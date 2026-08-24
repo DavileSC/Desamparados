@@ -14,6 +14,39 @@ export function login(email: string, password: string) {
   })
 }
 
+export function register(data: {
+  email: string
+  password: string
+  dni: string
+  nombre: string
+  apellidos: string
+  telefono: string
+  direccion: string
+  poblacion: string
+  codigoPostal: string
+  fechaNacimiento: string
+}) {
+  return apiFetch<{ user: { id: number; email: string }; message: string }>('/auth/register', {
+    method: 'POST',
+    auth: false,
+    json: {
+      isTutor: false,
+      usuario: {
+        email: data.email,
+        password: data.password,
+        dni: data.dni,
+        nombre: data.nombre,
+        apellidos: data.apellidos,
+        telefono: data.telefono,
+        direccion: data.direccion,
+        poblacion: data.poblacion,
+        codigoPostal: data.codigoPostal,
+      },
+      hermano: { fechaNacimiento: data.fechaNacimiento },
+    },
+  })
+}
+
 export function verify2FA(userId: number, token2fa: string) {
   return apiFetch<LoginResponse>('/auth/login/2fa', {
     method: 'POST',

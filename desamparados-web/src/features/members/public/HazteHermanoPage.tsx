@@ -8,9 +8,12 @@ import PageHeader from '../../../components/PageHeader'
 import AnimatedSection from '../../../components/AnimatedSection'
 import AppButton from '../../../components/AppButton'
 import { membershipSchema, type MembershipFormData } from './schema'
+import { register as apiRegister } from '../../../lib/api/auth'
+import { ApiError } from '../../../lib/api/client'
 
 export default function HazteHermanoPage() {
   const [success, setSuccess] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
     register,
@@ -23,19 +26,29 @@ export default function HazteHermanoPage() {
       nombre: '',
       apellidos: '',
       email: '',
+      password: '',
+      dni: '',
       telefono: '',
       direccion: '',
       ciudad: '',
       codigoPostal: '',
+      fechaNacimiento: '',
       aceptarPolitica: false,
     },
   })
 
   const onSubmit = async (data: MembershipFormData) => {
-    // TODO: Replace with real API call
-    console.log(data)
-    setSuccess(true)
-    reset()
+    setSubmitError(null)
+    try {
+      await apiRegister({
+        ...data,
+        poblacion: data.ciudad,
+      })
+      setSuccess(true)
+      reset()
+    } catch (error) {
+      setSubmitError(error instanceof ApiError ? error.message : 'No se ha podido enviar la solicitud.')
+    }
   }
 
   return (
@@ -57,6 +70,7 @@ export default function HazteHermanoPage() {
                 Solicitud enviada correctamente. Nos pondremos en contacto contigo pronto.
               </Alert>
             )}
+            {submitError && <Alert severity="error" sx={{ mb: 4 }}>{submitError}</Alert>}
 
             <Box
               component="form"
@@ -75,11 +89,41 @@ export default function HazteHermanoPage() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
+                    label="DNI/NIE"
+                    fullWidth
+                    error={!!errors.dni}
+                    helperText={errors.dni?.message}
+                    {...register('dni')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Contraseña"
+                    type="password"
+                    fullWidth
+                    error={!!errors.password}
+                    helperText={errors.password?.message}
+                    {...register('password')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
                     label="Apellidos"
                     fullWidth
                     error={!!errors.apellidos}
                     helperText={errors.apellidos?.message}
                     {...register('apellidos')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label="Fecha de nacimiento"
+                    type="date"
+                    fullWidth
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    error={!!errors.fechaNacimiento}
+                    helperText={errors.fechaNacimiento?.message}
+                    {...register('fechaNacimiento')}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
