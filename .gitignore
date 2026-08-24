@@ -1,0 +1,27 @@
+# Dependencies and generated builds
+**/node_modules/
+**/dist/
+**/build/
+**/coverage/
+
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+
+# Logs and local databases
+*.log
+*.sqlite
+*.sqlite-journal
+**/logs/
+
+# Runtime uploads and local storage
+backend-desamparados/storage/*
+!backend-desamparados/storage/.gitkeep
+
+# Local tooling and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+repomix-output.xml

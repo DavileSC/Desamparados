@@ -1,0 +1,484 @@
+// schema.prisma
+
+generator client {
+  provider      = "prisma-client-js"
+  // Añade esta línea obligatoria para que funcione en Windows Y en Docker Alpine:
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ---------------------------------------------------------
+// ENUMS GLOBALES
+// ---------------------------------------------------------
+
+enum Role {
+  USER // Hermano raso o Padre/Madre
+  ADMIN // Informático
+  TESORERIA // Tesorero
+  ALBACERIA // Albacea
+  HERMANO_MAYOR // Dashboard completo
+  REDES // Community Manager
+  SECRETARIA // Secretario
+}
+
+enum EstadoPago {
+  PENDIENTE
+  REMESADO // Enviado al banco en un lote (SEPA), esperando respuesta
+  PAGADO
+  DEVUELTO // El banco lo echa para atrás por falta de fondos
+  ANULADO
+  EXENTO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  BIZUM
+  TRANSFERENCIA
+  TARJETA
+  DOMICILIACION
+}
+
+enum TipoRecibo {
+  PAPELETA_SITIO // <--- Uso principal actual
+  CUOTA_HERMANO // <--- Preparado para el futuro
+  DONATIVO
+  OTRO
+}
+
+enum EstadoCita {
+  RESERVADA // El hermano ha dicho que viene
+  ATENDIDA // Ya vino y se llevó la papeleta
+  CANCELADA // El hermano anuló
+  NO_PRESENTADO // No apareció
+}
+
+// ---------------------------------------------------------
+// 1. GESTIÓN DE CUENTAS (LOGIN Y FAMILIAS)
+// ---------------------------------------------------------
+
+model User {
+  id Int @id @default(autoincrement())
+
+  // LOGIN
+  email    String @unique
+  password String
+
+  // PERFIL DEL RESPONSABLE (ADMIN FIX)
+  // Al tener estos datos aquí, el Admin puede loguearse sin ser Hermano.
+  dni          String  @unique
+  nombre       String
+  apellidos    String
+  telefono     String
+  direccion    String?
+  poblacion    String?
+  codigoPostal String?
+
+  role   Role    @default(USER)
+  active Boolean @default(true) // Soft Delete del usuario
+
+  // Invalidación de sesiones: todo JWT emitido ANTES de esta fecha queda anulado
+  // (cambio de contraseña, degradación de rol, reset 2FA de emergencia...)
+  tokenValidAfter DateTime @default(now())
+
+  // --- SEGURIDAD 2FA ---
+  // Guardamos el secreto que comparte el servidor y el móvil del usuario
+  twoFactorSecret  String?
+  // Para saber si obligarle a meter el código o no
+  twoFactorEnabled Boolean @default(false)
+
+  // --- RECUPERACIÓN DE CONTRASEÑA ---
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+
+  // --- JUNTA DE GOBIERNO ---
+  esJuntaDeGobierno Boolean @default(false)
+
+  // RELACIÓN: Un usuario gestiona N hermanos (hijos, o él mismo)
+  hermanos Hermano[]
+
+  // RELACIÓN: Turnos de reparto donde trabaja como responsable (Junta de Gobierno)
+  turnosResponsable Turno[] @relation("TurnosResponsables")
+
+  // Códigos de respaldo del 2FA (de un solo uso, para perder/cambiar el móvil)
+  backupCodes TwoFactorBackupCode[]
+
+  // Registro de auditoría de las acciones que realiza este usuario (staff)
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// 2. LA FICHA DEL COFRADE
+// ---------------------------------------------------------
+
+model Hermano {
+  id Int @id @default(autoincrement())
+
+  // DATOS PERSONALES
+  nombre          String
+  apellidos       String
+  dni             String?  @unique // Puede ser null (niños)
+  fechaNacimiento DateTime
+
+  // CONTACTO ESPECÍFICO
+  telefono     String?
+  email        String?
+  direccion    String?
+  poblacion    String?
+  codigoPostal String?
+
+  // DATOS DE HERMANDAD
+  fechaAlta DateTime  @default(now())
+  activo    Boolean   @default(true) // Soft Delete del hermano
+  numeroHermano   Int?      @unique // Número de hermano, si lo tienen asignado
+  fechaBaja DateTime? // Para saber cuándo dejó de pagar/salir
+
+  // VINCULACIÓN
+  esTitular Boolean @default(false) // true = este perfil es el User logueado
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id])
+
+  // --- DATOS LOGÍSTICOS (PROCESIÓN) ---
+
+  tieneTunicaPropia Boolean @default(false)
+
+  // TALLAJE DE ROPA (Nazarenos/Acólitos)
+  // Talla genérica para previsión (Ej: "L", "42", "Niño 10")
+  tunica String?
+
+  // TALLAJE FÍSICO (Hombres de Trono)
+  // Medida en cm desde suelo a hombro para cuadrar el varal (Ej: 165)
+  alturaHombro Int?
+
+  // ROL HABITUAL
+  // Para mostrar en la ficha: "Fulanito (Hombre de Trono)" o "Fulanito (Músico)"
+  puesto String?
+
+  // Pago preferido para la generación de recibos (Domiciliación SEPA preparada)
+  formaPagoPref MetodoPago @default(EFECTIVO)
+  iban          String?
+  titularCuenta String?
+
+  // HISTORIAL
+  papeletas PapeletaSitio[]
+  recibos   Recibo[]
+  citas     Cita[]
+  transacciones Transaccion[]
+  prendas   Prenda[]
+}
+
+// ---------------------------------------------------------
+// 3. SISTEMA DE ASISTENCIA (EL DÍA DE REPARTO)
+// ---------------------------------------------------------
+
+// Los días que la Hermandad abre para atender
+model Turno {
+  id    Int      @id @default(autoincrement())
+  fecha DateTime // Ej: 2024-03-15
+
+  horaInicio DateTime // Ej: 18:00
+  horaFin    DateTime // Ej: 21:00
+
+  // Informativo: ¿Cuánta gente esperamos poder atender bien?
+  capacidadEstimada Int @default(100)
+
+  activo Boolean @default(true)
+
+  citas Cita[] // Lista de gente que dijo que vendría
+
+  // RELACIÓN: Miembros de la Junta que trabajan ese día
+  responsables User[] @relation("TurnosResponsables")
+}
+
+// La intención de ir de un hermano
+model Cita {
+  id Int @id @default(autoincrement())
+
+  // No guardamos hora exacta, solo el vínculo con el turno
+  estado EstadoCita @default(RESERVADA)
+
+  // RELACIONES
+  turnoId Int
+  turno   Turno @relation(fields: [turnoId], references: [id])
+
+  hermanoId Int
+  hermano   Hermano @relation(fields: [hermanoId], references: [id])
+
+  // Opcional: Si la cita se completó, generó una papeleta
+  papeleta PapeletaSitio?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Restricción: Un hermano solo sale una vez por turno
+  @@unique([hermanoId, turnoId])
+}
+
+// ---------------------------------------------------------
+// 4. ECONOMÍA
+// ---------------------------------------------------------
+
+// Mantenemos solo el tipo básico
+enum TipoTransaccion {
+  INGRESO
+  GASTO
+}
+
+// NUEVO: Modelo dinámico de categorías
+model CategoriaTransaccion {
+  id     Int             @id @default(autoincrement())
+  nombre String // Ej: "Lotería Navidad", "Flores Cuaresma"
+  tipo   TipoTransaccion // Para saber si debe salir en el desplegable de Ingresos o de Gastos
+  activa Boolean         @default(true) // Soft-delete: si ya no venden lotería, la ocultan pero no se borra el historial
+
+  transacciones Transaccion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// EL LIBRO MAYOR (Actualizado)
+model Transaccion {
+  id   Int             @id @default(autoincrement())
+  tipo TipoTransaccion
+
+  // Enlace a la nueva tabla
+  categoriaId Int
+  categoria   CategoriaTransaccion @relation(fields: [categoriaId], references: [id])
+
+  concepto   String
+  importe    Decimal     @db.Decimal(10, 2)
+  fecha      DateTime    @default(now())
+  metodoPago MetodoPago?
+
+  hermanoId Int?
+  hermano   Hermano? @relation(fields: [hermanoId], references: [id])
+  reciboId  Int?     @unique
+  recibo    Recibo?  @relation(fields: [reciboId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Recibo {
+  id Int @id @default(autoincrement())
+
+  year         Int // Año fiscal
+  concepto     String // "Papeleta de Sitio 2024"
+  importe      Decimal  @db.Decimal(10, 2)
+  fechaEmision DateTime @default(now())
+
+  tipo TipoRecibo @default(PAPELETA_SITIO)
+
+  estado     EstadoPago  @default(PENDIENTE)
+  fechaPago  DateTime?
+  metodoPago MetodoPago?
+  observaciones String? @db.Text
+
+  // RELACIONES
+  hermanoId Int
+  hermano   Hermano       @relation(fields: [hermanoId], references: [id])
+  recibos   Transaccion[] // Un recibo puede tener varias transacciones (Ej: Papeleta + Donativo)
+
+  // Relación opcional: Si es papeleta, se rellena.
+  papeleta PapeletaSitio?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([year]) // <-- Búsquedas de tesorería mucho más rápidas
+  @@index([hermanoId]) // <-- Para listar rápido los recibos de una familia
+}
+
+// ---------------------------------------------------------
+// 5. LA PROCESIÓN (PAPELETA DE SITIO)
+// ---------------------------------------------------------
+
+model PapeletaSitio {
+  id   Int @id @default(autoincrement())
+  year Int
+
+  // SITIO
+  puesto String // "Cirio", "Varita", "Diputado", "hombre de trono"
+  tramo  String? // "Tramo 3 Virgen"
+  numero Int? // Orden de antigüedad
+
+  // ASIGNACIÓN DE MATERIAL (ROPA QUE SE LLEVA ESE AÑO)
+  numTunicaAsignada   String? // Ej: "140-05" (Código inventario)
+  numCapiroteAsignado String? // Ej: "135"
+  observaciones       String?
+
+  // RELACIONES
+  hermanoId Int
+  hermano   Hermano @relation(fields: [hermanoId], references: [id])
+
+  // ECONOMÍA: Vinculamos al recibo que pagó esto
+  reciboId Int    @unique
+  recibo   Recibo @relation(fields: [reciboId], references: [id])
+
+  // LOGÍSTICA: ¿Vino de una cita previa?
+  citaId Int?  @unique
+  cita   Cita? @relation(fields: [citaId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Restricción: Un hermano solo sale una vez por año
+  @@unique([hermanoId, year])
+  @@index([year])
+}
+
+// ---------------------------------------------------------
+// 6. EVENTOS Y CALENDARIO
+// ---------------------------------------------------------
+
+enum EventVisibility {
+  public
+  members_only
+}
+
+enum TipoEvento {
+  CULTO
+  PROCESION
+  FORMACION
+  ENSAYO
+  REUNION
+  SOCIAL
+  OTRO
+}
+
+model Evento {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?   @db.Text
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+
+  visibility EventVisibility @default(public)
+  type       TipoEvento      @default(OTRO)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startDate]) // <-- Para que el calendario cargue al instante
+}
+
+// ---------------------------------------------------------
+// 7. ALBACERÍA (INVENTARIO ESTÁTICO)
+// ---------------------------------------------------------
+
+// 1. LOS ENSERES (Gestión por Lotes: Hachetas, Viacrucis, Varales)
+model Enser {
+  id         Int     @id @default(autoincrement())
+  nombre     String
+  referencia String?
+  categoria  String?
+  ubicacion  String?
+
+  cantidadOptimo  Int @default(0)
+  cantidadBueno   Int @default(0)
+  cantidadReparar Int @default(0)
+  cantidadTotal   Int @default(0)
+
+  imagenUrl        String?
+  fechaAdquisicion DateTime?
+}
+
+// 2. EL ROPERO (Gestión Unitaria: Túnicas, Capirotes, Faraonas)
+model Prenda {
+  id            Int          @id @default(autoincrement())
+  numero        String       @unique // Ej: "TUN-014", "CAP-102", "FAR-005"
+  tipo          TipoPrenda // Enum a crear: TUNICA, CAPIROTE, FARAONA, CAPA
+  talla         String? // Ej: "1.75m", "XL"
+  estado        EstadoPrenda @default(DISPONIBLE) // Enum: DISPONIBLE, PRESTADA, TALLER, BAJA
+  observaciones String?
+
+  // Relación: ¿Quién se la ha llevado a casa?
+  hermanoId       Int?
+  hermano         Hermano?  @relation(fields: [hermanoId], references: [id])
+  fechaAsignacion DateTime?
+}
+
+enum TipoPrenda {
+  TUNICA
+  CAPIROTE
+  FARAONA
+  CAPA
+  OTRO
+}
+
+enum EstadoPrenda {
+  DISPONIBLE
+  PRESTADA
+  TALLER
+  BAJA
+}
+
+// ---------------------------------------------------------
+// 8. NOTICIAS Y CONFIGURACIÓN
+// ---------------------------------------------------------
+
+model Noticia {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  titulo    String
+  extracto  String?
+  contenido String   @db.Text
+  imagenUrl String?
+  fecha     DateTime @default(now())
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Configuracion {
+  key         String   @id
+  value       String
+  descripcion String?
+  updatedAt   DateTime @updatedAt
+}
+
+// Códigos de respaldo del 2FA: se muestran UNA sola vez al activar,
+// y cada uno puede usarse una única vez (para login o para desactivar).
+model TwoFactorBackupCode {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// Registro de auditoría de acciones sensibles (dinero, roles, solicitudes, RGPD).
+// Es la prueba forense de quién hizo qué, cuándo y desde qué IP.
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String // Ej: 'RECIBO_COBRAR', 'SOLICITUD_APROBAR' (ver AUDIT_ACTIONS)
+  entityType String? // 'recibo', 'hermano', 'user', 'config'...
+  entityId   String? // ID del registro afectado (string para flexibilidad)
+  ip         String?
+  userAgent  String? @db.VarChar(250)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Pagina {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  titulo    String
+  contenido String   @db.Text
+  updatedAt DateTime @updatedAt
+}

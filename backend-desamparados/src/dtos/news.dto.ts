@@ -1,0 +1,27 @@
+// src/dtos/news.dto.ts
+
+export interface CreateNewsDto {
+  titulo: string;
+  extracto?: string;  // Resumen corto para listados
+  contenido: string;  // HTML o Markdown del cuerpo
+  imagenUrl?: string; // URL de la imagen destacada
+  visible?: boolean;  // Borrador o Publicada
+  fecha?: string;     // ISO String. Opcional (si no viene, es hoy)
+  slug?: string;      // Opcional, por si el SEO quiere forzar uno
+}
+
+export interface UpdateNewsDto {
+  titulo?: string;
+  extracto?: string;
+  contenido?: string;
+  imagenUrl?: string;
+  visible?: boolean;
+  fecha?: string;
+  slug?: string;
+}
+
+export interface NewsFilterDto {
+  page: number;
+  limit: number;
+  search?: string; // Para buscar por título en el archivo
+}

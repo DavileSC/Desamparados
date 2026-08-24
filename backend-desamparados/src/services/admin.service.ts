@@ -1,0 +1,154 @@
+import db from '../config/db.js';
+import { Role } from '@prisma/client';
+import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
+
+export class AdminService {
+
+  // 1. VER EL STAFF ACTUAL
+  static async getStaff() {
+    return await db.user.findMany({
+      where: {
+        role: { not: Role.USER }, // Todos los que no sean rasos
+        active: true
+      },
+      select: { 
+        id: true, email: true, role: true, nombre: true, apellidos: true, dni: true, telefono: true 
+      }
+    });
+  }
+
+  // 2. BUSCAR USUARIOS RASOS PARA ASCENDERLOS (Para el select del frontend)
+  static async searchEligibleUsers(searchTerm?: string) {
+    return await db.user.findMany({
+      where: {
+        role: Role.USER,
+        active: true,
+        ...(searchTerm && {
+          OR: [
+            { nombre: { contains: searchTerm } },
+            { apellidos: { contains: searchTerm } },
+            { dni: { contains: searchTerm } },
+            { email: { contains: searchTerm } }
+          ]
+        })
+      },
+      select: { id: true, nombre: true, apellidos: true, dni: true, email: true },
+      take: 20 // Límite para no saturar
+    });
+  }
+
+  // 3. ASCENDER A UN USUARIO (Darle un cargo en la Junta / Staff)
+  static async promoteToStaff(userId: number, newRole: Role, currentAdminId: number, meta?: AuditMeta) {
+    // Medida de seguridad: Evitar que un admin se auto-promocione/cambie de rol.
+    if (userId === currentAdminId) {
+      throw new Error('Un administrador no puede modificar su propio rol.');
+    }
+
+    const existing = await db.user.findUnique({ where: { id: userId } });
+    if (!existing) throw new Error('Usuario no encontrado');
+    if (!existing.active) throw new Error('El usuario está inactivo');
+
+    const result = await db.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+      select: { id: true, email: true, role: true, nombre: true, apellidos: true }
+    });
+
+    // Auditoría: cambio de rol (asignación de privilegios)
+    AuditService.log(AUDIT_ACTIONS.STAFF_PROMOTE, meta ?? {}, 'user', userId);
+    return result;
+  }
+
+  // 4. DEGRADAR A UN USUARIO (Quitarle el cargo, vuelve a ser Hermano raso)
+  // ¡FÍJATE! No tocamos el campo `active`, solo le quitamos el rol.
+  static async demoteToUser(userId: number, currentAdminId: number, meta?: AuditMeta) {
+    // Medida de seguridad: Evitar que un admin se auto-degrade.
+    if (userId === currentAdminId) {
+      throw new Error('Un administrador no puede degradarse a sí mismo.');
+    }
+
+    const existing = await db.user.findUnique({ where: { id: userId } });
+    if (!existing) throw new Error('Usuario no encontrado');
+    if (existing.role === Role.ADMIN) {
+        // Medida de seguridad: Evitar que el último Admin se degrade a sí mismo por error
+        const adminCount = await db.user.count({ where: { role: Role.ADMIN, active: true } });
+        if (adminCount <= 1) throw new Error('No puedes degradar al último Administrador del sistema.');
+    }
+
+    const result = await db.user.update({
+      where: { id: userId },
+      data: {
+        role: Role.USER,
+        // Invalidamos sus sesiones activas: pierde el acceso al CMS de inmediato
+        // (los tokens JWT viejos ya no podrán usar rutas de staff)
+        tokenValidAfter: new Date()
+      },
+      select: { id: true, email: true, role: true, nombre: true }
+    });
+
+    // Auditoría: retirada de privilegios
+    AuditService.log(AUDIT_ACTIONS.STAFF_DEMOTE, meta ?? {}, 'user', userId);
+    return result;
+  }
+
+  // 5. OBTENER TODA LA CONFIGURACIÓN
+  static async getAllConfiguracion() {
+    return await db.configuracion.findMany({
+      orderBy: { key: 'asc' }
+    });
+  }
+
+  // 6. ACTUALIZAR UN VALOR DE CONFIGURACIÓN
+  // Whitelist de claves conocidas del sistema: evita que se cuelen parámetros
+  // arbitrarios (una clave 'precio_papeleta_sitio' mal escrita haría que el
+  // backend cobrara el precio fallback sin que nadie lo notara).
+  private static readonly ALLOWED_CONFIG_KEYS = [
+    'precio_papeleta_sitio',
+    'precio_alquiler_tunica',
+    'home_news_limit'
+  ] as const;
+
+  static async updateConfiguracion(key: string, value: string, meta?: AuditMeta) {
+    if (!(this.ALLOWED_CONFIG_KEYS as readonly string[]).includes(key)) {
+      throw new Error(`'${key}' no es un parámetro de configuración válido. Claves permitidas: ${this.ALLOWED_CONFIG_KEYS.join(', ')}.`);
+    }
+    const result = await db.configuracion.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value, descripcion: `Valor para ${key}` }
+    });
+
+    // Auditoría: los precios y parámetros globales son sensibles (afectan al cobro)
+    AuditService.log(AUDIT_ACTIONS.CONFIG_UPDATE, meta ?? {}, 'config', key);
+    return result;
+  }
+
+  // =================================================================
+  //  7. CONSULTA DEL REGISTRO DE AUDITORÍA (Solo ADMIN)
+  // =================================================================
+  static async getAuditLogs(page: number = 1, limit: number = 50, action?: string, userId?: number) {
+    page = Math.max(page, 1);
+    limit = Math.min(Math.max(limit, 1), 200); // Tope duro
+
+    const where = {
+      ...(action ? { action } : {}),
+      ...(userId ? { userId } : {})
+    };
+
+    const [data, total] = await db.$transaction([
+      db.auditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          user: { select: { id: true, email: true, nombre: true, apellidos: true, role: true } }
+        }
+      }),
+      db.auditLog.count({ where })
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
+}

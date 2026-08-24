@@ -1,0 +1,130 @@
+import db from '../config/db';
+import { SavePaginaDto, UpdatePaginaDto } from '../dtos/pagina.dto';
+import sanitizeHtml from 'sanitize-html';
+
+export class PaginaService {
+
+  // =================================================================
+  //  1. LECTURA PÚBLICA
+  // =================================================================
+
+  /**
+   * Obtiene una página por su URL amigable (slug).
+   * Ej: /api/pages/historia
+   */
+  static async getPaginaBySlug(slug: string) {
+    const pagina = await db.pagina.findUnique({
+      where: { slug }
+    });
+    
+    // Si no existe, devolvemos null.
+    // El Controller se encargará de mandar un 404 si recibe null.
+    return pagina;
+  }
+
+  // =================================================================
+  //  2. GESTIÓN (ADMIN)
+  // =================================================================
+
+  /**
+   * CREAR una página nueva.
+   * Protege contra duplicados comprobando el slug antes.
+   */
+  static async createPagina(data: SavePaginaDto) {
+    // 1. Normalizar Slug (Seguridad)
+    // Si el admin envía "Historia de la Hermandad", lo convertimos a "historia-de-la-hermandad"
+    const finalSlug = this.normalizeSlug(data.slug);
+
+    // 2. Sanitizar el contenido HTML (Prevención de Stored XSS)
+    const cleanContent = this.sanitizeContenido(data.contenido);
+
+    return await db.pagina.upsert({
+      where: { slug: finalSlug },
+      update: { 
+        titulo: data.titulo, 
+        contenido: cleanContent,
+        updatedAt: new Date() // Forzamos actualización de fecha
+      },
+      create: { 
+        slug: finalSlug, 
+        titulo: data.titulo, 
+        contenido: cleanContent
+      }
+    });
+  }
+
+  /**
+   * ACTUALIZAR una página existente.
+   * No tocamos el slug original para no romper el SEO.
+   */
+  static async updatePagina(slugOriginal: string, data: UpdatePaginaDto) {
+    // 1. Comprobamos que la página que intentan editar realmente existe
+    const existe = await db.pagina.findUnique({ where: { slug: slugOriginal } });
+    if (!existe) throw new Error('La página que intentas actualizar no existe.');
+
+    // 2. Actualizamos (Prisma se encarga de cambiar el updatedAt automáticamente)
+    // Sanitizamos igual que en create para prevenir Stored XSS
+    return await db.pagina.update({
+      where: { slug: slugOriginal },
+      data: { 
+        titulo: data.titulo, 
+        contenido: data.contenido !== undefined ? this.sanitizeContenido(data.contenido) : undefined
+      }
+    });
+  }
+  
+  /**
+   * Listado ligero para el menú del Admin (sin el contenido pesado)
+   */
+  static async getAllSlugs() {
+      return await db.pagina.findMany({
+          orderBy: { slug: 'asc' },
+          select: { 
+            slug: true, 
+            titulo: true, 
+            updatedAt: true 
+          }
+      });
+  }
+
+  /**
+   * Eliminar una página del sistema.
+   */
+  static async deletePagina(slug: string) {
+    // Medida de seguridad: Evitar que se borren páginas críticas por error.
+    const protectedSlugs = ['home', 'contacto', 'aviso-legal'];
+    if (protectedSlugs.includes(slug)) throw new Error(`La página '${slug}' está protegida y no se puede eliminar.`);
+
+    return await db.pagina.delete({
+      where: { slug }
+    });
+  }
+
+  // =================================================================
+  //  UTILIDADES
+  // =================================================================
+
+  /**
+   * Limpia el HTML permitiendo solo etiquetas de formato seguras.
+   */
+  private static sanitizeContenido(contenido: string): string {
+    return sanitizeHtml(contenido, {
+      // Permitimos etiquetas comunes para formato, pero ninguna peligrosa.
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'img']),
+      allowedAttributes: { ...sanitizeHtml.defaults.allowedAttributes, 'img': ['src', 'alt'] }
+    });
+  }
+
+  /**
+   * Limpia el texto para crear URLs amigables y seguras.
+   */
+  private static normalizeSlug(text: string): string {
+    return text
+      .toLowerCase()
+      .trim()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Tildes fuera
+      .replace(/ñ/g, "n") 
+      .replace(/\s+/g, '-') // Espacios a guiones
+      .replace(/[^a-z0-9-]/g, ''); // Eliminar caracteres raros
+  }
+}

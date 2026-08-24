@@ -1,0 +1,37 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Lunes a las 06:00 UTC: revisión semanal de dependencias
+    - cron: '0 6 * * 1'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar cliente Prisma
+        run: npx prisma generate
+        env:
+          # prisma.config.ts exige la variable, pero generate no conecta a la BD
+          DATABASE_URL: 'mysql://ci:ci@localhost:3306/ci'
+
+      - name: Comprobación de tipos (tsc)
+        run: npx tsc --noEmit
+
+      - name: Auditoría de vulnerabilidades (npm audit)
+        run: npm audit --audit-level=high

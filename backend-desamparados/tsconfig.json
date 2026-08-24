@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    /* --- Configuración Básica de Node.js --- */
+    "target": "ES2023",                /* Versión moderna de JS soportada por Node */
+    "module": "ESNext",              /* Estándar para Backend Node (require/module.exports bajo el capó) */
+    "moduleResolution": "bundler",        /* Permite imports sin extensión .ts ni .js */
+    "rootDir": "./src",                /* Dónde está tu código */
+    "outDir": "./dist",                /* Dónde se compila (limpieza) */
+    
+    /* --- Interoperabilidad (Clave para Express/Multer) --- */
+    "esModuleInterop": true,           /* Permite 'import express from "express"' en vez de 'import * as...' */
+    "resolveJsonModule": true,         /* Permite importar archivos .json */
+    
+    /* --- Tipado Estricto (Buenas prácticas) --- */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "ignoreDeprecations": "5.0",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,      
+    
+    /* --- Otros --- */
+    "skipLibCheck": true,              /* Salta chequeo de tipos en node_modules (ahorra tiempo) */
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}

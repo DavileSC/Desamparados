@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+  # Dependencias npm: avisos PR semanales de actualizaciones
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    # Agrupar parches menores para no ahogar el repo en PRs
+    groups:
+      minor-and-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  # Mantener las Actions del workflow al día
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
