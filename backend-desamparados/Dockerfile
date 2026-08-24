@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 # npm ci: instala EXACTAMENTE lo del package-lock (reproducible y auditable)
 RUN npm ci
+RUN chown -R node:node /app/node_modules
 
 # Código con permisos del usuario 'node' (no root)
 COPY --chown=node:node . .
