@@ -32,7 +32,7 @@ function QuickItem({ icon, label, href }: QuickItemProps) {
         transition: 'all 0.3s ease',
         '&:hover': {
           backgroundColor: 'rgba(255, 255, 255, 0.03)',
-          '& .quick-icon': { borderColor: 'primary.main', color: 'primary.main' },
+          '& .quick-icon': { borderColor: 'secondary.main', color: 'secondary.main' },
           '& .quick-label': { color: 'text.primary' },
         },
       }}
@@ -76,7 +76,8 @@ export default function QuickAccess() {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            // 4 columnas fijas desbordaban 93px a 375px (barra de scroll horizontal en toda la home)
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
             gap: { xs: 2, md: 4 },
             justifyItems: 'center',
           }}

@@ -4,6 +4,7 @@ import { EstadoCita, EstadoPago, TipoRecibo } from '@prisma/client';
 import { AvisarAsistenciaDto, CrearInscripcionManualDto } from '../dtos/procesion.dto';
 import { EmailService } from './email.service';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 
 export class ProcesionService {
 
@@ -48,7 +49,7 @@ export class ProcesionService {
       where: { id: hermanoId, userId: userId }
     });
     if (!checkPropiedad) {
-      throw new Error('No tienes permisos para apuntar a este cofrade.');
+      throw new HttpError('No tienes permisos para apuntar a este cofrade.');
     }
 
     const year = new Date().getFullYear();
@@ -57,7 +58,7 @@ export class ProcesionService {
     const yaTienePapeleta = await db.papeletaSitio.findFirst({
       where: { hermanoId, year }
     });
-    if (yaTienePapeleta) throw new Error('Ya tienes tu papeleta de este año.');
+    if (yaTienePapeleta) throw new HttpError('Ya tienes tu papeleta de este año.');
 
     // 2. Verificar si ya avisó para otro día (evitar duplicados)
     const avisoPrevio = await db.cita.findFirst({
@@ -67,7 +68,7 @@ export class ProcesionService {
         turno: { fecha: { gte: new Date(year, 0, 1) } }
       }
     });
-    if (avisoPrevio) throw new Error('Ya tienes un día reservado.');
+    if (avisoPrevio) throw new HttpError('Ya tienes un día reservado.');
 
     // 3. Crear el aviso
     return await db.cita.create({
@@ -91,8 +92,8 @@ export class ProcesionService {
       }
     });
 
-    if (!cita) throw new Error('Cita no encontrada o no autorizada.');
-    if (cita.estado !== EstadoCita.RESERVADA) throw new Error('Esta cita ya no se puede cancelar.');
+    if (!cita) throw new NotFoundError('Cita no encontrada o no autorizada.');
+    if (cita.estado !== EstadoCita.RESERVADA) throw new HttpError('Esta cita ya no se puede cancelar.');
 
     return await db.cita.update({
       where: { id: citaId },
@@ -156,7 +157,7 @@ export class ProcesionService {
     const existe = await db.papeletaSitio.findUnique({
       where: { hermanoId_year: { hermanoId: data.hermanoId, year: yearActual } }
     });
-    if (existe) throw new Error('Este hermano ya tiene papeleta este año.');
+    if (existe) throw new HttpError('Este hermano ya tiene papeleta este año.');
 
     // ================== CÁLCULO DE IMPORTE SEGURO (Backend) ==================
     // 1. Obtenemos los precios de la configuración y los datos del hermano en paralelo.
@@ -169,7 +170,7 @@ export class ProcesionService {
       })
     ]);
 
-    if (!hermano) throw new Error('No se encontró al hermano para calcular el importe.');
+    if (!hermano) throw new HttpError('No se encontró al hermano para calcular el importe.');
 
     // 2. Parseo seguro con valores por defecto para evitar fallos si no está configurado.
     const precioBase = Number(precioBaseConfig?.value) || 30; // Fallback a 30€
@@ -253,7 +254,7 @@ export class ProcesionService {
    */
   static async anularPapeleta(papeletaId: number, meta?: AuditMeta) {
     const papeleta = await db.papeletaSitio.findUnique({ where: { id: papeletaId } });
-    if (!papeleta) throw new Error('Papeleta no encontrada');
+    if (!papeleta) throw new NotFoundError('Papeleta no encontrada');
 
     // Auditoría: anulación implica devolución de dinero
     AuditService.log(AUDIT_ACTIONS.PAPELETA_ANULAR, meta ?? {}, 'papeleta', papeletaId);
@@ -384,7 +385,7 @@ export class ProcesionService {
 
     // 2. Validación lógica básica
     if (fechaFin <= fechaInicio) {
-      throw new Error('La hora de fin debe ser posterior a la hora de inicio.');
+      throw new HttpError('La hora de fin debe ser posterior a la hora de inicio.');
     }
 
     // 3. Lo guardamos en la base de datos
@@ -404,7 +405,7 @@ export class ProcesionService {
    */
   static async actualizarTurno(turnoId: number, data: { capacidadEstimada?: number, activo?: boolean, horaInicio?: Date, horaFin?: Date }) {
     const turno = await db.turno.findUnique({ where: { id: turnoId } });
-    if (!turno) throw new Error('Turno no encontrado');
+    if (!turno) throw new NotFoundError('Turno no encontrado');
 
     return await db.turno.update({
       where: { id: turnoId },
@@ -425,7 +426,7 @@ export class ProcesionService {
     const ocupacion = await db.cita.count({ where: { turnoId } });
 
     if (ocupacion > 0) {
-      throw new Error('No puedes borrar este día porque ya hay hermanos con cita. Desactívalo en su lugar.');
+      throw new HttpError('No puedes borrar este día porque ya hay hermanos con cita. Desactívalo en su lugar.');
     }
 
     return await db.turno.delete({ where: { id: turnoId } });
@@ -438,11 +439,11 @@ export class ProcesionService {
     // 1. EL BLINDAJE: ¿Es de la Junta?
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user || !user.esJuntaDeGobierno) {
-      throw new Error('Solo los miembros de la Junta de Gobierno pueden apuntarse a trabajar en los turnos.');
+      throw new HttpError('Solo los miembros de la Junta de Gobierno pueden apuntarse a trabajar en los turnos.');
     }
 
     const turno = await db.turno.findUnique({ where: { id: turnoId } });
-    if (!turno) throw new Error('Turno no encontrado');
+    if (!turno) throw new NotFoundError('Turno no encontrado');
 
     return await db.turno.update({
       where: { id: turnoId },

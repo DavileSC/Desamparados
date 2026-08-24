@@ -29,6 +29,20 @@ const adapter = new PrismaMariaDb({
   connectionLimit: 5
 });
 
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({
+  adapter,
+  // RED DE SEGURIDAD (fuga de secretos): por defecto NINGUNA consulta a User devuelve
+  // el hash de contraseña, el secreto TOTP ni el token de reset. Los pocos sitios que
+  // los necesitan de verdad (login, verificación 2FA, borrado de cuenta) deben pedirlos
+  // explícitamente con `omit: { password: false }` en esa consulta concreta.
+  omit: {
+    user: {
+      password: true,
+      twoFactorSecret: true,
+      resetPasswordToken: true,
+      resetPasswordExpires: true
+    }
+  }
+});
 
 export default prisma;

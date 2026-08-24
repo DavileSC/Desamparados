@@ -27,7 +27,7 @@ export default function CorporationPage() {
         subtitle="Grupo Parroquial de Nuestra Señora de los Desamparados."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', mb: 6 }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>

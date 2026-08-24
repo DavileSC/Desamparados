@@ -42,20 +42,30 @@ export default function ImageGallery({ images, columns = 3 }: ImageGalleryProps)
         {images.map((image, index) => (
           <Box
             key={index}
+            component="button"
+            type="button"
             onClick={() => handleOpen(index)}
+            aria-label={`Ampliar imagen: ${image.alt}`}
             sx={{
               position: 'relative',
               aspectRatio: '4 / 3',
               borderRadius: '8px',
               overflow: 'hidden',
               cursor: 'pointer',
+              p: 0,
+              border: 'none',
+              background: 'none',
+              width: '100%',
               '&:hover img': { transform: 'scale(1.05)', opacity: 0.9 },
+              '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: 2 },
             }}
           >
             <Box
               component="img"
               src={image.src}
               alt={image.alt}
+              loading="lazy"
+              decoding="async"
               sx={{
                 width: '100%',
                 height: '100%',
@@ -94,6 +104,7 @@ export default function ImageGallery({ images, columns = 3 }: ImageGalleryProps)
         >
           <IconButton
             onClick={handleClose}
+            aria-label="Cerrar"
             sx={{
               position: 'absolute',
               top: 16,
@@ -107,6 +118,7 @@ export default function ImageGallery({ images, columns = 3 }: ImageGalleryProps)
 
           <IconButton
             onClick={handlePrev}
+            aria-label="Imagen anterior"
             sx={{
               position: 'absolute',
               left: 16,
@@ -130,6 +142,7 @@ export default function ImageGallery({ images, columns = 3 }: ImageGalleryProps)
 
           <IconButton
             onClick={handleNext}
+            aria-label="Imagen siguiente"
             sx={{
               position: 'absolute',
               right: 16,

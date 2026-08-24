@@ -10,6 +10,7 @@ import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
 import * as OTPAuth from 'otpauth';
 import qrcode from 'qrcode';
 import { EmailService } from './email.service';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 // -------------------------------
 
 export class AuthService {
@@ -21,18 +22,18 @@ export class AuthService {
     const checkUser = await db.user.findFirst({
       where: { OR: [{ email: usuario.email }, { dni: usuario.dni }] }
     });
-    if (checkUser) throw new Error('El email o DNI ya están registrados.');
+    if (checkUser) throw new HttpError('El email o DNI ya están registrados.');
 
     if (isTutor) {
       if (!hermano || !hermano.nombre || !hermano.fechaNacimiento) {
-        throw new Error('Datos del hermano/hijo incompletos.');
+        throw new HttpError('Datos del hermano/hijo incompletos.');
       }
       if (hermano.dni) {
         const checkHermano = await db.hermano.findFirst({ where: { dni: hermano.dni } });
-        if (checkHermano) throw new Error('El DNI del hermano ya existe.');
+        if (checkHermano) throw new HttpError('El DNI del hermano ya existe.');
       }
     } else {
-      if (!hermano?.fechaNacimiento) throw new Error('Fecha de nacimiento obligatoria.');
+      if (!hermano?.fechaNacimiento) throw new HttpError('Fecha de nacimiento obligatoria.');
     }
 
     const hashedPassword = await encrypt(usuario.password);
@@ -123,7 +124,7 @@ export class AuthService {
     const state = this.attemptsLogin.get(email);
     if (state && state.blockedUntil > Date.now()) {
       const mins = Math.ceil((state.blockedUntil - Date.now()) / 60000);
-      throw new Error(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`);
+      throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`);
     }
   }
 
@@ -145,6 +146,7 @@ export class AuthService {
 
     const user = await db.user.findUnique({
       where: { email: emailNorm },
+      omit: { password: false }, // Necesario para comparar el hash (el cliente lo oculta por defecto)
       include: {
         hermanos: {
           // Solo perfiles activos: los dados de baja no deben salir en el selector
@@ -155,18 +157,18 @@ export class AuthService {
     });
 
     // 1. Validamos que el usuario exista
-    if (!user) throw new Error('Credenciales incorrectas.');
+    if (!user) throw new HttpError('Credenciales incorrectas.');
 
     // 2. Validamos la contraseña
     const isMatch = await verified(password, user.password);
     if (!isMatch) {
       this.registerFailLogin(emailNorm);
-      throw new Error('Credenciales incorrectas.');
+      throw new HttpError('Credenciales incorrectas.');
     }
 
     // 3. BLOQUEO: Si la contraseña es correcta pero la cuenta no está activa
     if (!user.active) {
-      throw new Error('Tu solicitud está pendiente de aprobación. Pásate por Secretaría para formalizar tu alta.');
+      throw new HttpError('Tu solicitud está pendiente de aprobación. Pásate por Secretaría para formalizar tu alta.');
     }
 
     // Login correcto: limpiamos el contador de fallos
@@ -205,7 +207,7 @@ export class AuthService {
     const state = this.attempts2FA.get(userId);
     if (state && state.blockedUntil > Date.now()) {
       const mins = Math.ceil((state.blockedUntil - Date.now()) / 60000);
-      throw new Error(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`);
+      throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`);
     }
   }
 
@@ -229,6 +231,7 @@ export class AuthService {
 
     const user = await db.user.findUnique({
       where: { id: userId },
+      omit: { twoFactorSecret: false }, // Necesario para validar el TOTP
       include: {
         hermanos: {
           // Mismo formato que el login normal para que el selector de perfiles funcione igual
@@ -237,7 +240,7 @@ export class AuthService {
         }
       }
     });
-    if (!user || !user.twoFactorSecret) throw new Error('2FA no configurado.');
+    if (!user || !user.twoFactorSecret) throw new HttpError('2FA no configurado.');
 
     const code = token2fa.trim().toUpperCase();
     let backupCodesRemaining: number | undefined;
@@ -255,14 +258,14 @@ export class AuthService {
       const delta = totp.validate({ token: code, window: 1 });
       if (delta === null) {
         this.registerFail2FA(userId);
-        throw new Error('Código incorrecto o expirado.');
+        throw new HttpError('Código incorrecto o expirado.');
       }
     } else {
       // Código de respaldo: lo buscamos por hash y debe estar sin usar
       const consumed = await this.consumeBackupCode(user.id, code);
       if (!consumed) {
         this.registerFail2FA(userId);
-        throw new Error('Código incorrecto o expirado.');
+        throw new HttpError('Código incorrecto o expirado.');
       }
 
       // Avisamos al frontend de cuántos le quedan (si se le acaban, necesita al ADMIN)
@@ -313,11 +316,9 @@ export class AuthService {
       }
     });
 
-    // Construimos la URL que el usuario clickará en el correo (ajusta a tu frontend)
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-
-    // Enviamos el correo (Tendrás que crear esta función en tu EmailService)
-    EmailService.enviarRecuperacionContrasena(user.email, user.nombre, resetUrl)
+    // Enviamos el correo. OJO: se pasa el TOKEN en crudo; la URL completa la construye
+    // EmailService (antes se construía aquí y el email la volvía a envolver: ?token=https://...?token=).
+    EmailService.enviarRecuperacionContrasena(user.email, user.nombre, resetToken)
       .catch(err => console.error('Error enviando email de recuperación:', err));
 
     return { message: 'Si el correo está registrado, recibirás un enlace de recuperación.' };
@@ -334,7 +335,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error('El enlace de recuperación es inválido o ha caducado.');
+      throw new HttpError('El enlace de recuperación es inválido o ha caducado.');
     }
 
     // Encriptamos la nueva contraseña
@@ -362,7 +363,7 @@ export class AuthService {
 
   static async generate2FAQR(userId: number) {
     const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error('Usuario no encontrado');
+    if (!user) throw new NotFoundError('Usuario no encontrado');
 
     // 1. Generamos un nuevo secreto aleatorio (20 bytes es el estándar)
     const secret = new OTPAuth.Secret({ size: 20 });
@@ -393,8 +394,8 @@ export class AuthService {
   }
 
   static async enable2FA(userId: number, token2fa: string) {
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user || !user.twoFactorSecret) throw new Error('Falta generar el QR.');
+    const user = await db.user.findUnique({ where: { id: userId }, omit: { twoFactorSecret: false } });
+    if (!user || !user.twoFactorSecret) throw new HttpError('Falta generar el QR.');
 
     const totp = new OTPAuth.TOTP({
       algorithm: 'SHA1',
@@ -405,7 +406,7 @@ export class AuthService {
 
     const delta = totp.validate({ token: token2fa, window: 1 });
 
-    if (delta === null) throw new Error('Código incorrecto.');
+    if (delta === null) throw new HttpError('Código incorrecto.');
 
     // Generamos los códigos de respaldo (de un solo uso) y guardamos solo su hash
     const backupCodes = this.generateBackupCodes(8);
@@ -435,8 +436,8 @@ export class AuthService {
    * Requiere el código TOTP vigente o un código de respaldo (cambio/perdida de móvil).
    */
   static async disable2FA(userId: number, code: string) {
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user || !user.twoFactorEnabled) throw new Error('2FA no está activado.');
+    const user = await db.user.findUnique({ where: { id: userId }, omit: { twoFactorSecret: false } });
+    if (!user || !user.twoFactorEnabled) throw new HttpError('2FA no está activado.');
 
     const normalized = code.trim().toUpperCase();
 
@@ -448,10 +449,10 @@ export class AuthService {
         secret: OTPAuth.Secret.fromBase32(user.twoFactorSecret!)
       });
       const delta = totp.validate({ token: normalized, window: 1 });
-      if (delta === null) throw new Error('Código incorrecto.');
+      if (delta === null) throw new HttpError('Código incorrecto.');
     } else {
       const consumed = await this.consumeBackupCode(userId, normalized);
-      if (!consumed) throw new Error('Código incorrecto.');
+      if (!consumed) throw new HttpError('Código incorrecto.');
     }
 
     return await db.$transaction(async (tx) => {
@@ -509,13 +510,14 @@ export class AuthService {
         }
       }
     });
-    if (!user) throw new Error('Usuario no encontrado');
+    if (!user) throw new NotFoundError('Usuario no encontrado');
 
     // Auditoría (las exportaciones masivas de datos también son rastreables)
     AuditService.log(AUDIT_ACTIONS.CUENTA_DATOS_EXPORT, meta ?? {}, 'user', userId);
 
-    // Nunca exponemos secretos en la exportación
-    const { password, twoFactorSecret, resetPasswordToken, resetPasswordExpires, ...safeUser } = user;
+    // Nunca exponemos secretos en la exportación: el cliente Prisma ya los omite
+    // globalmente (ver config/db.ts), así que `user` llega sin password/2FA/reset.
+    const { hermanos, ...safeUser } = user;
     return {
       exportadoEn: new Date().toISOString(),
       aviso: 'Exportación de datos personales conforme al art. 15 RGPD.',
@@ -537,13 +539,14 @@ export class AuthService {
   static async deleteOwnAccount(userId: number, password: string, meta?: AuditMeta) {
     const user = await db.user.findUnique({
       where: { id: userId },
+      omit: { password: false }, // Necesario para confirmar la identidad
       include: { hermanos: true }
     });
-    if (!user) throw new Error('Usuario no encontrado');
+    if (!user) throw new NotFoundError('Usuario no encontrado');
 
     // Confirmación de identidad obligatoria
     const isMatch = await verified(password, user.password);
-    if (!isMatch) throw new Error('Contraseña incorrecta: no se puede eliminar la cuenta.');
+    if (!isMatch) throw new HttpError('Contraseña incorrecta: no se puede eliminar la cuenta.');
 
     // Antes de anonimizar, registramos la acción (con sus datos aún identificables)
     await AuditService.log(AUDIT_ACTIONS.CUENTA_AUTODELETE, meta ?? {}, 'user', userId);

@@ -1,17 +1,31 @@
-import { motion } from 'framer-motion'
-import { Box, type BoxProps } from '@mui/material'
+import { motion, useReducedMotion } from 'framer-motion'
+import { Box, type SxProps, type Theme } from '@mui/material'
 
-interface AnimatedSectionProps extends BoxProps {
+// Este componente SIEMPRE renderiza un <section> animado. No acepta `component`:
+// antes, pasar component="section" sobrescribía motion.section por un <section> plano,
+// las props whileInView/initial llegaban al DOM (warning de React) y la animación no corría.
+interface AnimatedSectionProps {
   children: React.ReactNode
   delay?: number
+  sx?: SxProps<Theme>
+  id?: string
+  className?: string
+  'aria-labelledby'?: string
 }
 
-export default function AnimatedSection({
-  children,
-  delay = 0,
-  sx,
-  ...props
-}: AnimatedSectionProps) {
+export default function AnimatedSection({ children, delay = 0, sx, ...props }: AnimatedSectionProps) {
+  const reduceMotion = useReducedMotion()
+
+  // Con prefers-reduced-motion activo (o en entornos sin IntersectionObserver)
+  // renderizamos la sección visible desde el principio: nunca queda en opacity:0.
+  if (reduceMotion) {
+    return (
+      <Box component="section" sx={sx} {...props}>
+        {children}
+      </Box>
+    )
+  }
+
   return (
     <Box
       component={motion.section}

@@ -41,7 +41,7 @@ export default function EditProfilePage() {
         <title>Editar Perfil | Desamparados</title>
       </Helmet>
 
-      <AnimatedSection component="section" sx={{ py: { xs: 4, md: 6 } }}>
+      <AnimatedSection sx={{ py: { xs: 4, md: 6 } }}>
         <PageContainer>
           <Typography variant="h2" component="h1" sx={{ mb: 4 }}>
             Editar Perfil

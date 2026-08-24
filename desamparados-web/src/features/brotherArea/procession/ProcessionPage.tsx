@@ -35,7 +35,7 @@ export default function ProcessionPage() {
         subtitle="Información sobre tu participación en la estación de penitencia."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Grid container spacing={4}>
             {links.map((item) => (

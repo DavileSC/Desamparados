@@ -21,7 +21,7 @@ export default function BoletinesPage() {
         subtitle="Revista anual de la Hermandad."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <SectionTitle title="Boletines anuales" />
           <Grid container spacing={3}>

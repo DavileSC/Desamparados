@@ -4,6 +4,7 @@ import { GenerarCuotasDto, UpdateReciboDto } from '../dtos/recibo.dto.js';
 import { EstadoPago, Prisma, MetodoPago, TipoRecibo } from '@prisma/client';
 import { DatosPapeleta } from '../dtos/email.dto.js';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 
 export class ReciboService {
 
@@ -20,7 +21,7 @@ export class ReciboService {
       }
     });
 
-    if (hermanosActivos.length === 0) throw new Error('No hay hermanos activos.');
+    if (hermanosActivos.length === 0) throw new HttpError('No hay hermanos activos.');
 
     // 2. Buscamos qué hermanos YA TIENEN este recibo exacto
     const recibosExistentes = await db.recibo.findMany({
@@ -107,10 +108,10 @@ export class ReciboService {
 
     // 1. Comprobaciones de estado ANTES de tocar nada
     const actual = await db.recibo.findUnique({ where: { id: reciboId } });
-    if (!actual) throw new Error('Recibo no encontrado.');
-    if (actual.estado === EstadoPago.PAGADO) throw new Error('Este recibo ya estaba pagado.');
-    if (actual.estado === EstadoPago.ANULADO) throw new Error('No se puede cobrar un recibo anulado.');
-    if (actual.estado === EstadoPago.DEVUELTO) throw new Error('Recibo devuelto por el banco: regenera el cobro antes de marcarlo como pagado.');
+    if (!actual) throw new NotFoundError('Recibo no encontrado.');
+    if (actual.estado === EstadoPago.PAGADO) throw new HttpError('Este recibo ya estaba pagado.');
+    if (actual.estado === EstadoPago.ANULADO) throw new HttpError('No se puede cobrar un recibo anulado.');
+    if (actual.estado === EstadoPago.DEVUELTO) throw new HttpError('Recibo devuelto por el banco: regenera el cobro antes de marcarlo como pagado.');
 
     // Auditoría ANTES de mutar: el cobro siempre queda registrado
     AuditService.log(AUDIT_ACTIONS.RECIBO_COBRAR, meta ?? {}, 'recibo', reciboId);

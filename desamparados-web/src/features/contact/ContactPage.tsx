@@ -77,7 +77,7 @@ export default function ContactPage() {
 
       <PageHeader title="Contacto" subtitle="Estamos a tu disposición." />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Grid container spacing={6}>
             <Grid size={{ xs: 12, md: 7 }}>

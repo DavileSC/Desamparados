@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, ScrollRestoration } from 'react-router-dom'
 import { Box, CircularProgress } from '@mui/material'
 import PublicLayout from '../app/PublicLayout'
 import AuthLayout from '../app/AuthLayout'
@@ -26,12 +26,14 @@ const AjuarPage = lazy(() => import('../features/titular/AjuarPage'))
 const NewsPage = lazy(() => import('../features/news/NewsPage'))
 const AgendaPage = lazy(() => import('../features/news/agenda/AgendaPage'))
 const NoticiasPage = lazy(() => import('../features/news/noticias/NoticiasPage'))
+const NoticiaDetallePage = lazy(() => import('../features/news/noticias/NoticiaDetallePage'))
 const PublicationsPage = lazy(() => import('../features/publications/PublicationsPage'))
 const BoletinesPage = lazy(() => import('../features/publications/BoletinesPage'))
 const DossierPrensaPage = lazy(() => import('../features/publications/DossierPrensaPage'))
 const MembersPage = lazy(() => import('../features/members/public/MembersPage'))
 const HazteHermanoPage = lazy(() => import('../features/members/public/HazteHermanoPage'))
 const ContactPage = lazy(() => import('../features/contact/ContactPage'))
+const NotFoundPage = lazy(() => import('../features/notFound/NotFoundPage'))
 
 // Legal pages
 const LegalNoticePage = lazy(() => import('../features/legal/LegalNoticePage'))
@@ -72,66 +74,85 @@ function withSuspense(Component: React.ComponentType) {
   )
 }
 
+/**
+ * Layout raíz: restaura el scroll al cambiar de ruta (vuelve arriba en navegaciones
+ * nuevas y recupera la posición al usar atrás/adelante). Sin esto, las páginas
+ * aparecían con el scroll a mitad.
+ */
+function RootLayout() {
+  return (
+    <>
+      <ScrollRestoration />
+      <Outlet />
+    </>
+  )
+}
+
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <PublicLayout />,
+    element: <RootLayout />,
     children: [
-      { index: true, element: withSuspense(HomePage) },
-      { path: 'corporacion', element: withSuspense(CorporationPage) },
-      { path: 'corporacion/historia', element: withSuspense(HistoryPage) },
-      { path: 'corporacion/historia/organos-de-gobierno', element: withSuspense(GovernmentPage) },
-      { path: 'corporacion/parroquia-pasionistas', element: withSuspense(ParishPage) },
-      { path: 'corporacion/nuestros-fines', element: withSuspense(PurposesPage) },
-      { path: 'corporacion/nuestros-fines/caridad', element: withSuspense(CaridadPage) },
-      { path: 'corporacion/nuestros-fines/formacion', element: withSuspense(FormacionPage) },
-      { path: 'corporacion/cultos', element: withSuspense(CultsPage) },
-      { path: 'corporacion/sabado-de-pasion', element: withSuspense(SabadoPasionPage) },
-      { path: 'corporacion/sabado-de-pasion/recorrido', element: withSuspense(RecorridoPage) },
-      { path: 'corporacion/sabado-de-pasion/trono', element: withSuspense(TronoPage) },
-      { path: 'corporacion/sabado-de-pasion/enseres', element: withSuspense(EnseresPage) },
-      { path: 'sagrada-titular', element: withSuspense(TitularPage) },
-      { path: 'sagrada-titular/desamparados', element: withSuspense(DesamparadosPage) },
-      { path: 'sagrada-titular/ajuar', element: withSuspense(AjuarPage) },
-      { path: 'actualidad', element: withSuspense(NewsPage) },
-      { path: 'actualidad/agenda', element: withSuspense(AgendaPage) },
-      { path: 'actualidad/noticias', element: withSuspense(NoticiasPage) },
-      { path: 'publicaciones', element: withSuspense(PublicationsPage) },
-      { path: 'publicaciones/boletines', element: withSuspense(BoletinesPage) },
-      { path: 'publicaciones/dossier-prensa', element: withSuspense(DossierPrensaPage) },
-      { path: 'hermanos', element: withSuspense(MembersPage) },
-      { path: 'hermanos/hazte-hermano', element: withSuspense(HazteHermanoPage) },
-      { path: 'contacto', element: withSuspense(ContactPage) },
-      { path: 'aviso-legal', element: withSuspense(LegalNoticePage) },
-      { path: 'politica-privacidad', element: withSuspense(PrivacyPolicyPage) },
-      { path: 'politica-cookies', element: withSuspense(CookiesPolicyPage) },
+      {
+        path: '/',
+        element: <PublicLayout />,
+        children: [
+          { index: true, element: withSuspense(HomePage) },
+          { path: 'corporacion', element: withSuspense(CorporationPage) },
+          { path: 'corporacion/historia', element: withSuspense(HistoryPage) },
+          { path: 'corporacion/historia/organos-de-gobierno', element: withSuspense(GovernmentPage) },
+          { path: 'corporacion/parroquia-pasionistas', element: withSuspense(ParishPage) },
+          { path: 'corporacion/nuestros-fines', element: withSuspense(PurposesPage) },
+          { path: 'corporacion/nuestros-fines/caridad', element: withSuspense(CaridadPage) },
+          { path: 'corporacion/nuestros-fines/formacion', element: withSuspense(FormacionPage) },
+          { path: 'corporacion/cultos', element: withSuspense(CultsPage) },
+          { path: 'corporacion/sabado-de-pasion', element: withSuspense(SabadoPasionPage) },
+          { path: 'corporacion/sabado-de-pasion/recorrido', element: withSuspense(RecorridoPage) },
+          { path: 'corporacion/sabado-de-pasion/trono', element: withSuspense(TronoPage) },
+          { path: 'corporacion/sabado-de-pasion/enseres', element: withSuspense(EnseresPage) },
+          { path: 'sagrada-titular', element: withSuspense(TitularPage) },
+          { path: 'sagrada-titular/desamparados', element: withSuspense(DesamparadosPage) },
+          { path: 'sagrada-titular/ajuar', element: withSuspense(AjuarPage) },
+          { path: 'actualidad', element: withSuspense(NewsPage) },
+          { path: 'actualidad/agenda', element: withSuspense(AgendaPage) },
+          { path: 'actualidad/noticias', element: withSuspense(NoticiasPage) },
+          { path: 'actualidad/noticias/:slug', element: withSuspense(NoticiaDetallePage) },
+          { path: 'publicaciones', element: withSuspense(PublicationsPage) },
+          { path: 'publicaciones/boletines', element: withSuspense(BoletinesPage) },
+          { path: 'publicaciones/dossier-prensa', element: withSuspense(DossierPrensaPage) },
+          { path: 'hermanos', element: withSuspense(MembersPage) },
+          { path: 'hermanos/hazte-hermano', element: withSuspense(HazteHermanoPage) },
+          { path: 'contacto', element: withSuspense(ContactPage) },
+          { path: 'aviso-legal', element: withSuspense(LegalNoticePage) },
+          { path: 'politica-privacidad', element: withSuspense(PrivacyPolicyPage) },
+          { path: 'politica-cookies', element: withSuspense(CookiesPolicyPage) },
+          // 404 real (con cabecera y pie): antes cualquier URL errónea redirigía a la portada
+          { path: '*', element: withSuspense(NotFoundPage) },
+        ],
+      },
+      {
+        path: '/hermanos/acceso',
+        element: <AuthLayout />,
+        children: [{ index: true, element: withSuspense(LoginPage) }],
+      },
+      {
+        path: '/area-hermano',
+        element: (
+          <RequireAuth>
+            <BrotherLayout />
+          </RequireAuth>
+        ),
+        children: [
+          { index: true, element: <Navigate to="/area-hermano/perfil" replace /> },
+          { path: 'perfil', element: withSuspense(ProfilePage) },
+          { path: 'perfil/editar', element: withSuspense(EditProfilePage) },
+          { path: 'procesion', element: withSuspense(ProcessionPage) },
+          { path: 'procesion/papeleta', element: withSuspense(PapeletaPage) },
+          { path: 'procesion/historico', element: withSuspense(HistoricoPage) },
+          { path: 'recibos', element: withSuspense(ReceiptsPage) },
+          { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
+        ],
+      },
     ],
-  },
-  {
-    path: '/hermanos/acceso',
-    element: <AuthLayout />,
-    children: [{ index: true, element: withSuspense(LoginPage) }],
-  },
-  {
-    path: '/area-hermano',
-    element: (
-      <RequireAuth>
-        <BrotherLayout />
-      </RequireAuth>
-    ),
-    children: [
-      { index: true, element: <Navigate to="/area-hermano/perfil" replace /> },
-      { path: 'perfil', element: withSuspense(ProfilePage) },
-      { path: 'perfil/editar', element: withSuspense(EditProfilePage) },
-      { path: 'procesion', element: withSuspense(ProcessionPage) },
-      { path: 'procesion/papeleta', element: withSuspense(PapeletaPage) },
-      { path: 'procesion/historico', element: withSuspense(HistoricoPage) },
-      { path: 'recibos', element: withSuspense(ReceiptsPage) },
-    ],
-  },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
   },
 ])
 

@@ -1,4 +1,5 @@
 import db from '../config/db.js';
+import { HttpError } from '../utils/error.handle';
 
 export class TransaccionService {
   
@@ -36,8 +37,8 @@ export class TransaccionService {
   static async create(data: any) {
     // 1. Verificación de seguridad: Comprobar que la categoría existe y cuadra con el tipo
     const categoria = await db.categoriaTransaccion.findUnique({ where: { id: data.categoriaId } });
-    if (!categoria) throw new Error("La categoría seleccionada no existe.");
-    if (categoria.tipo !== data.tipo) throw new Error(`Conflicto: Intentas usar una categoría de ${categoria.tipo} en un ${data.tipo}.`);
+    if (!categoria) throw new HttpError("La categoría seleccionada no existe.");
+    if (categoria.tipo !== data.tipo) throw new HttpError(`Conflicto: Intentas usar una categoría de ${categoria.tipo} en un ${data.tipo}.`);
 
     return await db.transaccion.create({
       data: {

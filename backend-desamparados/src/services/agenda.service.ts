@@ -1,6 +1,7 @@
 import db from '../config/db';
 import { Prisma, TipoEvento } from '@prisma/client';
 import { CreateEventDto, UpdateEventDto, EventFilterDto } from '../dtos/agenda.dto';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 
 export class AgendaService {
 
@@ -56,10 +57,10 @@ export class AgendaService {
 
   static async getEventById(id: number, isHermano: boolean) {
     const event = await db.evento.findUnique({ where: { id } });
-    if (!event) throw new Error('Evento no encontrado');
+    if (!event) throw new NotFoundError('Evento no encontrado');
 
     if (!isHermano && event.visibility === 'members_only') {
-      throw new Error('No tienes permisos para ver este evento');
+      throw new HttpError('No tienes permisos para ver este evento');
     }
     return event;
   }
@@ -73,7 +74,7 @@ static async createEvent(data: CreateEventDto) {
     const end = data.endDate ? new Date(data.endDate) : null;
 
     if (end && end < start) {
-      throw new Error('La fecha de fin no puede ser anterior a la de inicio.');
+      throw new HttpError('La fecha de fin no puede ser anterior a la de inicio.');
     }
 
     return await db.evento.create({
@@ -92,7 +93,7 @@ static async createEvent(data: CreateEventDto) {
   static async updateEvent(id: number, data: UpdateEventDto) {
     // 1. Buscamos el evento actual para tener las fechas de referencia
     const actual = await db.evento.findUnique({ where: { id } });
-    if (!actual) throw new Error('Evento no encontrado');
+    if (!actual) throw new NotFoundError('Evento no encontrado');
 
     // 2. Calculamos las fechas finales (si viene en data, usamos esa; si no, la que ya tenía)
     const finalStartDate = data.startDate ? new Date(data.startDate) : actual.startDate;
@@ -105,7 +106,7 @@ static async createEvent(data: CreateEventDto) {
 
     // 3. Validación de cruce de fechas definitiva
     if (finalEndDate && finalEndDate < finalStartDate) {
-      throw new Error('La actualización provoca que la fecha de fin sea anterior a la de inicio.');
+      throw new HttpError('La actualización provoca que la fecha de fin sea anterior a la de inicio.');
     }
 
     return await db.evento.update({

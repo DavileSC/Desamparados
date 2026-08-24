@@ -49,7 +49,7 @@ export default function GovernmentPage() {
         subtitle="Junta de Gobierno y órganos de dirección de la corporación."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', mb: 6 }}>
             <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8, textAlign: 'center' }}>

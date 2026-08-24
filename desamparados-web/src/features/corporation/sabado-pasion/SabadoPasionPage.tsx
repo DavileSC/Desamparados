@@ -38,7 +38,7 @@ export default function SabadoPasionPage() {
         subtitle="Nuestra salida procesional por las calles de Málaga."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', mb: 6 }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8, textAlign: 'center' }}>
@@ -58,7 +58,7 @@ export default function SabadoPasionPage() {
             images={[
               { src: '/images/procesion.jpg', alt: 'Procesión del Sábado de Pasión' },
               { src: '/images/triduo.jpg', alt: 'Preparativos del Sábado de Pasión' },
-              { src: '/images/hero.jpg', alt: 'Sagrada Titular' },
+              { src: '/images/hero-thumb.jpg', alt: 'Sagrada Titular' },
               { src: '/images/live.jpg', alt: 'Sede Canónica' },
             ]}
             columns={4}

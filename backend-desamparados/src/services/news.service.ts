@@ -2,6 +2,7 @@ import db from '../config/db';
 import { Prisma } from '@prisma/client';
 import sanitizeHtml from 'sanitize-html';
 import { CreateNewsDto, UpdateNewsDto, NewsFilterDto } from '../dtos/news.dto';
+import { HttpError } from '../utils/error.handle';
 
 export class NewsService {
 
@@ -42,18 +43,21 @@ export class NewsService {
   // =================================================================
 
   // Archivo con Paginación + Búsqueda
-  static async getArchive({ page, limit, search }: NewsFilterDto) {
-    const skip = (page - 1) * limit;
+  static async getArchive({ page, limit, search, includeDrafts = false }: NewsFilterDto) {
+    // Saneamos la paginación: page negativo -> 500, limit gigante -> volcado completo
+    const safePage = Number.isFinite(page) ? Math.max(Math.floor(page), 1) : 1;
+    const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(Math.floor(limit), 1), 50) : 10;
+    const skip = (safePage - 1) * safeLimit;
 
     // Construimos filtro dinámico
     const whereCondition: Prisma.NoticiaWhereInput = {
-      // Si hay término de búsqueda, filtramos por título (case insensitive en algunos DBs)
+      // SEGURIDAD: la web pública SOLO ve noticias publicadas. Los borradores únicamente
+      // se listan desde la ruta de administración (includeDrafts = true, tras auth + rol CMS).
+      ...(includeDrafts ? {} : { visible: true }),
+      // Si hay término de búsqueda, filtramos por título
       ...(search && {
-        titulo: { contains: search } 
+        titulo: { contains: search }
       })
-      // Nota: Si es para panel de admin, quitamos 'visible: true' para ver borradores.
-      // Si es para web pública, habría que añadir visible: true.
-      // Asumiremos que este método es híbrido o para Admin por defecto.
     };
 
     const [noticias, total] = await db.$transaction([
@@ -61,7 +65,7 @@ export class NewsService {
         where: whereCondition,
         orderBy: { fecha: 'desc' },
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       db.noticia.count({ where: whereCondition })
     ]);
@@ -70,8 +74,9 @@ export class NewsService {
       data: noticias,
       meta: {
         total,
-        page,
-        lastPage: Math.ceil(total / limit)
+        page: safePage,
+        limit: safeLimit,
+        lastPage: Math.ceil(total / safeLimit)
       }
     };
   }
@@ -101,7 +106,7 @@ export class NewsService {
       });
     } catch (e: any) {
       if (e.code === 'P2002') {
-        throw new Error(`Ya existe una noticia con el slug '${finalSlug}'. Intenta cambiar el título.`);
+        throw new HttpError(`Ya existe una noticia con el slug '${finalSlug}'. Intenta cambiar el título.`);
       }
       throw e;
     }
@@ -124,7 +129,7 @@ export class NewsService {
         }
       });
     } catch (e: any) {
-      if (e.code === 'P2002') throw new Error('El slug indicado ya está en uso.');
+      if (e.code === 'P2002') throw new HttpError('El slug indicado ya está en uso.');
       throw e;
     }
   }

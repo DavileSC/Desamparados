@@ -31,10 +31,10 @@ export default function TitularPage() {
       <PageHeader
         title="Sagrada Titular"
         subtitle="Nuestra Señora de los Desamparados."
-        image="/images/hero.jpg"
+        image="/images/hero-960.jpg"
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Typography
             variant="body1"
@@ -54,7 +54,7 @@ export default function TitularPage() {
 
           <ImageGallery
             images={[
-              { src: '/images/hero.jpg', alt: 'Nuestra Señora de los Desamparados' },
+              { src: '/images/hero-thumb.jpg', alt: 'Nuestra Señora de los Desamparados' },
               { src: '/images/procesion.jpg', alt: 'Procesión de la Hermandad' },
               { src: '/images/triduo.jpg', alt: 'Solemne Triduo' },
               { src: '/images/live.jpg', alt: 'Sede Canónica' },

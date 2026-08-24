@@ -1,6 +1,7 @@
 import db from '../config/db.js';
 import { Role } from '@prisma/client';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 
 export class AdminService {
 
@@ -41,12 +42,12 @@ export class AdminService {
   static async promoteToStaff(userId: number, newRole: Role, currentAdminId: number, meta?: AuditMeta) {
     // Medida de seguridad: Evitar que un admin se auto-promocione/cambie de rol.
     if (userId === currentAdminId) {
-      throw new Error('Un administrador no puede modificar su propio rol.');
+      throw new HttpError('Un administrador no puede modificar su propio rol.');
     }
 
     const existing = await db.user.findUnique({ where: { id: userId } });
-    if (!existing) throw new Error('Usuario no encontrado');
-    if (!existing.active) throw new Error('El usuario está inactivo');
+    if (!existing) throw new NotFoundError('Usuario no encontrado');
+    if (!existing.active) throw new HttpError('El usuario está inactivo');
 
     const result = await db.user.update({
       where: { id: userId },
@@ -64,15 +65,15 @@ export class AdminService {
   static async demoteToUser(userId: number, currentAdminId: number, meta?: AuditMeta) {
     // Medida de seguridad: Evitar que un admin se auto-degrade.
     if (userId === currentAdminId) {
-      throw new Error('Un administrador no puede degradarse a sí mismo.');
+      throw new HttpError('Un administrador no puede degradarse a sí mismo.');
     }
 
     const existing = await db.user.findUnique({ where: { id: userId } });
-    if (!existing) throw new Error('Usuario no encontrado');
+    if (!existing) throw new NotFoundError('Usuario no encontrado');
     if (existing.role === Role.ADMIN) {
         // Medida de seguridad: Evitar que el último Admin se degrade a sí mismo por error
         const adminCount = await db.user.count({ where: { role: Role.ADMIN, active: true } });
-        if (adminCount <= 1) throw new Error('No puedes degradar al último Administrador del sistema.');
+        if (adminCount <= 1) throw new HttpError('No puedes degradar al último Administrador del sistema.');
     }
 
     const result = await db.user.update({
@@ -110,7 +111,7 @@ export class AdminService {
 
   static async updateConfiguracion(key: string, value: string, meta?: AuditMeta) {
     if (!(this.ALLOWED_CONFIG_KEYS as readonly string[]).includes(key)) {
-      throw new Error(`'${key}' no es un parámetro de configuración válido. Claves permitidas: ${this.ALLOWED_CONFIG_KEYS.join(', ')}.`);
+      throw new HttpError(`'${key}' no es un parámetro de configuración válido. Claves permitidas: ${this.ALLOWED_CONFIG_KEYS.join(', ')}.`);
     }
     const result = await db.configuracion.upsert({
       where: { key },

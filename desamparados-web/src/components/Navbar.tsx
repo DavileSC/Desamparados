@@ -11,7 +11,6 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  Divider,
   useTheme,
   useMediaQuery,
 } from '@mui/material'
@@ -32,13 +31,12 @@ import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 interface NavItem {
   label: string
   href: string
-  twoLines?: boolean
 }
 
 const navItems: NavItem[] = [
   { label: 'Inicio', href: '/' },
   { label: 'Corporación', href: '/corporacion' },
-  { label: 'Sagrada Titular', href: '/sagrada-titular', twoLines: true },
+  { label: 'Sagrada Titular', href: '/sagrada-titular' },
   { label: 'Actualidad', href: '/actualidad' },
   { label: 'Publicaciones', href: '/publicaciones' },
   { label: 'Contacto', href: '/contacto' },
@@ -57,14 +55,19 @@ const drawerItems = [
 ]
 
 const socialLinks = [
-  { icon: <FacebookIcon />, href: '#', label: 'Facebook' },
-  { icon: <CloseIcon />, href: '#', label: 'X' },
-  { icon: <PlayCircleIcon />, href: '#', label: 'YouTube' },
+  { icon: <FacebookIcon fontSize="small" />, href: '#', label: 'Facebook' },
+  { icon: <CloseIcon fontSize="small" />, href: '#', label: 'X' },
+  { icon: <PlayCircleIcon fontSize="small" />, href: '#', label: 'YouTube' },
 ]
+
+// Anchura mínima a partir de la cual cabe la barra completa (logo + menú + botón + redes)
+// con márgenes cómodos. Por debajo se usa el menú hamburguesa.
+const DESKTOP_NAV_MIN = 1366
+const desktopMq = `@media (min-width:${DESKTOP_NAV_MIN}px)`
 
 export default function Navbar() {
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const isMobile = useMediaQuery(`(max-width:${DESKTOP_NAV_MIN - 1}px)`)
   const location = useLocation()
   const [scrollProgress, setScrollProgress] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -117,10 +120,12 @@ export default function Navbar() {
           sx={{
             backgroundColor: 'rgba(38, 35, 38, 0.9)',
             borderBottom: '1px solid rgba(204, 196, 201, 0.2)',
-            display: { md: 'none' },
+            display: 'flex',
+            [desktopMq]: { display: 'none' },
           }}
         >
-          <Toolbar sx={{ justifyContent: 'space-between', px: '20px !important' }}>
+          {/* Mismos márgenes laterales que PageContainer para que el logo quede alineado con los títulos */}
+          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: '20px !important', md: '64px !important' } }}>
             <Box
               component={Link}
               to="/"
@@ -151,23 +156,29 @@ export default function Navbar() {
         sx={{
           backgroundColor: `rgba(38, 35, 38, ${0.12 + scrollProgress * 0.66})`,
           backgroundImage: 'none',
-          backdropFilter: `blur(${2 + scrollProgress * 12}px) saturate(${100 + scrollProgress * 60}%)`,
+          backdropFilter: `blur(${10 + scrollProgress * 14}px) saturate(${110 + scrollProgress * 60}%)`,
+          WebkitBackdropFilter: `blur(${10 + scrollProgress * 14}px) saturate(${110 + scrollProgress * 60}%)`,
           borderBottom: 'none',
           boxShadow: 'none',
           transition: 'background-color 0.35s ease, backdrop-filter 0.35s ease',
-          display: { xs: 'none', md: 'flex' },
+          display: 'none',
+          [desktopMq]: { display: 'flex' },
         }}
       >
         <Toolbar
+          disableGutters
           sx={{
             position: 'relative',
             zIndex: 2,
-            justifyContent: 'space-between',
-            maxWidth: '1280px',
+            display: 'flex',
+            flexWrap: 'nowrap',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: { xs: 4, xl: 6 }, // separación logo → menú: 32px en portátiles, 48px en pantallas grandes
+            // Barra a todo el ancho: logo y menú pegados a la izquierda, acciones a la derecha
             width: '100%',
-            mx: 'auto',
-            px: '64px !important',
-            py: 2,
+            minHeight: '72px !important',
+            px: { xs: '40px', xl: '48px' },
           }}
         >
           <Box
@@ -176,16 +187,29 @@ export default function Navbar() {
             sx={{
               fontFamily: theme.typography.h1.fontFamily,
               fontSize: '28px',
+              lineHeight: 1,
               color: 'text.primary',
               textDecoration: 'none',
               flexShrink: 0,
-              pr: 6,
+              whiteSpace: 'nowrap',
             }}
           >
             DESAMPARADOS
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1, justifyContent: 'flex-end' }}>
+          {/* Todo en una sola línea, centrado verticalmente: enlaces, botón e iconos comparten
+              la misma altura (40px) para que queden alineados entre sí y con el logo. */}
+          <Box
+            component="nav"
+            aria-label="Navegación principal"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'nowrap',
+              gap: { xs: 1.5, xl: 2 },
+              minWidth: 0,
+            }}
+          >
             {navItems.map((item) => {
               const active = isActive(item.href)
               return (
@@ -194,70 +218,90 @@ export default function Navbar() {
                   component={Link}
                   to={item.href}
                   sx={{
+                    position: 'relative',
                     fontFamily: theme.typography.button.fontFamily,
-                    fontSize: '14px',
+                    fontSize: '16px',
                     fontWeight: 600,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    color: active ? 'primary.main' : 'text.primary',
-                    borderBottom: active ? '2px solid' : 'none',
-                    borderColor: 'primary.main',
-                    borderRadius: 0,
-                    pb: 0.5,
+                    letterSpacing: 0,
+                    textTransform: 'none',
+                    whiteSpace: 'nowrap',
+                    lineHeight: 1,
+                    height: 40,
+                    px: 0.75,
                     minWidth: 'auto',
-                    lineHeight: item.twoLines ? 1.2 : 1,
-                    display: 'flex',
-                    flexDirection: item.twoLines ? 'column' : 'row',
-                    '&:hover': { color: 'primary.main', backgroundColor: 'transparent' },
+                    borderRadius: 0,
+                    color: active ? 'secondary.main' : 'text.primary',
+                    // Subrayado del activo como pseudo-elemento: no altera la altura del botón
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 6,
+                      right: 6,
+                      bottom: 6,
+                      height: 2,
+                      backgroundColor: 'secondary.main',
+                      transform: active ? 'scaleX(1)' : 'scaleX(0)',
+                      transformOrigin: 'center',
+                      transition: 'transform 0.25s ease',
+                    },
+                    '&:hover': { color: 'secondary.main', backgroundColor: 'transparent' },
+                    '&:hover::after': { transform: 'scaleX(1)' },
                   }}
                 >
-                  {item.twoLines ? (
-                    <>
-                      <span>Sagrada</span>
-                      <span>Titular</span>
-                    </>
-                  ) : (
-                    item.label
-                  )}
+                  {item.label}
                 </Button>
               )
             })}
+          </Box>
 
-            <Button
-              component={Link}
-              to="/hermanos/acceso"
-              variant="contained"
+          {/* Bloque derecho (como en la referencia): redes · filete · botón píldora, pegado al extremo */}
+          <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, ml: 'auto', gap: 2 }}>
+            <Box
               sx={{
-                backgroundColor: '#6e1822',
-                color: '#ffffff',
-                ml: 1,
-                px: 3,
-                py: 1,
-                borderRadius: '8px',
-                '&:hover': { backgroundColor: '#5a131c', opacity: 0.9 },
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                pr: 2,
+                borderRight: '1px solid rgba(204, 196, 201, 0.25)',
+                height: 24,
               }}
             >
-              Hermanos
-            </Button>
-
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{ borderColor: 'rgba(204, 196, 201, 0.2)', ml: 2 }}
-            />
-
-            <Box sx={{ display: 'flex', gap: 1.5, ml: 1 }}>
               {socialLinks.map((social) => (
                 <IconButton
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  sx={{ color: 'text.primary', '&:hover': { color: 'primary.main' } }}
+                  size="small"
+                  sx={{ width: 32, height: 32, p: 0, color: 'text.primary', '&:hover': { color: 'secondary.main' } }}
                 >
                   {social.icon}
                 </IconButton>
               ))}
             </Box>
+
+            <Button
+              component={Link}
+              to="/hermanos/acceso"
+              variant="contained"
+              disableElevation
+              sx={{
+                backgroundColor: '#6e1822',
+                color: '#ffffff',
+                px: 3,
+                height: 44,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                // Mismo redondeo y estilo que AppButton ("Conoce la Hermandad")
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                '&:hover': { backgroundColor: '#5a131c' },
+              }}
+            >
+              Acceso hermanos
+            </Button>
           </Box>
         </Toolbar>
       </AppBar>

@@ -43,7 +43,10 @@ export default function NewsCard({ news, featured = false }: NewsCardProps) {
           <Box
             component="img"
             src={news.image}
-            alt={news.title}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
             sx={{
               position: 'absolute',
               inset: 0,
@@ -66,16 +69,19 @@ export default function NewsCard({ news, featured = false }: NewsCardProps) {
       )}
 
       <Box sx={{ position: 'relative', zIndex: 2 }}>
+        {/* Badge de categoría: dorado con texto oscuro (>9:1). Antes era #100e11 sobre
+            background.paper (~1,2:1), prácticamente invisible. */}
         <Box
           sx={{
             display: 'inline-block',
             px: 1.5,
             py: 0.5,
             mb: 2,
-            backgroundColor: 'background.paper',
-            color: '#100e11',
+            backgroundColor: 'secondary.main',
+            color: '#201c00',
             typography: 'overline',
             fontSize: '11px',
+            fontWeight: 600,
             borderRadius: '4px',
           }}
         >
@@ -108,7 +114,9 @@ export default function NewsCard({ news, featured = false }: NewsCardProps) {
         </Typography>
         <Typography
           variant="caption"
-          sx={{ display: 'block', mt: 1.5, color: 'text.secondary', opacity: 0.7 }}
+          component="time"
+          dateTime={news.date}
+          sx={{ display: 'block', mt: 1.5, color: 'text.secondary' }}
         >
           {new Date(news.date).toLocaleDateString('es-ES', {
             day: 'numeric',

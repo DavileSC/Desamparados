@@ -1,6 +1,7 @@
 import db from '../config/db';
 import { SavePaginaDto, UpdatePaginaDto } from '../dtos/pagina.dto';
 import sanitizeHtml from 'sanitize-html';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 
 export class PaginaService {
 
@@ -60,7 +61,7 @@ export class PaginaService {
   static async updatePagina(slugOriginal: string, data: UpdatePaginaDto) {
     // 1. Comprobamos que la página que intentan editar realmente existe
     const existe = await db.pagina.findUnique({ where: { slug: slugOriginal } });
-    if (!existe) throw new Error('La página que intentas actualizar no existe.');
+    if (!existe) throw new NotFoundError('La página que intentas actualizar no existe.');
 
     // 2. Actualizamos (Prisma se encarga de cambiar el updatedAt automáticamente)
     // Sanitizamos igual que en create para prevenir Stored XSS
@@ -93,7 +94,7 @@ export class PaginaService {
   static async deletePagina(slug: string) {
     // Medida de seguridad: Evitar que se borren páginas críticas por error.
     const protectedSlugs = ['home', 'contacto', 'aviso-legal'];
-    if (protectedSlugs.includes(slug)) throw new Error(`La página '${slug}' está protegida y no se puede eliminar.`);
+    if (protectedSlugs.includes(slug)) throw new HttpError(`La página '${slug}' está protegida y no se puede eliminar.`);
 
     return await db.pagina.delete({
       where: { slug }

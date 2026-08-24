@@ -3,6 +3,7 @@ import { encrypt } from '../utils/bcrypt.handle';
 import { Prisma, Role } from '@prisma/client';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto, UpdateAdminHermanoDto } from '../dtos/hermano.dto';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 
 // 1. DICCIONARIO DE ERRORES (Centralizado)
 const HERMANO_ERRORS = {
@@ -13,7 +14,10 @@ const HERMANO_ERRORS = {
   EMAIL_IN_USE: 'El email ya está en uso.',
   USER_NOT_FOUND: 'Usuario no encontrado.',
   ALREADY_ACTIVE: 'Este usuario ya está activo en el sistema.',
-  CANNOT_DELETE_ACTIVE: 'No puedes destruir la cuenta de un hermano activo.'
+  NOTHING_TO_APPROVE: 'Este usuario no tiene perfiles pendientes de aprobación.',
+  CANNOT_DELETE_ACTIVE: 'No puedes destruir la cuenta de un hermano activo.',
+  CANNOT_TOUCH_STAFF: 'Esta cuenta pertenece a un miembro del staff: gestiona su rol desde Administración.',
+  PENDING_PROFILE: 'Este perfil aún no ha sido aprobado por Secretaría.'
 } as const;
 
 // 2. INTERFAZ PARA EL BUSCADOR
@@ -27,6 +31,34 @@ export interface SearchHermanoQuery {
   limit?: string;
 }
 
+// 3. LISTAS BLANCAS DE CAMPOS EDITABLES (anti mass-assignment)
+// El objeto que llega a Prisma se construye SOLO con estas claves. Nunca `{...body}`:
+// Prisma acepta escrituras anidadas (user.update, recibos.updateMany...) y con el body
+// crudo cualquier hermano podía ascenderse a ADMIN o marcar sus recibos como pagados.
+const USER_EDITABLE_FIELDS = [
+  'nombre', 'apellidos', 'fechaNacimiento', 'dni', 'telefono', 'email',
+  'direccion', 'poblacion', 'codigoPostal'
+] as const;
+
+const ADMIN_EDITABLE_FIELDS = [
+  ...USER_EDITABLE_FIELDS,
+  'tieneTunicaPropia', 'tunica', 'alturaHombro', 'puesto',
+  'activo', 'esTitular', 'numeroHermano'
+] as const;
+
+type EditableField = typeof ADMIN_EDITABLE_FIELDS[number];
+
+// Campos de la ficha que se pueden mostrar al staff sin exponer datos bancarios
+const HERMANO_SAFE_SELECT = {
+  id: true, nombre: true, apellidos: true, dni: true, fechaNacimiento: true,
+  telefono: true, email: true, direccion: true, poblacion: true, codigoPostal: true,
+  fechaAlta: true, activo: true, numeroHermano: true, fechaBaja: true, esTitular: true,
+  tieneTunicaPropia: true, tunica: true, alturaHombro: true, puesto: true
+} satisfies Prisma.HermanoSelect;
+
+/** Solo las cuentas de hermano raso (USER) se bloquean/borran al perder sus fichas. */
+const esCuentaStaff = (role: Role) => role !== Role.USER;
+
 export class HermanoService {
 
   // =================================================================
@@ -34,8 +66,10 @@ export class HermanoService {
   // =================================================================
 
   static async getProfilesByUserId(userId: number) {
+    // Incluimos también las fichas pendientes de aprobación (activo:false sin fecha de baja)
+    // para que el usuario vea que su familiar está "en trámite".
     return await db.hermano.findMany({
-      where: { userId, activo: true },
+      where: { userId, fechaBaja: null },
       orderBy: { fechaNacimiento: 'desc' },
       include: {
         recibos: { take: 1, orderBy: { year: 'desc' }, select: { year: true, estado: true } }
@@ -46,11 +80,11 @@ export class HermanoService {
   static async createDependentProfile(managerUserId: number, data: CreateHermanoDto) {
     if (data.dni) {
       const existe = await db.hermano.findFirst({ where: { dni: data.dni } });
-      if (existe) throw new Error(HERMANO_ERRORS.DNI_DUPLICATE);
+      if (existe) throw new HttpError(HERMANO_ERRORS.DNI_DUPLICATE, 409);
     }
 
     const manager = await db.user.findUnique({ where: { id: managerUserId } });
-    if (!manager) throw new Error(HERMANO_ERRORS.MANAGER_NOT_FOUND);
+    if (!manager) throw new NotFoundError(HERMANO_ERRORS.MANAGER_NOT_FOUND);
 
     const esTitular = !!data.dni && data.dni === manager.dni;
 
@@ -67,8 +101,9 @@ export class HermanoService {
         direccion: data.direccion || manager.direccion,
         poblacion: data.poblacion || manager.poblacion,
         codigoPostal: data.codigoPostal || manager.codigoPostal,
-        activo: true
-        // BORRADAS LAS LÍNEAS DE TÚNICA Y PUESTO
+        // SEGURIDAD: un familiar nuevo NO entra en el censo hasta que Secretaría lo apruebe
+        // (igual que el registro normal). Antes nacía activo y recibía cuotas sin control.
+        activo: false
       }
     });
   }
@@ -80,7 +115,7 @@ export class HermanoService {
 
     if (!hermano) return null; // Devolvemos null para que el Controller lance el 403 IDOR
 
-    const dataToUpdate = this.prepareUpdateData(data);
+    const dataToUpdate = this.prepareUpdateData(data, USER_EDITABLE_FIELDS);
 
     return await db.hermano.update({
       where: { id: hermanoId },
@@ -88,10 +123,11 @@ export class HermanoService {
     });
   }
 
-  // MÉTDO RECUPERADO: Baja Familiar (Blindaje BOLA/IDOR)
+  // Baja Familiar (Blindaje BOLA/IDOR)
   static async deleteProfileIfOwned(hermanoId: number, managerUserId: number) {
     const check = await db.hermano.findFirst({
-      where: { id: hermanoId, userId: managerUserId }
+      where: { id: hermanoId, userId: managerUserId },
+      include: { user: { select: { role: true } } }
     });
 
     if (!check) return null;
@@ -105,7 +141,9 @@ export class HermanoService {
       where: { userId: managerUserId, activo: true }
     });
 
-    if (restantes === 0) {
+    // Solo las cuentas de hermano raso se desactivan al quedarse sin fichas.
+    // Un ADMIN/SECRETARÍA que borra su propia ficha no debe perder el acceso al CMS.
+    if (restantes === 0 && !esCuentaStaff(check.user.role)) {
       await db.user.update({
         where: { id: managerUserId },
         data: { active: false }
@@ -120,19 +158,25 @@ export class HermanoService {
   // =================================================================
 
   static async emancipateProfile(hermanoId: number, managerUserId: number, dto: EmancipateHermanoDto, meta?: AuditMeta) {
-    const hermano = await db.hermano.findFirst({ where: { id: hermanoId, userId: managerUserId } });
-    if (!hermano) throw new Error(HERMANO_ERRORS.NOT_AUTHORIZED);
+    const hermano = await db.hermano.findFirst({
+      where: { id: hermanoId, userId: managerUserId },
+      include: { user: { select: { role: true } } }
+    });
+    if (!hermano) throw new HttpError(HERMANO_ERRORS.NOT_AUTHORIZED, 403);
+
+    // Una ficha pendiente de aprobación no puede convertirse en una cuenta activa
+    if (!hermano.activo) throw new HttpError(HERMANO_ERRORS.PENDING_PROFILE);
 
     const dniFinal = hermano.dni || dto.newDni;
-    if (!dniFinal) throw new Error(HERMANO_ERRORS.DNI_REQUIRED_EMANCIPATION);
+    if (!dniFinal) throw new HttpError(HERMANO_ERRORS.DNI_REQUIRED_EMANCIPATION);
 
     const emailExists = await db.user.findUnique({ where: { email: dto.newEmail } });
-    if (emailExists) throw new Error(HERMANO_ERRORS.EMAIL_IN_USE);
+    if (emailExists) throw new HttpError(HERMANO_ERRORS.EMAIL_IN_USE, 409);
 
     // El DNI también es único en User: si ya pertenece a otra cuenta (ej. el propio tutor),
     // la transacción fallaría con un error crudo de BD. Lo comprobamos antes.
     const dniExists = await db.user.findFirst({ where: { dni: dniFinal } });
-    if (dniExists) throw new Error('Ese DNI ya pertenece a otra cuenta de usuario.');
+    if (dniExists) throw new HttpError('Ese DNI ya pertenece a otra cuenta de usuario.', 409);
 
     const hashedPassword = await encrypt(dto.newPassword);
 
@@ -156,12 +200,12 @@ export class HermanoService {
         data: { userId: newUser.id, esTitular: true, email: dto.newEmail, dni: dniFinal }
       });
 
-      // --- NUEVO: Control del Gestor Fantasma ---
+      // --- Control del Gestor Fantasma ---
       const restantes = await tx.hermano.count({
         where: { userId: managerUserId, activo: true }
       });
 
-      if (restantes === 0) {
+      if (restantes === 0 && !esCuentaStaff(hermano.user.role)) {
         await tx.user.update({
           where: { id: managerUserId },
           data: { active: false }
@@ -169,9 +213,9 @@ export class HermanoService {
       }
       // ------------------------------------------
 
-      // Devolvemos solo datos seguros (nunca el hash de la contraseña)
       // Auditoría: creación de una cuenta nueva derivada de un perfil familiar
       AuditService.log(AUDIT_ACTIONS.EMANCIPACION, meta ?? {}, 'hermano', hermanoId);
+      // Devolvemos solo datos seguros (nunca el hash de la contraseña)
       return { id: newUser.id, email: newUser.email, nombre: newUser.nombre };
     });
   }
@@ -217,16 +261,16 @@ export class HermanoService {
     };
   }
 
-  // MÉTODO RECUPERADO: Ver todos los hermanos
+  // Ver todos los hermanos
   static async getAllHermanos(page: number = 1, limit: number = 500) {
-    page = Math.max(page, 1);
-    limit = Math.min(Math.max(limit, 1), 500); // Tope duro de seguridad
+    page = Number.isFinite(page) ? Math.max(page, 1) : 1;
+    limit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 500) : 500; // Tope duro de seguridad
     const skip = (page - 1) * limit;
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
         where: { activo: true },
-        orderBy: { numeroHermano: 'asc' }, // Ahora ordenamos por número en lugar de apellidos
+        orderBy: { numeroHermano: 'asc' }, // Ordenamos por número en lugar de apellidos
         skip,
         take: limit,
         include: {
@@ -242,7 +286,7 @@ export class HermanoService {
     };
   }
 
-  // MÉTODO RECUPERADO: Ver un hermano por ID
+  // Ver un hermano por ID
   static async getHermanoById(id: number) {
     return await db.hermano.findUnique({
       where: { id },
@@ -255,7 +299,7 @@ export class HermanoService {
   }
 
   static async updateAdminMode(id: number, data: UpdateAdminHermanoDto) {
-    const dataToUpdate = this.prepareUpdateData(data);
+    const dataToUpdate = this.prepareUpdateData(data, ADMIN_EDITABLE_FIELDS);
     return await db.hermano.update({
       where: { id },
       data: dataToUpdate
@@ -264,8 +308,8 @@ export class HermanoService {
 
   static async reactivarHermano(hermanoId: number, meta?: AuditMeta) {
     const hermano = await db.hermano.findUnique({ where: { id: hermanoId } });
-    if (!hermano) throw new Error('Hermano no encontrado.');
-    if (hermano.activo) throw new Error('El hermano ya está activo.');
+    if (!hermano) throw new NotFoundError('Hermano no encontrado.');
+    if (hermano.activo) throw new HttpError('El hermano ya está activo.');
 
     // Auditoría: reactivación de un miembro del censo
     AuditService.log(AUDIT_ACTIONS.HERMANO_REACTIVAR, meta ?? {}, 'hermano', hermanoId);
@@ -276,11 +320,11 @@ export class HermanoService {
 
       await tx.hermano.update({
         where: { id: hermanoId },
-        data: { 
-          activo: true, 
+        data: {
+          activo: true,
           fechaBaja: null, // Limpiamos la fecha de baja
           fechaAlta: new Date(), // Nueva fecha de alta
-          numeroHermano: nextNum 
+          numeroHermano: nextNum
         }
       });
 
@@ -295,9 +339,12 @@ export class HermanoService {
   }
 
   static async darDeBajaHermano(hermanoId: number, meta?: AuditMeta) {
-    const hermano = await db.hermano.findUnique({ where: { id: hermanoId } });
-    if (!hermano) throw new Error('Hermano no encontrado');
-    if (!hermano.activo) throw new Error('Este hermano ya está dado de baja');
+    const hermano = await db.hermano.findUnique({
+      where: { id: hermanoId },
+      include: { user: { select: { role: true } } }
+    });
+    if (!hermano) throw new NotFoundError('Hermano no encontrado');
+    if (!hermano.activo) throw new HttpError('Este hermano ya está dado de baja');
 
     // Auditoría: baja de un miembro del censo
     AuditService.log(AUDIT_ACTIONS.HERMANO_BAJA, meta ?? {}, 'hermano', hermanoId);
@@ -305,23 +352,25 @@ export class HermanoService {
     return await db.$transaction(async (tx) => {
       await tx.hermano.update({
         where: { id: hermanoId },
-        data: { activo: false, fechaBaja: new Date() }
+        // Liberamos el número: al reactivar se le asigna uno nuevo (final de la cola)
+        data: { activo: false, fechaBaja: new Date(), numeroHermano: null }
       });
 
       const restantes = await tx.hermano.count({
         where: { userId: hermano.userId, activo: true }
       });
 
-      if (restantes === 0) {
+      // SEGURIDAD: nunca bloqueamos la cuenta de un miembro del staff desde aquí.
+      // Antes, Secretaría podía dejar sin acceso al ADMIN dando de baja su ficha.
+      if (restantes === 0 && !esCuentaStaff(hermano.user.role)) {
         await tx.user.update({
           where: { id: hermano.userId },
           data: { active: false }
         });
-        // Corregido el espacio que faltaba después de apellidos
         return { message: `${hermano.nombre} ${hermano.apellidos} dado de baja. Se ha bloqueado el acceso a la App porque no le quedan perfiles activos.` };
       }
 
-      return { message: `${hermano.nombre} ${hermano.apellidos} dado de baja. El usuario mantiene el acceso porque gestiona otros familiares.` };
+      return { message: `${hermano.nombre} ${hermano.apellidos} dado de baja. El usuario mantiene el acceso.` };
     });
   }
 
@@ -329,17 +378,30 @@ export class HermanoService {
   //  GESTIÓN DE SOLICITUDES DE ALTA (SECRETARÍA)
   // =================================================================
 
-  // MÉTODO RECUPERADO: Ver solicitudes pendientes
+  /**
+   * Solicitudes pendientes: cuentas USER con alguna ficha sin aprobar (activo:false y sin
+   * fecha de baja). Incluye tanto registros nuevos (cuenta inactiva) como familiares añadidos
+   * por un hermano ya aprobado (cuenta activa, ficha pendiente).
+   *
+   * SEGURIDAD: `select` explícito. Antes se devolvía el objeto User completo con el hash
+   * de contraseña, el secreto 2FA, el token de reset y el IBAN de las fichas.
+   */
   static async getSolicitudesPendientes() {
     return await db.user.findMany({
       where: {
         role: Role.USER,
-        active: false,
         hermanos: {
-          some: { fechaBaja: null }
+          some: { activo: false, fechaBaja: null }
         }
       },
-      include: { hermanos: true },
+      select: {
+        id: true, email: true, dni: true, nombre: true, apellidos: true, telefono: true,
+        direccion: true, poblacion: true, codigoPostal: true, active: true, createdAt: true,
+        hermanos: {
+          where: { activo: false, fechaBaja: null },
+          select: HERMANO_SAFE_SELECT
+        }
+      },
       orderBy: { createdAt: 'asc' }
     });
   }
@@ -347,19 +409,24 @@ export class HermanoService {
   static async aprobarSolicitud(userId: number, meta?: AuditMeta) {
     const user = await db.user.findUnique({
       where: { id: userId },
-      include: { hermanos: true } // Necesitamos saber cuántas fichas tiene asociadas
+      include: { hermanos: { where: { activo: false, fechaBaja: null } } } // Solo las fichas pendientes
     });
 
-    if (!user) throw new Error(HERMANO_ERRORS.USER_NOT_FOUND);
-    if (user.active) throw new Error(HERMANO_ERRORS.ALREADY_ACTIVE);
+    if (!user) throw new NotFoundError(HERMANO_ERRORS.USER_NOT_FOUND);
+    if (user.hermanos.length === 0) {
+      throw new HttpError(user.active ? HERMANO_ERRORS.NOTHING_TO_APPROVE : HERMANO_ERRORS.ALREADY_ACTIVE);
+    }
 
     // Auditoría: alta oficial de miembros (trámite de Secretaría)
     AuditService.log(AUDIT_ACTIONS.SOLICITUD_APROBAR, meta ?? {}, 'user', userId);
 
     return await db.$transaction(async (tx) => {
-      await tx.user.update({ where: { id: userId }, data: { active: true } });
+      if (!user.active) {
+        await tx.user.update({ where: { id: userId }, data: { active: true } });
+      }
 
-      // A cada ficha familiar asociada le damos de alta y le asignamos un número consecutivo
+      // A cada ficha pendiente le damos de alta y le asignamos un número consecutivo.
+      // (Las fichas ya activas no se tocan: no se les reasigna número.)
       for (const hermano of user.hermanos) {
         const nextNum = await this.getNextNumeroHermano(tx);
         await tx.hermano.update({
@@ -378,33 +445,33 @@ export class HermanoService {
    */
   static async reordenarCenso(meta?: AuditMeta) {
     // 1. Buscamos a TODOS los hermanos activos, ordenados por fecha de alta (los más antiguos primero)
-    // Nota: Asegúrate de tener el campo 'fechaAlta' en tu base de datos.
     const hermanosActivos = await db.hermano.findMany({
       where: { activo: true },
-      orderBy: { fechaAlta: 'asc' },
-      select: { id: true, numeroHermano: true, nombre: true } // Traemos lo mínimo para no saturar la memoria
+      orderBy: [{ fechaAlta: 'asc' }, { id: 'asc' }],
+      select: { id: true } // Traemos lo mínimo para no saturar la memoria
     });
 
     if (hermanosActivos.length === 0) {
-      throw new Error('No hay hermanos activos en el censo para reordenar.');
+      throw new HttpError('No hay hermanos activos en el censo para reordenar.');
     }
 
     // Auditoría: renumeración completa del censo (operación delicada)
     AuditService.log(AUDIT_ACTIONS.CENSO_REORDENAR, meta ?? {}, 'hermano', `total:${hermanosActivos.length}`);
 
-    // 2. Preparamos todas las actualizaciones en una Transacción 
-    // (Para que si falla a la mitad, no se quede el censo corrupto)
-    const operaciones = hermanosActivos.map((hermano, index) => {
-      const nuevoNumero = index + 1; // El índice empieza en 0, así que sumamos 1
-      
-      return db.hermano.update({
-        where: { id: hermano.id },
-        data: { numeroHermano: nuevoNumero }
-      });
-    });
+    // 2. Todo en UNA transacción para que, si falla a la mitad, no quede el censo corrupto.
+    await db.$transaction(async (tx) => {
+      // numeroHermano es @unique y MySQL comprueba el índice por sentencia: si asignamos
+      // 1..N directamente, el primer número ya ocupado por otro hermano lanza P2002.
+      // Solución: liberamos TODOS los números primero (NULL no colisiona) y luego asignamos.
+      await tx.hermano.updateMany({ data: { numeroHermano: null } });
 
-    // 3. Ejecutamos todas las actualizaciones de golpe
-    await db.$transaction(operaciones);
+      for (let index = 0; index < hermanosActivos.length; index++) {
+        await tx.hermano.update({
+          where: { id: hermanosActivos[index].id },
+          data: { numeroHermano: index + 1 }
+        });
+      }
+    }, { timeout: 60_000 }); // Censos grandes: damos margen a la transacción
 
     return {
       message: 'Censo reordenado con éxito.',
@@ -413,14 +480,26 @@ export class HermanoService {
   }
 
   static async rechazarSolicitud(userId: number, meta?: AuditMeta) {
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error(HERMANO_ERRORS.USER_NOT_FOUND);
-    if (user.active) throw new Error(HERMANO_ERRORS.CANNOT_DELETE_ACTIVE);
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      include: { hermanos: { where: { activo: false, fechaBaja: null }, select: { id: true } } }
+    });
+    if (!user) throw new NotFoundError(HERMANO_ERRORS.USER_NOT_FOUND);
+    // SEGURIDAD: jamás se borra una cuenta del staff desde el panel de solicitudes
+    if (esCuentaStaff(user.role)) throw new HttpError(HERMANO_ERRORS.CANNOT_TOUCH_STAFF, 403);
 
     // Auditoría: borrado definitivo de datos personales (solicitud rechazada)
     AuditService.log(AUDIT_ACTIONS.SOLICITUD_RECHAZAR, meta ?? {}, 'user', userId);
 
     return await db.$transaction(async (tx) => {
+      if (user.active) {
+        // Cuenta ya aprobada: solo se eliminan las fichas pendientes, la cuenta sigue viva
+        if (user.hermanos.length === 0) throw new HttpError(HERMANO_ERRORS.CANNOT_DELETE_ACTIVE);
+        await tx.hermano.deleteMany({ where: { id: { in: user.hermanos.map(h => h.id) } } });
+        return { message: 'Perfiles pendientes rechazados y eliminados. La cuenta del usuario se mantiene.' };
+      }
+
+      // Cuenta nunca aprobada: se elimina por completo
       await tx.hermano.deleteMany({ where: { userId } });
       await tx.user.delete({ where: { id: userId } });
       return { message: 'Solicitud rechazada y eliminada definitivamente.' };
@@ -430,16 +509,34 @@ export class HermanoService {
   // =================================================================
   //  HELPER PRIVADO
   // =================================================================
-  private static prepareUpdateData(data: UpdateAdminHermanoDto): Prisma.HermanoUpdateInput {
-    const cleanedData = Object.fromEntries(
-      Object.entries(data).filter(([_, value]) => value !== undefined)
-    );
 
-    if (cleanedData.fechaNacimiento) {
-      cleanedData.fechaNacimiento = new Date(cleanedData.fechaNacimiento as string);
+  /**
+   * Construye el objeto de update por LISTA BLANCA.
+   * Solo pasan las claves permitidas para el rol; el resto del body se ignora aunque
+   * ArkType las hubiera dejado pasar. Nunca se reenvía el objeto entero a Prisma.
+   */
+  private static prepareUpdateData(
+    data: UpdateAdminHermanoDto,
+    allowedFields: readonly EditableField[]
+  ): Prisma.HermanoUpdateInput {
+    const source = data as Record<string, unknown>;
+    const cleanedData: Record<string, unknown> = {};
+
+    for (const field of allowedFields) {
+      const value = source[field];
+      if (value === undefined) continue;
+      // Solo valores primitivos: un objeto aquí sería un intento de escritura anidada
+      if (value !== null && typeof value === 'object') continue;
+      cleanedData[field] = value;
     }
 
-    return cleanedData;
+    if (typeof cleanedData.fechaNacimiento === 'string') {
+      const fecha = new Date(cleanedData.fechaNacimiento);
+      if (Number.isNaN(fecha.getTime())) throw new HttpError('Fecha de nacimiento inválida.');
+      cleanedData.fechaNacimiento = fecha;
+    }
+
+    return cleanedData as Prisma.HermanoUpdateInput;
   }
 
   static async getNextNumeroHermano(tx: Prisma.TransactionClient) {

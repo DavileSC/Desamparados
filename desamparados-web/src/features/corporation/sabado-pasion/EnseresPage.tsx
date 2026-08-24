@@ -16,7 +16,7 @@ export default function EnseresPage() {
         subtitle="Acompañamiento musical e insignias."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto' }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>

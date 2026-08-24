@@ -89,7 +89,7 @@ export class EmailService {
   // --- MÉTODOS DE NEGOCIO ---
 
   static async enviarRecuperacionContrasena(emailDestino: string, nombreHermano: string, token: string) {
-    const enlaceReset = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+    const enlaceReset = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${encodeURIComponent(token)}`;
     const { primario } = this.COLORS;
     const nombre = this.esc(nombreHermano);
 

@@ -94,7 +94,7 @@ export default function EventsAndLive() {
               sx={{ mt: 2, textAlign: 'center', color: 'text.secondary', fontSize: '12px', opacity: 0.6 }}
             >
               Si no puede visualizar el reproductor haga clic en el siguiente{' '}
-              <Box component="a" href="#" sx={{ color: 'primary.main', fontWeight: 700, textDecoration: 'underline' }}>
+              <Box component="a" href="#" sx={{ color: 'secondary.main', fontWeight: 700, textDecoration: 'underline' }}>
                 enlace
               </Box>
               .

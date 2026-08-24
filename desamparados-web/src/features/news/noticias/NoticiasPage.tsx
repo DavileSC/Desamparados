@@ -19,7 +19,7 @@ export default function NoticiasPage() {
         subtitle="Últimas noticias de la Hermandad de los Desamparados."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <SectionTitle title="Todas las noticias" />
           <Grid container spacing={3}>

@@ -16,7 +16,7 @@ export default function LegalPageLayout({ title, children }: LegalPageLayoutProp
         <title>{title} | Desamparados</title>
       </Helmet>
       <PageHeader title={title} />
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', color: 'text.secondary', lineHeight: 1.8 }}>
             {children}

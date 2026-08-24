@@ -17,7 +17,7 @@ export default function MembersPage() {
         subtitle="Forma parte de nuestra corporación."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Grid container spacing={6} sx={{ alignItems: 'center' }}>
             <Grid size={{ xs: 12, md: 7 }}>

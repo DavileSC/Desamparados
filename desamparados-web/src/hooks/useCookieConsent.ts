@@ -1,27 +1,50 @@
 import { useState, useCallback } from 'react'
 
-const STORAGE_KEY = 'desamparados-cookies-accepted'
+const STORAGE_KEY = 'desamparados-cookies-consent'
 
-function getInitialConsent(): boolean | null {
-  if (typeof window === 'undefined') return null
-  const value = localStorage.getItem(STORAGE_KEY)
-  if (value === 'true') return true
-  if (value === 'false') return false
-  return null
+export type CookieConsent = 'accepted' | 'declined' | null
+
+// localStorage puede lanzar (modo privado, almacenamiento bloqueado, iframes...).
+// Nunca debe tumbar la app: sin almacenamiento, el banner simplemente se muestra.
+function readConsent(): CookieConsent {
+  try {
+    if (typeof window === 'undefined') return null
+    const value = window.localStorage.getItem(STORAGE_KEY)
+    if (value === 'accepted' || value === 'declined') return value
+    return null
+  } catch {
+    return null
+  }
+}
+
+function writeConsent(value: Exclude<CookieConsent, null>) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, value)
+  } catch {
+    // Sin almacenamiento disponible: la decisión solo dura esta sesión de página
+  }
 }
 
 export function useCookieConsent() {
-  const [accepted, setAccepted] = useState<boolean | null>(getInitialConsent)
+  const [consent, setConsent] = useState<CookieConsent>(readConsent)
 
   const accept = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, 'true')
-    setAccepted(true)
+    writeConsent('accepted')
+    setConsent('accepted')
   }, [])
 
   const decline = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, 'false')
-    setAccepted(true)
+    writeConsent('declined')
+    setConsent('declined')
   }, [])
 
-  return { accepted, accept, decline }
+  return {
+    consent,
+    /** true solo si el usuario aceptó explícitamente (cargar terceros: mapas, vídeos...) */
+    accepted: consent === 'accepted',
+    /** true mientras el usuario no haya decidido: hay que mostrar el banner */
+    pending: consent === null,
+    accept,
+    decline,
+  }
 }

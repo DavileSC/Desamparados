@@ -19,7 +19,7 @@ export default function PublicationsPage() {
         subtitle="Boletines, dossieres de prensa y documentos de nuestra historia."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <SectionTitle title="Todas las publicaciones" />
           <Grid container spacing={3}>

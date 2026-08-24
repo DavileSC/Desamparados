@@ -1,6 +1,7 @@
 import db from '../config/db';
 import { Prisma, EstadoPrenda } from '@prisma/client';
 import { CreateEnserDto, UpdateEnserDto, EnserFilterDto } from '../dtos/inventario.dto';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 // Asume que crearás estos DTOs para la ropa:
 // import { CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/prenda.dto';
 
@@ -27,7 +28,7 @@ export class InventarioService {
 
   static async getEnserById(id: number) {
     const enser = await db.enser.findUnique({ where: { id } });
-    if (!enser) throw new Error('Enser no encontrado');
+    if (!enser) throw new NotFoundError('Enser no encontrado');
     return enser;
   }
 
@@ -50,7 +51,7 @@ export class InventarioService {
 
   static async updateEnser(id: number, data: UpdateEnserDto) {
     const actual = await db.enser.findUnique({ where: { id } });
-    if (!actual) throw new Error('Enser no encontrado');
+    if (!actual) throw new NotFoundError('Enser no encontrado');
 
     const optimo = data.cantidadOptimo ?? actual.cantidadOptimo;
     const bueno = data.cantidadBueno ?? actual.cantidadBueno;
@@ -97,7 +98,7 @@ export class InventarioService {
 
   static async createPrenda(data: any) { // Usa CreatePrendaDto
     const existe = await db.prenda.findUnique({ where: { numero: data.numero } });
-    if (existe) throw new Error(`El número de prenda ${data.numero} ya existe.`);
+    if (existe) throw new HttpError(`El número de prenda ${data.numero} ya existe.`);
 
     return await db.prenda.create({ data });
   }
@@ -105,7 +106,7 @@ export class InventarioService {
   static async updatePrenda(id: number, data: any) { // Usa UpdatePrendaDto
     if (data.numero) {
       const existe = await db.prenda.findUnique({ where: { numero: data.numero } });
-      if (existe && existe.id !== id) throw new Error(`El número ${data.numero} ya está en uso.`);
+      if (existe && existe.id !== id) throw new HttpError(`El número ${data.numero} ya está en uso.`);
     }
     return await db.prenda.update({ where: { id }, data });
   }
@@ -118,11 +119,11 @@ export class InventarioService {
 
   static async asignarPrenda(prendaId: number, hermanoId: number) {
     const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
-    if (!prenda) throw new Error('Prenda no encontrada.');
-    if (prenda.estado !== EstadoPrenda.DISPONIBLE) throw new Error('La prenda no está disponible.');
+    if (!prenda) throw new NotFoundError('Prenda no encontrada.');
+    if (prenda.estado !== EstadoPrenda.DISPONIBLE) throw new HttpError('La prenda no está disponible.');
 
     const hermano = await db.hermano.findUnique({ where: { id: hermanoId } });
-    if (!hermano) throw new Error('Hermano no encontrado.');
+    if (!hermano) throw new NotFoundError('Hermano no encontrado.');
 
     return await db.prenda.update({
       where: { id: prendaId },
@@ -136,7 +137,7 @@ export class InventarioService {
 
   static async devolverPrenda(prendaId: number, necesitaLavado: boolean = false) {
     const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
-    if (!prenda) throw new Error('Prenda no encontrada.');
+    if (!prenda) throw new NotFoundError('Prenda no encontrada.');
 
     return await db.prenda.update({
       where: { id: prendaId },

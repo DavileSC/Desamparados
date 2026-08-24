@@ -21,7 +21,7 @@ export default function DossierPrensaPage() {
         subtitle="Recopilación de apariciones mediáticas."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <SectionTitle title="Apariciones mediáticas" />
           <Grid container spacing={3}>

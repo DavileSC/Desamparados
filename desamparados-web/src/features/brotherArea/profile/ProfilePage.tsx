@@ -34,7 +34,7 @@ export default function ProfilePage() {
         <title>Mi Perfil | Desamparados</title>
       </Helmet>
 
-      <AnimatedSection component="section" sx={{ py: { xs: 4, md: 6 } }}>
+      <AnimatedSection sx={{ py: { xs: 4, md: 6 } }}>
         <PageContainer>
           <Box
             sx={{

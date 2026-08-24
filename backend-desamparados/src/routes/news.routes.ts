@@ -25,6 +25,7 @@ newsRoutes.get('/:slug', validate(slugParamSchema), NewsController.getOne);
 newsRoutes.use(authenticateToken);
 newsRoutes.use(checkRole(rolesCMS));
 
+newsRoutes.get('/admin/archive', NewsController.getAdminArchive); // Incluye borradores
 newsRoutes.post('/limit', validate(limitConfigSchema), NewsController.configHomeLimit); 
 newsRoutes.post('/', validate(createNewsSchema), NewsController.create);
 newsRoutes.put('/:id', validateId, validate(updateNewsSchema), NewsController.update); // Faltaba!

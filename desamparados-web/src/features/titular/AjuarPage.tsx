@@ -16,7 +16,7 @@ export default function AjuarPage() {
         subtitle="Manto, corona y joyas de la Sagrada Titular."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
             <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4 }}>

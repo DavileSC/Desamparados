@@ -18,21 +18,34 @@ export class NewsController {
     }
   }
 
+  private static parseArchiveFilter(req: Request, includeDrafts: boolean): NewsFilterDto {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    // Sanitización segura y limpia (si mandan un array, cogemos el primer elemento o nada)
+    const searchRaw = req.query.search;
+    const search = typeof searchRaw === 'string' ? searchRaw.slice(0, 100) : undefined;
+
+    return { page, limit, search, includeDrafts };
+  }
+
+  // Archivo PÚBLICO: solo noticias publicadas (visible:true)
   static async getArchive(req: Request, res: Response) {
     try {
-      const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 10;
-
-      // Sanitización segura y limpia (si mandan un array, cogemos el primer elemento o nada)
-      const searchRaw = req.query.search;
-      const search = typeof searchRaw === 'string' ? searchRaw : undefined;
-
-      const filter: NewsFilterDto = { page, limit, search };
-
-      const result = await NewsService.getArchive(filter);
+      const result = await NewsService.getArchive(NewsController.parseArchiveFilter(req, false));
       res.status(200).json(result);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo archivo');
+    }
+  }
+
+  // Archivo del CMS (auth + rol): incluye borradores
+  static async getAdminArchive(req: Request, res: Response) {
+    try {
+      const result = await NewsService.getArchive(NewsController.parseArchiveFilter(req, true));
+      res.status(200).json(result);
+    } catch (e) {
+      handleHttp(res, e, 'Error obteniendo archivo de administración');
     }
   }
 

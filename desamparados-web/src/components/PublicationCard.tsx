@@ -42,6 +42,8 @@ export default function PublicationCard({ publication }: PublicationCardProps) {
             component="img"
             src={publication.image}
             alt={publication.title}
+            loading="lazy"
+            decoding="async"
             sx={{
               width: '100%',
               height: 180,

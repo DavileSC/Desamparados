@@ -3,12 +3,15 @@ import { Link } from 'react-router-dom'
 import { useCookieConsent } from '../hooks/useCookieConsent'
 
 export default function CookieBanner() {
-  const { accepted, accept, decline } = useCookieConsent()
+  const { pending, accept, decline } = useCookieConsent()
 
-  if (accepted === null || accepted) return null
+  // Solo se muestra mientras el usuario no haya decidido. "Rechazar" también se recuerda.
+  if (!pending) return null
 
   return (
     <Box
+      role="dialog"
+      aria-label="Aviso de cookies"
       sx={{
         position: 'fixed',
         bottom: 0,
@@ -34,7 +37,9 @@ export default function CookieBanner() {
         }}
       >
         <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '14px', maxWidth: '900px' }}>
-          Este sitio utiliza cookies técnicas necesarias para su funcionamiento. Puedes consultar nuestra{' '}
+          Este sitio utiliza cookies técnicas necesarias para su funcionamiento. Si aceptas, además se
+          cargarán contenidos de terceros (mapa de Google Maps) que pueden enviar tu dirección IP a sus
+          servidores. Consulta nuestra{' '}
           <Box component={Link} to="/politica-cookies" sx={{ color: 'secondary.main', textDecoration: 'underline' }}>
             Política de Cookies
           </Box>{' '}
@@ -44,7 +49,7 @@ export default function CookieBanner() {
           <Button
             onClick={decline}
             sx={{
-              color: 'text.secondary',
+              color: 'text.primary',
               border: '1px solid rgba(204, 196, 201, 0.3)',
               px: 3,
               '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)' },

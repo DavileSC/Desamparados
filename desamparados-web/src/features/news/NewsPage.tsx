@@ -25,7 +25,7 @@ export default function NewsPage() {
         subtitle="Toda la información de nuestra corporación: noticias, cultos y eventos."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <SectionTitle
             title="Últimas noticias"
@@ -42,7 +42,7 @@ export default function NewsPage() {
         </PageContainer>
       </AnimatedSection>
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <SectionTitle
             title="Próximos cultos y eventos"

@@ -3,6 +3,8 @@ import { forwardRef } from 'react'
 
 interface AppButtonProps extends Omit<ButtonProps, 'variant'> {
   appVariant?: 'primary' | 'secondary' | 'outline'
+  /** Destino cuando se usa como enlace de router: <AppButton component={Link} to="/ruta"> */
+  to?: string
 }
 
 const AppButton = forwardRef<HTMLButtonElement, AppButtonProps>(
@@ -28,8 +30,8 @@ const AppButton = forwardRef<HTMLButtonElement, AppButtonProps>(
         color: 'text.primary',
         border: '1px solid rgba(204, 196, 201, 0.3)',
         '&:hover': {
-          borderColor: 'primary.main',
-          color: 'primary.main',
+          borderColor: 'secondary.main',
+          color: 'secondary.main',
           backgroundColor: 'rgba(255, 255, 255, 0.03)',
         },
       },

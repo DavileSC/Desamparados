@@ -1,0 +1,45 @@
+import { Helmet } from 'react-helmet-async'
+import { Box, Typography } from '@mui/material'
+import { Link, useLocation } from 'react-router-dom'
+import PageContainer from '../../components/PageContainer'
+import AppButton from '../../components/AppButton'
+
+export default function NotFoundPage() {
+  const location = useLocation()
+
+  return (
+    <>
+      <Helmet>
+        <title>Página no encontrada | Desamparados</title>
+        {/* Una SPA no puede devolver un 404 HTTP: al menos evitamos que se indexe */}
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
+      <Box component="section" sx={{ py: { xs: 12, md: 18 }, textAlign: 'center' }}>
+        <PageContainer>
+          <Typography variant="overline" sx={{ color: 'secondary.main', display: 'block', mb: 2 }}>
+            Error 404
+          </Typography>
+          <Typography variant="h2" component="h1" sx={{ fontSize: { xs: '32px', md: '48px' }, mb: 2 }}>
+            Página no encontrada
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{ color: 'text.secondary', maxWidth: '560px', mx: 'auto', mb: 5 }}
+          >
+            La dirección <Box component="code" sx={{ color: 'text.primary' }}>{location.pathname}</Box> no existe
+            o ha sido movida. Puede que el enlace esté mal escrito o que la página ya no esté disponible.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <AppButton component={Link} to="/">
+              Volver a la portada
+            </AppButton>
+            <AppButton appVariant="outline" component={Link} to="/contacto">
+              Contactar
+            </AppButton>
+          </Box>
+        </PageContainer>
+      </Box>
+    </>
+  )
+}

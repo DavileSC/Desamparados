@@ -19,7 +19,7 @@ export default function AgendaPage() {
         subtitle="Calendario de cultos, actos y celebraciones de la Hermandad."
       />
 
-      <AnimatedSection component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <SectionTitle title="Próximos cultos y eventos" />
           <Grid container spacing={4}>
