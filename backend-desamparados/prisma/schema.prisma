@@ -292,6 +292,7 @@ model Recibo {
 
   @@index([year]) // <-- Búsquedas de tesorería mucho más rápidas
   @@index([hermanoId]) // <-- Para listar rápido los recibos de una familia
+  @@unique([hermanoId, year, concepto])
 }
 
 // ---------------------------------------------------------

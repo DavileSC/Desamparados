@@ -42,7 +42,7 @@ export class ReciboController {
     try {
       const id = Number(req.params.id);
 
-      const recibo = await ReciboService.adminMarcarComoPagado(id, AuditService.metaFromReq(req));
+      const recibo = await ReciboService.adminMarcarComoPagado(id, req.body.metodoPago, AuditService.metaFromReq(req));
 
       res.status(200).json({
         message: 'Recibo cobrado correctamente. Si tenía papeleta, se ha enviado por email.',

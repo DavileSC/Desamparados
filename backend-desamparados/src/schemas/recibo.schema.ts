@@ -2,7 +2,8 @@ import { type } from 'arktype';
 import { textoRequerido } from '../config/common.js'; // Ajusta la ruta
 
 // Validar estado de pago basado en tu Enum
-const estadoPagoSchema = type("'PENDIENTE' | 'PAGADO' | 'ANULADO' | 'DEVUELTO'");
+const estadoPagoSchema = type("'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'");
+const metodoPagoSchema = type("'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'");
 
 export const generarCuotasSchema = type({
     body: {
@@ -23,5 +24,11 @@ export const updateReciboSchema = type({
         "puesto?": textoRequerido,
         "tramo?": "string",
         "observaciones?": "string"
+    }
+});
+
+export const marcarPagadoSchema = type({
+    body: {
+        "metodoPago?": metodoPagoSchema
     }
 });

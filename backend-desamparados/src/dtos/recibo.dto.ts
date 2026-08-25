@@ -6,8 +6,11 @@ export interface GenerarCuotasDto {
   concepto: string;
 }
 
+import { MetodoPago } from '@prisma/client';
+
 export interface UpdateReciboDto {
-  estado?: 'PENDIENTE' | 'PAGADO' | 'DEVUELTO';
+  estado?: 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO';
+  metodoPago?: MetodoPago;
   puesto?: string;
   tramo?: string;
   observaciones?: string;

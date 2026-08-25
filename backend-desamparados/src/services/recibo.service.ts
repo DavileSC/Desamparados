@@ -1,7 +1,7 @@
 import db from '../config/db';
 import { EmailService } from './email.service';
 import { GenerarCuotasDto, UpdateReciboDto } from '../dtos/recibo.dto.js';
-import { EstadoPago, Prisma, MetodoPago, TipoRecibo } from '@prisma/client';
+import { EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { DatosPapeleta } from '../dtos/email.dto.js';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
@@ -104,33 +104,65 @@ export class ReciboService {
   // =================================================================
 
   // Cobrar y emitir papeleta
-  static async adminMarcarComoPagado(reciboId: number, meta?: AuditMeta) {
+  static async adminMarcarComoPagado(reciboId: number, metodoPago?: MetodoPago, meta?: AuditMeta) {
 
-    // 1. Comprobaciones de estado ANTES de tocar nada
+    // El cambio condicionado evita que dos cobros concurrentes envíen dos emails
+    // o creen dos auditorías para el mismo recibo.
     const actual = await db.recibo.findUnique({ where: { id: reciboId } });
     if (!actual) throw new NotFoundError('Recibo no encontrado.');
     if (actual.estado === EstadoPago.PAGADO) throw new HttpError('Este recibo ya estaba pagado.');
     if (actual.estado === EstadoPago.ANULADO) throw new HttpError('No se puede cobrar un recibo anulado.');
     if (actual.estado === EstadoPago.DEVUELTO) throw new HttpError('Recibo devuelto por el banco: regenera el cobro antes de marcarlo como pagado.');
+    if (actual.estado === EstadoPago.EXENTO) throw new HttpError('No se puede cobrar un recibo exento.');
 
-    // Auditoría ANTES de mutar: el cobro siempre queda registrado
-    AuditService.log(AUDIT_ACTIONS.RECIBO_COBRAR, meta ?? {}, 'recibo', reciboId);
+    const recibo = await db.$transaction(async (tx) => {
+      const result = await tx.recibo.updateMany({
+        where: { id: reciboId, estado: EstadoPago.PENDIENTE },
+        data: {
+          estado: EstadoPago.PAGADO,
+          fechaPago: new Date(),
+          ...(metodoPago ? { metodoPago } : {})
+        }
+      });
+      if (result.count !== 1) {
+        throw new HttpError('El recibo ya no está pendiente de cobro.');
+      }
 
-    // 2. Actualización en BD
-    const recibo = await db.recibo.update({
-      where: { id: reciboId },
-      data: {
-        estado: EstadoPago.PAGADO,
-        fechaPago: new Date()
-      },
-      include: {
-        hermano: {
-          include: {
-            user: { select: { email: true, nombre: true } }
+      const updated = await tx.recibo.findUnique({
+        where: { id: reciboId },
+        include: {
+          hermano: {
+            include: {
+              user: { select: { email: true, nombre: true } }
+            }
           }
         }
-      }
-    });
+      });
+      if (!updated) throw new NotFoundError('Recibo no encontrado.');
+
+      const categoria = await tx.categoriaTransaccion.findFirst({
+        where: { nombre: 'Cuotas y papeletas', tipo: TipoTransaccion.INGRESO }
+      }) ?? await tx.categoriaTransaccion.create({
+        data: { nombre: 'Cuotas y papeletas', tipo: TipoTransaccion.INGRESO }
+      });
+
+      await tx.transaccion.create({
+        data: {
+          tipo: TipoTransaccion.INGRESO,
+          categoriaId: categoria.id,
+          concepto: updated.concepto,
+          importe: updated.importe,
+          fecha: updated.fechaPago ?? new Date(),
+          metodoPago: updated.metodoPago,
+          hermanoId: updated.hermanoId,
+          reciboId: updated.id
+        }
+      });
+
+      return updated;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    AuditService.log(AUDIT_ACTIONS.RECIBO_COBRAR, meta ?? {}, 'recibo', reciboId);
 
     // 2. Buscamos la papeleta asociada por separado (Más seguro que usar include si la relación no está definida en el Schema)
     const papeleta = await db.papeletaSitio.findFirst({
@@ -169,25 +201,45 @@ export class ReciboService {
 
   // Actualizar datos de procesión (Puesto, Tramo)
   static async adminUpdateDetalles(reciboId: number, data: UpdateReciboDto, meta?: AuditMeta) {
+    const actual = await db.recibo.findUnique({ where: { id: reciboId } });
+    if (!actual) throw new NotFoundError('Recibo no encontrado.');
+
+    if (data.estado && data.estado !== actual.estado) {
+      const transicionesPermitidas: Record<EstadoPago, EstadoPago[]> = {
+        [EstadoPago.PENDIENTE]: [EstadoPago.REMESADO, EstadoPago.ANULADO, EstadoPago.EXENTO],
+        [EstadoPago.REMESADO]: [EstadoPago.DEVUELTO, EstadoPago.ANULADO],
+        [EstadoPago.PAGADO]: [EstadoPago.DEVUELTO],
+        [EstadoPago.DEVUELTO]: [],
+        [EstadoPago.ANULADO]: [],
+        [EstadoPago.EXENTO]: []
+      };
+      if (!transicionesPermitidas[actual.estado].includes(data.estado as EstadoPago)) {
+        throw new HttpError(`No se puede cambiar un recibo de ${actual.estado} a ${data.estado}.`);
+      }
+    }
+
     // Auditoría: edición manual de un recibo (cambio de estado/detalles económicos)
     AuditService.log(AUDIT_ACTIONS.RECIBO_ACTUALIZAR, meta ?? {}, 'recibo', reciboId);
 
     // 1. Actualizar estado del recibo si procede
-    if (data.estado) {
+    if (data.estado && data.estado !== actual.estado) {
       await db.recibo.update({
         where: { id: reciboId },
-        data: { estado: data.estado as EstadoPago }
+        data: {
+          estado: data.estado as EstadoPago,
+          ...(data.estado === EstadoPago.PAGADO ? { fechaPago: new Date() } : {})
+        }
       });
     }
 
     // 2. Actualizar detalles de la papeleta si procede
-    if (data.puesto || data.tramo || data.observaciones) {
+    if (data.puesto !== undefined || data.tramo !== undefined || data.observaciones !== undefined) {
       await db.papeletaSitio.updateMany({
         where: { reciboId: reciboId },
         data: {
-          puesto: data.puesto,
-          tramo: data.tramo,
-          observaciones: data.observaciones
+          ...(data.puesto !== undefined ? { puesto: data.puesto } : {}),
+          ...(data.tramo !== undefined ? { tramo: data.tramo } : {}),
+          ...(data.observaciones !== undefined ? { observaciones: data.observaciones } : {})
         }
       });
     }

@@ -1,6 +1,6 @@
 import { CrearTurnoDto } from './../dtos/procesion.dto';
 import db from '../config/db';
-import { EstadoCita, EstadoPago, Prisma, TipoRecibo } from '@prisma/client';
+import { EstadoCita, EstadoPago, Prisma, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { AvisarAsistenciaDto, CrearInscripcionManualDto } from '../dtos/procesion.dto';
 import { EmailService } from './email.service';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
@@ -234,6 +234,25 @@ export class ProcesionService {
 
           // Si venía con cita, guardamos el link para historial
           citaId: data.citaId ?? undefined
+        }
+      });
+
+      const categoria = await tx.categoriaTransaccion.findFirst({
+        where: { nombre: 'Cuotas y papeletas', tipo: TipoTransaccion.INGRESO }
+      }) ?? await tx.categoriaTransaccion.create({
+        data: { nombre: 'Cuotas y papeletas', tipo: TipoTransaccion.INGRESO }
+      });
+
+      await tx.transaccion.create({
+        data: {
+          tipo: TipoTransaccion.INGRESO,
+          categoriaId: categoria.id,
+          concepto: recibo.concepto,
+          importe: recibo.importe,
+          fecha: recibo.fechaPago ?? new Date(),
+          metodoPago: recibo.metodoPago,
+          hermanoId: data.hermanoId,
+          reciboId: recibo.id
         }
       });
 

@@ -6,7 +6,7 @@ import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
 import { type } from 'arktype';
 import { idParam } from '../config/common.js'; // Esquema para validar IDs numéricos en URL
-import { generarCuotasSchema, updateReciboSchema } from '../schemas/recibo.schema.js';
+import { generarCuotasSchema, marcarPagadoSchema, updateReciboSchema } from '../schemas/recibo.schema.js';
 
 const reciboRoutes = Router();
 
@@ -32,7 +32,8 @@ reciboRoutes.post('/admin/generar',
 
 reciboRoutes.post('/admin/:id/pagar', 
   checkRole(rolesTesoreria), 
-  validateId, // Valida que el ID de URL es un número
+  validateId,
+  validate(marcarPagadoSchema),
   ReciboController.marcarPagado
 );
 
