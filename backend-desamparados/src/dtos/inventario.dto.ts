@@ -6,7 +6,6 @@ import { TipoPrenda, EstadoPrenda } from '@prisma/client';
 
 export interface CreateEnserDto {
   nombre: string;
-  descripcion?: string;
   referencia?: string; // Sustituye al antiguo 'codigo'
   categoria?: string;
   ubicacion?: string;
@@ -22,7 +21,6 @@ export interface CreateEnserDto {
 
 export interface UpdateEnserDto {
   nombre?: string;
-  descripcion?: string;
   referencia?: string;
   categoria?: string;
   ubicacion?: string;

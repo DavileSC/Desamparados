@@ -1,6 +1,6 @@
 import db from '../config/db';
 import { Prisma, EstadoPrenda } from '@prisma/client';
-import { CreateEnserDto, UpdateEnserDto, EnserFilterDto } from '../dtos/inventario.dto';
+import { CreateEnserDto, UpdateEnserDto, EnserFilterDto, CreatePrendaDto, UpdatePrendaDto } from '../dtos/inventario.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 // Asume que crearás estos DTOs para la ropa:
 // import { CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/prenda.dto';
@@ -39,7 +39,10 @@ export class InventarioService {
     
     return await db.enser.create({
       data: {
-        ...data,
+        nombre: data.nombre,
+        referencia: data.referencia,
+        categoria: data.categoria,
+        ubicacion: data.ubicacion,
         cantidadOptimo: optimo,
         cantidadBueno: bueno,
         cantidadReparar: reparar,
@@ -60,7 +63,10 @@ export class InventarioService {
     return await db.enser.update({
       where: { id },
       data: {
-        ...data,
+        nombre: data.nombre,
+        referencia: data.referencia,
+        categoria: data.categoria,
+        ubicacion: data.ubicacion,
         cantidadOptimo: optimo,
         cantidadBueno: bueno,
         cantidadReparar: reparar,
@@ -96,19 +102,36 @@ export class InventarioService {
     });
   }
 
-  static async createPrenda(data: any) { // Usa CreatePrendaDto
+  static async createPrenda(data: CreatePrendaDto) {
     const existe = await db.prenda.findUnique({ where: { numero: data.numero } });
     if (existe) throw new HttpError(`El número de prenda ${data.numero} ya existe.`);
 
-    return await db.prenda.create({ data });
+    return await db.prenda.create({
+      data: {
+        numero: data.numero,
+        tipo: data.tipo,
+        talla: data.talla,
+        estado: data.estado,
+        observaciones: data.observaciones
+      }
+    });
   }
 
-  static async updatePrenda(id: number, data: any) { // Usa UpdatePrendaDto
+  static async updatePrenda(id: number, data: UpdatePrendaDto) {
     if (data.numero) {
       const existe = await db.prenda.findUnique({ where: { numero: data.numero } });
       if (existe && existe.id !== id) throw new HttpError(`El número ${data.numero} ya está en uso.`);
     }
-    return await db.prenda.update({ where: { id }, data });
+    return await db.prenda.update({
+      where: { id },
+      data: {
+        numero: data.numero,
+        tipo: data.tipo,
+        talla: data.talla,
+        estado: data.estado,
+        observaciones: data.observaciones
+      }
+    });
   }
 
   static async deletePrenda(id: number) {

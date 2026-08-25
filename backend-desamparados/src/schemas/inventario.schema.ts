@@ -19,7 +19,6 @@ const fechaIsoSchema = type("string").matching(/^\d{4}-\d{2}-\d{2}/);
 export const createEnserSchema = type({
     body: {
         nombre: textoRequerido,
-        "descripcion?": "string",
         "referencia?": "string",
         "categoria?": "string",
         "ubicacion?": "string",
@@ -37,7 +36,6 @@ export const createEnserSchema = type({
 export const updateEnserSchema = type({
     body: {
         "nombre?": textoRequerido,
-        "descripcion?": "string",
         "referencia?": "string",
         "categoria?": "string",
         "ubicacion?": "string",
