@@ -49,13 +49,7 @@ export class ReciboController {
         reciboId: recibo.id,
         estado: recibo.estado
       });
-    } catch (e: any) {
-      // Errores de negocio del servicio (no existe, ya pagado, anulado...) → 400 con su mensaje real.
-      // Otros errores inesperados → 500 genérico (sin filtrar detalles internos al cliente).
-      const message = e instanceof Error ? e.message : '';
-      if (message) {
-        return handleHttp(res, e, message, 400);
-      }
+    } catch (e) {
       handleHttp(res, e, 'Error al cobrar el recibo');
     }
   }

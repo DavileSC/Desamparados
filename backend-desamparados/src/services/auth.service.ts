@@ -22,7 +22,7 @@ export class AuthService {
     const checkUser = await db.user.findFirst({
       where: { OR: [{ email: usuario.email }, { dni: usuario.dni }] }
     });
-    if (checkUser) throw new HttpError('El email o DNI ya están registrados.');
+    if (checkUser) throw new HttpError('El email o DNI ya están registrados.', 409);
 
     if (isTutor) {
       if (!hermano || !hermano.nombre || !hermano.fechaNacimiento) {
@@ -30,7 +30,7 @@ export class AuthService {
       }
       if (hermano.dni) {
         const checkHermano = await db.hermano.findFirst({ where: { dni: hermano.dni } });
-        if (checkHermano) throw new HttpError('El DNI del hermano ya existe.');
+        if (checkHermano) throw new HttpError('El DNI del hermano ya existe.', 409);
       }
     } else {
       if (!hermano?.fechaNacimiento) throw new HttpError('Fecha de nacimiento obligatoria.');
@@ -124,7 +124,7 @@ export class AuthService {
     const state = this.attemptsLogin.get(email);
     if (state && state.blockedUntil > Date.now()) {
       const mins = Math.ceil((state.blockedUntil - Date.now()) / 60000);
-      throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`);
+      throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`, 429);
     }
   }
 
@@ -157,18 +157,18 @@ export class AuthService {
     });
 
     // 1. Validamos que el usuario exista
-    if (!user) throw new HttpError('Credenciales incorrectas.');
+    if (!user) throw new HttpError('Credenciales incorrectas.', 401);
 
     // 2. Validamos la contraseña
     const isMatch = await verified(password, user.password);
     if (!isMatch) {
       this.registerFailLogin(emailNorm);
-      throw new HttpError('Credenciales incorrectas.');
+      throw new HttpError('Credenciales incorrectas.', 401);
     }
 
     // 3. BLOQUEO: Si la contraseña es correcta pero la cuenta no está activa
     if (!user.active) {
-      throw new HttpError('Tu solicitud está pendiente de aprobación. Pásate por Secretaría para formalizar tu alta.');
+      throw new HttpError('Tu solicitud está pendiente de aprobación. Pásate por Secretaría para formalizar tu alta.', 403);
     }
 
     // Login correcto: limpiamos el contador de fallos
@@ -207,7 +207,7 @@ export class AuthService {
     const state = this.attempts2FA.get(userId);
     if (state && state.blockedUntil > Date.now()) {
       const mins = Math.ceil((state.blockedUntil - Date.now()) / 60000);
-      throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`);
+      throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`, 429);
     }
   }
 
@@ -240,7 +240,7 @@ export class AuthService {
         }
       }
     });
-    if (!user || !user.twoFactorSecret) throw new HttpError('2FA no configurado.');
+    if (!user || !user.twoFactorSecret) throw new HttpError('2FA no configurado.', 401);
 
     const code = token2fa.trim().toUpperCase();
     let backupCodesRemaining: number | undefined;
@@ -258,14 +258,14 @@ export class AuthService {
       const delta = totp.validate({ token: code, window: 1 });
       if (delta === null) {
         this.registerFail2FA(userId);
-        throw new HttpError('Código incorrecto o expirado.');
+        throw new HttpError('Código incorrecto o expirado.', 401);
       }
     } else {
       // Código de respaldo: lo buscamos por hash y debe estar sin usar
       const consumed = await this.consumeBackupCode(user.id, code);
       if (!consumed) {
         this.registerFail2FA(userId);
-        throw new HttpError('Código incorrecto o expirado.');
+        throw new HttpError('Código incorrecto o expirado.', 401);
       }
 
       // Avisamos al frontend de cuántos le quedan (si se le acaban, necesita al ADMIN)
@@ -547,7 +547,7 @@ export class AuthService {
 
     // Confirmación de identidad obligatoria
     const isMatch = await verified(password, user.password);
-    if (!isMatch) throw new HttpError('Contraseña incorrecta: no se puede eliminar la cuenta.');
+    if (!isMatch) throw new HttpError('Contraseña incorrecta: no se puede eliminar la cuenta.', 401);
 
     // Antes de anonimizar, registramos la acción (con sus datos aún identificables)
     await AuditService.log(AUDIT_ACTIONS.CUENTA_AUTODELETE, meta ?? {}, 'user', userId);

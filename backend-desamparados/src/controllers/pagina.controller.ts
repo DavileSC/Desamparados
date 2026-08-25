@@ -33,10 +33,8 @@ static async createPage(req: Request, res: Response) {
     try {
       const result = await PaginaService.createPagina(req.body);
       res.status(201).json({ message: 'Página creada con éxito', data: result });
-    } catch (e: any) {
-      // Si salta nuestro error de duplicado, mandamos un 400 (Bad Request)
-      const isDuplicate = e.message.includes('Ya existe');
-      handleHttp(res, e, isDuplicate ? e.message : 'Error creando página', isDuplicate ? 400 : 500);
+    } catch (e) {
+      handleHttp(res, e, 'Error creando página');
     }
   }
 

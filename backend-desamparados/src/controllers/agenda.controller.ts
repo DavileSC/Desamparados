@@ -24,7 +24,7 @@ export class AgendaController {
       const event = await AgendaService.getEventById(id, isHermano);
       res.status(200).json(event);
     } catch (e) {
-      handleHttp(res, e, 'Error obteniendo evento', 403);
+      handleHttp(res, e, 'Error obteniendo evento');
     }
   }
 

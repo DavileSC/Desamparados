@@ -24,7 +24,7 @@ export class InventarioController {
       const enser = await InventarioService.getEnserById(id);
       res.status(200).json(enser);
     } catch (e) {
-      handleHttp(res, e, 'Error obteniendo ficha del enser', 404);
+      handleHttp(res, e, 'Error obteniendo ficha del enser');
     }
   }
 

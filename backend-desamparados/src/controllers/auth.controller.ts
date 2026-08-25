@@ -17,13 +17,8 @@ export class AuthController {
 
       // Ahora devuelve un 201 Created con el mensaje de "Pásate por Secretaría"
       res.status(201).json(result);
-    } catch (error: any) {
-      const message = error instanceof Error ? error.message : 'Error desconocido';
-      if (message.includes('ya están registrados') || message.includes('ya existe')) {
-        handleHttp(res, error, message, 409);
-      } else {
-        handleHttp(res, error, message, 400);
-      }
+    } catch (error) {
+      handleHttp(res, error, 'Error registrando usuario');
     }
   }
 
@@ -39,14 +34,8 @@ export class AuthController {
       // El frontend evaluará response.status ('OK' o '2FA_NEEDED')
       res.status(200).json(response);
 
-    } catch (error: any) {
-      const message = error instanceof Error ? error.message : 'Credenciales incorrectas';
-      // Si el error es por "Solicitud pendiente", devolvemos 403 Forbidden
-      if (message.includes('pendiente de aprobación')) {
-          handleHttp(res, error, message, 403);
-      } else {
-          handleHttp(res, error, message, 401);
-      }
+    } catch (error) {
+      handleHttp(res, error, 'Credenciales incorrectas');
     }
   }
 
@@ -60,10 +49,7 @@ export class AuthController {
     } catch (error) {
       // El servicio lanza mensajes de negocio específicos ("Cuenta bloqueada temporalmente...",
       // "Código incorrecto o expirado") que deben llegar al usuario tal cual.
-      const message = error instanceof Error && error.message
-        ? error.message
-        : 'Código 2FA incorrecto o expirado';
-      handleHttp(res, error, message, 401);
+      handleHttp(res, error, 'Código 2FA incorrecto o expirado');
     }
   }
 
@@ -167,12 +153,8 @@ export class AuthController {
       const { password } = req.body;
       const result = await AuthService.deleteOwnAccount(userId, password, AuditService.metaFromReq(req));
       res.status(200).json(result);
-    } catch (error: any) {
-      const message = error instanceof Error ? error.message : '';
-      if (message.includes('Contraseña incorrecta')) {
-        return handleHttp(res, error, message, 401);
-      }
-      handleHttp(res, error, message || 'Error eliminando la cuenta');
+    } catch (error) {
+      handleHttp(res, error, 'Error eliminando la cuenta');
     }
   }
 }
