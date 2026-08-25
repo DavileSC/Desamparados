@@ -76,7 +76,7 @@ app.use('/storage', express.static(storagePath));
 // 3. RUTAS DE LA API (Prefijo /api)
 // ==========================================
 
-// Healthcheck (para Docker restart policies, proxies y monitorización)
+// Healthcheck para proxies y monitorización
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', uptime: process.uptime() });
 });

@@ -7,7 +7,7 @@
 #   schtasks /Create /SC DAILY /ST 04:00 /TN "Backup Desamparados DB" ^
 #     /TR "powershell -File C:\ruta\backend-desamparados\scripts\backup-db.ps1"
 #
-# En Linux/docker: mysqldump equivalente (ver SECURITY.md, sección Backups).
+# En Linux: instala mysqldump y adapta este script si necesitas automatizarlo.
 
 param(
     [int]$RetentionDays = 30

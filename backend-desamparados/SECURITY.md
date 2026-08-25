@@ -27,27 +27,15 @@ que **debes** cumplir al desplegar en producción.
 ## Copias de seguridad
 
 - Windows/local: `.\scripts\backup-db.ps1` (programable con Task Scheduler).
-- Docker: `docker exec <contenedor-mariadb> sh -c 'mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" --single-transaction desamparados_db | gzip > /backup/backup_$(date +%F).sql.gz'`
 - **Prueba la restauración** al menos una vez antes de confiar en los backups:
   `gunzip < backup.sql.gz | mysql -u root -p desamparados_db`
 - Copia un backup fuera del servidor (nube/disco externo).
 
-## Imagen Docker de producción
-
-```
-docker build -t backend-desamparados:prod -f Dockerfile.prod .
-docker run -d --env-file .env.production -p 3001:3001 backend-desamparados:prod
-```
-
-La imagen corre como usuario no-root, sin nodemon ni debugger, con healthcheck
-en `/health`. La imagen de desarrollo (`Dockerfile` + docker-compose.yaml) es
-SOLO para local: nunca la expongas.
-
 ## Antivirus en subidas (opcional)
 
-Si sirves PDFs al público, despliega ClamAV (ej: contenedor `clamav/clamav`)
-y define `CLAMAV_HOST` y `CLAMAV_PORT`. Los uploads se escanearán vía clamd
-antes de aceptarse. Sin la variable, el escaneo se omite.
+Si sirves PDFs al público, instala ClamAV como servicio separado y define
+`CLAMAV_HOST` y `CLAMAV_PORT`. Los uploads se escanearán vía clamd antes de
+aceptarse. Sin la variable, el escaneo se omite.
 
 ## Auditoría
 

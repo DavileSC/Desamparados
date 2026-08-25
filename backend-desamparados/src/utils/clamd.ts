@@ -3,7 +3,7 @@ import net from 'net';
 /**
  * Cliente clamd mínimo (protocolo INSTREAM) sin dependencias externas.
  * Se activa ÚNICAMENTE si el entorno define CLAMAV_HOST (ej: un contenedor
- * clamav/clamav en la misma red de docker). Si no está definido, los uploads
+ * un servicio ClamAV accesible por red. Si no está definido, los uploads
  * se aceptan sin escanear (comportamiento actual).
  *
  * Protocolo INSTREAM:

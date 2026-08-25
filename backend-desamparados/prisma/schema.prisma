@@ -2,8 +2,7 @@
 
 generator client {
   provider      = "prisma-client-js"
-  // Añade esta línea obligatoria para que funcione en Windows Y en Docker Alpine:
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  binaryTargets = ["native"]
 }
 
 datasource db {
