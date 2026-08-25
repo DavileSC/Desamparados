@@ -42,6 +42,7 @@ const CookiesPolicyPage = lazy(() => import('../features/legal/CookiesPolicyPage
 
 // Auth pages
 const LoginPage = lazy(() => import('../features/members/auth/LoginPage'))
+const ResetPasswordPage = lazy(() => import('../features/members/auth/ResetPasswordPage'))
 
 // Brother area pages
 const ProfilePage = lazy(() => import('../features/brotherArea/profile/ProfilePage'))
@@ -133,6 +134,11 @@ const router = createBrowserRouter([
         path: '/hermanos/acceso',
         element: <AuthLayout />,
         children: [{ index: true, element: withSuspense(LoginPage) }],
+      },
+      {
+        path: '/reset-password',
+        element: <AuthLayout />,
+        children: [{ index: true, element: withSuspense(ResetPasswordPage) }],
       },
       {
         path: '/area-hermano',

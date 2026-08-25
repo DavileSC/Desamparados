@@ -303,6 +303,7 @@ export class AuthService {
 
     // Generamos un token aleatorio de 32 bytes y lo pasamos a texto hexadecimal
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = this.hashResetToken(resetToken);
     
     // Le damos 1 hora de validez desde este momento
     const expireDate = new Date(Date.now() + 3600000);
@@ -311,7 +312,7 @@ export class AuthService {
     await db.user.update({
       where: { id: user.id },
       data: {
-        resetPasswordToken: resetToken,
+        resetPasswordToken: resetTokenHash,
         resetPasswordExpires: expireDate
       }
     });
@@ -329,7 +330,7 @@ export class AuthService {
     // Buscamos un usuario que tenga ese token EXACTO y cuya fecha de expiración sea mayor a AHORA
     const user = await db.user.findFirst({
       where: {
-        resetPasswordToken: token,
+        resetPasswordToken: this.hashResetToken(token),
         resetPasswordExpires: { gt: new Date() } // gt = greater than (mayor que)
       }
     });
@@ -623,6 +624,10 @@ export class AuthService {
 
   private static hashBackupCode(code: string): string {
     return crypto.createHash('sha256').update(code).digest('hex');
+  }
+
+  private static hashResetToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
   }
 
   /**

@@ -21,3 +21,19 @@ export const twoFactorSchema = z.object({
 })
 
 export type TwoFactorFormData = z.infer<typeof twoFactorSchema>
+
+export const resetPasswordSchema = z.object({
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(64, 'La contraseña no puede superar los 64 caracteres'),
+  confirmation: z.string().min(1, 'Confirma la contraseña'),
+}).refine((data) => data.password === data.confirmation, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmation'],
+})
+
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
+
+export const requestPasswordResetSchema = z.object({
+  email: z.string().trim().email('Introduce un email válido'),
+})
+
+export type RequestPasswordResetFormData = z.infer<typeof requestPasswordResetSchema>

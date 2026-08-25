@@ -62,3 +62,11 @@ export function requestPasswordReset(email: string) {
     json: { email },
   })
 }
+
+export function resetPassword(token: string, newPassword: string) {
+  return apiFetch<{ message: string }>(`/auth/reset-password/${encodeURIComponent(token)}`, {
+    method: 'POST',
+    auth: false,
+    json: { newPassword },
+  })
+}

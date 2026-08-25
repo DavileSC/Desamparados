@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Box, Typography, TextField, Alert, Button } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import GlassCard from '../../../components/GlassCard'
@@ -148,6 +148,9 @@ export default function LoginPage() {
               <AppButton type="submit" fullWidth disabled={credentialsForm.formState.isSubmitting}>
                 Entrar
               </AppButton>
+              <Box component={Link} to="/reset-password" sx={{ color: 'secondary.main', textAlign: 'center', fontSize: '13px' }}>
+                ¿Has olvidado tu contraseña?
+              </Box>
             </Box>
           </>
         )}

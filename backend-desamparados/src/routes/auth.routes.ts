@@ -17,13 +17,18 @@ import {
   verify2FASchema, 
   enable2FASchema,
   disable2FASchema,
-  deleteAccountSchema
+  deleteAccountSchema,
+  requestPasswordResetSchema
 } from '../schemas/auth.schema';
 
 const authRoutes = Router();
 
 // Auxiliar para validar el :id
 const validateId = validate(type({ params: { id: idParam } }));
+const resetPasswordRequestSchema = type({
+  params: { token: type("string").matching(/^[a-f0-9]{64}$/i) },
+  body: { newPassword: type("string >= 8 & string <= 64") }
+});
 
 // El 2FA es exclusivo del personal con acceso al CMS (staff).
 // Un hermano normal (USER) de la app familiar no puede activarlo.
@@ -53,8 +58,8 @@ authRoutes.post('/login', authLimiter, validate(loginSchema), AuthController.log
 authRoutes.post('/login/2fa', authLimiter, validate(verify2FASchema), AuthController.loginVerify2FA);
 
 // Recuperación de contraseña
-authRoutes.post('/reset-password', authLimiter, AuthController.requestPasswordReset);
-authRoutes.post('/reset-password/:token', authLimiter, AuthController.resetPassword);
+authRoutes.post('/reset-password', authLimiter, validate(requestPasswordResetSchema), AuthController.requestPasswordReset);
+authRoutes.post('/reset-password/:token', authLimiter, validate(resetPasswordRequestSchema), AuthController.resetPassword);
 
 // ==========================================
 //  RUTAS PRIVADAS (Gestión del Perfil)

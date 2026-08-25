@@ -73,25 +73,22 @@ export class AuthController {
 
   static async resetPassword(req: Request, res: Response) {
     try {
-      const { token, newPassword } = req.body;
-      if (!token || !newPassword) throw new Error('Faltan datos');
-
+      const token = req.params.token as string;
+      const { newPassword } = req.body;
       const result = await AuthService.resetPassword(token, newPassword);
       res.status(200).json(result);
     } catch (error) {
-      handleHttp(res, error, 'Error al restablecer contraseña', 400);
+      handleHttp(res, error, 'Error al restablecer contraseña');
     }
   }
 
     static async requestPasswordReset(req: Request, res: Response) {
       try {
         const { email } = req.body;
-        if (!email) throw new Error('Falta el email');
-
         const result = await AuthService.requestPasswordReset(email);
         res.status(200).json(result);
       } catch (error) {
-        handleHttp(res, error, 'Error al solicitar recuperación', 400);
+        handleHttp(res, error, 'Error al solicitar recuperación');
       }
   }
   // =================================================================
