@@ -290,10 +290,25 @@ export class HermanoService {
   static async getHermanoById(id: number) {
     return await db.hermano.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...HERMANO_SAFE_SELECT,
         user: { select: { email: true, telefono: true } },
-        recibos: { orderBy: { year: 'desc' } },
-        papeletas: { orderBy: { year: 'desc' } }
+        recibos: {
+          orderBy: { year: 'desc' },
+          select: {
+            id: true, year: true, concepto: true, importe: true, fechaEmision: true,
+            tipo: true, estado: true, fechaPago: true, metodoPago: true,
+            observaciones: true, createdAt: true, updatedAt: true
+          }
+        },
+        papeletas: {
+          orderBy: { year: 'desc' },
+          select: {
+            id: true, year: true, puesto: true, tramo: true, numero: true,
+            numTunicaAsignada: true, numCapiroteAsignado: true, observaciones: true,
+            reciboId: true, citaId: true, createdAt: true, updatedAt: true
+          }
+        }
       }
     });
   }
