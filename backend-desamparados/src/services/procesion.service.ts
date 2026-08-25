@@ -1,6 +1,6 @@
 import { CrearTurnoDto } from './../dtos/procesion.dto';
 import db from '../config/db';
-import { EstadoCita, EstadoPago, TipoRecibo } from '@prisma/client';
+import { EstadoCita, EstadoPago, Prisma, TipoRecibo } from '@prisma/client';
 import { AvisarAsistenciaDto, CrearInscripcionManualDto } from '../dtos/procesion.dto';
 import { EmailService } from './email.service';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
@@ -53,6 +53,10 @@ export class ProcesionService {
     }
 
     const year = new Date().getFullYear();
+    const turno = await db.turno.findUnique({ where: { id: turnoId } });
+    if (!turno || !turno.activo || turno.fecha < new Date()) {
+      throw new HttpError('El turno no existe o ya no está disponible.');
+    }
 
     // 1. Verificar si ya tiene papeleta este año
     const yaTienePapeleta = await db.papeletaSitio.findFirst({
@@ -64,20 +68,26 @@ export class ProcesionService {
     const avisoPrevio = await db.cita.findFirst({
       where: {
         hermanoId,
-        estado: { not: EstadoCita.CANCELADA },
-        turno: { fecha: { gte: new Date(year, 0, 1) } }
+        estado: EstadoCita.RESERVADA,
+        turno: { fecha: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } }
       }
     });
     if (avisoPrevio) throw new HttpError('Ya tienes un día reservado.');
 
-    // 3. Crear el aviso
-    return await db.cita.create({
-      data: {
-        turnoId,
-        hermanoId,
-        estado: EstadoCita.RESERVADA
+    // La comprobación de aforo y la creación deben ser atómicas para no superar
+    // la capacidad cuando dos solicitudes llegan al mismo tiempo.
+    return await db.$transaction(async (tx) => {
+      const ocupacion = await tx.cita.count({
+        where: { turnoId, estado: EstadoCita.RESERVADA }
+      });
+      if (ocupacion >= turno.capacidadEstimada) {
+        throw new HttpError('Este turno ya ha alcanzado su capacidad máxima.');
       }
-    });
+
+      return tx.cita.create({
+        data: { turnoId, hermanoId, estado: EstadoCita.RESERVADA }
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   /**
@@ -180,7 +190,17 @@ export class ProcesionService {
     const importeFinal = hermano.tieneTunicaPropia ? precioBase : precioBase + precioAlquiler;
 
     // INICIO TRANSACCIÓN (Todo o Nada)
-    const result = await db.$transaction(async (tx) => {
+      const result = await db.$transaction(async (tx) => {
+
+      if (data.citaId) {
+        const cita = await tx.cita.findUnique({ where: { id: data.citaId } });
+        if (!cita || cita.hermanoId !== data.hermanoId) {
+          throw new HttpError('La cita no pertenece al hermano indicado.');
+        }
+        if (cita.estado !== EstadoCita.RESERVADA) {
+          throw new HttpError('La cita ya no está disponible para esta inscripción.');
+        }
+      }
 
 // 1. Crear RECIBO (Dinero o Exención)
       const recibo = await tx.recibo.create({
