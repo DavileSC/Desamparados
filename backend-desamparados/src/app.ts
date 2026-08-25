@@ -12,6 +12,8 @@ import { newsRoutes } from './routes/news.routes.js';
 import { uploadRoutes } from './routes/upload.routes.js';
 import { inventarioRoutes } from './routes/inventario.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
+import { procesionRoutes } from './routes/procesion.routes.js';
+import { transaccionRoutes } from './routes/transaccion.routes.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
 import hppConfig from './config/hpp'; // Protección HPP
@@ -94,6 +96,8 @@ app.use('/api/news', newsRoutes);        // Noticias
 app.use('/api/upload', uploadRoutes); // Subida de archivos
 app.use('/api/inventario', inventarioRoutes); // Inventario de enseres
 app.use('/api/admin', adminRoutes); // GESTIÓN DE STAFF Y ROLES
+app.use('/api/procesion', procesionRoutes); // Citas, papeletas y turnos
+app.use('/api/transacciones', transaccionRoutes); // Contabilidad
 
 // ==========================================
 // 4. MANEJO DE ERRORES GLOBAL
