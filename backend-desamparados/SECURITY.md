@@ -31,11 +31,13 @@ que **debes** cumplir al desplegar en producción.
   `gunzip < backup.sql.gz | mysql -u root -p desamparados_db`
 - Copia un backup fuera del servidor (nube/disco externo).
 
-## Antivirus en subidas (opcional)
+## Antivirus en subidas
 
 Si sirves PDFs al público, instala ClamAV como servicio separado y define
 `CLAMAV_HOST` y `CLAMAV_PORT`. Los uploads se escanearán vía clamd antes de
-aceptarse. Sin la variable, el escaneo se omite.
+aceptarse. Por defecto, si ClamAV no está configurado, el escaneo se omite;
+define `CLAMAV_REQUIRED=true` para rechazar archivos cuando el antivirus no
+esté disponible.
 
 ## Auditoría
 

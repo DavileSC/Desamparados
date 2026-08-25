@@ -2,8 +2,8 @@ import net from 'net';
 
 /**
  * Cliente clamd mínimo (protocolo INSTREAM) sin dependencias externas.
- * Se activa ÚNICAMENTE si el entorno define CLAMAV_HOST (ej: un contenedor
- * un servicio ClamAV accesible por red. Si no está definido, los uploads
+ * Se activa si el entorno define CLAMAV_HOST (un servicio ClamAV accesible
+ * por red). Si no está definido, los uploads
  * se aceptan sin escanear (comportamiento actual).
  *
  * Protocolo INSTREAM:
@@ -53,9 +53,18 @@ function writeAsync(socket: net.Socket, data: Buffer | string): Promise<void> {
 export async function scanBufferClamav(buffer: Buffer): Promise<ScanResult> {
   const host = process.env.CLAMAV_HOST;
   const port = parseInt(process.env.CLAMAV_PORT || '3310', 10);
+  const required = process.env.CLAMAV_REQUIRED === 'true';
 
-  // Sin ClamAV configurado: no escaneamos (fail-open deliberado).
-  if (!host) return { clean: true, scanned: false };
+  // En producción se puede exigir que todos los archivos pasen por ClamAV.
+  if (!host) {
+    return required
+      ? { clean: false, scanned: true, reason: 'ClamAV es obligatorio pero no está configurado' }
+      : { clean: true, scanned: false };
+  }
+
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return { clean: false, scanned: true, reason: 'Puerto de ClamAV no válido' };
+  }
 
   return new Promise<ScanResult>((resolve) => {
     let response = '';
