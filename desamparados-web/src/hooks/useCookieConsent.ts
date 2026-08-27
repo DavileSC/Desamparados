@@ -38,6 +38,15 @@ export function useCookieConsent() {
     setConsent('declined')
   }, [])
 
+  const reset = useCallback(() => {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // Sin almacenamiento disponible, el estado local sigue siendo suficiente.
+    }
+    setConsent(null)
+  }, [])
+
   return {
     consent,
     /** true solo si el usuario aceptó explícitamente (cargar terceros: mapas, vídeos...) */
@@ -46,5 +55,6 @@ export function useCookieConsent() {
     pending: consent === null,
     accept,
     decline,
+    reset,
   }
 }

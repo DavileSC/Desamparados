@@ -25,7 +25,7 @@ const MAP_EMBED_URL =
   'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3197.0!2d-4.42!3d36.72!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzbCNDMnMTIuMCJOIDTCsDI1JzEyLjAiVw!5e0!3m2!1ses!2ses!4v1600000000000!5m2!1ses!2ses'
 
 export default function Footer() {
-  const { accepted } = useCookieConsent()
+  const { accepted, reset: resetCookieConsent } = useCookieConsent()
   // RGPD: el iframe de Google Maps envía la IP del visitante a Google. Solo se carga si el
   // usuario ha aceptado las cookies o pulsa explícitamente "Mostrar mapa" (click-to-load).
   const [mapRequested, setMapRequested] = useState(false)
@@ -168,6 +168,22 @@ export default function Footer() {
                   {link.label}
                 </MuiLink>
               ))}
+              <MuiLink
+                component="button"
+                onClick={resetCookieConsent}
+                sx={{
+                  color: 'text.secondary',
+                  fontSize: '14px',
+                  textDecoration: 'underline',
+                  border: 0,
+                  background: 'none',
+                  cursor: 'pointer',
+                  p: 0,
+                  '&:hover': { color: 'secondary.main' },
+                }}
+              >
+                Gestionar cookies
+              </MuiLink>
             </Box>
           </Box>
         </Box>

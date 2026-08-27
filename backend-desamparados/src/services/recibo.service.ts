@@ -5,8 +5,35 @@ import { EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@pr
 import { DatosPapeleta } from '../dtos/email.dto.js';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 
 export class ReciboService {
+
+  static async getAdminRecibos(page: number = 1, limit: number = 50, year?: number, estado?: EstadoPago) {
+    const safePage = Math.max(1, Math.floor(page));
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 200);
+    const where = {
+      ...(year ? { year } : {}),
+      ...(estado ? { estado } : {})
+    };
+
+    const [data, total] = await db.$transaction([
+      db.recibo.findMany({
+        where,
+        orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
+        skip: (safePage - 1) * safeLimit,
+        take: safeLimit,
+        select: {
+          id: true, year: true, concepto: true, importe: true, fechaEmision: true,
+          estado: true, fechaPago: true, metodoPago: true, observaciones: true,
+          hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true } }
+        }
+      }),
+      db.recibo.count({ where })
+    ]);
+
+    return { data, meta: { total, page: safePage, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) } };
+  }
 
   // =================================================================
   //  1. GENERACIÓN MASIVA (ADMIN)
@@ -115,7 +142,7 @@ export class ReciboService {
     if (actual.estado === EstadoPago.DEVUELTO) throw new HttpError('Recibo devuelto por el banco: regenera el cobro antes de marcarlo como pagado.');
     if (actual.estado === EstadoPago.EXENTO) throw new HttpError('No se puede cobrar un recibo exento.');
 
-    const recibo = await db.$transaction(async (tx) => {
+    const recibo = await transactionWithRetry(async (tx) => {
       const result = await tx.recibo.updateMany({
         where: { id: reciboId, estado: EstadoPago.PENDIENTE },
         data: {
@@ -221,28 +248,75 @@ export class ReciboService {
     // Auditoría: edición manual de un recibo (cambio de estado/detalles económicos)
     AuditService.log(AUDIT_ACTIONS.RECIBO_ACTUALIZAR, meta ?? {}, 'recibo', reciboId);
 
-    // 1. Actualizar estado del recibo si procede
-    if (data.estado && data.estado !== actual.estado) {
-      await db.recibo.update({
-        where: { id: reciboId },
-        data: {
-          estado: data.estado as EstadoPago,
-          ...(data.estado === EstadoPago.PAGADO ? { fechaPago: new Date() } : {})
+    await db.$transaction(async (tx) => {
+      // El asiento original debe existir antes de registrar un reverso.
+      if (data.estado === EstadoPago.DEVUELTO && actual.estado === EstadoPago.PAGADO) {
+        // Solo una solicitud concurrente puede ganar la transición PAGADO -> DEVUELTO.
+        // Así evitamos generar dos asientos de reverso para el mismo cobro.
+        const transition = await tx.recibo.updateMany({
+          where: { id: reciboId, estado: EstadoPago.PAGADO },
+          data: { estado: EstadoPago.DEVUELTO }
+        });
+        if (transition.count === 0) {
+          const current = await tx.recibo.findUnique({ where: { id: reciboId }, select: { estado: true } });
+          if (current?.estado !== EstadoPago.DEVUELTO) {
+            throw new HttpError('El estado del recibo ha cambiado. Recarga la ficha e inténtalo de nuevo.');
+          }
         }
-      });
-    }
 
-    // 2. Actualizar detalles de la papeleta si procede
-    if (data.puesto !== undefined || data.tramo !== undefined || data.observaciones !== undefined) {
-      await db.papeletaSitio.updateMany({
-        where: { reciboId: reciboId },
-        data: {
-          ...(data.puesto !== undefined ? { puesto: data.puesto } : {}),
-          ...(data.tramo !== undefined ? { tramo: data.tramo } : {}),
-          ...(data.observaciones !== undefined ? { observaciones: data.observaciones } : {})
+        const ingresoOriginal = await tx.transaccion.findFirst({
+          where: { reciboId, tipo: TipoTransaccion.INGRESO }
+        });
+        if (!ingresoOriginal) {
+          throw new HttpError('No se puede devolver el recibo porque no tiene asiento contable de ingreso.');
         }
-      });
-    }
+
+        const conceptoReverso = `Reverso contable recibo #${reciboId}`;
+        const reversoExistente = await tx.transaccion.findFirst({
+          where: { reciboId, tipo: TipoTransaccion.GASTO, concepto: conceptoReverso }
+        });
+
+        if (!reversoExistente) {
+          const categoria = await tx.categoriaTransaccion.findFirst({
+            where: { nombre: 'Devoluciones de recibos', tipo: TipoTransaccion.GASTO }
+          }) ?? await tx.categoriaTransaccion.create({
+            data: { nombre: 'Devoluciones de recibos', tipo: TipoTransaccion.GASTO }
+          });
+
+          await tx.transaccion.create({
+            data: {
+              tipo: TipoTransaccion.GASTO,
+              categoriaId: categoria.id,
+              concepto: conceptoReverso,
+              importe: actual.importe,
+              fecha: new Date(),
+              metodoPago: actual.metodoPago,
+              hermanoId: actual.hermanoId,
+              reciboId
+            }
+          });
+        }
+      }
+
+      // Estado y detalles se confirman junto al asiento de reverso.
+      if (data.estado && data.estado !== actual.estado) {
+        await tx.recibo.update({
+          where: { id: reciboId },
+          data: { estado: data.estado as EstadoPago }
+        });
+      }
+
+      if (data.puesto !== undefined || data.tramo !== undefined || data.observaciones !== undefined) {
+        await tx.papeletaSitio.updateMany({
+          where: { reciboId },
+          data: {
+            ...(data.puesto !== undefined ? { puesto: data.puesto } : {}),
+            ...(data.tramo !== undefined ? { tramo: data.tramo } : {}),
+            ...(data.observaciones !== undefined ? { observaciones: data.observaciones } : {})
+          }
+        });
+      }
+    });
 
     return { message: 'Detalles actualizados' };
   }

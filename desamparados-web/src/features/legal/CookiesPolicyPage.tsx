@@ -16,9 +16,9 @@ export default function CookiesPolicyPage() {
         2. Cookies utilizadas
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
-        Este sitio web utiliza únicamente cookies técnicas y necesarias para su funcionamiento, como la
-        gestión de la sesión de usuario en el área privada de hermanos. No se utilizan cookies de
-        publicidad ni de analítica de terceros.
+         Este sitio utiliza cookies técnicas y almacenamiento local necesario para gestionar la sesión y las
+         preferencias de consentimiento. El mapa de Google Maps no se carga hasta que el usuario lo solicita;
+         al cargarlo, Google puede tratar la dirección IP y otros datos técnicos.
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
@@ -33,8 +33,8 @@ export default function CookiesPolicyPage() {
         4. Consentimiento
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
-        Al continuar navegando por este sitio web, el usuario acepta el uso de las cookies indicadas. En
-        cualquier momento podrá modificar su consentimiento desde el banner de cookies.
+        Las cookies no esenciales y los contenidos de terceros se activan únicamente cuando el usuario los
+        acepta expresamente. La decisión puede modificarse en cualquier momento desde «Gestionar cookies».
       </Typography>
     </LegalPageLayout>
   )

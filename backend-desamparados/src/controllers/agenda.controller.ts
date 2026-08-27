@@ -1,6 +1,7 @@
 import { Response, Request } from 'express';
 import { AgendaService } from '../services/agenda.service.js';
 import { handleHttp } from '../utils/error.handle.js';
+import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
 
 export class AgendaController {
 
@@ -32,6 +33,7 @@ export class AgendaController {
     try {
       // req.body validado por agendaSchema
       const event = await AgendaService.createEvent(req.body);
+      AuditService.log(AUDIT_ACTIONS.EVENTO_CREAR, AuditService.metaFromReq(req), 'evento', event.id);
       res.status(201).json(event);
     } catch (e) {
       handleHttp(res, e, 'Error creando evento');
@@ -42,6 +44,7 @@ export class AgendaController {
     try {
       const id = Number(req.params.id);
       const updated = await AgendaService.updateEvent(id, req.body);
+      AuditService.log(AUDIT_ACTIONS.EVENTO_ACTUALIZAR, AuditService.metaFromReq(req), 'evento', id);
       res.status(200).json(updated);
     } catch (e) {
       handleHttp(res, e, 'Error actualizando evento');
@@ -52,6 +55,7 @@ export class AgendaController {
     try {
       const id = Number(req.params.id);
       await AgendaService.deleteEvent(id);
+      AuditService.log(AUDIT_ACTIONS.EVENTO_ELIMINAR, AuditService.metaFromReq(req), 'evento', id);
       res.status(200).json({ message: 'Evento eliminado' });
     } catch (e) {
       handleHttp(res, e, 'Error eliminando evento');

@@ -14,7 +14,7 @@ app.listen(PORT, () => {
   │   🚀 Servidor Cofradía listo y escuchando        │
   │                                                  │
   │   🌐 URL:      http://localhost:${PORT}             │
-  │   📂 Storage:  /storage (Público)                │
+  │   📂 Storage:  /storage/public + private API     │
   │   🔑 Auth:     /api/auth                         │
   │   👥 Hermanos: /api/hermanos                     │
   │                                                  │

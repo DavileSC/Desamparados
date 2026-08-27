@@ -1,38 +1,92 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Box, Typography, TextField, Alert, Grid } from '@mui/material'
+import { Box, Typography, TextField, Alert, CircularProgress, Grid } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import AppButton from '../../../components/AppButton'
-import { brotherProfile } from '../../../lib/mocks/brother'
+import { getMyProfiles, updateMyProfile, type ApiProfile } from '../../../lib/api/profile'
 import { profileSchema, type ProfileFormData } from './schema'
 
 export default function EditProfilePage() {
   const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [profile, setProfile] = useState<ApiProfile | null>(null)
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: brotherProfile.name,
-      surname: brotherProfile.surname,
-      email: brotherProfile.email,
-      phone: brotherProfile.phone,
-      address: brotherProfile.address,
-      city: brotherProfile.city,
-      postalCode: brotherProfile.postalCode,
+      name: '',
+      surname: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      postalCode: '',
     },
   })
 
+  useEffect(() => {
+    let cancelled = false
+
+    getMyProfiles()
+      .then((profiles) => {
+        const currentProfile = profiles[0]
+        if (cancelled) return
+        if (!currentProfile) {
+          setError('No se ha encontrado ningún perfil asociado a tu cuenta.')
+          return
+        }
+
+        setProfile(currentProfile)
+        reset({
+          name: currentProfile.nombre,
+          surname: currentProfile.apellidos,
+          email: currentProfile.email ?? '',
+          phone: currentProfile.telefono ?? '',
+          address: currentProfile.direccion ?? '',
+          city: currentProfile.poblacion ?? '',
+          postalCode: currentProfile.codigoPostal ?? '',
+        })
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar tu perfil.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [reset])
+
   const onSubmit = async (data: ProfileFormData) => {
-    // TODO: Replace with real API call
-    console.log(data)
-    setSuccess(true)
+    if (!profile) return
+
+    setError(null)
+    setSuccess(false)
+    try {
+      await updateMyProfile(profile.id, {
+        nombre: data.name,
+        apellidos: data.surname,
+        email: data.email,
+        telefono: data.phone,
+        direccion: data.address,
+        poblacion: data.city,
+        codigoPostal: data.postalCode,
+      })
+      setSuccess(true)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se ha podido actualizar el perfil.')
+    }
   }
 
   return (
@@ -47,6 +101,12 @@ export default function EditProfilePage() {
             Editar Perfil
           </Typography>
 
+          {loading && <CircularProgress aria-label="Cargando perfil" sx={{ mb: 4 }} />}
+          {error && (
+            <Alert severity="error" sx={{ mb: 4 }}>
+              {error}
+            </Alert>
+          )}
           {success && (
             <Alert severity="success" sx={{ mb: 4 }}>
               Perfil actualizado correctamente.
@@ -60,7 +120,8 @@ export default function EditProfilePage() {
           >
             <Grid container spacing={3}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
+                  <TextField
+                    disabled={loading || !profile}
                   label="Nombre"
                   fullWidth
                   error={!!errors.name}
@@ -69,7 +130,8 @@ export default function EditProfilePage() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
+                  <TextField
+                    disabled={loading || !profile}
                   label="Apellidos"
                   fullWidth
                   error={!!errors.surname}
@@ -78,7 +140,8 @@ export default function EditProfilePage() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
+                  <TextField
+                    disabled={loading || !profile}
                   label="Email"
                   type="email"
                   fullWidth
@@ -88,7 +151,8 @@ export default function EditProfilePage() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
+                  <TextField
+                    disabled={loading || !profile}
                   label="Teléfono"
                   fullWidth
                   error={!!errors.phone}
@@ -98,6 +162,7 @@ export default function EditProfilePage() {
               </Grid>
               <Grid size={{ xs: 12 }}>
                 <TextField
+                  disabled={loading || !profile}
                   label="Dirección"
                   fullWidth
                   error={!!errors.address}
@@ -107,6 +172,7 @@ export default function EditProfilePage() {
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
+                  disabled={loading || !profile}
                   label="Ciudad"
                   fullWidth
                   error={!!errors.city}
@@ -116,6 +182,7 @@ export default function EditProfilePage() {
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
+                  disabled={loading || !profile}
                   label="Código postal"
                   fullWidth
                   error={!!errors.postalCode}
@@ -125,7 +192,7 @@ export default function EditProfilePage() {
               </Grid>
             </Grid>
 
-            <AppButton type="submit" disabled={isSubmitting} sx={{ alignSelf: 'flex-start' }}>
+            <AppButton type="submit" disabled={isSubmitting || loading || !profile} sx={{ alignSelf: 'flex-start' }}>
               Guardar cambios
             </AppButton>
           </Box>

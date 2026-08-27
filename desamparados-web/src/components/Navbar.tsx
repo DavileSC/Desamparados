@@ -54,16 +54,18 @@ const drawerItems = [
   { label: 'Contacto', href: '/contacto', icon: <MailIcon /> },
 ]
 
+// El menú debe seguir siendo de escritorio en portátiles con escalado de Windows
+// (la anchura CSS puede ser bastante menor que la resolución física).
+const DESKTOP_NAV_MIN = 1024
+const desktopMq = `@media (min-width:${DESKTOP_NAV_MIN}px)`
+const compactMq = `@media (max-width:1199px)`
+const socialMq = `@media (min-width:1700px)`
+
 const socialLinks = [
   { icon: <FacebookIcon fontSize="small" />, href: '#', label: 'Facebook' },
   { icon: <CloseIcon fontSize="small" />, href: '#', label: 'X' },
   { icon: <PlayCircleIcon fontSize="small" />, href: '#', label: 'YouTube' },
 ]
-
-// Anchura mínima a partir de la cual cabe la barra completa (logo + menú + botón + redes)
-// con márgenes cómodos. Por debajo se usa el menú hamburguesa.
-const DESKTOP_NAV_MIN = 1366
-const desktopMq = `@media (min-width:${DESKTOP_NAV_MIN}px)`
 
 export default function Navbar() {
   const theme = useTheme()
@@ -174,11 +176,12 @@ export default function Navbar() {
             flexWrap: 'nowrap',
             alignItems: 'center',
             justifyContent: 'flex-start',
-            gap: { xs: 4, xl: 6 }, // separación logo → menú: 32px en portátiles, 48px en pantallas grandes
+            gap: { xs: 2, xl: 4 }, // separación logo → menú, reservando espacio para las acciones
             // Barra a todo el ancho: logo y menú pegados a la izquierda, acciones a la derecha
             width: '100%',
             minHeight: '72px !important',
             px: { xs: '40px', xl: '48px' },
+            [compactMq]: { gap: 1.5, px: '24px' },
           }}
         >
           <Box
@@ -186,12 +189,13 @@ export default function Navbar() {
             to="/"
             sx={{
               fontFamily: theme.typography.h1.fontFamily,
-              fontSize: '28px',
+              fontSize: '26px',
               lineHeight: 1,
               color: 'text.primary',
               textDecoration: 'none',
               flexShrink: 0,
               whiteSpace: 'nowrap',
+              [compactMq]: { fontSize: '23px' },
             }}
           >
             DESAMPARADOS
@@ -206,8 +210,11 @@ export default function Navbar() {
               display: 'flex',
               alignItems: 'center',
               flexWrap: 'nowrap',
-              gap: { xs: 1.5, xl: 2 },
+              gap: { xs: 1, xl: 1.5 },
               minWidth: 0,
+              flexShrink: 1,
+              overflow: 'hidden',
+              [compactMq]: { gap: 0.5 },
             }}
           >
             {navItems.map((item) => {
@@ -220,7 +227,7 @@ export default function Navbar() {
                   sx={{
                     position: 'relative',
                     fontFamily: theme.typography.button.fontFamily,
-                    fontSize: '16px',
+                    fontSize: '15px',
                     fontWeight: 600,
                     letterSpacing: 0,
                     textTransform: 'none',
@@ -246,6 +253,7 @@ export default function Navbar() {
                     },
                     '&:hover': { color: 'secondary.main', backgroundColor: 'transparent' },
                     '&:hover::after': { transform: 'scaleX(1)' },
+                    [compactMq]: { fontSize: '13px', px: 0.35, '&::after': { left: 3, right: 3 } },
                   }}
                 >
                   {item.label}
@@ -255,15 +263,17 @@ export default function Navbar() {
           </Box>
 
           {/* Bloque derecho (como en la referencia): redes · filete · botón píldora, pegado al extremo */}
-          <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, ml: 'auto', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, ml: 'auto', gap: 2, [compactMq]: { gap: 1 } }}>
             <Box
               sx={{
-                display: 'flex',
+                display: 'none',
                 alignItems: 'center',
                 gap: 0.5,
                 pr: 2,
                 borderRight: '1px solid rgba(204, 196, 201, 0.25)',
                 height: 24,
+                [socialMq]: { display: 'flex' },
+                [compactMq]: { display: 'none' },
               }}
             >
               {socialLinks.map((social) => (
@@ -297,6 +307,7 @@ export default function Navbar() {
                 fontWeight: 600,
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase',
+                [compactMq]: { px: 1.5, fontSize: '12px' },
                 '&:hover': { backgroundColor: '#5a131c' },
               }}
             >

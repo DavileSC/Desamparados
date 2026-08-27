@@ -53,7 +53,11 @@ function writeAsync(socket: net.Socket, data: Buffer | string): Promise<void> {
 export async function scanBufferClamav(buffer: Buffer): Promise<ScanResult> {
   const host = process.env.CLAMAV_HOST;
   const port = parseInt(process.env.CLAMAV_PORT || '3310', 10);
-  const required = process.env.CLAMAV_REQUIRED === 'true';
+  const requiredValue = (process.env.CLAMAV_REQUIRED ?? 'false').trim().toLowerCase();
+  if (requiredValue !== 'true' && requiredValue !== 'false') {
+    return { clean: false, scanned: true, reason: 'CLAMAV_REQUIRED debe ser true o false' };
+  }
+  const required = requiredValue === 'true';
 
   // En producción se puede exigir que todos los archivos pasen por ClamAV.
   if (!host) {

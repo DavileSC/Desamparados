@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
 import {
+  Alert,
   Box,
+  CircularProgress,
   Typography,
   Table,
   TableBody,
@@ -12,9 +15,32 @@ import {
 import { Helmet } from 'react-helmet-async'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
-import { processionTickets } from '../../../lib/mocks/brother'
+import { getMyProcessionTickets, type ApiProcessionTicket } from '../../../lib/api/procession'
 
 export default function HistoricoPage() {
+  const [tickets, setTickets] = useState<ApiProcessionTicket[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    getMyProcessionTickets()
+      .then((data) => {
+        if (!cancelled) setTickets(data)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar el histórico.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <>
       <Helmet>
@@ -27,10 +53,17 @@ export default function HistoricoPage() {
             Histórico de Procesiones
           </Typography>
 
-          <TableContainer component={Paper} sx={{ backgroundColor: 'transparent' }}>
+          {loading && <CircularProgress aria-label="Cargando histórico" sx={{ mb: 4 }} />}
+          {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
+          {!loading && !error && tickets.length === 0 && (
+            <Alert severity="info">Todavía no hay papeletas registradas.</Alert>
+          )}
+
+          {!loading && !error && tickets.length > 0 && <TableContainer component={Paper} sx={{ backgroundColor: 'transparent', overflowX: 'auto' }}>
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell>Hermano</TableCell>
                   <TableCell>Año</TableCell>
                   <TableCell>Sección</TableCell>
                   <TableCell>Sitio</TableCell>
@@ -38,35 +71,36 @@ export default function HistoricoPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {processionTickets.map((ticket) => (
+                {tickets.map((ticket) => (
                   <TableRow key={ticket.id}>
+                    <TableCell>{ticket.hermano.nombre} {ticket.hermano.apellidos}</TableCell>
                     <TableCell>{ticket.year}</TableCell>
-                    <TableCell>{ticket.section}</TableCell>
-                    <TableCell>{ticket.seat}</TableCell>
+                    <TableCell>{ticket.puesto}</TableCell>
+                    <TableCell>{ticket.tramo ?? (ticket.numero !== null ? `Número ${ticket.numero}` : 'Pendiente de asignar')}</TableCell>
                     <TableCell>
                       <Box
                         component="span"
                         sx={{
                           color:
-                            ticket.status === 'assigned'
+                            ticket.recibo.estado === 'PAGADO'
                               ? 'success.main'
-                              : ticket.status === 'pending'
+                              : ticket.recibo.estado === 'PENDIENTE' || ticket.recibo.estado === 'REMESADO'
                                 ? 'warning.main'
                                 : 'error.main',
                           fontWeight: 600,
                           textTransform: 'uppercase',
                         }}
                       >
-                        {ticket.status === 'assigned' && 'Asignada'}
-                        {ticket.status === 'pending' && 'Pendiente'}
-                        {ticket.status === 'not-assigned' && 'No asignada'}
+                        {ticket.recibo.estado === 'PAGADO' && 'Asignada'}
+                        {(ticket.recibo.estado === 'PENDIENTE' || ticket.recibo.estado === 'REMESADO') && 'Pendiente'}
+                        {ticket.recibo.estado !== 'PAGADO' && ticket.recibo.estado !== 'PENDIENTE' && ticket.recibo.estado !== 'REMESADO' && 'No disponible'}
                       </Box>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </TableContainer>}
         </PageContainer>
       </AnimatedSection>
     </>

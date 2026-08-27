@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { InventarioService } from '../services/inventario.service.js';
 import { handleHttp } from '../utils/error.handle.js';
+import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
 
 export class InventarioController {
 
@@ -31,6 +32,7 @@ export class InventarioController {
   static async createEnser(req: Request, res: Response) {
     try {
       const newItem = await InventarioService.createEnser(req.body);
+      AuditService.log(AUDIT_ACTIONS.ENSER_CREAR, AuditService.metaFromReq(req), 'enser', newItem.id);
       res.status(201).json(newItem);
     } catch (e) {
       handleHttp(res, e, 'Error creando registro de enser');
@@ -41,6 +43,7 @@ export class InventarioController {
     try {
       const id = Number(req.params.id);
       const updated = await InventarioService.updateEnser(id, req.body);
+      AuditService.log(AUDIT_ACTIONS.ENSER_ACTUALIZAR, AuditService.metaFromReq(req), 'enser', id);
       res.status(200).json(updated);
     } catch (e) {
       handleHttp(res, e, 'Error actualizando enser');
@@ -51,6 +54,7 @@ export class InventarioController {
     try {
       const id = Number(req.params.id);
       await InventarioService.deleteEnser(id);
+      AuditService.log(AUDIT_ACTIONS.ENSER_ELIMINAR, AuditService.metaFromReq(req), 'enser', id);
       res.status(200).json({ message: 'Enser eliminado del inventario' });
     } catch (e) {
       handleHttp(res, e, 'Error eliminando enser');
@@ -73,6 +77,7 @@ export class InventarioController {
   static async createPrenda(req: Request, res: Response) {
     try {
       const newItem = await InventarioService.createPrenda(req.body);
+      AuditService.log(AUDIT_ACTIONS.PRENDA_CREAR, AuditService.metaFromReq(req), 'prenda', newItem.id);
       res.status(201).json(newItem);
     } catch (e) {
       handleHttp(res, e, 'Error registrando nueva prenda');
@@ -83,6 +88,7 @@ export class InventarioController {
     try {
       const id = Number(req.params.id);
       const updated = await InventarioService.updatePrenda(id, req.body);
+      AuditService.log(AUDIT_ACTIONS.PRENDA_ACTUALIZAR, AuditService.metaFromReq(req), 'prenda', id);
       res.status(200).json(updated);
     } catch (e) {
       handleHttp(res, e, 'Error actualizando datos de la prenda');
@@ -93,6 +99,7 @@ export class InventarioController {
     try {
       const id = Number(req.params.id);
       await InventarioService.deletePrenda(id);
+      AuditService.log(AUDIT_ACTIONS.PRENDA_ELIMINAR, AuditService.metaFromReq(req), 'prenda', id);
       res.status(200).json({ message: 'Prenda eliminada del ropero' });
     } catch (e) {
       handleHttp(res, e, 'Error eliminando prenda');
@@ -108,6 +115,7 @@ export class InventarioController {
       const { hermanoId } = req.body; 
 
       const result = await InventarioService.asignarPrenda(prendaId, hermanoId);
+      AuditService.log(AUDIT_ACTIONS.PRENDA_ASIGNAR, AuditService.metaFromReq(req), 'prenda', prendaId);
       res.status(200).json({ message: 'Prenda asignada correctamente', data: result });
     } catch (e) {
       handleHttp(res, e, 'Error al asignar la prenda al hermano');
@@ -121,6 +129,7 @@ export class InventarioController {
       const necesitaLavado = req.body.necesitaLavado === true;
 
       const result = await InventarioService.devolverPrenda(prendaId, necesitaLavado);
+      AuditService.log(AUDIT_ACTIONS.PRENDA_DEVOLVER, AuditService.metaFromReq(req), 'prenda', prendaId);
       res.status(200).json({ message: 'Prenda devuelta con éxito', data: result });
     } catch (e) {
       handleHttp(res, e, 'Error al procesar la devolución de la prenda');

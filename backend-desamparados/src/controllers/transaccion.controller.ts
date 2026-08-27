@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import { TransaccionService } from '../services/transaccion.service.js';
 import { handleHttp } from '../utils/error.handle.js';
+import { AuditService } from '../services/audit.service.js';
 
 export class TransaccionController {
   
   static async create(req: Request, res: Response) {
     try {
-      const transaccion = await TransaccionService.create(req.body);
+      const transaccion = await TransaccionService.create(req.body, AuditService.metaFromReq(req));
       res.status(201).json({ message: 'Apunte contable registrado', data: transaccion });
     } catch (e) {
       handleHttp(res, e, 'Error registrando la transacción');
@@ -45,7 +46,7 @@ export class TransaccionController {
   static async createCategoria(req: Request, res: Response) {
     try {
       const { nombre, tipo } = req.body;
-      const nueva = await TransaccionService.createCategoria(nombre, tipo);
+      const nueva = await TransaccionService.createCategoria(nombre, tipo, AuditService.metaFromReq(req));
       res.status(201).json({ message: 'Categoría creada', data: nueva });
     } catch (e) { handleHttp(res, e, 'Error creando categoría'); }
   }

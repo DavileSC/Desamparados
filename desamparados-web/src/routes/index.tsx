@@ -5,6 +5,11 @@ import PublicLayout from '../app/PublicLayout'
 import AuthLayout from '../app/AuthLayout'
 import BrotherLayout from '../app/BrotherLayout'
 import RequireAuth from './RequireAuth'
+import RequireRole from './RequireRole'
+import AdminLayout from '../app/AdminLayout'
+import { useAuthStore } from '../features/members/auth/store'
+import { Helmet } from 'react-helmet-async'
+import { useLocation } from 'react-router-dom'
 
 // Public pages
 const HomePage = lazy(() => import('../features/home/HomePage'))
@@ -34,6 +39,14 @@ const MembersPage = lazy(() => import('../features/members/public/MembersPage'))
 const HazteHermanoPage = lazy(() => import('../features/members/public/HazteHermanoPage'))
 const ContactPage = lazy(() => import('../features/contact/ContactPage'))
 const NotFoundPage = lazy(() => import('../features/notFound/NotFoundPage'))
+const NewsAdminPage = lazy(() => import('../features/cms/NewsAdminPage'))
+const PublicationsAdminPage = lazy(() => import('../features/cms/PublicationsAdminPage'))
+const AgendaAdminPage = lazy(() => import('../features/cms/AgendaAdminPage'))
+const BrothersAdminPage = lazy(() => import('../features/cms/BrothersAdminPage'))
+const TreasuryAdminPage = lazy(() => import('../features/cms/TreasuryAdminPage'))
+const InventoryAdminPage = lazy(() => import('../features/cms/InventoryAdminPage'))
+const AccountingAdminPage = lazy(() => import('../features/cms/AccountingAdminPage'))
+const AuditAdminPage = lazy(() => import('../features/cms/AuditAdminPage'))
 
 // Legal pages
 const LegalNoticePage = lazy(() => import('../features/legal/LegalNoticePage'))
@@ -75,14 +88,28 @@ function withSuspense(Component: React.ComponentType) {
   )
 }
 
+function CmsIndex() {
+  const role = useAuthStore((state) => state.user?.role)
+  return <Navigate to={role === 'REDES' ? '/cms/noticias' : role === 'TESORERIA' ? '/cms/tesoreria' : '/cms/agenda'} replace />
+}
+
 /**
  * Layout raíz: restaura el scroll al cambiar de ruta (vuelve arriba en navegaciones
  * nuevas y recupera la posición al usar atrás/adelante). Sin esto, las páginas
  * aparecían con el scroll a mitad.
  */
 function RootLayout() {
+  const location = useLocation()
+  const canonical = `https://www.desamparadosmalaga.com${location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '')}`
   return (
     <>
+      <Helmet>
+        <link rel="canonical" href={canonical} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:site_name" content="Hermandad de los Desamparados" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://www.desamparadosmalaga.com/images/hero-1920.webp" />
+      </Helmet>
       <ScrollRestoration />
       <Outlet />
     </>
@@ -156,6 +183,21 @@ const router = createBrowserRouter([
           { path: 'procesion/historico', element: withSuspense(HistoricoPage) },
           { path: 'recibos', element: withSuspense(ReceiptsPage) },
           { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
+        ],
+      },
+      {
+        path: '/cms',
+        element: <RequireRole roles={['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA']}><AdminLayout /></RequireRole>,
+        children: [
+          { index: true, element: <CmsIndex /> },
+          { path: 'noticias', element: <RequireRole roles={['ADMIN', 'REDES']}>{withSuspense(NewsAdminPage)}</RequireRole> },
+          { path: 'publicaciones', element: <RequireRole roles={['ADMIN', 'REDES']}>{withSuspense(PublicationsAdminPage)}</RequireRole> },
+          { path: 'agenda', element: <RequireRole roles={['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR']}>{withSuspense(AgendaAdminPage)}</RequireRole> },
+          { path: 'hermanos', element: <RequireRole roles={['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR']}>{withSuspense(BrothersAdminPage)}</RequireRole> },
+          { path: 'tesoreria', element: <RequireRole roles={['ADMIN', 'TESORERIA']}>{withSuspense(TreasuryAdminPage)}</RequireRole> },
+          { path: 'inventario', element: <RequireRole roles={['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR']}>{withSuspense(InventoryAdminPage)}</RequireRole> },
+          { path: 'contabilidad', element: <RequireRole roles={['ADMIN', 'TESORERIA']}>{withSuspense(AccountingAdminPage)}</RequireRole> },
+          { path: 'auditoria', element: <RequireRole roles={['ADMIN']}>{withSuspense(AuditAdminPage)}</RequireRole> },
         ],
       },
     ],

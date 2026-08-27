@@ -1,14 +1,37 @@
-import { Box, Typography } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { Alert, Box, CircularProgress, Typography } from '@mui/material'
 import PageContainer from '../../components/PageContainer'
 import SectionTitle from '../../components/SectionTitle'
 import GlassCard from '../../components/GlassCard'
 import EventCard from '../../components/EventCard'
 import AnimatedSection from '../../components/AnimatedSection'
-import { getUpcomingEvents } from '../../lib/mocks/events'
+import { getPublicEvents } from '../../lib/api/events'
+import type { EventItem } from '../../types'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 
 export default function EventsAndLive() {
-  const events = getUpcomingEvents(4)
+  const [events, setEvents] = useState<EventItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    getPublicEvents(4)
+      .then((data) => {
+        if (!cancelled) setEvents(data)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <AnimatedSection
@@ -30,6 +53,9 @@ export default function EventsAndLive() {
           <Box>
             <SectionTitle title="Agenda y Cultos" actionLabel="Ver agenda" actionHref="/actualidad/agenda" />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {loading && <CircularProgress aria-label="Cargando agenda" />}
+              {error && <Alert severity="error">{error}</Alert>}
+              {!loading && !error && events.length === 0 && <Alert severity="info">No hay próximos eventos.</Alert>}
               {events.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}

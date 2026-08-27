@@ -19,6 +19,7 @@ import AnimatedSection from '../../components/AnimatedSection'
 import GlassCard from '../../components/GlassCard'
 import AppButton from '../../components/AppButton'
 import { contactSchema, type ContactFormData } from './schema'
+import { sendContactMessage } from '../../lib/api/contact'
 
 const contactDetails = [
   {
@@ -45,6 +46,7 @@ const contactDetails = [
 
 export default function ContactPage() {
   const [success, setSuccess] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const {
     register,
@@ -63,10 +65,15 @@ export default function ContactPage() {
   })
 
   const onSubmit = async (data: ContactFormData) => {
-    // TODO: Replace with real API call
-    console.log(data)
-    setSuccess(true)
-    reset()
+    setSuccess(false)
+    setServerError(null)
+    try {
+      await sendContactMessage(data)
+      setSuccess(true)
+      reset()
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : 'No se ha podido enviar el mensaje. Inténtalo de nuevo más tarde.')
+    }
   }
 
   return (
@@ -91,6 +98,7 @@ export default function ContactPage() {
                     Mensaje enviado correctamente. Gracias por contactar con nosotros.
                   </Alert>
                 )}
+                {serverError && <Alert severity="error">{serverError}</Alert>}
 
                 <TextField
                   label="Nombre"

@@ -5,6 +5,7 @@ import { AvisarAsistenciaDto, CrearInscripcionManualDto } from '../dtos/procesio
 import { EmailService } from './email.service';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 
 export class ProcesionService {
 
@@ -46,7 +47,7 @@ export class ProcesionService {
 
     // 0. BARRERA BOLA: Verificar que este hermano pertenece a este usuario
     const checkPropiedad = await db.hermano.findFirst({
-      where: { id: hermanoId, userId: userId }
+      where: { id: hermanoId, userId: userId, activo: true }
     });
     if (!checkPropiedad) {
       throw new HttpError('No tienes permisos para apuntar a este cofrade.');
@@ -76,7 +77,7 @@ export class ProcesionService {
 
     // La comprobación de aforo y la creación deben ser atómicas para no superar
     // la capacidad cuando dos solicitudes llegan al mismo tiempo.
-    return await db.$transaction(async (tx) => {
+    return await transactionWithRetry(async (tx) => {
       const ocupacion = await tx.cita.count({
         where: { turnoId, estado: EstadoCita.RESERVADA }
       });
@@ -175,7 +176,7 @@ export class ProcesionService {
       db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } }),
       db.configuracion.findUnique({ where: { key: 'precio_alquiler_tunica' } }),
       db.hermano.findUnique({ 
-        where: { id: data.hermanoId },
+        where: { id: data.hermanoId, activo: true },
         include: { user: { select: { email: true } } } // Incluimos el email para el paso final
       })
     ]);

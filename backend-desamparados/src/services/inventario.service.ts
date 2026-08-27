@@ -145,7 +145,7 @@ export class InventarioService {
     if (!prenda) throw new NotFoundError('Prenda no encontrada.');
     if (prenda.estado !== EstadoPrenda.DISPONIBLE) throw new HttpError('La prenda no está disponible.');
 
-    const hermano = await db.hermano.findUnique({ where: { id: hermanoId } });
+    const hermano = await db.hermano.findUnique({ where: { id: hermanoId, activo: true } });
     if (!hermano) throw new NotFoundError('Hermano no encontrado.');
 
     return await db.prenda.update({

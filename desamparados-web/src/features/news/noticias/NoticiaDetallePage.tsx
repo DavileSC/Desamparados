@@ -1,16 +1,41 @@
+import { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link, useParams } from 'react-router-dom'
-import { Box, Typography } from '@mui/material'
+import { Alert, Box, CircularProgress, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
-import { getNewsBySlug } from '../../../lib/mocks/news'
+import { getNewsBySlug } from '../../../lib/api/news'
+import type { NewsItem } from '../../../types'
 import NotFoundPage from '../../notFound/NotFoundPage'
 
 export default function NoticiaDetallePage() {
   const { slug = '' } = useParams<{ slug: string }>()
-  const news = getNewsBySlug(slug)
+  const [news, setNews] = useState<NewsItem | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    let cancelled = false
+
+    getNewsBySlug(slug)
+      .then((data) => {
+        if (!cancelled) setNews(data)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar la noticia.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [slug])
+
+  if (loading) return <CircularProgress aria-label="Cargando noticia" />
+  if (error) return <Alert severity="error">{error}</Alert>
   if (!news) return <NotFoundPage />
 
   const fecha = new Date(news.date).toLocaleDateString('es-ES', {
@@ -75,7 +100,7 @@ export default function NoticiaDetallePage() {
             variant="body1"
             sx={{ color: 'text.primary', fontSize: { xs: '16px', md: '18px' }, lineHeight: 1.8, whiteSpace: 'pre-line' }}
           >
-            {news.content ?? news.excerpt}
+            <span dangerouslySetInnerHTML={{ __html: news.content ?? news.excerpt }} />
           </Typography>
 
           <Box

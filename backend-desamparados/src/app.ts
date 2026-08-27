@@ -1,7 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import path from 'path';
+import { publicStorageDir } from './middleware/upload.middleware.js';
 
 import { authRoutes } from './routes/auth.routes.js';
 import { hermanoRoutes } from './routes/hermano.routes.js';
@@ -14,6 +14,8 @@ import { inventarioRoutes } from './routes/inventario.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { procesionRoutes } from './routes/procesion.routes.js';
 import { transaccionRoutes } from './routes/transaccion.routes.js';
+import { publicationRoutes } from './routes/publication.routes.js';
+import { contactRoutes } from './routes/contact.routes.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
 import hppConfig from './config/hpp'; // Protección HPP
@@ -70,8 +72,7 @@ app.use(hppConfig);
 // ==========================================
 // 2. ARCHIVOS ESTÁTICOS (Imágenes/Storage)
 // ==========================================
-const storagePath = path.join(process.cwd(), 'storage');
-app.use('/storage', express.static(storagePath));
+app.use('/storage/public', express.static(publicStorageDir));
 
 
 // ==========================================
@@ -93,6 +94,8 @@ app.use('/api/recibos', reciboRoutes);   // Pagos y Tesorería
 app.use('/api/pages', paginaRoutes);     // Contenido estático
 app.use('/api/events', agendaRoutes);    // Agenda
 app.use('/api/news', newsRoutes);        // Noticias
+app.use('/api/publications', publicationRoutes); // Publicaciones
+app.use('/api/contact', contactRoutes); // Formulario de contacto
 app.use('/api/upload', uploadRoutes); // Subida de archivos
 app.use('/api/inventario', inventarioRoutes); // Inventario de enseres
 app.use('/api/admin', adminRoutes); // GESTIÓN DE STAFF Y ROLES

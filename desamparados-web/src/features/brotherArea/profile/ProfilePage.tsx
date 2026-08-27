@@ -1,4 +1,5 @@
-import { Box, Typography, Grid } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { Alert, Box, CircularProgress, Typography, Grid } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import EditIcon from '@mui/icons-material/Edit'
@@ -13,20 +14,49 @@ import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
-import { brotherProfile } from '../../../lib/mocks/brother'
-
-const profileFields = [
-  { icon: <EmailIcon sx={{ color: 'secondary.main' }} />, label: 'Email', value: brotherProfile.email },
-  { icon: <PhoneIcon sx={{ color: 'secondary.main' }} />, label: 'Teléfono', value: brotherProfile.phone },
-  { icon: <HomeIcon sx={{ color: 'secondary.main' }} />, label: 'Dirección', value: brotherProfile.address },
-  { icon: <LocationCityIcon sx={{ color: 'secondary.main' }} />, label: 'Ciudad', value: brotherProfile.city },
-  { icon: <MarkunreadMailboxIcon sx={{ color: 'secondary.main' }} />, label: 'Código postal', value: brotherProfile.postalCode },
-  { icon: <CalendarTodayIcon sx={{ color: 'secondary.main' }} />, label: 'Hermano desde', value: new Date(brotherProfile.memberSince).toLocaleDateString('es-ES') },
-  { icon: <BadgeIcon sx={{ color: 'secondary.main' }} />, label: 'Número de hermano', value: brotherProfile.brotherNumber },
-]
+import { getMyProfiles, type ApiProfile } from '../../../lib/api/profile'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
+  const [profile, setProfile] = useState<ApiProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    getMyProfiles()
+      .then((profiles) => {
+        if (!cancelled) {
+          setProfile(profiles[0] ?? null)
+          if (profiles.length === 0) setError('No se ha encontrado ningún perfil asociado a tu cuenta.')
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'No se ha podido cargar tu perfil.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const profileFields = profile
+    ? [
+        { icon: <EmailIcon sx={{ color: 'secondary.main' }} />, label: 'Email', value: profile.email ?? 'No indicado' },
+        { icon: <PhoneIcon sx={{ color: 'secondary.main' }} />, label: 'Teléfono', value: profile.telefono ?? 'No indicado' },
+        { icon: <HomeIcon sx={{ color: 'secondary.main' }} />, label: 'Dirección', value: profile.direccion ?? 'No indicada' },
+        { icon: <LocationCityIcon sx={{ color: 'secondary.main' }} />, label: 'Ciudad', value: profile.poblacion ?? 'No indicada' },
+        { icon: <MarkunreadMailboxIcon sx={{ color: 'secondary.main' }} />, label: 'Código postal', value: profile.codigoPostal ?? 'No indicado' },
+        { icon: <CalendarTodayIcon sx={{ color: 'secondary.main' }} />, label: 'Hermano desde', value: new Date(profile.fechaAlta).toLocaleDateString('es-ES') },
+        { icon: <BadgeIcon sx={{ color: 'secondary.main' }} />, label: 'Número de hermano', value: profile.numeroHermano?.toString() ?? 'Pendiente de asignar' },
+      ]
+    : []
 
   return (
     <>
@@ -36,7 +66,10 @@ export default function ProfilePage() {
 
       <AnimatedSection sx={{ py: { xs: 4, md: 6 } }}>
         <PageContainer>
-          <Box
+          {loading && <CircularProgress aria-label="Cargando perfil" />}
+          {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
+
+          {profile && <Box
             sx={{
               display: 'flex',
               flexDirection: { xs: 'column', md: 'row' },
@@ -55,11 +88,11 @@ export default function ProfilePage() {
             >
               Editar datos
             </AppButton>
-          </Box>
+          </Box>}
 
-          <GlassCard sx={{ p: { xs: 3, md: 5 } }}>
+          {profile && <GlassCard sx={{ p: { xs: 3, md: 5 } }}>
             <Typography variant="h4" component="h2" sx={{ mb: 4 }}>
-              {brotherProfile.name} {brotherProfile.surname}
+              {profile.nombre} {profile.apellidos}
             </Typography>
 
             <Grid container spacing={3}>
@@ -79,7 +112,7 @@ export default function ProfilePage() {
                 </Grid>
               ))}
             </Grid>
-          </GlassCard>
+          </GlassCard>}
         </PageContainer>
       </AnimatedSection>
     </>

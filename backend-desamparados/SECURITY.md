@@ -24,6 +24,16 @@ que **debes** cumplir al desplegar en producción.
 - [ ] **Usuario de BD dedicado** (no root) con privilegios solo sobre
       `desamparados_db`.
 
+## Almacenamiento
+
+- `/storage/public` contiene únicamente archivos destinados a la web pública.
+- Los documentos privados se guardan en `/storage/private`, que no se sirve como
+  contenido estático. Se descargan mediante `/api/upload/private/:filename` y
+  requieren autenticación.
+- Las subidas públicas y privadas usan directorios y permisos CMS separados.
+- Las URLs privadas no deben copiarse a campos de contenido público ni exponerse
+  en respuestas destinadas a visitantes anónimos.
+
 ## Copias de seguridad
 
 - Windows/local: `.\scripts\backup-db.ps1` (programable con Task Scheduler).
@@ -38,6 +48,34 @@ Si sirves PDFs al público, instala ClamAV como servicio separado y define
 aceptarse. Por defecto, si ClamAV no está configurado, el escaneo se omite;
 define `CLAMAV_REQUIRED=true` para rechazar archivos cuando el antivirus no
 esté disponible.
+
+El backend no inicia ni administra el proceso de ClamAV: solo conecta con el
+servicio `clamd` por TCP usando `INSTREAM`. En producción, configura por ejemplo
+`CLAMAV_HOST=127.0.0.1`, `CLAMAV_PORT=3310` y `CLAMAV_REQUIRED=true`, y verifica
+que `clamd` esté escuchando antes de publicar el servicio web.
+
+### Prueba local con WSL2
+
+En Windows, una instalación de Ubuntu bajo WSL2 puede ejecutar ClamAV como
+servicio independiente para las pruebas locales:
+
+```bash
+sudo apt-get install clamav clamav-daemon
+sudo freshclam
+sudo systemctl enable --now clamav-daemon
+```
+
+El backend usa `CLAMAV_HOST=127.0.0.1`, `CLAMAV_PORT=3310` y
+`CLAMAV_REQUIRED=true`. Las comprobaciones disponibles son:
+
+```bash
+npm run test:clamav
+npm run test:upload-clamav
+```
+
+La primera prueba el protocolo con un archivo limpio y EICAR. La segunda
+autentica un usuario CMS, sube un PDF limpio por HTTP y elimina el archivo de
+prueba al finalizar.
 
 ## Auditoría
 
@@ -67,7 +105,7 @@ los rate limiters a un almacén compartido (Redis, `rate-limit-redis`).
 | 2FA | Solo staff del CMS, backup codes de un solo uso (hash SHA-256), rescate por ADMIN auditado |
 | Autorización | `checkRole` en rutas, verificación de propiedad (anti-IDOR) en todas las operaciones familiares |
 | Entrada | Validación ArkType en 100% de rutas de escritura, sanitización HTML (noticias/páginas), escape en emails |
-| Subidas | Whitelist MIME+extensión, magic numbers, coincidencia ext↔contenido, tamaño 5MB, ClamAV opcional |
+| Subidas | Almacenamiento público/privado separado, whitelist MIME+extensión, magic numbers, coincidencia ext↔contenido, tamaño 5MB, ClamAV opcional |
 | Cabeceras | Helmet (CSP, HSTS, frameguard, referrer-policy), CORS cerrado por defecto en producción |
 | Datos | Soft-delete + anonimización RGPD (art. 15/17), exportación de datos propios |
 | Forense | AuditLog de acciones sensibles con IP y user-agent |

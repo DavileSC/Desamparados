@@ -2,6 +2,7 @@ import { Response, Request } from 'express';
 import { ReciboService } from '../services/recibo.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { AuditService } from '../services/audit.service.js';
+import { EstadoPago } from '@prisma/client';
 
 export class ReciboController {
 
@@ -22,6 +23,21 @@ export class ReciboController {
   // =================================================================
   //  ZONA ADMIN / TESORERÍA
   // =================================================================
+
+  static async getAdminRecibos(req: Request, res: Response) {
+    try {
+      const year = req.query.year ? Number(req.query.year) : undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : 50;
+      const page = req.query.page ? Number(req.query.page) : 1;
+      const estado = typeof req.query.estado === 'string' && Object.values(EstadoPago).includes(req.query.estado as EstadoPago)
+        ? req.query.estado as EstadoPago
+        : undefined;
+      const result = await ReciboService.getAdminRecibos(page, limit, Number.isFinite(year) ? year : undefined, estado);
+      res.status(200).json(result);
+    } catch (e) {
+      handleHttp(res, e, 'Error obteniendo recibos administrativos');
+    }
+  }
 
   static async generarCuotas(req: Request, res: Response) {
     try {

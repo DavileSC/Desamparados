@@ -1,0 +1,21 @@
+import { TipoPublicacion } from '@prisma/client';
+
+export interface CreatePublicationDto {
+  titulo: string;
+  descripcion?: string;
+  imagenUrl?: string;
+  archivoUrl: string;
+  fecha?: string;
+  categoria: TipoPublicacion;
+  visible?: boolean;
+}
+
+export interface UpdatePublicationDto {
+  titulo?: string;
+  descripcion?: string;
+  imagenUrl?: string;
+  archivoUrl?: string;
+  fecha?: string;
+  categoria?: TipoPublicacion;
+  visible?: boolean;
+}

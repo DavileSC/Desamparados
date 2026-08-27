@@ -10,7 +10,9 @@ export default function LegalNoticePage() {
       <Typography component="p" sx={{ mb: 2 }}>
         En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de
         la Información y del Comercio Electrónico, se informa que el titular de este sitio web es el Grupo
-        Parroquial de Nuestra Señora de los Desamparados, con domicilio en Málaga.
+         Parroquial de Nuestra Señora de los Desamparados, con domicilio en Málaga. Deben incorporarse antes
+         de la publicación definitiva la denominación jurídica exacta, NIF, domicilio completo y un medio de
+         contacto oficial del responsable.
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
@@ -36,6 +38,15 @@ export default function LegalNoticePage() {
       <Typography component="p" sx={{ mb: 2 }}>
         El titular no se hace responsable de los daños derivados del uso incorrecto de los contenidos del
         sitio web ni de fallos técnicos ajenos a su control.
+      </Typography>
+
+      <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
+        5. Contacto y cumplimiento
+      </Typography>
+      <Typography component="p" sx={{ mb: 2 }}>
+        Para consultas sobre este sitio o sobre el tratamiento de datos puede utilizarse el canal de contacto
+        oficial indicado por la Hermandad. Este aviso debe ser revisado y completado por el responsable legal
+        antes de su puesta en producción.
       </Typography>
     </LegalPageLayout>
   )

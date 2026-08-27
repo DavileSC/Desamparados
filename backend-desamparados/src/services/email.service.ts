@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import QRCode from 'qrcode';
 import { DatosPapeleta } from '../dtos/email.dto';
+import { ContactDto } from '../dtos/contact.dto';
 
 export class EmailService {
   private static transporter = nodemailer.createTransport({
@@ -260,14 +261,39 @@ export class EmailService {
     return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout("Aviso de Salida Procesional", "Secretaría y Albacería", content, '', infoExtra));
   }
 
+  static async enviarContacto(datos: ContactDto): Promise<boolean> {
+    const destino = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
+    if (!destino) {
+      console.error('❌ Contacto: CONTACT_EMAIL_TO o EMAIL_USER no está configurado.');
+      return false;
+    }
+
+    const nombre = this.esc(datos.nombre);
+    const email = this.esc(datos.email);
+    const telefono = this.esc(datos.telefono);
+    const asunto = this.esc(datos.asunto);
+    const mensaje = this.esc(datos.mensaje).replace(/\r?\n/g, '<br>');
+    const content = `
+      <p><strong>Nombre:</strong> ${nombre}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Teléfono:</strong> ${telefono}</p>
+      <p><strong>Asunto:</strong> ${asunto}</p>
+      <hr>
+      <p>${mensaje}</p>
+    `;
+
+    return this.enviarEmailBase(destino, `[Contacto web] ${datos.asunto}`, this.getHtmlLayout('Nuevo mensaje de contacto', 'Formulario web', content), datos.email);
+  }
+
   // --- MOTOR DE ENVÍO ---
-  private static async enviarEmailBase(to: string, subject: string, html: string): Promise<boolean> {
+  private static async enviarEmailBase(to: string, subject: string, html: string, replyTo?: string): Promise<boolean> {
     try {
       await this.transporter.sendMail({
         from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${process.env.EMAIL_USER}>`,
         to,
         subject,
         html,
+        ...(replyTo ? { replyTo } : {}),
       });
       console.log(`✅ Email enviado con éxito a: ${to}`);
       return true;

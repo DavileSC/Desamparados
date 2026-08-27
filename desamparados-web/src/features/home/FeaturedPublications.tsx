@@ -1,12 +1,20 @@
-import { Box } from '@mui/material'
+import { Alert, Box, CircularProgress } from '@mui/material'
+import { useEffect, useState } from 'react'
 import PageContainer from '../../components/PageContainer'
 import SectionTitle from '../../components/SectionTitle'
 import PublicationCard from '../../components/PublicationCard'
 import AnimatedSection from '../../components/AnimatedSection'
-import { publicationItems } from '../../lib/mocks/publications'
+import { getLatestPublications } from '../../lib/api/publications'
+import type { PublicationItem } from '../../types'
 
 export default function FeaturedPublications() {
-  const publications = publicationItems.slice(0, 3)
+  const [publications, setPublications] = useState<PublicationItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    getLatestPublications().then(setPublications).catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las publicaciones.')).finally(() => setLoading(false))
+  }, [])
 
   return (
     <AnimatedSection
@@ -22,6 +30,9 @@ export default function FeaturedPublications() {
           actionLabel="Ver todas"
           actionHref="/publicaciones"
         />
+        {loading && <CircularProgress aria-label="Cargando publicaciones" />}
+        {error && <Alert severity="error">{error}</Alert>}
+        {!loading && !error && publications.length === 0 && <Alert severity="info">No hay publicaciones disponibles.</Alert>}
         <Box
           sx={{
             display: 'grid',
@@ -29,7 +40,7 @@ export default function FeaturedPublications() {
             gap: 3,
           }}
         >
-          {publications.map((publication) => (
+          {!loading && publications.map((publication) => (
             <PublicationCard key={publication.id} publication={publication} />
           ))}
         </Box>

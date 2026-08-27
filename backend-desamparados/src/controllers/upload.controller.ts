@@ -4,6 +4,7 @@ import { fileTypeFromFile } from 'file-type';
 import path from 'path';
 import fs from 'fs/promises';
 import { scanBufferClamav } from '../utils/clamd.js';
+import { privateStorageDir } from '../middleware/upload.middleware.js';
 
 export class UploadController {
 
@@ -73,7 +74,10 @@ export class UploadController {
       const baseUrl = process.env.API_URL || 'http://localhost:3001';
       
       // Construimos la URL que guardaremos en la DB
-      const fileUrl = `${baseUrl}/storage/${file.filename}`;
+      const isPrivate = req.path.startsWith('/private');
+      const fileUrl = isPrivate
+        ? `${baseUrl}/api/upload/private/${encodeURIComponent(file.filename)}`
+        : `${baseUrl}/storage/public/${encodeURIComponent(file.filename)}`;
 
       res.status(201).json({
         message: 'Archivo subido correctamente',
@@ -88,5 +92,13 @@ export class UploadController {
     } catch (e) {
       handleHttp(res, e, 'Error subiendo archivo');
     }
+  }
+
+  static async downloadPrivate(req: Request, res: Response) {
+    const filename = req.params.filename as string;
+    // El middleware de ruta limita el nombre a un identificador generado por Multer.
+    res.sendFile(filename, { root: privateStorageDir, dotfiles: 'deny' }, (error) => {
+      if (error && !res.headersSent) handleHttp(res, error, 'Documento privado no encontrado', 404);
+    });
   }
 }

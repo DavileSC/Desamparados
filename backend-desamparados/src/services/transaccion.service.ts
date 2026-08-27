@@ -1,5 +1,6 @@
 import db from '../config/db.js';
 import { HttpError } from '../utils/error.handle';
+import { AuditMeta, AuditService, AUDIT_ACTIONS } from './audit.service.js';
 
 export class TransaccionService {
   
@@ -17,10 +18,12 @@ export class TransaccionService {
     });
   }
 
-  static async createCategoria(nombre: string, tipo: 'INGRESO' | 'GASTO') {
-    return await db.categoriaTransaccion.create({
+  static async createCategoria(nombre: string, tipo: 'INGRESO' | 'GASTO', meta?: AuditMeta) {
+    const result = await db.categoriaTransaccion.create({
       data: { nombre, tipo }
     });
+    AuditService.log(AUDIT_ACTIONS.CATEGORIA_CREAR, meta ?? {}, 'categoria', result.id);
+    return result;
   }
 
   static async toggleCategoria(id: number, activa: boolean) {
@@ -34,13 +37,13 @@ export class TransaccionService {
   //  LIBRO MAYOR (Actualizado)
   // ==========================================
 
-  static async create(data: any) {
+  static async create(data: any, meta?: AuditMeta) {
     // 1. Verificación de seguridad: Comprobar que la categoría existe y cuadra con el tipo
     const categoria = await db.categoriaTransaccion.findUnique({ where: { id: data.categoriaId } });
     if (!categoria) throw new HttpError("La categoría seleccionada no existe.");
     if (categoria.tipo !== data.tipo) throw new HttpError(`Conflicto: Intentas usar una categoría de ${categoria.tipo} en un ${data.tipo}.`);
 
-    return await db.transaccion.create({
+    const result = await db.transaccion.create({
       data: {
         tipo: data.tipo,
         categoriaId: data.categoriaId,
@@ -50,6 +53,8 @@ export class TransaccionService {
         metodoPago: data.metodoPago
       }
     });
+    AuditService.log(AUDIT_ACTIONS.TRANSACCION_CREAR, meta ?? {}, 'transaccion', result.id);
+    return result;
   }
 
   static async getAll(page: number = 1, limit: number = 20) {

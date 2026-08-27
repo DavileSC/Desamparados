@@ -27,3 +27,16 @@ export const authLimiter = rateLimit({
 		message: "Demasiados intentos de inicio de sesión. Por seguridad, espera 15 minutos."
 	}
 });
+
+// El formulario público puede provocar spam de correo, por lo que tiene un
+// límite propio más estricto que el resto de lecturas de la API.
+export const contactLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	limit: 5,
+	standardHeaders: 'draft-7',
+	legacyHeaders: false,
+	message: {
+		status: 429,
+		message: 'Demasiados mensajes desde esta IP. Espera unos minutos e inténtalo de nuevo.'
+	}
+});

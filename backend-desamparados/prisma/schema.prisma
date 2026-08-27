@@ -257,7 +257,7 @@ model Transaccion {
 
   hermanoId Int?
   hermano   Hermano? @relation(fields: [hermanoId], references: [id])
-  reciboId  Int?     @unique
+  reciboId  Int?
   recibo    Recibo?  @relation(fields: [reciboId], references: [id])
 
   createdAt DateTime @default(now())
@@ -435,6 +435,29 @@ model Noticia {
   visible   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum TipoPublicacion {
+  boletin
+  dossier
+  anuario
+  historia
+}
+
+model Publicacion {
+  id          Int             @id @default(autoincrement())
+  titulo      String
+  descripcion String?         @db.Text
+  imagenUrl   String?
+  archivoUrl  String
+  fecha       DateTime        @default(now())
+  categoria   TipoPublicacion
+  visible     Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([categoria, fecha])
+  @@index([visible, fecha])
 }
 
 model Configuracion {

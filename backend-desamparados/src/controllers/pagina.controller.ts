@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PaginaService } from '../services/pagina.service.js';
 import { handleHttp } from '../utils/error.handle.js';
+import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
 
 export class PaginaController {
 
@@ -32,6 +33,7 @@ export class PaginaController {
 static async createPage(req: Request, res: Response) {
     try {
       const result = await PaginaService.createPagina(req.body);
+      AuditService.log(AUDIT_ACTIONS.PAGINA_GUARDAR, AuditService.metaFromReq(req), 'pagina', result.slug);
       res.status(201).json({ message: 'Página creada con éxito', data: result });
     } catch (e) {
       handleHttp(res, e, 'Error creando página');
@@ -42,6 +44,7 @@ static async createPage(req: Request, res: Response) {
     try {
       const slug = req.params.slug as string;
       const result = await PaginaService.updatePagina(slug, req.body);
+      AuditService.log(AUDIT_ACTIONS.PAGINA_ACTUALIZAR, AuditService.metaFromReq(req), 'pagina', slug);
       res.status(200).json({ message: 'Página actualizada correctamente', data: result });
     } catch (e) {
       handleHttp(res, e, 'Error actualizando página');
@@ -58,6 +61,7 @@ static async createPage(req: Request, res: Response) {
       const slug = req.params.slug as string; 
       
       await PaginaService.deletePagina(slug);
+      AuditService.log(AUDIT_ACTIONS.PAGINA_ELIMINAR, AuditService.metaFromReq(req), 'pagina', slug);
       
       res.status(200).json({ message: `Página '${slug}' eliminada correctamente` });
     } catch (e) {

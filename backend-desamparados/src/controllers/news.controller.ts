@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { NewsService } from '../services/news.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { NewsFilterDto } from '../dtos/news.dto.js';
+import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
 
 export class NewsController {
 
@@ -71,6 +72,7 @@ export class NewsController {
     try {
       // El body viene limpio de inyecciones desde ArkType
       const news = await NewsService.create(req.body);
+      AuditService.log(AUDIT_ACTIONS.NOTICIA_CREAR, AuditService.metaFromReq(req), 'noticia', news.id);
       res.status(201).json(news);
     } catch (e) {
       handleHttp(res, e, 'Error creando noticia');
@@ -81,6 +83,7 @@ export class NewsController {
     try {
       const id = Number(req.params.id);
       const updated = await NewsService.update(id, req.body);
+      AuditService.log(AUDIT_ACTIONS.NOTICIA_ACTUALIZAR, AuditService.metaFromReq(req), 'noticia', id);
       res.status(200).json(updated);
     } catch (e) {
       handleHttp(res, e, 'Error actualizando noticia');
@@ -91,6 +94,7 @@ export class NewsController {
     try {
       const id = Number(req.params.id);
       await NewsService.delete(id);
+      AuditService.log(AUDIT_ACTIONS.NOTICIA_ELIMINAR, AuditService.metaFromReq(req), 'noticia', id);
       res.status(200).json({ message: 'Noticia eliminada correctamente' });
     } catch (e) {
       handleHttp(res, e, 'Error eliminando noticia');

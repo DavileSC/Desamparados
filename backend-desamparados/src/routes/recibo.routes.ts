@@ -24,6 +24,8 @@ reciboRoutes.get('/mis-recibos', ReciboController.getMyRecibos);
 //  RUTAS DE ADMIN (Tesorería / Secretaría)
 // ==========================================
 
+reciboRoutes.get('/admin', checkRole(rolesTesoreria), ReciboController.getAdminRecibos);
+
 reciboRoutes.post('/admin/generar', 
   checkRole(rolesTesoreria), 
   validate(generarCuotasSchema), // <-- Escudo contra importes negativos

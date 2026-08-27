@@ -17,6 +17,10 @@ const rolesCMS = [Role.ADMIN, Role.REDES];
 newsRoutes.get('/latest', NewsController.getLatest);   
 // Nota: Query params se validan en el controller o con un schema extra
 newsRoutes.get('/archive', NewsController.getArchive); 
+
+// Esta ruta debe declararse antes de /:slug para que "admin" no se interprete como un slug.
+newsRoutes.get('/admin/archive', NewsController.getAdminArchive);
+
 // Blindamos que el slug no tenga inyecciones
 newsRoutes.get('/:slug', validate(slugParamSchema), NewsController.getOne);       
 
@@ -25,7 +29,6 @@ newsRoutes.get('/:slug', validate(slugParamSchema), NewsController.getOne);
 newsRoutes.use(authenticateToken);
 newsRoutes.use(checkRole(rolesCMS));
 
-newsRoutes.get('/admin/archive', NewsController.getAdminArchive); // Incluye borradores
 newsRoutes.post('/limit', validate(limitConfigSchema), NewsController.configHomeLimit); 
 newsRoutes.post('/', validate(createNewsSchema), NewsController.create);
 newsRoutes.put('/:id', validateId, validate(updateNewsSchema), NewsController.update); // Faltaba!
