@@ -7,7 +7,6 @@ import BrotherLayout from '../app/BrotherLayout'
 import RequireAuth from './RequireAuth'
 import RequireRole from './RequireRole'
 import AdminLayout from '../app/AdminLayout'
-import { useAuthStore } from '../features/members/auth/store'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 
@@ -47,6 +46,7 @@ const TreasuryAdminPage = lazy(() => import('../features/cms/TreasuryAdminPage')
 const InventoryAdminPage = lazy(() => import('../features/cms/InventoryAdminPage'))
 const AccountingAdminPage = lazy(() => import('../features/cms/AccountingAdminPage'))
 const AuditAdminPage = lazy(() => import('../features/cms/AuditAdminPage'))
+const PanelPage = lazy(() => import('../features/cms/PanelPage'))
 
 // Legal pages
 const LegalNoticePage = lazy(() => import('../features/legal/LegalNoticePage'))
@@ -71,11 +71,6 @@ function withSuspense(Component: React.ComponentType) {
       <Component />
     </Suspense>
   )
-}
-
-function CmsIndex() {
-  const role = useAuthStore((state) => state.user?.role)
-  return <Navigate to={role === 'REDES' ? '/cms/noticias' : role === 'TESORERIA' ? '/cms/tesoreria' : '/cms/agenda'} replace />
 }
 
 /**
@@ -174,7 +169,7 @@ const router = createBrowserRouter([
         path: '/cms',
         element: <RequireRole roles={['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA']}><AdminLayout /></RequireRole>,
         children: [
-          { index: true, element: <CmsIndex /> },
+          { index: true, element: withSuspense(PanelPage) },
           { path: 'noticias', element: <RequireRole roles={['ADMIN', 'REDES']}>{withSuspense(NewsAdminPage)}</RequireRole> },
           { path: 'publicaciones', element: <RequireRole roles={['ADMIN', 'REDES']}>{withSuspense(PublicationsAdminPage)}</RequireRole> },
           { path: 'agenda', element: <RequireRole roles={['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR']}>{withSuspense(AgendaAdminPage)}</RequireRole> },
