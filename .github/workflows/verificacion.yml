@@ -1,0 +1,95 @@
+name: Verificación
+
+# Comprueba los dos proyectos en cada push y en cada pull request.
+#
+# Existe porque la ruta de administración de noticias se quedó sin
+# autenticación durante días sin que nada lo detectara: los tests, el typecheck
+# y la auditoría de dependencias solo se ejecutaban si alguien se acordaba.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Un push nuevo cancela la comprobación anterior de la misma rama.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend-desamparados
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend-desamparados/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # El cliente de Prisma se genera a partir del esquema y no está
+      # versionado: sin este paso el typecheck falla con tipos inexistentes.
+      - name: Generar cliente de Prisma
+        run: npx prisma generate
+
+      - name: Validar el esquema de Prisma
+        run: npx prisma validate
+
+      - name: Comprobar tipos
+        run: npx tsc --noEmit
+
+      - name: Pruebas
+        # Las que necesitan MariaDB se omiten solas indicando el motivo.
+        run: npm test
+
+      - name: Auditoría de dependencias
+        run: npm audit --audit-level=high
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desamparados-web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desamparados-web/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Comprobar tipos
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Pruebas
+        run: npm test
+
+      - name: Construir
+        run: npm run build
+
+      # `npm run build` regenera el sitemap: si quedó desincronizado en el
+      # commit, aquí se ve como un cambio sin registrar.
+      - name: Comprobar que el sitemap está al día
+        run: git diff --exit-code public/sitemap.xml
+
+      - name: Auditoría de dependencias
+        run: npm audit --audit-level=high
