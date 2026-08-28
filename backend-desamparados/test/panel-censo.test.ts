@@ -37,10 +37,11 @@ describe('serie mensual del censo', () => {
   });
 
   test('nunca devuelve un censo negativo', () => {
-    // Datos incoherentes (bajas sin alta previa registrada) no deben pintar
-    // una gráfica por debajo de cero.
-    const serie = serieCensoMensual(2, [], [{ mes: '2026-08', total: 0 }], ['2026-07', '2026-08']);
-    assert.ok(serie.every((p) => p.activos >= 0));
+    // Datos incoherentes (mas altas registradas que hermanos hay hoy) llevarian
+    // el acumulado a -3 en julio. Sin el suelo en cero, la grafica bajaria por
+    // debajo del eje. Este caso falla si se quita el Math.max de panel-censo.ts.
+    const serie = serieCensoMensual(2, [{ mes: '2026-08', total: 5 }], [], ['2026-07', '2026-08']);
+    assert.deepEqual(serie.map((p) => p.activos), [0, 2]);
   });
 
   test('ignora movimientos de meses que no están en la ventana', () => {
