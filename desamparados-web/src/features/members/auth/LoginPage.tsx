@@ -18,10 +18,11 @@ function errorMessage(e: unknown, fallback: string) {
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const login = useAuthStore((state) => state.login)
+  const entrarSesion = useAuthStore((state) => state.entrarSesion)
 
-  // Segundo paso del login cuando la cuenta tiene 2FA activado
-  const [pending2FA, setPending2FA] = useState<{ userId: number; message: string } | null>(null)
+  // Segundo paso del login cuando la cuenta tiene 2FA activado. Al usuario lo
+  // identifica una cookie de vida corta que emitio el servidor, no este estado.
+  const [pending2FA, setPending2FA] = useState<{ message: string } | null>(null)
 
   const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/area-hermano'
 
@@ -37,10 +38,10 @@ export default function LoginPage() {
 
   const handleResponse = (response: LoginResponse) => {
     if (response.status === '2FA_NEEDED') {
-      setPending2FA({ userId: response.userId, message: response.message })
+      setPending2FA({ message: response.message })
       return
     }
-    login({ token: response.token, user: response.user })
+    entrarSesion(response.user)
     navigate(from, { replace: true })
   }
 
@@ -55,7 +56,7 @@ export default function LoginPage() {
   const onSubmit2FA = async (data: TwoFactorFormData) => {
     if (!pending2FA) return
     try {
-      handleResponse(await verify2FA(pending2FA.userId, data.code))
+      handleResponse(await verify2FA(data.code))
     } catch (e) {
       twoFactorForm.setError('root', { message: errorMessage(e, 'Código incorrecto o expirado') })
     }

@@ -20,7 +20,7 @@ import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import LogoutIcon from '@mui/icons-material/Logout'
 import PageTransition from '../components/PageTransition'
-import { useAuthStore } from '../features/members/auth/store'
+import { cerrarSesion } from '../features/members/auth/session'
 
 const drawerWidth = 260
 
@@ -34,7 +34,6 @@ export default function BrotherLayout() {
   const theme = useTheme()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const logout = useAuthStore((state) => state.logout)
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen)
 
@@ -105,7 +104,7 @@ export default function BrotherLayout() {
         <Button
           fullWidth
           startIcon={<LogoutIcon />}
-          onClick={logout}
+          onClick={() => { void cerrarSesion() }}
           sx={{
             justifyContent: 'flex-start',
             color: 'text.secondary',

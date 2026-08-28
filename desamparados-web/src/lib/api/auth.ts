@@ -1,10 +1,14 @@
 import { apiFetch } from './client'
 import type { AuthUser } from '../../features/members/auth/store'
 
-/** Respuesta de POST /auth/login y POST /auth/login/2fa */
+/**
+ * Respuesta de POST /auth/login y POST /auth/login/2fa.
+ * Ni el token ni el userId viajan ya en el cuerpo: el token va en una cookie
+ * httpOnly y el usuario del segundo paso sale del testigo del primer factor.
+ */
 export type LoginResponse =
-  | { status: 'OK'; token: string; user: AuthUser }
-  | { status: '2FA_NEEDED'; userId: number; message: string }
+  | { status: 'OK'; user: AuthUser }
+  | { status: '2FA_NEEDED'; message: string }
 
 export function login(email: string, password: string) {
   return apiFetch<LoginResponse>('/auth/login', {
@@ -47,11 +51,11 @@ export function register(data: {
   })
 }
 
-export function verify2FA(userId: number, token2fa: string) {
+export function verify2FA(token2fa: string) {
   return apiFetch<LoginResponse>('/auth/login/2fa', {
     method: 'POST',
     auth: false,
-    json: { userId, token2fa },
+    json: { token2fa },
   })
 }
 

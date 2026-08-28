@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Box, Button, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material'
 import LogoutIcon from '@mui/icons-material/Logout'
 import { useAuthStore } from '../features/members/auth/store'
+import { cerrarSesion } from '../features/members/auth/session'
 
 const items = [
   { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES'] },
@@ -16,7 +17,6 @@ const items = [
 
 export default function AdminLayout() {
   const location = useLocation()
-  const logout = useAuthStore((state) => state.logout)
   const role = useAuthStore((state) => state.user?.role)
 
   return (
@@ -35,7 +35,7 @@ export default function AdminLayout() {
             </ListItem>
           ))}
         </List>
-        <Button startIcon={<LogoutIcon />} onClick={logout} sx={{ mt: 4, color: 'text.secondary' }}>Cerrar sesión</Button>
+        <Button startIcon={<LogoutIcon />} onClick={() => { void cerrarSesion() }} sx={{ mt: 4, color: 'text.secondary' }}>Cerrar sesión</Button>
       </Box>
       <Box component="main" sx={{ flexGrow: 1, p: { xs: 3, md: 6 }, overflow: 'auto' }}><Outlet /></Box>
     </Box>
