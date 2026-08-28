@@ -22,12 +22,26 @@ let baseUrl: string;
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
+// Por qué no se pudo conectar. Sin esto, una ejecución sin base de datos se
+// limita a omitir los tests y no hay forma de saber si es que MariaDB está
+// parada, si el .env apunta a otro sitio o si la contraseña es incorrecta.
+let motivoSinDb = '';
+
 async function sondearDb(): Promise<boolean> {
   // Con un timeout corto: el driver reintenta durante ~20 s antes de rendirse
   // y eso convertia cada ejecución sin base de datos en una espera inútil.
-  const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
-  const consulta = db.$queryRaw`SELECT 1`.then(() => true).catch(() => false);
-  return Promise.race([consulta, timeout]);
+  const timeout = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 3000).unref());
+  const consulta = db.$queryRaw`SELECT 1`
+    .then(() => 'ok' as const)
+    .catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
+
+  const resultado = await Promise.race([consulta, timeout]);
+  if (resultado === 'ok') return true;
+
+  motivoSinDb = resultado === 'timeout'
+    ? `la conexión no respondió en 3 s (DATABASE_HOST=${process.env.DATABASE_HOST ?? 'sin definir'})`
+    : resultado.message;
+  return false;
 }
 
 before(async () => {
@@ -37,7 +51,12 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}`;
   dbDisponible = await sondearDb();
   if (!dbDisponible) {
-    console.log(`ℹ  Sin conexión a la base de datos: se omiten los tests que la necesitan.`);
+    console.log(`
+ℹ  Sin conexión a la base de datos: se omiten los tests que la necesitan.`);
+    console.log(`   Motivo: ${motivoSinDb}`);
+    console.log(`   Revisa el .env: DATABASE_HOST, DATABASE_USER, DATABASE_PASSWORD, DATABASE_NAME.`);
+    console.log(`   Los tests omitidos NO demuestran nada: hasta que pasen, la sesión está sin verificar.
+`);
   }
 });
 
