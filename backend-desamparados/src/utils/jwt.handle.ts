@@ -2,6 +2,8 @@
 import jwt from 'jsonwebtoken';
 // 2. Importamos JwtPayload explícitamente como un "Type"
 import type { JwtPayload } from 'jsonwebtoken';
+// 3. Los roles deciden cuanto dura la sesion
+import { Role } from '@prisma/client';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -18,34 +20,81 @@ if (process.env.NODE_ENV === 'production' && JWT_SECRET.length < 32) {
   );
 }
 
-// 3. DEFINIMOS LA INTERFAZ AQUÍ (Y la exportamos para que el middleware la pueda usar)
+// 4. LOS DOS TIPOS DE TOKEN
+/**
+ * Los dos JWT los firma el mismo secreto, asi que sin un claim que los
+ * distinga el testigo de "2FA pendiente" -que ya identifica a un usuario-
+ * serviria como token de sesion y permitiria saltarse el segundo factor.
+ */
+export type TokenType = 'session' | '2fa_pending';
+
 export interface AuthTokenPayload extends JwtPayload {
   id: number;   // <-- OJO: Lo llamamos 'id' para que encaje con tus controladores (req.user!.id)
   role: string;
+  typ: TokenType;
 }
 
-// Generar Token
+// Roles con acceso al CMS. Su sesion dura mas, pero la cookie muere al cerrar
+// el navegador (ver utils/cookies.ts): se usan desde equipos compartidos.
+const ROLES_STAFF: string[] = [
+  Role.ADMIN,
+  Role.TESORERIA,
+  Role.ALBACERIA,
+  Role.HERMANO_MAYOR,
+  Role.REDES,
+  Role.SECRETARIA
+];
+
+export const esStaff = (role: string): boolean => ROLES_STAFF.includes(role);
+
+/** 8 h para el staff del CMS, 4 h para los hermanos del area familiar */
+export const duracionSesionSegundos = (role: string): number =>
+  esStaff(role) ? 8 * 3600 : 4 * 3600;
+
+/** El paso intermedio del 2FA caduca pronto: es solo para teclear un codigo */
+export const PENDIENTE_2FA_SEGUNDOS = 5 * 60;
+
+// Generar Token de sesion
 const generateToken = (userId: number, role: string): string => {
   const jwtSigned = jwt.sign(
-    { id: userId, role }, // <-- Guardamos el valor en la propiedad 'id'
+    { id: userId, role, typ: 'session' }, // <-- Guardamos el valor en la propiedad 'id'
     JWT_SECRET,
-    { 
-      expiresIn: '8h',
-      algorithm: 'HS256' 
+    {
+      expiresIn: duracionSesionSegundos(role),
+      algorithm: 'HS256'
     }
   );
   return jwtSigned;
 };
 
-// Verificar Token
-const verifyToken = (jwtToken: string): AuthTokenPayload | null => {
+/**
+ * Prueba de que se supero el primer factor (la contrasena). Sin esto, el
+ * endpoint del 2FA aceptaba un userId suelto del body y el segundo factor
+ * quedaba desvinculado del primero.
+ */
+const generatePending2FAToken = (userId: number): string => {
+  return jwt.sign(
+    { id: userId, role: '', typ: '2fa_pending' },
+    JWT_SECRET,
+    {
+      expiresIn: PENDIENTE_2FA_SEGUNDOS,
+      algorithm: 'HS256'
+    }
+  );
+};
+
+// Verificar Token: el tipo esperado es obligatorio, para que un token de un
+// tipo no pueda usarse en el sitio del otro.
+const verifyToken = (jwtToken: string, expectedType: TokenType): AuthTokenPayload | null => {
   try {
-    // 4. Casteamos (as) directamente a nuestra nueva interfaz, no a JwtPayload genérico
-    // algorithms explícito: defendemos contra tokens firmados con otro algoritmo (ej. 'none')
-    return jwt.verify(jwtToken, JWT_SECRET, { algorithms: ['HS256'] }) as AuthTokenPayload;
+    // Casteamos (as) directamente a nuestra interfaz, no a JwtPayload generico
+    // algorithms explicito: defendemos contra tokens firmados con otro algoritmo (ej. 'none')
+    const payload = jwt.verify(jwtToken, JWT_SECRET, { algorithms: ['HS256'] }) as AuthTokenPayload;
+    if (payload.typ !== expectedType) return null;
+    return payload;
   } catch (e) {
-    return null; 
+    return null;
   }
 };
 
-export { generateToken, verifyToken };
+export { generateToken, generatePending2FAToken, verifyToken };
