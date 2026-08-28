@@ -8,7 +8,13 @@ import { agruparPorTextoLibre, type Recuento } from '../domain/panel-agrupar.js'
  *
  * Solo `count`, `groupBy` y `aggregate`. Prohibido `findMany` sobre Hermano y
  * sobre User: el panel es informativo y no puede enseñar datos de personas.
- * Única excepción: Evento, que son actos públicos.
+ *
+ * Dos excepciones, ninguna de las dos toca datos de una persona:
+ *   - Evento: son actos públicos.
+ *   - CategoriaTransaccion: es un catálogo (id, nombre de la categoría
+ *     contable, p. ej. "Donativos"), no un dato de un hermano ni de un
+ *     usuario. Se necesita en `findMany` porque `groupBy` sobre Transaccion
+ *     solo puede devolver el `categoriaId`, no el nombre.
  */
 
 export interface PanelResponse {
@@ -59,11 +65,17 @@ const TRAMOS_EDAD = [
   { tramo: '61+', min: 61, max: 200 },
 ];
 
-function edad(nacimiento: Date, hoy: Date): number {
-  let anios = hoy.getUTCFullYear() - nacimiento.getUTCFullYear();
-  const mes = hoy.getUTCMonth() - nacimiento.getUTCMonth();
-  if (mes < 0 || (mes === 0 && hoy.getUTCDate() < nacimiento.getUTCDate())) anios--;
-  return anios;
+/**
+ * Límites de fecha de nacimiento de un tramo de edad, en el mismo día del año
+ * que `hoy`. Se usan como filtro de `count`, nunca se trae la fecha en sí:
+ * un `groupBy(['fechaNacimiento'])` devolvería una fila por persona, que es
+ * la fecha de nacimiento exacta de cada hermano viajando fuera de la base de
+ * datos. Con `count` el dato personal no sale nunca de la consulta SQL.
+ */
+function rangoEdad(hoy: Date, min: number, max: number): { lte: Date; gt: Date } {
+  const lte = new Date(Date.UTC(hoy.getUTCFullYear() - min, hoy.getUTCMonth(), hoy.getUTCDate()));
+  const gt = new Date(Date.UTC(hoy.getUTCFullYear() - (max + 1), hoy.getUTCMonth(), hoy.getUTCDate()));
+  return { lte, gt };
 }
 
 /** Agrupa fechas por 'YYYY-MM' contando cuántas caen en cada mes. */
@@ -92,7 +104,7 @@ export class PanelService {
       sinNumeroHermano,
       fechasAlta,
       fechasBaja,
-      nacimientos,
+      porEdadCounts,
       recibosPorEstado,
       transaccionesPorTipo,
       transaccionesPorCategoria,
@@ -109,6 +121,7 @@ export class PanelService {
       turnosProximos,
       citasReservadas,
       capacidad,
+      categorias,
     ] = await Promise.all([
       db.hermano.count({ where: { activo: true } }),
       db.hermano.count({ where: { fechaAlta: { gte: haceUnAnio } } }),
@@ -116,7 +129,12 @@ export class PanelService {
       db.hermano.count({ where: { activo: true, numeroHermano: null } }),
       db.hermano.groupBy({ by: ['fechaAlta'], _count: { _all: true }, where: { fechaAlta: { gte: haceUnAnio } } }),
       db.hermano.groupBy({ by: ['fechaBaja'], _count: { _all: true }, where: { fechaBaja: { gte: haceUnAnio } } }),
-      db.hermano.groupBy({ by: ['fechaNacimiento'], _count: { _all: true }, where: { activo: true } }),
+      // Un count por tramo, no un groupBy: ver el comentario de rangoEdad().
+      Promise.all(
+        TRAMOS_EDAD.map(({ min, max }) =>
+          db.hermano.count({ where: { activo: true, fechaNacimiento: rangoEdad(hoy, min, max) } }),
+        ),
+      ),
       db.recibo.groupBy({ by: ['estado'], _count: { _all: true }, _sum: { importe: true } }),
       db.transaccion.groupBy({ by: ['tipo'], _sum: { importe: true }, where: { fecha: { gte: inicioEjercicio } } }),
       db.transaccion.groupBy({ by: ['categoriaId', 'tipo'], _count: { _all: true }, where: { fecha: { gte: inicioEjercicio } } }),
@@ -138,10 +156,11 @@ export class PanelService {
       db.turno.count({ where: { fecha: { gte: hoy }, activo: true } }),
       db.cita.count({ where: { estado: 'RESERVADA' } }),
       db.turno.aggregate({ _sum: { capacidadEstimada: true }, where: { fecha: { gte: hoy }, activo: true } }),
+      // Catálogo de categorías contables (excepción de la regla de oro: sin
+      // datos personales). Hace falta el nombre, no solo el id que da groupBy.
+      db.categoriaTransaccion.findMany({ select: { id: true, nombre: true } }),
     ]);
 
-    // Las categorías se resuelven aparte: groupBy devuelve el id, no el nombre.
-    const categorias = await db.categoriaTransaccion.findMany({ select: { id: true, nombre: true } });
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
 
     const ingresos = Number(
@@ -151,15 +170,7 @@ export class PanelService {
       transaccionesPorTipo.find((t) => t.tipo === TipoTransaccion.GASTO)?._sum.importe ?? 0,
     );
 
-    const porEdad = TRAMOS_EDAD.map(({ tramo, min, max }) => ({
-      tramo,
-      total: nacimientos
-        .filter((n) => {
-          const e = edad(n.fechaNacimiento, hoy);
-          return e >= min && e <= max;
-        })
-        .reduce((suma, n) => suma + n._count._all, 0),
-    }));
+    const porEdad = TRAMOS_EDAD.map(({ tramo }, i) => ({ tramo, total: porEdadCounts[i] }));
 
     // Ingresos y gastos mes a mes. groupBy agrupa por fecha exacta, así que el
     // reparto por mes se hace aquí, sobre las sumas ya calculadas.
