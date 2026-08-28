@@ -10,28 +10,31 @@ const user: AuthUser = {
 
 describe('useAuthStore', () => {
   beforeEach(() => {
-    useAuthStore.setState({ isAuthenticated: false, token: null, user: null })
+    useAuthStore.setState({ status: 'cargando', user: null })
   })
 
-  it('starts unauthenticated', () => {
-    expect(useAuthStore.getState().isAuthenticated).toBe(false)
-    expect(useAuthStore.getState().token).toBeNull()
+  it('arranca en cargando, sin dar por hecho que hay sesion', () => {
+    expect(useAuthStore.getState().status).toBe('cargando')
     expect(useAuthStore.getState().user).toBeNull()
   })
 
-  it('logs in a user storing the token', () => {
-    useAuthStore.getState().login({ token: 'jwt-token', user })
-    expect(useAuthStore.getState().isAuthenticated).toBe(true)
-    expect(useAuthStore.getState().token).toBe('jwt-token')
+  it('entrarSesion guarda al usuario sin ningun token', () => {
+    useAuthStore.getState().entrarSesion(user)
+    expect(useAuthStore.getState().status).toBe('autenticado')
     expect(useAuthStore.getState().user).toEqual(user)
+    expect(useAuthStore.getState()).not.toHaveProperty('token')
   })
 
-  it('logs out a user clearing the token', () => {
-    useAuthStore.getState().login({ token: 'jwt-token', user })
-    useAuthStore.getState().logout()
-    expect(useAuthStore.getState().isAuthenticated).toBe(false)
-    expect(useAuthStore.getState().token).toBeNull()
+  it('salirSesion deja el estado como invitado', () => {
+    useAuthStore.getState().entrarSesion(user)
+    useAuthStore.getState().salirSesion()
+    expect(useAuthStore.getState().status).toBe('invitado')
     expect(useAuthStore.getState().user).toBeNull()
+  })
+
+  it('no persiste nada en localStorage', () => {
+    useAuthStore.getState().entrarSesion(user)
+    expect(localStorage.getItem('desamparados-auth')).toBeNull()
   })
 
   it('detects staff roles', () => {
