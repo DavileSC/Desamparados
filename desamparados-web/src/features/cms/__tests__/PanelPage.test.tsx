@@ -59,10 +59,11 @@ describe('PanelPage', () => {
   it('enseña las cifras principales', async () => {
     responder(panel)
     renderWithProviders(<PanelPage />)
-    // findAllByText, no findByText: 342 es a la vez "hermanos activos" (la
-    // cifra grande) y el último punto de "activos mes a mes" (la etiqueta del
-    // gráfico), así que aparece dos veces de forma legítima.
-    expect((await screen.findAllByText('342')).length).toBeGreaterThan(0)
+    // Dos veces exactamente: la tarjeta de «Hermanos activos» y la etiqueta del
+    // ultimo punto que LineaTemporal pinta sobre el mismo valor. Con
+    // toBeGreaterThan(0) el test pasaria aunque la tarjeta desapareciera, porque
+    // el grafico seguiria enseñando el 342 por su cuenta.
+    expect(await screen.findAllByText('342')).toHaveLength(2)
     expect(screen.getByText('302')).toBeInTheDocument()
   })
 
