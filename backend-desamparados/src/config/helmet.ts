@@ -12,7 +12,9 @@ const helmetConfig = helmet({
     directives: {
       defaultSrc: ["'self'"],
       baseUri: ["'self'"],
-      fontSrc: ["'self'", "https:", "data:"],
+      // Las tipografías se sirven desde el propio dominio (@fontsource), así
+      // que ya no hace falta abrir la puerta a cualquier host https.
+      fontSrc: ["'self'", "data:"],
       formAction: ["'self'"],
       frameAncestors: ["'self'"], // Evita que otros sitios te incrusten (Clickjacking moderno)
       imgSrc: ["'self'", "data:", "blob:"], // Permitir imágenes locales y base64

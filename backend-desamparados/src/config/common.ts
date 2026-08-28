@@ -1,4 +1,5 @@
 import { type } from 'arktype';
+import { motivoContrasenaDebil } from '../domain/password-debil.js';
 
 // --- TIPOS REUTILIZABLES CON MENSAJES EN ESPAÑOL ---
 
@@ -13,9 +14,14 @@ export const email = type("string")
     .matching(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
     .describe("un email válido");
 
-// 2. Contraseña con límite máximo (Prevención DoS en Bcrypt)
-export const password = type("string >= 8 & string <= 64")
-    .describe("una contraseña entre 8 y 64 caracteres");
+// 2. Contraseña: longitud mínima real, tope máximo (previene DoS en bcrypt)
+// y rechazo de las que se adivinan a la primera. Las reglas viven en
+// src/domain/password-debil.ts para poder probarlas sin base de datos.
+export const password = type("string")
+    .narrow((valor, ctx) => {
+        const motivo = motivoContrasenaDebil(valor);
+        return motivo === null || ctx.reject({ problem: `la contraseña ${motivo}` });
+    });
 
 // Teléfono español (9 dígitos)
 export const telefono = type("string")

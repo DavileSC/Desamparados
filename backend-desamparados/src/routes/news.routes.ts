@@ -18,8 +18,16 @@ newsRoutes.get('/latest', NewsController.getLatest);
 // Nota: Query params se validan en el controller o con un schema extra
 newsRoutes.get('/archive', NewsController.getArchive); 
 
-// Esta ruta debe declararse antes de /:slug para que "admin" no se interprete como un slug.
-newsRoutes.get('/admin/archive', NewsController.getAdminArchive);
+// Esta ruta debe declararse antes de /:slug para que "admin" no se interprete
+// como un slug, lo que la deja fuera del bloque .use() de más abajo: por eso
+// lleva su propia autenticación en línea. Sin ella expone los borradores
+// (visible: false) a cualquiera. Cubierto por test/integration.test.ts.
+newsRoutes.get(
+  '/admin/archive',
+  authenticateToken,
+  checkRole(rolesCMS),
+  NewsController.getAdminArchive
+);
 
 // Blindamos que el slug no tenga inyecciones
 newsRoutes.get('/:slug', validate(slugParamSchema), NewsController.getOne);       

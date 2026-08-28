@@ -8,11 +8,32 @@ import db from '../src/config/db.js';
 let server: Server;
 let baseUrl: string;
 
+/**
+ * Los tests que consultan la base de datos solo tienen sentido con MariaDB
+ * levantada. Sin ella el servidor devuelve 500 tras el timeout de conexión y
+ * el fallo no dice nada sobre el código, así que se sondea una vez y esos
+ * casos se marcan como omitidos con el motivo a la vista, en vez de fallar.
+ */
+let dbDisponible = false;
+const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
+
+async function sondearDb(): Promise<boolean> {
+  // Con un timeout corto: el driver reintenta durante ~20 s antes de rendirse
+  // y eso convertia cada ejecución sin base de datos en una espera inútil.
+  const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
+  const consulta = db.$queryRaw`SELECT 1`.then(() => true).catch(() => false);
+  return Promise.race([consulta, timeout]);
+}
+
 before(async () => {
   server = app.listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));
   const address = server.address() as AddressInfo;
   baseUrl = `http://127.0.0.1:${address.port}`;
+  dbDisponible = await sondearDb();
+  if (!dbDisponible) {
+    console.log(`ℹ  Sin conexión a la base de datos: se omiten los tests que la necesitan.`);
+  }
 });
 
 after(async () => {
@@ -28,13 +49,13 @@ test('healthcheck responde con estado ok', async () => {
   assert.equal(typeof body.uptime, 'number');
 });
 
-test('las publicaciones públicas no requieren autenticación', async () => {
+test('las publicaciones públicas no requieren autenticación', { skip: () => (dbDisponible ? false : SIN_DB) }, async () => {
   const response = await fetch(`${baseUrl}/api/publications`);
   assert.equal(response.status, 200);
   assert.ok(Array.isArray(await response.json()));
 });
 
-test('las noticias destacadas no requieren autenticación', async () => {
+test('las noticias destacadas no requieren autenticación', { skip: () => (dbDisponible ? false : SIN_DB) }, async () => {
   const response = await fetch(`${baseUrl}/api/news/latest`);
   assert.equal(response.status, 200);
   assert.ok(Array.isArray(await response.json()));
@@ -42,6 +63,16 @@ test('las noticias destacadas no requieren autenticación', async () => {
 
 test('el CMS rechaza peticiones sin token', async () => {
   const response = await fetch(`${baseUrl}/api/publications/admin`);
+  assert.equal(response.status, 401);
+  const body = await response.json() as { error?: string };
+  assert.equal(body.error, 'NO_TOKEN_PROVIDED');
+});
+
+test('el archivo de noticias del CMS rechaza peticiones sin token', async () => {
+  // Regresión: esta ruta se declaró antes del use(authenticateToken) para que
+  // "admin" no se leyera como slug, y con ello dejó de pasar por el filtro.
+  // Expone los borradores (visible: false) a cualquiera.
+  const response = await fetch(`${baseUrl}/api/news/admin/archive`);
   assert.equal(response.status, 401);
   const body = await response.json() as { error?: string };
   assert.equal(body.error, 'NO_TOKEN_PROVIDED');

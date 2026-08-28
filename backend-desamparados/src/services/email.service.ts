@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { enmascararEmail } from '../utils/log-privacidad.js';
 import QRCode from 'qrcode';
 import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactDto } from '../dtos/contact.dto';
@@ -75,7 +76,7 @@ export class EmailService {
                 <td style="background-color: #2b2b2b; color: #999999; padding: 30px 40px; font-family: 'Arial', sans-serif; font-size: 11px; line-height: 1.5; text-align: center;">
                   <p style="margin-top: 0; color: #ffffff;">&copy; ${year} ARCHICOFRADÍA DE LOS DESAMPARADOS</p>
                   ${footerExtra}
-                  <p style="text-align: justify;"><strong>Aviso Legal y Protección de Datos:</strong> En cumplimiento del RGPD, le informamos que sus datos serán tratados por la Hermandad. Este mensaje es confidencial. No responda a este correo automatizado. Dudas en <em>secretaria@tucofradia.com</em></p>
+                  <p style="text-align: justify;"><strong>Aviso Legal y Protección de Datos:</strong> En cumplimiento del RGPD, le informamos que sus datos serán tratados por el Grupo Parroquial. Este mensaje es confidencial. No responda a este correo automatizado. Dudas en <em>secretaria@tucofradia.com</em></p>
                   ${legalExtra}
                 </td>
               </tr>
@@ -170,11 +171,11 @@ export class EmailService {
 
       <div style="background-color: #fff8e1; border-left: 4px solid ${secundario}; padding: 15px;">
         <p style="margin: 0 0 5px 0; font-family: 'Arial', sans-serif; font-size: 12px; font-weight: bold; color: #bcaaa4;">RECORDATORIO</p>
-        <p style="margin: 0; font-size: 13px; color: #5d4037; font-style: italic;">Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla de la Hermandad y calzado oscuro. Mantenga el silencio durante la formación.</p>
+        <p style="margin: 0; font-size: 13px; color: #5d4037; font-style: italic;">Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla del Grupo Parroquial y calzado oscuro. Mantenga el silencio durante la formación.</p>
       </div>
     `;
 
-    const footerLinks = `<p style="margin: 10px 0 15px 0;"><a href="#" style="color: #ffffff; text-decoration: underline;">Descargar Normativa</a> | <a href="#" style="color: #ffffff; text-decoration: underline;">Contactar Secretaría</a></p>`;
+    const footerLinks = this.getFooterLinks();
     const asunto = `📜 Papeleta de Sitio ${datos.year} - ${nombre}`;
     
     return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout(`Papeleta de Sitio ${datos.year}`, `Papeleta de Sitio - ${datos.year}`, content, footerLinks));
@@ -186,11 +187,11 @@ export class EmailService {
 
     const content = `
       <p style="margin-top: 0;">Estimado/a en Cristo, <strong>${nombre}</strong>:</p>
-      <p>La Secretaría de esta corporación hace acuse de recibo de su solicitud de ingreso, cumplimentada a través de nuestros canales telemáticos. Le damos nuestra más sincera enhorabuena por dar este primer paso para formar parte de nuestra Hermandad.</p>
+      <p>La Secretaría de esta corporación hace acuse de recibo de su solicitud de ingreso, cumplimentada a través de nuestros canales telemáticos. Le damos nuestra más sincera enhorabuena por dar este primer paso para formar parte de nuestro Grupo Parroquial.</p>
       
       <div style="background-color: #fafafa; border-left: 4px solid ${secundario}; padding: 20px 25px; margin: 30px 0;">
         <h2 style="margin: 0 0 10px 0; font-size: 14px; color: ${primario}; font-family: 'Arial', sans-serif; text-transform: uppercase; letter-spacing: 1px;">Trámite de Personación Obligatorio</h2>
-        <p style="margin: 0; font-size: 14px; color: #555;">De acuerdo con nuestras Reglas, para elevar a definitivo su expediente y formalizar su alta en el censo de hermanos, es preceptivo que acuda personalmente a nuestra Casa de Hermandad.</p>
+        <p style="margin: 0; font-size: 14px; color: #555;">De acuerdo con nuestras Reglas, para elevar a definitivo su expediente y formalizar su alta en el censo de hermanos, es preceptivo que acuda personalmente a nuestra Casa de Grupo Parroquial.</p>
       </div>
 
       <p style="margin-bottom: 10px;">En dicha cita, deberá aportar la siguiente documentación indispensable:</p>
@@ -204,7 +205,7 @@ export class EmailService {
           <td>
             <strong style="color: ${primario}; font-size: 14px; display: block; margin-bottom: 5px;">Atención al Hermano en Secretaría</strong>
             Martes y Jueves, de 19:00h a 21:00h<br>
-            <span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">Casa Hermandad · C/ Falsa, 123, 29000 Málaga</span>
+            <span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">Casa Grupo Parroquial · C/ Falsa, 123, 29000 Málaga</span>
           </td>
         </tr>
       </table>
@@ -285,6 +286,27 @@ export class EmailService {
     return this.enviarEmailBase(destino, `[Contacto web] ${datos.asunto}`, this.getHtmlLayout('Nuevo mensaje de contacto', 'Formulario web', content), datos.email);
   }
 
+  /**
+   * Enlaces del pie de los correos. Solo se pinta el enlace a la normativa si
+   * NORMATIVA_URL está configurada: un `href="#"` en un correo es un enlace
+   * muerto que ya no se puede corregir una vez enviado.
+   */
+  private static getFooterLinks(): string {
+    const estilo = 'color: #ffffff; text-decoration: underline;';
+    const secretaria = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
+    const enlaces: string[] = [];
+
+    if (process.env.NORMATIVA_URL) {
+      enlaces.push(`<a href="${process.env.NORMATIVA_URL}" style="${estilo}">Descargar Normativa</a>`);
+    }
+    if (secretaria) {
+      enlaces.push(`<a href="mailto:${secretaria}" style="${estilo}">Contactar Secretaría</a>`);
+    }
+    if (enlaces.length === 0) return '';
+
+    return `<p style="margin: 10px 0 15px 0;">${enlaces.join(' | ')}</p>`;
+  }
+
   // --- MOTOR DE ENVÍO ---
   private static async enviarEmailBase(to: string, subject: string, html: string, replyTo?: string): Promise<boolean> {
     try {
@@ -295,10 +317,10 @@ export class EmailService {
         html,
         ...(replyTo ? { replyTo } : {}),
       });
-      console.log(`✅ Email enviado con éxito a: ${to}`);
+      console.log(`✅ Email enviado con éxito a: ${enmascararEmail(to)}`);
       return true;
     } catch (error) {
-      console.error(`❌ Error enviando email a ${to}:`, error);
+      console.error(`❌ Error enviando email a ${enmascararEmail(to)}:`, error);
       return false;
     }
   }

@@ -6,6 +6,7 @@ import { EmailService } from './email.service';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
+import { enmascararEmail } from '../utils/log-privacidad.js';
 
 export class ProcesionService {
 
@@ -268,7 +269,7 @@ export class ProcesionService {
       return { recibo, papeleta };
     });
 
-    // Auditoría: cobro + papeleta (dinero de la Hermandad)
+    // Auditoría: cobro + papeleta (dinero del Grupo Parroquial)
     AuditService.log(AUDIT_ACTIONS.INSCRIPCION_FACTURAR, meta ?? {}, 'hermano', data.hermanoId);
 
     // 4. Enviar Email (Fuera de la transacción)
@@ -282,7 +283,7 @@ export class ProcesionService {
            observaciones: result.papeleta.observaciones || '',
            fechaSalida: 'Viernes Santo', // Configurable
            horaSalida: '19:00',
-           accesoPuerta: 'Casa Hermandad'
+           accesoPuerta: 'Casa Grupo Parroquial'
        }).catch(console.error);
     }
 
@@ -393,7 +394,7 @@ export class ProcesionService {
           cita.hermano.user.email,
           cita.hermano.nombre,
           fechaStr
-        ).catch(err => console.error(`Error enviando email a ${cita.hermano.user.email}`));
+        ).catch(err => console.error(`Error enviando email a ${enmascararEmail(cita.hermano.user.email)}`));
       }
     }
 
@@ -416,7 +417,7 @@ export class ProcesionService {
   }
 
   /**
-   * Crear un nuevo día de reparto en la Casa Hermandad.
+   * Crear un nuevo día de reparto en la Casa Grupo Parroquial.
    */
   static async crearTurno(data: CrearTurnoDto) {
     // 1. Convertimos los textos (strings) a fechas reales de JavaScript

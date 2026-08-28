@@ -11,6 +11,7 @@ import * as OTPAuth from 'otpauth';
 import qrcode from 'qrcode';
 import { EmailService } from './email.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { enmascararEmail } from '../utils/log-privacidad.js';
 // -------------------------------
 
 export class AuthService {
@@ -100,7 +101,7 @@ export class AuthService {
     // El "catch" asegura que si falla el email, no se rompa el registro de la API
     EmailService.enviarConfirmacionRegistro(result.user.email, result.user.nombre)
       .catch(error => {
-        console.error(`❌ [Error Email] Fallo al enviar el correo de confirmación a ${result.user.email}:`, error);
+        console.error(`❌ [Error Email] Fallo al enviar el correo de confirmación a ${enmascararEmail(result.user.email)}:`, error);
       });
 
     // 3. RETORNAMOS LA RESPUESTA AL USUARIO
@@ -468,7 +469,7 @@ export class AuthService {
 
   /**
    * DESACTIVAR 2FA FORZADO (Rescate de emergencia: solo ADMIN/SECRETARÍA)
-   * No pide código porque lo invoca la mesa de la Hermandad tras verificar la identidad.
+   * No pide código porque lo invoca la mesa del Grupo Parroquial tras verificar la identidad.
    */
   static async forceDisable2FA(targetUserId: number, meta?: AuditMeta) {
     await db.$transaction([
@@ -529,7 +530,7 @@ export class AuthService {
 
   /**
    * Derecho de supresión (art. 17 RGPD) adaptado a las obligaciones fiscales
-   * de la Hermandad:
+   * del Grupo Parroquial:
    * - La CUENTA se anonimiza por completo (email, DNI, nombre, contraseña)
    *   y se desactiva. Sus sesiones quedan invalidadas al instante.
    * - Las FICHAS de hermano se dan de baja y se les limpia el contacto

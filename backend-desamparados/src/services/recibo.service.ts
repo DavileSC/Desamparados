@@ -6,6 +6,8 @@ import { DatosPapeleta } from '../dtos/email.dto.js';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
+import { puedeTransicionar } from '../domain/recibo-estados.js';
+import { enmascararEmail } from '../utils/log-privacidad.js';
 
 export class ReciboService {
 
@@ -206,13 +208,17 @@ export class ReciboService {
         tramo: papeleta.tramo,
         observaciones: papeleta.observaciones,
 
-        // --- DATOS ESTÁTICOS DEL EVENTO ---
-        fechaSalida: 'Jueves Santo',
-        horaSalida: '19:30h',
-        accesoPuerta: 'Casa Hermandad (C/ Ejemplo, 1)'
+        // --- DATOS DEL EVENTO ---
+        // Configurables por .env: van impresos en la papeleta que recibe cada
+        // hermano, así que un valor equivocado se envía y ya no se puede
+        // corregir. El valor por defecto de la fecha es el Sabado de Pasion,
+        // que es cuando sale este Grupo Parroquial.
+        fechaSalida: process.env.PROCESION_FECHA || 'Sábado de Pasión',
+        horaSalida: process.env.PROCESION_HORA || '19:30h',
+        accesoPuerta: process.env.PROCESION_ACCESO || 'Consultar en secretaría'
       };
 
-      console.log(`📨 [Cola] Enviando papeleta recibo #${recibo.id} a ${recibo.hermano.user.email}`);
+      console.log(`📨 [Cola] Enviando papeleta recibo #${recibo.id} a ${enmascararEmail(recibo.hermano.user.email)}`);
 
       EmailService.enviarPapeleta(
         recibo.hermano.user.email,
@@ -232,15 +238,9 @@ export class ReciboService {
     if (!actual) throw new NotFoundError('Recibo no encontrado.');
 
     if (data.estado && data.estado !== actual.estado) {
-      const transicionesPermitidas: Record<EstadoPago, EstadoPago[]> = {
-        [EstadoPago.PENDIENTE]: [EstadoPago.REMESADO, EstadoPago.ANULADO, EstadoPago.EXENTO],
-        [EstadoPago.REMESADO]: [EstadoPago.DEVUELTO, EstadoPago.ANULADO],
-        [EstadoPago.PAGADO]: [EstadoPago.DEVUELTO],
-        [EstadoPago.DEVUELTO]: [],
-        [EstadoPago.ANULADO]: [],
-        [EstadoPago.EXENTO]: []
-      };
-      if (!transicionesPermitidas[actual.estado].includes(data.estado as EstadoPago)) {
+      // El grafo de transiciones vive en src/domain/recibo-estados.ts para
+      // poder probarlo sin base de datos.
+      if (!puedeTransicionar(actual.estado, data.estado as EstadoPago)) {
         throw new HttpError(`No se puede cambiar un recibo de ${actual.estado} a ${data.estado}.`);
       }
     }
