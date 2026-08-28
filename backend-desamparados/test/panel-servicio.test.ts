@@ -6,9 +6,10 @@
 
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
-import { Role } from '@prisma/client';
+import { Role, TipoTransaccion } from '@prisma/client';
 import db from '../src/config/db.js';
 import { PanelService } from '../src/services/panel.service.js';
+import { claveMes } from '../src/domain/panel-censo.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
 let dbDisponible = false;
@@ -40,6 +41,17 @@ const HERMANO_PRUEBA = {
 
 let usuarioPruebaId: number | undefined;
 let hermanoPruebaId: number | undefined;
+let categoriaPruebaId: number | undefined;
+const transaccionesPruebaId: number[] = [];
+
+/**
+ * Dos importes de dos decimales que, sumados tal cual en JS (sin pasar por
+ * euros2), dan arrastre binario de verdad: 10.10 + 10.20 = 20.299999999999997.
+ * Se insertan en dos fechas distintas del mes en curso para que panel.service
+ * los agregue en groupBy(['tipo','fecha']) separados y los sume él mismo en
+ * JS al construir la serie mensual, que es justo donde se cuela el arrastre.
+ */
+const IMPORTES_ARRASTRE = [10.1, 10.2] as const;
 
 before(async () => {
   const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 3000).unref());
@@ -68,12 +80,38 @@ before(async () => {
     },
   });
   hermanoPruebaId = hermano.id;
+
+  const categoria = await db.categoriaTransaccion.create({
+    data: { nombre: 'ZZTestCategoriaArrastre', tipo: TipoTransaccion.INGRESO },
+  });
+  categoriaPruebaId = categoria.id;
+
+  const hoy = new Date();
+  for (const [i, importe] of IMPORTES_ARRASTRE.entries()) {
+    // Un día distinto por importe, dentro del mes en curso: cada uno cae en
+    // su propia fila de groupBy(['tipo','fecha']).
+    const fecha = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1 + i));
+    const transaccion = await db.transaccion.create({
+      data: {
+        tipo: TipoTransaccion.INGRESO,
+        categoriaId: categoria.id,
+        concepto: 'ZZTestArrastreBinario',
+        importe,
+        fecha,
+      },
+    });
+    transaccionesPruebaId.push(transaccion.id);
+  }
 });
 
 // Sin este cierre el proceso se queda colgado para siempre: el pool de
 // conexiones de Prisma mantiene el bucle de eventos vivo aunque los tests ya
 // hayan terminado. Mismo patrón que integration.test.ts.
 after(async () => {
+  if (transaccionesPruebaId.length > 0) {
+    await db.transaccion.deleteMany({ where: { id: { in: transaccionesPruebaId } } });
+  }
+  if (categoriaPruebaId) await db.categoriaTransaccion.deleteMany({ where: { id: categoriaPruebaId } });
   if (hermanoPruebaId) await db.hermano.deleteMany({ where: { id: hermanoPruebaId } });
   if (usuarioPruebaId) await borrarUsuarioPrueba(usuarioPruebaId);
   await db.$disconnect();
@@ -115,6 +153,39 @@ describe('servicio del panel', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ingresos, gastos, saldo } = (await PanelService.getPanel()).dinero.ejercicio;
     assert.equal(saldo, ingresos - gastos);
+  });
+
+  test('el dinero sale redondeado a dos decimales, sin arrastre binario', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+
+    const mesActual = claveMes(new Date());
+    const filaMesActual = panel.dinero.serieMensual.find((m) => m.mes === mesActual);
+    assert.ok(filaMesActual, 'no se encontró el mes en curso en la serie mensual');
+
+    // Control positivo: sin esto, si por lo que sea las transacciones de
+    // prueba no entraron en el mes en curso, el resto de esta prueba no
+    // comprobaría nada. El umbral es 20.29 y no 20.3: sin redondear,
+    // 10.10 + 10.20 da 20.299999999999997 en JS, que es MENOR que 20.3.
+    assert.ok(
+      filaMesActual!.ingresos >= 20.29,
+      'el test necesita que los importes de prueba (10.10 + 10.20) entren en el mes en curso',
+    );
+
+    // Sin euros2, 10.10 + 10.20 sale como 20.299999999999997 al sumarlos en
+    // JS (panel.service.ts, serieDinero): si el helper deja de aplicarse,
+    // esta expresión regular deja de casar y el test falla.
+    const dosDecimalesComoMucho = /^-?\d+(\.\d{1,2})?$/;
+    for (const valor of [
+      filaMesActual!.ingresos,
+      filaMesActual!.gastos,
+      panel.dinero.ejercicio.ingresos,
+      panel.dinero.ejercicio.gastos,
+      panel.dinero.ejercicio.saldo,
+      ...panel.dinero.porEstado.map((f) => f.importe),
+    ]) {
+      assert.match(String(valor), dosDecimalesComoMucho, `${valor} tiene más de dos decimales`);
+    }
   });
 
   test('no devuelve ningún dato personal', async (t) => {

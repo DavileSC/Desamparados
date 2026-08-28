@@ -78,6 +78,14 @@ function rangoEdad(hoy: Date, min: number, max: number): { lte: Date; gt: Date }
   return { lte, gt };
 }
 
+/**
+ * Redondea a dos decimales. `LineaTemporal` pinta el último valor de cada
+ * serie tal cual, en crudo, como etiqueta de texto: sin este redondeo, la
+ * suma de varios `Number(...)` por mes puede dejar arrastre binario en
+ * pantalla (p. ej. 1234.5600000000002).
+ */
+const euros2 = (n: number) => Math.round(n * 100) / 100;
+
 /** Agrupa fechas por 'YYYY-MM' contando cuántas caen en cada mes. */
 function contarPorMes(fechas: (Date | null)[]): MovimientoMensual[] {
   const cuenta = new Map<string, number>();
@@ -163,11 +171,11 @@ export class PanelService {
 
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
 
-    const ingresos = Number(
-      transaccionesPorTipo.find((t) => t.tipo === TipoTransaccion.INGRESO)?._sum.importe ?? 0,
+    const ingresos = euros2(
+      Number(transaccionesPorTipo.find((t) => t.tipo === TipoTransaccion.INGRESO)?._sum.importe ?? 0),
     );
-    const gastos = Number(
-      transaccionesPorTipo.find((t) => t.tipo === TipoTransaccion.GASTO)?._sum.importe ?? 0,
+    const gastos = euros2(
+      Number(transaccionesPorTipo.find((t) => t.tipo === TipoTransaccion.GASTO)?._sum.importe ?? 0),
     );
 
     const porEdad = TRAMOS_EDAD.map(({ tramo }, i) => ({ tramo, total: porEdadCounts[i] }));
@@ -178,7 +186,7 @@ export class PanelService {
       const delMes = transaccionesPorMes.filter((t) => claveMes(t.fecha) === mes);
       const suma = (tipo: TipoTransaccion) =>
         delMes.filter((t) => t.tipo === tipo).reduce((s, t) => s + Number(t._sum.importe ?? 0), 0);
-      return { mes, ingresos: suma(TipoTransaccion.INGRESO), gastos: suma(TipoTransaccion.GASTO) };
+      return { mes, ingresos: euros2(suma(TipoTransaccion.INGRESO)), gastos: euros2(suma(TipoTransaccion.GASTO)) };
     });
 
     // Cuántos hermanos hay de cada altura de hombro: es lo que decide cuántos
@@ -214,9 +222,9 @@ export class PanelService {
         porEstado: recibosPorEstado.map((r) => ({
           estado: r.estado,
           total: r._count._all,
-          importe: Number(r._sum.importe ?? 0),
+          importe: euros2(Number(r._sum.importe ?? 0)),
         })),
-        ejercicio: { anio, ingresos, gastos, saldo: ingresos - gastos },
+        ejercicio: { anio, ingresos, gastos, saldo: euros2(ingresos - gastos) },
         serieMensual: serieDinero,
         porCategoria: transaccionesPorCategoria.map((t) => ({
           categoria: nombreCategoria.get(t.categoriaId) ?? 'Sin categoría',
