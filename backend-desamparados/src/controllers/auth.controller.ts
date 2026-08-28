@@ -3,6 +3,8 @@ import { AuthService } from '../services/auth.service';
 import { handleHttp } from '../utils/error.handle';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
 import { AuditService } from '../services/audit.service';
+import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookiesAuth, COOKIE_2FA } from '../utils/cookies';
+import { verifyToken } from '../utils/jwt.handle';
 
 export class AuthController {
 
@@ -31,8 +33,15 @@ export class AuthController {
       const body: LoginDto = req.body;
       const response = await AuthService.loginUser(body);
 
-      // El frontend evaluará response.status ('OK' o '2FA_NEEDED')
-      res.status(200).json(response);
+      // Con 2FA activo no hay sesion todavia: solo el testigo del primer factor.
+      if (response.status === '2FA_NEEDED') {
+        ponerCookie2FA(res, response.pendingToken);
+        return res.status(200).json({ status: '2FA_NEEDED', message: response.message });
+      }
+
+      // El token va en la cookie httpOnly, nunca en el cuerpo.
+      ponerCookieSesion(res, response.token, response.user.role);
+      res.status(200).json({ status: 'OK', user: response.user });
 
     } catch (error) {
       handleHttp(res, error, 'Credenciales incorrectas');
@@ -41,11 +50,25 @@ export class AuthController {
 
   static async loginVerify2FA(req: Request, res: Response) {
     try {
-      const { userId, token2fa } = req.body;
-      if (!userId || !token2fa) throw new Error('Faltan datos');
+      // El usuario sale del testigo del primer factor, nunca del cuerpo: asi el
+      // segundo factor queda vinculado a haber superado la contrasena.
+      const pendiente = req.cookies?.[COOKIE_2FA];
+      const payload = pendiente ? verifyToken(pendiente, '2fa_pending') : null;
 
-      const response = await AuthService.verifyLogin2FA(userId, token2fa);
-      res.status(200).json(response);
+      if (!payload) {
+        limpiarCookiesAuth(res);
+        return res.status(401).json({
+          error: 'PENDING_2FA_REQUIRED',
+          message: 'La verificación ha caducado. Vuelve a introducir tu email y contraseña.'
+        });
+      }
+
+      const { token2fa } = req.body;
+      const response = await AuthService.verifyLogin2FA(payload.id, token2fa);
+
+      limpiarCookie2FA(res);
+      ponerCookieSesion(res, response.token, response.user.role);
+      res.status(200).json({ status: 'OK', user: response.user });
     } catch (error) {
       // El servicio lanza mensajes de negocio específicos ("Cuenta bloqueada temporalmente...",
       // "Código incorrecto o expirado") que deben llegar al usuario tal cual.

@@ -122,3 +122,24 @@ test('el testigo de 2FA no sirve como cookie de sesion', async () => {
   });
   assert.equal(res.status, 401);
 });
+
+// Sin la cookie del primer factor no se entra, aunque el codigo fuera correcto.
+// Este es el fallo que se cierra: antes bastaba con mandar { userId, token2fa }.
+test('el 2FA sin el testigo del primer factor responde 401', async () => {
+  const res = await fetch(`${baseUrl}/api/auth/login/2fa`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token2fa: '123456' })
+  });
+  assert.equal(res.status, 401);
+});
+
+test('el 2FA ya no acepta un userId en el cuerpo', async () => {
+  const res = await fetch(`${baseUrl}/api/auth/login/2fa`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: 1, token2fa: '123456' })
+  });
+  // 401 por falta de testigo, nunca 200: el userId del cuerpo se ignora
+  assert.equal(res.status, 401);
+});

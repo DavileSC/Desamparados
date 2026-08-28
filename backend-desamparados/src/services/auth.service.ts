@@ -1,6 +1,6 @@
 import db from '../config/db';
 import { encrypt, verified } from '../utils/bcrypt.handle';
-import { generateToken } from '../utils/jwt.handle';
+import { generateToken, generatePending2FAToken } from '../utils/jwt.handle';
 import crypto from 'crypto';
 import { Prisma, Role } from '@prisma/client';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
@@ -178,15 +178,17 @@ export class AuthService {
     // --- LÓGICA 2FA ---
     if (user.twoFactorEnabled) {
       return {
-        status: '2FA_NEEDED',
-        userId: user.id,
+        status: '2FA_NEEDED' as const,
+        // Prueba de que la contraseña era correcta. El controlador lo mueve a
+        // una cookie: no debe salir nunca en el cuerpo de la respuesta.
+        pendingToken: generatePending2FAToken(user.id),
         message: 'Introduce el código de tu aplicación de autenticación.'
       };
     }
 
     const token = generateToken(user.id, user.role);
     return {
-      status: 'OK',
+      status: 'OK' as const,
       token,
       user: {
         id: user.id,

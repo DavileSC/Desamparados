@@ -69,9 +69,9 @@ const codigo2FASchema = type("string")
     .matching(/^[0-9]{6}$|^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/)
     .describe("un código TOTP de 6 dígitos o un código de respaldo");
 
+// El usuario ya no viaja en el cuerpo: sale de la cookie del primer factor.
 export const verify2FASchema = type({
     body: {
-        userId: type("number"),
         token2fa: codigo2FASchema
     }
 });
