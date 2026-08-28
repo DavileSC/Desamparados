@@ -8,6 +8,7 @@ import AnimatedSection from '../../components/AnimatedSection'
 import { getPublicEvents } from '../../lib/api/events'
 import type { EventItem } from '../../types'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
+import { site } from '../../config/site'
 
 export default function EventsAndLive() {
   const [events, setEvents] = useState<EventItem[]>([])
@@ -115,16 +116,24 @@ export default function EventsAndLive() {
                 }}
               />
             </Box>
-            <Typography
-              variant="body2"
-              sx={{ mt: 2, textAlign: 'center', color: 'text.secondary', fontSize: '12px', opacity: 0.6 }}
-            >
-              Si no puede visualizar el reproductor haga clic en el siguiente{' '}
-              <Box component="a" href="#" sx={{ color: 'secondary.main', fontWeight: 700, textDecoration: 'underline' }}>
-                enlace
-              </Box>
-              .
-            </Typography>
+            {site.directo.urlAlternativa && (
+              <Typography
+                variant="body2"
+                sx={{ mt: 2, textAlign: 'center', color: 'text.secondary', fontSize: '12px', opacity: 0.6 }}
+              >
+                Si no puede visualizar el reproductor haga clic en el siguiente{' '}
+                <Box
+                  component="a"
+                  href={site.directo.urlAlternativa}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ color: 'secondary.main', fontWeight: 700, textDecoration: 'underline' }}
+                >
+                  enlace
+                </Box>
+                .
+              </Typography>
+            )}
           </GlassCard>
         </Box>
       </PageContainer>

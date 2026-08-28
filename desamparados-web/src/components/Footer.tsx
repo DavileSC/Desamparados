@@ -6,14 +6,20 @@ import PhoneIcon from '@mui/icons-material/Phone'
 import FacebookIcon from '@mui/icons-material/Facebook'
 import CloseIcon from '@mui/icons-material/Close'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
+import { site } from '../config/site'
 import MapIcon from '@mui/icons-material/Map'
+import type { ReactNode } from 'react'
 import { useCookieConsent } from '../hooks/useCookieConsent'
 
-const socialLinks = [
-  { icon: <FacebookIcon />, href: '#', label: 'Facebook' },
-  { icon: <CloseIcon />, href: '#', label: 'X' },
-  { icon: <PlayCircleIcon />, href: '#', label: 'YouTube' },
-]
+type SocialLink = { icon: ReactNode; href: string; label: string }
+
+// Solo se pintan los perfiles cuya URL está confirmada en `site.redes`: un
+// icono que lleva a `#` es un enlace muerto de cara al visitante.
+const socialLinks: SocialLink[] = [
+  { icon: <FacebookIcon />, href: site.redes.facebook, label: 'Facebook' },
+  { icon: <CloseIcon />, href: site.redes.x, label: 'X' },
+  { icon: <PlayCircleIcon />, href: site.redes.youtube, label: 'YouTube' },
+].flatMap((red) => (red.href ? [{ ...red, href: red.href }] : []))
 
 const legalLinks = [
   { label: 'Aviso Legal', to: '/aviso-legal' },
@@ -55,31 +61,33 @@ export default function Footer() {
               component="div"
               sx={{ color: 'text.primary', mb: 2, fontSize: '24px' }}
             >
-              Hermandad de Nuestra Señora de los Desamparados
+              {site.nombre}
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <MailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '14px' }}>
-                  info@desamparadosmalaga.com
+                  {site.contacto.email}
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '14px' }}>
-                  Tel: 952 00 00 00
-                </Typography>
-              </Box>
+              {site.contacto.telefono && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '14px' }}>
+                    Tel: {site.contacto.telefono}
+                  </Typography>
+                </Box>
+              )}
               <Typography
                 variant="body2"
                 sx={{ color: 'text.secondary', fontSize: '13px', pl: 3.5 }}
               >
-                Lunes a Viernes: 18:00h - 21:00h
+                {site.contacto.horario}
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, mb: socialLinks.length > 0 ? 3 : 0 }}>
               {socialLinks.map((social) => (
                 <IconButton
                   key={social.label}
@@ -93,7 +101,7 @@ export default function Footer() {
             </Box>
 
             <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
-              © {year} Hermandad de Nuestra Señora de los Desamparados. Todos los derechos reservados.
+              © {year} {site.nombre}. Todos los derechos reservados.
             </Typography>
           </Box>
 
@@ -129,7 +137,7 @@ export default function Footer() {
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Ubicación de la Hermandad"
+                  title="Ubicación del Grupo Parroquial"
                 />
               ) : (
                 <Box sx={{ textAlign: 'center', p: 3 }}>

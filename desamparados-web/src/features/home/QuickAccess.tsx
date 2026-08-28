@@ -9,6 +9,7 @@ import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism'
 import AddIcon from '@mui/icons-material/Add'
 import MailIcon from '@mui/icons-material/Mail'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
+import { site } from '../../config/site'
 
 interface QuickItemProps {
   icon: React.ReactNode
@@ -88,7 +89,13 @@ export default function QuickAccess() {
           <QuickItem icon={<VolunteerActivismIcon fontSize="inherit" />} label="Caridad" href="/corporacion/nuestros-fines/caridad" />
           <QuickItem icon={<AddIcon fontSize="inherit" />} label="Columbarios" href="/corporacion" />
           <QuickItem icon={<MailIcon fontSize="inherit" />} label="Contacto" href="/contacto" />
-          <QuickItem icon={<PlayCircleIcon fontSize="inherit" />} label="Canal de Youtube" href="#" />
+          {site.redes.youtube && (
+            <QuickItem
+              icon={<PlayCircleIcon fontSize="inherit" />}
+              label="Canal de Youtube"
+              href={site.redes.youtube}
+            />
+          )}
           <QuickItem icon={<ChurchIcon fontSize="inherit" />} label="Sede en directo" href="#live" />
         </Box>
       </PageContainer>
