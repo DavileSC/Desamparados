@@ -51,7 +51,13 @@ export class AdminService {
 
     const result = await db.user.update({
       where: { id: userId },
-      data: { role: newRole },
+      data: {
+        role: newRole,
+        // La sesion anterior se emitio con la politica del rol viejo (cookie
+        // persistente de 4 h si era USER). Forzamos un login nuevo para que
+        // reciba la de staff, que muere al cerrar el navegador.
+        tokenValidAfter: new Date()
+      },
       select: { id: true, email: true, role: true, nombre: true, apellidos: true }
     });
 
