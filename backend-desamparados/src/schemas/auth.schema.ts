@@ -98,13 +98,6 @@ export const requestPasswordResetSchema = type({
     }
 });
 
-export const resetPasswordSchema = type({
-    body: {
-        token: type("string > 0").describe("un token de recuperación válido"),
-        newPassword: password // Reutilizamos tu validador de contraseñas seguras
-    }
-});
-
 // =================================================================
 //  5. RGPD: BORRADO DE LA PROPIA CUENTA
 // =================================================================

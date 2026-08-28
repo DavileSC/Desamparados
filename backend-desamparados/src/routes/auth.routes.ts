@@ -7,7 +7,7 @@ import { Role } from '@prisma/client';
 
 // 1. Validadores
 import { validate } from '../config/validate'; 
-import { idParam } from '../config/common';
+import { idParam, password } from '../config/common';
 import { authLimiter } from '../config/limiter';
 
 // 2. Esquemas blindados
@@ -25,9 +25,12 @@ const authRoutes = Router();
 
 // Auxiliar para validar el :id
 const validateId = validate(type({ params: { id: idParam } }));
+// El token viaja en la URL, asi que el schema se define aqui. La contrasena usa
+// el validador compartido de config/common: antes era "string >= 8" a secas, y
+// eso dejaba pasar 12345678 o password1234 justo en el flujo de recuperacion.
 const resetPasswordRequestSchema = type({
   params: { token: type("string").matching(/^[a-f0-9]{64}$/i) },
-  body: { newPassword: type("string >= 8 & string <= 64") }
+  body: { newPassword: password }
 });
 
 // El 2FA es exclusivo del personal con acceso al CMS (staff).

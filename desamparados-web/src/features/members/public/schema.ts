@@ -1,10 +1,11 @@
 import { z } from 'zod'
+import { contrasenaNueva } from '../../../lib/passwordPolicy'
 
 export const membershipSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   apellidos: z.string().min(1, 'Los apellidos son obligatorios'),
   email: z.string().email('Introduce un email válido'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  password: contrasenaNueva,
   dni: z.string().regex(/^[XYZ]?\d{7,8}[A-Z]$/i, 'Introduce un DNI o NIE válido'),
   telefono: z.string().min(1, 'El teléfono es obligatorio'),
   direccion: z.string().min(1, 'La dirección es obligatoria'),

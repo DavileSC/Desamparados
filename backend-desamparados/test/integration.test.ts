@@ -331,3 +331,27 @@ test('el listado de paginas del CMS exige sesion y no queda ensombrecido por /:s
   const res = await fetch(`${baseUrl}/api/pages/list-all`);
   assert.equal(res.status, 401, `esperado 401; un 404 significa que /:slug la captura, un 200 que esta abierta`);
 });
+
+// El restablecimiento usaba un validador propio, definido en linea en el router,
+// que solo miraba la longitud: la politica de contrasenas debiles no se aplicaba
+// justo en el flujo donde la gente elige lo primero que se le ocurre.
+// Con un token falso, la respuesta distingue los dos casos: si el mensaje habla
+// del enlace, la contrasena ya paso la validacion.
+test('el restablecimiento rechaza contrasenas debiles antes de mirar el token', async () => {
+  const token = 'a'.repeat(64);
+
+  for (const debil of ['12345678', 'aaaaaaaaaaaa', 'password1234']) {
+    const res = await fetch(`${baseUrl}/api/auth/reset-password/${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPassword: debil }),
+    });
+    const cuerpo = await res.text();
+
+    assert.equal(res.status, 400, `"${debil}" deberia rechazarse`);
+    assert.ok(
+      !cuerpo.includes('enlace de recuperación'),
+      `"${debil}" llego a comprobar el token, o sea que paso la validacion de contrasena`
+    );
+  }
+});

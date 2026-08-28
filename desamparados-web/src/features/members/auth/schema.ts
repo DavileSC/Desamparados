@@ -1,12 +1,12 @@
 import { z } from 'zod'
+import { contrasenaNueva, contrasenaExistente } from '../../../lib/passwordPolicy'
 
-// Alineado con el backend: contraseña entre 8 y 64 caracteres
+// El acceso NO aplica la política: quien tenga una contraseña anterior al
+// endurecimiento del mínimo seguiría siendo válida, y rechazarla aquí lo dejaría
+// fuera de su cuenta. La comprobación de verdad la hace el backend.
 export const loginSchema = z.object({
   email: z.string().trim().email('Introduce un email válido'),
-  password: z
-    .string()
-    .min(8, 'La contraseña debe tener al menos 8 caracteres')
-    .max(64, 'La contraseña no puede superar los 64 caracteres'),
+  password: contrasenaExistente,
 })
 
 export type LoginFormData = z.infer<typeof loginSchema>
@@ -22,8 +22,9 @@ export const twoFactorSchema = z.object({
 
 export type TwoFactorFormData = z.infer<typeof twoFactorSchema>
 
+// Contraseña nueva: aquí sí se aplica la política completa del backend.
 export const resetPasswordSchema = z.object({
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(64, 'La contraseña no puede superar los 64 caracteres'),
+  password: contrasenaNueva,
   confirmation: z.string().min(1, 'Confirma la contraseña'),
 }).refine((data) => data.password === data.confirmation, {
   message: 'Las contraseñas no coinciden',
