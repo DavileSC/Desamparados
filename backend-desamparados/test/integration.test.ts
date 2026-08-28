@@ -18,6 +18,12 @@ let baseUrl: string;
  * levantada. Sin ella el servidor devuelve 500 tras el timeout de conexión y
  * el fallo no dice nada sobre el código, así que se sondea una vez y esos
  * casos se marcan como omitidos con el motivo a la vista, en vez de fallar.
+ *
+ * OJO: el skip va DENTRO del cuerpo con `t.skip()`, no en las opciones del
+ * test. La opcion `skip` del runner de Node espera un valor, no una funcion:
+ * una funcion es siempre truthy, nunca se llama, y el test queda omitido para
+ * siempre haya base de datos o no. Asi estuvieron desactivados sin que se
+ * notara. Ademas, `dbDisponible` solo se conoce despues del before().
  */
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -73,13 +79,17 @@ test('healthcheck responde con estado ok', async () => {
   assert.equal(typeof body.uptime, 'number');
 });
 
-test('las publicaciones públicas no requieren autenticación', { skip: () => (dbDisponible ? false : SIN_DB) }, async () => {
+test('las publicaciones públicas no requieren autenticación', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
   const response = await fetch(`${baseUrl}/api/publications`);
   assert.equal(response.status, 200);
   assert.ok(Array.isArray(await response.json()));
 });
 
-test('las noticias destacadas no requieren autenticación', { skip: () => (dbDisponible ? false : SIN_DB) }, async () => {
+test('las noticias destacadas no requieren autenticación', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
   const response = await fetch(`${baseUrl}/api/news/latest`);
   assert.equal(response.status, 200);
   assert.ok(Array.isArray(await response.json()));
@@ -185,8 +195,6 @@ test('logout responde 204 y borra las cookies aunque no hubiera sesion', async (
 //  COOKIES CONTRA LA BASE DE DATOS
 // ==========================================
 
-const conDb = { skip: () => (dbDisponible ? false : SIN_DB) };
-
 async function entrar(email: string) {
   return fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
@@ -199,7 +207,9 @@ function cookieSesionDe(res: Response): string | undefined {
   return res.headers.getSetCookie().find((c) => c.startsWith('desamparados_session='));
 }
 
-test('la cookie del hermano persiste 4 h y la del staff muere al cerrar', conDb, async () => {
+test('la cookie del hermano persiste 4 h y la del staff muere al cerrar', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
   const hermano = await crearUsuarioPrueba(Role.USER);
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
 
@@ -219,7 +229,9 @@ test('la cookie del hermano persiste 4 h y la del staff muere al cerrar', conDb,
   }
 });
 
-test('el cuerpo del login ya no lleva el token', conDb, async () => {
+test('el cuerpo del login ya no lleva el token', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
   const hermano = await crearUsuarioPrueba(Role.USER);
   try {
     const cuerpo = await (await entrar(hermano.email)).json() as { status?: string; token?: string; user?: { id?: number } };
@@ -231,7 +243,9 @@ test('el cuerpo del login ya no lleva el token', conDb, async () => {
   }
 });
 
-test('/me devuelve la sesion cuando se manda la cookie', conDb, async () => {
+test('/me devuelve la sesion cuando se manda la cookie', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
   const hermano = await crearUsuarioPrueba(Role.USER);
   try {
     const cookie = cookieSesionDe(await entrar(hermano.email))!.split(';')[0];
@@ -245,7 +259,9 @@ test('/me devuelve la sesion cuando se manda la cookie', conDb, async () => {
   }
 });
 
-test('con 2FA activo el login no emite sesion, solo el testigo pendiente', conDb, async () => {
+test('con 2FA activo el login no emite sesion, solo el testigo pendiente', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
   try {
     await db.user.update({
@@ -265,13 +281,27 @@ test('con 2FA activo el login no emite sesion, solo el testigo pendiente', conDb
   }
 });
 
-test('la agenda sigue distinguiendo invitado de autenticado', conDb, async () => {
-  const res = await fetch(`${baseUrl}/api/agenda`);
-  // El middleware opcional unificado deja pasar al invitado en lugar de bloquearlo
-  assert.ok(res.status === 200, `esperado 200 para un invitado, recibido ${res.status}`);
+test('la agenda deja pasar tanto al invitado como a quien tiene sesion', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  // La agenda se monta en /api/events y usa el middleware opcional unificado:
+  // ni bloquea al invitado ni rechaza una cookie valida.
+  const deInvitado = await fetch(`${baseUrl}/api/events`);
+  assert.equal(deInvitado.status, 200, 'el invitado deberia poder ver la agenda');
+
+  const hermano = await crearUsuarioPrueba(Role.USER);
+  try {
+    const cookie = cookieSesionDe(await entrar(hermano.email))!.split(';')[0];
+    const conSesion = await fetch(`${baseUrl}/api/events`, { headers: { Cookie: cookie } });
+    assert.equal(conSesion.status, 200, 'con sesion valida tambien deberia pasar');
+  } finally {
+    await borrarUsuarioPrueba(hermano.id);
+  }
 });
 
-test('promover a staff invalida la sesion emitida como hermano', conDb, async () => {
+test('promover a staff invalida la sesion emitida como hermano', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
   const hermano = await crearUsuarioPrueba(Role.USER);
   const admin = await crearUsuarioPrueba(Role.ADMIN);
 
