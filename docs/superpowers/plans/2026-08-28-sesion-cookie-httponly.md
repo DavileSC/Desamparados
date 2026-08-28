@@ -20,6 +20,7 @@
 - **Borrar una cookie exige repetir su `Path` exacto**, o el navegador ignora el borrado en silencio.
 - Roles staff del CMS: `ADMIN`, `TESORERIA`, `ALBACERIA`, `HERMANO_MAYOR`, `REDES`, `SECRETARIA`. Todo lo demás es `USER`.
 - Duración: **staff 8 h, `USER` 4 h**. La cookie de staff **no lleva `Max-Age`** (muere al cerrar el navegador); la de `USER` lleva `Max-Age` de 4 h.
+- **El typecheck del frontend es `npx tsc -b`, no `npx tsc --noEmit`.** El proyecto usa *project references*: sin `-b`, tsc no comprueba nada y da un falso verde. En el backend sí vale `--noEmit`.
 - El backend exige seis variables de entorno solo para arrancar: `DATABASE_URL`, `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`, `JWT_SECRET`. Sin ellas no importa ni `app`.
 - **`dotenv` no se carga solo.** Solo lo cargan `src/config/db.ts` y `src/index.ts`. Cualquier test que importe un módulo suelto debe empezar por `import 'dotenv/config';`.
 - Los tests que necesitan MariaDB deben omitirse solos si no está levantada, siguiendo el patrón que ya usa `test/integration.test.ts`.
@@ -1126,7 +1127,7 @@ Y sustituir el bloque del 401:
 - [ ] **Step 2: Comprobar que el typecheck falla como se espera**
 
 ```bash
-cd desamparados-web && npx tsc --noEmit
+cd desamparados-web && npx tsc -b
 ```
 
 Esperado: FALLA en `client.ts` porque `salirSesion` no existe todavía. Se arregla en la Task 9. **No arreglarlo aquí.**
@@ -1682,7 +1683,7 @@ El cierre de sesión tiene que pasar por el servidor: la cookie es `httpOnly` y 
 - [ ] **Step 4: Typecheck y tests completos del front**
 
 ```bash
-cd desamparados-web && npx tsc --noEmit && npm run lint && npm test
+cd desamparados-web && npx tsc -b && npm run lint && npm test
 ```
 
 Esperado: todo limpio. Si el compilador señala usos de `isAuthenticated`, `login` o `logout` en `src/routes/index.tsx` o `src/features/cms/BrothersAdminPage.tsx`, adaptarlos: `isAuthenticated` pasa a ser `status === 'autenticado'`.
@@ -1781,7 +1782,7 @@ En la sección 8 («Si hay que priorizar»), borrar el punto 1 y renumerar los o
 
 ```bash
 cd backend-desamparados && npx prisma generate && npx tsc --noEmit && npm test
-cd ../desamparados-web && npx tsc --noEmit && npm run lint && npm test && npm run build
+cd ../desamparados-web && npx tsc -b && npm run lint && npm test && npm run build
 ```
 
 Esperado: todo en verde.
