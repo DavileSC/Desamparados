@@ -108,6 +108,21 @@ describe('permisos del Hermano Mayor', () => {
     assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
   });
 
+  // Noticias y Publicaciones son contenido, no administración del sistema:
+  // quedaban fuera por una omisión al redactar el spec (ver news.routes.ts
+  // y publication.routes.ts, rolesCMS / roles).
+  test('entra en el archivo de gestión de noticias', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('HERMANO_MAYOR', '/api/news/admin/archive');
+    assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
+  });
+
+  test('entra en el listado de gestión de publicaciones', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('HERMANO_MAYOR', '/api/publications/admin');
+    assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
+  });
+
   test('NO puede promover cargos', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await como('HERMANO_MAYOR', '/api/admin/staff/promote', {

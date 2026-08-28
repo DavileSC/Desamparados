@@ -7,7 +7,10 @@ import { validate } from '../config/validate.js';
 import { categoryParamSchema, createPublicationSchema, publicationIdParamSchema, updatePublicationSchema } from '../schemas/publication.schema.js';
 
 const publicationRoutes = Router();
-const roles = [Role.ADMIN, Role.REDES];
+// Gestión de contenido, no administración del sistema: el Hermano Mayor ve y
+// edita todo salvo promover/degradar cargos y la configuración global (esas
+// dos siguen siendo solo de ADMIN, en admin.routes.ts).
+const roles = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
 publicationRoutes.get('/latest', PublicationController.latest);
 publicationRoutes.get('/admin', authenticateToken, checkRole(roles), PublicationController.adminList);

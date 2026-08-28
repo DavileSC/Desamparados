@@ -24,6 +24,13 @@ describe('AdminLayout', () => {
     expect(screen.getByRole('link', { name: 'Contabilidad' })).toBeInTheDocument()
   })
 
+  it('el Hermano Mayor ve noticias y publicaciones: todo salvo la administración del sistema', () => {
+    entrarComo('HERMANO_MAYOR')
+    renderWithProviders(<AdminLayout />)
+    expect(screen.getByRole('link', { name: 'Noticias' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Publicaciones' })).toBeInTheDocument()
+  })
+
   it('el community manager no ve tesorería', () => {
     entrarComo('REDES')
     renderWithProviders(<AdminLayout />)

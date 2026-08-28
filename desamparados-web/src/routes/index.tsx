@@ -89,8 +89,8 @@ function withSuspense(Component: React.ComponentType) {
  */
 export const rolesPorRutaCms = {
   panel: ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
-  noticias: ['ADMIN', 'REDES'],
-  publicaciones: ['ADMIN', 'REDES'],
+  noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   tesoreria: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],

@@ -12,8 +12,8 @@ import { cmsTheme, cmsSurfaces } from '../theme/cms'
 
 export const itemsMenu = [
   { label: 'Panel', href: '/cms', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA'] },
-  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES'] },
-  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES'] },
+  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'] },
+  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'] },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'] },
   { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'] },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'] },
