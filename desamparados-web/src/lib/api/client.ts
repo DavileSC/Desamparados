@@ -3,10 +3,13 @@ import { useAuthStore } from '../../features/members/auth/store'
 /**
  * Cliente HTTP mínimo para la API del backend.
  *
- * - Base URL: `VITE_API_URL` (p. ej. https://api.desamparados.es/api). Si no está definida
- *   se usa `/api` (mismo origen: en desarrollo Vite lo proxyea al backend, ver vite.config.ts).
- * - Añade `Authorization: Bearer <token>` cuando hay sesión.
- * - Un 401 con sesión activa significa token caducado/revocado: se cierra la sesión local.
+ * - Base URL: `/api` (mismo origen; en desarrollo Vite lo proxyea al backend,
+ *   ver vite.config.ts). La API tiene que estar en el mismo dominio: la cookie
+ *   de sesión es SameSite=Strict y el navegador no la mandaría a otro origen.
+ * - La sesión viaja en una cookie httpOnly que el navegador adjunta solo: aquí
+ *   no se lee ni se guarda ningún token.
+ * - Un 401 en una petición que esperaba sesión significa que ha caducado o se
+ *   ha revocado: se limpia el estado local.
  */
 const BASE_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '')
 
@@ -27,7 +30,7 @@ export class ApiError extends Error {
 interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
   /** Cuerpo JSON (se serializa automáticamente) */
   json?: unknown
-  /** false = no adjuntar el token aunque exista (login, registro...) */
+  /** false = un 401 aquí es normal y no debe cerrar la sesión (login, registro, /me del arranque) */
   auth?: boolean
 }
 
@@ -55,16 +58,16 @@ function extractFieldErrors(payload: unknown): Record<string, string> {
 
 export async function apiFetch<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const { json, auth = true, headers, ...rest } = options
-  const token = useAuthStore.getState().token
 
   let res: Response
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       ...rest,
+      // El navegador adjunta la cookie de sesión; sin esto no viajaría.
+      credentials: 'include',
       headers: {
         Accept: 'application/json',
         ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(auth && token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
       body: json !== undefined ? JSON.stringify(json) : undefined,
@@ -82,9 +85,11 @@ export async function apiFetch<T>(path: string, options: ApiRequestOptions = {})
   }
 
   if (!res.ok) {
-    if (res.status === 401 && auth && token) {
+    // `auth: false` marca las peticiones para las que un 401 es normal (login,
+    // y sobre todo el /me del arranque cuando el visitante es un invitado).
+    if (res.status === 401 && auth) {
       // Sesión caducada o revocada: limpiamos el estado local
-      useAuthStore.getState().logout()
+      useAuthStore.getState().salirSesion()
     }
     throw new ApiError(extractMessage(payload) ?? `Error ${res.status}`, res.status, payload)
   }
