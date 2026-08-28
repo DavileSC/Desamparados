@@ -22,7 +22,7 @@ export default function DesamparadosPage() {
             <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4 }}>
               La devoción a Nuestra Señora de los Desamparados tiene sus raíces en la
               tradición mariana valenciana, extendiéndose posteriormente por todo el
-              territorio español. En nuestra Hermandad, la Virgen de los Desamparados es
+              territorio español. En nuestro Grupo Parroquial, la Virgen de los Desamparados es
               acogida como Madre y Titular, patrona de aquellos que se sienten solos,
               olvidados o necesitados de misericordia.
             </Typography>
@@ -34,7 +34,7 @@ export default function DesamparadosPage() {
               mirada de María.
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-              Cada noviembre, la Hermandad celebra solemne triduo en su honor, culminando
+              Cada noviembre, el Grupo Parroquial celebra solemne triduo en su honor, culminando
               con un devoto besamanos que congrega a fieles de toda la ciudad. Estas
               celebraciones son expresión viva de la fe puesta en la Virgen y del
               compromiso de la corporación con su advocación.

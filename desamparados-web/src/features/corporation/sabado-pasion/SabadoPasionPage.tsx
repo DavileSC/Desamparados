@@ -42,7 +42,7 @@ export default function SabadoPasionPage() {
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', mb: 6 }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8, textAlign: 'center' }}>
-              El Sábado de Pasión es el día grande de nuestra Hermandad. En esta jornada,
+              El Sábado de Pasión es el día grande de nuestro Grupo Parroquial. En esta jornada,
               Nuestra Señora de los Desamparados sale en estación de penitencia por el
               centro histórico de Málaga, acompañada por sus hermanos y por una multitud de
               devotos que llenan las calles de fe y emoción.

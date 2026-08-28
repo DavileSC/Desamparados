@@ -13,20 +13,20 @@ export default function CaridadPage() {
 
       <PageHeader
         title="Caridad"
-        subtitle="Ayuda social y obra asistencial de la Hermandad."
+        subtitle="Ayuda social y obra asistencial del Grupo Parroquial."
       />
 
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto' }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>
-              La caridad constituye uno de los fines fundamentales de nuestra Hermandad.
+              La caridad constituye uno de los fines fundamentales de nuestro Grupo Parroquial.
               Inspirados en la advocación de Nuestra Señora de los Desamparados, buscamos
               ser signo vivo de la misericordia de Dios, acogiendo a quienes viven en
               situación de soledad, enfermedad o exclusión social.
             </Typography>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>
-              A través de la Vocalía de Caridad, la Hermandad pone en marcha diferentes
+              A través de la Vocalía de Caridad, el Grupo Parroquial pone en marcha diferentes
               iniciativas de ayuda social: reparto de alimentos, atención a familias en
               dificultades, visitas a enfermos y personas mayores, así como colaboración
               con otras entidades del ámbito social de Málaga.
@@ -38,7 +38,7 @@ export default function CaridadPage() {
               de amor y solidaridad.
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>
-              Queremos que nuestra Hermandad sea una comunidad acogedora, capaz de mirar
+              Queremos que nuestro Grupo Parroquial sea una comunidad acogedora, capaz de mirar
               con los ojos de la Virgen a cuantos sufren y de extender la mano a quienes
               más lo necesitan. La caridad, en definitiva, es el criterio último que da
               sentido a nuestra existencia como corporación.

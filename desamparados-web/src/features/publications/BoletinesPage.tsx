@@ -24,7 +24,7 @@ export default function BoletinesPage() {
 
       <PageHeader
         title="Boletines"
-        subtitle="Revista anual de la Hermandad."
+        subtitle="Revista anual del Grupo Parroquial."
       />
 
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>

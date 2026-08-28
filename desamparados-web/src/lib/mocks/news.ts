@@ -7,7 +7,7 @@ export const newsItems: NewsItem[] = [
     excerpt:
       'Durante los próximos días se celebrarán los solemnes cultos anuales, invitando a todos los hermanos y devotos a participar de estos días de recogimiento.',
     content:
-      'La Hermandad de los Desamparados convoca a todos sus hermanos, devotos y feligreses a los Solemnes Cultos que se celebrarán en honor a Nuestra Señora de los Desamparados...',
+      'El Grupo Parroquial de los Desamparados convoca a todos sus hermanos, devotos y feligreses a los Solemnes Cultos que se celebrarán en honor a Nuestra Señora de los Desamparados...',
     image: '/images/procesion.jpg',
     category: 'Cultos',
     date: '2023-11-10',
@@ -45,7 +45,7 @@ export const newsItems: NewsItem[] = [
     title: 'Carta de agradecimiento a los hermanos',
     excerpt:
       'El Hermano Mayor dirige una carta de agradecimiento a todos los hermanos por su participación en la última estación de penitencia.',
-    category: 'Hermandad',
+    category: 'Grupo Parroquial',
     date: '2023-09-15',
     slug: 'carta-agradecimiento-hermanos',
   },

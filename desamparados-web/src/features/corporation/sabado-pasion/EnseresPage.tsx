@@ -21,7 +21,7 @@ export default function EnseresPage() {
           <Box sx={{ maxWidth: '850px', mx: 'auto' }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>
               Los enseres procesionales son elementos fundamentales que acompañan a la
-              Hermandad durante su estación de penitencia. Entre ellos destacan el
+              Grupo Parroquial durante su estación de penitencia. Entre ellos destacan el
               acompañamiento musical, las insignias corporativas, las lámparas, los
               varales del palio y los distintivos que identifican a los hermanos en la
               calle.
@@ -33,7 +33,7 @@ export default function EnseresPage() {
               muchas de ellas fruto del cariño y la devoción de músicos y cofrades.
             </Typography>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>
-              Las insignias de la Hermandad, como el estandarte, el guión o la criz de
+              Las insignias del Grupo Parroquial, como el estandarte, el guión o la criz de
               guía, abren y cierran la comitiva, mostrando los símbolos de la corporación.
               Cada una de ellas ha sido confeccionada con materiales de calidad y diseños
               que reflejan la espiritualidad y la historia de los Desamparados.

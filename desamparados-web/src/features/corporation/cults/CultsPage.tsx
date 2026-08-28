@@ -25,7 +25,7 @@ const cults = [
   },
   {
     title: 'Sábado de Pasión',
-    description: 'Estación de penitencia por las calles de Málaga, momento culminante del año cofrade de la Hermandad.',
+    description: 'Estación de penitencia por las calles de Málaga, momento culminante del año cofrade del Grupo Parroquial.',
   },
   {
     title: 'Cultos de Navidad y Semana Santa',
@@ -49,7 +49,7 @@ export default function CultsPage() {
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', mb: 6 }}>
             <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8, textAlign: 'center' }}>
-              La vida espiritual de la Hermandad se alimenta de los cultos que celebramos a
+              La vida espiritual del Grupo Parroquial se alimenta de los cultos que celebramos a
               lo largo del año. Estas celebraciones son ocasiones privilegiadas para la
               oración comunitaria, la veneración a nuestra Sagrada Titular y el encuentro
               fraterno entre los hermanos.

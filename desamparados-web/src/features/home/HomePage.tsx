@@ -12,7 +12,7 @@ export default function HomePage() {
         <title>Desamparados Málaga</title>
         <meta
           name="description"
-          content="Hermandad de Nuestra Señora de los Desamparados de Málaga. Devoción, historia y patrimonio en el corazón de la ciudad."
+          content="Grupo Parroquial de Nuestra Señora de los Desamparados de Málaga. Devoción, historia y patrimonio en el corazón de la ciudad."
         />
       </Helmet>
       <Hero />

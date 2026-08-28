@@ -11,7 +11,7 @@ app.listen(PORT, () => {
   console.log(`
   ╭──────────────────────────────────────────────────╮
   │                                                  │
-  │   🚀 Servidor Cofradía listo y escuchando        │
+  │   🚀 Servidor Grupo Parroquial listo y escuchando│
   │                                                  │
   │   🌐 URL:      http://localhost:${PORT}             │
   │   📂 Storage:  /storage/public + private API     │

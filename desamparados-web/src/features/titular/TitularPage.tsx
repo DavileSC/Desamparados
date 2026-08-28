@@ -47,7 +47,7 @@ export default function TitularPage() {
               fontSize: { xs: '16px', md: '18px' },
             }}
           >
-            Nuestra Señora de los Desamparados es la Sagrada Titular de esta Hermandad.
+            Nuestra Señora de los Desamparados es la Sagrada Titular de este Grupo Parroquial.
             Desde su llegada a la ciudad ha sido motivo de profunda devoción, acogiendo
             bajo su manto a cuantos acuden a Ella en busca de consuelo y esperanza.
           </Typography>
@@ -55,7 +55,7 @@ export default function TitularPage() {
           <ImageGallery
             images={[
               { src: '/images/hero-thumb.jpg', alt: 'Nuestra Señora de los Desamparados' },
-              { src: '/images/procesion.jpg', alt: 'Procesión de la Hermandad' },
+              { src: '/images/procesion.jpg', alt: 'Procesión del Grupo Parroquial' },
               { src: '/images/triduo.jpg', alt: 'Solemne Triduo' },
               { src: '/images/live.jpg', alt: 'Sede Canónica' },
             ]}

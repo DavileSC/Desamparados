@@ -301,7 +301,7 @@ export default function Navbar() {
                 height: 44,
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
-                // Mismo redondeo y estilo que AppButton ("Conoce la Hermandad")
+                // Mismo redondeo y estilo que AppButton ("Conoce el Grupo Parroquial")
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: 600,

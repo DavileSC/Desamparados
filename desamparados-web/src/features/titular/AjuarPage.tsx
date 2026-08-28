@@ -28,7 +28,7 @@ export default function AjuarPage() {
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4 }}>
               El manto principal, de rico terciopelo, luce bordados en oro que representan
-              motivos marianos y los emblemas de la Hermandad. La corona, obra de orfebrería
+              motivos marianos y los emblemas del Grupo Parroquial. La corona, obra de orfebrería
               detallada, realza la majestad de la imagen, acompañada de joyas, rosarios y
               otros enseres que completan su atavío para las principales celebraciones
               litúrgicas y procesionales.

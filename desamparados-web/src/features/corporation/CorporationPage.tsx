@@ -8,7 +8,7 @@ import AnimatedSection from '../../components/AnimatedSection'
 import GlassCard from '../../components/GlassCard'
 
 const sections = [
-  { label: 'Historia', description: 'Orígenes y evolución de nuestra Hermandad.', to: '/corporacion/historia' },
+  { label: 'Historia', description: 'Orígenes y evolución de nuestro Grupo Parroquial.', to: '/corporacion/historia' },
   { label: 'Parroquia', description: 'Nuestra sede canónica y la comunidad pasionista.', to: '/corporacion/parroquia-pasionistas' },
   { label: 'Nuestros fines', description: 'Caridad y formación como ejes de nuestra acción.', to: '/corporacion/nuestros-fines' },
   { label: 'Cultos', description: 'Celebraciones y devociones en honor a nuestra Sagrada Titular.', to: '/corporacion/cultos' },
@@ -31,10 +31,10 @@ export default function CorporationPage() {
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', mb: 6 }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>
-              La Hermandad y Cofradía de Nazarenos de Nuestra Señora de los Desamparados,
+              El Grupo Parroquial de Nuestra Señora de los Desamparados,
               Santo Cristo de la Buena Muerte y San Juan de la Palma es una corporación
               religiosa fundada en el seno de la Parroquia de los Padres Pasionistas de
-              Málaga. Desde sus orígenes, la Hermandad ha vivido su fe a través de la
+              Málaga. Desde sus orígenes, el Grupo Parroquial ha vivido su fe a través de la
               devoción a la Santísima Virgen bajo la advocación de los Desamparados,
               acogiendo a cuantos buscan consuelo y esperanza.
             </Typography>

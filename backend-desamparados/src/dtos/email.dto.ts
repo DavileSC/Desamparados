@@ -6,6 +6,6 @@ export interface DatosPapeleta {
   tramo?: string | null;
   fechaSalida: string; // "Jueves Santo, 28 de Marzo"
   horaSalida: string;  // "19:30h"
-  accesoPuerta: string; // "Puerta de la Casa Hermandad"
+  accesoPuerta: string; // "Puerta de la Casa Grupo Parroquial"
   observaciones?: string | null;
 }

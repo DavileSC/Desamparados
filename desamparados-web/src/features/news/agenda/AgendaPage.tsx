@@ -41,7 +41,7 @@ export default function AgendaPage() {
 
       <PageHeader
         title="Agenda"
-        subtitle="Calendario de cultos, actos y celebraciones de la Hermandad."
+        subtitle="Calendario de cultos, actos y celebraciones del Grupo Parroquial."
       />
 
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>

@@ -8,6 +8,7 @@ import AnimatedSection from '../../../components/AnimatedSection'
 import { getNewsBySlug } from '../../../lib/api/news'
 import type { NewsItem } from '../../../types'
 import NotFoundPage from '../../notFound/NotFoundPage'
+import { sanitizeHtml } from '../../../lib/sanitizeHtml'
 
 export default function NoticiaDetallePage() {
   const { slug = '' } = useParams<{ slug: string }>()
@@ -100,7 +101,7 @@ export default function NoticiaDetallePage() {
             variant="body1"
             sx={{ color: 'text.primary', fontSize: { xs: '16px', md: '18px' }, lineHeight: 1.8, whiteSpace: 'pre-line' }}
           >
-            <span dangerouslySetInnerHTML={{ __html: news.content ?? news.excerpt }} />
+            <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(news.content ?? news.excerpt ?? '') }} />
           </Typography>
 
           <Box

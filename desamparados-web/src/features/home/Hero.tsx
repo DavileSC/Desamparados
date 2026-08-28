@@ -139,7 +139,7 @@ export default function Hero() {
           Devoción, historia y patrimonio en el corazón de Málaga. Acompáñanos en nuestro solemne caminar.
         </Typography>
         <AppButton component="a" href="#actualidad">
-          Conoce la Hermandad
+          Conoce el Grupo Parroquial
         </AppButton>
       </Box>
     </Box>

@@ -33,7 +33,7 @@ export class PaginaService {
    */
   static async createPagina(data: SavePaginaDto) {
     // 1. Normalizar Slug (Seguridad)
-    // Si el admin envía "Historia de la Hermandad", lo convertimos a "historia-de-la-hermandad"
+    // Si el admin envía "Historia del Grupo Parroquial", lo convertimos a "historia-de-la-grupo parroquial"
     const finalSlug = this.normalizeSlug(data.slug);
 
     // 2. Sanitizar el contenido HTML (Prevención de Stored XSS)

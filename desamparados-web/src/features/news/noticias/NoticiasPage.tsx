@@ -41,7 +41,7 @@ export default function NoticiasPage() {
 
       <PageHeader
         title="Noticias"
-        subtitle="Últimas noticias de la Hermandad de los Desamparados."
+        subtitle="Últimas noticias del Grupo Parroquial de los Desamparados."
       />
 
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>

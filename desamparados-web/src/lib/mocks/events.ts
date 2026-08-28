@@ -20,7 +20,7 @@ export const eventItems: EventItem[] = [
   },
   {
     id: '3',
-    title: 'Misa de Hermandad',
+    title: 'Misa de Grupo Parroquial',
     description: 'Celebración eucarística semanal de nuestra corporación.',
     date: 'Todos los Domingos',
     time: '12:00h',

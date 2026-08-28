@@ -26,7 +26,7 @@ export interface RegisterDto {
     dni?: string;
     
     // Dejamos esto opcional por si es el ADMIN quien registra a alguien 
-    // en la casa hermandad "a full", pero en la web no se pide.
+    // en la casa grupo parroquial "a full", pero en la web no se pide.
     tieneTunicaPropia?: boolean;
     tunica?: string;       
     alturaHombro?: number;    

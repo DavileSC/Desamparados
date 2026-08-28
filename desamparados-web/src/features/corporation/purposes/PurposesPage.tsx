@@ -23,7 +23,7 @@ export default function PurposesPage() {
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', mb: 6 }}>
             <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8, textAlign: 'center' }}>
-              La Hermandad se propone, como fines esenciales, la práctica de la caridad
+              El Grupo Parroquial se propone, como fines esenciales, la práctica de la caridad
               hacia los necesitados y la formación integral de sus hermanos en la fe. Ambos
               ejes se alimentan mutuamente y dan sentido a toda nuestra actividad corporativa
               y pastoral.
@@ -48,7 +48,7 @@ export default function PurposesPage() {
                   </Typography>
                   <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary', lineHeight: 1.7 }}>
                     Ayuda social, obra asistencial y cercanía con los más desfavorecidos. La
-                    caridad es el corazón de nuestra Hermandad, expresión visible del amor de
+                    caridad es el corazón de nuestro Grupo Parroquial, expresión visible del amor de
                     Dios a través del servicio concreto a los hermanos.
                   </Typography>
                   <AppButton appVariant="primary" sx={{ mt: 'auto' }}>

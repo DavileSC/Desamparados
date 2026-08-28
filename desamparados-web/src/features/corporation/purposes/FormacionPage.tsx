@@ -21,7 +21,7 @@ export default function FormacionPage() {
           <Box sx={{ maxWidth: '850px', mx: 'auto' }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>
               La formación cristiana es uno de los pilares sobre los que se sustenta la
-              vida de nuestra Hermandad. Entendida como educación permanente en la fe,
+              vida de nuestro Grupo Parroquial. Entendida como educación permanente en la fe,
               busca ayudar a cada hermano a crecer en el conocimiento de Dios, en la
               vivencia de los valores evangélicos y en la entrega a la misión de la Iglesia.
             </Typography>
@@ -36,12 +36,12 @@ export default function FormacionPage() {
               La formación también abarca la transmisión de los valores cofrades a las
               nuevas generaciones. Los jóvenes y los nuevos hermanos reciben una atención
               especial para que puedan conocer la historia, los fines y las tradiciones de
-              la Hermandad, insertándose plenamente en su vida comunitaria.
+              el Grupo Parroquial, insertándose plenamente en su vida comunitaria.
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>
               Desde la Vocalía de Formación se promueve un itinerario formativo continuo,
               abierto a todos y adaptado a las distintas edades y sensibilidades, con el
-              deseo de que cada hermano viva su pertenencia a la Hermandad como un auténtico
+              deseo de que cada hermano viva su pertenencia al Grupo Parroquial como un auténtico
               camino de fe y santidad.
             </Typography>
           </Box>

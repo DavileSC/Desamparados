@@ -21,7 +21,7 @@ export default function TronoPage() {
           <Box sx={{ maxWidth: '850px', mx: 'auto' }}>
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', lineHeight: 1.8 }}>
               El trono de Nuestra Señora de los Desamparados es una de las piezas más
-              destacadas del patrimonio artístico y devocional de la Hermandad. Diseñado
+              destacadas del patrimonio artístico y devocional del Grupo Parroquial. Diseñado
               para resaltar la belleza de la Sagrada Titular, combina la solidez de la
               ebanistería con el brillo de los metales, los bordados y las flores que lo
               adornan en su salida procesional.
@@ -42,7 +42,7 @@ export default function TronoPage() {
             <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>
               Alrededor del trono se organizan los cargos de la procesión, los hermanos de
               luz y la música, configurando una comitiva que honra a la Sagrada Titular y
-              que expresa la identidad propia de la Hermandad en el Sábado de Pasión.
+              que expresa la identidad propia del Grupo Parroquial en el Sábado de Pasión.
             </Typography>
           </Box>
         </PageContainer>

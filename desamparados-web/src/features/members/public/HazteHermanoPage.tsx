@@ -59,7 +59,7 @@ export default function HazteHermanoPage() {
 
       <PageHeader
         title="Hazte Hermano"
-        subtitle="Únete a la Hermandad de los Desamparados."
+        subtitle="Únete al Grupo Parroquial de los Desamparados."
       />
 
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
