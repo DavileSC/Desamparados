@@ -32,7 +32,13 @@ const panel: PanelResponse = {
   procesion: {
     anio: 2026,
     papeletas: 302,
-    porAnio: [{ anio: 2026, total: 302 }],
+    // El año en curso (2026) coincide a propósito con `papeletas`: son el
+    // mismo cómputo mirado desde dos ángulos (total del año vs. serie
+    // histórica). El de 2025 es distinto, para poder aislar cada aserción.
+    porAnio: [
+      { anio: 2025, total: 275 },
+      { anio: 2026, total: 302 },
+    ],
     porPuesto: [{ etiqueta: 'Nazarenos', total: 168 }],
     porTalla: [{ etiqueta: 'L', total: 90 }],
     porAlturaHombro: [{ tramo: '170-179', total: 41 }],
@@ -64,7 +70,32 @@ describe('PanelPage', () => {
     // toBeGreaterThan(0) el test pasaria aunque la tarjeta desapareciera, porque
     // el grafico seguiria enseñando el 342 por su cuenta.
     expect(await screen.findAllByText('342')).toHaveLength(2)
-    expect(screen.getByText('302')).toBeInTheDocument()
+    // También dos veces exactamente, y a propósito: la tarjeta de «Papeletas
+    // emitidas» y la barra del año en curso en «Papeletas por año» (mismo
+    // año, mismo total). toHaveLength(2) en vez de toBeInTheDocument():
+    // con un único match, getByText ya lanzaría por ambigüedad.
+    expect(screen.getAllByText('302')).toHaveLength(2)
+  })
+
+  it('enseña las métricas que antes se calculaban y no se pintaban', async () => {
+    responder(panel)
+    renderWithProviders(<PanelPage />)
+    await screen.findByRole('heading', { name: /censo/i })
+
+    // Bajas del censo, junto a las altas en la misma cifra.
+    expect(screen.getByText(/9 bajas/)).toBeInTheDocument()
+    // Hermanos activos sin número de hermano asignado.
+    expect(screen.getByText(/4 hermanos activos sin número/)).toBeInTheDocument()
+    // Dinero por categoría contable.
+    expect(screen.getByText('Flores Cuaresma')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
+    // Papeletas por año: el valor de 2025, que no coincide con ninguna otra
+    // cifra del panel (a diferencia del de 2026, ver el test anterior).
+    expect(screen.getByText('275')).toBeInTheDocument()
+    // Publicaciones y turnos de reparto, en la línea de resumen de actividad.
+    expect(screen.getByText(/7 publicaciones/)).toBeInTheDocument()
+    expect(screen.getByText(/3 turnos próximos/)).toBeInTheDocument()
+    expect(screen.getByText(/capacidad 300/)).toBeInTheDocument()
   })
 
   it('pinta los cuatro bloques', async () => {

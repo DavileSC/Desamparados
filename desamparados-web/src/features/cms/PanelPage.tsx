@@ -50,7 +50,11 @@ export default function PanelPage() {
       </Typography>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
-        <Cifra etiqueta="Hermanos activos" valor={data.censo.activos} pie={`+${data.censo.altas12m} en doce meses`} />
+        <Cifra
+          etiqueta="Hermanos activos"
+          valor={data.censo.activos}
+          pie={`+${data.censo.altas12m} altas / −${data.censo.bajas12m} bajas en doce meses`}
+        />
         <Cifra etiqueta="Papeletas emitidas" valor={data.procesion.papeletas} pie={`Año ${data.procesion.anio}`} />
         <Cifra
           etiqueta="Pendiente de cobro"
@@ -67,6 +71,9 @@ export default function PanelPage() {
             puntos={data.censo.serieMensual.map((p) => ({ x: p.mes, y: p.activos }))}
           />
           <BarrasHorizontales filas={data.censo.porEdad.map((t) => ({ etiqueta: t.tramo, valor: t.total }))} />
+          <Typography variant="body2" color="text.secondary">
+            {data.censo.sinNumeroHermano} hermanos activos sin número de hermano asignado
+          </Typography>
         </Bloque>
 
         <Bloque titulo="Tesorería">
@@ -90,6 +97,8 @@ export default function PanelPage() {
               color: designTokens.dataviz.series[1],
             }}
           />
+          <Typography variant="overline" color="text.secondary">Por categoría contable</Typography>
+          <BarrasHorizontales filas={data.dinero.porCategoria.map((c) => ({ etiqueta: c.categoria, valor: c.total }))} />
         </Bloque>
 
         <Bloque titulo="Procesión">
@@ -98,6 +107,8 @@ export default function PanelPage() {
           <BarrasHorizontales filas={data.procesion.porTalla.map((t) => ({ etiqueta: t.etiqueta, valor: t.total }))} />
           <Typography variant="overline" color="text.secondary">Altura de hombro, para los varales</Typography>
           <BarrasHorizontales filas={data.procesion.porAlturaHombro.map((a) => ({ etiqueta: a.tramo, valor: a.total }))} />
+          <Typography variant="overline" color="text.secondary">Papeletas por año</Typography>
+          <BarrasHorizontales filas={data.procesion.porAnio.map((a) => ({ etiqueta: String(a.anio), valor: a.total }))} />
         </Bloque>
 
         <Bloque titulo="Actividad">
@@ -116,7 +127,8 @@ export default function PanelPage() {
           </Stack>
           <Typography variant="body2" color="text.secondary">
             {data.actividad.noticias.publicadas} noticias publicadas · {data.actividad.noticias.borradores} borradores ·{' '}
-            {data.actividad.reparto.citasReservadas} citas de reparto
+            {data.actividad.publicaciones.total} publicaciones · {data.actividad.reparto.citasReservadas} citas de reparto ·{' '}
+            {data.actividad.reparto.turnosProximos} turnos próximos (capacidad {data.actividad.reparto.capacidadEstimada})
           </Typography>
         </Bloque>
       </Box>
