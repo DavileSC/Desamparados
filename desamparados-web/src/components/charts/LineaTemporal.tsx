@@ -103,6 +103,19 @@ export default function LineaTemporal({ puntos, etiqueta, color, comparar }: Pro
               <circle cx={ultimo.cx} cy={ultimo.cy} r="5" fill={serie.color} stroke={theme.palette.background.paper} strokeWidth="2">
                 <title>{`${serie.etiqueta} · ${ultimoValor.x}: ${ultimoValor.y}`}</title>
               </circle>
+              {/* Etiqueta directa del ultimo valor: el color no puede ser el
+                  unico portador del dato. El verde y el ambar de la paleta no
+                  llegan a 3:1 sobre el lienzo claro del CMS. */}
+              <text
+                x={ultimo.cx - 8}
+                y={ultimo.cy - 10}
+                textAnchor="end"
+                fontSize="11"
+                fontWeight="600"
+                fill={theme.palette.text.secondary}
+              >
+                {ultimoValor.y}
+              </text>
             </g>
           )
         })}

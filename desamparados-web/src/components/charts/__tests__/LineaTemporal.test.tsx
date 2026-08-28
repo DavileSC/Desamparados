@@ -48,6 +48,17 @@ describe('LineaTemporal', () => {
     expect(container.querySelector('path[data-testid="linea-comparada"]')).toBeTruthy()
     expect(screen.getByText('Ingresos')).toBeInTheDocument()
     expect(screen.getByText('Gastos')).toBeInTheDocument()
+    // Cada serie pinta su propio ultimo valor, sin pisarse (aqui quedan a
+    // 120px de separacion vertical: nada de solape evidente).
+    expect(screen.getByText('342')).toBeInTheDocument()
+    expect(screen.getByText('90')).toBeInTheDocument()
+  })
+
+  it('pinta el ultimo valor como texto visible, tambien con una sola serie', () => {
+    // El color no puede ser el unico portador del dato: verde y ambar de la
+    // paleta no llegan a 3:1 sobre el lienzo claro del CMS.
+    renderWithProviders(<LineaTemporal puntos={puntos} etiqueta="Hermanos activos" />)
+    expect(screen.getByText('342')).toBeInTheDocument()
   })
 
   it('las dos series comparten escala', () => {
