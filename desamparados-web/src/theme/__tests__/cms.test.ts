@@ -23,4 +23,15 @@ describe('tema del CMS', () => {
     expect(theme.palette.mode).toBe('dark')
     expect(theme.palette.background.default).toBe(designTokens.colors.primaryContainer)
   })
+
+  it('los estados interactivos no se quedan en blanco sobre el lienzo claro', () => {
+    // Fusionar sobre el tema oscuro deja action y text.disabled en blancos de
+    // baja opacidad: invisibles sobre fondo claro. Este test los fija.
+    const enBlanco = (valor: string) => valor.includes('255, 255, 255') || valor === '#fff'
+    expect(enBlanco(cmsTheme.palette.action.hover)).toBe(false)
+    expect(enBlanco(cmsTheme.palette.action.selected)).toBe(false)
+    expect(enBlanco(cmsTheme.palette.action.focus)).toBe(false)
+    expect(enBlanco(cmsTheme.palette.action.active)).toBe(false)
+    expect(enBlanco(cmsTheme.palette.text.disabled)).toBe(false)
+  })
 })
