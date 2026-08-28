@@ -21,7 +21,8 @@ const rolesTesoreria = [Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR];
 reciboRoutes.get('/mis-recibos', ReciboController.getMyRecibos);
 
 // ==========================================
-//  RUTAS DE ADMIN (Tesorería / Secretaría)
+//  RUTAS DE ADMIN (Tesorería, y ahora también el Hermano Mayor;
+//  Secretaría nunca tuvo acceso aquí)
 // ==========================================
 
 reciboRoutes.get('/admin', checkRole(rolesTesoreria), ReciboController.getAdminRecibos);

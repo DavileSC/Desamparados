@@ -11,9 +11,15 @@ const adminRoutes = Router();
 
 // Middleware Global
 adminRoutes.use(authenticateToken);
+// Suelo de seguridad: nadie fuera de estos dos entra en /api/admin, ni siquiera
+// a una ruta que se añada mañana y se olvide de declarar su checkRole. Cada ruta
+// estrecha después lo que le corresponde.
+adminRoutes.use(checkRole([Role.ADMIN, Role.HERMANO_MAYOR]));
+
 // Los permisos van ruta por ruta: el Hermano Mayor lee la auditoría, pero la
 // gestión de cargos y la configuración siguen siendo del ADMIN, que es el rol
-// técnico. Con un checkRole global esto no se podía distinguir.
+// técnico. El suelo de arriba ya bloquea a cualquier otro rol; esto estrecha
+// más para las rutas que ni al Hermano Mayor le tocan.
 const SOLO_ADMIN = [Role.ADMIN];
 const LECTURA_AUDITORIA = [Role.ADMIN, Role.HERMANO_MAYOR];
 
