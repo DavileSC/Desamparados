@@ -4,6 +4,7 @@ import { Role } from '@prisma/client';
 import { hash } from 'bcryptjs';
 import crypto from 'crypto';
 import db from '../src/config/db';
+import { sembrarContenido } from './seed-contenido';
 
 /**
  * Contraseñas del seed:
@@ -37,7 +38,7 @@ async function main() {
       nombre: 'Super',
       apellidos: 'Administrador',
       telefono: '600000000',
-      direccion: 'Casa Hermandad, Calle Real 1',
+      direccion: 'Casa parroquial, Calle Real 1',
       active: true,
       twoFactorEnabled: false // Empieza desactivado para que puedas entrar y probar el setup
     },
@@ -78,6 +79,12 @@ async function main() {
   });
 
   console.log(`✅ Creado usuario Normal: ${user.email}`);
+
+  // 3. Contenido de ejemplo (noticias, agenda, publicaciones, páginas,
+  //    albacería y categorías contables) para no ver la web vacía.
+  await sembrarContenido();
+
+  console.log('✅ Siembra completada.');
 }
 
 main()
