@@ -61,6 +61,7 @@
     "typescript": "^5.9.3"
   },
   "overrides": {
-    "deepmerge-ts": "^8.0.2"
+    "deepmerge-ts": "^8.0.2",
+    "mariadb": "^3.5.3"
   }
 }
