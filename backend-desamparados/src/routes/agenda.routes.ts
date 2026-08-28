@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { type } from 'arktype';
 import { AgendaController } from '../controllers/agenda.controller.js';
-import { optionalAuthentication } from '../middleware/optionalAuth.js'; 
+import { optionalAuthentication } from '../middleware/session.js'; 
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';

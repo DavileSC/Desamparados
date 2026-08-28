@@ -4,6 +4,8 @@ import app from '../src/app.js';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import db from '../src/config/db.js';
+import { generateToken, generatePending2FAToken } from '../src/utils/jwt.handle.js';
+import { COOKIE_SESION } from '../src/utils/cookies.js';
 
 let server: Server;
 let baseUrl: string;
@@ -92,4 +94,31 @@ test('contacto rechaza un cuerpo inválido antes de intentar enviar correo', asy
   assert.equal(response.status, 400);
   const body = await response.json() as { message?: string };
   assert.equal(body.message, 'Error de validación');
+});
+
+
+// ==========================================
+//  SESION EN COOKIE httpOnly
+// ==========================================
+// Ninguno de estos necesita base de datos: el middleware corta antes de llegar.
+
+test('sin cookie, una ruta privada responde 401', async () => {
+  const res = await fetch(`${baseUrl}/api/auth/mis-datos`);
+  assert.equal(res.status, 401);
+});
+
+test('la cabecera Authorization ya no autentica', async () => {
+  const res = await fetch(`${baseUrl}/api/auth/mis-datos`, {
+    headers: { Authorization: `Bearer ${generateToken(1, 'ADMIN')}` }
+  });
+  assert.equal(res.status, 401);
+});
+
+// El caso critico: el testigo del 2FA identifica a un usuario, pero no puede
+// servir de sesion. Falla antes de tocar la base de datos, asi que no la necesita.
+test('el testigo de 2FA no sirve como cookie de sesion', async () => {
+  const res = await fetch(`${baseUrl}/api/auth/mis-datos`, {
+    headers: { Cookie: `${COOKIE_SESION}=${generatePending2FAToken(1)}` }
+  });
+  assert.equal(res.status, 401);
 });

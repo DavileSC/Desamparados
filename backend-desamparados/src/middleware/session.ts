@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, AuthTokenPayload } from "../utils/jwt.handle.js";
+import { COOKIE_SESION } from "../utils/cookies.js";
 import db from "../config/db.js";
 
 // 1. DECLARATION MERGING: Extiende el Request global de Express de forma automática
@@ -36,14 +37,15 @@ async function validateSessionAgainstDb(payload: AuthTokenPayload): Promise<Auth
 // 2. MIDDLEWARE ESTRICTO (Si no hay token, bloquea)
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.[COOKIE_SESION];
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "NO_TOKEN_PROVIDED", message: "Se requiere un token Bearer válido" });
+    if (!token) {
+      return res.status(401).json({ error: "NO_TOKEN_PROVIDED", message: "Se requiere una sesión iniciada" });
     }
 
-    const token = authHeader.split(" ")[1];
-    const decodedPayload = verifyToken(token);
+    // El tipo esperado es obligatorio: un testigo de 2FA colado en esta cookie
+    // no puede valer como sesión.
+    const decodedPayload = verifyToken(token, 'session');
 
     if (!decodedPayload) {
       return res.status(401).json({ error: "INVALID_TOKEN", message: "El token ha expirado o es inválido" });
@@ -65,15 +67,16 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 // 3. MIDDLEWARE OPCIONAL (Si no hay token, lo deja pasar como invitado)
 export const optionalAuthentication = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.[COOKIE_SESION];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       req.user = undefined;
       return next();
     }
 
-    const token = authHeader.split(' ')[1];
-    const payload = verifyToken(token);
+    // Mismo tipo exigido que en el estricto: si solo lo comprobara aquel, el
+    // testigo de 2FA serviria para identificarse en las rutas opcionales.
+    const payload = verifyToken(token, 'session');
 
     // Token válido según firma: lo validamos también contra BD (rol fresco, no revocado).
     // Si la BD lo invalida, tratamos al visitante como invitado en lugar de bloquearlo.
