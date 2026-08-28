@@ -25,6 +25,20 @@ jobs:
       run:
         working-directory: backend-desamparados
 
+    # Valores de relleno, no secretos. `prisma generate` y `prisma validate` no
+    # se conectan a la base de datos, pero prisma.config.ts exige que la URL
+    # esté definida; y el módulo que firma tokens se niega a cargarse sin
+    # JWT_SECRET, así que sin él no arranca ni el importe de app en las pruebas.
+    # Las pruebas que necesitan MariaDB de verdad se omiten solas.
+    env:
+      DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci_desamparados
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_USER: ci
+      DATABASE_PASSWORD: ci
+      DATABASE_NAME: ci_desamparados
+      JWT_SECRET: valor-de-relleno-solo-para-la-verificacion-automatica
+      NODE_ENV: test
+
     steps:
       - uses: actions/checkout@v4
 
