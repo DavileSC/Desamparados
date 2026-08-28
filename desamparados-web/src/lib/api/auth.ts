@@ -70,3 +70,15 @@ export function resetPassword(token: string, newPassword: string) {
     json: { newPassword },
   })
 }
+
+/**
+ * Sesión actual. `auth: false` a propósito: para un invitado el 401 es la
+ * respuesta normal y no debe tratarse como sesión caducada.
+ */
+export function sesionActual() {
+  return apiFetch<{ user: AuthUser }>('/auth/me', { auth: false })
+}
+
+export function cerrarSesionApi() {
+  return apiFetch<null>('/auth/logout', { method: 'POST', auth: false })
+}

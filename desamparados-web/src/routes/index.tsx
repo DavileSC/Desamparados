@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, ScrollRestoration } from 'react-router-dom'
-import { Box, CircularProgress } from '@mui/material'
+import PageLoader from '../components/PageLoader'
 import PublicLayout from '../app/PublicLayout'
 import AuthLayout from '../app/AuthLayout'
 import BrotherLayout from '../app/BrotherLayout'
@@ -64,21 +64,6 @@ const ProcessionPage = lazy(() => import('../features/brotherArea/procession/Pro
 const PapeletaPage = lazy(() => import('../features/brotherArea/procession/PapeletaPage'))
 const HistoricoPage = lazy(() => import('../features/brotherArea/procession/HistoricoPage'))
 const ReceiptsPage = lazy(() => import('../features/brotherArea/receipts/ReceiptsPage'))
-
-function PageLoader() {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '50vh',
-      }}
-    >
-      <CircularProgress color="primary" />
-    </Box>
-  )
-}
 
 function withSuspense(Component: React.ComponentType) {
   return (
