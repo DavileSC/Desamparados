@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Variables de entorno. Vite solo ignora *.local, asi que un .env se subiria.
+# Ojo: todo lo que lleve el prefijo VITE_ acaba en el bundle publico, asi que
+# aqui no debe guardarse ningun secreto aunque este ignorado.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

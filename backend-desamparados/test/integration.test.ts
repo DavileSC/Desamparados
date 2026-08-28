@@ -323,3 +323,11 @@ test('promover a staff invalida la sesion emitida como hermano', async (t) => {
     await borrarUsuarioPrueba(admin.id);
   }
 });
+
+// El listado de paginas del CMS tiene que declararse ANTES de '/:slug' o queda
+// ensombrecido. Distinguir los tres estados importa: 200 seria estar abierta,
+// 404 seria estar rota por el orden, y solo 401 es correcto.
+test('el listado de paginas del CMS exige sesion y no queda ensombrecido por /:slug', async () => {
+  const res = await fetch(`${baseUrl}/api/pages/list-all`);
+  assert.equal(res.status, 401, `esperado 401; un 404 significa que /:slug la captura, un 200 que esta abierta`);
+});

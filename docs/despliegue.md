@@ -23,6 +23,17 @@ no corresponda a un fichero real tiene que devolver `index.html`.**
 En nginx:
 
 ```nginx
+# Cabeceras de seguridad de la web. Van en un fichero aparte porque en nginx
+# `add_header` NO se hereda en un `location` que tenga sus propios `add_header`:
+# hay que repetirlas con include en cada uno, o se pierden en silencio.
+# Guardar como /etc/nginx/snippets/desamparados-seguridad.conf
+#
+#   add_header X-Content-Type-Options "nosniff" always;
+#   add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+#   add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+#   # frame-ancestors sustituye a X-Frame-Options: nadie puede incrustarnos.
+#   add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; img-src 'self' data: blob: https:; frame-src https://www.google.com; upgrade-insecure-requests" always;
+
 server {
     listen 443 ssl http2;
     server_name www.desamparadosmalaga.com;
@@ -30,8 +41,11 @@ server {
     root /var/www/desamparados/dist;
     index index.html;
 
+    include snippets/desamparados-seguridad.conf;
+
     # Los assets llevan hash en el nombre: se pueden cachear indefinidamente.
     location /assets/ {
+        include snippets/desamparados-seguridad.conf;  # sin esto se pierden
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
@@ -39,6 +53,7 @@ server {
     # index.html NUNCA se cachea: es quien apunta a los assets nuevos tras cada
     # despliegue. Si se cachea, los visitantes siguen viendo la versión vieja.
     location = /index.html {
+        include snippets/desamparados-seguridad.conf;  # sin esto se pierden
         add_header Cache-Control "no-cache";
     }
 
@@ -47,7 +62,8 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # La API, detrás del mismo dominio.
+    # La API, detrás del mismo dominio. Aquí NO se incluye el snippet: las
+    # cabeceras las pone helmet en Express, y duplicarlas daría valores dobles.
     location /api/ {
         proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
@@ -62,6 +78,25 @@ server {
     }
 }
 ```
+
+### Por qué estas cabeceras y no las de helmet
+
+Helmet las pone en Express, **que solo sirve `/api/`**. El HTML de la web lo
+sirve nginx, así que sin este bloque la página que de verdad ejecuta JavaScript
+se queda sin `Content-Security-Policy` y sin protección contra clickjacking. La
+cookie `httpOnly` evita que un XSS se lleve la sesión; el CSP es la otra mitad,
+la que dificulta el XSS en sí.
+
+Dos diferencias deliberadas respecto al CSP de helmet, y **si se copia el de
+helmet tal cual, la web se rompe**:
+
+| Directiva | Por qué |
+|---|---|
+| `frame-src https://www.google.com` | El pie incrusta el mapa de Google Maps tras aceptar cookies. Sin esto el mapa no carga |
+| `img-src … https:` | `imagenUrl` del CMS es texto libre: se pueden pegar imágenes alojadas fuera. Con `'self'` se verían rotas |
+
+`img-src https:` es permisivo a propósito. Se puede cerrar a `'self' data: blob:`
+el día que el CMS obligue a subir las imágenes en vez de aceptar una URL.
 
 En Apache, el equivalente en `.htaccess` es
 `RewriteCond %{REQUEST_FILENAME} !-f` seguido de `RewriteRule . /index.html [L]`.
