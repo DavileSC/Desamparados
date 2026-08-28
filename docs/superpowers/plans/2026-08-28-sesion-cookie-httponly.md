@@ -10,31 +10,31 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-28-sesion-cookie-httponly-design.md`
 
-## ESTADO: implementado, pendiente de verificar con MariaDB
+## ESTADO: implementado y verificado
 
-Las 12 tareas están implementadas en la rama `sesion-cookie-httponly` (13
-commits). Verificado en la máquina de desarrollo: typecheck de ambos proyectos,
-lint, build del front, **54 tests de backend y 35 de frontend en verde**.
+Las 12 tareas están implementadas en la rama `sesion-cookie-httponly`. Verificado
+el 28 de agosto de 2026 contra MariaDB 12.3 local:
 
-**Falta ejecutarlo donde haya MariaDB.** Los 6 tests de la Task 6 y 7 se omiten
-solos sin base de datos, así que hoy *ninguna prueba ha demostrado que una
-cookie de sesión válida funcione*: las verdes prueban que las peticiones sin
-credenciales se rechazan, no que las correctas se acepten.
+- **62 de 62 tests de backend en verde, ninguno omitido.**
+- Frontend: 35 tests, typecheck (`tsc -b`), lint y build limpios.
+- Comprobado en el navegador con Playwright: login por formulario, sesión
+  recuperada tras recargar solo con la cookie, CMS accesible por URL directa,
+  cierre de sesión que borra la cookie de verdad, `localStorage` vacío y la
+  clave antigua `desamparados-auth` borrada sola al cargar.
 
-Pendiente, por orden:
+Dos cosas que salieron por el camino y quedaron arregladas en la rama:
 
-```bash
-git fetch && git checkout sesion-cookie-httponly
+1. **Los tests de base de datos se omitían siempre.** La opción `skip` del runner
+   de Node espera un valor, no una función: con `skip: () => …` la función nunca
+   se llama y, al ser truthy, el test queda desactivado para siempre. Los dos
+   que ya existían en el proyecto no se habían ejecutado nunca.
+2. La agenda cuelga de `/api/events`, no de `/api/agenda`.
 
-cd backend-desamparados
-npm ci                      # cookie-parser es dependencia nueva
-npx prisma generate
-npx prisma migrate deploy
-npm test                    # los 6 deben pasar, no omitirse
-```
-
-Si alguno se omite, MariaDB no está accesible y la ejecución no demuestra nada.
-Después, la comprobación manual en el navegador de la Task 12, Step 1.
+Pendiente ajeno a esta rama, detectado al probar: **el seed crea el hermano con
+la contraseña `user123`, de 7 caracteres, y el formulario exige 8**, así que con
+esa cuenta no se puede entrar por la interfaz. El admin (`admin123`, 8) sí. Y
+`resolveSeedPassword` ignora `SEED_ADMIN_PASSWORD`/`SEED_USER_PASSWORD` en
+desarrollo, así que no hay forma de cambiarlas sin tocar el código.
 
 ---
 
