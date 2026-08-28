@@ -17,6 +17,7 @@ import { procesionRoutes } from './routes/procesion.routes.js';
 import { transaccionRoutes } from './routes/transaccion.routes.js';
 import { publicationRoutes } from './routes/publication.routes.js';
 import { contactRoutes } from './routes/contact.routes.js';
+import { panelRoutes } from './routes/panel.routes.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
 import hppConfig from './config/hpp'; // Protección HPP
@@ -108,6 +109,7 @@ app.use('/api/inventario', inventarioRoutes); // Inventario de enseres
 app.use('/api/admin', adminRoutes); // GESTIÓN DE STAFF Y ROLES
 app.use('/api/procesion', procesionRoutes); // Citas, papeletas y turnos
 app.use('/api/transacciones', transaccionRoutes); // Contabilidad
+app.use('/api/panel', panelRoutes);      // Panel del CMS
 
 // ==========================================
 // 4. MANEJO DE ERRORES GLOBAL
