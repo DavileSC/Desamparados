@@ -10,6 +10,34 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-28-sesion-cookie-httponly-design.md`
 
+## ESTADO: implementado, pendiente de verificar con MariaDB
+
+Las 12 tareas están implementadas en la rama `sesion-cookie-httponly` (13
+commits). Verificado en la máquina de desarrollo: typecheck de ambos proyectos,
+lint, build del front, **54 tests de backend y 35 de frontend en verde**.
+
+**Falta ejecutarlo donde haya MariaDB.** Los 6 tests de la Task 6 y 7 se omiten
+solos sin base de datos, así que hoy *ninguna prueba ha demostrado que una
+cookie de sesión válida funcione*: las verdes prueban que las peticiones sin
+credenciales se rechazan, no que las correctas se acepten.
+
+Pendiente, por orden:
+
+```bash
+git fetch && git checkout sesion-cookie-httponly
+
+cd backend-desamparados
+npm ci                      # cookie-parser es dependencia nueva
+npx prisma generate
+npx prisma migrate deploy
+npm test                    # los 6 deben pasar, no omitirse
+```
+
+Si alguno se omite, MariaDB no está accesible y la ejecución no demuestra nada.
+Después, la comprobación manual en el navegador de la Task 12, Step 1.
+
+---
+
 ## Global Constraints
 
 - **Nomenclatura**: la corporación es **Grupo Parroquial**, nunca «Hermandad» ni «Cofradía». Los miembros sí son «hermanos».
