@@ -1770,9 +1770,9 @@ En `docs/despliegue.md`, sustituir la sección «Decisión pendiente: ¿mismo do
 ```markdown
 ## Decidido: mismo dominio para web y API
 
-Hay un VPS, así que la configuración de arriba es la definitiva: **la web y la
-API comparten dominio**, con `/api/` como ruta. No es una preferencia, es un
-requisito de funcionamiento:
+La configuración de arriba es la definitiva: **la web y la API comparten
+dominio**, con `/api/` como ruta. No es una preferencia, es un **requisito de
+funcionamiento**, y por tanto un requisito para el alojamiento que se contrate:
 
 1. `NUM_PROXIES` y el rate limiting funcionan con la IP real que pasa el proxy.
 2. **La sesión viaja en una cookie `httpOnly` con `SameSite=Strict` y
@@ -1791,7 +1791,7 @@ En `docs/traspaso-2026-08-28.md`, sustituir la sección 5.1 entera («### 5.1 De
 ```markdown
 ### 5.1 Cerrado: el hallazgo 02
 
-**Resuelto el 28 de agosto de 2026.** Se confirmó que hay un VPS y que la web y
+**Resuelto el 28 de agosto de 2026.** Se decidió que la web y
 la API comparten dominio, lo que desbloqueó la solución buena: el JWT ya no vive
 en `localStorage`, sino en una cookie `httpOnly` con `SameSite=Strict`.
 

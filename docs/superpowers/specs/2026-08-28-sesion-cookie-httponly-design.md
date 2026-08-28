@@ -8,8 +8,10 @@
 
 El hallazgo 02 llevaba abierto desde la segunda auditoría porque dependía de una
 decisión de infraestructura: si la web y la API iban a compartir dominio. Ya
-está confirmado que **sí** — hay un VPS, y `docs/despliegue.md` sirve el front en
-`/` y la API en `/api/` detrás del mismo `server_name`.
+está decidido que **sí**: `docs/despliegue.md` sirve el front en `/` y la API en
+`/api/` detrás del mismo `server_name`. El alojamiento está por contratar, así
+que esto es un **requisito** de lo que se contrate, no una descripción de algo
+que ya exista.
 
 Eso permite la solución buena: cookie `httpOnly` con `SameSite=Strict`, sin
 necesidad de protección CSRF explícita. Con la API en otro dominio habría hecho

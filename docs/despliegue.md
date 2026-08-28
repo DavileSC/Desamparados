@@ -4,6 +4,46 @@
 > hará falta el día que se autorice; escribirlo antes evita improvisar durante
 > la puesta en producción.
 
+## Qué hay que contratar
+
+**Nada de esto está contratado todavía.** Los requisitos salen de decisiones ya
+tomadas en el código, así que conviene comprobarlos *antes* de pagar nada.
+
+### Requisitos que no se pueden negociar
+
+| Requisito | Por qué |
+|---|---|
+| **Ejecutar un proceso Node** de larga vida (Node 22+) | La API es Express. Un alojamiento que solo sirva estáticos o PHP no vale |
+| **MariaDB o MySQL** propia | Prisma con el adaptador de MariaDB |
+| **Configurar el proxy inverso** (nginx o Apache) | La web y la API **tienen** que compartir dominio: la sesión va en una cookie `SameSite=Strict` y el navegador no la mandaría a otro origen. Sin esto, nadie puede iniciar sesión |
+| **Añadir cabeceras HTTP propias** | El `Content-Security-Policy` y las demás cabeceras de seguridad de la web las pone nginx, no la aplicación |
+| **Certificado TLS** | Con Let's Encrypt basta |
+| **Disco para las subidas** | Los ficheros del CMS van al sistema de archivos, no a la base de datos |
+
+En la práctica eso significa **un VPS con acceso de administrador**. Un
+alojamiento compartido de los que llevan cPanel puede servir el front, pero
+raramente deja tocar la configuración del proxy ni añadir cabeceras, y ahí se
+cae todo el montaje.
+
+### Tamaño
+
+Para una web de este tamaño el consumo es bajo. Lo que decide es el antivirus:
+
+| Con qué | Memoria recomendada | Nota |
+|---|---|---|
+| Sin ClamAV | 2 GB | Node + MariaDB + nginx van holgados |
+| **Con ClamAV** | **4 GB** | `clamd` carga la base de firmas en memoria y se come él solo más de 1 GB |
+
+Dos núcleos sobran. El disco depende de cuántas fotos y PDF suba el Grupo
+Parroquial: 40 GB dan para mucho tiempo.
+
+### El dominio
+
+También está sin comprar. El `server_name` de la configuración de abajo es un
+marcador de posición. Al elegirlo, recordar que **la API vivirá bajo ese mismo
+dominio en la ruta `/api/`**, así que no hace falta un subdominio aparte para
+ella — y de hecho no debe tenerlo.
+
 ## Piezas
 
 | Pieza | Qué es | Cómo se sirve |
@@ -36,7 +76,7 @@ En nginx:
 
 server {
     listen 443 ssl http2;
-    server_name www.desamparadosmalaga.com;
+    server_name www.desamparadosmalaga.com;  # marcador: el dominio esta sin contratar
 
     root /var/www/desamparados/dist;
     index index.html;
@@ -103,9 +143,9 @@ En Apache, el equivalente en `.htaccess` es
 
 ## Decidido: mismo dominio para web y API
 
-Hay un VPS, así que la configuración de arriba es la definitiva: **la web y la
-API comparten dominio**, con `/api/` como ruta. No es una preferencia, es un
-requisito de funcionamiento:
+La configuración de arriba es la definitiva: **la web y la API comparten
+dominio**, con `/api/` como ruta. No es una preferencia, es un **requisito de
+funcionamiento**, y por tanto un requisito para el alojamiento que se contrate:
 
 1. `NUM_PROXIES` y el rate limiting funcionan con la IP real que pasa el proxy.
 2. **La sesión viaja en una cookie `httpOnly` con `SameSite=Strict` y
