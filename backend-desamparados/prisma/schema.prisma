@@ -435,6 +435,11 @@ model Noticia {
   visible   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // La web pública filtra por visible y ordena por fecha; el CMS ordena por
+  // fecha sin filtrar. Mismo par de índices que Publicacion, que se consulta igual.
+  @@index([visible, fecha])
+  @@index([fecha])
 }
 
 enum TipoPublicacion {
