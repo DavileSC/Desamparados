@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
 
 const email = process.env.INTEGRATION_ADMIN_EMAIL || 'admin@cofradia.com';
-const password = process.env.INTEGRATION_ADMIN_PASSWORD || 'admin123';
+const password = process.env.INTEGRATION_ADMIN_PASSWORD || 'Nazareno-Local-2026';
 const server = app.listen(0);
 await new Promise<void>((resolve) => server.once('listening', resolve));
 const port = (server.address() as AddressInfo).port;

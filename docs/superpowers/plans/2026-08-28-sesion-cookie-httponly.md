@@ -30,11 +30,10 @@ Dos cosas que salieron por el camino y quedaron arregladas en la rama:
    que ya existían en el proyecto no se habían ejecutado nunca.
 2. La agenda cuelga de `/api/events`, no de `/api/agenda`.
 
-Pendiente ajeno a esta rama, detectado al probar: **el seed crea el hermano con
-la contraseña `user123`, de 7 caracteres, y el formulario exige 8**, así que con
-esa cuenta no se puede entrar por la interfaz. El admin (`admin123`, 8) sí. Y
-`resolveSeedPassword` ignora `SEED_ADMIN_PASSWORD`/`SEED_USER_PASSWORD` en
-desarrollo, así que no hay forma de cambiarlas sin tocar el código.
+Detectado al probar y **ya corregido aparte**: las contraseñas que sembraba el
+seed eran más cortas que el mínimo, así que con esas cuentas no se podía entrar
+por el formulario; y `resolveSeedPassword` ignoraba las variables de entorno en
+desarrollo. Ambas cosas están arregladas.
 
 ---
 

@@ -19,8 +19,11 @@ que **debes** cumplir al desplegar en producción.
       Cloudflare+Nginx, `0` si no hay proxy. Un valor incorrecto permite
       falsear la IP y saltarse los rate limiters.
 - [ ] **Contraseñas del seed**: en producción el seed genera contraseñas
-      aleatorias (o define `SEED_ADMIN_PASSWORD`). Cambia `admin123`
-      inmediatamente si sembraste en desarrollo.
+      aleatorias y las muestra una sola vez (o define `SEED_ADMIN_PASSWORD` y
+      `SEED_USER_PASSWORD`, que mandan también en desarrollo). Las de desarrollo
+      llevan `Local` en el nombre y **están en el repositorio**: si aparecen en
+      un servidor real, es que se sembró sin `NODE_ENV=production`. Cámbialas
+      de inmediato.
 - [ ] **Usuario de BD dedicado** (no root) con privilegios solo sobre
       `desamparados_db`.
 

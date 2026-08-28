@@ -120,8 +120,10 @@ Recomendadas:
 
 - [ ] Rotar `JWT_SECRET` y las credenciales de correo que hayan podido circular
       durante el desarrollo.
-- [ ] Cambiar las contraseñas del seed (`admin123` / `user123`) o crear las
-      cuentas reales y borrar las de prueba.
+- [ ] Sembrar **con `NODE_ENV=production`**, o definir `SEED_ADMIN_PASSWORD` y
+      `SEED_USER_PASSWORD`. Sin eso se usan las contraseñas de desarrollo, que
+      están en el repositorio. Después, crear las cuentas reales y borrar las
+      de prueba.
 - [ ] Comprobar que `https://…/actualidad/noticias` carga al entrar directamente.
 - [ ] Comprobar que el certificado cubre `www` y el dominio sin `www`.
 - [ ] Programar la copia de seguridad y **restaurarla una vez** para verificar

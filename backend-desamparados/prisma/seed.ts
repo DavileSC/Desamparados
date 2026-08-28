@@ -8,15 +8,27 @@ import { sembrarContenido } from './seed-contenido';
 
 /**
  * Contraseñas del seed:
- * - En DESARROLLO usa las clásicas (admin123/user123) para no romper el workflow local.
- * - En PRODUCCIÓN lee SEED_ADMIN_PASSWORD/SEED_USER_PASSWORD del entorno y,
- *   si no están definidas, genera aleatorias y las muestra UNA sola vez.
+ * - SEED_ADMIN_PASSWORD/SEED_USER_PASSWORD mandan siempre, también en desarrollo.
+ * - Sin ellas, en DESARROLLO se usan las constantes de abajo, que cumplen la
+ *   política real del proyecto: 12 caracteres mínimo y ninguna palabra de la
+ *   lista negra. Las anteriores eran más cortas que ese mínimo, así que con las
+ *   cuentas sembradas no se podía ni entrar por el formulario.
+ * - Sin ellas, en PRODUCCIÓN se genera una aleatoria y se muestra UNA sola vez.
+ *
+ * OJO: isDev es "NODE_ENV distinto de production". Si se despliega olvidando
+ * NODE_ENV=production se usarían estas contraseñas, que están en el repositorio:
+ * por eso llevan "Local" en el nombre, para que cante en un servidor real.
  */
 const isDev = process.env.NODE_ENV !== 'production';
 
+const PASSWORD_DEV_ADMIN = 'Nazareno-Local-2026';
+const PASSWORD_DEV_USER = 'Siembra-Local-Titular';
+
 function resolveSeedPassword(envVar: string, devDefault: string, label: string): string {
-  if (isDev) return devDefault;
+  // El entorno manda siempre. Antes se miraba isDev primero, así que estas
+  // variables se ignoraban en desarrollo sin avisar de nada.
   if (process.env[envVar]) return process.env[envVar]!;
+  if (isDev) return devDefault;
   const generated = crypto.randomBytes(12).toString('base64url');
   console.log(`⚠️  [Seed PRODUCCIÓN] ${label}: ${generated} (guárdala AHORA, no se volverá a mostrar)`);
   return generated;
@@ -25,7 +37,7 @@ function resolveSeedPassword(envVar: string, devDefault: string, label: string):
 async function main() {
   console.log('🌱 Iniciando la siembra de datos (Seeding)...');
 
-  const adminPassword = await hash(resolveSeedPassword('SEED_ADMIN_PASSWORD', 'admin123', 'Contraseña ADMIN'), 10);
+  const adminPassword = await hash(resolveSeedPassword('SEED_ADMIN_PASSWORD', PASSWORD_DEV_ADMIN, 'Contraseña ADMIN'), 10);
 
   const admin = await db.user.upsert({
     where: { email: 'admin@cofradia.com' },
@@ -47,7 +59,7 @@ async function main() {
   console.log(`✅ Creado usuario Admin: ${admin.email}`);
 
   // 2. Crear un HERMANO RASO (Usuario normal)
-  const userPassword = await hash(resolveSeedPassword('SEED_USER_PASSWORD', 'user123', 'Contraseña USER de prueba'), 10);
+  const userPassword = await hash(resolveSeedPassword('SEED_USER_PASSWORD', PASSWORD_DEV_USER, 'Contraseña USER de prueba'), 10);
   
   const user = await db.user.upsert({
     where: { email: 'hermano@cofradia.com' },
