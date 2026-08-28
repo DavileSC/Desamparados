@@ -94,9 +94,10 @@ describe('acceso al panel', () => {
     test(`${rol} pasa el filtro de permisos`, async (t) => {
       if (!dbDisponible) return t.skip(SIN_DB);
       const res = await pedirPanel(rol);
-      // 200 con base de datos, 500 sin ella: lo que se comprueba aquí es que
-      // NO es 401 ni 403, es decir, que el rol tiene permiso.
-      assert.ok(res.status !== 401 && res.status !== 403, `${rol} recibió ${res.status}`);
+      // Estos seis casos ya solo corren con MariaDB levantada (si no, se
+      // omiten arriba), así que aquí no vale un 404 ni un 500: solo 200 es
+      // que el rol tiene permiso y el panel respondió de verdad.
+      assert.equal(res.status, 200, `${rol} recibió ${res.status}`);
     });
   }
 });

@@ -57,7 +57,7 @@ before(async () => {
   }
 
   // Usuarios reales y desechables para los roles que sondean estas pruebas.
-  for (const rol of [Role.HERMANO_MAYOR, Role.REDES, Role.USER]) {
+  for (const rol of [Role.HERMANO_MAYOR, Role.REDES, Role.USER, Role.SECRETARIA]) {
     const usuario = await crearUsuarioPrueba(rol);
     usuariosTestId.push(usuario.id);
     roleToUserId[rol] = usuario.id;
@@ -106,6 +106,16 @@ describe('permisos del Hermano Mayor', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await como('HERMANO_MAYOR', '/api/admin/audit-logs');
     assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
+  });
+
+  // El suelo de seguridad de admin.routes.ts (checkRole([ADMIN, HERMANO_MAYOR])
+  // tras authenticateToken) no tenía test negativo propio: es lo único que
+  // protege /api/admin de cualquier otro rol, incluida una ruta que se añada
+  // mañana y se olvide de declarar su checkRole estrecho.
+  test('un rol fuera del suelo de /api/admin recibe 403', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('SECRETARIA', '/api/admin/audit-logs');
+    assert.equal(res.status, 403);
   });
 
   // Noticias y Publicaciones son contenido, no administración del sistema:
