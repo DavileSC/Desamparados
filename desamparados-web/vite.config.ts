@@ -5,7 +5,8 @@ import { defineConfig, loadEnv } from 'vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   // En desarrollo, /api se proxyea al backend (por defecto :3001) para evitar CORS.
-  // En producción, o bien se sirve bajo el mismo dominio, o se define VITE_API_URL.
+  // En producción se sirve bajo el mismo dominio: la cookie de sesión es
+  // SameSite=Strict y no viajaría a otro origen.
   const backendUrl = env.VITE_DEV_BACKEND_URL || 'http://localhost:3001'
 
   return {

@@ -66,19 +66,20 @@ server {
 En Apache, el equivalente en `.htaccess` es
 `RewriteCond %{REQUEST_FILENAME} !-f` seguido de `RewriteRule . /index.html [L]`.
 
-## Decisión pendiente: ¿mismo dominio para web y API?
+## Decidido: mismo dominio para web y API
 
-La configuración de arriba las pone **bajo el mismo dominio** (`/api/` como
-ruta), y conviene que siga así por dos motivos:
+Hay un VPS, así que la configuración de arriba es la definitiva: **la web y la
+API comparten dominio**, con `/api/` como ruta. No es una preferencia, es un
+requisito de funcionamiento:
 
 1. `NUM_PROXIES` y el rate limiting funcionan con la IP real que pasa el proxy.
-2. Permite mover el token de sesión a una cookie `httpOnly` con
-   `SameSite=Strict`, que es la única forma de que un fallo de XSS no se lleve
-   la sesión por delante. Con la API en otro dominio haría falta
-   `SameSite=None; Secure` y, con ello, protección CSRF explícita.
+2. **La sesión viaja en una cookie `httpOnly` con `SameSite=Strict` y
+   `Path=/api`.** Con la API en otro dominio el navegador no la mandaría y nadie
+   podría iniciar sesión.
 
-Hoy el token vive en `localStorage` precisamente porque esta decisión estaba
-abierta. **Confirmar el dominio único desbloquea ese cambio.**
+Por eso el bloque `location /api/` del proxy es obligatorio. Y por eso
+`VITE_API_URL` no puede apuntar a otro origen: o se deja vacío, o se pone una
+ruta del mismo dominio.
 
 ## Variables de entorno del backend
 
