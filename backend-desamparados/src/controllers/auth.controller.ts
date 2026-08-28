@@ -155,6 +155,28 @@ export class AuthController {
   }
 
   // =================================================================
+  //  SESION ACTUAL Y CIERRE
+  // =================================================================
+
+  static async me(req: Request, res: Response) {
+    try {
+      const user = await AuthService.perfilSesion(req.user!.id);
+      res.status(200).json({ user });
+    } catch (error) {
+      handleHttp(res, error, 'No se ha podido recuperar la sesión');
+    }
+  }
+
+  /**
+   * Sin authenticateToken a proposito: una sesion ya caducada tambien tiene que
+   * poder limpiar su cookie. Es idempotente.
+   */
+  static async logout(_req: Request, res: Response) {
+    limpiarCookiesAuth(res);
+    res.status(204).end();
+  }
+
+  // =================================================================
   //  RGPD: DATOS PROPIOS (Acceso y Supresión)
   // =================================================================
 

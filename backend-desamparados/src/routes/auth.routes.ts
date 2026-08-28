@@ -57,6 +57,9 @@ authRoutes.post('/login', authLimiter, validate(loginSchema), AuthController.log
 // Validación 2FA (objetivo clásico de fuerza bruta de códigos de 6 dígitos)
 authRoutes.post('/login/2fa', authLimiter, validate(verify2FASchema), AuthController.loginVerify2FA);
 
+// Cierre de sesion: sin autenticar, para que una sesion caducada pueda limpiarse.
+authRoutes.post('/logout', AuthController.logout);
+
 // Recuperación de contraseña
 authRoutes.post('/reset-password', authLimiter, validate(requestPasswordResetSchema), AuthController.requestPasswordReset);
 authRoutes.post('/reset-password/:token', authLimiter, validate(resetPasswordRequestSchema), AuthController.resetPassword);
@@ -65,6 +68,9 @@ authRoutes.post('/reset-password/:token', authLimiter, validate(resetPasswordReq
 //  RUTAS PRIVADAS (Gestión del Perfil)
 // ==========================================
 // Requieren Header: Authorization: Bearer <TOKEN>
+
+// Sesion actual: el frontend la consulta al arrancar, ya no guarda nada en el navegador.
+authRoutes.get('/me', authenticateToken, AuthController.me);
 
 authRoutes.get('/2fa/generate', authenticateToken, checkRole(rolesStaffCMS), AuthController.setup2FAGenerate);
 authRoutes.post('/2fa/enable', authenticateToken, checkRole(rolesStaffCMS), validate(enable2FASchema), AuthController.setup2FAEnable);

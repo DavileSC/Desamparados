@@ -143,3 +143,18 @@ test('el 2FA ya no acepta un userId en el cuerpo', async () => {
   // 401 por falta de testigo, nunca 200: el userId del cuerpo se ignora
   assert.equal(res.status, 401);
 });
+
+test('/me sin cookie responde 401', async () => {
+  const res = await fetch(`${baseUrl}/api/auth/me`);
+  assert.equal(res.status, 401);
+});
+
+test('logout responde 204 y borra las cookies aunque no hubiera sesion', async () => {
+  const res = await fetch(`${baseUrl}/api/auth/logout`, { method: 'POST' });
+  assert.equal(res.status, 204);
+
+  const borrados = res.headers.getSetCookie();
+  // El borrado tiene que repetir el Path exacto o el navegador lo ignora
+  assert.ok(borrados.some((c) => c.includes('desamparados_session=') && c.includes('Path=/api')));
+  assert.ok(borrados.some((c) => c.includes('desamparados_2fa=') && c.includes('Path=/api/auth')));
+});

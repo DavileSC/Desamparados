@@ -199,6 +199,26 @@ export class AuthService {
     };
   }
 
+  /**
+   * Los datos de sesion que el frontend necesita al arrancar. Devuelve el mismo
+   * objeto `user` que el login, para que el front tenga un unico formato.
+   */
+  static async perfilSesion(userId: number) {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      include: {
+        hermanos: {
+          where: { activo: true },
+          select: { id: true, nombre: true, esTitular: true, puesto: true }
+        }
+      }
+    });
+
+    if (!user) throw new NotFoundError('Usuario no encontrado');
+
+    return { id: user.id, email: user.email, role: user.role, perfiles: user.hermanos };
+  }
+
   // Contador de intentos fallidos de 2FA por cuenta (defensa contra fuerza bruta
   // distribuida, que el rate limiter por IP no cubre). En memoria: suficiente
   // para una instancia; con varias instancias habría que moverlo a Redis/BD.
