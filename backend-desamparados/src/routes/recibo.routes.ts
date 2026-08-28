@@ -13,7 +13,7 @@ const reciboRoutes = Router();
 reciboRoutes.use(authenticateToken);
 
 const validateId = validate(type({ params: { id: idParam } }));
-const rolesTesoreria = [Role.ADMIN, Role.TESORERIA];
+const rolesTesoreria = [Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR];
 
 // ==========================================
 //  RUTAS DE USUARIO (Familia)
