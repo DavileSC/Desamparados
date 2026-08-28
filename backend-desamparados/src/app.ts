@@ -1,5 +1,6 @@
 import express, { Application } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import { publicStorageDir } from './middleware/upload.middleware.js';
 
@@ -54,10 +55,16 @@ if (process.env.NODE_ENV === 'production' && !allowedOrigin) {
   console.warn('⚠️  [Security] Producción sin FRONTEND_URL: CORS desactivado. Define la variable para permitir el frontend.');
 }
 app.use(cors({
-    origin: allowedOrigin ? allowedOrigin : (process.env.NODE_ENV === 'production' ? false : '*'),
+    // '*' es incompatible con credentials, asi que en desarrollo reflejamos el origen.
+    origin: allowedOrigin ? allowedOrigin : (process.env.NODE_ENV === 'production' ? false : true),
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    // Ya no se usa Authorization: la sesion viaja en cookie.
+    allowedHeaders: ['Content-Type']
 }));
+
+// Las cookies de sesion y del paso intermedio del 2FA. Express no las parsea solo.
+app.use(cookieParser());
 
 // Rate Limiting Global (Protección DDoS básica)
 app.use(globalLimiter);
