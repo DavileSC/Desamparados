@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider, Link } from 'react-router-dom'
 import cmsTheme from '../../../theme/cms'
@@ -28,9 +28,10 @@ function montar(props: Partial<Parameters<typeof PantallaEdicion>[0]> = {}) {
     ],
     { initialEntries: ['/cms/noticias/1/editar'] },
   )
-  return render(
-    <ThemeProvider theme={cmsTheme}><RouterProvider router={router} /></ThemeProvider>,
-  )
+  return {
+    ...render(<ThemeProvider theme={cmsTheme}><RouterProvider router={router} /></ThemeProvider>),
+    router,
+  }
 }
 
 describe('PantallaEdicion', () => {
@@ -61,6 +62,16 @@ describe('PantallaEdicion', () => {
     expect(screen.getByText('Campos del formulario')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Salir sin guardar' }))
     expect(await screen.findByRole('heading', { name: /archivo editorial/i })).toBeInTheDocument()
+  })
+
+  it('mientras guarda no pregunta: esos cambios son los que se están guardando', async () => {
+    // La página navega al listado en cuanto el servidor responde, y en ese
+    // momento el formulario sigue «sucio»: sin esto, guardar acababa con el
+    // aviso de que se iban a perder los cambios recién guardados.
+    const { router } = montar({ sucio: true, guardando: true })
+    await act(async () => { await router.navigate('/cms/noticias') })
+    expect(await screen.findByRole('heading', { name: /archivo editorial/i })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('sin cambios, cancelar sale directo', async () => {

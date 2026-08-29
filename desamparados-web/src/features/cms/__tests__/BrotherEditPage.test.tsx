@@ -17,9 +17,11 @@ const ficha = {
 const dependiente = { ...ficha, id: 43, nombre: 'Pablo', apellidos: 'Ruiz Serrano', esTitular: false, fechaNacimiento: '2006-05-15T00:00:00.000Z', user: { email: 'padre@ejemplo.invalido', telefono: '600999888' } }
 
 function responder(cuerpo: unknown, status = 200) {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+  // Una `Response` nueva por llamada: su cuerpo solo se puede leer una vez, y
+  // la pantalla hace dos peticiones (cargar la ficha y guardarla).
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(
     new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } }),
-  ))
+  )))
 }
 
 function montar(id = 42) {
@@ -118,6 +120,21 @@ describe('BrotherEditPage', () => {
     expect(JSON.parse(opciones.body as string)).toEqual({ newEmail: 'pablo@ejemplo.invalido' })
     // Nadie ha escrito una contraseña en ningún sitio: eso es lo que se buscaba.
     expect(opciones.body as string).not.toMatch(/password/i)
+  })
+
+  it('al guardar vuelve al listado sin preguntar por los cambios', async () => {
+    // Los cambios se acaban de guardar: preguntar si se van a perder, justo
+    // después de guardarlos, es el aviso más confuso posible.
+    responder(ficha)
+    montar()
+    const dni = await screen.findByLabelText('DNI')
+    fireEvent.change(dni, { target: { value: '20000001X' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByRole('heading', { name: /gestión de hermanos/i })).toBeInTheDocument()
+    expect(screen.queryByText(/se van a perder/i)).not.toBeInTheDocument()
   })
 
   it('explica el fallo si la ficha no carga', async () => {

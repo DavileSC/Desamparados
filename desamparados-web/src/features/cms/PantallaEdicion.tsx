@@ -25,7 +25,11 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
   const navegar = useNavigate()
   const [confirmandoGuardado, setConfirmandoGuardado] = useState(false)
 
-  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sucio && currentLocation.pathname !== nextLocation.pathname)
+  // `guardando` queda fuera del bloqueo a propósito: la pantalla navega al
+  // listado en cuanto el servidor responde, y en ese momento el formulario
+  // sigue distinto del que se cargó. Sin esta condición, guardar terminaba
+  // preguntando si se pierden los cambios que se acaban de guardar.
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sucio && !guardando && currentLocation.pathname !== nextLocation.pathname)
 
   return (
     <>
