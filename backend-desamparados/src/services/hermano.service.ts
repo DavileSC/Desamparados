@@ -4,6 +4,7 @@ import { Prisma, Role } from '@prisma/client';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto, UpdateAdminHermanoDto } from '../dtos/hermano.dto';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { comprobarFechasHermano } from '../domain/fechas-hermano';
 
 // 1. DICCIONARIO DE ERRORES (Centralizado)
 const HERMANO_ERRORS = {
@@ -43,7 +44,8 @@ const USER_EDITABLE_FIELDS = [
 const ADMIN_EDITABLE_FIELDS = [
   ...USER_EDITABLE_FIELDS,
   'tieneTunicaPropia', 'tunica', 'alturaHombro', 'puesto',
-  'activo', 'esTitular', 'numeroHermano'
+  'activo', 'esTitular', 'numeroHermano',
+  'fechaAlta', 'fechaBaja'
 ] as const;
 
 type EditableField = typeof ADMIN_EDITABLE_FIELDS[number];
@@ -315,9 +317,16 @@ export class HermanoService {
 
   static async updateAdminMode(id: number, data: UpdateAdminHermanoDto) {
     const dataToUpdate = this.prepareUpdateData(data, ADMIN_EDITABLE_FIELDS);
+
+    // La baja se compara con el alta que vaya a quedar en la ficha, no solo con
+    // la que venga en el cuerpo: cambiar únicamente la baja es lo habitual.
+    const alta = (dataToUpdate.fechaAlta as Date | undefined)
+      ?? (await db.hermano.findUnique({ where: { id }, select: { fechaAlta: true } }))?.fechaAlta;
+    const forzado = comprobarFechasHermano(alta, dataToUpdate.fechaBaja as Date | null | undefined);
+
     return await db.hermano.update({
       where: { id },
-      data: dataToUpdate
+      data: { ...dataToUpdate, ...forzado }
     });
   }
 
@@ -545,10 +554,12 @@ export class HermanoService {
       cleanedData[field] = value;
     }
 
-    if (typeof cleanedData.fechaNacimiento === 'string') {
-      const fecha = new Date(cleanedData.fechaNacimiento);
-      if (Number.isNaN(fecha.getTime())) throw new HttpError('Fecha de nacimiento inválida.');
-      cleanedData.fechaNacimiento = fecha;
+    for (const campo of ['fechaNacimiento', 'fechaAlta', 'fechaBaja'] as const) {
+      const valor = cleanedData[campo];
+      if (typeof valor !== 'string') continue;
+      const fecha = new Date(valor);
+      if (Number.isNaN(fecha.getTime())) throw new HttpError(`Fecha inválida en ${campo}.`);
+      cleanedData[campo] = fecha;
     }
 
     return cleanedData as Prisma.HermanoUpdateInput;
