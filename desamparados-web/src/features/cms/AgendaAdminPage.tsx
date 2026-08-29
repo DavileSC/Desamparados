@@ -4,22 +4,15 @@ import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
-import { createEvent, deleteEvent, getAdminEvents, updateEvent, type ApiEvent, type EventPayload } from '../../lib/api/events'
+import { Link } from 'react-router-dom'
+import { createEvent, deleteEvent, getAdminEvents, type ApiEvent, type EventPayload } from '../../lib/api/events'
 
 const emptyForm: EventPayload = { title: '', description: '', startDate: '', endDate: null, location: '', visibility: 'public', type: 'OTRO' }
 const eventTypes: ApiEvent['type'][] = ['CULTO', 'PROCESION', 'FORMACION', 'ENSAYO', 'REUNION', 'SOCIAL', 'OTRO']
 
-function inputDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  const offset = date.getTimezoneOffset() * 60000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
-}
-
 export default function AgendaAdminPage() {
   const [items, setItems] = useState<ApiEvent[]>([])
   const [form, setForm] = useState<EventPayload>(emptyForm)
-  const [editingId, setEditingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,20 +25,14 @@ export default function AgendaAdminPage() {
   }, [])
 
   const updateField = (field: keyof EventPayload, value: string) => setForm((current) => ({ ...current, [field]: value }))
-  const edit = (item: ApiEvent) => {
-    setEditingId(item.id)
-    setForm({ title: item.title, description: item.description ?? '', startDate: inputDate(item.startDate), endDate: item.endDate ? inputDate(item.endDate) : null, location: item.location ?? '', visibility: item.visibility, type: item.type })
-    setNotice(null)
-  }
-  const reset = () => { setEditingId(null); setForm(emptyForm) }
+  const reset = () => setForm(emptyForm)
 
   const save = async () => {
     setSaving(true); setError(null); setNotice(null)
     try {
       const payload = { ...form, startDate: new Date(form.startDate).toISOString(), endDate: form.endDate ? new Date(form.endDate).toISOString() : null }
-      if (editingId === null) await createEvent(payload)
-      else await updateEvent(editingId, payload)
-      await load(); reset(); setNotice('Evento guardado correctamente.')
+      await createEvent(payload)
+      await load(); reset(); setNotice('Evento creado correctamente.')
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido guardar el evento.') }
     finally { setSaving(false) }
   }
@@ -63,7 +50,7 @@ export default function AgendaAdminPage() {
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
     <Paper sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
       <Stack spacing={2}>
-        <Typography variant="h4">{editingId === null ? 'Nuevo evento' : 'Editar evento'}</Typography>
+        <Typography variant="h4">Nuevo evento</Typography>
         <TextField label="Título" value={form.title} onChange={(event) => updateField('title', event.target.value)} fullWidth />
         <TextField label="Descripción" value={form.description} onChange={(event) => updateField('description', event.target.value)} fullWidth multiline />
         <TextField label="Inicio" type="datetime-local" value={form.startDate} onChange={(event) => updateField('startDate', event.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
@@ -73,10 +60,10 @@ export default function AgendaAdminPage() {
           <Select value={form.type} onChange={(event) => updateField('type', event.target.value)} aria-label="Tipo de evento" fullWidth>{eventTypes.map((type) => <MenuItem key={type} value={type}>{type}</MenuItem>)}</Select>
           <Select value={form.visibility} onChange={(event) => updateField('visibility', event.target.value)} aria-label="Visibilidad" fullWidth><MenuItem value="public">Público</MenuItem><MenuItem value="members_only">Solo hermanos</MenuItem></Select>
         </Stack>
-        <Box><Button variant="contained" startIcon={editingId === null ? <AddIcon /> : <EditIcon />} onClick={save} disabled={saving || !form.title || !form.startDate}>{saving ? 'Guardando...' : 'Guardar'}</Button>{editingId !== null && <Button onClick={reset} sx={{ ml: 2 }}>Cancelar</Button>}</Box>
+        <Box><Button variant="contained" startIcon={<AddIcon />} onClick={save} disabled={saving || !form.title || !form.startDate}>{saving ? 'Guardando...' : 'Guardar'}</Button></Box>
       </Stack>
     </Paper>
     <Typography variant="h4" sx={{ mb: 2 }}>Eventos</Typography>
-    {loading ? <CircularProgress aria-label="Cargando agenda" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.title}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.startDate).toLocaleString('es-ES')} · {item.visibility === 'public' ? 'Público' : 'Solo hermanos'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.title}`} onClick={() => edit(item)}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.title}`} onClick={() => remove(item.id)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay eventos registrados.</Alert>}</Stack>}
+    {loading ? <CircularProgress aria-label="Cargando agenda" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.title}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.startDate).toLocaleString('es-ES')} · {item.visibility === 'public' ? 'Público' : 'Solo hermanos'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.title}`} component={Link} to={`/cms/agenda/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.title}`} onClick={() => remove(item.id)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay eventos registrados.</Alert>}</Stack>}
   </>
 }

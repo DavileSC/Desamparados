@@ -60,3 +60,11 @@ export function updatePublication(id: number, payload: Partial<PublicationPayloa
 export function deletePublication(id: number) {
   return apiFetch<{ message: string }>(`/publications/${id}`, { method: 'DELETE' })
 }
+
+/** Como en noticias: el listado del CMS es la única vista con los borradores. */
+export async function getAdminPublicationById(id: number) {
+  const publications = await getAdminPublications()
+  const publication = publications.find((item) => item.id === id)
+  if (!publication) throw new Error('No se ha encontrado la publicación.')
+  return publication
+}

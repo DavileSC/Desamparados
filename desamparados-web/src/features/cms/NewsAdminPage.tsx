@@ -4,14 +4,14 @@ import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
-import { createNews, deleteNews, getAdminNews, updateNews, type ApiNews, type NewsPayload } from '../../lib/api/news'
+import { Link } from 'react-router-dom'
+import { createNews, deleteNews, getAdminNews, type ApiNews, type NewsPayload } from '../../lib/api/news'
 
 const emptyForm: NewsPayload = { titulo: '', contenido: '', extracto: '', imagenUrl: '', visible: true }
 
 export default function NewsAdminPage() {
   const [items, setItems] = useState<ApiNews[]>([])
   const [form, setForm] = useState<NewsPayload>(emptyForm)
-  const [editingId, setEditingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,24 +25,17 @@ export default function NewsAdminPage() {
 
   const updateField = (field: keyof NewsPayload, value: string | boolean) => setForm((current) => ({ ...current, [field]: value }))
 
-  const edit = (item: ApiNews) => {
-    setEditingId(item.id)
-    setForm({ titulo: item.titulo, contenido: item.contenido, extracto: item.extracto ?? '', imagenUrl: item.imagenUrl ?? '', visible: item.visible, fecha: item.fecha.slice(0, 10), slug: item.slug })
-    setNotice(null)
-  }
-
-  const reset = () => { setEditingId(null); setForm(emptyForm) }
+  const reset = () => setForm(emptyForm)
 
   const save = async () => {
     setSaving(true)
     setError(null)
     setNotice(null)
     try {
-      if (editingId === null) await createNews(form)
-      else await updateNews(editingId, form)
+      await createNews(form)
       await load()
       reset()
-      setNotice('Noticia guardada correctamente.')
+      setNotice('Noticia creada correctamente.')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'No se ha podido guardar la noticia.')
     } finally { setSaving(false) }
@@ -61,17 +54,17 @@ export default function NewsAdminPage() {
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
     <Paper sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
       <Stack spacing={2}>
-        <Typography variant="h4">{editingId === null ? 'Nueva noticia' : 'Editar noticia'}</Typography>
+        <Typography variant="h4">Nueva noticia</Typography>
         <TextField label="Título" value={form.titulo} onChange={(event) => updateField('titulo', event.target.value)} fullWidth />
         <TextField label="Extracto" value={form.extracto} onChange={(event) => updateField('extracto', event.target.value)} fullWidth multiline />
         <TextField label="Contenido HTML" value={form.contenido} onChange={(event) => updateField('contenido', event.target.value)} fullWidth multiline minRows={7} />
         <TextField label="URL de imagen" value={form.imagenUrl} onChange={(event) => updateField('imagenUrl', event.target.value)} fullWidth />
-        <TextField label="Slug (opcional al crear)" value={form.slug ?? ''} onChange={(event) => updateField('slug', event.target.value)} fullWidth disabled={editingId !== null} />
+        <TextField label="Slug (opcional)" value={form.slug ?? ''} onChange={(event) => updateField('slug', event.target.value)} fullWidth />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Switch checked={form.visible} onChange={(event) => updateField('visible', event.target.checked)} /> Visible públicamente</Box>
-        <Stack direction="row" spacing={2}><Button variant="contained" startIcon={editingId === null ? <AddIcon /> : <EditIcon />} onClick={save} disabled={saving || !form.titulo || !form.contenido}>{saving ? 'Guardando...' : 'Guardar'}</Button>{editingId !== null && <Button onClick={reset}>Cancelar</Button>}</Stack>
+        <Stack direction="row" spacing={2}><Button variant="contained" startIcon={<AddIcon />} onClick={save} disabled={saving || !form.titulo || !form.contenido}>{saving ? 'Guardando...' : 'Guardar'}</Button></Stack>
       </Stack>
     </Paper>
     <Typography variant="h4" sx={{ mb: 2 }}>Archivo editorial</Typography>
-    {loading ? <CircularProgress aria-label="Cargando noticias" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.titulo}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.fecha).toLocaleDateString('es-ES')} · {item.visible ? 'Publicada' : 'Borrador'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.titulo}`} onClick={() => edit(item)}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.titulo}`} onClick={() => remove(item.id)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay noticias en el archivo.</Alert>}</Stack>}
+    {loading ? <CircularProgress aria-label="Cargando noticias" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.titulo}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.fecha).toLocaleDateString('es-ES')} · {item.visible ? 'Publicada' : 'Borrador'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.titulo}`} component={Link} to={`/cms/noticias/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.titulo}`} onClick={() => remove(item.id)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay noticias en el archivo.</Alert>}</Stack>}
   </>
 }

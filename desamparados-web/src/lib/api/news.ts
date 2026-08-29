@@ -70,3 +70,14 @@ export function updateNews(id: number, payload: Partial<NewsPayload>) {
 export function deleteNews(id: number) {
   return apiFetch<{ message: string }>(`/news/${id}`, { method: 'DELETE' })
 }
+
+/**
+ * El servidor no tiene lectura por id en el CMS: la única vista que incluye los
+ * borradores es el archivo completo, así que se busca ahí.
+ */
+export async function getAdminNewsById(id: number) {
+  const response = await getAdminNews()
+  const news = response.data.find((item) => item.id === id)
+  if (!news) throw new Error('No se ha encontrado la noticia.')
+  return news
+}

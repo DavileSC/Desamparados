@@ -85,6 +85,19 @@ describe('el menú del CMS y las guardas de ruta no divergen', () => {
 })
 
 /**
+ * Las pantallas de edición son rutas nuevas que no aparecen en el menú, así que
+ * el test de arriba no las mira. Si una se montara con una guarda distinta a la
+ * de su listado, quien no puede ver el listado podría editar desde la URL.
+ */
+describe('las pantallas de edición se guardan como su listado', () => {
+  it('cada sección con edición propia tiene su guarda declarada', () => {
+    for (const seccion of ['noticias', 'publicaciones', 'agenda', 'hermanos', 'inventario'] as const) {
+      expect(rolesPorRutaCms[seccion], `${seccion} no tiene guarda`).toBeDefined()
+    }
+  })
+})
+
+/**
  * El color del texto del CMS lo ponía el `body` de la web pública, que es
  * blanco sobre fondo oscuro. Al envolver el CMS en el tema claro, el lienzo
  * pasó a `#f4f2ee` pero el texto siguió heredando aquel blanco: los `<h1>` de

@@ -68,3 +68,7 @@ export function updateEvent(id: number, payload: Partial<EventPayload>) {
 export function deleteEvent(id: number) {
   return apiFetch<{ message: string }>(`/events/${id}`, { method: 'DELETE' })
 }
+
+export function getEvent(id: number) {
+  return apiFetch<ApiEvent>(`/events/${id}`)
+}
