@@ -45,6 +45,17 @@ describe('AdminLayout', () => {
     expect(enlaces[1]).toHaveAccessibleName('Panel') // [0] es el logotipo
   })
 
+  it('la barra lateral se queda fija al bajar por la página', () => {
+    // En Tesorería la página mide veinte mil píxeles: si el menú se va con el
+    // scroll, se navega a ciegas.
+    entrarComo('ADMIN')
+    const { container } = renderWithProviders(<AdminLayout />)
+    const barra = container.querySelector('aside')!
+    const estilo = getComputedStyle(barra)
+    expect(estilo.position).toBe('sticky')
+    expect(estilo.height).toBe('100vh')
+  })
+
   it('dice quién ha entrado', () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<AdminLayout />)
