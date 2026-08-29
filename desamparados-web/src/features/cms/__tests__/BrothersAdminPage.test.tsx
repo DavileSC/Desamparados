@@ -44,10 +44,9 @@ describe('BrothersAdminPage', () => {
     expect(await screen.findByRole('tab', { name: /solicitudes \(2\)/i })).toBeInTheDocument()
   })
 
-  it('el Hermano Mayor ve las solicitudes, pero no edita fichas', async () => {
-    // Admitir un alta es censo; escribir en la ficha es de secretaría, y el
-    // servidor lo rechaza (PUT /hermanos/admin/:id). Enseñarle el botón sería
-    // llevarle a una pantalla donde guardar falla.
+  it('el Hermano Mayor gestiona el censo como secretaría', async () => {
+    // Ve las solicitudes y edita fichas: el servidor le deja las dos cosas
+    // (rolesGestionCenso en hermano.routes.ts).
     useAuthStore.setState({ status: 'autenticado', user: { id: 2, email: 'mayor@ejemplo.es', role: 'HERMANO_MAYOR', perfiles: [] } })
     responderCenso(
       { data: [{ id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, email: null, activo: true }], meta: { total: 1, page: 1, limit: 100, totalPages: 1 } },
@@ -56,6 +55,19 @@ describe('BrothersAdminPage', () => {
     renderWithProviders(<BrothersAdminPage />)
 
     expect(await screen.findByRole('tab', { name: /solicitudes \(1\)/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /editar rocío/i })).toHaveAttribute('href', '/cms/hermanos/5/editar')
+  })
+
+  it('un hermano raso que llegara al listado no ve el botón de editar', async () => {
+    // La guarda de ruta ya no le deja entrar, pero el botón no depende de eso.
+    useAuthStore.setState({ status: 'autenticado', user: { id: 3, email: 'raso@ejemplo.es', role: 'USER', perfiles: [] } })
+    responderCenso(
+      { data: [{ id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, email: null, activo: true }], meta: { total: 1, page: 1, limit: 100, totalPages: 1 } },
+      [],
+    )
+    renderWithProviders(<BrothersAdminPage />)
+
+    await screen.findByText('Rocío Gómez Marín')
     expect(screen.queryByRole('link', { name: /editar rocío/i })).not.toBeInTheDocument()
   })
 

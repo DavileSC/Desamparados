@@ -37,8 +37,7 @@ export interface PendingRequest {
   hermanos: AdminBrother[]
 }
 
-export function searchBrothers(query: string, role: string) {
-  if (role === 'HERMANO_MAYOR') return apiFetch<BrotherSearchResponse>('/hermanos/admin/all?page=1&limit=500')
+export function searchBrothers(query: string) {
   const params = new URLSearchParams({ page: '1', limit: '100' })
   if (query) params.set('q', query)
   return apiFetch<BrotherSearchResponse>(`/hermanos/admin/search?${params.toString()}`)

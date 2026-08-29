@@ -154,6 +154,65 @@ describe('permisos del Hermano Mayor', () => {
     assert.equal(res.status, 403);
   });
 
+  // El Hermano Mayor gestiona el censo entero, como secretaría. Estas cuatro
+  // rutas se sondean con un id no numérico a propósito: `checkRole` corre antes
+  // que `validateId`, así que un 400 demuestra que el rol pasó el control sin
+  // escribir nada en la base.
+  test('el Hermano Mayor puede editar la ficha de un hermano', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('HERMANO_MAYOR', '/api/hermanos/admin/abc', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: 'Prueba' }),
+    });
+    assert.equal(res.status, 400, `recibió ${res.status}`);
+  });
+
+  test('el Hermano Mayor puede dar de baja y reactivar', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const baja = await como('HERMANO_MAYOR', '/api/hermanos/admin/abc/baja', { method: 'DELETE' });
+    assert.equal(baja.status, 400, `baja recibió ${baja.status}`);
+    const reactivar = await como('HERMANO_MAYOR', '/api/hermanos/admin/abc/reactivar', { method: 'POST' });
+    assert.equal(reactivar.status, 400, `reactivar recibió ${reactivar.status}`);
+  });
+
+  test('el Hermano Mayor puede emancipar a un dependiente', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('HERMANO_MAYOR', '/api/hermanos/admin/abc/emancipar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newEmail: 'sonda@ejemplo.invalido' }),
+    });
+    assert.equal(res.status, 400, `recibió ${res.status}`);
+  });
+
+  test('el Hermano Mayor puede usar el buscador del censo', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    // Sin esto, el cliente tenía que pedirle el censo entero y filtrar a mano.
+    const res = await como('HERMANO_MAYOR', '/api/hermanos/admin/search?q=prueba');
+    assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
+  });
+
+  test('un community manager sigue sin poder editar fichas', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('REDES', '/api/hermanos/admin/abc', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: 'Prueba' }),
+    });
+    assert.equal(res.status, 403);
+  });
+
+  test('un hermano raso sigue sin poder editar fichas', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('USER', '/api/hermanos/admin/abc', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: 'Prueba' }),
+    });
+    assert.equal(res.status, 403);
+  });
+
   test('NO puede promover cargos', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await como('HERMANO_MAYOR', '/api/admin/staff/promote', {

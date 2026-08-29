@@ -8,10 +8,10 @@ import { approveRequest, getPendingRequests, rejectRequest, searchBrothers, type
 
 export default function BrothersAdminPage() {
   const role = useAuthStore((state) => state.user?.role ?? 'USER')
-  // Dos permisos distintos: la ficha la escribe secretaría (PUT /hermanos/admin/:id),
-  // y las altas las admite también el Hermano Mayor.
-  const canEdit = role === 'ADMIN' || role === 'SECRETARIA'
-  const puedeAdmitirAltas = canEdit || role === 'HERMANO_MAYOR'
+  // El Hermano Mayor gestiona el censo como secretaría: edita fichas y admite
+  // altas. Quien llega aquí sin ser ninguno de los tres es porque la guarda de
+  // ruta le deja mirar, no tocar.
+  const puedeGestionar = role === 'ADMIN' || role === 'SECRETARIA' || role === 'HERMANO_MAYOR'
   const [params, setParams] = useSearchParams()
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
@@ -23,8 +23,8 @@ export default function BrothersAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const load = useCallback(() => Promise.all([searchBrothers(query, role), puedeAdmitirAltas ? getPendingRequests() : Promise.resolve([] as PendingRequest[])])
-    .then(([census, pending]) => { setBrothers(census.data); setRequests(pending) }), [puedeAdmitirAltas, query, role])
+  const load = useCallback(() => Promise.all([searchBrothers(query), puedeGestionar ? getPendingRequests() : Promise.resolve([] as PendingRequest[])])
+    .then(([census, pending]) => { setBrothers(census.data); setRequests(pending) }), [puedeGestionar, query])
 
   useEffect(() => {
     const timer = window.setTimeout(() => load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.')).finally(() => setLoading(false)), query ? 300 : 0)
@@ -50,7 +50,7 @@ export default function BrothersAdminPage() {
       {requests.length === 0 && <Alert severity="info">No hay solicitudes pendientes.</Alert>}
     </Stack></Paper> : <>
     <TextField label="Buscar por nombre, DNI o email" value={query} onChange={(event) => setQuery(event.target.value)} fullWidth sx={{ mb: 3 }} />
-    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : 'Pendiente/inactivo'}</Typography></Box>{canEdit && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No se han encontrado hermanos.</Alert>}</Stack>}
+    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : 'Pendiente/inactivo'}</Typography></Box>{puedeGestionar && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No se han encontrado hermanos.</Alert>}</Stack>}
     </>}
   </>
 }
