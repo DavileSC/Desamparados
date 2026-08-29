@@ -32,6 +32,9 @@ quien atiende al hermano que viene a la casa parroquial a pedirlo.
 | Datos bancarios (IBAN, titular, forma de pago) | Fuera de esta fase | No hay domiciliaciones reales todavía; abrirlos ahora es exponer datos sin necesidad. |
 | Orden de trabajo | Menú fijo y edición en pantalla propia primero | Es lo que más se nota al usar el CMS a diario. |
 | Alta de contenido nuevo | Se queda como está, en línea sobre el listado | Lo que molesta es editar, no crear: el formulario de alta está arriba y se ve entero. La pantalla nueva servirá igual si más adelante se quiere mover. |
+| Solicitudes de alta en el CMS | Pestaña propia dentro de Hermanos, con el número de pendientes | Hoy la sección desaparece entera cuando no hay ninguna, y nadie puede saber que existe. |
+| Quién aprueba altas | También el Hermano Mayor | Ya tiene acceso a todo salvo la administración del sistema; que no pueda admitir hermanos se queda descolgado. |
+| Solicitudes en el censo de demostración | Se siembran unas cuantas | Sin ellas esa mitad de la pantalla no se puede ver ni probar sin darse de alta a mano desde la web. |
 
 ## 1. Barra lateral fija
 
@@ -176,6 +179,39 @@ comprobaciones, la transacción, el gestor fantasma, la auditoría— es común.
 camino del tutor no debe cambiar de comportamiento: hay tests que lo cubren y
 tienen que seguir pasando sin tocarlos.
 
+## 5. Las solicitudes de alta
+
+### El problema
+
+La pantalla de Hermanos tiene su bloque de solicitudes pendientes, con Aprobar y
+Rechazar, y sale arriba del todo. Pero está escrito
+`{canEdit && requests.length > 0 && ...}`: **cuando no hay ninguna solicitud no
+se pinta nada**, ni un título ni un aviso. La funcionalidad existe y es
+invisible, así que nadie sabe que está ni puede comprobar que funciona. Con el
+censo de demostración dentro hay cero solicitudes, y la pantalla lleva días
+enseñando solo la mitad de lo que hace.
+
+Una solicitud pendiente es un usuario con alguna ficha `activo: false` y sin
+fecha de baja; las crea el alta pública de la web.
+
+### Qué se hace
+
+**Dos pestañas dentro de Hermanos**: «Censo» y «Solicitudes (3)», con el número
+de pendientes a la vista en la propia pestaña. Vacía, dice que no hay ninguna
+esperando. La pestaña activa va en la URL (`?vista=solicitudes`) para que se
+pueda enlazar y para que volver de editar una ficha devuelva a donde se estaba.
+
+**El Hermano Mayor pasa a poder aprobar y rechazar.** Hay que abrirlo en las dos
+capas: `rolesSecretaria` en `hermano.routes.ts` para las tres rutas de
+solicitudes, y el `canEdit` de la pantalla. El test de permisos no cubre hoy
+estas rutas: se añade el caso, tanto el que comprueba que el Hermano Mayor entra
+como el que comprueba que Redes y un hermano raso siguen fuera.
+
+**El censo de demostración siembra cuatro o cinco solicitudes**, una de ellas de
+un tutor que apunta a un menor a su cargo, para que la pestaña se pueda ver con
+contenido. Son usuarios con ficha inactiva y sin fecha de baja, así que no
+cuentan como hermanos activos y no mueven las cifras del panel.
+
 ## Fuera de alcance, a propósito
 
 - **Los listados truncados**: el CMS pide una sola página con tope fijo (100
@@ -210,6 +246,8 @@ dentro.
 - Guardar pide confirmación y nombra la ficha.
 - Salir con cambios avisa; sin cambios, no.
 - Borrar pide confirmación con el nombre de lo que se borra, sin `window.confirm`.
+- La pestaña de solicitudes se ve aunque no haya ninguna, y dice que no hay.
+- El número de pendientes de la pestaña coincide con lo que devuelve el servidor.
 - La barra lateral es `sticky`.
 - La ficha enseña los dieciséis campos y el vínculo con el tutor.
 
