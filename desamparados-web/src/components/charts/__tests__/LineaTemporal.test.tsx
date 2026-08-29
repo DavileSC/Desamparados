@@ -72,4 +72,18 @@ describe('LineaTemporal', () => {
     const ys = [...d.matchAll(/[ML][\d.]+,([\d.]+)/g)].map((m) => Number(m[1]))
     expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(5)
   })
+  it('separa las etiquetas cuando las dos series acaban casi en el mismo valor', () => {
+    // Pasó de verdad en tesorería con el censo de demostración: agosto cerró
+    // con 939 € de ingresos y 939,50 € de gastos, y las dos cifras se
+    // imprimieron una encima de la otra.
+    const ingresos = [{ x: '2026-07', y: 758 }, { x: '2026-08', y: 939 }]
+    const gastos = [{ x: '2026-07', y: 811 }, { x: '2026-08', y: 939.5 }]
+    const { container } = renderWithProviders(
+      <LineaTemporal puntos={ingresos} etiqueta="Ingresos" comparar={{ etiqueta: 'Gastos', puntos: gastos }} />,
+    )
+
+    const alturas = [...container.querySelectorAll('text')].map((t) => Number(t.getAttribute('y')))
+    expect(alturas).toHaveLength(2)
+    expect(Math.abs(alturas[0] - alturas[1])).toBeGreaterThanOrEqual(14)
+  })
 })

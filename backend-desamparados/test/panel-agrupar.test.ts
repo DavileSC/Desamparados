@@ -42,6 +42,21 @@ describe('agrupar texto libre', () => {
     ]);
   });
 
+  test('respeta las siglas: una talla XXL no se enseña como «Xxl»', () => {
+    // Con 300 hermanos el panel enseñaba «Xxl» y «Xs» en la previsión de
+    // túnicas: agrupar en minúsculas está bien, pero la etiqueta que se pinta
+    // no tiene por qué salir de ahí.
+    const filas = agruparPorTextoLibre(['XXL', 'XXL', 'XS']);
+    assert.deepEqual(filas.map((f) => f.etiqueta), ['XXL', 'XS']);
+  });
+
+  test('de varias formas de escribirlo, enseña la más repetida', () => {
+    const filas = agruparPorTextoLibre(['XL', 'XL', 'xl']);
+    assert.equal(filas.length, 1);
+    assert.equal(filas[0].total, 3);
+    assert.equal(filas[0].etiqueta, 'XL');
+  });
+
   test('sin valores devuelve una lista vacía, no una fila de Otros a cero', () => {
     assert.deepEqual(agruparPorTextoLibre([]), []);
   });
