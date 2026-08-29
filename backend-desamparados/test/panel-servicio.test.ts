@@ -152,7 +152,11 @@ describe('servicio del panel', () => {
   test('el saldo es la resta de ingresos y gastos', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ingresos, gastos, saldo } = (await PanelService.getPanel()).dinero.ejercicio;
-    assert.equal(saldo, ingresos - gastos);
+    // El servicio redondea el saldo a dos decimales, asi que comparar contra la
+    // resta en crudo falla en cuanto hay centimos: 20.3 - 10.1 da
+    // 10.200000000000001 en coma flotante, no 10.2. Se compara contra el mismo
+    // redondeo, que es lo que de verdad promete el contrato.
+    assert.equal(saldo, Math.round((ingresos - gastos) * 100) / 100);
   });
 
   test('el dinero sale redondeado a dos decimales, sin arrastre binario', async (t) => {
