@@ -18,6 +18,9 @@ import {
 
 const rolesSecretaria = [Role.ADMIN, Role.SECRETARIA];
 const rolesLecturaCenso = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR];
+/** Quién admite hermanos nuevos: el Hermano Mayor también. Admitir un alta es
+ *  censo, no administración del sistema, que es lo único que tiene vedado. */
+const rolesAltasHermanos = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR];
 
 const hermanoRouter = Router();
 
@@ -37,9 +40,9 @@ hermanoRouter.get('/admin/all', checkRole(rolesLecturaCenso), HermanoController.
 hermanoRouter.post('/admin/reordenar-censo', checkRole(rolesSecretaria), HermanoController.reordenarCenso);
 
 // 3. Gestión de Solicitudes (Panel de Secretaría)
-hermanoRouter.get('/admin/solicitudes', checkRole(rolesSecretaria), HermanoController.getSolicitudes);
-hermanoRouter.post('/admin/solicitudes/:id/aprobar', checkRole(rolesSecretaria), validateId, HermanoController.aprobarSolicitud);
-hermanoRouter.delete('/admin/solicitudes/:id/rechazar', checkRole(rolesSecretaria), validateId, HermanoController.rechazarSolicitud);
+hermanoRouter.get('/admin/solicitudes', checkRole(rolesAltasHermanos), HermanoController.getSolicitudes);
+hermanoRouter.post('/admin/solicitudes/:id/aprobar', checkRole(rolesAltasHermanos), validateId, HermanoController.aprobarSolicitud);
+hermanoRouter.delete('/admin/solicitudes/:id/rechazar', checkRole(rolesAltasHermanos), validateId, HermanoController.rechazarSolicitud);
 
 // 4. Operaciones sobre un Hermano Específico
 hermanoRouter.get('/admin/:id', checkRole(rolesLecturaCenso), validateId, HermanoController.getById);

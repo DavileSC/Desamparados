@@ -133,6 +133,27 @@ describe('permisos del Hermano Mayor', () => {
     assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
   });
 
+  // Admitir hermanos nuevos es censo, no administración del sistema: que el
+  // Hermano Mayor viera el censo entero y no pudiera aprobar un alta se quedaba
+  // descolgado.
+  test('el Hermano Mayor puede ver las solicitudes de alta', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('HERMANO_MAYOR', '/api/hermanos/admin/solicitudes');
+    assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
+  });
+
+  test('un community manager sigue sin poder ver las solicitudes', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('REDES', '/api/hermanos/admin/solicitudes');
+    assert.equal(res.status, 403);
+  });
+
+  test('un hermano raso sigue sin poder ver las solicitudes', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('USER', '/api/hermanos/admin/solicitudes');
+    assert.equal(res.status, 403);
+  });
+
   test('NO puede promover cargos', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await como('HERMANO_MAYOR', '/api/admin/staff/promote', {

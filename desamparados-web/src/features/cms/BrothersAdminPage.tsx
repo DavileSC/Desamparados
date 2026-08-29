@@ -8,7 +8,10 @@ import { approveRequest, getPendingRequests, rejectRequest, searchBrothers, type
 
 export default function BrothersAdminPage() {
   const role = useAuthStore((state) => state.user?.role ?? 'USER')
+  // Dos permisos distintos: la ficha la escribe secretaría (PUT /hermanos/admin/:id),
+  // y las altas las admite también el Hermano Mayor.
   const canEdit = role === 'ADMIN' || role === 'SECRETARIA'
+  const puedeAdmitirAltas = canEdit || role === 'HERMANO_MAYOR'
   const [params, setParams] = useSearchParams()
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
@@ -20,8 +23,8 @@ export default function BrothersAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const load = useCallback(() => Promise.all([searchBrothers(query, role), canEdit ? getPendingRequests() : Promise.resolve([] as PendingRequest[])])
-    .then(([census, pending]) => { setBrothers(census.data); setRequests(pending) }), [canEdit, query, role])
+  const load = useCallback(() => Promise.all([searchBrothers(query, role), puedeAdmitirAltas ? getPendingRequests() : Promise.resolve([] as PendingRequest[])])
+    .then(([census, pending]) => { setBrothers(census.data); setRequests(pending) }), [puedeAdmitirAltas, query, role])
 
   useEffect(() => {
     const timer = window.setTimeout(() => load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.')).finally(() => setLoading(false)), query ? 300 : 0)

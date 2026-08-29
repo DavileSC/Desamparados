@@ -44,6 +44,21 @@ describe('BrothersAdminPage', () => {
     expect(await screen.findByRole('tab', { name: /solicitudes \(2\)/i })).toBeInTheDocument()
   })
 
+  it('el Hermano Mayor ve las solicitudes, pero no edita fichas', async () => {
+    // Admitir un alta es censo; escribir en la ficha es de secretaría, y el
+    // servidor lo rechaza (PUT /hermanos/admin/:id). Enseñarle el botón sería
+    // llevarle a una pantalla donde guardar falla.
+    useAuthStore.setState({ status: 'autenticado', user: { id: 2, email: 'mayor@ejemplo.es', role: 'HERMANO_MAYOR', perfiles: [] } })
+    responderCenso(
+      { data: [{ id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, email: null, activo: true }], meta: { total: 1, page: 1, limit: 100, totalPages: 1 } },
+      [{ id: 1, email: 'nuevo@ejemplo.invalido', nombre: 'Nuevo', apellidos: 'Hermano', createdAt: '2026-08-01T00:00:00.000Z', hermanos: [{ id: 9 }] }],
+    )
+    renderWithProviders(<BrothersAdminPage />)
+
+    expect(await screen.findByRole('tab', { name: /solicitudes \(1\)/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /editar rocío/i })).not.toBeInTheDocument()
+  })
+
   it('el censo no se mezcla con las solicitudes', async () => {
     responderCenso(censoVacio, [
       { id: 1, email: 'nuevo@ejemplo.invalido', nombre: 'Nuevo', apellidos: 'Hermano', createdAt: '2026-08-01T00:00:00.000Z', hermanos: [{ id: 9 }] },
