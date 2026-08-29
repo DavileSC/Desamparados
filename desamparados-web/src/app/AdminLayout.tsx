@@ -96,7 +96,7 @@ export default function AdminLayout() {
 
   return (
     <ThemeProvider theme={cmsTheme}>
-      <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
+      <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default', color: 'text.primary' }}>
         {esMovil ? (
           <Drawer open={menuAbierto} onClose={() => setMenuAbierto(false)} sx={{ '& .MuiDrawer-paper': { width: 250, border: 0 } }}>
             {barra}
