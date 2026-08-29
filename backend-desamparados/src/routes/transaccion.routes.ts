@@ -11,7 +11,7 @@ const transaccionRoutes = Router();
 
 // Nadie entra sin estar logueado y sin ser del equipo económico
 transaccionRoutes.use(authenticateToken);
-transaccionRoutes.use(checkRole([Role.ADMIN, Role.TESORERIA]));
+transaccionRoutes.use(checkRole([Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR]));
 
 // Rutas
 // --- GESTIÓN DE CATEGORÍAS ---

@@ -11,7 +11,10 @@ import { createNewsSchema, updateNewsSchema, limitConfigSchema, slugParamSchema 
 const newsRoutes = Router();
 
 const validateId = validate(type({ params: { id: idParam } }));
-const rolesCMS = [Role.ADMIN, Role.REDES];
+// Gestión de contenido, no administración del sistema: el Hermano Mayor ve y
+// edita todo salvo promover/degradar cargos y la configuración global (esas
+// dos siguen siendo solo de ADMIN, en admin.routes.ts).
+const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
 // --- RUTAS PÚBLICAS ---
 newsRoutes.get('/latest', NewsController.getLatest);   

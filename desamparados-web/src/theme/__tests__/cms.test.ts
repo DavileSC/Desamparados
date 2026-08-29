@@ -1,0 +1,37 @@
+import { describe, it, expect } from 'vitest'
+import { cmsTheme } from '../cms'
+import theme, { designTokens } from '../index'
+
+describe('tema del CMS', () => {
+  it('es claro, al contrario que el de la web pública', () => {
+    expect(cmsTheme.palette.mode).toBe('light')
+    expect(cmsTheme.palette.background.default).toBe('#f4f2ee')
+    expect(cmsTheme.palette.background.paper).toBe('#ffffff')
+  })
+
+  it('el texto es oscuro sobre el lienzo claro', () => {
+    expect(cmsTheme.palette.text.primary).toBe(designTokens.colors.onSurface)
+  })
+
+  it('conserva la identidad: burdeos y Libre Caslon en los títulos', () => {
+    expect(cmsTheme.palette.primary.main).toBe(designTokens.colors.secondary)
+    expect(cmsTheme.typography.h1.fontFamily).toContain('Libre Caslon Text')
+  })
+
+  it('no altera el tema de la web pública', () => {
+    // El CMS deriva del tema base; si lo mutara, la web se volvería clara.
+    expect(theme.palette.mode).toBe('dark')
+    expect(theme.palette.background.default).toBe(designTokens.colors.primaryContainer)
+  })
+
+  it('los estados interactivos no se quedan en blanco sobre el lienzo claro', () => {
+    // Fusionar sobre el tema oscuro deja action y text.disabled en blancos de
+    // baja opacidad: invisibles sobre fondo claro. Este test los fija.
+    const enBlanco = (valor: string) => valor.includes('255, 255, 255') || valor === '#fff'
+    expect(enBlanco(cmsTheme.palette.action.hover)).toBe(false)
+    expect(enBlanco(cmsTheme.palette.action.selected)).toBe(false)
+    expect(enBlanco(cmsTheme.palette.action.focus)).toBe(false)
+    expect(enBlanco(cmsTheme.palette.action.active)).toBe(false)
+    expect(enBlanco(cmsTheme.palette.text.disabled)).toBe(false)
+  })
+})

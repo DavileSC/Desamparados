@@ -68,6 +68,20 @@ export const designTokens = {
     card: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
     subtle: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
   },
+  /**
+   * Colores de los gráficos. Validados con el script de la skill dataviz sobre
+   * las superficies reales del proyecto (#fbf9f6 y #262326): pasan la banda de
+   * luminosidad, el suelo de croma, la separación para daltonismo y el suelo de
+   * visión normal. No sustituir a ojo: hay que revalidar.
+   *
+   * OJO: sobre fondo claro, el verde y el ámbar quedan por debajo de 3:1 de
+   * contraste. Todo valor pintado con ellos lleva etiqueta de texto visible.
+   */
+  dataviz: {
+    series: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100'],
+    seriesOscuras: ['#3987e5', '#d95926', '#199e70', '#c98500'],
+    estados: { ok: '#1baf7a', aviso: '#eda100', error: '#e34948' },
+  },
 }
 
 const themeOptions: ThemeOptions = {

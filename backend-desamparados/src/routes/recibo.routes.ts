@@ -13,7 +13,7 @@ const reciboRoutes = Router();
 reciboRoutes.use(authenticateToken);
 
 const validateId = validate(type({ params: { id: idParam } }));
-const rolesTesoreria = [Role.ADMIN, Role.TESORERIA];
+const rolesTesoreria = [Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR];
 
 // ==========================================
 //  RUTAS DE USUARIO (Familia)
@@ -21,7 +21,8 @@ const rolesTesoreria = [Role.ADMIN, Role.TESORERIA];
 reciboRoutes.get('/mis-recibos', ReciboController.getMyRecibos);
 
 // ==========================================
-//  RUTAS DE ADMIN (Tesorería / Secretaría)
+//  RUTAS DE ADMIN (Tesorería, y ahora también el Hermano Mayor;
+//  Secretaría nunca tuvo acceso aquí)
 // ==========================================
 
 reciboRoutes.get('/admin', checkRole(rolesTesoreria), ReciboController.getAdminRecibos);

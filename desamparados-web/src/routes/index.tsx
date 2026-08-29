@@ -7,7 +7,6 @@ import BrotherLayout from '../app/BrotherLayout'
 import RequireAuth from './RequireAuth'
 import RequireRole from './RequireRole'
 import AdminLayout from '../app/AdminLayout'
-import { useAuthStore } from '../features/members/auth/store'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 
@@ -47,6 +46,7 @@ const TreasuryAdminPage = lazy(() => import('../features/cms/TreasuryAdminPage')
 const InventoryAdminPage = lazy(() => import('../features/cms/InventoryAdminPage'))
 const AccountingAdminPage = lazy(() => import('../features/cms/AccountingAdminPage'))
 const AuditAdminPage = lazy(() => import('../features/cms/AuditAdminPage'))
+const PanelPage = lazy(() => import('../features/cms/PanelPage'))
 
 // Legal pages
 const LegalNoticePage = lazy(() => import('../features/legal/LegalNoticePage'))
@@ -73,10 +73,31 @@ function withSuspense(Component: React.ComponentType) {
   )
 }
 
-function CmsIndex() {
-  const role = useAuthStore((state) => state.user?.role)
-  return <Navigate to={role === 'REDES' ? '/cms/noticias' : role === 'TESORERIA' ? '/cms/tesoreria' : '/cms/agenda'} replace />
-}
+/**
+ * Qué roles pasan la guarda de cada ruta del CMS. Única fuente de verdad
+ * para las RequireRole de más abajo; AdminLayout.test.tsx la compara contra
+ * `itemsMenu` de AdminLayout.tsx para que el menú y las guardas no puedan
+ * volver a divergir sin que un test lo note (así se coló el hallazgo del
+ * Hermano Mayor expulsado de Tesorería, Contabilidad y Auditoría: el menú
+ * las enseñaba pero la guarda de ruta lo echaba a /area-hermano).
+ *
+ * No vive dentro de AdminLayout.tsx porque este fichero ya importa
+ * AdminLayout: si AdminLayout importara esta constante de vuelta, el ciclo
+ * de módulos dejaría `itemsMenu` leyendo un valor `undefined` en el
+ * arranque (los imports circulares de ES modules no garantizan qué módulo
+ * termina de inicializarse primero).
+ */
+export const rolesPorRutaCms = {
+  panel: ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
+  noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
+  hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
+  tesoreria: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
+  inventario: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'],
+  contabilidad: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
+  auditoria: ['ADMIN', 'HERMANO_MAYOR'],
+} satisfies Record<string, string[]>
 
 /**
  * Layout raíz: restaura el scroll al cambiar de ruta (vuelve arriba en navegaciones
@@ -172,17 +193,17 @@ const router = createBrowserRouter([
       },
       {
         path: '/cms',
-        element: <RequireRole roles={['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA']}><AdminLayout /></RequireRole>,
+        element: <RequireRole roles={rolesPorRutaCms.panel}><AdminLayout /></RequireRole>,
         children: [
-          { index: true, element: <CmsIndex /> },
-          { path: 'noticias', element: <RequireRole roles={['ADMIN', 'REDES']}>{withSuspense(NewsAdminPage)}</RequireRole> },
-          { path: 'publicaciones', element: <RequireRole roles={['ADMIN', 'REDES']}>{withSuspense(PublicationsAdminPage)}</RequireRole> },
-          { path: 'agenda', element: <RequireRole roles={['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR']}>{withSuspense(AgendaAdminPage)}</RequireRole> },
-          { path: 'hermanos', element: <RequireRole roles={['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR']}>{withSuspense(BrothersAdminPage)}</RequireRole> },
-          { path: 'tesoreria', element: <RequireRole roles={['ADMIN', 'TESORERIA']}>{withSuspense(TreasuryAdminPage)}</RequireRole> },
-          { path: 'inventario', element: <RequireRole roles={['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR']}>{withSuspense(InventoryAdminPage)}</RequireRole> },
-          { path: 'contabilidad', element: <RequireRole roles={['ADMIN', 'TESORERIA']}>{withSuspense(AccountingAdminPage)}</RequireRole> },
-          { path: 'auditoria', element: <RequireRole roles={['ADMIN']}>{withSuspense(AuditAdminPage)}</RequireRole> },
+          { index: true, element: withSuspense(PanelPage) },
+          { path: 'noticias', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsAdminPage)}</RequireRole> },
+          { path: 'publicaciones', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationsAdminPage)}</RequireRole> },
+          { path: 'agenda', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaAdminPage)}</RequireRole> },
+          { path: 'hermanos', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(BrothersAdminPage)}</RequireRole> },
+          { path: 'tesoreria', element: <RequireRole roles={rolesPorRutaCms.tesoreria}>{withSuspense(TreasuryAdminPage)}</RequireRole> },
+          { path: 'inventario', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventoryAdminPage)}</RequireRole> },
+          { path: 'contabilidad', element: <RequireRole roles={rolesPorRutaCms.contabilidad}>{withSuspense(AccountingAdminPage)}</RequireRole> },
+          { path: 'auditoria', element: <RequireRole roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditAdminPage)}</RequireRole> },
         ],
       },
     ],
