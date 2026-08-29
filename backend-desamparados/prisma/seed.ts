@@ -5,6 +5,7 @@ import { hash } from 'bcryptjs';
 import crypto from 'crypto';
 import db from '../src/config/db';
 import { sembrarContenido } from './seed-contenido';
+import { sembrarDemostracion } from './seed-demo';
 
 /**
  * Contraseñas del seed:
@@ -95,6 +96,12 @@ async function main() {
   // 3. Contenido de ejemplo (noticias, agenda, publicaciones, páginas,
   //    albacería y categorías contables) para no ver la web vacía.
   await sembrarContenido();
+
+  // 4. Censo de demostración: 300 hermanos con cinco ejercicios de cuotas,
+  //    papeletas, contabilidad, reparto y ropero, para ver el CMS con
+  //    contenido de verdad. No se ejecuta en producción, y se puede apagar
+  //    con SEED_DEMO=0.
+  await sembrarDemostracion();
 
   console.log('✅ Siembra completada.');
 }
