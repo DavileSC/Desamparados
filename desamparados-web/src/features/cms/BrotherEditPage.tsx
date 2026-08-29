@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, CircularProgress, Divider, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
-import { getBrother, updateBrother, type AdminBrother } from '../../lib/api/brothers'
+import { emancipateBrother, getBrother, updateBrother, type AdminBrother } from '../../lib/api/brothers'
+
+/** Años cumplidos, para saber si ya le toca tener cuenta propia. */
+const anios = (nacimiento: string) => Math.floor((Date.now() - new Date(nacimiento).getTime()) / 31557600000)
 
 /** El servidor manda ISO; los campos de fecha del navegador quieren YYYY-MM-DD. */
 const aDia = (iso: string | null) => (iso ? iso.slice(0, 10) : '')
@@ -33,6 +36,10 @@ export default function BrotherEditPage() {
   const [inicial, setInicial] = useState<Formulario | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
+  const [emancipando, setEmancipando] = useState(false)
+  const [correoNuevo, setCorreoNuevo] = useState('')
+  const [dniNuevo, setDniNuevo] = useState('')
+  const [emancipado, setEmancipado] = useState<string | null>(null)
 
   useEffect(() => {
     getBrother(Number(id))
@@ -74,6 +81,22 @@ export default function BrotherEditPage() {
     }
   }
 
+  const emancipar = async () => {
+    try {
+      const cuenta = await emancipateBrother(Number(id), {
+        newEmail: correoNuevo,
+        ...(dniNuevo ? { newDni: dniNuevo } : {}),
+      })
+      setEmancipando(false)
+      setEmancipado(`Se ha creado la cuenta de ${cuenta.email} y se le ha enviado un enlace para que ponga su contraseña.`)
+      const actualizada = await getBrother(Number(id))
+      setFicha(actualizada)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'No se ha podido emancipar al hermano.')
+      setEmancipando(false)
+    }
+  }
+
   if (error && !form) return <Alert severity="error">{error}</Alert>
   if (!form || !ficha) return <CircularProgress aria-label="Cargando la ficha" />
 
@@ -93,6 +116,7 @@ export default function BrotherEditPage() {
     <>
       <Helmet><title>Editar hermano | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {emancipado && <Alert severity="success" sx={{ mb: 3 }}>{emancipado}</Alert>}
       <PantallaEdicion
         titulo="Editar hermano"
         nombre={`${ficha.nombre} ${ficha.apellidos}`}
@@ -148,8 +172,47 @@ export default function BrotherEditPage() {
               />
             </Stack>
           </Box>
+
+          {!ficha.esTitular && (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="h6" sx={{ mb: 1 }}>Cuenta y tutor</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Depende de la cuenta de {ficha.user?.email ?? 'otro hermano'}.
+                </Typography>
+                {anios(ficha.fechaNacimiento) >= 18 && (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    Ya ha cumplido 18 años: puede tener cuenta propia.
+                  </Alert>
+                )}
+                <Button sx={{ mt: 2 }} onClick={() => setEmancipando(true)}>Emancipar</Button>
+              </Box>
+            </>
+          )}
         </Stack>
       </PantallaEdicion>
+
+      <Dialog open={emancipando} onClose={() => setEmancipando(false)} aria-labelledby="dialogo-emancipar">
+        <DialogTitle id="dialogo-emancipar">Emancipar a {ficha.nombre} {ficha.apellidos}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Se le crea su propia cuenta y se le manda un enlace para que ponga su contraseña.
+            Aquí no se escribe ninguna contraseña: la elige el hermano.
+          </Typography>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField label="Correo del hermano" type="email" value={correoNuevo} onChange={(e) => setCorreoNuevo(e.target.value)} fullWidth autoFocus />
+            {/* El DNI solo hace falta si la ficha no lo tiene: la cuenta lo exige. */}
+            {!ficha.dni && <TextField label="DNI del hermano" value={dniNuevo} onChange={(e) => setDniNuevo(e.target.value)} fullWidth />}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEmancipando(false)}>Volver</Button>
+          <Button variant="contained" disabled={!correoNuevo || (!ficha.dni && !dniNuevo)} onClick={() => void emancipar()}>
+            Emancipar hermano
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

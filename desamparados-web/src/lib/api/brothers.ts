@@ -84,3 +84,11 @@ export function getBrother(id: number) {
 export function updateBrother(id: number, payload: AdminBrotherPayload) {
   return apiFetch<AdminBrother>(`/hermanos/admin/${id}`, { method: 'PUT', json: payload })
 }
+
+/**
+ * Secretaría emancipa a un dependiente. No lleva contraseña: al hermano le
+ * llega un enlace para ponérsela él.
+ */
+export function emancipateBrother(id: number, payload: { newEmail: string; newDni?: string }) {
+  return apiFetch<{ id: number; email: string; nombre: string }>(`/hermanos/admin/${id}/emancipar`, { method: 'POST', json: payload })
+}
