@@ -42,6 +42,7 @@ const NewsAdminPage = lazy(() => import('../features/cms/NewsAdminPage'))
 const PublicationsAdminPage = lazy(() => import('../features/cms/PublicationsAdminPage'))
 const AgendaAdminPage = lazy(() => import('../features/cms/AgendaAdminPage'))
 const BrothersAdminPage = lazy(() => import('../features/cms/BrothersAdminPage'))
+const BrotherEditPage = lazy(() => import('../features/cms/BrotherEditPage'))
 const TreasuryAdminPage = lazy(() => import('../features/cms/TreasuryAdminPage'))
 const InventoryAdminPage = lazy(() => import('../features/cms/InventoryAdminPage'))
 const AccountingAdminPage = lazy(() => import('../features/cms/AccountingAdminPage'))
@@ -200,6 +201,7 @@ const router = createBrowserRouter([
           { path: 'publicaciones', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationsAdminPage)}</RequireRole> },
           { path: 'agenda', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaAdminPage)}</RequireRole> },
           { path: 'hermanos', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(BrothersAdminPage)}</RequireRole> },
+          { path: 'hermanos/:id/editar', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(BrotherEditPage)}</RequireRole> },
           { path: 'tesoreria', element: <RequireRole roles={rolesPorRutaCms.tesoreria}>{withSuspense(TreasuryAdminPage)}</RequireRole> },
           { path: 'inventario', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventoryAdminPage)}</RequireRole> },
           { path: 'contabilidad', element: <RequireRole roles={rolesPorRutaCms.contabilidad}>{withSuspense(AccountingAdminPage)}</RequireRole> },

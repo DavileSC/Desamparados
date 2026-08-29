@@ -5,14 +5,21 @@ export interface AdminBrother {
   nombre: string
   apellidos: string
   dni: string | null
+  fechaNacimiento: string
   email: string | null
   telefono: string | null
+  direccion: string | null
   poblacion: string | null
   codigoPostal: string | null
   activo: boolean
   numeroHermano: number | null
   fechaAlta: string
+  fechaBaja: string | null
   esTitular: boolean
+  tieneTunicaPropia: boolean
+  tunica: string | null
+  alturaHombro: number | null
+  puesto: string | null
   user?: { email: string | null; telefono: string | null }
 }
 
@@ -50,12 +57,28 @@ export function rejectRequest(id: number) {
 }
 
 export interface AdminBrotherPayload {
-  nombre: string
-  apellidos: string
-  email?: string
+  nombre?: string
+  apellidos?: string
+  dni?: string
+  fechaNacimiento?: string
   telefono?: string
-  activo?: boolean
+  email?: string
+  direccion?: string
+  poblacion?: string
+  codigoPostal?: string
   numeroHermano?: number
+  activo?: boolean
+  esTitular?: boolean
+  tieneTunicaPropia?: boolean
+  tunica?: string
+  alturaHombro?: number
+  puesto?: string
+  fechaAlta?: string
+  fechaBaja?: string | null
+}
+
+export function getBrother(id: number) {
+  return apiFetch<AdminBrother>(`/hermanos/admin/${id}`)
 }
 
 export function updateBrother(id: number, payload: AdminBrotherPayload) {
