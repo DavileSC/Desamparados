@@ -119,6 +119,27 @@ describe('PanelPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se ha podido cargar/i)
   })
 
+  it('escribe en singular cuando la cifra es uno', async () => {
+    responder({
+      ...panel,
+      censo: { ...panel.censo, sinNumeroHermano: 1 },
+      actividad: {
+        ...panel.actividad,
+        noticias: { publicadas: 1, borradores: 1 },
+        publicaciones: { total: 1, ultima: '2026-06-01T00:00:00.000Z' },
+        reparto: { turnosProximos: 1, citasReservadas: 1, capacidadEstimada: 30 },
+      },
+    })
+    renderWithProviders(<PanelPage />)
+
+    expect(await screen.findByText(/1 hermano activo sin número/)).toBeInTheDocument()
+    expect(screen.getByText(/1 noticia publicada/)).toBeInTheDocument()
+    expect(screen.getByText(/1 borrador /)).toBeInTheDocument()
+    expect(screen.getByText(/1 publicación /)).toBeInTheDocument()
+    expect(screen.getByText(/1 cita de reparto/)).toBeInTheDocument()
+    expect(screen.getByText(/1 turno próximo/)).toBeInTheDocument()
+  })
+
   it('aguanta un Grupo Parroquial recién instalado, con todo a cero', async () => {
     responder({
       ...panel,
