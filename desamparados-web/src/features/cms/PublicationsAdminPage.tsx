@@ -5,6 +5,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link } from 'react-router-dom'
+import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { createPublication, deletePublication, getAdminPublications, type ApiPublication, type PublicationPayload } from '../../lib/api/publications'
 import type { PublicationItem } from '../../types'
 
@@ -21,13 +22,14 @@ export default function PublicationsAdminPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [porBorrar, setPorBorrar] = useState<ApiPublication | null>(null)
   const load = () => getAdminPublications().then(setItems)
 
   useEffect(() => { load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las publicaciones.')).finally(() => setLoading(false)) }, [])
   const updateField = (field: keyof PublicationPayload, value: string | boolean) => setForm((current) => ({ ...current, [field]: value }))
   const reset = () => setForm(emptyForm)
   const save = async () => { setSaving(true); setError(null); setNotice(null); try { await createPublication(form); await load(); reset(); setNotice('Publicación creada correctamente.') } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido guardar la publicación.') } finally { setSaving(false) } }
-  const remove = async (id: number) => { if (!window.confirm('¿Quieres eliminar esta publicación?')) return; try { await deletePublication(id); await load(); setNotice('Publicación eliminada correctamente.') } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar la publicación.') } }
+  const borrar = async () => { if (!porBorrar) return; try { await deletePublication(porBorrar.id); await load(); setNotice('Publicación eliminada correctamente.') } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar la publicación.') } finally { setPorBorrar(null) } }
 
   return <>
     <Helmet><title>Publicaciones | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
@@ -45,6 +47,7 @@ export default function PublicationsAdminPage() {
       <Stack direction="row" spacing={2}><Button variant="contained" startIcon={<AddIcon />} onClick={save} disabled={saving || !form.titulo || !form.archivoUrl}>{saving ? 'Guardando...' : 'Guardar'}</Button></Stack>
     </Stack></Paper>
     <Typography variant="h4" sx={{ mb: 2 }}>Archivo editorial</Typography>
-    {loading ? <CircularProgress aria-label="Cargando publicaciones" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.titulo}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.fecha).toLocaleDateString('es-ES')} · {item.visible ? 'Publicada' : 'Borrador'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.titulo}`} component={Link} to={`/cms/publicaciones/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.titulo}`} onClick={() => remove(item.id)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay publicaciones en el archivo.</Alert>}</Stack>}
+    <DialogoConfirmacion abierto={porBorrar !== null} titulo="¿Eliminar la publicación?" mensaje={porBorrar ? porBorrar.titulo : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
+    {loading ? <CircularProgress aria-label="Cargando publicaciones" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.titulo}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.fecha).toLocaleDateString('es-ES')} · {item.visible ? 'Publicada' : 'Borrador'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.titulo}`} component={Link} to={`/cms/publicaciones/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.titulo}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay publicaciones en el archivo.</Alert>}</Stack>}
   </>
 }

@@ -5,6 +5,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link } from 'react-router-dom'
+import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { createNews, deleteNews, getAdminNews, type ApiNews, type NewsPayload } from '../../lib/api/news'
 
 const emptyForm: NewsPayload = { titulo: '', contenido: '', extracto: '', imagenUrl: '', visible: true }
@@ -16,6 +17,7 @@ export default function NewsAdminPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [porBorrar, setPorBorrar] = useState<ApiNews | null>(null)
 
   const load = () => getAdminNews().then((response) => setItems(response.data))
 
@@ -41,10 +43,11 @@ export default function NewsAdminPage() {
     } finally { setSaving(false) }
   }
 
-  const remove = async (id: number) => {
-    if (!window.confirm('¿Quieres eliminar esta noticia?')) return
-    try { await deleteNews(id); await load(); setNotice('Noticia eliminada correctamente.') }
+  const borrar = async () => {
+    if (!porBorrar) return
+    try { await deleteNews(porBorrar.id); await load(); setNotice('Noticia eliminada correctamente.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar la noticia.') }
+    finally { setPorBorrar(null) }
   }
 
   return <>
@@ -65,6 +68,7 @@ export default function NewsAdminPage() {
       </Stack>
     </Paper>
     <Typography variant="h4" sx={{ mb: 2 }}>Archivo editorial</Typography>
-    {loading ? <CircularProgress aria-label="Cargando noticias" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.titulo}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.fecha).toLocaleDateString('es-ES')} · {item.visible ? 'Publicada' : 'Borrador'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.titulo}`} component={Link} to={`/cms/noticias/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.titulo}`} onClick={() => remove(item.id)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay noticias en el archivo.</Alert>}</Stack>}
+    <DialogoConfirmacion abierto={porBorrar !== null} titulo="¿Eliminar la noticia?" mensaje={porBorrar ? porBorrar.titulo : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
+    {loading ? <CircularProgress aria-label="Cargando noticias" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.titulo}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.fecha).toLocaleDateString('es-ES')} · {item.visible ? 'Publicada' : 'Borrador'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.titulo}`} component={Link} to={`/cms/noticias/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.titulo}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay noticias en el archivo.</Alert>}</Stack>}
   </>
 }
