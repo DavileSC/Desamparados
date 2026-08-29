@@ -85,3 +85,12 @@ export const emancipateSchema = type({
         "newDni?": dni
     }
 });
+
+// 6. Emancipación desde secretaría: sin contraseña, va un enlace al hermano.
+// Quien está en el mostrador no elige la contraseña de otra persona.
+export const emancipateByStaffSchema = type({
+    body: {
+        newEmail: email,
+        "newDni?": dni
+    }
+});

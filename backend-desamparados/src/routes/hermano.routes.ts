@@ -13,7 +13,8 @@ import {
     updateProfileSchema, 
     updateAdminHermanoSchema,
     searchHermanoSchema,
-    emancipateSchema
+    emancipateSchema,
+    emancipateByStaffSchema
 } from '../schemas/hermano.schema';
 
 const rolesSecretaria = [Role.ADMIN, Role.SECRETARIA];
@@ -49,6 +50,7 @@ hermanoRouter.get('/admin/:id', checkRole(rolesLecturaCenso), validateId, Herman
 hermanoRouter.put('/admin/:id', checkRole(rolesSecretaria), validateId, validate(updateAdminHermanoSchema), HermanoController.updateAdmin);
 hermanoRouter.delete('/admin/:id/baja', checkRole(rolesSecretaria), validateId, HermanoController.darDeBajaHermano);
 hermanoRouter.post('/admin/:id/reactivar', checkRole(rolesSecretaria), validateId, HermanoController.reactivarHermano);
+hermanoRouter.post('/admin/:id/emancipar', checkRole(rolesSecretaria), validateId, validate(emancipateByStaffSchema), HermanoController.emancipateByStaff);
 
 // ==========================================
 // --- RUTAS FAMILIARES (Usuario normal) ---

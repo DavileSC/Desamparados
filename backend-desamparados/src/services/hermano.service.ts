@@ -5,6 +5,9 @@ import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto, UpdateAdminHe
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { comprobarFechasHermano } from '../domain/fechas-hermano';
+import crypto from 'crypto';
+import { AuthService } from './auth.service';
+import { EmailService } from './email.service';
 
 // 1. DICCIONARIO DE ERRORES (Centralizado)
 const HERMANO_ERRORS = {
@@ -159,6 +162,7 @@ export class HermanoService {
   //  ZONA EMANCIPACIÓN
   // =================================================================
 
+  /** El tutor emancipa a su dependiente y elige la contraseña. */
   static async emancipateProfile(hermanoId: number, managerUserId: number, dto: EmancipateHermanoDto, meta?: AuditMeta) {
     const hermano = await db.hermano.findFirst({
       where: { id: hermanoId, userId: managerUserId },
@@ -166,13 +170,48 @@ export class HermanoService {
     });
     if (!hermano) throw new HttpError(HERMANO_ERRORS.NOT_AUTHORIZED, 403);
 
+    return await this.emanciparFicha(hermano, dto.newEmail, dto.newDni, await encrypt(dto.newPassword), false, meta);
+  }
+
+  /**
+   * Secretaría emancipa: la contraseña no la elige nadie, va un enlace al
+   * hermano. Quien está en el mostrador no puede saber la contraseña de otro.
+   */
+  static async emancipateByStaff(hermanoId: number, dto: { newEmail: string; newDni?: string }, meta?: AuditMeta) {
+    const hermano = await db.hermano.findUnique({
+      where: { id: hermanoId },
+      include: { user: { select: { role: true } } }
+    });
+    if (!hermano) throw new NotFoundError('Hermano no encontrado.');
+
+    // Una contraseña aleatoria que nadie conoce: la cuenta se abre con el enlace.
+    const inutilizable = await encrypt(crypto.randomBytes(32).toString('hex'));
+    return await this.emanciparFicha(hermano, dto.newEmail, dto.newDni, inutilizable, true, meta);
+  }
+
+  /**
+   * Tronco común de la emancipación: las reglas y la transacción son las mismas
+   * venga de donde venga. Lo único que cambia entre los dos caminos es cómo
+   * nace la contraseña de la cuenta nueva.
+   */
+  private static async emanciparFicha(
+    hermano: { id: number; userId: number; nombre: string; apellidos: string | null; telefono: string | null; direccion: string | null; dni: string | null; activo: boolean; user: { role: Role } },
+    newEmail: string,
+    newDni: string | undefined,
+    hashedPassword: string,
+    mandarEnlace: boolean,
+    meta?: AuditMeta
+  ) {
+    const hermanoId = hermano.id;
+    const managerUserId = hermano.userId;
+
     // Una ficha pendiente de aprobación no puede convertirse en una cuenta activa
     if (!hermano.activo) throw new HttpError(HERMANO_ERRORS.PENDING_PROFILE);
 
-    const dniFinal = hermano.dni || dto.newDni;
+    const dniFinal = hermano.dni || newDni;
     if (!dniFinal) throw new HttpError(HERMANO_ERRORS.DNI_REQUIRED_EMANCIPATION);
 
-    const emailExists = await db.user.findUnique({ where: { email: dto.newEmail } });
+    const emailExists = await db.user.findUnique({ where: { email: newEmail } });
     if (emailExists) throw new HttpError(HERMANO_ERRORS.EMAIL_IN_USE, 409);
 
     // El DNI también es único en User: si ya pertenece a otra cuenta (ej. el propio tutor),
@@ -180,12 +219,10 @@ export class HermanoService {
     const dniExists = await db.user.findFirst({ where: { dni: dniFinal } });
     if (dniExists) throw new HttpError('Ese DNI ya pertenece a otra cuenta de usuario.', 409);
 
-    const hashedPassword = await encrypt(dto.newPassword);
-
-    return await db.$transaction(async (tx) => {
+    const resultado = await db.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
-          email: dto.newEmail,
+          email: newEmail,
           password: hashedPassword,
           role: Role.USER,
           dni: dniFinal,
@@ -199,7 +236,7 @@ export class HermanoService {
 
       await tx.hermano.update({
         where: { id: hermanoId },
-        data: { userId: newUser.id, esTitular: true, email: dto.newEmail, dni: dniFinal }
+        data: { userId: newUser.id, esTitular: true, email: newEmail, dni: dniFinal }
       });
 
       // --- Control del Gestor Fantasma ---
@@ -220,6 +257,16 @@ export class HermanoService {
       // Devolvemos solo datos seguros (nunca el hash de la contraseña)
       return { id: newUser.id, email: newUser.email, nombre: newUser.nombre };
     });
+
+    if (mandarEnlace) {
+      // Fuera de la transacción y con catch, como en requestPasswordReset: que
+      // falle el correo no puede deshacer una emancipación ya escrita.
+      const token = await AuthService.crearEnlaceDeContrasena(resultado.id, 72);
+      EmailService.enviarRecuperacionContrasena(resultado.email, resultado.nombre, token)
+        .catch(err => console.error('Error enviando el enlace de emancipación:', err));
+    }
+
+    return resultado;
   }
 
   // =================================================================

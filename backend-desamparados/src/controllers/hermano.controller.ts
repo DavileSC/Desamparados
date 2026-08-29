@@ -81,6 +81,19 @@ export class HermanoController {
     }
   }
 
+  /** Secretaría emancipa a un hermano: al hermano le llega un enlace. */
+  static async emancipateByStaff(req: Request, res: Response) {
+    try {
+      const hermanoId = Number(req.params.id);
+      if (isNaN(hermanoId)) return handleHttp(res, null, 'ID inválido', 400);
+
+      const result = await HermanoService.emancipateByStaff(hermanoId, req.body, AuditService.metaFromReq(req));
+      res.status(200).json(result);
+    } catch (e) {
+      handleHttp(res, e, 'Error en el proceso de emancipación');
+    }
+  }
+
   // ========================================================
   // --- RUTAS ADMIN (Secretaría) ---
   // ========================================================
