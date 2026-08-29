@@ -35,6 +35,7 @@ import {
   generarPrendas,
   generarRecibos,
   generarReparto,
+  generarSolicitudes,
   generarTransacciones,
 } from './demo/generar';
 
@@ -244,4 +245,35 @@ export async function sembrarDemostracion(): Promise<void> {
     })),
   });
   console.log(`   ${prendas.length} prendas en el ropero`);
+
+  // --- SOLICITUDES DE ALTA ---
+  // Cuenta y fichas nacen inactivas, igual que en el alta pública de la web
+  // (auth.service.ts): eso es exactamente lo que el CMS cuenta como pendiente.
+  const solicitudes = generarSolicitudes(anio);
+  for (const solicitud of solicitudes) {
+    await db.user.create({
+      data: {
+        email: solicitud.email,
+        password,
+        dni: solicitud.dni,
+        nombre: solicitud.nombre,
+        apellidos: solicitud.apellidos,
+        telefono: solicitud.telefono,
+        role: Role.USER,
+        active: false,
+        hermanos: {
+          create: solicitud.fichas.map((f) => ({
+            nombre: f.nombre,
+            apellidos: f.apellidos,
+            dni: f.dni,
+            fechaNacimiento: f.fechaNacimiento,
+            esTitular: f.esTitular,
+            activo: false,
+            fechaBaja: null,
+          })),
+        },
+      },
+    });
+  }
+  console.log(`   ${solicitudes.length} solicitudes de alta esperando aprobación`);
 }
