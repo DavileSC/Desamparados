@@ -7,6 +7,7 @@ import LineaTemporal from '../../components/charts/LineaTemporal'
 import BarrasHorizontales from '../../components/charts/BarrasHorizontales'
 import BarraEstados from '../../components/charts/BarraEstados'
 import Cifra from './panel/Cifra'
+import { contar } from './panel/plural'
 
 const euros = (valor: number) =>
   new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(valor)
@@ -72,7 +73,8 @@ export default function PanelPage() {
           />
           <BarrasHorizontales filas={data.censo.porEdad.map((t) => ({ etiqueta: t.tramo, valor: t.total }))} />
           <Typography variant="body2" color="text.secondary">
-            {data.censo.sinNumeroHermano} hermanos activos sin número de hermano asignado
+            {contar(data.censo.sinNumeroHermano, 'hermano activo', 'hermanos activos')} sin número de hermano
+            asignado
           </Typography>
         </Bloque>
 
@@ -126,9 +128,12 @@ export default function PanelPage() {
             )}
           </Stack>
           <Typography variant="body2" color="text.secondary">
-            {data.actividad.noticias.publicadas} noticias publicadas · {data.actividad.noticias.borradores} borradores ·{' '}
-            {data.actividad.publicaciones.total} publicaciones · {data.actividad.reparto.citasReservadas} citas de reparto ·{' '}
-            {data.actividad.reparto.turnosProximos} turnos próximos (capacidad {data.actividad.reparto.capacidadEstimada})
+            {contar(data.actividad.noticias.publicadas, 'noticia publicada', 'noticias publicadas')} ·{' '}
+            {contar(data.actividad.noticias.borradores, 'borrador', 'borradores')} ·{' '}
+            {contar(data.actividad.publicaciones.total, 'publicación', 'publicaciones')} ·{' '}
+            {contar(data.actividad.reparto.citasReservadas, 'cita de reparto', 'citas de reparto')} ·{' '}
+            {contar(data.actividad.reparto.turnosProximos, 'turno próximo', 'turnos próximos')} (capacidad{' '}
+            {data.actividad.reparto.capacidadEstimada})
           </Typography>
         </Bloque>
       </Box>

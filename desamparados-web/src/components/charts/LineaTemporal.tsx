@@ -58,6 +58,28 @@ export default function LineaTemporal({ puntos, etiqueta, color, comparar }: Pro
     }))
   }
 
+  const trazos = series.map((serie) => {
+    const coordenadas = trazar(serie.puntos)
+    return {
+      serie,
+      coordenadas,
+      ultimo: coordenadas[coordenadas.length - 1],
+      ultimoValor: serie.puntos[serie.puntos.length - 1],
+    }
+  })
+
+  // Las etiquetas del último valor se pisaban cuando las dos series cerraban el
+  // mes casi igual (pasó en tesorería: 939 € de ingresos y 939,50 € de gastos).
+  // Si están demasiado cerca, una se va arriba del punto y la otra debajo.
+  const SEPARACION_MINIMA = 14
+  const seEstorban =
+    trazos.length === 2 && Math.abs(trazos[0].ultimo.cy - trazos[1].ultimo.cy) < SEPARACION_MINIMA
+  const laDeArriba = trazos.length === 2 && trazos[1].ultimo.cy < trazos[0].ultimo.cy ? 1 : 0
+  const desvioEtiqueta = (indice: number) => {
+    if (!seEstorban) return -10
+    return indice === laDeArriba ? -12 : 20
+  }
+
   const descripcion = series
     .map((s) => `${s.etiqueta}: de ${s.puntos[0].y} a ${s.puntos[s.puntos.length - 1].y}`)
     .join('. ')
@@ -75,11 +97,8 @@ export default function LineaTemporal({ puntos, etiqueta, color, comparar }: Pro
           <line key={y} x1="0" y1={y} x2={ANCHO} y2={y} stroke={theme.palette.divider} strokeWidth="1" />
         ))}
 
-        {series.map((serie) => {
-          const coordenadas = trazar(serie.puntos)
+        {trazos.map(({ serie, coordenadas, ultimo, ultimoValor }, indice) => {
           const d = coordenadas.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.cx},${c.cy}`).join(' ')
-          const ultimo = coordenadas[coordenadas.length - 1]
-          const ultimoValor = serie.puntos[serie.puntos.length - 1]
           return (
             <g key={serie.etiqueta}>
               {/* El área solo bajo la serie principal: dos rellenos superpuestos
@@ -108,7 +127,7 @@ export default function LineaTemporal({ puntos, etiqueta, color, comparar }: Pro
                   llegan a 3:1 sobre el lienzo claro del CMS. */}
               <text
                 x={ultimo.cx - 8}
-                y={ultimo.cy - 10}
+                y={ultimo.cy + desvioEtiqueta(indice)}
                 textAnchor="end"
                 fontSize="11"
                 fontWeight="600"
