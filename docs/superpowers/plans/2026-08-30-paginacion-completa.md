@@ -20,6 +20,15 @@ MUI, React Router, Vitest y Testing Library en el cliente.
 
 **Diseño:** `docs/superpowers/specs/2026-08-30-paginacion-completa-design.md`
 
+## Estado al 30 de agosto de 2026
+
+**Tareas 1 a 6 hechas** (casillas marcadas), cada una con su revisión y su ronda
+de arreglos. **Quedan las tareas 7 a 15.** En ese punto: 191 tests de backend con
+cero omitidos y 135 de frontend, todos en verde.
+
+El detalle de lo decidido por el camino está en
+[`docs/traspaso-2026-08-30.md`](../../traspaso-2026-08-30.md).
+
 ## Restricciones globales
 
 - **Tamaños de página: 10, 20, 30, 40 y 50.** Por defecto **20**.
@@ -77,19 +86,19 @@ reescribir después lo que se escriba en medio.
 - Produce: el patrón `const user = userEvent.setup()` que usan todas las tareas
   siguientes.
 
-- [ ] **Paso 1: Instalar la dependencia**
+- [x] **Paso 1: Instalar la dependencia**
 
 ```bash
 cd desamparados-web
 npm install --save-dev @testing-library/user-event
 ```
 
-- [ ] **Paso 2: Comprobar que los tests siguen pasando antes de tocarlos**
+- [x] **Paso 2: Comprobar que los tests siguen pasando antes de tocarlos**
 
 Ejecuta: `npx vitest run`
 Esperado: 114 tests en verde. Si alguno falla ya, párate: el fallo no es tuyo.
 
-- [ ] **Paso 3: Migrar los cinco ficheros**
+- [x] **Paso 3: Migrar los cinco ficheros**
 
 En cada uno, sustituye el import y las llamadas. El patrón es siempre el mismo:
 
@@ -118,14 +127,14 @@ Tres cosas que cambian de verdad y no son mecánicas:
 3. `userEvent.setup()` se llama **dentro de cada `it`**, no en el cuerpo del
    `describe`: compartirlo entre tests arrastra estado.
 
-- [ ] **Paso 4: Ejecutar y comprobar que siguen pasando**
+- [x] **Paso 4: Ejecutar y comprobar que siguen pasando**
 
 Ejecuta: `npx vitest run`
 Esperado: los mismos 114 tests en verde. Si alguno falla ahora, **léelo antes de
 tocarlo**: `user-event` rechaza lo que una persona no podría hacer, así que un
 fallo nuevo puede ser un fallo real de la interfaz, no del test.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add desamparados-web/package.json desamparados-web/package-lock.json desamparados-web/src
@@ -146,7 +155,7 @@ git commit -m "Probar la interfaz como lo haria una persona"
   `MetaPaginacion` y `RespuestaPaginada<T>`. **Todas las tareas del servidor
   consumen esto.**
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 Crea `backend-desamparados/test/paginacion.test.ts`:
 
@@ -208,12 +217,12 @@ describe('construir la respuesta paginada', () => {
 });
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `cd backend-desamparados && npx tsx --test test/paginacion.test.ts`
 Esperado: FALLA porque `src/domain/paginacion.ts` no existe.
 
-- [ ] **Paso 3: Escribir la implementación mínima**
+- [x] **Paso 3: Escribir la implementación mínima**
 
 Crea `backend-desamparados/src/domain/paginacion.ts`:
 
@@ -276,12 +285,12 @@ export function respuestaPaginada<T>(data: T[], total: number, { page, limit }: 
 }
 ```
 
-- [ ] **Paso 4: Ejecutar para verlo pasar**
+- [x] **Paso 4: Ejecutar para verlo pasar**
 
 Ejecuta: `npx tsx --test test/paginacion.test.ts`
 Esperado: los 9 tests en verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src/domain/paginacion.ts backend-desamparados/test/paginacion.test.ts
@@ -306,7 +315,7 @@ primera página. Es un fallo mudo, así que lleva su propio test de regresión.
 - Produce: `paginacionQuery`, un objeto para esparcir dentro del `query` de
   cualquier esquema de arktype. Lo usan las tareas 12, 13 y 14.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 Crea `backend-desamparados/test/paginacion-query.test.ts`:
 
@@ -342,12 +351,12 @@ describe('parámetros de paginación en los esquemas de consulta', () => {
 });
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx tsx --test test/paginacion-query.test.ts`
 Esperado: FALLA, `paginacionQuery` no está exportado.
 
-- [ ] **Paso 3: Añadir el fragmento a `common.ts`**
+- [x] **Paso 3: Añadir el fragmento a `common.ts`**
 
 Al final de `backend-desamparados/src/config/common.ts`:
 
@@ -366,12 +375,12 @@ export const paginacionQuery = {
 };
 ```
 
-- [ ] **Paso 4: Ejecutar para verlo pasar**
+- [x] **Paso 4: Ejecutar para verlo pasar**
 
 Ejecuta: `npx tsx --test test/paginacion-query.test.ts`
 Esperado: los 3 tests en verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src/config/common.ts backend-desamparados/test/paginacion-query.test.ts
@@ -403,7 +412,7 @@ git commit -m "Dejar pasar los parametros de pagina por la validacion"
   - `renderWithProviders(ui, { ruta })`, que **hoy no existe** y necesitan casi
     todas las tareas siguientes.
 
-- [ ] **Paso 0: Poder fijar la URL en los tests**
+- [x] **Paso 0: Poder fijar la URL en los tests**
 
 Sin esto no se puede escribir ni uno de los tests que comprueban que la página
 sale de la URL: `AllTheProviders` monta un `BrowserRouter`, que siempre arranca
@@ -452,7 +461,7 @@ Ejecuta después `npx vitest run`: los 114 tests existentes deben seguir en verd
 **si alguno falla, míralo antes de seguir**: significa que dependía del historial
 real del navegador.
 
-- [ ] **Paso 1: Escribir los tests que fallan**
+- [x] **Paso 1: Escribir los tests que fallan**
 
 Crea `desamparados-web/src/hooks/__tests__/usePaginacion.test.tsx`:
 
@@ -564,12 +573,12 @@ describe('Paginador', () => {
 })
 ```
 
-- [ ] **Paso 2: Ejecutar para verlos fallar**
+- [x] **Paso 2: Ejecutar para verlos fallar**
 
 Ejecuta: `cd desamparados-web && npx vitest run src/hooks src/components/__tests__/Paginador.test.tsx`
 Esperado: FALLAN, los tres módulos no existen.
 
-- [ ] **Paso 3: Escribir las tres piezas**
+- [x] **Paso 3: Escribir las tres piezas**
 
 Crea `desamparados-web/src/lib/api/tipos.ts`:
 
@@ -732,12 +741,12 @@ export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props)
 }
 ```
 
-- [ ] **Paso 4: Ejecutar para verlos pasar**
+- [x] **Paso 4: Ejecutar para verlos pasar**
 
 Ejecuta: `npx vitest run src/hooks src/components/__tests__/Paginador.test.tsx`
 Esperado: los 11 tests en verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add desamparados-web/src/lib/api/tipos.ts desamparados-web/src/hooks desamparados-web/src/components/Paginador.tsx desamparados-web/src/components/__tests__/Paginador.test.tsx
@@ -761,7 +770,7 @@ git commit -m "Anadir el paginador y la memoria de pagina del cliente"
   `Paginador`, `paramsPagina`, `RespuestaPaginada` (tarea 4).
 - Produce: `searchBrothers(query, { pagina, porPagina })` → `Promise<RespuestaPaginada<AdminBrother>>`.
 
-- [ ] **Paso 1: Escribir los tests que fallan**
+- [x] **Paso 1: Escribir los tests que fallan**
 
 En `backend-desamparados/test/integration.test.ts`, añade:
 
@@ -836,12 +845,12 @@ function respuestaCenso(data: unknown[], total = data.length) {
 }
 ```
 
-- [ ] **Paso 2: Ejecutar para verlos fallar**
+- [x] **Paso 2: Ejecutar para verlos fallar**
 
 Ejecuta: `cd desamparados-web && npx vitest run src/features/cms/__tests__/BrothersAdminPage.test.tsx`
 Esperado: FALLAN; la pantalla no lee la URL ni reinicia al buscar.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 En `hermano.service.ts`, sustituye el saneamiento propio de `searchHermanos` por
 el compartido, y lo mismo en `getAllHermanos`:
@@ -906,12 +915,12 @@ Debajo de la lista:
 {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="censo de hermanos" />}
 ```
 
-- [ ] **Paso 4: Ejecutar los dos lados**
+- [x] **Paso 4: Ejecutar los dos lados**
 
 Ejecuta: `cd desamparados-web && npx vitest run` y `cd ../backend-desamparados && npm test`
 Esperado: todo en verde, ningún test omitido si MariaDB está levantada.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src backend-desamparados/test desamparados-web/src
@@ -936,7 +945,7 @@ la pestaña tiene que seguir diciendo el total**, no lo que cabe en la página.
 - Consume: lo de las tareas 2 y 4.
 - Produce: `getPendingRequests({ pagina, porPagina })` → `Promise<RespuestaPaginada<PendingRequest>>`.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 ```tsx
 it('la pestaña cuenta todas las solicitudes, no las de la página', async () => {
@@ -961,12 +970,12 @@ const solicitud = {
 }
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx vitest run src/features/cms/__tests__/BrothersAdminPage.test.tsx`
 Esperado: FALLA; hoy la pestaña cuenta `requests.length`.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 En el servicio, acepta paginación y devuelve el par lista/total:
 
@@ -1014,12 +1023,12 @@ const [metaSolicitudes, setMetaSolicitudes] = useState<MetaPaginacion | null>(nu
 />}
 ```
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npx vitest run` y `cd ../backend-desamparados && npm test`
 Esperado: todo en verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src desamparados-web/src
