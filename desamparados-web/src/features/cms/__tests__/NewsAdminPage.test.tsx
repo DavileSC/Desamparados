@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import NewsAdminPage from '../NewsAdminPage'
 
@@ -20,20 +21,22 @@ afterEach(() => { vi.unstubAllGlobals() })
 describe('NewsAdminPage', () => {
   it('antes de borrar pregunta, y dice qué se va a borrar', async () => {
     // Hasta ahora era un window.confirm: no decía de qué noticia hablaba.
+    const user = userEvent.setup()
     responder([noticia])
     renderWithProviders(<NewsAdminPage />)
-    fireEvent.click(await screen.findByRole('button', { name: /eliminar apertura/i }))
+    await user.click(await screen.findByRole('button', { name: /eliminar apertura/i }))
     expect(screen.getByRole('dialog')).toHaveTextContent('Apertura del curso cofrade 2026-2027')
   })
 
   it('quien cancela no borra nada', async () => {
+    const user = userEvent.setup()
     responder([noticia])
     renderWithProviders(<NewsAdminPage />)
-    fireEvent.click(await screen.findByRole('button', { name: /eliminar apertura/i }))
+    await user.click(await screen.findByRole('button', { name: /eliminar apertura/i }))
 
     const llamadas = vi.fn()
     vi.stubGlobal('fetch', llamadas)
-    fireEvent.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByRole('button', { name: 'Volver' }))
 
     expect(llamadas).not.toHaveBeenCalled()
     // El diálogo de MUI se va con una transición: sigue en el DOM un instante.

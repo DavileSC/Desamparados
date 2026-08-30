@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider, Link } from 'react-router-dom'
 import cmsTheme from '../../../theme/cms'
@@ -44,23 +45,25 @@ describe('PantallaEdicion', () => {
     expect(screen.queryByRole('heading', { name: /archivo editorial/i })).not.toBeInTheDocument()
   })
 
-  it('guardar pide confirmación y nombra la ficha', () => {
+  it('guardar pide confirmación y nombra la ficha', async () => {
+    const user = userEvent.setup()
     const guardar = vi.fn()
     montar({ sucio: true, onGuardar: guardar })
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
     expect(guardar).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog')).toHaveTextContent('Apertura del curso cofrade')
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     expect(guardar).toHaveBeenCalledOnce()
   })
 
   it('salir con cambios avisa antes de perderlos', async () => {
+    const user = userEvent.setup()
     montar({ sucio: true })
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.getByRole('dialog')).toHaveTextContent(/se van a perder/i)
     // Mientras no se confirme, seguimos en la edición.
     expect(screen.getByText('Campos del formulario')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Salir sin guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Salir sin guardar' }))
     expect(await screen.findByRole('heading', { name: /archivo editorial/i })).toBeInTheDocument()
   })
 
@@ -76,8 +79,9 @@ describe('PantallaEdicion', () => {
 
   it('sin cambios, cancelar sale directo', async () => {
     // Avisar de que se pierden cambios que no existen enseña a ignorar los avisos.
+    const user = userEvent.setup()
     montar({ sucio: false })
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(await screen.findByRole('heading', { name: /archivo editorial/i })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })

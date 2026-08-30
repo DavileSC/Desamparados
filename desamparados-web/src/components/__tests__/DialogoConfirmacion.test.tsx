@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
 import DialogoConfirmacion from '../DialogoConfirmacion'
 
@@ -19,15 +20,16 @@ describe('DialogoConfirmacion', () => {
     expect(screen.getByText('Ficha de Rocío Gómez Marín.')).toBeInTheDocument()
   })
 
-  it('avisa a quien lo abrió de lo que se ha pulsado', () => {
+  it('avisa a quien lo abrió de lo que se ha pulsado', async () => {
+    const user = userEvent.setup()
     const confirmar = vi.fn()
     const cancelar = vi.fn()
     renderWithProviders(
       <DialogoConfirmacion abierto titulo="¿Guardar?" mensaje="." textoConfirmar="Guardar" onConfirmar={confirmar} onCancelar={cancelar} />,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
     expect(confirmar).toHaveBeenCalledOnce()
-    fireEvent.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByRole('button', { name: 'Volver' }))
     expect(cancelar).toHaveBeenCalledOnce()
   })
 

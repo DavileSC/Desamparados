@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
@@ -59,16 +60,18 @@ describe('BrotherEditPage', () => {
   })
 
   it('manda solo la ficha, con las fechas en formato de día', async () => {
+    const user = userEvent.setup()
     responder(ficha)
     montar()
     const dni = await screen.findByLabelText('DNI')
-    fireEvent.change(dni, { target: { value: '20000001X' } })
+    await user.clear(dni)
+    await user.type(dni, '20000001X')
 
     const enviar = vi.fn().mockResolvedValue(new Response(JSON.stringify(ficha), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', enviar)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
     const [, opciones] = await vi.waitFor(() => {
       expect(enviar).toHaveBeenCalled()
@@ -103,14 +106,15 @@ describe('BrotherEditPage', () => {
   })
 
   it('emancipar pide el correo y confirma antes de crear la cuenta', async () => {
+    const user = userEvent.setup()
     responder(dependiente)
     montar(43)
-    fireEvent.click(await screen.findByRole('button', { name: /emancipar/i }))
-    fireEvent.change(screen.getByLabelText(/correo del hermano/i), { target: { value: 'pablo@ejemplo.invalido' } })
+    await user.click(await screen.findByRole('button', { name: /emancipar/i }))
+    await user.type(screen.getByLabelText(/correo del hermano/i), 'pablo@ejemplo.invalido')
 
     const enviar = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 99, email: 'pablo@ejemplo.invalido', nombre: 'Pablo' }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', enviar)
-    fireEvent.click(screen.getByRole('button', { name: 'Emancipar hermano' }))
+    await user.click(screen.getByRole('button', { name: 'Emancipar hermano' }))
 
     const [url, opciones] = await vi.waitFor(() => {
       expect(enviar).toHaveBeenCalled()
@@ -125,13 +129,15 @@ describe('BrotherEditPage', () => {
   it('al guardar vuelve al listado sin preguntar por los cambios', async () => {
     // Los cambios se acaban de guardar: preguntar si se van a perder, justo
     // después de guardarlos, es el aviso más confuso posible.
+    const user = userEvent.setup()
     responder(ficha)
     montar()
     const dni = await screen.findByLabelText('DNI')
-    fireEvent.change(dni, { target: { value: '20000001X' } })
+    await user.clear(dni)
+    await user.type(dni, '20000001X')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
     expect(await screen.findByRole('heading', { name: /gestión de hermanos/i })).toBeInTheDocument()
     expect(screen.queryByText(/se van a perder/i)).not.toBeInTheDocument()
