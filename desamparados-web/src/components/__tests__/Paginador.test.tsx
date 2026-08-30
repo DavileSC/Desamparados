@@ -38,4 +38,11 @@ describe('Paginador', () => {
     render(<Paginador meta={{ total: 40, page: 99, limit: 20, totalPages: 2 }} onPagina={onPagina} onTamano={vi.fn()} etiqueta="censo" />)
     expect(onPagina).toHaveBeenCalledWith(2)
   })
+
+  it('con una etiqueta de varias palabras, el selector sigue siendo accesible por su etiqueta', () => {
+    // Sin sanear, el id con espacios rompe aria-labelledby y el selector se
+    // queda sin nombre accesible en toda la aplicación.
+    render(<Paginador meta={meta} onPagina={vi.fn()} onTamano={vi.fn()} etiqueta="censo de hermanos" />)
+    expect(screen.getByLabelText(/resultados por página/i)).toBeInTheDocument()
+  })
 })

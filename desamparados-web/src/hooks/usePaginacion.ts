@@ -33,6 +33,8 @@ export function usePaginacion(prefijo = '') {
   const pagina = Number.isInteger(pedida) && pedida >= 1 ? pedida : 1
 
   const tamanoUrl = Number(params.get(claveTamano))
+  // Si el de la URL no es válido, se cae al guardado (no al valor por defecto):
+  // un enlace corrupto no debe tirar por la borda la preferencia real del usuario.
   const porPagina = TAMANOS.includes(tamanoUrl as (typeof TAMANOS)[number]) ? tamanoUrl : tamanoGuardado()
 
   const escribir = useCallback((cambios: Record<string, string | null>) => {

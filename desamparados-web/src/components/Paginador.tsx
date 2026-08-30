@@ -11,6 +11,13 @@ interface Props {
   etiqueta: string
 }
 
+// El id no puede llevar espacios: aria-labelledby interpreta el valor como una
+// lista de identificadores separados por espacios, y con etiquetas de varias
+// palabras («censo de hermanos») el selector se quedaría sin etiqueta accesible.
+function idParaEtiqueta(etiqueta: string): string {
+  return etiqueta.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-')
+}
+
 export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props) {
   const { total, page, limit, totalPages } = meta
 
@@ -23,6 +30,7 @@ export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props)
 
   const desde = (page - 1) * limit + 1
   const hasta = Math.min(page * limit, total)
+  const idEtiqueta = `tamano-${idParaEtiqueta(etiqueta)}`
 
   return (
     <Box sx={{ mt: 3, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
@@ -31,9 +39,9 @@ export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props)
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <FormControl size="small">
-          <InputLabel id={`tamano-${etiqueta}`}>Resultados por página</InputLabel>
+          <InputLabel id={idEtiqueta}>Resultados por página</InputLabel>
           <Select
-            labelId={`tamano-${etiqueta}`}
+            labelId={idEtiqueta}
             label="Resultados por página"
             value={limit}
             onChange={(evento) => onTamano(Number(evento.target.value))}
