@@ -405,3 +405,39 @@ test('el censo recorta un tamaño desmedido al tope', async (t) => {
     await borrarUsuarioPrueba(admin.id);
   }
 });
+
+// El seed de demostración siembra cinco solicitudes pendientes: con tamaño 2
+// hay margen para comprobar dos páginas de verdad, no una lista vacía.
+test('las solicitudes de alta respetan la página y el tamaño pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const admin = await crearUsuarioPrueba(Role.ADMIN);
+
+  try {
+    const token = generateToken(admin.id, Role.ADMIN);
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
+
+    const primera = await fetch(`${baseUrl}/api/hermanos/admin/solicitudes?page=1&limit=2`, { headers: cabeceras });
+    assert.equal(primera.status, 200);
+    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    // Con menos de tres solicitudes pendientes la página 2 no aportaría nada
+    // distinto que comprobar: se omite con el motivo a la vista.
+    if (uno.meta.total < 3) {
+      return t.skip(`solo hay ${uno.meta.total} solicitud(es) pendiente(s); hacen falta al menos 3 para comprobar dos páginas de tamaño 2 (ejecuta el seed de demostración)`);
+    }
+
+    const segunda = await fetch(`${baseUrl}/api/hermanos/admin/solicitudes?page=2&limit=2`, { headers: cabeceras });
+    const dos = await segunda.json() as { data: { id: number }[] };
+
+    assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+    assert.equal(uno.meta.limit, 2);
+    assert.equal(uno.data.length, 2, 'con al menos 3 solicitudes, la primera página debe traer las 2 que pidió');
+    assert.ok(dos.data.length >= 1, 'la segunda página debe traer al menos una solicitud');
+    // La segunda página trae solicitudes distintas: si el skip no se aplica, esto falla.
+    const idsPrimera = new Set(uno.data.map((s) => s.id));
+    assert.ok(dos.data.every((s) => !idsPrimera.has(s.id)));
+  } finally {
+    await borrarUsuarioPrueba(admin.id);
+  }
+});

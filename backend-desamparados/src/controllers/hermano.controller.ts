@@ -152,9 +152,11 @@ export class HermanoController {
     }
   }
 
-  static async getSolicitudes(_req: Request, res: Response) {
+  static async getSolicitudes(req: Request, res: Response) {
     try {
-      const solicitudes = await HermanoService.getSolicitudesPendientes();
+      // La ruta no pasa por `validate`: sanearPaginacion() ya defiende los
+      // parámetros crudos de req.query (defecto y tope incluidos).
+      const solicitudes = await HermanoService.getSolicitudesPendientes(req.query);
       res.status(200).json(solicitudes);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo las solicitudes pendientes');

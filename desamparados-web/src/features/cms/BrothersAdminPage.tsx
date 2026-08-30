@@ -27,16 +27,22 @@ export default function BrothersAdminPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const { pagina, porPagina, irAPagina, cambiarTamano, reiniciar } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
+  // Segundo listado de la misma pantalla, con su propia paginación: el prefijo
+  // evita que ?pagina= y ?paginaSolicitudes= se pisen en la URL.
+  const solicitudes = usePaginacion('Solicitudes')
+  const [metaSolicitudes, setMetaSolicitudes] = useState<MetaPaginacion | null>(null)
 
   const load = useCallback(() => Promise.all([
-    // Las solicitudes siguen llegando como array hasta la tarea 6.
-    puedeGestionar ? getPendingRequests() : Promise.resolve([] as PendingRequest[]),
+    puedeGestionar
+      ? getPendingRequests({ pagina: solicitudes.pagina, porPagina: solicitudes.porPagina })
+      : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 } }),
     searchBrothers(query, { pagina, porPagina }),
   ]).then(([pendientes, censo]) => {
     setBrothers(censo.data)
     setMeta(censo.meta)
-    setRequests(pendientes)
-  }), [puedeGestionar, query, pagina, porPagina])
+    setRequests(pendientes.data)
+    setMetaSolicitudes(pendientes.meta)
+  }), [puedeGestionar, query, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
 
   useEffect(() => {
     const timer = window.setTimeout(() => load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.')).finally(() => setLoading(false)), query ? 300 : 0)
@@ -55,12 +61,14 @@ export default function BrothersAdminPage() {
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
     <Tabs value={vista} onChange={(_, valor) => setParams(valor === 'solicitudes' ? { vista: 'solicitudes' } : {})} sx={{ mb: 3 }}>
       <Tab value="censo" label="Censo" />
-      <Tab value="solicitudes" label={`Solicitudes (${requests.length})`} />
+      <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
     </Tabs>
     {vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
       {requests.map((request) => <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Box><Typography>{request.nombre} {request.apellidos}</Typography><Typography variant="body2" color="text.secondary">{request.email} · {request.hermanos.length} perfil(es)</Typography></Box><Stack direction="row" spacing={1}><Button variant="contained" onClick={() => handleRequest(request, true)}>Aprobar</Button><Button color="error" onClick={() => handleRequest(request, false)}>Rechazar</Button></Stack></Box>)}
       {requests.length === 0 && <Alert severity="info">No hay solicitudes pendientes.</Alert>}
-    </Stack></Paper> : <>
+    </Stack>
+    {metaSolicitudes && <Paginador meta={metaSolicitudes} onPagina={solicitudes.irAPagina} onTamano={solicitudes.cambiarTamano} etiqueta="solicitudes de alta" />}
+    </Paper> : <>
     <TextField label="Buscar por nombre, DNI o email" value={query} onChange={(event) => { setQuery(event.target.value); reiniciar() }} fullWidth sx={{ mb: 3 }} />
     {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : 'Pendiente/inactivo'}</Typography></Box>{puedeGestionar && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No se han encontrado hermanos.</Alert>}</Stack>}
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="censo de hermanos" />}

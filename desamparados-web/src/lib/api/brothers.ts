@@ -39,8 +39,8 @@ export function searchBrothers(query: string, pagina: { pagina: number; porPagin
   )
 }
 
-export function getPendingRequests() {
-  return apiFetch<PendingRequest[]>('/hermanos/admin/solicitudes')
+export function getPendingRequests(pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<PendingRequest>>(`/hermanos/admin/solicitudes?${paramsPagina(pagina)}`)
 }
 
 export function approveRequest(id: number) {

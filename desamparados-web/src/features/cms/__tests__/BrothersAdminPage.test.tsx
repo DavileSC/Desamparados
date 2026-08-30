@@ -9,8 +9,10 @@ type Censo = { data: unknown[]; meta: { total: number; page: number; limit: numb
 
 /** El censo y las solicitudes son dos llamadas distintas: responde por URL. */
 function responderCenso(censo: Censo, solicitudes: unknown[]) {
+  // Desde la Tarea 6 las solicitudes también llegan paginadas.
+  const paginaSolicitudes = { data: solicitudes, meta: { total: solicitudes.length, page: 1, limit: 20, totalPages: Math.ceil(solicitudes.length / 20) } }
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
-    const cuerpo = String(url).includes('solicitudes') ? solicitudes : censo
+    const cuerpo = String(url).includes('solicitudes') ? paginaSolicitudes : censo
     return Promise.resolve(new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } }))
   }))
 }
@@ -20,6 +22,11 @@ const censoVacio: Censo = { data: [], meta: { total: 0, page: 1, limit: 100, tot
 function respuestaCenso(data: unknown[], total = data.length) {
   return new Response(JSON.stringify({ data, meta: { total, page: 1, limit: 20, totalPages: Math.ceil(total / 20) } }),
     { status: 200, headers: { 'Content-Type': 'application/json' } })
+}
+
+const solicitud = {
+  id: 3, email: 'nueva@ejemplo.invalido', nombre: 'Lucía', apellidos: 'Ramos Gil',
+  createdAt: '2026-08-20T10:00:00.000Z', hermanos: [],
 }
 
 beforeEach(() => {
@@ -103,7 +110,11 @@ describe('BrothersAdminPage', () => {
   }
 
   it('pide la página que dice la URL', async () => {
-    const fetchSimulado = vi.fn().mockResolvedValue(respuestaCenso([]))
+    // mockImplementation, no mockResolvedValue: cada llamada a fetch consume su
+    // propio Response, tanto la del censo como la de solicitudes (Promise.all
+    // dispara las dos). Compartir una única instancia rompería el segundo
+    // `.json()` con la Fetch API real.
+    const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(respuestaCenso([])))
     vi.stubGlobal('fetch', fetchSimulado)
     renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?pagina=3&porPagina=30' })
 
@@ -114,7 +125,7 @@ describe('BrothersAdminPage', () => {
 
   it('buscar vuelve a la primera página', async () => {
     const user = userEvent.setup()
-    const fetchSimulado = vi.fn().mockResolvedValue(respuestaCenso([]))
+    const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(respuestaCenso([])))
     vi.stubGlobal('fetch', fetchSimulado)
     renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?pagina=5' })
 
@@ -126,5 +137,17 @@ describe('BrothersAdminPage', () => {
       expect(ultimaAlCenso).toContain('page=1')
       expect(ultimaAlCenso).toContain('q=Roc')
     })
+  })
+
+  it('la pestaña cuenta todas las solicitudes, no las de la página', async () => {
+    // Con doce pendientes y diez por página, «Solicitudes (10)» sería mentira
+    // justo en el aviso que empuja a entrar a mirarlas.
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(String(url).includes('solicitudes')
+        ? new Response(JSON.stringify({ data: [solicitud], meta: { total: 12, page: 1, limit: 10, totalPages: 2 } }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+        : respuestaCenso([]))))
+
+    renderWithProviders(<BrothersAdminPage />)
+    expect(await screen.findByRole('tab', { name: /solicitudes \(12\)/i })).toBeInTheDocument()
   })
 })

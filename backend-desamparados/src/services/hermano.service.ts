@@ -447,24 +447,34 @@ export class HermanoService {
    * SEGURIDAD: `select` explícito. Antes se devolvía el objeto User completo con el hash
    * de contraseña, el secreto 2FA, el token de reset y el IBAN de las fichas.
    */
-  static async getSolicitudesPendientes() {
-    return await db.user.findMany({
-      where: {
-        role: Role.USER,
-        hermanos: {
-          some: { activo: false, fechaBaja: null }
-        }
-      },
-      select: {
-        id: true, email: true, dni: true, nombre: true, apellidos: true, telefono: true,
-        direccion: true, poblacion: true, codigoPostal: true, active: true, createdAt: true,
-        hermanos: {
-          where: { activo: false, fechaBaja: null },
-          select: HERMANO_SAFE_SELECT
-        }
-      },
-      orderBy: { createdAt: 'asc' }
-    });
+  static async getSolicitudesPendientes(query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
+    const where: Prisma.UserWhereInput = {
+      role: Role.USER,
+      hermanos: {
+        some: { activo: false, fechaBaja: null }
+      }
+    };
+
+    const [data, total] = await db.$transaction([
+      db.user.findMany({
+        where,
+        select: {
+          id: true, email: true, dni: true, nombre: true, apellidos: true, telefono: true,
+          direccion: true, poblacion: true, codigoPostal: true, active: true, createdAt: true,
+          hermanos: {
+            where: { activo: false, fechaBaja: null },
+            select: HERMANO_SAFE_SELECT
+          }
+        },
+        orderBy: { createdAt: 'asc' },
+        skip: paginacion.skip,
+        take: paginacion.take
+      }),
+      db.user.count({ where })
+    ]);
+
+    return respuestaPaginada(data, total, paginacion);
   }
 
   static async aprobarSolicitud(userId: number, meta?: AuditMeta) {
