@@ -53,3 +53,16 @@ export const dni = type("string")
 export const idParam = type("string")
     .matching(/^\d+$/)
     .describe("un ID numérico válido");
+
+/**
+ * Para esparcir dentro del `query` de cualquier esquema de listado:
+ *
+ *   type({ query: { ...paginacionQuery, "tipo?": tipoEventoSchema } })
+ *
+ * Sin declararlos, `validate` los borra en silencio y el extremo sirve siempre
+ * la primera página.
+ */
+export const paginacionQuery = {
+    "page?": type("string").matching(/^\d+$/).describe("un número de página"),
+    "limit?": type("string").matching(/^\d+$/).describe("un tamaño de página"),
+};
