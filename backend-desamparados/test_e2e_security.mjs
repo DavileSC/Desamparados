@@ -109,7 +109,7 @@ if (PARTE === 1) {
 
   step('FIX (BAJO): Tope de paginacion');
   r = await api('GET', '/api/hermanos/admin/all?limit=999999', null, adminToken);
-  check('limit=999999 → tope 500 aplicado', r.status === 200 && r.json?.meta?.limit === 500);
+  check('limit=999999 → tope 100 aplicado', r.status === 200 && r.json?.meta?.limit === 100);
 
   step('FIX (BAJO): Whitelist de claves de configuracion');
   r = await api('POST', '/api/admin/config', { key: 'clave_maliciosa_arbitraria', value: '123' }, adminToken);
@@ -180,7 +180,7 @@ if (PARTE === 1) {
 
   // Aprobamos su solicitud (esto tambien audita SOLICITUD_APROBAR)
   r = await api('GET', '/api/hermanos/admin/solicitudes', null, adminToken);
-  const rosa = r.json?.find(u => u.email === 'rgpd@test.com');
+  const rosa = r.json?.data?.find(u => u.email === 'rgpd@test.com');
   r = await api('POST', `/api/hermanos/admin/solicitudes/${rosa.id}/aprobar`, null, adminToken);
   check('solicitud aprobada', r.status === 200);
 

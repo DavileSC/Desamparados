@@ -47,7 +47,7 @@ const adminToken = r.json?.token;
 // ============ 4. VER SOLICITUDES PENDIENTES ============
 step(4, 'GET /admin/solicitudes (lista de pendientes)');
 r = await api('GET', '/api/hermanos/admin/solicitudes', null, adminToken);
-const maria = r.json?.find(u => u.email === 'maria@test.com');
+const maria = r.json?.data?.find(u => u.email === 'maria@test.com');
 console.log('HTTP', r.status, '| Maria pendiente:', maria ? `id=${maria.id}, hijos=${maria.hermanos.length}` : 'NO ENCONTRADA');
 
 // ============ 5. APROBAR SOLICITUD ============
