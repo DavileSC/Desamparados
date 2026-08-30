@@ -237,8 +237,8 @@ página. Sale de `meta.total`. Sin este cuidado, con doce solicitudes pondría
 
 **Inventario tiene dos listados en la misma pantalla.** Enseres y ropero llevan
 paginación independiente, con parámetros distintos en la URL
-(`?pagEnseres=2&pagPrendas=1`). Con un solo parámetro compartido, pasar página en
-enseres movería también el ropero.
+(`?paginaEnseres=2&paginaPrendas=1`). Con un solo parámetro compartido, pasar
+página en enseres movería también el ropero.
 
 **Hermanos tiene dos pestañas.** Censo y solicitudes, cada una con su paginación,
 también con parámetros distintos.
