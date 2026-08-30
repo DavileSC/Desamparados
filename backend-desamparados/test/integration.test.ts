@@ -366,15 +366,23 @@ test('el censo respeta la página y el tamaño pedidos', async (t) => {
     const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
 
     const primera = await fetch(`${baseUrl}/api/hermanos/admin/search?page=1&limit=10`, { headers: cabeceras });
-    const segunda = await fetch(`${baseUrl}/api/hermanos/admin/search?page=2&limit=10`, { headers: cabeceras });
     assert.equal(primera.status, 200);
-
     const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    // Con 10 hermanos o menos en el censo, la página 2 estaría vacía y las
+    // comprobaciones de abajo pasarían sin comprobar nada: se omite con el
+    // motivo a la vista en vez de dar un verde vacío.
+    if (uno.meta.total <= 10) {
+      return t.skip(`el censo de prueba solo tiene ${uno.meta.total} hermano(s); hacen falta más de 10 para comprobar la página 2`);
+    }
+
+    const segunda = await fetch(`${baseUrl}/api/hermanos/admin/search?page=2&limit=10`, { headers: cabeceras });
     const dos = await segunda.json() as { data: { id: number }[] };
 
-    assert.ok(uno.data.length <= 10);
     assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
     assert.equal(uno.meta.limit, 10);
+    assert.equal(uno.data.length, 10, 'con más de 10 hermanos, la primera página debe traer los 10 que pidió');
+    assert.ok(dos.data.length >= 1, 'la segunda página debe traer al menos un hermano');
     // La segunda página trae hermanos distintos: si el skip no se aplica, esto falla.
     const idsPrimera = new Set(uno.data.map((h) => h.id));
     assert.ok(dos.data.every((h) => !idsPrimera.has(h.id)));

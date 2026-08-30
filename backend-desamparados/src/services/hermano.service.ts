@@ -306,8 +306,8 @@ export class HermanoService {
   }
 
   // Ver todos los hermanos
-  static async getAllHermanos(page: number = 1, limit: number = 100) {
-    const paginacion = sanearPaginacion({ page, limit });
+  static async getAllHermanos(query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({

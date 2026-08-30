@@ -109,10 +109,8 @@ export class HermanoController {
 
   static async getAll(req: Request, res: Response) {
     try {
-      const page = req.query.page ? parseInt(req.query.page as string) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 500;
-
-      const hermanos = await HermanoService.getAllHermanos(page, limit);
+      // El saneamiento (defecto, tope) lo decide sanearPaginacion, no el controlador.
+      const hermanos = await HermanoService.getAllHermanos(req.query);
       res.status(200).json(hermanos);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo el censo de la cofradía');

@@ -93,14 +93,22 @@ describe('BrothersAdminPage', () => {
     expect(screen.queryByLabelText(/buscar por nombre/i)).not.toBeInTheDocument()
   })
 
+  // Las llamadas al censo se identifican por su URL (contiene '/search'), no
+  // por su posición: la Tarea 6 va a paginar también las solicitudes y ese
+  // Promise.all volverá a cambiar de orden sin que haya ningún defecto.
+  function llamadasAlCenso(fetchSimulado: ReturnType<typeof vi.fn>) {
+    return fetchSimulado.mock.calls
+      .map((llamada) => String(llamada[0]))
+      .filter((url) => url.includes('/hermanos/admin/search'))
+  }
+
   it('pide la página que dice la URL', async () => {
     const fetchSimulado = vi.fn().mockResolvedValue(respuestaCenso([]))
     vi.stubGlobal('fetch', fetchSimulado)
     renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?pagina=3&porPagina=30' })
 
     await waitFor(() => {
-      const llamadas = fetchSimulado.mock.calls.map(([url]) => String(url))
-      expect(llamadas.some((url) => url.includes('page=3') && url.includes('limit=30'))).toBe(true)
+      expect(llamadasAlCenso(fetchSimulado).some((url) => url.includes('page=3') && url.includes('limit=30'))).toBe(true)
     })
   })
 
@@ -113,9 +121,10 @@ describe('BrothersAdminPage', () => {
     await user.type(screen.getByLabelText(/buscar/i), 'Rocío')
 
     await waitFor(() => {
-      const ultima = String(fetchSimulado.mock.calls.at(-1)?.[0])
-      expect(ultima).toContain('page=1')
-      expect(ultima).toContain('q=Roc')
+      const ultimaAlCenso = llamadasAlCenso(fetchSimulado).at(-1)
+      expect(ultimaAlCenso).toBeDefined()
+      expect(ultimaAlCenso).toContain('page=1')
+      expect(ultimaAlCenso).toContain('q=Roc')
     })
   })
 })
