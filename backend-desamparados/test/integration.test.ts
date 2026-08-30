@@ -355,3 +355,45 @@ test('el restablecimiento rechaza contrasenas debiles antes de mirar el token', 
     );
   }
 });
+
+test('el censo respeta la página y el tamaño pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const admin = await crearUsuarioPrueba(Role.ADMIN);
+
+  try {
+    const token = generateToken(admin.id, Role.ADMIN);
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
+
+    const primera = await fetch(`${baseUrl}/api/hermanos/admin/search?page=1&limit=10`, { headers: cabeceras });
+    const segunda = await fetch(`${baseUrl}/api/hermanos/admin/search?page=2&limit=10`, { headers: cabeceras });
+    assert.equal(primera.status, 200);
+
+    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+    const dos = await segunda.json() as { data: { id: number }[] };
+
+    assert.ok(uno.data.length <= 10);
+    assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+    assert.equal(uno.meta.limit, 10);
+    // La segunda página trae hermanos distintos: si el skip no se aplica, esto falla.
+    const idsPrimera = new Set(uno.data.map((h) => h.id));
+    assert.ok(dos.data.every((h) => !idsPrimera.has(h.id)));
+  } finally {
+    await borrarUsuarioPrueba(admin.id);
+  }
+});
+
+test('el censo recorta un tamaño desmedido al tope', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const admin = await crearUsuarioPrueba(Role.ADMIN);
+
+  try {
+    const token = generateToken(admin.id, Role.ADMIN);
+    const respuesta = await fetch(`${baseUrl}/api/hermanos/admin/search?limit=999999`, { headers: { Cookie: `${COOKIE_SESION}=${token}` } });
+    const cuerpo = await respuesta.json() as { meta: { limit: number } };
+    assert.equal(cuerpo.meta.limit, 100);
+  } finally {
+    await borrarUsuarioPrueba(admin.id);
+  }
+});

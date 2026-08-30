@@ -8,6 +8,7 @@ import { comprobarFechasHermano } from '../domain/fechas-hermano';
 import crypto from 'crypto';
 import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 // 1. DICCIONARIO DE ERRORES (Centralizado)
 const HERMANO_ERRORS = {
@@ -274,10 +275,7 @@ export class HermanoService {
   // =================================================================
 
   static async searchHermanos(query: SearchHermanoQuery) {
-    const pageNum = Math.max(parseInt(query.page || "1"), 1);
-    // Tope duro: evita que un cliente pida limit=999999 y sature la BD
-    const limitNum = Math.min(Math.max(parseInt(query.limit || "20"), 1), 500);
-    const skip = (pageNum - 1) * limitNum;
+    const paginacion = sanearPaginacion(query);
 
     const where: Prisma.HermanoWhereInput = {};
 
@@ -297,31 +295,26 @@ export class HermanoService {
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
-        where, skip, take: limitNum,
+        where, skip: paginacion.skip, take: paginacion.take,
         orderBy: { apellidos: 'asc' },
         include: { user: { select: { telefono: true, email: true } } }
       }),
       db.hermano.count({ where })
     ]);
 
-    return {
-      data,
-      meta: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
-    };
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // Ver todos los hermanos
-  static async getAllHermanos(page: number = 1, limit: number = 500) {
-    page = Number.isFinite(page) ? Math.max(page, 1) : 1;
-    limit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 500) : 500; // Tope duro de seguridad
-    const skip = (page - 1) * limit;
+  static async getAllHermanos(page: number = 1, limit: number = 100) {
+    const paginacion = sanearPaginacion({ page, limit });
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
         where: { activo: true },
         orderBy: { numeroHermano: 'asc' }, // Ordenamos por número en lugar de apellidos
-        skip,
-        take: limit,
+        skip: paginacion.skip,
+        take: paginacion.take,
         include: {
           user: { select: { nombre: true, apellidos: true, telefono: true } }
         }
@@ -329,10 +322,7 @@ export class HermanoService {
       db.hermano.count({ where: { activo: true } })
     ]);
 
-    return {
-      data,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
-    };
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // Ver un hermano por ID

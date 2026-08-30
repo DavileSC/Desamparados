@@ -1,4 +1,5 @@
 import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface AdminBrother {
   id: number
@@ -23,11 +24,6 @@ export interface AdminBrother {
   user?: { email: string | null; telefono: string | null }
 }
 
-export interface BrotherSearchResponse {
-  data: AdminBrother[]
-  meta: { total: number; page: number; limit: number; totalPages: number }
-}
-
 export interface PendingRequest {
   id: number
   email: string
@@ -37,10 +33,10 @@ export interface PendingRequest {
   hermanos: AdminBrother[]
 }
 
-export function searchBrothers(query: string) {
-  const params = new URLSearchParams({ page: '1', limit: '100' })
-  if (query) params.set('q', query)
-  return apiFetch<BrotherSearchResponse>(`/hermanos/admin/search?${params.toString()}`)
+export function searchBrothers(query: string, pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<AdminBrother>>(
+    `/hermanos/admin/search?${paramsPagina(pagina, { q: query || undefined })}`,
+  )
 }
 
 export function getPendingRequests() {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import BrothersAdminPage from '../BrothersAdminPage'
@@ -16,6 +16,11 @@ function responderCenso(censo: Censo, solicitudes: unknown[]) {
 }
 
 const censoVacio: Censo = { data: [], meta: { total: 0, page: 1, limit: 100, totalPages: 0 } }
+
+function respuestaCenso(data: unknown[], total = data.length) {
+  return new Response(JSON.stringify({ data, meta: { total, page: 1, limit: 20, totalPages: Math.ceil(total / 20) } }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } })
+}
 
 beforeEach(() => {
   useAuthStore.setState({ status: 'autenticado', user: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [] } })
@@ -86,5 +91,31 @@ describe('BrothersAdminPage', () => {
     await user.click(screen.getByRole('tab', { name: /solicitudes/i }))
     expect(screen.getByRole('button', { name: 'Aprobar' })).toBeInTheDocument()
     expect(screen.queryByLabelText(/buscar por nombre/i)).not.toBeInTheDocument()
+  })
+
+  it('pide la página que dice la URL', async () => {
+    const fetchSimulado = vi.fn().mockResolvedValue(respuestaCenso([]))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?pagina=3&porPagina=30' })
+
+    await waitFor(() => {
+      const llamadas = fetchSimulado.mock.calls.map(([url]) => String(url))
+      expect(llamadas.some((url) => url.includes('page=3') && url.includes('limit=30'))).toBe(true)
+    })
+  })
+
+  it('buscar vuelve a la primera página', async () => {
+    const user = userEvent.setup()
+    const fetchSimulado = vi.fn().mockResolvedValue(respuestaCenso([]))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?pagina=5' })
+
+    await user.type(screen.getByLabelText(/buscar/i), 'Rocío')
+
+    await waitFor(() => {
+      const ultima = String(fetchSimulado.mock.calls.at(-1)?.[0])
+      expect(ultima).toContain('page=1')
+      expect(ultima).toContain('q=Roc')
+    })
   })
 })
