@@ -8,12 +8,12 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { puedeTransicionar } from '../domain/recibo-estados.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 export class ReciboService {
 
-  static async getAdminRecibos(page: number = 1, limit: number = 50, year?: number, estado?: EstadoPago) {
-    const safePage = Math.max(1, Math.floor(page));
-    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 200);
+  static async getAdminRecibos(query: { page?: unknown; limit?: unknown } = {}, year?: number, estado?: EstadoPago) {
+    const paginacion = sanearPaginacion(query);
     const where = {
       ...(year ? { year } : {}),
       ...(estado ? { estado } : {})
@@ -23,8 +23,8 @@ export class ReciboService {
       db.recibo.findMany({
         where,
         orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
-        skip: (safePage - 1) * safeLimit,
-        take: safeLimit,
+        skip: paginacion.skip,
+        take: paginacion.take,
         select: {
           id: true, year: true, concepto: true, importe: true, fechaEmision: true,
           estado: true, fechaPago: true, metodoPago: true, observaciones: true,
@@ -34,7 +34,7 @@ export class ReciboService {
       db.recibo.count({ where })
     ]);
 
-    return { data, meta: { total, page: safePage, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) } };
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // =================================================================

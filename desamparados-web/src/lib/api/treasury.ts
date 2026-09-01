@@ -1,4 +1,5 @@
 import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export type AdminReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
 export type PaymentMethod = 'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'
@@ -15,15 +16,8 @@ export interface AdminReceipt {
   hermano: { id: number; nombre: string; apellidos: string; numeroHermano: number | null }
 }
 
-interface AdminReceiptResponse {
-  data: AdminReceipt[]
-  meta: { total: number; page: number; limit: number; totalPages: number }
-}
-
-export function getAdminReceipts(year?: string) {
-  const params = new URLSearchParams({ page: '1', limit: '200' })
-  if (year) params.set('year', year)
-  return apiFetch<AdminReceiptResponse>(`/recibos/admin?${params.toString()}`)
+export function getAdminReceipts(year: string | undefined, pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<AdminReceipt>>(`/recibos/admin?${paramsPagina(pagina, { year })}`)
 }
 
 export function generateFees(payload: { year: number; importe: number; concepto: string }) {
