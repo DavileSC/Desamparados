@@ -1,25 +1,33 @@
 import { Helmet } from 'react-helmet-async'
 import { useEffect, useState } from 'react'
-import { Alert, CircularProgress, Grid } from '@mui/material'
+import { Alert, Box, CircularProgress, Grid } from '@mui/material'
 import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
 import SectionTitle from '../../../components/SectionTitle'
 import NewsCard from '../../../components/NewsCard'
 import AnimatedSection from '../../../components/AnimatedSection'
+import Paginador from '../../../components/Paginador'
+import { usePaginacion } from '../../../hooks/usePaginacion'
 import { getNewsArchive } from '../../../lib/api/news'
+import type { MetaPaginacion } from '../../../lib/api/tipos'
 import type { NewsItem } from '../../../types'
 
 export default function NoticiasPage() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([])
+  const [meta, setMeta] = useState<MetaPaginacion | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
 
   useEffect(() => {
     let cancelled = false
 
-    getNewsArchive()
-      .then((data) => {
-        if (!cancelled) setNewsItems(data)
+    getNewsArchive({ pagina, porPagina })
+      .then((resultado) => {
+        if (!cancelled) {
+          setNewsItems(resultado.noticias)
+          setMeta(resultado.meta)
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'No se han podido cargar las noticias.')
@@ -31,7 +39,12 @@ export default function NoticiasPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [pagina, porPagina])
+
+  const alCambiarPagina = (numero: number) => {
+    irAPagina(numero)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <>
@@ -57,6 +70,11 @@ export default function NoticiasPage() {
               </Grid>
             ))}
           </Grid>}
+          {meta && (
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="noticias" />
+            </Box>
+          )}
         </PageContainer>
       </AnimatedSection>
     </>

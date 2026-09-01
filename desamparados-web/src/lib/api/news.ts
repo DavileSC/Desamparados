@@ -31,9 +31,9 @@ export async function getLatestNews(count?: number) {
   return news.slice(0, count).map(toNewsItem)
 }
 
-export async function getNewsArchive() {
-  const response = await apiFetch<RespuestaPaginada<ApiNews>>('/news/archive')
-  return response.data.map(toNewsItem)
+export async function getNewsArchive(pagina: { pagina: number; porPagina: number }) {
+  const respuesta = await apiFetch<RespuestaPaginada<ApiNews>>(`/news/archive?${paramsPagina(pagina)}`)
+  return { noticias: respuesta.data.map(toNewsItem), meta: respuesta.meta }
 }
 
 export async function getNewsBySlug(slug: string) {
