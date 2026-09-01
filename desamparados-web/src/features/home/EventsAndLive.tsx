@@ -5,7 +5,7 @@ import SectionTitle from '../../components/SectionTitle'
 import GlassCard from '../../components/GlassCard'
 import EventCard from '../../components/EventCard'
 import AnimatedSection from '../../components/AnimatedSection'
-import { getPublicEvents } from '../../lib/api/events'
+import { getProximosEventos } from '../../lib/api/events'
 import type { EventItem } from '../../types'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import { site } from '../../config/site'
@@ -18,7 +18,7 @@ export default function EventsAndLive() {
   useEffect(() => {
     let cancelled = false
 
-    getPublicEvents(4)
+    getProximosEventos(4)
       .then((data) => {
         if (!cancelled) setEvents(data)
       })

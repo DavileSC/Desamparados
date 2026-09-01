@@ -9,7 +9,7 @@ import EventCard from '../../components/EventCard'
 import AnimatedSection from '../../components/AnimatedSection'
 import AppButton from '../../components/AppButton'
 import { getLatestNews } from '../../lib/api/news'
-import { getPublicEvents } from '../../lib/api/events'
+import { getProximosEventos } from '../../lib/api/events'
 import type { EventItem, NewsItem } from '../../types'
 
 export default function NewsPage() {
@@ -21,7 +21,7 @@ export default function NewsPage() {
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([getLatestNews(4), getPublicEvents(4)])
+    Promise.all([getLatestNews(4), getProximosEventos(4)])
       .then(([news, events]) => {
         if (!cancelled) {
           setLatestNews(news)

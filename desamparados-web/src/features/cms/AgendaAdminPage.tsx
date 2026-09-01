@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Alert, Box, Button, CircularProgress, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
@@ -7,6 +7,9 @@ import EditIcon from '@mui/icons-material/Edit'
 import { Link } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { createEvent, deleteEvent, getAdminEvents, type ApiEvent, type EventPayload } from '../../lib/api/events'
+import { usePaginacion } from '../../hooks/usePaginacion'
+import Paginador from '../../components/Paginador'
+import type { MetaPaginacion } from '../../lib/api/tipos'
 
 const emptyForm: EventPayload = { title: '', description: '', startDate: '', endDate: null, location: '', visibility: 'public', type: 'OTRO' }
 const eventTypes: ApiEvent['type'][] = ['CULTO', 'PROCESION', 'FORMACION', 'ENSAYO', 'REUNION', 'SOCIAL', 'OTRO']
@@ -19,12 +22,17 @@ export default function AgendaAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [porBorrar, setPorBorrar] = useState<ApiEvent | null>(null)
+  const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
+  const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
-  const load = () => getAdminEvents().then(setItems)
+  const load = useCallback(
+    () => getAdminEvents({ pagina, porPagina }).then((respuesta) => { setItems(respuesta.eventos); setMeta(respuesta.meta) }),
+    [pagina, porPagina]
+  )
 
   useEffect(() => {
     load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.')).finally(() => setLoading(false))
-  }, [])
+  }, [load])
 
   const updateField = (field: keyof EventPayload, value: string) => setForm((current) => ({ ...current, [field]: value }))
   const reset = () => setForm(emptyForm)
@@ -69,5 +77,6 @@ export default function AgendaAdminPage() {
     <Typography variant="h4" sx={{ mb: 2 }}>Eventos</Typography>
     <DialogoConfirmacion abierto={porBorrar !== null} titulo="¿Eliminar el evento?" mensaje={porBorrar ? porBorrar.title : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
     {loading ? <CircularProgress aria-label="Cargando agenda" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.title}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.startDate).toLocaleString('es-ES')} · {item.visibility === 'public' ? 'Público' : 'Solo hermanos'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.title}`} component={Link} to={`/cms/agenda/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.title}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay eventos registrados.</Alert>}</Stack>}
+    {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="la agenda" />}
   </>
 }

@@ -427,6 +427,54 @@ test('la agenda deja pasar tanto al invitado como a quien tiene sesion', async (
   }
 });
 
+// Que `meta` traiga las cuatro claves NO demuestra que la página y el tamaño se
+// hayan honrado. Ojo con la mutación que hay que vigilar: borrar entero el
+// bloque `query` de queryAgendaSchema NO rompe nada, porque `validate` solo
+// pisa req.query cuando el esquema declara ese bloque y la consulta cruda
+// sobrevive. La que sí rompe es declararlo incompleto: añadir un filtro nuevo y
+// olvidarse de `...paginacionQuery`. Entonces page y limit se borran en
+// silencio, `meta` sigue completa, `page` vale 1 y todas las páginas sirven la
+// primera. Esto es lo que lo detecta.
+test('la agenda respeta la pagina y el tamano pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const primera = await fetch(`${baseUrl}/api/events?page=1&limit=1`);
+  assert.equal(primera.status, 200);
+  const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+  assert.ok(Array.isArray(uno.data), 'los cuatro consumidores de /api/events leen data: sin ella se quedan en blanco');
+  assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+  assert.equal(uno.meta.limit, 1, 'el tamano pedido no llego al servicio: ¿falta ...paginacionQuery en queryAgendaSchema?');
+  assert.equal(uno.meta.page, 1);
+
+  // Con un solo evento publico la pagina 2 estaria vacia y las comprobaciones
+  // de abajo pasarian sin comprobar nada: se omite con el motivo a la vista en
+  // vez de dar un verde vacio.
+  if (uno.meta.total < 2) {
+    return t.skip(`solo hay ${uno.meta.total} evento(s) publico(s) proximo(s); hacen falta al menos 2 para comprobar dos paginas de tamano 1 (ejecuta el seed de contenido)`);
+  }
+
+  const segunda = await fetch(`${baseUrl}/api/events?page=2&limit=1`);
+  const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+  assert.equal(dos.meta.page, 2, 'la pagina pedida no llego al servicio');
+  assert.equal(uno.data.length, 1, 'con al menos 2 eventos, la primera pagina debe traer el que pidio');
+  assert.equal(dos.data.length, 1);
+  // La segunda pagina trae otro evento: si el skip no se aplica, esto falla.
+  assert.notEqual(dos.data[0].id, uno.data[0].id);
+});
+
+// El tope duro no lo pone el esquema (que solo exige digitos) sino
+// sanearPaginacion: un ?limit=999999 escrito a mano no puede llevarse la agenda
+// entera por delante.
+test('la agenda recorta un tamano desmedido al tope', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const respuesta = await fetch(`${baseUrl}/api/events?limit=999999`);
+  const cuerpo = await respuesta.json() as { meta: { limit: number } };
+  assert.equal(cuerpo.meta.limit, 100);
+});
+
 test('promover a staff invalida la sesion emitida como hermano', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 

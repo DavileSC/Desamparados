@@ -1,25 +1,32 @@
 import { Helmet } from 'react-helmet-async'
 import { useEffect, useState } from 'react'
-import { Alert, CircularProgress, Grid } from '@mui/material'
+import { Alert, Box, CircularProgress, Grid } from '@mui/material'
 import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
 import SectionTitle from '../../../components/SectionTitle'
 import EventCard from '../../../components/EventCard'
 import AnimatedSection from '../../../components/AnimatedSection'
+import Paginador from '../../../components/Paginador'
 import { getPublicEvents } from '../../../lib/api/events'
+import { usePaginacion } from '../../../hooks/usePaginacion'
+import type { MetaPaginacion } from '../../../lib/api/tipos'
 import type { EventItem } from '../../../types'
 
 export default function AgendaPage() {
   const [events, setEvents] = useState<EventItem[]>([])
+  const [meta, setMeta] = useState<MetaPaginacion | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
 
   useEffect(() => {
     let cancelled = false
 
-    getPublicEvents()
-      .then((data) => {
-        if (!cancelled) setEvents(data)
+    getPublicEvents({ pagina, porPagina })
+      .then((respuesta) => {
+        if (cancelled) return
+        setEvents(respuesta.eventos)
+        setMeta(respuesta.meta)
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.')
@@ -31,7 +38,12 @@ export default function AgendaPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [pagina, porPagina])
+
+  const alCambiarPagina = (numero: number) => {
+    irAPagina(numero)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <>
@@ -59,6 +71,11 @@ export default function AgendaPage() {
               </Grid>
             ))}
           </Grid>}
+          {meta && (
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="la agenda" />
+            </Box>
+          )}
         </PageContainer>
       </AnimatedSection>
     </>
