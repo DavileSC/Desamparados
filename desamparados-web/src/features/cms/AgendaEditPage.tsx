@@ -3,6 +3,7 @@ import { Alert, CircularProgress, MenuItem, Select, Stack, TextField } from '@mu
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
+import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { getEvent, updateEvent, type ApiEvent, type EventPayload } from '../../lib/api/events'
 
 const tiposEvento: ApiEvent['type'][] = ['CULTO', 'PROCESION', 'FORMACION', 'ENSAYO', 'REUNION', 'SOCIAL', 'OTRO']
@@ -18,6 +19,9 @@ function aLocal(valor: string) {
 export default function AgendaEditPage() {
   const { id } = useParams()
   const navegar = useNavigate()
+  // El listado del que se vino, con su página y sus filtros: el enlace de editar
+  // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
+  const volverAlListado = useVolverAlListado('/cms/agenda')
   const [nombre, setNombre] = useState('')
   const [form, setForm] = useState<EventPayload | null>(null)
   const [inicial, setInicial] = useState<EventPayload | null>(null)
@@ -48,7 +52,7 @@ export default function AgendaEditPage() {
         startDate: new Date(form.startDate).toISOString(),
         endDate: form.endDate ? new Date(form.endDate).toISOString() : null,
       })
-      navegar('/cms/agenda')
+      navegar(volverAlListado)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se ha podido guardar el evento.')
       setGuardando(false)
@@ -67,7 +71,7 @@ export default function AgendaEditPage() {
         nombre={nombre}
         sucio={JSON.stringify(form) !== JSON.stringify(inicial)}
         guardando={guardando}
-        volverA="/cms/agenda"
+        volverA={volverAlListado}
         onGuardar={guardar}
       >
         <Stack spacing={2}>

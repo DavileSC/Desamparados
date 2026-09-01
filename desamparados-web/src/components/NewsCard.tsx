@@ -6,9 +6,17 @@ import type { NewsItem } from '../types'
 interface NewsCardProps {
   news: NewsItem
   featured?: boolean
+  /**
+   * Consulta del listado del que sale la tarjeta (`?pagina=3&porPagina=50`).
+   * Viaja en el `state` de la navegación para que el enlace «Volver a todas las
+   * noticias» de la ficha devuelva a la misma página, y no a la primera. Solo
+   * lo pasa el archivo de noticias: desde la portada no hay página a la que
+   * volver, y entonces la ficha se queda con la ruta pelada.
+   */
+  volver?: string
 }
 
-export default function NewsCard({ news, featured = false }: NewsCardProps) {
+export default function NewsCard({ news, featured = false, volver }: NewsCardProps) {
   return (
     <GlassCard
       goldBorder
@@ -26,6 +34,7 @@ export default function NewsCard({ news, featured = false }: NewsCardProps) {
       <Box
         component={Link}
         to={`/actualidad/noticias/${news.slug}`}
+        state={volver ? { volver } : undefined}
         sx={{
           position: 'relative',
           display: 'flex',

@@ -3,11 +3,15 @@ import { Alert, Box, CircularProgress, Stack, Switch, TextField } from '@mui/mat
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
+import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { getAdminNewsById, updateNews, type NewsPayload } from '../../lib/api/news'
 
 export default function NewsEditPage() {
   const { id } = useParams()
   const navegar = useNavigate()
+  // El listado del que se vino, con su página y sus filtros: el enlace de editar
+  // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
+  const volverAlListado = useVolverAlListado('/cms/noticias')
   const [titulo, setTitulo] = useState('')
   const [form, setForm] = useState<NewsPayload | null>(null)
   const [inicial, setInicial] = useState<NewsPayload | null>(null)
@@ -33,7 +37,7 @@ export default function NewsEditPage() {
     setGuardando(true)
     try {
       await updateNews(Number(id), form)
-      navegar('/cms/noticias')
+      navegar(volverAlListado)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se ha podido guardar la noticia.')
       setGuardando(false)
@@ -52,7 +56,7 @@ export default function NewsEditPage() {
         nombre={titulo}
         sucio={JSON.stringify(form) !== JSON.stringify(inicial)}
         guardando={guardando}
-        volverA="/cms/noticias"
+        volverA={volverAlListado}
         onGuardar={guardar}
       >
         <Stack spacing={2}>

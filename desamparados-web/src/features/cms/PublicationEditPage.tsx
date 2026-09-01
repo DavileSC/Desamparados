@@ -3,6 +3,7 @@ import { Alert, Box, CircularProgress, MenuItem, Select, Stack, Switch, TextFiel
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
+import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { getAdminPublicationById, updatePublication, type PublicationPayload } from '../../lib/api/publications'
 import type { PublicationItem } from '../../types'
 
@@ -14,6 +15,9 @@ const categorias: { value: PublicationItem['category']; label: string }[] = [
 export default function PublicationEditPage() {
   const { id } = useParams()
   const navegar = useNavigate()
+  // El listado del que se vino, con su página y sus filtros: el enlace de editar
+  // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
+  const volverAlListado = useVolverAlListado('/cms/publicaciones')
   const [titulo, setTitulo] = useState('')
   const [form, setForm] = useState<PublicationPayload | null>(null)
   const [inicial, setInicial] = useState<PublicationPayload | null>(null)
@@ -39,7 +43,7 @@ export default function PublicationEditPage() {
     setGuardando(true)
     try {
       await updatePublication(Number(id), form)
-      navegar('/cms/publicaciones')
+      navegar(volverAlListado)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se ha podido guardar la publicación.')
       setGuardando(false)
@@ -58,7 +62,7 @@ export default function PublicationEditPage() {
         nombre={titulo}
         sucio={JSON.stringify(form) !== JSON.stringify(inicial)}
         guardando={guardando}
-        volverA="/cms/publicaciones"
+        volverA={volverAlListado}
         onGuardar={guardar}
       >
         <Stack spacing={2}>

@@ -3,6 +3,7 @@ import { Alert, CircularProgress, MenuItem, Select, Stack, TextField } from '@mu
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
+import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { getEnser, getPrenda, updateEnser, updatePrenda } from '../../lib/api/inventory'
 
 type FormEnser = { nombre: string; referencia: string; categoria: string; ubicacion: string; cantidadOptimo: string; cantidadBueno: string; cantidadReparar: string }
@@ -21,6 +22,9 @@ export default function InventoryEditPage() {
   const [params] = useSearchParams()
   const esPrenda = params.get('tipo') === 'prenda'
   const navegar = useNavigate()
+  // El listado del que se vino, con su página y sus filtros: el enlace de editar
+  // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
+  const volverAlListado = useVolverAlListado('/cms/inventario')
   const [nombre, setNombre] = useState('')
   const [form, setForm] = useState<FormEnser | FormPrenda | null>(null)
   const [inicial, setInicial] = useState<string>('')
@@ -62,7 +66,7 @@ export default function InventoryEditPage() {
           cantidadReparar: Number(e.cantidadReparar),
         })
       }
-      navegar('/cms/inventario')
+      navegar(volverAlListado)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se ha podido guardar el elemento.')
       setGuardando(false)
@@ -84,7 +88,7 @@ export default function InventoryEditPage() {
         nombre={nombre}
         sucio={JSON.stringify(form) !== inicial}
         guardando={guardando}
-        volverA="/cms/inventario"
+        volverA={volverAlListado}
         onGuardar={guardar}
       >
         {esPrenda ? (

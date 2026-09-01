@@ -3,6 +3,7 @@ import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogCont
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
+import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { emancipateBrother, getBrother, updateBrother, type AdminBrother } from '../../lib/api/brothers'
 
 /** Años cumplidos, para saber si ya le toca tener cuenta propia. */
@@ -31,6 +32,9 @@ const desdeFicha = (f: AdminBrother): Formulario => ({
 export default function BrotherEditPage() {
   const { id } = useParams()
   const navegar = useNavigate()
+  // El listado del que se vino, con su página y sus filtros: el enlace de editar
+  // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
+  const volverAlListado = useVolverAlListado('/cms/hermanos')
   const [ficha, setFicha] = useState<AdminBrother | null>(null)
   const [form, setForm] = useState<Formulario | null>(null)
   const [inicial, setInicial] = useState<Formulario | null>(null)
@@ -74,7 +78,7 @@ export default function BrotherEditPage() {
         ...(form.alturaHombro ? { alturaHombro: Number(form.alturaHombro) } : {}),
         puesto: form.puesto,
       })
-      navegar('/cms/hermanos')
+      navegar(volverAlListado)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se ha podido guardar la ficha.')
       setGuardando(false)
@@ -122,7 +126,7 @@ export default function BrotherEditPage() {
         nombre={`${ficha.nombre} ${ficha.apellidos}`}
         sucio={JSON.stringify(form) !== JSON.stringify(inicial)}
         guardando={guardando}
-        volverA="/cms/hermanos"
+        volverA={volverAlListado}
         onGuardar={guardar}
       >
         <Stack spacing={3}>

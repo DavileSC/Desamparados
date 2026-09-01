@@ -9,9 +9,13 @@ import { getNewsBySlug } from '../../../lib/api/news'
 import type { NewsItem } from '../../../types'
 import NotFoundPage from '../../notFound/NotFoundPage'
 import { sanitizeHtml } from '../../../lib/sanitizeHtml'
+import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
 
 export default function NoticiaDetallePage() {
   const { slug = '' } = useParams<{ slug: string }>()
+  // El archivo de noticias del que se vino, con su página: sin esto, «Volver a
+  // todas las noticias» devolvía siempre a la primera.
+  const volverAlArchivo = useVolverAlListado('/actualidad/noticias')
   const [news, setNews] = useState<NewsItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -106,7 +110,7 @@ export default function NoticiaDetallePage() {
 
           <Box
             component={Link}
-            to="/actualidad/noticias"
+            to={volverAlArchivo}
             sx={{
               display: 'inline-flex',
               alignItems: 'center',

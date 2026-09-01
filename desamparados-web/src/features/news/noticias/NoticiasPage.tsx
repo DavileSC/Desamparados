@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async'
+import { useLocation } from 'react-router-dom'
 import { Alert, Box, CircularProgress, Grid } from '@mui/material'
 import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
@@ -23,6 +24,9 @@ export default function NoticiasPage() {
   // noticia hasta que recargara a mano.
   const { items: newsItems, meta, loading, error, alCambiarPagina, cambiarTamano } =
     useListadoPaginado(pedirNoticias, 'No se han podido cargar las noticias.')
+  // La página en la que está el visitante viaja con cada tarjeta: al volver
+  // desde la ficha de una noticia aterriza donde estaba, no en la primera.
+  const { search: consultaArchivo } = useLocation()
 
   return (
     <>
@@ -44,7 +48,7 @@ export default function NoticiasPage() {
           {!loading && !error && newsItems.length > 0 && <Grid container spacing={3}>
             {newsItems.map((news) => (
               <Grid key={news.id} size={{ xs: 12, md: 6, lg: 3 }}>
-                <NewsCard news={news} />
+                <NewsCard news={news} volver={consultaArchivo} />
               </Grid>
             ))}
           </Grid>}

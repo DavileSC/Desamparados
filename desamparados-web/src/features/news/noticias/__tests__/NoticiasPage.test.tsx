@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
 import NoticiasPage from '../NoticiasPage'
+import NoticiaDetallePage from '../NoticiaDetallePage'
 
 // El stub de IntersectionObserver que AnimatedSection necesita vive en
 // src/test/setup.ts: lo comparten todas las páginas públicas con test.
@@ -52,5 +54,32 @@ describe('NoticiasPage: el error de una página no se queda pegado', () => {
     await usuario.click(screen.getByRole('button', { name: /ir a la página 1/i }))
     expect(await screen.findByText(/triduo de septiembre/i)).toBeInTheDocument()
     expect(screen.queryByText(/el archivo de noticias no responde/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('NoticiasPage: volver de una noticia no pierde la página', () => {
+  it('desde la página 3 del archivo, «Volver a todas las noticias» devuelve a la página 3', async () => {
+    // El enlace de la ficha apuntaba a `/actualidad/noticias` a secas, así que
+    // el visitante que entraba en una noticia de la página 3 volvía a la 1.
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: RequestInfo | URL) =>
+      Promise.resolve(new Response(
+        JSON.stringify(String(url).includes('/archive')
+          ? { data: [noticia], meta: { total: 45, page: 3, limit: 20, totalPages: 3 } }
+          : noticia),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ))))
+    const usuario = userEvent.setup()
+    renderWithProviders(
+      <Routes>
+        <Route path="/actualidad/noticias" element={<NoticiasPage />} />
+        <Route path="/actualidad/noticias/:slug" element={<NoticiaDetallePage />} />
+      </Routes>,
+      { ruta: '/actualidad/noticias?pagina=3' },
+    )
+
+    await usuario.click(await screen.findByText(/triduo de septiembre/i))
+
+    const volver = await screen.findByRole('link', { name: /volver a todas las noticias/i })
+    expect(volver).toHaveAttribute('href', '/actualidad/noticias?pagina=3')
   })
 })
