@@ -73,12 +73,12 @@ export class AdminController {
   /** Consulta del registro de auditoría (paginada, filtrable por acción y usuario). */
   static async getAuditLogs(req: Request, res: Response) {
     try {
-      const page = req.query.page ? parseInt(req.query.page as string) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-      const action = req.query.action as string | undefined;
+      // El saneamiento de página y tamaño lo decide sanearPaginacion, no el
+      // controlador: se le pasa req.query entero. userId sí necesita parseo
+      // aquí porque Prisma lo espera numérico (columna Int en AuditLog).
       const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
 
-      const result = await AdminService.getAuditLogs(page, limit, action, Number.isNaN(userId!) ? undefined : userId);
+      const result = await AdminService.getAuditLogs({ ...req.query, userId: Number.isNaN(userId!) ? undefined : userId });
       res.status(200).json(result);
     } catch (e) {
       handleHttp(res, e, 'Error consultando el registro de auditoría');
