@@ -1,22 +1,55 @@
 import db from '../config/db';
-import { TipoPublicacion } from '@prisma/client';
+import { Prisma, TipoPublicacion } from '@prisma/client';
 import { CreatePublicationDto, UpdatePublicationDto } from '../dtos/publication.dto';
 import { NotFoundError } from '../utils/error.handle';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+
+/** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
+interface ConsultaPaginada {
+  page?: unknown;
+  limit?: unknown;
+}
 
 export class PublicationService {
   static getLatest() {
     return db.publicacion.findMany({ where: { visible: true }, orderBy: { fecha: 'desc' }, take: 3 });
   }
 
-  static getPublic(category?: TipoPublicacion) {
-    return db.publicacion.findMany({
-      where: { visible: true, ...(category ? { categoria: category } : {}) },
-      orderBy: { fecha: 'desc' },
-    });
+  static async getPublic(category: TipoPublicacion | undefined, consulta: ConsultaPaginada) {
+    const paginacion = sanearPaginacion(consulta);
+    const where: Prisma.PublicacionWhereInput = { visible: true, ...(category ? { categoria: category } : {}) };
+
+    const [publicaciones, total] = await db.$transaction([
+      db.publicacion.findMany({
+        where,
+        orderBy: { fecha: 'desc' },
+        skip: paginacion.skip,
+        take: paginacion.take,
+      }),
+      db.publicacion.count({ where }),
+    ]);
+
+    return respuestaPaginada(publicaciones, total, paginacion);
   }
 
-  static getAdmin() {
-    return db.publicacion.findMany({ orderBy: { fecha: 'desc' } });
+  static async getAdmin(consulta: ConsultaPaginada) {
+    const paginacion = sanearPaginacion(consulta);
+
+    const [publicaciones, total] = await db.$transaction([
+      db.publicacion.findMany({ orderBy: { fecha: 'desc' }, skip: paginacion.skip, take: paginacion.take }),
+      db.publicacion.count(),
+    ]);
+
+    return respuestaPaginada(publicaciones, total, paginacion);
+  }
+
+  /**
+   * Lectura individual para el CMS, borradores incluidos. Antes el cliente se
+   * traía el listado y buscaba dentro con un .find(): una publicación fuera del
+   * recorte era imposible de editar.
+   */
+  static getOne(id: number) {
+    return db.publicacion.findUnique({ where: { id } });
   }
 
   static create(data: CreatePublicationDto) {

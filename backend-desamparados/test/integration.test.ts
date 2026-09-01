@@ -79,11 +79,36 @@ test('healthcheck responde con estado ok', async () => {
   assert.equal(typeof body.uptime, 'number');
 });
 
-test('las publicaciones públicas no requieren autenticación', async (t) => {
+test('las publicaciones públicas no requieren autenticación y vienen paginadas', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
   const response = await fetch(`${baseUrl}/api/publications`);
   assert.equal(response.status, 200);
+  const cuerpo = await response.json() as { data: unknown[]; meta: Record<string, number> };
+  assert.ok(Array.isArray(cuerpo.data));
+  assert.deepEqual(Object.keys(cuerpo.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+});
+
+// Boletines y Dossier de prensa se sirven por aquí: si esta ruta se quedara con
+// la forma antigua, esas dos pantallas se vaciarían sin dar ningún error.
+test('las publicaciones por categoría también vienen paginadas', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const response = await fetch(`${baseUrl}/api/publications/category/boletin`);
+  assert.equal(response.status, 200);
+  const cuerpo = await response.json() as { data: unknown[]; meta: Record<string, number> };
+  assert.ok(Array.isArray(cuerpo.data));
+  assert.deepEqual(Object.keys(cuerpo.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+});
+
+// '/:id' exige sesión y captura cualquier segmento suelto. Declarada antes de
+// '/latest', la portada pediría la publicación con id "latest" y el visitante
+// anónimo recibiría un 401 en vez de las destacadas.
+test('la ruta por id no ensombrece a /latest', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const response = await fetch(`${baseUrl}/api/publications/latest`);
+  assert.equal(response.status, 200, 'un 401 significa que /:id se declaró antes y captura "latest"');
   assert.ok(Array.isArray(await response.json()));
 });
 
@@ -100,6 +125,37 @@ test('el CMS rechaza peticiones sin token', async () => {
   assert.equal(response.status, 401);
   const body = await response.json() as { error?: string };
   assert.equal(body.error, 'NO_TOKEN_PROVIDED');
+});
+
+// Antes, getAdminPublicationById se traía el listado del CMS y buscaba dentro
+// con un .find(): una publicación fuera del recorte era imposible de editar.
+// Este test comprueba que se pide al servidor por id.
+test('la publicación del CMS se lee por id, no buscándola en el listado', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const admin = await crearUsuarioPrueba(Role.ADMIN);
+
+  try {
+    const token = generateToken(admin.id, Role.ADMIN);
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
+
+    const listado = await fetch(`${baseUrl}/api/publications/admin?limit=1`, { headers: cabeceras });
+    const { data } = await listado.json() as { data: { id: number }[] };
+    if (data.length === 0) return t.skip('no hay publicaciones sembradas');
+
+    const respuesta = await fetch(`${baseUrl}/api/publications/${data[0].id}`, { headers: cabeceras });
+    assert.equal(respuesta.status, 200);
+    assert.equal((await respuesta.json() as { id: number }).id, data[0].id);
+  } finally {
+    await borrarUsuarioPrueba(admin.id);
+  }
+});
+
+// La lectura por id muestra también los borradores (visible: false): sin sesión
+// no puede servirse. Corta antes de tocar la base de datos.
+test('la publicación por id no se sirve sin sesión', async () => {
+  const respuesta = await fetch(`${baseUrl}/api/publications/1`);
+  assert.equal(respuesta.status, 401);
 });
 
 test('el archivo de noticias del CMS rechaza peticiones sin token', async () => {

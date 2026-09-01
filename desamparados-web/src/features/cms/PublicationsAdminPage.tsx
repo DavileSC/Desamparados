@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Alert, Box, Button, CircularProgress, MenuItem, Paper, Select, Stack, Switch, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
@@ -7,6 +7,9 @@ import EditIcon from '@mui/icons-material/Edit'
 import { Link } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { createPublication, deletePublication, getAdminPublications, type ApiPublication, type PublicationPayload } from '../../lib/api/publications'
+import { usePaginacion } from '../../hooks/usePaginacion'
+import Paginador from '../../components/Paginador'
+import type { MetaPaginacion } from '../../lib/api/tipos'
 import type { PublicationItem } from '../../types'
 
 const categories: { value: PublicationItem['category']; label: string }[] = [
@@ -23,9 +26,15 @@ export default function PublicationsAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [porBorrar, setPorBorrar] = useState<ApiPublication | null>(null)
-  const load = () => getAdminPublications().then(setItems)
+  const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
+  const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
-  useEffect(() => { load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las publicaciones.')).finally(() => setLoading(false)) }, [])
+  const load = useCallback(
+    () => getAdminPublications({ pagina, porPagina }).then((respuesta) => { setItems(respuesta.data); setMeta(respuesta.meta) }),
+    [pagina, porPagina]
+  )
+
+  useEffect(() => { load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las publicaciones.')).finally(() => setLoading(false)) }, [load])
   const updateField = (field: keyof PublicationPayload, value: string | boolean) => setForm((current) => ({ ...current, [field]: value }))
   const reset = () => setForm(emptyForm)
   const save = async () => { setSaving(true); setError(null); setNotice(null); try { await createPublication(form); await load(); reset(); setNotice('Publicación creada correctamente.') } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido guardar la publicación.') } finally { setSaving(false) } }
@@ -49,5 +58,6 @@ export default function PublicationsAdminPage() {
     <Typography variant="h4" sx={{ mb: 2 }}>Archivo editorial</Typography>
     <DialogoConfirmacion abierto={porBorrar !== null} titulo="¿Eliminar la publicación?" mensaje={porBorrar ? porBorrar.titulo : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
     {loading ? <CircularProgress aria-label="Cargando publicaciones" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.titulo}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.fecha).toLocaleDateString('es-ES')} · {item.visible ? 'Publicada' : 'Borrador'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.titulo}`} component={Link} to={`/cms/publicaciones/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.titulo}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay publicaciones en el archivo.</Alert>}</Stack>}
+    {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="publicaciones" />}
   </>
 }
