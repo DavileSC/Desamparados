@@ -32,6 +32,21 @@ describe('Paginador', () => {
     expect(onPagina).toHaveBeenCalledWith(3)
   })
 
+  it('avisa al elegir otro tamaño de página', async () => {
+    // El `onChange` del Select no lo disparaba NINGÚN test, en ninguna capa:
+    // quitar `onTamano={cambiarTamano}` de cualquiera de las diecisiete
+    // pantallas no habría roto nada. Como las diecisiete delegan en este
+    // componente, abrir el selector aquí las cubre a todas.
+    const user = userEvent.setup()
+    const onTamano = vi.fn()
+    render(<Paginador meta={meta} onPagina={vi.fn()} onTamano={onTamano} etiqueta="censo" />)
+
+    await user.click(screen.getByLabelText(/resultados por página/i))
+    await user.click(await screen.findByRole('option', { name: '50' }))
+
+    expect(onTamano).toHaveBeenCalledWith(50)
+  })
+
   it('si la página pedida ya no existe, lleva a la última', () => {
     // Un enlace viejo con ?pagina=99 no debe dejar al usuario mirando un vacío.
     const onPagina = vi.fn()
