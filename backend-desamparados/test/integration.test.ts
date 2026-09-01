@@ -218,12 +218,17 @@ test('la noticia del CMS se lee por id, no buscándola en el listado', async (t)
     const token = generateToken(admin.id, Role.ADMIN);
     const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
 
-    const listado = await fetch(`${baseUrl}/api/news/admin/archive?limit=1`, { headers: cabeceras });
-    const { data, meta } = await listado.json() as { data: { id: number }[]; meta: { limit: number } };
+    // La página 2 a propósito: pedir la 1 traería justo la noticia que SÍ cabía
+    // en el recorte, y entonces el .find() de antes también la habría encontrado.
+    // El fallo que esta ruta cierra es el de una noticia MÁS ALLÁ de la primera
+    // página, así que es esa la que hay que pedir por id.
+    const listado = await fetch(`${baseUrl}/api/news/admin/archive?limit=1&page=2`, { headers: cabeceras });
+    const { data, meta } = await listado.json() as { data: { id: number }[]; meta: { limit: number; page: number } };
     // Igual que en publicaciones: el ?limit=1 solo demuestra algo si se comprueba
     // que llegó. Sin esto, el archivo podría servir siempre la página entera.
     assert.equal(meta.limit, 1, 'el archivo del CMS ignoró el tamaño pedido');
-    if (data.length === 0) return t.skip('no hay noticias sembradas');
+    assert.equal(meta.page, 2, 'el archivo del CMS ignoró la página pedida');
+    if (data.length === 0) return t.skip('hacen falta al menos 2 noticias sembradas para pedir la de la página 2');
 
     const respuesta = await fetch(`${baseUrl}/api/news/admin/${data[0].id}`, { headers: cabeceras });
     assert.equal(respuesta.status, 200);
@@ -238,6 +243,11 @@ test('la noticia del CMS se lee por id, no buscándola en el listado', async (t)
 test('la noticia del CMS por id no se sirve sin sesión', async () => {
   const respuesta = await fetch(`${baseUrl}/api/news/admin/1`);
   assert.equal(respuesta.status, 401);
+  // El código solo dice «no pasas»; el cuerpo dice QUIÉN cortó. Sin comprobarlo,
+  // un 401 de cualquier otra causa (un 404 mal traducido, un fallo de la base de
+  // datos) daría el test por bueno y la guarda en línea de la ruta podría faltar.
+  const cuerpo = await respuesta.json() as { error?: string };
+  assert.equal(cuerpo.error, 'NO_TOKEN_PROVIDED', 'el 401 debe venir de la guarda de sesión de la ruta');
 });
 
 test('los documentos privados rechazan peticiones sin token', async () => {
