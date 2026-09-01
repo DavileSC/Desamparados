@@ -20,11 +20,21 @@ MUI, React Router, Vitest y Testing Library en el cliente.
 
 **Diseño:** `docs/superpowers/specs/2026-08-30-paginacion-completa-design.md`
 
-## Estado al 30 de agosto de 2026
+## Estado al 1 de septiembre de 2026
 
-**Tareas 1 a 6 hechas** (casillas marcadas), cada una con su revisión y su ronda
-de arreglos. **Quedan las tareas 7 a 15.** En ese punto: 191 tests de backend con
-cero omitidos y 135 de frontend, todos en verde.
+**Las quince tareas están hechas** (casillas marcadas), cada una con su revisión y,
+donde hizo falta, su ronda de arreglos. Después vino la revisión de toda la rama,
+que encontró un fallo que ninguna revisión de tarea podía ver —ocho listados
+paginaban sobre un orden que MariaDB no garantiza, entre ellos los tres más
+grandes— y una ola de arreglos que lo cerró junto con otros seis puntos.
+
+**208 tests de backend con cero omitidos y 171 de frontend**, todos en verde,
+`tsc` limpio en los dos proyectos y sin avisos de lint nuevos. Se partía de 191 y
+135.
+
+Queda por hacer, y es de una persona, la **comprobación final en el navegador**
+que describe el último apartado de este documento. Los seis puntos que enumera
+están cubiertos por tests salvo el aspecto visual.
 
 El detalle de lo decidido por el camino está en
 [`docs/traspaso-2026-08-30.md`](../../traspaso-2026-08-30.md).
@@ -1049,7 +1059,7 @@ git commit -m "Paginar las solicitudes de alta sin falsear el contador"
 **Interfaces:**
 - Produce: `getAdminReceipts(year, { pagina, porPagina })` → `Promise<RespuestaPaginada<AdminReceipt>>`.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 ```tsx
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -1093,12 +1103,12 @@ describe('TreasuryAdminPage', () => {
 })
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx vitest run src/features/cms/__tests__/TreasuryAdminPage.test.tsx`
 Esperado: FALLA; no hay recuento ni paginación.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 En `recibo.service.ts`, cambia el saneamiento propio —`Math.min(Math.max(1, ...), 200)`— por
 `sanearPaginacion`, y devuelve `respuestaPaginada(data, total, paginacion)`. En el
@@ -1115,12 +1125,12 @@ export function getAdminReceipts(year: string | undefined, pagina: { pagina: num
 En la pantalla, `usePaginacion()`, guardar `meta`, pintar el `Paginador` con
 `etiqueta="recibos"` y llamar a `reiniciar()` en el `onChange` del año.
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npx vitest run` y `cd ../backend-desamparados && npm test`
 Esperado: verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src desamparados-web/src
@@ -1145,7 +1155,7 @@ además de paginar hay que enderezar su forma.
 - Produce: `getLedger({ pagina, porPagina })` → `Promise<RespuestaPaginada<Transaction>>`.
   **`meta.lastPage` desaparece: pasa a llamarse `totalPages`**, como en el resto.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 ```tsx
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -1168,12 +1178,12 @@ describe('AccountingAdminPage', () => {
 })
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx vitest run src/features/cms/__tests__/AccountingAdminPage.test.tsx`
 Esperado: FALLA.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 ```ts
 static async getAll(query: { page?: unknown; limit?: unknown } = {}) {
@@ -1199,12 +1209,12 @@ En `accounting.ts`, `getLedger` pasa a recibir la página y el tipo
 si algún sitio leía `meta.lastPage`** con `grep -rn "lastPage" desamparados-web/src`
 antes de dar la tarea por hecha.
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npx vitest run` y `npx tsc --noEmit -p tsconfig.app.json`
 Esperado: verde y sin errores de tipos.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src desamparados-web/src
@@ -1227,7 +1237,7 @@ compartido y darle paginación a la pantalla.
 **Interfaces:**
 - Produce: `getAuditLogs({ pagina, porPagina })` → `Promise<RespuestaPaginada<AuditEntry>>`.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 ```tsx
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -1251,12 +1261,12 @@ describe('AuditAdminPage', () => {
 })
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx vitest run src/features/cms/__tests__/AuditAdminPage.test.tsx`
 Esperado: FALLA; hoy pide siempre `page=1&limit=200`.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 En `admin.service.ts`, desaparecen el `Math.max` y el tope propio de 200:
 
@@ -1296,12 +1306,12 @@ export const getAuditLogs = (pagina: { pagina: number; porPagina: number }) =>
 
 Y la pantalla usa `usePaginacion()` con `etiqueta="registro de auditoría"`.
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npx vitest run` y `cd ../backend-desamparados && npm test`
 Esperado: verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src desamparados-web/src
@@ -1328,7 +1338,7 @@ listado recortado a diez.
   `Promise<RespuestaPaginada<ApiNews>>`; `getAdminNewsById(id)` →
   `Promise<ApiNews>` (ya sin `.find()`).
 
-- [ ] **Paso 1: Escribir los tests que fallan**
+- [x] **Paso 1: Escribir los tests que fallan**
 
 ```ts
 test('la noticia del CMS se lee por id, no buscándola en el listado', async (t) => {
@@ -1352,12 +1362,12 @@ test('la noticia del CMS por id no se sirve sin sesión', async () => {
 });
 ```
 
-- [ ] **Paso 2: Ejecutar para verlos fallar**
+- [x] **Paso 2: Ejecutar para verlos fallar**
 
 Ejecuta: `cd backend-desamparados && npx tsx --test test/integration.test.ts`
 Esperado: FALLAN con 404, la ruta no existe.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 En `news.routes.ts`, **justo debajo de `/admin/archive` y siempre antes de
 `/:slug`**:
@@ -1388,12 +1398,12 @@ export function getAdminNewsById(id: number) {
 }
 ```
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npm test` y `cd ../desamparados-web && npx vitest run`
 Esperado: verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src backend-desamparados/test desamparados-web/src
@@ -1415,7 +1425,7 @@ git commit -m "Leer la noticia del CMS por id y paginar su listado"
   cosas porque la página necesita el `meta` y las tarjetas necesitan el
   `NewsItem` ya convertido.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 ```tsx
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -1438,12 +1448,12 @@ describe('NoticiasPage', () => {
 })
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx vitest run src/features/news/noticias`
 Esperado: FALLA.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 ```ts
 export async function getNewsArchive(pagina: { pagina: number; porPagina: number }) {
@@ -1462,12 +1472,12 @@ const alCambiarPagina = (numero: number) => {
 }
 ```
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npx vitest run`
 Esperado: verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add desamparados-web/src
@@ -1498,7 +1508,7 @@ página se queda vacía sin dar error.**
   `getAdminPublications(pagina)` → `Promise<RespuestaPaginada<...>>`;
   `getAdminPublicationById(id)` → `Promise<ApiPublication>` sin `.find()`.
 
-- [ ] **Paso 1: Escribir los tests que fallan**
+- [x] **Paso 1: Escribir los tests que fallan**
 
 Actualiza el test existente de `integration.test.ts:85`, que hoy afirma que la
 respuesta es un array:
@@ -1527,12 +1537,12 @@ test('la publicación se lee por id', async (t) => {
 });
 ```
 
-- [ ] **Paso 2: Ejecutar para verlos fallar**
+- [x] **Paso 2: Ejecutar para verlos fallar**
 
 Ejecuta: `npx tsx --test test/integration.test.ts`
 Esperado: FALLAN.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 `getPublic` y `getAdmin` aceptan la consulta, usan `sanearPaginacion` y
 devuelven `respuestaPaginada`, con `db.$transaction([findMany, count])`. La ruta
@@ -1547,14 +1557,14 @@ Añade `...paginacionQuery` al `query` de `categoryParamSchema` y del esquema de
 listado. En el cliente, las cuatro pantallas pasan a leer `data` y a pintar el
 `Paginador`.
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npm test`, `cd ../desamparados-web && npx vitest run` y
 `npx tsc --noEmit -p tsconfig.app.json`
 Esperado: verde. **Comprueba a mano las cuatro páginas** en el navegador: son las
 que se quedan vacías si se escapa una.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src backend-desamparados/test desamparados-web/src
@@ -1585,7 +1595,7 @@ sí cambian de forma.
   `getProximosEventos(cuantos)` → `Promise<EventItem[]>` para portada y
   actualidad, que piden `?limit=<cuantos>` y se quedan con `data`.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 ```tsx
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -1612,12 +1622,12 @@ describe('EventsAndLive', () => {
 })
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx vitest run src/features/home`
 Esperado: FALLA; hoy espera un array.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 En `agenda.service.ts`, `getEvents` acepta la paginación, hace
 `db.$transaction([findMany, count])` con el `where` que ya construye y devuelve
@@ -1625,13 +1635,13 @@ En `agenda.service.ts`, `getEvents` acepta la paginación, hace
 cliente, las cuatro pantallas leen `data`; solo el CMS y la agenda pública
 pintan `Paginador`.
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npx vitest run` y `cd ../backend-desamparados && npm test`
 Esperado: verde. Abre la portada en el navegador y comprueba que la sección de
 eventos sigue ahí.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src desamparados-web/src
@@ -1657,7 +1667,7 @@ git commit -m "Paginar la agenda sin dejar en blanco la portada"
   `getPrendas(pagina)` → `Promise<RespuestaPaginada<...>>`; `getPrenda(id)` →
   `Promise<Prenda>` sin `.find()`.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 ```tsx
 it('cada listado pasa página por su cuenta', async () => {
@@ -1681,12 +1691,12 @@ it('cada listado pasa página por su cuenta', async () => {
 })
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx vitest run src/features/cms/__tests__/InventoryAdminPage.test.tsx`
 Esperado: FALLA.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 Los dos servicios pasan a `db.$transaction([findMany, count])` con el `where`
 que ya arman, y devuelven `respuestaPaginada`. Añade `...paginacionQuery` a
@@ -1712,12 +1722,12 @@ Y en `inventory.ts` desaparece el `.find()`:
 export const getPrenda = (id: number) => apiFetch<Prenda>(`/inventario/prendas/${id}`)
 ```
 
-- [ ] **Paso 4: Ejecutar**
+- [x] **Paso 4: Ejecutar**
 
 Ejecuta: `npx vitest run` y `cd ../backend-desamparados && npm test`
 Esperado: verde.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src desamparados-web/src
@@ -1746,7 +1756,7 @@ Tres listados propios: recibos, perfiles e histórico de papeletas.
 - Produce: `getMyReceipts(pagina)`, `getMyProfiles(pagina)` y
   `getMyProcessionTickets(pagina)` → `Promise<RespuestaPaginada<...>>`.
 
-- [ ] **Paso 1: Escribir el test que falla**
+- [x] **Paso 1: Escribir el test que falla**
 
 ```tsx
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -1768,12 +1778,12 @@ describe('ReceiptsPage', () => {
 })
 ```
 
-- [ ] **Paso 2: Ejecutar para verlo fallar**
+- [x] **Paso 2: Ejecutar para verlo fallar**
 
 Ejecuta: `npx vitest run src/features/members`
 Esperado: FALLA.
 
-- [ ] **Paso 3: Implementar**
+- [x] **Paso 3: Implementar**
 
 Los tres servicios siguen el mismo molde. El de papeletas, entero, para que se
 vea el patrón exacto:
@@ -1825,7 +1835,7 @@ etiquetas «mis recibos», «mis perfiles» y «mi histórico de papeletas».
 sobre qué ficha se opera. Comprueba que sigue funcionando con más de una página,
 o el hermano con tres fichas dejaría de ver una de ellas.
 
-- [ ] **Paso 4: Ejecutar la verificación completa**
+- [x] **Paso 4: Ejecutar la verificación completa**
 
 ```bash
 cd backend-desamparados && npm test
@@ -1834,7 +1844,7 @@ cd ../desamparados-web && npx vitest run && npx tsc --noEmit -p tsconfig.app.jso
 
 Esperado: todo en verde, **ningún test omitido** con MariaDB levantada.
 
-- [ ] **Paso 5: Commit**
+- [x] **Paso 5: Commit**
 
 ```bash
 git add backend-desamparados/src desamparados-web/src
