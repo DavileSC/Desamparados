@@ -12,7 +12,7 @@ export class HermanoController {
   static async getMyProfiles(req: Request, res: Response) {
     try {
       const userId = req.user!.id; 
-      const perfiles = await HermanoService.getProfilesByUserId(userId);
+      const perfiles = await HermanoService.getProfilesByUserId(userId, req.query);
       res.status(200).json(perfiles);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo los perfiles familiares');

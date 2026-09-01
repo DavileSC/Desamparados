@@ -25,11 +25,13 @@ export default function ProfilePage() {
   useEffect(() => {
     let cancelled = false
 
+    // Sin argumentos, getMyProfiles pide la familia entera en una sola página:
+    // esta pantalla elige una ficha, y un selector paginado escondería alguna.
     getMyProfiles()
-      .then((profiles) => {
+      .then((respuesta) => {
         if (!cancelled) {
-          setProfile(profiles[0] ?? null)
-          if (profiles.length === 0) setError('No se ha encontrado ningún perfil asociado a tu cuenta.')
+          setProfile(respuesta.data[0] ?? null)
+          if (respuesta.data.length === 0) setError('No se ha encontrado ningún perfil asociado a tu cuenta.')
         }
       })
       .catch((err: unknown) => {

@@ -728,3 +728,192 @@ test('el ropero publica la ficha de una prenda por su id', async (t) => {
     await borrarUsuarioPrueba(hermano.id);
   }
 });
+
+// ============================================================================
+//  EL ÁREA DEL HERMANO: sus recibos, sus fichas y su histórico de papeletas
+// ============================================================================
+//
+// Los tres extremos son privados y sirven SOLO lo del usuario de la sesión, así
+// que un usuario recién creado no tiene nada y las dos páginas saldrían vacías:
+// la guarda pasaría en verde sin comprobar nada. Por eso se siembra una familia
+// de tres fichas, con su recibo y su papeleta cada una.
+//
+// Ojo con la mutación que hay que vigilar: hoy las tres rutas no declaran
+// esquema de consulta, así que `req.query` llega crudo. Borrar un bloque
+// `query` NO rompe la paginación —`validate` solo pisa `req.query` cuando el
+// esquema declara ese bloque—. La que sí rompe es declararlo incompleto: el día
+// que alguien valide `?year=` en /mis-papeletas y olvide `...paginacionQuery`,
+// page y limit se borrarán en silencio, `meta` seguirá trayendo sus cuatro
+// claves, `page` valdrá 1 y todas las páginas servirán la primera. Comprobar
+// solo la forma de `meta` no lo detectaría; afirmar `meta.limit` y que las dos
+// páginas traen elementos distintos, sí.
+
+/** Tres fichas, tres recibos y tres papeletas colgando del usuario indicado. */
+async function sembrarFamiliaPrueba(userId: number): Promise<number[]> {
+  const fichas: number[] = [];
+
+  for (const [indice, nombre] of ['Ana', 'Bruno', 'Carla'].entries()) {
+    const ficha = await db.hermano.create({
+      data: {
+        userId,
+        nombre,
+        apellidos: 'Prueba Paginacion',
+        fechaNacimiento: new Date(Date.UTC(2000 + indice, 0, 1)),
+        esTitular: indice === 0,
+        activo: true
+      }
+    });
+
+    const recibo = await db.recibo.create({
+      data: {
+        hermanoId: ficha.id,
+        year: 2024 + indice,
+        concepto: `Papeleta de prueba ${indice + 1}`,
+        importe: 30
+      }
+    });
+
+    await db.papeletaSitio.create({
+      data: { hermanoId: ficha.id, reciboId: recibo.id, year: 2024 + indice, puesto: 'Cirio' }
+    });
+
+    fichas.push(ficha.id);
+  }
+
+  return fichas;
+}
+
+/** En orden inverso al de las claves ajenas: papeleta, recibo y ficha. */
+async function recogerFamiliaPrueba(fichas: number[]) {
+  await db.papeletaSitio.deleteMany({ where: { hermanoId: { in: fichas } } });
+  await db.recibo.deleteMany({ where: { hermanoId: { in: fichas } } });
+  await db.hermano.deleteMany({ where: { id: { in: fichas } } });
+}
+
+test('mis recibos respetan la página y el tamaño pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const usuario = await crearUsuarioPrueba(Role.USER);
+  const fichas = await sembrarFamiliaPrueba(usuario.id);
+
+  try {
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
+
+    const primera = await fetch(`${baseUrl}/api/recibos/mis-recibos?page=1&limit=2`, { headers: cabeceras });
+    assert.equal(primera.status, 200);
+    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.ok(Array.isArray(uno.data), 'la pantalla de recibos lee data: sin ella se queda en blanco');
+    assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+    assert.equal(uno.meta.limit, 2, 'el tamaño pedido no llegó al servicio: ¿alguien validó la consulta sin ...paginacionQuery?');
+    assert.equal(uno.meta.page, 1);
+    // La unidad paginada es el miembro de la familia, no el recibo: la respuesta
+    // viene agrupada por hermano con sus recibos anidados.
+    assert.equal(uno.meta.total, 3, 'las tres fichas sembradas deben contarse en el total');
+    assert.equal(uno.data.length, 2, 'la primera página debe traer los 2 miembros que pidió');
+
+    const segunda = await fetch(`${baseUrl}/api/recibos/mis-recibos?page=2&limit=2`, { headers: cabeceras });
+    const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
+    assert.equal(dos.data.length, 1, 'la segunda página debe traer el miembro que faltaba');
+    // La segunda página trae miembros distintos: si el skip no se aplica, esto falla.
+    const idsPrimera = new Set(uno.data.map((h) => h.id));
+    assert.ok(dos.data.every((h) => !idsPrimera.has(h.id)));
+  } finally {
+    await recogerFamiliaPrueba(fichas);
+    await borrarUsuarioPrueba(usuario.id);
+  }
+});
+
+test('mis perfiles respetan la página y el tamaño pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const usuario = await crearUsuarioPrueba(Role.USER);
+  const fichas = await sembrarFamiliaPrueba(usuario.id);
+
+  try {
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
+
+    const primera = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=2`, { headers: cabeceras });
+    assert.equal(primera.status, 200);
+    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.ok(Array.isArray(uno.data), 'las pantallas de perfil leen data: sin ella no hay ficha que mostrar');
+    assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+    assert.equal(uno.meta.limit, 2, 'el tamaño pedido no llegó al servicio: ¿alguien validó la consulta sin ...paginacionQuery?');
+    assert.equal(uno.meta.page, 1);
+    assert.equal(uno.meta.total, 3, 'las tres fichas sembradas deben contarse en el total');
+    assert.equal(uno.data.length, 2, 'la primera página debe traer las 2 fichas que pidió');
+
+    const segunda = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=2&limit=2`, { headers: cabeceras });
+    const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
+    assert.equal(dos.data.length, 1, 'la segunda página debe traer la ficha que faltaba');
+    // La segunda página trae fichas distintas: si el skip no se aplica, esto falla.
+    const idsPrimera = new Set(uno.data.map((h) => h.id));
+    assert.ok(dos.data.every((h) => !idsPrimera.has(h.id)));
+  } finally {
+    await recogerFamiliaPrueba(fichas);
+    await borrarUsuarioPrueba(usuario.id);
+  }
+});
+
+// El selector de ficha de las pantallas de perfil pide la familia entera de una
+// vez (limit=50, la constante FICHAS_POR_FAMILIA del cliente). Aquí se comprueba
+// el otro extremo del trato: que el servidor atienda ese tamaño sin recortarlo,
+// o el hermano con varias fichas dejaría de verlas todas.
+test('mis perfiles caben enteros en la página que pide el selector', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const usuario = await crearUsuarioPrueba(Role.USER);
+  const fichas = await sembrarFamiliaPrueba(usuario.id);
+
+  try {
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
+    const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=50`, { headers: cabeceras });
+    const cuerpo = await respuesta.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.equal(cuerpo.meta.limit, 50);
+    assert.equal(cuerpo.meta.totalPages, 1, 'la familia entera debe caber en una sola página');
+    assert.equal(cuerpo.data.length, 3, 'el selector debe recibir las tres fichas, no solo las de una página corta');
+  } finally {
+    await recogerFamiliaPrueba(fichas);
+    await borrarUsuarioPrueba(usuario.id);
+  }
+});
+
+test('mi histórico de papeletas respeta la página y el tamaño pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const usuario = await crearUsuarioPrueba(Role.USER);
+  const fichas = await sembrarFamiliaPrueba(usuario.id);
+
+  try {
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
+
+    const primera = await fetch(`${baseUrl}/api/procesion/mis-papeletas?page=1&limit=2`, { headers: cabeceras });
+    assert.equal(primera.status, 200);
+    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.ok(Array.isArray(uno.data), 'el histórico lee data: sin ella se queda en blanco');
+    assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+    assert.equal(uno.meta.limit, 2, 'el tamaño pedido no llegó al servicio: ¿alguien validó la consulta sin ...paginacionQuery?');
+    assert.equal(uno.meta.page, 1);
+    assert.equal(uno.meta.total, 3, 'las tres papeletas sembradas deben contarse en el total');
+    assert.equal(uno.data.length, 2, 'la primera página debe traer las 2 papeletas que pidió');
+
+    const segunda = await fetch(`${baseUrl}/api/procesion/mis-papeletas?page=2&limit=2`, { headers: cabeceras });
+    const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
+    assert.equal(dos.data.length, 1, 'la segunda página debe traer la papeleta que faltaba');
+    // La segunda página trae papeletas distintas: si el skip no se aplica, esto falla.
+    const idsPrimera = new Set(uno.data.map((p) => p.id));
+    assert.ok(dos.data.every((p) => !idsPrimera.has(p.id)));
+  } finally {
+    await recogerFamiliaPrueba(fichas);
+    await borrarUsuarioPrueba(usuario.id);
+  }
+});

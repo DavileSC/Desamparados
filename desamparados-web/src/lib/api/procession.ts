@@ -1,4 +1,5 @@
 import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export type ReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
 
@@ -18,6 +19,6 @@ export interface ApiProcessionTicket {
   }
 }
 
-export function getMyProcessionTickets() {
-  return apiFetch<ApiProcessionTicket[]>('/procesion/mis-papeletas')
+export function getMyProcessionTickets(pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<ApiProcessionTicket>>(`/procesion/mis-papeletas?${paramsPagina(pagina)}`)
 }

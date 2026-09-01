@@ -42,7 +42,7 @@ export class ProcesionController {
   static async getMisPapeletas(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const papeletas = await ProcesionService.getMisPapeletas(userId);
+      const papeletas = await ProcesionService.getMisPapeletas(userId, req.query);
       res.status(200).json(papeletas);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo el historial de papeletas');

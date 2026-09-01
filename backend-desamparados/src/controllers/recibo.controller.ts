@@ -13,7 +13,7 @@ export class ReciboController {
   static async getMyRecibos(req: Request, res: Response) {
     try {
       const userId = req.user!.id; 
-      const recibosFamiliares = await ReciboService.getRecibosByUsuarioFamilia(userId);
+      const recibosFamiliares = await ReciboService.getRecibosByUsuarioFamilia(userId, req.query);
       res.status(200).json(recibosFamiliares);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo tus recibos');

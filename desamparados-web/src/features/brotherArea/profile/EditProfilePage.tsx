@@ -36,9 +36,11 @@ export default function EditProfilePage() {
   useEffect(() => {
     let cancelled = false
 
+    // Sin argumentos, getMyProfiles pide la familia entera en una sola página:
+    // esta pantalla elige una ficha, y un selector paginado escondería alguna.
     getMyProfiles()
-      .then((profiles) => {
-        const currentProfile = profiles[0]
+      .then((respuesta) => {
+        const currentProfile = respuesta.data[0]
         if (cancelled) return
         if (!currentProfile) {
           setError('No se ha encontrado ningún perfil asociado a tu cuenta.')

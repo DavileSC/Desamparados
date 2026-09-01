@@ -102,30 +102,44 @@ export class ReciboService {
   //  2. CONSULTA FAMILIAR (PADRE/TUTOR) - AGRUPADA POR MIEMBRO
   // =================================================================
 
-  static async getRecibosByUsuarioFamilia(userId: number) {
+  /**
+   * La unidad que se pagina aquí es el MIEMBRO de la familia, no el recibo: la
+   * respuesta viene agrupada por hermano con sus recibos anidados, y es lo que
+   * pinta la pantalla. `meta.total` cuenta, por tanto, miembros activos.
+   */
+  static async getRecibosByUsuarioFamilia(userId: number, query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
     // Le damos la vuelta: Buscamos a los miembros de la familia y anidamos sus recibos
-    return await db.hermano.findMany({
-      where: {
-        userId: userId,
-        activo: true
-      },
-      select: {
-        id: true,
-        nombre: true,
-        apellidos: true,
-        esTitular: true, // Te lo añado porque al frontend le vendrá genial para ponerle una estrellita o algo al gestor
-        recibos: {
-          orderBy: [
-            { year: 'desc' },
-            { estado: 'asc' }
-          ]
-        }
-      },
-      orderBy: [
-        { esTitular: 'desc' },    // Ponemos al padre/madre/gestor el primero de la lista
-        { fechaNacimiento: 'asc' } // Y a los hijos ordenados por edad
-      ]
-    });
+    const where = { userId, activo: true };
+
+    const [data, total] = await db.$transaction([
+      db.hermano.findMany({
+        where,
+        select: {
+          id: true,
+          nombre: true,
+          apellidos: true,
+          esTitular: true, // Te lo añado porque al frontend le vendrá genial para ponerle una estrellita o algo al gestor
+          recibos: {
+            orderBy: [
+              { year: 'desc' },
+              { estado: 'asc' }
+            ]
+          }
+        },
+        orderBy: [
+          { esTitular: 'desc' },     // Ponemos al padre/madre/gestor el primero de la lista
+          { fechaNacimiento: 'asc' }, // Y a los hijos ordenados por edad
+          { id: 'asc' }               // Desempate: dos hijos nacidos el mismo día (mellizos) dejarían
+                                      // el orden a merced de MariaDB y uno saldría en dos páginas.
+        ],
+        skip: paginacion.skip,
+        take: paginacion.take,
+      }),
+      db.hermano.count({ where })
+    ]);
+
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // =================================================================

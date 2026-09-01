@@ -64,8 +64,9 @@ const tutorToken = r.json?.token;
 // ============ 7. VER MIS PERFILES ============
 step(7, 'GET /mis-perfiles (Maria ve a Pablito)');
 r = await api('GET', '/api/hermanos/mis-perfiles', null, tutorToken);
-console.log('HTTP', r.status, '| perfiles:', r.json?.map(h => `id=${h.id} ${h.nombre} (titular:${h.esTitular}, activo:${h.activo})`));
-const pablitoId = r.json?.[0]?.id;
+// /mis-perfiles pagina desde la Tarea 15: la lista viaja en `data`, no suelta.
+console.log('HTTP', r.status, '| perfiles:', r.json?.data?.map(h => `id=${h.id} ${h.nombre} (titular:${h.esTitular}, activo:${h.activo})`));
+const pablitoId = r.json?.data?.[0]?.id;
 
 // ============ 8. AÑADIR SEGUNDO HIJO (sin DNI, menor) ============
 step(8, 'POST /mis-perfiles (Maria añade a Nilita, SIN DNI)');
@@ -90,12 +91,12 @@ const pablitoToken = r.json?.token;
 // ============ 11. PABLITO VE SOLO SU FICHA ============
 step(11, 'GET /mis-perfiles (Pablito solo debe verse a si mismo)');
 r = await api('GET', '/api/hermanos/mis-perfiles', null, pablitoToken);
-console.log('HTTP', r.status, '| perfiles:', r.json?.map(h => `id=${h.id} ${h.nombre} (titular:${h.esTitular})`));
+console.log('HTTP', r.status, '| perfiles:', r.json?.data?.map(h => `id=${h.id} ${h.nombre} (titular:${h.esTitular})`));
 
 // ============ 12. MARIA YA NO VE A PABLITO ============
 step(12, 'GET /mis-perfiles (Maria ya solo debe ver a Nilita)');
 r = await api('GET', '/api/hermanos/mis-perfiles', null, tutorToken);
-console.log('HTTP', r.status, '| perfiles:', r.json?.map(h => `id=${h.id} ${h.nombre}`));
+console.log('HTTP', r.status, '| perfiles:', r.json?.data?.map(h => `id=${h.id} ${h.nombre}`));
 
 // ============ 13. IDOR: Maria intenta editar la ficha de Pablito ============
 step(13, `PUT /mis-perfiles/${pablitoId} (Maria intenta tocar la ficha de Pablito → debe dar 403)`);

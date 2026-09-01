@@ -11,11 +11,12 @@ import {
   TableRow,
   Paper,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
-import { getMyReceipts, type ApiReceipt, type ReceiptStatus } from '../../../lib/api/receipts'
+import Paginador from '../../../components/Paginador'
+import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
+import { getMyReceipts, type ApiReceipt, type ReceiptGroup, type ReceiptStatus } from '../../../lib/api/receipts'
 
 const statusConfig: Record<ReceiptStatus, { label: string; color: string }> = {
   PAGADO: { label: 'Pagado', color: 'success.main' },
@@ -31,36 +32,17 @@ interface DisplayReceipt extends ApiReceipt {
 }
 
 export default function ReceiptsPage() {
-  const [receipts, setReceipts] = useState<DisplayReceipt[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // El servidor pagina por miembro de la familia y anida los recibos de cada
+  // uno; aquí se aplanan para pintarlos como filas de una sola tabla.
+  const { items: groups, meta, loading, error, alCambiarPagina, cambiarTamano } =
+    useListadoPaginado<ReceiptGroup>(getMyReceipts, 'No se han podido cargar tus recibos.')
 
-  useEffect(() => {
-    let cancelled = false
-
-    getMyReceipts()
-      .then((groups) => {
-        if (cancelled) return
-        setReceipts(
-          groups.flatMap((group) =>
-            group.recibos.map((receipt) => ({
-              ...receipt,
-              memberName: `${group.nombre} ${group.apellidos}`,
-            }))
-          )
-        )
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se han podido cargar tus recibos.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const receipts: DisplayReceipt[] = groups.flatMap((group) =>
+    group.recibos.map((receipt) => ({
+      ...receipt,
+      memberName: `${group.nombre} ${group.apellidos}`,
+    }))
+  )
 
   return (
     <>
@@ -118,6 +100,8 @@ export default function ReceiptsPage() {
               </TableBody>
             </Table>
           </TableContainer>}
+
+          {meta && <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="mis recibos" />}
         </PageContainer>
       </AnimatedSection>
     </>

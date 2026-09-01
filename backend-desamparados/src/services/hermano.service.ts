@@ -71,16 +71,30 @@ export class HermanoService {
   //  ZONA GESTIÓN FAMILIAR
   // =================================================================
 
-  static async getProfilesByUserId(userId: number) {
+  static async getProfilesByUserId(userId: number, query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
     // Incluimos también las fichas pendientes de aprobación (activo:false sin fecha de baja)
     // para que el usuario vea que su familiar está "en trámite".
-    return await db.hermano.findMany({
-      where: { userId, fechaBaja: null },
-      orderBy: { fechaNacimiento: 'desc' },
-      include: {
-        recibos: { take: 1, orderBy: { year: 'desc' }, select: { year: true, estado: true } }
-      }
-    });
+    const where = { userId, fechaBaja: null };
+
+    const [data, total] = await db.$transaction([
+      db.hermano.findMany({
+        where,
+        orderBy: [
+          { fechaNacimiento: 'desc' },
+          { id: 'asc' } // Desempate: con dos mellizos el orden quedaría a merced de MariaDB y
+                        // una ficha podría salir en dos páginas y otra en ninguna.
+        ],
+        include: {
+          recibos: { take: 1, orderBy: { year: 'desc' }, select: { year: true, estado: true } }
+        },
+        skip: paginacion.skip,
+        take: paginacion.take,
+      }),
+      db.hermano.count({ where })
+    ]);
+
+    return respuestaPaginada(data, total, paginacion);
   }
 
   static async createDependentProfile(managerUserId: number, data: CreateHermanoDto) {
