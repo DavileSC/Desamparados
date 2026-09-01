@@ -74,6 +74,16 @@ export class InventarioController {
     }
   }
 
+  static async getOnePrenda(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      const prenda = await InventarioService.getPrendaById(id);
+      res.status(200).json(prenda);
+    } catch (e) {
+      handleHttp(res, e, 'Error obteniendo ficha de la prenda');
+    }
+  }
+
   static async createPrenda(req: Request, res: Response) {
     try {
       const newItem = await InventarioService.createPrenda(req.body);

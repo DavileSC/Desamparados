@@ -617,3 +617,114 @@ test('las solicitudes de alta respetan la página y el tamaño pedidos', async (
     await borrarUsuarioPrueba(admin.id);
   }
 });
+
+// El inventario es la única pantalla con dos listados independientes, así que
+// la guarda va por duplicado: hay dos esquemas que pueden perder la paginación.
+//
+// Ojo con la mutación que hay que vigilar: borrar entero el bloque `query` de
+// queryEnserSchema NO rompe nada, porque `validate` solo pisa req.query cuando
+// el esquema declara ese bloque y la consulta cruda sobrevive. La que sí rompe
+// es declararlo incompleto: añadir un filtro nuevo y olvidarse de
+// `...paginacionQuery`. Entonces page y limit se borran en silencio, `meta`
+// sigue trayendo sus cuatro claves, `page` vale 1 y todas las páginas sirven la
+// primera. Comprobar solo la forma de `meta` no lo detectaría; esto sí.
+test('los enseres respetan la página y el tamaño pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const hermano = await crearUsuarioPrueba(Role.ADMIN);
+
+  try {
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(hermano.id, Role.ADMIN)}` };
+
+    const primera = await fetch(`${baseUrl}/api/inventario/enseres?page=1&limit=2`, { headers: cabeceras });
+    assert.equal(primera.status, 200);
+    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.ok(Array.isArray(uno.data), 'el CMS lee data: sin ella la pestaña de enseres se queda en blanco');
+    assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+    assert.equal(uno.meta.limit, 2, 'el tamaño pedido no llegó al servicio: ¿falta ...paginacionQuery en queryEnserSchema?');
+    assert.equal(uno.meta.page, 1);
+
+    // Con menos de tres enseres la página 2 estaría vacía y lo de abajo pasaría
+    // sin comprobar nada: se omite con el motivo a la vista.
+    if (uno.meta.total < 3) {
+      return t.skip(`solo hay ${uno.meta.total} enser(es); hacen falta al menos 3 para comprobar dos páginas de tamaño 2 (ejecuta el seed de contenido)`);
+    }
+
+    const segunda = await fetch(`${baseUrl}/api/inventario/enseres?page=2&limit=2`, { headers: cabeceras });
+    const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
+    assert.equal(uno.data.length, 2, 'con al menos 3 enseres, la primera página debe traer los 2 que pidió');
+    assert.ok(dos.data.length >= 1, 'la segunda página debe traer al menos un enser');
+    // La segunda página trae enseres distintos: si el skip no se aplica, esto falla.
+    const idsPrimera = new Set(uno.data.map((e) => e.id));
+    assert.ok(dos.data.every((e) => !idsPrimera.has(e.id)));
+  } finally {
+    await borrarUsuarioPrueba(hermano.id);
+  }
+});
+
+// El segundo listado de la misma pantalla, con su propio esquema: si el ropero
+// perdiera `...paginacionQuery`, los enseres seguirían pasando de página y el
+// fallo pasaría desapercibido.
+test('el ropero respeta la página y el tamaño pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const hermano = await crearUsuarioPrueba(Role.ADMIN);
+
+  try {
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(hermano.id, Role.ADMIN)}` };
+
+    const primera = await fetch(`${baseUrl}/api/inventario/prendas?page=1&limit=2`, { headers: cabeceras });
+    assert.equal(primera.status, 200);
+    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.ok(Array.isArray(uno.data), 'el CMS lee data: sin ella la pestaña del ropero se queda en blanco');
+    assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+    assert.equal(uno.meta.limit, 2, 'el tamaño pedido no llegó al servicio: ¿falta ...paginacionQuery en queryPrendaSchema?');
+    assert.equal(uno.meta.page, 1);
+
+    if (uno.meta.total < 3) {
+      return t.skip(`solo hay ${uno.meta.total} prenda(s) en el ropero; hacen falta al menos 3 para comprobar dos páginas de tamaño 2 (ejecuta el seed de contenido)`);
+    }
+
+    const segunda = await fetch(`${baseUrl}/api/inventario/prendas?page=2&limit=2`, { headers: cabeceras });
+    const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+    assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
+    assert.equal(uno.data.length, 2, 'con al menos 3 prendas, la primera página debe traer las 2 que pidió');
+    assert.ok(dos.data.length >= 1, 'la segunda página debe traer al menos una prenda');
+    // La segunda página trae prendas distintas: si el skip no se aplica, esto falla.
+    const idsPrimera = new Set(uno.data.map((p) => p.id));
+    assert.ok(dos.data.every((p) => !idsPrimera.has(p.id)));
+  } finally {
+    await borrarUsuarioPrueba(hermano.id);
+  }
+});
+
+// La ficha suelta de una prenda: el CMS la necesita para editar una que está
+// fuera de la página cargada. Antes se buscaba con un .find() en el listado.
+test('el ropero publica la ficha de una prenda por su id', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const hermano = await crearUsuarioPrueba(Role.ADMIN);
+
+  try {
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(hermano.id, Role.ADMIN)}` };
+
+    const listado = await fetch(`${baseUrl}/api/inventario/prendas?limit=1`, { headers: cabeceras });
+    const cuerpo = await listado.json() as { data: { id: number; numero: string }[] };
+    if (cuerpo.data.length === 0) return t.skip('el ropero está vacío (ejecuta el seed de contenido)');
+
+    const esperada = cuerpo.data[0];
+    const ficha = await fetch(`${baseUrl}/api/inventario/prendas/${esperada.id}`, { headers: cabeceras });
+
+    assert.equal(ficha.status, 200, 'la ruta /prendas/:id debe ir después de /prendas y antes de las de acción');
+    const prenda = await ficha.json() as { id: number; numero: string };
+    assert.equal(prenda.id, esperada.id);
+    assert.equal(prenda.numero, esperada.numero);
+  } finally {
+    await borrarUsuarioPrueba(hermano.id);
+  }
+});

@@ -1,9 +1,14 @@
 import db from '../config/db';
 import { Prisma, EstadoPrenda } from '@prisma/client';
-import { CreateEnserDto, UpdateEnserDto, EnserFilterDto, CreatePrendaDto, UpdatePrendaDto } from '../dtos/inventario.dto';
+import { CreateEnserDto, UpdateEnserDto, EnserFilterDto, CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/inventario.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
-// Asume que crearás estos DTOs para la ropa:
-// import { CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/prenda.dto';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+
+/** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
+interface ConsultaPaginada {
+  page?: unknown;
+  limit?: unknown;
+}
 
 export class InventarioService {
 
@@ -11,7 +16,12 @@ export class InventarioService {
   //  BLOQUE 1: ENSERES GENERALES (Viacrucis, Hachetas...) -> LOTES
   // =================================================================
 
-  static async getAllEnseres(filters: EnserFilterDto) {
+  /**
+   * Devuelve `{ data, meta }`. Enseres y ropero comparten pantalla pero no
+   * paginación: cada uno cuenta y recorta lo suyo.
+   */
+  static async getAllEnseres(filters: EnserFilterDto & ConsultaPaginada) {
+    const paginacion = sanearPaginacion(filters);
     const where: Prisma.EnserWhereInput = {};
 
     if (filters.search) {
@@ -23,7 +33,22 @@ export class InventarioService {
     if (filters.categoria) where.categoria = filters.categoria;
     if (filters.necesitaReparacion === 'true') where.cantidadReparar = { gt: 0 };
 
-    return await db.enser.findMany({ where, orderBy: { nombre: 'asc' } });
+    const [enseres, total] = await db.$transaction([
+      db.enser.findMany({
+        where,
+        // El desempate por id no es adorno: `nombre` no es único en el modelo
+        // (nada impide dos lotes llamados «Insignias de tramo»), y con nombres
+        // repetidos MariaDB no garantiza el mismo orden en la consulta de la
+        // página 1 y en la de la 2: con skip/take uno saldría repetido y otro
+        // no saldría nunca.
+        orderBy: [{ nombre: 'asc' }, { id: 'asc' }],
+        skip: paginacion.skip,
+        take: paginacion.take
+      }),
+      db.enser.count({ where })
+    ]);
+
+    return respuestaPaginada(enseres, total, paginacion);
   }
 
   static async getEnserById(id: number) {
@@ -84,7 +109,14 @@ export class InventarioService {
   //  BLOQUE 2: ROPERO (Túnicas, Capirotes, Faraonas) -> UNITARIO
   // =================================================================
 
-  static async getAllPrendas(filters: any) { // Usa tu PrendaFilterDto
+  /** Lo que se muestra de quien tiene la prenda prestada: nunca más que esto. */
+  private static readonly hermanoDeLaPrenda = {
+    hermano: { select: { nombre: true, apellidos: true, numeroHermano: true } }
+  };
+
+  /** Devuelve `{ data, meta }`, con su propio contador: el ropero no comparte página con los enseres. */
+  static async getAllPrendas(filters: PrendaFilterDto & ConsultaPaginada) {
+    const paginacion = sanearPaginacion(filters);
     const where: Prisma.PrendaWhereInput = {};
 
     if (filters.numero) where.numero = { contains: filters.numero };
@@ -92,14 +124,34 @@ export class InventarioService {
     if (filters.estado) where.estado = filters.estado;
     if (filters.talla) where.talla = { contains: filters.talla };
 
-    return await db.prenda.findMany({
-      where,
-      orderBy: { numero: 'asc' },
-      include: {
-        // Traemos el nombre del hermano si la prenda está prestada
-        hermano: { select: { nombre: true, apellidos: true, numeroHermano: true } }
-      }
+    const [prendas, total] = await db.$transaction([
+      db.prenda.findMany({
+        where,
+        // Mismo motivo que en los enseres: `numero` es único hoy, pero el orden
+        // solo es estable si el criterio lo es; el id lo cierra sin coste.
+        orderBy: [{ numero: 'asc' }, { id: 'asc' }],
+        skip: paginacion.skip,
+        take: paginacion.take,
+        include: InventarioService.hermanoDeLaPrenda
+      }),
+      db.prenda.count({ where })
+    ]);
+
+    return respuestaPaginada(prendas, total, paginacion);
+  }
+
+  /**
+   * Lectura individual del ropero. Antes el cliente se traía el listado entero
+   * y buscaba dentro con un `.find()`: con el listado paginado, una prenda
+   * fuera del recorte era imposible de editar.
+   */
+  static async getPrendaById(id: number) {
+    const prenda = await db.prenda.findUnique({
+      where: { id },
+      include: InventarioService.hermanoDeLaPrenda
     });
+    if (!prenda) throw new NotFoundError('Prenda no encontrada');
+    return prenda;
   }
 
   static async createPrenda(data: CreatePrendaDto) {
