@@ -3,20 +3,17 @@ import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '../../../../test/test-utils'
 import ReceiptsPage from '../ReceiptsPage'
 
-const familia = {
-  id: 7,
-  nombre: 'Ana',
-  apellidos: 'Pérez Ruiz',
-  esTitular: true,
-  recibos: [{
-    id: 10,
-    year: 2026,
-    concepto: 'Cuota anual',
-    importe: 30,
-    fechaEmision: '2026-01-15T00:00:00.000Z',
-    fechaPago: null,
-    estado: 'PENDIENTE',
-  }],
+// La unidad paginada es el recibo, no el miembro: cada fila llega plana y con
+// el hermano al que pertenece dentro.
+const recibo = {
+  id: 10,
+  year: 2026,
+  concepto: 'Cuota anual',
+  importe: 30,
+  fechaEmision: '2026-01-15T00:00:00.000Z',
+  fechaPago: null,
+  estado: 'PENDIENTE',
+  hermano: { nombre: 'Ana', apellidos: 'Pérez Ruiz', esTitular: true },
 }
 
 /**
@@ -44,7 +41,7 @@ describe('ReceiptsPage', () => {
   })
 
   it('pinta los recibos que llegan en data y ofrece pasar de página', async () => {
-    const simulado = responder([familia], { total: 45, page: 1, limit: 20, totalPages: 3 })
+    const simulado = responder([recibo], { total: 45, page: 1, limit: 20, totalPages: 3 })
     renderWithProviders(<ReceiptsPage />)
 
     expect(await screen.findByText(/cuota anual/i)).toBeInTheDocument()

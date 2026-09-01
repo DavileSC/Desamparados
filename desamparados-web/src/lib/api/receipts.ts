@@ -13,19 +13,20 @@ export interface ApiReceipt {
   estado: ReceiptStatus
 }
 
-export interface ReceiptGroup {
-  id: number
-  nombre: string
-  apellidos: string
-  esTitular: boolean
-  recibos: ApiReceipt[]
+/** Un recibo de la familia con el miembro al que pertenece. */
+export interface MyReceipt extends ApiReceipt {
+  hermano: {
+    nombre: string
+    apellidos: string
+    esTitular: boolean
+  }
 }
 
 /**
- * Lo que se pagina aquí es el MIEMBRO de la familia con sus recibos anidados,
- * que es como los agrupa el servidor: `meta.total` cuenta miembros activos, no
- * recibos sueltos.
+ * Los recibos de toda la familia en una lista plana, que es como los pinta la
+ * pantalla: la unidad paginada es el recibo, así que `meta.total` cuenta
+ * recibos y el tamaño de página acota las filas que llegan.
  */
 export function getMyReceipts(pagina: { pagina: number; porPagina: number }) {
-  return apiFetch<RespuestaPaginada<ReceiptGroup>>(`/recibos/mis-recibos?${paramsPagina(pagina)}`)
+  return apiFetch<RespuestaPaginada<MyReceipt>>(`/recibos/mis-recibos?${paramsPagina(pagina)}`)
 }

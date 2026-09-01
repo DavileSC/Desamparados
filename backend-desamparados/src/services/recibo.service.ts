@@ -99,44 +99,40 @@ export class ReciboService {
   }
 
   // =================================================================
-  //  2. CONSULTA FAMILIAR (PADRE/TUTOR) - AGRUPADA POR MIEMBRO
+  //  2. CONSULTA FAMILIAR (PADRE/TUTOR)
   // =================================================================
 
   /**
-   * La unidad que se pagina aquí es el MIEMBRO de la familia, no el recibo: la
-   * respuesta viene agrupada por hermano con sus recibos anidados, y es lo que
-   * pinta la pantalla. `meta.total` cuenta, por tanto, miembros activos.
+   * Los recibos de toda la familia del usuario, en una sola lista plana.
+   *
+   * La unidad que se pagina es el RECIBO, que es lo que la pantalla enseña por
+   * filas: paginar por miembro dejaba el tamaño de página sin acotar nada —
+   * veinte miembros arrastran los cientos de recibos que tengan colgando— y
+   * hacía que el paginador dijese «3 resultados» encima de una tabla de treinta
+   * filas. Cada recibo trae de quién es para poder nombrarlo en su fila.
    */
   static async getRecibosByUsuarioFamilia(userId: number, query: { page?: unknown; limit?: unknown } = {}) {
     const paginacion = sanearPaginacion(query);
-    // Le damos la vuelta: Buscamos a los miembros de la familia y anidamos sus recibos
-    const where = { userId, activo: true };
+    const where = { hermano: { userId, activo: true } };
 
     const [data, total] = await db.$transaction([
-      db.hermano.findMany({
+      db.recibo.findMany({
         where,
-        select: {
-          id: true,
-          nombre: true,
-          apellidos: true,
-          esTitular: true, // Te lo añado porque al frontend le vendrá genial para ponerle una estrellita o algo al gestor
-          recibos: {
-            orderBy: [
-              { year: 'desc' },
-              { estado: 'asc' }
-            ]
-          }
+        include: {
+          // esTitular le vendrá genial al frontend para ponerle una estrellita o algo al gestor
+          hermano: { select: { nombre: true, apellidos: true, esTitular: true } }
         },
         orderBy: [
-          { esTitular: 'desc' },     // Ponemos al padre/madre/gestor el primero de la lista
-          { fechaNacimiento: 'asc' }, // Y a los hijos ordenados por edad
-          { id: 'asc' }               // Desempate: dos hijos nacidos el mismo día (mellizos) dejarían
-                                      // el orden a merced de MariaDB y uno saldría en dos páginas.
+          { year: 'desc' },   // Los dos criterios que antes ordenaban los recibos
+          { estado: 'asc' },  // dentro de cada miembro, ahora sobre la lista entera
+          { id: 'asc' }       // Desempate: dos recibos del mismo año y estado —la cuota y la
+                              // papeleta de dos hijos, por ejemplo— dejarían el orden a merced
+                              // de MariaDB y uno saldría en dos páginas y otro en ninguna.
         ],
         skip: paginacion.skip,
         take: paginacion.take,
       }),
-      db.hermano.count({ where })
+      db.recibo.count({ where })
     ]);
 
     return respuestaPaginada(data, total, paginacion);

@@ -16,7 +16,7 @@ import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import Paginador from '../../../components/Paginador'
 import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
-import { getMyReceipts, type ApiReceipt, type ReceiptGroup, type ReceiptStatus } from '../../../lib/api/receipts'
+import { getMyReceipts, type MyReceipt, type ReceiptStatus } from '../../../lib/api/receipts'
 
 const statusConfig: Record<ReceiptStatus, { label: string; color: string }> = {
   PAGADO: { label: 'Pagado', color: 'success.main' },
@@ -27,22 +27,11 @@ const statusConfig: Record<ReceiptStatus, { label: string; color: string }> = {
   EXENTO: { label: 'Exento', color: 'text.secondary' },
 }
 
-interface DisplayReceipt extends ApiReceipt {
-  memberName: string
-}
-
 export default function ReceiptsPage() {
-  // El servidor pagina por miembro de la familia y anida los recibos de cada
-  // uno; aquí se aplanan para pintarlos como filas de una sola tabla.
-  const { items: groups, meta, loading, error, alCambiarPagina, cambiarTamano } =
-    useListadoPaginado<ReceiptGroup>(getMyReceipts, 'No se han podido cargar tus recibos.')
-
-  const receipts: DisplayReceipt[] = groups.flatMap((group) =>
-    group.recibos.map((receipt) => ({
-      ...receipt,
-      memberName: `${group.nombre} ${group.apellidos}`,
-    }))
-  )
+  // El servidor sirve los recibos de toda la familia ya planos, una fila por
+  // recibo y con el miembro al que pertenece dentro.
+  const { items: receipts, meta, loading, error, alCambiarPagina, cambiarTamano } =
+    useListadoPaginado<MyReceipt>(getMyReceipts, 'No se han podido cargar tus recibos.')
 
   return (
     <>
@@ -79,7 +68,7 @@ export default function ReceiptsPage() {
                   const status = statusConfig[receipt.estado]
                   return (
                     <TableRow key={receipt.id}>
-                      <TableCell>{receipt.memberName}</TableCell>
+                      <TableCell>{receipt.hermano.nombre} {receipt.hermano.apellidos}</TableCell>
                       <TableCell>{receipt.year}</TableCell>
                       <TableCell>{receipt.concepto}</TableCell>
                       <TableCell>

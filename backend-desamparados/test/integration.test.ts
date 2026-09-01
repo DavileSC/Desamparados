@@ -736,7 +736,9 @@ test('el ropero publica la ficha de una prenda por su id', async (t) => {
 // Los tres extremos son privados y sirven SOLO lo del usuario de la sesión, así
 // que un usuario recién creado no tiene nada y las dos páginas saldrían vacías:
 // la guarda pasaría en verde sin comprobar nada. Por eso se siembra una familia
-// de tres fichas, con su recibo y su papeleta cada una.
+// de tres fichas, con su recibo y su papeleta cada una, más una cuota suelta
+// para la titular: así los tres listados tienen totales que no se confunden
+// entre sí (4 recibos, 3 fichas, 3 papeletas).
 //
 // Ojo con la mutación que hay que vigilar: hoy las tres rutas no declaran
 // esquema de consulta, así que `req.query` llega crudo. Borrar un bloque
@@ -748,39 +750,67 @@ test('el ropero publica la ficha de una prenda por su id', async (t) => {
 // solo la forma de `meta` no lo detectaría; afirmar `meta.limit` y que las dos
 // páginas traen elementos distintos, sí.
 
-/** Tres fichas, tres recibos y tres papeletas colgando del usuario indicado. */
+/**
+ * Tres fichas, CUATRO recibos y tres papeletas colgando del usuario indicado.
+ *
+ * El recibo de más va a propósito: hace que el total de /mis-recibos (4) no
+ * coincida con el de fichas (3), de modo que la guarda distinga de verdad la
+ * unidad paginada. Si alguien volviera a paginar por miembro, el total bajaría
+ * a 3 y el test lo diría.
+ *
+ * Si algo falla a mitad, recoge lo ya creado antes de relanzar: esto corre
+ * contra la base de datos de desarrollo y no puede dejar basura suelta.
+ */
 async function sembrarFamiliaPrueba(userId: number): Promise<number[]> {
   const fichas: number[] = [];
 
-  for (const [indice, nombre] of ['Ana', 'Bruno', 'Carla'].entries()) {
-    const ficha = await db.hermano.create({
-      data: {
-        userId,
-        nombre,
-        apellidos: 'Prueba Paginacion',
-        fechaNacimiento: new Date(Date.UTC(2000 + indice, 0, 1)),
-        esTitular: indice === 0,
-        activo: true
+  try {
+    for (const [indice, nombre] of ['Ana', 'Bruno', 'Carla'].entries()) {
+      const ficha = await db.hermano.create({
+        data: {
+          userId,
+          nombre,
+          apellidos: 'Prueba Paginacion',
+          fechaNacimiento: new Date(Date.UTC(2000 + indice, 0, 1)),
+          esTitular: indice === 0,
+          activo: true
+        }
+      });
+      // Antes de crear nada colgando de la ficha, para que el recogedor la
+      // encuentre aunque lo siguiente reviente.
+      fichas.push(ficha.id);
+
+      const recibo = await db.recibo.create({
+        data: {
+          hermanoId: ficha.id,
+          year: 2024 + indice,
+          concepto: `Papeleta de prueba ${indice + 1}`,
+          importe: 30
+        }
+      });
+
+      await db.papeletaSitio.create({
+        data: { hermanoId: ficha.id, reciboId: recibo.id, year: 2024 + indice, puesto: 'Cirio' }
+      });
+
+      // La titular lleva además su cuota anual, sin papeleta.
+      if (indice === 0) {
+        await db.recibo.create({
+          data: {
+            hermanoId: ficha.id,
+            year: 2024,
+            concepto: 'Cuota anual de prueba',
+            importe: 25
+          }
+        });
       }
-    });
+    }
 
-    const recibo = await db.recibo.create({
-      data: {
-        hermanoId: ficha.id,
-        year: 2024 + indice,
-        concepto: `Papeleta de prueba ${indice + 1}`,
-        importe: 30
-      }
-    });
-
-    await db.papeletaSitio.create({
-      data: { hermanoId: ficha.id, reciboId: recibo.id, year: 2024 + indice, puesto: 'Cirio' }
-    });
-
-    fichas.push(ficha.id);
+    return fichas;
+  } catch (e) {
+    await recogerFamiliaPrueba(fichas);
+    throw e;
   }
-
-  return fichas;
 }
 
 /** En orden inverso al de las claves ajenas: papeleta, recibo y ficha. */
@@ -794,32 +824,38 @@ test('mis recibos respetan la página y el tamaño pedidos', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
   const usuario = await crearUsuarioPrueba(Role.USER);
-  const fichas = await sembrarFamiliaPrueba(usuario.id);
+  let fichas: number[] = [];
 
   try {
+    fichas = await sembrarFamiliaPrueba(usuario.id);
     const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
 
     const primera = await fetch(`${baseUrl}/api/recibos/mis-recibos?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
-    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+    const uno = await primera.json() as { data: { id: number; hermano?: { nombre?: string } }[]; meta: Record<string, number> };
 
     assert.ok(Array.isArray(uno.data), 'la pantalla de recibos lee data: sin ella se queda en blanco');
     assert.deepEqual(Object.keys(uno.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
     assert.equal(uno.meta.limit, 2, 'el tamaño pedido no llegó al servicio: ¿alguien validó la consulta sin ...paginacionQuery?');
     assert.equal(uno.meta.page, 1);
-    // La unidad paginada es el miembro de la familia, no el recibo: la respuesta
-    // viene agrupada por hermano con sus recibos anidados.
-    assert.equal(uno.meta.total, 3, 'las tres fichas sembradas deben contarse en el total');
-    assert.equal(uno.data.length, 2, 'la primera página debe traer los 2 miembros que pidió');
+    // La unidad paginada es el RECIBO, no el miembro de la familia: la siembra
+    // deja tres fichas y CUATRO recibos, así que un total de 3 delataría que se
+    // ha vuelto a paginar por miembro —y entonces el tamaño de página no acota
+    // las filas que ve el hermano, que es justo lo que este plan viene a cerrar.
+    assert.equal(uno.meta.total, 4, 'deben contarse los cuatro recibos sembrados, no las tres fichas');
+    assert.equal(uno.meta.totalPages, 2);
+    assert.equal(uno.data.length, 2, 'la primera página debe traer los 2 recibos que pidió');
+    // Cada recibo viaja plano y con su hermano dentro: la pantalla pinta una fila por recibo.
+    assert.ok(uno.data.every((r) => typeof r.hermano?.nombre === 'string'), 'cada recibo debe decir de quién es');
 
     const segunda = await fetch(`${baseUrl}/api/recibos/mis-recibos?page=2&limit=2`, { headers: cabeceras });
     const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
 
     assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
-    assert.equal(dos.data.length, 1, 'la segunda página debe traer el miembro que faltaba');
-    // La segunda página trae miembros distintos: si el skip no se aplica, esto falla.
-    const idsPrimera = new Set(uno.data.map((h) => h.id));
-    assert.ok(dos.data.every((h) => !idsPrimera.has(h.id)));
+    assert.equal(dos.data.length, 2, 'la segunda página debe traer los 2 recibos que faltaban');
+    // La segunda página trae recibos distintos: si el skip no se aplica, esto falla.
+    const idsPrimera = new Set(uno.data.map((r) => r.id));
+    assert.ok(dos.data.every((r) => !idsPrimera.has(r.id)));
   } finally {
     await recogerFamiliaPrueba(fichas);
     await borrarUsuarioPrueba(usuario.id);
@@ -830,9 +866,10 @@ test('mis perfiles respetan la página y el tamaño pedidos', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
   const usuario = await crearUsuarioPrueba(Role.USER);
-  const fichas = await sembrarFamiliaPrueba(usuario.id);
+  let fichas: number[] = [];
 
   try {
+    fichas = await sembrarFamiliaPrueba(usuario.id);
     const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
 
     const primera = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=2`, { headers: cabeceras });
@@ -868,9 +905,10 @@ test('mis perfiles caben enteros en la página que pide el selector', async (t) 
   if (!dbDisponible) return t.skip(SIN_DB);
 
   const usuario = await crearUsuarioPrueba(Role.USER);
-  const fichas = await sembrarFamiliaPrueba(usuario.id);
+  let fichas: number[] = [];
 
   try {
+    fichas = await sembrarFamiliaPrueba(usuario.id);
     const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
     const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=50`, { headers: cabeceras });
     const cuerpo = await respuesta.json() as { data: { id: number }[]; meta: Record<string, number> };
@@ -888,9 +926,10 @@ test('mi histórico de papeletas respeta la página y el tamaño pedidos', async
   if (!dbDisponible) return t.skip(SIN_DB);
 
   const usuario = await crearUsuarioPrueba(Role.USER);
-  const fichas = await sembrarFamiliaPrueba(usuario.id);
+  let fichas: number[] = [];
 
   try {
+    fichas = await sembrarFamiliaPrueba(usuario.id);
     const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
 
     const primera = await fetch(`${baseUrl}/api/procesion/mis-papeletas?page=1&limit=2`, { headers: cabeceras });
