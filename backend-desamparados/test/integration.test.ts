@@ -89,16 +89,51 @@ test('las publicaciones públicas no requieren autenticación y vienen paginadas
   assert.deepEqual(Object.keys(cuerpo.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
 });
 
+// Que `meta` traiga las cuatro claves NO demuestra que la página y el tamaño se
+// hayan honrado. Si alguien quitara `...paginacionQuery` del esquema, `validate`
+// borraría page y limit en silencio: `meta` seguiría completa, `page` valdría 1
+// y todas las páginas servirían la primera. Esto es lo que lo detecta.
+test('las publicaciones públicas respetan la página y el tamaño pedidos', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const primera = await fetch(`${baseUrl}/api/publications?page=1&limit=1`);
+  assert.equal(primera.status, 200);
+  const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+  assert.equal(uno.meta.limit, 1, 'el tamaño pedido no llegó al servicio: ¿falta ...paginacionQuery en el esquema?');
+  assert.equal(uno.meta.page, 1);
+
+  // Con una sola publicación visible la página 2 estaría vacía y las
+  // comprobaciones de abajo pasarían sin comprobar nada: se omite con el motivo
+  // a la vista en vez de dar un verde vacío.
+  if (uno.meta.total < 2) {
+    return t.skip(`solo hay ${uno.meta.total} publicación(es) visible(s); hacen falta al menos 2 para comprobar dos páginas de tamaño 1`);
+  }
+
+  const segunda = await fetch(`${baseUrl}/api/publications?page=2&limit=1`);
+  const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
+
+  assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
+  assert.equal(uno.data.length, 1, 'con al menos 2 publicaciones, la primera página debe traer la que pidió');
+  assert.equal(dos.data.length, 1);
+  // La segunda página trae otra publicación: si el skip no se aplica, esto falla.
+  assert.notEqual(dos.data[0].id, uno.data[0].id);
+});
+
 // Boletines y Dossier de prensa se sirven por aquí: si esta ruta se quedara con
 // la forma antigua, esas dos pantallas se vaciarían sin dar ningún error.
 test('las publicaciones por categoría también vienen paginadas', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
-  const response = await fetch(`${baseUrl}/api/publications/category/boletin`);
+  const response = await fetch(`${baseUrl}/api/publications/category/boletin?page=2&limit=5`);
   assert.equal(response.status, 200);
   const cuerpo = await response.json() as { data: unknown[]; meta: Record<string, number> };
   assert.ok(Array.isArray(cuerpo.data));
   assert.deepEqual(Object.keys(cuerpo.meta).sort(), ['limit', 'page', 'total', 'totalPages']);
+  // Esta ruta valida con OTRO esquema (categoryParamSchema): si le faltara
+  // ...paginacionQuery, page y limit se perderían solo aquí y en ningún otro sitio.
+  assert.equal(cuerpo.meta.page, 2, 'la página pedida se perdió en categoryParamSchema');
+  assert.equal(cuerpo.meta.limit, 5, 'el tamaño pedido se perdió en categoryParamSchema');
 });
 
 // '/:id' exige sesión y captura cualquier segmento suelto. Declarada antes de
@@ -140,7 +175,10 @@ test('la publicación del CMS se lee por id, no buscándola en el listado', asyn
     const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
 
     const listado = await fetch(`${baseUrl}/api/publications/admin?limit=1`, { headers: cabeceras });
-    const { data } = await listado.json() as { data: { id: number }[] };
+    const { data, meta } = await listado.json() as { data: { id: number }[]; meta: { limit: number } };
+    // El ?limit=1 no está de adorno: si el esquema del listado perdiera page y
+    // limit, esto seguiría trayendo la página entera sin que nadie se enterara.
+    assert.equal(meta.limit, 1, 'el listado del CMS ignoró el tamaño pedido');
     if (data.length === 0) return t.skip('no hay publicaciones sembradas');
 
     const respuesta = await fetch(`${baseUrl}/api/publications/${data[0].id}`, { headers: cabeceras });
@@ -181,7 +219,10 @@ test('la noticia del CMS se lee por id, no buscándola en el listado', async (t)
     const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
 
     const listado = await fetch(`${baseUrl}/api/news/admin/archive?limit=1`, { headers: cabeceras });
-    const { data } = await listado.json() as { data: { id: number }[] };
+    const { data, meta } = await listado.json() as { data: { id: number }[]; meta: { limit: number } };
+    // Igual que en publicaciones: el ?limit=1 solo demuestra algo si se comprueba
+    // que llegó. Sin esto, el archivo podría servir siempre la página entera.
+    assert.equal(meta.limit, 1, 'el archivo del CMS ignoró el tamaño pedido');
     if (data.length === 0) return t.skip('no hay noticias sembradas');
 
     const respuesta = await fetch(`${baseUrl}/api/news/admin/${data[0].id}`, { headers: cabeceras });
