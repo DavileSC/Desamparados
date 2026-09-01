@@ -1,3 +1,28 @@
+// ============================================================================
+//  AVISO: ESTE SCRIPT NO ARRANCA. NO ES UNA RED DE SEGURIDAD.
+// ----------------------------------------------------------------------------
+//  Desde el paso a la sesión en cookie httpOnly (agosto de 2026) el login YA NO
+//  devuelve ningún token en el cuerpo, y la cabecera `Authorization: Bearer`
+//  que usa el helper `api()` de aquí abajo YA NO autentica: el servidor no la
+//  lee. Lo fijan dos tests de test/integration.test.ts («la cabecera
+//  Authorization ya no autentica» y su pareja del 401 sin cookie).
+//
+//  Resultado: el primer paso que necesita sesión falla y TODO lo que viene
+//  después recibe 401. Que el script imprima pasos y termine no demuestra nada.
+//  Ya se ha "corregido" a mano dos veces sin reparar en esto.
+//
+//  PARA REVIVIRLO hacen falta dos cosas, y ninguna es un retoque:
+//    1. Cambiar el helper de peticiones a un tarro de cookies: guardar la
+//       cookie de sesión de la respuesta del login (`set-cookie`) y reenviarla
+//       en la cabecera `Cookie` de cada petición siguiente.
+//    2. Apuntarlo a una BASE DE DATOS DESECHABLE. Escribe datos reales
+//       (usuarios, altas, ficheros) y hoy el 3001 de desarrollo sirve la base
+//       de datos que se está usando de verdad.
+//
+//  Mientras tanto: NO lo ejecutes y no lo cuentes como cobertura. Lo que sí
+//  cubre estos flujos es `npm test` (test/integration.test.ts).
+// ============================================================================
+
 // Test E2E del flujo 2FA: activacion (staff), login TOTP, backup codes, disable, restriccion USER
 import * as OTPAuth from 'otpauth';
 
