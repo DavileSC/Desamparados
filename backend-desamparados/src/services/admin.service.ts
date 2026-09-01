@@ -145,7 +145,13 @@ export class AdminService {
     const [data, total] = await db.$transaction([
       db.auditLog.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'asc' } // Desempate: una sola operación deja varios apuntes con el mismo
+                        // `createdAt` (aprobar una solicitud familiar, reordenar el censo),
+                        // y sin este criterio MariaDB los ordena a su antojo: un apunte
+                        // saldría en dos páginas y otro en ninguna.
+        ],
         skip: paginacion.skip,
         take: paginacion.take,
         include: {

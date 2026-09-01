@@ -62,7 +62,13 @@ export class TransaccionService {
     const paginacion = sanearPaginacion(query);
     const [data, total] = await db.$transaction([
       db.transaccion.findMany({
-        orderBy: { fecha: 'desc' },
+        orderBy: [
+          { fecha: 'desc' },
+          { id: 'asc' } // Desempate: los apuntes de un mismo día comparten `fecha` al
+                        // milisegundo (los de demostración se generan con inicioDelDia),
+                        // así que sin este criterio MariaDB los ordena a su antojo y con
+                        // skip/take uno saldría en dos páginas y otro en ninguna.
+        ],
         skip: paginacion.skip,
         take: paginacion.take,
         include: {

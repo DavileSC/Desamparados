@@ -22,7 +22,14 @@ export class ReciboService {
     const [data, total] = await db.$transaction([
       db.recibo.findMany({
         where,
-        orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [
+          { year: 'desc' },
+          { createdAt: 'desc' },
+          { id: 'asc' } // Desempate: los recibos emitidos de una tacada comparten `createdAt`
+                        // —MariaDB evalúa DEFAULT CURRENT_TIMESTAMP una vez por sentencia, así
+                        // que un createMany deja a todos con el mismo—, el orden degenera a
+                        // ordenar solo por año y uno saldría en dos páginas y otro en ninguna.
+        ],
         skip: paginacion.skip,
         take: paginacion.take,
         select: {

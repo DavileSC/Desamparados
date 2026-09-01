@@ -22,7 +22,12 @@ export class PublicationService {
     const [publicaciones, total] = await db.$transaction([
       db.publicacion.findMany({
         where,
-        orderBy: { fecha: 'desc' },
+        orderBy: [
+          { fecha: 'desc' },
+          { id: 'asc' } // Desempate: un boletín y sus anexos se suben con la misma `fecha`,
+                        // y sin este criterio MariaDB no garantiza el mismo orden entre la
+                        // página 1 y la 2: una publicación saldría dos veces y otra ninguna.
+        ],
         skip: paginacion.skip,
         take: paginacion.take,
       }),
@@ -36,7 +41,13 @@ export class PublicationService {
     const paginacion = sanearPaginacion(consulta);
 
     const [publicaciones, total] = await db.$transaction([
-      db.publicacion.findMany({ orderBy: { fecha: 'desc' }, skip: paginacion.skip, take: paginacion.take }),
+      db.publicacion.findMany({
+        // Mismo desempate que en getPublic: varias publicaciones comparten `fecha` y sin
+        // `id` MariaDB las ordenaría a su antojo, repitiendo una entre páginas y perdiendo otra.
+        orderBy: [{ fecha: 'desc' }, { id: 'asc' }],
+        skip: paginacion.skip,
+        take: paginacion.take
+      }),
       db.publicacion.count(),
     ]);
 

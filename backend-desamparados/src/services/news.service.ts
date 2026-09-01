@@ -68,7 +68,13 @@ export class NewsService {
     const [noticias, total] = await db.$transaction([
       db.noticia.findMany({
         where: whereCondition,
-        orderBy: { fecha: 'desc' },
+        orderBy: [
+          { fecha: 'desc' },
+          { id: 'asc' } // Desempate: dos noticias publicadas el mismo día comparten `fecha`
+                        // (los avisos de unos mismos cultos suelen subirse juntos), y sin este
+                        // criterio MariaDB no garantiza el mismo orden entre la página 1 y
+                        // la 2: una saldría dos veces y otra ninguna.
+        ],
         skip: paginacion.skip,
         take: paginacion.take,
       }),

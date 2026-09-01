@@ -956,3 +956,102 @@ test('mi histórico de papeletas respeta la página y el tamaño pedidos', async
     await borrarUsuarioPrueba(usuario.id);
   }
 });
+
+// ==========================================
+//  DESEMPATE EN EL LIBRO MAYOR
+// ==========================================
+/**
+ * Siembra apuntes con EXACTAMENTE la misma `fecha`, que es el caso real:
+ * `prisma/demo/generar.ts` construye la fecha de cada movimiento con
+ * `inicioDelDia(...)`, así que todos los de un mismo día la comparten al
+ * milisegundo. Con empates, `ORDER BY fecha DESC` + LIMIT/OFFSET no tiene un
+ * orden total y MariaDB puede devolver una fila en dos páginas y otra en
+ * ninguna: justo lo que la paginación venía a evitar.
+ *
+ * Son DOCE y no tres a propósito. Con dos o tres empatados MariaDB resuelve el
+ * `LIMIT` con una cola de prioridad diminuta y el orden coincide por casualidad
+ * entre las dos consultas: el test pasaría igual sin el desempate y no guardaría
+ * nada. A partir de una docena cambia de estrategia entre la página 1 y la 2 y
+ * el fallo aflora: sin `{ id: 'asc' }` en el orderBy, dos filas salen repetidas
+ * y otras dos no salen en ninguna página.
+ *
+ * La fecha va en el futuro a propósito, para que los doce queden en cabeza del
+ * orden descendente y caigan en las dos primeras páginas sea cual sea el
+ * volumen del libro. Son filas desechables: el `finally` las recoge.
+ *
+ * Si algo falla a mitad, recoge lo ya creado antes de relanzar: esto corre
+ * contra la base de datos de desarrollo y no puede dejar basura suelta.
+ */
+const FECHA_EMPATE = new Date(Date.UTC(2099, 11, 31, 12, 0, 0));
+const APUNTES_EMPATADOS = 12;
+
+async function sembrarApuntesEmpatados(): Promise<{ categoriaId: number; apuntes: number[] }> {
+  const categoria = await db.categoriaTransaccion.create({
+    data: { nombre: `Prueba desempate ${Date.now()}`, tipo: 'INGRESO' }
+  });
+  const apuntes: number[] = [];
+
+  try {
+    for (let i = 1; i <= APUNTES_EMPATADOS; i++) {
+      const apunte = await db.transaccion.create({
+        data: { tipo: 'INGRESO', categoriaId: categoria.id, concepto: `Empate ${i}`, importe: 10, fecha: FECHA_EMPATE }
+      });
+      apuntes.push(apunte.id);
+    }
+    return { categoriaId: categoria.id, apuntes };
+  } catch (e) {
+    await recogerApuntesEmpatados(categoria.id, apuntes);
+    throw e;
+  }
+}
+
+/** En orden inverso al de las claves ajenas: apuntes y después la categoría. */
+async function recogerApuntesEmpatados(categoriaId: number | null, apuntes: number[]) {
+  if (apuntes.length > 0) await db.transaccion.deleteMany({ where: { id: { in: apuntes } } });
+  if (categoriaId !== null) await db.categoriaTransaccion.deleteMany({ where: { id: categoriaId } });
+}
+
+test('el libro mayor no repite ni pierde apuntes con la misma fecha al pasar de página', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const tesorero = await crearUsuarioPrueba(Role.TESORERIA);
+  let categoriaId: number | null = null;
+  let apuntes: number[] = [];
+
+  try {
+    const sembrado = await sembrarApuntesEmpatados();
+    categoriaId = sembrado.categoriaId;
+    apuntes = sembrado.apuntes;
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(tesorero.id, Role.TESORERIA)}` };
+
+    // Tamaño 10, uno de los cinco que ofrece el selector: los doce empatados no
+    // caben en una página y el corte cae justo dentro del empate.
+    const primera = await fetch(`${baseUrl}/api/transacciones/libro-mayor?page=1&limit=10`, { headers: cabeceras });
+    assert.equal(primera.status, 200);
+    const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
+    assert.equal(uno.meta.limit, 10, 'el tamaño pedido no llegó al servicio');
+    assert.equal(uno.meta.page, 1);
+
+    const segunda = await fetch(`${baseUrl}/api/transacciones/libro-mayor?page=2&limit=10`, { headers: cabeceras });
+    assert.equal(segunda.status, 200);
+    const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
+    assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
+
+    // Ninguna fila puede salir en las dos páginas.
+    const idsPrimera = new Set(uno.data.map((m) => m.id));
+    const repetidos = dos.data.filter((m) => idsPrimera.has(m.id)).map((m) => m.id);
+    assert.deepEqual(repetidos, [], `estas filas salen en las dos páginas: ${repetidos.join(', ')}`);
+
+    // Y ninguno de los doce empatados puede desaparecer: son los más recientes
+    // del libro, así que las dos primeras páginas (veinte filas) los cubren.
+    const vistos = new Set([...uno.data, ...dos.data].map((m) => m.id));
+    const perdidos = apuntes.filter((id) => !vistos.has(id));
+    assert.deepEqual(
+      perdidos, [],
+      `estos apuntes empatados no salen en ninguna de las dos páginas: ${perdidos.join(', ')}. Falta el desempate por id en el orderBy del libro mayor.`
+    );
+  } finally {
+    await recogerApuntesEmpatados(categoriaId, apuntes);
+    await borrarUsuarioPrueba(tesorero.id);
+  }
+});

@@ -310,7 +310,13 @@ export class HermanoService {
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
         where, skip: paginacion.skip, take: paginacion.take,
-        orderBy: { apellidos: 'asc' },
+        orderBy: [
+          { apellidos: 'asc' },
+          { id: 'asc' } // Desempate: en un censo de familias los apellidos se repiten a
+                        // pares y a tríos, y sin este criterio MariaDB no garantiza el
+                        // mismo orden entre la página 1 y la 2: una ficha saldría dos
+                        // veces y otra ninguna.
+        ],
         include: { user: { select: { telefono: true, email: true } } }
       }),
       db.hermano.count({ where })
@@ -326,7 +332,13 @@ export class HermanoService {
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
         where: { activo: true },
-        orderBy: { numeroHermano: 'asc' }, // Ordenamos por número en lugar de apellidos
+        orderBy: [
+          { numeroHermano: 'asc' }, // Ordenamos por número en lugar de apellidos
+          { id: 'asc' } // Desempate: `numeroHermano` es @unique pero opcional, y en MariaDB
+                        // el índice único no impide varios NULL, así que las fichas activas
+                        // aún sin número quedarían en orden arbitrario entre la página 1 y
+                        // la 2: una saldría dos veces y otra ninguna.
+        ],
         skip: paginacion.skip,
         take: paginacion.take,
         include: {
@@ -481,7 +493,13 @@ export class HermanoService {
             select: HERMANO_SAFE_SELECT
           }
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: [
+          { createdAt: 'asc' },
+          { id: 'asc' } // Desempate: dos altas registradas en el mismo segundo —una familia
+                        // que se apunta seguida desde el mismo formulario, o una siembra que
+                        // las inserta de golpe— comparten `createdAt` y MariaDB las ordenaría
+                        // a su antojo: una saldría en dos páginas y otra en ninguna.
+        ],
         skip: paginacion.skip,
         take: paginacion.take
       }),
