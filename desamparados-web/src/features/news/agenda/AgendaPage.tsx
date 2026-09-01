@@ -1,5 +1,4 @@
 import { Helmet } from 'react-helmet-async'
-import { useEffect, useState } from 'react'
 import { Alert, Box, CircularProgress, Grid } from '@mui/material'
 import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
@@ -8,42 +7,17 @@ import EventCard from '../../../components/EventCard'
 import AnimatedSection from '../../../components/AnimatedSection'
 import Paginador from '../../../components/Paginador'
 import { getPublicEvents } from '../../../lib/api/events'
-import { usePaginacion } from '../../../hooks/usePaginacion'
-import type { MetaPaginacion } from '../../../lib/api/tipos'
-import type { EventItem } from '../../../types'
+import { useListadoPaginado, type Pagina } from '../../../hooks/useListadoPaginado'
+
+// Fuera del componente para que no cambie de identidad en cada render: el hook
+// la lleva en las dependencias de su efecto. El listado habla en `data`; la
+// agenda devuelve `eventos` porque el CMS necesita el evento crudo.
+const pedirAgenda = (pagina: Pagina) =>
+  getPublicEvents(pagina).then(({ eventos, meta }) => ({ data: eventos, meta }))
 
 export default function AgendaPage() {
-  const [events, setEvents] = useState<EventItem[]>([])
-  const [meta, setMeta] = useState<MetaPaginacion | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
-
-  useEffect(() => {
-    let cancelled = false
-
-    getPublicEvents({ pagina, porPagina })
-      .then((respuesta) => {
-        if (cancelled) return
-        setEvents(respuesta.eventos)
-        setMeta(respuesta.meta)
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [pagina, porPagina])
-
-  const alCambiarPagina = (numero: number) => {
-    irAPagina(numero)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  const { items: events, meta, loading, error, alCambiarPagina, cambiarTamano } =
+    useListadoPaginado(pedirAgenda, 'No se ha podido cargar la agenda.')
 
   return (
     <>

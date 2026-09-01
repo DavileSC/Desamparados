@@ -26,7 +26,8 @@ export default function AgendaAdminPage() {
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
   const load = useCallback(
-    () => getAdminEvents({ pagina, porPagina }).then((respuesta) => { setItems(respuesta.eventos); setMeta(respuesta.meta) }),
+    // Una carga buena borra el error de la anterior: si no, la alerta se queda puesta para siempre.
+    () => getAdminEvents({ pagina, porPagina }).then((respuesta) => { setItems(respuesta.eventos); setMeta(respuesta.meta); setError(null) }),
     [pagina, porPagina]
   )
 

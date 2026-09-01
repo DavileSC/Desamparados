@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import AgendaPage from '../AgendaPage'
 
@@ -37,5 +38,33 @@ describe('AgendaPage', () => {
     renderWithProviders(<AgendaPage />, { ruta: '/actualidad/agenda?pagina=2' })
 
     await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('page=2'))
+  })
+})
+
+describe('AgendaPage: el error de una página no se queda pegado', () => {
+  it('vuelve a pintar los eventos cuando la siguiente carga va bien', async () => {
+    // Con el efecto atado a [pagina, porPagina], un fallo pasajero al pasar de
+    // página dejaba `error` puesto para siempre: la rejilla está condicionada a
+    // !error, así que el visitante veía el paginador, una alerta y ni un solo
+    // evento hasta recargar a mano.
+    vi.stubGlobal('scrollTo', vi.fn()) // jsdom no implementa el scroll suave
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: RequestInfo | URL) =>
+      Promise.resolve(String(url).includes('page=2')
+        ? new Response(JSON.stringify({ message: 'La agenda no responde.' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+        : new Response(
+          JSON.stringify({ data: [evento], meta: { total: 45, page: 1, limit: 20, totalPages: 3 } }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ))))
+    const usuario = userEvent.setup()
+    renderWithProviders(<AgendaPage />)
+
+    expect(await screen.findByText(/besapiés/i)).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: /ir a la página 2/i }))
+    expect(await screen.findByText(/la agenda no responde/i)).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: /ir a la página 1/i }))
+    expect(await screen.findByText(/besapiés/i)).toBeInTheDocument()
+    expect(screen.queryByText(/la agenda no responde/i)).not.toBeInTheDocument()
   })
 })

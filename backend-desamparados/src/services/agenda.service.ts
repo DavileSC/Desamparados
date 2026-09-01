@@ -52,7 +52,11 @@ export class AgendaService {
     const [eventos, total] = await db.$transaction([
       db.evento.findMany({
         where: whereClause,
-        orderBy: { startDate: 'asc' },
+        // El desempate por id no es adorno: con dos eventos a la misma hora
+        // (una misa y un ensayo el mismo dia) MariaDB no garantiza el mismo
+        // orden entre la consulta de la pagina 1 y la de la 2, y con skip/take
+        // uno saldria repetido y otro no saldria nunca.
+        orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
         skip: paginacion.skip,
         take: paginacion.take,
         select: {
