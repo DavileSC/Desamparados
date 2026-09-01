@@ -32,12 +32,18 @@ export default function BrothersAdminPage() {
   const solicitudes = usePaginacion('Solicitudes')
   const [metaSolicitudes, setMetaSolicitudes] = useState<MetaPaginacion | null>(null)
 
-  const load = useCallback(() => Promise.all([
+  // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
+  // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
+  // orden inverso y dejar en pantalla los datos de una página con la URL
+  // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
+  // Las llamadas de después de aprobar o rechazar la omiten: no hay carrera.
+  const load = useCallback((vigente: () => boolean = () => true) => Promise.all([
     puedeGestionar
       ? getPendingRequests({ pagina: solicitudes.pagina, porPagina: solicitudes.porPagina })
       : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 } }),
     searchBrothers(query, { pagina, porPagina }),
   ]).then(([pendientes, censo]) => {
+    if (!vigente()) return
     setBrothers(censo.data)
     setMeta(censo.meta)
     setRequests(pendientes.data)
@@ -45,8 +51,13 @@ export default function BrothersAdminPage() {
   }), [puedeGestionar, query, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.')).finally(() => setLoading(false)), query ? 300 : 0)
-    return () => window.clearTimeout(timer)
+    // El temporizador ya cancelaba la carga que aún no había salido; `cancelado`
+    // se ocupa de la que salió y todavía no ha vuelto.
+    let cancelado = false
+    const timer = window.setTimeout(() => load(() => !cancelado)
+      .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.') })
+      .finally(() => { if (!cancelado) setLoading(false) }), query ? 300 : 0)
+    return () => { cancelado = true; window.clearTimeout(timer) }
   }, [load, query])
 
   const handleRequest = async (request: PendingRequest, approve: boolean) => {

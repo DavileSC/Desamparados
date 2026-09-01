@@ -29,12 +29,23 @@ export default function PublicationsAdminPage() {
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
+  // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
+  // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
+  // orden inverso y dejar en pantalla los datos de una página con la URL
+  // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
+  // Las llamadas de después de crear o borrar la omiten: no hay carrera.
   const load = useCallback(
-    () => getAdminPublications({ pagina, porPagina }).then((respuesta) => { setItems(respuesta.data); setMeta(respuesta.meta) }),
+    (vigente: () => boolean = () => true) => getAdminPublications({ pagina, porPagina }).then((respuesta) => { if (!vigente()) return; setItems(respuesta.data); setMeta(respuesta.meta) }),
     [pagina, porPagina]
   )
 
-  useEffect(() => { load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las publicaciones.')).finally(() => setLoading(false)) }, [load])
+  useEffect(() => {
+    let cancelado = false
+    load(() => !cancelado)
+      .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se han podido cargar las publicaciones.') })
+      .finally(() => { if (!cancelado) setLoading(false) })
+    return () => { cancelado = true }
+  }, [load])
   const updateField = (field: keyof PublicationPayload, value: string | boolean) => setForm((current) => ({ ...current, [field]: value }))
   const reset = () => setForm(emptyForm)
   const save = async () => { setSaving(true); setError(null); setNotice(null); try { await createPublication(form); await load(); reset(); setNotice('Publicación creada correctamente.') } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido guardar la publicación.') } finally { setSaving(false) } }

@@ -31,12 +31,23 @@ export default function InventoryAdminPage() {
   const [metaEnseres, setMetaEnseres] = useState<MetaPaginacion | null>(null)
   const [metaPrendas, setMetaPrendas] = useState<MetaPaginacion | null>(null)
 
-  const load = useCallback(() => Promise.all([
+  // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
+  // clics rápidos en cualquiera de los dos paginadores lanzan dos cargas que
+  // pueden resolverse en orden inverso y dejar en pantalla los datos de una
+  // página con la URL diciendo otra. Solo la última carga en marcha tiene
+  // derecho a escribir. Las llamadas de después de crear, borrar, asignar o
+  // devolver la omiten: no hay carrera.
+  const load = useCallback((vigente: () => boolean = () => true) => Promise.all([
     getEnseres({ pagina: enseres.pagina, porPagina: enseres.porPagina }),
     getPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }),
-  ]).then(([a, b]) => { setListaEnseres(a.data); setMetaEnseres(a.meta); setListaPrendas(b.data); setMetaPrendas(b.meta) }), [enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina])
+  ]).then(([a, b]) => { if (!vigente()) return; setListaEnseres(a.data); setMetaEnseres(a.meta); setListaPrendas(b.data); setMetaPrendas(b.meta) }), [enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina])
 
-  useEffect(() => { load().catch((e: unknown) => setError(e instanceof Error ? e.message : 'No se ha podido cargar el inventario.')) }, [load])
+  useEffect(() => {
+    let cancelado = false
+    load(() => !cancelado)
+      .catch((e: unknown) => { if (!cancelado) setError(e instanceof Error ? e.message : 'No se ha podido cargar el inventario.') })
+    return () => { cancelado = true }
+  }, [load])
   const reset = () => { setEnserForm(emptyEnser); setPrendaForm(emptyPrenda) }
   const saveEnser = async () => { try { const data = { ...enserForm, cantidadOptimo: Number(enserForm.cantidadOptimo), cantidadBueno: Number(enserForm.cantidadBueno), cantidadReparar: Number(enserForm.cantidadReparar) }; await createEnser(data); await load(); reset(); setNotice('Enser creado correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido guardar el enser.') } }
   const savePrenda = async () => { try { await createPrenda(prendaForm); await load(); reset(); setNotice('Prenda creada correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido guardar la prenda.') } }

@@ -22,8 +22,19 @@ export default function TreasuryAdminPage() {
   const { pagina, porPagina, irAPagina, cambiarTamano, reiniciar } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
-  const load = useCallback(() => getAdminReceipts(year, { pagina, porPagina }).then((response) => { setReceipts(response.data); setMeta(response.meta) }), [year, pagina, porPagina])
-  useEffect(() => { load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar los recibos.')).finally(() => setLoading(false)) }, [load])
+  // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
+  // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
+  // orden inverso y dejar en pantalla los datos de una página con la URL
+  // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
+  // Las llamadas de después de generar o cobrar la omiten: no hay carrera.
+  const load = useCallback((vigente: () => boolean = () => true) => getAdminReceipts(year, { pagina, porPagina }).then((response) => { if (!vigente()) return; setReceipts(response.data); setMeta(response.meta) }), [year, pagina, porPagina])
+  useEffect(() => {
+    let cancelado = false
+    load(() => !cancelado)
+      .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se han podido cargar los recibos.') })
+      .finally(() => { if (!cancelado) setLoading(false) })
+    return () => { cancelado = true }
+  }, [load])
 
   const generate = async () => {
     setWorking(true); setError(null); setNotice(null)

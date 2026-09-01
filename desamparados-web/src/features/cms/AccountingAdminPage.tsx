@@ -11,8 +11,18 @@ export default function AccountingAdminPage() {
   const [form, setForm] = useState({ tipo: 'INGRESO', categoriaId: '', concepto: '', importe: '' }); const [category, setCategory] = useState({ nombre: '', tipo: 'INGRESO' }); const [error, setError] = useState<string | null>(null); const [notice, setNotice] = useState<string | null>(null)
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
-  const load = useCallback(() => Promise.all([getBalance(), getLedger({ pagina, porPagina }), getCategories()]).then(([b, l, c]) => { setBalance(b); setLedger(l.data); setMeta(l.meta); setCategories(c) }), [pagina, porPagina])
-  useEffect(() => { load().catch((e: unknown) => setError(e instanceof Error ? e.message : 'No se ha podido cargar la contabilidad.')) }, [load])
+  // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
+  // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
+  // orden inverso y dejar en pantalla los datos de una página con la URL
+  // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
+  // Las llamadas de después de crear categoría o apunte la omiten: no hay carrera.
+  const load = useCallback((vigente: () => boolean = () => true) => Promise.all([getBalance(), getLedger({ pagina, porPagina }), getCategories()]).then(([b, l, c]) => { if (!vigente()) return; setBalance(b); setLedger(l.data); setMeta(l.meta); setCategories(c) }), [pagina, porPagina])
+  useEffect(() => {
+    let cancelado = false
+    load(() => !cancelado)
+      .catch((e: unknown) => { if (!cancelado) setError(e instanceof Error ? e.message : 'No se ha podido cargar la contabilidad.') })
+    return () => { cancelado = true }
+  }, [load])
   const saveCategory = async () => { try { await createCategory(category); await load(); setCategory({ ...category, nombre: '' }); setNotice('Categoría creada correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido crear la categoría.') } }
   const save = async () => { try { await createTransaction({ ...form, categoriaId: Number(form.categoriaId), importe: Number(form.importe) }); await load(); setForm({ ...form, concepto: '', importe: '' }); setNotice('Transacción registrada correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido registrar la transacción.') } }
   const available = categories.filter((item) => item.tipo === form.tipo)

@@ -25,14 +25,23 @@ export default function AgendaAdminPage() {
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
+  // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
+  // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
+  // orden inverso y dejar en pantalla los datos de una página con la URL
+  // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
+  // Las llamadas de después de crear o borrar la omiten: no hay carrera.
   const load = useCallback(
     // Una carga buena borra el error de la anterior: si no, la alerta se queda puesta para siempre.
-    () => getAdminEvents({ pagina, porPagina }).then((respuesta) => { setItems(respuesta.eventos); setMeta(respuesta.meta); setError(null) }),
+    (vigente: () => boolean = () => true) => getAdminEvents({ pagina, porPagina }).then((respuesta) => { if (!vigente()) return; setItems(respuesta.eventos); setMeta(respuesta.meta); setError(null) }),
     [pagina, porPagina]
   )
 
   useEffect(() => {
-    load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.')).finally(() => setLoading(false))
+    let cancelado = false
+    load(() => !cancelado)
+      .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.') })
+      .finally(() => { if (!cancelado) setLoading(false) })
+    return () => { cancelado = true }
   }, [load])
 
   const updateField = (field: keyof EventPayload, value: string) => setForm((current) => ({ ...current, [field]: value }))

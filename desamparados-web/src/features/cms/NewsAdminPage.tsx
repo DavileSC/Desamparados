@@ -24,13 +24,22 @@ export default function NewsAdminPage() {
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
+  // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
+  // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
+  // orden inverso y dejar en pantalla los datos de una página con la URL
+  // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
+  // Las llamadas de después de crear o borrar la omiten: no hay carrera.
   const load = useCallback(
-    () => getAdminNews({ pagina, porPagina }).then((response) => { setItems(response.data); setMeta(response.meta) }),
+    (vigente: () => boolean = () => true) => getAdminNews({ pagina, porPagina }).then((response) => { if (!vigente()) return; setItems(response.data); setMeta(response.meta) }),
     [pagina, porPagina]
   )
 
   useEffect(() => {
-    load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las noticias.')).finally(() => setLoading(false))
+    let cancelado = false
+    load(() => !cancelado)
+      .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se han podido cargar las noticias.') })
+      .finally(() => { if (!cancelado) setLoading(false) })
+    return () => { cancelado = true }
   }, [load])
 
   const updateField = (field: keyof NewsPayload, value: string | boolean) => setForm((current) => ({ ...current, [field]: value }))
