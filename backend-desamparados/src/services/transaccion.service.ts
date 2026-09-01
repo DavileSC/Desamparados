@@ -1,6 +1,7 @@
 import db from '../config/db.js';
 import { HttpError } from '../utils/error.handle';
 import { AuditMeta, AuditService, AUDIT_ACTIONS } from './audit.service.js';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 export class TransaccionService {
   
@@ -57,22 +58,21 @@ export class TransaccionService {
     return result;
   }
 
-  static async getAll(page: number = 1, limit: number = 20) {
-    const skip = (page - 1) * limit;
-    const [transacciones, total] = await db.$transaction([
+  static async getAll(query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
+    const [data, total] = await db.$transaction([
       db.transaccion.findMany({
         orderBy: { fecha: 'desc' },
-        skip,
-        take: limit,
+        skip: paginacion.skip,
+        take: paginacion.take,
         include: {
-           categoria: { select: { nombre: true } }, // Traemos el nombre para que el Frontend lo pinte
-           hermano: { select: { nombre: true, apellidos: true } }
-        }
+          categoria: { select: { nombre: true } }, // Traemos el nombre para que el Frontend lo pinte
+          hermano: { select: { nombre: true, apellidos: true } },
+        },
       }),
-      db.transaccion.count()
+      db.transaccion.count(),
     ]);
-
-    return { data: transacciones, meta: { total, page, lastPage: Math.ceil(total / limit) } };
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // 3. LA JOYA DE LA CORONA: EL BALANCE GENERAL

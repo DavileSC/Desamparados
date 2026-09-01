@@ -16,9 +16,8 @@ export class TransaccionController {
 
   static async getLibroMayor(req: Request, res: Response) {
     try {
-      const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 20;
-      const libro = await TransaccionService.getAll(page, limit);
+      // El saneamiento (defecto, tope) lo decide sanearPaginacion, no el controlador.
+      const libro = await TransaccionService.getAll(req.query);
       res.status(200).json(libro);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo el libro mayor');
