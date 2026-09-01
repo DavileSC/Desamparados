@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Alert, Box, Button, CircularProgress, Paper, Stack, Switch, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
@@ -7,6 +7,9 @@ import EditIcon from '@mui/icons-material/Edit'
 import { Link } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { createNews, deleteNews, getAdminNews, type ApiNews, type NewsPayload } from '../../lib/api/news'
+import { usePaginacion } from '../../hooks/usePaginacion'
+import Paginador from '../../components/Paginador'
+import type { MetaPaginacion } from '../../lib/api/tipos'
 
 const emptyForm: NewsPayload = { titulo: '', contenido: '', extracto: '', imagenUrl: '', visible: true }
 
@@ -18,12 +21,17 @@ export default function NewsAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [porBorrar, setPorBorrar] = useState<ApiNews | null>(null)
+  const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
+  const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
-  const load = () => getAdminNews().then((response) => setItems(response.data))
+  const load = useCallback(
+    () => getAdminNews({ pagina, porPagina }).then((response) => { setItems(response.data); setMeta(response.meta) }),
+    [pagina, porPagina]
+  )
 
   useEffect(() => {
     load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las noticias.')).finally(() => setLoading(false))
-  }, [])
+  }, [load])
 
   const updateField = (field: keyof NewsPayload, value: string | boolean) => setForm((current) => ({ ...current, [field]: value }))
 
@@ -70,5 +78,6 @@ export default function NewsAdminPage() {
     <Typography variant="h4" sx={{ mb: 2 }}>Archivo editorial</Typography>
     <DialogoConfirmacion abierto={porBorrar !== null} titulo="¿Eliminar la noticia?" mensaje={porBorrar ? porBorrar.titulo : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
     {loading ? <CircularProgress aria-label="Cargando noticias" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.titulo}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.fecha).toLocaleDateString('es-ES')} · {item.visible ? 'Publicada' : 'Borrador'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.titulo}`} component={Link} to={`/cms/noticias/${item.id}/editar`}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.titulo}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay noticias en el archivo.</Alert>}</Stack>}
+    {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="noticias" />}
   </>
 }

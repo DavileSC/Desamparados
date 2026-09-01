@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import sanitizeHtml from 'sanitize-html';
 import { CreateNewsDto, UpdateNewsDto, NewsFilterDto } from '../dtos/news.dto';
 import { HttpError } from '../utils/error.handle';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 export class NewsService {
 
@@ -33,9 +34,16 @@ export class NewsService {
     const noticia = await db.noticia.findUnique({ where: { slug } });
     if (!noticia || !noticia.visible) {
        // Nota: Podrías querer devolverla si es admin, pero eso se gestiona en el controller
-       return null; 
+       return null;
     }
     return noticia;
+  }
+
+  // Leer noticia individual por id, incluidos los borradores (CMS). Antes el
+  // cliente se traía el listado paginado y buscaba dentro con un .find(): una
+  // noticia fuera del recorte era imposible de editar.
+  static async getOneById(id: number) {
+    return await db.noticia.findUnique({ where: { id } });
   }
 
   // =================================================================
@@ -44,10 +52,7 @@ export class NewsService {
 
   // Archivo con Paginación + Búsqueda
   static async getArchive({ page, limit, search, includeDrafts = false }: NewsFilterDto) {
-    // Saneamos la paginación: page negativo -> 500, limit gigante -> volcado completo
-    const safePage = Number.isFinite(page) ? Math.max(Math.floor(page), 1) : 1;
-    const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(Math.floor(limit), 1), 50) : 10;
-    const skip = (safePage - 1) * safeLimit;
+    const paginacion = sanearPaginacion({ page, limit });
 
     // Construimos filtro dinámico
     const whereCondition: Prisma.NoticiaWhereInput = {
@@ -64,21 +69,13 @@ export class NewsService {
       db.noticia.findMany({
         where: whereCondition,
         orderBy: { fecha: 'desc' },
-        skip,
-        take: safeLimit,
+        skip: paginacion.skip,
+        take: paginacion.take,
       }),
       db.noticia.count({ where: whereCondition })
     ]);
 
-    return {
-      data: noticias,
-      meta: {
-        total,
-        page: safePage,
-        limit: safeLimit,
-        lastPage: Math.ceil(total / safeLimit)
-      }
-    };
+    return respuestaPaginada(noticias, total, paginacion);
   }
 
   // Crear Noticia

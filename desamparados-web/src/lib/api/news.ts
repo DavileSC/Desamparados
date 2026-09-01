@@ -1,5 +1,6 @@
 import type { NewsItem } from '../../types'
 import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface ApiNews {
   id: number
@@ -10,11 +11,6 @@ export interface ApiNews {
   imagenUrl: string | null
   fecha: string
   visible: boolean
-}
-
-export interface NewsArchiveResponse {
-  data: ApiNews[]
-  meta: { total: number; page: number; limit: number; lastPage: number }
 }
 
 function toNewsItem(news: ApiNews): NewsItem {
@@ -36,7 +32,7 @@ export async function getLatestNews(count?: number) {
 }
 
 export async function getNewsArchive() {
-  const response = await apiFetch<NewsArchiveResponse>('/news/archive')
+  const response = await apiFetch<RespuestaPaginada<ApiNews>>('/news/archive')
   return response.data.map(toNewsItem)
 }
 
@@ -45,8 +41,8 @@ export async function getNewsBySlug(slug: string) {
   return toNewsItem(news)
 }
 
-export function getAdminNews() {
-  return apiFetch<NewsArchiveResponse>('/news/admin/archive')
+export function getAdminNews(pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<ApiNews>>(`/news/admin/archive?${paramsPagina(pagina)}`)
 }
 
 export interface NewsPayload {
@@ -71,13 +67,6 @@ export function deleteNews(id: number) {
   return apiFetch<{ message: string }>(`/news/${id}`, { method: 'DELETE' })
 }
 
-/**
- * El servidor no tiene lectura por id en el CMS: la única vista que incluye los
- * borradores es el archivo completo, así que se busca ahí.
- */
-export async function getAdminNewsById(id: number) {
-  const response = await getAdminNews()
-  const news = response.data.find((item) => item.id === id)
-  if (!news) throw new Error('No se ha encontrado la noticia.')
-  return news
+export function getAdminNewsById(id: number) {
+  return apiFetch<ApiNews>(`/news/admin/${id}`)
 }

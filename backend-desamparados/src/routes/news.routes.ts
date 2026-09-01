@@ -32,6 +32,17 @@ newsRoutes.get(
   NewsController.getAdminArchive
 );
 
+// Misma razón que /admin/archive: debe ir antes de /:slug y lleva su propia
+// autenticación en línea, o "admin" se leería como slug y expondría los
+// borradores a cualquiera.
+newsRoutes.get(
+  '/admin/:id',
+  authenticateToken,
+  checkRole(rolesCMS),
+  validateId,
+  NewsController.getAdminOne
+);
+
 // Blindamos que el slug no tenga inyecciones
 newsRoutes.get('/:slug', validate(slugParamSchema), NewsController.getOne);       
 

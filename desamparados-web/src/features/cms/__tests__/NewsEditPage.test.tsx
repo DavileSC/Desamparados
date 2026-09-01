@@ -15,10 +15,12 @@ const noticia = {
 afterEach(() => { vi.unstubAllGlobals() })
 
 function montar(id = 7) {
-  // La lectura por id pasa por el archivo del CMS, que es la única vista del
-  // servidor que incluye los borradores.
+  // La lectura por id pide la noticia suelta al servidor (GET /news/admin/:id),
+  // ya no el archivo completo para buscar dentro con un .find().
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-    new Response(JSON.stringify({ data: [noticia], meta: { total: 1, page: 1, limit: 50, lastPage: 1 } }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    id === 7
+      ? new Response(JSON.stringify(noticia), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      : new Response(JSON.stringify({ error: 'Noticia no encontrada' }), { status: 404, headers: { 'Content-Type': 'application/json' } }),
   ))
   const router = createMemoryRouter(
     [

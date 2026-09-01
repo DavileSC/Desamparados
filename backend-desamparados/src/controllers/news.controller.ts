@@ -20,14 +20,13 @@ export class NewsController {
   }
 
   private static parseArchiveFilter(req: Request, includeDrafts: boolean): NewsFilterDto {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-
+    // El saneamiento de página y tamaño lo decide sanearPaginacion, no el
+    // controlador: se le pasan los valores crudos de la query.
     // Sanitización segura y limpia (si mandan un array, cogemos el primer elemento o nada)
     const searchRaw = req.query.search;
     const search = typeof searchRaw === 'string' ? searchRaw.slice(0, 100) : undefined;
 
-    return { page, limit, search, includeDrafts };
+    return { page: req.query.page, limit: req.query.limit, search, includeDrafts };
   }
 
   // Archivo PÚBLICO: solo noticias publicadas (visible:true)
@@ -47,6 +46,23 @@ export class NewsController {
       res.status(200).json(result);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo archivo de administración');
+    }
+  }
+
+  // Noticia individual del CMS por id (incluye borradores). Cierra un fallo
+  // latente: antes el cliente se traía el listado paginado y buscaba dentro
+  // con un .find(), así que una noticia fuera del recorte era imposible de
+  // editar.
+  static async getAdminOne(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      const noticia = await NewsService.getOneById(id);
+
+      if (!noticia) return handleHttp(res, null, 'Noticia no encontrada', 404);
+
+      res.status(200).json(noticia);
+    } catch (e) {
+      handleHttp(res, e, 'Error obteniendo noticia');
     }
   }
 

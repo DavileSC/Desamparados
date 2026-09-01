@@ -12,7 +12,7 @@ const noticia = {
 
 function responder(items: unknown[]) {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-    new Response(JSON.stringify({ data: items, meta: { total: items.length, page: 1, limit: 50, lastPage: 1 } }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    new Response(JSON.stringify({ data: items, meta: { total: items.length, page: 1, limit: 50, totalPages: 1 } }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
   ))
 }
 
@@ -48,5 +48,16 @@ describe('NewsAdminPage', () => {
     renderWithProviders(<NewsAdminPage />)
     const editar = await screen.findByRole('link', { name: /editar apertura/i })
     expect(editar).toHaveAttribute('href', '/cms/noticias/7/editar')
+  })
+
+  it('pide la página que dice la URL', async () => {
+    const fetchSimulado = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ data: [], meta: { total: 60, page: 2, limit: 20, totalPages: 3 } }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<NewsAdminPage />, { ruta: '/cms/noticias?pagina=2' })
+
+    await waitFor(() => expect(String(fetchSimulado.mock.calls.at(-1)?.[0])).toContain('page=2'))
   })
 })

@@ -21,8 +21,8 @@ export interface UpdateNewsDto {
 }
 
 export interface NewsFilterDto {
-  page: number;
-  limit: number;
+  page?: unknown;
+  limit?: unknown;
   search?: string; // Para buscar por título en el archivo
   includeDrafts?: boolean; // SOLO para el panel CMS: incluye noticias con visible:false
 }

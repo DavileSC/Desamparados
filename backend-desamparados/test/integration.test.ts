@@ -112,6 +112,37 @@ test('el archivo de noticias del CMS rechaza peticiones sin token', async () => 
   assert.equal(body.error, 'NO_TOKEN_PROVIDED');
 });
 
+// Antes, getAdminNewsById se traía el listado (recortado) y buscaba dentro
+// con un .find(): editar una noticia que no cabía en ese recorte era
+// imposible. Este test comprueba que la noticia se pide al servidor por id.
+test('la noticia del CMS se lee por id, no buscándola en el listado', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const admin = await crearUsuarioPrueba(Role.ADMIN);
+
+  try {
+    const token = generateToken(admin.id, Role.ADMIN);
+    const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
+
+    const listado = await fetch(`${baseUrl}/api/news/admin/archive?limit=1`, { headers: cabeceras });
+    const { data } = await listado.json() as { data: { id: number }[] };
+    if (data.length === 0) return t.skip('no hay noticias sembradas');
+
+    const respuesta = await fetch(`${baseUrl}/api/news/admin/${data[0].id}`, { headers: cabeceras });
+    assert.equal(respuesta.status, 200);
+    assert.equal((await respuesta.json() as { id: number }).id, data[0].id);
+  } finally {
+    await borrarUsuarioPrueba(admin.id);
+  }
+});
+
+// La ruta va antes de /:slug para que "admin" no se lea como slug, y ese
+// orden ya dejó los borradores al aire una vez.
+test('la noticia del CMS por id no se sirve sin sesión', async () => {
+  const respuesta = await fetch(`${baseUrl}/api/news/admin/1`);
+  assert.equal(respuesta.status, 401);
+});
+
 test('los documentos privados rechazan peticiones sin token', async () => {
   const response = await fetch(`${baseUrl}/api/upload/private/${'a'.repeat(32)}.pdf`);
   assert.equal(response.status, 401);
