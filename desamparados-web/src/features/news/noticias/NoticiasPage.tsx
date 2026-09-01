@@ -1,5 +1,4 @@
 import { Helmet } from 'react-helmet-async'
-import { useEffect, useState } from 'react'
 import { Alert, Box, CircularProgress, Grid } from '@mui/material'
 import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
@@ -7,44 +6,23 @@ import SectionTitle from '../../../components/SectionTitle'
 import NewsCard from '../../../components/NewsCard'
 import AnimatedSection from '../../../components/AnimatedSection'
 import Paginador from '../../../components/Paginador'
-import { usePaginacion } from '../../../hooks/usePaginacion'
 import { getNewsArchive } from '../../../lib/api/news'
-import type { MetaPaginacion } from '../../../lib/api/tipos'
-import type { NewsItem } from '../../../types'
+import { useListadoPaginado, type Pagina } from '../../../hooks/useListadoPaginado'
+
+// Fuera del componente para que no cambie de identidad en cada render: el hook
+// la lleva en las dependencias de su efecto. El listado habla en `data`; el
+// archivo de noticias devuelve `noticias` porque el CMS necesita la noticia cruda.
+const pedirNoticias = (pagina: Pagina) =>
+  getNewsArchive(pagina).then(({ noticias, meta }) => ({ data: noticias, meta }))
 
 export default function NoticiasPage() {
-  const [newsItems, setNewsItems] = useState<NewsItem[]>([])
-  const [meta, setMeta] = useState<MetaPaginacion | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
-
-  useEffect(() => {
-    let cancelled = false
-
-    getNewsArchive({ pagina, porPagina })
-      .then((resultado) => {
-        if (!cancelled) {
-          setNewsItems(resultado.noticias)
-          setMeta(resultado.meta)
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se han podido cargar las noticias.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [pagina, porPagina])
-
-  const alCambiarPagina = (numero: number) => {
-    irAPagina(numero)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  // Antes esta pantalla llevaba su propio bloque de carga, escrito antes de que
+  // el hook existiera, y con él el fallo que el hook arregló: el `setError` del
+  // .catch no se limpiaba nunca en el éxito, así que un tropiezo pasajero al
+  // pasar de página dejaba al visitante con el paginador, una alerta y ni una
+  // noticia hasta que recargara a mano.
+  const { items: newsItems, meta, loading, error, alCambiarPagina, cambiarTamano } =
+    useListadoPaginado(pedirNoticias, 'No se han podido cargar las noticias.')
 
   return (
     <>
