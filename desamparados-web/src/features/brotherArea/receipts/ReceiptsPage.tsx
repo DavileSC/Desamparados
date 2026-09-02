@@ -11,11 +11,12 @@ import {
   TableRow,
   Paper,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
-import { getMyReceipts, type ApiReceipt, type ReceiptStatus } from '../../../lib/api/receipts'
+import Paginador from '../../../components/Paginador'
+import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
+import { getMyReceipts, type MyReceipt, type ReceiptStatus } from '../../../lib/api/receipts'
 
 const statusConfig: Record<ReceiptStatus, { label: string; color: string }> = {
   PAGADO: { label: 'Pagado', color: 'success.main' },
@@ -26,41 +27,11 @@ const statusConfig: Record<ReceiptStatus, { label: string; color: string }> = {
   EXENTO: { label: 'Exento', color: 'text.secondary' },
 }
 
-interface DisplayReceipt extends ApiReceipt {
-  memberName: string
-}
-
 export default function ReceiptsPage() {
-  const [receipts, setReceipts] = useState<DisplayReceipt[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-
-    getMyReceipts()
-      .then((groups) => {
-        if (cancelled) return
-        setReceipts(
-          groups.flatMap((group) =>
-            group.recibos.map((receipt) => ({
-              ...receipt,
-              memberName: `${group.nombre} ${group.apellidos}`,
-            }))
-          )
-        )
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se han podido cargar tus recibos.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  // El servidor sirve los recibos de toda la familia ya planos, una fila por
+  // recibo y con el miembro al que pertenece dentro.
+  const { items: receipts, meta, loading, error, alCambiarPagina, cambiarTamano } =
+    useListadoPaginado<MyReceipt>(getMyReceipts, 'No se han podido cargar tus recibos.')
 
   return (
     <>
@@ -97,7 +68,7 @@ export default function ReceiptsPage() {
                   const status = statusConfig[receipt.estado]
                   return (
                     <TableRow key={receipt.id}>
-                      <TableCell>{receipt.memberName}</TableCell>
+                      <TableCell>{receipt.hermano.nombre} {receipt.hermano.apellidos}</TableCell>
                       <TableCell>{receipt.year}</TableCell>
                       <TableCell>{receipt.concepto}</TableCell>
                       <TableCell>
@@ -118,6 +89,8 @@ export default function ReceiptsPage() {
               </TableBody>
             </Table>
           </TableContainer>}
+
+          {meta && <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="mis recibos" />}
         </PageContainer>
       </AnimatedSection>
     </>

@@ -45,6 +45,17 @@ describe('AdminLayout', () => {
     expect(enlaces[1]).toHaveAccessibleName('Panel') // [0] es el logotipo
   })
 
+  it('la barra lateral se queda fija al bajar por la página', () => {
+    // En Tesorería la página mide veinte mil píxeles: si el menú se va con el
+    // scroll, se navega a ciegas.
+    entrarComo('ADMIN')
+    const { container } = renderWithProviders(<AdminLayout />)
+    const barra = container.querySelector('aside')!
+    const estilo = getComputedStyle(barra)
+    expect(estilo.position).toBe('sticky')
+    expect(estilo.height).toBe('100vh')
+  })
+
   it('dice quién ha entrado', () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<AdminLayout />)
@@ -69,6 +80,19 @@ describe('el menú del CMS y las guardas de ruta no divergen', () => {
       const rolesGuarda = rolesPorRutaCms[clave]
       expect(rolesGuarda, `${item.href} no tiene guarda declarada en rolesPorRutaCms`).toBeDefined()
       expect([...item.roles].sort()).toEqual([...rolesGuarda].sort())
+    }
+  })
+})
+
+/**
+ * Las pantallas de edición son rutas nuevas que no aparecen en el menú, así que
+ * el test de arriba no las mira. Si una se montara con una guarda distinta a la
+ * de su listado, quien no puede ver el listado podría editar desde la URL.
+ */
+describe('las pantallas de edición se guardan como su listado', () => {
+  it('cada sección con edición propia tiene su guarda declarada', () => {
+    for (const seccion of ['noticias', 'publicaciones', 'agenda', 'hermanos', 'inventario'] as const) {
+      expect(rolesPorRutaCms[seccion], `${seccion} no tiene guarda`).toBeDefined()
     }
   })
 })

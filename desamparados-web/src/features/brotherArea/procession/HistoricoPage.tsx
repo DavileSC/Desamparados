@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import {
   Alert,
   Box,
@@ -15,31 +14,13 @@ import {
 import { Helmet } from 'react-helmet-async'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
+import Paginador from '../../../components/Paginador'
+import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
 import { getMyProcessionTickets, type ApiProcessionTicket } from '../../../lib/api/procession'
 
 export default function HistoricoPage() {
-  const [tickets, setTickets] = useState<ApiProcessionTicket[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-
-    getMyProcessionTickets()
-      .then((data) => {
-        if (!cancelled) setTickets(data)
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar el histórico.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const { items: tickets, meta, loading, error, alCambiarPagina, cambiarTamano } =
+    useListadoPaginado<ApiProcessionTicket>(getMyProcessionTickets, 'No se ha podido cargar el histórico.')
 
   return (
     <>
@@ -101,6 +82,8 @@ export default function HistoricoPage() {
               </TableBody>
             </Table>
           </TableContainer>}
+
+          {meta && <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="mi histórico de papeletas" />}
         </PageContainer>
       </AnimatedSection>
     </>

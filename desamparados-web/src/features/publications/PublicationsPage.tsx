@@ -1,20 +1,16 @@
 import { Helmet } from 'react-helmet-async'
-import { Alert, CircularProgress, Grid } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { Alert, Box, CircularProgress, Grid } from '@mui/material'
 import PageContainer from '../../components/PageContainer'
 import PageHeader from '../../components/PageHeader'
 import SectionTitle from '../../components/SectionTitle'
 import PublicationCard from '../../components/PublicationCard'
 import AnimatedSection from '../../components/AnimatedSection'
-import { getPublications } from '../../lib/api/publications'
-import type { PublicationItem } from '../../types'
+import Paginador from '../../components/Paginador'
+import { usePublicacionesPaginadas } from './usePublicacionesPaginadas'
 
 export default function PublicationsPage() {
-  const [items, setItems] = useState<PublicationItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => { getPublications().then(setItems).catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las publicaciones.')).finally(() => setLoading(false)) }, [])
+  const { items, meta, loading, error, alCambiarPagina, cambiarTamano } =
+    usePublicacionesPaginadas(undefined, 'No se han podido cargar las publicaciones.')
 
   return (
     <>
@@ -40,6 +36,11 @@ export default function PublicationsPage() {
               </Grid>
             ))}
           </Grid>
+          {meta && (
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="publicaciones" />
+            </Box>
+          )}
         </PageContainer>
       </AnimatedSection>
     </>

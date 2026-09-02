@@ -13,11 +13,20 @@ import {
     updateProfileSchema, 
     updateAdminHermanoSchema,
     searchHermanoSchema,
-    emancipateSchema
+    emancipateSchema,
+    emancipateByStaffSchema
 } from '../schemas/hermano.schema';
 
-const rolesSecretaria = [Role.ADMIN, Role.SECRETARIA];
-const rolesLecturaCenso = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR];
+/**
+ * Quién gestiona el censo. El Hermano Mayor entra en todo lo de esta sección
+ * igual que secretaría: leer, buscar, editar la ficha, admitir altas, dar de
+ * baja, reactivar y emancipar. Lo único que tiene vedado es la administración
+ * del sistema, que vive en admin.routes.ts.
+ *
+ * Redes y los hermanos rasos se quedan fuera de todo esto, con test negativo
+ * en test/permisos-hermano-mayor.test.ts.
+ */
+const rolesGestionCenso = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR];
 
 const hermanoRouter = Router();
 
@@ -26,26 +35,27 @@ hermanoRouter.use(authenticateToken);
 const validateId = validate(type({ params: { id: idParam } }));
 
 // ==========================================
-// --- RUTAS ADMIN (SECRETARÍA) ---
+// --- RUTAS ADMIN (GESTIÓN DEL CENSO) ---
 // ==========================================
 
 // 1. Buscador Total 
-hermanoRouter.get('/admin/search', checkRole(rolesSecretaria), validate(searchHermanoSchema), HermanoController.search);
+hermanoRouter.get('/admin/search', checkRole(rolesGestionCenso), validate(searchHermanoSchema), HermanoController.search);
 
 // 2. Leer todo el censo (Paginado) y reordenar Censo (Debe ir antes de cualquier /admin/:id)
-hermanoRouter.get('/admin/all', checkRole(rolesLecturaCenso), HermanoController.getAll);
-hermanoRouter.post('/admin/reordenar-censo', checkRole(rolesSecretaria), HermanoController.reordenarCenso);
+hermanoRouter.get('/admin/all', checkRole(rolesGestionCenso), HermanoController.getAll);
+hermanoRouter.post('/admin/reordenar-censo', checkRole(rolesGestionCenso), HermanoController.reordenarCenso);
 
-// 3. Gestión de Solicitudes (Panel de Secretaría)
-hermanoRouter.get('/admin/solicitudes', checkRole(rolesSecretaria), HermanoController.getSolicitudes);
-hermanoRouter.post('/admin/solicitudes/:id/aprobar', checkRole(rolesSecretaria), validateId, HermanoController.aprobarSolicitud);
-hermanoRouter.delete('/admin/solicitudes/:id/rechazar', checkRole(rolesSecretaria), validateId, HermanoController.rechazarSolicitud);
+// 3. Gestión de Solicitudes
+hermanoRouter.get('/admin/solicitudes', checkRole(rolesGestionCenso), HermanoController.getSolicitudes);
+hermanoRouter.post('/admin/solicitudes/:id/aprobar', checkRole(rolesGestionCenso), validateId, HermanoController.aprobarSolicitud);
+hermanoRouter.delete('/admin/solicitudes/:id/rechazar', checkRole(rolesGestionCenso), validateId, HermanoController.rechazarSolicitud);
 
 // 4. Operaciones sobre un Hermano Específico
-hermanoRouter.get('/admin/:id', checkRole(rolesLecturaCenso), validateId, HermanoController.getById);
-hermanoRouter.put('/admin/:id', checkRole(rolesSecretaria), validateId, validate(updateAdminHermanoSchema), HermanoController.updateAdmin);
-hermanoRouter.delete('/admin/:id/baja', checkRole(rolesSecretaria), validateId, HermanoController.darDeBajaHermano);
-hermanoRouter.post('/admin/:id/reactivar', checkRole(rolesSecretaria), validateId, HermanoController.reactivarHermano);
+hermanoRouter.get('/admin/:id', checkRole(rolesGestionCenso), validateId, HermanoController.getById);
+hermanoRouter.put('/admin/:id', checkRole(rolesGestionCenso), validateId, validate(updateAdminHermanoSchema), HermanoController.updateAdmin);
+hermanoRouter.delete('/admin/:id/baja', checkRole(rolesGestionCenso), validateId, HermanoController.darDeBajaHermano);
+hermanoRouter.post('/admin/:id/reactivar', checkRole(rolesGestionCenso), validateId, HermanoController.reactivarHermano);
+hermanoRouter.post('/admin/:id/emancipar', checkRole(rolesGestionCenso), validateId, validate(emancipateByStaffSchema), HermanoController.emancipateByStaff);
 
 // ==========================================
 // --- RUTAS FAMILIARES (Usuario normal) ---

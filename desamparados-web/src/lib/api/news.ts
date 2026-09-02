@@ -1,5 +1,6 @@
 import type { NewsItem } from '../../types'
 import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface ApiNews {
   id: number
@@ -10,11 +11,6 @@ export interface ApiNews {
   imagenUrl: string | null
   fecha: string
   visible: boolean
-}
-
-export interface NewsArchiveResponse {
-  data: ApiNews[]
-  meta: { total: number; page: number; limit: number; lastPage: number }
 }
 
 function toNewsItem(news: ApiNews): NewsItem {
@@ -35,9 +31,9 @@ export async function getLatestNews(count?: number) {
   return news.slice(0, count).map(toNewsItem)
 }
 
-export async function getNewsArchive() {
-  const response = await apiFetch<NewsArchiveResponse>('/news/archive')
-  return response.data.map(toNewsItem)
+export async function getNewsArchive(pagina: { pagina: number; porPagina: number }) {
+  const respuesta = await apiFetch<RespuestaPaginada<ApiNews>>(`/news/archive?${paramsPagina(pagina)}`)
+  return { noticias: respuesta.data.map(toNewsItem), meta: respuesta.meta }
 }
 
 export async function getNewsBySlug(slug: string) {
@@ -45,8 +41,8 @@ export async function getNewsBySlug(slug: string) {
   return toNewsItem(news)
 }
 
-export function getAdminNews() {
-  return apiFetch<NewsArchiveResponse>('/news/admin/archive')
+export function getAdminNews(pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<ApiNews>>(`/news/admin/archive?${paramsPagina(pagina)}`)
 }
 
 export interface NewsPayload {
@@ -69,4 +65,8 @@ export function updateNews(id: number, payload: Partial<NewsPayload>) {
 
 export function deleteNews(id: number) {
   return apiFetch<{ message: string }>(`/news/${id}`, { method: 'DELETE' })
+}
+
+export function getAdminNewsById(id: number) {
+  return apiFetch<ApiNews>(`/news/admin/${id}`)
 }

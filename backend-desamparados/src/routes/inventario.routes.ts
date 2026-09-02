@@ -51,8 +51,13 @@ inventarioRoutes.delete('/enseres/:id', checkRole(rolesGestores), validateId, In
 // Rutas base: /inventario/prendas/...
 // ==========================================
 
-// LECTURA 
-inventarioRoutes.get('/prendas', validate(queryPrendaSchema), InventarioController.listPrendas);       
+// LECTURA
+inventarioRoutes.get('/prendas', validate(queryPrendaSchema), InventarioController.listPrendas);
+// Va DESPUÉS de '/prendas' y ANTES de las rutas de acción, igual que en el
+// bloque de enseres. ':id' se traga cualquier segmento suelto, así que
+// cualquier GET literal que se añada aquí ('/prendas/disponibles'...) tiene que
+// declararse por encima de esta línea o no llegará nunca a su controlador.
+inventarioRoutes.get('/prendas/:id', validateId, InventarioController.getOnePrenda);
 
 // GESTIÓN BÁSICA DE PRENDAS
 inventarioRoutes.post('/prendas', checkRole(rolesGestores), validate(createPrendaSchema), InventarioController.createPrenda);

@@ -7,6 +7,7 @@ import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 export class ProcesionService {
 
@@ -116,20 +117,31 @@ export class ProcesionService {
   /**
    * El hermano ve su historial de salidas (y las de sus hijos).
    */
-  static async getMisPapeletas(userId: number) {
-    return await db.papeletaSitio.findMany({
-      where: {
-        hermano: { userId: userId }
-      },
-      include: {
-        hermano: { select: { nombre: true, apellidos: true } },
-        recibo: { select: { estado: true, importe: true } }
-      },
-      orderBy: [
-        { year: 'desc' },
-        { hermano: { nombre: 'asc' } }
-      ]
-    });
+  static async getMisPapeletas(userId: number, query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
+    const where = { hermano: { userId } };
+
+    const [data, total] = await db.$transaction([
+      db.papeletaSitio.findMany({
+        where,
+        include: {
+          hermano: { select: { nombre: true, apellidos: true } },
+          recibo: { select: { estado: true, importe: true } }
+        },
+        orderBy: [
+          { year: 'desc' },
+          { hermano: { nombre: 'asc' } },
+          { id: 'asc' } // Desempate: dos papeletas del mismo año y del mismo hermano —una por
+                        // titular y otra por hijo homónimo— saldrían en orden arbitrario y una
+                        // podría aparecer en dos páginas y otra en ninguna.
+        ],
+        skip: paginacion.skip,
+        take: paginacion.take,
+      }),
+      db.papeletaSitio.count({ where })
+    ]);
+
+    return respuestaPaginada(data, total, paginacion);
   }
 
 

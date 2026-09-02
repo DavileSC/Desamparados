@@ -1,48 +1,67 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import EditIcon from '@mui/icons-material/Edit'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../members/auth/store'
-import { approveRequest, getPendingRequests, rejectRequest, searchBrothers, updateBrother, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
+import { approveRequest, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
+import { usePaginacion } from '../../hooks/usePaginacion'
+import Paginador from '../../components/Paginador'
+import type { MetaPaginacion } from '../../lib/api/tipos'
 
 export default function BrothersAdminPage() {
   const role = useAuthStore((state) => state.user?.role ?? 'USER')
-  const canEdit = role === 'ADMIN' || role === 'SECRETARIA'
+  // El Hermano Mayor gestiona el censo como secretaría: edita fichas y admite
+  // altas. Quien llega aquí sin ser ninguno de los tres es porque la guarda de
+  // ruta le deja mirar, no tocar.
+  const puedeGestionar = role === 'ADMIN' || role === 'SECRETARIA' || role === 'HERMANO_MAYOR'
+  const [params, setParams] = useSearchParams()
+  // La vista vive en la URL: así se puede volver a las solicitudes desde una
+  // ficha sin perder dónde se estaba.
+  const vista = params.get('vista') === 'solicitudes' ? 'solicitudes' : 'censo'
   const [query, setQuery] = useState('')
   const [brothers, setBrothers] = useState<AdminBrother[]>([])
   const [requests, setRequests] = useState<PendingRequest[]>([])
-  const [selected, setSelected] = useState<AdminBrother | null>(null)
-  const [form, setForm] = useState({ nombre: '', apellidos: '', email: '', telefono: '', numeroHermano: '' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // La consulta actual viaja con el enlace de editar (página, tamaño y filtros):
+  // así la pantalla de edición sabe a qué página del listado devolver.
+  const { search: consultaListado } = useLocation()
+  const { pagina, porPagina, irAPagina, cambiarTamano, reiniciar } = usePaginacion()
+  const [meta, setMeta] = useState<MetaPaginacion | null>(null)
+  // Segundo listado de la misma pantalla, con su propia paginación: el prefijo
+  // evita que ?pagina= y ?paginaSolicitudes= se pisen en la URL.
+  const solicitudes = usePaginacion('Solicitudes')
+  const [metaSolicitudes, setMetaSolicitudes] = useState<MetaPaginacion | null>(null)
 
-  const load = useCallback(() => Promise.all([searchBrothers(query, role), canEdit ? getPendingRequests() : Promise.resolve([] as PendingRequest[])])
-    .then(([census, pending]) => { setBrothers(census.data); setRequests(pending) }), [canEdit, query, role])
+  // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
+  // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
+  // orden inverso y dejar en pantalla los datos de una página con la URL
+  // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
+  // Las llamadas de después de aprobar o rechazar la omiten: no hay carrera.
+  const load = useCallback((vigente: () => boolean = () => true) => Promise.all([
+    puedeGestionar
+      ? getPendingRequests({ pagina: solicitudes.pagina, porPagina: solicitudes.porPagina })
+      : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 } }),
+    searchBrothers(query, { pagina, porPagina }),
+  ]).then(([pendientes, censo]) => {
+    if (!vigente()) return
+    setBrothers(censo.data)
+    setMeta(censo.meta)
+    setRequests(pendientes.data)
+    setMetaSolicitudes(pendientes.meta)
+  }), [puedeGestionar, query, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.')).finally(() => setLoading(false)), query ? 300 : 0)
-    return () => window.clearTimeout(timer)
+    // El temporizador ya cancelaba la carga que aún no había salido; `cancelado`
+    // se ocupa de la que salió y todavía no ha vuelto.
+    let cancelado = false
+    const timer = window.setTimeout(() => load(() => !cancelado)
+      .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.') })
+      .finally(() => { if (!cancelado) setLoading(false) }), query ? 300 : 0)
+    return () => { cancelado = true; window.clearTimeout(timer) }
   }, [load, query])
-
-  const edit = (brother: AdminBrother) => {
-    setSelected(brother)
-    setForm({ nombre: brother.nombre, apellidos: brother.apellidos, email: brother.email ?? brother.user?.email ?? '', telefono: brother.telefono ?? brother.user?.telefono ?? '', numeroHermano: brother.numeroHermano?.toString() ?? '' })
-  }
-
-  const save = async () => {
-    if (!selected) return
-    try {
-      await updateBrother(selected.id, {
-        nombre: form.nombre,
-        apellidos: form.apellidos,
-        ...(form.email ? { email: form.email } : {}),
-        ...(form.telefono ? { telefono: form.telefono } : {}),
-        ...(form.numeroHermano ? { numeroHermano: Number(form.numeroHermano) } : {}),
-      })
-      await load(); setSelected(null); setNotice('Ficha actualizada correctamente.')
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido actualizar la ficha.') }
-  }
 
   const handleRequest = async (request: PendingRequest, approve: boolean) => {
     try { await (approve ? approveRequest(request.id) : rejectRequest(request.id)); await load(); setNotice(approve ? 'Solicitud aprobada correctamente.' : 'Solicitud rechazada correctamente.') }
@@ -54,9 +73,19 @@ export default function BrothersAdminPage() {
     <Typography variant="h2" component="h1" sx={{ mb: 4 }}>Gestión de hermanos</Typography>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
-    {canEdit && requests.length > 0 && <Paper sx={{ p: 3, mb: 4 }}><Typography variant="h4" sx={{ mb: 2 }}>Solicitudes pendientes</Typography><Stack spacing={2}>{requests.map((request) => <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Box><Typography>{request.nombre} {request.apellidos}</Typography><Typography variant="body2" color="text.secondary">{request.email} · {request.hermanos.length} perfil(es)</Typography></Box><Stack direction="row" spacing={1}><Button variant="contained" onClick={() => handleRequest(request, true)}>Aprobar</Button><Button color="error" onClick={() => handleRequest(request, false)}>Rechazar</Button></Stack></Box>)}</Stack></Paper>}
-    <TextField label="Buscar por nombre, DNI o email" value={query} onChange={(event) => setQuery(event.target.value)} fullWidth sx={{ mb: 3 }} />
-    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : 'Pendiente/inactivo'}</Typography></Box>{canEdit && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} onClick={() => edit(brother)}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No se han encontrado hermanos.</Alert>}</Stack>}
-    {selected && <Paper sx={{ p: 3, mt: 4, maxWidth: 700 }}><Typography variant="h4" sx={{ mb: 2 }}>Editar ficha</Typography><Stack spacing={2}><TextField label="Nombre" value={form.nombre} onChange={(event) => setForm({ ...form, nombre: event.target.value })} /><TextField label="Apellidos" value={form.apellidos} onChange={(event) => setForm({ ...form, apellidos: event.target.value })} /><TextField label="Email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /><TextField label="Teléfono" value={form.telefono} onChange={(event) => setForm({ ...form, telefono: event.target.value })} /><TextField label="Número de hermano" type="number" value={form.numeroHermano} onChange={(event) => setForm({ ...form, numeroHermano: event.target.value })} /><Box><Button variant="contained" onClick={save}>Guardar</Button><Button onClick={() => setSelected(null)} sx={{ ml: 2 }}>Cancelar</Button></Box></Stack></Paper>}
+    <Tabs value={vista} onChange={(_, valor) => setParams(valor === 'solicitudes' ? { vista: 'solicitudes' } : {})} sx={{ mb: 3 }}>
+      <Tab value="censo" label="Censo" />
+      <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
+    </Tabs>
+    {vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
+      {requests.map((request) => <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Box><Typography>{request.nombre} {request.apellidos}</Typography><Typography variant="body2" color="text.secondary">{request.email} · {request.hermanos.length} perfil(es)</Typography></Box><Stack direction="row" spacing={1}><Button variant="contained" onClick={() => handleRequest(request, true)}>Aprobar</Button><Button color="error" onClick={() => handleRequest(request, false)}>Rechazar</Button></Stack></Box>)}
+      {requests.length === 0 && <Alert severity="info">No hay solicitudes pendientes.</Alert>}
+    </Stack>
+    {metaSolicitudes && <Paginador meta={metaSolicitudes} onPagina={solicitudes.irAPagina} onTamano={solicitudes.cambiarTamano} etiqueta="solicitudes de alta" />}
+    </Paper> : <>
+    <TextField label="Buscar por nombre, DNI o email" value={query} onChange={(event) => { setQuery(event.target.value); reiniciar() }} fullWidth sx={{ mb: 3 }} />
+    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : 'Pendiente/inactivo'}</Typography></Box>{puedeGestionar && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`} state={{ volver: consultaListado }}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No se han encontrado hermanos.</Alert>}</Stack>}
+    {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="censo de hermanos" />}
+    </>}
   </>
 }

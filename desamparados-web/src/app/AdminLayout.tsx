@@ -102,7 +102,22 @@ export default function AdminLayout() {
             {barra}
           </Drawer>
         ) : (
-          <Box component="aside" sx={{ width: 250, flexShrink: 0 }}>{barra}</Box>
+          <Box
+            component="aside"
+            sx={{
+              width: 250,
+              flexShrink: 0,
+              position: 'sticky',
+              top: 0,
+              // En un contenedor flex, sin esto el hijo se estira a toda la
+              // altura y `sticky` no llega a pegarse a nada.
+              alignSelf: 'flex-start',
+              height: '100vh',
+              overflowY: 'auto',
+            }}
+          >
+            {barra}
+          </Box>
         )}
 
         <Box component="main" sx={{ flexGrow: 1, minWidth: 0 }}>

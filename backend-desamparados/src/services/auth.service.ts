@@ -315,6 +315,25 @@ export class AuthService {
   }
 
   // 1. Solicitar el reseteo (Genera token y envía email)
+  /**
+   * Emite un enlace para poner contraseña y devuelve el token en crudo.
+   *
+   * Lo usan dos flujos con plazos distintos: el «he olvidado mi contraseña»
+   * (una hora, la persona está delante) y la emancipación desde secretaría
+   * (tres días, la persona se entera cuando abra el correo).
+   */
+  static async crearEnlaceDeContrasena(userId: number, validezHoras: number): Promise<string> {
+    const token = crypto.randomBytes(32).toString('hex');
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        resetPasswordToken: this.hashResetToken(token),
+        resetPasswordExpires: new Date(Date.now() + validezHoras * 3600000)
+      }
+    });
+    return token;
+  }
+
   static async requestPasswordReset(email: string) {
     const user = await db.user.findUnique({ where: { email } });
     
@@ -324,21 +343,8 @@ export class AuthService {
       return { message: 'Si el correo está registrado, recibirás un enlace de recuperación.' };
     }
 
-    // Generamos un token aleatorio de 32 bytes y lo pasamos a texto hexadecimal
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenHash = this.hashResetToken(resetToken);
-    
-    // Le damos 1 hora de validez desde este momento
-    const expireDate = new Date(Date.now() + 3600000);
-
-    // Lo guardamos en el usuario
-    await db.user.update({
-      where: { id: user.id },
-      data: {
-        resetPasswordToken: resetTokenHash,
-        resetPasswordExpires: expireDate
-      }
-    });
+    // Una hora de validez: la persona está delante de la pantalla.
+    const resetToken = await this.crearEnlaceDeContrasena(user.id, 1);
 
     // Enviamos el correo. OJO: se pasa el TOKEN en crudo; la URL completa la construye
     // EmailService (antes se construía aquí y el email la volvía a envolver: ?token=https://...?token=).

@@ -2,6 +2,7 @@ import db from '../config/db.js';
 import { Role } from '@prisma/client';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 export class AdminService {
 
@@ -133,21 +134,26 @@ export class AdminService {
   // =================================================================
   //  7. CONSULTA DEL REGISTRO DE AUDITORÍA (Solo ADMIN)
   // =================================================================
-  static async getAuditLogs(page: number = 1, limit: number = 50, action?: string, userId?: number) {
-    page = Math.max(page, 1);
-    limit = Math.min(Math.max(limit, 1), 200); // Tope duro
+  static async getAuditLogs(query: { page?: unknown; limit?: unknown; action?: string; userId?: number } = {}) {
+    const paginacion = sanearPaginacion(query);
 
     const where = {
-      ...(action ? { action } : {}),
-      ...(userId ? { userId } : {})
+      ...(query.action ? { action: query.action } : {}),
+      ...(query.userId ? { userId: query.userId } : {})
     };
 
     const [data, total] = await db.$transaction([
       db.auditLog.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'asc' } // Desempate: una sola operación deja varios apuntes con el mismo
+                        // `createdAt` (aprobar una solicitud familiar, reordenar el censo),
+                        // y sin este criterio MariaDB los ordena a su antojo: un apunte
+                        // saldría en dos páginas y otro en ninguna.
+        ],
+        skip: paginacion.skip,
+        take: paginacion.take,
         include: {
           user: { select: { id: true, email: true, nombre: true, apellidos: true, role: true } }
         }
@@ -155,7 +161,7 @@ export class AdminService {
       db.auditLog.count({ where })
     ]);
 
-    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    return respuestaPaginada(data, total, paginacion);
   }
 
 }

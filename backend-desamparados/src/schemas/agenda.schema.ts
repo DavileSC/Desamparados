@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { textoRequerido } from '../config/common.js'; 
+import { paginacionQuery, textoRequerido } from '../config/common.js';
 
 const tipoEventoSchema = type("'CULTO' | 'PROCESION' | 'FORMACION' | 'ENSAYO' | 'REUNION' | 'SOCIAL' | 'OTRO'");
 const visibilitySchema = type("'public' | 'members_only'");
@@ -28,8 +28,12 @@ export const updateAgendaSchema = type({
     }
 });
 
+// Sin `...paginacionQuery`, `validate` borra page y limit en silencio: la
+// agenda serviría siempre la primera página y la portada pediría su ?limit=4
+// sin que nadie lo escuchara.
 export const queryAgendaSchema = type({
     query: {
+        ...paginacionQuery,
         "from?": type("string").matching(/^\d{4}-\d{2}-\d{2}/),
         "to?": type("string").matching(/^\d{4}-\d{2}-\d{2}/),
         "type?": tipoEventoSchema

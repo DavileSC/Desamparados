@@ -7,8 +7,9 @@ export class AgendaController {
 
   static async list(req: Request, res: Response) {
     try {
-      const isHermano = !!req.user; 
-      // Los query params ya vienen limpios y tipados gracias a ArkType
+      const isHermano = !!req.user;
+      // Los query params ya vienen limpios y tipados gracias a ArkType. La
+      // página y el tamaño llegan crudos: quien los sanea es el servicio.
       const events = await AgendaService.getEvents(isHermano, req.query as any);
       res.status(200).json(events);
     } catch (e) {

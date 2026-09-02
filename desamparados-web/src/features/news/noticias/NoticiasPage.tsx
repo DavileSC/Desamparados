@@ -1,37 +1,32 @@
 import { Helmet } from 'react-helmet-async'
-import { useEffect, useState } from 'react'
-import { Alert, CircularProgress, Grid } from '@mui/material'
+import { useLocation } from 'react-router-dom'
+import { Alert, Box, CircularProgress, Grid } from '@mui/material'
 import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
 import SectionTitle from '../../../components/SectionTitle'
 import NewsCard from '../../../components/NewsCard'
 import AnimatedSection from '../../../components/AnimatedSection'
+import Paginador from '../../../components/Paginador'
 import { getNewsArchive } from '../../../lib/api/news'
-import type { NewsItem } from '../../../types'
+import { useListadoPaginado, type Pagina } from '../../../hooks/useListadoPaginado'
+
+// Fuera del componente para que no cambie de identidad en cada render: el hook
+// la lleva en las dependencias de su efecto. El listado habla en `data`; el
+// archivo de noticias devuelve `noticias` porque el CMS necesita la noticia cruda.
+const pedirNoticias = (pagina: Pagina) =>
+  getNewsArchive(pagina).then(({ noticias, meta }) => ({ data: noticias, meta }))
 
 export default function NoticiasPage() {
-  const [newsItems, setNewsItems] = useState<NewsItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-
-    getNewsArchive()
-      .then((data) => {
-        if (!cancelled) setNewsItems(data)
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se han podido cargar las noticias.')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  // Antes esta pantalla llevaba su propio bloque de carga, escrito antes de que
+  // el hook existiera, y con él el fallo que el hook arregló: el `setError` del
+  // .catch no se limpiaba nunca en el éxito, así que un tropiezo pasajero al
+  // pasar de página dejaba al visitante con el paginador, una alerta y ni una
+  // noticia hasta que recargara a mano.
+  const { items: newsItems, meta, loading, error, alCambiarPagina, cambiarTamano } =
+    useListadoPaginado(pedirNoticias, 'No se han podido cargar las noticias.')
+  // La página en la que está el visitante viaja con cada tarjeta: al volver
+  // desde la ficha de una noticia aterriza donde estaba, no en la primera.
+  const { search: consultaArchivo } = useLocation()
 
   return (
     <>
@@ -53,10 +48,15 @@ export default function NoticiasPage() {
           {!loading && !error && newsItems.length > 0 && <Grid container spacing={3}>
             {newsItems.map((news) => (
               <Grid key={news.id} size={{ xs: 12, md: 6, lg: 3 }}>
-                <NewsCard news={news} />
+                <NewsCard news={news} volver={consultaArchivo} />
               </Grid>
             ))}
           </Grid>}
+          {meta && (
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="noticias" />
+            </Box>
+          )}
         </PageContainer>
       </AnimatedSection>
     </>

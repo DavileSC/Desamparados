@@ -691,3 +691,66 @@ export function generarPrendas(hermanos: HermanoDemo[], momento: Date = new Date
 
   return prendas;
 }
+
+// =====================================================================
+//  SOLICITUDES DE ALTA PENDIENTES
+// =====================================================================
+
+export interface SolicitudDemo {
+  email: string;
+  dni: string;
+  nombre: string;
+  apellidos: string;
+  telefono: string;
+  /** Las fichas que entran con la solicitud: la del titular y, a veces, un menor. */
+  fichas: { nombre: string; apellidos: string; dni: string | null; fechaNacimiento: Date; esTitular: boolean }[];
+}
+
+/**
+ * Altas esperando aprobación. Son usuarios con la ficha inactiva y sin fecha de
+ * baja, que es exactamente lo que crea el alta pública de la web y lo que
+ * cuenta como solicitud pendiente. No son hermanos activos, así que no mueven
+ * ninguna cifra del panel.
+ */
+export function generarSolicitudes(anio: number): SolicitudDemo[] {
+  const azar = generadorAleatorio(SEMILLAS.hermanos + 7);
+  const solicitudes: SolicitudDemo[] = [];
+
+  for (let i = 0; i < 5; i++) {
+    // Fuera del rango del censo, que llega hasta 20000299.
+    const numero = 20000900 + i;
+    const nombre = NOMBRES_HOMBRE[entero(azar(), 0, NOMBRES_HOMBRE.length - 1)];
+    const apellidos = `${APELLIDOS[entero(azar(), 0, APELLIDOS.length - 1)]} ${APELLIDOS[entero(azar(), 0, APELLIDOS.length - 1)]}`;
+    // Las dos últimas vienen con un menor a cargo: es el caso del tutor.
+    const conMenor = i >= 3;
+
+    const fichas: SolicitudDemo['fichas'] = [{
+      nombre,
+      apellidos,
+      dni: `${numero}${letraDni(numero)}`,
+      fechaNacimiento: new Date(Date.UTC(anio - entero(azar(), 28, 55), entero(azar(), 0, 11), entero(azar(), 1, 28))),
+      esTitular: true,
+    }];
+
+    if (conMenor) {
+      fichas.push({
+        nombre: NOMBRES_MUJER[entero(azar(), 0, NOMBRES_MUJER.length - 1)],
+        apellidos,
+        dni: null,
+        fechaNacimiento: new Date(Date.UTC(anio - entero(azar(), 6, 15), entero(azar(), 0, 11), entero(azar(), 1, 28))),
+        esTitular: false,
+      });
+    }
+
+    solicitudes.push({
+      email: `solicitud.${i + 1}@ejemplo.invalido`,
+      dni: `${numero}${letraDni(numero)}`,
+      nombre,
+      apellidos,
+      telefono: `6${String(20000000 + entero(azar(), 0, 9999999)).slice(0, 8)}`,
+      fichas,
+    });
+  }
+
+  return solicitudes;
+}

@@ -10,13 +10,25 @@ export class PublicationController {
   }
 
   static async list(req: Request, res: Response) {
-    try { res.status(200).json(await PublicationService.getPublic(req.params.category as never)); }
+    // La página y el tamaño llegan crudos: quien los sanea es el servicio.
+    try { res.status(200).json(await PublicationService.getPublic(req.params.category as never, req.query)); }
     catch (e) { handleHttp(res, e, 'Error obteniendo publicaciones'); }
   }
 
-  static async adminList(_req: Request, res: Response) {
-    try { res.status(200).json(await PublicationService.getAdmin()); }
+  static async adminList(req: Request, res: Response) {
+    try { res.status(200).json(await PublicationService.getAdmin(req.query)); }
     catch (e) { handleHttp(res, e, 'Error obteniendo publicaciones'); }
+  }
+
+  // Publicación individual del CMS por id, borradores incluidos: por eso la ruta
+  // exige sesión y rol, a diferencia de los listados públicos.
+  static async getOne(req: Request, res: Response) {
+    try {
+      const publication = await PublicationService.getOne(Number(req.params.id));
+      if (!publication) return handleHttp(res, null, 'Publicación no encontrada', 404);
+      res.status(200).json(publication);
+    }
+    catch (e) { handleHttp(res, e, 'Error obteniendo la publicación'); }
   }
 
   static async create(req: Request, res: Response) {

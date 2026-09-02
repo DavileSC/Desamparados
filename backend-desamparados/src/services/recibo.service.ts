@@ -8,12 +8,12 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { puedeTransicionar } from '../domain/recibo-estados.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 export class ReciboService {
 
-  static async getAdminRecibos(page: number = 1, limit: number = 50, year?: number, estado?: EstadoPago) {
-    const safePage = Math.max(1, Math.floor(page));
-    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 200);
+  static async getAdminRecibos(query: { page?: unknown; limit?: unknown } = {}, year?: number, estado?: EstadoPago) {
+    const paginacion = sanearPaginacion(query);
     const where = {
       ...(year ? { year } : {}),
       ...(estado ? { estado } : {})
@@ -22,9 +22,16 @@ export class ReciboService {
     const [data, total] = await db.$transaction([
       db.recibo.findMany({
         where,
-        orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
-        skip: (safePage - 1) * safeLimit,
-        take: safeLimit,
+        orderBy: [
+          { year: 'desc' },
+          { createdAt: 'desc' },
+          { id: 'asc' } // Desempate: los recibos emitidos de una tacada comparten `createdAt`
+                        // —MariaDB evalúa DEFAULT CURRENT_TIMESTAMP una vez por sentencia, así
+                        // que un createMany deja a todos con el mismo—, el orden degenera a
+                        // ordenar solo por año y uno saldría en dos páginas y otro en ninguna.
+        ],
+        skip: paginacion.skip,
+        take: paginacion.take,
         select: {
           id: true, year: true, concepto: true, importe: true, fechaEmision: true,
           estado: true, fechaPago: true, metodoPago: true, observaciones: true,
@@ -34,7 +41,7 @@ export class ReciboService {
       db.recibo.count({ where })
     ]);
 
-    return { data, meta: { total, page: safePage, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) } };
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // =================================================================
@@ -99,33 +106,43 @@ export class ReciboService {
   }
 
   // =================================================================
-  //  2. CONSULTA FAMILIAR (PADRE/TUTOR) - AGRUPADA POR MIEMBRO
+  //  2. CONSULTA FAMILIAR (PADRE/TUTOR)
   // =================================================================
 
-  static async getRecibosByUsuarioFamilia(userId: number) {
-    // Le damos la vuelta: Buscamos a los miembros de la familia y anidamos sus recibos
-    return await db.hermano.findMany({
-      where: {
-        userId: userId,
-        activo: true
-      },
-      select: {
-        id: true,
-        nombre: true,
-        apellidos: true,
-        esTitular: true, // Te lo añado porque al frontend le vendrá genial para ponerle una estrellita o algo al gestor
-        recibos: {
-          orderBy: [
-            { year: 'desc' },
-            { estado: 'asc' }
-          ]
-        }
-      },
-      orderBy: [
-        { esTitular: 'desc' },    // Ponemos al padre/madre/gestor el primero de la lista
-        { fechaNacimiento: 'asc' } // Y a los hijos ordenados por edad
-      ]
-    });
+  /**
+   * Los recibos de toda la familia del usuario, en una sola lista plana.
+   *
+   * La unidad que se pagina es el RECIBO, que es lo que la pantalla enseña por
+   * filas: paginar por miembro dejaba el tamaño de página sin acotar nada —
+   * veinte miembros arrastran los cientos de recibos que tengan colgando— y
+   * hacía que el paginador dijese «3 resultados» encima de una tabla de treinta
+   * filas. Cada recibo trae de quién es para poder nombrarlo en su fila.
+   */
+  static async getRecibosByUsuarioFamilia(userId: number, query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
+    const where = { hermano: { userId, activo: true } };
+
+    const [data, total] = await db.$transaction([
+      db.recibo.findMany({
+        where,
+        include: {
+          // esTitular le vendrá genial al frontend para ponerle una estrellita o algo al gestor
+          hermano: { select: { nombre: true, apellidos: true, esTitular: true } }
+        },
+        orderBy: [
+          { year: 'desc' },   // Los dos criterios que antes ordenaban los recibos
+          { estado: 'asc' },  // dentro de cada miembro, ahora sobre la lista entera
+          { id: 'asc' }       // Desempate: dos recibos del mismo año y estado —la cuota y la
+                              // papeleta de dos hijos, por ejemplo— dejarían el orden a merced
+                              // de MariaDB y uno saldría en dos páginas y otro en ninguna.
+        ],
+        skip: paginacion.skip,
+        take: paginacion.take,
+      }),
+      db.recibo.count({ where })
+    ]);
+
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // =================================================================

@@ -1,4 +1,5 @@
 import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface ApiProfile {
   id: number
@@ -14,8 +15,19 @@ export interface ApiProfile {
   activo: boolean
 }
 
-export function getMyProfiles() {
-  return apiFetch<ApiProfile[]>('/hermanos/mis-perfiles')
+/**
+ * Las dos pantallas de perfil no listan fichas: eligen una —la primera— para
+ * mostrarla o editarla. Un selector paginado es mala interfaz, y con una página
+ * corta el hermano con varias fichas dejaría de poder llegar a alguna, así que
+ * piden la familia entera de una vez. Cincuenta es más de lo que ninguna
+ * familia tendrá y queda por debajo del tope del servidor, que son cien.
+ */
+export const FICHAS_POR_FAMILIA = 50
+
+export function getMyProfiles(
+  pagina: { pagina: number; porPagina: number } = { pagina: 1, porPagina: FICHAS_POR_FAMILIA },
+) {
+  return apiFetch<RespuestaPaginada<ApiProfile>>(`/hermanos/mis-perfiles?${paramsPagina(pagina)}`)
 }
 
 export interface UpdateProfilePayload {

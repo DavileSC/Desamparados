@@ -1,0 +1,42 @@
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
+import { renderWithProviders } from '../../../test/test-utils'
+import PublicationsPage from '../PublicationsPage'
+
+const anuario = {
+  id: 12, titulo: 'Anuario 2026', descripcion: 'Memoria del curso.', imagenUrl: null,
+  archivoUrl: '/storage/anuario-2026.pdf', fecha: '2026-01-15T00:00:00.000Z',
+  categoria: 'anuario', visible: true,
+}
+
+/**
+ * Una instancia de Response por llamada: `apiFetch` lee el cuerpo con
+ * `res.text()` y reutilizar la misma la dejaría consumida en la segunda.
+ */
+function responder(data: unknown[], meta: Record<string, number>) {
+  const simulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(
+    JSON.stringify({ data, meta }), { status: 200, headers: { 'Content-Type': 'application/json' } },
+  )))
+  vi.stubGlobal('fetch', simulado)
+  return simulado
+}
+
+afterEach(() => { vi.unstubAllGlobals() })
+
+describe('PublicationsPage', () => {
+  it('pinta las publicaciones que llegan en data y ofrece pasar de página', async () => {
+    const simulado = responder([anuario], { total: 45, page: 1, limit: 20, totalPages: 3 })
+    renderWithProviders(<PublicationsPage />)
+
+    expect(await screen.findByRole('heading', { name: 'Anuario 2026' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ir a la página 2/i })).toBeInTheDocument()
+    expect(String(simulado.mock.calls[0]?.[0])).toContain('/publications?')
+  })
+
+  it('pide la página que dice la URL', async () => {
+    const simulado = responder([], { total: 60, page: 2, limit: 20, totalPages: 3 })
+    renderWithProviders(<PublicationsPage />, { ruta: '/publicaciones?pagina=2' })
+
+    await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('page=2'))
+  })
+})

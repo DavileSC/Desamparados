@@ -1,5 +1,6 @@
 import type { EventItem } from '../../types'
 import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface ApiEvent {
   id: number
@@ -38,13 +39,34 @@ function toEventItem(event: ApiEvent): EventItem {
   }
 }
 
-export async function getPublicEvents(count?: number) {
-  const events = await apiFetch<ApiEvent[]>('/events')
-  return events.slice(0, count).map(toEventItem)
+function pedirPagina(pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<ApiEvent>>(`/events?${paramsPagina(pagina)}`)
 }
 
-export function getAdminEvents() {
-  return apiFetch<ApiEvent[]>('/events')
+/**
+ * Los próximos eventos de la portada y de actualidad: ni paginan ni lo quieren,
+ * solo piden los que caben. Recortar en el cliente traía la agenda entera para
+ * enseñar cuatro tarjetas, así que el recorte lo hace el servidor con `?limit=`.
+ */
+export async function getProximosEventos(cuantos: number): Promise<EventItem[]> {
+  const respuesta = await apiFetch<RespuestaPaginada<ApiEvent>>(`/events?limit=${cuantos}`)
+  return respuesta.data.map(toEventItem)
+}
+
+/** La agenda pública: tarjetas ya formateadas más el `meta` que pinta el paginador. */
+export async function getPublicEvents(pagina: { pagina: number; porPagina: number }) {
+  const respuesta = await pedirPagina(pagina)
+  return { eventos: respuesta.data.map(toEventItem), meta: respuesta.meta }
+}
+
+/**
+ * El CMS: mismo extremo, pero con la cookie de sesión también llegan los
+ * `members_only`, y la tabla necesita el evento crudo (id numérico, visibilidad
+ * y fechas sin formatear) para editar y borrar.
+ */
+export async function getAdminEvents(pagina: { pagina: number; porPagina: number }) {
+  const respuesta = await pedirPagina(pagina)
+  return { eventos: respuesta.data, meta: respuesta.meta }
 }
 
 export interface EventPayload {
@@ -67,4 +89,8 @@ export function updateEvent(id: number, payload: Partial<EventPayload>) {
 
 export function deleteEvent(id: number) {
   return apiFetch<{ message: string }>(`/events/${id}`, { method: 'DELETE' })
+}
+
+export function getEvent(id: number) {
+  return apiFetch<ApiEvent>(`/events/${id}`)
 }

@@ -1,3 +1,31 @@
+// ============================================================================
+//  AVISO: ESTE SCRIPT NO ARRANCA. NO ES UNA RED DE SEGURIDAD.
+// ----------------------------------------------------------------------------
+//  Desde el paso a la sesión en cookie httpOnly (agosto de 2026) el login YA NO
+//  devuelve ningún token en el cuerpo, y la cabecera `Authorization: Bearer`
+//  que usa el helper `api()` de aquí abajo YA NO autentica: el servidor no la
+//  lee. Lo fijan dos tests de test/integration.test.ts («la cabecera
+//  Authorization ya no autentica» y su pareja del 401 sin cookie).
+//
+//  Resultado: el primer paso que necesita sesión falla y TODO lo que viene
+//  después recibe 401. Que el script imprima pasos y termine no demuestra nada.
+//  Ya se ha "corregido" a mano dos veces sin reparar en esto.
+//
+//  Aquí falla ya el primer paso: `check('admin login OK', ... && r.json?.token)`
+//  da por bueno el login solo si viene un token en el cuerpo, y no viene.
+//
+//  PARA REVIVIRLO hacen falta dos cosas, y ninguna es un retoque:
+//    1. Cambiar el helper de peticiones a un tarro de cookies: guardar la
+//       cookie de sesión de la respuesta del login (`set-cookie`) y reenviarla
+//       en la cabecera `Cookie` de cada petición siguiente.
+//    2. Apuntarlo a una BASE DE DATOS DESECHABLE. Escribe datos reales
+//       (usuarios, altas, ficheros) y hoy el 3001 de desarrollo sirve la base
+//       de datos que se está usando de verdad.
+//
+//  Mientras tanto: NO lo ejecutes y no lo cuentes como cobertura. Lo que sí
+//  cubre estos flujos es `npm test` (test/integration.test.ts).
+// ============================================================================
+
 // Test E2E de los fixes de seguridad
 // Uso: node test_e2e_security.mjs 1   (fixes generales)
 //      node test_e2e_security.mjs 2   (flujo 2FA + lockout)  ← reinicia el servidor antes
@@ -109,7 +137,7 @@ if (PARTE === 1) {
 
   step('FIX (BAJO): Tope de paginacion');
   r = await api('GET', '/api/hermanos/admin/all?limit=999999', null, adminToken);
-  check('limit=999999 → tope 500 aplicado', r.status === 200 && r.json?.meta?.limit === 500);
+  check('limit=999999 → tope 100 aplicado', r.status === 200 && r.json?.meta?.limit === 100);
 
   step('FIX (BAJO): Whitelist de claves de configuracion');
   r = await api('POST', '/api/admin/config', { key: 'clave_maliciosa_arbitraria', value: '123' }, adminToken);
@@ -180,7 +208,7 @@ if (PARTE === 1) {
 
   // Aprobamos su solicitud (esto tambien audita SOLICITUD_APROBAR)
   r = await api('GET', '/api/hermanos/admin/solicitudes', null, adminToken);
-  const rosa = r.json?.find(u => u.email === 'rgpd@test.com');
+  const rosa = r.json?.data?.find(u => u.email === 'rgpd@test.com');
   r = await api('POST', `/api/hermanos/admin/solicitudes/${rosa.id}/aprobar`, null, adminToken);
   check('solicitud aprobada', r.status === 200);
 

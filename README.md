@@ -1,6 +1,6 @@
 # Desamparados
 
-Aplicacion web de la Hermandad de Nuestra Senora de los Desamparados.
+Aplicación web del Grupo Parroquial de Nuestra Señora de los Desamparados.
 
 ## Estructura
 
@@ -31,6 +31,16 @@ npm run dev
 ```
 
 En desarrollo, Vite utiliza `http://localhost:3001` como destino del backend.
+Se puede apuntar a otro con `VITE_DEV_BACKEND_URL`.
 
 Los secretos locales deben mantenerse en archivos `.env` y nunca subirse al
 repositorio.
+
+## Antes de tocar nada
+
+`docs/notas-del-proyecto.md` recoge las reglas y las trampas del proyecto que no
+se deducen leyendo el código: cómo se llama la corporación en los textos, qué
+variables exige el backend solo para arrancar, cómo comprobar de verdad que una
+ruta está protegida, y un par de trampas de los tests que ya han dado falsos
+verdes. El estado del trabajo, en cambio, está en los `docs/traspaso-*.md`, del
+más reciente hacia atrás.

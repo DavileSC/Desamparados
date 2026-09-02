@@ -1,5 +1,6 @@
 import type { PublicationItem } from '../../types'
 import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface ApiPublication {
   id: number
@@ -29,14 +30,17 @@ export async function getLatestPublications() {
   return publications.map(toPublicationItem)
 }
 
-export async function getPublications(category?: PublicationItem['category']) {
+export async function getPublications(
+  category: PublicationItem['category'] | undefined,
+  pagina: { pagina: number; porPagina: number },
+): Promise<RespuestaPaginada<PublicationItem>> {
   const path = category ? `/publications/category/${category}` : '/publications'
-  const publications = await apiFetch<ApiPublication[]>(path)
-  return publications.map(toPublicationItem)
+  const respuesta = await apiFetch<RespuestaPaginada<ApiPublication>>(`${path}?${paramsPagina(pagina)}`)
+  return { data: respuesta.data.map(toPublicationItem), meta: respuesta.meta }
 }
 
-export function getAdminPublications() {
-  return apiFetch<ApiPublication[]>('/publications/admin')
+export function getAdminPublications(pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<ApiPublication>>(`/publications/admin?${paramsPagina(pagina)}`)
 }
 
 export interface PublicationPayload {
@@ -59,4 +63,12 @@ export function updatePublication(id: number, payload: Partial<PublicationPayloa
 
 export function deletePublication(id: number) {
   return apiFetch<{ message: string }>(`/publications/${id}`, { method: 'DELETE' })
+}
+
+/**
+ * Como en noticias: se pide al servidor por id. Buscarla dentro del listado del
+ * CMS dejaba sin editar cualquier publicación fuera de la página cargada.
+ */
+export function getAdminPublicationById(id: number) {
+  return apiFetch<ApiPublication>(`/publications/${id}`)
 }

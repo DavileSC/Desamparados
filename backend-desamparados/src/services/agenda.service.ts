@@ -2,6 +2,7 @@ import db from '../config/db';
 import { Prisma, TipoEvento } from '@prisma/client';
 import { CreateEventDto, UpdateEventDto, EventFilterDto } from '../dtos/agenda.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 export class AgendaService {
 
@@ -9,7 +10,16 @@ export class AgendaService {
   //  1. LECTURA
   // =================================================================
 
-  static async getEvents(isHermano: boolean, filters: EventFilterDto) {
+  /**
+   * Devuelve `{ data, meta }`. La portada y actualidad siguen pidiendo solo los
+   * próximos con `?limit=4` y se quedan con `data`: no paginan, pero leen la
+   * misma forma.
+   *
+   * `page` y `limit` llegan crudos de la consulta; quien decide qué es válido
+   * (defecto y tope) es sanearPaginacion.
+   */
+  static async getEvents(isHermano: boolean, filters: EventFilterDto & { page?: unknown; limit?: unknown }) {
+    const paginacion = sanearPaginacion(filters);
     const whereClause: Prisma.EventoWhereInput = {};
 
     // A) Privacidad
@@ -39,20 +49,31 @@ export class AgendaService {
       whereClause.type = filters.type;
     }
 
-    return await db.evento.findMany({
-      where: whereClause,
-      orderBy: { startDate: 'asc' },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        location: true,
-        startDate: true,
-        endDate: true,
-        visibility: true,
-        type: true // <--- Devolvemos el tipo al frontend para que pinte el color
-      }
-    });
+    const [eventos, total] = await db.$transaction([
+      db.evento.findMany({
+        where: whereClause,
+        // El desempate por id no es adorno: con dos eventos a la misma hora
+        // (una misa y un ensayo el mismo dia) MariaDB no garantiza el mismo
+        // orden entre la consulta de la pagina 1 y la de la 2, y con skip/take
+        // uno saldria repetido y otro no saldria nunca.
+        orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+        skip: paginacion.skip,
+        take: paginacion.take,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          location: true,
+          startDate: true,
+          endDate: true,
+          visibility: true,
+          type: true // <--- Devolvemos el tipo al frontend para que pinte el color
+        }
+      }),
+      db.evento.count({ where: whereClause })
+    ]);
+
+    return respuestaPaginada(eventos, total, paginacion);
   }
 
   static async getEventById(id: number, isHermano: boolean) {

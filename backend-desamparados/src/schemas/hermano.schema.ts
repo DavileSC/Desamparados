@@ -56,7 +56,11 @@ export const updateAdminHermanoSchema = type({
     body: baseUpdateBody.and(datosProcesionSchema).and(type({
         "activo?": "boolean",
         "esTitular?": "boolean",
-        "numeroHermano?": "number" // Opcional, por si manejan antigüedad
+        "numeroHermano?": "number", // Opcional, por si manejan antigüedad
+        // Secretaría regulariza fichas antiguas: estas dos fechas son las que
+        // más se corrigen a mano. La baja admite null para revertirla.
+        "fechaAlta?": type("string").matching(/^\d{4}-\d{2}-\d{2}$/),
+        "fechaBaja?": type("string").matching(/^\d{4}-\d{2}-\d{2}$/).or("null")
     }))
 });
 
@@ -78,6 +82,15 @@ export const emancipateSchema = type({
     body: {
         newEmail: email,
         newPassword: password,
+        "newDni?": dni
+    }
+});
+
+// 6. Emancipación desde secretaría: sin contraseña, va un enlace al hermano.
+// Quien está en el mostrador no elige la contraseña de otra persona.
+export const emancipateByStaffSchema = type({
+    body: {
+        newEmail: email,
         "newDni?": dni
     }
 });

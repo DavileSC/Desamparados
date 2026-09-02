@@ -16,9 +16,11 @@ export default function PapeletaPage() {
   useEffect(() => {
     let cancelled = false
 
-    getMyProcessionTickets()
-      .then((data) => {
-        if (!cancelled) setTickets(data)
+    // La papeleta vigente es la más reciente y el servidor ordena por año
+    // descendente: con la primera página basta, no hace falta el histórico entero.
+    getMyProcessionTickets({ pagina: 1, porPagina: 10 })
+      .then((respuesta) => {
+        if (!cancelled) setTickets(respuesta.data)
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar tu papeleta.')

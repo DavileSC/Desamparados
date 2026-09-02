@@ -4,6 +4,11 @@ import { Prisma, Role } from '@prisma/client';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto, UpdateAdminHermanoDto } from '../dtos/hermano.dto';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { comprobarFechasHermano } from '../domain/fechas-hermano';
+import crypto from 'crypto';
+import { AuthService } from './auth.service';
+import { EmailService } from './email.service';
+import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
 // 1. DICCIONARIO DE ERRORES (Centralizado)
 const HERMANO_ERRORS = {
@@ -43,7 +48,8 @@ const USER_EDITABLE_FIELDS = [
 const ADMIN_EDITABLE_FIELDS = [
   ...USER_EDITABLE_FIELDS,
   'tieneTunicaPropia', 'tunica', 'alturaHombro', 'puesto',
-  'activo', 'esTitular', 'numeroHermano'
+  'activo', 'esTitular', 'numeroHermano',
+  'fechaAlta', 'fechaBaja'
 ] as const;
 
 type EditableField = typeof ADMIN_EDITABLE_FIELDS[number];
@@ -65,16 +71,30 @@ export class HermanoService {
   //  ZONA GESTIÓN FAMILIAR
   // =================================================================
 
-  static async getProfilesByUserId(userId: number) {
+  static async getProfilesByUserId(userId: number, query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
     // Incluimos también las fichas pendientes de aprobación (activo:false sin fecha de baja)
     // para que el usuario vea que su familiar está "en trámite".
-    return await db.hermano.findMany({
-      where: { userId, fechaBaja: null },
-      orderBy: { fechaNacimiento: 'desc' },
-      include: {
-        recibos: { take: 1, orderBy: { year: 'desc' }, select: { year: true, estado: true } }
-      }
-    });
+    const where = { userId, fechaBaja: null };
+
+    const [data, total] = await db.$transaction([
+      db.hermano.findMany({
+        where,
+        orderBy: [
+          { fechaNacimiento: 'desc' },
+          { id: 'asc' } // Desempate: con dos mellizos el orden quedaría a merced de MariaDB y
+                        // una ficha podría salir en dos páginas y otra en ninguna.
+        ],
+        include: {
+          recibos: { take: 1, orderBy: { year: 'desc' }, select: { year: true, estado: true } }
+        },
+        skip: paginacion.skip,
+        take: paginacion.take,
+      }),
+      db.hermano.count({ where })
+    ]);
+
+    return respuestaPaginada(data, total, paginacion);
   }
 
   static async createDependentProfile(managerUserId: number, data: CreateHermanoDto) {
@@ -157,6 +177,7 @@ export class HermanoService {
   //  ZONA EMANCIPACIÓN
   // =================================================================
 
+  /** El tutor emancipa a su dependiente y elige la contraseña. */
   static async emancipateProfile(hermanoId: number, managerUserId: number, dto: EmancipateHermanoDto, meta?: AuditMeta) {
     const hermano = await db.hermano.findFirst({
       where: { id: hermanoId, userId: managerUserId },
@@ -164,13 +185,48 @@ export class HermanoService {
     });
     if (!hermano) throw new HttpError(HERMANO_ERRORS.NOT_AUTHORIZED, 403);
 
+    return await this.emanciparFicha(hermano, dto.newEmail, dto.newDni, await encrypt(dto.newPassword), false, meta);
+  }
+
+  /**
+   * Secretaría emancipa: la contraseña no la elige nadie, va un enlace al
+   * hermano. Quien está en el mostrador no puede saber la contraseña de otro.
+   */
+  static async emancipateByStaff(hermanoId: number, dto: { newEmail: string; newDni?: string }, meta?: AuditMeta) {
+    const hermano = await db.hermano.findUnique({
+      where: { id: hermanoId },
+      include: { user: { select: { role: true } } }
+    });
+    if (!hermano) throw new NotFoundError('Hermano no encontrado.');
+
+    // Una contraseña aleatoria que nadie conoce: la cuenta se abre con el enlace.
+    const inutilizable = await encrypt(crypto.randomBytes(32).toString('hex'));
+    return await this.emanciparFicha(hermano, dto.newEmail, dto.newDni, inutilizable, true, meta);
+  }
+
+  /**
+   * Tronco común de la emancipación: las reglas y la transacción son las mismas
+   * venga de donde venga. Lo único que cambia entre los dos caminos es cómo
+   * nace la contraseña de la cuenta nueva.
+   */
+  private static async emanciparFicha(
+    hermano: { id: number; userId: number; nombre: string; apellidos: string | null; telefono: string | null; direccion: string | null; dni: string | null; activo: boolean; user: { role: Role } },
+    newEmail: string,
+    newDni: string | undefined,
+    hashedPassword: string,
+    mandarEnlace: boolean,
+    meta?: AuditMeta
+  ) {
+    const hermanoId = hermano.id;
+    const managerUserId = hermano.userId;
+
     // Una ficha pendiente de aprobación no puede convertirse en una cuenta activa
     if (!hermano.activo) throw new HttpError(HERMANO_ERRORS.PENDING_PROFILE);
 
-    const dniFinal = hermano.dni || dto.newDni;
+    const dniFinal = hermano.dni || newDni;
     if (!dniFinal) throw new HttpError(HERMANO_ERRORS.DNI_REQUIRED_EMANCIPATION);
 
-    const emailExists = await db.user.findUnique({ where: { email: dto.newEmail } });
+    const emailExists = await db.user.findUnique({ where: { email: newEmail } });
     if (emailExists) throw new HttpError(HERMANO_ERRORS.EMAIL_IN_USE, 409);
 
     // El DNI también es único en User: si ya pertenece a otra cuenta (ej. el propio tutor),
@@ -178,12 +234,10 @@ export class HermanoService {
     const dniExists = await db.user.findFirst({ where: { dni: dniFinal } });
     if (dniExists) throw new HttpError('Ese DNI ya pertenece a otra cuenta de usuario.', 409);
 
-    const hashedPassword = await encrypt(dto.newPassword);
-
-    return await db.$transaction(async (tx) => {
+    const resultado = await db.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
-          email: dto.newEmail,
+          email: newEmail,
           password: hashedPassword,
           role: Role.USER,
           dni: dniFinal,
@@ -197,7 +251,7 @@ export class HermanoService {
 
       await tx.hermano.update({
         where: { id: hermanoId },
-        data: { userId: newUser.id, esTitular: true, email: dto.newEmail, dni: dniFinal }
+        data: { userId: newUser.id, esTitular: true, email: newEmail, dni: dniFinal }
       });
 
       // --- Control del Gestor Fantasma ---
@@ -218,6 +272,16 @@ export class HermanoService {
       // Devolvemos solo datos seguros (nunca el hash de la contraseña)
       return { id: newUser.id, email: newUser.email, nombre: newUser.nombre };
     });
+
+    if (mandarEnlace) {
+      // Fuera de la transacción y con catch, como en requestPasswordReset: que
+      // falle el correo no puede deshacer una emancipación ya escrita.
+      const token = await AuthService.crearEnlaceDeContrasena(resultado.id, 72);
+      EmailService.enviarRecuperacionContrasena(resultado.email, resultado.nombre, token)
+        .catch(err => console.error('Error enviando el enlace de emancipación:', err));
+    }
+
+    return resultado;
   }
 
   // =================================================================
@@ -225,10 +289,7 @@ export class HermanoService {
   // =================================================================
 
   static async searchHermanos(query: SearchHermanoQuery) {
-    const pageNum = Math.max(parseInt(query.page || "1"), 1);
-    // Tope duro: evita que un cliente pida limit=999999 y sature la BD
-    const limitNum = Math.min(Math.max(parseInt(query.limit || "20"), 1), 500);
-    const skip = (pageNum - 1) * limitNum;
+    const paginacion = sanearPaginacion(query);
 
     const where: Prisma.HermanoWhereInput = {};
 
@@ -248,31 +309,38 @@ export class HermanoService {
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
-        where, skip, take: limitNum,
-        orderBy: { apellidos: 'asc' },
+        where, skip: paginacion.skip, take: paginacion.take,
+        orderBy: [
+          { apellidos: 'asc' },
+          { id: 'asc' } // Desempate: en un censo de familias los apellidos se repiten a
+                        // pares y a tríos, y sin este criterio MariaDB no garantiza el
+                        // mismo orden entre la página 1 y la 2: una ficha saldría dos
+                        // veces y otra ninguna.
+        ],
         include: { user: { select: { telefono: true, email: true } } }
       }),
       db.hermano.count({ where })
     ]);
 
-    return {
-      data,
-      meta: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
-    };
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // Ver todos los hermanos
-  static async getAllHermanos(page: number = 1, limit: number = 500) {
-    page = Number.isFinite(page) ? Math.max(page, 1) : 1;
-    limit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 500) : 500; // Tope duro de seguridad
-    const skip = (page - 1) * limit;
+  static async getAllHermanos(query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
         where: { activo: true },
-        orderBy: { numeroHermano: 'asc' }, // Ordenamos por número en lugar de apellidos
-        skip,
-        take: limit,
+        orderBy: [
+          { numeroHermano: 'asc' }, // Ordenamos por número en lugar de apellidos
+          { id: 'asc' } // Desempate: `numeroHermano` es @unique pero opcional, y en MariaDB
+                        // el índice único no impide varios NULL, así que las fichas activas
+                        // aún sin número quedarían en orden arbitrario entre la página 1 y
+                        // la 2: una saldría dos veces y otra ninguna.
+        ],
+        skip: paginacion.skip,
+        take: paginacion.take,
         include: {
           user: { select: { nombre: true, apellidos: true, telefono: true } }
         }
@@ -280,10 +348,7 @@ export class HermanoService {
       db.hermano.count({ where: { activo: true } })
     ]);
 
-    return {
-      data,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
-    };
+    return respuestaPaginada(data, total, paginacion);
   }
 
   // Ver un hermano por ID
@@ -315,9 +380,16 @@ export class HermanoService {
 
   static async updateAdminMode(id: number, data: UpdateAdminHermanoDto) {
     const dataToUpdate = this.prepareUpdateData(data, ADMIN_EDITABLE_FIELDS);
+
+    // La baja se compara con el alta que vaya a quedar en la ficha, no solo con
+    // la que venga en el cuerpo: cambiar únicamente la baja es lo habitual.
+    const alta = (dataToUpdate.fechaAlta as Date | undefined)
+      ?? (await db.hermano.findUnique({ where: { id }, select: { fechaAlta: true } }))?.fechaAlta;
+    const forzado = comprobarFechasHermano(alta, dataToUpdate.fechaBaja as Date | null | undefined);
+
     return await db.hermano.update({
       where: { id },
-      data: dataToUpdate
+      data: { ...dataToUpdate, ...forzado }
     });
   }
 
@@ -401,24 +473,40 @@ export class HermanoService {
    * SEGURIDAD: `select` explícito. Antes se devolvía el objeto User completo con el hash
    * de contraseña, el secreto 2FA, el token de reset y el IBAN de las fichas.
    */
-  static async getSolicitudesPendientes() {
-    return await db.user.findMany({
-      where: {
-        role: Role.USER,
-        hermanos: {
-          some: { activo: false, fechaBaja: null }
-        }
-      },
-      select: {
-        id: true, email: true, dni: true, nombre: true, apellidos: true, telefono: true,
-        direccion: true, poblacion: true, codigoPostal: true, active: true, createdAt: true,
-        hermanos: {
-          where: { activo: false, fechaBaja: null },
-          select: HERMANO_SAFE_SELECT
-        }
-      },
-      orderBy: { createdAt: 'asc' }
-    });
+  static async getSolicitudesPendientes(query: { page?: unknown; limit?: unknown } = {}) {
+    const paginacion = sanearPaginacion(query);
+    const where: Prisma.UserWhereInput = {
+      role: Role.USER,
+      hermanos: {
+        some: { activo: false, fechaBaja: null }
+      }
+    };
+
+    const [data, total] = await db.$transaction([
+      db.user.findMany({
+        where,
+        select: {
+          id: true, email: true, dni: true, nombre: true, apellidos: true, telefono: true,
+          direccion: true, poblacion: true, codigoPostal: true, active: true, createdAt: true,
+          hermanos: {
+            where: { activo: false, fechaBaja: null },
+            select: HERMANO_SAFE_SELECT
+          }
+        },
+        orderBy: [
+          { createdAt: 'asc' },
+          { id: 'asc' } // Desempate: dos altas registradas en el mismo segundo —una familia
+                        // que se apunta seguida desde el mismo formulario, o una siembra que
+                        // las inserta de golpe— comparten `createdAt` y MariaDB las ordenaría
+                        // a su antojo: una saldría en dos páginas y otra en ninguna.
+        ],
+        skip: paginacion.skip,
+        take: paginacion.take
+      }),
+      db.user.count({ where })
+    ]);
+
+    return respuestaPaginada(data, total, paginacion);
   }
 
   static async aprobarSolicitud(userId: number, meta?: AuditMeta) {
@@ -545,10 +633,12 @@ export class HermanoService {
       cleanedData[field] = value;
     }
 
-    if (typeof cleanedData.fechaNacimiento === 'string') {
-      const fecha = new Date(cleanedData.fechaNacimiento);
-      if (Number.isNaN(fecha.getTime())) throw new HttpError('Fecha de nacimiento inválida.');
-      cleanedData.fechaNacimiento = fecha;
+    for (const campo of ['fechaNacimiento', 'fechaAlta', 'fechaBaja'] as const) {
+      const valor = cleanedData[campo];
+      if (typeof valor !== 'string') continue;
+      const fecha = new Date(valor);
+      if (Number.isNaN(fecha.getTime())) throw new HttpError(`Fecha inválida en ${campo}.`);
+      cleanedData[campo] = fecha;
     }
 
     return cleanedData as Prisma.HermanoUpdateInput;

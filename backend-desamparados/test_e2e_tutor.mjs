@@ -1,3 +1,28 @@
+// ============================================================================
+//  AVISO: ESTE SCRIPT NO ARRANCA. NO ES UNA RED DE SEGURIDAD.
+// ----------------------------------------------------------------------------
+//  Desde el paso a la sesión en cookie httpOnly (agosto de 2026) el login YA NO
+//  devuelve ningún token en el cuerpo, y la cabecera `Authorization: Bearer`
+//  que usa el helper `api()` de aquí abajo YA NO autentica: el servidor no la
+//  lee. Lo fijan dos tests de test/integration.test.ts («la cabecera
+//  Authorization ya no autentica» y su pareja del 401 sin cookie).
+//
+//  Resultado: el primer paso que necesita sesión falla y TODO lo que viene
+//  después recibe 401. Que el script imprima pasos y termine no demuestra nada.
+//  Ya se ha "corregido" a mano dos veces sin reparar en esto.
+//
+//  PARA REVIVIRLO hacen falta dos cosas, y ninguna es un retoque:
+//    1. Cambiar el helper de peticiones a un tarro de cookies: guardar la
+//       cookie de sesión de la respuesta del login (`set-cookie`) y reenviarla
+//       en la cabecera `Cookie` de cada petición siguiente.
+//    2. Apuntarlo a una BASE DE DATOS DESECHABLE. Escribe datos reales
+//       (usuarios, altas, ficheros) y hoy el 3001 de desarrollo sirve la base
+//       de datos que se está usando de verdad.
+//
+//  Mientras tanto: NO lo ejecutes y no lo cuentes como cobertura. Lo que sí
+//  cubre estos flujos es `npm test` (test/integration.test.ts).
+// ============================================================================
+
 // Test E2E del flujo Tutor/Menor/Emancipación
 const BASE = 'http://127.0.0.1:3001';
 
@@ -47,7 +72,7 @@ const adminToken = r.json?.token;
 // ============ 4. VER SOLICITUDES PENDIENTES ============
 step(4, 'GET /admin/solicitudes (lista de pendientes)');
 r = await api('GET', '/api/hermanos/admin/solicitudes', null, adminToken);
-const maria = r.json?.find(u => u.email === 'maria@test.com');
+const maria = r.json?.data?.find(u => u.email === 'maria@test.com');
 console.log('HTTP', r.status, '| Maria pendiente:', maria ? `id=${maria.id}, hijos=${maria.hermanos.length}` : 'NO ENCONTRADA');
 
 // ============ 5. APROBAR SOLICITUD ============
@@ -64,8 +89,9 @@ const tutorToken = r.json?.token;
 // ============ 7. VER MIS PERFILES ============
 step(7, 'GET /mis-perfiles (Maria ve a Pablito)');
 r = await api('GET', '/api/hermanos/mis-perfiles', null, tutorToken);
-console.log('HTTP', r.status, '| perfiles:', r.json?.map(h => `id=${h.id} ${h.nombre} (titular:${h.esTitular}, activo:${h.activo})`));
-const pablitoId = r.json?.[0]?.id;
+// /mis-perfiles pagina desde la Tarea 15: la lista viaja en `data`, no suelta.
+console.log('HTTP', r.status, '| perfiles:', r.json?.data?.map(h => `id=${h.id} ${h.nombre} (titular:${h.esTitular}, activo:${h.activo})`));
+const pablitoId = r.json?.data?.[0]?.id;
 
 // ============ 8. AÑADIR SEGUNDO HIJO (sin DNI, menor) ============
 step(8, 'POST /mis-perfiles (Maria añade a Nilita, SIN DNI)');
@@ -90,12 +116,12 @@ const pablitoToken = r.json?.token;
 // ============ 11. PABLITO VE SOLO SU FICHA ============
 step(11, 'GET /mis-perfiles (Pablito solo debe verse a si mismo)');
 r = await api('GET', '/api/hermanos/mis-perfiles', null, pablitoToken);
-console.log('HTTP', r.status, '| perfiles:', r.json?.map(h => `id=${h.id} ${h.nombre} (titular:${h.esTitular})`));
+console.log('HTTP', r.status, '| perfiles:', r.json?.data?.map(h => `id=${h.id} ${h.nombre} (titular:${h.esTitular})`));
 
 // ============ 12. MARIA YA NO VE A PABLITO ============
 step(12, 'GET /mis-perfiles (Maria ya solo debe ver a Nilita)');
 r = await api('GET', '/api/hermanos/mis-perfiles', null, tutorToken);
-console.log('HTTP', r.status, '| perfiles:', r.json?.map(h => `id=${h.id} ${h.nombre}`));
+console.log('HTTP', r.status, '| perfiles:', r.json?.data?.map(h => `id=${h.id} ${h.nombre}`));
 
 // ============ 13. IDOR: Maria intenta editar la ficha de Pablito ============
 step(13, `PUT /mis-perfiles/${pablitoId} (Maria intenta tocar la ficha de Pablito → debe dar 403)`);

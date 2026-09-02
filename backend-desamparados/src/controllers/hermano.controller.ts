@@ -12,7 +12,7 @@ export class HermanoController {
   static async getMyProfiles(req: Request, res: Response) {
     try {
       const userId = req.user!.id; 
-      const perfiles = await HermanoService.getProfilesByUserId(userId);
+      const perfiles = await HermanoService.getProfilesByUserId(userId, req.query);
       res.status(200).json(perfiles);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo los perfiles familiares');
@@ -81,6 +81,19 @@ export class HermanoController {
     }
   }
 
+  /** Secretaría emancipa a un hermano: al hermano le llega un enlace. */
+  static async emancipateByStaff(req: Request, res: Response) {
+    try {
+      const hermanoId = Number(req.params.id);
+      if (isNaN(hermanoId)) return handleHttp(res, null, 'ID inválido', 400);
+
+      const result = await HermanoService.emancipateByStaff(hermanoId, req.body, AuditService.metaFromReq(req));
+      res.status(200).json(result);
+    } catch (e) {
+      handleHttp(res, e, 'Error en el proceso de emancipación');
+    }
+  }
+
   // ========================================================
   // --- RUTAS ADMIN (Secretaría) ---
   // ========================================================
@@ -96,10 +109,8 @@ export class HermanoController {
 
   static async getAll(req: Request, res: Response) {
     try {
-      const page = req.query.page ? parseInt(req.query.page as string) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 500;
-
-      const hermanos = await HermanoService.getAllHermanos(page, limit);
+      // El saneamiento (defecto, tope) lo decide sanearPaginacion, no el controlador.
+      const hermanos = await HermanoService.getAllHermanos(req.query);
       res.status(200).json(hermanos);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo el censo de la cofradía');
@@ -141,9 +152,11 @@ export class HermanoController {
     }
   }
 
-  static async getSolicitudes(_req: Request, res: Response) {
+  static async getSolicitudes(req: Request, res: Response) {
     try {
-      const solicitudes = await HermanoService.getSolicitudesPendientes();
+      // La ruta no pasa por `validate`: sanearPaginacion() ya defiende los
+      // parámetros crudos de req.query (defecto y tope incluidos).
+      const solicitudes = await HermanoService.getSolicitudesPendientes(req.query);
       res.status(200).json(solicitudes);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo las solicitudes pendientes');

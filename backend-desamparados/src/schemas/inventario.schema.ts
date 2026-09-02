@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { textoRequerido } from '../config/common';
+import { paginacionQuery, textoRequerido } from '../config/common';
 
 // =================================================================
 //  ENUMS COMUNES
@@ -49,8 +49,11 @@ export const updateEnserSchema = type({
     }
 });
 
+// Sin `...paginacionQuery`, `validate` borra page y limit en silencio y el
+// listado sirve siempre la primera página. Cubierto por test/integration.test.ts.
 export const queryEnserSchema = type({
     query: {
+        ...paginacionQuery,
         "search?": "string",
         "ubicacion?": "string",
         "categoria?": "string",
@@ -82,8 +85,11 @@ export const updatePrendaSchema = type({
     }
 });
 
+// Mismo motivo que en los enseres: el ropero pagina por su cuenta y necesita
+// declarar page y limit para que lleguen al servicio.
 export const queryPrendaSchema = type({
     query: {
+        ...paginacionQuery,
         "numero?": "string",
         "tipo?": tipoPrendaSchema,
         "estado?": estadoPrendaSchema,

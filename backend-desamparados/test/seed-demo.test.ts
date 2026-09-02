@@ -14,6 +14,7 @@ import {
   generarPrendas,
   generarRecibos,
   generarReparto,
+  generarSolicitudes,
   generarTransacciones,
 } from '../prisma/demo/generar.js';
 import { CATEGORIAS, PRENDAS } from '../prisma/seed-contenido.js';
@@ -402,5 +403,50 @@ describe('la guarda de la siembra de demostración', () => {
     conEntorno({ NODE_ENV: 'development', SEED_DEMO: undefined }, () => {
       assert.equal(demostracionDesactivada(), null);
     });
+  });
+});
+
+describe('solicitudes de alta de demostración', () => {
+  const solicitudes = generarSolicitudes(ANIO);
+
+  test('hay unas cuantas esperando', () => {
+    assert.ok(solicitudes.length >= 4 && solicitudes.length <= 6, `son ${solicitudes.length}`);
+  });
+
+  test('es determinista', () => {
+    assert.deepEqual(generarSolicitudes(ANIO), generarSolicitudes(ANIO));
+  });
+
+  test('alguna trae un menor a cargo, que es el caso que interesa probar', () => {
+    // Es el caso que luego se emancipa desde el CMS.
+    const conMenor = solicitudes.filter((s) => s.fichas.length > 1);
+    assert.ok(conMenor.length > 0);
+    for (const solicitud of conMenor) {
+      const menores = solicitud.fichas.filter((f) => !f.esTitular);
+      assert.ok(menores.length > 0);
+      for (const menor of menores) {
+        assert.ok(ANIO - menor.fechaNacimiento.getUTCFullYear() < 18, 'el dependiente debería ser menor');
+      }
+    }
+  });
+
+  test('cada solicitud tiene exactamente un titular', () => {
+    for (const solicitud of solicitudes) {
+      assert.equal(solicitud.fichas.filter((f) => f.esTitular).length, 1);
+    }
+  });
+
+  test('no chocan con los DNI ni los correos del censo', () => {
+    // Los dos campos son únicos en el esquema: un choque aborta la siembra.
+    const censo = generarHermanos(300, ANIO);
+    const dnis = new Set(censo.map((h) => h.dni));
+    const correos = new Set(censo.map((h) => h.email));
+    for (const solicitud of solicitudes) {
+      assert.ok(!dnis.has(solicitud.dni), `${solicitud.dni} ya está en el censo`);
+      assert.ok(!correos.has(solicitud.email), `${solicitud.email} ya está en el censo`);
+      for (const ficha of solicitud.fichas) {
+        if (ficha.dni) assert.ok(!dnis.has(ficha.dni));
+      }
+    }
   });
 });

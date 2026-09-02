@@ -1,9 +1,12 @@
 import { type } from 'arktype';
-import { idParam, textoRequerido } from '../config/common';
+import { idParam, paginacionQuery, textoRequerido } from '../config/common';
 
 const categorySchema = type("'boletin' | 'dossier' | 'anuario' | 'historia'");
 
-export const categoryParamSchema = type({ params: { category: categorySchema } });
+// Sin declarar page y limit, `validate` los borra en silencio y el listado sirve
+// siempre la primera página.
+export const categoryParamSchema = type({ params: { category: categorySchema }, query: { ...paginacionQuery } });
+export const publicationListQuerySchema = type({ query: { ...paginacionQuery } });
 export const createPublicationSchema = type({
   body: {
     titulo: textoRequerido,
