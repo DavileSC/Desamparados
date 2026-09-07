@@ -7,7 +7,7 @@ import {
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { cmsTheme } from '../../../theme/cms'
-import { loginSchema, twoFactorSchema, type LoginFormData, type TwoFactorFormData } from './schema'
+import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, cerrarSesionApi, type LoginResponse } from '../../../lib/api/auth'
 import { ApiError } from '../../../lib/api/client'
@@ -34,7 +34,7 @@ export default function CmsLoginPage() {
 
   const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/cms'
 
-  const credentialsForm = useForm<LoginFormData>({
+  const credentialsForm = useForm<LoginFormInput, unknown, LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '', recordarme: false },
   })

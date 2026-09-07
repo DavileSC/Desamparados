@@ -5,6 +5,8 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import {
   NOTICIAS,
   EVENTOS,
@@ -13,7 +15,11 @@ import {
   ENSERES,
   PRENDAS,
   CATEGORIAS,
+  ARCHIVO_PUBLICACION_PENDIENTE,
+  ORIGEN_ARCHIVO_PENDIENTE,
+  instalarArchivoPendiente,
 } from '../prisma/seed-contenido.js';
+import { publicStorageDir } from '../src/middleware/upload.middleware.js';
 
 const FORMATO_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -95,5 +101,29 @@ describe('contenido del seed', () => {
   test('el contenido ya no habla de "Hermandad"', () => {
     const todo = JSON.stringify([NOTICIAS, EVENTOS, PUBLICACIONES, PAGINAS, ENSERES]);
     assert.ok(!/hermandad/i.test(todo), 'queda alguna referencia a "Hermandad" en el contenido');
+  });
+
+  // Las publicaciones de ejemplo se siembran todas con el mismo PDF de relleno.
+  // Si esa ruta no acaba existiendo donde Express sirve /storage/public, la web
+  // pública ofrece una descarga que devuelve 404, que es peor que no ofrecerla.
+  test('el PDF de relleno de las publicaciones existe y se instala donde lo sirve Express', () => {
+    assert.ok(
+      existsSync(ORIGEN_ARCHIVO_PENDIENTE),
+      `falta el documento versionado en ${ORIGEN_ARCHIVO_PENDIENTE}`,
+    );
+
+    const prefijo = '/storage/public/';
+    assert.ok(
+      ARCHIVO_PUBLICACION_PENDIENTE.startsWith(prefijo),
+      `el marcador debe colgar de ${prefijo} para que lo sirva express.static`,
+    );
+
+    // El seed calcula el destino por su cuenta para no importar el middleware de
+    // subidas entero. Esta es la costura que avisa si las dos rutas divergen.
+    const instalado = instalarArchivoPendiente();
+    const queSirveExpress = path.join(publicStorageDir, ARCHIVO_PUBLICACION_PENDIENTE.slice(prefijo.length));
+
+    assert.equal(instalado, queSirveExpress, 'el seed instala el PDF fuera de donde Express lo sirve');
+    assert.ok(existsSync(queSirveExpress), `el seed no dejó el PDF en ${queSirveExpress}`);
   });
 });

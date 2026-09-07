@@ -1,0 +1,12 @@
+# Los binarios no pasan por la normalización de finales de línea. Sin esto, en
+# Windows Git convierte LF en CRLF dentro del fichero y lo corrompe: el PDF de
+# relleno de las publicaciones se subió con el aviso "LF will be replaced by
+# CRLF" y habría llegado roto a cualquier clon.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary

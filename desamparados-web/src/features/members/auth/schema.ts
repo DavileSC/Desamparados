@@ -10,7 +10,12 @@ export const loginSchema = z.object({
   recordarme: z.boolean().default(false),
 })
 
-export type LoginFormData = z.infer<typeof loginSchema>
+// Dos tipos, no uno: `recordarme` lleva `.default(false)`, así que en la ENTRADA
+// del esquema es opcional y en la SALIDA ya es un boolean. `useForm` necesita
+// ambos —los valores que maneja el formulario y los que entrega el resolver—; con
+// uno solo, el `Resolver` de zod no encaja y el typecheck falla.
+export type LoginFormInput = z.input<typeof loginSchema>
+export type LoginFormData = z.output<typeof loginSchema>
 
 // Segundo paso: código TOTP de 6 dígitos o código de respaldo
 export const twoFactorSchema = z.object({

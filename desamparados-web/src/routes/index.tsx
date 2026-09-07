@@ -7,6 +7,7 @@ import BrotherLayout from '../app/BrotherLayout'
 import RequireAuth from './RequireAuth'
 import RequireRole from './RequireRole'
 import AdminLayout from '../app/AdminLayout'
+import { rolesPorRutaCms } from '../app/cmsNavegacion'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 
@@ -79,35 +80,6 @@ function withSuspense(Component: React.ComponentType) {
     </Suspense>
   )
 }
-
-/**
- * Qué roles pasan la guarda de cada ruta del CMS. Única fuente de verdad
- * para las RequireRole de más abajo; AdminLayout.test.tsx la compara contra
- * `itemsMenu` de AdminLayout.tsx para que el menú y las guardas no puedan
- * volver a divergir sin que un test lo note (así se coló el hallazgo del
- * Hermano Mayor expulsado de Tesorería, Contabilidad y Auditoría: el menú
- * las enseñaba pero la guarda de ruta lo echaba a /area-hermano).
- *
- * No vive dentro de AdminLayout.tsx porque este fichero ya importa
- * AdminLayout: si AdminLayout importara esta constante de vuelta, el ciclo
- * de módulos dejaría `itemsMenu` leyendo un valor `undefined` en el
- * arranque (los imports circulares de ES modules no garantizan qué módulo
- * termina de inicializarse primero).
- */
-export const rolesPorRutaCms = {
-  panel: ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
-  noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
-  publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
-  agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
-  hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
-  tesoreria: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
-  inventario: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'],
-  contabilidad: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
-  auditoria: ['ADMIN', 'HERMANO_MAYOR'],
-  // La gestión del 2FA propio es de todo el staff: cada cuenta debe poder
-  // protegerse, no solo la de ADMIN.
-  'mi-seguridad': ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
-} satisfies Record<string, string[]>
 
 /**
  * Layout raíz: restaura el scroll al cambiar de ruta (vuelve arriba en navegaciones

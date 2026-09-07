@@ -16,6 +16,9 @@ import {
   EstadoPrenda,
   TipoTransaccion,
 } from '@prisma/client';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import db from '../src/config/db';
 
 /** Fecha relativa a hoy, en días, a las 20:00 salvo que se indique otra hora. */
@@ -289,7 +292,38 @@ export const PUBLICACIONES = [
   },
 ];
 
+/**
+ * PDF de relleno que acompaña a las publicaciones de ejemplo. El modelo exige
+ * `archivoUrl`, así que antes se sembraba una ruta inventada y la web pública
+ * ofrecía descargas que devolvían 404.
+ *
+ * El documento se guarda junto al seed y NO dentro de `storage/`, que está en
+ * .gitignore por ser el destino de las subidas del CMS en tiempo de ejecución:
+ * un despliegue que monte ahí un volumen vacío se lo llevaría por delante. El
+ * seed lo instala en su sitio al sembrar, y el PDF real lo sustituye en cuanto
+ * se sube desde el CMS.
+ */
+export const ARCHIVO_PUBLICACION_PENDIENTE = '/storage/public/documentos/pendiente.pdf';
+
+/** El original versionado, del que sale la copia que sirve Express. */
+export const ORIGEN_ARCHIVO_PENDIENTE = fileURLToPath(new URL('./activos/pendiente.pdf', import.meta.url));
+
+/**
+ * Deja el PDF de relleno donde `express.static` sirve `/storage/public`. La ruta
+ * se calcula con `process.cwd()` igual que `publicStorageDir` en
+ * upload.middleware; `seed-contenido.test.ts` comprueba que ambas coinciden.
+ */
+export function instalarArchivoPendiente() {
+  const prefijo = '/storage/public/';
+  const destino = path.join(process.cwd(), 'storage', 'public', ARCHIVO_PUBLICACION_PENDIENTE.slice(prefijo.length));
+  mkdirSync(path.dirname(destino), { recursive: true });
+  if (!existsSync(destino)) copyFileSync(ORIGEN_ARCHIVO_PENDIENTE, destino);
+  return destino;
+}
+
 async function sembrarPublicaciones() {
+  instalarArchivoPendiente();
+
   for (const publicacion of PUBLICACIONES) {
     const { diasDesdeHoy, ...datos } = publicacion;
     const existe = await db.publicacion.findFirst({ where: { titulo: datos.titulo } });
@@ -298,7 +332,7 @@ async function sembrarPublicaciones() {
       data: {
         ...datos,
         // Marcador: sustituir por el PDF real subido desde el CMS.
-        archivoUrl: '/storage/public/documentos/pendiente.pdf',
+        archivoUrl: ARCHIVO_PUBLICACION_PENDIENTE,
         imagenUrl: null,
         fecha: enDias(diasDesdeHoy, 10),
         visible: true,

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../test/test-utils'
-import AdminLayout, { itemsMenu } from '../AdminLayout'
+import AdminLayout from '../AdminLayout'
+import { itemsMenu, rolesPorRutaCms } from '../cmsNavegacion'
 import { useAuthStore } from '../../features/members/auth/store'
-import { rolesPorRutaCms } from '../../routes'
 import { designTokens } from '../../theme'
 
 function entrarComo(role: string) {

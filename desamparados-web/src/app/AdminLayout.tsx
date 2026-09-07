@@ -9,19 +9,7 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import { useAuthStore } from '../features/members/auth/store'
 import { cerrarSesion } from '../features/members/auth/session'
 import { cmsTheme, cmsSurfaces } from '../theme/cms'
-
-export const itemsMenu = [
-  { label: 'Panel', href: '/cms', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA'] },
-  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'] },
-  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'] },
-  { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'] },
-  { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'] },
-  { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'] },
-  { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'] },
-  { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'] },
-  { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'] },
-  { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA'] },
-]
+import { itemsMenu } from './cmsNavegacion'
 
 function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void }) {
   const location = useLocation()

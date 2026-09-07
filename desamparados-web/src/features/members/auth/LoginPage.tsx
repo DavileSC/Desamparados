@@ -6,7 +6,7 @@ import { Box, Typography, TextField, Alert, Button, Checkbox, FormControlLabel }
 import { Helmet } from 'react-helmet-async'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
-import { loginSchema, twoFactorSchema, type LoginFormData, type TwoFactorFormData } from './schema'
+import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, type LoginResponse } from '../../../lib/api/auth'
 import { ApiError } from '../../../lib/api/client'
@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/area-hermano'
 
-  const credentialsForm = useForm<LoginFormData>({
+  const credentialsForm = useForm<LoginFormInput, unknown, LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '', recordarme: false },
   })

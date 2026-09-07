@@ -333,11 +333,11 @@ test('logout responde 204 y borra las cookies aunque no hubiera sesion', async (
 //  COOKIES CONTRA LA BASE DE DATOS
 // ==========================================
 
-async function entrar(email: string) {
+async function entrar(email: string, contexto?: 'cms' | 'hermanos') {
   return fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password: PASSWORD_PRUEBA })
+    body: JSON.stringify({ email, password: PASSWORD_PRUEBA, ...(contexto ? { contexto } : {}) })
   });
 }
 
@@ -1063,5 +1063,71 @@ test('el libro mayor no repite ni pierde apuntes con la misma fecha al pasar de 
   } finally {
     await recogerApuntesEmpatados(categoriaId, apuntes);
     await borrarUsuarioPrueba(tesorero.id);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// ORIGEN DE SESIÓN: el 2FA se exige al entrar por el CMS, no por el área de
+// hermanos. Sin estos tests, la única comprobación del origen vivía en la
+// guarda de rutas del frontend, que es código del navegador y no protege la API.
+// ---------------------------------------------------------------------------
+
+async function conSegundoFactor(id: number) {
+  await db.user.update({
+    where: { id },
+    data: { twoFactorEnabled: true, twoFactorSecret: 'JBSWY3DPEHPK3PXP' }
+  });
+}
+
+test('con 2FA activo, entrar por el área de hermanos no pide el segundo factor', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  try {
+    await conSegundoFactor(staff.id);
+
+    const res = await entrar(staff.email, 'hermanos');
+    const cuerpo = await res.json() as { status?: string };
+
+    assert.notEqual(cuerpo.status, '2FA_NEEDED', 'el área de hermanos no debe pedir el segundo factor');
+    assert.ok(cookieSesionDe(res), 'debería emitir la sesión en el primer paso');
+  } finally {
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+test('con 2FA activo, entrar por el CMS sí pide el segundo factor', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  try {
+    await conSegundoFactor(staff.id);
+
+    const res = await entrar(staff.email, 'cms');
+    const cuerpo = await res.json() as { status?: string };
+
+    assert.equal(cuerpo.status, '2FA_NEEDED');
+    assert.ok(!cookieSesionDe(res), 'no debe haber sesión hasta pasar el segundo factor');
+  } finally {
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+test('una sesión abierta en el área de hermanos no vale para el CMS', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  // El caso que hace falta cerrar: un ADMIN con 2FA entra por /hermanos/acceso,
+  // donde solo se le pide la contraseña, y usa esa cookie contra la API del CMS.
+  // Si el servidor la acepta, el segundo factor del CMS es evitable sin navegador.
+  const admin = await crearUsuarioPrueba(Role.ADMIN);
+  try {
+    await conSegundoFactor(admin.id);
+
+    const cookie = cookieSesionDe(await entrar(admin.email, 'hermanos'))!.split(';')[0];
+    const res = await fetch(`${baseUrl}/api/news/admin/archive`, { headers: { Cookie: cookie } });
+
+    assert.equal(res.status, 403, 'una sesión de origen hermanos no debe entrar en el CMS');
+  } finally {
+    await borrarUsuarioPrueba(admin.id);
   }
 });
