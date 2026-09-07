@@ -20,17 +20,8 @@ export const itemsMenu = [
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'] },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'] },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'] },
+  { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA'] },
 ]
-
-/** Cómo se llama cada rol en castellano, para la cabecera */
-const NOMBRE_ROL: Record<string, string> = {
-  ADMIN: 'Administración',
-  HERMANO_MAYOR: 'Hermano Mayor',
-  SECRETARIA: 'Secretaría',
-  TESORERIA: 'Tesorería',
-  REDES: 'Comunicación',
-  ALBACERIA: 'Albacería',
-}
 
 function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void }) {
   const location = useLocation()
@@ -121,28 +112,21 @@ export default function AdminLayout() {
         )}
 
         <Box component="main" sx={{ flexGrow: 1, minWidth: 0 }}>
-          <Toolbar
-            sx={{
-              borderBottom: `1px solid ${cmsSurfaces.hairline}`,
-              backgroundColor: 'background.paper',
-              gap: 1.5,
-              position: 'sticky',
-              top: 0,
-              zIndex: 1,
-            }}
-          >
-            {esMovil && (
+          {esMovil && (
+            <Toolbar
+              sx={{
+                borderBottom: `1px solid ${cmsSurfaces.hairline}`,
+                backgroundColor: 'background.paper',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+              }}
+            >
               <IconButton edge="start" aria-label="Abrir el menú" onClick={() => setMenuAbierto(true)}>
                 <MenuIcon />
               </IconButton>
-            )}
-            <Typography sx={{ fontFamily: '"Libre Caslon Text", serif', fontSize: 18 }}>
-              Grupo Parroquial de los Desamparados
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
-              {role ? NOMBRE_ROL[role] ?? role : ''}
-            </Typography>
-          </Toolbar>
+            </Toolbar>
+          )}
           <Box sx={{ p: { xs: 2.5, md: 4 } }}>
             <Outlet />
           </Box>

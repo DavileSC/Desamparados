@@ -56,10 +56,12 @@ describe('AdminLayout', () => {
     expect(estilo.height).toBe('100vh')
   })
 
-  it('dice quién ha entrado', () => {
+  it('no lleva cabecera con el nombre del grupo ni el rol', () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<AdminLayout />)
-    expect(screen.getByText('Secretaría')).toBeInTheDocument()
+    expect(screen.queryByText('Grupo Parroquial de los Desamparados')).not.toBeInTheDocument()
+    expect(screen.queryByText('Administración')).not.toBeInTheDocument()
+    expect(screen.queryByText('Secretaría')).not.toBeInTheDocument()
   })
 })
 

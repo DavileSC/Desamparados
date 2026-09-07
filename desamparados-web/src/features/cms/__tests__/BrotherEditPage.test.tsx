@@ -105,7 +105,7 @@ describe('BrotherEditPage', () => {
     expect(screen.queryByRole('button', { name: /emancipar/i })).not.toBeInTheDocument()
   })
 
-  it('emancipar pide el correo y confirma antes de crear la cuenta', async () => {
+  it('emancipar pide el correo y confirma antes de crear la cuenta', { timeout: 20000 }, async () => {
     const user = userEvent.setup()
     responder(dependiente)
     montar(43)

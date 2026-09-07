@@ -14,6 +14,10 @@ export interface AuthUser {
   email: string
   role: string
   perfiles: AuthPerfil[]
+  /** Lo trae GET /api/auth/me: la pantalla "Mi seguridad" lo necesita. */
+  twoFactorEnabled?: boolean
+  /** De qué login nació la sesión: el CMS solo acepta tokens creados allí. */
+  origen?: 'cms' | 'hermanos'
 }
 
 /**

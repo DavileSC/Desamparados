@@ -36,6 +36,10 @@ export interface RegisterDto {
 export interface LoginDto {
   email: string;
   password: string;
+  /** "Recordarme": sesión persistente de 72 h en vez de la duración por rol. */
+  recordarme?: boolean;
+  /** De qué login viene la petición: el 2FA solo se exige en el CMS. */
+  contexto?: 'cms' | 'hermanos';
 }
 
 // =================================================================

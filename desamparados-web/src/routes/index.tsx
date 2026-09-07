@@ -52,6 +52,7 @@ const InventoryAdminPage = lazy(() => import('../features/cms/InventoryAdminPage
 const AccountingAdminPage = lazy(() => import('../features/cms/AccountingAdminPage'))
 const AuditAdminPage = lazy(() => import('../features/cms/AuditAdminPage'))
 const PanelPage = lazy(() => import('../features/cms/PanelPage'))
+const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
 
 // Legal pages
 const LegalNoticePage = lazy(() => import('../features/legal/LegalNoticePage'))
@@ -60,6 +61,7 @@ const CookiesPolicyPage = lazy(() => import('../features/legal/CookiesPolicyPage
 
 // Auth pages
 const LoginPage = lazy(() => import('../features/members/auth/LoginPage'))
+const CmsLoginPage = lazy(() => import('../features/members/auth/CmsLoginPage'))
 const ResetPasswordPage = lazy(() => import('../features/members/auth/ResetPasswordPage'))
 
 // Brother area pages
@@ -102,6 +104,9 @@ export const rolesPorRutaCms = {
   inventario: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'],
   contabilidad: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
   auditoria: ['ADMIN', 'HERMANO_MAYOR'],
+  // La gestión del 2FA propio es de todo el staff: cada cuenta debe poder
+  // protegerse, no solo la de ADMIN.
+  'mi-seguridad': ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
 } satisfies Record<string, string[]>
 
 /**
@@ -197,10 +202,15 @@ const router = createBrowserRouter([
         ],
       },
       {
+        path: '/cms/acceso',
+        element: withSuspense(CmsLoginPage),
+      },
+      {
         path: '/cms',
         element: <RequireRole roles={rolesPorRutaCms.panel}><AdminLayout /></RequireRole>,
         children: [
           { index: true, element: withSuspense(PanelPage) },
+          { path: 'mi-seguridad', element: <RequireRole roles={rolesPorRutaCms['mi-seguridad']}>{withSuspense(MiSeguridadPage)}</RequireRole> },
           { path: 'noticias', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsAdminPage)}</RequireRole> },
           { path: 'noticias/:id/editar', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsEditPage)}</RequireRole> },
           { path: 'publicaciones', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationsAdminPage)}</RequireRole> },

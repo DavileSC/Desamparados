@@ -32,6 +32,12 @@ export interface AuthTokenPayload extends JwtPayload {
   id: number;   // <-- OJO: Lo llamamos 'id' para que encaje con tus controladores (req.user!.id)
   role: string;
   typ: TokenType;
+  // Solo en el testigo de 2FA: si marcó "recordarme" en el primer factor, el
+  // segundo (que es el que crea la sesión real) debe respetarlo.
+  rem?: boolean;
+  // De qué login nació la sesión. El CMS solo acepta tokens creados desde
+  // /cms/acceso, donde se exige el segundo factor cuando está activado.
+  origen?: 'cms' | 'hermanos';
 }
 
 // Roles con acceso al CMS. Su sesion dura mas, pero la cookie muere al cerrar
@@ -51,16 +57,27 @@ export const esStaff = (role: string): boolean => ROLES_STAFF.includes(role);
 export const duracionSesionSegundos = (role: string): number =>
   esStaff(role) ? 8 * 3600 : 4 * 3600;
 
+/**
+ * Duración de la sesión cuando se marca "Recordarme": 72 h desde el login,
+ * para cualquier rol. Es una ventana fija: la actividad no la renueva.
+ */
+export const RECORDARME_SEGUNDOS = 72 * 3600;
+
 /** El paso intermedio del 2FA caduca pronto: es solo para teclear un codigo */
 export const PENDIENTE_2FA_SEGUNDOS = 5 * 60;
 
 // Generar Token de sesion
-const generateToken = (userId: number, role: string): string => {
+const generateToken = (
+  userId: number,
+  role: string,
+  recordarme = false,
+  origen: 'cms' | 'hermanos' = 'cms'
+): string => {
   const jwtSigned = jwt.sign(
-    { id: userId, role, typ: 'session' }, // <-- Guardamos el valor en la propiedad 'id'
+    { id: userId, role, typ: 'session', origen }, // <-- Guardamos el valor en la propiedad 'id'
     JWT_SECRET,
     {
-      expiresIn: duracionSesionSegundos(role),
+      expiresIn: recordarme ? RECORDARME_SEGUNDOS : duracionSesionSegundos(role),
       algorithm: 'HS256'
     }
   );
@@ -72,9 +89,13 @@ const generateToken = (userId: number, role: string): string => {
  * endpoint del 2FA aceptaba un userId suelto del body y el segundo factor
  * quedaba desvinculado del primero.
  */
-const generatePending2FAToken = (userId: number): string => {
+const generatePending2FAToken = (
+  userId: number,
+  recordarme = false,
+  origen: 'cms' | 'hermanos' = 'cms'
+): string => {
   return jwt.sign(
-    { id: userId, role: '', typ: '2fa_pending' },
+    { id: userId, role: '', typ: '2fa_pending', rem: recordarme, origen },
     JWT_SECRET,
     {
       expiresIn: PENDIENTE_2FA_SEGUNDOS,

@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Box, Typography, TextField, Alert, Button } from '@mui/material'
+import { Box, Typography, TextField, Alert, Button, Checkbox, FormControlLabel } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
 import { loginSchema, twoFactorSchema, type LoginFormData, type TwoFactorFormData } from './schema'
-import { useAuthStore } from './store'
+import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, type LoginResponse } from '../../../lib/api/auth'
 import { ApiError } from '../../../lib/api/client'
 
@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   const credentialsForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', recordarme: false },
   })
 
   const twoFactorForm = useForm<TwoFactorFormData>({
@@ -42,12 +42,18 @@ export default function LoginPage() {
       return
     }
     entrarSesion(response.user)
+    // El staff del CMS entra por su propio acceso: allí la sesión ya creada
+    // se recoge y aterriza directamente en el panel.
+    if (isStaffRole(response.user.role)) {
+      navigate('/cms/acceso', { replace: true })
+      return
+    }
     navigate(from, { replace: true })
   }
 
   const onSubmitCredentials = async (data: LoginFormData) => {
     try {
-      handleResponse(await apiLogin(data.email, data.password))
+      handleResponse(await apiLogin(data.email, data.password, data.recordarme, 'hermanos'))
     } catch (e) {
       credentialsForm.setError('root', { message: errorMessage(e, 'Email o contraseña incorrectos') })
     }
@@ -144,6 +150,11 @@ export default function LoginPage() {
                 error={!!credentialsForm.formState.errors.password}
                 helperText={credentialsForm.formState.errors.password?.message}
                 {...credentialsForm.register('password')}
+              />
+
+              <FormControlLabel
+                control={<Checkbox {...credentialsForm.register('recordarme')} />}
+                label="Recordarme: mantener la sesión iniciada 72 horas"
               />
 
               <AppButton type="submit" fullWidth disabled={credentialsForm.formState.isSubmitting}>

@@ -7,6 +7,7 @@ import { contrasenaNueva, contrasenaExistente } from '../../../lib/passwordPolic
 export const loginSchema = z.object({
   email: z.string().trim().email('Introduce un email válido'),
   password: contrasenaExistente,
+  recordarme: z.boolean().default(false),
 })
 
 export type LoginFormData = z.infer<typeof loginSchema>

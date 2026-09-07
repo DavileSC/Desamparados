@@ -45,7 +45,7 @@ export default function PanelPage() {
     <>
       <Helmet><title>Panel | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
 
-      <Typography variant="h3" component="h1" sx={{ mb: 0.5 }}>Panel del Grupo Parroquial</Typography>
+      <Typography variant="h3" component="h1" sx={{ mb: 0.5 }}>Panel informativo</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Datos a {new Date(data.generadoEn).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
       </Typography>

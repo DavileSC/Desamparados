@@ -10,11 +10,16 @@ export type LoginResponse =
   | { status: 'OK'; user: AuthUser }
   | { status: '2FA_NEEDED'; message: string }
 
-export function login(email: string, password: string) {
+export function login(
+  email: string,
+  password: string,
+  recordarme = false,
+  contexto: 'cms' | 'hermanos' = 'cms'
+) {
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
     auth: false,
-    json: { email, password },
+    json: { email, password, recordarme, contexto },
   })
 }
 
@@ -81,6 +86,31 @@ export function resetPassword(token: string, newPassword: string) {
  */
 export function sesionActual() {
   return apiFetch<{ user: AuthUser }>('/auth/me', { auth: false })
+}
+
+// ===================================================================
+//  2FA (pantalla "Mi seguridad" del CMS; el backend lo limita a staff)
+// ===================================================================
+
+/** Paso 1: QR en data URL + secreto Base32 para entrada manual. */
+export function generarQr2FA() {
+  return apiFetch<{ qrCodeUrl: string; secret: string }>('/auth/2fa/generate', { method: 'GET' })
+}
+
+/** Paso 2: verifica el primer TOTP y devuelve los respaldos en claro, UNA vez. */
+export function activar2FA(token2fa: string) {
+  return apiFetch<{ message: string; backupCodes: string[] }>('/auth/2fa/enable', {
+    method: 'POST',
+    json: { token2fa },
+  })
+}
+
+/** Desactiva el 2FA; pide un TOTP vigente o un código de respaldo. */
+export function desactivar2FA(token2fa: string) {
+  return apiFetch<{ message: string }>('/auth/2fa/disable', {
+    method: 'POST',
+    json: { token2fa },
+  })
 }
 
 export function cerrarSesionApi() {

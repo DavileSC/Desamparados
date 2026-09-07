@@ -31,7 +31,9 @@ export class AuthController {
   static async login(req: Request, res: Response) {
     try {
       const body: LoginDto = req.body;
-      const response = await AuthService.loginUser(body);
+      const recordarme = body.recordarme === true;
+      const contexto = body.contexto === 'hermanos' ? 'hermanos' : 'cms';
+      const response = await AuthService.loginUser({ ...body, recordarme, contexto });
 
       // Con 2FA activo no hay sesion todavia: solo el testigo del primer factor.
       if (response.status === '2FA_NEEDED') {
@@ -40,7 +42,7 @@ export class AuthController {
       }
 
       // El token va en la cookie httpOnly, nunca en el cuerpo.
-      ponerCookieSesion(res, response.token, response.user.role);
+      ponerCookieSesion(res, response.token, response.user.role, recordarme);
       res.status(200).json({ status: 'OK', user: response.user });
 
     } catch (error) {
@@ -64,10 +66,14 @@ export class AuthController {
       }
 
       const { token2fa } = req.body;
-      const response = await AuthService.verifyLogin2FA(payload.id, token2fa);
+      // El "recordarme" y el origen del primer factor viajan dentro del testigo:
+      // así el segundo paso no puede inventárselos.
+      const recordarme = payload.rem === true;
+      const origen = payload.origen ?? 'cms';
+      const response = await AuthService.verifyLogin2FA(payload.id, token2fa, recordarme, origen);
 
       limpiarCookie2FA(res);
-      ponerCookieSesion(res, response.token, response.user.role);
+      ponerCookieSesion(res, response.token, response.user.role, recordarme);
       res.status(200).json({ status: 'OK', user: response.user });
     } catch (error) {
       // El servicio lanza mensajes de negocio específicos ("Cuenta bloqueada temporalmente...",
@@ -160,7 +166,9 @@ export class AuthController {
 
   static async me(req: Request, res: Response) {
     try {
-      const user = await AuthService.perfilSesion(req.user!.id);
+      const datos = await AuthService.perfilSesion(req.user!.id);
+      // El origen viene del propio JWT; la BD no lo guarda.
+      const user = { ...datos, origen: req.user!.origen };
       res.status(200).json({ user });
     } catch (error) {
       handleHttp(res, error, 'No se ha podido recuperar la sesión');

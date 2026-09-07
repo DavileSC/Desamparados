@@ -7,7 +7,8 @@ import {
   generatePending2FAToken,
   verifyToken,
   duracionSesionSegundos,
-  esStaff
+  esStaff,
+  RECORDARME_SEGUNDOS
 } from '../src/utils/jwt.handle.js';
 
 // El caso que justifica todo el claim `typ`: el testigo de 2FA ya identifica a un
@@ -35,6 +36,33 @@ test('el staff del CMS dura 8 h y los hermanos 4 h', () => {
   assert.equal(duracionSesionSegundos('SECRETARIA'), 8 * 3600);
   assert.equal(duracionSesionSegundos('ADMIN'), 8 * 3600);
   assert.equal(duracionSesionSegundos('USER'), 4 * 3600);
+});
+
+test('con "recordarme" la sesión dura 72 h para cualquier rol', () => {
+  for (const role of ['USER', 'SECRETARIA', 'ADMIN']) {
+    const payload = verifyToken(generateToken(7, role, true), 'session');
+    assert.ok(payload, `token de ${role} debe verificarse`);
+    assert.equal(payload!.exp! - payload!.iat!, RECORDARME_SEGUNDOS, `rol ${role}`);
+  }
+});
+
+test('sin "recordarme" se mantiene la duración por rol', () => {
+  const payload = verifyToken(generateToken(7, 'USER', false), 'session');
+  assert.equal(payload!.exp! - payload!.iat!, 4 * 3600);
+});
+
+test('el testigo de 2FA lleva el "recordarme" del primer factor', () => {
+  assert.equal(verifyToken(generatePending2FAToken(7, true), '2fa_pending')?.rem, true);
+  assert.equal(verifyToken(generatePending2FAToken(7), '2fa_pending')?.rem, false);
+});
+
+test('el token de sesión lleva el origen del login', () => {
+  assert.equal(verifyToken(generateToken(7, 'USER', false, 'hermanos'), 'session')?.origen, 'hermanos');
+  assert.equal(verifyToken(generateToken(7, 'ADMIN', false, 'cms'), 'session')?.origen, 'cms');
+});
+
+test('el testigo de 2FA propaga el origen del login', () => {
+  assert.equal(verifyToken(generatePending2FAToken(7, false, 'hermanos'), '2fa_pending')?.origen, 'hermanos');
 });
 
 test('esStaff distingue los roles con acceso al CMS', () => {

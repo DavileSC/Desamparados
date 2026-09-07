@@ -139,7 +139,7 @@ export class AuthService {
     this.attemptsLogin.set(email, state);
   }
 
-  static async loginUser({ email, password }: LoginDto) {
+  static async loginUser({ email, password, recordarme, contexto }: LoginDto) {
     const emailNorm = email.trim().toLowerCase();
 
     // Bloqueo preventivo antes de gastar una consulta (defensa contra fuerza bruta)
@@ -175,18 +175,23 @@ export class AuthService {
     // Login correcto: limpiamos el contador de fallos
     this.attemptsLogin.delete(emailNorm);
 
+    const esCms = contexto === 'cms';
+    const origen = esCms ? 'cms' : 'hermanos';
+
     // --- LÓGICA 2FA ---
-    if (user.twoFactorEnabled) {
+    // El segundo factor solo se exige en el acceso al CMS. El área de hermanos
+    // entra solo con contraseña, aunque la cuenta tenga 2FA activado.
+    if (esCms && user.twoFactorEnabled) {
       return {
         status: '2FA_NEEDED' as const,
         // Prueba de que la contraseña era correcta. El controlador lo mueve a
         // una cookie: no debe salir nunca en el cuerpo de la respuesta.
-        pendingToken: generatePending2FAToken(user.id),
+        pendingToken: generatePending2FAToken(user.id, recordarme === true, origen),
         message: 'Introduce el código de tu aplicación de autenticación.'
       };
     }
 
-    const token = generateToken(user.id, user.role);
+    const token = generateToken(user.id, user.role, recordarme === true, origen);
     return {
       status: 'OK' as const,
       token,
@@ -194,7 +199,9 @@ export class AuthService {
         id: user.id,
         email: user.email,
         role: user.role,
-        perfiles: user.hermanos
+        perfiles: user.hermanos,
+        twoFactorEnabled: user.twoFactorEnabled,
+        origen
       }
     };
   }
@@ -216,7 +223,7 @@ export class AuthService {
 
     if (!user) throw new NotFoundError('Usuario no encontrado');
 
-    return { id: user.id, email: user.email, role: user.role, perfiles: user.hermanos };
+    return { id: user.id, email: user.email, role: user.role, perfiles: user.hermanos, twoFactorEnabled: user.twoFactorEnabled };
   }
 
   // Contador de intentos fallidos de 2FA por cuenta (defensa contra fuerza bruta
@@ -248,7 +255,7 @@ export class AuthService {
    * VERIFICAR LOGIN CON OTPAUTH
    * Acepta el código TOTP de 6 dígitos o un código de respaldo (si perdió el móvil).
    */
-  static async verifyLogin2FA(userId: number, token2fa: string) {
+  static async verifyLogin2FA(userId: number, token2fa: string, recordarme = false, origen: 'cms' | 'hermanos' = 'cms') {
     // Bloqueo preventivo antes de gastar consultas
     this.checkLockout2FA(userId);
 
@@ -300,7 +307,7 @@ export class AuthService {
     // Login correcto: limpiamos el contador de fallos
     this.attempts2FA.delete(userId);
 
-    const token = generateToken(user.id, user.role);
+    const token = generateToken(user.id, user.role, recordarme, origen);
     return {
       status: 'OK',
       token,
@@ -309,6 +316,8 @@ export class AuthService {
         email: user.email,
         role: user.role,
         perfiles: user.hermanos,
+        twoFactorEnabled: user.twoFactorEnabled,
+        origen,
         ...(backupCodesRemaining !== undefined ? { backupCodesRemaining } : {})
       }
     };

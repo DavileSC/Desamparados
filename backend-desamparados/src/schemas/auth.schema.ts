@@ -57,7 +57,9 @@ export const registerSchema = type({
 export const loginSchema = type({
     body: {
         email: email,
-        password: type("string >= 1") // Aquí no limitamos máximo para no dar pistas, solo que no esté vacío
+        password: type("string >= 1"), // Aquí no limitamos máximo para no dar pistas, solo que no esté vacío
+        "recordarme?": "boolean",
+        "contexto?": "'cms' | 'hermanos'"
     }
 });
 
