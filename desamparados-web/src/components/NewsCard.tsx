@@ -28,7 +28,7 @@ export default function NewsCard({ news, featured = false, volver }: NewsCardPro
         minHeight: featured ? { xs: '360px', md: '420px' } : 'auto',
         p: 0,
         overflow: 'hidden',
-        '&:hover': { background: 'rgba(255, 255, 255, 0.05)' },
+        '&:hover': { background: 'rgba(255, 255, 255, 0.05)', '& img': { transform: 'scale(1.035)' } },
       }}
     >
       <Box
@@ -62,8 +62,7 @@ export default function NewsCard({ news, featured = false, volver }: NewsCardPro
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              opacity: 0.6,
-              mixBlendMode: 'overlay',
+              opacity: 0.85,
               transition: 'transform 0.7s ease',
             }}
           />
@@ -71,7 +70,7 @@ export default function NewsCard({ news, featured = false, volver }: NewsCardPro
             sx={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(to top, rgba(38,35,38,0.92) 0%, transparent 65%)',
+              background: 'linear-gradient(to top, rgba(16,14,17,.98) 0%, rgba(16,14,17,.75) 48%, rgba(16,14,17,.12) 100%)',
             }}
           />
         </>

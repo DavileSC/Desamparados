@@ -30,6 +30,8 @@ export class ApiError extends Error {
 interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
   /** Cuerpo JSON (se serializa automáticamente) */
   json?: unknown
+  /** Formulario con archivos: el navegador pone el Content-Type de multipart con su separador. */
+  formData?: FormData
   /** false = un 401 aquí es normal y no debe cerrar la sesión (login, registro, /me del arranque) */
   auth?: boolean
 }
@@ -57,7 +59,7 @@ function extractFieldErrors(payload: unknown): Record<string, string> {
 }
 
 export async function apiFetch<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-  const { json, auth = true, headers, ...rest } = options
+  const { json, formData, auth = true, headers, ...rest } = options
 
   let res: Response
   try {
@@ -70,7 +72,7 @@ export async function apiFetch<T>(path: string, options: ApiRequestOptions = {})
         ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...headers,
       },
-      body: json !== undefined ? JSON.stringify(json) : undefined,
+      body: json !== undefined ? JSON.stringify(json) : formData,
     })
   } catch {
     throw new ApiError('No se ha podido conectar con el servidor. Inténtalo de nuevo en unos minutos.', 0)

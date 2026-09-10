@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 const STORAGE_KEY = 'desamparados-cookies-consent'
+const CONSENT_EVENT = 'desamparados-cookie-consent-change'
 
 export type CookieConsent = 'accepted' | 'declined' | null
 
@@ -28,14 +29,30 @@ function writeConsent(value: Exclude<CookieConsent, null>) {
 export function useCookieConsent() {
   const [consent, setConsent] = useState<CookieConsent>(readConsent)
 
+  // El pie y el banner comparten la decisión también dentro de la misma pestaña.
+  useEffect(() => {
+    const sync = (event: Event) => setConsent((event as CustomEvent<CookieConsent>).detail)
+    const syncStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY || event.key === null) setConsent(readConsent())
+    }
+    window.addEventListener(CONSENT_EVENT, sync)
+    window.addEventListener('storage', syncStorage)
+    return () => {
+      window.removeEventListener(CONSENT_EVENT, sync)
+      window.removeEventListener('storage', syncStorage)
+    }
+  }, [])
+
   const accept = useCallback(() => {
     writeConsent('accepted')
     setConsent('accepted')
+    window.dispatchEvent(new CustomEvent(CONSENT_EVENT, { detail: 'accepted' }))
   }, [])
 
   const decline = useCallback(() => {
     writeConsent('declined')
     setConsent('declined')
+    window.dispatchEvent(new CustomEvent(CONSENT_EVENT, { detail: 'declined' }))
   }, [])
 
   const reset = useCallback(() => {
@@ -45,6 +62,7 @@ export function useCookieConsent() {
       // Sin almacenamiento disponible, el estado local sigue siendo suficiente.
     }
     setConsent(null)
+    window.dispatchEvent(new CustomEvent(CONSENT_EVENT, { detail: null }))
   }, [])
 
   return {

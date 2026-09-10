@@ -1,0 +1,51 @@
+/* Ajustes de la portada sobre el tema oscuro existente. */
+.home-refined section { scroll-margin-top: 96px; }
+.home-refined a:focus-visible,
+.home-refined button:focus-visible { outline: 2px solid #dec72b; outline-offset: 5px; }
+/* Sobre el papel de la tarjeta de la agenda el dorado no se ve: el foco pasa a granate. */
+.home-refined .home-papel a:focus-visible,
+.home-refined .home-papel button:focus-visible { outline-color: #6e1822; outline-offset: 2px; }
+.home-refined h2 { text-wrap: balance; font-size: clamp(30px, 3vw, 40px); }
+.home-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+.procession-scene {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: 560px;
+  min-height: clamp(560px, 78svh, 900px);
+  /* Bloque de foto a sangre con bordes rectos: `clip` recorta el parallax sin crear un contenedor con scroll. */
+  overflow: hidden;
+  overflow: clip;
+  background: #1d1b1e;
+}
+.procession-scene-image { position: absolute; inset: -64px 0; z-index: -2; }
+.procession-scene-image img { width: 100%; height: 100%; object-fit: cover; object-position: center 62%; }
+.procession-scene-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(16,14,17,.88), rgba(16,14,17,.55) 50%, rgba(16,14,17,.15));
+}
+.procession-scene-content { width: min(1072px, calc(100% - 128px)); margin-inline: auto; padding-block: 110px; }
+.procession-scene-eyebrow { display: block; color: #e3d8bf; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 24px; }
+.home-refined .procession-scene h2 { font-family: 'Libre Caslon Text', serif; font-weight: 400; font-size: clamp(36px, 4.4vw, 64px); line-height: 1.18; letter-spacing: -.025em; margin: 0; max-width: 760px; }
+.procession-scene-content p { max-width: 470px; color: #e4e2df; font-size: 17px; line-height: 1.75; margin: 24px 0 26px; }
+.procession-scene-link { display: inline-flex; align-items: center; gap: 22px; min-height: 48px; padding-block: 8px; border-bottom: 1px solid #c4af79; color: #fff; font-size: 14px; font-weight: 600; }
+.procession-scene-link svg { transition: transform .25s ease; }
+.procession-scene-link:hover svg { transform: translateX(5px); }
+.procession-scene-link:hover { color: #e3d8bf; }
+@media (max-width: 600px) {
+  .procession-scene { min-height: 580px; }
+  .procession-scene-image { inset: -28px 0; }
+  .procession-scene-image img { object-position: 53% center; }
+  .procession-scene-content { width: calc(100% - 40px); padding-block: 100px; }
+  .procession-scene-content p { font-size: 15px; }
+  .procession-scene-eyebrow { font-size: 11px; margin-bottom: 20px; }
+  .procession-scene-shade { background: linear-gradient(180deg, rgba(16,14,17,.5), rgba(16,14,17,.82)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has(.home-refined) { scroll-behavior: auto; }
+  .home-refined *, .home-refined *::before, .home-refined *::after { animation: none !important; transition: none !important; }
+}

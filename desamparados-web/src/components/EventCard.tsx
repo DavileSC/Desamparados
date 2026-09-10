@@ -21,7 +21,7 @@ export default function EventCard({ event }: EventCardProps) {
       >
         {event.date} {event.time && `| ${event.time}`}
       </Typography>
-      <Typography variant="h5" component="h4" sx={{ color: 'text.primary', mb: 0.5, fontSize: '20px' }}>
+      <Typography variant="h5" component="h3" sx={{ color: 'text.primary', mb: 0.5, fontSize: '20px' }}>
         {event.title}
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '14px' }}>

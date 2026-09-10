@@ -16,6 +16,17 @@ import { COOKIE_SESION } from '../src/utils/cookies.js';
 import db from '../src/config/db.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { publicStorageDir } from '../src/middleware/upload.middleware.js';
+
+// Un PNG real de 1×1: la subida comprueba los «magic numbers», no solo la extensión.
+const PNG_1X1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+const formularioConPng = () => {
+  const formulario = new FormData();
+  formulario.append('file', new Blob([Buffer.from(PNG_1X1, 'base64')], { type: 'image/png' }), 'prueba.png');
+  return formulario;
+};
 
 let server: Server;
 let baseUrl: string;
@@ -131,6 +142,22 @@ describe('permisos del Hermano Mayor', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await como('HERMANO_MAYOR', '/api/publications/admin');
     assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
+  });
+
+  // Sube las fotos de las noticias y publicaciones que edita: sin esto, el CMS le deja
+  // editar una noticia pero la subida de su foto le devuelve 403.
+  test('puede subir una foto a la carpeta pública', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('HERMANO_MAYOR', '/api/upload/public', { method: 'POST', body: formularioConPng() });
+    assert.equal(res.status, 201, `recibió ${res.status}`);
+    const { data } = await res.json() as { data: { filename: string } };
+    await fs.unlink(path.join(publicStorageDir, data.filename)).catch(() => {});
+  });
+
+  test('un hermano raso sigue sin poder subir a la carpeta pública', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como('USER', '/api/upload/public', { method: 'POST', body: formularioConPng() });
+    assert.equal(res.status, 403);
   });
 
   // Admitir hermanos nuevos es censo, no administración del sistema: que el

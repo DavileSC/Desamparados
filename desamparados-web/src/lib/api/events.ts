@@ -53,6 +53,39 @@ export async function getProximosEventos(cuantos: number): Promise<EventItem[]> 
   return respuesta.data.map(toEventItem)
 }
 
+/** Un acto como lo necesita el calendario de la portada: fechas reales y tipo, no texto ya formateado. */
+export interface EventoCalendario {
+  id: string
+  title: string
+  description: string
+  location?: string
+  type: ApiEvent['type']
+  start: Date
+  end: Date | null
+}
+
+/**
+ * Los actos del calendario de la portada. Sin `desde` el servidor ya devuelve solo
+ * los futuros; con `desde` y `hasta` se pide la ventana del mes visible y el siguiente.
+ */
+export async function getEventosCalendario(
+  { desde, hasta, cuantos }: { desde?: Date; hasta?: Date; cuantos: number },
+): Promise<EventoCalendario[]> {
+  const params = new URLSearchParams({ limit: String(cuantos) })
+  if (desde) params.set('from', desde.toISOString())
+  if (hasta) params.set('to', hasta.toISOString())
+  const respuesta = await apiFetch<RespuestaPaginada<ApiEvent>>(`/events?${params}`)
+  return respuesta.data.map(event => ({
+    id: String(event.id),
+    title: event.title,
+    description: event.description ?? '',
+    location: event.location ?? undefined,
+    type: event.type,
+    start: new Date(event.startDate),
+    end: event.endDate ? new Date(event.endDate) : null,
+  }))
+}
+
 /** La agenda pública: tarjetas ya formateadas más el `meta` que pinta el paginador. */
 export async function getPublicEvents(pagina: { pagina: number; porPagina: number }) {
   const respuesta = await pedirPagina(pagina)

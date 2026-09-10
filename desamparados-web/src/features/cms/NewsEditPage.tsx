@@ -3,6 +3,7 @@ import { Alert, Box, CircularProgress, Stack, Switch, TextField } from '@mui/mat
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
+import CampoImagen from './CampoImagen'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { getAdminNewsById, updateNews, type NewsPayload } from '../../lib/api/news'
 
@@ -63,7 +64,7 @@ export default function NewsEditPage() {
           <TextField label="Título" value={form.titulo} onChange={(e) => campo('titulo', e.target.value)} fullWidth />
           <TextField label="Extracto" value={form.extracto} onChange={(e) => campo('extracto', e.target.value)} fullWidth multiline />
           <TextField label="Contenido HTML" value={form.contenido} onChange={(e) => campo('contenido', e.target.value)} fullWidth multiline minRows={7} />
-          <TextField label="URL de imagen" value={form.imagenUrl} onChange={(e) => campo('imagenUrl', e.target.value)} fullWidth />
+          <CampoImagen valor={form.imagenUrl ?? ''} onCambio={(ruta) => campo('imagenUrl', ruta)} />
           <TextField label="Fecha" type="date" value={form.fecha ?? ''} onChange={(e) => campo('fecha', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
           {/* El slug es la URL pública de la noticia: cambiarlo rompe los enlaces
               que ya se hayan compartido, así que se enseña sin poder tocarlo. */}

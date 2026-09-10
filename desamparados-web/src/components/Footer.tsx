@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Container, Typography, Link as MuiLink, IconButton, Button } from '@mui/material'
+import { Box, Typography, Link as MuiLink, IconButton, Button } from '@mui/material'
 import { Link } from 'react-router-dom'
 import MailIcon from '@mui/icons-material/Mail'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -7,6 +7,7 @@ import FacebookIcon from '@mui/icons-material/Facebook'
 import CloseIcon from '@mui/icons-material/Close'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import { site } from '../config/site'
+import PageContainer from './PageContainer'
 import MapIcon from '@mui/icons-material/Map'
 import type { ReactNode } from 'react'
 import { useCookieConsent } from '../hooks/useCookieConsent'
@@ -47,7 +48,7 @@ export default function Footer() {
         py: 6,
       }}
     >
-      <Container maxWidth="lg" sx={{ px: { xs: '20px', md: '64px' } }}>
+      <PageContainer>
         <Box
           sx={{
             display: 'grid',
@@ -195,7 +196,7 @@ export default function Footer() {
             </Box>
           </Box>
         </Box>
-      </Container>
+      </PageContainer>
     </Box>
   )
 }

@@ -1,12 +1,17 @@
 import { Container, type ContainerProps } from '@mui/material'
 import { forwardRef } from 'react'
 
+// Ancho máximo de la web pública. Con los 1200 px de `lg`, en pantallas de
+// 1920 o 2560 px el contenido quedaba perdido en el centro.
+export const ANCHO_PAGINA = 1440
+
 const PageContainer = forwardRef<HTMLDivElement, ContainerProps>(
   ({ children, sx, ...props }, ref) => (
     <Container
       ref={ref}
-      maxWidth="lg"
+      maxWidth={false}
       sx={{
+        maxWidth: ANCHO_PAGINA,
         px: { xs: '20px', md: '64px' },
         ...sx,
       }}

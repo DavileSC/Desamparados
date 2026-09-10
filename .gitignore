@@ -25,3 +25,9 @@ backend-desamparados/storage/*
 .DS_Store
 Thumbs.db
 repomix-output.xml
+
+# Bocetos del companion visual de brainstorming
+.superpowers/
+
+# Capturas y borradores de las sesiones de trabajo
+.tmp/

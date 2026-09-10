@@ -18,6 +18,8 @@ export default function SectionTitle({
     <Box
       sx={{
         display: 'flex',
+        flexWrap: 'wrap',
+        gap: 2,
         justifyContent: centered ? 'center' : 'space-between',
         alignItems: 'flex-end',
         mb: 4,
@@ -40,6 +42,9 @@ export default function SectionTitle({
             color: 'secondary.main',
             typography: 'overline',
             fontSize: '12px',
+            minHeight: 44,
+            flexShrink: 0,
+            px: 0,
             '&:hover': { color: 'secondary.light' },
           }}
         >

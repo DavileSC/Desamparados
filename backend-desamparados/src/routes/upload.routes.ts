@@ -28,7 +28,9 @@ uploadRoutes.get('/private/:filename',
     validateFilename,
     UploadController.downloadPrivate
 );
-uploadRoutes.post('/public', authenticateToken, checkRole([Role.ADMIN, Role.SECRETARIA, Role.REDES]), publicUploadMiddleware.single('file'), UploadController.uploadFile);
+// El Hermano Mayor edita noticias y publicaciones (news.routes.ts, publication.routes.ts):
+// sin él aquí, el CMS le dejaba editar una noticia pero la subida de su foto le daba 403.
+uploadRoutes.post('/public', authenticateToken, checkRole([Role.ADMIN, Role.SECRETARIA, Role.REDES, Role.HERMANO_MAYOR]), publicUploadMiddleware.single('file'), UploadController.uploadFile);
 uploadRoutes.post('/private', authenticateToken, checkRole(cmsRoles), privateUploadMiddleware.single('file'), UploadController.uploadFile);
 
 export { uploadRoutes };
