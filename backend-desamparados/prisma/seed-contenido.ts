@@ -462,11 +462,96 @@ async function sembrarContabilidad() {
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// FOTOS DE LA PORTADA
+// ---------------------------------------------------------------------------
+
+/**
+ * Fotos de relleno para ver rotar la cabecera del inicio mientras el Grupo
+ * Parroquial elige las suyas. Vienen de Wikimedia Commons con licencias
+ * Creative Commons que obligan a citar al autor: si alguna se quedara en la
+ * web real habría que acreditarla, aunque lo previsto es sustituirlas desde
+ * el CMS (Portada). El seed no las repone si ya hay alguna foto guardada.
+ */
+export const IMAGENES_PORTADA = [
+  {
+    archivo: '01-amor-trono.webp',
+    descripcion: 'Trono de palio de noche, con un nazareno de capirote blanco delante',
+    autor: 'Pedro J Pacheco', licencia: 'CC BY-SA 4.0',
+    fuente: 'https://commons.wikimedia.org/wiki/File:Amor_Trono_4.jpg',
+  },
+  {
+    archivo: '02-dolores-virgen.webp',
+    descripcion: 'Trono de palio dorado bajo los árboles, con la candelería encendida',
+    autor: 'Pedro J Pacheco', licencia: 'CC BY-SA 4.0',
+    fuente: 'https://commons.wikimedia.org/wiki/File:Dolores_-_Trono_de_la_Virgen.jpg',
+  },
+  {
+    archivo: '03-malaga-nazarenos.webp',
+    descripcion: 'Primer plano de un nazareno con el capirote de raso granate',
+    autor: 'Sten Dueland', licencia: 'CC BY-SA 2.0',
+    fuente: 'https://commons.wikimedia.org/wiki/File:Málaga_semana_santa_(17188297095).jpg',
+  },
+  {
+    archivo: '04-penas-virgen.webp',
+    descripcion: 'Trono de la Virgen bajo palio, con la orfebrería plateada iluminada',
+    autor: 'Pedro J Pacheco', licencia: 'CC BY-SA 4.0',
+    fuente: 'https://commons.wikimedia.org/wiki/File:Penas_-_Trono_de_la_Virgen_2.jpg',
+  },
+  {
+    archivo: '05-desamparados-virgen.webp',
+    descripcion: 'Nuestra Señora de los Desamparados en su trono, de día, a hombros de los portadores',
+    autor: 'Jesusplaza02', licencia: 'CC BY-SA 3.0',
+    fuente: 'https://commons.wikimedia.org/wiki/File:Nuestra_señora_de_los_Desamparados.jpg',
+  },
+  {
+    archivo: '06-gitanos-maria.webp',
+    descripcion: 'Lateral del trono de la Virgen con el palio granate y los portadores encapuchados',
+    autor: 'Pedro J Pacheco', licencia: 'CC BY-SA 4.0',
+    fuente: 'https://commons.wikimedia.org/wiki/File:Gitanos_-_Lateral_Trono_de_Maria.jpg',
+  },
+];
+
+/** La ruta que se guarda en la base de datos y que valida portada.schema.ts. */
+export const urlImagenPortada = (archivo: string) => `/storage/public/portada/${archivo}`;
+
+/** Los originales versionados, de los que salen las copias que sirve Express. */
+export const ORIGEN_IMAGENES_PORTADA = fileURLToPath(new URL('./activos/portada/', import.meta.url));
+
+/**
+ * Copia las fotos donde `express.static` sirve `/storage/public`, con el mismo
+ * cálculo de ruta que `instalarArchivoPendiente` (y la misma costura probada).
+ */
+export function instalarImagenesPortada() {
+  const carpeta = path.join(process.cwd(), 'storage', 'public', 'portada');
+  mkdirSync(carpeta, { recursive: true });
+  return IMAGENES_PORTADA.map((imagen) => {
+    const destino = path.join(carpeta, imagen.archivo);
+    if (!existsSync(destino)) copyFileSync(path.join(ORIGEN_IMAGENES_PORTADA, imagen.archivo), destino);
+    return destino;
+  });
+}
+
+export async function sembrarImagenesPortada() {
+  // Solo con la tabla vacía: la lista la manda el CMS y el seed no debe pisarla.
+  if ((await db.imagenPortada.count()) > 0) return;
+  instalarImagenesPortada();
+  await db.imagenPortada.createMany({
+    data: IMAGENES_PORTADA.map((imagen, orden) => ({
+      url: urlImagenPortada(imagen.archivo),
+      descripcion: imagen.descripcion,
+      orden,
+    })),
+  });
+  console.log(`   ${IMAGENES_PORTADA.length} fotos de la portada`);
+}
+
 export async function sembrarContenido() {
   console.log('Sembrando contenido de ejemplo (editable desde el CMS):');
   await sembrarNoticias();
   await sembrarEventos();
   await sembrarPublicaciones();
+  await sembrarImagenesPortada();
   await sembrarPaginas();
   await sembrarAlbaceria();
   await sembrarContabilidad();

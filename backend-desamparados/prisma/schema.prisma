@@ -510,3 +510,16 @@ model Pagina {
   contenido String   @db.Text
   updatedAt DateTime @updatedAt
 }
+
+// Fotos que rotan en la cabecera de la portada, en el orden en que se enseñan.
+// El CMS las sustituye en bloque (PUT /api/portada/imagenes); con la tabla
+// vacía, la web pública enseña su foto de siempre.
+model ImagenPortada {
+  id          Int      @id @default(autoincrement())
+  url         String
+  descripcion String?
+  orden       Int
+  createdAt   DateTime @default(now())
+
+  @@index([orden])
+}

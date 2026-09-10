@@ -1,7 +1,12 @@
-import type { MouseEvent } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { Box, Typography } from '@mui/material'
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import AppButton from '../../components/AppButton'
+import { getImagenesPortada } from '../../lib/api/portada'
+import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
 const PARALLAX_X = 14
@@ -9,6 +14,33 @@ const PARALLAX_Y = 9
 
 export default function Hero() {
   const reduceMotion = useReducedMotion()
+
+  // Las fotos las decide el CMS. Hasta que llega la lista no se pinta ninguna:
+  // si se pintara la de siempre mientras tanto, cada visita empezaría con un
+  // fundido de la foto vieja a la nueva.
+  const { data, status } = useQuery({
+    queryKey: ['home', 'portada-imagenes'],
+    queryFn: getImagenesPortada,
+    retry: false,
+    staleTime: 5 * 60_000,
+  })
+  const imagenes = status === 'pending' ? null : data && data.length > 0 ? data : IMAGENES_POR_DEFECTO
+  const total = imagenes?.length ?? 0
+
+  // Fundidos hechos: la foto visible es `tick % total`. Con una sola foto no
+  // hay nada que rotar, y con prefers-reduced-motion tampoco se rota (home.css
+  // anula además las transiciones y la rotación quedaría en cortes secos).
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    if (total < 2 || reduceMotion) return
+    const id = window.setInterval(() => {
+      // En una pestaña en segundo plano no se avanza: al volver no hay salto.
+      if (document.hidden) return
+      setTick((t) => t + 1)
+    }, INTERVALO_ROTACION_MS)
+    return () => window.clearInterval(id)
+  }, [total, reduceMotion])
+  const actual = total > 0 ? tick % total : 0
 
   // Parallax que sigue levemente al ratón: la imagen se mueve en sentido contrario al
   // cursor (sensación de profundidad) con un muelle suave. Sin efecto en táctil
@@ -43,18 +75,19 @@ export default function Hero() {
         width: '100%',
         // Hero a pantalla completa: la siguiente sección queda por debajo del pliegue.
         // 100dvh en móvil tiene en cuenta la barra del navegador; 100vh es el fallback.
-        height: '100vh',
-        '@supports (height: 100dvh)': { height: '100dvh' },
+        height: { xs: 'calc(100svh - 64px)', md: '100svh' },
         minHeight: 560,
         display: 'flex',
         justifyContent: 'flex-end',
         alignItems: 'flex-end',
         overflow: 'hidden',
+        // Lo que se ve antes de que llegue la primera foto.
+        backgroundColor: '#1d1b1e',
       }}
     >
-      {/* Imagen LCP: <img> real (priorizable y con alt) en vez de background-image.
-          Versiones optimizadas (WebP + JPG, 960/1920px) en lugar del original de 5 MB. */}
-      {/* Capa de imagen ligeramente mayor que el hero para que al moverse no asome el fondo */}
+      {/* Capa de imagen ligeramente mayor que el hero para que al moverse no asome el fondo.
+          Las fotos van apiladas: la visible encima, y la que viene se monta debajo con
+          antelación para que ya esté cargada cuando le toque fundirse. */}
       <Box
         component={motion.div}
         style={{ x, y }}
@@ -68,27 +101,38 @@ export default function Hero() {
           willChange: 'transform',
         }}
       >
-        <Box component="picture" sx={{ position: 'absolute', inset: 0, display: 'block' }}>
-          <source type="image/webp" media="(max-width: 960px)" srcSet="/images/hero-960.webp" />
-          <source type="image/webp" srcSet="/images/hero-1920.webp" />
-          <source media="(max-width: 960px)" srcSet="/images/hero-960.jpg" />
-          <Box
-            component="img"
-            src="/images/hero.jpg"
-            alt="Nuestra Señora de los Desamparados en su trono procesional"
-            width={1920}
-            height={1280}
-            fetchPriority="high"
-            decoding="async"
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              opacity: 0.8,
-            }}
-          />
-        </Box>
+        {imagenes?.map((imagen, i) => {
+          // Se montan la visible, las ya enseñadas y la siguiente; las demás
+          // no gastan red hasta que se acerca su turno.
+          if (i > tick + 1) return null
+          const activa = i === actual
+          return (
+            <Box
+              key={`${i}-${imagen.url}`}
+              component={motion.img}
+              src={imagen.url}
+              alt={imagen.descripcion}
+              aria-hidden={activa ? undefined : true}
+              fetchPriority={i === 0 ? 'high' : undefined}
+              decoding="async"
+              initial={{ opacity: 0 }}
+              // La que entra se funde por encima; la que sale espera tapada a que
+              // termine el fundido y se apaga de golpe. Si las dos se fundieran a
+              // la vez, a mitad se vería el fondo oscuro a través de ambas.
+              animate={{ opacity: activa ? OPACIDAD_FOTO : 0 }}
+              transition={activa ? { duration: FUNDIDO_S, ease: 'easeInOut' } : { duration: 0, delay: FUNDIDO_S }}
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: { xs: '35% center', md: 'center' },
+                zIndex: activa ? 2 : 1,
+              }}
+            />
+          )
+        })}
       </Box>
       <Box
         sx={{
@@ -96,7 +140,7 @@ export default function Hero() {
           inset: 0,
           zIndex: 1,
           background:
-            'linear-gradient(to top, rgba(38, 35, 38, 1) 0%, rgba(38, 35, 38, 0.4) 50%, transparent 100%)',
+            'linear-gradient(to top, #262326 0%, rgba(16,14,17,.76) 18%, rgba(16,14,17,.12) 65%), linear-gradient(to left, rgba(16,14,17,.38), transparent 70%)',
         }}
       />
 
@@ -109,19 +153,25 @@ export default function Hero() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-end',
-          pb: { xs: 8, md: 12 },
+          pb: { xs: 5, md: 8 },
           // Mismo margen lateral que el logo de la barra de navegación
           px: { xs: '20px', md: '40px', xl: '48px' },
         }}
       >
+        <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 10, md: 12 }, mb: 2 }}>
+          Grupo Parroquial · Málaga
+        </Typography>
         <Typography
           id="hero-title"
           variant="h1"
           component="h1"
           sx={{
             color: 'text.primary',
-            mb: 3,
-            fontSize: { xs: '36px', sm: '48px', md: '64px' },
+            mb: 2.5,
+            fontSize: { xs: '38px', sm: '50px', md: '64px' },
+            maxWidth: '780px',
+            textWrap: 'balance',
+            textShadow: '0 2px 24px rgba(0,0,0,.2)',
           }}
         >
           Desamparados Málaga
@@ -130,17 +180,23 @@ export default function Hero() {
           variant="body1"
           sx={{
             color: 'text.secondary',
-            maxWidth: '640px',
+            maxWidth: '510px',
             ml: 'auto',
-            mb: 5,
+            mb: 3.5,
             fontSize: { xs: '16px', md: '18px' },
           }}
         >
           Devoción, historia y patrimonio en el corazón de Málaga. Acompáñanos en nuestro solemne caminar.
         </Typography>
-        <AppButton component="a" href="#actualidad">
-          Conoce el Grupo Parroquial
-        </AppButton>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
+          <AppButton component={Link} to="/corporacion" endIcon={<ArrowForwardIcon fontSize="small" />} sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 11, md: 13 } }}>
+            Conoce el Grupo Parroquial
+          </AppButton>
+          {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta. */}
+          <Box component={Link} to="/actualidad/agenda" sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, gap: 1, fontSize: 13, color: '#e4e2df', '&:hover': { color: 'white' } }}>
+            Agenda y cultos <ArrowForwardIcon sx={{ fontSize: 16 }} />
+          </Box>
+        </Box>
       </Box>
     </Box>
   )

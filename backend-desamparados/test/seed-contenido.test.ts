@@ -18,8 +18,14 @@ import {
   ARCHIVO_PUBLICACION_PENDIENTE,
   ORIGEN_ARCHIVO_PENDIENTE,
   instalarArchivoPendiente,
+  IMAGENES_PORTADA,
+  ORIGEN_IMAGENES_PORTADA,
+  instalarImagenesPortada,
+  urlImagenPortada,
 } from '../prisma/seed-contenido.js';
 import { publicStorageDir } from '../src/middleware/upload.middleware.js';
+import { rutaImagenPublica } from '../src/schemas/portada.schema.js';
+import { ArkErrors } from 'arktype';
 
 const FORMATO_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -125,5 +131,27 @@ describe('contenido del seed', () => {
 
     assert.equal(instalado, queSirveExpress, 'el seed instala el PDF fuera de donde Express lo sirve');
     assert.ok(existsSync(queSirveExpress), `el seed no dejó el PDF en ${queSirveExpress}`);
+  });
+
+  // Las fotos de la cabecera se siembran como filas que apuntan a ficheros: si el
+  // fichero no está donde Express lo sirve, la portada rota entre imágenes rotas.
+  test('las fotos de la portada existen versionadas, pasan la validación del CMS y se instalan donde las sirve Express', () => {
+    assert.ok(IMAGENES_PORTADA.length >= 2, 'con menos de dos fotos no hay rotación que probar');
+    assert.deepEqual(duplicados(IMAGENES_PORTADA.map((i) => i.archivo)), []);
+
+    for (const imagen of IMAGENES_PORTADA) {
+      assert.ok(existsSync(path.join(ORIGEN_IMAGENES_PORTADA, imagen.archivo)), `falta ${imagen.archivo} en prisma/activos/portada`);
+      assert.ok(imagen.descripcion.trim().length > 0 && !/[<>]/.test(imagen.descripcion), `descripción inválida en ${imagen.archivo}`);
+      assert.ok(imagen.autor && imagen.licencia && imagen.fuente, `${imagen.archivo} sin atribución`);
+      // Lo que guarda el seed tiene que poder guardarse también desde el CMS.
+      assert.ok(!(rutaImagenPublica(urlImagenPortada(imagen.archivo)) instanceof ArkErrors), `la ruta de ${imagen.archivo} no pasa portada.schema`);
+    }
+
+    const instaladas = instalarImagenesPortada();
+    IMAGENES_PORTADA.forEach((imagen, i) => {
+      const queSirveExpress = path.join(publicStorageDir, 'portada', imagen.archivo);
+      assert.equal(instaladas[i], queSirveExpress, 'el seed instala la foto fuera de donde Express la sirve');
+      assert.ok(existsSync(queSirveExpress), `el seed no dejó ${imagen.archivo} en ${queSirveExpress}`);
+    });
   });
 });
