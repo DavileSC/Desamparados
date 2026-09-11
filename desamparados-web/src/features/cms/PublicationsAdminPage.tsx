@@ -6,6 +6,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link, useLocation } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
+import CampoImagen from './CampoImagen'
+import { AYUDA_PORTADA, ETIQUETA_PORTADA } from './portadaPublicacion'
 import { createPublication, deletePublication, getAdminPublications, type ApiPublication, type PublicationPayload } from '../../lib/api/publications'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
@@ -64,7 +66,7 @@ export default function PublicationsAdminPage() {
       <TextField label="Descripción" value={form.descripcion} onChange={(e) => updateField('descripcion', e.target.value)} fullWidth multiline />
       <Select value={form.categoria} onChange={(e) => updateField('categoria', e.target.value)}>{categories.map((category) => <MenuItem key={category.value} value={category.value}>{category.label}</MenuItem>)}</Select>
       <TextField label="URL del archivo PDF" value={form.archivoUrl} onChange={(e) => updateField('archivoUrl', e.target.value)} fullWidth />
-      <TextField label="URL de imagen" value={form.imagenUrl} onChange={(e) => updateField('imagenUrl', e.target.value)} fullWidth />
+      <CampoImagen etiqueta={ETIQUETA_PORTADA} ayuda={AYUDA_PORTADA} valor={form.imagenUrl ?? ''} onCambio={(ruta) => updateField('imagenUrl', ruta)} />
       <TextField label="Fecha" type="date" value={form.fecha ?? ''} onChange={(e) => updateField('fecha', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Switch checked={form.visible} onChange={(e) => updateField('visible', e.target.checked)} /> Visible públicamente</Box>
       <Stack direction="row" spacing={2}><Button variant="contained" startIcon={<AddIcon />} onClick={save} disabled={saving || !form.titulo || !form.archivoUrl}>{saving ? 'Guardando...' : 'Guardar'}</Button></Stack>

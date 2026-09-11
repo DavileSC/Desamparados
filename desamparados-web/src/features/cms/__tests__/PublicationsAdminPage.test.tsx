@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import PublicationsAdminPage from '../PublicationsAdminPage'
 
@@ -31,6 +31,15 @@ describe('PublicationsAdminPage', () => {
     expect(await screen.findByRole('heading', { name: 'Boletín 2026' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /ir a la página 2/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /editar boletín 2026/i })).toHaveAttribute('href', '/cms/publicaciones/4/editar')
+  })
+
+  it('la nueva publicación sube su portada con un botón en vez de pedir una URL', async () => {
+    responder([publicacion], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    renderWithProviders(<PublicationsAdminPage />)
+
+    const portada = await screen.findByRole('group', { name: /portada/i })
+    expect(within(portada).getByLabelText(/subir foto/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/url de imagen/i)).not.toBeInTheDocument()
   })
 
   it('pide la página que dice la URL', async () => {

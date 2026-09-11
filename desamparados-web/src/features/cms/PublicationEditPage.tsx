@@ -3,6 +3,8 @@ import { Alert, Box, CircularProgress, MenuItem, Select, Stack, Switch, TextFiel
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
+import CampoImagen from './CampoImagen'
+import { AYUDA_PORTADA, ETIQUETA_PORTADA } from './portadaPublicacion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { getAdminPublicationById, updatePublication, type PublicationPayload } from '../../lib/api/publications'
 import type { PublicationItem } from '../../types'
@@ -72,7 +74,7 @@ export default function PublicationEditPage() {
             {categorias.map((categoria) => <MenuItem key={categoria.value} value={categoria.value}>{categoria.label}</MenuItem>)}
           </Select>
           <TextField label="URL del archivo PDF" value={form.archivoUrl} onChange={(e) => campo('archivoUrl', e.target.value)} fullWidth />
-          <TextField label="URL de imagen" value={form.imagenUrl} onChange={(e) => campo('imagenUrl', e.target.value)} fullWidth />
+          <CampoImagen etiqueta={ETIQUETA_PORTADA} ayuda={AYUDA_PORTADA} valor={form.imagenUrl ?? ''} onCambio={(ruta) => campo('imagenUrl', ruta)} />
           <TextField label="Fecha" type="date" value={form.fecha ?? ''} onChange={(e) => campo('fecha', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Switch checked={form.visible} onChange={(e) => campo('visible', e.target.checked)} /> Visible públicamente

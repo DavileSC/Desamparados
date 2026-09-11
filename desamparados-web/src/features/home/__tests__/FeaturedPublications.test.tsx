@@ -54,4 +54,27 @@ describe('FeaturedPublications', () => {
     const conFoto = await screen.findByTestId('portada-publicacion')
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/portada.jpg')
   })
+
+  it('apila detrás del ejemplar las dos publicaciones anteriores, cada una con su cubierta', async () => {
+    // Se rompe si el abanico deja huecos cuando hay pocas publicaciones o si repite la destacada.
+    servir([BOLETIN, ANUARIO, DOSSIER])
+    const { unmount } = renderWithProviders(<FeaturedPublications />)
+    const detras = await screen.findAllByTestId('ejemplar-anterior')
+    expect(detras).toHaveLength(2)
+    expect(detras[0]).toHaveTextContent(/anuario/i)
+    expect(detras[1]).toHaveTextContent(/dossier/i)
+    unmount()
+
+    servir([BOLETIN])
+    renderWithProviders(<FeaturedPublications />)
+    await screen.findByTestId('portada-publicacion')
+    expect(screen.queryAllByTestId('ejemplar-anterior')).toHaveLength(0)
+  })
+
+  it('en la cubierta de un anuario pone su curso y no un año suelto', async () => {
+    servir([ANUARIO])
+    renderWithProviders(<FeaturedPublications />)
+    const portada = await screen.findByTestId('portada-publicacion')
+    expect(within(portada).getByText('25·26')).toBeInTheDocument()
+  })
 })
