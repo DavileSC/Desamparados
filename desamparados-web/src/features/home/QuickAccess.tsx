@@ -1,17 +1,18 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import PageContainer from '../../components/PageContainer'
 import AnimatedSection, { Revela } from '../../components/AnimatedSection'
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
 import ChurchOutlinedIcon from '@mui/icons-material/ChurchOutlined'
 import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined'
 import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { site } from '../../config/site'
-import { GOLD, SERIF, TINTA } from './estilos'
+import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 
 interface Acceso {
   icon: ReactNode
@@ -20,19 +21,125 @@ interface Acceso {
   href: string
 }
 
+// «Hazte hermano» abre el mosaico en su propia placa: captar hermanos es lo que
+// más importa de este bloque. El texto sale de la página de Hermanos.
+const HAZTE_HERMANO = {
+  href: '/hermanos/hazte-hermano',
+  ceja: 'Hazte hermano',
+  titulo: 'Forma parte de nuestra historia',
+  texto: 'Una comunidad de fe que vive la devoción a nuestra Sagrada Titular y trabaja por el bien común.',
+  boton: 'Quiero ser hermano',
+}
+
 // «Acceso de hermanos» no está aquí a propósito: el menú ya lo muestra siempre.
 // Tampoco la agenda ni el recorrido: tienen bloque propio en la portada, y los
 // accesos son para lo que no se ve en ella.
 const ACCESOS: Acceso[] = [
-  { icon: <PersonAddOutlinedIcon fontSize="inherit" />, title: 'Hazte hermano', description: 'Únete al Grupo Parroquial', href: '/hermanos/hazte-hermano' },
   { icon: <ChurchOutlinedIcon fontSize="inherit" />, title: 'Nuestra sede', description: 'Parroquia de los Pasionistas', href: '/corporacion/parroquia-pasionistas' },
   { icon: <VolunteerActivismOutlinedIcon fontSize="inherit" />, title: 'Caridad', description: 'Ayuda social y obra asistencial', href: '/corporacion/nuestros-fines/caridad' },
   { icon: <HistoryEduOutlinedIcon fontSize="inherit" />, title: 'Historia', description: 'Orígenes y evolución del Grupo Parroquial', href: '/corporacion/historia' },
   { icon: <ArticleOutlinedIcon fontSize="inherit" />, title: 'Boletines', description: 'Boletín informativo y anuarios', href: '/publicaciones/boletines' },
-  { icon: <MailOutlinedIcon fontSize="inherit" />, title: 'Contacto', description: 'Estamos a tu disposición', href: '/contacto' },
 ]
 
-function QuickItem({ icon, title, description, href }: Acceso) {
+const CONTACTO: Acceso = { icon: <MailOutlinedIcon fontSize="inherit" />, title: 'Contacto', description: 'Estamos a tu disposición', href: '/contacto' }
+
+const FONDO_TESELA = '#262326'
+
+function PlacaHazteHermano() {
+  const id = useId()
+
+  return (
+    <Box
+      component={Link}
+      to={HAZTE_HERMANO.href}
+      aria-labelledby={`${id}-ceja ${id}-titulo ${id}-boton`}
+      aria-describedby={`${id}-texto`}
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
+        '@supports (overflow: clip)': { overflow: 'clip' },
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        p: { xs: '30px 24px 26px', md: '40px 38px' },
+        backgroundColor: GRANATE,
+        color: '#fff',
+        textDecoration: 'none',
+        transition: 'background-color .3s ease',
+        '@media (hover: hover)': {
+          '&:hover': { backgroundColor: '#7a1c27' },
+          '&:hover .placa-boton svg': { transform: 'translateX(4px)' },
+        },
+      }}
+    >
+      <Box
+        aria-hidden="true"
+        sx={{
+          position: 'absolute',
+          right: { xs: -24, md: -30 },
+          bottom: { xs: -80, md: -110 },
+          fontFamily: SERIF,
+          fontSize: { xs: 280, md: 400 },
+          lineHeight: 1,
+          color: 'rgba(255, 255, 255, 0.06)',
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        D
+      </Box>
+      <Typography component="span" id={`${id}-ceja`} sx={{ ...ceja, position: 'relative', color: '#f1d9d6' }}>
+        {HAZTE_HERMANO.ceja}
+      </Typography>
+      <Typography
+        component="span"
+        id={`${id}-titulo`}
+        sx={{ position: 'relative', display: 'block', maxWidth: 320, fontFamily: SERIF, fontSize: { xs: 30, md: 40 }, lineHeight: 1.1, letterSpacing: '-0.015em' }}
+      >
+        {HAZTE_HERMANO.titulo}
+      </Typography>
+      <Typography
+        component="span"
+        id={`${id}-texto`}
+        sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: '#f3dedb' }}
+      >
+        {HAZTE_HERMANO.texto}
+      </Typography>
+      <Box
+        component="span"
+        id={`${id}-boton`}
+        className="placa-boton"
+        sx={{
+          position: 'relative',
+          mt: { md: 'auto' },
+          alignSelf: { xs: 'stretch', md: 'flex-start' },
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1.25,
+          minHeight: 44,
+          px: 2.75,
+          py: 1.5,
+          borderRadius: '3px',
+          backgroundColor: PAPEL,
+          color: GRANATE,
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          '& svg': { fontSize: 18, transition: 'transform .25s ease' },
+        }}
+      >
+        {HAZTE_HERMANO.boton} <ArrowForwardIcon aria-hidden="true" />
+      </Box>
+    </Box>
+  )
+}
+
+/** Tesela del mosaico. La ancha ocupa una fila entera y cambia la flecha por «Escríbenos». */
+function Tesela({ icon, title, description, href, ancha }: Acceso & { ancha: boolean }) {
   const externo = href.startsWith('http')
 
   return (
@@ -40,90 +147,93 @@ function QuickItem({ icon, title, description, href }: Acceso) {
       component={externo ? 'a' : Link}
       {...(externo ? { href, target: '_blank', rel: 'noopener noreferrer' } : { to: href })}
       sx={{
+        position: 'relative',
+        flex: 1,
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center',
-        height: '100%',
-        px: 1.5,
-        py: { xs: 2.25, md: 1.5 },
-        borderRadius: '8px',
+        flexDirection: ancha ? 'row' : 'column',
+        alignItems: ancha ? 'center' : 'stretch',
+        gap: ancha ? { xs: 1.75, md: 2.5 } : 0,
+        minHeight: ancha ? 0 : { xs: 140, md: 158 },
+        p: ancha ? { xs: '20px 16px', md: '24px 26px' } : { xs: '18px 16px 16px', md: '26px 26px 24px' },
+        backgroundColor: FONDO_TESELA,
         color: 'inherit',
         textDecoration: 'none',
+        transition: 'background-color .3s ease',
         '@media (hover: hover)': {
-          '&:hover .quick-icon': { backgroundColor: 'rgba(222, 199, 43, 0.14)', boxShadow: `inset 0 0 0 1px ${GOLD}` },
-          '&:hover .quick-title': { color: GOLD },
+          '&:hover': { backgroundColor: '#2f2b2f' },
+          '&:hover .tesela-titulo, &:hover .tesela-cta': { color: GOLD },
+          '&:hover .tesela-flecha': { color: GOLD, transform: 'translate(3px, -3px)' },
         },
       }}
     >
       <Box
-        className="quick-icon"
+        component="span"
         aria-hidden="true"
-        sx={{
-          width: { xs: 48, md: 56 },
-          height: { xs: 48, md: 56 },
-          mb: 2,
-          borderRadius: '50%',
-          display: 'grid',
-          placeItems: 'center',
-          fontSize: { xs: 22, md: 24 },
-          color: GOLD,
-          boxShadow: 'inset 0 0 0 1px rgba(222, 199, 43, 0.45)',
-          transition: 'background-color .3s ease, box-shadow .3s ease',
-        }}
+        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 22, md: 26 }, ...(ancha ? {} : { mb: 'auto', pb: { xs: 2.25, md: 2.75 } }) }}
       >
         {icon}
       </Box>
-      <Typography
-        component="span"
-        className="quick-title"
-        sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 18, md: 24 }, lineHeight: 1.2, color: '#fff', mb: 0.75, transition: 'color .3s ease' }}
-      >
-        {title}
-      </Typography>
-      <Typography component="span" sx={{ display: 'block', fontSize: { xs: 13, md: 14 }, lineHeight: 1.45, color: 'rgba(228, 226, 223, 0.72)' }}>
-        {description}
-      </Typography>
+      <Box component="span" sx={{ display: 'block', flex: ancha ? 1 : 'none' }}>
+        <Typography
+          component="span"
+          className="tesela-titulo"
+          sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 18, md: 22 }, lineHeight: 1.2, color: '#fff', mb: 0.75, transition: 'color .3s ease' }}
+        >
+          {title}
+        </Typography>
+        <Typography component="span" sx={{ display: 'block', fontSize: { xs: 13, md: 14 }, lineHeight: 1.45, color: 'rgba(228, 226, 223, 0.72)' }}>
+          {description}
+        </Typography>
+      </Box>
+      {externo && <span className="home-visually-hidden"> (nueva pestaña)</span>}
+      {ancha ? (
+        <Box
+          component="span"
+          aria-hidden="true"
+          className="tesela-cta"
+          sx={{ pb: '5px', borderBottom: `2px solid ${GOLD}`, color: '#fff', fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', whiteSpace: 'nowrap', transition: 'color .3s ease' }}
+        >
+          Escríbenos
+        </Box>
+      ) : (
+        <NorthEastIcon
+          aria-hidden="true"
+          className="tesela-flecha"
+          sx={{
+            position: 'absolute',
+            top: { xs: 16, md: 24 },
+            right: { xs: 14, md: 22 },
+            fontSize: { xs: 16, md: 20 },
+            color: 'rgba(255, 255, 255, 0.35)',
+            transition: 'color .3s ease, transform .3s ease',
+          }}
+        />
+      )}
     </Box>
   )
 }
 
-/** Accesos directos: bloque de tinta sin foto, con la «D» de Desamparados como marca de agua. */
+/** Accesos directos: mosaico sobre tinta con «Hazte hermano» destacado en granate. */
 export default function QuickAccess() {
-  const accesos: Acceso[] = site.redes.youtube
-    ? [...ACCESOS, { icon: <PlayCircleOutlinedIcon fontSize="inherit" />, title: 'Canal de YouTube', description: 'Vídeos y retransmisiones', href: site.redes.youtube }]
-    : ACCESOS
+  const teselas: Acceso[] = [
+    ...ACCESOS,
+    ...(site.redes.youtube
+      ? [{ icon: <PlayCircleOutlinedIcon fontSize="inherit" />, title: 'Canal de YouTube', description: 'Vídeos y retransmisiones', href: site.redes.youtube }]
+      : []),
+    CONTACTO,
+  ]
+  // Las teselas van de dos en dos junto a la placa; si son impares, la última
+  // (Contacto) se estira a la fila entera para no dejar hueco.
+  const filas = Math.ceil(teselas.length / 2)
+  const ultimaAncha = teselas.length % 2 === 1
 
   return (
     <AnimatedSection
       cascada
       aria-labelledby="quick-access-title"
-      sx={{
-        position: 'relative',
-        overflow: 'hidden',
-        '@supports (overflow: clip)': { overflow: 'clip' },
-        py: { xs: 8, md: 11 },
-        backgroundColor: TINTA,
-      }}
+      sx={{ py: { xs: 7, md: 11 }, backgroundColor: TINTA }}
     >
-      <Box
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          left: { xs: -24, md: -38 },
-          top: '50%',
-          transform: 'translateY(-52%)',
-          fontFamily: SERIF,
-          fontSize: { xs: 300, md: 460 },
-          lineHeight: 1,
-          color: 'rgba(255, 255, 255, 0.035)',
-          pointerEvents: 'none',
-          userSelect: 'none',
-        }}
-      >
-        D
-      </Box>
-      <PageContainer sx={{ position: 'relative' }}>
+      <PageContainer>
         <Typography id="quick-access-title" component="h2" className="home-visually-hidden">
           Accesos directos
         </Typography>
@@ -131,14 +241,33 @@ export default function QuickAccess() {
           component="ul"
           role="list"
           aria-labelledby="quick-access-title"
-          sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', rowGap: { xs: 1, md: 5.75 }, maxWidth: 1060, mx: 'auto' }}
+          sx={{
+            listStyle: 'none',
+            m: 0,
+            p: 0,
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr 1fr', md: '1.3fr 1fr 1fr' },
+            gap: { xs: 1.25, md: 1.75 },
+            maxWidth: 1060,
+            mx: 'auto',
+          }}
         >
-          {accesos.map((acceso, i) => (
-            // Tres por fila en escritorio y dos en móvil; si sobra alguno, queda centrado.
-            <Revela as="li" key={acceso.href} orden={i} sx={{ flex: { xs: '0 0 50%', md: '0 0 33.333%' } }}>
-              <QuickItem {...acceso} />
-            </Revela>
-          ))}
+          <Revela as="li" sx={{ display: 'flex', gridColumn: { xs: '1 / -1', md: '1' }, gridRow: { md: `1 / span ${filas}` } }}>
+            <PlacaHazteHermano />
+          </Revela>
+          {teselas.map((acceso, i) => {
+            const ancha = ultimaAncha && i === teselas.length - 1
+            return (
+              <Revela
+                as="li"
+                key={acceso.href}
+                orden={i + 1}
+                sx={{ display: 'flex', ...(ancha ? { gridColumn: { xs: '1 / -1', md: '2 / -1' } } : {}) }}
+              >
+                <Tesela {...acceso} ancha={ancha} />
+              </Revela>
+            )
+          })}
         </Box>
       </PageContainer>
     </AnimatedSection>
