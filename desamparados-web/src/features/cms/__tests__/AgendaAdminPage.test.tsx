@@ -29,6 +29,19 @@ afterEach(() => {
 })
 
 describe('AgendaAdminPage', () => {
+  it('al entrar no hay formulario: «Nuevo evento» abre la ventana de alta', async () => {
+    const usuario = userEvent.setup()
+    responder([evento], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    renderWithProviders(<AgendaAdminPage />)
+
+    expect(await screen.findByRole('heading', { name: 'Besapiés' })).toBeInTheDocument()
+    expect(screen.queryByLabelText(/ubicación/i)).not.toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: /nuevo evento/i }))
+    expect(screen.getByRole('dialog', { name: /nuevo evento/i })).toBeInTheDocument()
+    expect(screen.getByLabelText(/ubicación/i)).toBeInTheDocument()
+  })
+
   it('pinta los eventos que llegan en data y ofrece pasar de página', async () => {
     responder([evento], { total: 45, page: 1, limit: 20, totalPages: 3 })
     renderWithProviders(<AgendaAdminPage />)

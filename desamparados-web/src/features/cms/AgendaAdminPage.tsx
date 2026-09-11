@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link, useLocation } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
+import CabeceraSeccion from './CabeceraSeccion'
+import VentanaFormulario from './VentanaFormulario'
 import { createEvent, deleteEvent, getAdminEvents, type ApiEvent, type EventPayload } from '../../lib/api/events'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
@@ -22,6 +24,8 @@ export default function AgendaAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [porBorrar, setPorBorrar] = useState<ApiEvent | null>(null)
+  const [creando, setCreando] = useState(false)
+  const [errorAlta, setErrorAlta] = useState<string | null>(null)
   // La consulta actual viaja con el enlace de editar (página, tamaño y filtros):
   // así la pantalla de edición sabe a qué página del listado devolver.
   const { search: consultaListado } = useLocation()
@@ -48,16 +52,19 @@ export default function AgendaAdminPage() {
   }, [load])
 
   const updateField = (field: keyof EventPayload, value: string) => setForm((current) => ({ ...current, [field]: value }))
-  const reset = () => setForm(emptyForm)
+  // El formulario se limpia al abrir y no al cerrar: así no se vacía a la vista mientras la ventana se va.
+  const abrirAlta = () => { setForm(emptyForm); setErrorAlta(null); setCreando(true) }
 
   const save = async () => {
-    setSaving(true); setError(null); setNotice(null)
+    setSaving(true); setErrorAlta(null); setNotice(null)
     try {
       const payload = { ...form, startDate: new Date(form.startDate).toISOString(), endDate: form.endDate ? new Date(form.endDate).toISOString() : null }
       await createEvent(payload)
-      await load(); reset(); setNotice('Evento creado correctamente.')
-    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido guardar el evento.') }
+    } catch (err: unknown) { setErrorAlta(err instanceof Error ? err.message : 'No se ha podido guardar el evento.'); return }
     finally { setSaving(false) }
+    setCreando(false)
+    setNotice('Evento creado correctamente.')
+    await load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.'))
   }
 
   const borrar = async () => {
@@ -69,25 +76,31 @@ export default function AgendaAdminPage() {
 
   return <>
     <Helmet><title>Agenda | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
-    <Typography variant="h2" component="h1" sx={{ mb: 4 }}>Agenda</Typography>
+    <CabeceraSeccion titulo="Agenda">
+      <Button variant="contained" startIcon={<AddIcon />} onClick={abrirAlta}>Nuevo evento</Button>
+    </CabeceraSeccion>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
-    <Paper sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
-      <Stack spacing={2}>
-        <Typography variant="h4">Nuevo evento</Typography>
-        <TextField label="Título" value={form.title} onChange={(event) => updateField('title', event.target.value)} fullWidth />
-        <TextField label="Descripción" value={form.description} onChange={(event) => updateField('description', event.target.value)} fullWidth multiline />
-        <TextField label="Inicio" type="datetime-local" value={form.startDate} onChange={(event) => updateField('startDate', event.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
-        <TextField label="Fin (opcional)" type="datetime-local" value={form.endDate ?? ''} onChange={(event) => updateField('endDate', event.target.value || '')} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
-        <TextField label="Ubicación" value={form.location} onChange={(event) => updateField('location', event.target.value)} fullWidth />
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <Select value={form.type} onChange={(event) => updateField('type', event.target.value)} aria-label="Tipo de evento" fullWidth>{eventTypes.map((type) => <MenuItem key={type} value={type}>{type}</MenuItem>)}</Select>
-          <Select value={form.visibility} onChange={(event) => updateField('visibility', event.target.value)} aria-label="Visibilidad" fullWidth><MenuItem value="public">Público</MenuItem><MenuItem value="members_only">Solo hermanos</MenuItem></Select>
-        </Stack>
-        <Box><Button variant="contained" startIcon={<AddIcon />} onClick={save} disabled={saving || !form.title || !form.startDate}>{saving ? 'Guardando...' : 'Guardar'}</Button></Box>
+    <VentanaFormulario
+      abierto={creando}
+      titulo="Nuevo evento"
+      sucio={JSON.stringify(form) !== JSON.stringify(emptyForm)}
+      guardando={saving}
+      puedeGuardar={Boolean(form.title && form.startDate)}
+      error={errorAlta}
+      onGuardar={save}
+      onCerrar={() => setCreando(false)}
+    >
+      <TextField label="Título" value={form.title} onChange={(event) => updateField('title', event.target.value)} fullWidth />
+      <TextField label="Descripción" value={form.description} onChange={(event) => updateField('description', event.target.value)} fullWidth multiline />
+      <TextField label="Inicio" type="datetime-local" value={form.startDate} onChange={(event) => updateField('startDate', event.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+      <TextField label="Fin (opcional)" type="datetime-local" value={form.endDate ?? ''} onChange={(event) => updateField('endDate', event.target.value || '')} fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+      <TextField label="Ubicación" value={form.location} onChange={(event) => updateField('location', event.target.value)} fullWidth />
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <TextField select label="Tipo de evento" value={form.type} onChange={(event) => updateField('type', event.target.value)} fullWidth>{eventTypes.map((type) => <MenuItem key={type} value={type}>{type}</MenuItem>)}</TextField>
+        <TextField select label="Visibilidad" value={form.visibility} onChange={(event) => updateField('visibility', event.target.value)} fullWidth><MenuItem value="public">Público</MenuItem><MenuItem value="members_only">Solo hermanos</MenuItem></TextField>
       </Stack>
-    </Paper>
-    <Typography variant="h4" sx={{ mb: 2 }}>Eventos</Typography>
+    </VentanaFormulario>
     <DialogoConfirmacion abierto={porBorrar !== null} titulo="¿Eliminar el evento?" mensaje={porBorrar ? porBorrar.title : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
     {loading ? <CircularProgress aria-label="Cargando agenda" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.title}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.startDate).toLocaleString('es-ES')} · {item.visibility === 'public' ? 'Público' : 'Solo hermanos'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.title}`} component={Link} to={`/cms/agenda/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.title}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay eventos registrados.</Alert>}</Stack>}
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="la agenda" />}

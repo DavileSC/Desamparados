@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import TreasuryAdminPage from '../TreasuryAdminPage'
@@ -23,6 +23,23 @@ describe('TreasuryAdminPage', () => {
     vi.stubGlobal('fetch', responder(1167))
     renderWithProviders(<TreasuryAdminPage />)
     expect(await screen.findByText(/de 1167/i)).toBeInTheDocument()
+  })
+
+  it('al entrar se ven los recibos; generar cuotas va en una ventana con el año que se está viendo', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', responder(3))
+    renderWithProviders(<TreasuryAdminPage />)
+
+    expect(await screen.findByText(/3 resultados/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/importe/i)).not.toBeInTheDocument()
+
+    await user.clear(screen.getByLabelText(/año/i))
+    await user.type(screen.getByLabelText(/año/i), '2025')
+    await user.click(screen.getByRole('button', { name: /generar cuotas/i }))
+
+    const ventana = screen.getByRole('dialog', { name: /generar cuotas/i })
+    expect(within(ventana).getByLabelText(/año/i)).toHaveValue(2025)
+    expect(within(ventana).getByLabelText(/importe/i)).toBeInTheDocument()
   })
 
   it('cambiar de año vuelve a la primera página', async () => {

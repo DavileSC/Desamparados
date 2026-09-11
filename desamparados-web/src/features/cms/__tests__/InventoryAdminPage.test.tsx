@@ -38,6 +38,25 @@ describe('InventoryAdminPage', () => {
     })
   })
 
+  it('el botón de alta cambia con la pestaña y abre su ventana', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(
+      JSON.stringify({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ))))
+    renderWithProviders(<InventoryAdminPage />, { ruta: '/cms/inventario' })
+
+    await user.click(await screen.findByRole('button', { name: /nuevo enser/i }))
+    expect(screen.getByRole('dialog', { name: /nuevo enser/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    await user.click(screen.getByRole('tab', { name: 'Ropero' }))
+    expect(screen.queryByRole('button', { name: /nuevo enser/i })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /nueva prenda/i }))
+    expect(screen.getByRole('dialog', { name: /nueva prenda/i })).toBeInTheDocument()
+  })
+
   it('pinta los dos listados con lo que llega en data', async () => {
     const user = userEvent.setup()
     // Cada extremo responde lo suyo: la llamada se distingue por su URL, nunca

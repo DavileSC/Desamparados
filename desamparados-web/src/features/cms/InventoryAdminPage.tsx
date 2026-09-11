@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, MenuItem, Paper, Select, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, Button, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
+import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link, useLocation } from 'react-router-dom'
@@ -9,9 +10,16 @@ import { assignPrenda, createEnser, createPrenda, deleteEnser, deletePrenda, get
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
+import CabeceraSeccion from './CabeceraSeccion'
+import VentanaFormulario from './VentanaFormulario'
 
 const emptyEnser = { nombre: '', referencia: '', categoria: '', ubicacion: '', cantidadOptimo: '0', cantidadBueno: '0', cantidadReparar: '0' }
 const emptyPrenda = { numero: '', tipo: 'TUNICA', talla: '', estado: 'DISPONIBLE', observaciones: '' }
+
+const CAMPOS_ENSER = [['nombre', 'Nombre'], ['referencia', 'Referencia'], ['categoria', 'Categoría'], ['ubicacion', 'Ubicación']] as const
+const CANTIDADES_ENSER = [['cantidadOptimo', 'Óptimo'], ['cantidadBueno', 'Bueno'], ['cantidadReparar', 'A reparar']] as const
+
+const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
 
 export default function InventoryAdminPage() {
   const [tab, setTab] = useState(0)
@@ -19,6 +27,10 @@ export default function InventoryAdminPage() {
   const [listaPrendas, setListaPrendas] = useState<Prenda[]>([])
   const [enserForm, setEnserForm] = useState(emptyEnser)
   const [prendaForm, setPrendaForm] = useState(emptyPrenda)
+  // La ventana de alta abierta: la del enser o la de la prenda, según la pestaña desde la que se pidió.
+  const [creando, setCreando] = useState<'enser' | 'prenda' | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [errorAlta, setErrorAlta] = useState<string | null>(null)
   const [assignIds, setAssignIds] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -48,17 +60,89 @@ export default function InventoryAdminPage() {
   useEffect(() => {
     let cancelado = false
     load(() => !cancelado)
-      .catch((e: unknown) => { if (!cancelado) setError(e instanceof Error ? e.message : 'No se ha podido cargar el inventario.') })
+      .catch((e: unknown) => { if (!cancelado) setError(mensaje(e, 'No se ha podido cargar el inventario.')) })
     return () => { cancelado = true }
   }, [load])
-  const reset = () => { setEnserForm(emptyEnser); setPrendaForm(emptyPrenda) }
-  const saveEnser = async () => { try { const data = { ...enserForm, cantidadOptimo: Number(enserForm.cantidadOptimo), cantidadBueno: Number(enserForm.cantidadBueno), cantidadReparar: Number(enserForm.cantidadReparar) }; await createEnser(data); await load(); reset(); setNotice('Enser creado correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido guardar el enser.') } }
-  const savePrenda = async () => { try { await createPrenda(prendaForm); await load(); reset(); setNotice('Prenda creada correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido guardar la prenda.') } }
+
+  // Cada ventana se limpia al abrirse, no al cerrarse: así no se vacía a la vista mientras se va.
+  const abrirAlta = () => {
+    if (tab === 0) setEnserForm(emptyEnser)
+    else setPrendaForm(emptyPrenda)
+    setErrorAlta(null)
+    setCreando(tab === 0 ? 'enser' : 'prenda')
+  }
+
+  /** Guarda lo de la ventana abierta; si falla, la ventana sigue abierta con el motivo. */
+  const guardar = async (peticion: () => Promise<unknown>, aviso: string, porDefecto: string) => {
+    setGuardando(true); setErrorAlta(null); setNotice(null)
+    try { await peticion() }
+    catch (e: unknown) { setErrorAlta(mensaje(e, porDefecto)); return }
+    finally { setGuardando(false) }
+    setCreando(null)
+    setNotice(aviso)
+    await load().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
+  }
+
+  const saveEnser = () => guardar(
+    () => createEnser({ ...enserForm, cantidadOptimo: Number(enserForm.cantidadOptimo), cantidadBueno: Number(enserForm.cantidadBueno), cantidadReparar: Number(enserForm.cantidadReparar) }),
+    'Enser creado correctamente.',
+    'No se ha podido guardar el enser.',
+  )
+  const savePrenda = () => guardar(() => createPrenda(prendaForm), 'Prenda creada correctamente.', 'No se ha podido guardar la prenda.')
   const nombreDe = (item: Enser | Prenda) => ('nombre' in item ? item.nombre : `Prenda ${item.numero}`)
-  const borrar = async () => { if (!porBorrar) return; try { if (tab === 0) await deleteEnser(porBorrar.id); else await deletePrenda(porBorrar.id); await load(); setNotice('Elemento eliminado correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido eliminar el elemento.') } finally { setPorBorrar(null) } }
-  const assign = async (item: Prenda) => { const hermanoId = Number(assignIds[item.id]); if (!Number.isInteger(hermanoId) || hermanoId <= 0) return; try { await assignPrenda(item.id, hermanoId); await load(); setNotice('Prenda asignada correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido asignar la prenda.') } }
-  const returnItem = async (item: Prenda) => { try { await returnPrenda(item.id, window.confirm('¿La prenda necesita lavado o pasar a taller?')); await load(); setNotice('Prenda devuelta correctamente.') } catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido registrar la devolución.') } }
-  return <><Helmet><title>Inventario | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet><Typography variant="h2" component="h1" sx={{ mb: 4 }}>Inventario</Typography>{error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}{notice && <Alert severity="success" sx={{ mb: 2 }}>{notice}</Alert>}<DialogoConfirmacion abierto={porBorrar !== null} titulo={tab === 0 ? '¿Eliminar el enser?' : '¿Eliminar la prenda?'} mensaje={porBorrar ? nombreDe(porBorrar) : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} /><Tabs value={tab} onChange={(_, value) => { setTab(value); reset() }} sx={{ mb: 3 }}><Tab label="Enseres" /><Tab label="Ropero" /></Tabs>{tab === 0 ? <Paper sx={{ p: 3, mb: 3 }}><Stack spacing={2}><Typography variant="h4">Nuevo enser</Typography>{(['nombre', 'referencia', 'categoria', 'ubicacion'] as const).map((field) => <TextField key={field} label={field} value={enserForm[field]} onChange={(e) => setEnserForm({ ...enserForm, [field]: e.target.value })} />)}<Stack direction="row" spacing={2}>{(['cantidadOptimo', 'cantidadBueno', 'cantidadReparar'] as const).map((field) => <TextField key={field} label={field.replace('cantidad', '')} type="number" value={enserForm[field]} onChange={(e) => setEnserForm({ ...enserForm, [field]: e.target.value })} />)}</Stack><Stack direction="row"><Button variant="contained" onClick={saveEnser} disabled={!enserForm.nombre}>Guardar</Button></Stack></Stack></Paper> : <Paper sx={{ p: 3, mb: 3 }}><Stack spacing={2}><Typography variant="h4">Nueva prenda</Typography><TextField label="Número" value={prendaForm.numero} onChange={(e) => setPrendaForm({ ...prendaForm, numero: e.target.value })} /><Select value={prendaForm.tipo} onChange={(e) => setPrendaForm({ ...prendaForm, tipo: e.target.value as typeof prendaForm.tipo })} aria-label="Tipo de prenda">{['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</Select><TextField label="Talla" value={prendaForm.talla} onChange={(e) => setPrendaForm({ ...prendaForm, talla: e.target.value })} /><Select value={prendaForm.estado} onChange={(e) => setPrendaForm({ ...prendaForm, estado: e.target.value as typeof prendaForm.estado })} aria-label="Estado">{['DISPONIBLE', 'PRESTADA', 'TALLER', 'BAJA'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</Select><TextField label="Observaciones" value={prendaForm.observaciones} onChange={(e) => setPrendaForm({ ...prendaForm, observaciones: e.target.value })} /><Stack direction="row"><Button variant="contained" onClick={savePrenda} disabled={!prendaForm.numero}>Guardar</Button></Stack></Stack></Paper>}<Stack spacing={2}>{tab === 0 ? listaEnseres.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Typography>{item.nombre} · {item.cantidadTotal} unidades · {item.ubicacion ?? 'Sin ubicación'}</Typography><Stack direction="row"><Button aria-label={`Editar ${item.nombre}`} component={Link} to={`/cms/inventario/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.nombre}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>) : listaPrendas.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Typography>{item.numero} · {item.tipo} · {item.estado}{item.hermano ? ` · ${item.hermano.nombre} ${item.hermano.apellidos}` : ''}</Typography><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>{item.estado === 'DISPONIBLE' && <><TextField size="small" label="ID hermano" value={assignIds[item.id] ?? ''} onChange={(e) => setAssignIds({ ...assignIds, [item.id]: e.target.value })} /><Button onClick={() => assign(item)}>Asignar</Button></>}{item.estado === 'PRESTADA' && <Button onClick={() => returnItem(item)}>Devolver</Button>}<Button aria-label={`Editar ${item.numero}`} component={Link} to={`/cms/inventario/${item.id}/editar?tipo=prenda`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.numero}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}</Stack>{tab === 0
-    ? metaEnseres && <Paginador meta={metaEnseres} onPagina={enseres.irAPagina} onTamano={enseres.cambiarTamano} etiqueta="los enseres" />
-    : metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}</>
+  const borrar = async () => { if (!porBorrar) return; try { if (tab === 0) await deleteEnser(porBorrar.id); else await deletePrenda(porBorrar.id); await load(); setNotice('Elemento eliminado correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido eliminar el elemento.')) } finally { setPorBorrar(null) } }
+  const assign = async (item: Prenda) => { const hermanoId = Number(assignIds[item.id]); if (!Number.isInteger(hermanoId) || hermanoId <= 0) return; try { await assignPrenda(item.id, hermanoId); await load(); setNotice('Prenda asignada correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido asignar la prenda.')) } }
+  const returnItem = async (item: Prenda) => { try { await returnPrenda(item.id, window.confirm('¿La prenda necesita lavado o pasar a taller?')); await load(); setNotice('Prenda devuelta correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido registrar la devolución.')) } }
+
+  return <>
+    <Helmet><title>Inventario | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <CabeceraSeccion titulo="Inventario">
+      <Button variant="contained" startIcon={<AddIcon />} onClick={abrirAlta}>{tab === 0 ? 'Nuevo enser' : 'Nueva prenda'}</Button>
+    </CabeceraSeccion>
+    {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+    {notice && <Alert severity="success" sx={{ mb: 2 }}>{notice}</Alert>}
+    <DialogoConfirmacion abierto={porBorrar !== null} titulo={tab === 0 ? '¿Eliminar el enser?' : '¿Eliminar la prenda?'} mensaje={porBorrar ? nombreDe(porBorrar) : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
+
+    <VentanaFormulario
+      abierto={creando === 'enser'}
+      titulo="Nuevo enser"
+      sucio={JSON.stringify(enserForm) !== JSON.stringify(emptyEnser)}
+      guardando={guardando}
+      puedeGuardar={Boolean(enserForm.nombre)}
+      error={errorAlta}
+      onGuardar={saveEnser}
+      onCerrar={() => setCreando(null)}
+    >
+      {CAMPOS_ENSER.map(([campo, etiqueta]) => <TextField key={campo} label={etiqueta} value={enserForm[campo]} onChange={(e) => setEnserForm({ ...enserForm, [campo]: e.target.value })} fullWidth />)}
+      <Typography variant="subtitle2">Unidades por estado</Typography>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        {CANTIDADES_ENSER.map(([campo, etiqueta]) => <TextField key={campo} label={etiqueta} type="number" slotProps={{ htmlInput: { min: 0 } }} value={enserForm[campo]} onChange={(e) => setEnserForm({ ...enserForm, [campo]: e.target.value })} fullWidth />)}
+      </Stack>
+    </VentanaFormulario>
+
+    <VentanaFormulario
+      abierto={creando === 'prenda'}
+      titulo="Nueva prenda"
+      sucio={JSON.stringify(prendaForm) !== JSON.stringify(emptyPrenda)}
+      guardando={guardando}
+      puedeGuardar={Boolean(prendaForm.numero)}
+      error={errorAlta}
+      onGuardar={savePrenda}
+      onCerrar={() => setCreando(null)}
+    >
+      <TextField label="Número" value={prendaForm.numero} onChange={(e) => setPrendaForm({ ...prendaForm, numero: e.target.value })} fullWidth />
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <TextField select label="Tipo de prenda" value={prendaForm.tipo} onChange={(e) => setPrendaForm({ ...prendaForm, tipo: e.target.value })} fullWidth>{['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField>
+        <TextField label="Talla" value={prendaForm.talla} onChange={(e) => setPrendaForm({ ...prendaForm, talla: e.target.value })} fullWidth />
+      </Stack>
+      <TextField select label="Estado" value={prendaForm.estado} onChange={(e) => setPrendaForm({ ...prendaForm, estado: e.target.value })} fullWidth>{['DISPONIBLE', 'PRESTADA', 'TALLER', 'BAJA'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField>
+      <TextField label="Observaciones" value={prendaForm.observaciones} onChange={(e) => setPrendaForm({ ...prendaForm, observaciones: e.target.value })} fullWidth multiline />
+    </VentanaFormulario>
+
+    <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 3 }}><Tab label="Enseres" /><Tab label="Ropero" /></Tabs>
+    <Stack spacing={2}>{tab === 0 ? listaEnseres.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Typography>{item.nombre} · {item.cantidadTotal} unidades · {item.ubicacion ?? 'Sin ubicación'}</Typography><Stack direction="row"><Button aria-label={`Editar ${item.nombre}`} component={Link} to={`/cms/inventario/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.nombre}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>) : listaPrendas.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Typography>{item.numero} · {item.tipo} · {item.estado}{item.hermano ? ` · ${item.hermano.nombre} ${item.hermano.apellidos}` : ''}</Typography><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>{item.estado === 'DISPONIBLE' && <><TextField size="small" label="ID hermano" value={assignIds[item.id] ?? ''} onChange={(e) => setAssignIds({ ...assignIds, [item.id]: e.target.value })} /><Button onClick={() => assign(item)}>Asignar</Button></>}{item.estado === 'PRESTADA' && <Button onClick={() => returnItem(item)}>Devolver</Button>}<Button aria-label={`Editar ${item.numero}`} component={Link} to={`/cms/inventario/${item.id}/editar?tipo=prenda`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.numero}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}</Stack>
+    {tab === 0
+      ? metaEnseres && <Paginador meta={metaEnseres} onPagina={enseres.irAPagina} onTamano={enseres.cambiarTamano} etiqueta="los enseres" />
+      : metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}
+  </>
 }
