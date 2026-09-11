@@ -10,7 +10,11 @@
 # Para comprobar que una copia sirve, restáurala sobre una base de datos vacía:
 #   .\scripts\restore-db.ps1 -Archivo .\backups\backup_xxx.sql.gz -BaseDatos desamparados_prueba
 #
-# En Linux: instala mysqldump y adapta este script si necesitas automatizarlo.
+# SOLO PARA EL EQUIPO DE DESARROLLO: copia la base de datos sin cifrar, sin
+# storage/ y en la misma máquina. En el servidor (Linux) se usa
+# scripts/backup-vps.sh, que empaqueta también storage/, cifra con age y sube
+# fuera con rclone (ver docs/despliegue.md). La carpeta backups/ está en
+# .gitignore: estas copias llevan el censo entero.
 #
 # IMPORTANTE: este fichero debe funcionar en Windows PowerShell 5.1, que es el
 # que trae Windows de serie. Nada de operadores de PowerShell 7 (?., ??,

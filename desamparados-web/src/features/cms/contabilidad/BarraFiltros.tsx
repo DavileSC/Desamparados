@@ -3,7 +3,7 @@ import { Box, IconButton, InputAdornment, ListSubheader, MenuItem, Paper, Stack,
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import type { Category } from '../../../lib/api/accounting'
-import { METODOS, PERIODOS, PERIODO_POR_DEFECTO, type FiltrosUi } from './filtros'
+import { METODOS, PERIODOS, PERIODO_POR_DEFECTO, fechasInvertidas, type FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, etiquetaMetodo } from './formato'
 
 interface Props {
@@ -32,13 +32,16 @@ export default function BarraFiltros({ filtros, categorias, onCambiar }: Props) 
     return () => window.clearTimeout(espera)
   }, [texto, filtros.q, onCambiar])
 
+  const alReves = fechasInvertidas(filtros)
+
   // Con «Ingresos» o «Gastos», el desplegable solo ofrece categorías de ese tipo.
+  // Las desactivadas también salen: su historial se sigue pudiendo filtrar.
   const ingresos = categorias.filter((c) => c.tipo === 'INGRESO')
   const gastos = categorias.filter((c) => c.tipo === 'GASTO')
   const categoriaElegida = categorias.find((c) => String(c.id) === filtros.categoria)
   const grupo = (titulo: string, lista: Category[]) => [
     <ListSubheader key={titulo}>{titulo}</ListSubheader>,
-    ...lista.map((c) => <MenuItem key={c.id} value={String(c.id)}>{c.nombre}</MenuItem>),
+    ...lista.map((c) => <MenuItem key={c.id} value={String(c.id)}>{c.nombre}{c.activa === false ? ' (desactivada)' : ''}</MenuItem>),
   ]
 
   const cambiarTipo = (tipo: FiltrosUi['tipo'] | null) => {
@@ -80,9 +83,19 @@ export default function BarraFiltros({ filtros, categorias, onCambiar }: Props) 
           {PERIODOS.map((p) => <MenuItem key={p.valor} value={p.valor}>{p.etiqueta}</MenuItem>)}
         </TextField>
         {filtros.periodo === 'personalizado' && (
-          <Stack direction="row" spacing={1}>
-            <TextField size="small" type="date" label="Desde" value={filtros.desde} onChange={(e) => onCambiar({ desde: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
-            <TextField size="small" type="date" label="Hasta" value={filtros.hasta} onChange={(e) => onCambiar({ hasta: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
+          // min y max guían el calendario; el aviso cubre lo que se teclea a mano.
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+            <TextField size="small" type="date" label="Desde" value={filtros.desde} onChange={(e) => onCambiar({ desde: e.target.value })} slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: filtros.hasta || undefined } }} />
+            <TextField
+              size="small"
+              type="date"
+              label="Hasta"
+              value={filtros.hasta}
+              onChange={(e) => onCambiar({ hasta: e.target.value })}
+              error={alReves}
+              helperText={alReves ? 'Es anterior a «Desde»' : undefined}
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: filtros.desde || undefined } }}
+            />
           </Stack>
         )}
         <TextField select size="small" label="Categoría" value={filtros.categoria} onChange={(e) => onCambiar({ categoria: e.target.value })} sx={{ minWidth: 190 }} slotProps={SIN_VALOR_VISIBLE}>

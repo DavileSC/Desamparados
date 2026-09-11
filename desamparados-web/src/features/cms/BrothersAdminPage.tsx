@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, Box, Button, CircularProgress, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import EditIcon from '@mui/icons-material/Edit'
@@ -7,6 +7,7 @@ import { useAuthStore } from '../members/auth/store'
 import { approveRequest, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
+import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 
 export default function BrothersAdminPage() {
@@ -34,6 +35,14 @@ export default function BrothersAdminPage() {
   // evita que ?pagina= y ?paginaSolicitudes= se pisen en la URL.
   const solicitudes = usePaginacion('Solicitudes')
   const [metaSolicitudes, setMetaSolicitudes] = useState<MetaPaginacion | null>(null)
+  // Solicitud que se está aprobando o rechazando: mientras tanto no responde
+  // ningún botón de la lista. Un doble clic en «Aprobar» mandaba dos peticiones
+  // (un 500 o un número de hermano saltado). La referencia es la guarda
+  // síncrona: el diálogo de confirmación tarda en cerrarse y un segundo clic en
+  // su botón llegaría antes que el nuevo estado.
+  const [procesando, setProcesando] = useState<number | null>(null)
+  const enMarcha = useRef(false)
+  const [porRechazar, setPorRechazar] = useState<PendingRequest | null>(null)
 
   // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
   // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
@@ -64,8 +73,20 @@ export default function BrothersAdminPage() {
   }, [load, query])
 
   const handleRequest = async (request: PendingRequest, approve: boolean) => {
+    if (enMarcha.current) return
+    enMarcha.current = true
+    setProcesando(request.id); setError(null); setNotice(null)
     try { await (approve ? approveRequest(request.id) : rejectRequest(request.id)); await load(); setNotice(approve ? 'Solicitud aprobada correctamente.' : 'Solicitud rechazada correctamente.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido procesar la solicitud.') }
+    finally { enMarcha.current = false; setProcesando(null) }
+  }
+
+  /** Qué se borra al rechazar: depende de si la cuenta ya estaba aprobada. */
+  const mensajeRechazo = (request: PendingRequest) => {
+    const perfiles = request.hermanos.length === 1 ? 'su perfil pendiente' : `sus ${request.hermanos.length} perfiles pendientes`
+    return request.active
+      ? `Se borrarán ${perfiles} de ${request.nombre} ${request.apellidos}; su cuenta se mantiene. No se puede deshacer.`
+      : `Se borrará la solicitud de ${request.nombre} ${request.apellidos} con sus datos personales y la cuenta que abrió. No se puede deshacer.`
   }
 
   return <>
@@ -77,14 +98,24 @@ export default function BrothersAdminPage() {
       <Tab value="censo" label="Censo" />
       <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
     </Tabs>
+    {/* Rechazar borra datos personales (y a veces la cuenta entera): se pregunta antes. */}
+    <DialogoConfirmacion
+      abierto={porRechazar !== null}
+      titulo="¿Rechazar la solicitud?"
+      mensaje={porRechazar ? mensajeRechazo(porRechazar) : ''}
+      textoConfirmar="Rechazar solicitud"
+      peligro
+      onConfirmar={() => { const solicitud = porRechazar; setPorRechazar(null); if (solicitud) void handleRequest(solicitud, false) }}
+      onCancelar={() => setPorRechazar(null)}
+    />
     {vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
-      {requests.map((request) => <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Box><Typography>{request.nombre} {request.apellidos}</Typography><Typography variant="body2" color="text.secondary">{request.email} · {request.hermanos.length} perfil(es)</Typography></Box><Stack direction="row" spacing={1}><Button variant="contained" onClick={() => handleRequest(request, true)}>Aprobar</Button><Button color="error" onClick={() => handleRequest(request, false)}>Rechazar</Button></Stack></Box>)}
+      {requests.map((request) => <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Box><Typography>{request.nombre} {request.apellidos}</Typography><Typography variant="body2" color="text.secondary">{request.email} · {request.hermanos.length} perfil(es)</Typography></Box><Stack direction="row" spacing={1}><Button variant="contained" disabled={procesando !== null} onClick={() => void handleRequest(request, true)}>{procesando === request.id ? 'Procesando…' : 'Aprobar'}</Button><Button color="error" disabled={procesando !== null} onClick={() => setPorRechazar(request)}>Rechazar</Button></Stack></Box>)}
       {requests.length === 0 && <Alert severity="info">No hay solicitudes pendientes.</Alert>}
     </Stack>
     {metaSolicitudes && <Paginador meta={metaSolicitudes} onPagina={solicitudes.irAPagina} onTamano={solicitudes.cambiarTamano} etiqueta="solicitudes de alta" />}
     </Paper> : <>
     <TextField label="Buscar por nombre, DNI o email" value={query} onChange={(event) => { setQuery(event.target.value); reiniciar() }} fullWidth sx={{ mb: 3 }} />
-    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : 'Pendiente/inactivo'}</Typography></Box>{puedeGestionar && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`} state={{ volver: consultaListado }}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No se han encontrado hermanos.</Alert>}</Stack>}
+    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : brother.fechaBaja ? 'De baja' : 'Solicitud pendiente'}</Typography></Box>{puedeGestionar && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`} state={{ volver: consultaListado }}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No se han encontrado hermanos.</Alert>}</Stack>}
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="censo de hermanos" />}
     </>}
   </>

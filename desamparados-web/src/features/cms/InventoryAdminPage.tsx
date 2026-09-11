@@ -6,12 +6,14 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link, useLocation } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
-import { assignPrenda, createEnser, createPrenda, deleteEnser, deletePrenda, getEnseres, getPrendas, returnPrenda, type Enser, type Prenda } from '../../lib/api/inventory'
+import { createEnser, createPrenda, deleteEnser, deletePrenda, getEnseres, getPrendas, returnPrenda, type Enser, type Prenda } from '../../lib/api/inventory'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
+import { DialogoDevolucion, DialogoPrestamo } from './DialogosRopero'
+import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, esCantidadValida } from './ropero'
 
 const emptyEnser = { nombre: '', referencia: '', categoria: '', ubicacion: '', cantidadOptimo: '0', cantidadBueno: '0', cantidadReparar: '0' }
 const emptyPrenda = { numero: '', tipo: 'TUNICA', talla: '', estado: 'DISPONIBLE', observaciones: '' }
@@ -31,7 +33,9 @@ export default function InventoryAdminPage() {
   const [creando, setCreando] = useState<'enser' | 'prenda' | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [errorAlta, setErrorAlta] = useState<string | null>(null)
-  const [assignIds, setAssignIds] = useState<Record<number, string>>({})
+  // La prenda que se está prestando o devolviendo: cada una con su diálogo.
+  const [prestando, setPrestando] = useState<Prenda | null>(null)
+  const [devolviendo, setDevolviendo] = useState<Prenda | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [porBorrar, setPorBorrar] = useState<Enser | Prenda | null>(null)
@@ -91,8 +95,23 @@ export default function InventoryAdminPage() {
   const savePrenda = () => guardar(() => createPrenda(prendaForm), 'Prenda creada correctamente.', 'No se ha podido guardar la prenda.')
   const nombreDe = (item: Enser | Prenda) => ('nombre' in item ? item.nombre : `Prenda ${item.numero}`)
   const borrar = async () => { if (!porBorrar) return; try { if (tab === 0) await deleteEnser(porBorrar.id); else await deletePrenda(porBorrar.id); await load(); setNotice('Elemento eliminado correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido eliminar el elemento.')) } finally { setPorBorrar(null) } }
-  const assign = async (item: Prenda) => { const hermanoId = Number(assignIds[item.id]); if (!Number.isInteger(hermanoId) || hermanoId <= 0) return; try { await assignPrenda(item.id, hermanoId); await load(); setNotice('Prenda asignada correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido asignar la prenda.')) } }
-  const returnItem = async (item: Prenda) => { try { await returnPrenda(item.id, window.confirm('¿La prenda necesita lavado o pasar a taller?')); await load(); setNotice('Prenda devuelta correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido registrar la devolución.')) } }
+  const cantidadesValidas = CANTIDADES_ENSER.every(([campo]) => esCantidadValida(enserForm[campo]))
+  const prestada = async (aviso: string) => {
+    setPrestando(null)
+    setError(null)
+    setNotice(aviso)
+    await load().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
+  }
+  const devolver = async (necesitaLavado: boolean) => {
+    const prenda = devolviendo
+    setDevolviendo(null)
+    if (!prenda) return
+    try {
+      await returnPrenda(prenda.id, necesitaLavado)
+      await load()
+      setNotice(necesitaLavado ? `Prenda ${prenda.numero} devuelta: pasa al taller.` : `Prenda ${prenda.numero} devuelta: queda disponible.`)
+    } catch (e: unknown) { setError(mensaje(e, 'No se ha podido registrar la devolución.')) }
+  }
 
   return <>
     <Helmet><title>Inventario | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
@@ -101,6 +120,8 @@ export default function InventoryAdminPage() {
     </CabeceraSeccion>
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 2 }}>{notice}</Alert>}
+    <DialogoPrestamo key={prestando?.id ?? 'cerrado'} prenda={prestando} onCerrar={() => setPrestando(null)} onPrestada={(aviso) => void prestada(aviso)} />
+    <DialogoDevolucion prenda={devolviendo} onElegir={(necesitaLavado) => void devolver(necesitaLavado)} onCancelar={() => setDevolviendo(null)} />
     <DialogoConfirmacion abierto={porBorrar !== null} titulo={tab === 0 ? '¿Eliminar el enser?' : '¿Eliminar la prenda?'} mensaje={porBorrar ? nombreDe(porBorrar) : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
 
     <VentanaFormulario
@@ -108,7 +129,7 @@ export default function InventoryAdminPage() {
       titulo="Nuevo enser"
       sucio={JSON.stringify(enserForm) !== JSON.stringify(emptyEnser)}
       guardando={guardando}
-      puedeGuardar={Boolean(enserForm.nombre)}
+      puedeGuardar={Boolean(enserForm.nombre) && cantidadesValidas}
       error={errorAlta}
       onGuardar={saveEnser}
       onCerrar={() => setCreando(null)}
@@ -116,8 +137,9 @@ export default function InventoryAdminPage() {
       {CAMPOS_ENSER.map(([campo, etiqueta]) => <TextField key={campo} label={etiqueta} value={enserForm[campo]} onChange={(e) => setEnserForm({ ...enserForm, [campo]: e.target.value })} fullWidth />)}
       <Typography variant="subtitle2">Unidades por estado</Typography>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        {CANTIDADES_ENSER.map(([campo, etiqueta]) => <TextField key={campo} label={etiqueta} type="number" slotProps={{ htmlInput: { min: 0 } }} value={enserForm[campo]} onChange={(e) => setEnserForm({ ...enserForm, [campo]: e.target.value })} fullWidth />)}
+        {CANTIDADES_ENSER.map(([campo, etiqueta]) => <TextField key={campo} label={etiqueta} type="number" slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'numeric' } }} value={enserForm[campo]} onChange={(e) => setEnserForm({ ...enserForm, [campo]: e.target.value })} error={!esCantidadValida(enserForm[campo])} fullWidth />)}
       </Stack>
+      {!cantidadesValidas && <Alert severity="warning">{AVISO_CANTIDADES}</Alert>}
     </VentanaFormulario>
 
     <VentanaFormulario
@@ -135,12 +157,13 @@ export default function InventoryAdminPage() {
         <TextField select label="Tipo de prenda" value={prendaForm.tipo} onChange={(e) => setPrendaForm({ ...prendaForm, tipo: e.target.value })} fullWidth>{['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField>
         <TextField label="Talla" value={prendaForm.talla} onChange={(e) => setPrendaForm({ ...prendaForm, talla: e.target.value })} fullWidth />
       </Stack>
-      <TextField select label="Estado" value={prendaForm.estado} onChange={(e) => setPrendaForm({ ...prendaForm, estado: e.target.value })} fullWidth>{['DISPONIBLE', 'PRESTADA', 'TALLER', 'BAJA'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField>
+      {/* Sin «Prestada»: una prenda se presta con «Prestar», que anota a quién. */}
+      <TextField select label="Estado" value={prendaForm.estado} onChange={(e) => setPrendaForm({ ...prendaForm, estado: e.target.value })} helperText="Para prestarla, usa «Prestar» en el listado del ropero." fullWidth>{ESTADOS_ELEGIBLES.map((v) => <MenuItem key={v} value={v}>{ETIQUETA_ESTADO[v]}</MenuItem>)}</TextField>
       <TextField label="Observaciones" value={prendaForm.observaciones} onChange={(e) => setPrendaForm({ ...prendaForm, observaciones: e.target.value })} fullWidth multiline />
     </VentanaFormulario>
 
     <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 3 }}><Tab label="Enseres" /><Tab label="Ropero" /></Tabs>
-    <Stack spacing={2}>{tab === 0 ? listaEnseres.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Typography>{item.nombre} · {item.cantidadTotal} unidades · {item.ubicacion ?? 'Sin ubicación'}</Typography><Stack direction="row"><Button aria-label={`Editar ${item.nombre}`} component={Link} to={`/cms/inventario/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.nombre}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>) : listaPrendas.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Typography>{item.numero} · {item.tipo} · {item.estado}{item.hermano ? ` · ${item.hermano.nombre} ${item.hermano.apellidos}` : ''}</Typography><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>{item.estado === 'DISPONIBLE' && <><TextField size="small" label="ID hermano" value={assignIds[item.id] ?? ''} onChange={(e) => setAssignIds({ ...assignIds, [item.id]: e.target.value })} /><Button onClick={() => assign(item)}>Asignar</Button></>}{item.estado === 'PRESTADA' && <Button onClick={() => returnItem(item)}>Devolver</Button>}<Button aria-label={`Editar ${item.numero}`} component={Link} to={`/cms/inventario/${item.id}/editar?tipo=prenda`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.numero}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}</Stack>
+    <Stack spacing={2}>{tab === 0 ? listaEnseres.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Typography>{item.nombre} · {item.cantidadTotal} unidades · {item.ubicacion ?? 'Sin ubicación'}</Typography><Stack direction="row"><Button aria-label={`Editar ${item.nombre}`} component={Link} to={`/cms/inventario/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.nombre}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>) : listaPrendas.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Typography>{item.numero} · {item.tipo} · {ETIQUETA_ESTADO[item.estado] ?? item.estado}{item.hermano ? ` · ${item.hermano.nombre} ${item.hermano.apellidos}${item.hermano.numeroHermano ? ` (nº ${item.hermano.numeroHermano})` : ''}` : ''}</Typography><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>{item.estado === 'DISPONIBLE' && <Button aria-label={`Prestar ${item.numero}`} onClick={() => setPrestando(item)}>Prestar</Button>}{item.estado === 'PRESTADA' && <Button aria-label={`Devolver ${item.numero}`} onClick={() => setDevolviendo(item)}>Devolver</Button>}<Button aria-label={`Editar ${item.numero}`} component={Link} to={`/cms/inventario/${item.id}/editar?tipo=prenda`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.numero}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}</Stack>
     {tab === 0
       ? metaEnseres && <Paginador meta={metaEnseres} onPagina={enseres.irAPagina} onTamano={enseres.cambiarTamano} etiqueta="los enseres" />
       : metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}

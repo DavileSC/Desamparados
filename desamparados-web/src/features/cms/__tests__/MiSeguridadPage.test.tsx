@@ -39,11 +39,12 @@ describe('MiSeguridadPage', () => {
   })
 
   it('activar: QR, código y respaldos en claro una sola vez', async () => {
-    vi.stubGlobal('fetch', mockPorUrl({
+    const fetchMock = mockPorUrl({
       '/auth/2fa/generate': { qrCodeUrl: 'data:image/png;base64,qr', secret: 'JBSWY3DPEHPK3PXP' },
       '/auth/2fa/enable': { message: '2FA activado.', backupCodes: ['AB2C-DEF4-GH56', 'IJ8K-LM6N-OP3Q'] },
       '/auth/me': { user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], twoFactorEnabled: true } },
-    }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
 
     renderWithProviders(<MiSeguridadPage />)
     const user = userEvent.setup()
@@ -51,6 +52,10 @@ describe('MiSeguridadPage', () => {
     await user.click(screen.getByRole('button', { name: /activar 2fa/i }))
     expect(await screen.findByRole('img', { name: /qr/i })).toBeInTheDocument()
     expect(screen.getByText('JBSWY3DPEHPK3PXP')).toBeInTheDocument()
+
+    // Genera y guarda un secreto nuevo: el backend ya no lo sirve por GET.
+    const generar = fetchMock.mock.calls.find((c) => String(c[0]).includes('/auth/2fa/generate'))
+    expect(generar?.[1]?.method).toBe('POST')
 
     await user.type(screen.getByLabelText(/código de 6 dígitos/i), '123456')
     await user.click(screen.getByRole('button', { name: 'Activar' }))
@@ -89,6 +94,30 @@ describe('MiSeguridadPage', () => {
     expect(await screen.findByText('Código incorrecto.')).toBeInTheDocument()
     // No hay respaldos que mostrar: el flujo no avanzó.
     expect(screen.queryByText(/los he guardado/i)).not.toBeInTheDocument()
+  })
+
+  it('si el servidor dice que ya está activo, lo explica y la pantalla se pone al día', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((input: RequestInfo) => {
+      const url = typeof input === 'string' ? input : input.url
+      if (url.includes('/auth/2fa/generate')) {
+        return ok({ error: 'El doble factor ya está activo. Desactívalo primero si quieres configurarlo con otro móvil.' }, 409)
+      }
+      if (url.includes('/auth/me')) {
+        return ok({ user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], twoFactorEnabled: true } })
+      }
+      return ok({}, 404)
+    }))
+
+    renderWithProviders(<MiSeguridadPage />)
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: /activar 2fa/i }))
+
+    expect(await screen.findByText(/desactívalo primero/i)).toBeInTheDocument()
+    // Sin QR que escanear, y con el estado real de la cuenta.
+    expect(screen.queryByRole('img', { name: /qr/i })).not.toBeInTheDocument()
+    expect(await screen.findByText('Activado')).toBeInTheDocument()
+    expect(useAuthStore.getState().status).toBe('autenticado')
   })
 
   it('desactivar pide confirmación y código vigente', async () => {

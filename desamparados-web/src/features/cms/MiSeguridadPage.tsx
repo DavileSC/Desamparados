@@ -46,6 +46,9 @@ export default function MiSeguridadPage() {
       setQr(await generarQr2FA())
     } catch (e) {
       setError(errorMessage(e, 'No se ha podido generar el QR. Inténtalo de nuevo.'))
+      // 409: el servidor dice que ya está activo (activado desde otra pestaña,
+      // por ejemplo). Se refresca la cuenta para que la pantalla lo refleje.
+      if (e instanceof ApiError && e.status === 409) await refrescarSesion().catch(() => undefined)
     } finally {
       setOcupado(false)
     }

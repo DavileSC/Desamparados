@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { subirImagenPublica } from '../upload'
+import { subirImagenPublica, subirPdfPublico } from '../upload'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -32,5 +32,18 @@ describe('subirImagenPublica', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ error: 'El tipo de archivo real no es válido.' }, 400)))
 
     await expect(subirImagenPublica(new File(['x'], 'foto.png', { type: 'image/png' }))).rejects.toThrow('El tipo de archivo real no es válido.')
+  })
+})
+
+describe('subirPdfPublico', () => {
+  it('sube el PDF a la carpeta pública y devuelve su ruta relativa, que es lo único que admite el servidor', async () => {
+    const espia = vi.fn().mockResolvedValue(respuesta({
+      message: 'Archivo subido correctamente',
+      data: { url: 'http://localhost:3001/storage/public/abc.pdf', filename: 'abc.pdf', type: 'application/pdf', size: '900 KB' },
+    }, 201))
+    vi.stubGlobal('fetch', espia)
+
+    await expect(subirPdfPublico(new File(['%PDF'], 'boletin.pdf', { type: 'application/pdf' }))).resolves.toBe('/storage/public/abc.pdf')
+    expect(String(espia.mock.calls[0][0])).toContain('/upload/public')
   })
 })

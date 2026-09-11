@@ -3,7 +3,13 @@
 // Las fotos de la cabecera de la portada. La validación del cuerpo y el 401 sin
 // sesión no tocan la base de datos y corren siempre; la lectura pública y el
 // guardado como staff necesitan MariaDB y se omiten si no está levantada.
+//
+// El primer import aísla storage/ en una carpeta temporal: sustituir la lista
+// borra del disco las fotos que salen de ella (utils/ficheros-publicos.ts), y
+// este test sustituye la lista de la base de desarrollo, cuyas fotos viven en
+// el storage del repositorio.
 
+import './fixtures/almacen-temporal.js';
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import type { AddressInfo } from 'node:net';

@@ -5,8 +5,38 @@ export type TipoApunte = 'INGRESO' | 'GASTO'
 export type MetodoPago = 'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'
 
 export interface Balance { ingresos: number; gastos: number; balanceTotal: number }
-export interface Category { id: number; nombre: string; tipo: TipoApunte }
-export interface Transaction { id: number; tipo: TipoApunte; concepto: string; importe: number | string; fecha: string; metodoPago?: MetodoPago | null; categoria: { nombre: string }; hermano: { nombre: string; apellidos: string } | null }
+export interface Category {
+  id: number
+  nombre: string
+  tipo: TipoApunte
+  /** Desactivada, deja de ofrecerse al apuntar; sus apuntes siguen en el libro. */
+  activa?: boolean
+  /** La usan los recibos al cobrarse o devolverse: no se puede renombrar. */
+  deRecibos?: boolean
+}
+export interface Transaction {
+  id: number
+  tipo: TipoApunte
+  concepto: string
+  importe: number | string
+  fecha: string
+  metodoPago?: MetodoPago | null
+  categoriaId?: number
+  /** Con recibo, el apunte se corrige desde el recibo; sin él, es manual y se corrige aquí. */
+  reciboId?: number | null
+  categoria: { nombre: string }
+  hermano: { nombre: string; apellidos: string } | null
+}
+
+/** Lo que se manda al apuntar o corregir a mano. `fecha` en `AAAA-MM-DD`. */
+export interface ApunteManual {
+  tipo: TipoApunte
+  categoriaId: number
+  concepto: string
+  importe: number
+  fecha: string
+  metodoPago: MetodoPago
+}
 
 /** Los mismos filtros sirven al libro mayor y al resumen: las cifras cuadran con la lista. */
 export interface FiltrosContables {
@@ -47,6 +77,18 @@ export const getResumen = (filtros: FiltrosContables = {}) => {
   const filtrado = paramsFiltros(filtros).toString()
   return apiFetch<ResumenContable>(`/transacciones/resumen${filtrado ? `?${filtrado}` : ''}`)
 }
-export const getCategories = (tipo?: TipoApunte) => apiFetch<Category[]>(`/transacciones/categorias${tipo ? `?tipo=${tipo}` : ''}`)
-export const createTransaction = (json: object) => apiFetch<{ message: string }>('/transacciones', { method: 'POST', json })
-export const createCategory = (json: object) => apiFetch<{ message: string }>('/transacciones/categorias', { method: 'POST', json })
+/** `todas`: también las desactivadas, que la gestión y los filtros del histórico necesitan ver. */
+export const getCategories = (tipo?: TipoApunte, todas = false) => {
+  const params = new URLSearchParams()
+  if (tipo) params.set('tipo', tipo)
+  if (todas) params.set('todas', 'true')
+  const consulta = params.toString()
+  return apiFetch<Category[]>(`/transacciones/categorias${consulta ? `?${consulta}` : ''}`)
+}
+export const createTransaction = (json: ApunteManual) => apiFetch<{ message: string }>('/transacciones', { method: 'POST', json })
+/** Solo apuntes manuales: los de un recibo responden 409 y se corrigen desde el recibo. */
+export const updateTransaction = (id: number, json: ApunteManual) => apiFetch<{ message: string }>(`/transacciones/${id}`, { method: 'PUT', json })
+export const deleteTransaction = (id: number) => apiFetch<{ message: string }>(`/transacciones/${id}`, { method: 'DELETE' })
+export const createCategory = (json: { nombre: string; tipo: TipoApunte }) => apiFetch<{ message: string }>('/transacciones/categorias', { method: 'POST', json })
+export const renameCategory = (id: number, nombre: string) => apiFetch<{ message: string }>(`/transacciones/categorias/${id}`, { method: 'PUT', json: { nombre } })
+export const setCategoryActive = (id: number, activa: boolean) => apiFetch<{ message: string }>(`/transacciones/categorias/${id}/activa`, { method: 'PATCH', json: { activa } })

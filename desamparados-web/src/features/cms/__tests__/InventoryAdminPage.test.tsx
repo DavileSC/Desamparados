@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import InventoryAdminPage from '../InventoryAdminPage'
@@ -76,4 +76,90 @@ describe('InventoryAdminPage', () => {
 
     expect(await screen.findByRole('link', { name: /editar tun-002/i })).toHaveAttribute('href', '/cms/inventario/9/editar?tipo=prenda')
   })
+
+  it('el alta de una prenda no ofrece «Prestada»: eso lo hace «Prestar», que anota a quién', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(respuestaJson({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }))))
+    renderWithProviders(<InventoryAdminPage />, { ruta: '/cms/inventario' })
+
+    await user.click(await screen.findByRole('tab', { name: 'Ropero' }))
+    await user.click(screen.getByRole('button', { name: /nueva prenda/i }))
+    await user.click(within(screen.getByRole('dialog', { name: /nueva prenda/i })).getByLabelText('Estado'))
+    const opciones = (await screen.findAllByRole('option')).map((o) => o.textContent)
+    expect(opciones).toEqual(['Disponible', 'En taller', 'De baja'])
+  })
+
+  it('las cantidades de un enser tienen que ser enteras para poder guardarlo', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(respuestaJson({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }))))
+    renderWithProviders(<InventoryAdminPage />, { ruta: '/cms/inventario' })
+
+    await user.click(await screen.findByRole('button', { name: /nuevo enser/i }))
+    const ventana = screen.getByRole('dialog', { name: /nuevo enser/i })
+    await user.type(within(ventana).getByLabelText('Nombre'), 'Ciriales')
+    const optimo = within(ventana).getByLabelText('Óptimo')
+    await user.clear(optimo)
+    await user.type(optimo, '2.5')
+
+    expect(within(ventana).getByText(/números enteros/i)).toBeInTheDocument()
+    expect(within(ventana).getByRole('button', { name: 'Guardar' })).toBeDisabled()
+  })
+
+  it('se presta buscando por número de hermano y enseñando su nombre antes de confirmar', async () => {
+    const user = userEvent.setup()
+    const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      const ruta = String(url)
+      if (ruta.includes('/hermanos/123')) return Promise.resolve(respuestaJson({ numeroHermano: 123, nombre: 'Ana', apellidos: 'Ruiz Martín' }))
+      if (init?.method === 'POST') return Promise.resolve(respuestaJson({ message: 'Prenda asignada correctamente' }))
+      return Promise.resolve(respuestaJson({ data: [ruta.includes('/enseres') ? enser : prenda], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } }))
+    })
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<InventoryAdminPage />, { ruta: '/cms/inventario' })
+
+    await user.click(await screen.findByRole('tab', { name: 'Ropero' }))
+    await user.click(await screen.findByRole('button', { name: 'Prestar TUN-002' }))
+    const dialogo = screen.getByRole('dialog', { name: /prestar la prenda tun-002/i })
+    expect(within(dialogo).getByRole('button', { name: 'Prestar' })).toBeDisabled()
+
+    await user.type(within(dialogo).getByLabelText(/número de hermano/i), '123')
+    await user.click(within(dialogo).getByRole('button', { name: 'Buscar' }))
+    expect(await within(dialogo).findByText('Nº 123 · Ana Ruiz Martín')).toBeInTheDocument()
+
+    await user.click(within(dialogo).getByRole('button', { name: 'Prestar a Ana' }))
+    await waitFor(() => {
+      const envio = simulado.mock.calls.find(([url, init]) => String(url).includes('/prendas/9/asignar') && init?.method === 'POST')
+      expect(envio).toBeDefined()
+      expect(JSON.parse(String(envio![1].body))).toEqual({ numeroHermano: 123 })
+    })
+    expect(await screen.findByText('Prenda TUN-002 prestada a Ana Ruiz Martín.')).toBeInTheDocument()
+  })
+
+  it('«Devolver» pregunta con tres salidas y «Cancelar» no devuelve nada', async () => {
+    const user = userEvent.setup()
+    const prestada = { ...prenda, estado: 'PRESTADA', hermano: { nombre: 'Ana', apellidos: 'Ruiz', numeroHermano: 123 } }
+    const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return Promise.resolve(respuestaJson({ message: 'Prenda devuelta con éxito' }))
+      return Promise.resolve(respuestaJson({ data: [String(url).includes('/enseres') ? enser : prestada], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } }))
+    })
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<InventoryAdminPage />, { ruta: '/cms/inventario' })
+    const devoluciones = () => simulado.mock.calls.filter(([url, init]) => String(url).includes('/devolver') && init?.method === 'POST')
+
+    await user.click(await screen.findByRole('tab', { name: 'Ropero' }))
+    await user.click(await screen.findByRole('button', { name: 'Devolver TUN-002' }))
+    const dialogo = screen.getByRole('dialog', { name: /cómo vuelve la prenda tun-002/i })
+    expect(within(dialogo).getByText(/la tenía ana ruiz/i)).toBeInTheDocument()
+    await user.click(within(dialogo).getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(devoluciones()).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Devolver TUN-002' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /con lavado/i }))
+    await waitFor(() => expect(devoluciones()).toHaveLength(1))
+    expect(JSON.parse(String(devoluciones()[0][1]!.body))).toEqual({ necesitaLavado: true })
+  })
 })
+
+function respuestaJson(cuerpo: unknown) {
+  return new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } })
+}

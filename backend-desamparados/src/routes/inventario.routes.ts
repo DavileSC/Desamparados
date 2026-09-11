@@ -10,7 +10,8 @@ import { idParam } from '../config/common.js';
 // Importamos todos los esquemas (Enseres y Prendas)
 import { 
   createEnserSchema, updateEnserSchema, queryEnserSchema,
-  createPrendaSchema, updatePrendaSchema, queryPrendaSchema 
+  createPrendaSchema, updatePrendaSchema, queryPrendaSchema,
+  asignarPrendaSchema, devolverPrendaSchema, numeroHermanoParamSchema
 } from '../schemas/inventario.schema.js';
 
 const inventarioRoutes = Router();
@@ -27,7 +28,9 @@ const rolesGestores = [Role.ADMIN, Role.ALBACERIA, Role.HERMANO_MAYOR];
 // ==========================================
 // --- DASHBOARD GLOBAL ---
 // ==========================================
-// Va suelto y arriba para que no choque con los /:id
+// Va suelto y arriba para que no choque con los /:id. Abierto a cualquier
+// hermano con sesión: son totales (unidades por estado y prendas por tipo y
+// estado), sin ningún dato de quién tiene cada prenda.
 inventarioRoutes.get('/dashboard', InventarioController.dashboard); 
 
 
@@ -36,7 +39,8 @@ inventarioRoutes.get('/dashboard', InventarioController.dashboard);
 // Rutas base: /inventario/enseres/...
 // ==========================================
 
-// LECTURA (Todos los hermanos pueden ver el patrimonio)
+// LECTURA (Todos los hermanos pueden ver el patrimonio: un enser no lleva
+// datos personales, a diferencia de las prendas del ropero)
 inventarioRoutes.get('/enseres', validate(queryEnserSchema), InventarioController.listEnseres);       
 inventarioRoutes.get('/enseres/:id', validateId, InventarioController.getOneEnser);  
 
@@ -51,13 +55,15 @@ inventarioRoutes.delete('/enseres/:id', checkRole(rolesGestores), validateId, In
 // Rutas base: /inventario/prendas/...
 // ==========================================
 
-// LECTURA
-inventarioRoutes.get('/prendas', validate(queryPrendaSchema), InventarioController.listPrendas);
+// LECTURA (solo gestores): cada prenda prestada lleva el nombre, los apellidos
+// y el número de hermano de quien la tiene. Sin el checkRole, cualquier hermano
+// raso con sesión veía quién tiene cada túnica.
+inventarioRoutes.get('/prendas', checkRole(rolesGestores), validate(queryPrendaSchema), InventarioController.listPrendas);
 // Va DESPUÉS de '/prendas' y ANTES de las rutas de acción, igual que en el
 // bloque de enseres. ':id' se traga cualquier segmento suelto, así que
 // cualquier GET literal que se añada aquí ('/prendas/disponibles'...) tiene que
 // declararse por encima de esta línea o no llegará nunca a su controlador.
-inventarioRoutes.get('/prendas/:id', validateId, InventarioController.getOnePrenda);
+inventarioRoutes.get('/prendas/:id', checkRole(rolesGestores), validateId, InventarioController.getOnePrenda);
 
 // GESTIÓN BÁSICA DE PRENDAS
 inventarioRoutes.post('/prendas', checkRole(rolesGestores), validate(createPrendaSchema), InventarioController.createPrenda);
@@ -66,13 +72,14 @@ inventarioRoutes.delete('/prendas/:id', checkRole(rolesGestores), validateId, In
 
 // --- LÓGICA DE ASIGNACIONES (PRÉSTAMOS) ---
 
-// Validadores inline rápidos y seguros para los préstamos
-const asignarSchema = validate(type({ body: { hermanoId: "number > 0" } }));
-const devolverSchema = validate(type({ body: { "necesitaLavado?": "boolean" } }));
+// Antes de prestar, el CMS enseña a quién: nombre y apellidos del hermano con
+// ese número. Cuelga de '/hermanos' y no de '/prendas' para que ningún
+// '/prendas/:id' se lo trague.
+inventarioRoutes.get('/hermanos/:numeroHermano', checkRole(rolesGestores), validate(numeroHermanoParamSchema), InventarioController.buscarHermano);
 
 // Rutas de acción
-inventarioRoutes.post('/prendas/:id/asignar', checkRole(rolesGestores), validateId, asignarSchema, InventarioController.asignarPrenda);
-inventarioRoutes.post('/prendas/:id/devolver', checkRole(rolesGestores), validateId, devolverSchema, InventarioController.devolverPrenda);
+inventarioRoutes.post('/prendas/:id/asignar', checkRole(rolesGestores), validateId, validate(asignarPrendaSchema), InventarioController.asignarPrenda);
+inventarioRoutes.post('/prendas/:id/devolver', checkRole(rolesGestores), validateId, validate(devolverPrendaSchema), InventarioController.devolverPrenda);
 
 
 export { inventarioRoutes };

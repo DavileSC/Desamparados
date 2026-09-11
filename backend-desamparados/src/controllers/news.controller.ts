@@ -119,7 +119,7 @@ export class NewsController {
 
   static async configHomeLimit(req: Request, res: Response) {
     try {
-      // limit ya es un 'number' real garantizado por ArkType
+      // limit ya es un entero entre 1 y 20 garantizado por ArkType (news.schema.ts)
       const { limit } = req.body;
       await NewsService.setHomeLimit(limit);
       res.status(200).json({ message: 'Configuración actualizada' });

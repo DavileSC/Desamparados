@@ -4,7 +4,7 @@ export interface CreateNewsDto {
   titulo: string;
   extracto?: string;  // Resumen corto para listados
   contenido: string;  // HTML o Markdown del cuerpo
-  imagenUrl?: string; // URL de la imagen destacada
+  imagenUrl?: string | null; // Ruta de la imagen destacada; '' o null = sin foto
   visible?: boolean;  // Borrador o Publicada
   fecha?: string;     // ISO String. Opcional (si no viene, es hoy)
   slug?: string;      // Opcional, por si el SEO quiere forzar uno
@@ -14,7 +14,7 @@ export interface UpdateNewsDto {
   titulo?: string;
   extracto?: string;
   contenido?: string;
-  imagenUrl?: string;
+  imagenUrl?: string | null;
   visible?: boolean;
   fecha?: string;
   slug?: string;

@@ -17,7 +17,8 @@ export class AdminController {
 
   static async searchUsers(req: Request, res: Response) {
     try {
-      const search = req.query.q as string;
+      // Validado por searchUsersSchema: si llega, es un texto (nunca un array).
+      const search = typeof req.query.q === 'string' ? req.query.q : undefined;
       const users = await AdminService.searchEligibleUsers(search);
       res.status(200).json(users);
     } catch (e) {

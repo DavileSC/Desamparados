@@ -30,6 +30,8 @@ export interface PendingRequest {
   nombre: string
   apellidos: string
   createdAt: string
+  /** Cuenta ya aprobada (un familiar añadido después) o solicitud nueva (false). */
+  active?: boolean
   hermanos: AdminBrother[]
 }
 
@@ -62,14 +64,19 @@ export interface AdminBrotherPayload {
   poblacion?: string
   codigoPostal?: string
   numeroHermano?: number
-  activo?: boolean
   esTitular?: boolean
   tieneTunicaPropia?: boolean
   tunica?: string
   alturaHombro?: number
   puesto?: string
   fechaAlta?: string
-  fechaBaja?: string | null
+  /**
+   * Solo para CORREGIR la fecha de una ficha que ya está de baja. La ficha no
+   * da altas ni bajas (ni `activo`, ni quitar la baja con null): eso va por
+   * darDeBajaBrother, reactivarBrother y la aprobación de solicitudes, que
+   * asignan o liberan el número, tocan la cuenta y quedan en la auditoría.
+   */
+  fechaBaja?: string
 }
 
 export function getBrother(id: number) {
@@ -78,6 +85,19 @@ export function getBrother(id: number) {
 
 export function updateBrother(id: number, payload: AdminBrotherPayload) {
   return apiFetch<AdminBrother>(`/hermanos/admin/${id}`, { method: 'PUT', json: payload })
+}
+
+/** Da de baja a un hermano con la fecha indicada (AAAA-MM-DD); sin ella, hoy. */
+export function darDeBajaBrother(id: number, fechaBaja?: string) {
+  return apiFetch<{ message: string }>(`/hermanos/admin/${id}/baja`, {
+    method: 'DELETE',
+    ...(fechaBaja ? { json: { fechaBaja } } : {}),
+  })
+}
+
+/** Vuelve a dar de alta a un hermano de baja: número nuevo y cuenta con acceso. */
+export function reactivarBrother(id: number) {
+  return apiFetch<{ message: string }>(`/hermanos/admin/${id}/reactivar`, { method: 'POST' })
 }
 
 /**

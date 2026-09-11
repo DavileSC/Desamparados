@@ -2,9 +2,13 @@ import helmet from 'helmet';
 
 const helmetConfig = helmet({
   // 1. Cross-Origin Resource Policy (CORP)
-  // Permite que otros dominios (tu frontend) carguen recursos (imágenes) de tu backend.
-  // Es fundamental porque sirves archivos estáticos en /storage.
-  crossOriginResourcePolicy: { policy: "cross-origin" },
+  // Por defecto, ningún otro sitio puede incrustar las respuestas de la API
+  // (<img>, <script>...). La excepción son los archivos públicos del CMS, que
+  // se sirven con 'cross-origin' desde app.ts (setHeaders de express.static):
+  // así una imagen guardada con URL absoluta se sigue viendo desde la web en
+  // desarrollo, que corre en otro puerto. A las llamadas fetch de la web no
+  // les afecta: CORP solo se aplica a peticiones sin CORS.
+  crossOriginResourcePolicy: { policy: "same-origin" },
 
   // 2. Content Security Policy (CSP)
   // Previene ataques XSS restringiendo desde dónde se pueden cargar scripts, imágenes, etc.
@@ -16,7 +20,9 @@ const helmetConfig = helmet({
       // que ya no hace falta abrir la puerta a cualquier host https.
       fontSrc: ["'self'", "data:"],
       formAction: ["'self'"],
-      frameAncestors: ["'self'"], // Evita que otros sitios te incrusten (Clickjacking moderno)
+      // 'none' y no 'self': con 'self' contradecía el X-Frame-Options: DENY de
+      // abajo, y la API no tiene nada que deba verse dentro de un marco.
+      frameAncestors: ["'none'"],
       imgSrc: ["'self'", "data:", "blob:"], // Permitir imágenes locales y base64
       objectSrc: ["'none'"], // Bloquear plugins como Flash
       scriptSrc: ["'self'"], // Solo scripts del propio dominio

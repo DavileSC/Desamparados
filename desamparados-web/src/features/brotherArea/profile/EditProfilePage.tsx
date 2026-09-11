@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet-async'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import AppButton from '../../../components/AppButton'
-import { getMyProfiles, updateMyProfile, type ApiProfile } from '../../../lib/api/profile'
+import { fichaPropia, getMyProfiles, updateMyProfile, type ApiProfile } from '../../../lib/api/profile'
 import { profileSchema, type ProfileFormData } from './schema'
 
 export default function EditProfilePage() {
@@ -40,7 +40,7 @@ export default function EditProfilePage() {
     // esta pantalla elige una ficha, y un selector paginado escondería alguna.
     getMyProfiles()
       .then((respuesta) => {
-        const currentProfile = respuesta.data[0]
+        const currentProfile = fichaPropia(respuesta.data)
         if (cancelled) return
         if (!currentProfile) {
           setError('No se ha encontrado ningún perfil asociado a tu cuenta.')

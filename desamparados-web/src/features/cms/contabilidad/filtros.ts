@@ -33,8 +33,18 @@ export interface FiltrosUi {
 }
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/
-const dia = (fecha: Date) =>
+/** `AAAA-MM-DD` del día local (el del navegador, que en el CMS es el de Madrid). */
+export const dia = (fecha: Date) =>
   `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
+
+/**
+ * Unas fechas a elegir con el «hasta» antes del «desde». El servidor lo
+ * rechaza con 400 (antes pintaba 1.201 meses vacíos), así que la pantalla ni
+ * lo pide: avisa en el campo y espera a que se corrija.
+ */
+export function fechasInvertidas(ui: Pick<FiltrosUi, 'periodo' | 'desde' | 'hasta'>): boolean {
+  return ui.periodo === 'personalizado' && Boolean(ui.desde && ui.hasta) && ui.desde > ui.hasta
+}
 
 /**
  * Fechas de cada periodo, contadas desde hoy. Los que están en curso acaban hoy

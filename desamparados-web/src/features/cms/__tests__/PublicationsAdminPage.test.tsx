@@ -54,6 +54,20 @@ describe('PublicationsAdminPage', () => {
     expect(screen.queryByLabelText(/url de imagen/i)).not.toBeInTheDocument()
   })
 
+  it('la nueva publicación sube su PDF con un botón y no se puede guardar sin él', async () => {
+    const user = userEvent.setup()
+    responder([publicacion], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    renderWithProviders(<PublicationsAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: /nueva publicación/i }))
+    const ventana = screen.getByRole('dialog', { name: /nueva publicación/i })
+    const pdf = within(ventana).getByRole('group', { name: /archivo pdf/i })
+    expect(within(pdf).getByLabelText(/subir pdf/i)).toBeInTheDocument()
+
+    await user.type(within(ventana).getByLabelText('Título'), 'Boletín 2027')
+    expect(within(ventana).getByRole('button', { name: 'Guardar' })).toBeDisabled()
+  })
+
   it('pide la página que dice la URL', async () => {
     const simulado = responder([], { total: 60, page: 2, limit: 20, totalPages: 3 })
     renderWithProviders(<PublicationsAdminPage />, { ruta: '/cms/publicaciones?pagina=2' })

@@ -10,6 +10,8 @@ import {
   transicionesDesde,
   requiereReverso,
   ESTADOS_FINALES,
+  puedeCobrarse,
+  anulaPapeleta,
 } from '../src/domain/recibo-estados.js';
 
 const TODOS = Object.values(EstadoPago);
@@ -89,6 +91,23 @@ describe('máquina de estados de recibos', () => {
     assert.equal(requiereReverso(EstadoPago.REMESADO, EstadoPago.DEVUELTO), false);
     assert.equal(requiereReverso(EstadoPago.PENDIENTE, EstadoPago.ANULADO), false);
     assert.equal(requiereReverso(EstadoPago.PENDIENTE, EstadoPago.EXENTO), false);
+  });
+
+  test('se cobra desde pendiente y también desde remesado', () => {
+    // Un remesado es un cobro en curso: antes no había forma de darlo por
+    // cobrado y se quedaba en un callejón sin salida.
+    assert.ok(puedeCobrarse(EstadoPago.PENDIENTE));
+    assert.ok(puedeCobrarse(EstadoPago.REMESADO));
+    for (const estado of [EstadoPago.PAGADO, ...ESTADOS_FINALES]) {
+      assert.equal(puedeCobrarse(estado), false, `${estado} no debería poder cobrarse`);
+    }
+  });
+
+  test('devolver o anular el recibo deja sin efecto la papeleta; eximirlo no', () => {
+    assert.ok(anulaPapeleta(EstadoPago.DEVUELTO));
+    assert.ok(anulaPapeleta(EstadoPago.ANULADO));
+    assert.equal(anulaPapeleta(EstadoPago.EXENTO), false);
+    assert.equal(anulaPapeleta(EstadoPago.REMESADO), false);
   });
 
   test('toda transición válida parte de un estado no final', () => {

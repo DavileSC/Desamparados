@@ -1,6 +1,7 @@
 import { EstadoPago, TipoTransaccion, type TipoEvento } from '@prisma/client';
 import db from '../config/db.js';
-import { serieCensoMensual, ultimosMeses, claveMes, type MovimientoMensual } from '../domain/panel-censo.js';
+import { serieCensoMensual, ultimosMeses, claveMes, whereAltasAprobadas, type MovimientoMensual } from '../domain/panel-censo.js';
+import { diaMadrid, inicioDiaMadrid, unAnioAntes } from '../domain/contabilidad.js';
 import { agruparPorTextoLibre, type Recuento } from '../domain/panel-agrupar.js';
 
 /**
@@ -100,10 +101,15 @@ function contarPorMes(fechas: (Date | null)[]): MovimientoMensual[] {
 export class PanelService {
   static async getPanel(): Promise<PanelResponse> {
     const hoy = new Date();
-    const anio = hoy.getUTCFullYear();
+    // Días, meses y años de Madrid, con los mismos helpers que la contabilidad:
+    // en UTC, el ejercicio perdía la primera hora del 1 de enero y lo cobrado la
+    // primera hora del día 1 de cada mes caía en el mes anterior.
+    const diaHoy = diaMadrid(hoy);
+    const anio = Number(diaHoy.slice(0, 4));
     const meses = ultimosMeses(hoy, 12);
-    const haceUnAnio = new Date(Date.UTC(anio - 1, hoy.getUTCMonth(), hoy.getUTCDate()));
-    const inicioEjercicio = new Date(Date.UTC(anio, 0, 1));
+    const haceUnAnio = inicioDiaMadrid(unAnioAntes(diaHoy));
+    const inicioEjercicio = inicioDiaMadrid(`${anio}-01-01`);
+    const altasDelAnio = whereAltasAprobadas(haceUnAnio);
 
     const [
       activos,
@@ -132,10 +138,11 @@ export class PanelService {
       categorias,
     ] = await Promise.all([
       db.hermano.count({ where: { activo: true } }),
-      db.hermano.count({ where: { fechaAlta: { gte: haceUnAnio } } }),
+      // Las solicitudes pendientes no son altas (ver whereAltasAprobadas).
+      db.hermano.count({ where: altasDelAnio }),
       db.hermano.count({ where: { fechaBaja: { gte: haceUnAnio } } }),
       db.hermano.count({ where: { activo: true, numeroHermano: null } }),
-      db.hermano.groupBy({ by: ['fechaAlta'], _count: { _all: true }, where: { fechaAlta: { gte: haceUnAnio } } }),
+      db.hermano.groupBy({ by: ['fechaAlta'], _count: { _all: true }, where: altasDelAnio }),
       db.hermano.groupBy({ by: ['fechaBaja'], _count: { _all: true }, where: { fechaBaja: { gte: haceUnAnio } } }),
       // Un count por tramo, no un groupBy: ver el comentario de rangoEdad().
       Promise.all(

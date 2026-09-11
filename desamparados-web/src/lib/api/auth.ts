@@ -72,11 +72,13 @@ export function requestPasswordReset(email: string) {
   })
 }
 
+// El token viaja en el cuerpo: en la URL quedaría en los registros de acceso, y
+// abre la cuenta durante una hora.
 export function resetPassword(token: string, newPassword: string) {
-  return apiFetch<{ message: string }>(`/auth/reset-password/${encodeURIComponent(token)}`, {
+  return apiFetch<{ message: string }>('/auth/reset-password/confirmar', {
     method: 'POST',
     auth: false,
-    json: { newPassword },
+    json: { token, newPassword },
   })
 }
 
@@ -92,9 +94,13 @@ export function sesionActual() {
 //  2FA (pantalla "Mi seguridad" del CMS; el backend lo limita a staff)
 // ===================================================================
 
-/** Paso 1: QR en data URL + secreto Base32 para entrada manual. */
+/**
+ * Paso 1: QR en data URL + secreto Base32 para entrada manual.
+ * POST porque crea y guarda un secreto nuevo. Con el 2FA ya activo el backend
+ * responde 409: hay que desactivarlo antes de configurarlo con otro móvil.
+ */
 export function generarQr2FA() {
-  return apiFetch<{ qrCodeUrl: string; secret: string }>('/auth/2fa/generate', { method: 'GET' })
+  return apiFetch<{ qrCodeUrl: string; secret: string }>('/auth/2fa/generate', { method: 'POST' })
 }
 
 /** Paso 2: verifica el primer TOTP y devuelve los respaldos en claro, UNA vez. */

@@ -1,7 +1,8 @@
 import db from '../config/db';
 import { SavePaginaDto, UpdatePaginaDto } from '../dtos/pagina.dto';
-import sanitizeHtml from 'sanitize-html';
 import { HttpError, NotFoundError } from '../utils/error.handle';
+import { sanearContenidoCms } from '../utils/sanear-html.js';
+import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 
 export class PaginaService {
 
@@ -39,7 +40,11 @@ export class PaginaService {
     // 2. Sanitizar el contenido HTML (Prevención de Stored XSS)
     const cleanContent = this.sanitizeContenido(data.contenido);
 
-    return await db.pagina.upsert({
+    // Es un upsert: si la página ya existía, las fotos que quite del cuerpo
+    // tienen que salir también del disco.
+    const anterior = await db.pagina.findUnique({ where: { slug: finalSlug }, select: { contenido: true } });
+
+    const pagina = await db.pagina.upsert({
       where: { slug: finalSlug },
       update: { 
         titulo: data.titulo, 
@@ -52,6 +57,8 @@ export class PaginaService {
         contenido: cleanContent
       }
     });
+    if (anterior) await borrarSubidasHuerfanas(subidasEnTexto(anterior.contenido), { conservar: subidasEnTexto(pagina.contenido) });
+    return pagina;
   }
 
   /**
@@ -65,13 +72,16 @@ export class PaginaService {
 
     // 2. Actualizamos (Prisma se encarga de cambiar el updatedAt automáticamente)
     // Sanitizamos igual que en create para prevenir Stored XSS
-    return await db.pagina.update({
+    const pagina = await db.pagina.update({
       where: { slug: slugOriginal },
       data: { 
         titulo: data.titulo, 
         contenido: data.contenido !== undefined ? this.sanitizeContenido(data.contenido) : undefined
       }
     });
+    // Las fotos que ya no están en el cuerpo salen del disco si nadie más las usa.
+    await borrarSubidasHuerfanas(subidasEnTexto(existe.contenido), { conservar: subidasEnTexto(pagina.contenido) });
+    return pagina;
   }
   
   /**
@@ -96,9 +106,11 @@ export class PaginaService {
     const protectedSlugs = ['home', 'contacto', 'aviso-legal'];
     if (protectedSlugs.includes(slug)) throw new HttpError(`La página '${slug}' está protegida y no se puede eliminar.`);
 
-    return await db.pagina.delete({
+    const pagina = await db.pagina.delete({
       where: { slug }
     });
+    await borrarSubidasHuerfanas(subidasEnTexto(pagina.contenido));
+    return pagina;
   }
 
   // =================================================================
@@ -106,14 +118,12 @@ export class PaginaService {
   // =================================================================
 
   /**
-   * Limpia el HTML permitiendo solo etiquetas de formato seguras.
+   * Limpia el HTML con las mismas reglas que las noticias (utils/sanear-html.ts):
+   * formato sí, scripts no, imágenes solo del propio sitio y enlaces que abren
+   * pestaña siempre con `rel="noopener noreferrer"`.
    */
   private static sanitizeContenido(contenido: string): string {
-    return sanitizeHtml(contenido, {
-      // Permitimos etiquetas comunes para formato, pero ninguna peligrosa.
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'img']),
-      allowedAttributes: { ...sanitizeHtml.defaults.allowedAttributes, 'img': ['src', 'alt'] }
-    });
+    return sanearContenidoCms(contenido);
   }
 
   /**

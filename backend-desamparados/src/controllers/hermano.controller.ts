@@ -22,7 +22,7 @@ export class HermanoController {
   static async addProfile(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const newProfile = await HermanoService.createDependentProfile(userId, req.body);
+      const newProfile = await HermanoService.createDependentProfile(userId, req.body, AuditService.metaFromReq(req));
       res.status(201).json(newProfile);
     } catch (e) {
       handleHttp(res, e, 'Error añadiendo perfil familiar');
@@ -36,7 +36,7 @@ export class HermanoController {
 
       if (isNaN(hermanoId)) return handleHttp(res, null, 'ID inválido', 400);
 
-      const updated = await HermanoService.updateProfileIfOwned(hermanoId, userId, req.body);
+      const updated = await HermanoService.updateProfileIfOwned(hermanoId, userId, req.body, AuditService.metaFromReq(req));
       
       if (!updated) {
         return handleHttp(res, 'IDOR_ATTEMPT', 'Perfil no encontrado o no autorizado', 403);
@@ -55,13 +55,14 @@ export class HermanoController {
 
       if (isNaN(hermanoId)) return handleHttp(res, null, 'ID inválido', 400);
 
-      const deleted = await HermanoService.deleteProfileIfOwned(hermanoId, userId);
+      const deleted = await HermanoService.deleteProfileIfOwned(hermanoId, userId, AuditService.metaFromReq(req));
       
       if (!deleted) {
         return handleHttp(res, 'IDOR_ATTEMPT', 'No autorizado para dar de baja este perfil', 403);
       }
 
-      res.status(200).json({ message: 'Perfil dado de baja' });
+      // El mensaje dice qué pasó de verdad: baja, o solicitud retirada y borrada.
+      res.status(200).json({ message: deleted.message });
     } catch (e) {
       handleHttp(res, e, 'Error eliminando perfil');
     }
@@ -113,7 +114,7 @@ export class HermanoController {
       const hermanos = await HermanoService.getAllHermanos(req.query);
       res.status(200).json(hermanos);
     } catch (e) {
-      handleHttp(res, e, 'Error obteniendo el censo de la cofradía');
+      handleHttp(res, e, 'Error obteniendo el censo del Grupo Parroquial');
     }
   }
 
@@ -136,7 +137,7 @@ export class HermanoController {
       const hermanoId = Number(req.params.id);
       if (isNaN(hermanoId)) return handleHttp(res, null, 'ID inválido', 400);
 
-      const updated = await HermanoService.updateAdminMode(hermanoId, req.body);
+      const updated = await HermanoService.updateAdminMode(hermanoId, req.body, AuditService.metaFromReq(req));
       res.status(200).json(updated);
     } catch (e) {
       handleHttp(res, e, 'Error actualizando ficha desde Secretaría');
@@ -192,7 +193,9 @@ export class HermanoController {
       const hermanoId = Number(req.params.id);
       if (isNaN(hermanoId)) return handleHttp(res, null, 'ID inválido', 400);
 
-      const result = await HermanoService.darDeBajaHermano(hermanoId, AuditService.metaFromReq(req));
+      // La fecha es opcional (validada por bajaHermanoSchema): sin ella, la baja es de hoy.
+      const fechaBaja = typeof req.body?.fechaBaja === 'string' ? req.body.fechaBaja : undefined;
+      const result = await HermanoService.darDeBajaHermano(hermanoId, AuditService.metaFromReq(req), fechaBaja);
       res.status(200).json(result);
     } catch (e) {
       handleHttp(res, e, 'Error dando de baja al hermano');

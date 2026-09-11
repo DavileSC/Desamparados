@@ -16,6 +16,13 @@ function errorMessage(e: unknown, fallback: string) {
   return e instanceof ApiError ? e.message : fallback
 }
 
+/** Código de error que acompaña al mensaje en las respuestas del login. */
+function codigoError(e: unknown): string | undefined {
+  if (!(e instanceof ApiError) || !e.payload || typeof e.payload !== 'object') return undefined
+  const { error } = e.payload as { error?: unknown }
+  return typeof error === 'string' ? error : undefined
+}
+
 /**
  * Acceso propio del CMS. Misma cuentas que el área de hermanos, pero aquí solo
  * entra el equipo: una cuenta USER con credenciales válidas no consigue sesión,
@@ -50,8 +57,9 @@ export default function CmsLoginPage() {
       return
     }
 
-    // Cuenta válida pero sin rol del CMS: la sesión que acaba de crear se
-    // cierra en el acto. Este acceso no reparte sesiones del área de hermanos.
+    // Red de seguridad: el backend ya no da sesión del CMS a una cuenta sin
+    // rol del equipo (responde 403 CUENTA_SIN_CMS). Si aun así llegara una,
+    // se cierra en el acto: este acceso no reparte sesiones del área de hermanos.
     if (!isStaffRole(response.user.role)) {
       await cerrarSesionApi().catch(() => undefined)
       salirSesion()
@@ -64,9 +72,16 @@ export default function CmsLoginPage() {
   }
 
   const onSubmitCredentials = async (data: LoginFormData) => {
+    setRechazado(false)
     try {
       await handleResponse(await apiLogin(data.email, data.password, data.recordarme, 'cms'))
     } catch (e) {
+      // Cuenta de hermano con la contraseña correcta: el servidor no crea la
+      // sesión y se le indica su acceso, con enlace, en vez del error genérico.
+      if (codigoError(e) === 'CUENTA_SIN_CMS') {
+        setRechazado(true)
+        return
+      }
       credentialsForm.setError('root', { message: errorMessage(e, 'Email o contraseña incorrectos') })
     }
   }
@@ -75,14 +90,27 @@ export default function CmsLoginPage() {
     try {
       await handleResponse(await verify2FA(data.code))
     } catch (e) {
+      // El paso de la contraseña caducó (5 min) o su testigo ya se usó: de
+      // nada sirve seguir probando códigos, hay que volver al primer paso.
+      if (codigoError(e) === 'PENDING_2FA_REQUIRED') {
+        setPending2FA(null)
+        twoFactorForm.reset()
+        credentialsForm.setError('root', { message: errorMessage(e, 'La verificación ha caducado. Vuelve a introducir tu email y contraseña.') })
+        return
+      }
       twoFactorForm.setError('root', { message: errorMessage(e, 'Código incorrecto o expirado') })
     }
   }
 
-  // Quien ya tiene sesión de staff no ve este formulario: directo al panel.
-  if (status === 'autenticado' && isStaffRole(user?.role)) {
+  // Quien ya tiene sesión del CMS no ve este formulario: directo al panel.
+  // Solo si nació aquí: con una sesión del área de hermanos, el panel la
+  // devolvería a esta página y esta al panel, en bucle. Esa persona tiene que
+  // identificarse aquí, donde se le pide el segundo factor.
+  const sesionDelCms = status === 'autenticado' && isStaffRole(user?.role) && user?.origen === 'cms'
+  if (sesionDelCms) {
     return <Navigate to="/cms" replace />
   }
+  const staffDesdeHermanos = status === 'autenticado' && isStaffRole(user?.role) && user?.origen !== 'cms'
 
   return (
     <ThemeProvider theme={cmsTheme}>
@@ -109,6 +137,13 @@ export default function CmsLoginPage() {
           >
             Acceso a la administración
           </Typography>
+
+          {staffDesdeHermanos && !pending2FA && (
+            <Alert severity="info" role="status" sx={{ mb: 2 }}>
+              Tu sesión actual es la del área de hermanos. Para entrar en la administración,
+              identifícate aquí.
+            </Alert>
+          )}
 
           {rechazado && (
             <Alert severity="error" role="alert" sx={{ mb: 2 }}>

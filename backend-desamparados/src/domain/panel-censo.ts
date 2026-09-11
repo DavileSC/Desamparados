@@ -1,3 +1,6 @@
+import type { Prisma } from '@prisma/client';
+import { claveMesMadrid } from './contabilidad.js';
+
 export interface MovimientoMensual {
   /** 'YYYY-MM' */
   mes: string;
@@ -9,18 +12,38 @@ export interface PuntoCenso {
   activos: number;
 }
 
-/** Etiqueta 'YYYY-MM' de una fecha, en UTC para no depender de la zona del servidor. */
-export function claveMes(fecha: Date): string {
-  const mes = String(fecha.getUTCMonth() + 1).padStart(2, '0');
-  return `${fecha.getUTCFullYear()}-${mes}`;
+/**
+ * Altas del censo desde `desde`: solo hermanos que Secretaría aprobó.
+ *
+ * Una solicitud pendiente también tiene `fechaAlta` (la del registro), pero no
+ * es un alta: está `activo: false` y sin `fechaBaja` (hermano.service,
+ * getSolicitudesPendientes). Al aprobarla pasa a activa con la fecha de la
+ * aprobación. Un hermano aprobado que luego se dio de baja sigue contando: su
+ * alta ocurrió, y la serie del censo necesita el alta para compensar su baja.
+ */
+export function whereAltasAprobadas(desde: Date): Prisma.HermanoWhereInput {
+  return { fechaAlta: { gte: desde }, OR: [{ activo: true }, { fechaBaja: { not: null } }] };
 }
 
-/** Los `cuantos` últimos meses hasta `hasta`, del más antiguo al más reciente. */
+/**
+ * Etiqueta 'YYYY-MM' de una fecha, en el mes de Madrid (no depende de la zona
+ * del servidor). Antes era el mes UTC y la contabilidad contaba en meses de
+ * Madrid: lo cobrado entre las 00:00 y la 01:00 (o las 02:00 en verano) del día 1
+ * caía en un mes en el panel y en otro en la contabilidad.
+ */
+export function claveMes(fecha: Date): string {
+  return claveMesMadrid(fecha);
+}
+
+/** Los `cuantos` últimos meses (de Madrid) hasta `hasta`, del más antiguo al más reciente. */
 export function ultimosMeses(hasta: Date, cuantos: number): string[] {
+  const [anio, mes] = claveMes(hasta).split('-').map(Number);
   const meses: string[] = [];
   for (let i = cuantos - 1; i >= 0; i--) {
-    const fecha = new Date(Date.UTC(hasta.getUTCFullYear(), hasta.getUTCMonth() - i, 1));
-    meses.push(claveMes(fecha));
+    // Aritmética de calendario pura: se construye y se lee en UTC, así que la
+    // zona no interviene; Date.UTC resuelve el cruce de año (mes 0 → diciembre).
+    const fecha = new Date(Date.UTC(anio, mes - 1 - i, 1));
+    meses.push(`${fecha.getUTCFullYear()}-${String(fecha.getUTCMonth() + 1).padStart(2, '0')}`);
   }
   return meses;
 }

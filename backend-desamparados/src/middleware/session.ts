@@ -19,7 +19,7 @@ declare global {
  *   contraseña, degradación de rol, etc.)
  * - Refresca el rol: si degradan a alguien, su token viejo pierde permisos al instante.
  */
-async function validateSessionAgainstDb(payload: AuthTokenPayload): Promise<AuthTokenPayload | null> {
+export async function validateSessionAgainstDb(payload: AuthTokenPayload): Promise<AuthTokenPayload | null> {
   const dbUser = await db.user.findUnique({
     where: { id: payload.id },
     select: { role: true, active: true, tokenValidAfter: true }
@@ -27,7 +27,11 @@ async function validateSessionAgainstDb(payload: AuthTokenPayload): Promise<Auth
 
   if (!dbUser || !dbUser.active) return null;
 
-  const issuedAtMs = (payload.iat ?? 0) * 1000;
+  // Con milisegundos cuando el token los trae: `iat` va en segundos enteros y,
+  // tras un cierre de sesión (que mueve tokenValidAfter al instante actual),
+  // el login que se hiciera en ese mismo segundo nacería ya revocado. Los
+  // tokens emitidos antes de existir `emitidoMs` siguen con `iat`.
+  const issuedAtMs = typeof payload.emitidoMs === 'number' ? payload.emitidoMs : (payload.iat ?? 0) * 1000;
   if (issuedAtMs < dbUser.tokenValidAfter.getTime()) return null;
 
   // Devolvemos el payload con el rol REAL de la BD (no el que viajaba en el JWT)

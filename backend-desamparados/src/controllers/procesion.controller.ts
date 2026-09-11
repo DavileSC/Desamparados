@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ProcesionService } from '../services/procesion.service.js';
-import { handleHttp } from '../utils/error.handle.js';
+import { handleHttp, HttpError } from '../utils/error.handle.js';
+import { instanteLimiteAusencias } from '../domain/datos-procesion.js';
 import { AuditService } from '../services/audit.service.js';
 
 export class ProcesionController {
@@ -100,11 +101,16 @@ export class ProcesionController {
 
   static async procesarAusencias(req: Request, res: Response) {
     try {
-      // Por defecto toma la fecha de hoy, pero puede venir en el body
-      const limite = req.body.fechaLimite ? new Date(req.body.fechaLimite) : new Date();
-      const cierreDefinitivo = req.body.cierreDefinitivo === true;
-      
-      const result = await ProcesionService.procesarAusencias(limite, cierreDefinitivo);
+      // Por defecto, ahora mismo; puede venir en el body (ya validada: legible
+      // y no futura). Un día AAAA-MM-DD es el principio de ese día en Madrid,
+      // no la medianoche UTC que daría `new Date`. Sin cuerpo, Express 5 deja
+      // req.body en undefined.
+      const cuerpo = (req.body ?? {}) as { fechaLimite?: string; cierreDefinitivo?: boolean };
+      const limite = instanteLimiteAusencias(cuerpo.fechaLimite);
+      if (!limite) throw new HttpError('La fecha límite debe ser una fecha válida que no sea posterior a hoy.');
+      const cierreDefinitivo = cuerpo.cierreDefinitivo === true;
+
+      const result = await ProcesionService.procesarAusencias(limite, cierreDefinitivo, AuditService.metaFromReq(req));
       res.status(200).json(result);
     } catch (e) {
       handleHttp(res, e, 'Error procesando ausencias');
@@ -126,7 +132,7 @@ export class ProcesionController {
 
   static async crearTurno(req: Request, res: Response) {
     try {
-      const nuevoTurno = await ProcesionService.crearTurno(req.body);
+      const nuevoTurno = await ProcesionService.crearTurno(req.body, AuditService.metaFromReq(req));
       res.status(201).json(nuevoTurno);
     } catch (e) {
       handleHttp(res, e, 'Error creando el turno');
@@ -136,7 +142,7 @@ export class ProcesionController {
   static async deleteTurno(req: Request, res: Response) {
     try {
       const turnoId = Number(req.params.id);
-      await ProcesionService.eliminarTurno(turnoId);
+      await ProcesionService.eliminarTurno(turnoId, AuditService.metaFromReq(req));
       res.status(200).json({ message: 'Turno eliminado correctamente' });
     } catch (e) {
       handleHttp(res, e, 'Error eliminando turno');

@@ -87,6 +87,9 @@ model User {
   twoFactorSecret  String?
   // Para saber si obligarle a meter el código o no
   twoFactorEnabled Boolean @default(false)
+  // Último intervalo TOTP (30 s) aceptado: impide reutilizar el mismo código
+  // mientras siga dentro de su ventana de validez.
+  twoFactorLastStep Int?
 
   // --- RECUPERACIÓN DE CONTRASEÑA ---
   resetPasswordToken   String?
@@ -239,6 +242,10 @@ model CategoriaTransaccion {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // El servicio ya lo comprueba, pero dos altas a la vez podían colarse. Con la
+  // intercalación utf8mb4_unicode_ci el índice no distingue mayúsculas ni tildes.
+  @@unique([tipo, nombre])
 }
 
 // EL LIBRO MAYOR (Actualizado)
@@ -496,6 +503,8 @@ model AuditLog {
   entityId   String? // ID del registro afectado (string para flexibilidad)
   ip         String?
   userAgent  String? @db.VarChar(250)
+  // Estado anterior y nuevo, u otros datos que expliquen el cambio.
+  detalles   Json?
   createdAt  DateTime @default(now())
 
   @@index([userId])

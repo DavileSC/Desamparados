@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aFiltrosApi, leerFiltrosUrl, rangoDePeriodo } from '../filtros'
+import { aFiltrosApi, fechasInvertidas, leerFiltrosUrl, rangoDePeriodo } from '../filtros'
 
 // Un día fijo: los periodos se cuentan desde hoy.
 const HOY = new Date(2026, 8, 11) // 11 de septiembre de 2026
@@ -47,5 +47,17 @@ describe('filtros en la URL', () => {
   it('un periodo personalizado a medias usa solo la fecha que tenga', () => {
     const ui = leerFiltrosUrl(new URLSearchParams('periodo=personalizado&desde=2026-03-01'))
     expect(aFiltrosApi(ui, HOY)).toEqual({ desde: '2026-03-01' })
+  })
+})
+
+describe('fechas a elegir al revés (D12)', () => {
+  it('se detectan solo con las dos fechas y el «hasta» antes del «desde»', () => {
+    expect(fechasInvertidas({ periodo: 'personalizado', desde: '2026-05-01', hasta: '2026-01-31' })).toBe(true)
+    expect(fechasInvertidas({ periodo: 'personalizado', desde: '2026-01-31', hasta: '2026-01-31' })).toBe(false)
+    expect(fechasInvertidas({ periodo: 'personalizado', desde: '2026-05-01', hasta: '' })).toBe(false)
+  })
+
+  it('los periodos fijos nunca lo están, aunque la URL traiga fechas sueltas', () => {
+    expect(fechasInvertidas({ periodo: 'anio', desde: '2026-05-01', hasta: '2026-01-31' })).toBe(false)
   })
 })

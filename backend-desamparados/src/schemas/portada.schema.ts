@@ -1,4 +1,5 @@
 import { type } from 'arktype';
+import { IMAGEN_PROPIA } from '../utils/rutas-propias.js';
 
 export const MAX_IMAGENES_PORTADA = 12;
 
@@ -7,7 +8,7 @@ export const MAX_IMAGENES_PORTADA = 12;
 // (`/images/…`). Nada de URLs externas ni de esquemas como `javascript:`: la
 // ruta acaba en el `src` de una <img> de la portada.
 export const rutaImagenPublica = type('string')
-  .matching(/^\/(?:storage\/public|images)\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:jpe?g|png|webp)$/i)
+  .matching(IMAGEN_PROPIA)
   .describe('una ruta de imagen del propio sitio (/storage/public/… o /images/…)');
 
 // Es el texto alternativo de la foto: sin etiquetas.

@@ -9,21 +9,29 @@ que **debes** cumplir al desplegar en producción.
       Traefik o la terminación TLS de tu plataforma). Sin HTTPS, tokens,
       contraseñas y datos personales viajan en claro. El backend ya envía
       cabeceras HSTS cuando `NODE_ENV=production`.
-- [ ] **`NODE_ENV=production`** definido en el entorno (activa HSTS, endurece
-      CORS y exige un `JWT_SECRET` robusto).
+- [ ] **`NODE_ENV=production`** definido en el entorno (activa HSTS, la cookie
+      `Secure`, endurece CORS y exige un `JWT_SECRET` robusto). El servidor no
+      arranca sin `NODE_ENV` ni con un valor distinto de `development`, `test`
+      o `production`, y en producción comprueba al arrancar todas las variables
+      obligatorias (`src/config/entorno.ts`; lista en `docs/despliegue.md`).
 - [ ] **`JWT_SECRET` nuevo** de al menos 32 caracteres (64 recomendado):
       `npm run gen:secret`. No reutilices el de desarrollo.
-- [ ] **`FRONTEND_URL`** definido (si no, el CORS queda cerrado en producción
-      y el frontend no podrá llamar a la API).
-- [ ] **`NUM_PROXIES`** correcto: `1` tras un Nginx/proxy, `2` tras
-      Cloudflare+Nginx, `0` si no hay proxy. Un valor incorrecto permite
-      falsear la IP y saltarse los rate limiters.
-- [ ] **Contraseñas del seed**: en producción el seed genera contraseñas
-      aleatorias y las muestra una sola vez (o define `SEED_ADMIN_PASSWORD` y
-      `SEED_USER_PASSWORD`, que mandan también en desarrollo). Las de desarrollo
-      llevan `Local` en el nombre y **están en el repositorio**: si aparecen en
-      un servidor real, es que se sembró sin `NODE_ENV=production`. Cámbialas
-      de inmediato.
+- [ ] **`TOTP_ENC_KEY`** propia (`npm run gen:clave-totp`), guardada también
+      fuera del servidor, y `npm run 2fa:cifrar-secretos` una vez.
+- [ ] **`FRONTEND_URL`** y **`API_URL`** con `https://` (obligatorias en
+      producción: sin ellas el CORS queda cerrado y los enlaces apuntan a localhost).
+- [ ] **`NUM_PROXIES`** correcto y explícito: `1` tras un Nginx/proxy, `2` tras
+      Cloudflare+Nginx. Un valor incorrecto permite falsear la IP y saltarse
+      los rate limiters. Además, la API solo escucha en `127.0.0.1` en
+      producción (`HOST`): nadie debe llegar a su puerto sin pasar por nginx.
+- [ ] **Siembra**: en producción exige `SEED_ADMIN_EMAIL` (un correo real del
+      Grupo Parroquial), no crea la cuenta de hermano de prueba y genera una
+      contraseña aleatoria que muestra una sola vez (o usa
+      `SEED_ADMIN_PASSWORD`, que debe cumplir la política). Con un `NODE_ENV`
+      desconocido o sin definir, se cancela. Las contraseñas de desarrollo
+      llevan `Local` en el nombre y **están en el repositorio**: si aparecen
+      `admin@cofradia.com` o `hermano@cofradia.com` en un servidor real,
+      bórralas de inmediato (el dominio es ajeno y tiene correo activo).
 - [ ] **Usuario de BD dedicado** (no root) con privilegios solo sobre
       `desamparados_db`.
 
@@ -39,18 +47,29 @@ que **debes** cumplir al desplegar en producción.
 
 ## Copias de seguridad
 
-- Windows/local: `.\scripts\backup-db.ps1` (programable con Task Scheduler).
-- **Prueba la restauración** al menos una vez antes de confiar en los backups:
-  `gunzip < backup.sql.gz | mysql -u root -p desamparados_db`
-- Copia un backup fuera del servidor (nube/disco externo).
+- Servidor (Linux): `scripts/backup-vps.sh` vuelca la base de datos, la
+  empaqueta con `storage/`, la cifra con `age` para una clave pública (la
+  privada no vive en el servidor), rota las copias locales y las sube fuera
+  con `rclone`. Programación, preparación y restauración en
+  `docs/despliegue.md`.
+- Windows/local: `.\scripts\backup-db.ps1` (solo la base de datos y sin
+  cifrar: vale para el equipo de desarrollo, no para el servidor).
+- **Prueba la restauración** al menos una vez antes de confiar en las copias,
+  y después cada pocos meses, sobre una base de datos de prueba.
+- `backups/`, `*.sql` y `*.age` están en `.gitignore`: una copia lleva el censo
+  entero y nunca debe acabar en el repositorio.
 
 ## Antivirus en subidas
 
-Si sirves PDFs al público, instala ClamAV como servicio separado y define
-`CLAMAV_HOST` y `CLAMAV_PORT`. Los uploads se escanearán vía clamd antes de
-aceptarse. Por defecto, si ClamAV no está configurado, el escaneo se omite;
-define `CLAMAV_REQUIRED=true` para rechazar archivos cuando el antivirus no
-esté disponible.
+Instala ClamAV como servicio separado y define `CLAMAV_HOST` y `CLAMAV_PORT`:
+las subidas se analizan vía clamd antes de aceptarse. En producción es
+obligatorio (`CLAMAV_HOST` y `CLAMAV_REQUIRED=true`; sin ellos el servidor no
+arranca). El comportamiento real:
+
+- Sin `CLAMAV_HOST`, no se analiza nada (salvo que `CLAMAV_REQUIRED=true`, que
+  entonces rechaza todas las subidas).
+- Con `CLAMAV_HOST` y clamd caído, la subida se rechaza **siempre**, también
+  con `CLAMAV_REQUIRED=false`.
 
 El backend no inicia ni administra el proceso de ClamAV: solo conecta con el
 servicio `clamd` por TCP usando `INSTREAM`. En producción, configura por ejemplo
@@ -89,8 +108,21 @@ registrada en la tabla `AuditLog` con usuario, IP y user-agent. Consúltala con:
 GET /api/admin/audit-logs?page=1&limit=50&action=RECIBO_COBRAR&userId=3
 ```
 
-(solo rol ADMIN). Los registros de auditoría NO deben borrarse masivamente:
-son la prueba forense ante cualquier disputa.
+(solo rol ADMIN). Los registros de auditoría no se borran a mano: son la
+prueba forense ante cualquier disputa. Pero guardan IP y navegador, que son
+datos personales, así que tienen plazo: `npm run auditoria:purgar` (diario en
+el servidor, ver `docs/despliegue.md`) borra los más antiguos que
+`AUDIT_RETENTION_DAYS` (730 días por defecto).
+
+## Registros
+
+En producción el registro de accesos lleva fecha, IP, método, ruta **sin la
+consulta**, estado y tiempo (las búsquedas del censo van en `?q=` con nombres y
+DNI, y el enlace de recuperación lleva el token en `?token=`). La API recibe ese
+token en el cuerpo de `POST /api/auth/reset-password/confirmar`, nunca en la
+ruta, así que no llega a ningún registro. Los errores 500
+dejan mensaje, código de Prisma y pila, sin los argumentos de la consulta. La
+retención (journald y logrotate) está en `docs/despliegue.md`.
 
 ## Escalado horizontal (varias instancias)
 
@@ -107,8 +139,9 @@ los rate limiters a un almacén compartido (Redis, `rate-limit-redis`).
 | Fuerza bruta | Rate limit por IP (login/registro/2FA/reset) + lockout por cuenta (login y 2FA) |
 | 2FA | Solo staff del CMS, backup codes de un solo uso (hash SHA-256), rescate por ADMIN auditado |
 | Autorización | `checkRole` en rutas, verificación de propiedad (anti-IDOR) en todas las operaciones familiares |
-| Entrada | Validación ArkType en 100% de rutas de escritura, sanitización HTML (noticias/páginas), escape en emails |
-| Subidas | Almacenamiento público/privado separado, whitelist MIME+extensión, magic numbers, coincidencia ext↔contenido, tamaño 5MB, ClamAV opcional |
-| Cabeceras | Helmet (CSP, HSTS, frameguard, referrer-policy), CORS cerrado por defecto en producción |
+| Entrada | Validación ArkType en 100% de rutas de escritura, sanitización HTML (noticias/páginas), escape en emails, cuerpo JSON de 100 KB como mucho (2 MB solo en noticias, páginas y publicaciones), email de una sola dirección y 254 caracteres |
+| Subidas | Almacenamiento público/privado separado, whitelist MIME+extensión, magic numbers, coincidencia ext↔contenido, 5 MB las fotos y 20 MB los PDF, ClamAV obligatorio en producción |
+| Cabeceras | Helmet (CSP con `frame-ancestors 'none'`, HSTS, frameguard, referrer-policy, CORP `same-origin` salvo `/storage/public`), CORS cerrado por defecto en producción |
+| Arranque | Validación del entorno (falla cerrado sin `NODE_ENV` o sin las variables de producción), API solo en `127.0.0.1` en producción, cierre ordenado con SIGTERM |
 | Datos | Soft-delete + anonimización RGPD (art. 15/17), exportación de datos propios |
 | Forense | AuditLog de acciones sensibles con IP y user-agent |

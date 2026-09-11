@@ -1,19 +1,45 @@
 import { type } from 'arktype';
-import { textoRequerido } from '../config/common.js'; // Ajusta la ruta
+import { textoRequerido, paginacionQuery } from '../config/common.js';
 
 // Validar estado de pago basado en tu Enum
 const estadoPagoSchema = type("'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'");
 const metodoPagoSchema = type("'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'");
 
+// Un año de verdad: entero. Un 2026.5 pasaba la validación y reventaba en
+// Prisma con un 500, porque la columna `year` es Int.
+const anioSchema = type("2000 <= number.integer <= 2100").describe("un año entero entre 2000 y 2100");
+
+// Positivo, con dos decimales como mucho y que quepa en Decimal(10, 2): así lo
+// que se guarda es exactamente lo que se escribió, sin redondeos de MariaDB.
+const importeSchema = type("0 < number <= 99999999.99")
+    .narrow((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6)
+    .describe("un importe positivo con dos decimales como mucho");
+
+// El concepto forma parte de la clave única del recibo y se imprime en el
+// correo: sin HTML y con un largo que quepa en la columna (VARCHAR 191).
+const conceptoSchema = type("string <= 150").and(textoRequerido)
+    .describe("un concepto de hasta 150 caracteres, sin < ni >");
+
+// Los tipos que se pueden emitir a mano. La papeleta de sitio queda fuera: su
+// recibo nace en la mesa de reparto junto con la papeleta, y uno suelto sería
+// un cobro sin sitio en la procesión.
+const tipoEmitibleSchema = type("'CUOTA_HERMANO' | 'DONATIVO' | 'OTRO'");
+
 export const generarCuotasSchema = type({
     body: {
-        // En ArkType, los rangos numéricos se ponen directamente en la definición
-        year: type("number >= 2000").describe("un año válido a partir del 2000"),
-        
-        // Lo mismo para el importe: le decimos que debe ser mayor que 0
-        importe: type("number > 0").describe("un importe decimal positivo"),
-            
-        concepto: textoRequerido
+        year: anioSchema,
+        importe: importeSchema,
+        concepto: conceptoSchema
+    }
+});
+
+export const emitirReciboSchema = type({
+    body: {
+        hermanoId: type("number.integer > 0").describe("el identificador de un hermano"),
+        year: anioSchema,
+        concepto: conceptoSchema,
+        importe: importeSchema,
+        tipo: tipoEmitibleSchema
     }
 });
 
@@ -30,5 +56,30 @@ export const updateReciboSchema = type({
 export const marcarPagadoSchema = type({
     body: {
         "metodoPago?": metodoPagoSchema
+    }
+});
+
+// Consultas de los listados. Sin esquema, `req.query` llegaba crudo y un
+// parámetro repetido (`?estado=a&estado=b`) llega en Express 5 como lista: el
+// controlador lo trataba como texto. Declarado aquí, una lista es un 400 con su
+// motivo. Llevan `...paginacionQuery`: sin él, `validate` borraría page y limit
+// en silencio y todas las páginas servirían la primera.
+export const adminRecibosQuerySchema = type({
+    query: {
+        ...paginacionQuery,
+        "year?": type("string").matching(/^\d{4}$/).describe("un año de cuatro cifras"),
+        "estado?": estadoPagoSchema
+    }
+});
+
+export const misRecibosQuerySchema = type({
+    query: { ...paginacionQuery }
+});
+
+// Buscador de hermanos de la ventana «Nuevo recibo». Dos letras como mínimo
+// para no devolver medio censo con cada pulsación.
+export const buscarHermanosQuerySchema = type({
+    query: {
+        q: type("2 <= string <= 100").describe("un texto de búsqueda de 2 a 100 caracteres")
     }
 });

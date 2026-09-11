@@ -9,9 +9,15 @@ export const textoRequerido = type("string")
     .matching(/^[^<>]+$/) // Prohíbe inyección de etiquetas HTML
     .describe("un texto válido sin caracteres especiales (<, >)");
 
-// Email con validación regex estándar (Perfecto como estaba)
-export const email = type("string")
-    .matching(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+// Email: una sola dirección, de 254 caracteres como mucho (el máximo del
+// estándar). Sin tope y admitiendo comas, el formulario público de contacto
+// dejaba mandar sin sesión una «dirección» enorme con miles de comas que el
+// analizador de direcciones de nodemailer procesaba en tiempo cuadrático, y una
+// lista separada por comas se convierte en varios destinatarios. Por eso se
+// excluyen los separadores y la sintaxis de nombre (`,;<>()":[]\`), que ninguna
+// dirección real necesita.
+export const email = type("string <= 254")
+    .matching(/^[^\s@,;<>()":\\[\]]+@[^\s@,;<>()":\\[\]]+\.[^\s@,;<>()":\\[\]]+$/)
     .describe("un email válido");
 
 // 2. Contraseña: longitud mínima real, tope máximo (previene DoS en bcrypt)

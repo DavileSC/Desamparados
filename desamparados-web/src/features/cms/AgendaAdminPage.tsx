@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
-import { createEvent, deleteEvent, getAdminEvents, type ApiEvent, type EventPayload } from '../../lib/api/events'
+import { createEvent, deleteEvent, getAdminEvents, type ApiEvent, type EventPayload, type PeriodoAgenda } from '../../lib/api/events'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
@@ -31,6 +31,19 @@ export default function AgendaAdminPage() {
   const { search: consultaListado } = useLocation()
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
+  // Próximos o pasados, en la URL como la página: al volver de editar un evento
+  // pasado se vuelve a su pestaña. Sin la de pasados, un evento fechado por
+  // error antes de hoy desaparecía del CMS y no se podía corregir ni borrar.
+  const [params, setParams] = useSearchParams()
+  const periodo: PeriodoAgenda = params.get('periodo') === 'pasados' ? 'pasados' : 'proximos'
+  const cambiarPeriodo = (nuevo: PeriodoAgenda) => setParams((anteriores) => {
+    const siguientes = new URLSearchParams(anteriores)
+    if (nuevo === 'pasados') siguientes.set('periodo', 'pasados')
+    else siguientes.delete('periodo')
+    // Otra lista: la página 3 de los próximos no tiene nada que ver con la de los pasados.
+    siguientes.delete('pagina')
+    return siguientes
+  }, { replace: true })
 
   // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
   // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
@@ -39,8 +52,8 @@ export default function AgendaAdminPage() {
   // Las llamadas de después de crear o borrar la omiten: no hay carrera.
   const load = useCallback(
     // Una carga buena borra el error de la anterior: si no, la alerta se queda puesta para siempre.
-    (vigente: () => boolean = () => true) => getAdminEvents({ pagina, porPagina }).then((respuesta) => { if (!vigente()) return; setItems(respuesta.eventos); setMeta(respuesta.meta); setError(null) }),
-    [pagina, porPagina]
+    (vigente: () => boolean = () => true) => getAdminEvents({ pagina, porPagina }, periodo).then((respuesta) => { if (!vigente()) return; setItems(respuesta.eventos); setMeta(respuesta.meta); setError(null) }),
+    [pagina, porPagina, periodo]
   )
 
   useEffect(() => {
@@ -57,13 +70,19 @@ export default function AgendaAdminPage() {
 
   const save = async () => {
     setSaving(true); setErrorAlta(null); setNotice(null)
+    const inicio = new Date(form.startDate)
     try {
-      const payload = { ...form, startDate: new Date(form.startDate).toISOString(), endDate: form.endDate ? new Date(form.endDate).toISOString() : null }
+      const payload = { ...form, startDate: inicio.toISOString(), endDate: form.endDate ? new Date(form.endDate).toISOString() : null }
       await createEvent(payload)
     } catch (err: unknown) { setErrorAlta(err instanceof Error ? err.message : 'No se ha podido guardar el evento.'); return }
     finally { setSaving(false) }
     setCreando(false)
-    setNotice('Evento creado correctamente.')
+    // Mismo corte que el servidor: lo anterior a hoy a las 00:00 va a «Pasados».
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    setNotice(inicio < hoy && periodo === 'proximos'
+      ? 'Evento creado. Su fecha ya ha pasado: lo tienes en la pestaña «Pasados».'
+      : 'Evento creado correctamente.')
     await load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.'))
   }
 
@@ -102,7 +121,11 @@ export default function AgendaAdminPage() {
       </Stack>
     </VentanaFormulario>
     <DialogoConfirmacion abierto={porBorrar !== null} titulo="¿Eliminar el evento?" mensaje={porBorrar ? porBorrar.title : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
-    {loading ? <CircularProgress aria-label="Cargando agenda" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.title}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.startDate).toLocaleString('es-ES')} · {item.visibility === 'public' ? 'Público' : 'Solo hermanos'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.title}`} component={Link} to={`/cms/agenda/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.title}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">No hay eventos registrados.</Alert>}</Stack>}
+    <Tabs value={periodo} onChange={(_, valor: PeriodoAgenda) => cambiarPeriodo(valor)} sx={{ mb: 3 }}>
+      <Tab value="proximos" label="Próximos" />
+      <Tab value="pasados" label="Pasados" />
+    </Tabs>
+    {loading ? <CircularProgress aria-label="Cargando agenda" /> : <Stack spacing={2}>{items.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{item.title}</Typography><Typography variant="body2" color="text.secondary">{new Date(item.startDate).toLocaleString('es-ES')} · {item.visibility === 'public' ? 'Público' : 'Solo hermanos'}</Typography></Box><Stack direction="row"><Button aria-label={`Editar ${item.title}`} component={Link} to={`/cms/agenda/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.title}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{items.length === 0 && <Alert severity="info">{periodo === 'pasados' ? 'No hay eventos pasados.' : 'No hay eventos próximos.'}</Alert>}</Stack>}
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="la agenda" />}
   </>
 }

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Type, ArkErrors } from 'arktype';
+import { mensajeValidacion } from './mensajes-validacion.js';
 
 export const validate = (schema: Type<any>) => {
   // SEGURIDAD (anti mass-assignment): ArkType, por defecto, CONSERVA las claves no
@@ -24,8 +25,7 @@ export const validate = (schema: Type<any>) => {
         message: 'Error de validación',
         errors: [...result].map((problem) => ({
           field: problem.path.join('.').replace(/^(body\.|query\.|params\.)/, ''),
-          // Traducimos el prefijo "Must" de ArkType para que quede natural en español
-          message: problem.message.replace(/^Must be/, 'Debe ser').replace(/^Must/, 'Debe')
+          message: mensajeValidacion(problem)
         }))
       });
     }

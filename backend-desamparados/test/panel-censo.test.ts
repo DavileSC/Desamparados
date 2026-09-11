@@ -4,7 +4,8 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { serieCensoMensual, ultimosMeses } from '../src/domain/panel-censo.js';
+import { claveMes, serieCensoMensual, ultimosMeses, whereAltasAprobadas } from '../src/domain/panel-censo.js';
+import { claveMesMadrid } from '../src/domain/contabilidad.js';
 
 describe('serie mensual del censo', () => {
   test('resta las altas y suma las bajas para ir hacia atrás', () => {
@@ -66,5 +67,41 @@ describe('ultimosMeses', () => {
   test('cruza bien el cambio de año', () => {
     const meses = ultimosMeses(new Date('2026-02-01T12:00:00Z'), 3);
     assert.deepEqual(meses, ['2025-12', '2026-01', '2026-02']);
+  });
+
+  test('el mes en curso es el de Madrid: el 31-12 a las 23:30 UTC ya es enero', () => {
+    const meses = ultimosMeses(new Date('2026-12-31T23:30:00Z'), 2);
+    assert.deepEqual(meses, ['2026-12', '2027-01']);
+  });
+});
+
+// El panel y la contabilidad tienen que partir los meses igual: antes el panel
+// contaba en UTC y lo cobrado en la primera hora del día 1 caía en el mes anterior.
+describe('claveMes cuenta en meses de Madrid', () => {
+  test('la primera hora del 1 de febrero (invierno) es febrero', () => {
+    // 00:30 del 1-02 en Madrid = 23:30 UTC del 31-01.
+    assert.equal(claveMes(new Date('2026-01-31T23:30:00Z')), '2026-02');
+  });
+
+  test('la primera hora y media del 1 de julio (verano) es julio', () => {
+    // 01:30 del 1-07 en Madrid = 23:30 UTC del 30-06.
+    assert.equal(claveMes(new Date('2026-06-30T23:30:00Z')), '2026-07');
+  });
+
+  test('y coincide con la contabilidad', () => {
+    for (const iso of ['2026-01-31T23:30:00Z', '2026-03-28T23:30:00Z', '2026-10-24T22:30:00Z', '2026-12-31T23:00:00Z']) {
+      assert.equal(claveMes(new Date(iso)), claveMesMadrid(new Date(iso)), iso);
+    }
+  });
+});
+
+describe('altas del censo', () => {
+  test('cuentan solo hermanos aprobados, no solicitudes pendientes', () => {
+    const desde = new Date('2025-09-10T22:00:00Z');
+    // Pendiente = activo:false y sin fechaBaja: queda fuera del OR.
+    assert.deepEqual(whereAltasAprobadas(desde), {
+      fechaAlta: { gte: desde },
+      OR: [{ activo: true }, { fechaBaja: { not: null } }],
+    });
   });
 });

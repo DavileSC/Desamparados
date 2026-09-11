@@ -8,11 +8,13 @@ import { type } from 'arktype';
 import { idParam } from '../config/common.js'; 
 
 // AHORA IMPORTAMOS TODO DESDE EL SCHEMA
-import { 
-  avisarAsistenciaSchema, 
-  inscribirManualSchema, 
-  yearParamSchema, 
-  crearTurnoSchema 
+import {
+  avisarAsistenciaSchema,
+  inscribirManualSchema,
+  yearParamSchema,
+  crearTurnoSchema,
+  procesarAusenciasSchema,
+  misPapeletasQuerySchema
 } from '../schemas/procesion.schema.js';
 
 const procesionRouter = Router();
@@ -29,7 +31,7 @@ const rolesJunta = [Role.ADMIN, Role.TESORERIA, Role.SECRETARIA, Role.ALBACERIA,
 procesionRouter.get('/dias', ProcesionController.getDias);
 procesionRouter.post('/avisar', validate(avisarAsistenciaSchema), ProcesionController.avisarAsistencia);
 procesionRouter.delete('/avisar/:id', validateId, ProcesionController.cancelarAsistencia);
-procesionRouter.get('/mis-papeletas', ProcesionController.getMisPapeletas);
+procesionRouter.get('/mis-papeletas', validate(misPapeletasQuerySchema), ProcesionController.getMisPapeletas);
 
 // ==========================================
 //  ZONA ADMIN (MESA DE REPARTO)
@@ -42,7 +44,7 @@ procesionRouter.delete('/admin/papeletas/:id/anular', checkRole(rolesMesaReparto
 //  ZONA ADMIN (LISTADOS Y MANTENIMIENTO)
 // ==========================================
 procesionRouter.get('/admin/listado/:year', checkRole(rolesJunta), validate(yearParamSchema), ProcesionController.getListadoProcesion);
-procesionRouter.post('/admin/procesar-ausencias', checkRole([Role.ADMIN, Role.SECRETARIA]), ProcesionController.procesarAusencias);
+procesionRouter.post('/admin/procesar-ausencias', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(procesarAusenciasSchema), ProcesionController.procesarAusencias);
 
 // ==========================================
 //  ZONA ADMIN (GESTIÓN DE TURNOS DE REPARTO)

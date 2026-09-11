@@ -4,13 +4,13 @@ import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
-import { getEnser, getPrenda, updateEnser, updatePrenda } from '../../lib/api/inventory'
+import { getEnser, getPrenda, updateEnser, updatePrenda, type Prenda } from '../../lib/api/inventory'
+import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, esCantidadValida } from './ropero'
 
 type FormEnser = { nombre: string; referencia: string; categoria: string; ubicacion: string; cantidadOptimo: string; cantidadBueno: string; cantidadReparar: string }
 type FormPrenda = { numero: string; tipo: string; talla: string; estado: string; observaciones: string }
 
 const tipos = ['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO']
-const estados = ['DISPONIBLE', 'PRESTADA', 'TALLER', 'BAJA']
 
 /**
  * Enseres y ropero comparten pantalla porque comparten listado: el inventario
@@ -28,6 +28,8 @@ export default function InventoryEditPage() {
   const [nombre, setNombre] = useState('')
   const [form, setForm] = useState<FormEnser | FormPrenda | null>(null)
   const [inicial, setInicial] = useState<string>('')
+  // El estado con el que llegó la prenda: si está prestada, aquí no se cambia.
+  const [estadoInicial, setEstadoInicial] = useState<Prenda['estado'] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
 
@@ -35,6 +37,7 @@ export default function InventoryEditPage() {
     const cargar = esPrenda
       ? getPrenda(Number(id)).then((p) => {
           setNombre(`Prenda ${p.numero}`)
+          setEstadoInicial(p.estado)
           return { numero: p.numero, tipo: p.tipo, talla: p.talla ?? '', estado: p.estado, observaciones: p.observaciones ?? '' } as FormPrenda
         })
       : getEnser(Number(id)).then((e) => {
@@ -54,6 +57,13 @@ export default function InventoryEditPage() {
 
   const guardar = async () => {
     if (!form) return
+    if (!esPrenda) {
+      const e = form as FormEnser
+      if (![e.cantidadOptimo, e.cantidadBueno, e.cantidadReparar].every(esCantidadValida)) {
+        setError(AVISO_CANTIDADES)
+        return
+      }
+    }
     setGuardando(true)
     try {
       if (esPrenda) await updatePrenda(Number(id), form)
@@ -98,9 +108,21 @@ export default function InventoryEditPage() {
               {tipos.map((tipo) => <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>)}
             </Select>
             <TextField label="Talla" value={prenda.talla} onChange={(e) => campo('talla', e.target.value)} fullWidth />
-            <Select value={prenda.estado} onChange={(e) => campo('estado', e.target.value)} aria-label="Estado">
-              {estados.map((estado) => <MenuItem key={estado} value={estado}>{estado}</MenuItem>)}
-            </Select>
+            {/* PRESTADA la ponen «Prestar» y «Devolver», que guardan también quién
+                la tiene: aquí ni se elige ni se quita. */}
+            {estadoInicial === 'PRESTADA' ? (
+              <TextField
+                label="Estado"
+                value={ETIQUETA_ESTADO.PRESTADA}
+                helperText="Para cambiarlo, registra la devolución con «Devolver» en el listado del ropero."
+                disabled
+                fullWidth
+              />
+            ) : (
+              <TextField select label="Estado" value={prenda.estado} onChange={(e) => campo('estado', e.target.value)} fullWidth>
+                {ESTADOS_ELEGIBLES.map((estado) => <MenuItem key={estado} value={estado}>{ETIQUETA_ESTADO[estado]}</MenuItem>)}
+              </TextField>
+            )}
             <TextField label="Observaciones" value={prenda.observaciones} onChange={(e) => campo('observaciones', e.target.value)} fullWidth multiline />
           </Stack>
         ) : (
@@ -110,9 +132,19 @@ export default function InventoryEditPage() {
             <TextField label="Categoría" value={enser.categoria} onChange={(e) => campo('categoria', e.target.value)} fullWidth />
             <TextField label="Ubicación" value={enser.ubicacion} onChange={(e) => campo('ubicacion', e.target.value)} fullWidth />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField label="En estado óptimo" type="number" value={enser.cantidadOptimo} onChange={(e) => campo('cantidadOptimo', e.target.value)} fullWidth />
-              <TextField label="En buen estado" type="number" value={enser.cantidadBueno} onChange={(e) => campo('cantidadBueno', e.target.value)} fullWidth />
-              <TextField label="Para reparar" type="number" value={enser.cantidadReparar} onChange={(e) => campo('cantidadReparar', e.target.value)} fullWidth />
+              {([['cantidadOptimo', 'En estado óptimo'], ['cantidadBueno', 'En buen estado'], ['cantidadReparar', 'Para reparar']] as const).map(([clave, etiqueta]) => (
+                <TextField
+                  key={clave}
+                  label={etiqueta}
+                  type="number"
+                  slotProps={{ htmlInput: { min: 0, step: 1, inputMode: 'numeric' } }}
+                  value={enser[clave]}
+                  onChange={(e) => campo(clave, e.target.value)}
+                  error={!esCantidadValida(enser[clave])}
+                  helperText={esCantidadValida(enser[clave]) ? undefined : 'Solo números enteros'}
+                  fullWidth
+                />
+              ))}
             </Stack>
           </Stack>
         )}

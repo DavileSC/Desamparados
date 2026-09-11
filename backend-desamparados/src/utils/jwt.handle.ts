@@ -37,7 +37,17 @@ export interface AuthTokenPayload extends JwtPayload {
   rem?: boolean;
   // De qué login nació la sesión. El CMS solo acepta tokens creados desde
   // /cms/acceso, donde se exige el segundo factor cuando está activado.
+  // Sin el claim no es una sesión del CMS (ver checkRole).
   origen?: 'cms' | 'hermanos';
+  // Momento de emisión en milisegundos. `iat` va en segundos enteros y, al
+  // compararlo con `tokenValidAfter`, un login en el mismo segundo que un
+  // cierre de sesión nacía ya revocado (o, redondeando al revés, el token
+  // cerrado sobrevivía). Ver middleware/session.ts y `corteDeSesiones`.
+  emitidoMs?: number;
+  // Solo en el testigo de 2FA: el `twoFactorLastStep` de la cuenta cuando se
+  // emitió. En cuanto se acepta un segundo factor ese valor cambia y el
+  // testigo deja de valer: es de un solo uso sin guardar nada en memoria.
+  paso2fa?: number | null;
 }
 
 // Roles con acceso al CMS. Su sesion dura mas, pero la cookie muere al cerrar
@@ -66,6 +76,22 @@ export const RECORDARME_SEGUNDOS = 72 * 3600;
 /** El paso intermedio del 2FA caduca pronto: es solo para teclear un codigo */
 export const PENDIENTE_2FA_SEGUNDOS = 5 * 60;
 
+/**
+ * El valor que se guarda en `tokenValidAfter` para cortar las sesiones de una
+ * cuenta (cerrar sesión, cambiar la contraseña, cambiar el rol, rescatar el
+ * 2FA…): un milisegundo POR DELANTE del reloj.
+ *
+ * Un token vale si `emitidoMs >= tokenValidAfter`. Con `new Date()` a secas, un
+ * token emitido en el mismo milisegundo que el corte sobrevivía: pasó en el CI,
+ * donde el primer paso del login y el cierre de sesiones caían en el mismo
+ * milisegundo y el testigo seguía valiendo. Con el margen, todo lo emitido
+ * hasta el instante del corte queda fuera, y lo que se emita después (un login
+ * nuevo tarda decenas de milisegundos solo en el bcrypt) sigue entrando.
+ */
+export function corteDeSesiones(): Date {
+  return new Date(Date.now() + 1);
+}
+
 // Generar Token de sesion
 const generateToken = (
   userId: number,
@@ -74,7 +100,7 @@ const generateToken = (
   origen: 'cms' | 'hermanos' = 'cms'
 ): string => {
   const jwtSigned = jwt.sign(
-    { id: userId, role, typ: 'session', origen }, // <-- Guardamos el valor en la propiedad 'id'
+    { id: userId, role, typ: 'session', origen, emitidoMs: Date.now() }, // <-- Guardamos el valor en la propiedad 'id'
     JWT_SECRET,
     {
       expiresIn: recordarme ? RECORDARME_SEGUNDOS : duracionSesionSegundos(role),
@@ -88,14 +114,18 @@ const generateToken = (
  * Prueba de que se supero el primer factor (la contrasena). Sin esto, el
  * endpoint del 2FA aceptaba un userId suelto del body y el segundo factor
  * quedaba desvinculado del primero.
+ *
+ * Lleva `emitidoMs` igual que la sesión: un cambio de contraseña o un cierre
+ * de todas las sesiones entre los dos pasos también tiene que dejarlo sin valor.
  */
 const generatePending2FAToken = (
   userId: number,
   recordarme = false,
-  origen: 'cms' | 'hermanos' = 'cms'
+  origen: 'cms' | 'hermanos' = 'cms',
+  paso2fa: number | null = null
 ): string => {
   return jwt.sign(
-    { id: userId, role: '', typ: '2fa_pending', rem: recordarme, origen },
+    { id: userId, role: '', typ: '2fa_pending', rem: recordarme, origen, paso2fa, emitidoMs: Date.now() },
     JWT_SECRET,
     {
       expiresIn: PENDIENTE_2FA_SEGUNDOS,

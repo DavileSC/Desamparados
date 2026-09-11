@@ -1,4 +1,5 @@
 import db from '../config/db.js';
+import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 
 export interface ImagenPortadaEntrada {
   url: string;
@@ -20,6 +21,7 @@ export class PortadaService {
    * cabecera sin fotos.
    */
   static async guardarImagenes(imagenes: ImagenPortadaEntrada[]) {
+    const anteriores = await db.imagenPortada.findMany({ select: { url: true } });
     await db.$transaction([
       db.imagenPortada.deleteMany(),
       db.imagenPortada.createMany({
@@ -30,6 +32,13 @@ export class PortadaService {
         })),
       }),
     ]);
+    // Las fotos que salen de la lista se borran del disco si ninguna noticia,
+    // publicación o página las usa. Solo las subidas del CMS: las del seed
+    // (`/storage/public/portada/…`) y las estáticas (`/images/…`) no casan con
+    // el filtro de utils/ficheros-publicos.ts y se quedan.
+    await borrarSubidasHuerfanas(subidasEnTexto(...anteriores.map((i) => i.url)), {
+      conservar: subidasEnTexto(...imagenes.map((i) => i.url)),
+    });
     return this.listarImagenes();
   }
 }

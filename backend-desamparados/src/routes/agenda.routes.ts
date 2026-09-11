@@ -9,7 +9,7 @@ import { validate } from '../config/validate.js';
 import { idParam } from '../config/common.js';
 
 // --- CORRECCIÓN: Importamos también updateAgendaSchema ---
-import { agendaSchema, updateAgendaSchema, queryAgendaSchema } from '../schemas/agenda.schema.js';
+import { agendaSchema, updateAgendaSchema, queryAgendaSchema, queryAgendaAdminSchema } from '../schemas/agenda.schema.js';
 
 const agendaRoutes = Router();
 const validateId = validate(type({ params: { id: idParam } }));
@@ -19,6 +19,13 @@ const rolesAgenda = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR];
 
 // LECTURA (Híbrida - Opcionalmente autenticada)
 agendaRoutes.get('/', optionalAuthentication, validate(queryAgendaSchema), AgendaController.list);
+
+// El listado del CMS, con los eventos pasados. El orden es de corrección, no
+// de estilo: tiene que ir ANTES de '/:id', que se traga cualquier segmento
+// suelto y rechazaría «admin» por no ser un id. Lleva su sesión y su rol en
+// línea porque este router no tiene un use() de autenticación.
+agendaRoutes.get('/admin', authenticateToken, checkRole(rolesAgenda), validate(queryAgendaAdminSchema), AgendaController.adminList);
+
 agendaRoutes.get('/:id', optionalAuthentication, validateId, AgendaController.getOne);
 
 // GESTIÓN (Estricta - Solo Junta)

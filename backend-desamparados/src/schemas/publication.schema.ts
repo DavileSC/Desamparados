@@ -1,7 +1,25 @@
 import { type } from 'arktype';
 import { idParam, paginacionQuery, textoRequerido } from '../config/common';
+import { imagenAlEditar, imagenOpcional } from './news.schema';
+import { aRutaPropia, esPdfPropio, PDF_DE_RELLENO } from '../utils/rutas-propias';
+
+// Se reexporta: lo usan los tests y es parte de la regla del PDF.
+export { PDF_DE_RELLENO };
 
 const categorySchema = type("'boletin' | 'dossier' | 'anuario' | 'historia'");
+
+// El PDF de la publicación: lo que devuelve la subida del CMS (32 hex en la raíz
+// de /storage/public, con la extensión en mayúsculas o minúsculas) o el de
+// relleno del seed. Nada de URLs externas: el botón de descarga de la web
+// apuntaría a donde quisiera quien escribió el campo. Una URL absoluta a un PDF
+// nuestro se guarda como ruta relativa.
+const normalizarPdf = (valor: string) => aRutaPropia(valor, esPdfPropio);
+
+export const rutaPdfPublica = type('string')
+  .pipe(normalizarPdf, type('string').narrow(esPdfPropio).describe('un PDF subido desde el CMS (/storage/public/….pdf)'));
+
+// Al editar se valida en el servicio contra lo guardado (ver `imagenAlEditar`).
+const pdfAlEditar = type('string').pipe(normalizarPdf);
 
 // Sin declarar page y limit, `validate` los borra en silencio y el listado sirve
 // siempre la primera página.
@@ -10,10 +28,10 @@ export const publicationListQuerySchema = type({ query: { ...paginacionQuery } }
 export const createPublicationSchema = type({
   body: {
     titulo: textoRequerido,
-    archivoUrl: textoRequerido,
+    archivoUrl: rutaPdfPublica,
     categoria: categorySchema,
     'descripcion?': 'string',
-    'imagenUrl?': 'string',
+    'imagenUrl?': imagenOpcional,
     'fecha?': type('string').matching(/^\d{4}-\d{2}-\d{2}/),
     'visible?': 'boolean',
   },
@@ -21,10 +39,10 @@ export const createPublicationSchema = type({
 export const updatePublicationSchema = type({
   body: {
     'titulo?': textoRequerido,
-    'archivoUrl?': textoRequerido,
+    'archivoUrl?': pdfAlEditar,
     'categoria?': categorySchema,
     'descripcion?': 'string',
-    'imagenUrl?': 'string',
+    'imagenUrl?': imagenAlEditar,
     'fecha?': type('string').matching(/^\d{4}-\d{2}-\d{2}/),
     'visible?': 'boolean',
   },

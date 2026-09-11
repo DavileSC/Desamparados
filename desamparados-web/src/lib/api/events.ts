@@ -92,13 +92,18 @@ export async function getPublicEvents(pagina: { pagina: number; porPagina: numbe
   return { eventos: respuesta.data.map(toEventItem), meta: respuesta.meta }
 }
 
+/** Las dos pestañas de la agenda del CMS. */
+export type PeriodoAgenda = 'proximos' | 'pasados'
+
 /**
- * El CMS: mismo extremo, pero con la cookie de sesión también llegan los
- * `members_only`, y la tabla necesita el evento crudo (id numérico, visibilidad
- * y fechas sin formatear) para editar y borrar.
+ * El CMS tiene su propio extremo (`/events/admin`, con sesión y rol): la lectura
+ * pública solo enseña desde hoy, y un evento fechado por error en el pasado
+ * desaparecía del CMS sin forma de corregirlo ni borrarlo. Trae las dos
+ * visibilidades y el evento crudo (id numérico, visibilidad y fechas sin
+ * formatear) para editar y borrar. Los pasados llegan del más reciente hacia atrás.
  */
-export async function getAdminEvents(pagina: { pagina: number; porPagina: number }) {
-  const respuesta = await pedirPagina(pagina)
+export async function getAdminEvents(pagina: { pagina: number; porPagina: number }, periodo: PeriodoAgenda = 'proximos') {
+  const respuesta = await apiFetch<RespuestaPaginada<ApiEvent>>(`/events/admin?${paramsPagina(pagina, { periodo })}`)
   return { eventos: respuesta.data, meta: respuesta.meta }
 }
 

@@ -5,7 +5,7 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js'; 
-import { promoteUserSchema, demoteUserSchema, updateConfigSchema } from '../schemas/admin.schema.js';
+import { promoteUserSchema, demoteUserSchema, updateConfigSchema, searchUsersSchema, auditLogsQuerySchema } from '../schemas/admin.schema.js';
 
 const adminRoutes = Router();
 
@@ -25,7 +25,9 @@ const LECTURA_AUDITORIA = [Role.ADMIN, Role.HERMANO_MAYOR];
 
 // --- GESTIÓN DE USUARIOS Y ROLES ---
 adminRoutes.get('/staff', checkRole(SOLO_ADMIN), AdminController.getStaff);
-adminRoutes.get('/users/search', checkRole(SOLO_ADMIN), AdminController.searchUsers);
+// Las dos rutas que leen req.query llevan esquema: sin él, un parámetro repetido
+// (?q=a&q=b) llegaba como array hasta Prisma y respondía 500 en vez de 400.
+adminRoutes.get('/users/search', checkRole(SOLO_ADMIN), validate(searchUsersSchema), AdminController.searchUsers);
 adminRoutes.post('/staff/promote', checkRole(SOLO_ADMIN), validate(promoteUserSchema), AdminController.promote);
 adminRoutes.post('/staff/demote', checkRole(SOLO_ADMIN), validate(demoteUserSchema), AdminController.demote);
 
@@ -38,6 +40,6 @@ adminRoutes.get('/config', checkRole(SOLO_ADMIN), AdminController.getAllConfig);
 adminRoutes.post('/config', checkRole(SOLO_ADMIN), validate(updateConfigSchema), AdminController.updateConfig);
 
 // --- REGISTRO DE AUDITORÍA (Quién hizo qué) ---
-adminRoutes.get('/audit-logs', checkRole(LECTURA_AUDITORIA), AdminController.getAuditLogs);
+adminRoutes.get('/audit-logs', checkRole(LECTURA_AUDITORIA), validate(auditLogsQuerySchema), AdminController.getAuditLogs);
 
 export { adminRoutes };

@@ -1,5 +1,6 @@
 import db from '../config/db';
 import { Request } from 'express';
+import { Prisma } from '@prisma/client';
 
 /**
  * Metadatos de quién realiza la acción (extraídos del request autenticado).
@@ -26,8 +27,20 @@ export const AUDIT_ACTIONS = {
   CUOTAS_GENERAR: 'CUOTAS_GENERAR',
   TRANSACCION_CREAR: 'TRANSACCION_CREAR',
   CATEGORIA_CREAR: 'CATEGORIA_CREAR',
+  // Contabilidad: corregir y borrar apuntes manuales, gestionar categorías
+  TRANSACCION_ACTUALIZAR: 'TRANSACCION_ACTUALIZAR',
+  TRANSACCION_ELIMINAR: 'TRANSACCION_ELIMINAR',
+  CATEGORIA_RENOMBRAR: 'CATEGORIA_RENOMBRAR',
+  CATEGORIA_DESACTIVAR: 'CATEGORIA_DESACTIVAR',
+  CATEGORIA_REACTIVAR: 'CATEGORIA_REACTIVAR',
   PAPELETA_ANULAR: 'PAPELETA_ANULAR',
   INSCRIPCION_FACTURAR: 'INSCRIPCION_FACTURAR',
+  RECIBO_EMITIR: 'RECIBO_EMITIR',
+  // Procesión (turnos de reparto y citas)
+  TURNO_CREAR: 'TURNO_CREAR',
+  TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',
+  TURNO_ELIMINAR: 'TURNO_ELIMINAR',
+  AUSENCIAS_PROCESAR: 'AUSENCIAS_PROCESAR',
   // Secretaría
   SOLICITUD_APROBAR: 'SOLICITUD_APROBAR',
   SOLICITUD_RECHAZAR: 'SOLICITUD_RECHAZAR',
@@ -35,6 +48,12 @@ export const AUDIT_ACTIONS = {
   HERMANO_REACTIVAR: 'HERMANO_REACTIVAR',
   CENSO_REORDENAR: 'CENSO_REORDENAR',
   EMANCIPACION: 'EMANCIPACION',
+  // Censo: edición de la ficha por el staff y operaciones del área familiar
+  HERMANO_ACTUALIZAR: 'HERMANO_ACTUALIZAR',
+  HERMANO_BAJA_FAMILIAR: 'HERMANO_BAJA_FAMILIAR',
+  FAMILIAR_CREAR: 'FAMILIAR_CREAR',
+  FAMILIAR_ACTUALIZAR: 'FAMILIAR_ACTUALIZAR',
+  FAMILIAR_SOLICITUD_RETIRAR: 'FAMILIAR_SOLICITUD_RETIRAR',
   // RGPD
   CUENTA_DATOS_EXPORT: 'CUENTA_DATOS_EXPORT',
   CUENTA_AUTODELETE: 'CUENTA_AUTODELETE',
@@ -75,15 +94,36 @@ export class AuditService {
   }
 
   /**
+   * Borra los registros más antiguos que el plazo de retención. La auditoría
+   * guarda IP y navegador, que son datos personales: no pueden guardarse sin
+   * límite. El plazo por defecto (730 días) cubre dos ejercicios contables
+   * completos; se ajusta con AUDIT_RETENTION_DAYS.
+   */
+  static async purgarAntiguos(dias = Number(process.env.AUDIT_RETENTION_DAYS ?? 730)): Promise<number> {
+    if (!Number.isInteger(dias) || dias < 30) {
+      throw new Error(`AUDIT_RETENTION_DAYS debe ser un entero de 30 o más (recibido: ${dias}).`);
+    }
+    const limite = new Date(Date.now() - dias * 24 * 60 * 60 * 1000);
+    const { count } = await db.auditLog.deleteMany({ where: { createdAt: { lt: limite } } });
+    return count;
+  }
+
+  /**
    * Registra una acción sensible. Fire-and-forget tolerante a fallos:
    * un problema escribiendo auditoría NUNCA debe romper la operación de negocio
    * (queda logueado en consola para alertar al administrador).
+   *
+   * Se llama DESPUÉS de que la operación haya confirmado, no antes: si la
+   * transacción falla, el registro no debe dar fe de algo que no ocurrió.
+   * `detalles` lleva el estado anterior y el nuevo (`{ antes, despues }`) o
+   * lo que haga falta para entender el cambio sin reconstruirlo.
    */
   static async log(
     action: string,
     meta: AuditMeta,
     entityType?: string,
-    entityId?: string | number
+    entityId?: string | number,
+    detalles?: Prisma.InputJsonValue
   ): Promise<void> {
     try {
       await db.auditLog.create({
@@ -93,7 +133,8 @@ export class AuditService {
           ip: meta.ip,
           userAgent: meta.userAgent,
           entityType: entityType ?? null,
-          entityId: entityId !== undefined ? String(entityId) : null
+          entityId: entityId !== undefined ? String(entityId) : null,
+          ...(detalles !== undefined ? { detalles } : {})
         }
       });
     } catch (e) {

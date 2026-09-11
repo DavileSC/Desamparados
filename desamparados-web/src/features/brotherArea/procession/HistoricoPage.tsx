@@ -17,6 +17,7 @@ import AnimatedSection from '../../../components/AnimatedSection'
 import Paginador from '../../../components/Paginador'
 import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
 import { getMyProcessionTickets, type ApiProcessionTicket } from '../../../lib/api/procession'
+import { estadoPapeleta } from './estadoPapeleta'
 
 export default function HistoricoPage() {
   const { items: tickets, meta, loading, error, alCambiarPagina, cambiarTamano } =
@@ -62,19 +63,12 @@ export default function HistoricoPage() {
                       <Box
                         component="span"
                         sx={{
-                          color:
-                            ticket.recibo.estado === 'PAGADO'
-                              ? 'success.main'
-                              : ticket.recibo.estado === 'PENDIENTE' || ticket.recibo.estado === 'REMESADO'
-                                ? 'warning.main'
-                                : 'error.main',
+                          color: estadoPapeleta(ticket.recibo.estado).color,
                           fontWeight: 600,
                           textTransform: 'uppercase',
                         }}
                       >
-                        {ticket.recibo.estado === 'PAGADO' && 'Asignada'}
-                        {(ticket.recibo.estado === 'PENDIENTE' || ticket.recibo.estado === 'REMESADO') && 'Pendiente'}
-                        {ticket.recibo.estado !== 'PAGADO' && ticket.recibo.estado !== 'PENDIENTE' && ticket.recibo.estado !== 'REMESADO' && 'No disponible'}
+                        {estadoPapeleta(ticket.recibo.estado).texto}
                       </Box>
                     </TableCell>
                   </TableRow>
