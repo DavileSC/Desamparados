@@ -9,7 +9,7 @@ import Paginador from '../../components/Paginador'
 import { usePublicacionesPaginadas } from './usePublicacionesPaginadas'
 
 export default function PublicationsPage() {
-  const { items, meta, loading, error, alCambiarPagina, cambiarTamano } =
+  const { items, meta, loading, error, alCambiarPagina } =
     usePublicacionesPaginadas(undefined, 'No se han podido cargar las publicaciones.')
 
   return (
@@ -38,7 +38,7 @@ export default function PublicationsPage() {
           </Grid>
           {meta && (
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="publicaciones" />
+              <Paginador meta={meta} onPagina={alCambiarPagina} etiqueta="publicaciones" />
             </Box>
           )}
         </PageContainer>

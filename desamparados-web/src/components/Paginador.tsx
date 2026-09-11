@@ -6,7 +6,11 @@ import type { MetaPaginacion } from '../lib/api/tipos'
 interface Props {
   meta: MetaPaginacion
   onPagina: (numero: number) => void
-  onTamano: (numero: number) => void
+  /**
+   * Sin él no hay selector de tamaño ni recuento: es lo que usan los listados
+   * públicos, donde el visitante solo necesita pasar de página.
+   */
+  onTamano?: (numero: number) => void
   /** Para los lectores de pantalla: «paginación del censo de hermanos». */
   etiqueta: string
 }
@@ -27,10 +31,30 @@ export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props)
   }, [page, totalPages, onPagina])
 
   if (total === 0) return null
+  if (!onTamano && totalPages <= 1) return null
 
   const desde = (page - 1) * limit + 1
   const hasta = Math.min(page * limit, total)
   const idEtiqueta = `tamano-${idParaEtiqueta(etiqueta)}`
+
+  const numeros = totalPages > 1 && (
+    <Pagination
+      count={totalPages}
+      page={Math.min(page, totalPages)}
+      onChange={(_, numero) => onPagina(numero)}
+      color="primary"
+      getItemAriaLabel={(tipo, numero) =>
+        tipo === 'page' ? `Ir a la página ${numero}`
+        : tipo === 'previous' ? 'Página anterior'
+        : tipo === 'next' ? 'Página siguiente'
+        : tipo === 'first' ? 'Primera página' : 'Última página'}
+      aria-label={`Paginación de ${etiqueta}`}
+    />
+  )
+
+  if (!onTamano) {
+    return <Box sx={{ mt: 5, display: 'flex', justifyContent: 'center' }}>{numeros}</Box>
+  }
 
   return (
     <Box sx={{ mt: 3, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
@@ -38,7 +62,8 @@ export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props)
         {totalPages > 1 ? `Mostrando ${desde}-${hasta} de ${total}` : `${total} resultados`}
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <FormControl size="small">
+        {/* Sin anchura mínima, la etiqueta flotante se recortaba a «Resul…» sobre un valor de dos cifras. */}
+        <FormControl size="small" sx={{ minWidth: 190 }}>
           <InputLabel id={idEtiqueta}>Resultados por página</InputLabel>
           <Select
             labelId={idEtiqueta}
@@ -49,20 +74,7 @@ export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props)
             {TAMANOS.map((tamano) => <MenuItem key={tamano} value={tamano}>{tamano}</MenuItem>)}
           </Select>
         </FormControl>
-        {totalPages > 1 && (
-          <Pagination
-            count={totalPages}
-            page={Math.min(page, totalPages)}
-            onChange={(_, numero) => onPagina(numero)}
-            color="primary"
-            getItemAriaLabel={(tipo, numero) =>
-              tipo === 'page' ? `Ir a la página ${numero}`
-              : tipo === 'previous' ? 'Página anterior'
-              : tipo === 'next' ? 'Página siguiente'
-              : tipo === 'first' ? 'Primera página' : 'Última página'}
-            aria-label={`Paginación de ${etiqueta}`}
-          />
-        )}
+        {numeros}
       </Box>
     </Box>
   )

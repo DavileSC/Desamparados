@@ -9,7 +9,7 @@ import Paginador from '../../components/Paginador'
 import { usePublicacionesPaginadas } from './usePublicacionesPaginadas'
 
 export default function DossierPrensaPage() {
-  const { items: dossieres, meta, loading, error, alCambiarPagina, cambiarTamano } =
+  const { items: dossieres, meta, loading, error, alCambiarPagina } =
     usePublicacionesPaginadas('dossier', 'No se han podido cargar los dossieres.')
 
   return (
@@ -38,7 +38,7 @@ export default function DossierPrensaPage() {
           </Grid>
           {meta && (
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="dossieres de prensa" />
+              <Paginador meta={meta} onPagina={alCambiarPagina} etiqueta="dossieres de prensa" />
             </Box>
           )}
         </PageContainer>

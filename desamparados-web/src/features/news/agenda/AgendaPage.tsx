@@ -16,7 +16,7 @@ const pedirAgenda = (pagina: Pagina) =>
   getPublicEvents(pagina).then(({ eventos, meta }) => ({ data: eventos, meta }))
 
 export default function AgendaPage() {
-  const { items: events, meta, loading, error, alCambiarPagina, cambiarTamano } =
+  const { items: events, meta, loading, error, alCambiarPagina } =
     useListadoPaginado(pedirAgenda, 'No se ha podido cargar la agenda.')
 
   return (
@@ -47,7 +47,7 @@ export default function AgendaPage() {
           </Grid>}
           {meta && (
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="la agenda" />
+              <Paginador meta={meta} onPagina={alCambiarPagina} etiqueta="la agenda" />
             </Box>
           )}
         </PageContainer>

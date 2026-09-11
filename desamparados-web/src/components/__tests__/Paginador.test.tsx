@@ -19,6 +19,19 @@ describe('Paginador', () => {
     expect(screen.getByText(/8 resultados/i)).toBeInTheDocument()
   })
 
+  it('sin onTamano (listados públicos) solo quedan los números de página', () => {
+    render(<Paginador meta={meta} onPagina={vi.fn()} etiqueta="noticias" />)
+    expect(screen.queryByLabelText(/resultados por página/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/mostrando/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: /paginación de noticias/i })).toBeInTheDocument()
+  })
+
+  it('sin onTamano y con una sola página no se pinta nada', () => {
+    // «8 resultados» sin nada más que hacer es ruido para el visitante.
+    const { container } = render(<Paginador meta={{ total: 8, page: 1, limit: 20, totalPages: 1 }} onPagina={vi.fn()} etiqueta="noticias" />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
   it('sin resultados no se pinta nada', () => {
     const { container } = render(<Paginador meta={{ total: 0, page: 1, limit: 20, totalPages: 0 }} onPagina={vi.fn()} onTamano={vi.fn()} etiqueta="censo" />)
     expect(container).toBeEmptyDOMElement()
