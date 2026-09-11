@@ -1,25 +1,42 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
+import { useSearchParams } from 'react-router-dom'
 import AddIcon from '@mui/icons-material/Add'
 import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
-import { createCategory, createTransaction, getBalance, getCategories, getLedger, type Balance, type Category, type Transaction } from '../../lib/api/accounting'
+import { createCategory, createTransaction, getCategories, getLedger, getResumen, type Category, type ResumenContable, type Transaction } from '../../lib/api/accounting'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
+import BarraFiltros from './contabilidad/BarraFiltros'
+import CifrasPeriodo from './contabilidad/CifrasPeriodo'
+import GraficaMeses from './contabilidad/GraficaMeses'
+import RepartoCategorias from './contabilidad/RepartoCategorias'
+import LibroCaja from './contabilidad/LibroCaja'
+import { PERIODO_POR_DEFECTO, aFiltrosApi, leerFiltrosUrl, type FiltrosUi } from './contabilidad/filtros'
 
 type Tipo = Category['tipo']
 const apunteVacio = { tipo: 'INGRESO' as Tipo, categoriaId: '', concepto: '', importe: '' }
 const categoriaVacia = { nombre: '', tipo: 'INGRESO' as Tipo }
+// Valor de cada filtro que equivale a no filtrar: no se escribe en la URL.
+const SIN_FILTRO: Partial<Record<keyof FiltrosUi, string>> = { tipo: 'TODO', periodo: PERIODO_POR_DEFECTO }
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
 
 export default function AccountingAdminPage() {
-  const [balance, setBalance] = useState<Balance | null>(null)
+  const [params, setParams] = useSearchParams()
+  const filtros = useMemo(() => leerFiltrosUrl(params), [params])
+  // Se memoriza por su texto: `aFiltrosApi` cuenta los periodos desde hoy y
+  // devolvería un objeto nuevo en cada render, relanzando las cargas sin fin.
+  const claveFiltros = JSON.stringify(aFiltrosApi(filtros))
+  const filtrosApi = useMemo(() => JSON.parse(claveFiltros) as ReturnType<typeof aFiltrosApi>, [claveFiltros])
+
+  const [resumen, setResumen] = useState<ResumenContable | null>(null)
   const [ledger, setLedger] = useState<Transaction[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [cargando, setCargando] = useState(true)
   const [form, setForm] = useState(apunteVacio)
   const [category, setCategory] = useState(categoriaVacia)
   // Qué ventana de alta está abierta: el apunte o la categoría.
@@ -30,16 +47,38 @@ export default function AccountingAdminPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
+
+  /** Cambia filtros en la URL y vuelve a la primera página: la 7 de otra consulta no tiene sentido. */
+  const cambiarFiltros = useCallback((cambios: Partial<FiltrosUi>) => {
+    setParams((anteriores) => {
+      const siguientes = new URLSearchParams(anteriores)
+      for (const [clave, valor] of Object.entries(cambios)) {
+        if (!valor || valor === SIN_FILTRO[clave as keyof FiltrosUi]) siguientes.delete(clave)
+        else siguientes.set(clave, valor)
+      }
+      siguientes.delete('pagina')
+      return siguientes
+    }, { replace: true })
+  }, [setParams])
+
   // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
-  // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
-  // orden inverso y dejar en pantalla los datos de una página con la URL
-  // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
-  // Las llamadas de después de crear categoría o apunte la omiten: no hay carrera.
-  const load = useCallback((vigente: () => boolean = () => true) => Promise.all([getBalance(), getLedger({ pagina, porPagina }), getCategories()]).then(([b, l, c]) => { if (!vigente()) return; setBalance(b); setLedger(l.data); setMeta(l.meta); setCategories(c) }), [pagina, porPagina])
+  // cambios rápidos de filtro o de página lanzan dos cargas que pueden
+  // resolverse en orden inverso y dejar en pantalla los datos de una consulta
+  // con la URL diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
+  const load = useCallback((vigente: () => boolean = () => true) => Promise.all([
+    getResumen(filtrosApi),
+    getLedger({ pagina, porPagina }, filtrosApi),
+    getCategories(),
+  ]).then(([r, l, c]) => {
+    if (!vigente()) return
+    setResumen(r); setLedger(l.data); setMeta(l.meta); setCategories(c); setError(null)
+  }), [filtrosApi, pagina, porPagina])
+
   useEffect(() => {
     let cancelado = false
     load(() => !cancelado)
       .catch((e: unknown) => { if (!cancelado) setError(mensaje(e, 'No se ha podido cargar la contabilidad.')) })
+      .finally(() => { if (!cancelado) setCargando(false) })
     return () => { cancelado = true }
   }, [load])
 
@@ -126,9 +165,21 @@ export default function AccountingAdminPage() {
       </TextField>
     </VentanaFormulario>
 
-    {balance && <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 4 }}>{[['Ingresos', balance.ingresos], ['Gastos', balance.gastos], ['Balance', balance.balanceTotal]].map(([label, value]) => <Paper key={label} sx={{ p: 3, flex: 1 }}><Typography variant="overline">{label}</Typography><Typography variant="h4">{Number(value).toFixed(2)} €</Typography></Paper>)}</Stack>}
-    <Typography variant="h4" sx={{ mb: 2 }}>Libro mayor</Typography>
-    <Stack spacing={2}>{ledger.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', gap: 2 }}><Typography>{item.concepto} · {item.categoria.nombre}</Typography><Typography color={item.tipo === 'INGRESO' ? 'success.main' : 'error.main'}>{item.tipo === 'INGRESO' ? '+' : '-'}{Number(item.importe).toFixed(2)} €</Typography></Paper>)}</Stack>
+    <BarraFiltros filtros={filtros} categorias={categories} onCambiar={cambiarFiltros} />
+
+    {cargando && !resumen ? <CircularProgress aria-label="Cargando la contabilidad" /> : resumen && <>
+      <CifrasPeriodo resumen={resumen} tipo={filtros.tipo} />
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '3fr 2fr' }, gap: 2, mb: 3, alignItems: 'stretch' }}>
+        <GraficaMeses serie={resumen.serie} tipo={filtros.tipo} />
+        <RepartoCategorias categorias={resumen.categorias} totales={resumen.totales} tipo={filtros.tipo} elegida={filtros.categoria} onElegir={(id) => cambiarFiltros({ categoria: id })} />
+      </Box>
+    </>}
+
+    <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: 1.5 }}>
+      <Typography variant="h4" component="h2">Libro de caja</Typography>
+      {meta && <Typography variant="body2" color="text.secondary">Lo más reciente arriba</Typography>}
+    </Stack>
+    <LibroCaja apuntes={ledger} totales={resumen?.totales ?? null} tipo={filtros.tipo} />
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="libro mayor" />}
   </>
 }

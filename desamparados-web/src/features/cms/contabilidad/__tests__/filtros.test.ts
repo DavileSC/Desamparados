@@ -1,0 +1,51 @@
+import { describe, it, expect } from 'vitest'
+import { aFiltrosApi, leerFiltrosUrl, rangoDePeriodo } from '../filtros'
+
+// Un día fijo: los periodos se cuentan desde hoy.
+const HOY = new Date(2026, 8, 11) // 11 de septiembre de 2026
+
+describe('periodos', () => {
+  it('el año en curso va del 1 de enero hasta hoy, no hasta diciembre', () => {
+    // Si llegara a diciembre, se compararía lo que va de año con el año anterior entero.
+    expect(rangoDePeriodo('anio', HOY)).toEqual({ desde: '2026-01-01', hasta: '2026-09-11' })
+  })
+
+  it('este mes y los últimos tres meses empiezan el día 1', () => {
+    expect(rangoDePeriodo('mes', HOY)).toEqual({ desde: '2026-09-01', hasta: '2026-09-11' })
+    expect(rangoDePeriodo('3meses', HOY)).toEqual({ desde: '2026-07-01', hasta: '2026-09-11' })
+  })
+
+  it('el curso empieza en septiembre: el de este mes de septiembre ya es el nuevo', () => {
+    expect(rangoDePeriodo('curso', HOY)).toEqual({ desde: '2026-09-01', hasta: '2026-09-11' })
+    expect(rangoDePeriodo('curso', new Date(2026, 4, 3))).toEqual({ desde: '2025-09-01', hasta: '2026-05-03' })
+  })
+
+  it('el año anterior va completo y el histórico no tiene fechas', () => {
+    expect(rangoDePeriodo('anioAnterior', HOY)).toEqual({ desde: '2025-01-01', hasta: '2025-12-31' })
+    expect(rangoDePeriodo('todo', HOY)).toEqual({})
+  })
+})
+
+describe('filtros en la URL', () => {
+  it('sin nada en la URL: todo, año en curso', () => {
+    expect(leerFiltrosUrl(new URLSearchParams())).toEqual({ tipo: 'TODO', periodo: 'anio', desde: '', hasta: '', categoria: '', metodo: '', q: '' })
+  })
+
+  it('lee cada filtro y descarta lo que no reconoce', () => {
+    const filtros = leerFiltrosUrl(new URLSearchParams('tipo=GASTO&periodo=personalizado&desde=2026-01-01&hasta=2026-04-30&categoria=6&metodo=BIZUM&q=flores'))
+    expect(filtros).toEqual({ tipo: 'GASTO', periodo: 'personalizado', desde: '2026-01-01', hasta: '2026-04-30', categoria: '6', metodo: 'BIZUM', q: 'flores' })
+    expect(leerFiltrosUrl(new URLSearchParams('tipo=OTRO&periodo=siempre&categoria=x&metodo=CHEQUE')).tipo).toBe('TODO')
+    expect(leerFiltrosUrl(new URLSearchParams('periodo=siempre')).periodo).toBe('anio')
+  })
+
+  it('traduce lo de la pantalla a lo que pide la API', () => {
+    const ui = leerFiltrosUrl(new URLSearchParams('tipo=INGRESO&categoria=3&metodo=EFECTIVO&q=juan'))
+    expect(aFiltrosApi(ui, HOY)).toEqual({ tipo: 'INGRESO', desde: '2026-01-01', hasta: '2026-09-11', categorias: [3], metodo: 'EFECTIVO', q: 'juan' })
+    expect(aFiltrosApi(leerFiltrosUrl(new URLSearchParams('periodo=todo')), HOY)).toEqual({})
+  })
+
+  it('un periodo personalizado a medias usa solo la fecha que tenga', () => {
+    const ui = leerFiltrosUrl(new URLSearchParams('periodo=personalizado&desde=2026-03-01'))
+    expect(aFiltrosApi(ui, HOY)).toEqual({ desde: '2026-03-01' })
+  })
+})

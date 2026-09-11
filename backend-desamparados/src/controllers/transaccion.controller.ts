@@ -24,6 +24,15 @@ export class TransaccionController {
     }
   }
 
+  static async getResumen(req: Request, res: Response) {
+    try {
+      const resumen = await TransaccionService.getResumen(req.query);
+      res.status(200).json(resumen);
+    } catch (e) {
+      handleHttp(res, e, 'Error calculando el resumen contable');
+    }
+  }
+
   static async getDashboard(req: Request, res: Response) {
     try {
       const balance = await TransaccionService.getBalance();

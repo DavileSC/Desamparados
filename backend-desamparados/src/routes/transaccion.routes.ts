@@ -4,7 +4,7 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
-import { createCategoriaSchema, createTransaccionSchema } from '../schemas/transaccion.schema.js';
+import { createCategoriaSchema, createTransaccionSchema, libroMayorQuerySchema, resumenQuerySchema } from '../schemas/transaccion.schema.js';
 
 
 const transaccionRoutes = Router();
@@ -19,7 +19,9 @@ transaccionRoutes.get('/categorias', TransaccionController.getCategorias);
 transaccionRoutes.post('/categorias', validate(createCategoriaSchema), TransaccionController.createCategoria);
 
 // --- LIBRO MAYOR ---
-transaccionRoutes.get('/libro-mayor', TransaccionController.getLibroMayor);
+transaccionRoutes.get('/libro-mayor', validate(libroMayorQuerySchema), TransaccionController.getLibroMayor);
+// Totales, serie y reparto por categoría para los mismos filtros que el libro mayor.
+transaccionRoutes.get('/resumen', validate(resumenQuerySchema), TransaccionController.getResumen);
 transaccionRoutes.get('/balance', TransaccionController.getDashboard);
 transaccionRoutes.post('/', validate(createTransaccionSchema), TransaccionController.create);
 
