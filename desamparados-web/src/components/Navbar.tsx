@@ -25,6 +25,8 @@ import GroupIcon from '@mui/icons-material/Group'
 import MailIcon from '@mui/icons-material/Mail'
 import FacebookIcon from '@mui/icons-material/Facebook'
 import CloseIcon from '@mui/icons-material/Close'
+import InstagramIcon from '@mui/icons-material/Instagram'
+import XIcon from '@mui/icons-material/X'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
@@ -50,9 +52,18 @@ const desktopMq = `@media (min-width:${DESKTOP_NAV_MIN}px)`
 const compactMq = `@media (max-width:1199px)`
 const socialMq = `@media (min-width:1700px)`
 
+// Velo de la barra de escritorio, en opacidad de la tinta #100e11. 0,72 es el
+// mínimo: sobre una foto blanca deja el texto blanco en 7,7:1 y el dorado del
+// enlace activo justo en 4,5:1 (AA); por debajo, el dorado deja de leerse.
+// Al hacer scroll sube a 0,86.
+const tinta = (opacidad: number) => `rgba(16, 14, 17, ${opacidad.toFixed(3)})`
+const VELO_ARRIBA = 0.72
+const VELO_SCROLL = 0.86
+
 const socialLinks = [
+  { icon: <InstagramIcon fontSize="small" />, href: site.redes.instagram, label: 'Instagram' },
+  { icon: <XIcon fontSize="small" />, href: site.redes.x, label: 'X' },
   { icon: <FacebookIcon fontSize="small" />, href: site.redes.facebook, label: 'Facebook' },
-  { icon: <CloseIcon fontSize="small" />, href: site.redes.x, label: 'X' },
   { icon: <PlayCircleIcon fontSize="small" />, href: site.redes.youtube, label: 'YouTube' },
 ].flatMap(social => social.href ? [{ ...social, href: social.href }] : [])
 
@@ -190,7 +201,7 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
               p: 1,
               minWidth: 260,
               borderRadius: '10px',
-              backgroundColor: 'rgba(38, 35, 38, 0.96)',
+              backgroundColor: tinta(0.97),
               backdropFilter: 'blur(18px)',
               WebkitBackdropFilter: 'blur(18px)',
               boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.55)',
@@ -292,6 +303,7 @@ export default function Navbar() {
   }, [])
 
   const isActive = (href: string) => esActiva(location.pathname, href)
+  const velo = VELO_ARRIBA + (VELO_SCROLL - VELO_ARRIBA) * scrollProgress
 
   // El cajón se abre con la sección de la página actual ya desplegada.
   const abrirCajon = () => {
@@ -309,7 +321,7 @@ export default function Navbar() {
           position="sticky"
           elevation={0}
           sx={{
-            backgroundColor: 'rgba(38, 35, 38, 0.9)',
+            backgroundColor: tinta(VELO_SCROLL),
             borderBottom: '1px solid rgba(204, 196, 201, 0.2)',
             display: 'flex',
             [desktopMq]: { display: 'none' },
@@ -346,13 +358,15 @@ export default function Navbar() {
         position="fixed"
         elevation={0}
         sx={{
-          backgroundColor: `rgba(38, 35, 38, ${0.12 + scrollProgress * 0.66})`,
+          // Banda de tinta casi opaca desde el primer píxel y con corte limpio: las
+          // fotos del hero las cambia el cliente y no se puede contar con que sean
+          // oscuras, y al bajar la barra pasa por encima de tarjetas de papel.
+          backgroundColor: tinta(velo),
           backgroundImage: 'none',
-          backdropFilter: `blur(${10 + scrollProgress * 14}px) saturate(${110 + scrollProgress * 60}%)`,
-          WebkitBackdropFilter: `blur(${10 + scrollProgress * 14}px) saturate(${110 + scrollProgress * 60}%)`,
+          backdropFilter: `blur(${10 + scrollProgress * 14}px) saturate(${110 + scrollProgress * 40}%)`,
+          WebkitBackdropFilter: `blur(${10 + scrollProgress * 14}px) saturate(${110 + scrollProgress * 40}%)`,
           borderBottom: 'none',
           boxShadow: 'none',
-          transition: 'background-color 0.35s ease, backdrop-filter 0.35s ease',
           display: 'none',
           [desktopMq]: { display: 'flex' },
         }}
@@ -430,6 +444,8 @@ export default function Navbar() {
                 <IconButton
                   key={social.label}
                   href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={social.label}
                   size="small"
                   sx={{ width: 32, height: 32, p: 0, color: 'text.primary', '&:hover': { color: 'secondary.main' } }}

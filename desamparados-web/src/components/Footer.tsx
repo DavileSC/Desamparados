@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom'
 import MailIcon from '@mui/icons-material/Mail'
 import PhoneIcon from '@mui/icons-material/Phone'
 import FacebookIcon from '@mui/icons-material/Facebook'
-import CloseIcon from '@mui/icons-material/Close'
+import InstagramIcon from '@mui/icons-material/Instagram'
+import XIcon from '@mui/icons-material/X'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import { site } from '../config/site'
 import PageContainer from './PageContainer'
@@ -17,8 +18,9 @@ type SocialLink = { icon: ReactNode; href: string; label: string }
 // Solo se pintan los perfiles cuya URL está confirmada en `site.redes`: un
 // icono que lleva a `#` es un enlace muerto de cara al visitante.
 const socialLinks: SocialLink[] = [
+  { icon: <InstagramIcon />, href: site.redes.instagram, label: 'Instagram' },
+  { icon: <XIcon />, href: site.redes.x, label: 'X' },
   { icon: <FacebookIcon />, href: site.redes.facebook, label: 'Facebook' },
-  { icon: <CloseIcon />, href: site.redes.x, label: 'X' },
   { icon: <PlayCircleIcon />, href: site.redes.youtube, label: 'YouTube' },
 ].flatMap((red) => (red.href ? [{ ...red, href: red.href }] : []))
 
@@ -93,6 +95,8 @@ export default function Footer() {
                 <IconButton
                   key={social.label}
                   href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={social.label}
                   sx={{ color: 'text.secondary', '&:hover': { color: 'secondary.main' } }}
                 >

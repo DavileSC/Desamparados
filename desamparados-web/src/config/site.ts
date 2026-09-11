@@ -46,9 +46,9 @@ export const site = {
    * muerto que lleve a `#`.
    */
   redes: {
-    facebook: null as string | DatoPendiente,
-    instagram: null as string | DatoPendiente,
-    x: null as string | DatoPendiente,
+    facebook: 'https://www.facebook.com/desamparadosmalaga/' as string | DatoPendiente,
+    instagram: 'https://www.instagram.com/desamparadosmalaga/' as string | DatoPendiente,
+    x: 'https://x.com/GPDesamparados' as string | DatoPendiente,
     youtube: null as string | DatoPendiente,
   },
 
