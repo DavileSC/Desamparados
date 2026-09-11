@@ -1,6 +1,6 @@
 import db from '../config/db';
 import { encrypt, verified } from '../utils/bcrypt.handle';
-import { generateToken, generatePending2FAToken, esStaff } from '../utils/jwt.handle';
+import { generateToken, generatePending2FAToken, esStaff, corteDeSesiones } from '../utils/jwt.handle';
 import crypto from 'crypto';
 import { Prisma, Role } from '@prisma/client';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
@@ -550,7 +550,7 @@ export class AuthService {
         resetPasswordExpires: null,
         // Invalidamos TODAS las sesiones abiertas (por si la contraseña se cambió
         // por robo de cuenta: el atacante con token viejo queda fuera)
-        tokenValidAfter: new Date()
+        tokenValidAfter: corteDeSesiones()
       }
     });
 
@@ -571,7 +571,7 @@ export class AuthService {
   static async cerrarSesionesDe(userId: number) {
     // updateMany y no update: si la cuenta ya no existe no hay nada que cerrar,
     // y un P2025 convertiría el cierre de sesión en un 500.
-    await db.user.updateMany({ where: { id: userId }, data: { tokenValidAfter: new Date() } });
+    await db.user.updateMany({ where: { id: userId }, data: { tokenValidAfter: corteDeSesiones() } });
   }
 
   // =================================================================
@@ -769,7 +769,7 @@ export class AuthService {
         data: {
           ...APAGAR_2FA,
           // Rescate de emergencia: se invalidan sus sesiones por seguridad
-          tokenValidAfter: new Date()
+          tokenValidAfter: corteDeSesiones()
         }
       });
       await tx.twoFactorBackupCode.deleteMany({ where: { userId: targetUserId } });
@@ -919,7 +919,7 @@ export class AuthService {
           twoFactorSecret: null,
           resetPasswordToken: null,
           resetPasswordExpires: null,
-          tokenValidAfter: new Date() // Mata todas las sesiones abiertas
+          tokenValidAfter: corteDeSesiones() // Mata todas las sesiones abiertas
         }
       });
 

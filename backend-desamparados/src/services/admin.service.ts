@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { corteDeSesiones } from '../utils/jwt.handle.js';
 import { CLAVES_CONFIGURACION, esClaveConfiguracion, normalizarValorConfiguracion } from '../domain/configuracion.js';
 
 export class AdminService {
@@ -58,7 +59,7 @@ export class AdminService {
         // La sesion anterior se emitio con la politica del rol viejo (cookie
         // persistente de 4 h si era USER). Forzamos un login nuevo para que
         // reciba la de staff, que muere al cerrar el navegador.
-        tokenValidAfter: new Date()
+        tokenValidAfter: corteDeSesiones()
       },
       select: { id: true, email: true, role: true, nombre: true, apellidos: true }
     });
@@ -92,7 +93,7 @@ export class AdminService {
         role: Role.USER,
         // Invalidamos sus sesiones activas: pierde el acceso al CMS de inmediato
         // (los tokens JWT viejos ya no podrán usar rutas de staff)
-        tokenValidAfter: new Date()
+        tokenValidAfter: corteDeSesiones()
       },
       select: { id: true, email: true, role: true, nombre: true }
     });

@@ -42,7 +42,7 @@ export interface AuthTokenPayload extends JwtPayload {
   // Momento de emisión en milisegundos. `iat` va en segundos enteros y, al
   // compararlo con `tokenValidAfter`, un login en el mismo segundo que un
   // cierre de sesión nacía ya revocado (o, redondeando al revés, el token
-  // cerrado sobrevivía). Ver middleware/session.ts.
+  // cerrado sobrevivía). Ver middleware/session.ts y `corteDeSesiones`.
   emitidoMs?: number;
   // Solo en el testigo de 2FA: el `twoFactorLastStep` de la cuenta cuando se
   // emitió. En cuanto se acepta un segundo factor ese valor cambia y el
@@ -75,6 +75,22 @@ export const RECORDARME_SEGUNDOS = 72 * 3600;
 
 /** El paso intermedio del 2FA caduca pronto: es solo para teclear un codigo */
 export const PENDIENTE_2FA_SEGUNDOS = 5 * 60;
+
+/**
+ * El valor que se guarda en `tokenValidAfter` para cortar las sesiones de una
+ * cuenta (cerrar sesión, cambiar la contraseña, cambiar el rol, rescatar el
+ * 2FA…): un milisegundo POR DELANTE del reloj.
+ *
+ * Un token vale si `emitidoMs >= tokenValidAfter`. Con `new Date()` a secas, un
+ * token emitido en el mismo milisegundo que el corte sobrevivía: pasó en el CI,
+ * donde el primer paso del login y el cierre de sesiones caían en el mismo
+ * milisegundo y el testigo seguía valiendo. Con el margen, todo lo emitido
+ * hasta el instante del corte queda fuera, y lo que se emita después (un login
+ * nuevo tarda decenas de milisegundos solo en el bcrypt) sigue entrando.
+ */
+export function corteDeSesiones(): Date {
+  return new Date(Date.now() + 1);
+}
 
 // Generar Token de sesion
 const generateToken = (

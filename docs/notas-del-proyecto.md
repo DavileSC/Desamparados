@@ -141,14 +141,20 @@ que declara omisiones cuando la base sí está disponible es una suite que mient
 *project references* y sin `-b` no comprueba nada. (`tsc --noEmit -p
 tsconfig.app.json` sí funciona para comprobar solo la aplicación.)
 
-**Los ficheros de test del backend corren a la vez contra la misma base**
-(`node --test` los paraleliza). Un test que lee totales GLOBALES —el panel, la
-contabilidad del mes, el número de hermano más alto— puede ver lo que otro
-fichero está creando en ese momento. Dos casos reales: un «número de hermano que
-no existe» calculado como `máximo + 1` que otro test de aprobaciones acababa
-asignando, y una comparación panel/contabilidad que difería en un apunte ajeno.
-Usa valores propios del test (por debajo de lo que otros generan) o repite la
-comparación hasta que cuadre, y di en un comentario por qué.
+**Los ficheros de test del backend van uno detrás de otro**
+(`--test-concurrency=1`, en `npm test` y en el CI). Comparten la base de datos, y
+varios trabajan sobre su estado global: generar cuotas emite un recibo a *todos*
+los hermanos activos, el panel suma todos los apuntes, el número de hermano sale
+de `máximo + 1` y borrar el último ADMIN bloquea la tabla de usuarios. En
+paralelo (lo que hace `node --test` por defecto) se pisaban: fallos que salían
+una vez de cada tres, limpiezas que chocaban con claves ajenas y, lo peor, una
+suite colgada esperando un bloqueo. En serie tarda algo más de un minuto en vez
+de quince segundos; se prefirió así. **No quitar el flag** para ganar tiempo.
+
+Aun así, un test que lea totales globales debe usar valores propios o tolerar lo
+que dejen los datos de la base de desarrollo, y un test que retenga una
+transacción a propósito tiene que soltarla en un `finally`: una transacción
+abierta deja la fila bloqueada y cuelga la limpieza del final.
 
 ## 6 bis. MariaDB 11.8 y los choques de transacciones
 

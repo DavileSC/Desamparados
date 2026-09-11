@@ -14,6 +14,7 @@ import { createInterface } from 'node:readline/promises';
 import { Role } from '@prisma/client';
 import db from '../src/config/db.js';
 import { encrypt } from '../src/utils/bcrypt.handle.js';
+import { corteDeSesiones } from '../src/utils/jwt.handle.js';
 
 async function pedirCorreo(): Promise<string> {
   const argumento = process.argv[2]?.trim();
@@ -48,7 +49,7 @@ try {
       // El mismo hash que el resto de la aplicación (bcrypt, 10 rondas).
       password: await encrypt(password),
       // Invalida las sesiones abiertas: si alguien tenía la cuenta, la pierde.
-      tokenValidAfter: new Date(),
+      tokenValidAfter: corteDeSesiones(),
     },
   });
 

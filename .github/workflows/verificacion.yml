@@ -111,8 +111,10 @@ jobs:
 
       - name: Pruebas
         # Además de la salida normal, un informe TAP para el paso siguiente.
+        # Un fichero detrás de otro, como `npm test`: comparten la base de datos
+        # y varios trabajan sobre su estado global (ver docs/notas-del-proyecto.md).
         run: >-
-          npx tsx --test
+          npx tsx --test --test-concurrency=1
           --test-reporter=spec --test-reporter-destination=stdout
           --test-reporter=tap --test-reporter-destination=pruebas.tap
           "test/**/*.test.ts"

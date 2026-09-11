@@ -8,8 +8,27 @@ import {
   verifyToken,
   duracionSesionSegundos,
   esStaff,
-  RECORDARME_SEGUNDOS
+  RECORDARME_SEGUNDOS,
+  corteDeSesiones
 } from '../src/utils/jwt.handle.js';
+
+// Un token vale si `emitidoMs >= tokenValidAfter`. Con el corte en `new Date()`
+// a secas, un token emitido en el mismo milisegundo sobrevivía: el CI del PR #6
+// lo pilló con el testigo del 2FA, que seguía valiendo tras cerrar las sesiones.
+// Con el reloj parado se reproduce siempre, no solo en una máquina rápida.
+test('el corte de sesiones deja fuera lo emitido en su mismo milisegundo y deja entrar lo siguiente', (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: 1_800_000_000_000 });
+
+  const sesion = verifyToken(generateToken(7, 'ADMIN'), 'session');
+  const testigo = verifyToken(generatePending2FAToken(7), '2fa_pending');
+  const corte = corteDeSesiones().getTime();
+  assert.ok(sesion?.emitidoMs !== undefined && sesion.emitidoMs < corte, 'la sesión del mismo milisegundo tiene que caer');
+  assert.ok(testigo?.emitidoMs !== undefined && testigo.emitidoMs < corte, 'el testigo del mismo milisegundo tiene que caer');
+
+  t.mock.timers.tick(1);
+  const nueva = verifyToken(generateToken(7, 'ADMIN'), 'session');
+  assert.ok(nueva?.emitidoMs !== undefined && nueva.emitidoMs >= corte, 'un login posterior al corte tiene que valer');
+});
 
 // El caso que justifica todo el claim `typ`: el testigo de 2FA ya identifica a un
 // usuario, así que si valiera como token de sesión permitiría saltarse el segundo

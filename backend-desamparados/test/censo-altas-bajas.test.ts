@@ -271,19 +271,38 @@ describe('la ficha no da altas ni bajas (D1)', () => {
 
     // Otra transacción reactiva la ficha y tarda en confirmar: la edición lee la
     // ficha aún de baja, pero cuando va a escribir ya no lo está.
-    let soltar!: () => void;
+    //
+    // El orden se espera de verdad, no con un `setTimeout` a ojo: con la suite
+    // entera en paralelo, la reactivación podía no haber escrito aún a los
+    // 100 ms; entonces `soltar` no existía, el test fallaba y la transacción se
+    // quedaba abierta con la fila bloqueada, y la limpieza del final esperaba
+    // ese bloqueo para siempre (la suite colgada). Por eso también se suelta
+    // siempre, en el `finally`.
+    let soltar: (() => void) | undefined;
+    let avisarEscrita!: () => void;
+    const escrita = new Promise<void>((r) => { avisarEscrita = r; });
     const reactivacion = db.$transaction(async (tx) => {
       await tx.hermano.update({ where: { id: deBaja.id }, data: { activo: true, fechaBaja: null } });
-      await new Promise<void>((r) => { soltar = r; });
+      await new Promise<void>((r) => { soltar = r; avisarEscrita(); });
     }, { timeout: 10_000 });
-    await new Promise((r) => setTimeout(r, 100));
 
-    const edicion = HermanoService.updateAdminMode(deBaja.id, { fechaBaja: '2024-06-01' }, meta());
-    await new Promise((r) => setTimeout(r, 150));
-    soltar();
-    await reactivacion;
+    let edicion: Promise<unknown> | undefined;
+    try {
+      await Promise.race([
+        escrita,
+        new Promise((_, rechazar) => setTimeout(() => rechazar(new Error('la reactivación no llegó a escribir en 5 s')), 5000).unref())
+      ]);
+      edicion = HermanoService.updateAdminMode(deBaja.id, { fechaBaja: '2024-06-01' }, meta());
+      // Da tiempo a que la edición lea y se quede esperando el bloqueo de la
+      // fila. Si tardara más, leería ya la ficha activa: también es un error de
+      // negocio, que es lo que se comprueba.
+      await new Promise((r) => setTimeout(r, 150));
+    } finally {
+      soltar?.();
+      await reactivacion;
+    }
 
-    await assert.rejects(edicion, (e: unknown) => e instanceof HttpError, 'la edición tiene que fallar con un error de negocio');
+    await assert.rejects(edicion!, (e: unknown) => e instanceof HttpError, 'la edición tiene que fallar con un error de negocio');
     const despues = await db.hermano.findUnique({ where: { id: deBaja.id } });
     assert.equal(despues!.activo, true);
     assert.equal(despues!.fechaBaja, null, 'nunca activa y con fecha de baja a la vez');
