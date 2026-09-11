@@ -4,7 +4,8 @@ import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
 import CampoImagen from './CampoImagen'
-import { AYUDA_PORTADA, ETIQUETA_PORTADA } from './portadaPublicacion'
+import CampoPdf from './CampoPdf'
+import { AYUDA_PDF, AYUDA_PORTADA, ETIQUETA_PDF, ETIQUETA_PORTADA } from './portadaPublicacion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { getAdminPublicationById, updatePublication, type PublicationPayload } from '../../lib/api/publications'
 import type { PublicationItem } from '../../types'
@@ -42,6 +43,11 @@ export default function PublicationEditPage() {
 
   const guardar = async () => {
     if (!form) return
+    // El servidor lo rechazaría igual: toda publicación es un PDF que descargar.
+    if (!form.archivoUrl) {
+      setError('Falta el PDF de la publicación: súbelo antes de guardar.')
+      return
+    }
     setGuardando(true)
     try {
       await updatePublication(Number(id), form)
@@ -73,7 +79,7 @@ export default function PublicationEditPage() {
           <Select value={form.categoria} onChange={(e) => campo('categoria', e.target.value)} aria-label="Categoría">
             {categorias.map((categoria) => <MenuItem key={categoria.value} value={categoria.value}>{categoria.label}</MenuItem>)}
           </Select>
-          <TextField label="URL del archivo PDF" value={form.archivoUrl} onChange={(e) => campo('archivoUrl', e.target.value)} fullWidth />
+          <CampoPdf etiqueta={ETIQUETA_PDF} ayuda={AYUDA_PDF} valor={form.archivoUrl} onCambio={(ruta) => campo('archivoUrl', ruta)} />
           <CampoImagen etiqueta={ETIQUETA_PORTADA} ayuda={AYUDA_PORTADA} valor={form.imagenUrl ?? ''} onCambio={(ruta) => campo('imagenUrl', ruta)} />
           <TextField label="Fecha" type="date" value={form.fecha ?? ''} onChange={(e) => campo('fecha', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

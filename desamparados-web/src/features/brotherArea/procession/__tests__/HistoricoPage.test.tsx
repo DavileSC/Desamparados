@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../../test/test-utils'
 import HistoricoPage from '../HistoricoPage'
 
@@ -43,6 +43,21 @@ describe('HistoricoPage', () => {
     renderWithProviders(<HistoricoPage />)
 
     expect(await screen.findByText(/de 45/i)).toBeInTheDocument()
+  })
+
+  it('una papeleta exenta (0 €) está asignada; una devuelta, no', async () => {
+    // Con el precio a 0 € la papeleta nace con su recibo EXENTO: el sitio es
+    // del hermano igual que si la hubiera pagado. Antes salía «No disponible».
+    responder([
+      { ...papeleta, id: 4, tramo: 'Tramo exento', recibo: { estado: 'EXENTO', importe: 0 } },
+      { ...papeleta, id: 5, tramo: 'Tramo devuelto', recibo: { estado: 'DEVUELTO', importe: 30 } },
+    ], { total: 2, page: 1, limit: 20, totalPages: 1 })
+    renderWithProviders(<HistoricoPage />)
+
+    const exenta = (await screen.findByText('Tramo exento')).closest('tr') as HTMLElement
+    expect(within(exenta).getByText('Asignada')).toBeInTheDocument()
+    const devuelta = screen.getByText('Tramo devuelto').closest('tr') as HTMLElement
+    expect(within(devuelta).getByText('No disponible')).toBeInTheDocument()
   })
 
   it('pide la página que dice la URL', async () => {

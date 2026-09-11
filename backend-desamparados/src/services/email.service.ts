@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import QRCode from 'qrcode';
 import { DatosPapeleta } from '../dtos/email.dto';
@@ -12,6 +12,31 @@ export class EmailService {
       pass: process.env.EMAIL_PASS
     }
   });
+
+  /**
+   * Cuenta de envío propia del formulario de contacto (CONTACT_EMAIL_USER y
+   * CONTACT_EMAIL_PASS). El formulario es público: un spam repartido entre
+   * muchas IP podía agotar la cuota diaria de la cuenta de Gmail y dejar sin
+   * salir los correos de recuperación de contraseña, que usan EMAIL_*. Sin esas
+   * dos variables se sigue usando EMAIL_* como hasta ahora.
+   *
+   * Se resuelve en el primer envío y no al importar: `undefined` = sin mirar
+   * todavía, `null` = no configurada.
+   */
+  private static cuentaContacto: { transporter: Transporter; usuario: string } | null | undefined;
+
+  private static getCuentaContacto() {
+    if (this.cuentaContacto !== undefined) return this.cuentaContacto;
+    const usuario = process.env.CONTACT_EMAIL_USER;
+    const pass = process.env.CONTACT_EMAIL_PASS;
+    if (usuario && pass) {
+      this.cuentaContacto = { transporter: nodemailer.createTransport({ service: 'gmail', auth: { user: usuario, pass } }), usuario };
+    } else {
+      if (usuario || pass) console.warn('[Email] CONTACT_EMAIL_USER y CONTACT_EMAIL_PASS van juntas y falta una: el contacto sale por la cuenta de EMAIL_USER.');
+      this.cuentaContacto = null;
+    }
+    return this.cuentaContacto;
+  }
 
   // CONFIGURACIÓN GLOBAL DE COLORES
   private static readonly COLORS = {
@@ -91,7 +116,7 @@ export class EmailService {
   // --- MÉTODOS DE NEGOCIO ---
 
   static async enviarRecuperacionContrasena(emailDestino: string, nombreHermano: string, token: string) {
-    const enlaceReset = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${encodeURIComponent(token)}`;
+    const enlaceReset = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${encodeURIComponent(token)}`;
     const { primario } = this.COLORS;
     const nombre = this.esc(nombreHermano);
 
@@ -176,7 +201,9 @@ export class EmailService {
     `;
 
     const footerLinks = this.getFooterLinks();
-    const asunto = `📜 Papeleta de Sitio ${datos.year} - ${nombre}`;
+    // El asunto es texto, no HTML: con el nombre escapado, «O'Brien» llegaba
+    // como «O&#39;Brien». Los saltos de línea los aplana nodemailer.
+    const asunto = `📜 Papeleta de Sitio ${datos.year} - ${nombreHermano}`;
     
     return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout(`Papeleta de Sitio ${datos.year}`, `Papeleta de Sitio - ${datos.year}`, content, footerLinks));
   }
@@ -216,7 +243,8 @@ export class EmailService {
       </div>
     `;
 
-    const asunto = `📋 Solicitud de Registro Recibida - ${nombre}`;
+    // Sin escapar: el asunto es texto, no HTML (ver enviarPapeleta).
+    const asunto = `📋 Solicitud de Registro Recibida - ${nombreHermano}`;
     return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout("Acuse de Recibo", "Secretaría General", content));
   }
 
@@ -271,7 +299,7 @@ export class EmailService {
 
     const nombre = this.esc(datos.nombre);
     const email = this.esc(datos.email);
-    const telefono = this.esc(datos.telefono);
+    const telefono = datos.telefono?.trim() ? this.esc(datos.telefono) : 'No indicado';
     const asunto = this.esc(datos.asunto);
     const mensaje = this.esc(datos.mensaje).replace(/\r?\n/g, '<br>');
     const content = `
@@ -283,7 +311,9 @@ export class EmailService {
       <p>${mensaje}</p>
     `;
 
-    return this.enviarEmailBase(destino, `[Contacto web] ${datos.asunto}`, this.getHtmlLayout('Nuevo mensaje de contacto', 'Formulario web', content), datos.email);
+    // `datos.email` llega validado por contact.schema.ts (sin comas ni ángulos):
+    // es seguro como Reply-To.
+    return this.enviarEmailBase(destino, `[Contacto web] ${datos.asunto}`, this.getHtmlLayout('Nuevo mensaje de contacto', 'Formulario web', content), datos.email, this.getCuentaContacto());
   }
 
   /**
@@ -308,10 +338,16 @@ export class EmailService {
   }
 
   // --- MOTOR DE ENVÍO ---
-  private static async enviarEmailBase(to: string, subject: string, html: string, replyTo?: string): Promise<boolean> {
+  private static async enviarEmailBase(
+    to: string,
+    subject: string,
+    html: string,
+    replyTo?: string,
+    cuenta?: { transporter: Transporter; usuario: string } | null,
+  ): Promise<boolean> {
     try {
-      await this.transporter.sendMail({
-        from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${process.env.EMAIL_USER}>`,
+      await (cuenta?.transporter ?? this.transporter).sendMail({
+        from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${cuenta?.usuario ?? process.env.EMAIL_USER}>`,
         to,
         subject,
         html,

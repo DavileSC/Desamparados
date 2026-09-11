@@ -14,7 +14,7 @@ import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
-import { getMyProfiles, type ApiProfile } from '../../../lib/api/profile'
+import { fichaPropia, getMyProfiles, type ApiProfile } from '../../../lib/api/profile'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -30,7 +30,7 @@ export default function ProfilePage() {
     getMyProfiles()
       .then((respuesta) => {
         if (!cancelled) {
-          setProfile(respuesta.data[0] ?? null)
+          setProfile(fichaPropia(respuesta.data))
           if (respuesta.data.length === 0) setError('No se ha encontrado ningún perfil asociado a tu cuenta.')
         }
       })

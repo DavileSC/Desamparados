@@ -333,6 +333,9 @@ test('logout responde 204 y borra las cookies aunque no hubiera sesion', async (
 //  COOKIES CONTRA LA BASE DE DATOS
 // ==========================================
 
+// Los hermanos entran por su área: el acceso del CMS ya no da sesión a una
+// cuenta USER (responde 403 CUENTA_SIN_CMS), y sin `contexto` el servidor
+// entiende que es el del CMS.
 async function entrar(email: string, contexto?: 'cms' | 'hermanos') {
   return fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
@@ -352,7 +355,7 @@ test('la cookie del hermano persiste 4 h y la del staff muere al cerrar', async 
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
 
   try {
-    const deHermano = cookieSesionDe(await entrar(hermano.email))!;
+    const deHermano = cookieSesionDe(await entrar(hermano.email, 'hermanos'))!;
     assert.match(deHermano, /HttpOnly/i);
     assert.match(deHermano, /SameSite=Strict/i);
     assert.match(deHermano, /Max-Age=14400/i);
@@ -372,7 +375,7 @@ test('el cuerpo del login ya no lleva el token', async (t) => {
 
   const hermano = await crearUsuarioPrueba(Role.USER);
   try {
-    const cuerpo = await (await entrar(hermano.email)).json() as { status?: string; token?: string; user?: { id?: number } };
+    const cuerpo = await (await entrar(hermano.email, 'hermanos')).json() as { status?: string; token?: string; user?: { id?: number } };
     assert.equal(cuerpo.status, 'OK');
     assert.equal(cuerpo.token, undefined);
     assert.ok(cuerpo.user?.id);
@@ -386,7 +389,7 @@ test('/me devuelve la sesion cuando se manda la cookie', async (t) => {
 
   const hermano = await crearUsuarioPrueba(Role.USER);
   try {
-    const cookie = cookieSesionDe(await entrar(hermano.email))!.split(';')[0];
+    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'))!.split(';')[0];
     const res = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
 
     assert.equal(res.status, 200);
@@ -429,7 +432,7 @@ test('la agenda deja pasar tanto al invitado como a quien tiene sesion', async (
 
   const hermano = await crearUsuarioPrueba(Role.USER);
   try {
-    const cookie = cookieSesionDe(await entrar(hermano.email))!.split(';')[0];
+    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'))!.split(';')[0];
     const conSesion = await fetch(`${baseUrl}/api/events`, { headers: { Cookie: cookie } });
     assert.equal(conSesion.status, 200, 'con sesion valida tambien deberia pasar');
   } finally {
@@ -492,7 +495,7 @@ test('promover a staff invalida la sesion emitida como hermano', async (t) => {
   const admin = await crearUsuarioPrueba(Role.ADMIN);
 
   try {
-    const cookie = cookieSesionDe(await entrar(hermano.email))!.split(';')[0];
+    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'))!.split(';')[0];
 
     // Antes de promover, la sesion sirve
     const antes = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
@@ -527,10 +530,10 @@ test('el restablecimiento rechaza contrasenas debiles antes de mirar el token', 
   const token = 'a'.repeat(64);
 
   for (const debil of ['12345678', 'aaaaaaaaaaaa', 'password1234']) {
-    const res = await fetch(`${baseUrl}/api/auth/reset-password/${token}`, {
+    const res = await fetch(`${baseUrl}/api/auth/reset-password/confirmar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newPassword: debil }),
+      body: JSON.stringify({ token, newPassword: debil }),
     });
     const cuerpo = await res.text();
 
@@ -750,10 +753,11 @@ test('el ropero publica la ficha de una prenda por su id', async (t) => {
 // para la titular: así los tres listados tienen totales que no se confunden
 // entre sí (4 recibos, 3 fichas, 3 papeletas).
 //
-// Ojo con la mutación que hay que vigilar: hoy las tres rutas no declaran
-// esquema de consulta, así que `req.query` llega crudo. Borrar un bloque
-// `query` NO rompe la paginación —`validate` solo pisa `req.query` cuando el
-// esquema declara ese bloque—. La que sí rompe es declararlo incompleto: el día
+// Ojo con la mutación que hay que vigilar: /mis-recibos y /mis-papeletas ya
+// declaran esquema de consulta (solo `...paginacionQuery`, para que un
+// parámetro repetido sea un 400). Borrar un bloque `query` NO rompe la
+// paginación —`validate` solo pisa `req.query` cuando el esquema declara ese
+// bloque—. La que sí rompe es declararlo incompleto: el día
 // que alguien valide `?year=` en /mis-papeletas y olvide `...paginacionQuery`,
 // page y limit se borrarán en silencio, `meta` seguirá trayendo sus cuatro
 // claves, `page` valdrá 1 y todas las páginas servirán la primera. Comprobar

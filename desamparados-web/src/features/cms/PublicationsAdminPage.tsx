@@ -8,8 +8,9 @@ import { Link, useLocation } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CabeceraSeccion from './CabeceraSeccion'
 import CampoImagen from './CampoImagen'
+import CampoPdf from './CampoPdf'
 import VentanaFormulario from './VentanaFormulario'
-import { AYUDA_PORTADA, ETIQUETA_PORTADA } from './portadaPublicacion'
+import { AYUDA_PDF, AYUDA_PORTADA, ETIQUETA_PDF, ETIQUETA_PORTADA } from './portadaPublicacion'
 import { createPublication, deletePublication, getAdminPublications, type ApiPublication, type PublicationPayload } from '../../lib/api/publications'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
@@ -89,7 +90,7 @@ export default function PublicationsAdminPage() {
       <TextField label="Título" value={form.titulo} onChange={(e) => updateField('titulo', e.target.value)} fullWidth />
       <TextField label="Descripción" value={form.descripcion} onChange={(e) => updateField('descripcion', e.target.value)} fullWidth multiline />
       <TextField select label="Categoría" value={form.categoria} onChange={(e) => updateField('categoria', e.target.value)} fullWidth>{categories.map((category) => <MenuItem key={category.value} value={category.value}>{category.label}</MenuItem>)}</TextField>
-      <TextField label="URL del archivo PDF" value={form.archivoUrl} onChange={(e) => updateField('archivoUrl', e.target.value)} fullWidth />
+      <CampoPdf etiqueta={ETIQUETA_PDF} ayuda={AYUDA_PDF} valor={form.archivoUrl} onCambio={(ruta) => updateField('archivoUrl', ruta)} />
       <CampoImagen etiqueta={ETIQUETA_PORTADA} ayuda={AYUDA_PORTADA} valor={form.imagenUrl ?? ''} onCambio={(ruta) => updateField('imagenUrl', ruta)} />
       <TextField label="Fecha" type="date" value={form.fecha ?? ''} onChange={(e) => updateField('fecha', e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Switch checked={form.visible} onChange={(e) => updateField('visible', e.target.checked)} /> Visible públicamente</Box>

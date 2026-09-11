@@ -16,7 +16,8 @@ export const deleteEnser = (id: number) => apiFetch<{ message: string }>(`/inven
 export const createPrenda = (json: object) => apiFetch<Prenda>('/inventario/prendas', { method: 'POST', json })
 export const updatePrenda = (id: number, json: object) => apiFetch<Prenda>(`/inventario/prendas/${id}`, { method: 'PUT', json })
 export const deletePrenda = (id: number) => apiFetch<{ message: string }>(`/inventario/prendas/${id}`, { method: 'DELETE' })
-export const assignPrenda = (id: number, hermanoId: number) => apiFetch<{ message: string }>(`/inventario/prendas/${id}/asignar`, { method: 'POST', json: { hermanoId } })
+/** Se presta por número de hermano, no por el id interno de la base de datos (que nadie conoce). */
+export const assignPrenda = (id: number, numeroHermano: number) => apiFetch<{ message: string }>(`/inventario/prendas/${id}/asignar`, { method: 'POST', json: { numeroHermano } })
 export const returnPrenda = (id: number, necesitaLavado: boolean) => apiFetch<{ message: string }>(`/inventario/prendas/${id}/devolver`, { method: 'POST', json: { necesitaLavado } })
 export const getEnser = (id: number) => apiFetch<Enser>(`/inventario/enseres/${id}`)
 
@@ -25,3 +26,10 @@ export const getEnser = (id: number) => apiFetch<Enser>(`/inventario/enseres/${i
  * listado paginado, una prenda fuera del recorte era imposible de editar.
  */
 export const getPrenda = (id: number) => apiFetch<Prenda>(`/inventario/prendas/${id}`)
+
+/** Lo justo para confirmar un préstamo antes de hacerlo: «Nº 123 · Nombre Apellidos». */
+export interface HermanoDelRopero { numeroHermano: number; nombre: string; apellidos: string }
+
+/** El hermano activo con ese número; 404 si no hay ninguno. Solo para gestores del inventario. */
+export const buscarHermanoPorNumero = (numeroHermano: number) =>
+  apiFetch<HermanoDelRopero>(`/inventario/hermanos/${numeroHermano}`)

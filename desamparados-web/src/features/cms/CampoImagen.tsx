@@ -34,7 +34,9 @@ export default function CampoImagen({
   valor,
   onCambio,
   etiqueta = 'Foto de la noticia',
-  ayuda = 'JPG, PNG o WebP de hasta 5 MB. Se verá en la portada y en la ficha de la noticia.',
+  // Lo de quitar o cambiar no es solo de la ficha: al guardar, el servidor
+  // borra la foto anterior si nada más la usa (backend: utils/ficheros-publicos.ts).
+  ayuda = 'JPG, PNG o WebP de hasta 5 MB. Se verá en la portada y en la ficha de la noticia. Al quitarla o cambiarla y guardar, la anterior se borra del servidor.',
   apaisada = false,
 }: CampoImagenProps) {
   const [subiendo, setSubiendo] = useState(false)

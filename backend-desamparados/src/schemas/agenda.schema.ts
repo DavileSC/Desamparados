@@ -39,3 +39,11 @@ export const queryAgendaSchema = type({
         "type?": tipoEventoSchema
     }
 });
+
+// El listado del CMS: pasados o próximos. Sin periodo, los próximos.
+export const queryAgendaAdminSchema = type({
+    query: {
+        ...paginacionQuery,
+        "periodo?": "'proximos' | 'pasados'"
+    }
+});

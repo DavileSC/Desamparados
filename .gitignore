@@ -31,3 +31,12 @@ repomix-output.xml
 
 # Capturas y borradores de las sesiones de trabajo
 .tmp/
+
+# Copias de seguridad y volcados de la base de datos: llevan el censo entero
+# (nombres, DNI, direcciones). Nunca al repositorio, ni cifradas.
+**/backups/
+*.sql
+*.sql.gz
+*.age
+# ...salvo las migraciones de Prisma, que sí se versionan.
+!backend-desamparados/prisma/migrations/**/*.sql

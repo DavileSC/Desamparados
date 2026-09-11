@@ -58,6 +58,20 @@ seis variables a mano y ejecutar la suite.
 Y después de cada `git pull`, `npx prisma generate` en el backend antes del
 typecheck.
 
+**Para arrancar el servidor** (`src/index.ts`, no al importar `app`: los tests no
+lo notan) hace falta además `NODE_ENV` con `development`, `test` o `production`.
+`.env.example` la trae vacía a propósito: sin ella todo fallaba abierto (cookies
+sin `Secure`, sin HSTS, siembra con las contraseñas del repo). En producción
+`src/config/entorno.ts` exige también `FRONTEND_URL`, `API_URL`, `EMAIL_*`,
+`NUM_PROXIES`, `TOTP_ENC_KEY`, `CLAMAV_HOST` y `CLAMAV_REQUIRED=true`, y lista de
+una vez todo lo que falta.
+
+Las migraciones no se crean con `prisma migrate dev`: el usuario de la base no
+puede crear la base «sombra». Se escribe el SQL con
+`npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`,
+se guarda en `prisma/migrations/<fecha>_<nombre>/migration.sql` y se aplica con
+`npx prisma migrate deploy`.
+
 ---
 
 ## 4. Cómo comprobar de verdad que una ruta está protegida
@@ -126,6 +140,29 @@ que declara omisiones cuando la base sí está disponible es una suite que mient
 **El typecheck del frontend es `npx tsc -b`, no `tsc --noEmit`**: el proyecto usa
 *project references* y sin `-b` no comprueba nada. (`tsc --noEmit -p
 tsconfig.app.json` sí funciona para comprobar solo la aplicación.)
+
+**Los ficheros de test del backend corren a la vez contra la misma base**
+(`node --test` los paraleliza). Un test que lee totales GLOBALES —el panel, la
+contabilidad del mes, el número de hermano más alto— puede ver lo que otro
+fichero está creando en ese momento. Dos casos reales: un «número de hermano que
+no existe» calculado como `máximo + 1` que otro test de aprobaciones acababa
+asignando, y una comparación panel/contabilidad que difería en un apunte ajeno.
+Usa valores propios del test (por debajo de lo que otros generan) o repite la
+comparación hasta que cuadre, y di en un comentario por qué.
+
+## 6 bis. MariaDB 11.8 y los choques de transacciones
+
+La base de desarrollo trae `innodb_snapshot_isolation=ON`: si dos transacciones
+tocan la misma fila, la segunda falla con el error **1020** («Record has changed
+since last read»), o **1213** si es un interbloqueo. Prisma **no** los traduce a
+P2034, y la forma en que los entrega **cambia con la versión**: la 7.3 los dejaba
+como `DriverAdapterError` suelto (código en `cause`) y la 7.10 los envuelve en un
+`P2039` con el código en `meta.driverAdapterError.cause`. Se reconocen en un solo
+sitio, `esConflictoDeConcurrencia` (`src/utils/error.handle.ts`): de ahí tiran el
+reintento (`esConflictoTransitorio`) y el 409 «Otra persona ha cambiado estos
+datos a la vez». Un doble clic en «Aprobar» era un 500 por esto, y al subir
+Prisma a 7.10 volvió a serlo hasta cubrir la forma nueva: **después de actualizar
+Prisma, pasar `test/censo-altas-bajas.test.ts` y `test/transaction-retry.test.ts`**.
 
 ---
 

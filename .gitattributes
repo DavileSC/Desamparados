@@ -10,3 +10,7 @@
 *.ico binary
 *.woff binary
 *.woff2 binary
+
+# Los scripts de shell se ejecutan en el VPS: con CRLF, bash lee `set -euo
+# pipefail\r` y el script de copias falla en la primera línea.
+*.sh text eol=lf

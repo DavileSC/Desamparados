@@ -4,8 +4,9 @@ import { renderWithProviders } from '../../../../test/test-utils'
 import ProfilePage from '../ProfilePage'
 import { FICHAS_POR_FAMILIA } from '../../../../lib/api/profile'
 
-function ficha(id: number, nombre: string) {
+function ficha(id: number, nombre: string, esTitular = true) {
   return {
+    esTitular,
     id,
     nombre,
     apellidos: 'Pérez Ruiz',
@@ -61,6 +62,26 @@ describe('ProfilePage', () => {
     expect(pedida.pathname).toContain('/hermanos/mis-perfiles')
     expect(Number(pedida.searchParams.get('limit'))).toBe(FICHAS_POR_FAMILIA)
     expect(pedida.searchParams.get('page')).toBe('1')
+  })
+
+  // El servidor ordena por fecha de nacimiento descendente: la primera ficha es
+  // la del hijo más pequeño, no la del tutor que ha iniciado sesión.
+  it('enseña la ficha del titular aunque no sea la primera', async () => {
+    responder(
+      [ficha(2, 'Bruno', false), ficha(1, 'Ana', true)],
+      { total: 2, page: 1, limit: FICHAS_POR_FAMILIA, totalPages: 1 },
+    )
+    renderWithProviders(<ProfilePage />)
+
+    expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
+    expect(screen.queryByText('Bruno Pérez Ruiz')).not.toBeInTheDocument()
+  })
+
+  it('sin ficha propia, enseña la primera de la familia', async () => {
+    responder([ficha(2, 'Bruno', false)], { total: 1, page: 1, limit: FICHAS_POR_FAMILIA, totalPages: 1 })
+    renderWithProviders(<ProfilePage />)
+
+    expect(await screen.findByText('Bruno Pérez Ruiz')).toBeInTheDocument()
   })
 
   it('avisa cuando la cuenta no tiene ninguna ficha', async () => {

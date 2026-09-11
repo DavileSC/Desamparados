@@ -7,6 +7,7 @@ import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
 import { getMyProcessionTickets, type ApiProcessionTicket } from '../../../lib/api/procession'
+import { estadoPapeleta } from './estadoPapeleta'
 
 export default function PapeletaPage() {
   const [tickets, setTickets] = useState<ApiProcessionTicket[]>([])
@@ -94,19 +95,12 @@ export default function PapeletaPage() {
                   <Typography
                     variant="body1"
                     sx={{
-                      color:
-                        ticket.recibo.estado === 'PAGADO'
-                          ? 'success.main'
-                          : ticket.recibo.estado === 'PENDIENTE' || ticket.recibo.estado === 'REMESADO'
-                            ? 'warning.main'
-                            : 'error.main',
+                      color: estadoPapeleta(ticket.recibo.estado).color,
                       fontWeight: 600,
                       textTransform: 'uppercase',
                     }}
                   >
-                    {ticket.recibo.estado === 'PAGADO' && 'Asignada'}
-                    {(ticket.recibo.estado === 'PENDIENTE' || ticket.recibo.estado === 'REMESADO') && 'Pendiente'}
-                    {ticket.recibo.estado !== 'PAGADO' && ticket.recibo.estado !== 'PENDIENTE' && ticket.recibo.estado !== 'REMESADO' && 'No disponible'}
+                    {estadoPapeleta(ticket.recibo.estado).texto}
                   </Typography>
                 </Grid>
               </Grid>

@@ -118,14 +118,23 @@ export class InventarioController {
 
   // --- LÓGICA DE ASIGNACIONES (PRÉSTAMOS Y DEVOLUCIONES) ---
 
+  static async buscarHermano(req: Request, res: Response) {
+    try {
+      const hermano = await InventarioService.buscarHermanoPorNumero(Number(req.params.numeroHermano));
+      res.status(200).json(hermano);
+    } catch (e) {
+      handleHttp(res, e, 'Error buscando al hermano');
+    }
+  }
+
   static async asignarPrenda(req: Request, res: Response) {
     try {
       const prendaId = Number(req.params.id);
-      // Asumimos que el body trae { hermanoId: 123 } validado por ArkType
-      const { hermanoId } = req.body; 
+      // El body trae { numeroHermano: 123 } validado por ArkType (inventario.schema.ts)
+      const { numeroHermano } = req.body;
 
-      const result = await InventarioService.asignarPrenda(prendaId, hermanoId);
-      AuditService.log(AUDIT_ACTIONS.PRENDA_ASIGNAR, AuditService.metaFromReq(req), 'prenda', prendaId);
+      const result = await InventarioService.asignarPrenda(prendaId, numeroHermano);
+      AuditService.log(AUDIT_ACTIONS.PRENDA_ASIGNAR, AuditService.metaFromReq(req), 'prenda', prendaId, { numeroHermano });
       res.status(200).json({ message: 'Prenda asignada correctamente', data: result });
     } catch (e) {
       handleHttp(res, e, 'Error al asignar la prenda al hermano');
@@ -139,7 +148,7 @@ export class InventarioController {
       const necesitaLavado = req.body.necesitaLavado === true;
 
       const result = await InventarioService.devolverPrenda(prendaId, necesitaLavado);
-      AuditService.log(AUDIT_ACTIONS.PRENDA_DEVOLVER, AuditService.metaFromReq(req), 'prenda', prendaId);
+      AuditService.log(AUDIT_ACTIONS.PRENDA_DEVOLVER, AuditService.metaFromReq(req), 'prenda', prendaId, { necesitaLavado });
       res.status(200).json({ message: 'Prenda devuelta con éxito', data: result });
     } catch (e) {
       handleHttp(res, e, 'Error al procesar la devolución de la prenda');

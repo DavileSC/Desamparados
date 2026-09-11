@@ -1,6 +1,6 @@
 import db from '../config/db';
 import { Prisma, TipoEvento } from '@prisma/client';
-import { CreateEventDto, UpdateEventDto, EventFilterDto } from '../dtos/agenda.dto';
+import { CreateEventDto, UpdateEventDto, EventFilterDto, PeriodoAgenda } from '../dtos/agenda.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 
@@ -76,12 +76,54 @@ export class AgendaService {
     return respuestaPaginada(eventos, total, paginacion);
   }
 
+  /**
+   * El listado del CMS: pasados y futuros, las dos visibilidades. La lectura
+   * pública solo enseña desde hoy, y el CMS la usaba: un evento fechado por
+   * error en el pasado desaparecía y ya no se podía corregir ni borrar.
+   *
+   * Los próximos van del más cercano al más lejano; los pasados, del más
+   * reciente hacia atrás, que es el que se suele buscar.
+   */
+  static async getAdminEvents(periodo: PeriodoAgenda, consulta: { page?: unknown; limit?: unknown }) {
+    const paginacion = sanearPaginacion(consulta);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const where: Prisma.EventoWhereInput = periodo === 'pasados'
+      ? { startDate: { lt: hoy } }
+      : { startDate: { gte: hoy } };
+
+    const [eventos, total] = await db.$transaction([
+      db.evento.findMany({
+        where,
+        // Mismo desempate por id que la lectura pública (ver getEvents).
+        orderBy: [{ startDate: periodo === 'pasados' ? 'desc' : 'asc' }, { id: 'asc' }],
+        skip: paginacion.skip,
+        take: paginacion.take,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          location: true,
+          startDate: true,
+          endDate: true,
+          visibility: true,
+          type: true
+        }
+      }),
+      db.evento.count({ where })
+    ]);
+
+    return respuestaPaginada(eventos, total, paginacion);
+  }
+
   static async getEventById(id: number, isHermano: boolean) {
     const event = await db.evento.findUnique({ where: { id } });
-    if (!event) throw new NotFoundError('Evento no encontrado');
 
-    if (!isHermano && event.visibility === 'members_only') {
-      throw new HttpError('No tienes permisos para ver este evento');
+    // Sin sesión, un evento solo para hermanos responde lo mismo que uno que no
+    // existe: un «no tienes permisos» confirmaba que había algo con ese id.
+    if (!event || (!isHermano && event.visibility === 'members_only')) {
+      throw new NotFoundError('Evento no encontrado');
     }
     return event;
   }

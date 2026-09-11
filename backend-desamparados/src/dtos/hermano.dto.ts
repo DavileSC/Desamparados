@@ -25,11 +25,23 @@ export interface UpdateHermanoDto {
 }
 
 // Datos que SOLO Secretaría puede editar (Todo lo anterior + Privilegios Cofrades)
+// Sin `activo`: las altas y bajas tienen sus propias operaciones (aprobar,
+// reactivar, dar de baja), que asignan número, tocan la cuenta y dejan rastro.
 export interface UpdateAdminHermanoDto extends UpdateHermanoDto {
   tieneTunicaPropia?: boolean;
-  tunica?: string;       
-  alturaHombro?: number; 
-  puesto?: string;       
+  tunica?: string;
+  alturaHombro?: number;
+  puesto?: string;
+  esTitular?: boolean;
+  numeroHermano?: number;
+  fechaAlta?: string;
+  // Solo en fichas ya dadas de baja: corrige la fecha, no da la baja.
+  fechaBaja?: string;
+}
+
+// Baja desde secretaría: sin fecha, se toma la de hoy.
+export interface BajaHermanoDto {
+  fechaBaja?: string;
 }
 
 export interface EmancipateHermanoDto {

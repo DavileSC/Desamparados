@@ -35,8 +35,8 @@ export interface PuntoSerie {
 export function leerFiltros(query: Record<string, unknown>): FiltrosContables {
   const filtros: FiltrosContables = {};
   if (query.tipo === 'INGRESO' || query.tipo === 'GASTO') filtros.tipo = query.tipo;
-  if (typeof query.desde === 'string' && FECHA.test(query.desde)) filtros.desde = query.desde;
-  if (typeof query.hasta === 'string' && FECHA.test(query.hasta)) filtros.hasta = query.hasta;
+  if (typeof query.desde === 'string' && esDiaValido(query.desde)) filtros.desde = query.desde;
+  if (typeof query.hasta === 'string' && esDiaValido(query.hasta)) filtros.hasta = query.hasta;
   if (typeof query.categorias === 'string' && /^\d+(,\d+)*$/.test(query.categorias)) {
     filtros.categorias = query.categorias.split(',').map(Number);
   }
@@ -56,12 +56,49 @@ function desfaseMadrid(instante: Date): number {
   return Math.round((comoUtc - instante.getTime()) / 60000);
 }
 
-/** Instante en que empieza ese día en Madrid. */
+/**
+ * Instante en que empieza ese día en Madrid.
+ *
+ * El desfase que cuenta es el de la propia medianoche de Madrid, no el de otra
+ * hora del día: los días de cambio de hora, a mediodía ya rige el horario
+ * nuevo y la medianoche salía una hora corrida (el 29-03-2026 empezaba a las
+ * 23:00 del 28 en vez de a las 00:00). Madrid cambia a la 01:00 UTC, así que
+ * entre su medianoche (22:00 o 23:00 UTC del día anterior) y las 00:00 UTC del
+ * día nunca hay cambio: el desfase de las 00:00 UTC ya es el bueno. La segunda
+ * pasada solo confirma, por si alguna vez la regla de la zona dejara de ser esa.
+ */
 export function inicioDiaMadrid(dia: string): Date {
   const [anio, mes, d] = dia.split('-').map(Number);
   const medianocheUtc = Date.UTC(anio, mes - 1, d);
-  // El desfase se mira a mediodía para no caer en la hora que falta o sobra el día del cambio.
-  return new Date(medianocheUtc - desfaseMadrid(new Date(medianocheUtc + 12 * 3600000)) * 60000);
+  const tanteo = medianocheUtc - desfaseMadrid(new Date(medianocheUtc)) * 60000;
+  return new Date(medianocheUtc - desfaseMadrid(new Date(tanteo)) * 60000);
+}
+
+/** El día de Madrid de un instante, en `AAAA-MM-DD`. */
+export function diaMadrid(instante: Date): string {
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(instante).map((p) => [p.type, p.value]),
+  );
+  return `${partes.year}-${partes.month}-${partes.day}`;
+}
+
+/**
+ * ¿Es un día que existe en el calendario? El patrón `AAAA-MM-DD` deja pasar el
+ * 2026-02-30, que `Date.UTC` convierte sin avisar en el 2 de marzo. Los años se
+ * acotan a 1900-2100: por debajo de 100 `Date.UTC` los lee como 19xx, y un
+ * «hasta» del año 9999 pedía una serie de ocho mil años.
+ */
+export function esDiaValido(dia: string): boolean {
+  if (!FECHA.test(dia)) return false;
+  const [anio, mes, d] = dia.split('-').map(Number);
+  if (anio < 1900 || anio > 2100) return false;
+  const fecha = new Date(Date.UTC(anio, mes - 1, d));
+  return fecha.getUTCFullYear() === anio && fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === d;
+}
+
+/** Un periodo al revés («desde» después de «hasta») no es un periodo vacío: es un error de quien lo pide. */
+export function fechasInvertidas(filtros: Pick<FiltrosContables, 'desde' | 'hasta'>): boolean {
+  return Boolean(filtros.desde && filtros.hasta && filtros.desde > filtros.hasta);
 }
 
 /** El día siguiente, en `AAAA-MM-DD`. */
@@ -97,15 +134,16 @@ export function whereContable(filtros: FiltrosContables): Prisma.TransaccionWher
   return where;
 }
 
+/** El mismo día un año antes. Sin 29 de febrero el año anterior, se queda en el 28. */
+export function unAnioAntes(dia: string): string {
+  const [anio, mes, d] = dia.split('-').map(Number);
+  const ultimoDelMes = new Date(Date.UTC(anio - 1, mes, 0)).getUTCDate();
+  return `${anio - 1}-${String(mes).padStart(2, '0')}-${String(Math.min(d, ultimoDelMes)).padStart(2, '0')}`;
+}
+
 /** El mismo tramo un año antes, para comparar. Solo si el periodo tiene principio y fin. */
 export function periodoAnterior(filtros: Pick<FiltrosContables, 'desde' | 'hasta'>): { desde: string; hasta: string } | null {
   if (!filtros.desde || !filtros.hasta) return null;
-  const unAnioAntes = (dia: string) => {
-    const [anio, mes, d] = dia.split('-').map(Number);
-    // Sin 29 de febrero el año anterior, se queda en el 28.
-    const ultimoDelMes = new Date(Date.UTC(anio - 1, mes, 0)).getUTCDate();
-    return `${anio - 1}-${String(mes).padStart(2, '0')}-${String(Math.min(d, ultimoDelMes)).padStart(2, '0')}`;
-  };
   return { desde: unAnioAntes(filtros.desde), hasta: unAnioAntes(filtros.hasta) };
 }
 
@@ -115,6 +153,9 @@ function claveMadrid(instante: Date, gran: Granularidad): string {
   );
   return gran === 'anio' ? partes.year : `${partes.year}-${partes.month}`;
 }
+
+/** Mes de Madrid de un instante, `AAAA-MM`. Lo usa también el panel: los dos tienen que partir los meses igual. */
+export const claveMesMadrid = (instante: Date): string => claveMadrid(instante, 'mes');
 
 /** Hasta 13 meses se ve mes a mes; con más, 57 barras no se leen y se pasa a años. */
 export function granularidad(desde: Date, hasta: Date): Granularidad {
@@ -134,6 +175,9 @@ export function agruparEnSerie(
   hasta: Date,
 ): PuntoSerie[] {
   const puntos = new Map<string, PuntoSerie>();
+  // Un periodo al revés no tiene meses: sin esto el bucle no encontraba nunca
+  // la clave final y salían 1.201 barras vacías hasta el tope.
+  if (desde.getTime() > hasta.getTime()) return [];
   let [anio, mes] = claveMadrid(desde, 'mes').split('-').map(Number);
   const fin = claveMadrid(hasta, gran);
   // Se recorre de mes en mes (o de año en año) hasta la clave final.
@@ -152,4 +196,74 @@ export function agruparEnSerie(
   }
   // Céntimos exactos: sumar decimales en coma flotante deja colas como 120.50000001.
   return [...puntos.values()].map((p) => ({ ...p, ingresos: Math.round(p.ingresos * 100) / 100, gastos: Math.round(p.gastos * 100) / 100 }));
+}
+
+// ==========================================
+//  APUNTES MANUALES Y CATEGORÍAS
+// ==========================================
+
+/** Tope de la columna `importe`, que es Decimal(10,2): ocho cifras enteras y dos decimales. */
+export const IMPORTE_MAXIMO = 99_999_999.99;
+
+/**
+ * Por qué no vale un importe, o `null` si vale. Pasarse del Decimal(10,2) daba
+ * un 500 de la base de datos, y con tres decimales MariaDB redondeaba sin avisar:
+ * 12,345 € se guardaba como 12,35 €.
+ */
+export function motivoImporteInvalido(importe: number): string | null {
+  if (!Number.isFinite(importe) || importe <= 0) return 'tiene que ser mayor que cero';
+  if (importe > IMPORTE_MAXIMO) return 'no puede pasar de 99.999.999,99 €';
+  // Si al redondear a céntimos cambia, es que traía más de dos decimales. La
+  // comparación es exacta: «12.34» y 1234 / 100 dan el mismo número en coma flotante.
+  if (Math.round(importe * 100) / 100 !== importe) return 'no puede tener más de dos decimales';
+  return null;
+}
+
+/** Por qué un apunte no puede llevar esa fecha, o `null`. La caja apunta lo que ya ha pasado. */
+export function motivoFechaApunte(dia: string, ahora = new Date()): string | null {
+  if (!esDiaValido(dia)) return 'no es un día válido';
+  if (dia > diaMadrid(ahora)) return 'no puede ser posterior a hoy';
+  return null;
+}
+
+/**
+ * El instante que se guarda para un apunte de ese día. Si es hoy, la hora de
+ * ahora: el libro, que ordena por fecha, lo pone encima de lo cobrado antes. Si
+ * es otro día, su medianoche de Madrid, igual que los apuntes de la siembra: así
+ * cae en su día y en su mes se mire con el filtro que se mire.
+ */
+export function instanteDelApunte(dia: string, ahora = new Date()): Date {
+  return dia === diaMadrid(ahora) ? ahora : inicioDiaMadrid(dia);
+}
+
+/** El nombre de una categoría tal como se guarda: sin espacios de sobra. */
+export const limpiarNombreCategoria = (nombre: string): string => nombre.trim().replace(/\s+/g, ' ');
+
+/**
+ * Clave para decidir si dos nombres de categoría son el mismo. Tiene que
+ * coincidir con el índice único (tipo, nombre) de la base de datos, que compara
+ * con la intercalación utf8mb4_unicode_ci: sin mayúsculas, sin tildes ni
+ * diéresis, la ñ igual que la n y sin espacios al final. «Año» y «Ano» son la
+ * misma categoría para MariaDB; si aquí fueran distintas, el servicio daría el
+ * nombre por libre y la base respondería con un choque de clave sin explicación.
+ * Los espacios de dentro se juntan (más estricto que la base, nunca menos).
+ */
+export function claveNombreCategoria(nombre: string): string {
+  // NFD separa la letra de su marca (á → a + ´, ñ → n + ˜) y se quitan todas las marcas.
+  return limpiarNombreCategoria(nombre).normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase('es');
+}
+
+/**
+ * Categorías que los recibos buscan por su nombre al cobrarse o devolverse
+ * (recibo.service y procesion.service). Si se renombraran, el siguiente cobro
+ * crearía otra con el nombre de siempre y el historial quedaría partido en dos.
+ */
+export const CATEGORIAS_DE_RECIBOS: readonly { nombre: string; tipo: TipoTransaccion }[] = [
+  { nombre: 'Cuotas y papeletas', tipo: 'INGRESO' },
+  { nombre: 'Devoluciones de recibos', tipo: 'GASTO' },
+];
+
+export function esCategoriaDeRecibos(categoria: { nombre: string; tipo: TipoTransaccion }): boolean {
+  const clave = claveNombreCategoria(categoria.nombre);
+  return CATEGORIAS_DE_RECIBOS.some((c) => c.tipo === categoria.tipo && claveNombreCategoria(c.nombre) === clave);
 }

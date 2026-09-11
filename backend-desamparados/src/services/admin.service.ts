@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { CLAVES_CONFIGURACION, esClaveConfiguracion, normalizarValorConfiguracion } from '../domain/configuracion.js';
 
 export class AdminService {
 
@@ -63,7 +64,9 @@ export class AdminService {
     });
 
     // Auditoría: cambio de rol (asignación de privilegios)
-    AuditService.log(AUDIT_ACTIONS.STAFF_PROMOTE, meta ?? {}, 'user', userId);
+    AuditService.log(AUDIT_ACTIONS.STAFF_PROMOTE, meta ?? {}, 'user', userId, {
+      antes: { role: existing.role }, despues: { role: result.role }
+    });
     return result;
   }
 
@@ -95,7 +98,9 @@ export class AdminService {
     });
 
     // Auditoría: retirada de privilegios
-    AuditService.log(AUDIT_ACTIONS.STAFF_DEMOTE, meta ?? {}, 'user', userId);
+    AuditService.log(AUDIT_ACTIONS.STAFF_DEMOTE, meta ?? {}, 'user', userId, {
+      antes: { role: existing.role }, despues: { role: result.role }
+    });
     return result;
   }
 
@@ -107,27 +112,29 @@ export class AdminService {
   }
 
   // 6. ACTUALIZAR UN VALOR DE CONFIGURACIÓN
-  // Whitelist de claves conocidas del sistema: evita que se cuelen parámetros
-  // arbitrarios (una clave 'precio_papeleta_sitio' mal escrita haría que el
-  // backend cobrara el precio fallback sin que nadie lo notara).
-  private static readonly ALLOWED_CONFIG_KEYS = [
-    'precio_papeleta_sitio',
-    'precio_alquiler_tunica',
-    'home_news_limit'
-  ] as const;
-
+  // Lista blanca de claves conocidas (src/domain/configuracion.ts): evita que se
+  // cuelen parámetros arbitrarios (una clave 'precio_papeleta_sitio' mal escrita
+  // haría que el backend cobrara el precio de reserva sin que nadie lo notara).
+  // El valor se vuelve a validar aquí aunque la ruta ya lo haga: el servicio no
+  // sabe quién le llama, y un precio inválido guardado es un cobro equivocado.
   static async updateConfiguracion(key: string, value: string, meta?: AuditMeta) {
-    if (!(this.ALLOWED_CONFIG_KEYS as readonly string[]).includes(key)) {
-      throw new HttpError(`'${key}' no es un parámetro de configuración válido. Claves permitidas: ${this.ALLOWED_CONFIG_KEYS.join(', ')}.`);
+    if (!esClaveConfiguracion(key)) {
+      throw new HttpError(`'${key}' no es un parámetro de configuración válido. Claves permitidas: ${CLAVES_CONFIGURACION.join(', ')}.`);
     }
+    const normalizado = normalizarValorConfiguracion(key, value);
+    if (!normalizado.ok) throw new HttpError(normalizado.error);
+
+    const anterior = await db.configuracion.findUnique({ where: { key }, select: { value: true } });
     const result = await db.configuracion.upsert({
       where: { key },
-      update: { value },
-      create: { key, value, descripcion: `Valor para ${key}` }
+      update: { value: normalizado.valor },
+      create: { key, value: normalizado.valor, descripcion: `Valor para ${key}` }
     });
 
     // Auditoría: los precios y parámetros globales son sensibles (afectan al cobro)
-    AuditService.log(AUDIT_ACTIONS.CONFIG_UPDATE, meta ?? {}, 'config', key);
+    AuditService.log(AUDIT_ACTIONS.CONFIG_UPDATE, meta ?? {}, 'config', key, {
+      antes: { value: anterior?.value ?? null }, despues: { value: result.value }
+    });
     return result;
   }
 

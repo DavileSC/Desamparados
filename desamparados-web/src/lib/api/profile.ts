@@ -13,10 +13,23 @@ export interface ApiProfile {
   fechaAlta: string
   numeroHermano: number | null
   activo: boolean
+  /** `true` en la ficha de la persona que tiene la cuenta; `false` en la de sus tutelados. */
+  esTitular: boolean
 }
 
 /**
- * Las dos pantallas de perfil no listan fichas: eligen una —la primera— para
+ * La ficha que enseñan «Mi perfil» y su edición: la del titular de la cuenta.
+ * El servidor ordena la familia por fecha de nacimiento descendente, así que la
+ * primera es la del hijo más pequeño: tomar `data[0]` le enseñaba al tutor la
+ * ficha de su hijo como si fuera la suya. Sin ficha propia (un padre que solo
+ * inscribió a sus hijos), se queda la primera, como antes.
+ */
+export function fichaPropia(fichas: ApiProfile[]): ApiProfile | null {
+  return fichas.find((ficha) => ficha.esTitular) ?? fichas[0] ?? null
+}
+
+/**
+ * Las dos pantallas de perfil no listan fichas: eligen una —la del titular— para
  * mostrarla o editarla. Un selector paginado es mala interfaz, y con una página
  * corta el hermano con varias fichas dejaría de poder llegar a alguna, así que
  * piden la familia entera de una vez. Cincuenta es más de lo que ninguna

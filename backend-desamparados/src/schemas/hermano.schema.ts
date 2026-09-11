@@ -50,18 +50,35 @@ export const updateProfileSchema = type({
     body: baseUpdateBody
 });
 
+const fechaDia = type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha AAAA-MM-DD");
+
 // 3. Esquema para la Secretaría (Admin)
 // Base + Datos Procesión + Estados Internos
+//
+// Sin `activo` y sin quitar la baja (null): la edición genérica de la ficha no
+// da altas ni bajas. Antes, guardar una errata en una solicitud pendiente la
+// activaba sin aprobarla (sin número, con la cuenta cerrada, sin auditoría) y
+// una fecha de baja con el interruptor encendido dejaba a alguien de baja pero
+// activo. Las altas van por «Aprobar» y «Reactivar»; las bajas, por «Dar de
+// baja». `validate` borra en silencio las claves no declaradas, así que un
+// cliente viejo que mande `activo` no cambia nada.
 export const updateAdminHermanoSchema = type({
     body: baseUpdateBody.and(datosProcesionSchema).and(type({
-        "activo?": "boolean",
         "esTitular?": "boolean",
-        "numeroHermano?": "number", // Opcional, por si manejan antigüedad
+        "numeroHermano?": type("number.integer >= 1").describe("un número de hermano entero mayor que 0"),
         // Secretaría regulariza fichas antiguas: estas dos fechas son las que
-        // más se corrigen a mano. La baja admite null para revertirla.
-        "fechaAlta?": type("string").matching(/^\d{4}-\d{2}-\d{2}$/),
-        "fechaBaja?": type("string").matching(/^\d{4}-\d{2}-\d{2}$/).or("null")
+        // más se corrigen a mano. La baja solo se corrige en fichas que ya
+        // están de baja (lo comprueba el servicio, que conoce el estado).
+        "fechaAlta?": fechaDia,
+        "fechaBaja?": fechaDia
     }))
+});
+
+// 3 bis. Dar de baja desde secretaría. La fecha es opcional (por defecto, hoy):
+// se da de baja a quien avisó hace unos días con la fecha en que avisó. El
+// cuerpo entero es opcional porque un DELETE sin cuerpo sigue siendo válido.
+export const bajaHermanoSchema = type({
+    "body?": type({ "fechaBaja?": fechaDia }).or("undefined")
 });
 
 // 4. Buscador Total para Secretaría

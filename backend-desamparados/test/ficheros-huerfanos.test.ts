@@ -1,0 +1,324 @@
+// test/ficheros-huerfanos.test.ts
+//
+// C1: los ficheros subidos que deja de usar el CMS se borran del disco. Antes
+// quitar una foto, sustituirla o borrar la noticia solo tocaba la base de datos
+// y el archivo seguía publicado en /storage/public para siempre.
+//
+// El primer import aísla storage/ en una carpeta temporal: estas pruebas crean
+// y borran ficheros, y nunca deben tocar los del repositorio.
+
+import { almacenPublico } from './fixtures/almacen-temporal.js';
+import assert from 'node:assert/strict';
+import { after, before, describe, test } from 'node:test';
+import type { AddressInfo } from 'node:net';
+import type { Server } from 'node:http';
+import { randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { mkdir, mkdtemp, rm, utimes, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { Role } from '@prisma/client';
+import app from '../src/app.js';
+import db from '../src/config/db.js';
+import { generateToken } from '../src/utils/jwt.handle.js';
+import { COOKIE_SESION } from '../src/utils/cookies.js';
+import {
+  borrarSubida,
+  buscarHuerfanos,
+  nombreDeSubida,
+  subidasEnTexto,
+  subidasReferenciadas,
+} from '../src/utils/ficheros-publicos.js';
+import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+
+const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
+const hex = () => randomBytes(16).toString('hex');
+
+describe('qué cuenta como fichero subido por el CMS', () => {
+  test('solo 32 hex con extensión de foto o PDF en la raíz de /storage/public', () => {
+    const nombre = `${hex()}.jpg`;
+    assert.equal(nombreDeSubida(`/storage/public/${nombre}`), nombre);
+    assert.equal(nombreDeSubida(`/storage/public/${hex()}.PDF`)?.endsWith('.PDF'), true);
+    for (const ruta of [
+      '/storage/public/documentos/pendiente.pdf', // activo del seed, en subcarpeta
+      '/storage/public/portada/01-trono.webp',
+      `/storage/public/../${hex()}.jpg`,
+      `/storage/public/${hex()}.jpg/../../.env`,
+      `/storage/public/${hex()}.html`,
+      `/storage/private/${hex()}.pdf`,
+      `/images/${hex()}.jpg`,
+      `https://fuera.example/storage/public/${hex()}.jpg`, // la ruta exacta, no una URL
+      '',
+      null,
+    ]) {
+      assert.equal(nombreDeSubida(ruta), null, `no debería aceptar ${ruta}`);
+    }
+  });
+
+  test('encuentra las subidas dentro de HTML y de URLs absolutas antiguas', () => {
+    const a = `${hex()}.webp`;
+    const b = `${hex()}.jpg`;
+    const html = `<p>Texto</p><img src="/storage/public/${a}" alt="x"><a href="http://localhost:3001/storage/public/${b}">foto</a>`;
+    assert.deepEqual([...subidasEnTexto(html, null, undefined, '/storage/public/portada/01.webp')].sort(), [a, b].sort());
+  });
+
+  test('borrarSubida no sale del filtro aunque se lo pidan', async () => {
+    const carpeta = await mkdtemp(path.join(os.tmpdir(), 'desamparados-borrar-'));
+    try {
+      await writeFile(path.join(carpeta, 'secreto.txt'), 'x');
+      await mkdir(path.join(carpeta, 'portada'));
+      await writeFile(path.join(carpeta, 'portada', '01.webp'), 'x');
+      for (const nombre of ['secreto.txt', '../secreto.txt', 'portada/01.webp', `${hex()}.jpg/..`]) {
+        assert.equal(await borrarSubida(nombre, carpeta), false, `no debería borrar ${nombre}`);
+      }
+      assert.ok(existsSync(path.join(carpeta, 'secreto.txt')));
+      assert.ok(existsSync(path.join(carpeta, 'portada', '01.webp')));
+
+      const buena = `${hex()}.png`;
+      await writeFile(path.join(carpeta, buena), 'x');
+      assert.equal(await borrarSubida(buena, carpeta), true);
+      assert.ok(!existsSync(path.join(carpeta, buena)));
+      assert.equal(await borrarSubida(buena, carpeta), false, 'si ya no está, no es un error');
+    } finally {
+      await rm(carpeta, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('búsqueda de huérfanos del script', () => {
+  test('lista solo las subidas sin referencias y con más de las horas pedidas; el resto no lo toca', async () => {
+    const carpeta = await mkdtemp(path.join(os.tmpdir(), 'desamparados-huerfanos-'));
+    try {
+      const enUso = `${hex()}.jpg`;
+      const huerfanoViejo = `${hex()}.pdf`;
+      const huerfanoReciente = `${hex()}.webp`;
+      for (const nombre of [enUso, huerfanoViejo, huerfanoReciente, 'LEEME.txt']) await writeFile(path.join(carpeta, nombre), 'x');
+      await mkdir(path.join(carpeta, 'documentos'));
+      await writeFile(path.join(carpeta, 'documentos', 'pendiente.pdf'), 'x');
+      const haceDosDias = new Date(Date.now() - 48 * 3600_000);
+      for (const nombre of [enUso, huerfanoViejo]) await utimes(path.join(carpeta, nombre), haceDosDias, haceDosDias);
+
+      const { huerfanos, ignorados } = await buscarHuerfanos({ referenciados: new Set([enUso.toUpperCase()]), directorio: carpeta, minHoras: 24 });
+      assert.deepEqual(huerfanos.map((h) => h.nombre), [huerfanoViejo]);
+      assert.deepEqual(ignorados, ['LEEME.txt']);
+
+      const sinMargen = await buscarHuerfanos({ referenciados: new Set([enUso]), directorio: carpeta, minHoras: 0 });
+      assert.deepEqual(sinMargen.huerfanos.map((h) => h.nombre).sort(), [huerfanoViejo, huerfanoReciente].sort());
+    } finally {
+      await rm(carpeta, { recursive: true, force: true });
+    }
+  });
+});
+
+// =================================================================
+//  Con base de datos: el CMS borra lo que deja de usar
+// =================================================================
+
+let server: Server;
+let baseUrl: string;
+let dbDisponible = false;
+let usuarioId = 0;
+
+async function sondearDb(): Promise<boolean> {
+  const timeout = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 3000).unref());
+  const consulta = db.$queryRaw`SELECT 1`.then(() => 'ok' as const).catch(() => 'error' as const);
+  return (await Promise.race([consulta, timeout])) === 'ok';
+}
+
+before(async () => {
+  server = app.listen(0);
+  await new Promise((r) => server.once('listening', r));
+  baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  dbDisponible = await sondearDb();
+  if (dbDisponible) usuarioId = (await crearUsuarioPrueba(Role.REDES)).id;
+});
+
+after(async () => {
+  server.close();
+  if (usuarioId) await borrarUsuarioPrueba(usuarioId);
+  await db.$disconnect();
+});
+
+const api = (ruta: string, metodo: string, cuerpo?: unknown) =>
+  fetch(`${baseUrl}/api${ruta}`, {
+    method: metodo,
+    headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_SESION}=${generateToken(usuarioId, Role.REDES)}` },
+    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+  });
+
+/** Un fichero como los que deja la subida del CMS, en el almacén temporal. */
+async function subidaFalsa(ext: 'jpg' | 'webp' | 'pdf') {
+  const nombre = `${hex()}.${ext}`;
+  await writeFile(path.join(almacenPublico, nombre), 'contenido de prueba');
+  return { nombre, ruta: `/storage/public/${nombre}`, existe: () => existsSync(path.join(almacenPublico, nombre)) };
+}
+
+const slugUnico = () => `prueba-huerfanos-${Date.now()}-${randomBytes(3).toString('hex')}`;
+
+describe('noticias (C1)', () => {
+  test('quitar la foto y guardar la borra del disco', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const foto = await subidaFalsa('jpg');
+    const res = await api('/news', 'POST', { titulo: 'Prueba huérfanos', contenido: '<p>x</p>', imagenUrl: foto.ruta, slug: slugUnico(), visible: false });
+    assert.equal(res.status, 201, await res.clone().text());
+    const { id } = await res.json() as { id: number };
+    try {
+      assert.ok(foto.existe());
+      const quitar = await api(`/news/${id}`, 'PUT', { imagenUrl: '' });
+      assert.equal(quitar.status, 200, await quitar.clone().text());
+      assert.equal(((await quitar.json()) as { imagenUrl: string | null }).imagenUrl, null, '«Quitar foto» se guarda como sin foto');
+      assert.ok(!foto.existe(), 'la foto quitada debe desaparecer de /storage/public');
+    } finally {
+      await db.noticia.deleteMany({ where: { id } });
+    }
+  });
+
+  test('sustituir la foto borra la anterior y conserva la nueva; las incrustadas que salen del cuerpo, también', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const vieja = await subidaFalsa('jpg');
+    const nueva = await subidaFalsa('webp');
+    const incrustada = await subidaFalsa('jpg');
+    const res = await api('/news', 'POST', {
+      titulo: 'Prueba huérfanos 2', contenido: `<p>x</p><img src="${incrustada.ruta}" alt="y">`, imagenUrl: vieja.ruta, slug: slugUnico(), visible: false,
+    });
+    assert.equal(res.status, 201, await res.clone().text());
+    const { id } = await res.json() as { id: number };
+    try {
+      const cambio = await api(`/news/${id}`, 'PUT', { imagenUrl: nueva.ruta, contenido: '<p>sin fotos</p>' });
+      assert.equal(cambio.status, 200);
+      assert.ok(!vieja.existe());
+      assert.ok(!incrustada.existe());
+      assert.ok(nueva.existe());
+    } finally {
+      await db.noticia.deleteMany({ where: { id } });
+    }
+  });
+
+  test('una foto incrustada con URL absoluta propia sobrevive a guardar la noticia (y queda como ruta relativa)', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    // Contenido de antes: la dirección copiada del navegador. Al guardar cualquier
+    // campo, el formulario reenvía el cuerpo, y el saneado quitaba esa <img>... y
+    // el fichero se borraba del disco por no tener ya referencias.
+    const foto = await subidaFalsa('jpg');
+    const contenido = `<p>x</p><img src="http://localhost:3001/storage/public/${foto.nombre}" alt="Titular">`;
+    const noticia = await db.noticia.create({ data: { titulo: 'Prueba absoluta', slug: slugUnico(), contenido, visible: false } });
+    try {
+      const res = await api(`/news/${noticia.id}`, 'PUT', { titulo: 'Prueba absoluta retocada', contenido });
+      assert.equal(res.status, 200, await res.clone().text());
+      const guardada = await res.json() as { contenido: string };
+      assert.match(guardada.contenido, new RegExp(`<img src="/storage/public/${foto.nombre}" alt="Titular"`));
+      assert.ok(foto.existe(), 'la foto sigue en uso: no puede borrarse');
+    } finally {
+      await db.noticia.deleteMany({ where: { id: noticia.id } });
+    }
+  });
+
+  test('una foto que usa otro registro no se borra hasta que la deja el último', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const compartida = await subidaFalsa('jpg');
+    const ids: number[] = [];
+    try {
+      for (const titulo of ['Prueba compartida A', 'Prueba compartida B']) {
+        const res = await api('/news', 'POST', { titulo, contenido: '<p>x</p>', imagenUrl: compartida.ruta, slug: slugUnico(), visible: false });
+        assert.equal(res.status, 201);
+        ids.push(((await res.json()) as { id: number }).id);
+      }
+      assert.equal((await api(`/news/${ids[0]}`, 'DELETE')).status, 200);
+      assert.ok(compartida.existe(), 'la otra noticia sigue usándola');
+      assert.equal((await api(`/news/${ids[1]}`, 'DELETE')).status, 200);
+      assert.ok(!compartida.existe(), 'al borrar la última noticia que la usaba, sale del disco');
+    } finally {
+      await db.noticia.deleteMany({ where: { id: { in: ids } } });
+    }
+  });
+});
+
+describe('publicaciones (C1)', () => {
+  test('sustituir el PDF borra el anterior; borrar la publicación borra su portada y su PDF salvo lo que use otro registro', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const pdfViejo = await subidaFalsa('pdf');
+    const pdfNuevo = await subidaFalsa('pdf');
+    const portada = await subidaFalsa('jpg');
+    const res = await api('/publications', 'POST', { titulo: 'Prueba huérfanos', archivoUrl: pdfViejo.ruta, imagenUrl: portada.ruta, categoria: 'boletin', visible: false });
+    assert.equal(res.status, 201, await res.clone().text());
+    const { id } = await res.json() as { id: number };
+    // Una noticia usa la misma portada: debe sobrevivir al borrado de la publicación.
+    const noticia = await db.noticia.create({ data: { titulo: 'Prueba', slug: slugUnico(), contenido: '<p>x</p>', imagenUrl: portada.ruta, visible: false } });
+    try {
+      const cambio = await api(`/publications/${id}`, 'PUT', { archivoUrl: pdfNuevo.ruta });
+      assert.equal(cambio.status, 200, await cambio.clone().text());
+      assert.ok(!pdfViejo.existe());
+      assert.ok(pdfNuevo.existe());
+
+      assert.equal((await api(`/publications/${id}`, 'DELETE')).status, 200);
+      assert.ok(!pdfNuevo.existe());
+      assert.ok(portada.existe(), 'la noticia sigue usando la portada');
+    } finally {
+      await db.publicacion.deleteMany({ where: { id } });
+      await db.noticia.deleteMany({ where: { id: noticia.id } });
+    }
+  });
+});
+
+describe('ficheros a los que apunta el entorno', () => {
+  test('el PDF de NORMATIVA_URL (el que enlazan los correos) cuenta como en uso', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const normativa = await subidaFalsa('pdf');
+    const otro = await subidaFalsa('pdf');
+    const antes = process.env.NORMATIVA_URL;
+    process.env.NORMATIVA_URL = `https://www.desamparados.es/storage/public/${normativa.nombre}`;
+    const res = await api('/publications', 'POST', { titulo: 'Normativa', archivoUrl: normativa.ruta, categoria: 'historia', visible: false });
+    assert.equal(res.status, 201, await res.clone().text());
+    const { id } = await res.json() as { id: number };
+    try {
+      assert.ok((await subidasReferenciadas()).has(normativa.nombre));
+      assert.equal((await api(`/publications/${id}`, 'PUT', { archivoUrl: otro.ruta })).status, 200);
+      assert.ok(normativa.existe(), 'los correos siguen enlazándolo: no puede borrarse');
+    } finally {
+      if (antes === undefined) delete process.env.NORMATIVA_URL;
+      else process.env.NORMATIVA_URL = antes;
+      await db.publicacion.deleteMany({ where: { id } });
+    }
+  });
+});
+
+describe('fotos de la portada (C1)', () => {
+  test('la foto que sale de la lista se borra; las del seed y las estáticas no se tocan', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    // Se guarda la lista de la base de desarrollo para dejarla como estaba. Sus
+    // ficheros viven en el storage del repositorio y aquí el almacén es otro:
+    // aunque la sustitución los diera por huérfanos, no los encontraría.
+    const anterior = (await db.imagenPortada.findMany({ orderBy: { orden: 'asc' } })).map((i) => ({ url: i.url, descripcion: i.descripcion ?? '' }));
+    const foto = await subidaFalsa('webp');
+    try {
+      const poner = await api('/portada/imagenes', 'PUT', { imagenes: [{ url: foto.ruta }, { url: '/storage/public/portada/01-trono.webp' }] });
+      assert.equal(poner.status, 200, await poner.clone().text());
+      assert.ok(foto.existe());
+
+      const quitar = await api('/portada/imagenes', 'PUT', { imagenes: [{ url: '/images/hero-1920.webp' }] });
+      assert.equal(quitar.status, 200);
+      assert.ok(!foto.existe(), 'la foto quitada de la portada debe desaparecer del disco');
+    } finally {
+      await api('/portada/imagenes', 'PUT', { imagenes: anterior });
+    }
+  });
+});
+
+describe('referencias para el script de huérfanos', () => {
+  test('cuenta como en uso lo que menciona cualquier tabla del contenido', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const enPagina = `${hex()}.jpg`;
+    const enEvento = `${hex()}.pdf`;
+    const slug = slugUnico();
+    await db.pagina.create({ data: { slug, titulo: 'Prueba', contenido: `<img src="/storage/public/${enPagina}">` } });
+    const evento = await db.evento.create({ data: { title: 'Prueba', description: `Cartel: /storage/public/${enEvento}`, startDate: new Date() } });
+    try {
+      const referenciados = await subidasReferenciadas();
+      assert.ok(referenciados.has(enPagina));
+      assert.ok(referenciados.has(enEvento));
+    } finally {
+      await db.pagina.deleteMany({ where: { slug } });
+      await db.evento.deleteMany({ where: { id: evento.id } });
+    }
+  });
+});

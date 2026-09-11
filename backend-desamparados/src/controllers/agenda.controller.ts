@@ -17,6 +17,17 @@ export class AgendaController {
     }
   }
 
+  // Listado del CMS (sesión + rol en la ruta): pasados o próximos, de las dos visibilidades.
+  static async adminList(req: Request, res: Response) {
+    try {
+      const periodo = req.query.periodo === 'pasados' ? 'pasados' : 'proximos';
+      const events = await AgendaService.getAdminEvents(periodo, req.query);
+      res.status(200).json(events);
+    } catch (e) {
+      handleHttp(res, e, 'Error obteniendo agenda');
+    }
+  }
+
   static async getOne(req: Request, res: Response) {
     try {
       // Ya no hace falta isNaN, validateId en la ruta nos protege

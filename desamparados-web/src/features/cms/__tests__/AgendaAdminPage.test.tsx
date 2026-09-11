@@ -58,6 +58,38 @@ describe('AgendaAdminPage', () => {
     await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('page=2'))
   })
 
+  it('el CMS pide su propio listado, el que incluye los eventos pasados', async () => {
+    const simulado = responder([evento], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    renderWithProviders(<AgendaAdminPage />)
+
+    await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('/events/admin?'))
+    expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('periodo=proximos')
+    expect(screen.getByRole('tab', { name: 'Próximos' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('la pestaña «Pasados» pide los pasados desde la primera página', async () => {
+    // Un evento fechado por error en el pasado desaparecía del CMS: sin esta
+    // pestaña no había forma de corregirlo ni de borrarlo.
+    const usuario = userEvent.setup()
+    const simulado = responder([evento], { total: 60, page: 2, limit: 20, totalPages: 3 })
+    renderWithProviders(<AgendaAdminPage />, { ruta: '/cms/agenda?pagina=2' })
+    await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('page=2'))
+
+    await usuario.click(screen.getByRole('tab', { name: 'Pasados' }))
+
+    await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('periodo=pasados'))
+    expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('page=1')
+    expect(screen.getByRole('tab', { name: 'Pasados' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('con ?periodo=pasados en la URL (al volver de editar) abre esa pestaña', async () => {
+    const simulado = responder([], { total: 0, page: 1, limit: 20, totalPages: 0 })
+    renderWithProviders(<AgendaAdminPage />, { ruta: '/cms/agenda?periodo=pasados' })
+
+    await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('periodo=pasados'))
+    expect(await screen.findByText('No hay eventos pasados.')).toBeInTheDocument()
+  })
+
   it('al elegir otro tamaño en el selector, la petición lo lleva como limit', async () => {
     // La cadena entera —abrir el selector, elegir 50, que llegue al servidor
     // como limit=50— no estaba cubierta en ningún punto: el Paginador ya

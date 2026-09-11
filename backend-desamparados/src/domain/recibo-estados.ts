@@ -19,9 +19,16 @@ import { EstadoPago } from '@prisma/client';
  * DEVUELTO, ANULADO y EXENTO son finales: para volver a cobrar se emite un
  * recibo nuevo, de modo que la contabilidad conserva el rastro completo.
  *
- * PENDIENTE -> PAGADO no está aquí a propósito: cobrar no es una edición de
- * estado, tiene su propia operación (`marcarComoPagado`) porque además genera
- * el asiento de ingreso.
+ * PENDIENTE -> PAGADO y REMESADO -> PAGADO no están aquí a propósito: cobrar
+ * no es una edición de estado, tiene su propia operación
+ * (`adminMarcarComoPagado`) porque además genera el asiento de ingreso. Acepta
+ * los dos estados de `ESTADOS_COBRABLES`: un remesado es un cobro en curso que
+ * el banco acaba confirmando, y antes se quedaba en un callejón sin salida
+ * (solo podía devolverse o anularse, nunca darse por cobrado).
+ *
+ *   PENDIENTE ─┐
+ *              ├──(cobrar)──> PAGADO      (con su asiento de ingreso)
+ *   REMESADO ──┘
  */
 const TRANSICIONES: Record<EstadoPago, readonly EstadoPago[]> = {
   [EstadoPago.PENDIENTE]: [EstadoPago.REMESADO, EstadoPago.ANULADO, EstadoPago.EXENTO],
@@ -56,4 +63,22 @@ export function puedeTransicionar(origen: EstadoPago, destino: EstadoPago): bool
  */
 export function requiereReverso(origen: EstadoPago, destino: EstadoPago): boolean {
   return origen === EstadoPago.PAGADO && destino === EstadoPago.DEVUELTO;
+}
+
+/** Estados desde los que se puede cobrar un recibo (ver el grafo de arriba). */
+export const ESTADOS_COBRABLES: readonly EstadoPago[] = [EstadoPago.PENDIENTE, EstadoPago.REMESADO];
+
+/** `true` si el recibo puede darse por cobrado desde `estado`. */
+export function puedeCobrarse(estado: EstadoPago): boolean {
+  return ESTADOS_COBRABLES.includes(estado);
+}
+
+/**
+ * `true` si pasar un recibo de papeleta a `destino` deja la papeleta sin
+ * efecto. Un recibo devuelto o anulado ya no respalda ningún sitio en la
+ * procesión: si Tesorería lo devuelve, la papeleta se anula igual que si la
+ * anulara la mesa de reparto. EXENTO no: el hermano sale sin pagar.
+ */
+export function anulaPapeleta(destino: EstadoPago): boolean {
+  return destino === EstadoPago.DEVUELTO || destino === EstadoPago.ANULADO;
 }

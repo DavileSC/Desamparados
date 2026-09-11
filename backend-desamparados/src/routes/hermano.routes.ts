@@ -14,7 +14,8 @@ import {
     updateAdminHermanoSchema,
     searchHermanoSchema,
     emancipateSchema,
-    emancipateByStaffSchema
+    emancipateByStaffSchema,
+    bajaHermanoSchema
 } from '../schemas/hermano.schema';
 
 /**
@@ -53,7 +54,8 @@ hermanoRouter.delete('/admin/solicitudes/:id/rechazar', checkRole(rolesGestionCe
 // 4. Operaciones sobre un Hermano Específico
 hermanoRouter.get('/admin/:id', checkRole(rolesGestionCenso), validateId, HermanoController.getById);
 hermanoRouter.put('/admin/:id', checkRole(rolesGestionCenso), validateId, validate(updateAdminHermanoSchema), HermanoController.updateAdmin);
-hermanoRouter.delete('/admin/:id/baja', checkRole(rolesGestionCenso), validateId, HermanoController.darDeBajaHermano);
+// La baja admite un cuerpo opcional con la fecha ({ fechaBaja: 'AAAA-MM-DD' }).
+hermanoRouter.delete('/admin/:id/baja', checkRole(rolesGestionCenso), validateId, validate(bajaHermanoSchema), HermanoController.darDeBajaHermano);
 hermanoRouter.post('/admin/:id/reactivar', checkRole(rolesGestionCenso), validateId, HermanoController.reactivarHermano);
 hermanoRouter.post('/admin/:id/emancipar', checkRole(rolesGestionCenso), validateId, validate(emancipateByStaffSchema), HermanoController.emancipateByStaff);
 

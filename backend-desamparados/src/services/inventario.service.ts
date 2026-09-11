@@ -3,6 +3,7 @@ import { Prisma, EstadoPrenda } from '@prisma/client';
 import { CreateEnserDto, UpdateEnserDto, EnserFilterDto, CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/inventario.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 
 /** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
 interface ConsultaPaginada {
@@ -72,7 +73,10 @@ export class InventarioService {
         cantidadBueno: bueno,
         cantidadReparar: reparar,
         cantidadTotal: optimo + bueno + reparar,
-        fechaAdquisicion: data.fechaAdquisicion ? new Date(data.fechaAdquisicion) : null
+        fechaAdquisicion: data.fechaAdquisicion ? new Date(data.fechaAdquisicion) : null,
+        // El esquema la valida (ruta propia o vacía); antes se descartaba y la
+        // foto subida quedaba huérfana en el disco.
+        imagenUrl: data.imagenUrl || null
       }
     });
   }
@@ -85,7 +89,7 @@ export class InventarioService {
     const bueno = data.cantidadBueno ?? actual.cantidadBueno;
     const reparar = data.cantidadReparar ?? actual.cantidadReparar;
 
-    return await db.enser.update({
+    const actualizado = await db.enser.update({
       where: { id },
       data: {
         nombre: data.nombre,
@@ -96,13 +100,24 @@ export class InventarioService {
         cantidadBueno: bueno,
         cantidadReparar: reparar,
         cantidadTotal: optimo + bueno + reparar,
-        fechaAdquisicion: data.fechaAdquisicion ? new Date(data.fechaAdquisicion) : undefined
+        fechaAdquisicion: data.fechaAdquisicion ? new Date(data.fechaAdquisicion) : undefined,
+        // Sin `imagenUrl` en el cuerpo, la foto se queda; vacía o null, se quita.
+        ...(data.imagenUrl !== undefined ? { imagenUrl: data.imagenUrl || null } : {})
       }
     });
+
+    // La foto sustituida o quitada se borra del disco si nadie más la usa.
+    await borrarSubidasHuerfanas(subidasEnTexto(actual.imagenUrl), {
+      conservar: subidasEnTexto(actualizado.imagenUrl)
+    });
+    return actualizado;
   }
 
   static async deleteEnser(id: number) {
-    return await db.enser.delete({ where: { id } });
+    const borrado = await db.enser.delete({ where: { id } });
+    // La foto del enser, si la tenía, sale del disco si nadie más la usa.
+    await borrarSubidasHuerfanas(subidasEnTexto(borrado.imagenUrl));
+    return borrado;
   }
 
   // =================================================================
@@ -170,6 +185,22 @@ export class InventarioService {
   }
 
   static async updatePrenda(id: number, data: UpdatePrendaDto) {
+    const actual = await db.prenda.findUnique({ where: { id } });
+    if (!actual) throw new NotFoundError('Prenda no encontrada');
+
+    // PRESTADA va siempre con su titular: la ponen «Asignar» y «Devolver», que
+    // guardan también quién la tiene. Editando el estado a mano salían prendas
+    // prestadas a nadie o disponibles con un hermano todavía apuntado. Reenviar
+    // el estado que ya tenía (el formulario manda la ficha entera) no es un cambio.
+    if (data.estado !== undefined && data.estado !== actual.estado) {
+      if (data.estado === EstadoPrenda.PRESTADA) {
+        throw new HttpError('Para prestar una prenda usa «Asignar» en el listado del ropero: así queda anotado quién la tiene.');
+      }
+      if (actual.estado === EstadoPrenda.PRESTADA) {
+        throw new HttpError('La prenda está prestada: registra antes su devolución con «Devolver» en el listado del ropero.');
+      }
+    }
+
     if (data.numero) {
       const existe = await db.prenda.findUnique({ where: { numero: data.numero } });
       if (existe && existe.id !== id) throw new HttpError(`El número ${data.numero} ya está en uso.`);
@@ -192,36 +223,56 @@ export class InventarioService {
 
   // --- LÓGICA DE NEGOCIO: ASIGNACIONES ---
 
-  static async asignarPrenda(prendaId: number, hermanoId: number) {
-    const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
-    if (!prenda) throw new NotFoundError('Prenda no encontrada.');
-    if (prenda.estado !== EstadoPrenda.DISPONIBLE) throw new HttpError('La prenda no está disponible.');
+  /**
+   * El hermano activo con ese número, con lo justo para confirmar el préstamo
+   * en el CMS («Nº 123 · Nombre Apellidos») antes de hacerlo.
+   */
+  static async buscarHermanoPorNumero(numeroHermano: number) {
+    const hermano = await db.hermano.findFirst({
+      where: { numeroHermano, activo: true },
+      select: { numeroHermano: true, nombre: true, apellidos: true }
+    });
+    if (!hermano) throw new NotFoundError(`No hay ningún hermano activo con el número ${numeroHermano}.`);
+    return hermano;
+  }
 
-    const hermano = await db.hermano.findUnique({ where: { id: hermanoId, activo: true } });
-    if (!hermano) throw new NotFoundError('Hermano no encontrado.');
+  static async asignarPrenda(prendaId: number, numeroHermano: number) {
+    const hermano = await db.hermano.findFirst({ where: { numeroHermano, activo: true }, select: { id: true } });
+    if (!hermano) throw new NotFoundError(`No hay ningún hermano activo con el número ${numeroHermano}.`);
 
-    return await db.prenda.update({
-      where: { id: prendaId },
+    // Condicionada al estado: si dos personas asignan la misma prenda a la vez,
+    // la segunda no pisa a la primera.
+    const { count } = await db.prenda.updateMany({
+      where: { id: prendaId, estado: EstadoPrenda.DISPONIBLE },
       data: {
         estado: EstadoPrenda.PRESTADA,
-        hermanoId: hermanoId,
+        hermanoId: hermano.id,
         fechaAsignacion: new Date()
       }
     });
+    if (count === 0) {
+      const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
+      if (!prenda) throw new NotFoundError('Prenda no encontrada.');
+      throw new HttpError('La prenda no está disponible.');
+    }
+    return InventarioService.getPrendaById(prendaId);
   }
 
   static async devolverPrenda(prendaId: number, necesitaLavado: boolean = false) {
-    const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
-    if (!prenda) throw new NotFoundError('Prenda no encontrada.');
-
-    return await db.prenda.update({
-      where: { id: prendaId },
+    const { count } = await db.prenda.updateMany({
+      where: { id: prendaId, estado: EstadoPrenda.PRESTADA },
       data: {
         estado: necesitaLavado ? EstadoPrenda.TALLER : EstadoPrenda.DISPONIBLE,
         hermanoId: null, // Desvinculamos al hermano
         fechaAsignacion: null
       }
     });
+    if (count === 0) {
+      const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
+      if (!prenda) throw new NotFoundError('Prenda no encontrada.');
+      throw new HttpError('La prenda no está prestada.');
+    }
+    return InventarioService.getPrendaById(prendaId);
   }
 
   // =================================================================

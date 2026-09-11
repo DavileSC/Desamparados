@@ -6,7 +6,15 @@ import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
 import { type } from 'arktype';
 import { idParam } from '../config/common.js'; // Esquema para validar IDs numéricos en URL
-import { generarCuotasSchema, marcarPagadoSchema, updateReciboSchema } from '../schemas/recibo.schema.js';
+import {
+  adminRecibosQuerySchema,
+  buscarHermanosQuerySchema,
+  emitirReciboSchema,
+  generarCuotasSchema,
+  marcarPagadoSchema,
+  misRecibosQuerySchema,
+  updateReciboSchema
+} from '../schemas/recibo.schema.js';
 
 const reciboRoutes = Router();
 
@@ -18,31 +26,44 @@ const rolesTesoreria = [Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR];
 // ==========================================
 //  RUTAS DE USUARIO (Familia)
 // ==========================================
-reciboRoutes.get('/mis-recibos', ReciboController.getMyRecibos);
+reciboRoutes.get('/mis-recibos', validate(misRecibosQuerySchema), ReciboController.getMyRecibos);
 
 // ==========================================
 //  RUTAS DE ADMIN (Tesorería, y ahora también el Hermano Mayor;
 //  Secretaría nunca tuvo acceso aquí)
 // ==========================================
 
-reciboRoutes.get('/admin', checkRole(rolesTesoreria), ReciboController.getAdminRecibos);
+reciboRoutes.get('/admin', checkRole(rolesTesoreria), validate(adminRecibosQuerySchema), ReciboController.getAdminRecibos);
 
-reciboRoutes.post('/admin/generar', 
-  checkRole(rolesTesoreria), 
+// Buscador para la ventana «Nuevo recibo»: Tesorería no entra en el del censo.
+reciboRoutes.get('/admin/hermanos',
+  checkRole(rolesTesoreria),
+  validate(buscarHermanosQuerySchema),
+  ReciboController.buscarHermanos
+);
+
+reciboRoutes.post('/admin',
+  checkRole(rolesTesoreria),
+  validate(emitirReciboSchema),
+  ReciboController.emitir
+);
+
+reciboRoutes.post('/admin/generar',
+  checkRole(rolesTesoreria),
   validate(generarCuotasSchema), // <-- Escudo contra importes negativos
   ReciboController.generarCuotas
 );
 
-reciboRoutes.post('/admin/:id/pagar', 
-  checkRole(rolesTesoreria), 
+reciboRoutes.post('/admin/:id/pagar',
+  checkRole(rolesTesoreria),
   validateId,
   validate(marcarPagadoSchema),
   ReciboController.marcarPagado
 );
 
-reciboRoutes.put('/admin/:id', 
-  checkRole(rolesTesoreria), 
-  validateId, 
+reciboRoutes.put('/admin/:id',
+  checkRole(rolesTesoreria),
+  validateId,
   validate(updateReciboSchema), // Solo admite campos válidos
   ReciboController.updateDetalles
 );

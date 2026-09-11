@@ -150,4 +150,63 @@ describe('BrothersAdminPage', () => {
     renderWithProviders(<BrothersAdminPage />)
     expect(await screen.findByRole('tab', { name: /solicitudes \(12\)/i })).toBeInTheDocument()
   })
+
+  // --- Hallazgo D10: rechazar borraba sin preguntar y los botones no se
+  // deshabilitaban (un doble clic en «Aprobar» daba un 500 o un número saltado).
+
+  /** Solicitudes en la lista; aprobar y rechazar responden con lo que diga la prueba. */
+  function servidorSolicitudes(acciones: { aprobar?: () => Promise<unknown>; rechazar?: () => Promise<unknown> } = {}) {
+    const llamadas: { url: string; metodo: string }[] = []
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init: RequestInit = {}) => {
+      const metodo = init.method ?? 'GET'
+      llamadas.push({ url: String(url), metodo })
+      let cuerpo: unknown
+      if (metodo === 'POST') cuerpo = await (acciones.aprobar?.() ?? Promise.resolve({ message: 'ok' }))
+      else if (metodo === 'DELETE') cuerpo = await (acciones.rechazar?.() ?? Promise.resolve({ message: 'ok' }))
+      else if (String(url).includes('solicitudes')) cuerpo = { data: [{ ...solicitud, hermanos: [{ id: 9 }] }], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } }
+      else cuerpo = { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }
+      return new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }))
+    return llamadas
+  }
+
+  it('rechazar pregunta antes de borrar', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidorSolicitudes()
+    renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?vista=solicitudes' })
+
+    await user.click(await screen.findByRole('button', { name: 'Rechazar' }))
+    const dialogo = screen.getByRole('dialog', { name: /rechazar la solicitud/i })
+    expect(dialogo).toHaveTextContent(/lucía ramos gil/i)
+    expect(dialogo).toHaveTextContent(/no se puede deshacer/i)
+
+    // «Volver» no borra nada.
+    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    expect(llamadas.some((l) => l.metodo === 'DELETE')).toBe(false)
+
+    // El diálogo tarda en cerrarse: hasta entonces el resto de la página queda oculto.
+    await user.click(await screen.findByRole('button', { name: 'Rechazar' }))
+    await user.click(screen.getByRole('button', { name: 'Rechazar solicitud' }))
+    await waitFor(() => {
+      const borrado = llamadas.find((l) => l.metodo === 'DELETE')
+      expect(borrado?.url).toContain('/hermanos/admin/solicitudes/3/rechazar')
+    })
+  })
+
+  it('mientras se aprueba, ningún botón de la solicitud responde', async () => {
+    const user = userEvent.setup()
+    let terminar!: (valor: unknown) => void
+    const llamadas = servidorSolicitudes({ aprobar: () => new Promise((r) => { terminar = r }) })
+    renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?vista=solicitudes' })
+
+    await user.click(await screen.findByRole('button', { name: 'Aprobar' }))
+    const ocupado = screen.getByRole('button', { name: /procesando/i })
+    expect(ocupado).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Rechazar' })).toBeDisabled()
+    expect(llamadas.filter((l) => l.metodo === 'POST')).toHaveLength(1)
+
+    terminar({ message: 'Solicitud aprobada.' })
+    expect(await screen.findByText(/solicitud aprobada correctamente/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Aprobar' })).toBeEnabled()
+  })
 })

@@ -100,7 +100,8 @@ export default function PortadaAdminPage() {
       >
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Se enseñan en este orden, con un fundido de una a otra cada pocos segundos. Sin ninguna, la portada
-          usa la foto de siempre.
+          usa la foto de siempre. Las fotos que quites o cambies se borran del servidor al guardar, salvo que
+          las use también una noticia o una publicación.
         </Typography>
 
         <Stack component="ol" spacing={2} sx={{ listStyle: 'none', p: 0, m: 0 }}>

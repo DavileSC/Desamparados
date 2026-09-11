@@ -65,6 +65,31 @@ test('el testigo de 2FA propaga el origen del login', () => {
   assert.equal(verifyToken(generatePending2FAToken(7, false, 'hermanos'), '2fa_pending')?.origen, 'hermanos');
 });
 
+// `iat` va en segundos enteros: comparado con tokenValidAfter, el login que
+// sigue a un cierre de sesión en el mismo segundo nacía ya revocado.
+test('el token de sesión lleva el momento de emisión en milisegundos', () => {
+  const antes = Date.now();
+  const payload = verifyToken(generateToken(7, 'USER'), 'session')!;
+  assert.equal(typeof payload.emitidoMs, 'number');
+  assert.ok(payload.emitidoMs! >= antes && payload.emitidoMs! <= Date.now());
+  assert.equal(Math.floor(payload.emitidoMs! / 1000), payload.iat, 'emitidoMs e iat deben describir el mismo instante');
+});
+
+// El testigo es de un solo uso porque lleva el último intervalo TOTP aceptado:
+// en cuanto la cuenta acepta otro, deja de coincidir.
+test('el testigo de 2FA lleva el último intervalo aceptado de la cuenta', () => {
+  assert.equal(verifyToken(generatePending2FAToken(7, false, 'cms', 58_000_123), '2fa_pending')?.paso2fa, 58_000_123);
+  assert.equal(verifyToken(generatePending2FAToken(7), '2fa_pending')?.paso2fa, null, 'sin 2FA usado todavía va null, no ausente');
+});
+
+// Sin él, un cambio de contraseña o un cierre de todas las sesiones entre los
+// dos pasos del login no tocaba el testigo, y sus cinco minutos seguían valiendo.
+test('el testigo de 2FA también lleva el momento de emisión en milisegundos', () => {
+  const antes = Date.now();
+  const payload = verifyToken(generatePending2FAToken(7), '2fa_pending')!;
+  assert.ok(typeof payload.emitidoMs === 'number' && payload.emitidoMs >= antes && payload.emitidoMs <= Date.now());
+});
+
 test('esStaff distingue los roles con acceso al CMS', () => {
   assert.equal(esStaff('TESORERIA'), true);
   assert.equal(esStaff('USER'), false);

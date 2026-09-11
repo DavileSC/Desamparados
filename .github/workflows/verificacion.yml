@@ -12,10 +12,21 @@ on:
   pull_request:
   workflow_dispatch:
 
+# El token del job solo puede leer el repositorio: ningún paso necesita
+# escribir, y así una dependencia comprometida que se ejecute durante `npm ci`
+# no puede tocar ramas, releases ni issues.
+permissions:
+  contents: read
+
 # Un push nuevo cancela la comprobación anterior de la misma rama.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+# Las acciones van fijadas por SHA de commit y no por etiqueta: una etiqueta se
+# puede mover y ejecutar código distinto sin que cambie este fichero. El
+# comentario dice a qué versión corresponde cada SHA (v4 apuntaba a v4.4.0 el
+# 11-09-2026). Para actualizar: `gh api repos/actions/checkout/git/ref/tags/vX.Y.Z`.
 
 jobs:
   backend:
@@ -25,11 +36,33 @@ jobs:
       run:
         working-directory: backend-desamparados
 
-    # Valores de relleno, no secretos. `prisma generate` y `prisma validate` no
-    # se conectan a la base de datos, pero prisma.config.ts exige que la URL
-    # esté definida; y el módulo que firma tokens se niega a cargarse sin
-    # JWT_SECRET, así que sin él no arranca ni el importe de app en las pruebas.
-    # Las pruebas que necesitan MariaDB de verdad se omiten solas.
+    # MariaDB de verdad: sin ella se omitían 75 de las 248 pruebas del backend,
+    # entre ellas las de sesión y permisos. Usuario y base coinciden con las
+    # variables de abajo; la imagen crea el usuario con todos los permisos
+    # sobre esa base. 11.8, la misma que en desarrollo: trae
+    # innodb_snapshot_isolation=ON, que cambia qué pasa con dos escrituras a
+    # la vez (error 1020), y conviene que el CI lo vea igual.
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_DATABASE: ci_desamparados
+          MARIADB_USER: ci
+          MARIADB_PASSWORD: ci
+          MARIADB_ROOT_PASSWORD: ci-root
+        ports:
+          - 3306:3306
+        # El job no empieza hasta que MariaDB acepta conexiones.
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    # Valores de relleno, no secretos. src/config/db.ts exige las cuatro
+    # DATABASE_* por separado, prisma.config.ts la URL, y el módulo que firma
+    # tokens se niega a cargarse sin JWT_SECRET (ver docs/notas-del-proyecto.md,
+    # sección 3). Apuntan al servicio mariadb de arriba.
     env:
       DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci_desamparados
       DATABASE_HOST: 127.0.0.1
@@ -40,9 +73,12 @@ jobs:
       NODE_ENV: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # Sin guardar el token en .git/config: ningún paso hace push.
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
           cache: npm
@@ -62,9 +98,38 @@ jobs:
       - name: Comprobar tipos
         run: npx tsc --noEmit
 
+      # Si MariaDB no respondiera, este paso falla: las pruebas nunca llegan a
+      # ejecutarse «en verde» con la mitad omitidas.
+      - name: Aplicar migraciones
+        run: npx prisma migrate deploy
+
+      # Con NODE_ENV=test la siembra crea las cuentas de desarrollo, el
+      # contenido de ejemplo y el censo de demostración: varias pruebas de
+      # paginación se omiten si no hay al menos dos páginas de datos.
+      - name: Sembrar datos de prueba
+        run: npx prisma db seed
+
       - name: Pruebas
-        # Las que necesitan MariaDB se omiten solas indicando el motivo.
-        run: npm test
+        # Además de la salida normal, un informe TAP para el paso siguiente.
+        run: >-
+          npx tsx --test
+          --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=tap --test-reporter-destination=pruebas.tap
+          "test/**/*.test.ts"
+
+      # «Omitido no es pasado» (docs/notas-del-proyecto.md, sección 6): con la
+      # base de datos levantada, una prueba omitida por falta de MariaDB es
+      # que algo no conecta, y el job debe fallar en vez de quedar en verde.
+      # Las omisiones por otros motivos se listan como aviso.
+      - name: Comprobar que no se ha omitido ninguna prueba por falta de base de datos
+        if: always()
+        run: |
+          if [ ! -f pruebas.tap ]; then echo "::error::No se generó pruebas.tap"; exit 1; fi
+          grep -E '# SKIP' pruebas.tap | sed -E 's/^ *ok [0-9]+ - /::warning::Omitida: /' || true
+          if grep -q '# SKIP requiere MariaDB' pruebas.tap; then
+            echo "::error::Hay pruebas omitidas por falta de MariaDB aunque el servicio está levantado."
+            exit 1
+          fi
 
       - name: Auditoría de dependencias
         run: npm audit --audit-level=high
@@ -77,9 +142,11 @@ jobs:
         working-directory: desamparados-web
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
           cache: npm

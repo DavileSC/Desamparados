@@ -3,6 +3,8 @@ import { Prisma, TipoPublicacion } from '@prisma/client';
 import { CreatePublicationDto, UpdatePublicationDto } from '../dtos/publication.dto';
 import { NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
+import { esImagenPropia, esPdfPropio, rutaAlEditar } from '../utils/rutas-propias.js';
 
 /** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
 interface ConsultaPaginada {
@@ -65,22 +67,47 @@ export class PublicationService {
 
   static create(data: CreatePublicationDto) {
     return db.publicacion.create({
-      data: { ...data, fecha: data.fecha ? new Date(data.fecha) : undefined },
+      data: { ...data, imagenUrl: data.imagenUrl || null, fecha: data.fecha ? new Date(data.fecha) : undefined },
     });
   }
 
   static async update(id: number, data: UpdatePublicationDto) {
     const current = await db.publicacion.findUnique({ where: { id } });
     if (!current) throw new NotFoundError('Publicación no encontrada');
-    return db.publicacion.update({
+    const actualizada = await db.publicacion.update({
       where: { id },
-      data: { ...data, fecha: data.fecha ? new Date(data.fecha) : undefined },
+      data: {
+        ...data,
+        // Las dos rutas se validan contra lo guardado: el formulario reenvía la
+        // ficha entera, y una publicación con un PDF de antes de la validación
+        // (una URL tecleada en el antiguo campo de texto) no podía volver a
+        // guardarse por un campo que nadie había tocado. Si cambian, tienen que
+        // ser rutas propias; '' en la portada es «sin portada».
+        imagenUrl: rutaAlEditar(data.imagenUrl, current.imagenUrl, {
+          esValida: esImagenPropia,
+          mensaje: 'La portada de la publicación no es una imagen del propio sitio: vuelve a subirla con «Cambiar foto».',
+        }),
+        archivoUrl: rutaAlEditar(data.archivoUrl, current.archivoUrl, {
+          esValida: esPdfPropio,
+          siFalta: 'Falta el PDF de la publicación: súbelo con «Subir PDF» antes de guardar.',
+          mensaje: 'El PDF de la publicación no es un archivo subido desde el CMS: vuelve a subirlo con «Cambiar PDF».',
+        }) ?? undefined,
+        fecha: data.fecha ? new Date(data.fecha) : undefined,
+      },
     });
+    // La portada y el PDF sustituidos o quitados salen del disco si ningún otro
+    // registro los usa: seguían descargándose en /storage/public para siempre.
+    await borrarSubidasHuerfanas(subidasEnTexto(current.imagenUrl, current.archivoUrl, current.descripcion), {
+      conservar: subidasEnTexto(actualizada.imagenUrl, actualizada.archivoUrl, actualizada.descripcion),
+    });
+    return actualizada;
   }
 
   static async delete(id: number) {
     const current = await db.publicacion.findUnique({ where: { id } });
     if (!current) throw new NotFoundError('Publicación no encontrada');
-    return db.publicacion.delete({ where: { id } });
+    const borrada = await db.publicacion.delete({ where: { id } });
+    await borrarSubidasHuerfanas(subidasEnTexto(current.imagenUrl, current.archivoUrl, current.descripcion));
+    return borrada;
   }
 }

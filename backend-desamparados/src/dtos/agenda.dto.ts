@@ -30,3 +30,6 @@ export interface EventFilterDto {
   to?: string;
   type?: TipoEvento; // <--- Nuevo filtro
 }
+
+/** Las dos pestañas del listado de la agenda en el CMS. */
+export type PeriodoAgenda = 'proximos' | 'pasados';

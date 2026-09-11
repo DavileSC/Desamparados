@@ -12,7 +12,10 @@ let contador = 0;
  */
 export async function crearUsuarioPrueba(role: Role = Role.USER) {
   contador += 1;
-  const sufijo = `${Date.now()}${contador}`;
+  // Con el pid: los ficheros de test corren en procesos paralelos, cada uno con
+  // su propio `contador`, y dos que coincidían en el mismo milisegundo chocaban
+  // con el índice único del email y cancelaban un fichero entero.
+  const sufijo = `${Date.now()}${process.pid}${contador}`;
 
   return db.user.create({
     data: {

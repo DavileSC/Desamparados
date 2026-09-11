@@ -1,8 +1,8 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
 import { publicStorageDir } from './middleware/upload.middleware.js';
+import { registroPeticiones } from './config/registro.js';
 
 import { authRoutes } from './routes/auth.routes.js';
 import { hermanoRoutes } from './routes/hermano.routes.js';
@@ -21,7 +21,6 @@ import { panelRoutes } from './routes/panel.routes.js';
 import { portadaRoutes } from './routes/portada.routes.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
-import hppConfig from './config/hpp'; // Protección HPP
 import { notFoundHandler, globalErrorHandler } from './middleware/error.middleware'; // Manejo de errores global
 
 // Inicializamos la app
@@ -33,6 +32,14 @@ const app: Application = express();
 // SEGURIDAD: en desarrollo (sin proxy delante) DEBE ser 0. Si pones 1 sin haber
 // proxy real, cualquier atacante puede falsear su IP con la cabecera
 // X-Forwarded-For y saltarse los limitadores (fuerza bruta de login incluida).
+//
+// Con 1, Express toma como IP la ÚLTIMA entrada de X-Forwarded-For, que es la
+// que añade nginx con `$proxy_add_x_forwarded_for`. Eso solo es fiable si:
+//  - todo `location` de nginx que llegue a Node pone esa cabecera (nginx NO la
+//    añade por su cuenta: sin `proxy_set_header`, reenvía intacta la que mande
+//    el cliente, y Express se creería la IP inventada), y
+//  - nadie llega al puerto de Node sin pasar por nginx: por eso en producción
+//    escucha solo en 127.0.0.1 (ver HOST en src/index.ts).
 const numProxies = parseInt(
   process.env.NUM_PROXIES ?? (process.env.NODE_ENV === 'production' ? '1' : '0'),
   10
@@ -43,8 +50,9 @@ app.set('trust proxy', numProxies);
 // 1. MIDDLEWARES GLOBALES
 // ==========================================
 
-// Logs de desarrollo (solo en consola)
-app.use(morgan('dev'));
+// Registro de accesos: `dev` en local; en producción con fecha e IP y sin la
+// consulta de la URL (ver config/registro.ts).
+app.use(registroPeticiones());
 
 // Seguridad (Helmet)
 app.use(helmetConfig);
@@ -68,34 +76,59 @@ app.use(cors({
 // Las cookies de sesion y del paso intermedio del 2FA. Express no las parsea solo.
 app.use(cookieParser());
 
-// Archivos públicos ANTES del limitador: son estáticos y baratos, una sola
-// portada pide media docena, y en producción nginx los pasa sin
-// X-Forwarded-For, con lo que todas las visitas compartirían la IP 127.0.0.1 y
-// un único cupo. Un archivo que no existe sigue de largo y sí cuenta.
-app.use('/storage/public', express.static(publicStorageDir));
+// ==========================================
+// 2. ARCHIVOS ESTÁTICOS (Imágenes/Storage)
+// ==========================================
+// Archivos públicos ANTES del limitador: son estáticos y baratos, y una sola
+// portada pide media docena; contarlos agotaba el cupo de quien solo estaba
+// mirando la web. Un archivo que no existe sigue de largo y sí cuenta.
+// En producción, lo recomendado es que nginx los sirva directamente con
+// `alias` y no lleguen aquí (ver docs/despliegue.md).
+//
+// Opciones: sin índice de carpetas, sin redirección de `carpeta` a
+// `carpeta/` (que confirmaría qué subcarpetas existen) y ningún fichero oculto.
+// CORP `cross-origin` solo aquí: el resto de la API queda en `same-origin`
+// (config/helmet.ts), pero una foto guardada con URL absoluta tiene que
+// poder verse desde la web, que en desarrollo corre en otro puerto.
+app.use('/storage/public', express.static(publicStorageDir, {
+  index: false,
+  redirect: false,
+  dotfiles: 'deny',
+  setHeaders: (res) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  },
+}));
 
 // Rate Limiting Global (Protección DDoS básica)
 app.use(globalLimiter);
 
-// Límite subido a 2mb para permitir el HTML de las páginas y noticias del CMS
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+// Cuerpos JSON. El tope general es 100 KB: ningún formulario de la web se
+// acerca, y un cuerpo grande sin sesión (el formulario de contacto, el login)
+// solo sirve para hacer trabajar al servidor. Las tres rutas que reciben el
+// HTML del CMS (noticias, páginas y publicaciones) admiten 2 MB; su parser se
+// monta ANTES del general, y el general ya no vuelve a leer un cuerpo leído.
+// Sin `express.urlencoded`: la web solo envía JSON y las subidas van en
+// multipart, que lee multer en su propia ruta.
+const CUERPO_CMS = '2mb';
+const CUERPO_GENERAL = '100kb';
+app.use(['/api/news', '/api/pages', '/api/publications'], express.json({ limit: CUERPO_CMS }));
+app.use(express.json({ limit: CUERPO_GENERAL }));
 
-// Protección contra HTTP Parameter Pollution (HPP)
-app.use(hppConfig);
-
-// ==========================================
-// 2. ARCHIVOS ESTÁTICOS (Imágenes/Storage)
-// ==========================================
-// `/storage/public` se monta arriba, antes del limitador global.
-
+// Sin `hpp`: con Express 5, `req.query` es un getter que vuelve a analizar la
+// URL en cada lectura, así que lo que hpp dejaba en `req.query` se perdía y
+// el paquete no hacía nada. La defensa real es que cada ruta declare su
+// `query` en el esquema de arktype: `validate` descarta lo no declarado y un
+// parámetro repetido (que llega como array) no pasa un tipo `string`.
 
 // ==========================================
 // 3. RUTAS DE LA API (Prefijo /api)
 // ==========================================
 
-// Healthcheck para proxies y monitorización
-app.get('/health', (_req, res) => {
+// Healthcheck para proxies y monitorización. `/api/health` es el que se
+// comprueba desde fuera: nginx solo manda a Node lo que va bajo `/api/`, y
+// `/health` por el dominio devolvería la web. `/health` se conserva para
+// comprobarlo en la propia máquina (curl http://127.0.0.1:3001/health).
+app.get(['/health', '/api/health'], (_req, res) => {
   res.status(200).json({ status: 'ok', uptime: process.uptime() });
 });
 

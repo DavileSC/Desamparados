@@ -2,42 +2,82 @@ import net from 'net';
 
 /**
  * Cliente clamd mínimo (protocolo INSTREAM) sin dependencias externas.
- * Se activa si el entorno define CLAMAV_HOST (un servicio ClamAV accesible
- * por red). Si no está definido, los uploads
- * se aceptan sin escanear (comportamiento actual).
+ *
+ * Comportamiento real, según el entorno:
+ *  - Sin CLAMAV_HOST (y CLAMAV_REQUIRED distinto de true): NO se analiza nada y
+ *    la subida se acepta. Se avisa una vez en el log, en la primera subida,
+ *    para que no pase inadvertido en un servidor que debería tenerlo.
+ *  - Sin CLAMAV_HOST y CLAMAV_REQUIRED=true: se rechazan todas las subidas como
+ *    «antivirus no disponible» (configuración incompleta).
+ *  - Con CLAMAV_HOST y clamd caído, lento o respondiendo algo inesperado: se
+ *    rechaza la subida (fail-closed), pero como «antivirus no disponible», no
+ *    como si el archivo tuviera un virus.
+ *  - Con CLAMAV_HOST y clamd respondiendo «FOUND»: se rechaza por infectado.
  *
  * Protocolo INSTREAM:
  *   1. Conectar y enviar "zINSTREAM\0"
  *   2. Enviar el archivo en trozos: 4 bytes big-endian de longitud + datos
  *   3. Terminar con un trozo de longitud 0
  *   4. clamd responde "stream: OK\0" (limpio) o "stream: <SIGNATURE> FOUND\0" (infectado)
+ *
+ * Ojo en el despliegue: clamd corta los flujos que superan su `StreamMaxLength`
+ * («INSTREAM size limit exceeded»). Tiene que ser mayor que el tope de subida
+ * de PDF (upload.middleware.ts) o todos los boletines grandes se rechazarán.
  */
 
 const CHUNK_SIZE = 64 * 1024; // límite recomendado por clamd
-const TIMEOUT_MS = 20_000; // PDFs de 5MB pueden tardar en analizarse
+// Un PDF de 20 MB tarda en analizarse bastante más que una foto: con 20 s un
+// clamd cargado daba por caída una subida legítima.
+const TIMEOUT_MS = 60_000;
+
+/**
+ * - `limpio`: clamd lo ha analizado y no ha encontrado nada.
+ * - `infectado`: clamd ha encontrado una firma.
+ * - `sin-analizar`: no hay antivirus configurado; la subida sigue.
+ * - `no-disponible`: debía analizarse y no se ha podido (clamd caído, lento,
+ *   mal configurado o con una respuesta que no se entiende).
+ */
+export type VeredictoAntivirus = 'limpio' | 'infectado' | 'sin-analizar' | 'no-disponible';
 
 export interface ScanResult {
+  veredicto: VeredictoAntivirus;
   clean: boolean;
-  scanned: boolean; // false = ClamAV no estaba configurado o no se pudo usar
+  scanned: boolean; // false = ClamAV no estaba configurado
   reason?: string;
 }
+
+const noDisponible = (reason: string): ScanResult => ({ veredicto: 'no-disponible', clean: false, scanned: true, reason });
 
 /**
  * Interpreta la respuesta de clamd. Exportado para poder testearlo sin socket.
  *  - "stream: OK"            -> limpio
  *  - "OK"                    -> limpio (variantes antiguas)
  *  - "stream: Eicar FOUND"   -> infectado
- *  - cualquier otra cosa     -> se rechaza (fail-closed)
+ *  - cualquier otra cosa     -> no disponible (se rechaza igual: fail-closed)
  */
 export function parseClamdResponse(raw: string): ScanResult {
   const resp = raw.replace(/\0/g, '').trim();
   if (/(^|:\s*)OK$/.test(resp)) {
-    return { clean: true, scanned: true };
+    return { veredicto: 'limpio', clean: true, scanned: true };
   }
   if (/FOUND$/.test(resp)) {
-    return { clean: false, scanned: true, reason: resp };
+    return { veredicto: 'infectado', clean: false, scanned: true, reason: resp };
   }
-  return { clean: false, scanned: true, reason: resp || 'Respuesta vacía del antivirus' };
+  return noDisponible(resp || 'Respuesta vacía del antivirus');
+}
+
+// Un aviso por proceso: en cada subida sería ruido y dejaría de leerse.
+let avisadoSinAntivirus = false;
+
+/** Solo para los tests: vuelve a dejar pendiente el aviso de «sin antivirus». */
+export function reiniciarAvisoSinAntivirus() {
+  avisadoSinAntivirus = false;
+}
+
+function avisarSinAntivirus() {
+  if (avisadoSinAntivirus) return;
+  avisadoSinAntivirus = true;
+  console.warn('[Security] CLAMAV_HOST no está definido: los archivos subidos NO se analizan con antivirus. Define CLAMAV_HOST (y CLAMAV_REQUIRED=true) en producción.');
 }
 
 /** Escribe en el socket respetando el backpressure (espera 'drain' cuando toca). */
@@ -55,19 +95,19 @@ export async function scanBufferClamav(buffer: Buffer): Promise<ScanResult> {
   const port = parseInt(process.env.CLAMAV_PORT || '3310', 10);
   const requiredValue = (process.env.CLAMAV_REQUIRED ?? 'false').trim().toLowerCase();
   if (requiredValue !== 'true' && requiredValue !== 'false') {
-    return { clean: false, scanned: true, reason: 'CLAMAV_REQUIRED debe ser true o false' };
+    return noDisponible('CLAMAV_REQUIRED debe ser true o false');
   }
   const required = requiredValue === 'true';
 
   // En producción se puede exigir que todos los archivos pasen por ClamAV.
   if (!host) {
-    return required
-      ? { clean: false, scanned: true, reason: 'ClamAV es obligatorio pero no está configurado' }
-      : { clean: true, scanned: false };
+    if (required) return noDisponible('ClamAV es obligatorio pero no está configurado');
+    avisarSinAntivirus();
+    return { veredicto: 'sin-analizar', clean: true, scanned: false };
   }
 
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    return { clean: false, scanned: true, reason: 'Puerto de ClamAV no válido' };
+    return noDisponible('Puerto de ClamAV no válido');
   }
 
   return new Promise<ScanResult>((resolve) => {
@@ -83,11 +123,11 @@ export async function scanBufferClamav(buffer: Buffer): Promise<ScanResult> {
     };
 
     socket.setTimeout(TIMEOUT_MS, () => {
-      finish({ clean: false, scanned: true, reason: 'Timeout del antivirus (clamd)' });
+      finish(noDisponible('Timeout del antivirus (clamd)'));
     });
 
     socket.on('error', (err) => {
-      finish({ clean: false, scanned: true, reason: `Antivirus no disponible: ${err.message}` });
+      finish(noDisponible(`Antivirus no disponible: ${err.message}`));
     });
 
     socket.on('connect', async () => {
@@ -101,7 +141,7 @@ export async function scanBufferClamav(buffer: Buffer): Promise<ScanResult> {
         }
         await writeAsync(socket, Buffer.alloc(4)); // trozo de longitud 0 = fin del stream
       } catch (err: any) {
-        finish({ clean: false, scanned: true, reason: `Error enviando el archivo al antivirus: ${err?.message ?? err}` });
+        finish(noDisponible(`Error enviando el archivo al antivirus: ${err?.message ?? err}`));
       }
     });
 

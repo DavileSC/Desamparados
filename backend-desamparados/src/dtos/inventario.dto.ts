@@ -15,7 +15,7 @@ export interface CreateEnserDto {
   cantidadBueno?: number;
   cantidadReparar?: number;
   
-  imagenUrl?: string;
+  imagenUrl?: string | null;
   fechaAdquisicion?: string; // ISO Date string
 }
 
@@ -29,7 +29,7 @@ export interface UpdateEnserDto {
   cantidadBueno?: number;
   cantidadReparar?: number;
   
-  imagenUrl?: string;
+  imagenUrl?: string | null;
   fechaAdquisicion?: string;
 }
 

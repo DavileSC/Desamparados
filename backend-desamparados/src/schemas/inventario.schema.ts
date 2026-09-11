@@ -1,5 +1,6 @@
 import { type } from 'arktype';
 import { paginacionQuery, textoRequerido } from '../config/common';
+import { imagenOpcional } from './news.schema';
 
 // =================================================================
 //  ENUMS COMUNES
@@ -8,6 +9,13 @@ import { paginacionQuery, textoRequerido } from '../config/common';
 // Enums para el Ropero
 const tipoPrendaSchema = type("'TUNICA' | 'CAPIROTE' | 'FARAONA' | 'CAPA' | 'OTRO'");
 const estadoPrendaSchema = type("'DISPONIBLE' | 'PRESTADA' | 'TALLER' | 'BAJA'");
+// PRESTADA no se elige: la pone «Asignar», que es lo que guarda también quién
+// la tiene. Dada de alta como prestada, la prenda quedaba prestada a nadie.
+const estadoAltaPrendaSchema = type("'DISPONIBLE' | 'TALLER' | 'BAJA'");
+
+// Unidades de un lote: enteras. Un 2.5 llegaba hasta Prisma (columna Int) y
+// salía como un 500. El tope solo evita desbordar la columna.
+const cantidadSchema = type("0 <= number.integer <= 100000");
 
 // Validador de fecha común
 const fechaIsoSchema = type("string").matching(/^\d{4}-\d{2}-\d{2}/);
@@ -24,11 +32,11 @@ export const createEnserSchema = type({
         "ubicacion?": "string",
         
         // Cantidades desglosadas (opcionales, si no vienen el servicio asume 0)
-        "cantidadOptimo?": "number >= 0",
-        "cantidadBueno?": "number >= 0",
-        "cantidadReparar?": "number >= 0",
+        "cantidadOptimo?": cantidadSchema,
+        "cantidadBueno?": cantidadSchema,
+        "cantidadReparar?": cantidadSchema,
         
-        "imagenUrl?": "string",
+        "imagenUrl?": imagenOpcional,
         "fechaAdquisicion?": fechaIsoSchema
     }
 });
@@ -40,11 +48,11 @@ export const updateEnserSchema = type({
         "categoria?": "string",
         "ubicacion?": "string",
         
-        "cantidadOptimo?": "number >= 0",
-        "cantidadBueno?": "number >= 0",
-        "cantidadReparar?": "number >= 0",
+        "cantidadOptimo?": cantidadSchema,
+        "cantidadBueno?": cantidadSchema,
+        "cantidadReparar?": cantidadSchema,
         
-        "imagenUrl?": "string",
+        "imagenUrl?": imagenOpcional,
         "fechaAdquisicion?": fechaIsoSchema
     }
 });
@@ -70,7 +78,7 @@ export const createPrendaSchema = type({
         numero: textoRequerido, // Obligatorio, es el identificador de la túnica
         tipo: tipoPrendaSchema, // Obligatorio
         "talla?": "string",
-        "estado?": estadoPrendaSchema,
+        "estado?": estadoAltaPrendaSchema,
         "observaciones?": "string"
     }
 });
@@ -80,6 +88,8 @@ export const updatePrendaSchema = type({
         "numero?": textoRequerido,
         "tipo?": tipoPrendaSchema,
         "talla?": "string",
+        // Admite PRESTADA para que el formulario de edición pueda reenviar el
+        // estado que ya tenía; cambiar a o desde PRESTADA lo impide el servicio.
         "estado?": estadoPrendaSchema,
         "observaciones?": "string"
     }
@@ -95,4 +105,18 @@ export const queryPrendaSchema = type({
         "estado?": estadoPrendaSchema,
         "talla?": "string"
     }
+});
+
+// =================================================================
+//  3. PRÉSTAMOS DEL ROPERO
+// =================================================================
+
+// Se presta por número de hermano, que es el que maneja la albacería; antes
+// había que teclear el id interno de la base de datos, que nadie conoce.
+const numeroHermanoSchema = type("number.integer > 0");
+
+export const asignarPrendaSchema = type({ body: { numeroHermano: numeroHermanoSchema } });
+export const devolverPrendaSchema = type({ body: { "necesitaLavado?": "boolean" } });
+export const numeroHermanoParamSchema = type({
+    params: { numeroHermano: type("string").matching(/^[1-9]\d{0,8}$/).describe("un número de hermano") }
 });

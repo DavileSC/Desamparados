@@ -29,3 +29,11 @@ Thumbs.db
 
 # Herramientas de empaquetado del repositorio (repomix)
 repomix-output.xml
+# Copias de seguridad (scripts/backup-db.ps1 y scripts/backup-vps.sh) y
+# volcados sueltos: llevan datos personales de todo el censo.
+backups/
+*.sql
+*.sql.gz
+*.age
+# ...salvo las migraciones de Prisma, que sí se versionan.
+!prisma/migrations/**/*.sql

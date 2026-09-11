@@ -10,6 +10,14 @@ for (const directory of [publicStorageDir, privateStorageDir]) {
   if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
 }
 
+// Tope por tipo real del archivo. Un boletín o un anuario en PDF pasa sin
+// esfuerzo de 5 MB; una foto para la web no tiene por qué. Multer solo sabe
+// poner un tope por petición, así que corta en el mayor (el del PDF) y el
+// controlador aplica el de imagen cuando ya conoce el tipo real.
+// Si se cambia MAX_BYTES_PDF, hay que subir también `client_max_body_size` en nginx.
+export const MAX_BYTES_IMAGEN = 5 * 1024 * 1024;
+export const MAX_BYTES_PDF = 20 * 1024 * 1024;
+
 function createStorage(directory: string) {
   return multer.diskStorage({
     destination: function (_req, _file, cb) {
@@ -17,7 +25,10 @@ function createStorage(directory: string) {
     },
     filename: function (_req, file, cb) {
       const randomName = crypto.randomBytes(16).toString('hex');
-      const ext = path.extname(file.originalname);
+      // En minúsculas: «FOTO.JPG» quedaría como `<hex>.JPG`, que no casa con el
+      // filtro de rutas con el que se borran los ficheros que ya nadie usa
+      // (utils/ficheros-publicos.ts) y se quedaría publicado para siempre.
+      const ext = path.extname(file.originalname).toLowerCase();
       cb(null, `${randomName}${ext}`);
     }
   });
@@ -28,10 +39,17 @@ function createStorage(directory: string) {
 const ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
 
+// Hay navegadores y sistemas que mandan un PDF sin tipo o como genérico
+// (`application/octet-stream`): el CMS lo aceptaba por la extensión y aquí se
+// rechazaba con un 400 que no decía por qué. Se deja pasar solo con extensión
+// .pdf; el controlador comprueba después los bytes reales y la extensión.
+const TIPOS_GENERICOS = ['application/octet-stream', ''];
+
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const ext = path.extname(file.originalname).toLowerCase();
+  const pdfSinTipo = ext === '.pdf' && TIPOS_GENERICOS.includes(file.mimetype ?? '');
 
-  if (ALLOWED_MIMETYPES.includes(file.mimetype) && ALLOWED_EXTENSIONS.includes(ext)) {
+  if ((ALLOWED_MIMETYPES.includes(file.mimetype) || pdfSinTipo) && ALLOWED_EXTENSIONS.includes(ext)) {
     cb(null, true);
   } else {
     // Rechazamos el archivo pero no lanzamos error fatal, solo no lo sube
@@ -44,11 +62,11 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 export const publicUploadMiddleware = multer({
   storage: createStorage(publicStorageDir),
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: MAX_BYTES_PDF }
 });
 
 export const privateUploadMiddleware = multer({
   storage: createStorage(privateStorageDir),
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: MAX_BYTES_PDF }
 });

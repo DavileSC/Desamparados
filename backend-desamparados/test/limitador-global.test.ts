@@ -1,3 +1,6 @@
+// Primero: aísla `storage/` en una carpeta temporal antes de que se cargue
+// upload.middleware.ts (ver el fixture). Este fichero crea ficheros de prueba.
+import './fixtures/almacen-temporal.js';
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
