@@ -4,7 +4,10 @@ import rateLimit from 'express-rate-limit';
 // Evita ataques de denegación de servicio (DDoS) básicos.
 export const globalLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutos
-	limit: 100, // Límite de 100 peticiones por IP cada 15 minutos
+	// 1000 por IP cada 15 minutos (~1 por segundo sostenido). Con 100, una visita
+	// a la portada (~6 peticiones) y un rato en el CMS bastaban para dejar al
+	// editor sin guardar y sin sesión. La fuerza bruta la frena authLimiter.
+	limit: 1000,
 	standardHeaders: 'draft-7', // Usa el estándar moderno de cabeceras IETF
 	legacyHeaders: false, // Deshabilita las cabeceras `X-RateLimit-*`
 	message: {

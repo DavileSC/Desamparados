@@ -68,6 +68,12 @@ app.use(cors({
 // Las cookies de sesion y del paso intermedio del 2FA. Express no las parsea solo.
 app.use(cookieParser());
 
+// Archivos públicos ANTES del limitador: son estáticos y baratos, una sola
+// portada pide media docena, y en producción nginx los pasa sin
+// X-Forwarded-For, con lo que todas las visitas compartirían la IP 127.0.0.1 y
+// un único cupo. Un archivo que no existe sigue de largo y sí cuenta.
+app.use('/storage/public', express.static(publicStorageDir));
+
 // Rate Limiting Global (Protección DDoS básica)
 app.use(globalLimiter);
 
@@ -81,7 +87,7 @@ app.use(hppConfig);
 // ==========================================
 // 2. ARCHIVOS ESTÁTICOS (Imágenes/Storage)
 // ==========================================
-app.use('/storage/public', express.static(publicStorageDir));
+// `/storage/public` se monta arriba, antes del limitador global.
 
 
 // ==========================================
