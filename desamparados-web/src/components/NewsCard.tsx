@@ -1,11 +1,18 @@
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
-import GlassCard from './GlassCard'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import { GOLD, GRANATE, SERIF } from '../features/home/estilos'
 import type { NewsItem } from '../types'
 
 interface NewsCardProps {
   news: NewsItem
-  featured?: boolean
+  /** Posición en su listado: decide el tono de la placa cuando no hay foto. */
+  indice?: number
+  /**
+   * La noticia más reciente del archivo: foto y texto lado a lado. El listado
+   * le da todo el ancho; aquí solo cambia su composición interna.
+   */
+  destacada?: boolean
   /**
    * Consulta del listado del que sale la tarjeta (`?pagina=3&porPagina=50`).
    * Viaja en el `state` de la navegación para que el enlace «Volver a todas las
@@ -16,124 +23,136 @@ interface NewsCardProps {
   volver?: string
 }
 
-export default function NewsCard({ news, featured = false, volver }: NewsCardProps) {
+// Tres letras siempre («sep», no «sept.»): la abreviatura de cada motor varía.
+const fechaCorta = (iso: string) => {
+  const fecha = new Date(iso)
+  return `${fecha.getDate()} ${fecha.toLocaleDateString('es-ES', { month: 'long' }).slice(0, 3)} ${fecha.getFullYear()}`
+}
+
+const recorte = (lineas: number) => ({ display: '-webkit-box', WebkitLineClamp: lineas, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) as const
+
+// Las placas de las noticias sin foto alternan tono: tres seguidas del mismo color pesan como un solo bloque.
+const TONOS_PLACA = [
+  { tono: 'granate', fondo: GRANATE, letra: '#fbe9e7' },
+  { tono: 'tinta', fondo: '#121012', letra: GOLD },
+  { tono: 'piedra', fondo: '#3a3538', letra: '#e3d8bf' },
+] as const
+
+/**
+ * Tarjeta de papel de una noticia: foto (o placa con la inicial), fecha,
+ * título y extracto. La comparten la portada, Actualidad y el archivo, así que
+ * una noticia se ve igual en los tres sitios.
+ */
+export default function NewsCard({ news, indice = 0, destacada = false, volver }: NewsCardProps) {
+  const tono = TONOS_PLACA[indice % TONOS_PLACA.length]
+  // La destacada se abre en dos columnas desde sm; en móvil es una tarjeta más.
+  const enFila = destacada ? { xs: 'flex', sm: 'grid' } : 'flex'
+
   return (
-    <GlassCard
-      goldBorder
+    <Box
+      component={Link}
+      to={`/actualidad/noticias/${news.slug}`}
+      state={volver ? { volver } : undefined}
+      data-destacada={destacada || undefined}
       sx={{
-        position: 'relative',
-        display: 'flex',
+        display: enFila,
         flexDirection: 'column',
-        justifyContent: 'flex-end',
-        minHeight: featured ? { xs: '360px', md: '420px' } : 'auto',
-        p: 0,
-        overflow: 'hidden',
-        '&:hover': { background: 'rgba(255, 255, 255, 0.05)', '& img': { transform: 'scale(1.035)' } },
+        gridTemplateColumns: destacada ? { sm: '7fr 5fr', lg: '3fr 2fr' } : undefined,
+        width: '100%',
+        backgroundColor: '#fbf9f6',
+        color: '#1b1c1a',
+        textDecoration: 'none',
+        boxShadow: '0 24px 50px -30px rgba(0, 0, 0, 0.8)',
+        transition: 'transform .3s ease',
+        '&:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 3 },
+        '@media (hover: hover)': {
+          '&:hover': { transform: 'translateY(-3px)' },
+          '&:hover .noticia-titulo': { color: GRANATE },
+        },
       }}
     >
+      {/* El marco fija la proporción; la foto va absoluta dentro para que, en la
+          destacada, sea la columna de texto la que marque el alto y no el tamaño
+          natural de la imagen. */}
       <Box
-        component={Link}
-        to={`/actualidad/noticias/${news.slug}`}
-        state={volver ? { volver } : undefined}
         sx={{
           position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          flex: 1,
-          minHeight: featured ? { xs: '360px', md: '420px' } : 'auto',
-          p: featured ? 4 : 3,
-          textDecoration: 'none',
-          color: 'inherit',
+          overflow: 'hidden',
+          aspectRatio: destacada ? { xs: '4 / 3', sm: 'auto' } : '4 / 3',
+          minHeight: destacada ? { sm: 340, md: 420 } : undefined,
         }}
       >
-      {news.image && (
-        <>
+        {news.image ? (
           <Box
             component="img"
             src={news.image}
             alt=""
-            aria-hidden="true"
-            loading="lazy"
+            loading={destacada ? 'eager' : 'lazy'}
             decoding="async"
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              opacity: 0.85,
-              transition: 'transform 0.7s ease',
-            }}
+            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
           />
+        ) : (
+          // Sin foto, una placa con la inicial: la tarjeta nunca queda con un hueco.
           <Box
+            data-testid="placa-noticia"
+            data-tono={tono.tono}
+            aria-hidden="true"
             sx={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(to top, rgba(16,14,17,.98) 0%, rgba(16,14,17,.75) 48%, rgba(16,14,17,.12) 100%)',
+              p: destacada ? { xs: 2.5, md: 5 } : { xs: 2.5, md: 3 },
+              backgroundColor: tono.fondo,
+              color: tono.letra,
+              fontFamily: SERIF,
+              fontSize: destacada ? { xs: 120, md: 220 } : { xs: 120, md: 150 },
+              lineHeight: 0.8,
             }}
-          />
-        </>
-      )}
+          >
+            {news.title.trim().charAt(0).toUpperCase()}
+          </Box>
+        )}
+      </Box>
 
-      <Box sx={{ position: 'relative', zIndex: 2 }}>
-        {/* Badge de categoría: dorado con texto oscuro (>9:1). Antes era #100e11 sobre
-            background.paper (~1,2:1), prácticamente invisible. */}
-        <Box
-          sx={{
-            display: 'inline-block',
-            px: 1.5,
-            py: 0.5,
-            mb: 2,
-            backgroundColor: 'secondary.main',
-            color: '#201c00',
-            typography: 'overline',
-            fontSize: '11px',
-            fontWeight: 600,
-            borderRadius: '4px',
-          }}
-        >
-          {news.category}
-        </Box>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: destacada ? 'center' : undefined,
+          gap: destacada ? 2 : 1.5,
+          flex: 1,
+          p: destacada ? { xs: 2.5, sm: 4, md: 6 } : { xs: 2.5, md: 3 },
+        }}
+      >
+        <Typography component="time" dateTime={news.date} sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: GRANATE }}>
+          {fechaCorta(news.date)}
+        </Typography>
         <Typography
-          variant={featured ? 'h3' : 'h5'}
+          variant="h3"
           component="h3"
+          className="noticia-titulo"
           sx={{
-            color: 'text.primary',
-            mb: 1,
-            fontSize: featured ? { xs: '24px', md: '32px' } : '20px',
-            transition: 'color 0.3s ease',
-            '&:hover': { color: 'secondary.main' },
+            fontFamily: SERIF,
+            fontSize: destacada ? { xs: 22, sm: 26, md: 34 } : { xs: 20, md: 21 },
+            lineHeight: destacada ? 1.2 : 1.3,
+            color: '#1b1c1a',
+            textWrap: 'balance',
+            transition: 'color .3s ease',
           }}
         >
           {news.title}
         </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'text.secondary',
-            display: '-webkit-box',
-            WebkitLineClamp: featured ? 2 : 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
+        {news.excerpt && (
+          <Typography sx={{ ...recorte(destacada ? 4 : 3), fontSize: destacada ? { xs: 14, md: 16 } : 14, lineHeight: 1.6, color: '#4a454a' }}>
+            {news.excerpt}
+          </Typography>
+        )}
+        <Box
+          component="span"
+          sx={{ mt: destacada ? 1 : 'auto', pt: 1, display: 'inline-flex', alignItems: 'center', gap: 1, fontSize: 13, fontWeight: 600, '& svg': { fontSize: 16 } }}
         >
-          {news.excerpt}
-        </Typography>
-        <Typography
-          variant="caption"
-          component="time"
-          dateTime={news.date}
-          sx={{ display: 'block', mt: 1.5, color: 'text.secondary' }}
-        >
-          {new Date(news.date).toLocaleDateString('es-ES', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-        </Typography>
+          Leer noticia <ArrowForwardIcon />
+        </Box>
       </Box>
-      </Box>
-    </GlassCard>
+    </Box>
   )
 }

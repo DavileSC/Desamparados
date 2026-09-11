@@ -21,7 +21,8 @@ export default function NewsPage() {
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([getLatestNews(4), getProximosEventos(4)])
+    // Tres noticias: las tarjetas van de tres en tres, como en la portada y el archivo.
+    Promise.all([getLatestNews(3), getProximosEventos(4)])
       .then(([news, events]) => {
         if (!cancelled) {
           setLatestNews(news)
@@ -61,13 +62,19 @@ export default function NewsPage() {
             {loading && <CircularProgress aria-label="Cargando actualidad" />}
             {error && <Alert severity="error">{error}</Alert>}
             {!loading && !error && latestNews.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
-            {!loading && !error && latestNews.length > 0 && <Grid container spacing={3}>
-            {latestNews.map((news) => (
-              <Grid key={news.id} size={{ xs: 12, md: 6, lg: 3 }}>
-                <NewsCard news={news} />
-              </Grid>
-            ))}
-          </Grid>}
+            {!loading && !error && latestNews.length > 0 && (
+              <Box
+                component="ul"
+                aria-label="Últimas noticias"
+                sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 3.25 } }}
+              >
+                {latestNews.map((news, i) => (
+                  <Box component="li" key={news.id} sx={{ display: 'flex' }}>
+                    <NewsCard news={news} indice={i} />
+                  </Box>
+                ))}
+              </Box>
+            )}
         </PageContainer>
       </AnimatedSection>
 

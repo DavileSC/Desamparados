@@ -28,6 +28,56 @@ describe('NoticiasPage', () => {
   })
 })
 
+describe('NoticiasPage: la noticia destacada', () => {
+  const otra = { ...noticia, id: 2, slug: 'cabildo', titulo: 'Cabildo general', fecha: '2026-08-01T10:00:00.000Z' }
+  const servir = (page: number) => vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(
+    JSON.stringify({ data: [noticia, otra], meta: { total: 45, page, limit: 20, totalPages: 3 } }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  ))))
+
+  it('en la primera página, la más reciente va destacada y el resto no', async () => {
+    servir(1)
+    renderWithProviders(<NoticiasPage />)
+    const primera = await screen.findByRole('link', { name: /triduo de septiembre/i })
+    expect(primera).toHaveAttribute('data-destacada', 'true')
+    expect(screen.getByRole('link', { name: /cabildo general/i })).not.toHaveAttribute('data-destacada')
+  })
+
+  it('en las páginas siguientes no hay destacada: la primera de la página 3 no es la última noticia', async () => {
+    servir(3)
+    renderWithProviders(<NoticiasPage />, { ruta: '/?pagina=3' })
+    const primera = await screen.findByRole('link', { name: /triduo de septiembre/i })
+    expect(primera).not.toHaveAttribute('data-destacada')
+  })
+
+  it('las placas sin foto no repiten tono con la de debajo en la rejilla de tres columnas', async () => {
+    // Se rompe si el tono vuelve a ir por el índice a secas: cada columna salía
+    // del mismo color fila tras fila.
+    const sinFoto = Array.from({ length: 9 }, (_, i) => ({ ...noticia, id: 10 + i, slug: `n-${i}`, titulo: `Noticia ${i}` }))
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(
+      JSON.stringify({ data: sinFoto, meta: { total: 45, page: 2, limit: 20, totalPages: 3 } }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ))))
+    renderWithProviders(<NoticiasPage />, { ruta: '/?pagina=2' })
+    await screen.findByRole('link', { name: /noticia 0/i })
+
+    const tonos = screen.getAllByTestId('placa-noticia').map((placa) => placa.getAttribute('data-tono'))
+    tonos.forEach((tono, i) => {
+      if (i + 3 < tonos.length) expect(tonos[i + 3]).not.toBe(tono)
+      if (i % 3 < 2) expect(tonos[i + 1]).not.toBe(tono)
+    })
+  })
+
+  it('el visitante no ve el selector de resultados por página', async () => {
+    // Es una herramienta del CMS: en el archivo público solo estorba.
+    servir(1)
+    renderWithProviders(<NoticiasPage />)
+    await screen.findByRole('link', { name: /triduo de septiembre/i })
+    expect(screen.queryByLabelText(/resultados por página/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ir a la página 2/i })).toBeInTheDocument()
+  })
+})
+
 describe('NoticiasPage: el error de una página no se queda pegado', () => {
   it('vuelve a pintar las noticias cuando la siguiente carga va bien', async () => {
     // Esta pantalla llevaba su propio bloque de carga, anterior al hook, y con
