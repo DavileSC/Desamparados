@@ -11,6 +11,7 @@ import db from '../src/config/db.js';
 import { PanelService } from '../src/services/panel.service.js';
 import { claveMes } from '../src/domain/panel-censo.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { HttpError } from '../src/utils/error.handle.js';
 
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -43,6 +44,8 @@ let usuarioPruebaId: number | undefined;
 let hermanoPruebaId: number | undefined;
 let categoriaPruebaId: number | undefined;
 const transaccionesPruebaId: number[] = [];
+const recibosPruebaId: number[] = [];
+const auditLogPruebaId: number[] = [];
 
 /**
  * Dos importes de dos decimales que, sumados tal cual en JS (sin pasar por
@@ -81,6 +84,20 @@ before(async () => {
   });
   hermanoPruebaId = hermano.id;
 
+  // Dos recibos del mismo hermano en ejercicios distintos: sin esto, si la
+  // base de pruebas solo tuviera recibos de un año, el test de la tarea 5
+  // («los recibos se cuentan del ejercicio elegido, no de todos los años»)
+  // pasaría por casualidad sin comprobar nada. Conceptos ZZTest... porque
+  // Recibo tiene @@unique([hermanoId, year, concepto]).
+  const anioActual = new Date().getFullYear();
+  const reciboEjercicioActual = await db.recibo.create({
+    data: { hermanoId: hermano.id, year: anioActual, concepto: 'ZZTestReciboEjercicioActual', importe: 10 },
+  });
+  const reciboEjercicioAnterior = await db.recibo.create({
+    data: { hermanoId: hermano.id, year: anioActual - 1, concepto: 'ZZTestReciboEjercicioAnterior', importe: 10 },
+  });
+  recibosPruebaId.push(reciboEjercicioActual.id, reciboEjercicioAnterior.id);
+
   const categoria = await db.categoriaTransaccion.create({
     data: { nombre: 'ZZTestCategoriaArrastre', tipo: TipoTransaccion.INGRESO },
   });
@@ -102,6 +119,34 @@ before(async () => {
     });
     transaccionesPruebaId.push(transaccion.id);
   }
+
+  // Control positivo y negativo para el registro de actividad (tarea 6): sin
+  // esto, si la base de pruebas no tuviera ningún AuditLog de contenido, el
+  // bucle de aserciones del test recorrería un array vacío y pasaría entero
+  // por vacuidad, justo en la prueba de la parte más sensible del panel (que
+  // no se cuele nunca una persona).
+  const ahoraAuditoria = new Date();
+  const auditoriaPermitida = await db.auditLog.create({
+    data: {
+      userId: usuario.id,
+      action: 'NOTICIA_CREAR',
+      entityType: 'noticia',
+      createdAt: ahoraAuditoria,
+    },
+  });
+  const auditoriaProhibida = await db.auditLog.create({
+    data: {
+      userId: usuario.id,
+      // Fuera de la lista blanca a propósito (dinero, no contenido).
+      action: 'RECIBO_COBRAR',
+      entityType: 'recibo',
+      // Más reciente que la permitida a propósito: si el filtro de la lista
+      // blanca fallara, esta sería la primera en salir (orderBy createdAt
+      // desc), no una casualidad de que quedara fuera del `take: 5`.
+      createdAt: new Date(ahoraAuditoria.getTime() + 1000),
+    },
+  });
+  auditLogPruebaId.push(auditoriaPermitida.id, auditoriaProhibida.id);
 });
 
 // Sin este cierre el proceso se queda colgado para siempre: el pool de
@@ -112,6 +157,15 @@ after(async () => {
     await db.transaccion.deleteMany({ where: { id: { in: transaccionesPruebaId } } });
   }
   if (categoriaPruebaId) await db.categoriaTransaccion.deleteMany({ where: { id: categoriaPruebaId } });
+  if (auditLogPruebaId.length > 0) {
+    await db.auditLog.deleteMany({ where: { id: { in: auditLogPruebaId } } });
+  }
+  if (recibosPruebaId.length > 0) {
+    // Antes que el hermano: Recibo.hermanoId es una relación obligatoria sin
+    // cascada, así que borrar el hermano primero dejaría recibos huérfanos y
+    // Prisma rechazaría el borrado.
+    await db.recibo.deleteMany({ where: { id: { in: recibosPruebaId } } });
+  }
   if (hermanoPruebaId) await db.hermano.deleteMany({ where: { id: hermanoPruebaId } });
   if (usuarioPruebaId) await borrarUsuarioPrueba(usuarioPruebaId);
   await db.$disconnect();
@@ -249,5 +303,149 @@ describe('servicio del panel', () => {
     ]) {
       assert.ok(!json.includes(valor), `el panel no debe exponer el valor de prueba ${valor}`);
     }
+  });
+
+  test('las altas y bajas de cada mes viajan con la serie del censo', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+
+    // Los mismos meses y en el mismo orden que la serie: las dos gráficas se
+    // leen una encima de otra y un desfase las haría mentir.
+    assert.deepEqual(
+      panel.censo.movimientosMensuales.map((m) => m.mes),
+      panel.censo.serieMensual.map((p) => p.mes),
+    );
+    for (const mes of panel.censo.movimientosMensuales) {
+      assert.equal(typeof mes.altas, 'number');
+      assert.equal(typeof mes.bajas, 'number');
+      assert.ok(mes.altas >= 0 && mes.bajas >= 0, `${mes.mes} trae movimientos negativos`);
+    }
+  });
+
+  test('cada categoría trae su importe además del número de apuntes', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+
+    // Control positivo: el before() siembra una categoría de ingreso con dos
+    // apuntes de 10,10 y 10,20 en el mes en curso.
+    const prueba = panel.dinero.porCategoria.find((c) => c.categoria === 'ZZTestCategoriaArrastre');
+    assert.ok(prueba, 'no se encontró la categoría de prueba; ¿se sembró?');
+    assert.equal(prueba!.total, 2);
+    assert.equal(prueba!.importe, 20.3); // sin arrastre binario: 20.299999999999997 fallaría
+
+    for (const fila of panel.dinero.porCategoria) {
+      assert.equal(typeof fila.importe, 'number');
+      assert.ok(!Number.isNaN(fila.importe));
+    }
+  });
+
+  test('la actividad del equipo solo trae contenido y agenda, y sin personas', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+
+    assert.ok(Array.isArray(panel.actividad.registro));
+    // Control positivo (el before() siembra un NOTICIA_CREAR): sin esto, un
+    // registro vacío haría que el bucle de abajo no comprobara nada y el test
+    // pasara por vacuidad, justo en la prueba de que no se cuela una persona.
+    assert.ok(panel.actividad.registro.length > 0, 'el registro no debe estar vacío; ¿se sembró el AuditLog de prueba?');
+    assert.ok(panel.actividad.registro.length <= 5, 'el registro son las cinco últimas acciones');
+
+    const PERMITIDAS = /^(NOTICIA|PUBLICACION|PAGINA|EVENTO)_|^PORTADA_ACTUALIZAR$/;
+    for (const fila of panel.actividad.registro) {
+      assert.match(fila.accion, PERMITIDAS, `${fila.accion} no es una acción de contenido`);
+      assert.match(fila.createdAt, /^\d{4}-\d{2}-\d{2}T/);
+      // El cargo, nunca la persona: ni id, ni nombre, ni correo.
+      assert.ok(fila.cargo === null || typeof fila.cargo === 'string');
+      assert.deepEqual(
+        Object.keys(fila).sort(),
+        ['accion', 'cargo', 'createdAt', 'entityType'],
+      );
+    }
+
+    // Control negativo (el before() siembra un RECIBO_COBRAR, más reciente que
+    // el NOTICIA_CREAR permitido): sin esta comprobación, nada demuestra que
+    // el filtro de la lista blanca filtre de verdad y no que el prohibido,
+    // simplemente, no cupiera en el `take: 5`.
+    assert.ok(
+      !panel.actividad.registro.some((f) => f.accion === 'RECIBO_COBRAR'),
+      'una acción fuera de la lista blanca se ha colado en el registro',
+    );
+
+    // En orden, de lo más reciente a lo más antiguo.
+    const fechas = panel.actividad.registro.map((f) => f.createdAt);
+    assert.deepEqual(fechas, [...fechas].sort().reverse());
+  });
+});
+
+describe('el ejercicio del panel', () => {
+  test('sin parámetro, el año en curso y sin cerrar', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+    const anioActual = new Date().getFullYear();
+    assert.equal(panel.ejercicio.anio, anioActual);
+    assert.equal(panel.ejercicio.cerrado, false);
+    // La cifra del ejercicio y el ejercicio elegido no pueden discrepar.
+    assert.equal(panel.dinero.ejercicio.anio, panel.ejercicio.anio);
+    assert.equal(panel.procesion.anio, panel.ejercicio.anio);
+  });
+
+  test('con un año anterior, la sección entera pasa a ese año', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const anterior = new Date().getFullYear() - 1;
+    const panel = await PanelService.getPanel(String(anterior));
+    assert.deepEqual(panel.ejercicio, { anio: anterior, cerrado: true });
+    assert.equal(panel.dinero.ejercicio.anio, anterior);
+    assert.equal(panel.procesion.anio, anterior);
+    // Doce meses naturales de ese año, de enero a diciembre.
+    assert.equal(panel.censo.serieMensual.length, 12);
+    assert.equal(panel.censo.serieMensual[0].mes, `${anterior}-01`);
+    assert.equal(panel.censo.serieMensual[11].mes, `${anterior}-12`);
+    assert.deepEqual(
+      panel.dinero.serieMensual.map((m) => m.mes),
+      panel.censo.serieMensual.map((p) => p.mes),
+    );
+  });
+
+  test('lo que es de hoy no lo toca el selector', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const anterior = new Date().getFullYear() - 1;
+    const [hoy, cerrado] = await Promise.all([
+      PanelService.getPanel(),
+      PanelService.getPanel(String(anterior)),
+    ]);
+    assert.equal(cerrado.censo.activos, hoy.censo.activos);
+    assert.equal(cerrado.censo.sinNumeroHermano, hoy.censo.sinNumeroHermano);
+    assert.deepEqual(cerrado.censo.porEdad, hoy.censo.porEdad);
+    assert.deepEqual(cerrado.actividad.proximosEventos, hoy.actividad.proximosEventos);
+    assert.deepEqual(cerrado.actividad.noticias, hoy.actividad.noticias);
+    assert.deepEqual(cerrado.actividad.reparto, hoy.actividad.reparto);
+  });
+
+  test('un año inválido no llega ni a consultar: es un error de la petición', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    await assert.rejects(
+      () => PanelService.getPanel('1492'),
+      (e: unknown) => e instanceof HttpError && e.status === 400,
+    );
+  });
+
+  test('los recibos se cuentan del ejercicio elegido, no de todos los años', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const anterior = new Date().getFullYear() - 1;
+    const [hoy, cerrado] = await Promise.all([
+      PanelService.getPanel(),
+      PanelService.getPanel(String(anterior)),
+    ]);
+
+    const suma = (panel: Awaited<ReturnType<typeof PanelService.getPanel>>) =>
+      panel.dinero.porEstado.reduce((s, e) => s + e.total, 0);
+    const total = await db.recibo.count();
+
+    // Cada ejercicio por separado no puede sumar más que todos los recibos que
+    // hay; antes de este cambio los dos devolvían exactamente ese total.
+    assert.ok(suma(hoy) <= total, 'el ejercicio en curso trae recibos de más');
+    assert.ok(suma(cerrado) <= total, 'el ejercicio cerrado trae recibos de más');
+    assert.equal(suma(hoy), await db.recibo.count({ where: { year: hoy.ejercicio.anio } }));
+    assert.equal(suma(cerrado), await db.recibo.count({ where: { year: anterior } }));
   });
 });

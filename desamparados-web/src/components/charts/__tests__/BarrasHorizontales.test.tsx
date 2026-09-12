@@ -35,4 +35,26 @@ describe('BarrasHorizontales', () => {
     renderWithProviders(<BarrasHorizontales filas={[]} />)
     expect(screen.getByText(/todavía no hay datos/i)).toBeInTheDocument()
   })
+
+  it('formatea el valor si se le pide, para poder poner euros', () => {
+    renderWithProviders(
+      <BarrasHorizontales
+        filas={[{ etiqueta: 'Cultos', valor: 9800 }]}
+        // `useGrouping: 'always'` explícito: desde CLDR 45 el agrupado por
+        // defecto de `es-ES` es `min2` y un número de 4 cifras como 9800 se
+        // queda sin puntos («9800»), lo que hacía el test dependiente de la
+        // versión de ICU del Node que lo ejecute en vez de nuestro componente.
+        formatoValor={(v) => `${v.toLocaleString('es-ES', { useGrouping: 'always' })} €`}
+      />,
+    )
+    expect(screen.getByText('9.800 €')).toBeInTheDocument()
+  })
+
+  it('ordena de mayor a menor quien se las pasa, y las pinta en ese orden', () => {
+    renderWithProviders(
+      <BarrasHorizontales filas={[{ etiqueta: 'A', valor: 30 }, { etiqueta: 'B', valor: 10 }]} />,
+    )
+    const etiquetas = screen.getAllByText(/^[AB]$/).map((n) => n.textContent)
+    expect(etiquetas).toEqual(['A', 'B'])
+  })
 })

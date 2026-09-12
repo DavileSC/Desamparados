@@ -1,7 +1,23 @@
+import type { ComponentType } from 'react'
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined'
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
+import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
+import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
+import type { PanelResponse } from '../lib/api/panel'
+
 /**
- * Menú del CMS y roles que pasan la guarda de cada una de sus rutas.
+ * Menú del CMS, agrupado por áreas, y roles que pasan la guarda de cada una
+ * de sus rutas.
  *
- * Las dos constantes viven juntas y fuera de los componentes por dos motivos:
+ * Las dos exportaciones de guardas y roles viven juntas y fuera de los
+ * componentes por dos motivos:
  *
  * 1. `AdminLayout.test.tsx` las compara entre sí para que el menú y las guardas
  *    no puedan divergir sin que un test lo note (así se coló el hallazgo del
@@ -13,22 +29,44 @@
  *    arriesgaba un ciclo de módulos: `routes/index.tsx` ya importa AdminLayout,
  *    así que si AdminLayout hubiera importado los roles de vuelta, el orden de
  *    inicialización de los ES modules podía dejar una de las dos leyendo
- *    `undefined` en el arranque. Este fichero no importa nada, de modo que el
- *    ciclo es imposible.
+ *    `undefined` en el arranque. Este fichero no importa nada de componentes,
+ *    de modo que el ciclo es imposible.
  */
 
-export const itemsMenu = [
-  { label: 'Panel', href: '/cms', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA'] },
-  { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'] },
-  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'] },
-  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'] },
-  { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'] },
-  { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'] },
-  { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'] },
-  { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'] },
-  { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'] },
-  { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'] },
-  { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA'] },
+/**
+ * Áreas del menú, en el orden en que se pintan. «Censo y enseres» y no
+ * «Hermandad»: la corporación es un Grupo Parroquial.
+ */
+export const GRUPOS = ['Hoy', 'Contenido', 'Censo y enseres', 'Cuentas', 'Sistema'] as const
+export type Grupo = (typeof GRUPOS)[number]
+
+/** De dónde sale el número que se enseña junto a una sección. */
+export type ClaveContador = 'noticiasBorradores' | 'hermanosSinNumero' | 'recibosDevueltos'
+
+export interface ItemMenu {
+  label: string
+  href: string
+  roles: string[]
+  grupo: Grupo
+  icono: ComponentType<{ fontSize?: 'small' | 'inherit' | 'medium' | 'large' }>
+  /** El número dice cuántos hay; el tono, cuánta prisa corre. */
+  contador?: { de: ClaveContador; tono: 'aviso' | 'error' }
+}
+
+const TODOS = ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA']
+
+export const itemsMenu: ItemMenu[] = [
+  { label: 'Inicio', href: '/cms', roles: TODOS, grupo: 'Hoy', icono: HomeOutlinedIcon },
+  { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ImageOutlinedIcon },
+  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
+  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MenuBookOutlinedIcon },
+  { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: CalendarMonthOutlinedIcon },
+  { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
+  { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: Inventory2OutlinedIcon },
+  { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon, contador: { de: 'recibosDevueltos', tono: 'error' } },
+  { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
+  { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
+  { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'Sistema', icono: ShieldOutlinedIcon },
 ]
 
 /** Única fuente de verdad de las `RequireRole` de `routes/index.tsx`. */
@@ -48,3 +86,22 @@ export const rolesPorRutaCms = {
   // protegerse, no solo la de ADMIN.
   'mi-seguridad': ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
 } satisfies Record<string, string[]>
+
+/** Los tres números del menú, del mismo panel que alimenta el Inicio. */
+export function contadoresDelPanel(panel?: PanelResponse): Record<ClaveContador, number> {
+  return {
+    noticiasBorradores: panel?.actividad.noticias.borradores ?? 0,
+    hermanosSinNumero: panel?.censo.sinNumeroHermano ?? 0,
+    recibosDevueltos: panel?.dinero.porEstado.find((e) => e.estado === 'DEVUELTO')?.total ?? 0,
+  }
+}
+
+/** Nombre del cargo tal y como se enseña. */
+export const NOMBRE_CARGO: Record<string, string> = {
+  ADMIN: 'Administración',
+  HERMANO_MAYOR: 'Hermano Mayor',
+  SECRETARIA: 'Secretaría',
+  TESORERIA: 'Tesorería',
+  REDES: 'Redes',
+  ALBACERIA: 'Albacería',
+}

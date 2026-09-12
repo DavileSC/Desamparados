@@ -1,55 +1,52 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
+import { TemaCmsProvider } from '../../../app/temaCms'
 import PanelPage from '../PanelPage'
+import { useAuthStore } from '../../members/auth/store'
 import type { PanelResponse } from '../../../lib/api/panel'
 
 const panel: PanelResponse = {
-  generadoEn: '2026-08-28T10:00:00.000Z',
+  generadoEn: '2026-09-11T08:00:00.000Z',
+  ejercicio: { anio: 2026, cerrado: false },
   censo: {
-    activos: 342,
-    altas12m: 33,
-    bajas12m: 9,
-    sinNumeroHermano: 4,
-    serieMensual: [
-      { mes: '2026-07', activos: 341 },
-      { mes: '2026-08', activos: 342 },
-    ],
-    porEdad: [{ tramo: '18-30', total: 60 }],
+    activos: 1284,
+    altas12m: 34,
+    bajas12m: 12,
+    sinNumeroHermano: 3,
+    serieMensual: [{ mes: '2026-08', activos: 1282 }, { mes: '2026-09', activos: 1284 }],
+    movimientosMensuales: [{ mes: '2026-08', altas: 3, bajas: 0 }, { mes: '2026-09', altas: 3, bajas: 1 }],
+    porEdad: [{ tramo: '31-45', total: 312 }],
   },
   dinero: {
     porEstado: [
-      { estado: 'PAGADO', total: 289, importe: 13005 },
-      { estado: 'PENDIENTE', total: 41, importe: 1855 },
+      { estado: 'PAGADO', total: 1126, importe: 33780 },
+      { estado: 'PENDIENTE', total: 57, importe: 1710 },
+      { estado: 'REMESADO', total: 23, importe: 690 },
+      { estado: 'DEVUELTO', total: 14, importe: 420 },
     ],
-    ejercicio: { anio: 2026, ingresos: 18400, gastos: 11990, saldo: 6410 },
-    serieMensual: [
-      { mes: '2026-07', ingresos: 1200, gastos: 800 },
-      { mes: '2026-08', ingresos: 1500, gastos: 950 },
-    ],
-    porCategoria: [{ categoria: 'Flores Cuaresma', tipo: 'GASTO', total: 12 }],
+    ejercicio: { anio: 2026, ingresos: 48300, gastos: 35440, saldo: 12860 },
+    serieMensual: [{ mes: '2026-08', ingresos: 4100, gastos: 2240 }, { mes: '2026-09', ingresos: 7600, gastos: 4600 }],
+    porCategoria: [{ categoria: 'Cultos y liturgia', tipo: 'GASTO', total: 18, importe: 9800 }],
   },
   procesion: {
     anio: 2026,
-    papeletas: 302,
-    // El año en curso (2026) coincide a propósito con `papeletas`: son el
-    // mismo cómputo mirado desde dos ángulos (total del año vs. serie
-    // histórica). El de 2025 es distinto, para poder aislar cada aserción.
-    porAnio: [
-      { anio: 2025, total: 275 },
-      { anio: 2026, total: 302 },
-    ],
-    porPuesto: [{ etiqueta: 'Nazarenos', total: 168 }],
+    papeletas: 612,
+    porAnio: [{ anio: 2025, total: 604 }, { anio: 2026, total: 612 }],
+    porPuesto: [{ etiqueta: 'Nazarenos', total: 418 }],
     porTalla: [{ etiqueta: 'L', total: 90 }],
     porAlturaHombro: [{ tramo: '170-179', total: 41 }],
   },
   actividad: {
     proximosEventos: [
-      { id: 1, title: 'Cabildo de oficiales', startDate: '2026-09-06T18:00:00.000Z', type: 'REUNION' },
+      { id: 1, title: 'Misa de hermandad', startDate: '2026-09-14T18:30:00.000Z', type: 'CULTO' },
     ],
     noticias: { publicadas: 4, borradores: 2 },
     publicaciones: { total: 7, ultima: '2026-06-01T00:00:00.000Z' },
-    reparto: { turnosProximos: 3, citasReservadas: 118, capacidadEstimada: 300 },
+    reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
+    registro: [
+      { accion: 'NOTICIA_CREAR', entityType: 'noticia', createdAt: '2026-09-11T08:05:00.000Z', cargo: 'REDES' },
+    ],
   },
 }
 
@@ -59,100 +56,141 @@ function responder(cuerpo: unknown, status = 200) {
   ))
 }
 
+const entrarComo = (role: string) =>
+  useAuthStore.setState({ status: 'autenticado', user: { id: 1, email: 'p@e.es', role, perfiles: [] } })
+
+const montar = () => renderWithProviders(<TemaCmsProvider><PanelPage /></TemaCmsProvider>)
+
+beforeEach(() => { localStorage.clear() })
 afterEach(() => { vi.unstubAllGlobals() })
 
-describe('PanelPage', () => {
-  it('enseña las cifras principales', async () => {
+describe('Inicio del CMS', () => {
+  it('saluda con el cargo y con lo que espera', async () => {
     responder(panel)
-    renderWithProviders(<PanelPage />)
-    // Dos veces exactamente: la tarjeta de «Hermanos activos» y la etiqueta del
-    // ultimo punto que LineaTemporal pinta sobre el mismo valor. Con
-    // toBeGreaterThan(0) el test pasaria aunque la tarjeta desapareciera, porque
-    // el grafico seguiria enseñando el 342 por su cuenta.
-    expect(await screen.findAllByText('342')).toHaveLength(2)
-    // También dos veces exactamente, y a propósito: la tarjeta de «Papeletas
-    // emitidas» y la barra del año en curso en «Papeletas por año» (mismo
-    // año, mismo total). toHaveLength(2) en vez de toBeInTheDocument():
-    // con un único match, getByText ya lanzaría por ambigüedad.
-    expect(screen.getAllByText('302')).toHaveLength(2)
+    entrarComo('HERMANO_MAYOR')
+    montar()
+    expect(await screen.findByRole('heading', { level: 1, name: /Buenos días, Hermano Mayor/ })).toBeInTheDocument()
+    expect(screen.getByText(/4 asuntos esperando/)).toBeInTheDocument()
   })
 
-  it('enseña las métricas que antes se calculaban y no se pintaban', async () => {
+  it('enseña las cuatro cifras de hoy', async () => {
     responder(panel)
-    renderWithProviders(<PanelPage />)
-    await screen.findByRole('heading', { name: /censo/i })
+    entrarComo('ADMIN')
+    montar()
+    // Se buscan DENTRO de su tarjeta: las mismas cifras salen también en las
+    // gráficas y en sus tablas, y una búsqueda suelta sería ambigua.
+    const tarjeta = async (etiqueta: string | RegExp) =>
+      within((await screen.findByText(etiqueta)).closest('.MuiPaper-root') as HTMLElement)
 
-    // Bajas del censo, junto a las altas en la misma cifra.
-    expect(screen.getByText(/9 bajas/)).toBeInTheDocument()
-    // Hermanos activos sin número de hermano asignado.
-    expect(screen.getByText(/4 hermanos activos sin número/)).toBeInTheDocument()
-    // Dinero por categoría contable.
-    expect(screen.getByText('Flores Cuaresma')).toBeInTheDocument()
-    expect(screen.getByText('12')).toBeInTheDocument()
-    // Papeletas por año: el valor de 2025, que no coincide con ninguna otra
-    // cifra del panel (a diferencia del de 2026, ver el test anterior).
-    expect(screen.getByText('275')).toBeInTheDocument()
-    // Publicaciones y turnos de reparto, en la línea de resumen de actividad.
+    expect((await tarjeta('Hermanos activos')).getByText('1.284')).toBeInTheDocument()
+    expect((await tarjeta(/^Papeletas 2026$/)).getByText('612')).toBeInTheDocument()
+    expect((await tarjeta('Por cobrar')).getByText('2.820 €')).toBeInTheDocument() // pendientes + remesados + devueltos
+    expect((await tarjeta(/^Saldo 2026$/)).getByText('12.860 €')).toBeInTheDocument()
+  })
+
+  it('reparte los asuntos según el cargo', async () => {
+    responder(panel)
+    entrarComo('REDES')
+    montar()
+    expect(await screen.findByRole('link', { name: /Publicar/ })).toBeInTheDocument()
+    expect(screen.getByText('Lo lleva Tesorería')).toBeInTheDocument()
+  })
+
+  it('lleva cuenta atrás, próximos actos y actividad del equipo', async () => {
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    expect(await screen.findByText(/Sábado de Pasión/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Próximos actos' })).toBeInTheDocument()
+    expect(screen.getByText('Misa de hermandad')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Actividad del equipo' })).toBeInTheDocument()
+    expect(screen.getByText(/creó una noticia/)).toBeInTheDocument()
+  })
+
+  it('el pie de «Actividad del equipo» enseña las noticias publicadas, las publicaciones y la fecha de la última', async () => {
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    await screen.findByRole('heading', { name: 'Actividad del equipo' })
+    expect(screen.getByText(/4 noticias publicadas/)).toBeInTheDocument()
     expect(screen.getByText(/7 publicaciones/)).toBeInTheDocument()
-    expect(screen.getByText(/3 turnos próximos/)).toBeInTheDocument()
-    expect(screen.getByText(/capacidad 300/)).toBeInTheDocument()
+    expect(screen.getByText(/última el 1 jun 2026/)).toBeInTheDocument()
   })
 
-  it('pinta los cuatro bloques', async () => {
+  it('sin ninguna publicación registrada, el pie no menciona una fecha', async () => {
+    responder({ ...panel, actividad: { ...panel.actividad, publicaciones: { total: 0, ultima: null } } })
+    entrarComo('ADMIN')
+    montar()
+    await screen.findByRole('heading', { name: 'Actividad del equipo' })
+    expect(screen.getByText(/0 publicaciones/)).toBeInTheDocument()
+    expect(screen.queryByText(/última el/)).not.toBeInTheDocument()
+  })
+
+  it('el enlace a Auditoría solo lo ven quienes pueden entrar', async () => {
     responder(panel)
-    renderWithProviders(<PanelPage />)
-    expect(await screen.findByRole('heading', { name: /censo/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /tesorería/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /procesión/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /actividad/i })).toBeInTheDocument()
+    entrarComo('REDES')
+    montar()
+    await screen.findByRole('heading', { name: 'Actividad del equipo' })
+    expect(screen.queryByRole('link', { name: /Ver auditoría/ })).not.toBeInTheDocument()
+  })
+
+  it('el enlace a Auditoría lo ve quien puede entrar', async () => {
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    expect(await screen.findByRole('link', { name: /Ver auditoría/ })).toBeInTheDocument()
+  })
+
+  // rolesPorRutaCms.agenda es ['ADMIN','SECRETARIA','HERMANO_MAYOR']: sin este
+  // condicional, Tesorería pulsaba «Agenda →» y RequireRole la expulsaba a
+  // /area-hermano, fuera de todo el CMS (ver el hallazgo crítico de la revisión).
+  it('el enlace a la Agenda de «Próximos actos» no lo ve Tesorería', async () => {
+    responder(panel)
+    entrarComo('TESORERIA')
+    montar()
+    await screen.findByRole('heading', { name: 'Próximos actos' })
+    expect(screen.queryByRole('link', { name: /Agenda →/ })).not.toBeInTheDocument()
+  })
+
+  it('el enlace a la Agenda de «Próximos actos» sí lo ve Secretaría', async () => {
+    responder(panel)
+    entrarComo('SECRETARIA')
+    montar()
+    expect(await screen.findByRole('link', { name: /Agenda →/ })).toBeInTheDocument()
+  })
+
+  it('lleva «Cómo va el año» debajo', async () => {
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    expect(await screen.findByRole('heading', { name: 'Cómo va el año' })).toBeInTheDocument()
   })
 
   it('avisa mientras carga', () => {
     responder(panel)
-    renderWithProviders(<PanelPage />)
+    entrarComo('ADMIN')
+    montar()
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
   })
 
   it('explica el fallo si el servidor no responde', async () => {
     responder({}, 500)
-    renderWithProviders(<PanelPage />)
+    entrarComo('ADMIN')
+    montar()
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se ha podido cargar/i)
-  })
-
-  it('escribe en singular cuando la cifra es uno', async () => {
-    responder({
-      ...panel,
-      censo: { ...panel.censo, sinNumeroHermano: 1 },
-      actividad: {
-        ...panel.actividad,
-        noticias: { publicadas: 1, borradores: 1 },
-        publicaciones: { total: 1, ultima: '2026-06-01T00:00:00.000Z' },
-        reparto: { turnosProximos: 1, citasReservadas: 1, capacidadEstimada: 30 },
-      },
-    })
-    renderWithProviders(<PanelPage />)
-
-    expect(await screen.findByText(/1 hermano activo sin número/)).toBeInTheDocument()
-    expect(screen.getByText(/1 noticia publicada/)).toBeInTheDocument()
-    expect(screen.getByText(/1 borrador /)).toBeInTheDocument()
-    expect(screen.getByText(/1 publicación /)).toBeInTheDocument()
-    expect(screen.getByText(/1 cita de reparto/)).toBeInTheDocument()
-    expect(screen.getByText(/1 turno próximo/)).toBeInTheDocument()
   })
 
   it('aguanta un Grupo Parroquial recién instalado, con todo a cero', async () => {
     responder({
       ...panel,
-      censo: { activos: 0, altas12m: 0, bajas12m: 0, sinNumeroHermano: 0, serieMensual: [], porEdad: [] },
-      dinero: {
-        porEstado: [],
-        ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 },
-        serieMensual: [],
-        porCategoria: [],
-      },
+      censo: { activos: 0, altas12m: 0, bajas12m: 0, sinNumeroHermano: 0, serieMensual: [], movimientosMensuales: [], porEdad: [] },
+      dinero: { porEstado: [], ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 }, serieMensual: [], porCategoria: [] },
       procesion: { anio: 2026, papeletas: 0, porAnio: [], porPuesto: [], porTalla: [], porAlturaHombro: [] },
+      actividad: { ...panel.actividad, proximosEventos: [], noticias: { publicadas: 0, borradores: 0 }, reparto: { turnosProximos: 0, citasReservadas: 0, capacidadEstimada: 0 }, registro: [] },
     })
-    renderWithProviders(<PanelPage />)
-    expect(await screen.findAllByText(/todavía no hay datos/i)).not.toHaveLength(0)
+    entrarComo('ADMIN')
+    montar()
+    expect(await screen.findByText(/todo al día/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/todavía no hay datos/i).length).toBeGreaterThan(0)
   })
 })

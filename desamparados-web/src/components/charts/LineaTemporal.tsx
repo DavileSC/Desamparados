@@ -1,5 +1,6 @@
 import { Box, Typography, useTheme } from '@mui/material'
-import { designTokens } from '../../theme'
+import type { GraficasCms } from '../../theme/cms'
+import { pasoBonito } from './ejes'
 
 export interface PuntoLinea {
   x: string
@@ -10,18 +11,38 @@ interface Props {
   puntos: PuntoLinea[]
   /** Qué mide la línea. Va en el aria-label y da nombre al gráfico. */
   etiqueta: string
+  paleta: GraficasCms
+  /** Por defecto, el color de énfasis: esta gráfica no compara nada. */
   color?: string
-  /** Segunda serie opcional, dibujada sobre la MISMA escala (ingresos y gastos). */
-  comparar?: { etiqueta: string; puntos: PuntoLinea[]; color?: string }
+  formatoValor?: (valor: number) => string
+  /** '2026-09' → 'sep'. Por defecto, la clave tal cual. */
+  etiquetaX?: (x: string) => string
 }
 
-const ANCHO = 600
-const ALTO = 172
-const MARGEN_X = 20
-const SUELO = 150
-const TECHO = 30
+const ANCHO = 488
+const ALTO = 232
+const IZQ = 50
+const DER = 54
+const ARRIBA = 18
+const ABAJO = 42
 
-export default function LineaTemporal({ puntos, etiqueta, color, comparar }: Props) {
+/** Eje que abarca los datos con marcas en números redondos, unas tres. */
+function escala(min: number, max: number) {
+  if (max === min) return { suelo: min - 1, techo: min + 1, marcas: [min] }
+  const paso = pasoBonito((max - min) / 2)
+  const suelo = Math.floor(min / paso) * paso
+  const techo = Math.ceil(max / paso) * paso
+  const marcas: number[] = []
+  for (let v = suelo; v <= techo + paso / 1000; v += paso) marcas.push(Math.round(v * 100) / 100)
+  return { suelo, techo, marcas }
+}
+
+/**
+ * Una serie en el tiempo, con área. Los valores del primero y el último punto
+ * van escritos: el ratón añade detalle, pero nunca es la única forma de leer un
+ * dato.
+ */
+export default function LineaTemporal({ puntos, etiqueta, paleta, color, formatoValor, etiquetaX }: Props) {
   const theme = useTheme()
 
   if (puntos.length === 0) {
@@ -32,57 +53,22 @@ export default function LineaTemporal({ puntos, etiqueta, color, comparar }: Pro
     )
   }
 
-  const series = [{ etiqueta, puntos, color: color ?? designTokens.dataviz.series[0], principal: true }]
-  if (comparar && comparar.puntos.length > 0) {
-    series.push({
-      etiqueta: comparar.etiqueta,
-      puntos: comparar.puntos,
-      color: comparar.color ?? designTokens.dataviz.series[1],
-      principal: false,
-    })
-  }
+  const trazo = color ?? paleta.enfasis
+  const texto = (valor: number) => (formatoValor ? formatoValor(valor) : String(valor))
+  const enX = etiquetaX ?? ((x: string) => x)
 
-  // Escala común a todas las series. Con una escala por serie, dos líneas que
-  // se cruzan no significarían nada.
-  const todos = series.flatMap((s) => s.puntos.map((p) => p.y))
-  const max = Math.max(...todos)
-  const min = Math.min(...todos)
-  // Si todos los valores son iguales el rango es 0 y la escala daría NaN.
-  const rango = max - min || 1
+  const valores = puntos.map((p) => p.y)
+  const { suelo, techo, marcas } = escala(Math.min(...valores), Math.max(...valores))
+  const rango = techo - suelo || 1
+  const anchoUtil = ANCHO - IZQ - DER
+  const altoUtil = ALTO - ARRIBA - ABAJO
 
-  const trazar = (ps: PuntoLinea[]) => {
-    const paso = ps.length > 1 ? (ANCHO - MARGEN_X * 2) / (ps.length - 1) : 0
-    return ps.map((p, i) => ({
-      cx: MARGEN_X + paso * i,
-      cy: SUELO - ((p.y - min) / rango) * (SUELO - TECHO),
-    }))
-  }
+  const X = (i: number) => IZQ + (puntos.length > 1 ? (i * anchoUtil) / (puntos.length - 1) : anchoUtil / 2)
+  const Y = (v: number) => ARRIBA + altoUtil - ((v - suelo) / rango) * altoUtil
 
-  const trazos = series.map((serie) => {
-    const coordenadas = trazar(serie.puntos)
-    return {
-      serie,
-      coordenadas,
-      ultimo: coordenadas[coordenadas.length - 1],
-      ultimoValor: serie.puntos[serie.puntos.length - 1],
-    }
-  })
-
-  // Las etiquetas del último valor se pisaban cuando las dos series cerraban el
-  // mes casi igual (pasó en tesorería: 939 € de ingresos y 939,50 € de gastos).
-  // Si están demasiado cerca, una se va arriba del punto y la otra debajo.
-  const SEPARACION_MINIMA = 14
-  const seEstorban =
-    trazos.length === 2 && Math.abs(trazos[0].ultimo.cy - trazos[1].ultimo.cy) < SEPARACION_MINIMA
-  const laDeArriba = trazos.length === 2 && trazos[1].ultimo.cy < trazos[0].ultimo.cy ? 1 : 0
-  const desvioEtiqueta = (indice: number) => {
-    if (!seEstorban) return -10
-    return indice === laDeArriba ? -12 : 20
-  }
-
-  const descripcion = series
-    .map((s) => `${s.etiqueta}: de ${s.puntos[0].y} a ${s.puntos[s.puntos.length - 1].y}`)
-    .join('. ')
+  const d = puntos.map((p, i) => `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ')
+  const primero = puntos[0]
+  const ultimo = puntos[puntos.length - 1]
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -90,68 +76,45 @@ export default function LineaTemporal({ puntos, etiqueta, color, comparar }: Pro
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
         width="100%"
         role="img"
-        aria-label={`${descripcion}.`}
+        aria-label={`${etiqueta}: de ${texto(primero.y)} a ${texto(ultimo.y)}.`}
         style={{ display: 'block', overflow: 'visible' }}
       >
-        {[SUELO, 106, 62].map((y) => (
-          <line key={y} x1="0" y1={y} x2={ANCHO} y2={y} stroke={theme.palette.divider} strokeWidth="1" />
+        {marcas.map((marca) => (
+          <g key={marca}>
+            <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER + 8} y2={Y(marca)} stroke={paleta.rejilla} strokeWidth="1" />
+            <text
+              x={IZQ - 10}
+              y={Y(marca) + 4}
+              textAnchor="end"
+              fontSize="11"
+              fill={theme.palette.text.secondary}
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              {marca}
+            </text>
+          </g>
         ))}
 
-        {trazos.map(({ serie, coordenadas, ultimo, ultimoValor }, indice) => {
-          const d = coordenadas.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.cx},${c.cy}`).join(' ')
-          return (
-            <g key={serie.etiqueta}>
-              {/* El área solo bajo la serie principal: dos rellenos superpuestos
-                  ensucian y ninguna de las dos se lee bien. */}
-              {serie.principal && (
-                <path
-                  d={`${d} L${ultimo.cx},${SUELO} L${coordenadas[0].cx},${SUELO} Z`}
-                  fill={serie.color}
-                  opacity="0.13"
-                />
-              )}
-              <path
-                data-testid={serie.principal ? 'linea' : 'linea-comparada'}
-                d={d}
-                fill="none"
-                stroke={serie.color}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx={ultimo.cx} cy={ultimo.cy} r="5" fill={serie.color} stroke={theme.palette.background.paper} strokeWidth="2">
-                <title>{`${serie.etiqueta} · ${ultimoValor.x}: ${ultimoValor.y}`}</title>
-              </circle>
-              {/* Etiqueta directa del ultimo valor: el color no puede ser el
-                  unico portador del dato. El verde y el ambar de la paleta no
-                  llegan a 3:1 sobre el lienzo claro del CMS. */}
-              <text
-                x={ultimo.cx - 8}
-                y={ultimo.cy + desvioEtiqueta(indice)}
-                textAnchor="end"
-                fontSize="11"
-                fontWeight="600"
-                fill={theme.palette.text.secondary}
-              >
-                {ultimoValor.y}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
+        <path d={`${d} L${X(puntos.length - 1).toFixed(1)},${Y(suelo).toFixed(1)} L${X(0).toFixed(1)},${Y(suelo).toFixed(1)} Z`} fill={trazo} opacity="0.1" />
+        <path data-testid="linea" d={d} fill="none" stroke={trazo} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
-      {/* Leyenda obligatoria a partir de dos series: el color por sí solo no
-          identifica nada para quien no lo distingue. */}
-      {series.length > 1 && (
-        <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-          {series.map((serie) => (
-            <Box key={serie.etiqueta} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-              <Box sx={{ width: 9, height: 9, borderRadius: '2px', backgroundColor: serie.color }} />
-              <Typography variant="caption" color="text.secondary">{serie.etiqueta}</Typography>
-            </Box>
-          ))}
-        </Box>
-      )}
+        {/* Primer punto: la etiqueta va DEBAJO, donde no hay trazo. */}
+        <circle cx={X(0)} cy={Y(primero.y)} r="4" fill={trazo} stroke={theme.palette.background.paper} strokeWidth="2" />
+        <text x={X(0) + 8} y={Y(primero.y) + 20} fontSize="12" fontWeight="600" fill={theme.palette.text.secondary}>
+          {texto(primero.y)}
+        </text>
+
+        <circle cx={X(puntos.length - 1)} cy={Y(ultimo.y)} r="5" fill={trazo} stroke={theme.palette.background.paper} strokeWidth="2" />
+        <text x={X(puntos.length - 1) + 10} y={Y(ultimo.y) + 4} fontSize="13" fontWeight="700" fill={theme.palette.text.primary}>
+          {texto(ultimo.y)}
+        </text>
+
+        {puntos.map((p, i) => (
+          <text key={p.x} x={X(i)} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={theme.palette.text.secondary}>
+            {enX(p.x)}
+          </text>
+        ))}
+      </svg>
     </Box>
   )
 }

@@ -22,19 +22,22 @@ export interface FilaRecuento {
 
 export interface PanelResponse {
   generadoEn: string
+  /** Ejercicio al que corresponden el dinero, la procesión y la serie del censo. */
+  ejercicio: { anio: number; cerrado: boolean }
   censo: {
     activos: number
     altas12m: number
     bajas12m: number
     sinNumeroHermano: number
     serieMensual: PuntoCenso[]
+    movimientosMensuales: { mes: string; altas: number; bajas: number }[]
     porEdad: { tramo: string; total: number }[]
   }
   dinero: {
     porEstado: { estado: EstadoRecibo; total: number; importe: number }[]
     ejercicio: { anio: number; ingresos: number; gastos: number; saldo: number }
     serieMensual: { mes: string; ingresos: number; gastos: number }[]
-    porCategoria: { categoria: string; tipo: TipoMovimiento; total: number }[]
+    porCategoria: { categoria: string; tipo: TipoMovimiento; total: number; importe: number }[]
   }
   procesion: {
     anio: number
@@ -49,9 +52,12 @@ export interface PanelResponse {
     noticias: { publicadas: number; borradores: number }
     publicaciones: { total: number; ultima: string | null }
     reparto: { turnosProximos: number; citasReservadas: number; capacidadEstimada: number }
+    /** Las cinco últimas acciones de contenido y agenda, por cargo y sin personas. */
+    registro: { accion: string; entityType: string | null; createdAt: string; cargo: string | null }[]
   }
 }
 
-export function getPanel() {
-  return apiFetch<PanelResponse>('/panel')
+/** Sin año, el ejercicio en curso. */
+export function getPanel(anio?: number) {
+  return apiFetch<PanelResponse>(anio === undefined ? '/panel' : `/panel?anio=${anio}`)
 }

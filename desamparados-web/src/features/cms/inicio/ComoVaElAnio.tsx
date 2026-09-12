@@ -1,0 +1,324 @@
+import { useState } from 'react'
+import { Alert, Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
+import { getPanel, type PanelResponse, type TipoMovimiento } from '../../../lib/api/panel'
+import { useTemaCms } from '../../../app/temaCms'
+import LineaTemporal from '../../../components/charts/LineaTemporal'
+import BarrasHorizontales from '../../../components/charts/BarrasHorizontales'
+import ColumnasDivergentes from '../../../components/charts/ColumnasDivergentes'
+import ColumnasPorPares from '../../../components/charts/ColumnasPorPares'
+import ColumnasPorAnio from '../../../components/charts/ColumnasPorAnio'
+import ProporcionEstados, { type FilaEstado } from '../../../components/charts/ProporcionEstados'
+import TablaDeDatos from '../../../components/charts/TablaDeDatos'
+import { euros, eurosResumen, numero, etiquetaPunto, etiquetaPuntoLarga } from '../contabilidad/formato'
+
+/** Cuántos ejercicios ofrece el selector. Cinco cubre de sobra la reunión de enero. */
+const EJERCICIOS = 5
+
+/**
+ * Los estados de recibo que interesan, con su severidad. ANULADO y EXENTO se
+ * quedan fuera a propósito: un recibo anulado o exento no es cobro pendiente,
+ * y meterlo en el denominador del porcentaje lo hundiría sin motivo.
+ */
+const ESTADOS = [
+  { clave: 'PAGADO', etiqueta: 'Cobrados', estado: 'ok' as const },
+  { clave: 'PENDIENTE', etiqueta: 'Pendientes', estado: 'aviso' as const },
+  { clave: 'REMESADO', etiqueta: 'Remesados al banco', estado: 'aviso' as const },
+  { clave: 'DEVUELTO', etiqueta: 'Devueltos por el banco', estado: 'error' as const },
+]
+
+function Tarjeta({
+  titulo, subtitulo, ancha = false, children,
+}: {
+  titulo: string
+  subtitulo: string
+  ancha?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <Paper
+      component="section"
+      sx={{
+        borderRadius: 1.75, p: 2.75, display: 'flex', flexDirection: 'column', gap: 1.75,
+        gridColumn: { xs: '1 / -1', lg: ancha ? '1 / -1' : 'span 6' },
+      }}
+    >
+      <Box>
+        <Typography variant="h5" component="h3" sx={{ fontSize: 20 }}>{titulo}</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.375 }}>{subtitulo}</Typography>
+      </Box>
+      {children}
+    </Paper>
+  )
+}
+
+/**
+ * «Cómo va el año»: un selector de ejercicio que gobierna las gráficas de esta
+ * sección y nada más. La cabecera del Inicio, «Para hoy», los actos y la
+ * cuenta atrás no cambian nunca; el selector existe porque el Inicio se
+ * enseña a la junta en la reunión de principios de año, cuando lo que importa
+ * es el ejercicio cerrado.
+ */
+export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse }) {
+  const { graficas } = useTemaCms()
+  const anioActual = panelDeHoy.ejercicio.anio
+  const [anio, setAnio] = useState(anioActual)
+  const esElActual = anio === anioActual
+
+  // Con el año en curso no se pide nada: los datos ya están arriba. Al elegir
+  // uno cerrado, la clave incluye el año, así que lo ya cargado no se borra y
+  // volver atrás es instantáneo.
+  const consulta = useQuery({
+    queryKey: ['panel', anio],
+    queryFn: () => getPanel(anio),
+    enabled: !esElActual,
+    placeholderData: (anterior) => anterior,
+  })
+  const datos = esElActual ? panelDeHoy : consulta.data
+
+  const anios = Array.from({ length: EJERCICIOS }, (_, i) => anioActual - i)
+
+  // Misma lista para el dibujo y para la tabla de «Cobro de recibos»: así no
+  // pueden discrepar nunca, ni cuando aparezca un estado que ESTADOS no cubre.
+  const filasEstado: FilaEstado[] = datos
+    ? ESTADOS.map((e) => {
+        const fila = datos.dinero.porEstado.find((f) => f.estado === e.clave)
+        return { clave: e.clave, etiqueta: e.etiqueta, estado: e.estado, total: fila?.total ?? 0, importe: fila?.importe ?? 0 }
+      })
+    : []
+
+  // Misma lista para la gráfica y para su tabla, tanto en «De dónde entra»
+  // como en «En qué se gasta»: así el filtro por tipo y el orden por importe
+  // no se escriben dos veces, ni se pueden desincronizar entre las dos.
+  const categoriasPorTipo = (tipo: TipoMovimiento) =>
+    datos ? [...datos.dinero.porCategoria].filter((c) => c.tipo === tipo).sort((a, b) => b.importe - a.importe) : []
+  const ingresosPorCategoria = categoriasPorTipo('INGRESO')
+  const gastosPorCategoria = categoriasPorTipo('GASTO')
+
+  return (
+    <Box component="section" aria-labelledby="como-va" sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: 'divider' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
+        <Box>
+          <Typography variant="overline" color="text.secondary" sx={{ display: 'block' }}>
+            El Grupo Parroquial en datos · igual para toda la junta
+          </Typography>
+          <Typography id="como-va" variant="h4" component="h2" sx={{ fontSize: 30, mt: 1 }}>
+            Cómo va el año
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary">
+          Solo cifras de conjunto: aquí nunca aparecen datos de una persona.
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, my: 2.5, flexWrap: 'wrap' }}>
+        <TextField
+          select
+          size="small"
+          label="Ejercicio"
+          value={anio}
+          onChange={(e) => setAnio(Number(e.target.value))}
+          sx={{ minWidth: 140 }}
+        >
+          {anios.map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+        </TextField>
+        <Typography variant="body2" color="text.secondary">
+          {esElActual
+            ? 'Ejercicio en curso · el censo, en los últimos doce meses'
+            : `Ejercicio ${anio} · cerrado · de enero a diciembre`}
+        </Typography>
+      </Box>
+
+      {consulta.isError ? (
+        // Con retry: 1 (App.tsx), tras dos intentos fallidos la consulta se
+        // queda en isError para siempre: sin esta rama, el cartel de «Cargando…»
+        // se quedaba fijo sin explicación ni forma de salir de ahí.
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={() => setAnio(anioActual)}>
+              Volver al ejercicio en curso
+            </Button>
+          }
+          sx={{ my: 4 }}
+        >
+          No se ha podido cargar el ejercicio {anio}.
+        </Alert>
+      ) : !datos ? (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 4 }}>
+          Cargando el ejercicio {anio}…
+        </Typography>
+      ) : (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(12, minmax(0, 1fr))' }, gap: 2.5 }}>
+          <Tarjeta titulo="Censo de hermanos" subtitulo="Hermanos activos al cierre de cada mes">
+            <LineaTemporal
+              etiqueta="Hermanos activos"
+              paleta={graficas}
+              puntos={datos.censo.serieMensual.map((p) => ({ x: p.mes, y: p.activos }))}
+              formatoValor={numero}
+              etiquetaX={etiquetaPunto}
+            />
+            <TablaDeDatos
+              titulo="Hermanos activos al cierre de cada mes"
+              columnas={['Mes', 'Activos']}
+              filas={datos.censo.serieMensual.map((p) => [etiquetaPuntoLarga(p.mes), numero(p.activos)])}
+            />
+          </Tarjeta>
+
+          <Tarjeta titulo="Altas y bajas" subtitulo="Cuántos entran y cuántos se van cada mes">
+            <ColumnasDivergentes
+              meses={datos.censo.movimientosMensuales.map((m) => ({ mes: m.mes, arriba: m.altas, abajo: m.bajas }))}
+              paleta={graficas}
+              etiquetaArriba="Altas"
+              etiquetaAbajo="Bajas"
+              etiquetaX={etiquetaPunto}
+            />
+            <TablaDeDatos
+              titulo="Altas y bajas por mes"
+              columnas={['Mes', 'Altas', 'Bajas']}
+              filas={datos.censo.movimientosMensuales.map((m) => [etiquetaPuntoLarga(m.mes), numero(m.altas), numero(m.bajas)])}
+            />
+          </Tarjeta>
+
+          <Tarjeta
+            titulo="Ingresos y gastos por mes"
+            subtitulo={`Ingresos ${eurosResumen(datos.dinero.ejercicio.ingresos)} · Gastos ${eurosResumen(datos.dinero.ejercicio.gastos)} · Saldo ${eurosResumen(datos.dinero.ejercicio.saldo)}`}
+            ancha
+          >
+            <ColumnasPorPares
+              puntos={datos.dinero.serieMensual.map((m) => ({ clave: m.mes, a: m.ingresos, b: m.gastos }))}
+              paleta={graficas}
+              etiquetaA="Ingresos"
+              etiquetaB="Gastos"
+              formatoValor={eurosResumen}
+              etiquetaX={etiquetaPunto}
+              etiquetaXLarga={etiquetaPuntoLarga}
+            />
+            <TablaDeDatos
+              titulo="Ingresos y gastos por mes"
+              columnas={['Mes', 'Ingresos', 'Gastos']}
+              filas={datos.dinero.serieMensual.map((m) => [etiquetaPuntoLarga(m.mes), euros(m.ingresos), euros(m.gastos)])}
+            />
+          </Tarjeta>
+
+          <Tarjeta titulo="De dónde entra" subtitulo={`Ingresos de ${datos.ejercicio.anio} por categoría contable`}>
+            <BarrasHorizontales
+              color={graficas.entrada}
+              formatoValor={eurosResumen}
+              filas={ingresosPorCategoria.map((c) => ({ etiqueta: c.categoria, valor: c.importe }))}
+            />
+            <TablaDeDatos
+              titulo="Ingreso por categoría"
+              columnas={['Categoría', 'Importe', 'Apuntes']}
+              filas={ingresosPorCategoria.map((c) => [c.categoria, euros(c.importe), numero(c.total)])}
+            />
+          </Tarjeta>
+
+          <Tarjeta titulo="En qué se gasta" subtitulo={`Gastos de ${datos.ejercicio.anio} por categoría contable`}>
+            <BarrasHorizontales
+              color={graficas.salida}
+              formatoValor={eurosResumen}
+              filas={gastosPorCategoria.map((c) => ({ etiqueta: c.categoria, valor: c.importe }))}
+            />
+            <TablaDeDatos
+              titulo="Gasto por categoría"
+              columnas={['Categoría', 'Importe', 'Apuntes']}
+              filas={gastosPorCategoria.map((c) => [c.categoria, euros(c.importe), numero(c.total)])}
+            />
+          </Tarjeta>
+
+          <Tarjeta titulo="Cobro de recibos" subtitulo={`Recibos del ejercicio ${datos.ejercicio.anio} según su estado`}>
+            <ProporcionEstados paleta={graficas} formatoImporte={eurosResumen} formatoNumero={numero} estados={filasEstado} />
+            <TablaDeDatos
+              titulo="Recibos por estado"
+              columnas={['Estado', 'Recibos', 'Importe']}
+              filas={filasEstado.map((f) => [f.etiqueta, numero(f.total), euros(f.importe)])}
+            />
+          </Tarjeta>
+
+          <Tarjeta titulo="Papeletas de sitio" subtitulo="Últimos cinco años, con el ejercicio elegido destacado">
+            <ColumnasPorAnio datos={datos.procesion.porAnio} paleta={graficas} destacado={datos.ejercicio.anio} formatoValor={numero} />
+            <TablaDeDatos
+              titulo="Papeletas por año"
+              columnas={['Año', 'Papeletas']}
+              filas={datos.procesion.porAnio.map((a) => [String(a.anio), numero(a.total)])}
+            />
+          </Tarjeta>
+
+          {/* Lo que Albacería necesita para preparar la estación: cuántas
+              papeletas hay por puesto. Sí sigue al selector, porque el
+              backend acota `procesion.porPuesto` con el ejercicio elegido
+              (igual que `porAnio` y `papeletas`), y el subtítulo lo dice. */}
+          <Tarjeta titulo="Puestos de la procesión" subtitulo={`Papeletas del ejercicio ${datos.ejercicio.anio}, por puesto`}>
+            <BarrasHorizontales
+              color={graficas.neutro}
+              formatoValor={numero}
+              filas={datos.procesion.porPuesto.map((p) => ({ etiqueta: p.etiqueta, valor: p.total }))}
+            />
+            <TablaDeDatos
+              titulo="Papeletas por puesto"
+              columnas={['Puesto', 'Papeletas']}
+              filas={datos.procesion.porPuesto.map((p) => [p.etiqueta, numero(p.total)])}
+            />
+          </Tarjeta>
+
+          <Tarjeta
+            titulo="Túnicas y varales"
+            subtitulo="Hermanos activos a día de hoy, para preparar cuántas túnicas de cada talla y cuántos varales de cada medida hacen falta"
+            ancha
+          >
+            {/* De hoy siempre, igual que «Hermanos por edad»: la talla o la
+                altura de hombro de quien estaba activo en un ejercicio
+                cerrado no se pueden reconstruir con agregados, así que estos
+                dos se leen de panelDeHoy y no del ejercicio elegido arriba. */}
+            <Box>
+              <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Tallas de túnica
+              </Typography>
+              <BarrasHorizontales
+                color={graficas.neutro}
+                formatoValor={numero}
+                filas={panelDeHoy.procesion.porTalla.map((t) => ({ etiqueta: t.etiqueta, valor: t.total }))}
+              />
+              <TablaDeDatos
+                titulo="Hermanos activos por talla de túnica"
+                columnas={['Talla', 'Hermanos']}
+                filas={panelDeHoy.procesion.porTalla.map((t) => [t.etiqueta, numero(t.total)])}
+              />
+            </Box>
+            <Box>
+              <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Altura de hombro, para los varales
+              </Typography>
+              <BarrasHorizontales
+                color={graficas.neutro}
+                formatoValor={numero}
+                filas={panelDeHoy.procesion.porAlturaHombro.map((a) => ({ etiqueta: a.tramo, valor: a.total }))}
+              />
+              <TablaDeDatos
+                titulo="Hermanos activos por altura de hombro"
+                columnas={['Altura', 'Hermanos']}
+                filas={panelDeHoy.procesion.porAlturaHombro.map((a) => [a.tramo, numero(a.total)])}
+              />
+            </Box>
+          </Tarjeta>
+
+          <Tarjeta titulo="Hermanos por edad" subtitulo="Hermanos activos por tramo de edad, a día de hoy">
+            {/* De hoy siempre: la edad de quien estaba activo en 2023 no se puede
+                reconstruir con agregados, y el subtítulo lo dice. */}
+            <BarrasHorizontales
+              color={graficas.neutro}
+              formatoValor={numero}
+              filas={panelDeHoy.censo.porEdad.map((t) => ({ etiqueta: t.tramo, valor: t.total }))}
+            />
+            <TablaDeDatos
+              titulo="Hermanos activos por tramo de edad"
+              columnas={['Tramo', 'Hermanos']}
+              filas={panelDeHoy.censo.porEdad.map((t) => [t.tramo, numero(t.total)])}
+            />
+          </Tarjeta>
+        </Box>
+      )}
+    </Box>
+  )
+}

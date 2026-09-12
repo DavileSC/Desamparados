@@ -6,7 +6,7 @@ import {
   Alert, Box, Button, Checkbox, FormControlLabel, Paper, TextField, ThemeProvider, Typography,
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import { cmsTheme } from '../../../theme/cms'
+import { crearTemaCms } from '../../../theme/cms'
 import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, cerrarSesionApi, type LoginResponse } from '../../../lib/api/auth'
@@ -22,6 +22,13 @@ function codigoError(e: unknown): string | undefined {
   const { error } = e.payload as { error?: unknown }
   return typeof error === 'string' ? error : undefined
 }
+
+// Modo fijo en esta pantalla: se calcula una sola vez al cargar el módulo, no
+// en cada render. `crearTemaCms` construye el tema entero con `createTheme`;
+// repetirlo en cada re-render (el 2FA y react-hook-form provocan varios) es
+// trabajo de más y, sobre todo, rompe la identidad del objeto del tema, así
+// que Emotion reinyecta estilos y se invalida cualquier hijo que dependa de esa identidad.
+const TEMA_ACCESO = crearTemaCms('claro')
 
 /**
  * Acceso propio del CMS. Misma cuentas que el área de hermanos, pero aquí solo
@@ -113,7 +120,7 @@ export default function CmsLoginPage() {
   const staffDesdeHermanos = status === 'autenticado' && isStaffRole(user?.role) && user?.origen !== 'cms'
 
   return (
-    <ThemeProvider theme={cmsTheme}>
+    <ThemeProvider theme={TEMA_ACCESO}>
       <Helmet>
         <title>Acceso a la administración | CMS Desamparados</title>
         <meta name="robots" content="noindex" />

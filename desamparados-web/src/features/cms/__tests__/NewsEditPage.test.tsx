@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import cmsTheme from '../../../theme/cms'
+import { crearTemaCms } from '../../../theme/cms'
 import NewsEditPage from '../NewsEditPage'
 
 const noticia = {
@@ -29,7 +29,7 @@ function montar(id = 7) {
     ],
     { initialEntries: [`/cms/noticias/${id}/editar`] },
   )
-  return render(<HelmetProvider><ThemeProvider theme={cmsTheme}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
+  return render(<HelmetProvider><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
 }
 
 describe('NewsEditPage', () => {

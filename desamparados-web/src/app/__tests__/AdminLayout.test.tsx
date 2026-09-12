@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
 import AdminLayout from '../AdminLayout'
 import { itemsMenu, rolesPorRutaCms } from '../cmsNavegacion'
 import { useAuthStore } from '../../features/members/auth/store'
 import { designTokens } from '../../theme'
+import { CLAVE_TEMA_CMS } from '../temaCms'
 
 function entrarComo(role: string) {
   useAuthStore.setState({
@@ -38,13 +40,6 @@ describe('AdminLayout', () => {
     expect(screen.queryByRole('link', { name: 'Tesorería' })).not.toBeInTheDocument()
   })
 
-  it('todo el staff tiene el panel como primera entrada', () => {
-    entrarComo('REDES')
-    renderWithProviders(<AdminLayout />)
-    const enlaces = screen.getAllByRole('link')
-    expect(enlaces[1]).toHaveAccessibleName('Panel') // [0] es el logotipo
-  })
-
   it('la barra lateral se queda fija al bajar por la página', () => {
     // En Tesorería la página mide veinte mil píxeles: si el menú se va con el
     // scroll, se navega a ciegas.
@@ -56,12 +51,116 @@ describe('AdminLayout', () => {
     expect(estilo.height).toBe('100vh')
   })
 
-  it('no lleva cabecera con el nombre del grupo ni el rol', () => {
+  it('no lleva cabecera superior con el nombre del Grupo Parroquial', () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<AdminLayout />)
     expect(screen.queryByText('Grupo Parroquial de los Desamparados')).not.toBeInTheDocument()
     expect(screen.queryByText('Administración')).not.toBeInTheDocument()
-    expect(screen.queryByText('Secretaría')).not.toBeInTheDocument()
+  })
+})
+
+const PANEL_MINIMO = {
+  generadoEn: '2026-09-11T08:00:00.000Z',
+  ejercicio: { anio: 2026, cerrado: false },
+  censo: { activos: 1284, altas12m: 34, bajas12m: 12, sinNumeroHermano: 3, serieMensual: [], movimientosMensuales: [], porEdad: [] },
+  dinero: {
+    porEstado: [{ estado: 'DEVUELTO', total: 14, importe: 420 }],
+    ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 },
+    serieMensual: [],
+    porCategoria: [],
+  },
+  procesion: { anio: 2026, papeletas: 612, porAnio: [], porPuesto: [], porTalla: [], porAlturaHombro: [] },
+  actividad: {
+    proximosEventos: [],
+    noticias: { publicadas: 4, borradores: 2 },
+    publicaciones: { total: 7, ultima: null },
+    reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
+    registro: [],
+  },
+}
+
+function responder(cuerpo: unknown = PANEL_MINIMO, status = 200) {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+    new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } }),
+  ))
+}
+
+describe('el menú del Inicio', () => {
+  beforeEach(() => { localStorage.clear(); responder() })
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  it('la primera entrada es Inicio, no Panel', async () => {
+    entrarComo('REDES')
+    renderWithProviders(<AdminLayout />)
+    const enlaces = screen.getAllByRole('link')
+    expect(enlaces[1]).toHaveAccessibleName('Inicio') // [0] es el logotipo
+  })
+
+  it('agrupa las secciones por áreas', () => {
+    entrarComo('ADMIN')
+    renderWithProviders(<AdminLayout />)
+    for (const grupo of ['Hoy', 'Contenido', 'Censo y enseres', 'Cuentas', 'Sistema']) {
+      expect(screen.getByText(grupo)).toBeInTheDocument()
+    }
+  })
+
+  it('un cargo acotado solo ve los grupos que le tocan', () => {
+    entrarComo('REDES')
+    renderWithProviders(<AdminLayout />)
+    expect(screen.getByText('Contenido')).toBeInTheDocument()
+    // Sin Tesorería ni Contabilidad, el grupo «Cuentas» no tiene nada que agrupar.
+    expect(screen.queryByText('Cuentas')).not.toBeInTheDocument()
+    expect(screen.queryByText('Censo y enseres')).not.toBeInTheDocument()
+  })
+
+  it('los contadores salen de los datos del panel', async () => {
+    entrarComo('ADMIN')
+    renderWithProviders(<AdminLayout />)
+    // 2 borradores en Noticias, 3 hermanos sin número, 14 recibos devueltos.
+    expect(await screen.findByLabelText('Noticias: 2 pendientes')).toHaveTextContent('2')
+    expect(screen.getByLabelText('Hermanos: 3 pendientes')).toHaveTextContent('3')
+    expect(screen.getByLabelText('Tesorería: 14 urgentes')).toHaveTextContent('14')
+  })
+
+  it('sin nada pendiente no pinta contadores', async () => {
+    responder({
+      ...PANEL_MINIMO,
+      censo: { ...PANEL_MINIMO.censo, sinNumeroHermano: 0 },
+      dinero: { ...PANEL_MINIMO.dinero, porEstado: [] },
+      actividad: { ...PANEL_MINIMO.actividad, noticias: { publicadas: 4, borradores: 0 } },
+    })
+    entrarComo('ADMIN')
+    renderWithProviders(<AdminLayout />)
+    await screen.findByRole('link', { name: 'Noticias' })
+    // Los dos tonos: «pendientes» (aviso) y también «urgentes», el de recibos
+    // devueltos, que es el más visible del menú.
+    expect(screen.queryByLabelText(/pendientes$/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/urgentes$/)).not.toBeInTheDocument()
+  })
+
+  it('si el panel falla, el menú se pinta igual', async () => {
+    responder({}, 500)
+    entrarComo('ADMIN')
+    renderWithProviders(<AdminLayout />)
+    expect(await screen.findByRole('link', { name: 'Tesorería' })).toBeInTheDocument()
+  })
+
+  it('el interruptor de tema arranca en oscuro y recuerda el cambio', async () => {
+    entrarComo('ADMIN')
+    renderWithProviders(<AdminLayout />)
+    const claro = screen.getByRole('radio', { name: 'Claro' })
+    const oscuro = screen.getByRole('radio', { name: 'Oscuro' })
+    expect(oscuro).toBeChecked()
+    await userEvent.click(claro)
+    expect(claro).toBeChecked()
+    expect(localStorage.getItem(CLAVE_TEMA_CMS)).toBe('claro')
+  })
+
+  it('el bloque de usuario dice el cargo y ofrece salir', () => {
+    entrarComo('SECRETARIA')
+    renderWithProviders(<AdminLayout />)
+    expect(screen.getByText('Secretaría')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument()
   })
 })
 
@@ -106,14 +205,33 @@ describe('las pantallas de edición se guardan como su listado', () => {
  * las cinco pantallas y los subtítulos que no van dentro de una tarjeta se
  * quedaron a 1.06:1 de contraste, ilegibles. Lo que sí vive dentro de un
  * `Paper` se salvaba de casualidad, porque MUI le aplica `text.primary`.
+ *
+ * Desde que el CMS arranca en modo oscuro, la misma trampa se puede colar al
+ * revés: basta con que algo vuelva a dejar el `body` en un color ajeno para
+ * que el modo activo, claro u oscuro, herede lo que no debe. Los dos casos de
+ * abajo ensucian el `body` con un color que no es el esperado en ningún modo
+ * y comprueban que `<main>` fija el suyo propio, herede lo que herede.
  */
 describe('el CMS no hereda el color de texto de la web pública', () => {
+  beforeEach(() => {
+    localStorage.removeItem(CLAVE_TEMA_CMS)
+  })
+
   afterEach(() => {
     document.body.style.removeProperty('color')
   })
 
-  it('el contenido fija el texto oscuro del tema claro, herede lo que herede', () => {
-    document.body.style.color = '#ffffff' // lo que hace la web pública
+  it('en modo oscuro (el arranque por defecto) el contenido fija el texto en blanco', () => {
+    document.body.style.color = '#ff00ff' // un color que no es el esperado en ningún modo
+    entrarComo('ADMIN')
+    renderWithProviders(<AdminLayout />)
+
+    expect(getComputedStyle(screen.getByRole('main')).color).toBe('rgb(255, 255, 255)')
+  })
+
+  it('en modo claro el contenido fija el texto oscuro del tema', () => {
+    localStorage.setItem(CLAVE_TEMA_CMS, 'claro')
+    document.body.style.color = '#ff00ff' // un color que no es el esperado en ningún modo
     entrarComo('ADMIN')
     renderWithProviders(<AdminLayout />)
 

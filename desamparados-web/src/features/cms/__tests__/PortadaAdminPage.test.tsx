@@ -5,7 +5,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import cmsTheme from '../../../theme/cms'
+import { crearTemaCms } from '../../../theme/cms'
 import PortadaAdminPage, { MAX_FOTOS_PORTADA } from '../PortadaAdminPage'
 
 const FOTOS = [
@@ -34,7 +34,7 @@ function montar(inicial: Response, ...siguientes: Response[]) {
   render(
     <HelmetProvider>
       <QueryClientProvider client={new QueryClient()}>
-        <ThemeProvider theme={cmsTheme}><RouterProvider router={router} /></ThemeProvider>
+        <ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>,
   )
