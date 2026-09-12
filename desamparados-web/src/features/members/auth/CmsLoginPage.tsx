@@ -23,6 +23,13 @@ function codigoError(e: unknown): string | undefined {
   return typeof error === 'string' ? error : undefined
 }
 
+// Modo fijo en esta pantalla: se calcula una sola vez al cargar el módulo, no
+// en cada render. `crearTemaCms` construye el tema entero con `createTheme`;
+// repetirlo en cada re-render (el 2FA y react-hook-form provocan varios) es
+// trabajo de más y, sobre todo, rompe la identidad del objeto del tema, así
+// que Emotion reinyecta estilos y se invalida cualquier hijo que dependa de esa identidad.
+const TEMA_ACCESO = crearTemaCms('claro')
+
 /**
  * Acceso propio del CMS. Misma cuentas que el área de hermanos, pero aquí solo
  * entra el equipo: una cuenta USER con credenciales válidas no consigue sesión,
@@ -113,7 +120,7 @@ export default function CmsLoginPage() {
   const staffDesdeHermanos = status === 'autenticado' && isStaffRole(user?.role) && user?.origen !== 'cms'
 
   return (
-    <ThemeProvider theme={crearTemaCms('claro')}>
+    <ThemeProvider theme={TEMA_ACCESO}>
       <Helmet>
         <title>Acceso a la administración | CMS Desamparados</title>
         <meta name="robots" content="noindex" />
