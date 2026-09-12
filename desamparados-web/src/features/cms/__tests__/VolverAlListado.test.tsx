@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import cmsTheme from '../../../theme/cms'
+import { crearTemaCms } from '../../../theme/cms'
 import BrothersAdminPage from '../BrothersAdminPage'
 import BrotherEditPage from '../BrotherEditPage'
 import { useAuthStore } from '../../members/auth/store'
@@ -58,7 +58,7 @@ function montar(entrada: string) {
     ],
     { initialEntries: [entrada] },
   )
-  render(<HelmetProvider><ThemeProvider theme={cmsTheme}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
+  render(<HelmetProvider><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
   return router
 }
 

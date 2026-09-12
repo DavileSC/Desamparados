@@ -6,7 +6,7 @@ import {
   Alert, Box, Button, Checkbox, FormControlLabel, Paper, TextField, ThemeProvider, Typography,
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import { cmsTheme } from '../../../theme/cms'
+import { crearTemaCms } from '../../../theme/cms'
 import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, cerrarSesionApi, type LoginResponse } from '../../../lib/api/auth'
@@ -113,7 +113,7 @@ export default function CmsLoginPage() {
   const staffDesdeHermanos = status === 'autenticado' && isStaffRole(user?.role) && user?.origen !== 'cms'
 
   return (
-    <ThemeProvider theme={cmsTheme}>
+    <ThemeProvider theme={crearTemaCms('claro')}>
       <Helmet>
         <title>Acceso a la administración | CMS Desamparados</title>
         <meta name="robots" content="noindex" />

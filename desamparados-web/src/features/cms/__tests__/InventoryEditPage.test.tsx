@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import cmsTheme from '../../../theme/cms'
+import { crearTemaCms } from '../../../theme/cms'
 import InventoryEditPage from '../InventoryEditPage'
 
 const prenda = {
@@ -29,7 +29,7 @@ function montar(ruta: string, cuerpo: unknown) {
     ],
     { initialEntries: [ruta] },
   )
-  render(<HelmetProvider><ThemeProvider theme={cmsTheme}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
+  render(<HelmetProvider><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
   return simulado
 }
 

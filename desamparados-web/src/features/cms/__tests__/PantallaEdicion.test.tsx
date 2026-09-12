@@ -3,7 +3,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider, Link } from 'react-router-dom'
-import cmsTheme from '../../../theme/cms'
+import { crearTemaCms } from '../../../theme/cms'
 import PantallaEdicion from '../PantallaEdicion'
 
 /**
@@ -30,7 +30,7 @@ function montar(props: Partial<Parameters<typeof PantallaEdicion>[0]> = {}) {
     { initialEntries: ['/cms/noticias/1/editar'] },
   )
   return {
-    ...render(<ThemeProvider theme={cmsTheme}><RouterProvider router={router} /></ThemeProvider>),
+    ...render(<ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider>),
     router,
   }
 }
