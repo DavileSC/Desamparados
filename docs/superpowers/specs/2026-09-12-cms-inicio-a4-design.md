@@ -1,9 +1,10 @@
 # Inicio del CMS: tema claro/oscuro y «Cómo va el año» — diseño
 
 **Fecha:** 12 de septiembre de 2026
-**Estado:** pendiente de revisión del usuario
-**Lienzo de referencia:** https://claude.ai/code/artifact/af1ee0d5-f8c5-4028-bf99-d86927349190
-(página «A4 · claro y oscuro»; las rondas anteriores quedan en las otras dos páginas)
+**Estado:** implementado (12 de septiembre de 2026)
+**Referencia de diseño:** `docs/superpowers/specs/2026-09-12-cms-inicio-a4/build-a4.mjs`
+(ahí viven las variables de los dos temas, la geometría de cada gráfica y los textos
+del diseño; el lienzo original se borró)
 
 ## 1. Por qué
 
@@ -221,14 +222,16 @@ No cambia ninguna guarda: `panel.routes.ts` ya admite los seis roles.
 
 1. **Contadores del menú.** Salen del mismo `/api/panel`, así que no añaden consultas.
    Si más adelante hace falta refrescarlos aparte, se separa entonces.
-2. **Cambio para Tesorería.** La tarjeta de recibos pasa a ser del ejercicio, no de
-   todos los años. Es lo correcto y el selector cubre la reunión de enero, pero
-   conviene avisarles del cambio.
-3. **Actividad para toda la junta.** Aunque solo sea contenido y agenda, es
-   información de quién trabaja. Si el usuario prefiere, se deja solo para ADMIN y
-   HERMANO_MAYOR y los demás no ven esa tarjeta.
-4. **Oscuro en los formularios largos.** Tesorería y Contabilidad se revisan en
-   oscuro; si alguno queda peor, se documenta y se decide si esa pantalla fuerza claro.
+2. **Cambio para Tesorería.** *Decidido.* La tarjeta de recibos pasa a ser del
+   ejercicio, no de todos los años. Es lo correcto y el selector cubre la reunión de
+   enero, pero **hay que avisar a Tesorería** del cambio antes de que lo note en uso.
+3. **Actividad para toda la junta.** *Decidido.* Se queda visible para los seis
+   cargos, no solo para ADMIN y HERMANO_MAYOR, y limitada a contenido y agenda (sin
+   datos personales), tal y como describe la sección 8.5.
+4. **Oscuro en los formularios largos.** *Pendiente.* La tarea 18 no pudo revisarlo a
+   ojo (`/cms/tesoreria`, `/cms/contabilidad`, `/cms/hermanos/:id/editar`,
+   `/cms/inventario`): no había base de datos levantada para servir el CMS. Queda
+   pendiente de mirar en cuanto haya entorno con MariaDB.
 5. **Datos de ejemplo.** Todas las cifras del lienzo son inventadas; al implementar
    salen del servidor.
 
