@@ -2,6 +2,7 @@ import { Box, Paper, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { designTokens } from '../../../theme'
+import { rolesPorRutaCms } from '../../../app/cmsNavegacion'
 
 const TIPO: Record<string, string> = {
   CULTO: 'Culto', PROCESION: 'Procesión', FORMACION: 'Formación', ENSAYO: 'Ensayo',
@@ -9,16 +10,28 @@ const TIPO: Record<string, string> = {
 }
 
 /** Los cuatro primeros actos convocados. */
-export default function ProximosActos({ eventos }: { eventos: PanelResponse['actividad']['proximosEventos'] }) {
+export default function ProximosActos({
+  eventos, role,
+}: {
+  eventos: PanelResponse['actividad']['proximosEventos']
+  role?: string
+}) {
   const proximos = eventos.slice(0, 4)
+  // Mismos roles que la guarda de /cms/agenda (rolesPorRutaCms es la única
+  // fuente de verdad): sin este condicional, Tesorería, Redes y Albacería
+  // pulsaban el enlace y RequireRole los expulsaba a /area-hermano, fuera de
+  // todo el CMS.
+  const veAgenda = role !== undefined && rolesPorRutaCms.agenda.includes(role)
 
   return (
     <Paper component="section" aria-labelledby="proximos-actos" sx={{ borderRadius: 1.75 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 2.75, pt: 2.25, pb: 1.5 }}>
         <Typography id="proximos-actos" variant="h5" component="h2">Próximos actos</Typography>
-        <Typography component={Link} to="/cms/agenda" variant="body2" sx={{ fontWeight: 600, textDecoration: 'none', color: 'primary.main' }}>
-          Agenda →
-        </Typography>
+        {veAgenda && (
+          <Typography component={Link} to="/cms/agenda" variant="body2" sx={{ fontWeight: 600, textDecoration: 'none', color: 'primary.main' }}>
+            Agenda →
+          </Typography>
+        )}
       </Box>
       {proximos.length === 0 && (
         <Typography variant="body2" color="text.secondary" sx={{ px: 2.75, pb: 3, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>

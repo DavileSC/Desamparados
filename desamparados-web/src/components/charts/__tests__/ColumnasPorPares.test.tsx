@@ -21,6 +21,14 @@ const props = {
 }
 
 describe('ColumnasPorPares', () => {
+  it('lleva leyenda con el total de cada serie', () => {
+    renderWithProviders(<ColumnasPorPares {...props} />)
+    expect(screen.getByText('Ingresos')).toBeInTheDocument()
+    expect(screen.getByText('13700 €')).toBeInTheDocument() // 9800 + 3900
+    expect(screen.getByText('Gastos')).toBeInTheDocument()
+    expect(screen.getByText('12500 €')).toBeInTheDocument() // 3100 + 9400
+  })
+
   it('pinta dos columnas por punto y el eje en euros', () => {
     const { container } = renderWithProviders(<ColumnasPorPares {...props} />)
     expect(container.querySelectorAll('[data-testid="columna"]')).toHaveLength(4)

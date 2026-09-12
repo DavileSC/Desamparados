@@ -47,6 +47,11 @@ export default function ColumnasPorPares({
   }
 
   const eje = escalaDesdeCero(Math.max(0, ...puntos.flatMap((p) => [p.a, p.b])))
+  // Totales del periodo para la leyenda: la correspondencia color→serie no
+  // puede vivir solo en el emergente del ratón (el color nunca es el único
+  // portador del dato, y el ratón nunca es la única forma de leerlo).
+  const totalA = puntos.reduce((s, p) => s + p.a, 0)
+  const totalB = puntos.reduce((s, p) => s + p.b, 0)
   const altoUtil = ALTO - ARRIBA - ABAJO
   const Y = (v: number) => ARRIBA + altoUtil - (v / eje.techo) * altoUtil
   const ranura = (ANCHO - IZQ - DER) / puntos.length
@@ -57,6 +62,18 @@ export default function ColumnasPorPares({
 
   return (
     <Box sx={{ width: '100%', position: 'relative' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.25, mb: 1, fontSize: 13 }}>
+        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.875 }}>
+          <Box component="span" sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: paleta.entrada }} />
+          <Typography component="span" variant="body2" color="text.secondary">{etiquetaA}</Typography>
+          <Typography component="strong" variant="body2" sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatoValor(totalA)}</Typography>
+        </Box>
+        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.875 }}>
+          <Box component="span" sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: paleta.salida }} />
+          <Typography component="span" variant="body2" color="text.secondary">{etiquetaB}</Typography>
+          <Typography component="strong" variant="body2" sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatoValor(totalB)}</Typography>
+        </Box>
+      </Box>
       <svg
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
         width="100%"

@@ -191,9 +191,16 @@ export class PanelService {
       db.hermano.groupBy({
         by: ['fechaAlta'],
         _count: { _all: true },
-        // gte y lt por simetría con rangoDinero: sin el lt, un alta futura (poco
-        // probable, pero no imposible con datos mal cargados) contaría de más.
-        where: { ...altasDelRecorrido, fechaAlta: { gte: rangoCenso.desde, lt: rangoCenso.hasta } },
+        // No se spreadea altasDelRecorrido entero: ya trae su propio
+        // `fechaAlta: { gte }`, y ponerlo junto a un `fechaAlta` propio aquí
+        // debajo lo pisaría en silencio (el literal que va después gana). Solo
+        // "funcionaba" porque los dos usan el mismo rangoCenso.desde. Se toma
+        // solo el OR de altas aprobadas del helper y el rango de fechaAlta se
+        // escribe completo y explícito, con el tope superior que ese OR no
+        // lleva (gte y lt por simetría con rangoDinero: sin el lt, un alta
+        // futura, poco probable pero no imposible con datos mal cargados,
+        // contaría de más).
+        where: { OR: altasDelRecorrido.OR, fechaAlta: { gte: rangoCenso.desde, lt: rangoCenso.hasta } },
       }),
       db.hermano.groupBy({
         by: ['fechaBaja'],

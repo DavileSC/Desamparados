@@ -18,6 +18,9 @@ interface Props {
   estados: FilaEstado[]
   paleta: GraficasCms
   formatoImporte: (valor: number) => string
+  /** Con el mismo punto de miles que la tabla: los componentes de `charts/`
+   * no dependen de `features/`, así que el formato llega por props. */
+  formatoNumero: (valor: number) => string
 }
 
 const ICONO = {
@@ -31,7 +34,7 @@ const ICONO = {
  * llegan a 3:1 sobre el lienzo claro, así que cada estado lleva además icono,
  * texto, número e importe: el color solo acompaña.
  */
-export default function ProporcionEstados({ estados, paleta, formatoImporte }: Props) {
+export default function ProporcionEstados({ estados, paleta, formatoImporte, formatoNumero }: Props) {
   const total = estados.reduce((s, e) => s + e.total, 0)
 
   if (total === 0) {
@@ -53,7 +56,7 @@ export default function ProporcionEstados({ estados, paleta, formatoImporte }: P
           {porcentaje} %
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          cobrado · {cobrados} de {total} recibos
+          cobrado · {formatoNumero(cobrados)} de {formatoNumero(total)} recibos
         </Typography>
       </Box>
 
@@ -77,7 +80,7 @@ export default function ProporcionEstados({ estados, paleta, formatoImporte }: P
               <Box sx={{ display: 'flex', color: paleta.estados[e.estado] }}><Icono sx={{ fontSize: 18 }} /></Box>
               <Typography variant="body2" color="text.secondary">{e.etiqueta}</Typography>
               <Typography component="strong" variant="body2" sx={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                {e.total}
+                {formatoNumero(e.total)}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                 {formatoImporte(e.importe)}

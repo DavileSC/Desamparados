@@ -45,7 +45,7 @@ export default function PanelPage() {
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <CuentaAtras />
-          <ProximosActos eventos={data.actividad.proximosEventos} />
+          <ProximosActos eventos={data.actividad.proximosEventos} role={role} />
         </Box>
       </Box>
 

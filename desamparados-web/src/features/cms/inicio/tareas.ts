@@ -1,4 +1,5 @@
 import type { PanelResponse } from '../../../lib/api/panel'
+import { NOMBRE_CARGO } from '../../../app/cmsNavegacion'
 import { contar } from './plural'
 
 /**
@@ -45,7 +46,7 @@ export function tareasDelDia(panel: PanelResponse): Tarea[] {
       etiqueta: ETIQUETA.urgente,
       titulo: contar(devueltos, 'recibo devuelto', 'recibos devueltos'),
       detalle: `Tesorería · ejercicio ${panel.ejercicio.anio}`,
-      cargo: 'Tesorería',
+      cargo: NOMBRE_CARGO.TESORERIA,
       roles: TESORERIA,
       accion: { texto: 'Revisar', href: '/cms/tesoreria' },
     })
@@ -59,7 +60,7 @@ export function tareasDelDia(panel: PanelResponse): Tarea[] {
       etiqueta: ETIQUETA.pendiente,
       titulo: contar(borradores, 'noticia en borrador', 'noticias en borrador'),
       detalle: 'Noticias · sin publicar',
-      cargo: 'Redes',
+      cargo: NOMBRE_CARGO.REDES,
       roles: CONTENIDO,
       accion: { texto: 'Publicar', href: '/cms/noticias' },
     })
@@ -73,7 +74,7 @@ export function tareasDelDia(panel: PanelResponse): Tarea[] {
       etiqueta: ETIQUETA.pendiente,
       titulo: `${contar(sinNumero, 'hermano', 'hermanos')} sin número de hermano`,
       detalle: 'Hermanos · altas recientes',
-      cargo: 'Secretaría',
+      cargo: NOMBRE_CARGO.SECRETARIA,
       roles: SECRETARIA,
       accion: { texto: 'Asignar', href: '/cms/hermanos' },
     })
@@ -87,7 +88,7 @@ export function tareasDelDia(panel: PanelResponse): Tarea[] {
       etiqueta: ETIQUETA.programado,
       titulo: contar(citasReservadas, 'cita de reparto', 'citas de reparto'),
       detalle: `Reparto · ${contar(turnosProximos, 'turno próximo', 'turnos próximos')}, capacidad para ${capacidadEstimada}`,
-      cargo: 'Secretaría',
+      cargo: NOMBRE_CARGO.SECRETARIA,
       roles: SECRETARIA,
       // El CMS todavía no tiene pantalla de turnos de reparto: sin sitio al que
       // ir, el asunto informa y no ofrece botón a nadie.

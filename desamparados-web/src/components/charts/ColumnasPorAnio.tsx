@@ -7,6 +7,8 @@ interface Props {
   paleta: GraficasCms
   /** El ejercicio elegido: va en tinta, el resto en gris. */
   destacado: number
+  /** Con punto de miles cuando lo pasa quien llama. Por defecto, el número tal cual. */
+  formatoValor?: (valor: number) => string
 }
 
 const ANCHO = 488
@@ -17,8 +19,9 @@ const ARRIBA = 26
 const ABAJO = 30
 
 /** Una columna por año, con su valor escrito encima: cinco cifras se leen mejor así que en una línea. */
-export default function ColumnasPorAnio({ datos, paleta, destacado }: Props) {
+export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor }: Props) {
   const theme = useTheme()
+  const texto = formatoValor ?? ((v: number) => String(v))
 
   if (datos.length === 0) {
     return (
@@ -40,7 +43,7 @@ export default function ColumnasPorAnio({ datos, paleta, destacado }: Props) {
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
         width="100%"
         role="img"
-        aria-label={datos.map((d) => `${d.anio}: ${d.total}`).join('. ')}
+        aria-label={datos.map((d) => `${d.anio}: ${texto(d.total)}`).join('. ')}
         style={{ display: 'block', overflow: 'visible' }}
       >
         {/* Las marcas intermedias van por debajo de las cifras de cada columna, así nunca las cruzan. */}
@@ -58,7 +61,7 @@ export default function ColumnasPorAnio({ datos, paleta, destacado }: Props) {
             <g key={d.anio}>
               <path data-testid="columna" d={columna(x, Y(0), Y(d.total), ancho)} fill={esElegido ? paleta.enfasis : paleta.contexto} />
               <text x={x + ancho / 2} y={Y(d.total) - 8} textAnchor="middle" fontSize="12" fontWeight={esElegido ? 700 : 600} fill={esElegido ? theme.palette.text.primary : theme.palette.text.secondary}>
-                {d.total}
+                {texto(d.total)}
               </text>
               <text x={x + ancho / 2} y={ALTO - 8} textAnchor="middle" fontSize="12" fontWeight={esElegido ? 700 : 400} fill={esElegido ? theme.palette.text.primary : theme.palette.text.secondary}>
                 {d.anio}

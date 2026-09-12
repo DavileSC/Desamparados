@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, MenuItem, Paper, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { getPanel, type PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/temaCms'
@@ -86,6 +86,12 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
       })
     : []
 
+  // Misma lista para la gráfica de «En qué se gasta» y para su tabla: mismo
+  // motivo que filasEstado, para que el filtro y el orden no se escriban dos veces.
+  const gastosPorCategoria = datos
+    ? [...datos.dinero.porCategoria].filter((c) => c.tipo === 'GASTO').sort((a, b) => b.importe - a.importe)
+    : []
+
   return (
     <Box component="section" aria-labelledby="como-va" sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: 'divider' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
@@ -120,7 +126,22 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
         </Typography>
       </Box>
 
-      {!datos ? (
+      {consulta.isError ? (
+        // Con retry: 1 (App.tsx), tras dos intentos fallidos la consulta se
+        // queda en isError para siempre: sin esta rama, el cartel de «Cargando…»
+        // se quedaba fijo sin explicación ni forma de salir de ahí.
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={() => setAnio(anioActual)}>
+              Volver al ejercicio en curso
+            </Button>
+          }
+          sx={{ my: 4 }}
+        >
+          No se ha podido cargar el ejercicio {anio}.
+        </Alert>
+      ) : !datos ? (
         <Typography variant="body2" color="text.secondary" sx={{ py: 4 }}>
           Cargando el ejercicio {anio}…
         </Typography>
@@ -131,6 +152,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               etiqueta="Hermanos activos"
               paleta={graficas}
               puntos={datos.censo.serieMensual.map((p) => ({ x: p.mes, y: p.activos }))}
+              formatoValor={numero}
               etiquetaX={etiquetaPunto}
             />
             <TablaDeDatos
@@ -157,7 +179,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
 
           <Tarjeta
             titulo="Ingresos y gastos por mes"
-            subtitulo={`Lo que entra y lo que sale cada mes · saldo del ejercicio ${eurosResumen(datos.dinero.ejercicio.saldo)}`}
+            subtitulo={`Ingresos ${eurosResumen(datos.dinero.ejercicio.ingresos)} · Gastos ${eurosResumen(datos.dinero.ejercicio.gastos)} · Saldo ${eurosResumen(datos.dinero.ejercicio.saldo)}`}
             ancha
           >
             <ColumnasPorPares
@@ -180,23 +202,17 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
             <BarrasHorizontales
               color={graficas.salida}
               formatoValor={eurosResumen}
-              filas={datos.dinero.porCategoria
-                .filter((c) => c.tipo === 'GASTO')
-                .sort((a, b) => b.importe - a.importe)
-                .map((c) => ({ etiqueta: c.categoria, valor: c.importe }))}
+              filas={gastosPorCategoria.map((c) => ({ etiqueta: c.categoria, valor: c.importe }))}
             />
             <TablaDeDatos
               titulo="Gasto por categoría"
               columnas={['Categoría', 'Importe', 'Apuntes']}
-              filas={datos.dinero.porCategoria
-                .filter((c) => c.tipo === 'GASTO')
-                .sort((a, b) => b.importe - a.importe)
-                .map((c) => [c.categoria, euros(c.importe), numero(c.total)])}
+              filas={gastosPorCategoria.map((c) => [c.categoria, euros(c.importe), numero(c.total)])}
             />
           </Tarjeta>
 
           <Tarjeta titulo="Cobro de recibos" subtitulo={`Recibos del ejercicio ${datos.ejercicio.anio} según su estado`}>
-            <ProporcionEstados paleta={graficas} formatoImporte={eurosResumen} estados={filasEstado} />
+            <ProporcionEstados paleta={graficas} formatoImporte={eurosResumen} formatoNumero={numero} estados={filasEstado} />
             <TablaDeDatos
               titulo="Recibos por estado"
               columnas={['Estado', 'Recibos', 'Importe']}
@@ -205,7 +221,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
           </Tarjeta>
 
           <Tarjeta titulo="Papeletas de sitio" subtitulo="Últimos cinco años, con el ejercicio elegido destacado">
-            <ColumnasPorAnio datos={datos.procesion.porAnio} paleta={graficas} destacado={datos.ejercicio.anio} />
+            <ColumnasPorAnio datos={datos.procesion.porAnio} paleta={graficas} destacado={datos.ejercicio.anio} formatoValor={numero} />
             <TablaDeDatos
               titulo="Papeletas por año"
               columnas={['Año', 'Papeletas']}

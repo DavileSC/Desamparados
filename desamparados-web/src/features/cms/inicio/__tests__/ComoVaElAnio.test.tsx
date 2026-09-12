@@ -47,9 +47,9 @@ const DE_2025 = {
   procesion: { ...PANEL.procesion, anio: 2025, papeletas: 604 },
 } as unknown as PanelResponse
 
-function responder(cuerpo: unknown) {
+function responder(cuerpo: unknown, status = 200) {
   const espia = vi.fn().mockResolvedValue(
-    new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } }),
   )
   vi.stubGlobal('fetch', espia)
   return espia
@@ -77,6 +77,12 @@ describe('ComoVaElAnio', () => {
     ]) {
       expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument()
     }
+  })
+
+  it('el subtítulo de «Ingresos y gastos por mes» lleva los tres totales del ejercicio', () => {
+    responder(PANEL)
+    montar()
+    expect(screen.getByText('Ingresos 48.300 € · Gastos 35.440 € · Saldo 12.860 €')).toBeInTheDocument()
   })
 
   it('al elegir un año cerrado pide ese ejercicio y lo dice en la cabecera', async () => {
@@ -130,6 +136,20 @@ describe('ComoVaElAnio', () => {
     responder(PANEL)
     montar()
     expect(screen.getAllByText('Ver tabla').length).toBeGreaterThanOrEqual(6)
+  })
+
+  it('si el ejercicio elegido falla al cargar, avisa y deja volver al actual', async () => {
+    responder({}, 500)
+    montar()
+    await userEvent.click(screen.getByRole('combobox', { name: /ejercicio/i }))
+    await userEvent.click(screen.getByRole('option', { name: '2025' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no se ha podido cargar el ejercicio 2025/i)
+
+    await userEvent.click(screen.getByRole('button', { name: /volver al ejercicio en curso/i }))
+    expect(screen.getByRole('combobox', { name: /ejercicio/i })).toHaveTextContent('2026')
+    expect(screen.getByText(/Ejercicio en curso/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Censo de hermanos' })).toBeInTheDocument()
   })
 
   it('con las series vacías no revienta', () => {

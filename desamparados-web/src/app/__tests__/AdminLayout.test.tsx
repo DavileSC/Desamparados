@@ -132,7 +132,10 @@ describe('el menú del Inicio', () => {
     entrarComo('ADMIN')
     renderWithProviders(<AdminLayout />)
     await screen.findByRole('link', { name: 'Noticias' })
+    // Los dos tonos: «pendientes» (aviso) y también «urgentes», el de recibos
+    // devueltos, que es el más visible del menú.
     expect(screen.queryByLabelText(/pendientes$/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/urgentes$/)).not.toBeInTheDocument()
   })
 
   it('si el panel falla, el menú se pinta igual', async () => {

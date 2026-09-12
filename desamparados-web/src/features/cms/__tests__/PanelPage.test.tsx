@@ -22,6 +22,7 @@ const panel: PanelResponse = {
     porEstado: [
       { estado: 'PAGADO', total: 1126, importe: 33780 },
       { estado: 'PENDIENTE', total: 57, importe: 1710 },
+      { estado: 'REMESADO', total: 23, importe: 690 },
       { estado: 'DEVUELTO', total: 14, importe: 420 },
     ],
     ejercicio: { anio: 2026, ingresos: 48300, gastos: 35440, saldo: 12860 },
@@ -83,7 +84,7 @@ describe('Inicio del CMS', () => {
 
     expect((await tarjeta('Hermanos activos')).getByText('1.284')).toBeInTheDocument()
     expect((await tarjeta(/^Papeletas 2026$/)).getByText('612')).toBeInTheDocument()
-    expect((await tarjeta('Por cobrar')).getByText('2.130 €')).toBeInTheDocument() // pendientes + devueltos
+    expect((await tarjeta('Por cobrar')).getByText('2.820 €')).toBeInTheDocument() // pendientes + remesados + devueltos
     expect((await tarjeta(/^Saldo 2026$/)).getByText('12.860 €')).toBeInTheDocument()
   })
 
@@ -112,6 +113,31 @@ describe('Inicio del CMS', () => {
     montar()
     await screen.findByRole('heading', { name: 'Actividad del equipo' })
     expect(screen.queryByRole('link', { name: /Ver auditoría/ })).not.toBeInTheDocument()
+  })
+
+  it('el enlace a Auditoría lo ve quien puede entrar', async () => {
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    expect(await screen.findByRole('link', { name: /Ver auditoría/ })).toBeInTheDocument()
+  })
+
+  // rolesPorRutaCms.agenda es ['ADMIN','SECRETARIA','HERMANO_MAYOR']: sin este
+  // condicional, Tesorería pulsaba «Agenda →» y RequireRole la expulsaba a
+  // /area-hermano, fuera de todo el CMS (ver el hallazgo crítico de la revisión).
+  it('el enlace a la Agenda de «Próximos actos» no lo ve Tesorería', async () => {
+    responder(panel)
+    entrarComo('TESORERIA')
+    montar()
+    await screen.findByRole('heading', { name: 'Próximos actos' })
+    expect(screen.queryByRole('link', { name: /Agenda →/ })).not.toBeInTheDocument()
+  })
+
+  it('el enlace a la Agenda de «Próximos actos» sí lo ve Secretaría', async () => {
+    responder(panel)
+    entrarComo('SECRETARIA')
+    montar()
+    expect(await screen.findByRole('link', { name: /Agenda →/ })).toBeInTheDocument()
   })
 
   it('lleva «Cómo va el año» debajo', async () => {

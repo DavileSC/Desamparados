@@ -22,8 +22,12 @@ function Cifra({ etiqueta, valor, pie }: { etiqueta: string; valor: string | num
  * hacer ahora, y mezclarlas con un año cerrado despistaría.
  */
 export default function Cifras({ panel }: { panel: PanelResponse }) {
+  // REMESADO cuenta como «por cobrar»: es dinero ya enviado al banco en un
+  // lote SEPA, pero todavía no está en la cuenta. «Cómo va el año» ya lo
+  // sumaba en el mismo sentido; sin él aquí, esta cifra y esa tarjeta se
+  // contradecían en la misma pantalla.
   const porCobrar = panel.dinero.porEstado
-    .filter((e) => e.estado === 'PENDIENTE' || e.estado === 'DEVUELTO')
+    .filter((e) => e.estado === 'PENDIENTE' || e.estado === 'REMESADO' || e.estado === 'DEVUELTO')
     .reduce((s, e) => ({ total: s.total + e.total, importe: s.importe + e.importe }), { total: 0, importe: 0 })
   const saldo = panel.dinero.ejercicio.saldo
 
@@ -32,7 +36,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
       <Cifra
         etiqueta="Hermanos activos"
         valor={numero(panel.censo.activos)}
-        pie={`+${panel.censo.altas12m} / −${panel.censo.bajas12m} en doce meses`}
+        pie={`+${numero(panel.censo.altas12m)} / −${numero(panel.censo.bajas12m)} en doce meses`}
       />
       <Cifra etiqueta={`Papeletas ${panel.procesion.anio}`} valor={numero(panel.procesion.papeletas)} pie="de sitio" />
       <Cifra
