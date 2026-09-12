@@ -41,7 +41,7 @@ export default function PanelPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <ParaHoy tareas={tareas} role={role} />
           <Cifras panel={data} />
-          <ActividadEquipo registro={data.actividad.registro} role={role} />
+          <ActividadEquipo actividad={data.actividad} role={role} />
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <CuentaAtras />

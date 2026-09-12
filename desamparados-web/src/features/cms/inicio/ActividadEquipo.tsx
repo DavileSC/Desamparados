@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { NOMBRE_CARGO } from '../../../app/cmsNavegacion'
 import { cuandoFue, describirAccion } from './actividad'
+import { contar } from './plural'
+import { fechaCorta } from '../contabilidad/formato'
 
 /**
  * Qué se ha tocado últimamente, por cargo y sin nombres. Solo contenido y
@@ -10,12 +12,13 @@ import { cuandoFue, describirAccion } from './actividad'
  * HERMANO_MAYOR, y por eso el enlace solo aparece para ellos.
  */
 export default function ActividadEquipo({
-  registro, role, ahora = new Date(),
+  actividad, role, ahora = new Date(),
 }: {
-  registro: PanelResponse['actividad']['registro']
+  actividad: PanelResponse['actividad']
   role?: string
   ahora?: Date
 }) {
+  const { registro, noticias, publicaciones } = actividad
   const veAuditoria = role === 'ADMIN' || role === 'HERMANO_MAYOR'
 
   return (
@@ -51,7 +54,15 @@ export default function ActividadEquipo({
           </Typography>
         </Box>
       ))}
-      <Box sx={{ pb: 1 }} />
+
+      {/* Noticias publicadas y publicaciones: el panel viejo las enseñaba y
+          aquí no llevan gráfica, a propósito, porque son solo dos números
+          sueltos y una fecha (un número suelto no lleva gráfica). */}
+      <Typography variant="body2" color="text.secondary" sx={{ px: 2.75, py: 1.5, borderTop: 1, borderColor: 'divider' }}>
+        {contar(noticias.publicadas, 'noticia publicada', 'noticias publicadas')} ·{' '}
+        {contar(publicaciones.total, 'publicación', 'publicaciones')}
+        {publicaciones.ultima && ` · última el ${fechaCorta(publicaciones.ultima)}`}
+      </Typography>
     </Paper>
   )
 }

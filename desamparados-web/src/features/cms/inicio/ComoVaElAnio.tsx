@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Alert, Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { getPanel, type PanelResponse } from '../../../lib/api/panel'
+import { getPanel, type PanelResponse, type TipoMovimiento } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/temaCms'
 import LineaTemporal from '../../../components/charts/LineaTemporal'
 import BarrasHorizontales from '../../../components/charts/BarrasHorizontales'
@@ -53,10 +53,11 @@ function Tarjeta({
 }
 
 /**
- * «Cómo va el año»: un selector de ejercicio que gobierna las siete gráficas y
- * nada más. La cabecera del Inicio, «Para hoy», los actos y la cuenta atrás no
- * cambian nunca; el selector existe porque el Inicio se enseña a la junta en la
- * reunión de principios de año, cuando lo que importa es el ejercicio cerrado.
+ * «Cómo va el año»: un selector de ejercicio que gobierna las gráficas de esta
+ * sección y nada más. La cabecera del Inicio, «Para hoy», los actos y la
+ * cuenta atrás no cambian nunca; el selector existe porque el Inicio se
+ * enseña a la junta en la reunión de principios de año, cuando lo que importa
+ * es el ejercicio cerrado.
  */
 export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse }) {
   const { graficas } = useTemaCms()
@@ -86,11 +87,13 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
       })
     : []
 
-  // Misma lista para la gráfica de «En qué se gasta» y para su tabla: mismo
-  // motivo que filasEstado, para que el filtro y el orden no se escriban dos veces.
-  const gastosPorCategoria = datos
-    ? [...datos.dinero.porCategoria].filter((c) => c.tipo === 'GASTO').sort((a, b) => b.importe - a.importe)
-    : []
+  // Misma lista para la gráfica y para su tabla, tanto en «De dónde entra»
+  // como en «En qué se gasta»: así el filtro por tipo y el orden por importe
+  // no se escriben dos veces, ni se pueden desincronizar entre las dos.
+  const categoriasPorTipo = (tipo: TipoMovimiento) =>
+    datos ? [...datos.dinero.porCategoria].filter((c) => c.tipo === tipo).sort((a, b) => b.importe - a.importe) : []
+  const ingresosPorCategoria = categoriasPorTipo('INGRESO')
+  const gastosPorCategoria = categoriasPorTipo('GASTO')
 
   return (
     <Box component="section" aria-labelledby="como-va" sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: 'divider' }}>
@@ -198,6 +201,19 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
             />
           </Tarjeta>
 
+          <Tarjeta titulo="De dónde entra" subtitulo={`Ingresos de ${datos.ejercicio.anio} por categoría contable`}>
+            <BarrasHorizontales
+              color={graficas.entrada}
+              formatoValor={eurosResumen}
+              filas={ingresosPorCategoria.map((c) => ({ etiqueta: c.categoria, valor: c.importe }))}
+            />
+            <TablaDeDatos
+              titulo="Ingreso por categoría"
+              columnas={['Categoría', 'Importe', 'Apuntes']}
+              filas={ingresosPorCategoria.map((c) => [c.categoria, euros(c.importe), numero(c.total)])}
+            />
+          </Tarjeta>
+
           <Tarjeta titulo="En qué se gasta" subtitulo={`Gastos de ${datos.ejercicio.anio} por categoría contable`}>
             <BarrasHorizontales
               color={graficas.salida}
@@ -227,6 +243,64 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               columnas={['Año', 'Papeletas']}
               filas={datos.procesion.porAnio.map((a) => [String(a.anio), numero(a.total)])}
             />
+          </Tarjeta>
+
+          {/* Lo que Albacería necesita para preparar la estación: cuántas
+              papeletas hay por puesto. Sí sigue al selector, porque el
+              backend acota `procesion.porPuesto` con el ejercicio elegido
+              (igual que `porAnio` y `papeletas`), y el subtítulo lo dice. */}
+          <Tarjeta titulo="Puestos de la procesión" subtitulo={`Papeletas del ejercicio ${datos.ejercicio.anio}, por puesto`}>
+            <BarrasHorizontales
+              color={graficas.neutro}
+              formatoValor={numero}
+              filas={datos.procesion.porPuesto.map((p) => ({ etiqueta: p.etiqueta, valor: p.total }))}
+            />
+            <TablaDeDatos
+              titulo="Papeletas por puesto"
+              columnas={['Puesto', 'Papeletas']}
+              filas={datos.procesion.porPuesto.map((p) => [p.etiqueta, numero(p.total)])}
+            />
+          </Tarjeta>
+
+          <Tarjeta
+            titulo="Túnicas y varales"
+            subtitulo="Hermanos activos a día de hoy, para preparar cuántas túnicas de cada talla y cuántos varales de cada medida hacen falta"
+            ancha
+          >
+            {/* De hoy siempre, igual que «Hermanos por edad»: la talla o la
+                altura de hombro de quien estaba activo en un ejercicio
+                cerrado no se pueden reconstruir con agregados, así que estos
+                dos se leen de panelDeHoy y no del ejercicio elegido arriba. */}
+            <Box>
+              <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Tallas de túnica
+              </Typography>
+              <BarrasHorizontales
+                color={graficas.neutro}
+                formatoValor={numero}
+                filas={panelDeHoy.procesion.porTalla.map((t) => ({ etiqueta: t.etiqueta, valor: t.total }))}
+              />
+              <TablaDeDatos
+                titulo="Hermanos activos por talla de túnica"
+                columnas={['Talla', 'Hermanos']}
+                filas={panelDeHoy.procesion.porTalla.map((t) => [t.etiqueta, numero(t.total)])}
+              />
+            </Box>
+            <Box>
+              <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Altura de hombro, para los varales
+              </Typography>
+              <BarrasHorizontales
+                color={graficas.neutro}
+                formatoValor={numero}
+                filas={panelDeHoy.procesion.porAlturaHombro.map((a) => ({ etiqueta: a.tramo, valor: a.total }))}
+              />
+              <TablaDeDatos
+                titulo="Hermanos activos por altura de hombro"
+                columnas={['Altura', 'Hermanos']}
+                filas={panelDeHoy.procesion.porAlturaHombro.map((a) => [a.tramo, numero(a.total)])}
+              />
+            </Box>
           </Tarjeta>
 
           <Tarjeta titulo="Hermanos por edad" subtitulo="Hermanos activos por tramo de edad, a día de hoy">

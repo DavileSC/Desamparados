@@ -124,7 +124,7 @@ nombres (sección 8).
 ## 7. «Cómo va el año»
 
 Debajo, con su cabecera y un **selector de ejercicio** encima de todo: uno solo, que
-afecta a las siete gráficas y a nada más.
+afecta a las gráficas de esta sección y a nada más.
 
 - Por defecto, el año en curso.
 - Al elegir un año cerrado, la sección entera pasa a ese año (de enero a diciembre) y
@@ -137,9 +137,13 @@ afecta a las siete gráficas y a nada más.
 | Censo de hermanos | Línea con área | `censo.serieMensual` del ejercicio elegido (en el año en curso, los últimos doce meses) | Eje con tres marcas, primer y último valor escritos |
 | Altas y bajas | Columnas a ambos lados del cero | **nuevo** `censo.movimientosMensuales` | Azul arriba, granate abajo, leyenda con totales |
 | Ingresos y gastos por mes | Columnas por pares | `dinero.serieMensual` | Eje en euros, leyenda, el mes señalado muestra sus cifras al pasar el ratón |
-| En qué se gasta | Barras horizontales | **nuevo** importe en `dinero.porCategoria` | Ordenadas de mayor a menor, con el importe al final |
+| De dónde entra | Barras horizontales | Importe en `dinero.porCategoria` con `tipo: 'INGRESO'` | Ordenadas de mayor a menor, con el importe al final; justo antes de «En qué se gasta», como pareja |
+| En qué se gasta | Barras horizontales | **nuevo** importe en `dinero.porCategoria` con `tipo: 'GASTO'` | Ordenadas de mayor a menor, con el importe al final |
 | Cobro de recibos | Proporción + tabla de estados | `dinero.porEstado` **del ejercicio elegido** | Porcentaje cobrado, y cada estado con icono, texto, número e importe |
 | Papeletas de sitio | Columnas por año | `procesion.porAnio` | Cinco años, valor sobre cada columna, el ejercicio elegido destacado |
+| Puestos de la procesión | Barras horizontales | `procesion.porPuesto` **del ejercicio elegido** | Un puesto por fila; lo que usa Albacería para preparar la estación |
+| Tallas de túnica | Barras horizontales | `procesion.porTalla` (siempre a día de hoy) | Una talla por fila; dentro de la tarjeta ancha «Túnicas y varales», junto a la altura de hombro |
+| Altura de hombro | Barras horizontales | `procesion.porAlturaHombro` (siempre a día de hoy) | Un tramo por fila; para calcular cuántos varales de cada medida hacen falta |
 | Hermanos por edad | Barras horizontales | `censo.porEdad` (siempre a día de hoy, y lo dice el subtítulo) | Un tramo por fila con su número |
 
 Reglas para todas: ejes y valores legibles sin pasar el ratón; leyenda cuando hay dos
@@ -147,7 +151,16 @@ series; el ratón añade detalle pero nunca es la única forma de leer un dato; 
 tabla» en cada una; marcas finas, rejilla de un tono; nada de dos ejes verticales.
 
 Sin gráfica, a propósito: las cuatro cifras, «Para hoy», los actos, la cuenta atrás y
-la actividad.
+la actividad (con las noticias publicadas y las publicaciones, como dos números
+sueltos y una fecha, al pie de «Actividad del equipo»).
+
+> **Nota (12-09-2026).** Esta tabla listaba siete gráficas; la revisión posterior a la
+> tarea 18 encontró que el panel viejo (`PanelPage.tsx` previo a este rediseño) también
+> enseñaba el desglose de la procesión por puesto, talla y altura de hombro, los
+> ingresos por categoría y las noticias/publicaciones, y que la primera versión de esta
+> spec los dejó fuera sin querer al no llevarlos a la tabla de gráficas. Se han
+> recuperado todos: el backend ya los calculaba y los devolvía en `PanelResponse`, así
+> que no hizo falta tocarlo.
 
 ## 8. Backend
 

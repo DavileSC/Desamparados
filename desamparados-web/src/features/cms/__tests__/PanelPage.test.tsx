@@ -107,6 +107,25 @@ describe('Inicio del CMS', () => {
     expect(screen.getByText(/creó una noticia/)).toBeInTheDocument()
   })
 
+  it('el pie de «Actividad del equipo» enseña las noticias publicadas, las publicaciones y la fecha de la última', async () => {
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    await screen.findByRole('heading', { name: 'Actividad del equipo' })
+    expect(screen.getByText(/4 noticias publicadas/)).toBeInTheDocument()
+    expect(screen.getByText(/7 publicaciones/)).toBeInTheDocument()
+    expect(screen.getByText(/última el 1 jun 2026/)).toBeInTheDocument()
+  })
+
+  it('sin ninguna publicación registrada, el pie no menciona una fecha', async () => {
+    responder({ ...panel, actividad: { ...panel.actividad, publicaciones: { total: 0, ultima: null } } })
+    entrarComo('ADMIN')
+    montar()
+    await screen.findByRole('heading', { name: 'Actividad del equipo' })
+    expect(screen.getByText(/0 publicaciones/)).toBeInTheDocument()
+    expect(screen.queryByText(/última el/)).not.toBeInTheDocument()
+  })
+
   it('el enlace a Auditoría solo lo ven quienes pueden entrar', async () => {
     responder(panel)
     entrarComo('REDES')

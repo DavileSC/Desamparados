@@ -98,6 +98,10 @@ describe('TreasuryAdminPage', () => {
     expect(años.every((a) => a === null || /^\d{4}$/.test(a))).toBe(true)
   })
 
+  // Encadena muchas interacciones reales de userEvent (teclear, abrir dos
+  // desplegables, esperar la búsqueda de hermano); con el resto de la suite
+  // completa corriendo en paralelo puede rozar el límite por defecto de 5 s
+  // sin que haya nada roto, así que lleva su propio margen.
   it('«Nuevo recibo» abre una ventana, busca al hermano y emite el recibo con su importe con coma', async () => {
     const user = userEvent.setup()
     const simulado = servidor()
@@ -130,7 +134,7 @@ describe('TreasuryAdminPage', () => {
       hermanoId: 5, year: new Date().getFullYear(), concepto: 'Cuota anual (reemisión)', importe: 12.5, tipo: 'CUOTA_HERMANO',
     })
     expect(await screen.findByText(/emitido\. queda pendiente de cobro/i)).toBeInTheDocument()
-  })
+  }, 15000)
 
   it('un importe negativo o con tres decimales no deja emitir y dice por qué', async () => {
     const user = userEvent.setup()
