@@ -9,13 +9,15 @@ export interface FilaBarra {
 interface Props {
   filas: FilaBarra[]
   color?: string
+  /** Por defecto, el número tal cual; con euros, el importe formateado. */
+  formatoValor?: (valor: number) => string
 }
 
 /**
  * Una sola serie, así que un solo color: el orden y la longitud ya distinguen
  * las filas. Pintarlas de colores distintos sugeriría categorías que no hay.
  */
-export default function BarrasHorizontales({ filas, color }: Props) {
+export default function BarrasHorizontales({ filas, color, formatoValor }: Props) {
   if (filas.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
@@ -32,7 +34,7 @@ export default function BarrasHorizontales({ filas, color }: Props) {
       {filas.map((fila) => (
         <Box
           key={fila.etiqueta}
-          sx={{ display: 'grid', gridTemplateColumns: '128px 1fr auto', alignItems: 'center', gap: 1.5 }}
+          sx={{ display: 'grid', gridTemplateColumns: '176px minmax(0, 1fr) auto', alignItems: 'center', gap: 1.5 }}
         >
           <Typography variant="body2" color="text.secondary" noWrap title={fila.etiqueta}>
             {fila.etiqueta}
@@ -49,8 +51,8 @@ export default function BarrasHorizontales({ filas, color }: Props) {
               }}
             />
           </Box>
-          <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-            {fila.valor}
+          <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+            {formatoValor ? formatoValor(fila.valor) : fila.valor}
           </Typography>
         </Box>
       ))}

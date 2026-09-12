@@ -1,8 +1,15 @@
 import { EstadoPago, TipoTransaccion, type TipoEvento } from '@prisma/client';
 import db from '../config/db.js';
-import { serieCensoMensual, ultimosMeses, claveMes, whereAltasAprobadas, type MovimientoMensual } from '../domain/panel-censo.js';
+import { serieCensoMensual, claveMes, whereAltasAprobadas, type MovimientoMensual } from '../domain/panel-censo.js';
 import { diaMadrid, inicioDiaMadrid, unAnioAntes } from '../domain/contabilidad.js';
 import { agruparPorTextoLibre, type Recuento } from '../domain/panel-agrupar.js';
+import {
+  leerEjercicio,
+  mesesDelEjercicio,
+  mesesParaReconstruir,
+  rangoDeMeses,
+  rangoDelEjercicio,
+} from '../domain/panel-ejercicio.js';
 
 /**
  * REGLA DE ORO DE ESTE FICHERO
@@ -20,6 +27,8 @@ import { agruparPorTextoLibre, type Recuento } from '../domain/panel-agrupar.js'
 
 export interface PanelResponse {
   generadoEn: string;
+  /** Ejercicio que acota el dinero, la procesión y la serie del censo. */
+  ejercicio: { anio: number; cerrado: boolean };
   censo: {
     activos: number;
     altas12m: number;
@@ -99,17 +108,32 @@ function contarPorMes(fechas: (Date | null)[]): MovimientoMensual[] {
 }
 
 export class PanelService {
-  static async getPanel(): Promise<PanelResponse> {
+  static async getPanel(anioSolicitado?: unknown): Promise<PanelResponse> {
     const hoy = new Date();
     // Días, meses y años de Madrid, con los mismos helpers que la contabilidad:
     // en UTC, el ejercicio perdía la primera hora del 1 de enero y lo cobrado la
     // primera hora del día 1 de cada mes caía en el mes anterior.
     const diaHoy = diaMadrid(hoy);
-    const anio = Number(diaHoy.slice(0, 4));
-    const meses = ultimosMeses(hoy, 12);
+    const ejercicio = leerEjercicio(anioSolicitado, hoy);
+    const anio = ejercicio.anio;
+
+    // Los meses que se enseñan y los que hay que recorrer para reconstruir el
+    // censo hacia atrás desde los activos de hoy. Con el año en curso son los
+    // mismos; con uno cerrado, el recorrido llega hasta el mes de hoy.
+    const meses = mesesDelEjercicio(ejercicio, hoy);
+    const mesesRecorridos = mesesParaReconstruir(meses, hoy);
+    // Dos rangos distintos a propósito: el dinero solo necesita los meses que se
+    // enseñan, y el censo necesita además todo lo que va desde ahí hasta hoy.
+    const rangoDinero = rangoDeMeses(meses);
+    const rangoCenso = rangoDeMeses(mesesRecorridos);
+    const { desde: inicioEjercicio, hasta: finEjercicio } = rangoDelEjercicio(anio);
+
+    // Las altas y bajas de los últimos doce meses son cifras DE HOY (van en la
+    // tarjeta de hermanos activos), así que no las toca el selector.
     const haceUnAnio = inicioDiaMadrid(unAnioAntes(diaHoy));
-    const inicioEjercicio = inicioDiaMadrid(`${anio}-01-01`);
-    const altasDelAnio = whereAltasAprobadas(haceUnAnio);
+    const altasUltimoAnio = whereAltasAprobadas(haceUnAnio);
+    // Las de la serie, en cambio, cubren todo el recorrido de reconstrucción.
+    const altasDelRecorrido = whereAltasAprobadas(rangoCenso.desde);
 
     const [
       activos,
@@ -139,11 +163,15 @@ export class PanelService {
     ] = await Promise.all([
       db.hermano.count({ where: { activo: true } }),
       // Las solicitudes pendientes no son altas (ver whereAltasAprobadas).
-      db.hermano.count({ where: altasDelAnio }),
+      db.hermano.count({ where: altasUltimoAnio }),
       db.hermano.count({ where: { fechaBaja: { gte: haceUnAnio } } }),
       db.hermano.count({ where: { activo: true, numeroHermano: null } }),
-      db.hermano.groupBy({ by: ['fechaAlta'], _count: { _all: true }, where: altasDelAnio }),
-      db.hermano.groupBy({ by: ['fechaBaja'], _count: { _all: true }, where: { fechaBaja: { gte: haceUnAnio } } }),
+      db.hermano.groupBy({ by: ['fechaAlta'], _count: { _all: true }, where: altasDelRecorrido }),
+      db.hermano.groupBy({
+        by: ['fechaBaja'],
+        _count: { _all: true },
+        where: { fechaBaja: { gte: rangoCenso.desde } },
+      }),
       // Un count por tramo, no un groupBy: ver el comentario de rangoEdad().
       Promise.all(
         TRAMOS_EDAD.map(({ min, max }) =>
@@ -151,10 +179,25 @@ export class PanelService {
         ),
       ),
       db.recibo.groupBy({ by: ['estado'], _count: { _all: true }, _sum: { importe: true } }),
-      db.transaccion.groupBy({ by: ['tipo'], _sum: { importe: true }, where: { fecha: { gte: inicioEjercicio } } }),
-      db.transaccion.groupBy({ by: ['categoriaId', 'tipo'], _count: { _all: true }, where: { fecha: { gte: inicioEjercicio } } }),
-      db.transaccion.groupBy({ by: ['tipo', 'fecha'], _sum: { importe: true }, where: { fecha: { gte: haceUnAnio } } }),
-      db.papeletaSitio.groupBy({ by: ['year'], _count: { _all: true } }),
+      db.transaccion.groupBy({
+        by: ['tipo'],
+        _sum: { importe: true },
+        where: { fecha: { gte: inicioEjercicio, lt: finEjercicio } },
+      }),
+      db.transaccion.groupBy({
+        by: ['categoriaId', 'tipo'],
+        _count: { _all: true },
+        where: { fecha: { gte: inicioEjercicio, lt: finEjercicio } },
+      }),
+      db.transaccion.groupBy({
+        by: ['tipo', 'fecha'],
+        _sum: { importe: true },
+        where: { fecha: { gte: rangoDinero.desde, lt: rangoDinero.hasta } },
+      }),
+      // Los cinco años HASTA el elegido: la gráfica destaca el ejercicio, y con
+      // los cinco últimos absolutos un año antiguo no aparecería en su propia
+      // gráfica.
+      db.papeletaSitio.groupBy({ by: ['year'], _count: { _all: true }, where: { year: { lte: anio } } }),
       db.papeletaSitio.groupBy({ by: ['puesto'], _count: { _all: true }, where: { year: anio } }),
       db.hermano.groupBy({ by: ['tunica'], _count: { _all: true }, where: { activo: true } }),
       db.hermano.groupBy({ by: ['alturaHombro'], _count: { _all: true }, where: { activo: true, alturaHombro: { not: null } } }),
@@ -187,6 +230,17 @@ export class PanelService {
 
     const porEdad = TRAMOS_EDAD.map(({ tramo }, i) => ({ tramo, total: porEdadCounts[i] }));
 
+    // Altas y bajas del recorrido completo, ya agrupadas por mes: se dejan en
+    // constantes con nombre (y no solo dentro de la llamada) porque la
+    // siguiente tarea las necesita por separado.
+    const altasPorMes = contarPorMes(fechasAlta.flatMap((f) => new Array(f._count._all).fill(f.fechaAlta)));
+    const bajasPorMes = contarPorMes(fechasBaja.flatMap((f) => new Array(f._count._all).fill(f.fechaBaja)));
+    // serieCensoMensual reconstruye hacia atrás desde hoy con TODO el recorrido
+    // (mesesRecorridos); aquí se recorta a los meses que de verdad se enseñan.
+    const serieCompleta = serieCensoMensual(activos, altasPorMes, bajasPorMes, mesesRecorridos);
+    const mesesMostrados = new Set(meses);
+    const serieCenso = serieCompleta.filter((p) => mesesMostrados.has(p.mes));
+
     // Ingresos y gastos mes a mes. groupBy agrupa por fecha exacta, así que el
     // reparto por mes se hace aquí, sobre las sumas ya calculadas.
     const serieDinero = meses.map((mes) => {
@@ -212,17 +266,13 @@ export class PanelService {
 
     return {
       generadoEn: hoy.toISOString(),
+      ejercicio,
       censo: {
         activos,
         altas12m,
         bajas12m,
         sinNumeroHermano,
-        serieMensual: serieCensoMensual(
-          activos,
-          contarPorMes(fechasAlta.flatMap((f) => new Array(f._count._all).fill(f.fechaAlta))),
-          contarPorMes(fechasBaja.flatMap((f) => new Array(f._count._all).fill(f.fechaBaja))),
-          meses,
-        ),
+        serieMensual: serieCenso,
         porEdad,
       },
       dinero: {

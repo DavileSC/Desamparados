@@ -11,6 +11,7 @@ import db from '../src/config/db.js';
 import { PanelService } from '../src/services/panel.service.js';
 import { claveMes } from '../src/domain/panel-censo.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { HttpError } from '../src/utils/error.handle.js';
 
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -249,5 +250,58 @@ describe('servicio del panel', () => {
     ]) {
       assert.ok(!json.includes(valor), `el panel no debe exponer el valor de prueba ${valor}`);
     }
+  });
+});
+
+describe('el ejercicio del panel', () => {
+  test('sin parámetro, el año en curso y sin cerrar', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+    const anioActual = new Date().getFullYear();
+    assert.equal(panel.ejercicio.anio, anioActual);
+    assert.equal(panel.ejercicio.cerrado, false);
+    // La cifra del ejercicio y el ejercicio elegido no pueden discrepar.
+    assert.equal(panel.dinero.ejercicio.anio, panel.ejercicio.anio);
+    assert.equal(panel.procesion.anio, panel.ejercicio.anio);
+  });
+
+  test('con un año anterior, la sección entera pasa a ese año', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const anterior = new Date().getFullYear() - 1;
+    const panel = await PanelService.getPanel(String(anterior));
+    assert.deepEqual(panel.ejercicio, { anio: anterior, cerrado: true });
+    assert.equal(panel.dinero.ejercicio.anio, anterior);
+    assert.equal(panel.procesion.anio, anterior);
+    // Doce meses naturales de ese año, de enero a diciembre.
+    assert.equal(panel.censo.serieMensual.length, 12);
+    assert.equal(panel.censo.serieMensual[0].mes, `${anterior}-01`);
+    assert.equal(panel.censo.serieMensual[11].mes, `${anterior}-12`);
+    assert.deepEqual(
+      panel.dinero.serieMensual.map((m) => m.mes),
+      panel.censo.serieMensual.map((p) => p.mes),
+    );
+  });
+
+  test('lo que es de hoy no lo toca el selector', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const anterior = new Date().getFullYear() - 1;
+    const [hoy, cerrado] = await Promise.all([
+      PanelService.getPanel(),
+      PanelService.getPanel(String(anterior)),
+    ]);
+    assert.equal(cerrado.censo.activos, hoy.censo.activos);
+    assert.equal(cerrado.censo.sinNumeroHermano, hoy.censo.sinNumeroHermano);
+    assert.deepEqual(cerrado.censo.porEdad, hoy.censo.porEdad);
+    assert.deepEqual(cerrado.actividad.proximosEventos, hoy.actividad.proximosEventos);
+    assert.deepEqual(cerrado.actividad.noticias, hoy.actividad.noticias);
+    assert.deepEqual(cerrado.actividad.reparto, hoy.actividad.reparto);
+  });
+
+  test('un año inválido no llega ni a consultar: es un error de la petición', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    await assert.rejects(
+      () => PanelService.getPanel('1492'),
+      (e: unknown) => e instanceof HttpError && e.status === 400,
+    );
   });
 });

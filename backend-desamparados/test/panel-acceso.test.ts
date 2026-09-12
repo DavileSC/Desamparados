@@ -100,4 +100,14 @@ describe('acceso al panel', () => {
       assert.equal(res.status, 200, `${rol} recibió ${res.status}`);
     });
   }
+
+  test('un año que no existe devuelve 400, no 500', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await fetch(`${baseUrl}/api/panel?anio=abc`, {
+      headers: { Cookie: `${COOKIE_SESION}=${generateToken(roleToUserId['ADMIN']!, 'ADMIN')}` },
+    });
+    assert.equal(res.status, 400);
+    const cuerpo = await res.json();
+    assert.match(cuerpo.error, /año/i);
+  });
 });
