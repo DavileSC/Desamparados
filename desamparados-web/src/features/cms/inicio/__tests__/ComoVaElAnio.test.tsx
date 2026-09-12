@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import { TemaCmsProvider } from '../../../../app/temaCms'
@@ -40,6 +40,9 @@ const PANEL = {
 const DE_2025 = {
   ...PANEL,
   ejercicio: { anio: 2025, cerrado: true },
+  // Un censo por edad distinto del de `panelDeHoy`: si «Hermanos por edad»
+  // leyera de aquí por error, el test de más abajo lo detectaría.
+  censo: { ...PANEL.censo, porEdad: [{ tramo: '18-30', total: 57 }] },
   dinero: { ...PANEL.dinero, ejercicio: { anio: 2025, ingresos: 41000, gastos: 39000, saldo: 2000 } },
   procesion: { ...PANEL.procesion, anio: 2025, papeletas: 604 },
 } as unknown as PanelResponse
@@ -94,10 +97,33 @@ describe('ComoVaElAnio', () => {
     expect(screen.getByText('9.800 €')).toBeInTheDocument()
   })
 
-  it('los tramos de edad son siempre de hoy, y el subtítulo lo dice', () => {
-    responder(PANEL)
+  it('los tramos de edad son siempre de hoy, y el subtítulo lo dice', async () => {
+    // DE_2025 trae un censo por edad distinto («18-30», 57) del de panelDeHoy
+    // («31-45», 312): si la gráfica leyera del ejercicio elegido en vez de
+    // panelDeHoy, este test lo pillaría al cambiar de año.
+    responder(DE_2025)
     montar()
     expect(screen.getByText(/a día de hoy/i)).toBeInTheDocument()
+
+    const seccionInicial = screen.getByRole('heading', { name: 'Hermanos por edad' }).closest('section') as HTMLElement
+    expect(within(seccionInicial).getAllByText('31-45').length).toBeGreaterThan(0)
+    expect(within(seccionInicial).getAllByText('312').length).toBeGreaterThan(0)
+
+    await userEvent.click(screen.getByRole('combobox', { name: /ejercicio/i }))
+    await userEvent.click(screen.getByRole('option', { name: '2025' }))
+
+    // Mientras carga el ejercicio 2025, toda la cuadrícula desaparece un
+    // instante; se espera a que «Hermanos por edad» vuelva a existir para no
+    // comparar contra un nodo ya desmontado.
+    const cabeceraTrasCambiar = await screen.findByRole('heading', { name: 'Hermanos por edad' })
+    const tarjeta = cabeceraTrasCambiar.closest('section') as HTMLElement
+
+    // El ejercicio cambió, pero la gráfica sigue enseñando los tramos y las
+    // cifras de hoy, no los de DE_2025.
+    expect(within(tarjeta).getAllByText('31-45').length).toBeGreaterThan(0)
+    expect(within(tarjeta).getAllByText('312').length).toBeGreaterThan(0)
+    expect(within(tarjeta).queryByText('18-30')).not.toBeInTheDocument()
+    expect(within(tarjeta).queryByText('57')).not.toBeInTheDocument()
   })
 
   it('cada gráfica ofrece su tabla', () => {

@@ -15,10 +15,15 @@ import { euros, eurosResumen, numero, etiquetaPunto, etiquetaPuntoLarga } from '
 /** Cuántos ejercicios ofrece el selector. Cinco cubre de sobra la reunión de enero. */
 const EJERCICIOS = 5
 
-/** Los estados de recibo que interesan, con su severidad. */
+/**
+ * Los estados de recibo que interesan, con su severidad. ANULADO y EXENTO se
+ * quedan fuera a propósito: un recibo anulado o exento no es cobro pendiente,
+ * y meterlo en el denominador del porcentaje lo hundiría sin motivo.
+ */
 const ESTADOS = [
   { clave: 'PAGADO', etiqueta: 'Cobrados', estado: 'ok' as const },
   { clave: 'PENDIENTE', etiqueta: 'Pendientes', estado: 'aviso' as const },
+  { clave: 'REMESADO', etiqueta: 'Remesados al banco', estado: 'aviso' as const },
   { clave: 'DEVUELTO', etiqueta: 'Devueltos por el banco', estado: 'error' as const },
 ]
 
@@ -71,6 +76,15 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
   const datos = esElActual ? panelDeHoy : consulta.data
 
   const anios = Array.from({ length: EJERCICIOS }, (_, i) => anioActual - i)
+
+  // Misma lista para el dibujo y para la tabla de «Cobro de recibos»: así no
+  // pueden discrepar nunca, ni cuando aparezca un estado que ESTADOS no cubre.
+  const filasEstado: FilaEstado[] = datos
+    ? ESTADOS.map((e) => {
+        const fila = datos.dinero.porEstado.find((f) => f.estado === e.clave)
+        return { clave: e.clave, etiqueta: e.etiqueta, estado: e.estado, total: fila?.total ?? 0, importe: fila?.importe ?? 0 }
+      })
+    : []
 
   return (
     <Box component="section" aria-labelledby="como-va" sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: 'divider' }}>
@@ -137,7 +151,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
             <TablaDeDatos
               titulo="Altas y bajas por mes"
               columnas={['Mes', 'Altas', 'Bajas']}
-              filas={datos.censo.movimientosMensuales.map((m) => [etiquetaPuntoLarga(m.mes), m.altas, m.bajas])}
+              filas={datos.censo.movimientosMensuales.map((m) => [etiquetaPuntoLarga(m.mes), numero(m.altas), numero(m.bajas)])}
             />
           </Tarjeta>
 
@@ -177,23 +191,16 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               filas={datos.dinero.porCategoria
                 .filter((c) => c.tipo === 'GASTO')
                 .sort((a, b) => b.importe - a.importe)
-                .map((c) => [c.categoria, euros(c.importe), c.total])}
+                .map((c) => [c.categoria, euros(c.importe), numero(c.total)])}
             />
           </Tarjeta>
 
           <Tarjeta titulo="Cobro de recibos" subtitulo={`Recibos del ejercicio ${datos.ejercicio.anio} según su estado`}>
-            <ProporcionEstados
-              paleta={graficas}
-              formatoImporte={eurosResumen}
-              estados={ESTADOS.map<FilaEstado>((e) => {
-                const fila = datos.dinero.porEstado.find((f) => f.estado === e.clave)
-                return { clave: e.clave, etiqueta: e.etiqueta, estado: e.estado, total: fila?.total ?? 0, importe: fila?.importe ?? 0 }
-              })}
-            />
+            <ProporcionEstados paleta={graficas} formatoImporte={eurosResumen} estados={filasEstado} />
             <TablaDeDatos
               titulo="Recibos por estado"
               columnas={['Estado', 'Recibos', 'Importe']}
-              filas={datos.dinero.porEstado.map((f) => [f.estado, f.total, euros(f.importe)])}
+              filas={filasEstado.map((f) => [f.etiqueta, numero(f.total), euros(f.importe)])}
             />
           </Tarjeta>
 
