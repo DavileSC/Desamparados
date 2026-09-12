@@ -7,7 +7,7 @@ import LineaTemporal from '../../components/charts/LineaTemporal'
 import BarrasHorizontales from '../../components/charts/BarrasHorizontales'
 import BarraEstados from '../../components/charts/BarraEstados'
 import Cifra from './panel/Cifra'
-import { contar } from './panel/plural'
+import { contar } from './inicio/plural'
 
 const euros = (valor: number) =>
   new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(valor)
