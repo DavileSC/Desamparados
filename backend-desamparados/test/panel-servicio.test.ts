@@ -251,6 +251,64 @@ describe('servicio del panel', () => {
       assert.ok(!json.includes(valor), `el panel no debe exponer el valor de prueba ${valor}`);
     }
   });
+
+  test('las altas y bajas de cada mes viajan con la serie del censo', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+
+    // Los mismos meses y en el mismo orden que la serie: las dos gráficas se
+    // leen una encima de otra y un desfase las haría mentir.
+    assert.deepEqual(
+      panel.censo.movimientosMensuales.map((m) => m.mes),
+      panel.censo.serieMensual.map((p) => p.mes),
+    );
+    for (const mes of panel.censo.movimientosMensuales) {
+      assert.equal(typeof mes.altas, 'number');
+      assert.equal(typeof mes.bajas, 'number');
+      assert.ok(mes.altas >= 0 && mes.bajas >= 0, `${mes.mes} trae movimientos negativos`);
+    }
+  });
+
+  test('cada categoría trae su importe además del número de apuntes', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+
+    // Control positivo: el before() siembra una categoría de ingreso con dos
+    // apuntes de 10,10 y 10,20 en el mes en curso.
+    const prueba = panel.dinero.porCategoria.find((c) => c.categoria === 'ZZTestCategoriaArrastre');
+    assert.ok(prueba, 'no se encontró la categoría de prueba; ¿se sembró?');
+    assert.equal(prueba!.total, 2);
+    assert.equal(prueba!.importe, 20.3); // sin arrastre binario: 20.299999999999997 fallaría
+
+    for (const fila of panel.dinero.porCategoria) {
+      assert.equal(typeof fila.importe, 'number');
+      assert.ok(!Number.isNaN(fila.importe));
+    }
+  });
+
+  test('la actividad del equipo solo trae contenido y agenda, y sin personas', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const panel = await PanelService.getPanel();
+
+    assert.ok(Array.isArray(panel.actividad.registro));
+    assert.ok(panel.actividad.registro.length <= 5, 'el registro son las cinco últimas acciones');
+
+    const PERMITIDAS = /^(NOTICIA|PUBLICACION|PAGINA|EVENTO)_|^PORTADA_ACTUALIZAR$/;
+    for (const fila of panel.actividad.registro) {
+      assert.match(fila.accion, PERMITIDAS, `${fila.accion} no es una acción de contenido`);
+      assert.match(fila.createdAt, /^\d{4}-\d{2}-\d{2}T/);
+      // El cargo, nunca la persona: ni id, ni nombre, ni correo.
+      assert.ok(fila.cargo === null || typeof fila.cargo === 'string');
+      assert.deepEqual(
+        Object.keys(fila).sort(),
+        ['accion', 'cargo', 'createdAt', 'entityType'],
+      );
+    }
+
+    // En orden, de lo más reciente a lo más antiguo.
+    const fechas = panel.actividad.registro.map((f) => f.createdAt);
+    assert.deepEqual(fechas, [...fechas].sort().reverse());
+  });
 });
 
 describe('el ejercicio del panel', () => {
@@ -303,5 +361,25 @@ describe('el ejercicio del panel', () => {
       () => PanelService.getPanel('1492'),
       (e: unknown) => e instanceof HttpError && e.status === 400,
     );
+  });
+
+  test('los recibos se cuentan del ejercicio elegido, no de todos los años', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const anterior = new Date().getFullYear() - 1;
+    const [hoy, cerrado] = await Promise.all([
+      PanelService.getPanel(),
+      PanelService.getPanel(String(anterior)),
+    ]);
+
+    const suma = (panel: Awaited<ReturnType<typeof PanelService.getPanel>>) =>
+      panel.dinero.porEstado.reduce((s, e) => s + e.total, 0);
+    const total = await db.recibo.count();
+
+    // Cada ejercicio por separado no puede sumar más que todos los recibos que
+    // hay; antes de este cambio los dos devolvían exactamente ese total.
+    assert.ok(suma(hoy) <= total, 'el ejercicio en curso trae recibos de más');
+    assert.ok(suma(cerrado) <= total, 'el ejercicio cerrado trae recibos de más');
+    assert.equal(suma(hoy), await db.recibo.count({ where: { year: hoy.ejercicio.anio } }));
+    assert.equal(suma(cerrado), await db.recibo.count({ where: { year: anterior } }));
   });
 });

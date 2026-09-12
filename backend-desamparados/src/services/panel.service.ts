@@ -17,12 +17,17 @@ import {
  * Solo `count`, `groupBy` y `aggregate`. Prohibido `findMany` sobre Hermano y
  * sobre User: el panel es informativo y no puede enseñar datos de personas.
  *
- * Dos excepciones, ninguna de las dos toca datos de una persona:
+ * Tres excepciones, ninguna de las tres toca datos de una persona:
  *   - Evento: son actos públicos.
  *   - CategoriaTransaccion: es un catálogo (id, nombre de la categoría
  *     contable, p. ej. "Donativos"), no un dato de un hermano ni de un
  *     usuario. Se necesita en `findMany` porque `groupBy` sobre Transaccion
  *     solo puede devolver el `categoriaId`, no el nombre.
+ *   - AuditLog acotado a las acciones de contenido y agenda de la lista
+ *     blanca, y seleccionando del usuario SOLO su `role`: el Inicio dice qué
+ *     cargo hizo qué, nunca quién. Ni `detalles` ni `entityId` salen de aquí,
+ *     así que no hay forma de que se cuele el nombre de nadie. El registro
+ *     completo sigue en Auditoría, que solo ven ADMIN y HERMANO_MAYOR.
  */
 
 export interface PanelResponse {
@@ -35,13 +40,15 @@ export interface PanelResponse {
     bajas12m: number;
     sinNumeroHermano: number;
     serieMensual: { mes: string; activos: number }[];
+    /** Altas y bajas de cada uno de los meses de `serieMensual`. */
+    movimientosMensuales: { mes: string; altas: number; bajas: number }[];
     porEdad: { tramo: string; total: number }[];
   };
   dinero: {
     porEstado: { estado: EstadoPago; total: number; importe: number }[];
     ejercicio: { anio: number; ingresos: number; gastos: number; saldo: number };
     serieMensual: { mes: string; ingresos: number; gastos: number }[];
-    porCategoria: { categoria: string; tipo: TipoTransaccion; total: number }[];
+    porCategoria: { categoria: string; tipo: TipoTransaccion; total: number; importe: number }[];
   };
   procesion: {
     anio: number;
@@ -56,6 +63,8 @@ export interface PanelResponse {
     noticias: { publicadas: number; borradores: number };
     publicaciones: { total: number; ultima: string | null };
     reparto: { turnosProximos: number; citasReservadas: number; capacidadEstimada: number };
+    /** Las cinco últimas acciones de contenido y agenda, por cargo y sin personas. */
+    registro: { accion: string; entityType: string | null; createdAt: string; cargo: string | null }[];
   };
 }
 
@@ -73,6 +82,18 @@ const TRAMOS_EDAD = [
   { tramo: '31-45', min: 31, max: 45 },
   { tramo: '46-60', min: 46, max: 60 },
   { tramo: '61+', min: 61, max: 200 },
+];
+
+/**
+ * Acciones que puede ver toda la junta: las que tocan lo que se publica.
+ * Cualquier acción sobre personas o dinero queda fuera a propósito.
+ */
+const ACCIONES_DE_CONTENIDO = [
+  'NOTICIA_CREAR', 'NOTICIA_ACTUALIZAR', 'NOTICIA_ELIMINAR',
+  'PUBLICACION_CREAR', 'PUBLICACION_ACTUALIZAR', 'PUBLICACION_ELIMINAR',
+  'PAGINA_GUARDAR', 'PAGINA_ACTUALIZAR', 'PAGINA_ELIMINAR',
+  'PORTADA_ACTUALIZAR',
+  'EVENTO_CREAR', 'EVENTO_ACTUALIZAR', 'EVENTO_ELIMINAR',
 ];
 
 /**
@@ -160,17 +181,24 @@ export class PanelService {
       citasReservadas,
       capacidad,
       categorias,
+      registroContenido,
     ] = await Promise.all([
       db.hermano.count({ where: { activo: true } }),
       // Las solicitudes pendientes no son altas (ver whereAltasAprobadas).
       db.hermano.count({ where: altasUltimoAnio }),
       db.hermano.count({ where: { fechaBaja: { gte: haceUnAnio } } }),
       db.hermano.count({ where: { activo: true, numeroHermano: null } }),
-      db.hermano.groupBy({ by: ['fechaAlta'], _count: { _all: true }, where: altasDelRecorrido }),
+      db.hermano.groupBy({
+        by: ['fechaAlta'],
+        _count: { _all: true },
+        // gte y lt por simetría con rangoDinero: sin el lt, un alta futura (poco
+        // probable, pero no imposible con datos mal cargados) contaría de más.
+        where: { ...altasDelRecorrido, fechaAlta: { gte: rangoCenso.desde, lt: rangoCenso.hasta } },
+      }),
       db.hermano.groupBy({
         by: ['fechaBaja'],
         _count: { _all: true },
-        where: { fechaBaja: { gte: rangoCenso.desde } },
+        where: { fechaBaja: { gte: rangoCenso.desde, lt: rangoCenso.hasta } },
       }),
       // Un count por tramo, no un groupBy: ver el comentario de rangoEdad().
       Promise.all(
@@ -178,7 +206,14 @@ export class PanelService {
           db.hermano.count({ where: { activo: true, fechaNacimiento: rangoEdad(hoy, min, max) } }),
         ),
       ),
-      db.recibo.groupBy({ by: ['estado'], _count: { _all: true }, _sum: { importe: true } }),
+      // Del ejercicio elegido: mezclando años, el «% cobrado» salía diluido por
+      // ejercicios ya liquidados. El índice @@index([year]) ya existe.
+      db.recibo.groupBy({
+        by: ['estado'],
+        _count: { _all: true },
+        _sum: { importe: true },
+        where: { year: anio },
+      }),
       db.transaccion.groupBy({
         by: ['tipo'],
         _sum: { importe: true },
@@ -187,6 +222,7 @@ export class PanelService {
       db.transaccion.groupBy({
         by: ['categoriaId', 'tipo'],
         _count: { _all: true },
+        _sum: { importe: true },
         where: { fecha: { gte: inicioEjercicio, lt: finEjercicio } },
       }),
       db.transaccion.groupBy({
@@ -217,6 +253,18 @@ export class PanelService {
       // Catálogo de categorías contables (excepción de la regla de oro: sin
       // datos personales). Hace falta el nombre, no solo el id que da groupBy.
       db.categoriaTransaccion.findMany({ select: { id: true, nombre: true } }),
+      db.auditLog.findMany({
+        where: { action: { in: ACCIONES_DE_CONTENIDO } },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          action: true,
+          entityType: true,
+          createdAt: true,
+          // Solo el cargo. `user` entero traería correo y nombre.
+          user: { select: { role: true } },
+        },
+      }),
     ]);
 
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
@@ -240,6 +288,18 @@ export class PanelService {
     const serieCompleta = serieCensoMensual(activos, altasPorMes, bajasPorMes, mesesRecorridos);
     const mesesMostrados = new Set(meses);
     const serieCenso = serieCompleta.filter((p) => mesesMostrados.has(p.mes));
+
+    // Los movimientos ya estaban calculados para reconstruir la serie; lo único
+    // que faltaba era mandarlos. Los meses sin movimiento van a cero, no
+    // ausentes: la gráfica necesita las doce ranuras.
+    const porMes = (lista: MovimientoMensual[]) => new Map(lista.map((m) => [m.mes, m.total]));
+    const altasIndexadas = porMes(altasPorMes);
+    const bajasIndexadas = porMes(bajasPorMes);
+    const movimientosMensuales = meses.map((mes) => ({
+      mes,
+      altas: altasIndexadas.get(mes) ?? 0,
+      bajas: bajasIndexadas.get(mes) ?? 0,
+    }));
 
     // Ingresos y gastos mes a mes. groupBy agrupa por fecha exacta, así que el
     // reparto por mes se hace aquí, sobre las sumas ya calculadas.
@@ -273,6 +333,7 @@ export class PanelService {
         bajas12m,
         sinNumeroHermano,
         serieMensual: serieCenso,
+        movimientosMensuales,
         porEdad,
       },
       dinero: {
@@ -287,6 +348,10 @@ export class PanelService {
           categoria: nombreCategoria.get(t.categoriaId) ?? 'Sin categoría',
           tipo: t.tipo,
           total: t._count._all,
+          // En euros, que es lo que responde a «en qué se gasta»: el número de
+          // apuntes no dice nada (una factura de 11.000 € y un recibo de 6 €
+          // cuentan igual). `total` se mantiene para no romper a nadie.
+          importe: euros2(Number(t._sum.importe ?? 0)),
         })),
       },
       procesion: {
@@ -317,6 +382,12 @@ export class PanelService {
           citasReservadas,
           capacidadEstimada: capacidad._sum.capacidadEstimada ?? 0,
         },
+        registro: registroContenido.map((r) => ({
+          accion: r.action,
+          entityType: r.entityType,
+          createdAt: r.createdAt.toISOString(),
+          cargo: r.user?.role ?? null,
+        })),
       },
     };
   }
