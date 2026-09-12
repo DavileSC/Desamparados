@@ -1,5 +1,6 @@
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
+import { pasoBonito } from './ejes'
 
 export interface PuntoLinea {
   x: string
@@ -24,13 +25,6 @@ const IZQ = 50
 const DER = 54
 const ARRIBA = 18
 const ABAJO = 42
-
-/** Paso de eje redondo: 1, 2, 2,5 o 5 por la potencia de diez que toque. */
-function pasoBonito(bruto: number) {
-  if (bruto <= 0) return 1
-  const potencia = 10 ** Math.floor(Math.log10(bruto))
-  return ([1, 2, 2.5, 5, 10].find((f) => f * potencia >= bruto) ?? 10) * potencia
-}
 
 /** Eje que abarca los datos con marcas en números redondos, unas tres. */
 function escala(min: number, max: number) {
