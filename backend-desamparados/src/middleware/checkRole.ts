@@ -8,56 +8,47 @@ export const SESION_NO_CMS = 'SESION_NO_CMS';
 
 export const checkRole = (allowedRoles: Role[]) => {
   // 2. Usamos RequestExt aquí
-  return (req: Request, res: Response, next: NextFunction) => { 
+  return (req: Request, res: Response, next: NextFunction) => {
     try {
-      const user = req.user;
-
-      // Caso 1: No hay usuario (Error 401 Unauthorized)
-      if (!user) {
-        return handleHttp(res, 'NO_USER_FOUND', 'Usuario no autenticado', 401);
-      }
-
-      // Caso 2: La sesión se abrió en el área de hermanos (Error 403 Forbidden).
+      // Caso 1: La sesión del CMS no está (Error 403 Forbidden con código propio).
       //
-      // El segundo factor solo se pide al entrar por /cms/acceso, así que una
-      // sesión nacida en /hermanos/acceso es una sesión que NO ha pasado el 2FA.
-      // Sin esta comprobación bastaba con entrar por el área de hermanos y
-      // reutilizar esa cookie contra la API para saltárselo entero: la guarda
-      // que lo impedía vivía solo en el frontend, y el frontend no protege nada.
+      // El CMS y el área de hermanos tienen una cookie cada uno. El segundo
+      // factor solo se pide al entrar por /cms/acceso, así que una sesión del
+      // área de hermanos es una sesión que NO ha pasado el 2FA: no puede abrir
+      // nada de aquí. Con cookies separadas ni siquiera puede confundirse, pero
+      // la comprobación se queda porque es la que da sentido al 2FA.
       //
       // Va aquí, y no en un middleware suelto que haya que recordar en cada
       // router, porque `checkRole` es el paso obligado de TODAS las rutas de
       // staff: ninguna de sus listas de roles incluye USER. Olvidarse de un
-      // router es justo el fallo que ya dejó abierto /news/admin/archive.
-      //
-      // Sin el claim tampoco es una sesión del CMS. Durante la migración se
-      // trataba como 'cms' para no tirar las sesiones abiertas antes del 7-09,
-      // pero la sesión más larga dura 72 h: esa gracia ya no protege a nadie y
-      // solo dejaba una puerta a un token sin origen.
-      //
-      // Con código propio, distinto del 403 de permisos: si otra pestaña entra
-      // por el área de hermanos, la cookie del CMS se sustituye y cada petición
-      // del CMS abierto recibe esto. El frontend lo reconoce por el código y lo
-      // trata como sesión perdida para el CMS, en vez de un «no tienes
-      // permisos» inexplicable en cada pantalla.
-      if (user.origen !== 'cms') {
-        console.warn(`[HTTP 403] Sesión de origen ${user.origen ?? 'desconocido'} en una ruta del CMS`);
+      // router es justo el fallo que ya dejó abierta /news/admin/archive.
+      const sesion = req.sesiones?.cms;
+      if (!sesion) {
+        // Si hay sesión de hermanos, es que alguien ha llegado aquí desde el
+        // área de hermanos: no es un fallo de permisos, es que falta el acceso
+        // del CMS. Sin ninguna de las dos, es un 401 normal.
+        if (!req.sesiones?.hermano) {
+          return handleHttp(res, 'NO_USER_FOUND', 'Usuario no autenticado', 401);
+        }
         return res.status(403).json({
           error: SESION_NO_CMS,
           message: 'Esta sesión no da acceso al gestor de contenidos. Entra por el acceso del CMS.'
         });
       }
 
-      // Caso 3: El rol no coincide (Error 403 Forbidden)
+      // A partir de aquí, la identidad de la petición es la del CMS: la
+      // auditoría tiene que apuntar a quien está administrando, no a la sesión
+      // de hermano que esa misma persona pueda tener abierta en otra pestaña.
+      req.user = sesion;
+
+      // Caso 2: El rol no coincide (Error 403 Forbidden).
       // Como user.role viene del JWT (string), lo casteamos al Enum Role de Prisma
-      if (allowedRoles.includes(user.role as Role)) {
+      if (allowedRoles.includes(sesion.role as Role)) {
         return next();
-      } else {
-        return handleHttp(res, `Intentó acceder con rol: ${user.role}`, 'No tienes permisos para realizar esta acción', 403);
       }
+      return handleHttp(res, `Intentó acceder con rol: ${sesion.role}`, 'No tienes permisos para realizar esta acción', 403);
 
     } catch (e) {
-      // Caso 4: Error inesperado (Error 500)
       return handleHttp(res, e, 'Error verificando permisos', 500);
     }
   };

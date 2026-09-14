@@ -12,7 +12,7 @@ import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import app from '../src/app.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import db from '../src/config/db.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
@@ -86,7 +86,7 @@ after(async () => {
 const como = (rol: string, ruta: string, init: RequestInit = {}) =>
   fetch(`${baseUrl}${ruta}`, {
     ...init,
-    headers: { Cookie: `${COOKIE_SESION}=${generateToken(roleToUserId[rol]!, rol)}`, ...(init.headers ?? {}) },
+    headers: { Cookie: `${COOKIE_CMS}=${generateToken(roleToUserId[rol]!, rol)}`, ...(init.headers ?? {}) },
   });
 
 describe('permisos del Hermano Mayor', () => {

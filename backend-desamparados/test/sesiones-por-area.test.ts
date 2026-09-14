@@ -130,12 +130,10 @@ test('un token de hermanos no vale como sesión del CMS aunque la cuenta sea de 
 // los `assert.notEqual(status, 401/403)` pasarían sin comprobar nada: se usa
 // /api/panel, la ruta real, protegida por authenticateToken + checkRole(staff).
 //
-// OJO al tramo de /api/panel del siguiente test: seguirá en 403 hasta que la
-// tarea 5 actualice checkRole para que sustituya req.user por la sesión del
-// CMS en las rutas de staff (ahora mismo req.user es hermano ?? cms, tal cual
-// pide esta tarea, y checkRole solo mira req.user). No es un fallo de esta
-// tarea: es la frontera de alcance que marca el propio brief («No adelantes
-// trabajo de checkRole»).
+// El tramo de /api/panel del siguiente test pasa porque la tarea 5 hizo que
+// checkRole mire req.sesiones.cms en vez de req.user: con las dos cookies
+// puestas, req.user por defecto es la de hermanos (así lo deja la tarea 4),
+// pero checkRole la ignora en las rutas de staff y usa la del CMS.
 
 test('con las dos cookies puestas, cada área usa la suya', async (t) => {
   if (!dbDisponible) return t.skip(motivoSinDb);
@@ -172,6 +170,37 @@ test('solo con la cookie del CMS, una ruta del área de hermanos sigue atendiend
     headers: { cookie: `${COOKIE_CMS}=${cms}` },
   });
   assert.equal(respuesta.status, 200);
+});
+
+// --- Tarea 5: checkRole exige la sesión del CMS, nunca cae a la de hermanos ---
+
+test('la cookie de hermanos no abre una ruta de staff, aunque la cuenta sea ADMIN', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  // Saltarse esto es saltarse el segundo factor: solo se pide en /cms/acceso.
+  const user = await crearUsuarioPrueba(Role.ADMIN);
+  creados.push(user.id);
+  const hermano = generateToken(user.id, Role.ADMIN, false, 'hermanos');
+
+  const respuesta = await fetch(`${baseUrl}/api/panel`, {
+    headers: { cookie: `${COOKIE_HERMANO}=${hermano}` },
+  });
+  assert.equal(respuesta.status, 403);
+  assert.equal((await respuesta.json()).error, 'SESION_NO_CMS');
+});
+
+test('la cookie del CMS no vale si el rol no llega', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const user = await crearUsuarioPrueba(Role.REDES);
+  creados.push(user.id);
+  const cms = generateToken(user.id, Role.REDES, false, 'cms');
+
+  // Auditoría es solo de ADMIN y HERMANO_MAYOR: aquí el 403 es de permisos,
+  // no de sesión, y lleva otro código.
+  const respuesta = await fetch(`${baseUrl}/api/admin/audit-logs`, {
+    headers: { cookie: `${COOKIE_CMS}=${cms}` },
+  });
+  assert.equal(respuesta.status, 403);
+  assert.notEqual((await respuesta.json()).error, 'SESION_NO_CMS');
 });
 
 // --- Tarea 6: el login pone la cookie de su área y no toca la otra ---

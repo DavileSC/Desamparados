@@ -8,7 +8,7 @@ import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import app from '../src/app.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import db from '../src/config/db.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
@@ -77,7 +77,7 @@ after(async () => {
 
 const pedirPanel = (rol?: string) =>
   fetch(`${baseUrl}/api/panel`, {
-    headers: rol ? { Cookie: `${COOKIE_SESION}=${generateToken(roleToUserId[rol]!, rol)}` } : {},
+    headers: rol ? { Cookie: `${COOKIE_CMS}=${generateToken(roleToUserId[rol]!, rol)}` } : {},
   });
 
 describe('acceso al panel', () => {
@@ -104,7 +104,7 @@ describe('acceso al panel', () => {
   test('un año que no existe devuelve 400, no 500', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await fetch(`${baseUrl}/api/panel?anio=abc`, {
-      headers: { Cookie: `${COOKIE_SESION}=${generateToken(roleToUserId['ADMIN']!, 'ADMIN')}` },
+      headers: { Cookie: `${COOKIE_CMS}=${generateToken(roleToUserId['ADMIN']!, 'ADMIN')}` },
     });
     assert.equal(res.status, 400);
     const cuerpo = await res.json();
