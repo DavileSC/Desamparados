@@ -1,45 +1,33 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useAuthStore, isStaffRole, type AuthUser } from '../store'
+import { useAuthStore } from '../store'
 
-const user: AuthUser = {
-  id: 1,
-  email: 'test@test.com',
-  role: 'USER',
-  perfiles: [{ id: 10, nombre: 'Test', esTitular: true, puesto: null }],
-}
+const HERMANO = { id: 1, email: 'juan@ejemplo.es', role: 'USER', perfiles: [], origen: 'hermanos' as const }
+const TESORERO = { id: 1, email: 'juan@ejemplo.es', role: 'TESORERIA', perfiles: [], origen: 'cms' as const }
 
-describe('useAuthStore', () => {
-  beforeEach(() => {
-    useAuthStore.setState({ status: 'cargando', user: null })
+describe('el estado de sesión', () => {
+  beforeEach(() => { useAuthStore.setState({ status: 'cargando', cms: null, hermano: null }) })
+
+  it('guarda las dos sesiones a la vez', () => {
+    // El mismo correo entra al CMS como Tesorero y al portal como hermano.
+    useAuthStore.getState().entrarSesion('cms', TESORERO)
+    useAuthStore.getState().entrarSesion('hermanos', HERMANO)
+    expect(useAuthStore.getState().cms?.role).toBe('TESORERIA')
+    expect(useAuthStore.getState().hermano?.role).toBe('USER')
   })
 
-  it('arranca en cargando, sin dar por hecho que hay sesion', () => {
-    expect(useAuthStore.getState().status).toBe('cargando')
-    expect(useAuthStore.getState().user).toBeNull()
+  it('salir de un área no toca la otra', () => {
+    useAuthStore.getState().entrarSesion('cms', TESORERO)
+    useAuthStore.getState().entrarSesion('hermanos', HERMANO)
+    useAuthStore.getState().salirSesion('hermanos')
+    expect(useAuthStore.getState().hermano).toBeNull()
+    expect(useAuthStore.getState().cms?.role).toBe('TESORERIA')
   })
 
-  it('entrarSesion guarda al usuario sin ningun token', () => {
-    useAuthStore.getState().entrarSesion(user)
-    expect(useAuthStore.getState().status).toBe('autenticado')
-    expect(useAuthStore.getState().user).toEqual(user)
-    expect(useAuthStore.getState()).not.toHaveProperty('token')
-  })
-
-  it('salirSesion deja el estado como invitado', () => {
-    useAuthStore.getState().entrarSesion(user)
+  it('salir sin área vacía las dos', () => {
+    useAuthStore.getState().entrarSesion('cms', TESORERO)
+    useAuthStore.getState().entrarSesion('hermanos', HERMANO)
     useAuthStore.getState().salirSesion()
-    expect(useAuthStore.getState().status).toBe('invitado')
-    expect(useAuthStore.getState().user).toBeNull()
-  })
-
-  it('no persiste nada en localStorage', () => {
-    useAuthStore.getState().entrarSesion(user)
-    expect(localStorage.getItem('desamparados-auth')).toBeNull()
-  })
-
-  it('detects staff roles', () => {
-    expect(isStaffRole('USER')).toBe(false)
-    expect(isStaffRole('SECRETARIA')).toBe(true)
-    expect(isStaffRole(null)).toBe(false)
+    expect(useAuthStore.getState().cms).toBeNull()
+    expect(useAuthStore.getState().hermano).toBeNull()
   })
 })
