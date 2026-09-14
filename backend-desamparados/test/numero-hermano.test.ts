@@ -9,6 +9,7 @@ import { after, before, test } from 'node:test';
 import db from '../src/config/db.js';
 import { HermanoService } from '../src/services/hermano.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import type { CreateHermanoDto } from '../src/dtos/hermano.dto.js';
 
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -38,10 +39,6 @@ before(async () => {
   }
 });
 
-after(async () => {
-  await db.$disconnect();
-});
-
 const usuariosCreados: number[] = [];
 
 async function fichaActivaSinNumero() {
@@ -63,6 +60,13 @@ async function fichaActivaSinNumero() {
 after(async () => {
   await db.hermano.deleteMany({ where: { userId: { in: usuariosCreados } } });
   for (const id of usuariosCreados) await borrarUsuarioPrueba(id);
+  // Un solo after() y el disconnect al final (como permisos-hermano-mayor.test.ts):
+  // con el disconnect en un after() aparte y declarado ANTES de este, Node ejecuta
+  // los after() en el orden en que se registran, así que la limpieza de aquí
+  // llegaba a un cliente ya desconectado. Prisma reconecta solo para la consulta,
+  // pero nada volvía a cerrar esa conexión y el proceso se quedaba colgado sin
+  // salir nunca (confirmado a mano: sin este cambio, `tsx --test` no termina).
+  await db.$disconnect();
 });
 
 test('el cierre de huecos da número a las activas que no lo tienen', async (t) => {
@@ -107,4 +111,58 @@ test('sin huecos, el cierre no hace nada', async (t) => {
   await HermanoService.cerrarHuecosDeNumero();
   const segunda = await HermanoService.cerrarHuecosDeNumero();
   assert.deepEqual(segunda.asignados, [], 'la segunda pasada no debe tocar nada');
+});
+
+// Red de la regla completa: toda ficha activa tiene número. Una pendiente de
+// aprobación no lo tiene, y una de baja lo libera. Estos tres tests recorren
+// las cuatro vías de alta (alta familiar, aprobación, baja y reactivación) y
+// fallan si alguna se la salta.
+
+test('una ficha recién creada por su tutor nace sin número, y lo recibe al aprobarla', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+
+  const tutor = await crearUsuarioPrueba();
+  usuariosCreados.push(tutor.id);
+
+  const datosFicha: CreateHermanoDto = { nombre: 'Hija', apellidos: 'De Prueba', fechaNacimiento: '2015-05-20' };
+  const ficha = await HermanoService.createDependentProfile(tutor.id, datosFicha);
+
+  // Pendiente de aprobación: activo false y sin número. Lo contrario sería
+  // colar a alguien en el censo sin que Secretaría lo admita.
+  assert.equal(ficha.activo, false);
+  assert.equal(ficha.numeroHermano, null);
+
+  await HermanoService.aprobarSolicitud(tutor.id);
+
+  const aprobada = await db.hermano.findUnique({ where: { id: ficha.id } });
+  assert.equal(aprobada?.activo, true);
+  assert.ok(aprobada?.numeroHermano, 'al aprobar debe llevarse número');
+});
+
+test('dar de baja libera el número y reactivar da uno nuevo', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+
+  const tutor = await crearUsuarioPrueba();
+  usuariosCreados.push(tutor.id);
+  const datosFicha: CreateHermanoDto = { nombre: 'Alta', apellidos: 'Y Baja', fechaNacimiento: '1990-01-01' };
+  const ficha = await HermanoService.createDependentProfile(tutor.id, datosFicha);
+  await HermanoService.aprobarSolicitud(tutor.id);
+
+  await HermanoService.darDeBajaHermano(ficha.id);
+  const deBaja = await db.hermano.findUnique({ where: { id: ficha.id } });
+  assert.equal(deBaja?.activo, false);
+  assert.equal(deBaja?.numeroHermano, null, 'la baja libera el número');
+
+  await HermanoService.reactivarHermano(ficha.id);
+  const reactivada = await db.hermano.findUnique({ where: { id: ficha.id } });
+  assert.equal(reactivada?.activo, true);
+  assert.ok(reactivada?.numeroHermano, 'al reactivar debe llevarse número nuevo');
+});
+
+test('no queda ningún hermano activo sin número tras cerrar huecos', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+
+  await HermanoService.cerrarHuecosDeNumero();
+  const huerfanos = await db.hermano.count({ where: { activo: true, numeroHermano: null } });
+  assert.equal(huerfanos, 0, 'la regla es que toda ficha activa tiene número');
 });
