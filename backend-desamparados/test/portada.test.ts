@@ -19,7 +19,7 @@ import { Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { guardarImagenesPortadaSchema, MAX_IMAGENES_PORTADA } from '../src/schemas/portada.schema.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
@@ -111,7 +111,7 @@ const guardar = (imagenes: unknown, rol?: Role) =>
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      ...(rol ? { Cookie: `${COOKIE_SESION}=${generateToken(usuarios[rol]!, rol)}` } : {}),
+      ...(rol ? { Cookie: `${COOKIE_CMS}=${generateToken(usuarios[rol]!, rol)}` } : {}),
     },
     body: JSON.stringify({ imagenes }),
   });

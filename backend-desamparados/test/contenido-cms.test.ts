@@ -19,7 +19,7 @@ import { Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { readFileSync } from 'node:fs';
 import { sanearContenidoCms, extractoPlano, ETIQUETAS_CMS, ATRIBUTOS_CMS } from '../src/utils/sanear-html.js';
 import { createNewsSchema, limitConfigSchema, updateNewsSchema } from '../src/schemas/news.schema.js';
@@ -247,7 +247,7 @@ after(async () => {
 const api = (ruta: string, metodo = 'GET', cuerpo?: unknown) =>
   fetch(`${baseUrl}/api${ruta}`, {
     method: metodo,
-    headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_SESION}=${generateToken(usuarioId, Role.REDES)}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_CMS}=${generateToken(usuarioId, Role.REDES)}` },
     body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
   });
 

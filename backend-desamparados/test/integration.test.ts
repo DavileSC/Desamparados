@@ -5,7 +5,7 @@ import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import db from '../src/config/db.js';
 import { generateToken, generatePending2FAToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS, COOKIE_HERMANO, COOKIE_2FA } from '../src/utils/cookies.js';
 import { Role } from '@prisma/client';
 import { AdminService } from '../src/services/admin.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
@@ -172,7 +172,7 @@ test('la publicación del CMS se lee por id, no buscándola en el listado', asyn
 
   try {
     const token = generateToken(admin.id, Role.ADMIN);
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${token}` };
 
     const listado = await fetch(`${baseUrl}/api/publications/admin?limit=1`, { headers: cabeceras });
     const { data, meta } = await listado.json() as { data: { id: number }[]; meta: { limit: number } };
@@ -216,7 +216,7 @@ test('la noticia del CMS se lee por id, no buscándola en el listado', async (t)
 
   try {
     const token = generateToken(admin.id, Role.ADMIN);
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${token}` };
 
     // La página 2 a propósito: pedir la 1 traería justo la noticia que SÍ cabía
     // en el recorte, y entonces el .find() de antes también la habría encontrado.
@@ -288,7 +288,7 @@ test('la cabecera Authorization ya no autentica', async () => {
 // servir de sesion. Falla antes de tocar la base de datos, asi que no la necesita.
 test('el testigo de 2FA no sirve como cookie de sesion', async () => {
   const res = await fetch(`${baseUrl}/api/auth/mis-datos`, {
-    headers: { Cookie: `${COOKIE_SESION}=${generatePending2FAToken(1)}` }
+    headers: { Cookie: `${COOKIE_CMS}=${generatePending2FAToken(1)}` }
   });
   assert.equal(res.status, 401);
 });
@@ -314,9 +314,14 @@ test('el 2FA ya no acepta un userId en el cuerpo', async () => {
   assert.equal(res.status, 401);
 });
 
-test('/me sin cookie responde 401', async () => {
+// La tarea 7 cambió el contrato: /me ya no bloquea al invitado, responde 200
+// con las dos sesiones a null (un visitante sin sesión es el caso normal de
+// la web pública). Esto ya lo fija test/sesiones-por-area.test.ts; aquí queda
+// por ser el sitio "sin base de datos" de este fichero.
+test('/me sin cookie responde 200 con las dos sesiones a null', async () => {
   const res = await fetch(`${baseUrl}/api/auth/me`);
-  assert.equal(res.status, 401);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { cms: null, hermano: null });
 });
 
 test('logout responde 204 y borra las cookies aunque no hubiera sesion', async () => {
@@ -324,9 +329,11 @@ test('logout responde 204 y borra las cookies aunque no hubiera sesion', async (
   assert.equal(res.status, 204);
 
   const borrados = res.headers.getSetCookie();
-  // El borrado tiene que repetir el Path exacto o el navegador lo ignora
-  assert.ok(borrados.some((c) => c.includes('desamparados_session=') && c.includes('Path=/api')));
-  assert.ok(borrados.some((c) => c.includes('desamparados_2fa=') && c.includes('Path=/api/auth')));
+  // El borrado tiene que repetir el Path exacto o el navegador lo ignora. Sin
+  // área, el logout limpia las dos cookies de sesión y la del 2FA.
+  assert.ok(borrados.some((c) => c.includes(`${COOKIE_CMS}=`) && c.includes('Path=/api')));
+  assert.ok(borrados.some((c) => c.includes(`${COOKIE_HERMANO}=`) && c.includes('Path=/api')));
+  assert.ok(borrados.some((c) => c.includes(`${COOKIE_2FA}=`) && c.includes('Path=/api/auth')));
 });
 
 // ==========================================
@@ -344,8 +351,12 @@ async function entrar(email: string, contexto?: 'cms' | 'hermanos') {
   });
 }
 
-function cookieSesionDe(res: Response): string | undefined {
-  return res.headers.getSetCookie().find((c) => c.startsWith('desamparados_session='));
+// Desde la tarea 6 el login pone la cookie de su propia área y no una única
+// "desamparados_session": hay que decir cuál se busca. 'cms' por defecto,
+// porque es lo que entiende `entrar(email)` sin contexto.
+function cookieSesionDe(res: Response, area: 'cms' | 'hermanos' = 'cms'): string | undefined {
+  const nombre = area === 'cms' ? COOKIE_CMS : COOKIE_HERMANO;
+  return res.headers.getSetCookie().find((c) => c.startsWith(`${nombre}=`));
 }
 
 test('la cookie del hermano persiste 4 h y la del staff muere al cerrar', async (t) => {
@@ -355,7 +366,7 @@ test('la cookie del hermano persiste 4 h y la del staff muere al cerrar', async 
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
 
   try {
-    const deHermano = cookieSesionDe(await entrar(hermano.email, 'hermanos'))!;
+    const deHermano = cookieSesionDe(await entrar(hermano.email, 'hermanos'), 'hermanos')!;
     assert.match(deHermano, /HttpOnly/i);
     assert.match(deHermano, /SameSite=Strict/i);
     assert.match(deHermano, /Max-Age=14400/i);
@@ -389,12 +400,14 @@ test('/me devuelve la sesion cuando se manda la cookie', async (t) => {
 
   const hermano = await crearUsuarioPrueba(Role.USER);
   try {
-    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'))!.split(';')[0];
+    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'), 'hermanos')!.split(';')[0];
     const res = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
 
     assert.equal(res.status, 200);
-    const cuerpo = await res.json() as { user: { email: string } };
-    assert.equal(cuerpo.user.email, hermano.email);
+    // Desde la tarea 7 el cuerpo es { cms, hermano }, no { user }: esta es una
+    // sesión del área de hermanos, así que sale en esa clave.
+    const cuerpo = await res.json() as { hermano: { email: string } | null };
+    assert.equal(cuerpo.hermano?.email, hermano.email);
   } finally {
     await borrarUsuarioPrueba(hermano.id);
   }
@@ -415,8 +428,8 @@ test('con 2FA activo el login no emite sesion, solo el testigo pendiente', async
     const cuerpo = await res.json() as { status?: string };
 
     assert.equal(cuerpo.status, '2FA_NEEDED');
-    assert.ok(cookies.some((c) => c.startsWith('desamparados_2fa=')));
-    assert.ok(!cookies.some((c) => c.startsWith('desamparados_session=')));
+    assert.ok(cookies.some((c) => c.startsWith(`${COOKIE_2FA}=`)));
+    assert.ok(!cookies.some((c) => c.startsWith(`${COOKIE_CMS}=`) || c.startsWith(`${COOKIE_HERMANO}=`)));
   } finally {
     await borrarUsuarioPrueba(staff.id);
   }
@@ -432,7 +445,7 @@ test('la agenda deja pasar tanto al invitado como a quien tiene sesion', async (
 
   const hermano = await crearUsuarioPrueba(Role.USER);
   try {
-    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'))!.split(';')[0];
+    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'), 'hermanos')!.split(';')[0];
     const conSesion = await fetch(`${baseUrl}/api/events`, { headers: { Cookie: cookie } });
     assert.equal(conSesion.status, 200, 'con sesion valida tambien deberia pasar');
   } finally {
@@ -495,18 +508,21 @@ test('promover a staff invalida la sesion emitida como hermano', async (t) => {
   const admin = await crearUsuarioPrueba(Role.ADMIN);
 
   try {
-    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'))!.split(';')[0];
+    const cookie = cookieSesionDe(await entrar(hermano.email, 'hermanos'), 'hermanos')!.split(';')[0];
 
     // Antes de promover, la sesion sirve
     const antes = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
     assert.equal(antes.status, 200);
+    assert.ok((await antes.json() as { hermano: unknown }).hermano, 'antes de promover, /me debe traer la sesión de hermano');
 
     await AdminService.promoteToStaff(hermano.id, Role.SECRETARIA, admin.id);
 
-    // Despues ya no: su cookie era la persistente de 4 h de USER, y con permisos
-    // de CMS tiene que recibir la de staff, que muere al cerrar el navegador.
+    // Despues ya no: promover mueve tokenValidAfter (el corte global) y mata la
+    // sesion vieja. Desde la tarea 7 /me ya no responde 401 por esto: sigue en
+    // 200, pero con la sesion de hermano a null.
     const despues = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
-    assert.equal(despues.status, 401);
+    assert.equal(despues.status, 200);
+    assert.equal((await despues.json() as { hermano: unknown }).hermano, null, 'la sesion vieja de hermano debe quedar muerta tras promover');
   } finally {
     await borrarUsuarioPrueba(hermano.id);
     await borrarUsuarioPrueba(admin.id);
@@ -552,7 +568,7 @@ test('el censo respeta la página y el tamaño pedidos', async (t) => {
 
   try {
     const token = generateToken(admin.id, Role.ADMIN);
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${token}` };
 
     const primera = await fetch(`${baseUrl}/api/hermanos/admin/search?page=1&limit=10`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -587,7 +603,7 @@ test('el censo recorta un tamaño desmedido al tope', async (t) => {
 
   try {
     const token = generateToken(admin.id, Role.ADMIN);
-    const respuesta = await fetch(`${baseUrl}/api/hermanos/admin/search?limit=999999`, { headers: { Cookie: `${COOKIE_SESION}=${token}` } });
+    const respuesta = await fetch(`${baseUrl}/api/hermanos/admin/search?limit=999999`, { headers: { Cookie: `${COOKIE_CMS}=${token}` } });
     const cuerpo = await respuesta.json() as { meta: { limit: number } };
     assert.equal(cuerpo.meta.limit, 100);
   } finally {
@@ -604,7 +620,7 @@ test('las solicitudes de alta respetan la página y el tamaño pedidos', async (
 
   try {
     const token = generateToken(admin.id, Role.ADMIN);
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${token}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${token}` };
 
     const primera = await fetch(`${baseUrl}/api/hermanos/admin/solicitudes?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -647,7 +663,7 @@ test('los enseres respetan la página y el tamaño pedidos', async (t) => {
   const hermano = await crearUsuarioPrueba(Role.ADMIN);
 
   try {
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(hermano.id, Role.ADMIN)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(hermano.id, Role.ADMIN)}` };
 
     const primera = await fetch(`${baseUrl}/api/inventario/enseres?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -687,7 +703,7 @@ test('el ropero respeta la página y el tamaño pedidos', async (t) => {
   const hermano = await crearUsuarioPrueba(Role.ADMIN);
 
   try {
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(hermano.id, Role.ADMIN)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(hermano.id, Role.ADMIN)}` };
 
     const primera = await fetch(`${baseUrl}/api/inventario/prendas?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -724,7 +740,7 @@ test('el ropero publica la ficha de una prenda por su id', async (t) => {
   const hermano = await crearUsuarioPrueba(Role.ADMIN);
 
   try {
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(hermano.id, Role.ADMIN)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(hermano.id, Role.ADMIN)}` };
 
     const listado = await fetch(`${baseUrl}/api/inventario/prendas?limit=1`, { headers: cabeceras });
     const cuerpo = await listado.json() as { data: { id: number; numero: string }[] };
@@ -842,7 +858,7 @@ test('mis recibos respetan la página y el tamaño pedidos', async (t) => {
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
 
     const primera = await fetch(`${baseUrl}/api/recibos/mis-recibos?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -884,7 +900,7 @@ test('mis perfiles respetan la página y el tamaño pedidos', async (t) => {
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
 
     const primera = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -923,7 +939,7 @@ test('mis perfiles caben enteros en la página que pide el selector', async (t) 
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
     const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles?page=1&limit=50`, { headers: cabeceras });
     const cuerpo = await respuesta.json() as { data: { id: number }[]; meta: Record<string, number> };
 
@@ -944,7 +960,7 @@ test('mi histórico de papeletas respeta la página y el tamaño pedidos', async
 
   try {
     fichas = await sembrarFamiliaPrueba(usuario.id);
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, Role.USER)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, Role.USER)}` };
 
     const primera = await fetch(`${baseUrl}/api/procesion/mis-papeletas?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
@@ -1036,7 +1052,7 @@ test('el libro mayor no repite ni pierde apuntes con la misma fecha al pasar de 
     const sembrado = await sembrarApuntesEmpatados();
     categoriaId = sembrado.categoriaId;
     apuntes = sembrado.apuntes;
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(tesorero.id, Role.TESORERIA)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(tesorero.id, Role.TESORERIA)}` };
 
     // Tamaño 10, uno de los cinco que ofrece el selector: los doce empatados no
     // caben en una página y el corte cae justo dentro del empate.
@@ -1094,7 +1110,7 @@ test('con 2FA activo, entrar por el área de hermanos no pide el segundo factor'
     const cuerpo = await res.json() as { status?: string };
 
     assert.notEqual(cuerpo.status, '2FA_NEEDED', 'el área de hermanos no debe pedir el segundo factor');
-    assert.ok(cookieSesionDe(res), 'debería emitir la sesión en el primer paso');
+    assert.ok(cookieSesionDe(res, 'hermanos'), 'debería emitir la sesión en el primer paso');
   } finally {
     await borrarUsuarioPrueba(staff.id);
   }
@@ -1127,7 +1143,7 @@ test('una sesión abierta en el área de hermanos no vale para el CMS', async (t
   try {
     await conSegundoFactor(admin.id);
 
-    const cookie = cookieSesionDe(await entrar(admin.email, 'hermanos'))!.split(';')[0];
+    const cookie = cookieSesionDe(await entrar(admin.email, 'hermanos'), 'hermanos')!.split(';')[0];
     const res = await fetch(`${baseUrl}/api/news/admin/archive`, { headers: { Cookie: cookie } });
 
     assert.equal(res.status, 403, 'una sesión de origen hermanos no debe entrar en el CMS');
