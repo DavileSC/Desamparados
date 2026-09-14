@@ -1,5 +1,6 @@
 import { apiFetch } from './client'
 import type { AuthUser } from '../../features/members/auth/store'
+import { normalizarDni, normalizarTelefono } from '../validacion/identidad'
 
 /**
  * Respuesta de POST /auth/login y POST /auth/login/2fa.
@@ -43,10 +44,13 @@ export function register(data: {
       usuario: {
         email: data.email,
         password: data.password,
-        dni: data.dni,
+        // Normalizados aquí y no en el formulario: el servidor guarda nueve
+        // dígitos pelados y el DNI en mayúsculas sin separadores, y quien
+        // escribe «+34 600 12 34 56» está dando un teléfono correcto.
+        dni: normalizarDni(data.dni),
         nombre: data.nombre,
         apellidos: data.apellidos,
-        telefono: data.telefono,
+        telefono: normalizarTelefono(data.telefono),
         direccion: data.direccion,
         poblacion: data.poblacion,
         codigoPostal: data.codigoPostal,
