@@ -3,10 +3,11 @@ import { AuthService, CuentaSinCmsError, Testigo2FACaducadoError } from '../serv
 import { handleHttp } from '../utils/error.handle';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
 import { AuditService } from '../services/audit.service';
-import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookiesAuth, COOKIE_2FA, COOKIE_CMS } from '../utils/cookies';
+import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookieSesion, limpiarCookiesAuth, COOKIE_2FA } from '../utils/cookies';
+import type { AreaSesion } from '../utils/cookies';
 import { verifyToken } from '../utils/jwt.handle';
 import type { AuthTokenPayload } from '../utils/jwt.handle';
-import { validateSessionAgainstDb } from '../middleware/session';
+import { resolverSesiones } from '../middleware/session';
 
 export class AuthController {
 
@@ -213,30 +214,35 @@ export class AuthController {
   }
 
   /**
-   * Sin authenticateToken a proposito: una sesion ya caducada tambien tiene que
+   * Sin authenticateToken a propósito: una sesión ya caducada también tiene que
    * poder limpiar su cookie. Es idempotente.
    *
-   * Si la cookie es una sesión vigente, además se revocan en el servidor todas
-   * las de la cuenta. Borrar solo la cookie dejaba vivo el token: quien lo
-   * hubiera copiado seguía dentro sus 8 h (o 72 h con «Recordarme») aunque el
-   * usuario hubiera cerrado sesión en un equipo compartido.
+   * Cierra el área que se pida, y las dos si no se pide ninguna. Borrar solo la
+   * cookie dejaba vivo el token: quien lo hubiera copiado seguía dentro sus 8 h
+   * (o 72 h con «Recordarme») aunque se hubiera cerrado sesión en un equipo
+   * compartido. Por eso además se revoca en el servidor.
    */
   static async logout(req: Request, res: Response) {
+    const area: AreaSesion | undefined =
+      req.body?.area === 'cms' ? 'cms' : req.body?.area === 'hermanos' ? 'hermanos' : undefined;
+
     try {
-      // PROVISIONAL (tarea 8): con dos cookies ya no hay «la» sesión. De
-      // momento solo mira la del CMS para que el módulo siga cargando tras
-      // quitar COOKIE_SESION; la tarea 8 tiene que revisar las dos áreas.
-      const token = req.cookies?.[COOKIE_CMS];
-      const payload = token ? verifyToken(token, 'session') : null;
-      const vigente = payload ? await validateSessionAgainstDb(payload) : null;
-      if (vigente) await AuthService.cerrarSesionesDe(vigente.id);
+      await resolverSesiones(req, res, () => {});
+      const sesiones = area === 'cms' ? [req.sesiones.cms]
+        : area === 'hermanos' ? [req.sesiones.hermano]
+        : [req.sesiones.cms, req.sesiones.hermano];
+      for (const sesion of sesiones) {
+        if (sesion) await AuthService.cerrarSesionesDe(sesion.id, area);
+      }
     } catch (error) {
       // La cookie se borra igual: el cierre en el navegador no puede depender
       // de la base de datos. Queda en el log para que se sepa que el token no
       // se revocó.
       console.error('[Logout] No se pudo revocar la sesión en el servidor:', error);
     }
-    limpiarCookiesAuth(res);
+
+    if (area) limpiarCookieSesion(res, area);
+    else limpiarCookiesAuth(res);
     res.status(204).end();
   }
 

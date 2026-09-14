@@ -313,3 +313,54 @@ test('una cuenta de staff con solo la cookie de hermanos no puede pedir su borra
     'Esta cuenta es del equipo del CMS: para eliminarla, entra por el acceso del CMS.'
   );
 });
+
+// --- Tarea 8: cerrar sesión afecta solo a su área ---
+//
+// NOTA: el brief de esta tarea usa `/api/panel/hoy` en estos dos tests, la
+// misma errata que arriba (ver nota de la tarea 4): esa ruta no existe. Se usa
+// /api/panel, la ruta real.
+
+test('cerrar el área de hermanos deja el CMS dentro', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const user = await crearUsuarioPrueba(Role.TESORERIA);
+  creados.push(user.id);
+  const cms = generateToken(user.id, Role.TESORERIA, false, 'cms');
+  const hermano = generateToken(user.id, Role.TESORERIA, false, 'hermanos');
+  const lasDos = `${COOKIE_CMS}=${cms}; ${COOKIE_HERMANO}=${hermano}`;
+
+  const salida = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', cookie: lasDos },
+    body: JSON.stringify({ area: 'hermanos' }),
+  });
+  assert.equal(salida.status, 204);
+
+  // Borra solo la suya...
+  const borradas = salida.headers.getSetCookie();
+  assert.ok(borradas.some((c) => c.startsWith(`${COOKIE_HERMANO}=`)));
+  assert.ok(!borradas.some((c) => c.startsWith(`${COOKIE_CMS}=`)));
+
+  // ...y revoca solo la suya en el servidor.
+  const panel = await fetch(`${baseUrl}/api/panel`, { headers: { cookie: `${COOKIE_CMS}=${cms}` } });
+  assert.notEqual(panel.status, 401, 'el CMS tiene que seguir dentro');
+  const perfiles = await fetch(`${baseUrl}/api/hermanos/mis-perfiles`, { headers: { cookie: `${COOKIE_HERMANO}=${hermano}` } });
+  assert.equal(perfiles.status, 401, 'el área de hermanos tiene que estar fuera');
+});
+
+test('sin área, el cierre de sesión echa de las dos', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const user = await crearUsuarioPrueba(Role.ADMIN);
+  creados.push(user.id);
+  const cms = generateToken(user.id, Role.ADMIN, false, 'cms');
+  const hermano = generateToken(user.id, Role.ADMIN, false, 'hermanos');
+
+  // Sin cuerpo ninguno y sin Content-Type: es el caso que ejercita el
+  // `.or("undefined")` del schema, no `{ area: undefined }`.
+  await fetch(`${baseUrl}/api/auth/logout`, {
+    method: 'POST',
+    headers: { cookie: `${COOKIE_CMS}=${cms}; ${COOKIE_HERMANO}=${hermano}` },
+  });
+
+  assert.equal((await fetch(`${baseUrl}/api/panel`, { headers: { cookie: `${COOKIE_CMS}=${cms}` } })).status, 401);
+  assert.equal((await fetch(`${baseUrl}/api/hermanos/mis-perfiles`, { headers: { cookie: `${COOKIE_HERMANO}=${hermano}` } })).status, 401);
+});

@@ -63,6 +63,11 @@ export const loginSchema = type({
     }
 });
 
+// El cuerpo entero es opcional: un POST /logout sin nada cierra las dos áreas.
+export const logoutSchema = type({
+    "body?": type({ "area?": "'cms' | 'hermanos'" }).or("undefined")
+});
+
 // Esquema para validar los 6 dígitos del TOTP
 export const totpTokenSchema = type("string").matching(/^[0-9]{6}$/).describe("un código numérico de 6 dígitos");
 
