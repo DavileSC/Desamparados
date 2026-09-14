@@ -1,8 +1,20 @@
 import type { CookieOptions, Response } from 'express';
-import { duracionSesionSegundos, esStaff, PENDIENTE_2FA_SEGUNDOS, RECORDARME_SEGUNDOS } from './jwt.handle.js';
+import { duracionSesionSegundos, PENDIENTE_2FA_SEGUNDOS, RECORDARME_SEGUNDOS } from './jwt.handle.js';
 
-export const COOKIE_SESION = 'desamparados_session';
+/**
+ * El CMS y el área de hermanos tienen **una cookie cada uno**. Con una sola,
+ * entrar por un acceso sustituía la sesión del otro: quien estaba dentro del
+ * CMS y se identificaba como hermano para ver su perfil perdía la
+ * administración. Son dos sesiones distintas de la misma persona.
+ */
+export type AreaSesion = 'cms' | 'hermanos';
+
+export const COOKIE_CMS = 'desamparados_cms';
+export const COOKIE_HERMANO = 'desamparados_hermano';
 export const COOKIE_2FA = 'desamparados_2fa';
+
+export const nombreCookie = (area: AreaSesion): string =>
+  area === 'cms' ? COOKIE_CMS : COOKIE_HERMANO;
 
 // La cookie de sesión solo viaja a la API; los estáticos y /storage/public no la reciben.
 const RUTA_SESION = '/api';
@@ -17,24 +29,31 @@ const base = (path: string): CookieOptions => ({
 });
 
 /**
- * Staff del CMS: sin maxAge, o sea cookie de sesión que muere al cerrar el
- * navegador (el CMS se usa desde equipos compartidos de la casa parroquial).
- * Hermanos: persiste, con el mismo tope que el JWT para que no lo sobreviva.
+ * La duración la decide el ÁREA, no el rol.
  *
- * Con "Recordarme" ( cualquier rol ): cookie persistente de 72 h, alineada con
- * el JWT para que ninguna de las dos sobreviva a la otra.
+ * - CMS: sin maxAge, o sea cookie que muere al cerrar el navegador, porque se
+ *   usa desde equipos compartidos de la casa parroquial.
+ * - Hermanos: persiste, con el mismo tope que el JWT para que no lo sobreviva.
+ *
+ * Antes lo decidía `esStaff(role)`, y entonces un Tesorero que entraba al área
+ * de hermanos a ver su perfil se llevaba la cookie corta del CMS sin estar en
+ * el CMS.
+ *
+ * Con «Recordarme» (cualquier área, cualquier rol): 72 h, alineadas con el JWT.
  */
-export const opcionesCookieSesion = (role: string, recordarme = false): CookieOptions => ({
+export const opcionesCookieSesion = (area: AreaSesion, role: string, recordarme = false): CookieOptions => ({
   ...base(RUTA_SESION),
   ...(recordarme
     ? { maxAge: RECORDARME_SEGUNDOS * 1000 }
-    : esStaff(role)
+    : area === 'cms'
       ? {}
       : { maxAge: duracionSesionSegundos(role) * 1000 })
 });
 
-export const ponerCookieSesion = (res: Response, token: string, role: string, recordarme = false): void => {
-  res.cookie(COOKIE_SESION, token, opcionesCookieSesion(role, recordarme));
+export const ponerCookieSesion = (
+  res: Response, area: AreaSesion, token: string, role: string, recordarme = false
+): void => {
+  res.cookie(nombreCookie(area), token, opcionesCookieSesion(area, role, recordarme));
 };
 
 export const ponerCookie2FA = (res: Response, token: string): void => {
@@ -43,11 +62,16 @@ export const ponerCookie2FA = (res: Response, token: string): void => {
 
 // OJO: borrar una cookie exige repetir su Path exacto. Sin él el navegador
 // ignora el borrado y la respuesta sigue siendo un 204 engañoso.
+export const limpiarCookieSesion = (res: Response, area: AreaSesion): void => {
+  res.clearCookie(nombreCookie(area), base(RUTA_SESION));
+};
+
 export const limpiarCookie2FA = (res: Response): void => {
   res.clearCookie(COOKIE_2FA, base(RUTA_2FA));
 };
 
 export const limpiarCookiesAuth = (res: Response): void => {
-  res.clearCookie(COOKIE_SESION, base(RUTA_SESION));
+  limpiarCookieSesion(res, 'cms');
+  limpiarCookieSesion(res, 'hermanos');
   limpiarCookie2FA(res);
 };
