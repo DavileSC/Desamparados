@@ -3,7 +3,9 @@ import { Alert, Box, Button, CircularProgress, Paper, Stack, Tab, Tabs, TextFiel
 import { Helmet } from 'react-helmet-async'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../members/auth/store'
+import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
 import { approveRequest, cerrarHuecosDeNumero, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
@@ -11,6 +13,7 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 
 export default function BrothersAdminPage() {
+  const queryClient = useQueryClient()
   const role = useAuthStore((state) => state.user?.role ?? 'USER')
   // El Hermano Mayor gestiona el censo como secretaría: edita fichas y admite
   // altas. Quien llega aquí sin ser ninguno de los tres es porque la guarda de
@@ -61,7 +64,15 @@ export default function BrothersAdminPage() {
     setMeta(censo.meta)
     setRequests(pendientes.data)
     setMetaSolicitudes(pendientes.meta)
-  }), [puedeGestionar, query, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
+    // El menú saca sus contadores («hermanos sin número», solicitudes
+    // pendientes) de la consulta del panel, que guarda cinco minutos. Asignar
+    // números, aprobar y rechazar mueven justo esos números, y esta pantalla es
+    // la única forma de bajarlos: sin invalidar el panel, Secretaría leía «Se han
+    // asignado 3 números de hermano» y el menú seguía diciendo 3 durante cinco
+    // minutos, aun cambiando de pantalla dentro del CMS. Va aquí y no en el
+    // botón de asignar porque los tres caminos recargan el censo por aquí.
+    void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
+  }), [puedeGestionar, query, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina, queryClient])
 
   useEffect(() => {
     // El temporizador ya cancelaba la carga que aún no había salido; `cancelado`
