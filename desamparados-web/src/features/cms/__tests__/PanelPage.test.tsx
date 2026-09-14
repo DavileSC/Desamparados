@@ -44,9 +44,6 @@ const panel: PanelResponse = {
     noticias: { publicadas: 4, borradores: 2 },
     publicaciones: { total: 7, ultima: '2026-06-01T00:00:00.000Z' },
     reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
-    registro: [
-      { accion: 'NOTICIA_CREAR', entityType: 'noticia', createdAt: '2026-09-11T08:05:00.000Z', cargo: 'REDES' },
-    ],
   },
 }
 
@@ -96,49 +93,13 @@ describe('Inicio del CMS', () => {
     expect(screen.getByText('Lo lleva Tesorería')).toBeInTheDocument()
   })
 
-  it('lleva cuenta atrás, próximos actos y actividad del equipo', async () => {
+  it('lleva cuenta atrás y próximos actos', async () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
     expect(await screen.findByText(/Sábado de Pasión/)).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Próximos actos' })).toBeInTheDocument()
     expect(screen.getByText('Misa de hermandad')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Actividad del equipo' })).toBeInTheDocument()
-    expect(screen.getByText(/creó una noticia/)).toBeInTheDocument()
-  })
-
-  it('el pie de «Actividad del equipo» enseña las noticias publicadas, las publicaciones y la fecha de la última', async () => {
-    responder(panel)
-    entrarComo('ADMIN')
-    montar()
-    await screen.findByRole('heading', { name: 'Actividad del equipo' })
-    expect(screen.getByText(/4 noticias publicadas/)).toBeInTheDocument()
-    expect(screen.getByText(/7 publicaciones/)).toBeInTheDocument()
-    expect(screen.getByText(/última el 1 jun 2026/)).toBeInTheDocument()
-  })
-
-  it('sin ninguna publicación registrada, el pie no menciona una fecha', async () => {
-    responder({ ...panel, actividad: { ...panel.actividad, publicaciones: { total: 0, ultima: null } } })
-    entrarComo('ADMIN')
-    montar()
-    await screen.findByRole('heading', { name: 'Actividad del equipo' })
-    expect(screen.getByText(/0 publicaciones/)).toBeInTheDocument()
-    expect(screen.queryByText(/última el/)).not.toBeInTheDocument()
-  })
-
-  it('el enlace a Auditoría solo lo ven quienes pueden entrar', async () => {
-    responder(panel)
-    entrarComo('REDES')
-    montar()
-    await screen.findByRole('heading', { name: 'Actividad del equipo' })
-    expect(screen.queryByRole('link', { name: /Ver auditoría/ })).not.toBeInTheDocument()
-  })
-
-  it('el enlace a Auditoría lo ve quien puede entrar', async () => {
-    responder(panel)
-    entrarComo('ADMIN')
-    montar()
-    expect(await screen.findByRole('link', { name: /Ver auditoría/ })).toBeInTheDocument()
   })
 
   // rolesPorRutaCms.agenda es ['ADMIN','SECRETARIA','HERMANO_MAYOR']: sin este
@@ -186,7 +147,7 @@ describe('Inicio del CMS', () => {
       censo: { activos: 0, altas12m: 0, bajas12m: 0, sinNumeroHermano: 0, serieMensual: [], movimientosMensuales: [], porEdad: [] },
       dinero: { porEstado: [], ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 }, serieMensual: [], porCategoria: [] },
       procesion: { anio: 2026, papeletas: 0, porAnio: [], porPuesto: [], porTalla: [], porAlturaHombro: [] },
-      actividad: { ...panel.actividad, proximosEventos: [], noticias: { publicadas: 0, borradores: 0 }, reparto: { turnosProximos: 0, citasReservadas: 0, capacidadEstimada: 0 }, registro: [] },
+      actividad: { ...panel.actividad, proximosEventos: [], noticias: { publicadas: 0, borradores: 0 }, reparto: { turnosProximos: 0, citasReservadas: 0, capacidadEstimada: 0 } },
     })
     entrarComo('ADMIN')
     montar()

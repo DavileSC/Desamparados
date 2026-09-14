@@ -1,6 +1,6 @@
 import { Box, Paper, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
-import { eurosResumen, numero } from '../contabilidad/formato'
+import { eurosResumen, fechaCorta, numero } from '../contabilidad/formato'
 import { contar } from './plural'
 
 function Cifra({ etiqueta, valor, pie }: { etiqueta: string; valor: string | number; pie: string }) {
@@ -32,23 +32,33 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
   const saldo = panel.dinero.ejercicio.saldo
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, minmax(0, 1fr))' }, gap: 1.75 }}>
-      <Cifra
-        etiqueta="Hermanos activos"
-        valor={numero(panel.censo.activos)}
-        pie={`+${numero(panel.censo.altas12m)} / −${numero(panel.censo.bajas12m)} en doce meses`}
-      />
-      <Cifra etiqueta={`Papeletas ${panel.procesion.anio}`} valor={numero(panel.procesion.papeletas)} pie="de sitio" />
-      <Cifra
-        etiqueta="Por cobrar"
-        valor={eurosResumen(porCobrar.importe)}
-        pie={contar(porCobrar.total, 'recibo', 'recibos')}
-      />
-      <Cifra
-        etiqueta={`Saldo ${panel.dinero.ejercicio.anio}`}
-        valor={eurosResumen(saldo)}
-        pie={saldo >= 0 ? 'superávit' : 'déficit'}
-      />
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, minmax(0, 1fr))' }, gap: 1.75 }}>
+        <Cifra
+          etiqueta="Hermanos activos"
+          valor={numero(panel.censo.activos)}
+          pie={`+${numero(panel.censo.altas12m)} / −${numero(panel.censo.bajas12m)} en doce meses`}
+        />
+        <Cifra etiqueta={`Papeletas ${panel.procesion.anio}`} valor={numero(panel.procesion.papeletas)} pie="de sitio" />
+        <Cifra
+          etiqueta="Por cobrar"
+          valor={eurosResumen(porCobrar.importe)}
+          pie={contar(porCobrar.total, 'recibo', 'recibos')}
+        />
+        <Cifra
+          etiqueta={`Saldo ${panel.dinero.ejercicio.anio}`}
+          valor={eurosResumen(saldo)}
+          pie={saldo >= 0 ? 'superávit' : 'déficit'}
+        />
+      </Box>
+
+      {/* Venía de «Actividad del equipo», que se retiró con la auditoría: son
+          dos números y una fecha, no un registro de quién hizo qué. */}
+      <Typography variant="caption" color="text.secondary" sx={{ px: 0.25 }}>
+        {contar(panel.actividad.noticias.publicadas, 'noticia publicada', 'noticias publicadas')} ·{' '}
+        {contar(panel.actividad.publicaciones.total, 'publicación', 'publicaciones')}
+        {panel.actividad.publicaciones.ultima && ` · última el ${fechaCorta(panel.actividad.publicaciones.ultima)}`}
+      </Typography>
     </Box>
   )
 }

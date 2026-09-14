@@ -8,7 +8,6 @@ import ParaHoy from './inicio/ParaHoy'
 import Cifras from './inicio/Cifras'
 import CuentaAtras from './inicio/CuentaAtras'
 import ProximosActos from './inicio/ProximosActos'
-import ActividadEquipo from './inicio/ActividadEquipo'
 import ComoVaElAnio from './inicio/ComoVaElAnio'
 
 /**
@@ -41,7 +40,6 @@ export default function PanelPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <ParaHoy tareas={tareas} role={role} />
           <Cifras panel={data} />
-          <ActividadEquipo actividad={data.actividad} role={role} />
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <CuentaAtras />

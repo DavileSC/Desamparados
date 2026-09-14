@@ -52,8 +52,6 @@ export interface PanelResponse {
     noticias: { publicadas: number; borradores: number }
     publicaciones: { total: number; ultima: string | null }
     reparto: { turnosProximos: number; citasReservadas: number; capacidadEstimada: number }
-    /** Las cinco últimas acciones de contenido y agenda, por cargo y sin personas. */
-    registro: { accion: string; entityType: string | null; createdAt: string; cargo: string | null }[]
   }
 }
 

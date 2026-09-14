@@ -94,7 +94,6 @@ const PANEL_MINIMO = {
     noticias: { publicadas: 4, borradores: 2 },
     publicaciones: { total: 7, ultima: null },
     reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
-    registro: [],
   },
 }
 
