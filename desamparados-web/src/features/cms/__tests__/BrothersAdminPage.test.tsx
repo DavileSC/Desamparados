@@ -252,6 +252,10 @@ describe('BrothersAdminPage', () => {
   // Ese número sale de la consulta del panel (`CLAVE_PANEL_HOY`), con cinco
   // minutos de `staleTime`: sin invalidarla, Secretaría leía «Se han asignado 3
   // números» y el menú seguía diciendo 3 durante cinco minutos.
+  //
+  // El refresco cuelga de las tres acciones que mueven esos números (asignar,
+  // aprobar y rechazar) y no de `load()`: el tercer test es el que fija esa
+  // decisión y el que impide devolverlo a la recarga.
 
   it('asignar números refresca el contador del menú', async () => {
     const usuario = userEvent.setup()
@@ -264,10 +268,6 @@ describe('BrothersAdminPage', () => {
     renderWithProviders(<BrothersAdminPage />)
 
     const boton = await screen.findByRole('button', { name: /asignar n[úu]meros/i })
-    // La carga de entrada también refresca el menú; se descuenta para que lo que
-    // se mida aquí sea lo que hace el botón, no lo que hizo el montaje.
-    espia.mockClear()
-
     await usuario.click(boton)
     await usuario.click(await screen.findByRole('button', { name: /confirmar|asignar/i }))
     await screen.findByText(/se han asignado 2 n[úu]meros/i)
@@ -277,17 +277,37 @@ describe('BrothersAdminPage', () => {
 
   it('aprobar una solicitud refresca el contador del menú', async () => {
     // Aprobar mueve los mismos números (un pendiente menos, un hermano más):
-    // por eso el refresco vive en `load()` y no solo en el botón de asignar.
+    // por eso el refresco no cuelga solo del botón de asignar.
     const usuario = userEvent.setup()
     servidorSolicitudes()
     const espia = espiarInvalidaciones()
     renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?vista=solicitudes' })
 
     const aprobar = await screen.findByRole('button', { name: 'Aprobar' })
-    espia.mockClear()
     await usuario.click(aprobar)
     await screen.findByText(/solicitud aprobada correctamente/i)
 
     expect(invalidoElPanel(espia)).toBe(true)
+  })
+
+  it('teclear en el buscador no refresca el panel', async () => {
+    // El negativo de los dos de arriba. Buscar a un hermano no cambia ningún
+    // contador, y el panel es un agregado caro (censo, dinero, procesión y
+    // actividad) que el menú tiene observado: con la invalidación en `load()`,
+    // abrir la pantalla y cada rebote del buscador pedían el panel entero otra
+    // vez. Esto es lo que impide devolverla ahí dentro de seis meses.
+    const usuario = userEvent.setup()
+    const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(respuestaCenso([])))
+    vi.stubGlobal('fetch', fetchSimulado)
+    const espia = espiarInvalidaciones()
+    renderWithProviders(<BrothersAdminPage />)
+
+    await usuario.type(await screen.findByLabelText(/buscar por nombre/i), 'Rocío')
+    await waitFor(() => {
+      expect(llamadasAlCenso(fetchSimulado).some((url) => url.includes('q=Roc'))).toBe(true)
+    })
+
+    // Ni el montaje ni el tecleo: el espía lleva puesto desde antes de pintar.
+    expect(invalidoElPanel(espia)).toBe(false)
   })
 })

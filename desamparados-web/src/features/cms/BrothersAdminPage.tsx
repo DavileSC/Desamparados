@@ -64,15 +64,7 @@ export default function BrothersAdminPage() {
     setMeta(censo.meta)
     setRequests(pendientes.data)
     setMetaSolicitudes(pendientes.meta)
-    // El menú saca sus contadores («hermanos sin número», solicitudes
-    // pendientes) de la consulta del panel, que guarda cinco minutos. Asignar
-    // números, aprobar y rechazar mueven justo esos números, y esta pantalla es
-    // la única forma de bajarlos: sin invalidar el panel, Secretaría leía «Se han
-    // asignado 3 números de hermano» y el menú seguía diciendo 3 durante cinco
-    // minutos, aun cambiando de pantalla dentro del CMS. Va aquí y no en el
-    // botón de asignar porque los tres caminos recargan el censo por aquí.
-    void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
-  }), [puedeGestionar, query, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina, queryClient])
+  }), [puedeGestionar, query, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
 
   useEffect(() => {
     // El temporizador ya cancelaba la carga que aún no había salido; `cancelado`
@@ -84,11 +76,32 @@ export default function BrothersAdminPage() {
     return () => { cancelado = true; window.clearTimeout(timer) }
   }, [load, query])
 
+  /**
+   * Recarga el censo y refresca de paso los contadores del menú («hermanos sin
+   * número», solicitudes pendientes): salen de la consulta del panel, que se
+   * guarda cinco minutos, y sin esto Secretaría leía «Se han asignado 3 números
+   * de hermano» y el menú seguía diciendo 3 durante cinco minutos, aun
+   * cambiando de pantalla dentro del CMS.
+   *
+   * Cuelga de las tres acciones que de verdad mueven esos números —asignar,
+   * aprobar y rechazar— y no de `load()`: `load()` corre también al abrir la
+   * pantalla, en cada tecleo del buscador (con rebote, pero cada 300 ms) y al
+   * cambiar de página. El panel es un agregado caro (censo, dinero, procesión y
+   * actividad) y el menú lo tiene observado mientras se está dentro del CMS, así
+   * que invalidarlo no deja una marca de caducidad: dispara una petición de
+   * verdad, en ese momento. Y buscar a un hermano por su nombre no cambia
+   * ningún contador.
+   */
+  const recargarYRefrescarMenu = async () => {
+    await load()
+    void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
+  }
+
   const handleRequest = async (request: PendingRequest, approve: boolean) => {
     if (enMarcha.current) return
     enMarcha.current = true
     setProcesando(request.id); setError(null); setNotice(null)
-    try { await (approve ? approveRequest(request.id) : rejectRequest(request.id)); await load(); setNotice(approve ? 'Solicitud aprobada correctamente.' : 'Solicitud rechazada correctamente.') }
+    try { await (approve ? approveRequest(request.id) : rejectRequest(request.id)); await recargarYRefrescarMenu(); setNotice(approve ? 'Solicitud aprobada correctamente.' : 'Solicitud rechazada correctamente.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido procesar la solicitud.') }
     finally { enMarcha.current = false; setProcesando(null) }
   }
@@ -100,7 +113,7 @@ export default function BrothersAdminPage() {
     setError(null); setNotice(null)
     try {
       const { message } = await cerrarHuecosDeNumero()
-      await load()
+      await recargarYRefrescarMenu()
       setNotice(message)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'No se han podido asignar los números.')
