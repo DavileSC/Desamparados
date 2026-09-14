@@ -50,25 +50,27 @@ export const codigoPostal = type("string").pipe(
 );
 
 // 3. DNI/NIE con Validación Matemática Oficial
-export const dni = type("string")
-    .narrow((s) => {
-        const str = s.toUpperCase();
-        // 1. Validar formato básico
+//
+// Normaliza ANTES de comprobar y devuelve el valor limpio, no el que llegó:
+// guardar «12345678z» dejaba en la base un DNI que el índice único no
+// reconoce como el mismo que «12345678Z». El formulario también normaliza
+// (desamparados-web/src/lib/validacion/identidad.ts), pero el servidor no
+// puede fiarse del cliente. Mismo patrón que codigoPostal: .pipe() con dos
+// argumentos, porque encadenar .narrow() tras un .pipe() de un solo
+// argumento revienta en arktype 2.1.29 («Pattern operand must be a string
+// (was a morph)»).
+const LETRAS_DNI = "TRWAGMYFPDXBNJZSQVHLCKE";
+
+export const dni = type("string").pipe(
+    (valor: string) => valor.replace(/[\s-]/g, '').toUpperCase(),
+    type("string").narrow((str: string) => {
         if (!/^[XYZ0-9][0-9]{7}[A-Z]$/.test(str)) return false;
-        
-        // 2. Extraer número y letra
         const letra = str.slice(-1);
-        // Si es NIE (X, Y, Z), lo convertimos al número correspondiente para la fórmula
-        const numeroStr = str.slice(0, -1).replace('X', '0').replace('Y', '1').replace('Z', '2');
-        const numero = parseInt(numeroStr, 10);
-        
-        // 3. Calcular módulo 23
-        const letrasValidas = "TRWAGMYFPDXBNJZSQVHLCKE";
-        const letraCalculada = letrasValidas[numero % 23];
-        
-        return letra === letraCalculada;
-    })
-    .describe("un DNI/NIE válido con letra correcta");
+        // En un NIE la letra inicial vale por un dígito: X=0, Y=1, Z=2.
+        const numero = parseInt(str.slice(0, -1).replace('X', '0').replace('Y', '1').replace('Z', '2'), 10);
+        return letra === LETRAS_DNI[numero % 23];
+    }).describe("un DNI/NIE válido con letra correcta"),
+);
 
 // ID numérico (para params)
 export const idParam = type("string")

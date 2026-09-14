@@ -22,9 +22,29 @@ const casos = JSON.parse(
 const acepta = (validador: { (valor: unknown): unknown }, valor: string) =>
   !(validador(valor) instanceof ArkErrors);
 
-test('el DNI: el servidor acepta lo mismo que el formulario, ya normalizado', () => {
+// Antes el validador comprobaba sobre el valor en mayúsculas pero devolvía
+// el que le habían mandado; ahora que normaliza de verdad, esta tabla puede
+// alimentarse con el valor crudo (como hace el código postal más abajo) y
+// comprobar además que lo que devuelve es el normalizado.
+test('el DNI: el servidor acepta y normaliza lo mismo que el formulario', () => {
   for (const caso of casos.dni) {
-    assert.equal(acepta(dni, caso.normalizado), caso.valido, `DNI ${JSON.stringify(caso.valor)}`);
+    const resultado = dni(caso.valor);
+    const fueAceptado = !(resultado instanceof ArkErrors);
+    assert.equal(fueAceptado, caso.valido, `DNI ${JSON.stringify(caso.valor)}`);
+    if (fueAceptado) {
+      assert.equal(resultado, caso.normalizado, `DNI normalizado ${JSON.stringify(caso.valor)}`);
+    }
+  }
+});
+
+test('el servidor devuelve el DNI normalizado, no el que le mandaron', () => {
+  // El formulario ya normaliza, pero el servidor no puede fiarse del cliente:
+  // con la minúscula guardada, el @unique de Prisma deja de proteger.
+  for (const crudo of ['12345678z', '12345678-Z', '12345678 z', 'x1234567l']) {
+    const resultado = dni(crudo);
+    assert.equal(typeof resultado, 'string', `${crudo} debería valer`);
+    assert.equal(resultado, String(resultado).replace(/[\s-]/g, '').toUpperCase());
+    assert.match(String(resultado), /^[XYZ0-9][0-9]{7}[A-Z]$/);
   }
 });
 
