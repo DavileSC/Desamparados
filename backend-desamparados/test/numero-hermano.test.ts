@@ -135,9 +135,12 @@ test('sin huecos, el cierre no hace nada', async (t) => {
 });
 
 // Red de la regla completa: toda ficha activa tiene número. Una pendiente de
-// aprobación no lo tiene, y una de baja lo libera. Estos tres tests recorren
-// las cuatro vías de alta (alta familiar, aprobación, baja y reactivación) y
-// fallan si alguna se la salta.
+// aprobación no lo tiene, y una de baja lo libera. Los dos primeros tests
+// comprueban cada transición por separado (alta familiar + aprobación; baja
+// + reactivación). El tercero ejercita las cuatro vías sobre sus propias
+// fichas y mira el estado que dejaron, sin pasar por cerrarHuecosDeNumero
+// (esa llamada repararía cualquier hueco justo antes de buscarlo, y dejaría
+// el test incapaz de ponerse rojo pasara lo que pasara).
 
 test('una ficha recién creada por su tutor nace sin número, y lo recibe al aprobarla', async (t) => {
   if (!dbDisponible) return t.skip(motivoSinDb);
@@ -169,6 +172,12 @@ test('dar de baja libera el número y reactivar da uno nuevo', async (t) => {
   const ficha = await HermanoService.createDependentProfile(tutor.id, datosFicha);
   await HermanoService.aprobarSolicitud(tutor.id);
 
+  // Sin este dato, "queda a null tras la baja" no demuestra que la baja
+  // libere nada: podría no haber tenido número nunca. El test tiene que
+  // sostenerse solo, sin fiarse de lo que comprobó el test anterior.
+  const antesDeBaja = await db.hermano.findUnique({ where: { id: ficha.id }, select: { numeroHermano: true } });
+  assert.ok(antesDeBaja?.numeroHermano, 'antes de la baja debe tener número: si no, la baja no libera nada');
+
   await HermanoService.darDeBajaHermano(ficha.id);
   const deBaja = await db.hermano.findUnique({ where: { id: ficha.id } });
   assert.equal(deBaja?.activo, false);
@@ -180,10 +189,34 @@ test('dar de baja libera el número y reactivar da uno nuevo', async (t) => {
   assert.ok(reactivada?.numeroHermano, 'al reactivar debe llevarse número nuevo');
 });
 
-test('no queda ningún hermano activo sin número tras cerrar huecos', async (t) => {
+test('las fichas de este test no quedan activas sin número tras pasar por sus vías de alta', async (t) => {
   if (!dbDisponible) return t.skip(motivoSinDb);
 
-  await HermanoService.cerrarHuecosDeNumero();
-  const huerfanos = await db.hermano.count({ where: { activo: true, numeroHermano: null } });
-  assert.equal(huerfanos, 0, 'la regla es que toda ficha activa tiene número');
+  const tutor = await crearUsuarioPrueba();
+  usuariosCreados.push(tutor.id);
+
+  // Dos fichas del mismo tutor. «Quieta» se queda tal cual la deja la
+  // aprobación: es el canario de aprobarSolicitud, porque nada la vuelve a
+  // tocar después. «Vaivén» sigue hasta baja y reactivación: es el canario
+  // de reactivarHermano. Sin cerrarHuecosDeNumero de por medio, el recuento
+  // de abajo mira el estado que dejaron las vías tal cual, no uno reparado.
+  const datosQuieta: CreateHermanoDto = { nombre: 'Quieta', apellidos: 'Tras Aprobar', fechaNacimiento: '2000-01-01' };
+  const quieta = await HermanoService.createDependentProfile(tutor.id, datosQuieta);
+
+  const datosVaiven: CreateHermanoDto = { nombre: 'Va', apellidos: 'Y Viene', fechaNacimiento: '1985-01-01' };
+  const vaiven = await HermanoService.createDependentProfile(tutor.id, datosVaiven);
+
+  await HermanoService.aprobarSolicitud(tutor.id); // aprueba las dos fichas pendientes del tutor de golpe
+
+  await HermanoService.darDeBajaHermano(vaiven.id);
+  await HermanoService.reactivarHermano(vaiven.id);
+
+  // Acotado a las fichas de este test: un recuento sobre toda la tabla
+  // Hermano podría ponerse rojo por datos de otra procedencia (otro censo
+  // importado con huecos legítimos hasta que Secretaría pulse «Asignar
+  // números», u otra suite) sin que hubiera ninguna regresión aquí.
+  const huerfanos = await db.hermano.count({
+    where: { id: { in: [quieta.id, vaiven.id] }, activo: true, numeroHermano: null }
+  });
+  assert.equal(huerfanos, 0, 'ninguna de las dos fichas de este test debe quedar activa sin número');
 });
