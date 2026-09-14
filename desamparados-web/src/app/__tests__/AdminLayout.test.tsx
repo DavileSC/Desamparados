@@ -51,6 +51,25 @@ describe('AdminLayout', () => {
     expect(estilo.height).toBe('100vh')
   })
 
+  it('el menú conserva su fondo cuando es más alto que la ventana', () => {
+    // Con el menú desbordado, `barra` medía 100vh y su contenido seguía más
+    // abajo: el fondo oscuro se acababa y asomaba el de la página. Invisible
+    // en tema oscuro, evidente en claro, donde el menú parecía borrarse.
+    entrarComo('ADMIN')
+    const { container } = renderWithProviders(<AdminLayout />)
+    const aside = container.querySelector('aside')!
+    const barra = aside.firstElementChild as HTMLElement
+
+    // El fondo vive en el contenedor que hace scroll, no solo en el hijo.
+    expect(getComputedStyle(aside).backgroundColor).toBe(getComputedStyle(barra).backgroundColor)
+    expect(getComputedStyle(aside).backgroundColor).not.toBe('')
+    expect(getComputedStyle(aside).backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
+
+    // Y el hijo crece con su contenido en lugar de quedarse clavado a la ventana.
+    expect(getComputedStyle(barra).minHeight).toBe('100%')
+    expect(getComputedStyle(barra).height).not.toBe('100%')
+  })
+
   it('no lleva cabecera superior con el nombre del Grupo Parroquial', () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<AdminLayout />)
