@@ -31,4 +31,24 @@ describe('Cifras', () => {
     expect(screen.getByText(/4 noticias publicadas/)).toBeInTheDocument()
     expect(screen.getByText(/7 publicaciones/)).toBeInTheDocument()
   })
+
+  // Los dos casos de abajo los cubría `PanelPage.test.tsx` hasta que la
+  // auditoría salió del Inicio. La lógica se mudó aquí (la rama
+  // `publicaciones.ultima && ...`) y se quedó sin nadie que la mirase.
+
+  it('el pie fecha la última publicación', () => {
+    renderWithProviders(<Cifras panel={PANEL} />)
+    expect(screen.getByText(/última el 1 jun 2026/)).toBeInTheDocument()
+  })
+
+  it('sin ninguna publicación registrada, el pie no menciona una fecha', () => {
+    // No hay fecha que dar: «última el 1 ene 1970» sería peor que callarse.
+    const sinPublicaciones: PanelResponse = {
+      ...PANEL,
+      actividad: { ...PANEL.actividad, publicaciones: { total: 0, ultima: null } },
+    }
+    renderWithProviders(<Cifras panel={sinPublicaciones} />)
+    expect(screen.getByText(/0 publicaciones/)).toBeInTheDocument()
+    expect(screen.queryByText(/última el/)).not.toBeInTheDocument()
+  })
 })
