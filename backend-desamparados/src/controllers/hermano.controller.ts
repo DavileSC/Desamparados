@@ -153,6 +153,20 @@ export class HermanoController {
     }
   }
 
+  static async cerrarHuecosNumero(req: Request, res: Response) {
+    try {
+      const { asignados } = await HermanoService.cerrarHuecosDeNumero(AuditService.metaFromReq(req));
+      res.status(200).json({
+        message: asignados.length === 0
+          ? 'No había ningún hermano activo sin número.'
+          : `Se han asignado ${asignados.length} números de hermano.`,
+        asignados
+      });
+    } catch (e) {
+      handleHttp(res, e, 'Error asignando los números de hermano');
+    }
+  }
+
   static async getSolicitudes(req: Request, res: Response) {
     try {
       // La ruta no pasa por `validate`: sanearPaginacion() ya defiende los

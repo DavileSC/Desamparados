@@ -924,6 +924,44 @@ export class HermanoService {
     };
   }
 
+  /**
+   * Da número de hermano a las fichas activas que no lo tienen, por antigüedad.
+   *
+   * No renumera a nadie: quien ya tiene número lo conserva, porque lleva
+   * décadas con él y el censo real llega con su numeración hecha. Esto cierra
+   * huecos, no reordena; para reordenar está `reordenarCenso`.
+   *
+   * Se lanza a mano desde Secretaría y no en el arranque del servidor: asignar
+   * números es una decisión suya y tiene que quedar en la auditoría con quién
+   * la tomó.
+   */
+  static async cerrarHuecosDeNumero(meta?: AuditMeta) {
+    const asignados = await transaccionReintentable(async (tx) => {
+      const sinNumero = await tx.hermano.findMany({
+        where: { activo: true, numeroHermano: null },
+        // Por antigüedad real. `id` desempata: dos altas del mismo día dejarían
+        // el orden a merced de MariaDB y el resultado no sería repetible.
+        orderBy: [{ fechaAlta: 'asc' }, { id: 'asc' }],
+        select: { id: true }
+      });
+      if (sinNumero.length === 0) return [];
+
+      let siguiente = await this.getNextNumeroHermano(tx);
+      const hechas: { id: number; numeroHermano: number }[] = [];
+      for (const { id } of sinNumero) {
+        await tx.hermano.update({ where: { id }, data: { numeroHermano: siguiente } });
+        hechas.push({ id, numeroHermano: siguiente });
+        siguiente += 1;
+      }
+      return hechas;
+    });
+
+    if (asignados.length > 0) {
+      await AuditService.log(AUDIT_ACTIONS.CENSO_CERRAR_HUECOS, meta ?? {}, 'hermano', undefined, { asignados });
+    }
+    return { asignados };
+  }
+
   static async rechazarSolicitud(userId: number, meta?: AuditMeta) {
     const user = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
     if (!user) throw new NotFoundError(HERMANO_ERRORS.USER_NOT_FOUND);
