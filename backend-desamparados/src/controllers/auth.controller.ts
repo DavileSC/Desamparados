@@ -5,6 +5,7 @@ import { RegisterDto, LoginDto } from '../dtos/auth.dto';
 import { AuditService } from '../services/audit.service';
 import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookiesAuth, COOKIE_2FA, COOKIE_CMS } from '../utils/cookies';
 import { verifyToken } from '../utils/jwt.handle';
+import type { AuthTokenPayload } from '../utils/jwt.handle';
 import { validateSessionAgainstDb } from '../middleware/session';
 
 export class AuthController {
@@ -189,12 +190,23 @@ export class AuthController {
   //  SESION ACTUAL Y CIERRE
   // =================================================================
 
+  /**
+   * Las sesiones abiertas de este navegador, una por área. Responde 200 aunque
+   * no haya ninguna: un visitante sin sesión es el caso normal de la web
+   * pública, y devolverle un 401 hacía que el arranque del frontend lo tratara
+   * como error y lo reintentara.
+   */
   static async me(req: Request, res: Response) {
     try {
-      const datos = await AuthService.perfilSesion(req.user!.id);
-      // El origen viene del propio JWT; la BD no lo guarda.
-      const user = { ...datos, origen: req.user!.origen };
-      res.status(200).json({ user });
+      const perfil = async (sesion: AuthTokenPayload | null) => {
+        if (!sesion) return null;
+        const datos = await AuthService.perfilSesion(sesion.id);
+        // El origen viene del propio JWT; la BD no lo guarda.
+        return { ...datos, origen: sesion.origen };
+      };
+
+      const [cms, hermano] = await Promise.all([perfil(req.sesiones.cms), perfil(req.sesiones.hermano)]);
+      res.status(200).json({ cms, hermano });
     } catch (error) {
       handleHttp(res, error, 'No se ha podido recuperar la sesión');
     }
@@ -248,7 +260,17 @@ export class AuthController {
     try {
       const userId = req.user!.id;
       const { password } = req.body;
-      const result = await AuthService.deleteOwnAccount(userId, password, req.user!.origen, AuditService.metaFromReq(req));
+      // El área efectiva se saca de req.sesiones y no de req.user.origen: la
+      // tarea 4 dejó req.user por defecto como hermano ?? cms, así que un
+      // cargo con las dos cookies abiertas (esta ruta no lleva checkRole,
+      // porque también la usan los hermanos) mandaba origen 'hermanos' al
+      // servicio aunque tuviera sesión de CMS válida, y el borrado RGPD de su
+      // propia cuenta de staff salía rechazado por error. Mirar si hay sesión
+      // de CMS DE ESTE MISMO usuario es la misma garantía de antes ("esta
+      // persona tiene sesión de CMS en este navegador"), ni más permisiva ni
+      // más estricta.
+      const origen: 'cms' | 'hermanos' = req.sesiones.cms?.id === userId ? 'cms' : 'hermanos';
+      const result = await AuthService.deleteOwnAccount(userId, password, origen, AuditService.metaFromReq(req));
       res.status(200).json(result);
     } catch (error) {
       handleHttp(res, error, 'Error eliminando la cuenta');

@@ -240,3 +240,76 @@ test('entrar en el CMS no borra la cookie del área de hermanos', async (t) => {
   assert.ok(cookies.some((c) => c.startsWith(`${COOKIE_CMS}=`)));
   assert.ok(!cookies.some((c) => c.startsWith(`${COOKIE_HERMANO}=`)));
 });
+
+// --- Tarea 7: /auth/me devuelve las dos sesiones ---
+
+test('/auth/me responde 200 a un invitado, con las dos sesiones vacías', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  // Un visitante sin sesión es el caso normal de la web pública, no un error.
+  const respuesta = await fetch(`${baseUrl}/api/auth/me`);
+  assert.equal(respuesta.status, 200);
+  assert.deepEqual(await respuesta.json(), { cms: null, hermano: null });
+});
+
+test('/auth/me devuelve las dos sesiones de quien tiene las dos', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const user = await crearUsuarioPrueba(Role.TESORERIA);
+  creados.push(user.id);
+  const cms = generateToken(user.id, Role.TESORERIA, false, 'cms');
+  const hermano = generateToken(user.id, Role.TESORERIA, false, 'hermanos');
+
+  const respuesta = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: { cookie: `${COOKIE_CMS}=${cms}; ${COOKIE_HERMANO}=${hermano}` },
+  });
+  const cuerpo = await respuesta.json();
+  assert.equal(cuerpo.cms.id, user.id);
+  assert.equal(cuerpo.cms.origen, 'cms');
+  assert.equal(cuerpo.hermano.id, user.id);
+  assert.equal(cuerpo.hermano.origen, 'hermanos');
+});
+
+// --- Arreglo obligatorio: el borrado RGPD deduce el área de req.sesiones ---
+//
+// La tarea 4 dejó req.user por defecto como hermano ?? cms. La ruta de
+// /mi-cuenta no lleva checkRole (también la usan los hermanos), así que un
+// cargo con las dos cookies abiertas mandaba origen 'hermanos' al servicio,
+// que rechaza el borrado de una cuenta de staff si no viene desde el CMS.
+// Estos dos tests fijan que el controlador mira req.sesiones.cms (del mismo
+// usuario) y no req.user.origen: con las dos cookies pasa el guardián de área
+// y llega hasta la contraseña; con solo la de hermanos lo sigue rechazando.
+// La contraseña es incorrecta a propósito, para no dejar un usuario de
+// prueba anonimizado: lo que distingue los dos casos es el código de estado
+// (401 por contraseña frente a 403 por área), no si el borrado se completa.
+
+test('una cuenta de staff con las dos cookies llega a comprobar la contraseña (área efectiva: cms)', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const user = await crearUsuarioPrueba(Role.TESORERIA);
+  creados.push(user.id);
+  const cms = generateToken(user.id, Role.TESORERIA, false, 'cms');
+  const hermano = generateToken(user.id, Role.TESORERIA, false, 'hermanos');
+
+  const respuesta = await fetch(`${baseUrl}/api/auth/mi-cuenta`, {
+    method: 'DELETE',
+    headers: { cookie: `${COOKIE_CMS}=${cms}; ${COOKIE_HERMANO}=${hermano}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: 'contraseña-incorrecta-de-prueba' }),
+  });
+  assert.equal(respuesta.status, 401, 'con sesión de CMS, el rechazo es por contraseña, no por área');
+});
+
+test('una cuenta de staff con solo la cookie de hermanos no puede pedir su borrado RGPD (área efectiva: hermanos)', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const user = await crearUsuarioPrueba(Role.TESORERIA);
+  creados.push(user.id);
+  const hermano = generateToken(user.id, Role.TESORERIA, false, 'hermanos');
+
+  const respuesta = await fetch(`${baseUrl}/api/auth/mi-cuenta`, {
+    method: 'DELETE',
+    headers: { cookie: `${COOKIE_HERMANO}=${hermano}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: 'contraseña-incorrecta-de-prueba' }),
+  });
+  assert.equal(respuesta.status, 403, 'sin sesión de CMS, el área efectiva es hermanos y el servicio lo rechaza');
+  assert.equal(
+    (await respuesta.json()).error,
+    'Esta cuenta es del equipo del CMS: para eliminarla, entra por el acceso del CMS.'
+  );
+});

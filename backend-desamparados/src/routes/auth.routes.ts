@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { type } from 'arktype';
 import { AuthController } from '../controllers/auth.controller';
-import { authenticateToken } from '../middleware/session';
+import { authenticateToken, resolverSesiones } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
 import { Role } from '@prisma/client';
 
@@ -73,8 +73,11 @@ authRoutes.post('/reset-password/confirmar', authLimiter, validate(resetPassword
 // ==========================================
 // Requieren Header: Authorization: Bearer <TOKEN>
 
-// Sesion actual: el frontend la consulta al arrancar, ya no guarda nada en el navegador.
-authRoutes.get('/me', authenticateToken, AuthController.me);
+// Sesion actual: el frontend la consulta al arrancar, ya no guarda nada en el
+// navegador. Sin authenticateToken a propósito: un invitado sin sesión es el
+// caso normal de la web pública, no un error, y /me solo informa de qué
+// sesiones hay (puede que ninguna).
+authRoutes.get('/me', resolverSesiones, AuthController.me);
 
 // POST y no GET: genera y guarda un secreto nuevo, no es una lectura.
 authRoutes.post('/2fa/generate', authenticateToken, checkRole(rolesStaffCMS), AuthController.setup2FAGenerate);
