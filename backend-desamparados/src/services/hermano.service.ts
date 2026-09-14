@@ -874,29 +874,41 @@ export class HermanoService {
    * basándose estrictamente en su fecha de alta (antigüedad).
    */
   static async reordenarCenso(meta?: AuditMeta) {
-    // 1. Buscamos a TODOS los hermanos activos, ordenados por fecha de alta (los más antiguos primero)
-    const hermanosActivos = await db.hermano.findMany({
-      where: { activo: true },
-      orderBy: [{ fechaAlta: 'asc' }, { id: 'asc' }],
-      select: { id: true, numeroHermano: true } // Traemos lo mínimo para no saturar la memoria
-    });
-
-    if (hermanosActivos.length === 0) {
-      throw new HttpError('No hay hermanos activos en el censo para reordenar.');
-    }
-
-    // Fichas fuera del censo que aún conservan número (bajas familiares de antes
-    // de que se liberara): la reordenación se lo quita, y eso también se anota.
-    const inactivosConNumero = await db.hermano.findMany({
-      where: { activo: false, numeroHermano: { not: null } },
-      select: { id: true, numeroHermano: true }
-    });
-
-    // 2. Todo en UNA transacción para que, si falla a la mitad, no quede el censo corrupto.
+    // Todo en UNA transacción para que, si falla a la mitad, no quede el censo corrupto.
     // `transaccionReintentable` (no `db.$transaction` a pelo): un reordenamiento
     // toca a todo el censo activo, y con eso hay más ocasión de chocar con una
     // aprobación o una baja que esté firmando a la vez.
-    await transaccionReintentable(async (tx) => {
+    //
+    // Las dos lecturas van DENTRO del cuerpo, y con `tx`: el cuerpo se reintenta,
+    // y con la foto tomada fuera el reintento renumeraba sobre una realidad que
+    // ya había cambiado. Quien entrase en el censo entre la lectura y el reintento
+    // se comía el `numeroHermano: null` del `updateMany` de abajo, no estaba en la
+    // lista que reparte 1..N, nadie le reasignaba número y el reintento confirmaba
+    // una ficha `activo: true` sin número: el estado que el censo declara imposible.
+    // Leyendo dentro, cada intento parte del censo real del momento.
+    const { hermanosActivos, inactivosConNumero } = await transaccionReintentable(async (tx) => {
+      // 1. TODOS los hermanos activos, ordenados por fecha de alta (los más antiguos primero)
+      const hermanosActivos = await tx.hermano.findMany({
+        where: { activo: true },
+        orderBy: [{ fechaAlta: 'asc' }, { id: 'asc' }],
+        select: { id: true, numeroHermano: true } // Traemos lo mínimo para no saturar la memoria
+      });
+
+      // Lanzar aquí aborta la transacción sin tocar nada, y el error sale del
+      // servicio igual que cuando la lectura estaba fuera: un `HttpError` no es
+      // P2002 ni un conflicto transitorio, así que `esChoqueReintentable` no lo
+      // toma por un choque y no lo repite (fijado en test/numero-hermano.test.ts).
+      if (hermanosActivos.length === 0) {
+        throw new HttpError('No hay hermanos activos en el censo para reordenar.');
+      }
+
+      // Fichas fuera del censo que aún conservan número (bajas familiares de antes
+      // de que se liberara): la reordenación se lo quita, y eso también se anota.
+      const inactivosConNumero = await tx.hermano.findMany({
+        where: { activo: false, numeroHermano: { not: null } },
+        select: { id: true, numeroHermano: true }
+      });
+
       // numeroHermano es @unique y MySQL comprueba el índice por sentencia: si asignamos
       // 1..N directamente, el primer número ya ocupado por otro hermano lanza P2002.
       // Solución: liberamos TODOS los números primero (NULL no colisiona) y luego asignamos.
@@ -908,6 +920,10 @@ export class HermanoService {
           data: { numeroHermano: index + 1 }
         });
       }
+
+      // Las dos listas salen para la auditoría y el recuento de abajo: son la foto
+      // del intento que de verdad se confirmó, no la de una lectura anterior.
+      return { hermanosActivos, inactivosConNumero };
     }, { timeout: 60_000 }); // Censos grandes: damos margen a la transacción
 
     // Auditoría tras confirmar: renumeración completa del censo (operación

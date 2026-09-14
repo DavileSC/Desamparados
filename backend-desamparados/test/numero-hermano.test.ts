@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import db from '../src/config/db.js';
 import { HermanoService } from '../src/services/hermano.service.js';
+import { AuditService } from '../src/services/audit.service.js';
+import { HttpError } from '../src/utils/error.handle.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import type { CreateHermanoDto } from '../src/dtos/hermano.dto.js';
 
@@ -219,4 +221,88 @@ test('las fichas de este test no quedan activas sin número tras pasar por sus v
     where: { id: { in: [quieta.id, vaiven.id] }, activo: true, numeroHermano: null }
   });
   assert.equal(huerfanos, 0, 'ninguna de las dos fichas de este test debe quedar activa sin número');
+});
+
+// --- La foto del censo que reordena se lee DENTRO de la transacción ---
+//
+// `reordenarCenso` corre dentro de `transaccionReintentable`, que repite el
+// cuerpo entero ante un choque. Con las dos lecturas fuera, el reintento
+// renumeraba sobre una foto vieja: quien entrase en el censo entre la lectura y
+// el reintento se comía el `numeroHermano: null` del `updateMany`, no estaba en
+// la lista que reparte 1..N, nadie le reasignaba y la transacción confirmaba una
+// ficha activa sin número. Justo lo que esta suite defiende que no puede pasar.
+//
+// Estas dos pruebas sustituyen `db.$transaction` por uno de mentira para ver qué
+// lee el cuerpo, así que no necesitan MariaDB. Si las lecturas volvieran a
+// salirse de la transacción irían contra la base de verdad y ninguna pasaría.
+
+type FichaLeida = { id: number; numeroHermano: number | null };
+
+/** Cambia `db.$transaction` por uno que entrega `tx` y cuenta los intentos. */
+function conTransaccionDeMentira(tx: unknown) {
+  const original = db.$transaction;
+  let intentos = 0;
+  (db as unknown as Record<string, unknown>).$transaction = async (operacion: (tx: unknown) => Promise<unknown>) => {
+    intentos += 1;
+    return operacion(tx);
+  };
+  return {
+    intentos: () => intentos,
+    restaurar: () => { (db as unknown as Record<string, unknown>).$transaction = original; },
+  };
+}
+
+/** Censo de mentira: responde a las dos lecturas y apunta lo que se escribe. */
+function censoDeMentira(activos: FichaLeida[], inactivosConNumero: FichaLeida[] = []) {
+  const asignados: { id: number; numeroHermano: number }[] = [];
+  let liberaciones = 0;
+  const tx = {
+    hermano: {
+      findMany: async ({ where }: { where: { activo: boolean } }) => (where.activo ? activos : inactivosConNumero),
+      updateMany: async () => { liberaciones += 1; return { count: activos.length + inactivosConNumero.length }; },
+      update: async ({ where, data }: { where: { id: number }; data: { numeroHermano: number } }) => {
+        asignados.push({ id: where.id, numeroHermano: data.numeroHermano });
+        return { id: where.id };
+      },
+    },
+  };
+  return { tx, asignados, liberaciones: () => liberaciones };
+}
+
+test('reordenar un censo sin activos sigue lanzando su HttpError, y a la primera', async () => {
+  const { tx } = censoDeMentira([]);
+  const transaccion = conTransaccionDeMentira(tx);
+  try {
+    await assert.rejects(
+      () => HermanoService.reordenarCenso(),
+      (e: unknown) => e instanceof HttpError && e.message === 'No hay hermanos activos en el censo para reordenar.'
+    );
+    // El error de negocio ahora se lanza dentro de la transacción. No es P2002
+    // ni un conflicto transitorio, así que `esChoqueReintentable` no lo toma por
+    // un choque: sale a la primera, sin repetir tres veces la misma negativa.
+    assert.equal(transaccion.intentos(), 1, 'un error de negocio no se reintenta');
+  } finally {
+    transaccion.restaurar();
+  }
+});
+
+test('la reordenación reparte 1..N sobre lo que lee dentro de la transacción', async (t) => {
+  const { tx, asignados, liberaciones } = censoDeMentira(
+    [{ id: 41, numeroHermano: 7 }, { id: 42, numeroHermano: null }],
+    [{ id: 99, numeroHermano: 300 }]
+  );
+  const transaccion = conTransaccionDeMentira(tx);
+  const auditados: unknown[] = [];
+  t.mock.method(AuditService, 'log', async (...args: unknown[]) => { auditados.push(args); });
+  try {
+    const resultado = await HermanoService.reordenarCenso();
+    assert.equal(liberaciones(), 1, 'primero se liberan todos los números, que son únicos');
+    assert.deepEqual(asignados, [{ id: 41, numeroHermano: 1 }, { id: 42, numeroHermano: 2 }]);
+    // Las dos listas salen de la transacción para la auditoría y el recuento:
+    // si se quedaran dentro, esto contaría el censo de verdad, no el leído.
+    assert.equal(resultado.totalProcesados, 2, 'el recuento de vuelta es el de la lectura de dentro');
+    assert.equal(auditados.length, 1, 'la reordenación se anota en la auditoría tras confirmar');
+  } finally {
+    transaccion.restaurar();
+  }
 });
