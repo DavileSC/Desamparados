@@ -90,6 +90,27 @@ test('el cierre de huecos da número a las activas que no lo tienen', async (t) 
   assert.ok(numAntigua < numReciente, `${numAntigua} debería ir antes que ${numReciente}`);
 });
 
+test('con la misma fecha de alta, el desempate por id da un orden estable', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+
+  // fichaActivaSinNumero() siempre pone la misma fechaAlta (1995-03-10): las
+  // dos fichas empatan a propósito, para probar el `id asc` de desempate que
+  // usa cerrarHuecosDeNumero (sin él, MariaDB decidiría el orden y el
+  // resultado no sería repetible de una pasada a otra).
+  const primera = await fichaActivaSinNumero();
+  const segunda = await fichaActivaSinNumero();
+  assert.equal(primera.fechaAlta.getTime(), segunda.fechaAlta.getTime(), 'la prueba exige la fecha empatada');
+
+  const { asignados } = await HermanoService.cerrarHuecosDeNumero();
+
+  const numPrimera = asignados.find((a) => a.id === primera.id)!.numeroHermano;
+  const numSegunda = asignados.find((a) => a.id === segunda.id)!.numeroHermano;
+  assert.ok(
+    numPrimera < numSegunda,
+    `con la fecha empatada, la ficha creada antes (id ${primera.id}) debería ir antes que la creada después (id ${segunda.id})`
+  );
+});
+
 test('el cierre de huecos no renumera a quien ya tiene número', async (t) => {
   if (!dbDisponible) return t.skip(motivoSinDb);
 

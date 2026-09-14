@@ -127,10 +127,19 @@ function esChoqueReintentable(e: unknown): boolean {
   return esConflictoTransitorio(e);
 }
 
-async function transaccionReintentable<T>(operacion: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+// `opciones` se reenvía tal cual a `db.$transaction` (mismo tipo que acepta
+// Prisma: `timeout`, `maxWait`, `isolationLevel`). Casi nadie lo necesita —
+// una transacción de una o dos fichas cabe de sobra en los 5 s por defecto—,
+// pero quien procesa un lote (`cerrarHuecosDeNumero`) sí, y sin margen un
+// timeout no es de los errores que reintenta `esChoqueReintentable`: Prisma
+// deshace todo y no hay nada que reintentar, el lote es el mismo.
+async function transaccionReintentable<T>(
+  operacion: (tx: Prisma.TransactionClient) => Promise<T>,
+  opciones?: { maxWait?: number; timeout?: number; isolationLevel?: Prisma.TransactionIsolationLevel }
+): Promise<T> {
   for (let intento = 1; ; intento += 1) {
     try {
-      return await db.$transaction(operacion);
+      return await db.$transaction(operacion, opciones);
     } catch (e) {
       if (!esChoqueReintentable(e) || intento >= INTENTOS_TRANSACCION) throw e;
       await new Promise((resolver) => setTimeout(resolver, 20 * intento + Math.floor(Math.random() * 30)));
@@ -884,7 +893,10 @@ export class HermanoService {
     });
 
     // 2. Todo en UNA transacción para que, si falla a la mitad, no quede el censo corrupto.
-    await db.$transaction(async (tx) => {
+    // `transaccionReintentable` (no `db.$transaction` a pelo): un reordenamiento
+    // toca a todo el censo activo, y con eso hay más ocasión de chocar con una
+    // aprobación o una baja que esté firmando a la vez.
+    await transaccionReintentable(async (tx) => {
       // numeroHermano es @unique y MySQL comprueba el índice por sentencia: si asignamos
       // 1..N directamente, el primer número ya ocupado por otro hermano lanza P2002.
       // Solución: liberamos TODOS los números primero (NULL no colisiona) y luego asignamos.
@@ -954,10 +966,19 @@ export class HermanoService {
         siguiente += 1;
       }
       return hechas;
-    });
+    // Margen largo, como `reordenarCenso` (misma cifra, mismo motivo: «Censos
+    // grandes: damos margen a la transacción»). Esta función existe para el
+    // censo real que se va a importar, que puede traer cientos de fichas sin
+    // número: un `update` por ficha, cada uno un viaje de ida y vuelta, agota
+    // de sobra los 5 s por defecto de Prisma. Y si agota el timeout, Prisma
+    // deshace TODO y no hay nada que reintentar (no es de los errores que
+    // repite `esChoqueReintentable`), así que volver a pulsar fallaría igual.
+    // `reactivarHermano` y `aprobarSolicitud` tocan una sola ficha cada vez y
+    // no lo necesitan.
+    }, { timeout: 60_000 });
 
     if (asignados.length > 0) {
-      await AuditService.log(AUDIT_ACTIONS.CENSO_CERRAR_HUECOS, meta ?? {}, 'hermano', undefined, { asignados });
+      await AuditService.log(AUDIT_ACTIONS.CENSO_CERRAR_HUECOS, meta ?? {}, 'hermano', `total:${asignados.length}`, { asignados });
     }
     return { asignados };
   }
