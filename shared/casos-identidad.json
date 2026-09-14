@@ -25,11 +25,11 @@
     { "valor": "seiscientos", "valido": false, "normalizado": "seiscientos" }
   ],
   "codigoPostal": [
-    { "valor": "29013", "valido": true },
-    { "valor": "29013 ", "valido": true },
-    { "valor": "2901", "valido": false },
-    { "valor": "290134", "valido": false },
-    { "valor": "2901A", "valido": false }
+    { "valor": "29013", "valido": true, "normalizado": "29013" },
+    { "valor": "29013 ", "valido": true, "normalizado": "29013" },
+    { "valor": "2901", "valido": false, "normalizado": "2901" },
+    { "valor": "290134", "valido": false, "normalizado": "290134" },
+    { "valor": "2901A", "valido": false, "normalizado": "2901A" }
   ],
   "texto": [
     { "valor": "Calle Real 14", "valido": true },

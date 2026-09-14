@@ -34,6 +34,21 @@ export const telefono = type("string")
     .matching(/^[0-9]{9}$/)
     .describe("un teléfono válido (9 dígitos)");
 
+// Código postal (5 dígitos). Vivía suelto como `type(...).matching(...)` dentro
+// de auth.schema.ts: nadie podía atarlo a la tabla de shared/casos-identidad.json
+// (que sí ata DNI y teléfono), así que el regex del servidor podía cambiar sin
+// que ningún test se enterara. Se exporta aquí, con el mismo estilo que los demás.
+//
+// Se recorta aquí, en el servidor: a diferencia del DNI y el teléfono, el
+// formulario no normaliza el código postal antes de enviarlo, así que un
+// espacio de más tecleado sin querer («29013 ») llega tal cual. Sin este
+// recorte, ese dato correcto chocaba contra un 400 que no explica nada — el
+// mismo fallo que cerró esta tarea, pero en un campo más.
+export const codigoPostal = type("string").pipe(
+    (valor: string) => valor.trim(),
+    type("string").matching(/^[0-9]{5}$/).describe("un código postal válido de 5 dígitos"),
+);
+
 // 3. DNI/NIE con Validación Matemática Oficial
 export const dni = type("string")
     .narrow((s) => {
