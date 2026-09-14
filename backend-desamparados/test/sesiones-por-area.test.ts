@@ -12,13 +12,20 @@
 
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
+import type { AddressInfo } from 'node:net';
+import type { Server } from 'node:http';
+import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { validateSessionAgainstDb } from '../src/middleware/session.js';
+import { generateToken } from '../src/utils/jwt.handle.js';
+import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
 
 let dbDisponible = false;
 let motivoSinDb = '';
+let server: Server;
+let baseUrl: string;
 
 async function sondearDb(): Promise<boolean> {
   const timeout = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 3000).unref());
@@ -36,6 +43,12 @@ async function sondearDb(): Promise<boolean> {
 }
 
 before(async () => {
+  // Servidor real: los tests del middleware (tarea 4 en adelante) necesitan
+  // que las cookies pasen por Express de verdad, no solo llamar a la función.
+  server = app.listen(0);
+  await new Promise((r) => server.once('listening', r));
+  baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+
   dbDisponible = await sondearDb();
   if (!dbDisponible) {
     console.log(`
@@ -46,6 +59,7 @@ before(async () => {
 
 const creados: number[] = [];
 after(async () => {
+  server.close();
   for (const id of creados) await borrarUsuarioPrueba(id);
   await db.$disconnect();
 });
@@ -106,4 +120,56 @@ test('un token de hermanos no vale como sesión del CMS aunque la cuenta sea de 
   // de hermanos es un token que NO ha pasado el 2FA.
   const colado = payloadDe(user.id, Role.ADMIN, 'hermanos');
   assert.equal(await validateSessionAgainstDb(colado, 'cms'), null);
+});
+
+// --- Tarea 4: el middleware sobre el servidor real, resolviendo las dos cookies ---
+//
+// NOTA: el brief de esta tarea usa `/api/panel/hoy` en estos tres tests, pero
+// esa ruta no existe (src/routes/panel.routes.ts monta panelRoutes.get('/', ...)
+// y src/app.ts lo cuelga de /api/panel). Con /hoy el servidor respondería 404 y
+// los `assert.notEqual(status, 401/403)` pasarían sin comprobar nada: se usa
+// /api/panel, la ruta real, protegida por authenticateToken + checkRole(staff).
+//
+// OJO al tramo de /api/panel del siguiente test: seguirá en 403 hasta que la
+// tarea 5 actualice checkRole para que sustituya req.user por la sesión del
+// CMS en las rutas de staff (ahora mismo req.user es hermano ?? cms, tal cual
+// pide esta tarea, y checkRole solo mira req.user). No es un fallo de esta
+// tarea: es la frontera de alcance que marca el propio brief («No adelantes
+// trabajo de checkRole»).
+
+test('con las dos cookies puestas, cada área usa la suya', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const user = await crearUsuarioPrueba(Role.TESORERIA);
+  creados.push(user.id);
+
+  const cms = generateToken(user.id, Role.TESORERIA, false, 'cms');
+  const hermano = generateToken(user.id, Role.TESORERIA, false, 'hermanos');
+  const lasDos = `${COOKIE_CMS}=${cms}; ${COOKIE_HERMANO}=${hermano}`;
+
+  // Ruta de staff: tiene que pasar, porque la cookie del CMS está puesta.
+  const panel = await fetch(`${baseUrl}/api/panel`, { headers: { cookie: lasDos } });
+  assert.notEqual(panel.status, 401, 'con cookie del CMS no puede dar 401');
+  assert.notEqual(panel.status, 403, 'con cookie del CMS no puede dar 403');
+
+  // Ruta del área de hermanos: también, con la suya.
+  const perfiles = await fetch(`${baseUrl}/api/hermanos/mis-perfiles`, { headers: { cookie: lasDos } });
+  assert.equal(perfiles.status, 200);
+});
+
+test('sin ninguna cookie, las rutas con sesión dan 401', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles`);
+  assert.equal(respuesta.status, 401);
+});
+
+test('solo con la cookie del CMS, una ruta del área de hermanos sigue atendiendo', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  // Es su propia ficha: una sesión del CMS es más fuerte, no más débil.
+  const user = await crearUsuarioPrueba(Role.SECRETARIA);
+  creados.push(user.id);
+  const cms = generateToken(user.id, Role.SECRETARIA, false, 'cms');
+  const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles`, {
+    headers: { cookie: `${COOKIE_CMS}=${cms}` },
+  });
+  assert.equal(respuesta.status, 200);
 });
