@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../members/auth/store'
-import { approveRequest, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
+import { approveRequest, cerrarHuecosDeNumero, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
@@ -43,6 +43,7 @@ export default function BrothersAdminPage() {
   const [procesando, setProcesando] = useState<number | null>(null)
   const enMarcha = useRef(false)
   const [porRechazar, setPorRechazar] = useState<PendingRequest | null>(null)
+  const [porAsignarNumeros, setPorAsignarNumeros] = useState(false)
 
   // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
   // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
@@ -81,6 +82,20 @@ export default function BrothersAdminPage() {
     finally { enMarcha.current = false; setProcesando(null) }
   }
 
+  /** Reparte los números que faltan. `enMarcha` es la guarda del doble clic, igual que al aprobar. */
+  const asignarNumeros = async () => {
+    if (enMarcha.current) return
+    enMarcha.current = true
+    setError(null); setNotice(null)
+    try {
+      const { message } = await cerrarHuecosDeNumero()
+      await load()
+      setNotice(message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se han podido asignar los números.')
+    } finally { enMarcha.current = false }
+  }
+
   /** Qué se borra al rechazar: depende de si la cuenta ya estaba aprobada. */
   const mensajeRechazo = (request: PendingRequest) => {
     const perfiles = request.hermanos.length === 1 ? 'su perfil pendiente' : `sus ${request.hermanos.length} perfiles pendientes`
@@ -94,10 +109,15 @@ export default function BrothersAdminPage() {
     <Typography variant="h2" component="h1" sx={{ mb: 4 }}>Gestión de hermanos</Typography>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
-    <Tabs value={vista} onChange={(_, valor) => setParams(valor === 'solicitudes' ? { vista: 'solicitudes' } : {})} sx={{ mb: 3 }}>
-      <Tab value="censo" label="Censo" />
-      <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
-    </Tabs>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+      <Tabs value={vista} onChange={(_, valor) => setParams(valor === 'solicitudes' ? { vista: 'solicitudes' } : {})}>
+        <Tab value="censo" label="Censo" />
+        <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
+      </Tabs>
+      {puedeGestionar && (
+        <Button variant="outlined" onClick={() => setPorAsignarNumeros(true)}>Asignar números</Button>
+      )}
+    </Box>
     {/* Rechazar borra datos personales (y a veces la cuenta entera): se pregunta antes. */}
     <DialogoConfirmacion
       abierto={porRechazar !== null}
@@ -107,6 +127,15 @@ export default function BrothersAdminPage() {
       peligro
       onConfirmar={() => { const solicitud = porRechazar; setPorRechazar(null); if (solicitud) void handleRequest(solicitud, false) }}
       onCancelar={() => setPorRechazar(null)}
+    />
+    {/* Asignar números toca el censo entero: se pregunta antes, como al rechazar. */}
+    <DialogoConfirmacion
+      abierto={porAsignarNumeros}
+      titulo="¿Asignar los números que faltan?"
+      mensaje="Se dará número de hermano, por antigüedad, a los que están activos y no lo tienen. A quien ya tiene número no se le toca."
+      textoConfirmar="Asignar números"
+      onConfirmar={() => { setPorAsignarNumeros(false); void asignarNumeros() }}
+      onCancelar={() => setPorAsignarNumeros(false)}
     />
     {vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
       {requests.map((request) => <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Box><Typography>{request.nombre} {request.apellidos}</Typography><Typography variant="body2" color="text.secondary">{request.email} · {request.hermanos.length} perfil(es)</Typography></Box><Stack direction="row" spacing={1}><Button variant="contained" disabled={procesando !== null} onClick={() => void handleRequest(request, true)}>{procesando === request.id ? 'Procesando…' : 'Aprobar'}</Button><Button color="error" disabled={procesando !== null} onClick={() => setPorRechazar(request)}>Rechazar</Button></Stack></Box>)}

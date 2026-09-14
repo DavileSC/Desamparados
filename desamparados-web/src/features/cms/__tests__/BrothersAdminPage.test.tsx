@@ -209,4 +209,24 @@ describe('BrothersAdminPage', () => {
     expect(await screen.findByText(/solicitud aprobada correctamente/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Aprobar' })).toBeEnabled()
   })
+
+  it('ofrece asignar números a los hermanos que no lo tienen', async () => {
+    // El menú lleva un contador de «hermanos sin número» que hasta ahora no
+    // tenía ninguna forma de bajar desde la interfaz.
+    const usuario = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init: RequestInit = {}) =>
+      Promise.resolve((init.method ?? 'GET') === 'POST'
+        ? new Response(JSON.stringify({
+            message: 'Se han asignado 2 números de hermano.',
+            asignados: [{ id: 7, numeroHermano: 1285 }, { id: 9, numeroHermano: 1286 }],
+          }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+        : respuestaCenso([]))))
+    renderWithProviders(<BrothersAdminPage />)
+
+    const boton = await screen.findByRole('button', { name: /asignar n[úu]meros/i })
+    await usuario.click(boton)
+    await usuario.click(await screen.findByRole('button', { name: /confirmar|asignar/i }))
+
+    expect(await screen.findByText(/se han asignado 2 n[úu]meros/i)).toBeInTheDocument()
+  })
 })
