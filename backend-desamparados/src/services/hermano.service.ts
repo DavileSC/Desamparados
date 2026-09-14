@@ -127,10 +127,19 @@ function esChoqueReintentable(e: unknown): boolean {
   return esConflictoTransitorio(e);
 }
 
-async function transaccionReintentable<T>(operacion: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+// `opciones` se reenvía tal cual a `db.$transaction` (mismo tipo que acepta
+// Prisma: `timeout`, `maxWait`, `isolationLevel`). Casi nadie lo necesita —
+// una transacción de una o dos fichas cabe de sobra en los 5 s por defecto—,
+// pero quien procesa un lote (`cerrarHuecosDeNumero`) sí, y sin margen un
+// timeout no es de los errores que reintenta `esChoqueReintentable`: Prisma
+// deshace todo y no hay nada que reintentar, el lote es el mismo.
+async function transaccionReintentable<T>(
+  operacion: (tx: Prisma.TransactionClient) => Promise<T>,
+  opciones?: { maxWait?: number; timeout?: number; isolationLevel?: Prisma.TransactionIsolationLevel }
+): Promise<T> {
   for (let intento = 1; ; intento += 1) {
     try {
-      return await db.$transaction(operacion);
+      return await db.$transaction(operacion, opciones);
     } catch (e) {
       if (!esChoqueReintentable(e) || intento >= INTENTOS_TRANSACCION) throw e;
       await new Promise((resolver) => setTimeout(resolver, 20 * intento + Math.floor(Math.random() * 30)));
@@ -865,26 +874,41 @@ export class HermanoService {
    * basándose estrictamente en su fecha de alta (antigüedad).
    */
   static async reordenarCenso(meta?: AuditMeta) {
-    // 1. Buscamos a TODOS los hermanos activos, ordenados por fecha de alta (los más antiguos primero)
-    const hermanosActivos = await db.hermano.findMany({
-      where: { activo: true },
-      orderBy: [{ fechaAlta: 'asc' }, { id: 'asc' }],
-      select: { id: true, numeroHermano: true } // Traemos lo mínimo para no saturar la memoria
-    });
+    // Todo en UNA transacción para que, si falla a la mitad, no quede el censo corrupto.
+    // `transaccionReintentable` (no `db.$transaction` a pelo): un reordenamiento
+    // toca a todo el censo activo, y con eso hay más ocasión de chocar con una
+    // aprobación o una baja que esté firmando a la vez.
+    //
+    // Las dos lecturas van DENTRO del cuerpo, y con `tx`: el cuerpo se reintenta,
+    // y con la foto tomada fuera el reintento renumeraba sobre una realidad que
+    // ya había cambiado. Quien entrase en el censo entre la lectura y el reintento
+    // se comía el `numeroHermano: null` del `updateMany` de abajo, no estaba en la
+    // lista que reparte 1..N, nadie le reasignaba número y el reintento confirmaba
+    // una ficha `activo: true` sin número: el estado que el censo declara imposible.
+    // Leyendo dentro, cada intento parte del censo real del momento.
+    const { hermanosActivos, inactivosConNumero } = await transaccionReintentable(async (tx) => {
+      // 1. TODOS los hermanos activos, ordenados por fecha de alta (los más antiguos primero)
+      const hermanosActivos = await tx.hermano.findMany({
+        where: { activo: true },
+        orderBy: [{ fechaAlta: 'asc' }, { id: 'asc' }],
+        select: { id: true, numeroHermano: true } // Traemos lo mínimo para no saturar la memoria
+      });
 
-    if (hermanosActivos.length === 0) {
-      throw new HttpError('No hay hermanos activos en el censo para reordenar.');
-    }
+      // Lanzar aquí aborta la transacción sin tocar nada, y el error sale del
+      // servicio igual que cuando la lectura estaba fuera: un `HttpError` no es
+      // P2002 ni un conflicto transitorio, así que `esChoqueReintentable` no lo
+      // toma por un choque y no lo repite (fijado en test/numero-hermano.test.ts).
+      if (hermanosActivos.length === 0) {
+        throw new HttpError('No hay hermanos activos en el censo para reordenar.');
+      }
 
-    // Fichas fuera del censo que aún conservan número (bajas familiares de antes
-    // de que se liberara): la reordenación se lo quita, y eso también se anota.
-    const inactivosConNumero = await db.hermano.findMany({
-      where: { activo: false, numeroHermano: { not: null } },
-      select: { id: true, numeroHermano: true }
-    });
+      // Fichas fuera del censo que aún conservan número (bajas familiares de antes
+      // de que se liberara): la reordenación se lo quita, y eso también se anota.
+      const inactivosConNumero = await tx.hermano.findMany({
+        where: { activo: false, numeroHermano: { not: null } },
+        select: { id: true, numeroHermano: true }
+      });
 
-    // 2. Todo en UNA transacción para que, si falla a la mitad, no quede el censo corrupto.
-    await db.$transaction(async (tx) => {
       // numeroHermano es @unique y MySQL comprueba el índice por sentencia: si asignamos
       // 1..N directamente, el primer número ya ocupado por otro hermano lanza P2002.
       // Solución: liberamos TODOS los números primero (NULL no colisiona) y luego asignamos.
@@ -896,6 +920,10 @@ export class HermanoService {
           data: { numeroHermano: index + 1 }
         });
       }
+
+      // Las dos listas salen para la auditoría y el recuento de abajo: son la foto
+      // del intento que de verdad se confirmó, no la de una lectura anterior.
+      return { hermanosActivos, inactivosConNumero };
     }, { timeout: 60_000 }); // Censos grandes: damos margen a la transacción
 
     // Auditoría tras confirmar: renumeración completa del censo (operación
@@ -922,6 +950,53 @@ export class HermanoService {
       message: 'Censo reordenado con éxito.',
       totalProcesados: hermanosActivos.length
     };
+  }
+
+  /**
+   * Da número de hermano a las fichas activas que no lo tienen, por antigüedad.
+   *
+   * No renumera a nadie: quien ya tiene número lo conserva, porque lleva
+   * décadas con él y el censo real llega con su numeración hecha. Esto cierra
+   * huecos, no reordena; para reordenar está `reordenarCenso`.
+   *
+   * Se lanza a mano desde Secretaría y no en el arranque del servidor: asignar
+   * números es una decisión suya y tiene que quedar en la auditoría con quién
+   * la tomó.
+   */
+  static async cerrarHuecosDeNumero(meta?: AuditMeta) {
+    const asignados = await transaccionReintentable(async (tx) => {
+      const sinNumero = await tx.hermano.findMany({
+        where: { activo: true, numeroHermano: null },
+        // Por antigüedad real. `id` desempata: dos altas del mismo día dejarían
+        // el orden a merced de MariaDB y el resultado no sería repetible.
+        orderBy: [{ fechaAlta: 'asc' }, { id: 'asc' }],
+        select: { id: true }
+      });
+      if (sinNumero.length === 0) return [];
+
+      let siguiente = await this.getNextNumeroHermano(tx);
+      const hechas: { id: number; numeroHermano: number }[] = [];
+      for (const { id } of sinNumero) {
+        await tx.hermano.update({ where: { id }, data: { numeroHermano: siguiente } });
+        hechas.push({ id, numeroHermano: siguiente });
+        siguiente += 1;
+      }
+      return hechas;
+    // Margen largo, como `reordenarCenso` (misma cifra, mismo motivo: «Censos
+    // grandes: damos margen a la transacción»). Esta función existe para el
+    // censo real que se va a importar, que puede traer cientos de fichas sin
+    // número: un `update` por ficha, cada uno un viaje de ida y vuelta, agota
+    // de sobra los 5 s por defecto de Prisma. Y si agota el timeout, Prisma
+    // deshace TODO y no hay nada que reintentar (no es de los errores que
+    // repite `esChoqueReintentable`), así que volver a pulsar fallaría igual.
+    // `reactivarHermano` y `aprobarSolicitud` tocan una sola ficha cada vez y
+    // no lo necesitan.
+    }, { timeout: 60_000 });
+
+    if (asignados.length > 0) {
+      await AuditService.log(AUDIT_ACTIONS.CENSO_CERRAR_HUECOS, meta ?? {}, 'hermano', `total:${asignados.length}`, { asignados });
+    }
+    return { asignados };
   }
 
   static async rechazarSolicitud(userId: number, meta?: AuditMeta) {

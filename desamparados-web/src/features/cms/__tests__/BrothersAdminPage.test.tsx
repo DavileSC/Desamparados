@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient } from '@tanstack/react-query'
 import { renderWithProviders } from '../../../test/test-utils'
 import BrothersAdminPage from '../BrothersAdminPage'
 import { useAuthStore } from '../../members/auth/store'
+import { CLAVE_PANEL_HOY } from '../../../app/usePanelDeHoy'
 
 type Censo = { data: unknown[]; meta: { total: number; page: number; limit: number; totalPages: number } }
 
@@ -36,7 +38,23 @@ beforeEach(() => {
   window.history.replaceState({}, '', '/cms/hermanos')
 })
 
-afterEach(() => { vi.unstubAllGlobals() })
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
+
+/**
+ * Espia la invalidación de consultas. `renderWithProviders` fabrica su propio
+ * `QueryClient` y no lo devuelve, así que el único sitio desde donde mirarla es
+ * el prototipo; por eso no basta con leer el estado de la caché: la consulta del
+ * panel no tiene aquí a nadie que la observe.
+ */
+function espiarInvalidaciones() {
+  return vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+}
+
+/** ¿Se pidió refrescar la consulta del panel, la que alimenta el menú? */
+function invalidoElPanel(espia: ReturnType<typeof espiarInvalidaciones>) {
+  return espia.mock.calls.some(([filtros]) =>
+    JSON.stringify(filtros?.queryKey) === JSON.stringify(CLAVE_PANEL_HOY))
+}
 
 describe('BrothersAdminPage', () => {
   it('la pestaña de solicitudes se ve aunque no haya ninguna', async () => {
@@ -208,5 +226,88 @@ describe('BrothersAdminPage', () => {
     terminar({ message: 'Solicitud aprobada.' })
     expect(await screen.findByText(/solicitud aprobada correctamente/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Aprobar' })).toBeEnabled()
+  })
+
+  it('ofrece asignar números a los hermanos que no lo tienen', async () => {
+    // El menú lleva un contador de «hermanos sin número» que hasta ahora no
+    // tenía ninguna forma de bajar desde la interfaz.
+    const usuario = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init: RequestInit = {}) =>
+      Promise.resolve((init.method ?? 'GET') === 'POST'
+        ? new Response(JSON.stringify({
+            message: 'Se han asignado 2 números de hermano.',
+            asignados: [{ id: 7, numeroHermano: 1285 }, { id: 9, numeroHermano: 1286 }],
+          }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+        : respuestaCenso([]))))
+    renderWithProviders(<BrothersAdminPage />)
+
+    const boton = await screen.findByRole('button', { name: /asignar n[úu]meros/i })
+    await usuario.click(boton)
+    await usuario.click(await screen.findByRole('button', { name: /confirmar|asignar/i }))
+
+    expect(await screen.findByText(/se han asignado 2 n[úu]meros/i)).toBeInTheDocument()
+  })
+
+  // --- El botón existe para bajar el contador de «hermanos sin número» del menú.
+  // Ese número sale de la consulta del panel (`CLAVE_PANEL_HOY`), con cinco
+  // minutos de `staleTime`: sin invalidarla, Secretaría leía «Se han asignado 3
+  // números» y el menú seguía diciendo 3 durante cinco minutos.
+  //
+  // El refresco cuelga de las tres acciones que mueven esos números (asignar,
+  // aprobar y rechazar) y no de `load()`: el tercer test es el que fija esa
+  // decisión y el que impide devolverlo a la recarga.
+
+  it('asignar números refresca el contador del menú', async () => {
+    const usuario = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init: RequestInit = {}) =>
+      Promise.resolve((init.method ?? 'GET') === 'POST'
+        ? new Response(JSON.stringify({ message: 'Se han asignado 2 números de hermano.', asignados: [] }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } })
+        : respuestaCenso([]))))
+    const espia = espiarInvalidaciones()
+    renderWithProviders(<BrothersAdminPage />)
+
+    const boton = await screen.findByRole('button', { name: /asignar n[úu]meros/i })
+    await usuario.click(boton)
+    await usuario.click(await screen.findByRole('button', { name: /confirmar|asignar/i }))
+    await screen.findByText(/se han asignado 2 n[úu]meros/i)
+
+    expect(invalidoElPanel(espia)).toBe(true)
+  })
+
+  it('aprobar una solicitud refresca el contador del menú', async () => {
+    // Aprobar mueve los mismos números (un pendiente menos, un hermano más):
+    // por eso el refresco no cuelga solo del botón de asignar.
+    const usuario = userEvent.setup()
+    servidorSolicitudes()
+    const espia = espiarInvalidaciones()
+    renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?vista=solicitudes' })
+
+    const aprobar = await screen.findByRole('button', { name: 'Aprobar' })
+    await usuario.click(aprobar)
+    await screen.findByText(/solicitud aprobada correctamente/i)
+
+    expect(invalidoElPanel(espia)).toBe(true)
+  })
+
+  it('teclear en el buscador no refresca el panel', async () => {
+    // El negativo de los dos de arriba. Buscar a un hermano no cambia ningún
+    // contador, y el panel es un agregado caro (censo, dinero, procesión y
+    // actividad) que el menú tiene observado: con la invalidación en `load()`,
+    // abrir la pantalla y cada rebote del buscador pedían el panel entero otra
+    // vez. Esto es lo que impide devolverla ahí dentro de seis meses.
+    const usuario = userEvent.setup()
+    const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(respuestaCenso([])))
+    vi.stubGlobal('fetch', fetchSimulado)
+    const espia = espiarInvalidaciones()
+    renderWithProviders(<BrothersAdminPage />)
+
+    await usuario.type(await screen.findByLabelText(/buscar por nombre/i), 'Rocío')
+    await waitFor(() => {
+      expect(llamadasAlCenso(fetchSimulado).some((url) => url.includes('q=Roc'))).toBe(true)
+    })
+
+    // Ni el montaje ni el tecleo: el espía lleva puesto desde antes de pintar.
+    expect(invalidoElPanel(espia)).toBe(false)
   })
 })

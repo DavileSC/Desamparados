@@ -1,0 +1,42 @@
+{
+  "_comentario": "Tabla de casos que leen los tests de los dos proyectos: desamparados-web/src/lib/validacion/__tests__/identidad.test.ts y backend-desamparados/test/identidad-paridad.test.ts. Si el formulario y el servidor se separan, uno de los dos falla. No la edites sin ejecutar los dos.",
+  "dni": [
+    { "valor": "12345678Z", "valido": true, "normalizado": "12345678Z" },
+    { "valor": "12345678z", "valido": true, "normalizado": "12345678Z" },
+    { "valor": "12345678 Z", "valido": true, "normalizado": "12345678Z" },
+    { "valor": "12345678-Z", "valido": true, "normalizado": "12345678Z" },
+    { "valor": "X1234567L", "valido": true, "normalizado": "X1234567L" },
+    { "valor": "Y1234567X", "valido": true, "normalizado": "Y1234567X" },
+    { "valor": "Z1234567R", "valido": true, "normalizado": "Z1234567R" },
+    { "valor": "12345678A", "valido": false, "normalizado": "12345678A" },
+    { "valor": "1234567A", "valido": false, "normalizado": "1234567A" },
+    { "valor": "0123456S", "valido": false, "normalizado": "0123456S" },
+    { "valor": "", "valido": false, "normalizado": "" },
+    { "valor": "ABCDEFGHI", "valido": false, "normalizado": "ABCDEFGHI" }
+  ],
+  "telefono": [
+    { "valor": "600123456", "valido": true, "normalizado": "600123456" },
+    { "valor": "600 12 34 56", "valido": true, "normalizado": "600123456" },
+    { "valor": "600-12-34-56", "valido": true, "normalizado": "600123456" },
+    { "valor": "+34600123456", "valido": true, "normalizado": "600123456" },
+    { "valor": "0034600123456", "valido": true, "normalizado": "600123456" },
+    { "valor": "95212345", "valido": false, "normalizado": "95212345" },
+    { "valor": "6001234567", "valido": false, "normalizado": "6001234567" },
+    { "valor": "seiscientos", "valido": false, "normalizado": "seiscientos" }
+  ],
+  "codigoPostal": [
+    { "valor": "29013", "valido": true, "normalizado": "29013" },
+    { "valor": "29013 ", "valido": true, "normalizado": "29013" },
+    { "valor": "2901", "valido": false, "normalizado": "2901" },
+    { "valor": "290134", "valido": false, "normalizado": "290134" },
+    { "valor": "2901A", "valido": false, "normalizado": "2901A" }
+  ],
+  "texto": [
+    { "valor": "Calle Real 14", "valido": true },
+    { "valor": "  Málaga  ", "valido": true },
+    { "valor": "", "valido": false },
+    { "valor": "   ", "valido": false },
+    { "valor": "<script>", "valido": false },
+    { "valor": "Juan > Pedro", "valido": false }
+  ]
+}

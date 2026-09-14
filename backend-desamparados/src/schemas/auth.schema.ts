@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { email, password, dni, textoRequerido, telefono, idParam } from '../config/common';
+import { email, password, dni, textoRequerido, telefono, idParam, codigoPostal } from '../config/common';
 
 // =================================================================
 //  1. ESQUEMAS BASE REUTILIZABLES
@@ -15,7 +15,7 @@ const usuarioSchema = type({
     telefono: telefono,
     direccion: textoRequerido,
     poblacion: textoRequerido,
-    codigoPostal: type("string").matching(/^[0-9]{5}$/).describe("un código postal válido de 5 dígitos")
+    codigoPostal: codigoPostal
 });
 
 // =================================================================

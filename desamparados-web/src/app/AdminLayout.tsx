@@ -174,7 +174,7 @@ function Contenido() {
   const esMovil = useMediaQuery(tema.breakpoints.down('md'))
 
   const barra = (
-    <Box sx={{ height: '100%', backgroundColor: SIDEBAR, p: 2, pt: 3.25, display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ minHeight: '100%', backgroundColor: SIDEBAR, p: 2, pt: 3.25, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ px: 1.25 }}>
         <Typography
           component={Link}
@@ -213,6 +213,10 @@ function Contenido() {
             alignSelf: 'flex-start',
             height: '100vh',
             overflowY: 'auto',
+            // El fondo va aquí, en el elemento que hace scroll, y no solo en
+            // `barra`: con el menú más alto que la ventana, `barra` medía
+            // 100vh y al bajar asomaba el fondo de la página por debajo.
+            backgroundColor: SIDEBAR,
           }}
         >
           {barra}
