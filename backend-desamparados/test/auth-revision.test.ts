@@ -9,7 +9,7 @@ import { Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken, generatePending2FAToken, verifyToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION, COOKIE_2FA } from '../src/utils/cookies.js';
+import { COOKIE_HERMANO, COOKIE_2FA } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { AuthService, Testigo2FACaducadoError, asegurarQueQuedaOtroAdmin } from '../src/services/auth.service.js';
 import { EmailService } from '../src/services/email.service.js';
@@ -290,7 +290,7 @@ test('un testigo gastado o ausente solo borra la cookie del 2FA', async (t) => {
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
   try {
     await conSegundoFactor(staff.id);
-    const sesionHermanos = `${COOKIE_SESION}=${generateToken(staff.id, Role.SECRETARIA, false, 'hermanos')}`;
+    const sesionHermanos = `${COOKIE_HERMANO}=${generateToken(staff.id, Role.SECRETARIA, false, 'hermanos')}`;
     // Testigo de otro intervalo: gastado a efectos de la cuenta.
     const gastado = generatePending2FAToken(staff.id, false, 'cms', 12345);
 
@@ -303,7 +303,7 @@ test('un testigo gastado o ausente solo borra la cookie del 2FA', async (t) => {
       assert.equal(res.status, 401);
       assert.equal((await res.json() as { error?: string }).error, 'PENDING_2FA_REQUIRED');
       const puestas = res.headers.getSetCookie();
-      assert.ok(!puestas.some((c) => c.startsWith(`${COOKIE_SESION}=`)), 'la sesión del área de hermanos sigue siendo buena');
+      assert.ok(!puestas.some((c) => c.startsWith(`${COOKIE_HERMANO}=`)), 'la sesión del área de hermanos sigue siendo buena');
       assert.ok(puestas.some((c) => c.startsWith(`${COOKIE_2FA}=`)));
     }
   } finally {

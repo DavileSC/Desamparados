@@ -19,7 +19,7 @@ import db from '../src/config/db.js';
 import { validateSessionAgainstDb } from '../src/middleware/session.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
-import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
 
 let dbDisponible = false;
@@ -172,4 +172,42 @@ test('solo con la cookie del CMS, una ruta del área de hermanos sigue atendiend
     headers: { cookie: `${COOKIE_CMS}=${cms}` },
   });
   assert.equal(respuesta.status, 200);
+});
+
+// --- Tarea 6: el login pone la cookie de su área y no toca la otra ---
+
+test('entrar como hermano no borra la cookie del CMS', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  // Es el hallazgo del usuario: estaba en el CMS, entró como hermano para ver
+  // su perfil, y la administración le dijo que su sesión no tenía acceso.
+  const user = await crearUsuarioPrueba(Role.TESORERIA);
+  creados.push(user.id);
+
+  const respuesta = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: user.email, password: PASSWORD_PRUEBA, contexto: 'hermanos' }),
+  });
+  assert.equal(respuesta.status, 200);
+
+  const cookies = respuesta.headers.getSetCookie();
+  assert.ok(cookies.some((c) => c.startsWith(`${COOKIE_HERMANO}=`)), 'pone la de hermanos');
+  assert.ok(!cookies.some((c) => c.startsWith(`${COOKIE_CMS}=`)), 'no toca la del CMS');
+});
+
+test('entrar en el CMS no borra la cookie del área de hermanos', async (t) => {
+  if (!dbDisponible) return t.skip(motivoSinDb);
+  const user = await crearUsuarioPrueba(Role.SECRETARIA);
+  creados.push(user.id);
+
+  const respuesta = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: user.email, password: PASSWORD_PRUEBA, contexto: 'cms' }),
+  });
+  assert.equal(respuesta.status, 200);
+
+  const cookies = respuesta.headers.getSetCookie();
+  assert.ok(cookies.some((c) => c.startsWith(`${COOKIE_CMS}=`)));
+  assert.ok(!cookies.some((c) => c.startsWith(`${COOKIE_HERMANO}=`)));
 });

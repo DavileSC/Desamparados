@@ -10,7 +10,7 @@ import { Prisma, Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken, verifyToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS, COOKIE_HERMANO, nombreCookie } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { checkRole } from '../src/middleware/checkRole.js';
 import { AuthService, Testigo2FACaducadoError, asegurarQueQuedaOtroAdmin } from '../src/services/auth.service.js';
@@ -77,7 +77,7 @@ async function secretoGuardado(id: number) {
 }
 
 const cookieSesion = (id: number, role: Role, origen: 'cms' | 'hermanos' = 'cms') =>
-  `${COOKIE_SESION}=${generateToken(id, role, false, origen)}`;
+  `${nombreCookie(origen)}=${generateToken(id, role, false, origen)}`;
 
 async function peticion(ruta: string, cookie: string, metodo = 'POST', cuerpo?: unknown) {
   return fetch(`${baseUrl}/api${ruta}`, {
@@ -269,7 +269,8 @@ test('el testigo del primer factor es de un solo uso', async (t) => {
     assert.equal(repetido.status, 401);
     assert.equal((await repetido.json() as { error?: string }).error, 'PENDING_2FA_REQUIRED');
     // Ni sesión nueva ni borrado de la que hubiera: solo se va la cookie del 2FA.
-    assert.equal(cookieDe(repetido, COOKIE_SESION), undefined, 'la cookie de sesión no se toca');
+    assert.equal(cookieDe(repetido, COOKIE_CMS), undefined, 'la cookie del CMS no se toca');
+    assert.equal(cookieDe(repetido, COOKIE_HERMANO), undefined, 'ni la del área de hermanos');
     assert.ok(cookieDe(repetido, 'desamparados_2fa') !== undefined, 'la del testigo sí se borra');
   } finally {
     await borrarUsuarioPrueba(staff.id);
@@ -578,7 +579,7 @@ test('cerrar sesión revoca el token en todos los dispositivos y deja entrar al 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: hermano.email, password: PASSWORD_PRUEBA, contexto: 'hermanos' })
-  }), COOKIE_SESION)!;
+  }), COOKIE_HERMANO)!;
 
   try {
     const movil = await entrar();
@@ -732,7 +733,7 @@ test('un testigo de 2FA sin origen da una sesión que no entra en el CMS', async
     assert.equal(res.status, 200);
     assert.equal((await res.json() as { user: { origen: string } }).user.origen, 'hermanos');
 
-    const cms = await peticion('/news/admin/archive', cookieDe(res, COOKIE_SESION)!, 'GET');
+    const cms = await peticion('/news/admin/archive', cookieDe(res, COOKIE_HERMANO)!, 'GET');
     assert.equal(cms.status, 403);
     assert.equal((await cms.json() as { error?: string }).error, 'SESION_NO_CMS');
   } finally {
@@ -755,7 +756,8 @@ test('el acceso del CMS no crea sesión para una cuenta de hermano', async (t) =
     });
     assert.equal(res.status, 403);
     assert.equal((await res.json() as { error?: string }).error, 'CUENTA_SIN_CMS');
-    assert.equal(cookieDe(res, COOKIE_SESION), undefined, 'ni se crea la sesión que antes el frontend tenía que cerrar');
+    assert.equal(cookieDe(res, COOKIE_CMS), undefined, 'ni se crea la sesión del CMS que antes el frontend tenía que cerrar');
+    assert.equal(cookieDe(res, COOKIE_HERMANO), undefined, 'ni tampoco una del área de hermanos');
   } finally {
     await borrarUsuarioPrueba(hermano.id);
   }

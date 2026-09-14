@@ -3,7 +3,7 @@ import { AuthService, CuentaSinCmsError, Testigo2FACaducadoError } from '../serv
 import { handleHttp } from '../utils/error.handle';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
 import { AuditService } from '../services/audit.service';
-import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookiesAuth, COOKIE_2FA, COOKIE_SESION } from '../utils/cookies';
+import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookiesAuth, COOKIE_2FA, COOKIE_CMS } from '../utils/cookies';
 import { verifyToken } from '../utils/jwt.handle';
 import { validateSessionAgainstDb } from '../middleware/session';
 
@@ -45,7 +45,9 @@ export class AuthController {
       }
 
       // El token va en la cookie httpOnly, nunca en el cuerpo.
-      ponerCookieSesion(res, response.token, response.user.role, recordarme);
+      // Solo la cookie de SU área: entrar por un acceso no puede tirar la
+      // sesión del otro. Es el hallazgo que abrió esta fase.
+      ponerCookieSesion(res, contexto, response.token, response.user.role, recordarme);
       res.status(200).json({ status: 'OK', user: response.user });
 
     } catch (error) {
@@ -88,7 +90,10 @@ export class AuthController {
       });
 
       limpiarCookie2FA(res);
-      ponerCookieSesion(res, response.token, response.user.role, recordarme);
+      // El área sale del testigo del primer factor, nunca del cuerpo: si no,
+      // el segundo paso podría inventarse un origen 'cms' sin haber pasado
+      // por el acceso del CMS. Es la misma regla de arriba en `origen`.
+      ponerCookieSesion(res, origen, response.token, response.user.role, recordarme);
       res.status(200).json({ status: 'OK', user: response.user });
     } catch (error) {
       // Testigo ya gastado: fuera su cookie (solo esa, como arriba) y el mismo
@@ -206,7 +211,10 @@ export class AuthController {
    */
   static async logout(req: Request, res: Response) {
     try {
-      const token = req.cookies?.[COOKIE_SESION];
+      // PROVISIONAL (tarea 8): con dos cookies ya no hay «la» sesión. De
+      // momento solo mira la del CMS para que el módulo siga cargando tras
+      // quitar COOKIE_SESION; la tarea 8 tiene que revisar las dos áreas.
+      const token = req.cookies?.[COOKIE_CMS];
       const payload = token ? verifyToken(token, 'session') : null;
       const vigente = payload ? await validateSessionAgainstDb(payload) : null;
       if (vigente) await AuthService.cerrarSesionesDe(vigente.id);
