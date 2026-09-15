@@ -19,7 +19,8 @@ const DATOS: Record<string, string> = {
   Contraseña: 'Prueba-2026-Segura',
 }
 
-// El formulario va por pasos: solo están en pantalla los campos del paso actual.
+// El formulario va por pasos: los tres están en el DOM (así la tarjeta mide
+// siempre lo mismo) pero solo se ve, y se puede usar, el paso actual.
 const PASO_1 = ['Nombre', 'Apellidos', 'DNI/NIE', 'Fecha de nacimiento']
 const PASO_2 = ['Email', 'Teléfono', 'Dirección', 'Ciudad', 'Código postal']
 
@@ -32,6 +33,13 @@ async function rellenar(u: Usuario, etiquetas: string[], datos: Partial<Record<s
 }
 
 const continuar = (u: Usuario) => u.click(screen.getByRole('button', { name: 'Continuar' }))
+
+/**
+ * El paso de un campo, por su fieldset. Los pasos que no tocan van `inert`
+ * (ni se usan ni los lee un lector). No se comprueba la visibilidad porque el
+ * envoltorio animado arranca con opacidad 0 y en jsdom nunca entra en pantalla.
+ */
+const pasoDe = (etiqueta: string) => screen.getByLabelText(etiqueta).closest('fieldset')!
 
 /** Recorre los tres pasos y deja el formulario listo para enviar. */
 async function rellenarTodo(datos: Partial<Record<string, string>> = {}) {
@@ -64,7 +72,8 @@ describe('HazteHermanoPage', () => {
     await continuar(u)
 
     expect(await screen.findByText(/la letra no corresponde/i)).toBeInTheDocument()
-    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument()
+    expect(pasoDe('Email')).toHaveAttribute('inert')
+    expect(screen.getByText('Paso 1 de 3')).toBeInTheDocument()
     expect(fetchFalso).not.toHaveBeenCalled()
   })
 
@@ -79,7 +88,7 @@ describe('HazteHermanoPage', () => {
     await continuar(u)
 
     expect(await screen.findByText(/nueve d[ií]gitos/i)).toBeInTheDocument()
-    expect(screen.queryByLabelText('Contraseña')).not.toBeInTheDocument()
+    expect(pasoDe('Contraseña')).toHaveAttribute('inert')
     expect(fetchFalso).not.toHaveBeenCalled()
   })
 
@@ -88,9 +97,10 @@ describe('HazteHermanoPage', () => {
     const u = usuario()
     await rellenar(u, PASO_1)
     await continuar(u)
-    expect(screen.getByLabelText('Email')).toBeInTheDocument()
+    expect(pasoDe('Email')).not.toHaveAttribute('inert')
     await u.click(screen.getByRole('button', { name: 'Atrás' }))
 
+    expect(pasoDe('Nombre')).not.toHaveAttribute('inert')
     expect(screen.getByLabelText('Nombre')).toHaveValue('Juan')
     expect(screen.getByLabelText('DNI/NIE')).toHaveValue('12345678Z')
   })
@@ -123,6 +133,7 @@ describe('HazteHermanoPage', () => {
     await enviar(u)
 
     expect(await screen.findByText('ese DNI ya está registrado')).toBeInTheDocument()
+    expect(pasoDe('DNI/NIE')).not.toHaveAttribute('inert')
     expect(screen.getByLabelText('DNI/NIE')).toHaveFocus()
     expect(screen.getByText('Paso 1 de 3')).toBeInTheDocument()
   })

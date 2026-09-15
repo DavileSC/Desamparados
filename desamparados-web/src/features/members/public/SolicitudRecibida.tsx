@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import AppButton from '../../../components/AppButton'
 import { site } from '../../../config/site'
 import { SERIF } from '../../home/estilos'
-import { BOTON_PAPEL_SECUNDARIO, FILETE_PAPEL } from './temaPapel'
+import { FILETE_TARJETA } from './temaTarjeta'
 
 interface SolicitudRecibidaProps {
   nombre: string
@@ -39,7 +39,7 @@ export default function SolicitudRecibida({ nombre, email }: SolicitudRecibidaPr
         mira en la carpeta de correo no deseado.
       </Typography>
 
-      <Box sx={{ borderTop: `1px solid ${FILETE_PAPEL}`, pt: 2.5, mb: 3.5 }}>
+      <Box sx={{ borderTop: `1px solid ${FILETE_TARJETA}`, pt: 2.5, mb: 3.5 }}>
         <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.25, mb: 1 }}>
           Qué toca ahora
         </Typography>
@@ -54,7 +54,7 @@ export default function SolicitudRecibida({ nombre, email }: SolicitudRecibidaPr
         <AppButton component={Link} to="/" sx={{ borderRadius: '3px' }}>
           Volver a la portada
         </AppButton>
-        <AppButton component={Link} to="/contacto" appVariant="outline" sx={BOTON_PAPEL_SECUNDARIO}>
+        <AppButton component={Link} to="/contacto" appVariant="outline" sx={{ borderRadius: '3px' }}>
           Escribir a Secretaría
         </AppButton>
       </Box>

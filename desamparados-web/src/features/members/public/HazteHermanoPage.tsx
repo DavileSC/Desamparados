@@ -15,9 +15,9 @@ import CampoContrasena from '../../../components/CampoContrasena'
 import { LONGITUD_MINIMA } from '../../../lib/passwordPolicy'
 import { register as apiRegister } from '../../../lib/api/auth'
 import { ApiError } from '../../../lib/api/client'
-import { GOLD, GRANATE, PAPEL, SERIF, ceja } from '../../home/estilos'
+import { GOLD, SERIF, ceja } from '../../home/estilos'
 import { membershipSchema, type MembershipFormData } from './schema'
-import { temaPapel, BOTON_PAPEL_SECUNDARIO, FILETE_PAPEL, TINTA_SOBRE_PAPEL } from './temaPapel'
+import { temaTarjeta, FILETE_TARJETA, TARJETA } from './temaTarjeta'
 import ProcesoAlta from './ProcesoAlta'
 import SolicitudRecibida from './SolicitudRecibida'
 
@@ -62,6 +62,16 @@ const VALORES_INICIALES: MembershipFormData = {
 // pone encima de la página, así que la sección la deja pasar con su relleno.
 const ESCRITORIO = '@media (min-width:1024px)'
 
+/** Fondo de página: la foto se funde a él en los bordes. */
+const FONDO = '#262326'
+const FONDO_VELO = 'rgba(38, 35, 38, 0.55)'
+const FONDO_VELO_LEVE = 'rgba(38, 35, 38, 0.25)'
+/** Presencia leve: se intuye la corona y el rostro, sin competir con el texto. */
+const OPACIDAD_VIRGEN = 0.18
+
+/** Botones del pie de la tarjeta: misma altura los dos y sin partir el texto en móvil. */
+const BOTON_PIE = { borderRadius: '3px', height: 48, py: 0, whiteSpace: 'nowrap' } as const
+
 export default function HazteHermanoPage() {
   const [paso, setPaso] = useState(0)
   const [enviada, setEnviada] = useState<{ nombre: string; email: string } | null>(null)
@@ -79,7 +89,7 @@ export default function HazteHermanoPage() {
 
   const esUltimo = paso === PASOS.length - 1
 
-  /** Cambia al paso del campo y le pasa el foco: el paso se pinta ya, para que el campo exista. */
+  /** Cambia al paso del campo y le pasa el foco: el paso se pinta ya, para que el campo se pueda enfocar. */
   const irA = (campo: Campo) => {
     flushSync(() => setPaso(pasoDe(campo)))
     setFocus(campo)
@@ -152,6 +162,8 @@ export default function HazteHermanoPage() {
         component="section"
         aria-labelledby="hazte-hermano-titulo"
         sx={{
+          position: 'relative',
+          isolation: 'isolate',
           display: 'grid',
           alignContent: 'center',
           minHeight: { xs: 'calc(100svh - 56px)', sm: 'calc(100svh - 64px)' },
@@ -160,6 +172,40 @@ export default function HazteHermanoPage() {
           '& a:focus-visible, & button:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 4 },
         }}
       >
+        {/* La Virgen, velada, detrás de la solicitud. Es la foto de siempre del
+            hero. Va muy tenue y fundida arriba y abajo al fondo de página, para
+            que no se note el corte con la barra ni con el pie; el rostro queda
+            hacia la columna del texto, no bajo la tarjeta. */}
+        <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, zIndex: -1, overflow: 'hidden', pointerEvents: 'none' }}>
+          <Box
+            component="img"
+            src="/images/hero-1920.webp"
+            srcSet="/images/hero-960.webp 960w, /images/hero-1920.webp 1920w"
+            sizes="100vw"
+            alt=""
+            decoding="async"
+            fetchPriority="low"
+            sx={{
+              position: 'absolute',
+              top: 0,
+              height: '100%',
+              objectFit: 'cover',
+              // En móvil, a sangre y centrada: la corona asoma alrededor del
+              // título y la tarjeta tinta el resto. En escritorio la foto se
+              // amplía y se corre a la izquierda para que el rostro (que en la
+              // foto está al 40 % del ancho) quede bajo el texto y no lo parta
+              // el borde de la tarjeta.
+              left: { xs: 0, md: '-32%' },
+              width: { xs: '100%', md: '130%' },
+              objectPosition: { xs: '50% 22%', md: '50% 0%' },
+              opacity: OPACIDAD_VIRGEN,
+              filter: 'saturate(0.85)',
+            }}
+          />
+          <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${FONDO} 0%, transparent 22%, transparent 76%, ${FONDO} 100%)` }} />
+          <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, ${FONDO_VELO_LEVE} 0%, transparent 30%, ${FONDO_VELO} 100%)` }} />
+        </Box>
+
         <PageContainer>
           <Box
             sx={{
@@ -169,7 +215,7 @@ export default function HazteHermanoPage() {
               rowGap: { xs: 3, md: 4 },
               gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 5fr) minmax(0, 7fr)' },
               gridTemplateRows: { md: 'auto 1fr' },
-              gridTemplateAreas: { xs: '"intro" "pliego" "despues"', md: '"intro pliego" "despues pliego"' },
+              gridTemplateAreas: { xs: '"intro" "tarjeta" "despues"', md: '"intro tarjeta" "despues tarjeta"' },
             }}
           >
             <Revela sx={{ gridArea: 'intro' }}>
@@ -192,17 +238,9 @@ export default function HazteHermanoPage() {
               </Typography>
             </Revela>
 
-            <Revela orden={1} sx={{ gridArea: 'pliego' }}>
-              <ThemeProvider theme={temaPapel}>
-                <Box
-                  sx={{
-                    backgroundColor: PAPEL,
-                    color: TINTA_SOBRE_PAPEL,
-                    p: { xs: '24px 20px', sm: '32px', md: '36px 44px' },
-                    boxShadow: '0 30px 60px -30px rgba(0, 0, 0, 0.9)',
-                    '& a:focus-visible, & button:focus-visible': { outline: `2px solid ${GRANATE}`, outlineOffset: 3 },
-                  }}
-                >
+            <Revela orden={1} sx={{ gridArea: 'tarjeta' }}>
+              <ThemeProvider theme={temaTarjeta}>
+                <Box sx={{ ...TARJETA, p: { xs: '24px 20px', sm: '32px', md: '36px 44px' } }}>
                   {enviada ? (
                     <SolicitudRecibida nombre={enviada.nombre} email={enviada.email} />
                   ) : (
@@ -211,144 +249,172 @@ export default function HazteHermanoPage() {
                         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
                           Paso {paso + 1} de {PASOS.length}
                         </Typography>
-                        <Typography
-                          id="paso-titulo"
-                          component="h2"
-                          sx={{ fontFamily: SERIF, fontSize: { xs: 24, md: 28 }, lineHeight: 1.2, mt: 0.25 }}
-                        >
-                          {PASOS[paso].titulo}
-                        </Typography>
-                        {/* Barra de pasos: un tramo por paso, hechos y actual en granate. */}
+                        {/* Los tres títulos apilados en la misma celda, como los campos:
+                            en móvil el del último paso ocupa dos líneas y, si solo
+                            estuviera el actual, la tarjeta crecería al llegar a él. */}
+                        <Box sx={{ display: 'grid', mt: 0.25 }}>
+                          {PASOS.map((p, indice) => (
+                            <Typography
+                              key={p.titulo}
+                              id={indice === paso ? 'paso-titulo' : undefined}
+                              component="h2"
+                              aria-hidden={indice !== paso || undefined}
+                              sx={{ gridArea: '1 / 1', visibility: indice === paso ? 'visible' : 'hidden', fontFamily: SERIF, fontSize: { xs: 24, md: 28 }, lineHeight: 1.2 }}
+                            >
+                              {p.titulo}
+                            </Typography>
+                          ))}
+                        </Box>
+                        {/* Barra de pasos: un tramo por paso, hechos y actual en dorado. */}
                         <Box aria-hidden="true" sx={{ display: 'grid', gridTemplateColumns: `repeat(${PASOS.length}, 1fr)`, gap: '6px', mt: 2 }}>
                           {PASOS.map((p, indice) => (
-                            <Box key={p.titulo} sx={{ height: 3, backgroundColor: indice <= paso ? GRANATE : FILETE_PAPEL, transition: 'background-color .3s ease' }} />
+                            <Box key={p.titulo} sx={{ height: 3, backgroundColor: indice <= paso ? GOLD : FILETE_TARJETA, transition: 'background-color .3s ease' }} />
                           ))}
                         </Box>
                       </Box>
 
-                      <Box component="fieldset" aria-labelledby="paso-titulo" sx={{ border: 0, m: 0, p: 0, minWidth: 0 }}>
-                        <Grid container spacing={{ xs: 1.5, md: 2 }}>
-                          {paso === 0 && (
-                            <>
-                              <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField label="Nombre" autoComplete="given-name" {...campo('nombre')} />
-                              </Grid>
-                              <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField label="Apellidos" autoComplete="family-name" {...campo('apellidos')} />
-                              </Grid>
-                              <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                  label="DNI/NIE"
-                                  slotProps={{ htmlInput: { autoCapitalize: 'characters', spellCheck: false } }}
-                                  {...campo('dni', 'Con la letra final.')}
-                                />
-                              </Grid>
-                              <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField
-                                  label="Fecha de nacimiento"
-                                  type="date"
-                                  autoComplete="bday"
-                                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: hoy } }}
-                                  {...campo('fechaNacimiento')}
-                                />
-                              </Grid>
-                            </>
-                          )}
+                      {/* Los tres pasos van apilados en la misma celda: la tarjeta
+                          mide siempre lo que el más alto y no cambia de altura al
+                          pasar de uno a otro. Los que no tocan quedan invisibles e
+                          inertes: ni se ven, ni se tabulan, ni los lee un lector. */}
+                      <Box sx={{ display: 'grid' }}>
+                        {PASOS.map((p, indice) => {
+                          const activo = indice === paso
+                          return (
+                            <Box
+                              key={p.titulo}
+                              component="fieldset"
+                              aria-labelledby={activo ? 'paso-titulo' : undefined}
+                              inert={!activo}
+                              sx={{ gridArea: '1 / 1', visibility: activo ? 'visible' : 'hidden', border: 0, m: 0, p: 0, minWidth: 0 }}
+                            >
+                              <Grid container spacing={{ xs: 1.5, md: 2 }}>
+                                {indice === 0 && (
+                                  <>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                      <TextField label="Nombre" autoComplete="given-name" {...campo('nombre')} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                      <TextField label="Apellidos" autoComplete="family-name" {...campo('apellidos')} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                      <TextField
+                                        label="DNI/NIE"
+                                        slotProps={{ htmlInput: { autoCapitalize: 'characters', spellCheck: false } }}
+                                        {...campo('dni', 'Con la letra final.')}
+                                      />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                      <TextField
+                                        label="Fecha de nacimiento"
+                                        type="date"
+                                        autoComplete="bday"
+                                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: hoy } }}
+                                        {...campo('fechaNacimiento')}
+                                      />
+                                    </Grid>
+                                  </>
+                                )}
 
-                          {paso === 1 && (
-                            <>
-                              <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField label="Email" type="email" autoComplete="email" {...campo('email')} />
-                              </Grid>
-                              <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField label="Teléfono" type="tel" autoComplete="tel" {...campo('telefono', 'Nueve dígitos.')} />
-                              </Grid>
-                              <Grid size={{ xs: 12 }}>
-                                <TextField label="Dirección" autoComplete="street-address" {...campo('direccion')} />
-                              </Grid>
-                              <Grid size={{ xs: 6, sm: 8 }}>
-                                <TextField label="Ciudad" autoComplete="address-level2" {...campo('ciudad')} />
-                              </Grid>
-                              <Grid size={{ xs: 6, sm: 4 }}>
-                                <TextField
-                                  label="Código postal"
-                                  autoComplete="postal-code"
-                                  slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 5 } }}
-                                  {...campo('codigoPostal')}
-                                />
-                              </Grid>
-                            </>
-                          )}
+                                {indice === 1 && (
+                                  <>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                      <TextField label="Email" type="email" autoComplete="email" {...campo('email')} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                      <TextField label="Teléfono" type="tel" autoComplete="tel" {...campo('telefono', 'Nueve dígitos.')} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12 }}>
+                                      <TextField label="Dirección" autoComplete="street-address" {...campo('direccion')} />
+                                    </Grid>
+                                    <Grid size={{ xs: 6, sm: 8 }}>
+                                      <TextField label="Ciudad" autoComplete="address-level2" {...campo('ciudad')} />
+                                    </Grid>
+                                    <Grid size={{ xs: 6, sm: 4 }}>
+                                      <TextField
+                                        label="Código postal"
+                                        autoComplete="postal-code"
+                                        slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 5 } }}
+                                        {...campo('codigoPostal')}
+                                      />
+                                    </Grid>
+                                  </>
+                                )}
 
-                          {paso === 2 && (
-                            <>
-                              <Grid size={{ xs: 12 }}>
-                                <Typography sx={{ fontSize: 15, lineHeight: 1.6, color: 'text.secondary', maxWidth: '60ch' }}>
-                                  Con tu email y esta contraseña entrarás al área de hermanos cuando Secretaría active tu alta.
-                                </Typography>
+                                {indice === 2 && (
+                                  <>
+                                    <Grid size={{ xs: 12 }}>
+                                      <Typography sx={{ fontSize: 15, lineHeight: 1.6, color: 'text.secondary', maxWidth: '60ch' }}>
+                                        Con tu email y esta contraseña entrarás al área de hermanos cuando Secretaría active tu alta.
+                                      </Typography>
+                                    </Grid>
+                                    {/* El email se escribió en el paso anterior y ahí sigue, pero
+                                        oculto e inerte: sin este campo junto a la contraseña, el
+                                        gestor de contraseñas no sabe de qué usuario es. */}
+                                    <input
+                                      type="email"
+                                      name="usuario"
+                                      autoComplete="username"
+                                      value={getValues('email')}
+                                      readOnly
+                                      tabIndex={-1}
+                                      aria-hidden="true"
+                                      style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', opacity: 0 }}
+                                    />
+                                    <Grid size={{ xs: 12, sm: 8 }}>
+                                      <CampoContrasena
+                                        label="Contraseña"
+                                        autoComplete="new-password"
+                                        {...campo('password', `Al menos ${LONGITUD_MINIMA} caracteres. Evita palabras evidentes y secuencias.`)}
+                                      />
+                                    </Grid>
+                                    <Grid size={{ xs: 12 }}>
+                                      <FormControl error={!!errors.aceptarPolitica} sx={{ mt: 0.5 }}>
+                                        <FormControlLabel
+                                          control={<Checkbox {...register('aceptarPolitica')} sx={{ mt: '-6px' }} />}
+                                          label={
+                                            <>
+                                              Acepto la{' '}
+                                              <Box
+                                                component={Link}
+                                                to="/politica-privacidad"
+                                                target="_blank"
+                                                rel="noopener"
+                                                sx={{ color: 'secondary.main', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                                              >
+                                                política de privacidad
+                                              </Box>
+                                            </>
+                                          }
+                                          slotProps={{ typography: { sx: { fontSize: 16, lineHeight: 1.5, pt: '3px' } } }}
+                                        />
+                                        <FormHelperText sx={{ ml: '33px', mt: 0.25, fontSize: 13 }}>
+                                          {errors.aceptarPolitica?.message
+                                            ?? 'Usamos tus datos solo para tramitar el alta y tu relación con el Grupo Parroquial.'}
+                                        </FormHelperText>
+                                      </FormControl>
+                                    </Grid>
+                                  </>
+                                )}
                               </Grid>
-                              {/* El email se escribió en el paso anterior y ya no está en el
-                                  DOM: sin este campo, el gestor de contraseñas del navegador
-                                  guarda la contraseña sin saber de qué usuario es. */}
-                              <input
-                                type="email"
-                                name="usuario"
-                                autoComplete="username"
-                                value={getValues('email')}
-                                readOnly
-                                tabIndex={-1}
-                                aria-hidden="true"
-                                style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', opacity: 0 }}
-                              />
-                              <Grid size={{ xs: 12, sm: 8 }}>
-                                <CampoContrasena
-                                  label="Contraseña"
-                                  autoComplete="new-password"
-                                  {...campo('password', `Al menos ${LONGITUD_MINIMA} caracteres. Evita palabras evidentes y secuencias.`)}
-                                />
-                              </Grid>
-                              <Grid size={{ xs: 12 }}>
-                                <FormControl error={!!errors.aceptarPolitica} sx={{ mt: 0.5 }}>
-                                  <FormControlLabel
-                                    control={<Checkbox {...register('aceptarPolitica')} sx={{ mt: '-6px' }} />}
-                                    label={
-                                      <>
-                                        Acepto la{' '}
-                                        <Box
-                                          component={Link}
-                                          to="/politica-privacidad"
-                                          target="_blank"
-                                          rel="noopener"
-                                          sx={{ color: 'primary.main', textDecoration: 'underline', textUnderlineOffset: 3 }}
-                                        >
-                                          política de privacidad
-                                        </Box>
-                                      </>
-                                    }
-                                    slotProps={{ typography: { sx: { fontSize: 16, lineHeight: 1.5, pt: '3px' } } }}
-                                  />
-                                  <FormHelperText sx={{ ml: '33px', mt: 0.25, fontSize: 13 }}>
-                                    {errors.aceptarPolitica?.message
-                                      ?? 'Usamos tus datos solo para tramitar el alta y tu relación con el Grupo Parroquial.'}
-                                  </FormHelperText>
-                                </FormControl>
-                              </Grid>
-                            </>
-                          )}
-                        </Grid>
+                            </Box>
+                          )
+                        })}
                       </Box>
 
                       {errorEnvio && <Alert severity="error" role="alert">{errorEnvio}</Alert>}
 
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, borderTop: `1px solid ${FILETE_PAPEL}`, pt: { xs: 2.5, md: 3 } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, borderTop: `1px solid ${FILETE_TARJETA}`, pt: { xs: 2.5, md: 3 } }}>
+                        {/* Altura fija en los dos botones: el de contorno lleva 1 px de
+                            borde y, sin esto, la fila crecía 2 px al aparecer «Atrás». */}
                         {paso > 0 ? (
-                          <AppButton type="button" appVariant="outline" onClick={retroceder} sx={{ ...BOTON_PAPEL_SECUNDARIO, px: 3 }}>
+                          <AppButton type="button" appVariant="outline" onClick={retroceder} sx={{ ...BOTON_PIE, px: { xs: 2, sm: 3 } }}>
                             Atrás
                           </AppButton>
                         ) : (
                           <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Todos los campos son obligatorios.</Typography>
                         )}
-                        <AppButton type="submit" disabled={isSubmitting} sx={{ borderRadius: '3px', px: { xs: 3, sm: 5 } }}>
+                        <AppButton type="submit" disabled={isSubmitting} sx={{ ...BOTON_PIE, px: { xs: 2.5, sm: 5 } }}>
                           {esUltimo ? (isSubmitting ? 'Enviando…' : 'Enviar solicitud') : 'Continuar'}
                         </AppButton>
                       </Box>
