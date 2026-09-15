@@ -1,8 +1,9 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import { site } from '../../../config/site'
 import QuickAccess from '../QuickAccess'
+import { textosDePrueba, responderPortada } from './ayudas'
 
 // `site` es de solo lectura en los tipos, pero en tiempo de ejecución es un objeto
 // normal: así se simula que alguien rellena el canal de YouTube en la configuración.
@@ -12,6 +13,7 @@ const youtubeOriginal = redes.youtube
 describe('QuickAccess', () => {
   afterEach(() => {
     redes.youtube = youtubeOriginal
+    vi.unstubAllGlobals()
   })
 
   it('ofrece seis accesos en una lista, cada uno a su página', () => {
@@ -72,5 +74,40 @@ describe('QuickAccess', () => {
     expect(screen.getByRole('link', { name: /canal de youtube/i })).toHaveAttribute('href', redes.youtube)
     const contacto = screen.getByRole('link', { name: /contacto/i })
     expect(within(contacto).queryByText('Escríbenos')).not.toBeInTheDocument()
+  })
+
+  it('enseña los textos de la placa y de cada tesela', async () => {
+    const textos = textosDePrueba()
+    textos.accesos.placa.titulo = 'Únete a nosotros'
+    textos.accesos.teselas.find((t) => t.clave === 'caridad')!.descripcion = 'Nuestra obra social'
+    responderPortada(textos)
+
+    renderWithProviders(<QuickAccess />)
+
+    expect(await screen.findByText('Únete a nosotros')).toBeInTheDocument()
+    expect(screen.getByText('Nuestra obra social')).toBeInTheDocument()
+  })
+
+  it('el destino de cada tesela no depende del documento', async () => {
+    // Los destinos siguen en el código: el CMS cambia el rótulo, no adónde lleva.
+    const textos = textosDePrueba()
+    textos.accesos.teselas.find((t) => t.clave === 'historia')!.titulo = 'Nuestros orígenes'
+    responderPortada(textos)
+
+    renderWithProviders(<QuickAccess />)
+
+    const enlace = await screen.findByRole('link', { name: /nuestros orígenes/i })
+    expect(enlace).toHaveAttribute('href', '/corporacion/historia')
+  })
+
+  it('una tesela que el documento no trae conserva su texto de siempre', async () => {
+    const textos = textosDePrueba()
+    textos.accesos.teselas = textos.accesos.teselas.filter((t) => t.clave !== 'sede')
+    responderPortada(textos)
+
+    renderWithProviders(<QuickAccess />)
+
+    expect(await screen.findByText('Nuestra sede')).toBeInTheDocument()
+    expect(screen.getByText('Parroquia de los Pasionistas')).toBeInTheDocument()
   })
 })
