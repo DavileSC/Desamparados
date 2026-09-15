@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { email, password, dni, textoRequerido, telefono, idParam } from '../config/common';
+import { email, password, dni, textoRequerido, telefono, idParam, codigoPostal } from '../config/common';
 
 // =================================================================
 //  1. ESQUEMAS BASE REUTILIZABLES
@@ -15,7 +15,7 @@ const usuarioSchema = type({
     telefono: telefono,
     direccion: textoRequerido,
     poblacion: textoRequerido,
-    codigoPostal: type("string").matching(/^[0-9]{5}$/).describe("un código postal válido de 5 dígitos")
+    codigoPostal: codigoPostal
 });
 
 // =================================================================
@@ -61,6 +61,11 @@ export const loginSchema = type({
         "recordarme?": "boolean",
         "contexto?": "'cms' | 'hermanos'"
     }
+});
+
+// El cuerpo entero es opcional: un POST /logout sin nada cierra las dos áreas.
+export const logoutSchema = type({
+    "body?": type({ "area?": "'cms' | 'hermanos'" }).or("undefined")
 });
 
 // Esquema para validar los 6 dígitos del TOTP

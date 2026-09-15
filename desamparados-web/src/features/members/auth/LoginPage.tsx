@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Box, Typography, TextField, Alert, Button, Checkbox, FormControlLabel } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
 import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
-import { useAuthStore, isStaffRole } from './store'
+import { useAuthStore } from './store'
 import { login as apiLogin, verify2FA, type LoginResponse } from '../../../lib/api/auth'
 import { ApiError } from '../../../lib/api/client'
 
@@ -18,6 +18,7 @@ function errorMessage(e: unknown, fallback: string) {
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const hermano = useAuthStore((state) => state.hermano)
   const entrarSesion = useAuthStore((state) => state.entrarSesion)
 
   // Segundo paso del login cuando la cuenta tiene 2FA activado. Al usuario lo
@@ -41,13 +42,11 @@ export default function LoginPage() {
       setPending2FA({ message: response.message })
       return
     }
-    entrarSesion(response.user)
-    // El staff del CMS entra por su propio acceso: allí la sesión ya creada
-    // se recoge y aterriza directamente en el panel.
-    if (isStaffRole(response.user.role)) {
-      navigate('/cms/acceso', { replace: true })
-      return
-    }
+    // Sin rebote: un cargo que entra por aquí crea sesión de hermano válida y
+    // va al área de hermanos igual que cualquiera. Si además quiere el CMS,
+    // entra por /cms/acceso, que es el acceso con segundo factor y su propia
+    // cookie; por eso las dos sesiones son independientes.
+    entrarSesion('hermanos', response.user)
     navigate(from, { replace: true })
   }
 
@@ -66,6 +65,11 @@ export default function LoginPage() {
     } catch (e) {
       twoFactorForm.setError('root', { message: errorMessage(e, 'Código incorrecto o expirado') })
     }
+  }
+
+  // Quien ya tiene sesión del área de hermanos no ve este formulario: directo al área.
+  if (hermano) {
+    return <Navigate to="/area-hermano" replace />
   }
 
   return (

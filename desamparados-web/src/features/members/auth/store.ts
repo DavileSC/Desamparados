@@ -20,30 +20,45 @@ export interface AuthUser {
   origen?: 'cms' | 'hermanos'
 }
 
+export type AreaSesion = 'cms' | 'hermanos'
+
 /**
- * `cargando` es el estado inicial: todavía no sabemos si hay sesión porque la
- * respuesta de /api/auth/me no ha llegado. Los guardas de ruta deben esperar en
- * lugar de mandar al login, o expulsarían a quien sí tiene sesión.
+ * `cargando` es el estado inicial: todavía no sabemos qué sesiones hay porque
+ * la respuesta de /api/auth/me no ha llegado. Los guardas de ruta deben esperar
+ * en lugar de mandar al login, o expulsarían a quien sí tiene sesión.
  */
-export type AuthStatus = 'cargando' | 'autenticado' | 'invitado'
+export type AuthStatus = 'cargando' | 'listo'
 
 /** Clave que usaba zustand/persist cuando el token vivía en el navegador */
 export const CLAVE_PERSISTENCIA_ANTIGUA = 'desamparados-auth'
 
 interface AuthState {
   status: AuthStatus
-  user: AuthUser | null
-  entrarSesion: (user: AuthUser) => void
-  salirSesion: () => void
+  /**
+   * Una sesión por área, independientes. La misma persona puede estar dentro
+   * del CMS como Tesorero y dentro del portal como hermano: antes compartían
+   * cookie y la segunda tiraba a la primera.
+   */
+  cms: AuthUser | null
+  hermano: AuthUser | null
+  entrarSesion: (area: AreaSesion, user: AuthUser) => void
+  salirSesion: (area?: AreaSesion) => void
 }
 
-// Sin persist: la sesión vive en una cookie httpOnly y el navegador no guarda
+// Sin persist: las sesiones viven en cookies httpOnly y el navegador no guarda
 // aquí ni el token ni los datos personales.
 export const useAuthStore = create<AuthState>()((set) => ({
   status: 'cargando',
-  user: null,
-  entrarSesion: (user) => set({ status: 'autenticado', user }),
-  salirSesion: () => set({ status: 'invitado', user: null }),
+  cms: null,
+  hermano: null,
+  entrarSesion: (area, user) =>
+    set(area === 'cms' ? { status: 'listo', cms: user } : { status: 'listo', hermano: user }),
+  salirSesion: (area) =>
+    set(
+      area === 'cms' ? { status: 'listo', cms: null }
+      : area === 'hermanos' ? { status: 'listo', hermano: null }
+      : { status: 'listo', cms: null, hermano: null },
+    ),
 }))
 
 /** Roles con acceso al CMS/Secretaría (el resto son hermanos rasos: USER) */

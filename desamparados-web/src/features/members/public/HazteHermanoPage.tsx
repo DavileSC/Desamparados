@@ -18,6 +18,7 @@ export default function HazteHermanoPage() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<MembershipFormData>({
@@ -37,6 +38,20 @@ export default function HazteHermanoPage() {
     },
   })
 
+  /** Del `usuario.dni` que manda el servidor al `dni` que conoce el formulario. */
+  const CAMPOS_API: Record<string, keyof MembershipFormData> = {
+    'usuario.dni': 'dni',
+    'usuario.email': 'email',
+    'usuario.telefono': 'telefono',
+    'usuario.nombre': 'nombre',
+    'usuario.apellidos': 'apellidos',
+    'usuario.direccion': 'direccion',
+    'usuario.poblacion': 'ciudad',
+    'usuario.codigoPostal': 'codigoPostal',
+    'usuario.password': 'password',
+    'hermano.fechaNacimiento': 'fechaNacimiento',
+  }
+
   const onSubmit = async (data: MembershipFormData) => {
     setSubmitError(null)
     try {
@@ -47,6 +62,16 @@ export default function HazteHermanoPage() {
       setSuccess(true)
       reset()
     } catch (error) {
+      if (error instanceof ApiError && Object.keys(error.fields).length > 0) {
+        // El servidor dice qué campo falla; enseñarlo bajo su casilla en vez
+        // de un «Error de validación» suelto que no dice qué corregir.
+        let colocado = false
+        for (const [campoApi, mensaje] of Object.entries(error.fields)) {
+          const campo = CAMPOS_API[campoApi]
+          if (campo) { setError(campo, { type: 'server', message: mensaje }); colocado = true }
+        }
+        if (colocado) return
+      }
       setSubmitError(error instanceof ApiError ? error.message : 'No se ha podido enviar la solicitud.')
     }
   }

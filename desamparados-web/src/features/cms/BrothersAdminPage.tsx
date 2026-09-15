@@ -3,15 +3,18 @@ import { Alert, Box, Button, CircularProgress, Paper, Stack, Tab, Tabs, TextFiel
 import { Helmet } from 'react-helmet-async'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../members/auth/store'
-import { approveRequest, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
+import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
+import { approveRequest, cerrarHuecosDeNumero, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 
 export default function BrothersAdminPage() {
-  const role = useAuthStore((state) => state.user?.role ?? 'USER')
+  const queryClient = useQueryClient()
+  const role = useAuthStore((state) => state.cms?.role ?? 'USER')
   // El Hermano Mayor gestiona el censo como secretaría: edita fichas y admite
   // altas. Quien llega aquí sin ser ninguno de los tres es porque la guarda de
   // ruta le deja mirar, no tocar.
@@ -43,6 +46,7 @@ export default function BrothersAdminPage() {
   const [procesando, setProcesando] = useState<number | null>(null)
   const enMarcha = useRef(false)
   const [porRechazar, setPorRechazar] = useState<PendingRequest | null>(null)
+  const [porAsignarNumeros, setPorAsignarNumeros] = useState(false)
 
   // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
   // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
@@ -72,13 +76,48 @@ export default function BrothersAdminPage() {
     return () => { cancelado = true; window.clearTimeout(timer) }
   }, [load, query])
 
+  /**
+   * Recarga el censo y refresca de paso los contadores del menú («hermanos sin
+   * número», solicitudes pendientes): salen de la consulta del panel, que se
+   * guarda cinco minutos, y sin esto Secretaría leía «Se han asignado 3 números
+   * de hermano» y el menú seguía diciendo 3 durante cinco minutos, aun
+   * cambiando de pantalla dentro del CMS.
+   *
+   * Cuelga de las tres acciones que de verdad mueven esos números —asignar,
+   * aprobar y rechazar— y no de `load()`: `load()` corre también al abrir la
+   * pantalla, en cada tecleo del buscador (con rebote, pero cada 300 ms) y al
+   * cambiar de página. El panel es un agregado caro (censo, dinero, procesión y
+   * actividad) y el menú lo tiene observado mientras se está dentro del CMS, así
+   * que invalidarlo no deja una marca de caducidad: dispara una petición de
+   * verdad, en ese momento. Y buscar a un hermano por su nombre no cambia
+   * ningún contador.
+   */
+  const recargarYRefrescarMenu = async () => {
+    await load()
+    void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
+  }
+
   const handleRequest = async (request: PendingRequest, approve: boolean) => {
     if (enMarcha.current) return
     enMarcha.current = true
     setProcesando(request.id); setError(null); setNotice(null)
-    try { await (approve ? approveRequest(request.id) : rejectRequest(request.id)); await load(); setNotice(approve ? 'Solicitud aprobada correctamente.' : 'Solicitud rechazada correctamente.') }
+    try { await (approve ? approveRequest(request.id) : rejectRequest(request.id)); await recargarYRefrescarMenu(); setNotice(approve ? 'Solicitud aprobada correctamente.' : 'Solicitud rechazada correctamente.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido procesar la solicitud.') }
     finally { enMarcha.current = false; setProcesando(null) }
+  }
+
+  /** Reparte los números que faltan. `enMarcha` es la guarda del doble clic, igual que al aprobar. */
+  const asignarNumeros = async () => {
+    if (enMarcha.current) return
+    enMarcha.current = true
+    setError(null); setNotice(null)
+    try {
+      const { message } = await cerrarHuecosDeNumero()
+      await recargarYRefrescarMenu()
+      setNotice(message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se han podido asignar los números.')
+    } finally { enMarcha.current = false }
   }
 
   /** Qué se borra al rechazar: depende de si la cuenta ya estaba aprobada. */
@@ -94,10 +133,15 @@ export default function BrothersAdminPage() {
     <Typography variant="h2" component="h1" sx={{ mb: 4 }}>Gestión de hermanos</Typography>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
-    <Tabs value={vista} onChange={(_, valor) => setParams(valor === 'solicitudes' ? { vista: 'solicitudes' } : {})} sx={{ mb: 3 }}>
-      <Tab value="censo" label="Censo" />
-      <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
-    </Tabs>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+      <Tabs value={vista} onChange={(_, valor) => setParams(valor === 'solicitudes' ? { vista: 'solicitudes' } : {})}>
+        <Tab value="censo" label="Censo" />
+        <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
+      </Tabs>
+      {puedeGestionar && (
+        <Button variant="outlined" onClick={() => setPorAsignarNumeros(true)}>Asignar números</Button>
+      )}
+    </Box>
     {/* Rechazar borra datos personales (y a veces la cuenta entera): se pregunta antes. */}
     <DialogoConfirmacion
       abierto={porRechazar !== null}
@@ -107,6 +151,15 @@ export default function BrothersAdminPage() {
       peligro
       onConfirmar={() => { const solicitud = porRechazar; setPorRechazar(null); if (solicitud) void handleRequest(solicitud, false) }}
       onCancelar={() => setPorRechazar(null)}
+    />
+    {/* Asignar números toca el censo entero: se pregunta antes, como al rechazar. */}
+    <DialogoConfirmacion
+      abierto={porAsignarNumeros}
+      titulo="¿Asignar los números que faltan?"
+      mensaje="Se dará número de hermano, por antigüedad, a los que están activos y no lo tienen. A quien ya tiene número no se le toca."
+      textoConfirmar="Asignar números"
+      onConfirmar={() => { setPorAsignarNumeros(false); void asignarNumeros() }}
+      onCancelar={() => setPorAsignarNumeros(false)}
     />
     {vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
       {requests.map((request) => <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Box><Typography>{request.nombre} {request.apellidos}</Typography><Typography variant="body2" color="text.secondary">{request.email} · {request.hermanos.length} perfil(es)</Typography></Box><Stack direction="row" spacing={1}><Button variant="contained" disabled={procesando !== null} onClick={() => void handleRequest(request, true)}>{procesando === request.id ? 'Procesando…' : 'Aprobar'}</Button><Button color="error" disabled={procesando !== null} onClick={() => setPorRechazar(request)}>Rechazar</Button></Stack></Box>)}

@@ -82,6 +82,12 @@ model User {
   // (cambio de contraseña, degradación de rol, reset 2FA de emergencia...)
   tokenValidAfter DateTime @default(now())
 
+  // Corte POR ÁREA. Las dos sesiones (CMS y hermanos) son independientes: salir
+  // del área de hermanos no puede echar a nadie del CMS, y al revés. Un token
+  // vale si se emitió después de tokenValidAfter Y de la marca de su área.
+  cmsValidoDesde     DateTime @default(now())
+  hermanoValidoDesde DateTime @default(now())
+
   // --- SEGURIDAD 2FA ---
   // Guardamos el secreto que comparte el servidor y el móvil del usuario
   twoFactorSecret  String?

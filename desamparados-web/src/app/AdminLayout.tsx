@@ -153,7 +153,7 @@ function BloqueUsuario({ role }: { role?: string }) {
         <Box
           component="button"
           type="button"
-          onClick={() => { void cerrarSesion() }}
+          onClick={() => { void cerrarSesion('cms') }}
           sx={{
             border: 0, background: 'none', p: 0, cursor: 'pointer', fontFamily: 'inherit',
             fontSize: 12, color: 'rgba(255,255,255,0.45)', '&:hover': { color: '#fff' },
@@ -167,14 +167,14 @@ function BloqueUsuario({ role }: { role?: string }) {
 }
 
 function Contenido() {
-  const role = useAuthStore((state) => state.user?.role)
+  const role = useAuthStore((state) => state.cms?.role)
   const [menuAbierto, setMenuAbierto] = useState(false)
   const tema = useTheme()
   const { superficies } = useTemaCms()
   const esMovil = useMediaQuery(tema.breakpoints.down('md'))
 
   const barra = (
-    <Box sx={{ height: '100%', backgroundColor: SIDEBAR, p: 2, pt: 3.25, display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ minHeight: '100%', backgroundColor: SIDEBAR, p: 2, pt: 3.25, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ px: 1.25 }}>
         <Typography
           component={Link}
@@ -213,6 +213,10 @@ function Contenido() {
             alignSelf: 'flex-start',
             height: '100vh',
             overflowY: 'auto',
+            // El fondo va aquí, en el elemento que hace scroll, y no solo en
+            // `barra`: con el menú más alto que la ventana, `barra` medía
+            // 100vh y al bajar asomaba el fondo de la página por debajo.
+            backgroundColor: SIDEBAR,
           }}
         >
           {barra}

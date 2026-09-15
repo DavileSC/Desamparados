@@ -19,7 +19,7 @@ import { Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -67,7 +67,7 @@ after(async () => {
 const como = (rol: Role, ruta: string, metodo = 'GET', cuerpo?: unknown) =>
   fetch(`${baseUrl}/api/inventario${ruta}`, {
     method: metodo,
-    headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_SESION}=${generateToken(usuarios[rol]!, rol)}` },
+    headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_CMS}=${generateToken(usuarios[rol]!, rol)}` },
     body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
   });
 

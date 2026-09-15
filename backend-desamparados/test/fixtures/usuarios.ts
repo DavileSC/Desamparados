@@ -28,8 +28,13 @@ export async function crearUsuarioPrueba(role: Role = Role.USER) {
       role,
       // Un minuto en el pasado: el `iat` del JWT va en segundos enteros y, si el
       // login cae en el mismo segundo que la creación, el redondeo lo dejaría
-      // antes de tokenValidAfter y la sesión nacería ya invalidada.
-      tokenValidAfter: new Date(Date.now() - 60_000)
+      // antes de tokenValidAfter y la sesión nacería ya invalidada. Los cortes
+      // por área tienen el mismo problema, agravado porque el reloj de MariaDB
+      // y el de Node no son el mismo: si nacieran con `now()` de la base, un
+      // token emitido con el reloj de Node podría quedar justo antes.
+      tokenValidAfter: new Date(Date.now() - 60_000),
+      cmsValidoDesde: new Date(Date.now() - 60_000),
+      hermanoValidoDesde: new Date(Date.now() - 60_000)
     }
   });
 }

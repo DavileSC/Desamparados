@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
 import BrothersAdminPage from '../BrothersAdminPage'
 import BrotherEditPage from '../BrotherEditPage'
@@ -58,12 +59,22 @@ function montar(entrada: string) {
     ],
     { initialEntries: [entrada] },
   )
-  render(<HelmetProvider><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
+  // El listado refresca los contadores del menú al recargar el censo, y para eso
+  // pide el cliente de consultas: este montaje no usa `renderWithProviders`, así
+  // que el proveedor lo pone aquí. Uno nuevo por montaje, sin reintentos.
+  const clienteConsultas = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+  render(
+    <HelmetProvider>
+      <QueryClientProvider client={clienteConsultas}>
+        <ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>,
+  )
   return router
 }
 
 beforeEach(() => {
-  useAuthStore.setState({ status: 'autenticado', user: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [] } })
+  useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [], origen: 'cms' }, hermano: null })
   responder()
 })
 

@@ -10,7 +10,7 @@ import { Prisma, Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken, verifyToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS, COOKIE_HERMANO, nombreCookie } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { checkRole } from '../src/middleware/checkRole.js';
 import { AuthService, Testigo2FACaducadoError, asegurarQueQuedaOtroAdmin } from '../src/services/auth.service.js';
@@ -77,7 +77,7 @@ async function secretoGuardado(id: number) {
 }
 
 const cookieSesion = (id: number, role: Role, origen: 'cms' | 'hermanos' = 'cms') =>
-  `${COOKIE_SESION}=${generateToken(id, role, false, origen)}`;
+  `${nombreCookie(origen)}=${generateToken(id, role, false, origen)}`;
 
 async function peticion(ruta: string, cookie: string, metodo = 'POST', cuerpo?: unknown) {
   return fetch(`${baseUrl}/api${ruta}`, {
@@ -198,7 +198,9 @@ test('el rescate apaga el 2FA, cierra sus sesiones y queda auditado con el antes
     const estado = await secretoGuardado(objetivo.id);
     assert.equal(estado?.twoFactorEnabled, false);
     assert.equal(estado?.twoFactorSecret, null);
-    assert.equal((await peticion('/auth/me', sesionObjetivo, 'GET')).status, 401, 'sus sesiones abiertas deben caer');
+    // /auth/me ya no da 401 (responde 200 siempre, tarea 7): la sesión muerta
+    // se comprueba contra una ruta que sigue exigiendo sesión de verdad.
+    assert.equal((await peticion('/auth/mis-datos', sesionObjetivo, 'GET')).status, 401, 'sus sesiones abiertas deben caer');
 
     const registro = await db.auditLog.findFirst({
       where: { action: '2FA_RESET_ADMIN', entityType: 'user', entityId: String(objetivo.id) },
@@ -269,7 +271,8 @@ test('el testigo del primer factor es de un solo uso', async (t) => {
     assert.equal(repetido.status, 401);
     assert.equal((await repetido.json() as { error?: string }).error, 'PENDING_2FA_REQUIRED');
     // Ni sesión nueva ni borrado de la que hubiera: solo se va la cookie del 2FA.
-    assert.equal(cookieDe(repetido, COOKIE_SESION), undefined, 'la cookie de sesión no se toca');
+    assert.equal(cookieDe(repetido, COOKIE_CMS), undefined, 'la cookie del CMS no se toca');
+    assert.equal(cookieDe(repetido, COOKIE_HERMANO), undefined, 'ni la del área de hermanos');
     assert.ok(cookieDe(repetido, 'desamparados_2fa') !== undefined, 'la del testigo sí se borra');
   } finally {
     await borrarUsuarioPrueba(staff.id);
@@ -578,22 +581,27 @@ test('cerrar sesión revoca el token en todos los dispositivos y deja entrar al 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: hermano.email, password: PASSWORD_PRUEBA, contexto: 'hermanos' })
-  }), COOKIE_SESION)!;
+  }), COOKIE_HERMANO)!;
+
+  // /auth/me responde 200 siempre desde la tarea 7 (aunque el token esté
+  // muerto): para comprobar de verdad si una sesión sigue viva hace falta una
+  // ruta que exija authenticateToken de verdad.
+  const sesionViva = (cookie: string) => peticion('/auth/mis-datos', cookie, 'GET');
 
   try {
     const movil = await entrar();
     const ordenador = await entrar();
-    assert.equal((await peticion('/auth/me', movil, 'GET')).status, 200);
+    assert.equal((await sesionViva(movil)).status, 200);
 
     const salida = await peticion('/auth/logout', ordenador);
     assert.equal(salida.status, 204);
 
-    assert.equal((await peticion('/auth/me', ordenador, 'GET')).status, 401, 'el token copiado de este equipo ya no vale');
-    assert.equal((await peticion('/auth/me', movil, 'GET')).status, 401, 'y tampoco el del otro dispositivo');
+    assert.equal((await sesionViva(ordenador)).status, 401, 'el token copiado de este equipo ya no vale');
+    assert.equal((await sesionViva(movil)).status, 401, 'y tampoco el del otro dispositivo');
 
     // Justo después, en el mismo segundo casi seguro: el login nuevo vale.
     const otraVez = await entrar();
-    assert.equal((await peticion('/auth/me', otraVez, 'GET')).status, 200, 'la granularidad de segundos no puede tumbar el login siguiente');
+    assert.equal((await sesionViva(otraVez)).status, 200, 'la granularidad de segundos no puede tumbar el login siguiente');
   } finally {
     await borrarUsuarioPrueba(hermano.id);
   }
@@ -683,10 +691,17 @@ test('registrarse con el DNI de una ficha que ya existe responde 409 y no crea n
 });
 
 // ---------------------------------------------------------------------------
-//  A10: sin origen no es CMS
+//  A10: checkRole mira req.sesiones, nunca req.user
 // ---------------------------------------------------------------------------
+//
+// Antes, un token sin claim de origen llegaba a checkRole como req.user y
+// producía el 403 SESION_NO_CMS. Con la tarea 5, checkRole ya no mira
+// req.user: mira req.sesiones.cms, y ese caso ya no puede darse, porque
+// validateSessionAgainstDb rechaza antes cualquier token sin origen (no llega
+// ni a rellenar req.sesiones.cms ni req.sesiones.hermano). Lo que importa
+// ahora son los dos casos reales de req.sesiones que resolverSesiones deja.
 
-test('checkRole rechaza una sesión sin claim de origen, con el código de sesión no CMS', () => {
+test('con sesión de hermanos pero sin la del CMS, checkRole responde 403 con el código de sesión no CMS', () => {
   let estado = 0;
   let cuerpo: { error?: string } = {};
   let siguiente = false;
@@ -694,12 +709,28 @@ test('checkRole rechaza una sesión sin claim de origen, con el código de sesi�
     status(codigoHttp: number) { estado = codigoHttp; return this; },
     json(datos: { error?: string }) { cuerpo = datos; return this; }
   };
-  const req = { user: { id: 1, role: Role.ADMIN, typ: 'session' } };
+  const req = { sesiones: { cms: null, hermano: { id: 1, role: Role.ADMIN, typ: 'session' as const, origen: 'hermanos' as const } } };
   checkRole([Role.ADMIN])(req as never, res as never, () => { siguiente = true; });
   assert.equal(siguiente, false);
   assert.equal(estado, 403);
   // El frontend distingue por este código una sesión perdida para el CMS de un 403 de permisos.
   assert.equal(cuerpo.error, 'SESION_NO_CMS');
+});
+
+test('sin ninguna sesión, checkRole responde 401 y no el código de sesión no CMS', () => {
+  let estado = 0;
+  let cuerpo: { error?: string } = {};
+  let siguiente = false;
+  const res = {
+    status(codigoHttp: number) { estado = codigoHttp; return this; },
+    json(datos: { error?: string }) { cuerpo = datos; return this; }
+  };
+  const req = { sesiones: { cms: null, hermano: null } };
+  checkRole([Role.ADMIN])(req as never, res as never, () => { siguiente = true; });
+  assert.equal(siguiente, false);
+  assert.equal(estado, 401);
+  // Sin ninguna sesión es un 401 normal, no el 403 de "te falta el CMS".
+  assert.notEqual(cuerpo.error, 'SESION_NO_CMS');
 });
 
 test('el 403 de permisos no lleva el código de sesión no CMS', () => {
@@ -732,7 +763,7 @@ test('un testigo de 2FA sin origen da una sesión que no entra en el CMS', async
     assert.equal(res.status, 200);
     assert.equal((await res.json() as { user: { origen: string } }).user.origen, 'hermanos');
 
-    const cms = await peticion('/news/admin/archive', cookieDe(res, COOKIE_SESION)!, 'GET');
+    const cms = await peticion('/news/admin/archive', cookieDe(res, COOKIE_HERMANO)!, 'GET');
     assert.equal(cms.status, 403);
     assert.equal((await cms.json() as { error?: string }).error, 'SESION_NO_CMS');
   } finally {
@@ -755,7 +786,8 @@ test('el acceso del CMS no crea sesión para una cuenta de hermano', async (t) =
     });
     assert.equal(res.status, 403);
     assert.equal((await res.json() as { error?: string }).error, 'CUENTA_SIN_CMS');
-    assert.equal(cookieDe(res, COOKIE_SESION), undefined, 'ni se crea la sesión que antes el frontend tenía que cerrar');
+    assert.equal(cookieDe(res, COOKIE_CMS), undefined, 'ni se crea la sesión del CMS que antes el frontend tenía que cerrar');
+    assert.equal(cookieDe(res, COOKIE_HERMANO), undefined, 'ni tampoco una del área de hermanos');
   } finally {
     await borrarUsuarioPrueba(hermano.id);
   }

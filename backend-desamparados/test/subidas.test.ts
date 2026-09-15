@@ -20,7 +20,7 @@ import { Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { publicStorageDir, MAX_BYTES_IMAGEN, MAX_BYTES_PDF } from '../src/middleware/upload.middleware.js';
 import { recodificarSinMetadatos } from '../src/controllers/upload.controller.js';
 import { parseClamdResponse, reiniciarAvisoSinAntivirus, scanBufferClamav } from '../src/utils/clamd.js';
@@ -76,7 +76,7 @@ function subir(contenido: Buffer, nombre: string, tipo: string) {
   formulario.append('file', new Blob([new Uint8Array(contenido)], { type: tipo }), nombre);
   return fetch(`${baseUrl}/api/upload/public`, {
     method: 'POST',
-    headers: { Cookie: `${COOKIE_SESION}=${generateToken(usuarioId, Role.REDES)}` },
+    headers: { Cookie: `${COOKIE_CMS}=${generateToken(usuarioId, Role.REDES)}` },
     body: formulario,
   });
 }

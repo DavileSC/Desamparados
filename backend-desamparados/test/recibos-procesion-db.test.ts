@@ -13,7 +13,7 @@ import { EstadoCita, EstadoPago, MetodoPago, Role, TipoRecibo, TipoTransaccion }
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
 import { ProcesionService } from '../src/services/procesion.service.js';
@@ -256,7 +256,7 @@ test('D3: por HTTP, Tesorería emite el recibo y busca al hermano sin ver sus da
   const e = await escenario();
   try {
     const hermano = await e.hermano();
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
 
     const emitir = await fetch(`${baseUrl}/api/recibos/admin`, {
       method: 'POST', headers: cabeceras,
@@ -508,7 +508,7 @@ test('P5: por HTTP, una fecha futura o ilegible es un 400 y una pasada se proces
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
     const url = `${baseUrl}/api/procesion/admin/procesar-ausencias`;
     const manana = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -697,7 +697,7 @@ test('Turnos: crear un turno con horas de otro día o al revés es un 400 con mo
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
     const crear = (cuerpo: Record<string, unknown>) =>
       fetch(`${baseUrl}/api/procesion/admin/turnos`, { method: 'POST', headers: cabeceras, body: JSON.stringify({ capacidadEstimada: 40, ...cuerpo }) });
     // Contados solo los de ese día, para no depender de lo que hagan otras pruebas a la vez.
@@ -761,7 +761,7 @@ test('S10: un parámetro repetido en el listado de Tesorería no acaba en 500', 
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    const cabeceras = { Cookie: `${COOKIE_SESION}=${generateToken(e.admin.id, Role.ADMIN)}` };
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}` };
     const repetido = await fetch(`${baseUrl}/api/recibos/admin?estado=PENDIENTE&estado=PAGADO`, { headers: cabeceras });
     assert.ok(repetido.status < 500, `respondió ${repetido.status}`);
 

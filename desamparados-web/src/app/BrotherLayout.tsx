@@ -104,7 +104,7 @@ export default function BrotherLayout() {
         <Button
           fullWidth
           startIcon={<LogoutIcon />}
-          onClick={() => { void cerrarSesion() }}
+          onClick={() => { void cerrarSesion('hermanos') }}
           sx={{
             justifyContent: 'flex-start',
             color: 'text.secondary',

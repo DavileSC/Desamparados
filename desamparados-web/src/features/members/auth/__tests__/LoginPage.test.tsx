@@ -15,7 +15,7 @@ function SondaRuta() {
 }
 
 beforeEach(() => {
-  useAuthStore.setState({ status: 'invitado', user: null })
+  useAuthStore.setState({ status: 'listo', cms: null, hermano: null })
 })
 
 afterEach(() => { vi.unstubAllGlobals() })
@@ -41,10 +41,10 @@ describe('LoginPage (acceso de hermanos)', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     expect(await screen.findByTestId('ruta')).toHaveTextContent('/area-hermano')
-    expect(useAuthStore.getState().user?.role).toBe('USER')
+    expect(useAuthStore.getState().hermano?.role).toBe('USER')
   })
 
-  it('el staff no entra por aquí: se le manda al acceso propio del CMS', async () => {
+  it('un cargo también entra por aquí y aterriza en el área de hermanos, sin sesión de CMS', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       ok({ status: 'OK', user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'hermanos' } }),
     ))
@@ -55,7 +55,9 @@ describe('LoginPage (acceso de hermanos)', () => {
     await user.type(screen.getByLabelText(/contraseña/i), 'Desamparados2026')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
-    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cms/acceso')
+    expect(await screen.findByTestId('ruta')).toHaveTextContent('/area-hermano')
+    expect(useAuthStore.getState().hermano?.role).toBe('ADMIN')
+    expect(useAuthStore.getState().cms).toBeNull()
   })
 
   it('ofrece "recordarme" y manda contexto hermanos en el cuerpo', async () => {
@@ -75,5 +77,18 @@ describe('LoginPage (acceso de hermanos)', () => {
     const cuerpo = JSON.parse(fetchMock.mock.calls[0][1].body as string)
     expect(cuerpo.recordarme).toBe(true)
     expect(cuerpo.contexto).toBe('hermanos')
+  })
+
+  it('quien ya tiene sesión de hermano no ve el formulario: directo al área', () => {
+    useAuthStore.setState({
+      status: 'listo',
+      cms: null,
+      hermano: { id: 5, email: 'h@cofradia.com', role: 'USER', perfiles: [], origen: 'hermanos' },
+    })
+
+    montar()
+
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/area-hermano')
+    expect(screen.queryByRole('button', { name: 'Entrar' })).not.toBeInTheDocument()
   })
 })

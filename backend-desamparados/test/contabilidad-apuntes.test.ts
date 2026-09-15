@@ -12,7 +12,7 @@ import { Role, TipoTransaccion } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { TransaccionService } from '../src/services/transaccion.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
@@ -88,7 +88,7 @@ async function pedir(rol: Rol, ruta: string, metodo = 'GET', cuerpo?: unknown) {
   const res = await fetch(`${baseUrl}/api/transacciones${ruta}`, {
     method: metodo,
     headers: {
-      Cookie: `${COOKIE_SESION}=${generateToken(usuarios[rol]!, rol)}`,
+      Cookie: `${COOKIE_CMS}=${generateToken(usuarios[rol]!, rol)}`,
       ...(cuerpo !== undefined ? { 'Content-Type': 'application/json' } : {}),
     },
     body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,

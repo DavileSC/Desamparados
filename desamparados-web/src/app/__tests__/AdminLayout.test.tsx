@@ -10,14 +10,15 @@ import { CLAVE_TEMA_CMS } from '../temaCms'
 
 function entrarComo(role: string) {
   useAuthStore.setState({
-    status: 'autenticado',
-    user: { id: 1, email: 'prueba@ejemplo.es', role, perfiles: [] },
+    status: 'listo',
+    cms: { id: 1, email: 'prueba@ejemplo.es', role, perfiles: [], origen: 'cms' },
+    hermano: null,
   })
 }
 
 describe('AdminLayout', () => {
   beforeEach(() => {
-    useAuthStore.setState({ status: 'cargando', user: null })
+    useAuthStore.setState({ status: 'cargando', cms: null, hermano: null })
   })
 
   it('el Hermano Mayor ve tesorería y contabilidad', () => {
@@ -51,6 +52,25 @@ describe('AdminLayout', () => {
     expect(estilo.height).toBe('100vh')
   })
 
+  it('el menú conserva su fondo cuando es más alto que la ventana', () => {
+    // Con el menú desbordado, `barra` medía 100vh y su contenido seguía más
+    // abajo: el fondo oscuro se acababa y asomaba el de la página. Invisible
+    // en tema oscuro, evidente en claro, donde el menú parecía borrarse.
+    entrarComo('ADMIN')
+    const { container } = renderWithProviders(<AdminLayout />)
+    const aside = container.querySelector('aside')!
+    const barra = aside.firstElementChild as HTMLElement
+
+    // El fondo vive en el contenedor que hace scroll, no solo en el hijo.
+    expect(getComputedStyle(aside).backgroundColor).toBe(getComputedStyle(barra).backgroundColor)
+    expect(getComputedStyle(aside).backgroundColor).not.toBe('')
+    expect(getComputedStyle(aside).backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
+
+    // Y el hijo crece con su contenido en lugar de quedarse clavado a la ventana.
+    expect(getComputedStyle(barra).minHeight).toBe('100%')
+    expect(getComputedStyle(barra).height).not.toBe('100%')
+  })
+
   it('no lleva cabecera superior con el nombre del Grupo Parroquial', () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<AdminLayout />)
@@ -75,7 +95,6 @@ const PANEL_MINIMO = {
     noticias: { publicadas: 4, borradores: 2 },
     publicaciones: { total: 7, ultima: null },
     reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
-    registro: [],
   },
 }
 

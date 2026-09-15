@@ -35,7 +35,7 @@ function montar(rutas: Parameters<typeof createMemoryRouter>[0], inicial = '/cms
 }
 
 beforeEach(() => {
-  useAuthStore.setState({ status: 'invitado', user: null })
+  useAuthStore.setState({ status: 'listo', cms: null, hermano: null })
 })
 
 afterEach(() => { vi.unstubAllGlobals() })
@@ -78,7 +78,7 @@ describe('CmsLoginPage', () => {
 
     // El aviso propio, con el enlace a su acceso.
     expect(await screen.findByRole('link', { name: /acceso del área de hermanos/i })).toBeInTheDocument()
-    expect(useAuthStore.getState().status).toBe('invitado')
+    expect(useAuthStore.getState().status).toBe('listo')
     // Ya no hay sesión que cerrar: cerrar sesión ahora revoca las de la cuenta
     // en todos sus dispositivos, y no se le puede cerrar la del móvil por equivocarse de acceso.
     const llamadas = fetchMock.mock.calls.map((c) => String(c[0]))
@@ -105,7 +105,7 @@ describe('CmsLoginPage', () => {
 
     // Se le expulsa con mensaje, no con un cambio de página.
     expect(await screen.findByText(/no pertenece al equipo del cms/i)).toBeInTheDocument()
-    expect(useAuthStore.getState().status).toBe('invitado')
+    expect(useAuthStore.getState().status).toBe('listo')
 
     // La sesión que el backend acaba de crear se cierra en el acto.
     const llamadas = fetchMock.mock.calls.map((c) => String(c[0]))
@@ -130,7 +130,7 @@ describe('CmsLoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     expect(await screen.findByText('panel del cms')).toBeInTheDocument()
-    expect(useAuthStore.getState().user?.role).toBe('SECRETARIA')
+    expect(useAuthStore.getState().cms?.role).toBe('SECRETARIA')
   })
 
   it('marca "recordarme" y envía contexto cms en el cuerpo del login', async () => {
@@ -150,7 +150,7 @@ describe('CmsLoginPage', () => {
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
-    await waitFor(() => expect(useAuthStore.getState().status).toBe('autenticado'))
+    await waitFor(() => expect(useAuthStore.getState().status).toBe('listo'))
     const cuerpo = JSON.parse(fetchMock.mock.calls[0][1].body as string)
     expect(cuerpo.recordarme).toBe(true)
     expect(cuerpo.contexto).toBe('cms')
@@ -158,8 +158,9 @@ describe('CmsLoginPage', () => {
 
   it('quien ya tiene sesión de staff no ve el formulario: directo al panel', () => {
     useAuthStore.setState({
-      status: 'autenticado',
-      user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms' },
+      status: 'listo',
+      cms: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms' },
+      hermano: null,
     })
 
     montar([
@@ -171,39 +172,11 @@ describe('CmsLoginPage', () => {
     expect(screen.queryByRole('button', { name: 'Entrar' })).not.toBeInTheDocument()
   })
 
-  // El panel manda al acceso a toda sesión que no nació en el CMS; si esta
-  // página la devolviera al panel por tener rol de staff, el navegador
-  // entraría en un bucle de redirecciones.
-  it('un cargo con sesión del área de hermanos ve el formulario, no vuelve al panel', () => {
-    useAuthStore.setState({
-      status: 'autenticado',
-      user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'hermanos' },
-    })
-
-    montar([
-      { path: '/cms/acceso', element: <CmsLoginPage /> },
-      { path: '/cms', element: <div>panel directo</div> },
-    ])
-
-    expect(screen.queryByText('panel directo')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
-    expect(screen.getByText(/tu sesión actual es la del área de hermanos/i)).toBeInTheDocument()
-  })
-
-  it('una sesión sin origen tampoco cuenta como del CMS', () => {
-    useAuthStore.setState({
-      status: 'autenticado',
-      user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [] },
-    })
-
-    montar([
-      { path: '/cms/acceso', element: <CmsLoginPage /> },
-      { path: '/cms', element: <div>panel directo</div> },
-    ])
-
-    expect(screen.queryByText('panel directo')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
-  })
+  // Antes «origen» distinguía, dentro de un único usuario compartido, si la
+  // sesión había nacido en el acceso de hermanos; con cookies separadas esa
+  // sesión ni siquiera llega a `cms`, así que esta pantalla no tiene nada que
+  // mirar: sin sesión del CMS, siempre se ve el formulario (ver el primer test
+  // de este describe, con el estado inicial de `beforeEach`).
 
   it('si el paso de la contraseña caducó, vuelve a pedirla en vez de seguir probando códigos', async () => {
     vi.stubGlobal('fetch', mockConEstados({
@@ -232,7 +205,7 @@ describe('CmsLoginPage', () => {
   // una del área de hermanos) sigue siendo buena y el estado no debe perderla.
   it('un testigo caducado no se lleva por delante la sesión del área de hermanos', async () => {
     const deHermanos = { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'hermanos' as const }
-    useAuthStore.setState({ status: 'autenticado', user: deHermanos })
+    useAuthStore.setState({ status: 'listo', cms: null, hermano: deHermanos })
     vi.stubGlobal('fetch', mockConEstados({
       '/auth/login': { cuerpo: { status: '2FA_NEEDED', message: 'Introduce el código de tu aplicación de autenticación.' } },
       '/auth/login/2fa': {
@@ -250,6 +223,6 @@ describe('CmsLoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Verificar' }))
 
     expect(await screen.findByText(/la verificación ha caducado/i)).toBeInTheDocument()
-    expect(useAuthStore.getState()).toMatchObject({ status: 'autenticado', user: deHermanos })
+    expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: null, hermano: deHermanos })
   })
 })

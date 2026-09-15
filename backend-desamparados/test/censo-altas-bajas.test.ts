@@ -15,7 +15,7 @@ import { Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
-import { COOKIE_SESION } from '../src/utils/cookies.js';
+import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { HermanoService } from '../src/services/hermano.service.js';
 import { esCuentaAnonimizada } from '../src/domain/cuenta-anonimizada.js';
@@ -86,7 +86,7 @@ const como = (usuario: { id: number }, rol: Role, ruta: string, init: RequestIni
   return fetch(`${baseUrl}${ruta}`, {
     ...resto,
     headers: {
-      Cookie: `${COOKIE_SESION}=${generateToken(usuario.id, rol)}`,
+      Cookie: `${COOKIE_CMS}=${generateToken(usuario.id, rol)}`,
       ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}),
     },
     body: json !== undefined ? JSON.stringify(json) : undefined,

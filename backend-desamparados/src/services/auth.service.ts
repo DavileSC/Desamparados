@@ -1,6 +1,7 @@
 import db from '../config/db';
 import { encrypt, verified } from '../utils/bcrypt.handle';
 import { generateToken, generatePending2FAToken, esStaff, corteDeSesiones } from '../utils/jwt.handle';
+import type { AreaSesion } from '../utils/cookies';
 import crypto from 'crypto';
 import { Prisma, Role } from '@prisma/client';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
@@ -562,16 +563,23 @@ export class AuthService {
   }
 
   /**
-   * Cierra todas las sesiones de la cuenta (logout). Mueve tokenValidAfter al
-   * instante actual: los tokens emitidos antes quedan revocados en todos los
-   * dispositivos, también el que se haya podido copiar de este navegador. El
-   * login siguiente sigue valiendo aunque caiga en el mismo segundo, porque el
-   * token lleva `emitidoMs` con milisegundos (ver middleware/session.ts).
+   * Cierra las sesiones de la cuenta. Con `area`, solo las de esa área: salir
+   * del portal del hermano no puede echar a nadie del CMS, ni al revés, porque
+   * son dos sesiones distintas de la misma persona.
+   *
+   * Sin `area`, corta las dos: es lo que hace falta cuando la cuenta entera
+   * deja de ser de fiar (cambio de contraseña, RGPD, degradación de rol).
    */
-  static async cerrarSesionesDe(userId: number) {
+  static async cerrarSesionesDe(userId: number, area?: AreaSesion) {
+    const corte = corteDeSesiones();
+    const data =
+      area === 'cms' ? { cmsValidoDesde: corte }
+      : area === 'hermanos' ? { hermanoValidoDesde: corte }
+      : { cmsValidoDesde: corte, hermanoValidoDesde: corte, tokenValidAfter: corte };
+
     // updateMany y no update: si la cuenta ya no existe no hay nada que cerrar,
     // y un P2025 convertiría el cierre de sesión en un 500.
-    await db.user.updateMany({ where: { id: userId }, data: { tokenValidAfter: corteDeSesiones() } });
+    await db.user.updateMany({ where: { id: userId }, data });
   }
 
   // =================================================================

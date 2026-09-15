@@ -17,17 +17,15 @@ import {
  * Solo `count`, `groupBy` y `aggregate`. Prohibido `findMany` sobre Hermano y
  * sobre User: el panel es informativo y no puede enseñar datos de personas.
  *
- * Tres excepciones, ninguna de las tres toca datos de una persona:
+ * Dos excepciones, ninguna de las dos toca datos de una persona:
  *   - Evento: son actos públicos.
  *   - CategoriaTransaccion: es un catálogo (id, nombre de la categoría
  *     contable, p. ej. "Donativos"), no un dato de un hermano ni de un
  *     usuario. Se necesita en `findMany` porque `groupBy` sobre Transaccion
  *     solo puede devolver el `categoriaId`, no el nombre.
- *   - AuditLog acotado a las acciones de contenido y agenda de la lista
- *     blanca, y seleccionando del usuario SOLO su `role`: el Inicio dice qué
- *     cargo hizo qué, nunca quién. Ni `detalles` ni `entityId` salen de aquí,
- *     así que no hay forma de que se cuele el nombre de nadie. El registro
- *     completo sigue en Auditoría, que solo ven ADMIN y HERMANO_MAYOR.
+ *
+ * El Inicio ya no consulta AuditLog: la auditoría es privada y vive en su
+ * propia sección, que solo ven ADMIN y HERMANO_MAYOR.
  */
 
 export interface PanelResponse {
@@ -63,8 +61,6 @@ export interface PanelResponse {
     noticias: { publicadas: number; borradores: number };
     publicaciones: { total: number; ultima: string | null };
     reparto: { turnosProximos: number; citasReservadas: number; capacidadEstimada: number };
-    /** Las cinco últimas acciones de contenido y agenda, por cargo y sin personas. */
-    registro: { accion: string; entityType: string | null; createdAt: string; cargo: string | null }[];
   };
 }
 
@@ -82,18 +78,6 @@ const TRAMOS_EDAD = [
   { tramo: '31-45', min: 31, max: 45 },
   { tramo: '46-60', min: 46, max: 60 },
   { tramo: '61+', min: 61, max: 200 },
-];
-
-/**
- * Acciones que puede ver toda la junta: las que tocan lo que se publica.
- * Cualquier acción sobre personas o dinero queda fuera a propósito.
- */
-const ACCIONES_DE_CONTENIDO = [
-  'NOTICIA_CREAR', 'NOTICIA_ACTUALIZAR', 'NOTICIA_ELIMINAR',
-  'PUBLICACION_CREAR', 'PUBLICACION_ACTUALIZAR', 'PUBLICACION_ELIMINAR',
-  'PAGINA_GUARDAR', 'PAGINA_ACTUALIZAR', 'PAGINA_ELIMINAR',
-  'PORTADA_ACTUALIZAR',
-  'EVENTO_CREAR', 'EVENTO_ACTUALIZAR', 'EVENTO_ELIMINAR',
 ];
 
 /**
@@ -181,7 +165,6 @@ export class PanelService {
       citasReservadas,
       capacidad,
       categorias,
-      registroContenido,
     ] = await Promise.all([
       db.hermano.count({ where: { activo: true } }),
       // Las solicitudes pendientes no son altas (ver whereAltasAprobadas).
@@ -260,18 +243,6 @@ export class PanelService {
       // Catálogo de categorías contables (excepción de la regla de oro: sin
       // datos personales). Hace falta el nombre, no solo el id que da groupBy.
       db.categoriaTransaccion.findMany({ select: { id: true, nombre: true } }),
-      db.auditLog.findMany({
-        where: { action: { in: ACCIONES_DE_CONTENIDO } },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: {
-          action: true,
-          entityType: true,
-          createdAt: true,
-          // Solo el cargo. `user` entero traería correo y nombre.
-          user: { select: { role: true } },
-        },
-      }),
     ]);
 
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
@@ -389,12 +360,6 @@ export class PanelService {
           citasReservadas,
           capacidadEstimada: capacidad._sum.capacidadEstimada ?? 0,
         },
-        registro: registroContenido.map((r) => ({
-          accion: r.action,
-          entityType: r.entityType,
-          createdAt: r.createdAt.toISOString(),
-          cargo: r.user?.role ?? null,
-        })),
       },
     };
   }

@@ -25,7 +25,6 @@ const respuesta = {
     noticias: { publicadas: 4, borradores: 2 },
     publicaciones: { total: 7, ultima: null },
     reparto: { turnosProximos: 3, citasReservadas: 118, capacidadEstimada: 300 },
-    registro: [{ accion: 'crear', entityType: 'Noticia', createdAt: '2026-08-28T10:00:00Z', cargo: 'Hermano Mayor' }],
   },
 }
 
@@ -45,7 +44,6 @@ describe('getPanel', () => {
     expect(panel.actividad.noticias.borradores).toBe(2)
     expect(panel.ejercicio.anio).toBe(2026)
     expect(panel.dinero.porCategoria[0].importe).toBe(150)
-    expect(panel.actividad.registro[0].cargo).toBe('Hermano Mayor')
   })
 
   it('sin año, pide el panel a secas', async () => {

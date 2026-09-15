@@ -3,9 +3,11 @@ import { AuthService, CuentaSinCmsError, Testigo2FACaducadoError } from '../serv
 import { handleHttp } from '../utils/error.handle';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
 import { AuditService } from '../services/audit.service';
-import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookiesAuth, COOKIE_2FA, COOKIE_SESION } from '../utils/cookies';
+import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookieSesion, limpiarCookiesAuth, COOKIE_2FA } from '../utils/cookies';
+import type { AreaSesion } from '../utils/cookies';
 import { verifyToken } from '../utils/jwt.handle';
-import { validateSessionAgainstDb } from '../middleware/session';
+import type { AuthTokenPayload } from '../utils/jwt.handle';
+import { resolverSesiones } from '../middleware/session';
 
 export class AuthController {
 
@@ -45,7 +47,9 @@ export class AuthController {
       }
 
       // El token va en la cookie httpOnly, nunca en el cuerpo.
-      ponerCookieSesion(res, response.token, response.user.role, recordarme);
+      // Solo la cookie de SU área: entrar por un acceso no puede tirar la
+      // sesión del otro. Es el hallazgo que abrió esta fase.
+      ponerCookieSesion(res, contexto, response.token, response.user.role, recordarme);
       res.status(200).json({ status: 'OK', user: response.user });
 
     } catch (error) {
@@ -88,7 +92,10 @@ export class AuthController {
       });
 
       limpiarCookie2FA(res);
-      ponerCookieSesion(res, response.token, response.user.role, recordarme);
+      // El área sale del testigo del primer factor, nunca del cuerpo: si no,
+      // el segundo paso podría inventarse un origen 'cms' sin haber pasado
+      // por el acceso del CMS. Es la misma regla de arriba en `origen`.
+      ponerCookieSesion(res, origen, response.token, response.user.role, recordarme);
       res.status(200).json({ status: 'OK', user: response.user });
     } catch (error) {
       // Testigo ya gastado: fuera su cookie (solo esa, como arriba) y el mismo
@@ -184,39 +191,58 @@ export class AuthController {
   //  SESION ACTUAL Y CIERRE
   // =================================================================
 
+  /**
+   * Las sesiones abiertas de este navegador, una por área. Responde 200 aunque
+   * no haya ninguna: un visitante sin sesión es el caso normal de la web
+   * pública, y devolverle un 401 hacía que el arranque del frontend lo tratara
+   * como error y lo reintentara.
+   */
   static async me(req: Request, res: Response) {
     try {
-      const datos = await AuthService.perfilSesion(req.user!.id);
-      // El origen viene del propio JWT; la BD no lo guarda.
-      const user = { ...datos, origen: req.user!.origen };
-      res.status(200).json({ user });
+      const perfil = async (sesion: AuthTokenPayload | null) => {
+        if (!sesion) return null;
+        const datos = await AuthService.perfilSesion(sesion.id);
+        // El origen viene del propio JWT; la BD no lo guarda.
+        return { ...datos, origen: sesion.origen };
+      };
+
+      const [cms, hermano] = await Promise.all([perfil(req.sesiones.cms), perfil(req.sesiones.hermano)]);
+      res.status(200).json({ cms, hermano });
     } catch (error) {
       handleHttp(res, error, 'No se ha podido recuperar la sesión');
     }
   }
 
   /**
-   * Sin authenticateToken a proposito: una sesion ya caducada tambien tiene que
+   * Sin authenticateToken a propósito: una sesión ya caducada también tiene que
    * poder limpiar su cookie. Es idempotente.
    *
-   * Si la cookie es una sesión vigente, además se revocan en el servidor todas
-   * las de la cuenta. Borrar solo la cookie dejaba vivo el token: quien lo
-   * hubiera copiado seguía dentro sus 8 h (o 72 h con «Recordarme») aunque el
-   * usuario hubiera cerrado sesión en un equipo compartido.
+   * Cierra el área que se pida, y las dos si no se pide ninguna. Borrar solo la
+   * cookie dejaba vivo el token: quien lo hubiera copiado seguía dentro sus 8 h
+   * (o 72 h con «Recordarme») aunque se hubiera cerrado sesión en un equipo
+   * compartido. Por eso además se revoca en el servidor.
    */
   static async logout(req: Request, res: Response) {
+    const area: AreaSesion | undefined =
+      req.body?.area === 'cms' ? 'cms' : req.body?.area === 'hermanos' ? 'hermanos' : undefined;
+
     try {
-      const token = req.cookies?.[COOKIE_SESION];
-      const payload = token ? verifyToken(token, 'session') : null;
-      const vigente = payload ? await validateSessionAgainstDb(payload) : null;
-      if (vigente) await AuthService.cerrarSesionesDe(vigente.id);
+      await resolverSesiones(req, res, () => {});
+      const sesiones = area === 'cms' ? [req.sesiones.cms]
+        : area === 'hermanos' ? [req.sesiones.hermano]
+        : [req.sesiones.cms, req.sesiones.hermano];
+      for (const sesion of sesiones) {
+        if (sesion) await AuthService.cerrarSesionesDe(sesion.id, area);
+      }
     } catch (error) {
       // La cookie se borra igual: el cierre en el navegador no puede depender
       // de la base de datos. Queda en el log para que se sepa que el token no
       // se revocó.
       console.error('[Logout] No se pudo revocar la sesión en el servidor:', error);
     }
-    limpiarCookiesAuth(res);
+
+    if (area) limpiarCookieSesion(res, area);
+    else limpiarCookiesAuth(res);
     res.status(204).end();
   }
 
@@ -240,7 +266,17 @@ export class AuthController {
     try {
       const userId = req.user!.id;
       const { password } = req.body;
-      const result = await AuthService.deleteOwnAccount(userId, password, req.user!.origen, AuditService.metaFromReq(req));
+      // El área efectiva se saca de req.sesiones y no de req.user.origen: la
+      // tarea 4 dejó req.user por defecto como hermano ?? cms, así que un
+      // cargo con las dos cookies abiertas (esta ruta no lleva checkRole,
+      // porque también la usan los hermanos) mandaba origen 'hermanos' al
+      // servicio aunque tuviera sesión de CMS válida, y el borrado RGPD de su
+      // propia cuenta de staff salía rechazado por error. Mirar si hay sesión
+      // de CMS DE ESTE MISMO usuario es la misma garantía de antes ("esta
+      // persona tiene sesión de CMS en este navegador"), ni más permisiva ni
+      // más estricta.
+      const origen: 'cms' | 'hermanos' = req.sesiones.cms?.id === userId ? 'cms' : 'hermanos';
+      const result = await AuthService.deleteOwnAccount(userId, password, origen, AuditService.metaFromReq(req));
       res.status(200).json(result);
     } catch (error) {
       handleHttp(res, error, 'Error eliminando la cuenta');

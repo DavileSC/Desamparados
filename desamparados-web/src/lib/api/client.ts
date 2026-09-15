@@ -8,8 +8,9 @@ import { useAuthStore } from '../../features/members/auth/store'
  *   de sesión es SameSite=Strict y el navegador no la mandaría a otro origen.
  * - La sesión viaja en una cookie httpOnly que el navegador adjunta solo: aquí
  *   no se lee ni se guarda ningún token.
- * - Un 401 en una petición que esperaba sesión significa que ha caducado o se
- *   ha revocado: se limpia el estado local.
+ * - Un 401 en una petición que esperaba sesión significa que una de las dos
+ *   sesiones (CMS o hermanos) ha caducado o se ha revocado: se vuelve a
+ *   preguntar al servidor y se actualiza el estado local con lo que quede.
  */
 const BASE_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '')
 
@@ -74,37 +75,29 @@ function mensajeDeError(payload: unknown): string | null {
 }
 
 /**
- * El 403 del backend cuando la cookie ya no es una sesión del CMS. Pasa si en
- * otra pestaña se entra por el área de hermanos: la cookie es la misma y se
- * sustituye, y el CMS abierto empezaba a dar «no tienes permisos» en cada
- * pantalla sin explicación. Los 403 de permisos no llevan este código.
+ * El 403 del backend cuando la petición llega al CMS con una cookie que no es
+ * la suya (por ejemplo, la del área de hermanos). Con cookies separadas por
+ * área, ninguna pestaña puede pisarle la sesión a otra: este código ya no dice
+ * «te han sustituido la cookie», sino «has llegado al CMS sin haber entrado
+ * por su acceso».
  */
 export const SESION_NO_CMS = 'SESION_NO_CMS'
 
-let reconsultandoSesion: Promise<void> | null = null
+let refrescando: Promise<void> | null = null
 
-/**
- * Sesión perdida para el CMS: se vacía el estado (los guardas esperan en
- * `cargando`) y se pregunta al servidor quién es ahora la cookie. Con la
- * sesión de hermanos que la ha sustituido, el guarda del CMS lleva al acceso,
- * que ya explica que hay que identificarse allí; sin sesión, al acceso a secas.
- * Una sola consulta aunque fallen a la vez todas las peticiones de la pantalla.
- */
-function sesionPerdidaParaCms(): void {
-  if (reconsultandoSesion) return
-  useAuthStore.setState({ status: 'cargando', user: null })
-  // Import dinámico: auth.ts usa este cliente y uno estático sería circular.
-  reconsultandoSesion = import('./auth')
+/** Una sola consulta aunque fallen a la vez todas las peticiones de la pantalla. */
+function refrescarSesiones(): Promise<void> {
+  refrescando ??= import('./auth')
     .then(({ sesionActual }) => sesionActual())
-    .then(({ user }) => useAuthStore.getState().entrarSesion(user))
+    .then(({ cms, hermano }) => {
+      const { entrarSesion, salirSesion } = useAuthStore.getState()
+      salirSesion()
+      if (cms) entrarSesion('cms', cms)
+      if (hermano) entrarSesion('hermanos', hermano)
+    })
     .catch(() => useAuthStore.getState().salirSesion())
-    .finally(() => { reconsultandoSesion = null })
-}
-
-function codigoDeError(payload: unknown): string | undefined {
-  if (!payload || typeof payload !== 'object') return undefined
-  const { error } = payload as { error?: unknown }
-  return typeof error === 'string' ? error : undefined
+    .finally(() => { refrescando = null })
+  return refrescando
 }
 
 export async function apiFetch<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
@@ -139,10 +132,12 @@ export async function apiFetch<T>(path: string, options: ApiRequestOptions = {})
     // `auth: false` marca las peticiones para las que un 401 es normal (login,
     // y sobre todo el /me del arranque cuando el visitante es un invitado).
     if (res.status === 401 && auth) {
-      // Sesión caducada o revocada: limpiamos el estado local
-      useAuthStore.getState().salirSesion()
+      // Una de las dos sesiones ha caducado o se ha revocado, pero desde aquí
+      // no sabemos cuál: la petición no lleva el área. Preguntamos al servidor,
+      // que devuelve las dos, en vez de tirar las dos a ciegas y echar de la
+      // buena a quien seguía dentro.
+      void refrescarSesiones()
     }
-    if (res.status === 403 && codigoDeError(payload) === SESION_NO_CMS) sesionPerdidaParaCms()
     throw new ApiError(mensajeDeError(payload) ?? `Error ${res.status}`, res.status, payload)
   }
 

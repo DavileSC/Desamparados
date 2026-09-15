@@ -45,6 +45,7 @@ hermanoRouter.get('/admin/search', checkRole(rolesGestionCenso), validate(search
 // 2. Leer todo el censo (Paginado) y reordenar Censo (Debe ir antes de cualquier /admin/:id)
 hermanoRouter.get('/admin/all', checkRole(rolesGestionCenso), HermanoController.getAll);
 hermanoRouter.post('/admin/reordenar-censo', checkRole(rolesGestionCenso), HermanoController.reordenarCenso);
+hermanoRouter.post('/admin/cerrar-huecos-numero', checkRole(rolesGestionCenso), HermanoController.cerrarHuecosNumero);
 
 // 3. Gestión de Solicitudes
 hermanoRouter.get('/admin/solicitudes', checkRole(rolesGestionCenso), HermanoController.getSolicitudes);

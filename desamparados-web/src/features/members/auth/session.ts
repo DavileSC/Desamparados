@@ -9,9 +9,8 @@ import { useAuthStore, CLAVE_PERSISTENCIA_ANTIGUA } from './store'
  */
 export const ESPERAS_REINTENTO_MS = [1000, 3000, 8000]
 
-// Solo un 401 dice de verdad «no hay sesión». Un 429 del limitador, un 5xx o
-// un backend reiniciándose no dicen nada de la cookie, y tratarlos como
-// invitado mandaba al login a quien tenía la sesión intacta.
+// Solo un 401 decía «no hay sesión», pero /auth/me ya no devuelve 401 nunca:
+// solo quedan los fallos pasajeros que sí merecen reintento.
 const esPasajero = (error: unknown) =>
   !(error instanceof ApiError) || error.status === 429 || error.status >= 500
 
@@ -43,17 +42,24 @@ export function useCargarSesion(): void {
     localStorage.removeItem(CLAVE_PERSISTENCIA_ANTIGUA)
 
     preguntarSesion()
-      .then(({ user }) => useAuthStore.getState().entrarSesion(user))
+      .then(({ cms, hermano }) => {
+        const { entrarSesion, salirSesion } = useAuthStore.getState()
+        // `salirSesion` deja el estado en 'listo' aunque no haya ninguna: sin
+        // esto los guardas se quedarían esperando para siempre a un invitado.
+        salirSesion()
+        if (cms) entrarSesion('cms', cms)
+        if (hermano) entrarSesion('hermanos', hermano)
+      })
       .catch(() => useAuthStore.getState().salirSesion())
   }, [])
 }
 
-/** Cierra la sesión en el servidor (que borra la cookie) y luego en el cliente. */
-export async function cerrarSesion(): Promise<void> {
+/** Cierra la sesión de un área en el servidor (que borra su cookie) y luego en el cliente. */
+export async function cerrarSesion(area: 'cms' | 'hermanos'): Promise<void> {
   try {
-    await cerrarSesionApi()
+    await cerrarSesionApi(area)
   } catch {
     // Si el servidor no responde, al menos limpiamos el estado local.
   }
-  useAuthStore.getState().salirSesion()
+  useAuthStore.getState().salirSesion(area)
 }

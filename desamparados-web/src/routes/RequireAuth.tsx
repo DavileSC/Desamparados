@@ -8,13 +8,16 @@ interface RequireAuthProps {
 
 export default function RequireAuth({ children }: RequireAuthProps) {
   const status = useAuthStore((state) => state.status)
+  const hermano = useAuthStore((state) => state.hermano)
   const location = useLocation()
 
-  // Mientras no sepamos si hay sesión no podemos mandar a nadie al login:
+  // Mientras no sepamos qué sesiones hay no podemos mandar a nadie al login:
   // expulsaría a quien sí la tiene cada vez que recarga la página.
   if (status === 'cargando') return <PageLoader />
 
-  if (status !== 'autenticado') {
+  // Solo la sesión del área de hermanos abre el área de hermanos. Estar dentro
+  // del CMS no es estar dentro del portal: son dos accesos distintos.
+  if (!hermano) {
     return <Navigate to="/hermanos/acceso" state={{ from: location }} replace />
   }
 

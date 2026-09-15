@@ -1,5 +1,6 @@
 import { apiFetch } from './client'
 import type { AuthUser } from '../../features/members/auth/store'
+import { normalizarDni, normalizarTelefono } from '../validacion/identidad'
 
 /**
  * Respuesta de POST /auth/login y POST /auth/login/2fa.
@@ -43,10 +44,13 @@ export function register(data: {
       usuario: {
         email: data.email,
         password: data.password,
-        dni: data.dni,
+        // Normalizados aquí y no en el formulario: el servidor guarda nueve
+        // dígitos pelados y el DNI en mayúsculas sin separadores, y quien
+        // escribe «+34 600 12 34 56» está dando un teléfono correcto.
+        dni: normalizarDni(data.dni),
         nombre: data.nombre,
         apellidos: data.apellidos,
-        telefono: data.telefono,
+        telefono: normalizarTelefono(data.telefono),
         direccion: data.direccion,
         poblacion: data.poblacion,
         codigoPostal: data.codigoPostal,
@@ -83,11 +87,11 @@ export function resetPassword(token: string, newPassword: string) {
 }
 
 /**
- * Sesión actual. `auth: false` a propósito: para un invitado el 401 es la
- * respuesta normal y no debe tratarse como sesión caducada.
+ * Las sesiones abiertas, una por área. Responde 200 aunque no haya ninguna:
+ * para un visitante eso es lo normal, no un error.
  */
 export function sesionActual() {
-  return apiFetch<{ user: AuthUser }>('/auth/me', { auth: false })
+  return apiFetch<{ cms: AuthUser | null; hermano: AuthUser | null }>('/auth/me', { auth: false })
 }
 
 // ===================================================================
@@ -119,6 +123,7 @@ export function desactivar2FA(token2fa: string) {
   })
 }
 
-export function cerrarSesionApi() {
-  return apiFetch<null>('/auth/logout', { method: 'POST', auth: false })
+/** Cierra la sesión de un área. La del área contraria no se toca. */
+export function cerrarSesionApi(area: 'cms' | 'hermanos') {
+  return apiFetch<null>('/auth/logout', { method: 'POST', auth: false, json: { area } })
 }

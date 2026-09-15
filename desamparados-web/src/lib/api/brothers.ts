@@ -107,3 +107,13 @@ export function reactivarBrother(id: number) {
 export function emancipateBrother(id: number, payload: { newEmail: string; newDni?: string }) {
   return apiFetch<{ id: number; email: string; nombre: string }>(`/hermanos/admin/${id}/emancipar`, { method: 'POST', json: payload })
 }
+
+export interface CierreDeHuecos {
+  message: string
+  asignados: { id: number; numeroHermano: number }[]
+}
+
+/** Da número a los hermanos activos que no lo tienen, por antigüedad. No renumera a nadie. */
+export function cerrarHuecosDeNumero() {
+  return apiFetch<CierreDeHuecos>('/hermanos/admin/cerrar-huecos-numero', { method: 'POST' })
+}
