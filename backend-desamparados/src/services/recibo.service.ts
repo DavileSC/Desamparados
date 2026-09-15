@@ -238,6 +238,41 @@ export class ReciboService {
   // =================================================================
 
   /**
+   * Un recibo suelto de la familia del usuario, con el desglose que no cabe en
+   * la fila del listado (tipo, método de pago, las dos fechas).
+   *
+   * Dos cosas no son de estilo:
+   *
+   * - El `where` lleva el MISMO filtro de familia que el listado, no un
+   *   `findUnique` por id. Sin él, cambiar el número de la URL enseñaría el
+   *   recibo de cualquier otro hermano.
+   * - Los campos van por `select`, no por `include`: así `observaciones` —el
+   *   texto libre de Tesorería, con notas internas— no puede colarse por
+   *   descuido en la respuesta.
+   */
+  static async getReciboFamiliar(userId: number, id: number) {
+    const recibo = await db.recibo.findFirst({
+      where: { id, hermano: { userId, activo: true } },
+      select: {
+        id: true,
+        year: true,
+        concepto: true,
+        importe: true,
+        tipo: true,
+        estado: true,
+        fechaEmision: true,
+        fechaPago: true,
+        metodoPago: true,
+        hermano: { select: { nombre: true, apellidos: true, esTitular: true } }
+      }
+    });
+
+    // 404 y no 403: quien pregunta no tiene por qué saber si el recibo existe.
+    if (!recibo) throw new NotFoundError('Recibo no encontrado');
+    return recibo;
+  }
+
+  /**
    * Los recibos de toda la familia del usuario, en una sola lista plana.
    *
    * La unidad que se pagina es el RECIBO, que es lo que la pantalla enseña por

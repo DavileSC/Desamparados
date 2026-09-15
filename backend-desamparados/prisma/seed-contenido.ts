@@ -20,6 +20,7 @@ import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import db from '../src/config/db';
+import { porDefecto, SLUGS_CONTENIDO } from '../src/domain/contenido';
 
 /** Fecha relativa a hoy, en días, a las 20:00 salvo que se indique otra hora. */
 function enDias(dias: number, hora = 20, minutos = 0): Date {
@@ -546,12 +547,28 @@ export async function sembrarImagenesPortada() {
   console.log(`   ${IMAGENES_PORTADA.length} fotos de la portada`);
 }
 
+/**
+ * Deja las dos páginas con los textos de siempre. Idempotente y **sin `update`**:
+ * volver a sembrar no puede deshacer lo que alguien haya editado desde el CMS.
+ */
+export async function sembrarContenidoPaginas() {
+  for (const slug of SLUGS_CONTENIDO) {
+    await db.contenidoPagina.upsert({
+      where: { slug },
+      update: {},
+      create: { slug, datos: porDefecto(slug) as object },
+    });
+  }
+  console.log(`   ${SLUGS_CONTENIDO.length} páginas de contenido editable`);
+}
+
 export async function sembrarContenido() {
   console.log('Sembrando contenido de ejemplo (editable desde el CMS):');
   await sembrarNoticias();
   await sembrarEventos();
   await sembrarPublicaciones();
   await sembrarImagenesPortada();
+  await sembrarContenidoPaginas();
   await sembrarPaginas();
   await sembrarAlbaceria();
   await sembrarContabilidad();

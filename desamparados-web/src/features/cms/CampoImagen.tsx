@@ -27,6 +27,17 @@ interface CampoImagenProps {
   ayuda?: string
   /** Miniatura 16:9 en vez de 4:3, para fotos de cabecera. */
   apaisada?: boolean
+  /**
+   * No pinta el botón de quitar: la foto se puede cambiar, pero no dejar vacía.
+   *
+   * Para los campos que el backend exige rellenos. El `imagenUrl` del bloque del
+   * Sábado de Pasión es uno: `contenido.schema.ts` lo valida con
+   * `rutaImagenPublica`, que NO admite cadena vacía —al revés que el `plano.url`
+   * del recorrido, que la contempla a propósito—. Ofrecer ahí un «Quitar foto»
+   * deja el documento entero inguardable, también los textos de los otros cinco
+   * bloques, con un error de validación por toda explicación.
+   */
+  sinQuitar?: boolean
 }
 
 /** Sube una foto al servidor desde el CMS y entrega su ruta al formulario. */
@@ -38,6 +49,7 @@ export default function CampoImagen({
   // borra la foto anterior si nada más la usa (backend: utils/ficheros-publicos.ts).
   ayuda = 'JPG, PNG o WebP de hasta 5 MB. Se verá en la portada y en la ficha de la noticia. Al quitarla o cambiarla y guardar, la anterior se borra del servidor.',
   apaisada = false,
+  sinQuitar = false,
 }: CampoImagenProps) {
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,7 +101,7 @@ export default function CampoImagen({
             {subiendo ? 'Subiendo…' : valor ? 'Cambiar foto' : 'Subir foto'}
             <Box component="input" type="file" accept={TIPOS.join(',')} onChange={elegir} sx={inputOculto} />
           </Button>
-          {valor && (
+          {valor && !sinQuitar && (
             <Button color="error" startIcon={<DeleteOutlineIcon />} onClick={() => onCambio('')} disabled={subiendo}>
               Quitar foto
             </Button>

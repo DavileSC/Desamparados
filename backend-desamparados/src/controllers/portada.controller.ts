@@ -1,15 +1,24 @@
 import { Request, Response } from 'express';
 import { PortadaService } from '../services/portada.service.js';
+import { ContenidoService } from '../services/contenido.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
 
 export class PortadaController {
-  /** GET /api/portada/imagenes (pública: la lee la portada de la web). */
+  /**
+   * GET /api/portada (pública). Devuelve fotos y textos juntos porque el hero
+   * ya espera a esta llamada antes de pintar: así la portada entera no cuesta
+   * ni una petición más de las que ya hacía.
+   */
   static async listar(_req: Request, res: Response) {
     try {
-      res.status(200).json(await PortadaService.listarImagenes());
+      const [imagenes, textos] = await Promise.all([
+        PortadaService.listarImagenes(),
+        ContenidoService.leer('portada'),
+      ]);
+      res.status(200).json({ imagenes, textos });
     } catch (e) {
-      handleHttp(res, e, 'Error obteniendo las fotos de la portada');
+      handleHttp(res, e, 'Error obteniendo la portada');
     }
   }
 

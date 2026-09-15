@@ -1,12 +1,11 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { Box, Typography } from '@mui/material'
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import AppButton from '../../components/AppButton'
-import { getImagenesPortada } from '../../lib/api/portada'
 import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
+import { usePortada, useTextosPortada } from './useContenidoPortada'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
 const PARALLAX_X = 14
@@ -15,16 +14,19 @@ const PARALLAX_Y = 9
 export default function Hero() {
   const reduceMotion = useReducedMotion()
 
-  // Las fotos las decide el CMS. Hasta que llega la lista no se pinta ninguna:
-  // si se pintara la de siempre mientras tanto, cada visita empezaría con un
-  // fundido de la foto vieja a la nueva.
-  const { data, status } = useQuery({
-    queryKey: ['home', 'portada-imagenes'],
-    queryFn: getImagenesPortada,
-    retry: false,
-    staleTime: 5 * 60_000,
-  })
-  const imagenes = status === 'pending' ? null : data && data.length > 0 ? data : IMAGENES_POR_DEFECTO
+  // Los textos, por el hook que comparten los otros cinco bloques y no por una
+  // copia de su expresión: el único test de «la API falla y salen los textos de
+  // siempre» corre sobre el hook, y con la copia aquí este bloque —el que más
+  // se ve— se quedaba justo fuera de esa red.
+  const textos = useTextosPortada()
+
+  // Las fotos las decide el CMS, y para ellas hace falta el `status` de la
+  // consulta: hasta que llega la lista no se pinta ninguna, porque si se
+  // pintara la de siempre mientras tanto cada visita empezaría con un fundido
+  // de la foto vieja a la nueva. Llamar a las dos no cuesta otra petición:
+  // react-query deduplica por la clave, que es la misma.
+  const { data, status } = usePortada()
+  const imagenes = status === 'pending' ? null : data && data.imagenes.length > 0 ? data.imagenes : IMAGENES_POR_DEFECTO
   const total = imagenes?.length ?? 0
 
   // Fundidos hechos: la foto visible es `tick % total`. Con una sola foto no
@@ -159,7 +161,7 @@ export default function Hero() {
         }}
       >
         <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 10, md: 12 }, mb: 2 }}>
-          Grupo Parroquial · Málaga
+          {textos.hero.ceja}
         </Typography>
         <Typography
           id="hero-title"
@@ -174,7 +176,7 @@ export default function Hero() {
             textShadow: '0 2px 24px rgba(0,0,0,.2)',
           }}
         >
-          Desamparados Málaga
+          {textos.hero.titulo}
         </Typography>
         <Typography
           variant="body1"
@@ -186,15 +188,15 @@ export default function Hero() {
             fontSize: { xs: '16px', md: '18px' },
           }}
         >
-          Devoción, historia y patrimonio en el corazón de Málaga. Acompáñanos en nuestro solemne caminar.
+          {textos.hero.parrafo}
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
           <AppButton component={Link} to="/corporacion" endIcon={<ArrowForwardIcon fontSize="small" />} sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 11, md: 13 } }}>
-            Conoce el Grupo Parroquial
+            {textos.hero.botonPrincipal}
           </AppButton>
           {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta. */}
           <Box component={Link} to="/actualidad/agenda" sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, gap: 1, fontSize: 13, color: '#e4e2df', '&:hover': { color: 'white' } }}>
-            Agenda y cultos <ArrowForwardIcon sx={{ fontSize: 16 }} />
+            {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
           </Box>
         </Box>
       </Box>

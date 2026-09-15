@@ -15,10 +15,30 @@ interface ApiImagenPortada {
   orden: number
 }
 
-/** Fotos de la cabecera del inicio, en el orden en que rotan. Se leen sin sesión. */
-export async function getImagenesPortada(): Promise<ImagenPortada[]> {
-  const lista = await apiFetch<ApiImagenPortada[]>('/portada/imagenes')
-  return lista.map((imagen) => ({ id: imagen.id, url: imagen.url, descripcion: imagen.descripcion ?? '' }))
+export interface TextosPortada {
+  hero: { ceja: string; titulo: string; parrafo: string; botonPrincipal: string; enlaceSecundario: string }
+  actualidad: { ceja: string; titulo: string; enlace: string }
+  agenda: { ceja: string; titulo: string; parrafo: string; enlace: string; directoTitulo: string; directoTexto: string }
+  accesos: {
+    placa: { ceja: string; titulo: string; texto: string; boton: string }
+    teselas: { clave: string; titulo: string; descripcion: string }[]
+  }
+  sabadoDePasion: { ceja: string; titulo: string; parrafo: string; enlace: string; imagenUrl: string; imagenAlt: string }
+  publicaciones: { boton: string; marcaDeAgua: string }
+}
+
+export interface Portada {
+  imagenes: ImagenPortada[]
+  textos: TextosPortada
+}
+
+/** Fotos y textos de la portada, de una sola petición. Se leen sin sesión. */
+export async function getPortada(): Promise<Portada> {
+  const { imagenes, textos } = await apiFetch<{ imagenes: ApiImagenPortada[]; textos: TextosPortada }>('/portada')
+  return {
+    imagenes: imagenes.map((i) => ({ id: i.id, url: i.url, descripcion: i.descripcion ?? '' })),
+    textos,
+  }
 }
 
 /** Sustituye la lista entera: la posición en el array es el orden en la portada. */

@@ -19,6 +19,7 @@ import { publicationRoutes } from './routes/publication.routes.js';
 import { contactRoutes } from './routes/contact.routes.js';
 import { panelRoutes } from './routes/panel.routes.js';
 import { portadaRoutes } from './routes/portada.routes.js';
+import { contenidoRoutes } from './routes/contenido.routes.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
 import { notFoundHandler, globalErrorHandler } from './middleware/error.middleware'; // Manejo de errores global
@@ -151,6 +152,7 @@ app.use('/api/procesion', procesionRoutes); // Citas, papeletas y turnos
 app.use('/api/transacciones', transaccionRoutes); // Contabilidad
 app.use('/api/panel', panelRoutes);      // Panel del CMS
 app.use('/api/portada', portadaRoutes);  // Fotos de la cabecera del inicio
+app.use('/api/contenido', contenidoRoutes); // Textos editables de la portada y el recorrido
 
 // ==========================================
 // 4. MANEJO DE ERRORES GLOBAL

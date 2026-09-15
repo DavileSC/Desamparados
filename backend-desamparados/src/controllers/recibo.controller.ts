@@ -20,6 +20,16 @@ export class ReciboController {
     }
   }
 
+  static async getMyRecibo(req: Request, res: Response) {
+    try {
+      const userId = req.user!.id;
+      const recibo = await ReciboService.getReciboFamiliar(userId, Number(req.params.id));
+      res.status(200).json(recibo);
+    } catch (e) {
+      handleHttp(res, e, 'Error obteniendo el recibo');
+    }
+  }
+
   // =================================================================
   //  ZONA ADMIN / TESORERÍA
   // =================================================================

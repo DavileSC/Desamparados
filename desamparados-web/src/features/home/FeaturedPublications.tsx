@@ -6,6 +6,7 @@ import AnimatedSection, { Revela } from '../../components/AnimatedSection'
 import { getLatestPublications } from '../../lib/api/publications'
 import type { PublicationItem } from '../../types'
 import { useHomeData } from './useHomeData'
+import { useTextosPortada } from './useContenidoPortada'
 import HomeFeedback from './HomeFeedback'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 
@@ -165,6 +166,7 @@ function Ejemplares({ destacada, anteriores }: { destacada: PublicationItem; ant
 /** Publicaciones: bloque de tinta con la última publicación en 3D y el resto en lista. */
 export default function FeaturedPublications() {
   const { data: publications = [], isPending, isError, refetch } = useHomeData('publications', getLatestPublications)
+  const textos = useTextosPortada()
   const [destacada, ...resto] = publications
   const otras = resto.slice(0, 2)
 
@@ -199,7 +201,7 @@ export default function FeaturedPublications() {
           userSelect: 'none',
         }}
       >
-        DESAMPARADOS
+        {textos.publicaciones.marcaDeAgua}
       </Box>
       {/* El texto empieza donde acaba la marca de agua: con la página a 1440 px o menos,
           los 64 px de margen la dejarían debajo del título. */}
@@ -241,7 +243,7 @@ export default function FeaturedPublications() {
                     to="/publicaciones"
                     sx={{ ...boton, border: '1px solid rgba(255, 255, 255, 0.7)', color: '#fff', '&:hover': { borderColor: GOLD, color: GOLD } }}
                   >
-                    Archivo de publicaciones
+                    {textos.publicaciones.boton}
                   </Box>
                 </Box>
               </Revela>

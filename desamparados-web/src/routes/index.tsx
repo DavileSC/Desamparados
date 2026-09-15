@@ -40,6 +40,7 @@ const HazteHermanoPage = lazy(() => import('../features/members/public/HazteHerm
 const ContactPage = lazy(() => import('../features/contact/ContactPage'))
 const NotFoundPage = lazy(() => import('../features/notFound/NotFoundPage'))
 const PortadaAdminPage = lazy(() => import('../features/cms/PortadaAdminPage'))
+const RecorridoAdminPage = lazy(() => import('../features/cms/RecorridoAdminPage'))
 const NewsAdminPage = lazy(() => import('../features/cms/NewsAdminPage'))
 const PublicationsAdminPage = lazy(() => import('../features/cms/PublicationsAdminPage'))
 const AgendaAdminPage = lazy(() => import('../features/cms/AgendaAdminPage'))
@@ -73,6 +74,7 @@ const ProcessionPage = lazy(() => import('../features/brotherArea/procession/Pro
 const PapeletaPage = lazy(() => import('../features/brotherArea/procession/PapeletaPage'))
 const HistoricoPage = lazy(() => import('../features/brotherArea/procession/HistoricoPage'))
 const ReceiptsPage = lazy(() => import('../features/brotherArea/receipts/ReceiptsPage'))
+const ReceiptDetailPage = lazy(() => import('../features/brotherArea/receipts/ReceiptDetailPage'))
 
 function withSuspense(Component: React.ComponentType) {
   return (
@@ -171,6 +173,7 @@ const router = createBrowserRouter([
           { path: 'procesion/papeleta', element: withSuspense(PapeletaPage) },
           { path: 'procesion/historico', element: withSuspense(HistoricoPage) },
           { path: 'recibos', element: withSuspense(ReceiptsPage) },
+          { path: 'recibos/:id', element: withSuspense(ReceiptDetailPage) },
           { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
         ],
       },
@@ -185,6 +188,7 @@ const router = createBrowserRouter([
           { index: true, element: withSuspense(PanelPage) },
           { path: 'mi-seguridad', element: <RequireRole roles={rolesPorRutaCms['mi-seguridad']}>{withSuspense(MiSeguridadPage)}</RequireRole> },
           { path: 'portada', element: <RequireRole roles={rolesPorRutaCms.portada}>{withSuspense(PortadaAdminPage)}</RequireRole> },
+          { path: 'recorrido', element: <RequireRole roles={rolesPorRutaCms.recorrido}>{withSuspense(RecorridoAdminPage)}</RequireRole> },
           { path: 'noticias', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsAdminPage)}</RequireRole> },
           { path: 'noticias/:id/editar', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsEditPage)}</RequireRole> },
           { path: 'publicaciones', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationsAdminPage)}</RequireRole> },

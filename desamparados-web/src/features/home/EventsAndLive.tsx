@@ -8,6 +8,7 @@ import PageContainer from '../../components/PageContainer'
 import AnimatedSection, { Revela } from '../../components/AnimatedSection'
 import { getEventosCalendario, type EventoCalendario } from '../../lib/api/events'
 import { site } from '../../config/site'
+import { useTextosPortada } from './useContenidoPortada'
 import HomeFeedback from './HomeFeedback'
 import MiniCalendar from './MiniCalendar'
 import AgendaList from './AgendaList'
@@ -17,7 +18,7 @@ import { GOLD, PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
 // El tope por página del servidor: sobra para dos meses de actos.
 const ACTOS_POR_VENTANA = 100
 
-function AvisoDirecto({ url }: { url: string }) {
+function AvisoDirecto({ url, titulo, texto }: { url: string; titulo: string; texto: string }) {
   return (
     <Box
       component="a"
@@ -45,10 +46,10 @@ function AvisoDirecto({ url }: { url: string }) {
       <PlayCircleIcon aria-hidden="true" sx={{ fontSize: 34, color: GOLD }} />
       <Box component="span">
         <Box component="span" className="directo-titulo" sx={{ display: 'block', fontFamily: SERIF, fontSize: 16, transition: 'color .3s ease' }}>
-          Ver en directo
+          {titulo}
         </Box>
         <Box component="span" sx={{ display: 'block', fontSize: 13, color: 'rgba(228, 226, 223, 0.7)' }}>
-          Retransmisión desde la sede <span className="home-visually-hidden">(nueva pestaña)</span>
+          {texto} <span className="home-visually-hidden">(nueva pestaña)</span>
         </Box>
       </Box>
     </Box>
@@ -87,6 +88,7 @@ function AlturaSostenida({ children, className, sx }: { children: ReactNode; cla
 }
 
 export default function EventsAndLive() {
+  const textos = useTextosPortada()
   const hoy = inicioDelDia(new Date())
   const [mesElegido, setMesElegido] = useState<Date | null>(null)
   // undefined: nadie ha tocado nada y se abre el próximo acto; null: el visitante lo ha cerrado.
@@ -173,17 +175,21 @@ export default function EventsAndLive() {
       <PageContainer>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: { xs: 4, md: 7 }, alignItems: 'start' }}>
           <Revela>
-            <Typography component="span" sx={ceja}>Cultos</Typography>
+            <Typography component="span" sx={ceja}>{textos.agenda.ceja}</Typography>
             <Typography id="agenda-title" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
-              Agenda y Cultos
+              {textos.agenda.titulo}
             </Typography>
             <Typography sx={{ mt: 2.75, mb: 3.5, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df' }}>
-              La vida de oración del Grupo Parroquial a lo largo del año litúrgico: cultos, formación y convivencia.
+              {textos.agenda.parrafo}
             </Typography>
             <Box component={Link} to="/actualidad/agenda" sx={enlaceBloque}>
-              Calendario completo <ArrowForwardIcon />
+              {textos.agenda.enlace} <ArrowForwardIcon />
             </Box>
-            {stream && <Box sx={{ mt: 4 }}><AvisoDirecto url={stream} /></Box>}
+            {stream && (
+              <Box sx={{ mt: 4 }}>
+                <AvisoDirecto url={stream} titulo={textos.agenda.directoTitulo} texto={textos.agenda.directoTexto} />
+              </Box>
+            )}
           </Revela>
 
           <Revela orden={1}>

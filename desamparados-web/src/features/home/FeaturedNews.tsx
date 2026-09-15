@@ -6,6 +6,7 @@ import AnimatedSection, { Revela } from '../../components/AnimatedSection'
 import NewsCard from '../../components/NewsCard'
 import { getLatestNews } from '../../lib/api/news'
 import { useHomeData } from './useHomeData'
+import { useTextosPortada } from './useContenidoPortada'
 import HomeFeedback from './HomeFeedback'
 import { SERIF, ceja, enlaceBloque } from './estilos'
 
@@ -16,20 +17,21 @@ const fetchNews = () => getLatestNews(MAX_NOTICIAS)
 /** Actualidad: bloque oscuro con las tres últimas noticias en tarjetas claras. */
 export default function FeaturedNews() {
   const { data: news = [], isPending, isError, refetch } = useHomeData('news', fetchNews)
+  const textos = useTextosPortada()
 
   return (
     <AnimatedSection cascada id="actualidad" aria-labelledby="actualidad-titulo" sx={{ py: { xs: 8, md: 11 }, backgroundColor: '#262326' }}>
       <PageContainer>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, mb: { xs: 4, md: 5.5 } }}>
           <Revela>
-            <Typography component="span" sx={ceja}>Actualidad</Typography>
+            <Typography component="span" sx={ceja}>{textos.actualidad.ceja}</Typography>
             <Typography id="actualidad-titulo" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
-              Últimas noticias
+              {textos.actualidad.titulo}
             </Typography>
           </Revela>
           <Revela orden={1}>
             <Box component={Link} to="/actualidad/noticias" sx={enlaceBloque}>
-              Ver todas <span className="home-visually-hidden">las noticias</span> <ArrowForwardIcon />
+              {textos.actualidad.enlace} <span className="home-visually-hidden">las noticias</span> <ArrowForwardIcon />
             </Box>
           </Revela>
         </Box>
@@ -37,7 +39,7 @@ export default function FeaturedNews() {
         {news.length > 0 && (
           <Box
             component="ul"
-            aria-label="Últimas noticias"
+            aria-label={textos.actualidad.titulo}
             sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 3.25 } }}
           >
             {news.slice(0, MAX_NOTICIAS).map((noticia, i) => (

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import FeaturedNews from '../FeaturedNews'
+import { responderPortada, textosDePrueba } from './ayudas'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -69,5 +70,17 @@ describe('FeaturedNews', () => {
     const tonos = screen.getAllByTestId('placa-noticia').map(placa => placa.getAttribute('data-tono'))
     expect(tonos).toHaveLength(3)
     expect(new Set(tonos).size).toBe(3)
+  })
+
+  it('enseña la ceja, el título y el enlace que vienen del CMS', async () => {
+    const textos = textosDePrueba()
+    textos.actualidad = { ceja: 'Lo último', titulo: 'Novedades', enlace: 'Ver el archivo' }
+    responderPortada(textos)
+
+    renderWithProviders(<FeaturedNews />)
+
+    expect(await screen.findByText('Lo último')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Novedades' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /ver el archivo/i })).toBeInTheDocument()
   })
 })

@@ -5,6 +5,7 @@ import { renderWithProviders } from '../../../test/test-utils'
 import EventsAndLive from '../EventsAndLive'
 import { site } from '../../../config/site'
 import type { ApiEvent } from '../../../lib/api/events'
+import { responderPortada, textosDePrueba } from './ayudas'
 
 function evento(parcial: Partial<ApiEvent> & Pick<ApiEvent, 'id' | 'title' | 'startDate'>): ApiEvent {
   return { description: null, location: null, endDate: null, visibility: 'public', type: 'CULTO', ...parcial }
@@ -113,5 +114,29 @@ describe('EventsAndLive', () => {
     directo.urlAlternativa = 'https://www.youtube.com/live/ejemplo'
     renderWithProviders(<EventsAndLive />)
     expect(await screen.findByRole('link', { name: /ver en directo/i })).toHaveAttribute('href', 'https://www.youtube.com/live/ejemplo')
+  })
+
+  it('enseña los textos de la agenda y del aviso de directo que vienen del CMS', async () => {
+    const textos = textosDePrueba()
+    textos.agenda = {
+      ceja: 'Vida litúrgica',
+      titulo: 'Próximos cultos',
+      parrafo: 'Un párrafo distinto sobre la vida de oración.',
+      enlace: 'Ver toda la agenda',
+      directoTitulo: 'Síguelo ahora',
+      directoTexto: 'Emisión en directo desde la parroquia',
+    }
+    responderPortada(textos)
+    directo.urlAlternativa = 'https://www.youtube.com/live/ejemplo'
+
+    renderWithProviders(<EventsAndLive />)
+
+    expect(await screen.findByText('Vida litúrgica')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Próximos cultos' })).toBeInTheDocument()
+    expect(screen.getByText('Un párrafo distinto sobre la vida de oración.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /ver toda la agenda/i })).toBeInTheDocument()
+    const aviso = screen.getByRole('link', { name: /síguelo ahora/i })
+    expect(aviso).toHaveTextContent('Síguelo ahora')
+    expect(aviso).toHaveTextContent('Emisión en directo desde la parroquia')
   })
 })

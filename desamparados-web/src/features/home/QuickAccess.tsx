@@ -13,39 +13,37 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { site } from '../../config/site'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
+import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
+import type { TextosPortada } from '../../lib/api/portada'
 
+// Lo que NO se edita desde el CMS: qué teselas hay, su icono, su destino y su
+// orden. El documento solo pone título y descripción, casados por `clave`.
 interface Acceso {
+  clave: string
   icon: ReactNode
-  title: string
-  description: string
   href: string
 }
 
 // «Hazte hermano» abre el mosaico en su propia placa: captar hermanos es lo que
-// más importa de este bloque. El texto sale de la página de Hermanos.
-const HAZTE_HERMANO = {
-  href: '/hermanos/hazte-hermano',
-  ceja: 'Hazte hermano',
-  titulo: 'Forma parte de nuestra historia',
-  texto: 'Una comunidad de fe que vive la devoción a nuestra Sagrada Titular y trabaja por el bien común.',
-  boton: 'Quiero ser hermano',
-}
+// más importa de este bloque. El destino se queda en el código; el texto llega
+// por props desde el documento (`textos.accesos.placa`).
+const HAZTE_HERMANO = { href: '/hermanos/hazte-hermano' }
 
 // «Acceso de hermanos» no está aquí a propósito: el menú ya lo muestra siempre.
 // Tampoco la agenda ni el recorrido: tienen bloque propio en la portada, y los
 // accesos son para lo que no se ve en ella.
 const ACCESOS: Acceso[] = [
-  { icon: <ChurchOutlinedIcon fontSize="inherit" />, title: 'Nuestra sede', description: 'Parroquia de los Pasionistas', href: '/corporacion/parroquia-pasionistas' },
-  { icon: <VolunteerActivismOutlinedIcon fontSize="inherit" />, title: 'Caridad', description: 'Ayuda social y obra asistencial', href: '/corporacion/nuestros-fines/caridad' },
-  { icon: <HistoryEduOutlinedIcon fontSize="inherit" />, title: 'Historia', description: 'Orígenes y evolución del Grupo Parroquial', href: '/corporacion/historia' },
-  { icon: <ArticleOutlinedIcon fontSize="inherit" />, title: 'Boletines', description: 'Boletín informativo y anuarios', href: '/publicaciones/boletines' },
+  { clave: 'sede', icon: <ChurchOutlinedIcon fontSize="inherit" />, href: '/corporacion/parroquia-pasionistas' },
+  { clave: 'caridad', icon: <VolunteerActivismOutlinedIcon fontSize="inherit" />, href: '/corporacion/nuestros-fines/caridad' },
+  { clave: 'historia', icon: <HistoryEduOutlinedIcon fontSize="inherit" />, href: '/corporacion/historia' },
+  { clave: 'boletines', icon: <ArticleOutlinedIcon fontSize="inherit" />, href: '/publicaciones/boletines' },
 ]
 
-const CONTACTO: Acceso = { icon: <MailOutlinedIcon fontSize="inherit" />, title: 'Contacto', description: 'Estamos a tu disposición', href: '/contacto' }
+const CONTACTO: Acceso = { clave: 'contacto', icon: <MailOutlinedIcon fontSize="inherit" />, href: '/contacto' }
 
 const FONDO_TESELA = '#262326'
 
-function PlacaHazteHermano() {
+function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa'] }) {
   const id = useId()
 
   return (
@@ -90,21 +88,21 @@ function PlacaHazteHermano() {
         D
       </Box>
       <Typography component="span" id={`${id}-ceja`} sx={{ ...ceja, position: 'relative', color: '#f1d9d6' }}>
-        {HAZTE_HERMANO.ceja}
+        {placa.ceja}
       </Typography>
       <Typography
         component="span"
         id={`${id}-titulo`}
         sx={{ position: 'relative', display: 'block', maxWidth: 320, fontFamily: SERIF, fontSize: { xs: 30, md: 40 }, lineHeight: 1.1, letterSpacing: '-0.015em' }}
       >
-        {HAZTE_HERMANO.titulo}
+        {placa.titulo}
       </Typography>
       <Typography
         component="span"
         id={`${id}-texto`}
         sx={{ position: 'relative', display: 'block', maxWidth: 320, mt: { xs: 1.75, md: 2.5 }, mb: { xs: 3, md: 4 }, fontSize: { xs: 14, md: 15 }, lineHeight: 1.7, color: '#f3dedb' }}
       >
-        {HAZTE_HERMANO.texto}
+        {placa.texto}
       </Typography>
       <Box
         component="span"
@@ -132,14 +130,22 @@ function PlacaHazteHermano() {
           '& svg': { fontSize: 18, transition: 'transform .25s ease' },
         }}
       >
-        {HAZTE_HERMANO.boton} <ArrowForwardIcon aria-hidden="true" />
+        {placa.boton} <ArrowForwardIcon aria-hidden="true" />
       </Box>
     </Box>
   )
 }
 
+interface TeselaProps {
+  icon: ReactNode
+  title: string
+  description: string
+  href: string
+  ancha: boolean
+}
+
 /** Tesela del mosaico. La ancha ocupa una fila entera y cambia la flecha por «Escríbenos». */
-function Tesela({ icon, title, description, href, ancha }: Acceso & { ancha: boolean }) {
+function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
   const externo = href.startsWith('http')
 
   return (
@@ -215,10 +221,17 @@ function Tesela({ icon, title, description, href, ancha }: Acceso & { ancha: boo
 
 /** Accesos directos: mosaico sobre tinta con «Hazte hermano» destacado en granate. */
 export default function QuickAccess() {
+  const textos = useTextosPortada()
+  // El servidor ya mezcla, pero un documento viejo en caché podría no traer una
+  // tesela: se cae en el texto de siempre para no pintar una tesela en blanco.
+  const textoDe = (clave: string) =>
+    textos.accesos.teselas.find((t) => t.clave === clave)
+    ?? TEXTOS_POR_DEFECTO.accesos.teselas.find((t) => t.clave === clave)!
+
   const teselas: Acceso[] = [
     ...ACCESOS,
     ...(site.redes.youtube
-      ? [{ icon: <PlayCircleOutlinedIcon fontSize="inherit" />, title: 'Canal de YouTube', description: 'Vídeos y retransmisiones', href: site.redes.youtube }]
+      ? [{ clave: 'youtube', icon: <PlayCircleOutlinedIcon fontSize="inherit" />, href: site.redes.youtube }]
       : []),
     CONTACTO,
   ]
@@ -253,10 +266,11 @@ export default function QuickAccess() {
           }}
         >
           <Revela as="li" sx={{ display: 'flex', gridColumn: { xs: '1 / -1', md: '1' }, gridRow: { md: `1 / span ${filas}` } }}>
-            <PlacaHazteHermano />
+            <PlacaHazteHermano placa={textos.accesos.placa} />
           </Revela>
           {teselas.map((acceso, i) => {
             const ancha = ultimaAncha && i === teselas.length - 1
+            const { titulo, descripcion } = textoDe(acceso.clave)
             return (
               <Revela
                 as="li"
@@ -264,7 +278,7 @@ export default function QuickAccess() {
                 orden={i + 1}
                 sx={{ display: 'flex', ...(ancha ? { gridColumn: { xs: '1 / -1', md: '2 / -1' } } : {}) }}
               >
-                <Tesela {...acceso} ancha={ancha} />
+                <Tesela icon={acceso.icon} href={acceso.href} title={titulo} description={descripcion} ancha={ancha} />
               </Revela>
             )
           })}

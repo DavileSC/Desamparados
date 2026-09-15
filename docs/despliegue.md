@@ -65,6 +65,14 @@ admite reglas de ciclo de vida o bloqueo de objetos: ver
 | `storage/public` | Fotos y PDF públicos subidos desde el CMS | nginx directamente, con `alias` |
 | MariaDB | Base de datos | Servicio propio, solo accesible desde la máquina |
 | ClamAV (`clamd`) | Antivirus para las subidas | Servicio propio en `127.0.0.1:3310` |
+| `shared/` | JSON que comparten la web y la API (textos por defecto de la portada y del recorrido, topes de longitud) | No se sirve: lo importa el proceso de la API en ejecución |
+
+**Al servidor se copia el repositorio entero, no solo `backend-desamparados/`.**
+`shared/` es dependencia de ejecución de la API —la importan
+`src/domain/contenido.ts` y `prisma/seed-contenido.ts`—, así que sin esa carpeta
+al lado el proceso no arranca. Aquí funciona porque todo cuelga de
+`/srv/desamparados`, pero conviene tenerlo escrito antes de que a alguien se le
+ocurra desplegar solo la carpeta de la API.
 
 La API **solo escucha en `127.0.0.1`** (variable `HOST`, que en producción vale
 eso por defecto). Con `NUM_PROXIES=1` Express se fía de la última entrada de

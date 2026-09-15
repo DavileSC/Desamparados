@@ -1,0 +1,70 @@
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
+import { renderWithProviders } from '../../../../test/test-utils'
+import RecorridoPage from '../RecorridoPage'
+import POR_DEFECTO from '../../../../../../shared/contenido-por-defecto.json'
+
+// Cada test estampa su propio fetch; sin esto, el mock de uno se colaría en el siguiente.
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+const responder = (recorrido: unknown) =>
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify(recorrido), { status: 200, headers: { 'Content-Type': 'application/json' } })),
+    ),
+  )
+
+describe('RecorridoPage', () => {
+  it('enseña las paradas que vienen del CMS', async () => {
+    responder({ ...POR_DEFECTO.recorrido, paradas: [{ hora: '18:15', lugar: 'Plaza nueva' }] })
+    renderWithProviders(<RecorridoPage />)
+
+    expect(await screen.findByText('Plaza nueva')).toBeInTheDocument()
+    expect(screen.getByText('18:15')).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('enseña el plano cuando lo hay', async () => {
+    responder({
+      ...POR_DEFECTO.recorrido,
+      plano: { url: '/storage/public/ab12cd34ef56ab78cd90ef12ab34cd56.webp', alt: 'Plano del recorrido' },
+    })
+    renderWithProviders(<RecorridoPage />)
+
+    expect(await screen.findByRole('img', { name: 'Plano del recorrido' })).toBeInTheDocument()
+    expect(screen.getByText('Plaza de la Marina')).toBeInTheDocument()
+  })
+
+  it('sin paradas no pinta ni la rejilla ni su título', async () => {
+    responder({ ...POR_DEFECTO.recorrido, paradas: [] })
+    renderWithProviders(<RecorridoPage />)
+
+    expect(await screen.findByRole('heading', { name: 'Recorrido' })).toBeInTheDocument()
+    // El título del encabezado no cambia entre el itinerario de siempre y la
+    // respuesta del CMS, así que ya está en pantalla antes de que la petición
+    // resuelva: esperar por él no basta para saber que las paradas ya han
+    // llegado. `waitFor` sí espera a que React aplique esa actualización.
+    await waitFor(() => {
+      expect(screen.queryByText('Itinerario y horarios aproximados')).not.toBeInTheDocument()
+    })
+  })
+
+  it('sin plano ni paradas quedan la cabecera y la introducción', async () => {
+    responder({ ...POR_DEFECTO.recorrido, paradas: [], plano: { url: '', alt: '' } })
+    renderWithProviders(<RecorridoPage />)
+
+    expect(await screen.findByRole('heading', { name: 'Recorrido' })).toBeInTheDocument()
+    expect(screen.getByText(/El itinerario de la procesión/)).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('si la API falla, enseña el itinerario de siempre', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red')))
+    renderWithProviders(<RecorridoPage />)
+
+    expect(await screen.findByText('Salida desde la Parroquia de los Desamparados')).toBeInTheDocument()
+  })
+})

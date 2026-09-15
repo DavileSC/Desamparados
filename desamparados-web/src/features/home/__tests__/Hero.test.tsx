@@ -3,6 +3,7 @@ import { act, screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import Hero from '../Hero'
 import { IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS } from '../heroImagenes'
+import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -12,6 +13,11 @@ afterEach(() => {
 const respuesta = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
+const respuestaPortada = (textos: unknown) => vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
+  Promise.resolve(new Response(JSON.stringify({ imagenes: [], textos }), {
+    status: 200, headers: { 'Content-Type': 'application/json' },
+  }))))
+
 const FOTOS = [
   { id: 1, url: '/storage/public/primera.webp', descripcion: 'Primera foto', orden: 0 },
   { id: 2, url: '/storage/public/segunda.webp', descripcion: 'Segunda foto', orden: 1 },
@@ -19,7 +25,7 @@ const FOTOS = [
 
 describe('Hero', () => {
   it('ofrece la agenda como segunda acción, no las noticias que ya vienen justo debajo', () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta([])))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
     renderWithProviders(<Hero />)
 
     expect(screen.getByRole('link', { name: /conoce el grupo parroquial/i })).toHaveAttribute('href', '/corporacion')
@@ -29,7 +35,7 @@ describe('Hero', () => {
 
   it('rota las fotos del CMS: la siguiente ya está montada y pasa a ser la visible al cumplirse el intervalo', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta(FOTOS)))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: FOTOS })))
     renderWithProviders(<Hero />)
 
     // La primera es la visible: accesible por su nombre y con la prioridad de carga alta.
@@ -51,7 +57,7 @@ describe('Hero', () => {
 
   it('con una sola foto no hay rotación', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta([FOTOS[0]])))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [FOTOS[0]] })))
     renderWithProviders(<Hero />)
 
     await screen.findByRole('img', { name: 'Primera foto' })
@@ -61,7 +67,7 @@ describe('Hero', () => {
   })
 
   it('sin fotos en el CMS, o sin API, enseña la de siempre', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta([])))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
     const { unmount } = renderWithProviders(<Hero />)
     expect(await screen.findByRole('img', { name: IMAGENES_POR_DEFECTO[0].descripcion })).toHaveAttribute('src', IMAGENES_POR_DEFECTO[0].url)
     unmount()
@@ -77,5 +83,26 @@ describe('Hero', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
     renderWithProviders(<Hero />)
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('enseña los textos que llegan del servidor', async () => {
+    const textos = structuredClone(POR_DEFECTO.portada)
+    textos.hero.titulo = 'Desamparados de Málaga'
+    textos.hero.parrafo = 'Un párrafo distinto.'
+    respuestaPortada(textos)
+
+    renderWithProviders(<Hero />)
+
+    expect(await screen.findByRole('heading', { name: 'Desamparados de Málaga', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText('Un párrafo distinto.')).toBeInTheDocument()
+  })
+
+  it('si la API falla, enseña los textos de siempre en vez de un hueco', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red')))
+
+    renderWithProviders(<Hero />)
+
+    expect(await screen.findByRole('heading', { name: 'Desamparados Málaga', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText(/Devoción, historia y patrimonio/)).toBeInTheDocument()
   })
 })
