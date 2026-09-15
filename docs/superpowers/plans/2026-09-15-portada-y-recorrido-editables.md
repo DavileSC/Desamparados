@@ -354,18 +354,25 @@ test('sembrar dos veces no pisa lo que se haya editado', async (t) => {
 
   await sembrarContenidoPaginas();
   const antes = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
-  await db.contenidoPagina.update({
-    where: { slug: 'portada' },
-    data: { datos: { ...(antes!.datos as object), hero: { titulo: 'Editado a mano' } } },
-  });
 
-  await sembrarContenidoPaginas();
+  // La restauración va en `finally`, no al final del camino feliz. La batería
+  // corre EN SERIE compartiendo la base de datos: si este test lanzara a mitad,
+  // la fila se quedaría con la portada rota (el `hero` reducido a su título)
+  // para todos los ficheros que vengan después. Es la trampa de
+  // `notas-del-proyecto.md` §6, y el patrón bueno está en `contenido-cms.test.ts`.
+  try {
+    await db.contenidoPagina.update({
+      where: { slug: 'portada' },
+      data: { datos: { ...(antes!.datos as object), hero: { titulo: 'Editado a mano' } } },
+    });
 
-  const despues = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
-  assert.equal((despues!.datos as any).hero.titulo, 'Editado a mano', 'la siembra no puede deshacer una edición');
+    await sembrarContenidoPaginas();
 
-  // Se deja como estaba para no ensuciar la base de desarrollo.
-  await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
+    const despues = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
+    assert.equal((despues!.datos as any).hero.titulo, 'Editado a mano', 'la siembra no puede deshacer una edición');
+  } finally {
+    await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
+  }
 });
 ```
 
