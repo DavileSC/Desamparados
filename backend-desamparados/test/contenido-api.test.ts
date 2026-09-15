@@ -97,6 +97,30 @@ test('un campo que falta en la fila sale del valor por defecto', async (t) => {
   }
 });
 
+test('sin fila en la base, la portada responde 200 con los textos de siempre', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
+  try {
+    // Simula una base recién creada o una siembra que no ha corrido: no hay
+    // fila para 'portada'. `ContenidoService.leer` es la red de seguridad de
+    // la web pública para este caso, y hasta ahora solo estaba comprobada
+    // leyendo el código.
+    await db.contenidoPagina.delete({ where: { slug: 'portada' } });
+
+    const respuesta = await fetch(`${baseUrl}/api/contenido/portada`);
+    assert.equal(respuesta.status, 200, 'sin fila la portada no puede quedarse en blanco (404) ni romperse (500)');
+
+    const datos = await respuesta.json() as any;
+    assert.equal(datos.hero.titulo, 'Desamparados Málaga', 'sin fila debe salir el texto por defecto, no un cuerpo vacío');
+  } finally {
+    // Se recrea con lo capturado ANTES de borrar, no resembrando: sembrar es
+    // un upsert con `update: {}` (no pisa lo editado), así que si la fila
+    // borrada aquí no existiera para la siembra ya no estaríamos ante los
+    // valores de por defecto sino ante los que tuviera 'antes'.
+    await db.contenidoPagina.create({ data: { slug: 'portada', datos: antes!.datos as object } });
+  }
+});
+
 test('un slug que no existe responde 404 y no crea fila', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
@@ -154,6 +178,11 @@ test('un documento mal formado responde 400 y NO escribe', async (t) => {
     const despues = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
     assert.deepEqual(despues!.datos, antes!.datos, 'un 400 no puede dejar la fila a medias');
   } finally {
+    // Si la aserción de arriba fallara —justo el caso que este test existe
+    // para cazar— la fila se quedaría con el documento roto: la batería corre
+    // en serie contra una base compartida y eso contaminaría todo lo que se
+    // ejecute después. Se restaura incondicionalmente, pase lo que pase arriba.
+    await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
     await borrarUsuarioPrueba(redes.id);
   }
 });
