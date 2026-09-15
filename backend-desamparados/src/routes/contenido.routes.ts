@@ -1,0 +1,40 @@
+import { Router } from 'express';
+import { Role } from '@prisma/client';
+import { ContenidoController } from '../controllers/contenido.controller.js';
+import { authenticateToken } from '../middleware/session.js';
+import { checkRole } from '../middleware/checkRole.js';
+import { validate } from '../config/validate.js';
+import { esSlugContenido } from '../domain/contenido.js';
+import { guardarContenidoSchema } from '../schemas/contenido.schema.js';
+
+const contenidoRoutes = Router();
+
+// Gestión de contenido, como la portada y las noticias.
+const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
+
+// La web la lee sin sesión.
+contenidoRoutes.get('/:slug', ContenidoController.leer);
+
+/**
+ * El esquema depende del slug, así que el `validate` se elige en tiempo de
+ * petición. El slug se comprueba ANTES de validar: con uno desconocido no hay
+ * esquema que aplicar, y responder 404 aquí evita que `guardarContenidoSchema`
+ * reciba un índice que no existe.
+ *
+ * Los middlewares van en línea y no colgados de un `.use()` porque esta ruta
+ * comparte camino con la pública de arriba: el orden de declaración manda, y un
+ * `.use(authenticateToken)` entre las dos cerraría también la lectura pública.
+ */
+contenidoRoutes.put(
+  '/:slug',
+  authenticateToken,
+  checkRole(rolesCMS),
+  (req, res, next) => {
+    const slug = req.params.slug;
+    if (!esSlugContenido(slug)) return res.status(404).json({ message: 'Página no encontrada' });
+    return validate(guardarContenidoSchema(slug))(req, res, next);
+  },
+  ContenidoController.guardar,
+);
+
+export { contenidoRoutes };
