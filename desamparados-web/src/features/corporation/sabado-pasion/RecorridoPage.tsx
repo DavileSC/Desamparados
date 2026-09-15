@@ -36,7 +36,7 @@ export default function RecorridoPage() {
             <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8, textAlign: 'center' }}>
               El itinerario de la procesión del Sábado de Pasión recorre algunas de las
               calles más emblemáticas de Málaga. Los horarios son orientativos y pueden
-              sufrir ligeras modificaciones en función del ritmo de la cofradía y de las
+              sufrir ligeras modificaciones en función del ritmo del cortejo y de las
               circunstancias del momento.
             </Typography>
           </Box>

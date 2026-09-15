@@ -1,15 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
-// `import ... with { type: 'json' }` era la vía natural aquí, pero rootDir en
-// tsconfig.json es «./src» y el fichero compartido vive fuera de ese árbol
-// (../../../shared/...): tsc lo rechaza con TS6059 al compilar, aunque tsx lo
-// ejecute sin queja. La misma alternativa que ya usa test/identidad-paridad.test.ts
-// —leer y parsear a mano— no depende de rootDir ni de que Node y tsc se pongan
-// de acuerdo sobre el import de JSON.
-const defectos = JSON.parse(
-  readFileSync(fileURLToPath(new URL('../../../shared/contenido-por-defecto.json', import.meta.url)), 'utf8')
-) as Record<string, unknown>;
+import defectos from '../../../shared/contenido-por-defecto.json' with { type: 'json' };
 
 export const SLUGS_CONTENIDO = ['portada', 'recorrido'] as const;
 export type SlugContenido = (typeof SLUGS_CONTENIDO)[number];
@@ -18,7 +7,8 @@ export const esSlugContenido = (valor: unknown): valor is SlugContenido =>
   typeof valor === 'string' && (SLUGS_CONTENIDO as readonly string[]).includes(valor);
 
 /** Copia nueva de los textos de siempre. Nunca se devuelve el objeto original. */
-export const porDefecto = (slug: SlugContenido): unknown => structuredClone(defectos[slug]);
+export const porDefecto = (slug: SlugContenido): unknown =>
+  structuredClone((defectos as Record<string, unknown>)[slug]);
 
 const esObjeto = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);

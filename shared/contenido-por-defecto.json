@@ -52,7 +52,7 @@
   "recorrido": {
     "titulo": "Recorrido",
     "subtitulo": "Itinerario oficial de la estación de penitencia.",
-    "introduccion": "El itinerario de la procesión del Sábado de Pasión recorre algunas de las calles más emblemáticas de Málaga. Los horarios son orientativos y pueden sufrir ligeras modificaciones en función del ritmo de la cofradía y de las circunstancias del momento.",
+    "introduccion": "El itinerario de la procesión del Sábado de Pasión recorre algunas de las calles más emblemáticas de Málaga. Los horarios son orientativos y pueden sufrir ligeras modificaciones en función del ritmo del cortejo y de las circunstancias del momento.",
     "tituloItinerario": "Itinerario y horarios aproximados",
     "plano": { "url": "", "alt": "" },
     "paradas": [
