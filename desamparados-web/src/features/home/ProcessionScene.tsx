@@ -4,6 +4,14 @@ import { useMediaQuery } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import { Revela } from '../../components/AnimatedSection'
+import { useTextosPortada } from './useContenidoPortada'
+
+// El srcset solo vale para la foto que viene en el repositorio, que existe en
+// cuatro tamaños. Una foto subida desde el CMS es un solo fichero: darle este
+// srcset pediría al navegador rutas que no existen.
+const FOTO_DEL_REPOSITORIO = '/images/nazarenos-1280.webp'
+const SRCSET_DEL_REPOSITORIO =
+  '/images/nazarenos-1200.webp 1200w, /images/nazarenos-1280.webp 1280w, /images/nazarenos-1600.webp 1600w, /images/nazarenos-1920.webp 1920w'
 
 export default function ProcessionScene() {
   const sectionRef = useRef<HTMLElement>(null)
@@ -15,6 +23,8 @@ export default function ProcessionScene() {
   })
   const distance = mobile ? 20 : 56
   const imageY = useTransform(scrollYProgress, [0, 1], [-distance, distance])
+  const { sabadoDePasion } = useTextosPortada()
+  const esLaDelRepositorio = sabadoDePasion.imagenUrl === FOTO_DEL_REPOSITORIO
 
   return (
     <section ref={sectionRef} className="procession-scene" aria-labelledby="procession-title">
@@ -23,24 +33,29 @@ export default function ProcessionScene() {
         style={{ y: reducedMotion ? 0 : imageY }}
       >
         {/* Nazarenos de capirote blanco en la avenida de Andalucía (Quino Al, Unsplash, licencia Unsplash).
-            Va recortada por la derecha: el original pixela caras del público a la izquierda. */}
+            Va recortada por la derecha: el original pixela caras del público a la izquierda.
+            Foto y alt editables desde el CMS; ver FOTO_DEL_REPOSITORIO arriba. */}
         <img
-          src="/images/nazarenos-1280.webp"
-          srcSet="/images/nazarenos-1200.webp 1200w, /images/nazarenos-1280.webp 1280w, /images/nazarenos-1600.webp 1600w, /images/nazarenos-1920.webp 1920w"
-          sizes="100vw"
-          alt="Nazarenos de capirote blanco durante la procesión"
+          src={sabadoDePasion.imagenUrl}
+          srcSet={esLaDelRepositorio ? SRCSET_DEL_REPOSITORIO : undefined}
+          sizes={esLaDelRepositorio ? '100vw' : undefined}
+          alt={sabadoDePasion.imagenAlt}
           loading="lazy"
           decoding="async"
         />
       </motion.div>
       <div className="procession-scene-shade" aria-hidden="true" />
       <div className="procession-scene-content">
-        <Revela><span className="procession-scene-eyebrow">Sábado de Pasión</span></Revela>
-        <Revela orden={1}><h2 id="procession-title">Una devoción que<br />camina con nosotros.</h2></Revela>
-        <Revela orden={2}><p>La fe compartida, el encuentro y la emoción de acompañar a Nuestra Señora por las calles de Málaga.</p></Revela>
+        <Revela><span className="procession-scene-eyebrow">{sabadoDePasion.ceja}</span></Revela>
+        <Revela orden={1}>
+          {/* Guardado como texto solo puede llevar un \n; pre-line es lo único que lo respeta
+              y conserva el corte a dos líneas que antes daba el <br /> a mano. */}
+          <h2 id="procession-title" style={{ whiteSpace: 'pre-line' }}>{sabadoDePasion.titulo}</h2>
+        </Revela>
+        <Revela orden={2}><p>{sabadoDePasion.parrafo}</p></Revela>
         <Revela orden={3}>
           <Link to="/corporacion/sabado-de-pasion" className="procession-scene-link">
-            Vive el Sábado de Pasión <ArrowForwardIcon fontSize="small" />
+            {sabadoDePasion.enlace} <ArrowForwardIcon fontSize="small" />
           </Link>
         </Revela>
       </div>
