@@ -7,6 +7,7 @@ import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
 import AnimatedSection from '../../../components/AnimatedSection'
 import AppButton from '../../../components/AppButton'
+import CampoContrasena from '../../../components/CampoContrasena'
 import { membershipSchema, type MembershipFormData } from './schema'
 import { register as apiRegister } from '../../../lib/api/auth'
 import { ApiError } from '../../../lib/api/client'
@@ -122,9 +123,8 @@ export default function HazteHermanoPage() {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
+                  <CampoContrasena
                     label="Contraseña"
-                    type="password"
                     fullWidth
                     error={!!errors.password}
                     helperText={errors.password?.message}

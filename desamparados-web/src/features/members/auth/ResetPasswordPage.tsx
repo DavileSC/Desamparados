@@ -6,6 +6,7 @@ import { Alert, Box, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
+import CampoContrasena from '../../../components/CampoContrasena'
 import { requestPasswordReset as apiRequestPasswordReset, resetPassword as apiResetPassword } from '../../../lib/api/auth'
 import { ApiError } from '../../../lib/api/client'
 import { requestPasswordResetSchema, resetPasswordSchema, type RequestPasswordResetFormData, type ResetPasswordFormData } from './schema'
@@ -75,8 +76,8 @@ export default function ResetPasswordPage() {
               Introduce una nueva contraseña para tu cuenta.
             </Typography>
             {submitError && <Alert severity="error">{submitError}</Alert>}
-            <TextField label="Nueva contraseña" type="password" autoComplete="new-password" fullWidth error={!!errors.password} helperText={errors.password?.message} {...register('password')} />
-            <TextField label="Confirmar contraseña" type="password" autoComplete="new-password" fullWidth error={!!errors.confirmation} helperText={errors.confirmation?.message} {...register('confirmation')} />
+            <CampoContrasena label="Nueva contraseña" autoComplete="new-password" fullWidth error={!!errors.password} helperText={errors.password?.message} {...register('password')} />
+            <CampoContrasena label="Confirmar contraseña" autoComplete="new-password" fullWidth error={!!errors.confirmation} helperText={errors.confirmation?.message} {...register('confirmation')} />
             <AppButton type="submit" fullWidth disabled={isSubmitting}>Actualizar contraseña</AppButton>
           </Box>
         )}

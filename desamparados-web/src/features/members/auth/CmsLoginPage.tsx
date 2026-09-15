@@ -7,6 +7,7 @@ import {
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { crearTemaCms } from '../../../theme/cms'
+import CampoContrasena from '../../../components/CampoContrasena'
 import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, cerrarSesionApi, type LoginResponse } from '../../../lib/api/auth'
@@ -208,9 +209,8 @@ export default function CmsLoginPage() {
                   {...credentialsForm.register('email')}
                 />
 
-                <TextField
+                <CampoContrasena
                   label="Contraseña"
-                  type="password"
                   autoComplete="current-password"
                   fullWidth
                   error={!!credentialsForm.formState.errors.password}

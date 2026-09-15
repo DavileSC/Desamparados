@@ -37,7 +37,7 @@ describe('LoginPage (acceso de hermanos)', () => {
     montar()
     const user = userEvent.setup()
     await user.type(screen.getByLabelText(/email/i), 'hermano@cofradia.com')
-    await user.type(screen.getByLabelText(/contraseña/i), 'Desamparados2026')
+    await user.type(screen.getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     expect(await screen.findByTestId('ruta')).toHaveTextContent('/area-hermano')
@@ -52,7 +52,7 @@ describe('LoginPage (acceso de hermanos)', () => {
     montar()
     const user = userEvent.setup()
     await user.type(screen.getByLabelText(/email/i), 'admin@cofradia.com')
-    await user.type(screen.getByLabelText(/contraseña/i), 'Desamparados2026')
+    await user.type(screen.getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     expect(await screen.findByTestId('ruta')).toHaveTextContent('/area-hermano')
@@ -69,7 +69,7 @@ describe('LoginPage (acceso de hermanos)', () => {
     montar()
     const user = userEvent.setup()
     await user.type(screen.getByLabelText(/email/i), 'hermano@cofradia.com')
-    await user.type(screen.getByLabelText(/contraseña/i), 'Desamparados2026')
+    await user.type(screen.getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 

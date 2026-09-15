@@ -55,7 +55,7 @@ function mockConEstados(rutas: Record<string, { cuerpo: unknown; status?: number
 async function escribirCredenciales(email = 'cuenta@cofradia.com') {
   const user = userEvent.setup()
   await user.type(screen.getByLabelText(/email/i), email)
-  await user.type(screen.getByLabelText(/contraseña/i), 'Desamparados2026')
+  await user.type(screen.getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
   await user.click(screen.getByRole('button', { name: 'Entrar' }))
   return user
 }
@@ -100,7 +100,7 @@ describe('CmsLoginPage', () => {
 
     const user = userEvent.setup()
     await user.type(screen.getByLabelText(/email/i), 'hermano@cofradia.com')
-    await user.type(screen.getByLabelText(/contraseña/i), 'Desamparados2026')
+    await user.type(screen.getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     // Se le expulsa con mensaje, no con un cambio de página.
@@ -126,7 +126,7 @@ describe('CmsLoginPage', () => {
 
     const user = userEvent.setup()
     await user.type(screen.getByLabelText(/email/i), 'secretaria@cofradia.com')
-    await user.type(screen.getByLabelText(/contraseña/i), 'Desamparados2026')
+    await user.type(screen.getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     expect(await screen.findByText('panel del cms')).toBeInTheDocument()
@@ -146,7 +146,7 @@ describe('CmsLoginPage', () => {
 
     const user = userEvent.setup()
     await user.type(screen.getByLabelText(/email/i), 'admin@cofradia.com')
-    await user.type(screen.getByLabelText(/contraseña/i), 'Desamparados2026')
+    await user.type(screen.getByLabelText(/contraseña/i, { selector: 'input' }), 'Desamparados2026')
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 

@@ -6,6 +6,7 @@ import { Box, Typography, TextField, Alert, Button, Checkbox, FormControlLabel }
 import { Helmet } from 'react-helmet-async'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
+import CampoContrasena from '../../../components/CampoContrasena'
 import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore } from './store'
 import { login as apiLogin, verify2FA, type LoginResponse } from '../../../lib/api/auth'
@@ -146,9 +147,8 @@ export default function LoginPage() {
                 {...credentialsForm.register('email')}
               />
 
-              <TextField
+              <CampoContrasena
                 label="Contraseña"
-                type="password"
                 autoComplete="current-password"
                 fullWidth
                 error={!!credentialsForm.formState.errors.password}
