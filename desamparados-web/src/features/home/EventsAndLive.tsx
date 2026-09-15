@@ -174,25 +174,32 @@ export default function EventsAndLive() {
       />
       <PageContainer>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: { xs: 4, md: 7 }, alignItems: 'start' }}>
-          <Revela>
-            <Typography component="span" sx={ceja}>{textos.agenda.ceja}</Typography>
-            <Typography id="agenda-title" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
-              {textos.agenda.titulo}
-            </Typography>
-            <Typography sx={{ mt: 2.75, mb: 3.5, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df' }}>
-              {textos.agenda.parrafo}
-            </Typography>
-            <Box component={Link} to="/actualidad/agenda" sx={enlaceBloque}>
-              {textos.agenda.enlace} <ArrowForwardIcon />
-            </Box>
-            {stream && (
-              <Box sx={{ mt: 4 }}>
-                <AvisoDirecto url={stream} titulo={textos.agenda.directoTitulo} texto={textos.agenda.directoTexto} />
+          <Box>
+            <Revela>
+              <Typography component="span" sx={ceja}>{textos.agenda.ceja}</Typography>
+            </Revela>
+            <Revela efecto="cortina" orden={1}>
+              <Typography id="agenda-title" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
+                {textos.agenda.titulo}
+              </Typography>
+            </Revela>
+            <Revela orden={2}>
+              <Typography sx={{ mt: 2.75, mb: 3.5, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df' }}>
+                {textos.agenda.parrafo}
+              </Typography>
+              <Box component={Link} to="/actualidad/agenda" sx={enlaceBloque}>
+                {textos.agenda.enlace} <ArrowForwardIcon />
               </Box>
-            )}
-          </Revela>
+              {stream && (
+                <Box sx={{ mt: 4 }}>
+                  <AvisoDirecto url={stream} titulo={textos.agenda.directoTitulo} texto={textos.agenda.directoTexto} />
+                </Box>
+              )}
+            </Revela>
+          </Box>
 
-          <Revela orden={1}>
+          {/* La tarjeta de papel es el objeto del bloque: crece al posarse. */}
+          <Revela efecto="crecer" orden={2}>
             {!proximo.isSuccess ? (
               <HomeFeedback loading={proximo.isPending} error={proximo.isError} empty={false} label="la agenda" emptyMessage="" retry={() => { void proximo.refetch() }} />
             ) : (

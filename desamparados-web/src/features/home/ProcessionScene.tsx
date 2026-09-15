@@ -4,7 +4,12 @@ import { useMediaQuery } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import { Revela } from '../../components/AnimatedSection'
+import { CURVA_ENTRADA } from '../../components/entrada'
 import { useTextosPortada } from './useContenidoPortada'
+
+// La foto entra posándose desde este zoom, y tarda esto en quedarse quieta.
+const ZOOM_DE_ENTRADA = 1.06
+const POSADO_S = 2.4
 
 // El srcset solo vale para la foto que viene en el repositorio, que existe en
 // cuatro tamaños. Una foto subida desde el CMS es un solo fichero: darle este
@@ -28,9 +33,15 @@ export default function ProcessionScene() {
 
   return (
     <section ref={sectionRef} className="procession-scene" aria-labelledby="procession-title">
+      {/* La foto se posa desde un zoom ligero la primera vez que entra en vista,
+          además del parallax de siempre al hacer scroll. */}
       <motion.div
         className="procession-scene-image"
         style={{ y: reducedMotion ? 0 : imageY }}
+        initial={reducedMotion ? false : { scale: ZOOM_DE_ENTRADA }}
+        whileInView={{ scale: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: POSADO_S, ease: CURVA_ENTRADA }}
       >
         {/* Nazarenos de capirote blanco en la avenida de Andalucía (Quino Al, Unsplash, licencia Unsplash).
             Va recortada por la derecha: el original pixela caras del público a la izquierda.
@@ -47,7 +58,7 @@ export default function ProcessionScene() {
       <div className="procession-scene-shade" aria-hidden="true" />
       <div className="procession-scene-content">
         <Revela><span className="procession-scene-eyebrow">{sabadoDePasion.ceja}</span></Revela>
-        <Revela orden={1}>
+        <Revela efecto="cortina" orden={1}>
           {/* Guardado como texto solo puede llevar un \n; pre-line es lo único que lo respeta
               y conserva el corte a dos líneas que antes daba el <br /> a mano. */}
           <h2 id="procession-title" style={{ whiteSpace: 'pre-line' }}>{sabadoDePasion.titulo}</h2>

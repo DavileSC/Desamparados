@@ -4,12 +4,19 @@ import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-moti
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import AppButton from '../../components/AppButton'
+import { Revela } from '../../components/AnimatedSection'
+import { CURVA_ENTRADA } from '../../components/entrada'
 import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
 import { usePortada, useTextosPortada } from './useContenidoPortada'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
 const PARALLAX_X = 14
 const PARALLAX_Y = 9
+// La primera foto entra posándose desde este zoom, y tarda esto en quedarse quieta.
+const ZOOM_DE_ENTRADA = 1.08
+const POSADO_S = 2.8
+// Los textos empiezan a entrar cuando la página ya se ha fundido (PageTransition, 0,35 s).
+const RETRASO_TEXTOS_S = 0.25
 
 export default function Hero() {
   const reduceMotion = useReducedMotion()
@@ -108,6 +115,10 @@ export default function Hero() {
           // no gastan red hasta que se acerca su turno.
           if (i > tick + 1) return null
           const activa = i === actual
+          // La primera foto, además de fundirse, se posa desde un zoom ligero: es
+          // la entrada de la página. Las demás solo se funden; un zoom en cada
+          // cambio de foto cansaría.
+          const sePosa = i === 0 && !reduceMotion
           return (
             <Box
               key={`${i}-${imagen.url}`}
@@ -117,12 +128,14 @@ export default function Hero() {
               aria-hidden={activa ? undefined : true}
               fetchPriority={i === 0 ? 'high' : undefined}
               decoding="async"
-              initial={{ opacity: 0 }}
+              initial={{ opacity: 0, ...(sePosa ? { scale: ZOOM_DE_ENTRADA } : {}) }}
               // La que entra se funde por encima; la que sale espera tapada a que
               // termine el fundido y se apaga de golpe. Si las dos se fundieran a
               // la vez, a mitad se vería el fondo oscuro a través de ambas.
-              animate={{ opacity: activa ? OPACIDAD_FOTO : 0 }}
-              transition={activa ? { duration: FUNDIDO_S, ease: 'easeInOut' } : { duration: 0, delay: FUNDIDO_S }}
+              animate={{ opacity: activa ? OPACIDAD_FOTO : 0, ...(sePosa ? { scale: 1 } : {}) }}
+              transition={activa
+                ? { opacity: { duration: FUNDIDO_S, ease: 'easeInOut' }, scale: { duration: POSADO_S, ease: CURVA_ENTRADA } }
+                : { duration: 0, delay: FUNDIDO_S }}
               sx={{
                 position: 'absolute',
                 inset: 0,
@@ -160,45 +173,55 @@ export default function Hero() {
           px: { xs: '20px', md: '40px', xl: '48px' },
         }}
       >
-        <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 10, md: 12 }, mb: 2 }}>
-          {textos.hero.ceja}
-        </Typography>
-        <Typography
-          id="hero-title"
-          variant="h1"
-          component="h1"
-          sx={{
-            color: 'text.primary',
-            mb: 2.5,
-            fontSize: { xs: '38px', sm: '50px', md: '64px' },
-            maxWidth: '780px',
-            textWrap: 'balance',
-            textShadow: '0 2px 24px rgba(0,0,0,.2)',
-          }}
-        >
-          {textos.hero.titulo}
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'text.secondary',
-            maxWidth: '510px',
-            ml: 'auto',
-            mb: 3.5,
-            fontSize: { xs: '16px', md: '18px' },
-          }}
-        >
-          {textos.hero.parrafo}
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
-          <AppButton component={Link} to="/corporacion" endIcon={<ArrowForwardIcon fontSize="small" />} sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 11, md: 13 } }}>
-            {textos.hero.botonPrincipal}
-          </AppButton>
-          {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta. */}
-          <Box component={Link} to="/actualidad/agenda" sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, gap: 1, fontSize: 13, color: '#e4e2df', '&:hover': { color: 'white' } }}>
-            {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
+        {/* Los textos entran en cascada nada más montarse (no al entrar en vista:
+            el hero ya está a la vista), con el título asomando por su cortina. */}
+        <Revela alMontar retraso={RETRASO_TEXTOS_S}>
+          <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 10, md: 12 }, mb: 2 }}>
+            {textos.hero.ceja}
+          </Typography>
+        </Revela>
+        <Revela alMontar efecto="cortina" retraso={RETRASO_TEXTOS_S} orden={1}>
+          <Typography
+            id="hero-title"
+            variant="h1"
+            component="h1"
+            sx={{
+              color: 'text.primary',
+              mb: 2.5,
+              fontSize: { xs: '38px', sm: '50px', md: '64px' },
+              maxWidth: '780px',
+              textWrap: 'balance',
+              textShadow: '0 2px 24px rgba(0,0,0,.2)',
+            }}
+          >
+            {textos.hero.titulo}
+          </Typography>
+        </Revela>
+        <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={2}>
+          <Typography
+            variant="body1"
+            sx={{
+              color: 'text.secondary',
+              maxWidth: '510px',
+              ml: 'auto',
+              mb: 3.5,
+              fontSize: { xs: '16px', md: '18px' },
+            }}
+          >
+            {textos.hero.parrafo}
+          </Typography>
+        </Revela>
+        <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
+            <AppButton component={Link} to="/corporacion" endIcon={<ArrowForwardIcon fontSize="small" />} sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 11, md: 13 } }}>
+              {textos.hero.botonPrincipal}
+            </AppButton>
+            {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta. */}
+            <Box component={Link} to="/actualidad/agenda" sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, gap: 1, fontSize: 13, color: '#e4e2df', '&:hover': { color: 'white' } }}>
+              {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
+            </Box>
           </Box>
-        </Box>
+        </Revela>
       </Box>
     </Box>
   )

@@ -24,6 +24,18 @@ const FOTOS = [
 ]
 
 describe('Hero', () => {
+  it('los textos entran nada más montarse: no esperan a que un observador los vea', () => {
+    // El hero ya está a la vista al cargar la página; si dependiera del
+    // IntersectionObserver, la coreografía arrancaría tarde o no arrancaría.
+    const observe = vi.spyOn(IntersectionObserver.prototype, 'observe')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
+    renderWithProviders(<Hero />)
+
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(observe).not.toHaveBeenCalled()
+    observe.mockRestore()
+  })
+
   it('ofrece la agenda como segunda acción, no las noticias que ya vienen justo debajo', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
     renderWithProviders(<Hero />)
