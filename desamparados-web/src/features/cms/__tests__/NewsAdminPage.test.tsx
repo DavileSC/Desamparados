@@ -18,6 +18,12 @@ function responder(items: unknown[]) {
 
 afterEach(() => { vi.unstubAllGlobals() })
 
+// Los dos tests que rellenan la ventana teclean carácter a carácter en dos
+// campos: en vacío tardan unos 2,3 s de los 5 que da vitest por defecto, y con
+// la batería entera en paralelo se pasan. Mismo tope que en
+// AccountingAdminPage, BrotherEditPage y PortadaAdminPage, por lo mismo.
+const RELLENAR_VENTANA_MS = 15_000
+
 describe('NewsAdminPage', () => {
   it('antes de borrar pregunta, y dice qué se va a borrar', async () => {
     // Hasta ahora era un window.confirm: no decía de qué noticia hablaba.
@@ -59,7 +65,7 @@ describe('NewsAdminPage', () => {
     expect(screen.queryByLabelText(/contenido html/i)).not.toBeInTheDocument()
   })
 
-  it('la ventana de nueva noticia la crea, se cierra y avisa', async () => {
+  it('la ventana de nueva noticia la crea, se cierra y avisa', { timeout: RELLENAR_VENTANA_MS }, async () => {
     const user = userEvent.setup()
     const simulado = vi.fn().mockImplementation((_url: string, init?: RequestInit) => Promise.resolve(new Response(
       JSON.stringify(init?.method === 'POST' ? { ...noticia, id: 8 } : { data: [noticia], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } }),
@@ -80,7 +86,7 @@ describe('NewsAdminPage', () => {
     expect(screen.getByText(/noticia creada correctamente/i)).toBeInTheDocument()
   })
 
-  it('si el servidor rechaza la noticia, la ventana sigue abierta con lo escrito y el motivo', async () => {
+  it('si el servidor rechaza la noticia, la ventana sigue abierta con lo escrito y el motivo', { timeout: RELLENAR_VENTANA_MS }, async () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init?: RequestInit) => Promise.resolve(new Response(
       JSON.stringify(init?.method === 'POST' ? { error: 'Ya existe una noticia con ese slug.' } : { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
