@@ -51,7 +51,7 @@ describe('TreasuryAdminPage', () => {
   })
 
   it('al entrar se ven los recibos; generar cuotas va en una ventana con el año que se está viendo', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', responder(3))
     renderWithProviders(<TreasuryAdminPage />)
 
@@ -68,7 +68,7 @@ describe('TreasuryAdminPage', () => {
   })
 
   it('cambiar de año vuelve a la primera página', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const fetchSimulado = responder(1167)
     vi.stubGlobal('fetch', fetchSimulado)
     renderWithProviders(<TreasuryAdminPage />, { ruta: '/cms/tesoreria?pagina=4' })
@@ -84,7 +84,7 @@ describe('TreasuryAdminPage', () => {
   })
 
   it('mientras se teclea el año no pide años a medias, que el servidor rechazaría', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const fetchSimulado = responder(3)
     vi.stubGlobal('fetch', fetchSimulado)
     renderWithProviders(<TreasuryAdminPage />)
@@ -103,7 +103,7 @@ describe('TreasuryAdminPage', () => {
   // completa corriendo en paralelo puede rozar el límite por defecto de 5 s
   // sin que haya nada roto, así que lleva su propio margen.
   it('«Nuevo recibo» abre una ventana, busca al hermano y emite el recibo con su importe con coma', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const simulado = servidor()
     vi.stubGlobal('fetch', simulado)
     renderWithProviders(<TreasuryAdminPage />)
@@ -137,7 +137,7 @@ describe('TreasuryAdminPage', () => {
   }, 15000)
 
   it('un importe negativo o con tres decimales no deja emitir y dice por qué', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', servidor())
     renderWithProviders(<TreasuryAdminPage />)
 
@@ -152,7 +152,7 @@ describe('TreasuryAdminPage', () => {
   })
 
   it('ofrece «Cobrar» en los pendientes y en los remesados, y el remesado se cobra por domiciliación', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const simulado = servidor([recibo(1, 'REMESADO', 'Cuota remesada'), recibo(2, 'PAGADO', 'Cuota pagada'), recibo(3, 'PENDIENTE', 'Cuota pendiente')])
     vi.stubGlobal('fetch', simulado)
     renderWithProviders(<TreasuryAdminPage />)
