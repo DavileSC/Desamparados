@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import ProcessionScene from '../ProcessionScene'
 import { responderPortada, textosDePrueba } from './ayudas'
@@ -46,15 +46,16 @@ describe('ProcessionScene', () => {
   it('una foto subida se sirve sin srcset', async () => {
     const textos = textosDePrueba()
     textos.sabadoDePasion.imagenUrl = '/storage/public/ab12cd34ef56ab78cd90ef12ab34cd56.webp'
+    // Un alt distinto del de siempre: así el render de respaldo (foto del
+    // repositorio, con srcset) no puede casar con la búsqueda, y findByRole
+    // espera de verdad a la respuesta simulada en vez de resolver con lo
+    // primero que pinta el componente mientras carga.
+    textos.sabadoDePasion.imagenAlt = 'Una foto subida desde el CMS'
     responderPortada(textos)
 
     renderWithProviders(<ProcessionScene />)
 
-    // El alt no cambia en este test, así que la foto de siempre ya cumple el nombre
-    // accesible en el primer render (con los textos por defecto, antes de que
-    // responda el CMS). Sin esperar a que se sustituya el srcset, la comprobación
-    // se haría sobre ese primer render y no sobre la foto subida.
-    const foto = await screen.findByRole('img', { name: /nazarenos/i })
-    await waitFor(() => expect(foto).not.toHaveAttribute('srcset'))
+    const foto = await screen.findByRole('img', { name: 'Una foto subida desde el CMS' })
+    expect(foto).not.toHaveAttribute('srcset')
   })
 })
