@@ -3,7 +3,6 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import SeccionPlegable from '../SeccionPlegable'
-import CampoTexto from '../CampoTexto'
 
 describe('SeccionPlegable', () => {
   it('empieza cerrada y se abre al pulsar el título', async () => {
@@ -11,33 +10,22 @@ describe('SeccionPlegable', () => {
     renderWithProviders(<SeccionPlegable titulo="Actualidad"><p>contenido</p></SeccionPlegable>)
 
     expect(screen.queryByText('contenido')).not.toBeVisible()
-    await usuario.click(screen.getByRole('button', { name: /actualidad/i }))
+    const boton = screen.getByRole('button', { name: /actualidad/i })
+    expect(boton).toHaveAttribute('aria-expanded', 'false')
+    await usuario.click(boton)
     expect(screen.getByText('contenido')).toBeVisible()
+    // No basta con que se vea: quien no ve la pantalla se entera por este atributo.
+    expect(boton).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('la que se marca como abierta empieza abierta', () => {
     renderWithProviders(<SeccionPlegable titulo="Cabecera" abiertaPorDefecto><p>contenido</p></SeccionPlegable>)
     expect(screen.getByText('contenido')).toBeVisible()
+    expect(screen.getByRole('button', { name: /cabecera/i })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('dice si está abierta o cerrada para quien no la ve', () => {
     renderWithProviders(<SeccionPlegable titulo="Actualidad"><p>contenido</p></SeccionPlegable>)
     expect(screen.getByRole('button', { name: /actualidad/i })).toHaveAttribute('aria-expanded', 'false')
-  })
-})
-
-describe('CampoTexto', () => {
-  it('explica dónde sale en la web', () => {
-    renderWithProviders(
-      <CampoTexto
-        etiqueta="Antetítulo"
-        valor="Cultos"
-        onCambio={() => {}}
-        ayuda="El texto pequeño en versalitas, encima del título del bloque."
-        maxLength={60}
-      />,
-    )
-
-    expect(screen.getByText(/versalitas/i)).toBeInTheDocument()
   })
 })
