@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet-async'
 import { useQueryClient } from '@tanstack/react-query'
 import PantallaEdicion from './PantallaEdicion'
 import CampoImagen from './CampoImagen'
-import { getImagenesPortada, guardarImagenesPortada, type ImagenPortada } from '../../lib/api/portada'
+import { getPortada, guardarImagenesPortada, type ImagenPortada } from '../../lib/api/portada'
 
 /** Tope del servidor (portada.schema.ts): se avisa antes de enviar. */
 export const MAX_FOTOS_PORTADA = 12
@@ -31,8 +31,8 @@ export default function PortadaAdminPage() {
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
-    getImagenesPortada()
-      .then((lista) => {
+    getPortada()
+      .then(({ imagenes: lista }) => {
         setFilas(lista.map(conClave))
         setInicial(lista.map(({ url, descripcion }) => ({ url, descripcion })))
       })
@@ -72,7 +72,7 @@ export default function PortadaAdminPage() {
       setGuardado(true)
       // La portada pública comparte caché con el CMS en la misma pestaña: que
       // la siguiente visita al inicio pida la lista nueva en vez de la guardada.
-      void queryClient.invalidateQueries({ queryKey: ['home', 'portada-imagenes'] })
+      void queryClient.invalidateQueries({ queryKey: ['home', 'portada'] })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se han podido guardar las fotos.')
     } finally {

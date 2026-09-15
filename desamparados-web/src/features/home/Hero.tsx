@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import AppButton from '../../components/AppButton'
-import { getImagenesPortada } from '../../lib/api/portada'
+import { getPortada } from '../../lib/api/portada'
 import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
@@ -19,12 +19,12 @@ export default function Hero() {
   // si se pintara la de siempre mientras tanto, cada visita empezaría con un
   // fundido de la foto vieja a la nueva.
   const { data, status } = useQuery({
-    queryKey: ['home', 'portada-imagenes'],
-    queryFn: getImagenesPortada,
+    queryKey: ['home', 'portada'],
+    queryFn: getPortada,
     retry: false,
     staleTime: 5 * 60_000,
   })
-  const imagenes = status === 'pending' ? null : data && data.length > 0 ? data : IMAGENES_POR_DEFECTO
+  const imagenes = status === 'pending' ? null : data && data.imagenes.length > 0 ? data.imagenes : IMAGENES_POR_DEFECTO
   const total = imagenes?.length ?? 0
 
   // Fundidos hechos: la foto visible es `tick % total`. Con una sola foto no

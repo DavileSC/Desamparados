@@ -11,8 +11,8 @@ const portadaRoutes = Router();
 // Gestión de contenido, como las noticias: los mismos roles que las editan.
 const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
-// La portada de la web la lee sin sesión.
-portadaRoutes.get('/imagenes', PortadaController.listar);
+// La portada de la web la lee sin sesión: fotos y textos de una vez.
+portadaRoutes.get('/', PortadaController.listar);
 
 // Se guarda la lista entera de golpe: sin altas ni bajas sueltas, el orden que
 // llega es el orden que se enseña.

@@ -123,9 +123,9 @@ describe('acceso a las fotos de portada', () => {
 
   test('la lectura es pública y devuelve la lista ordenada', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const res = await fetch(`${baseUrl}/api/portada/imagenes`);
+    const res = await fetch(`${baseUrl}/api/portada`);
     assert.equal(res.status, 200);
-    const lista = (await res.json()) as { orden: number }[];
+    const { imagenes: lista } = (await res.json()) as { imagenes: { orden: number }[] };
     assert.ok(Array.isArray(lista));
     assert.deepEqual(lista.map((i) => i.orden), lista.map((i) => i.orden).sort((a, b) => a - b));
   });
@@ -149,7 +149,7 @@ describe('acceso a las fotos de portada', () => {
       const res = await guardar(nuevas, Role.REDES);
       assert.equal(res.status, 200, await res.text());
 
-      const lista = (await (await fetch(`${baseUrl}/api/portada/imagenes`)).json()) as { url: string; descripcion: string | null; orden: number }[];
+      const { imagenes: lista } = (await (await fetch(`${baseUrl}/api/portada`)).json()) as { imagenes: { url: string; descripcion: string | null; orden: number }[] };
       assert.deepEqual(lista.map((i) => [i.url, i.descripcion, i.orden]), [
         ['/images/hero-1920.webp', 'Primera', 0],
         // Una descripción en blanco se guarda como nula, no como espacios.
@@ -164,6 +164,25 @@ describe('acceso a las fotos de portada', () => {
 });
 
 async function PortadaServiceLista() {
-  const lista = (await (await fetch(`${baseUrl}/api/portada/imagenes`)).json()) as { url: string; descripcion: string | null }[];
+  const { imagenes: lista } = (await (await fetch(`${baseUrl}/api/portada`)).json()) as { imagenes: { url: string; descripcion: string | null }[] };
   return lista.map((i) => ({ url: i.url, descripcion: i.descripcion ?? '' }));
 }
+
+test('GET /api/portada trae las fotos y los textos en la misma respuesta', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  const respuesta = await fetch(`${baseUrl}/api/portada`);
+  assert.equal(respuesta.status, 200);
+
+  const cuerpo = await respuesta.json() as any;
+  assert.ok(Array.isArray(cuerpo.imagenes), 'el hero necesita las fotos');
+  assert.equal(typeof cuerpo.textos?.hero?.titulo, 'string', 'y los textos, para no pedirlos aparte');
+});
+
+test('la ruta vieja de solo imágenes ya no existe', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+
+  // No hay usuarios en producción a los que mantener compatibilidad: la
+  // absorbe GET /api/portada y se retira para no dejar dos caminos vivos.
+  assert.equal((await fetch(`${baseUrl}/api/portada/imagenes`)).status, 404);
+});

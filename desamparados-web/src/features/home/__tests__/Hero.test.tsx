@@ -19,7 +19,7 @@ const FOTOS = [
 
 describe('Hero', () => {
   it('ofrece la agenda como segunda acción, no las noticias que ya vienen justo debajo', () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta([])))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
     renderWithProviders(<Hero />)
 
     expect(screen.getByRole('link', { name: /conoce el grupo parroquial/i })).toHaveAttribute('href', '/corporacion')
@@ -29,7 +29,7 @@ describe('Hero', () => {
 
   it('rota las fotos del CMS: la siguiente ya está montada y pasa a ser la visible al cumplirse el intervalo', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta(FOTOS)))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: FOTOS })))
     renderWithProviders(<Hero />)
 
     // La primera es la visible: accesible por su nombre y con la prioridad de carga alta.
@@ -51,7 +51,7 @@ describe('Hero', () => {
 
   it('con una sola foto no hay rotación', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta([FOTOS[0]])))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [FOTOS[0]] })))
     renderWithProviders(<Hero />)
 
     await screen.findByRole('img', { name: 'Primera foto' })
@@ -61,7 +61,7 @@ describe('Hero', () => {
   })
 
   it('sin fotos en el CMS, o sin API, enseña la de siempre', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta([])))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
     const { unmount } = renderWithProviders(<Hero />)
     expect(await screen.findByRole('img', { name: IMAGENES_POR_DEFECTO[0].descripcion })).toHaveAttribute('src', IMAGENES_POR_DEFECTO[0].url)
     unmount()

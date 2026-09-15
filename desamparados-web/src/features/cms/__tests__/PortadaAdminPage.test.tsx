@@ -45,7 +45,7 @@ const foto = (numero: number) => screen.getByRole('group', { name: `Foto ${numer
 
 describe('PortadaAdminPage', () => {
   it('carga las fotos en su orden, deja reordenar y quitar, y guarda la lista entera tal y como queda', async () => {
-    const fetchMock = montar(respuesta(FOTOS), respuesta({ message: 'ok', data: [] }))
+    const fetchMock = montar(respuesta({ imagenes: FOTOS }), respuesta({ message: 'ok', data: [] }))
     expect(await screen.findByRole('group', { name: 'Foto 1' })).toBeInTheDocument()
     expect(within(foto(1)).getByRole('img', { name: /foto actual/i })).toHaveAttribute('src', '/storage/public/primera.webp')
     expect(screen.getByRole('button', { name: /subir la foto 1/i })).toBeDisabled()
@@ -73,7 +73,7 @@ describe('PortadaAdminPage', () => {
   })
 
   it('la foto que se sube se añade al final de la lista', async () => {
-    montar(respuesta(FOTOS), respuesta({ data: { url: 'http://localhost:3001/storage/public/nueva.webp', filename: 'nueva.webp' } }, 201))
+    montar(respuesta({ imagenes: FOTOS }), respuesta({ data: { url: 'http://localhost:3001/storage/public/nueva.webp', filename: 'nueva.webp' } }, 201))
     await screen.findByRole('group', { name: 'Foto 1' })
 
     const anadir = screen.getByRole('group', { name: /añadir una foto/i })
@@ -87,14 +87,14 @@ describe('PortadaAdminPage', () => {
 
   it('con el máximo de fotos ya no ofrece añadir más', async () => {
     const llenas = Array.from({ length: MAX_FOTOS_PORTADA }, (_, i) => ({ id: i, url: `/storage/public/${i}.webp`, descripcion: '', orden: i }))
-    montar(respuesta(llenas))
+    montar(respuesta({ imagenes: llenas }))
     await screen.findByRole('group', { name: `Foto ${MAX_FOTOS_PORTADA}` })
     expect(screen.queryByRole('group', { name: /añadir una foto/i })).not.toBeInTheDocument()
     expect(screen.getByText(/el máximo/i)).toBeInTheDocument()
   })
 
   it('sin fotos explica que se usa la de siempre y ofrece añadir', async () => {
-    montar(respuesta([]))
+    montar(respuesta({ imagenes: [] }))
     expect(await screen.findByRole('group', { name: /añadir una foto/i })).toBeInTheDocument()
     expect(screen.getByText(/la foto de siempre/i)).toBeInTheDocument()
   })
