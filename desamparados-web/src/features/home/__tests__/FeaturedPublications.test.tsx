@@ -2,6 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import FeaturedPublications from '../FeaturedPublications'
+import { textosDePrueba } from './ayudas'
+import type { TextosPortada } from '../../../lib/api/portada'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -18,6 +20,18 @@ function servir(publicaciones: unknown[]) {
     JSON.stringify(publicaciones),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
   )))
+}
+
+/**
+ * El botón del archivo solo se pinta cuando hay una publicación destacada, así que
+ * a diferencia de `responderPortada` (ayudas.ts) esta responde con datos reales de
+ * `/publications/latest`, no con una lista vacía.
+ */
+function responderConPublicaciones(textos: TextosPortada, publicaciones: unknown[]) {
+  vi.stubGlobal('fetch', vi.fn().mockImplementation((url: unknown) => Promise.resolve(new Response(
+    JSON.stringify(String(url).includes('/portada') ? { imagenes: [], textos } : publicaciones),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  ))))
 }
 
 describe('FeaturedPublications', () => {
@@ -76,5 +90,16 @@ describe('FeaturedPublications', () => {
     renderWithProviders(<FeaturedPublications />)
     const portada = await screen.findByTestId('portada-publicacion')
     expect(within(portada).getByText('25·26')).toBeInTheDocument()
+  })
+
+  it('enseña el botón del archivo y la marca de agua que vienen del CMS', async () => {
+    const textos = textosDePrueba()
+    textos.publicaciones = { boton: 'Ver todo el archivo', marcaDeAgua: 'PARROQUIA' }
+    responderConPublicaciones(textos, [BOLETIN])
+
+    renderWithProviders(<FeaturedPublications />)
+
+    expect(await screen.findByRole('link', { name: 'Ver todo el archivo' })).toHaveAttribute('href', '/publicaciones')
+    expect(screen.getByText('PARROQUIA')).toBeInTheDocument()
   })
 })
