@@ -30,16 +30,20 @@ test('sembrar dos veces no pisa lo que se haya editado', async (t) => {
 
   await sembrarContenidoPaginas();
   const antes = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
-  await db.contenidoPagina.update({
-    where: { slug: 'portada' },
-    data: { datos: { ...(antes!.datos as object), hero: { titulo: 'Editado a mano' } } },
-  });
+  try {
+    await db.contenidoPagina.update({
+      where: { slug: 'portada' },
+      data: { datos: { ...(antes!.datos as object), hero: { titulo: 'Editado a mano' } } },
+    });
 
-  await sembrarContenidoPaginas();
+    await sembrarContenidoPaginas();
 
-  const despues = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
-  assert.equal((despues!.datos as any).hero.titulo, 'Editado a mano', 'la siembra no puede deshacer una edición');
-
-  // Se deja como estaba para no ensuciar la base de desarrollo.
-  await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
+    const despues = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
+    assert.equal((despues!.datos as any).hero.titulo, 'Editado a mano', 'la siembra no puede deshacer una edición');
+  } finally {
+    // Pase lo que pase arriba: la batería corre en serie contra una base
+    // compartida, y dejar `portada` con el hero a medias rompería la portada
+    // para todos los ficheros que se ejecuten después.
+    await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
+  }
 });
