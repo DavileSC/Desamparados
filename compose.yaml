@@ -1,0 +1,214 @@
+# Despliegue de la web del Grupo Parroquial. Este fichero es el de
+# PRODUCCIÓN; para probarlo en esta máquina se le añade compose.local.yaml:
+#
+#   docker compose -f compose.yaml -f compose.local.yaml up -d --build
+#
+# La guía completa —qué contratar, el orden de la primera puesta en marcha,
+# las copias de seguridad y el mantenimiento— está en docs/despliegue.md.
+#
+# Configuración: un único fichero `.env` en esta misma carpeta, a partir de
+# docker/.env.ejemplo. Compose lo usa para dos cosas a la vez: sustituir las
+# ${VARIABLES} de aquí abajo y pasárselo entero al contenedor de la API.
+
+name: desamparados
+
+# ---------------------------------------------------------------------------
+# Trozos reutilizados
+# ---------------------------------------------------------------------------
+
+# Sin esto, el registro de un contenedor crece hasta llenar el disco.
+x-registro: &registro
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# Lo que comparten la API y las dos imágenes de mantenimiento. Manda sobre el
+# `.env`: aunque allí ponga `localhost` (el valor con el que se trabaja fuera
+# de Docker), dentro de la red del compose la base de datos se llama `db`.
+x-entorno-api: &entorno-api
+  NODE_ENV: production
+  # En un contenedor, 127.0.0.1 solo lo alcanza el propio contenedor: nginx no
+  # llegaría. El puerto 3001 NO se publica al servidor, así que a la API solo
+  # se llega desde la red interna, que es la misma garantía que daba escuchar
+  # en 127.0.0.1. El arranque deja un aviso por este cambio; es esperado.
+  HOST: 0.0.0.0
+  PORT: "3001"
+  DATABASE_HOST: db
+  # Se arma desde las partes para no tener dos sitios donde equivocarse. La
+  # contraseña no debe llevar caracteres que haya que codificar en una URL:
+  # docker/.env.ejemplo explica cómo generarla.
+  DATABASE_URL: mysql://${DATABASE_USER:?falta DATABASE_USER en .env}:${DATABASE_PASSWORD:?falta DATABASE_PASSWORD en .env}@db:3306/${DATABASE_NAME:?falta DATABASE_NAME en .env}
+  CLAMAV_HOST: clamav
+  CLAMAV_PORT: "3310"
+
+x-imagen-api: &imagen-api
+  build:
+    context: .
+    dockerfile: docker/api.Dockerfile
+    target: ejecucion
+
+services:
+  # -------------------------------------------------------------------------
+  # Base de datos
+  # -------------------------------------------------------------------------
+  db:
+    image: mariadb:11.8
+    restart: unless-stopped
+    # Solo las suyas: el .env entero llevaría los secretos de la aplicación al
+    # contenedor de la base de datos sin ninguna necesidad.
+    environment:
+      MARIADB_DATABASE: ${DATABASE_NAME:?falta DATABASE_NAME en .env}
+      MARIADB_USER: ${DATABASE_USER:?falta DATABASE_USER en .env}
+      MARIADB_PASSWORD: ${DATABASE_PASSWORD:?falta DATABASE_PASSWORD en .env}
+      MARIADB_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD:?falta DATABASE_ROOT_PASSWORD en .env}
+    volumes:
+      - datos-db:/var/lib/mysql
+    # El puerto no se publica: nadie de fuera del servidor habla con la base de
+    # datos. Para inspeccionarla, `docker compose exec db mariadb -u root -p`.
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    logging: *registro
+
+  # -------------------------------------------------------------------------
+  # Migraciones: corre una vez, termina, y solo entonces arranca la API
+  # -------------------------------------------------------------------------
+  migraciones:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: herramientas
+    restart: "no"
+    env_file: [.env]
+    environment: *entorno-api
+    # `migrate deploy`, nunca `migrate dev`: aplica lo que hay sin inventarse
+    # migraciones nuevas ni tocar datos.
+    command: ["npx", "prisma", "migrate", "deploy"]
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *registro
+
+  # -------------------------------------------------------------------------
+  # API
+  # -------------------------------------------------------------------------
+  api:
+    <<: *imagen-api
+    restart: unless-stopped
+    env_file: [.env]
+    environment: *entorno-api
+    # El dueño de los archivos subidos. En el servidor, `storage/` tiene que
+    # pertenecer a este mismo usuario; si allí no es el 1000, se cambia en el
+    # .env y no aquí.
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    volumes:
+      # Las subidas del CMS viven en el disco del servidor y no en un volumen
+      # de Docker: así la copia de seguridad las empaqueta leyendo una carpeta
+      # normal, y restaurar es un rsync.
+      - ./backend-desamparados/storage:/app/backend-desamparados/storage
+    depends_on:
+      migraciones:
+        condition: service_completed_successfully
+    # A clamav no se le espera a propósito: si el antivirus no está, la API
+    # arranca igual y son las subidas las que fallan con un 503. Ponerlo en
+    # depends_on obligaría además a tener siempre activo su perfil.
+    logging: *registro
+
+  # -------------------------------------------------------------------------
+  # Web: la SPA, el proxy de la API y los archivos públicos
+  # -------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Solo lectura y solo la carpeta pública: storage/private se descarga por
+      # la API, con sesión, y nginx no tiene por qué poder abrirla.
+      - ./backend-desamparados/storage/public:/srv/storage/public:ro
+      - certificados:/etc/letsencrypt:ro
+      - acme:/var/www/certbot:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *registro
+
+  # -------------------------------------------------------------------------
+  # Antivirus. Perfil `antivirus`, que en el servidor se deja siempre activo
+  # con COMPOSE_PROFILES en el .env: sin él, cada subida responde 503.
+  # -------------------------------------------------------------------------
+  clamav:
+    image: clamav/clamav:1.4
+    profiles: ["antivirus"]
+    restart: unless-stopped
+    volumes:
+      - firmas-clamav:/var/lib/clamav
+      - ./docker/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
+    # El primer arranque se baja la base de firmas entera (varios minutos y
+    # cerca de 1 GB de memoria). Hasta que el healthcheck pase, las subidas
+    # responden 503.
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+    logging: *registro
+
+  # -------------------------------------------------------------------------
+  # Certificado de Let's Encrypt. Perfil `tls`: en local no se usa.
+  # -------------------------------------------------------------------------
+  certbot:
+    image: certbot/certbot:latest
+    profiles: ["tls"]
+    restart: unless-stopped
+    volumes:
+      - certificados:/etc/letsencrypt
+      - acme:/var/www/certbot
+    # Intenta renovar dos veces al día; certbot no hace nada si al certificado
+    # le queda más de un mes. Quien recarga nginx con el certificado nuevo es
+    # el propio contenedor `web`, cada seis horas (ver docker/web.Dockerfile).
+    entrypoint:
+      - sh
+      - -c
+      - |
+        trap exit TERM
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet
+          sleep 12h & wait $${!}
+        done
+    logging: *registro
+
+  # -------------------------------------------------------------------------
+  # Mantenimiento: siembra, purga de la auditoría, huérfanos, claves del 2FA.
+  # Perfil `manual` para que `up` no lo levante. Se usa con `run --rm`:
+  #   docker compose run --rm herramientas npm run seed
+  # -------------------------------------------------------------------------
+  herramientas:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: herramientas
+    profiles: ["manual"]
+    env_file: [.env]
+    environment: *entorno-api
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    volumes:
+      - ./backend-desamparados/storage:/app/backend-desamparados/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *registro
+
+volumes:
+  datos-db:
+  certificados:
+  acme:
+  firmas-clamav:

@@ -24,13 +24,17 @@
 #   BACKUP_DIR             Dónde guardar las copias locales. Por defecto /var/backups/desamparados.
 #   BACKUP_RETENTION_DAYS  Días que se conservan las copias locales. Por defecto 14.
 #   BACKUP_RCLONE_REMOTE   Destino de rclone (p. ej. «copias:grupo-parroquial/desamparados»). Opcional.
-#   BACKUP_DB_USER/BACKUP_DB_PASSWORD  Usuario de MariaDB solo de lectura para la copia. Opcional:
-#                          sin ellos se usan DATABASE_USER/DATABASE_PASSWORD del .env.
+#   PROYECTO_DIR           Carpeta con compose.yaml. Por defecto, la raíz del repositorio.
 #   APP_DIR                Carpeta de backend-desamparados. Por defecto, la de este script.
 #
-# Los datos de conexión (DATABASE_HOST, DATABASE_NAME...) se leen del .env del
-# backend. Sale con código distinto de 0 si algo falla, para que systemd lo
-# marque como fallido.
+# El volcado lo hace el contenedor de MariaDB con las credenciales que ya
+# tiene en su entorno: aquí no se leen ni se pasan por la línea de órdenes,
+# donde cualquier usuario del servidor las vería con `ps`. `storage/` sí se lee
+# del disco, porque el compose lo monta desde una carpeta normal y no desde un
+# volumen de Docker.
+#
+# Sale con código distinto de 0 si algo falla, para que systemd lo marque como
+# fallido.
 
 set -Eeuo pipefail
 umask 077
@@ -39,32 +43,16 @@ log() { printf '%s [copia] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 fallo() { log "ERROR: $*" >&2; exit 1; }
 
 APP_DIR="${APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PROYECTO_DIR="${PROYECTO_DIR:-$(cd "$APP_DIR/.." && pwd)}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/desamparados}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
-ENV_FILE="$APP_DIR/.env"
 
 [[ "$BACKUP_RETENTION_DAYS" =~ ^[0-9]+$ ]] || fallo "BACKUP_RETENTION_DAYS debe ser un número de días."
-[[ -f "$ENV_FILE" ]] || fallo "No se encuentra $ENV_FILE."
+[[ -f "$PROYECTO_DIR/compose.yaml" ]] || fallo "No se encuentra $PROYECTO_DIR/compose.yaml."
 [[ -d "$APP_DIR/storage" ]] || fallo "No se encuentra $APP_DIR/storage."
 
-# --- Leer una variable del .env sin ejecutarlo (`source` ejecutaría cualquier cosa que haya dentro) ---
-leer_env() {
-  local linea valor
-  linea="$(grep -E "^[[:space:]]*$1[[:space:]]*=" "$ENV_FILE" | tail -n 1 || true)"
-  valor="${linea#*=}"
-  valor="${valor%$'\r'}"
-  valor="$(printf '%s' "$valor" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
-  # Quita las comillas que envuelven el valor, si las hay.
-  if [[ "$valor" =~ ^\"(.*)\"$ || "$valor" =~ ^\'(.*)\'$ ]]; then valor="${BASH_REMATCH[1]}"; fi
-  printf '%s' "$valor"
-}
-
-DB_HOST="$(leer_env DATABASE_HOST)"; DB_HOST="${DB_HOST:-localhost}"
-DB_NAME="$(leer_env DATABASE_NAME)"
-DB_USER="${BACKUP_DB_USER:-$(leer_env DATABASE_USER)}"
-DB_PASS="${BACKUP_DB_PASSWORD:-$(leer_env DATABASE_PASSWORD)}"
-[[ -n "$DB_NAME" ]] || fallo "Falta DATABASE_NAME en $ENV_FILE."
-[[ -n "$DB_USER" ]] || fallo "Falta DATABASE_USER en $ENV_FILE."
+# --- La orden del compose, una sola vez ---
+compose() { docker compose -f "$PROYECTO_DIR/compose.yaml" "$@"; }
 
 # --- Cifrado: sin clave pública no se hace copia (una copia en claro es peor que ninguna) ---
 AGE_ARGS=()
@@ -78,11 +66,12 @@ else
 fi
 
 # --- Herramientas ---
-DUMP="$(command -v mariadb-dump || command -v mysqldump || true)"
-[[ -n "$DUMP" ]] || fallo "No se encuentra mariadb-dump (paquete mariadb-client)."
-for herramienta in age tar gzip; do
+# mariadb-dump no hace falta en el servidor: lo trae la imagen de MariaDB.
+for herramienta in docker age tar gzip; do
   command -v "$herramienta" >/dev/null || fallo "No se encuentra $herramienta."
 done
+compose ps --status running --services 2>/dev/null | grep -qx db \
+  || fallo "El servicio db no está en marcha: sin él no hay de dónde volcar."
 
 mkdir -p "$BACKUP_DIR"
 
@@ -96,15 +85,22 @@ TMP="$(mktemp -d "$BACKUP_DIR/.tmp.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
 # --- 1. Volcado ---
-# La contraseña va en MYSQL_PWD y no en la línea de órdenes, donde cualquier
-# usuario del servidor la vería con `ps`; el entorno de un proceso solo lo
-# leen su dueño y root. (Un fichero de opciones obligaría a escapar `#`, `\` y
-# comillas, y una contraseña con `#` se cortaría sin avisar.)
-log "Volcando la base de datos $DB_NAME..."
-MYSQL_PWD="$DB_PASS" "$DUMP" --host="$DB_HOST" --user="$DB_USER" \
-  --single-transaction --quick --no-tablespaces --hex-blob \
-  --default-character-set=utf8mb4 \
-  "$DB_NAME" > "$TMP/db.sql"
+# Se vuelca DENTRO del contenedor de la base de datos. Las credenciales salen
+# de su propio entorno (MARIADB_USER y compañía, que puso el compose) y nunca
+# pasan por la línea de órdenes, donde cualquier usuario del servidor las
+# vería con `ps`. Las comillas SIMPLES de la orden son las que impiden que las
+# expanda este script en lugar del contenedor.
+#
+# --single-transaction lo deja consistente sin bloquear la web;
+# --no-tablespaces evita necesitar el privilegio PROCESS, que el usuario de la
+# aplicación no tiene.
+log "Volcando la base de datos..."
+compose exec -T db sh -c '
+  MYSQL_PWD="$MARIADB_PASSWORD" mariadb-dump \
+    --user="$MARIADB_USER" \
+    --single-transaction --quick --no-tablespaces --hex-blob \
+    --default-character-set=utf8mb4 \
+    "$MARIADB_DATABASE"' > "$TMP/db.sql"
 
 # Un volcado cortado a medias (disco lleno, conexión perdida) pesa más de cero
 # y parece válido: el volcado completo termina siempre con «Dump completed».

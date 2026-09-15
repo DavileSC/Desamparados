@@ -36,6 +36,21 @@ Se puede apuntar a otro con `VITE_DEV_BACKEND_URL`.
 Los secretos locales deben mantenerse en archivos `.env` y nunca subirse al
 repositorio.
 
+### Todo junto, en contenedores
+
+Para ver el montaje completo —la web, la API, MariaDB, el antivirus y nginx
+delante— tal y como correrá en el servidor:
+
+```text
+cp docker/.env.example .env      # y rellenarlo
+docker compose -f compose.yaml -f compose.local.yaml up -d --build
+docker compose -f compose.yaml -f compose.local.yaml run --rm herramientas npm run seed
+```
+
+Queda en `https://localhost:8443`, con un certificado autofirmado. No sustituye
+al flujo de arriba para el día a día: es más lento de recargar y sirve para
+comprobar el despliegue. Los detalles, en `docs/despliegue.md`.
+
 ## Antes de tocar nada
 
 `docs/notas-del-proyecto.md` recoge las reglas y las trampas del proyecto que no
