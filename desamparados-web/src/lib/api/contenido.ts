@@ -11,6 +11,17 @@ export interface ContenidoRecorrido {
   paradas: ParadaRecorrido[]
 }
 
+/**
+ * La clave de react-query del documento del Recorrido. La comparten la página
+ * pública (features/corporation/sabado-pasion/RecorridoPage.tsx), que guarda su
+ * caché con ella, y el CMS (features/cms/RecorridoAdminPage.tsx), que la
+ * invalida tras guardar. Estaba escrita a mano en los dos sitios: si divergían,
+ * guardar dejaba de refrescar la página pública y nada fallaba —la página
+ * seguía enseñando lo viejo hasta que caducara la caché—. Exportada de un solo
+ * sitio, la divergencia no se puede ni escribir.
+ */
+export const CLAVE_RECORRIDO = ['contenido', 'recorrido'] as const
+
 /** El contenido de una página, ya mezclado por el servidor. Se lee sin sesión. */
 export const getContenido = <T,>(slug: 'portada' | 'recorrido') => apiFetch<T>(`/contenido/${slug}`)
 

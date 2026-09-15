@@ -1,4 +1,5 @@
 import { type } from 'arktype';
+import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
 import type { SlugContenido } from '../domain/contenido.js';
 
@@ -11,9 +12,15 @@ const texto = (max: number) => type(`0 <= string <= ${max}`)
   .matching(/^[^<>]*$/)
   .describe(`un texto de hasta ${max} caracteres, sin < ni >`);
 
-const TITULO = texto(120);
-const PARRAFO = texto(600);
-const ETIQUETA = texto(60);
+// Los cuatro topes salen de `shared/topes-contenido.json` y no de números
+// escritos aquí: las pantallas del CMS repiten estos mismos límites en sus
+// `maxLength` para avisar mientras se escribe, y mientras cada lado se los
+// inventaba por su cuenta nada impedía que dejaran de coincidir. Los valores
+// son los de siempre: 60/120/600/200.
+const TITULO = texto(topes.titulo);
+const PARRAFO = texto(topes.parrafo);
+const ETIQUETA = texto(topes.etiqueta);
+const DESCRIPCION = texto(topes.descripcion);
 
 const heroSchema = type({
   ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO,
@@ -34,7 +41,7 @@ const portadaSchema = type({
   sabadoDePasion: {
     ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO, enlace: ETIQUETA,
     imagenUrl: rutaImagenPublica,
-    imagenAlt: texto(200),
+    imagenAlt: DESCRIPCION,
   },
   publicaciones: { boton: ETIQUETA, marcaDeAgua: ETIQUETA },
 });
@@ -53,7 +60,9 @@ const recorridoSchema = type({
   subtitulo: PARRAFO,
   introduccion: PARRAFO,
   tituloItinerario: TITULO,
-  plano: { url: type('string').matching(/^$/).or(rutaImagenPublica), alt: texto(200) },
+  plano: { url: type('string').matching(/^$/).or(rutaImagenPublica), alt: DESCRIPCION },
+  // El lugar no es ninguna de las cuatro clases de `topes-contenido.json`: es
+  // el nombre de una calle o una plaza, y su tope es suyo aunque hoy coincida.
   paradas: type({ hora, lugar: texto(200) }).array().atMostLength(60),
 }).narrow((datos, ctx) =>
   datos.plano.url === '' || datos.plano.alt.trim() !== ''

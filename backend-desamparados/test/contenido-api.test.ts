@@ -160,6 +160,33 @@ test('un hermano sin cargo no puede guardar', async (t) => {
   }
 });
 
+test('un cargo del CMS sin permiso sobre el contenido tampoco guarda', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  // El test de arriba manda la cookie de hermanos, que muere antes en
+  // `authenticateToken`: `checkRole` ni llega a ejecutarse, así que el permiso
+  // por cargo se quedaba sin probar. Con una cookie del CMS de un rol que no
+  // toca contenido —TESORERIA— la petición sí llega hasta él.
+  const tesoreria = await crearUsuarioPrueba(Role.TESORERIA);
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
+  try {
+    const respuesta = await fetch(`${baseUrl}/api/contenido/portada`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: cookieCms(tesoreria.id, Role.TESORERIA) },
+      body: JSON.stringify({ datos: porDefecto('portada') }),
+    });
+    assert.equal(respuesta.status, 403);
+
+    const despues = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
+    assert.deepEqual(despues!.datos, antes!.datos, 'un cargo sin permiso no puede dejar rastro en la fila');
+  } finally {
+    // Si el 403 se rompiera —justo lo que este test vigila— la fila se habría
+    // quedado con lo que mandó la petición. La batería corre en serie contra
+    // una base compartida: se restaura pase lo que pase arriba.
+    await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
+    await borrarUsuarioPrueba(tesoreria.id);
+  }
+});
+
 test('un documento mal formado responde 400 y NO escribe', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const redes = await crearUsuarioPrueba(Role.REDES);

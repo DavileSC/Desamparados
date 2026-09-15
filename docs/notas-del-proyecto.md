@@ -126,7 +126,7 @@ de log.
 
 ---
 
-## 6. Dos trampas en los tests
+## 6. Trampas en los tests
 
 **La opción `skip` del runner de Node espera un valor, no una función.** Escrito
 como `skip: () => …`, la función nunca se llama y, al ser *truthy*, el test queda
@@ -155,6 +155,34 @@ Aun así, un test que lea totales globales debe usar valores propios o tolerar l
 que dejen los datos de la base de desarrollo, y un test que retenga una
 transacción a propósito tiene que soltarla en un `finally`: una transacción
 abierta deja la fila bloqueada y cuelga la limpieza del final.
+
+**Un diálogo de MUI abierto convierte en verdes las aserciones negativas por
+rol.** Mientras el modal sigue montado, su `ModalManager` pone `aria-hidden` a
+todos los hermanos del diálogo —o sea, al resto de la página—, y las consultas
+`*ByRole` de Testing Library excluyen por defecto lo que esté `aria-hidden`.
+Consecuencia: **cualquier** `queryByRole(...)` seguido de `not.toBeInTheDocument()`
+escrito después de confirmar un diálogo pasa sin mirar nada. El elemento sigue
+en el DOM, el test no lo ve y la aserción se cumple igual que si el arreglo
+existiera.
+
+No basta con esperar un tick: el diálogo sigue montado hasta que **termina su
+transición de salida**. Hay dos formas de esperar a que el árbol de
+accesibilidad vuelva:
+
+```ts
+await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+// …o poner delante un findByRole positivo, que no resuelve hasta que vuelve:
+await screen.findByRole('button', { name: 'Guardar' })
+```
+
+Solo muerde a `*ByRole`. `getByLabelText`, `getByText` y `getByDisplayValue` no
+filtran por `aria-hidden` y siguen viendo la pantalla tapada.
+
+Se había pisado cuatro veces y cada una se resolvió a mano sin dejarlo escrito
+en ninguna parte (los comentarios están en `AccountingAdminPage.test.tsx:182`,
+`BrothersAdminPage.test.tsx:205`, `NewsAdminPage.test.tsx:42` y
+`PortadaAdminPage.test.tsx:186`). Por eso está aquí: cuesta una tarde
+encontrarlo y treinta segundos evitarlo.
 
 ## 6 bis. MariaDB 11.8 y los choques de transacciones
 

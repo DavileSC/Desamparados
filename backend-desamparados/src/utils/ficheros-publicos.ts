@@ -70,8 +70,9 @@ const rutasDelEntorno = () => VARIABLES_CON_RUTAS.map((nombre) => process.env[no
  * Es la lista de todos los sitios donde el CMS guarda rutas: si se añade un
  * campo nuevo que apunte a `/storage/public`, tiene que entrar aquí y en
  * `subidasReferenciadas`, o sus ficheros se borrarán estando en uso. El
- * contenido editable (`ContenidoPagina`, tabla `portada`/`recorrido`) ya
- * está contemplado vía `contarEnContenido`.
+ * contenido editable ya está contemplado vía `contarEnContenido`: son las filas
+ * `portada` y `recorrido` (valores de `slug`) de la tabla `ContenidoPagina`, no
+ * tablas con esos nombres, que no existen.
  */
 export async function contarReferencias(nombre: string): Promise<number> {
   const enEntorno = [...subidasEnTexto(...rutasDelEntorno())].some((n) => clave(n) === clave(nombre));
@@ -95,7 +96,13 @@ export async function contarReferencias(nombre: string): Promise<number> {
 
 async function contarEnContenido(nombre: string): Promise<number> {
   const paginas = await db.contenidoPagina.findMany({ select: { datos: true } });
-  return subidasEnTexto(...paginas.map((p) => JSON.stringify(p.datos))).has(nombre) ? 1 : 0;
+  // Con `clave()` a los dos lados, como en el resto de la familia: el nombre se
+  // compara sin mirar mayúsculas porque las subidas antiguas podían guardar la
+  // extensión en mayúsculas y en Linux «<hex>.JPG» y «<hex>.jpg» son ficheros
+  // distintos. Siendo esta la cuenta que decide si una foto publicada se borra,
+  // un fallo de comparación aquí se paga borrando lo que sigue en uso.
+  const mencionados = new Set([...subidasEnTexto(...paginas.map((p) => JSON.stringify(p.datos)))].map(clave));
+  return mencionados.has(clave(nombre)) ? 1 : 0;
 }
 
 /** Todos los ficheros subidos que menciona alguna tabla (para el script de huérfanos). */

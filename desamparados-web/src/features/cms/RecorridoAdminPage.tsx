@@ -10,11 +10,11 @@ import PantallaEdicion from './PantallaEdicion'
 import CampoImagen from './CampoImagen'
 import SeccionPlegable from './contenido/SeccionPlegable'
 import CampoTexto from './contenido/CampoTexto'
-import { getContenido, guardarContenido, type ContenidoRecorrido, type ParadaRecorrido } from '../../lib/api/contenido'
+import { CLAVE_RECORRIDO, getContenido, guardarContenido, type ContenidoRecorrido, type ParadaRecorrido } from '../../lib/api/contenido'
 
 const AYUDA_PLANO = 'JPG, PNG o WebP apaisado, de hasta 5 MB. Se enseña en la página del Recorrido, encima de las paradas.'
-const AYUDA_PLANO_ALT = 'Qué se ve en el plano, en una frase. Es lo que oye quien usa un lector de pantalla.'
-const AVISO_PLANO_SIN_ALT = 'El plano necesita una descripción antes de guardar: es lo que oye quien usa un lector de pantalla.'
+const AYUDA_PLANO_ALT = 'El plano, en una frase. Es lo que oye quien usa un lector de pantalla.'
+export const AVISO_PLANO_SIN_ALT = 'El plano necesita una descripción antes de guardar: es lo que oye quien usa un lector de pantalla.'
 
 /** Los campos sueltos del documento, sin las paradas: esas llevan su propia clave de fila. */
 type Campos = Omit<ContenidoRecorrido, 'paradas'>
@@ -70,17 +70,28 @@ export default function RecorridoAdminPage() {
   const guardar = async () => {
     if (!campos) return
     // El servidor también lo rechaza (contenido.schema.ts): mejor no ni mandarlo.
-    if (campos.plano.url && !campos.plano.alt.trim()) return
+    // Se pone el error arriba y no solo el aviso del campo porque ese vive
+    // dentro de la sección «Plano», que arranca plegada: quien confirmaba el
+    // diálogo se quedaba mirando una pantalla que no decía nada ni hacía nada.
+    if (campos.plano.url && !campos.plano.alt.trim()) {
+      setError(AVISO_PLANO_SIN_ALT)
+      return
+    }
+    const datos: ContenidoRecorrido = { ...campos, paradas: sinClave(filas) }
+    // Guardar sin haber tocado nada mandaría un PUT, escribiría un apunte de
+    // auditoría y movería el `updatedAt` para dejar el documento igual que
+    // estaba. La portada ya se negaba a hacerlo a propósito (PortadaAdminPage);
+    // esta pantalla no tenía por qué comportarse distinto.
+    if (JSON.stringify(datos) === JSON.stringify(inicial)) return
     setGuardando(true)
     setError(null)
     try {
-      const datos: ContenidoRecorrido = { ...campos, paradas: sinClave(filas) }
       await guardarContenido('recorrido', datos)
       setInicial(datos)
       setGuardado(true)
       // La página pública del Recorrido comparte caché con el CMS en la misma
       // pestaña: que la siguiente visita pida el documento nuevo, no el guardado.
-      void queryClient.invalidateQueries({ queryKey: ['contenido', 'recorrido'] })
+      void queryClient.invalidateQueries({ queryKey: CLAVE_RECORRIDO })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se ha podido guardar el recorrido.')
     } finally {
@@ -149,7 +160,7 @@ export default function RecorridoAdminPage() {
             onCambio={(url) => setCampos((actual) => actual && { ...actual, plano: { ...actual.plano, url } })}
           />
           <CampoTexto
-            etiqueta="Qué se ve en el plano"
+            etiqueta="Qué se ve en la imagen"
             valor={campos.plano.alt}
             onCambio={(alt) => setCampos((actual) => actual && { ...actual, plano: { ...actual.plano, alt } })}
             ayuda={AYUDA_PLANO_ALT}

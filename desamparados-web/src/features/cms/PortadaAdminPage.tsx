@@ -167,9 +167,12 @@ export default function PortadaAdminPage() {
       // Son dos almacenes y dos peticiones. Si el fallo llega en la segunda, las
       // fotos YA están guardadas: decirlo, o quien lo lea creerá que no se ha
       // guardado nada y lo repetirá todo.
-      setError(fotosGuardadas
-        ? 'Las fotos se han guardado, pero los textos no. Vuelve a intentarlo.'
-        : e instanceof Error ? e.message : 'No se ha podido guardar.')
+      const motivo = e instanceof Error ? e.message : 'No se ha podido guardar.'
+      // Y decir además POR QUÉ. El aviso terminaba en «vuelve a intentarlo», que
+      // con el fallo más probable —un 400 porque uno de los treinta campos lleva
+      // un `<`, que el esquema prohíbe— no puede funcionar por muchas veces que
+      // se reintente. `lib/api/client.ts` ya trae ahí el campo y el motivo.
+      setError(fotosGuardadas ? `Las fotos se han guardado, pero los textos no. ${motivo}` : motivo)
     } finally {
       setGuardando(false)
       // La portada pública comparte caché con el CMS en la misma pestaña: que la
@@ -262,10 +265,10 @@ export default function PortadaAdminPage() {
                         onCambio={(url) => (url ? cambiar(fila.clave, { url }) : quitar(fila.clave))}
                       />
                       <TextField
-                        label="Descripción para lectores de pantalla"
+                        label="Qué se ve en la imagen"
                         value={fila.descripcion}
                         onChange={(e) => cambiar(fila.clave, { descripcion: e.target.value })}
-                        helperText="Qué se ve en la foto, en una frase."
+                        helperText="En una frase. Es lo que oye quien usa un lector de pantalla."
                         slotProps={{ htmlInput: { maxLength: 200 } }}
                         size="small"
                         fullWidth
@@ -469,11 +472,11 @@ export default function PortadaAdminPage() {
             onCambio={(imagenUrl) => cambiarSabado({ imagenUrl })}
           />
           <CampoTexto
-            etiqueta="Descripción de la foto"
+            etiqueta="Qué se ve en la imagen"
             valor={textos.sabadoDePasion.imagenAlt}
             onCambio={(imagenAlt) => cambiarSabado({ imagenAlt })}
             maxLength={200}
-            ayuda="Qué se ve en la foto, en una frase. No se lee en pantalla: la usan los lectores de pantalla."
+            ayuda="En una frase. No se lee en pantalla: es lo que oye quien usa un lector de pantalla."
           />
         </SeccionPlegable>
 

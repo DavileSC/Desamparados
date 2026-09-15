@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ArkErrors } from 'arktype';
+import topes from '../../shared/topes-contenido.json' with { type: 'json' };
 import { esquemaDeSlug } from '../src/schemas/contenido.schema.js';
 import { porDefecto } from '../src/domain/contenido.js';
 
@@ -58,6 +59,32 @@ test('la hora de una parada tiene que parecer una hora', () => {
 
   datos.paradas = [{ hora: '17:30', lugar: 'Plaza' }];
   assert.ok(valida('recorrido', datos));
+});
+
+test('cada clase de texto acepta su tope justo y rechaza un carácter más', () => {
+  // Los topes de `shared/topes-contenido.json` los repiten a mano los ~33
+  // `maxLength` de las pantallas del CMS, que es lo único que avisa mientras se
+  // escribe. Que el servidor corte de verdad en el límite no lo comprobaba
+  // nada: se daba por hecho leyendo el esquema, y el esquema es justo lo que
+  // este test tiene que vigilar.
+  const casos: [keyof typeof topes, (datos: any, valor: string) => void][] = [
+    ['etiqueta', (d, v) => { d.hero.ceja = v; }],
+    ['titulo', (d, v) => { d.hero.titulo = v; }],
+    ['parrafo', (d, v) => { d.hero.parrafo = v; }],
+    ['descripcion', (d, v) => { d.sabadoDePasion.imagenAlt = v; }],
+  ];
+
+  for (const [clase, poner] of casos) {
+    const tope = topes[clase];
+
+    const justo = porDefecto('portada') as any;
+    poner(justo, 'a'.repeat(tope));
+    assert.ok(valida('portada', justo), `${clase}: ${tope} caracteres son el tope y tienen que pasar`);
+
+    const pasado = porDefecto('portada') as any;
+    poner(pasado, 'a'.repeat(tope + 1));
+    assert.ok(!valida('portada', pasado), `${clase}: ${tope + 1} caracteres se pasan del tope y tienen que caer`);
+  }
 });
 
 test('una lista de paradas vacía es correcta', () => {

@@ -120,7 +120,13 @@ const guardar = async (usuario: Usuario) => {
 const putsA = (peticiones: () => Peticion[]) =>
   peticiones().filter((p) => p.metodo === 'PUT').map((p) => p.url)
 
-const descripcionesDeFoto = () => screen.getAllByLabelText(/descripción para lectores de pantalla/i)
+/**
+ * Los textos alternativos de las fotos de la cabecera, en su orden. Las tres
+ * imágenes editables del CMS comparten rótulo desde que se unificaron, así que
+ * la consulta devuelve también el del bloque «Sábado de Pasión»: va el último,
+ * porque su sección viene después en el DOM (plegada, pero montada).
+ */
+const descripcionesDeFoto = () => screen.getAllByLabelText(/qué se ve en la imagen/i)
 
 /**
  * Las fotos de la cabecera en el orden en que se ven. De una sola consulta: en
@@ -278,6 +284,10 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
     const aviso = await screen.findByRole('alert')
     expect(aviso).toHaveTextContent(/fotos se han guardado/i)
     expect(aviso).toHaveTextContent(/textos no/i)
+    // Y por qué no. El aviso terminaba en «vuelve a intentarlo» y se tragaba el
+    // motivo, que es lo único accionable cuando el fallo es un 400 de validación:
+    // reintentar lo mismo no lo arregla nunca.
+    expect(aviso).toHaveTextContent(/fallo del servidor/i)
     // Las fotos SÍ llegaron al servidor: la portada pública tiene que enterarse
     // aunque el guardado se haya quedado a medias.
     await waitFor(() => expect(invalidar).toHaveBeenCalled())

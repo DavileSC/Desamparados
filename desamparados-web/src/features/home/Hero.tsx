@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import AppButton from '../../components/AppButton'
 import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
-import { TEXTOS_POR_DEFECTO, usePortada } from './useContenidoPortada'
+import { usePortada, useTextosPortada } from './useContenidoPortada'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
 const PARALLAX_X = 14
@@ -14,11 +14,18 @@ const PARALLAX_Y = 9
 export default function Hero() {
   const reduceMotion = useReducedMotion()
 
-  // Las fotos las decide el CMS. Hasta que llega la lista no se pinta ninguna:
-  // si se pintara la de siempre mientras tanto, cada visita empezaría con un
-  // fundido de la foto vieja a la nueva.
+  // Los textos, por el hook que comparten los otros cinco bloques y no por una
+  // copia de su expresión: el único test de «la API falla y salen los textos de
+  // siempre» corre sobre el hook, y con la copia aquí este bloque —el que más
+  // se ve— se quedaba justo fuera de esa red.
+  const textos = useTextosPortada()
+
+  // Las fotos las decide el CMS, y para ellas hace falta el `status` de la
+  // consulta: hasta que llega la lista no se pinta ninguna, porque si se
+  // pintara la de siempre mientras tanto cada visita empezaría con un fundido
+  // de la foto vieja a la nueva. Llamar a las dos no cuesta otra petición:
+  // react-query deduplica por la clave, que es la misma.
   const { data, status } = usePortada()
-  const textos = data?.textos ?? TEXTOS_POR_DEFECTO
   const imagenes = status === 'pending' ? null : data && data.imagenes.length > 0 ? data.imagenes : IMAGENES_POR_DEFECTO
   const total = imagenes?.length ?? 0
 

@@ -6,12 +6,12 @@ import PageHeader from '../../../components/PageHeader'
 import SectionTitle from '../../../components/SectionTitle'
 import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
-import { getContenido, type ContenidoRecorrido } from '../../../lib/api/contenido'
+import { CLAVE_RECORRIDO, getContenido, type ContenidoRecorrido } from '../../../lib/api/contenido'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 
 export default function RecorridoPage() {
   const { data } = useQuery({
-    queryKey: ['contenido', 'recorrido'],
+    queryKey: CLAVE_RECORRIDO,
     queryFn: () => getContenido<ContenidoRecorrido>('recorrido'),
     retry: false,
     staleTime: 5 * 60_000,

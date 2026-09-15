@@ -6,7 +6,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
-import RecorridoAdminPage from '../RecorridoAdminPage'
+import RecorridoAdminPage, { AVISO_PLANO_SIN_ALT } from '../RecorridoAdminPage'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 
 const respuesta = (cuerpo: unknown, status = 200) =>
@@ -102,6 +102,25 @@ describe('RecorridoAdminPage', () => {
     expect(await screen.findByText(/descripción/i)).toBeInTheDocument()
   })
 
+  it('al confirmar el diálogo, el aviso del plano sale fuera de la sección plegada', async () => {
+    // El aviso del propio campo vive dentro de «Plano», que arranca plegada, y
+    // lo plegado no se ve: al confirmar el diálogo no pasaba absolutamente nada
+    // —ni error, ni indicador, ni mensaje— y quien editaba se quedaba mirando.
+    const { usuario } = await montarConPlanoSinAlt()
+
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    await usuario.click(screen.getByRole('button', { name: /guardar cambios/i }))
+    // Mientras el diálogo siga montado, MUI deja el resto de la pantalla en
+    // `aria-hidden`; se espera a que se vaya antes de mirar nada por rol.
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    // Cada sección plegable es un `role="region"` del acordeón de MUI: el aviso
+    // que cuenta es el que NO cuelga de ninguna, porque es el único que se ve
+    // sin tener que desplegar la sección que se acaba de ignorar.
+    const alaVista = screen.getAllByText(AVISO_PLANO_SIN_ALT).filter((el) => !el.closest('[role="region"]'))
+    expect(alaVista).toHaveLength(1)
+  })
+
   it('aunque se confirme el diálogo, el plano sin descripción no llega a mandarse', async () => {
     // Cierra el hueco del test de arriba: ese solo comprueba el aviso, no que
     // el envío se pare de verdad. Este sí llega hasta «Guardar cambios», que
@@ -121,7 +140,10 @@ describe('RecorridoAdminPage', () => {
       plano: { url: '/storage/public/ab12cd34ef56ab78cd90ef12ab34cd56.webp', alt: 'Plano del recorrido, calle a calle' },
     }))
     const usuario = userEvent.setup({ delay: null })
-    await screen.findByDisplayValue('Plaza de la Marina')
+    // Se retoca algo antes: desde que la pantalla no guarda documentos sin
+    // cambios, un formulario recién cargado no mandaría nada y este test
+    // pasaría a comprobar lo contrario de lo que dice su nombre.
+    await usuario.type(await screen.findByDisplayValue('Plaza de la Marina'), '!')
 
     await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
     await usuario.click(screen.getByRole('button', { name: /guardar cambios/i }))
@@ -133,12 +155,30 @@ describe('RecorridoAdminPage', () => {
   it('guarda el documento entero', async () => {
     const { peticiones } = montar()
     const usuario = userEvent.setup({ delay: null })
-    await screen.findByDisplayValue('Plaza de la Marina')
+    await usuario.type(await screen.findByDisplayValue('Plaza de la Marina'), '!')
 
     await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
     await usuario.click(screen.getByRole('button', { name: /guardar cambios/i }))
 
     await waitFor(() => expect(peticiones()).toContainEqual(
       expect.objectContaining({ url: '/api/contenido/recorrido', metodo: 'PUT' })))
+  })
+
+  it('sin cambios, guardar no manda nada', async () => {
+    // Cada «Guardar» en balde era un PUT, un apunte de auditoría y un
+    // `updatedAt` movido para dejar el documento exactamente igual que estaba.
+    // La portada ya se negaba a hacerlo; esta pantalla no tenía por qué ser
+    // distinta.
+    const { peticiones } = montar()
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByDisplayValue('Plaza de la Marina')
+
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    await usuario.click(screen.getByRole('button', { name: /guardar cambios/i }))
+    // El diálogo tapa el resto de la pantalla con `aria-hidden` mientras siga
+    // montado: sin esta espera, la comprobación de abajo no miraría nada.
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    expect(peticiones().filter((p) => p.metodo === 'PUT')).toEqual([])
   })
 })
