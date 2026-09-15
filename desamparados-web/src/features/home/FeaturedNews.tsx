@@ -23,13 +23,17 @@ export default function FeaturedNews() {
     <AnimatedSection cascada id="actualidad" aria-labelledby="actualidad-titulo" sx={{ py: { xs: 8, md: 11 }, backgroundColor: '#262326' }}>
       <PageContainer>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, mb: { xs: 4, md: 5.5 } }}>
-          <Revela>
-            <Typography component="span" sx={ceja}>{textos.actualidad.ceja}</Typography>
-            <Typography id="actualidad-titulo" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
-              {textos.actualidad.titulo}
-            </Typography>
-          </Revela>
-          <Revela orden={1}>
+          <Box>
+            <Revela>
+              <Typography component="span" sx={ceja}>{textos.actualidad.ceja}</Typography>
+            </Revela>
+            <Revela efecto="cortina" orden={1}>
+              <Typography id="actualidad-titulo" variant="h2" component="h2" sx={{ fontFamily: SERIF, color: '#fff', m: 0 }}>
+                {textos.actualidad.titulo}
+              </Typography>
+            </Revela>
+          </Box>
+          <Revela orden={2}>
             <Box component={Link} to="/actualidad/noticias" sx={enlaceBloque}>
               {textos.actualidad.enlace} <span className="home-visually-hidden">las noticias</span> <ArrowForwardIcon />
             </Box>
@@ -43,7 +47,7 @@ export default function FeaturedNews() {
             sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 3.25 } }}
           >
             {news.slice(0, MAX_NOTICIAS).map((noticia, i) => (
-              <Revela key={noticia.id} as="li" orden={2 + i} sx={{ display: 'flex' }}>
+              <Revela key={noticia.id} as="li" efecto="crecer" orden={3 + i} sx={{ display: 'flex' }}>
                 <NewsCard news={noticia} indice={i} />
               </Revela>
             ))}

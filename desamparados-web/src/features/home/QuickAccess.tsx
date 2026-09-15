@@ -265,7 +265,8 @@ export default function QuickAccess() {
             mx: 'auto',
           }}
         >
-          <Revela as="li" sx={{ display: 'flex', gridColumn: { xs: '1 / -1', md: '1' }, gridRow: { md: `1 / span ${filas}` } }}>
+          {/* La placa se descubre de izquierda a derecha; las teselas van creciendo detrás. */}
+          <Revela as="li" efecto="desvelar" sx={{ display: 'flex', gridColumn: { xs: '1 / -1', md: '1' }, gridRow: { md: `1 / span ${filas}` } }}>
             <PlacaHazteHermano placa={textos.accesos.placa} />
           </Revela>
           {teselas.map((acceso, i) => {
@@ -275,6 +276,7 @@ export default function QuickAccess() {
               <Revela
                 as="li"
                 key={acceso.href}
+                efecto="crecer"
                 orden={i + 1}
                 sx={{ display: 'flex', ...(ancha ? { gridColumn: { xs: '1 / -1', md: '2 / -1' } } : {}) }}
               >

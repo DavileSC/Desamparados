@@ -208,7 +208,8 @@ export default function FeaturedPublications() {
       <PageContainer sx={{ position: 'relative', pl: { md: 'max(64px, calc(128px - max(0px, (100vw - 1440px) / 2)))' } }}>
         {destacada ? (
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 440px' }, gap: { xs: 4, lg: 7 }, alignItems: 'center' }}>
-            <Revela sx={{ order: { xs: -1, lg: 0 }, gridColumn: { lg: 2 }, gridRow: { lg: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 }, ml: { md: 5, lg: 0 } }}>
+            {/* Los ejemplares son el objeto del bloque: crecen al posarse. */}
+            <Revela efecto="crecer" sx={{ order: { xs: -1, lg: 0 }, gridColumn: { lg: 2 }, gridRow: { lg: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 }, ml: { md: 5, lg: 0 } }}>
               <Ejemplares destacada={destacada} anteriores={otras} />
             </Revela>
             <Box sx={{ gridColumn: { lg: 1 }, gridRow: { lg: 1 } }}>
@@ -216,9 +217,13 @@ export default function FeaturedPublications() {
                 <Typography id="publicaciones-titulo" component="h2" sx={cejaTitulo}>
                   Publicaciones · {mes(destacada.date)} {anio(destacada.date)}
                 </Typography>
+              </Revela>
+              <Revela efecto="cortina" orden={2}>
                 <Typography variant="h3" component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 34, md: 52 }, lineHeight: 1.06, letterSpacing: '-0.015em', color: '#fff', textWrap: 'balance' }}>
                   {destacada.title}
                 </Typography>
+              </Revela>
+              <Revela orden={3}>
                 {destacada.description && (
                   <Typography sx={{ mt: 2.5, maxWidth: 470, fontSize: 16, lineHeight: 1.7, color: '#d9d5d0' }}>
                     {destacada.description}
@@ -248,7 +253,7 @@ export default function FeaturedPublications() {
                 </Box>
               </Revela>
               {otras.length > 0 && (
-                <Revela orden={2}>
+                <Revela orden={4}>
                   <Box
                     component="ul"
                     aria-label="Otras publicaciones"
