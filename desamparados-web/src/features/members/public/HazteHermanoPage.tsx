@@ -195,8 +195,12 @@ export default function HazteHermanoPage() {
               // amplía y se corre a la izquierda para que el rostro (que en la
               // foto está al 40 % del ancho) quede bajo el texto y no lo parta
               // el borde de la tarjeta.
+              // El `max-width: 100%` global de las imágenes la recortaba al
+              // ancho de la ventana y, corrida a la izquierda, dejaba sin
+              // cubrir el tercio derecho. Desplazamiento + ancho pasan del 100 %.
+              maxWidth: 'none',
               left: { xs: 0, md: '-32%' },
-              width: { xs: '100%', md: '130%' },
+              width: { xs: '100%', md: '136%' },
               objectPosition: { xs: '50% 22%', md: '50% 0%' },
               opacity: OPACIDAD_VIRGEN,
               filter: 'saturate(0.85)',
