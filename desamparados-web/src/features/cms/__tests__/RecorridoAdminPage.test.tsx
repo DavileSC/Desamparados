@@ -46,13 +46,13 @@ function montar(inicial: Response = respuesta(POR_DEFECTO.recorrido)) {
 
 /** Como `montar()`, pero el plano ya trae una foto sin descripción. */
 async function montarConPlanoSinAlt() {
-  montar(respuesta({
+  const { peticiones } = montar(respuesta({
     ...POR_DEFECTO.recorrido,
     plano: { url: '/storage/public/ab12cd34ef56ab78cd90ef12ab34cd56.webp', alt: '' },
   }))
   const usuario = userEvent.setup({ delay: null })
   await screen.findByRole('button', { name: 'Guardar' })
-  return { usuario }
+  return { usuario, peticiones }
 }
 
 describe('RecorridoAdminPage', () => {
@@ -100,6 +100,34 @@ describe('RecorridoAdminPage', () => {
     await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(await screen.findByText(/descripción/i)).toBeInTheDocument()
+  })
+
+  it('aunque se confirme el diálogo, el plano sin descripción no llega a mandarse', async () => {
+    // Cierra el hueco del test de arriba: ese solo comprueba el aviso, no que
+    // el envío se pare de verdad. Este sí llega hasta «Guardar cambios», que
+    // es lo único que dispara `onGuardar` (el botón de arriba solo abre el diálogo).
+    const { usuario, peticiones } = await montarConPlanoSinAlt()
+
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    await usuario.click(screen.getByRole('button', { name: /guardar cambios/i }))
+
+    expect(peticiones().some((p) => p.metodo === 'PUT')).toBe(false)
+  })
+
+  it('con el plano descrito, el guardado sí llega al servidor', async () => {
+    // El caso contrario del anterior: la guarda no debe bloquear un plano válido.
+    const { peticiones } = montar(respuesta({
+      ...POR_DEFECTO.recorrido,
+      plano: { url: '/storage/public/ab12cd34ef56ab78cd90ef12ab34cd56.webp', alt: 'Plano del recorrido, calle a calle' },
+    }))
+    const usuario = userEvent.setup({ delay: null })
+    await screen.findByDisplayValue('Plaza de la Marina')
+
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+    await usuario.click(screen.getByRole('button', { name: /guardar cambios/i }))
+
+    await waitFor(() => expect(peticiones()).toContainEqual(
+      expect.objectContaining({ url: '/api/contenido/recorrido', metodo: 'PUT' })))
   })
 
   it('guarda el documento entero', async () => {
