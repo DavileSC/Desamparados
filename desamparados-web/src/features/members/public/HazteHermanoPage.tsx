@@ -173,43 +173,49 @@ export default function HazteHermanoPage() {
         }}
       >
         {/* La Virgen, velada, detrás de la solicitud. Es la foto de siempre del
-            hero. Va muy tenue y fundida arriba y abajo al fondo de página, para
-            que no se note el corte con la barra ni con el pie; el rostro queda
-            hacia la columna del texto, no bajo la tarjeta. */}
+            hero, a su alto completo para que corona y rostro entren enteros en
+            cualquier ventana: a sangre y ampliada, en una pantalla apaisada solo
+            cabía la mitad de arriba y los ojos quedaban en el borde. En
+            escritorio ocupa la columna del texto y se funde al fondo antes de
+            la tarjeta; en móvil va a todo el ancho y la tarjeta tinta el resto.
+            Arriba y abajo se funde al fondo de página, para que no se note el
+            corte con la barra ni con el pie. */}
         <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, zIndex: -1, overflow: 'hidden', pointerEvents: 'none' }}>
           <Box
             component="img"
             src="/images/hero-1920.webp"
             srcSet="/images/hero-960.webp 960w, /images/hero-1920.webp 1920w"
-            sizes="100vw"
+            sizes="(min-width: 900px) 60vw, 100vw"
             alt=""
             decoding="async"
             fetchPriority="low"
             sx={{
               position: 'absolute',
               top: 0,
+              left: 0,
               height: '100%',
-              objectFit: 'cover',
-              // En móvil, a sangre y centrada: la corona asoma alrededor del
-              // título y la tarjeta tinta el resto. En escritorio la foto se
-              // amplía y se corre a la izquierda para que el rostro (que en la
-              // foto está al 40 % del ancho) quede bajo el texto y no lo parta
-              // el borde de la tarjeta.
-              // El `max-width: 100%` global de las imágenes la recortaba al
-              // ancho de la ventana y, corrida a la izquierda, dejaba sin
-              // cubrir el tercio derecho. Desplazamiento + ancho pasan del 100 %.
+              width: { xs: '100%', md: '60%' },
               maxWidth: 'none',
-              left: { xs: 0, md: '-32%' },
-              width: { xs: '100%', md: '136%' },
-              objectPosition: { xs: '50% 22%', md: '50% 0%' },
+              objectFit: 'cover',
+              // El rostro está al 40 % del ancho de la foto: alineado con el
+              // 40 % de su caja queda bajo el texto, no bajo la tarjeta.
+              objectPosition: '40% 50%',
               opacity: OPACIDAD_VIRGEN,
               filter: 'saturate(0.85)',
             }}
           />
           <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${FONDO} 0%, transparent 22%, transparent 76%, ${FONDO} 100%)` }} />
-          <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, ${FONDO_VELO_LEVE} 0%, transparent 30%, ${FONDO_VELO} 100%)` }} />
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              background: {
+                xs: `linear-gradient(90deg, ${FONDO_VELO_LEVE} 0%, transparent 30%, ${FONDO_VELO} 100%)`,
+                md: `linear-gradient(90deg, ${FONDO_VELO_LEVE} 0%, transparent 20%, transparent 32%, ${FONDO} 60%)`,
+              },
+            }}
+          />
         </Box>
-
         <PageContainer>
           <Box
             sx={{
