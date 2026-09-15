@@ -1,0 +1,70 @@
+{
+  "portada": {
+    "hero": {
+      "ceja": "Grupo Parroquial · Málaga",
+      "titulo": "Desamparados Málaga",
+      "parrafo": "Devoción, historia y patrimonio en el corazón de Málaga. Acompáñanos en nuestro solemne caminar.",
+      "botonPrincipal": "Conoce el Grupo Parroquial",
+      "enlaceSecundario": "Agenda y cultos"
+    },
+    "actualidad": {
+      "ceja": "Actualidad",
+      "titulo": "Últimas noticias",
+      "enlace": "Ver todas"
+    },
+    "agenda": {
+      "ceja": "Cultos",
+      "titulo": "Agenda y Cultos",
+      "parrafo": "La vida de oración del Grupo Parroquial a lo largo del año litúrgico: cultos, formación y convivencia.",
+      "enlace": "Calendario completo",
+      "directoTitulo": "Ver en directo",
+      "directoTexto": "Retransmisión desde la sede"
+    },
+    "accesos": {
+      "placa": {
+        "ceja": "Hazte hermano",
+        "titulo": "Forma parte de nuestra historia",
+        "texto": "Una comunidad de fe que vive la devoción a nuestra Sagrada Titular y trabaja por el bien común.",
+        "boton": "Quiero ser hermano"
+      },
+      "teselas": [
+        { "clave": "sede", "titulo": "Nuestra sede", "descripcion": "Parroquia de los Pasionistas" },
+        { "clave": "caridad", "titulo": "Caridad", "descripcion": "Ayuda social y obra asistencial" },
+        { "clave": "historia", "titulo": "Historia", "descripcion": "Orígenes y evolución del Grupo Parroquial" },
+        { "clave": "boletines", "titulo": "Boletines", "descripcion": "Boletín informativo y anuarios" },
+        { "clave": "youtube", "titulo": "Canal de YouTube", "descripcion": "Vídeos y retransmisiones" },
+        { "clave": "contacto", "titulo": "Contacto", "descripcion": "Estamos a tu disposición" }
+      ]
+    },
+    "sabadoDePasion": {
+      "ceja": "Sábado de Pasión",
+      "titulo": "Una devoción que\ncamina con nosotros.",
+      "parrafo": "La fe compartida, el encuentro y la emoción de acompañar a Nuestra Señora por las calles de Málaga.",
+      "enlace": "Vive el Sábado de Pasión",
+      "imagenUrl": "/images/nazarenos-1280.webp",
+      "imagenAlt": "Nazarenos de capirote blanco durante la procesión"
+    },
+    "publicaciones": {
+      "boton": "Archivo de publicaciones",
+      "marcaDeAgua": "DESAMPARADOS"
+    }
+  },
+  "recorrido": {
+    "titulo": "Recorrido",
+    "subtitulo": "Itinerario oficial de la estación de penitencia.",
+    "introduccion": "El itinerario de la procesión del Sábado de Pasión recorre algunas de las calles más emblemáticas de Málaga. Los horarios son orientativos y pueden sufrir ligeras modificaciones en función del ritmo de la cofradía y de las circunstancias del momento.",
+    "tituloItinerario": "Itinerario y horarios aproximados",
+    "plano": { "url": "", "alt": "" },
+    "paradas": [
+      { "hora": "17:30", "lugar": "Salida desde la Parroquia de los Desamparados" },
+      { "hora": "18:00", "lugar": "Plaza de la Constitución" },
+      { "hora": "18:30", "lugar": "Calle Marqués de Larios" },
+      { "hora": "19:00", "lugar": "Plaza de la Marina" },
+      { "hora": "19:30", "lugar": "Paseo del Parque" },
+      { "hora": "20:00", "lugar": "Plaza del Obispo" },
+      { "hora": "20:30", "lugar": "Calle Molina Lario" },
+      { "hora": "21:00", "lugar": "Plaza de la Constitución" },
+      { "hora": "21:30", "lugar": "Entrada en la Parroquia de los Desamparados" }
+    ]
+  }
+}
