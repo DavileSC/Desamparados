@@ -26,11 +26,15 @@ function SondaPortadaPublica() {
   return null
 }
 
+type Textos = typeof POR_DEFECTO.portada
+
 interface Opciones {
   /** Ruta cuyo PUT responde 500, para probar el guardado a medias. */
   fallaEn?: string
   /** Fotos que devuelve la lectura inicial. */
   imagenes?: typeof FOTOS
+  /** Textos que devuelve la lectura inicial, para no depender siempre del documento por defecto. */
+  textos?: Textos
   /** La lectura inicial responde 500. */
   cargaRota?: boolean
   /** Monta además un componente que usa la consulta de la portada pública. */
@@ -41,9 +45,14 @@ interface Opciones {
  * Registra cada petición para poder afirmar **a qué rutas** fue el guardado,
  * que es lo que distingue «guardó las dos cosas» de «guardó una».
  */
-function montar({ fallaEn, imagenes = FOTOS, cargaRota = false, conPortadaPublica = false }: Opciones = {}) {
+function montar({
+  fallaEn,
+  imagenes = FOTOS,
+  textos = structuredClone(POR_DEFECTO.portada),
+  cargaRota = false,
+  conPortadaPublica = false,
+}: Opciones = {}) {
   const registradas: Peticion[] = []
-  const textos = structuredClone(POR_DEFECTO.portada)
 
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: unknown, opciones?: RequestInit) => {
     const ruta = String(url)
@@ -158,7 +167,21 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
         { url: '/storage/public/segunda.webp', descripcion: 'Segunda!' },
       ],
     })
-    expect(await screen.findByRole('alert')).toHaveTextContent(/guardad/i)
+    // Afinado: un «guardad…» a secas también casaría con el aviso del guardado a medias.
+    expect(await screen.findByRole('alert')).toHaveTextContent(/cambios guardados/i)
+  })
+
+  it('sin cambios, guardar no manda nada ni dice que se haya guardado', async () => {
+    const { peticiones, usuario } = montar()
+    await screen.findByDisplayValue('Desamparados Málaga')
+
+    await guardar(usuario)
+
+    // Hasta que el diálogo no se va, MUI deja el resto de la página en
+    // `aria-hidden` y cualquier `queryByRole` de aquí daría vacío sin mirar nada.
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(putsA(peticiones)).toEqual([])
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('si solo cambian los textos, no reescribe la lista de fotos', async () => {
@@ -220,7 +243,10 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
     await screen.findByDisplayValue('Desamparados Málaga')
 
     expect(screen.getByText(/el texto pequeño en versalitas, sobre el título grande/i)).toBeInTheDocument()
-    expect(screen.getByText(/ocupa el fondo del bloque a todo lo ancho/i)).toBeInTheDocument()
+    const fotoDelSabado = screen.getByText(/ocupa el fondo del bloque a todo lo ancho/i)
+    // El servidor borra la foto anterior al guardar (contenido.service.ts), igual
+    // que con las de la cabecera: si no se avisa, se pierde sin saber por qué.
+    expect(fotoDelSabado).toHaveTextContent(/la anterior se borra del servidor/i)
   })
 
   it('guarda las fotos y los textos, cada uno a su sitio', async () => {
@@ -241,7 +267,7 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
   it('si fallan los textos después de guardar las fotos, lo dice', async () => {
     // Son dos almacenes y dos peticiones: el botón no puede decir «guardado» si
     // la segunda ha fallado. Es la mentira más fácil de escribir aquí.
-    const { usuario } = montar({ fallaEn: '/contenido/portada' })
+    const { usuario, invalidar } = montar({ fallaEn: '/contenido/portada' })
 
     // Se tocan las DOS cosas: una foto y un texto. Con solo el texto, el mensaje
     // correcto sería otro (no se guardó nada), y el test no probaría este caso.
@@ -252,6 +278,9 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
     const aviso = await screen.findByRole('alert')
     expect(aviso).toHaveTextContent(/fotos se han guardado/i)
     expect(aviso).toHaveTextContent(/textos no/i)
+    // Las fotos SÍ llegaron al servidor: la portada pública tiene que enterarse
+    // aunque el guardado se haya quedado a medias.
+    await waitFor(() => expect(invalidar).toHaveBeenCalled())
   })
 
   it('si fallan las fotos no dice que se hayan guardado, ni escribe los textos', async () => {
@@ -292,14 +321,18 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
     expect(invalidar).not.toHaveBeenCalled()
   })
 
-  it('pinta los seis accesos en el orden del documento y no deja añadir, quitar ni reordenar', async () => {
-    const { usuario } = montar()
+  it('pinta los accesos en el orden en que llegan, no en uno escrito a mano', async () => {
+    // Barajados a propósito: con el documento por defecto, una implementación que
+    // se inventara el orden en el código pasaría igual y el test no valdría nada.
+    const textos = structuredClone(POR_DEFECTO.portada)
+    textos.accesos.teselas = [...textos.accesos.teselas].reverse()
+    const { usuario } = montar({ textos })
     await screen.findByDisplayValue('Desamparados Málaga')
     await usuario.click(screen.getByRole('button', { name: /accesos directos/i }))
 
-    const mosaico = screen.getByRole('group', { name: /los seis accesos/i })
+    const mosaico = screen.getByRole('group', { name: /textos de los accesos/i })
     expect(within(mosaico).getAllByLabelText('Título').map((campo) => (campo as HTMLInputElement).value)).toEqual([
-      'Nuestra sede', 'Caridad', 'Historia', 'Boletines', 'Canal de YouTube', 'Contacto',
+      'Contacto', 'Canal de YouTube', 'Boletines', 'Historia', 'Caridad', 'Nuestra sede',
     ])
     // El destino y el icono los pone el código: aquí no hay nada que pulsar.
     expect(within(mosaico).queryByRole('button')).not.toBeInTheDocument()
@@ -323,5 +356,18 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
     // El texto llega con un salto de línea real; las consultas de Testing Library
     // normalizan los espacios, así que aquí se busca ya normalizado.
     expect(campoMultilinea('Una devoción que camina con nosotros.').tagName).toBe('TEXTAREA')
+  })
+
+  it('la foto del Sábado de Pasión se puede cambiar pero no quitar', async () => {
+    // El backend valida ese campo con `rutaImagenPublica` (contenido.schema.ts) y
+    // no admite cadena vacía: un botón de quitar dejaría el documento entero
+    // inguardable, también los textos de los otros cinco bloques.
+    const { usuario } = montar()
+    await screen.findByDisplayValue('Desamparados Málaga')
+    await usuario.click(screen.getByRole('button', { name: /sábado de pasión/i }))
+
+    const campo = within(screen.getByRole('group', { name: 'Foto del bloque' }))
+    expect(campo.getByRole('button', { name: /cambiar foto/i })).toBeInTheDocument()
+    expect(campo.queryByRole('button', { name: /quitar foto/i })).not.toBeInTheDocument()
   })
 })

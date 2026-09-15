@@ -14,7 +14,8 @@ import { guardarContenido } from '../../lib/api/contenido'
 /** Tope del servidor (portada.schema.ts): se avisa antes de enviar. */
 export const MAX_FOTOS_PORTADA = 12
 const AYUDA_FOTO = 'JPG, PNG o WebP apaisado, de al menos 1920 píxeles de ancho y hasta 5 MB.'
-const AYUDA_FOTO_SABADO = `${AYUDA_FOTO} Ocupa el fondo del bloque a todo lo ancho.`
+const AYUDA_FOTO_SABADO = `${AYUDA_FOTO} Ocupa el fondo del bloque a todo lo ancho. `
+  + 'Al cambiarla y guardar, la anterior se borra del servidor salvo que la use algo más.'
 
 /**
  * La misma clave con la que la portada pública guarda su caché
@@ -158,7 +159,10 @@ export default function PortadaAdminPage() {
         setInicialTextos(JSON.stringify(textos))
         textosGuardados = true
       }
-      setGuardado(true)
+      // Solo se marca éxito si algo llegó de verdad al servidor: pulsar Guardar
+      // sin haber cambiado nada no manda ninguna petición, y decir «guardado»
+      // sería la misma mentira pequeña que este botón tiene prohibida.
+      setGuardado(fotosGuardadas || textosGuardados)
     } catch (e: unknown) {
       // Son dos almacenes y dos peticiones. Si el fallo llega en la segunda, las
       // fotos YA están guardadas: decirlo, o quien lo lea creerá que no se ha
@@ -405,10 +409,11 @@ export default function PortadaAdminPage() {
           <Divider sx={{ pt: 1 }} />
 
           <Box>
-            <Typography id={idMosaico} variant="subtitle2" sx={{ mb: 1 }}>Los seis accesos</Typography>
+            <Typography id={idMosaico} variant="subtitle2" sx={{ mb: 1 }}>Textos de los accesos</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Van en este orden, que no se cambia desde aquí, igual que a dónde lleva cada uno y su icono. Solo se
-              editan el nombre y la línea que va debajo.
+              Aquí se cambian el nombre y la línea de debajo de cada acceso. Cuáles salen en la portada, en qué
+              orden y a dónde llevan lo decide el código, no esta lista: no se puede añadir, quitar ni reordenar
+              ninguno.
             </Typography>
             <Stack role="group" aria-labelledby={idMosaico} spacing={2}>
               {textos.accesos.teselas.map((tesela, indice) => (
@@ -449,10 +454,17 @@ export default function PortadaAdminPage() {
             maxLength={60}
             ayuda="El enlace del final del bloque. Sigue llevando a la página del Sábado de Pasión."
           />
+          {/*
+            Sin botón de quitar: el bloque es una banda de foto a sangre y no
+            existe el estado «sin foto». El backend tampoco lo admite
+            (`rutaImagenPublica` en contenido.schema.ts rechaza la cadena vacía),
+            así que quitarla dejaría todo el documento sin poder guardarse.
+          */}
           <CampoImagen
             etiqueta="Foto del bloque"
             ayuda={AYUDA_FOTO_SABADO}
             apaisada
+            sinQuitar
             valor={textos.sabadoDePasion.imagenUrl}
             onCambio={(imagenUrl) => cambiarSabado({ imagenUrl })}
           />
