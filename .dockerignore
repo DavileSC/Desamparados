@@ -1,0 +1,38 @@
+# Qué NO entra en el contexto de construcción de las imágenes.
+#
+# El contexto es la raíz del repositorio y no cada carpeta por separado:
+# `src/domain/contenido.ts` importa `../../../shared/contenido-por-defecto.json`,
+# así que la imagen de la API necesita `shared/` al lado de
+# `backend-desamparados/`. Ver docker/api.Dockerfile.
+
+# Las dependencias se instalan dentro de la imagen, con el sistema operativo y
+# la arquitectura del contenedor. Copiar las de Windows rompería sharp y Prisma.
+node_modules
+**/node_modules
+
+# Lo construido aquí no viaja: cada imagen lo genera.
+desamparados-web/dist
+**/*.tsbuildinfo
+
+# Secretos. El .env del backend existe en esta máquina con valores reales y no
+# puede acabar en una capa de imagen, de donde ya no se borra.
+.env
+**/.env
+**/.env.*
+!**/.env.example
+
+# Los archivos subidos desde el CMS se montan del disco, no se hornean.
+backend-desamparados/storage
+
+# Nada de esto hace falta para ejecutar.
+.git
+.github
+.gitignore
+.superpowers
+docs
+**/test
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.log
+.claude

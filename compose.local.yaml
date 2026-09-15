@@ -1,0 +1,50 @@
+# Sobrescritura para probar el montaje en esta máquina. No se usa en el
+# servidor.
+#
+#   docker compose -f compose.yaml -f compose.local.yaml up -d --build
+#
+# Qué cambia respecto a producción, y nada más:
+#   - Los puertos son 8080 y 8443, para no chocar con lo que ya escuche en el
+#     80 y el 443.
+#   - El certificado es autofirmado y para `localhost`; lo genera el servicio
+#     `certificado-local` la primera vez.
+#   - El sitio de nginx es docker/nginx/sitio-local.conf, que no manda HSTS.
+#
+# Lo que NO cambia: NODE_ENV sigue siendo production. Es lo que se quiere
+# probar —la cookie Secure, las cabeceras, la siembra segura—, y por eso se
+# sirve por HTTPS y no por HTTP.
+#
+# La base de datos de aquí es la del compose y vive en su propio volumen: no
+# tiene nada que ver con el contenedor `desamparados-mariadb` que usan los
+# tests. El puerto 3306 no se publica, así que no se pisan.
+
+services:
+  # Certificado autofirmado para localhost, solo si no existe ya.
+  certificado-local:
+    image: alpine/openssl:latest
+    restart: "no"
+    volumes:
+      - certificados-local:/certificados
+    entrypoint:
+      - sh
+      - -c
+      - |
+        test -f /certificados/cert.pem && exit 0
+        openssl req -x509 -newkey rsa:2048 -nodes -days 825 -keyout /certificados/key.pem -out /certificados/cert.pem -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+
+  web:
+    ports: !override
+      - "8080:80"
+      - "8443:443"
+    volumes: !override
+      - ./backend-desamparados/storage/public:/srv/storage/public:ro
+      - ./docker/nginx/sitio-local.conf:/etc/nginx/conf.d/desamparados.conf:ro
+      - certificados-local:/etc/nginx/certificados-local:ro
+    depends_on: !override
+      api:
+        condition: service_healthy
+      certificado-local:
+        condition: service_completed_successfully
+
+volumes:
+  certificados-local:
