@@ -25,6 +25,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import {
   borrarSubida,
   buscarHuerfanos,
+  contarReferencias,
   nombreDeSubida,
   subidasEnTexto,
   subidasReferenciadas,
@@ -319,6 +320,35 @@ describe('referencias para el script de huérfanos', () => {
     } finally {
       await db.pagina.deleteMany({ where: { slug } });
       await db.evento.deleteMany({ where: { id: evento.id } });
+    }
+  });
+
+  test('una foto que solo menciona ContenidoPagina cuenta como en uso', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+
+    // Nombre con la forma exacta de una subida del CMS: 32 hex + extensión.
+    const nombre = 'ab12cd34ef56ab78cd90ef12ab34cd56.webp';
+    const ruta = `/storage/public/${nombre}`;
+    const antes = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
+
+    try {
+      await db.contenidoPagina.upsert({
+        where: { slug: 'portada' },
+        update: { datos: { sabadoDePasion: { imagenUrl: ruta } } },
+        create: { slug: 'portada', datos: { sabadoDePasion: { imagenUrl: ruta } } },
+      });
+
+      assert.equal(
+        await contarReferencias(nombre), 1,
+        'sin esto, guardar la portada borraría del disco la foto que acaba de publicarse',
+      );
+      assert.ok(
+        (await subidasReferenciadas()).has(nombre),
+        'sin esto, limpiar:huerfanos --borrar la borraría estando en la web',
+      );
+    } finally {
+      if (antes) await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes.datos as object } });
+      else await db.contenidoPagina.deleteMany({ where: { slug: 'portada' } });
     }
   });
 });

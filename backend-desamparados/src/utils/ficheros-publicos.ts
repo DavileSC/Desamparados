@@ -69,7 +69,9 @@ const rutasDelEntorno = () => VARIABLES_CON_RUTAS.map((nombre) => process.env[no
  *
  * Es la lista de todos los sitios donde el CMS guarda rutas: si se añade un
  * campo nuevo que apunte a `/storage/public`, tiene que entrar aquí y en
- * `subidasReferenciadas`, o sus ficheros se borrarán estando en uso.
+ * `subidasReferenciadas`, o sus ficheros se borrarán estando en uso. El
+ * contenido editable (`ContenidoPagina`, tabla `portada`/`recorrido`) ya
+ * está contemplado vía `contarEnContenido`.
  */
 export async function contarReferencias(nombre: string): Promise<number> {
   const enEntorno = [...subidasEnTexto(...rutasDelEntorno())].some((n) => clave(n) === clave(nombre));
@@ -82,19 +84,30 @@ export async function contarReferencias(nombre: string): Promise<number> {
     db.enser.count({ where: { imagenUrl: menciona } }),
     db.pagina.count({ where: { contenido: menciona } }),
     db.evento.count({ where: { description: menciona } }),
+    // El contenido editable guarda rutas de foto dentro de un JSON (la de
+    // «Sábado de Pasión», el plano del recorrido). Son dos filas: se leen
+    // enteras y se busca el nombre en su texto, porque el filtro JSON de Prisma
+    // sobre MariaDB no es de fiar para un `contains` dentro de un objeto.
+    contarEnContenido(nombre),
   ]);
   return cuentas.reduce((total, n) => total + n, 0);
 }
 
+async function contarEnContenido(nombre: string): Promise<number> {
+  const paginas = await db.contenidoPagina.findMany({ select: { datos: true } });
+  return subidasEnTexto(...paginas.map((p) => JSON.stringify(p.datos))).has(nombre) ? 1 : 0;
+}
+
 /** Todos los ficheros subidos que menciona alguna tabla (para el script de huérfanos). */
 export async function subidasReferenciadas(): Promise<Set<string>> {
-  const [noticias, publicaciones, portada, enseres, paginas, eventos] = await Promise.all([
+  const [noticias, publicaciones, portada, enseres, paginas, eventos, contenido] = await Promise.all([
     db.noticia.findMany({ select: { imagenUrl: true, contenido: true } }),
     db.publicacion.findMany({ select: { imagenUrl: true, archivoUrl: true, descripcion: true } }),
     db.imagenPortada.findMany({ select: { url: true } }),
     db.enser.findMany({ select: { imagenUrl: true } }),
     db.pagina.findMany({ select: { contenido: true } }),
     db.evento.findMany({ select: { description: true } }),
+    db.contenidoPagina.findMany({ select: { datos: true } }),
   ]);
   const textos = [
     ...noticias.flatMap((n) => [n.imagenUrl, n.contenido]),
@@ -103,6 +116,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     ...enseres.map((e) => e.imagenUrl),
     ...paginas.map((p) => p.contenido),
     ...eventos.map((e) => e.description),
+    ...contenido.map((p) => JSON.stringify(p.datos)),
     ...rutasDelEntorno(),
   ];
   return subidasEnTexto(...textos);
