@@ -61,9 +61,12 @@ const recorridoSchema = type({
   introduccion: PARRAFO,
   tituloItinerario: TITULO,
   plano: { url: type('string').matching(/^$/).or(rutaImagenPublica), alt: DESCRIPCION },
-  // El lugar no es ninguna de las cuatro clases de `topes-contenido.json`: es
-  // el nombre de una calle o una plaza, y su tope es suyo aunque hoy coincida.
-  paradas: type({ hora, lugar: texto(200) }).array().atMostLength(60),
+  // El lugar tiene su propia entrada en `topes-contenido.json`, no la de
+  // `descripcion`: es el nombre de una calle o una plaza, y que hoy comparta
+  // valor con descripción es casualidad, no un vínculo. Sin tope propio, bajar
+  // el de descripción pondría en rojo sin motivo la prueba del CMS que exige
+  // que todo maxlength pintado sea un tope que el servidor reconozca.
+  paradas: type({ hora, lugar: texto(topes.lugar) }).array().atMostLength(60),
 }).narrow((datos, ctx) =>
   datos.plano.url === '' || datos.plano.alt.trim() !== ''
     ? true
