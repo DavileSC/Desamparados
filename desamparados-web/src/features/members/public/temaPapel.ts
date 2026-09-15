@@ -4,11 +4,23 @@ import { GRANATE, PAPEL } from '../../home/estilos'
 
 /** Tinta del texto sobre el papel, la misma que la tarjeta de la agenda. */
 export const TINTA_SOBRE_PAPEL = '#1b1c1a'
-/** Filete entre grupos de campos y bajo el consentimiento. */
+/** Filete entre bloques del pliego y tramos pendientes de la barra de pasos. */
 export const FILETE_PAPEL = '#e3dccf'
 /** Borde de los campos en reposo y al pasar el ratón. */
 const BORDE_CAMPO = '#cfc6b9'
 const BORDE_CAMPO_HOVER = '#8f8578'
+
+/**
+ * Botón secundario sobre el papel («Atrás», «Escribir a Secretaría»). El
+ * `outline` de AppButton está pensado para tinta: su borde casi blanco no se
+ * ve sobre el papel.
+ */
+export const BOTON_PAPEL_SECUNDARIO = {
+  borderRadius: '3px',
+  color: 'text.primary',
+  borderColor: BORDE_CAMPO,
+  '&:hover': { color: 'primary.main', borderColor: 'primary.main', backgroundColor: 'transparent' },
+} as const
 
 /**
  * Tema del pliego de papel donde va el formulario de alta.
@@ -19,8 +31,9 @@ const BORDE_CAMPO_HOVER = '#8f8578'
  * la paleta entera (texto, acciones, divisor) y no solo el `mode`, porque
  * `createTheme(base, cambios)` fusiona sin recalcular lo derivado.
  *
- * El granate es el único acento: foco de campo, casilla marcada y botón. Es el
- * color de la acción en toda la web, no un adorno del papel.
+ * El granate es el único acento: foco de campo, casilla marcada, tramo hecho
+ * de la barra de pasos y botón. Es el color de la acción en toda la web, no
+ * un adorno del papel.
  */
 export const temaPapel: Theme = createTheme(theme, {
   palette: {

@@ -2,28 +2,7 @@ import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { site } from '../../../config/site'
-import { GOLD, SERIF, ceja } from '../../home/estilos'
-
-/**
- * Los tres pasos del alta, en el orden en que ocurren. Es lo que hace el
- * servidor al recibir la solicitud (`AuthService.registerUser`): guarda la
- * ficha inactiva, manda el acuse de recibo por correo y deja el alta en manos
- * de Secretaría, que la formaliza en persona.
- */
-const PASOS_ALTA = [
-  {
-    titulo: 'Envías la solicitud',
-    texto: 'Rellena el formulario con tus datos. Te llevará unos minutos.',
-  },
-  {
-    titulo: 'Recibes el acuse de recibo',
-    texto: 'Te llega un correo confirmando que la solicitud está en Secretaría, con lo que necesitas para el siguiente paso.',
-  },
-  {
-    titulo: 'Formalizas el alta en Secretaría',
-    texto: 'Pásate por la casa parroquial con tu DNI y el certificado de bautismo. Al formalizar el alta se activa tu acceso al área de hermanos.',
-  },
-] as const
+import { GOLD, SERIF } from '../../home/estilos'
 
 const enlaceLateral = {
   display: 'inline-flex',
@@ -41,85 +20,54 @@ const enlaceLateral = {
   '&:hover svg': { transform: 'translateX(4px)' },
 } as const
 
-/** Columna lateral de «Hazte hermano»: cómo va el alta y a dónde acudir. */
+/**
+ * Qué pasa cuando la solicitud ya ha entrado. Es lo que hace el servidor
+ * (`AuthService.registerUser`): guarda la ficha inactiva, manda el acuse de
+ * recibo y deja el alta en manos de Secretaría, que la formaliza en persona.
+ * Sin numerar a propósito: los números son de los pasos del formulario.
+ */
 export default function ProcesoAlta() {
   return (
-    <Box component="aside" aria-labelledby="proceso-alta-titulo">
-      <Typography component="span" sx={ceja}>Cómo funciona</Typography>
+    <Box component="aside" aria-labelledby="despues-titulo">
       <Typography
-        id="proceso-alta-titulo"
+        id="despues-titulo"
         component="h2"
-        sx={{ fontFamily: SERIF, fontSize: { xs: 26, md: 30 }, lineHeight: 1.2, letterSpacing: '-0.01em', mb: 3.5 }}
+        sx={{ fontFamily: SERIF, fontSize: { xs: 22, md: 24 }, lineHeight: 1.2, mb: 1.5 }}
       >
-        El alta, en tres pasos
+        Después de enviar
       </Typography>
-
-      <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gap: { xs: 2.5, md: 3 } }}>
-        {PASOS_ALTA.map((paso, indice) => (
-          <Box
-            key={paso.titulo}
-            component="li"
-            sx={{ display: 'grid', gridTemplateColumns: '40px 1fr', columnGap: 2, alignItems: 'start' }}
-          >
-            <Typography
-              component="span"
-              aria-hidden="true"
-              sx={{ fontFamily: SERIF, fontSize: 34, lineHeight: 1, color: '#e3d8bf', mt: '-2px' }}
-            >
-              {indice + 1}
-            </Typography>
-            <Box>
-              <Typography component="h3" sx={{ fontSize: 17, fontWeight: 600, lineHeight: 1.35, mb: 0.5 }}>
-                {paso.titulo}
-              </Typography>
-              <Typography sx={{ fontSize: 15, lineHeight: 1.65, color: 'text.secondary' }}>
-                {paso.texto}
-              </Typography>
-            </Box>
-          </Box>
-        ))}
-      </Box>
-
-      <Box
-        sx={{
-          mt: { xs: 4, md: 5 },
-          pt: 3,
-          borderTop: '1px solid rgba(204, 196, 201, 0.2)',
-          display: 'grid',
-          gap: 2.5,
-        }}
-      >
-        <Box>
-          <Typography component="h3" sx={{ fontSize: 15, fontWeight: 600, mb: 0.5 }}>
-            Secretaría
-          </Typography>
-          <Typography sx={{ fontSize: 15, lineHeight: 1.65, color: 'text.secondary' }}>
-            Casa parroquial. {site.contacto.horario}.
-          </Typography>
-          <Typography
-            component="a"
-            href={`mailto:${site.contacto.email}`}
-            sx={{ fontSize: 15, color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3, '&:hover': { color: GOLD } }}
-          >
-            {site.contacto.email}
-          </Typography>
-        </Box>
-
-        <Typography sx={{ fontSize: 14, lineHeight: 1.65, color: 'text.secondary' }}>
-          Si el alta es para un menor, escríbenos y te decimos cómo hacerlo.
+      <Box sx={{ display: 'grid', gap: 1.25, maxWidth: '46ch' }}>
+        <Typography sx={{ fontSize: 15, lineHeight: 1.65, color: 'text.secondary' }}>
+          Te llega el acuse de recibo por correo y la solicitud queda en Secretaría.
         </Typography>
+        <Typography sx={{ fontSize: 15, lineHeight: 1.65, color: 'text.secondary' }}>
+          Para formalizar el alta, pásate por la casa parroquial con tu DNI y el certificado de
+          bautismo ({site.contacto.horario.toLowerCase()}). Entonces se activa tu acceso al área
+          de hermanos.
+        </Typography>
+      </Box>
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 3, rowGap: 0.5 }}>
-          <Box component={Link} to="/hermanos/acceso" sx={enlaceLateral}>
-            Ya soy hermano
-            <ArrowForwardIcon />
-          </Box>
-          <Box component={Link} to="/contacto" sx={enlaceLateral}>
-            Tengo una duda
-            <ArrowForwardIcon />
-          </Box>
+      <Box sx={{ mt: 2.5, display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 3, rowGap: 0.5 }}>
+        <Box component={Link} to="/hermanos/acceso" sx={enlaceLateral}>
+          Ya soy hermano
+          <ArrowForwardIcon />
+        </Box>
+        <Box component={Link} to="/contacto" sx={enlaceLateral}>
+          Tengo una duda
+          <ArrowForwardIcon />
         </Box>
       </Box>
+      <Typography sx={{ mt: 1.5, fontSize: 13, lineHeight: 1.6, color: 'text.secondary' }}>
+        Si el alta es para un menor, escríbenos a{' '}
+        <Box
+          component="a"
+          href={`mailto:${site.contacto.email}`}
+          sx={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3, '&:hover': { color: GOLD } }}
+        >
+          {site.contacto.email}
+        </Box>
+        .
+      </Typography>
     </Box>
   )
 }
