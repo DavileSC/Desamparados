@@ -67,3 +67,14 @@ test('un documento que no es un objeto se ignora entero', () => {
     assert.equal(mezclado.hero.titulo, 'Desamparados Málaga');
   }
 });
+
+test('los hitos guardados sustituyen enteros a los de por defecto', () => {
+  // Como las paradas: quitar hitos tiene que dejarlos quitados, no traer de
+  // vuelta los cinco de por defecto.
+  const hito = { periodo: '1954', etiqueta: 'Fundación', titulo: 'Se funda el grupo', relato: 'Texto.', foto: { url: '', alt: '', pie: '' }, tono: 'ninguno' };
+  const mezclado = mezclarConDefectos('historia', { hitos: [hito] }) as any;
+
+  assert.equal(mezclado.hitos.length, 1);
+  assert.deepEqual(mezclado.hitos[0], hito);
+  assert.equal(mezclado.titulo, 'Historia', 'lo no tocado conserva el texto de siempre');
+});

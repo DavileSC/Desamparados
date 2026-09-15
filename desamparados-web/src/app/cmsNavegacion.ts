@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
+import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
@@ -60,6 +61,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Inicio', href: '/cms', roles: TODOS, grupo: 'Hoy', icono: HomeOutlinedIcon },
   { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ImageOutlinedIcon },
   { label: 'Recorrido', href: '/cms/recorrido', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MapOutlinedIcon },
+  { label: 'Historia', href: '/cms/historia', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: HistoryEduOutlinedIcon },
   { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
   { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MenuBookOutlinedIcon },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: CalendarMonthOutlinedIcon },
@@ -77,6 +79,7 @@ export const rolesPorRutaCms = {
   // Las fotos de la cabecera son contenido: los mismos roles que las noticias.
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   recorrido: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  historia: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],

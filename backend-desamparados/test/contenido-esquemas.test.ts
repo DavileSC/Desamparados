@@ -3,9 +3,9 @@ import { test } from 'node:test';
 import { ArkErrors } from 'arktype';
 import topes from '../../shared/topes-contenido.json' with { type: 'json' };
 import { esquemaDeSlug } from '../src/schemas/contenido.schema.js';
-import { porDefecto } from '../src/domain/contenido.js';
+import { porDefecto, type SlugContenido } from '../src/domain/contenido.js';
 
-const valida = (slug: 'portada' | 'recorrido', datos: unknown) =>
+const valida = (slug: SlugContenido, datos: unknown) =>
   !(esquemaDeSlug(slug)(datos) instanceof ArkErrors);
 
 test('los valores por defecto pasan su propio esquema', () => {
@@ -91,4 +91,38 @@ test('una lista de paradas vacía es correcta', () => {
   const datos = porDefecto('recorrido') as any;
   datos.paradas = [];
   assert.ok(valida('recorrido', datos), 'la página puede estar en preparación');
+});
+
+test('los valores por defecto de la historia pasan su esquema', () => {
+  assert.ok(valida('historia', porDefecto('historia')));
+});
+
+test('una foto de hito sin descripción no se guarda', () => {
+  const datos = porDefecto('historia') as any;
+  datos.hitos[1].foto = { url: '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp', alt: '', pie: '' };
+  assert.ok(!valida('historia', datos), 'una foto sin alt deja el hito a medias para quien use lector de pantalla');
+
+  datos.hitos[1].foto.alt = 'Los hermanos en la misa de la parroquia';
+  assert.ok(valida('historia', datos));
+});
+
+test('la foto de fondo puede no estar, y si está es del propio sitio', () => {
+  const datos = porDefecto('historia') as any;
+  datos.fondo.url = '';
+  assert.ok(valida('historia', datos), 'sin foto, el fondo queda liso');
+
+  datos.fondo.url = 'https://otro-sitio.example/foto.jpg';
+  assert.ok(!valida('historia', datos));
+});
+
+test('el tono de un hito es uno de los tres de la web', () => {
+  const datos = porDefecto('historia') as any;
+  datos.hitos[0].tono = 'verde';
+  assert.ok(!valida('historia', datos), 'un color libre no responde a nada de la web');
+});
+
+test('el relato de un hito admite varios párrafos separados por línea en blanco', () => {
+  const datos = porDefecto('historia') as any;
+  datos.hitos[0].relato = 'Primer párrafo.\n\nSegundo párrafo.';
+  assert.ok(valida('historia', datos));
 });

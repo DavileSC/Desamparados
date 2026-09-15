@@ -27,7 +27,7 @@ function Contador({ seccion, valor, tono }: { seccion: string; valor: number; to
       aria-label={`${seccion}: ${valor} ${tono === 'error' ? 'urgentes' : 'pendientes'}`}
       sx={{
         minWidth: 22, height: 20, px: 0.75, borderRadius: 10, backgroundColor: fondo,
-        color: SIDEBAR, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+        color: '#fff', fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       }}
     >
