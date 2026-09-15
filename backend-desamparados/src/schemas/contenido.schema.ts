@@ -74,7 +74,47 @@ const recorridoSchema = type({
     : ctx.reject({ path: ['plano', 'alt'], problem: 'es obligatorio cuando hay un plano' })
 );
 
-const ESQUEMAS = { portada: portadaSchema, recorrido: recorridoSchema } as const;
+const sinFoto = type('string').matching(/^$/);
+
+// El color de un hito responde a algo de la web, no a un gusto: granate es el
+// que ya lleva el Sábado de Pasión y dorado marca el punto en el que estamos,
+// como el subrayado del menú. Tres valores cerrados; no un color libre.
+const tonoHito = type("'ninguno' | 'granate' | 'oro'");
+
+const hitoSchema = type({
+  periodo: ETIQUETA,
+  etiqueta: ETIQUETA,
+  titulo: TITULO,
+  // Un solo cuadro de texto por hito: los párrafos van separados por una línea
+  // en blanco, y la web los parte al pintarlos. Tope propio (`relato`) porque
+  // caben dos o tres párrafos, más que en `parrafo`.
+  relato: texto(topes.relato),
+  foto: { url: sinFoto.or(rutaImagenPublica), alt: DESCRIPCION, pie: ETIQUETA },
+  tono: tonoHito,
+});
+
+/**
+ * La página de Historia: cabecera, la foto velada de fondo (opcional: sin
+ * ruta, el fondo queda liso; es decorativa y no lleva descripción), los hitos
+ * de la cronología en orden y el bloque de cierre. El destino del enlace de
+ * cierre lo fija el código, como los de la portada.
+ */
+const historiaSchema = type({
+  ceja: ETIQUETA,
+  titulo: TITULO,
+  subtitulo: PARRAFO,
+  fondo: { url: sinFoto.or(rutaImagenPublica) },
+  hitos: hitoSchema.array().atMostLength(30),
+  cierre: { ceja: ETIQUETA, titulo: TITULO, enlace: ETIQUETA },
+}).narrow((datos, ctx) => {
+  // Una foto de hito sin descripción deja ese hito a medias para quien use lector de pantalla.
+  const indice = datos.hitos.findIndex((hito) => hito.foto.url !== '' && hito.foto.alt.trim() === '');
+  return indice === -1
+    ? true
+    : ctx.reject({ path: ['hitos', indice, 'foto', 'alt'], problem: 'es obligatorio cuando hay una foto' });
+});
+
+const ESQUEMAS = { portada: portadaSchema, recorrido: recorridoSchema, historia: historiaSchema } as const;
 
 /** El esquema del documento de una página, para validarlo suelto. */
 export const esquemaDeSlug = (slug: SlugContenido) => ESQUEMAS[slug];

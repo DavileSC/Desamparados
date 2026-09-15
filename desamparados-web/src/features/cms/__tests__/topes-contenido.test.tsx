@@ -10,11 +10,12 @@ import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 import TOPES from '../../../../../shared/topes-contenido.json'
 import PortadaAdminPage from '../PortadaAdminPage'
 import RecorridoAdminPage from '../RecorridoAdminPage'
+import HistoriaAdminPage from '../HistoriaAdminPage'
 
 /**
  * Los topes de longitud del servidor (`schemas/contenido.schema.ts`, que los lee
  * de `shared/topes-contenido.json`) están copiados a mano en una treintena de
- * `maxLength` repartidos por las dos pantallas del CMS. Son lo único que avisa
+ * `maxLength` repartidos por las tres pantallas del CMS. Son lo único que avisa
  * mientras se escribe: si el servidor baja un tope y las pantallas no se
  * enteran, el editor escribe tan tranquilo hasta que le sale un 400 al guardar.
  *
@@ -30,10 +31,12 @@ const respuesta = (cuerpo: unknown) =>
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-function montarLasDosPantallas() {
+function montarLasTresPantallas() {
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: unknown) => Promise.resolve(
     String(url).includes('/contenido/recorrido')
       ? respuesta(POR_DEFECTO.recorrido)
+      : String(url).includes('/contenido/historia')
+      ? respuesta(POR_DEFECTO.historia)
       : respuesta({ imagenes: [{ id: 1, url: '/storage/public/una.webp', descripcion: 'Una', orden: 0 }], textos: POR_DEFECTO.portada }),
   )))
 
@@ -47,6 +50,7 @@ function montarLasDosPantallas() {
         <ThemeProvider theme={crearTemaCms('claro')}>
           <RouterProvider router={rutaDe(<PortadaAdminPage />, '/cms/portada')} />
           <RouterProvider router={rutaDe(<RecorridoAdminPage />, '/cms/recorrido')} />
+          <RouterProvider router={rutaDe(<HistoriaAdminPage />, '/cms/historia')} />
         </ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>,
@@ -55,11 +59,12 @@ function montarLasDosPantallas() {
 
 describe('topes de longitud del CMS', () => {
   it('todo maxlength que pintan las pantallas es un tope que el servidor conoce', async () => {
-    montarLasDosPantallas()
-    // Las dos pantallas cargadas: las secciones plegadas siguen montadas (el
+    montarLasTresPantallas()
+    // Las tres pantallas cargadas: las secciones plegadas siguen montadas (el
     // acordeón de MUI no desmonta lo que oculta), así que se cuentan todas.
     await screen.findByDisplayValue('Desamparados Málaga')
     await screen.findByDisplayValue('Plaza de la Marina')
+    await screen.findByDisplayValue('La devoción crece en la parroquia')
 
     const pintados = [...document.querySelectorAll('[maxlength]')]
       .map((campo) => Number(campo.getAttribute('maxlength')))

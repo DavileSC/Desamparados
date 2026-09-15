@@ -1,6 +1,6 @@
 import defectos from '../../../shared/contenido-por-defecto.json' with { type: 'json' };
 
-export const SLUGS_CONTENIDO = ['portada', 'recorrido'] as const;
+export const SLUGS_CONTENIDO = ['portada', 'recorrido', 'historia'] as const;
 export type SlugContenido = (typeof SLUGS_CONTENIDO)[number];
 
 export const esSlugContenido = (valor: unknown): valor is SlugContenido =>

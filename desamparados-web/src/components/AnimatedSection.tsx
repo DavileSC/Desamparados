@@ -47,6 +47,7 @@ interface RevelaProps {
   alMontar?: boolean
   sx?: SxProps<Theme>
   className?: string
+  id?: string
 }
 
 /**
@@ -54,12 +55,12 @@ interface RevelaProps {
  * depende de la sección), así que también entra bien si se monta tarde, por
  * ejemplo cuando las noticias llegan de la API con la sección ya a la vista.
  */
-export function Revela({ children, orden = 0, retraso = 0, as = 'div', efecto = 'subir', alMontar = false, sx, className }: RevelaProps) {
+export function Revela({ children, orden = 0, retraso = 0, as = 'div', efecto = 'subir', alMontar = false, sx, className, id }: RevelaProps) {
   const reduceMotion = useReducedMotion()
 
   // Con prefers-reduced-motion activo, visible desde el principio: nunca queda en opacity:0.
   if (reduceMotion) {
-    return <Box component={as} sx={sx} className={className}>{children}</Box>
+    return <Box component={as} sx={sx} className={className} id={id}>{children}</Box>
   }
 
   const { oculto, visible, duracion } = EFECTOS[efecto]
@@ -73,14 +74,14 @@ export function Revela({ children, orden = 0, retraso = 0, as = 'div', efecto = 
   if (efecto === 'cortina') {
     const disparoMascara = alMontar ? { animate: 'visible' } : { whileInView: 'visible', viewport: VIEWPORT }
     return (
-      <Box component={ETIQUETAS[as]} initial="oculto" {...disparoMascara} sx={[{ clipPath: MASCARA }, ...(Array.isArray(sx) ? sx : [sx])]} className={className}>
+      <Box component={ETIQUETAS[as]} initial="oculto" {...disparoMascara} sx={[{ clipPath: MASCARA }, ...(Array.isArray(sx) ? sx : [sx])]} className={className} id={id}>
         <motion.div variants={{ oculto, visible }} transition={transition}>{children}</motion.div>
       </Box>
     )
   }
 
   return (
-    <Box component={ETIQUETAS[as]} initial={oculto} {...disparo} transition={transition} sx={sx} className={className}>
+    <Box component={ETIQUETAS[as]} initial={oculto} {...disparo} transition={transition} sx={sx} className={className} id={id}>
       {children}
     </Box>
   )

@@ -71,7 +71,7 @@ const rutasDelEntorno = () => VARIABLES_CON_RUTAS.map((nombre) => process.env[no
  * campo nuevo que apunte a `/storage/public`, tiene que entrar aquí y en
  * `subidasReferenciadas`, o sus ficheros se borrarán estando en uso. El
  * contenido editable ya está contemplado vía `contarEnContenido`: son las filas
- * `portada` y `recorrido` (valores de `slug`) de la tabla `ContenidoPagina`, no
+ * `portada`, `recorrido` e `historia` (valores de `slug`) de la tabla `ContenidoPagina`, no
  * tablas con esos nombres, que no existen.
  */
 export async function contarReferencias(nombre: string): Promise<number> {
@@ -86,7 +86,7 @@ export async function contarReferencias(nombre: string): Promise<number> {
     db.pagina.count({ where: { contenido: menciona } }),
     db.evento.count({ where: { description: menciona } }),
     // El contenido editable guarda rutas de foto dentro de un JSON (la de
-    // «Sábado de Pasión», el plano del recorrido). Son dos filas: se leen
+    // «Sábado de Pasión», el plano del recorrido, las de la historia). Son pocas filas: se leen
     // enteras y se busca el nombre en su texto, porque el filtro JSON de Prisma
     // sobre MariaDB no es de fiar para un `contains` dentro de un objeto.
     contarEnContenido(nombre),

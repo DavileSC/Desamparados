@@ -1,4 +1,4 @@
-// El contenido editable de la portada y el recorrido contra MariaDB.
+// El contenido editable de la portada, el recorrido y la historia contra MariaDB.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
@@ -33,15 +33,16 @@ after(async () => {
 
 const cookieCms = (id: number, role: Role) => `${COOKIE_CMS}=${generateToken(id, role, false, 'cms')}`;
 
-test('la siembra deja las dos páginas con los textos de siempre', async (t) => {
+test('la siembra deja las tres páginas con los textos de siempre', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
   await sembrarContenidoPaginas();
   const filas = await db.contenidoPagina.findMany({ orderBy: { slug: 'asc' } });
 
-  assert.deepEqual(filas.map((f) => f.slug), ['portada', 'recorrido']);
-  assert.equal((filas[0].datos as any).hero.titulo, 'Desamparados Málaga');
-  assert.equal((filas[1].datos as any).paradas.length, 9);
+  assert.deepEqual(filas.map((f) => f.slug), ['historia', 'portada', 'recorrido']);
+  assert.equal((filas[0].datos as any).hitos.length, 5);
+  assert.equal((filas[1].datos as any).hero.titulo, 'Desamparados Málaga');
+  assert.equal((filas[2].datos as any).paradas.length, 9);
 });
 
 test('sembrar dos veces no pisa lo que se haya editado', async (t) => {
