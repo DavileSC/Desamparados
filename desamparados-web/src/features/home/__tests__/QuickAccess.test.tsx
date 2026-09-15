@@ -103,11 +103,19 @@ describe('QuickAccess', () => {
   it('una tesela que el documento no trae conserva su texto de siempre', async () => {
     const textos = textosDePrueba()
     textos.accesos.teselas = textos.accesos.teselas.filter((t) => t.clave !== 'sede')
+    // Ancla para forzar la espera al pintado posterior al fetch: «Nuestra sede» y
+    // «Parroquia de los Pasionistas» son iguales al valor por defecto, así que por sí
+    // solos ya estarían en el primer pintado (el de respaldo, antes de resolver el
+    // fetch simulado) y no probarían nada. Cambiar «caridad» a un valor distinto del
+    // por defecto obliga a `findByText` a esperar al pintado real, el que sí lee el
+    // documento sin `sede`.
+    textos.accesos.teselas.find((t) => t.clave === 'caridad')!.titulo = 'Nuestra caridad'
     responderPortada(textos)
 
     renderWithProviders(<QuickAccess />)
 
-    expect(await screen.findByText('Nuestra sede')).toBeInTheDocument()
+    await screen.findByText('Nuestra caridad')
+    expect(screen.getByText('Nuestra sede')).toBeInTheDocument()
     expect(screen.getByText('Parroquia de los Pasionistas')).toBeInTheDocument()
   })
 })
