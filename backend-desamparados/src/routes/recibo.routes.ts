@@ -28,6 +28,11 @@ const rolesTesoreria = [Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR];
 // ==========================================
 reciboRoutes.get('/mis-recibos', validate(misRecibosQuerySchema), ReciboController.getMyRecibos);
 
+// El detalle de un recibo propio. El filtro de familia está en el servicio
+// (`getReciboFamiliar`), no aquí: esta ruta no distingue roles, cualquiera con
+// sesión de hermano puede pedirla y solo verá lo suyo.
+reciboRoutes.get('/mis-recibos/:id', validateId, ReciboController.getMyRecibo);
+
 // ==========================================
 //  RUTAS DE ADMIN (Tesorería, y ahora también el Hermano Mayor;
 //  Secretaría nunca tuvo acceso aquí)

@@ -73,6 +73,7 @@ const ProcessionPage = lazy(() => import('../features/brotherArea/procession/Pro
 const PapeletaPage = lazy(() => import('../features/brotherArea/procession/PapeletaPage'))
 const HistoricoPage = lazy(() => import('../features/brotherArea/procession/HistoricoPage'))
 const ReceiptsPage = lazy(() => import('../features/brotherArea/receipts/ReceiptsPage'))
+const ReceiptDetailPage = lazy(() => import('../features/brotherArea/receipts/ReceiptDetailPage'))
 
 function withSuspense(Component: React.ComponentType) {
   return (
@@ -171,6 +172,7 @@ const router = createBrowserRouter([
           { path: 'procesion/papeleta', element: withSuspense(PapeletaPage) },
           { path: 'procesion/historico', element: withSuspense(HistoricoPage) },
           { path: 'recibos', element: withSuspense(ReceiptsPage) },
+          { path: 'recibos/:id', element: withSuspense(ReceiptDetailPage) },
           { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
         ],
       },

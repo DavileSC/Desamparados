@@ -45,7 +45,7 @@ describe('ReceiptsPage', () => {
     renderWithProviders(<ReceiptsPage />)
 
     expect(await screen.findByText(/cuota anual/i)).toBeInTheDocument()
-    expect(screen.getByText('Ana Pérez Ruiz')).toBeInTheDocument()
+    expect(screen.getByText('30,00 €')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /ir a la página 2/i })).toBeInTheDocument()
     expect(String(simulado.mock.calls[0]?.[0])).toContain('/recibos/mis-recibos?')
   })
@@ -55,5 +55,68 @@ describe('ReceiptsPage', () => {
     renderWithProviders(<ReceiptsPage />, { ruta: '/area-hermano/recibos?pagina=2' })
 
     await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('page=2'))
+  })
+
+  // El arreglo del móvil: seis columnas en una tabla obligaban a arrastrar la
+  // pantalla de lado para leer el importe y el estado, que están al final.
+  it('no pinta una tabla, que en el móvil hay que arrastrar de lado', async () => {
+    responder([recibo], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    renderWithProviders(<ReceiptsPage />)
+
+    await screen.findByText(/cuota anual/i)
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('encabeza cada año una sola vez, aunque tenga varios recibos', async () => {
+    responder(
+      [
+        { ...recibo, id: 1, year: 2026, concepto: 'Cuota anual' },
+        { ...recibo, id: 2, year: 2026, concepto: 'Papeleta de sitio' },
+        { ...recibo, id: 3, year: 2025, concepto: 'Cuota anual' },
+      ],
+      { total: 3, page: 1, limit: 20, totalPages: 1 },
+    )
+    renderWithProviders(<ReceiptsPage />)
+
+    expect(await screen.findByRole('heading', { name: '2026' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '2025' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: '2026' })).toHaveLength(1)
+  })
+
+  // Quien entra solo, con su cuota y su papeleta de cada año, veía su propio
+  // nombre repetido en cada fila sin que aportara nada. En una familia con
+  // varias fichas es justo al revés: es lo único que distingue dos recibos
+  // iguales del mismo año.
+  it('no repite el nombre cuando todos los recibos son de la misma persona', async () => {
+    responder(
+      [{ ...recibo, id: 1 }, { ...recibo, id: 2, concepto: 'Papeleta de sitio' }],
+      { total: 2, page: 1, limit: 20, totalPages: 1 },
+    )
+    renderWithProviders(<ReceiptsPage />)
+
+    await screen.findByText(/cuota anual/i)
+    expect(screen.queryByText('Ana Pérez Ruiz')).not.toBeInTheDocument()
+  })
+
+  it('nombra a cada hermano cuando la familia tiene varios', async () => {
+    responder(
+      [
+        { ...recibo, id: 1 },
+        { ...recibo, id: 2, hermano: { nombre: 'Lucas', apellidos: 'Pérez Ruiz', esTitular: false } },
+      ],
+      { total: 2, page: 1, limit: 20, totalPages: 1 },
+    )
+    renderWithProviders(<ReceiptsPage />)
+
+    expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
+    expect(screen.getByText('Lucas Pérez Ruiz')).toBeInTheDocument()
+  })
+
+  it('cada recibo enlaza con su detalle', async () => {
+    responder([recibo], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    renderWithProviders(<ReceiptsPage />)
+
+    const enlace = await screen.findByRole('link', { name: /cuota anual/i })
+    expect(enlace).toHaveAttribute('href', '/area-hermano/recibos/10')
   })
 })

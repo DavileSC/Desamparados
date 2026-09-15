@@ -5,7 +5,12 @@ import { renderWithProviders } from '../../../../test/test-utils'
 import HazteHermanoPage from '../HazteHermanoPage'
 
 async function rellenar(datos: Partial<Record<string, string>> = {}) {
-  const usuario = userEvent.setup()
+  // `delay: null` quita la espera que userEvent mete entre pulsación y
+  // pulsación. Son diez campos tecleados letra a letra: con la espera, cada
+  // test rondaba los 3 s estando solo y se pasaba del tope de 5 s en cuanto la
+  // batería completa competía por la CPU. Aquí no se comprueba nada del ritmo
+  // de escritura, así que la espera solo costaba tiempo y falsos rojos.
+  const usuario = userEvent.setup({ delay: null })
   const campos: Record<string, string> = {
     Nombre: 'Juan', Apellidos: 'Pérez Ruiz', 'DNI/NIE': '12345678Z',
     Contraseña: 'Prueba-2026-Segura', 'Fecha de nacimiento': '1990-04-12',
