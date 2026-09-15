@@ -16,7 +16,7 @@ import ComoVaElAnio from './inicio/ComoVaElAnio'
  * que es lo único que cambia con el selector de ejercicio.
  */
 export default function PanelPage() {
-  const role = useAuthStore((state) => state.user?.role)
+  const role = useAuthStore((state) => state.cms?.role)
   const { data, isPending, isError } = usePanelDeHoy()
 
   if (isPending) {

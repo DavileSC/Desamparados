@@ -14,7 +14,7 @@ import type { MetaPaginacion } from '../../lib/api/tipos'
 
 export default function BrothersAdminPage() {
   const queryClient = useQueryClient()
-  const role = useAuthStore((state) => state.user?.role ?? 'USER')
+  const role = useAuthStore((state) => state.cms?.role ?? 'USER')
   // El Hermano Mayor gestiona el censo como secretaría: edita fichas y admite
   // altas. Quien llega aquí sin ser ninguno de los tres es porque la guarda de
   // ruta le deja mirar, no tocar.

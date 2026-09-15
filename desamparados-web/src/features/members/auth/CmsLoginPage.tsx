@@ -38,8 +38,7 @@ const TEMA_ACCESO = crearTemaCms('claro')
 export default function CmsLoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const status = useAuthStore((state) => state.status)
-  const user = useAuthStore((state) => state.user)
+  const cms = useAuthStore((state) => state.cms)
   const entrarSesion = useAuthStore((state) => state.entrarSesion)
   const salirSesion = useAuthStore((state) => state.salirSesion)
 
@@ -68,13 +67,13 @@ export default function CmsLoginPage() {
     // rol del equipo (responde 403 CUENTA_SIN_CMS). Si aun así llegara una,
     // se cierra en el acto: este acceso no reparte sesiones del área de hermanos.
     if (!isStaffRole(response.user.role)) {
-      await cerrarSesionApi().catch(() => undefined)
-      salirSesion()
+      await cerrarSesionApi('cms').catch(() => undefined)
+      salirSesion('cms')
       setRechazado(true)
       return
     }
 
-    entrarSesion(response.user)
+    entrarSesion('cms', response.user)
     navigate(from, { replace: true })
   }
 
@@ -109,15 +108,13 @@ export default function CmsLoginPage() {
     }
   }
 
-  // Quien ya tiene sesión del CMS no ve este formulario: directo al panel.
-  // Solo si nació aquí: con una sesión del área de hermanos, el panel la
-  // devolvería a esta página y esta al panel, en bucle. Esa persona tiene que
-  // identificarse aquí, donde se le pide el segundo factor.
-  const sesionDelCms = status === 'autenticado' && isStaffRole(user?.role) && user?.origen === 'cms'
-  if (sesionDelCms) {
+  // Quien ya tiene sesión del CMS no ve este formulario: directo al panel. Una
+  // sesión del área de hermanos no cuenta aquí: es una cookie distinta, y esta
+  // pantalla ni la mira. Esa persona tiene que identificarse aquí, donde se le
+  // pide el segundo factor.
+  if (cms) {
     return <Navigate to="/cms" replace />
   }
-  const staffDesdeHermanos = status === 'autenticado' && isStaffRole(user?.role) && user?.origen !== 'cms'
 
   return (
     <ThemeProvider theme={TEMA_ACCESO}>
@@ -145,13 +142,6 @@ export default function CmsLoginPage() {
             Acceso a la administración
           </Typography>
 
-          {staffDesdeHermanos && !pending2FA && (
-            <Alert severity="info" role="status" sx={{ mb: 2 }}>
-              Tu sesión actual es la del área de hermanos. Para entrar en la administración,
-              identifícate aquí.
-            </Alert>
-          )}
-
           {rechazado && (
             <Alert severity="error" role="alert" sx={{ mb: 2 }}>
               Esta cuenta no pertenece al equipo del CMS. Si eres hermano, entra por el{' '}
@@ -159,12 +149,7 @@ export default function CmsLoginPage() {
             </Alert>
           )}
 
-          {status === 'autenticado' && !isStaffRole(user?.role) ? (
-            <Alert severity="info" role="alert">
-              Tu sesión actual no tiene acceso a la administración.{' '}
-              <Link to="/area-hermano">Vuelve al área de hermanos</Link>.
-            </Alert>
-          ) : pending2FA ? (
+          {pending2FA ? (
             <>
               <Typography variant="body2" sx={{ mb: 4, textAlign: 'center', color: 'text.secondary' }}>
                 {pending2FA.message}

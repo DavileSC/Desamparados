@@ -19,7 +19,7 @@ function errorMessage(e: unknown, fallback: string) {
  * quien se apodere de una sesión abierta deje la cuenta con un solo factor.
  */
 export default function MiSeguridadPage() {
-  const user = useAuthStore((state) => state.user)
+  const cms = useAuthStore((state) => state.cms)
   const entrarSesion = useAuthStore((state) => state.entrarSesion)
 
   const [qr, setQr] = useState<{ qrCodeUrl: string; secret: string } | null>(null)
@@ -30,12 +30,12 @@ export default function MiSeguridadPage() {
   const [ocupado, setOcupado] = useState(false)
   const [confirmarBaja, setConfirmarBaja] = useState(false)
 
-  const activo = !!user?.twoFactorEnabled
+  const activo = !!cms?.twoFactorEnabled
 
   /** Refresca el estado de la cuenta (el 2FA cambia y el store debe enterarse). */
   const refrescarSesion = async () => {
-    const { user: actualizado } = await sesionActual()
-    entrarSesion(actualizado)
+    const { cms: actualizado } = await sesionActual()
+    if (actualizado) entrarSesion('cms', actualizado)
   }
 
   const pedirQr = async () => {
@@ -95,7 +95,7 @@ export default function MiSeguridadPage() {
 
       <Typography variant="h3" component="h1" sx={{ mb: 0.5 }}>Mi seguridad</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Doble factor de autenticación de tu cuenta ({user?.email}).
+        Doble factor de autenticación de tu cuenta ({cms?.email}).
       </Typography>
 
       <Paper sx={{ p: { xs: 2, md: 3 }, maxWidth: 640 }}>

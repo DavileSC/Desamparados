@@ -23,8 +23,9 @@ function mockPorUrl(rutas: Record<string, unknown>) {
 
 beforeEach(() => {
   useAuthStore.setState({
-    status: 'autenticado',
-    user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], ...cuenta },
+    status: 'listo',
+    cms: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms', ...cuenta },
+    hermano: null,
   })
 })
 
@@ -42,7 +43,7 @@ describe('MiSeguridadPage', () => {
     const fetchMock = mockPorUrl({
       '/auth/2fa/generate': { qrCodeUrl: 'data:image/png;base64,qr', secret: 'JBSWY3DPEHPK3PXP' },
       '/auth/2fa/enable': { message: '2FA activado.', backupCodes: ['AB2C-DEF4-GH56', 'IJ8K-LM6N-OP3Q'] },
-      '/auth/me': { user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], twoFactorEnabled: true } },
+      '/auth/me': { cms: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms', twoFactorEnabled: true }, hermano: null },
     })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -67,7 +68,7 @@ describe('MiSeguridadPage', () => {
 
     await user.click(screen.getByRole('button', { name: /los he guardado/i }))
     expect(await screen.findByText('Activado')).toBeInTheDocument()
-    expect(useAuthStore.getState().user?.twoFactorEnabled).toBe(true)
+    expect(useAuthStore.getState().cms?.twoFactorEnabled).toBe(true)
   })
 
   it('un código erróneo en la activación se ve en pantalla', async () => {
@@ -103,7 +104,7 @@ describe('MiSeguridadPage', () => {
         return ok({ error: 'El doble factor ya está activo. Desactívalo primero si quieres configurarlo con otro móvil.' }, 409)
       }
       if (url.includes('/auth/me')) {
-        return ok({ user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], twoFactorEnabled: true } })
+        return ok({ cms: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms', twoFactorEnabled: true }, hermano: null })
       }
       return ok({}, 404)
     }))
@@ -117,17 +118,18 @@ describe('MiSeguridadPage', () => {
     // Sin QR que escanear, y con el estado real de la cuenta.
     expect(screen.queryByRole('img', { name: /qr/i })).not.toBeInTheDocument()
     expect(await screen.findByText('Activado')).toBeInTheDocument()
-    expect(useAuthStore.getState().status).toBe('autenticado')
+    expect(useAuthStore.getState().status).toBe('listo')
   })
 
   it('desactivar pide confirmación y código vigente', async () => {
     useAuthStore.setState({
-      status: 'autenticado',
-      user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], twoFactorEnabled: true },
+      status: 'listo',
+      cms: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms', twoFactorEnabled: true },
+      hermano: null,
     })
     vi.stubGlobal('fetch', mockPorUrl({
       '/auth/2fa/disable': { message: '2FA desactivado.' },
-      '/auth/me': { user: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], twoFactorEnabled: false } },
+      '/auth/me': { cms: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms', twoFactorEnabled: false }, hermano: null },
     }))
 
     renderWithProviders(<MiSeguridadPage />)
@@ -144,6 +146,6 @@ describe('MiSeguridadPage', () => {
     await user.click(screen.getByRole('button', { name: 'Desactivar' }))
 
     expect(await screen.findByText(/vuelve a entrar solo con contraseña/i)).toBeInTheDocument()
-    expect(useAuthStore.getState().user?.twoFactorEnabled).toBe(false)
+    expect(useAuthStore.getState().cms?.twoFactorEnabled).toBe(false)
   })
 })

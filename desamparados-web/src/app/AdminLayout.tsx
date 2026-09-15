@@ -153,7 +153,7 @@ function BloqueUsuario({ role }: { role?: string }) {
         <Box
           component="button"
           type="button"
-          onClick={() => { void cerrarSesion() }}
+          onClick={() => { void cerrarSesion('cms') }}
           sx={{
             border: 0, background: 'none', p: 0, cursor: 'pointer', fontFamily: 'inherit',
             fontSize: 12, color: 'rgba(255,255,255,0.45)', '&:hover': { color: '#fff' },
@@ -167,7 +167,7 @@ function BloqueUsuario({ role }: { role?: string }) {
 }
 
 function Contenido() {
-  const role = useAuthStore((state) => state.user?.role)
+  const role = useAuthStore((state) => state.cms?.role)
   const [menuAbierto, setMenuAbierto] = useState(false)
   const tema = useTheme()
   const { superficies } = useTemaCms()

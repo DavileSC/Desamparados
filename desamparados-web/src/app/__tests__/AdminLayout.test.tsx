@@ -10,14 +10,15 @@ import { CLAVE_TEMA_CMS } from '../temaCms'
 
 function entrarComo(role: string) {
   useAuthStore.setState({
-    status: 'autenticado',
-    user: { id: 1, email: 'prueba@ejemplo.es', role, perfiles: [] },
+    status: 'listo',
+    cms: { id: 1, email: 'prueba@ejemplo.es', role, perfiles: [], origen: 'cms' },
+    hermano: null,
   })
 }
 
 describe('AdminLayout', () => {
   beforeEach(() => {
-    useAuthStore.setState({ status: 'cargando', user: null })
+    useAuthStore.setState({ status: 'cargando', cms: null, hermano: null })
   })
 
   it('el Hermano Mayor ve tesorería y contabilidad', () => {

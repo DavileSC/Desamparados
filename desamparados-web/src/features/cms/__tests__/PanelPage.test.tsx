@@ -54,7 +54,7 @@ function responder(cuerpo: unknown, status = 200) {
 }
 
 const entrarComo = (role: string) =>
-  useAuthStore.setState({ status: 'autenticado', user: { id: 1, email: 'p@e.es', role, perfiles: [] } })
+  useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'p@e.es', role, perfiles: [], origen: 'cms' }, hermano: null })
 
 const montar = () => renderWithProviders(<TemaCmsProvider><PanelPage /></TemaCmsProvider>)
 

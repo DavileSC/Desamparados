@@ -32,7 +32,7 @@ const solicitud = {
 }
 
 beforeEach(() => {
-  useAuthStore.setState({ status: 'autenticado', user: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [] } })
+  useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [], origen: 'cms' }, hermano: null })
   // La vista vive en la URL y el `BrowserRouter` de los tests comparte el
   // `window.location`: sin esto, un test empieza donde lo dejó el anterior.
   window.history.replaceState({}, '', '/cms/hermanos')
@@ -79,7 +79,7 @@ describe('BrothersAdminPage', () => {
   it('el Hermano Mayor gestiona el censo como secretaría', async () => {
     // Ve las solicitudes y edita fichas: el servidor le deja las dos cosas
     // (rolesGestionCenso en hermano.routes.ts).
-    useAuthStore.setState({ status: 'autenticado', user: { id: 2, email: 'mayor@ejemplo.es', role: 'HERMANO_MAYOR', perfiles: [] } })
+    useAuthStore.setState({ status: 'listo', cms: { id: 2, email: 'mayor@ejemplo.es', role: 'HERMANO_MAYOR', perfiles: [], origen: 'cms' }, hermano: null })
     responderCenso(
       { data: [{ id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, email: null, activo: true }], meta: { total: 1, page: 1, limit: 100, totalPages: 1 } },
       [{ id: 1, email: 'nuevo@ejemplo.invalido', nombre: 'Nuevo', apellidos: 'Hermano', createdAt: '2026-08-01T00:00:00.000Z', hermanos: [{ id: 9 }] }],
@@ -92,7 +92,7 @@ describe('BrothersAdminPage', () => {
 
   it('un hermano raso que llegara al listado no ve el botón de editar', async () => {
     // La guarda de ruta ya no le deja entrar, pero el botón no depende de eso.
-    useAuthStore.setState({ status: 'autenticado', user: { id: 3, email: 'raso@ejemplo.es', role: 'USER', perfiles: [] } })
+    useAuthStore.setState({ status: 'listo', cms: { id: 3, email: 'raso@ejemplo.es', role: 'USER', perfiles: [], origen: 'cms' }, hermano: null })
     responderCenso(
       { data: [{ id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, email: null, activo: true }], meta: { total: 1, page: 1, limit: 100, totalPages: 1 } },
       [],
