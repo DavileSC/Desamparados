@@ -1671,9 +1671,11 @@ git commit -m "Sábado de Pasión: textos y foto editables desde el CMS"
 
 - [ ] **Paso 1: escribir el test, que falla**
 
-Los cuatro casos de la spec:
+Los cuatro casos de la spec. El fichero va en `src/features/corporation/sabado-pasion/__tests__/`, así que el import de los valores por defecto sube **seis** niveles:
 
 ```ts
+import POR_DEFECTO from '../../../../../../shared/contenido-por-defecto.json'
+
 const responder = (recorrido: unknown) => vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
   Promise.resolve(new Response(JSON.stringify(recorrido), { status: 200, headers: { 'Content-Type': 'application/json' } }))))
 
@@ -1985,6 +1987,10 @@ interface Peticion { url: string; metodo: string }
 function montar({ fallaEn }: { fallaEn?: string } = {}) {
   const registradas: Peticion[] = []
   const textos = structuredClone(POR_DEFECTO.portada)
+  // Una foto, no cero: con la lista vacía no se pinta ninguna fila de foto y el
+  // test del guardado a medias no tendría dónde tocar una foto, que es lo que
+  // hace falta para que se lancen las DOS peticiones.
+  const imagenes = [{ id: 1, url: '/storage/public/portada/hero-1.webp', descripcion: 'Foto de prueba', orden: 0 }]
 
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: unknown, opciones?: RequestInit) => {
     const ruta = String(url)
@@ -1995,7 +2001,7 @@ function montar({ fallaEn }: { fallaEn?: string } = {}) {
       return Promise.resolve(new Response(JSON.stringify({ error: 'Fallo del servidor' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }))
     }
-    const cuerpo = metodo === 'GET' ? { imagenes: [], textos } : { message: 'ok', data: {} }
+    const cuerpo = metodo === 'GET' ? { imagenes, textos } : { message: 'ok', data: {} }
     return Promise.resolve(new Response(JSON.stringify(cuerpo),
       { status: 200, headers: { 'Content-Type': 'application/json' } }))
   }))
