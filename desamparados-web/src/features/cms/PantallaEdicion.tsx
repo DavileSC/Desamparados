@@ -3,6 +3,9 @@ import { Box, Button, Paper, Stack, Typography } from '@mui/material'
 import { useBlocker, useNavigate } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 
+/** Ancho de la columna de edición. Antes era 900 y pegada a la izquierda. */
+export const ANCHO_EDICION = 1100
+
 interface Props {
   titulo: string
   nombre: string
@@ -33,17 +36,24 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
 
   return (
     <>
-      <Typography variant="h2" component="h1" sx={{ mb: 0.5 }}>{titulo}</Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>{nombre}</Typography>
+      {/* Título, subtítulo y panel van juntos en una columna centrada: en un
+          monitor ancho quedan márgenes iguales a los dos lados en vez de todo
+          el aire a la derecha, y en un portátil la columna ocupa casi todo.
+          El tope no es la pantalla entera: un formulario de lado a lado se
+          lee peor y los campos cortos se estirarían sin motivo. */}
+      <Box sx={{ maxWidth: ANCHO_EDICION, mx: 'auto' }}>
+        <Typography variant="h2" component="h1" sx={{ mb: 0.5 }}>{titulo}</Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>{nombre}</Typography>
 
-      <Paper sx={{ p: { xs: 2.5, md: 4 }, maxWidth: 900 }}>
-        {children}
+        <Paper sx={{ p: { xs: 2.5, md: 4 } }}>
+          {children}
 
-        <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
-          <Button variant="contained" disabled={guardando} onClick={() => setConfirmandoGuardado(true)}>Guardar</Button>
-          <Button disabled={guardando} onClick={() => navegar(volverA)}>Cancelar</Button>
-        </Stack>
-      </Paper>
+          <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
+            <Button variant="contained" disabled={guardando} onClick={() => setConfirmandoGuardado(true)}>Guardar</Button>
+            <Button disabled={guardando} onClick={() => navegar(volverA)}>Cancelar</Button>
+          </Stack>
+        </Paper>
+      </Box>
 
       <DialogoConfirmacion
         abierto={confirmandoGuardado}

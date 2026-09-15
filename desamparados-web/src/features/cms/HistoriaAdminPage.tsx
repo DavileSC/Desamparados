@@ -207,7 +207,9 @@ export default function HistoriaAdminPage() {
                       </Stack>
                     </Stack>
 
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                    {/* Los tres campos cortos en una fila: con la columna de
+                        edición ancha caben, y el relato queda solo con todo el ancho. */}
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'flex-start' } }}>
                       <TextField
                         label={`Periodo del hito ${n}`}
                         value={fila.periodo}
@@ -215,7 +217,7 @@ export default function HistoriaAdminPage() {
                         helperText="En grande, en serif: «Años 50», «1954» o «Hoy»."
                         slotProps={{ htmlInput: { maxLength: 60 } }}
                         size="small"
-                        sx={{ width: { xs: '100%', sm: 240 } }}
+                        sx={{ width: { xs: '100%', md: 220 }, flexShrink: 0 }}
                       />
                       <TextField
                         label={`Etiqueta del hito ${n}`}
@@ -226,6 +228,18 @@ export default function HistoriaAdminPage() {
                         size="small"
                         fullWidth
                       />
+                      <TextField
+                        select
+                        label={`Color del hito ${n}`}
+                        value={fila.tono}
+                        onChange={(e) => cambiarHito(fila.clave, { tono: e.target.value as TonoHito })}
+                        helperText="Tiñe el periodo y el punto de la línea. No hay colores libres."
+                        slotProps={{ select: { native: true } }}
+                        size="small"
+                        sx={{ width: { xs: '100%', md: 320 }, flexShrink: 0 }}
+                      >
+                        {TONOS.map((tono) => <option key={tono.valor} value={tono.valor}>{tono.nombre}</option>)}
+                      </TextField>
                     </Stack>
                     <TextField
                       label={`Título del hito ${n}`}
@@ -247,19 +261,6 @@ export default function HistoriaAdminPage() {
                       size="small"
                       fullWidth
                     />
-                    <TextField
-                      select
-                      label={`Color del hito ${n}`}
-                      value={fila.tono}
-                      onChange={(e) => cambiarHito(fila.clave, { tono: e.target.value as TonoHito })}
-                      helperText="Tiñe el periodo y el punto de la línea. Cada color responde a algo de la web; no hay colores libres."
-                      slotProps={{ select: { native: true } }}
-                      size="small"
-                      sx={{ width: { xs: '100%', sm: 360 } }}
-                    >
-                      {TONOS.map((tono) => <option key={tono.valor} value={tono.valor}>{tono.nombre}</option>)}
-                    </TextField>
-
                     <CampoImagen
                       etiqueta={`Foto del hito ${n}`}
                       ayuda={AYUDA_FOTO}
