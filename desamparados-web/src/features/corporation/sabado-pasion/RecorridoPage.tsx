@@ -1,24 +1,26 @@
 import { Helmet } from 'react-helmet-async'
 import { Box, Grid, Typography } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
 import SectionTitle from '../../../components/SectionTitle'
 import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
-
-const itinerary = [
-  { time: '17:30', place: 'Salida desde la Parroquia de los Desamparados' },
-  { time: '18:00', place: 'Plaza de la Constitución' },
-  { time: '18:30', place: 'Calle Marqués de Larios' },
-  { time: '19:00', place: 'Plaza de la Marina' },
-  { time: '19:30', place: 'Paseo del Parque' },
-  { time: '20:00', place: 'Plaza del Obispo' },
-  { time: '20:30', place: 'Calle Molina Lario' },
-  { time: '21:00', place: 'Plaza de la Constitución' },
-  { time: '21:30', place: 'Entrada en la Parroquia de los Desamparados' },
-]
+import { getContenido, type ContenidoRecorrido } from '../../../lib/api/contenido'
+import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 
 export default function RecorridoPage() {
+  const { data } = useQuery({
+    queryKey: ['contenido', 'recorrido'],
+    queryFn: () => getContenido<ContenidoRecorrido>('recorrido'),
+    retry: false,
+    staleTime: 5 * 60_000,
+  })
+  // Mientras carga y si falla, el itinerario de siempre: esta página es
+  // información práctica —a qué hora pasa la procesión por cada sitio— y un
+  // hueco es peor que un dato de hace un año.
+  const recorrido = data ?? (POR_DEFECTO.recorrido as ContenidoRecorrido)
+
   return (
     <>
       <Helmet>
@@ -26,54 +28,71 @@ export default function RecorridoPage() {
       </Helmet>
 
       <PageHeader
-        title="Recorrido"
-        subtitle="Itinerario oficial de la estación de penitencia."
+        title={recorrido.titulo}
+        subtitle={recorrido.subtitulo}
       />
 
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <Box sx={{ maxWidth: '850px', mx: 'auto', mb: 6 }}>
             <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8, textAlign: 'center' }}>
-              El itinerario de la procesión del Sábado de Pasión recorre algunas de las
-              calles más emblemáticas de Málaga. Los horarios son orientativos y pueden
-              sufrir ligeras modificaciones en función del ritmo del cortejo y de las
-              circunstancias del momento.
+              {recorrido.introduccion}
             </Typography>
           </Box>
 
-          <SectionTitle title="Itinerario y horarios aproximados" centered />
-          <Grid container spacing={2}>
-            {itinerary.map((item) => (
-              <Grid key={item.place} size={{ xs: 12, md: 6 }}>
-                <GlassCard
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 3,
-                    p: 3,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      minWidth: '80px',
-                      textAlign: 'center',
-                      px: 1.5,
-                      py: 1,
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(110, 24, 34, 0.25)',
-                      color: 'secondary.main',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {item.time}
-                  </Box>
-                  <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                    {item.place}
-                  </Typography>
-                </GlassCard>
+          {recorrido.plano.url && (
+            <Box sx={{ maxWidth: 900, mx: 'auto', mb: 6 }}>
+              <Box
+                component="img"
+                src={recorrido.plano.url}
+                alt={recorrido.plano.alt}
+                sx={{ width: '100%', height: 'auto', borderRadius: '8px' }}
+                loading="lazy"
+                decoding="async"
+              />
+            </Box>
+          )}
+
+          {recorrido.paradas.length > 0 && (
+            <>
+              <SectionTitle title={recorrido.tituloItinerario} centered />
+              <Grid container spacing={2}>
+                {recorrido.paradas.map((parada, i) => (
+                  // El itinerario repite lugares (la procesión pasa dos veces por la
+                  // misma plaza): la clave necesita el índice o React se lía al
+                  // reordenar las paradas desde el CMS.
+                  <Grid key={`${parada.hora}-${parada.lugar}-${i}`} size={{ xs: 12, md: 6 }}>
+                    <GlassCard
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        p: 3,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          minWidth: '80px',
+                          textAlign: 'center',
+                          px: 1.5,
+                          py: 1,
+                          borderRadius: '8px',
+                          backgroundColor: 'rgba(110, 24, 34, 0.25)',
+                          color: 'secondary.main',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {parada.hora}
+                      </Box>
+                      <Typography variant="body1" sx={{ color: 'text.primary' }}>
+                        {parada.lugar}
+                      </Typography>
+                    </GlassCard>
+                  </Grid>
+                ))}
               </Grid>
-            ))}
-          </Grid>
+            </>
+          )}
         </PageContainer>
       </AnimatedSection>
     </>
