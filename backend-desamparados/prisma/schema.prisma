@@ -538,3 +538,17 @@ model ImagenPortada {
 
   @@index([orden])
 }
+
+// Contenido editable de una página: un documento por página, validado contra su
+// esquema antes de escribirse. La ESTRUCTURA la fija el código (qué bloques hay
+// y en qué orden); esto guarda solo lo que dentro de ella se puede cambiar,
+// textos e imágenes. Dos filas: 'portada' y 'recorrido'.
+//
+// OJO: si un campo de `datos` apunta a /storage/public, tiene que contar en
+// `utils/ficheros-publicos.ts` o el limpiador de huérfanos borrará la foto
+// estando publicada.
+model ContenidoPagina {
+  slug      String   @id
+  datos     Json
+  updatedAt DateTime @updatedAt
+}
