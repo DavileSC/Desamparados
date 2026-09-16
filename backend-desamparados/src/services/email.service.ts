@@ -1,17 +1,43 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import { enmascararEmail } from '../utils/log-privacidad.js';
+import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../utils/buzon-pruebas.js';
+import { emailDeSecretaria, escudoUrl, lineasDeSecretaria } from '../domain/datos-entidad.js';
+
 import QRCode from 'qrcode';
 import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactDto } from '../dtos/contact.dto';
 
+/**
+ * Lo único que `EmailService` necesita de un transporte. Lo cumplen tanto el de
+ * nodemailer como el buzón de pruebas, así que el motor de envío no tiene que
+ * saber cuál de los dos tiene delante.
+ */
+interface TransporteDeCorreo {
+  sendMail(correo: CorreoParaBuzon): Promise<unknown>;
+}
+
 export class EmailService {
-  private static transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+  /**
+   * Se resuelve en el primer envío y no al importar: el buzón de pruebas se
+   * decide con EMAIL_BUZON_PRUEBAS, y leyéndola al importar el módulo quedaba
+   * fijada antes de que `dotenv` terminara de cargar el .env.
+   */
+  private static transporter: TransporteDeCorreo | undefined;
+
+  private static getTransporter(): TransporteDeCorreo {
+    if (this.transporter) return this.transporter;
+
+    if (buzonPedido()) {
+      console.log('📬 [Email] EMAIL_BUZON_PRUEBAS activo: los correos se escriben en storage/correos y no se envían.');
+      this.transporter = buzonDePruebas();
+    } else {
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+      });
     }
-  });
+    return this.transporter;
+  }
 
   /**
    * Cuenta de envío propia del formulario de contacto (CONTACT_EMAIL_USER y
@@ -68,6 +94,9 @@ export class EmailService {
   private static getHtmlLayout(tituloCabecera: string, subtitulo: string, contenidoPrincipal: string, footerExtra: string = '', legalExtra: string = ''): string {
     const { primario, fondo, texto } = this.COLORS;
     const year = new Date().getFullYear();
+    // Ni escudo ni dirección de contacto si no están confirmados: antes iban
+    // escritos a mano un placeholder y un dominio que no es nuestro.
+    const emailSecretaria = this.esc(emailDeSecretaria() ?? '');
 
     return `
     <!DOCTYPE html>
@@ -85,8 +114,8 @@ export class EmailService {
               
               <tr>
                 <td style="padding: 40px 40px 20px 40px; text-align: center; border-bottom: 1px solid #f0f0f0;">
-                  <img src="https://via.placeholder.com/80x100?text=ESCUDO" alt="Escudo Corporativo" width="80" style="display: block; margin: 0 auto 15px auto; border: 0;">
-                  <h1 style="color: ${primario}; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: normal;">Archicofradía de los Desamparados</h1>
+                  ${escudoUrl ? `<img src="${escudoUrl}" alt="Escudo del Grupo Parroquial" width="80" style="display: block; margin: 0 auto 15px auto; border: 0;">` : ''}
+                  <h1 style="color: ${primario}; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: normal;">Grupo Parroquial de los Desamparados</h1>
                   <p style="margin: 10px 0 0; color: #888; font-size: 13px; font-family: 'Arial', sans-serif; text-transform: uppercase; letter-spacing: 1px;">${subtitulo}</p>
                 </td>
               </tr>
@@ -99,9 +128,9 @@ export class EmailService {
 
               <tr>
                 <td style="background-color: #2b2b2b; color: #999999; padding: 30px 40px; font-family: 'Arial', sans-serif; font-size: 11px; line-height: 1.5; text-align: center;">
-                  <p style="margin-top: 0; color: #ffffff;">&copy; ${year} ARCHICOFRADÍA DE LOS DESAMPARADOS</p>
+                  <p style="margin-top: 0; color: #ffffff;">&copy; ${year} GRUPO PARROQUIAL DE LOS DESAMPARADOS</p>
                   ${footerExtra}
-                  <p style="text-align: justify;"><strong>Aviso Legal y Protección de Datos:</strong> En cumplimiento del RGPD, le informamos que sus datos serán tratados por el Grupo Parroquial. Este mensaje es confidencial. No responda a este correo automatizado. Dudas en <em>secretaria@tucofradia.com</em></p>
+                  <p style="text-align: justify;"><strong>Aviso Legal y Protección de Datos:</strong> En cumplimiento del RGPD, le informamos que sus datos serán tratados por el Grupo Parroquial. Este mensaje es confidencial. No responda a este correo automatizado.${emailSecretaria ? ` Dudas en <em>${emailSecretaria}</em>` : ''}</p>
                   ${legalExtra}
                 </td>
               </tr>
@@ -111,6 +140,34 @@ export class EmailService {
       </table>
     </body>
     </html>`;
+  }
+
+  /**
+   * Bloque con el horario y la dirección de Secretaría. Devuelve cadena vacía
+   * mientras el Grupo Parroquial no confirme esos datos (shared/datos-entidad.json):
+   * antes iban escritos a mano en la plantilla, y el correo citaba un horario y
+   * una «C/ Falsa, 123» a los que un solicitante podía presentarse de verdad.
+   */
+  private static bloqueDeSecretaria(titulo: string): string {
+    const lineas = lineasDeSecretaria();
+    if (lineas.length === 0) return '';
+
+    const { primario } = this.COLORS;
+    const [primera, ...resto] = lineas.map((linea) => this.esc(linea));
+    const secundarias = resto.length
+      ? `<span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">${resto.join(' · ')}</span>`
+      : '';
+
+    return `
+      <table width="100%" style="background-color: #fcfcfc; border: 1px solid #eeeeee; padding: 20px; text-align: center; font-family: 'Arial', sans-serif; font-size: 13px; color: #555; margin-top: 20px;">
+        <tr>
+          <td>
+            <strong style="color: ${primario}; font-size: 14px; display: block; margin-bottom: 5px;">${this.esc(titulo)}</strong>
+            ${primera}
+            ${secundarias}
+          </td>
+        </tr>
+      </table>`;
   }
 
   // --- MÉTODOS DE NEGOCIO ---
@@ -227,15 +284,7 @@ export class EmailService {
         <li>Certificado de Bautismo (copia expedida por su parroquia).</li>
       </ul>
 
-      <table width="100%" style="background-color: #fcfcfc; border: 1px solid #eeeeee; padding: 20px; text-align: center; font-family: 'Arial', sans-serif; font-size: 13px; color: #555; margin-top: 20px;">
-        <tr>
-          <td>
-            <strong style="color: ${primario}; font-size: 14px; display: block; margin-bottom: 5px;">Atención al Hermano en Secretaría</strong>
-            Martes y Jueves, de 19:00h a 21:00h<br>
-            <span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">Casa Grupo Parroquial · C/ Falsa, 123, 29000 Málaga</span>
-          </td>
-        </tr>
-      </table>
+      ${this.bloqueDeSecretaria('Atención al Hermano en Secretaría')}
 
       <div style="text-align: center; margin-top: 30px; font-style: italic;">
         <p>Que nuestros Sagrados Titulares le guarden y bendigan.</p>
@@ -267,15 +316,7 @@ export class EmailService {
         <li>Recibo de la cuota anual de hermano (en caso de tenerla pendiente).</li>
       </ul>
 
-      <table width="100%" style="background-color: #fcfcfc; border: 1px solid #eeeeee; padding: 20px; text-align: center; font-family: 'Arial', sans-serif; font-size: 13px; color: #555; margin-top: 20px;">
-        <tr>
-          <td>
-            <strong style="color: ${primario}; font-size: 14px; display: block; margin-bottom: 5px;">Horario de Reparto de Puestos</strong>
-            Lunes a Viernes, de 18:30h a 21:00h<br>
-            <span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">Lugar: Parroquia de Santa Mª Goretti</span>
-          </td>
-        </tr>
-      </table>
+      ${this.bloqueDeSecretaria('Horario de Reparto de Puestos')}
 
       <div style="text-align: center; margin-top: 30px; font-style: italic;">
         <p>Esperamos contar con su presencia acompañando a nuestros Sagrados Titulares.</p>
@@ -346,7 +387,7 @@ export class EmailService {
     cuenta?: { transporter: Transporter; usuario: string } | null,
   ): Promise<boolean> {
     try {
-      await (cuenta?.transporter ?? this.transporter).sendMail({
+      await (cuenta?.transporter ?? this.getTransporter()).sendMail({
         from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${cuenta?.usuario ?? process.env.EMAIL_USER}>`,
         to,
         subject,
