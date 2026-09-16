@@ -261,3 +261,15 @@ describe('el CMS no hereda el color de texto de la web pública', () => {
     expect(getComputedStyle(screen.getByRole('main')).color).toBe(esperado)
   })
 })
+
+describe('accesos al CMS', () => {
+  // Repartir cargos es repartir privilegios: ni el Hermano Mayor entra aquí.
+  // El backend ya lo estrecha así (`checkRole(SOLO_ADMIN)` en adminRoutes), y el
+  // menú no debe ofrecer una pantalla que va a devolver un 403.
+  it('solo el administrador ve la sección de accesos', () => {
+    const accesos = itemsMenu.find((item) => item.href === '/cms/accesos')
+    expect(accesos, 'falta la entrada de accesos en el menú del CMS').toBeDefined()
+    expect(accesos!.roles).toEqual(['ADMIN'])
+    expect(rolesPorRutaCms.accesos).toEqual(['ADMIN'])
+  })
+})

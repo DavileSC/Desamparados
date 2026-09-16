@@ -55,6 +55,7 @@ const TreasuryAdminPage = lazy(() => import('../features/cms/TreasuryAdminPage')
 const InventoryAdminPage = lazy(() => import('../features/cms/InventoryAdminPage'))
 const AccountingAdminPage = lazy(() => import('../features/cms/AccountingAdminPage'))
 const AuditAdminPage = lazy(() => import('../features/cms/AuditAdminPage'))
+const AccesosAdminPage = lazy(() => import('../features/cms/AccesosAdminPage'))
 const PanelPage = lazy(() => import('../features/cms/PanelPage'))
 const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
 
@@ -203,6 +204,7 @@ const router = createBrowserRouter([
           { path: 'inventario', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventoryAdminPage)}</RequireRole> },
           { path: 'inventario/:id/editar', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventoryEditPage)}</RequireRole> },
           { path: 'contabilidad', element: <RequireRole roles={rolesPorRutaCms.contabilidad}>{withSuspense(AccountingAdminPage)}</RequireRole> },
+          { path: 'accesos', element: <RequireRole roles={rolesPorRutaCms.accesos}>{withSuspense(AccesosAdminPage)}</RequireRole> },
           { path: 'auditoria', element: <RequireRole roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditAdminPage)}</RequireRole> },
         ],
       },
