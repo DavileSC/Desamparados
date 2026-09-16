@@ -19,3 +19,26 @@ class IntersectionObserverStub {
 }
 
 globalThis.IntersectionObserver = IntersectionObserverStub as unknown as typeof IntersectionObserver
+
+/**
+ * jsdom no calcula posiciones: no tiene `Range.getClientRects` ni
+ * `document.elementFromPoint`. ProseMirror (el motor del editor de texto del
+ * CMS) los usa para saber dónde está el cursor, y sin ellos escribir en el
+ * editor revienta con «target.getClientRects is not a function» antes de que el
+ * test llegue a comprobar nada.
+ *
+ * Devuelven una caja vacía a propósito: no hay maquetación real que medir, y lo
+ * que los tests comprueban es el HTML que sale, no dónde cae el cursor.
+ */
+const cajaVacia = () => ({ top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0, x: 0, y: 0, toJSON() {} })
+
+if (!Range.prototype.getClientRects) {
+  Range.prototype.getClientRects = function () {
+    return Object.assign([], { item: () => null }) as unknown as DOMRectList
+  }
+  Range.prototype.getBoundingClientRect = cajaVacia as unknown as () => DOMRect
+}
+
+if (!document.elementFromPoint) {
+  document.elementFromPoint = () => document.body
+}

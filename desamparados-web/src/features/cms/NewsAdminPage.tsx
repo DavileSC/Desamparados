@@ -8,6 +8,7 @@ import { Link, useLocation } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CabeceraSeccion from './CabeceraSeccion'
 import CampoImagen from './CampoImagen'
+import EditorTexto from './EditorTexto'
 import VentanaFormulario from './VentanaFormulario'
 import { createNews, deleteNews, getAdminNews, type ApiNews, type NewsPayload } from '../../lib/api/news'
 import { usePaginacion } from '../../hooks/usePaginacion'
@@ -97,7 +98,7 @@ export default function NewsAdminPage() {
     >
       <TextField label="Título" value={form.titulo} onChange={(event) => updateField('titulo', event.target.value)} fullWidth />
       <TextField label="Extracto" value={form.extracto} onChange={(event) => updateField('extracto', event.target.value)} fullWidth multiline />
-      <TextField label="Contenido HTML" value={form.contenido} onChange={(event) => updateField('contenido', event.target.value)} fullWidth multiline minRows={7} />
+      <EditorTexto valor={form.contenido} onCambio={(html) => updateField('contenido', html)} etiqueta="Contenido de la noticia" />
       <CampoImagen valor={form.imagenUrl ?? ''} onCambio={(ruta) => updateField('imagenUrl', ruta)} />
       <TextField label="Slug (opcional)" value={form.slug ?? ''} onChange={(event) => updateField('slug', event.target.value)} fullWidth />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Switch checked={form.visible} onChange={(event) => updateField('visible', event.target.checked)} /> Visible públicamente</Box>

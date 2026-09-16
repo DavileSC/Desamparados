@@ -62,7 +62,7 @@ describe('NewsAdminPage', () => {
 
     expect(await screen.findByRole('heading', { name: noticia.titulo })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /nueva noticia/i })).toBeInTheDocument()
-    expect(screen.queryByLabelText(/contenido html/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: /contenido de la noticia/i })).not.toBeInTheDocument()
   })
 
   it('la ventana de nueva noticia la crea, se cierra y avisa', { timeout: RELLENAR_VENTANA_MS }, async () => {
@@ -76,13 +76,14 @@ describe('NewsAdminPage', () => {
 
     await user.click(await screen.findByRole('button', { name: /nueva noticia/i }))
     const ventana = screen.getByRole('dialog', { name: /nueva noticia/i })
-    await user.type(within(ventana).getByLabelText(/título/i), 'Triduo de septiembre')
-    await user.type(within(ventana).getByLabelText(/contenido html/i), 'Texto')
+    await user.type(within(ventana).getByLabelText('Título'), 'Triduo de septiembre')
+    await user.click(within(ventana).getByRole('textbox', { name: /contenido de la noticia/i }))
+    await user.keyboard('Texto')
     await user.click(within(ventana).getByRole('button', { name: 'Guardar' }))
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     const alta = simulado.mock.calls.find(([, init]) => init?.method === 'POST')
-    expect(JSON.parse(String(alta?.[1]?.body))).toMatchObject({ titulo: 'Triduo de septiembre', contenido: 'Texto' })
+    expect(JSON.parse(String(alta?.[1]?.body))).toMatchObject({ titulo: 'Triduo de septiembre', contenido: '<p>Texto</p>' })
     expect(screen.getByText(/noticia creada correctamente/i)).toBeInTheDocument()
   })
 
@@ -96,12 +97,13 @@ describe('NewsAdminPage', () => {
 
     await user.click(await screen.findByRole('button', { name: /nueva noticia/i }))
     const ventana = screen.getByRole('dialog', { name: /nueva noticia/i })
-    await user.type(within(ventana).getByLabelText(/título/i), 'Triduo')
-    await user.type(within(ventana).getByLabelText(/contenido html/i), 'Texto')
+    await user.type(within(ventana).getByLabelText('Título'), 'Triduo')
+    await user.click(within(ventana).getByRole('textbox', { name: /contenido de la noticia/i }))
+    await user.keyboard('Texto')
     await user.click(within(ventana).getByRole('button', { name: 'Guardar' }))
 
     expect(await within(ventana).findByText(/ya existe una noticia con ese slug/i)).toBeInTheDocument()
-    expect(within(ventana).getByLabelText(/título/i)).toHaveValue('Triduo')
+    expect(within(ventana).getByLabelText('Título')).toHaveValue('Triduo')
   })
 
   it('pide la página que dice la URL', async () => {

@@ -18,7 +18,7 @@ import DOMPurify from 'dompurify'
  *  - nada de `href="//otro-dominio"`, que se salta la lista de esquemas;
  *  - todo enlace con `target` abre pestaña nueva con `rel="noopener noreferrer"`.
  */
-const ETIQUETAS_PERMITIDAS = [
+export const ETIQUETAS_PERMITIDAS = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'p', 'br', 'hr', 'div', 'span',
   'strong', 'b', 'em', 'i', 'u', 's', 'sub', 'sup', 'small',

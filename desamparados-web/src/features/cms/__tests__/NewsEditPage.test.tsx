@@ -44,3 +44,14 @@ describe('NewsEditPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se ha podido cargar/i)
   })
 })
+
+describe('el cuerpo se escribe con formato, no con etiquetas', () => {
+  it('ya no hay un campo «Contenido HTML»: hay un editor con sus botones', async () => {
+    montar()
+
+    expect(await screen.findByDisplayValue('Apertura del curso cofrade 2026-2027')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/contenido html/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /contenido/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Negrita' })).toBeInTheDocument()
+  })
+})
