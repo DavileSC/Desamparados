@@ -192,6 +192,16 @@ export class AuthService {
         console.error(`❌ [Error Email] Fallo al enviar el correo de confirmación a ${enmascararEmail(result.user.email)}:`, error);
       });
 
+    // Aviso al buzón de Secretaría. Sin él, una solicitud solo se veía entrando
+    // al CMS a mirar el contador de «Hermanos», y podía quedarse parada semanas.
+    EmailService.enviarAvisoSolicitud({
+      nombre: result.user.nombre,
+      apellidos: result.user.apellidos,
+      email: result.user.email,
+    }).catch(error => {
+      console.error('❌ [Error Email] Fallo al avisar a Secretaría de la solicitud nueva:', error);
+    });
+
     // 3. RETORNAMOS LA RESPUESTA AL USUARIO
     return { 
       user: { id: result.user.id, email: result.user.email }, // Retornamos info segura, sin password

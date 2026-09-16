@@ -35,9 +35,19 @@ export interface CorreoParaBuzon {
  */
 export const carpetaCorreos = (): string => path.join(process.cwd(), 'storage', 'correos');
 
+/**
+ * `NODE_TEST_CONTEXT` la pone el ejecutor de tests de Node en cada proceso
+ * hijo. Sin esa condición, un `.env` con el buzón encendido hacía que cada
+ * `npm test` dejara 46 correos sueltos en storage/correos: los que sueltan
+ * aprobar, rechazar y dar de baja en los cinco ficheros que hacen esas
+ * operaciones. Nadie debería tener que cambiar su .env para pasar los tests, y
+ * en un test lo correcto es no enviar nada (sin cuenta, el envío falla en el
+ * acto y sin tocar la red).
+ */
 export const buzonPedido = (entorno: NodeJS.ProcessEnv = process.env): boolean =>
   entorno.EMAIL_BUZON_PRUEBAS?.trim().toLowerCase() === 'true' &&
-  entorno.NODE_ENV?.trim() !== 'production';
+  entorno.NODE_ENV?.trim() !== 'production' &&
+  entorno.NODE_TEST_CONTEXT === undefined;
 
 /** `Solicitud de Registro Recibida - Ana` -> `solicitud-de-registro-recibida-ana`. */
 function partePlana(texto: string): string {

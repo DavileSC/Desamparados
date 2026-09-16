@@ -79,7 +79,11 @@ export const AUDIT_ACTIONS = {
   PUBLICACION_ACTUALIZAR: 'PUBLICACION_ACTUALIZAR',
   PUBLICACION_ELIMINAR: 'PUBLICACION_ELIMINAR',
   PORTADA_ACTUALIZAR: 'PORTADA_ACTUALIZAR',
-  CONTENIDO_ACTUALIZAR: 'CONTENIDO_ACTUALIZAR'
+  CONTENIDO_ACTUALIZAR: 'CONTENIDO_ACTUALIZAR',
+  // Correo que no salió. No es una acción de nadie, pero se guarda aquí porque
+  // es el único sitio del CMS donde el staff puede enterarse: antes el fallo
+  // moría en un console.error y el alta se daba por buena sin avisar a nadie.
+  EMAIL_FALLIDO: 'EMAIL_FALLIDO'
 } as const;
 
 export class AuditService {

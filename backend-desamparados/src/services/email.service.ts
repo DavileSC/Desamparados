@@ -2,6 +2,7 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../utils/buzon-pruebas.js';
 import { emailDeSecretaria, escudoUrl, lineasDeSecretaria } from '../domain/datos-entidad.js';
+import { AuditService, AUDIT_ACTIONS } from './audit.service.js';
 
 import QRCode from 'qrcode';
 import { DatosPapeleta } from '../dtos/email.dto';
@@ -30,11 +31,28 @@ export class EmailService {
     if (buzonPedido()) {
       console.log('📬 [Email] EMAIL_BUZON_PRUEBAS activo: los correos se escriben en storage/correos y no se envían.');
       this.transporter = buzonDePruebas();
-    } else {
+    } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
       });
+    } else {
+      // Sin cuenta configurada NO se abre conexión: se falla en el acto.
+      //
+      // Antes se creaba igualmente el transporte de Gmail con credenciales
+      // vacías, y cada envío se quedaba esperando al SMTP hasta agotar el
+      // tiempo. Desde que aprobar, rechazar y dar de baja mandan correo, eso
+      // colgaba la suite de tests entera —cinco ficheros hacen esas
+      // operaciones— y habría colgado también al CI, que no tiene ningún .env.
+      //
+      // En producción no puede darse: `config/entorno.ts` exige EMAIL_USER y
+      // EMAIL_PASS para que el servidor arranque.
+      this.transporter = {
+        sendMail: () => Promise.reject(new Error(
+          'No hay cuenta de correo configurada (faltan EMAIL_USER y EMAIL_PASS). ' +
+          'Para revisar los correos en local, pon EMAIL_BUZON_PRUEBAS=true.'
+        )),
+      };
     }
     return this.transporter;
   }
@@ -297,6 +315,133 @@ export class EmailService {
     return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout("Acuse de Recibo", "Secretaría General", content));
   }
 
+  /**
+   * Aviso al buzón de Secretaría de que ha entrado una solicitud nueva.
+   *
+   * Antes no existía: una solicitud solo se veía si alguien entraba al CMS y
+   * miraba el contador de «Hermanos», así que podía quedarse semanas parada sin
+   * que nadie lo supiera.
+   *
+   * Va al buzón de la corporación (CONTACT_EMAIL_TO, con respaldo en EMAIL_USER)
+   * y no a las cuentas personales del staff: el destinatario es el cargo, no la
+   * persona que hoy lo ocupa.
+   */
+  static async enviarAvisoSolicitud(datos: { nombre: string; apellidos?: string | null; email: string }) {
+    const destino = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
+    if (!destino) {
+      console.error('❌ Aviso de solicitud: ni CONTACT_EMAIL_TO ni EMAIL_USER están configurados.');
+      return false;
+    }
+
+    const { primario, secundario } = this.COLORS;
+    const nombreCompleto = this.esc([datos.nombre, datos.apellidos].filter(Boolean).join(' '));
+    const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cms/hermanos`;
+
+    const content = `
+      <p style="margin-top: 0;">Ha entrado una <strong>solicitud de ingreso nueva</strong> por la web.</p>
+
+      <div style="background-color: #fafafa; border-left: 4px solid ${secundario}; padding: 20px 25px; margin: 25px 0;">
+        <p style="margin: 0 0 6px 0;"><strong>Solicitante:</strong> ${nombreCompleto}</p>
+        <p style="margin: 0;"><strong>Correo:</strong> ${this.esc(datos.email)}</p>
+      </div>
+
+      <p>Queda pendiente de aprobación hasta que Secretaría la revise. Mientras tanto, la cuenta no puede entrar al área de hermanos.</p>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${enlace}" style="background-color: ${primario}; color: #ffffff; padding: 12px 25px; text-decoration: none; font-family: 'Arial', sans-serif; font-size: 14px; border-radius: 4px; display: inline-block;">Ver las solicitudes pendientes</a>
+      </div>
+    `;
+
+    const asunto = `📥 Solicitud de ingreso nueva - ${[datos.nombre, datos.apellidos].filter(Boolean).join(' ')}`;
+    return await this.enviarEmailBase(destino, asunto, this.getHtmlLayout('Solicitud de ingreso nueva', 'Aviso interno · Secretaría', content));
+  }
+
+  /**
+   * La solicitud ha sido aprobada: ya figura en el censo y tiene número.
+   * Antes aprobar era mudo y el solicitante no se enteraba de nada.
+   */
+  static async enviarAprobacionSolicitud(emailDestino: string, nombreHermano: string, numerosDeHermano: number[]) {
+    const { primario, secundario } = this.COLORS;
+    const nombre = this.esc(nombreHermano);
+    const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/hermanos/acceso`;
+
+    // Una cuenta puede tener varias fichas (los hijos de un tutor) y se aprueban
+    // todas a la vez: el correo las nombra en plural o el padre creería que solo
+    // ha entrado una.
+    const varios = numerosDeHermano.length > 1;
+    const bloqueNumero = numerosDeHermano.length
+      ? `<div style="background-color: #fcfcfc; border: 1px dashed #cccccc; padding: 20px; text-align: center; margin: 25px 0;">
+           <span style="font-family: 'Arial', sans-serif; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1px;">${varios ? 'Números de hermano' : 'Número de hermano'}</span><br>
+           <strong style="font-size: 28px; color: ${primario};">${this.esc(numerosDeHermano.join(', '))}</strong>
+         </div>`
+      : '';
+
+    const content = `
+      <p style="margin-top: 0;">Estimado/a en Cristo, <strong>${nombre}</strong>:</p>
+      <p>Le comunicamos que la Secretaría ha <strong>aprobado su solicitud de ingreso</strong>. Desde este momento ${varios ? 'sus perfiles figuran' : 'figura'} oficialmente en el censo de hermanos de nuestro Grupo Parroquial.</p>
+
+      ${bloqueNumero}
+
+      <p>Con su alta ya en vigor, puede acceder al área de hermanos para consultar sus datos, sus recibos y, llegado el momento, su papeleta de sitio.</p>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${enlace}" style="background-color: ${primario}; color: #ffffff; padding: 12px 25px; text-decoration: none; font-family: 'Arial', sans-serif; font-size: 14px; border-radius: 4px; display: inline-block;">Entrar en el área de hermanos</a>
+      </div>
+
+      <div style="background-color: #fff8e1; border-left: 4px solid ${secundario}; padding: 15px;">
+        <p style="margin: 0; font-size: 13px; color: #5d4037; font-style: italic;">Conserve ${varios ? 'esos números' : 'ese número'}: ${varios ? 'son los que identifican' : 'es el que le identifica'} en el censo y ${varios ? 'los' : 'el'} que se le pedirá en Secretaría.</p>
+      </div>
+
+      <div style="text-align: center; margin-top: 30px; font-style: italic;">
+        <p>Bienvenido/a. Que nuestros Sagrados Titulares le guarden y bendigan.</p>
+        <p style="margin-top: 20px; font-weight: bold; font-style: normal; font-size: 14px;">El Secretario</p>
+      </div>
+    `;
+
+    const asunto = `✅ Su solicitud ha sido aprobada - ${nombreHermano}`;
+    return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout('Solicitud aprobada', 'Secretaría General', content));
+  }
+
+  /**
+   * La solicitud no sale adelante, o se tramita una baja.
+   *
+   * Sin motivos automáticos a propósito: la decisión la explica Secretaría, y un
+   * correo generado no puede dar por escrito una razón que nadie ha redactado.
+   *
+   * El asunto NO lleva el nombre. Si el envío falla, `enviarEmailBase` guarda el
+   * asunto en la auditoría (EMAIL_FALLIDO), y en un rechazo eso devolvería a la
+   * base el nombre que `rechazarSolicitud` acaba de borrar.
+   */
+  static async enviarBajaORechazo(emailDestino: string, nombreHermano: string, motivo: 'rechazo' | 'baja') {
+    const nombre = this.esc(nombreHermano);
+    const esRechazo = motivo === 'rechazo';
+
+    const cuerpo = esRechazo
+      ? `<p>Le comunicamos que la Secretaría <strong>no ha podido dar curso a su solicitud de ingreso</strong>, y que sus datos han sido eliminados de nuestros registros.</p>
+         <p>Si cree que se trata de un error, o desea volver a presentarla, puede ponerse en contacto con la Secretaría y le atenderemos con mucho gusto.</p>`
+      : `<p>Le comunicamos que se ha tramitado su <strong>baja en el censo de hermanos</strong> de nuestro Grupo Parroquial.</p>
+         <p>Si esta baja no responde a su voluntad, o desea reincorporarse más adelante, puede ponerse en contacto con la Secretaría.</p>`;
+
+    const content = `
+      <p style="margin-top: 0;">Estimado/a <strong>${nombre}</strong>:</p>
+      ${cuerpo}
+      ${this.bloqueDeSecretaria('Contacto con Secretaría')}
+      <div style="text-align: center; margin-top: 30px; font-style: italic;">
+        <p>Le agradecemos el interés mostrado por nuestro Grupo Parroquial.</p>
+        <p style="margin-top: 20px; font-weight: bold; font-style: normal; font-size: 14px;">El Secretario</p>
+      </div>
+    `;
+
+    const asunto = esRechazo
+      ? 'Resolución de su solicitud de ingreso'
+      : 'Baja en el censo de hermanos';
+    return await this.enviarEmailBase(
+      emailDestino,
+      asunto,
+      this.getHtmlLayout(asunto, 'Secretaría General', content)
+    );
+  }
+
   static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string) {
     const { primario, secundario } = this.COLORS;
     const nombre = this.esc(nombreHermano);
@@ -398,6 +543,15 @@ export class EmailService {
       return true;
     } catch (error) {
       console.error(`❌ Error enviando email a ${enmascararEmail(to)}:`, error);
+      // El fallo va también a la auditoría: es el único sitio donde el staff
+      // puede verlo. La dirección se guarda ENMASCARADA — la auditoría ya
+      // retiene IP y navegador, y no hace falta añadirle correos completos para
+      // saber que algo no salió.
+      await AuditService.log(AUDIT_ACTIONS.EMAIL_FALLIDO, {}, 'email', undefined, {
+        para: enmascararEmail(to),
+        asunto: subject,
+        motivo: error instanceof Error ? error.message.slice(0, 250) : 'desconocido',
+      });
       return false;
     }
   }

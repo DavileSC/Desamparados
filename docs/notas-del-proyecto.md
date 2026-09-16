@@ -221,3 +221,47 @@ rompe la paginación** —`validate` solo sobrescribe `req.query` si el esquema
 declara `query`, así que la consulta cruda sobrevive—. Lo que sí la rompe es
 declarar `query` **incompleto**: añadir un filtro y olvidarse de esparcir
 `...paginacionQuery`.
+
+---
+
+## 8. Los correos automáticos: cómo verlos y por qué salen incompletos
+
+**Para revisarlos en local no hacen falta credenciales de Gmail.** Con
+`EMAIL_BUZON_PRUEBAS="true"` en el `.env` del backend, cada correo se escribe
+como un `.html` en `backend-desamparados/storage/correos` en vez de enviarse, con
+el sobre (de, para, asunto) en una cabecera amarilla. Se abre con doble clic.
+
+Se enciende **a mano y nunca por omisión**, aunque falten `EMAIL_USER` y
+`EMAIL_PASS`. Y queda **apagado dentro del ejecutor de tests** aunque el `.env` lo
+pida (`buzonPedido()` mira `NODE_TEST_CONTEXT`): aprobar, rechazar y dar de baja
+mandan correo, cinco ficheros de test hacen esas operaciones, y sin ese freno cada
+`npm test` dejaba 46 `.html` sueltos en `storage/correos`. En producción también
+se ignora, y además `entorno.ts` exige las dos credenciales para arrancar.
+
+**Sin cuenta configurada, el envío falla en el acto y sin abrir conexión.** Antes
+se creaba el transporte de Gmail con credenciales vacías y cada correo se quedaba
+esperando al SMTP hasta agotar el tiempo: desde que las bajas mandan correo, eso
+colgaba la suite entera y habría colgado también al CI, que no tiene ningún `.env`.
+Lo fija `test/correos-solicitud.test.ts`, que comprueba que no se crea ningún
+transporte.
+
+**Un correo que no sale deja rastro en la auditoría** (`EMAIL_FALLIDO`), visible
+en `/cms/auditoria`. Antes moría en un `console.error`: el alta se completaba, el
+solicitante no recibía nada y nadie se enteraba. La dirección se guarda
+**enmascarada**.
+
+**Los correos salen deliberadamente incompletos.** El horario de Secretaría, la
+dirección, el teléfono y el escudo viven en `shared/datos-entidad.json` con el
+mismo criterio que `config/site.ts` en la web: `null` es «pendiente de confirmar»
+y el bloque entero **desaparece** del correo. Antes iban escritos a mano en la
+plantilla una «C/ Falsa, 123, 29000 Málaga», un horario inventado y un
+`secretaria@tucofradia.com` que no es nuestro. Un correo automático no se puede
+corregir una vez enviado: es mejor que salga corto a que mande a un solicitante a
+una calle que no existe. **En cuanto el Grupo Parroquial confirme esos datos, se
+rellenan ahí y aparecen solos.**
+
+**El aviso de rechazo se envía después de borrar la cuenta.**
+`rechazarSolicitud` elimina el usuario entero cuando nunca llegó a aprobarse, así
+que el email y el nombre se leen **antes** de la transacción. Por el mismo motivo
+el asunto de ese correo no lleva el nombre: si el envío falla, el asunto acaba en
+la auditoría, y eso devolvería a la base el dato que se acaba de borrar.
