@@ -352,3 +352,29 @@ describe('referencias para el script de huérfanos', () => {
     }
   });
 });
+
+describe('huérfanos con el reloj del disco por delante', () => {
+  // El mtime que devuelve el sistema de ficheros puede quedar unos milisegundos
+  // por delante del reloj de Node (en NTFS pasa). Entonces «ahora - mtime» sale
+  // negativo y el fichero se descartaba por «reciente» aunque se hubiera pedido
+  // sin margen: con --horas=0 el script se dejaba subidas sin listar. Esto lo
+  // reproduce de forma fija pasando un `ahora` anterior al fichero.
+  test('un fichero con la fecha por delante del reloj cuenta como huérfano si no se pide margen', async () => {
+    const carpeta = await mkdtemp(path.join(os.tmpdir(), 'desamparados-reloj-'));
+    try {
+      const huerfano = `${hex()}.webp`;
+      await writeFile(path.join(carpeta, huerfano), 'x');
+
+      const { huerfanos } = await buscarHuerfanos({
+        referenciados: new Set(),
+        directorio: carpeta,
+        minHoras: 0,
+        ahora: new Date(Date.now() - 5_000),
+      });
+
+      assert.deepEqual(huerfanos.map((h) => h.nombre), [huerfano]);
+    } finally {
+      await rm(carpeta, { recursive: true, force: true });
+    }
+  });
+});

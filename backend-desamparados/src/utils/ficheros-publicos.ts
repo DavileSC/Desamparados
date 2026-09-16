@@ -208,7 +208,12 @@ export async function buscarHuerfanos({
     }
     if (enUso.has(clave(entrada.name))) continue;
     const datos = await fs.stat(path.join(directorio, entrada.name));
-    if (ahora.getTime() - datos.mtime.getTime() < minHoras * 3600_000) continue;
+    // La edad nunca es negativa: el mtime del disco puede quedar unos
+    // milisegundos por delante del reloj de Node (NTFS lo hace), y entonces la
+    // resta salía negativa y el fichero se descartaba por «reciente» aunque se
+    // hubiera pedido sin margen (--horas=0 se dejaba subidas sin listar).
+    const edadMs = Math.max(0, ahora.getTime() - datos.mtime.getTime());
+    if (edadMs < minHoras * 3600_000) continue;
     huerfanos.push({ nombre: entrada.name, bytes: datos.size, modificado: datos.mtime });
   }
   huerfanos.sort((a, b) => a.nombre.localeCompare(b.nombre));
