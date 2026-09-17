@@ -35,7 +35,13 @@ const textoSchema = type({
   tipo: "'texto'",
   // El HTML ya viene saneado por sanear-html.ts; aquí solo se exige que haya algo.
   html: type(`1 <= string <= ${topes.html}`),
-});
+}).narrow((datos, ctx) => datos.html.trim() !== ''
+  ? true
+  // Tres espacios no son un párrafo: el bloque pintaría un hueco en la página.
+  // El tope de arriba ya descarta la cadena vacía, pero no el blanco. El CMS
+  // avisa de lo mismo (`problemaDeBloque`), y esa comprobación vive solo en el
+  // navegador.
+  : ctx.reject({ path: ['html'], problem: 'no puede quedar en blanco' }));
 
 const fotoSchema = type({
   ...comunes,

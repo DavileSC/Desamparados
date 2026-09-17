@@ -30,6 +30,9 @@ describe('bloque de texto', () => {
 
   test('rechaza un cuerpo vacío: un bloque sin nada no pinta nada', () => {
     assert.ok(falla('texto', { tipo: 'texto', titulo: '', html: '' }));
+    // Solo espacios pasaba el tope de longitud y pintaba un hueco. El CMS ya
+    // avisaba, pero un PUT hecho a mano se colaba igual.
+    assert.ok(falla('texto', { tipo: 'texto', titulo: '', html: '   ' }), 'solo espacios: no es un párrafo');
   });
 });
 
