@@ -26,13 +26,6 @@ describe('el documento de una página de bloques', () => {
     assert.ok(!falla(doc([])));
   });
 
-  test('un tipo declarado sin esquema da 400 y no revienta', () => {
-    // Simula el descuido de añadir un tipo al catálogo y olvidar su esquema:
-    // sin la guarda, esto sería un TypeError, o sea un 500.
-    const salida = valida(doc([{ tipo: 'inventadoSinEsquema', titulo: '' }]));
-    assert.ok(salida instanceof ArkErrors);
-  });
-
   test('rechaza un tipo de bloque que no existe, y lo nombra', () => {
     const salida = valida(doc([{ tipo: 'carrusel3d', titulo: '' }]));
     assert.ok(salida instanceof ArkErrors);

@@ -40,6 +40,7 @@ test('la siembra deja las cinco páginas con los textos de siempre', async (t) =
   const filas = await db.contenidoPagina.findMany({ orderBy: { slug: 'asc' } });
 
   assert.deepEqual(filas.map((f) => f.slug), ['corporacion', 'historia', 'portada', 'recorrido', 'titular']);
+  assert.equal((filas[0].datos as any).bloques.length, 2);
   assert.equal((filas[1].datos as any).hitos.length, 5);
   assert.equal((filas[2].datos as any).hero.titulo, 'Desamparados Málaga');
   assert.equal((filas[3].datos as any).paradas.length, 9);

@@ -5,7 +5,6 @@ import { normalizarVideo } from '../domain/video-galeria.js';
 import { esImagenPropia } from '../utils/rutas-propias.js';
 import type { SlugContenido } from '../domain/contenido.js';
 import { cabeceraSchema, esquemaDeBloque } from './bloques.schema.js';
-import { esTipoBloque } from '../domain/bloques.js';
 
 /**
  * Un texto visible de la web. Sin `<` ni `>`: estos campos se pintan como texto
@@ -210,22 +209,18 @@ const paginaDeBloquesSchema = type({
 }).narrow((datos, ctx) => {
   for (const [indice, bloque] of datos.bloques.entries()) {
     const tipo = (bloque as { tipo?: unknown })?.tipo;
-    if (!esTipoBloque(tipo)) {
-      return ctx.reject({
-        path: ['bloques', indice, 'tipo'],
-        problem: `no es un tipo de bloque conocido: «${String(tipo)}»`,
-      });
-    }
-    // `esTipoBloque` valida contra el catálogo, no contra el mapa de esquemas:
-    // un tipo declarado en shared/tipos-de-bloque.json al que se le olvidara su
-    // esquema pasaría esa comprobación y luego `esquemaDeBloque` devolvería
-    // `undefined`. Llamarlo a ciegas sería un TypeError, es decir un 500, justo
-    // donde el diseño promete un 400 que nombra el problema.
-    const esquema = esquemaDeBloque(tipo);
+    // El mapa de esquemas es la única autoridad aquí sobre qué tipo se sabe
+    // validar: un tipo inventado y un tipo declarado en el catálogo al que se
+    // le olvidó el esquema (`esquemaDeBloque` devuelve `undefined`) caen en la
+    // MISMA rama. Preguntarle antes al catálogo (`esTipoBloque`) duplicaba la
+    // pregunta y dejaba una rama que ningún test ejercitaba de verdad. Que el
+    // catálogo compartido y este mapa no se desincronicen lo vigila el test de
+    // cobertura en `bloques-esquemas.test.ts`, no esta guarda.
+    const esquema = typeof tipo === 'string' ? esquemaDeBloque(tipo as never) : undefined;
     if (!esquema) {
       return ctx.reject({
         path: ['bloques', indice, 'tipo'],
-        problem: `es un tipo declarado sin esquema de validación: «${tipo}»`,
+        problem: `no es un tipo de bloque conocido: «${String(tipo)}»`,
       });
     }
     const salida = esquema(bloque);
