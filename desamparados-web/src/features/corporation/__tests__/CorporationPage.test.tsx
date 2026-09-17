@@ -24,6 +24,19 @@ function responder(datos: unknown = POR_DEFECTO.corporacion) {
   ))))
 }
 
+/**
+ * A propósito, NADA de esto coincide con `shared/contenido-por-defecto.json`:
+ * la prueba que la usa solo puede pasar si la página de verdad pinta lo que
+ * responde el servidor, y no el contenido de partida que lleva escrito para
+ * cuando el servidor tarda o falla.
+ */
+const CONTENIDO_DISTINTO_DEL_DE_PARTIDA = {
+  cabecera: { titulo: 'Cableado a prueba', subtitulo: '', foto: '', fotoAlt: '' },
+  bloques: [
+    { tipo: 'texto', titulo: '', html: '<p>Frase exclusiva de esta prueba, ausente del contenido de partida.</p>' },
+  ],
+}
+
 describe('CorporationPage', () => {
   it('sigue diciendo lo mismo que antes de convertirla a bloques', async () => {
     responder()
@@ -50,5 +63,16 @@ describe('CorporationPage', () => {
 
     // La cabecera es lo mínimo que tiene que quedar en pie.
     expect(await screen.findByRole('heading', { name: 'Corporación' })).toBeInTheDocument()
+  })
+
+  it('lo que se ve es lo que sirve el CMS, no el contenido de partida', async () => {
+    responder(CONTENIDO_DISTINTO_DEL_DE_PARTIDA)
+    renderWithProviders(<CorporationPage />)
+
+    await screen.findByText(/Frase exclusiva de esta prueba/)
+    // Si la página se hubiera quedado enseñando el contenido de partida sin
+    // consultar de verdad al servidor, esta tarjeta —que solo está en el
+    // JSON por defecto— seguiría en pantalla.
+    expect(screen.queryByText('Explora la sección')).not.toBeInTheDocument()
   })
 })

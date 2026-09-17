@@ -4,7 +4,8 @@ interface PageHeaderProps {
   title: string
   subtitle?: string
   image?: string
-  /** Qué se ve en la foto. Sin ella se repetiría el título. */
+  /** Qué se ve en la foto. Sin ella, se repite el título: toda foto necesita
+   *  descripción, y una redundancia con el título es mejor que dejarla sin ella. */
   imageAlt?: string
 }
 
@@ -25,9 +26,12 @@ export default function PageHeader({ title, subtitle, image, imageAlt }: PageHea
           <Box
             component="img"
             src={image}
-            // Foto de fondo decorativa: repetir aquí el título estorbaría a
-            // quien use un lector de pantalla. Vacío si el CMS no trae descripción.
-            alt={imageAlt ?? ''}
+            // Respaldo en el título, no en cadena vacía: las páginas cuya foto
+            // no viene del CMS (p. ej. Sagrada Titular, con una foto fija en el
+            // código) no pasan `imageAlt`, y no por eso la foto se queda sin
+            // describir. Las que sí traen cabecera del CMS siempre rellenan
+            // `fotoAlt` en cuanto hay foto, así que aquí manda su descripción.
+            alt={imageAlt ?? title}
             sx={{
               position: 'absolute',
               inset: 0,

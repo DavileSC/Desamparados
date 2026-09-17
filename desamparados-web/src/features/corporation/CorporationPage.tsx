@@ -7,29 +7,29 @@ import BloquesDePagina from '../../components/bloques/BloquesDePagina'
 import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
 import { CLAVE_CORPORACION, getContenido, type PaginaDeBloques } from '../../lib/api/contenido'
 
-const DE_PARTIDA = POR_DEFECTO.corporacion as unknown as PaginaDeBloques
-
 export default function CorporationPage() {
-  // Con `initialData`, si el servidor tarda o falla la página no se queda en
-  // blanco: enseña el contenido de partida y lo sustituye cuando llega el suyo.
   const { data } = useQuery({
     queryKey: CLAVE_CORPORACION,
     queryFn: () => getContenido<PaginaDeBloques>('corporacion'),
-    initialData: DE_PARTIDA,
+    retry: false,
+    staleTime: 5 * 60_000,
   })
+  // Mientras carga y si falla, el contenido de partida: la página no puede
+  // quedarse en blanco porque el servidor tarde o no conteste.
+  const pagina = data ?? (POR_DEFECTO.corporacion as unknown as PaginaDeBloques)
 
   return (
     <>
       <Helmet><title>Corporación | Desamparados</title></Helmet>
       <PageHeader
-        title={data.cabecera.titulo}
-        subtitle={data.cabecera.subtitulo}
-        image={data.cabecera.foto || undefined}
-        imageAlt={data.cabecera.fotoAlt}
+        title={pagina.cabecera.titulo}
+        subtitle={pagina.cabecera.subtitulo}
+        image={pagina.cabecera.foto || undefined}
+        imageAlt={pagina.cabecera.fotoAlt}
       />
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
-          <BloquesDePagina bloques={data.bloques} />
+          <BloquesDePagina bloques={pagina.bloques} />
         </PageContainer>
       </AnimatedSection>
     </>
