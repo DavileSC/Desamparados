@@ -194,7 +194,9 @@ export default function AccesosAdminPage() {
               onClick={() => setElegido(c)}
               sx={{
                 textAlign: 'left', border: 0, background: 'none', cursor: 'pointer',
-                p: 1, borderRadius: 1, font: 'inherit',
+                // Un <button> no hereda el color del texto: sin esto el
+                // navegador lo pinta en negro sobre el fondo oscuro.
+                p: 1, borderRadius: 1, font: 'inherit', color: 'text.primary',
                 '&:hover': { backgroundColor: 'action.hover' },
               }}
             >
