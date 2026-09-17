@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import AccesosAdminPage from '../AccesosAdminPage'
+import { useAuthStore } from '../../members/auth/store'
 
 const STAFF = [
   { id: 1, email: 'admin@desamparados.test', role: 'ADMIN', nombre: 'Rocío', apellidos: 'Vega Luna', dni: '12345678Z', telefono: '600000000' },
@@ -108,5 +109,32 @@ describe('AccesosAdminPage', () => {
     await user.click(screen.getByRole('button', { name: /quitar acceso/i }))
 
     expect(await screen.findByText(/último Administrador/i)).toBeInTheDocument()
+  })
+})
+
+describe('la pantalla produce HTML válido', () => {
+  // React avisa por consola cuando el marcado es inválido (por ejemplo, un
+  // <div> dentro de un <p>). Eso no rompe ningún test de comportamiento, así
+  // que se cuela sin que nadie lo note: se vio en las capturas, no aquí.
+  it('montarla no deja avisos de React en la consola', async () => {
+    // Con sesión: la fila de uno mismo lleva la etiqueta «Tú», que es donde
+    // estaba el marcado inválido. Sin sesión no se pinta y el fallo no aparece.
+    useAuthStore.getState().entrarSesion('cms', {
+      id: 1, email: 'admin@desamparados.test', nombre: 'Rocío', apellidos: 'Vega Luna', role: 'ADMIN',
+    } as never)
+
+    const avisos: string[] = []
+    const error = vi.spyOn(console, 'error').mockImplementation((...args) => { avisos.push(String(args[0])) })
+    try {
+      responder()
+      renderWithProviders(<AccesosAdminPage />)
+      await screen.findByText('Rocío Vega Luna')
+      expect(screen.getByText('Tú')).toBeInTheDocument()
+    } finally {
+      error.mockRestore()
+      useAuthStore.getState().salirSesion()
+    }
+
+    expect(avisos.filter((a) => /cannot contain a nested|validateDOMNesting|In HTML, /i.test(a))).toEqual([])
   })
 })

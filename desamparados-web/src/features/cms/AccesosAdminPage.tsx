@@ -229,7 +229,10 @@ export default function AccesosAdminPage() {
         return (
           <Paper key={miembro.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Box>
-              <Typography variant="h6" component="p">
+              {/* `div` y no `p`: el Chip de MUI es un <div>, y un <div> dentro
+                  de un <p> es marcado inválido (el navegador cierra el párrafo
+                  por su cuenta y la línea se parte). */}
+              <Typography variant="h6" component="div">
                 {nombreDe(miembro)}
                 {soyYo && <Chip label="Tú" size="small" sx={{ ml: 1 }} />}
               </Typography>
