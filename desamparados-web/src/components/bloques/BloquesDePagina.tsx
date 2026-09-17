@@ -22,9 +22,13 @@ export default function BloquesDePagina({ bloques }: { bloques: Bloque[] }) {
         // prefijo del tipo evita que React reutilice el nodo de un bloque de un
         // tipo para pintar otro distinto al cambiar el número de bloques, pero no
         // distingue dos bloques del mismo tipo entre sí. Al reordenar dos bloques
-        // de texto (o dos de tarjetas), la clave no cambia —sigue siendo
-        // `texto-0`/`texto-1` antes y después— y React reutiliza la instancia en
-        // cada posición en vez de moverla con su contenido. Hoy es inofensivo
+        // de texto (o dos de tarjetas), cada uno sí recibe un índice distinto
+        // —el de la posición 0 pasa a la 1 y viceversa—, pero el conjunto de
+        // claves que ve React es el mismo de antes: sigue habiendo un
+        // `texto-0` y un `texto-1`. Sin una clave que se mueva con el bloque,
+        // React no detecta que los elementos han cambiado de sitio: reutiliza
+        // cada instancia en su posición y solo le pasa las props del bloque
+        // que ahora la ocupa. Hoy es inofensivo
         // porque los tres bloques son funciones puras sin estado; en cuanto haya
         // uno con estado propio —la galería de la fase 2, con su vídeo en
         // reproducción o su foto ampliada—, ese estado se quedaría pegado a la
