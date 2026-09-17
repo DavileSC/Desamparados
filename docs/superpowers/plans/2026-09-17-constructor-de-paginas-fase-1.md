@@ -55,8 +55,15 @@ que nada avisara antes.
 - Test: `backend-desamparados/test/bloques-catalogo.test.ts`
 
 **Interfaces:**
-- Produce: `TIPOS_BLOQUE: readonly TipoBloque[]`, `type TipoBloque`,
+- Produce: `TIPOS_BLOQUE: readonly string[]`, `type TipoBloque`,
   `esTipoBloque(valor: unknown): valor is TipoBloque`
+
+  Aviso para quien lo consuma: `TipoBloque` NO es una unión literal.
+  `resolveJsonModule` ensancha los arrays de un JSON importado a `string[]`, así
+  que el compilador no distingue `TipoBloque` de `string`. Es el precio de tener
+  una sola fuente compartida, y se acepta a sabiendas: lo que en otro diseño
+  vigilaría el compilador, aquí lo vigilan los tests de cobertura de los mapas
+  (Tarea 2 para el servidor, Tarea 4 para la web).
 
 - [ ] **Paso 1: Escribir el test que falla**
 
@@ -169,9 +176,22 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { ArkErrors } from 'arktype';
 import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
+import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 const falla = (tipo: 'texto' | 'foto' | 'tarjetas', valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
+
+describe('el mapa de esquemas cubre el catálogo', () => {
+  // `TipoBloque` es `string` a ojos del compilador (ver Tarea 1), así que
+  // TypeScript no avisaría si este mapa se quedara corto al añadir un tipo al
+  // catálogo. Lo vigila este test: sin él, un bloque nuevo daría un 500 al
+  // guardar en vez de validarse.
+  test('hay un esquema para cada tipo declarado', () => {
+    for (const tipo of TIPOS_BLOQUE) {
+      assert.ok(esquemaDeBloque(tipo as never), `falta el esquema del bloque «${tipo}»`);
+    }
+  });
+});
 
 describe('bloque de texto', () => {
   test('acepta el HTML que produce el editor', () => {
