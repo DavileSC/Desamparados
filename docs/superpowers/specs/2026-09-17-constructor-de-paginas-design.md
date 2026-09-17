@@ -36,7 +36,7 @@ bloques que se añaden, se quitan y se reordenan.
 | Publicación | Guardar y publicar a la vez, con vista previa | Es como funciona hoy el CMS; los borradores duplicarían el contenido en la base y añadirían estado que nadie ha pedido |
 | Almacenamiento | Lista de bloques dentro del documento JSON que ya existe | Conserva el patrón actual, la validación en servidor y —sin tocar una línea— el limpiador de ficheros huérfanos, que busca rutas dentro del JSON |
 | Pantalla del CMS | Lista de bloques plegables (diseño A) | Es como ya funcionan Historia y la galería: a quien use el CMS no le cambia nada salvo que ahora puede añadir y quitar |
-| Colores | **Fuera de este spec** | El usuario pidió «contenido, estructura y colores». Los dos primeros son esto; los colores son un proyecto aparte y se decidirá después |
+| Colores | **No se editan desde el CMS** | El usuario pidió «contenido, estructura y colores» y el 17 de septiembre cerró el último: los colores no se tocan. Los bloques se pintan con el tema de la web, y así ninguna combinación elegida a mano puede dejar la web ilegible o sin contraste |
 
 ## 3. Cómo se guarda una página
 
@@ -180,7 +180,8 @@ trasladarlo a la base de datos. Es la parte con más riesgo de perder cosas.
 
 - No crea páginas nuevas ni toca las rutas, el menú o el sitemap.
 - No toca la portada.
-- No permite elegir colores ni tipografías: los bloques se pintan con el tema de
-  la web. Cada bloque sabe pintarse bien solo, y esa es la decisión que impide
-  que un constructor genérico empeore el diseño que ya existe.
+- **No permite elegir colores ni tipografías**, y no es una fase pendiente: es
+  una decisión cerrada del usuario. Los bloques se pintan con el tema de la web.
+  Cada bloque sabe pintarse bien solo, y esa es la decisión que impide que un
+  constructor genérico empeore el diseño que ya existe.
 - No añade borradores, historial de versiones ni permisos por página.
