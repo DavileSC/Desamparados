@@ -100,6 +100,25 @@ describe('PaginaAdminPage', () => {
     expect(screen.getByText('Tarjetas')).toBeInTheDocument()
   })
 
+  it('los controles del bloque no cuelgan del botón que lo pliega', async () => {
+    montar()
+    await screen.findByDisplayValue('Corporación')
+
+    // Con el Accordion de MUI los tres controles vivían DENTRO del
+    // AccordionSummary, que es un <button>: HTML inválido, un error de
+    // hidratación en cada carga y, sobre todo, un árbol de accesibilidad en el
+    // que Subir, Bajar y Quitar no existían como controles —el navegador los
+    // absorbía en el nombre del botón de plegar—. Nada de esto lo veían los
+    // tests de arriba, que encuentran los botones en el DOM y siguen pasando.
+    expect(document.body.querySelectorAll('button button')).toHaveLength(0)
+
+    // El botón que pliega se llama solo por su bloque: si algún control vuelve
+    // a colarse dentro, su etiqueta acabaría pegada a este nombre.
+    const plegar = screen.getByRole('button', { name: /^Texto/ })
+    expect(plegar).toHaveAttribute('aria-expanded', 'false')
+    expect(plegar.getAttribute('aria-label') ?? plegar.textContent).not.toMatch(/quitar|subir|bajar/i)
+  })
+
   it('se reordena y se guarda en el orden nuevo', async () => {
     const user = userEvent.setup()
     const llamadas = montar()

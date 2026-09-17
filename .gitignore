@@ -40,3 +40,6 @@ repomix-output.xml
 *.age
 # ...salvo las migraciones de Prisma, que sí se versionan.
 !backend-desamparados/prisma/migrations/**/*.sql
+
+# Capturas y volcados del MCP de Playwright: son de una sesión, no del proyecto.
+.playwright-mcp/
