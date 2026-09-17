@@ -1,0 +1,21 @@
+{
+  "_comentario": [
+    "Datos de contacto reales del Grupo Parroquial que salen en los correos automáticos.",
+    "MISMO CRITERIO QUE desamparados-web/src/config/site.ts: null significa 'todavía no",
+    "confirmado', y entonces el correo OMITE ese bloque entero en vez de inventarse un",
+    "valor. Antes la plantilla del acuse de registro llevaba escritos a mano una 'C/ Falsa,",
+    "123', un horario de secretaría y un dominio 'tucofradia.com' que no es nuestro: si los",
+    "correos salen de verdad, eso manda a un solicitante a una dirección que no existe.",
+    "",
+    "Cuando el Grupo Parroquial confirme los datos, se rellenan aquí y aparecen solos.",
+    "Pendiente de unificar con site.ts el día que estos datos se editen desde el CMS; hoy",
+    "los dos ficheros dicen lo mismo (pendiente de confirmar), así que no hay dos verdades."
+  ],
+  "secretaria": {
+    "horario": null,
+    "direccion": null,
+    "telefono": null,
+    "email": null
+  },
+  "escudoUrl": null
+}

@@ -715,7 +715,9 @@ export class HermanoService {
   static async darDeBajaHermano(hermanoId: number, meta?: AuditMeta, fechaBajaTexto?: string) {
     const hermano = await db.hermano.findUnique({
       where: { id: hermanoId },
-      include: { user: { select: { role: true, active: true } } }
+      // `user.email` es el respaldo del aviso de baja: las fichas antiguas
+      // pueden no tener dirección propia, y la de un menor es la del tutor.
+      include: { user: { select: { role: true, active: true, email: true } } }
     });
     if (!hermano) throw new NotFoundError(HERMANO_ERRORS.HERMANO_NOT_FOUND);
     if (!hermano.activo) {
@@ -761,6 +763,14 @@ export class HermanoService {
       antes: { activo: true, numeroHermano: hermano.numeroHermano, fechaBaja: null, cuentaActiva: hermano.user.active },
       despues: { activo: false, numeroHermano: null, fechaBaja: valorParaAuditoria(fechaBaja), cuentaActiva: hermano.user.active && !cuentaBloqueada }
     });
+
+    // Aviso de la baja, fuera de la transacción y con catch: la baja ya está
+    // escrita y un correo no puede deshacerla.
+    const destino = hermano.email || hermano.user.email;
+    if (destino) {
+      EmailService.enviarBajaORechazo(destino, hermano.nombre, 'baja')
+        .catch((err) => console.error('Error enviando el aviso de baja:', err));
+    }
 
     return cuentaBloqueada
       ? { message: `${hermano.nombre} ${hermano.apellidos} dado de baja. Se ha bloqueado el acceso a la App porque no le quedan perfiles activos.` }
@@ -864,6 +874,16 @@ export class HermanoService {
       antes: { cuentaActiva: !cuentaActivada, fichasPendientes: aprobadas.map((f) => f.id) },
       despues: { cuentaActiva: true, fichasAprobadas: aprobadas }
     });
+
+    // Aviso al hermano, fuera de la transacción y con catch: aprobar no puede
+    // deshacerse porque falle un correo (el fallo queda en la auditoría como
+    // EMAIL_FALLIDO). Antes esta operación era muda y el hermano no se enteraba
+    // ni de su alta ni de su número.
+    EmailService.enviarAprobacionSolicitud(
+      user.email,
+      user.nombre,
+      aprobadas.map((f) => f.numeroHermano)
+    ).catch((err) => console.error('Error enviando el aviso de aprobación:', err));
 
     return { message: 'Solicitud aprobada. Los perfiles ya son oficiales y tienen número de hermano asignado.' };
   }
@@ -1000,7 +1020,13 @@ export class HermanoService {
   }
 
   static async rechazarSolicitud(userId: number, meta?: AuditMeta) {
-    const user = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
+    // El email y el nombre se leen AQUÍ y no después: cuando la cuenta nunca
+    // llegó a aprobarse, la transacción de abajo la borra entera y ya no hay a
+    // quién escribir ni cómo llamarle.
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { role: true, email: true, nombre: true }
+    });
     if (!user) throw new NotFoundError(HERMANO_ERRORS.USER_NOT_FOUND);
     // SEGURIDAD: jamás se borra una cuenta del staff desde el panel de solicitudes
     if (esCuentaStaff(user.role)) throw new HttpError(HERMANO_ERRORS.CANNOT_TOUCH_STAFF, 403);
@@ -1045,6 +1071,11 @@ export class HermanoService {
       antes: { cuentaAprobada: resultado.cuentaAprobada, fichasPendientes: resultado.fichas },
       despues: { cuentaEliminada: resultado.cuentaEliminada, fichasEliminadas: resultado.fichas }
     });
+
+    // Aviso con los datos leídos antes del borrado. Fuera de la transacción y
+    // con catch: el rechazo ya está escrito y un correo no puede deshacerlo.
+    EmailService.enviarBajaORechazo(user.email, user.nombre, 'rechazo')
+      .catch((err) => console.error('Error enviando el aviso de rechazo:', err));
 
     return { message: resultado.message };
   }

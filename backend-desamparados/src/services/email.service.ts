@@ -1,17 +1,61 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import { enmascararEmail } from '../utils/log-privacidad.js';
+import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../utils/buzon-pruebas.js';
+import { emailDeSecretaria, escudoUrl, lineasDeSecretaria } from '../domain/datos-entidad.js';
+import { AuditService, AUDIT_ACTIONS } from './audit.service.js';
+
 import QRCode from 'qrcode';
 import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactDto } from '../dtos/contact.dto';
 
+/**
+ * Lo único que `EmailService` necesita de un transporte. Lo cumplen tanto el de
+ * nodemailer como el buzón de pruebas, así que el motor de envío no tiene que
+ * saber cuál de los dos tiene delante.
+ */
+interface TransporteDeCorreo {
+  sendMail(correo: CorreoParaBuzon): Promise<unknown>;
+}
+
 export class EmailService {
-  private static transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+  /**
+   * Se resuelve en el primer envío y no al importar: el buzón de pruebas se
+   * decide con EMAIL_BUZON_PRUEBAS, y leyéndola al importar el módulo quedaba
+   * fijada antes de que `dotenv` terminara de cargar el .env.
+   */
+  private static transporter: TransporteDeCorreo | undefined;
+
+  private static getTransporter(): TransporteDeCorreo {
+    if (this.transporter) return this.transporter;
+
+    if (buzonPedido()) {
+      console.log('📬 [Email] EMAIL_BUZON_PRUEBAS activo: los correos se escriben en storage/correos y no se envían.');
+      this.transporter = buzonDePruebas();
+    } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+      });
+    } else {
+      // Sin cuenta configurada NO se abre conexión: se falla en el acto.
+      //
+      // Antes se creaba igualmente el transporte de Gmail con credenciales
+      // vacías, y cada envío se quedaba esperando al SMTP hasta agotar el
+      // tiempo. Desde que aprobar, rechazar y dar de baja mandan correo, eso
+      // colgaba la suite de tests entera —cinco ficheros hacen esas
+      // operaciones— y habría colgado también al CI, que no tiene ningún .env.
+      //
+      // En producción no puede darse: `config/entorno.ts` exige EMAIL_USER y
+      // EMAIL_PASS para que el servidor arranque.
+      this.transporter = {
+        sendMail: () => Promise.reject(new Error(
+          'No hay cuenta de correo configurada (faltan EMAIL_USER y EMAIL_PASS). ' +
+          'Para revisar los correos en local, pon EMAIL_BUZON_PRUEBAS=true.'
+        )),
+      };
     }
-  });
+    return this.transporter;
+  }
 
   /**
    * Cuenta de envío propia del formulario de contacto (CONTACT_EMAIL_USER y
@@ -68,6 +112,9 @@ export class EmailService {
   private static getHtmlLayout(tituloCabecera: string, subtitulo: string, contenidoPrincipal: string, footerExtra: string = '', legalExtra: string = ''): string {
     const { primario, fondo, texto } = this.COLORS;
     const year = new Date().getFullYear();
+    // Ni escudo ni dirección de contacto si no están confirmados: antes iban
+    // escritos a mano un placeholder y un dominio que no es nuestro.
+    const emailSecretaria = this.esc(emailDeSecretaria() ?? '');
 
     return `
     <!DOCTYPE html>
@@ -85,8 +132,8 @@ export class EmailService {
               
               <tr>
                 <td style="padding: 40px 40px 20px 40px; text-align: center; border-bottom: 1px solid #f0f0f0;">
-                  <img src="https://via.placeholder.com/80x100?text=ESCUDO" alt="Escudo Corporativo" width="80" style="display: block; margin: 0 auto 15px auto; border: 0;">
-                  <h1 style="color: ${primario}; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: normal;">Archicofradía de los Desamparados</h1>
+                  ${escudoUrl ? `<img src="${escudoUrl}" alt="Escudo del Grupo Parroquial" width="80" style="display: block; margin: 0 auto 15px auto; border: 0;">` : ''}
+                  <h1 style="color: ${primario}; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: normal;">Grupo Parroquial de los Desamparados</h1>
                   <p style="margin: 10px 0 0; color: #888; font-size: 13px; font-family: 'Arial', sans-serif; text-transform: uppercase; letter-spacing: 1px;">${subtitulo}</p>
                 </td>
               </tr>
@@ -99,9 +146,9 @@ export class EmailService {
 
               <tr>
                 <td style="background-color: #2b2b2b; color: #999999; padding: 30px 40px; font-family: 'Arial', sans-serif; font-size: 11px; line-height: 1.5; text-align: center;">
-                  <p style="margin-top: 0; color: #ffffff;">&copy; ${year} ARCHICOFRADÍA DE LOS DESAMPARADOS</p>
+                  <p style="margin-top: 0; color: #ffffff;">&copy; ${year} GRUPO PARROQUIAL DE LOS DESAMPARADOS</p>
                   ${footerExtra}
-                  <p style="text-align: justify;"><strong>Aviso Legal y Protección de Datos:</strong> En cumplimiento del RGPD, le informamos que sus datos serán tratados por el Grupo Parroquial. Este mensaje es confidencial. No responda a este correo automatizado. Dudas en <em>secretaria@tucofradia.com</em></p>
+                  <p style="text-align: justify;"><strong>Aviso Legal y Protección de Datos:</strong> En cumplimiento del RGPD, le informamos que sus datos serán tratados por el Grupo Parroquial. Este mensaje es confidencial. No responda a este correo automatizado.${emailSecretaria ? ` Dudas en <em>${emailSecretaria}</em>` : ''}</p>
                   ${legalExtra}
                 </td>
               </tr>
@@ -111,6 +158,34 @@ export class EmailService {
       </table>
     </body>
     </html>`;
+  }
+
+  /**
+   * Bloque con el horario y la dirección de Secretaría. Devuelve cadena vacía
+   * mientras el Grupo Parroquial no confirme esos datos (shared/datos-entidad.json):
+   * antes iban escritos a mano en la plantilla, y el correo citaba un horario y
+   * una «C/ Falsa, 123» a los que un solicitante podía presentarse de verdad.
+   */
+  private static bloqueDeSecretaria(titulo: string): string {
+    const lineas = lineasDeSecretaria();
+    if (lineas.length === 0) return '';
+
+    const { primario } = this.COLORS;
+    const [primera, ...resto] = lineas.map((linea) => this.esc(linea));
+    const secundarias = resto.length
+      ? `<span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">${resto.join(' · ')}</span>`
+      : '';
+
+    return `
+      <table width="100%" style="background-color: #fcfcfc; border: 1px solid #eeeeee; padding: 20px; text-align: center; font-family: 'Arial', sans-serif; font-size: 13px; color: #555; margin-top: 20px;">
+        <tr>
+          <td>
+            <strong style="color: ${primario}; font-size: 14px; display: block; margin-bottom: 5px;">${this.esc(titulo)}</strong>
+            ${primera}
+            ${secundarias}
+          </td>
+        </tr>
+      </table>`;
   }
 
   // --- MÉTODOS DE NEGOCIO ---
@@ -227,15 +302,7 @@ export class EmailService {
         <li>Certificado de Bautismo (copia expedida por su parroquia).</li>
       </ul>
 
-      <table width="100%" style="background-color: #fcfcfc; border: 1px solid #eeeeee; padding: 20px; text-align: center; font-family: 'Arial', sans-serif; font-size: 13px; color: #555; margin-top: 20px;">
-        <tr>
-          <td>
-            <strong style="color: ${primario}; font-size: 14px; display: block; margin-bottom: 5px;">Atención al Hermano en Secretaría</strong>
-            Martes y Jueves, de 19:00h a 21:00h<br>
-            <span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">Casa Grupo Parroquial · C/ Falsa, 123, 29000 Málaga</span>
-          </td>
-        </tr>
-      </table>
+      ${this.bloqueDeSecretaria('Atención al Hermano en Secretaría')}
 
       <div style="text-align: center; margin-top: 30px; font-style: italic;">
         <p>Que nuestros Sagrados Titulares le guarden y bendigan.</p>
@@ -246,6 +313,133 @@ export class EmailService {
     // Sin escapar: el asunto es texto, no HTML (ver enviarPapeleta).
     const asunto = `📋 Solicitud de Registro Recibida - ${nombreHermano}`;
     return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout("Acuse de Recibo", "Secretaría General", content));
+  }
+
+  /**
+   * Aviso al buzón de Secretaría de que ha entrado una solicitud nueva.
+   *
+   * Antes no existía: una solicitud solo se veía si alguien entraba al CMS y
+   * miraba el contador de «Hermanos», así que podía quedarse semanas parada sin
+   * que nadie lo supiera.
+   *
+   * Va al buzón de la corporación (CONTACT_EMAIL_TO, con respaldo en EMAIL_USER)
+   * y no a las cuentas personales del staff: el destinatario es el cargo, no la
+   * persona que hoy lo ocupa.
+   */
+  static async enviarAvisoSolicitud(datos: { nombre: string; apellidos?: string | null; email: string }) {
+    const destino = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
+    if (!destino) {
+      console.error('❌ Aviso de solicitud: ni CONTACT_EMAIL_TO ni EMAIL_USER están configurados.');
+      return false;
+    }
+
+    const { primario, secundario } = this.COLORS;
+    const nombreCompleto = this.esc([datos.nombre, datos.apellidos].filter(Boolean).join(' '));
+    const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cms/hermanos`;
+
+    const content = `
+      <p style="margin-top: 0;">Ha entrado una <strong>solicitud de ingreso nueva</strong> por la web.</p>
+
+      <div style="background-color: #fafafa; border-left: 4px solid ${secundario}; padding: 20px 25px; margin: 25px 0;">
+        <p style="margin: 0 0 6px 0;"><strong>Solicitante:</strong> ${nombreCompleto}</p>
+        <p style="margin: 0;"><strong>Correo:</strong> ${this.esc(datos.email)}</p>
+      </div>
+
+      <p>Queda pendiente de aprobación hasta que Secretaría la revise. Mientras tanto, la cuenta no puede entrar al área de hermanos.</p>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${enlace}" style="background-color: ${primario}; color: #ffffff; padding: 12px 25px; text-decoration: none; font-family: 'Arial', sans-serif; font-size: 14px; border-radius: 4px; display: inline-block;">Ver las solicitudes pendientes</a>
+      </div>
+    `;
+
+    const asunto = `📥 Solicitud de ingreso nueva - ${[datos.nombre, datos.apellidos].filter(Boolean).join(' ')}`;
+    return await this.enviarEmailBase(destino, asunto, this.getHtmlLayout('Solicitud de ingreso nueva', 'Aviso interno · Secretaría', content));
+  }
+
+  /**
+   * La solicitud ha sido aprobada: ya figura en el censo y tiene número.
+   * Antes aprobar era mudo y el solicitante no se enteraba de nada.
+   */
+  static async enviarAprobacionSolicitud(emailDestino: string, nombreHermano: string, numerosDeHermano: number[]) {
+    const { primario, secundario } = this.COLORS;
+    const nombre = this.esc(nombreHermano);
+    const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/hermanos/acceso`;
+
+    // Una cuenta puede tener varias fichas (los hijos de un tutor) y se aprueban
+    // todas a la vez: el correo las nombra en plural o el padre creería que solo
+    // ha entrado una.
+    const varios = numerosDeHermano.length > 1;
+    const bloqueNumero = numerosDeHermano.length
+      ? `<div style="background-color: #fcfcfc; border: 1px dashed #cccccc; padding: 20px; text-align: center; margin: 25px 0;">
+           <span style="font-family: 'Arial', sans-serif; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1px;">${varios ? 'Números de hermano' : 'Número de hermano'}</span><br>
+           <strong style="font-size: 28px; color: ${primario};">${this.esc(numerosDeHermano.join(', '))}</strong>
+         </div>`
+      : '';
+
+    const content = `
+      <p style="margin-top: 0;">Estimado/a en Cristo, <strong>${nombre}</strong>:</p>
+      <p>Le comunicamos que la Secretaría ha <strong>aprobado su solicitud de ingreso</strong>. Desde este momento ${varios ? 'sus perfiles figuran' : 'figura'} oficialmente en el censo de hermanos de nuestro Grupo Parroquial.</p>
+
+      ${bloqueNumero}
+
+      <p>Con su alta ya en vigor, puede acceder al área de hermanos para consultar sus datos, sus recibos y, llegado el momento, su papeleta de sitio.</p>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${enlace}" style="background-color: ${primario}; color: #ffffff; padding: 12px 25px; text-decoration: none; font-family: 'Arial', sans-serif; font-size: 14px; border-radius: 4px; display: inline-block;">Entrar en el área de hermanos</a>
+      </div>
+
+      <div style="background-color: #fff8e1; border-left: 4px solid ${secundario}; padding: 15px;">
+        <p style="margin: 0; font-size: 13px; color: #5d4037; font-style: italic;">Conserve ${varios ? 'esos números' : 'ese número'}: ${varios ? 'son los que identifican' : 'es el que le identifica'} en el censo y ${varios ? 'los' : 'el'} que se le pedirá en Secretaría.</p>
+      </div>
+
+      <div style="text-align: center; margin-top: 30px; font-style: italic;">
+        <p>Bienvenido/a. Que nuestros Sagrados Titulares le guarden y bendigan.</p>
+        <p style="margin-top: 20px; font-weight: bold; font-style: normal; font-size: 14px;">El Secretario</p>
+      </div>
+    `;
+
+    const asunto = `✅ Su solicitud ha sido aprobada - ${nombreHermano}`;
+    return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout('Solicitud aprobada', 'Secretaría General', content));
+  }
+
+  /**
+   * La solicitud no sale adelante, o se tramita una baja.
+   *
+   * Sin motivos automáticos a propósito: la decisión la explica Secretaría, y un
+   * correo generado no puede dar por escrito una razón que nadie ha redactado.
+   *
+   * El asunto NO lleva el nombre. Si el envío falla, `enviarEmailBase` guarda el
+   * asunto en la auditoría (EMAIL_FALLIDO), y en un rechazo eso devolvería a la
+   * base el nombre que `rechazarSolicitud` acaba de borrar.
+   */
+  static async enviarBajaORechazo(emailDestino: string, nombreHermano: string, motivo: 'rechazo' | 'baja') {
+    const nombre = this.esc(nombreHermano);
+    const esRechazo = motivo === 'rechazo';
+
+    const cuerpo = esRechazo
+      ? `<p>Le comunicamos que la Secretaría <strong>no ha podido dar curso a su solicitud de ingreso</strong>, y que sus datos han sido eliminados de nuestros registros.</p>
+         <p>Si cree que se trata de un error, o desea volver a presentarla, puede ponerse en contacto con la Secretaría y le atenderemos con mucho gusto.</p>`
+      : `<p>Le comunicamos que se ha tramitado su <strong>baja en el censo de hermanos</strong> de nuestro Grupo Parroquial.</p>
+         <p>Si esta baja no responde a su voluntad, o desea reincorporarse más adelante, puede ponerse en contacto con la Secretaría.</p>`;
+
+    const content = `
+      <p style="margin-top: 0;">Estimado/a <strong>${nombre}</strong>:</p>
+      ${cuerpo}
+      ${this.bloqueDeSecretaria('Contacto con Secretaría')}
+      <div style="text-align: center; margin-top: 30px; font-style: italic;">
+        <p>Le agradecemos el interés mostrado por nuestro Grupo Parroquial.</p>
+        <p style="margin-top: 20px; font-weight: bold; font-style: normal; font-size: 14px;">El Secretario</p>
+      </div>
+    `;
+
+    const asunto = esRechazo
+      ? 'Resolución de su solicitud de ingreso'
+      : 'Baja en el censo de hermanos';
+    return await this.enviarEmailBase(
+      emailDestino,
+      asunto,
+      this.getHtmlLayout(asunto, 'Secretaría General', content)
+    );
   }
 
   static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string) {
@@ -267,15 +461,7 @@ export class EmailService {
         <li>Recibo de la cuota anual de hermano (en caso de tenerla pendiente).</li>
       </ul>
 
-      <table width="100%" style="background-color: #fcfcfc; border: 1px solid #eeeeee; padding: 20px; text-align: center; font-family: 'Arial', sans-serif; font-size: 13px; color: #555; margin-top: 20px;">
-        <tr>
-          <td>
-            <strong style="color: ${primario}; font-size: 14px; display: block; margin-bottom: 5px;">Horario de Reparto de Puestos</strong>
-            Lunes a Viernes, de 18:30h a 21:00h<br>
-            <span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">Lugar: Parroquia de Santa Mª Goretti</span>
-          </td>
-        </tr>
-      </table>
+      ${this.bloqueDeSecretaria('Horario de Reparto de Puestos')}
 
       <div style="text-align: center; margin-top: 30px; font-style: italic;">
         <p>Esperamos contar con su presencia acompañando a nuestros Sagrados Titulares.</p>
@@ -346,7 +532,7 @@ export class EmailService {
     cuenta?: { transporter: Transporter; usuario: string } | null,
   ): Promise<boolean> {
     try {
-      await (cuenta?.transporter ?? this.transporter).sendMail({
+      await (cuenta?.transporter ?? this.getTransporter()).sendMail({
         from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${cuenta?.usuario ?? process.env.EMAIL_USER}>`,
         to,
         subject,
@@ -357,6 +543,15 @@ export class EmailService {
       return true;
     } catch (error) {
       console.error(`❌ Error enviando email a ${enmascararEmail(to)}:`, error);
+      // El fallo va también a la auditoría: es el único sitio donde el staff
+      // puede verlo. La dirección se guarda ENMASCARADA — la auditoría ya
+      // retiene IP y navegador, y no hace falta añadirle correos completos para
+      // saber que algo no salió.
+      await AuditService.log(AUDIT_ACTIONS.EMAIL_FALLIDO, {}, 'email', undefined, {
+        para: enmascararEmail(to),
+        asunto: subject,
+        motivo: error instanceof Error ? error.message.slice(0, 250) : 'desconocido',
+      });
       return false;
     }
   }
