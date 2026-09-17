@@ -1,6 +1,8 @@
 import { type } from 'arktype';
 import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
+import { normalizarVideo } from '../domain/video-galeria.js';
+import { esImagenPropia } from '../utils/rutas-propias.js';
 import type { SlugContenido } from '../domain/contenido.js';
 
 /**
@@ -114,7 +116,83 @@ const historiaSchema = type({
     : ctx.reject({ path: ['hitos', indice, 'foto', 'alt'], problem: 'es obligatorio cuando hay una foto' });
 });
 
-const ESQUEMAS = { portada: portadaSchema, recorrido: recorridoSchema, historia: historiaSchema } as const;
+
+// --- Galería de la Sagrada Titular ---
+
+/**
+ * Un medio de la galería: una foto nuestra o un vídeo de YouTube/Vimeo.
+ *
+ * Es un objeto plano con un campo `tipo` y no una unión discriminada a
+ * propósito: arktype 2.1 revienta al describir el error de una unión cuyas
+ * ramas llevan `narrow` (lo mismo que ya obligó a `updateConfigSchema` a ir por
+ * este camino), y eso sería un 500 en vez de un 400. La coherencia entre `tipo`
+ * y `url` la comprueba el `.narrow` del documento.
+ */
+const medioGaleriaSchema = type({
+  tipo: "'foto' | 'video'",
+  // Una ruta nuestra o una dirección de vídeo ya normalizada: lo estrecha el narrow.
+  url: 'string <= 300',
+  // Solo para los vídeos: la miniatura que se enseña hasta que alguien pulsa el
+  // play. Con ella la web no llama a YouTube mientras nadie se lo pida.
+  portada: sinFoto.or(rutaImagenPublica),
+  alt: DESCRIPCION,
+  pie: ETIQUETA,
+});
+
+/** Qué falla en un medio, o `null` si está bien. Devuelve también el campo. */
+function problemaDelMedio(medio: { tipo: string; url: string; portada: string; alt: string }): { campo: string; problema: string } | null {
+  if (medio.alt.trim() === '') {
+    // Sin descripción, la galería no existe para quien use un lector de pantalla.
+    return { campo: 'alt', problema: 'es obligatoria: describe lo que se ve' };
+  }
+  if (medio.tipo === 'foto') {
+    return esImagenPropia(medio.url)
+      ? null
+      : { campo: 'url', problema: 'tiene que ser una foto subida desde el CMS' };
+  }
+  if (normalizarVideo(medio.url) === null) {
+    return { campo: 'url', problema: 'tiene que ser un vídeo de YouTube o Vimeo' };
+  }
+  return medio.portada === ''
+    // Sin portada propia habría que pedirle la miniatura a YouTube nada más
+    // abrir la página, y eso ya avisa a un tercero de la visita.
+    ? { campo: 'portada', problema: 'es obligatoria en los vídeos' }
+    : null;
+}
+
+/**
+ * La página de la Sagrada Titular: su cabecera y la galería que se enseña como
+ * pase de fotos y vídeos. Una galería vacía es válida: la sección se oculta.
+ */
+const titularSchema = type({
+  ceja: ETIQUETA,
+  titulo: TITULO,
+  subtitulo: PARRAFO,
+  galeria: medioGaleriaSchema.array().atMostLength(60),
+}).narrow((datos, ctx) => {
+  for (const [indice, medio] of datos.galeria.entries()) {
+    const problema = problemaDelMedio(medio);
+    if (problema) return ctx.reject({ path: ['galeria', indice, problema.campo], problem: problema.problema });
+  }
+  return true;
+}).pipe((datos) => ({
+  // La dirección del vídeo se guarda NORMALIZADA, no como la pegó quien edita.
+  //
+  // El CMS pide «pega la dirección de YouTube o Vimeo», que es la del navegador
+  // («youtube.com/watch?v=…»). Exigirla ya normalizada dejaba la función
+  // inservible: el formulario mandaba justo lo que había pedido y el servidor
+  // respondía 400, porque nadie escribe a mano una dirección `-nocookie/embed`.
+  //
+  // Normalizar aquí, y no al pintar, deja a la web solo con poner el valor en el
+  // iframe: la regla de seguridad (solo YouTube y Vimeo, y sin cookies) se
+  // aplica una vez, en el servidor, y no se repite en el navegador.
+  ...datos,
+  galeria: datos.galeria.map((medio) => (medio.tipo === 'video'
+    ? { ...medio, url: normalizarVideo(medio.url) ?? medio.url }
+    : medio)),
+}));
+
+const ESQUEMAS = { portada: portadaSchema, recorrido: recorridoSchema, historia: historiaSchema, titular: titularSchema } as const;
 
 /** El esquema del documento de una página, para validarlo suelto. */
 export const esquemaDeSlug = (slug: SlugContenido) => ESQUEMAS[slug];

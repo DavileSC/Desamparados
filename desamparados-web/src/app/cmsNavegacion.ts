@@ -3,6 +3,7 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
 import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
+import CollectionsOutlinedIcon from '@mui/icons-material/CollectionsOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
@@ -63,6 +64,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ImageOutlinedIcon },
   { label: 'Recorrido', href: '/cms/recorrido', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MapOutlinedIcon },
   { label: 'Historia', href: '/cms/historia', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: HistoryEduOutlinedIcon },
+  { label: 'Sagrada Titular', href: '/cms/titular', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: CollectionsOutlinedIcon },
   { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
   { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MenuBookOutlinedIcon },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: CalendarMonthOutlinedIcon },
@@ -82,6 +84,8 @@ export const rolesPorRutaCms = {
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   recorrido: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   historia: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  // La galería de la Titular es contenido: los mismos roles que la portada.
+  titular: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],

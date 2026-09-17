@@ -1,9 +1,33 @@
 import { apiFetch } from './client'
 
 /** Las páginas con documento editable. La misma lista que `SLUGS_CONTENIDO` en el servidor. */
-export type SlugContenido = 'portada' | 'recorrido' | 'historia'
+export type SlugContenido = 'portada' | 'recorrido' | 'historia' | 'titular'
 
 export interface ParadaRecorrido { hora: string; lugar: string }
+
+/**
+ * Un medio de la galería. `url` es una ruta nuestra si es foto, y la dirección
+ * de incrustación ya normalizada (`youtube-nocookie`, `player.vimeo`) si es
+ * vídeo: el servidor la valida y la normaliza al guardar, así que aquí no hay
+ * ninguna decisión de seguridad que tomar.
+ *
+ * `portada` solo la usan los vídeos: es la miniatura nuestra que se enseña
+ * hasta que alguien pulsa el play, para no llamar a YouTube antes.
+ */
+export interface MedioGaleria {
+  tipo: 'foto' | 'video'
+  url: string
+  portada: string
+  alt: string
+  pie: string
+}
+
+export interface ContenidoTitular {
+  ceja: string
+  titulo: string
+  subtitulo: string
+  galeria: MedioGaleria[]
+}
 
 export interface ContenidoRecorrido {
   titulo: string
@@ -54,6 +78,7 @@ export interface ContenidoHistoria {
  */
 export const CLAVE_RECORRIDO = ['contenido', 'recorrido'] as const
 export const CLAVE_HISTORIA = ['contenido', 'historia'] as const
+export const CLAVE_TITULAR = ['contenido', 'titular'] as const
 
 /** El contenido de una página, ya mezclado por el servidor. Se lee sin sesión. */
 export const getContenido = <T,>(slug: SlugContenido) => apiFetch<T>(`/contenido/${slug}`)

@@ -33,16 +33,18 @@ after(async () => {
 
 const cookieCms = (id: number, role: Role) => `${COOKIE_CMS}=${generateToken(id, role, false, 'cms')}`;
 
-test('la siembra deja las tres páginas con los textos de siempre', async (t) => {
+test('la siembra deja las cuatro páginas con los textos de siempre', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
   await sembrarContenidoPaginas();
   const filas = await db.contenidoPagina.findMany({ orderBy: { slug: 'asc' } });
 
-  assert.deepEqual(filas.map((f) => f.slug), ['historia', 'portada', 'recorrido']);
+  assert.deepEqual(filas.map((f) => f.slug), ['historia', 'portada', 'recorrido', 'titular']);
   assert.equal((filas[0].datos as any).hitos.length, 5);
   assert.equal((filas[1].datos as any).hero.titulo, 'Desamparados Málaga');
   assert.equal((filas[2].datos as any).paradas.length, 9);
+  // La galería nace vacía: las fotos las sube el Grupo Parroquial desde el CMS.
+  assert.deepEqual((filas[3].datos as any).galeria, []);
 });
 
 test('sembrar dos veces no pisa lo que se haya editado', async (t) => {

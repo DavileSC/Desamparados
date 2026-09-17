@@ -1,12 +1,14 @@
 import { Typography, Grid } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
+import { useQuery } from '@tanstack/react-query'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import PageContainer from '../../components/PageContainer'
 import PageHeader from '../../components/PageHeader'
 import AnimatedSection from '../../components/AnimatedSection'
 import GlassCard from '../../components/GlassCard'
-import ImageGallery from '../../components/ImageGallery'
+import GaleriaMedios from '../../components/GaleriaMedios'
+import { CLAVE_TITULAR, getContenido, type ContenidoTitular } from '../../lib/api/contenido'
 
 const links = [
   {
@@ -22,6 +24,13 @@ const links = [
 ]
 
 export default function TitularPage() {
+  // El texto y la galería los edita el Grupo Parroquial desde el CMS. Antes las
+  // cuatro fotos estaban escritas aquí dentro y no había forma de cambiarlas.
+  const { data } = useQuery({
+    queryKey: CLAVE_TITULAR,
+    queryFn: () => getContenido<ContenidoTitular>('titular'),
+  })
+
   return (
     <>
       <Helmet>
@@ -47,20 +56,10 @@ export default function TitularPage() {
               fontSize: { xs: '16px', md: '18px' },
             }}
           >
-            Nuestra Señora de los Desamparados es la Sagrada Titular de este Grupo Parroquial.
-            Desde su llegada a la ciudad ha sido motivo de profunda devoción, acogiendo
-            bajo su manto a cuantos acuden a Ella en busca de consuelo y esperanza.
+            {data?.subtitulo}
           </Typography>
 
-          <ImageGallery
-            images={[
-              { src: '/images/hero-thumb.jpg', alt: 'Nuestra Señora de los Desamparados' },
-              { src: '/images/procesion.jpg', alt: 'Procesión del Grupo Parroquial' },
-              { src: '/images/triduo.jpg', alt: 'Solemne Triduo' },
-              { src: '/images/live.jpg', alt: 'Sede Canónica' },
-            ]}
-            columns={4}
-          />
+          <GaleriaMedios medios={data?.galeria ?? []} />
 
           <Grid container spacing={4} sx={{ mt: 2 }}>
             {links.map((item) => (

@@ -42,3 +42,30 @@ if (!Range.prototype.getClientRects) {
 if (!document.elementFromPoint) {
   document.elementFromPoint = () => document.body
 }
+
+/**
+ * jsdom tampoco trae `ResizeObserver` ni `matchMedia`, y Embla (el carrusel de
+ * la galería de la Sagrada Titular) los consulta al montarse: sin ellos, montar
+ * la galería revienta con «undefined is not a function» antes de pintar nada.
+ *
+ * Igual que con el IntersectionObserver de arriba, van directos al global y no
+ * por `vi.stubGlobal`: varios tests llaman a `vi.unstubAllGlobals()`.
+ */
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver
+
+globalThis.matchMedia ??= ((consulta: string) => ({
+  matches: false,
+  media: consulta,
+  onchange: null,
+  addListener() {},
+  removeListener() {},
+  addEventListener() {},
+  removeEventListener() {},
+  dispatchEvent: () => false,
+})) as unknown as typeof window.matchMedia
