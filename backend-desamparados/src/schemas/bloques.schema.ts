@@ -34,7 +34,7 @@ const textoSchema = type({
   ...comunes,
   tipo: "'texto'",
   // El HTML ya viene saneado por sanear-html.ts; aquí solo se exige que haya algo.
-  html: type('1 <= string <= 20000'),
+  html: type(`1 <= string <= ${topes.html}`),
 });
 
 const fotoSchema = type({

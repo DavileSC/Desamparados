@@ -4,5 +4,6 @@
   "parrafo": 600,
   "descripcion": 200,
   "lugar": 200,
-  "relato": 1200
+  "relato": 1200,
+  "html": 20000
 }
