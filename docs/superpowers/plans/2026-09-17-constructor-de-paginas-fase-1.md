@@ -308,7 +308,11 @@ export const cabeceraSchema = type({
   subtitulo: DESCRIPCION,
   foto: sinFoto.or(rutaImagenPublica),
   fotoAlt: DESCRIPCION,
-});
+}).narrow((datos, ctx) => datos.foto === '' || datos.fotoAlt.trim() !== ''
+  ? true
+  // Misma regla que el plano del recorrido y las fotos de los hitos: en cuanto
+  // hay foto, su descripción deja de ser opcional.
+  : ctx.reject({ path: ['fotoAlt'], problem: 'es obligatoria cuando hay foto' }));
 ```
 
 Nota: `sinFoto` se declara aquí y no se importa de `contenido.schema.ts` porque
@@ -394,9 +398,15 @@ describe('el documento de una página de bloques', () => {
     assert.ok(falla(doc([{ ...TEXTO, tipo: 'foto' }])));
   });
 
-  test('rechaza una página sin cabecera o con el título vacío por encima del tope', () => {
+  test('rechaza una página sin cabecera o con el título por encima del tope', () => {
     assert.ok(falla({ bloques: [] }));
     assert.ok(falla({ cabecera: { ...CABECERA, titulo: 'x'.repeat(121) }, bloques: [] }));
+  });
+
+  test('una cabecera con foto exige su descripción', () => {
+    const conFoto = { ...CABECERA, foto: '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp' };
+    assert.ok(falla({ cabecera: conFoto, bloques: [] }), 'foto sin descripción');
+    assert.ok(!falla({ cabecera: { ...conFoto, fotoAlt: 'La Virgen en su trono' }, bloques: [] }));
   });
 
   test('rechaza una página con más bloques de los que nadie va a poner', () => {
@@ -873,7 +883,26 @@ Esperado: FALLA — la página de hoy no llama al servidor, así que
 `POR_DEFECTO.corporacion` no existe todavía en el JSON o el test no encuentra
 los textos por no estar montado el `fetch`.
 
-- [ ] **Paso 3: Reescribir la página**
+- [ ] **Paso 3: Que `PageHeader` acepte la descripción de su foto**
+
+Hoy pone `alt={title}`, que le repite el título a quien use un lector de
+pantalla y deja sin uso el `fotoAlt` que guarda el CMS. En
+`desamparados-web/src/components/PageHeader.tsx`:
+
+```tsx
+interface PageHeaderProps {
+  title: string
+  subtitle?: string
+  image?: string
+  /** Qué se ve en la foto. Sin ella se repetiría el título. */
+  imageAlt?: string
+}
+```
+
+y en la etiqueta de la imagen, `alt={imageAlt ?? ''}`. Vacío y no el título:
+una foto de fondo sin descripción es decorativa, y anunciarla dos veces estorba.
+
+- [ ] **Paso 4: Reescribir la página**
 
 ```tsx
 import { Helmet } from 'react-helmet-async'
@@ -899,7 +928,12 @@ export default function CorporationPage() {
   return (
     <>
       <Helmet><title>Corporación | Desamparados</title></Helmet>
-      <PageHeader title={data.cabecera.titulo} subtitle={data.cabecera.subtitulo} image={data.cabecera.foto || undefined} />
+      <PageHeader
+        title={data.cabecera.titulo}
+        subtitle={data.cabecera.subtitulo}
+        image={data.cabecera.foto || undefined}
+        imageAlt={data.cabecera.fotoAlt}
+      />
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <BloquesDePagina bloques={data.bloques} />
@@ -910,21 +944,21 @@ export default function CorporationPage() {
 }
 ```
 
-- [ ] **Paso 4: Ejecutar el test y verlo pasar**
+- [ ] **Paso 5: Ejecutar el test y verlo pasar**
 
 Ejecuta: `cd desamparados-web && npx vitest run src/features/corporation/__tests__/CorporationPage.test.tsx`
 Esperado: PASA, 3 tests. Si falla el primero, el fragmento que falta te dice qué
 se perdió al volcar el contenido.
 
-- [ ] **Paso 5: Ejecutar la suite entera y el typecheck**
+- [ ] **Paso 6: Ejecutar la suite entera y el typecheck**
 
 Ejecuta: `cd desamparados-web && npx tsc -b && npm test`
 Esperado: todo en verde.
 
-- [ ] **Paso 6: Confirmar**
+- [ ] **Paso 7: Confirmar**
 
 ```bash
-git add desamparados-web/src/features/corporation
+git add desamparados-web/src/features/corporation desamparados-web/src/components/PageHeader.tsx
 git commit -m "Corporación se pinta con los bloques que sirve el CMS"
 ```
 
@@ -1028,10 +1062,15 @@ describe('PaginaAdminPage', () => {
     const user = userEvent.setup()
     montar()
     await screen.findByDisplayValue('Corporación')
+    expect(screen.getByText('Bloques (2)')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /quitar el bloque 1/i }))
 
-    expect(screen.queryByText(/Posición 2 de 2/)).not.toBeInTheDocument()
+    // El contador y la desaparición del bloque: comprobar que no existe un
+    // texto que tampoco existía antes no prueba nada.
+    expect(screen.getByText('Bloques (1)')).toBeInTheDocument()
+    expect(screen.queryByText('Texto')).not.toBeInTheDocument()
+    expect(screen.getByText('Tarjetas')).toBeInTheDocument()
   })
 
   it('se reordena y se guarda en el orden nuevo', async () => {
