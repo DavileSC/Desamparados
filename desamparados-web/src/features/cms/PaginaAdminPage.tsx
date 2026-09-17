@@ -11,13 +11,44 @@ import CampoTexto from './contenido/CampoTexto'
 import SeccionPlegable from './contenido/SeccionPlegable'
 import EditorDeBloques from './bloques/EditorDeBloques'
 import { conClave, sinClave, type Fila } from './bloques/filas'
+import { problemaDeBloque, NOMBRE_BLOQUE } from './bloques/formularios'
 import { RUTA_PUBLICA } from '../../app/cmsNavegacion'
+import { ApiError } from '../../lib/api/client'
 import {
   getContenido, guardarContenido,
   type CabeceraPagina, type PaginaDeBloques, type SlugContenido,
 } from '../../lib/api/contenido'
 
 export const AVISO_SIN_TITULO = 'La página se ha quedado sin título. Ponle uno antes de guardar.'
+
+/**
+ * Traduce `ApiError.fields` («bloques.2»: motivo) a algo que diga de qué
+ * bloque habla, con su posición y su tipo, igual que la comprobación del
+ * cliente: es la red de seguridad para lo que el cliente no haya previsto, y
+ * el mensaje tiene que ser tan localizable como el suyo.
+ */
+function mensajeDelServidor(fields: Record<string, string>, filas: Fila[]): string {
+  const detalle = Object.entries(fields)
+    .map(([campo, texto]) => {
+      const bloque = /^bloques\.(\d+)/.exec(campo)
+      if (!bloque) return `${campo}: ${texto}`
+      const indice = Number(bloque[1])
+      const nombre = filas[indice] ? (NOMBRE_BLOQUE[filas[indice].bloque.tipo] ?? filas[indice].bloque.tipo) : null
+      return `El bloque ${indice + 1}${nombre ? ` (${nombre})` : ''}: ${texto}`
+    })
+    .join(' ')
+  return `El servidor ha rechazado la página. ${detalle}`
+}
+
+/** Las claves de las filas que nombra `ApiError.fields`, para desplegarlas. */
+function clavesDelServidor(fields: Record<string, string>, filas: Fila[]): Set<number> {
+  const claves = new Set<number>()
+  for (const campo of Object.keys(fields)) {
+    const indice = /^bloques\.(\d+)/.exec(campo)?.[1]
+    if (indice !== undefined && filas[Number(indice)]) claves.add(filas[Number(indice)].clave)
+  }
+  return claves
+}
 
 export default function PaginaAdminPage() {
   const { slug = '' } = useParams()
@@ -27,6 +58,10 @@ export default function PaginaAdminPage() {
   const [inicial, setInicial] = useState<PaginaDeBloques | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
+  // Los bloques que han fallado la última comprobación, para desplegarlos:
+  // pueden estar plegados y fuera de la vista, y sin esto el aviso no dice a
+  // quién agarrarse.
+  const [clavesInvalidas, setClavesInvalidas] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     getContenido<PaginaDeBloques>(slug as SlugContenido)
@@ -40,18 +75,42 @@ export default function PaginaAdminPage() {
 
   const guardar = async () => {
     if (!cabecera) return
-    // El servidor también lo rechaza; mejor no mandarlo y decirlo aquí arriba.
+    // El servidor también lo rechaza (cabeceraSchema, bloques.schema.ts): se
+    // comprueba aquí antes para no gastar una petición y dar un aviso claro.
     if (cabecera.titulo.trim() === '') { setError(AVISO_SIN_TITULO); return }
+
+    // Un bloque recién añadido nace en blanco (BLOQUE_NUEVO) y se queda
+    // plegado por defecto: sin esta comprobación, guardar mandaba un 400 del
+    // servidor sin decir cuál era el bloque culpable, que ni siquiera estaba
+    // a la vista.
+    const invalida = filas
+      .map((fila, indice) => ({ fila, indice, motivo: problemaDeBloque(fila.bloque) }))
+      .find((f) => f.motivo !== null)
+    if (invalida) {
+      setClavesInvalidas(new Set([invalida.fila.clave]))
+      const nombre = NOMBRE_BLOQUE[invalida.fila.bloque.tipo] ?? invalida.fila.bloque.tipo
+      setError(`El bloque ${invalida.indice + 1} (${nombre}) ${invalida.motivo}.`)
+      return
+    }
 
     const datos: PaginaDeBloques = { cabecera, bloques: sinClave(filas) }
     if (JSON.stringify(datos) === JSON.stringify(inicial)) return
-    setGuardando(true); setError(null)
+    setGuardando(true); setError(null); setClavesInvalidas(new Set())
     try {
       await guardarContenido(slug as SlugContenido, datos)
       setInicial(datos)
       void queryClient.invalidateQueries({ queryKey: ['contenido', slug] })
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se ha podido guardar la página.')
+      if (e instanceof ApiError && Object.keys(e.fields).length > 0) {
+        // Red de seguridad: algo que el cliente no comprobó, pero el servidor
+        // sí. `ApiError.fields` (client.ts) trae el campo y el motivo
+        // concretos; con eso se puede decir de qué bloque habla en vez del
+        // genérico «Error de validación».
+        setError(mensajeDelServidor(e.fields, filas))
+        setClavesInvalidas(clavesDelServidor(e.fields, filas))
+      } else {
+        setError(e instanceof Error ? e.message : 'No se ha podido guardar la página.')
+      }
     } finally { setGuardando(false) }
   }
 
@@ -96,7 +155,7 @@ export default function PaginaAdminPage() {
             </SeccionPlegable>
           </Paper>
 
-          <EditorDeBloques filas={filas} onCambio={setFilas} />
+          <EditorDeBloques filas={filas} onCambio={setFilas} clavesInvalidas={clavesInvalidas} />
         </Stack>
       </PantallaEdicion>
     </>

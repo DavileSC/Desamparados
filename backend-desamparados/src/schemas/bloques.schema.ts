@@ -70,8 +70,15 @@ export const cabeceraSchema = type({
   subtitulo: DESCRIPCION,
   foto: sinFoto.or(rutaImagenPublica),
   fotoAlt: DESCRIPCION,
-}).narrow((datos, ctx) => datos.foto === '' || datos.fotoAlt.trim() !== ''
-  ? true
-  // Misma regla que el plano del recorrido y las fotos de los hitos: en cuanto
-  // hay foto, su descripción deja de ser opcional.
-  : ctx.reject({ path: ['fotoAlt'], problem: 'es obligatoria cuando hay foto' }));
+}).narrow((datos, ctx) => {
+  // Un título en blanco (o solo espacios: tres espacios no son un título) deja
+  // la página sin título en producción. El CMS ya avisa antes de mandar nada,
+  // pero esa comprobación vive solo en el navegador; sin esta, un PUT hecho a
+  // mano se colaba igual.
+  if (datos.titulo.trim() === '') return ctx.reject({ path: ['titulo'], problem: 'no puede quedar en blanco' });
+  return datos.foto === '' || datos.fotoAlt.trim() !== ''
+    ? true
+    // Misma regla que el plano del recorrido y las fotos de los hitos: en cuanto
+    // hay foto, su descripción deja de ser opcional.
+    : ctx.reject({ path: ['fotoAlt'], problem: 'es obligatoria cuando hay foto' });
+});

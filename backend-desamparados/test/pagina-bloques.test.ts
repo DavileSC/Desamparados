@@ -48,6 +48,16 @@ describe('el documento de una página de bloques', () => {
     assert.ok(!falla({ cabecera: { ...conFoto, fotoAlt: 'La Virgen en su trono' }, bloques: [] }));
   });
 
+  // El CMS ya avisa antes de guardar (PaginaAdminPage.tsx), pero esa
+  // comprobación vive solo en el navegador: un PUT hecho a mano con el título
+  // en blanco tiene que rechazarlo igual, o la página se queda sin título en
+  // producción («Todo se valida en el servidor», restricciones del proyecto).
+  test('rechaza una cabecera sin título, en blanco o solo con espacios', () => {
+    assert.ok(falla({ cabecera: { ...CABECERA, titulo: '' }, bloques: [] }), 'título vacío');
+    assert.ok(falla({ cabecera: { ...CABECERA, titulo: '   ' }, bloques: [] }), 'solo espacios: no es un título');
+    assert.ok(!falla({ cabecera: { ...CABECERA, titulo: 'Corporación' }, bloques: [] }));
+  });
+
   test('rechaza una página con más bloques de los que nadie va a poner', () => {
     assert.ok(falla(doc(Array.from({ length: 41 }, () => TEXTO))));
   });

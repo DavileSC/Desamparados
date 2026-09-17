@@ -18,13 +18,25 @@ const contenido = {
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-/** PantallaEdicion usa useBlocker, que exige un data router. */
-function montar() {
+/**
+ * PantallaEdicion usa useBlocker, que exige un data router.
+ *
+ * `respuestaPut` deja simular un 400 del servidor (Crítico 2 del fix round 1):
+ * algo que el cliente no comprobó, pero que el servidor sí rechaza.
+ */
+function montar(respuestaPut?: { status: number; cuerpo: unknown }) {
   const llamadas: { url: string; metodo: string; cuerpo: unknown }[] = []
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-    llamadas.push({ url, metodo: init?.method ?? 'GET', cuerpo: init?.body ? JSON.parse(String(init.body)) : null })
+    const metodo = init?.method ?? 'GET'
+    llamadas.push({ url, metodo, cuerpo: init?.body ? JSON.parse(String(init.body)) : null })
+    if (metodo === 'PUT' && respuestaPut) {
+      return Promise.resolve(new Response(
+        JSON.stringify(respuestaPut.cuerpo),
+        { status: respuestaPut.status, headers: { 'Content-Type': 'application/json' } },
+      ))
+    }
     return Promise.resolve(new Response(
-      JSON.stringify(init?.method === 'PUT' ? { message: 'Guardado', data: contenido } : contenido),
+      JSON.stringify(metodo === 'PUT' ? { message: 'Guardado', data: contenido } : contenido),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     ))
   }))
@@ -112,6 +124,52 @@ describe('PaginaAdminPage', () => {
 
     expect(await screen.findByText(/sin título/i)).toBeInTheDocument()
     expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
+  })
+
+  it('avisa de qué bloque falla si se guarda con una foto recién añadida (vacía), y no manda nada; y lo despliega', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await user.click(screen.getByRole('button', { name: /añadir bloque/i }))
+    await user.click(await screen.findByRole('menuitem', { name: /foto/i }))
+    await guardar(user)
+
+    // Nombra el bloque por su posición y su tipo: plegado, es la única forma
+    // de saber cuál de todos es.
+    expect(await screen.findByText(/el bloque 3 \(foto\) no tiene foto/i)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
+
+    // Y lo despliega: el campo culpable tiene que quedar a la vista, no solo
+    // nombrado en el aviso. Antes de guardar los tres bloques están plegados
+    // (unmountOnExit), así que si aparece exactamente uno es el que falló.
+    expect(screen.getAllByLabelText(/título de sección/i)).toHaveLength(1)
+  })
+
+  it('si el servidor rechaza algo que el cliente no vio, enseña el bloque y el motivo en vez del aviso genérico', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar({
+      status: 400,
+      cuerpo: {
+        status: 'error',
+        message: 'Error de validación',
+        errors: [{ field: 'bloques.1', message: 'Debe ser una ruta interna, sin salir del sitio' }],
+      },
+    })
+    await screen.findByDisplayValue('Corporación')
+
+    // Sin tocar nada, guardar no manda ningún PUT (documento igual al
+    // cargado): un cambio inocuo en la cabecera lo deja «sucio» sin tocar el
+    // orden ni la validez de ningún bloque. El bloque 2 (tarjetas) sigue
+    // siendo válido para el cliente: la comprobación local no mira el patrón
+    // del enlace, así que esto sí llega a mandarse.
+    await user.type(screen.getByRole('textbox', { name: 'Subtítulo' }), ' extra')
+    await guardar(user)
+
+    await waitFor(() => expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(true))
+    expect(await screen.findByText(/el bloque 2 \(tarjetas\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/sin salir del sitio/i)).toBeInTheDocument()
+    expect(screen.queryByText(/^Error de validación$/)).not.toBeInTheDocument()
   })
 
   it('la vista previa abre la página pública en otra pestaña', async () => {

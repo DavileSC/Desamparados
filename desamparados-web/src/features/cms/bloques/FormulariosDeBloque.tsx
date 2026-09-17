@@ -6,14 +6,14 @@ import CampoTexto from '../contenido/CampoTexto'
 import type { BloqueTexto, BloqueFoto, BloqueTarjetas } from '../../../lib/api/contenido'
 
 /**
- * El formulario de cada tipo de bloque, uno por componente exportado.
- *
- * Viven en su propio fichero, separado del registro de `formularios.tsx`
- * (`NOMBRE_BLOQUE`, `FORMULARIOS`, `BLOQUE_NUEVO`): un fichero que declara
- * componentes Y exporta datos sueltos rompe el *fast refresh* de Vite —
- * el aviso `react/only-export-components`, el mismo motivo por el que
- * `components/bloques/registro.tsx` importa sus componentes de fuera en vez
- * de declararlos ahí mismo.
+ * El formulario de cada tipo de bloque: los tres juntos en este fichero,
+ * separados del registro de `formularios.tsx` (`NOMBRE_BLOQUE`, `FORMULARIOS`,
+ * `BLOQUE_NUEVO`). Un fichero que declara componentes Y exporta datos sueltos
+ * rompe el *fast refresh* de Vite (aviso `react/only-export-components`), así
+ * que la separación es esa y no otra: `components/bloques/registro.tsx` evita
+ * el mismo aviso con un componente por fichero, pero aquí los tres formularios
+ * son pequeños y solo los usa `formularios.tsx`, así que basta con un fichero
+ * para los tres en vez de tres ficheros de uno.
  */
 
 export type Props<T> = { bloque: T; onCambio: (cambios: Partial<T>) => void }

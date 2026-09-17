@@ -14,11 +14,21 @@ import { BLOQUE_NUEVO, FORMULARIOS, NOMBRE_BLOQUE } from './formularios'
 import { conClave, type Fila } from './filas'
 import type { Bloque } from '../../../lib/api/contenido'
 
-export default function EditorDeBloques({ filas, onCambio }: {
+export default function EditorDeBloques({ filas, onCambio, clavesInvalidas }: {
   filas: Fila[]
   onCambio: (filas: Fila[]) => void
+  /**
+   * Bloques que acaban de fallar la comprobación de guardado: se despliegan
+   * aunque estén plegados por defecto, porque si no quien lee el aviso no
+   * tiene forma de saber cuál de todos es ni de llegar hasta él.
+   */
+  clavesInvalidas?: Set<number>
 }) {
   const [menu, setMenu] = useState<HTMLElement | null>(null)
+  // Plegado por defecto (`undefined`); una vez que quien edita pliega o
+  // despliega uno a mano, su elección manda por encima de `clavesInvalidas`,
+  // aunque el bloque siga sin corregir: ya ha visto el aviso y ha decidido.
+  const [expandidoManual, setExpandidoManual] = useState<Record<number, boolean>>({})
 
   const cambiar = (clave: number, cambios: object) =>
     onCambio(filas.map((f) => (f.clave === clave ? { ...f, bloque: { ...f.bloque, ...cambios } as Bloque } : f)))
@@ -55,10 +65,12 @@ export default function EditorDeBloques({ filas, onCambio }: {
 
       {filas.map(({ bloque, clave }, indice) => {
         const Formulario = FORMULARIOS[bloque.tipo]
+        const abierto = expandidoManual[clave] ?? clavesInvalidas?.has(clave) ?? false
         return (
           <Accordion
             key={clave}
-            defaultExpanded={false}
+            expanded={abierto}
+            onChange={(_, expandido) => setExpandidoManual((actual) => ({ ...actual, [clave]: expandido }))}
             disableGutters
             variant="outlined"
             // Sin desmontar, el contenido plegado (con la ayuda «...va sin
