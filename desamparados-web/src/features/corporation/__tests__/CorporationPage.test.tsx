@@ -18,10 +18,19 @@ const ANTES = [
 
 afterEach(() => { vi.unstubAllGlobals() })
 
+/**
+ * Devuelve el propio mock para que quien llame pueda comprobar no solo qué
+ * respondió, sino A QUÉ SE LE PREGUNTÓ: esta implementación responde lo mismo
+ * sea cual sea la URL, así que por sí sola nunca detectaría un slug mal
+ * escrito o una ruta equivocada. Sin la aserción sobre los argumentos de la
+ * llamada, ese hueco queda abierto.
+ */
 function responder(datos: unknown = POR_DEFECTO.corporacion) {
-  vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(
+  const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(
     JSON.stringify(datos), { status: 200, headers: { 'Content-Type': 'application/json' } },
-  ))))
+  )))
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
 }
 
 /**
@@ -66,7 +75,7 @@ describe('CorporationPage', () => {
   })
 
   it('lo que se ve es lo que sirve el CMS, no el contenido de partida', async () => {
-    responder(CONTENIDO_DISTINTO_DEL_DE_PARTIDA)
+    const fetchMock = responder(CONTENIDO_DISTINTO_DEL_DE_PARTIDA)
     renderWithProviders(<CorporationPage />)
 
     await screen.findByText(/Frase exclusiva de esta prueba/)
@@ -74,5 +83,14 @@ describe('CorporationPage', () => {
     // consultar de verdad al servidor, esta tarjeta —que solo está en el
     // JSON por defecto— seguiría en pantalla.
     expect(screen.queryByText('Explora la sección')).not.toBeInTheDocument()
+    // Y no basta con que llegue contenido con pinta de válido: tiene que
+    // haberse pedido la ruta de Corporación y no la de otra página, ni una con
+    // el slug mal escrito. El mock de arriba respondería igual a cualquier
+    // URL, así que sin esta aserción un cableado a la ruta equivocada pasaría
+    // inadvertido.
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/contenido/corporacion'),
+      expect.anything(),
+    )
   })
 })
