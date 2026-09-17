@@ -69,6 +69,3 @@ export function normalizarVideo(url: string): string | null {
 
   return null;
 }
-
-/** `true` si la dirección ya está normalizada (es lo que se guarda). */
-export const esVideoDeGaleria = (url: string): boolean => normalizarVideo(url) === url;

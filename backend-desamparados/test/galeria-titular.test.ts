@@ -43,6 +43,34 @@ describe('la galería de la Titular es un documento de contenido', () => {
     assert.ok(!falla(documento([FOTO, VIDEO])));
     assert.ok(!falla(documento([])), 'una galería vacía es válida: la sección se oculta');
   });
+
+  /**
+   * Lo que el CMS pide es «pega la dirección de YouTube o Vimeo», y eso es lo
+   * que la gente va a pegar: la del navegador. El servidor la NORMALIZA al
+   * guardar; exigirla ya normalizada dejaba la función inservible, porque nadie
+   * escribe a mano una dirección `-nocookie/embed`.
+   */
+  test('la dirección se pega tal cual del navegador y se guarda normalizada', () => {
+    for (const pegada of [
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://youtu.be/dQw4w9WgXcQ',
+      'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+    ]) {
+      const salida = esquema()(documento([{ ...VIDEO, url: pegada }]));
+      assert.ok(!(salida instanceof ArkErrors), `debería aceptar ${pegada}`);
+      assert.equal(
+        (salida as { galeria: { url: string }[] }).galeria[0].url,
+        'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+        `no ha normalizado ${pegada}`,
+      );
+    }
+  });
+
+  test('Vimeo también se pega tal cual', () => {
+    const salida = esquema()(documento([{ ...VIDEO, url: 'https://vimeo.com/76979871' }]));
+    assert.ok(!(salida instanceof ArkErrors));
+    assert.equal((salida as { galeria: { url: string }[] }).galeria[0].url, 'https://player.vimeo.com/video/76979871?dnt=1');
+  });
 });
 
 describe('lo que la galería no deja pasar', () => {
@@ -51,10 +79,9 @@ describe('lo que la galería no deja pasar', () => {
     assert.ok(falla(documento([{ ...FOTO, url: '' }])));
   });
 
-  test('un vídeo que no sea YouTube o Vimeo, o sin normalizar', () => {
+  test('un vídeo que no sea de YouTube ni de Vimeo', () => {
     assert.ok(falla(documento([{ ...VIDEO, url: 'https://ejemplo.test/video.mp4' }])));
-    assert.ok(falla(documento([{ ...VIDEO, url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }])),
-      'la dirección se guarda ya normalizada, no como la pegó el usuario');
+    assert.ok(falla(documento([{ ...VIDEO, url: 'https://youtube.com.sitio-malo.test/watch?v=dQw4w9WgXcQ' }])));
   });
 
   test('un medio sin descripción', () => {

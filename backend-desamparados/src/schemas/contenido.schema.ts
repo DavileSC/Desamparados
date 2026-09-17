@@ -1,7 +1,7 @@
 import { type } from 'arktype';
 import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
-import { esVideoDeGaleria } from '../domain/video-galeria.js';
+import { normalizarVideo } from '../domain/video-galeria.js';
 import { esImagenPropia } from '../utils/rutas-propias.js';
 import type { SlugContenido } from '../domain/contenido.js';
 
@@ -150,7 +150,7 @@ function problemaDelMedio(medio: { tipo: string; url: string; portada: string; a
       ? null
       : { campo: 'url', problema: 'tiene que ser una foto subida desde el CMS' };
   }
-  if (!esVideoDeGaleria(medio.url)) {
+  if (normalizarVideo(medio.url) === null) {
     return { campo: 'url', problema: 'tiene que ser un vídeo de YouTube o Vimeo' };
   }
   return medio.portada === ''
@@ -175,7 +175,22 @@ const titularSchema = type({
     if (problema) return ctx.reject({ path: ['galeria', indice, problema.campo], problem: problema.problema });
   }
   return true;
-});
+}).pipe((datos) => ({
+  // La dirección del vídeo se guarda NORMALIZADA, no como la pegó quien edita.
+  //
+  // El CMS pide «pega la dirección de YouTube o Vimeo», que es la del navegador
+  // («youtube.com/watch?v=…»). Exigirla ya normalizada dejaba la función
+  // inservible: el formulario mandaba justo lo que había pedido y el servidor
+  // respondía 400, porque nadie escribe a mano una dirección `-nocookie/embed`.
+  //
+  // Normalizar aquí, y no al pintar, deja a la web solo con poner el valor en el
+  // iframe: la regla de seguridad (solo YouTube y Vimeo, y sin cookies) se
+  // aplica una vez, en el servidor, y no se repite en el navegador.
+  ...datos,
+  galeria: datos.galeria.map((medio) => (medio.tipo === 'video'
+    ? { ...medio, url: normalizarVideo(medio.url) ?? medio.url }
+    : medio)),
+}));
 
 const ESQUEMAS = { portada: portadaSchema, recorrido: recorridoSchema, historia: historiaSchema, titular: titularSchema } as const;
 
