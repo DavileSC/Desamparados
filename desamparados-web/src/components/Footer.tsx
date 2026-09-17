@@ -31,7 +31,7 @@ const legalLinks = [
 ]
 
 const MAP_EMBED_URL =
-  'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3197.0!2d-4.42!3d36.72!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzbCNDMnMTIuMCJOIDTCsDI1JzEyLjAiVw!5e0!3m2!1ses!2ses!4v1600000000000!5m2!1ses!2ses'
+  'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1067.3544649056719!2d-4.449098871278157!3d36.711765554466446!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd72f77028f9b929%3A0xe34fc3610f0d1398!2sIglesia%20Parroquial%20Santa%20Mar%C3%ADa%20Goretti!5e0!3m2!1ses!2ses!4v1789660222285!5m2!1ses!2ses'
 
 export default function Footer() {
   const { accepted, reset: resetCookieConsent } = useCookieConsent()
