@@ -69,4 +69,24 @@ describe('bloque de tarjetas', () => {
     assert.ok(falla('tarjetas', doc([])));
     assert.ok(falla('tarjetas', doc(Array.from({ length: 13 }, () => TARJETA))));
   });
+
+  // El cliente (formularios.tsx, problemaDeBloque) avisa de lo mismo antes de
+  // guardar, pero esa comprobación vive en el navegador: sin esta, una
+  // tarjeta sin título —un recuadro vacío que lleva a alguna parte— se
+  // guardaba igual con un PUT hecho a mano.
+  test('rechaza una tarjeta sin título, y dice cuál', () => {
+    assert.ok(falla('tarjetas', doc([{ ...TARJETA, titulo: '' }])), 'título vacío');
+    assert.ok(falla('tarjetas', doc([{ ...TARJETA, titulo: '   ' }])), 'solo espacios: no es un título');
+    const salida = esquemaDeBloque('tarjetas')(doc([TARJETA, { ...TARJETA, titulo: '' }]));
+    assert.ok(salida instanceof ArkErrors);
+    // Así escribe arktype el camino dentro de una lista: `tarjetas[1].titulo`.
+    assert.ok(String(salida).includes('tarjetas[1].titulo'),
+      `debe señalar la segunda tarjeta, no la primera; dijo: ${salida}`);
+  });
+
+  test('acepta una tarjeta con título y su enlace por defecto a la portada', () => {
+    // El valor de partida de una tarjeta nueva (BLOQUE_NUEVO, formularios.tsx)
+    // es exactamente este: no puede exigirse un enlace distinto de «/».
+    assert.ok(!falla('tarjetas', doc([{ ...TARJETA, enlace: '/' }])));
+  });
 });

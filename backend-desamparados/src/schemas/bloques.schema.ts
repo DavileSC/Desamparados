@@ -58,6 +58,15 @@ const tarjetasSchema = type({
   ...comunes,
   tipo: "'tarjetas'",
   tarjetas: tarjetaSchema.array().atLeastLength(1).atMostLength(12),
+}).narrow((datos, ctx) => {
+  // Una tarjeta sin título es un recuadro vacío que lleva a alguna parte: no
+  // dice adónde ni por qué pulsarla. Misma regla que una foto sin descripción
+  // (fotoSchema): en cuanto hay contenido, el título deja de ser opcional. El
+  // enlace no entra aquí: «/» (la portada) es un destino legítimo.
+  const indice = datos.tarjetas.findIndex((tarjeta) => tarjeta.titulo.trim() === '');
+  return indice === -1
+    ? true
+    : ctx.reject({ path: ['tarjetas', indice, 'titulo'], problem: 'no puede quedar en blanco' });
 });
 
 const POR_TIPO = { texto: textoSchema, foto: fotoSchema, tarjetas: tarjetasSchema } as const;
