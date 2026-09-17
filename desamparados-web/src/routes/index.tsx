@@ -43,6 +43,7 @@ const PortadaAdminPage = lazy(() => import('../features/cms/PortadaAdminPage'))
 const RecorridoAdminPage = lazy(() => import('../features/cms/RecorridoAdminPage'))
 const HistoriaAdminPage = lazy(() => import('../features/cms/HistoriaAdminPage'))
 const TitularAdminPage = lazy(() => import('../features/cms/TitularAdminPage'))
+const PaginaAdminPage = lazy(() => import('../features/cms/PaginaAdminPage'))
 const NewsAdminPage = lazy(() => import('../features/cms/NewsAdminPage'))
 const PublicationsAdminPage = lazy(() => import('../features/cms/PublicationsAdminPage'))
 const AgendaAdminPage = lazy(() => import('../features/cms/AgendaAdminPage'))
@@ -190,6 +191,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: withSuspense(PanelPage) },
           { path: 'mi-seguridad', element: <RequireRole roles={rolesPorRutaCms['mi-seguridad']}>{withSuspense(MiSeguridadPage)}</RequireRole> },
+          { path: 'paginas/:slug', element: <RequireRole roles={rolesPorRutaCms['paginas/corporacion']}>{withSuspense(PaginaAdminPage)}</RequireRole> },
           { path: 'portada', element: <RequireRole roles={rolesPorRutaCms.portada}>{withSuspense(PortadaAdminPage)}</RequireRole> },
           { path: 'recorrido', element: <RequireRole roles={rolesPorRutaCms.recorrido}>{withSuspense(RecorridoAdminPage)}</RequireRole> },
           { path: 'historia', element: <RequireRole roles={rolesPorRutaCms.historia}>{withSuspense(HistoriaAdminPage)}</RequireRole> },

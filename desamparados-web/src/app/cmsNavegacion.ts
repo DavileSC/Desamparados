@@ -14,6 +14,7 @@ import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined'
+import WebOutlinedIcon from '@mui/icons-material/WebOutlined'
 import type { PanelResponse } from '../lib/api/panel'
 
 /**
@@ -40,8 +41,12 @@ import type { PanelResponse } from '../lib/api/panel'
 /**
  * Áreas del menú, en el orden en que se pintan. «Censo y enseres» y no
  * «Hermandad»: la corporación es un Grupo Parroquial.
+ *
+ * «Web pública» es el apartado del constructor de páginas: páginas de la web
+ * pública compuestas por bloques, distinto de «Contenido», que son las fichas
+ * de siempre (portada, recorrido, historia...) con su propio formulario fijo.
  */
-export const GRUPOS = ['Hoy', 'Contenido', 'Censo y enseres', 'Cuentas', 'Sistema'] as const
+export const GRUPOS = ['Hoy', 'Web pública', 'Contenido', 'Censo y enseres', 'Cuentas', 'Sistema'] as const
 export type Grupo = (typeof GRUPOS)[number]
 
 /** De dónde sale el número que se enseña junto a una sección. */
@@ -61,6 +66,7 @@ const TODOS = ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'AL
 
 export const itemsMenu: ItemMenu[] = [
   { label: 'Inicio', href: '/cms', roles: TODOS, grupo: 'Hoy', icono: HomeOutlinedIcon },
+  { label: 'Corporación', href: '/cms/paginas/corporacion', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web pública', icono: WebOutlinedIcon },
   { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ImageOutlinedIcon },
   { label: 'Recorrido', href: '/cms/recorrido', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MapOutlinedIcon },
   { label: 'Historia', href: '/cms/historia', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: HistoryEduOutlinedIcon },
@@ -80,6 +86,8 @@ export const itemsMenu: ItemMenu[] = [
 /** Única fuente de verdad de las `RequireRole` de `routes/index.tsx`. */
 export const rolesPorRutaCms = {
   panel: ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
+  // La página de Corporación por bloques: los mismos roles que el resto del contenido.
+  'paginas/corporacion': ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   // Las fotos de la cabecera son contenido: los mismos roles que las noticias.
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   recorrido: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
@@ -119,4 +127,9 @@ export const NOMBRE_CARGO: Record<string, string> = {
   TESORERIA: 'Tesorería',
   REDES: 'Redes',
   ALBACERIA: 'Albacería',
+}
+
+/** Dónde vive en la web pública cada página editable. */
+export const RUTA_PUBLICA: Record<string, string> = {
+  corporacion: '/corporacion',
 }
