@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { Box, Typography, Link as MuiLink, IconButton, Button } from '@mui/material'
 import { Link } from 'react-router-dom'
-import MailIcon from '@mui/icons-material/Mail'
-import PhoneIcon from '@mui/icons-material/Phone'
+import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
+import NorthEastIcon from '@mui/icons-material/NorthEast'
 import FacebookIcon from '@mui/icons-material/Facebook'
 import InstagramIcon from '@mui/icons-material/Instagram'
 import XIcon from '@mui/icons-material/X'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
-import { site } from '../config/site'
-import PageContainer from './PageContainer'
-import MapIcon from '@mui/icons-material/Map'
+import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
 import type { ReactNode } from 'react'
+import { site } from '../config/site'
+import { aplanarMenu, menuPublico } from '../config/navegacion'
+import PageContainer from './PageContainer'
 import { useCookieConsent } from '../hooks/useCookieConsent'
 
 type SocialLink = { icon: ReactNode; href: string; label: string }
@@ -18,20 +22,76 @@ type SocialLink = { icon: ReactNode; href: string; label: string }
 // Solo se pintan los perfiles cuya URL está confirmada en `site.redes`: un
 // icono que lleva a `#` es un enlace muerto de cara al visitante.
 const socialLinks: SocialLink[] = [
-  { icon: <InstagramIcon />, href: site.redes.instagram, label: 'Instagram' },
-  { icon: <XIcon />, href: site.redes.x, label: 'X' },
-  { icon: <FacebookIcon />, href: site.redes.facebook, label: 'Facebook' },
-  { icon: <PlayCircleIcon />, href: site.redes.youtube, label: 'YouTube' },
+  { icon: <InstagramIcon fontSize="small" />, href: site.redes.instagram, label: 'Instagram' },
+  { icon: <XIcon fontSize="small" />, href: site.redes.x, label: 'X' },
+  { icon: <FacebookIcon fontSize="small" />, href: site.redes.facebook, label: 'Facebook' },
+  { icon: <PlayCircleIcon fontSize="small" />, href: site.redes.youtube, label: 'YouTube' },
 ].flatMap((red) => (red.href ? [{ ...red, href: red.href }] : []))
 
+// Las columnas de enlaces se sacan del menú principal por su ruta: si una
+// sección cambia de nombre, el pie lo recoge solo, y si desaparece, su enlace
+// deja de pintarse en vez de quedar muerto.
+const entradasMenu = new Map(aplanarMenu(menuPublico).map((entrada) => [entrada.href, entrada.label]))
+
+const columnas: { titulo: string; rutas: string[] }[] = [
+  {
+    titulo: 'Corporación',
+    rutas: [
+      '/corporacion/historia',
+      '/corporacion/historia/organos-de-gobierno',
+      '/corporacion/nuestros-fines',
+      '/corporacion/cultos',
+      '/corporacion/sabado-de-pasion',
+      '/sagrada-titular',
+    ],
+  },
+  {
+    titulo: 'Actualidad',
+    rutas: ['/actualidad/agenda', '/actualidad/noticias', '/publicaciones/boletines', '/publicaciones/dossier-prensa'],
+  },
+  {
+    titulo: 'Hermanos',
+    rutas: ['/hermanos/hazte-hermano', '/hermanos/acceso', '/contacto'],
+  },
+]
+
 const legalLinks = [
-  { label: 'Aviso Legal', to: '/aviso-legal' },
-  { label: 'Política de Privacidad', to: '/politica-privacidad' },
+  { label: 'Aviso legal', to: '/aviso-legal' },
+  { label: 'Privacidad', to: '/politica-privacidad' },
   { label: 'Cookies', to: '/politica-cookies' },
 ]
 
 const MAP_EMBED_URL =
   'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1067.3544649056719!2d-4.449098871278157!3d36.711765554466446!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd72f77028f9b929%3A0xe34fc3610f0d1398!2sIglesia%20Parroquial%20Santa%20Mar%C3%ADa%20Goretti!5e0!3m2!1ses!2ses!4v1789660222285!5m2!1ses!2ses'
+
+const LINEA = 'rgba(204, 196, 201, 0.18)'
+
+const tituloColumna = {
+  mb: 2,
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '0.2em',
+  textTransform: 'uppercase',
+  color: 'text.primary',
+} as const
+
+const enlace = {
+  color: 'text.secondary',
+  fontSize: 14,
+  lineHeight: 1.4,
+  textDecoration: 'none',
+  transition: 'color .2s ease',
+  '&:hover': { color: 'secondary.main' },
+} as const
+
+function Dato({ icono, children }: { icono: ReactNode; children: ReactNode }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, color: 'text.secondary', fontSize: 14, lineHeight: 1.5 }}>
+      <Box sx={{ display: 'flex', pt: '2px', '& svg': { fontSize: 17 } }} aria-hidden="true">{icono}</Box>
+      <Box>{children}</Box>
+    </Box>
+  )
+}
 
 export default function Footer() {
   const { accepted, reset: resetCookieConsent } = useCookieConsent()
@@ -42,91 +102,112 @@ export default function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <Box
-      component="footer"
-      sx={{
-        backgroundColor: 'background.paper',
-        borderTop: '1px solid rgba(204, 196, 201, 0.3)',
-        py: 6,
-      }}
-    >
+    <Box component="footer" sx={{ backgroundColor: 'background.paper', borderTop: `1px solid ${LINEA}` }}>
       <PageContainer>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '5fr 7fr' },
-            gap: 4,
+            gridTemplateColumns: {
+              xs: 'repeat(2, minmax(0, 1fr))',
+              md: 'repeat(3, minmax(0, 1fr))',
+              lg: 'minmax(0, 1.35fr) repeat(3, minmax(0, 0.8fr)) minmax(0, 1.25fr)',
+            },
+            columnGap: { xs: 4, lg: 5 },
+            rowGap: 5,
+            py: { xs: 6, md: 8 },
           }}
         >
-          <Box>
+          {/* Identidad y contacto */}
+          <Box sx={{ gridColumn: { xs: '1 / -1', lg: 'auto' } }}>
+            <Typography component="div" sx={{ ...tituloColumna, color: 'text.secondary', mb: 1 }}>
+              Grupo Parroquial
+            </Typography>
             <Typography
+              component={Link}
+              to="/"
               variant="h4"
-              component="div"
-              sx={{ color: 'text.primary', mb: 2, fontSize: '24px' }}
+              sx={{ display: 'block', color: 'text.primary', textDecoration: 'none', fontSize: 22, lineHeight: 1.25, mb: 0.75 }}
             >
-              {site.nombre}
+              Nuestra Señora de los Desamparados
+            </Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: 13, letterSpacing: '0.08em', mb: 3 }}>
+              {site.sede.localidad}
             </Typography>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <MailIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '14px' }}>
-                  {site.contacto.email}
-                </Typography>
-              </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, mb: socialLinks.length > 0 ? 3 : 0 }}>
+              <Dato icono={<MailOutlinedIcon />}>
+                <MuiLink href={`mailto:${site.contacto.email}`} sx={enlace}>{site.contacto.email}</MuiLink>
+              </Dato>
               {site.contacto.telefono && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <PhoneIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '14px' }}>
-                    Tel: {site.contacto.telefono}
-                  </Typography>
-                </Box>
+                <Dato icono={<PhoneOutlinedIcon />}>
+                  <MuiLink href={`tel:${site.contacto.telefono.replace(/\s/g, '')}`} sx={enlace}>{site.contacto.telefono}</MuiLink>
+                </Dato>
               )}
-              <Typography
-                variant="body2"
-                sx={{ color: 'text.secondary', fontSize: '13px', pl: 3.5 }}
-              >
-                {site.contacto.horario}
-              </Typography>
+              <Dato icono={<AccessTimeIcon />}>{site.contacto.horario}</Dato>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 1.5, mb: socialLinks.length > 0 ? 3 : 0 }}>
-              {socialLinks.map((social) => (
-                <IconButton
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  sx={{ color: 'text.secondary', '&:hover': { color: 'secondary.main' } }}
-                >
-                  {social.icon}
-                </IconButton>
-              ))}
-            </Box>
-
-            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
-              © {year} {site.nombre}. Todos los derechos reservados.
-            </Typography>
+            {socialLinks.length > 0 && (
+              <Box sx={{ display: 'flex', gap: 1, ml: -1 }}>
+                {socialLinks.map((social) => (
+                  <IconButton
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${social.label} (se abre en otra pestaña)`}
+                    sx={{ color: 'text.secondary', '&:hover': { color: 'secondary.main' } }}
+                  >
+                    {social.icon}
+                  </IconButton>
+                ))}
+              </Box>
+            )}
           </Box>
 
+          {/* Mapa del sitio */}
+          {columnas.map((columna) => (
+            <Box key={columna.titulo} component="nav" aria-label={columna.titulo}>
+              <Typography component="h2" sx={tituloColumna}>{columna.titulo}</Typography>
+              <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                {columna.rutas.flatMap((ruta) => {
+                  const label = entradasMenu.get(ruta)
+                  return label
+                    ? [<li key={ruta}><MuiLink component={Link} to={ruta} sx={enlace}>{label}</MuiLink></li>]
+                    : []
+                })}
+              </Box>
+            </Box>
+          ))}
+
+          {/* Dónde estamos: en tableta, la dirección a un lado y el mapa al otro */}
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: { xs: 'flex-start', md: 'flex-end' },
-              justifyContent: 'space-between',
-              gap: 3,
+              gridColumn: { xs: '1 / -1', lg: 'auto' },
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'minmax(0, 1fr) minmax(0, 1fr)', lg: '1fr' },
+              gridTemplateRows: { sm: 'auto auto 1fr', lg: 'none' },
+              columnGap: 4,
+              alignContent: 'start',
             }}
           >
+            <Typography component="h2" sx={tituloColumna}>Dónde estamos</Typography>
+            <Box sx={{ gridColumn: { sm: 1, lg: 'auto' } }}>
+              <Dato icono={<PlaceOutlinedIcon />}>
+                <Box component="span" sx={{ display: 'block', color: 'text.primary' }}>{site.sede.nombre}</Box>
+                {site.sede.direccion}, {site.sede.localidad}
+              </Dato>
+            </Box>
+
             <Box
               sx={{
-                width: { xs: '100%', md: '80%' },
-                height: '300px',
-                borderRadius: '12px',
+                gridColumn: { sm: 2, lg: 'auto' },
+                gridRow: { sm: '1 / span 3', lg: 'auto' },
+                mt: { xs: 2, sm: 0, lg: 2 },
+                height: 160,
+                borderRadius: '8px',
                 overflow: 'hidden',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)',
+                border: `1px solid ${LINEA}`,
+                backgroundColor: 'rgba(255,255,255,0.03)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -139,25 +220,20 @@ export default function Footer() {
                   width="100%"
                   height="100%"
                   style={{ border: 0, filter: 'grayscale(100%) invert(92%) contrast(83%)' }}
-                  allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Ubicación del Grupo Parroquial"
+                  title={`Mapa: ${site.sede.nombre}`}
                 />
               ) : (
-                <Box sx={{ textAlign: 'center', p: 3 }}>
-                  <MapIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                  <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2, fontSize: '13px' }}>
-                    El mapa lo proporciona Google Maps. Al mostrarlo, tu dirección IP se enviará a Google.
+                <Box sx={{ textAlign: 'center', px: 2 }}>
+                  <MapOutlinedIcon sx={{ fontSize: 28, color: 'text.secondary', mb: 0.5 }} />
+                  <Typography sx={{ color: 'text.secondary', fontSize: 12, lineHeight: 1.4, mb: 1 }}>
+                    Al mostrar el mapa, tu IP se envía a Google.
                   </Typography>
                   <Button
+                    size="small"
                     onClick={() => setMapRequested(true)}
-                    sx={{
-                      color: 'text.primary',
-                      border: '1px solid rgba(204, 196, 201, 0.3)',
-                      px: 3,
-                      '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)' },
-                    }}
+                    sx={{ color: 'text.primary', border: `1px solid ${LINEA}`, px: 2, '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)' } }}
                   >
                     Mostrar mapa
                   </Button>
@@ -165,42 +241,69 @@ export default function Footer() {
               )}
             </Box>
 
-            <Box sx={{ display: 'flex', gap: { xs: 2, md: 4 }, flexWrap: 'wrap' }}>
+            <MuiLink
+              href={site.sede.comoLlegar}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ ...enlace, gridColumn: { sm: 1, lg: 'auto' }, justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 1.5, color: 'text.primary', fontSize: 13, fontWeight: 600 }}
+            >
+              Cómo llegar
+              <NorthEastIcon sx={{ fontSize: 14 }} />
+              <Box component="span" sx={visualmenteOculto}>(se abre en Google Maps)</Box>
+            </MuiLink>
+          </Box>
+        </Box>
+      </PageContainer>
+
+      {/* Franja inferior */}
+      <Box sx={{ borderTop: `1px solid ${LINEA}` }}>
+        <PageContainer>
+          <Box
+            sx={{
+              py: 3,
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: { xs: 'flex-start', md: 'center' },
+              justifyContent: 'space-between',
+              gap: 2,
+            }}
+          >
+            <Typography sx={{ color: 'text.secondary', fontSize: 13 }}>
+              © {year} {site.nombre}
+            </Typography>
+            <Box component="nav" aria-label="Información legal" sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 3, rowGap: 1 }}>
               {legalLinks.map((link) => (
-                <MuiLink
-                  key={link.label}
-                  component={Link}
-                  to={link.to}
-                  sx={{
-                    color: 'text.secondary',
-                    fontSize: '14px',
-                    textDecoration: 'underline',
-                    '&:hover': { color: 'secondary.main' },
-                  }}
-                >
+                <MuiLink key={link.to} component={Link} to={link.to} sx={{ ...enlace, fontSize: 13 }}>
                   {link.label}
                 </MuiLink>
               ))}
               <MuiLink
                 component="button"
+                type="button"
                 onClick={resetCookieConsent}
-                sx={{
-                  color: 'text.secondary',
-                  fontSize: '14px',
-                  textDecoration: 'underline',
-                  border: 0,
-                  background: 'none',
-                  cursor: 'pointer',
-                  p: 0,
-                  '&:hover': { color: 'secondary.main' },
-                }}
+                sx={{ font: 'inherit', ...enlace, fontSize: 13, border: 0, background: 'none', cursor: 'pointer', p: 0 }}
               >
                 Gestionar cookies
               </MuiLink>
             </Box>
           </Box>
-        </Box>
-      </PageContainer>
+        </PageContainer>
+      </Box>
     </Box>
   )
 }
+
+// Solo para lectores de pantalla. Tamaños en px y no `1`: en `sx`, un 1 es el
+// 100 %, y este span medía toda la pantalla y alargaba la página a lo ancho y
+// por debajo del pie.
+const visualmenteOculto = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  margin: '-1px',
+  padding: 0,
+  border: 0,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+} as const

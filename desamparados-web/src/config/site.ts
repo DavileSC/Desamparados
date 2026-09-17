@@ -35,6 +35,18 @@ export const site = {
     horario: 'Lunes a viernes: 18:00h - 21:00h',
   },
 
+  /**
+   * Dónde está el Grupo Parroquial, para quien quiere ir: el pie de página. No
+   * es el domicilio social de `entidad`, que es un dato legal y sigue pendiente.
+   */
+  sede: {
+    nombre: 'Iglesia Parroquial Santa María Goretti',
+    direccion: 'C. Corregidor Paz Guzmán, 13',
+    localidad: 'Málaga',
+    /** Abre Google Maps en otra pestaña con la parroquia buscada. */
+    comoLlegar: 'https://www.google.com/maps/search/?api=1&query=Iglesia%20Parroquial%20Santa%20Mar%C3%ADa%20Goretti%2C%20M%C3%A1laga',
+  },
+
   /** Canal para ejercer los derechos RGPD. Cae al email general si no hay uno propio. */
   privacidad: {
     emailDerechos: null as string | DatoPendiente,
