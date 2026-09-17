@@ -4,9 +4,11 @@ interface PageHeaderProps {
   title: string
   subtitle?: string
   image?: string
+  /** Qué se ve en la foto. Sin ella se repetiría el título. */
+  imageAlt?: string
 }
 
-export default function PageHeader({ title, subtitle, image }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, image, imageAlt }: PageHeaderProps) {
   return (
     <Box
       component="section"
@@ -23,7 +25,9 @@ export default function PageHeader({ title, subtitle, image }: PageHeaderProps) 
           <Box
             component="img"
             src={image}
-            alt={title}
+            // Foto de fondo decorativa: repetir aquí el título estorbaría a
+            // quien use un lector de pantalla. Vacío si el CMS no trae descripción.
+            alt={imageAlt ?? ''}
             sx={{
               position: 'absolute',
               inset: 0,
