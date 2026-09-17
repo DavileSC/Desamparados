@@ -75,6 +75,10 @@ function responder(cuerpo: unknown, status = 200) {
 const montar = () =>
   renderWithProviders(<TemaCmsProvider><ComoVaElAnio panelDeHoy={PANEL} /></TemaCmsProvider>)
 
+/** Las gráficas van repartidas en tres pestañas: para ver una hay que abrir la suya. */
+const abrir = (tema: 'Hermanos' | 'Dinero' | 'Procesión') =>
+  userEvent.click(screen.getByRole('tab', { name: tema }))
+
 afterEach(() => { vi.unstubAllGlobals() })
 
 describe('ComoVaElAnio', () => {
@@ -85,20 +89,47 @@ describe('ComoVaElAnio', () => {
     expect(espia).not.toHaveBeenCalled()
   })
 
-  it('pinta todas las gráficas con su título', () => {
+  it('reparte las gráficas en tres pestañas, y arranca por la de hermanos', async () => {
     responder(PANEL)
     montar()
-    for (const titulo of [
-      'Censo de hermanos', 'Altas y bajas', 'Ingresos y gastos por mes', 'De dónde entra', 'En qué se gasta',
-      'Cobro de recibos', 'Papeletas de sitio', 'Puestos de la procesión', 'Túnicas y varales', 'Hermanos por edad',
-    ]) {
-      expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument()
+
+    const porTema = {
+      Hermanos: ['Censo de hermanos', 'Altas y bajas', 'Hermanos por edad'],
+      Dinero: ['Ingresos y gastos por mes', 'De dónde entra', 'En qué se gasta', 'Cobro de recibos'],
+      'Procesión': ['Papeletas de sitio', 'Puestos de la procesión', 'Tallas de túnica', 'Altura de hombro'],
+    } as const
+
+    // La primera pestaña sale abierta, y lo de las otras dos no está a la vista.
+    expect(screen.getByRole('tab', { name: 'Hermanos' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('heading', { name: 'Censo de hermanos' })).toBeVisible()
+    // Las otras pestañas ni se ven ni las anuncia un lector de pantalla.
+    expect(screen.queryByRole('heading', { name: 'Cobro de recibos' })).not.toBeInTheDocument()
+
+    for (const [tema, titulos] of Object.entries(porTema)) {
+      await abrir(tema as 'Hermanos')
+      for (const titulo of titulos) {
+        expect(screen.getByRole('heading', { name: titulo })).toBeVisible()
+      }
     }
   })
 
-  it('el subtítulo de «Ingresos y gastos por mes» lleva los tres totales del ejercicio', () => {
+  it('el ejercicio elegido vale para las tres pestañas', async () => {
+    responder(DE_2025)
+    montar()
+    await userEvent.click(screen.getByRole('combobox', { name: /ejercicio/i }))
+    await userEvent.click(screen.getByRole('option', { name: '2025' }))
+    await screen.findByText(/Ejercicio 2025 · cerrado/)
+
+    await abrir('Dinero')
+    expect(await screen.findByText('Ingresos de 2025 por categoría contable')).toBeInTheDocument()
+    // El selector sigue donde estaba: no se reinicia al cambiar de pestaña.
+    expect(screen.getByRole('combobox', { name: /ejercicio/i })).toHaveTextContent('2025')
+  })
+
+  it('el subtítulo de «Ingresos y gastos por mes» lleva los tres totales del ejercicio', async () => {
     responder(PANEL)
     montar()
+    await abrir('Dinero')
     expect(screen.getByText('Ingresos 48.300 € · Gastos 35.440 € · Saldo 12.860 €')).toBeInTheDocument()
   })
 
@@ -112,17 +143,19 @@ describe('ComoVaElAnio', () => {
     expect(await screen.findByText(/Ejercicio 2025 · cerrado/)).toBeInTheDocument()
   })
 
-  it('el gasto por categoría va en euros, no en número de apuntes', () => {
+  it('el gasto por categoría va en euros, no en número de apuntes', async () => {
     responder(PANEL)
     montar()
+    await abrir('Dinero')
     // La barra lleva el importe redondo; el número de apuntes (18) solo vive en
     // la tabla, como dato secundario.
     expect(screen.getByText('9.800 €')).toBeInTheDocument()
   })
 
-  it('el ingreso por categoría va en euros, no en número de apuntes, y antes del gasto', () => {
+  it('el ingreso por categoría va en euros, no en número de apuntes, y antes del gasto', async () => {
     responder(PANEL)
     montar()
+    await abrir('Dinero')
     expect(screen.getByText('21.000 €')).toBeInTheDocument()
 
     // «De dónde entra» y «En qué se gasta» se leen como pareja: la primera
@@ -165,6 +198,7 @@ describe('ComoVaElAnio', () => {
   it('«Puestos de la procesión» sí sigue al ejercicio elegido, y el subtítulo dice de cuál', async () => {
     responder(DE_2025)
     montar()
+    await abrir('Procesión')
 
     const seccionInicial = screen.getByRole('heading', { name: 'Puestos de la procesión' }).closest('section') as HTMLElement
     expect(within(seccionInicial).getByText('Papeletas del ejercicio 2026, por puesto')).toBeInTheDocument()
@@ -183,27 +217,29 @@ describe('ComoVaElAnio', () => {
     expect(within(tarjeta).getAllByText('Nazarenos').length).toBeGreaterThan(0)
   })
 
-  it('«Túnicas y varales» son siempre de hoy: tallas y altura de hombro no cambian con el ejercicio', async () => {
+  it('las tallas y la altura de hombro son siempre de hoy: no cambian con el ejercicio', async () => {
     // DE_2025 trae una talla y una altura de hombro distintas de las de
     // panelDeHoy: si la tarjeta leyera del ejercicio elegido en vez de
     // panelDeHoy, este test lo pillaría al cambiar de año.
     responder(DE_2025)
     montar()
+    await abrir('Procesión')
 
-    const seccionInicial = screen.getByRole('heading', { name: 'Túnicas y varales' }).closest('section') as HTMLElement
-    expect(within(seccionInicial).getAllByText('L').length).toBeGreaterThan(0)
-    expect(within(seccionInicial).getAllByText('170-179').length).toBeGreaterThan(0)
+    const tallasInicial = screen.getByRole('heading', { name: 'Tallas de túnica' }).closest('section') as HTMLElement
+    expect(within(tallasInicial).getAllByText('L').length).toBeGreaterThan(0)
+    const alturaInicial = screen.getByRole('heading', { name: 'Altura de hombro' }).closest('section') as HTMLElement
+    expect(within(alturaInicial).getAllByText('170-179').length).toBeGreaterThan(0)
 
     await userEvent.click(screen.getByRole('combobox', { name: /ejercicio/i }))
     await userEvent.click(screen.getByRole('option', { name: '2025' }))
 
-    const cabeceraTrasCambiar = await screen.findByRole('heading', { name: 'Túnicas y varales' })
-    const tarjeta = cabeceraTrasCambiar.closest('section') as HTMLElement
+    const tallas = (await screen.findByRole('heading', { name: 'Tallas de túnica' })).closest('section') as HTMLElement
+    const altura = screen.getByRole('heading', { name: 'Altura de hombro' }).closest('section') as HTMLElement
 
-    expect(within(tarjeta).getAllByText('L').length).toBeGreaterThan(0)
-    expect(within(tarjeta).getAllByText('170-179').length).toBeGreaterThan(0)
-    expect(within(tarjeta).queryByText('S')).not.toBeInTheDocument()
-    expect(within(tarjeta).queryByText('150-159')).not.toBeInTheDocument()
+    expect(within(tallas).getAllByText('L').length).toBeGreaterThan(0)
+    expect(within(tallas).queryByText('S')).not.toBeInTheDocument()
+    expect(within(altura).getAllByText('170-179').length).toBeGreaterThan(0)
+    expect(within(altura).queryByText('150-159')).not.toBeInTheDocument()
   })
 
   it('cada gráfica ofrece su tabla', () => {

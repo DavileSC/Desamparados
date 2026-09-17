@@ -1,6 +1,7 @@
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
 import { pasoBonito } from './ejes'
+import { useAnchoMedido } from './useAnchoMedido'
 
 export interface PuntoLinea {
   x: string
@@ -19,8 +20,7 @@ interface Props {
   etiquetaX?: (x: string) => string
 }
 
-const ANCHO = 488
-const ALTO = 232
+const ALTO = 150
 const IZQ = 50
 const DER = 54
 const ARRIBA = 18
@@ -44,6 +44,8 @@ function escala(min: number, max: number) {
  */
 export default function LineaTemporal({ puntos, etiqueta, paleta, color, formatoValor, etiquetaX }: Props) {
   const theme = useTheme()
+  // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
+  const { referencia, ancho: ANCHO } = useAnchoMedido()
 
   if (puntos.length === 0) {
     return (
@@ -71,10 +73,11 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
   const ultimo = puntos[puntos.length - 1]
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box ref={referencia} sx={{ width: '100%' }}>
       <svg
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
         width="100%"
+        height={ALTO}
         role="img"
         aria-label={`${etiqueta}: de ${texto(primero.y)} a ${texto(ultimo.y)}.`}
         style={{ display: 'block', overflow: 'visible' }}

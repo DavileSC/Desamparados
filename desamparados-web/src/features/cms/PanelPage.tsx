@@ -11,7 +11,7 @@ import ProximosActos from './inicio/ProximosActos'
 import ComoVaElAnio from './inicio/ComoVaElAnio'
 
 /**
- * El Inicio del CMS. Arriba, lo de hoy: qué hay que hacer, las cuatro cifras,
+ * El Inicio del CMS. Arriba, lo de hoy: las cuatro cifras, qué hay que hacer,
  * los próximos actos y cuánto queda para la estación. Debajo, «Cómo va el año»,
  * que es lo único que cambia con el selector de ejercicio.
  */
@@ -36,15 +36,26 @@ export default function PanelPage() {
 
       <Cabecera asuntosPropios={tuyas.length} asuntosDeLaJunta={deLaJunta.length} role={role} />
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 352px' }, gap: 3, alignItems: 'start' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <ParaHoy tareas={tareas} role={role} />
-          <Cifras panel={data} />
-        </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <CuentaAtras />
-          <ProximosActos eventos={data.actividad.proximosEventos} role={role} />
-        </Box>
+      {/* Las cifras, a todo lo ancho y antes que nada: son el resumen de la
+          casa. «Para hoy» va debajo, que es donde se actúa. */}
+      <Cifras panel={data} />
+
+      {/* Mosaico: las tres piezas se reparten solas entre las columnas según lo
+          que ocupa cada una. Con dos asuntos pendientes, «Para hoy» encogía y
+          dejaba media pantalla en blanco al lado de una agenda larga; ahora el
+          navegador equilibra las columnas y no queda hueco, tenga el día lo que
+          tenga. `breakInside` impide que una tarjeta se parta entre columnas. */}
+      <Box
+        sx={{
+          mt: 2.5,
+          columnCount: { xs: 1, lg: 2 },
+          columnGap: 3,
+          '& > *': { breakInside: 'avoid', mb: 2.5 },
+        }}
+      >
+        <ParaHoy tareas={tareas} role={role} />
+        <CuentaAtras />
+        <ProximosActos eventos={data.actividad.proximosEventos} actividad={data.actividad} role={role} />
       </Box>
 
       <ComoVaElAnio panelDeHoy={data} />

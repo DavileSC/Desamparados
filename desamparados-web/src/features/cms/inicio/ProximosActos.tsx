@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { designTokens } from '../../../theme'
 import { rolesPorRutaCms } from '../../../app/cmsNavegacion'
+import { fechaCorta } from '../contabilidad/formato'
+import { contar } from './plural'
 
 const TIPO: Record<string, string> = {
   CULTO: 'Culto', PROCESION: 'Procesión', FORMACION: 'Formación', ENSAYO: 'Ensayo',
@@ -11,9 +13,11 @@ const TIPO: Record<string, string> = {
 
 /** Los cuatro primeros actos convocados. */
 export default function ProximosActos({
-  eventos, role,
+  eventos, actividad, role,
 }: {
   eventos: PanelResponse['actividad']['proximosEventos']
+  /** Noticias y publicaciones, para el pie. Venían sueltas bajo las cifras, sin título que las explicara. */
+  actividad: PanelResponse['actividad']
   role?: string
 }) {
   const proximos = eventos.slice(0, 4)
@@ -60,7 +64,15 @@ export default function ProximosActos({
           </Box>
         )
       })}
-      <Box sx={{ pb: 1 }} />
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: 'block', px: 2.75, py: 1.5, borderTop: 1, borderColor: 'divider' }}
+      >
+        {contar(actividad.noticias.publicadas, 'noticia publicada', 'noticias publicadas')} ·{' '}
+        {contar(actividad.publicaciones.total, 'publicación', 'publicaciones')}
+        {actividad.publicaciones.ultima && ` · última el ${fechaCorta(actividad.publicaciones.ultima)}`}
+      </Typography>
     </Paper>
   )
 }

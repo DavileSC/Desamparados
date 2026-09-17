@@ -30,16 +30,18 @@ export default function BarrasHorizontales({ filas, color, formatoValor }: Props
   const max = Math.max(...filas.map((f) => f.valor))
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       {filas.map((fila) => (
         <Box
           key={fila.etiqueta}
-          sx={{ display: 'grid', gridTemplateColumns: '176px minmax(0, 1fr) auto', alignItems: 'center', gap: 1.5 }}
+          // La columna del nombre se encoge con la tarjeta: con 176 px fijos,
+          // en media tarjeta la barra se quedaba sin sitio.
+          sx={{ display: 'grid', gridTemplateColumns: 'minmax(72px, 150px) minmax(0, 1fr) auto', alignItems: 'center', gap: 1.25 }}
         >
           <Typography variant="body2" color="text.secondary" noWrap title={fila.etiqueta}>
             {fila.etiqueta}
           </Typography>
-          <Box sx={{ height: 9, borderRadius: 99, backgroundColor: 'divider', overflow: 'hidden' }}>
+          <Box sx={{ height: 10, borderRadius: 99, backgroundColor: 'divider', overflow: 'hidden' }}>
             <Box
               data-testid="barra"
               sx={{

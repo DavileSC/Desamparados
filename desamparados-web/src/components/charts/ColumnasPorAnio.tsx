@@ -1,6 +1,7 @@
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
 import { columna, escalaDesdeCero } from './ejes'
+import { useAnchoMedido } from './useAnchoMedido'
 
 interface Props {
   datos: { anio: number; total: number }[]
@@ -11,8 +12,7 @@ interface Props {
   formatoValor?: (valor: number) => string
 }
 
-const ANCHO = 488
-const ALTO = 232
+const ALTO = 150
 const IZQ = 40
 const DER = 10
 const ARRIBA = 26
@@ -21,6 +21,8 @@ const ABAJO = 30
 /** Una columna por año, con su valor escrito encima: cinco cifras se leen mejor así que en una línea. */
 export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor }: Props) {
   const theme = useTheme()
+  // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
+  const { referencia, ancho: ANCHO } = useAnchoMedido()
   const texto = formatoValor ?? ((v: number) => String(v))
 
   if (datos.length === 0) {
@@ -38,10 +40,11 @@ export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor
   const ancho = Math.min(24, ranura * 0.45)
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box ref={referencia} sx={{ width: '100%' }}>
       <svg
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
         width="100%"
+        height={ALTO}
         role="img"
         aria-label={datos.map((d) => `${d.anio}: ${texto(d.total)}`).join('. ')}
         style={{ display: 'block', overflow: 'visible' }}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
 import { columna, escalaDesdeCero } from './ejes'
+import { useAnchoMedido } from './useAnchoMedido'
 
 export interface PuntoPar {
   clave: string
@@ -20,8 +21,7 @@ interface Props {
   etiquetaXLarga: (clave: string) => string
 }
 
-const ANCHO = 1042
-const ALTO = 300
+const ALTO = 170
 const IZQ = 66
 const DER = 12
 const ARRIBA = 24
@@ -36,6 +36,8 @@ export default function ColumnasPorPares({
   puntos, paleta, etiquetaA, etiquetaB, formatoValor, etiquetaX, etiquetaXLarga,
 }: Props) {
   const theme = useTheme()
+  // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
+  const { referencia, ancho: ANCHO } = useAnchoMedido()
   const [activo, setActivo] = useState<number | null>(null)
 
   if (puntos.length === 0) {
@@ -61,7 +63,7 @@ export default function ColumnasPorPares({
     puntos.reduce((mejor, p, i) => (p[lado] > puntos[mejor][lado] ? i : mejor), 0)
 
   return (
-    <Box sx={{ width: '100%', position: 'relative' }}>
+    <Box ref={referencia} sx={{ width: '100%', position: 'relative' }}>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.25, mb: 1, fontSize: 13 }}>
         <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.875 }}>
           <Box component="span" sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: paleta.entrada }} />
@@ -77,6 +79,7 @@ export default function ColumnasPorPares({
       <svg
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
         width="100%"
+        height={ALTO}
         role="img"
         aria-label={`${etiquetaA} y ${etiquetaB} por periodo.`}
         style={{ display: 'block', overflow: 'visible' }}

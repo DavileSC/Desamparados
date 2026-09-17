@@ -1,6 +1,7 @@
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
 import { columna, pasoBonito } from './ejes'
+import { useAnchoMedido } from './useAnchoMedido'
 
 export interface MesDivergente {
   mes: string
@@ -16,8 +17,7 @@ interface Props {
   etiquetaX?: (mes: string) => string
 }
 
-const ANCHO = 488
-const ALTO = 232
+const ALTO = 140
 const IZQ = 38
 const DER = 10
 const ARRIBA = 20
@@ -30,6 +30,8 @@ const ABAJO = 42
  */
 export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, etiquetaAbajo, etiquetaX }: Props) {
   const theme = useTheme()
+  // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
+  const { referencia, ancho: ANCHO } = useAnchoMedido()
 
   if (meses.length === 0) {
     return (
@@ -53,7 +55,7 @@ export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, eti
   const anchoColumna = Math.min(16, ranura * 0.55)
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box ref={referencia} sx={{ width: '100%' }}>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.25, mb: 1, fontSize: 13 }}>
         <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.875 }}>
           <Box component="span" sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: paleta.entrada }} />
@@ -70,6 +72,7 @@ export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, eti
       <svg
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
         width="100%"
+        height={ALTO}
         role="img"
         aria-label={`${etiquetaArriba}: ${totalArriba}. ${etiquetaAbajo}: ${totalAbajo}.`}
         style={{ display: 'block', overflow: 'visible' }}

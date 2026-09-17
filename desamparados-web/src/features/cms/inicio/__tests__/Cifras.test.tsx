@@ -24,31 +24,17 @@ const PANEL: PanelResponse = {
 }
 
 describe('Cifras', () => {
-  it('recoge las noticias y las publicaciones que enseñaba la actividad del equipo', () => {
-    // Al sacar la auditoría del Inicio se llevaba por delante estos dos
-    // números, que no son auditoría y el panel viejo ya enseñaba.
+  it('enseña las cuatro cifras de hoy', () => {
     renderWithProviders(<Cifras panel={PANEL} />)
-    expect(screen.getByText(/4 noticias publicadas/)).toBeInTheDocument()
-    expect(screen.getByText(/7 publicaciones/)).toBeInTheDocument()
+    expect(screen.getByText('1.284')).toBeInTheDocument()
+    expect(screen.getByText('612')).toBeInTheDocument()
+    expect(screen.getByText('420 €')).toBeInTheDocument()
   })
 
-  // Los dos casos de abajo los cubría `PanelPage.test.tsx` hasta que la
-  // auditoría salió del Inicio. La lógica se mudó aquí (la rama
-  // `publicaciones.ultima && ...`) y se quedó sin nadie que la mirase.
-
-  it('el pie fecha la última publicación', () => {
+  // El pie de noticias y publicaciones se mudó a «Próximos actos»: suelto bajo
+  // las cifras, y sin título, parecía un resto. Sus tests se fueron con él.
+  it('ya no lleva el pie de noticias y publicaciones', () => {
     renderWithProviders(<Cifras panel={PANEL} />)
-    expect(screen.getByText(/última el 1 jun 2026/)).toBeInTheDocument()
-  })
-
-  it('sin ninguna publicación registrada, el pie no menciona una fecha', () => {
-    // No hay fecha que dar: «última el 1 ene 1970» sería peor que callarse.
-    const sinPublicaciones: PanelResponse = {
-      ...PANEL,
-      actividad: { ...PANEL.actividad, publicaciones: { total: 0, ultima: null } },
-    }
-    renderWithProviders(<Cifras panel={sinPublicaciones} />)
-    expect(screen.getByText(/0 publicaciones/)).toBeInTheDocument()
-    expect(screen.queryByText(/última el/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/noticias publicadas/)).not.toBeInTheDocument()
   })
 })

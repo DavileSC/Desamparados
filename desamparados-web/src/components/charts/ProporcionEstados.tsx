@@ -52,7 +52,7 @@ export default function ProporcionEstados({ estados, paleta, formatoImporte, for
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, flexWrap: 'wrap' }}>
-        <Typography component="span" sx={{ fontSize: 44, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1 }}>
+        <Typography component="span" sx={{ fontSize: 30, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1 }}>
           {porcentaje} %
         </Typography>
         <Typography variant="body2" color="text.secondary">
