@@ -407,6 +407,13 @@ describe('el documento de una página de bloques', () => {
     assert.ok(!falla(doc([])));
   });
 
+  test('un tipo declarado sin esquema da 400 y no revienta', () => {
+    // Simula el descuido de añadir un tipo al catálogo y olvidar su esquema:
+    // sin la guarda, esto sería un TypeError, o sea un 500.
+    const salida = valida(doc([{ tipo: 'inventadoSinEsquema', titulo: '' }]));
+    assert.ok(salida instanceof ArkErrors);
+  });
+
   test('rechaza un tipo de bloque que no existe, y lo nombra', () => {
     const salida = valida(doc([{ tipo: 'carrusel3d', titulo: '' }]));
     assert.ok(salida instanceof ArkErrors);
@@ -479,7 +486,19 @@ const paginaDeBloquesSchema = type({
         problem: `no es un tipo de bloque conocido: «${String(tipo)}»`,
       });
     }
-    const salida = esquemaDeBloque(tipo)(bloque);
+    // `esTipoBloque` valida contra el catálogo, no contra el mapa de esquemas:
+    // un tipo declarado en shared/tipos-de-bloque.json al que se le olvidara su
+    // esquema pasaría esa comprobación y luego `esquemaDeBloque` devolvería
+    // `undefined`. Llamarlo a ciegas sería un TypeError, es decir un 500, justo
+    // donde el diseño promete un 400 que nombra el problema.
+    const esquema = esquemaDeBloque(tipo);
+    if (!esquema) {
+      return ctx.reject({
+        path: ['bloques', indice, 'tipo'],
+        problem: `es un tipo declarado sin esquema de validación: «${tipo}»`,
+      });
+    }
+    const salida = esquema(bloque);
     if (salida instanceof ArkErrors) {
       return ctx.reject({ path: ['bloques', indice], problem: salida.summary });
     }
