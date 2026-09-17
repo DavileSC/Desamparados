@@ -13,6 +13,13 @@ interface Props {
   guardando?: boolean
   volverA: string
   onGuardar: () => void | Promise<void>
+  /**
+   * Con esto, Guardar y Descartar van en una barra pegada al borde de abajo de
+   * la ventana, siempre a la vista: para pantallas largas (la portada), donde
+   * los botones del final quedan a varias pantallas del campo que se cambia.
+   * Descartar vuelve el formulario a lo guardado, sin salir de la pantalla.
+   */
+  onDescartar?: () => void
   children: ReactNode
 }
 
@@ -24,9 +31,10 @@ interface Props {
  * navegador o pulsando otra sección del menú lateral. Necesita un data router
  * (`createBrowserRouter`), que es lo que monta la aplicación.
  */
-export default function PantallaEdicion({ titulo, nombre, sucio, guardando = false, volverA, onGuardar, children }: Props) {
+export default function PantallaEdicion({ titulo, nombre, sucio, guardando = false, volverA, onGuardar, onDescartar, children }: Props) {
   const navegar = useNavigate()
   const [confirmandoGuardado, setConfirmandoGuardado] = useState(false)
+  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
 
   // `guardando` queda fuera del bloqueo a propósito: la pantalla navega al
   // listado en cuanto el servidor responde, y en ese momento el formulario
@@ -48,11 +56,41 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
         <Paper sx={{ p: { xs: 2.5, md: 4 } }}>
           {children}
 
-          <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
-            <Button variant="contained" disabled={guardando} onClick={() => setConfirmandoGuardado(true)}>Guardar</Button>
-            <Button disabled={guardando} onClick={() => navegar(volverA)}>Cancelar</Button>
-          </Stack>
+          {!onDescartar && (
+            <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
+              <Button variant="contained" disabled={guardando} onClick={() => setConfirmandoGuardado(true)}>Guardar</Button>
+              <Button disabled={guardando} onClick={() => navegar(volverA)}>Cancelar</Button>
+            </Stack>
+          )}
         </Paper>
+
+        {onDescartar && (
+          <Paper
+            role="region"
+            aria-label="Guardar o descartar los cambios"
+            elevation={8}
+            sx={{
+              position: 'sticky',
+              bottom: { xs: 12, md: 20 },
+              zIndex: (tema) => tema.zIndex.appBar,
+              mt: 2,
+              px: { xs: 2, md: 3 },
+              py: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 1.5,
+              border: 1,
+              borderColor: sucio ? 'primary.main' : 'divider',
+            }}
+          >
+            <Typography variant="body2" aria-live="polite" sx={{ flex: '1 1 auto', fontWeight: sucio ? 600 : 400, color: sucio ? 'text.primary' : 'text.secondary' }}>
+              {guardando ? 'Guardando…' : sucio ? 'Hay cambios sin guardar' : 'Sin cambios pendientes'}
+            </Typography>
+            <Button disabled={!sucio || guardando} onClick={() => setConfirmandoDescarte(true)}>Descartar cambios</Button>
+            <Button variant="contained" disabled={!sucio || guardando} onClick={() => setConfirmandoGuardado(true)}>Guardar</Button>
+          </Paper>
+        )}
       </Box>
 
       <DialogoConfirmacion
@@ -62,6 +100,17 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
         textoConfirmar="Guardar cambios"
         onConfirmar={() => { setConfirmandoGuardado(false); void onGuardar() }}
         onCancelar={() => setConfirmandoGuardado(false)}
+      />
+
+      <DialogoConfirmacion
+        abierto={confirmandoDescarte}
+        titulo="¿Descartar los cambios?"
+        mensaje="Todo lo que has cambiado desde la última vez que guardaste vuelve a como estaba. No se puede deshacer."
+        textoConfirmar="Descartar cambios"
+        textoCancelar="Seguir editando"
+        peligro
+        onConfirmar={() => { setConfirmandoDescarte(false); onDescartar?.() }}
+        onCancelar={() => setConfirmandoDescarte(false)}
       />
 
       <DialogoConfirmacion

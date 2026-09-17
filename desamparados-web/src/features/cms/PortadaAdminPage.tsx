@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Alert, Box, CircularProgress, Divider, IconButton, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
@@ -8,6 +8,13 @@ import PantallaEdicion from './PantallaEdicion'
 import CampoImagen from './CampoImagen'
 import SeccionPlegable from './contenido/SeccionPlegable'
 import CampoTexto from './contenido/CampoTexto'
+import VistaPreviaPortada from './contenido/VistaPreviaPortada'
+import Hero from '../home/Hero'
+import FeaturedNews from '../home/FeaturedNews'
+import EventsAndLive from '../home/EventsAndLive'
+import QuickAccess from '../home/QuickAccess'
+import ProcessionScene from '../home/ProcessionScene'
+import FeaturedPublications from '../home/FeaturedPublications'
 import { getPortada, guardarImagenesPortada, type ImagenPortada, type TextosPortada } from '../../lib/api/portada'
 import { guardarContenido } from '../../lib/api/contenido'
 
@@ -138,6 +145,15 @@ export default function PortadaAdminPage() {
   const textosSucios = !!textos && JSON.stringify(textos) !== inicialTextos
   const sucio = fotosSucias || textosSucios
 
+  // Vuelve a lo último que llegó al servidor. Las fotos reciben claves nuevas:
+  // son filas nuevas para React, y así ningún campo conserva lo que se escribió.
+  const descartar = () => {
+    setFilas(inicialFotos.map(conClave))
+    setTextos(JSON.parse(inicialTextos) as TextosPortada)
+    setError(null)
+    setGuardado(false)
+  }
+
   const guardar = async () => {
     if (!filas || !textos) return
     setGuardando(true)
@@ -185,6 +201,11 @@ export default function PortadaAdminPage() {
   if (error && (!filas || !textos)) return <Alert severity="error">{error}</Alert>
   if (!filas || !textos) return <CircularProgress aria-label="Cargando la portada" />
 
+  // Lo que se está escribiendo, con la forma de lo que sirve la API: los bloques
+  // de la vista previa lo leen como si fuera lo guardado.
+  const borrador = { imagenes: sinClave(filas), textos }
+  const vista = (bloque: ReactNode) => <VistaPreviaPortada portada={borrador}>{bloque}</VistaPreviaPortada>
+
   return (
     <>
       <Helmet><title>Portada | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
@@ -197,6 +218,7 @@ export default function PortadaAdminPage() {
         guardando={guardando}
         volverA="/cms"
         onGuardar={guardar}
+        onDescartar={descartar}
       >
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Cada apartado es un bloque de la página de inicio, en el mismo orden en que se ven al bajar por ella.
@@ -204,7 +226,7 @@ export default function PortadaAdminPage() {
           de los bloques) es parte del diseño y no se toca desde el CMS.
         </Typography>
 
-        <SeccionPlegable titulo="Cabecera" abiertaPorDefecto>
+        <SeccionPlegable titulo="Cabecera" abiertaPorDefecto vistaPrevia={vista(<Hero />)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.hero.ceja}
@@ -308,7 +330,7 @@ export default function PortadaAdminPage() {
           </Box>
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Actualidad">
+        <SeccionPlegable titulo="Actualidad" vistaPrevia={vista(<FeaturedNews />)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.actualidad.ceja}
@@ -332,7 +354,7 @@ export default function PortadaAdminPage() {
           />
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Agenda y Cultos">
+        <SeccionPlegable titulo="Agenda y Cultos" vistaPrevia={vista(<EventsAndLive />)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.agenda.ceja}
@@ -378,7 +400,7 @@ export default function PortadaAdminPage() {
           />
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Accesos directos">
+        <SeccionPlegable titulo="Accesos directos" vistaPrevia={vista(<QuickAccess />)}>
           <CampoTexto
             etiqueta="Antetítulo de la placa"
             valor={textos.accesos.placa.ceja}
@@ -426,7 +448,7 @@ export default function PortadaAdminPage() {
           </Box>
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Sábado de Pasión">
+        <SeccionPlegable titulo="Sábado de Pasión" vistaPrevia={vista(<ProcessionScene />)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.sabadoDePasion.ceja}
@@ -480,7 +502,7 @@ export default function PortadaAdminPage() {
           />
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Publicaciones">
+        <SeccionPlegable titulo="Publicaciones" vistaPrevia={vista(<FeaturedPublications />)}>
           <CampoTexto
             etiqueta="Botón"
             valor={textos.publicaciones.boton}

@@ -177,17 +177,58 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/cambios guardados/i)
   })
 
-  it('sin cambios, guardar no manda nada ni dice que se haya guardado', async () => {
-    const { peticiones, usuario } = montar()
+  it('sin cambios, guardar no se puede pulsar ni se manda nada', async () => {
+    const { peticiones } = montar()
     await screen.findByDisplayValue('Desamparados Málaga')
 
-    await guardar(usuario)
-
-    // Hasta que el diálogo no se va, MUI deja el resto de la página en
-    // `aria-hidden` y cualquier `queryByRole` de aquí daría vacío sin mirar nada.
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Descartar cambios' })).toBeDisabled()
+    expect(screen.getByText('Sin cambios pendientes')).toBeInTheDocument()
     expect(putsA(peticiones)).toEqual([])
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('descartar vuelve los textos y las fotos a lo guardado, sin mandar nada', async () => {
+    const { peticiones, usuario } = montar()
+    const titulo = await screen.findByDisplayValue('Desamparados Málaga')
+
+    await retocar(usuario, titulo)
+    await usuario.click(screen.getByRole('button', { name: /bajar la foto 1/i }))
+    expect(screen.getByText('Hay cambios sin guardar')).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Descartar cambios' }))
+    await usuario.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Descartar cambios' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByDisplayValue('Desamparados Málaga')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('Desamparados Málaga!')).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Foto 1' })).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Primera')).toBeInTheDocument()
+    expect(screen.getAllByDisplayValue(/Primera|Segunda/).map((el) => (el as HTMLInputElement).value)).toEqual(['Primera', 'Segunda'])
+    expect(screen.getByText('Sin cambios pendientes')).toBeInTheDocument()
+    expect(putsA(peticiones)).toEqual([])
+  })
+
+  it('la vista previa pinta el bloque real con lo que se está escribiendo', async () => {
+    const { usuario } = montar()
+    const titulo = await screen.findByDisplayValue('Desamparados Málaga')
+
+    const vista = screen.getByTestId('vista-previa-portada')
+    expect(vista).toHaveTextContent('Desamparados Málaga')
+    await retocar(usuario, titulo)
+    expect(vista).toHaveTextContent('Desamparados Málaga!')
+    // Solo para mirar: fuera del foco y de los lectores de pantalla.
+    expect(vista).toHaveAttribute('inert')
+    expect(vista).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('la vista previa de un apartado solo se monta al abrirlo', async () => {
+    const { usuario } = montar()
+    await screen.findByDisplayValue('Desamparados Málaga')
+    expect(screen.getAllByTestId('vista-previa-portada')).toHaveLength(1)
+
+    await usuario.click(screen.getByRole('button', { name: /sábado de pasión/i }))
+    expect(screen.getAllByTestId('vista-previa-portada')).toHaveLength(2)
   })
 
   it('si solo cambian los textos, no reescribe la lista de fotos', async () => {
