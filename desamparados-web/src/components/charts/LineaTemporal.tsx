@@ -1,6 +1,6 @@
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
-import { pasoBonito } from './ejes'
+import { pasoBonito, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
 
 export interface PuntoLinea {
@@ -65,6 +65,7 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
   const anchoUtil = ANCHO - IZQ - DER
   const altoUtil = ALTO - ARRIBA - ABAJO
 
+  const paso = pasoEtiquetas(puntos.length, anchoUtil)
   const X = (i: number) => IZQ + (puntos.length > 1 ? (i * anchoUtil) / (puntos.length - 1) : anchoUtil / 2)
   const Y = (v: number) => ARRIBA + altoUtil - ((v - suelo) / rango) * altoUtil
 
@@ -113,9 +114,11 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
         </text>
 
         {puntos.map((p, i) => (
-          <text key={p.x} x={X(i)} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={theme.palette.text.secondary}>
-            {enX(p.x)}
-          </text>
+          i % paso === 0 && (
+            <text key={p.x} x={X(i)} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={theme.palette.text.secondary}>
+              {enX(p.x)}
+            </text>
+          )
         ))}
       </svg>
     </Box>

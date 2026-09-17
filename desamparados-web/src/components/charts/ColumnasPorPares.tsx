@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
-import { columna, escalaDesdeCero } from './ejes'
+import { columna, escalaDesdeCero, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
 
 export interface PuntoPar {
@@ -58,6 +58,7 @@ export default function ColumnasPorPares({
   const Y = (v: number) => ARRIBA + altoUtil - (v / eje.techo) * altoUtil
   const ranura = (ANCHO - IZQ - DER) / puntos.length
   const ancho = Math.min(22, (ranura - 12) / 2)
+  const pasoX = pasoEtiquetas(puntos.length, ANCHO - IZQ - DER)
 
   const picoDe = (lado: 'a' | 'b') =>
     puntos.reduce((mejor, p, i) => (p[lado] > puntos[mejor][lado] ? i : mejor), 0)
@@ -104,9 +105,11 @@ export default function ColumnasPorPares({
               <rect data-testid="zona" x={IZQ + ranura * i} y={ARRIBA - 10} width={ranura} height={altoUtil + 30} fill="transparent" />
               <path data-testid="columna" d={columna(centro - ancho - 1, Y(0), Y(p.a), ancho)} fill={paleta.entrada} />
               <path data-testid="columna" d={columna(centro + 1, Y(0), Y(p.b), ancho)} fill={paleta.salida} />
-              <text x={centro} y={ALTO - 8} textAnchor="middle" fontSize="12" fill={activo === i ? theme.palette.text.primary : theme.palette.text.secondary} fontWeight={activo === i ? 700 : 400}>
-                {etiquetaX(p.clave)}
-              </text>
+              {(i % pasoX === 0 || activo === i) && (
+                <text x={centro} y={ALTO - 8} textAnchor="middle" fontSize="12" fill={activo === i ? theme.palette.text.primary : theme.palette.text.secondary} fontWeight={activo === i ? 700 : 400}>
+                  {etiquetaX(p.clave)}
+                </text>
+              )}
             </g>
           )
         })}

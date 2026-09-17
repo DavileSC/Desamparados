@@ -77,8 +77,10 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
               px: { xs: 2, md: 3 },
               py: 1.5,
               display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
+              // En un móvil, el aviso arriba y los dos botones en su fila: con
+              // `wrap` cada botón caía en una línea y la barra se comía la pantalla.
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'stretch', sm: 'center' },
               gap: 1.5,
               border: 1,
               borderColor: sucio ? 'primary.main' : 'divider',
@@ -87,8 +89,14 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
             <Typography variant="body2" aria-live="polite" sx={{ flex: '1 1 auto', fontWeight: sucio ? 600 : 400, color: sucio ? 'text.primary' : 'text.secondary' }}>
               {guardando ? 'Guardando…' : sucio ? 'Hay cambios sin guardar' : 'Sin cambios pendientes'}
             </Typography>
-            <Button disabled={!sucio || guardando} onClick={() => setConfirmandoDescarte(true)}>Descartar cambios</Button>
-            <Button variant="contained" disabled={!sucio || guardando} onClick={() => setConfirmandoGuardado(true)}>Guardar</Button>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ justifyContent: 'flex-end', '& .MuiButton-root': { whiteSpace: 'nowrap', px: { xs: 1.5, sm: 2 } } }}
+            >
+              <Button disabled={!sucio || guardando} onClick={() => setConfirmandoDescarte(true)}>Descartar cambios</Button>
+              <Button variant="contained" disabled={!sucio || guardando} onClick={() => setConfirmandoGuardado(true)}>Guardar</Button>
+            </Stack>
           </Paper>
         )}
       </Box>

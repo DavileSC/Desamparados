@@ -1,6 +1,6 @@
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
-import { columna, pasoBonito } from './ejes'
+import { columna, pasoBonito, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
 
 export interface MesDivergente {
@@ -53,6 +53,7 @@ export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, eti
 
   const ranura = (ANCHO - IZQ - DER) / meses.length
   const anchoColumna = Math.min(16, ranura * 0.55)
+  const pasoX = pasoEtiquetas(meses.length, ANCHO - IZQ - DER)
 
   return (
     <Box ref={referencia} sx={{ width: '100%' }}>
@@ -98,9 +99,11 @@ export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, eti
               {m.abajo > 0 && (
                 <path data-testid="columna-abajo" d={columna(x, Y(0) + 1, Y(-m.abajo), anchoColumna)} fill={paleta.salida} />
               )}
-              <text x={x + anchoColumna / 2} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={theme.palette.text.secondary}>
-                {enX(m.mes)}
-              </text>
+              {i % pasoX === 0 && (
+                <text x={x + anchoColumna / 2} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={theme.palette.text.secondary}>
+                  {enX(m.mes)}
+                </text>
+              )}
             </g>
           )
         })}

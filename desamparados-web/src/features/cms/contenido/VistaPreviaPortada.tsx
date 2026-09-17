@@ -15,6 +15,16 @@ import '../../home/home.css'
  */
 export const ANCHO_ESCRITORIO = 1440
 
+/** Por debajo de esto, encoger un escritorio entero no deja nada legible. */
+export const ANCHO_MINIMO_ESCRITORIO = 700
+
+/**
+ * Lo alto que ocupa la vista previa en un móvil. A tamaño real, la cabecera mide
+ * una pantalla entera y el formulario quedaba debajo del todo: se le pone este
+ * tope y el bloque se recorre dentro de su marco, con el dedo.
+ */
+export const ALTO_MAXIMO_MOVIL = 320
+
 /**
  * Cómo queda un bloque de la portada con lo que se está escribiendo, antes de
  * guardar. Pinta el componente REAL de la portada (no una imitación), con su
@@ -41,7 +51,12 @@ export default function VistaPreviaPortada({ portada, children }: { portada: Por
     return () => observador.disconnect()
   }, [])
 
-  const escala = ancho > 0 ? ancho / ANCHO_ESCRITORIO : 0.5
+  // En una pantalla estrecha no se encoge un escritorio de 1440 px: a esa
+  // escala (0,19) los textos son rayas. Se pinta a tamaño real, y entonces el
+  // bloque se maqueta como lo verá quien entre desde el móvil.
+  const enMovil = ancho > 0 && ancho < ANCHO_MINIMO_ESCRITORIO
+  const anchoLienzo = enMovil ? ancho : ANCHO_ESCRITORIO
+  const escala = enMovil ? 1 : ancho > 0 ? ancho / ANCHO_ESCRITORIO : 0.5
 
   return (
     <Box>
@@ -51,7 +66,9 @@ export default function VistaPreviaPortada({ portada, children }: { portada: Por
         sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1, fontWeight: 600, letterSpacing: '0.04em' }}
       >
         <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
-        Vista previa · se actualiza mientras escribes, pero no se publica hasta que guardes
+        {enMovil
+          ? 'Vista previa en móvil · se actualiza mientras escribes, pero no se publica hasta que guardes'
+          : 'Vista previa · se actualiza mientras escribes, pero no se publica hasta que guardes'}
       </Typography>
       <Box
         ref={marco}
@@ -61,7 +78,10 @@ export default function VistaPreviaPortada({ portada, children }: { portada: Por
           borderRadius: 1,
           border: 1,
           borderColor: 'divider',
-          height: alto > 0 ? alto * escala : undefined,
+          height: enMovil ? ALTO_MAXIMO_MOVIL : alto > 0 ? alto * escala : undefined,
+          // En móvil el bloque va a tamaño real: se recorre dentro del marco.
+          overflowY: enMovil ? 'auto' : 'hidden',
+          overscrollBehavior: 'contain',
           // Mientras se mide, un alto razonable: sin él, el formulario pega un salto.
           minHeight: alto > 0 ? undefined : 240,
           backgroundColor: '#1d1b1e',
@@ -73,10 +93,10 @@ export default function VistaPreviaPortada({ portada, children }: { portada: Por
           aria-hidden="true"
           data-testid="vista-previa-portada"
           sx={{
-            width: ANCHO_ESCRITORIO,
-            transform: `scale(${escala})`,
+            width: anchoLienzo,
+            transform: enMovil ? 'none' : `scale(${escala})`,
             transformOrigin: 'top left',
-            position: 'absolute',
+            position: enMovil ? 'relative' : 'absolute',
             top: 0,
             left: 0,
             userSelect: 'none',

@@ -77,7 +77,16 @@ export default function ParaHoy({ tareas, role }: { tareas: Tarea[]; role?: stri
 
   return (
     <Paper component="section" aria-labelledby="para-hoy" sx={{ borderRadius: 1.75 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2, px: { xs: 2, md: 2.75 }, pt: 2.25, pb: 1.5 }}>
+      <Box
+        sx={{
+          display: 'flex', gap: { xs: 0.25, sm: 2 }, px: { xs: 2, md: 2.75 }, pt: 2.25, pb: 1.5,
+          // En un móvil no caben el título y el recuento en la misma línea: el
+          // título se partía en dos («Para / hoy»).
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'baseline' },
+        }}
+      >
         <Typography id="para-hoy" variant="h5" component="h2">Para hoy</Typography>
         <Typography variant="body2" color="text.secondary">
           {tareas.length === 0

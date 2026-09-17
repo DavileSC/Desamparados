@@ -23,3 +23,13 @@ export function columna(x: number, base: number, tope: number, ancho: number): s
     ? `M${x},${base} H${x + ancho} V${tope - r} Q${x + ancho},${tope} ${x + ancho - r},${tope} H${x + r} Q${x},${tope} ${x},${tope - r} Z`
     : `M${x},${base} V${tope + r} Q${x},${tope} ${x + r},${tope} H${x + ancho - r} Q${x + ancho},${tope} ${x + ancho},${tope + r} V${base} Z`
 }
+
+/**
+ * Cada cuántas etiquetas del eje X se pinta una. Con doce meses en la pantalla
+ * de un móvil no caben todas y se solapan: se calcula con el sitio que hay, así
+ * que en una tarjeta ancha salen todas y en una estrecha, una de cada dos o tres.
+ */
+export function pasoEtiquetas(cuantas: number, anchoUtil: number, minimoPorEtiqueta = 30): number {
+  if (cuantas <= 1 || anchoUtil <= 0) return 1
+  return Math.max(1, Math.ceil(cuantas / Math.max(1, Math.floor(anchoUtil / minimoPorEtiqueta))))
+}
