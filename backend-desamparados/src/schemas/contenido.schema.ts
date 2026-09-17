@@ -1,9 +1,10 @@
-import { type } from 'arktype';
+import { type, ArkErrors } from 'arktype';
 import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
 import { normalizarVideo } from '../domain/video-galeria.js';
 import { esImagenPropia } from '../utils/rutas-propias.js';
 import type { SlugContenido } from '../domain/contenido.js';
+import { cabeceraSchema, esquemaDeBloque } from './bloques.schema.js';
 
 /**
  * Un texto visible de la web. Sin `<` ni `>`: estos campos se pintan como texto
@@ -192,7 +193,51 @@ const titularSchema = type({
     : medio)),
 }));
 
-const ESQUEMAS = { portada: portadaSchema, recorrido: recorridoSchema, historia: historiaSchema, titular: titularSchema } as const;
+/**
+ * Una página compuesta de bloques.
+ *
+ * Los bloques se validan uno a uno con el esquema de su `tipo`, no con una unión
+ * discriminada: arktype 2.1 revienta al describir el error de una unión cuyas
+ * ramas llevan `narrow`, y eso sería un 500 en vez de un 400.
+ *
+ * Un tipo desconocido se rechaza nombrándolo. Ignorarlo en silencio haría que un
+ * bloque desapareciera al guardar, que es peor que un error.
+ */
+const paginaDeBloquesSchema = type({
+  cabecera: cabeceraSchema,
+  bloques: type('unknown[]').atMostLength(40),
+}).narrow((datos, ctx) => {
+  for (const [indice, bloque] of datos.bloques.entries()) {
+    const tipo = (bloque as { tipo?: unknown })?.tipo;
+    // El mapa de esquemas es la única autoridad aquí sobre qué tipo se sabe
+    // validar: un tipo inventado y un tipo declarado en el catálogo al que se
+    // le olvidó el esquema (`esquemaDeBloque` devuelve `undefined`) caen en la
+    // MISMA rama. Preguntarle antes al catálogo (`esTipoBloque`) duplicaba la
+    // pregunta y dejaba una rama que ningún test ejercitaba de verdad. Que el
+    // catálogo compartido y este mapa no se desincronicen lo vigila el test de
+    // cobertura en `bloques-esquemas.test.ts`, no esta guarda.
+    const esquema = typeof tipo === 'string' ? esquemaDeBloque(tipo as never) : undefined;
+    if (!esquema) {
+      return ctx.reject({
+        path: ['bloques', indice, 'tipo'],
+        problem: `no es un tipo de bloque conocido: «${String(tipo)}»`,
+      });
+    }
+    const salida = esquema(bloque);
+    if (salida instanceof ArkErrors) {
+      return ctx.reject({ path: ['bloques', indice], problem: salida.summary });
+    }
+  }
+  return true;
+});
+
+const ESQUEMAS = {
+  portada: portadaSchema,
+  recorrido: recorridoSchema,
+  historia: historiaSchema,
+  titular: titularSchema,
+  corporacion: paginaDeBloquesSchema,
+} as const;
 
 /** El esquema del documento de una página, para validarlo suelto. */
 export const esquemaDeSlug = (slug: SlugContenido) => ESQUEMAS[slug];

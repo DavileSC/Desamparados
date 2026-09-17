@@ -33,18 +33,19 @@ after(async () => {
 
 const cookieCms = (id: number, role: Role) => `${COOKIE_CMS}=${generateToken(id, role, false, 'cms')}`;
 
-test('la siembra deja las cuatro páginas con los textos de siempre', async (t) => {
+test('la siembra deja las cinco páginas con los textos de siempre', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
   await sembrarContenidoPaginas();
   const filas = await db.contenidoPagina.findMany({ orderBy: { slug: 'asc' } });
 
-  assert.deepEqual(filas.map((f) => f.slug), ['historia', 'portada', 'recorrido', 'titular']);
-  assert.equal((filas[0].datos as any).hitos.length, 5);
-  assert.equal((filas[1].datos as any).hero.titulo, 'Desamparados Málaga');
-  assert.equal((filas[2].datos as any).paradas.length, 9);
+  assert.deepEqual(filas.map((f) => f.slug), ['corporacion', 'historia', 'portada', 'recorrido', 'titular']);
+  assert.equal((filas[0].datos as any).bloques.length, 2);
+  assert.equal((filas[1].datos as any).hitos.length, 5);
+  assert.equal((filas[2].datos as any).hero.titulo, 'Desamparados Málaga');
+  assert.equal((filas[3].datos as any).paradas.length, 9);
   // La galería nace vacía: las fotos las sube el Grupo Parroquial desde el CMS.
-  assert.deepEqual((filas[3].datos as any).galeria, []);
+  assert.deepEqual((filas[4].datos as any).galeria, []);
 });
 
 test('sembrar dos veces no pisa lo que se haya editado', async (t) => {
@@ -236,6 +237,75 @@ test('REDES guarda y lo guardado se lee', async (t) => {
     assert.equal(leido.hero.titulo, 'Desamparados de Málaga');
   } finally {
     await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
+    await borrarUsuarioPrueba(redes.id);
+  }
+});
+
+test('el HTML de un bloque se guarda saneado, no como llegó', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  // El agujero que esto cierra: `ContenidoService.guardar` hace un `upsert` del
+  // documento entero, así que sin `sanearBloques` el HTML se almacenaba literal
+  // y la única barrera era el saneado del navegador. Se sondea la ruta entera
+  // —no el esquema suelto— porque el defecto no estaba en el esquema sino en
+  // que nadie llamaba al saneado por el camino.
+  const redes = await crearUsuarioPrueba(Role.REDES);
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+  try {
+    const nuevo = porDefecto('corporacion') as any;
+    nuevo.bloques = [{
+      tipo: 'texto',
+      titulo: '',
+      html: '<p>Hola</p><img src="https://rastreador.ejemplo/pixel.gif"><script>alert(1)</script>'
+        + '<a href="javascript:alert(2)">pulsa</a>',
+    }];
+
+    const respuesta = await fetch(`${baseUrl}/api/contenido/corporacion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: cookieCms(redes.id, Role.REDES) },
+      body: JSON.stringify({ datos: nuevo }),
+    });
+    assert.equal(respuesta.status, 200);
+
+    // Se comprueba en la BASE, no en la respuesta: lo que importa es lo que
+    // queda almacenado, que es lo que servirá a cualquier consumidor futuro.
+    const fila = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+    const html = ((fila!.datos as any).bloques[0].html) as string;
+    assert.ok(html.includes('<p>Hola</p>'), 'el contenido legítimo se conserva');
+    assert.ok(!html.includes('<script'), 'el script no puede quedar almacenado');
+    assert.ok(!html.includes('rastreador.ejemplo'), 'una imagen de fuera filtra la IP de quien la vea');
+    assert.ok(!html.includes('javascript:'), 'un enlace con javascript: tampoco');
+  } finally {
+    await db.contenidoPagina.update({ where: { slug: 'corporacion' }, data: { datos: antes!.datos as object } });
+    await borrarUsuarioPrueba(redes.id);
+  }
+});
+
+test('un bloque que solo lleva porquería se rechaza, no se guarda en blanco', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  // Por esto el saneado va ANTES del esquema: `<script>…</script>` se queda en
+  // nada al limpiarlo, y un bloque vacío no pinta nada. Si se saneara después
+  // de validar, esto se habría guardado como un hueco.
+  const redes = await crearUsuarioPrueba(Role.REDES);
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+  try {
+    const nuevo = porDefecto('corporacion') as any;
+    nuevo.bloques = [{ tipo: 'texto', titulo: '', html: '<script>alert(1)</script>' }];
+
+    const respuesta = await fetch(`${baseUrl}/api/contenido/corporacion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: cookieCms(redes.id, Role.REDES) },
+      body: JSON.stringify({ datos: nuevo }),
+    });
+    assert.equal(respuesta.status, 400);
+
+    const fila = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+    assert.deepEqual(fila!.datos, antes!.datos, 'la página no se toca');
+  } finally {
+    // Se restaura aunque el 400 no debiera haber tocado nada: si esta prueba
+    // falla es justamente porque SÍ se guardó, y entonces dejaría la página
+    // envenenada para los demás tests del fichero. Un test que al romperse
+    // ensucia la base convierte un fallo en varios y esconde el de verdad.
+    await db.contenidoPagina.update({ where: { slug: 'corporacion' }, data: { datos: antes!.datos as object } });
     await borrarUsuarioPrueba(redes.id);
   }
 });

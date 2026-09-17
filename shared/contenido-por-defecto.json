@@ -201,5 +201,31 @@
     "titulo": "Nuestra Señora de los Desamparados",
     "subtitulo": "Imágenes y vídeos de nuestra Amantísima Titular, de sus cultos y de su salida procesional.",
     "galeria": []
+  },
+  "corporacion": {
+    "cabecera": {
+      "titulo": "Corporación",
+      "subtitulo": "Grupo Parroquial de Nuestra Señora de los Desamparados.",
+      "foto": "",
+      "fotoAlt": ""
+    },
+    "bloques": [
+      {
+        "tipo": "texto",
+        "titulo": "",
+        "html": "<p>El Grupo Parroquial de Nuestra Señora de los Desamparados, Santo Cristo de la Buena Muerte y San Juan de la Palma es una corporación religiosa fundada en el seno de la Parroquia de los Padres Pasionistas de Málaga. Desde sus orígenes, el Grupo Parroquial ha vivido su fe a través de la devoción a la Santísima Virgen bajo la advocación de los Desamparados, acogiendo a cuantos buscan consuelo y esperanza.</p><p>Como Grupo Parroquial, desarrollamos una intensa labor espiritual, caritativa y formativa al servicio de la Iglesia y de la ciudad. Nuestra comunidad de hermanos y cofrades se reúne en torno a los cultos, la oración, la enseñanza de la fe y la entrega a los más necesitados, manteniendo vivas las tradiciones que nos definen.</p><p>A continuación puedes conocer más sobre nuestra historia, nuestra sede parroquial, los fines que nos mueven, los cultos que celebramos y nuestra estación de penitencia del Sábado de Pasión.</p>"
+      },
+      {
+        "tipo": "tarjetas",
+        "titulo": "Explora la sección",
+        "tarjetas": [
+          { "titulo": "Historia", "descripcion": "Orígenes y evolución de nuestro Grupo Parroquial.", "enlace": "/corporacion/historia" },
+          { "titulo": "Parroquia", "descripcion": "Nuestra sede canónica y la comunidad pasionista.", "enlace": "/corporacion/parroquia-pasionistas" },
+          { "titulo": "Nuestros fines", "descripcion": "Caridad y formación como ejes de nuestra acción.", "enlace": "/corporacion/nuestros-fines" },
+          { "titulo": "Cultos", "descripcion": "Celebraciones y devociones en honor a nuestra Sagrada Titular.", "enlace": "/corporacion/cultos" },
+          { "titulo": "Sábado de Pasión", "descripcion": "Nuestra salida procesional por las calles de Málaga.", "enlace": "/corporacion/sabado-de-pasion" }
+        ]
+      }
+    ]
   }
 }

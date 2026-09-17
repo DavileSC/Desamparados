@@ -1,7 +1,7 @@
 import { apiFetch } from './client'
 
 /** Las páginas con documento editable. La misma lista que `SLUGS_CONTENIDO` en el servidor. */
-export type SlugContenido = 'portada' | 'recorrido' | 'historia' | 'titular'
+export type SlugContenido = 'portada' | 'recorrido' | 'historia' | 'titular' | 'corporacion'
 
 export interface ParadaRecorrido { hora: string; lugar: string }
 
@@ -69,6 +69,24 @@ export interface ContenidoHistoria {
 }
 
 /**
+ * Un bloque de una página compuesta por bloques (Corporación y, más adelante,
+ * las que use el constructor de páginas). Unión discriminada por `tipo`, la
+ * misma forma que valida el servidor con su mapa `tipo -> esquema` en
+ * `bloques.schema.ts` (nada de uniones arktype con `narrow`, que ahí sí
+ * revientan: eso es cosa del servidor, aquí es solo el tipo de TypeScript).
+ */
+export interface BloqueBase { tipo: string; titulo: string }
+export interface BloqueTexto extends BloqueBase { tipo: 'texto'; html: string }
+export interface BloqueFoto extends BloqueBase { tipo: 'foto'; url: string; alt: string; pie: string }
+export interface TarjetaEnlace { titulo: string; descripcion: string; enlace: string }
+export interface BloqueTarjetas extends BloqueBase { tipo: 'tarjetas'; tarjetas: TarjetaEnlace[] }
+
+export type Bloque = BloqueTexto | BloqueFoto | BloqueTarjetas
+
+export interface CabeceraPagina { titulo: string; subtitulo: string; foto: string; fotoAlt: string }
+export interface PaginaDeBloques { cabecera: CabeceraPagina; bloques: Bloque[] }
+
+/**
  * Las claves de react-query de cada documento. Las comparten la página pública,
  * que guarda su caché con ellas, y el CMS, que las invalida tras guardar.
  * Estaban escritas a mano en los dos sitios: si divergían, guardar dejaba de
@@ -79,6 +97,7 @@ export interface ContenidoHistoria {
 export const CLAVE_RECORRIDO = ['contenido', 'recorrido'] as const
 export const CLAVE_HISTORIA = ['contenido', 'historia'] as const
 export const CLAVE_TITULAR = ['contenido', 'titular'] as const
+export const CLAVE_CORPORACION = ['contenido', 'corporacion'] as const
 
 /** El contenido de una página, ya mezclado por el servidor. Se lee sin sesión. */
 export const getContenido = <T,>(slug: SlugContenido) => apiFetch<T>(`/contenido/${slug}`)

@@ -1,0 +1,95 @@
+import assert from 'node:assert/strict';
+import { describe, test } from 'node:test';
+import { ArkErrors } from 'arktype';
+import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
+import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
+
+const falla = (tipo: 'texto' | 'foto' | 'tarjetas', valor: unknown) =>
+  esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
+
+describe('el mapa de esquemas cubre el catálogo', () => {
+  // `TipoBloque` es `string` a ojos del compilador (ver Tarea 1), así que
+  // TypeScript no avisaría si este mapa se quedara corto al añadir un tipo al
+  // catálogo. Lo vigila este test: sin él, un bloque nuevo daría un 500 al
+  // guardar en vez de validarse.
+  test('hay un esquema para cada tipo declarado', () => {
+    for (const tipo of TIPOS_BLOQUE) {
+      assert.ok(esquemaDeBloque(tipo as never), `falta el esquema del bloque «${tipo}»`);
+    }
+  });
+});
+
+describe('bloque de texto', () => {
+  test('acepta el HTML que produce el editor', () => {
+    assert.ok(!falla('texto', { tipo: 'texto', titulo: '', html: '<p>Hola</p><ul><li>Uno</li></ul>' }));
+  });
+
+  test('acepta un título de sección opcional', () => {
+    assert.ok(!falla('texto', { tipo: 'texto', titulo: 'Explora la sección', html: '<p>Hola</p>' }));
+  });
+
+  test('rechaza un cuerpo vacío: un bloque sin nada no pinta nada', () => {
+    assert.ok(falla('texto', { tipo: 'texto', titulo: '', html: '' }));
+    // Solo espacios pasaba el tope de longitud y pintaba un hueco. El CMS ya
+    // avisaba, pero un PUT hecho a mano se colaba igual.
+    assert.ok(falla('texto', { tipo: 'texto', titulo: '', html: '   ' }), 'solo espacios: no es un párrafo');
+  });
+});
+
+describe('bloque de foto', () => {
+  const FOTO = { tipo: 'foto', titulo: '', url: '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp', alt: 'La Virgen', pie: '' };
+
+  test('acepta una foto nuestra con su descripción', () => {
+    assert.ok(!falla('foto', FOTO));
+  });
+
+  test('rechaza una foto de fuera: filtraría la IP de quien visita', () => {
+    assert.ok(falla('foto', { ...FOTO, url: 'https://ejemplo.test/foto.jpg' }));
+  });
+
+  test('rechaza una foto sin descripción', () => {
+    assert.ok(falla('foto', { ...FOTO, alt: '' }));
+    assert.ok(falla('foto', { ...FOTO, alt: '   ' }));
+  });
+});
+
+describe('bloque de tarjetas', () => {
+  const TARJETA = { titulo: 'Historia', descripcion: 'Orígenes del Grupo Parroquial.', enlace: '/corporacion/historia' };
+  const doc = (tarjetas: unknown[]) => ({ tipo: 'tarjetas', titulo: 'Explora la sección', tarjetas });
+
+  test('acepta tarjetas con enlace interno', () => {
+    assert.ok(!falla('tarjetas', doc([TARJETA])));
+  });
+
+  test('rechaza un enlace que se va fuera del sitio', () => {
+    assert.ok(falla('tarjetas', doc([{ ...TARJETA, enlace: 'https://otro.test' }])));
+    assert.ok(falla('tarjetas', doc([{ ...TARJETA, enlace: 'javascript:alert(1)' }])));
+    assert.ok(falla('tarjetas', doc([{ ...TARJETA, enlace: '//otro.test' }])),
+      'relativo al protocolo: parece interno y no lo es');
+  });
+
+  test('rechaza una lista vacía y una desmedida', () => {
+    assert.ok(falla('tarjetas', doc([])));
+    assert.ok(falla('tarjetas', doc(Array.from({ length: 13 }, () => TARJETA))));
+  });
+
+  // El cliente (formularios.tsx, problemaDeBloque) avisa de lo mismo antes de
+  // guardar, pero esa comprobación vive en el navegador: sin esta, una
+  // tarjeta sin título —un recuadro vacío que lleva a alguna parte— se
+  // guardaba igual con un PUT hecho a mano.
+  test('rechaza una tarjeta sin título, y dice cuál', () => {
+    assert.ok(falla('tarjetas', doc([{ ...TARJETA, titulo: '' }])), 'título vacío');
+    assert.ok(falla('tarjetas', doc([{ ...TARJETA, titulo: '   ' }])), 'solo espacios: no es un título');
+    const salida = esquemaDeBloque('tarjetas')(doc([TARJETA, { ...TARJETA, titulo: '' }]));
+    assert.ok(salida instanceof ArkErrors);
+    // Así escribe arktype el camino dentro de una lista: `tarjetas[1].titulo`.
+    assert.ok(String(salida).includes('tarjetas[1].titulo'),
+      `debe señalar la segunda tarjeta, no la primera; dijo: ${salida}`);
+  });
+
+  test('acepta una tarjeta con título y su enlace por defecto a la portada', () => {
+    // El valor de partida de una tarjeta nueva (BLOQUE_NUEVO, formularios.tsx)
+    // es exactamente este: no puede exigirse un enlace distinto de «/».
+    assert.ok(!falla('tarjetas', doc([{ ...TARJETA, enlace: '/' }])));
+  });
+});

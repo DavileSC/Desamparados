@@ -1,0 +1,10 @@
+{
+  "_comentario": [
+    "Los tipos de bloque que puede tener una página de la web pública.",
+    "Lo leen los dos lados: el servidor lo usa para mapear tipo -> esquema de",
+    "arktype, y la web para mapear tipo -> componente. Vive aquí y no duplicado",
+    "en cada lado porque añadir un bloque en uno y olvidarlo en el otro daría un",
+    "400 al guardar sin que nada avisara antes."
+  ],
+  "tipos": ["texto", "foto", "tarjetas"]
+}

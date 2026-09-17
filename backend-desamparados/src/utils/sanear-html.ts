@@ -105,3 +105,40 @@ export function extractoPlano(extracto: string): string {
   const sinEtiquetas = sanitizeHtml(extracto, { allowedTags: [], allowedAttributes: {} });
   return decodificarEntidades(sinEtiquetas).replace(/[<>]/g, '');
 }
+
+/**
+ * Sanea el HTML de los bloques de texto de una página de bloques.
+ *
+ * `ContenidoService.guardar` hace un `upsert` del documento entero tal y como
+ * llega, así que sin esto el HTML del CMS se almacenaba literal: un `<script>`
+ * o una `<img>` de un tercero metidos con un PUT a mano se guardaban, y la
+ * única barrera era el saneado del navegador (`lib/sanitizeHtml.ts`), contra la
+ * regla de que todo se valida en el servidor. La imagen externa, además, se
+ * pintaba en el propio CMS al abrir la página a editar: la IP de quien edita
+ * viajaba al tercero.
+ *
+ * Va ANTES del esquema, no después, por dos razones: así el `narrow` que exige
+ * un cuerpo no vacío juzga lo que de verdad se va a guardar —un bloque que solo
+ * llevase un `<script>` queda en blanco al sanearlo y tiene que dar 400 en vez
+ * de guardarse vacío—, y así el comentario de `bloques.schema.ts` («el HTML ya
+ * viene saneado») pasa a ser cierto.
+ *
+ * Tolera cualquier forma: lo que no sea un documento con una lista de bloques
+ * sale igual que entró, y de rechazarlo se encarga el esquema, que es quien
+ * sabe decir por qué.
+ */
+export function sanearBloques(datos: unknown): unknown {
+  if (typeof datos !== 'object' || datos === null) return datos;
+  const bloques = (datos as { bloques?: unknown }).bloques;
+  if (!Array.isArray(bloques)) return datos;
+  return {
+    ...datos,
+    bloques: bloques.map((bloque) => {
+      if (typeof bloque !== 'object' || bloque === null) return bloque;
+      const { tipo, html } = bloque as { tipo?: unknown; html?: unknown };
+      return tipo === 'texto' && typeof html === 'string'
+        ? { ...bloque, html: sanearContenidoCms(html) }
+        : bloque;
+    }),
+  };
+}

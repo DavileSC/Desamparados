@@ -55,8 +55,15 @@ que nada avisara antes.
 - Test: `backend-desamparados/test/bloques-catalogo.test.ts`
 
 **Interfaces:**
-- Produce: `TIPOS_BLOQUE: readonly TipoBloque[]`, `type TipoBloque`,
+- Produce: `TIPOS_BLOQUE: readonly string[]`, `type TipoBloque`,
   `esTipoBloque(valor: unknown): valor is TipoBloque`
+
+  Aviso para quien lo consuma: `TipoBloque` NO es una unión literal.
+  `resolveJsonModule` ensancha los arrays de un JSON importado a `string[]`, así
+  que el compilador no distingue `TipoBloque` de `string`. Es el precio de tener
+  una sola fuente compartida, y se acepta a sabiendas: lo que en otro diseño
+  vigilaría el compilador, aquí lo vigilan los tests de cobertura de los mapas
+  (Tarea 2 para el servidor, Tarea 4 para la web).
 
 - [ ] **Paso 1: Escribir el test que falla**
 
@@ -169,9 +176,22 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { ArkErrors } from 'arktype';
 import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
+import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 const falla = (tipo: 'texto' | 'foto' | 'tarjetas', valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
+
+describe('el mapa de esquemas cubre el catálogo', () => {
+  // `TipoBloque` es `string` a ojos del compilador (ver Tarea 1), así que
+  // TypeScript no avisaría si este mapa se quedara corto al añadir un tipo al
+  // catálogo. Lo vigila este test: sin él, un bloque nuevo daría un 500 al
+  // guardar en vez de validarse.
+  test('hay un esquema para cada tipo declarado', () => {
+    for (const tipo of TIPOS_BLOQUE) {
+      assert.ok(esquemaDeBloque(tipo as never), `falta el esquema del bloque «${tipo}»`);
+    }
+  });
+});
 
 describe('bloque de texto', () => {
   test('acepta el HTML que produce el editor', () => {
@@ -308,7 +328,11 @@ export const cabeceraSchema = type({
   subtitulo: DESCRIPCION,
   foto: sinFoto.or(rutaImagenPublica),
   fotoAlt: DESCRIPCION,
-});
+}).narrow((datos, ctx) => datos.foto === '' || datos.fotoAlt.trim() !== ''
+  ? true
+  // Misma regla que el plano del recorrido y las fotos de los hitos: en cuanto
+  // hay foto, su descripción deja de ser opcional.
+  : ctx.reject({ path: ['fotoAlt'], problem: 'es obligatoria cuando hay foto' }));
 ```
 
 Nota: `sinFoto` se declara aquí y no se importa de `contenido.schema.ts` porque
@@ -383,6 +407,13 @@ describe('el documento de una página de bloques', () => {
     assert.ok(!falla(doc([])));
   });
 
+  test('un tipo declarado sin esquema da 400 y no revienta', () => {
+    // Simula el descuido de añadir un tipo al catálogo y olvidar su esquema:
+    // sin la guarda, esto sería un TypeError, o sea un 500.
+    const salida = valida(doc([{ tipo: 'inventadoSinEsquema', titulo: '' }]));
+    assert.ok(salida instanceof ArkErrors);
+  });
+
   test('rechaza un tipo de bloque que no existe, y lo nombra', () => {
     const salida = valida(doc([{ tipo: 'carrusel3d', titulo: '' }]));
     assert.ok(salida instanceof ArkErrors);
@@ -394,9 +425,15 @@ describe('el documento de una página de bloques', () => {
     assert.ok(falla(doc([{ ...TEXTO, tipo: 'foto' }])));
   });
 
-  test('rechaza una página sin cabecera o con el título vacío por encima del tope', () => {
+  test('rechaza una página sin cabecera o con el título por encima del tope', () => {
     assert.ok(falla({ bloques: [] }));
     assert.ok(falla({ cabecera: { ...CABECERA, titulo: 'x'.repeat(121) }, bloques: [] }));
+  });
+
+  test('una cabecera con foto exige su descripción', () => {
+    const conFoto = { ...CABECERA, foto: '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp' };
+    assert.ok(falla({ cabecera: conFoto, bloques: [] }), 'foto sin descripción');
+    assert.ok(!falla({ cabecera: { ...conFoto, fotoAlt: 'La Virgen en su trono' }, bloques: [] }));
   });
 
   test('rechaza una página con más bloques de los que nadie va a poner', () => {
@@ -449,7 +486,19 @@ const paginaDeBloquesSchema = type({
         problem: `no es un tipo de bloque conocido: «${String(tipo)}»`,
       });
     }
-    const salida = esquemaDeBloque(tipo)(bloque);
+    // `esTipoBloque` valida contra el catálogo, no contra el mapa de esquemas:
+    // un tipo declarado en shared/tipos-de-bloque.json al que se le olvidara su
+    // esquema pasaría esa comprobación y luego `esquemaDeBloque` devolvería
+    // `undefined`. Llamarlo a ciegas sería un TypeError, es decir un 500, justo
+    // donde el diseño promete un 400 que nombra el problema.
+    const esquema = esquemaDeBloque(tipo);
+    if (!esquema) {
+      return ctx.reject({
+        path: ['bloques', indice, 'tipo'],
+        problem: `es un tipo declarado sin esquema de validación: «${tipo}»`,
+      });
+    }
+    const salida = esquema(bloque);
     if (salida instanceof ArkErrors) {
       return ctx.reject({ path: ['bloques', indice], problem: salida.summary });
     }
@@ -873,7 +922,26 @@ Esperado: FALLA — la página de hoy no llama al servidor, así que
 `POR_DEFECTO.corporacion` no existe todavía en el JSON o el test no encuentra
 los textos por no estar montado el `fetch`.
 
-- [ ] **Paso 3: Reescribir la página**
+- [ ] **Paso 3: Que `PageHeader` acepte la descripción de su foto**
+
+Hoy pone `alt={title}`, que le repite el título a quien use un lector de
+pantalla y deja sin uso el `fotoAlt` que guarda el CMS. En
+`desamparados-web/src/components/PageHeader.tsx`:
+
+```tsx
+interface PageHeaderProps {
+  title: string
+  subtitle?: string
+  image?: string
+  /** Qué se ve en la foto. Sin ella se repetiría el título. */
+  imageAlt?: string
+}
+```
+
+y en la etiqueta de la imagen, `alt={imageAlt ?? ''}`. Vacío y no el título:
+una foto de fondo sin descripción es decorativa, y anunciarla dos veces estorba.
+
+- [ ] **Paso 4: Reescribir la página**
 
 ```tsx
 import { Helmet } from 'react-helmet-async'
@@ -899,7 +967,12 @@ export default function CorporationPage() {
   return (
     <>
       <Helmet><title>Corporación | Desamparados</title></Helmet>
-      <PageHeader title={data.cabecera.titulo} subtitle={data.cabecera.subtitulo} image={data.cabecera.foto || undefined} />
+      <PageHeader
+        title={data.cabecera.titulo}
+        subtitle={data.cabecera.subtitulo}
+        image={data.cabecera.foto || undefined}
+        imageAlt={data.cabecera.fotoAlt}
+      />
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
         <PageContainer>
           <BloquesDePagina bloques={data.bloques} />
@@ -910,21 +983,21 @@ export default function CorporationPage() {
 }
 ```
 
-- [ ] **Paso 4: Ejecutar el test y verlo pasar**
+- [ ] **Paso 5: Ejecutar el test y verlo pasar**
 
 Ejecuta: `cd desamparados-web && npx vitest run src/features/corporation/__tests__/CorporationPage.test.tsx`
 Esperado: PASA, 3 tests. Si falla el primero, el fragmento que falta te dice qué
 se perdió al volcar el contenido.
 
-- [ ] **Paso 5: Ejecutar la suite entera y el typecheck**
+- [ ] **Paso 6: Ejecutar la suite entera y el typecheck**
 
 Ejecuta: `cd desamparados-web && npx tsc -b && npm test`
 Esperado: todo en verde.
 
-- [ ] **Paso 6: Confirmar**
+- [ ] **Paso 7: Confirmar**
 
 ```bash
-git add desamparados-web/src/features/corporation
+git add desamparados-web/src/features/corporation desamparados-web/src/components/PageHeader.tsx
 git commit -m "Corporación se pinta con los bloques que sirve el CMS"
 ```
 
@@ -1028,10 +1101,15 @@ describe('PaginaAdminPage', () => {
     const user = userEvent.setup()
     montar()
     await screen.findByDisplayValue('Corporación')
+    expect(screen.getByText('Bloques (2)')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /quitar el bloque 1/i }))
 
-    expect(screen.queryByText(/Posición 2 de 2/)).not.toBeInTheDocument()
+    // El contador y la desaparición del bloque: comprobar que no existe un
+    // texto que tampoco existía antes no prueba nada.
+    expect(screen.getByText('Bloques (1)')).toBeInTheDocument()
+    expect(screen.queryByText('Texto')).not.toBeInTheDocument()
+    expect(screen.getByText('Tarjetas')).toBeInTheDocument()
   })
 
   it('se reordena y se guarda en el orden nuevo', async () => {
