@@ -33,7 +33,9 @@ const comunes = { titulo: TITULO };
 const textoSchema = type({
   ...comunes,
   tipo: "'texto'",
-  // El HTML ya viene saneado por sanear-html.ts; aquí solo se exige que haya algo.
+  // El HTML llega saneado: la ruta pasa el documento por `sanearBloques`
+  // (utils/sanear-html.ts) ANTES de validarlo. Aquí solo se exige que, después
+  // de esa limpieza, quede algo que pintar.
   html: type(`1 <= string <= ${topes.html}`),
 }).narrow((datos, ctx) => datos.html.trim() !== ''
   ? true
@@ -63,7 +65,10 @@ const tarjetaSchema = type({
 const tarjetasSchema = type({
   ...comunes,
   tipo: "'tarjetas'",
-  tarjetas: tarjetaSchema.array().atLeastLength(1).atMostLength(12),
+  // El tope sale del JSON compartido porque el CMS también lo necesita: es él
+  // quien deshabilita «Añadir tarjeta» al llegar al límite, y con dos números
+  // escritos aparte se separan sin que nadie lo note.
+  tarjetas: tarjetaSchema.array().atLeastLength(1).atMostLength(topes.tarjetasPorBloque),
 }).narrow((datos, ctx) => {
   // Una tarjeta sin título es un recuadro vacío que lleva a alguna parte: no
   // dice adónde ni por qué pulsarla. Misma regla que una foto sin descripción

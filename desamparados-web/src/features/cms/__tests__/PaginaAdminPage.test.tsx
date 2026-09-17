@@ -135,6 +135,40 @@ describe('PaginaAdminPage', () => {
     })
   })
 
+  it('se añaden y se quitan tarjetas dentro de un bloque', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    // El bloque de tarjetas nace plegado; hay que abrirlo para llegar a su
+    // formulario. El fixture trae UNA tarjeta, así que quitar tiene que estar
+    // deshabilitado: el esquema del servidor exige al menos una.
+    await user.click(screen.getByRole('button', { name: /^Tarjetas/ }))
+    expect(screen.getByRole('button', { name: /quitar la tarjeta 1/i })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: /añadir tarjeta/i }))
+    expect(screen.getByDisplayValue('/')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /quitar la tarjeta 1/i })).toBeEnabled()
+
+    await user.type(screen.getByRole('textbox', { name: /título de la tarjeta 2/i }), 'Cultos')
+
+    // Quitar de verdad, antes de guardar: al guardar, la pantalla recarga las
+    // filas con claves nuevas y vuelve a plegarlas todas.
+    await user.click(screen.getByRole('button', { name: /quitar la tarjeta 2/i }))
+    expect(screen.queryByDisplayValue('Cultos')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /añadir tarjeta/i }))
+    await user.type(screen.getByRole('textbox', { name: /título de la tarjeta 2/i }), 'Cultos')
+    await guardar(user)
+
+    await waitFor(() => {
+      const envio = llamadas.find((l) => l.metodo === 'PUT')
+      const bloques = (envio!.cuerpo as { datos: { bloques: { tipo: string; tarjetas?: { titulo: string }[] }[] } }).datos.bloques
+      const tarjetas = bloques.find((b) => b.tipo === 'tarjetas')!.tarjetas!
+      expect(tarjetas.map((t) => t.titulo)).toEqual(['Historia', 'Cultos'])
+    })
+  })
+
   it('avisa si la cabecera se queda sin título, y no manda nada', async () => {
     const user = userEvent.setup()
     const llamadas = montar()

@@ -6,6 +6,7 @@ import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
 import { esSlugContenido } from '../domain/contenido.js';
 import { guardarContenidoSchema } from '../schemas/contenido.schema.js';
+import { sanearBloques } from '../utils/sanear-html.js';
 
 const contenidoRoutes = Router();
 
@@ -32,6 +33,10 @@ contenidoRoutes.put(
   (req, res, next) => {
     const slug = req.params.slug;
     if (!esSlugContenido(slug)) return res.status(404).json({ message: 'Página no encontrada' });
+    // El HTML de los bloques se limpia ANTES de validar: el servicio guarda el
+    // documento entero tal y como llega, y el esquema tiene que juzgar lo que
+    // de verdad se va a almacenar. Ver `sanearBloques`.
+    if (req.body && typeof req.body === 'object') req.body.datos = sanearBloques(req.body.datos);
     return validate(guardarContenidoSchema(slug))(req, res, next);
   },
   ContenidoController.guardar,

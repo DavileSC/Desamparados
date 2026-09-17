@@ -1,4 +1,6 @@
-import { Stack, TextField } from '@mui/material'
+import { Button, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import topes from '../../../../../shared/topes-contenido.json'
 import EditorTexto from '../EditorTexto'
 import CampoImagen from '../CampoImagen'
@@ -56,14 +58,37 @@ export function FormularioFoto({ bloque, onCambio }: Props<BloqueFoto>) {
   )
 }
 
+/** Una tarjeta recién añadida: en blanco salvo el enlace, que apunta a la portada. */
+const TARJETA_NUEVA = { titulo: '', descripcion: '', enlace: '/' }
+
 export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) {
   const cambiar = (indice: number, campo: 'titulo' | 'descripcion' | 'enlace', valor: string) =>
     onCambio({ tarjetas: bloque.tarjetas.map((t, i) => (i === indice ? { ...t, [campo]: valor } : t)) })
+
+  const anadir = () => onCambio({ tarjetas: [...bloque.tarjetas, { ...TARJETA_NUEVA }] })
+  const quitar = (indice: number) =>
+    onCambio({ tarjetas: bloque.tarjetas.filter((_, i) => i !== indice) })
+
+  // Los dos límites son los del esquema del servidor, que lee el mismo JSON:
+  // una lista vacía no pinta nada, y el tope de arriba evita una página
+  // interminable. El servidor sigue siendo quien decide; esto solo evita
+  // ofrecer algo que se va a rechazar.
+  const sobranParaQuitar = bloque.tarjetas.length > 1
+  const cabenMas = bloque.tarjetas.length < topes.tarjetasPorBloque
 
   return (
     <Stack spacing={2}>
       {bloque.tarjetas.map((tarjeta, indice) => (
         <Stack key={indice} spacing={1.5} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          <Stack direction="row" sx={{ alignItems: 'center' }}>
+            <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Tarjeta {indice + 1}</Typography>
+            <Tooltip title={sobranParaQuitar ? 'Quitar' : 'El bloque necesita al menos una tarjeta'}><span>
+              <IconButton size="small" color="error" aria-label={`Quitar la tarjeta ${indice + 1}`}
+                disabled={!sobranParaQuitar} onClick={() => quitar(indice)}>
+                <DeleteOutlineIcon fontSize="small" />
+              </IconButton>
+            </span></Tooltip>
+          </Stack>
           <TextField label={`Título de la tarjeta ${indice + 1}`} value={tarjeta.titulo}
             onChange={(e) => cambiar(indice, 'titulo', e.target.value)} size="small" fullWidth
             slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
@@ -75,6 +100,14 @@ export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) 
             helperText="Una ruta de este sitio, como /corporacion/historia" />
         </Stack>
       ))}
+      <Button startIcon={<AddIcon />} onClick={anadir} disabled={!cabenMas} sx={{ alignSelf: 'flex-start' }}>
+        Añadir tarjeta
+      </Button>
+      {!cabenMas && (
+        <Typography variant="caption" color="text.secondary">
+          Son ya {topes.tarjetasPorBloque} tarjetas, el máximo de un bloque.
+        </Typography>
+      )}
     </Stack>
   )
 }

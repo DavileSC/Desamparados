@@ -48,6 +48,17 @@ describe('el documento de una página de bloques', () => {
     assert.ok(!falla({ cabecera: { ...conFoto, fotoAlt: 'La Virgen en su trono' }, bloques: [] }));
   });
 
+  test('la foto de la cabecera tiene que ser nuestra', () => {
+    // El bloque de foto ya tenía su prueba; la cabecera no, y su regla se podía
+    // borrar entera sin que nada se pusiera rojo. Una foto de fuera filtra la IP
+    // de quien visita y el limpiador de huérfanos no la conoce.
+    const con = (foto: string) => falla({ cabecera: { ...CABECERA, foto, fotoAlt: 'Da igual' }, bloques: [] });
+    assert.ok(con('https://ejemplo.test/foto.jpg'), 'una dirección de fuera');
+    assert.ok(con('//ejemplo.test/foto.jpg'), 'relativa al protocolo: parece interna y no lo es');
+    assert.ok(con('javascript:alert(1)'), 'ni siquiera es una imagen');
+    assert.ok(con('/storage/private/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp'), 'lo privado no se publica');
+  });
+
   // El CMS ya avisa antes de guardar (PaginaAdminPage.tsx), pero esa
   // comprobación vive solo en el navegador: un PUT hecho a mano con el título
   // en blanco tiene que rechazarlo igual, o la página se queda sin título en
