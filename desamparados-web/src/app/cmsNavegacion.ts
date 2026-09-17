@@ -12,6 +12,7 @@ import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalance
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
+import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined'
 import type { PanelResponse } from '../lib/api/panel'
 
 /**
@@ -69,6 +70,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: Inventory2OutlinedIcon },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon, contador: { de: 'recibosDevueltos', tono: 'error' } },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
+  { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
   { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'Sistema', icono: ShieldOutlinedIcon },
 ]
@@ -87,6 +89,9 @@ export const rolesPorRutaCms = {
   tesoreria: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
   inventario: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'],
   contabilidad: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
+  // Repartir cargos es repartir privilegios: ni el Hermano Mayor. El backend
+  // lo estrecha igual (checkRole(SOLO_ADMIN) en adminRoutes).
+  accesos: ['ADMIN'],
   auditoria: ['ADMIN', 'HERMANO_MAYOR'],
   // La gestión del 2FA propio es de todo el staff: cada cuenta debe poder
   // protegerse, no solo la de ADMIN.
