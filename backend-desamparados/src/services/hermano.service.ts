@@ -10,6 +10,7 @@ import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import crypto from 'crypto';
 import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
+import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { esConflictoTransitorio } from '../utils/transaction-retry.js';
 
@@ -463,16 +464,9 @@ export class HermanoService {
   static async searchHermanos(query: SearchHermanoQuery) {
     const paginacion = sanearPaginacion(query);
 
-    const where: Prisma.HermanoWhereInput = {};
-
-    if (query.q) {
-      where.OR = [
-        { nombre: { contains: query.q } },
-        { apellidos: { contains: query.q } },
-        { dni: { contains: query.q } },
-        { email: { contains: query.q } }
-      ];
-    }
+    const where: Prisma.HermanoWhereInput = {
+      ...condicionBusqueda(query.q, ['nombre', 'apellidos', 'dni', 'email']),
+    };
 
     if (query.tunica) where.tunica = { contains: query.tunica };
     if (query.puesto) where.puesto = { contains: query.puesto };

@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { corteDeSesiones } from '../utils/jwt.handle.js';
 import { CLAVES_CONFIGURACION, esClaveConfiguracion, normalizarValorConfiguracion } from '../domain/configuracion.js';
 
@@ -27,14 +28,7 @@ export class AdminService {
       where: {
         role: Role.USER,
         active: true,
-        ...(searchTerm && {
-          OR: [
-            { nombre: { contains: searchTerm } },
-            { apellidos: { contains: searchTerm } },
-            { dni: { contains: searchTerm } },
-            { email: { contains: searchTerm } }
-          ]
-        })
+        ...condicionBusqueda(searchTerm, ['nombre', 'apellidos', 'dni', 'email'])
       },
       select: { id: true, nombre: true, apellidos: true, dni: true, email: true },
       take: 20 // Límite para no saturar
