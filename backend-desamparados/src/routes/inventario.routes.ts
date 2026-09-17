@@ -28,10 +28,9 @@ const rolesGestores = [Role.ADMIN, Role.ALBACERIA, Role.HERMANO_MAYOR];
 // ==========================================
 // --- DASHBOARD GLOBAL ---
 // ==========================================
-// Va suelto y arriba para que no choque con los /:id. Abierto a cualquier
-// hermano con sesión: son totales (unidades por estado y prendas por tipo y
-// estado), sin ningún dato de quién tiene cada prenda.
-inventarioRoutes.get('/dashboard', InventarioController.dashboard); 
+// Va suelto y arriba para que no choque con los /:id. Solo para quien gestiona
+// el inventario, como el resto: ninguna pantalla fuera del CMS lo usa.
+inventarioRoutes.get('/dashboard', checkRole(rolesGestores), InventarioController.dashboard);
 
 
 // ==========================================
@@ -39,10 +38,11 @@ inventarioRoutes.get('/dashboard', InventarioController.dashboard);
 // Rutas base: /inventario/enseres/...
 // ==========================================
 
-// LECTURA (Todos los hermanos pueden ver el patrimonio: un enser no lleva
-// datos personales, a diferencia de las prendas del ropero)
-inventarioRoutes.get('/enseres', validate(queryEnserSchema), InventarioController.listEnseres);       
-inventarioRoutes.get('/enseres/:id', validateId, InventarioController.getOneEnser);  
+// LECTURA. Antes abierta a cualquier hermano con sesión («un enser no lleva
+// datos personales»), pero cada enser lleva su `ubicacion`: la API le decía a
+// cualquier cuenta dónde se guardan las piezas de valor. Solo quien lo gestiona.
+inventarioRoutes.get('/enseres', checkRole(rolesGestores), validate(queryEnserSchema), InventarioController.listEnseres);
+inventarioRoutes.get('/enseres/:id', checkRole(rolesGestores), validateId, InventarioController.getOneEnser);
 
 // GESTIÓN (Solo roles autorizados)
 inventarioRoutes.post('/enseres', checkRole(rolesGestores), validate(createEnserSchema), InventarioController.createEnser);

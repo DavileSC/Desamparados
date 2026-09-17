@@ -83,12 +83,12 @@ describe('quién ve el ropero (P1)', () => {
     assert.equal((await como(Role.USER, `/hermanos/${numeroHermano}`)).status, 403);
   });
 
-  test('el patrimonio y el resumen siguen abiertos a los hermanos: no llevan datos personales', async (t) => {
+  // Antes abiertos «porque no llevan datos personales», pero cada enser dice
+  // dónde se guarda. Los detalles, en test/inventario-acceso.test.ts.
+  test('un hermano raso tampoco ve el patrimonio ni el resumen', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const resumen = await como(Role.USER, '/dashboard');
-    assert.equal(resumen.status, 200);
-    assert.doesNotMatch(await resumen.text(), /apellidos|numeroHermano|nombre/);
-    assert.equal((await como(Role.USER, '/enseres')).status, 200);
+    assert.equal((await como(Role.USER, '/dashboard')).status, 403);
+    assert.equal((await como(Role.USER, '/enseres')).status, 403);
   });
 
   test('la albacería sí ve el ropero', async (t) => {
