@@ -16,8 +16,6 @@ export default function BloquesDePagina({ bloques }: { bloques: Bloque[] }) {
   return (
     <Stack spacing={{ xs: 5, md: 8 }}>
       {bloques.map((bloque, indice) => {
-        const Componente = componenteDeBloque(bloque)
-        if (!Componente) return null
         // La clave es posicional porque `Bloque` no tiene identificador propio: el
         // prefijo del tipo evita que React reutilice el nodo de un bloque de un
         // tipo para pintar otro distinto al cambiar el número de bloques, pero no
@@ -34,13 +32,23 @@ export default function BloquesDePagina({ bloques }: { bloques: Bloque[] }) {
         // reproducción o su foto ampliada—, ese estado se quedaría pegado a la
         // posición al reordenar en vez de viajar con el bloque. Hará falta darle
         // a cada bloque un identificador estable antes de que eso ocurra.
-        return (
-          <Box key={`${bloque.tipo}-${indice}`}>
-            {bloque.titulo && !pintaSuTitulo(bloque) && <SectionTitle title={bloque.titulo} centered />}
-            <Componente bloque={bloque as never} />
-          </Box>
-        )
+        return <BloqueDePagina key={`${bloque.tipo}-${indice}`} bloque={bloque} />
       })}
     </Stack>
+  )
+}
+
+/**
+ * Un bloque con su título de sección. Lo usa también la vista previa del CMS,
+ * para que un bloque suelto se pinte exactamente como dentro de la página.
+ */
+export function BloqueDePagina({ bloque }: { bloque: Bloque }) {
+  const Componente = componenteDeBloque(bloque)
+  if (!Componente) return null
+  return (
+    <Box>
+      {bloque.titulo && !pintaSuTitulo(bloque) && <SectionTitle title={bloque.titulo} centered />}
+      <Componente bloque={bloque as never} />
+    </Box>
   )
 }

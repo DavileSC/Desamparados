@@ -12,9 +12,14 @@ import type { BloqueGaleria as Datos } from '../../lib/api/contenido'
  * una debajo de otra no bailen.
  */
 export default function BloqueGaleria({ bloque }: { bloque: Datos }) {
+  // Solo los que ya tienen imagen. Guardado nunca falta (lo exige el
+  // servidor), pero la vista previa del CMS pinta el borrador, y una foto o un
+  // vídeo recién añadidos darían un <img src=""> que vuelve a pedir la página.
+  const listos = bloque.medios.filter((m) => (m.tipo === 'video' ? m.url !== '' && m.portada !== '' : m.url !== ''))
+  if (listos.length === 0) return null
   return (
     <Box sx={{ maxWidth: '1000px', mx: 'auto' }}>
-      <GaleriaMedios medios={bloque.medios} />
+      <GaleriaMedios medios={listos} />
     </Box>
   )
 }

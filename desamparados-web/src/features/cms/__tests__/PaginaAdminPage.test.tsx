@@ -24,7 +24,7 @@ afterEach(() => { vi.unstubAllGlobals() })
  * `respuestaPut` deja simular un 400 del servidor (Crítico 2 del fix round 1):
  * algo que el cliente no comprobó, pero que el servidor sí rechaza.
  */
-function montar(respuestaPut?: { status: number; cuerpo: unknown }) {
+function montar(respuestaPut?: { status: number; cuerpo: unknown }, datos: unknown = contenido) {
   const llamadas: { url: string; metodo: string; cuerpo: unknown }[] = []
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     const metodo = init?.method ?? 'GET'
@@ -36,7 +36,7 @@ function montar(respuestaPut?: { status: number; cuerpo: unknown }) {
       ))
     }
     return Promise.resolve(new Response(
-      JSON.stringify(metodo === 'PUT' ? { message: 'Guardado', data: contenido } : contenido),
+      JSON.stringify(metodo === 'PUT' ? { message: 'Guardado', data: datos } : datos),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     ))
   }))
@@ -147,7 +147,8 @@ describe('PaginaAdminPage', () => {
     expect(screen.getByRole('button', { name: /quitar la tarjeta 1/i })).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: /añadir tarjeta/i }))
-    expect(screen.getByDisplayValue('/')).toBeInTheDocument()
+    // Nace sin enlace: antes apuntaba a la portada sin que nadie lo decidiera.
+    expect(screen.getByRole('combobox', { name: /enlace de la tarjeta 2/i })).toHaveValue('')
     expect(screen.getByRole('button', { name: /quitar la tarjeta 1/i })).toBeEnabled()
 
     await user.type(screen.getByRole('textbox', { name: /título de la tarjeta 2/i }), 'Cultos')
@@ -175,7 +176,7 @@ describe('PaginaAdminPage', () => {
     await user.clear(await screen.findByDisplayValue('Corporación'))
     await guardar(user)
 
-    expect(await screen.findByText(/sin título/i)).toBeInTheDocument()
+    expect(await screen.findByText(/se ha quedado sin título/i)).toBeInTheDocument()
     expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
   })
 
@@ -225,11 +226,11 @@ describe('PaginaAdminPage', () => {
     expect(screen.queryByText(/^Error de validación$/)).not.toBeInTheDocument()
   })
 
-  it('la vista previa abre la página pública en otra pestaña', async () => {
+  it('«Abrir la publicada» abre la página pública en otra pestaña', async () => {
     montar()
     await screen.findByDisplayValue('Corporación')
 
-    const previa = screen.getByRole('link', { name: /vista previa/i })
+    const previa = screen.getByRole('link', { name: /abrir la publicada/i })
     expect(previa).toHaveAttribute('href', '/corporacion')
     expect(previa).toHaveAttribute('target', '_blank')
     expect(previa).toHaveAttribute('rel', expect.stringContaining('noopener'))
@@ -404,5 +405,90 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
 
     await vi.waitFor(() => expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(true))
     expect(ultimoPut(llamadas).bloques.at(-1)).toEqual({ tipo: 'contacto', titulo: '', tituloDatos: 'Datos de contacto', lineas: [] })
+  })
+
+  it('el enlace de una tarjeta se elige de las páginas que existen', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+    await user.click(screen.getByRole('button', { name: /^Tarjetas/ }))
+
+    const campo = screen.getByRole('combobox', { name: /enlace de la tarjeta 1/i })
+    expect(campo).toHaveValue('Historia · /corporacion/historia')
+    await user.clear(campo)
+    await user.type(campo, 'cultos')
+    await user.click(await screen.findByRole('option', { name: /cultos · \/corporacion\/cultos/i }))
+    await guardar(user)
+
+    await waitFor(() => {
+      const envio = llamadas.find((l) => l.metodo === 'PUT')
+      const bloques = (envio!.cuerpo as { datos: { bloques: { tipo: string; tarjetas?: { enlace: string }[] }[] } }).datos.bloques
+      expect(bloques.find((b) => b.tipo === 'tarjetas')!.tarjetas![0].enlace).toBe('/corporacion/cultos')
+    })
+  })
+
+  it('un enlace guardado a una página que no existe se señala y no deja guardar', async () => {
+    const user = userEvent.setup()
+    const roto = { ...contenido, bloques: [{ tipo: 'tarjetas', titulo: '', tarjetas: [{ titulo: 'Hola', descripcion: '', enlace: '/corporacion/hola' }] }] }
+    const llamadas = montar(undefined, roto)
+    await screen.findByDisplayValue('Corporación')
+
+    // Se cambia algo para que haya qué guardar; la tarjeta rota sigue igual.
+    await user.type(screen.getByRole('textbox', { name: /^subtítulo/i }), ' Más.')
+    await guardar(user)
+
+    expect(await screen.findByText(/el bloque 1 \(tarjetas\) tiene la tarjeta 1 enlazada a una página que no existe \(\/corporacion\/hola\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/«\/corporacion\/hola» no es ninguna página de la web/i)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
+  })
+
+  it('la cabecera y el bloque abierto se ven como en la web, con lo que se está escribiendo', async () => {
+    const user = userEvent.setup()
+    montar()
+    const titulo = await screen.findByDisplayValue('Corporación')
+
+    await user.clear(titulo)
+    await user.type(titulo, 'Nuestra corporación')
+    expect(screen.getByTestId('vista-previa-cabecera')).toHaveTextContent('Nuestra corporación')
+
+    // Solo el bloque abierto monta su vista previa.
+    expect(screen.queryByTestId('vista-previa-bloque')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^Tarjetas/ }))
+    await user.clear(screen.getByRole('textbox', { name: /título de la tarjeta 1/i }))
+    await user.type(screen.getByRole('textbox', { name: /título de la tarjeta 1/i }), 'Nuestra historia')
+    expect(screen.getByTestId('vista-previa-bloque')).toHaveTextContent('Nuestra historia')
+    expect(screen.getByTestId('vista-previa-bloque')).toHaveTextContent('Explora la sección')
+  })
+
+  it('«Ver la página entera» enseña la página con lo escrito, sin publicarlo', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    const titulo = await screen.findByDisplayValue('Corporación')
+    await user.type(titulo, ' y sus fines')
+
+    await user.click(screen.getByRole('button', { name: /ver la página entera/i }))
+    const ventana = await screen.findByRole('dialog', { name: /vista previa de «corporación y sus fines»/i })
+    const pagina = within(ventana).getByTestId('vista-previa-pagina')
+    expect(pagina).toHaveTextContent('Corporación y sus fines')
+    expect(pagina).toHaveTextContent('Historia')
+    // La página del borrador no pide lo guardado al servidor.
+    expect(llamadas.filter((l) => l.metodo === 'GET' && l.url.includes('/contenido/corporacion'))).toHaveLength(1)
+    expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
+
+    await user.click(within(ventana).getByRole('button', { name: /cerrar la vista previa/i }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('«Descartar cambios» vuelve a lo guardado sin salir de la pantalla', async () => {
+    const user = userEvent.setup()
+    montar()
+    const titulo = await screen.findByDisplayValue('Corporación')
+    await user.type(titulo, ' cambiada')
+    expect(screen.getByText(/hay cambios sin guardar/i)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /descartar cambios/i }))
+    await user.click(await screen.findByRole('button', { name: /^descartar cambios$/i }))
+    expect(await screen.findByDisplayValue('Corporación')).toBeInTheDocument()
+    expect(screen.getByText(/sin cambios pendientes/i)).toBeInTheDocument()
   })
 })

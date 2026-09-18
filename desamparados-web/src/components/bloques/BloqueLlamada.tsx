@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import AppButton from '../AppButton'
 import GlassCard from '../GlassCard'
 import type { BloqueLlamada as Datos } from '../../lib/api/contenido'
+import { esDestinoValido } from '../../lib/destinos'
 
 /**
  * Un texto y un botón que lleva a otra página del sitio.
@@ -21,9 +22,12 @@ export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
           {bloque.texto}
         </Typography>
       )}
-      <Box>
-        <AppButton component={Link} to={bloque.enlace}>{bloque.boton}</AppButton>
-      </Box>
+      {/* Sin destino que exista, sin botón: llevaría a «página no encontrada». */}
+      {esDestinoValido(bloque.enlace) && (
+        <Box>
+          <AppButton component={Link} to={bloque.enlace}>{bloque.boton}</AppButton>
+        </Box>
+      )}
     </GlassCard>
   )
 }

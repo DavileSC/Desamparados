@@ -3,6 +3,7 @@ import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
 import { medioGaleriaSchema, problemaDelMedio } from './medios.schema.js';
 import type { TipoBloque } from '../domain/bloques.js';
+import { esDestinoValido } from '../domain/destinos.js';
 
 /** Un texto visible, sin `<` ni `>`: se pinta como texto plano. */
 const texto = (max: number) => type(`0 <= string <= ${max}`)
@@ -17,14 +18,13 @@ const sinFoto = type('string').matching(/^$/);
 const sinEnlace = type('string').matching(/^$/);
 
 /**
- * Enlace de una tarjeta: solo rutas de este sitio.
- *
- * Empieza por una barra y NO por dos: `//otro.test` es relativo al protocolo,
- * parece interno y lleva fuera. Tampoco `javascript:` ni ningún esquema.
+ * Enlace de una tarjeta o del botón de una llamada: una página que exista en
+ * la web (ver domain/destinos.ts). Con que empezara por una barra se colaban
+ * rutas inventadas, y la tarjeta llevaba a «página no encontrada».
  */
 const enlaceInterno = type('string <= 200')
-  .matching(/^\/(?!\/)[A-Za-z0-9\-._~/]*$/)
-  .describe('una ruta de este sitio, como /corporacion/historia');
+  .narrow((enlace) => esDestinoValido(enlace))
+  .describe('una página que exista en la web: elígela de la lista');
 
 /**
  * El título de sección es común a todos los bloques y opcional: vacío significa

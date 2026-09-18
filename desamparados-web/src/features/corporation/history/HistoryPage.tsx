@@ -9,6 +9,8 @@ import BloquesDePagina from '../../../components/bloques/BloquesDePagina'
 import BloqueCronologia from '../../../components/bloques/BloqueCronologia'
 import { idDeHito } from '../../../components/bloques/cronologia'
 import { GOLD, SERIF, ceja, enlaceBloque } from '../../home/estilos'
+import { esDestinoValido } from '../../../lib/destinos'
+import { useBorradorPagina } from '../../../components/bloques/borrador'
 import {
   getContenido,
   type Bloque, type BloqueCronologia as Cronologia, type BloqueLlamada, type PaginaDeBloques,
@@ -53,27 +55,31 @@ const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidde
  * - cualquier otro bloque se pinta como en el resto de la web.
  */
 export default function HistoryPage() {
+  // En la vista previa del CMS, lo que se está escribiendo; fuera, lo guardado.
+  const borrador = useBorradorPagina()
   const { data } = useQuery({
     queryKey: ['contenido', 'historia'],
     queryFn: () => getContenido<PaginaDeBloques>('historia'),
     retry: false,
     staleTime: 5 * 60_000,
+    enabled: borrador === null,
   })
   // Mientras carga y si falla, la historia de siempre: la página no puede
   // quedarse en blanco porque el servidor tarde o no conteste.
-  const { cabecera, bloques } = data ?? (POR_DEFECTO.historia as PaginaDeBloques)
+  const { cabecera, bloques } = borrador ?? data ?? (POR_DEFECTO.historia as PaginaDeBloques)
   const conIndice = bloques.findIndex((bloque) => bloque.tipo === 'cronologia')
   const hitosDelIndice = conIndice === -1 ? [] : (bloques[conIndice] as Cronologia).hitos
 
   return (
     <>
-      <Helmet>
+      {/* En la vista previa, la pestaña sigue siendo la del CMS. */}
+      {!borrador && <Helmet>
         <title>{cabecera.titulo} | Desamparados</title>
         <meta
           name="description"
           content="Historia del Grupo Parroquial de Nuestra Señora de los Desamparados: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga."
         />
-      </Helmet>
+      </Helmet>}
 
       <Box sx={{ position: 'relative', isolation: 'isolate', '& a:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 4 } }}>
         {cabecera.foto !== '' && <FondoVelado url={cabecera.foto} />}
@@ -203,11 +209,14 @@ function Cierre({ bloque, idTitulo }: { bloque: BloqueLlamada; idTitulo: string 
               </Typography>
             )}
           </Revela>
-          <Revela orden={1}>
-            <Box component={Link} to={bloque.enlace} sx={enlaceBloque}>
-              {bloque.boton} <ArrowForwardIcon />
-            </Box>
-          </Revela>
+          {/* Como en BloqueLlamada: un destino que no existe no se pinta. */}
+          {esDestinoValido(bloque.enlace) && (
+            <Revela orden={1}>
+              <Box component={Link} to={bloque.enlace} sx={enlaceBloque}>
+                {bloque.boton} <ArrowForwardIcon />
+              </Box>
+            </Revela>
+          )}
         </Box>
       </PageContainer>
     </Box>

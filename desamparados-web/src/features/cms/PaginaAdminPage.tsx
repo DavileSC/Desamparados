@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import { Helmet } from 'react-helmet-async'
 import { useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -10,13 +11,14 @@ import CampoImagen from './CampoImagen'
 import CampoTexto from './contenido/CampoTexto'
 import SeccionPlegable from './contenido/SeccionPlegable'
 import EditorDeBloques from './bloques/EditorDeBloques'
+import { VistaPreviaBloque, VistaPreviaCabecera, VistaPreviaPagina } from './bloques/VistasPrevias'
 import { conClave, sinClave, type Fila } from './bloques/filas'
 import { problemaDeBloque, NOMBRE_BLOQUE } from './bloques/formularios'
 import { paginaPublica } from '../../app/cmsNavegacion'
 import { ApiError } from '../../lib/api/client'
 import {
   getContenido, guardarContenido,
-  type CabeceraPagina, type PaginaDeBloques, type SlugContenido,
+  type Bloque, type CabeceraPagina, type PaginaDeBloques, type SlugContenido,
 } from '../../lib/api/contenido'
 
 export const AVISO_SIN_TITULO = 'La página se ha quedado sin título. Ponle uno antes de guardar.'
@@ -29,6 +31,13 @@ export const AVISO_SIN_TITULO = 'La página se ha quedado sin título. Ponle uno
 const AYUDA_FOTO_CABECERA: Record<string, string> = {
   historia: 'JPG, PNG o WebP grande y apaisado, de hasta 5 MB. Se ve muy velada detrás de toda la página de Historia. Sin foto, el fondo queda liso.',
 }
+
+/**
+ * En Historia, la cronología y la llamada no se pintan como en las demás
+ * páginas (van en su franja y como cierre): su vista previa suelta enseñaría
+ * algo que la página no hace. Se miran en «Ver la página entera».
+ */
+const CON_MAQUETACION_PROPIA_EN_HISTORIA = new Set(['cronologia', 'llamada'])
 
 /**
  * Traduce `ApiError.fields` («bloques.2»: motivo) a algo que diga de qué
@@ -74,6 +83,7 @@ export default function PaginaAdminPage() {
   // pueden estar plegados y fuera de la vista, y sin esto el aviso no dice a
   // quién agarrarse.
   const [clavesInvalidas, setClavesInvalidas] = useState<Set<number>>(new Set())
+  const [paginaEntera, setPaginaEntera] = useState(false)
 
   useEffect(() => {
     getContenido<PaginaDeBloques>(slug as SlugContenido)
@@ -126,6 +136,26 @@ export default function PaginaAdminPage() {
     } finally { setGuardando(false) }
   }
 
+  /** Vuelve a lo guardado sin salir de la pantalla, como en la portada. */
+  const descartar = () => {
+    if (!inicial) return
+    setCabecera(inicial.cabecera)
+    setFilas(inicial.bloques.map(conClave))
+    setError(null)
+    setClavesInvalidas(new Set())
+  }
+
+  const vistaPreviaDeBloque = (bloque: Bloque) => {
+    if (slug === 'historia' && CON_MAQUETACION_PROPIA_EN_HISTORIA.has(bloque.tipo)) {
+      return (
+        <Alert severity="info" icon={<VisibilityOutlinedIcon />}>
+          En Historia este bloque tiene su propia maquetación: míralo con «Ver la página entera».
+        </Alert>
+      )
+    }
+    return <VistaPreviaBloque bloque={bloque} />
+  }
+
   if (error && !cabecera) return <Alert severity="error">{error}</Alert>
   if (!cabecera) return <CircularProgress aria-label="Cargando la página" />
 
@@ -142,16 +172,25 @@ export default function PaginaAdminPage() {
         guardando={guardando}
         volverA="/cms/paginas"
         onGuardar={guardar}
+        onDescartar={descartar}
       >
         <Stack spacing={3}>
-          <Button component="a" href={ficha?.ruta ?? '/'} target="_blank" rel="noopener noreferrer"
-            startIcon={<OpenInNewIcon />} sx={{ alignSelf: 'flex-start' }}>
-            Vista previa
-          </Button>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+            <Button variant="outlined" startIcon={<VisibilityOutlinedIcon />} onClick={() => setPaginaEntera(true)}>
+              Ver la página entera
+            </Button>
+            {/* Lo publicado, no lo que se está escribiendo: por eso en otra pestaña y dicho así. */}
+            <Button component="a" href={ficha?.ruta ?? '/'} target="_blank" rel="noopener noreferrer" startIcon={<OpenInNewIcon />}>
+              Abrir la publicada
+            </Button>
+          </Stack>
+          <VistaPreviaPagina abierta={paginaEntera} slug={slug as SlugContenido} documento={documento} onCerrar={() => setPaginaEntera(false)} />
 
           {/* La cabecera va aparte y sin botón de quitar: está siempre. */}
           <Paper sx={{ p: 2.5 }}>
             <SeccionPlegable titulo="Cabecera de la página" abiertaPorDefecto>
+              {/* Historia no usa la cabecera común: la suya va en «Ver la página entera». */}
+              {slug !== 'historia' && <VistaPreviaCabecera cabecera={cabecera} />}
               {/* Solo la trae Historia: las demás cabeceras no pintan ceja. */}
               {cabecera.ceja !== undefined && (
                 <CampoTexto etiqueta="Antetítulo" valor={cabecera.ceja}
@@ -180,7 +219,7 @@ export default function PaginaAdminPage() {
             </SeccionPlegable>
           </Paper>
 
-          <EditorDeBloques filas={filas} onCambio={setFilas} clavesInvalidas={clavesInvalidas} />
+          <EditorDeBloques filas={filas} onCambio={setFilas} clavesInvalidas={clavesInvalidas} vistaPrevia={vistaPreviaDeBloque} />
         </Stack>
       </PantallaEdicion>
     </>

@@ -2,6 +2,7 @@ import { Box, Grid, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import GlassCard from '../GlassCard'
 import type { BloqueTarjetas as Datos, TarjetaEnlace } from '../../lib/api/contenido'
+import { esDestinoValido } from '../../lib/destinos'
 
 /** Mismo marcado que tenía `CorporationPage` a mano, para que convertir esa
  *  página a bloques no le cambie el aspecto. */
@@ -34,7 +35,10 @@ function Tarjeta({ tarjeta }: { tarjeta: TarjetaEnlace }) {
     </>
   )
 
-  if (!tarjeta.enlace) {
+  // Un enlace guardado antes de que el CMS solo dejara elegir páginas que
+  // existen puede llevar a ninguna parte: mejor una tarjeta informativa que
+  // una que promete y acaba en «página no encontrada».
+  if (!tarjeta.enlace || !esDestinoValido(tarjeta.enlace)) {
     return <GlassCard sx={{ p: 4, height: '100%' }}>{contenido}</GlassCard>
   }
 

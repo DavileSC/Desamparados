@@ -6,6 +6,7 @@ import {
   type Props,
 } from './FormulariosDeBloque'
 import { problemaDelMedio } from '../contenido/medios'
+import { esDestinoValido } from '../../../lib/destinos'
 import type { Bloque } from '../../../lib/api/contenido'
 
 /** Nombre visible de cada tipo. Es lo que lee quien edita. */
@@ -87,13 +88,17 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       const problema = bloque.medios.map(problemaDelMedio).find((p) => p !== null)
       return problema ?? null
     }
-    case 'tarjetas':
+    case 'tarjetas': {
       if (bloque.tarjetas.some((t) => t.titulo.trim() === '')) return 'tiene una tarjeta sin título'
-      // El enlace no: una tarjeta sin enlace es informativa, y es legítimo.
+      // Vacío sí vale: una tarjeta sin enlace es informativa, y es legítimo.
+      const rota = bloque.tarjetas.findIndex((t) => t.enlace !== '' && !esDestinoValido(t.enlace))
+      if (rota !== -1) return `tiene la tarjeta ${rota + 1} enlazada a una página que no existe (${bloque.tarjetas[rota].enlace})`
       return null
+    }
     case 'llamada':
       if (bloque.boton.trim() === '') return 'no tiene texto en el botón'
       if (bloque.enlace.trim() === '') return 'no tiene destino en el botón'
+      if (!esDestinoValido(bloque.enlace)) return `lleva el botón a una página que no existe (${bloque.enlace})`
       return null
     case 'datos':
       if (bloque.lineas.some((l) => l.etiqueta.trim() === '')) return 'tiene una línea sin concepto'

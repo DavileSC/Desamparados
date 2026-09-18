@@ -11,6 +11,7 @@ import EditorTexto from '../EditorTexto'
 import CampoImagen from '../CampoImagen'
 import CampoTexto from '../contenido/CampoTexto'
 import CamposDeMedio from '../contenido/CamposDeMedio'
+import CampoEnlace from '../contenido/CampoEnlace'
 import { FOTO_NUEVA, VIDEO_NUEVO } from '../contenido/medios'
 import type {
   BloqueTexto, BloqueFoto, BloqueGaleria, BloqueTarjetas, BloqueLlamada, BloqueDatos,
@@ -69,8 +70,12 @@ export function FormularioFoto({ bloque, onCambio }: Props<BloqueFoto>) {
   )
 }
 
-/** Una tarjeta recién añadida: en blanco salvo el enlace, que apunta a la portada. */
-const TARJETA_NUEVA = { titulo: '', descripcion: '', enlace: '/' }
+/**
+ * Una tarjeta recién añadida, en blanco y sin enlace. Antes apuntaba a la
+ * portada por defecto, y una tarjeta a medio hacer llevaba al inicio sin que
+ * nadie lo hubiera decidido.
+ */
+const TARJETA_NUEVA = { titulo: '', descripcion: '', enlace: '' }
 
 export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) {
   const cambiar = (indice: number, campo: 'titulo' | 'descripcion' | 'enlace', valor: string) =>
@@ -106,9 +111,9 @@ export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) 
           <TextField label="Descripción" value={tarjeta.descripcion} multiline
             onChange={(e) => cambiar(indice, 'descripcion', e.target.value)} size="small" fullWidth
             slotProps={{ htmlInput: { maxLength: topes.textoTarjeta } }} />
-          <TextField label="Enlace" value={tarjeta.enlace}
-            onChange={(e) => cambiar(indice, 'enlace', e.target.value)} size="small" fullWidth
-            helperText="Opcional. Una ruta de este sitio, como /corporacion/historia. Vacío, la tarjeta no lleva a ninguna parte." />
+          <CampoEnlace etiqueta={`Enlace de la tarjeta ${indice + 1}`} valor={tarjeta.enlace} opcional
+            onCambio={(ruta) => cambiar(indice, 'enlace', ruta)}
+            ayuda="Opcional. Sin enlace, la tarjeta es informativa y no lleva a ninguna parte." />
         </Stack>
       ))}
       <Button startIcon={<AddIcon />} onClick={anadir} disabled={!cabenMas} sx={{ alignSelf: 'flex-start' }}>
@@ -252,9 +257,9 @@ export function FormularioLlamada({ bloque, onCambio }: Props<BloqueLlamada>) {
         onChange={(e) => onCambio({ boton: e.target.value })} size="small" fullWidth
         helperText="Lo que se lee dentro del botón, como «Hazte hermano». Sin esto el bloque no se puede guardar."
         slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
-      <TextField label="Destino del botón" value={bloque.enlace}
-        onChange={(e) => onCambio({ enlace: e.target.value })} size="small" fullWidth
-        helperText="Una ruta de este sitio, como /hermanos/hazte-hermano" />
+      <CampoEnlace etiqueta="Destino del botón" valor={bloque.enlace}
+        onCambio={(enlace) => onCambio({ enlace })}
+        ayuda="La página a la que lleva el botón." />
     </Stack>
   )
 }

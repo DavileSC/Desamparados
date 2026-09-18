@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   Box, Button, ButtonBase, Chip, Collapse, IconButton,
   Menu, MenuItem, Paper, Stack, TextField, Tooltip, Typography,
@@ -14,9 +14,15 @@ import { BLOQUE_NUEVO, FORMULARIOS, NOMBRE_BLOQUE } from './formularios'
 import { conClave, type Fila } from './filas'
 import type { Bloque } from '../../../lib/api/contenido'
 
-export default function EditorDeBloques({ filas, onCambio, clavesInvalidas }: {
+export default function EditorDeBloques({ filas, onCambio, clavesInvalidas, vistaPrevia }: {
   filas: Fila[]
   onCambio: (filas: Fila[]) => void
+  /**
+   * Cómo queda el bloque en la web con lo escrito. Se pinta encima de su
+   * formulario, y solo el del bloque abierto: montar la vista previa de todos
+   * a la vez haría la pantalla pesada y larguísima.
+   */
+  vistaPrevia?: (bloque: Bloque) => ReactNode
   /**
    * Bloques que acaban de fallar la comprobación de guardado: se despliegan
    * aunque estén plegados por defecto, porque si no quien lee el aviso no
@@ -126,6 +132,7 @@ export default function EditorDeBloques({ filas, onCambio, clavesInvalidas }: {
             <Collapse in={abierto} unmountOnExit>
               <Box id={idDetalle} role="region" aria-labelledby={idCabecera} sx={{ px: 2, pt: 1, pb: 2 }}>
                 <Stack spacing={2}>
+                  {vistaPrevia?.(bloque)}
                   <TextField
                     label="Título de sección (opcional)"
                     value={bloque.titulo}

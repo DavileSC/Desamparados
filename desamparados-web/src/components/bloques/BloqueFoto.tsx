@@ -4,6 +4,9 @@ import type { BloqueFoto as Datos } from '../../lib/api/contenido'
 /** Foto a ancho de página con su pie opcional. El `alt` es obligatorio en el
  *  servidor (`bloques.schema.ts`): aquí nunca llega vacío. */
 export default function BloqueFoto({ bloque }: { bloque: Datos }) {
+  // Sin foto todavía (un bloque recién añadido, en la vista previa del CMS),
+  // nada: un <img src=""> vuelve a pedir la página entera.
+  if (bloque.url === '') return null
   return (
     <Box sx={{ maxWidth: '1000px', mx: 'auto' }}>
       <Box component="img" src={bloque.url} alt={bloque.alt} loading="lazy" decoding="async"
