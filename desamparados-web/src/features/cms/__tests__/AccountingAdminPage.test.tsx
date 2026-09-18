@@ -346,4 +346,27 @@ describe('gestión de categorías (D8)', () => {
     await user.click(within(gestion).getByRole('button', { name: 'Reactivar «Rifas antiguas»' }))
     await waitFor(() => expect(escritura(simulado)).toEqual({ url: '/api/transacciones/categorias/4/activa', metodo: 'PATCH', cuerpo: { activa: true } }))
   })
+
+  it('el orden va al libro de caja y no al resumen, y vuelve a la primera página', async () => {
+    const user = userEvent.setup()
+    const simulado = servir(120)
+    renderWithProviders(<AccountingAdminPage />, { ruta: '/cms/contabilidad?pagina=3' })
+
+    await waitFor(() => expect(ultima(simulado, 'libro-mayor')).toContain('page=3'))
+    await elegir(user, document.body, /ordenar por/i, /importe: mayor primero/i)
+
+    await waitFor(() => expect(ultima(simulado, 'libro-mayor')).toContain('orden=importeDesc'))
+    expect(ultima(simulado, 'libro-mayor')).toContain('page=1')
+    expect(ultima(simulado, 'resumen')).not.toContain('orden=')
+  })
+
+  it('«Quitar todos» deja los filtros como al entrar', async () => {
+    const user = userEvent.setup()
+    const simulado = servir()
+    renderWithProviders(<AccountingAdminPage />, { ruta: '/cms/contabilidad?periodo=todo&metodo=BIZUM&q=flores' })
+
+    await user.click(await screen.findByRole('button', { name: /quitar todos/i }))
+    await waitFor(() => expect(ultima(simulado, 'libro-mayor')).toContain(`desde=${new Date().getFullYear()}-01-01`))
+    expect(ultima(simulado, 'libro-mayor')).not.toMatch(/metodo=|q=/)
+  })
 })

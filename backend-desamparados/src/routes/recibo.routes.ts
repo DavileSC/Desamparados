@@ -8,6 +8,7 @@ import { type } from 'arktype';
 import { idParam } from '../config/common.js'; // Esquema para validar IDs numéricos en URL
 import {
   adminRecibosQuerySchema,
+  adminResumenQuerySchema,
   buscarHermanosQuerySchema,
   emitirReciboSchema,
   generarCuotasSchema,
@@ -39,6 +40,9 @@ reciboRoutes.get('/mis-recibos/:id', validateId, ReciboController.getMyRecibo);
 // ==========================================
 
 reciboRoutes.get('/admin', checkRole(rolesTesoreria), validate(adminRecibosQuerySchema), ReciboController.getAdminRecibos);
+
+// Los contadores por estado de encima del listado, con sus mismos filtros.
+reciboRoutes.get('/admin/resumen', checkRole(rolesTesoreria), validate(adminResumenQuerySchema), ReciboController.getResumenAdmin);
 
 // Buscador para la ventana «Nuevo recibo»: Tesorería no entra en el del censo.
 reciboRoutes.get('/admin/hermanos',

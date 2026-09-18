@@ -6,10 +6,15 @@ export interface Prenda { id: number; numero: string; tipo: 'TUNICA' | 'CAPIROTE
 
 // Enseres y ropero son dos listados independientes de la misma pantalla: cada
 // uno pide su propia página, y por eso reciben la suya en vez de compartirla.
-export const getEnseres = (pagina: { pagina: number; porPagina: number }) =>
-  apiFetch<RespuestaPaginada<Enser>>(`/inventario/enseres?${paramsPagina(pagina)}`)
-export const getPrendas = (pagina: { pagina: number; porPagina: number }) =>
-  apiFetch<RespuestaPaginada<Prenda>>(`/inventario/prendas?${paramsPagina(pagina)}`)
+// Cada uno con sus filtros y su orden; vacío = sin filtrar.
+export type FiltrosEnseres = { search?: string; categoria?: string; ubicacion?: string; necesitaReparacion?: 'true' | ''; orden?: string }
+export type FiltrosPrendas = { q?: string; tipo?: Prenda['tipo'] | ''; estado?: Prenda['estado'] | ''; orden?: string }
+export const getEnseres = (pagina: { pagina: number; porPagina: number }, filtros: FiltrosEnseres = {}) =>
+  apiFetch<RespuestaPaginada<Enser>>(`/inventario/enseres?${paramsPagina(pagina, filtros)}`)
+export const getPrendas = (pagina: { pagina: number; porPagina: number }, filtros: FiltrosPrendas = {}) =>
+  apiFetch<RespuestaPaginada<Prenda>>(`/inventario/prendas?${paramsPagina(pagina, filtros)}`)
+/** Las categorías y ubicaciones que ya tienen los enseres, para los desplegables del filtro. */
+export const getOpcionesEnseres = () => apiFetch<{ categorias: string[]; ubicaciones: string[] }>('/inventario/enseres/opciones')
 export const createEnser = (json: object) => apiFetch<Enser>('/inventario/enseres', { method: 'POST', json })
 export const updateEnser = (id: number, json: object) => apiFetch<Enser>(`/inventario/enseres/${id}`, { method: 'PUT', json })
 export const deleteEnser = (id: number) => apiFetch<{ message: string }>(`/inventario/enseres/${id}`, { method: 'DELETE' })

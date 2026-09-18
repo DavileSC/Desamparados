@@ -4,16 +4,18 @@ import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
-import { createEnser, createPrenda, deleteEnser, deletePrenda, getEnseres, getPrendas, returnPrenda, type Enser, type Prenda } from '../../lib/api/inventory'
+import { createEnser, createPrenda, deleteEnser, deletePrenda, getEnseres, getOpcionesEnseres, getPrendas, returnPrenda, type Enser, type FiltrosPrendas, type Prenda } from '../../lib/api/inventory'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import { DialogoDevolucion, DialogoPrestamo } from './DialogosRopero'
-import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, esCantidadValida } from './ropero'
+import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, ETIQUETA_TIPO, esCantidadValida } from './ropero'
+import BarraListado, { type Opcion } from './listados/BarraListado'
+import { useFiltrosUrl } from './listados/useFiltrosUrl'
 
 const emptyEnser = { nombre: '', referencia: '', categoria: '', ubicacion: '', cantidadOptimo: '0', cantidadBueno: '0', cantidadReparar: '0' }
 const emptyPrenda = { numero: '', tipo: 'TUNICA', talla: '', estado: 'DISPONIBLE', observaciones: '' }
@@ -23,8 +25,53 @@ const CANTIDADES_ENSER = [['cantidadOptimo', 'Óptimo'], ['cantidadBueno', 'Buen
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
 
+const aOpciones = <K extends string>(etiquetas: Record<K, string>): Opcion[] =>
+  (Object.entries(etiquetas) as [K, string][]).map(([valor, etiqueta]) => ({ valor, etiqueta }))
+const valoresDe = (opciones: Opcion[]) => opciones.map((o) => o.valor)
+
+const ORDENES_ENSERES: Opcion[] = [
+  { valor: 'nombre', etiqueta: 'Nombre (A-Z)' },
+  { valor: 'categoria', etiqueta: 'Categoría' },
+  { valor: 'ubicacion', etiqueta: 'Ubicación' },
+  { valor: 'unidades', etiqueta: 'Más unidades' },
+  { valor: 'reparar', etiqueta: 'Más piezas a reparar' },
+]
+const ORDENES_PRENDAS: Opcion[] = [
+  { valor: 'numero', etiqueta: 'Número' },
+  { valor: 'tipo', etiqueta: 'Tipo' },
+  { valor: 'estado', etiqueta: 'Estado' },
+  { valor: 'talla', etiqueta: 'Talla' },
+]
+const TIPOS_PRENDA = aOpciones(ETIQUETA_TIPO)
+const ESTADOS_PRENDA = aOpciones(ETIQUETA_ESTADO)
+const A_REPARAR: Opcion[] = [{ valor: 'si', etiqueta: 'Con piezas a reparar' }]
+
+// Categoría y ubicación son texto libre: sus valores válidos son los que haya en la base.
+const FILTROS_ENSERES = {
+  q: {},
+  categoria: {},
+  ubicacion: {},
+  reparar: { validos: valoresDe(A_REPARAR) },
+  orden: { porDefecto: 'nombre', validos: valoresDe(ORDENES_ENSERES) },
+}
+const FILTROS_PRENDAS = {
+  q: {},
+  tipo: { validos: valoresDe(TIPOS_PRENDA) },
+  estado: { validos: valoresDe(ESTADOS_PRENDA) },
+  orden: { porDefecto: 'numero', validos: valoresDe(ORDENES_PRENDAS) },
+}
+
 export default function InventoryAdminPage() {
-  const [tab, setTab] = useState(0)
+  // La pestaña vive en la URL, como los filtros: al volver de editar una
+  // prenda se vuelve al ropero, no a los enseres.
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('vista') === 'ropero' ? 1 : 0
+  const setTab = (valor: number) => setParams((anteriores) => {
+    const siguientes = new URLSearchParams(anteriores)
+    if (valor === 1) siguientes.set('vista', 'ropero')
+    else siguientes.delete('vista')
+    return siguientes
+  }, { replace: true })
   const [listaEnseres, setListaEnseres] = useState<Enser[]>([])
   const [listaPrendas, setListaPrendas] = useState<Prenda[]>([])
   const [enserForm, setEnserForm] = useState(emptyEnser)
@@ -49,6 +96,10 @@ export default function InventoryAdminPage() {
   const prendas = usePaginacion('Prendas')
   const [metaEnseres, setMetaEnseres] = useState<MetaPaginacion | null>(null)
   const [metaPrendas, setMetaPrendas] = useState<MetaPaginacion | null>(null)
+  // Cada listado con sus filtros, con el mismo prefijo que su paginación.
+  const [filtrosEnseres, cambiarEnseres] = useFiltrosUrl(FILTROS_ENSERES, 'Enseres')
+  const [filtrosPrendas, cambiarPrendas] = useFiltrosUrl(FILTROS_PRENDAS, 'Prendas')
+  const [opciones, setOpciones] = useState<{ categorias: string[]; ubicaciones: string[] }>({ categorias: [], ubicaciones: [] })
 
   // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
   // clics rápidos en cualquiera de los dos paginadores lanzan dos cargas que
@@ -57,9 +108,22 @@ export default function InventoryAdminPage() {
   // derecho a escribir. Las llamadas de después de crear, borrar, asignar o
   // devolver la omiten: no hay carrera.
   const load = useCallback((vigente: () => boolean = () => true) => Promise.all([
-    getEnseres({ pagina: enseres.pagina, porPagina: enseres.porPagina }),
-    getPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }),
-  ]).then(([a, b]) => { if (!vigente()) return; setListaEnseres(a.data); setMetaEnseres(a.meta); setListaPrendas(b.data); setMetaPrendas(b.meta) }), [enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina])
+    getEnseres({ pagina: enseres.pagina, porPagina: enseres.porPagina }, {
+      search: filtrosEnseres.q,
+      categoria: filtrosEnseres.categoria,
+      ubicacion: filtrosEnseres.ubicacion,
+      necesitaReparacion: filtrosEnseres.reparar ? 'true' : '',
+      orden: filtrosEnseres.orden,
+    }),
+    getPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }, filtrosPrendas as FiltrosPrendas),
+  ]).then(([a, b]) => { if (!vigente()) return; setListaEnseres(a.data); setMetaEnseres(a.meta); setListaPrendas(b.data); setMetaPrendas(b.meta) }), [enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina, filtrosEnseres, filtrosPrendas])
+
+  // Las categorías y ubicaciones en uso, para los desplegables. Si fallan, los
+  // filtros se quedan sin opciones pero el listado se sigue viendo.
+  const cargarOpciones = useCallback(() => getOpcionesEnseres()
+    .then((o) => setOpciones({ categorias: o.categorias ?? [], ubicaciones: o.ubicaciones ?? [] }))
+    .catch(() => undefined), [])
+  useEffect(() => { void cargarOpciones() }, [cargarOpciones])
 
   useEffect(() => {
     let cancelado = false
@@ -87,11 +151,15 @@ export default function InventoryAdminPage() {
     await load().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
   }
 
-  const saveEnser = () => guardar(
-    () => createEnser({ ...enserForm, cantidadOptimo: Number(enserForm.cantidadOptimo), cantidadBueno: Number(enserForm.cantidadBueno), cantidadReparar: Number(enserForm.cantidadReparar) }),
-    'Enser creado correctamente.',
-    'No se ha podido guardar el enser.',
-  )
+  // Un enser nuevo puede traer una categoría o una ubicación que aún no estaba en los filtros.
+  const saveEnser = async () => {
+    await guardar(
+      () => createEnser({ ...enserForm, cantidadOptimo: Number(enserForm.cantidadOptimo), cantidadBueno: Number(enserForm.cantidadBueno), cantidadReparar: Number(enserForm.cantidadReparar) }),
+      'Enser creado correctamente.',
+      'No se ha podido guardar el enser.',
+    )
+    await cargarOpciones()
+  }
   const savePrenda = () => guardar(() => createPrenda(prendaForm), 'Prenda creada correctamente.', 'No se ha podido guardar la prenda.')
   const nombreDe = (item: Enser | Prenda) => ('nombre' in item ? item.nombre : `Prenda ${item.numero}`)
   const borrar = async () => { if (!porBorrar) return; try { if (tab === 0) await deleteEnser(porBorrar.id); else await deletePrenda(porBorrar.id); await load(); setNotice('Elemento eliminado correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido eliminar el elemento.')) } finally { setPorBorrar(null) } }
@@ -163,7 +231,31 @@ export default function InventoryAdminPage() {
     </VentanaFormulario>
 
     <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 3 }}><Tab label="Enseres" /><Tab label="Ropero" /></Tabs>
-    <Stack spacing={2}>{tab === 0 ? listaEnseres.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Typography>{item.nombre} · {item.cantidadTotal} unidades · {item.ubicacion ?? 'Sin ubicación'}</Typography><Stack direction="row"><Button aria-label={`Editar ${item.nombre}`} component={Link} to={`/cms/inventario/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.nombre}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>) : listaPrendas.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Typography>{item.numero} · {item.tipo} · {ETIQUETA_ESTADO[item.estado] ?? item.estado}{item.hermano ? ` · ${item.hermano.nombre} ${item.hermano.apellidos}${item.hermano.numeroHermano ? ` (nº ${item.hermano.numeroHermano})` : ''}` : ''}</Typography><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>{item.estado === 'DISPONIBLE' && <Button aria-label={`Prestar ${item.numero}`} onClick={() => setPrestando(item)}>Prestar</Button>}{item.estado === 'PRESTADA' && <Button aria-label={`Devolver ${item.numero}`} onClick={() => setDevolviendo(item)}>Devolver</Button>}<Button aria-label={`Editar ${item.numero}`} component={Link} to={`/cms/inventario/${item.id}/editar?tipo=prenda`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.numero}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}</Stack>
+    {tab === 0 ? (
+      <BarraListado
+        valores={filtrosEnseres}
+        onCambiar={cambiarEnseres}
+        busqueda={{ clave: 'q', etiqueta: 'Buscar enseres', placeholder: 'Nombre, referencia, categoría o ubicación' }}
+        filtros={[
+          { clave: 'categoria', etiqueta: 'Categoría', todos: 'Todas', opciones: opciones.categorias.map((c) => ({ valor: c, etiqueta: c })) },
+          { clave: 'ubicacion', etiqueta: 'Ubicación', todos: 'Todas', opciones: opciones.ubicaciones.map((u) => ({ valor: u, etiqueta: u })) },
+          { clave: 'reparar', etiqueta: 'Conservación', todos: 'Todos', opciones: A_REPARAR, ancho: 190 },
+        ]}
+        orden={{ clave: 'orden', opciones: ORDENES_ENSERES }}
+      />
+    ) : (
+      <BarraListado
+        valores={filtrosPrendas}
+        onCambiar={cambiarPrendas}
+        busqueda={{ clave: 'q', etiqueta: 'Buscar en el ropero', placeholder: 'Número, talla, observaciones o hermano' }}
+        filtros={[
+          { clave: 'tipo', etiqueta: 'Tipo', todos: 'Todos', opciones: TIPOS_PRENDA },
+          { clave: 'estado', etiqueta: 'Estado', todos: 'Todos', opciones: ESTADOS_PRENDA },
+        ]}
+        orden={{ clave: 'orden', opciones: ORDENES_PRENDAS }}
+      />
+    )}
+    <Stack spacing={2}>{tab === 0 ? listaEnseres.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Typography>{item.nombre} · {item.cantidadTotal} unidades{item.cantidadReparar > 0 ? ` (${item.cantidadReparar} a reparar)` : ''} · {item.ubicacion || 'Sin ubicación'}</Typography><Stack direction="row"><Button aria-label={`Editar ${item.nombre}`} component={Link} to={`/cms/inventario/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.nombre}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>) : listaPrendas.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Typography>{item.numero} · {ETIQUETA_TIPO[item.tipo] ?? item.tipo} · {ETIQUETA_ESTADO[item.estado] ?? item.estado}{item.hermano ? ` · ${item.hermano.nombre} ${item.hermano.apellidos}${item.hermano.numeroHermano ? ` (nº ${item.hermano.numeroHermano})` : ''}` : ''}</Typography><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>{item.estado === 'DISPONIBLE' && <Button aria-label={`Prestar ${item.numero}`} onClick={() => setPrestando(item)}>Prestar</Button>}{item.estado === 'PRESTADA' && <Button aria-label={`Devolver ${item.numero}`} onClick={() => setDevolviendo(item)}>Devolver</Button>}<Button aria-label={`Editar ${item.numero}`} component={Link} to={`/cms/inventario/${item.id}/editar?tipo=prenda`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.numero}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{(tab === 0 ? metaEnseres : metaPrendas) && (tab === 0 ? listaEnseres : listaPrendas).length === 0 && <Alert severity="info">{tab === 0 ? 'No hay enseres con esta búsqueda o estos filtros.' : 'No hay prendas con esta búsqueda o estos filtros.'}</Alert>}</Stack>
     {tab === 0
       ? metaEnseres && <Paginador meta={metaEnseres} onPagina={enseres.irAPagina} onTamano={enseres.cambiarTamano} etiqueta="los enseres" />
       : metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}

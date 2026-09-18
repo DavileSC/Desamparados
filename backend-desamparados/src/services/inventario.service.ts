@@ -3,6 +3,8 @@ import { Prisma, EstadoPrenda } from '@prisma/client';
 import { CreateEnserDto, UpdateEnserDto, EnserFilterDto, CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/inventario.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { condicionBusqueda, palabrasDeBusqueda } from '../domain/busqueda-texto.js';
+import { ORDENES_ENSERES, ORDENES_PRENDAS, ordenDe } from '../domain/ordenacion.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 
 /** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
@@ -23,26 +25,22 @@ export class InventarioService {
    */
   static async getAllEnseres(filters: EnserFilterDto & ConsultaPaginada) {
     const paginacion = sanearPaginacion(filters);
-    const where: Prisma.EnserWhereInput = {};
+    // Cada palabra en alguno de los cuatro campos: «cirial sacristía» encuentra
+    // los ciriales guardados en la sacristía.
+    const where: Prisma.EnserWhereInput = {
+      ...condicionBusqueda(filters.search, ['nombre', 'referencia', 'categoria', 'ubicacion'])
+    };
 
-    if (filters.search) {
-      where.OR = [
-        { nombre: { contains: filters.search } },
-        { referencia: { contains: filters.search } }
-      ];
-    }
     if (filters.categoria) where.categoria = filters.categoria;
+    // Estaba declarado en el esquema pero nunca llegaba a la consulta.
+    if (filters.ubicacion) where.ubicacion = filters.ubicacion;
     if (filters.necesitaReparacion === 'true') where.cantidadReparar = { gt: 0 };
 
     const [enseres, total] = await db.$transaction([
       db.enser.findMany({
         where,
-        // El desempate por id no es adorno: `nombre` no es único en el modelo
-        // (nada impide dos lotes llamados «Insignias de tramo»), y con nombres
-        // repetidos MariaDB no garantiza el mismo orden en la consulta de la
-        // página 1 y en la de la 2: con skip/take uno saldría repetido y otro
-        // no saldría nunca.
-        orderBy: [{ nombre: 'asc' }, { id: 'asc' }],
+        // Todos acaban en el id: ver domain/ordenacion.ts.
+        orderBy: ordenDe(ORDENES_ENSERES, filters.orden),
         skip: paginacion.skip,
         take: paginacion.take
       }),
@@ -50,6 +48,23 @@ export class InventarioService {
     ]);
 
     return respuestaPaginada(enseres, total, paginacion);
+  }
+
+  /**
+   * Las categorías y ubicaciones que ya se usan, para los desplegables del
+   * filtro. Son texto libre en la ficha: un desplegable fijo se quedaría corto
+   * y uno de texto obligaría a acertar con la grafía exacta.
+   */
+  static async opcionesEnseres() {
+    const [categorias, ubicaciones] = await db.$transaction([
+      db.enser.findMany({ where: { categoria: { not: null } }, distinct: ['categoria'], select: { categoria: true }, orderBy: { categoria: 'asc' } }),
+      db.enser.findMany({ where: { ubicacion: { not: null } }, distinct: ['ubicacion'], select: { ubicacion: true }, orderBy: { ubicacion: 'asc' } })
+    ]);
+    const limpias = (valores: (string | null)[]) => valores.filter((v): v is string => Boolean(v?.trim()));
+    return {
+      categorias: limpias(categorias.map((e) => e.categoria)),
+      ubicaciones: limpias(ubicaciones.map((e) => e.ubicacion))
+    };
   }
 
   static async getEnserById(id: number) {
@@ -132,7 +147,20 @@ export class InventarioService {
   /** Devuelve `{ data, meta }`, con su propio contador: el ropero no comparte página con los enseres. */
   static async getAllPrendas(filters: PrendaFilterDto & ConsultaPaginada) {
     const paginacion = sanearPaginacion(filters);
-    const where: Prisma.PrendaWhereInput = {};
+    // Cada palabra en la prenda o en quien la tiene prestada: «pérez» encuentra
+    // lo que tiene Pérez, y «tun pérez», sus túnicas (el número lleva el tipo).
+    const palabras = palabrasDeBusqueda(filters.q);
+    const where: Prisma.PrendaWhereInput = palabras.length === 0 ? {} : {
+      AND: palabras.map((p) => ({
+        OR: [
+          { numero: { contains: p } },
+          { talla: { contains: p } },
+          { observaciones: { contains: p } },
+          { hermano: { is: { nombre: { contains: p } } } },
+          { hermano: { is: { apellidos: { contains: p } } } }
+        ]
+      }))
+    };
 
     if (filters.numero) where.numero = { contains: filters.numero };
     if (filters.tipo) where.tipo = filters.tipo; // Filtra para ver solo Capirotes, o solo Túnicas
@@ -142,9 +170,7 @@ export class InventarioService {
     const [prendas, total] = await db.$transaction([
       db.prenda.findMany({
         where,
-        // Mismo motivo que en los enseres: `numero` es único hoy, pero el orden
-        // solo es estable si el criterio lo es; el id lo cierra sin coste.
-        orderBy: [{ numero: 'asc' }, { id: 'asc' }],
+        orderBy: ordenDe(ORDENES_PRENDAS, filters.orden),
         skip: paginacion.skip,
         take: paginacion.take,
         include: InventarioService.hermanoDeLaPrenda

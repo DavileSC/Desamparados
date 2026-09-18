@@ -310,4 +310,46 @@ describe('BrothersAdminPage', () => {
     // Ni el montaje ni el tecleo: el espía lleva puesto desde antes de pintar.
     expect(invalidoElPanel(espia)).toBe(false)
   })
+
+  it('filtra por situación y ordena por número', async () => {
+    const user = userEvent.setup()
+    const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(respuestaCenso([])))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?pagina=4' })
+
+    await user.click(await screen.findByRole('combobox', { name: /situación/i }))
+    await user.click(await screen.findByRole('option', { name: 'De baja' }))
+    await waitFor(() => expect(llamadasAlCenso(fetchSimulado).at(-1)).toContain('estado=baja'))
+    expect(llamadasAlCenso(fetchSimulado).at(-1)).toContain('page=1')
+
+    await user.click(screen.getByRole('combobox', { name: /ordenar por/i }))
+    await user.click(await screen.findByRole('option', { name: /número de hermano/i }))
+    await waitFor(() => expect(llamadasAlCenso(fetchSimulado).at(-1)).toContain('orden=numero'))
+    expect(llamadasAlCenso(fetchSimulado).at(-1)).toContain('estado=baja')
+  })
+
+  it('pasar a las solicitudes y volver no pierde los filtros del censo', async () => {
+    const user = userEvent.setup()
+    responderCenso(censoVacio, [])
+    renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?estado=pendiente&q=ramos' })
+
+    await user.click(await screen.findByRole('tab', { name: /solicitudes/i }))
+    await user.click(screen.getByRole('tab', { name: /censo/i }))
+    expect(screen.getByRole('button', { name: /quitar el filtro situación/i })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /buscar por nombre/i })).toHaveValue('ramos')
+  })
+
+  it('«Quitar todos» limpia búsqueda y filtros de una vez', async () => {
+    const user = userEvent.setup()
+    const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(respuestaCenso([])))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<BrothersAdminPage />, { ruta: '/cms/hermanos?estado=activo&numero=sin&q=ruiz' })
+
+    await user.click(await screen.findByRole('button', { name: /quitar todos/i }))
+    await waitFor(() => {
+      const ultima = llamadasAlCenso(fetchSimulado).at(-1) ?? ''
+      expect(ultima).not.toMatch(/estado=|numero=|q=/)
+    })
+    expect(screen.getByRole('textbox', { name: /buscar por nombre/i })).toHaveValue('')
+  })
 })

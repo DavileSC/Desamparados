@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useSearchParams } from 'react-router-dom'
 import AddIcon from '@mui/icons-material/Add'
 import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
+import SwapVertIcon from '@mui/icons-material/SwapVert'
 import {
   createCategory,
   createTransaction,
@@ -34,6 +35,7 @@ import GestionCategorias from './contabilidad/GestionCategorias'
 import { PERIODO_POR_DEFECTO, aFiltrosApi, fechasInvertidas, leerFiltrosUrl, type FiltrosUi } from './contabilidad/filtros'
 import { aApunteManual, apunteCompleto, apunteDesde, apunteNuevo, errorNombreCategoria, type FormApunte } from './contabilidad/apunte'
 import { euros, fechaCorta } from './contabilidad/formato'
+import { useFiltrosUrl } from './listados/useFiltrosUrl'
 
 type Tipo = Category['tipo']
 const categoriaVacia = { nombre: '', tipo: 'INGRESO' as Tipo }
@@ -41,6 +43,16 @@ const categoriaVacia = { nombre: '', tipo: 'INGRESO' as Tipo }
 const SIN_FILTRO: Partial<Record<keyof FiltrosUi, string>> = { tipo: 'TODO', periodo: PERIODO_POR_DEFECTO }
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
+
+const ORDENES_LIBRO = [
+  { valor: 'recientes', etiqueta: 'Más recientes' },
+  { valor: 'antiguos', etiqueta: 'Más antiguos' },
+  { valor: 'importeDesc', etiqueta: 'Importe: mayor primero' },
+  { valor: 'importeAsc', etiqueta: 'Importe: menor primero' },
+  { valor: 'concepto', etiqueta: 'Concepto (A-Z)' },
+]
+// El orden es solo del libro de caja: las cifras y las gráficas no cambian con él.
+const ORDEN_LIBRO = { orden: { porDefecto: 'recientes', validos: ORDENES_LIBRO.map((o) => o.valor) } }
 
 export default function AccountingAdminPage() {
   const [params, setParams] = useSearchParams()
@@ -72,6 +84,7 @@ export default function AccountingAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
+  const [{ orden }, cambiarOrden] = useFiltrosUrl(ORDEN_LIBRO)
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
 
   /** Cambia filtros en la URL y vuelve a la primera página: la 7 de otra consulta no tiene sentido. */
@@ -103,12 +116,12 @@ export default function AccountingAdminPage() {
     if (alReves) return Promise.resolve()
     return Promise.all([
       getResumen(filtrosApi),
-      getLedger({ pagina, porPagina }, filtrosApi),
+      getLedger({ pagina, porPagina }, filtrosApi, orden),
     ]).then(([r, l]) => {
       if (!vigente()) return
       setResumen(r); setLedger(l.data); setMeta(l.meta); setError(null)
     })
-  }, [filtrosApi, pagina, porPagina, alReves])
+  }, [filtrosApi, pagina, porPagina, orden, alReves])
 
   useEffect(() => {
     let cancelado = false
@@ -254,9 +267,19 @@ export default function AccountingAdminPage() {
         </Box>
       </>}
 
-      <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: 1.5 }}>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', rowGap: 1.5 }}>
         <Typography variant="h4" component="h2">Libro de caja</Typography>
-        {meta && <Typography variant="body2" color="text.secondary">Lo más reciente arriba</Typography>}
+        <TextField
+          select
+          size="small"
+          label="Ordenar por"
+          value={orden}
+          onChange={(e) => cambiarOrden({ orden: e.target.value })}
+          sx={{ minWidth: 220 }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SwapVertIcon fontSize="small" /></InputAdornment> } }}
+        >
+          {ORDENES_LIBRO.map((o) => <MenuItem key={o.valor} value={o.valor}>{o.etiqueta}</MenuItem>)}
+        </TextField>
       </Stack>
       <LibroCaja apuntes={ledger} totales={resumen?.totales ?? null} tipo={filtros.tipo} onCorregir={(a) => abrirApunte(a)} onBorrar={setPorBorrar} />
       {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="libro mayor" />}

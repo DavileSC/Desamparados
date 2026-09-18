@@ -1,5 +1,5 @@
 import { Response, Request } from 'express';
-import { ReciboService } from '../services/recibo.service.js';
+import { ReciboService, type ConsultaRecibos } from '../services/recibo.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { AuditService } from '../services/audit.service.js';
 import { EstadoPago } from '@prisma/client';
@@ -38,12 +38,22 @@ export class ReciboController {
     try {
       // `adminRecibosQuerySchema` ya garantiza que, si vienen, `year` son
       // cuatro cifras y `estado` uno de los del enum (nunca una lista).
-      const query = req.query as { year?: string; estado?: EstadoPago; page?: string; limit?: string };
+      const query = req.query as ConsultaRecibos & { year?: string; estado?: EstadoPago };
       const year = query.year ? Number(query.year) : undefined;
       const result = await ReciboService.getAdminRecibos(query, year, query.estado);
       res.status(200).json(result);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo recibos administrativos');
+    }
+  }
+
+  static async getResumenAdmin(req: Request, res: Response) {
+    try {
+      const query = req.query as ConsultaRecibos & { year?: string };
+      const year = query.year ? Number(query.year) : undefined;
+      res.status(200).json(await ReciboService.getResumenAdmin(query, year));
+    } catch (e) {
+      handleHttp(res, e, 'Error obteniendo el resumen de recibos');
     }
   }
 

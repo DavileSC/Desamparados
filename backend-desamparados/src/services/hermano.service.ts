@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { ORDENES_CENSO, ordenDe } from '../domain/ordenacion.js';
 import { esConflictoTransitorio } from '../utils/transaction-retry.js';
 
 // 1. DICCIONARIO DE ERRORES (Centralizado)
@@ -45,9 +46,24 @@ export interface SearchHermanoQuery {
   puesto?: string;
   activo?: string;
   tieneTunicaPropia?: string;
+  /** Situación de la ficha, como la lee el listado del CMS. */
+  estado?: 'activo' | 'baja' | 'pendiente';
+  /** Con número de hermano o todavía sin él. */
+  numero?: 'con' | 'sin';
+  orden?: string;
   page?: string;
   limit?: string;
 }
+
+/**
+ * Las tres situaciones de una ficha. «De baja» y «pendiente» comparten
+ * `activo: false`; las separa la fecha de baja, que solo pone una baja.
+ */
+const WHERE_SITUACION: Record<NonNullable<SearchHermanoQuery['estado']>, Prisma.HermanoWhereInput> = {
+  activo: { activo: true },
+  baja: { activo: false, fechaBaja: { not: null } },
+  pendiente: { activo: false, fechaBaja: null },
+};
 
 // 3. LISTAS BLANCAS DE CAMPOS EDITABLES (anti mass-assignment)
 // El objeto que llega a Prisma se construye SOLO con estas claves. Nunca `{...body}`:
@@ -464,25 +480,27 @@ export class HermanoService {
   static async searchHermanos(query: SearchHermanoQuery) {
     const paginacion = sanearPaginacion(query);
 
-    const where: Prisma.HermanoWhereInput = {
-      ...condicionBusqueda(query.q, ['nombre', 'apellidos', 'dni', 'email']),
-    };
+    // Un número suelto busca también al hermano con ese número: en la
+    // secretaría a un hermano se le conoce tanto por el número como por el nombre.
+    const texto = query.q?.trim() ?? '';
+    const numero = /^\d{1,9}$/.test(texto) ? Number(texto) : null;
+    const busqueda = condicionBusqueda(texto, ['nombre', 'apellidos', 'dni', 'email']);
+
+    const where: Prisma.HermanoWhereInput = numero !== null
+      ? { OR: [busqueda, { numeroHermano: numero }] }
+      : { ...busqueda };
 
     if (query.tunica) where.tunica = { contains: query.tunica };
     if (query.puesto) where.puesto = { contains: query.puesto };
     if (query.activo) where.activo = query.activo === 'true';
     if (query.tieneTunicaPropia) where.tieneTunicaPropia = query.tieneTunicaPropia === 'true';
+    if (query.estado) Object.assign(where, WHERE_SITUACION[query.estado]);
+    if (query.numero) where.numeroHermano = query.numero === 'con' ? { not: null } : null;
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
         where, skip: paginacion.skip, take: paginacion.take,
-        orderBy: [
-          { apellidos: 'asc' },
-          { id: 'asc' } // Desempate: en un censo de familias los apellidos se repiten a
-                        // pares y a tríos, y sin este criterio MariaDB no garantiza el
-                        // mismo orden entre la página 1 y la 2: una ficha saldría dos
-                        // veces y otra ninguna.
-        ],
+        orderBy: ordenDe(ORDENES_CENSO, query.orden),
         // `select` y no `include`: con `include` salían todos los escalares de la
         // ficha, IBAN, titular de la cuenta y forma de pago incluidos, a cualquiera
         // que abriera el buscador del censo.

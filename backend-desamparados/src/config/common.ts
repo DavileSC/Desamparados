@@ -89,3 +89,10 @@ export const paginacionQuery = {
     "page?": type("string").matching(/^\d+$/).describe("un número de página"),
     "limit?": type("string").matching(/^\d+$/).describe("un tamaño de página"),
 };
+/**
+ * El `?orden=` de un listado: solo los nombres de su tabla en
+ * `domain/ordenacion.ts`. Otro cualquiera es un 400 con la lista de los que
+ * valen, no un listado ordenado por lo que caiga.
+ */
+export const ordenQuery = (tabla: Record<string, unknown>) =>
+    type.enumerated(...Object.keys(tabla)).describe(`un orden de estos: ${Object.keys(tabla).join(', ')}`);

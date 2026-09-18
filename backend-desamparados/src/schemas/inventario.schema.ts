@@ -1,5 +1,6 @@
 import { type } from 'arktype';
-import { paginacionQuery, textoRequerido } from '../config/common';
+import { ordenQuery, paginacionQuery, textoRequerido } from '../config/common';
+import { ORDENES_ENSERES, ORDENES_PRENDAS } from '../domain/ordenacion.js';
 import { imagenOpcional } from './news.schema';
 
 // =================================================================
@@ -65,7 +66,8 @@ export const queryEnserSchema = type({
         "search?": "string",
         "ubicacion?": "string",
         "categoria?": "string",
-        "necesitaReparacion?": "'true' | 'false'"
+        "necesitaReparacion?": "'true' | 'false'",
+        "orden?": ordenQuery(ORDENES_ENSERES)
     }
 });
 
@@ -100,10 +102,12 @@ export const updatePrendaSchema = type({
 export const queryPrendaSchema = type({
     query: {
         ...paginacionQuery,
+        "q?": "string <= 100",
         "numero?": "string",
         "tipo?": tipoPrendaSchema,
         "estado?": estadoPrendaSchema,
-        "talla?": "string"
+        "talla?": "string",
+        "orden?": ordenQuery(ORDENES_PRENDAS)
     }
 });
 

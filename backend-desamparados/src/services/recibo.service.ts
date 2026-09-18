@@ -10,6 +10,8 @@ import { anulaPapeleta, puedeCobrarse, puedeTransicionar, requiereReverso, ESTAD
 import { CLAVES_EVENTO, datosEvento, type DatosEvento } from '../domain/datos-procesion.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { palabrasDeBusqueda } from '../domain/busqueda-texto.js';
+import { ORDENES_RECIBOS, ordenDe } from '../domain/ordenacion.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -34,26 +36,60 @@ function fotoRecibo(r: { estado: EstadoPago; importe: Prisma.Decimal | number; m
   };
 }
 
+/** Lo que admite el listado de Tesorería, además del año y el estado. */
+export interface ConsultaRecibos {
+  page?: unknown;
+  limit?: unknown;
+  /** Hermano (nombre, apellidos o número) o concepto. */
+  q?: string;
+  tipo?: TipoRecibo;
+  orden?: string;
+}
+
+/**
+ * Cada palabra en el concepto o en el hermano; un número suelto encuentra
+ * además los recibos del hermano con ese número, que es como Tesorería
+ * identifica a la gente en la mesa.
+ */
+function whereBusquedaRecibo(q: string | undefined): Prisma.ReciboWhereInput {
+  const palabras = palabrasDeBusqueda(q);
+  if (palabras.length === 0) return {};
+  const porTexto: Prisma.ReciboWhereInput = {
+    AND: palabras.map((p) => ({
+      OR: [
+        { concepto: { contains: p } },
+        { hermano: { is: { nombre: { contains: p } } } },
+        { hermano: { is: { apellidos: { contains: p } } } }
+      ]
+    }))
+  };
+  const texto = q!.trim();
+  return /^\d{1,9}$/.test(texto) ? { OR: [porTexto, { hermano: { is: { numeroHermano: Number(texto) } } }] } : porTexto;
+}
+
+/** El filtro del listado de Tesorería; el resumen usa el mismo sin el estado. */
+function whereRecibosAdmin(query: ConsultaRecibos, year?: number, estado?: EstadoPago): Prisma.ReciboWhereInput {
+  return {
+    ...(year ? { year } : {}),
+    ...(estado ? { estado } : {}),
+    ...(query.tipo ? { tipo: query.tipo } : {}),
+    ...whereBusquedaRecibo(query.q)
+  };
+}
+
 export class ReciboService {
 
-  static async getAdminRecibos(query: { page?: unknown; limit?: unknown } = {}, year?: number, estado?: EstadoPago) {
+  static async getAdminRecibos(query: ConsultaRecibos = {}, year?: number, estado?: EstadoPago) {
     const paginacion = sanearPaginacion(query);
-    const where = {
-      ...(year ? { year } : {}),
-      ...(estado ? { estado } : {})
-    };
+    const where = whereRecibosAdmin(query, year, estado);
 
     const [data, total] = await db.$transaction([
       db.recibo.findMany({
         where,
-        orderBy: [
-          { year: 'desc' },
-          { createdAt: 'desc' },
-          { id: 'asc' } // Desempate: los recibos emitidos de una tacada comparten `createdAt`
-                        // —MariaDB evalúa DEFAULT CURRENT_TIMESTAMP una vez por sentencia, así
-                        // que un createMany deja a todos con el mismo—, el orden degenera a
-                        // ordenar solo por año y uno saldría en dos páginas y otro en ninguna.
-        ],
+        // El desempate por id importa aquí más que en ningún sitio: los recibos
+        // emitidos de una tacada comparten `createdAt` (MariaDB evalúa DEFAULT
+        // CURRENT_TIMESTAMP una vez por sentencia). Ver domain/ordenacion.ts.
+        orderBy: ordenDe(ORDENES_RECIBOS, query.orden),
         skip: paginacion.skip,
         take: paginacion.take,
         select: {
@@ -66,6 +102,29 @@ export class ReciboService {
     ]);
 
     return respuestaPaginada(data, total, paginacion);
+  }
+
+  /**
+   * Cuántos recibos hay en cada estado, y cuánto suman, con la misma búsqueda,
+   * año y tipo que el listado pero sin filtrar por estado: son los contadores
+   * de encima del listado, que a la vez sirven para elegir el estado. Salen
+   * todos los estados, también con cero, para que la pantalla no tenga que
+   * adivinar los que faltan.
+   */
+  static async getResumenAdmin(query: ConsultaRecibos = {}, year?: number) {
+    const grupos = await db.recibo.groupBy({
+      by: ['estado'],
+      where: whereRecibosAdmin(query, year),
+      _count: { _all: true },
+      _sum: { importe: true }
+    });
+    const estados = Object.fromEntries(
+      Object.values(EstadoPago).map((e) => [e, { cuenta: 0, total: 0 }])
+    ) as Record<EstadoPago, { cuenta: number; total: number }>;
+    for (const g of grupos) {
+      estados[g.estado] = { cuenta: g._count._all, total: Number(g._sum.importe ?? 0) };
+    }
+    return { estados };
   }
 
   /**

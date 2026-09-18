@@ -1,5 +1,6 @@
 import { type } from 'arktype';
-import { idParam, paginacionQuery } from '../config/common';
+import { idParam, ordenQuery, paginacionQuery } from '../config/common';
+import { ORDENES_LIBRO } from '../domain/ordenacion.js';
 import { esDiaValido, fechasInvertidas, motivoImporteInvalido } from '../domain/contabilidad.js';
 
 const tipoTransaccion = type("'INGRESO' | 'GASTO'");
@@ -24,7 +25,8 @@ const filtrosContablesQuery = {
  */
 const FECHAS_AL_REVES = { path: ['query', 'hasta'], problem: 'no puede ser anterior a la fecha «desde»' };
 
-export const libroMayorQuerySchema = type({ query: { ...paginacionQuery, ...filtrosContablesQuery } })
+// El orden solo lo tiene el libro: al resumen le da igual en qué orden se sumen.
+export const libroMayorQuerySchema = type({ query: { ...paginacionQuery, ...filtrosContablesQuery, "orden?": ordenQuery(ORDENES_LIBRO) } })
     .narrow((datos, ctx) => !fechasInvertidas(datos.query) || ctx.reject(FECHAS_AL_REVES));
 export const resumenQuerySchema = type({ query: filtrosContablesQuery })
     .narrow((datos, ctx) => !fechasInvertidas(datos.query) || ctx.reject(FECHAS_AL_REVES));

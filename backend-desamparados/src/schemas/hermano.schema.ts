@@ -1,5 +1,6 @@
 import { type } from 'arktype';
-import { dni, textoRequerido, telefono, email, password } from '../config/common';
+import { dni, textoRequerido, telefono, email, password, ordenQuery } from '../config/common';
+import { ORDENES_CENSO } from '../domain/ordenacion.js';
 
 // ==========================================
 // PIEZAS REUTILIZABLES (No exportadas directamente)
@@ -89,6 +90,9 @@ export const searchHermanoSchema = type({
         "puesto?": "string",
         "activo?": "'true' | 'false'", // Las URLs siempre envían strings
         "tieneTunicaPropia?": "'true' | 'false'",
+        "estado?": "'activo' | 'baja' | 'pendiente'",
+        "numero?": "'con' | 'sin'",
+        "orden?": ordenQuery(ORDENES_CENSO),
         "page?": type("string").matching(/^[1-9]\d*$/), // Número mayor que 0
         "limit?": type("string").matching(/^[1-9]\d*$/)
     }

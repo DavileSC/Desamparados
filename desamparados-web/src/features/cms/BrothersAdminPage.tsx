@@ -1,16 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Paper, Stack, Tab, Tabs, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import EditIcon from '@mui/icons-material/Edit'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../members/auth/store'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { approveRequest, cerrarHuecosDeNumero, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type PendingRequest } from '../../lib/api/brothers'
+import { approveRequest, cerrarHuecosDeNumero, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type FiltrosCenso, type PendingRequest } from '../../lib/api/brothers'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import type { MetaPaginacion } from '../../lib/api/tipos'
+import BarraListado, { type Opcion } from './listados/BarraListado'
+import { useFiltrosUrl } from './listados/useFiltrosUrl'
+
+const SITUACIONES: Opcion[] = [
+  { valor: 'activo', etiqueta: 'Activos' },
+  { valor: 'baja', etiqueta: 'De baja' },
+  { valor: 'pendiente', etiqueta: 'Solicitud pendiente' },
+]
+const CON_SIN_NUMERO: Opcion[] = [
+  { valor: 'con', etiqueta: 'Con número' },
+  { valor: 'sin', etiqueta: 'Sin número' },
+]
+const ORDENES_CENSO: Opcion[] = [
+  { valor: 'apellidos', etiqueta: 'Apellidos (A-Z)' },
+  { valor: 'numero', etiqueta: 'Número de hermano' },
+  { valor: 'antiguedad', etiqueta: 'Antigüedad' },
+  { valor: 'recientes', etiqueta: 'Altas más recientes' },
+]
+const valoresDe = (opciones: Opcion[]) => opciones.map((o) => o.valor)
+const FILTROS_CENSO = {
+  q: {},
+  estado: { validos: valoresDe(SITUACIONES) },
+  numero: { validos: valoresDe(CON_SIN_NUMERO) },
+  orden: { porDefecto: 'apellidos', validos: valoresDe(ORDENES_CENSO) },
+}
 
 export default function BrothersAdminPage() {
   const queryClient = useQueryClient()
@@ -23,7 +48,8 @@ export default function BrothersAdminPage() {
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
   const vista = params.get('vista') === 'solicitudes' ? 'solicitudes' : 'censo'
-  const [query, setQuery] = useState('')
+  // Búsqueda, filtros y orden, en la URL como la página.
+  const [filtros, cambiarFiltros] = useFiltrosUrl(FILTROS_CENSO)
   const [brothers, setBrothers] = useState<AdminBrother[]>([])
   const [requests, setRequests] = useState<PendingRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,7 +58,7 @@ export default function BrothersAdminPage() {
   // La consulta actual viaja con el enlace de editar (página, tamaño y filtros):
   // así la pantalla de edición sabe a qué página del listado devolver.
   const { search: consultaListado } = useLocation()
-  const { pagina, porPagina, irAPagina, cambiarTamano, reiniciar } = usePaginacion()
+  const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
   // Segundo listado de la misma pantalla, con su propia paginación: el prefijo
   // evita que ?pagina= y ?paginaSolicitudes= se pisen en la URL.
@@ -57,24 +83,24 @@ export default function BrothersAdminPage() {
     puedeGestionar
       ? getPendingRequests({ pagina: solicitudes.pagina, porPagina: solicitudes.porPagina })
       : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 } }),
-    searchBrothers(query, { pagina, porPagina }),
+    searchBrothers(filtros as FiltrosCenso, { pagina, porPagina }),
   ]).then(([pendientes, censo]) => {
     if (!vigente()) return
     setBrothers(censo.data)
     setMeta(censo.meta)
     setRequests(pendientes.data)
     setMetaSolicitudes(pendientes.meta)
-  }), [puedeGestionar, query, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
+  }), [puedeGestionar, filtros, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
 
   useEffect(() => {
-    // El temporizador ya cancelaba la carga que aún no había salido; `cancelado`
-    // se ocupa de la que salió y todavía no ha vuelto.
+    // La espera del tecleo la pone el buscador (CampoBusqueda); `cancelado` se
+    // ocupa de la carga que salió y todavía no ha vuelto.
     let cancelado = false
-    const timer = window.setTimeout(() => load(() => !cancelado)
+    load(() => !cancelado)
       .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.') })
-      .finally(() => { if (!cancelado) setLoading(false) }), query ? 300 : 0)
-    return () => { cancelado = true; window.clearTimeout(timer) }
-  }, [load, query])
+      .finally(() => { if (!cancelado) setLoading(false) })
+    return () => { cancelado = true }
+  }, [load])
 
   /**
    * Recarga el censo y refresca de paso los contadores del menú («hermanos sin
@@ -85,8 +111,7 @@ export default function BrothersAdminPage() {
    *
    * Cuelga de las tres acciones que de verdad mueven esos números —asignar,
    * aprobar y rechazar— y no de `load()`: `load()` corre también al abrir la
-   * pantalla, en cada tecleo del buscador (con rebote, pero cada 300 ms) y al
-   * cambiar de página. El panel es un agregado caro (censo, dinero, procesión y
+   * pantalla, en cada búsqueda o filtro y al cambiar de página. El panel es un agregado caro (censo, dinero, procesión y
    * actividad) y el menú lo tiene observado mientras se está dentro del CMS, así
    * que invalidarlo no deja una marca de caducidad: dispara una petición de
    * verdad, en ese momento. Y buscar a un hermano por su nombre no cambia
@@ -134,7 +159,13 @@ export default function BrothersAdminPage() {
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-      <Tabs value={vista} onChange={(_, valor) => setParams(valor === 'solicitudes' ? { vista: 'solicitudes' } : {})}>
+      {/* Solo cambia `vista`: los filtros y la página del censo siguen ahí al volver. */}
+      <Tabs value={vista} onChange={(_, valor) => setParams((anteriores) => {
+        const siguientes = new URLSearchParams(anteriores)
+        if (valor === 'solicitudes') siguientes.set('vista', 'solicitudes')
+        else siguientes.delete('vista')
+        return siguientes
+      })}>
         <Tab value="censo" label="Censo" />
         <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
       </Tabs>
@@ -167,8 +198,17 @@ export default function BrothersAdminPage() {
     </Stack>
     {metaSolicitudes && <Paginador meta={metaSolicitudes} onPagina={solicitudes.irAPagina} onTamano={solicitudes.cambiarTamano} etiqueta="solicitudes de alta" />}
     </Paper> : <>
-    <TextField label="Buscar por nombre, DNI o email" value={query} onChange={(event) => { setQuery(event.target.value); reiniciar() }} fullWidth sx={{ mb: 3 }} />
-    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : brother.fechaBaja ? 'De baja' : 'Solicitud pendiente'}</Typography></Box>{puedeGestionar && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`} state={{ volver: consultaListado }}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No se han encontrado hermanos.</Alert>}</Stack>}
+    <BarraListado
+      valores={filtros}
+      onCambiar={cambiarFiltros}
+      busqueda={{ clave: 'q', etiqueta: 'Buscar por nombre, DNI, email o número' }}
+      filtros={[
+        { clave: 'estado', etiqueta: 'Situación', todos: 'Todas', opciones: SITUACIONES },
+        { clave: 'numero', etiqueta: 'Número', todos: 'Con y sin número', opciones: CON_SIN_NUMERO, ancho: 190 },
+      ]}
+      orden={{ clave: 'orden', opciones: ORDENES_CENSO }}
+    />
+    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : brother.fechaBaja ? 'De baja' : 'Solicitud pendiente'}</Typography></Box>{puedeGestionar && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`} state={{ volver: consultaListado }}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No hay hermanos con esta búsqueda o estos filtros.</Alert>}</Stack>}
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="censo de hermanos" />}
     </>}
   </>

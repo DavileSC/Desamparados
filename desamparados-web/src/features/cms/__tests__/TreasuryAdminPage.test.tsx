@@ -37,6 +37,10 @@ function servidor(recibos: unknown[] = []) {
   })
 }
 
+/** La última petición del listado, no la de los contadores (van a la vez). */
+const ultimaAlListado = (simulado: ReturnType<typeof vi.fn>) =>
+  String(simulado.mock.calls.map(([url]) => String(url)).filter((url) => !url.includes('/resumen') && !url.includes('/hermanos')).at(-1))
+
 const llamadas = (simulado: ReturnType<typeof vi.fn>, filtro: (ruta: string, init?: RequestInit) => boolean) =>
   simulado.mock.calls.filter(([url, init]) => filtro(String(url), init as RequestInit | undefined))
 
@@ -77,7 +81,7 @@ describe('TreasuryAdminPage', () => {
     await user.type(screen.getByLabelText(/año/i), '2025')
 
     await waitFor(() => {
-      const ultima = String(fetchSimulado.mock.calls.at(-1)?.[0])
+      const ultima = ultimaAlListado(fetchSimulado)
       expect(ultima).toContain('page=1')
       expect(ultima).toContain('year=2025')
     })
@@ -93,7 +97,7 @@ describe('TreasuryAdminPage', () => {
     await user.clear(screen.getByLabelText(/año/i))
     await user.type(screen.getByLabelText(/año/i), '2025')
 
-    await waitFor(() => expect(String(fetchSimulado.mock.calls.at(-1)?.[0])).toContain('year=2025'))
+    await waitFor(() => expect(ultimaAlListado(fetchSimulado)).toContain('year=2025'))
     const años = fetchSimulado.mock.calls.map(([url]) => new URL(String(url), 'http://x').searchParams.get('year'))
     expect(años.every((a) => a === null || /^\d{4}$/.test(a))).toBe(true)
   })
@@ -151,20 +155,102 @@ describe('TreasuryAdminPage', () => {
     expect(within(ventana).getByRole('button', { name: /emitir recibo/i })).toBeDisabled()
   })
 
-  it('ofrece «Cobrar» en los pendientes y en los remesados, y el remesado se cobra por domiciliación', async () => {
+  it('cada estado tiene su botón: «Cobrar» el pendiente y «Confirmar» el remesado, que va por domiciliación', async () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor([recibo(1, 'REMESADO', 'Cuota remesada'), recibo(2, 'PAGADO', 'Cuota pagada'), recibo(3, 'PENDIENTE', 'Cuota pendiente')])
     vi.stubGlobal('fetch', simulado)
     renderWithProviders(<TreasuryAdminPage />)
 
-    expect(await screen.findByRole('button', { name: /cobrar cuota remesada/i })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /confirmar el cobro de cuota remesada/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /cobrar cuota pendiente/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /cobrar cuota pagada/i })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /cobrar cuota remesada/i }))
+    await user.click(screen.getByRole('button', { name: /confirmar el cobro de cuota remesada/i }))
     await waitFor(() => expect(llamadas(simulado, (ruta) => ruta.endsWith('/pagar'))).toHaveLength(1))
     const [url, init] = llamadas(simulado, (ruta) => ruta.endsWith('/pagar'))[0]
     expect(String(url)).toContain('/recibos/admin/1/pagar')
     expect(JSON.parse(String((init as RequestInit).body))).toEqual({ metodoPago: 'DOMICILIACION' })
+  })
+
+  it('busca por hermano o concepto y filtra por estado, volviendo a la primera página', async () => {
+    const user = userEvent.setup({ delay: null })
+    const simulado = servidor()
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TreasuryAdminPage />, { ruta: '/cms/tesoreria?pagina=3' })
+
+    await user.type(await screen.findByRole('textbox', { name: /buscar recibos/i }), 'pérez')
+    await waitFor(() => expect(ultimaAlListado(simulado)).toContain('q=p%C3%A9rez'))
+    expect(ultimaAlListado(simulado)).toContain('page=1')
+
+    // El estado se elige en los contadores, que hacen de filtro.
+    await user.click(screen.getByRole('button', { name: /^devueltos/i }))
+    await waitFor(() => expect(ultimaAlListado(simulado)).toContain('estado=DEVUELTO'))
+    expect(screen.getByRole('button', { name: /^devueltos/i })).toHaveAttribute('aria-pressed', 'true')
+    // Los contadores no se filtran a sí mismos: cuentan todos los estados.
+    const resumen = simulado.mock.calls.map(([url]) => String(url)).filter((url) => url.includes('/resumen')).at(-1)
+    expect(resumen).toContain('q=p%C3%A9rez')
+    expect(resumen).not.toContain('estado=')
+  })
+
+  it('el orden y el tipo de la URL llegan al servidor', async () => {
+    const simulado = servidor()
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TreasuryAdminPage />, { ruta: '/cms/tesoreria?orden=importeDesc&tipo=DONATIVO' })
+    await waitFor(() => expect(ultimaAlListado(simulado)).toContain('orden=importeDesc'))
+    expect(ultimaAlListado(simulado)).toContain('tipo=DONATIVO')
+  })
+
+  it('un orden que no existe en la URL no se manda: el servidor respondería 400', async () => {
+    const simulado = servidor()
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TreasuryAdminPage />, { ruta: '/cms/tesoreria?orden=iban' })
+    await waitFor(() => expect(simulado).toHaveBeenCalled())
+    expect(simulado.mock.calls.every(([url]) => !String(url).includes('orden=iban'))).toBe(true)
+  })
+
+  it('con el año vacío se ven los recibos de todos los años', async () => {
+    const user = userEvent.setup({ delay: null })
+    const simulado = servidor()
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TreasuryAdminPage />)
+    await screen.findByText(`Recibos del año ${new Date().getFullYear()}`)
+
+    await user.clear(screen.getByLabelText(/año/i))
+    expect(await screen.findByText('Recibos de todos los años')).toBeInTheDocument()
+    await waitFor(() => expect(ultimaAlListado(simulado)).not.toContain('year='))
+  })
+
+  it('los contadores dicen cuántos hay y cuánto suman; exentos y anulados no suman', async () => {
+    const cero = { cuenta: 0, total: 0 }
+    const resumen = { estados: { PENDIENTE: { cuenta: 120, total: 4320 }, REMESADO: { cuenta: 40, total: 1440 }, PAGADO: cero, DEVUELTO: { cuenta: 5, total: 180 }, EXENTO: { cuenta: 7, total: 252 }, ANULADO: cero } }
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => String(url).includes('/resumen')
+      ? json(resumen)
+      : json({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })))
+    renderWithProviders(<TreasuryAdminPage />)
+
+    const pendientes = await screen.findByRole('button', { name: /^pendientes/i })
+    await waitFor(() => expect(pendientes).toHaveTextContent('120'))
+    expect(pendientes).toHaveTextContent('4.320,00')
+    expect(screen.getByRole('button', { name: /^todos/i })).toHaveTextContent('172')
+    expect(screen.getByRole('button', { name: /^exentos/i })).toHaveTextContent('no cuentan')
+    expect(screen.getByRole('button', { name: /^todos/i })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('«Reemitir» abre el nuevo recibo con los datos del devuelto; una papeleta devuelta no se reemite aquí', async () => {
+    const user = userEvent.setup({ delay: null })
+    const devuelto = { ...recibo(7, 'DEVUELTO', 'Cuota anual 2026'), importe: '36.00', tipo: 'CUOTA_HERMANO' }
+    const papeleta = { ...recibo(8, 'DEVUELTO', 'Papeleta de sitio 2026'), tipo: 'PAPELETA_SITIO' }
+    vi.stubGlobal('fetch', servidor([devuelto, papeleta]))
+    renderWithProviders(<TreasuryAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: /reemitir cuota anual 2026/i }))
+    const ventana = screen.getByRole('dialog', { name: /nuevo recibo/i })
+    expect(within(ventana).getByLabelText(/concepto/i)).toHaveValue('Cuota anual 2026 (reemisión)')
+    expect(within(ventana).getByLabelText(/importe/i)).toHaveValue('36,00')
+    expect(within(ventana).getByRole('combobox', { name: /hermano/i })).toHaveValue('Pérez Ruiz, Ana · n.º 12')
+    expect(within(ventana).getByRole('button', { name: /emitir recibo/i })).toBeEnabled()
+
+    expect(screen.queryByRole('button', { name: /reemitir papeleta/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/se reemite en la mesa de reparto/i)).toBeInTheDocument()
   })
 })

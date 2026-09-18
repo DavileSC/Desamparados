@@ -35,10 +35,16 @@ export interface PendingRequest {
   hermanos: AdminBrother[]
 }
 
-export function searchBrothers(query: string, pagina: { pagina: number; porPagina: number }) {
-  return apiFetch<RespuestaPaginada<AdminBrother>>(
-    `/hermanos/admin/search?${paramsPagina(pagina, { q: query || undefined })}`,
-  )
+/** Búsqueda, filtros y orden del censo. Vacío = sin filtrar. */
+export type FiltrosCenso = {
+  q?: string
+  estado?: '' | 'activo' | 'baja' | 'pendiente'
+  numero?: '' | 'con' | 'sin'
+  orden?: string
+}
+
+export function searchBrothers(filtros: FiltrosCenso, pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<AdminBrother>>(`/hermanos/admin/search?${paramsPagina(pagina, filtros)}`)
 }
 
 export function getPendingRequests(pagina: { pagina: number; porPagina: number }) {

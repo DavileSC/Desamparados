@@ -3,6 +3,7 @@ import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { AuditMeta, AuditService, AUDIT_ACTIONS } from './audit.service.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { ORDENES_LIBRO, ordenDe } from '../domain/ordenacion.js';
 import {
   agruparEnSerie,
   claveNombreCategoria,
@@ -271,13 +272,10 @@ export class TransaccionService {
     const [data, total] = await db.$transaction([
       db.transaccion.findMany({
         where,
-        orderBy: [
-          { fecha: 'desc' },
-          { id: 'asc' } // Desempate: los apuntes de un mismo día comparten `fecha` al
-                        // milisegundo (los de demostración se generan con inicioDelDia),
-                        // así que sin este criterio MariaDB los ordena a su antojo y con
-                        // skip/take uno saldría en dos páginas y otro en ninguna.
-        ],
+        // Los apuntes de un mismo día comparten `fecha` al milisegundo (los de
+        // demostración se generan con inicioDelDia): todos los órdenes acaban
+        // en el id. Ver domain/ordenacion.ts.
+        orderBy: ordenDe(ORDENES_LIBRO, query.orden),
         skip: paginacion.skip,
         take: paginacion.take,
         include: {

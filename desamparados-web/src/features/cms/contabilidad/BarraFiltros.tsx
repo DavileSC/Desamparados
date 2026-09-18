@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
-import { Box, IconButton, InputAdornment, ListSubheader, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
-import SearchIcon from '@mui/icons-material/Search'
+import { Box, ListSubheader, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import type { Category } from '../../../lib/api/accounting'
 import { METODOS, PERIODOS, PERIODO_POR_DEFECTO, fechasInvertidas, type FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, etiquetaMetodo } from './formato'
+import CampoBusqueda from '../listados/CampoBusqueda'
+import PastillasFiltro, { type Pastilla } from '../listados/PastillasFiltro'
+import { SIN_VALOR_VISIBLE, anchoControl } from '../listados/BarraListado'
 
 interface Props {
   filtros: FiltrosUi
@@ -13,25 +13,10 @@ interface Props {
   onCambiar: (cambios: Partial<FiltrosUi>) => void
 }
 
-// Sin esto, un desplegable sin filtro enseña su etiqueta dentro, como si estuviera vacío, en vez de «Todas».
-const SIN_VALOR_VISIBLE = { inputLabel: { shrink: true }, select: { displayEmpty: true } } as const
-
 const punto = (color: string) => <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, display: 'inline-block', mr: 1 }} />
 
 /** Fila de filtros de la contabilidad y, debajo, los activos como etiquetas que se quitan. */
 export default function BarraFiltros({ filtros, categorias, onCambiar }: Props) {
-  // La búsqueda se escribe aquí y llega a la URL medio segundo después de dejar
-  // de teclear: una petición por letra saturaría el limitador.
-  const [texto, setTexto] = useState(filtros.q)
-  // Si la búsqueda cambia desde fuera (la × de su etiqueta), la caja la sigue.
-  const [qConocida, setQConocida] = useState(filtros.q)
-  if (filtros.q !== qConocida) { setQConocida(filtros.q); setTexto(filtros.q) }
-  useEffect(() => {
-    if (texto.trim() === filtros.q) return
-    const espera = window.setTimeout(() => onCambiar({ q: texto.trim() }), 400)
-    return () => window.clearTimeout(espera)
-  }, [texto, filtros.q, onCambiar])
-
   const alReves = fechasInvertidas(filtros)
 
   // Con «Ingresos» o «Gastos», el desplegable solo ofrece categorías de ese tipo.
@@ -51,7 +36,7 @@ export default function BarraFiltros({ filtros, categorias, onCambiar }: Props) 
     onCambiar({ tipo, ...(sigueValida ? {} : { categoria: '' }) })
   }
 
-  const etiquetas = [
+  const pastillas = [
     filtros.periodo !== PERIODO_POR_DEFECTO && {
       nombre: 'periodo',
       texto: filtros.periodo === 'personalizado'
@@ -62,7 +47,7 @@ export default function BarraFiltros({ filtros, categorias, onCambiar }: Props) 
     categoriaElegida && { nombre: 'categoría', texto: categoriaElegida.nombre, quitar: () => onCambiar({ categoria: '' }) },
     filtros.metodo && { nombre: 'método', texto: etiquetaMetodo(filtros.metodo), quitar: () => onCambiar({ metodo: '' }) },
     filtros.q && { nombre: 'búsqueda', texto: `«${filtros.q}»`, quitar: () => onCambiar({ q: '' }) },
-  ].filter((e): e is { nombre: string; texto: string; quitar: () => void } => Boolean(e))
+  ].filter((e): e is Pastilla => Boolean(e))
 
   return (
     <Box sx={{ mb: 3 }}>
@@ -78,7 +63,7 @@ export default function BarraFiltros({ filtros, categorias, onCambiar }: Props) 
           label="Periodo"
           value={filtros.periodo}
           onChange={(e) => onCambiar({ periodo: e.target.value as FiltrosUi['periodo'], desde: '', hasta: '' })}
-          sx={{ minWidth: 170 }}
+          sx={anchoControl(170)}
         >
           {PERIODOS.map((p) => <MenuItem key={p.valor} value={p.valor}>{p.etiqueta}</MenuItem>)}
         </TextField>
@@ -98,38 +83,21 @@ export default function BarraFiltros({ filtros, categorias, onCambiar }: Props) 
             />
           </Stack>
         )}
-        <TextField select size="small" label="Categoría" value={filtros.categoria} onChange={(e) => onCambiar({ categoria: e.target.value })} sx={{ minWidth: 190 }} slotProps={SIN_VALOR_VISIBLE}>
+        <TextField select size="small" label="Categoría" value={filtros.categoria} onChange={(e) => onCambiar({ categoria: e.target.value })} sx={anchoControl(190)} slotProps={SIN_VALOR_VISIBLE}>
           <MenuItem value="">Todas</MenuItem>
           {filtros.tipo !== 'GASTO' && grupo('Ingresos', ingresos)}
           {filtros.tipo !== 'INGRESO' && grupo('Gastos', gastos)}
         </TextField>
-        <TextField select size="small" label="Método" value={filtros.metodo} onChange={(e) => onCambiar({ metodo: e.target.value as FiltrosUi['metodo'] })} sx={{ minWidth: 150 }} slotProps={SIN_VALOR_VISIBLE}>
+        <TextField select size="small" label="Método" value={filtros.metodo} onChange={(e) => onCambiar({ metodo: e.target.value as FiltrosUi['metodo'] })} sx={anchoControl(150)} slotProps={SIN_VALOR_VISIBLE}>
           <MenuItem value="">Todos</MenuItem>
           {METODOS.map((m) => <MenuItem key={m.valor} value={m.valor}>{m.etiqueta}</MenuItem>)}
         </TextField>
-        <TextField
-          size="small"
-          label="Buscar"
-          placeholder="Concepto o hermano"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          sx={{ flex: 1, minWidth: 200 }}
-          slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
-        />
+        <CampoBusqueda etiqueta="Buscar" placeholder="Concepto o hermano" valor={filtros.q} onCambiar={(q) => onCambiar({ q })} sx={anchoControl(220, 2)} />
       </Paper>
-      {etiquetas.length > 0 && (
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: 'wrap', rowGap: 1 }}>
-          {/* Pastilla propia y no Chip: el aspa del Chip no es un botón para el lector de pantalla. */}
-          {etiquetas.map((e) => (
-            <Box key={e.nombre} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, pl: 1.5, pr: 0.25, borderRadius: 999, backgroundColor: 'action.selected', fontSize: 13 }}>
-              {e.texto}
-              <IconButton size="small" aria-label={`Quitar el filtro ${e.nombre}`} onClick={e.quitar} sx={{ p: 0.5 }}>
-                <CloseIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Box>
-          ))}
-        </Stack>
-      )}
+      <PastillasFiltro
+        pastillas={pastillas}
+        onQuitarTodas={() => onCambiar({ periodo: PERIODO_POR_DEFECTO, desde: '', hasta: '', categoria: '', metodo: '', q: '' })}
+      />
     </Box>
   )
 }

@@ -42,6 +42,9 @@ inventarioRoutes.get('/dashboard', checkRole(rolesGestores), InventarioControlle
 // datos personales»), pero cada enser lleva su `ubicacion`: la API le decía a
 // cualquier cuenta dónde se guardan las piezas de valor. Solo quien lo gestiona.
 inventarioRoutes.get('/enseres', checkRole(rolesGestores), validate(queryEnserSchema), InventarioController.listEnseres);
+// Categorías y ubicaciones en uso, para los filtros del listado. Por encima de
+// '/enseres/:id', que se tragaría el segmento.
+inventarioRoutes.get('/enseres/opciones', checkRole(rolesGestores), InventarioController.opcionesEnseres);
 inventarioRoutes.get('/enseres/:id', checkRole(rolesGestores), validateId, InventarioController.getOneEnser);
 
 // GESTIÓN (Solo roles autorizados)

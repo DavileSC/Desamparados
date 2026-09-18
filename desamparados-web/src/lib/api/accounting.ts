@@ -69,9 +69,10 @@ export function paramsFiltros(filtros: FiltrosContables): URLSearchParams {
 }
 
 export const getBalance = () => apiFetch<Balance>('/transacciones/balance')
-export const getLedger = (pagina: { pagina: number; porPagina: number }, filtros: FiltrosContables = {}) => {
+/** El orden solo es del libro: al resumen le da igual en qué orden se sumen los apuntes. */
+export const getLedger = (pagina: { pagina: number; porPagina: number }, filtros: FiltrosContables = {}, orden?: string) => {
   const filtrado = paramsFiltros(filtros).toString()
-  return apiFetch<RespuestaPaginada<Transaction>>(`/transacciones/libro-mayor?${paramsPagina(pagina)}${filtrado ? `&${filtrado}` : ''}`)
+  return apiFetch<RespuestaPaginada<Transaction>>(`/transacciones/libro-mayor?${paramsPagina(pagina, { orden })}${filtrado ? `&${filtrado}` : ''}`)
 }
 export const getResumen = (filtros: FiltrosContables = {}) => {
   const filtrado = paramsFiltros(filtros).toString()

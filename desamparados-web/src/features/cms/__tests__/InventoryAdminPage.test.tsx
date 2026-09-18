@@ -158,6 +158,50 @@ describe('InventoryAdminPage', () => {
     await waitFor(() => expect(devoluciones()).toHaveLength(1))
     expect(JSON.parse(String(devoluciones()[0][1]!.body))).toEqual({ necesitaLavado: true })
   })
+
+  it('cada listado filtra por su cuenta, y la pestaña sigue en la URL', async () => {
+    const user = userEvent.setup()
+    const fetchSimulado = vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(
+      JSON.stringify(String(url).includes('/opciones')
+        ? { categorias: ['Cortejo'], ubicaciones: ['Sacristía'] }
+        : { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<InventoryAdminPage />, { ruta: '/cms/inventario?vista=ropero' })
+    const ultima = (trozo: string) => fetchSimulado.mock.calls.map(([url]) => String(url)).filter((url) => url.includes(trozo) && !url.includes('/opciones')).at(-1) ?? ''
+
+    // Entra directamente al ropero.
+    expect(await screen.findByRole('tab', { name: 'Ropero', selected: true })).toBeInTheDocument()
+    await user.click(screen.getByRole('combobox', { name: /^tipo$/i }))
+    await user.click(await screen.findByRole('option', { name: 'Capirote' }))
+    await waitFor(() => expect(ultima('/prendas')).toContain('tipo=CAPIROTE'))
+    expect(ultima('/enseres')).not.toContain('tipo=')
+
+    await user.click(screen.getByRole('tab', { name: 'Enseres' }))
+    await user.click(screen.getByRole('combobox', { name: /ubicación/i }))
+    await user.click(await screen.findByRole('option', { name: 'Sacristía' }))
+    await waitFor(() => expect(ultima('/enseres')).toContain(`ubicacion=${encodeURIComponent('Sacristía')}`))
+    // El filtro del ropero sigue puesto aunque no se vea.
+    expect(ultima('/prendas')).toContain('tipo=CAPIROTE')
+  })
+
+  it('busca en el ropero por el hermano que tiene la prenda', async () => {
+    const user = userEvent.setup()
+    const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(
+      JSON.stringify({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<InventoryAdminPage />, { ruta: '/cms/inventario?vista=ropero' })
+
+    await user.type(await screen.findByRole('textbox', { name: /buscar en el ropero/i }), 'pérez')
+    await waitFor(() => {
+      const prendas = fetchSimulado.mock.calls.map(([url]) => String(url)).filter((url) => url.includes('/prendas'))
+      expect(prendas.at(-1)).toContain('q=p%C3%A9rez')
+    })
+    expect(await screen.findByText(/no hay prendas con esta búsqueda/i)).toBeInTheDocument()
+  })
 })
 
 function respuestaJson(cuerpo: unknown) {

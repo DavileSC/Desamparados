@@ -18,7 +18,7 @@ describe('searchBrothers', () => {
     // gestiona el censo como secretaría, el buscador es el mismo para todos y
     // la función ya no necesita saber el rol.
     const espia = espiarFetch()
-    await searchBrothers('Rocío', { pagina: 1, porPagina: 20 })
+    await searchBrothers({ q: 'Rocío' }, { pagina: 1, porPagina: 20 })
     const [url] = espia.mock.calls[0]
     expect(String(url)).toContain('/hermanos/admin/search')
     expect(String(url)).toContain(`q=${encodeURIComponent('Rocío')}`)
@@ -26,7 +26,7 @@ describe('searchBrothers', () => {
 
   it('sin consulta pide el listado sin filtro', async () => {
     const espia = espiarFetch()
-    await searchBrothers('', { pagina: 1, porPagina: 20 })
+    await searchBrothers({}, { pagina: 1, porPagina: 20 })
     const [url] = espia.mock.calls[0]
     expect(String(url)).toContain('/hermanos/admin/search')
     expect(String(url)).not.toContain('q=')
@@ -34,9 +34,19 @@ describe('searchBrothers', () => {
 
   it('manda la página y el tamaño pedidos', async () => {
     const espia = espiarFetch()
-    await searchBrothers('', { pagina: 3, porPagina: 30 })
+    await searchBrothers({}, { pagina: 3, porPagina: 30 })
     const [url] = espia.mock.calls[0]
     expect(String(url)).toContain('page=3')
     expect(String(url)).toContain('limit=30')
+  })
+
+  it('manda la situación, el número y el orden, y no los vacíos', async () => {
+    const espia = espiarFetch()
+    await searchBrothers({ q: '', estado: 'baja', numero: '', orden: 'numero' }, { pagina: 1, porPagina: 20 })
+    const params = new URL(String(espia.mock.calls[0][0]), 'http://x').searchParams
+    expect(params.get('estado')).toBe('baja')
+    expect(params.get('orden')).toBe('numero')
+    expect(params.has('numero')).toBe(false)
+    expect(params.has('q')).toBe(false)
   })
 })

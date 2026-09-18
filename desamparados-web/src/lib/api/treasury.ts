@@ -39,9 +39,20 @@ export interface NewReceiptPayload {
 /** `true` si el texto es un año de cuatro cifras, que es lo único que acepta el servidor como filtro. */
 export const esAnioCompleto = (year: string | undefined): year is string => Boolean(year && /^\d{4}$/.test(year))
 
-export function getAdminReceipts(year: string | undefined, pagina: { pagina: number; porPagina: number }) {
+/** Búsqueda (hermano, número o concepto), filtros y orden del listado de recibos. Vacío = sin filtrar. */
+export type FiltrosRecibos = { q?: string; estado?: AdminReceiptStatus | ''; tipo?: ReceiptType | ''; orden?: string }
+
+export function getAdminReceipts(year: string | undefined, pagina: { pagina: number; porPagina: number }, filtros: FiltrosRecibos = {}) {
   // Un año a medio escribir («20») sería un 400: se pide sin filtro de año.
-  return apiFetch<RespuestaPaginada<AdminReceipt>>(`/recibos/admin?${paramsPagina(pagina, { year: esAnioCompleto(year) ? year : undefined })}`)
+  return apiFetch<RespuestaPaginada<AdminReceipt>>(`/recibos/admin?${paramsPagina(pagina, { ...filtros, year: esAnioCompleto(year) ? year : undefined })}`)
+}
+
+/** Recibos y euros de cada estado, con la búsqueda, el año y el tipo del listado pero sin su estado. */
+export type ResumenRecibos = { estados: Record<AdminReceiptStatus, { cuenta: number; total: number }> }
+
+export function getResumenRecibos(year: string | undefined, filtros: Pick<FiltrosRecibos, 'q' | 'tipo'> = {}) {
+  return apiFetch<ResumenRecibos>(`/recibos/admin/resumen?${new URLSearchParams(Object.entries({ ...filtros, year: esAnioCompleto(year) ? year : undefined })
+    .filter((par): par is [string, string] => Boolean(par[1]))).toString()}`)
 }
 
 export function generateFees(payload: { year: number; importe: number; concepto: string }) {

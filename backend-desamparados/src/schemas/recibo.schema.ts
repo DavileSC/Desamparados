@@ -1,5 +1,6 @@
 import { type } from 'arktype';
-import { textoRequerido, paginacionQuery } from '../config/common.js';
+import { textoRequerido, paginacionQuery, ordenQuery } from '../config/common.js';
+import { ORDENES_RECIBOS } from '../domain/ordenacion.js';
 
 // Validar estado de pago basado en tu Enum
 const estadoPagoSchema = type("'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'");
@@ -64,13 +65,24 @@ export const marcarPagadoSchema = type({
 // controlador lo trataba como texto. Declarado aquí, una lista es un 400 con su
 // motivo. Llevan `...paginacionQuery`: sin él, `validate` borraría page y limit
 // en silencio y todas las páginas servirían la primera.
+// Año, tipo y búsqueda: lo que comparten el listado y su resumen por estados.
+const filtrosRecibosQuery = {
+    "year?": type("string").matching(/^\d{4}$/).describe("un año de cuatro cifras"),
+    "tipo?": type("'PAPELETA_SITIO' | 'CUOTA_HERMANO' | 'DONATIVO' | 'OTRO'"),
+    "q?": type("string <= 100").describe("un texto de búsqueda de hasta 100 caracteres"),
+};
+
 export const adminRecibosQuerySchema = type({
     query: {
         ...paginacionQuery,
-        "year?": type("string").matching(/^\d{4}$/).describe("un año de cuatro cifras"),
-        "estado?": estadoPagoSchema
+        ...filtrosRecibosQuery,
+        "estado?": estadoPagoSchema,
+        "orden?": ordenQuery(ORDENES_RECIBOS)
     }
 });
+
+// Sin estado: el resumen cuenta todos para que se pueda elegir uno.
+export const adminResumenQuerySchema = type({ query: filtrosRecibosQuery });
 
 export const misRecibosQuerySchema = type({
     query: { ...paginacionQuery }

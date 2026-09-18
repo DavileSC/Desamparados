@@ -8,6 +8,15 @@ export const ETIQUETA_ESTADO: Record<Prenda['estado'], string> = {
   BAJA: 'De baja',
 }
 
+/** Cómo se lee cada tipo de prenda. */
+export const ETIQUETA_TIPO: Record<Prenda['tipo'], string> = {
+  TUNICA: 'Túnica',
+  CAPIROTE: 'Capirote',
+  FARAONA: 'Faraona',
+  CAPA: 'Capa',
+  OTRO: 'Otro',
+}
+
 /**
  * Los estados que se eligen a mano, al dar de alta o al editar. PRESTADA no está:
  * la ponen «Prestar» y «Devolver», que guardan también quién tiene la prenda.

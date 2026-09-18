@@ -38,6 +38,7 @@ export interface EnserFilterDto {
   categoria?: string;
   ubicacion?: string;
   necesitaReparacion?: string; // 'true' o 'false' desde el query string
+  orden?: string;
 }
 
 // =================================================================
@@ -61,8 +62,11 @@ export interface UpdatePrendaDto {
 }
 
 export interface PrendaFilterDto {
+  /** Búsqueda libre: número, talla, observaciones o quien la tiene prestada. */
+  q?: string;
   numero?: string;
   tipo?: TipoPrenda;
   estado?: EstadoPrenda;
   talla?: string;
+  orden?: string;
 }

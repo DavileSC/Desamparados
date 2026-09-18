@@ -19,6 +19,14 @@ export class InventarioController {
     }
   }
 
+  static async opcionesEnseres(_req: Request, res: Response) {
+    try {
+      res.status(200).json(await InventarioService.opcionesEnseres());
+    } catch (e) {
+      handleHttp(res, e, 'Error obteniendo las categorías y ubicaciones');
+    }
+  }
+
   static async getOneEnser(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);

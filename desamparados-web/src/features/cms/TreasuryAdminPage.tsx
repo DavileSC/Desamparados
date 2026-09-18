@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
@@ -8,23 +8,54 @@ import {
   esAnioCompleto,
   generateFees,
   getAdminReceipts,
+  getResumenRecibos,
   payReceipt,
   searchReceiptBrothers,
   type AdminReceipt,
+  type AdminReceiptStatus,
   type EmittableReceiptType,
+  type FiltrosRecibos,
   type PaymentMethod,
   type ReceiptBrother,
+  type ReceiptType,
+  type ResumenRecibos,
 } from '../../lib/api/treasury'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
+import BarraListado, { type Opcion } from './listados/BarraListado'
+import { useFiltrosUrl } from './listados/useFiltrosUrl'
+import ContadoresEstado from './tesoreria/ContadoresEstado'
+import ListaRecibos from './tesoreria/ListaRecibos'
 
 const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
 const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento' }
 const typeLabels: Record<EmittableReceiptType, string> = { CUOTA_HERMANO: 'Cuota de hermano', DONATIVO: 'Donativo', OTRO: 'Otro' }
+// Para filtrar sí entra la papeleta, aunque no se emita desde aquí.
+const tiposRecibo: Record<ReceiptType, string> = { PAPELETA_SITIO: 'Papeleta de sitio', ...typeLabels }
 const CONCEPTO_POR_DEFECTO = 'Cuota anual'
+
+const aOpciones = <K extends string>(etiquetas: Record<K, string>): Opcion[] =>
+  (Object.entries(etiquetas) as [K, string][]).map(([valor, etiqueta]) => ({ valor, etiqueta }))
+const ESTADOS_RECIBO = aOpciones(statusLabels)
+const TIPOS_RECIBO = aOpciones(tiposRecibo)
+const ORDENES_RECIBOS: Opcion[] = [
+  { valor: 'recientes', etiqueta: 'Más recientes' },
+  { valor: 'antiguos', etiqueta: 'Más antiguos' },
+  { valor: 'hermano', etiqueta: 'Hermano (A-Z)' },
+  { valor: 'numero', etiqueta: 'Número de hermano' },
+  { valor: 'importeDesc', etiqueta: 'Importe: mayor primero' },
+  { valor: 'importeAsc', etiqueta: 'Importe: menor primero' },
+]
+const valoresDe = (opciones: Opcion[]) => opciones.map((o) => o.valor)
+const FILTROS_RECIBOS = {
+  q: {},
+  estado: { validos: valoresDe(ESTADOS_RECIBO) },
+  tipo: { validos: valoresDe(TIPOS_RECIBO) },
+  orden: { porDefecto: 'recientes', validos: valoresDe(ORDENES_RECIBOS) },
+}
 
 // Lo que acepta el servidor: positivo, hasta dos decimales, con punto o con coma
 // («12,50» es como lo escribe cualquiera aquí).
@@ -32,9 +63,6 @@ const IMPORTE = /^\d{1,8}(?:[.,]\d{1,2})?$/
 const leerImporte = (texto: string) => (IMPORTE.test(texto.trim()) ? Number(texto.trim().replace(',', '.')) : NaN)
 
 const nombreHermano = (h: ReceiptBrother) => `${h.apellidos}, ${h.nombre}${h.numeroHermano !== null ? ` · n.º ${h.numeroHermano}` : ''}`
-
-// Se cobra desde pendiente y desde remesado (el banco confirma la remesa).
-const esCobrable = (estado: AdminReceipt['estado']) => estado === 'PENDIENTE' || estado === 'REMESADO'
 
 // Sin tipo preseleccionado: con «Cuota de hermano» por defecto era fácil emitir
 // una segunda cuota del año sin darse cuenta. El tipo decide cómo se cuenta el
@@ -44,7 +72,11 @@ interface NuevoRecibo { hermano: ReceiptBrother | null; year: string; concepto: 
 export default function TreasuryAdminPage() {
   const [receipts, setReceipts] = useState<AdminReceipt[]>([])
   // El año que se está viendo: filtra el listado y es el que proponen las ventanas de alta.
+  // Vacío, se ven todos los años. Va aparte de los filtros de la URL porque se
+  // teclea: con la URL de por medio, borrarlo para escribir otro lo rellenaría.
   const [year, setYear] = useState(String(new Date().getFullYear()))
+  // Búsqueda, estado, tipo y orden, en la URL como la página.
+  const [filtros, cambiarFiltros] = useFiltrosUrl(FILTROS_RECIBOS)
   const [cuotas, setCuotas] = useState({ year: '', importe: '', concepto: CONCEPTO_POR_DEFECTO })
   const [generando, setGenerando] = useState(false)
   const [errorCuotas, setErrorCuotas] = useState<string | null>(null)
@@ -61,6 +93,7 @@ export default function TreasuryAdminPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const { pagina, porPagina, irAPagina, cambiarTamano, reiniciar } = usePaginacion()
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
+  const [resumen, setResumen] = useState<ResumenRecibos | null>(null)
 
   // `vigente` es la guarda de cancelación de useListadoPaginado traída aquí: dos
   // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
@@ -70,9 +103,18 @@ export default function TreasuryAdminPage() {
   // Mientras el año está a medio escribir («2», «20»…) no se pide nada: el
   // listado se queda con el último año completo en vez de parpadear.
   const load = useCallback((vigente: () => boolean = () => true) => {
-    if (!esAnioCompleto(year)) return Promise.resolve()
-    return getAdminReceipts(year, { pagina, porPagina }).then((response) => { if (!vigente()) return; setReceipts(response.data); setMeta(response.meta) })
-  }, [year, pagina, porPagina])
+    if (year && !esAnioCompleto(year)) return Promise.resolve()
+    const { q, tipo } = filtros as FiltrosRecibos
+    return Promise.all([
+      getAdminReceipts(year, { pagina, porPagina }, filtros as FiltrosRecibos),
+      // Los contadores, con los mismos filtros menos el estado: son los que lo eligen.
+      getResumenRecibos(year, { q, tipo }),
+    ]).then(([response, cifras]) => {
+      if (!vigente()) return
+      setReceipts(response.data); setMeta(response.meta)
+      setResumen(cifras?.estados ? cifras : null)
+    })
+  }, [year, pagina, porPagina, filtros])
   useEffect(() => {
     let cancelado = false
     load(() => !cancelado)
@@ -106,8 +148,21 @@ export default function TreasuryAdminPage() {
   }
 
   // Se limpia al abrir, no al cerrar, y parte del año que se está viendo.
-  const abrirCuotas = () => { setCuotas({ year, importe: '', concepto: CONCEPTO_POR_DEFECTO }); setErrorCuotas(null); setGenerando(true) }
-  const abrirNuevo = () => { setNuevo({ hermano: null, year, concepto: '', importe: '', tipo: '' }); setBusqueda(''); setCandidatos([]); setErrorNuevo(null); setEmitiendo(true) }
+  const anioPropuesto = year || String(new Date().getFullYear())
+  const abrirCuotas = () => { setCuotas({ year: anioPropuesto, importe: '', concepto: CONCEPTO_POR_DEFECTO }); setErrorCuotas(null); setGenerando(true) }
+  const abrirNuevo = (inicial: NuevoRecibo = { hermano: null, year: anioPropuesto, concepto: '', importe: '', tipo: '' }) => {
+    setNuevo(inicial); setBusqueda(inicial.hermano ? nombreHermano(inicial.hermano) : ''); setCandidatos(inicial.hermano ? [inicial.hermano] : []); setErrorNuevo(null); setEmitiendo(true)
+  }
+  // Reemitir un devuelto es emitir uno nuevo con sus mismos datos, ya rellenos.
+  // El concepto cambia: el servidor no admite dos recibos iguales para el mismo
+  // hermano y año, y así se distingue el nuevo del devuelto.
+  const abrirReemision = (recibo: AdminReceipt) => abrirNuevo({
+    hermano: recibo.hermano,
+    year: String(recibo.year),
+    concepto: `${recibo.concepto} (reemisión)`.slice(0, 150),
+    importe: Number(recibo.importe).toFixed(2).replace('.', ','),
+    tipo: recibo.tipo && recibo.tipo !== 'PAPELETA_SITIO' ? recibo.tipo : '',
+  })
 
   const generate = async () => {
     setWorking(true); setErrorCuotas(null); setNotice(null)
@@ -150,7 +205,7 @@ export default function TreasuryAdminPage() {
     <Helmet><title>Tesorería | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Recibos y tesorería">
       <Stack direction="row" spacing={1}>
-        <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={abrirNuevo}>Nuevo recibo</Button>
+        <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => abrirNuevo()}>Nuevo recibo</Button>
         <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCuotas}>Generar cuotas</Button>
       </Stack>
     </CabeceraSeccion>
@@ -214,13 +269,36 @@ export default function TreasuryAdminPage() {
       </TextField>
     </VentanaFormulario>
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2, alignItems: { sm: 'center' } }}>
-      <Typography variant="h4" sx={{ flexGrow: 1 }}>Recibos del año {year}</Typography>
-      <TextField size="small" label="Año" type="number" value={year} onChange={(event) => cambiarAnio(event.target.value)} sx={{ width: { sm: 120 } }} />
+      <Typography variant="h4" sx={{ flexGrow: 1 }}>{esAnioCompleto(year) ? `Recibos del año ${year}` : 'Recibos de todos los años'}</Typography>
+      {/* No es un filtro: es con qué se cobra al pulsar «Cobrar». */}
       <TextField size="small" select label="Método de cobro" value={payment} onChange={(event) => setPayment(event.target.value as PaymentMethod)} sx={{ minWidth: { sm: 190 } }}>
         {methods.map((method) => <MenuItem key={method} value={method}>{method}</MenuItem>)}
       </TextField>
     </Stack>
-    {loading ? <CircularProgress aria-label="Cargando recibos" /> : <Stack spacing={2}>{receipts.map((receipt) => <Paper key={receipt.id} sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}><div><Typography variant="h6">{receipt.hermano.nombre} {receipt.hermano.apellidos}</Typography><Typography variant="body2" color="text.secondary">{receipt.concepto} · {Number(receipt.importe).toFixed(2)} € · {statusLabels[receipt.estado]}</Typography></div>{esCobrable(receipt.estado) && <Button variant="outlined" onClick={() => pay(receipt)} disabled={working} aria-label={`Cobrar ${receipt.concepto} de ${receipt.hermano.nombre} ${receipt.hermano.apellidos}`}>Cobrar</Button>}</Paper>)}{receipts.length === 0 && <Alert severity="info">No hay recibos para este año.</Alert>}</Stack>}
+    <BarraListado
+      valores={filtros}
+      onCambiar={cambiarFiltros}
+      busqueda={{ clave: 'q', etiqueta: 'Buscar recibos', placeholder: 'Hermano, número de hermano o concepto' }}
+      filtros={[
+        { clave: 'tipo', etiqueta: 'Tipo', todos: 'Todos', opciones: TIPOS_RECIBO, ancho: 180 },
+      ]}
+      orden={{ clave: 'orden', opciones: ORDENES_RECIBOS }}
+      anchoHijos={110}
+    >
+      <TextField
+        size="small"
+        label="Año"
+        type="number"
+        value={year}
+        onChange={(event) => cambiarAnio(event.target.value)}
+        helperText={year ? undefined : 'Vacío: todos los años'}
+        sx={{ minWidth: 0 }}
+      />
+    </BarraListado>
+    <ContadoresEstado resumen={resumen} elegido={filtros.estado as AdminReceiptStatus | ''} onElegir={(estado) => cambiarFiltros({ estado })} />
+    {loading ? <CircularProgress aria-label="Cargando recibos" /> : receipts.length === 0
+      ? <Alert severity="info">{filtros.q || filtros.estado || filtros.tipo ? 'No hay recibos con esta búsqueda o estos filtros.' : esAnioCompleto(year) ? 'No hay recibos para este año.' : 'No hay recibos.'}</Alert>
+      : <ListaRecibos recibos={receipts} verAnio={!esAnioCompleto(year)} ocupado={working} onCobrar={pay} onConfirmar={pay} onReemitir={abrirReemision} />}
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="recibos" />}
   </>
 }
