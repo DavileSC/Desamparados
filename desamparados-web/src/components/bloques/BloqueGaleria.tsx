@@ -8,8 +8,8 @@ import type { BloqueGaleria as Datos } from '../../lib/api/contenido'
  * play, y la dirección llega ya normalizada del servidor: aquí no se decide
  * nada sobre seguridad.
  *
- * El ancho es el del bloque de foto para que una galería y una foto sueltas
- * una debajo de otra no bailen.
+ * Más ancho que el bloque de foto: el escenario de la galería tiene que
+ * lucirse, y a 1000 px quedaba como una foto más.
  */
 export default function BloqueGaleria({ bloque }: { bloque: Datos }) {
   // Solo los que ya tienen imagen. Guardado nunca falta (lo exige el
@@ -18,7 +18,7 @@ export default function BloqueGaleria({ bloque }: { bloque: Datos }) {
   const listos = bloque.medios.filter((m) => (m.tipo === 'video' ? m.url !== '' && m.portada !== '' : m.url !== ''))
   if (listos.length === 0) return null
   return (
-    <Box sx={{ maxWidth: '1000px', mx: 'auto' }}>
+    <Box sx={{ maxWidth: '1200px', mx: 'auto' }}>
       <GaleriaMedios medios={listos} />
     </Box>
   )

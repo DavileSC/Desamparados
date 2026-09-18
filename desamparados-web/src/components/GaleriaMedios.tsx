@@ -1,155 +1,82 @@
 import { useCallback, useState } from 'react'
-import useEmblaCarousel from 'embla-carousel-react'
-import { Box, Dialog, IconButton, Typography } from '@mui/material'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import CloseIcon from '@mui/icons-material/Close'
-import PlayArrowIcon from '@mui/icons-material/PlayArrow'
-import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap'
+import { useMediaQuery, useTheme } from '@mui/material'
+import { useReducedMotion } from 'framer-motion'
 import type { MedioGaleria } from '../lib/api/contenido'
+import Escenario from './galeria/Escenario'
+import CarrilMovil from './galeria/CarrilMovil'
+import VisorGaleria from './galeria/VisorGaleria'
+import { useMedidas } from './galeria/formato'
+
+interface Props {
+  medios: MedioGaleria[]
+  /** Fuerza una disposición; sin ella, la decide el ancho de la pantalla. */
+  disposicion?: 'escritorio' | 'movil'
+}
 
 /**
- * Pase de fotos y vídeos.
+ * Galería de fotos y vídeos.
+ *
+ * - En escritorio, un escenario: la foto grande sobre su propio fondo
+ *   desenfocado, con pase automático (que se puede parar), contador y
+ *   miniaturas.
+ * - En el móvil, un carril que se pasa deslizando.
+ * - En los dos, al pulsar se abre un visor a pantalla completa donde cada foto
+ *   se ajusta sin recortarse, sea horizontal, vertical o cuadrada.
+ *
+ * El formato de cada foto se aprende al cargarla (`useMedidas`): no se le pide
+ * a quien la sube.
  *
  * El vídeo se enseña con una **portada nuestra** y no se carga el marco de
  * YouTube hasta que alguien pulsa el play: incrustarlo de entrada deja cookies
  * de terceros y avisa a YouTube de cada visita, sin que el visitante haya
  * pedido ver nada. La dirección ya viene normalizada del servidor a la forma
- * `-nocookie` (`domain/video-galeria.ts`), así que aquí no se decide nada sobre
- * seguridad: solo se pinta lo que llega.
- *
- * Las flechas solo salen si hay más de un medio: un carrusel de uno no se
- * desplaza, y unas flechas muertas confunden.
+ * `-nocookie` (`domain/video-galeria.ts`).
  */
-export default function GaleriaMedios({ medios }: { medios: MedioGaleria[] }) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'center' })
-  const [ampliada, setAmpliada] = useState<MedioGaleria | null>(null)
-  // Vídeos a los que ya se ha dado al play: solo esos cargan su marco.
+export default function GaleriaMedios({ medios, disposicion }: Props) {
+  const theme = useTheme()
+  const anchoEscritorio = useMediaQuery(theme.breakpoints.up('md'), { noSsr: true })
+  const escritorio = disposicion ? disposicion === 'escritorio' : anchoEscritorio
+  const sinMovimiento = useReducedMotion() ?? false
+  const { medir, medidaDe } = useMedidas()
+  const [actual, setActual] = useState(0)
+  const [visor, setVisor] = useState<number | null>(null)
   const [reproduciendo, setReproduciendo] = useState<string[]>([])
 
-  const anterior = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
-  const siguiente = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
+  const total = medios.length
+  // En bucle: después de la última, la primera.
+  const ir = useCallback((indice: number) => setActual(((indice % total) + total) % total), [total])
+  const irEnVisor = useCallback((indice: number) => {
+    const destino = ((indice % total) + total) % total
+    setVisor(destino)
+    setActual(destino)
+  }, [total])
+  const reproducir = useCallback((url: string) => setReproduciendo((actuales) => (actuales.includes(url) ? actuales : [...actuales, url])), [])
 
-  if (medios.length === 0) return null
+  const abrir = (indice: number, conReproduccion: boolean) => {
+    // Pulsar el play de un vídeo es pedir verlo: se abre ya reproduciéndose.
+    if (conReproduccion) reproducir(medios[indice].url)
+    setVisor(indice)
+  }
 
-  const variasDiapositivas = medios.length > 1
+  if (total === 0) return null
+  const indiceSeguro = Math.min(actual, total - 1)
 
   return (
-    <Box sx={{ position: 'relative' }}>
-      <Box ref={emblaRef} sx={{ overflow: 'hidden', borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', touchAction: 'pan-y' }}>
-          {medios.map((medio, indice) => (
-            <Box
-              key={`${medio.url}-${indice}`}
-              sx={{ flex: '0 0 100%', minWidth: 0, position: 'relative' }}
-            >
-              <Box sx={{ position: 'relative', aspectRatio: '16 / 9', backgroundColor: 'rgba(0,0,0,0.35)' }}>
-                {medio.tipo === 'video' && reproduciendo.includes(medio.url) ? (
-                  <Box
-                    component="iframe"
-                    src={`${medio.url}${medio.url.includes('?') ? '&' : '?'}autoplay=1`}
-                    title={medio.alt}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    sx={{ width: '100%', height: '100%', border: 0, display: 'block' }}
-                  />
-                ) : (
-                  <>
-                    <Box
-                      component="img"
-                      src={medio.tipo === 'video' ? medio.portada : medio.url}
-                      alt={medio.alt}
-                      loading="lazy"
-                      decoding="async"
-                      sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
-                    <IconButton
-                      onClick={() => (medio.tipo === 'video'
-                        ? setReproduciendo((actuales) => [...actuales, medio.url])
-                        : setAmpliada(medio))}
-                      aria-label={medio.tipo === 'video' ? `Reproducir: ${medio.alt}` : `Ampliar: ${medio.alt}`}
-                      sx={{
-                        position: 'absolute', inset: 0, m: 'auto',
-                        width: 72, height: 72,
-                        color: 'common.white',
-                        backgroundColor: 'rgba(0,0,0,0.45)',
-                        '&:hover': { backgroundColor: 'rgba(0,0,0,0.65)' },
-                      }}
-                    >
-                      {medio.tipo === 'video' ? <PlayArrowIcon sx={{ fontSize: 40 }} /> : <ZoomOutMapIcon sx={{ fontSize: 30 }} />}
-                    </IconButton>
-                  </>
-                )}
-              </Box>
-              {medio.pie && (
-                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1.5, textAlign: 'center' }}>
-                  {medio.pie}
-                </Typography>
-              )}
-            </Box>
-          ))}
-        </Box>
-      </Box>
-
-      {variasDiapositivas && (
-        <>
-          {/* Con el carrusel en bucle siempre hay a dónde ir: no hay estado
-              que derivar ni flechas que deshabilitar. */}
-          <FlechaCarrusel lado="left" etiqueta="Medio anterior" onClick={anterior}>
-            <ChevronLeftIcon />
-          </FlechaCarrusel>
-          <FlechaCarrusel lado="right" etiqueta="Medio siguiente" onClick={siguiente}>
-            <ChevronRightIcon />
-          </FlechaCarrusel>
-        </>
-      )}
-
-      <Dialog
-        open={ampliada !== null}
-        onClose={() => setAmpliada(null)}
-        maxWidth="lg"
-        fullWidth
-        slotProps={{ paper: { sx: { backgroundColor: 'rgba(16, 14, 17, 0.95)', boxShadow: 'none' } } }}
-      >
-        <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-          <IconButton onClick={() => setAmpliada(null)} aria-label="Cerrar" sx={{ position: 'absolute', top: 8, right: 8, color: 'common.white', zIndex: 1 }}>
-            <CloseIcon />
-          </IconButton>
-          {ampliada && (
-            <Box
-              component="img"
-              src={ampliada.url}
-              alt={ampliada.alt}
-              sx={{ maxWidth: '100%', maxHeight: { xs: '70vh', md: '80vh' }, objectFit: 'contain' }}
-            />
-          )}
-        </Box>
-      </Dialog>
-    </Box>
-  )
-}
-
-function FlechaCarrusel({ lado, etiqueta, onClick, children }: {
-  lado: 'left' | 'right'
-  etiqueta: string
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <IconButton
-      onClick={onClick}
-      aria-label={etiqueta}
-      sx={{
-        position: 'absolute',
-        top: '50%',
-        [lado]: { xs: 4, md: -20 },
-        transform: 'translateY(-50%)',
-        color: 'common.white',
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
-      }}
-    >
-      {children}
-    </IconButton>
+    <>
+      {escritorio
+        ? <Escenario medios={medios} actual={indiceSeguro} onIr={ir} onAbrir={abrir} medidaDe={medidaDe} medir={medir} quieta={visor !== null || sinMovimiento} />
+        : <CarrilMovil medios={medios} actual={indiceSeguro} onIr={ir} onAbrir={abrir} medidaDe={medidaDe} medir={medir} />}
+      <VisorGaleria
+        medios={medios}
+        actual={visor}
+        onIr={irEnVisor}
+        onCerrar={() => setVisor(null)}
+        reproduciendo={reproduciendo}
+        onReproducir={reproducir}
+        medidaDe={medidaDe}
+        medir={medir}
+        escritorio={escritorio}
+      />
+    </>
   )
 }

@@ -44,9 +44,10 @@ if (!document.elementFromPoint) {
 }
 
 /**
- * jsdom tampoco trae `ResizeObserver` ni `matchMedia`, y Embla (el carrusel de
- * la galería de la Sagrada Titular) los consulta al montarse: sin ellos, montar
- * la galería revienta con «undefined is not a function» antes de pintar nada.
+ * jsdom tampoco trae `ResizeObserver` ni `matchMedia`, y los usan la galería
+ * (elige escritorio o móvil por el ancho, y el visor mira la orientación) y el
+ * marco de las vistas previas del CMS: sin ellos, montarlos revienta con
+ * «undefined is not a function» antes de pintar nada.
  *
  * Igual que con el IntersectionObserver de arriba, van directos al global y no
  * por `vi.stubGlobal`: varios tests llaman a `vi.unstubAllGlobals()`.
