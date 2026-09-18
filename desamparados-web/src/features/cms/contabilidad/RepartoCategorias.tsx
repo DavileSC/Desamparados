@@ -2,6 +2,7 @@ import { Box, ButtonBase, Paper, Typography } from '@mui/material'
 import type { ResumenContable, TipoApunte } from '../../../lib/api/accounting'
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, eurosResumen } from './formato'
+import { useColoresContabilidad } from './tema'
 
 interface Props {
   categorias: ResumenContable['categorias']
@@ -14,6 +15,7 @@ interface Props {
 
 /** De dónde viene el dinero y a dónde va, por categoría. Pinchar una filtra todo por ella. */
 export default function RepartoCategorias({ categorias, totales, tipo, elegida, onElegir }: Props) {
+  const { carril } = useColoresContabilidad()
   // Todas las barras en la misma escala: la mayor categoría, sea ingreso o gasto, ocupa el ancho entero.
   const mayor = Math.max(1, ...categorias.map((c) => c.total))
   const grupos: { tipo: TipoApunte; titulo: string; total: number; color: string }[] = [
@@ -68,7 +70,7 @@ export default function RepartoCategorias({ categorias, totales, tipo, elegida, 
                       {eurosResumen(c.total)}
                       <Box component="span" sx={{ fontWeight: 400, color: 'text.secondary', ml: 0.75, fontSize: 12 }}>{porcentaje} %</Box>
                     </Typography>
-                    <Box aria-hidden="true" sx={{ gridColumn: '1 / -1', height: 8, borderRadius: '4px', backgroundColor: '#f1eeea', overflow: 'hidden' }}>
+                    <Box aria-hidden="true" sx={{ gridColumn: '1 / -1', height: 8, borderRadius: '4px', backgroundColor: carril, overflow: 'hidden' }}>
                       <Box sx={{ height: '100%', width: `${Math.max((c.total / mayor) * 100, 1)}%`, backgroundColor: g.color, borderRadius: '0 4px 4px 0' }} />
                     </Box>
                   </ButtonBase>

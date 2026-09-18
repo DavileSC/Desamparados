@@ -3,6 +3,7 @@ import { Box, Paper, Stack, Typography } from '@mui/material'
 import type { ResumenContable } from '../../../lib/api/accounting'
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, numero, etiquetaPunto, etiquetaPuntoLarga, euros, eurosResumen } from './formato'
+import { useColoresContabilidad } from './tema'
 
 const ANCHO = 640
 const ALTO = 330
@@ -36,6 +37,7 @@ function barra(x: number, ancho: number, alto: number) {
 /** Ingresos y gastos de cada mes (o de cada año) del periodo, en barras emparejadas. */
 export default function GraficaMeses({ serie, tipo }: { serie: ResumenContable['serie']; tipo: FiltrosUi['tipo'] }) {
   const [activo, setActivo] = useState<number | null>(null)
+  const { graficas, texto, texto2, emergente, emergenteBorde } = useColoresContabilidad()
   const puntos = serie.puntos
   const verIngresos = tipo !== 'GASTO'
   const verGastos = tipo !== 'INGRESO'
@@ -70,8 +72,8 @@ export default function GraficaMeses({ serie, tipo }: { serie: ResumenContable['
             const y = BASE - escala(marca)
             return (
               <g key={marca}>
-                <line x1={IZQ} x2={ANCHO - DERECHA} y1={y} y2={y} stroke={marca === 0 ? '#cfc9c2' : '#ece8e3'} />
-                <text x={IZQ - 8} y={y + 4} textAnchor="end" fontSize="12.5" fill="#7a7278">{numero(marca)}</text>
+                <line x1={IZQ} x2={ANCHO - DERECHA} y1={y} y2={y} stroke={marca === 0 ? graficas.cero : graficas.rejilla} />
+                <text x={IZQ - 8} y={y + 4} textAnchor="end" fontSize="12.5" fill={graficas.neutro}>{numero(marca)}</text>
               </g>
             )
           })}
@@ -86,11 +88,11 @@ export default function GraficaMeses({ serie, tipo }: { serie: ResumenContable['
               >
                 {/* Zona de ratón más ancha que las barras. */}
                 <rect x={IZQ + i * hueco} y={ARRIBA - 10} width={hueco} height={BASE - ARRIBA + 30} fill="transparent" />
-                {activo === i && <rect x={IZQ + i * hueco + 2} y={ARRIBA - 6} width={hueco - 4} height={BASE - ARRIBA + 6} fill="#f4f2ee" rx="4" />}
+                {activo === i && <rect x={IZQ + i * hueco + 2} y={ARRIBA - 6} width={hueco - 4} height={BASE - ARRIBA + 6} fill={graficas.banda} rx="4" />}
                 {series.map((s, j) => (
                   <path key={s} d={barra(x + j * (anchoBarra + 2), anchoBarra, escala(p[s]))} fill={s === 'ingresos' ? COLOR_INGRESO : COLOR_GASTO} />
                 ))}
-                <text x={IZQ + i * hueco + hueco / 2} y={BASE + 22} textAnchor="middle" fontSize="13.5" fill="#4a454a">{etiquetaPunto(p.clave)}</text>
+                <text x={IZQ + i * hueco + hueco / 2} y={BASE + 22} textAnchor="middle" fontSize="13.5" fill={texto2}>{etiquetaPunto(p.clave)}</text>
               </g>
             )
           })}
@@ -99,7 +101,7 @@ export default function GraficaMeses({ serie, tipo }: { serie: ResumenContable['
             const valor = puntos[i][s]
             if (valor <= 0 || activo !== null) return null
             const x = IZQ + i * hueco + (hueco - grupo) / 2 + j * (anchoBarra + 2) + anchoBarra / 2
-            return <text key={s} x={x} y={BASE - escala(valor) - 7} textAnchor="middle" fontSize="13" fontWeight="600" fill="#1b1c1a">{eurosResumen(valor)}</text>
+            return <text key={s} x={x} y={BASE - escala(valor) - 7} textAnchor="middle" fontSize="13" fontWeight="600" fill={texto}>{eurosResumen(valor)}</text>
           })}
           {activo !== null && (() => {
             const p = puntos[activo]
@@ -111,7 +113,7 @@ export default function GraficaMeses({ serie, tipo }: { serie: ResumenContable['
             ]
             return (
               <g pointerEvents="none">
-                <rect x={x} y={2} width={anchoTip} height={16 + lineas.length * 18} rx="6" fill="#1b1c1a" />
+                <rect x={x} y={2} width={anchoTip} height={16 + lineas.length * 18} rx="6" fill={emergente} stroke={emergenteBorde} />
                 {lineas.map((l, k) => <text key={k} x={x + 12} y={22 + k * 18} fontSize="13" fill={l.color} fontWeight={l.peso}>{l.texto}</text>)}
               </g>
             )

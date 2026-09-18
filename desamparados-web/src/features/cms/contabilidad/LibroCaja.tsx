@@ -5,6 +5,7 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import type { ResumenContable, Transaction } from '../../../lib/api/accounting'
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, etiquetaMetodo, euros, fechaCorta } from './formato'
+import { useColoresContabilidad } from './tema'
 
 interface Props {
   apuntes: Transaction[]
@@ -34,6 +35,7 @@ const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidde
  * del recibo y la contabilidad no se contradigan.
  */
 export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar }: Props) {
+  const { fondoCabecera } = useColoresContabilidad()
   const verIngreso = tipo !== 'GASTO'
   const verGasto = tipo !== 'INGRESO'
   const verAcciones = Boolean(onCorregir || onBorrar)
@@ -45,7 +47,7 @@ export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar
       {/* Ancho mínimo: en el móvil la tabla se desliza en vez de partir cada concepto en cuatro líneas. */}
       <Table size="small" aria-label="Libro de caja" sx={{ minWidth: 760 }}>
         <TableHead>
-          <TableRow sx={{ '& th': { fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary', backgroundColor: '#faf8f5', whiteSpace: 'nowrap' } }}>
+          <TableRow sx={{ '& th': { fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary', backgroundColor: fondoCabecera, whiteSpace: 'nowrap' } }}>
             <TableCell>Fecha</TableCell>
             <TableCell>Concepto</TableCell>
             <TableCell>Categoría</TableCell>
@@ -105,7 +107,7 @@ export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar
         </TableBody>
         {totales && apuntes.length > 0 && (
           <TableFooter>
-            <TableRow sx={{ '& td': { fontWeight: 700, fontSize: 14, color: 'text.primary', backgroundColor: '#faf8f5', whiteSpace: 'nowrap' } }}>
+            <TableRow sx={{ '& td': { fontWeight: 700, fontSize: 14, color: 'text.primary', backgroundColor: fondoCabecera, whiteSpace: 'nowrap' } }}>
               <TableCell colSpan={columnasTexto}>Total de lo filtrado</TableCell>
               {verIngreso && <TableCell align="right">{euros(totales.ingresos)}</TableCell>}
               {verGasto && <TableCell align="right">{euros(totales.gastos)}</TableCell>}
