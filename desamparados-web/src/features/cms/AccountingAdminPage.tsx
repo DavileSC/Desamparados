@@ -33,12 +33,10 @@ import LibroCaja from './contabilidad/LibroCaja'
 import CamposApunte from './contabilidad/CamposApunte'
 import GestionCategorias from './contabilidad/GestionCategorias'
 import { PERIODO_POR_DEFECTO, aFiltrosApi, fechasInvertidas, leerFiltrosUrl, type FiltrosUi } from './contabilidad/filtros'
-import { aApunteManual, apunteCompleto, apunteDesde, apunteNuevo, errorNombreCategoria, type FormApunte } from './contabilidad/apunte'
+import { aApunteManual, apunteCompleto, apunteDesde, apunteNuevo, type FormApunte } from './contabilidad/apunte'
 import { euros, fechaCorta } from './contabilidad/formato'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 
-type Tipo = Category['tipo']
-const categoriaVacia = { nombre: '', tipo: 'INGRESO' as Tipo }
 // Valor de cada filtro que equivale a no filtrar: no se escribe en la URL.
 const SIN_FILTRO: Partial<Record<keyof FiltrosUi, string>> = { tipo: 'TODO', periodo: PERIODO_POR_DEFECTO }
 
@@ -74,10 +72,9 @@ export default function AccountingAdminPage() {
   // El apunte que se está corrigiendo; `null` es un apunte nuevo.
   const [corrigiendo, setCorrigiendo] = useState<Transaction | null>(null)
   const [porBorrar, setPorBorrar] = useState<Transaction | null>(null)
-  const [category, setCategory] = useState(categoriaVacia)
-  // Qué ventana de formulario está abierta: el apunte o el alta de categoría.
-  const [ventana, setVentana] = useState<'apunte' | 'categoria' | null>(null)
-  // La gestión de categorías va aparte: el alta de categoría se abre encima de ella.
+  // La ventana del apunte, nuevo o corregido.
+  const [ventana, setVentana] = useState<'apunte' | null>(null)
+  // La gestión de categorías va en su ventana, con el alta dentro.
   const [gestionAbierta, setGestionAbierta] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [errorAlta, setErrorAlta] = useState<string | null>(null)
@@ -140,12 +137,6 @@ export default function AccountingAdminPage() {
     setErrorAlta(null)
     setVentana('apunte')
   }
-  const abrirCategoria = () => {
-    setCategory(categoriaVacia)
-    setErrorAlta(null)
-    setVentana('categoria')
-  }
-
   /** Guarda lo de la ventana abierta; si falla, la ventana sigue abierta con el motivo. */
   const guardar = async (peticion: () => Promise<unknown>, aviso: string, porDefecto: string, despues: () => Promise<unknown> = recargar) => {
     setGuardando(true); setErrorAlta(null); setNotice(null)
@@ -157,12 +148,6 @@ export default function AccountingAdminPage() {
     await despues()
   }
 
-  const saveCategory = () => guardar(
-    () => createCategory({ nombre: category.nombre.trim(), tipo: category.tipo }),
-    'Categoría creada correctamente.',
-    'No se ha podido crear la categoría.',
-    () => cargarCategorias().catch((e: unknown) => setError(mensaje(e, 'No se han podido cargar las categorías.'))),
-  )
   const save = () => corrigiendo
     ? guardar(() => updateTransaction(corrigiendo.id, aApunteManual(form)), 'Apunte corregido.', 'No se ha podido corregir el apunte.')
     : guardar(() => createTransaction(aApunteManual(form)), 'Transacción registrada correctamente.', 'No se ha podido registrar la transacción.')
@@ -185,6 +170,8 @@ export default function AccountingAdminPage() {
   const trasCambiarCategoria = async () => { await cargarCategorias(); await recargar() }
   const renombrar = async (id: number, nombre: string) => { await renameCategory(id, nombre); await trasCambiarCategoria() }
   const cambiarEstado = async (id: number, activa: boolean) => { await setCategoryActive(id, activa); await trasCambiarCategoria() }
+  // Se da de alta dentro de la gestión: si falla, el motivo sale allí, junto al campo.
+  const crearCategoria = async (nombre: string, tipo: Category['tipo']) => { await createCategory({ nombre, tipo }); await cargarCategorias() }
 
   const sucio = JSON.stringify(form) !== JSON.stringify(formInicial)
 
@@ -221,28 +208,10 @@ export default function AccountingAdminPage() {
       abierto={gestionAbierta}
       categorias={categories}
       onCerrar={() => setGestionAbierta(false)}
-      onNueva={abrirCategoria}
+      onCrear={crearCategoria}
       onRenombrar={renombrar}
       onCambiarEstado={cambiarEstado}
     />
-
-    <VentanaFormulario
-      abierto={ventana === 'categoria'}
-      titulo="Nueva categoría"
-      textoGuardar="Crear categoría"
-      sucio={JSON.stringify(category) !== JSON.stringify(categoriaVacia)}
-      guardando={guardando}
-      puedeGuardar={!errorNombreCategoria(category.nombre)}
-      error={errorAlta}
-      onGuardar={saveCategory}
-      onCerrar={() => setVentana(null)}
-    >
-      <TextField label="Nombre" value={category.nombre} onChange={(e) => setCategory({ ...category, nombre: e.target.value })} slotProps={{ htmlInput: { maxLength: 60 } }} fullWidth />
-      <TextField select label="Tipo" value={category.tipo} onChange={(e) => setCategory({ ...category, tipo: e.target.value as Tipo })} fullWidth>
-        <MenuItem value="INGRESO">Ingreso</MenuItem>
-        <MenuItem value="GASTO">Gasto</MenuItem>
-      </TextField>
-    </VentanaFormulario>
 
     <DialogoConfirmacion
       abierto={porBorrar !== null}

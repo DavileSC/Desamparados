@@ -13,6 +13,8 @@ export interface Category {
   activa?: boolean
   /** La usan los recibos al cobrarse o devolverse: no se puede renombrar. */
   deRecibos?: boolean
+  /** Apuntes e importe en el año natural en curso, para la gestión de categorías. */
+  usoAnio?: { apuntes: number; importe: number }
 }
 export interface Transaction {
   id: number

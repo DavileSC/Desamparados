@@ -19,6 +19,7 @@ import { InventarioService } from '../src/services/inventario.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
 import { TransaccionService } from '../src/services/transaccion.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
@@ -201,6 +202,15 @@ describe('consultas contra la base de datos', () => {
     for (const orden of Object.keys(ORDENES_PRENDAS)) await InventarioService.getAllPrendas({ orden, limit: '5' });
     for (const orden of Object.keys(ORDENES_RECIBOS)) await ReciboService.getAdminRecibos({ orden, limit: '5' });
     for (const orden of Object.keys(ORDENES_LIBRO)) await TransaccionService.getAll({ orden, limit: '5' });
+  });
+
+  test('categorías: cada una trae sus apuntes e importe del año, y juntas suman los del año', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const categorias = await TransaccionService.getCategorias(undefined, true);
+    assert.ok(categorias.every((c) => Number.isInteger(c.usoAnio.apuntes) && typeof c.usoAnio.importe === 'number'));
+    const inicioAnio = inicioDiaMadrid(`${diaMadrid(new Date()).slice(0, 4)}-01-01`);
+    const delAnio = await db.transaccion.count({ where: { fecha: { gte: inicioAnio } } });
+    assert.equal(categorias.reduce((s, c) => s + c.usoAnio.apuntes, 0), delAnio);
   });
 
   test('libro mayor: por importe, el mayor arriba', async (t) => {

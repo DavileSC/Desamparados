@@ -170,9 +170,9 @@ describe('AccountingAdminPage', () => {
     await waitFor(() => expect(ultima(simulado, 'libro-mayor')).toContain('q=juan'))
   })
 
-  it('apunte y categorías van cada uno en su ventana, y el alta de categoría también', async () => {
+  it('apunte y categorías van cada uno en su ventana, y la categoría se da de alta dentro de la suya', async () => {
     const user = userEvent.setup()
-    servir()
+    const simulado = servir()
     renderWithProviders(<AccountingAdminPage />)
 
     await user.click(await screen.findByRole('button', { name: /nuevo apunte/i }))
@@ -184,8 +184,12 @@ describe('AccountingAdminPage', () => {
 
     await user.click(screen.getByRole('button', { name: /^categorías$/i }))
     const gestion = await screen.findByRole('dialog', { name: /^categorías$/i })
-    await user.click(within(gestion).getByRole('button', { name: /nueva categoría/i }))
-    expect(await screen.findByRole('dialog', { name: /nueva categoría/i })).toBeInTheDocument()
+    await user.click(within(gestion).getByRole('button', { name: /añadir categoría de gasto/i }))
+    await user.type(within(gestion).getByLabelText(/nombre de la nueva categoría de gasto/i), 'Banda de música')
+    await user.click(within(gestion).getByRole('button', { name: /crear la categoría/i }))
+    await waitFor(() => expect(escritura(simulado)).toEqual({ url: '/api/transacciones/categorias', metodo: 'POST', cuerpo: { nombre: 'Banda de música', tipo: 'GASTO' } }))
+    // Sin segunda ventana encima.
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
   })
 })
 
@@ -319,13 +323,14 @@ describe('gestión de categorías (D8)', () => {
 
     await user.click(await screen.findByRole('button', { name: /^categorías$/i }))
     const gestion = await screen.findByRole('dialog', { name: /^categorías$/i })
-    await user.click(within(gestion).getByRole('button', { name: 'Renombrar «Flores y exorno»' }))
+    await user.click(within(gestion).getByRole('button', { name: 'Más acciones de «Flores y exorno»' }))
+    await user.click(await screen.findByRole('menuitem', { name: /renombrar/i }))
     const campo = within(gestion).getByLabelText(/nuevo nombre de «flores y exorno»/i)
     await user.clear(campo)
     await user.type(campo, 'ab')
     expect(within(gestion).getByText('Al menos 3 caracteres.')).toBeInTheDocument()
     await user.type(campo, 'c exorno')
-    await user.click(within(gestion).getByRole('button', { name: 'Guardar' }))
+    await user.click(within(gestion).getByRole('button', { name: 'Guardar el nombre' }))
 
     await waitFor(() => expect(escritura(simulado)).toEqual({ url: '/api/transacciones/categorias/6', metodo: 'PUT', cuerpo: { nombre: 'abc exorno' } }))
   })
@@ -337,13 +342,20 @@ describe('gestión de categorías (D8)', () => {
 
     await user.click(await screen.findByRole('button', { name: /^categorías$/i }))
     const gestion = await screen.findByRole('dialog', { name: /^categorías$/i })
-    expect(within(gestion).queryByRole('button', { name: 'Renombrar «Cuotas y papeletas»' })).not.toBeInTheDocument()
-    expect(within(gestion).getByText(/la usan los recibos/i)).toBeInTheDocument()
+    expect(within(gestion).getByRole('img', { name: /la usan los recibos/i })).toBeInTheDocument()
+    await user.click(within(gestion).getByRole('button', { name: 'Más acciones de «Cuotas y papeletas»' }))
+    expect(await screen.findByRole('menuitem', { name: /desactivar/i })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /renombrar/i })).not.toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
 
-    await user.click(within(gestion).getByRole('button', { name: 'Desactivar «Donativos»' }))
+    await user.click(within(gestion).getByRole('button', { name: 'Más acciones de «Donativos»' }))
+    await user.click(await screen.findByRole('menuitem', { name: /desactivar/i }))
     await waitFor(() => expect(escritura(simulado)).toEqual({ url: '/api/transacciones/categorias/3/activa', metodo: 'PATCH', cuerpo: { activa: false } }))
 
-    await user.click(within(gestion).getByRole('button', { name: 'Reactivar «Rifas antiguas»' }))
+    // Las desactivadas van plegadas al final.
+    await user.click(within(gestion).getByRole('button', { name: /desactivadas \(1\)/i }))
+    await user.click(await within(gestion).findByRole('button', { name: 'Reactivar «Rifas antiguas»' }))
     await waitFor(() => expect(escritura(simulado)).toEqual({ url: '/api/transacciones/categorias/4/activa', metodo: 'PATCH', cuerpo: { activa: true } }))
   })
 

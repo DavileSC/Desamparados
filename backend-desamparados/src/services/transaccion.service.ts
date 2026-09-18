@@ -73,16 +73,35 @@ export class TransaccionService {
    * Por defecto solo las activas, que son las que se ofrecen al apuntar. `todas`
    * trae también las desactivadas. `deRecibos` marca las que usan los recibos,
    * para que la pantalla no ofrezca renombrarlas.
+   *
+   * `usoAnio`: apuntes e importe de cada una en el año natural en curso (en
+   * Madrid), también cero. Es lo que enseña la gestión de categorías para
+   * saber cuáles se usan antes de desactivar o renombrar; el resumen no sirve,
+   * porque va con los filtros de la pantalla y se salta las que no tienen apuntes.
    */
-  static async getCategorias(tipo?: TipoTransaccion, todas = false) {
-    const categorias = await db.categoriaTransaccion.findMany({
-      where: {
-        ...(todas ? {} : { activa: true }),
-        ...(tipo && { tipo }) // Si me piden solo las de ingreso, filtro
-      },
-      orderBy: [{ nombre: 'asc' }, { id: 'asc' }]
-    });
-    return categorias.map((c) => ({ ...c, deRecibos: esCategoriaDeRecibos(c) }));
+  static async getCategorias(tipo?: TipoTransaccion, todas = false, ahora = new Date()) {
+    const inicioAnio = inicioDiaMadrid(`${diaMadrid(ahora).slice(0, 4)}-01-01`);
+    const [categorias, uso] = await Promise.all([
+      db.categoriaTransaccion.findMany({
+        where: {
+          ...(todas ? {} : { activa: true }),
+          ...(tipo && { tipo }) // Si me piden solo las de ingreso, filtro
+        },
+        orderBy: [{ nombre: 'asc' }, { id: 'asc' }]
+      }),
+      db.transaccion.groupBy({
+        by: ['categoriaId'],
+        where: { fecha: { gte: inicioAnio }, ...(tipo && { tipo }) },
+        _count: { _all: true },
+        _sum: { importe: true }
+      })
+    ]);
+    const porCategoria = new Map(uso.map((u) => [u.categoriaId, { apuntes: u._count._all, importe: Number(u._sum.importe ?? 0) }]));
+    return categorias.map((c) => ({
+      ...c,
+      deRecibos: esCategoriaDeRecibos(c),
+      usoAnio: porCategoria.get(c.id) ?? { apuntes: 0, importe: 0 }
+    }));
   }
 
   /**
