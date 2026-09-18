@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
@@ -9,15 +10,15 @@ import { crearTemaCms } from '../../../theme/cms'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 import TOPES from '../../../../../shared/topes-contenido.json'
 import PortadaAdminPage from '../PortadaAdminPage'
-import RecorridoAdminPage from '../RecorridoAdminPage'
-import HistoriaAdminPage from '../HistoriaAdminPage'
+import PaginaAdminPage from '../PaginaAdminPage'
 
 /**
  * Los topes de longitud del servidor (`schemas/contenido.schema.ts`, que los lee
  * de `shared/topes-contenido.json`) están copiados a mano en una treintena de
- * `maxLength` repartidos por las tres pantallas del CMS. Son lo único que avisa
- * mientras se escribe: si el servidor baja un tope y las pantallas no se
- * enteran, el editor escribe tan tranquilo hasta que le sale un 400 al guardar.
+ * `maxLength` repartidos por las pantallas del CMS y por los formularios de
+ * cada tipo de bloque. Son lo único que avisa mientras se escribe: si el
+ * servidor baja un tope y las pantallas no se enteran, el editor escribe tan
+ * tranquilo hasta que le sale un 400 al guardar.
  *
  * Esto no empareja campo por campo —eso exigiría repetir el mapa entero y sería
  * la misma copia a mano con otro nombre—: comprueba que **ningún** `maxlength`
@@ -31,26 +32,29 @@ const respuesta = (cuerpo: unknown) =>
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-function montarLasTresPantallas() {
+function montarLasPantallas() {
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: unknown) => Promise.resolve(
-    String(url).includes('/contenido/recorrido')
-      ? respuesta(POR_DEFECTO.recorrido)
+    String(url).includes('/contenido/corporacion')
+      ? respuesta(POR_DEFECTO.corporacion)
       : String(url).includes('/contenido/historia')
       ? respuesta(POR_DEFECTO.historia)
       : respuesta({ imagenes: [{ id: 1, url: '/storage/public/una.webp', descripcion: 'Una', orden: 0 }], textos: POR_DEFECTO.portada }),
   )))
 
   // PantallaEdicion usa useBlocker, que exige un data router: uno por pantalla.
-  const rutaDe = (elemento: ReactNode, ruta: string) =>
-    createMemoryRouter([{ path: ruta, element: elemento }], { initialEntries: [ruta] })
+  // El patrón y la entrada van aparte: la pantalla del constructor lee su
+  // slug de la ruta (`/cms/paginas/:slug`), así que declarar la ruta literal
+  // la dejaba sin parámetro y pidiendo un slug vacío.
+  const rutaDe = (elemento: ReactNode, patron: string, entrada = patron) =>
+    createMemoryRouter([{ path: patron, element: elemento }], { initialEntries: [entrada] })
 
   render(
     <HelmetProvider>
       <QueryClientProvider client={new QueryClient()}>
         <ThemeProvider theme={crearTemaCms('claro')}>
           <RouterProvider router={rutaDe(<PortadaAdminPage />, '/cms/portada')} />
-          <RouterProvider router={rutaDe(<RecorridoAdminPage />, '/cms/recorrido')} />
-          <RouterProvider router={rutaDe(<HistoriaAdminPage />, '/cms/historia')} />
+          <RouterProvider router={rutaDe(<PaginaAdminPage />, '/cms/paginas/:slug', '/cms/paginas/historia')} />
+          <RouterProvider router={rutaDe(<PaginaAdminPage />, '/cms/paginas/:slug', '/cms/paginas/corporacion')} />
         </ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>,
@@ -59,12 +63,22 @@ function montarLasTresPantallas() {
 
 describe('topes de longitud del CMS', () => {
   it('todo maxlength que pintan las pantallas es un tope que el servidor conoce', async () => {
-    montarLasTresPantallas()
-    // Las tres pantallas cargadas: las secciones plegadas siguen montadas (el
-    // acordeón de MUI no desmonta lo que oculta), así que se cuentan todas.
+    const user = userEvent.setup()
+    montarLasPantallas()
+    // Las pantallas cargadas: en la portada las secciones plegadas siguen
+    // montadas (el acordeón de MUI no desmonta lo que oculta), así que se
+    // cuentan todas. Historia es ya una página de bloques: su cronología se
+    // despliega abajo con los demás bloques.
     await screen.findByDisplayValue('Desamparados Málaga')
-    await screen.findByDisplayValue('Plaza de la Marina')
-    await screen.findByDisplayValue('La devoción crece en la parroquia')
+    await screen.findByDisplayValue('Corporación · Historia')
+    await screen.findByDisplayValue('Corporación')
+
+    // El constructor de páginas SÍ desmonta lo que pliega, así que sus
+    // formularios hay que abrirlos: si no, ningún `maxLength` de un bloque
+    // entraría en la cuenta y el test pasaría sin mirarlos.
+    for (const cabecera of screen.getAllByRole('button', { expanded: false })) {
+      await user.click(cabecera)
+    }
 
     const pintados = [...document.querySelectorAll('[maxlength]')]
       .map((campo) => Number(campo.getAttribute('maxlength')))

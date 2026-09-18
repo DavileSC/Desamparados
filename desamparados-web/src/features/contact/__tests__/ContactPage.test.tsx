@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import ContactPage from '../ContactPage'
 import { contactSchema, telefonoValido } from '../schema'
+import { stubFetchPublico } from '../../../test/fetchPublico'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -11,7 +12,7 @@ function responderBien() {
   const simulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(
     JSON.stringify({ message: 'Mensaje enviado correctamente.' }), { status: 200, headers: { 'Content-Type': 'application/json' } },
   )))
-  vi.stubGlobal('fetch', simulado)
+  stubFetchPublico(simulado)
   return simulado
 }
 

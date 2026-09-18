@@ -11,7 +11,12 @@ const valida = (slug: SlugContenido, datos: unknown) =>
 test('los valores por defecto pasan su propio esquema', () => {
   // Si no pasaran, la siembra escribiría algo que el CMS no podría volver a guardar.
   assert.ok(valida('portada', porDefecto('portada')));
+  // El recorrido dejó de tener forma propia: ahora es una página de bloques, y
+  // sus paradas y su plano los validan el bloque de itinerario y el de foto
+  // (`bloques-esquemas.test.ts`). Aquí se comprueba que el documento entero
+  // sigue pasando, que es lo que la siembra escribe.
   assert.ok(valida('recorrido', porDefecto('recorrido')));
+  assert.ok(valida('titular', porDefecto('titular')));
 });
 
 test('un título que no es texto se rechaza', () => {
@@ -35,30 +40,6 @@ test('la foto tiene que ser una ruta del propio sitio', () => {
 
   datos.sabadoDePasion.imagenUrl = '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp';
   assert.ok(valida('portada', datos));
-});
-
-test('un plano sin descripción no se guarda', () => {
-  const datos = porDefecto('recorrido') as any;
-  datos.plano = { url: '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp', alt: '' };
-  assert.ok(!valida('recorrido', datos), 'un plano sin alt deja sin recorrido a quien use lector de pantalla');
-
-  datos.plano.alt = 'Plano del recorrido por el centro de Málaga';
-  assert.ok(valida('recorrido', datos));
-});
-
-test('sin plano, la descripción vacía es correcta', () => {
-  const datos = porDefecto('recorrido') as any;
-  datos.plano = { url: '', alt: '' };
-  assert.ok(valida('recorrido', datos));
-});
-
-test('la hora de una parada tiene que parecer una hora', () => {
-  const datos = porDefecto('recorrido') as any;
-  datos.paradas = [{ hora: 'por la tarde', lugar: 'Plaza' }];
-  assert.ok(!valida('recorrido', datos));
-
-  datos.paradas = [{ hora: '17:30', lugar: 'Plaza' }];
-  assert.ok(valida('recorrido', datos));
 });
 
 test('cada clase de texto acepta su tope justo y rechaza un carácter más', () => {
@@ -87,11 +68,12 @@ test('cada clase de texto acepta su tope justo y rechaza un carácter más', () 
   }
 });
 
-test('una lista de paradas vacía es correcta', () => {
-  const datos = porDefecto('recorrido') as any;
-  datos.paradas = [];
-  assert.ok(valida('recorrido', datos), 'la página puede estar en preparación');
-});
+/**
+ * Historia pasó a ser una página de bloques: sus hitos los valida el bloque de
+ * cronología (`bloques-esquemas.test.ts`). Aquí queda lo que es del documento
+ * entero: que los valores de partida pasan, y la ceja y el fondo de su cabecera.
+ */
+const cronologiaDe = (datos: any) => datos.bloques.find((b: any) => b.tipo === 'cronologia');
 
 test('los valores por defecto de la historia pasan su esquema', () => {
   assert.ok(valida('historia', porDefecto('historia')));
@@ -99,30 +81,27 @@ test('los valores por defecto de la historia pasan su esquema', () => {
 
 test('una foto de hito sin descripción no se guarda', () => {
   const datos = porDefecto('historia') as any;
-  datos.hitos[1].foto = { url: '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp', alt: '', pie: '' };
+  cronologiaDe(datos).hitos[1].foto = { url: '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp', alt: '', pie: '' };
   assert.ok(!valida('historia', datos), 'una foto sin alt deja el hito a medias para quien use lector de pantalla');
 
-  datos.hitos[1].foto.alt = 'Los hermanos en la misa de la parroquia';
+  cronologiaDe(datos).hitos[1].foto.alt = 'Los hermanos en la misa de la parroquia';
   assert.ok(valida('historia', datos));
 });
 
 test('la foto de fondo puede no estar, y si está es del propio sitio', () => {
   const datos = porDefecto('historia') as any;
-  datos.fondo.url = '';
+  datos.cabecera.foto = '';
   assert.ok(valida('historia', datos), 'sin foto, el fondo queda liso');
 
-  datos.fondo.url = 'https://otro-sitio.example/foto.jpg';
+  datos.cabecera.foto = 'https://otro-sitio.example/foto.jpg';
   assert.ok(!valida('historia', datos));
 });
 
-test('el tono de un hito es uno de los tres de la web', () => {
+test('la ceja de la cabecera es opcional y tiene el tope de una etiqueta', () => {
   const datos = porDefecto('historia') as any;
-  datos.hitos[0].tono = 'verde';
-  assert.ok(!valida('historia', datos), 'un color libre no responde a nada de la web');
-});
+  delete datos.cabecera.ceja;
+  assert.ok(valida('historia', datos), 'las demás páginas no llevan ceja');
 
-test('el relato de un hito admite varios párrafos separados por línea en blanco', () => {
-  const datos = porDefecto('historia') as any;
-  datos.hitos[0].relato = 'Primer párrafo.\n\nSegundo párrafo.';
-  assert.ok(valida('historia', datos));
+  datos.cabecera.ceja = 'a'.repeat(topes.etiqueta + 1);
+  assert.ok(!valida('historia', datos));
 });

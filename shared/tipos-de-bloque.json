@@ -4,7 +4,25 @@
     "Lo leen los dos lados: el servidor lo usa para mapear tipo -> esquema de",
     "arktype, y la web para mapear tipo -> componente. Vive aquí y no duplicado",
     "en cada lado porque añadir un bloque en uno y olvidarlo en el otro daría un",
-    "400 al guardar sin que nada avisara antes."
+    "400 al guardar sin que nada avisara antes.",
+    "",
+    "El orden es el del menú «Añadir bloque» del CMS: primero los tres de la",
+    "primera fase, que son los que más se usan, y detrás los de la segunda.",
+    "",
+    "Detrás, los tres que sirven a páginas con diseño o datos propios: la",
+    "cronología de Historia, los listados vivos (noticias, agenda y",
+    "publicaciones) y el formulario de Contacto."
   ],
-  "tipos": ["texto", "foto", "tarjetas"]
+  "tipos": [
+    "texto",
+    "foto",
+    "galeria",
+    "tarjetas",
+    "llamada",
+    "datos",
+    "itinerario",
+    "cronologia",
+    "listado",
+    "contacto"
+  ]
 }

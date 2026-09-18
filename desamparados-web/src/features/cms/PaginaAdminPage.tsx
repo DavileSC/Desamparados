@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, CircularProgress, Paper, Stack } from '@mui/material'
+import { Alert, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Helmet } from 'react-helmet-async'
 import { useParams } from 'react-router-dom'
@@ -12,7 +12,7 @@ import SeccionPlegable from './contenido/SeccionPlegable'
 import EditorDeBloques from './bloques/EditorDeBloques'
 import { conClave, sinClave, type Fila } from './bloques/filas'
 import { problemaDeBloque, NOMBRE_BLOQUE } from './bloques/formularios'
-import { RUTA_PUBLICA } from '../../app/cmsNavegacion'
+import { paginaPublica } from '../../app/cmsNavegacion'
 import { ApiError } from '../../lib/api/client'
 import {
   getContenido, guardarContenido,
@@ -20,6 +20,15 @@ import {
 } from '../../lib/api/contenido'
 
 export const AVISO_SIN_TITULO = 'La página se ha quedado sin título. Ponle uno antes de guardar.'
+
+/**
+ * Dónde sale la foto de la cabecera, cuando no es donde sale en las demás.
+ * Historia tiene maquetación propia y su foto no va en la cabecera sino, muy
+ * velada, detrás de la página entera.
+ */
+const AYUDA_FOTO_CABECERA: Record<string, string> = {
+  historia: 'JPG, PNG o WebP grande y apaisado, de hasta 5 MB. Se ve muy velada detrás de toda la página de Historia. Sin foto, el fondo queda liso.',
+}
 
 /**
  * Traduce `ApiError.fields` («bloques.2»: motivo) a algo que diga de qué
@@ -52,6 +61,9 @@ function clavesDelServidor(fields: Record<string, string>, filas: Fila[]): Set<n
 
 export default function PaginaAdminPage() {
   const { slug = '' } = useParams()
+  // La ficha del catálogo (`shared/paginas-publicas.json`): de ahí salen el
+  // nombre que se enseña y la ruta pública a la que lleva la vista previa.
+  const ficha = paginaPublica(slug)
   const queryClient = useQueryClient()
   const [cabecera, setCabecera] = useState<CabeceraPagina | null>(null)
   const [filas, setFilas] = useState<Fila[]>([])
@@ -125,14 +137,14 @@ export default function PaginaAdminPage() {
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       <PantallaEdicion
         titulo={cabecera.titulo || 'Página'}
-        nombre="Página de la web pública"
+        nombre={ficha ? `Página «${ficha.nombre}»` : 'Página de la web pública'}
         sucio={JSON.stringify(documento) !== JSON.stringify(inicial)}
         guardando={guardando}
-        volverA="/cms"
+        volverA="/cms/paginas"
         onGuardar={guardar}
       >
         <Stack spacing={3}>
-          <Button component="a" href={RUTA_PUBLICA[slug] ?? '/'} target="_blank" rel="noopener noreferrer"
+          <Button component="a" href={ficha?.ruta ?? '/'} target="_blank" rel="noopener noreferrer"
             startIcon={<OpenInNewIcon />} sx={{ alignSelf: 'flex-start' }}>
             Vista previa
           </Button>
@@ -140,6 +152,12 @@ export default function PaginaAdminPage() {
           {/* La cabecera va aparte y sin botón de quitar: está siempre. */}
           <Paper sx={{ p: 2.5 }}>
             <SeccionPlegable titulo="Cabecera de la página" abiertaPorDefecto>
+              {/* Solo la trae Historia: las demás cabeceras no pintan ceja. */}
+              {cabecera.ceja !== undefined && (
+                <CampoTexto etiqueta="Antetítulo" valor={cabecera.ceja}
+                  onCambio={(ceja) => setCabecera({ ...cabecera, ceja })}
+                  ayuda="Línea pequeña en mayúsculas, encima del título grande." maxLength={topes.etiqueta} />
+              )}
               <CampoTexto etiqueta="Título" valor={cabecera.titulo}
                 onCambio={(titulo) => setCabecera({ ...cabecera, titulo })}
                 ayuda="Encabezado grande de la página, arriba del todo." maxLength={topes.titulo} />
@@ -148,10 +166,17 @@ export default function PaginaAdminPage() {
                 ayuda="Frase bajo el título." maxLength={topes.descripcion} />
               <CampoImagen valor={cabecera.foto} onCambio={(foto) => setCabecera({ ...cabecera, foto })}
                 etiqueta="Foto de la cabecera"
-                ayuda="Opcional. Sin foto, la cabecera queda lisa." apaisada />
+                ayuda={AYUDA_FOTO_CABECERA[slug] ?? 'Opcional. Sin foto, la cabecera queda lisa.'} apaisada />
               <CampoTexto etiqueta="Descripción de la foto" valor={cabecera.fotoAlt}
                 onCambio={(fotoAlt) => setCabecera({ ...cabecera, fotoAlt })}
                 ayuda="Lo que se ve en la foto. Déjala vacía si no hay foto." maxLength={topes.descripcion} />
+              {slug === 'historia' && (
+                <Typography variant="body2" color="text.secondary">
+                  En Historia, los bloques de cronología van en una franja oscura y el primero forma el
+                  índice de la cabecera, y un bloque de llamada es el cierre: su texto es la línea pequeña,
+                  su título la frase grande y su botón el enlace con flecha.
+                </Typography>
+              )}
             </SeccionPlegable>
           </Paper>
 

@@ -1,6 +1,16 @@
 import defectos from '../../../shared/contenido-por-defecto.json' with { type: 'json' };
 
-export const SLUGS_CONTENIDO = ['portada', 'recorrido', 'historia', 'titular', 'corporacion'] as const;
+/**
+ * Las páginas con documento editable: primero la portada, que tiene
+ * formulario propio, y después las que se componen por bloques, que son las
+ * que declara `shared/paginas-publicas.json`.
+ *
+ * La lista va escrita a mano y no derivada de ese JSON porque TypeScript no
+ * saca tipos literales de un import de JSON: derivarla dejaría `SlugContenido`
+ * en `string` y con él el mapa de esquemas y `porDefecto` sin comprobación.
+ * De que las dos listas no se separen se encarga `paginas-catalogo.test.ts`.
+ */
+export const SLUGS_CONTENIDO = ['portada', 'recorrido', 'historia', 'titular', 'corporacion', 'parroquia', 'organos-de-gobierno', 'nuestros-fines', 'caridad', 'formacion', 'cultos', 'sabado-de-pasion', 'trono', 'enseres', 'desamparados', 'ajuar', 'actualidad', 'agenda', 'noticias', 'publicaciones', 'boletines', 'dossier-prensa', 'contacto'] as const;
 export type SlugContenido = (typeof SLUGS_CONTENIDO)[number];
 
 export const esSlugContenido = (valor: unknown): valor is SlugContenido =>

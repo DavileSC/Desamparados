@@ -15,18 +15,20 @@ test('un campo que no está guardado sale del valor por defecto', () => {
 });
 
 test('una lista guardada sustituye a la de por defecto, no se mezcla con ella', () => {
-  const mezclado = mezclarConDefectos('recorrido', { paradas: [{ hora: '18:00', lugar: 'Plaza nueva' }] }) as any;
+  // Con el recorrido ya convertido a bloques, la lista que manda es `bloques`.
+  const soloTexto = [{ tipo: 'texto', titulo: '', html: '<p>Solo esto</p>' }];
+  const mezclado = mezclarConDefectos('recorrido', { bloques: soloTexto }) as any;
 
-  assert.equal(mezclado.paradas.length, 1, 'si se mezclaran, quedarían las nueve de por defecto');
-  assert.deepEqual(mezclado.paradas[0], { hora: '18:00', lugar: 'Plaza nueva' });
+  assert.equal(mezclado.bloques.length, 1, 'si se mezclaran, quedarían también los de por defecto');
+  assert.deepEqual(mezclado.bloques[0], soloTexto[0]);
 });
 
-test('borrar todas las paradas las deja borradas', () => {
+test('borrar todos los bloques los deja borrados', () => {
   // Si la lista vacía se tratara como «no hay nada guardado», el CMS parecería
-  // no guardar: se borran las nueve, se guarda, y vuelven las nueve.
-  const mezclado = mezclarConDefectos('recorrido', { paradas: [] }) as any;
+  // no guardar: se quitan todos los bloques, se guarda, y vuelven los de antes.
+  const mezclado = mezclarConDefectos('recorrido', { bloques: [] }) as any;
 
-  assert.deepEqual(mezclado.paradas, []);
+  assert.deepEqual(mezclado.bloques, []);
 });
 
 test('las teselas se casan por clave y no por posición', () => {
@@ -68,13 +70,19 @@ test('un documento que no es un objeto se ignora entero', () => {
   }
 });
 
-test('los hitos guardados sustituyen enteros a los de por defecto', () => {
-  // Como las paradas: quitar hitos tiene que dejarlos quitados, no traer de
+test('los bloques guardados de la historia sustituyen enteros a los de por defecto', () => {
+  // Como las paradas: si se mezclaran por posición, quitar hitos dejaría de
   // vuelta los cinco de por defecto.
   const hito = { periodo: '1954', etiqueta: 'Fundación', titulo: 'Se funda el grupo', relato: 'Texto.', foto: { url: '', alt: '', pie: '' }, tono: 'ninguno' };
-  const mezclado = mezclarConDefectos('historia', { hitos: [hito] }) as any;
+  const bloques = [{ tipo: 'cronologia', titulo: '', hitos: [hito] }];
+  const mezclado = mezclarConDefectos('historia', { bloques }) as any;
 
-  assert.equal(mezclado.hitos.length, 1);
-  assert.deepEqual(mezclado.hitos[0], hito);
-  assert.equal(mezclado.titulo, 'Historia', 'lo no tocado conserva el texto de siempre');
+  assert.deepEqual(mezclado.bloques, bloques);
+  assert.equal(mezclado.cabecera.titulo, 'Historia', 'lo no tocado conserva el texto de siempre');
+  assert.equal(mezclado.cabecera.ceja, 'Corporación · Historia', 'y la ceja, que solo tiene Historia, también');
+});
+
+test('una ceja guardada en una página que no la lleva se descarta', () => {
+  const mezclado = mezclarConDefectos('cultos', { cabecera: { ceja: 'Colada' } }) as any;
+  assert.ok(!('ceja' in mezclado.cabecera));
 });

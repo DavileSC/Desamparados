@@ -1,6 +1,6 @@
 import { Box, Stack } from '@mui/material'
 import SectionTitle from '../SectionTitle'
-import { componenteDeBloque } from './registro'
+import { componenteDeBloque, pintaSuTitulo } from './registro'
 import type { Bloque } from '../../lib/api/contenido'
 
 /**
@@ -36,7 +36,7 @@ export default function BloquesDePagina({ bloques }: { bloques: Bloque[] }) {
         // a cada bloque un identificador estable antes de que eso ocurra.
         return (
           <Box key={`${bloque.tipo}-${indice}`}>
-            {bloque.titulo && <SectionTitle title={bloque.titulo} centered />}
+            {bloque.titulo && !pintaSuTitulo(bloque) && <SectionTitle title={bloque.titulo} centered />}
             <Componente bloque={bloque as never} />
           </Box>
         )

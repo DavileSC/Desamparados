@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import PublicationsPage from '../PublicationsPage'
+import { stubFetchPublico } from '../../../test/fetchPublico'
 
 const anuario = {
   id: 12, titulo: 'Anuario 2026', descripcion: 'Memoria del curso.', imagenUrl: null,
@@ -17,7 +18,7 @@ function responder(data: unknown[], meta: Record<string, number>) {
   const simulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(
     JSON.stringify({ data, meta }), { status: 200, headers: { 'Content-Type': 'application/json' } },
   )))
-  vi.stubGlobal('fetch', simulado)
+  stubFetchPublico(simulado)
   return simulado
 }
 

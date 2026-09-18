@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import AgendaPage from '../AgendaPage'
+import { stubFetchPublico } from '../../../../test/fetchPublico'
 
 const evento = {
   id: 1, title: 'Besapiés', description: null, location: 'Parroquia',
@@ -17,7 +18,7 @@ function responder(data: unknown[], meta: Record<string, number>) {
   const simulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(
     JSON.stringify({ data, meta }), { status: 200, headers: { 'Content-Type': 'application/json' } },
   )))
-  vi.stubGlobal('fetch', simulado)
+  stubFetchPublico(simulado)
   return simulado
 }
 
@@ -63,7 +64,7 @@ describe('AgendaPage: el error de una página no se queda pegado', () => {
     // !error, así que el visitante veía el paginador, una alerta y ni un solo
     // evento hasta recargar a mano.
     vi.stubGlobal('scrollTo', vi.fn()) // jsdom no implementa el scroll suave
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: RequestInfo | URL) =>
+    stubFetchPublico(vi.fn().mockImplementation((url: RequestInfo | URL) =>
       Promise.resolve(String(url).includes('page=2')
         ? new Response(JSON.stringify({ message: 'La agenda no responde.' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
         : new Response(

@@ -5,6 +5,7 @@ import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
 import NoticiasPage from '../NoticiasPage'
 import NoticiaDetallePage from '../NoticiaDetallePage'
+import { stubFetchPublico } from '../../../../test/fetchPublico'
 
 // El stub de IntersectionObserver que AnimatedSection necesita vive en
 // src/test/setup.ts: lo comparten todas las páginas públicas con test.
@@ -19,7 +20,7 @@ afterEach(() => { vi.unstubAllGlobals() })
 describe('NoticiasPage', () => {
   it('ofrece pasar de página cuando hay más noticias de las que caben', async () => {
     // El archivo público servía diez y no lo decía.
-    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(
+    stubFetchPublico(vi.fn().mockImplementation(() => Promise.resolve(new Response(
       JSON.stringify({ data: [], meta: { total: 45, page: 1, limit: 20, totalPages: 3 } }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     ))))
@@ -30,7 +31,7 @@ describe('NoticiasPage', () => {
 
 describe('NoticiasPage: la noticia destacada', () => {
   const otra = { ...noticia, id: 2, slug: 'cabildo', titulo: 'Cabildo general', fecha: '2026-08-01T10:00:00.000Z' }
-  const servir = (page: number) => vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(
+  const servir = (page: number) => stubFetchPublico(vi.fn().mockImplementation(() => Promise.resolve(new Response(
     JSON.stringify({ data: [noticia, otra], meta: { total: 45, page, limit: 20, totalPages: 3 } }),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
   ))))
@@ -54,7 +55,7 @@ describe('NoticiasPage: la noticia destacada', () => {
     // Se rompe si el tono vuelve a ir por el índice a secas: cada columna salía
     // del mismo color fila tras fila.
     const sinFoto = Array.from({ length: 9 }, (_, i) => ({ ...noticia, id: 10 + i, slug: `n-${i}`, titulo: `Noticia ${i}` }))
-    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(
+    stubFetchPublico(vi.fn().mockImplementation(() => Promise.resolve(new Response(
       JSON.stringify({ data: sinFoto, meta: { total: 45, page: 2, limit: 20, totalPages: 3 } }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     ))))
@@ -86,7 +87,7 @@ describe('NoticiasPage: el error de una página no se queda pegado', () => {
     // que un tropiezo pasajero al pasar de página dejaba al visitante con el
     // paginador, una alerta y ni una noticia hasta recargar a mano.
     vi.stubGlobal('scrollTo', vi.fn()) // jsdom no implementa el scroll suave
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: RequestInfo | URL) =>
+    stubFetchPublico(vi.fn().mockImplementation((url: RequestInfo | URL) =>
       Promise.resolve(String(url).includes('page=2')
         ? new Response(JSON.stringify({ message: 'El archivo de noticias no responde.' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
         : new Response(
@@ -111,7 +112,7 @@ describe('NoticiasPage: volver de una noticia no pierde la página', () => {
   it('desde la página 3 del archivo, «Volver a todas las noticias» devuelve a la página 3', async () => {
     // El enlace de la ficha apuntaba a `/actualidad/noticias` a secas, así que
     // el visitante que entraba en una noticia de la página 3 volvía a la 1.
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: RequestInfo | URL) =>
+    stubFetchPublico(vi.fn().mockImplementation((url: RequestInfo | URL) =>
       Promise.resolve(new Response(
         JSON.stringify(String(url).includes('/archive')
           ? { data: [noticia], meta: { total: 45, page: 3, limit: 20, totalPages: 3 } }

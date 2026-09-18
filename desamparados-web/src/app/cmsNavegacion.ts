@@ -1,9 +1,6 @@
 import type { ComponentType } from 'react'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
-import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
-import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
-import CollectionsOutlinedIcon from '@mui/icons-material/CollectionsOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
@@ -15,6 +12,7 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined'
 import WebOutlinedIcon from '@mui/icons-material/WebOutlined'
+import CATALOGO from '../../../shared/paginas-publicas.json'
 import type { PanelResponse } from '../lib/api/panel'
 
 /**
@@ -43,8 +41,9 @@ import type { PanelResponse } from '../lib/api/panel'
  * «Hermandad»: la corporación es un Grupo Parroquial.
  *
  * «Web pública» es el apartado del constructor de páginas: páginas de la web
- * pública compuestas por bloques, distinto de «Contenido», que son las fichas
- * de siempre (portada, recorrido, historia...) con su propio formulario fijo.
+ * pública compuestas por bloques, distinto de «Contenido», que son la portada,
+ * con su formulario fijo, y lo que se publica por entradas (noticias,
+ * publicaciones, agenda).
  */
 export const GRUPOS = ['Hoy', 'Web pública', 'Contenido', 'Censo y enseres', 'Cuentas', 'Sistema'] as const
 export type Grupo = (typeof GRUPOS)[number]
@@ -66,11 +65,8 @@ const TODOS = ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'AL
 
 export const itemsMenu: ItemMenu[] = [
   { label: 'Inicio', href: '/cms', roles: TODOS, grupo: 'Hoy', icono: HomeOutlinedIcon },
-  { label: 'Corporación', href: '/cms/paginas/corporacion', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web pública', icono: WebOutlinedIcon },
+  { label: 'Páginas', href: '/cms/paginas', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web pública', icono: WebOutlinedIcon },
   { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ImageOutlinedIcon },
-  { label: 'Recorrido', href: '/cms/recorrido', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MapOutlinedIcon },
-  { label: 'Historia', href: '/cms/historia', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: HistoryEduOutlinedIcon },
-  { label: 'Sagrada Titular', href: '/cms/titular', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: CollectionsOutlinedIcon },
   { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
   { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MenuBookOutlinedIcon },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: CalendarMonthOutlinedIcon },
@@ -86,14 +82,15 @@ export const itemsMenu: ItemMenu[] = [
 /** Única fuente de verdad de las `RequireRole` de `routes/index.tsx`. */
 export const rolesPorRutaCms = {
   panel: ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
-  // La página de Corporación por bloques: los mismos roles que el resto del contenido.
+  // Las páginas por bloques: el índice y la pantalla de cada una, con los
+  // mismos roles que el resto del contenido. Las dos claves llevan la misma
+  // lista a propósito: son la misma pantalla en dos pasos, y dejar entrar al
+  // índice a quien no puede abrir ninguna página sería enseñarle una lista de
+  // enlaces que todos le rebotan.
+  paginas: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   'paginas/corporacion': ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   // Las fotos de la cabecera son contenido: los mismos roles que las noticias.
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
-  recorrido: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
-  historia: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
-  // La galería de la Titular es contenido: los mismos roles que la portada.
-  titular: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
@@ -129,7 +126,27 @@ export const NOMBRE_CARGO: Record<string, string> = {
   ALBACERIA: 'Albacería',
 }
 
-/** Dónde vive en la web pública cada página editable. */
-export const RUTA_PUBLICA: Record<string, string> = {
-  corporacion: '/corporacion',
+/**
+ * Las páginas de la web pública que se editan por bloques, tal y como las
+ * declara `shared/paginas-publicas.json`. Añadir una es añadirla ahí: el índice
+ * del CMS, el enlace de «Vista previa» y el título de cada pantalla salen de
+ * esta misma lista.
+ */
+export interface PaginaPublica {
+  slug: string
+  nombre: string
+  ruta: string
+  grupo: string
+  descripcion: string
 }
+
+export const PAGINAS_PUBLICAS: PaginaPublica[] = CATALOGO.paginas
+
+/** Dónde vive en la web pública cada página editable. */
+export const RUTA_PUBLICA: Record<string, string> = Object.fromEntries(
+  PAGINAS_PUBLICAS.map((pagina) => [pagina.slug, pagina.ruta]),
+)
+
+/** La ficha de una página del catálogo, o `undefined` si el slug no es de ahí. */
+export const paginaPublica = (slug: string): PaginaPublica | undefined =>
+  PAGINAS_PUBLICAS.find((pagina) => pagina.slug === slug)

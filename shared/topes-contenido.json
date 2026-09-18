@@ -6,5 +6,10 @@
   "lugar": 200,
   "relato": 1200,
   "html": 20000,
-  "tarjetasPorBloque": 12
+  "tarjetasPorBloque": 12,
+  "mediosPorGaleria": 30,
+  "lineasPorBloque": 20,
+  "textoTarjeta": 400,
+  "paradasPorItinerario": 60,
+  "hitosPorCronologia": 30
 }

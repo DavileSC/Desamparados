@@ -4,10 +4,24 @@ import { renderWithProviders } from '../../../../test/test-utils'
 import RecorridoPage from '../RecorridoPage'
 import POR_DEFECTO from '../../../../../../shared/contenido-por-defecto.json'
 
+/**
+ * El recorrido dejó de tener documento propio: es una página de bloques, y sus
+ * paradas viven en un bloque de itinerario. Estas pruebas siguen mirando lo
+ * mismo que antes —que la página pinta lo que manda el CMS y no algo escrito en
+ * el código—, solo que sobre la forma nueva.
+ */
+
 // Cada test estampa su propio fetch; sin esto, el mock de uno se colaría en el siguiente.
 afterEach(() => {
   vi.unstubAllGlobals()
 })
+
+const DE_PARTIDA = POR_DEFECTO.recorrido as unknown as {
+  cabecera: { titulo: string; subtitulo: string; foto: string; fotoAlt: string }
+  bloques: unknown[]
+}
+
+const pagina = (bloques: unknown[]) => ({ cabecera: DE_PARTIDA.cabecera, bloques })
 
 const responder = (recorrido: unknown) =>
   vi.stubGlobal(
@@ -19,7 +33,9 @@ const responder = (recorrido: unknown) =>
 
 describe('RecorridoPage', () => {
   it('enseña las paradas que vienen del CMS', async () => {
-    responder({ ...POR_DEFECTO.recorrido, paradas: [{ hora: '18:15', lugar: 'Plaza nueva' }] })
+    responder(pagina([
+      { tipo: 'itinerario', titulo: 'Itinerario y horarios aproximados', paradas: [{ hora: '18:15', lugar: 'Plaza nueva' }] },
+    ]))
     renderWithProviders(<RecorridoPage />)
 
     expect(await screen.findByText('Plaza nueva')).toBeInTheDocument()
@@ -28,36 +44,44 @@ describe('RecorridoPage', () => {
   })
 
   it('enseña el plano cuando lo hay', async () => {
-    responder({
-      ...POR_DEFECTO.recorrido,
-      plano: { url: '/storage/public/ab12cd34ef56ab78cd90ef12ab34cd56.webp', alt: 'Plano del recorrido' },
-    })
+    // El plano era un campo propio del recorrido; ahora es un bloque de foto,
+    // que es lo que de verdad era: una imagen con su descripción.
+    responder(pagina([
+      {
+        tipo: 'foto', titulo: '',
+        url: '/storage/public/ab12cd34ef56ab78cd90ef12ab34cd56.webp',
+        alt: 'Plano del recorrido', pie: '',
+      },
+      { tipo: 'itinerario', titulo: 'Itinerario', paradas: [{ hora: '19:00', lugar: 'Plaza de la Marina' }] },
+    ]))
     renderWithProviders(<RecorridoPage />)
 
     expect(await screen.findByRole('img', { name: 'Plano del recorrido' })).toBeInTheDocument()
     expect(screen.getByText('Plaza de la Marina')).toBeInTheDocument()
   })
 
-  it('sin paradas no pinta ni la rejilla ni su título', async () => {
-    responder({ ...POR_DEFECTO.recorrido, paradas: [] })
+  it('sin bloque de itinerario no pinta ni la rejilla ni su título', async () => {
+    responder(pagina([{ tipo: 'texto', titulo: '', html: '<p>Este año no hay recorrido publicado.</p>' }]))
     renderWithProviders(<RecorridoPage />)
 
     expect(await screen.findByRole('heading', { name: 'Recorrido' })).toBeInTheDocument()
     // El título del encabezado no cambia entre el itinerario de siempre y la
     // respuesta del CMS, así que ya está en pantalla antes de que la petición
-    // resuelva: esperar por él no basta para saber que las paradas ya han
+    // resuelva: esperar por él no basta para saber que los bloques ya han
     // llegado. `waitFor` sí espera a que React aplique esa actualización.
     await waitFor(() => {
       expect(screen.queryByText('Itinerario y horarios aproximados')).not.toBeInTheDocument()
     })
   })
 
-  it('sin plano ni paradas quedan la cabecera y la introducción', async () => {
-    responder({ ...POR_DEFECTO.recorrido, paradas: [], plano: { url: '', alt: '' } })
+  it('una página sin bloques deja la cabecera en pie', async () => {
+    responder(pagina([]))
     renderWithProviders(<RecorridoPage />)
 
     expect(await screen.findByRole('heading', { name: 'Recorrido' })).toBeInTheDocument()
-    expect(screen.getByText(/El itinerario de la procesión/)).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByText('Itinerario y horarios aproximados')).not.toBeInTheDocument()
+    })
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
@@ -66,5 +90,6 @@ describe('RecorridoPage', () => {
     renderWithProviders(<RecorridoPage />)
 
     expect(await screen.findByText('Salida desde la Parroquia de los Desamparados')).toBeInTheDocument()
+    expect(screen.getByText(/El itinerario de la procesión/)).toBeInTheDocument()
   })
 })

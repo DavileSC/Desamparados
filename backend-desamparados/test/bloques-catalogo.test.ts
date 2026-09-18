@@ -3,8 +3,8 @@ import { describe, test } from 'node:test';
 import { TIPOS_BLOQUE, esTipoBloque } from '../src/domain/bloques.js';
 
 describe('catálogo de tipos de bloque', () => {
-  test('los tres bloques de la primera fase están declarados', () => {
-    for (const tipo of ['texto', 'foto', 'tarjetas']) {
+  test('los bloques de las dos fases están declarados', () => {
+    for (const tipo of ['texto', 'foto', 'galeria', 'tarjetas', 'llamada', 'datos', 'itinerario', 'cronologia', 'listado', 'contacto']) {
       assert.ok((TIPOS_BLOQUE as readonly string[]).includes(tipo), `falta el tipo ${tipo}`);
     }
   });

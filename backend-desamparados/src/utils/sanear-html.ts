@@ -1,5 +1,6 @@
 import sanitizeHtml from 'sanitize-html';
 import { aRutaPropia, esImagenPropia } from './rutas-propias.js';
+import { normalizarVideo } from '../domain/video-galeria.js';
 
 /**
  * Saneado del HTML que se escribe en el CMS (noticias y páginas). Es la defensa
@@ -107,38 +108,63 @@ export function extractoPlano(extracto: string): string {
 }
 
 /**
- * Sanea el HTML de los bloques de texto de una página de bloques.
+ * Deja los bloques de una página en la forma en que se van a guardar, antes de
+ * validarlos. Hace dos cosas:
  *
- * `ContenidoService.guardar` hace un `upsert` del documento entero tal y como
- * llega, así que sin esto el HTML del CMS se almacenaba literal: un `<script>`
- * o una `<img>` de un tercero metidos con un PUT a mano se guardaban, y la
- * única barrera era el saneado del navegador (`lib/sanitizeHtml.ts`), contra la
- * regla de que todo se valida en el servidor. La imagen externa, además, se
- * pintaba en el propio CMS al abrir la página a editar: la IP de quien edita
- * viajaba al tercero.
+ * 1. **Sanea el HTML** de los bloques de texto. `ContenidoService.guardar` hace
+ *    un `upsert` del documento entero tal y como llega, así que sin esto el
+ *    HTML del CMS se almacenaba literal: un `<script>` o una `<img>` de un
+ *    tercero metidos con un PUT a mano se guardaban, y la única barrera era el
+ *    saneado del navegador (`lib/sanitizeHtml.ts`), contra la regla de que todo
+ *    se valida en el servidor. La imagen externa, además, se pintaba en el
+ *    propio CMS al abrir la página a editar: la IP de quien edita viajaba al
+ *    tercero.
+ * 2. **Normaliza la dirección de los vídeos** de los bloques de galería a su
+ *    forma de incrustación sin cookies (`domain/video-galeria.ts`). El CMS pide
+ *    «pega la dirección de YouTube o Vimeo», que es la de la barra del
+ *    navegador; nadie escribe a mano una `-nocookie/embed`. Una dirección que
+ *    no sea de esos dos sitios se deja tal cual y la rechaza el esquema, que es
+ *    quien sabe decir por qué.
  *
- * Va ANTES del esquema, no después, por dos razones: así el `narrow` que exige
- * un cuerpo no vacío juzga lo que de verdad se va a guardar —un bloque que solo
- * llevase un `<script>` queda en blanco al sanearlo y tiene que dar 400 en vez
- * de guardarse vacío—, y así el comentario de `bloques.schema.ts` («el HTML ya
- * viene saneado») pasa a ser cierto.
+ * Todo esto va ANTES del esquema, no después, por dos razones: así el `narrow`
+ * que exige un cuerpo no vacío juzga lo que de verdad se va a guardar —un
+ * bloque que solo llevase un `<script>` queda en blanco al sanearlo y tiene que
+ * dar 400 en vez de guardarse vacío—, y así el comentario de
+ * `bloques.schema.ts` («el HTML ya viene saneado», «el vídeo ya viene
+ * normalizado») pasa a ser cierto.
+ *
+ * Y no puede hacerse con un `.pipe()` de arktype dentro del esquema de cada
+ * bloque, que es como lo hace la página de la Sagrada Titular:
+ * `paginaDeBloquesSchema` valida cada bloque dentro de un `.narrow()` y
+ * descarta la salida, así que lo que se guardaría sería el valor crudo.
  *
  * Tolera cualquier forma: lo que no sea un documento con una lista de bloques
- * sale igual que entró, y de rechazarlo se encarga el esquema, que es quien
- * sabe decir por qué.
+ * sale igual que entró, y de rechazarlo se encarga el esquema.
  */
 export function sanearBloques(datos: unknown): unknown {
   if (typeof datos !== 'object' || datos === null) return datos;
   const bloques = (datos as { bloques?: unknown }).bloques;
   if (!Array.isArray(bloques)) return datos;
-  return {
-    ...datos,
-    bloques: bloques.map((bloque) => {
-      if (typeof bloque !== 'object' || bloque === null) return bloque;
-      const { tipo, html } = bloque as { tipo?: unknown; html?: unknown };
-      return tipo === 'texto' && typeof html === 'string'
-        ? { ...bloque, html: sanearContenidoCms(html) }
-        : bloque;
-    }),
-  };
+  return { ...datos, bloques: bloques.map(sanearBloque) };
+}
+
+function sanearBloque(bloque: unknown): unknown {
+  if (typeof bloque !== 'object' || bloque === null) return bloque;
+  const { tipo, html, medios } = bloque as { tipo?: unknown; html?: unknown; medios?: unknown };
+
+  if (tipo === 'texto' && typeof html === 'string') {
+    return { ...bloque, html: sanearContenidoCms(html) };
+  }
+  if (tipo === 'galeria' && Array.isArray(medios)) {
+    return { ...bloque, medios: medios.map(normalizarMedio) };
+  }
+  return bloque;
+}
+
+/** Solo toca la dirección de los vídeos; una foto sale igual que entró. */
+function normalizarMedio(medio: unknown): unknown {
+  if (typeof medio !== 'object' || medio === null) return medio;
+  const { tipo, url } = medio as { tipo?: unknown; url?: unknown };
+  if (tipo !== 'video' || typeof url !== 'string') return medio;
+  return { ...medio, url: normalizarVideo(url) ?? url };
 }

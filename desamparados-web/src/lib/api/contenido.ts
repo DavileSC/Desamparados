@@ -1,7 +1,19 @@
 import { apiFetch } from './client'
 
-/** Las páginas con documento editable. La misma lista que `SLUGS_CONTENIDO` en el servidor. */
-export type SlugContenido = 'portada' | 'recorrido' | 'historia' | 'titular' | 'corporacion'
+/**
+ * Las páginas con documento editable. La misma lista que `SLUGS_CONTENIDO` en
+ * el servidor: la portada, con formulario propio, y detrás las que se componen
+ * por bloques (las que declara `shared/paginas-publicas.json`).
+ */
+export type SlugContenido =
+  | 'portada' | 'recorrido' | 'historia' | 'titular'
+  | 'corporacion' | 'parroquia' | 'organos-de-gobierno'
+  | 'nuestros-fines' | 'caridad' | 'formacion' | 'cultos'
+  | 'sabado-de-pasion' | 'trono' | 'enseres'
+  | 'desamparados' | 'ajuar'
+  | 'actualidad' | 'agenda' | 'noticias'
+  | 'publicaciones' | 'boletines' | 'dossier-prensa'
+  | 'contacto'
 
 export interface ParadaRecorrido { hora: string; lugar: string }
 
@@ -58,16 +70,6 @@ export interface HitoHistoria {
   tono: TonoHito
 }
 
-export interface ContenidoHistoria {
-  ceja: string
-  titulo: string
-  subtitulo: string
-  /** La foto velada detrás de toda la página; sin `url`, el fondo queda liso. */
-  fondo: { url: string }
-  hitos: HitoHistoria[]
-  cierre: { ceja: string; titulo: string; enlace: string }
-}
-
 /**
  * Un bloque de una página compuesta por bloques (Corporación y, más adelante,
  * las que use el constructor de páginas). Unión discriminada por `tipo`, la
@@ -80,10 +82,40 @@ export interface BloqueTexto extends BloqueBase { tipo: 'texto'; html: string }
 export interface BloqueFoto extends BloqueBase { tipo: 'foto'; url: string; alt: string; pie: string }
 export interface TarjetaEnlace { titulo: string; descripcion: string; enlace: string }
 export interface BloqueTarjetas extends BloqueBase { tipo: 'tarjetas'; tarjetas: TarjetaEnlace[] }
+/** Mismos medios que la galería de la Titular, y con las mismas reglas: el
+ *  servidor los valida con el esquema compartido `medios.schema.ts`. */
+export interface BloqueGaleria extends BloqueBase { tipo: 'galeria'; medios: MedioGaleria[] }
+export interface BloqueLlamada extends BloqueBase { tipo: 'llamada'; texto: string; boton: string; enlace: string }
+export interface LineaDatos { etiqueta: string; valor: string }
+export interface BloqueDatos extends BloqueBase { tipo: 'datos'; lineas: LineaDatos[] }
+export interface BloqueItinerario extends BloqueBase { tipo: 'itinerario'; paradas: ParadaRecorrido[] }
+export interface BloqueCronologia extends BloqueBase { tipo: 'cronologia'; hitos: HitoHistoria[] }
+/**
+ * De dónde saca sus elementos un bloque de listado. Lista cerrada, la misma que
+ * `FUENTES_LISTADO` en `bloques.schema.ts`: cada fuente es una consulta que ya
+ * hacía la web antes de que estas páginas se compusieran por bloques.
+ */
+export type FuenteListado =
+  | 'noticias-recientes' | 'agenda-proxima'
+  | 'noticias' | 'agenda'
+  | 'publicaciones' | 'boletines' | 'dossier'
+export interface BloqueListado extends BloqueBase { tipo: 'listado'; fuente: FuenteListado }
+export interface BloqueContacto extends BloqueBase { tipo: 'contacto'; tituloDatos: string; lineas: LineaDatos[] }
 
-export type Bloque = BloqueTexto | BloqueFoto | BloqueTarjetas
+export type Bloque =
+  | BloqueTexto
+  | BloqueFoto
+  | BloqueGaleria
+  | BloqueTarjetas
+  | BloqueLlamada
+  | BloqueDatos
+  | BloqueItinerario
+  | BloqueCronologia
+  | BloqueListado
+  | BloqueContacto
 
-export interface CabeceraPagina { titulo: string; subtitulo: string; foto: string; fotoAlt: string }
+/** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
+export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }
 export interface PaginaDeBloques { cabecera: CabeceraPagina; bloques: Bloque[] }
 
 /**
@@ -95,7 +127,6 @@ export interface PaginaDeBloques { cabecera: CabeceraPagina; bloques: Bloque[] }
  * divergencia no se puede ni escribir.
  */
 export const CLAVE_RECORRIDO = ['contenido', 'recorrido'] as const
-export const CLAVE_HISTORIA = ['contenido', 'historia'] as const
 export const CLAVE_TITULAR = ['contenido', 'titular'] as const
 export const CLAVE_CORPORACION = ['contenido', 'corporacion'] as const
 

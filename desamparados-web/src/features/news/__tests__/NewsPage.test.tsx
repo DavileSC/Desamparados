@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import NewsPage from '../NewsPage'
+import { stubFetchPublico } from '../../../test/fetchPublico'
 
 const evento = {
   id: 1, title: 'Besapiés', description: null, location: 'Parroquia',
@@ -26,7 +27,7 @@ function responder() {
       JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } },
     ))
   })
-  vi.stubGlobal('fetch', simulado)
+  stubFetchPublico(simulado)
   return simulado
 }
 

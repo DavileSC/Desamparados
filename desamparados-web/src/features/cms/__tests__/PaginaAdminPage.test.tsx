@@ -235,3 +235,174 @@ describe('PaginaAdminPage', () => {
     expect(previa).toHaveAttribute('rel', expect.stringContaining('noopener'))
   })
 })
+
+describe('PaginaAdminPage: los bloques de la segunda fase', () => {
+  const anadirBloque = async (user: ReturnType<typeof userEvent.setup>, nombre: RegExp) => {
+    await user.click(screen.getByRole('button', { name: /añadir bloque/i }))
+    await user.click(await screen.findByRole('menuitem', { name: nombre }))
+  }
+
+  it('el menú ofrece todos los tipos de bloque del catálogo', async () => {
+    const user = userEvent.setup()
+    montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await user.click(screen.getByRole('button', { name: /añadir bloque/i }))
+    const opciones = (await screen.findAllByRole('menuitem')).map((o) => o.textContent)
+    expect(opciones).toEqual([
+      'Texto', 'Foto', 'Galería', 'Tarjetas', 'Llamada', 'Datos', 'Itinerario',
+      'Cronología', 'Listado', 'Formulario de contacto',
+    ])
+  })
+
+  it('una galería recién añadida avisa de que está vacía, y no se manda', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await anadirBloque(user, /galería/i)
+    await guardar(user)
+
+    expect(await screen.findByText(/el bloque 3 \(galería\) está vacío/i)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
+  })
+
+  it('se añade un vídeo a la galería y avisa hasta que tiene dirección y portada', async () => {
+    const user = userEvent.setup()
+    montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await anadirBloque(user, /galería/i)
+    await user.click(screen.getByRole('button', { name: /^Galería/ }))
+    await user.click(screen.getByRole('button', { name: /añadir vídeo/i }))
+
+    // Los vídeos no se suben: se pega su dirección. Lo que sí se sube es la
+    // portada, para no pedirle la miniatura a YouTube al abrir la página.
+    expect(screen.getByRole('textbox', { name: /dirección del vídeo 1/i })).toBeInTheDocument()
+    await guardar(user)
+    expect(await screen.findByText(/el bloque 3 \(galería\) tiene un vídeo sin dirección/i)).toBeInTheDocument()
+
+    // `findByRole` y no `getByRole`: el diálogo de confirmación sigue montado
+    // hasta que termina su transición de salida, y mientras tanto su
+    // `ModalManager` deja el resto de la página en `aria-hidden`, invisible
+    // para las consultas por rol (`docs/notas-del-proyecto.md` §6).
+    await user.type(
+      await screen.findByRole('textbox', { name: /dirección del vídeo 1/i }),
+      'https://www.youtube.com/watch?v=aaaaaaaaaaa',
+    )
+    await user.type(screen.getByRole('textbox', { name: 'Descripción' }), 'Salida procesional')
+    await guardar(user)
+    expect(await screen.findByText(/tiene un vídeo sin foto de portada/i)).toBeInTheDocument()
+  })
+
+  it('se reordena la galería y el orden nuevo es el que se guarda', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await anadirBloque(user, /galería/i)
+    await user.click(screen.getByRole('button', { name: /^Galería/ }))
+    await user.click(screen.getByRole('button', { name: /añadir foto/i }))
+    await user.click(screen.getByRole('button', { name: /añadir vídeo/i }))
+
+    // La foto es el medio 1 y el vídeo el 2; al subir el vídeo, se cambian.
+    await user.click(screen.getByRole('button', { name: /subir el medio 2/i }))
+    expect(screen.getByRole('textbox', { name: /dirección del vídeo 1/i })).toBeInTheDocument()
+
+    // Y se quita el vídeo, que ahora es el primero: queda solo la foto.
+    await user.click(screen.getByRole('button', { name: /quitar el medio 1/i }))
+    expect(screen.queryByRole('textbox', { name: /dirección del vídeo/i })).not.toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
+  })
+
+  it('una llamada sin texto en el botón no se puede guardar', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await anadirBloque(user, /llamada/i)
+    await guardar(user)
+
+    expect(await screen.findByText(/el bloque 3 \(llamada\) no tiene texto en el botón/i)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
+  })
+
+  it('se añaden y se quitan líneas de un bloque de datos, y se guardan', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await anadirBloque(user, /datos/i)
+    await user.click(screen.getByRole('button', { name: /^Datos/ }))
+
+    // Nace con una línea, y el esquema del servidor exige al menos una: quitar
+    // tiene que estar deshabilitado hasta que haya una segunda.
+    expect(screen.getByRole('button', { name: /quitar la línea 1/i })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: /añadir línea/i }))
+    expect(screen.getByRole('button', { name: /quitar la línea 1/i })).toBeEnabled()
+
+    await user.type(screen.getByRole('textbox', { name: /concepto 1/i }), 'Misa de hermandad')
+    await user.type(screen.getByRole('textbox', { name: /concepto 2/i }), 'Rosario')
+    await user.click(screen.getByRole('button', { name: /quitar la línea 2/i }))
+    await guardar(user)
+
+    await waitFor(() => {
+      const envio = llamadas.find((l) => l.metodo === 'PUT')
+      const bloques = (envio!.cuerpo as { datos: { bloques: { tipo: string; lineas?: { etiqueta: string }[] }[] } }).datos.bloques
+      const datos = bloques.find((b) => b.tipo === 'datos')!.lineas!
+      expect(datos.map((l) => l.etiqueta)).toEqual(['Misa de hermandad'])
+    })
+  })
+})
+
+describe('PaginaAdminPage: cronología, listado y contacto', () => {
+  const anadirBloque = async (user: ReturnType<typeof userEvent.setup>, nombre: RegExp) => {
+    await user.click(screen.getByRole('button', { name: /añadir bloque/i }))
+    await user.click(await screen.findByRole('menuitem', { name: nombre }))
+  }
+  const ultimoPut = (llamadas: { metodo: string; cuerpo: unknown }[]) =>
+    (llamadas.filter((l) => l.metodo === 'PUT').at(-1)?.cuerpo as { datos: { bloques: Record<string, unknown>[] } }).datos
+
+  it('una cronología recién añadida avisa del hito sin periodo, y no se manda', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await anadirBloque(user, /cronología/i)
+    await guardar(user)
+
+    expect(await screen.findByText(/el bloque 3 \(cronología\) tiene el hito 1 sin periodo/i)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
+    // Se despliega solo, para que se vea qué hito es.
+    await user.type(screen.getByLabelText('Periodo del hito 1'), '1954')
+    await user.click(screen.getByRole('button', { name: /añadir hito/i }))
+    expect(screen.getByLabelText('Periodo del hito 2')).toBeInTheDocument()
+  })
+
+  it('un listado se guarda con la fuente elegida', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await anadirBloque(user, /^listado$/i)
+    await user.click(screen.getByRole('button', { name: /listado/i, expanded: false }))
+    await user.selectOptions(screen.getByLabelText('Qué se enseña'), 'boletines')
+    expect(screen.getByText(/solo los boletines/i)).toBeInTheDocument()
+    await guardar(user)
+
+    await vi.waitFor(() => expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(true))
+    expect(ultimoPut(llamadas).bloques.at(-1)).toEqual({ tipo: 'listado', titulo: '', fuente: 'boletines' })
+  })
+
+  it('el formulario de contacto se guarda sin líneas: la tarjeta es opcional', async () => {
+    const user = userEvent.setup()
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+
+    await anadirBloque(user, /formulario de contacto/i)
+    await guardar(user)
+
+    await vi.waitFor(() => expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(true))
+    expect(ultimoPut(llamadas).bloques.at(-1)).toEqual({ tipo: 'contacto', titulo: '', tituloDatos: 'Datos de contacto', lineas: [] })
+  })
+})
