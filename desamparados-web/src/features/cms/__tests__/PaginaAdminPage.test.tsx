@@ -28,6 +28,15 @@ function montar(respuestaPut?: { status: number; cuerpo: unknown }, datos: unkno
   const llamadas: { url: string; metodo: string; cuerpo: unknown }[] = []
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     const metodo = init?.method ?? 'GET'
+    // Las subidas llevan un FormData, no JSON: responden con el nombre del fichero.
+    if (init?.body instanceof FormData) {
+      const archivo = init.body.get('file') as File
+      llamadas.push({ url, metodo, cuerpo: archivo.name })
+      return Promise.resolve(new Response(
+        JSON.stringify({ message: 'Subido', data: { filename: archivo.name, url: '', type: archivo.type, size: '' } }),
+        { status: 201, headers: { 'Content-Type': 'application/json' } },
+      ))
+    }
     llamadas.push({ url, metodo, cuerpo: init?.body ? JSON.parse(String(init.body)) : null })
     if (metodo === 'PUT' && respuestaPut) {
       return Promise.resolve(new Response(
@@ -268,7 +277,11 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
     expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
   })
 
-  it('se añade un vídeo a la galería y avisa hasta que tiene dirección y portada', async () => {
+  // Teclea dos direcciones de vídeo enteras, letra a letra, con la vista previa
+  // de la galería repintándose en cada una: solo tarda unos 5 a 7 s, y con la
+  // suite completa en paralelo pasaba de los 20. Margen propio, como los tests
+  // que rellenan la ventana de apunte en Contabilidad.
+  it('se añade un vídeo a la galería y avisa hasta que tiene dirección y portada', { timeout: 45_000 }, async () => {
     const user = userEvent.setup()
     montar()
     await screen.findByDisplayValue('Corporación')
@@ -303,7 +316,8 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
 
     await anadirBloque(user, /galería/i)
     await user.click(screen.getByRole('button', { name: /^Galería/ }))
-    await user.click(screen.getByRole('button', { name: /añadir foto/i }))
+    await user.upload(screen.getByLabelText(/subir fotos/i), new File(['x'], 'uno.jpg', { type: 'image/jpeg' }))
+    await screen.findByText(/1 foto añadida/i)
     await user.click(screen.getByRole('button', { name: /añadir vídeo/i }))
 
     // La foto es el medio 1 y el vídeo el 2; al subir el vídeo, se cambian.
@@ -490,5 +504,31 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     await user.click(await screen.findByRole('button', { name: /^descartar cambios$/i }))
     expect(await screen.findByDisplayValue('Corporación')).toBeInTheDocument()
     expect(screen.getByText(/sin cambios pendientes/i)).toBeInTheDocument()
+  })
+
+  it('la galería sube varias fotos de una vez, en el orden elegido, y dice cuáles no valen', async () => {
+    const user = userEvent.setup({ applyAccept: false })
+    const llamadas = montar()
+    await screen.findByDisplayValue('Corporación')
+    await anadirBloque(user, /galería/i)
+    await user.click(screen.getByRole('button', { name: /^Galería/ }))
+
+    await user.upload(screen.getByLabelText(/subir fotos/i), [
+      new File(['1'], 'procesion.jpg', { type: 'image/jpeg' }),
+      new File(['2'], 'altar.png', { type: 'image/png' }),
+      new File(['3'], 'movil.heic', { type: 'image/heic' }),
+      new File(['4'], 'trono.webp', { type: 'image/webp' }),
+    ])
+
+    expect(await screen.findByText(/3 fotos añadidas al final de la galería/i)).toBeInTheDocument()
+    expect(screen.getByText(/movil\.heic: tiene que ser jpg, png o webp/i)).toBeInTheDocument()
+    expect(llamadas.filter((l) => l.url.includes('/upload/public')).map((l) => l.cuerpo).sort()).toEqual(['altar.png', 'procesion.jpg', 'trono.webp'])
+    // Tres medios, en el orden elegido; los tres sin descripción todavía.
+    const miniaturas = screen.getAllByRole('img', { name: /foto actual/i }).map((i) => i.getAttribute('src'))
+    expect(miniaturas).toEqual(['/storage/public/procesion.jpg', '/storage/public/altar.png', '/storage/public/trono.webp'])
+
+    await guardar(user)
+    expect(await screen.findByText(/tiene un medio sin descripción/i)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
   })
 })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Alert, Button, Chip, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
@@ -12,6 +12,7 @@ import CampoImagen from '../CampoImagen'
 import CampoTexto from '../contenido/CampoTexto'
 import CamposDeMedio from '../contenido/CamposDeMedio'
 import CampoEnlace from '../contenido/CampoEnlace'
+import SubidaDeFotos from '../contenido/SubidaDeFotos'
 import { FOTO_NUEVA, VIDEO_NUEVO } from '../contenido/medios'
 import type {
   BloqueTexto, BloqueFoto, BloqueGaleria, BloqueTarjetas, BloqueLlamada, BloqueDatos,
@@ -166,6 +167,17 @@ export function FormularioGaleria({ bloque, onCambio }: Props<BloqueGaleria>) {
     onCambio({ medios: [...bloque.medios, { ...medio }] })
   }
 
+  // Las fotos terminan de subir segundos después de elegirlas, y mientras tanto
+  // se puede seguir escribiendo: se añaden sobre la galería de ESE momento, no
+  // sobre la de cuando se eligieron, o se perdería lo escrito entretanto.
+  const alDia = useRef({ bloque, onCambio })
+  alDia.current = { bloque, onCambio }
+  const anadirSubidas = (rutas: string[]) => {
+    const { bloque: actual, onCambio: cambiarActual } = alDia.current
+    setClaves((actuales) => [...actuales, ...rutas.map(() => siguienteClave())])
+    cambiarActual({ medios: [...actual.medios, ...rutas.map((url) => ({ ...FOTO_NUEVA, url }))] })
+  }
+
   const quitar = (indice: number) => {
     setClaves((actuales) => actuales.filter((_, i) => i !== indice))
     onCambio({ medios: bloque.medios.filter((_, i) => i !== indice) })
@@ -225,14 +237,17 @@ export function FormularioGaleria({ bloque, onCambio }: Props<BloqueGaleria>) {
         </Stack>
       ))}
 
-      <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-        <Button startIcon={<AddPhotoAlternateOutlinedIcon />} onClick={() => anadir(FOTO_NUEVA)} disabled={!cabenMas}>
-          Añadir foto
-        </Button>
-        <Button startIcon={<MovieOutlinedIcon />} onClick={() => anadir(VIDEO_NUEVO)} disabled={!cabenMas}>
-          Añadir vídeo
-        </Button>
-      </Stack>
+      {/* Las fotos se suben de una en una o muchas a la vez; los vídeos son
+          enlaces de YouTube o Vimeo, no ficheros, y se añaden aparte. */}
+      <SubidaDeFotos
+        hueco={topes.mediosPorGaleria - bloque.medios.length}
+        onSubidas={anadirSubidas}
+        otrasAcciones={(
+          <Button startIcon={<MovieOutlinedIcon />} onClick={() => anadir(VIDEO_NUEVO)} disabled={!cabenMas}>
+            Añadir vídeo
+          </Button>
+        )}
+      />
       {!cabenMas && (
         <Typography variant="caption" color="text.secondary">
           Son ya {topes.mediosPorGaleria} medios, el máximo de una galería.
