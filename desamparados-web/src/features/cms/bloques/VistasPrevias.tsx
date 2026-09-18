@@ -33,7 +33,9 @@ export function VistaPreviaCabecera({ cabecera }: { cabecera: CabeceraPagina }) 
  */
 export function VistaPreviaBloque({ bloque }: { bloque: Bloque }) {
   return (
-    <MarcoVistaPrevia testId="vista-previa-bloque">
+    // La galería se mueve con sus flechas o arrastrando: en la vista previa
+    // también, para ver cómo pasan las fotos.
+    <MarcoVistaPrevia testId="vista-previa-bloque" interactiva={bloque.tipo === 'galeria'}>
       <PageContainer sx={{ py: 6 }}>
         <BloqueDePagina bloque={bloque} />
       </PageContainer>
@@ -66,13 +68,15 @@ export function VistaPreviaPagina({ abierta, slug, documento, onCerrar }: {
             Vista previa de «{documento.cabecera.titulo || 'Sin título'}»
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Con lo que hay escrito ahora. No se publica hasta que guardes.
+            Con lo que hay escrito ahora: puedes pasar las fotos y probarla. No se publica hasta que guardes.
           </Typography>
         </Box>
         <IconButton aria-label="Cerrar la vista previa" onClick={onCerrar}><CloseIcon /></IconButton>
       </Stack>
       <Box sx={{ p: { xs: 1.5, md: 3 } }}>
-        <MarcoVistaPrevia sinTope sinAviso testId="vista-previa-pagina">
+        {/* La página entera se puede probar: pasar las fotos de sus galerías,
+            ampliar una, darle al play; los enlaces siguen sin llevar a ningún sitio. */}
+        <MarcoVistaPrevia sinTope sinAviso interactiva testId="vista-previa-pagina">
           <BorradorPaginaContext.Provider value={documento}>
             <Suspense fallback={<CircularProgress sx={{ m: 4 }} aria-label="Cargando la vista previa" />}>
               {slug === 'historia' ? <HistoryPage /> : <PaginaDeBloquesPublica slug={slug} />}

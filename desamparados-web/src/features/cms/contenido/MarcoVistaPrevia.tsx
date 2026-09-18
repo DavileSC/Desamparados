@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -28,6 +28,12 @@ interface Props {
   sinTope?: boolean
   /** Sin la línea de encima («Vista previa · …»), cuando ya la dice quien la monta. */
   sinAviso?: boolean
+  /**
+   * Se puede tocar lo que se mueve (pasar las fotos de una galería, ampliar una,
+   * darle al play de un vídeo), pero ningún enlace lleva a ninguna parte ni se
+   * envía ningún formulario. Sin esto, la vista previa es solo para mirar.
+   */
+  interactiva?: boolean
   testId?: string
 }
 
@@ -42,11 +48,13 @@ interface Props {
  * el ancho de la VENTANA (media queries), no por el del recuadro, y un móvil
  * simulado saldría como un escritorio apretado.
  *
- * Es solo para mirar: `inert` impide pulsar sus enlaces (llevarían fuera del
- * CMS a mitad de edición) y la saca del orden de tabulación y de los lectores
- * de pantalla, que ya tienen los campos del formulario.
+ * Por defecto es solo para mirar: `inert` impide pulsar sus enlaces (llevarían
+ * fuera del CMS a mitad de edición) y la saca del orden de tabulación y de los
+ * lectores de pantalla, que ya tienen los campos del formulario. Con
+ * `interactiva`, lo que se mueve responde y los enlaces siguen sin llevar a
+ * ninguna parte.
  */
-export default function MarcoVistaPrevia({ children, sinTope = false, sinAviso = false, testId }: Props) {
+export default function MarcoVistaPrevia({ children, sinTope = false, sinAviso = false, interactiva = false, testId }: Props) {
   const marco = useRef<HTMLDivElement>(null)
   const lienzo = useRef<HTMLDivElement>(null)
   const [ancho, setAncho] = useState(0)
@@ -71,6 +79,22 @@ export default function MarcoVistaPrevia({ children, sinTope = false, sinAviso =
   const escala = realMovil ? 1 : ancho > 0 ? ancho / ANCHO_ESCRITORIO : 0.5
   const conTope = realMovil && !sinTope
 
+  // Cortado en la captura, antes de que llegue al formulario: con solo
+  // `preventDefault`, el `onSubmit` de la página se ejecutaba igual, y el de
+  // Contacto habría mandado el mensaje de verdad desde la vista previa.
+  const noEnviar = (evento: FormEvent) => {
+    evento.preventDefault()
+    evento.stopPropagation()
+  }
+
+  // Un enlace de la página llevaría fuera del CMS con los cambios sin guardar.
+  const sinSalir = (evento: MouseEvent) => {
+    if ((evento.target as HTMLElement).closest('a[href]')) {
+      evento.preventDefault()
+      evento.stopPropagation()
+    }
+  }
+
   return (
     <Box>
       {!sinAviso && (
@@ -80,9 +104,9 @@ export default function MarcoVistaPrevia({ children, sinTope = false, sinAviso =
           sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1, fontWeight: 600, letterSpacing: '0.04em' }}
         >
           <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
-          {realMovil
-            ? 'Vista previa en móvil · se actualiza mientras escribes, pero no se publica hasta que guardes'
-            : 'Vista previa · se actualiza mientras escribes, pero no se publica hasta que guardes'}
+          {realMovil ? 'Vista previa en móvil' : 'Vista previa'}
+          {interactiva ? ' · puedes pasar las fotos y probarla' : ''}
+          {' · se actualiza mientras escribes, pero no se publica hasta que guardes'}
         </Typography>
       )}
       <Box
@@ -104,8 +128,12 @@ export default function MarcoVistaPrevia({ children, sinTope = false, sinAviso =
       >
         <Box
           ref={lienzo}
-          inert
-          aria-hidden="true"
+          inert={!interactiva}
+          aria-hidden={interactiva ? undefined : 'true'}
+          aria-label={interactiva ? 'Vista previa, sin publicar' : undefined}
+          role={interactiva ? 'region' : undefined}
+          onClickCapture={interactiva ? sinSalir : undefined}
+          onSubmitCapture={interactiva ? noEnviar : undefined}
           data-testid={testId}
           sx={{
             width: anchoLienzo,
