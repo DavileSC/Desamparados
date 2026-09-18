@@ -169,7 +169,16 @@ const ACCIONES: Record<ModoCms, Record<string, string>> = {
 
 export function crearTemaCms(modo: ModoCms): Theme {
   const s = superficiesCms(modo)
+  const fuentes = designTokens.fonts.cms
+  const titulo = { fontFamily: fuentes.heading }
+  const texto = { fontFamily: fuentes.body }
   return createTheme(theme, {
+    // Todas las variantes, porque el tema base fija la fuente en cada una.
+    typography: {
+      fontFamily: fuentes.body,
+      h1: titulo, h2: titulo, h3: titulo, h4: titulo, h5: titulo, h6: titulo,
+      subtitle1: texto, subtitle2: texto, body1: texto, body2: texto, button: texto, caption: texto, overline: texto,
+    },
     palette: {
       mode: modo === 'claro' ? 'light' : 'dark',
       background: { default: s.canvas, paper: s.card },
@@ -195,3 +204,12 @@ export function crearTemaCms(modo: ModoCms): Theme {
     },
   })
 }
+
+/**
+ * La fuente del CMS en el `body` mientras el CMS está en pantalla. El tema ya
+ * la pone en sus componentes, pero lo que no es un componente de MUI (la barra
+ * lateral, las cabeceras de tabla) hereda del `body`, y las ventanas y menús
+ * cuelgan directamente de él: sin esto, salían con la fuente de la web pública.
+ * Emotion la retira al desmontarse, al volver a la web pública.
+ */
+export const ESTILOS_GLOBALES_CMS = { body: { fontFamily: designTokens.fonts.cms.body } } as const

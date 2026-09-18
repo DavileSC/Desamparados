@@ -55,7 +55,7 @@ export default function VentanaFormulario({
   return (
     <>
       <Dialog open={abierto} onClose={pedirCierre} fullWidth maxWidth={ancho} scroll="paper" aria-labelledby={idTitulo}>
-        <DialogTitle id={idTitulo} sx={{ fontFamily: '"Libre Caslon Text", serif', fontWeight: 400, fontSize: 24, pb: 1 }}>
+        <DialogTitle id={idTitulo} sx={{ fontFamily: (t) => t.typography.h1.fontFamily, fontWeight: 400, fontSize: 24, pb: 1 }}>
           {titulo}
         </DialogTitle>
         <DialogContent>

@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { GlobalStyles } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
 import {
+  ESTILOS_GLOBALES_CMS,
   crearTemaCms,
   graficasCms,
   superficiesCms,
@@ -59,7 +61,10 @@ export function TemaCmsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Contexto.Provider value={valor}>
-      <ThemeProvider theme={tema}>{children}</ThemeProvider>
+      <ThemeProvider theme={tema}>
+        <GlobalStyles styles={ESTILOS_GLOBALES_CMS} />
+        {children}
+      </ThemeProvider>
     </Contexto.Provider>
   )
 }

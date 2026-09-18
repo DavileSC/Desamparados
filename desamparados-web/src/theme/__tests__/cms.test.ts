@@ -19,19 +19,23 @@ describe('tema del CMS', () => {
     expect(oscuro.palette.text.primary).toBe('#ffffff')
   })
 
-  it('conserva la identidad en los dos: burdeos y Libre Caslon en los títulos', () => {
+  it('conserva el burdeos en los dos y usa su propia fuente, Saira, en títulos y texto', () => {
     for (const modo of ['claro', 'oscuro'] as const) {
       const t = crearTemaCms(modo)
       expect(t.palette.primary.main).toBe(designTokens.colors.secondary)
-      expect(t.typography.h1.fontFamily).toContain('Libre Caslon Text')
+      for (const variante of ['h1', 'h6', 'body1', 'body2', 'button', 'caption', 'overline'] as const) {
+        expect(t.typography[variante].fontFamily).toContain('Saira')
+      }
     }
   })
 
-  it('no altera el tema de la web pública', () => {
+  it('no altera el tema de la web pública, que sigue en Exo 2', () => {
     crearTemaCms('claro')
     crearTemaCms('oscuro')
     expect(theme.palette.mode).toBe('dark')
     expect(theme.palette.background.default).toBe(designTokens.colors.primaryContainer)
+    expect(theme.typography.h1.fontFamily).toContain('Exo 2')
+    expect(theme.typography.body1.fontFamily).toContain('Exo 2')
   })
 
   it('los estados interactivos del modo claro no se quedan en blanco', () => {

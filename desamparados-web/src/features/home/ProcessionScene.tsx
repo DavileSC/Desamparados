@@ -5,6 +5,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import { Revela } from '../../components/AnimatedSection'
 import { CURVA_ENTRADA } from '../../components/entrada'
+import { SERIF } from './estilos'
 import { useTextosPortada } from './useContenidoPortada'
 
 // La foto entra posándose desde este zoom, y tarda esto en quedarse quieta.
@@ -61,7 +62,7 @@ export default function ProcessionScene() {
         <Revela efecto="cortina" orden={1}>
           {/* Guardado como texto solo puede llevar un \n; pre-line es lo único que lo respeta
               y conserva el corte a dos líneas que antes daba el <br /> a mano. */}
-          <h2 id="procession-title" style={{ whiteSpace: 'pre-line' }}>{sabadoDePasion.titulo}</h2>
+          <h2 id="procession-title" style={{ whiteSpace: 'pre-line', fontFamily: SERIF }}>{sabadoDePasion.titulo}</h2>
         </Revela>
         <Revela orden={2}><p>{sabadoDePasion.parrafo}</p></Revela>
         <Revela orden={3}>

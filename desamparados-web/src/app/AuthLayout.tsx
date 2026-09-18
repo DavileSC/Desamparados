@@ -1,6 +1,7 @@
 import { Outlet, Link } from 'react-router-dom'
 import { Box, Container } from '@mui/material'
 import PageTransition from '../components/PageTransition'
+import { designTokens } from '../theme'
 
 export default function AuthLayout() {
   return (
@@ -19,7 +20,7 @@ export default function AuthLayout() {
           position: 'absolute',
           top: 24,
           left: { xs: '20px', md: '64px' },
-          fontFamily: '"Libre Caslon Text", serif',
+          fontFamily: designTokens.fonts.heading,
           fontSize: '22px',
           color: 'text.primary',
           textDecoration: 'none',

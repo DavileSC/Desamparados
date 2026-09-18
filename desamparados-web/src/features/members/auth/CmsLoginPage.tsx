@@ -3,10 +3,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import {
-  Alert, Box, Button, Checkbox, FormControlLabel, Paper, TextField, ThemeProvider, Typography,
+  Alert, Box, Button, Checkbox, FormControlLabel, GlobalStyles, Paper, TextField, ThemeProvider, Typography,
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import { crearTemaCms } from '../../../theme/cms'
+import { ESTILOS_GLOBALES_CMS, crearTemaCms } from '../../../theme/cms'
 import CampoContrasena from '../../../components/CampoContrasena'
 import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore, isStaffRole } from './store'
@@ -119,6 +119,7 @@ export default function CmsLoginPage() {
 
   return (
     <ThemeProvider theme={TEMA_ACCESO}>
+      <GlobalStyles styles={ESTILOS_GLOBALES_CMS} />
       <Helmet>
         <title>Acceso a la administración | CMS Desamparados</title>
         <meta name="robots" content="noindex" />

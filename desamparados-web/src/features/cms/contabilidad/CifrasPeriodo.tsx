@@ -15,7 +15,7 @@ function Cifra({ titulo, icono, color, valor, detalle, apagada = false }: { titu
       <Typography component="h3" sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'text.secondary', '& svg': { fontSize: 17, color } }}>
         {icono}{titulo}
       </Typography>
-      <Typography sx={{ fontFamily: '"Libre Caslon Text", serif', fontSize: 30, lineHeight: 1.2, mt: 0.75 }}>{valor}</Typography>
+      <Typography sx={{ fontFamily: (t) => t.typography.h1.fontFamily, fontSize: 30, lineHeight: 1.2, mt: 0.75 }}>{valor}</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>{detalle}</Typography>
     </Paper>
   )

@@ -3,11 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 // Tipografías auto-alojadas: evitan la petición a Google Fonts (RGPD) y la dependencia del CDN
-import '@fontsource/libre-caslon-text/400.css'
-import '@fontsource/libre-caslon-text/700.css'
-import '@fontsource/hanken-grotesk/400.css'
-import '@fontsource/hanken-grotesk/600.css'
-import '@fontsource/hanken-grotesk/700.css'
+// Variables: un solo fichero por alfabeto cubre todos los pesos. Exo 2 es la
+// de la web pública y Saira la del CMS (ver designTokens.fonts).
+import '@fontsource-variable/exo-2'
+import '@fontsource-variable/saira'
 import './index.css'
 import App from './App.tsx'
 import theme from './theme'

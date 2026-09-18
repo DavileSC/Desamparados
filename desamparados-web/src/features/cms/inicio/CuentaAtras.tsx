@@ -28,10 +28,10 @@ export default function CuentaAtras({ hoy = new Date() }: { hoy?: Date }) {
         Sábado de Pasión · {corta(fecha)}
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, mt: 1, mb: 0.25 }}>
-        <Typography component="span" sx={{ fontFamily: designTokens.fonts.heading, fontSize: 68, lineHeight: 1 }}>
+        <Typography component="span" sx={{ fontFamily: designTokens.fonts.cms.heading, fontSize: 68, lineHeight: 1 }}>
           {dias}
         </Typography>
-        <Typography component="span" sx={{ fontFamily: designTokens.fonts.heading, fontSize: 20, color: superficies.inversoTenue }}>
+        <Typography component="span" sx={{ fontFamily: designTokens.fonts.cms.heading, fontSize: 20, color: superficies.inversoTenue }}>
           {dias === 1 ? 'día' : 'días'}
         </Typography>
       </Box>

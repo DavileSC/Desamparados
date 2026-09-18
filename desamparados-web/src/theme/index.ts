@@ -53,9 +53,17 @@ export const designTokens = {
     glass: 'rgba(38, 35, 38, 0.6)',
     glassBorder: 'rgba(204, 196, 201, 0.1)',
   },
+  // Las únicas fuentes del proyecto: ningún componente escribe un nombre de
+  // fuente a mano, todos leen de aquí (o del tema, que lee de aquí).
   fonts: {
-    heading: '"Libre Caslon Text", serif',
-    body: '"Hanken Grotesk", sans-serif',
+    /** Web pública y área de hermanos. */
+    heading: '"Exo 2 Variable", "Exo 2", sans-serif',
+    body: '"Exo 2 Variable", "Exo 2", sans-serif',
+    /** El CMS lleva su propia tipografía: la aplica su tema (theme/cms.ts). */
+    cms: {
+      heading: '"Saira Variable", "Saira", sans-serif',
+      body: '"Saira Variable", "Saira", sans-serif',
+    },
   },
   spacing: {
     unit: 8,
@@ -206,6 +214,12 @@ const themeOptions: ThemeOptions = {
         a: {
           textDecoration: 'none',
           color: 'inherit',
+        },
+        // El navegador no hereda la fuente en los controles de formulario: sin
+        // esto, un botón que no es de MUI (los contadores de Tesorería, el
+        // interruptor de modo del CMS) salía en Arial.
+        'button, input, select, textarea': {
+          fontFamily: 'inherit',
         },
       },
     },

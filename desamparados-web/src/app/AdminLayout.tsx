@@ -179,7 +179,7 @@ function Contenido() {
         <Typography
           component={Link}
           to="/cms"
-          sx={{ color: '#fff', textDecoration: 'none', fontFamily: designTokens.fonts.heading, fontSize: 19, letterSpacing: '0.04em' }}
+          sx={{ color: '#fff', textDecoration: 'none', fontFamily: designTokens.fonts.cms.heading, fontSize: 19, letterSpacing: '0.04em' }}
         >
           DESAMPARADOS
         </Typography>

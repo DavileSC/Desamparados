@@ -47,7 +47,7 @@ export default function ProximosActos({
         return (
           <Box key={evento.id} sx={{ display: 'flex', gap: 1.75, alignItems: 'center', px: 2.75, py: 1.5, borderTop: 1, borderColor: 'divider' }}>
             <Box sx={{ width: 44, flexShrink: 0, textAlign: 'center' }}>
-              <Typography sx={{ fontFamily: designTokens.fonts.heading, fontSize: 22, lineHeight: 1.1 }}>
+              <Typography sx={{ fontFamily: designTokens.fonts.cms.heading, fontSize: 22, lineHeight: 1.1 }}>
                 {fecha.getDate()}
               </Typography>
               <Typography sx={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'text.secondary' }}>

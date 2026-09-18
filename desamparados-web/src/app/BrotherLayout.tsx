@@ -20,6 +20,7 @@ import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import LogoutIcon from '@mui/icons-material/Logout'
 import PageTransition from '../components/PageTransition'
+import { designTokens } from '../theme'
 import { cerrarSesion } from '../features/members/auth/session'
 
 const drawerWidth = 260
@@ -47,7 +48,7 @@ export default function BrotherLayout() {
           component={Link}
           to="/"
           sx={{
-            fontFamily: '"Libre Caslon Text", serif',
+            fontFamily: designTokens.fonts.heading,
             fontSize: '20px',
             color: 'text.primary',
             textDecoration: 'none',
@@ -134,7 +135,7 @@ export default function BrotherLayout() {
           <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2 }}>
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ fontFamily: '"Libre Caslon Text", serif' }}>
+          <Typography variant="h6" sx={{ fontFamily: designTokens.fonts.heading }}>
             Área de Hermanos
           </Typography>
         </Toolbar>
