@@ -11,6 +11,8 @@ export interface ApiEvent {
   endDate: string | null
   visibility: 'public' | 'members_only'
   type: 'CULTO' | 'PROCESION' | 'FORMACION' | 'ENSAYO' | 'REUNION' | 'SOCIAL' | 'OTRO'
+  /** Solo lo trae el listado del CMS. */
+  updatedAt?: string
 }
 
 function formatDate(date: string) {
@@ -95,6 +97,25 @@ export async function getPublicEvents(pagina: { pagina: number; porPagina: numbe
 /** Las dos pestañas de la agenda del CMS. */
 export type PeriodoAgenda = 'proximos' | 'pasados'
 
+/** Búsqueda y filtros del listado de la agenda en el CMS; `''` es «todos». */
+export interface FiltrosAgenda {
+  q?: string
+  tipo?: ApiEvent['type'] | ''
+  visibilidad?: ApiEvent['visibility'] | ''
+}
+
+/** Lo que el servidor manda con cada página del listado del CMS. */
+export interface ResumenAgenda {
+  /** Con la misma búsqueda y filtros: las cifras de las pestañas. */
+  proximos: number
+  pasados: number
+  /** De los próximos, sin filtros. */
+  soloHermanos: number
+  siguiente: { id: number; title: string; startDate: string } | null
+  /** Los actos que la portada de la web enseña ahora en su lista. */
+  portada: { limite: number; ids: number[] }
+}
+
 /**
  * El CMS tiene su propio extremo (`/events/admin`, con sesión y rol): la lectura
  * pública solo enseña desde hoy, y un evento fechado por error en el pasado
@@ -102,9 +123,11 @@ export type PeriodoAgenda = 'proximos' | 'pasados'
  * visibilidades y el evento crudo (id numérico, visibilidad y fechas sin
  * formatear) para editar y borrar. Los pasados llegan del más reciente hacia atrás.
  */
-export async function getAdminEvents(pagina: { pagina: number; porPagina: number }, periodo: PeriodoAgenda = 'proximos') {
-  const respuesta = await apiFetch<RespuestaPaginada<ApiEvent>>(`/events/admin?${paramsPagina(pagina, { periodo })}`)
-  return { eventos: respuesta.data, meta: respuesta.meta }
+export async function getAdminEvents(pagina: { pagina: number; porPagina: number }, periodo: PeriodoAgenda = 'proximos', filtros: FiltrosAgenda = {}) {
+  const respuesta = await apiFetch<RespuestaPaginada<ApiEvent> & { resumen: ResumenAgenda }>(
+    `/events/admin?${paramsPagina(pagina, { periodo, q: filtros.q, tipo: filtros.tipo, visibilidad: filtros.visibilidad })}`,
+  )
+  return { eventos: respuesta.data, meta: respuesta.meta, resumen: respuesta.resumen }
 }
 
 export interface EventPayload {

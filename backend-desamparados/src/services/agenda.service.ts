@@ -1,8 +1,24 @@
 import db from '../config/db';
 import { Prisma, TipoEvento } from '@prisma/client';
-import { CreateEventDto, UpdateEventDto, EventFilterDto, PeriodoAgenda } from '../dtos/agenda.dto';
+import { CreateEventDto, UpdateEventDto, EventFilterDto, PeriodoAgenda, AdminEventFilterDto } from '../dtos/agenda.dto';
+import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+
+/**
+ * Los actos que la portada de la web enseña en su lista, sin sesión: los
+ * públicos desde hoy, como mucho cinco, y solo los que caen en el mes del
+ * próximo acto y el siguiente, que es lo que abarca su calendario
+ * (EventsAndLive y AgendaList en el frontend).
+ */
+export const ACTOS_EN_PORTADA = 5;
+
+export function actosEnPortada<E extends { startDate: Date }>(proximosPublicos: E[]): E[] {
+  const primero = proximosPublicos[0];
+  if (!primero) return [];
+  const finVentana = new Date(primero.startDate.getFullYear(), primero.startDate.getMonth() + 2, 1);
+  return proximosPublicos.filter((e) => e.startDate < finVentana).slice(0, ACTOS_EN_PORTADA);
+}
 
 export class AgendaService {
 
@@ -83,17 +99,27 @@ export class AgendaService {
    *
    * Los próximos van del más cercano al más lejano; los pasados, del más
    * reciente hacia atrás, que es el que se suele buscar.
+   *
+   * Con cada página va un resumen: cuántos hay a cada lado de hoy con la misma
+   * búsqueda y filtros (las cifras de las pestañas), cuántos de los próximos
+   * son solo para hermanos, cuál es el siguiente y qué actos salen ahora en la
+   * portada de la web.
    */
-  static async getAdminEvents(periodo: PeriodoAgenda, consulta: { page?: unknown; limit?: unknown }) {
-    const paginacion = sanearPaginacion(consulta);
+  static async getAdminEvents(periodo: PeriodoAgenda, { page, limit, q, tipo, visibilidad }: AdminEventFilterDto) {
+    const paginacion = sanearPaginacion({ page, limit });
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    const where: Prisma.EventoWhereInput = periodo === 'pasados'
-      ? { startDate: { lt: hoy } }
-      : { startDate: { gte: hoy } };
+    const filtros: Prisma.EventoWhereInput = {
+      ...(tipo ? { type: tipo } : {}),
+      ...(visibilidad ? { visibility: visibilidad } : {}),
+      ...condicionBusqueda(q, ['title', 'description', 'location'] as const),
+    };
+    const proximos: Prisma.EventoWhereInput = { startDate: { gte: hoy } };
+    const pasados: Prisma.EventoWhereInput = { startDate: { lt: hoy } };
+    const where: Prisma.EventoWhereInput = { ...filtros, ...(periodo === 'pasados' ? pasados : proximos) };
 
-    const [eventos, total] = await db.$transaction([
+    const [eventos, total, cuantosProximos, cuantosPasados, soloHermanos, siguiente, enPortada] = await db.$transaction([
       db.evento.findMany({
         where,
         // Mismo desempate por id que la lectura pública (ver getEvents).
@@ -108,13 +134,33 @@ export class AgendaService {
           startDate: true,
           endDate: true,
           visibility: true,
-          type: true
+          type: true,
+          updatedAt: true
         }
       }),
-      db.evento.count({ where })
+      db.evento.count({ where }),
+      db.evento.count({ where: { ...filtros, ...proximos } }),
+      db.evento.count({ where: { ...filtros, ...pasados } }),
+      db.evento.count({ where: { ...proximos, visibility: 'members_only' } }),
+      db.evento.findFirst({ where: proximos, orderBy: [{ startDate: 'asc' }, { id: 'asc' }], select: { id: true, title: true, startDate: true } }),
+      db.evento.findMany({
+        where: { ...proximos, visibility: 'public' },
+        orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+        take: ACTOS_EN_PORTADA,
+        select: { id: true, startDate: true },
+      }),
     ]);
 
-    return respuestaPaginada(eventos, total, paginacion);
+    return {
+      ...respuestaPaginada(eventos, total, paginacion),
+      resumen: {
+        proximos: cuantosProximos,
+        pasados: cuantosPasados,
+        soloHermanos,
+        siguiente,
+        portada: { limite: ACTOS_EN_PORTADA, ids: actosEnPortada(enPortada).map((e) => e.id) },
+      },
+    };
   }
 
   static async getEventById(id: number, isHermano: boolean) {

@@ -1,5 +1,6 @@
 import { Response, Request } from 'express';
 import { AgendaService } from '../services/agenda.service.js';
+import type { AdminEventFilterDto } from '../dtos/agenda.dto.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
 
@@ -17,11 +18,13 @@ export class AgendaController {
     }
   }
 
-  // Listado del CMS (sesión + rol en la ruta): pasados o próximos, de las dos visibilidades.
+  // Listado del CMS (sesión + rol en la ruta): pasados o próximos, de las dos
+  // visibilidades. La query ya viene validada por queryAgendaAdminSchema.
   static async adminList(req: Request, res: Response) {
     try {
       const periodo = req.query.periodo === 'pasados' ? 'pasados' : 'proximos';
-      const events = await AgendaService.getAdminEvents(periodo, req.query);
+      const { page, limit, q, tipo, visibilidad } = req.query as AdminEventFilterDto;
+      const events = await AgendaService.getAdminEvents(periodo, { page, limit, q, tipo, visibilidad });
       res.status(200).json(events);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo agenda');

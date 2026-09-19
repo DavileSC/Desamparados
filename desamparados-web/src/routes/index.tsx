@@ -201,6 +201,7 @@ const router = createBrowserRouter([
           { path: 'publicaciones/nueva', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationEditPage)}</RequireRole> },
           { path: 'publicaciones/:id/editar', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationEditPage)}</RequireRole> },
           { path: 'agenda', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaAdminPage)}</RequireRole> },
+          { path: 'agenda/nuevo', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</RequireRole> },
           { path: 'agenda/:id/editar', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</RequireRole> },
           { path: 'hermanos', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(BrothersAdminPage)}</RequireRole> },
           { path: 'hermanos/:id/editar', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(BrotherEditPage)}</RequireRole> },

@@ -17,6 +17,7 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { ACTOS_EN_PORTADA, actosEnPortada } from '../src/services/agenda.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let server: Server;
@@ -116,5 +117,58 @@ describe('evento solo para hermanos sin sesión (P6)', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     assert.equal((await como(Role.USER, `/${eventos.ayer}`)).status, 200);
     assert.equal((await como(null, `/${eventos.anteayer}`)).status, 200);
+  });
+});
+
+describe('listado de la agenda en el CMS: búsqueda, filtros y resumen', () => {
+  type ConResumen = Pagina & {
+    resumen: { proximos: number; pasados: number; soloHermanos: number; siguiente: { id: number } | null; portada: { limite: number; ids: number[] } };
+  };
+
+  test('busca en el título y deja fuera lo que no casa', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como(Role.SECRETARIA, `/admin?periodo=pasados&limit=50&q=${encodeURIComponent(`${marca} ayer`)}`);
+    assert.equal(res.status, 200);
+    const { data, resumen } = await res.json() as ConResumen;
+    assert.deepEqual(data.map((e) => e.id), [eventos.ayer]);
+    assert.equal(resumen.pasados, 1, 'la cifra de la pestaña respeta la búsqueda');
+    assert.equal(resumen.proximos, 0);
+  });
+
+  test('filtra por visibilidad y por tipo', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const q = encodeURIComponent(marca);
+    const publicos = await (await como(Role.SECRETARIA, `/admin?periodo=pasados&limit=50&q=${q}&visibilidad=public`)).json() as Pagina;
+    assert.deepEqual(publicos.data.map((e) => e.id), [eventos.anteayer]);
+    const cultos = await (await como(Role.SECRETARIA, `/admin?periodo=pasados&limit=50&q=${q}&tipo=CULTO`)).json() as Pagina;
+    assert.equal(cultos.data.length, 0, 'los de prueba son de tipo OTRO');
+    assert.equal((await como(Role.SECRETARIA, '/admin?tipo=MISA')).status, 400);
+  });
+
+  test('el resumen trae el siguiente acto y la portada solo con públicos', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const { resumen } = await (await como(Role.SECRETARIA, '/admin')).json() as ConResumen;
+    assert.ok(resumen.siguiente, 'hay al menos el de hoy');
+    assert.equal(resumen.portada.limite, ACTOS_EN_PORTADA);
+    assert.ok(!resumen.portada.ids.includes(eventos.hoy), 'el de hoy es solo para hermanos: no sale en la portada');
+    assert.ok(resumen.soloHermanos >= 1);
+  });
+});
+
+describe('qué actos salen en la portada', () => {
+  const el = (id: number, anio: number, mes: number, dia: number) => ({ id, startDate: new Date(anio, mes, dia, 20) });
+
+  test('como mucho cinco, desde el próximo', () => {
+    const actos = [1, 2, 3, 4, 5, 6, 7].map((n) => el(n, 2026, 9, n));
+    assert.deepEqual(actosEnPortada(actos).map((e) => e.id), [1, 2, 3, 4, 5]);
+  });
+
+  test('solo el mes del próximo acto y el siguiente, que es lo que abarca el calendario', () => {
+    const actos = [el(1, 2026, 9, 30), el(2, 2026, 10, 15), el(3, 2026, 11, 1)];
+    assert.deepEqual(actosEnPortada(actos).map((e) => e.id), [1, 2]);
+  });
+
+  test('sin actos, ninguno', () => {
+    assert.deepEqual(actosEnPortada([]), []);
   });
 });

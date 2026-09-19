@@ -82,13 +82,17 @@ export function Grupo({ titulo, cifra, children }: { titulo: string; cifra?: num
   )
 }
 
-/** La raya bajo la última que sale en la portada. Sin `onCambiar`, cuántas salen no se puede cambiar. */
-export function LineaPortada({ limite, onCambiar }: { limite: number; onCambiar?: () => void }) {
+/**
+ * La raya bajo la última que sale en la portada. Sin `onCambiar`, cuántas salen
+ * no se puede cambiar. `texto` sustituye la frase de noticias y publicaciones
+ * («las 3 más recientes»), que en la agenda no vale.
+ */
+export function LineaPortada({ limite, texto, onCambiar }: { limite: number; texto?: string; onCambiar?: () => void }) {
   const { superficies } = useTemaCms()
   return (
     <Box component="li" sx={{ listStyle: 'none', display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', minHeight: 36, px: { xs: 2, md: 2.5 }, py: 0.5, borderTop: '1.5px dashed', borderColor: superficies.enlace, color: superficies.enlace, fontSize: 12.5, '& svg': { fontSize: 16 } }}>
       <HomeOutlinedIcon aria-hidden="true" />
-      <span>Hasta aquí sale en la portada: {limite === 1 ? 'la más reciente' : `las ${limite} más recientes`}.</span>
+      <span>{texto ?? `Hasta aquí sale en la portada: ${limite === 1 ? 'la más reciente' : `las ${limite} más recientes`}.`}</span>
       {onCambiar && <Button size="small" onClick={onCambiar} sx={{ color: 'inherit', minWidth: 0, px: 0.75, fontSize: 12.5, textDecoration: 'underline' }}>Cambiar cuántas</Button>}
     </Box>
   )

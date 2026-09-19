@@ -33,3 +33,12 @@ export interface EventFilterDto {
 
 /** Las dos pestañas del listado de la agenda en el CMS. */
 export type PeriodoAgenda = 'proximos' | 'pasados';
+
+/** La consulta del listado de la agenda en el CMS, ya validada por queryAgendaAdminSchema. */
+export interface AdminEventFilterDto {
+  page?: unknown;
+  limit?: unknown;
+  q?: string; // Palabras que buscar en el título, la descripción y el lugar
+  tipo?: TipoEvento;
+  visibilidad?: EventVisibility;
+}

@@ -40,10 +40,14 @@ export const queryAgendaSchema = type({
     }
 });
 
-// El listado del CMS: pasados o próximos. Sin periodo, los próximos.
+// El listado del CMS: pasados o próximos (sin periodo, los próximos), con
+// búsqueda en el título, la descripción y el lugar, y filtros de tipo y visibilidad.
 export const queryAgendaAdminSchema = type({
     query: {
         ...paginacionQuery,
-        "periodo?": "'proximos' | 'pasados'"
+        "periodo?": "'proximos' | 'pasados'",
+        "q?": "string",
+        "tipo?": tipoEventoSchema,
+        "visibilidad?": visibilitySchema
     }
 });
