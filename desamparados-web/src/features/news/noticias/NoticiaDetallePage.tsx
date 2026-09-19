@@ -52,7 +52,7 @@ export default function NoticiaDetallePage() {
   return (
     <>
       <Helmet>
-        <title>{news.title} | Desamparados</title>
+        <title>{`${news.title} | Desamparados`}</title>
         <meta name="description" content={news.excerpt} />
       </Helmet>
 

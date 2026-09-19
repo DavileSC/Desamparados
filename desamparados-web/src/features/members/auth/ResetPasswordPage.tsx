@@ -54,7 +54,7 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <Helmet><title>{token ? 'Nueva contraseña' : 'Recuperar contraseña'} | Desamparados</title></Helmet>
+      <Helmet><title>{`${token ? 'Nueva contraseña' : 'Recuperar contraseña'} | Desamparados`}</title></Helmet>
       <GlassCard sx={{ width: '100%', p: { xs: 3, md: 5 }, maxWidth: 440, mx: 'auto' }}>
         <Typography variant="h3" component="h1" sx={{ mb: 1, textAlign: 'center', fontSize: { xs: '28px', md: '36px' } }}>
           {token ? 'Nueva contraseña' : 'Recuperar contraseña'}

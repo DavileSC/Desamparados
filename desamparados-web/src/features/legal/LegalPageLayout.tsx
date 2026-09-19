@@ -13,7 +13,7 @@ export default function LegalPageLayout({ title, children }: LegalPageLayoutProp
   return (
     <>
       <Helmet>
-        <title>{title} | Desamparados</title>
+        <title>{`${title} | Desamparados`}</title>
       </Helmet>
       <PageHeader title={title} />
       <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>

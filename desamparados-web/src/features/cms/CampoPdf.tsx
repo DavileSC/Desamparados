@@ -15,8 +15,8 @@ const PDF_DE_RELLENO = '/storage/public/documentos/pendiente.pdf'
 // El input queda oculto a la vista pero no a la accesibilidad: lo activa su etiqueta, que es el botón.
 const inputOculto = {
   position: 'absolute',
-  width: 1,
-  height: 1,
+  width: '1px',
+  height: '1px',
   overflow: 'hidden',
   clip: 'rect(0 0 0 0)',
   whiteSpace: 'nowrap',

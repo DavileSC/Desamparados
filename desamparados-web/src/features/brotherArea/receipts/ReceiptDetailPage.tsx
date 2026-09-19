@@ -44,7 +44,7 @@ export default function ReceiptDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{recibo ? `${recibo.concepto} | Recibos` : 'Recibo'} | Desamparados</title>
+        <title>{`${recibo ? `${recibo.concepto} | Recibos` : 'Recibo'} | Desamparados`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 

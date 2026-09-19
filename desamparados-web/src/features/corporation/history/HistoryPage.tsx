@@ -36,7 +36,7 @@ const FONDO_DEL_REPOSITORIO = '/images/hero-1920.webp'
 const SRCSET_DEL_REPOSITORIO = '/images/hero-960.webp 960w, /images/hero-1920.webp 1920w'
 
 /** Un título que solo oye quien usa lector de pantalla. */
-const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
+const soloLector = { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
 
 /**
  * La página de Historia. Se edita en el CMS como las demás, en «Web pública →
@@ -74,7 +74,7 @@ export default function HistoryPage() {
     <>
       {/* En la vista previa, la pestaña sigue siendo la del CMS. */}
       {!borrador && <Helmet>
-        <title>{cabecera.titulo} | Desamparados</title>
+        <title>{`${cabecera.titulo} | Desamparados`}</title>
         <meta
           name="description"
           content="Historia del Grupo Parroquial de Nuestra Señora de los Desamparados: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga."

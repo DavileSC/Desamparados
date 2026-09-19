@@ -24,7 +24,7 @@ const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 5 * 1024 * 1024
 
 const inputOculto = {
-  position: 'absolute', width: 1, height: 1, overflow: 'hidden',
+  position: 'absolute', width: '1px', height: '1px', overflow: 'hidden',
   clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
 } as const
 

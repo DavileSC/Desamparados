@@ -11,7 +11,7 @@ const IZQ = 56
 const ARRIBA = 22
 const BASE = 290
 const DERECHA = 8
-const oculto = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
+const oculto = { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
 
 /**
  * Eje con marcas redondas (0, 2.000, 4.000…): el paso es 1, 2, 2,5 o 5 por la

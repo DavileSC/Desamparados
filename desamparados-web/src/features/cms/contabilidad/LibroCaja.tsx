@@ -24,7 +24,7 @@ const cabeceraImporte = (texto: string, color: string) => (
 )
 
 // Texto solo para el lector de pantalla: la columna de acciones no necesita título a la vista.
-const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
+const soloLector = { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
 
 /**
  * El libro de caja: cada importe en su columna, Ingreso o Gasto, sin signos.

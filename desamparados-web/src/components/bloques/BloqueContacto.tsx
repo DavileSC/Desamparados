@@ -20,8 +20,8 @@ const trampaOculta = {
   position: 'absolute',
   left: '-10000px',
   top: 'auto',
-  width: 1,
-  height: 1,
+  width: '1px',
+  height: '1px',
   overflow: 'hidden',
 } as const
 

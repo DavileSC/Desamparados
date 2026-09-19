@@ -37,7 +37,7 @@ export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }
   return (
     <>
       {/* En la vista previa, la pestaña sigue siendo la del CMS. */}
-      {!borrador && <Helmet><title>{pagina.cabecera.titulo} | Desamparados</title></Helmet>}
+      {!borrador && <Helmet><title>{`${pagina.cabecera.titulo} | Desamparados`}</title></Helmet>}
       <PageHeader
         title={pagina.cabecera.titulo}
         subtitle={pagina.cabecera.subtitulo}

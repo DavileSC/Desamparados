@@ -5,7 +5,7 @@ import { TIPOS_FOTO, subirFotos, type ResultadoSubida } from './subidaFotos'
 
 // El input queda oculto a la vista pero no a la accesibilidad: lo activa su etiqueta, que es el botón.
 const inputOculto = {
-  position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
+  position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
 } as const
 
 interface Props {

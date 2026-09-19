@@ -163,7 +163,7 @@ export default function PaginaAdminPage() {
 
   return (
     <>
-      <Helmet><title>{cabecera.titulo} | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`${cabecera.titulo} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       <PantallaEdicion
         titulo={cabecera.titulo || 'Página'}
@@ -175,7 +175,7 @@ export default function PaginaAdminPage() {
         onDescartar={descartar}
       >
         <Stack spacing={3}>
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
             <Button variant="outlined" startIcon={<VisibilityOutlinedIcon />} onClick={() => setPaginaEntera(true)}>
               Ver la página entera
             </Button>
