@@ -4,16 +4,31 @@ import GlassCard from '../GlassCard'
 import type { BloqueTarjetas as Datos, TarjetaEnlace } from '../../lib/api/contenido'
 import { esDestinoValido } from '../../lib/destinos'
 
-/** Mismo marcado que tenía `CorporationPage` a mano, para que convertir esa
- *  página a bloques no le cambie el aspecto. */
+/**
+ * Cuántas columnas ocupa cada tarjeta según cuántas haya. Siempre a tres
+ * columnas, dos tarjetas dejaban un tercio vacío a la derecha (Nuestros
+ * fines) y una sola, dos tercios. Ahora una va sola y ancha, dos y cuatro se
+ * reparten a pares y lo demás va de tres en tres.
+ */
+function columnas(cuantas: number) {
+  if (cuantas === 1) return { xs: 12 }
+  if (cuantas === 2 || cuantas === 4) return { xs: 12, md: 6 }
+  return { xs: 12, md: 6, lg: 4 }
+}
+
+/** El marcado de las tarjetas que tenía `CorporationPage` a mano. Con pocas,
+ *  la rejilla se estrecha a lo que mide una foto (1000 px): a todo el ancho,
+ *  dos tarjetas quedaban mucho más anchas que el texto de encima. */
 export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
+  const cuantas = bloque.tarjetas.length
   return (
-    <Grid container spacing={3}>
+    // La última fila, si no se llena, va centrada y no pegada a la izquierda.
+    <Grid container spacing={3} sx={{ justifyContent: 'center', maxWidth: cuantas <= 2 ? '1000px' : undefined, mx: 'auto' }}>
       {bloque.tarjetas.map((tarjeta, indice) => (
         // La clave es posicional porque una tarjeta no tiene identificador
         // propio y el enlace dejó de servir: ahora es opcional, así que dos
         // tarjetas informativas compartirían la cadena vacía.
-        <Grid key={indice} size={{ xs: 12, md: 6, lg: 4 }}>
+        <Grid key={indice} size={columnas(cuantas)}>
           <Tarjeta tarjeta={tarjeta} />
         </Grid>
       ))}

@@ -11,6 +11,9 @@ export default function BloqueTexto({ bloque }: { bloque: Datos }) {
         maxWidth: '850px', mx: 'auto', color: 'text.secondary', lineHeight: 1.8,
         '& p': { mb: 3 }, '& h2, & h3': { color: 'text.primary', mt: 4, mb: 2 },
         '& img': { maxWidth: '100%', height: 'auto', borderRadius: 1 },
+        // El primer párrafo traía el margen de arriba del navegador y el último
+        // el suyo de abajo: se sumaban al espacio entre bloques, que ya lo pone la página.
+        '& > :first-child': { mt: 0 }, '& > :last-child': { mb: 0 },
       }}
       dangerouslySetInnerHTML={{ __html: sanitizeHtml(bloque.html) }}
     />

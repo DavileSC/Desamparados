@@ -7,6 +7,7 @@ import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
 import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
+import { SECCION_TRAS_CABECERA } from '../../../components/espaciado'
 
 const links = [
   {
@@ -35,7 +36,7 @@ export default function ProcessionPage() {
         subtitle="Información sobre tu participación en la estación de penitencia."
       />
 
-      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={SECCION_TRAS_CABECERA}>
         <PageContainer>
           <Grid container spacing={4}>
             {links.map((item) => (

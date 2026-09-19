@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import GlassCard from './GlassCard'
 import type { PublicationItem } from '../types'
@@ -7,6 +8,9 @@ interface PublicationCardProps {
 }
 
 export default function PublicationCard({ publication }: PublicationCardProps) {
+  // Una portada cuyo fichero ya no está se quita, como si no la tuviera: mejor
+  // que el icono de imagen rota ocupando la cabeza de la tarjeta.
+  const [portadaRota, setPortadaRota] = useState<string | null>(null)
   const categoryLabel =
     publication.category === 'boletin'
       ? 'Boletín'
@@ -37,10 +41,11 @@ export default function PublicationCard({ publication }: PublicationCardProps) {
           color: 'inherit',
         }}
       >
-        {publication.image && (
+        {publication.image && portadaRota !== publication.image && (
           <Box
             component="img"
             src={publication.image}
+            onError={() => setPortadaRota(publication.image ?? null)}
             alt={publication.title}
             loading="lazy"
             decoding="async"

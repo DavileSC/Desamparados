@@ -4,6 +4,7 @@ import PageContainer from '../../../components/PageContainer'
 import PageHeader from '../../../components/PageHeader'
 import AnimatedSection from '../../../components/AnimatedSection'
 import AppButton from '../../../components/AppButton'
+import { SECCION_TRAS_CABECERA } from '../../../components/espaciado'
 
 export default function MembersPage() {
   return (
@@ -17,7 +18,7 @@ export default function MembersPage() {
         subtitle="Forma parte de nuestra corporación."
       />
 
-      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={SECCION_TRAS_CABECERA}>
         <PageContainer>
           <Grid container spacing={6} sx={{ alignItems: 'center' }}>
             <Grid size={{ xs: 12, md: 7 }}>

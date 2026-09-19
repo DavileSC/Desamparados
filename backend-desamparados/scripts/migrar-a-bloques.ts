@@ -12,6 +12,12 @@
  * Es idempotente, como la siembra: una fila que ya tiene `bloques` se deja
  * como está. Correrlo dos veces no pisa nada.
  *
+ * Además retira los títulos de listado que repetían el de la cabecera
+ * («Noticias» y debajo «Todas las noticias»): la siembra no pisa filas que ya
+ * existen, así que cambiar el contenido de partida no llegaba a las bases ya
+ * sembradas. Solo se vacían si siguen con el texto de partida; uno que se haya
+ * cambiado en el CMS es una decisión de alguien y se respeta.
+ *
  *   npx tsx scripts/migrar-a-bloques.ts            # dice qué haría
  *   npx tsx scripts/migrar-a-bloques.ts --aplicar  # lo hace
  */
@@ -115,6 +121,32 @@ const CONVERSORES: Record<string, (viejo: Record<string, never>) => Documento> =
   historia: historiaABloques,
 };
 
+/** Títulos de listado retirados, con el texto que traían de partida. */
+const TITULOS_REPETIDOS: Record<string, string> = {
+  noticias: 'Todas las noticias',
+  publicaciones: 'Todas las publicaciones',
+};
+
+async function retirarTitulosRepetidos(): Promise<number> {
+  let cambiadas = 0;
+  for (const [slug, viejo] of Object.entries(TITULOS_REPETIDOS)) {
+    const fila = await db.contenidoPagina.findUnique({ where: { slug } });
+    const datos = fila?.datos as { bloques?: { tipo: string; titulo?: string }[] } | undefined;
+    const bloque = datos?.bloques?.find((b) => b.tipo === 'listado' && b.titulo === viejo);
+    if (!fila || !datos || !bloque) {
+      console.log(`· ${slug}: sin el título «${viejo}»; se deja como está.`);
+      continue;
+    }
+    console.log(`· ${slug}: se quita el título «${viejo}», que repetía la cabecera.`);
+    if (APLICAR) {
+      bloque.titulo = '';
+      await db.contenidoPagina.update({ where: { slug }, data: { datos: datos as object } });
+      cambiadas += 1;
+    }
+  }
+  return cambiadas;
+}
+
 async function main() {
   let convertidas = 0;
   for (const [slug, convertir] of Object.entries(CONVERSORES)) {
@@ -138,8 +170,10 @@ async function main() {
     }
   }
 
+  const retitulados = await retirarTitulosRepetidos();
+
   console.log(APLICAR
-    ? `\nListo: ${convertidas} página(s) convertida(s).`
+    ? `\nListo: ${convertidas} página(s) convertida(s) y ${retitulados} título(s) repetido(s) retirado(s).`
     : '\nNo se ha tocado nada. Vuelve a lanzarlo con --aplicar para hacerlo.');
 }
 

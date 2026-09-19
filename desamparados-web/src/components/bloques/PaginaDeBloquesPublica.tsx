@@ -7,6 +7,7 @@ import BloquesDePagina from './BloquesDePagina'
 import { useBorradorPagina } from './borrador'
 import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
 import { getContenido, type PaginaDeBloques, type SlugContenido } from '../../lib/api/contenido'
+import { SECCION_TRAS_CABECERA } from '../espaciado'
 
 /**
  * Una página pública compuesta por bloques: su cabecera y, debajo, lo que el
@@ -44,7 +45,7 @@ export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }
         image={pagina.cabecera.foto || undefined}
         imageAlt={pagina.cabecera.fotoAlt}
       />
-      <AnimatedSection sx={{ py: { xs: 6, md: 10 } }}>
+      <AnimatedSection sx={SECCION_TRAS_CABECERA}>
         <PageContainer>
           <BloquesDePagina bloques={pagina.bloques} />
         </PageContainer>

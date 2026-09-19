@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../test/test-utils'
 import NewsCard from '../NewsCard'
 import type { NewsItem } from '../../types'
@@ -42,5 +42,12 @@ describe('NewsCard', () => {
   it('marca la destacada para que el listado le dé todo el ancho', () => {
     renderWithProviders(<NewsCard news={mockNews} destacada />)
     expect(screen.getByRole('link')).toHaveAttribute('data-destacada', 'true')
+  })
+
+  it('si la foto no carga, pone la placa y no el icono de imagen rota', () => {
+    renderWithProviders(<NewsCard news={{ ...mockNews, image: '/storage/public/ya-no-esta.jpg' }} />)
+    fireEvent.error(screen.getByRole('link').querySelector('img')!)
+    expect(screen.getByTestId('placa-noticia')).toHaveTextContent('S')
+    expect(screen.getByRole('link').querySelector('img')).toBeNull()
   })
 })

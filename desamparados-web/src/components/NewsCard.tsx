@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -45,6 +46,11 @@ const TONOS_PLACA = [
  */
 export default function NewsCard({ news, indice = 0, destacada = false, volver }: NewsCardProps) {
   const tono = TONOS_PLACA[indice % TONOS_PLACA.length]
+  // Si el fichero de la foto ya no está en el servidor, la placa y no el icono
+  // de imagen rota. Se guarda qué dirección falló: si la noticia cambia de foto,
+  // la nueva se vuelve a intentar.
+  const [fotoRota, setFotoRota] = useState<string | null>(null)
+  const conFoto = Boolean(news.image) && fotoRota !== news.image
   // La destacada se abre en dos columnas desde sm; en móvil es una tarjeta más.
   const enFila = destacada ? { xs: 'flex', sm: 'grid' } : 'flex'
 
@@ -82,17 +88,18 @@ export default function NewsCard({ news, indice = 0, destacada = false, volver }
           minHeight: destacada ? { sm: 340, md: 420 } : undefined,
         }}
       >
-        {news.image ? (
+        {conFoto ? (
           <Box
             component="img"
             src={news.image}
+            onError={() => setFotoRota(news.image ?? null)}
             alt=""
             loading={destacada ? 'eager' : 'lazy'}
             decoding="async"
             sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          // Sin foto, una placa con la inicial: la tarjeta nunca queda con un hueco.
+          // Sin foto (o con una que no carga), una placa con la inicial: la tarjeta nunca queda con un hueco.
           <Box
             data-testid="placa-noticia"
             data-tono={tono.tono}

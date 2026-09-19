@@ -15,8 +15,10 @@ export default function PageHeader({ title, subtitle, image, imageAlt }: PageHea
       component="section"
       sx={{
         position: 'relative',
-        py: { xs: 10, md: 14 },
-        mb: { xs: 4, md: 6 },
+        // Arriba, lo de siempre: en escritorio la barra de navegación es fija y va
+        // encima. Abajo, poco: el contenido que sigue ya trae su aire (espaciado.ts).
+        pt: { xs: 10, md: 14 },
+        pb: { xs: 5, md: 7 },
         backgroundColor: image ? 'transparent' : 'background.paper',
         overflow: 'hidden',
       }}

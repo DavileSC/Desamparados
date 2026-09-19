@@ -649,7 +649,7 @@
     "bloques": [
       {
         "tipo": "listado",
-        "titulo": "Todas las noticias",
+        "titulo": "",
         "fuente": "noticias"
       }
     ]
@@ -664,7 +664,7 @@
     "bloques": [
       {
         "tipo": "listado",
-        "titulo": "Todas las publicaciones",
+        "titulo": "",
         "fuente": "publicaciones"
       }
     ]

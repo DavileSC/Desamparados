@@ -1,0 +1,19 @@
+import { describe, it, expect } from 'vitest'
+import { fireEvent, screen } from '@testing-library/react'
+import { renderWithProviders } from '../../test/test-utils'
+import PublicationCard from '../PublicationCard'
+
+const publicacion = {
+  id: '1', title: 'Boletín n.º 12', description: 'Crónica del curso.', image: '/storage/public/ya-no-esta.jpg',
+  date: '2026-08-21T12:00:00', category: 'boletin' as const, fileUrl: '/storage/public/boletin.pdf',
+}
+
+describe('PublicationCard', () => {
+  it('si la portada no carga, la quita en vez de enseñar una imagen rota', () => {
+    renderWithProviders(<PublicationCard publication={publicacion} />)
+    const portada = screen.getByRole('img', { name: 'Boletín n.º 12' })
+    fireEvent.error(portada)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByText('Crónica del curso.')).toBeInTheDocument()
+  })
+})
