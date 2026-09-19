@@ -11,6 +11,8 @@ export interface ApiNews {
   imagenUrl: string | null
   fecha: string
   visible: boolean
+  /** Última vez que se guardó; para decir de un borrador cuándo se tocó. */
+  updatedAt?: string
 }
 
 function toNewsItem(news: ApiNews): NewsItem {
@@ -41,8 +43,27 @@ export async function getNewsBySlug(slug: string) {
   return toNewsItem(news)
 }
 
-export function getAdminNews(pagina: { pagina: number; porPagina: number }) {
-  return apiFetch<RespuestaPaginada<ApiNews>>(`/news/admin/archive?${paramsPagina(pagina)}`)
+export type EstadoNoticia = 'publicadas' | 'borradores' | 'incompletas'
+
+/** Lo que acompaña al listado del CMS: cifras del archivo entero y qué sale en la portada. */
+export interface ResumenNoticias {
+  publicadas: number
+  borradores: number
+  incompletas: number
+  ultimaPublicacion: string | null
+  /** `ids`: las que la portada enseña ahora, en su orden; `limite`: cuántas enseña. */
+  portada: { limite: number; ids: number[] }
+}
+
+export function getAdminNews(pagina: { pagina: number; porPagina: number }, filtros: { q?: string; estado?: EstadoNoticia | '' } = {}) {
+  return apiFetch<RespuestaPaginada<ApiNews> & { resumen: ResumenNoticias }>(
+    `/news/admin/archive?${paramsPagina(pagina, { q: filtros.q, estado: filtros.estado || undefined })}`,
+  )
+}
+
+/** Cuántas noticias enseña la portada de la web (entre 1 y 20). */
+export function setLimitePortada(limite: number) {
+  return apiFetch<{ message: string }>('/news/limit', { method: 'POST', json: { limit: limite } })
 }
 
 export interface NewsPayload {

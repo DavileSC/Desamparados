@@ -63,6 +63,21 @@ export const limitConfigSchema = type({
     }
 });
 
+// Los apartados del listado del CMS. «Incompletas» son las que salen cojas en la
+// web (sin foto o sin extracto), estén publicadas o no.
+export const ESTADOS_NOTICIA = ['publicadas', 'borradores', 'incompletas'] as const;
+export type EstadoNoticia = (typeof ESTADOS_NOTICIA)[number];
+
+// Listado del CMS: búsqueda por palabras, apartado y página.
+export const adminArchiveQuerySchema = type({
+    query: {
+        "q?": "string <= 100",
+        "estado?": "'publicadas' | 'borradores' | 'incompletas'",
+        "page?": type("string").matching(/^[1-9]\d*$/),
+        "limit?": type("string").matching(/^[1-9]\d*$/)
+    }
+});
+
 // Validar parámetros de la URL
 export const slugParamSchema = type({
     params: {

@@ -6,7 +6,7 @@ import { checkRole } from '../middleware/checkRole.js'; // Usamos el global
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
 import { idParam } from '../config/common.js';
-import { createNewsSchema, updateNewsSchema, limitConfigSchema, slugParamSchema } from '../schemas/news.schema.js';
+import { createNewsSchema, updateNewsSchema, limitConfigSchema, slugParamSchema, adminArchiveQuerySchema } from '../schemas/news.schema.js';
 
 const newsRoutes = Router();
 
@@ -29,6 +29,7 @@ newsRoutes.get(
   '/admin/archive',
   authenticateToken,
   checkRole(rolesCMS),
+  validate(adminArchiveQuerySchema),
   NewsController.getAdminArchive
 );
 

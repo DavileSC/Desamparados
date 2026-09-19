@@ -42,6 +42,8 @@ export interface SuperficiesCms {
   pillUrgente: string
   pillPendiente: string
   pillNeutro: string
+  /** Texto de aviso («Sin foto», «Le falta el extracto»): el ámbar del punto no se lee en letra pequeña. */
+  avisoTexto: string
   /** Emergente de detalle de las gráficas. */
   emergente: string
   emergenteBorde: string
@@ -88,6 +90,7 @@ const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
     pillUrgente: 'rgba(227,73,72,0.12)',
     pillPendiente: 'rgba(237,161,0,0.16)',
     pillNeutro: '#efeeeb',
+    avisoTexto: '#8a5a00',
     emergente: '#ffffff',
     emergenteBorde: '#e3dfda',
     texto: designTokens.colors.onSurface, // #1b1c1a
@@ -112,6 +115,7 @@ const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
     pillUrgente: 'rgba(227,73,72,0.18)',
     pillPendiente: 'rgba(237,161,0,0.18)',
     pillNeutro: 'rgba(255,255,255,0.08)',
+    avisoTexto: '#f2c264',
     emergente: designTokens.colors.primary, // #100e11
     emergenteBorde: 'rgba(204,196,201,0.18)',
     texto: '#ffffff',
@@ -201,6 +205,20 @@ export function crearTemaCms(modo: ModoCms): Theme {
           },
         },
       },
+      // El granate de la marca sobre el fondo oscuro se queda en 2,6:1: los
+      // botones que lo usan como texto («Subir foto») toman el rosado del modo oscuro.
+      ...(modo === 'oscuro' && {
+        MuiButton: {
+          styleOverrides: {
+            root: {
+              variants: [
+                { props: { variant: 'text', color: 'primary' }, style: { color: s.accionTexto } },
+                { props: { variant: 'outlined', color: 'primary' }, style: { color: s.accionTexto, borderColor: 'rgba(255, 179, 180, 0.5)', '&:hover': { borderColor: s.accionTexto } } },
+              ],
+            },
+          },
+        },
+      }),
     },
   })
 }

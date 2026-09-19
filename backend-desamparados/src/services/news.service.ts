@@ -1,12 +1,13 @@
 import db from '../config/db';
 import { Prisma } from '@prisma/client';
-import { CreateNewsDto, UpdateNewsDto, NewsFilterDto } from '../dtos/news.dto';
+import { CreateNewsDto, UpdateNewsDto, NewsFilterDto, AdminNewsFilterDto } from '../dtos/news.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 import { esImagenPropia, rutaAlEditar } from '../utils/rutas-propias.js';
-import { LIMITE_PORTADA_DEFECTO, LIMITE_PORTADA_MAX, LIMITE_PORTADA_MIN } from '../schemas/news.schema.js';
+import { LIMITE_PORTADA_DEFECTO, LIMITE_PORTADA_MAX, LIMITE_PORTADA_MIN, type EstadoNoticia } from '../schemas/news.schema.js';
+import { condicionBusqueda } from '../domain/busqueda-texto.js';
 
 /**
  * El número de noticias de la portada tal y como está guardado. Un valor que no
@@ -30,6 +31,21 @@ export function limitePortada(valorGuardado: string | null | undefined): number 
  */
 function conExtractoPlano<T extends { extracto: string | null }>(noticia: T): T {
   return noticia.extracto ? { ...noticia, extracto: extractoPlano(noticia.extracto) } : noticia;
+}
+
+/**
+ * El `where` de cada apartado del listado del CMS. «Incompletas» son las que
+ * en la web quedan cojas: sin foto (la tarjeta cae a una placa con la inicial)
+ * o sin extracto (la tarjeta se queda en el título). '' cuenta como vacío
+ * porque los extractos borrados se guardan así.
+ */
+export function condicionEstadoNoticia(estado: EstadoNoticia | undefined): Prisma.NoticiaWhereInput {
+  switch (estado) {
+    case 'publicadas': return { visible: true };
+    case 'borradores': return { visible: false };
+    case 'incompletas': return { OR: [{ imagenUrl: null }, { imagenUrl: '' }, { extracto: null }, { extracto: '' }] };
+    default: return {};
+  }
 }
 
 /** '' es «sin foto» (lo que manda «Quitar foto» del CMS): se guarda como null. */
@@ -79,16 +95,14 @@ export class NewsService {
   //  2. CMS / GESTIÓN
   // =================================================================
 
-  // Archivo con Paginación + Búsqueda
-  static async getArchive({ page, limit, search, includeDrafts = false }: NewsFilterDto) {
+  // Archivo PÚBLICO con paginación y búsqueda por título: solo lo publicado.
+  static async getArchive({ page, limit, search }: NewsFilterDto) {
     const paginacion = sanearPaginacion({ page, limit });
 
-    // Construimos filtro dinámico
     const whereCondition: Prisma.NoticiaWhereInput = {
-      // SEGURIDAD: la web pública SOLO ve noticias publicadas. Los borradores únicamente
-      // se listan desde la ruta de administración (includeDrafts = true, tras auth + rol CMS).
-      ...(includeDrafts ? {} : { visible: true }),
-      // Si hay término de búsqueda, filtramos por título
+      // SEGURIDAD: la web pública SOLO ve noticias publicadas. Los borradores
+      // se listan desde getAdminArchive, tras auth + rol CMS.
+      visible: true,
       ...(search && {
         titulo: { contains: search }
       })
@@ -111,6 +125,59 @@ export class NewsService {
     ]);
 
     return respuestaPaginada(noticias.map(conExtractoPlano), total, paginacion);
+  }
+
+  /**
+   * Listado del CMS: borradores incluidos, con búsqueda por palabras en título
+   * y extracto, y el apartado que se pida.
+   *
+   * Sin apartado, los borradores van primero: son lo que está a medio hacer y
+   * lo que se viene a terminar. Luego lo publicado, por fecha.
+   *
+   * Además de la página, devuelve un `resumen` para la cabecera del listado:
+   * cuántas hay en cada apartado (del archivo entero, no de la búsqueda, para
+   * que las cifras no bailen al teclear) y qué noticias salen ahora mismo en la
+   * portada, que son las mismas que sirve getLatest.
+   */
+  static async getAdminArchive({ page, limit, q, estado }: AdminNewsFilterDto) {
+    const paginacion = sanearPaginacion({ page, limit });
+    const where: Prisma.NoticiaWhereInput = {
+      ...condicionEstadoNoticia(estado),
+      ...condicionBusqueda(q, ['titulo', 'extracto'] as const),
+    };
+
+    const [noticias, total, publicadas, borradores, incompletas, configLimit] = await db.$transaction([
+      db.noticia.findMany({
+        where,
+        orderBy: [{ visible: 'asc' }, { fecha: 'desc' }, { id: 'asc' }],
+        skip: paginacion.skip,
+        take: paginacion.take,
+      }),
+      db.noticia.count({ where }),
+      db.noticia.count({ where: condicionEstadoNoticia('publicadas') }),
+      db.noticia.count({ where: condicionEstadoNoticia('borradores') }),
+      db.noticia.count({ where: condicionEstadoNoticia('incompletas') }),
+      db.configuracion.findUnique({ where: { key: 'home_news_limit' } }),
+    ]);
+
+    const limite = limitePortada(configLimit?.value);
+    const enPortada = await db.noticia.findMany({
+      where: { visible: true },
+      orderBy: [{ fecha: 'desc' }, { id: 'asc' }],
+      take: limite,
+      select: { id: true, fecha: true },
+    });
+
+    return {
+      ...respuestaPaginada(noticias.map(conExtractoPlano), total, paginacion),
+      resumen: {
+        publicadas,
+        borradores,
+        incompletas,
+        ultimaPublicacion: enPortada[0]?.fecha ?? null,
+        portada: { limite, ids: enPortada.map((n) => n.id) },
+      },
+    };
   }
 
   // Crear Noticia

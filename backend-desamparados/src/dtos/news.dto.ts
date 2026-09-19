@@ -24,5 +24,11 @@ export interface NewsFilterDto {
   page?: unknown;
   limit?: unknown;
   search?: string; // Para buscar por título en el archivo
-  includeDrafts?: boolean; // SOLO para el panel CMS: incluye noticias con visible:false
+}
+
+export interface AdminNewsFilterDto {
+  page?: unknown;
+  limit?: unknown;
+  q?: string; // Palabras que buscar en el título y el extracto
+  estado?: 'publicadas' | 'borradores' | 'incompletas';
 }

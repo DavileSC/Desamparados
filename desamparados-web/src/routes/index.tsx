@@ -195,6 +195,7 @@ const router = createBrowserRouter([
           // Historia se edita ya como las demás páginas; la dirección vieja sigue llevando a ella.
           { path: 'historia', element: <Navigate to="/cms/paginas/historia" replace /> },
           { path: 'noticias', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsAdminPage)}</RequireRole> },
+          { path: 'noticias/nueva', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsEditPage)}</RequireRole> },
           { path: 'noticias/:id/editar', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsEditPage)}</RequireRole> },
           { path: 'publicaciones', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationsAdminPage)}</RequireRole> },
           { path: 'publicaciones/:id/editar', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationEditPage)}</RequireRole> },

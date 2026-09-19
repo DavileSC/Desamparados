@@ -11,8 +11,8 @@ const MAX_BYTES = 5 * 1024 * 1024
 // El input queda oculto a la vista pero no a la accesibilidad: lo activa su etiqueta, que es el botón.
 const inputOculto = {
   position: 'absolute',
-  width: 1,
-  height: 1,
+  width: '1px',
+  height: '1px',
   overflow: 'hidden',
   clip: 'rect(0 0 0 0)',
   whiteSpace: 'nowrap',
@@ -38,6 +38,8 @@ interface CampoImagenProps {
    * bloques, con un error de validación por toda explicación.
    */
   sinQuitar?: boolean
+  /** Foto a todo el ancho y botones debajo: para una columna estrecha, como la lateral de la ficha de noticia. */
+  apilada?: boolean
 }
 
 /** Sube una foto al servidor desde el CMS y entrega su ruta al formulario. */
@@ -50,11 +52,14 @@ export default function CampoImagen({
   ayuda = 'JPG, PNG o WebP de hasta 5 MB. Se verá en la portada y en la ficha de la noticia. Al quitarla o cambiarla y guardar, la anterior se borra del servidor.',
   apaisada = false,
   sinQuitar = false,
+  apilada = false,
 }: CampoImagenProps) {
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const idEtiqueta = useId()
-  const miniatura = apaisada ? { width: 224, aspectRatio: '16 / 9' } : { width: 160, aspectRatio: '4 / 3' }
+  const miniatura = apilada
+    ? { width: '100%', aspectRatio: '4 / 3' }
+    : apaisada ? { width: 224, aspectRatio: '16 / 9' } : { width: 160, aspectRatio: '4 / 3' }
 
   const elegir = async (evento: ChangeEvent<HTMLInputElement>) => {
     const archivo = evento.target.files?.[0]
@@ -83,7 +88,7 @@ export default function CampoImagen({
   return (
     <Box role="group" aria-labelledby={idEtiqueta}>
       <Typography id={idEtiqueta} variant="subtitle2" sx={{ mb: 1 }}>{etiqueta}</Typography>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
+      <Stack direction={apilada ? 'column' : { xs: 'column', sm: 'row' }} spacing={apilada ? 1.25 : 2} sx={{ alignItems: apilada ? 'stretch' : { sm: 'center' } }}>
         {valor ? (
           <Box component="img" src={valor} alt="Foto actual" sx={{ ...miniatura, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
         ) : (

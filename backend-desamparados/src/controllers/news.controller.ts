@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { NewsService } from '../services/news.service.js';
 import { handleHttp } from '../utils/error.handle.js';
-import { NewsFilterDto } from '../dtos/news.dto.js';
+import type { AdminNewsFilterDto } from '../dtos/news.dto.js';
 import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
 
 export class NewsController {
@@ -19,30 +19,27 @@ export class NewsController {
     }
   }
 
-  private static parseArchiveFilter(req: Request, includeDrafts: boolean): NewsFilterDto {
-    // El saneamiento de página y tamaño lo decide sanearPaginacion, no el
-    // controlador: se le pasan los valores crudos de la query.
-    // Sanitización segura y limpia (si mandan un array, cogemos el primer elemento o nada)
-    const searchRaw = req.query.search;
-    const search = typeof searchRaw === 'string' ? searchRaw.slice(0, 100) : undefined;
-
-    return { page: req.query.page, limit: req.query.limit, search, includeDrafts };
-  }
-
   // Archivo PÚBLICO: solo noticias publicadas (visible:true)
   static async getArchive(req: Request, res: Response) {
     try {
-      const result = await NewsService.getArchive(NewsController.parseArchiveFilter(req, false));
+      // El saneamiento de página y tamaño lo decide sanearPaginacion, no el
+      // controlador: se le pasan los valores crudos de la query.
+      // Si mandan un array en `search`, se descarta.
+      const searchRaw = req.query.search;
+      const search = typeof searchRaw === 'string' ? searchRaw.slice(0, 100) : undefined;
+      const result = await NewsService.getArchive({ page: req.query.page, limit: req.query.limit, search });
       res.status(200).json(result);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo archivo');
     }
   }
 
-  // Archivo del CMS (auth + rol): incluye borradores
+  // Archivo del CMS (auth + rol): incluye borradores. La query ya viene
+  // validada por adminArchiveQuerySchema.
   static async getAdminArchive(req: Request, res: Response) {
     try {
-      const result = await NewsService.getArchive(NewsController.parseArchiveFilter(req, true));
+      const { page, limit, q, estado } = req.query as AdminNewsFilterDto;
+      const result = await NewsService.getAdminArchive({ page, limit, q, estado });
       res.status(200).json(result);
     } catch (e) {
       handleHttp(res, e, 'Error obteniendo archivo de administración');
