@@ -11,7 +11,6 @@
 export const CLAVES_CONFIGURACION = [
   'precio_papeleta_sitio',
   'precio_alquiler_tunica',
-  'home_news_limit',
   // Datos de la salida que la mesa de reparto y Tesorería ponen en el correo
   // de la papeleta (los lee procesion.service.ts de esta misma tabla).
   'procesion_fecha',
@@ -34,8 +33,6 @@ export type ResultadoValor = { ok: true; valor: string } | { ok: false; error: s
  */
 const IMPORTE = /^\d{1,8}(?:[.,]\d{1,2})?$/;
 
-const LIMITE_NOTICIAS = { minimo: 1, maximo: 20 };
-
 /**
  * Texto libre de la procesión (fecha, hora, punto de acceso): va a un correo,
  * así que sin `<` ni `>` (nada de etiquetas) y sin caracteres de control (un
@@ -49,15 +46,6 @@ export function normalizarValorConfiguracion(clave: ClaveConfiguracion, valorCru
   const valor = valorCrudo.trim();
 
   switch (clave) {
-    case 'home_news_limit': {
-      // Solo cifras: `Number('1e1')` o `Number('0x10')` también son números.
-      const numero = /^\d{1,3}$/.test(valor) ? Number(valor) : NaN;
-      if (!Number.isInteger(numero) || numero < LIMITE_NOTICIAS.minimo || numero > LIMITE_NOTICIAS.maximo) {
-        return { ok: false, error: `El número de noticias de la portada debe ser un entero entre ${LIMITE_NOTICIAS.minimo} y ${LIMITE_NOTICIAS.maximo}.` };
-      }
-      return { ok: true, valor: String(numero) }; // «07» se guarda como «7»
-    }
-
     case 'precio_papeleta_sitio':
     case 'precio_alquiler_tunica': {
       if (!IMPORTE.test(valor)) {

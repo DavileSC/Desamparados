@@ -6,7 +6,7 @@ import { checkRole } from '../middleware/checkRole.js'; // Usamos el global
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
 import { idParam } from '../config/common.js';
-import { createNewsSchema, updateNewsSchema, limitConfigSchema, slugParamSchema, adminArchiveQuerySchema } from '../schemas/news.schema.js';
+import { createNewsSchema, updateNewsSchema, slugParamSchema, adminArchiveQuerySchema } from '../schemas/news.schema.js';
 
 const newsRoutes = Router();
 
@@ -52,7 +52,6 @@ newsRoutes.get('/:slug', validate(slugParamSchema), NewsController.getOne);
 newsRoutes.use(authenticateToken);
 newsRoutes.use(checkRole(rolesCMS));
 
-newsRoutes.post('/limit', validate(limitConfigSchema), NewsController.configHomeLimit); 
 newsRoutes.post('/', validate(createNewsSchema), NewsController.create);
 newsRoutes.put('/:id', validateId, validate(updateNewsSchema), NewsController.update); // Faltaba!
 newsRoutes.delete('/:id', validateId, NewsController.delete); // Faltaba!

@@ -636,15 +636,12 @@ describe('configuración y consultas de administración (P4 y S10)', () => {
     for (const malo of ['', '   ', '<b>Jueves</b>', 'x'.repeat(121), 'línea\notra']) {
       assert.equal(normalizarValorConfiguracion('procesion_fecha', malo).ok, false, `«${malo}» debería rechazarse`);
     }
-    assert.deepEqual(normalizarValorConfiguracion('home_news_limit', '07'), { ok: true, valor: '7' });
-    for (const malo of ['0', '21', '1.5', 'tres', '']) {
-      assert.equal(normalizarValorConfiguracion('home_news_limit', malo).ok, false, `«${malo}» debería rechazarse`);
-    }
   });
 
-  test('la ruta rechaza un límite de noticias fuera de rango y un precio con tres decimales', async (t) => {
+  test('la ruta rechaza el número de noticias de la portada, que ya no es un ajuste, y un precio con tres decimales', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const limite = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key: 'home_news_limit', value: '21' } });
+    // Son tres fijas (NOTICIAS_EN_PORTADA): guardar otro número no cambiaría nada en la web.
+    const limite = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key: 'home_news_limit', value: '5' } });
     assert.equal(limite.status, 400);
     const precio = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key: 'precio_papeleta_sitio', value: '12,555' } });
     assert.equal(precio.status, 400);

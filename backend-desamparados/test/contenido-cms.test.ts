@@ -22,10 +22,10 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { readFileSync } from 'node:fs';
 import { sanearContenidoCms, extractoPlano, ETIQUETAS_CMS, ATRIBUTOS_CMS } from '../src/utils/sanear-html.js';
-import { createNewsSchema, limitConfigSchema, updateNewsSchema } from '../src/schemas/news.schema.js';
+import { createNewsSchema, updateNewsSchema } from '../src/schemas/news.schema.js';
 import { createPublicationSchema, PDF_DE_RELLENO } from '../src/schemas/publication.schema.js';
 import { createEnserSchema, createPrendaSchema } from '../src/schemas/inventario.schema.js';
-import { limitePortada } from '../src/services/news.service.js';
+import { NOTICIAS_EN_PORTADA } from '../src/services/news.service.js';
 import { ARCHIVO_PUBLICACION_PENDIENTE } from '../prisma/seed-contenido.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
@@ -200,17 +200,9 @@ describe('inventario: datos que llegaban a Prisma y daban 500 (D15)', () => {
   });
 });
 
-describe('noticias de la portada (P4)', () => {
-  test('el esquema solo admite enteros de 1 a 20', () => {
-    for (const limit of [2.5, 0, 21, -3, '5']) assert.ok(esError(limitConfigSchema({ body: { limit } })), `debería rechazar ${limit}`);
-    for (const limit of [1, 5, 20]) assert.ok(!esError(limitConfigSchema({ body: { limit } })));
-  });
-
-  test('un valor guardado inválido cae al de por defecto en vez de llegar a Prisma', () => {
-    assert.equal(limitePortada('7'), 7);
-    for (const guardado of ['2.5', 'abc', '0', '21', '-1', '', null, undefined]) {
-      assert.equal(limitePortada(guardado), 3, `con ${JSON.stringify(guardado)}`);
-    }
+describe('noticias de la portada', () => {
+  test('son tres, las que caben en la rejilla de la portada', () => {
+    assert.equal(NOTICIAS_EN_PORTADA, 3);
   });
 });
 
@@ -252,20 +244,23 @@ const api = (ruta: string, metodo = 'GET', cuerpo?: unknown) =>
   });
 
 describe('noticias contra el servidor', () => {
-  test('POST /news/limit rechaza 2.5 con 400', async (t) => {
+  test('el número de la portada ya no se puede cambiar: POST /news/limit no existe', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const res = await api('/news/limit', 'POST', { limit: 2.5 });
-    assert.equal(res.status, 400);
+    const res = await api('/news/limit', 'POST', { limit: 5 });
+    assert.notEqual(res.status, 200);
+    assert.notEqual(res.status, 201);
   });
 
-  test('con un límite inválido guardado, la portada sigue respondiendo', async (t) => {
+  test('la portada da tres como mucho aunque quede guardado el ajuste antiguo', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const anterior = await db.configuracion.findUnique({ where: { key: 'home_news_limit' } });
     try {
-      await db.configuracion.upsert({ where: { key: 'home_news_limit' }, update: { value: '2.5' }, create: { key: 'home_news_limit', value: '2.5' } });
+      await db.configuracion.upsert({ where: { key: 'home_news_limit' }, update: { value: '7' }, create: { key: 'home_news_limit', value: '7' } });
       const res = await fetch(`${baseUrl}/api/news/latest`);
       assert.equal(res.status, 200);
-      assert.ok(((await res.json()) as unknown[]).length <= 3);
+      assert.ok(((await res.json()) as unknown[]).length <= NOTICIAS_EN_PORTADA);
+      const { resumen } = await (await api('/news/admin/archive')).json() as { resumen: { portada: { limite: number } } };
+      assert.equal(resumen.portada.limite, NOTICIAS_EN_PORTADA);
     } finally {
       if (anterior) await db.configuracion.update({ where: { key: 'home_news_limit' }, data: { value: anterior.value } });
       else await db.configuracion.deleteMany({ where: { key: 'home_news_limit' } });

@@ -23,12 +23,6 @@ export const imagenOpcional = type('string | null')
 export const imagenAlEditar = type('string | null')
     .pipe((valor: string | null) => (valor === null ? null : aRutaPropia(valor, esImagenPropia)));
 
-// Cuántas noticias enseña la portada. Entero y acotado: un 2.5 guardado aquí
-// acababa en el `take` de Prisma y la portada pública daba 500 en cada visita.
-export const LIMITE_PORTADA_MIN = 1;
-export const LIMITE_PORTADA_MAX = 20;
-export const LIMITE_PORTADA_DEFECTO = 3;
-
 // Esquema para crear (titulo y contenido obligatorios)
 export const createNewsSchema = type({
     body: {
@@ -52,14 +46,6 @@ export const updateNewsSchema = type({
         "visible?": "boolean",
         "fecha?": type("string").matching(/^\d{4}-\d{2}-\d{2}/),
         "slug?": type("string").matching(/^[a-z0-9-]+$/)
-    }
-});
-
-// Esquema para la configuración del límite de la portada
-export const limitConfigSchema = type({
-    body: {
-        // Los mismos topes que LIMITE_PORTADA_MIN y LIMITE_PORTADA_MAX.
-        limit: type("1 <= number.integer <= 20")
     }
 });
 

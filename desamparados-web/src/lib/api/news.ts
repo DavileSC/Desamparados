@@ -61,11 +61,6 @@ export function getAdminNews(pagina: { pagina: number; porPagina: number }, filt
   )
 }
 
-/** Cuántas noticias enseña la portada de la web (entre 1 y 20). */
-export function setLimitePortada(limite: number) {
-  return apiFetch<{ message: string }>('/news/limit', { method: 'POST', json: { limit: limite } })
-}
-
 export interface NewsPayload {
   titulo: string
   contenido: string

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Box, Button, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import { useTemaCms } from '../../../app/temaCms'
 import { haceCuanto } from './completitud'
@@ -83,17 +83,16 @@ export function Grupo({ titulo, cifra, children }: { titulo: string; cifra?: num
 }
 
 /**
- * La raya bajo la última que sale en la portada. Sin `onCambiar`, cuántas salen
- * no se puede cambiar. `texto` sustituye la frase de noticias y publicaciones
+ * La raya bajo la última que sale en la portada. Cuántas salen no se cambia
+ * desde el CMS: lo pone el diseño de la portada. `texto` sustituye la frase de noticias y publicaciones
  * («las 3 más recientes»), que en la agenda no vale.
  */
-export function LineaPortada({ limite, texto, onCambiar }: { limite: number; texto?: string; onCambiar?: () => void }) {
+export function LineaPortada({ limite, texto }: { limite: number; texto?: string }) {
   const { superficies } = useTemaCms()
   return (
     <Box component="li" sx={{ listStyle: 'none', display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', minHeight: 36, px: { xs: 2, md: 2.5 }, py: 0.5, borderTop: '1.5px dashed', borderColor: superficies.enlace, color: superficies.enlace, fontSize: 12.5, '& svg': { fontSize: 16 } }}>
       <HomeOutlinedIcon aria-hidden="true" />
       <span>{texto ?? `Hasta aquí sale en la portada: ${limite === 1 ? 'la más reciente' : `las ${limite} más recientes`}.`}</span>
-      {onCambiar && <Button size="small" onClick={onCambiar} sx={{ color: 'inherit', minWidth: 0, px: 0.75, fontSize: 12.5, textDecoration: 'underline' }}>Cambiar cuántas</Button>}
     </Box>
   )
 }

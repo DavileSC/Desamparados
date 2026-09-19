@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, CircularProgress, MenuItem, Paper, TextField, Typography } from '@mui/material'
+import { Alert, Button, CircularProgress, Paper, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
@@ -7,14 +7,13 @@ import { Link, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CabeceraSeccion from './CabeceraSeccion'
-import VentanaFormulario from './VentanaFormulario'
 import CampoBusqueda from './listados/CampoBusqueda'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import FilaRedaccion from './redaccion/FilaRedaccion'
 import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion } from './redaccion/Listado'
 import { piezasDeNoticia } from './redaccion/completitud'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { deleteNews, getAdminNews, setLimitePortada, updateNews, type ApiNews, type EstadoNoticia, type ResumenNoticias } from '../../lib/api/news'
+import { deleteNews, getAdminNews, updateNews, type ApiNews, type EstadoNoticia, type ResumenNoticias } from '../../lib/api/news'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
@@ -22,15 +21,13 @@ import type { MetaPaginacion } from '../../lib/api/tipos'
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
 const FILTROS = { q: {}, estado: { validos: ESTADOS } }
 
-/** Cuántas puede enseñar la portada: los topes del servidor (LIMITE_PORTADA_MIN y _MAX). */
-const LIMITES_PORTADA = Array.from({ length: 20 }, (_, i) => i + 1)
-
 /**
  * La mesa de redacción de Noticias.
  *
  * Arriba lo que está a medio escribir, con lo que le falta a cada borrador;
  * debajo lo publicado, con una línea que marca hasta dónde llega la portada de
- * la web. Cada fila avisa si le falta la foto o el extracto, que es lo que en
+ * la web: las tres más recientes, las que caben en su rejilla (el número no se
+ * cambia desde aquí; lo pone el diseño, como en Publicaciones). Cada fila avisa si le falta la foto o el extracto, que es lo que en
  * la web se nota. Para escribir se entra en la ficha (NewsEditPage), también
  * para una noticia nueva: una ventana se queda corta para el texto de una
  * noticia y es fácil cerrarla sin querer.
@@ -45,7 +42,6 @@ export default function NewsAdminPage() {
   const [notice, setNotice] = useState<string | null>((location.state as { aviso?: string } | null)?.aviso ?? null)
   const [porBorrar, setPorBorrar] = useState<ApiNews | null>(null)
   const [porCambiar, setPorCambiar] = useState<ApiNews | null>(null)
-  const [editandoPortada, setEditandoPortada] = useState(false)
   // La consulta actual viaja con el enlace de editar (página, tamaño y filtros):
   // así la pantalla de edición sabe a qué página del listado devolver.
   const consultaListado = location.search
@@ -76,7 +72,6 @@ export default function NewsAdminPage() {
   // publicar, se le pide el número nuevo en vez de esperar a que caduque.
   const queryClient = useQueryClient()
   const refrescarMenu = () => void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
-  const recargar = () => load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar las noticias.'))
 
   const borrar = async () => {
     if (!porBorrar) return
@@ -132,7 +127,6 @@ export default function NewsAdminPage() {
       <FiltroEstado etiqueta="Qué noticias ver" valor={filtros.estado} cifras={resumen} onCambiar={(estado) => cambiarFiltros({ estado })} />
     </Paper>
 
-    <VentanaLimitePortada abierto={editandoPortada} actual={resumen?.portada.limite ?? 3} onCerrar={() => setEditandoPortada(false)} onGuardado={(limite) => { setEditandoPortada(false); setNotice(`La portada enseña ahora ${limite === 1 ? 'la noticia más reciente' : `las ${limite} noticias más recientes`}.`); void recargar() }} />
     <DialogoConfirmacion abierto={porBorrar !== null} titulo="¿Eliminar la noticia?" mensaje={porBorrar ? porBorrar.titulo : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
     <DialogoConfirmacion
       abierto={porCambiar !== null}
@@ -160,7 +154,7 @@ export default function NewsAdminPage() {
               const corte = conLineaPortada && portada.at(-1) === n.id && siguiente !== undefined
               return [
                 fila(n, portada.includes(n.id)),
-                corte && <LineaPortada key="corte" limite={resumen?.portada.limite ?? portada.length} onCambiar={() => setEditandoPortada(true)} />,
+                corte && <LineaPortada key="corte" limite={resumen?.portada.limite ?? portada.length} />,
               ]
             })}
           </Grupo>
@@ -169,34 +163,6 @@ export default function NewsAdminPage() {
     )}
     {meta && items.length > 0 && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="noticias" />}
   </>
-}
-
-function VentanaLimitePortada({ abierto, actual, onCerrar, onGuardado }: { abierto: boolean; actual: number; onCerrar: () => void; onGuardado: (limite: number) => void }) {
-  const [limite, setLimite] = useState(actual)
-  const [guardando, setGuardando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  // Al abrir, se parte de lo que hay guardado.
-  const [abiertoAntes, setAbiertoAntes] = useState(abierto)
-  if (abierto !== abiertoAntes) { setAbiertoAntes(abierto); if (abierto) { setLimite(actual); setError(null) } }
-
-  const guardar = async () => {
-    setGuardando(true)
-    setError(null)
-    try { await setLimitePortada(limite); onGuardado(limite) }
-    catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido cambiar la portada.') }
-    finally { setGuardando(false) }
-  }
-
-  return (
-    <VentanaFormulario abierto={abierto} titulo="Noticias en la portada" sucio={limite !== actual} guardando={guardando} puedeGuardar={limite !== actual} error={error} onGuardar={guardar} onCerrar={onCerrar}>
-      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        La portada de la web enseña las noticias publicadas más recientes. Los borradores no cuentan.
-      </Typography>
-      <TextField select label="Cuántas enseña" value={limite} onChange={(e) => setLimite(Number(e.target.value))} sx={{ maxWidth: 200 }}>
-        {LIMITES_PORTADA.map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
-      </TextField>
-    </VentanaFormulario>
-  )
 }
 
 function Vacio({ hayFiltro, estado, busqueda, onQuitar }: { hayFiltro: boolean; estado: string; busqueda: string; onQuitar: () => void }) {

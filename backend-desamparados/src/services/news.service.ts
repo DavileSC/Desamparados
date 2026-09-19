@@ -6,22 +6,18 @@ import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 import { esImagenPropia, rutaAlEditar } from '../utils/rutas-propias.js';
-import { LIMITE_PORTADA_DEFECTO, LIMITE_PORTADA_MAX, LIMITE_PORTADA_MIN, type EstadoNoticia } from '../schemas/news.schema.js';
+import type { EstadoNoticia } from '../schemas/news.schema.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 
 /**
- * El número de noticias de la portada tal y como está guardado. Un valor que no
- * sea un entero dentro de los topes (un «2.5» guardado antes de que el esquema
- * lo impidiera, o una fila tocada a mano) cae al de por defecto: si llegara al
- * `take` de Prisma, la portada pública daría 500 en cada visita.
+ * Las noticias de la portada: tres, las que caben en su rejilla de tres
+ * columnas (FeaturedNews en el frontend). Antes era un ajuste del CMS de 1 a
+ * 20, pero la portada cortaba en tres de todos modos: con 5, el CMS decía que
+ * salían cinco y salían tres; y si de verdad saliera otro número, la rejilla
+ * quedaría con huecos o una fila coja. Como en Publicaciones y la Agenda, el
+ * número lo pone el diseño de la portada.
  */
-export function limitePortada(valorGuardado: string | null | undefined): number {
-  if (valorGuardado === null || valorGuardado === undefined || valorGuardado.trim() === '') return LIMITE_PORTADA_DEFECTO;
-  const limite = Number(valorGuardado);
-  return Number.isInteger(limite) && limite >= LIMITE_PORTADA_MIN && limite <= LIMITE_PORTADA_MAX
-    ? limite
-    : LIMITE_PORTADA_DEFECTO;
-}
+export const NOTICIAS_EN_PORTADA = 3;
 
 /**
  * Los extractos guardados antes del arreglo llevan entidades («Cultos &amp;
@@ -59,16 +55,12 @@ export class NewsService {
   //  1. FRONTEND: LECTURA PÚBLICA
   // =================================================================
 
-  // Portada: Límite dinámico configurable desde DB
+  // Portada: las NOTICIAS_EN_PORTADA más recientes.
   static async getLatest() {
-    const configLimit = await db.configuracion.findUnique({
-      where: { key: 'home_news_limit' }
-    });
-
     const noticias = await db.noticia.findMany({
       where: { visible: true },
       orderBy: [{ fecha: 'desc' }, { id: 'asc' }],
-      take: limitePortada(configLimit?.value)
+      take: NOTICIAS_EN_PORTADA
     });
     return noticias.map(conExtractoPlano);
   }
@@ -146,7 +138,7 @@ export class NewsService {
       ...condicionBusqueda(q, ['titulo', 'extracto'] as const),
     };
 
-    const [noticias, total, publicadas, borradores, incompletas, configLimit] = await db.$transaction([
+    const [noticias, total, publicadas, borradores, incompletas] = await db.$transaction([
       db.noticia.findMany({
         where,
         orderBy: [{ visible: 'asc' }, { fecha: 'desc' }, { id: 'asc' }],
@@ -157,10 +149,9 @@ export class NewsService {
       db.noticia.count({ where: condicionEstadoNoticia('publicadas') }),
       db.noticia.count({ where: condicionEstadoNoticia('borradores') }),
       db.noticia.count({ where: condicionEstadoNoticia('incompletas') }),
-      db.configuracion.findUnique({ where: { key: 'home_news_limit' } }),
     ]);
 
-    const limite = limitePortada(configLimit?.value);
+    const limite = NOTICIAS_EN_PORTADA;
     const enPortada = await db.noticia.findMany({
       where: { visible: true },
       orderBy: [{ fecha: 'desc' }, { id: 'asc' }],
@@ -256,19 +247,6 @@ export class NewsService {
     const borrada = await db.noticia.delete({ where: { id } });
     await borrarSubidasHuerfanas(subidasEnTexto(noticia.imagenUrl, noticia.contenido));
     return borrada;
-  }
-
-  // Configuración Home
-  static async setHomeLimit(newLimit: number) {
-    return await db.configuracion.upsert({
-      where: { key: 'home_news_limit' },
-      update: { value: String(newLimit) },
-      create: {
-        key: 'home_news_limit',
-        value: String(newLimit),
-        descripcion: 'Número de noticias visibles en la portada'
-      }
-    });
   }
 
   // =================================================================

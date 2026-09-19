@@ -147,25 +147,13 @@ describe('NewsAdminPage', () => {
     expect(await screen.findByText(/noticia publicada/i)).toBeInTheDocument()
   })
 
-  it('cuántas salen en la portada se cambia desde la línea de corte', async () => {
-    const user = userEvent.setup()
-    const simulado = vi.fn().mockImplementation((_url: string, init?: RequestInit) => Promise.resolve(
-      init?.method === 'POST' ? json({ message: 'ok' }) : listado([noticia, antigua]),
-    ))
-    vi.stubGlobal('fetch', simulado)
+  it('la línea de la portada dice cuántas salen y no ofrece cambiarlo', async () => {
+    // Eran de 1 a 20, pero la portada cortaba en tres de todos modos: el CMS
+    // prometía cinco y salían tres. Ahora son tres fijas, como en Publicaciones.
+    responder([noticia, antigua])
     montar()
-
-    await user.click(await screen.findByRole('button', { name: /cambiar cuántas/i }))
-    const ventana = screen.getByRole('dialog', { name: /noticias en la portada/i })
-    await user.click(within(ventana).getByRole('combobox', { name: /cuántas enseña/i }))
-    await user.click(screen.getByRole('option', { name: '4' }))
-    await user.click(within(ventana).getByRole('button', { name: 'Guardar' }))
-
-    await waitFor(() => expect(simulado.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true))
-    const [url, init] = simulado.mock.calls.find(([, i]) => i?.method === 'POST')!
-    expect(String(url)).toContain('/news/limit')
-    expect(JSON.parse(String(init.body))).toEqual({ limit: 4 })
-    expect(await screen.findByText(/la portada enseña ahora las 4 noticias más recientes/i)).toBeInTheDocument()
+    expect(await screen.findByText(/hasta aquí sale en la portada/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /cambiar cuántas/i })).not.toBeInTheDocument()
   })
 
   it('sin resultados lo dice y deja volver a verlas todas', async () => {
