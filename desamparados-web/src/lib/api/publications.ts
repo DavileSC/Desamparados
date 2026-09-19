@@ -11,6 +11,7 @@ export interface ApiPublication {
   fecha: string
   categoria: PublicationItem['category']
   visible: boolean
+  updatedAt?: string
 }
 
 function toPublicationItem(publication: ApiPublication): PublicationItem {
@@ -39,8 +40,25 @@ export async function getPublications(
   return { data: respuesta.data.map(toPublicationItem), meta: respuesta.meta }
 }
 
-export function getAdminPublications(pagina: { pagina: number; porPagina: number }) {
-  return apiFetch<RespuestaPaginada<ApiPublication>>(`/publications/admin?${paramsPagina(pagina)}`)
+export type EstadoPublicacion = 'publicadas' | 'borradores' | 'incompletas'
+
+/** Lo que acompaña al listado del CMS: cifras del tipo elegido y qué sale en la portada. */
+export interface ResumenPublicaciones {
+  publicadas: number
+  borradores: number
+  incompletas: number
+  ultimaPublicacion: string | null
+  /** `ids`: las que la portada enseña ahora, en su orden; `limite`: cuántas enseña (fijo). */
+  portada: { limite: number; ids: number[] }
+}
+
+export function getAdminPublications(
+  pagina: { pagina: number; porPagina: number },
+  filtros: { q?: string; estado?: EstadoPublicacion | ''; categoria?: PublicationItem['category'] | '' } = {},
+) {
+  return apiFetch<RespuestaPaginada<ApiPublication> & { resumen: ResumenPublicaciones }>(
+    `/publications/admin?${paramsPagina(pagina, { q: filtros.q, estado: filtros.estado || undefined, categoria: filtros.categoria || undefined })}`,
+  )
 }
 
 export interface PublicationPayload {

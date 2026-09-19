@@ -4,13 +4,11 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import { subirPdfPublico } from '../../lib/api/upload'
+import { PDF_DE_RELLENO } from './portadaPublicacion'
 
 // El mismo tope que la subida del servidor para los PDF (upload.middleware.ts):
 // se avisa antes de mandar 30 MB para que el servidor los rechace.
 export const MAX_BYTES_PDF = 20 * 1024 * 1024
-
-/** El PDF de relleno de las publicaciones de ejemplo (prisma/seed-contenido.ts). */
-const PDF_DE_RELLENO = '/storage/public/documentos/pendiente.pdf'
 
 // El input queda oculto a la vista pero no a la accesibilidad: lo activa su etiqueta, que es el botón.
 const inputOculto = {
@@ -28,6 +26,8 @@ interface CampoPdfProps {
   onCambio: (ruta: string) => void
   etiqueta?: string
   ayuda?: string
+  /** Archivo arriba y botones debajo: para una columna estrecha, como la lateral de la ficha de publicación. */
+  apilada?: boolean
 }
 
 const esPdf = (archivo: File) => archivo.type === 'application/pdf' || /\.pdf$/i.test(archivo.name)
@@ -42,6 +42,7 @@ export default function CampoPdf({
   onCambio,
   etiqueta = 'Archivo PDF',
   ayuda = 'PDF de hasta 20 MB. Es lo que se descarga desde la web.',
+  apilada = false,
 }: CampoPdfProps) {
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,8 +86,8 @@ export default function CampoPdf({
   return (
     <Box role="group" aria-labelledby={idEtiqueta}>
       <Typography id={idEtiqueta} variant="subtitle2" sx={{ mb: 1 }}>{etiqueta}</Typography>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0, flex: { sm: 1 } }}>
+      <Stack direction={apilada ? 'column' : { xs: 'column', sm: 'row' }} spacing={apilada ? 1.5 : 2} sx={{ alignItems: apilada ? 'stretch' : { sm: 'center' } }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0, flex: apilada ? undefined : { sm: 1 } }}>
           <PictureAsPdfOutlinedIcon color={valor ? 'error' : 'disabled'} />
           {valor ? (
             <Box sx={{ minWidth: 0 }}>
@@ -97,7 +98,7 @@ export default function CampoPdf({
             <Typography variant="body2" color="text.secondary">Sin PDF</Typography>
           )}
         </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
           <Button
             component="label"
             variant="outlined"

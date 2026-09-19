@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fechaCorta, haceCuanto, piezasDeNoticia, queLeFalta, tieneTexto } from '../completitud'
+import { fechaCorta, haceCuanto, piezasDeNoticia, piezasDePublicacion, queLeFalta, tieneTexto } from '../completitud'
 
 const completa = { titulo: 'Cultos de octubre', extracto: 'Triduo y función.', contenido: '<p>Texto</p>', imagenUrl: '/storage/public/cultos.jpg' }
 const faltan = (noticia: Parameters<typeof piezasDeNoticia>[0]) => piezasDeNoticia(noticia).filter((p) => !p.lista).map((p) => p.clave)
@@ -70,5 +70,22 @@ describe('fechaCorta', () => {
   it('siempre tres letras para el mes, como la tarjeta pública', () => {
     expect(fechaCorta('2026-09-14T10:00:00')).toBe('14 sep 2026')
     expect(fechaCorta('2026-02-01T10:00:00')).toBe('1 feb 2026')
+  })
+})
+
+describe('piezasDePublicacion', () => {
+  const lista = { titulo: 'Boletín n.º 12', descripcion: 'Crónica del curso.', archivoUrl: '/storage/public/0123456789abcdef0123456789abcdef.pdf', imagenUrl: '/storage/public/b.jpg' }
+  const faltanPub = (p: Parameters<typeof piezasDePublicacion>[0]) => piezasDePublicacion(p).filter((x) => !x.lista).map((x) => x.clave)
+
+  it('una publicación completa no echa nada de menos', () => {
+    expect(queLeFalta(piezasDePublicacion(lista))).toBe('Lista para publicar')
+  })
+
+  it('el PDF de relleno del seed cuenta como sin PDF', () => {
+    expect(faltanPub({ ...lista, archivoUrl: '/storage/public/documentos/pendiente.pdf' })).toEqual(['pdf'])
+  })
+
+  it('sin descripción ni portada lo dice como se diría', () => {
+    expect(queLeFalta(piezasDePublicacion({ ...lista, descripcion: null, imagenUrl: null }))).toBe('Le faltan la descripción y la portada')
   })
 })

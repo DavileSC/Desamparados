@@ -19,3 +19,11 @@ export interface UpdatePublicationDto {
   categoria?: TipoPublicacion;
   visible?: boolean;
 }
+
+export interface AdminPublicationFilterDto {
+  page?: unknown;
+  limit?: unknown;
+  q?: string; // Palabras que buscar en el título y la descripción
+  estado?: 'publicadas' | 'borradores' | 'incompletas';
+  categoria?: TipoPublicacion;
+}

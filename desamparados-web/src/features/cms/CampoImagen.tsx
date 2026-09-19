@@ -40,6 +40,8 @@ interface CampoImagenProps {
   sinQuitar?: boolean
   /** Foto a todo el ancho y botones debajo: para una columna estrecha, como la lateral de la ficha de noticia. */
   apilada?: boolean
+  /** Con `apilada`: una portada en vertical (3:4), centrada y no a todo el ancho. */
+  vertical?: boolean
 }
 
 /** Sube una foto al servidor desde el CMS y entrega su ruta al formulario. */
@@ -53,12 +55,13 @@ export default function CampoImagen({
   apaisada = false,
   sinQuitar = false,
   apilada = false,
+  vertical = false,
 }: CampoImagenProps) {
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const idEtiqueta = useId()
   const miniatura = apilada
-    ? { width: '100%', aspectRatio: '4 / 3' }
+    ? vertical ? { width: 168, maxWidth: '100%', aspectRatio: '3 / 4', alignSelf: 'center' } : { width: '100%', aspectRatio: '4 / 3' }
     : apaisada ? { width: 224, aspectRatio: '16 / 9' } : { width: 160, aspectRatio: '4 / 3' }
 
   const elegir = async (evento: ChangeEvent<HTMLInputElement>) => {
@@ -96,7 +99,7 @@ export default function CampoImagen({
             Sin foto
           </Box>
         )}
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
           <Button
             component="label"
             variant="outlined"

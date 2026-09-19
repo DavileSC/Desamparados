@@ -236,7 +236,7 @@ export default function AccountingAdminPage() {
         </Box>
       </>}
 
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', rowGap: 1.5 }}>
+      <Stack direction="row" spacing={2} useFlexGap sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', rowGap: 1.5 }}>
         <Typography variant="h4" component="h2">Libro de caja</Typography>
         <TextField
           select

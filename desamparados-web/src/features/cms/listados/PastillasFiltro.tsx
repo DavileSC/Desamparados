@@ -18,7 +18,7 @@ interface Props {
 export default function PastillasFiltro({ pastillas, onQuitarTodas }: Props) {
   if (pastillas.length === 0) return null
   return (
-    <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}>
+    <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 1.5, flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}>
       {/* Pastilla propia y no Chip: el aspa del Chip no es un botón para el lector de pantalla. */}
       {pastillas.map((p) => (
         <Box key={p.nombre} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, pl: 1.5, pr: 0.25, borderRadius: 999, backgroundColor: 'action.selected', fontSize: 13 }}>

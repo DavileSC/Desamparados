@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, MenuItem, Paper, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Alert, Button, CircularProgress, MenuItem, Paper, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Link, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -11,10 +10,9 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import CampoBusqueda from './listados/CampoBusqueda'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
-import FilaNoticia from './noticias/FilaNoticia'
-import { REJILLA_FILA } from './noticias/rejilla'
-import { haceCuanto } from './noticias/completitud'
-import { useTemaCms } from '../../app/temaCms'
+import FilaRedaccion from './redaccion/FilaRedaccion'
+import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion } from './redaccion/Listado'
+import { piezasDeNoticia } from './redaccion/completitud'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
 import { deleteNews, getAdminNews, setLimitePortada, updateNews, type ApiNews, type EstadoNoticia, type ResumenNoticias } from '../../lib/api/news'
 import { usePaginacion } from '../../hooks/usePaginacion'
@@ -108,10 +106,21 @@ export default function NewsAdminPage() {
   const borradores = items.filter((n) => !n.visible)
   const publicadas = items.filter((n) => n.visible)
   const hayFiltro = Boolean(filtros.q || filtros.estado)
+  const fila = (noticia: ApiNews, enPortada: boolean) => (
+    <FilaRedaccion
+      key={noticia.id}
+      titulo={noticia.titulo} visible={noticia.visible} fecha={noticia.fecha} editadaEl={noticia.updatedAt}
+      imagenUrl={noticia.imagenUrl} enPortada={enPortada}
+      piezas={piezasDeNoticia(noticia)} avisos={{ foto: 'Sin foto', extracto: 'Sin extracto' }} resumen={noticia.extracto}
+      editar={`/cms/noticias/${noticia.id}/editar`} volver={consultaListado}
+      enLaWeb={{ href: `/actualidad/noticias/${noticia.slug}`, texto: 'Ver en la web' }}
+      onCambiarVisible={() => setPorCambiar(noticia)} onBorrar={() => setPorBorrar(noticia)}
+    />
+  )
 
   return <>
     <Helmet><title>Noticias | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion titulo="Noticias" subtitulo={resumen && <Resumen resumen={resumen} />}>
+    <CabeceraSeccion titulo="Noticias" subtitulo={resumen && <ResumenRedaccion cifras={resumen} />}>
       <Button variant="outlined" color="inherit" startIcon={<OpenInNewIcon />} href="/actualidad/noticias" target="_blank" rel="noopener" sx={{ borderColor: 'divider' }}>Ver en la web</Button>
       <Button variant="contained" startIcon={<AddIcon />} component={Link} to="/cms/noticias/nueva" state={{ volver: consultaListado }}>Nueva noticia</Button>
     </CabeceraSeccion>
@@ -120,26 +129,7 @@ export default function NewsAdminPage() {
 
     <Paper sx={{ p: 2, mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
       <CampoBusqueda etiqueta="Buscar" placeholder="En el título o el extracto" valor={filtros.q} onCambiar={(q) => cambiarFiltros({ q })} sx={{ flex: '2 1 260px' }} />
-      {/* Con los contadores no caben en un móvil: ahí se parten en botones sueltos, para que ninguno quede escondido. */}
-      <ToggleButtonGroup
-          exclusive
-          size="small"
-          aria-label="Qué noticias ver"
-          value={filtros.estado}
-          onChange={(_, estado: string | null) => { if (estado !== null) cambiarFiltros({ estado }) }}
-          sx={(tema) => ({
-            '& .MuiToggleButton-root': { textTransform: 'none', px: 1.5, gap: 0.75, whiteSpace: 'nowrap' },
-            [tema.breakpoints.down('sm')]: {
-              flexWrap: 'wrap', gap: 0.75,
-              '& .MuiToggleButtonGroup-grouped': { m: 0, border: 1, borderColor: 'divider', borderRadius: 1 },
-            },
-          })}
-        >
-          <ToggleButton value="">Todas<Cifra n={resumen ? resumen.publicadas + resumen.borradores : undefined} /></ToggleButton>
-          <ToggleButton value="publicadas">Publicadas<Cifra n={resumen?.publicadas} /></ToggleButton>
-          <ToggleButton value="borradores">Borradores<Cifra n={resumen?.borradores} /></ToggleButton>
-          <ToggleButton value="incompletas">Incompletas<Cifra n={resumen?.incompletas} /></ToggleButton>
-        </ToggleButtonGroup>
+      <FiltroEstado etiqueta="Qué noticias ver" valor={filtros.estado} cifras={resumen} onCambiar={(estado) => cambiarFiltros({ estado })} />
     </Paper>
 
     <VentanaLimitePortada abierto={editandoPortada} actual={resumen?.portada.limite ?? 3} onCerrar={() => setEditandoPortada(false)} onGuardado={(limite) => { setEditandoPortada(false); setNotice(`La portada enseña ahora ${limite === 1 ? 'la noticia más reciente' : `las ${limite} noticias más recientes`}.`); void recargar() }} />
@@ -147,7 +137,7 @@ export default function NewsAdminPage() {
     <DialogoConfirmacion
       abierto={porCambiar !== null}
       titulo={porCambiar?.visible ? '¿Pasar la noticia a borrador?' : '¿Publicar la noticia?'}
-      mensaje={porCambiar ? `${porCambiar.titulo}. ${porCambiar.visible ? 'Dejará de verse en la web y en la portada.' : 'Se verá en la web al momento.'}` : ''}
+      mensaje={porCambiar ? `${porCambiar.titulo}. ${porCambiar.visible ? `Dejará de verse en la web${portada.includes(porCambiar.id) ? ' y en la portada' : ''}.` : 'Se verá en la web al momento.'}` : ''}
       textoConfirmar={porCambiar?.visible ? 'Pasar a borrador' : 'Publicar'}
       onConfirmar={() => void cambiarVisible()}
       onCancelar={() => setPorCambiar(null)}
@@ -157,12 +147,10 @@ export default function NewsAdminPage() {
       <Vacio hayFiltro={hayFiltro} estado={filtros.estado} busqueda={filtros.q} onQuitar={() => cambiarFiltros({ q: '', estado: '' })} />
     ) : (
       <Paper sx={{ overflow: 'hidden' }}>
-        <Box aria-hidden="true" sx={{ ...REJILLA_FILA, display: { xs: 'none', md: 'grid' }, px: 2.5, py: 1.25, gridTemplateAreas: undefined, '& span': { fontSize: 11.5, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary' } }}>
-          <span /><span>Noticia</span><span>Estado</span><span>Fecha</span><span />
-        </Box>
+        <CabeceraColumnas nombre="Noticia" />
         {borradores.length > 0 && (
           <Grupo titulo="En preparación" cifra={filtros.estado === '' && !filtros.q ? resumen?.borradores : undefined}>
-            {borradores.map((n) => <FilaNoticia key={n.id} noticia={n} enPortada={false} volver={consultaListado} onCambiarVisible={setPorCambiar} onBorrar={setPorBorrar} />)}
+            {borradores.map((n) => fila(n, false))}
           </Grupo>
         )}
         {publicadas.length > 0 && (
@@ -171,7 +159,7 @@ export default function NewsAdminPage() {
               const siguiente = publicadas[i + 1]
               const corte = conLineaPortada && portada.at(-1) === n.id && siguiente !== undefined
               return [
-                <FilaNoticia key={n.id} noticia={n} enPortada={portada.includes(n.id)} volver={consultaListado} onCambiarVisible={setPorCambiar} onBorrar={setPorBorrar} />,
+                fila(n, portada.includes(n.id)),
                 corte && <LineaPortada key="corte" limite={resumen?.portada.limite ?? portada.length} onCambiar={() => setEditandoPortada(true)} />,
               ]
             })}
@@ -181,44 +169,6 @@ export default function NewsAdminPage() {
     )}
     {meta && items.length > 0 && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="noticias" />}
   </>
-}
-
-/** «40 publicadas · 3 borradores · la última salió hace 7 días». */
-function Resumen({ resumen }: { resumen: ResumenNoticias }) {
-  const partes = [
-    `${resumen.publicadas} ${resumen.publicadas === 1 ? 'publicada' : 'publicadas'}`,
-    `${resumen.borradores} ${resumen.borradores === 1 ? 'borrador' : 'borradores'}`,
-  ]
-  if (resumen.ultimaPublicacion) partes.push(`la última salió ${haceCuanto(resumen.ultimaPublicacion)}`)
-  return <>{partes.join(' · ')}</>
-}
-
-function Cifra({ n }: { n?: number }) {
-  if (n === undefined) return null
-  return <Box component="span" sx={{ opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>{n}</Box>
-}
-
-function Grupo({ titulo, cifra, children }: { titulo: string; cifra?: number; children: React.ReactNode }) {
-  return (
-    <Box component="section">
-      <Typography component="h2" sx={{ px: { xs: 2, md: 2.5 }, py: 0.75, fontSize: 11.5, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', backgroundColor: 'action.hover', borderTop: 1, borderColor: 'divider' }}>
-        {titulo}{cifra !== undefined && ` · ${cifra}`}
-      </Typography>
-      <Box component="ul" sx={{ m: 0, p: 0 }}>{children}</Box>
-    </Box>
-  )
-}
-
-/** La raya bajo la última noticia que sale en la portada. */
-function LineaPortada({ limite, onCambiar }: { limite: number; onCambiar: () => void }) {
-  const { superficies } = useTemaCms()
-  return (
-    <Box component="li" sx={{ listStyle: 'none', display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', px: { xs: 2, md: 2.5 }, py: 0.5, borderTop: '1.5px dashed', borderColor: superficies.enlace, color: superficies.enlace, fontSize: 12.5, '& svg': { fontSize: 16 } }}>
-      <HomeOutlinedIcon aria-hidden="true" />
-      <span>Hasta aquí sale en la portada: {limite === 1 ? 'la más reciente' : `las ${limite} más recientes`}.</span>
-      <Button size="small" onClick={onCambiar} sx={{ color: 'inherit', minWidth: 0, px: 0.75, fontSize: 12.5, textDecoration: 'underline' }}>Cambiar cuántas</Button>
-    </Box>
-  )
 }
 
 function VentanaLimitePortada({ abierto, actual, onCerrar, onGuardado }: { abierto: boolean; actual: number; onCerrar: () => void; onGuardado: (limite: number) => void }) {

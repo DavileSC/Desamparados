@@ -25,6 +25,21 @@ const pdfAlEditar = type('string').pipe(normalizarPdf);
 // siempre la primera página.
 export const categoryParamSchema = type({ params: { category: categorySchema }, query: { ...paginacionQuery } });
 export const publicationListQuerySchema = type({ query: { ...paginacionQuery } });
+
+// Los apartados del listado del CMS. «Incompletas» son las que salen cojas en la
+// web (sin portada o sin descripción), estén publicadas o no.
+export const ESTADOS_PUBLICACION = ['publicadas', 'borradores', 'incompletas'] as const;
+export type EstadoPublicacion = (typeof ESTADOS_PUBLICACION)[number];
+
+// Listado del CMS: búsqueda por palabras, apartado, tipo y página.
+export const adminPublicationQuerySchema = type({
+  query: {
+    'q?': 'string <= 100',
+    'estado?': "'publicadas' | 'borradores' | 'incompletas'",
+    'categoria?': categorySchema,
+    ...paginacionQuery,
+  },
+});
 export const createPublicationSchema = type({
   body: {
     titulo: textoRequerido,

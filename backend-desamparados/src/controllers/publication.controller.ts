@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PublicationService } from '../services/publication.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
+import type { AdminPublicationFilterDto } from '../dtos/publication.dto.js';
 
 export class PublicationController {
   static async latest(_req: Request, res: Response) {
@@ -15,8 +16,12 @@ export class PublicationController {
     catch (e) { handleHttp(res, e, 'Error obteniendo publicaciones'); }
   }
 
+  // La query ya viene validada por adminPublicationQuerySchema.
   static async adminList(req: Request, res: Response) {
-    try { res.status(200).json(await PublicationService.getAdmin(req.query)); }
+    try {
+      const { page, limit, q, estado, categoria } = req.query as AdminPublicationFilterDto;
+      res.status(200).json(await PublicationService.getAdmin({ page, limit, q, estado, categoria }));
+    }
     catch (e) { handleHttp(res, e, 'Error obteniendo publicaciones'); }
   }
 
