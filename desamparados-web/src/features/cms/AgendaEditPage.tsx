@@ -1,18 +1,18 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, MenuItem, Paper, Radio, RadioGroup, Stack, TextField, Typography } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Helmet } from 'react-helmet-async'
-import { Link, useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom'
-import DialogoConfirmacion from '../../components/DialogoConfirmacion'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import AgendaList from '../home/AgendaList'
 import { PAPEL } from '../home/estilos'
 import temaPublico from '../../theme'
 import { ANCHO_EDICION } from './PantallaEdicion'
+import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
+import { useFichaCms } from './ficha/useFichaCms'
 import PuntoTipo from './agenda/PuntoTipo'
 import { TIPOS_EVENTO } from './agenda/tiposEvento'
 import { haceCuanto } from './redaccion/completitud'
-import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { createEvent, getEvent, updateEvent, type ApiEvent, type EventPayload } from '../../lib/api/events'
 
 /** El formulario: día y hora por separado, que es como se piensa un acto. */
@@ -64,42 +64,26 @@ export default function AgendaEditPage() {
   const nuevo = id === undefined
   const { state } = useLocation()
   const copiaDe = nuevo ? (state as { copiaDe?: unknown } | null)?.copiaDe : undefined
-  const navegar = useNavigate()
-  // El listado del que se vino, con su página y sus filtros: el enlace de editar
-  // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
-  const volverAlListado = useVolverAlListado('/cms/agenda')
-  const [guardado, setGuardado] = useState<ApiEvent | null>(null)
-  const [original, setOriginal] = useState<string | null>(null)
-  const [form, setForm] = useState<Formulario | null>(nuevo && typeof copiaDe !== 'number' ? vacio : null)
-  const [inicial, setInicial] = useState<Formulario | null>(form)
-  const [error, setError] = useState<string | null>(null)
-  const [guardando, setGuardando] = useState(false)
-
-  useEffect(() => {
-    const origen = nuevo ? copiaDe : Number(id)
-    if (typeof origen !== 'number') return
-    getEvent(origen)
-      .then((evento) => {
-        const datos = desdeEvento(evento)
-        if (nuevo) setOriginal(evento.title)
-        else setGuardado(evento)
-        setForm(datos); setInicial(datos)
-      })
-      .catch(() => {
-        if (nuevo) { setForm(vacio); setInicial(vacio); setError('No se ha podido cargar el evento que duplicar: empieza uno en blanco.') }
-        else setError('No se ha podido cargar el evento.')
-      })
-  }, [id, nuevo, copiaDe])
-
-  const sucio = JSON.stringify(form) !== JSON.stringify(inicial)
-  // `guardando` fuera del bloqueo: al guardar se navega al listado con el
-  // formulario aún distinto del cargado, y no hay nada que perder.
-  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sucio && !guardando && currentLocation.pathname !== nextLocation.pathname)
+  const { cargado, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, setForm, guardar: guardarFicha } =
+    useFichaCms<ApiEvent, Formulario>({
+      listado: '/cms/agenda',
+      origen: nuevo ? (typeof copiaDe === 'number' ? copiaDe : null) : Number(id),
+      cargar: getEvent,
+      aFormulario: desdeEvento,
+      vacio,
+      errorAlCargar: nuevo
+        ? 'No se ha podido cargar el evento que duplicar: empieza uno en blanco.'
+        : 'No se ha podido cargar el evento.',
+      comoCopia: nuevo,
+    })
+  // Al duplicar, lo cargado no es esta ficha sino el acto del que sale: da el
+  // punto de partida y su título para decirlo, pero la ficha nace sin guardar.
+  const guardado = nuevo ? null : cargado
+  const original = nuevo ? cargado?.title ?? null : null
 
   if (error && !form) return <Alert severity="error">{error}</Alert>
   if (!form || !inicial) return <CircularProgress aria-label="Cargando el evento" />
 
-  const campo = <K extends keyof Formulario>(clave: K, valor: Formulario[K]) => setForm((actual) => (actual ? { ...actual, [clave]: valor } : actual))
   const inicio = momento(form.dia, form.hora)
   const fin = form.conFin ? momento(form.diaFin || form.dia, form.horaFin) : null
   const finAntes = Boolean(inicio && fin && fin < inicio)
@@ -114,28 +98,23 @@ export default function AgendaEditPage() {
 
   const guardar = async () => {
     if (!inicio) return
-    setGuardando(true)
-    setError(null)
     const payload: EventPayload = {
       title: form.title.trim(), description: form.description, location: form.location,
       type: form.type, visibility: form.visibility,
       startDate: inicio.toISOString(),
       endDate: fin ? fin.toISOString() : null,
     }
-    try {
-      if (nuevo) await createEvent(payload)
-      else await updateEvent(Number(id), payload)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se ha podido guardar el evento.')
-      setGuardando(false)
-      return
-    }
-    const aviso = yaPaso
-      ? 'Guardado. Su fecha ya ha pasado: lo tienes en «Pasados» y no sale en la web.'
-      : nuevo
-        ? (publico ? 'Añadido a la agenda: ya se ve en la web.' : 'Añadido a la agenda: lo ven los hermanos al entrar con su cuenta.')
-        : (publico ? 'Cambios guardados: ya se ven en la web.' : 'Cambios guardados: ya los ven los hermanos.')
-    navegar(volverAlListado, { state: { aviso } })
+    await guardarFicha(
+      () => (nuevo ? createEvent(payload) : updateEvent(Number(id), payload)),
+      {
+        siFalla: 'No se ha podido guardar el evento.',
+        aviso: yaPaso
+          ? 'Guardado. Su fecha ya ha pasado: lo tienes en «Pasados» y no sale en la web.'
+          : nuevo
+            ? (publico ? 'Añadido a la agenda: ya se ve en la web.' : 'Añadido a la agenda: lo ven los hermanos al entrar con su cuenta.')
+            : (publico ? 'Cambios guardados: ya se ven en la web.' : 'Cambios guardados: ya los ven los hermanos.'),
+      },
+    )
   }
 
   const titulo = nuevo ? 'Nuevo evento' : (guardado?.title ?? form.title)
@@ -272,16 +251,7 @@ export default function AgendaEditPage() {
         </Box>
       </Box>
 
-      <DialogoConfirmacion
-        abierto={bloqueo.state === 'blocked'}
-        titulo="Hay cambios sin guardar"
-        mensaje="Si sales ahora se van a perder los cambios que has hecho en este evento."
-        textoConfirmar="Salir sin guardar"
-        textoCancelar="Seguir editando"
-        peligro
-        onConfirmar={() => bloqueo.proceed?.()}
-        onCancelar={() => bloqueo.reset?.()}
-      />
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="este evento" />
       <Box sx={{ height: 24 }} />
     </>
   )

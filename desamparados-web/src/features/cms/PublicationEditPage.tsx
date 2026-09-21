@@ -1,19 +1,20 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Alert, Box, Button, CircularProgress, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Helmet } from 'react-helmet-async'
-import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import PublicationCard from '../../components/PublicationCard'
 import temaPublico from '../../theme'
 import { ANCHO_EDICION } from './PantallaEdicion'
+import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
+import { useFichaCms } from './ficha/useFichaCms'
 import CampoImagen from './CampoImagen'
 import CampoPdf from './CampoPdf'
 import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDePublicacion } from './redaccion/completitud'
 import { AYUDA_PDF, AYUDA_PORTADA, ETIQUETA_PORTADA, TIPOS_PUBLICACION } from './portadaPublicacion'
-import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { createPublication, getAdminPublicationById, updatePublication, type ApiPublication, type PublicationPayload } from '../../lib/api/publications'
 
 type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
@@ -43,47 +44,29 @@ const hoy = () => {
 export default function PublicationEditPage() {
   const { id } = useParams()
   const nueva = id === undefined
-  const navegar = useNavigate()
-  // El listado del que se vino, con su página y sus filtros: el enlace de editar
-  // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
-  const volverAlListado = useVolverAlListado('/cms/publicaciones')
-  const [guardada, setGuardada] = useState<ApiPublication | null>(null)
-  const [form, setForm] = useState<PublicationPayload | null>(nueva ? vacia() : null)
-  const [inicial, setInicial] = useState<PublicationPayload | null>(form)
-  const [error, setError] = useState<string | null>(null)
-  const [guardando, setGuardando] = useState(false)
   const [confirmando, setConfirmando] = useState<Accion | null>(null)
-
-  useEffect(() => {
-    if (nueva) return
-    getAdminPublicationById(Number(id))
-      .then((item) => {
-        const datos: PublicationPayload = {
-          titulo: item.titulo, descripcion: item.descripcion ?? '', imagenUrl: item.imagenUrl ?? '',
-          archivoUrl: item.archivoUrl, categoria: item.categoria, visible: item.visible, fecha: item.fecha.slice(0, 10),
-        }
-        setGuardada(item); setForm(datos); setInicial(datos)
-      })
-      .catch(() => setError('No se ha podido cargar la publicación.'))
-  }, [id, nueva])
-
-  const sucio = JSON.stringify(form) !== JSON.stringify(inicial)
-  // `guardando` fuera del bloqueo: al guardar se navega al listado con el
-  // formulario aún distinto del cargado, y no hay nada que perder.
-  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sucio && !guardando && currentLocation.pathname !== nextLocation.pathname)
+  const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, guardar: guardarFicha } =
+    useFichaCms<ApiPublication, PublicationPayload>({
+      listado: '/cms/publicaciones',
+      origen: nueva ? null : Number(id),
+      cargar: getAdminPublicationById,
+      aFormulario: (item) => ({
+        titulo: item.titulo, descripcion: item.descripcion ?? '', imagenUrl: item.imagenUrl ?? '',
+        archivoUrl: item.archivoUrl, categoria: item.categoria, visible: item.visible, fecha: item.fecha.slice(0, 10),
+      }),
+      vacio: vacia(),
+      errorAlCargar: 'No se ha podido cargar la publicación.',
+    })
 
   if (error && !form) return <Alert severity="error">{error}</Alert>
   if (!form || !inicial) return <CircularProgress aria-label="Cargando la publicación" />
 
-  const campo = (clave: keyof PublicationPayload, valor: string | boolean) => setForm((actual) => (actual ? { ...actual, [clave]: valor } : actual))
   const publicada = !nueva && inicial.visible
   const falta = [form.titulo.trim() === '' && 'el título', !form.archivoUrl && 'el PDF'].filter(Boolean) as string[]
   const sePuedeGuardar = falta.length === 0
 
   const guardar = async (accion: Accion) => {
     setConfirmando(null)
-    setGuardando(true)
-    setError(null)
     const payload: PublicationPayload = {
       ...form,
       visible: accion === 'publicar' || accion === 'guardar',
@@ -91,21 +74,18 @@ export default function PublicationEditPage() {
       // pone el momento de guardar, con su hora, y el orden del día se respeta.
       fecha: nueva && form.fecha === inicial.fecha ? undefined : form.fecha,
     }
-    try {
-      if (nueva) await createPublication(payload)
-      else await updatePublication(Number(id), payload)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se ha podido guardar la publicación.')
-      setGuardando(false)
-      return
-    }
-    const aviso = {
-      borrador: 'Borrador guardado. No se ve en la web hasta que se publique.',
-      publicar: 'Publicada: ya se puede descargar desde la web.',
-      guardar: 'Cambios guardados: ya se ven en la web.',
-      despublicar: 'Pasada a borrador: ya no se ve en la web.',
-    }[accion]
-    navegar(volverAlListado, { state: { aviso } })
+    await guardarFicha(
+      () => (nueva ? createPublication(payload) : updatePublication(Number(id), payload)),
+      {
+        siFalla: 'No se ha podido guardar la publicación.',
+        aviso: {
+          borrador: 'Borrador guardado. No se ve en la web hasta que se publique.',
+          publicar: 'Publicada: ya se puede descargar desde la web.',
+          guardar: 'Cambios guardados: ya se ven en la web.',
+          despublicar: 'Pasada a borrador: ya no se ve en la web.',
+        }[accion],
+      },
+    )
   }
 
   // Guardar un borrador no se ve fuera: va directo. Lo demás cambia la web y se confirma.
@@ -174,7 +154,7 @@ export default function PublicationEditPage() {
                   minRows={3}
                   helperText="Lo que se lee bajo el título en la portada y en el listado de publicaciones: qué trae este número."
                 />
-                <TextField select label="Tipo" value={form.categoria} onChange={(e) => campo('categoria', e.target.value)} sx={{ maxWidth: 280 }}>
+                <TextField select label="Tipo" value={form.categoria} onChange={(e) => campo('categoria', e.target.value as PublicationPayload['categoria'])} sx={{ maxWidth: 280 }}>
                   {TIPOS_PUBLICACION.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
                 </TextField>
               </Stack>
@@ -248,16 +228,7 @@ export default function PublicationEditPage() {
         onConfirmar={() => { if (confirmando) void guardar(confirmando) }}
         onCancelar={() => setConfirmando(null)}
       />
-      <DialogoConfirmacion
-        abierto={bloqueo.state === 'blocked'}
-        titulo="Hay cambios sin guardar"
-        mensaje="Si sales ahora se van a perder los cambios que has hecho en esta publicación."
-        textoConfirmar="Salir sin guardar"
-        textoCancelar="Seguir editando"
-        peligro
-        onConfirmar={() => bloqueo.proceed?.()}
-        onCancelar={() => bloqueo.reset?.()}
-      />
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="esta publicación" />
       <Box sx={{ height: 24 }} />
     </>
   )

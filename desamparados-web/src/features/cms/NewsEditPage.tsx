@@ -1,21 +1,22 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Alert, Box, Button, CircularProgress, Paper, Stack, TextField, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Helmet } from 'react-helmet-async'
-import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import NewsCard from '../../components/NewsCard'
 import { ANCHO_EDICION } from './PantallaEdicion'
+import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
+import { useFichaCms } from './ficha/useFichaCms'
 import CampoImagen from './CampoImagen'
 import EditorTexto from './EditorTexto'
 import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDeNoticia, tieneTexto } from './redaccion/completitud'
 import { useTemaCms } from '../../app/temaCms'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { createNews, getAdminNewsById, updateNews, type ApiNews, type NewsPayload } from '../../lib/api/news'
 
 /** Lo que cabe en las tres líneas de la tarjeta de la portada; pasarse no impide guardar. */
@@ -50,52 +51,33 @@ function direccionAutomatica(titulo: string, fecha: string) {
 export default function NewsEditPage() {
   const { id } = useParams()
   const nueva = id === undefined
-  const navegar = useNavigate()
   const queryClient = useQueryClient()
-  // El listado del que se vino, con su página y sus filtros: el enlace de editar
-  // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
-  const volverAlListado = useVolverAlListado('/cms/noticias')
-  const [guardada, setGuardada] = useState<ApiNews | null>(null)
-  const [form, setForm] = useState<NewsPayload | null>(nueva ? vacia() : null)
-  const [inicial, setInicial] = useState<NewsPayload | null>(form)
-  const [error, setError] = useState<string | null>(null)
-  const [guardando, setGuardando] = useState(false)
   const [confirmando, setConfirmando] = useState<Accion | null>(null)
-
-  useEffect(() => {
-    if (nueva) return
-    getAdminNewsById(Number(id))
-      .then((item) => {
-        const datos: NewsPayload = {
-          titulo: item.titulo, contenido: item.contenido, extracto: item.extracto ?? '',
-          imagenUrl: item.imagenUrl ?? '', visible: item.visible, fecha: item.fecha.slice(0, 10), slug: item.slug,
-        }
-        setGuardada(item); setForm(datos); setInicial(datos)
-      })
-      .catch(() => setError('No se ha podido cargar la noticia.'))
-  }, [id, nueva])
-
-  const sucio = JSON.stringify(form) !== JSON.stringify(inicial)
-  // `guardando` fuera del bloqueo: al guardar se navega al listado con el
-  // formulario aún distinto del cargado, y no hay nada que perder.
-  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sucio && !guardando && currentLocation.pathname !== nextLocation.pathname)
+  const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, guardar: guardarFicha } =
+    useFichaCms<ApiNews, NewsPayload>({
+      listado: '/cms/noticias',
+      origen: nueva ? null : Number(id),
+      cargar: getAdminNewsById,
+      aFormulario: (item) => ({
+        titulo: item.titulo, contenido: item.contenido, extracto: item.extracto ?? '',
+        imagenUrl: item.imagenUrl ?? '', visible: item.visible, fecha: item.fecha.slice(0, 10), slug: item.slug,
+      }),
+      vacio: vacia(),
+      errorAlCargar: 'No se ha podido cargar la noticia.',
+    })
 
   if (error && !form) return <Alert severity="error">{error}</Alert>
   if (!form || !inicial) return <CircularProgress aria-label="Cargando la noticia" />
 
-  const campo = (clave: keyof NewsPayload, valor: string | boolean) => setForm((actual) => (actual ? { ...actual, [clave]: valor } : actual))
   const publicada = !nueva && inicial.visible
   const conTitulo = form.titulo.trim() !== ''
   const conTexto = tieneTexto(form.contenido)
 
   const guardar = async (accion: Accion) => {
     setConfirmando(null)
-    setGuardando(true)
-    setError(null)
-    const visible = accion === 'publicar' || accion === 'guardar'
     const payload: NewsPayload = {
       ...form,
-      visible,
+      visible: accion === 'publicar' || accion === 'guardar',
       // El esquema pide contenido no vacío; un borrador puede no tener texto aún.
       contenido: form.contenido || '<p></p>',
       // En una nueva, la fecha solo se manda si se ha tocado: si no, el servidor
@@ -103,23 +85,23 @@ export default function NewsEditPage() {
       fecha: nueva && form.fecha === inicial.fecha ? undefined : form.fecha,
       slug: form.slug?.trim() || undefined,
     }
-    try {
-      if (nueva) await createNews(payload)
-      else await updateNews(Number(id), payload)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se ha podido guardar la noticia.')
-      setGuardando(false)
-      return
-    }
-    // El contador de borradores del menú sale del panel del Inicio.
-    void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
-    const aviso = {
-      borrador: 'Borrador guardado. No se ve en la web hasta que se publique.',
-      publicar: 'Noticia publicada: ya se ve en la web.',
-      guardar: 'Cambios guardados: ya se ven en la web.',
-      despublicar: 'Noticia pasada a borrador: ya no se ve en la web.',
-    }[accion]
-    navegar(volverAlListado, { state: { aviso } })
+    await guardarFicha(
+      async () => {
+        if (nueva) await createNews(payload)
+        else await updateNews(Number(id), payload)
+        // El contador de borradores del menú sale del panel del Inicio.
+        void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
+      },
+      {
+        siFalla: 'No se ha podido guardar la noticia.',
+        aviso: {
+          borrador: 'Borrador guardado. No se ve en la web hasta que se publique.',
+          publicar: 'Noticia publicada: ya se ve en la web.',
+          guardar: 'Cambios guardados: ya se ven en la web.',
+          despublicar: 'Noticia pasada a borrador: ya no se ve en la web.',
+        }[accion],
+      },
+    )
   }
 
   // Guardar un borrador no se ve fuera: va directo. Lo demás cambia la web y se confirma.
@@ -252,16 +234,7 @@ export default function NewsEditPage() {
         onConfirmar={() => { if (confirmando) void guardar(confirmando) }}
         onCancelar={() => setConfirmando(null)}
       />
-      <DialogoConfirmacion
-        abierto={bloqueo.state === 'blocked'}
-        titulo="Hay cambios sin guardar"
-        mensaje="Si sales ahora se van a perder los cambios que has hecho en esta noticia."
-        textoConfirmar="Salir sin guardar"
-        textoCancelar="Seguir editando"
-        peligro
-        onConfirmar={() => bloqueo.proceed?.()}
-        onCancelar={() => bloqueo.reset?.()}
-      />
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="esta noticia" />
       <Box sx={{ height: 24 }} />
     </>
   )
