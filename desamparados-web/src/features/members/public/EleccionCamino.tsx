@@ -18,19 +18,19 @@ const OPCIONES: { camino: Camino; titulo: string; descripcion: string; icono: ty
   {
     camino: 'HERMANO',
     titulo: 'Quiero ser hermano',
-    descripcion: 'Tu alta, con tu DNI y correo electrónico',
+    descripcion: 'Tu alta, con tu DNI y tu correo',
     icono: PersonOutlineIcon,
   },
   {
     camino: 'HERMANO_Y_MENORES',
     titulo: 'Queremos ser hermanos',
-    descripcion: 'Tu alta y la de quienes tengas a tu cargo, en la misma solicitud.',
+    descripcion: 'Tu alta y la de quienes tengas a tu cargo, en la misma solicitud',
     icono: FamilyRestroomIcon,
   },
   {
     camino: 'SOLO_MENORES',
     titulo: 'Apunto a un familiar',
-    descripcion: 'Quieres dar de alta a un menor de edad en el Grupo Parroquial',
+    descripcion: 'El alta de un menor a tu cargo, sin entrar tú en el censo',
     icono: EscalatorWarningIcon,
   },
 ]
