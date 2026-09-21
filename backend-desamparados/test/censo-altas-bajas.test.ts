@@ -17,7 +17,6 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
-import { HermanoService } from '../src/services/hermano.service.js';
 import { esCuentaAnonimizada } from '../src/domain/cuenta-anonimizada.js';
 import { diferenciasFicha, valorParaAuditoria } from '../src/domain/cambios-ficha.js';
 import { normalizarValorConfiguracion } from '../src/domain/configuracion.js';
@@ -25,6 +24,9 @@ import { diaDeHoy } from '../src/domain/fechas-hermano.js';
 import { diaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { MisDatosService } from '../src/services/mis-datos.service.js';
+import { SolicitudesService } from '../src/services/solicitudes.service.js';
+import { MisFichasService } from '../src/services/mis-fichas.service.js';
+import { CensoService } from '../src/services/censo.service.js';
 
 let server: Server;
 let baseUrl: string;
@@ -129,7 +131,7 @@ async function solicitudPendiente() {
  */
 async function hermanoActivo() {
   const { usuario, ficha: f } = await solicitudPendiente();
-  await HermanoService.aprobarSolicitud(usuario.id, meta());
+  await SolicitudesService.aprobarSolicitud(usuario.id, meta());
   const aprobada = await db.hermano.update({ where: { id: f.id }, data: { fechaAlta: new Date('2020-03-15') } });
   return { usuario, ficha: aprobada };
 }
@@ -137,7 +139,7 @@ async function hermanoActivo() {
 /** Un hermano ya de baja, dado de baja por secretaría. */
 async function hermanoDeBaja(fechaBaja = '2024-05-10') {
   const { usuario, ficha: f } = await hermanoActivo();
-  await HermanoService.darDeBajaHermano(f.id, meta(), fechaBaja);
+  await CensoService.darDeBajaHermano(f.id, meta(), fechaBaja);
   return { usuario, ficha: (await db.hermano.findUnique({ where: { id: f.id } }))! };
 }
 
@@ -180,7 +182,7 @@ describe('la ficha no da altas ni bajas (D1)', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ficha: activa } = await hermanoActivo();
     await assert.rejects(
-      () => HermanoService.updateAdminMode(activa.id, { fechaBaja: '2025-01-01' }, meta()),
+      () => CensoService.updateAdminMode(activa.id, { fechaBaja: '2025-01-01' }, meta()),
       /Dar de baja/,
     );
     const despues = await db.hermano.findUnique({ where: { id: activa.id } });
@@ -191,7 +193,7 @@ describe('la ficha no da altas ni bajas (D1)', () => {
   test('tampoco a una solicitud pendiente', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ficha: pendiente } = await solicitudPendiente();
-    await assert.rejects(() => HermanoService.updateAdminMode(pendiente.id, { fechaBaja: '2025-01-01' }, meta()), /Dar de baja/);
+    await assert.rejects(() => CensoService.updateAdminMode(pendiente.id, { fechaBaja: '2025-01-01' }, meta()), /Dar de baja/);
   });
 
   test('en una ficha de baja la fecha se corrige, pero nunca antes del alta', async (t) => {
@@ -199,19 +201,19 @@ describe('la ficha no da altas ni bajas (D1)', () => {
     const { ficha: deBaja } = await hermanoDeBaja();
     const alta = diaMadrid(deBaja.fechaAlta);
 
-    await HermanoService.updateAdminMode(deBaja.id, { fechaBaja: alta }, meta());
+    await CensoService.updateAdminMode(deBaja.id, { fechaBaja: alta }, meta());
     const corregida = await db.hermano.findUnique({ where: { id: deBaja.id } });
     assert.equal(diaMadrid(corregida!.fechaBaja!), alta);
     assert.equal(corregida!.activo, false);
 
-    await assert.rejects(() => HermanoService.updateAdminMode(deBaja.id, { fechaBaja: '2000-01-01' }, meta()), /anterior/);
+    await assert.rejects(() => CensoService.updateAdminMode(deBaja.id, { fechaBaja: '2000-01-01' }, meta()), /anterior/);
   });
 
   test('mover el alta después de una baja existente se rechaza', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ficha: deBaja } = await hermanoDeBaja('2024-05-10');
     // Alta de 2020 y baja de 2024: llevar el alta a 2025 la dejaría después de la baja.
-    await assert.rejects(() => HermanoService.updateAdminMode(deBaja.id, { fechaAlta: '2025-06-01' }, meta()), /anterior/);
+    await assert.rejects(() => CensoService.updateAdminMode(deBaja.id, { fechaAlta: '2025-06-01' }, meta()), /anterior/);
   });
 
   // --- Fechas en día de Madrid (revisión del 11-09-2026) ---
@@ -225,7 +227,7 @@ describe('la ficha no da altas ni bajas (D1)', () => {
     await db.hermano.update({ where: { id: activa.id }, data: { fechaAlta: altaDeMadrugada } });
 
     // Lo que manda el formulario: la ficha entera, con el alta como su día de Madrid.
-    await HermanoService.updateAdminMode(activa.id, { nombre: 'Corregido', fechaAlta: '2026-09-12' }, meta());
+    await CensoService.updateAdminMode(activa.id, { nombre: 'Corregido', fechaAlta: '2026-09-12' }, meta());
 
     const despues = await db.hermano.findUnique({ where: { id: activa.id } });
     assert.equal(despues!.fechaAlta.getTime(), altaDeMadrugada.getTime(), 'el alta no se reescribe si no cambia de día');
@@ -238,7 +240,7 @@ describe('la ficha no da altas ni bajas (D1)', () => {
     const { ficha: activa } = await hermanoActivo();
     await db.hermano.update({ where: { id: activa.id }, data: { fechaAlta: new Date('2026-09-11T22:30:00Z') } });
 
-    await HermanoService.updateAdminMode(activa.id, { fechaAlta: '2026-09-11' }, meta());
+    await CensoService.updateAdminMode(activa.id, { fechaAlta: '2026-09-11' }, meta());
 
     const despues = await db.hermano.findUnique({ where: { id: activa.id } });
     assert.equal(diaMadrid(despues!.fechaAlta), '2026-09-11');
@@ -252,7 +254,7 @@ describe('la ficha no da altas ni bajas (D1)', () => {
     const bajaDeMadrugada = new Date('2026-02-28T23:30:00Z'); // 00:30 del 1 de marzo en Madrid
     await db.hermano.update({ where: { id: deBaja.id }, data: { fechaBaja: bajaDeMadrugada } });
 
-    await HermanoService.updateAdminMode(deBaja.id, { puesto: 'Cirio', fechaBaja: '2026-03-01' }, meta());
+    await CensoService.updateAdminMode(deBaja.id, { puesto: 'Cirio', fechaBaja: '2026-03-01' }, meta());
 
     const despues = await db.hermano.findUnique({ where: { id: deBaja.id } });
     assert.equal(despues!.fechaBaja!.getTime(), bajaDeMadrugada.getTime());
@@ -293,7 +295,7 @@ describe('la ficha no da altas ni bajas (D1)', () => {
         escrita,
         new Promise((_, rechazar) => setTimeout(() => rechazar(new Error('la reactivación no llegó a escribir en 5 s')), 5000).unref())
       ]);
-      edicion = HermanoService.updateAdminMode(deBaja.id, { fechaBaja: '2024-06-01' }, meta());
+      edicion = CensoService.updateAdminMode(deBaja.id, { fechaBaja: '2024-06-01' }, meta());
       // Da tiempo a que la edición lea y se quede esperando el bloqueo de la
       // fila. Si tardara más, leería ya la ficha activa: también es un error de
       // negocio, que es lo que se comprueba.
@@ -312,7 +314,7 @@ describe('la ficha no da altas ni bajas (D1)', () => {
   test('el número no se pone a mano en una ficha pendiente', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ficha: pendiente } = await solicitudPendiente();
-    await assert.rejects(() => HermanoService.updateAdminMode(pendiente.id, { numeroHermano: 99999 }, meta()), /fichas activas/);
+    await assert.rejects(() => CensoService.updateAdminMode(pendiente.id, { numeroHermano: 99999 }, meta()), /fichas activas/);
   });
 });
 
@@ -323,7 +325,7 @@ describe('dar de baja y reactivar', () => {
     const { usuario, ficha: activa } = await hermanoActivo();
     assert.ok(activa.numeroHermano, 'la aprobación debería haberle dado número');
 
-    await HermanoService.darDeBajaHermano(activa.id, meta(), '2026-01-20');
+    await CensoService.darDeBajaHermano(activa.id, meta(), '2026-01-20');
 
     const despues = await db.hermano.findUnique({ where: { id: activa.id } });
     assert.equal(despues!.activo, false);
@@ -342,13 +344,13 @@ describe('dar de baja y reactivar', () => {
   test('una solicitud pendiente no se da de baja: se rechaza desde Solicitudes', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ficha: pendiente } = await solicitudPendiente();
-    await assert.rejects(() => HermanoService.darDeBajaHermano(pendiente.id, meta()), /Solicitudes/);
+    await assert.rejects(() => CensoService.darDeBajaHermano(pendiente.id, meta()), /Solicitudes/);
   });
 
   test('una baja con fecha futura se rechaza', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ficha: activa } = await hermanoActivo();
-    await assert.rejects(() => HermanoService.darDeBajaHermano(activa.id, meta(), '2099-01-01'), /posterior a hoy/);
+    await assert.rejects(() => CensoService.darDeBajaHermano(activa.id, meta(), '2099-01-01'), /posterior a hoy/);
     assert.equal((await db.hermano.findUnique({ where: { id: activa.id } }))!.activo, true);
   });
 
@@ -368,7 +370,7 @@ describe('dar de baja y reactivar', () => {
   test('«Reactivar» no aprueba solicitudes pendientes', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { usuario, ficha: pendiente } = await solicitudPendiente();
-    await assert.rejects(() => HermanoService.reactivarHermano(pendiente.id, meta()), /Solicitudes/);
+    await assert.rejects(() => CensoService.reactivarHermano(pendiente.id, meta()), /Solicitudes/);
 
     const despues = await db.hermano.findUnique({ where: { id: pendiente.id } });
     assert.equal(despues!.activo, false);
@@ -380,7 +382,7 @@ describe('dar de baja y reactivar', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { usuario, ficha: deBaja } = await hermanoDeBaja();
 
-    await HermanoService.reactivarHermano(deBaja.id, meta());
+    await CensoService.reactivarHermano(deBaja.id, meta());
 
     const despues = await db.hermano.findUnique({ where: { id: deBaja.id } });
     assert.equal(despues!.activo, true);
@@ -402,7 +404,7 @@ describe('dar de baja y reactivar', () => {
     await db.user.update({ where: { id: usuario.id }, data: { email: `anon-${usuario.id}@eliminado.local`, dni: `ELIMINADO-${usuario.id}` } });
     const suprimida = await ficha(usuario.id, { activo: false, fechaBaja: new Date('2025-02-01') });
 
-    const { message } = await HermanoService.reactivarHermano(suprimida.id, meta());
+    const { message } = await CensoService.reactivarHermano(suprimida.id, meta());
 
     assert.match(message, /RGPD/);
     const despues = await db.hermano.findUnique({ where: { id: suprimida.id } });
@@ -424,7 +426,7 @@ describe('aprobación de solicitudes (D17 y doble clic)', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const solicitudes = await Promise.all([1, 2, 3, 4].map(() => solicitudPendiente()));
 
-    const resultados = await Promise.allSettled(solicitudes.map((s) => HermanoService.aprobarSolicitud(s.usuario.id, meta())));
+    const resultados = await Promise.allSettled(solicitudes.map((s) => SolicitudesService.aprobarSolicitud(s.usuario.id, meta())));
     const fallos = resultados.filter((r) => r.status === 'rejected');
     assert.equal(fallos.length, 0, `fallaron ${fallos.length}: ${fallos.map((f) => String((f as PromiseRejectedResult).reason)).join(' | ')}`);
 
@@ -439,8 +441,8 @@ describe('aprobación de solicitudes (D17 y doble clic)', () => {
     const { usuario, ficha: pendiente } = await solicitudPendiente();
 
     const [a, b] = await Promise.allSettled([
-      HermanoService.aprobarSolicitud(usuario.id, meta()),
-      HermanoService.aprobarSolicitud(usuario.id, meta()),
+      SolicitudesService.aprobarSolicitud(usuario.id, meta()),
+      SolicitudesService.aprobarSolicitud(usuario.id, meta()),
     ]);
     const bien = [a, b].filter((r) => r.status === 'fulfilled');
     const mal = [a, b].filter((r) => r.status === 'rejected') as PromiseRejectedResult[];
@@ -460,16 +462,16 @@ describe('aprobación de solicitudes (D17 y doble clic)', () => {
     // segunda petición era un error crudo de la base de datos.
     const { ficha: activa } = await hermanoActivo();
     const bajas = await Promise.allSettled([
-      HermanoService.darDeBajaHermano(activa.id, meta()),
-      HermanoService.darDeBajaHermano(activa.id, meta()),
+      CensoService.darDeBajaHermano(activa.id, meta()),
+      CensoService.darDeBajaHermano(activa.id, meta()),
     ]);
     assert.equal(bajas.filter((r) => r.status === 'fulfilled').length, 1);
     const falloBaja = bajas.find((r) => r.status === 'rejected') as PromiseRejectedResult;
     assert.ok(falloBaja.reason instanceof HttpError, `baja: ${falloBaja.reason}`);
 
     const altas = await Promise.allSettled([
-      HermanoService.reactivarHermano(activa.id, meta()),
-      HermanoService.reactivarHermano(activa.id, meta()),
+      CensoService.reactivarHermano(activa.id, meta()),
+      CensoService.reactivarHermano(activa.id, meta()),
     ]);
     assert.equal(altas.filter((r) => r.status === 'fulfilled').length, 1);
     const falloAlta = altas.find((r) => r.status === 'rejected') as PromiseRejectedResult;
@@ -481,7 +483,7 @@ describe('aprobación de solicitudes (D17 y doble clic)', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { usuario } = await hermanoActivo(); // ya aprobada: no queda nada pendiente
     const antes = (await apuntes('SOLICITUD_APROBAR', 'user', usuario.id)).length;
-    await assert.rejects(() => HermanoService.aprobarSolicitud(usuario.id, meta()));
+    await assert.rejects(() => SolicitudesService.aprobarSolicitud(usuario.id, meta()));
     assert.equal((await apuntes('SOLICITUD_APROBAR', 'user', usuario.id)).length, antes);
   });
 });
@@ -493,7 +495,7 @@ describe('auditoría de la ficha (D19)', () => {
     const { ficha: activa } = await hermanoActivo();
 
     // El CMS manda la ficha entera: nombre y apellidos van iguales.
-    await HermanoService.updateAdminMode(activa.id, {
+    await CensoService.updateAdminMode(activa.id, {
       nombre: activa.nombre, apellidos: activa.apellidos, fechaNacimiento: '1991-02-03', puesto: 'Nazareno de cirio',
     }, meta());
 
@@ -509,7 +511,7 @@ describe('auditoría de la ficha (D19)', () => {
   test('guardar sin cambios no llena la auditoría', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { ficha: activa } = await hermanoActivo();
-    await HermanoService.updateAdminMode(activa.id, { nombre: activa.nombre }, meta());
+    await CensoService.updateAdminMode(activa.id, { nombre: activa.nombre }, meta());
     assert.equal((await apuntes('HERMANO_ACTUALIZAR', 'hermano', activa.id)).length, 0);
   });
 
@@ -517,7 +519,7 @@ describe('auditoría de la ficha (D19)', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { usuario, ficha: pendiente } = await solicitudPendiente();
 
-    await HermanoService.rechazarSolicitud(usuario.id, meta());
+    await SolicitudesService.rechazarSolicitud(usuario.id, meta());
 
     const [apunte] = await apuntes('SOLICITUD_RECHAZAR', 'user', usuario.id);
     assert.ok(apunte);
@@ -534,7 +536,7 @@ describe('auditoría de la ficha (D19)', () => {
     const historica = await ficha(usuario.id, { activo: false, fechaBaja: new Date('2024-01-01') });
     const pendiente = await ficha(usuario.id);
 
-    await HermanoService.rechazarSolicitud(usuario.id, meta());
+    await SolicitudesService.rechazarSolicitud(usuario.id, meta());
 
     assert.ok(await db.user.findUnique({ where: { id: usuario.id } }), 'la cuenta sigue');
     assert.ok(await db.hermano.findUnique({ where: { id: historica.id } }), 'la ficha histórica sigue');
@@ -545,7 +547,7 @@ describe('auditoría de la ficha (D19)', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { usuario, ficha: activa } = await hermanoActivo();
 
-    await HermanoService.deleteProfileIfOwned(activa.id, usuario.id, { userId: usuario.id });
+    await MisFichasService.deleteProfileIfOwned(activa.id, usuario.id, { userId: usuario.id });
 
     const despues = await db.hermano.findUnique({ where: { id: activa.id } });
     assert.equal(despues!.numeroHermano, null);
@@ -554,7 +556,7 @@ describe('auditoría de la ficha (D19)', () => {
     assert.equal((apunte.detalles as { antes: { numeroHermano: number } }).antes.numeroHermano, activa.numeroHermano);
 
     // Y una segunda baja no reescribe la fecha de la primera.
-    await assert.rejects(() => HermanoService.deleteProfileIfOwned(activa.id, usuario.id), /ya está dado de baja/);
+    await assert.rejects(() => MisFichasService.deleteProfileIfOwned(activa.id, usuario.id), /ya está dado de baja/);
   });
 
   test('la familia retira una solicitud pendiente: se borra, no se da de baja', async (t) => {
@@ -564,7 +566,7 @@ describe('auditoría de la ficha (D19)', () => {
     const { usuario, ficha: activa } = await hermanoActivo();
     const familiar = await ficha(usuario.id);
 
-    const { message } = (await HermanoService.deleteProfileIfOwned(familiar.id, usuario.id, { userId: usuario.id }))!;
+    const { message } = (await MisFichasService.deleteProfileIfOwned(familiar.id, usuario.id, { userId: usuario.id }))!;
 
     assert.match(message, /retirada/i);
     assert.equal(await db.hermano.findUnique({ where: { id: familiar.id } }), null, 'la solicitud se borra');
@@ -580,7 +582,7 @@ describe('auditoría de la ficha (D19)', () => {
     const familiar = await ficha(usuario.id);
     await db.recibo.create({ data: { hermanoId: familiar.id, year: 2026, concepto: `Prueba ${RONDA}`, importe: 10 } });
 
-    await HermanoService.deleteProfileIfOwned(familiar.id, usuario.id, { userId: usuario.id });
+    await MisFichasService.deleteProfileIfOwned(familiar.id, usuario.id, { userId: usuario.id });
 
     const despues = await db.hermano.findUnique({ where: { id: familiar.id } });
     assert.ok(despues, 'con recibos, la ficha se conserva');
@@ -613,7 +615,7 @@ describe('el censo no enseña datos bancarios (P2)', () => {
     assert.equal(data.length, 1);
     for (const campo of ['iban', 'titularCuenta', 'formaPagoPref']) assert.ok(!(campo in data[0]), `el buscador devuelve ${campo}`);
 
-    const todos = await HermanoService.getAllHermanos({ limit: 5 });
+    const todos = await CensoService.getAllHermanos({ limit: 5 });
     for (const fila of todos.data as Record<string, unknown>[]) {
       assert.ok(!('iban' in fila) && !('titularCuenta' in fila) && !('formaPagoPref' in fila));
     }

@@ -16,7 +16,7 @@ export interface PuntoCenso {
  * Altas del censo desde `desde`: solo hermanos que Secretaría aprobó.
  *
  * Una solicitud pendiente también tiene `fechaAlta` (la del registro), pero no
- * es un alta: está `activo: false` y sin `fechaBaja` (hermano.service,
+ * es un alta: está `activo: false` y sin `fechaBaja` (solicitudes.service,
  * getSolicitudesPendientes). Al aprobarla pasa a activa con la fecha de la
  * aprobación. Un hermano aprobado que luego se dio de baja sigue contando: su
  * alta ocurrió, y la serie del censo necesita el alta para compensar su baja.

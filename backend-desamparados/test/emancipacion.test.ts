@@ -5,7 +5,8 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import db from '../src/config/db.js';
-import { HermanoService } from '../src/services/hermano.service.js';
+import { MisFichasService } from '../src/services/mis-fichas.service.js';
+import { CensoService } from '../src/services/censo.service.js';
 
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -50,7 +51,7 @@ describe('emancipación desde secretaría', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { dependiente } = await tutorConDependiente('1');
 
-    const resultado = await HermanoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.1@ejemplo.invalido' });
+    const resultado = await CensoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.1@ejemplo.invalido' });
     creados.usuarios.push(resultado.id);
 
     // El cliente omite el token del reset en toda consulta (config/db.ts): aquí
@@ -65,7 +66,7 @@ describe('emancipación desde secretaría', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { dependiente } = await tutorConDependiente('2');
 
-    const resultado = await HermanoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.2@ejemplo.invalido' });
+    const resultado = await CensoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.2@ejemplo.invalido' });
     creados.usuarios.push(resultado.id);
 
     const cuenta = await db.user.findUnique({ where: { id: resultado.id }, omit: { resetPasswordToken: false, resetPasswordExpires: false } });
@@ -78,7 +79,7 @@ describe('emancipación desde secretaría', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { dependiente } = await tutorConDependiente('3');
 
-    const resultado = await HermanoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.3@ejemplo.invalido' });
+    const resultado = await CensoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.3@ejemplo.invalido' });
     creados.usuarios.push(resultado.id);
 
     const ficha = await db.hermano.findUnique({ where: { id: dependiente.id } });
@@ -91,7 +92,7 @@ describe('emancipación desde secretaría', () => {
     const { dependiente, tutor } = await tutorConDependiente('4');
 
     await assert.rejects(
-      () => HermanoService.emancipateByStaff(dependiente.id, { newEmail: tutor.email }),
+      () => CensoService.emancipateByStaff(dependiente.id, { newEmail: tutor.email }),
       /correo|email/i,
     );
 
@@ -103,7 +104,7 @@ describe('emancipación desde secretaría', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { dependiente, tutor } = await tutorConDependiente('5');
 
-    const resultado = await HermanoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.5@ejemplo.invalido' });
+    const resultado = await CensoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.5@ejemplo.invalido' });
     creados.usuarios.push(resultado.id);
 
     const cuentaTutor = await db.user.findUnique({ where: { id: tutor.id } });
@@ -120,7 +121,7 @@ describe('emancipación desde secretaría', () => {
     const { dependiente, tutor } = await tutorConDependiente('6', new Date(hace17.toISOString().slice(0, 10)));
 
     await assert.rejects(
-      () => HermanoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.6@ejemplo.invalido' }),
+      () => CensoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.6@ejemplo.invalido' }),
       /18 años/,
     );
 
@@ -135,7 +136,7 @@ describe('emancipación desde secretaría', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { dependiente, tutor } = await tutorConDependiente('7', new Date('2015-01-01'));
     await assert.rejects(
-      () => HermanoService.emancipateProfile(dependiente.id, tutor.id, { newEmail: 'emancipado.7@ejemplo.invalido', newPassword: 'Prueba-2026-Segura' }),
+      () => MisFichasService.emancipateProfile(dependiente.id, tutor.id, { newEmail: 'emancipado.7@ejemplo.invalido', newPassword: 'Prueba-2026-Segura' }),
       /18 años/,
     );
   });
@@ -145,7 +146,7 @@ describe('emancipación desde secretaría', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { dependiente, tutor } = await tutorConDependiente('8');
 
-    const resultado = await HermanoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.8@ejemplo.invalido' });
+    const resultado = await CensoService.emancipateByStaff(dependiente.id, { newEmail: 'emancipado.8@ejemplo.invalido' });
     creados.usuarios.push(resultado.id);
 
     const apunte = await db.auditLog.findFirst({ where: { action: 'EMANCIPACION', entityType: 'hermano', entityId: String(dependiente.id) } });
@@ -161,7 +162,7 @@ describe('emancipación desde secretaría', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { dependiente, tutor } = await tutorConDependiente('9');
 
-    await assert.rejects(() => HermanoService.emancipateByStaff(dependiente.id, { newEmail: tutor.email }));
+    await assert.rejects(() => CensoService.emancipateByStaff(dependiente.id, { newEmail: tutor.email }));
 
     const apuntes = await db.auditLog.count({ where: { action: 'EMANCIPACION', entityId: String(dependiente.id) } });
     assert.equal(apuntes, 0, 'la auditoría no puede dar fe de algo que no ocurrió');

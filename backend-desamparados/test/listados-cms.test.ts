@@ -14,12 +14,12 @@ import { searchHermanoSchema } from '../src/schemas/hermano.schema.js';
 import { queryEnserSchema, queryPrendaSchema } from '../src/schemas/inventario.schema.js';
 import { adminRecibosQuerySchema, adminResumenQuerySchema } from '../src/schemas/recibo.schema.js';
 import { libroMayorQuerySchema, resumenQuerySchema } from '../src/schemas/transaccion.schema.js';
-import { HermanoService } from '../src/services/hermano.service.js';
 import { InventarioService } from '../src/services/inventario.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
 import { TransaccionService } from '../src/services/transaccion.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
+import { CensoService } from '../src/services/censo.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
@@ -126,7 +126,7 @@ describe('consultas contra la base de datos', () => {
 
   test('censo: la situación separa activos, bajas y solicitudes pendientes', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const de = async (estado: 'activo' | 'baja' | 'pendiente') => apellidos((await HermanoService.searchHermanos({ q: marca, estado })).data)
+    const de = async (estado: 'activo' | 'baja' | 'pendiente') => apellidos((await CensoService.searchHermanos({ q: marca, estado })).data)
     assert.deepEqual(await de('activo'), ['Alfa', 'Beta']);
     assert.deepEqual(await de('baja'), ['Gamma']);
     assert.deepEqual(await de('pendiente'), ['Delta']);
@@ -134,16 +134,16 @@ describe('consultas contra la base de datos', () => {
 
   test('censo: con o sin número, y el número suelto encuentra al hermano', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    assert.deepEqual(apellidos((await HermanoService.searchHermanos({ q: marca, numero: 'con' })).data), ['Alfa']);
-    assert.equal((await HermanoService.searchHermanos({ q: marca, numero: 'sin' })).meta.total, 3);
-    assert.deepEqual(apellidos((await HermanoService.searchHermanos({ q: String(numero) })).data), ['Alfa']);
+    assert.deepEqual(apellidos((await CensoService.searchHermanos({ q: marca, numero: 'con' })).data), ['Alfa']);
+    assert.equal((await CensoService.searchHermanos({ q: marca, numero: 'sin' })).meta.total, 3);
+    assert.deepEqual(apellidos((await CensoService.searchHermanos({ q: String(numero) })).data), ['Alfa']);
   });
 
   test('censo: por número deja a los que no lo tienen al final; por antigüedad, el más antiguo arriba', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    assert.equal(apellidos((await HermanoService.searchHermanos({ q: marca, orden: 'numero' })).data)[0], 'Alfa');
-    assert.deepEqual(apellidos((await HermanoService.searchHermanos({ q: marca, orden: 'antiguedad' })).data), ['Alfa', 'Gamma', 'Beta', 'Delta']);
-    assert.deepEqual(apellidos((await HermanoService.searchHermanos({ q: marca, orden: 'recientes' })).data), ['Delta', 'Beta', 'Gamma', 'Alfa']);
+    assert.equal(apellidos((await CensoService.searchHermanos({ q: marca, orden: 'numero' })).data)[0], 'Alfa');
+    assert.deepEqual(apellidos((await CensoService.searchHermanos({ q: marca, orden: 'antiguedad' })).data), ['Alfa', 'Gamma', 'Beta', 'Delta']);
+    assert.deepEqual(apellidos((await CensoService.searchHermanos({ q: marca, orden: 'recientes' })).data), ['Delta', 'Beta', 'Gamma', 'Alfa']);
   });
 
   test('recibos: busca por concepto, hermano o número; filtra por tipo y ordena por importe', async (t) => {
@@ -197,7 +197,7 @@ describe('consultas contra la base de datos', () => {
 
   test('todos los órdenes de todas las tablas se pueden pedir a MariaDB', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    for (const orden of Object.keys(ORDENES_CENSO)) await HermanoService.searchHermanos({ orden, limit: '5' });
+    for (const orden of Object.keys(ORDENES_CENSO)) await CensoService.searchHermanos({ orden, limit: '5' });
     for (const orden of Object.keys(ORDENES_ENSERES)) await InventarioService.getAllEnseres({ orden, limit: '5' });
     for (const orden of Object.keys(ORDENES_PRENDAS)) await InventarioService.getAllPrendas({ orden, limit: '5' });
     for (const orden of Object.keys(ORDENES_RECIBOS)) await ReciboService.getAdminRecibos({ orden, limit: '5' });

@@ -21,9 +21,10 @@ import { EmailService } from '../src/services/email.service.js';
 import { buzonDePruebas, buzonPedido } from '../src/utils/buzon-pruebas.js';
 import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
-import { HermanoService } from '../src/services/hermano.service.js';
 import { PASSWORD_PRUEBA } from './fixtures/usuarios.js';
 import { RegistroService } from '../src/services/registro.service.js';
+import { SolicitudesService } from '../src/services/solicitudes.service.js';
+import { CensoService } from '../src/services/censo.service.js';
 
 const carpetaCorreos = () => path.join(process.cwd(), 'storage', 'correos');
 
@@ -222,7 +223,7 @@ describe('aprobación de la solicitud', () => {
     });
 
     try {
-      await HermanoService.aprobarSolicitud(cuenta.id);
+      await SolicitudesService.aprobarSolicitud(cuenta.id);
       await dejarSalirLosCorreos();
 
       const aviso = transporte.enviados.find((c) => c.to === email);
@@ -260,7 +261,7 @@ describe('rechazo de la solicitud', () => {
     });
 
     try {
-      await HermanoService.rechazarSolicitud(cuenta.id);
+      await SolicitudesService.rechazarSolicitud(cuenta.id);
       await dejarSalirLosCorreos();
 
       assert.equal(await db.user.count({ where: { id: cuenta.id } }), 0, 'la cuenta debía borrarse');
@@ -295,7 +296,7 @@ describe('baja en el censo', () => {
     });
 
     try {
-      await HermanoService.darDeBajaHermano(ficha.id);
+      await CensoService.darDeBajaHermano(ficha.id);
       await dejarSalirLosCorreos();
 
       const aviso = transporte.enviados.find((c) => c.to === email);

@@ -7,11 +7,13 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import db from '../src/config/db.js';
-import { HermanoService } from '../src/services/hermano.service.js';
 import { AuditoriaService } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import type { CreateHermanoDto } from '../src/dtos/hermano.dto.js';
+import { SolicitudesService } from '../src/services/solicitudes.service.js';
+import { MisFichasService } from '../src/services/mis-fichas.service.js';
+import { CensoService } from '../src/services/censo.service.js';
 
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -80,7 +82,7 @@ test('el cierre de huecos da número a las activas que no lo tienen', async (t) 
     data: { fechaAlta: new Date('2020-06-01') },
   });
 
-  const { asignados } = await HermanoService.cerrarHuecosDeNumero();
+  const { asignados } = await SolicitudesService.cerrarHuecosDeNumero();
 
   const idsAsignados = asignados.map((a) => a.id);
   assert.ok(idsAsignados.includes(antigua.id), 'la ficha antigua debe recibir número');
@@ -103,7 +105,7 @@ test('con la misma fecha de alta, el desempate por id da un orden estable', asyn
   const segunda = await fichaActivaSinNumero();
   assert.equal(primera.fechaAlta.getTime(), segunda.fechaAlta.getTime(), 'la prueba exige la fecha empatada');
 
-  const { asignados } = await HermanoService.cerrarHuecosDeNumero();
+  const { asignados } = await SolicitudesService.cerrarHuecosDeNumero();
 
   const numPrimera = asignados.find((a) => a.id === primera.id)!.numeroHermano;
   const numSegunda = asignados.find((a) => a.id === segunda.id)!.numeroHermano;
@@ -123,7 +125,7 @@ test('el cierre de huecos no renumera a quien ya tiene número', async (t) => {
   if (!conNumero) return t.skip('no hay ninguna ficha con número en la base');
 
   await fichaActivaSinNumero();
-  await HermanoService.cerrarHuecosDeNumero();
+  await SolicitudesService.cerrarHuecosDeNumero();
 
   const despues = await db.hermano.findUnique({ where: { id: conNumero.id }, select: { numeroHermano: true } });
   assert.equal(despues?.numeroHermano, conNumero.numeroHermano, 'no se renumera a nadie');
@@ -131,8 +133,8 @@ test('el cierre de huecos no renumera a quien ya tiene número', async (t) => {
 
 test('sin huecos, el cierre no hace nada', async (t) => {
   if (!dbDisponible) return t.skip(motivoSinDb);
-  await HermanoService.cerrarHuecosDeNumero();
-  const segunda = await HermanoService.cerrarHuecosDeNumero();
+  await SolicitudesService.cerrarHuecosDeNumero();
+  const segunda = await SolicitudesService.cerrarHuecosDeNumero();
   assert.deepEqual(segunda.asignados, [], 'la segunda pasada no debe tocar nada');
 });
 
@@ -151,14 +153,14 @@ test('una ficha recién creada por su tutor nace sin número, y lo recibe al apr
   usuariosCreados.push(tutor.id);
 
   const datosFicha: CreateHermanoDto = { nombre: 'Hija', apellidos: 'De Prueba', fechaNacimiento: '2015-05-20' };
-  const ficha = await HermanoService.createDependentProfile(tutor.id, datosFicha);
+  const ficha = await MisFichasService.createDependentProfile(tutor.id, datosFicha);
 
   // Pendiente de aprobación: activo false y sin número. Lo contrario sería
   // colar a alguien en el censo sin que Secretaría lo admita.
   assert.equal(ficha.activo, false);
   assert.equal(ficha.numeroHermano, null);
 
-  await HermanoService.aprobarSolicitud(tutor.id);
+  await SolicitudesService.aprobarSolicitud(tutor.id);
 
   const aprobada = await db.hermano.findUnique({ where: { id: ficha.id } });
   assert.equal(aprobada?.activo, true);
@@ -171,8 +173,8 @@ test('dar de baja libera el número y reactivar da uno nuevo', async (t) => {
   const tutor = await crearUsuarioPrueba();
   usuariosCreados.push(tutor.id);
   const datosFicha: CreateHermanoDto = { nombre: 'Alta', apellidos: 'Y Baja', fechaNacimiento: '2014-01-01' };
-  const ficha = await HermanoService.createDependentProfile(tutor.id, datosFicha);
-  await HermanoService.aprobarSolicitud(tutor.id);
+  const ficha = await MisFichasService.createDependentProfile(tutor.id, datosFicha);
+  await SolicitudesService.aprobarSolicitud(tutor.id);
 
   // Sin este dato, "queda a null tras la baja" no demuestra que la baja
   // libere nada: podría no haber tenido número nunca. El test tiene que
@@ -180,12 +182,12 @@ test('dar de baja libera el número y reactivar da uno nuevo', async (t) => {
   const antesDeBaja = await db.hermano.findUnique({ where: { id: ficha.id }, select: { numeroHermano: true } });
   assert.ok(antesDeBaja?.numeroHermano, 'antes de la baja debe tener número: si no, la baja no libera nada');
 
-  await HermanoService.darDeBajaHermano(ficha.id);
+  await CensoService.darDeBajaHermano(ficha.id);
   const deBaja = await db.hermano.findUnique({ where: { id: ficha.id } });
   assert.equal(deBaja?.activo, false);
   assert.equal(deBaja?.numeroHermano, null, 'la baja libera el número');
 
-  await HermanoService.reactivarHermano(ficha.id);
+  await CensoService.reactivarHermano(ficha.id);
   const reactivada = await db.hermano.findUnique({ where: { id: ficha.id } });
   assert.equal(reactivada?.activo, true);
   assert.ok(reactivada?.numeroHermano, 'al reactivar debe llevarse número nuevo');
@@ -205,15 +207,15 @@ test('las fichas de este test no quedan activas sin número tras pasar por sus v
   // Menores las dos: una ficha a cargo de otra cuenta es la de alguien que aún
   // no puede darse de alta por su cuenta (domain/fechas-hermano).
   const datosQuieta: CreateHermanoDto = { nombre: 'Quieta', apellidos: 'Tras Aprobar', fechaNacimiento: '2015-01-01' };
-  const quieta = await HermanoService.createDependentProfile(tutor.id, datosQuieta);
+  const quieta = await MisFichasService.createDependentProfile(tutor.id, datosQuieta);
 
   const datosVaiven: CreateHermanoDto = { nombre: 'Va', apellidos: 'Y Viene', fechaNacimiento: '2016-01-01' };
-  const vaiven = await HermanoService.createDependentProfile(tutor.id, datosVaiven);
+  const vaiven = await MisFichasService.createDependentProfile(tutor.id, datosVaiven);
 
-  await HermanoService.aprobarSolicitud(tutor.id); // aprueba las dos fichas pendientes del tutor de golpe
+  await SolicitudesService.aprobarSolicitud(tutor.id); // aprueba las dos fichas pendientes del tutor de golpe
 
-  await HermanoService.darDeBajaHermano(vaiven.id);
-  await HermanoService.reactivarHermano(vaiven.id);
+  await CensoService.darDeBajaHermano(vaiven.id);
+  await CensoService.reactivarHermano(vaiven.id);
 
   // Acotado a las fichas de este test: un recuento sobre toda la tabla
   // Hermano podría ponerse rojo por datos de otra procedencia (otro censo
@@ -276,7 +278,7 @@ test('reordenar un censo sin activos sigue lanzando su HttpError, y a la primera
   const transaccion = conTransaccionDeMentira(tx);
   try {
     await assert.rejects(
-      () => HermanoService.reordenarCenso(),
+      () => SolicitudesService.reordenarCenso(),
       (e: unknown) => e instanceof HttpError && e.message === 'No hay hermanos activos en el censo para reordenar.'
     );
     // El error de negocio ahora se lanza dentro de la transacción. No es P2002
@@ -297,7 +299,7 @@ test('la reordenación reparte 1..N sobre lo que lee dentro de la transacción',
   const auditados: unknown[] = [];
   t.mock.method(AuditoriaService, 'log', async (...args: unknown[]) => { auditados.push(args); });
   try {
-    const resultado = await HermanoService.reordenarCenso();
+    const resultado = await SolicitudesService.reordenarCenso();
     assert.equal(liberaciones(), 1, 'primero se liberan todos los números, que son únicos');
     assert.deepEqual(asignados, [{ id: 41, numeroHermano: 1 }, { id: 42, numeroHermano: 2 }]);
     // Las dos listas salen de la transacción para la auditoría y el recuento:

@@ -10,8 +10,9 @@ import { after, before, describe, test } from 'node:test';
 import { randomInt } from 'node:crypto';
 import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
-import { HermanoService } from '../src/services/hermano.service.js';
 import { RegistroService } from '../src/services/registro.service.js';
+import { SolicitudesService } from '../src/services/solicitudes.service.js';
+import { CensoService } from '../src/services/censo.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
@@ -80,7 +81,7 @@ describe('pedir volver tras una baja', () => {
 
   test('sale en la cola de Secretaría, aparte de las altas nuevas', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const { reactivaciones } = await HermanoService.getSolicitudesPendientes();
+    const { reactivaciones } = await SolicitudesService.getSolicitudesPendientes();
     const suya = reactivaciones.find((r) => r.id === fichas[0]);
     assert.ok(suya, 'la petición está en la cola');
     assert.equal(suya!.dni, dniDeBaja);
@@ -96,7 +97,7 @@ describe('pedir volver tras una baja', () => {
 
   test('reactivar la atiende: número nuevo y fuera de la cola', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    await HermanoService.reactivarHermano(fichas[0], {});
+    await CensoService.reactivarHermano(fichas[0], {});
 
     const ficha = await laFicha();
     assert.equal(ficha!.activo, true);
@@ -104,7 +105,7 @@ describe('pedir volver tras una baja', () => {
     assert.ok(ficha!.numeroHermano, 'vuelve con número');
     assert.equal(ficha!.reactivacionSolicitada, null, 'la petición queda atendida');
 
-    const { reactivaciones } = await HermanoService.getSolicitudesPendientes();
+    const { reactivaciones } = await SolicitudesService.getSolicitudesPendientes();
     assert.ok(!reactivaciones.some((r) => r.id === fichas[0]));
   });
 
@@ -117,12 +118,12 @@ describe('pedir volver tras una baja', () => {
     });
     await RegistroService.solicitarReactivacion({ dni: dniDeBaja, email });
 
-    await HermanoService.descartarReactivacion(fichas[0], {});
+    await SolicitudesService.descartarReactivacion(fichas[0], {});
     const ficha = await laFicha();
     assert.equal(ficha!.reactivacionSolicitada, null);
     assert.equal(ficha!.activo, false, 'no se reactiva de rebote');
     assert.ok(ficha!.fechaBaja, 'y sigue constando cuándo se fue');
 
-    await assert.rejects(() => HermanoService.descartarReactivacion(fichas[0], {}), /ya no está/);
+    await assert.rejects(() => SolicitudesService.descartarReactivacion(fichas[0], {}), /ya no está/);
   });
 });
