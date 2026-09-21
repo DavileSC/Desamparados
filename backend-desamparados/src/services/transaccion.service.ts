@@ -1,7 +1,7 @@
 import { Prisma, type Transaccion, type TipoTransaccion } from '@prisma/client';
 import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
-import { AuditMeta, AuditService, AUDIT_ACTIONS } from './audit.service.js';
+import { MetaDeAuditoria, AuditoriaService, ACCIONES_AUDITORIA } from './auditoria.service.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { ORDENES_LIBRO, ordenDe } from '../domain/ordenacion.js';
 import {
@@ -140,17 +140,17 @@ export class TransaccionService {
     }
   }
 
-  static async createCategoria(nombre: string, tipo: TipoTransaccion, meta?: AuditMeta) {
+  static async createCategoria(nombre: string, tipo: TipoTransaccion, meta?: MetaDeAuditoria) {
     const limpio = limpiarNombreCategoria(nombre);
     await this.exigirNombreLibre(limpio, tipo);
     const result = await this.conNombreLibre(limpio, tipo, undefined, () => db.categoriaTransaccion.create({
       data: { nombre: limpio, tipo }
     }));
-    AuditService.log(AUDIT_ACTIONS.CATEGORIA_CREAR, meta ?? {}, 'categoria', result.id, { despues: { nombre: result.nombre, tipo: result.tipo } });
+    AuditoriaService.log(ACCIONES_AUDITORIA.CATEGORIA_CREAR, meta ?? {}, 'categoria', result.id, { despues: { nombre: result.nombre, tipo: result.tipo } });
     return result;
   }
 
-  static async renombrarCategoria(id: number, nombre: string, meta?: AuditMeta) {
+  static async renombrarCategoria(id: number, nombre: string, meta?: MetaDeAuditoria) {
     const antes = await db.categoriaTransaccion.findUnique({ where: { id } });
     if (!antes) throw new NotFoundError(TRANSACCION_ERRORS.CATEGORIA_NO_EXISTE);
     if (esCategoriaDeRecibos(antes)) {
@@ -161,7 +161,7 @@ export class TransaccionService {
     await this.exigirNombreLibre(limpio, antes.tipo, id);
 
     const despues = await this.conNombreLibre(limpio, antes.tipo, id, () => db.categoriaTransaccion.update({ where: { id }, data: { nombre: limpio } }));
-    AuditService.log(AUDIT_ACTIONS.CATEGORIA_RENOMBRAR, meta ?? {}, 'categoria', id, { antes: { nombre: antes.nombre }, despues: { nombre: despues.nombre } });
+    AuditoriaService.log(ACCIONES_AUDITORIA.CATEGORIA_RENOMBRAR, meta ?? {}, 'categoria', id, { antes: { nombre: antes.nombre }, despues: { nombre: despues.nombre } });
     return despues;
   }
 
@@ -169,7 +169,7 @@ export class TransaccionService {
    * Desactivar no borra nada: la categoría deja de salir al apuntar, pero sus
    * apuntes siguen en el libro con su nombre. Reactivar la devuelve al desplegable.
    */
-  static async cambiarEstadoCategoria(id: number, activa: boolean, meta?: AuditMeta) {
+  static async cambiarEstadoCategoria(id: number, activa: boolean, meta?: MetaDeAuditoria) {
     const antes = await db.categoriaTransaccion.findUnique({ where: { id } });
     if (!antes) throw new NotFoundError(TRANSACCION_ERRORS.CATEGORIA_NO_EXISTE);
     if (antes.activa === activa) return antes;
@@ -186,8 +186,8 @@ export class TransaccionService {
     }
 
     const despues = await db.categoriaTransaccion.update({ where: { id }, data: { activa } });
-    AuditService.log(
-      activa ? AUDIT_ACTIONS.CATEGORIA_REACTIVAR : AUDIT_ACTIONS.CATEGORIA_DESACTIVAR,
+    AuditoriaService.log(
+      activa ? ACCIONES_AUDITORIA.CATEGORIA_REACTIVAR : ACCIONES_AUDITORIA.CATEGORIA_DESACTIVAR,
       meta ?? {},
       'categoria',
       id,
@@ -217,7 +217,7 @@ export class TransaccionService {
     return categoria;
   }
 
-  static async create(data: CreateTransaccionDto, meta?: AuditMeta) {
+  static async create(data: CreateTransaccionDto, meta?: MetaDeAuditoria) {
     const ahora = new Date();
     const dia = data.fecha ?? diaMadrid(ahora);
     exigirApunteValido({ importe: data.importe, fecha: dia }, ahora);
@@ -233,7 +233,7 @@ export class TransaccionService {
         metodoPago: data.metodoPago
       }
     });
-    AuditService.log(AUDIT_ACTIONS.TRANSACCION_CREAR, meta ?? {}, 'transaccion', result.id, { despues: foto(result) });
+    AuditoriaService.log(ACCIONES_AUDITORIA.TRANSACCION_CREAR, meta ?? {}, 'transaccion', result.id, { despues: foto(result) });
     return result;
   }
 
@@ -249,7 +249,7 @@ export class TransaccionService {
    * Corrige un apunte manual. Antes solo se podía compensar con un contraapunte,
    * que dejaba inflados a la vez los ingresos y los gastos del periodo.
    */
-  static async update(id: number, data: UpdateTransaccionDto, meta?: AuditMeta) {
+  static async update(id: number, data: UpdateTransaccionDto, meta?: MetaDeAuditoria) {
     const antes = await this.apunteManual(id);
     const ahora = new Date();
     exigirApunteValido(data, ahora);
@@ -271,15 +271,15 @@ export class TransaccionService {
         metodoPago: data.metodoPago,
       },
     });
-    AuditService.log(AUDIT_ACTIONS.TRANSACCION_ACTUALIZAR, meta ?? {}, 'transaccion', id, { antes: foto(antes), despues: foto(despues) });
+    AuditoriaService.log(ACCIONES_AUDITORIA.TRANSACCION_ACTUALIZAR, meta ?? {}, 'transaccion', id, { antes: foto(antes), despues: foto(despues) });
     return despues;
   }
 
   /** Borra un apunte manual. La auditoría guarda cómo era, que es lo único que queda de él. */
-  static async remove(id: number, meta?: AuditMeta) {
+  static async remove(id: number, meta?: MetaDeAuditoria) {
     const antes = await this.apunteManual(id);
     await db.transaccion.delete({ where: { id, reciboId: null } });
-    AuditService.log(AUDIT_ACTIONS.TRANSACCION_ELIMINAR, meta ?? {}, 'transaccion', id, { antes: foto(antes) });
+    AuditoriaService.log(ACCIONES_AUDITORIA.TRANSACCION_ELIMINAR, meta ?? {}, 'transaccion', id, { antes: foto(antes) });
     return { id };
   }
 

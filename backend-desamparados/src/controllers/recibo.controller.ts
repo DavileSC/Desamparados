@@ -2,7 +2,7 @@ import { Response, Request } from 'express';
 import { ReciboService, type ConsultaRecibos } from '../services/recibo.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
-import { AuditService } from '../services/audit.service.js';
+import { AuditoriaService } from '../services/auditoria.service.js';
 import { EstadoPago } from '@prisma/client';
 
 export class ReciboController {
@@ -48,7 +48,7 @@ export class ReciboController {
   });
 
   static emitir = manejar('Error emitiendo el recibo', async (req, res) => {
-    const recibo = await ReciboService.emitirRecibo(req.body, AuditService.metaFromReq(req));
+    const recibo = await ReciboService.emitirRecibo(req.body, AuditoriaService.metaFromReq(req));
     res.status(201).json({
       message: `Recibo «${recibo.concepto}» emitido.`,
       reciboId: recibo.id,
@@ -58,7 +58,7 @@ export class ReciboController {
 
   static generarCuotas = manejar('Error generando cuotas masivas', async (req, res) => {
     // req.body validado por ArkType
-    const result = await ReciboService.generarCuotaAnual(req.body, AuditService.metaFromReq(req));
+    const result = await ReciboService.generarCuotaAnual(req.body, AuditoriaService.metaFromReq(req));
 
     // --- ACTUALIZADO: El servicio ahora nos devuelve un mensaje exacto y los omitidos ---
     res.status(201).json({
@@ -70,7 +70,7 @@ export class ReciboController {
   static marcarPagado = manejar('Error al cobrar el recibo', async (req, res) => {
     const id = Number(req.params.id);
 
-    const recibo = await ReciboService.adminMarcarComoPagado(id, req.body?.metodoPago, AuditService.metaFromReq(req));
+    const recibo = await ReciboService.adminMarcarComoPagado(id, req.body?.metodoPago, AuditoriaService.metaFromReq(req));
 
     res.status(200).json({
       message: 'Recibo cobrado correctamente. Si tenía papeleta, se ha enviado por email.',
@@ -81,7 +81,7 @@ export class ReciboController {
 
   static updateDetalles = manejar('Error actualizando recibo', async (req, res) => {
     const id = Number(req.params.id);
-    const reciboActualizado = await ReciboService.adminUpdateDetalles(id, req.body, AuditService.metaFromReq(req));
+    const reciboActualizado = await ReciboService.adminUpdateDetalles(id, req.body, AuditoriaService.metaFromReq(req));
     res.status(200).json(reciboActualizado);
   });
 }

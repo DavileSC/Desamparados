@@ -11,8 +11,8 @@ import { randomInt } from 'node:crypto';
 import db from '../src/config/db.js';
 import { fechaMasReciente, marcaDestacada } from '../src/domain/destacada-portada.js';
 import { HttpError } from '../src/utils/error.handle.js';
-import { NewsService } from '../src/services/news.service.js';
-import { PublicationService } from '../src/services/publication.service.js';
+import { NoticiaService } from '../src/services/noticia.service.js';
+import { PublicacionService } from '../src/services/publicacion.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
@@ -105,64 +105,64 @@ describe('destacar contra la base de datos', () => {
 
   test('sin destacada, la portada va por fecha', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const ids = (await NewsService.getLatest()).map((n) => n.id);
+    const ids = (await NoticiaService.deLaPortada()).map((n) => n.id);
     assert.deepEqual(ids, [nueva(), media(), vieja()]);
   });
 
   test('la destacada encabeza aunque sea la más vieja, y el resto sigue por fecha', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    await NewsService.update(vieja(), { fijada: true });
-    const ids = (await NewsService.getLatest()).map((n) => n.id);
+    await NoticiaService.actualizar(vieja(), { fijada: true });
+    const ids = (await NoticiaService.deLaPortada()).map((n) => n.id);
     assert.deepEqual(ids, [vieja(), nueva(), media()]);
   });
 
   test('el resumen del CMS dice cuál es la destacada y coincide con lo que sale', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const { resumen, data } = await NewsService.getAdminArchive({ q: marca });
+    const { resumen, data } = await NoticiaService.archivoDelCms({ q: marca });
     assert.equal(resumen.portada.fijada, vieja());
-    assert.deepEqual(resumen.portada.ids, (await NewsService.getLatest()).map((n) => n.id));
+    assert.deepEqual(resumen.portada.ids, (await NoticiaService.deLaPortada()).map((n) => n.id));
     // Y sube en el listado, o la raya del corte caería en mitad de la página.
     assert.deepEqual(data.filter((n) => n.visible).map((n) => n.id), [vieja(), nueva(), media()]);
   });
 
   test('la última publicación sigue siendo la más reciente, no la destacada', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const { resumen } = await NewsService.getAdminArchive({ q: marca });
+    const { resumen } = await NoticiaService.archivoDelCms({ q: marca });
     assert.deepEqual(resumen.ultimaPublicacion, new Date('2099-03-03'));
   });
 
   test('destacar otra suelta la anterior: nunca hay dos', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    await NewsService.update(media(), { fijada: true });
+    await NoticiaService.actualizar(media(), { fijada: true });
     const fijadas = await db.noticia.findMany({ where: { fijada: true }, select: { id: true } });
     assert.deepEqual(fijadas.map((n) => n.id), [media()]);
   });
 
   test('pasarla a borrador la suelta: no puede volver sola a la portada al republicarla', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    await NewsService.update(media(), { visible: false });
+    await NoticiaService.actualizar(media(), { visible: false });
     assert.equal((await db.noticia.findUnique({ where: { id: media() } }))?.fijada, false);
-    await NewsService.update(media(), { visible: true });
+    await NoticiaService.actualizar(media(), { visible: true });
     assert.equal((await db.noticia.findUnique({ where: { id: media() } }))?.fijada, false);
   });
 
   test('un borrador no se puede destacar', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    await assert.rejects(() => NewsService.update(borrador(), { fijada: true }), HttpError);
+    await assert.rejects(() => NoticiaService.actualizar(borrador(), { fijada: true }), HttpError);
     assert.equal((await db.noticia.findUnique({ where: { id: borrador() } }))?.fijada, false);
   });
 
   test('en Publicaciones funciona igual', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const [nuevaP, mediaP, viejaP] = publicaciones;
-    await PublicationService.update(viejaP, { fijada: true });
-    assert.deepEqual((await PublicationService.getLatest()).map((p) => p.id), [viejaP, nuevaP, mediaP]);
+    await PublicacionService.actualizar(viejaP, { fijada: true });
+    assert.deepEqual((await PublicacionService.deLaPortada()).map((p) => p.id), [viejaP, nuevaP, mediaP]);
 
-    await PublicationService.update(mediaP, { fijada: true });
+    await PublicacionService.actualizar(mediaP, { fijada: true });
     const fijadas = await db.publicacion.findMany({ where: { fijada: true }, select: { id: true } });
     assert.deepEqual(fijadas.map((p) => p.id), [mediaP]);
 
-    const { resumen } = await PublicationService.getAdmin({ q: marca });
+    const { resumen } = await PublicacionService.listadoDelCms({ q: marca });
     assert.equal(resumen.portada.fijada, mediaP);
     assert.deepEqual(resumen.ultimaPublicacion, new Date('2099-03-03'));
   });

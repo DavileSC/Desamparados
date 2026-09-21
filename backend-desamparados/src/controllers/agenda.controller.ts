@@ -3,7 +3,7 @@ import { AgendaService } from '../services/agenda.service.js';
 import type { AdminEventFilterDto } from '../dtos/agenda.dto.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
-import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
+import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
 
 export class AgendaController {
 
@@ -36,21 +36,21 @@ export class AgendaController {
   static create = manejar('Error creando evento', async (req, res) => {
     // req.body validado por agendaSchema
     const event = await AgendaService.createEvent(req.body);
-    AuditService.log(AUDIT_ACTIONS.EVENTO_CREAR, AuditService.metaFromReq(req), 'evento', event.id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.EVENTO_CREAR, AuditoriaService.metaFromReq(req), 'evento', event.id);
     res.status(201).json(event);
   });
 
   static update = manejar('Error actualizando evento', async (req, res) => {
     const id = Number(req.params.id);
     const updated = await AgendaService.updateEvent(id, req.body);
-    AuditService.log(AUDIT_ACTIONS.EVENTO_ACTUALIZAR, AuditService.metaFromReq(req), 'evento', id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.EVENTO_ACTUALIZAR, AuditoriaService.metaFromReq(req), 'evento', id);
     res.status(200).json(updated);
   });
 
   static delete = manejar('Error eliminando evento', async (req, res) => {
     const id = Number(req.params.id);
     await AgendaService.deleteEvent(id);
-    AuditService.log(AUDIT_ACTIONS.EVENTO_ELIMINAR, AuditService.metaFromReq(req), 'evento', id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.EVENTO_ELIMINAR, AuditoriaService.metaFromReq(req), 'evento', id);
     res.status(200).json({ message: 'Evento eliminado' });
   });
 }

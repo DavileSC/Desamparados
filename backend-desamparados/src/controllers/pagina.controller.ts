@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PaginaService } from '../services/pagina.service.js';
 import { handleHttp } from '../utils/error.handle.js';
-import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
+import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
 import { manejar } from '../utils/manejar.js';
 
 export class PaginaController {
@@ -29,14 +29,14 @@ export class PaginaController {
    */
   static createPage = manejar('Error creando página', async (req, res) => {
     const result = await PaginaService.createPagina(req.body);
-    AuditService.log(AUDIT_ACTIONS.PAGINA_GUARDAR, AuditService.metaFromReq(req), 'pagina', result.slug);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PAGINA_GUARDAR, AuditoriaService.metaFromReq(req), 'pagina', result.slug);
     res.status(201).json({ message: 'Página creada con éxito', data: result });
   });
 
   static updatePage = manejar('Error actualizando página', async (req, res) => {
     const slug = req.params.slug as string;
     const result = await PaginaService.updatePagina(slug, req.body);
-    AuditService.log(AUDIT_ACTIONS.PAGINA_ACTUALIZAR, AuditService.metaFromReq(req), 'pagina', slug);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PAGINA_ACTUALIZAR, AuditoriaService.metaFromReq(req), 'pagina', slug);
     res.status(200).json({ message: 'Página actualizada correctamente', data: result });
   });
 
@@ -49,7 +49,7 @@ export class PaginaController {
     const slug = req.params.slug as string; 
 
     await PaginaService.deletePagina(slug);
-    AuditService.log(AUDIT_ACTIONS.PAGINA_ELIMINAR, AuditService.metaFromReq(req), 'pagina', slug);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PAGINA_ELIMINAR, AuditoriaService.metaFromReq(req), 'pagina', slug);
 
     res.status(200).json({ message: `Página '${slug}' eliminada correctamente` });
   });

@@ -22,10 +22,10 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { readFileSync } from 'node:fs';
 import { sanearContenidoCms, extractoPlano, ETIQUETAS_CMS, ATRIBUTOS_CMS } from '../src/utils/sanear-html.js';
-import { createNewsSchema, updateNewsSchema } from '../src/schemas/news.schema.js';
-import { createPublicationSchema, PDF_DE_RELLENO } from '../src/schemas/publication.schema.js';
+import { crearNoticiaSchema, actualizarNoticiaSchema } from '../src/schemas/noticia.schema.js';
+import { crearPublicacionSchema, PDF_DE_RELLENO } from '../src/schemas/publicacion.schema.js';
 import { createEnserSchema, createPrendaSchema } from '../src/schemas/inventario.schema.js';
-import { NOTICIAS_EN_PORTADA } from '../src/services/news.service.js';
+import { NOTICIAS_EN_PORTADA } from '../src/services/noticia.service.js';
 import { ARCHIVO_PUBLICACION_PENDIENTE } from '../prisma/seed-contenido.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
@@ -142,9 +142,9 @@ describe('extracto como texto plano (C7)', () => {
 });
 
 describe('rutas de fotos y PDF (C3)', () => {
-  const noticia = (imagenUrl: unknown) => createNewsSchema({ body: { titulo: 'T', contenido: '<p>x</p>', imagenUrl } });
+  const noticia = (imagenUrl: unknown) => crearNoticiaSchema({ body: { titulo: 'T', contenido: '<p>x</p>', imagenUrl } });
   const publicacion = (archivoUrl: unknown, imagenUrl?: unknown) =>
-    createPublicationSchema({ body: { titulo: 'T', archivoUrl, categoria: 'boletin', ...(imagenUrl === undefined ? {} : { imagenUrl }) } });
+    crearPublicacionSchema({ body: { titulo: 'T', archivoUrl, categoria: 'boletin', ...(imagenUrl === undefined ? {} : { imagenUrl }) } });
 
   test('la foto de una noticia es una ruta propia, o vacía para «sin foto»', () => {
     for (const ok of [`/storage/public/${HEX}.jpg`, '/storage/public/portada/01-trono.webp', '/images/hero.jpg', '', null]) {
@@ -155,7 +155,7 @@ describe('rutas de fotos y PDF (C3)', () => {
     }
     // Al editar, el esquema solo normaliza: la foto se valida en el servicio
     // contra la ya guardada (ver «noticias contra el servidor», más abajo).
-    const editada = updateNewsSchema({ body: { imagenUrl: `https://www.desamparados.es/storage/public/${HEX}.jpg` } }) as { body: { imagenUrl: string } };
+    const editada = actualizarNoticiaSchema({ body: { imagenUrl: `https://www.desamparados.es/storage/public/${HEX}.jpg` } }) as { body: { imagenUrl: string } };
     assert.equal(editada.body.imagenUrl, `/storage/public/${HEX}.jpg`);
   });
 

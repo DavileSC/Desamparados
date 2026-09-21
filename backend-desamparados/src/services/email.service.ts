@@ -2,11 +2,11 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../utils/buzon-pruebas.js';
 import { emailDeSecretaria, escudoUrl, lineasDeSecretaria } from '../domain/datos-entidad.js';
-import { AuditService, AUDIT_ACTIONS } from './audit.service.js';
+import { AuditoriaService, ACCIONES_AUDITORIA } from './auditoria.service.js';
 
 import QRCode from 'qrcode';
 import { DatosPapeleta } from '../dtos/email.dto';
-import { ContactDto } from '../dtos/contact.dto';
+import { ContactoDto } from '../dtos/contacto.dto';
 
 /**
  * Lo único que `EmailService` necesita de un transporte. Lo cumplen tanto el de
@@ -478,7 +478,7 @@ export class EmailService {
     return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout("Aviso de Salida Procesional", "Secretaría y Albacería", content, '', infoExtra));
   }
 
-  static async enviarContacto(datos: ContactDto): Promise<boolean> {
+  static async enviarContacto(datos: ContactoDto): Promise<boolean> {
     const destino = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
     if (!destino) {
       console.error('❌ Contacto: CONTACT_EMAIL_TO o EMAIL_USER no está configurado.');
@@ -549,7 +549,7 @@ export class EmailService {
       // puede verlo. La dirección se guarda ENMASCARADA — la auditoría ya
       // retiene IP y navegador, y no hace falta añadirle correos completos para
       // saber que algo no salió.
-      await AuditService.log(AUDIT_ACTIONS.EMAIL_FALLIDO, {}, 'email', undefined, {
+      await AuditoriaService.log(ACCIONES_AUDITORIA.EMAIL_FALLIDO, {}, 'email', undefined, {
         para: enmascararEmail(to),
         asunto: subject,
         motivo: error instanceof Error ? error.message.slice(0, 250) : 'desconocido',

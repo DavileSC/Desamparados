@@ -2,7 +2,7 @@ import { Response, Request } from 'express';
 import { AdminService } from '../services/admin.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
-import { AuditService } from '../services/audit.service.js';
+import { AuditoriaService } from '../services/auditoria.service.js';
 
 
 export class AdminController {
@@ -22,14 +22,14 @@ export class AdminController {
   static promote = manejar('Error asignando rol', async (req, res) => {
     const { userId, role } = req.body; // Validados por ArkType
     const currentAdminId = req.user!.id;
-    const promoted = await AdminService.promoteToStaff(userId, role, currentAdminId, AuditService.metaFromReq(req));
+    const promoted = await AdminService.promoteToStaff(userId, role, currentAdminId, AuditoriaService.metaFromReq(req));
     res.status(200).json({ message: 'Usuario ascendido correctamente', data: promoted });
   });
 
   static demote = manejar('Error revocando cargo', async (req, res) => {
     const { userId } = req.body; // Validado por ArkType
     const currentAdminId = req.user!.id;
-    const demoted = await AdminService.demoteToUser(userId, currentAdminId, AuditService.metaFromReq(req));
+    const demoted = await AdminService.demoteToUser(userId, currentAdminId, AuditoriaService.metaFromReq(req));
     res.status(200).json({ message: 'Cargo revocado. El usuario vuelve a ser base.', data: demoted });
   });
 
@@ -42,7 +42,7 @@ export class AdminController {
 
   static updateConfig = manejar('Error actualizando la configuración', async (req, res) => {
     const { key, value } = req.body; // Validado por ArkType
-    const config = await AdminService.updateConfiguracion(key, value, AuditService.metaFromReq(req));
+    const config = await AdminService.updateConfiguracion(key, value, AuditoriaService.metaFromReq(req));
     res.status(200).json({ message: 'Configuración actualizada correctamente', data: config });
   });
 

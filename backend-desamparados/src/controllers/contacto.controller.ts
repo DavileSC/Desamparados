@@ -1,4 +1,4 @@
-import { ContactFormDto } from '../dtos/contact.dto.js';
+import { FormularioContactoDto } from '../dtos/contacto.dto.js';
 import { EmailService } from '../services/email.service.js';
 import { HttpError, handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
@@ -21,7 +21,7 @@ export const MIN_MS_RELLENO = 3000;
  *   abierta la versión anterior de la web lo envía sin él, y su mensaje se
  *   perdería sin que nadie lo supiera. Se deja constancia en el log.
  */
-export function motivoDescarte({ comentarioAdicional, tiempoRelleno }: Pick<ContactFormDto, 'comentarioAdicional' | 'tiempoRelleno'>): string | null {
+export function motivoDescarte({ comentarioAdicional, tiempoRelleno }: Pick<FormularioContactoDto, 'comentarioAdicional' | 'tiempoRelleno'>): string | null {
   if (comentarioAdicional && comentarioAdicional.trim() !== '') return 'campo trampa relleno';
   if (tiempoRelleno !== undefined && tiempoRelleno < MIN_MS_RELLENO) return `rellenado en ${Math.round(tiempoRelleno)} ms`;
   return null;
@@ -29,9 +29,9 @@ export function motivoDescarte({ comentarioAdicional, tiempoRelleno }: Pick<Cont
 
 const MENSAJE_ENVIADO = 'Mensaje enviado correctamente.';
 
-export class ContactController {
+export class ContactoController {
   static send = manejar('No se ha podido enviar el mensaje. Inténtalo de nuevo más tarde.', async (req, res) => {
-    const { comentarioAdicional, tiempoRelleno, ...datos } = req.body as ContactFormDto;
+    const { comentarioAdicional, tiempoRelleno, ...datos } = req.body as FormularioContactoDto;
 
     // Al robot se le responde lo mismo que a una persona: si notara la
     // diferencia, aprendería a esquivar la trampa. Así tampoco gasta la cuota

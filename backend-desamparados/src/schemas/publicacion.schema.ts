@@ -1,6 +1,6 @@
 import { type } from 'arktype';
 import { idParam, paginacionQuery, textoRequerido } from '../config/common';
-import { imagenAlEditar, imagenOpcional } from './news.schema';
+import { imagenAlEditar, imagenOpcional } from './noticia.schema';
 import { aRutaPropia, esPdfPropio, PDF_DE_RELLENO } from '../utils/rutas-propias';
 
 // Se reexporta: lo usan los tests y es parte de la regla del PDF.
@@ -24,7 +24,7 @@ const pdfAlEditar = type('string').pipe(normalizarPdf);
 // Sin declarar page y limit, `validate` los borra en silencio y el listado sirve
 // siempre la primera página.
 export const categoryParamSchema = type({ params: { category: categorySchema }, query: { ...paginacionQuery } });
-export const publicationListQuerySchema = type({ query: { ...paginacionQuery } });
+export const publicacionesQuerySchema = type({ query: { ...paginacionQuery } });
 
 // Los apartados del listado del CMS. «Incompletas» son las que salen cojas en la
 // web (sin portada o sin descripción), estén publicadas o no.
@@ -32,7 +32,7 @@ export const ESTADOS_PUBLICACION = ['publicadas', 'borradores', 'incompletas'] a
 export type EstadoPublicacion = (typeof ESTADOS_PUBLICACION)[number];
 
 // Listado del CMS: búsqueda por palabras, apartado, tipo y página.
-export const adminPublicationQuerySchema = type({
+export const publicacionesCmsQuerySchema = type({
   query: {
     'q?': 'string <= 100',
     'estado?': "'publicadas' | 'borradores' | 'incompletas'",
@@ -40,7 +40,7 @@ export const adminPublicationQuerySchema = type({
     ...paginacionQuery,
   },
 });
-export const createPublicationSchema = type({
+export const crearPublicacionSchema = type({
   body: {
     titulo: textoRequerido,
     archivoUrl: rutaPdfPublica,
@@ -51,7 +51,7 @@ export const createPublicationSchema = type({
     'visible?': 'boolean',
   },
 });
-export const updatePublicationSchema = type({
+export const actualizarPublicacionSchema = type({
   body: {
     'titulo?': textoRequerido,
     'archivoUrl?': pdfAlEditar,
@@ -65,4 +65,4 @@ export const updatePublicationSchema = type({
     'fijada?': 'boolean',
   },
 });
-export const publicationIdParamSchema = type({ params: { id: idParam } });
+export const publicacionIdParamSchema = type({ params: { id: idParam } });

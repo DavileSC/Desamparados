@@ -1,7 +1,7 @@
 import { type } from 'arktype';
 import { ordenQuery, paginacionQuery, textoRequerido } from '../config/common';
 import { ORDENES_ENSERES, ORDENES_PRENDAS } from '../domain/ordenacion.js';
-import { imagenOpcional } from './news.schema';
+import { imagenOpcional } from './noticia.schema';
 
 // =================================================================
 //  ENUMS COMUNES

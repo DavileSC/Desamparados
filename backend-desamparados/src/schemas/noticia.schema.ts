@@ -24,7 +24,7 @@ export const imagenAlEditar = type('string | null')
     .pipe((valor: string | null) => (valor === null ? null : aRutaPropia(valor, esImagenPropia)));
 
 // Esquema para crear (titulo y contenido obligatorios)
-export const createNewsSchema = type({
+export const crearNoticiaSchema = type({
     body: {
         titulo: textoRequerido,
         contenido: contenidoHtml,
@@ -37,7 +37,7 @@ export const createNewsSchema = type({
 });
 
 // Esquema para actualizar (todo opcional)
-export const updateNewsSchema = type({
+export const actualizarNoticiaSchema = type({
     body: {
         "titulo?": textoRequerido,
         "contenido?": contenidoHtml,
@@ -58,7 +58,7 @@ export const ESTADOS_NOTICIA = ['publicadas', 'borradores', 'incompletas'] as co
 export type EstadoNoticia = (typeof ESTADOS_NOTICIA)[number];
 
 // Listado del CMS: búsqueda por palabras, apartado y página.
-export const adminArchiveQuerySchema = type({
+export const archivoCmsQuerySchema = type({
     query: {
         "q?": "string <= 100",
         "estado?": "'publicadas' | 'borradores' | 'incompletas'",

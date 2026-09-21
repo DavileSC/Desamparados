@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import { Prisma, Role } from '@prisma/client';
 import { RegisterDto, LoginDto, ReactivacionDto } from '../dtos/auth.dto';
 import { comprobarEsAdulto, comprobarEsMenor } from '../domain/fechas-hermano.js';
-import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
+import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
 
 // --- NUEVA LIBRERÍA: OTPAUTH ---
 import * as OTPAuth from 'otpauth';
@@ -789,7 +789,7 @@ export class AuthService {
    * quitarse el segundo factor sin demostrar que se tiene. Para eso está la
    * desactivación con código de «Mi seguridad».
    */
-  static async forceDisable2FA(targetUserId: number, actorId: number, meta?: AuditMeta) {
+  static async forceDisable2FA(targetUserId: number, actorId: number, meta?: MetaDeAuditoria) {
     if (targetUserId === actorId) {
       throw new HttpError('No puedes rescatar tu propia cuenta. Desactiva tu doble factor desde «Mi seguridad» con un código vigente.', 403);
     }
@@ -797,7 +797,7 @@ export class AuthService {
     const antes = await this.apagar2FAForzado(targetUserId);
 
     // Auditoría: rescate de emergencia sobre la cuenta de otro usuario, ya confirmado
-    await AuditService.log(AUDIT_ACTIONS.TFa_RESET_ADMIN, meta ?? {}, 'user', targetUserId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.TFa_RESET_ADMIN, meta ?? {}, 'user', targetUserId, {
       antes,
       despues: { twoFactorEnabled: false, codigosRespaldoSinUsar: 0 },
       sesionesCerradas: true
@@ -818,8 +818,8 @@ export class AuthService {
 
     const antes = await this.apagar2FAForzado(objetivo.id);
 
-    await AuditService.log(
-      AUDIT_ACTIONS.TFa_RESET_ADMIN,
+    await AuditoriaService.log(
+      ACCIONES_AUDITORIA.TFa_RESET_ADMIN,
       { ip: 'consola', userAgent: 'scripts/rescatar-2fa.ts' },
       'user',
       objetivo.id,
@@ -905,7 +905,7 @@ export class AuthService {
    * del usuario: cuenta, fichas familiares, recibos, papeletas, citas y
    * transacciones asociadas a sus perfiles.
    */
-  static async exportMisDatos(userId: number, meta?: AuditMeta) {
+  static async exportMisDatos(userId: number, meta?: MetaDeAuditoria) {
     const user = await db.user.findUnique({
       where: { id: userId },
       include: {
@@ -922,7 +922,7 @@ export class AuthService {
     if (!user) throw new NotFoundError('Usuario no encontrado');
 
     // Auditoría (las exportaciones masivas de datos también son rastreables)
-    AuditService.log(AUDIT_ACTIONS.CUENTA_DATOS_EXPORT, meta ?? {}, 'user', userId);
+    AuditoriaService.log(ACCIONES_AUDITORIA.CUENTA_DATOS_EXPORT, meta ?? {}, 'user', userId);
 
     // Nunca exponemos secretos en la exportación: el cliente Prisma ya los omite
     // globalmente (ver config/db.ts), así que `user` llega sin password/2FA/reset.
@@ -954,7 +954,7 @@ export class AuthService {
     userId: number,
     password: string,
     origen: 'cms' | 'hermanos' | undefined,
-    meta?: AuditMeta
+    meta?: MetaDeAuditoria
   ) {
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -1077,7 +1077,7 @@ export class AuthService {
     // Auditoría después de confirmar: si la transacción falla, el registro no
     // debe dar fe de un borrado que no ocurrió. El userId del registro sigue
     // señalando a la cuenta, que se anonimiza pero no se borra.
-    await AuditService.log(AUDIT_ACTIONS.CUENTA_AUTODELETE, meta ?? {}, 'user', userId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.CUENTA_AUTODELETE, meta ?? {}, 'user', userId, {
       antes: { rol: user.role, activa: user.active, fichasActivas: user.hermanos.filter((h) => h.activo).length },
       despues: { activa: false, anonimizada: true, fichas, registrosAuditoriaSuprimidos: registrosSuprimidos }
     });

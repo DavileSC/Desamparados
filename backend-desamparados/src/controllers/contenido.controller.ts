@@ -1,7 +1,7 @@
 import { ContenidoService } from '../services/contenido.service.js';
 import { esSlugContenido } from '../domain/contenido.js';
 import { handleHttp, NotFoundError } from '../utils/error.handle.js';
-import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
+import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
 import { manejar } from '../utils/manejar.js';
 
 export class ContenidoController {
@@ -17,7 +17,7 @@ export class ContenidoController {
     const slug = req.params.slug;
     if (!esSlugContenido(slug)) throw new NotFoundError('Página no encontrada');
     const datos = await ContenidoService.guardar(slug, req.body.datos);
-    AuditService.log(AUDIT_ACTIONS.CONTENIDO_ACTUALIZAR, AuditService.metaFromReq(req), 'contenido', slug);
+    AuditoriaService.log(ACCIONES_AUDITORIA.CONTENIDO_ACTUALIZAR, AuditoriaService.metaFromReq(req), 'contenido', slug);
     res.status(200).json({ message: 'Contenido guardado', data: datos });
   });
 }

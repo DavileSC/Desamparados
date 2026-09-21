@@ -3,7 +3,7 @@ import { EmailService } from './email.service';
 import { EmitirReciboDto, GenerarCuotasDto, UpdateReciboDto } from '../dtos/recibo.dto.js';
 import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { DatosPapeleta } from '../dtos/email.dto.js';
-import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service.js';
+import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { anulaPapeleta, puedeCobrarse, puedeTransicionar, requiereReverso, ESTADOS_COBRABLES } from '../domain/recibo-estados.js';
@@ -169,7 +169,7 @@ export class ReciboService {
   // =================================================================
   //  1. GENERACIÓN MASIVA Y EMISIÓN SUELTA (ADMIN)
   // =================================================================
-  static async generarCuotaAnual({ year, importe, concepto }: GenerarCuotasDto, meta?: AuditMeta) {
+  static async generarCuotaAnual({ year, importe, concepto }: GenerarCuotasDto, meta?: MetaDeAuditoria) {
     const conceptoLimpio = concepto.trim();
 
     // Serializable: dos «Generar» seguidos (o dos tesoreros a la vez) leerían
@@ -219,7 +219,7 @@ export class ReciboService {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     // Auditoría: movimiento económico masivo, ya confirmado.
-    await AuditService.log(AUDIT_ACTIONS.CUOTAS_GENERAR, meta ?? {}, 'recibo', `year:${year}:${resultado.creados}`, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.CUOTAS_GENERAR, meta ?? {}, 'recibo', `year:${year}:${resultado.creados}`, {
       despues: { year, concepto: conceptoLimpio, importe: String(importe), creados: resultado.creados, omitidos: resultado.omitidos }
     });
 
@@ -237,7 +237,7 @@ export class ReciboService {
    * comprometido o la reemisión de un recibo que el banco devolvió (los
    * devueltos son finales: para volver a cobrar se emite otro).
    */
-  static async emitirRecibo(dto: EmitirReciboDto, meta?: AuditMeta) {
+  static async emitirRecibo(dto: EmitirReciboDto, meta?: MetaDeAuditoria) {
     const concepto = dto.concepto.trim();
 
     const recibo = await transactionWithRetry(async (tx) => {
@@ -285,7 +285,7 @@ export class ReciboService {
       });
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-    await AuditService.log(AUDIT_ACTIONS.RECIBO_EMITIR, meta ?? {}, 'recibo', recibo.id, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.RECIBO_EMITIR, meta ?? {}, 'recibo', recibo.id, {
       despues: { hermanoId: recibo.hermanoId, year: recibo.year, concepto: recibo.concepto, tipo: recibo.tipo, ...fotoRecibo(recibo) }
     });
 
@@ -490,7 +490,7 @@ export class ReciboService {
   // =================================================================
 
   // Cobrar y emitir papeleta
-  static async adminMarcarComoPagado(reciboId: number, metodoPago?: MetodoPago, meta?: AuditMeta) {
+  static async adminMarcarComoPagado(reciboId: number, metodoPago?: MetodoPago, meta?: MetaDeAuditoria) {
     // Antes de abrir la transacción: ver idCategoriaDeRecibos.
     const categoriaIngresosId = await ReciboService.idCategoriaIngresos();
 
@@ -554,7 +554,7 @@ export class ReciboService {
       return { recibo: updated, antes: actual };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-    await AuditService.log(AUDIT_ACTIONS.RECIBO_COBRAR, meta ?? {}, 'recibo', reciboId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.RECIBO_COBRAR, meta ?? {}, 'recibo', reciboId, {
       antes: fotoRecibo(antes),
       despues: fotoRecibo(recibo)
     });
@@ -593,7 +593,7 @@ export class ReciboService {
   }
 
   // Cambiar el estado de un recibo y los datos de su papeleta (puesto, tramo)
-  static async adminUpdateDetalles(reciboId: number, data: UpdateReciboDto, meta?: AuditMeta) {
+  static async adminUpdateDetalles(reciboId: number, data: UpdateReciboDto, meta?: MetaDeAuditoria) {
     const tocaPapeleta = data.puesto !== undefined || data.tramo !== undefined || data.observaciones !== undefined;
     // Solo una devolución puede necesitar el reverso; la categoría se resuelve
     // antes de abrir la transacción (ver idCategoriaDeRecibos).
@@ -669,7 +669,7 @@ export class ReciboService {
     });
 
     // Tras confirmar: la auditoría no da fe de cambios que se deshicieron.
-    await AuditService.log(AUDIT_ACTIONS.RECIBO_ACTUALIZAR, meta ?? {}, 'recibo', reciboId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.RECIBO_ACTUALIZAR, meta ?? {}, 'recibo', reciboId, {
       antes: resultado.antes,
       despues: resultado.despues
     });

@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 /**
  * Metadatos de quién realiza la acción (extraídos del request autenticado).
  */
-export interface AuditMeta {
+export interface MetaDeAuditoria {
   userId?: number;
   ip?: string;
   userAgent?: string;
@@ -15,7 +15,7 @@ export interface AuditMeta {
  * Catálogo centralizado de acciones auditables.
  * Mantener en mayúsculas y verbo_sustantivo para filtrado consistente.
  */
-export const AUDIT_ACTIONS = {
+export const ACCIONES_AUDITORIA = {
   // Staff / roles
   STAFF_PROMOTE: 'STAFF_PROMOTE',
   STAFF_DEMOTE: 'STAFF_DEMOTE',
@@ -87,12 +87,12 @@ export const AUDIT_ACTIONS = {
   EMAIL_FALLIDO: 'EMAIL_FALLIDO'
 } as const;
 
-export class AuditService {
+export class AuditoriaService {
 
   /**
    * Extrae los metadatos del request (requiere que authenticateToken ya haya corrido).
    */
-  static metaFromReq(req: Request): AuditMeta {
+  static metaFromReq(req: Request): MetaDeAuditoria {
     return {
       userId: req.user?.id,
       ip: req.ip,
@@ -127,7 +127,7 @@ export class AuditService {
    */
   static async log(
     action: string,
-    meta: AuditMeta,
+    meta: MetaDeAuditoria,
     entityType?: string,
     entityId?: string | number,
     detalles?: Prisma.InputJsonValue

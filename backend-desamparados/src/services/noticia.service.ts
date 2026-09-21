@@ -1,12 +1,12 @@
 import db from '../config/db';
 import { Prisma } from '@prisma/client';
-import { CreateNewsDto, UpdateNewsDto, NewsFilterDto, AdminNewsFilterDto } from '../dtos/news.dto';
+import { CrearNoticiaDto, ActualizarNoticiaDto, FiltroNoticiasDto, FiltroNoticiasCmsDto } from '../dtos/noticia.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { sanearContenidoCms, extractoPlano } from '../utils/sanear-html.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 import { esImagenPropia, rutaAlEditar } from '../utils/rutas-propias.js';
-import type { EstadoNoticia } from '../schemas/news.schema.js';
+import type { EstadoNoticia } from '../schemas/noticia.schema.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { fechaMasReciente, marcaDestacada } from '../domain/destacada-portada.js';
 import { slugDeNoticia } from '../domain/slug-noticia.js';
@@ -64,14 +64,14 @@ function imagenAGuardar(imagenUrl: string | null | undefined): string | null | u
   return imagenUrl === '' ? null : imagenUrl;
 }
 
-export class NewsService {
+export class NoticiaService {
 
   // =================================================================
   //  1. FRONTEND: LECTURA PÚBLICA
   // =================================================================
 
   // Portada: la destacada y, tras ella, las más recientes hasta NOTICIAS_EN_PORTADA.
-  static async getLatest() {
+  static async deLaPortada() {
     const noticias = await db.noticia.findMany({
       where: { visible: true },
       orderBy: ORDEN_PORTADA,
@@ -81,7 +81,7 @@ export class NewsService {
   }
 
   // Leer noticia individual por URL amigable
-  static async getOneBySlug(slug: string) {
+  static async porDireccion(slug: string) {
     const noticia = await db.noticia.findUnique({ where: { slug } });
     if (!noticia || !noticia.visible) {
        // Nota: Podrías querer devolverla si es admin, pero eso se gestiona en el controller
@@ -93,7 +93,7 @@ export class NewsService {
   // Leer noticia individual por id, incluidos los borradores (CMS). Antes el
   // cliente se traía el listado paginado y buscaba dentro con un .find(): una
   // noticia fuera del recorte era imposible de editar.
-  static async getOneById(id: number) {
+  static async porId(id: number) {
     const noticia = await db.noticia.findUnique({ where: { id } });
     return noticia ? conExtractoPlano(noticia) : null;
   }
@@ -103,7 +103,7 @@ export class NewsService {
   // =================================================================
 
   // Archivo PÚBLICO con paginación y búsqueda por título: solo lo publicado.
-  static async getArchive({ page, limit, search }: NewsFilterDto) {
+  static async archivoPublico({ page, limit, search }: FiltroNoticiasDto) {
     const paginacion = sanearPaginacion({ page, limit });
 
     const whereCondition: Prisma.NoticiaWhereInput = {
@@ -150,7 +150,7 @@ export class NewsService {
    * que las cifras no bailen al teclear) y qué noticias salen ahora mismo en la
    * portada, que son las mismas que sirve getLatest.
    */
-  static async getAdminArchive({ page, limit, q, estado }: AdminNewsFilterDto) {
+  static async archivoDelCms({ page, limit, q, estado }: FiltroNoticiasCmsDto) {
     const paginacion = sanearPaginacion({ page, limit });
     const where: Prisma.NoticiaWhereInput = {
       ...condicionEstadoNoticia(estado),
@@ -199,7 +199,7 @@ export class NewsService {
   }
 
   // Crear Noticia
-  static async create(data: CreateNewsDto) {
+  static async crear(data: CrearNoticiaDto) {
     // 1. Calcular fecha
     const fechaNoticia = data.fecha ? new Date(data.fecha) : new Date();
 
@@ -230,7 +230,7 @@ export class NewsService {
   }
 
   // Editar Noticia
-  static async update(id: number, data: UpdateNewsDto) {
+  static async actualizar(id: number, data: ActualizarNoticiaDto) {
     // Lo de antes hace falta para saber qué ficheros deja de usar la noticia.
     const anterior = await db.noticia.findUnique({ where: { id } });
     if (!anterior) throw new NotFoundError('Noticia no encontrada');
@@ -282,7 +282,7 @@ export class NewsService {
   }
 
   // Borrar Noticia
-  static async delete(id: number) {
+  static async eliminar(id: number) {
     const noticia = await db.noticia.findUnique({ where: { id } });
     if (!noticia) throw new NotFoundError('Noticia no encontrada');
     const borrada = await db.noticia.delete({ where: { id } });

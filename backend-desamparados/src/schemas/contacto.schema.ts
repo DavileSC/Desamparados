@@ -25,7 +25,7 @@ export const telefonoContacto = type('string')
   })
   .describe('un teléfono válido (entre 6 y 15 cifras; puede empezar por + y el prefijo del país)');
 
-export const contactSchema = type({
+export const contactoSchema = type({
   body: {
     nombre: boundedText.and(textoRequerido),
     email: emailVisitante,

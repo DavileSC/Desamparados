@@ -17,7 +17,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
 import { ProcesionService } from '../src/services/procesion.service.js';
-import { AUDIT_ACTIONS } from '../src/services/audit.service.js';
+import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
@@ -161,7 +161,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cita.id } })).estado, EstadoCita.CANCELADA);
 
     // Auditoría escrita tras confirmar, con el antes y el después.
-    const registro = await auditoria(AUDIT_ACTIONS.PAPELETA_ANULAR, papeleta.id);
+    const registro = await auditoria(ACCIONES_AUDITORIA.PAPELETA_ANULAR, papeleta.id);
     const detalles = registro?.detalles as { antes: { recibo: { estado: string } }; despues: { recibo: { estado: string } } };
     assert.equal(detalles.antes.recibo.estado, EstadoPago.PAGADO);
     assert.equal(detalles.despues.recibo.estado, EstadoPago.DEVUELTO);
@@ -191,7 +191,7 @@ test('D2: si Tesorería devuelve el recibo de una papeleta, la papeleta queda an
     assert.equal(await db.papeletaSitio.findUnique({ where: { id: papeleta.id } }), null);
     assert.equal((await apuntes(recibo.id)).filter((m) => m.tipo === TipoTransaccion.GASTO).length, 1, 'un solo reverso');
 
-    const registro = await auditoria(AUDIT_ACTIONS.RECIBO_ACTUALIZAR, recibo.id);
+    const registro = await auditoria(ACCIONES_AUDITORIA.RECIBO_ACTUALIZAR, recibo.id);
     const detalles = registro?.detalles as { antes: { estado: string }; despues: { estado: string; papeletaAnulada: number } };
     assert.deepEqual([detalles.antes.estado, detalles.despues.estado], [EstadoPago.PAGADO, EstadoPago.DEVUELTO]);
     assert.equal(detalles.despues.papeletaAnulada, papeleta.id);
@@ -214,7 +214,7 @@ test('D3: se emite un recibo suelto, se remesa y se cobra con su ingreso', async
     );
     assert.equal(recibo.estado, EstadoPago.PENDIENTE);
     assert.equal(recibo.tipo, TipoRecibo.DONATIVO);
-    assert.ok(await auditoria(AUDIT_ACTIONS.RECIBO_EMITIR, recibo.id), 'la emisión debe quedar auditada');
+    assert.ok(await auditoria(ACCIONES_AUDITORIA.RECIBO_EMITIR, recibo.id), 'la emisión debe quedar auditada');
 
     // El mismo concepto el mismo año choca con la clave única: 409 con motivo, no 500.
     await assert.rejects(
@@ -229,7 +229,7 @@ test('D3: se emite un recibo suelto, se remesa y se cobra con su ingreso', async
     assert.equal(cobrado.metodoPago, MetodoPago.DOMICILIACION);
     assert.deepEqual((await apuntes(recibo.id)).map((m) => [m.tipo, String(m.importe)]), [[TipoTransaccion.INGRESO, '12.5']]);
 
-    const registro = await auditoria(AUDIT_ACTIONS.RECIBO_COBRAR, recibo.id);
+    const registro = await auditoria(ACCIONES_AUDITORIA.RECIBO_COBRAR, recibo.id);
     const detalles = registro?.detalles as { antes: { estado: string }; despues: { estado: string } };
     assert.deepEqual([detalles.antes.estado, detalles.despues.estado], [EstadoPago.REMESADO, EstadoPago.PAGADO]);
   } finally {
@@ -368,7 +368,7 @@ test('D5/D19: un cambio de estado rechazado no deja auditoría ni toca el recibo
     await assert.rejects(ReciboService.adminUpdateDetalles(recibo.id, { estado: 'EXENTO' }, e.meta), HttpError);
     assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: recibo.id } })).estado, EstadoPago.PAGADO);
     // Antes se auditaba ANTES de la transacción: el registro daba fe de un cambio que no ocurrió.
-    assert.equal(await auditoria(AUDIT_ACTIONS.RECIBO_ACTUALIZAR, recibo.id), null);
+    assert.equal(await auditoria(ACCIONES_AUDITORIA.RECIBO_ACTUALIZAR, recibo.id), null);
   } finally {
     await e.recoger();
   }
@@ -518,7 +518,7 @@ test('P5: por HTTP, una fecha futura o ilegible es un 400 y una pasada se proces
     // 2000-01-01: ningún turno real es tan antiguo, así que no toca datos de nadie.
     const valida = await fetch(url, { method: 'POST', headers: cabeceras, body: JSON.stringify({ fechaLimite: '2000-01-01', cierreDefinitivo: true }) });
     assert.equal(valida.status, 200);
-    const registro = await db.auditLog.findFirst({ where: { action: AUDIT_ACTIONS.AUSENCIAS_PROCESAR, userId: e.admin.id } });
+    const registro = await db.auditLog.findFirst({ where: { action: ACCIONES_AUDITORIA.AUSENCIAS_PROCESAR, userId: e.admin.id } });
     assert.equal((registro?.detalles as { citasAfectadas: number }).citasAfectadas, 0);
   } finally {
     await e.recoger();
@@ -539,7 +539,7 @@ test('P5: marca como no presentado a quien no vino, le escribe y audita cuántas
     assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cita.id } })).estado, EstadoCita.NO_PRESENTADO);
     assert.equal(recordatoriosEnviados.mock.callCount(), 1);
 
-    const registro = await db.auditLog.findFirst({ where: { action: AUDIT_ACTIONS.AUSENCIAS_PROCESAR, userId: e.admin.id } });
+    const registro = await db.auditLog.findFirst({ where: { action: ACCIONES_AUDITORIA.AUSENCIAS_PROCESAR, userId: e.admin.id } });
     const detalles = registro?.detalles as { citasAfectadas: number; citaIds: number[]; estadoNuevo: string };
     assert.equal(detalles.citasAfectadas, 1);
     assert.deepEqual(detalles.citaIds, [cita.id]);
@@ -682,11 +682,11 @@ test('D19: crear y borrar un turno queda auditado con sus datos', async (t) => {
     }, e.meta);
     e.turnos.push(turno.id);
 
-    const alta = await auditoria(AUDIT_ACTIONS.TURNO_CREAR, turno.id);
+    const alta = await auditoria(ACCIONES_AUDITORIA.TURNO_CREAR, turno.id);
     assert.equal((alta?.detalles as { despues: { capacidadEstimada: number } }).despues.capacidadEstimada, 40);
 
     await ProcesionService.eliminarTurno(turno.id, e.meta);
-    const baja = await auditoria(AUDIT_ACTIONS.TURNO_ELIMINAR, turno.id);
+    const baja = await auditoria(ACCIONES_AUDITORIA.TURNO_ELIMINAR, turno.id);
     assert.equal((baja?.detalles as { antes: { capacidadEstimada: number } }).antes.capacidadEstimada, 40);
   } finally {
     await e.recoger();

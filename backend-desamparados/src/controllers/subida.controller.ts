@@ -80,9 +80,9 @@ export async function recodificarSinMetadatos(original: Buffer, mime: string): P
   return mejor!;
 }
 
-export class UploadController {
+export class SubidaController {
 
-  static async uploadFile(req: Request, res: Response) {
+  static async subirArchivo(req: Request, res: Response) {
     try {
       const { file } = req;
 

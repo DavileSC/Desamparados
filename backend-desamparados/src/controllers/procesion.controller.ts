@@ -1,7 +1,7 @@
 import { ProcesionService } from '../services/procesion.service.js';
 import { handleHttp, HttpError } from '../utils/error.handle.js';
 import { instanteLimiteAusencias } from '../domain/datos-procesion.js';
-import { AuditService } from '../services/audit.service.js';
+import { AuditoriaService } from '../services/auditoria.service.js';
 import { manejar } from '../utils/manejar.js';
 
 export class ProcesionController {
@@ -44,7 +44,7 @@ export class ProcesionController {
   });
 
   static inscribirManual = manejar('Error al realizar inscripción', async (req, res) => {
-    const result = await ProcesionService.inscribirYFacturar(req.body, AuditService.metaFromReq(req));
+    const result = await ProcesionService.inscribirYFacturar(req.body, AuditoriaService.metaFromReq(req));
     res.status(200).json({
       msg: 'Inscripción realizada. Recibo generado y correo enviado.',
       data: result
@@ -53,7 +53,7 @@ export class ProcesionController {
 
   static anularPapeleta = manejar('Error al anular la papeleta', async (req, res) => {
     const papeletaId = Number(req.params.id);
-    const result = await ProcesionService.anularPapeleta(papeletaId, AuditService.metaFromReq(req));
+    const result = await ProcesionService.anularPapeleta(papeletaId, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
@@ -77,7 +77,7 @@ export class ProcesionController {
     if (!limite) throw new HttpError('La fecha límite debe ser una fecha válida que no sea posterior a hoy.');
     const cierreDefinitivo = cuerpo.cierreDefinitivo === true;
 
-    const result = await ProcesionService.procesarAusencias(limite, cierreDefinitivo, AuditService.metaFromReq(req));
+    const result = await ProcesionService.procesarAusencias(limite, cierreDefinitivo, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
@@ -91,13 +91,13 @@ export class ProcesionController {
   });
 
   static crearTurno = manejar('Error creando el turno', async (req, res) => {
-    const nuevoTurno = await ProcesionService.crearTurno(req.body, AuditService.metaFromReq(req));
+    const nuevoTurno = await ProcesionService.crearTurno(req.body, AuditoriaService.metaFromReq(req));
     res.status(201).json(nuevoTurno);
   });
 
   static deleteTurno = manejar('Error eliminando turno', async (req, res) => {
     const turnoId = Number(req.params.id);
-    await ProcesionService.eliminarTurno(turnoId, AuditService.metaFromReq(req));
+    await ProcesionService.eliminarTurno(turnoId, AuditoriaService.metaFromReq(req));
     res.status(200).json({ message: 'Turno eliminado correctamente' });
   });
 

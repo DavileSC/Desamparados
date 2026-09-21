@@ -2,7 +2,7 @@
  * La dirección de una noticia en la web: su título en minúsculas y sin
  * adornos, con el año detrás.
  *
- * Vive aquí, y no dentro de `NewsService`, porque el CMS tiene que decir la
+ * Vive aquí, y no dentro de `NoticiaService`, porque el CMS tiene que decir la
  * misma dirección mientras se escribe el título (`desamparados-web/src/lib/
  * slug.ts`) y era un método privado que ningún test podía mirar. La tabla de
  * casos de `shared/casos-slug.json` la leen los tests de los dos lados: si uno

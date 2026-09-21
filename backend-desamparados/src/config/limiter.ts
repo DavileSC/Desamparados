@@ -33,7 +33,7 @@ export const authLimiter = rateLimit({
 
 // El formulario público puede provocar spam de correo, por lo que tiene un
 // límite propio más estricto que el resto de lecturas de la API.
-export const contactLimiter = rateLimit({
+export const limitadorContacto = rateLimit({
 	windowMs: 15 * 60 * 1000,
 	limit: 5,
 	standardHeaders: 'draft-7',

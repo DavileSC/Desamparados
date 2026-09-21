@@ -9,13 +9,13 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { randomInt } from 'node:crypto';
 import db from '../src/config/db.js';
-import { adminArchiveQuerySchema } from '../src/schemas/news.schema.js';
-import { NewsService, condicionEstadoNoticia } from '../src/services/news.service.js';
+import { archivoCmsQuerySchema } from '../src/schemas/noticia.schema.js';
+import { NoticiaService, condicionEstadoNoticia } from '../src/services/noticia.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 const valida = (query: Record<string, string>) =>
-  !(adminArchiveQuerySchema.onDeepUndeclaredKey('delete')({ query, body: {}, params: {} }) as { summary?: string }).summary;
+  !(archivoCmsQuerySchema.onDeepUndeclaredKey('delete')({ query, body: {}, params: {} }) as { summary?: string }).summary;
 
 describe('la consulta del listado de noticias del CMS', () => {
   test('acepta los tres apartados y rechaza cualquier otro', () => {
@@ -76,13 +76,13 @@ describe('getAdminArchive contra la base de datos', () => {
 
   test('sin apartado, los borradores van primero y luego lo publicado por fecha', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const { data } = await NewsService.getAdminArchive({ q: marca });
+    const { data } = await NoticiaService.archivoDelCms({ q: marca });
     assert.deepEqual(titulos(data), ['Borrador', 'Completa', 'Sinfoto']);
   });
 
   test('cada apartado trae lo suyo', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const de = async (estado: 'publicadas' | 'borradores' | 'incompletas') => titulos((await NewsService.getAdminArchive({ q: marca, estado })).data);
+    const de = async (estado: 'publicadas' | 'borradores' | 'incompletas') => titulos((await NoticiaService.archivoDelCms({ q: marca, estado })).data);
     assert.deepEqual(await de('publicadas'), ['Completa', 'Sinfoto']);
     assert.deepEqual(await de('borradores'), ['Borrador']);
     assert.deepEqual(await de('incompletas'), ['Borrador', 'Sinfoto']);
@@ -90,13 +90,13 @@ describe('getAdminArchive contra la base de datos', () => {
 
   test('la búsqueda mira también el extracto', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const { data } = await NewsService.getAdminArchive({ q: `${marca} resumen` });
+    const { data } = await NoticiaService.archivoDelCms({ q: `${marca} resumen` });
     assert.deepEqual(titulos(data), ['Completa', 'Sinfoto']);
   });
 
   test('el resumen dice qué sale en la portada, y los borradores no cuentan', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const { resumen } = await NewsService.getAdminArchive({ q: marca });
+    const { resumen } = await NoticiaService.archivoDelCms({ q: marca });
     assert.deepEqual(resumen.portada.ids.slice(0, 2), [ids[0], ids[1]]);
     assert.ok(!resumen.portada.ids.includes(ids[2]));
     assert.equal(resumen.portada.ids.length <= resumen.portada.limite, true);
@@ -105,8 +105,8 @@ describe('getAdminArchive contra la base de datos', () => {
 
   test('las cifras son del archivo entero, no de la búsqueda', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const conBusqueda = await NewsService.getAdminArchive({ q: marca });
-    const sinBusqueda = await NewsService.getAdminArchive({});
+    const conBusqueda = await NoticiaService.archivoDelCms({ q: marca });
+    const sinBusqueda = await NoticiaService.archivoDelCms({});
     assert.deepEqual(conBusqueda.resumen, sinBusqueda.resumen);
     assert.ok(sinBusqueda.resumen.borradores >= 1);
   });

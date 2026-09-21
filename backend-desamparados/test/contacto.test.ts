@@ -18,12 +18,12 @@ import type { Server } from 'node:http';
 import { ArkErrors } from 'arktype';
 import nodemailer from 'nodemailer';
 import app from '../src/app.js';
-import { contactSchema } from '../src/schemas/contact.schema.js';
-import { motivoDescarte, MIN_MS_RELLENO } from '../src/controllers/contact.controller.js';
+import { contactoSchema } from '../src/schemas/contacto.schema.js';
+import { motivoDescarte, MIN_MS_RELLENO } from '../src/controllers/contacto.controller.js';
 import { EmailService } from '../src/services/email.service.js';
 
 const valido = { nombre: 'Ana', email: 'ana@example.es', asunto: 'Besapiés', mensaje: 'Quería preguntar por el horario.' };
-const validar = (cambios: Record<string, unknown>) => contactSchema({ body: { ...valido, ...cambios } });
+const validar = (cambios: Record<string, unknown>) => contactoSchema({ body: { ...valido, ...cambios } });
 const esError = (resultado: unknown) => resultado instanceof ArkErrors;
 
 describe('validación del formulario', () => {

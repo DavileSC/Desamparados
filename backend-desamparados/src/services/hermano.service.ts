@@ -2,7 +2,7 @@ import db from '../config/db';
 import { encrypt } from '../utils/bcrypt.handle';
 import { Prisma, Role } from '@prisma/client';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto, UpdateAdminHermanoDto } from '../dtos/hermano.dto';
-import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
+import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { comprobarBajaNoFutura, comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano, comprobarMayoriaDeEdad, diaDeHoy, instanteDeDia, mismoDia } from '../domain/fechas-hermano';
 import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
@@ -206,7 +206,7 @@ export class HermanoService {
     return respuestaPaginada(data, total, paginacion);
   }
 
-  static async createDependentProfile(managerUserId: number, data: CreateHermanoDto, meta?: AuditMeta) {
+  static async createDependentProfile(managerUserId: number, data: CreateHermanoDto, meta?: MetaDeAuditoria) {
     if (data.dni) {
       const existe = await db.hermano.findFirst({ where: { dni: data.dni } });
       if (existe) throw new HttpError(HERMANO_ERRORS.DNI_DUPLICATE, 409);
@@ -249,13 +249,13 @@ export class HermanoService {
 
     // Auditoría: una solicitud de alta nueva desde el área familiar. Sin los datos
     // personales del familiar: basta el id de la ficha para encontrarlos.
-    await AuditService.log(AUDIT_ACTIONS.FAMILIAR_CREAR, meta ?? {}, 'hermano', creado.id, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_CREAR, meta ?? {}, 'hermano', creado.id, {
       despues: { estado: 'pendiente', esTitular }
     });
     return creado;
   }
 
-  static async updateProfileIfOwned(hermanoId: number, managerUserId: number, data: UpdateHermanoDto, meta?: AuditMeta) {
+  static async updateProfileIfOwned(hermanoId: number, managerUserId: number, data: UpdateHermanoDto, meta?: MetaDeAuditoria) {
     const hermano = await db.hermano.findFirst({
       where: { id: hermanoId, userId: managerUserId }
     });
@@ -274,7 +274,7 @@ export class HermanoService {
     });
 
     // Auditoría tras confirmar: el hermano cambió datos de su ficha o de la de un familiar
-    if (detalles) await AuditService.log(AUDIT_ACTIONS.FAMILIAR_ACTUALIZAR, meta ?? {}, 'hermano', hermanoId, detalles);
+    if (detalles) await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_ACTUALIZAR, meta ?? {}, 'hermano', hermanoId, detalles);
     return actualizado;
   }
 
@@ -288,7 +288,7 @@ export class HermanoService {
    *   contaba como alta y como baja.
    * - Cualquier otra ficha (activa, o pendiente con historial) se da de BAJA.
    */
-  static async deleteProfileIfOwned(hermanoId: number, managerUserId: number, meta?: AuditMeta) {
+  static async deleteProfileIfOwned(hermanoId: number, managerUserId: number, meta?: MetaDeAuditoria) {
     const check = await db.hermano.findFirst({
       where: { id: hermanoId, userId: managerUserId },
       include: { user: { select: { role: true, active: true } } }
@@ -347,13 +347,13 @@ export class HermanoService {
 
     if (resultado.retirada) {
       // Como en rechazarSolicitud: solo el estado, sin los datos de la ficha borrada.
-      await AuditService.log(AUDIT_ACTIONS.FAMILIAR_SOLICITUD_RETIRAR, meta ?? {}, 'hermano', hermanoId, {
+      await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_SOLICITUD_RETIRAR, meta ?? {}, 'hermano', hermanoId, {
         antes: { estado: 'pendiente' }, despues: { estado: 'eliminada' }
       });
       return { message: 'Solicitud retirada: el perfil pendiente se ha eliminado.' };
     }
 
-    await AuditService.log(AUDIT_ACTIONS.HERMANO_BAJA_FAMILIAR, meta ?? {}, 'hermano', hermanoId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.HERMANO_BAJA_FAMILIAR, meta ?? {}, 'hermano', hermanoId, {
       antes: { activo: check.activo, numeroHermano: check.numeroHermano, fechaBaja: null, cuentaActiva: check.user.active },
       despues: { activo: false, numeroHermano: null, fechaBaja: valorParaAuditoria(fechaBaja), cuentaActiva: check.user.active && !resultado.cuentaDesactivada }
     });
@@ -368,7 +368,7 @@ export class HermanoService {
   // =================================================================
 
   /** El tutor emancipa a su dependiente y elige la contraseña. */
-  static async emancipateProfile(hermanoId: number, managerUserId: number, dto: EmancipateHermanoDto, meta?: AuditMeta) {
+  static async emancipateProfile(hermanoId: number, managerUserId: number, dto: EmancipateHermanoDto, meta?: MetaDeAuditoria) {
     const hermano = await db.hermano.findFirst({
       where: { id: hermanoId, userId: managerUserId },
       include: { user: { select: { role: true } } }
@@ -382,7 +382,7 @@ export class HermanoService {
    * Secretaría emancipa: la contraseña no la elige nadie, va un enlace al
    * hermano. Quien está en el mostrador no puede saber la contraseña de otro.
    */
-  static async emancipateByStaff(hermanoId: number, dto: { newEmail: string; newDni?: string }, meta?: AuditMeta) {
+  static async emancipateByStaff(hermanoId: number, dto: { newEmail: string; newDni?: string }, meta?: MetaDeAuditoria) {
     const hermano = await db.hermano.findUnique({
       where: { id: hermanoId },
       include: { user: { select: { role: true } } }
@@ -405,7 +405,7 @@ export class HermanoService {
     newDni: string | undefined,
     hashedPassword: string,
     mandarEnlace: boolean,
-    meta?: AuditMeta
+    meta?: MetaDeAuditoria
   ) {
     const hermanoId = hermano.id;
     const managerUserId = hermano.userId;
@@ -470,7 +470,7 @@ export class HermanoService {
     // Auditoría DESPUÉS de confirmar: creación de una cuenta nueva derivada de un
     // perfil familiar. Antes se escribía dentro de la transacción y quedaba
     // constancia aunque esta se deshiciera.
-    await AuditService.log(AUDIT_ACTIONS.EMANCIPACION, meta ?? {}, 'hermano', hermanoId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.EMANCIPACION, meta ?? {}, 'hermano', hermanoId, {
       origen: mandarEnlace ? 'secretaría' : 'tutor',
       antes: { userId: managerUserId, esTitular: hermano.esTitular, email: hermano.email, dni: hermano.dni, cuentaTutorActiva: true },
       despues: { userId: cuenta.id, esTitular: true, email: newEmail, dni: dniFinal, cuentaTutorActiva: !tutorDesactivado }
@@ -586,7 +586,7 @@ export class HermanoService {
    * ADMIN_EDITABLE_FIELDS): corrige datos, y cada cambio queda en la auditoría
    * con su valor anterior.
    */
-  static async updateAdminMode(id: number, data: UpdateAdminHermanoDto, meta?: AuditMeta) {
+  static async updateAdminMode(id: number, data: UpdateAdminHermanoDto, meta?: MetaDeAuditoria) {
     const pedidos = this.prepareUpdateData(data, ADMIN_EDITABLE_FIELDS) as Record<string, unknown>;
     // El esquema ya no admite null, pero el servicio no sabe quién le llama:
     // quitar la baja es reactivar, y eso tiene su propia operación.
@@ -655,7 +655,7 @@ export class HermanoService {
 
     // Auditoría tras confirmar (fuera del cuerpo que se reintenta), y solo si
     // algo cambió de verdad.
-    if (detalles) await AuditService.log(AUDIT_ACTIONS.HERMANO_ACTUALIZAR, meta ?? {}, 'hermano', id, detalles);
+    if (detalles) await AuditoriaService.log(ACCIONES_AUDITORIA.HERMANO_ACTUALIZAR, meta ?? {}, 'hermano', id, detalles);
     return actualizado;
   }
 
@@ -669,7 +669,7 @@ export class HermanoService {
    * sirvan. Si vuelve a necesitar acceso, se le crea una cuenta nueva con la
    * emancipación, que le manda un enlace a un correo que dé él.
    */
-  static async reactivarHermano(hermanoId: number, meta?: AuditMeta) {
+  static async reactivarHermano(hermanoId: number, meta?: MetaDeAuditoria) {
     const hermano = await db.hermano.findUnique({
       where: { id: hermanoId },
       include: { user: { select: { email: true, dni: true, active: true } } }
@@ -717,7 +717,7 @@ export class HermanoService {
     });
 
     // Auditoría tras confirmar: reactivación de un miembro del censo
-    await AuditService.log(AUDIT_ACTIONS.HERMANO_REACTIVAR, meta ?? {}, 'hermano', hermanoId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.HERMANO_REACTIVAR, meta ?? {}, 'hermano', hermanoId, {
       antes: {
         activo: false, numeroHermano: null, fechaAlta: valorParaAuditoria(hermano.fechaAlta),
         fechaBaja: valorParaAuditoria(hermano.fechaBaja), cuentaActiva: hermano.user.active
@@ -741,7 +741,7 @@ export class HermanoService {
    * Baja desde secretaría. `fechaBajaTexto` (AAAA-MM-DD) permite anotar la baja
    * con el día en que el hermano avisó; sin ella, la baja es de ahora.
    */
-  static async darDeBajaHermano(hermanoId: number, meta?: AuditMeta, fechaBajaTexto?: string) {
+  static async darDeBajaHermano(hermanoId: number, meta?: MetaDeAuditoria, fechaBajaTexto?: string) {
     const hermano = await db.hermano.findUnique({
       where: { id: hermanoId },
       // `user.email` es el respaldo del aviso de baja: las fichas antiguas
@@ -788,7 +788,7 @@ export class HermanoService {
 
     // Auditoría tras confirmar: baja de un miembro del censo. El número que tenía
     // queda aquí, porque en la ficha se borra.
-    await AuditService.log(AUDIT_ACTIONS.HERMANO_BAJA, meta ?? {}, 'hermano', hermanoId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.HERMANO_BAJA, meta ?? {}, 'hermano', hermanoId, {
       antes: { activo: true, numeroHermano: hermano.numeroHermano, fechaBaja: null, cuentaActiva: hermano.user.active },
       despues: { activo: false, numeroHermano: null, fechaBaja: valorParaAuditoria(fechaBaja), cuentaActiva: hermano.user.active && !cuentaBloqueada }
     });
@@ -881,20 +881,20 @@ export class HermanoService {
    * sigue de baja, como estaba. No se borra nada, porque la ficha tiene
    * historia (recibos, papeletas) aunque su dueño ya no esté.
    */
-  static async descartarReactivacion(hermanoId: number, meta?: AuditMeta) {
+  static async descartarReactivacion(hermanoId: number, meta?: MetaDeAuditoria) {
     const { count } = await db.hermano.updateMany({
       where: { id: hermanoId, reactivacionSolicitada: { not: null } },
       data: { reactivacionSolicitada: null },
     });
     if (count === 0) throw new NotFoundError('Esa petición de reactivación ya no está.');
 
-    await AuditService.log(AUDIT_ACTIONS.REACTIVACION_DESCARTAR, meta ?? {}, 'hermano', hermanoId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.REACTIVACION_DESCARTAR, meta ?? {}, 'hermano', hermanoId, {
       despues: { peticionDeVuelta: 'descartada' },
     });
     return { message: 'Petición descartada. La ficha sigue de baja.' };
   }
 
-  static async aprobarSolicitud(userId: number, meta?: AuditMeta) {
+  static async aprobarSolicitud(userId: number, meta?: MetaDeAuditoria) {
     const user = await db.user.findUnique({
       where: { id: userId },
       include: { hermanos: { where: FICHA_PENDIENTE, select: { id: true } } } // Solo las fichas pendientes
@@ -939,7 +939,7 @@ export class HermanoService {
     });
 
     // Auditoría tras confirmar: alta oficial de miembros (trámite de Secretaría)
-    await AuditService.log(AUDIT_ACTIONS.SOLICITUD_APROBAR, meta ?? {}, 'user', userId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.SOLICITUD_APROBAR, meta ?? {}, 'user', userId, {
       antes: { cuentaActiva: !cuentaActivada, fichasPendientes: aprobadas.map((f) => f.id) },
       despues: { cuentaActiva: true, fichasAprobadas: aprobadas }
     });
@@ -962,7 +962,7 @@ export class HermanoService {
    * Asigna un nuevo número correlativo a todos los hermanos activos
    * basándose estrictamente en su fecha de alta (antigüedad).
    */
-  static async reordenarCenso(meta?: AuditMeta) {
+  static async reordenarCenso(meta?: MetaDeAuditoria) {
     // Todo en UNA transacción para que, si falla a la mitad, no quede el censo corrupto.
     // `transaccionReintentable` (no `db.$transaction` a pelo): un reordenamiento
     // toca a todo el censo activo, y con eso hay más ocasión de chocar con una
@@ -1029,7 +1029,7 @@ export class HermanoService {
       antes[`hermano #${h.id}`] = h.numeroHermano;
       despues[`hermano #${h.id}`] = null;
     }
-    await AuditService.log(AUDIT_ACTIONS.CENSO_REORDENAR, meta ?? {}, 'hermano', `total:${hermanosActivos.length}`, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.CENSO_REORDENAR, meta ?? {}, 'hermano', `total:${hermanosActivos.length}`, {
       totalProcesados: hermanosActivos.length,
       antes,
       despues
@@ -1052,7 +1052,7 @@ export class HermanoService {
    * números es una decisión suya y tiene que quedar en la auditoría con quién
    * la tomó.
    */
-  static async cerrarHuecosDeNumero(meta?: AuditMeta) {
+  static async cerrarHuecosDeNumero(meta?: MetaDeAuditoria) {
     const asignados = await transaccionReintentable(async (tx) => {
       const sinNumero = await tx.hermano.findMany({
         where: { activo: true, numeroHermano: null },
@@ -1083,12 +1083,12 @@ export class HermanoService {
     }, { timeout: 60_000 });
 
     if (asignados.length > 0) {
-      await AuditService.log(AUDIT_ACTIONS.CENSO_CERRAR_HUECOS, meta ?? {}, 'hermano', `total:${asignados.length}`, { asignados });
+      await AuditoriaService.log(ACCIONES_AUDITORIA.CENSO_CERRAR_HUECOS, meta ?? {}, 'hermano', `total:${asignados.length}`, { asignados });
     }
     return { asignados };
   }
 
-  static async rechazarSolicitud(userId: number, meta?: AuditMeta) {
+  static async rechazarSolicitud(userId: number, meta?: MetaDeAuditoria) {
     // El email y el nombre se leen AQUÍ y no después: cuando la cuenta nunca
     // llegó a aprobarse, la transacción de abajo la borra entera y ya no hay a
     // quién escribir ni cómo llamarle.
@@ -1136,7 +1136,7 @@ export class HermanoService {
 
     // Auditoría tras confirmar: borrado definitivo de datos personales (solicitud
     // rechazada). Solo ids: guardar aquí el nombre desharía el borrado.
-    await AuditService.log(AUDIT_ACTIONS.SOLICITUD_RECHAZAR, meta ?? {}, 'user', userId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.SOLICITUD_RECHAZAR, meta ?? {}, 'user', userId, {
       antes: { cuentaAprobada: resultado.cuentaAprobada, fichasPendientes: resultado.fichas },
       despues: { cuentaEliminada: resultado.cuentaEliminada, fichasEliminadas: resultado.fichas }
     });

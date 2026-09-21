@@ -2,7 +2,7 @@ import { PortadaService } from '../services/portada.service.js';
 import { ContenidoService } from '../services/contenido.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
-import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
+import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
 
 export class PortadaController {
   /**
@@ -22,7 +22,7 @@ export class PortadaController {
   static guardar = manejar('Error guardando las fotos de la portada', async (req, res) => {
     const { imagenes } = req.body; // Validado por ArkType
     const resultado = await PortadaService.guardarImagenes(imagenes);
-    AuditService.log(AUDIT_ACTIONS.PORTADA_ACTUALIZAR, AuditService.metaFromReq(req), 'portada', 'imagenes');
+    AuditoriaService.log(ACCIONES_AUDITORIA.PORTADA_ACTUALIZAR, AuditoriaService.metaFromReq(req), 'portada', 'imagenes');
     res.status(200).json({ message: 'Fotos de la portada guardadas', data: resultado });
   });
 }

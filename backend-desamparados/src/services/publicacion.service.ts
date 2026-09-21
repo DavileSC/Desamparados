@@ -1,13 +1,13 @@
 import db from '../config/db';
 import { Prisma, TipoPublicacion } from '@prisma/client';
-import { AdminPublicationFilterDto, CreatePublicationDto, UpdatePublicationDto } from '../dtos/publication.dto';
+import { FiltroPublicacionesCmsDto, CrearPublicacionDto, ActualizarPublicacionDto } from '../dtos/publicacion.dto';
 import { NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 import { esImagenPropia, esPdfPropio, rutaAlEditar } from '../utils/rutas-propias.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { fechaMasReciente, marcaDestacada } from '../domain/destacada-portada.js';
-import { PDF_DE_RELLENO, type EstadoPublicacion } from '../schemas/publication.schema.js';
+import { PDF_DE_RELLENO, type EstadoPublicacion } from '../schemas/publicacion.schema.js';
 
 /** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
 interface ConsultaPaginada {
@@ -45,14 +45,14 @@ export function condicionEstadoPublicacion(estado: EstadoPublicacion | undefined
   }
 }
 
-export class PublicationService {
-  static getLatest() {
+export class PublicacionService {
+  static deLaPortada() {
     // Mismo orden que el listado del CMS, destacada y desempate incluidos: la
     // raya de «hasta aquí sale en la portada» tiene que coincidir con lo que sale.
     return db.publicacion.findMany({ where: { visible: true }, orderBy: ORDEN_PORTADA, take: PUBLICACIONES_EN_PORTADA });
   }
 
-  static async getPublic(category: TipoPublicacion | undefined, consulta: ConsultaPaginada) {
+  static async listadoPublico(category: TipoPublicacion | undefined, consulta: ConsultaPaginada) {
     const paginacion = sanearPaginacion(consulta);
     const where: Prisma.PublicacionWhereInput = { visible: true, ...(category ? { categoria: category } : {}) };
 
@@ -86,7 +86,7 @@ export class PublicationService {
    * cifras no bailen al teclear) y cuáles salen ahora mismo en la portada, que
    * son las mismas que sirve getLatest.
    */
-  static async getAdmin({ page, limit, q, estado, categoria }: AdminPublicationFilterDto) {
+  static async listadoDelCms({ page, limit, q, estado, categoria }: FiltroPublicacionesCmsDto) {
     const paginacion = sanearPaginacion({ page, limit });
     const delTipo: Prisma.PublicacionWhereInput = categoria ? { categoria } : {};
     const where: Prisma.PublicacionWhereInput = {
@@ -140,17 +140,17 @@ export class PublicationService {
    * traía el listado y buscaba dentro con un .find(): una publicación fuera del
    * recorte era imposible de editar.
    */
-  static getOne(id: number) {
+  static porId(id: number) {
     return db.publicacion.findUnique({ where: { id } });
   }
 
-  static create(data: CreatePublicationDto) {
+  static crear(data: CrearPublicacionDto) {
     return db.publicacion.create({
       data: { ...data, imagenUrl: data.imagenUrl || null, fecha: data.fecha ? new Date(data.fecha) : undefined },
     });
   }
 
-  static async update(id: number, data: UpdatePublicationDto) {
+  static async actualizar(id: number, data: ActualizarPublicacionDto) {
     const current = await db.publicacion.findUnique({ where: { id } });
     if (!current) throw new NotFoundError('Publicación no encontrada');
 
@@ -198,7 +198,7 @@ export class PublicationService {
     return actualizada;
   }
 
-  static async delete(id: number) {
+  static async eliminar(id: number) {
     const current = await db.publicacion.findUnique({ where: { id } });
     if (!current) throw new NotFoundError('Publicación no encontrada');
     const borrada = await db.publicacion.delete({ where: { id } });

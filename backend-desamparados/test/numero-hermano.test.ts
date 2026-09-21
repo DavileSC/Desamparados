@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import db from '../src/config/db.js';
 import { HermanoService } from '../src/services/hermano.service.js';
-import { AuditService } from '../src/services/audit.service.js';
+import { AuditoriaService } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import type { CreateHermanoDto } from '../src/dtos/hermano.dto.js';
@@ -295,7 +295,7 @@ test('la reordenación reparte 1..N sobre lo que lee dentro de la transacción',
   );
   const transaccion = conTransaccionDeMentira(tx);
   const auditados: unknown[] = [];
-  t.mock.method(AuditService, 'log', async (...args: unknown[]) => { auditados.push(args); });
+  t.mock.method(AuditoriaService, 'log', async (...args: unknown[]) => { auditados.push(args); });
   try {
     const resultado = await HermanoService.reordenarCenso();
     assert.equal(liberaciones(), 1, 'primero se liberan todos los números, que son únicos');

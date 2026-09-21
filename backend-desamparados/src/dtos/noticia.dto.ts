@@ -1,6 +1,6 @@
-// src/dtos/news.dto.ts
+// src/dtos/noticia.dto.ts
 
-export interface CreateNewsDto {
+export interface CrearNoticiaDto {
   titulo: string;
   extracto?: string;  // Resumen corto para listados
   contenido: string;  // HTML o Markdown del cuerpo
@@ -10,7 +10,7 @@ export interface CreateNewsDto {
   slug?: string;      // Opcional, por si el SEO quiere forzar uno
 }
 
-export interface UpdateNewsDto {
+export interface ActualizarNoticiaDto {
   titulo?: string;
   extracto?: string;
   contenido?: string;
@@ -21,13 +21,13 @@ export interface UpdateNewsDto {
   slug?: string;
 }
 
-export interface NewsFilterDto {
+export interface FiltroNoticiasDto {
   page?: unknown;
   limit?: unknown;
   search?: string; // Para buscar por título en el archivo
 }
 
-export interface AdminNewsFilterDto {
+export interface FiltroNoticiasCmsDto {
   page?: unknown;
   limit?: unknown;
   q?: string; // Palabras que buscar en el título y el extracto

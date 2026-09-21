@@ -3,7 +3,7 @@ import db from '../config/db';
 import { EstadoCita, EstadoPago, Prisma, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { AvisarAsistenciaDto, CrearInscripcionManualDto } from '../dtos/procesion.dto';
 import { EmailService } from './email.service';
-import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
+import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
 import { ReciboService } from './recibo.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
@@ -244,7 +244,7 @@ export class ProcesionService {
    * El importe lo calcula SIEMPRE el servidor con los precios de la
    * configuración; la mesa no manda ninguno.
    */
-  static async inscribirYFacturar(data: CrearInscripcionManualDto, meta?: AuditMeta) {
+  static async inscribirYFacturar(data: CrearInscripcionManualDto, meta?: MetaDeAuditoria) {
     const yearActual = new Date().getFullYear();
 
     const hermano = await db.hermano.findUnique({
@@ -346,7 +346,7 @@ export class ProcesionService {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     // Auditoría: cobro + papeleta (dinero del Grupo Parroquial), ya confirmados.
-    await AuditService.log(AUDIT_ACTIONS.INSCRIPCION_FACTURAR, meta ?? {}, 'hermano', data.hermanoId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.INSCRIPCION_FACTURAR, meta ?? {}, 'hermano', data.hermanoId, {
       despues: {
         reciboId: result.recibo.id,
         papeletaId: result.papeleta.id,
@@ -387,7 +387,7 @@ export class ProcesionService {
    * conserva, así que el hermano puede volver a inscribirse: su nuevo recibo
    * sale como reemisión.
    */
-  static async anularPapeleta(papeletaId: number, meta?: AuditMeta) {
+  static async anularPapeleta(papeletaId: number, meta?: MetaDeAuditoria) {
     // Si el recibo estaba cobrado hará falta su reverso; la categoría se
     // resuelve antes de abrir la transacción (ver ReciboService.idCategoriaDeRecibos).
     const categoriaDevolucionesId = await ReciboService.idCategoriaDevoluciones();
@@ -428,7 +428,7 @@ export class ProcesionService {
 
     // Auditoría tras confirmar: la anulación implica devolución de dinero.
     const { papeleta, recibo, estadoFinal } = resultado;
-    await AuditService.log(AUDIT_ACTIONS.PAPELETA_ANULAR, meta ?? {}, 'papeleta', papeletaId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.PAPELETA_ANULAR, meta ?? {}, 'papeleta', papeletaId, {
       antes: {
         papeleta: { hermanoId: papeleta.hermanoId, year: papeleta.year, puesto: papeleta.puesto, tramo: papeleta.tramo, citaId: papeleta.citaId },
         recibo: { id: recibo.id, estado: recibo.estado, importe: String(recibo.importe) }
@@ -479,7 +479,7 @@ export class ProcesionService {
    *   habían TERMINADO entonces (el controlador lo calcula con instanteLimiteAusencias).
    * @param esCierreDefinitivo Si es TRUE, limpia las citas sin mandar correos de "vuelve a pedir cita".
    */
-  static async procesarAusencias(fechaLimite: Date = new Date(), esCierreDefinitivo: boolean = false, meta?: AuditMeta) {
+  static async procesarAusencias(fechaLimite: Date = new Date(), esCierreDefinitivo: boolean = false, meta?: MetaDeAuditoria) {
     // Última barrera por si alguien llama al servicio sin pasar por el esquema:
     // una fecha futura marcaría como ausentes a quienes aún no les ha tocado.
     if (Number.isNaN(fechaLimite.getTime()) || fechaLimite.getTime() > Date.now()) {
@@ -515,7 +515,7 @@ export class ProcesionService {
           data: { estado: estadoNuevo }
         });
 
-    await AuditService.log(AUDIT_ACTIONS.AUSENCIAS_PROCESAR, meta ?? {}, 'cita', undefined, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.AUSENCIAS_PROCESAR, meta ?? {}, 'cita', undefined, {
       fechaLimite: fechaLimite.toISOString(),
       cierreDefinitivo: esCierreDefinitivo,
       estadoNuevo,
@@ -569,7 +569,7 @@ export class ProcesionService {
   /**
    * Crear un nuevo día de reparto en la Casa Grupo Parroquial.
    */
-  static async crearTurno(data: CrearTurnoDto, meta?: AuditMeta) {
+  static async crearTurno(data: CrearTurnoDto, meta?: MetaDeAuditoria) {
     // 1. Convertimos los textos (strings) a fechas reales de JavaScript
     const fechaInicio = new Date(data.horaInicio);
     const fechaFin = new Date(data.horaFin);
@@ -590,7 +590,7 @@ export class ProcesionService {
       }
     });
 
-    await AuditService.log(AUDIT_ACTIONS.TURNO_CREAR, meta ?? {}, 'turno', turno.id, { despues: fotoTurno(turno) });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.TURNO_CREAR, meta ?? {}, 'turno', turno.id, { despues: fotoTurno(turno) });
     return turno;
   }
 
@@ -600,7 +600,7 @@ export class ProcesionService {
   static async actualizarTurno(
     turnoId: number,
     data: { capacidadEstimada?: number, activo?: boolean, horaInicio?: Date, horaFin?: Date },
-    meta?: AuditMeta
+    meta?: MetaDeAuditoria
   ) {
     const turno = await db.turno.findUnique({ where: { id: turnoId } });
     if (!turno) throw new NotFoundError('Turno no encontrado');
@@ -625,7 +625,7 @@ export class ProcesionService {
       }
     });
 
-    await AuditService.log(AUDIT_ACTIONS.TURNO_ACTUALIZAR, meta ?? {}, 'turno', turnoId, {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.TURNO_ACTUALIZAR, meta ?? {}, 'turno', turnoId, {
       antes: fotoTurno(turno),
       despues: fotoTurno(actualizado)
     });
@@ -635,7 +635,7 @@ export class ProcesionService {
   /**
    * Elimina un día de reparto (Solo si nos hemos equivocado al crearlo y no hay nadie apuntado).
    */
-  static async eliminarTurno(turnoId: number, meta?: AuditMeta) {
+  static async eliminarTurno(turnoId: number, meta?: MetaDeAuditoria) {
     const turno = await db.turno.findUnique({ where: { id: turnoId } });
     if (!turno) throw new NotFoundError('Turno no encontrado');
 
@@ -645,7 +645,7 @@ export class ProcesionService {
     }
 
     const borrado = await db.turno.delete({ where: { id: turnoId } });
-    await AuditService.log(AUDIT_ACTIONS.TURNO_ELIMINAR, meta ?? {}, 'turno', turnoId, { antes: fotoTurno(turno) });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.TURNO_ELIMINAR, meta ?? {}, 'turno', turnoId, { antes: fotoTurno(turno) });
     return borrado;
   }
 

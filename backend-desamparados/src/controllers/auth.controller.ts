@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AuthService, CuentaSinCmsError, Testigo2FACaducadoError } from '../services/auth.service';
 import { handleHttp } from '../utils/error.handle';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
-import { AuditService } from '../services/audit.service';
+import { AuditoriaService } from '../services/auditoria.service';
 import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookieSesion, limpiarCookiesAuth, COOKIE_2FA } from '../utils/cookies';
 import type { AreaSesion } from '../utils/cookies';
 import { verifyToken } from '../utils/jwt.handle';
@@ -163,7 +163,7 @@ export class AuthController {
 
   static adminReset2FA = manejar('Error reseteando usuario', async (req, res) => {
     // El id llega comprobado: la ruta pasa por `validateId`.
-    const result = await AuthService.forceDisable2FA(Number(req.params.id), req.user!.id, AuditService.metaFromReq(req));
+    const result = await AuthService.forceDisable2FA(Number(req.params.id), req.user!.id, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
@@ -229,7 +229,7 @@ export class AuthController {
   /** Derecho de acceso (art. 15 RGPD): exporta todos los datos personales. */
   static exportMisDatos = manejar('Error exportando tus datos', async (req, res) => {
     const userId = req.user!.id;
-    const data = await AuthService.exportMisDatos(userId, AuditService.metaFromReq(req));
+    const data = await AuthService.exportMisDatos(userId, AuditoriaService.metaFromReq(req));
     res.status(200).json(data);
   });
 
@@ -247,7 +247,7 @@ export class AuthController {
     // persona tiene sesión de CMS en este navegador"), ni más permisiva ni
     // más estricta.
     const origen: 'cms' | 'hermanos' = req.sesiones.cms?.id === userId ? 'cms' : 'hermanos';
-    const result = await AuthService.deleteOwnAccount(userId, password, origen, AuditService.metaFromReq(req));
+    const result = await AuthService.deleteOwnAccount(userId, password, origen, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 }

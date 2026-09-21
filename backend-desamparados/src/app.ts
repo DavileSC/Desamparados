@@ -9,14 +9,14 @@ import { hermanoRoutes } from './routes/hermano.routes.js';
 import { reciboRoutes } from './routes/recibo.routes.js';
 import { paginaRoutes } from './routes/pagina.routes.js';
 import { agendaRoutes } from './routes/agenda.routes.js';
-import { newsRoutes } from './routes/news.routes.js'; 
-import { uploadRoutes } from './routes/upload.routes.js';
+import { noticiaRoutes } from './routes/noticia.routes.js'; 
+import { subidaRoutes } from './routes/subida.routes.js';
 import { inventarioRoutes } from './routes/inventario.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { procesionRoutes } from './routes/procesion.routes.js';
 import { transaccionRoutes } from './routes/transaccion.routes.js';
-import { publicationRoutes } from './routes/publication.routes.js';
-import { contactRoutes } from './routes/contact.routes.js';
+import { publicacionRoutes } from './routes/publicacion.routes.js';
+import { contactoRoutes } from './routes/contacto.routes.js';
 import { panelRoutes } from './routes/panel.routes.js';
 import { portadaRoutes } from './routes/portada.routes.js';
 import { contenidoRoutes } from './routes/contenido.routes.js';
@@ -142,10 +142,10 @@ app.use('/api/hermanos', hermanoRoutes); // Gestión de Cofrades
 app.use('/api/recibos', reciboRoutes);   // Pagos y Tesorería
 app.use('/api/pages', paginaRoutes);     // Contenido estático
 app.use('/api/events', agendaRoutes);    // Agenda
-app.use('/api/news', newsRoutes);        // Noticias
-app.use('/api/publications', publicationRoutes); // Publicaciones
-app.use('/api/contact', contactRoutes); // Formulario de contacto
-app.use('/api/upload', uploadRoutes); // Subida de archivos
+app.use('/api/news', noticiaRoutes);        // Noticias
+app.use('/api/publications', publicacionRoutes); // Publicaciones
+app.use('/api/contact', contactoRoutes); // Formulario de contacto
+app.use('/api/upload', subidaRoutes); // Subida de archivos
 app.use('/api/inventario', inventarioRoutes); // Inventario de enseres
 app.use('/api/admin', adminRoutes); // GESTIÓN DE STAFF Y ROLES
 app.use('/api/procesion', procesionRoutes); // Citas, papeletas y turnos

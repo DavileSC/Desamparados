@@ -1,7 +1,7 @@
 import { handleHttp } from '../utils/error.handle';
 import { manejar } from '../utils/manejar';
 import { HermanoService } from '../services/hermano.service';
-import { AuditService } from '../services/audit.service';
+import { AuditoriaService } from '../services/auditoria.service';
 
 /**
  * El censo, por sus dos puertas: la del hermano, que solo alcanza sus fichas,
@@ -24,19 +24,19 @@ export class HermanoController {
   });
 
   static addProfile = manejar('Error añadiendo perfil familiar', async (req, res) => {
-    const newProfile = await HermanoService.createDependentProfile(req.user!.id, req.body, AuditService.metaFromReq(req));
+    const newProfile = await HermanoService.createDependentProfile(req.user!.id, req.body, AuditoriaService.metaFromReq(req));
     res.status(201).json(newProfile);
   });
 
   static updateProfile = manejar('Error actualizando el perfil', async (req, res) => {
-    const updated = await HermanoService.updateProfileIfOwned(Number(req.params.id), req.user!.id, req.body, AuditService.metaFromReq(req));
+    const updated = await HermanoService.updateProfileIfOwned(Number(req.params.id), req.user!.id, req.body, AuditoriaService.metaFromReq(req));
     if (!updated) return handleHttp(res, 'IDOR_ATTEMPT', 'Perfil no encontrado o no autorizado', 403);
 
     res.status(200).json({ message: 'Perfil actualizado correctamente', data: updated });
   });
 
   static deleteProfile = manejar('Error eliminando perfil', async (req, res) => {
-    const deleted = await HermanoService.deleteProfileIfOwned(Number(req.params.id), req.user!.id, AuditService.metaFromReq(req));
+    const deleted = await HermanoService.deleteProfileIfOwned(Number(req.params.id), req.user!.id, AuditoriaService.metaFromReq(req));
     if (!deleted) return handleHttp(res, 'IDOR_ATTEMPT', 'No autorizado para dar de baja este perfil', 403);
 
     // El mensaje dice qué pasó de verdad: baja, o solicitud retirada y borrada.
@@ -44,13 +44,13 @@ export class HermanoController {
   });
 
   static emancipate = manejar('Error en el proceso de emancipación', async (req, res) => {
-    const result = await HermanoService.emancipateProfile(Number(req.params.id), req.user!.id, req.body, AuditService.metaFromReq(req));
+    const result = await HermanoService.emancipateProfile(Number(req.params.id), req.user!.id, req.body, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
   /** Secretaría emancipa a un hermano: al hermano le llega un enlace. */
   static emancipateByStaff = manejar('Error en el proceso de emancipación', async (req, res) => {
-    const result = await HermanoService.emancipateByStaff(Number(req.params.id), req.body, AuditService.metaFromReq(req));
+    const result = await HermanoService.emancipateByStaff(Number(req.params.id), req.body, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
@@ -77,17 +77,17 @@ export class HermanoController {
   });
 
   static updateAdmin = manejar('Error actualizando ficha desde Secretaría', async (req, res) => {
-    const updated = await HermanoService.updateAdminMode(Number(req.params.id), req.body, AuditService.metaFromReq(req));
+    const updated = await HermanoService.updateAdminMode(Number(req.params.id), req.body, AuditoriaService.metaFromReq(req));
     res.status(200).json(updated);
   });
 
   static reordenarCenso = manejar('Error crítico al intentar reordenar el censo', async (req, res) => {
-    const result = await HermanoService.reordenarCenso(AuditService.metaFromReq(req));
+    const result = await HermanoService.reordenarCenso(AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
   static cerrarHuecosNumero = manejar('Error asignando los números de hermano', async (req, res) => {
-    const { asignados } = await HermanoService.cerrarHuecosDeNumero(AuditService.metaFromReq(req));
+    const { asignados } = await HermanoService.cerrarHuecosDeNumero(AuditoriaService.metaFromReq(req));
     res.status(200).json({
       message: asignados.length === 0
         ? 'No había ningún hermano activo sin número.'
@@ -104,29 +104,29 @@ export class HermanoController {
   });
 
   static aprobarSolicitud = manejar('Error aprobando la solicitud', async (req, res) => {
-    const result = await HermanoService.aprobarSolicitud(Number(req.params.id), AuditService.metaFromReq(req));
+    const result = await HermanoService.aprobarSolicitud(Number(req.params.id), AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
   static rechazarSolicitud = manejar('Error rechazando la solicitud', async (req, res) => {
-    const result = await HermanoService.rechazarSolicitud(Number(req.params.id), AuditService.metaFromReq(req));
+    const result = await HermanoService.rechazarSolicitud(Number(req.params.id), AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
   static darDeBajaHermano = manejar('Error dando de baja al hermano', async (req, res) => {
     // La fecha es opcional (validada por bajaHermanoSchema): sin ella, la baja es de hoy.
     const fechaBaja = typeof req.body?.fechaBaja === 'string' ? req.body.fechaBaja : undefined;
-    const result = await HermanoService.darDeBajaHermano(Number(req.params.id), AuditService.metaFromReq(req), fechaBaja);
+    const result = await HermanoService.darDeBajaHermano(Number(req.params.id), AuditoriaService.metaFromReq(req), fechaBaja);
     res.status(200).json(result);
   });
 
   static reactivarHermano = manejar('Error reactivando al hermano', async (req, res) => {
-    const result = await HermanoService.reactivarHermano(Number(req.params.id), AuditService.metaFromReq(req));
+    const result = await HermanoService.reactivarHermano(Number(req.params.id), AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
   /** Secretaría descarta una petición de volver: la ficha se queda de baja. */
   static descartarReactivacion = manejar('Error descartando la petición de reactivación', async (req, res) => {
-    res.status(200).json(await HermanoService.descartarReactivacion(Number(req.params.id), AuditService.metaFromReq(req)));
+    res.status(200).json(await HermanoService.descartarReactivacion(Number(req.params.id), AuditoriaService.metaFromReq(req)));
   });
 }

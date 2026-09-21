@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { type } from 'arktype';
-import { NewsController } from '../controllers/news.controller.js';
+import { NoticiaController } from '../controllers/noticia.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js'; // Usamos el global
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
 import { idParam } from '../config/common.js';
-import { createNewsSchema, updateNewsSchema, slugParamSchema, adminArchiveQuerySchema } from '../schemas/news.schema.js';
+import { crearNoticiaSchema, actualizarNoticiaSchema, slugParamSchema, archivoCmsQuerySchema } from '../schemas/noticia.schema.js';
 
-const newsRoutes = Router();
+const noticiaRoutes = Router();
 
 const validateId = validate(type({ params: { id: idParam } }));
 // Gestión de contenido, no administración del sistema: el Hermano Mayor ve y
@@ -17,43 +17,43 @@ const validateId = validate(type({ params: { id: idParam } }));
 const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
 // --- RUTAS PÚBLICAS ---
-newsRoutes.get('/latest', NewsController.getLatest);   
+noticiaRoutes.get('/latest', NoticiaController.getLatest);   
 // Nota: Query params se validan en el controller o con un schema extra
-newsRoutes.get('/archive', NewsController.getArchive); 
+noticiaRoutes.get('/archive', NoticiaController.getArchive); 
 
 // Esta ruta debe declararse antes de /:slug para que "admin" no se interprete
 // como un slug, lo que la deja fuera del bloque .use() de más abajo: por eso
 // lleva su propia autenticación en línea. Sin ella expone los borradores
 // (visible: false) a cualquiera. Cubierto por test/integration.test.ts.
-newsRoutes.get(
+noticiaRoutes.get(
   '/admin/archive',
   authenticateToken,
   checkRole(rolesCMS),
-  validate(adminArchiveQuerySchema),
-  NewsController.getAdminArchive
+  validate(archivoCmsQuerySchema),
+  NoticiaController.getAdminArchive
 );
 
 // Misma razón que /admin/archive: debe ir antes de /:slug y lleva su propia
 // autenticación en línea, o "admin" se leería como slug y expondría los
 // borradores a cualquiera.
-newsRoutes.get(
+noticiaRoutes.get(
   '/admin/:id',
   authenticateToken,
   checkRole(rolesCMS),
   validateId,
-  NewsController.getAdminOne
+  NoticiaController.getAdminOne
 );
 
 // Blindamos que el slug no tenga inyecciones
-newsRoutes.get('/:slug', validate(slugParamSchema), NewsController.getOne);       
+noticiaRoutes.get('/:slug', validate(slugParamSchema), NoticiaController.getOne);       
 
 // --- RUTAS PRIVADAS (Gestión CMS) ---
 // Aplicamos seguridad en bloque para no repetir
-newsRoutes.use(authenticateToken);
-newsRoutes.use(checkRole(rolesCMS));
+noticiaRoutes.use(authenticateToken);
+noticiaRoutes.use(checkRole(rolesCMS));
 
-newsRoutes.post('/', validate(createNewsSchema), NewsController.create);
-newsRoutes.put('/:id', validateId, validate(updateNewsSchema), NewsController.update); // Faltaba!
-newsRoutes.delete('/:id', validateId, NewsController.delete); // Faltaba!
+noticiaRoutes.post('/', validate(crearNoticiaSchema), NoticiaController.create);
+noticiaRoutes.put('/:id', validateId, validate(actualizarNoticiaSchema), NoticiaController.update); // Faltaba!
+noticiaRoutes.delete('/:id', validateId, NoticiaController.delete); // Faltaba!
 
-export { newsRoutes };
+export { noticiaRoutes };

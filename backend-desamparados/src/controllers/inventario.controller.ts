@@ -1,7 +1,7 @@
 import { InventarioService } from '../services/inventario.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
-import { AuditService, AUDIT_ACTIONS } from '../services/audit.service.js';
+import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
 
 export class InventarioController {
 
@@ -27,21 +27,21 @@ export class InventarioController {
 
   static createEnser = manejar('Error creando registro de enser', async (req, res) => {
     const newItem = await InventarioService.createEnser(req.body);
-    AuditService.log(AUDIT_ACTIONS.ENSER_CREAR, AuditService.metaFromReq(req), 'enser', newItem.id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.ENSER_CREAR, AuditoriaService.metaFromReq(req), 'enser', newItem.id);
     res.status(201).json(newItem);
   });
 
   static updateEnser = manejar('Error actualizando enser', async (req, res) => {
     const id = Number(req.params.id);
     const updated = await InventarioService.updateEnser(id, req.body);
-    AuditService.log(AUDIT_ACTIONS.ENSER_ACTUALIZAR, AuditService.metaFromReq(req), 'enser', id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.ENSER_ACTUALIZAR, AuditoriaService.metaFromReq(req), 'enser', id);
     res.status(200).json(updated);
   });
 
   static deleteEnser = manejar('Error eliminando enser', async (req, res) => {
     const id = Number(req.params.id);
     await InventarioService.deleteEnser(id);
-    AuditService.log(AUDIT_ACTIONS.ENSER_ELIMINAR, AuditService.metaFromReq(req), 'enser', id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.ENSER_ELIMINAR, AuditoriaService.metaFromReq(req), 'enser', id);
     res.status(200).json({ message: 'Enser eliminado del inventario' });
   });
 
@@ -62,21 +62,21 @@ export class InventarioController {
 
   static createPrenda = manejar('Error registrando nueva prenda', async (req, res) => {
     const newItem = await InventarioService.createPrenda(req.body);
-    AuditService.log(AUDIT_ACTIONS.PRENDA_CREAR, AuditService.metaFromReq(req), 'prenda', newItem.id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_CREAR, AuditoriaService.metaFromReq(req), 'prenda', newItem.id);
     res.status(201).json(newItem);
   });
 
   static updatePrenda = manejar('Error actualizando datos de la prenda', async (req, res) => {
     const id = Number(req.params.id);
     const updated = await InventarioService.updatePrenda(id, req.body);
-    AuditService.log(AUDIT_ACTIONS.PRENDA_ACTUALIZAR, AuditService.metaFromReq(req), 'prenda', id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_ACTUALIZAR, AuditoriaService.metaFromReq(req), 'prenda', id);
     res.status(200).json(updated);
   });
 
   static deletePrenda = manejar('Error eliminando prenda', async (req, res) => {
     const id = Number(req.params.id);
     await InventarioService.deletePrenda(id);
-    AuditService.log(AUDIT_ACTIONS.PRENDA_ELIMINAR, AuditService.metaFromReq(req), 'prenda', id);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_ELIMINAR, AuditoriaService.metaFromReq(req), 'prenda', id);
     res.status(200).json({ message: 'Prenda eliminada del ropero' });
   });
 
@@ -93,7 +93,7 @@ export class InventarioController {
     const { numeroHermano } = req.body;
 
     const result = await InventarioService.asignarPrenda(prendaId, numeroHermano);
-    AuditService.log(AUDIT_ACTIONS.PRENDA_ASIGNAR, AuditService.metaFromReq(req), 'prenda', prendaId, { numeroHermano });
+    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_ASIGNAR, AuditoriaService.metaFromReq(req), 'prenda', prendaId, { numeroHermano });
     res.status(200).json({ message: 'Prenda asignada correctamente', data: result });
   });
 
@@ -103,7 +103,7 @@ export class InventarioController {
     const necesitaLavado = req.body.necesitaLavado === true;
 
     const result = await InventarioService.devolverPrenda(prendaId, necesitaLavado);
-    AuditService.log(AUDIT_ACTIONS.PRENDA_DEVOLVER, AuditService.metaFromReq(req), 'prenda', prendaId, { necesitaLavado });
+    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_DEVOLVER, AuditoriaService.metaFromReq(req), 'prenda', prendaId, { necesitaLavado });
     res.status(200).json({ message: 'Prenda devuelta con éxito', data: result });
   });
 
