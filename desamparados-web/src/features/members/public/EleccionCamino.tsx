@@ -17,19 +17,19 @@ import type { Camino } from './schema'
 const OPCIONES: { camino: Camino; titulo: string; descripcion: string; icono: typeof PersonOutlineIcon }[] = [
   {
     camino: 'HERMANO',
-    titulo: 'Quiero ser Hermano',
+    titulo: 'Quiero ser hermano',
     descripcion: 'Tu alta, con tu DNI y correo electrónico',
     icono: PersonOutlineIcon,
   },
   {
     camino: 'HERMANO_Y_MENORES',
-    titulo: 'Queremos ser hermanos (Familia)',
+    titulo: 'Queremos ser hermanos',
     descripcion: 'Tu alta y la de quienes tengas a tu cargo, en la misma solicitud.',
     icono: FamilyRestroomIcon,
   },
   {
     camino: 'SOLO_MENORES',
-    titulo: 'Hago hermano a un familiar',
+    titulo: 'Apunto a un familiar',
     descripcion: 'Quieres dar de alta a un menor de edad en el Grupo Parroquial',
     icono: EscalatorWarningIcon,
   },

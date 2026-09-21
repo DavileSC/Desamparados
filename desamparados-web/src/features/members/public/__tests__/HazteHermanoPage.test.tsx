@@ -29,9 +29,9 @@ const PASO_2 = ['Email', 'Teléfono', 'Dirección', 'Ciudad', 'Código postal']
 const elegir = (u: Usuario, nombre: RegExp) => u.click(screen.getByRole('radio', { name: nombre }))
 // Los rótulos son los que se leen en la pantalla: el nombre accesible de cada
 // opción es su título (`aria-label`), no el título más su explicación.
-const CAMINO_HERMANO = /^Quiero ser Hermano$/
-const CAMINO_CON_MENORES = /^Queremos ser hermanos/
-const CAMINO_SOLO_MENORES = /^Hago hermano a un familiar$/
+const CAMINO_HERMANO = /^Quiero ser hermano$/
+const CAMINO_CON_MENORES = /^Queremos ser hermanos$/
+const CAMINO_SOLO_MENORES = /^Apunto a un familiar$/
 
 /**
  * Los campos de un menor, acotados a su bloque: «Nombre» y «Apellidos» también
