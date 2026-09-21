@@ -7,6 +7,8 @@ export interface ApiProfile {
   id: number
   nombre: string
   apellidos: string
+  /** Puede no tenerlo: un menor pequeño se apunta sin DNI. */
+  dni: string | null
   email: string | null
   telefono: string | null
   direccion: string | null
