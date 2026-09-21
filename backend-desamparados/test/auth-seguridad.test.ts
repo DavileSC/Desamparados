@@ -16,6 +16,9 @@ import { checkRole } from '../src/middleware/checkRole.js';
 import { AuthService, Testigo2FACaducadoError, asegurarQueQuedaOtroAdmin } from '../src/services/auth.service.js';
 import { cifrarSecretoTotp, leerSecretoTotp } from '../src/utils/cifrado-totp.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
+import { DobleFactorService } from '../src/services/doble-factor.service.js';
+import { RegistroService } from '../src/services/registro.service.js';
+import { consumirCodigoDeRespaldo } from '../src/services/auth/codigos-2fa.js';
 
 /**
  * Arreglos de acceso y sesión de la auditoría del 11-09-2026 (A1-A10 y el
@@ -309,7 +312,7 @@ test('el código usado para entrar no sirve para desactivar el 2FA', async (t) =
     await AuthService.verifyLogin2FA(staff.id, bueno, false, 'cms', testigo);
 
     await assert.rejects(
-      AuthService.disable2FA(staff.id, bueno),
+      DobleFactorService.disable2FA(staff.id, bueno),
       (e: unknown) => e instanceof HttpError && e.status === 400 && /ya se ha usado/.test(e.message)
     );
     assert.equal((await secretoGuardado(staff.id))?.twoFactorEnabled, true);
@@ -352,7 +355,7 @@ test('la activación rechaza un código de un intervalo ya usado', async (t) => 
       data: { twoFactorSecret: cifrarSecretoTotp(SECRETO), twoFactorLastStep: pasoActual + 1 }
     });
     await assert.rejects(
-      AuthService.enable2FA(staff.id, codigo()),
+      DobleFactorService.enable2FA(staff.id, codigo()),
       (e: unknown) => e instanceof HttpError && /ya se ha usado/.test(e.message)
     );
     assert.equal((await secretoGuardado(staff.id))?.twoFactorEnabled, false);
@@ -442,12 +445,12 @@ test('el script cifra los secretos en claro y se puede repetir sin efecto', asyn
     const cifrado = cifrarSecretoTotp(SECRETO);
     await conSegundoFactor(yaCifrado.id, cifrado);
 
-    const primera = await AuthService.cifrarSecretosPendientes([enClaro.id, yaCifrado.id]);
+    const primera = await DobleFactorService.cifrarSecretosPendientes([enClaro.id, yaCifrado.id]);
     assert.deepEqual(primera, { revisados: 2, cifrados: 1, ilegibles: [] });
     assert.ok((await secretoGuardado(enClaro.id))!.twoFactorSecret!.startsWith('v1:'));
     assert.equal((await secretoGuardado(yaCifrado.id))!.twoFactorSecret, cifrado, 'el ya cifrado no se reescribe');
 
-    const segunda = await AuthService.cifrarSecretosPendientes([enClaro.id, yaCifrado.id]);
+    const segunda = await DobleFactorService.cifrarSecretosPendientes([enClaro.id, yaCifrado.id]);
     assert.equal(segunda.cifrados, 0);
   } finally {
     await borrarUsuarioPrueba(enClaro.id);
@@ -559,11 +562,13 @@ test('un código de respaldo solo se consume una vez aunque lleguen dos a la vez
       data: { userId: staff.id, codeHash: crypto.createHash('sha256').update(codigoRespaldo).digest('hex') }
     });
 
-    // Privado a propósito en el servicio; aquí se llama directo para medir la
-    // carrera sin el resto del login alrededor.
-    const consumir = (AuthService as unknown as { consumeBackupCode(id: number, c: string): Promise<boolean> })
-      .consumeBackupCode.bind(AuthService);
-    const resultados = await Promise.all([consumir(staff.id, codigoRespaldo), consumir(staff.id, codigoRespaldo)]);
+    // Se llama directo para medir la carrera sin el resto del login alrededor.
+    // Antes hacía falta un `as unknown as` para alcanzarlo, porque era un
+    // método privado del servicio; ahora es una función de `auth/codigos-2fa`.
+    const resultados = await Promise.all([
+      consumirCodigoDeRespaldo(staff.id, codigoRespaldo),
+      consumirCodigoDeRespaldo(staff.id, codigoRespaldo),
+    ]);
     assert.deepEqual([...resultados].sort(), [false, true], 'uno gana y el otro recibe false, no un 500');
   } finally {
     await borrarUsuarioPrueba(staff.id);
@@ -675,7 +680,7 @@ test('registrarse con el DNI de una ficha que ya existe responde 409 y no crea n
   });
   try {
     await assert.rejects(
-      AuthService.registerUser({
+      RegistroService.registerUser({
         usuario: { email: emailNuevo, dni, password: PASSWORD_PRUEBA, nombre: 'Prueba', apellidos: 'Vuelve', telefono: '600000000' },
         titular: { fechaNacimiento: '1990-01-01' }
       } as never),

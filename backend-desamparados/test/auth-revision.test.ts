@@ -16,6 +16,9 @@ import { EmailService } from '../src/services/email.service.js';
 import { cifrarSecretoTotp } from '../src/utils/cifrado-totp.js';
 import { VALOR_SUPRIMIDO } from '../src/domain/auditoria-supresion.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
+import { MisDatosService } from '../src/services/mis-datos.service.js';
+import { DobleFactorService } from '../src/services/doble-factor.service.js';
+import { reclamarTotp } from '../src/services/auth/codigos-2fa.js';
 
 /**
  * Fallos que encontró la revisión independiente de los arreglos de acceso del
@@ -77,24 +80,22 @@ const hashRespaldo = (codigoRespaldo: string) => crypto.createHash('sha256').upd
 test('activar el 2FA falla con 409 si el secreto cambia entre la comprobación y la escritura', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
-  // Un «generar QR» de otra pestaña justo entre el código y la activación. Se
-  // provoca en ese punto exacto envolviendo la comprobación del TOTP.
-  const servicio = AuthService as unknown as { reclamarTotp: (...args: unknown[]) => Promise<unknown> };
-  const original = servicio.reclamarTotp;
+  // Un «generar QR» de otra pestaña justo entre el código y la activación: se
+  // provoca en ese punto exacto envolviendo la comprobación del TOTP, que el
+  // servicio admite sustituir precisamente para esto.
+  const comprobarYPisarElSecreto: typeof reclamarTotp = async (user, codigo) => {
+    const resultado = await reclamarTotp(user, codigo);
+    await db.user.update({ where: { id: staff.id }, data: { twoFactorSecret: cifrarSecretoTotp('KRSXG5CTMVRXEZLU') } });
+    return resultado;
+  };
   try {
     await db.user.update({ where: { id: staff.id }, data: { twoFactorSecret: cifrarSecretoTotp(SECRETO) } });
-    servicio.reclamarTotp = async function (this: unknown, ...args: unknown[]) {
-      const resultado = await original.apply(this, args);
-      await db.user.update({ where: { id: staff.id }, data: { twoFactorSecret: cifrarSecretoTotp('KRSXG5CTMVRXEZLU') } });
-      return resultado;
-    };
 
-    await assert.rejects(AuthService.enable2FA(staff.id, codigo()), conEstado(409));
+    await assert.rejects(DobleFactorService.enable2FA(staff.id, codigo(), comprobarYPisarElSecreto), conEstado(409));
     const cuenta = await db.user.findUnique({ where: { id: staff.id }, select: { twoFactorEnabled: true } });
     assert.equal(cuenta?.twoFactorEnabled, false, 'no puede quedar activo con un secreto que nadie ha escaneado');
     assert.equal(await db.twoFactorBackupCode.count({ where: { userId: staff.id } }), 0);
   } finally {
-    servicio.reclamarTotp = original;
     await borrarUsuarioPrueba(staff.id);
   }
 });
@@ -268,13 +269,13 @@ test('desactivar el 2FA limpia el último intervalo y se puede reactivar al mome
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
   try {
     await conSegundoFactor(staff.id);
-    await AuthService.disable2FA(staff.id, codigo());
+    await DobleFactorService.disable2FA(staff.id, codigo());
     const tras = await db.user.findUnique({ where: { id: staff.id }, select: { twoFactorLastStep: true, twoFactorEnabled: true } });
     assert.deepEqual(tras, { twoFactorLastStep: null, twoFactorEnabled: false });
 
     // En el mismo intervalo, con el secreto nuevo: antes daba «ya se ha usado».
-    const { secret } = await AuthService.generate2FAQR(staff.id);
-    const activado = await AuthService.enable2FA(staff.id, codigo(0, secret));
+    const { secret } = await DobleFactorService.generate2FAQR(staff.id);
+    const activado = await DobleFactorService.enable2FA(staff.id, codigo(0, secret));
     assert.equal(activado.backupCodes.length, 8);
   } finally {
     await borrarUsuarioPrueba(staff.id);
@@ -467,7 +468,7 @@ test('suprimir la cuenta trata cada ficha según su estado y suprime los datos d
     }
     const antesDeSuprimir = await db.auditLog.findMany({ where: { id: { in: registros } }, select: { id: true, createdAt: true } });
 
-    await AuthService.deleteOwnAccount(cuenta.id, PASSWORD_PRUEBA, 'hermanos');
+    await MisDatosService.deleteOwnAccount(cuenta.id, PASSWORD_PRUEBA, 'hermanos');
 
     // 13. Cada ficha según su estado.
     const leer = (id: number) => db.hermano.findUnique({

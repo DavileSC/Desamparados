@@ -11,6 +11,7 @@ import { randomInt } from 'node:crypto';
 import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
 import { HermanoService } from '../src/services/hermano.service.js';
+import { RegistroService } from '../src/services/registro.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
@@ -62,7 +63,7 @@ describe('pedir volver tras una baja', () => {
 
   test('la petición marca la ficha sin tocar la fecha de baja', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    await AuthService.solicitarReactivacion({ dni: dniDeBaja, email });
+    await RegistroService.solicitarReactivacion({ dni: dniDeBaja, email });
 
     const ficha = await laFicha();
     assert.ok(ficha!.reactivacionSolicitada, 'queda marcada');
@@ -73,7 +74,7 @@ describe('pedir volver tras una baja', () => {
   test('insistir no reescribe desde cuándo espera', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const primera = (await laFicha())!.reactivacionSolicitada;
-    await AuthService.solicitarReactivacion({ dni: dniDeBaja, email });
+    await RegistroService.solicitarReactivacion({ dni: dniDeBaja, email });
     assert.deepEqual((await laFicha())!.reactivacionSolicitada, primera);
   });
 
@@ -88,8 +89,8 @@ describe('pedir volver tras una baja', () => {
 
   test('responde lo mismo exista o no el DNI: el formulario no delata al censo', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const conFicha = await AuthService.solicitarReactivacion({ dni: dniDeBaja, email });
-    const sinFicha = await AuthService.solicitarReactivacion({ dni: dniValido(siguienteDni++), email: 'nadie@ejemplo.test' });
+    const conFicha = await RegistroService.solicitarReactivacion({ dni: dniDeBaja, email });
+    const sinFicha = await RegistroService.solicitarReactivacion({ dni: dniValido(siguienteDni++), email: 'nadie@ejemplo.test' });
     assert.deepEqual(conFicha, sinFicha);
   });
 
@@ -114,7 +115,7 @@ describe('pedir volver tras una baja', () => {
       where: { id: fichas[0] },
       data: { activo: false, fechaBaja: new Date('2024-06-30'), numeroHermano: null },
     });
-    await AuthService.solicitarReactivacion({ dni: dniDeBaja, email });
+    await RegistroService.solicitarReactivacion({ dni: dniDeBaja, email });
 
     await HermanoService.descartarReactivacion(fichas[0], {});
     const ficha = await laFicha();

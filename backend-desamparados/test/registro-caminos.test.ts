@@ -14,6 +14,7 @@ import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
 import { MAXIMO_MENORES_POR_ALTA, registerSchema } from '../src/schemas/auth.schema.js';
 import { HttpError } from '../src/utils/error.handle.js';
+import { RegistroService } from '../src/services/registro.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const PASSWORD = 'Trono-Alameda-84-Verde';
@@ -97,7 +98,7 @@ describe('el alta contra la base de datos', () => {
   test('camino 1: un adulto que se hace hermano tiene una ficha, la suya', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('solo-yo');
-    await AuthService.registerUser({ usuario: adulto(email, nuevoDni()), titular: { fechaNacimiento: '1986-11-03' } });
+    await RegistroService.registerUser({ usuario: adulto(email, nuevoDni()), titular: { fechaNacimiento: '1986-11-03' } });
 
     const { user, fichas } = await fichasDe(email);
     assert.equal(user!.active, false, 'la cuenta nace bloqueada');
@@ -110,7 +111,7 @@ describe('el alta contra la base de datos', () => {
   test('camino 2: con dos menores salen tres fichas, y solo una es la del titular', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('yo-y-los-mios');
-    await AuthService.registerUser({
+    await RegistroService.registerUser({
       usuario: adulto(email, nuevoDni()),
       titular: { fechaNacimiento: '1986-11-03' },
       menores: [
@@ -132,7 +133,7 @@ describe('el alta contra la base de datos', () => {
   test('camino 3: quien solo apunta a un menor no entra en el censo', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('solo-mi-hija');
-    await AuthService.registerUser({
+    await RegistroService.registerUser({
       usuario: adulto(email, nuevoDni()),
       menores: [{ nombre: 'Lucía', parentesco: 'HIJO', fechaNacimiento: '2017-04-12' }],
     });
@@ -147,7 +148,7 @@ describe('el alta contra la base de datos', () => {
   test('un sobrino conserva sus apellidos; un hijo hereda los del adulto', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('con-sobrino');
-    await AuthService.registerUser({
+    await RegistroService.registerUser({
       usuario: adulto(email, nuevoDni()),
       menores: [
         { nombre: 'Hugo', apellidos: 'Cano Vega', parentesco: 'SOBRINO', fechaNacimiento: '2015-02-20' },
@@ -168,7 +169,7 @@ describe('el alta contra la base de datos', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('con-adolescente');
     const suDni = nuevoDni();
-    await AuthService.registerUser({
+    await RegistroService.registerUser({
       usuario: adulto(email, nuevoDni()),
       menores: [{ nombre: 'Marta', dni: suDni, email: 'marta.prueba@ejemplo.test', parentesco: 'HIJO', fechaNacimiento: '2010-05-01' }],
     });
@@ -181,7 +182,7 @@ describe('el alta contra la base de datos', () => {
   test('sin titular ni menores no hay a quién dar de alta', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     await assert.rejects(
-      () => AuthService.registerUser({ usuario: adulto(nuevoCorreo('vacio'), nuevoDni()) }),
+      () => RegistroService.registerUser({ usuario: adulto(nuevoCorreo('vacio'), nuevoDni()) }),
       (e: HttpError) => e instanceof HttpError && /No hay a quién dar de alta/.test(e.message),
     );
   });
@@ -189,7 +190,7 @@ describe('el alta contra la base de datos', () => {
   test('a quien tiene 18 cumplidos no se le apunta como menor', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     await assert.rejects(
-      () => AuthService.registerUser({
+      () => RegistroService.registerUser({
         usuario: adulto(nuevoCorreo('mayor-como-menor'), nuevoDni()),
         menores: [{ nombre: 'Andrés', fechaNacimiento: '1995-01-01' }],
       }),
@@ -200,7 +201,7 @@ describe('el alta contra la base de datos', () => {
   test('y un menor no abre cuenta propia haciéndose pasar por titular', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     await assert.rejects(
-      () => AuthService.registerUser({
+      () => RegistroService.registerUser({
         usuario: adulto(nuevoCorreo('nino-solo'), nuevoDni()),
         titular: { fechaNacimiento: '2015-03-01' },
       }),
@@ -213,7 +214,7 @@ describe('el alta contra la base de datos', () => {
     const email = nuevoCorreo('dni-repetido');
     const repetido = nuevoDni();
     await assert.rejects(
-      () => AuthService.registerUser({
+      () => RegistroService.registerUser({
         usuario: adulto(email, nuevoDni()),
         menores: [
           { nombre: 'Marta', dni: repetido, fechaNacimiento: '2010-05-01' },
@@ -229,7 +230,7 @@ describe('el alta contra la base de datos', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const suyo = nuevoDni();
     await assert.rejects(
-      () => AuthService.registerUser({
+      () => RegistroService.registerUser({
         usuario: adulto(nuevoCorreo('mi-dni-de-hijo'), suyo),
         menores: [{ nombre: 'Marta', dni: suyo, fechaNacimiento: '2010-05-01' }],
       }),
@@ -241,13 +242,13 @@ describe('el alta contra la base de datos', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('con-dni-ocupado');
     const ocupado = nuevoDni();
-    await AuthService.registerUser({
+    await RegistroService.registerUser({
       usuario: adulto(nuevoCorreo('primero'), nuevoDni()),
       menores: [{ nombre: 'Marta', dni: ocupado, fechaNacimiento: '2010-05-01' }],
     });
 
     await assert.rejects(
-      () => AuthService.registerUser({
+      () => RegistroService.registerUser({
         usuario: adulto(email, nuevoDni()),
         menores: [{ nombre: 'Otra', dni: ocupado, fechaNacimiento: '2011-01-01' }],
       }),

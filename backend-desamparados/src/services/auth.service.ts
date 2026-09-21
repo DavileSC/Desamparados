@@ -16,6 +16,10 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { ipKeyGenerator } from 'express-rate-limit';
 import { ContadorFallos, RegistroReciente } from '../utils/contador-fallos.js';
+import {
+  MENSAJE_CODIGO_USADO, comprobarBloqueo2FA, consumirCodigoDeRespaldo,
+  limpiarFallos2FA, pasoTotpActual, reclamarTotp, registrarFallo2FA,
+} from './auth/codigos-2fa.js';
 import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '../utils/cifrado-totp.js';
 import { DOMINIO_CUENTA_ELIMINADA, PREFIJO_DNI_ELIMINADO } from '../domain/cuenta-anonimizada.js';
 import { suprimirDatosPersonales } from '../domain/auditoria-supresion.js';
@@ -52,27 +56,6 @@ export class Testigo2FACaducadoError extends HttpError {
 const QUINCE_MINUTOS = 15 * 60 * 1000;
 const UNA_HORA = 60 * 60 * 1000;
 
-const MENSAJE_CODIGO_USADO = 'Ese código ya se ha usado. Espera a que tu aplicación muestre el siguiente.';
-const MENSAJE_2FA_YA_ACTIVO = 'El doble factor ya está activo. Desactívalo primero si quieres configurarlo con otro móvil.';
-
-type ResultadoTotp = 'ok' | 'incorrecto' | 'usado';
-
-// Todo lo que se deja a cero al apagar el 2FA, por el propio usuario o por un
-// rescate. `twoFactorLastStep` también: si se quedaba el intervalo del código
-// usado para desactivar, reactivar enseguida con el secreto nuevo daba «Ese
-// código ya se ha usado» (el intervalo es el mismo aunque el secreto no).
-const APAGAR_2FA = { twoFactorEnabled: false, twoFactorSecret: null, twoFactorLastStep: null } as const;
-
-// Datos de contacto de una ficha, fuera, en la supresión de la cuenta.
-const CONTACTO_FUERA = { email: null, telefono: null, direccion: null, poblacion: null, codigoPostal: null } as const;
-
-// Un secreto que no se puede descifrar es un fallo de configuración del
-// servidor (la clave cambió sin conservar la anterior), no del usuario: el
-// mensaje no puede decirle que su código está mal.
-const MENSAJE_SECRETO_ILEGIBLE =
-  'No se puede comprobar tu doble factor por un problema de configuración del servidor. ' +
-  'Avisa al administrador: puede desactivártelo para que vuelvas a entrar.';
-
 /**
  * Impide que el último ADMIN activo se borre: dejaría el CMS sin nadie capaz
  * de nombrar ni rescatar al equipo. Suelta para poder probar la regla sin
@@ -93,184 +76,12 @@ export async function asegurarQueQuedaOtroAdmin(tx: Prisma.TransactionClient, ro
   }
 }
 
+/** El testigo del enlace de recuperación se guarda cifrado, nunca en claro. */
+function hashDelTestigoDeRecuperacion(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 export class AuthService {
-
-  // =================================================================
-  //  REGISTRO (Crea Solicitud Inactiva y envía Email Seguro)
-  // =================================================================
-  /**
-   * El alta, en sus tres caminos (ver `registerSchema`): un adulto que se hace
-   * hermano, uno que además apunta a menores a su cargo, y uno que solo los
-   * apunta a ellos y no entra en el censo.
-   *
-   * Todo nace bloqueado y no es hermano de nada hasta que Secretaría lo
-   * aprueba: la cuenta con `active: false` y cada ficha con `activo: false`. Es
-   * la misma puerta de siempre; lo que cambia es que por ella pueden entrar
-   * varias personas de una vez.
-   */
-  static async registerUser({ usuario, titular, menores = [] }: RegisterDto) {
-    if (!titular && menores.length === 0) {
-      throw new HttpError('No hay a quién dar de alta: marca si te apuntas tú, si apuntas a un menor, o las dos cosas.');
-    }
-
-    const checkUser = await db.user.findFirst({
-      where: { OR: [{ email: usuario.email }, { dni: usuario.dni }] }
-    });
-    if (checkUser) throw new HttpError('El email o DNI ya están registrados.', 409);
-
-    // Las edades, antes de tocar nada: quien va a tener ficha propia es mayor
-    // de edad, y a quien se apunta como menor se le comprueba que de verdad lo
-    // es (con 18 cumplidos el alta la hace él, con su DNI).
-    if (titular) comprobarEsAdulto(new Date(titular.fechaNacimiento));
-    for (const menor of menores) comprobarEsMenor(new Date(menor.fechaNacimiento), menor.nombre);
-
-    // Los DNI de los menores: libres en el censo y distintos entre sí. Sin lo
-    // segundo, dos fichas del mismo envío chocarían contra el índice único ya
-    // dentro de la transacción y el alta entera moriría con un 500.
-    const dnisDeMenores = menores.map((m) => m.dni).filter((valor): valor is string => Boolean(valor));
-    if (new Set(dnisDeMenores).size !== dnisDeMenores.length) {
-      throw new HttpError('Has repetido el mismo DNI en dos de los menores.');
-    }
-    if (dnisDeMenores.includes(usuario.dni)) {
-      throw new HttpError('Has puesto tu propio DNI en uno de los menores.');
-    }
-    if (dnisDeMenores.length > 0) {
-      const ocupado = await db.hermano.findFirst({ where: { dni: { in: dnisDeMenores } }, select: { dni: true } });
-      if (ocupado) throw new HttpError(`Ya hay una ficha en el censo con el DNI ${ocupado.dni}.`, 409);
-    }
-
-    // Quien vuelve tras una baja, o tras suprimir su cuenta, conserva su ficha
-    // con el DNI en el censo: una ficha nueva chocaría con el índice único y
-    // daría un 500. Lo que toca es que Secretaría reactive la que ya existe, y
-    // para eso está `solicitarReactivacion`, que es lo que ofrece la web cuando
-    // le llega este 409. Solo estorba si el adulto iba a tener ficha: quien
-    // apunta a un menor sin hacerse hermano no crea ninguna con su DNI.
-    if (titular) {
-      const fichaConEseDni = await db.hermano.findFirst({ where: { dni: usuario.dni }, select: { id: true } });
-      if (fichaConEseDni) {
-        throw new HttpError(
-          'Ya hay una ficha en el censo con ese DNI. Si fuiste hermano, pide a Secretaría que te reactive.',
-          409
-        );
-      }
-    }
-
-    const hashedPassword = await encrypt(usuario.password);
-
-    // 1. TRANSACCIÓN RÁPIDA DE BASE DE DATOS
-    const result = await db.$transaction(async (tx) => {
-      // Creamos el Usuario BLOQUEADO
-      const newUser = await tx.user.create({
-        data: {
-          email: usuario.email,
-          dni: usuario.dni,
-          password: hashedPassword,
-          role: Role.USER,
-          active: false, // <--- Nace bloqueado, pendiente de pago/aprobación
-          nombre: usuario.nombre,
-          apellidos: usuario.apellidos,
-          telefono: usuario.telefono,
-          direccion: usuario.direccion,
-          poblacion: usuario.poblacion,
-          codigoPostal: usuario.codigoPostal
-        },
-      });
-
-      // Lo que hereda toda ficha de quien abre la cuenta: por ahí se localiza
-      // a la persona, también a un niño de siete años sin teléfono propio.
-      const contacto = {
-        userId: newUser.id,
-        telefono: usuario.telefono,
-        email: usuario.email,
-        direccion: usuario.direccion,
-        poblacion: usuario.poblacion,
-        codigoPostal: usuario.codigoPostal,
-        activo: false // <--- Fichas inactivas hasta que Secretaría las apruebe
-      };
-
-      await tx.hermano.createMany({
-        data: [
-          ...(titular ? [{
-            ...contacto,
-            esTitular: true,
-            nombre: usuario.nombre,
-            apellidos: usuario.apellidos,
-            dni: usuario.dni,
-            fechaNacimiento: new Date(titular.fechaNacimiento),
-          }] : []),
-          ...menores.map((menor) => ({
-            ...contacto,
-            esTitular: false,
-            nombre: menor.nombre,
-            // Los del adulto solo como respaldo: un sobrino o un ahijado llevan
-            // los suyos, y el formulario los pide en blanco cuando no es un hijo.
-            apellidos: menor.apellidos || usuario.apellidos,
-            dni: menor.dni || null,
-            email: menor.email || usuario.email,
-            parentesco: menor.parentesco ?? null,
-            fechaNacimiento: new Date(menor.fechaNacimiento),
-          })),
-        ],
-      });
-
-      // `createMany` no devuelve las filas: se leen para el aviso a Secretaría.
-      const fichas = await tx.hermano.findMany({ where: { userId: newUser.id }, select: { id: true } });
-      return { user: newUser, fichas };
-    });
-
-    // 2. TAREAS ASÍNCRONAS (Envío de Email fuera de la transacción)
-    // El "catch" asegura que si falla el email, no se rompa el registro de la API
-    EmailService.enviarConfirmacionRegistro(result.user.email, result.user.nombre)
-      .catch(error => {
-        console.error(`❌ [Error Email] Fallo al enviar el correo de confirmación a ${enmascararEmail(result.user.email)}:`, error);
-      });
-
-    // Aviso al buzón de Secretaría. Sin él, una solicitud solo se veía entrando
-    // al CMS a mirar el contador de «Hermanos», y podía quedarse parada semanas.
-    EmailService.enviarAvisoSolicitud({
-      nombre: result.user.nombre,
-      apellidos: result.user.apellidos,
-      email: result.user.email,
-      // Cuántas personas trae el alta: no es lo mismo una ficha que una familia.
-      fichas: result.fichas.length,
-    }).catch(error => {
-      console.error('❌ [Error Email] Fallo al avisar a Secretaría de la solicitud nueva:', error);
-    });
-
-    // 3. RETORNAMOS LA RESPUESTA AL USUARIO
-    return {
-      user: { id: result.user.id, email: result.user.email }, // Retornamos info segura, sin password
-      fichas: result.fichas.length,
-      message: 'Solicitud enviada correctamente. Revisa tu email y pásate por Secretaría para formalizar tu alta.'
-    };
-  }
-
-  /**
-   * Pedir volver tras una baja.
-   *
-   * La ficha de quien se fue conserva su `fechaBaja`, así que no aparece en la
-   * cola de pendientes, que busca las que nunca han estado activas. Borrar esa
-   * fecha para colarla ahí perdería cuándo se marchó, de modo que la petición
-   * se marca aparte y la cola la recoge por esa marca.
-   *
-   * SEGURIDAD: responde lo mismo exista o no la ficha. Si distinguiera, el
-   * formulario serviría para averiguar qué DNI están en el censo probándolos
-   * uno a uno.
-   */
-  static async solicitarReactivacion({ dni }: ReactivacionDto) {
-    const ficha = await db.hermano.findFirst({
-      where: { dni, activo: false, fechaBaja: { not: null } },
-      select: { id: true, reactivacionSolicitada: true },
-    });
-
-    // Insistir no reescribe la fecha: a Secretaría le importa desde cuándo
-    // espera esta persona, no cuándo volvió a pulsar el botón.
-    if (ficha && !ficha.reactivacionSolicitada) {
-      await db.hermano.update({ where: { id: ficha.id }, data: { reactivacionSolicitada: new Date() } });
-    }
-
-    return { message: 'Si hay una ficha a tu nombre, Secretaría la revisará y se pondrá en contacto contigo.' };
-  }
 
   // =================================================================
   //  LOGIN (Con Filtro de Solicitud Pendiente y Lockout por Cuenta)
@@ -424,26 +235,6 @@ export class AuthService {
     return { id: user.id, email: user.email, role: user.role, perfiles: user.hermanos, twoFactorEnabled: user.twoFactorEnabled };
   }
 
-  // Contador de intentos fallidos de 2FA por cuenta (defensa contra fuerza bruta
-  // distribuida, que el rate limiter por IP no cubre). Lo comparten el login
-  // con 2FA y la desactivación: si cada uno llevara el suyo, quien tuviera la
-  // contraseña probaría cinco códigos en uno y otros cinco en el otro.
-  private static readonly fallos2FA = new ContadorFallos({
-    maxFallos: 5, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
-  });
-
-  private static checkLockout2FA(userId: number): void {
-    const restante = this.fallos2FA.restanteBloqueo(String(userId));
-    if (restante > 0) {
-      const mins = Math.ceil(restante / 60000);
-      throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`, 429);
-    }
-  }
-
-  private static registerFail2FA(userId: number): void {
-    this.fallos2FA.registrarFallo(String(userId));
-  }
-
   /**
    * VERIFICAR LOGIN CON OTPAUTH
    * Acepta el código TOTP de 6 dígitos o un código de respaldo (si perdió el móvil).
@@ -462,7 +253,7 @@ export class AuthService {
     testigo: { paso2fa?: number | null; emitidoMs?: number } = {}
   ) {
     // Bloqueo preventivo antes de gastar consultas
-    this.checkLockout2FA(userId);
+    comprobarBloqueo2FA(userId);
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -499,9 +290,9 @@ export class AuthService {
     if (/^[0-9]{6}$/.test(code)) {
       // El reclamo del intervalo es un compare-and-swap sobre el valor leído,
       // que es el del testigo: gana una sola petición aunque lleguen a la vez.
-      const { resultado } = await this.reclamarTotp(user, code);
+      const { resultado } = await reclamarTotp(user, code);
       if (resultado !== 'ok') {
-        this.registerFail2FA(userId);
+        registrarFallo2FA(userId);
         throw new HttpError(resultado === 'usado' ? MENSAJE_CODIGO_USADO : 'Código incorrecto o expirado.', 401);
       }
     } else {
@@ -518,14 +309,14 @@ export class AuthService {
           // si no, el testigo seguiría vivo y admitiría otro código.
           const { count } = await tx.user.updateMany({
             where: { id: user.id, twoFactorLastStep: user.twoFactorLastStep },
-            data: { twoFactorLastStep: Math.max(this.pasoTotpActual(), (user.twoFactorLastStep ?? -1) + 1) }
+            data: { twoFactorLastStep: Math.max(pasoTotpActual(), (user.twoFactorLastStep ?? -1) + 1) }
           });
           if (count !== 1) throw new Testigo2FACaducadoError();
-          if (!(await this.consumeBackupCode(user.id, code, tx))) throw respaldoIncorrecto;
+          if (!(await consumirCodigoDeRespaldo(user.id, code, tx))) throw respaldoIncorrecto;
         });
       } catch (e) {
         if (e !== respaldoIncorrecto) throw e;
-        this.registerFail2FA(userId);
+        registrarFallo2FA(userId);
         throw new HttpError('Código incorrecto o expirado.', 401);
       }
 
@@ -536,7 +327,7 @@ export class AuthService {
     }
 
     // Login correcto: limpiamos el contador de fallos
-    this.fallos2FA.limpiar(String(userId));
+    limpiarFallos2FA(userId);
 
     const token = generateToken(user.id, user.role, recordarme, origen);
     return {
@@ -567,7 +358,7 @@ export class AuthService {
     await db.user.update({
       where: { id: userId },
       data: {
-        resetPasswordToken: this.hashResetToken(token),
+        resetPasswordToken: hashDelTestigoDeRecuperacion(token),
         resetPasswordExpires: new Date(Date.now() + validezHoras * 3600000)
       }
     });
@@ -615,7 +406,7 @@ export class AuthService {
     // misma sentencia que lo comprueba: solo una encuentra el hash sin usar.
     const { count } = await db.user.updateMany({
       where: {
-        resetPasswordToken: this.hashResetToken(token),
+        resetPasswordToken: hashDelTestigoDeRecuperacion(token),
         resetPasswordExpires: { gt: new Date() } // gt = greater than (mayor que)
       },
       data: {
@@ -653,569 +444,5 @@ export class AuthService {
     // updateMany y no update: si la cuenta ya no existe no hay nada que cerrar,
     // y un P2025 convertiría el cierre de sesión en un 500.
     await db.user.updateMany({ where: { id: userId }, data });
-  }
-
-  // =================================================================
-  //  GESTIÓN 2FA (Setup y Rescate)
-  // =================================================================
-
-  static async generate2FAQR(userId: number) {
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundError('Usuario no encontrado');
-
-    // Con el 2FA activo, generar pisaba el secreto en uso: la app del móvil
-    // dejaba de valer y quien tuviera una sesión abierta podía cambiar el
-    // segundo factor por uno suyo sin conocer el vigente.
-    if (user.twoFactorEnabled) throw new HttpError(MENSAJE_2FA_YA_ACTIVO, 409);
-
-    // 1. Generamos un nuevo secreto aleatorio (20 bytes es el estándar)
-    const secret = new OTPAuth.Secret({ size: 20 });
-
-    // 2. Creamos el objeto TOTP
-    const totp = new OTPAuth.TOTP({
-      issuer: 'Cofradía Virtual',
-      label: user.email,
-      algorithm: 'SHA1',
-      digits: 6,
-      period: 30,
-      secret: secret
-    });
-
-    // 3. Obtenemos la URL otpauth://... automáticamente
-    const otpauthUrl = totp.toString();
-
-    // 4. Generamos imagen QR
-    const qrCodeUrl = await qrcode.toDataURL(otpauthUrl);
-
-    // 5. Guardamos el secreto cifrado. Condicionado a que siga apagado: si se
-    // activó entre la lectura y aquí, no se pisa.
-    const { count } = await db.user.updateMany({
-      where: { id: userId, twoFactorEnabled: false },
-      data: { twoFactorSecret: cifrarSecretoTotp(secret.base32) }
-    });
-    if (count !== 1) throw new HttpError(MENSAJE_2FA_YA_ACTIVO, 409);
-
-    // En claro solo en esta respuesta: es la clave para quien no puede escanear el QR.
-    return { qrCodeUrl, secret: secret.base32 };
-  }
-
-  static async enable2FA(userId: number, token2fa: string) {
-    const user = await db.user.findUnique({ where: { id: userId }, omit: { twoFactorSecret: false } });
-    if (!user || !user.twoFactorSecret) throw new HttpError('Falta generar el QR.');
-    if (user.twoFactorEnabled) throw new HttpError(MENSAJE_2FA_YA_ACTIVO, 409);
-
-    const { resultado, guardado } = await this.reclamarTotp(user, token2fa.trim());
-    if (resultado === 'usado') throw new HttpError(MENSAJE_CODIGO_USADO);
-    if (resultado !== 'ok') throw new HttpError('Código incorrecto.');
-
-    // Generamos los códigos de respaldo (de un solo uso) y guardamos solo su hash
-    const backupCodes = this.generateBackupCodes(8);
-
-    await db.$transaction(async (tx) => {
-      // Se activa el secreto que se ha comprobado y no otro. Sin la condición,
-      // un «generar QR» de otra pestaña que llegara entre la comprobación y
-      // aquí dejaba el 2FA activo con un secreto que nadie había escaneado, y
-      // la cuenta fuera del CMS hasta un rescate.
-      const { count } = await tx.user.updateMany({
-        where: { id: userId, twoFactorEnabled: false, twoFactorSecret: guardado },
-        data: { twoFactorEnabled: true }
-      });
-      if (count !== 1) {
-        throw new HttpError('El QR ha cambiado mientras lo activabas (quizá desde otra pestaña). Genera uno nuevo y escanéalo otra vez.', 409);
-      }
-      // Por si reactivaba después de un disable forzado, limpiamos restos primero
-      await tx.twoFactorBackupCode.deleteMany({ where: { userId } });
-      await tx.twoFactorBackupCode.createMany({
-        data: backupCodes.map(code => ({ userId, codeHash: this.hashBackupCode(code) }))
-      });
-    });
-
-    // OJO: los códigos en claro se devuelven UNA sola vez aquí.
-    // El frontend debe pedirle al usuario que los guarde (papel, gestor de contraseñas...).
-    return {
-      message: '2FA activado correctamente. Guarda tus códigos de respaldo ahora: no volverán a mostrarse.',
-      backupCodes
-    };
-  }
-
-  /**
-   * DESACTIVAR 2FA (por el propio usuario)
-   * Requiere el código TOTP vigente o un código de respaldo (cambio/perdida de móvil).
-   *
-   * Comparte el contador de fallos con el login 2FA: sin él, quien tuviera la
-   * contraseña de un cargo podía probar códigos aquí sin límite. Los fallos
-   * responden 400 y no 401 a propósito: el frontend trata un 401 como sesión
-   * caducada y echaría al usuario por teclear mal un código.
-   */
-  static async disable2FA(userId: number, code: string) {
-    this.checkLockout2FA(userId);
-
-    const user = await db.user.findUnique({ where: { id: userId }, omit: { twoFactorSecret: false } });
-    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) throw new HttpError('2FA no está activado.');
-
-    const normalized = code.trim().toUpperCase();
-
-    if (/^[0-9]{6}$/.test(normalized)) {
-      const { resultado } = await this.reclamarTotp(user, normalized);
-      if (resultado !== 'ok') {
-        this.registerFail2FA(userId);
-        throw new HttpError(resultado === 'usado' ? MENSAJE_CODIGO_USADO : 'Código incorrecto.');
-      }
-    } else {
-      const consumed = await this.consumeBackupCode(userId, normalized);
-      if (!consumed) {
-        this.registerFail2FA(userId);
-        throw new HttpError('Código incorrecto.');
-      }
-    }
-
-    this.fallos2FA.limpiar(String(userId));
-
-    return await db.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: userId },
-        data: { ...APAGAR_2FA }
-      });
-      await tx.twoFactorBackupCode.deleteMany({ where: { userId } });
-      return { message: '2FA desactivado. Podrás volver a activarlo generando un QR nuevo.' };
-    });
-  }
-
-  /**
-   * DESACTIVAR 2FA FORZADO (Rescate de emergencia: solo ADMIN)
-   * No pide código porque lo invoca la mesa del Grupo Parroquial tras verificar la identidad.
-   *
-   * Nunca sobre la propia cuenta: un rescate sin código sobre uno mismo es
-   * quitarse el segundo factor sin demostrar que se tiene. Para eso está la
-   * desactivación con código de «Mi seguridad».
-   */
-  static async forceDisable2FA(targetUserId: number, actorId: number, meta?: MetaDeAuditoria) {
-    if (targetUserId === actorId) {
-      throw new HttpError('No puedes rescatar tu propia cuenta. Desactiva tu doble factor desde «Mi seguridad» con un código vigente.', 403);
-    }
-
-    const antes = await this.apagar2FAForzado(targetUserId);
-
-    // Auditoría: rescate de emergencia sobre la cuenta de otro usuario, ya confirmado
-    await AuditoriaService.log(ACCIONES_AUDITORIA.TFa_RESET_ADMIN, meta ?? {}, 'user', targetUserId, {
-      antes,
-      despues: { twoFactorEnabled: false, codigosRespaldoSinUsar: 0 },
-      sesionesCerradas: true
-    });
-    return { message: '2FA desactivado por un administrador.' };
-  }
-
-  /**
-   * Rescate desde la consola del servidor (`npm run 2fa:rescatar`), para
-   * cuando no queda nadie que pueda hacerlo desde el CMS: todos los ADMIN con
-   * 2FA y el móvil perdido, o la clave del 2FA perdida. Quien tiene la consola
-   * ya tiene la base de datos, así que no se le pide más; sí queda auditado.
-   */
-  static async rescatar2FADesdeConsola(email: string) {
-    const emailNorm = email.trim().toLowerCase();
-    const objetivo = await db.user.findUnique({ where: { email: emailNorm }, select: { id: true, role: true } });
-    if (!objetivo) throw new NotFoundError(`No existe ninguna cuenta con el correo ${emailNorm}.`);
-
-    const antes = await this.apagar2FAForzado(objetivo.id);
-
-    await AuditoriaService.log(
-      ACCIONES_AUDITORIA.TFa_RESET_ADMIN,
-      { ip: 'consola', userAgent: 'scripts/rescatar-2fa.ts' },
-      'user',
-      objetivo.id,
-      { via: 'consola', antes, despues: { twoFactorEnabled: false, codigosRespaldoSinUsar: 0 }, sesionesCerradas: true }
-    );
-    return { id: objetivo.id, email: emailNorm, role: objetivo.role, antes };
-  }
-
-  /**
-   * Lo común a los dos rescates: apaga el 2FA, borra los respaldos y cierra
-   * las sesiones. Leer y escribir en la misma transacción: un id inexistente
-   * da 404 en vez del 500 que daba el P2025 del update.
-   */
-  private static async apagar2FAForzado(targetUserId: number) {
-    return db.$transaction(async (tx) => {
-      const objetivo = await tx.user.findUnique({
-        where: { id: targetUserId },
-        select: { twoFactorEnabled: true }
-      });
-      if (!objetivo) throw new NotFoundError('Usuario no encontrado');
-
-      const codigosRespaldoSinUsar = await tx.twoFactorBackupCode.count({
-        where: { userId: targetUserId, usedAt: null }
-      });
-
-      await tx.user.update({
-        where: { id: targetUserId },
-        data: {
-          ...APAGAR_2FA,
-          // Rescate de emergencia: se invalidan sus sesiones por seguridad
-          tokenValidAfter: corteDeSesiones()
-        }
-      });
-      await tx.twoFactorBackupCode.deleteMany({ where: { userId: targetUserId } });
-
-      return { twoFactorEnabled: objetivo.twoFactorEnabled, codigosRespaldoSinUsar };
-    });
-  }
-
-  /**
-   * Cifra los secretos 2FA que sigan en claro o con una clave que ya no es la
-   * principal (TOTP_ENC_KEY_ANTERIOR tras una rotación). Idempotente: los
-   * cifrados con la clave actual se saltan. Lo usa
-   * `scripts/cifrar-secretos-2fa.ts`; `soloIds` acota la pasada (para los tests).
-   */
-  static async cifrarSecretosPendientes(soloIds?: number[]) {
-    const usuarios = await db.user.findMany({
-      where: { twoFactorSecret: { not: null }, ...(soloIds ? { id: { in: soloIds } } : {}) },
-      select: { id: true, twoFactorSecret: true }
-    });
-
-    let cifrados = 0;
-    const ilegibles: number[] = [];
-    for (const { id, twoFactorSecret } of usuarios) {
-      let lectura: { secreto: string; recifrar: boolean };
-      try {
-        lectura = leerSecretoTotp(twoFactorSecret!);
-      } catch (e) {
-        if (!(e instanceof SecretoTotpIlegibleError)) throw e;
-        // Cifrado con una clave que ya no se tiene: no se toca, se informa.
-        ilegibles.push(id);
-        continue;
-      }
-      if (!lectura.recifrar) continue;
-
-      // Condicionado al valor leído, como el cifrado al vuelo del login.
-      const { count } = await db.user.updateMany({
-        where: { id, twoFactorSecret },
-        data: { twoFactorSecret: cifrarSecretoTotp(lectura.secreto) }
-      });
-      cifrados += count;
-    }
-
-    return { revisados: usuarios.length, cifrados, ilegibles };
-  }
-
-  // =================================================================
-  //  RGPD: EXPORTACIÓN Y SUPRESIÓN DE DATOS PROPIOS
-  // =================================================================
-
-  /**
-   * Derecho de acceso (art. 15 RGPD): exporta TODOS los datos personales
-   * del usuario: cuenta, fichas familiares, recibos, papeletas, citas y
-   * transacciones asociadas a sus perfiles.
-   */
-  static async exportMisDatos(userId: number, meta?: MetaDeAuditoria) {
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      include: {
-        hermanos: {
-          include: {
-            recibos: { orderBy: { year: 'desc' } },
-            papeletas: { orderBy: { year: 'desc' } },
-            citas: { include: { turno: true } },
-            transacciones: true
-          }
-        }
-      }
-    });
-    if (!user) throw new NotFoundError('Usuario no encontrado');
-
-    // Auditoría (las exportaciones masivas de datos también son rastreables)
-    AuditoriaService.log(ACCIONES_AUDITORIA.CUENTA_DATOS_EXPORT, meta ?? {}, 'user', userId);
-
-    // Nunca exponemos secretos en la exportación: el cliente Prisma ya los omite
-    // globalmente (ver config/db.ts), así que `user` llega sin password/2FA/reset.
-    const { hermanos, ...safeUser } = user;
-    return {
-      exportadoEn: new Date().toISOString(),
-      aviso: 'Exportación de datos personales conforme al art. 15 RGPD.',
-      usuario: safeUser,
-      perfilesHermanos: user.hermanos
-    };
-  }
-
-  /**
-   * Derecho de supresión (art. 17 RGPD) adaptado a las obligaciones fiscales
-   * del Grupo Parroquial:
-   * - La CUENTA se anonimiza por completo (email, DNI, nombre, contraseña)
-   *   y se desactiva. Sus sesiones quedan invalidadas al instante.
-   * - Las FICHAS de hermano se dan de baja y se les limpia el contacto
-   *   (email/teléfono/dirección), conservando nombre y historial económico
-   *   porque los recibos tienen obligación de retención (6 años Hacienda).
-   * Requiere confirmar con la contraseña actual.
-   *
-   * Una cuenta del equipo solo puede borrarse desde una sesión del CMS: la del
-   * área de hermanos no ha pasado el 2FA, y con la contraseña robada de un
-   * cargo bastaba para hacer desaparecer su cuenta. Y nunca la del último
-   * ADMIN activo, que dejaría el CMS sin nadie capaz de gestionar al equipo.
-   */
-  static async deleteOwnAccount(
-    userId: number,
-    password: string,
-    origen: 'cms' | 'hermanos' | undefined,
-    meta?: MetaDeAuditoria
-  ) {
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      omit: { password: false }, // Necesario para confirmar la identidad
-      include: { hermanos: true }
-    });
-    if (!user) throw new NotFoundError('Usuario no encontrado');
-
-    // Antes que la contraseña: no hace falta gastar un bcrypt para decir que no.
-    if (esStaff(user.role) && origen !== 'cms') {
-      throw new HttpError('Esta cuenta es del equipo del CMS: para eliminarla, entra por el acceso del CMS.', 403);
-    }
-
-    // Confirmación de identidad obligatoria
-    const isMatch = await verified(password, user.password);
-    if (!isMatch) throw new HttpError('Contraseña incorrecta: no se puede eliminar la cuenta.', 401);
-
-    const randomPass = crypto.randomBytes(32).toString('hex');
-    const fichas = { retiradas: 0, dadasDeBaja: 0, yaDeBaja: 0 };
-    let registrosSuprimidos = 0;
-
-    await db.$transaction(async (tx) => {
-      // 0. El último ADMIN activo no se va.
-      await asegurarQueQuedaOtroAdmin(tx, user.role);
-
-      // 1. Anonimización de la cuenta
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          // Formato compartido con `esCuentaAnonimizada`, que lo usa para no
-          // reactivar por error una cuenta suprimida.
-          email: `anon-${userId}${DOMINIO_CUENTA_ELIMINADA}`,
-          dni: `${PREFIJO_DNI_ELIMINADO}${userId}`,
-          nombre: 'Usuario',
-          apellidos: 'Eliminado',
-          telefono: '',
-          direccion: null,
-          poblacion: null,
-          codigoPostal: null,
-          password: randomPass, // Inutiliza la contraseña anterior
-          active: false,
-          twoFactorEnabled: false,
-          twoFactorSecret: null,
-          resetPasswordToken: null,
-          resetPasswordExpires: null,
-          tokenValidAfter: corteDeSesiones() // Mata todas las sesiones abiertas
-        }
-      });
-
-      // 2. Backup codes del 2FA fuera
-      await tx.twoFactorBackupCode.deleteMany({ where: { userId } });
-
-      // 3. Fichas, según su estado (el mismo criterio que la retirada de un
-      // perfil desde el área de hermanos, `deleteProfileIfOwned`). Antes todas
-      // pasaban a baja con fecha de hoy: una solicitud pendiente quedaba como
-      // «baja» que Secretaría podía reactivar sin pasar por Solicitudes, las ya
-      // de baja perdían su fecha real y las activas conservaban su número.
-      // A todas se les limpia el contacto; nombre e historial económico se
-      // conservan porque los recibos tienen obligación de retención (6 años).
-      const fechaBaja = new Date();
-      for (const { id } of user.hermanos) {
-        const ficha = await tx.hermano.findUnique({
-          where: { id },
-          select: {
-            activo: true, fechaBaja: true,
-            _count: { select: { recibos: true, papeletas: true, citas: true, transacciones: true, prendas: true } }
-          }
-        });
-        if (!ficha) continue;
-
-        if (ficha.fechaBaja) {
-          // Ya de baja: su estado y su fecha son historia del censo.
-          await tx.hermano.update({ where: { id }, data: CONTACTO_FUERA });
-          fichas.yaDeBaja += 1;
-          continue;
-        }
-
-        const conHistorial = Object.values(ficha._count).some((n) => n > 0);
-        if (!ficha.activo && !conHistorial) {
-          // Solicitud pendiente sin nada detrás: se retira, como la retiraría la familia.
-          await tx.hermano.delete({ where: { id } });
-          fichas.retiradas += 1;
-          continue;
-        }
-
-        // Activa, o pendiente con historial: baja, y el número queda libre
-        // como en cualquier otra baja (una ficha de baja no lo retiene).
-        await tx.hermano.update({
-          where: { id },
-          data: { activo: false, fechaBaja, numeroHermano: null, ...CONTACTO_FUERA }
-        });
-        fichas.dadasDeBaja += 1;
-      }
-
-      // 4. La auditoría de la cuenta y de sus fichas guarda el antes y el
-      // después de cada cambio (DNI, correo, dirección...) durante todo el
-      // plazo de retención. Se suprimen esos valores en la misma transacción:
-      // la cuenta no está suprimida mientras su historial siga diciendo quién era.
-      const registros = await tx.auditLog.findMany({
-        where: {
-          OR: [
-            { entityType: 'user', entityId: String(userId) },
-            { entityType: 'hermano', entityId: { in: user.hermanos.map((h) => String(h.id)) } }
-          ]
-        },
-        select: { id: true, detalles: true }
-      });
-      for (const registro of registros) {
-        if (registro.detalles === null) continue;
-        const suprimidos = suprimirDatosPersonales(registro.detalles);
-        if (JSON.stringify(suprimidos) === JSON.stringify(registro.detalles)) continue;
-        await tx.auditLog.update({
-          where: { id: registro.id },
-          data: { detalles: suprimidos as Prisma.InputJsonValue }
-        });
-        registrosSuprimidos += 1;
-      }
-    });
-
-    // Auditoría después de confirmar: si la transacción falla, el registro no
-    // debe dar fe de un borrado que no ocurrió. El userId del registro sigue
-    // señalando a la cuenta, que se anonimiza pero no se borra.
-    await AuditoriaService.log(ACCIONES_AUDITORIA.CUENTA_AUTODELETE, meta ?? {}, 'user', userId, {
-      antes: { rol: user.role, activa: user.active, fichasActivas: user.hermanos.filter((h) => h.activo).length },
-      despues: { activa: false, anonimizada: true, fichas, registrosAuditoriaSuprimidos: registrosSuprimidos }
-    });
-
-    return {
-      message: 'Tu cuenta ha sido eliminada y tus datos personales anonimizados. ' +
-        'El historial de recibos se conserva durante el plazo legal obligatorio, ya sin vincular a tus datos de contacto.'
-    };
-  }
-
-  // =================================================================
-  //  HELPERS PRIVADOS 2FA
-  // =================================================================
-
-  // Alfabeto sin caracteres ambiguos (sin 0/O, 1/I/L)
-  private static readonly BACKUP_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-
-  private static generateBackupCodes(count: number = 8): string[] {
-    const codes: string[] = [];
-    for (let i = 0; i < count; i++) {
-      let raw = '';
-      for (let j = 0; j < 12; j++) {
-        raw += this.BACKUP_ALPHABET[crypto.randomInt(this.BACKUP_ALPHABET.length)];
-      }
-      codes.push(`${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`);
-    }
-    return codes;
-  }
-
-  private static hashBackupCode(code: string): string {
-    return crypto.createHash('sha256').update(code).digest('hex');
-  }
-
-  private static hashResetToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
-  }
-
-  /**
-   * Consume un código de respaldo (de un solo uso). Devuelve true si era válido.
-   *
-   * En una sola sentencia condicionada a `usedAt: null`: antes se leía y luego
-   * se escribía, y de dos peticiones simultáneas con el mismo código la que
-   * perdía se encontraba el registro ya cambiado y acababa en un 500.
-   */
-  private static async consumeBackupCode(
-    userId: number,
-    code: string,
-    cliente: Pick<typeof db, 'twoFactorBackupCode'> = db
-  ): Promise<boolean> {
-    const { count } = await cliente.twoFactorBackupCode.updateMany({
-      where: { userId, codeHash: this.hashBackupCode(code), usedAt: null },
-      data: { usedAt: new Date() }
-    });
-    return count === 1;
-  }
-
-  /** Intervalo TOTP en curso (el contador de 30 s del RFC 6238). */
-  private static pasoTotpActual(ahora = Date.now()): number {
-    return OTPAuth.TOTP.counter({ period: 30, timestamp: ahora });
-  }
-
-  /**
-   * Comprueba un código TOTP y reclama su intervalo en la misma operación.
-   *
-   * Un código vale todo su intervalo y, con `window: 1`, también el anterior y
-   * el siguiente: hasta 90 s en los que quien lo viera por encima del hombro
-   * podía reutilizarlo. Se guarda el último intervalo aceptado y se rechaza
-   * cualquiera igual o anterior. La escritura es un compare-and-swap sobre el
-   * valor leído: de dos peticiones simultáneas con el mismo código, gana una.
-   *
-   * Devuelve también el secreto tal como queda guardado (cifrado al vuelo si
-   * era antiguo), para que quien active el 2FA pueda condicionar su escritura
-   * a ese valor exacto.
-   */
-  private static async reclamarTotp(
-    user: { id: number; twoFactorSecret: string | null; twoFactorLastStep: number | null },
-    codigo: string
-  ): Promise<{ resultado: ResultadoTotp; guardado: string | null }> {
-    if (!user.twoFactorSecret) return { resultado: 'incorrecto', guardado: null };
-    const { secreto, guardado } = await this.secretoEnClaro(user.id, user.twoFactorSecret);
-
-    const totp = new OTPAuth.TOTP({
-      algorithm: 'SHA1',
-      digits: 6,
-      period: 30,
-      secret: OTPAuth.Secret.fromBase32(secreto)
-    });
-
-    // window: 1 permite un margen de +/- 30 segundos por si el reloj no está sincro
-    const ahora = Date.now();
-    const delta = totp.validate({ token: codigo, window: 1, timestamp: ahora });
-    if (delta === null) return { resultado: 'incorrecto', guardado };
-
-    const paso = this.pasoTotpActual(ahora) + delta;
-    if (user.twoFactorLastStep !== null && paso <= user.twoFactorLastStep) return { resultado: 'usado', guardado };
-
-    const { count } = await db.user.updateMany({
-      where: { id: user.id, twoFactorLastStep: user.twoFactorLastStep },
-      data: { twoFactorLastStep: paso }
-    });
-    return { resultado: count === 1 ? 'ok' : 'usado', guardado };
-  }
-
-  /**
-   * Descifra el secreto guardado. Los antiguos en claro (o cifrados con una
-   * clave que ya no es la principal) se reescriben cifrados al leerlos, para
-   * que la migración no dependa solo de acordarse de ejecutar el script.
-   *
-   * Si no se puede descifrar con ninguna clave configurada, el fallo es del
-   * servidor: queda en el registro con la cuenta afectada y al usuario se le
-   * dice eso, no que su código está mal (antes salía un 500 con «Código 2FA
-   * incorrecto», y el cargo seguía probando códigos buenos).
-   */
-  private static async secretoEnClaro(userId: number, almacenado: string): Promise<{ secreto: string; guardado: string }> {
-    let lectura: { secreto: string; recifrar: boolean };
-    try {
-      lectura = leerSecretoTotp(almacenado);
-    } catch (e) {
-      if (!(e instanceof SecretoTotpIlegibleError)) throw e;
-      console.error(`[2FA] Secreto ilegible del usuario ${userId}. ${e.message} Rescate: npm run 2fa:rescatar -- <correo>.`);
-      throw new HttpError(MENSAJE_SECRETO_ILEGIBLE, 500);
-    }
-
-    if (!lectura.recifrar) return { secreto: lectura.secreto, guardado: almacenado };
-
-    // Condicionado al valor leído: si entre medias se desactivó o ya lo
-    // reescribió otra petición, no se pisa. Y si falla, el login sigue: el
-    // secreto ya está en memoria y el script lo cifrará después.
-    const nuevo = cifrarSecretoTotp(lectura.secreto);
-    try {
-      const { count } = await db.user.updateMany({
-        where: { id: userId, twoFactorSecret: almacenado },
-        data: { twoFactorSecret: nuevo }
-      });
-      return { secreto: lectura.secreto, guardado: count === 1 ? nuevo : almacenado };
-    } catch (e) {
-      console.error('[2FA] No se pudo cifrar un secreto antiguo al leerlo:', e);
-      return { secreto: lectura.secreto, guardado: almacenado };
-    }
   }
 }

@@ -23,9 +23,10 @@
  */
 import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
+import { DobleFactorService } from '../src/services/doble-factor.service.js';
 
 try {
-  const { revisados, cifrados, ilegibles } = await AuthService.cifrarSecretosPendientes();
+  const { revisados, cifrados, ilegibles } = await DobleFactorService.cifrarSecretosPendientes();
   console.log(`Secretos 2FA revisados: ${revisados}. Cifrados o recifrados ahora: ${cifrados}.`);
 
   if (ilegibles.length > 0) {

@@ -16,6 +16,7 @@ import { AuthService } from '../src/services/auth.service.js';
 import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '../src/utils/cifrado-totp.js';
 import { validarEntorno } from '../src/config/entorno.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
+import { DobleFactorService } from '../src/services/doble-factor.service.js';
 
 /**
  * Rotación de TOTP_ENC_KEY y rescate del 2FA por consola (punto 1 de la
@@ -97,7 +98,7 @@ test('el script recifra con la clave nueva lo que estaba con la anterior e infor
     await conSegundoFactor(conVieja.id, cifrarSecretoTotp(SECRETO, CLAVE_VIEJA));
     await conSegundoFactor(perdida.id, guardadoPerdido);
 
-    const resultado = await AuthService.cifrarSecretosPendientes([conVieja.id, perdida.id]);
+    const resultado = await DobleFactorService.cifrarSecretosPendientes([conVieja.id, perdida.id]);
     assert.deepEqual(resultado, { revisados: 2, cifrados: 1, ilegibles: [perdida.id] });
 
     const recifrado = (await db.user.findUnique({ where: { id: conVieja.id }, select: { twoFactorSecret: true } }))!.twoFactorSecret!;
@@ -106,7 +107,7 @@ test('el script recifra con la clave nueva lo que estaba con la anterior e infor
     assert.equal(intacto, guardadoPerdido, 'lo ilegible no se toca: con la clave buena podría recuperarse');
 
     // Repetirlo no cambia nada más.
-    assert.equal((await AuthService.cifrarSecretosPendientes([conVieja.id])).cifrados, 0);
+    assert.equal((await DobleFactorService.cifrarSecretosPendientes([conVieja.id])).cifrados, 0);
   } finally {
     await borrarUsuarioPrueba(conVieja.id);
     await borrarUsuarioPrueba(perdida.id);
@@ -183,7 +184,7 @@ test('el rescate por consola apaga el 2FA, cierra sesiones y queda auditado', as
     const antes = new Date();
 
     // Con mayúsculas y espacios, como se teclea en una consola.
-    const resultado = await AuthService.rescatar2FADesdeConsola(`  ${admin.email.toUpperCase()} `);
+    const resultado = await DobleFactorService.rescatar2FADesdeConsola(`  ${admin.email.toUpperCase()} `);
     assert.equal(resultado.id, admin.id);
     assert.equal(resultado.antes.twoFactorEnabled, true);
 
@@ -213,7 +214,7 @@ test('el rescate por consola apaga el 2FA, cierra sesiones y queda auditado', as
 test('el rescate por consola de un correo que no existe lo dice', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   await assert.rejects(
-    AuthService.rescatar2FADesdeConsola(`no-existe-${Date.now()}@ejemplo.test`),
+    DobleFactorService.rescatar2FADesdeConsola(`no-existe-${Date.now()}@ejemplo.test`),
     (e: unknown) => e instanceof NotFoundError && /No existe ninguna cuenta/.test(e.message)
   );
 });

@@ -17,6 +17,7 @@
 import { createInterface } from 'node:readline/promises';
 import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
+import { DobleFactorService } from '../src/services/doble-factor.service.js';
 
 async function pedirCorreo(): Promise<string> {
   const argumento = process.argv[2]?.trim();
@@ -38,7 +39,7 @@ try {
   const email = await pedirCorreo();
   if (!email) throw new Error('No se ha indicado ningún correo.');
 
-  const { id, role, antes } = await AuthService.rescatar2FADesdeConsola(email);
+  const { id, role, antes } = await DobleFactorService.rescatar2FADesdeConsola(email);
   console.log(
     antes.twoFactorEnabled
       ? `Doble factor desactivado para ${email} (usuario ${id}, ${role}). Sus sesiones se han cerrado: ` +

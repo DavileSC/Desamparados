@@ -23,6 +23,7 @@ import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
 import { HermanoService } from '../src/services/hermano.service.js';
 import { PASSWORD_PRUEBA } from './fixtures/usuarios.js';
+import { RegistroService } from '../src/services/registro.service.js';
 
 const carpetaCorreos = () => path.join(process.cwd(), 'storage', 'correos');
 
@@ -179,7 +180,7 @@ describe('aviso a Secretaría de una solicitud nueva', () => {
     const email = `solicitante-${sufijo}@ejemplo.test`;
 
     try {
-      await AuthService.registerUser({
+      await RegistroService.registerUser({
         usuario: { email, dni: `S${sufijo}`, password: PASSWORD_PRUEBA, nombre: 'Lucía', apellidos: 'Moreno Gil', telefono: '600000000' },
         titular: { fechaNacimiento: '1990-01-01' },
       } as never);

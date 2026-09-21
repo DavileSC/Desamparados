@@ -1,4 +1,7 @@
 import { Request, Response } from 'express';
+import { RegistroService } from '../services/registro.service';
+import { DobleFactorService } from '../services/doble-factor.service';
+import { MisDatosService } from '../services/mis-datos.service';
 import { AuthService, CuentaSinCmsError, Testigo2FACaducadoError } from '../services/auth.service';
 import { handleHttp } from '../utils/error.handle';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
@@ -18,7 +21,7 @@ export class AuthController {
 
   static register = manejar('Error registrando usuario', async (req, res) => {
     const body: RegisterDto = req.body;
-    const result = await AuthService.registerUser(body);
+    const result = await RegistroService.registerUser(body);
 
     // Ahora devuelve un 201 Created con el mensaje de "Pásate por Secretaría"
     res.status(201).json(result);
@@ -30,7 +33,7 @@ export class AuthController {
    * qué DNI están en el censo.
    */
   static solicitarReactivacion = manejar('Error pidiendo la reactivación', async (req, res) => {
-    res.status(200).json(await AuthService.solicitarReactivacion(req.body));
+    res.status(200).json(await RegistroService.solicitarReactivacion(req.body));
   });
 
   // =================================================================
@@ -137,7 +140,7 @@ export class AuthController {
 
   static setup2FAGenerate = manejar('Error generando QR', async (req, res) => {
     const userId = req.user!.id; 
-    const data = await AuthService.generate2FAQR(userId);
+    const data = await DobleFactorService.generate2FAQR(userId);
     res.status(200).json(data);
   });
 
@@ -145,7 +148,7 @@ export class AuthController {
     const userId = req.user!.id;
     const { token2fa } = req.body;
 
-    const result = await AuthService.enable2FA(userId, token2fa);
+    const result = await DobleFactorService.enable2FA(userId, token2fa);
     res.status(200).json(result);
   });
 
@@ -153,7 +156,7 @@ export class AuthController {
     const userId = req.user!.id;
     const { token2fa } = req.body;
 
-    const result = await AuthService.disable2FA(userId, token2fa);
+    const result = await DobleFactorService.disable2FA(userId, token2fa);
     res.status(200).json(result);
   });
 
@@ -163,7 +166,7 @@ export class AuthController {
 
   static adminReset2FA = manejar('Error reseteando usuario', async (req, res) => {
     // El id llega comprobado: la ruta pasa por `validateId`.
-    const result = await AuthService.forceDisable2FA(Number(req.params.id), req.user!.id, AuditoriaService.metaFromReq(req));
+    const result = await DobleFactorService.forceDisable2FA(Number(req.params.id), req.user!.id, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
@@ -229,7 +232,7 @@ export class AuthController {
   /** Derecho de acceso (art. 15 RGPD): exporta todos los datos personales. */
   static exportMisDatos = manejar('Error exportando tus datos', async (req, res) => {
     const userId = req.user!.id;
-    const data = await AuthService.exportMisDatos(userId, AuditoriaService.metaFromReq(req));
+    const data = await MisDatosService.exportMisDatos(userId, AuditoriaService.metaFromReq(req));
     res.status(200).json(data);
   });
 
@@ -247,7 +250,7 @@ export class AuthController {
     // persona tiene sesión de CMS en este navegador"), ni más permisiva ni
     // más estricta.
     const origen: 'cms' | 'hermanos' = req.sesiones.cms?.id === userId ? 'cms' : 'hermanos';
-    const result = await AuthService.deleteOwnAccount(userId, password, origen, AuditoriaService.metaFromReq(req));
+    const result = await MisDatosService.deleteOwnAccount(userId, password, origen, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 }

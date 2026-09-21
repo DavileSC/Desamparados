@@ -24,6 +24,7 @@ import { normalizarValorConfiguracion } from '../src/domain/configuracion.js';
 import { diaDeHoy } from '../src/domain/fechas-hermano.js';
 import { diaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { MisDatosService } from '../src/services/mis-datos.service.js';
 
 let server: Server;
 let baseUrl: string;
@@ -397,7 +398,7 @@ describe('dar de baja y reactivar', () => {
   test('reactivar a quien borró su cuenta (RGPD) devuelve la ficha al censo pero no la cuenta', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const usuario = await cuenta(false);
-    // Así deja AuthService.deleteOwnAccount una cuenta suprimida.
+    // Así deja MisDatosService.deleteOwnAccount una cuenta suprimida.
     await db.user.update({ where: { id: usuario.id }, data: { email: `anon-${usuario.id}@eliminado.local`, dni: `ELIMINADO-${usuario.id}` } });
     const suprimida = await ficha(usuario.id, { activo: false, fechaBaja: new Date('2025-02-01') });
 
