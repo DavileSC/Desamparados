@@ -309,6 +309,11 @@ export const cabeceraSchema = type({
   titulo: TITULO,
   subtitulo: DESCRIPCION,
   foto: sinFoto.or(rutaImagenPublica),
+  // La descripción es opcional, al revés que en el plano del recorrido o en las
+  // fotos de los hitos: la foto de la cabecera no se pinta como una foto, es el
+  // fondo velado de la página (`FondoDePagina`) y va fuera del árbol accesible,
+  // así que nadie la oiría. Se sigue guardando lo escrito: describe la foto por
+  // si algún día vuelve a verse como tal.
   fotoAlt: DESCRIPCION,
 }).narrow((datos, ctx) => {
   // Un título en blanco (o solo espacios: tres espacios no son un título) deja
@@ -316,9 +321,5 @@ export const cabeceraSchema = type({
   // pero esa comprobación vive solo en el navegador; sin esta, un PUT hecho a
   // mano se colaba igual.
   if (datos.titulo.trim() === '') return ctx.reject({ path: ['titulo'], problem: 'no puede quedar en blanco' });
-  return datos.foto === '' || datos.fotoAlt.trim() !== ''
-    ? true
-    // Misma regla que el plano del recorrido y las fotos de los hitos: en cuanto
-    // hay foto, su descripción deja de ser opcional.
-    : ctx.reject({ path: ['fotoAlt'], problem: 'es obligatoria cuando hay foto' });
+  return true;
 });

@@ -7,9 +7,13 @@ interface PageHeaderProps {
   /** Qué se ve en la foto. Sin ella, se repite el título: toda foto necesita
    *  descripción, y una redundancia con el título es mejor que dejarla sin ella. */
   imageAlt?: string
+  /** La página ya trae la foto de fondo detrás de todo (`FondoDePagina`): aquí
+   *  no se pinta nada propio, ni foto ni color, para dejarla pasar. */
+  sobreFondo?: boolean
 }
 
-export default function PageHeader({ title, subtitle, image, imageAlt }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, image, imageAlt, sobreFondo }: PageHeaderProps) {
+  const conFotoPropia = Boolean(image) && !sobreFondo
   return (
     <Box
       component="section"
@@ -19,11 +23,11 @@ export default function PageHeader({ title, subtitle, image, imageAlt }: PageHea
         // encima. Abajo, poco: el contenido que sigue ya trae su aire (espaciado.ts).
         pt: { xs: 10, md: 14 },
         pb: { xs: 5, md: 7 },
-        backgroundColor: image ? 'transparent' : 'background.paper',
+        backgroundColor: image || sobreFondo ? 'transparent' : 'background.paper',
         overflow: 'hidden',
       }}
     >
-      {image && (
+      {conFotoPropia && (
         <>
           <Box
             component="img"

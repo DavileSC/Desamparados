@@ -42,9 +42,12 @@ describe('el documento de una página de bloques', () => {
     assert.ok(falla({ cabecera: { ...CABECERA, titulo: 'x'.repeat(121) }, bloques: [] }));
   });
 
-  test('una cabecera con foto exige su descripción', () => {
+  test('una cabecera con foto no exige su descripción', () => {
+    // La foto de la cabecera es el fondo velado de la página, decorativo y
+    // fuera del árbol accesible: pedir una descripción que nadie va a oír solo
+    // frenaba a quien edita.
     const conFoto = { ...CABECERA, foto: '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp' };
-    assert.ok(falla({ cabecera: conFoto, bloques: [] }), 'foto sin descripción');
+    assert.ok(!falla({ cabecera: conFoto, bloques: [] }), 'foto sin descripción');
     assert.ok(!falla({ cabecera: { ...conFoto, fotoAlt: 'La Virgen en su trono' }, bloques: [] }));
   });
 

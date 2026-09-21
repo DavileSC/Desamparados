@@ -3,6 +3,7 @@ import { Box, CircularProgress, Dialog, IconButton, Stack, Typography } from '@m
 import CloseIcon from '@mui/icons-material/Close'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import PageHeader from '../../../components/PageHeader'
+import FondoDePagina from '../../../components/FondoDePagina'
 import PageContainer from '../../../components/PageContainer'
 import PaginaDeBloquesPublica from '../../../components/bloques/PaginaDeBloquesPublica'
 import { BloqueDePagina } from '../../../components/bloques/BloquesDePagina'
@@ -13,16 +14,24 @@ import type { Bloque, CabeceraPagina, PaginaDeBloques, SlugContenido } from '../
 // Historia tiene maquetación propia; se carga solo si se previsualiza.
 const HistoryPage = lazy(() => import('../../corporation/history/HistoryPage'))
 
-/** La cabecera de la página tal como sale arriba del todo en la web. */
+/**
+ * La cabecera de la página tal como sale arriba del todo en la web, con la
+ * foto velada detrás: en la página es el fondo de todo, y aquí se ve el tramo
+ * que le toca a la cabecera.
+ */
 export function VistaPreviaCabecera({ cabecera }: { cabecera: CabeceraPagina }) {
   return (
     <MarcoVistaPrevia testId="vista-previa-cabecera">
-      <PageHeader
-        title={cabecera.titulo || 'Sin título'}
-        subtitle={cabecera.subtitulo}
-        image={cabecera.foto || undefined}
-        imageAlt={cabecera.fotoAlt}
-      />
+      <Box sx={{ position: 'relative', isolation: 'isolate' }}>
+        {Boolean(cabecera.foto) && <FondoDePagina url={cabecera.foto} altura="100%" />}
+        <PageHeader
+          title={cabecera.titulo || 'Sin título'}
+          subtitle={cabecera.subtitulo}
+          image={cabecera.foto || undefined}
+          imageAlt={cabecera.fotoAlt}
+          sobreFondo={Boolean(cabecera.foto)}
+        />
+      </Box>
     </MarcoVistaPrevia>
   )
 }

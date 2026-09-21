@@ -24,15 +24,6 @@ import {
 export const AVISO_SIN_TITULO = 'La página se ha quedado sin título. Ponle uno antes de guardar.'
 
 /**
- * Dónde sale la foto de la cabecera, cuando no es donde sale en las demás.
- * Historia tiene maquetación propia y su foto no va en la cabecera sino, muy
- * velada, detrás de la página entera.
- */
-const AYUDA_FOTO_CABECERA: Record<string, string> = {
-  historia: 'JPG, PNG o WebP grande y apaisado, de hasta 5 MB. Se ve muy velada detrás de toda la página de Historia. Sin foto, el fondo queda liso.',
-}
-
-/**
  * En Historia, la cronología y la llamada no se pintan como en las demás
  * páginas (van en su franja y como cierre): su vista previa suelta enseñaría
  * algo que la página no hace. Se miran en «Ver la página entera».
@@ -204,11 +195,11 @@ export default function PaginaAdminPage() {
                 onCambio={(subtitulo) => setCabecera({ ...cabecera, subtitulo })}
                 ayuda="Frase bajo el título." maxLength={topes.descripcion} />
               <CampoImagen valor={cabecera.foto} onCambio={(foto) => setCabecera({ ...cabecera, foto })}
-                etiqueta="Foto de la cabecera"
-                ayuda={AYUDA_FOTO_CABECERA[slug] ?? 'Opcional. Sin foto, la cabecera queda lisa.'} apaisada />
+                etiqueta="Foto de fondo"
+                ayuda="Opcional. JPG, PNG o WebP grande y apaisado, de hasta 5 MB. Se ve muy velada detrás de toda la página, hasta el pie. Sin foto, el fondo queda liso." apaisada />
               <CampoTexto etiqueta="Descripción de la foto" valor={cabecera.fotoAlt}
                 onCambio={(fotoAlt) => setCabecera({ ...cabecera, fotoAlt })}
-                ayuda="Lo que se ve en la foto. Déjala vacía si no hay foto." maxLength={topes.descripcion} />
+                ayuda="Opcional: el fondo es decorativo y los lectores de pantalla lo saltan. Escríbela si quieres dejar apuntado qué se ve." maxLength={topes.descripcion} />
               {slug === 'historia' && (
                 <Typography variant="body2" color="text.secondary">
                   En Historia, los bloques de cronología van en una franja oscura y el primero forma el
