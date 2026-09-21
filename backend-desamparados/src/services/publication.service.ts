@@ -6,6 +6,7 @@ import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 import { esImagenPropia, esPdfPropio, rutaAlEditar } from '../utils/rutas-propias.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
+import { fechaMasReciente, marcaDestacada } from '../domain/destacada-portada.js';
 import { PDF_DE_RELLENO, type EstadoPublicacion } from '../schemas/publication.schema.js';
 
 /** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
@@ -16,6 +17,17 @@ interface ConsultaPaginada {
 
 /** Las que enseña la portada de la web: las más recientes publicadas, de cualquier tipo. */
 export const PUBLICACIONES_EN_PORTADA = 3;
+
+/**
+ * Igual que en Noticias: delante la destacada, si la hay, y detrás las más
+ * recientes. El desempate por `id` es el de siempre, porque varias
+ * publicaciones comparten `fecha`.
+ */
+export const ORDEN_PORTADA = [
+  { fijada: 'desc' },
+  { fecha: 'desc' },
+  { id: 'asc' },
+] satisfies Prisma.PublicacionOrderByWithRelationInput[];
 
 /**
  * El `where` de cada apartado del listado del CMS. «Incompletas» son las que
@@ -35,9 +47,9 @@ export function condicionEstadoPublicacion(estado: EstadoPublicacion | undefined
 
 export class PublicationService {
   static getLatest() {
-    // Mismo orden que el listado del CMS, desempate incluido: la raya de «hasta
-    // aquí sale en la portada» tiene que coincidir con lo que sale.
-    return db.publicacion.findMany({ where: { visible: true }, orderBy: [{ fecha: 'desc' }, { id: 'asc' }], take: PUBLICACIONES_EN_PORTADA });
+    // Mismo orden que el listado del CMS, destacada y desempate incluidos: la
+    // raya de «hasta aquí sale en la portada» tiene que coincidir con lo que sale.
+    return db.publicacion.findMany({ where: { visible: true }, orderBy: ORDEN_PORTADA, take: PUBLICACIONES_EN_PORTADA });
   }
 
   static async getPublic(category: TipoPublicacion | undefined, consulta: ConsultaPaginada) {
@@ -89,7 +101,7 @@ export class PublicationService {
         where,
         // Mismo desempate que en getPublic: varias publicaciones comparten `fecha` y sin
         // `id` MariaDB las ordenaría a su antojo, repitiendo una entre páginas y perdiendo otra.
-        orderBy: [{ visible: 'asc' }, { fecha: 'desc' }, { id: 'asc' }],
+        orderBy: [{ visible: 'asc' }, ...ORDEN_PORTADA],
         skip: paginacion.skip,
         take: paginacion.take,
       }),
@@ -99,9 +111,9 @@ export class PublicationService {
       contar('incompletas'),
       db.publicacion.findMany({
         where: { visible: true },
-        orderBy: [{ fecha: 'desc' }, { id: 'asc' }],
+        orderBy: ORDEN_PORTADA,
         take: PUBLICACIONES_EN_PORTADA,
-        select: { id: true, fecha: true },
+        select: { id: true, fecha: true, fijada: true },
       }),
     ]);
 
@@ -111,8 +123,14 @@ export class PublicationService {
         publicadas,
         borradores,
         incompletas,
-        ultimaPublicacion: enPortada[0]?.fecha ?? null,
-        portada: { limite: PUBLICACIONES_EN_PORTADA, ids: enPortada.map((p) => p.id) },
+        // El máximo, no la primera: desde que hay destacada, la primera puede
+        // ser una publicación vieja que se ha fijado a mano.
+        ultimaPublicacion: fechaMasReciente(enPortada),
+        portada: {
+          limite: PUBLICACIONES_EN_PORTADA,
+          ids: enPortada.map((p) => p.id),
+          fijada: enPortada.find((p) => p.fijada)?.id ?? null,
+        },
       },
     };
   }
@@ -135,10 +153,21 @@ export class PublicationService {
   static async update(id: number, data: UpdatePublicationDto) {
     const current = await db.publicacion.findUnique({ where: { id } });
     if (!current) throw new NotFoundError('Publicación no encontrada');
-    const actualizada = await db.publicacion.update({
+
+    // Las mismas reglas que en Noticias: una destacada, publicada, y se suelta
+    // al pasar a borrador (domain/destacada-portada).
+    const marca = marcaDestacada(data, current);
+    const soltarLasDemas = db.publicacion.updateMany({
+      where: { fijada: true, id: { not: id } },
+      data: { fijada: false },
+    });
+
+    const guardar = db.publicacion.update({
       where: { id },
       data: {
         ...data,
+        // Después del spread: la marca la decide `marcaDestacada`, no el cuerpo.
+        fijada: marca.fijada,
         // Las dos rutas se validan contra lo guardado: el formulario reenvía la
         // ficha entera, y una publicación con un PDF de antes de la validación
         // (una URL tecleada en el antiguo campo de texto) no podía volver a
@@ -156,6 +185,11 @@ export class PublicationService {
         fecha: data.fecha ? new Date(data.fecha) : undefined,
       },
     });
+    // En una transacción para que la portada no se quede sin destacada (o con
+    // dos) si falla el segundo paso.
+    const actualizada = marca.soltarLasDemas
+      ? (await db.$transaction([soltarLasDemas, guardar]))[1]
+      : await guardar;
     // La portada y el PDF sustituidos o quitados salen del disco si ningún otro
     // registro los usa: seguían descargándose en /storage/public para siempre.
     await borrarSubidasHuerfanas(subidasEnTexto(current.imagenUrl, current.archivoUrl, current.descripcion), {

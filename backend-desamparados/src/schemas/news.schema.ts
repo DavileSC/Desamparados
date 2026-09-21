@@ -44,6 +44,9 @@ export const updateNewsSchema = type({
         "extracto?": "string",
         "imagenUrl?": imagenAlEditar,
         "visible?": "boolean",
+        // La destacada de la portada. Solo al editar: se destaca algo que ya
+        // existe y está publicado, no se crea destacado.
+        "fijada?": "boolean",
         "fecha?": type("string").matching(/^\d{4}-\d{2}-\d{2}/),
         "slug?": type("string").matching(/^[a-z0-9-]+$/)
     }

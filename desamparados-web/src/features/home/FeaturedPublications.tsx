@@ -8,6 +8,7 @@ import type { PublicationItem } from '../../types'
 import { useHomeData } from './useHomeData'
 import { useTextosPortada } from './useContenidoPortada'
 import HomeFeedback from './HomeFeedback'
+import CintaDestacada from './CintaDestacada'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 
 const CATEGORIAS: Record<PublicationItem['category'], { nombre: string; corto: string }> = {
@@ -163,7 +164,12 @@ function Ejemplares({ destacada, anteriores }: { destacada: PublicationItem; ant
   )
 }
 
-/** Publicaciones: bloque de tinta con la última publicación en 3D y el resto en lista. */
+/**
+ * Publicaciones: bloque de tinta con una publicación en 3D y el resto en lista.
+ *
+ * El puesto grande es de la destacada, si se ha destacado alguna en el CMS, y
+ * si no de la más reciente: el servidor las manda ya en ese orden.
+ */
 export default function FeaturedPublications() {
   const { data: publications = [], isPending, isError, refetch } = useHomeData('publications', getLatestPublications)
   const textos = useTextosPortada()
@@ -209,7 +215,9 @@ export default function FeaturedPublications() {
         {destacada ? (
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 440px' }, gap: { xs: 4, lg: 7 }, alignItems: 'center' }}>
             {/* Los ejemplares son el objeto del bloque: crecen al posarse. */}
-            <Revela efecto="crecer" sx={{ order: { xs: -1, lg: 0 }, gridColumn: { lg: 2 }, gridRow: { lg: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 }, ml: { md: 5, lg: 0 } }}>
+            <Revela efecto="crecer" sx={{ position: 'relative', order: { xs: -1, lg: 0 }, gridColumn: { lg: 2 }, gridRow: { lg: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 }, ml: { md: 5, lg: 0 } }}>
+              {/* Sobre el ejemplar, que es lo que hace de portada aquí. */}
+              {destacada.fijada && <CintaDestacada />}
               <Ejemplares destacada={destacada} anteriores={otras} />
             </Revela>
             <Box sx={{ gridColumn: { lg: 1 }, gridRow: { lg: 1 } }}>

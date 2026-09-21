@@ -16,6 +16,7 @@ export interface UpdateNewsDto {
   contenido?: string;
   imagenUrl?: string | null;
   visible?: boolean;
+  fijada?: boolean;   // La destacada de la portada: una sola y publicada
   fecha?: string;
   slug?: string;
 }

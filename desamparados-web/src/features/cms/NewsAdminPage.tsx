@@ -10,7 +10,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import CampoBusqueda from './listados/CampoBusqueda'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import FilaRedaccion from './redaccion/FilaRedaccion'
-import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion } from './redaccion/Listado'
+import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion, textoPortada } from './redaccion/Listado'
 import { piezasDeNoticia } from './redaccion/completitud'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
 import { deleteNews, getAdminNews, updateNews, type ApiNews, type EstadoNoticia, type ResumenNoticias } from '../../lib/api/news'
@@ -19,6 +19,9 @@ import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
+// Lo que useHomeData('news') tiene cacheado 60 s: tras destacar hay que pedirlo
+// de nuevo o la portada seguiría enseñando el orden de antes.
+const CLAVE_NOTICIAS_PORTADA = ['home', 'news']
 const FILTROS = { q: {}, estado: { validos: ESTADOS } }
 
 /**
@@ -26,8 +29,10 @@ const FILTROS = { q: {}, estado: { validos: ESTADOS } }
  *
  * Arriba lo que está a medio escribir, con lo que le falta a cada borrador;
  * debajo lo publicado, con una línea que marca hasta dónde llega la portada de
- * la web: las tres más recientes, las que caben en su rejilla (el número no se
- * cambia desde aquí; lo pone el diseño, como en Publicaciones). Cada fila avisa si le falta la foto o el extracto, que es lo que en
+ * la web: las tres primeras, las que caben en su rejilla (el número no se
+ * cambia desde aquí; lo pone el diseño, como en Publicaciones). Salen por fecha
+ * salvo que haya una destacada: esa encabeza mientras lo esté, y el resto de
+ * plazas se siguen llenando solas. Cada fila avisa si le falta la foto o el extracto, que es lo que en
  * la web se nota. Para escribir se entra en la ficha (NewsEditPage), también
  * para una noticia nueva: una ventana se queda corta para el texto de una
  * noticia y es fácil cerrarla sin querer.
@@ -72,6 +77,7 @@ export default function NewsAdminPage() {
   // publicar, se le pide el número nuevo en vez de esperar a que caduque.
   const queryClient = useQueryClient()
   const refrescarMenu = () => void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
+  const refrescarPortada = () => void queryClient.invalidateQueries({ queryKey: CLAVE_NOTICIAS_PORTADA })
 
   const borrar = async () => {
     if (!porBorrar) return
@@ -94,6 +100,20 @@ export default function NewsAdminPage() {
     finally { setPorCambiar(null) }
   }
 
+  // Sin diálogo: destacar no rompe nada y se deshace con el mismo clic.
+  const fijar = async (noticia: ApiNews) => {
+    const destacar = !noticia.fijada
+    setNotice(null)
+    try {
+      await updateNews(noticia.id, { fijada: destacar })
+      refrescarPortada()
+      await load()
+      setNotice(destacar
+        ? 'Destacada: va la primera de la portada hasta que destaques otra.'
+        : 'Ya no está destacada: la portada vuelve a ir por fecha.')
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido destacar la noticia.') }
+  }
+
   const portada = resumen?.portada.ids ?? []
   // La línea de la portada solo es exacta si se ve el archivo publicado entero,
   // en orden: con búsqueda o con «incompletas» faltan filas entre medias.
@@ -105,11 +125,11 @@ export default function NewsAdminPage() {
     <FilaRedaccion
       key={noticia.id}
       titulo={noticia.titulo} visible={noticia.visible} fecha={noticia.fecha} editadaEl={noticia.updatedAt}
-      imagenUrl={noticia.imagenUrl} enPortada={enPortada}
+      imagenUrl={noticia.imagenUrl} enPortada={enPortada} fijada={noticia.fijada}
       piezas={piezasDeNoticia(noticia)} avisos={{ foto: 'Sin foto', extracto: 'Sin extracto' }} resumen={noticia.extracto}
       editar={`/cms/noticias/${noticia.id}/editar`} volver={consultaListado}
       enLaWeb={{ href: `/actualidad/noticias/${noticia.slug}`, texto: 'Ver en la web' }}
-      onCambiarVisible={() => setPorCambiar(noticia)} onBorrar={() => setPorBorrar(noticia)}
+      onCambiarVisible={() => setPorCambiar(noticia)} onFijar={() => void fijar(noticia)} onBorrar={() => setPorBorrar(noticia)}
     />
   )
 
@@ -154,7 +174,7 @@ export default function NewsAdminPage() {
               const corte = conLineaPortada && portada.at(-1) === n.id && siguiente !== undefined
               return [
                 fila(n, portada.includes(n.id)),
-                corte && <LineaPortada key="corte" limite={resumen?.portada.limite ?? portada.length} />,
+                corte && <LineaPortada key="corte" limite={resumen?.portada.limite ?? portada.length} texto={textoPortada(resumen)} />,
               ]
             })}
           </Grupo>

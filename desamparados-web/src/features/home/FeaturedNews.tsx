@@ -4,6 +4,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import PageContainer from '../../components/PageContainer'
 import AnimatedSection, { Revela } from '../../components/AnimatedSection'
 import NewsCard from '../../components/NewsCard'
+import CintaDestacada from './CintaDestacada'
 import { getLatestNews } from '../../lib/api/news'
 import { useHomeData } from './useHomeData'
 import { useTextosPortada } from './useContenidoPortada'
@@ -14,7 +15,13 @@ import { SERIF, ceja, enlaceBloque } from './estilos'
 const MAX_NOTICIAS = 3
 const fetchNews = () => getLatestNews(MAX_NOTICIAS)
 
-/** Actualidad: bloque oscuro con las tres últimas noticias en tarjetas claras. */
+/**
+ * Actualidad: bloque oscuro con tres noticias en tarjetas claras.
+ *
+ * Las manda el servidor ya ordenadas: la destacada delante, si la hay, y detrás
+ * las más recientes. Aquí solo se pinta lo que llega, con su cinta la que venga
+ * destacada.
+ */
 export default function FeaturedNews() {
   const { data: news = [], isPending, isError, refetch } = useHomeData('news', fetchNews)
   const textos = useTextosPortada()
@@ -47,7 +54,8 @@ export default function FeaturedNews() {
             sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 3.25 } }}
           >
             {news.slice(0, MAX_NOTICIAS).map((noticia, i) => (
-              <Revela key={noticia.id} as="li" efecto="crecer" orden={3 + i} sx={{ display: 'flex' }}>
+              <Revela key={noticia.id} as="li" efecto="crecer" orden={3 + i} sx={{ display: 'flex', position: 'relative' }}>
+                {noticia.fijada && <CintaDestacada />}
                 <NewsCard news={noticia} indice={i} />
               </Revela>
             ))}

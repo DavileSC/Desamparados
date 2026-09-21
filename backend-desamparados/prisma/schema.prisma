@@ -446,6 +446,10 @@ model Noticia {
   imagenUrl String?
   fecha     DateTime @default(now())
   visible   Boolean  @default(true)
+  /// La destacada de la portada: encabeza la rejilla y las otras dos plazas
+  /// siguen siendo las más recientes. Solo una a la vez (fijar una suelta la
+  /// anterior) y solo si está publicada. El archivo no la mira: ahí manda la fecha.
+  fijada    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -471,6 +475,9 @@ model Publicacion {
   fecha       DateTime        @default(now())
   categoria   TipoPublicacion
   visible     Boolean         @default(true)
+  /// La destacada de la portada, igual que en Noticia: una sola, publicada, y
+  /// ocupa el puesto grande del bloque de Publicaciones.
+  fijada      Boolean         @default(false)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 

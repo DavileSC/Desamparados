@@ -4,12 +4,13 @@ import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Link, useLocation } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CabeceraSeccion from './CabeceraSeccion'
 import CampoBusqueda from './listados/CampoBusqueda'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import FilaRedaccion from './redaccion/FilaRedaccion'
-import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion } from './redaccion/Listado'
+import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion, textoPortada } from './redaccion/Listado'
 import { piezasDePublicacion } from './redaccion/completitud'
 import { TIPOS_PUBLICACION, nombreTipo } from './portadaPublicacion'
 import { deletePublication, getAdminPublications, updatePublication, type ApiPublication, type EstadoPublicacion, type ResumenPublicaciones } from '../../lib/api/publications'
@@ -19,6 +20,9 @@ import type { MetaPaginacion } from '../../lib/api/tipos'
 import type { PublicationItem } from '../../types'
 
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
+// Lo que useHomeData('publications') tiene cacheado 60 s: tras destacar hay que
+// pedirlo de nuevo o la portada seguiría con el orden de antes.
+const CLAVE_PUBLICACIONES_PORTADA = ['home', 'publications']
 const FILTROS = { q: {}, estado: { validos: ESTADOS }, tipo: { validos: TIPOS_PUBLICACION.map((t) => t.value) } }
 
 /**
@@ -26,7 +30,8 @@ const FILTROS = { q: {}, estado: { validos: ESTADOS }, tipo: { validos: TIPOS_PU
  *
  * Arriba lo que está a medio preparar, con lo que le falta a cada borrador;
  * debajo lo publicado, con una línea que marca las que salen en la portada de
- * la web (las tres más recientes, de cualquier tipo). Cada fila avisa si le
+ * la web (las tres primeras, de cualquier tipo: por fecha, salvo que haya una
+ * destacada, que encabeza mientras lo esté). Cada fila avisa si le
  * falta la portada o la descripción, que es lo que en la web se nota, o si
  * sigue con el PDF de relleno del seed. Para preparar una se entra en la
  * ficha (PublicationEditPage), también para una nueva.
@@ -89,6 +94,21 @@ export default function PublicationsAdminPage() {
     finally { setPorCambiar(null) }
   }
 
+  const queryClient = useQueryClient()
+  // Sin diálogo: destacar no rompe nada y se deshace con el mismo clic.
+  const fijar = async (publicacion: ApiPublication) => {
+    const destacar = !publicacion.fijada
+    setNotice(null)
+    try {
+      await updatePublication(publicacion.id, { fijada: destacar })
+      void queryClient.invalidateQueries({ queryKey: CLAVE_PUBLICACIONES_PORTADA })
+      await load()
+      setNotice(destacar
+        ? 'Destacada: va la primera de la portada hasta que destaques otra.'
+        : 'Ya no está destacada: la portada vuelve a ir por fecha.')
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido destacar la publicación.') }
+  }
+
   const portada = resumen?.portada.ids ?? []
   // La línea de la portada solo es exacta si se ve lo publicado entero, en
   // orden: con búsqueda, con un tipo o con «incompletas» faltan filas entre medias.
@@ -101,13 +121,13 @@ export default function PublicationsAdminPage() {
     <FilaRedaccion
       key={publicacion.id}
       titulo={publicacion.titulo} visible={publicacion.visible} fecha={publicacion.fecha} editadaEl={publicacion.updatedAt}
-      imagenUrl={publicacion.imagenUrl} fotoVertical antetitulo={nombreTipo(publicacion.categoria)} enPortada={enPortada}
+      imagenUrl={publicacion.imagenUrl} fotoVertical antetitulo={nombreTipo(publicacion.categoria)} enPortada={enPortada} fijada={publicacion.fijada}
       piezas={piezasDePublicacion(publicacion)}
       avisos={{ portada: 'Sin portada', descripcion: 'Sin descripción', pdf: 'PDF de relleno' }}
       resumen={publicacion.descripcion}
       editar={`/cms/publicaciones/${publicacion.id}/editar`} volver={consultaListado}
       enLaWeb={{ href: publicacion.archivoUrl, texto: 'Abrir el PDF' }}
-      onCambiarVisible={() => setPorCambiar(publicacion)} onBorrar={() => setPorBorrar(publicacion)}
+      onCambiarVisible={() => setPorCambiar(publicacion)} onFijar={() => void fijar(publicacion)} onBorrar={() => setPorBorrar(publicacion)}
     />
   )
 
@@ -155,7 +175,7 @@ export default function PublicationsAdminPage() {
               const corte = conLineaPortada && portada.at(-1) === p.id && publicadas[i + 1] !== undefined
               return [
                 fila(p, portada.includes(p.id)),
-                corte && <LineaPortada key="corte" limite={resumen?.portada.limite ?? portada.length} />,
+                corte && <LineaPortada key="corte" limite={resumen?.portada.limite ?? portada.length} texto={textoPortada(resumen)} />,
               ]
             })}
           </Grupo>

@@ -7,6 +7,7 @@ import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined'
+import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined'
 import UnpublishedOutlinedIcon from '@mui/icons-material/UnpublishedOutlined'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { Link } from 'react-router-dom'
@@ -27,6 +28,8 @@ interface Props {
   antetitulo?: string
   /** Sale ahora en la portada de la web. */
   enPortada: boolean
+  /** Destacada a mano: va la primera de la portada mientras lo esté. */
+  fijada: boolean
   /** Lo que se mira para decir qué le falta. */
   piezas: Pieza[]
   /** De lo publicado solo se avisa de lo que se nota en la web: estas piezas, con su aviso («Sin foto»). */
@@ -39,6 +42,8 @@ interface Props {
   /** Dónde verla en la web, si está publicada. */
   enLaWeb?: { href: string; texto: string }
   onCambiarVisible: () => void
+  /** Destacarla en la portada, o soltarla si ya lo está. */
+  onFijar: () => void
   onBorrar: () => void
 }
 
@@ -48,7 +53,7 @@ interface Props {
  * igual: se escribe un borrador, se completa y se publica.
  */
 export default function FilaRedaccion(props: Props) {
-  const { titulo, visible, fecha, editadaEl, imagenUrl, fotoVertical = false, antetitulo, enPortada, piezas, avisos, resumen, editar, volver, enLaWeb, onCambiarVisible, onBorrar } = props
+  const { titulo, visible, fecha, editadaEl, imagenUrl, fotoVertical = false, antetitulo, enPortada, fijada, piezas, avisos, resumen, editar, volver, enLaWeb, onCambiarVisible, onFijar, onBorrar } = props
   const { superficies } = useTemaCms()
   const [menu, setMenu] = useState<HTMLElement | null>(null)
   const borrador = !visible
@@ -67,9 +72,11 @@ export default function FilaRedaccion(props: Props) {
         )}
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
           <Typography component="h3" sx={{ fontSize: 15, fontWeight: 600, lineHeight: 1.35 }}>{titulo}</Typography>
-          {enPortada && (
+          {/* Fijada manda sobre «En portada»: explica por qué una vieja sigue arriba. */}
+          {(fijada || enPortada) && (
             <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 600, color: superficies.enlace, whiteSpace: 'nowrap', '& svg': { fontSize: 15, alignSelf: 'center' } }}>
-              <HomeOutlinedIcon aria-hidden="true" />En portada
+              {fijada ? <PushPinOutlinedIcon aria-hidden="true" /> : <HomeOutlinedIcon aria-hidden="true" />}
+              {fijada ? 'Destacada' : 'En portada'}
             </Box>
           )}
         </Box>
@@ -123,6 +130,12 @@ export default function FilaRedaccion(props: Props) {
           {!borrador && enLaWeb && (
             <MenuItem component="a" href={enLaWeb.href} target="_blank" rel="noopener" onClick={cerrar}>
               <ListItemIcon><OpenInNewIcon fontSize="small" /></ListItemIcon>{enLaWeb.texto}
+            </MenuItem>
+          )}
+          {!borrador && (
+            <MenuItem onClick={() => { cerrar(); onFijar() }}>
+              <ListItemIcon><PushPinOutlinedIcon fontSize="small" /></ListItemIcon>
+              {fijada ? 'Dejar de destacarla' : 'Destacar en la portada'}
             </MenuItem>
           )}
           <MenuItem onClick={() => { cerrar(); onCambiarVisible() }}>

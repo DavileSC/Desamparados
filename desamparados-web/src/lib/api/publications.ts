@@ -11,6 +11,8 @@ export interface ApiPublication {
   fecha: string
   categoria: PublicationItem['category']
   visible: boolean
+  /** La destacada de la portada: ocupa el puesto grande y lleva la cinta. */
+  fijada: boolean
   updatedAt?: string
 }
 
@@ -23,6 +25,7 @@ function toPublicationItem(publication: ApiPublication): PublicationItem {
     fileUrl: publication.archivoUrl,
     date: publication.fecha,
     category: publication.categoria,
+    fijada: publication.fijada,
   }
 }
 
@@ -48,8 +51,11 @@ export interface ResumenPublicaciones {
   borradores: number
   incompletas: number
   ultimaPublicacion: string | null
-  /** `ids`: las que la portada enseña ahora, en su orden; `limite`: cuántas enseña (fijo). */
-  portada: { limite: number; ids: number[] }
+  /**
+   * `ids`: las que la portada enseña ahora, en su orden; `limite`: cuántas
+   * enseña (fijo); `fijada`: la destacada a mano, o null si va sola por fecha.
+   */
+  portada: { limite: number; ids: number[]; fijada: number | null }
 }
 
 export function getAdminPublications(
@@ -69,6 +75,8 @@ export interface PublicationPayload {
   fecha?: string
   categoria: PublicationItem['category']
   visible: boolean
+  /** Solo al editar: se destaca una publicación ya publicada. */
+  fijada?: boolean
 }
 
 export function createPublication(payload: PublicationPayload) {

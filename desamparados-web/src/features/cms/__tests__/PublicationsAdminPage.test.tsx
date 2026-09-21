@@ -8,7 +8,7 @@ import PublicationsAdminPage from '../PublicationsAdminPage'
 const PDF = '/storage/public/0123456789abcdef0123456789abcdef.pdf'
 const publicacion = {
   id: 4, titulo: 'Boletín informativo n.º 12', descripcion: 'Crónica del curso.', imagenUrl: '/storage/public/boletin-12.jpg',
-  archivoUrl: PDF, fecha: '2026-03-01T00:00:00.000Z', categoria: 'boletin', visible: true,
+  archivoUrl: PDF, fecha: '2026-03-01T00:00:00.000Z', categoria: 'boletin', visible: true, fijada: false,
 }
 const anuario = { ...publicacion, id: 3, titulo: 'Anuario 2024-2025', categoria: 'anuario', imagenUrl: null, fecha: '2025-10-01T00:00:00.000Z' }
 const antigua = { ...publicacion, id: 2, titulo: 'Boletín informativo n.º 11', fecha: '2025-03-01T00:00:00.000Z' }
@@ -18,7 +18,7 @@ const borrador = {
   visible: false, updatedAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
 }
 
-const resumen = { publicadas: 4, borradores: 1, incompletas: 2, ultimaPublicacion: '2026-03-01T00:00:00.000Z', portada: { limite: 3, ids: [4, 3, 2] } }
+const resumen = { publicadas: 4, borradores: 1, incompletas: 2, ultimaPublicacion: '2026-03-01T00:00:00.000Z', portada: { limite: 3, ids: [4, 3, 2], fijada: null } }
 
 /**
  * Una instancia de Response por llamada: `apiFetch` lee el cuerpo con
@@ -139,5 +139,26 @@ describe('PublicationsAdminPage', () => {
     const simulado = responder([], { total: 60, page: 2, limit: 20, totalPages: 3 })
     montar('/cms/publicaciones?pagina=2')
     await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('page=2'))
+  })
+
+  it('destacar manda solo la marca y avisa de que va la primera', async () => {
+    const user = userEvent.setup()
+    const simulado = vi.fn().mockImplementation((_url: string, init?: RequestInit) => Promise.resolve(new Response(
+      JSON.stringify(init?.method === 'PUT'
+        ? { ...vieja, fijada: true }
+        : { data: [publicacion, vieja], meta: { total: 2, page: 1, limit: 20, totalPages: 1 }, resumen }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )))
+    vi.stubGlobal('fetch', simulado)
+    montar()
+
+    await user.click(await screen.findByRole('button', { name: /más acciones para boletín informativo n.º 10/i }))
+    await user.click(screen.getByRole('menuitem', { name: /destacar en la portada/i }))
+
+    await waitFor(() => expect(simulado.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(true))
+    const [url, init] = simulado.mock.calls.find(([, i]) => i?.method === 'PUT')!
+    expect(String(url)).toContain('/publications/1')
+    expect(JSON.parse(String(init.body))).toEqual({ fijada: true })
+    expect(await screen.findByText(/va la primera de la portada/i)).toBeInTheDocument()
   })
 })

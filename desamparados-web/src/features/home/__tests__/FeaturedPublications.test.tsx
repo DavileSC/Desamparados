@@ -8,7 +8,7 @@ import type { TextosPortada } from '../../../lib/api/portada'
 afterEach(() => { vi.unstubAllGlobals() })
 
 const publicacion = (id: number, titulo: string, fecha: string, categoria: string, imagenUrl: string | null = null) => ({
-  id, titulo, descripcion: `Descripción de ${titulo}`, imagenUrl, archivoUrl: `/storage/public/documentos/${id}.pdf`, fecha, categoria, visible: true,
+  id, titulo, descripcion: `Descripción de ${titulo}`, imagenUrl, archivoUrl: `/storage/public/documentos/${id}.pdf`, fecha, categoria, visible: true, fijada: false,
 })
 
 const BOLETIN = publicacion(1, 'Boletín informativo n.º 12', '2026-08-21T08:00:00.000Z', 'boletin')
@@ -101,5 +101,18 @@ describe('FeaturedPublications', () => {
 
     expect(await screen.findByRole('link', { name: 'Ver todo el archivo' })).toHaveAttribute('href', '/publicaciones')
     expect(screen.getByText('PARROQUIA')).toBeInTheDocument()
+  })
+
+  it('la del puesto grande lleva la cinta si está destacada, y si no, ninguna', async () => {
+    servir([{ ...DOSSIER, fijada: true }, BOLETIN, ANUARIO])
+    const { unmount } = renderWithProviders(<FeaturedPublications />)
+    expect(await screen.findByText('Destacada')).toBeInTheDocument()
+    unmount()
+
+    vi.unstubAllGlobals()
+    servir([BOLETIN, ANUARIO, DOSSIER])
+    renderWithProviders(<FeaturedPublications />)
+    await screen.findByRole('heading', { level: 3, name: BOLETIN.titulo })
+    expect(screen.queryByText('Destacada')).toBeNull()
   })
 })

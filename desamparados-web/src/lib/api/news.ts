@@ -11,6 +11,8 @@ export interface ApiNews {
   imagenUrl: string | null
   fecha: string
   visible: boolean
+  /** La destacada de la portada: va primera y lleva la cinta «Destacada». */
+  fijada: boolean
   /** Última vez que se guardó; para decir de un borrador cuándo se tocó. */
   updatedAt?: string
 }
@@ -25,6 +27,7 @@ function toNewsItem(news: ApiNews): NewsItem {
     category: 'Noticias',
     date: news.fecha,
     slug: news.slug,
+    fijada: news.fijada,
   }
 }
 
@@ -51,8 +54,12 @@ export interface ResumenNoticias {
   borradores: number
   incompletas: number
   ultimaPublicacion: string | null
-  /** `ids`: las que la portada enseña ahora, en su orden; `limite`: cuántas enseña. */
-  portada: { limite: number; ids: number[] }
+  /**
+   * `ids`: las que la portada enseña ahora, en su orden; `limite`: cuántas
+   * enseña; `fijada`: la destacada a mano, que va primera, o null si la portada
+   * va sola por fecha.
+   */
+  portada: { limite: number; ids: number[]; fijada: number | null }
 }
 
 export function getAdminNews(pagina: { pagina: number; porPagina: number }, filtros: { q?: string; estado?: EstadoNoticia | '' } = {}) {
@@ -67,6 +74,8 @@ export interface NewsPayload {
   extracto?: string
   imagenUrl?: string
   visible: boolean
+  /** Solo al editar: destacar es algo que se hace sobre una noticia publicada. */
+  fijada?: boolean
   fecha?: string
   slug?: string
 }

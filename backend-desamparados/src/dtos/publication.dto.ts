@@ -18,6 +18,7 @@ export interface UpdatePublicationDto {
   fecha?: string;
   categoria?: TipoPublicacion;
   visible?: boolean;
+  fijada?: boolean; // La destacada de la portada: una sola y publicada
 }
 
 export interface AdminPublicationFilterDto {

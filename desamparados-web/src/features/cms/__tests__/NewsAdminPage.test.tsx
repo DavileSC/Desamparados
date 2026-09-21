@@ -8,7 +8,7 @@ import NewsAdminPage from '../NewsAdminPage'
 const noticia = {
   id: 7, slug: 'apertura-curso-cofrade', titulo: 'Apertura del curso cofrade 2026-2027',
   extracto: 'El Grupo Parroquial abre el nuevo curso.', contenido: '<p>Texto</p>',
-  imagenUrl: '/storage/public/apertura.jpg', visible: true, fecha: '2026-08-26T00:00:00.000Z',
+  imagenUrl: '/storage/public/apertura.jpg', visible: true, fijada: false, fecha: '2026-08-26T00:00:00.000Z',
 }
 const antigua = { ...noticia, id: 5, slug: 'besamanos', titulo: 'Besamanos de septiembre', imagenUrl: null, fecha: '2026-08-01T00:00:00.000Z' }
 const borrador = {
@@ -16,7 +16,7 @@ const borrador = {
   visible: false, fecha: '2026-09-14T00:00:00.000Z', updatedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
 }
 
-const resumen = (portada: number[] = [7], limite = 1) => ({ publicadas: 2, borradores: 1, incompletas: 2, ultimaPublicacion: '2026-08-26T00:00:00.000Z', portada: { limite, ids: portada } })
+const resumen = (portada: number[] = [7], limite = 1, fijada: number | null = null) => ({ publicadas: 2, borradores: 1, incompletas: 2, ultimaPublicacion: '2026-08-26T00:00:00.000Z', portada: { limite, ids: portada, fijada } })
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 const listado = (items: unknown[], extra = {}) => json({ data: items, meta: { total: items.length, page: 1, limit: 20, totalPages: 1 }, resumen: resumen(), ...extra })
@@ -145,6 +145,49 @@ describe('NewsAdminPage', () => {
     expect(String(url)).toContain('/news/9')
     expect(JSON.parse(String(init.body))).toEqual({ visible: true })
     expect(await screen.findByText(/noticia publicada/i)).toBeInTheDocument()
+  })
+
+  it('la destacada se distingue de las que salen por fecha, y la raya lo explica', async () => {
+    // La destacada es la vieja: por fecha no saldría, y sale la primera. Hacen
+    // falta más publicadas que plazas, o no hay nada bajo la raya que cortar.
+    const destacada = { ...antigua, fijada: true }
+    const tercera = { ...noticia, id: 3, slug: 'triduo', titulo: 'Triduo de mayo', fecha: '2026-07-01T00:00:00.000Z' }
+    const cuarta = { ...noticia, id: 2, slug: 'via-crucis', titulo: 'Vía crucis de marzo', fecha: '2026-03-01T00:00:00.000Z' }
+    responder([destacada, noticia, tercera, cuarta], { resumen: resumen([5, 7, 3], 3, 5) })
+    montar()
+
+    const fila = (await screen.findByRole('heading', { name: antigua.titulo })).closest('li')!
+    expect(fila).toHaveTextContent('Destacada')
+    // La reciente sale por fecha, no destacada: la etiqueta de siempre.
+    expect(screen.getByRole('heading', { name: noticia.titulo }).closest('li')).toHaveTextContent('En portada')
+    expect(screen.getByText(/hasta aquí sale en la portada: la destacada y las 2 más recientes/i)).toBeInTheDocument()
+  })
+
+  it('destacar desde el listado no pregunta y manda solo la marca', async () => {
+    const user = userEvent.setup()
+    const simulado = vi.fn().mockImplementation((_url: string, init?: RequestInit) => Promise.resolve(
+      init?.method === 'PUT' ? json({ ...antigua, fijada: true }) : listado([noticia, antigua]),
+    ))
+    vi.stubGlobal('fetch', simulado)
+    montar()
+
+    await user.click(await screen.findByRole('button', { name: /más acciones para besamanos/i }))
+    await user.click(screen.getByRole('menuitem', { name: /destacar en la portada/i }))
+
+    await waitFor(() => expect(simulado.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(true))
+    const [url, init] = simulado.mock.calls.find(([, i]) => i?.method === 'PUT')!
+    expect(String(url)).toContain('/news/5')
+    expect(JSON.parse(String(init.body))).toEqual({ fijada: true })
+    expect(await screen.findByText(/va la primera de la portada/i)).toBeInTheDocument()
+  })
+
+  it('un borrador no se puede destacar: no se vería en la web', async () => {
+    const user = userEvent.setup()
+    responder([borrador])
+    montar()
+    await user.click(await screen.findByRole('button', { name: /más acciones para cultos/i }))
+    expect(screen.queryByRole('menuitem', { name: /destacar/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Publicar' })).toBeInTheDocument()
   })
 
   it('la línea de la portada dice cuántas salen y no ofrece cambiarlo', async () => {

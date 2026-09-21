@@ -60,6 +60,9 @@ export const updatePublicationSchema = type({
     'imagenUrl?': imagenAlEditar,
     'fecha?': type('string').matching(/^\d{4}-\d{2}-\d{2}/),
     'visible?': 'boolean',
+    // La destacada de la portada. Solo al editar: se destaca algo que ya existe
+    // y está publicado, no se crea destacado.
+    'fijada?': 'boolean',
   },
 });
 export const publicationIdParamSchema = type({ params: { id: idParam } });

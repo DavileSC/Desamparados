@@ -83,6 +83,18 @@ export function Grupo({ titulo, cifra, children }: { titulo: string; cifra?: num
 }
 
 /**
+ * Lo que dice la raya cuando hay una destacada. La frase de siempre («las 3 más
+ * recientes») dejaría de ser verdad: la primera plaza es la que se ha fijado a
+ * mano y las otras se siguen llenando por fecha. Sin destacada devuelve
+ * `undefined` y la raya usa su frase de siempre.
+ */
+export function textoPortada(resumen: { portada: { limite: number; fijada: number | null } } | null) {
+  if (!resumen?.portada.fijada) return undefined
+  const resto = resumen.portada.limite - 1
+  return `Hasta aquí sale en la portada: la destacada y ${resto === 1 ? 'la más reciente' : `las ${resto} más recientes`}.`
+}
+
+/**
  * La raya bajo la última que sale en la portada. Cuántas salen no se cambia
  * desde el CMS: lo pone el diseño de la portada. `texto` sustituye la frase de noticias y publicaciones
  * («las 3 más recientes»), que en la agenda no vale.

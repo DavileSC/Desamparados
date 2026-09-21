@@ -7,7 +7,7 @@ import { responderPortada, textosDePrueba } from './ayudas'
 afterEach(() => { vi.unstubAllGlobals() })
 
 const noticia = (id: number, slug: string, titulo: string, fecha: string, imagenUrl: string | null = null) => ({
-  id, slug, titulo, extracto: `Extracto de ${titulo}`, contenido: '<p>Texto</p>', imagenUrl, fecha, visible: true,
+  id, slug, titulo, extracto: `Extracto de ${titulo}`, contenido: '<p>Texto</p>', imagenUrl, fecha, visible: true, fijada: false,
 })
 
 const APERTURA = noticia(1, 'apertura-curso', 'Apertura del curso cofrade 2026-2027', '2026-09-07T10:00:00.000Z', '/storage/apertura.jpg')
@@ -59,6 +59,27 @@ describe('FeaturedNews', () => {
     expect(within(lista).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.queryByRole('link', { name: /cabildo general/i })).toBeNull()
     expect(screen.getByRole('link', { name: /ver todas/i })).toHaveAttribute('href', '/actualidad/noticias')
+  })
+
+  it('la destacada lleva su cinta y las demás no', async () => {
+    // El servidor la manda ya la primera; aquí solo se comprueba que se marca
+    // la que viene destacada, y solo esa: si la llevaran todas no diría nada.
+    servir([{ ...CABILDO, fijada: true }, APERTURA, TRIDUO])
+    renderWithProviders(<FeaturedNews />)
+
+    await screen.findByRole('link', { name: /cabildo general/i })
+    const tarjetas = within(screen.getByRole('list', { name: /últimas noticias/i })).getAllByRole('listitem')
+    expect(tarjetas[0]).toHaveTextContent('Destacada')
+    expect(tarjetas[1]).not.toHaveTextContent('Destacada')
+    expect(screen.getAllByText('Destacada')).toHaveLength(1)
+  })
+
+  it('sin ninguna destacada no hay cintas', async () => {
+    servir([APERTURA, TRIDUO, CAMPANA])
+    renderWithProviders(<FeaturedNews />)
+
+    await screen.findByRole('link', { name: /apertura del curso/i })
+    expect(screen.queryByText('Destacada')).toBeNull()
   })
 
   it('alterna el tono de las placas para que varias noticias sin foto no formen un bloque del mismo color', async () => {

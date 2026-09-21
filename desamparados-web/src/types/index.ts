@@ -7,6 +7,8 @@ export interface NewsItem {
   category: string
   date: string
   slug: string
+  /** Destacada a mano en el CMS: en la portada va primera y con cinta. */
+  fijada?: boolean
 }
 
 export interface EventItem {
@@ -27,6 +29,8 @@ export interface PublicationItem {
   fileUrl?: string
   date: string
   category: 'boletin' | 'dossier' | 'anuario' | 'historia'
+  /** Destacada a mano en el CMS: en la portada va primera y con cinta. */
+  fijada?: boolean
 }
 
 export interface BrotherProfile {
