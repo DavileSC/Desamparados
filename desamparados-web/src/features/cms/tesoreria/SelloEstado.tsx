@@ -6,7 +6,7 @@ import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import UndoRoundedIcon from '@mui/icons-material/UndoRounded'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
-import type { AdminReceiptStatus } from '../../../lib/api/treasury'
+import type { AdminReceiptStatus } from '../../../lib/api/tesoreria'
 import { ESTADOS_RECIBO } from './estados'
 
 const ICONOS: Record<AdminReceiptStatus, ComponentType<SvgIconProps>> = {

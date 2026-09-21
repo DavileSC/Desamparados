@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, TextField } from '@mui/material'
 import AppButton from '../../../components/AppButton'
 import { PARENTESCOS, type Parentesco } from '../../../lib/api/auth'
-import { addMyProfile } from '../../../lib/api/profile'
+import { anadirFicha } from '../../../lib/api/perfil'
 import { ApiError } from '../../../lib/api/client'
 import { esDniValido } from '../../../lib/validacion/identidad'
 import { MAYORIA_DE_EDAD, aniosCumplidos } from '../../members/public/schema'
@@ -81,7 +81,7 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
 
     setGuardando(true)
     try {
-      await addMyProfile({
+      await anadirFicha({
         nombre: datos.nombre.trim(),
         apellidos: datos.apellidos.trim(),
         fechaNacimiento: datos.fechaNacimiento,

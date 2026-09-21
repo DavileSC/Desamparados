@@ -1,4 +1,4 @@
-import type { MetodoPago } from '../../../lib/api/accounting'
+import type { MetodoPago } from '../../../lib/api/contabilidad'
 import { METODOS } from './filtros'
 
 /** Colores con significado: el azul es siempre ingreso y el granate, gasto. Validados para daltonismo. */

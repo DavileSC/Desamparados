@@ -11,7 +11,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import type { Category, TipoApunte } from '../../../lib/api/accounting'
+import type { Category, TipoApunte } from '../../../lib/api/contabilidad'
 import { errorNombreCategoria } from './apunte'
 import { COLOR_GASTO, COLOR_INGRESO, eurosResumen, numero } from './formato'
 

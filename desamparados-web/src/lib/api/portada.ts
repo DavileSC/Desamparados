@@ -33,7 +33,7 @@ export interface Portada {
 }
 
 /** Fotos y textos de la portada, de una sola petición. Se leen sin sesión. */
-export async function getPortada(): Promise<Portada> {
+export async function portadaDelInicio(): Promise<Portada> {
   const { imagenes, textos } = await apiFetch<{ imagenes: ApiImagenPortada[]; textos: TextosPortada }>('/portada')
   return {
     imagenes: imagenes.map((i) => ({ id: i.id, url: i.url, descripcion: i.descripcion ?? '' })),

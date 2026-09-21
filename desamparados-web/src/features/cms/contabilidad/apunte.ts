@@ -1,4 +1,4 @@
-import type { ApunteManual, Category, MetodoPago, TipoApunte, Transaction } from '../../../lib/api/accounting'
+import type { ApunteManual, Category, MetodoPago, TipoApunte, Transaction } from '../../../lib/api/contabilidad'
 import { dia } from './filtros'
 
 /**

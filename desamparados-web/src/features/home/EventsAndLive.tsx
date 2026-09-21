@@ -6,7 +6,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import PageContainer from '../../components/PageContainer'
 import AnimatedSection, { Revela } from '../../components/AnimatedSection'
-import { getEventosCalendario, type EventoCalendario } from '../../lib/api/events'
+import { eventosDelCalendario, type EventoCalendario } from '../../lib/api/agenda'
 import { site } from '../../config/site'
 import { useTextosPortada } from './useContenidoPortada'
 import HomeFeedback from './HomeFeedback'
@@ -97,7 +97,7 @@ export default function EventsAndLive() {
   // El calendario se abre en el mes del próximo acto: así nunca arranca en un mes vacío.
   const proximo = useQuery({
     queryKey: ['home', 'agenda', 'proximo'],
-    queryFn: () => getEventosCalendario({ cuantos: 1 }),
+    queryFn: () => eventosDelCalendario({ cuantos: 1 }),
     retry: false,
     staleTime: 60_000,
   })
@@ -106,7 +106,7 @@ export default function EventsAndLive() {
   // La ventana es el mes visible y el siguiente, desde hoy: los actos pasados no se enseñan.
   const ventana = useQuery({
     queryKey: ['home', 'agenda', mes.getTime()],
-    queryFn: () => getEventosCalendario({
+    queryFn: () => eventosDelCalendario({
       desde: mes.getTime() > hoy.getTime() ? mes : hoy,
       hasta: sumarMeses(mes, 2),
       cuantos: ACTOS_POR_VENTANA,

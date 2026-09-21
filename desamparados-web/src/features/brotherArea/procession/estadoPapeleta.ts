@@ -1,4 +1,4 @@
-import type { ReceiptStatus } from '../../../lib/api/procession'
+import type { ReceiptStatus } from '../../../lib/api/procesion'
 
 /**
  * Cómo se enseña una papeleta según el estado de su recibo.

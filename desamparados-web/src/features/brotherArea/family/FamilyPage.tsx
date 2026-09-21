@@ -6,7 +6,7 @@ import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
-import { fichaPropia, fichasACargo, getMyProfiles, type ApiProfile } from '../../../lib/api/profile'
+import { fichaPropia, fichasACargo, misFichas, type ApiProfile } from '../../../lib/api/perfil'
 import { PARENTESCOS } from '../../../lib/api/auth'
 import { MAYORIA_DE_EDAD, aniosCumplidos } from '../../members/public/schema'
 import DialogoAnadirFicha from './DialogoAnadirFicha'
@@ -35,7 +35,7 @@ export default function FamilyPage() {
   const [emancipando, setEmancipando] = useState<ApiProfile | null>(null)
 
   const cargar = useCallback(
-    () => getMyProfiles().then((respuesta) => setFichas(respuesta.data)),
+    () => misFichas().then((respuesta) => setFichas(respuesta.data)),
     [],
   )
 

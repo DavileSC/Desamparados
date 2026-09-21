@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getPanel } from '../lib/api/panel'
+import { traerPanelDeHoy } from '../lib/api/panel'
 
 /**
  * La consulta del panel del ejercicio en curso, compartida por el menú (que
@@ -12,7 +12,7 @@ export const CLAVE_PANEL_HOY = ['panel', 'hoy'] as const
 export function usePanelDeHoy() {
   return useQuery({
     queryKey: CLAVE_PANEL_HOY,
-    queryFn: () => getPanel(),
+    queryFn: () => traerPanelDeHoy(),
     staleTime: 5 * 60 * 1000,
   })
 }

@@ -31,7 +31,7 @@ export interface CandidatoACargo {
   email: string
 }
 
-export const getStaff = () => apiFetch<MiembroDelStaff[]>('/admin/staff')
+export const cuentasDeStaff = () => apiFetch<MiembroDelStaff[]>('/admin/staff')
 
 export const buscarCandidatos = (q: string) =>
   apiFetch<CandidatoACargo[]>(`/admin/users/search${q ? `?q=${encodeURIComponent(q)}` : ''}`)

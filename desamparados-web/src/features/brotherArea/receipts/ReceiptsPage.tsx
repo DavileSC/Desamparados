@@ -7,7 +7,7 @@ import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import Paginador from '../../../components/Paginador'
 import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
-import { getMyReceipts, type MyReceipt } from '../../../lib/api/receipts'
+import { misRecibos, type MyReceipt } from '../../../lib/api/recibos'
 import { ESTADO_RECIBO, formatearImporte } from './etiquetas'
 
 /**
@@ -26,7 +26,7 @@ import { ESTADO_RECIBO, formatearImporte } from './etiquetas'
  */
 export default function ReceiptsPage() {
   const { items: receipts, meta, loading, error, alCambiarPagina, cambiarTamano } =
-    useListadoPaginado<MyReceipt>(getMyReceipts, 'No se han podido cargar tus recibos.')
+    useListadoPaginado<MyReceipt>(misRecibos, 'No se han podido cargar tus recibos.')
 
   // Quien está solo en su ficha veía su propio nombre repetido en cada fila.
   // En una familia con varias fichas, en cambio, el nombre es lo único que

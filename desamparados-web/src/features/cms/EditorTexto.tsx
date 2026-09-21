@@ -18,7 +18,7 @@ import LinkOffIcon from '@mui/icons-material/LinkOff'
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined'
 import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
-import { subirImagenPublica } from '../../lib/api/upload'
+import { subirImagenPublica } from '../../lib/api/subida'
 
 const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 5 * 1024 * 1024
@@ -111,7 +111,7 @@ export default function EditorTexto({
    * el documento y se tragaba las teclas pulsadas entre medias («Texto» se
    * guardaba como «Txo»): los renders en cola traen valores ya viejos, así que
    * comparar contra el último emitido no basta. Mientras el editor tiene el
-   * foco, quien manda es el teclado. Lo fija el test de NewsAdminPage que crea
+   * foco, quien manda es el teclado. Lo fija el test de NoticiasAdminPage que crea
    * una noticia.
    */
   useEffect(() => {

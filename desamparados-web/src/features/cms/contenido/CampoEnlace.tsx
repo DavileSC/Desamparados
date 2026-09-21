@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Autocomplete, TextField } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { getNewsArchive } from '../../../lib/api/news'
+import { archivoDeNoticias } from '../../../lib/api/noticias'
 import { DESTINOS_FIJOS, PREFIJO_NOTICIA, esDestinoValido, type Destino } from '../../../lib/destinos'
 
 interface Props {
@@ -31,7 +31,7 @@ const NOTICIAS_OFRECIDAS = 50
 export default function CampoEnlace({ etiqueta, valor, onCambio, opcional = false, ayuda }: Props) {
   const { data } = useQuery({
     queryKey: ['noticias', 'destinos-de-enlace'],
-    queryFn: () => getNewsArchive({ pagina: 1, porPagina: NOTICIAS_OFRECIDAS }),
+    queryFn: () => archivoDeNoticias({ pagina: 1, porPagina: NOTICIAS_OFRECIDAS }),
     staleTime: 5 * 60_000,
     retry: false,
   })

@@ -1,5 +1,5 @@
 import { MenuItem, TextField } from '@mui/material'
-import type { Category, MetodoPago, TipoApunte } from '../../../lib/api/accounting'
+import type { Category, MetodoPago, TipoApunte } from '../../../lib/api/contabilidad'
 import { METODOS, dia } from './filtros'
 import { categoriasParaApunte, errorConcepto, errorFecha, errorImporte, type FormApunte } from './apunte'
 

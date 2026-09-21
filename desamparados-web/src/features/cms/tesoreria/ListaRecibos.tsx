@@ -1,5 +1,5 @@
 import { Box, Button, Paper, Typography } from '@mui/material'
-import type { AdminReceipt } from '../../../lib/api/treasury'
+import type { AdminReceipt } from '../../../lib/api/tesoreria'
 import { etiquetaMetodo, euros, fechaCorta } from '../contabilidad/formato'
 import SelloEstado from './SelloEstado'
 

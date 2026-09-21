@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { newsItems, getLatestNews, getNewsBySlug } from '../news'
+import { newsItems, noticiasDePortada, noticiaPorDireccion } from '../news'
 
 describe('news mocks', () => {
   it('returns all news items', () => {
@@ -7,18 +7,18 @@ describe('news mocks', () => {
   })
 
   it('returns latest news limited by count', () => {
-    const latest = getLatestNews(2)
+    const latest = noticiasDePortada(2)
     expect(latest.length).toBe(2)
   })
 
   it('finds news by slug', () => {
-    const news = getNewsBySlug(newsItems[0].slug)
+    const news = noticiaPorDireccion(newsItems[0].slug)
     expect(news).toBeDefined()
     expect(news?.slug).toBe(newsItems[0].slug)
   })
 
   it('returns undefined for unknown slug', () => {
-    const news = getNewsBySlug('unknown-slug')
+    const news = noticiaPorDireccion('unknown-slug')
     expect(news).toBeUndefined()
   })
 })

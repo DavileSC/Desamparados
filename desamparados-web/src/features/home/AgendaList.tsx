@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import type { EventoCalendario } from '../../lib/api/events'
+import type { EventoCalendario } from '../../lib/api/agenda'
 import { SERIF, TIPOS, inicioDelDia, nombreDelMes } from './agenda'
 import { GRANATE } from './estilos'
 

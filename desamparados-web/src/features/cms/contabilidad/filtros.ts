@@ -1,4 +1,4 @@
-import type { FiltrosContables, MetodoPago, TipoApunte } from '../../../lib/api/accounting'
+import type { FiltrosContables, MetodoPago, TipoApunte } from '../../../lib/api/contabilidad'
 import { aDia } from '../../../lib/fechas'
 
 export const PERIODOS = [

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Alert, Box, Button, MenuItem, Paper, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { getPanel, type PanelResponse, type TipoMovimiento } from '../../../lib/api/panel'
+import { traerPanelDeHoy, type PanelResponse, type TipoMovimiento } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/temaCms'
 import LineaTemporal from '../../../components/charts/LineaTemporal'
 import BarrasHorizontales from '../../../components/charts/BarrasHorizontales'
@@ -91,7 +91,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
   // volver atrás es instantáneo.
   const consulta = useQuery({
     queryKey: ['panel', anio],
-    queryFn: () => getPanel(anio),
+    queryFn: () => traerPanelDeHoy(anio),
     enabled: !esElActual,
     placeholderData: (anterior) => anterior,
   })

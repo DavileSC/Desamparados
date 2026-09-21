@@ -3,7 +3,7 @@ import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextFie
 import AppButton from '../../../components/AppButton'
 import CampoContrasena from '../../../components/CampoContrasena'
 import { LONGITUD_MINIMA } from '../../../lib/passwordPolicy'
-import { emancipateMyProfile, type ApiProfile } from '../../../lib/api/profile'
+import { emanciparFicha, type ApiProfile } from '../../../lib/api/perfil'
 import { ApiError } from '../../../lib/api/client'
 import { esDniValido } from '../../../lib/validacion/identidad'
 
@@ -46,7 +46,7 @@ export default function DialogoEmancipar({ ficha, onCerrar, onHecho }: Props) {
 
     setGuardando(true)
     try {
-      await emancipateMyProfile(ficha.id, { newEmail: email.trim(), newPassword: password, ...(dni ? { newDni: dni } : {}) })
+      await emanciparFicha(ficha.id, { newEmail: email.trim(), newPassword: password, ...(dni ? { newDni: dni } : {}) })
       onHecho(`${ficha.nombre} ya tiene su propia cuenta. A partir de ahora entra con su correo y gestiona sus datos.`)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se ha podido crear la cuenta. Inténtalo de nuevo.')

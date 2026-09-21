@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Box, Paper, Stack, Typography } from '@mui/material'
-import type { ResumenContable } from '../../../lib/api/accounting'
+import type { ResumenContable } from '../../../lib/api/contabilidad'
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, numero, etiquetaPunto, etiquetaPuntoLarga, euros, eurosResumen } from './formato'
 import { useColoresContabilidad } from './tema'

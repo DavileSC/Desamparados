@@ -1,4 +1,4 @@
-import type { MetodoPago, ReceiptStatus, TipoRecibo } from '../../../lib/api/receipts'
+import type { MetodoPago, ReceiptStatus, TipoRecibo } from '../../../lib/api/recibos'
 
 /**
  * Cómo se nombran ante el hermano el estado, el tipo y la forma de pago de un

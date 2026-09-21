@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '../../../../test/test-utils'
 import ProfilePage from '../ProfilePage'
-import { FICHAS_POR_FAMILIA } from '../../../../lib/api/profile'
+import { FICHAS_POR_FAMILIA } from '../../../../lib/api/perfil'
 
 function ficha(id: number, nombre: string, esTitular = true) {
   return {

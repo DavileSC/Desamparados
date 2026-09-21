@@ -89,7 +89,7 @@ export function haceCuanto(iso: string, ahora = new Date()): string {
 }
 
 // Tres letras siempre («sep», no «sept.»): la abreviatura de cada motor varía.
-// La misma forma que la tarjeta pública (NewsCard).
+// La misma forma que la tarjeta pública (TarjetaNoticia).
 export function fechaCorta(iso: string): string {
   const fecha = new Date(iso)
   return `${fecha.getDate()} ${fecha.toLocaleDateString('es-ES', { month: 'long' }).slice(0, 3)} ${fecha.getFullYear()}`

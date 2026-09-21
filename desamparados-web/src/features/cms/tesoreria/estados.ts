@@ -1,4 +1,4 @@
-import type { AdminReceiptStatus } from '../../../lib/api/treasury'
+import type { AdminReceiptStatus } from '../../../lib/api/tesoreria'
 
 type Tono = { texto: string; fondo: string }
 

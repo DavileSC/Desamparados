@@ -3,12 +3,12 @@ import { Link, useLocation } from 'react-router-dom'
 import { Alert, Box, Button, CircularProgress, Grid } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import SectionTitle from '../SectionTitle'
-import NewsCard from '../NewsCard'
+import TarjetaNoticia from '../TarjetaNoticia'
 import EventCard from '../EventCard'
-import PublicationCard from '../PublicationCard'
+import TarjetaPublicacion from '../TarjetaPublicacion'
 import Paginador from '../Paginador'
-import { getLatestNews, getNewsArchive } from '../../lib/api/news'
-import { getProximosEventos, getPublicEvents } from '../../lib/api/events'
+import { noticiasDePortada, archivoDeNoticias } from '../../lib/api/noticias'
+import { traerProximosEventos, eventosPublicos } from '../../lib/api/agenda'
 import { useListadoPaginado, type Pagina } from '../../hooks/useListadoPaginado'
 import { usePublicacionesPaginadas } from '../../features/publications/usePublicacionesPaginadas'
 import type { EventItem, NewsItem } from '../../types'
@@ -105,8 +105,8 @@ function useCargaUnica<T>(pedir: () => Promise<T[]>, mensajeError: string) {
 }
 
 // Tres noticias: las tarjetas van de tres en tres, como en la portada y el archivo.
-const pedirRecientes = () => getLatestNews(3)
-const pedirProximos = () => getProximosEventos(4)
+const pedirRecientes = () => noticiasDePortada(3)
+const pedirProximos = () => traerProximosEventos(4)
 
 function NoticiasRecientes({ titulo }: PropsListado) {
   const { items, loading, error } = useCargaUnica<NewsItem>(pedirRecientes, 'No se han podido cargar las noticias.')
@@ -120,7 +120,7 @@ function NoticiasRecientes({ titulo }: PropsListado) {
         <Box component="ul" aria-label={titulo || 'Últimas noticias'} sx={rejillaDeNoticias}>
           {items.map((noticia, i) => (
             <Box component="li" key={noticia.id} sx={{ display: 'flex' }}>
-              <NewsCard news={noticia} indice={i} />
+              <TarjetaNoticia news={noticia} indice={i} />
             </Box>
           ))}
         </Box>
@@ -162,7 +162,7 @@ function ListaDeEventos({ eventos, loading, error }: { eventos: EventItem[]; loa
 // la lleva en las dependencias de su efecto. El listado habla en `data`; la
 // agenda devuelve `eventos` porque el CMS necesita el evento crudo.
 const pedirAgenda = (pagina: Pagina) =>
-  getPublicEvents(pagina).then(({ eventos, meta }) => ({ data: eventos, meta }))
+  eventosPublicos(pagina).then(({ eventos, meta }) => ({ data: eventos, meta }))
 
 function Agenda({ titulo }: PropsListado) {
   const { items, meta, loading, error, alCambiarPagina } =
@@ -183,7 +183,7 @@ function Agenda({ titulo }: PropsListado) {
 // Igual que `pedirAgenda`: el archivo de noticias devuelve `noticias` porque el
 // CMS necesita la noticia cruda.
 const pedirNoticias = (pagina: Pagina) =>
-  getNewsArchive(pagina).then(({ noticias, meta }) => ({ data: noticias, meta }))
+  archivoDeNoticias(pagina).then(({ noticias, meta }) => ({ data: noticias, meta }))
 
 // El tono de las placas sin foto va por el índice, módulo 3, y la rejilla tiene
 // tres columnas: con el índice tal cual, cada columna repetía color fila tras
@@ -216,7 +216,7 @@ function ArchivoDeNoticias({ titulo }: PropsListado) {
             const destacada = hayDestacada && i === 0
             return (
               <Box component="li" key={noticia.id} sx={{ display: 'flex', gridColumn: destacada ? '1 / -1' : undefined }}>
-                <NewsCard news={noticia} indice={destacada ? INDICE_DESTACADA : indiceEnDiagonal(hayDestacada ? i - 1 : i)} destacada={destacada} volver={consultaArchivo} />
+                <TarjetaNoticia news={noticia} indice={destacada ? INDICE_DESTACADA : indiceEnDiagonal(hayDestacada ? i - 1 : i)} destacada={destacada} volver={consultaArchivo} />
               </Box>
             )
           })}
@@ -244,7 +244,7 @@ function Publicaciones({ titulo, categoria, etiqueta, vacio, fallo }: PropsLista
       <Grid container spacing={3}>
         {items.map((publicacion) => (
           <Grid key={publicacion.id} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <PublicationCard publication={publicacion} />
+            <TarjetaPublicacion publication={publicacion} />
           </Grid>
         ))}
       </Grid>

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, TextField } from '@mui/material'
-import { assignPrenda, buscarHermanoPorNumero, type HermanoDelRopero, type Prenda } from '../../lib/api/inventory'
+import { asignarPrenda, buscarHermanoPorNumero, type HermanoDelRopero, type Prenda } from '../../lib/api/inventario'
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
 
@@ -46,7 +46,7 @@ export function DialogoPrestamo({ prenda, onCerrar, onPrestada }: DialogoPrestam
     setGuardando(true)
     setError(null)
     try {
-      await assignPrenda(prenda.id, hermano.numeroHermano)
+      await asignarPrenda(prenda.id, hermano.numeroHermano)
       onPrestada(`Prenda ${prenda.numero} prestada a ${hermano.nombre} ${hermano.apellidos}.`)
     } catch (e: unknown) {
       setError(mensaje(e, 'No se ha podido prestar la prenda.'))

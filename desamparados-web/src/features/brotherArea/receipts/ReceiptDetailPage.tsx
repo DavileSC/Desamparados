@@ -6,7 +6,7 @@ import { Link, useParams } from 'react-router-dom'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
-import { getMyReceipt, type MyReceiptDetail } from '../../../lib/api/receipts'
+import { miRecibo, type MyReceiptDetail } from '../../../lib/api/recibos'
 import { ESTADO_RECIBO, METODO_PAGO, TIPO_RECIBO, formatearFecha, formatearImporte } from './etiquetas'
 
 /**
@@ -31,7 +31,7 @@ export default function ReceiptDetailPage() {
   useEffect(() => {
     let cancelado = false
 
-    getMyReceipt(Number(id))
+    miRecibo(Number(id))
       .then((datos) => { if (!cancelado) setRecibo(datos) })
       .catch(() => { if (!cancelado) setError(true) })
       .finally(() => { if (!cancelado) setCargando(false) })

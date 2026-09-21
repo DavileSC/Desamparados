@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import type { ApiEvent } from '../../../lib/api/events'
+import type { ApiEvent } from '../../../lib/api/agenda'
 import { TIPOS } from '../../home/agenda'
 
 /**

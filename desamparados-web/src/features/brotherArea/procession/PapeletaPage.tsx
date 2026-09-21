@@ -6,7 +6,7 @@ import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
-import { getMyProcessionTickets, type ApiProcessionTicket } from '../../../lib/api/procession'
+import { misPapeletas, type ApiProcessionTicket } from '../../../lib/api/procesion'
 import { estadoPapeleta } from './estadoPapeleta'
 
 export default function PapeletaPage() {
@@ -19,7 +19,7 @@ export default function PapeletaPage() {
 
     // La papeleta vigente es la más reciente y el servidor ordena por año
     // descendente: con la primera página basta, no hace falta el histórico entero.
-    getMyProcessionTickets({ pagina: 1, porPagina: 10 })
+    misPapeletas({ pagina: 1, porPagina: 10 })
       .then((respuesta) => {
         if (!cancelled) setTickets(respuesta.data)
       })

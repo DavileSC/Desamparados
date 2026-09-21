@@ -6,8 +6,8 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
-import BrothersAdminPage from '../BrothersAdminPage'
-import BrotherEditPage from '../BrotherEditPage'
+import HermanosAdminPage from '../HermanosAdminPage'
+import HermanoEditPage from '../HermanoEditPage'
 import { useAuthStore } from '../../members/auth/store'
 
 /**
@@ -54,8 +54,8 @@ function responder() {
 function montar(entrada: string) {
   const router = createMemoryRouter(
     [
-      { path: '/cms/hermanos', element: <BrothersAdminPage /> },
-      { path: '/cms/hermanos/:id/editar', element: <BrotherEditPage /> },
+      { path: '/cms/hermanos', element: <HermanosAdminPage /> },
+      { path: '/cms/hermanos/:id/editar', element: <HermanoEditPage /> },
     ],
     { initialEntries: [entrada] },
   )

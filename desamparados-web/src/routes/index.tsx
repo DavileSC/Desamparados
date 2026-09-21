@@ -42,19 +42,19 @@ const NotFoundPage = lazy(() => import('../features/notFound/NotFoundPage'))
 const PortadaAdminPage = lazy(() => import('../features/cms/PortadaAdminPage'))
 const PaginasAdminPage = lazy(() => import('../features/cms/PaginasAdminPage'))
 const PaginaAdminPage = lazy(() => import('../features/cms/PaginaAdminPage'))
-const NewsAdminPage = lazy(() => import('../features/cms/NewsAdminPage'))
-const PublicationsAdminPage = lazy(() => import('../features/cms/PublicationsAdminPage'))
+const NoticiasAdminPage = lazy(() => import('../features/cms/NoticiasAdminPage'))
+const PublicacionesAdminPage = lazy(() => import('../features/cms/PublicacionesAdminPage'))
 const AgendaAdminPage = lazy(() => import('../features/cms/AgendaAdminPage'))
-const BrothersAdminPage = lazy(() => import('../features/cms/BrothersAdminPage'))
-const BrotherEditPage = lazy(() => import('../features/cms/BrotherEditPage'))
-const NewsEditPage = lazy(() => import('../features/cms/NewsEditPage'))
-const PublicationEditPage = lazy(() => import('../features/cms/PublicationEditPage'))
+const HermanosAdminPage = lazy(() => import('../features/cms/HermanosAdminPage'))
+const HermanoEditPage = lazy(() => import('../features/cms/HermanoEditPage'))
+const NoticiaEditPage = lazy(() => import('../features/cms/NoticiaEditPage'))
+const PublicacionEditPage = lazy(() => import('../features/cms/PublicacionEditPage'))
 const AgendaEditPage = lazy(() => import('../features/cms/AgendaEditPage'))
-const InventoryEditPage = lazy(() => import('../features/cms/InventoryEditPage'))
-const TreasuryAdminPage = lazy(() => import('../features/cms/TreasuryAdminPage'))
-const InventoryAdminPage = lazy(() => import('../features/cms/InventoryAdminPage'))
-const AccountingAdminPage = lazy(() => import('../features/cms/AccountingAdminPage'))
-const AuditAdminPage = lazy(() => import('../features/cms/AuditAdminPage'))
+const InventarioEditPage = lazy(() => import('../features/cms/InventarioEditPage'))
+const TesoreriaAdminPage = lazy(() => import('../features/cms/TesoreriaAdminPage'))
+const InventarioAdminPage = lazy(() => import('../features/cms/InventarioAdminPage'))
+const ContabilidadAdminPage = lazy(() => import('../features/cms/ContabilidadAdminPage'))
+const AuditoriaAdminPage = lazy(() => import('../features/cms/AuditoriaAdminPage'))
 const AccesosAdminPage = lazy(() => import('../features/cms/AccesosAdminPage'))
 const PanelPage = lazy(() => import('../features/cms/PanelPage'))
 const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
@@ -196,23 +196,23 @@ const router = createBrowserRouter([
           { path: 'portada', element: <RequireRole roles={rolesPorRutaCms.portada}>{withSuspense(PortadaAdminPage)}</RequireRole> },
           // Historia se edita ya como las demás páginas; la dirección vieja sigue llevando a ella.
           { path: 'historia', element: <Navigate to="/cms/paginas/historia" replace /> },
-          { path: 'noticias', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsAdminPage)}</RequireRole> },
-          { path: 'noticias/nueva', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsEditPage)}</RequireRole> },
-          { path: 'noticias/:id/editar', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NewsEditPage)}</RequireRole> },
-          { path: 'publicaciones', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationsAdminPage)}</RequireRole> },
-          { path: 'publicaciones/nueva', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationEditPage)}</RequireRole> },
-          { path: 'publicaciones/:id/editar', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicationEditPage)}</RequireRole> },
+          { path: 'noticias', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiasAdminPage)}</RequireRole> },
+          { path: 'noticias/nueva', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</RequireRole> },
+          { path: 'noticias/:id/editar', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</RequireRole> },
+          { path: 'publicaciones', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionesAdminPage)}</RequireRole> },
+          { path: 'publicaciones/nueva', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionEditPage)}</RequireRole> },
+          { path: 'publicaciones/:id/editar', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionEditPage)}</RequireRole> },
           { path: 'agenda', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaAdminPage)}</RequireRole> },
           { path: 'agenda/nuevo', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</RequireRole> },
           { path: 'agenda/:id/editar', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</RequireRole> },
-          { path: 'hermanos', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(BrothersAdminPage)}</RequireRole> },
-          { path: 'hermanos/:id/editar', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(BrotherEditPage)}</RequireRole> },
-          { path: 'tesoreria', element: <RequireRole roles={rolesPorRutaCms.tesoreria}>{withSuspense(TreasuryAdminPage)}</RequireRole> },
-          { path: 'inventario', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventoryAdminPage)}</RequireRole> },
-          { path: 'inventario/:id/editar', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventoryEditPage)}</RequireRole> },
-          { path: 'contabilidad', element: <RequireRole roles={rolesPorRutaCms.contabilidad}>{withSuspense(AccountingAdminPage)}</RequireRole> },
+          { path: 'hermanos', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanosAdminPage)}</RequireRole> },
+          { path: 'hermanos/:id/editar', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</RequireRole> },
+          { path: 'tesoreria', element: <RequireRole roles={rolesPorRutaCms.tesoreria}>{withSuspense(TesoreriaAdminPage)}</RequireRole> },
+          { path: 'inventario', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</RequireRole> },
+          { path: 'inventario/:id/editar', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</RequireRole> },
+          { path: 'contabilidad', element: <RequireRole roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</RequireRole> },
           { path: 'accesos', element: <RequireRole roles={rolesPorRutaCms.accesos}>{withSuspense(AccesosAdminPage)}</RequireRole> },
-          { path: 'auditoria', element: <RequireRole roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditAdminPage)}</RequireRole> },
+          { path: 'auditoria', element: <RequireRole roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditoriaAdminPage)}</RequireRole> },
         ],
       },
     ],

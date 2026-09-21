@@ -1,4 +1,4 @@
-import type { ApiEvent, EventoCalendario } from '../../lib/api/events'
+import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
 import { GRANATE } from './estilos'
 
 export { GOLD, SERIF } from './estilos'

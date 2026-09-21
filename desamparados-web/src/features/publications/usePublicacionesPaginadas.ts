@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useListadoPaginado, type Pagina } from '../../hooks/useListadoPaginado'
-import { getPublications } from '../../lib/api/publications'
+import { publicacionesPublicas } from '../../lib/api/publicaciones'
 import type { PublicationItem } from '../../types'
 
 /**
@@ -16,6 +16,6 @@ export function usePublicacionesPaginadas(
   category: PublicationItem['category'] | undefined,
   mensajeError: string,
 ) {
-  const pedir = useCallback((pagina: Pagina) => getPublications(category, pagina), [category])
+  const pedir = useCallback((pagina: Pagina) => publicacionesPublicas(category, pagina), [category])
   return useListadoPaginado(pedir, mensajeError)
 }

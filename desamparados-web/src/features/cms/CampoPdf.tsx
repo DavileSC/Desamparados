@@ -3,7 +3,7 @@ import { Alert, Box, Button, CircularProgress, Link, Stack, Typography } from '@
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
-import { subirPdfPublico } from '../../lib/api/upload'
+import { subirPdfPublico } from '../../lib/api/subida'
 import { PDF_DE_RELLENO } from './portadaPublicacion'
 
 // El mismo tope que la subida del servidor para los PDF (upload.middleware.ts):

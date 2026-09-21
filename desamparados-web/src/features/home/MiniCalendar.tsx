@@ -2,7 +2,7 @@ import { Box, IconButton, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import type { ApiEvent, EventoCalendario } from '../../lib/api/events'
+import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
 import { SERIF, TIPOS, cubreElDia, diasDeLaRejilla, inicioDelDia, nombreDelMes } from './agenda'
 import { GRANATE } from './estilos'
 

@@ -10,7 +10,7 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { NOMBRE_CARGO } from '../../app/cmsNavegacion'
 import { useAuthStore } from '../members/auth/store'
 import {
-  buscarCandidatos, CARGOS_CMS, darAcceso, getStaff, quitarAcceso,
+  buscarCandidatos, CARGOS_CMS, darAcceso, cuentasDeStaff, quitarAcceso,
   type CandidatoACargo, type CargoCms, type MiembroDelStaff,
 } from '../../lib/api/admin'
 
@@ -45,13 +45,13 @@ export default function AccesosAdminPage() {
   const [errorVentana, setErrorVentana] = useState<string | null>(null)
 
   const [porQuitar, setPorQuitar] = useState<MiembroDelStaff | null>(null)
-  // Guarda síncrona del doble clic, igual que en BrothersAdminPage: el diálogo
+  // Guarda síncrona del doble clic, igual que en HermanosAdminPage: el diálogo
   // de confirmación tarda en cerrarse y un segundo clic llegaría antes que el
   // nuevo estado.
   const enMarcha = useRef(false)
 
   const cargar = useCallback(async () => {
-    const lista = await getStaff()
+    const lista = await cuentasDeStaff()
     setStaff(lista)
   }, [])
 

@@ -16,12 +16,12 @@ import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import Paginador from '../../../components/Paginador'
 import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
-import { getMyProcessionTickets, type ApiProcessionTicket } from '../../../lib/api/procession'
+import { misPapeletas, type ApiProcessionTicket } from '../../../lib/api/procesion'
 import { estadoPapeleta } from './estadoPapeleta'
 
 export default function HistoricoPage() {
   const { items: tickets, meta, loading, error, alCambiarPagina, cambiarTamano } =
-    useListadoPaginado<ApiProcessionTicket>(getMyProcessionTickets, 'No se ha podido cargar el histórico.')
+    useListadoPaginado<ApiProcessionTicket>(misPapeletas, 'No se ha podido cargar el histórico.')
 
   return (
     <>

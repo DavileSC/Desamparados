@@ -1,5 +1,5 @@
 import { Box, ButtonBase, Paper, Typography } from '@mui/material'
-import type { ResumenContable, TipoApunte } from '../../../lib/api/accounting'
+import type { ResumenContable, TipoApunte } from '../../../lib/api/contabilidad'
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, eurosResumen } from './formato'
 import { useColoresContabilidad } from './tema'

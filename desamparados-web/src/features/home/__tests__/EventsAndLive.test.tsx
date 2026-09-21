@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import EventsAndLive from '../EventsAndLive'
 import { site } from '../../../config/site'
-import type { ApiEvent } from '../../../lib/api/events'
+import type { ApiEvent } from '../../../lib/api/agenda'
 import { responderPortada, textosDePrueba } from './ayudas'
 
 function evento(parcial: Partial<ApiEvent> & Pick<ApiEvent, 'id' | 'title' | 'startDate'>): ApiEvent {

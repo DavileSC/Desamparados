@@ -2,7 +2,7 @@ import { useId, useState, type ChangeEvent } from 'react'
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
-import { subirImagenPublica } from '../../lib/api/upload'
+import { subirImagenPublica } from '../../lib/api/subida'
 
 // Los mismos límites que la subida del servidor (upload.middleware.ts): se avisa antes de enviar.
 const TIPOS = ['image/jpeg', 'image/png', 'image/webp']

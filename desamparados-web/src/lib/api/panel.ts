@@ -56,6 +56,6 @@ export interface PanelResponse {
 }
 
 /** Sin año, el ejercicio en curso. */
-export function getPanel(anio?: number) {
+export function traerPanelDeHoy(anio?: number) {
   return apiFetch<PanelResponse>(anio === undefined ? '/panel' : `/panel?anio=${anio}`)
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { aApunteManual, apunteCompleto, apunteDesde, apunteNuevo, categoriasParaApunte, errorFecha, errorImporte, errorNombreCategoria, type FormApunte } from '../apunte'
-import type { Category, Transaction } from '../../../../lib/api/accounting'
+import type { Category, Transaction } from '../../../../lib/api/contabilidad'
 
 // Un día fijo: «hoy» manda sobre la fecha por defecto y sobre las fechas futuras.
 const HOY = new Date(2026, 8, 11, 10, 0) // 11 de septiembre de 2026, hora local

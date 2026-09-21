@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
-import { getPortada, type Portada, type TextosPortada } from '../../lib/api/portada'
+import { portadaDelInicio, type Portada, type TextosPortada } from '../../lib/api/portada'
 
 /** Los textos de siempre: lo que se enseña mientras carga y si la API falla. */
 export const TEXTOS_POR_DEFECTO = POR_DEFECTO.portada as TextosPortada
@@ -22,7 +22,7 @@ export function usePortada(): { data: Portada | undefined; status: 'pending' | '
   const borrador = useContext(BorradorPortadaContext)
   const consulta = useQuery<Portada>({
     queryKey: ['home', 'portada'],
-    queryFn: getPortada,
+    queryFn: portadaDelInicio,
     retry: false,
     staleTime: 5 * 60_000,
     enabled: borrador === null,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { getPanel } from '../panel'
+import { traerPanelDeHoy } from '../panel'
 
 const respuesta = {
   generadoEn: '2026-08-28T10:00:00.000Z',
@@ -30,14 +30,14 @@ const respuesta = {
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-describe('getPanel', () => {
+describe('traerPanelDeHoy', () => {
   it('pide /api/panel y devuelve las cifras deserializadas, con credentials incluidas', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(respuesta), { status: 200, headers: { 'Content-Type': 'application/json' } }),
     )
     vi.stubGlobal('fetch', fetchFalso)
 
-    const panel = await getPanel()
+    const panel = await traerPanelDeHoy()
 
     expect(fetchFalso).toHaveBeenCalledWith('/api/panel', expect.objectContaining({ credentials: 'include' }))
     expect(panel.censo.activos).toBe(342)
@@ -51,7 +51,7 @@ describe('getPanel', () => {
       new Response(JSON.stringify(respuesta), { status: 200, headers: { 'Content-Type': 'application/json' } }),
     )
     vi.stubGlobal('fetch', espia)
-    await getPanel()
+    await traerPanelDeHoy()
     expect(espia.mock.calls[0][0]).toBe('/api/panel')
   })
 
@@ -60,7 +60,7 @@ describe('getPanel', () => {
       new Response(JSON.stringify(respuesta), { status: 200, headers: { 'Content-Type': 'application/json' } }),
     )
     vi.stubGlobal('fetch', espia)
-    await getPanel(2025)
+    await traerPanelDeHoy(2025)
     expect(espia.mock.calls[0][0]).toBe('/api/panel?anio=2025')
   })
 })

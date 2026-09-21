@@ -1,4 +1,4 @@
-import type { Prenda } from '../../lib/api/inventory'
+import type { Prenda } from '../../lib/api/inventario'
 
 /** Cómo se lee cada estado de una prenda en el CMS (en la base de datos van en mayúsculas). */
 export const ETIQUETA_ESTADO: Record<Prenda['estado'], string> = {

@@ -3,7 +3,7 @@ import { Box, Paper, Typography } from '@mui/material'
 import SouthWestIcon from '@mui/icons-material/SouthWest'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import BalanceIcon from '@mui/icons-material/Balance'
-import type { ResumenContable } from '../../../lib/api/accounting'
+import type { ResumenContable } from '../../../lib/api/contabilidad'
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, numero, eurosResumen, tramo } from './formato'
 

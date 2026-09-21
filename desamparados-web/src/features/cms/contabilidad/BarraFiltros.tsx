@@ -1,5 +1,5 @@
 import { Box, ListSubheader, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material'
-import type { Category } from '../../../lib/api/accounting'
+import type { Category } from '../../../lib/api/contabilidad'
 import { METODOS, PERIODOS, PERIODO_POR_DEFECTO, fechasInvertidas, type FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, etiquetaMetodo } from './formato'
 import CampoBusqueda from '../listados/CampoBusqueda'

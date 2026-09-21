@@ -10,7 +10,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import GlassCard from '../GlassCard'
 import AppButton from '../AppButton'
 import { contactSchema, type ContactFormData } from '../../features/contact/schema'
-import { sendContactMessage } from '../../lib/api/contact'
+import { enviarMensajeDeContacto } from '../../lib/api/contacto'
 import type { BloqueContacto as Datos, LineaDatos } from '../../lib/api/contenido'
 
 // Trampa para robots: fuera de la vista, del tabulador y de los lectores de
@@ -92,7 +92,7 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
     setSuccess(false)
     setServerError(null)
     try {
-      await sendContactMessage(data, tiempoRelleno.medir())
+      await enviarMensajeDeContacto(data, tiempoRelleno.medir())
       setSuccess(true)
       reset()
       tiempoRelleno.reiniciar()

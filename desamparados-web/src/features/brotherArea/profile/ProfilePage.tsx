@@ -14,7 +14,7 @@ import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import GlassCard from '../../../components/GlassCard'
 import AppButton from '../../../components/AppButton'
-import { fichaPropia, getMyProfiles, type ApiProfile } from '../../../lib/api/profile'
+import { fichaPropia, misFichas, type ApiProfile } from '../../../lib/api/perfil'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -26,9 +26,9 @@ export default function ProfilePage() {
   useEffect(() => {
     let cancelled = false
 
-    // Sin argumentos, getMyProfiles pide la familia entera en una sola página:
+    // Sin argumentos, misFichas pide la familia entera en una sola página:
     // esta pantalla elige una ficha, y un selector paginado escondería alguna.
-    getMyProfiles()
+    misFichas()
       .then((respuesta) => {
         if (cancelled) return
         setProfile(fichaPropia(respuesta.data))

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import PageContainer from '../../components/PageContainer'
 import AnimatedSection, { Revela } from '../../components/AnimatedSection'
-import { getLatestPublications } from '../../lib/api/publications'
+import { publicacionesDePortada } from '../../lib/api/publicaciones'
 import type { PublicationItem } from '../../types'
 import { useHomeData } from './useHomeData'
 import { useTextosPortada } from './useContenidoPortada'
@@ -171,7 +171,7 @@ function Ejemplares({ destacada, anteriores }: { destacada: PublicationItem; ant
  * si no de la más reciente: el servidor las manda ya en ese orden.
  */
 export default function FeaturedPublications() {
-  const { data: publications = [], isPending, isError, refetch } = useHomeData('publications', getLatestPublications)
+  const { data: publications = [], isPending, isError, refetch } = useHomeData('publications', publicacionesDePortada)
   const textos = useTextosPortada()
   const [destacada, ...resto] = publications
   const otras = resto.slice(0, 2)

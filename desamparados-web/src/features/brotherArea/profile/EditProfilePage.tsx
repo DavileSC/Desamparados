@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet-async'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
 import AppButton from '../../../components/AppButton'
-import { fichaPropia, getMyProfiles, updateMyProfile, type ApiProfile } from '../../../lib/api/profile'
+import { fichaPropia, misFichas, actualizarMiFicha, type ApiProfile } from '../../../lib/api/perfil'
 import { profileSchema, type ProfileFormData } from './schema'
 
 export default function EditProfilePage() {
@@ -36,9 +36,9 @@ export default function EditProfilePage() {
   useEffect(() => {
     let cancelled = false
 
-    // Sin argumentos, getMyProfiles pide la familia entera en una sola página:
+    // Sin argumentos, misFichas pide la familia entera en una sola página:
     // esta pantalla elige una ficha, y un selector paginado escondería alguna.
-    getMyProfiles()
+    misFichas()
       .then((respuesta) => {
         const currentProfile = fichaPropia(respuesta.data)
         if (cancelled) return
@@ -76,7 +76,7 @@ export default function EditProfilePage() {
     setError(null)
     setSuccess(false)
     try {
-      await updateMyProfile(profile.id, {
+      await actualizarMiFicha(profile.id, {
         nombre: data.name,
         apellidos: data.surname,
         email: data.email,

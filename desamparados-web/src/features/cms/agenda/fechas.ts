@@ -1,4 +1,4 @@
-import type { ApiEvent } from '../../../lib/api/events'
+import type { ApiEvent } from '../../../lib/api/agenda'
 import { inicioDelDia, nombreDelMes } from '../../home/agenda'
 
 /** «18:00». */

@@ -14,7 +14,7 @@ import { useFichaCms } from './ficha/useFichaCms'
 import PuntoTipo from './agenda/PuntoTipo'
 import { TIPOS_EVENTO } from './agenda/tiposEvento'
 import { haceCuanto } from './redaccion/completitud'
-import { createEvent, getEvent, updateEvent, type ApiEvent, type EventPayload } from '../../lib/api/events'
+import { crearEvento, traerEvento, actualizarEvento, type ApiEvent, type EventPayload } from '../../lib/api/agenda'
 
 /** El formulario: día y hora por separado, que es como se piensa un acto. */
 interface Formulario {
@@ -65,7 +65,7 @@ export default function AgendaEditPage() {
     useFichaCms<ApiEvent, Formulario>({
       listado: '/cms/agenda',
       origen: nuevo ? (typeof copiaDe === 'number' ? copiaDe : null) : Number(id),
-      cargar: getEvent,
+      cargar: traerEvento,
       aFormulario: desdeEvento,
       vacio,
       errorAlCargar: nuevo
@@ -102,7 +102,7 @@ export default function AgendaEditPage() {
       endDate: fin ? fin.toISOString() : null,
     }
     await guardarFicha(
-      () => (nuevo ? createEvent(payload) : updateEvent(Number(id), payload)),
+      () => (nuevo ? crearEvento(payload) : actualizarEvento(Number(id), payload)),
       {
         siFalla: 'No se ha podido guardar el evento.',
         aviso: yaPaso

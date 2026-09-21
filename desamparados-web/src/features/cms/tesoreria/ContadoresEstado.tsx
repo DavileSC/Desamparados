@@ -1,5 +1,5 @@
 import { Box, ButtonBase, Typography, useTheme } from '@mui/material'
-import type { AdminReceiptStatus, ResumenRecibos } from '../../../lib/api/treasury'
+import type { AdminReceiptStatus, ResumenRecibos } from '../../../lib/api/tesoreria'
 import { euros } from '../contabilidad/formato'
 import { ESTADOS_RECIBO, ORDEN_ESTADOS } from './estados'
 

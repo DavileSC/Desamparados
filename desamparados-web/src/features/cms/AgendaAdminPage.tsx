@@ -13,7 +13,7 @@ import FilaEvento from './agenda/FilaEvento'
 import { rejillaEvento } from './agenda/rejilla'
 import { TIPOS_EVENTO } from './agenda/tiposEvento'
 import { agruparPorMes, cuandoEs, hora } from './agenda/fechas'
-import { deleteEvent, getAdminEvents, type ApiEvent, type PeriodoAgenda, type ResumenAgenda } from '../../lib/api/events'
+import { eliminarEvento, eventosDelCms, type ApiEvent, type PeriodoAgenda, type ResumenAgenda } from '../../lib/api/agenda'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
@@ -64,7 +64,7 @@ export default function AgendaAdminPage() {
   // Las llamadas de después de borrar la omiten: no hay carrera.
   const load = useCallback(
     // Una carga buena borra el error de la anterior: si no, la alerta se queda puesta para siempre.
-    (vigente: () => boolean = () => true) => getAdminEvents(
+    (vigente: () => boolean = () => true) => eventosDelCms(
       { pagina, porPagina },
       periodo,
       { q: filtros.q, tipo: filtros.tipo as ApiEvent['type'] | '', visibilidad: filtros.visibilidad as ApiEvent['visibility'] | '' },
@@ -83,7 +83,7 @@ export default function AgendaAdminPage() {
   const borrar = async () => {
     if (!porBorrar) return
     setNotice(null)
-    try { await deleteEvent(porBorrar.id); await load(); setNotice('Evento eliminado.') }
+    try { await eliminarEvento(porBorrar.id); await load(); setNotice('Evento eliminado.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar el evento.') }
     finally { setPorBorrar(null) }
   }

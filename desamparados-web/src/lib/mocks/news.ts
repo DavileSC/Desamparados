@@ -51,10 +51,10 @@ export const newsItems: NewsItem[] = [
   },
 ]
 
-export function getLatestNews(count = 4): NewsItem[] {
+export function noticiasDePortada(count = 4): NewsItem[] {
   return newsItems.slice(0, count)
 }
 
-export function getNewsBySlug(slug: string): NewsItem | undefined {
+export function noticiaPorDireccion(slug: string): NewsItem | undefined {
   return newsItems.find((item) => item.slug === slug)
 }

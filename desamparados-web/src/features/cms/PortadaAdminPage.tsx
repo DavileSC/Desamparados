@@ -15,7 +15,7 @@ import EventsAndLive from '../home/EventsAndLive'
 import QuickAccess from '../home/QuickAccess'
 import ProcessionScene from '../home/ProcessionScene'
 import FeaturedPublications from '../home/FeaturedPublications'
-import { getPortada, guardarImagenesPortada, type ImagenPortada, type TextosPortada } from '../../lib/api/portada'
+import { portadaDelInicio, guardarImagenesPortada, type ImagenPortada, type TextosPortada } from '../../lib/api/portada'
 import { guardarContenido } from '../../lib/api/contenido'
 
 /** Tope del servidor (portada.schema.ts): se avisa antes de enviar. */
@@ -88,7 +88,7 @@ export default function PortadaAdminPage() {
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
-    getPortada()
+    portadaDelInicio()
       .then(({ imagenes, textos: cargados }) => {
         setFilas(imagenes.map(conClave))
         setInicialFotos(imagenes.map(({ url, descripcion }) => ({ url, descripcion })))

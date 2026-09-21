@@ -1,4 +1,4 @@
-import { subirImagenPublica } from '../../../lib/api/upload'
+import { subirImagenPublica } from '../../../lib/api/subida'
 
 /** Los mismos límites que la subida del servidor (upload.middleware.ts): se avisa antes de enviar. */
 export const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp']

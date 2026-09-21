@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import PageContainer from '../../components/PageContainer'
 import AnimatedSection, { Revela } from '../../components/AnimatedSection'
-import NewsCard from '../../components/NewsCard'
+import TarjetaNoticia from '../../components/TarjetaNoticia'
 import CintaDestacada from './CintaDestacada'
-import { getLatestNews } from '../../lib/api/news'
+import { noticiasDePortada } from '../../lib/api/noticias'
 import { useHomeData } from './useHomeData'
 import { useTextosPortada } from './useContenidoPortada'
 import HomeFeedback from './HomeFeedback'
@@ -13,7 +13,7 @@ import { SERIF, ceja, enlaceBloque } from './estilos'
 
 // En portada caben tres noticias; el resto está en el archivo.
 const MAX_NOTICIAS = 3
-const fetchNews = () => getLatestNews(MAX_NOTICIAS)
+const fetchNews = () => noticiasDePortada(MAX_NOTICIAS)
 
 /**
  * Actualidad: bloque oscuro con tres noticias en tarjetas claras.
@@ -56,7 +56,7 @@ export default function FeaturedNews() {
             {news.slice(0, MAX_NOTICIAS).map((noticia, i) => (
               <Revela key={noticia.id} as="li" efecto="crecer" orden={3 + i} sx={{ display: 'flex', position: 'relative' }}>
                 {noticia.fijada && <CintaDestacada />}
-                <NewsCard news={noticia} indice={i} />
+                <TarjetaNoticia news={noticia} indice={i} />
               </Revela>
             ))}
           </Box>

@@ -1,0 +1,157 @@
+import type { EventItem } from '../../types'
+import { apiFetch } from './client'
+import { paramsPagina, type RespuestaPaginada } from './tipos'
+
+export interface ApiEvent {
+  id: number
+  title: string
+  description: string | null
+  location: string | null
+  startDate: string
+  endDate: string | null
+  visibility: 'public' | 'members_only'
+  type: 'CULTO' | 'PROCESION' | 'FORMACION' | 'ENSAYO' | 'REUNION' | 'SOCIAL' | 'OTRO'
+  /** Solo lo trae el listado del CMS. */
+  updatedAt?: string
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+function toEventItem(event: ApiEvent): EventItem {
+  const start = new Date(event.startDate)
+  const end = event.endDate ? new Date(event.endDate) : null
+  const date = end && start.toDateString() !== end.toDateString()
+    ? `${formatDate(event.startDate)} - ${formatDate(event.endDate!)}`
+    : formatDate(event.startDate)
+
+  return {
+    id: String(event.id),
+    title: event.title,
+    description: event.description ?? '',
+    date,
+    time: start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    location: event.location ?? undefined,
+    highlighted: event.type === 'CULTO' || event.type === 'PROCESION',
+  }
+}
+
+function pedirPagina(pagina: { pagina: number; porPagina: number }) {
+  return apiFetch<RespuestaPaginada<ApiEvent>>(`/events?${paramsPagina(pagina)}`)
+}
+
+/**
+ * Los próximos eventos de la portada y de actualidad: ni paginan ni lo quieren,
+ * solo piden los que caben. Recortar en el cliente traía la agenda entera para
+ * enseñar cuatro tarjetas, así que el recorte lo hace el servidor con `?limit=`.
+ */
+export async function traerProximosEventos(cuantos: number): Promise<EventItem[]> {
+  const respuesta = await apiFetch<RespuestaPaginada<ApiEvent>>(`/events?limit=${cuantos}`)
+  return respuesta.data.map(toEventItem)
+}
+
+/** Un acto como lo necesita el calendario de la portada: fechas reales y tipo, no texto ya formateado. */
+export interface EventoCalendario {
+  id: string
+  title: string
+  description: string
+  location?: string
+  type: ApiEvent['type']
+  start: Date
+  end: Date | null
+}
+
+/**
+ * Los actos del calendario de la portada. Sin `desde` el servidor ya devuelve solo
+ * los futuros; con `desde` y `hasta` se pide la ventana del mes visible y el siguiente.
+ */
+export async function eventosDelCalendario(
+  { desde, hasta, cuantos }: { desde?: Date; hasta?: Date; cuantos: number },
+): Promise<EventoCalendario[]> {
+  const params = new URLSearchParams({ limit: String(cuantos) })
+  if (desde) params.set('from', desde.toISOString())
+  if (hasta) params.set('to', hasta.toISOString())
+  const respuesta = await apiFetch<RespuestaPaginada<ApiEvent>>(`/events?${params}`)
+  return respuesta.data.map(event => ({
+    id: String(event.id),
+    title: event.title,
+    description: event.description ?? '',
+    location: event.location ?? undefined,
+    type: event.type,
+    start: new Date(event.startDate),
+    end: event.endDate ? new Date(event.endDate) : null,
+  }))
+}
+
+/** La agenda pública: tarjetas ya formateadas más el `meta` que pinta el paginador. */
+export async function eventosPublicos(pagina: { pagina: number; porPagina: number }) {
+  const respuesta = await pedirPagina(pagina)
+  return { eventos: respuesta.data.map(toEventItem), meta: respuesta.meta }
+}
+
+/** Las dos pestañas de la agenda del CMS. */
+export type PeriodoAgenda = 'proximos' | 'pasados'
+
+/** Búsqueda y filtros del listado de la agenda en el CMS; `''` es «todos». */
+export interface FiltrosAgenda {
+  q?: string
+  tipo?: ApiEvent['type'] | ''
+  visibilidad?: ApiEvent['visibility'] | ''
+}
+
+/** Lo que el servidor manda con cada página del listado del CMS. */
+export interface ResumenAgenda {
+  /** Con la misma búsqueda y filtros: las cifras de las pestañas. */
+  proximos: number
+  pasados: number
+  /** De los próximos, sin filtros. */
+  soloHermanos: number
+  siguiente: { id: number; title: string; startDate: string } | null
+  /** Los actos que la portada de la web enseña ahora en su lista. */
+  portada: { limite: number; ids: number[] }
+}
+
+/**
+ * El CMS tiene su propio extremo (`/events/admin`, con sesión y rol): la lectura
+ * pública solo enseña desde hoy, y un evento fechado por error en el pasado
+ * desaparecía del CMS sin forma de corregirlo ni borrarlo. Trae las dos
+ * visibilidades y el evento crudo (id numérico, visibilidad y fechas sin
+ * formatear) para editar y borrar. Los pasados llegan del más reciente hacia atrás.
+ */
+export async function eventosDelCms(pagina: { pagina: number; porPagina: number }, periodo: PeriodoAgenda = 'proximos', filtros: FiltrosAgenda = {}) {
+  const respuesta = await apiFetch<RespuestaPaginada<ApiEvent> & { resumen: ResumenAgenda }>(
+    `/events/admin?${paramsPagina(pagina, { periodo, q: filtros.q, tipo: filtros.tipo, visibilidad: filtros.visibilidad })}`,
+  )
+  return { eventos: respuesta.data, meta: respuesta.meta, resumen: respuesta.resumen }
+}
+
+export interface EventPayload {
+  title: string
+  description?: string
+  startDate: string
+  endDate?: string | null
+  location?: string
+  visibility: 'public' | 'members_only'
+  type: ApiEvent['type']
+}
+
+export function crearEvento(payload: EventPayload) {
+  return apiFetch<ApiEvent>('/events', { method: 'POST', json: payload })
+}
+
+export function actualizarEvento(id: number, payload: Partial<EventPayload>) {
+  return apiFetch<ApiEvent>(`/events/${id}`, { method: 'PUT', json: payload })
+}
+
+export function eliminarEvento(id: number) {
+  return apiFetch<{ message: string }>(`/events/${id}`, { method: 'DELETE' })
+}
+
+export function traerEvento(id: number) {
+  return apiFetch<ApiEvent>(`/events/${id}`)
+}

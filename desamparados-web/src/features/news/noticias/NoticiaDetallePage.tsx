@@ -5,7 +5,7 @@ import { Alert, Box, CircularProgress, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PageContainer from '../../../components/PageContainer'
 import AnimatedSection from '../../../components/AnimatedSection'
-import { getNewsBySlug } from '../../../lib/api/news'
+import { noticiaPorDireccion } from '../../../lib/api/noticias'
 import type { NewsItem } from '../../../types'
 import NotFoundPage from '../../notFound/NotFoundPage'
 import { sanitizeHtml } from '../../../lib/sanitizeHtml'
@@ -23,7 +23,7 @@ export default function NoticiaDetallePage() {
   useEffect(() => {
     let cancelled = false
 
-    getNewsBySlug(slug)
+    noticiaPorDireccion(slug)
       .then((data) => {
         if (!cancelled) setNews(data)
       })
