@@ -29,7 +29,7 @@ const OPCIONES: { camino: Camino; titulo: string; descripcion: string; icono: ty
   },
   {
     camino: 'SOLO_MENORES',
-    titulo: 'Hago hermano a un famliar',
+    titulo: 'Hago hermano a un familiar',
     descripcion: 'Quieres dar de alta a un menor de edad en el Grupo Parroquial',
     icono: EscalatorWarningIcon,
   },
