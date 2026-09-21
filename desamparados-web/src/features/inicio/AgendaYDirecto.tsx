@@ -9,9 +9,9 @@ import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import { eventosDelCalendario, type EventoCalendario } from '../../lib/api/agenda'
 import { site } from '../../config/site'
 import { useTextosPortada } from './useContenidoPortada'
-import HomeFeedback from './HomeFeedback'
+import AvisosDeInicio from './AvisosDeInicio'
 import MiniCalendario from './MiniCalendario'
-import AgendaList from './AgendaList'
+import ListaDeAgenda from './ListaDeAgenda'
 import { inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from './agenda'
 import { GOLD, PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
 
@@ -201,7 +201,7 @@ export default function AgendaYDirecto() {
           {/* La tarjeta de papel es el objeto del bloque: crece al posarse. */}
           <Revela efecto="crecer" orden={2}>
             {!proximo.isSuccess ? (
-              <HomeFeedback loading={proximo.isPending} error={proximo.isError} empty={false} label="la agenda" emptyMessage="" retry={() => { void proximo.refetch() }} />
+              <AvisosDeInicio loading={proximo.isPending} error={proximo.isError} empty={false} label="la agenda" emptyMessage="" retry={() => { void proximo.refetch() }} />
             ) : (
               <AlturaSostenida
                 className="home-papel"
@@ -228,7 +228,7 @@ export default function AgendaYDirecto() {
                 <Box sx={{ minWidth: 0, opacity: ventana.isPlaceholderData ? 0.6 : 1, transition: 'opacity .2s ease' }}>
                   {sinLista && (
                     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                      <HomeFeedback
+                      <AvisosDeInicio
                         claro
                         loading={ventana.isPending}
                         error={ventana.isError}
@@ -239,7 +239,7 @@ export default function AgendaYDirecto() {
                       />
                     </Box>
                   )}
-                  <AgendaList eventos={eventos} abiertoId={abiertoId} hoy={hoy} onAlternar={alternar} />
+                  <ListaDeAgenda eventos={eventos} abiertoId={abiertoId} hoy={hoy} onAlternar={alternar} />
                 </Box>
               </AlturaSostenida>
             )}

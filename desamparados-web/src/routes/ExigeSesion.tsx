@@ -6,7 +6,7 @@ interface RequireAuthProps {
   children: React.ReactNode
 }
 
-export default function RequireAuth({ children }: RequireAuthProps) {
+export default function ExigeSesion({ children }: RequireAuthProps) {
   const status = useAuthStore((state) => state.status)
   const hermano = useAuthStore((state) => state.hermano)
   const location = useLocation()

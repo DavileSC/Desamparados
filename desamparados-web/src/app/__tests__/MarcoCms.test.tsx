@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
-import AdminLayout from '../AdminLayout'
+import MarcoCms from '../MarcoCms'
 import { itemsMenu, rolesPorRutaCms } from '../cmsNavegacion'
 import { useAuthStore } from '../../features/altas/auth/store'
 import { designTokens } from '../../theme'
@@ -16,28 +16,28 @@ function entrarComo(role: string) {
   })
 }
 
-describe('AdminLayout', () => {
+describe('MarcoCms', () => {
   beforeEach(() => {
     useAuthStore.setState({ status: 'cargando', cms: null, hermano: null })
   })
 
   it('el Hermano Mayor ve tesorería y contabilidad', () => {
     entrarComo('HERMANO_MAYOR')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     expect(screen.getByRole('link', { name: 'Tesorería' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Contabilidad' })).toBeInTheDocument()
   })
 
   it('el Hermano Mayor ve noticias y publicaciones: todo salvo la administración del sistema', () => {
     entrarComo('HERMANO_MAYOR')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     expect(screen.getByRole('link', { name: 'Noticias' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Publicaciones' })).toBeInTheDocument()
   })
 
   it('el community manager no ve tesorería', () => {
     entrarComo('REDES')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     expect(screen.queryByRole('link', { name: 'Tesorería' })).not.toBeInTheDocument()
   })
 
@@ -45,7 +45,7 @@ describe('AdminLayout', () => {
     // En Tesorería la página mide veinte mil píxeles: si el menú se va con el
     // scroll, se navega a ciegas.
     entrarComo('ADMIN')
-    const { container } = renderWithProviders(<AdminLayout />)
+    const { container } = renderWithProviders(<MarcoCms />)
     const barra = container.querySelector('aside')!
     const estilo = getComputedStyle(barra)
     expect(estilo.position).toBe('sticky')
@@ -57,7 +57,7 @@ describe('AdminLayout', () => {
     // abajo: el fondo oscuro se acababa y asomaba el de la página. Invisible
     // en tema oscuro, evidente en claro, donde el menú parecía borrarse.
     entrarComo('ADMIN')
-    const { container } = renderWithProviders(<AdminLayout />)
+    const { container } = renderWithProviders(<MarcoCms />)
     const aside = container.querySelector('aside')!
     const barra = aside.firstElementChild as HTMLElement
 
@@ -73,7 +73,7 @@ describe('AdminLayout', () => {
 
   it('no lleva cabecera superior con el nombre del Grupo Parroquial', () => {
     entrarComo('SECRETARIA')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     expect(screen.queryByText('Grupo Parroquial de los Desamparados')).not.toBeInTheDocument()
     expect(screen.queryByText('Administración')).not.toBeInTheDocument()
   })
@@ -110,14 +110,14 @@ describe('el menú del Inicio', () => {
 
   it('la primera entrada es Inicio, no Panel', async () => {
     entrarComo('REDES')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     const enlaces = screen.getAllByRole('link')
     expect(enlaces[1]).toHaveAccessibleName('Inicio') // [0] es el logotipo
   })
 
   it('agrupa las secciones por áreas', () => {
     entrarComo('ADMIN')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     for (const grupo of ['Hoy', 'Contenido', 'Censo y enseres', 'Cuentas', 'Sistema']) {
       expect(screen.getByText(grupo)).toBeInTheDocument()
     }
@@ -125,7 +125,7 @@ describe('el menú del Inicio', () => {
 
   it('un cargo acotado solo ve los grupos que le tocan', () => {
     entrarComo('REDES')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     expect(screen.getByText('Contenido')).toBeInTheDocument()
     // Sin Tesorería ni Contabilidad, el grupo «Cuentas» no tiene nada que agrupar.
     expect(screen.queryByText('Cuentas')).not.toBeInTheDocument()
@@ -134,7 +134,7 @@ describe('el menú del Inicio', () => {
 
   it('los contadores salen de los datos del panel', async () => {
     entrarComo('ADMIN')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     // 2 borradores en Noticias, 3 hermanos sin número, 14 recibos devueltos.
     expect(await screen.findByLabelText('Noticias: 2 pendientes')).toHaveTextContent('2')
     expect(screen.getByLabelText('Hermanos: 3 pendientes')).toHaveTextContent('3')
@@ -149,7 +149,7 @@ describe('el menú del Inicio', () => {
       actividad: { ...PANEL_MINIMO.actividad, noticias: { publicadas: 4, borradores: 0 } },
     })
     entrarComo('ADMIN')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     await screen.findByRole('link', { name: 'Noticias' })
     // Los dos tonos: «pendientes» (aviso) y también «urgentes», el de recibos
     // devueltos, que es el más visible del menú.
@@ -160,13 +160,13 @@ describe('el menú del Inicio', () => {
   it('si el panel falla, el menú se pinta igual', async () => {
     responder({}, 500)
     entrarComo('ADMIN')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     expect(await screen.findByRole('link', { name: 'Tesorería' })).toBeInTheDocument()
   })
 
   it('el interruptor de tema arranca en oscuro y recuerda el cambio', async () => {
     entrarComo('ADMIN')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     const claro = screen.getByRole('radio', { name: 'Claro' })
     const oscuro = screen.getByRole('radio', { name: 'Oscuro' })
     expect(oscuro).toBeChecked()
@@ -177,14 +177,14 @@ describe('el menú del Inicio', () => {
 
   it('el bloque de usuario dice el cargo y ofrece salir', () => {
     entrarComo('SECRETARIA')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
     expect(screen.getByText('Secretaría')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument()
   })
 })
 
 /**
- * Nadie tocaba RequireRole hasta ahora, y por eso el menú y las guardas de
+ * Nadie tocaba ExigeRol hasta ahora, y por eso el menú y las guardas de
  * ruta se desincronizaron sin que ningún test lo notara: el Hermano Mayor
  * veía Tesorería, Contabilidad y Auditoría en el menú, pero la guarda de
  * `routes/index.tsx` seguía sin él y lo expulsaba a /area-hermano en cuanto
@@ -243,7 +243,7 @@ describe('el CMS no hereda el color de texto de la web pública', () => {
   it('en modo oscuro (el arranque por defecto) el contenido fija el texto en blanco', () => {
     document.body.style.color = '#ff00ff' // un color que no es el esperado en ningún modo
     entrarComo('ADMIN')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
 
     expect(getComputedStyle(screen.getByRole('main')).color).toBe('rgb(255, 255, 255)')
   })
@@ -252,7 +252,7 @@ describe('el CMS no hereda el color de texto de la web pública', () => {
     localStorage.setItem(CLAVE_TEMA_CMS, 'claro')
     document.body.style.color = '#ff00ff' // un color que no es el esperado en ningún modo
     entrarComo('ADMIN')
-    renderWithProviders(<AdminLayout />)
+    renderWithProviders(<MarcoCms />)
 
     const { onSurface } = designTokens.colors
     const [, r, g, b] = /^#(\w{2})(\w{2})(\w{2})$/.exec(onSurface)!

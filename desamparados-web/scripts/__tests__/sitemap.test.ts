@@ -11,7 +11,7 @@ const DOMINIO = 'https://www.desamparadosmalaga.com'
 
 function rutasPublicasDelRouter(): string[] {
   const fuente = readFileSync(join(raiz, 'src/routes/index.tsx'), 'utf8')
-  const inicio = fuente.indexOf('<PublicLayout />')
+  const inicio = fuente.indexOf('<MarcoPublico />')
   const fin = fuente.indexOf("path: '*'", inicio)
   const bloque = fuente.slice(inicio, fin)
 

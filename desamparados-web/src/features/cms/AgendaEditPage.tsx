@@ -4,7 +4,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Helmet } from 'react-helmet-async'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import AgendaList from '../inicio/AgendaList'
+import ListaDeAgenda from '../inicio/ListaDeAgenda'
 import { PAPEL } from '../inicio/estilos'
 import temaPublico from '../../theme'
 import { aDia, aHora } from '../../lib/fechas'
@@ -192,7 +192,7 @@ export default function AgendaEditPage() {
                 // La lista de verdad, la de la tarjeta de papel de la portada, pero sin poder pulsarla.
                 <ThemeProvider theme={temaPublico}>
                   <Box inert data-testid="vista-previa-evento" sx={{ borderRadius: 1, backgroundColor: PAPEL, fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', overflow: 'hidden' }}>
-                    <AgendaList
+                    <ListaDeAgenda
                       hoy={hoy}
                       abiertoId="vista-previa"
                       onAlternar={() => {}}

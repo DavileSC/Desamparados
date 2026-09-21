@@ -23,12 +23,12 @@ const MINIMO_ESPERADO = 20
 
 const fuente = readFileSync(RUTAS, 'utf8')
 
-// El bloque público es el que cuelga de <PublicLayout /> y termina en su
+// El bloque público es el que cuelga de <MarcoPublico /> y termina en su
 // comodín `path: '*'`. Las demás secciones (acceso, área de hermanos, CMS) no
 // deben indexarse.
-const inicio = fuente.indexOf('<PublicLayout />')
+const inicio = fuente.indexOf('<MarcoPublico />')
 if (inicio === -1) {
-  throw new Error('No se encuentra <PublicLayout /> en src/routes/index.tsx: revisa este script.')
+  throw new Error('No se encuentra <MarcoPublico /> en src/routes/index.tsx: revisa este script.')
 }
 const fin = fuente.indexOf("path: '*'", inicio)
 if (fin === -1) {

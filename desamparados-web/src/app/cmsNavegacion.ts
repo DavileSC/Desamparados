@@ -22,15 +22,15 @@ import type { PanelResponse } from '../lib/api/panel'
  * Las dos exportaciones de guardas y roles viven juntas y fuera de los
  * componentes por dos motivos:
  *
- * 1. `AdminLayout.test.tsx` las compara entre sí para que el menú y las guardas
+ * 1. `MarcoCms.test.tsx` las compara entre sí para que el menú y las guardas
  *    no puedan divergir sin que un test lo note (así se coló el hallazgo del
  *    Hermano Mayor expulsado de Tesorería, Contabilidad y Auditoría: el menú las
  *    enseñaba pero la guarda de ruta lo echaba a /area-hermano).
  *
  * 2. Exportarlas desde un fichero de componentes rompe el *fast refresh* de
- *    Vite, y tenerlas cruzadas entre `AdminLayout.tsx` y `routes/index.tsx`
- *    arriesgaba un ciclo de módulos: `routes/index.tsx` ya importa AdminLayout,
- *    así que si AdminLayout hubiera importado los roles de vuelta, el orden de
+ *    Vite, y tenerlas cruzadas entre `MarcoCms.tsx` y `routes/index.tsx`
+ *    arriesgaba un ciclo de módulos: `routes/index.tsx` ya importa MarcoCms,
+ *    así que si MarcoCms hubiera importado los roles de vuelta, el orden de
  *    inicialización de los ES modules podía dejar una de las dos leyendo
  *    `undefined` en el arranque. Este fichero no importa nada de componentes,
  *    de modo que el ciclo es imposible.
@@ -79,7 +79,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'Sistema', icono: ShieldOutlinedIcon },
 ]
 
-/** Única fuente de verdad de las `RequireRole` de `routes/index.tsx`. */
+/** Única fuente de verdad de las `ExigeRol` de `routes/index.tsx`. */
 export const rolesPorRutaCms = {
   panel: ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
   // Las páginas por bloques: el índice y la pantalla de cada una, con los

@@ -1,11 +1,11 @@
 import { Typography } from '@mui/material'
-import LegalPageLayout from './LegalPageLayout'
+import MarcoPaginaLegal from './MarcoPaginaLegal'
 import IdentificationDetails from './IdentificationDetails'
 import { emailDerechos } from '../../config/site'
 
 export default function PrivacyPolicyPage() {
   return (
-    <LegalPageLayout title="Política de Privacidad">
+    <MarcoPaginaLegal title="Política de Privacidad">
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. Responsable del tratamiento
       </Typography>
@@ -58,6 +58,6 @@ export default function PrivacyPolicyPage() {
         {emailDerechos}, acreditando la identidad del solicitante. Si procede, puede reclamarse ante la
         Agencia Española de Protección de Datos (www.aepd.es).
       </Typography>
-    </LegalPageLayout>
+    </MarcoPaginaLegal>
   )
 }

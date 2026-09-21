@@ -6,11 +6,11 @@ import fuente from '../../routes/index.tsx?raw'
 
 /**
  * Rutas reales del router, leídas del fuente como hace `scripts/generar-sitemap.mjs`:
- * el bloque público (lo que cuelga de <PublicLayout />) más las rutas absolutas
+ * el bloque público (lo que cuelga de <MarcoPublico />) más las rutas absolutas
  * que viven fuera de él, como `/hermanos/acceso`.
  */
 function rutasDelRouter(): Set<string> {
-  const inicio = fuente.indexOf('<PublicLayout />')
+  const inicio = fuente.indexOf('<MarcoPublico />')
   const fin = fuente.indexOf("path: '*'", inicio)
   const publicas = [...fuente.slice(inicio, fin).matchAll(/path:\s*'([^']+)'/g)].map((m) => `/${m[1]}`)
   const absolutas = [...fuente.matchAll(/path:\s*'(\/[^']+)'/g)].map((m) => m[1])

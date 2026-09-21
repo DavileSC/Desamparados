@@ -1,13 +1,13 @@
 import { Helmet } from 'react-helmet-async'
 import Hero from './Hero'
 import NoticiasDestacadas from './NoticiasDestacadas'
-import QuickAccess from './QuickAccess'
+import AccesosRapidos from './AccesosRapidos'
 import AgendaYDirecto from './AgendaYDirecto'
 import PublicacionesDestacadas from './PublicacionesDestacadas'
 import EscenaProcesion from './EscenaProcesion'
 import './home.css'
 
-export default function HomePage() {
+export default function InicioPage() {
   return (
     <div className="home-refined">
       <Helmet>
@@ -22,7 +22,7 @@ export default function HomePage() {
       <Hero />
       <NoticiasDestacadas />
       <AgendaYDirecto />
-      <QuickAccess />
+      <AccesosRapidos />
       <EscenaProcesion />
       <PublicacionesDestacadas />
     </div>

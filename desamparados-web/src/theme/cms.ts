@@ -4,7 +4,7 @@ import theme, { designTokens } from './index'
 /**
  * Tema del CMS en dos modos, sobre el mismo juego de tokens que la web pública.
  *
- * Se aplica con un ThemeProvider anidado dentro de AdminLayout, así que la web
+ * Se aplica con un ThemeProvider anidado dentro de MarcoCms, así que la web
  * pública no se entera. Los dos modos redefinen la paleta entera, los estados
  * interactivos y el texto deshabilitado en lugar de fusionar parcialmente:
  * heredar sobre el `mode: 'dark'` del tema base deja esos tres grupos en

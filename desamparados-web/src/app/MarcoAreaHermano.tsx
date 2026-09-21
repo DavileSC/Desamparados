@@ -36,7 +36,7 @@ const menuItems = [
   { label: 'Recibos', href: '/area-hermano/recibos', icon: <ReceiptIcon /> },
 ]
 
-export default function BrotherLayout() {
+export default function MarcoAreaHermano() {
   const theme = useTheme()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)

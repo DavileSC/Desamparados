@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../../test/test-utils'
-import HistoryPage from '../HistoryPage'
+import HistoriaPage from '../HistoriaPage'
 import POR_DEFECTO from '../../../../../../shared/contenido-por-defecto.json'
 import type { BloqueCronologia, PaginaDeBloques } from '../../../../lib/api/contenido'
 
@@ -26,10 +26,10 @@ const responder = (historia: unknown) =>
     ),
   )
 
-describe('HistoryPage', () => {
+describe('HistoriaPage', () => {
   it('cuenta la historia como una cronología: un hito por momento, en orden', async () => {
     responder(HISTORIA)
-    renderWithProviders(<HistoryPage />)
+    renderWithProviders(<HistoriaPage />)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Historia' })).toBeInTheDocument()
     expect(screen.getByText('Corporación · Historia')).toBeInTheDocument()
@@ -45,7 +45,7 @@ describe('HistoryPage', () => {
 
   it('el índice de la cabecera lleva a cada hito', async () => {
     responder(HISTORIA)
-    renderWithProviders(<HistoryPage />)
+    renderWithProviders(<HistoriaPage />)
     await screen.findByRole('heading', { level: 1, name: 'Historia' })
 
     const indice = screen.getByRole('navigation', { name: 'Momentos de la historia' })
@@ -59,7 +59,7 @@ describe('HistoryPage', () => {
 
   it('las fotos van dentro de su hito y la de fondo no se anuncia', async () => {
     responder(HISTORIA)
-    renderWithProviders(<HistoryPage />)
+    renderWithProviders(<HistoriaPage />)
     await screen.findByRole('heading', { level: 1, name: 'Historia' })
 
     const conFoto = HITOS.filter((hito) => hito.foto.url !== '')
@@ -75,7 +75,7 @@ describe('HistoryPage', () => {
 
   it('cierra con la llamada a Órganos de Gobierno, con el aspecto de siempre', async () => {
     responder(HISTORIA)
-    renderWithProviders(<HistoryPage />)
+    renderWithProviders(<HistoriaPage />)
 
     expect(await screen.findByRole('link', { name: /Órganos de Gobierno/ })).toHaveAttribute(
       'href',
@@ -106,7 +106,7 @@ describe('HistoryPage', () => {
         { tipo: 'texto', titulo: 'Una nota', html: '<p>Un bloque cualquiera añadido desde el CMS.</p>' },
       ],
     })
-    renderWithProviders(<HistoryPage />)
+    renderWithProviders(<HistoriaPage />)
 
     expect(await screen.findByRole('heading', { level: 3, name: 'Se funda el grupo' })).toBeInTheDocument()
     expect(screen.queryByText('La devoción crece en la parroquia')).not.toBeInTheDocument()
@@ -121,7 +121,7 @@ describe('HistoryPage', () => {
 
   it('sin cronología no hay índice en la cabecera', async () => {
     responder({ cabecera: HISTORIA.cabecera, bloques: [] })
-    renderWithProviders(<HistoryPage />)
+    renderWithProviders(<HistoriaPage />)
 
     await screen.findByRole('heading', { level: 1, name: 'Historia' })
     await vi.waitFor(() => expect(screen.queryByRole('navigation', { name: 'Momentos de la historia' })).not.toBeInTheDocument())
@@ -129,7 +129,7 @@ describe('HistoryPage', () => {
 
   it('mientras el servidor no contesta, enseña la historia de siempre', () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise(() => {})))
-    renderWithProviders(<HistoryPage />)
+    renderWithProviders(<HistoriaPage />)
 
     expect(screen.getByRole('heading', { level: 1, name: 'Historia' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 3, name: HITOS[0].titulo })).toBeInTheDocument()

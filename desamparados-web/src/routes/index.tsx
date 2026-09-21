@@ -1,26 +1,26 @@
 import { Suspense, lazy } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, ScrollRestoration } from 'react-router-dom'
 import CargandoPagina from '../components/CargandoPagina'
-import PublicLayout from '../app/PublicLayout'
-import AuthLayout from '../app/AuthLayout'
-import BrotherLayout from '../app/BrotherLayout'
-import RequireAuth from './RequireAuth'
-import RequireRole from './RequireRole'
-import AdminLayout from '../app/AdminLayout'
+import MarcoPublico from '../app/MarcoPublico'
+import MarcoAcceso from '../app/MarcoAcceso'
+import MarcoAreaHermano from '../app/MarcoAreaHermano'
+import ExigeSesion from './ExigeSesion'
+import ExigeRol from './ExigeRol'
+import MarcoCms from '../app/MarcoCms'
 import { rolesPorRutaCms } from '../app/cmsNavegacion'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 
 // Public pages
-const HomePage = lazy(() => import('../features/inicio/HomePage'))
-const CorporationPage = lazy(() => import('../features/corporacion/CorporationPage'))
-const HistoryPage = lazy(() => import('../features/corporacion/history/HistoryPage'))
-const GovernmentPage = lazy(() => import('../features/corporacion/government/GovernmentPage'))
-const ParishPage = lazy(() => import('../features/corporacion/parish/ParishPage'))
-const PurposesPage = lazy(() => import('../features/corporacion/purposes/PurposesPage'))
-const CaridadPage = lazy(() => import('../features/corporacion/purposes/CaridadPage'))
-const FormacionPage = lazy(() => import('../features/corporacion/purposes/FormacionPage'))
-const CultsPage = lazy(() => import('../features/corporacion/cults/CultsPage'))
+const InicioPage = lazy(() => import('../features/inicio/InicioPage'))
+const CorporacionPage = lazy(() => import('../features/corporacion/CorporacionPage'))
+const HistoriaPage = lazy(() => import('../features/corporacion/historia/HistoriaPage'))
+const GovernmentPage = lazy(() => import('../features/corporacion/gobierno/GovernmentPage'))
+const ParishPage = lazy(() => import('../features/corporacion/parroquia/ParishPage'))
+const PurposesPage = lazy(() => import('../features/corporacion/fines/PurposesPage'))
+const CaridadPage = lazy(() => import('../features/corporacion/fines/CaridadPage'))
+const FormacionPage = lazy(() => import('../features/corporacion/fines/FormacionPage'))
+const CultsPage = lazy(() => import('../features/corporacion/cultos/CultsPage'))
 const SabadoPasionPage = lazy(() => import('../features/corporacion/sabado-pasion/SabadoPasionPage'))
 const RecorridoPage = lazy(() => import('../features/corporacion/sabado-pasion/RecorridoPage'))
 const TronoPage = lazy(() => import('../features/corporacion/sabado-pasion/TronoPage'))
@@ -38,7 +38,7 @@ const DossierPrensaPage = lazy(() => import('../features/publicaciones/DossierPr
 const HermanosPage = lazy(() => import('../features/altas/public/HermanosPage'))
 const HazteHermanoPage = lazy(() => import('../features/altas/public/HazteHermanoPage'))
 const ContactPage = lazy(() => import('../features/contacto/ContactPage'))
-const NotFoundPage = lazy(() => import('../features/noEncontrado/NotFoundPage'))
+const NoEncontradaPage = lazy(() => import('../features/noEncontrado/NoEncontradaPage'))
 const PortadaAdminPage = lazy(() => import('../features/cms/PortadaAdminPage'))
 const PaginasAdminPage = lazy(() => import('../features/cms/PaginasAdminPage'))
 const PaginaAdminPage = lazy(() => import('../features/cms/PaginaAdminPage'))
@@ -116,11 +116,11 @@ const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <PublicLayout />,
+        element: <MarcoPublico />,
         children: [
-          { index: true, element: withSuspense(HomePage) },
-          { path: 'corporacion', element: withSuspense(CorporationPage) },
-          { path: 'corporacion/historia', element: withSuspense(HistoryPage) },
+          { index: true, element: withSuspense(InicioPage) },
+          { path: 'corporacion', element: withSuspense(CorporacionPage) },
+          { path: 'corporacion/historia', element: withSuspense(HistoriaPage) },
           { path: 'corporacion/historia/organos-de-gobierno', element: withSuspense(GovernmentPage) },
           { path: 'corporacion/parroquia-pasionistas', element: withSuspense(ParishPage) },
           { path: 'corporacion/nuestros-fines', element: withSuspense(PurposesPage) },
@@ -148,25 +148,25 @@ const router = createBrowserRouter([
           { path: 'politica-privacidad', element: withSuspense(PrivacyPolicyPage) },
           { path: 'politica-cookies', element: withSuspense(CookiesPolicyPage) },
           // 404 real (con cabecera y pie): antes cualquier URL errónea redirigía a la portada
-          { path: '*', element: withSuspense(NotFoundPage) },
+          { path: '*', element: withSuspense(NoEncontradaPage) },
         ],
       },
       {
         path: '/hermanos/acceso',
-        element: <AuthLayout />,
+        element: <MarcoAcceso />,
         children: [{ index: true, element: withSuspense(AccesoPage) }],
       },
       {
         path: '/reset-password',
-        element: <AuthLayout />,
+        element: <MarcoAcceso />,
         children: [{ index: true, element: withSuspense(NuevaContrasenaPage) }],
       },
       {
         path: '/area-hermano',
         element: (
-          <RequireAuth>
-            <BrotherLayout />
-          </RequireAuth>
+          <ExigeSesion>
+            <MarcoAreaHermano />
+          </ExigeSesion>
         ),
         children: [
           { index: true, element: <Navigate to="/area-hermano/perfil" replace /> },
@@ -187,32 +187,32 @@ const router = createBrowserRouter([
       },
       {
         path: '/cms',
-        element: <RequireRole roles={rolesPorRutaCms.panel}><AdminLayout /></RequireRole>,
+        element: <ExigeRol roles={rolesPorRutaCms.panel}><MarcoCms /></ExigeRol>,
         children: [
           { index: true, element: withSuspense(PanelPage) },
-          { path: 'mi-seguridad', element: <RequireRole roles={rolesPorRutaCms['mi-seguridad']}>{withSuspense(MiSeguridadPage)}</RequireRole> },
-          { path: 'paginas', element: <RequireRole roles={rolesPorRutaCms.paginas}>{withSuspense(PaginasAdminPage)}</RequireRole> },
-          { path: 'paginas/:slug', element: <RequireRole roles={rolesPorRutaCms['paginas/corporacion']}>{withSuspense(PaginaAdminPage)}</RequireRole> },
-          { path: 'portada', element: <RequireRole roles={rolesPorRutaCms.portada}>{withSuspense(PortadaAdminPage)}</RequireRole> },
+          { path: 'mi-seguridad', element: <ExigeRol roles={rolesPorRutaCms['mi-seguridad']}>{withSuspense(MiSeguridadPage)}</ExigeRol> },
+          { path: 'paginas', element: <ExigeRol roles={rolesPorRutaCms.paginas}>{withSuspense(PaginasAdminPage)}</ExigeRol> },
+          { path: 'paginas/:slug', element: <ExigeRol roles={rolesPorRutaCms['paginas/corporacion']}>{withSuspense(PaginaAdminPage)}</ExigeRol> },
+          { path: 'portada', element: <ExigeRol roles={rolesPorRutaCms.portada}>{withSuspense(PortadaAdminPage)}</ExigeRol> },
           // Historia se edita ya como las demás páginas; la dirección vieja sigue llevando a ella.
           { path: 'historia', element: <Navigate to="/cms/paginas/historia" replace /> },
-          { path: 'noticias', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiasAdminPage)}</RequireRole> },
-          { path: 'noticias/nueva', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</RequireRole> },
-          { path: 'noticias/:id/editar', element: <RequireRole roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</RequireRole> },
-          { path: 'publicaciones', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionesAdminPage)}</RequireRole> },
-          { path: 'publicaciones/nueva', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionEditPage)}</RequireRole> },
-          { path: 'publicaciones/:id/editar', element: <RequireRole roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionEditPage)}</RequireRole> },
-          { path: 'agenda', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaAdminPage)}</RequireRole> },
-          { path: 'agenda/nuevo', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</RequireRole> },
-          { path: 'agenda/:id/editar', element: <RequireRole roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</RequireRole> },
-          { path: 'hermanos', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanosAdminPage)}</RequireRole> },
-          { path: 'hermanos/:id/editar', element: <RequireRole roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</RequireRole> },
-          { path: 'tesoreria', element: <RequireRole roles={rolesPorRutaCms.tesoreria}>{withSuspense(TesoreriaAdminPage)}</RequireRole> },
-          { path: 'inventario', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</RequireRole> },
-          { path: 'inventario/:id/editar', element: <RequireRole roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</RequireRole> },
-          { path: 'contabilidad', element: <RequireRole roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</RequireRole> },
-          { path: 'accesos', element: <RequireRole roles={rolesPorRutaCms.accesos}>{withSuspense(AccesosAdminPage)}</RequireRole> },
-          { path: 'auditoria', element: <RequireRole roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditoriaAdminPage)}</RequireRole> },
+          { path: 'noticias', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiasAdminPage)}</ExigeRol> },
+          { path: 'noticias/nueva', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
+          { path: 'noticias/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
+          { path: 'publicaciones', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionesAdminPage)}</ExigeRol> },
+          { path: 'publicaciones/nueva', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionEditPage)}</ExigeRol> },
+          { path: 'publicaciones/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionEditPage)}</ExigeRol> },
+          { path: 'agenda', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaAdminPage)}</ExigeRol> },
+          { path: 'agenda/nuevo', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</ExigeRol> },
+          { path: 'agenda/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</ExigeRol> },
+          { path: 'hermanos', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanosAdminPage)}</ExigeRol> },
+          { path: 'hermanos/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</ExigeRol> },
+          { path: 'tesoreria', element: <ExigeRol roles={rolesPorRutaCms.tesoreria}>{withSuspense(TesoreriaAdminPage)}</ExigeRol> },
+          { path: 'inventario', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</ExigeRol> },
+          { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },
+          { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
+          { path: 'accesos', element: <ExigeRol roles={rolesPorRutaCms.accesos}>{withSuspense(AccesosAdminPage)}</ExigeRol> },
+          { path: 'auditoria', element: <ExigeRol roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditoriaAdminPage)}</ExigeRol> },
         ],
       },
     ],

@@ -247,7 +247,7 @@ function Contenido() {
   )
 }
 
-export default function AdminLayout() {
+export default function MarcoCms() {
   // El proveedor va fuera para que `Contenido` pueda leer el modo con useTemaCms.
   return (
     <TemaCmsProvider>

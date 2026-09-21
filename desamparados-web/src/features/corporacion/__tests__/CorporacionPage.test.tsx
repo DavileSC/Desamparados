@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
-import CorporationPage from '../CorporationPage'
+import CorporacionPage from '../CorporacionPage'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 
 /**
@@ -46,10 +46,10 @@ const CONTENIDO_DISTINTO_DEL_DE_PARTIDA = {
   ],
 }
 
-describe('CorporationPage', () => {
+describe('CorporacionPage', () => {
   it('sigue diciendo lo mismo que antes de convertirla a bloques', async () => {
     responder()
-    renderWithProviders(<CorporationPage />)
+    renderWithProviders(<CorporacionPage />)
 
     await screen.findByText(/El Grupo Parroquial de Nuestra Señora/)
     const visible = document.body.textContent ?? ''
@@ -60,7 +60,7 @@ describe('CorporationPage', () => {
 
   it('los enlaces de las tarjetas llevan a donde llevaban', async () => {
     responder()
-    renderWithProviders(<CorporationPage />)
+    renderWithProviders(<CorporacionPage />)
 
     expect(await screen.findByRole('link', { name: /Historia/ })).toHaveAttribute('href', '/corporacion/historia')
     expect(screen.getByRole('link', { name: /Sábado de Pasión/ })).toHaveAttribute('href', '/corporacion/sabado-de-pasion')
@@ -68,7 +68,7 @@ describe('CorporationPage', () => {
 
   it('si el servidor no responde, la página no se queda en blanco', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red')))
-    renderWithProviders(<CorporationPage />)
+    renderWithProviders(<CorporacionPage />)
 
     // La cabecera es lo mínimo que tiene que quedar en pie.
     expect(await screen.findByRole('heading', { name: 'Corporación' })).toBeInTheDocument()
@@ -76,7 +76,7 @@ describe('CorporationPage', () => {
 
   it('lo que se ve es lo que sirve el CMS, no el contenido de partida', async () => {
     const fetchMock = responder(CONTENIDO_DISTINTO_DEL_DE_PARTIDA)
-    renderWithProviders(<CorporationPage />)
+    renderWithProviders(<CorporacionPage />)
 
     await screen.findByText(/Frase exclusiva de esta prueba/)
     // Si la página se hubiera quedado enseñando el contenido de partida sin

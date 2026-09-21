@@ -23,7 +23,7 @@ export default function ProximosActos({
   const proximos = eventos.slice(0, 4)
   // Mismos roles que la guarda de /cms/agenda (rolesPorRutaCms es la única
   // fuente de verdad): sin este condicional, Tesorería, Redes y Albacería
-  // pulsaban el enlace y RequireRole los expulsaba a /area-hermano, fuera de
+  // pulsaban el enlace y ExigeRol los expulsaba a /area-hermano, fuera de
   // todo el CMS.
   const veAgenda = role !== undefined && rolesPorRutaCms.agenda.includes(role)
 

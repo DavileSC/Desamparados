@@ -7,7 +7,7 @@ import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import { noticiaPorDireccion } from '../../../lib/api/noticias'
 import type { NewsItem } from '../../../types'
-import NotFoundPage from '../../noEncontrado/NotFoundPage'
+import NoEncontradaPage from '../../noEncontrado/NoEncontradaPage'
 import { sanitizeHtml } from '../../../lib/sanitizeHtml'
 import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
 
@@ -41,7 +41,7 @@ export default function NoticiaDetallePage() {
 
   if (loading) return <CircularProgress aria-label="Cargando noticia" />
   if (error) return <Alert severity="error">{error}</Alert>
-  if (!news) return <NotFoundPage />
+  if (!news) return <NoEncontradaPage />
 
   const fecha = new Date(news.date).toLocaleDateString('es-ES', {
     day: 'numeric',

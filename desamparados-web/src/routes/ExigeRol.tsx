@@ -7,12 +7,12 @@ interface RequireRoleProps {
   children: React.ReactNode
 }
 
-export default function RequireRole({ roles, children }: RequireRoleProps) {
+export default function ExigeRol({ roles, children }: RequireRoleProps) {
   const status = useAuthStore((state) => state.status)
   const cms = useAuthStore((state) => state.cms)
   const location = useLocation()
 
-  // Igual que en RequireAuth: sin saber todavía si hay sesión, esperamos.
+  // Igual que en ExigeSesion: sin saber todavía si hay sesión, esperamos.
   if (status === 'cargando') return <CargandoPagina />
 
   // El CMS tiene acceso propio, con segundo factor. Sin su sesión se va allí,

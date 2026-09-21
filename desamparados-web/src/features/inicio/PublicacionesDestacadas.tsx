@@ -7,7 +7,7 @@ import { publicacionesDePortada } from '../../lib/api/publicaciones'
 import type { PublicationItem } from '../../types'
 import { useHomeData } from './useHomeData'
 import { useTextosPortada } from './useContenidoPortada'
-import HomeFeedback from './HomeFeedback'
+import AvisosDeInicio from './AvisosDeInicio'
 import CintaDestacada from './CintaDestacada'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 
@@ -302,7 +302,7 @@ export default function PublicacionesDestacadas() {
         ) : (
           <Box sx={{ maxWidth: 640 }}>
             <Typography id="publicaciones-titulo" component="h2" sx={cejaTitulo}>Publicaciones</Typography>
-            <HomeFeedback loading={isPending} error={isError} empty={!publications.length} label="las publicaciones" emptyMessage="No hay publicaciones disponibles por el momento." retry={() => { void refetch() }} />
+            <AvisosDeInicio loading={isPending} error={isError} empty={!publications.length} label="las publicaciones" emptyMessage="No hay publicaciones disponibles por el momento." retry={() => { void refetch() }} />
           </Box>
         )}
       </ContenedorDePagina>

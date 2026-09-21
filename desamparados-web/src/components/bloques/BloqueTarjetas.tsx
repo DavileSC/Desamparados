@@ -16,7 +16,7 @@ function columnas(cuantas: number) {
   return { xs: 12, md: 6, lg: 4 }
 }
 
-/** El marcado de las tarjetas que tenía `CorporationPage` a mano. Con pocas,
+/** El marcado de las tarjetas que tenía `CorporacionPage` a mano. Con pocas,
  *  la rejilla se estrecha a lo que mide una foto (1000 px): a todo el ancho,
  *  dos tarjetas quedaban mucho más anchas que el texto de encima. */
 export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {

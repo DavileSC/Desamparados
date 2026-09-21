@@ -5,7 +5,7 @@ import PieDePagina from '../components/PieDePagina'
 import AvisoDeCookies from '../components/AvisoDeCookies'
 import TransicionDePagina from '../components/TransicionDePagina'
 
-export default function PublicLayout() {
+export default function MarcoPublico() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <BarraDeNavegacion />

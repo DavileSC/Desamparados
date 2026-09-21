@@ -220,7 +220,7 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
 }
 
 /** Accesos directos: mosaico sobre tinta con «Hazte hermano» destacado en granate. */
-export default function QuickAccess() {
+export default function AccesosRapidos() {
   const textos = useTextosPortada()
   // El servidor ya mezcla, pero un documento viejo en caché podría no traer una
   // tesela: se cae en el texto de siempre para no pintar una tesela en blanco.

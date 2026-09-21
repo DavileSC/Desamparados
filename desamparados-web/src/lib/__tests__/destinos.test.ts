@@ -5,7 +5,7 @@ import fuente from '../../routes/index.tsx?raw'
 
 /** Las rutas reales del router: el bloque público y las absolutas de fuera de él. */
 function rutasDelRouter(): Set<string> {
-  const inicio = fuente.indexOf('<PublicLayout />')
+  const inicio = fuente.indexOf('<MarcoPublico />')
   const fin = fuente.indexOf("path: '*'", inicio)
   const publicas = [...fuente.slice(inicio, fin).matchAll(/path:\s*'([^']+)'/g)].map((m) => `/${m[1]}`)
   const absolutas = [...fuente.matchAll(/path:\s*'(\/[^']+)'/g)].map((m) => m[1])

@@ -1,9 +1,9 @@
 import { Typography } from '@mui/material'
-import LegalPageLayout from './LegalPageLayout'
+import MarcoPaginaLegal from './MarcoPaginaLegal'
 
 export default function CookiesPolicyPage() {
   return (
-    <LegalPageLayout title="Política de Cookies">
+    <MarcoPaginaLegal title="Política de Cookies">
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. ¿Qué son las cookies?
       </Typography>
@@ -36,6 +36,6 @@ export default function CookiesPolicyPage() {
         Las cookies no esenciales y los contenidos de terceros se activan únicamente cuando el usuario los
         acepta expresamente. La decisión puede modificarse en cualquier momento desde «Gestionar cookies».
       </Typography>
-    </LegalPageLayout>
+    </MarcoPaginaLegal>
   )
 }

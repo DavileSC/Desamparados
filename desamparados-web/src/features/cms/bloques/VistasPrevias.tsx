@@ -12,7 +12,7 @@ import MarcoVistaPrevia from '../contenido/MarcoVistaPrevia'
 import type { Bloque, CabeceraPagina, PaginaDeBloques, SlugContenido } from '../../../lib/api/contenido'
 
 // Historia tiene maquetación propia; se carga solo si se previsualiza.
-const HistoryPage = lazy(() => import('../../corporacion/history/HistoryPage'))
+const HistoriaPage = lazy(() => import('../../corporacion/historia/HistoriaPage'))
 
 /**
  * La cabecera de la página tal como sale arriba del todo en la web, con la
@@ -88,7 +88,7 @@ export function VistaPreviaPagina({ abierta, slug, documento, onCerrar }: {
         <MarcoVistaPrevia sinTope sinAviso interactiva testId="vista-previa-pagina">
           <BorradorPaginaContext.Provider value={documento}>
             <Suspense fallback={<CircularProgress sx={{ m: 4 }} aria-label="Cargando la vista previa" />}>
-              {slug === 'historia' ? <HistoryPage /> : <PaginaDeBloquesPublica slug={slug} />}
+              {slug === 'historia' ? <HistoriaPage /> : <PaginaDeBloquesPublica slug={slug} />}
             </Suspense>
           </BorradorPaginaContext.Provider>
         </MarcoVistaPrevia>

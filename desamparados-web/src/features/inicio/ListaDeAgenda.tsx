@@ -109,7 +109,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
 }
 
 /** La lista de la tarjeta de papel, agrupada por meses; el acto abierto enseña su descripción. */
-export default function AgendaList({ eventos, abiertoId, hoy, onAlternar }: AgendaListProps) {
+export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: AgendaListProps) {
   // Si el acto abierto desde el calendario cae más allá de la quinta fila, la lista corre hasta él.
   const indice = eventos.findIndex(e => e.id === abiertoId)
   const desde = indice < MAX_FILAS ? 0 : indice - MAX_FILAS + 1

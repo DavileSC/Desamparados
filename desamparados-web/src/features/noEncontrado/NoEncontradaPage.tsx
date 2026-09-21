@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
 
-export default function NotFoundPage() {
+export default function NoEncontradaPage() {
   const location = useLocation()
 
   return (

@@ -46,7 +46,7 @@ const soloLector = { position: 'absolute', width: '1px', height: '1px', overflow
  *   título la frase grande y su botón el enlace con flecha;
  * - cualquier otro bloque se pinta como en el resto de la web.
  */
-export default function HistoryPage() {
+export default function HistoriaPage() {
   // En la vista previa del CMS, lo que se está escribiendo; fuera, lo guardado.
   const borrador = useBorradorPagina()
   const { data } = useQuery({

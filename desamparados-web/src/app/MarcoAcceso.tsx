@@ -3,7 +3,7 @@ import { Box, Container } from '@mui/material'
 import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
 
-export default function AuthLayout() {
+export default function MarcoAcceso() {
   return (
     <Box
       sx={{

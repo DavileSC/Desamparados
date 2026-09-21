@@ -11,7 +11,7 @@ import CATALOGO from '../../../../../shared/paginas-publicas.json'
  * pantalla: los valores de partida son de donde sale el contenido de una página
  * cuya fila no se ha tocado nunca, y son lo que de verdad se trasladó. Que la
  * pantalla pinte esos bloques ya lo cubren `BloquesDePagina.test.tsx` y
- * `CorporationPage.test.tsx`.
+ * `CorporacionPage.test.tsx`.
  */
 const ANTES: Record<string, string[]> = {
   cultos: [

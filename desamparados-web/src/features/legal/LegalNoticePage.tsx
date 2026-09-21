@@ -1,10 +1,10 @@
 import { Typography } from '@mui/material'
-import LegalPageLayout from './LegalPageLayout'
+import MarcoPaginaLegal from './MarcoPaginaLegal'
 import IdentificationDetails from './IdentificationDetails'
 
 export default function LegalNoticePage() {
   return (
-    <LegalPageLayout title="Aviso Legal">
+    <MarcoPaginaLegal title="Aviso Legal">
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. Datos identificativos
       </Typography>
@@ -49,6 +49,6 @@ export default function LegalNoticePage() {
         oficial indicado por el Grupo Parroquial. Este aviso debe ser revisado y completado por el responsable legal
         antes de su puesta en producción.
       </Typography>
-    </LegalPageLayout>
+    </MarcoPaginaLegal>
   )
 }

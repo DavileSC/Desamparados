@@ -8,7 +8,7 @@ import CintaDestacada from './CintaDestacada'
 import { noticiasDePortada } from '../../lib/api/noticias'
 import { useHomeData } from './useHomeData'
 import { useTextosPortada } from './useContenidoPortada'
-import HomeFeedback from './HomeFeedback'
+import AvisosDeInicio from './AvisosDeInicio'
 import { SERIF, ceja, enlaceBloque } from './estilos'
 
 // En portada caben tres noticias; el resto está en el archivo.
@@ -46,7 +46,7 @@ export default function NoticiasDestacadas() {
             </Box>
           </Revela>
         </Box>
-        <HomeFeedback loading={isPending} error={isError} empty={!news.length} label="la actualidad" emptyMessage="No hay noticias publicadas por el momento." retry={() => { void refetch() }} />
+        <AvisosDeInicio loading={isPending} error={isError} empty={!news.length} label="la actualidad" emptyMessage="No hay noticias publicadas por el momento." retry={() => { void refetch() }} />
         {news.length > 0 && (
           <Box
             component="ul"

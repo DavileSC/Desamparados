@@ -12,7 +12,7 @@ interface HomeFeedbackProps {
   claro?: boolean
 }
 
-export default function HomeFeedback({ loading, error, empty, label, emptyMessage, retry, claro = false }: HomeFeedbackProps) {
+export default function AvisosDeInicio({ loading, error, empty, label, emptyMessage, retry, claro = false }: HomeFeedbackProps) {
   if (loading) return (
     <Box role="status" aria-label={`Cargando ${label}`} sx={{ display: 'grid', gap: 1.5, py: 2, ...(claro && { '& .MuiSkeleton-root': { bgcolor: 'rgba(27,28,26,.08)' } }) }}>
       <Skeleton variant="rounded" height={90} />

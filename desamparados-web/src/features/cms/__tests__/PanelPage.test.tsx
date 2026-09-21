@@ -103,7 +103,7 @@ describe('Inicio del CMS', () => {
   })
 
   // rolesPorRutaCms.agenda es ['ADMIN','SECRETARIA','HERMANO_MAYOR']: sin este
-  // condicional, Tesorería pulsaba «Agenda →» y RequireRole la expulsaba a
+  // condicional, Tesorería pulsaba «Agenda →» y ExigeRol la expulsaba a
   // /area-hermano, fuera de todo el CMS (ver el hallazgo crítico de la revisión).
   it('el enlace a la Agenda de «Próximos actos» no lo ve Tesorería', async () => {
     responder(panel)

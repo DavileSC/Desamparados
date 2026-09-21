@@ -12,7 +12,7 @@ import VistaPreviaPortada from './contenido/VistaPreviaPortada'
 import Hero from '../inicio/Hero'
 import NoticiasDestacadas from '../inicio/NoticiasDestacadas'
 import AgendaYDirecto from '../inicio/AgendaYDirecto'
-import QuickAccess from '../inicio/QuickAccess'
+import AccesosRapidos from '../inicio/AccesosRapidos'
 import EscenaProcesion from '../inicio/EscenaProcesion'
 import PublicacionesDestacadas from '../inicio/PublicacionesDestacadas'
 import { portadaDelInicio, guardarImagenesPortada, type ImagenPortada, type TextosPortada } from '../../lib/api/portada'
@@ -46,7 +46,7 @@ const sinClave = (filas: Fila[]): ImagenPortada[] => filas.map(({ url, descripci
 /**
  * Un acceso del mosaico, bajo su nombre actual: es lo único que lo distingue en
  * esta pantalla, porque el destino y el icono los pone el código
- * (features/inicio/QuickAccess.tsx) y no se editan desde aquí.
+ * (features/inicio/AccesosRapidos.tsx) y no se editan desde aquí.
  */
 function EdicionTesela({ tesela, onCambio }: { tesela: Tesela; onCambio: (cambios: Partial<Tesela>) => void }) {
   const id = useId()
@@ -400,7 +400,7 @@ export default function PortadaAdminPage() {
           />
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Accesos directos" vistaPrevia={vista(<QuickAccess />)}>
+        <SeccionPlegable titulo="Accesos directos" vistaPrevia={vista(<AccesosRapidos />)}>
           <CampoTexto
             etiqueta="Antetítulo de la placa"
             valor={textos.accesos.placa.ceja}

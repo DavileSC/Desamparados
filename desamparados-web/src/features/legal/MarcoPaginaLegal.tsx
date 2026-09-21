@@ -10,7 +10,7 @@ interface LegalPageLayoutProps {
   children: React.ReactNode
 }
 
-export default function LegalPageLayout({ title, children }: LegalPageLayoutProps) {
+export default function MarcoPaginaLegal({ title, children }: LegalPageLayoutProps) {
   return (
     <>
       <Helmet>

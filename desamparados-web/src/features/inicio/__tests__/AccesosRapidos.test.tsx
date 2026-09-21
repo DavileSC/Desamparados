@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import { site } from '../../../config/site'
-import QuickAccess from '../QuickAccess'
+import AccesosRapidos from '../AccesosRapidos'
 import { textosDePrueba, responderPortada } from './ayudas'
 
 // `site` es de solo lectura en los tipos, pero en tiempo de ejecución es un objeto
@@ -10,7 +10,7 @@ import { textosDePrueba, responderPortada } from './ayudas'
 const redes = site.redes as { youtube: string | null }
 const youtubeOriginal = redes.youtube
 
-describe('QuickAccess', () => {
+describe('AccesosRapidos', () => {
   afterEach(() => {
     redes.youtube = youtubeOriginal
     vi.unstubAllGlobals()
@@ -20,7 +20,7 @@ describe('QuickAccess', () => {
     // Se rompe si un acceso apunta a otra ruta, si vuelve el acceso de hermanos
     // (ya está siempre visible en el menú), si vuelven la agenda o el recorrido
     // (tienen bloque propio en la portada) o si el bloque deja de ser una lista.
-    renderWithProviders(<QuickAccess />)
+    renderWithProviders(<AccesosRapidos />)
 
     const lista = screen.getByRole('list', { name: /accesos directos/i })
     const destinos = within(lista).getAllByRole('link').map((enlace) => enlace.getAttribute('href'))
@@ -38,7 +38,7 @@ describe('QuickAccess', () => {
   it('anuncia en cada enlace qué hay detrás, no solo su título', () => {
     // Se rompe si la descripción se saca del enlace: un lector de pantalla
     // volvería a oír solo «Boletines», sin contexto.
-    renderWithProviders(<QuickAccess />)
+    renderWithProviders(<AccesosRapidos />)
 
     expect(
       screen.getByRole('link', { name: /boletines.*boletín informativo y anuarios/i }),
@@ -48,7 +48,7 @@ describe('QuickAccess', () => {
   it('destaca «Hazte hermano» como primer acceso, con titular y llamada a la acción', () => {
     // Se rompe si la captación de hermanos vuelve a ser un acceso más, sin
     // titular ni botón, o si su texto deja de llegar al lector de pantalla.
-    renderWithProviders(<QuickAccess />)
+    renderWithProviders(<AccesosRapidos />)
 
     const lista = screen.getByRole('list', { name: /accesos directos/i })
     const [primero] = within(lista).getAllByRole('link')
@@ -60,7 +60,7 @@ describe('QuickAccess', () => {
 
   it('con un número impar de accesos pequeños, Contacto ocupa la fila entera con «Escríbenos»', () => {
     // Hoy son cinco (sin YouTube): si el último no se estira, queda un hueco en el mosaico.
-    renderWithProviders(<QuickAccess />)
+    renderWithProviders(<AccesosRapidos />)
 
     const contacto = screen.getByRole('link', { name: /contacto/i })
     expect(within(contacto).getByText('Escríbenos')).toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('QuickAccess', () => {
   it('con YouTube configurado, Contacto vuelve a ser un acceso normal', () => {
     // Con seis accesos pequeños el mosaico cuadra solo: estirar Contacto lo descuadraría.
     redes.youtube = 'https://www.youtube.com/@desamparadosmalaga'
-    renderWithProviders(<QuickAccess />)
+    renderWithProviders(<AccesosRapidos />)
 
     expect(screen.getByRole('link', { name: /canal de youtube/i })).toHaveAttribute('href', redes.youtube)
     const contacto = screen.getByRole('link', { name: /contacto/i })
@@ -82,7 +82,7 @@ describe('QuickAccess', () => {
     textos.accesos.teselas.find((t) => t.clave === 'caridad')!.descripcion = 'Nuestra obra social'
     responderPortada(textos)
 
-    renderWithProviders(<QuickAccess />)
+    renderWithProviders(<AccesosRapidos />)
 
     expect(await screen.findByText('Únete a nosotros')).toBeInTheDocument()
     expect(screen.getByText('Nuestra obra social')).toBeInTheDocument()
@@ -94,7 +94,7 @@ describe('QuickAccess', () => {
     textos.accesos.teselas.find((t) => t.clave === 'historia')!.titulo = 'Nuestros orígenes'
     responderPortada(textos)
 
-    renderWithProviders(<QuickAccess />)
+    renderWithProviders(<AccesosRapidos />)
 
     const enlace = await screen.findByRole('link', { name: /nuestros orígenes/i })
     expect(enlace).toHaveAttribute('href', '/corporacion/historia')
@@ -112,7 +112,7 @@ describe('QuickAccess', () => {
     textos.accesos.teselas.find((t) => t.clave === 'caridad')!.titulo = 'Nuestra caridad'
     responderPortada(textos)
 
-    renderWithProviders(<QuickAccess />)
+    renderWithProviders(<AccesosRapidos />)
 
     await screen.findByText('Nuestra caridad')
     expect(screen.getByText('Nuestra sede')).toBeInTheDocument()
