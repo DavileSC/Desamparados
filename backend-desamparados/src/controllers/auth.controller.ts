@@ -8,6 +8,7 @@ import type { AreaSesion } from '../utils/cookies';
 import { verifyToken } from '../utils/jwt.handle';
 import type { AuthTokenPayload } from '../utils/jwt.handle';
 import { resolverSesiones } from '../middleware/session';
+import { manejar } from '../utils/manejar';
 
 export class AuthController {
 
@@ -15,30 +16,22 @@ export class AuthController {
   //  REGISTRO (Solicitud Inactiva)
   // =================================================================
 
-  static async register(req: Request, res: Response) {
-    try {
-      const body: RegisterDto = req.body;
-      const result = await AuthService.registerUser(body);
+  static register = manejar('Error registrando usuario', async (req, res) => {
+    const body: RegisterDto = req.body;
+    const result = await AuthService.registerUser(body);
 
-      // Ahora devuelve un 201 Created con el mensaje de "Pásate por Secretaría"
-      res.status(201).json(result);
-    } catch (error) {
-      handleHttp(res, error, 'Error registrando usuario');
-    }
-  }
+    // Ahora devuelve un 201 Created con el mensaje de "Pásate por Secretaría"
+    res.status(201).json(result);
+  });
 
   /**
    * Pedir volver tras una baja. Devuelve siempre 200 con el mismo mensaje,
    * exista o no la ficha: distinguir convertiría esto en una forma de averiguar
    * qué DNI están en el censo.
    */
-  static async solicitarReactivacion(req: Request, res: Response) {
-    try {
-      res.status(200).json(await AuthService.solicitarReactivacion(req.body));
-    } catch (error) {
-      handleHttp(res, error, 'Error pidiendo la reactivación');
-    }
-  }
+  static solicitarReactivacion = manejar('Error pidiendo la reactivación', async (req, res) => {
+    res.status(200).json(await AuthService.solicitarReactivacion(req.body));
+  });
 
   // =================================================================
   //  LOGIN
@@ -127,78 +120,52 @@ export class AuthController {
   //  RECUPERACIÓN DE CONTRASEÑA
   // =================================================================
 
-  static async resetPassword(req: Request, res: Response) {
-    try {
-      const { token, newPassword } = req.body;
-      const result = await AuthService.resetPassword(token, newPassword);
-      res.status(200).json(result);
-    } catch (error) {
-      handleHttp(res, error, 'Error al restablecer contraseña');
-    }
-  }
+  static resetPassword = manejar('Error al restablecer contraseña', async (req, res) => {
+    const { token, newPassword } = req.body;
+    const result = await AuthService.resetPassword(token, newPassword);
+    res.status(200).json(result);
+  });
 
-    static async requestPasswordReset(req: Request, res: Response) {
-      try {
-        const { email } = req.body;
-        const result = await AuthService.requestPasswordReset(email);
-        res.status(200).json(result);
-      } catch (error) {
-        handleHttp(res, error, 'Error al solicitar recuperación');
-      }
-  }
+  static requestPasswordReset = manejar('Error al solicitar recuperación', async (req, res) => {
+      const { email } = req.body;
+      const result = await AuthService.requestPasswordReset(email);
+      res.status(200).json(result);
+  });
   // =================================================================
   //  CONFIGURACIÓN 2FA (Desde el Perfil - Requiere Auth)
   // =================================================================
 
-  static async setup2FAGenerate(req: Request, res: Response) {
-    try {
-      const userId = req.user!.id; 
-      const data = await AuthService.generate2FAQR(userId);
-      res.status(200).json(data);
-    } catch (error) {
-      handleHttp(res, error, 'Error generando QR');
-    }
-  }
+  static setup2FAGenerate = manejar('Error generando QR', async (req, res) => {
+    const userId = req.user!.id; 
+    const data = await AuthService.generate2FAQR(userId);
+    res.status(200).json(data);
+  });
 
-  static async setup2FAEnable(req: Request, res: Response) {
-    try {
-      const userId = req.user!.id;
-      const { token2fa } = req.body;
+  static setup2FAEnable = manejar('Error al activar 2FA. Código incorrecto.', async (req, res) => {
+    const userId = req.user!.id;
+    const { token2fa } = req.body;
 
-      const result = await AuthService.enable2FA(userId, token2fa);
-      res.status(200).json(result);
-    } catch (error) {
-      handleHttp(res, error, 'Error al activar 2FA. Código incorrecto.');
-    }
-  }
+    const result = await AuthService.enable2FA(userId, token2fa);
+    res.status(200).json(result);
+  });
 
-  static async setup2FADisable(req: Request, res: Response) {
-    try {
-      const userId = req.user!.id;
-      const { token2fa } = req.body;
+  static setup2FADisable = manejar('Error al desactivar 2FA. Código incorrecto o expirado.', async (req, res) => {
+    const userId = req.user!.id;
+    const { token2fa } = req.body;
 
-      const result = await AuthService.disable2FA(userId, token2fa);
-      res.status(200).json(result);
-    } catch (error) {
-      handleHttp(res, error, 'Error al desactivar 2FA. Código incorrecto o expirado.');
-    }
-  }
+    const result = await AuthService.disable2FA(userId, token2fa);
+    res.status(200).json(result);
+  });
 
   // =================================================================
   //  ADMINISTRACIÓN (Rescate)
   // =================================================================
 
-  static async adminReset2FA(req: Request, res: Response) {
-    try {
-      const targetUserId = Number(req.params.id);
-      if (isNaN(targetUserId)) return handleHttp(res, null, 'ID inválido', 400);
-
-      const result = await AuthService.forceDisable2FA(targetUserId, req.user!.id, AuditService.metaFromReq(req));
-      res.status(200).json(result);
-    } catch (error) {
-      handleHttp(res, error, 'Error reseteando usuario');
-    }
-  }
+  static adminReset2FA = manejar('Error reseteando usuario', async (req, res) => {
+    // El id llega comprobado: la ruta pasa por `validateId`.
+    const result = await AuthService.forceDisable2FA(Number(req.params.id), req.user!.id, AuditService.metaFromReq(req));
+    res.status(200).json(result);
+  });
 
   // =================================================================
   //  SESION ACTUAL Y CIERRE
@@ -210,21 +177,17 @@ export class AuthController {
    * pública, y devolverle un 401 hacía que el arranque del frontend lo tratara
    * como error y lo reintentara.
    */
-  static async me(req: Request, res: Response) {
-    try {
-      const perfil = async (sesion: AuthTokenPayload | null) => {
-        if (!sesion) return null;
-        const datos = await AuthService.perfilSesion(sesion.id);
-        // El origen viene del propio JWT; la BD no lo guarda.
-        return { ...datos, origen: sesion.origen };
-      };
+  static me = manejar('No se ha podido recuperar la sesión', async (req, res) => {
+    const perfil = async (sesion: AuthTokenPayload | null) => {
+      if (!sesion) return null;
+      const datos = await AuthService.perfilSesion(sesion.id);
+      // El origen viene del propio JWT; la BD no lo guarda.
+      return { ...datos, origen: sesion.origen };
+    };
 
-      const [cms, hermano] = await Promise.all([perfil(req.sesiones.cms), perfil(req.sesiones.hermano)]);
-      res.status(200).json({ cms, hermano });
-    } catch (error) {
-      handleHttp(res, error, 'No se ha podido recuperar la sesión');
-    }
-  }
+    const [cms, hermano] = await Promise.all([perfil(req.sesiones.cms), perfil(req.sesiones.hermano)]);
+    res.status(200).json({ cms, hermano });
+  });
 
   /**
    * Sin authenticateToken a propósito: una sesión ya caducada también tiene que
@@ -264,35 +227,27 @@ export class AuthController {
   // =================================================================
 
   /** Derecho de acceso (art. 15 RGPD): exporta todos los datos personales. */
-  static async exportMisDatos(req: Request, res: Response) {
-    try {
-      const userId = req.user!.id;
-      const data = await AuthService.exportMisDatos(userId, AuditService.metaFromReq(req));
-      res.status(200).json(data);
-    } catch (error) {
-      handleHttp(res, error, 'Error exportando tus datos');
-    }
-  }
+  static exportMisDatos = manejar('Error exportando tus datos', async (req, res) => {
+    const userId = req.user!.id;
+    const data = await AuthService.exportMisDatos(userId, AuditService.metaFromReq(req));
+    res.status(200).json(data);
+  });
 
   /** Derecho de supresión (art. 17 RGPD): anonimiza la cuenta. Requiere contraseña. */
-  static async deleteOwnAccount(req: Request, res: Response) {
-    try {
-      const userId = req.user!.id;
-      const { password } = req.body;
-      // El área efectiva se saca de req.sesiones y no de req.user.origen: la
-      // tarea 4 dejó req.user por defecto como hermano ?? cms, así que un
-      // cargo con las dos cookies abiertas (esta ruta no lleva checkRole,
-      // porque también la usan los hermanos) mandaba origen 'hermanos' al
-      // servicio aunque tuviera sesión de CMS válida, y el borrado RGPD de su
-      // propia cuenta de staff salía rechazado por error. Mirar si hay sesión
-      // de CMS DE ESTE MISMO usuario es la misma garantía de antes ("esta
-      // persona tiene sesión de CMS en este navegador"), ni más permisiva ni
-      // más estricta.
-      const origen: 'cms' | 'hermanos' = req.sesiones.cms?.id === userId ? 'cms' : 'hermanos';
-      const result = await AuthService.deleteOwnAccount(userId, password, origen, AuditService.metaFromReq(req));
-      res.status(200).json(result);
-    } catch (error) {
-      handleHttp(res, error, 'Error eliminando la cuenta');
-    }
-  }
+  static deleteOwnAccount = manejar('Error eliminando la cuenta', async (req, res) => {
+    const userId = req.user!.id;
+    const { password } = req.body;
+    // El área efectiva se saca de req.sesiones y no de req.user.origen: la
+    // tarea 4 dejó req.user por defecto como hermano ?? cms, así que un
+    // cargo con las dos cookies abiertas (esta ruta no lleva checkRole,
+    // porque también la usan los hermanos) mandaba origen 'hermanos' al
+    // servicio aunque tuviera sesión de CMS válida, y el borrado RGPD de su
+    // propia cuenta de staff salía rechazado por error. Mirar si hay sesión
+    // de CMS DE ESTE MISMO usuario es la misma garantía de antes ("esta
+    // persona tiene sesión de CMS en este navegador"), ni más permisiva ni
+    // más estricta.
+    const origen: 'cms' | 'hermanos' = req.sesiones.cms?.id === userId ? 'cms' : 'hermanos';
+    const result = await AuthService.deleteOwnAccount(userId, password, origen, AuditService.metaFromReq(req));
+    res.status(200).json(result);
+  });
 }
