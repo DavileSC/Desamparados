@@ -13,30 +13,47 @@ import { Revela } from '../../../components/AnimatedSection'
 import AppButton from '../../../components/AppButton'
 import CampoContrasena from '../../../components/CampoContrasena'
 import { LONGITUD_MINIMA } from '../../../lib/passwordPolicy'
-import { register as apiRegister } from '../../../lib/api/auth'
+import { register as apiRegister, pedirReactivacion } from '../../../lib/api/auth'
 import { ApiError } from '../../../lib/api/client'
 import { GOLD, SERIF, ceja } from '../../home/estilos'
-import { membershipSchema, type MembershipFormData } from './schema'
+import {
+  conFichaPropia, conMenores, membershipSchema, menorVacio,
+  type Camino, type MembershipFormData,
+} from './schema'
 import { temaTarjeta, FILETE_TARJETA, TARJETA } from './temaTarjeta'
 import ProcesoAlta from './ProcesoAlta'
 import SolicitudRecibida from './SolicitudRecibida'
+import EleccionCamino from './EleccionCamino'
+import PasoMenores from './PasoMenores'
 
 type Campo = keyof MembershipFormData
 
 /**
  * El formulario cabe en pantalla porque va por pasos: cada uno tiene los
- * campos justos para no tener que bajar, también en un móvil. Los tres pasos
- * son los grupos que pide el servidor para abrir la ficha (`registerSchema`
- * del backend): quién eres, cómo localizarte y con qué entrarás.
+ * campos justos para no tener que bajar, también en un móvil.
+ *
+ * El primero pregunta quién se apunta, y de esa respuesta depende el resto:
+ * quien solo apunta a un menor no da su fecha de nacimiento (no va a tener
+ * ficha) y quien trae menores tiene un paso más para ellos. Su DNI sí se pide
+ * siempre, porque es el de la cuenta, no el de la ficha.
  */
-const PASOS: { titulo: string; campos: Campo[] }[] = [
-  { titulo: 'Datos personales', campos: ['nombre', 'apellidos', 'dni', 'fechaNacimiento'] },
-  { titulo: 'Contacto y domicilio', campos: ['email', 'telefono', 'direccion', 'ciudad', 'codigoPostal'] },
-  { titulo: 'Acceso al área de hermanos', campos: ['password', 'aceptarPolitica'] },
-]
-const pasoDe = (campo: Campo) => PASOS.findIndex((paso) => paso.campos.includes(campo))
-/** El primer campo en orden de pasos, para llevar allí a la persona cuando algo falla. */
-const primeroEnOrden = (campos: Campo[]) => [...campos].sort((a, b) => pasoDe(a) - pasoDe(b))[0]
+type Paso = { titulo: string; campos: Campo[] }
+
+function pasosDe(camino: Camino | null): Paso[] {
+  if (!camino) return [{ titulo: '¿Quién se apunta?', campos: ['camino'] }]
+  return [
+    { titulo: '¿Quién se apunta?', campos: ['camino'] },
+    {
+      titulo: 'Tus datos',
+      campos: conFichaPropia(camino)
+        ? ['nombre', 'apellidos', 'dni', 'fechaNacimiento']
+        : ['nombre', 'apellidos', 'dni'],
+    },
+    ...(conMenores(camino) ? [{ titulo: 'A quién apuntas', campos: ['menores'] as Campo[] }] : []),
+    { titulo: 'Contacto y domicilio', campos: ['email', 'telefono', 'direccion', 'ciudad', 'codigoPostal'] },
+    { titulo: 'Acceso al área de hermanos', campos: ['password', 'aceptarPolitica'] },
+  ]
+}
 
 /** Del `usuario.dni` que manda el servidor al `dni` que conoce el formulario. */
 const CAMPOS_API: Record<string, Campo> = {
@@ -53,8 +70,8 @@ const CAMPOS_API: Record<string, Campo> = {
 }
 
 const VALORES_INICIALES: MembershipFormData = {
-  nombre: '', apellidos: '', email: '', password: '', dni: '', telefono: '',
-  direccion: '', ciudad: '', codigoPostal: '', fechaNacimiento: '', aceptarPolitica: false,
+  camino: 'HERMANO', nombre: '', apellidos: '', email: '', password: '', dni: '', telefono: '',
+  direccion: '', ciudad: '', codigoPostal: '', fechaNacimiento: '', menores: [], aceptarPolitica: false,
 }
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): por debajo la barra va en
@@ -74,11 +91,16 @@ const BOTON_PIE = { borderRadius: '3px', height: 48, py: 0, whiteSpace: 'nowrap'
 
 export default function HazteHermanoPage() {
   const [paso, setPaso] = useState(0)
-  const [enviada, setEnviada] = useState<{ nombre: string; email: string } | null>(null)
+  const [camino, setCamino] = useState<Camino | null>(null)
+  const [enviada, setEnviada] = useState<{ nombre: string; email: string; fichas: number; soloMenores: boolean } | null>(null)
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
+  // Cuando el alta topa con un DNI que ya está en el censo, lo que toca no es
+  // repetir el formulario: es pedir que reactiven la ficha de antes.
+  const [ofrecerVuelta, setOfrecerVuelta] = useState(false)
+  const [vueltaPedida, setVueltaPedida] = useState<string | null>(null)
 
   const {
-    register, handleSubmit, setError, setFocus, trigger, reset, getValues,
+    register, handleSubmit, setError, setFocus, trigger, reset, getValues, setValue, watch,
     formState: { errors, isSubmitting },
   } = useForm<MembershipFormData>({
     resolver: zodResolver(membershipSchema),
@@ -87,28 +109,83 @@ export default function HazteHermanoPage() {
     mode: 'onTouched',
   })
 
+  const PASOS = pasosDe(camino)
   const esUltimo = paso === PASOS.length - 1
+  const menores = watch('menores')
+
+  const pasoDe = (campo: Campo) => PASOS.findIndex((p) => p.campos.includes(campo))
+  /** El primer campo en orden de pasos, para llevar allí a la persona cuando algo falla. */
+  const primeroEnOrden = (campos: Campo[]) => [...campos].sort((a, b) => pasoDe(a) - pasoDe(b))[0]
 
   /** Cambia al paso del campo y le pasa el foco: el paso se pinta ya, para que el campo se pueda enfocar. */
   const irA = (campo: Campo) => {
-    flushSync(() => setPaso(pasoDe(campo)))
-    setFocus(campo)
+    const destino = pasoDe(campo)
+    flushSync(() => setPaso(destino === -1 ? 0 : destino))
+    // `camino` y `menores` no son casillas que puedan recibir el foco.
+    if (campo !== 'camino' && campo !== 'menores') setFocus(campo)
+  }
+
+  const irAlPaso = (indice: number) => {
+    flushSync(() => setPaso(indice))
+    const primero = PASOS[indice].campos[0]
+    if (primero !== 'camino' && primero !== 'menores') setFocus(primero)
   }
 
   const avanzar = async () => {
     const valido = await trigger(PASOS[paso].campos, { shouldFocus: true })
-    if (valido) irA(PASOS[paso + 1].campos[0])
+    if (valido) irAlPaso(paso + 1)
   }
 
-  const retroceder = () => irA(PASOS[paso - 1].campos[0])
+  const retroceder = () => irAlPaso(paso - 1)
+
+  /** Elegir camino es, además, el «Continuar» de ese paso: no hay nada más que rellenar ahí. */
+  const elegirCamino = (elegido: Camino) => {
+    setCamino(elegido)
+    setValue('camino', elegido)
+    // El primer menor aparece ya puesto: nadie elige «apunto a un menor» para
+    // luego tener que pulsar «añadir».
+    if (conMenores(elegido) && getValues('menores').length === 0) {
+      setValue('menores', [{ ...menorVacio }])
+    }
+    flushSync(() => setPaso(1))
+    setFocus('nombre')
+  }
+
+  const pedirVuelta = async () => {
+    setErrorEnvio(null)
+    try {
+      const { message } = await pedirReactivacion(getValues('dni'), getValues('email'))
+      setVueltaPedida(message)
+      setOfrecerVuelta(false)
+    } catch (error) {
+      setErrorEnvio(error instanceof ApiError ? error.message : 'No se ha podido enviar la petición. Inténtalo más tarde.')
+    }
+  }
 
   const onSubmit = async (data: MembershipFormData) => {
     setErrorEnvio(null)
+    setOfrecerVuelta(false)
     try {
-      await apiRegister({ ...data, poblacion: data.ciudad })
-      setEnviada({ nombre: data.nombre.trim(), email: data.email.trim() })
+      const respuesta = await apiRegister({
+        ...data,
+        poblacion: data.ciudad,
+        // Sin ficha propia no se manda fecha de nacimiento: el servidor la usa
+        // justo para saber si hay que crearla.
+        fechaNacimiento: conFichaPropia(data.camino) ? data.fechaNacimiento : undefined,
+        menores: conMenores(data.camino) ? data.menores : undefined,
+      })
+      setEnviada({ nombre: data.nombre.trim(), email: data.email.trim(), fichas: respuesta.fichas, soloMenores: !conFichaPropia(data.camino) })
       reset()
+      setCamino(null)
+      setPaso(0)
     } catch (error) {
+      // Un DNI que ya está en el censo es de alguien que estuvo aquí: se le
+      // ofrece pedir la vuelta en vez de dejarlo en un callejón sin salida.
+      if (error instanceof ApiError && /ya hay una ficha en el censo/i.test(error.message)) {
+        setOfrecerVuelta(true)
+        setErrorEnvio(error.message)
+        return
+      }
       if (error instanceof ApiError && Object.keys(error.fields).length > 0) {
         // El servidor dice qué campo falla; enseñarlo bajo su casilla, en su
         // paso, en vez de un «Error de validación» suelto que no dice qué corregir.
@@ -240,7 +317,7 @@ export default function HazteHermanoPage() {
               <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 17, lineHeight: 1.7, color: 'text.secondary', maxWidth: '44ch' }}>
                 Ser hermano es acompañar a Nuestra Señora de los Desamparados todo el año: en los
                 cultos, en la estación de penitencia del Sábado de Pasión y en la labor de caridad y
-                formación del Grupo Parroquial. La solicitud son tres pasos y se formaliza después en
+                formación del Grupo Parroquial. La solicitud se rellena aquí y se formaliza después en
                 Secretaría.
               </Typography>
               <Typography sx={{ display: { xs: 'block', md: 'none' }, fontSize: 15, lineHeight: 1.6, color: 'text.secondary' }}>
@@ -252,12 +329,17 @@ export default function HazteHermanoPage() {
               <ThemeProvider theme={temaTarjeta}>
                 <Box sx={{ ...TARJETA, p: { xs: '24px 20px', sm: '32px', md: '36px 44px' } }}>
                   {enviada ? (
-                    <SolicitudRecibida nombre={enviada.nombre} email={enviada.email} />
+                    <SolicitudRecibida
+                      nombre={enviada.nombre}
+                      email={enviada.email}
+                      fichas={enviada.fichas}
+                      soloMenores={enviada.soloMenores}
+                    />
                   ) : (
                     <Box component="form" noValidate onSubmit={alEnviar} sx={{ display: 'grid', gap: { xs: 2.5, md: 3 } }}>
                       <Box>
                         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-                          Paso {paso + 1} de {PASOS.length}
+                          {camino ? `Paso ${paso + 1} de ${PASOS.length}` : 'Solicitud de alta'}
                         </Typography>
                         {/* Los tres títulos apilados en la misma celda, como los campos:
                             en móvil el del último paso ocupa dos líneas y, si solo
@@ -299,7 +381,13 @@ export default function HazteHermanoPage() {
                               sx={{ gridArea: '1 / 1', visibility: activo ? 'visible' : 'hidden', border: 0, m: 0, p: 0, minWidth: 0 }}
                             >
                               <Grid container spacing={{ xs: 1.5, md: 2 }}>
-                                {indice === 0 && (
+                                {p.campos[0] === 'camino' && (
+                                  <Grid size={{ xs: 12 }}>
+                                    <EleccionCamino valor={camino} onElegir={elegirCamino} />
+                                  </Grid>
+                                )}
+
+                                {p.campos[0] === 'nombre' && (
                                   <>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                       <TextField label="Nombre" autoComplete="given-name" {...campo('nombre')} />
@@ -311,22 +399,39 @@ export default function HazteHermanoPage() {
                                       <TextField
                                         label="DNI/NIE"
                                         slotProps={{ htmlInput: { autoCapitalize: 'characters', spellCheck: false } }}
-                                        {...campo('dni', 'Con la letra final.')}
+                                        {...campo('dni', camino === 'SOLO_MENORES' ? 'El tuyo: es el de la cuenta.' : 'Con la letra final.')}
                                       />
                                     </Grid>
-                                    <Grid size={{ xs: 12, sm: 6 }}>
-                                      <TextField
-                                        label="Fecha de nacimiento"
-                                        type="date"
-                                        autoComplete="bday"
-                                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: hoy } }}
-                                        {...campo('fechaNacimiento')}
-                                      />
-                                    </Grid>
+                                    {/* Sin ficha propia no hace falta: no va a entrar en el censo. */}
+                                    {camino !== null && conFichaPropia(camino) && (
+                                      <Grid size={{ xs: 12, sm: 6 }}>
+                                        <TextField
+                                          label="Fecha de nacimiento"
+                                          type="date"
+                                          autoComplete="bday"
+                                          slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: hoy } }}
+                                          {...campo('fechaNacimiento')}
+                                        />
+                                      </Grid>
+                                    )}
                                   </>
                                 )}
 
-                                {indice === 1 && (
+                                {p.campos[0] === 'menores' && (
+                                  <Grid size={{ xs: 12 }}>
+                                    <PasoMenores
+                                      menores={menores}
+                                      errores={errors}
+                                      register={register}
+                                      setValue={setValue}
+                                      watch={watch}
+                                      apellidosDelTitular={getValues('apellidos')}
+                                      hoy={hoy}
+                                    />
+                                  </Grid>
+                                )}
+
+                                {p.campos[0] === 'email' && (
                                   <>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                       <TextField label="Email" type="email" autoComplete="email" {...campo('email')} />
@@ -351,11 +456,13 @@ export default function HazteHermanoPage() {
                                   </>
                                 )}
 
-                                {indice === 2 && (
+                                {p.campos[0] === 'password' && (
                                   <>
                                     <Grid size={{ xs: 12 }}>
                                       <Typography sx={{ fontSize: 15, lineHeight: 1.6, color: 'text.secondary', maxWidth: '60ch' }}>
-                                        Con tu email y esta contraseña entrarás al área de hermanos cuando Secretaría active tu alta.
+                                        {camino === 'SOLO_MENORES'
+                                          ? 'Con tu email y esta contraseña entrarás al área de hermanos para gestionar sus fichas cuando Secretaría active el alta.'
+                                          : 'Con tu email y esta contraseña entrarás al área de hermanos cuando Secretaría active tu alta.'}
                                       </Typography>
                                     </Grid>
                                     {/* El email se escribió en el paso anterior y ahí sigue, pero
@@ -412,7 +519,20 @@ export default function HazteHermanoPage() {
                         })}
                       </Box>
 
-                      {errorEnvio && <Alert severity="error" role="alert">{errorEnvio}</Alert>}
+                      {errorEnvio && (
+                        <Alert
+                          severity="error"
+                          role="alert"
+                          action={ofrecerVuelta ? (
+                            <AppButton type="button" appVariant="outline" onClick={() => void pedirVuelta()} sx={{ borderRadius: '3px', height: 40, whiteSpace: 'nowrap' }}>
+                              Pedir la reactivación
+                            </AppButton>
+                          ) : undefined}
+                        >
+                          {errorEnvio}
+                        </Alert>
+                      )}
+                      {vueltaPedida && <Alert severity="success" role="status">{vueltaPedida}</Alert>}
 
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, borderTop: `1px solid ${FILETE_TARJETA}`, pt: { xs: 2.5, md: 3 } }}>
                         {/* Altura fija en los dos botones: el de contorno lleva 1 px de
@@ -422,11 +542,15 @@ export default function HazteHermanoPage() {
                             Atrás
                           </AppButton>
                         ) : (
-                          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Todos los campos son obligatorios.</Typography>
+                          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Da el primer paso para seguir tu camino con Nuestra Señora de los Desamparados.</Typography>
                         )}
-                        <AppButton type="submit" disabled={isSubmitting} sx={{ ...BOTON_PIE, px: { xs: 2.5, sm: 5 } }}>
-                          {esUltimo ? (isSubmitting ? 'Enviando…' : 'Enviar solicitud') : 'Continuar'}
-                        </AppButton>
+                        {/* En el primer paso se avanza eligiendo: un «Continuar» ahí
+                            solo serviría para pasar sin haber elegido nada. */}
+                        {paso > 0 && (
+                          <AppButton type="submit" disabled={isSubmitting} sx={{ ...BOTON_PIE, px: { xs: 2.5, sm: 5 } }}>
+                            {esUltimo ? (isSubmitting ? 'Enviando…' : 'Enviar solicitud') : 'Continuar'}
+                          </AppButton>
+                        )}
                       </Box>
                     </Box>
                   )}

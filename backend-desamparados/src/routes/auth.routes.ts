@@ -13,6 +13,7 @@ import { authLimiter } from '../config/limiter';
 // 2. Esquemas blindados
 import {
   registerSchema,
+  reactivacionSchema,
   loginSchema,
   verify2FASchema,
   enable2FASchema,
@@ -55,6 +56,11 @@ const rolesStaffCMS = [
 
 // Registro (Crea solicitud inactiva)
 authRoutes.post('/register', authLimiter, validate(registerSchema), AuthController.register);
+
+// Pedir volver tras una baja: la web lo ofrece cuando el registro topa con un
+// DNI que ya está en el censo. Lleva el mismo limitador que el resto, porque es
+// justo lo que usaría quien quisiera ir tanteando DNI uno a uno.
+authRoutes.post('/reactivacion', authLimiter, validate(reactivacionSchema), AuthController.solicitarReactivacion);
 
 // Login 
 authRoutes.post('/login', authLimiter, validate(loginSchema), AuthController.login);

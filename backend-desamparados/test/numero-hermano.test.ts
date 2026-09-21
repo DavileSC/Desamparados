@@ -170,7 +170,7 @@ test('dar de baja libera el número y reactivar da uno nuevo', async (t) => {
 
   const tutor = await crearUsuarioPrueba();
   usuariosCreados.push(tutor.id);
-  const datosFicha: CreateHermanoDto = { nombre: 'Alta', apellidos: 'Y Baja', fechaNacimiento: '1990-01-01' };
+  const datosFicha: CreateHermanoDto = { nombre: 'Alta', apellidos: 'Y Baja', fechaNacimiento: '2014-01-01' };
   const ficha = await HermanoService.createDependentProfile(tutor.id, datosFicha);
   await HermanoService.aprobarSolicitud(tutor.id);
 
@@ -202,10 +202,12 @@ test('las fichas de este test no quedan activas sin número tras pasar por sus v
   // tocar después. «Vaivén» sigue hasta baja y reactivación: es el canario
   // de reactivarHermano. Sin cerrarHuecosDeNumero de por medio, el recuento
   // de abajo mira el estado que dejaron las vías tal cual, no uno reparado.
-  const datosQuieta: CreateHermanoDto = { nombre: 'Quieta', apellidos: 'Tras Aprobar', fechaNacimiento: '2000-01-01' };
+  // Menores las dos: una ficha a cargo de otra cuenta es la de alguien que aún
+  // no puede darse de alta por su cuenta (domain/fechas-hermano).
+  const datosQuieta: CreateHermanoDto = { nombre: 'Quieta', apellidos: 'Tras Aprobar', fechaNacimiento: '2015-01-01' };
   const quieta = await HermanoService.createDependentProfile(tutor.id, datosQuieta);
 
-  const datosVaiven: CreateHermanoDto = { nombre: 'Va', apellidos: 'Y Viene', fechaNacimiento: '1985-01-01' };
+  const datosVaiven: CreateHermanoDto = { nombre: 'Va', apellidos: 'Y Viene', fechaNacimiento: '2016-01-01' };
   const vaiven = await HermanoService.createDependentProfile(tutor.id, datosVaiven);
 
   await HermanoService.aprobarSolicitud(tutor.id); // aprueba las dos fichas pendientes del tutor de golpe

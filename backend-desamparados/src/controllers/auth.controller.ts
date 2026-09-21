@@ -27,6 +27,19 @@ export class AuthController {
     }
   }
 
+  /**
+   * Pedir volver tras una baja. Devuelve siempre 200 con el mismo mensaje,
+   * exista o no la ficha: distinguir convertiría esto en una forma de averiguar
+   * qué DNI están en el censo.
+   */
+  static async solicitarReactivacion(req: Request, res: Response) {
+    try {
+      res.status(200).json(await AuthService.solicitarReactivacion(req.body));
+    } catch (error) {
+      handleHttp(res, error, 'Error pidiendo la reactivación');
+    }
+  }
+
   // =================================================================
   //  LOGIN
   // =================================================================

@@ -58,7 +58,8 @@ export default function ProcesoAlta() {
         </Box>
       </Box>
       <Typography sx={{ mt: 1.5, fontSize: 13, lineHeight: 1.6, color: 'text.secondary' }}>
-        Si el alta es para un menor, escríbenos a{' '}
+        El alta de un menor se hace aquí mismo: elige arriba la opción que te toque. Si tienes cualquier duda,
+        escríbenos a{' '}
         <Box
           component="a"
           href={`mailto:${site.contacto.email}`}

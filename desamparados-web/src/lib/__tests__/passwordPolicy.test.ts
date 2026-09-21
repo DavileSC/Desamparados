@@ -36,6 +36,7 @@ describe('política de contraseñas en los formularios', () => {
 
     it('el alta de hermano aplica las mismas reglas que el restablecimiento', () => {
       const base = {
+        camino: 'HERMANO' as const, menores: [],
         nombre: 'Ana', apellidos: 'Ruiz', email: 'prueba@ejemplo.com',
         dni: '00000000T', telefono: '600000000', direccion: 'Calle 1',
         ciudad: 'Málaga', codigoPostal: '29001', fechaNacimiento: '1990-01-01',

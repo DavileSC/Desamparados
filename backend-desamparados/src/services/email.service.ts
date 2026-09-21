@@ -326,7 +326,7 @@ export class EmailService {
    * y no a las cuentas personales del staff: el destinatario es el cargo, no la
    * persona que hoy lo ocupa.
    */
-  static async enviarAvisoSolicitud(datos: { nombre: string; apellidos?: string | null; email: string }) {
+  static async enviarAvisoSolicitud(datos: { nombre: string; apellidos?: string | null; email: string; fichas?: number }) {
     const destino = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
     if (!destino) {
       console.error('❌ Aviso de solicitud: ni CONTACT_EMAIL_TO ni EMAIL_USER están configurados.');
@@ -342,7 +342,9 @@ export class EmailService {
 
       <div style="background-color: #fafafa; border-left: 4px solid ${secundario}; padding: 20px 25px; margin: 25px 0;">
         <p style="margin: 0 0 6px 0;"><strong>Solicitante:</strong> ${nombreCompleto}</p>
-        <p style="margin: 0;"><strong>Correo:</strong> ${this.esc(datos.email)}</p>
+        <p style="margin: 0 0 6px 0;"><strong>Correo:</strong> ${this.esc(datos.email)}</p>
+        ${/* Un alta puede traer varias personas: el adulto y los menores a su cargo. */ ''}
+        ${datos.fichas && datos.fichas > 1 ? `<p style="margin: 0;"><strong>Fichas que trae:</strong> ${datos.fichas} (incluye menores a su cargo)</p>` : ''}
       </div>
 
       <p>Queda pendiente de aprobación hasta que Secretaría la revise. Mientras tanto, la cuenta no puede entrar al área de hermanos.</p>

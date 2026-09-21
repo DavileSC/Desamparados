@@ -1,8 +1,26 @@
 // src/dtos/auth.dto.ts
 
-export interface RegisterDto {
-  isTutor: boolean; 
+/** Qué es el menor para quien lo apunta (ver `PARENTESCOS` en auth.schema). */
+export type Parentesco = 'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO';
 
+/** Un menor a cargo del adulto que abre la cuenta. */
+export interface MenorAltaDto {
+  nombre: string;
+  /** Sin ellos se heredan los del adulto, que es lo normal con un hijo. */
+  apellidos?: string;
+  /** Un niño no tiene; uno de quince, casi siempre sí. */
+  dni?: string;
+  email?: string;
+  parentesco?: Parentesco;
+  fechaNacimiento: string; // 'AAAA-MM-DD'
+}
+
+/**
+ * El alta, en sus tres caminos: solo `titular` (un adulto que se hace hermano),
+ * `titular` y `menores` (y además apunta a quien tiene a su cargo), o solo
+ * `menores` (no se hace hermano: su cuenta existe para gestionarlos).
+ */
+export interface RegisterDto {
   // DATOS DE CUENTA (OBLIGATORIOS)
   usuario: {
     email: string;
@@ -16,23 +34,21 @@ export interface RegisterDto {
     codigoPostal?: string;
   };
 
-  // DATOS DEL COFRADE (Opcionales)
-  // Al registrarse, solo nos interesa quién es y cuándo nació.
-  // El tema de túnicas y alturas se ve luego.
-  hermano?: {
-    nombre?: string;
-    apellidos?: string;
-    fechaNacimiento: string; // ISO String (Obligatorio)
-    dni?: string;
-    
-    // Dejamos esto opcional por si es el ADMIN quien registra a alguien 
-    // en la casa grupo parroquial "a full", pero en la web no se pide.
-    tieneTunicaPropia?: boolean;
-    tunica?: string;       
-    alturaHombro?: number;    
-    puesto?: string;  
+  /** Su propia ficha en el censo. Sin esto, la cuenta no es de un hermano. */
+  titular?: {
+    fechaNacimiento: string; // 'AAAA-MM-DD'
   };
+
+  /** Los menores que apunta. */
+  menores?: MenorAltaDto[];
 }
+
+/** Pedir volver tras una baja. */
+export interface ReactivacionDto {
+  dni: string;
+  email: string;
+}
+
 export interface LoginDto {
   email: string;
   password: string;

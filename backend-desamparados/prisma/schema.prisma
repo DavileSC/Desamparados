@@ -124,6 +124,18 @@ model User {
 // 2. LA FICHA DEL COFRADE
 // ---------------------------------------------------------
 
+// Quién es el menor para el adulto del que cuelga su ficha. No siempre es su
+// hijo: un tío, un abuelo o un padrino pueden ejercer de tutor a efectos de la
+// cofradía, y Secretaría necesita saber por qué esa ficha cuelga de esa cuenta
+// (con un parentesco que no sea HIJO se pide la autorización de los padres).
+enum Parentesco {
+  HIJO
+  SOBRINO
+  NIETO
+  AHIJADO
+  OTRO
+}
+
 model Hermano {
   id Int @id @default(autoincrement())
 
@@ -150,6 +162,16 @@ model Hermano {
   esTitular Boolean @default(false) // true = este perfil es el User logueado
   userId    Int
   user      User    @relation(fields: [userId], references: [id])
+
+  /// Qué es este menor para el titular de la cuenta. Null en las fichas del
+  /// propio titular y en las de antes de que existiera el campo.
+  parentesco Parentesco?
+
+  /// Cuándo pidió volver quien está de baja. La ficha de baja conserva su
+  /// `fechaBaja` (borrarla perdería cuándo se fue), así que la petición se
+  /// marca aquí y con eso entra en la cola de Secretaría. Se limpia al
+  /// reactivarla o al rechazar la petición.
+  reactivacionSolicitada DateTime?
 
   // --- DATOS LOGÍSTICOS (PROCESIÓN) ---
 
@@ -178,6 +200,10 @@ model Hermano {
   citas     Cita[]
   transacciones Transaccion[]
   prendas   Prenda[]
+
+  // Las peticiones de reactivación son pocas y Secretaría las lee enteras cada
+  // vez que abre la cola: así no hay que recorrer el censo para encontrarlas.
+  @@index([reactivacionSolicitada])
 }
 
 // ---------------------------------------------------------

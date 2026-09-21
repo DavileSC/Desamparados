@@ -24,7 +24,28 @@ export function login(
   })
 }
 
-export function register(data: {
+/** Qué es el menor para quien lo apunta: no todos son hijos suyos. */
+export const PARENTESCOS = [
+  { value: 'HIJO', label: 'Hijo o hija' },
+  { value: 'SOBRINO', label: 'Sobrino o sobrina' },
+  { value: 'NIETO', label: 'Nieto o nieta' },
+  { value: 'AHIJADO', label: 'Ahijado o ahijada' },
+  { value: 'OTRO', label: 'Otro' },
+] as const
+
+export type Parentesco = (typeof PARENTESCOS)[number]['value']
+
+/** Un menor a cargo de quien abre la cuenta. DNI y correo, solo si ya los tiene. */
+export interface MenorAlta {
+  nombre: string
+  apellidos: string
+  fechaNacimiento: string
+  parentesco: Parentesco
+  dni?: string
+  email?: string
+}
+
+export interface RegistroData {
   email: string
   password: string
   dni: string
@@ -34,13 +55,22 @@ export function register(data: {
   direccion: string
   poblacion: string
   codigoPostal: string
-  fechaNacimiento: string
-}) {
-  return apiFetch<{ user: { id: number; email: string }; message: string }>('/auth/register', {
+  /** La suya, si se hace hermano. Sin ella, la cuenta es solo para gestionar. */
+  fechaNacimiento?: string
+  menores?: MenorAlta[]
+}
+
+/**
+ * El alta, en sus tres caminos: `fechaNacimiento` sin menores es un adulto que
+ * se hace hermano; las dos cosas, uno que además apunta a quien tiene a su
+ * cargo; solo menores, uno que no entra en el censo y abre la cuenta para
+ * gestionarlos.
+ */
+export function register(data: RegistroData) {
+  return apiFetch<{ user: { id: number; email: string }; fichas: number; message: string }>('/auth/register', {
     method: 'POST',
     auth: false,
     json: {
-      isTutor: false,
       usuario: {
         email: data.email,
         password: data.password,
@@ -55,8 +85,34 @@ export function register(data: {
         poblacion: data.poblacion,
         codigoPostal: data.codigoPostal,
       },
-      hermano: { fechaNacimiento: data.fechaNacimiento },
+      ...(data.fechaNacimiento ? { titular: { fechaNacimiento: data.fechaNacimiento } } : {}),
+      ...(data.menores?.length
+        ? {
+            menores: data.menores.map((menor) => ({
+              nombre: menor.nombre,
+              apellidos: menor.apellidos,
+              fechaNacimiento: menor.fechaNacimiento,
+              parentesco: menor.parentesco,
+              // Vacíos se omiten: el servidor los quiere ausentes, no en blanco.
+              ...(menor.dni ? { dni: normalizarDni(menor.dni) } : {}),
+              ...(menor.email ? { email: menor.email } : {}),
+            })),
+          }
+        : {}),
     },
+  })
+}
+
+/**
+ * Pedir volver tras una baja. Se ofrece cuando el alta topa con un DNI que ya
+ * está en el censo. La respuesta es siempre la misma, exista o no la ficha: el
+ * servidor no dice quién está en el censo y la pantalla tampoco puede saberlo.
+ */
+export function pedirReactivacion(dni: string, email: string) {
+  return apiFetch<{ message: string }>('/auth/reactivacion', {
+    method: 'POST',
+    auth: false,
+    json: { dni: normalizarDni(dni), email },
   })
 }
 

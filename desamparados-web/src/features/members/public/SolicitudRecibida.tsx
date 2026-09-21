@@ -9,6 +9,10 @@ import { FILETE_TARJETA } from './temaTarjeta'
 interface SolicitudRecibidaProps {
   nombre: string
   email: string
+  /** Cuántas personas van en la solicitud: el adulto y los menores a su cargo. */
+  fichas?: number
+  /** Quien solo apunta a un menor no se hace hermano: lo que toca no es lo mismo. */
+  soloMenores?: boolean
 }
 
 /**
@@ -17,7 +21,7 @@ interface SolicitudRecibidaProps {
  * Se lleva el foco al título para que quien usa teclado o lector de pantalla
  * sepa que la página ha cambiado y no se quede sobre un botón que ya no está.
  */
-export default function SolicitudRecibida({ nombre, email }: SolicitudRecibidaProps) {
+export default function SolicitudRecibida({ nombre, email, fichas = 1, soloMenores = false }: SolicitudRecibidaProps) {
   const titulo = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
@@ -37,6 +41,7 @@ export default function SolicitudRecibida({ nombre, email }: SolicitudRecibidaPr
       <Typography sx={{ fontSize: 16, lineHeight: 1.65, maxWidth: '58ch', mb: 3 }}>
         Te hemos enviado el acuse de recibo a <strong>{email}</strong>. Si no lo ves en unos minutos,
         mira en la carpeta de correo no deseado.
+        {fichas > 1 && <> La solicitud lleva <strong>{fichas} fichas</strong>: Secretaría las revisa todas juntas.</>}
       </Typography>
 
       <Box sx={{ borderTop: `1px solid ${FILETE_TARJETA}`, pt: 2.5, mb: 3.5 }}>
@@ -44,9 +49,10 @@ export default function SolicitudRecibida({ nombre, email }: SolicitudRecibidaPr
           Qué toca ahora
         </Typography>
         <Typography sx={{ fontSize: 15, lineHeight: 1.7, maxWidth: '58ch', color: 'text.secondary' }}>
-          Pásate por Secretaría, en la casa parroquial, con tu DNI y el certificado de bautismo
-          ({site.contacto.horario.toLowerCase()}). Allí formalizan el alta y activan tu acceso al
-          área de hermanos con el email y la contraseña que acabas de elegir.
+          Pásate por Secretaría, en la casa parroquial, con tu DNI y el certificado de bautismo de cada
+          persona que apuntas ({site.contacto.horario.toLowerCase()}). Allí formalizan el alta y activan tu
+          acceso al área de hermanos con el email y la contraseña que acabas de elegir.
+          {soloMenores && ' Desde ahí gestionarás sus fichas, aunque tú no seas hermano.'}
         </Typography>
       </Box>
 

@@ -676,9 +676,8 @@ test('registrarse con el DNI de una ficha que ya existe responde 409 y no crea n
   try {
     await assert.rejects(
       AuthService.registerUser({
-        isTutor: false,
         usuario: { email: emailNuevo, dni, password: PASSWORD_PRUEBA, nombre: 'Prueba', apellidos: 'Vuelve', telefono: '600000000' },
-        hermano: { fechaNacimiento: '1990-01-01' }
+        titular: { fechaNacimiento: '1990-01-01' }
       } as never),
       conEstado(409)
     );

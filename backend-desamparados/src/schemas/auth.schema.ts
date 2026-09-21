@@ -19,34 +19,76 @@ const usuarioSchema = type({
 });
 
 // =================================================================
-//  2. LÓGICA CONDICIONAL DE REGISTRO (Unión Discriminada)
+//  2. REGISTRO: UNA FORMA PARA LOS TRES CAMINOS
 // =================================================================
 
-// CASO A: Es un Tutor dando de alta a un hermano/menor
-const registroTutor = type({
-    isTutor: "true", // literal 'true'
-    usuario: usuarioSchema,
-    hermano: type({
-        nombre: textoRequerido,
-        "apellidos?": "string", // Opcional (si no viene, tu controlador coge el del usuario)
-        "dni?": dni,            // Opcional, pero si viene, pasa por la validación matemática
-        fechaNacimiento: type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha de nacimiento válida (YYYY-MM-DD)")
-    })
+const diaNacimiento = type("string")
+    .matching(/^\d{4}-\d{2}-\d{2}$/)
+    .describe("una fecha de nacimiento válida (YYYY-MM-DD)");
+
+/**
+ * Qué es el menor para quien lo apunta. No siempre es su hijo: un tío, un
+ * abuelo o un padrino pueden ser su tutor a efectos de la cofradía, y a
+ * Secretaría le hace falta saberlo para pedir la autorización de los padres.
+ */
+export const PARENTESCOS = ['HIJO', 'SOBRINO', 'NIETO', 'AHIJADO', 'OTRO'] as const;
+export type ParentescoAlta = (typeof PARENTESCOS)[number];
+
+/**
+ * Un menor a cargo del adulto que se registra. El DNI y el correo son
+ * opcionales **a propósito**: un niño de siete años no tiene ninguno de los
+ * dos, pero uno de quince ya suele tener ambos, y obligar a dejarlos en blanco
+ * dejaría fuera a media adolescencia. La edad no se comprueba aquí sino en el
+ * servicio (`comprobarEsMenor`), que es quien sabe qué día es hoy.
+ */
+const menorSchema = type({
+    nombre: textoRequerido,
+    "apellidos?": "string",  // Sin ellos se heredan los del adulto: ver auth.service
+    "dni?": dni,             // Si viene, pasa por la validación de la letra
+    "email?": email,
+    "parentesco?": "'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO'",
+    fechaNacimiento: diaNacimiento
 });
 
-// CASO B: Es un adulto dándose de alta a sí mismo
-// (necesita su fecha de nacimiento para crear su ficha de hermano)
-const registroPropio = type({
-    isTutor: "false", // literal 'false'
-    usuario: usuarioSchema,
-    hermano: type({
-        fechaNacimiento: type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha de nacimiento válida (YYYY-MM-DD)")
-    })
-});
+/**
+ * Tantos menores como caben en un alta. El tope existe para que un solo envío
+ * no pueda sembrar fichas sin límite; ocho es más de lo que ninguna familia
+ * apunta de una vez.
+ */
+export const MAXIMO_MENORES_POR_ALTA = 8;
 
-// Esquema final de Registro (Acepta A o B)
+/**
+ * Los tres caminos del alta, sin discriminador artificial: lo que se pide
+ * describe a quién se está apuntando.
+ *
+ *  - Solo `titular`             → un adulto que se hace hermano.
+ *  - `titular` y `menores`      → y que además apunta a menores a su cargo.
+ *  - Solo `menores`             → un adulto que NO se hace hermano y solo
+ *                                 apunta a un menor: su cuenta es la de quien
+ *                                 lo gestiona.
+ *
+ * Que venga al menos uno de los dos lo comprueba el servicio, junto al resto de
+ * reglas que necesitan mirar la base de datos o el calendario.
+ */
 export const registerSchema = type({
-    body: registroTutor.or(registroPropio)
+    body: {
+        usuario: usuarioSchema,
+        "titular?": { fechaNacimiento: diaNacimiento },
+        "menores?": menorSchema.array().moreThanLength(0).atMostLength(MAXIMO_MENORES_POR_ALTA)
+    }
+});
+
+/**
+ * Pedir volver tras una baja. Van los dos datos porque con el DNI solo, el
+ * formulario serviría para saber quién está en el censo: el correo no se
+ * comprueba contra nada, pero deja constancia de quién dice ser y hace que
+ * probar DNI sueltos no tenga ningún premio (la respuesta es siempre la misma).
+ */
+export const reactivacionSchema = type({
+    body: {
+        dni: dni,
+        email: email
+    }
 });
 
 

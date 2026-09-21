@@ -94,3 +94,37 @@ export function comprobarMayoriaDeEdad(fechaNacimiento: Date | null | undefined,
     throw new HttpError(`Solo puede tener cuenta propia un hermano con ${MAYORIA_DE_EDAD} años cumplidos.`);
   }
 }
+
+/**
+ * La regla espejo, para el alta: a quien se apunta como menor a cargo de otro
+ * hay que comprobarle que de verdad lo es. Con 18 cumplidos no puede depender
+ * de la cuenta de nadie —tiene que darse de alta él, con su DNI— o entraría en
+ * el censo un adulto cuyos datos gestiona un tercero para siempre.
+ *
+ * El nacimiento futuro se descarta aquí y no en el esquema: la fecha llega como
+ * 'AAAA-MM-DD' válida, y es esta función la que sabe qué día es hoy.
+ */
+export function comprobarEsMenor(fechaNacimiento: Date, quien: string, hoy: string = diaDeHoy()): void {
+  const edad = aniosCumplidos(fechaNacimiento, hoy);
+  if (edad < 0) {
+    throw new HttpError(`Revisa la fecha de nacimiento de ${quien}: es una fecha futura.`);
+  }
+  if (edad >= MAYORIA_DE_EDAD) {
+    throw new HttpError(
+      `${quien} tiene ${MAYORIA_DE_EDAD} años cumplidos: con esa edad el alta la hace la propia persona, con su DNI.`
+    );
+  }
+}
+
+/** Y la de siempre, dicha para el alta: quien abre la cuenta es mayor de edad. */
+export function comprobarEsAdulto(fechaNacimiento: Date, hoy: string = diaDeHoy()): void {
+  const edad = aniosCumplidos(fechaNacimiento, hoy);
+  if (edad < 0) {
+    throw new HttpError('Revisa tu fecha de nacimiento: es una fecha futura.');
+  }
+  if (edad < MAYORIA_DE_EDAD) {
+    throw new HttpError(
+      `Para abrir una cuenta hacen falta ${MAYORIA_DE_EDAD} años. Si eres menor, tiene que apuntarte un adulto a su cargo.`
+    );
+  }
+}

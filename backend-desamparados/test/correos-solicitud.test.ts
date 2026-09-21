@@ -180,9 +180,8 @@ describe('aviso a Secretaría de una solicitud nueva', () => {
 
     try {
       await AuthService.registerUser({
-        isTutor: false,
         usuario: { email, dni: `S${sufijo}`, password: PASSWORD_PRUEBA, nombre: 'Lucía', apellidos: 'Moreno Gil', telefono: '600000000' },
-        hermano: { fechaNacimiento: '1990-01-01' },
+        titular: { fechaNacimiento: '1990-01-01' },
       } as never);
       await dejarSalirLosCorreos();
 
