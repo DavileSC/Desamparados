@@ -1,0 +1,15 @@
+{
+  "_comentario": "Tabla de casos que leen los tests de los dos proyectos: desamparados-web/src/lib/__tests__/slug.test.ts y backend-desamparados/test/slug-paridad.test.ts. La dirección de una noticia la propone el CMS mientras se escribe y la pone el servidor al guardar: si se separan, el CMS enseña una dirección y la noticia acaba en otra. Si cambias la tabla, ejecuta los dos.",
+  "casos": [
+    { "titulo": "Triduo a la Virgen", "anio": 2026, "slug": "triduo-a-la-virgen-2026" },
+    { "titulo": "Función Principal de Instituto", "anio": 2025, "slug": "funcion-principal-de-instituto-2025" },
+    { "titulo": "Besamanos de la Señora", "anio": 2026, "slug": "besamanos-de-la-senora-2026" },
+    { "titulo": "El Niño y la Cofradía", "anio": 2026, "slug": "el-nino-y-la-cofradia-2026" },
+    { "titulo": "¡Ya está aquí el Sábado de Pasión!", "anio": 2026, "slug": "ya-esta-aqui-el-sabado-de-pasion-2026" },
+    { "titulo": "Cultos   con    espacios", "anio": 2026, "slug": "cultos-con-espacios-2026" },
+    { "titulo": "  Con espacios al borde  ", "anio": 2026, "slug": "con-espacios-al-borde-2026" },
+    { "titulo": "Güisqui, cañas y ñoños", "anio": 2026, "slug": "guisqui-canas-y-nonos-2026" },
+    { "titulo": "Memoria 2024/2025", "anio": 2026, "slug": "memoria-2024-2025-2026" },
+    { "titulo": "MAYÚSCULAS", "anio": 2026, "slug": "mayusculas-2026" }
+  ]
+}

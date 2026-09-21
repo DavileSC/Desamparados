@@ -7,6 +7,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import AgendaList from '../home/AgendaList'
 import { PAPEL } from '../home/estilos'
 import temaPublico from '../../theme'
+import { aDia, aHora } from '../../lib/fechas'
 import { ANCHO_EDICION } from './PantallaEdicion'
 import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
 import { useFichaCms } from './ficha/useFichaCms'
@@ -31,10 +32,6 @@ interface Formulario {
 
 const vacio: Formulario = { title: '', description: '', location: '', type: 'CULTO', visibility: 'public', dia: '', hora: '', conFin: false, diaFin: '', horaFin: '' }
 
-const dosCifras = (n: number) => String(n).padStart(2, '0')
-/** Los campos de fecha y hora piden la hora local, no el ISO en UTC del servidor. */
-const aDia = (fecha: Date) => `${fecha.getFullYear()}-${dosCifras(fecha.getMonth() + 1)}-${dosCifras(fecha.getDate())}`
-const aHora = (fecha: Date) => `${dosCifras(fecha.getHours())}:${dosCifras(fecha.getMinutes())}`
 const momento = (dia: string, hora: string) => (dia && hora ? new Date(`${dia}T${hora}`) : null)
 
 function desdeEvento(evento: ApiEvent): Formulario {

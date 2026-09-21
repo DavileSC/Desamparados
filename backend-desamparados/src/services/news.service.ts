@@ -9,6 +9,7 @@ import { esImagenPropia, rutaAlEditar } from '../utils/rutas-propias.js';
 import type { EstadoNoticia } from '../schemas/news.schema.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { fechaMasReciente, marcaDestacada } from '../domain/destacada-portada.js';
+import { slugDeNoticia } from '../domain/slug-noticia.js';
 
 /**
  * Las noticias de la portada: tres, las que caben en su rejilla de tres
@@ -205,7 +206,7 @@ export class NewsService {
     // 2. Generar Slug si no viene dado
     let finalSlug = data.slug;
     if (!finalSlug) {
-      finalSlug = this.generateSlug(data.titulo, fechaNoticia.getFullYear());
+      finalSlug = slugDeNoticia(data.titulo, fechaNoticia.getFullYear());
     }
 
     try {
@@ -297,14 +298,4 @@ export class NewsService {
    * Genera una URL amigable limpia (SEO Friendly)
    * Ej: "Procesión Magna 2024" -> "procesion-magna-2024"
    */
-  private static generateSlug(title: string, year: number): string {
-    const base = title
-      .toLowerCase()
-      .normalize("NFD").replace(/[̀-ͯ]/g, "") // Elimina tildes y diacríticos
-      .replace(/ñ/g, "n") // Trata la ñ explícitamente
-      .replace(/[^a-z0-9]+/g, "-") // Reemplaza caracteres raros por guiones
-      .replace(/(^-|-$)+/g, ""); // Quita guiones al inicio/final
-
-    return `${base}-${year}`;
-  }
 }

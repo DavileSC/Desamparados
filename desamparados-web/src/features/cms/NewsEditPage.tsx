@@ -8,6 +8,8 @@ import { Link, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import NewsCard from '../../components/NewsCard'
+import { hoy } from '../../lib/fechas'
+import { direccionAutomatica } from '../../lib/slug'
 import { ANCHO_EDICION } from './PantallaEdicion'
 import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
 import { useFichaCms } from './ficha/useFichaCms'
@@ -24,16 +26,7 @@ const EXTRACTO_RECOMENDADO = 180
 
 type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
 
-const hoy = () => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
-/** La dirección que pondrá el servidor si no se escribe otra (NewsService.generateSlug). */
-function direccionAutomatica(titulo: string, fecha: string) {
-  const base = titulo.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ñ/g, 'n').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
-  return base ? `${base}-${fecha.slice(0, 4) || new Date().getFullYear()}` : ''
-}
 
 /**
  * La ficha de una noticia, nueva o ya escrita.

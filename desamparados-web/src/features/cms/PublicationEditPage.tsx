@@ -7,6 +7,7 @@ import { Link, useParams } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import PublicationCard from '../../components/PublicationCard'
 import temaPublico from '../../theme'
+import { hoy } from '../../lib/fechas'
 import { ANCHO_EDICION } from './PantallaEdicion'
 import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
 import { useFichaCms } from './ficha/useFichaCms'
@@ -19,10 +20,6 @@ import { createPublication, getAdminPublicationById, updatePublication, type Api
 
 type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
 
-const hoy = () => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 /**
  * La ficha de una publicación, nueva o ya subida.

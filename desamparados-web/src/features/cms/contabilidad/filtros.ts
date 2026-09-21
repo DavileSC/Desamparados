@@ -1,4 +1,5 @@
 import type { FiltrosContables, MetodoPago, TipoApunte } from '../../../lib/api/accounting'
+import { aDia } from '../../../lib/fechas'
 
 export const PERIODOS = [
   { valor: 'mes', etiqueta: 'Este mes' },
@@ -34,8 +35,7 @@ export interface FiltrosUi {
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/
 /** `AAAA-MM-DD` del día local (el del navegador, que en el CMS es el de Madrid). */
-export const dia = (fecha: Date) =>
-  `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
+export const dia = aDia
 
 /**
  * Unas fechas a elegir con el «hasta» antes del «desde». El servidor lo
