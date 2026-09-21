@@ -35,6 +35,21 @@ export interface PendingRequest {
   hermanos: AdminBrother[]
 }
 
+/**
+ * Quien se dio de baja y ha pedido volver desde la web. No es una solicitud de
+ * alta: su ficha ya estuvo en el censo, así que se resuelve reactivándola (le
+ * da número nuevo) o descartando la petición, nunca con «aprobar».
+ */
+export interface PeticionVuelta {
+  id: number
+  nombre: string
+  apellidos: string
+  dni: string | null
+  email: string | null
+  fechaBaja: string | null
+  reactivacionSolicitada: string
+}
+
 /** Búsqueda, filtros y orden del censo. Vacío = sin filtrar. */
 export type FiltrosCenso = {
   q?: string
@@ -48,7 +63,16 @@ export function searchBrothers(filtros: FiltrosCenso, pagina: { pagina: number; 
 }
 
 export function getPendingRequests(pagina: { pagina: number; porPagina: number }) {
-  return apiFetch<RespuestaPaginada<PendingRequest>>(`/hermanos/admin/solicitudes?${paramsPagina(pagina)}`)
+  // Las peticiones de vuelta llegan con las altas: se atienden en la misma
+  // pantalla, aunque con otro botón.
+  return apiFetch<RespuestaPaginada<PendingRequest> & { reactivaciones: PeticionVuelta[] }>(
+    `/hermanos/admin/solicitudes?${paramsPagina(pagina)}`,
+  )
+}
+
+/** Descartar una petición de vuelta: la ficha se queda de baja, como estaba. */
+export function descartarPeticionVuelta(hermanoId: number) {
+  return apiFetch<{ message: string }>(`/hermanos/admin/reactivaciones/${hermanoId}`, { method: 'DELETE' })
 }
 
 export function approveRequest(id: number) {

@@ -51,6 +51,10 @@ hermanoRouter.post('/admin/cerrar-huecos-numero', checkRole(rolesGestionCenso), 
 hermanoRouter.get('/admin/solicitudes', checkRole(rolesGestionCenso), HermanoController.getSolicitudes);
 hermanoRouter.post('/admin/solicitudes/:id/aprobar', checkRole(rolesGestionCenso), validateId, HermanoController.aprobarSolicitud);
 hermanoRouter.delete('/admin/solicitudes/:id/rechazar', checkRole(rolesGestionCenso), validateId, HermanoController.rechazarSolicitud);
+// Las peticiones de volver salen en la misma pantalla que las solicitudes, pero
+// se atienden con «reactivar» (más abajo) o descartándolas: nunca con aprobar,
+// que es para quien nunca estuvo en el censo.
+hermanoRouter.delete('/admin/reactivaciones/:id', checkRole(rolesGestionCenso), validateId, HermanoController.descartarReactivacion);
 
 // 4. Operaciones sobre un Hermano Específico
 hermanoRouter.get('/admin/:id', checkRole(rolesGestionCenso), validateId, HermanoController.getById);

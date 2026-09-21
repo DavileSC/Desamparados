@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import PersonIcon from '@mui/icons-material/Person'
+import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom'
 import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import LogoutIcon from '@mui/icons-material/Logout'
@@ -27,6 +28,10 @@ const drawerWidth = 260
 
 const menuItems = [
   { label: 'Mi perfil', href: '/area-hermano/perfil', icon: <PersonIcon /> },
+  // Las fichas de quienes están a su cargo: un menor apuntado por su padre, su
+  // tío o su padrino. Sin esta pantalla, el alta de un menor solo se podía
+  // hacer el día del registro y nunca más.
+  { label: 'Mi familia', href: '/area-hermano/familia', icon: <FamilyRestroomIcon /> },
   { label: 'Procesión', href: '/area-hermano/procesion', icon: <DirectionsWalkIcon /> },
   { label: 'Recibos', href: '/area-hermano/recibos', icon: <ReceiptIcon /> },
 ]

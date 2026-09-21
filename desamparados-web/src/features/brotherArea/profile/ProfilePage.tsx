@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ApiProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [sinFichaPropia, setSinFichaPropia] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -29,9 +30,14 @@ export default function ProfilePage() {
     // esta pantalla elige una ficha, y un selector paginado escondería alguna.
     getMyProfiles()
       .then((respuesta) => {
-        if (!cancelled) {
-          setProfile(fichaPropia(respuesta.data))
-          if (respuesta.data.length === 0) setError('No se ha encontrado ningún perfil asociado a tu cuenta.')
+        if (cancelled) return
+        setProfile(fichaPropia(respuesta.data))
+        if (respuesta.data.length === 0) {
+          setError('No se ha encontrado ningún perfil asociado a tu cuenta.')
+        } else if (!fichaPropia(respuesta.data)) {
+          // Quien solo apuntó a menores no tiene ficha: su cuenta existe para
+          // gestionarlas. Antes se le enseñaba la del hijo como si fuera la suya.
+          setSinFichaPropia(true)
         }
       })
       .catch((err: unknown) => {
@@ -70,6 +76,19 @@ export default function ProfilePage() {
         <PageContainer>
           {loading && <CircularProgress aria-label="Cargando perfil" />}
           {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
+
+          {/* Su cuenta existe para gestionar a quienes tiene a su cargo: aquí no
+              hay ficha que enseñar, y lo que busca está en «Mi familia». */}
+          {sinFichaPropia && (
+            <GlassCard sx={{ p: { xs: 3, md: 5 } }}>
+              <Typography variant="h4" component="h1" sx={{ mb: 1.5 }}>Tu cuenta</Typography>
+              <Typography sx={{ color: 'text.secondary', mb: 3, maxWidth: '58ch' }}>
+                No tienes ficha de hermano: esta cuenta la abriste para gestionar las fichas de quienes tienes a tu
+                cargo. Las encontrarás en «Mi familia», y desde ahí puedes hacerte hermano tú también.
+              </Typography>
+              <AppButton onClick={() => navigate('/area-hermano/familia')}>Ir a Mi familia</AppButton>
+            </GlassCard>
+          )}
 
           {profile && <Box
             sx={{

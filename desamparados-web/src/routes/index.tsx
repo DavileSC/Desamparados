@@ -72,6 +72,7 @@ const ResetPasswordPage = lazy(() => import('../features/members/auth/ResetPassw
 // Brother area pages
 const ProfilePage = lazy(() => import('../features/brotherArea/profile/ProfilePage'))
 const EditProfilePage = lazy(() => import('../features/brotherArea/profile/EditProfilePage'))
+const FamilyPage = lazy(() => import('../features/brotherArea/family/FamilyPage'))
 const ProcessionPage = lazy(() => import('../features/brotherArea/procession/ProcessionPage'))
 const PapeletaPage = lazy(() => import('../features/brotherArea/procession/PapeletaPage'))
 const HistoricoPage = lazy(() => import('../features/brotherArea/procession/HistoricoPage'))
@@ -171,6 +172,7 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="/area-hermano/perfil" replace /> },
           { path: 'perfil', element: withSuspense(ProfilePage) },
           { path: 'perfil/editar', element: withSuspense(EditProfilePage) },
+          { path: 'familia', element: withSuspense(FamilyPage) },
           { path: 'procesion', element: withSuspense(ProcessionPage) },
           { path: 'procesion/papeleta', element: withSuspense(PapeletaPage) },
           { path: 'procesion/historico', element: withSuspense(HistoricoPage) },

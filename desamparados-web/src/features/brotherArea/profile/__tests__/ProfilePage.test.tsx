@@ -77,11 +77,15 @@ describe('ProfilePage', () => {
     expect(screen.queryByText('Bruno Pérez Ruiz')).not.toBeInTheDocument()
   })
 
-  it('sin ficha propia, enseña la primera de la familia', async () => {
+  // Quien solo apuntó a menores no tiene ficha: antes se le enseñaba la de su
+  // hijo bajo el rótulo «Mi perfil», como si fuera la suya.
+  it('sin ficha propia, habla de la cuenta y manda a Mi familia', async () => {
     responder([ficha(2, 'Bruno', false)], { total: 1, page: 1, limit: FICHAS_POR_FAMILIA, totalPages: 1 })
     renderWithProviders(<ProfilePage />)
 
-    expect(await screen.findByText('Bruno Pérez Ruiz')).toBeInTheDocument()
+    expect(await screen.findByText('Tu cuenta')).toBeInTheDocument()
+    expect(screen.queryByText('Bruno Pérez Ruiz')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ir a mi familia/i })).toBeInTheDocument()
   })
 
   it('avisa cuando la cuenta no tiene ninguna ficha', async () => {

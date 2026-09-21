@@ -6,7 +6,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../members/auth/store'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { approveRequest, cerrarHuecosDeNumero, getPendingRequests, rejectRequest, searchBrothers, type AdminBrother, type FiltrosCenso, type PendingRequest } from '../../lib/api/brothers'
+import { approveRequest, cerrarHuecosDeNumero, descartarPeticionVuelta, getPendingRequests, reactivarBrother, rejectRequest, searchBrothers, type AdminBrother, type FiltrosCenso, type PendingRequest, type PeticionVuelta } from '../../lib/api/brothers'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
@@ -52,6 +52,8 @@ export default function BrothersAdminPage() {
   const [filtros, cambiarFiltros] = useFiltrosUrl(FILTROS_CENSO)
   const [brothers, setBrothers] = useState<AdminBrother[]>([])
   const [requests, setRequests] = useState<PendingRequest[]>([])
+  // Las peticiones de volver llegan con las solicitudes, en la misma respuesta.
+  const [vueltas, setVueltas] = useState<PeticionVuelta[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -82,13 +84,14 @@ export default function BrothersAdminPage() {
   const load = useCallback((vigente: () => boolean = () => true) => Promise.all([
     puedeGestionar
       ? getPendingRequests({ pagina: solicitudes.pagina, porPagina: solicitudes.porPagina })
-      : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 } }),
+      : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 }, reactivaciones: [] as PeticionVuelta[] }),
     searchBrothers(filtros as FiltrosCenso, { pagina, porPagina }),
   ]).then(([pendientes, censo]) => {
     if (!vigente()) return
     setBrothers(censo.data)
     setMeta(censo.meta)
     setRequests(pendientes.data)
+    setVueltas(pendientes.reactivaciones ?? [])
     setMetaSolicitudes(pendientes.meta)
   }), [puedeGestionar, filtros, pagina, porPagina, solicitudes.pagina, solicitudes.porPagina])
 
@@ -120,6 +123,29 @@ export default function BrothersAdminPage() {
   const recargarYRefrescarMenu = async () => {
     await load()
     void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
+  }
+
+  /**
+   * Atender a quien pide volver: reactivar su ficha (vuelve al censo con número
+   * nuevo) o descartar la petición (se queda de baja, como estaba). Nunca
+   * «aprobar»: eso es para quien nunca estuvo.
+   */
+  const atenderVuelta = async (vuelta: PeticionVuelta, reactivar: boolean) => {
+    if (enMarcha.current) return
+    enMarcha.current = true
+    setProcesando(vuelta.id); setError(null); setNotice(null)
+    try {
+      await (reactivar ? reactivarBrother(vuelta.id) : descartarPeticionVuelta(vuelta.id))
+      await recargarYRefrescarMenu()
+      setNotice(reactivar
+        ? `${vuelta.nombre} vuelve al censo con número nuevo.`
+        : 'Petición descartada. La ficha sigue de baja.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se ha podido atender la petición.')
+    } finally {
+      setProcesando(null)
+      enMarcha.current = false
+    }
   }
 
   const handleRequest = async (request: PendingRequest, approve: boolean) => {
@@ -193,10 +219,63 @@ export default function BrothersAdminPage() {
       onCancelar={() => setPorAsignarNumeros(false)}
     />
     {vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
-      {requests.map((request) => <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Box><Typography>{request.nombre} {request.apellidos}</Typography><Typography variant="body2" color="text.secondary">{request.email} · {request.hermanos.length} perfil(es)</Typography></Box><Stack direction="row" spacing={1}><Button variant="contained" disabled={procesando !== null} onClick={() => void handleRequest(request, true)}>{procesando === request.id ? 'Procesando…' : 'Aprobar'}</Button><Button color="error" disabled={procesando !== null} onClick={() => setPorRechazar(request)}>Rechazar</Button></Stack></Box>)}
+      {requests.map((request) => (
+        <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
+          <Box>
+            <Typography>{request.nombre} {request.apellidos}</Typography>
+            <Typography variant="body2" color="text.secondary">{request.email}</Typography>
+            {/* Quiénes son, no cuántos: un alta puede traer al adulto y a los
+                menores a su cargo, y quien aprueba tiene que saber a quién. */}
+            <Box component="ul" sx={{ m: 0, mt: 0.75, pl: 2.5 }}>
+              {request.hermanos.map((ficha) => (
+                <Typography key={ficha.id} component="li" variant="body2" color="text.secondary">
+                  {ficha.nombre} {ficha.apellidos}
+                  {ficha.fechaNacimiento && ` · ${new Date(ficha.fechaNacimiento).toLocaleDateString('es-ES')}`}
+                  {ficha.dni ? ` · ${ficha.dni}` : ' · sin DNI'}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+          <Stack direction="row" spacing={1}>
+            <Button variant="contained" disabled={procesando !== null} onClick={() => void handleRequest(request, true)}>{procesando === request.id ? 'Procesando…' : 'Aprobar'}</Button>
+            <Button color="error" disabled={procesando !== null} onClick={() => setPorRechazar(request)}>Rechazar</Button>
+          </Stack>
+        </Box>
+      ))}
       {requests.length === 0 && <Alert severity="info">No hay solicitudes pendientes.</Alert>}
     </Stack>
     {metaSolicitudes && <Paginador meta={metaSolicitudes} onPagina={solicitudes.irAPagina} onTamano={solicitudes.cambiarTamano} etiqueta="solicitudes de alta" />}
+
+    {/* Quien se fue y quiere volver. No se aprueba: se reactiva, porque su
+        ficha ya estuvo en el censo y vuelve con número nuevo. */}
+    {vueltas.length > 0 && (
+      <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
+        <Typography component="h2" sx={{ fontSize: 15, fontWeight: 600, mb: 0.5 }}>Piden volver</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Estuvieron en el censo y se dieron de baja. Al reactivarlos entran otra vez, con número nuevo.
+        </Typography>
+        <Stack spacing={2}>
+          {vueltas.map((vuelta) => (
+            <Box key={vuelta.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Box>
+                <Typography>{vuelta.nombre} {vuelta.apellidos}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {vuelta.dni ?? 'sin DNI'}
+                  {vuelta.fechaBaja && ` · se dio de baja el ${new Date(vuelta.fechaBaja).toLocaleDateString('es-ES')}`}
+                  {` · lo pidió el ${new Date(vuelta.reactivacionSolicitada).toLocaleDateString('es-ES')}`}
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1}>
+                <Button variant="contained" disabled={procesando !== null} onClick={() => void atenderVuelta(vuelta, true)}>
+                  {procesando === vuelta.id ? 'Procesando…' : 'Reactivar'}
+                </Button>
+                <Button color="error" disabled={procesando !== null} onClick={() => void atenderVuelta(vuelta, false)}>Descartar</Button>
+              </Stack>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
+    )}
     </Paper> : <>
     <BarraListado
       valores={filtros}

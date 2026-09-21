@@ -4,7 +4,7 @@ import { Prisma, Role } from '@prisma/client';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto, UpdateAdminHermanoDto } from '../dtos/hermano.dto';
 import { AuditService, AUDIT_ACTIONS, AuditMeta } from './audit.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
-import { comprobarBajaNoFutura, comprobarFechasHermano, comprobarMayoriaDeEdad, diaDeHoy, instanteDeDia, mismoDia } from '../domain/fechas-hermano';
+import { comprobarBajaNoFutura, comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano, comprobarMayoriaDeEdad, diaDeHoy, instanteDeDia, mismoDia } from '../domain/fechas-hermano';
 import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import crypto from 'crypto';
@@ -93,6 +93,9 @@ const HERMANO_SAFE_SELECT = {
   id: true, nombre: true, apellidos: true, dni: true, fechaNacimiento: true,
   telefono: true, email: true, direccion: true, poblacion: true, codigoPostal: true,
   fechaAlta: true, activo: true, numeroHermano: true, fechaBaja: true, esTitular: true,
+  // Quién es para el titular: «Mi familia» lo enseña, porque una ficha a cargo
+  // de alguien que no es su padre se gestiona distinto (autorización aparte).
+  parentesco: true,
   tieneTunicaPropia: true, tunica: true, alturaHombro: true, puesto: true
 } satisfies Prisma.HermanoSelect;
 
@@ -214,14 +217,25 @@ export class HermanoService {
 
     const esTitular = !!data.dni && data.dni === manager.dni;
 
+    // Su propia ficha (se apunta él con su DNI) tiene que ser de un adulto; la
+    // de alguien a su cargo, de un menor: con 18 cumplidos el alta la hace la
+    // propia persona, o quedaría un adulto dependiendo de la cuenta de otro.
+    const nacimiento = new Date(data.fechaNacimiento);
+    if (esTitular) comprobarEsAdulto(nacimiento);
+    else comprobarEsMenor(nacimiento, data.nombre);
+
     const creado = await db.hermano.create({
       data: {
         userId: managerUserId,
         esTitular,
         nombre: data.nombre,
+        // De un hijo se heredan si no vienen; de un sobrino o un ahijado no
+        // valen, y por eso el formulario los pide en blanco cuando no es hijo.
         apellidos: data.apellidos || manager.apellidos,
         dni: data.dni || null,
-        fechaNacimiento: new Date(data.fechaNacimiento),
+        // La ficha del propio titular no tiene parentesco: no es de nadie.
+        parentesco: esTitular ? null : (data.parentesco ?? null),
+        fechaNacimiento: nacimiento,
         telefono: data.telefono || manager.telefono,
         email: data.email || manager.email,
         direccion: data.direccion || manager.direccion,
@@ -682,7 +696,10 @@ export class HermanoService {
           activo: true,
           fechaBaja: null, // Limpiamos la fecha de baja
           fechaAlta, // Nueva fecha de alta
-          numeroHermano: nextNum
+          numeroHermano: nextNum,
+          // Si volvió porque lo pidió desde la web, la petición queda atendida
+          // y sale de la cola de Secretaría.
+          reactivacionSolicitada: null
         }
       });
       if (count === 0) throw new HttpError(HERMANO_ERRORS.HERMANO_ALREADY_ACTIVE);
@@ -834,7 +851,47 @@ export class HermanoService {
       db.user.count({ where })
     ]);
 
-    return respuestaPaginada(data, total, paginacion);
+    return { ...respuestaPaginada(data, total, paginacion), reactivaciones: await this.getReactivacionesPedidas() };
+  }
+
+  /**
+   * Quien se dio de baja y ha pedido volver desde la web.
+   *
+   * No son solicitudes de alta: su ficha ya estuvo en el censo y conserva su
+   * `fechaBaja`, así que el `where` de arriba no las ve. Van aparte en la misma
+   * respuesta porque Secretaría las atiende en la misma pantalla, pero con otro
+   * botón: estas se resuelven con `reactivarHermano`, que les devuelve número
+   * nuevo, no con `aprobarSolicitud`.
+   *
+   * Sin paginar a propósito: son pocas y conviene verlas todas de un vistazo.
+   */
+  static async getReactivacionesPedidas() {
+    return db.hermano.findMany({
+      where: { reactivacionSolicitada: { not: null } },
+      orderBy: [{ reactivacionSolicitada: 'asc' }, { id: 'asc' }],
+      select: {
+        id: true, nombre: true, apellidos: true, dni: true, email: true,
+        fechaBaja: true, reactivacionSolicitada: true,
+      },
+    });
+  }
+
+  /**
+   * Secretaría descarta una petición de volver: la marca se quita y la ficha
+   * sigue de baja, como estaba. No se borra nada, porque la ficha tiene
+   * historia (recibos, papeletas) aunque su dueño ya no esté.
+   */
+  static async descartarReactivacion(hermanoId: number, meta?: AuditMeta) {
+    const { count } = await db.hermano.updateMany({
+      where: { id: hermanoId, reactivacionSolicitada: { not: null } },
+      data: { reactivacionSolicitada: null },
+    });
+    if (count === 0) throw new NotFoundError('Esa petición de reactivación ya no está.');
+
+    await AuditService.log(AUDIT_ACTIONS.REACTIVACION_DESCARTAR, meta ?? {}, 'hermano', hermanoId, {
+      despues: { peticionDeVuelta: 'descartada' },
+    });
+    return { message: 'Petición descartada. La ficha sigue de baja.' };
   }
 
   static async aprobarSolicitud(userId: number, meta?: AuditMeta) {

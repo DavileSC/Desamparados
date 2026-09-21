@@ -39,7 +39,11 @@ export const addProfileSchema = type({
         nombre: textoRequerido,
         "apellidos?": "string",
         fechaNacimiento: type("string").matching(/^\d{4}-\d{2}-\d{2}$/),
-        "dni?": dni, 
+        // No todo menor a cargo de alguien es su hijo: puede ser su sobrino, su
+        // nieto o su ahijado, y Secretaría necesita saberlo para pedir la
+        // autorización de los padres.
+        "parentesco?": "'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO'",
+        "dni?": dni,
         "telefono?": telefono,
         "email?": email,
     })

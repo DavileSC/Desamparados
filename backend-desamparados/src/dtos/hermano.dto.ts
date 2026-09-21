@@ -3,6 +3,8 @@ export interface CreateHermanoDto {
   nombre: string;
   apellidos: string;
   fechaNacimiento: string;
+  /** Qué es para quien lo apunta: no todo menor a cargo de alguien es su hijo. */
+  parentesco?: 'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO';
   dni?: string;
   telefono?: string;
   email?: string;

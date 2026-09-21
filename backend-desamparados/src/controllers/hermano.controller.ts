@@ -227,4 +227,16 @@ export class HermanoController {
       handleHttp(res, e, 'Error reactivando al hermano');
     }
   }
+
+  /** Secretaría descarta una petición de volver: la ficha se queda de baja. */
+  static async descartarReactivacion(req: Request, res: Response) {
+    try {
+      const hermanoId = Number(req.params.id);
+      if (isNaN(hermanoId)) return handleHttp(res, null, 'ID inválido', 400);
+
+      res.status(200).json(await HermanoService.descartarReactivacion(hermanoId, AuditService.metaFromReq(req)));
+    } catch (e) {
+      handleHttp(res, e, 'Error descartando la petición de reactivación');
+    }
+  }
 }
