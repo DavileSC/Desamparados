@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { AuthUser } from '../../features/members/auth/store'
+import type { AuthUser } from '../../features/altas/auth/store'
 import { normalizarDni, normalizarTelefono } from '../validacion/identidad'
 
 /**

@@ -3,7 +3,7 @@ import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import PanelPage from '../PanelPage'
-import { useAuthStore } from '../../members/auth/store'
+import { useAuthStore } from '../../altas/auth/store'
 import type { PanelResponse } from '../../../lib/api/panel'
 
 const panel: PanelResponse = {

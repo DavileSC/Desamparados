@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { waitFor } from '@testing-library/react'
 import { apiFetch, ApiError, SESION_NO_CMS } from '../client'
-import { useAuthStore, type AuthUser } from '../../../features/members/auth/store'
+import { useAuthStore, type AuthUser } from '../../../features/altas/auth/store'
 
 const respuesta = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })

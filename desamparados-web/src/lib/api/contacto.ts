@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { ContactFormData } from '../../features/contact/schema'
+import type { ContactFormData } from '../../features/contacto/schema'
 
 /**
  * `tiempoRelleno` son los milisegundos entre que se abrió el formulario y se

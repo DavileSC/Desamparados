@@ -2,15 +2,15 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Alert, Box, Button, CircularProgress, Grid } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import SectionTitle from '../SectionTitle'
+import TituloDeSeccion from '../TituloDeSeccion'
 import TarjetaNoticia from '../TarjetaNoticia'
-import EventCard from '../EventCard'
+import TarjetaEvento from '../TarjetaEvento'
 import TarjetaPublicacion from '../TarjetaPublicacion'
 import Paginador from '../Paginador'
 import { noticiasDePortada, archivoDeNoticias } from '../../lib/api/noticias'
 import { traerProximosEventos, eventosPublicos } from '../../lib/api/agenda'
 import { useListadoPaginado, type Pagina } from '../../hooks/useListadoPaginado'
-import { usePublicacionesPaginadas } from '../../features/publications/usePublicacionesPaginadas'
+import { usePublicacionesPaginadas } from '../../features/publicaciones/usePublicacionesPaginadas'
 import type { EventItem, NewsItem } from '../../types'
 import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/contenido'
 
@@ -61,11 +61,11 @@ const LISTADOS: Record<FuenteListado, (props: PropsListado) => ReactNode> = {
 
 /**
  * Título del bloque, con el enlace al listado entero si lo hay. Sin título, el
- * enlace va solo y a la derecha: un `SectionTitle` vacío dejaría un encabezado
+ * enlace va solo y a la derecha: un `TituloDeSeccion` vacío dejaría un encabezado
  * sin texto, que un lector de pantalla anuncia igual.
  */
 function Encabezado({ titulo, enlace }: { titulo: string; enlace?: { texto: string; ruta: string } }) {
-  if (titulo) return <SectionTitle title={titulo} actionLabel={enlace?.texto} actionHref={enlace?.ruta} />
+  if (titulo) return <TituloDeSeccion title={titulo} actionLabel={enlace?.texto} actionHref={enlace?.ruta} />
   if (!enlace) return null
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
@@ -149,7 +149,7 @@ function ListaDeEventos({ eventos, loading, error }: { eventos: EventItem[]; loa
         <Grid container spacing={4}>
           {eventos.map((evento) => (
             <Grid key={evento.id} size={{ xs: 12, md: 6 }}>
-              <EventCard event={evento} />
+              <TarjetaEvento event={evento} />
             </Grid>
           ))}
         </Grid>

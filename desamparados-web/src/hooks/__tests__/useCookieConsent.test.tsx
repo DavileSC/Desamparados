@@ -7,7 +7,7 @@ function Banner() {
   return pending ? <button onClick={decline}>Rechazar cookies</button> : null
 }
 
-function Footer() {
+function PieDePagina() {
   const { reset } = useCookieConsent()
   return <button onClick={reset}>Gestionar cookies</button>
 }
@@ -16,7 +16,7 @@ afterEach(() => localStorage.clear())
 
 describe('useCookieConsent', () => {
   it('permite reabrir el banner desde otra instancia del hook y volver a decidir', () => {
-    render(<><Banner /><Footer /></>)
+    render(<><Banner /><PieDePagina /></>)
     fireEvent.click(screen.getByText('Rechazar cookies'))
     expect(screen.queryByText('Rechazar cookies')).not.toBeInTheDocument()
     expect(localStorage.getItem('desamparados-cookies-consent')).toBe('declined')

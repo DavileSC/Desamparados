@@ -1,5 +1,5 @@
 import type { ApiEvent } from '../../../lib/api/agenda'
-import { inicioDelDia, nombreDelMes } from '../../home/agenda'
+import { inicioDelDia, nombreDelMes } from '../../inicio/agenda'
 
 /** «18:00». */
 export const hora = (fecha: Date) => fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })

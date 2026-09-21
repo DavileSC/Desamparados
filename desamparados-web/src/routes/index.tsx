@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, ScrollRestoration } from 'react-router-dom'
-import PageLoader from '../components/PageLoader'
+import CargandoPagina from '../components/CargandoPagina'
 import PublicLayout from '../app/PublicLayout'
 import AuthLayout from '../app/AuthLayout'
 import BrotherLayout from '../app/BrotherLayout'
@@ -12,33 +12,33 @@ import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 
 // Public pages
-const HomePage = lazy(() => import('../features/home/HomePage'))
-const CorporationPage = lazy(() => import('../features/corporation/CorporationPage'))
-const HistoryPage = lazy(() => import('../features/corporation/history/HistoryPage'))
-const GovernmentPage = lazy(() => import('../features/corporation/government/GovernmentPage'))
-const ParishPage = lazy(() => import('../features/corporation/parish/ParishPage'))
-const PurposesPage = lazy(() => import('../features/corporation/purposes/PurposesPage'))
-const CaridadPage = lazy(() => import('../features/corporation/purposes/CaridadPage'))
-const FormacionPage = lazy(() => import('../features/corporation/purposes/FormacionPage'))
-const CultsPage = lazy(() => import('../features/corporation/cults/CultsPage'))
-const SabadoPasionPage = lazy(() => import('../features/corporation/sabado-pasion/SabadoPasionPage'))
-const RecorridoPage = lazy(() => import('../features/corporation/sabado-pasion/RecorridoPage'))
-const TronoPage = lazy(() => import('../features/corporation/sabado-pasion/TronoPage'))
-const EnseresPage = lazy(() => import('../features/corporation/sabado-pasion/EnseresPage'))
+const HomePage = lazy(() => import('../features/inicio/HomePage'))
+const CorporationPage = lazy(() => import('../features/corporacion/CorporationPage'))
+const HistoryPage = lazy(() => import('../features/corporacion/history/HistoryPage'))
+const GovernmentPage = lazy(() => import('../features/corporacion/government/GovernmentPage'))
+const ParishPage = lazy(() => import('../features/corporacion/parish/ParishPage'))
+const PurposesPage = lazy(() => import('../features/corporacion/purposes/PurposesPage'))
+const CaridadPage = lazy(() => import('../features/corporacion/purposes/CaridadPage'))
+const FormacionPage = lazy(() => import('../features/corporacion/purposes/FormacionPage'))
+const CultsPage = lazy(() => import('../features/corporacion/cults/CultsPage'))
+const SabadoPasionPage = lazy(() => import('../features/corporacion/sabado-pasion/SabadoPasionPage'))
+const RecorridoPage = lazy(() => import('../features/corporacion/sabado-pasion/RecorridoPage'))
+const TronoPage = lazy(() => import('../features/corporacion/sabado-pasion/TronoPage'))
+const EnseresPage = lazy(() => import('../features/corporacion/sabado-pasion/EnseresPage'))
 const TitularPage = lazy(() => import('../features/titular/TitularPage'))
 const DesamparadosPage = lazy(() => import('../features/titular/DesamparadosPage'))
 const AjuarPage = lazy(() => import('../features/titular/AjuarPage'))
-const NewsPage = lazy(() => import('../features/news/NewsPage'))
-const AgendaPage = lazy(() => import('../features/news/agenda/AgendaPage'))
-const NoticiasPage = lazy(() => import('../features/news/noticias/NoticiasPage'))
-const NoticiaDetallePage = lazy(() => import('../features/news/noticias/NoticiaDetallePage'))
-const PublicationsPage = lazy(() => import('../features/publications/PublicationsPage'))
-const BoletinesPage = lazy(() => import('../features/publications/BoletinesPage'))
-const DossierPrensaPage = lazy(() => import('../features/publications/DossierPrensaPage'))
-const MembersPage = lazy(() => import('../features/members/public/MembersPage'))
-const HazteHermanoPage = lazy(() => import('../features/members/public/HazteHermanoPage'))
-const ContactPage = lazy(() => import('../features/contact/ContactPage'))
-const NotFoundPage = lazy(() => import('../features/notFound/NotFoundPage'))
+const ActualidadPage = lazy(() => import('../features/actualidad/ActualidadPage'))
+const AgendaPage = lazy(() => import('../features/actualidad/agenda/AgendaPage'))
+const NoticiasPage = lazy(() => import('../features/actualidad/noticias/NoticiasPage'))
+const NoticiaDetallePage = lazy(() => import('../features/actualidad/noticias/NoticiaDetallePage'))
+const PublicacionesPage = lazy(() => import('../features/publicaciones/PublicacionesPage'))
+const BoletinesPage = lazy(() => import('../features/publicaciones/BoletinesPage'))
+const DossierPrensaPage = lazy(() => import('../features/publicaciones/DossierPrensaPage'))
+const HermanosPage = lazy(() => import('../features/altas/public/HermanosPage'))
+const HazteHermanoPage = lazy(() => import('../features/altas/public/HazteHermanoPage'))
+const ContactPage = lazy(() => import('../features/contacto/ContactPage'))
+const NotFoundPage = lazy(() => import('../features/noEncontrado/NotFoundPage'))
 const PortadaAdminPage = lazy(() => import('../features/cms/PortadaAdminPage'))
 const PaginasAdminPage = lazy(() => import('../features/cms/PaginasAdminPage'))
 const PaginaAdminPage = lazy(() => import('../features/cms/PaginaAdminPage'))
@@ -65,23 +65,23 @@ const PrivacyPolicyPage = lazy(() => import('../features/legal/PrivacyPolicyPage
 const CookiesPolicyPage = lazy(() => import('../features/legal/CookiesPolicyPage'))
 
 // Auth pages
-const LoginPage = lazy(() => import('../features/members/auth/LoginPage'))
-const CmsLoginPage = lazy(() => import('../features/members/auth/CmsLoginPage'))
-const ResetPasswordPage = lazy(() => import('../features/members/auth/ResetPasswordPage'))
+const AccesoPage = lazy(() => import('../features/altas/auth/AccesoPage'))
+const AccesoCmsPage = lazy(() => import('../features/altas/auth/AccesoCmsPage'))
+const NuevaContrasenaPage = lazy(() => import('../features/altas/auth/NuevaContrasenaPage'))
 
 // Brother area pages
-const ProfilePage = lazy(() => import('../features/brotherArea/profile/ProfilePage'))
-const EditProfilePage = lazy(() => import('../features/brotherArea/profile/EditProfilePage'))
-const FamilyPage = lazy(() => import('../features/brotherArea/family/FamilyPage'))
-const ProcessionPage = lazy(() => import('../features/brotherArea/procession/ProcessionPage'))
-const PapeletaPage = lazy(() => import('../features/brotherArea/procession/PapeletaPage'))
-const HistoricoPage = lazy(() => import('../features/brotherArea/procession/HistoricoPage'))
-const ReceiptsPage = lazy(() => import('../features/brotherArea/receipts/ReceiptsPage'))
-const ReceiptDetailPage = lazy(() => import('../features/brotherArea/receipts/ReceiptDetailPage'))
+const PerfilPage = lazy(() => import('../features/areaHermano/perfil/PerfilPage'))
+const EditarPerfilPage = lazy(() => import('../features/areaHermano/perfil/EditarPerfilPage'))
+const FamiliaPage = lazy(() => import('../features/areaHermano/familia/FamiliaPage'))
+const ProcesionPage = lazy(() => import('../features/areaHermano/procesion/ProcesionPage'))
+const PapeletaPage = lazy(() => import('../features/areaHermano/procesion/PapeletaPage'))
+const HistoricoPage = lazy(() => import('../features/areaHermano/procesion/HistoricoPage'))
+const RecibosPage = lazy(() => import('../features/areaHermano/recibos/RecibosPage'))
+const ReciboPage = lazy(() => import('../features/areaHermano/recibos/ReciboPage'))
 
 function withSuspense(Component: React.ComponentType) {
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={<CargandoPagina />}>
       <Component />
     </Suspense>
   )
@@ -134,14 +134,14 @@ const router = createBrowserRouter([
           { path: 'sagrada-titular', element: withSuspense(TitularPage) },
           { path: 'sagrada-titular/desamparados', element: withSuspense(DesamparadosPage) },
           { path: 'sagrada-titular/ajuar', element: withSuspense(AjuarPage) },
-          { path: 'actualidad', element: withSuspense(NewsPage) },
+          { path: 'actualidad', element: withSuspense(ActualidadPage) },
           { path: 'actualidad/agenda', element: withSuspense(AgendaPage) },
           { path: 'actualidad/noticias', element: withSuspense(NoticiasPage) },
           { path: 'actualidad/noticias/:slug', element: withSuspense(NoticiaDetallePage) },
-          { path: 'publicaciones', element: withSuspense(PublicationsPage) },
+          { path: 'publicaciones', element: withSuspense(PublicacionesPage) },
           { path: 'publicaciones/boletines', element: withSuspense(BoletinesPage) },
           { path: 'publicaciones/dossier-prensa', element: withSuspense(DossierPrensaPage) },
-          { path: 'hermanos', element: withSuspense(MembersPage) },
+          { path: 'hermanos', element: withSuspense(HermanosPage) },
           { path: 'hermanos/hazte-hermano', element: withSuspense(HazteHermanoPage) },
           { path: 'contacto', element: withSuspense(ContactPage) },
           { path: 'aviso-legal', element: withSuspense(LegalNoticePage) },
@@ -154,12 +154,12 @@ const router = createBrowserRouter([
       {
         path: '/hermanos/acceso',
         element: <AuthLayout />,
-        children: [{ index: true, element: withSuspense(LoginPage) }],
+        children: [{ index: true, element: withSuspense(AccesoPage) }],
       },
       {
         path: '/reset-password',
         element: <AuthLayout />,
-        children: [{ index: true, element: withSuspense(ResetPasswordPage) }],
+        children: [{ index: true, element: withSuspense(NuevaContrasenaPage) }],
       },
       {
         path: '/area-hermano',
@@ -170,20 +170,20 @@ const router = createBrowserRouter([
         ),
         children: [
           { index: true, element: <Navigate to="/area-hermano/perfil" replace /> },
-          { path: 'perfil', element: withSuspense(ProfilePage) },
-          { path: 'perfil/editar', element: withSuspense(EditProfilePage) },
-          { path: 'familia', element: withSuspense(FamilyPage) },
-          { path: 'procesion', element: withSuspense(ProcessionPage) },
+          { path: 'perfil', element: withSuspense(PerfilPage) },
+          { path: 'perfil/editar', element: withSuspense(EditarPerfilPage) },
+          { path: 'familia', element: withSuspense(FamiliaPage) },
+          { path: 'procesion', element: withSuspense(ProcesionPage) },
           { path: 'procesion/papeleta', element: withSuspense(PapeletaPage) },
           { path: 'procesion/historico', element: withSuspense(HistoricoPage) },
-          { path: 'recibos', element: withSuspense(ReceiptsPage) },
-          { path: 'recibos/:id', element: withSuspense(ReceiptDetailPage) },
+          { path: 'recibos', element: withSuspense(RecibosPage) },
+          { path: 'recibos/:id', element: withSuspense(ReciboPage) },
           { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
         ],
       },
       {
         path: '/cms/acceso',
-        element: withSuspense(CmsLoginPage),
+        element: withSuspense(AccesoCmsPage),
       },
       {
         path: '/cms',

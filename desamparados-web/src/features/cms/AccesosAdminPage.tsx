@@ -8,7 +8,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { NOMBRE_CARGO } from '../../app/cmsNavegacion'
-import { useAuthStore } from '../members/auth/store'
+import { useAuthStore } from '../altas/auth/store'
 import {
   buscarCandidatos, CARGOS_CMS, darAcceso, cuentasDeStaff, quitarAcceso,
   type CandidatoACargo, type CargoCms, type MiembroDelStaff,

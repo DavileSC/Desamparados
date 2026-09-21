@@ -1,8 +1,8 @@
 import { Helmet } from 'react-helmet-async'
 import { Box } from '@mui/material'
-import PageContainer from '../../components/PageContainer'
-import PageHeader from '../../components/PageHeader'
-import AnimatedSection from '../../components/AnimatedSection'
+import ContenedorDePagina from '../../components/ContenedorDePagina'
+import CabeceraDePagina from '../../components/CabeceraDePagina'
+import SeccionAnimada from '../../components/SeccionAnimada'
 import { SECCION_TRAS_CABECERA } from '../../components/espaciado'
 
 interface LegalPageLayoutProps {
@@ -16,14 +16,14 @@ export default function LegalPageLayout({ title, children }: LegalPageLayoutProp
       <Helmet>
         <title>{`${title} | Desamparados`}</title>
       </Helmet>
-      <PageHeader title={title} />
-      <AnimatedSection sx={SECCION_TRAS_CABECERA}>
-        <PageContainer>
+      <CabeceraDePagina title={title} />
+      <SeccionAnimada sx={SECCION_TRAS_CABECERA}>
+        <ContenedorDePagina>
           <Box sx={{ maxWidth: '850px', mx: 'auto', color: 'text.secondary', lineHeight: 1.8 }}>
             {children}
           </Box>
-        </PageContainer>
-      </AnimatedSection>
+        </ContenedorDePagina>
+      </SeccionAnimada>
     </>
   )
 }

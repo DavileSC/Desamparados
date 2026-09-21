@@ -7,9 +7,9 @@ import PhoneIcon from '@mui/icons-material/Phone'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import GlassCard from '../GlassCard'
-import AppButton from '../AppButton'
-import { contactSchema, type ContactFormData } from '../../features/contact/schema'
+import TarjetaCristal from '../TarjetaCristal'
+import Boton from '../Boton'
+import { contactSchema, type ContactFormData } from '../../features/contacto/schema'
 import { enviarMensajeDeContacto } from '../../lib/api/contacto'
 import type { BloqueContacto as Datos, LineaDatos } from '../../lib/api/contenido'
 
@@ -184,15 +184,15 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
             />
           </Box>
 
-          <AppButton type="submit" disabled={isSubmitting}>
+          <Boton type="submit" disabled={isSubmitting}>
             Enviar mensaje
-          </AppButton>
+          </Boton>
         </Box>
       </Grid>
 
       {conTarjeta && (
         <Grid size={{ xs: 12, md: 5 }}>
-          <GlassCard sx={{ p: 4, height: '100%' }}>
+          <TarjetaCristal sx={{ p: 4, height: '100%' }}>
             {bloque.tituloDatos && (
               <Typography variant="h4" component="h2" sx={{ mb: 4 }}>
                 {bloque.tituloDatos}
@@ -213,7 +213,7 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
                 </Box>
               ))}
             </Box>
-          </GlassCard>
+          </TarjetaCristal>
         </Grid>
       )}
     </Grid>

@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../features/members/auth/store'
-import PageLoader from '../components/PageLoader'
+import { useAuthStore } from '../features/altas/auth/store'
+import CargandoPagina from '../components/CargandoPagina'
 
 interface RequireRoleProps {
   roles: string[]
@@ -13,7 +13,7 @@ export default function RequireRole({ roles, children }: RequireRoleProps) {
   const location = useLocation()
 
   // Igual que en RequireAuth: sin saber todavía si hay sesión, esperamos.
-  if (status === 'cargando') return <PageLoader />
+  if (status === 'cargando') return <CargandoPagina />
 
   // El CMS tiene acceso propio, con segundo factor. Sin su sesión se va allí,
   // con `from` para volver a la página que pedía. Tener abierta la del portal

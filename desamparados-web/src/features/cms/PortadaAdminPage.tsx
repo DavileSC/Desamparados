@@ -9,12 +9,12 @@ import CampoImagen from './CampoImagen'
 import SeccionPlegable from './contenido/SeccionPlegable'
 import CampoTexto from './contenido/CampoTexto'
 import VistaPreviaPortada from './contenido/VistaPreviaPortada'
-import Hero from '../home/Hero'
-import FeaturedNews from '../home/FeaturedNews'
-import EventsAndLive from '../home/EventsAndLive'
-import QuickAccess from '../home/QuickAccess'
-import ProcessionScene from '../home/ProcessionScene'
-import FeaturedPublications from '../home/FeaturedPublications'
+import Hero from '../inicio/Hero'
+import NoticiasDestacadas from '../inicio/NoticiasDestacadas'
+import AgendaYDirecto from '../inicio/AgendaYDirecto'
+import QuickAccess from '../inicio/QuickAccess'
+import EscenaProcesion from '../inicio/EscenaProcesion'
+import PublicacionesDestacadas from '../inicio/PublicacionesDestacadas'
 import { portadaDelInicio, guardarImagenesPortada, type ImagenPortada, type TextosPortada } from '../../lib/api/portada'
 import { guardarContenido } from '../../lib/api/contenido'
 
@@ -26,7 +26,7 @@ const AYUDA_FOTO_SABADO = `${AYUDA_FOTO} Ocupa el fondo del bloque a todo lo anc
 
 /**
  * La misma clave con la que la portada pública guarda su caché
- * (features/home/useContenidoPortada.ts). Si las dos dejan de coincidir,
+ * (features/inicio/useContenidoPortada.ts). Si las dos dejan de coincidir,
  * guardar aquí deja de refrescar el inicio y nadie se entera hasta que se
  * queja quien lo lee; hay un test que las compara.
  */
@@ -46,7 +46,7 @@ const sinClave = (filas: Fila[]): ImagenPortada[] => filas.map(({ url, descripci
 /**
  * Un acceso del mosaico, bajo su nombre actual: es lo único que lo distingue en
  * esta pantalla, porque el destino y el icono los pone el código
- * (features/home/QuickAccess.tsx) y no se editan desde aquí.
+ * (features/inicio/QuickAccess.tsx) y no se editan desde aquí.
  */
 function EdicionTesela({ tesela, onCambio }: { tesela: Tesela; onCambio: (cambios: Partial<Tesela>) => void }) {
   const id = useId()
@@ -330,7 +330,7 @@ export default function PortadaAdminPage() {
           </Box>
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Actualidad" vistaPrevia={vista(<FeaturedNews />)}>
+        <SeccionPlegable titulo="Actualidad" vistaPrevia={vista(<NoticiasDestacadas />)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.actualidad.ceja}
@@ -354,7 +354,7 @@ export default function PortadaAdminPage() {
           />
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Agenda y Cultos" vistaPrevia={vista(<EventsAndLive />)}>
+        <SeccionPlegable titulo="Agenda y Cultos" vistaPrevia={vista(<AgendaYDirecto />)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.agenda.ceja}
@@ -448,7 +448,7 @@ export default function PortadaAdminPage() {
           </Box>
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Sábado de Pasión" vistaPrevia={vista(<ProcessionScene />)}>
+        <SeccionPlegable titulo="Sábado de Pasión" vistaPrevia={vista(<EscenaProcesion />)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.sabadoDePasion.ceja}
@@ -502,7 +502,7 @@ export default function PortadaAdminPage() {
           />
         </SeccionPlegable>
 
-        <SeccionPlegable titulo="Publicaciones" vistaPrevia={vista(<FeaturedPublications />)}>
+        <SeccionPlegable titulo="Publicaciones" vistaPrevia={vista(<PublicacionesDestacadas />)}>
           <CampoTexto
             etiqueta="Botón"
             valor={textos.publicaciones.boton}

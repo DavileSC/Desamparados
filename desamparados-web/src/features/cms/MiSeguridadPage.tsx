@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import { useAuthStore } from '../members/auth/store'
+import { useAuthStore } from '../altas/auth/store'
 import { sesionActual, activar2FA, desactivar2FA, generarQr2FA } from '../../lib/api/auth'
 import { ApiError } from '../../lib/api/client'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'

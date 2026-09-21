@@ -1,5 +1,5 @@
 import { Box, Grid, Typography } from '@mui/material'
-import GlassCard from '../GlassCard'
+import TarjetaCristal from '../TarjetaCristal'
 import type { BloqueItinerario as Datos } from '../../lib/api/contenido'
 
 /**
@@ -16,7 +16,7 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
         // misma plaza): la clave necesita el índice o React se lía al
         // reordenar las paradas desde el CMS.
         <Grid key={`${parada.hora}-${parada.lugar}-${i}`} size={{ xs: 12, md: 6 }}>
-          <GlassCard sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3 }}>
+          <TarjetaCristal sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3 }}>
             <Box
               sx={{
                 minWidth: '80px', textAlign: 'center', px: 1.5, py: 1, borderRadius: '8px',
@@ -26,7 +26,7 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
               {parada.hora}
             </Box>
             <Typography variant="body1" sx={{ color: 'text.primary' }}>{parada.lugar}</Typography>
-          </GlassCard>
+          </TarjetaCristal>
         </Grid>
       ))}
     </Grid>

@@ -1,6 +1,6 @@
 import { Alert, Box, CircularProgress } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import { useAuthStore } from '../members/auth/store'
+import { useAuthStore } from '../altas/auth/store'
 import { usePanelDeHoy } from '../../app/usePanelDeHoy'
 import { tareasDelDia, repartirTareas } from './inicio/tareas'
 import Cabecera from './inicio/Cabecera'

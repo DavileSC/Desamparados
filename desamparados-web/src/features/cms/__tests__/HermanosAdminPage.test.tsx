@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient } from '@tanstack/react-query'
 import { renderWithProviders } from '../../../test/test-utils'
 import HermanosAdminPage from '../HermanosAdminPage'
-import { useAuthStore } from '../../members/auth/store'
+import { useAuthStore } from '../../altas/auth/store'
 import { CLAVE_PANEL_HOY } from '../../../app/usePanelDeHoy'
 
 type Censo = { data: unknown[]; meta: { total: number; page: number; limit: number; totalPages: number } }

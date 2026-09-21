@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { loginSchema, resetPasswordSchema } from '../../features/members/auth/schema'
-import { membershipSchema } from '../../features/members/public/schema'
+import { loginSchema, resetPasswordSchema } from '../../features/altas/auth/schema'
+import { membershipSchema } from '../../features/altas/public/schema'
 import { LONGITUD_MINIMA } from '../passwordPolicy'
 
 /** Extrae el mensaje del campo password de un parseo fallido */

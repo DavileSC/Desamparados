@@ -1,5 +1,5 @@
 import { Box, Stack } from '@mui/material'
-import SectionTitle from '../SectionTitle'
+import TituloDeSeccion from '../TituloDeSeccion'
 import { componenteDeBloque, pintaSuTitulo } from './registro'
 import type { Bloque } from '../../lib/api/contenido'
 
@@ -47,7 +47,7 @@ export function BloqueDePagina({ bloque }: { bloque: Bloque }) {
   if (!Componente) return null
   return (
     <Box>
-      {bloque.titulo && !pintaSuTitulo(bloque) && <SectionTitle title={bloque.titulo} centered />}
+      {bloque.titulo && !pintaSuTitulo(bloque) && <TituloDeSeccion title={bloque.titulo} centered />}
       <Componente bloque={bloque as never} />
     </Box>
   )

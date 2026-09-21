@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import AccesosAdminPage from '../AccesosAdminPage'
-import { useAuthStore } from '../../members/auth/store'
+import { useAuthStore } from '../../altas/auth/store'
 
 const STAFF = [
   { id: 1, email: 'admin@desamparados.test', role: 'ADMIN', nombre: 'Rocío', apellidos: 'Vega Luna', dni: '12345678Z', telefono: '600000000' },

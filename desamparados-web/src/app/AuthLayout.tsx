@@ -1,6 +1,6 @@
 import { Outlet, Link } from 'react-router-dom'
 import { Box, Container } from '@mui/material'
-import PageTransition from '../components/PageTransition'
+import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
 
 export default function AuthLayout() {
@@ -40,9 +40,9 @@ export default function AuthLayout() {
           py: 8,
         }}
       >
-        <PageTransition>
+        <TransicionDePagina>
           <Outlet />
-        </PageTransition>
+        </TransicionDePagina>
       </Container>
     </Box>
   )

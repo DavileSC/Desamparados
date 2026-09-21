@@ -1,5 +1,5 @@
 /**
- * El aire entre la cabecera de una página (PageHeader) y su contenido.
+ * El aire entre la cabecera de una página (CabeceraDePagina) y su contenido.
  *
  * Antes se sumaban tres rellenos pensados cada uno por separado: los 112 px de
  * debajo de la cabecera, 48 de margen y 80 encima del contenido. Unos 300 px

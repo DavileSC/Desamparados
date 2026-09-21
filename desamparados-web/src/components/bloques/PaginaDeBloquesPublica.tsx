@@ -1,10 +1,10 @@
 import { Box } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
-import PageContainer from '../PageContainer'
-import PageHeader from '../PageHeader'
+import ContenedorDePagina from '../ContenedorDePagina'
+import CabeceraDePagina from '../CabeceraDePagina'
 import FondoDePagina from '../FondoDePagina'
-import AnimatedSection from '../AnimatedSection'
+import SeccionAnimada from '../SeccionAnimada'
 import BloquesDePagina from './BloquesDePagina'
 import { useBorradorPagina } from './borrador'
 import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
@@ -50,18 +50,18 @@ export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }
           acaba: el pie queda fuera y la foto no lo pisa. */}
       <Box sx={{ position: 'relative', isolation: 'isolate' }}>
         {Boolean(pagina.cabecera.foto) && <FondoDePagina url={pagina.cabecera.foto} />}
-        <PageHeader
+        <CabeceraDePagina
           title={pagina.cabecera.titulo}
           subtitle={pagina.cabecera.subtitulo}
           image={pagina.cabecera.foto || undefined}
           imageAlt={pagina.cabecera.fotoAlt}
           sobreFondo={Boolean(pagina.cabecera.foto)}
         />
-        <AnimatedSection sx={SECCION_TRAS_CABECERA}>
-          <PageContainer>
+        <SeccionAnimada sx={SECCION_TRAS_CABECERA}>
+          <ContenedorDePagina>
             <BloquesDePagina bloques={pagina.bloques} />
-          </PageContainer>
-        </AnimatedSection>
+          </ContenedorDePagina>
+        </SeccionAnimada>
       </Box>
     </>
   )

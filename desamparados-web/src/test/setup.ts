@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 
 /**
- * jsdom no implementa IntersectionObserver, y `AnimatedSection` (framer-motion,
+ * jsdom no implementa IntersectionObserver, y `SeccionAnimada` (framer-motion,
  * `whileInView`) lo necesita: sin él, montar cualquier página pública revienta
  * con un ReferenceError antes de llegar a la primera aserción.
  *

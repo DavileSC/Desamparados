@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material'
-import { Revela } from '../AnimatedSection'
-import { GOLD, GRANATE, SERIF, ceja } from '../../features/home/estilos'
+import { Revela } from '../SeccionAnimada'
+import { GOLD, GRANATE, SERIF, ceja } from '../../features/inicio/estilos'
 import { parrafosDe, type BloqueCronologia as Datos, type HitoHistoria } from '../../lib/api/contenido'
 import { idDeHito } from './cronologia'
 

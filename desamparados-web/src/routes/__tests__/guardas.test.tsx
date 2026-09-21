@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router-dom'
 import RequireAuth from '../RequireAuth'
 import RequireRole from '../RequireRole'
-import { useAuthStore } from '../../features/members/auth/store'
+import { useAuthStore } from '../../features/altas/auth/store'
 
 const TESORERO = { id: 1, email: 'a@b.es', role: 'TESORERIA', perfiles: [], origen: 'cms' as const }
 const HERMANO = { id: 1, email: 'a@b.es', role: 'USER', perfiles: [], origen: 'hermanos' as const }

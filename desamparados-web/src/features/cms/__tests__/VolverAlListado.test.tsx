@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
 import HermanosAdminPage from '../HermanosAdminPage'
 import HermanoEditPage from '../HermanoEditPage'
-import { useAuthStore } from '../../members/auth/store'
+import { useAuthStore } from '../../altas/auth/store'
 
 /**
  * Editar una ficha y volver tiene que dejar el listado donde estaba. Antes no:

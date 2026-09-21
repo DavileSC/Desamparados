@@ -2,9 +2,9 @@ import { Suspense, lazy } from 'react'
 import { Box, CircularProgress, Dialog, IconButton, Stack, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import PageHeader from '../../../components/PageHeader'
+import CabeceraDePagina from '../../../components/CabeceraDePagina'
 import FondoDePagina from '../../../components/FondoDePagina'
-import PageContainer from '../../../components/PageContainer'
+import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import PaginaDeBloquesPublica from '../../../components/bloques/PaginaDeBloquesPublica'
 import { BloqueDePagina } from '../../../components/bloques/BloquesDePagina'
 import { BorradorPaginaContext } from '../../../components/bloques/borrador'
@@ -12,7 +12,7 @@ import MarcoVistaPrevia from '../contenido/MarcoVistaPrevia'
 import type { Bloque, CabeceraPagina, PaginaDeBloques, SlugContenido } from '../../../lib/api/contenido'
 
 // Historia tiene maquetación propia; se carga solo si se previsualiza.
-const HistoryPage = lazy(() => import('../../corporation/history/HistoryPage'))
+const HistoryPage = lazy(() => import('../../corporacion/history/HistoryPage'))
 
 /**
  * La cabecera de la página tal como sale arriba del todo en la web, con la
@@ -24,7 +24,7 @@ export function VistaPreviaCabecera({ cabecera }: { cabecera: CabeceraPagina }) 
     <MarcoVistaPrevia testId="vista-previa-cabecera">
       <Box sx={{ position: 'relative', isolation: 'isolate' }}>
         {Boolean(cabecera.foto) && <FondoDePagina url={cabecera.foto} altura="100%" />}
-        <PageHeader
+        <CabeceraDePagina
           title={cabecera.titulo || 'Sin título'}
           subtitle={cabecera.subtitulo}
           image={cabecera.foto || undefined}
@@ -45,9 +45,9 @@ export function VistaPreviaBloque({ bloque }: { bloque: Bloque }) {
     // La galería se mueve con sus flechas o arrastrando: en la vista previa
     // también, para ver cómo pasan las fotos.
     <MarcoVistaPrevia testId="vista-previa-bloque" interactiva={bloque.tipo === 'galeria'}>
-      <PageContainer sx={{ py: 6 }}>
+      <ContenedorDePagina sx={{ py: 6 }}>
         <BloqueDePagina bloque={bloque} />
-      </PageContainer>
+      </ContenedorDePagina>
     </MarcoVistaPrevia>
   )
 }

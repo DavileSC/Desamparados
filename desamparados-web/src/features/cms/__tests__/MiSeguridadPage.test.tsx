@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import MiSeguridadPage from '../MiSeguridadPage'
-import { useAuthStore } from '../../members/auth/store'
+import { useAuthStore } from '../../altas/auth/store'
 
 const ok = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })

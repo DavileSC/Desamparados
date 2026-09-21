@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
-import AppButton from '../AppButton'
-import GlassCard from '../GlassCard'
+import Boton from '../Boton'
+import TarjetaCristal from '../TarjetaCristal'
 import type { BloqueLlamada as Datos } from '../../lib/api/contenido'
 import { esDestinoValido } from '../../lib/destinos'
 
@@ -16,7 +16,7 @@ import { esDestinoValido } from '../../lib/destinos'
  */
 export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
   return (
-    <GlassCard goldBorder sx={{ maxWidth: '850px', mx: 'auto', p: { xs: 3, md: 5 }, textAlign: 'center' }}>
+    <TarjetaCristal goldBorder sx={{ maxWidth: '850px', mx: 'auto', p: { xs: 3, md: 5 }, textAlign: 'center' }}>
       {bloque.texto && (
         <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8, mb: 3 }}>
           {bloque.texto}
@@ -25,9 +25,9 @@ export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
       {/* Sin destino que exista, sin botón: llevaría a «página no encontrada». */}
       {esDestinoValido(bloque.enlace) && (
         <Box>
-          <AppButton component={Link} to={bloque.enlace}>{bloque.boton}</AppButton>
+          <Boton component={Link} to={bloque.enlace}>{bloque.boton}</Boton>
         </Box>
       )}
-    </GlassCard>
+    </TarjetaCristal>
   )
 }

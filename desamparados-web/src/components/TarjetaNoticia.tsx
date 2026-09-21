@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import { GOLD, GRANATE, SERIF } from '../features/home/estilos'
+import { GOLD, GRANATE, SERIF } from '../features/inicio/estilos'
 import type { NewsItem } from '../types'
 
 interface NewsCardProps {

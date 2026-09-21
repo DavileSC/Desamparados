@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import type { ApiEvent } from '../../../lib/api/agenda'
-import { TIPOS } from '../../home/agenda'
+import { TIPOS } from '../../inicio/agenda'
 
 /**
  * El tipo con el color que lleva en la agenda de la portada, en un punto: el

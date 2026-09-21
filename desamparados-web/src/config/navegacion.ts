@@ -1,6 +1,6 @@
 /**
  * Mapa de la web pública: la única fuente de verdad del menú de escritorio y
- * del cajón móvil de `Navbar.tsx`.
+ * del cajón móvil de `BarraDeNavegacion.tsx`.
  *
  * Reproduce el árbol de secciones tal cual se aprobó (10-09-2026): siete
  * entradas de primer nivel y hasta dos niveles más por debajo. Las rutas ya

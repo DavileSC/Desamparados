@@ -20,9 +20,9 @@ import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom'
 import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import LogoutIcon from '@mui/icons-material/Logout'
-import PageTransition from '../components/PageTransition'
+import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
-import { cerrarSesion } from '../features/members/auth/session'
+import { cerrarSesion } from '../features/altas/auth/session'
 
 const drawerWidth = 260
 
@@ -184,9 +184,9 @@ export default function BrotherLayout() {
           backgroundColor: 'background.default',
         }}
       >
-        <PageTransition>
+        <TransicionDePagina>
           <Outlet />
-        </PageTransition>
+        </TransicionDePagina>
       </Box>
     </Box>
   )

@@ -1,6 +1,6 @@
 import { Box, Grid, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
-import GlassCard from '../GlassCard'
+import TarjetaCristal from '../TarjetaCristal'
 import type { BloqueTarjetas as Datos, TarjetaEnlace } from '../../lib/api/contenido'
 import { esDestinoValido } from '../../lib/destinos'
 
@@ -54,14 +54,14 @@ function Tarjeta({ tarjeta }: { tarjeta: TarjetaEnlace }) {
   // existen puede llevar a ninguna parte: mejor una tarjeta informativa que
   // una que promete y acaba en «página no encontrada».
   if (!tarjeta.enlace || !esDestinoValido(tarjeta.enlace)) {
-    return <GlassCard sx={{ p: 4, height: '100%' }}>{contenido}</GlassCard>
+    return <TarjetaCristal sx={{ p: 4, height: '100%' }}>{contenido}</TarjetaCristal>
   }
 
   return (
     <Box component={Link} to={tarjeta.enlace} sx={{ display: 'block', height: '100%', textDecoration: 'none', color: 'inherit' }}>
-      <GlassCard sx={{ p: 4, height: '100%', '&:hover': { borderColor: 'rgba(193, 172, 0, 0.3)', transform: 'translateY(-4px)' } }}>
+      <TarjetaCristal sx={{ p: 4, height: '100%', '&:hover': { borderColor: 'rgba(193, 172, 0, 0.3)', transform: 'translateY(-4px)' } }}>
         {contenido}
-      </GlassCard>
+      </TarjetaCristal>
     </Box>
   )
 }

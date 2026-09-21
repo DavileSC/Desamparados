@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
 import AdminLayout from '../AdminLayout'
 import { itemsMenu, rolesPorRutaCms } from '../cmsNavegacion'
-import { useAuthStore } from '../../features/members/auth/store'
+import { useAuthStore } from '../../features/altas/auth/store'
 import { designTokens } from '../../theme'
 import { CLAVE_TEMA_CMS } from '../temaCms'
 

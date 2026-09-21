@@ -1,26 +1,26 @@
 import { Outlet } from 'react-router-dom'
 import { Box } from '@mui/material'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
-import CookieBanner from '../components/CookieBanner'
-import PageTransition from '../components/PageTransition'
+import BarraDeNavegacion from '../components/BarraDeNavegacion'
+import PieDePagina from '../components/PieDePagina'
+import AvisoDeCookies from '../components/AvisoDeCookies'
+import TransicionDePagina from '../components/TransicionDePagina'
 
 export default function PublicLayout() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Navbar />
+      <BarraDeNavegacion />
       <Box
         component="main"
         sx={{
           flex: 1,
         }}
       >
-        <PageTransition>
+        <TransicionDePagina>
           <Outlet />
-        </PageTransition>
+        </TransicionDePagina>
       </Box>
-      <Footer />
-      <CookieBanner />
+      <PieDePagina />
+      <AvisoDeCookies />
     </Box>
   )
 }

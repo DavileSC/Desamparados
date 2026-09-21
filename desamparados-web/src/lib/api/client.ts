@@ -1,4 +1,4 @@
-import { useAuthStore } from '../../features/members/auth/store'
+import { useAuthStore } from '../../features/altas/auth/store'
 
 /**
  * Cliente HTTP mínimo para la API del backend.

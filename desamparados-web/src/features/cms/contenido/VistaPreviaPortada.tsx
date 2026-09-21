@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { Box } from '@mui/material'
 import MarcoVistaPrevia from './MarcoVistaPrevia'
-import { BorradorPortadaContext } from '../../home/useContenidoPortada'
+import { BorradorPortadaContext } from '../../inicio/useContenidoPortada'
 import type { Portada } from '../../../lib/api/portada'
-import '../../home/home.css'
+import '../../inicio/home.css'
 
 /**
  * Cómo queda un bloque de la portada con lo que se está escribiendo, antes de

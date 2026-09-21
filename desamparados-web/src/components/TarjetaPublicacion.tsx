@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
-import GlassCard from './GlassCard'
+import TarjetaCristal from './TarjetaCristal'
 import type { PublicationItem } from '../types'
 
 interface PublicationCardProps {
@@ -21,7 +21,7 @@ export default function TarjetaPublicacion({ publication }: PublicationCardProps
           : 'Historia'
 
   return (
-    <GlassCard
+    <TarjetaCristal
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -79,6 +79,6 @@ export default function TarjetaPublicacion({ publication }: PublicationCardProps
           </Typography>
         </Box>
       </Box>
-    </GlassCard>
+    </TarjetaCristal>
   )
 }

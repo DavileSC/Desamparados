@@ -7,7 +7,7 @@ import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
-import { usePortada } from '../../home/useContenidoPortada'
+import { usePortada } from '../../inicio/useContenidoPortada'
 import PortadaAdminPage, { MAX_FOTOS_PORTADA } from '../PortadaAdminPage'
 
 interface Peticion { url: string; metodo: string; cuerpo?: unknown }
@@ -349,7 +349,7 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
   })
 
   it('al guardar invalida exactamente la clave con la que la portada pública guarda su caché', async () => {
-    // Si esta pantalla y features/home/useContenidoPortada.ts dejan de compartir
+    // Si esta pantalla y features/inicio/useContenidoPortada.ts dejan de compartir
     // clave, guardar deja de refrescar el inicio y nadie se entera.
     const { usuario, queryClient, invalidar } = montar({ conPortadaPublica: true })
     await waitFor(() => expect(queryClient.getQueryCache().getAll()).toHaveLength(1))
