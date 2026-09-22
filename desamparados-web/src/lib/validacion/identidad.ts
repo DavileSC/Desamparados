@@ -13,9 +13,22 @@
  * decía «Error de validación».
  */
 
-/** Fuera espacios y guiones, y a mayúsculas: «12345678-z» es el mismo DNI que «12345678Z». */
+/**
+ * El DNI como se guarda: ocho cifras y la letra, o la X, Y o Z, siete cifras y
+ * la letra. «12.345.678-z» es el mismo DNI que «12345678Z».
+ *
+ * Los DNI antiguos empiezan por ceros y casi nadie los escribe: «123456S» es el
+ * 00123456S, con su letra bien. Antes se rechazaban por tener menos de ocho
+ * cifras. Tampoco pasaban los NIE antiguos con ocho cifras tras la X, cuya
+ * primera es un cero de relleno. La letra se sigue comprobando igual.
+ */
 export function normalizarDni(valor: string): string {
-  return valor.replace(/[\s-]/g, '').toUpperCase()
+  const limpio = valor.replace(/[^0-9A-Za-z]/g, '').toUpperCase()
+  const dni = /^([0-9]{1,7})([A-Z])$/.exec(limpio)
+  if (dni) return dni[1].padStart(8, '0') + dni[2]
+  const nie = /^([XYZ])0([0-9]{7}[A-Z])$/.exec(limpio)
+  if (nie) return nie[1] + nie[2]
+  return limpio
 }
 
 const LETRAS_DNI = 'TRWAGMYFPDXBNJZSQVHLCKE'

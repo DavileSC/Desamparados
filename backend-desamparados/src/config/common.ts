@@ -59,10 +59,25 @@ export const codigoPostal = type("string").pipe(
 // argumentos, porque encadenar .narrow() tras un .pipe() de un solo
 // argumento revienta en arktype 2.1.29 («Pattern operand must be a string
 // (was a morph)»).
+//
+// Normalizar es también completar: los DNI antiguos empiezan por ceros que
+// casi nadie escribe («123456S» es el 00123456S, con su letra bien), y los NIE
+// antiguos llevan ocho cifras tras la X, la primera un cero de relleno. Antes
+// se rechazaban; la letra se sigue comprobando igual. Fuera también puntos y
+// cualquier otro separador: «12.345.678-Z» es como sale en muchos papeles.
 const LETRAS_DNI = "TRWAGMYFPDXBNJZSQVHLCKE";
 
+export function normalizarDni(valor: string): string {
+    const limpio = valor.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+    const dni = /^([0-9]{1,7})([A-Z])$/.exec(limpio);
+    if (dni) return dni[1].padStart(8, '0') + dni[2];
+    const nie = /^([XYZ])0([0-9]{7}[A-Z])$/.exec(limpio);
+    if (nie) return nie[1] + nie[2];
+    return limpio;
+}
+
 export const dni = type("string").pipe(
-    (valor: string) => valor.replace(/[\s-]/g, '').toUpperCase(),
+    normalizarDni,
     type("string").narrow((str: string) => {
         if (!/^[XYZ0-9][0-9]{7}[A-Z]$/.test(str)) return false;
         const letra = str.slice(-1);
