@@ -1,10 +1,9 @@
 import type { ComponentType } from 'react'
-import {
-  FormularioTexto, FormularioFoto, FormularioGaleria,
-  FormularioTarjetas, FormularioLlamada, FormularioDatos, FormularioItinerario,
-  FormularioCronologia, FormularioListado, FormularioContacto,
-  type Props,
-} from './FormulariosDeBloque'
+import { FormularioTexto, FormularioLlamada, FormularioListado, FormularioContacto } from './formularios/breves'
+import { FormularioFoto, FormularioGaleria } from './formularios/medios'
+import { FormularioTarjetas, FormularioDatos, FormularioItinerario } from './formularios/listas'
+import { FormularioCronologia } from './formularios/cronologia'
+import type { Props } from './formularios/comunes'
 import { problemaDelMedio } from '../contenido/medios'
 import { esDestinoValido } from '../../../lib/destinos'
 import type { Bloque } from '../../../lib/api/contenido'
