@@ -158,6 +158,19 @@ ser `private` por eso) o sale a su propio módulo con una puerta declarada (como
 `ponerTransporte` en `services/correos/envio.ts`). Así, moverla rompe la
 compilación en vez de vaciar la prueba en silencio.
 
+**Después de un menú o un diálogo de MUI, hay que esperar a que se cierre antes
+de usar `getByRole`.** Mientras dura la transición de cierre, MUI deja el resto
+del árbol en `aria-hidden` y bloquea el scroll del `body`. `getByRole` **no ve
+lo oculto**, así que no encuentra nada; `getByLabelText` sí, porque no filtra
+por accesibilidad. De ahí un fallo que solo salía en el CI y nunca en local, y
+que además señalaba a la línea equivocada: caía en la primera consulta por rol
+posterior al menú, no donde estaba el problema. La espera va en el ayudante que
+abre el menú, no en cada test:
+
+```ts
+await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+```
+
 **Los ficheros de test del backend van uno detrás de otro**
 (`--test-concurrency=1`, en `npm test` y en el CI). Comparten la base de datos, y
 varios trabajan sobre su estado global: generar cuotas emite un recibo a *todos*

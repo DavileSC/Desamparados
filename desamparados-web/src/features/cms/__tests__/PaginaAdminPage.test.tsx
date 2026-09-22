@@ -250,6 +250,12 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
   const anadirBloque = async (user: ReturnType<typeof userEvent.setup>, nombre: RegExp) => {
     await user.click(screen.getByRole('button', { name: /añadir bloque/i }))
     await user.click(await screen.findByRole('menuitem', { name: nombre }))
+    // El menú se cierra con transición, y mientras dura MUI deja el resto del
+    // árbol en aria-hidden. `getByRole` no ve lo oculto, así que sin esperar
+    // aquí una máquina lenta no encuentra los botones del bloque recién
+    // añadido. (`getByLabelText` sí los encontraba, y por eso el fallo salía
+    // en una línea y no en la anterior.)
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
   }
 
   it('el menú ofrece todos los tipos de bloque del catálogo', async () => {
@@ -374,6 +380,12 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
   const anadirBloque = async (user: ReturnType<typeof userEvent.setup>, nombre: RegExp) => {
     await user.click(screen.getByRole('button', { name: /añadir bloque/i }))
     await user.click(await screen.findByRole('menuitem', { name: nombre }))
+    // El menú se cierra con transición, y mientras dura MUI deja el resto del
+    // árbol en aria-hidden. `getByRole` no ve lo oculto, así que sin esperar
+    // aquí una máquina lenta no encuentra los botones del bloque recién
+    // añadido. (`getByLabelText` sí los encontraba, y por eso el fallo salía
+    // en una línea y no en la anterior.)
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
   }
   const ultimoPut = (llamadas: { metodo: string; cuerpo: unknown }[]) => {
     // Si no hubo ningún PUT, el fallo se decía solo como «no se puede leer
