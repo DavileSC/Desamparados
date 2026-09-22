@@ -14,6 +14,13 @@ import { useAuthStore } from '../../features/altas/auth/store'
  */
 const BASE_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '')
 
+/**
+ * La dirección de un documento de storage/private (la foto o el certificado de
+ * bautismo del alta). Solo la abre una sesión del CMS: la cookie va sola porque
+ * la API está en el mismo dominio.
+ */
+export const urlDocumentoPrivado = (nombre: string) => `${BASE_URL}/upload/private/${encodeURIComponent(nombre)}`
+
 export class ErrorDeApi extends Error {
   status: number
   payload: unknown

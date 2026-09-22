@@ -2,7 +2,7 @@ import db from '../config/db';
 import { encrypt } from '../utils/bcrypt.handle';
 import { Role } from '@prisma/client';
 import { RegisterDto, ReactivacionDto } from '../dtos/auth.dto';
-import { comprobarEsAdulto, comprobarEsMenor } from '../domain/fechas-hermano.js';
+import { comprobarEsAdulto, comprobarEsMenor, diaDeHoy, instanteDeDia } from '../domain/fechas-hermano.js';
 import { EmailService } from './email.service';
 import { HttpError } from '../utils/error.handle';
 import { enmascararEmail } from '../utils/log-privacidad.js';
@@ -26,9 +26,24 @@ export class RegistroService {
    * la misma puerta de siempre; lo que cambia es que por ella pueden entrar
    * varias personas de una vez.
    */
-  static async registerUser({ usuario, titular, menores = [] }: RegisterDto) {
+  static async registerUser({ usuario, titular, menores = [], pago, documentos = {} }: RegisterDto) {
     if (!titular && menores.length === 0) {
       throw new HttpError('No hay a quién dar de alta: marca si te apuntas tú, si apuntas a un menor, o las dos cosas.');
+    }
+
+    // El bautismo, después del nacimiento y no en el futuro.
+    if (titular && (titular.fechaBautismo < titular.fechaNacimiento || titular.fechaBautismo > diaDeHoy())) {
+      throw new HttpError('Revisa la fecha de bautismo: no puede ser anterior al nacimiento ni posterior a hoy.');
+    }
+
+    // La cuota (anual): sin forma de pago, como las webs de antes, en Secretaría.
+    const domiciliada = pago?.forma === 'DOMICILIACION';
+    if (domiciliada) {
+      if (!pago.iban) throw new HttpError('Para domiciliar la cuota hace falta el IBAN de la cuenta.');
+      if (!pago.titularidad) throw new HttpError('Indica quién es el titular de la cuenta.');
+      if (pago.titularidad !== 'PROPIA' && !pago.titularCuenta?.trim()) {
+        throw new HttpError('Escribe el nombre del titular de la cuenta.');
+      }
     }
 
     const checkUser = await db.user.findFirst({
@@ -76,6 +91,24 @@ export class RegistroService {
     // Los apellidos del adulto: por separado si vienen así, y si no, partidos.
     const apellidosDelAdulto = apellidosTrasCambio(usuario)!;
 
+    // La cuenta del IBAN, vista desde cada ficha. Quien rellena el alta dice si
+    // es suya, de un familiar hermano o de otra persona; para la ficha de un
+    // menor, «suya» es la del adulto que lo apunta, y el nombre se guarda.
+    const nombreDelAdulto = `${usuario.nombre} ${apellidosDelAdulto.apellidos}`.trim();
+    const cuentaDe = (esElAdulto: boolean) => {
+      if (!domiciliada) return { formaPagoPref: 'EFECTIVO' as const };
+      const propia = pago.titularidad === 'PROPIA';
+      return {
+        formaPagoPref: 'DOMICILIACION' as const,
+        iban: pago.iban,
+        titularidadCuenta: propia
+          ? (esElAdulto ? 'PROPIA' as const : titular ? 'FAMILIAR_HERMANO' as const : 'OTRA_PERSONA' as const)
+          : pago.titularidad,
+        // Vacío es «el propio hermano», como en su perfil.
+        titularCuenta: propia ? (esElAdulto ? null : nombreDelAdulto) : pago.titularCuenta!.trim(),
+      };
+    };
+
     const hashedPassword = await encrypt(usuario.password);
 
     // 1. TRANSACCIÓN RÁPIDA DE BASE DE DATOS
@@ -106,6 +139,9 @@ export class RegistroService {
         direccion: usuario.direccion,
         poblacion: usuario.poblacion,
         codigoPostal: usuario.codigoPostal,
+        provincia: usuario.provincia?.trim() || null,
+        comunidadAutonoma: usuario.comunidadAutonoma?.trim() || null,
+        pais: usuario.pais?.trim() || null,
         activo: false // <--- Fichas inactivas hasta que Secretaría las apruebe
       };
 
@@ -118,6 +154,15 @@ export class RegistroService {
             ...apellidosDelAdulto,
             dni: usuario.dni,
             fechaNacimiento: new Date(titular.fechaNacimiento),
+            sexo: titular.sexo,
+            estadoCivil: titular.estadoCivil,
+            fechaBautismo: instanteDeDia(titular.fechaBautismo, 'fechaBautismo'),
+            lugarBautismo: titular.lugarBautismo?.trim() || null,
+            parroquiaBautismo: titular.parroquiaBautismo?.trim() || null,
+            boletin: usuario.boletin ?? false,
+            ...cuentaDe(true),
+            foto: documentos.foto ?? null,
+            certificadoBautismo: documentos.certificadoBautismo ?? null,
           }] : []),
           ...menores.map((menor) => ({
             ...contacto,
@@ -130,6 +175,9 @@ export class RegistroService {
             email: menor.email || usuario.email,
             parentesco: menor.parentesco ?? null,
             fechaNacimiento: new Date(menor.fechaNacimiento),
+            // El boletín va a la ficha del adulto; si no tiene, a las de ellos.
+            boletin: !titular && (usuario.boletin ?? false),
+            ...cuentaDe(false),
           })),
         ],
       });

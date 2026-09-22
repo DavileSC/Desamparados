@@ -36,12 +36,16 @@ export interface UpdateHermanoDto {
   poblacion?: string;
   codigoPostal?: string;
   provincia?: string | null;
+  comunidadAutonoma?: string | null;
   pais?: string | null;
+  boletin?: boolean;
   fechaBautismo?: string | null;
+  lugarBautismo?: string | null;
   parroquiaBautismo?: string | null;
   formaPagoPref?: 'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION';
   iban?: string | null;
   titularCuenta?: string | null;
+  titularidadCuenta?: 'PROPIA' | 'FAMILIAR_HERMANO' | 'OTRA_PERSONA' | null;
   parentesco?: 'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO';
 }
 

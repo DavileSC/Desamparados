@@ -9,9 +9,15 @@ import { DOMINIO_CUENTA_ELIMINADA, PREFIJO_DNI_ELIMINADO } from '../domain/cuent
 import { suprimirDatosPersonales } from '../domain/auditoria-supresion.js';
 import { asegurarQueQuedaOtroAdmin } from './auth.service';
 import { consumirCodigoDeRespaldo, reclamarTotp } from './auth/codigos-2fa.js';
+import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 
 // Datos de contacto de una ficha, fuera, en la supresión de la cuenta.
-const CONTACTO_FUERA = { email: null, telefono: null, direccion: null, poblacion: null, codigoPostal: null } as const;
+// La foto y el certificado de bautismo también salen: no hacen falta para la
+// contabilidad que se retiene, y los ficheros se borran al terminar.
+const CONTACTO_FUERA = {
+  email: null, telefono: null, direccion: null, poblacion: null, codigoPostal: null,
+  foto: null, certificadoBautismo: null,
+} as const;
 
 /**
  * Los derechos del RGPD sobre los datos propios: llevárselos y borrarlos.
@@ -196,6 +202,8 @@ export class MisDatosService {
         registrosSuprimidos += 1;
       }
     });
+
+    await borrarDocumentosPrivados(documentosDe(user.hermanos));
 
     // Auditoría después de confirmar: si la transacción falla, el registro no
     // debe dar fe de un borrado que no ocurrió. El userId del registro sigue

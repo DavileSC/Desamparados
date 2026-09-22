@@ -23,17 +23,26 @@ export type Paso = { titulo: string; campos: Campo[] }
 
 export function pasosDe(camino: Camino | null): Paso[] {
   if (!camino) return [{ titulo: '¿Quién se apunta?', campos: ['camino'] }]
+  const propia = conFichaPropia(camino)
   return [
     { titulo: '¿Quién se apunta?', campos: ['camino'] },
     {
       titulo: 'Tus datos',
-      campos: conFichaPropia(camino)
-        ? ['nombre', 'primerApellido', 'segundoApellido', 'dni', 'fechaNacimiento']
+      campos: propia
+        ? ['nombre', 'primerApellido', 'segundoApellido', 'dni', 'fechaNacimiento', 'sexo', 'estadoCivil']
         : ['nombre', 'primerApellido', 'segundoApellido', 'dni'],
     },
+    ...(propia ? [{ titulo: 'Bautismo', campos: ['fechaBautismo', 'lugarBautismo', 'parroquiaBautismo', 'certificadoBautismo'] as Campo[] }] : []),
     ...(conMenores(camino) ? [{ titulo: 'A quién apuntas', campos: ['menores'] as Campo[] }] : []),
-    { titulo: 'Contacto y domicilio', campos: ['email', 'telefono', 'direccion', 'ciudad', 'codigoPostal'] },
-    { titulo: 'Acceso al área de hermanos', campos: ['password', 'aceptarPolitica'] },
+    {
+      titulo: 'Contacto y domicilio',
+      campos: ['email', 'telefono', 'direccion', 'codigoPostal', 'ciudad', 'provincia', 'comunidadAutonoma', 'pais'],
+    },
+    { titulo: 'La cuota', campos: ['formaPago', 'iban', 'titularidad', 'titularCuenta'] },
+    {
+      titulo: 'Acceso al área de hermanos',
+      campos: propia ? ['foto', 'password', 'boletin', 'aceptarPolitica'] : ['password', 'boletin', 'aceptarPolitica'],
+    },
   ]
 }
 
@@ -49,13 +58,33 @@ export const CAMPOS_API: Record<string, Campo> = {
   'usuario.direccion': 'direccion',
   'usuario.poblacion': 'ciudad',
   'usuario.codigoPostal': 'codigoPostal',
+  'usuario.provincia': 'provincia',
+  'usuario.comunidadAutonoma': 'comunidadAutonoma',
+  'usuario.pais': 'pais',
   'usuario.password': 'password',
   'hermano.fechaNacimiento': 'fechaNacimiento',
+  'titular.fechaNacimiento': 'fechaNacimiento',
+  'titular.sexo': 'sexo',
+  'titular.estadoCivil': 'estadoCivil',
+  'titular.fechaBautismo': 'fechaBautismo',
+  'titular.lugarBautismo': 'lugarBautismo',
+  'titular.parroquiaBautismo': 'parroquiaBautismo',
+  'pago.forma': 'formaPago',
+  'pago.iban': 'iban',
+  'pago.titularidad': 'titularidad',
+  'pago.titularCuenta': 'titularCuenta',
+  // Los documentos los rechaza el servidor por su nombre de campo.
+  foto: 'foto',
+  certificadoBautismo: 'certificadoBautismo',
 }
 
 export const VALORES_INICIALES: MembershipFormData = {
   camino: 'HERMANO', nombre: '', primerApellido: '', segundoApellido: '', email: '', password: '', dni: '', telefono: '',
   direccion: '', ciudad: '', codigoPostal: '', fechaNacimiento: '', menores: [], aceptarPolitica: false,
+  sexo: '', estadoCivil: '', fechaBautismo: '', lugarBautismo: '', parroquiaBautismo: '',
+  provincia: '', comunidadAutonoma: '', pais: 'España',
+  formaPago: '', iban: '', titularidad: 'PROPIA', titularCuenta: '',
+  foto: null, certificadoBautismo: null, boletin: false,
   comentarioAdicional: '',
 }
 

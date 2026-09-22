@@ -9,6 +9,7 @@ import { Role } from '@prisma/client';
 import { validate } from '../config/validate'; 
 import { idParam, password } from '../config/common';
 import { authLimiter } from '../config/limiter';
+import { recibirAlta, comprobarDocumentosDelAlta } from '../middleware/alta-documentos.middleware';
 
 // 2. Esquemas blindados
 import {
@@ -55,7 +56,9 @@ const rolesStaffCMS = [
 // y les basta el limitador global.
 
 // Registro (Crea solicitud inactiva)
-authRoutes.post('/register', authLimiter, validate(registerSchema), AuthController.register);
+// El alta llega en multipart cuando trae la foto o el certificado de bautismo
+// (ver alta-documentos.middleware), y en JSON cuando no.
+authRoutes.post('/register', authLimiter, recibirAlta, validate(registerSchema), comprobarDocumentosDelAlta, AuthController.register);
 
 // Pedir volver tras una baja: la web lo ofrece cuando el registro topa con un
 // DNI que ya está en el censo. Lleva el mismo limitador que el resto, porque es

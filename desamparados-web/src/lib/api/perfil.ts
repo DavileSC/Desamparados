@@ -6,6 +6,8 @@ import type { Parentesco } from './auth'
 export type Sexo = 'HOMBRE' | 'MUJER'
 export type EstadoCivil = 'SOLTERO' | 'CASADO' | 'PAREJA_DE_HECHO' | 'SEPARADO' | 'DIVORCIADO' | 'VIUDO'
 export type FormaDePago = 'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'
+/** Quién es el titular de la cuenta del IBAN, visto desde la ficha. */
+export type TitularidadCuenta = 'PROPIA' | 'FAMILIAR_HERMANO' | 'OTRA_PERSONA'
 
 export interface ApiProfile {
   id: number
@@ -36,9 +38,17 @@ export interface ApiProfile {
   telefonoFijo: string | null
   email2: string | null
   provincia: string | null
+  comunidadAutonoma: string | null
   pais: string | null
+  /** Quiere el boletín de noticias por correo. */
+  boletin: boolean
   fechaBautismo: string | null
+  /** «Bautizado/a en»: la localidad. */
+  lugarBautismo: string | null
   parroquiaBautismo: string | null
+  /** Los documentos del alta, si los adjuntó (solo el nombre: los descarga Secretaría). */
+  foto: string | null
+  certificadoBautismo: string | null
   /** Los lleva Secretaría: se ven, no se editan desde aquí. */
   fechaJura: string | null
   presentadoPor: string | null
@@ -51,6 +61,7 @@ export interface ApiProfile {
   /** La cuenta nunca llega entera: «ES•• •••• … 1332». */
   ibanEnmascarado: string | null
   titularCuenta: string | null
+  titularidadCuenta: TitularidadCuenta | null
 }
 
 /**
@@ -111,12 +122,16 @@ export type CambiosDeFicha = Partial<{
   codigoPostal: string
   poblacion: string
   provincia: string | null
+  comunidadAutonoma: string | null
   pais: string | null
+  boletin: boolean
   fechaBautismo: string | null
+  lugarBautismo: string | null
   parroquiaBautismo: string | null
   formaPagoPref: FormaDePago
   iban: string | null
   titularCuenta: string | null
+  titularidadCuenta: TitularidadCuenta | null
 }>
 
 export function actualizarFicha(id: number, cambios: CambiosDeFicha) {

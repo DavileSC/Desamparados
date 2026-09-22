@@ -35,9 +35,15 @@ export interface AdminBrother {
   telefonoFijo: string | null
   email2: string | null
   provincia: string | null
+  comunidadAutonoma: string | null
   pais: string | null
+  boletin: boolean
   fechaBautismo: string | null
+  lugarBautismo: string | null
   parroquiaBautismo: string | null
+  /** Documentos del alta en storage/private (el nombre): se abren con `urlDocumentoPrivado`. */
+  foto: string | null
+  certificadoBautismo: string | null
   fechaJura: string | null
   presentadoPor: string | null
   presentadoPor2: string | null
@@ -114,8 +120,11 @@ export interface DatosDeFichaDeHermano {
   telefonoFijo?: string | null
   email2?: string | null
   provincia?: string | null
+  comunidadAutonoma?: string | null
   pais?: string | null
+  boletin?: boolean
   fechaBautismo?: string | null
+  lugarBautismo?: string | null
   parroquiaBautismo?: string | null
   /** La jura y los padrinos los lleva Secretaría: el hermano no los toca. */
   fechaJura?: string | null

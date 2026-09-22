@@ -16,7 +16,8 @@ const subidaRoutes = Router();
  * Body: form-data key="file" value=<archivo>
  */
 const cmsRoles = [Role.ADMIN, Role.TESORERIA, Role.ALBACERIA, Role.HERMANO_MAYOR, Role.REDES, Role.SECRETARIA];
-const validateFilename = validate(type({ params: { filename: type('string').matching(/^[a-f0-9]{32}\.(jpg|jpeg|png|webp|pdf)$/i) } }));
+// doc y docx: los certificados de bautismo que se adjuntan al alta.
+const validateFilename = validate(type({ params: { filename: type('string').matching(/^[a-f0-9]{32}\.(jpg|jpeg|png|webp|pdf|doc|docx)$/i) } }));
 
 // Mismo rol que para subir: si un hermano raso no puede colocar un documento
 // en la carpeta privada, tampoco debe poder descargarlo. El nombre es un hash

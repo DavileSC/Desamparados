@@ -41,14 +41,18 @@ const baseUpdateBody = type({
     "poblacion?": "string",
     "codigoPostal?": "string",
     "provincia?": opcional,
+    "comunidadAutonoma?": opcional,
     "pais?": opcional,
+    "boletin?": "boolean",
     // Bautismo y parroquia: datos religiosos, siempre opcionales.
     "fechaBautismo?": diaOpcional,
+    "lugarBautismo?": opcional,
     "parroquiaBautismo?": opcional,
     // La cuenta la cambia el propio hermano.
     "formaPagoPref?": "'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'",
     "iban?": iban.or("null"),
     "titularCuenta?": opcional,
+    "titularidadCuenta?": "'PROPIA' | 'FAMILIAR_HERMANO' | 'OTRA_PERSONA' | null",
     // Solo cuenta en las fichas a cargo: la del titular no es de nadie.
     "parentesco?": "'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO'"
 });

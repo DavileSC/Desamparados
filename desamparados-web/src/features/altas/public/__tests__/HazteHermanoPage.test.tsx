@@ -14,8 +14,9 @@ type Usuario = ReturnType<typeof usuario>
 
 const DATOS: Record<string, string> = {
   Nombre: 'Juan', 'Primer apellido': 'Pérez', 'Segundo apellido': 'Ruiz', 'DNI/NIE': '12345678Z', 'Fecha de nacimiento': '1990-04-12',
+  'Fecha de bautismo': '1990-06-10',
   Email: 'juan@ejemplo.es', Teléfono: '600123456',
-  Dirección: 'Calle Real 14', Ciudad: 'Málaga', 'Código postal': '29013',
+  Dirección: 'Calle Real 14', Localidad: 'Málaga', 'Código postal': '29013',
   Contraseña: 'Prueba-2026-Segura',
 }
 
@@ -23,7 +24,9 @@ const DATOS: Record<string, string> = {
 // siempre lo mismo) pero solo se ve, y se puede usar, el paso actual. El
 // primero no tiene campos: pregunta quién se apunta, y de eso depende el resto.
 const PASO_1 = ['Nombre', 'Primer apellido', 'Segundo apellido', 'DNI/NIE', 'Fecha de nacimiento']
-const PASO_2 = ['Email', 'Teléfono', 'Dirección', 'Ciudad', 'Código postal']
+const PASO_2 = ['Email', 'Teléfono', 'Dirección', 'Código postal', 'Localidad']
+/** Lo que el servidor guarda de la ficha propia con los datos de arriba. */
+const TITULAR = { fechaNacimiento: '1990-04-12', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1990-06-10' }
 
 /** Elegir camino es el «Continuar» del primer paso. */
 const elegir = (u: Usuario, nombre: RegExp) => u.click(screen.getByRole('radio', { name: nombre }))
@@ -68,6 +71,22 @@ async function rellenar(u: Usuario, etiquetas: string[], datos: Partial<Record<s
 
 const continuar = (u: Usuario) => u.click(screen.getByRole('button', { name: 'Continuar' }))
 
+/** Un desplegable de MUI no es un <select>: se abre y se elige la opción. */
+async function escoger(u: Usuario, etiqueta: string, opcion: RegExp) {
+  await u.click(within(pasoActivo()).getByRole('combobox', { name: etiqueta }))
+  await u.click(await screen.findByRole('option', { name: opcion }))
+}
+
+/** El paso de «Tus datos» de quien se hace hermano: los textos y los dos desplegables. */
+async function rellenarDatos(u: Usuario, datos: Partial<Record<string, string>> = {}) {
+  await rellenar(u, PASO_1, datos)
+  await escoger(u, 'Sexo', /^Hombre$/)
+  await escoger(u, 'Estado civil', /^Soltero/)
+}
+
+/** Cuota en Secretaría: el camino sin datos bancarios. */
+const pagarEnSecretaria = (u: Usuario) => escoger(u, 'Forma de pago', /^En Secretaría$/)
+
 /**
  * El paso de un campo, por su fieldset. Los pasos que no tocan van `inert`
  * (ni se usan ni los lee un lector). No se comprueba la visibilidad porque el
@@ -79,9 +98,13 @@ const pasoDe = (etiqueta: string) => screen.getByLabelText(etiqueta).closest('fi
 async function rellenarTodo(datos: Partial<Record<string, string>> = {}) {
   const u = usuario()
   await elegir(u, CAMINO_HERMANO)
-  await rellenar(u, PASO_1, datos)
+  await rellenarDatos(u, datos)
+  await continuar(u)
+  await rellenar(u, ['Fecha de bautismo'], datos)
   await continuar(u)
   await rellenar(u, PASO_2, datos)
+  await continuar(u)
+  await pagarEnSecretaria(u)
   await continuar(u)
   await rellenar(u, ['Contraseña'], datos)
   await u.click(screen.getByLabelText('Acepto la política de privacidad'))
@@ -104,12 +127,12 @@ describe('HazteHermanoPage', () => {
     renderWithProviders(<HazteHermanoPage />)
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
-    await rellenar(u, PASO_1, { 'DNI/NIE': '12345678A' })
+    await rellenarDatos(u, { 'DNI/NIE': '12345678A' })
     await continuar(u)
 
     expect(await screen.findByText(/la letra no corresponde/i)).toBeInTheDocument()
     expect(pasoDe('Email')).toHaveAttribute('inert')
-    expect(screen.getByText('Paso 2 de 4')).toBeInTheDocument()
+    expect(screen.getByText('Paso 2 de 6')).toBeInTheDocument()
     expect(fetchFalso).not.toHaveBeenCalled()
   })
 
@@ -119,7 +142,9 @@ describe('HazteHermanoPage', () => {
     renderWithProviders(<HazteHermanoPage />)
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
-    await rellenar(u, PASO_1)
+    await rellenarDatos(u)
+    await continuar(u)
+    await rellenar(u, ['Fecha de bautismo'])
     await continuar(u)
     await rellenar(u, PASO_2, { Teléfono: '95212345' })
     await continuar(u)
@@ -133,9 +158,9 @@ describe('HazteHermanoPage', () => {
     renderWithProviders(<HazteHermanoPage />)
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
-    await rellenar(u, PASO_1)
+    await rellenarDatos(u)
     await continuar(u)
-    expect(pasoDe('Email')).not.toHaveAttribute('inert')
+    expect(pasoDe('Fecha de bautismo')).not.toHaveAttribute('inert')
     await u.click(screen.getByRole('button', { name: 'Atrás' }))
 
     expect(pasoDe('Nombre')).not.toHaveAttribute('inert')
@@ -157,7 +182,9 @@ describe('HazteHermanoPage', () => {
     expect(cuerpo.usuario.dni).toBe('12345678Z')
     expect(cuerpo.usuario.telefono).toBe('600123456')
     // Camino 1: su ficha y nadie más.
-    expect(cuerpo.titular).toEqual({ fechaNacimiento: '1990-04-12' })
+    expect(cuerpo.titular).toEqual(TITULAR)
+    expect(cuerpo.pago).toEqual({ forma: 'EFECTIVO' })
+    expect(cuerpo.usuario).toMatchObject({ provincia: 'Málaga', comunidadAutonoma: 'Andalucía', pais: 'España', boletin: false })
     expect(cuerpo.menores).toBeUndefined()
   })
 
@@ -176,7 +203,7 @@ describe('HazteHermanoPage', () => {
     expect(await screen.findByText('ese DNI ya está registrado')).toBeInTheDocument()
     expect(pasoDe('DNI/NIE')).not.toHaveAttribute('inert')
     expect(screen.getByLabelText('DNI/NIE')).toHaveFocus()
-    expect(screen.getByText('Paso 2 de 4')).toBeInTheDocument()
+    expect(screen.getByText('Paso 2 de 6')).toBeInTheDocument()
   })
 
   it('sustituye el formulario por la confirmación con el email usado', async () => {
@@ -203,12 +230,14 @@ describe('HazteHermanoPage', () => {
     renderWithProviders(<HazteHermanoPage />)
     const u = usuario()
     await elegir(u, CAMINO_CON_MENORES)
-    await rellenar(u, PASO_1)
+    await rellenarDatos(u)
+    await continuar(u)
+    await rellenar(u, ['Fecha de bautismo'])
     await continuar(u)
 
     // El primer menor sale ya puesto: nadie elige este camino para luego tener
     // que pulsar «añadir».
-    expect(screen.getByText('Paso 3 de 5')).toBeInTheDocument()
+    expect(screen.getByText('Paso 4 de 7')).toBeInTheDocument()
     await rellenarMenor(u, 0, { Nombre: 'Lucía', 'Primer apellido': 'Pérez', 'Segundo apellido': 'Cano', 'Fecha de nacimiento': '2017-04-12' })
     await u.click(screen.getByRole('button', { name: /añadir otro menor/i }))
     await rellenarMenor(u, 1, { Nombre: 'Martín', 'Primer apellido': 'Pérez', 'Segundo apellido': 'Cano', 'Fecha de nacimiento': '2019-06-30' })
@@ -216,18 +245,20 @@ describe('HazteHermanoPage', () => {
     await continuar(u)
     await rellenar(u, PASO_2)
     await continuar(u)
+    await pagarEnSecretaria(u)
+    await continuar(u)
     await rellenar(u, ['Contraseña'])
     await u.click(screen.getByLabelText('Acepto la política de privacidad'))
     await enviar(u)
 
     const cuerpo = JSON.parse(fetchFalso.mock.calls[0][1].body)
-    expect(cuerpo.titular).toEqual({ fechaNacimiento: '1990-04-12' })
+    expect(cuerpo.titular).toEqual(TITULAR)
     expect(cuerpo.menores).toHaveLength(2)
     expect(cuerpo.menores[0]).toMatchObject({ nombre: 'Lucía', parentesco: 'HIJO' })
     expect(cuerpo.menores[1]).toMatchObject({ nombre: 'Martín' })
     // Sin DNI ni correo no se mandan esos campos: el servidor los quiere ausentes.
     expect(cuerpo.menores[0].dni).toBeUndefined()
-  // Cinco pasos y dos menores tecleados campo a campo: con la suite entera
+  // Siete pasos y dos menores tecleados campo a campo: con la suite entera
   // compitiendo por la CPU se pasa de los 20 s de tope, sin que falle nada.
   }, 45_000)
 
@@ -240,14 +271,19 @@ describe('HazteHermanoPage', () => {
     const u = usuario()
     await elegir(u, CAMINO_SOLO_MENORES)
 
-    // Su DNI sí se pide: es el de la cuenta. Su nacimiento no.
+    // Su DNI sí se pide: es el de la cuenta. Su nacimiento no, ni su sexo,
+    // estado civil o bautismo: no va a tener ficha.
     expect(screen.getByLabelText('DNI/NIE')).toBeInTheDocument()
+    expect(within(pasoActivo()).queryByRole('combobox', { name: 'Sexo' })).not.toBeInTheDocument()
     await rellenar(u, ['Nombre', 'Primer apellido', 'Segundo apellido', 'DNI/NIE'])
     await continuar(u)
     await rellenarMenor(u, 0, { Nombre: 'Lucía', 'Primer apellido': 'Pérez', 'Segundo apellido': 'Cano', 'Fecha de nacimiento': '2017-04-12' })
     await continuar(u)
     await rellenar(u, PASO_2)
     await continuar(u)
+    await pagarEnSecretaria(u)
+    await continuar(u)
+    expect(within(pasoActivo()).queryByText('Fotografía')).not.toBeInTheDocument()
     await rellenar(u, ['Contraseña'])
     await u.click(screen.getByLabelText('Acepto la política de privacidad'))
     await enviar(u)
@@ -261,7 +297,9 @@ describe('HazteHermanoPage', () => {
     renderWithProviders(<HazteHermanoPage />)
     const u = usuario()
     await elegir(u, CAMINO_CON_MENORES)
-    await rellenar(u, PASO_1)
+    await rellenarDatos(u)
+    await continuar(u)
+    await rellenar(u, ['Fecha de bautismo'])
     await continuar(u)
 
     expect(screen.queryByText(/autorización firmada/i)).not.toBeInTheDocument()
@@ -286,4 +324,130 @@ describe('HazteHermanoPage', () => {
     expect(String(fetchFalso.mock.calls[1][0])).toContain('/auth/reactivacion')
     expect(JSON.parse(fetchFalso.mock.calls[1][1].body)).toEqual({ dni: '12345678Z', email: 'juan@ejemplo.es' })
   })
+
+  it('no pasa de «Tus datos» sin sexo ni estado civil', async () => {
+    renderWithProviders(<HazteHermanoPage />)
+    const u = usuario()
+    await elegir(u, CAMINO_HERMANO)
+    await rellenar(u, PASO_1)
+    await continuar(u)
+
+    expect(await screen.findAllByText('Elige una opción')).toHaveLength(2)
+    expect(pasoDe('Fecha de bautismo')).toHaveAttribute('inert')
+  })
+
+  it('la fecha de bautismo es obligatoria y no puede ser anterior al nacimiento', async () => {
+    renderWithProviders(<HazteHermanoPage />)
+    const u = usuario()
+    await elegir(u, CAMINO_HERMANO)
+    await rellenarDatos(u)
+    await continuar(u)
+    await continuar(u)
+    expect(await screen.findByText('La fecha de bautismo es obligatoria')).toBeInTheDocument()
+
+    await rellenar(u, ['Fecha de bautismo'], { 'Fecha de bautismo': '1989-01-01' })
+    await continuar(u)
+    expect(await screen.findByText(/anterior al nacimiento/i)).toBeInTheDocument()
+    expect(pasoDe('Email')).toHaveAttribute('inert')
+  })
+
+  it('el código postal rellena la provincia y la comunidad, sin pisar lo escrito a mano', async () => {
+    renderWithProviders(<HazteHermanoPage />)
+    const u = usuario()
+    await elegir(u, CAMINO_HERMANO)
+    await rellenarDatos(u)
+    await continuar(u)
+    await rellenar(u, ['Fecha de bautismo'])
+    await continuar(u)
+
+    expect(screen.getByLabelText('País')).toHaveValue('España')
+    await rellenar(u, ['Código postal'], { 'Código postal': '41004' })
+    expect(screen.getByLabelText('Provincia')).toHaveValue('Sevilla')
+    expect(screen.getByLabelText('Comunidad autónoma')).toHaveValue('Andalucía')
+
+    // Otro código cambia lo que puso la tabla; lo escrito a mano se queda.
+    await u.clear(screen.getByLabelText('Comunidad autónoma'))
+    await u.type(screen.getByLabelText('Comunidad autónoma'), 'Mi comunidad')
+    await rellenar(u, ['Código postal'], { 'Código postal': '28013' })
+    expect(screen.getByLabelText('Provincia')).toHaveValue('Madrid')
+    expect(screen.getByLabelText('Comunidad autónoma')).toHaveValue('Mi comunidad')
+  })
+
+  it('domiciliar pide el IBAN y, si la cuenta es de otra persona, su nombre', async () => {
+    const fetchFalso = vi.fn().mockResolvedValue(
+      respuesta({ user: { id: 1, email: 'juan@ejemplo.es' }, fichas: 1, message: 'ok' }, 201),
+    )
+    vi.stubGlobal('fetch', fetchFalso)
+    renderWithProviders(<HazteHermanoPage />)
+    const u = usuario()
+    await elegir(u, CAMINO_HERMANO)
+    await rellenarDatos(u)
+    await continuar(u)
+    await rellenar(u, ['Fecha de bautismo'])
+    await continuar(u)
+    await rellenar(u, PASO_2)
+    await continuar(u)
+
+    // Sin elegir forma de pago no se sigue.
+    await continuar(u)
+    expect(await screen.findByText('Elige cómo vas a pagar la cuota')).toBeInTheDocument()
+
+    await escoger(u, 'Forma de pago', /^Domiciliación bancaria$/)
+    await continuar(u)
+    expect(await screen.findByText('Para domiciliar la cuota hace falta el IBAN')).toBeInTheDocument()
+
+    await rellenar(u, ['IBAN'], { IBAN: 'ES91 2100 0418 4502 0005 1332' })
+    await u.click(screen.getByRole('radio', { name: 'No, es otra persona' }))
+    await continuar(u)
+    expect(await screen.findByText('Escribe el nombre del titular de la cuenta')).toBeInTheDocument()
+
+    await rellenar(u, ['Nombre y apellidos del titular'], { 'Nombre y apellidos del titular': 'Ana Ruiz Gil' })
+    await continuar(u)
+    await rellenar(u, ['Contraseña'])
+    await u.click(screen.getByLabelText('Quiero recibir el boletín de noticias por correo'))
+    await u.click(screen.getByLabelText('Acepto la política de privacidad'))
+    await enviar(u)
+
+    const cuerpo = JSON.parse(fetchFalso.mock.calls[0][1].body)
+    expect(cuerpo.pago).toEqual({ forma: 'DOMICILIACION', iban: 'ES9121000418450200051332', titularidad: 'OTRA_PERSONA', titularCuenta: 'Ana Ruiz Gil' })
+    expect(cuerpo.usuario.boletin).toBe(true)
+  }, 45_000)
+
+  it('con foto o certificado, el alta va en multipart con cada documento en su campo', async () => {
+    const fetchFalso = vi.fn().mockResolvedValue(
+      respuesta({ user: { id: 1, email: 'juan@ejemplo.es' }, fichas: 1, message: 'ok' }, 201),
+    )
+    vi.stubGlobal('fetch', fetchFalso)
+    renderWithProviders(<HazteHermanoPage />)
+    const u = usuario()
+    await elegir(u, CAMINO_HERMANO)
+    await rellenarDatos(u)
+    await continuar(u)
+    await rellenar(u, ['Fecha de bautismo'])
+    const certificado = new File(['%PDF-1.4'], 'certificado.pdf', { type: 'application/pdf' })
+    await u.upload(within(pasoActivo()).getByLabelText('Certificado de bautismo'), certificado)
+    expect(within(pasoActivo()).getByText('certificado.pdf')).toBeInTheDocument()
+    await continuar(u)
+    await rellenar(u, PASO_2)
+    await continuar(u)
+    await pagarEnSecretaria(u)
+    await continuar(u)
+
+    // Una foto que no es JPG ni PNG se señala antes de enviar. `applyAccept:
+    // false`: el selector del sistema ya la escondería, pero se puede arrastrar.
+    const subir = userEvent.setup({ delay: null, applyAccept: false })
+    await subir.upload(within(pasoActivo()).getByLabelText('Fotografía'), new File(['x'], 'foto.gif', { type: 'image/gif' }))
+    expect(await screen.findByText('La foto tiene que ser JPG o PNG')).toBeInTheDocument()
+    const foto = new File(['x'], 'foto.jpg', { type: 'image/jpeg' })
+    await u.upload(within(pasoActivo()).getByLabelText('Fotografía'), foto)
+    await rellenar(u, ['Contraseña'])
+    await u.click(screen.getByLabelText('Acepto la política de privacidad'))
+    await enviar(u)
+
+    const cuerpo = fetchFalso.mock.calls[0][1].body as FormData
+    expect(cuerpo).toBeInstanceOf(FormData)
+    expect(JSON.parse(String(cuerpo.get('datos'))).titular).toEqual(TITULAR)
+    expect((cuerpo.get('foto') as File).name).toBe('foto.jpg')
+    expect((cuerpo.get('certificadoBautismo') as File).name).toBe('certificado.pdf')
+  }, 45_000)
 })

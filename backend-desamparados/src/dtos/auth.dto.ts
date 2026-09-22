@@ -36,12 +36,34 @@ export interface RegisterDto {
     direccion?: string;
     poblacion?: string;
     codigoPostal?: string;
+    provincia?: string;
+    comunidadAutonoma?: string;
+    pais?: string;
+    /** Quiere el boletín de noticias por correo. */
+    boletin?: boolean;
   };
 
   /** Su propia ficha en el censo. Sin esto, la cuenta no es de un hermano. */
   titular?: {
     fechaNacimiento: string; // 'AAAA-MM-DD'
+    sexo: 'HOMBRE' | 'MUJER';
+    estadoCivil: 'SOLTERO' | 'CASADO' | 'PAREJA_DE_HECHO' | 'SEPARADO' | 'DIVORCIADO' | 'VIUDO';
+    fechaBautismo: string; // 'AAAA-MM-DD'
+    lugarBautismo?: string;
+    parroquiaBautismo?: string;
   };
+
+  /** La cuota: domiciliada (con su cuenta) o en Secretaría. Sin él, en Secretaría. */
+  pago?: {
+    forma: 'DOMICILIACION' | 'EFECTIVO';
+    iban?: string;
+    /** Visto desde quien rellena el alta: él mismo, un familiar hermano u otra persona. */
+    titularidad?: 'PROPIA' | 'FAMILIAR_HERMANO' | 'OTRA_PERSONA';
+    titularCuenta?: string;
+  };
+
+  /** La foto y el certificado de bautismo que se adjuntan (nombres en storage/private). */
+  documentos?: { foto?: string; certificadoBautismo?: string };
 
   /** Los menores que apunta. */
   menores?: MenorAltaDto[];

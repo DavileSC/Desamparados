@@ -40,7 +40,9 @@ export class AuthController {
       });
     }
 
-    const result = await RegistroService.registerUser(body);
+    const result = await RegistroService.registerUser({ ...body, documentos: req.documentosDelAlta });
+    // Ya están en la ficha: que no los borre la limpieza de alta-documentos.
+    res.locals.conservarDocumentos = true;
 
     // Ahora devuelve un 201 Created con el mensaje de "Pásate por Secretaría"
     res.status(201).json(result);

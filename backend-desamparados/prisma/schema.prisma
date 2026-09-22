@@ -142,6 +142,14 @@ enum Sexo {
   MUJER
 }
 
+/// Quién es el titular de la cuenta del IBAN, visto desde la ficha: el propio
+/// hermano, un familiar que también es hermano, u otra persona.
+enum TitularidadCuenta {
+  PROPIA
+  FAMILIAR_HERMANO
+  OTRA_PERSONA
+}
+
 enum EstadoCivil {
   SOLTERO
   CASADO
@@ -180,12 +188,17 @@ model Hermano {
   poblacion    String?
   codigoPostal String?
   provincia    String?
+  comunidadAutonoma String?
   pais         String?
+  /// Quiere recibir el boletín de noticias por correo.
+  boletin      Boolean @default(false)
 
   // VIDA COFRADE
   // Bautismo y parroquia son datos religiosos (RGPD, art. 9): opcionales, y
   // solo los ven el propio hermano y la gestión del censo.
   fechaBautismo     DateTime?
+  /// «Bautizado/a en»: la localidad del bautismo.
+  lugarBautismo     String?
   parroquiaBautismo String?
   /// Los tres siguientes los lleva Secretaría: el hermano los ve, no los edita.
   fechaJura         DateTime?
@@ -232,7 +245,14 @@ model Hermano {
   // Pago preferido para la generación de recibos (Domiciliación SEPA preparada)
   formaPagoPref MetodoPago @default(EFECTIVO)
   iban          String?
+  /// Nombre del titular de la cuenta, cuando no es el propio hermano.
   titularCuenta String?
+  titularidadCuenta TitularidadCuenta?
+
+  // DOCUMENTOS DEL ALTA (en storage/private: solo los ve el CMS). Guardan el
+  // nombre del fichero, no la URL, para no atarse al dominio de la API.
+  foto                String?
+  certificadoBautismo String?
 
   // HISTORIAL
   papeletas PapeletaSitio[]

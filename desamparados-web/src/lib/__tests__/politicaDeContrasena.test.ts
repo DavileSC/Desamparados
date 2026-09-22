@@ -40,6 +40,10 @@ describe('política de contraseñas en los formularios', () => {
         nombre: 'Ana', primerApellido: 'Ruiz', segundoApellido: '', email: 'prueba@ejemplo.com',
         dni: '00000000T', telefono: '600000000', direccion: 'Calle 1',
         ciudad: 'Málaga', codigoPostal: '29001', fechaNacimiento: '1990-01-01',
+        sexo: 'MUJER' as const, estadoCivil: 'SOLTERO' as const, fechaBautismo: '1990-03-01',
+        lugarBautismo: '', parroquiaBautismo: '', provincia: '', comunidadAutonoma: '', pais: '',
+        formaPago: 'EFECTIVO' as const, iban: '', titularidad: 'PROPIA' as const, titularCuenta: '',
+        foto: null, certificadoBautismo: null, boletin: false,
         aceptarPolitica: true,
       }
       expect(membershipSchema.safeParse({ ...base, password: '12345678' }).success).toBe(false)

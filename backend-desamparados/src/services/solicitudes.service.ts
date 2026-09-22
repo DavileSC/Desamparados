@@ -12,6 +12,7 @@ import {
 import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
 import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
+import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 
 /**
  * La cola de Secretaría: quien pide entrar y quien pide volver.
@@ -318,11 +319,14 @@ export class SolicitudesService {
       // petición tiene que ver lo que ya borró la primera.
       const cuenta = await tx.user.findUnique({
         where: { id: userId },
-        select: { active: true, hermanos: { select: { id: true, activo: true, fechaBaja: true } } }
+        select: { active: true, hermanos: { select: { id: true, activo: true, fechaBaja: true, foto: true, certificadoBautismo: true } } }
       });
       if (!cuenta) throw new NotFoundError(HERMANO_ERRORS.USER_NOT_FOUND);
 
-      const pendientes = cuenta.hermanos.filter((h) => !h.activo && h.fechaBaja === null).map((h) => h.id);
+      const fichasPendientes = cuenta.hermanos.filter((h) => !h.activo && h.fechaBaja === null);
+      const pendientes = fichasPendientes.map((h) => h.id);
+      // La foto y el certificado de quien no entra no se guardan: se borran al terminar.
+      const documentos = documentosDe(fichasPendientes);
       // Una cuenta con alguna ficha que llegó a estar en el censo (activa o de
       // baja) tiene historia —recibos, papeletas— aunque hoy esté bloqueada: se
       // rechazan sus fichas pendientes y la cuenta se queda.
@@ -333,7 +337,7 @@ export class SolicitudesService {
         if (pendientes.length === 0) throw new HttpError(HERMANO_ERRORS.CANNOT_DELETE_ACTIVE);
         await tx.hermano.deleteMany({ where: { id: { in: pendientes }, ...FICHA_PENDIENTE } });
         return {
-          cuentaAprobada: cuenta.active, cuentaEliminada: false, fichas: pendientes,
+          cuentaAprobada: cuenta.active, cuentaEliminada: false, fichas: pendientes, documentos,
           message: 'Perfiles pendientes rechazados y eliminados. La cuenta del usuario se mantiene.'
         };
       }
@@ -342,10 +346,12 @@ export class SolicitudesService {
       await tx.hermano.deleteMany({ where: { userId } });
       await tx.user.delete({ where: { id: userId } });
       return {
-        cuentaAprobada: false, cuentaEliminada: true, fichas: pendientes,
+        cuentaAprobada: false, cuentaEliminada: true, fichas: pendientes, documentos,
         message: 'Solicitud rechazada y eliminada definitivamente.'
       };
     });
+
+    await borrarDocumentosPrivados(resultado.documentos);
 
     // Auditoría tras confirmar: borrado definitivo de datos personales (solicitud
     // rechazada). Solo ids: guardar aquí el nombre desharía el borrado.

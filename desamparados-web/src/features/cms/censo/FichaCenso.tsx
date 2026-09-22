@@ -4,6 +4,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { Link } from 'react-router-dom'
 import { fichaDeHermano, type FichaDeLaCuenta, type FichaDelCenso } from '../../../lib/api/hermanos'
+import { urlDocumentoPrivado } from '../../../lib/api/cliente'
 import { PARENTESCOS } from '../../../lib/api/auth'
 import { ESTADO_RECIBO } from '../../areaHermano/recibos/etiquetas'
 import { ETIQUETA_TIPO } from '../ropero'
@@ -70,9 +71,9 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
   const correo = ficha.email ?? ficha.user?.email ?? null
   const telefono = ficha.telefono ?? ficha.user?.telefono ?? null
   const poblacion = [ficha.codigoPostal, ficha.poblacion].filter(Boolean).join(' ')
-  const provincia = [ficha.provincia, ficha.pais].filter(Boolean).join(' · ')
+  const provincia = [ficha.provincia, ficha.comunidadAutonoma, ficha.pais].filter(Boolean).join(' · ')
   const presentado = [ficha.presentadoPor, ficha.presentadoPor2].filter(Boolean).join(' y ')
-  const bautismo = [ficha.fechaBautismo ? dia(ficha.fechaBautismo) : null, ficha.parroquiaBautismo].filter(Boolean).join(' · ')
+  const bautismo = [ficha.fechaBautismo ? dia(ficha.fechaBautismo) : null, ficha.lugarBautismo, ficha.parroquiaBautismo].filter(Boolean).join(' · ')
   const personal = [ficha.sexo ? SEXO[ficha.sexo] : null, ficha.estadoCivil ? ESTADO_CIVIL[ficha.estadoCivil] : null].filter(Boolean).join(' · ')
   const familia = ficha.user?.hermanos ?? []
   const recibo = ficha.recibos?.[0]
@@ -89,7 +90,8 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
     ['Correo', [correo, ficha.email2].filter(Boolean).join(' · ') || null],
     ['Dirección', ficha.direccion],
     ['Población', poblacion || null],
-    ['Provincia y país', provincia || null],
+    ['Provincia, comunidad y país', provincia || null],
+    ['Boletín de noticias', ficha.boletin ? 'Sí' : 'No'],
     ['Fecha de jura', ficha.fechaJura ? dia(ficha.fechaJura) : null],
     ['Presentado por', presentado || null],
     ['Bautismo', bautismo || null],
@@ -102,9 +104,19 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
     <Paper component="section" aria-labelledby="ficha-censo-titulo" sx={{ p: { xs: 2.5, md: 3.5 } }}>
       {cerrar}
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
-        <Box aria-hidden="true" sx={{ flexShrink: 0, display: 'grid', placeItems: 'center', width: 56, height: 56, borderRadius: '50%', backgroundColor: 'action.selected', fontSize: 19, fontWeight: 600 }}>
-          {iniciales(ficha.apellidos, ficha.nombre)}
-        </Box>
+        {/* La foto del alta, si la adjuntó; si no, sus iniciales. */}
+        {ficha.foto ? (
+          <Box
+            component="img"
+            src={urlDocumentoPrivado(ficha.foto)}
+            alt={`Foto de ${ficha.nombre} ${ficha.apellidos}`}
+            sx={{ flexShrink: 0, width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', backgroundColor: 'action.selected' }}
+          />
+        ) : (
+          <Box aria-hidden="true" sx={{ flexShrink: 0, display: 'grid', placeItems: 'center', width: 56, height: 56, borderRadius: '50%', backgroundColor: 'action.selected', fontSize: 19, fontWeight: 600 }}>
+            {iniciales(ficha.apellidos, ficha.nombre)}
+          </Box>
+        )}
         <Box sx={{ flexGrow: 1, minWidth: 200 }}>
           <Typography id="ficha-censo-titulo" component="h2" sx={{ fontSize: 22, fontWeight: 600, lineHeight: 1.3 }}>
             {ficha.apellidos}, {ficha.nombre}
@@ -142,6 +154,16 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
           </Box>
         ))}
       </Box>
+
+      {(ficha.foto || ficha.certificadoBautismo) && (
+        <Box sx={{ mt: 3, pt: 2.5, borderTop: 1, borderColor: 'divider' }}>
+          <Etiqueta component="h3" sx={{ mb: 1.25 }}>Documentos del alta</Etiqueta>
+          <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', fontSize: 14.5 }}>
+            {ficha.foto && <a href={urlDocumentoPrivado(ficha.foto)} target="_blank" rel="noopener">Fotografía</a>}
+            {ficha.certificadoBautismo && <a href={urlDocumentoPrivado(ficha.certificadoBautismo)} target="_blank" rel="noopener">Certificado de bautismo</a>}
+          </Box>
+        </Box>
+      )}
 
       {familia.length > 0 && (
         <Box sx={{ mt: 3, pt: 2.5, borderTop: 1, borderColor: 'divider' }}>

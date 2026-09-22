@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { email, password, dni, textoRequerido, textoOpcional, telefono, idParam, codigoPostal } from '../config/common';
+import { email, password, dni, textoRequerido, textoOpcional, telefono, idParam, codigoPostal, iban } from '../config/common';
 
 // =================================================================
 //  1. ESQUEMAS BASE REUTILIZABLES
@@ -18,7 +18,11 @@ const usuarioSchema = type({
     telefono: telefono,
     direccion: textoRequerido,
     poblacion: textoRequerido,
-    codigoPostal: codigoPostal
+    codigoPostal: codigoPostal,
+    "provincia?": textoOpcional,
+    "comunidadAutonoma?": textoOpcional,
+    "pais?": textoOpcional,
+    "boletin?": "boolean"
 });
 
 // =================================================================
@@ -28,6 +32,37 @@ const usuarioSchema = type({
 const diaNacimiento = type("string")
     .matching(/^\d{4}-\d{2}-\d{2}$/)
     .describe("una fecha de nacimiento válida (YYYY-MM-DD)");
+
+const diaBautismo = type("string")
+    .matching(/^\d{4}-\d{2}-\d{2}$/)
+    .describe("una fecha de bautismo válida (YYYY-MM-DD)");
+
+/**
+ * La ficha propia de quien se hace hermano. Sexo, estado civil y fecha de
+ * bautismo son obligatorios en el alta; dónde y en qué parroquia, no. Que el
+ * bautismo no sea anterior al nacimiento ni futuro lo mira el servicio.
+ */
+const titularSchema = type({
+    fechaNacimiento: diaNacimiento,
+    sexo: "'HOMBRE' | 'MUJER'",
+    estadoCivil: "'SOLTERO' | 'CASADO' | 'PAREJA_DE_HECHO' | 'SEPARADO' | 'DIVORCIADO' | 'VIUDO'",
+    fechaBautismo: diaBautismo,
+    "lugarBautismo?": textoOpcional,
+    "parroquiaBautismo?": textoOpcional
+});
+
+/**
+ * Cómo se paga la cuota (anual). Domiciliada, con el IBAN y quién es el
+ * titular de la cuenta; o en Secretaría, sin datos bancarios. Que la
+ * domiciliación traiga su IBAN, y el nombre del titular cuando no es quien
+ * se apunta, lo comprueba el servicio: aquí son todos opcionales.
+ */
+const pagoSchema = type({
+    forma: "'DOMICILIACION' | 'EFECTIVO'",
+    "iban?": iban,
+    "titularidad?": "'PROPIA' | 'FAMILIAR_HERMANO' | 'OTRA_PERSONA'",
+    "titularCuenta?": textoOpcional
+});
 
 /**
  * Qué es el menor para quien lo apunta. No siempre es su hijo: un tío, un
@@ -78,7 +113,9 @@ export const MAXIMO_MENORES_POR_ALTA = 8;
 export const registerSchema = type({
     body: {
         usuario: usuarioSchema,
-        "titular?": { fechaNacimiento: diaNacimiento },
+        "titular?": titularSchema,
+        // Opcional solo para las webs de antes de pedirlo: sin él, en Secretaría.
+        "pago?": pagoSchema,
         "menores?": menorSchema.array().moreThanLength(0).atMostLength(MAXIMO_MENORES_POR_ALTA),
         // El campo trampa para robots. Se admite y se ignora: quien lo rellena
         // recibe la misma respuesta que una persona, pero no se le crea nada.

@@ -1,6 +1,6 @@
 import { llamarApi } from './cliente'
 import type { AuthUser } from '../../features/altas/auth/store'
-import { normalizarDni, normalizarTelefono } from '../validacion/identidad'
+import { normalizarDni, normalizarIban, normalizarTelefono } from '../validacion/identidad'
 
 /**
  * Respuesta de POST /auth/login y POST /auth/login/2fa.
@@ -57,8 +57,30 @@ export interface RegistroData {
   direccion: string
   poblacion: string
   codigoPostal: string
+  provincia?: string
+  comunidadAutonoma?: string
+  pais?: string
+  /** Quiere el boletín de noticias por correo. */
+  boletin?: boolean
   /** La suya, si se hace hermano. Sin ella, la cuenta es solo para gestionar. */
   fechaNacimiento?: string
+  /** Lo que acompaña a la ficha propia: van solo si hay `fechaNacimiento`. */
+  ficha?: {
+    sexo: 'HOMBRE' | 'MUJER'
+    estadoCivil: 'SOLTERO' | 'CASADO' | 'PAREJA_DE_HECHO' | 'SEPARADO' | 'DIVORCIADO' | 'VIUDO'
+    fechaBautismo: string
+    lugarBautismo?: string
+    parroquiaBautismo?: string
+  }
+  /** La cuota anual: domiciliada (con su cuenta) o en Secretaría. */
+  pago?: {
+    forma: 'DOMICILIACION' | 'EFECTIVO'
+    iban?: string
+    titularidad?: 'PROPIA' | 'FAMILIAR_HERMANO' | 'OTRA_PERSONA'
+    titularCuenta?: string
+  }
+  foto?: File | null
+  certificadoBautismo?: File | null
   menores?: MenorAlta[]
   /** Campo trampa: escondido en el formulario, solo lo rellena un robot. */
   comentarioAdicional?: string
@@ -77,46 +99,86 @@ function apellidos(primero: string, segundo: string) {
   return { apellidos: [p, s].filter(Boolean).join(' '), primerApellido: p, ...(s ? { segundoApellido: s } : {}) }
 }
 
+/** Un texto opcional: vacío no se manda (el servidor lo quiere ausente, no en blanco). */
+const siHay = <K extends string>(clave: K, valor: string | undefined) =>
+  (valor?.trim() ? { [clave]: valor.trim() } : {}) as Partial<Record<K, string>>
+
 export function register(data: RegistroData) {
-  return llamarApi<{ user: { id: number; email: string }; fichas: number; message: string }>('/auth/register', {
-    method: 'POST',
-    auth: false,
-    json: {
-      usuario: {
-        email: data.email,
-        password: data.password,
-        // Normalizados aquí y no en el formulario: el servidor guarda nueve
-        // dígitos pelados y el DNI en mayúsculas sin separadores, y quien
-        // escribe «+34 600 12 34 56» está dando un teléfono correcto.
-        dni: normalizarDni(data.dni),
-        nombre: data.nombre,
-        // Por separado, y juntos para los servidores de antes de separarlos.
-        ...apellidos(data.primerApellido, data.segundoApellido),
-        telefono: normalizarTelefono(data.telefono),
-        direccion: data.direccion,
-        poblacion: data.poblacion,
-        codigoPostal: data.codigoPostal,
-      },
-      ...(data.fechaNacimiento ? { titular: { fechaNacimiento: data.fechaNacimiento } } : {}),
-      ...(data.menores?.length
-        ? {
-            menores: data.menores.map((menor) => ({
-              nombre: menor.nombre,
-              ...apellidos(menor.primerApellido, menor.segundoApellido),
-              fechaNacimiento: menor.fechaNacimiento,
-              parentesco: menor.parentesco,
-              // Vacíos se omiten: el servidor los quiere ausentes, no en blanco.
-              ...(menor.dni ? { dni: normalizarDni(menor.dni) } : {}),
-              ...(menor.email ? { email: menor.email } : {}),
-            })),
-          }
-        : {}),
-      // Siempre presente, aunque vaya vacío: si solo se mandara cuando lleva
-      // algo, su ausencia distinguiría a la persona del robot y la trampa
-      // dejaría de estar escondida.
-      comentarioAdicional: data.comentarioAdicional ?? '',
+  const alta = {
+    usuario: {
+      email: data.email,
+      password: data.password,
+      // Normalizados aquí y no en el formulario: el servidor guarda nueve
+      // dígitos pelados y el DNI en mayúsculas sin separadores, y quien
+      // escribe «+34 600 12 34 56» está dando un teléfono correcto.
+      dni: normalizarDni(data.dni),
+      nombre: data.nombre,
+      // Por separado, y juntos para los servidores de antes de separarlos.
+      ...apellidos(data.primerApellido, data.segundoApellido),
+      telefono: normalizarTelefono(data.telefono),
+      direccion: data.direccion,
+      poblacion: data.poblacion,
+      codigoPostal: data.codigoPostal,
+      ...siHay('provincia', data.provincia),
+      ...siHay('comunidadAutonoma', data.comunidadAutonoma),
+      ...siHay('pais', data.pais),
+      boletin: data.boletin ?? false,
     },
-  })
+    ...(data.fechaNacimiento && data.ficha
+      ? {
+          titular: {
+            fechaNacimiento: data.fechaNacimiento,
+            sexo: data.ficha.sexo,
+            estadoCivil: data.ficha.estadoCivil,
+            fechaBautismo: data.ficha.fechaBautismo,
+            ...siHay('lugarBautismo', data.ficha.lugarBautismo),
+            ...siHay('parroquiaBautismo', data.ficha.parroquiaBautismo),
+          },
+        }
+      : {}),
+    ...(data.pago
+      ? {
+          pago: data.pago.forma === 'DOMICILIACION'
+            ? {
+                forma: data.pago.forma,
+                ...(data.pago.iban ? { iban: normalizarIban(data.pago.iban) } : {}),
+                titularidad: data.pago.titularidad,
+                // Si la cuenta es suya, el nombre sobra: el servidor pone el que toca.
+                ...(data.pago.titularidad !== 'PROPIA' ? siHay('titularCuenta', data.pago.titularCuenta) : {}),
+              }
+            : { forma: data.pago.forma },
+        }
+      : {}),
+    ...(data.menores?.length
+      ? {
+          menores: data.menores.map((menor) => ({
+            nombre: menor.nombre,
+            ...apellidos(menor.primerApellido, menor.segundoApellido),
+            fechaNacimiento: menor.fechaNacimiento,
+            parentesco: menor.parentesco,
+            // Vacíos se omiten: el servidor los quiere ausentes, no en blanco.
+            ...(menor.dni ? { dni: normalizarDni(menor.dni) } : {}),
+            ...(menor.email ? { email: menor.email } : {}),
+          })),
+        }
+      : {}),
+    // Siempre presente, aunque vaya vacío: si solo se mandara cuando lleva
+    // algo, su ausencia distinguiría a la persona del robot y la trampa
+    // dejaría de estar escondida.
+    comentarioAdicional: data.comentarioAdicional ?? '',
+  }
+
+  type Respuesta = { user: { id: number; email: string }; fichas: number; message: string }
+  // Sin documentos, JSON como siempre. Con ellos, multipart: el alta va entera
+  // en `datos` y cada fichero en su campo, para que el servidor diga cuál falla.
+  if (!data.foto && !data.certificadoBautismo) {
+    return llamarApi<Respuesta>('/auth/register', { method: 'POST', auth: false, json: alta })
+  }
+  const formulario = new FormData()
+  formulario.append('datos', JSON.stringify(alta))
+  if (data.foto) formulario.append('foto', data.foto)
+  if (data.certificadoBautismo) formulario.append('certificadoBautismo', data.certificadoBautismo)
+  return llamarApi<Respuesta>('/auth/register', { method: 'POST', auth: false, formData: formulario })
 }
 
 /**

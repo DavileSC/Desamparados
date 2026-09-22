@@ -39,7 +39,7 @@ const cuerpo = (extra: Record<string, unknown>) => ({
     poblacion: 'Málaga',
     codigoPostal: '29013',
   },
-  titular: { fechaNacimiento: '1990-05-14' },
+  titular: { fechaNacimiento: '1990-05-14', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1990-12-28' },
   ...extra,
 });
 

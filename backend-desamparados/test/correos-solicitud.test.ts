@@ -183,7 +183,7 @@ describe('aviso a Secretaría de una solicitud nueva', () => {
     try {
       await RegistroService.registerUser({
         usuario: { email, dni: `S${sufijo}`, password: PASSWORD_PRUEBA, nombre: 'Lucía', apellidos: 'Moreno Gil', telefono: '600000000' },
-        titular: { fechaNacimiento: '1990-01-01' },
+        titular: { fechaNacimiento: '1990-01-01', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1990-12-28' },
       } as never);
       await dejarSalirLosCorreos();
 

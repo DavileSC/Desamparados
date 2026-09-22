@@ -65,9 +65,10 @@ type Formulario = {
   nombre: string; primerApellido: string; segundoApellido: string; dni: string; fechaNacimiento: string
   sexo: string; estadoCivil: string; profesion: string; lugarNacimiento: string; parentesco: string
   telefono: string; telefonoFijo: string; email: string; email2: string
-  direccion: string; poblacion: string; codigoPostal: string; provincia: string; pais: string
+  direccion: string; poblacion: string; codigoPostal: string; provincia: string; comunidadAutonoma: string; pais: string
+  boletin: boolean
   numeroHermano: string; fechaAlta: string; fechaBaja: string
-  fechaJura: string; presentadoPor: string; presentadoPor2: string; fechaBautismo: string; parroquiaBautismo: string
+  fechaJura: string; presentadoPor: string; presentadoPor2: string; fechaBautismo: string; lugarBautismo: string; parroquiaBautismo: string
   tieneTunicaPropia: boolean; tunica: string; alturaHombro: string; puesto: string
 }
 
@@ -86,9 +87,9 @@ const desdeFicha = (f: AdminBrother & { parentesco?: string | null }): Formulari
   parentesco: f.parentesco ?? '',
   telefono: f.telefono ?? '', telefonoFijo: f.telefonoFijo ?? '', email: f.email ?? '', email2: f.email2 ?? '',
   direccion: f.direccion ?? '', poblacion: f.poblacion ?? '', codigoPostal: f.codigoPostal ?? '',
-  provincia: f.provincia ?? '', pais: f.pais ?? '',
+  provincia: f.provincia ?? '', comunidadAutonoma: f.comunidadAutonoma ?? '', pais: f.pais ?? '', boletin: f.boletin,
   fechaJura: aDia(f.fechaJura), presentadoPor: f.presentadoPor ?? '', presentadoPor2: f.presentadoPor2 ?? '',
-  fechaBautismo: aDia(f.fechaBautismo), parroquiaBautismo: f.parroquiaBautismo ?? '',
+  fechaBautismo: aDia(f.fechaBautismo), lugarBautismo: f.lugarBautismo ?? '', parroquiaBautismo: f.parroquiaBautismo ?? '',
   ...camposDeEstado(f),
   tieneTunicaPropia: f.tieneTunicaPropia, tunica: f.tunica ?? '',
   alturaHombro: f.alturaHombro?.toString() ?? '', puesto: f.puesto ?? '',
@@ -170,8 +171,11 @@ export default function HermanoEditPage() {
         telefonoFijo: opcional(form.telefonoFijo),
         email2: opcional(form.email2),
         provincia: opcional(form.provincia),
+        comunidadAutonoma: opcional(form.comunidadAutonoma),
         pais: opcional(form.pais),
+        boletin: form.boletin,
         ...(cambiada('fechaBautismo') ? { fechaBautismo: form.fechaBautismo || null } : {}),
+        lugarBautismo: opcional(form.lugarBautismo),
         parroquiaBautismo: opcional(form.parroquiaBautismo),
         ...(cambiada('fechaJura') ? { fechaJura: form.fechaJura || null } : {}),
         presentadoPor: opcional(form.presentadoPor),
@@ -328,7 +332,12 @@ export default function HermanoEditPage() {
               {texto('poblacion', 'Población')}
               {texto('codigoPostal', 'Código postal')}
               {texto('provincia', 'Provincia')}
+              {texto('comunidadAutonoma', 'Comunidad autónoma')}
               {texto('pais', 'País')}
+              <FormControlLabel
+                control={<Switch checked={form.boletin} onChange={(e) => campo('boletin', e.target.checked)} />}
+                label="Recibe el boletín de noticias"
+              />
             </Stack>
           </Box>
           <Divider />
@@ -362,6 +371,7 @@ export default function HermanoEditPage() {
               {texto('presentadoPor', 'Presentado por')}
               {texto('presentadoPor2', 'Presentado también por')}
               {texto('fechaBautismo', 'Fecha de bautismo', 'date', { helperText: 'Opcional. Dato religioso: solo lo ven el hermano y la gestión del censo.' })}
+              {texto('lugarBautismo', 'Bautizado/a en')}
               {texto('parroquiaBautismo', 'Parroquia de bautismo')}
               {estado === 'baja' && texto('fechaBaja', 'Fecha de baja', 'date', {
                 helperText: 'Solo para corregir la fecha. No puede ser anterior al alta.',

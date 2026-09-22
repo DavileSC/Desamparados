@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { MenuItem, TextField, Typography } from '@mui/material'
-import { actualizarFicha, type ApiProfile, type CambiosDeFicha, type EstadoCivil, type FormaDePago, type Sexo } from '../../../lib/api/perfil'
+import { Checkbox, FormControlLabel, MenuItem, TextField, Typography } from '@mui/material'
+import { actualizarFicha, type ApiProfile, type CambiosDeFicha, type EstadoCivil, type FormaDePago, type Sexo, type TitularidadCuenta } from '../../../lib/api/perfil'
 import { PARENTESCOS, type Parentesco } from '../../../lib/api/auth'
 import {
   esCodigoPostalValido, esDniValido, esIbanValido, esTelefonoValido, esTextoValido,
@@ -8,7 +8,7 @@ import {
 } from '../../../lib/validacion/identidad'
 import { aniosCumplidos } from '../../altas/public/schema'
 import Apartado, { Dato, Rejilla } from './Apartado'
-import { ESTADO_CIVIL, FORMAS_DE_PAGO, FORMA_DE_PAGO, PARENTESCO, SEXO, aDia, diaLegible } from './etiquetas'
+import { ESTADO_CIVIL, FORMAS_DE_PAGO, FORMA_DE_PAGO, PARENTESCO, SEXO, TITULARIDAD_CUENTA, aDia, diaLegible } from './etiquetas'
 
 interface PropsApartado {
   ficha: ApiProfile
@@ -171,7 +171,7 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
     (f) => ({
       email: f.email ?? '', email2: f.email2 ?? '', telefono: f.telefono ?? '', telefonoFijo: f.telefonoFijo ?? '',
       direccion: f.direccion ?? '', codigoPostal: f.codigoPostal ?? '', poblacion: f.poblacion ?? '',
-      provincia: f.provincia ?? '', pais: f.pais ?? '',
+      provincia: f.provincia ?? '', comunidadAutonoma: f.comunidadAutonoma ?? '', pais: f.pais ?? '', boletin: f.boletin,
     }),
     (v) => {
       if (!EMAIL.test(v.email.trim())) return 'Revisa el correo electrónico.'
@@ -181,14 +181,15 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
       if (!esTextoValido(v.direccion)) return 'Escribe la dirección.'
       if (!esCodigoPostalValido(v.codigoPostal)) return 'El código postal tiene que tener 5 cifras.'
       if (!esTextoValido(v.poblacion)) return 'Escribe la localidad.'
-      if ([v.provincia, v.pais].some((t) => /[<>]/.test(t))) return 'Los textos no pueden llevar «<» ni «>».'
+      if ([v.provincia, v.comunidadAutonoma, v.pais].some((t) => /[<>]/.test(t))) return 'Los textos no pueden llevar «<» ni «>».'
       return null
     },
     (v) => ({
       email: v.email.trim(), email2: opcional(v.email2),
       telefono: normalizarTelefono(v.telefono), telefonoFijo: v.telefonoFijo.trim() ? normalizarTelefono(v.telefonoFijo) : null,
       direccion: v.direccion.trim(), codigoPostal: v.codigoPostal.trim(), poblacion: v.poblacion.trim(),
-      provincia: opcional(v.provincia), pais: opcional(v.pais),
+      provincia: opcional(v.provincia), comunidadAutonoma: opcional(v.comunidadAutonoma), pais: opcional(v.pais),
+      boletin: v.boletin,
     }),
     onGuardada,
   )
@@ -209,7 +210,9 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
           <Dato etiqueta="Dirección" valor={ficha.direccion} completo />
           <Dato etiqueta="Localidad" valor={localidad} />
           <Dato etiqueta="Provincia" valor={ficha.provincia} />
+          <Dato etiqueta="Comunidad autónoma" valor={ficha.comunidadAutonoma} />
           <Dato etiqueta="País" valor={ficha.pais} />
+          <Dato etiqueta="Boletín de noticias" valor={ficha.boletin ? 'Sí, por correo' : 'No'} />
         </Rejilla>
       }
       formulario={
@@ -222,7 +225,13 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
           <Campo etiqueta="Código postal" valor={v.codigoPostal} onCambiar={a.campo('codigoPostal')} obligatorio autoComplete="postal-code" />
           <Campo etiqueta="Localidad" valor={v.poblacion} onCambiar={a.campo('poblacion')} obligatorio autoComplete="address-level2" />
           <Campo etiqueta="Provincia" valor={v.provincia} onCambiar={a.campo('provincia')} autoComplete="address-level1" />
-          <Campo etiqueta="País" valor={v.pais} onCambiar={a.campo('pais')} autoComplete="country-name" placeholder="España" />
+          <Campo etiqueta="Comunidad autónoma" valor={v.comunidadAutonoma} onCambiar={a.campo('comunidadAutonoma')} />
+          <Campo etiqueta="País" valor={v.pais} onCambiar={a.campo('pais')} autoComplete="country-name" placeholder="España" completo />
+          <FormControlLabel
+            control={<Checkbox checked={v.boletin} onChange={(e) => a.campo('boletin')(e.target.checked)} />}
+            label="Quiero recibir el boletín de noticias por correo"
+            sx={{ gridColumn: '1 / -1' }}
+          />
         </Rejilla>
       }
     />
@@ -234,9 +243,9 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
 export function VidaCofrade({ ficha, onGuardada }: PropsApartado) {
   const a = useApartado(
     ficha,
-    (f) => ({ fechaBautismo: aDia(f.fechaBautismo), parroquiaBautismo: f.parroquiaBautismo ?? '' }),
-    (v) => (/[<>]/.test(v.parroquiaBautismo) ? 'La parroquia no puede llevar «<» ni «>».' : null),
-    (v) => ({ fechaBautismo: v.fechaBautismo || null, parroquiaBautismo: opcional(v.parroquiaBautismo) }),
+    (f) => ({ fechaBautismo: aDia(f.fechaBautismo), lugarBautismo: f.lugarBautismo ?? '', parroquiaBautismo: f.parroquiaBautismo ?? '' }),
+    (v) => ([v.lugarBautismo, v.parroquiaBautismo].some((t) => /[<>]/.test(t)) ? 'Los textos no pueden llevar «<» ni «>».' : null),
+    (v) => ({ fechaBautismo: v.fechaBautismo || null, lugarBautismo: opcional(v.lugarBautismo), parroquiaBautismo: opcional(v.parroquiaBautismo) }),
     onGuardada,
   )
   const v = a.valores
@@ -256,6 +265,7 @@ export function VidaCofrade({ ficha, onGuardada }: PropsApartado) {
           <Dato etiqueta="Fecha de jura" valor={diaLegible(ficha.fechaJura)} />
           <Dato etiqueta="Presentado por" valor={presentado} />
           <Dato etiqueta="Fecha de bautismo" valor={diaLegible(ficha.fechaBautismo)} />
+          <Dato etiqueta="Bautizado/a en" valor={ficha.lugarBautismo} />
           <Dato etiqueta="Parroquia de bautismo" valor={ficha.parroquiaBautismo} />
           <Dato etiqueta="Túnica" valor={tunica} />
           <Dato etiqueta="Puesto habitual" valor={ficha.puesto} />
@@ -269,7 +279,8 @@ export function VidaCofrade({ ficha, onGuardada }: PropsApartado) {
           </Typography>
           <Rejilla>
             <Campo etiqueta="Fecha de bautismo" valor={v.fechaBautismo} onCambiar={a.campo('fechaBautismo')} tipo="date" />
-            <Campo etiqueta="Parroquia de bautismo" valor={v.parroquiaBautismo} onCambiar={a.campo('parroquiaBautismo')} />
+            <Campo etiqueta="Bautizado/a en" valor={v.lugarBautismo} onCambiar={a.campo('lugarBautismo')} ayuda="La localidad" />
+            <Campo etiqueta="Parroquia de bautismo" valor={v.parroquiaBautismo} onCambiar={a.campo('parroquiaBautismo')} completo />
           </Rejilla>
         </>
       }
@@ -282,15 +293,21 @@ export function VidaCofrade({ ficha, onGuardada }: PropsApartado) {
 export function CuotaYPago({ ficha, onGuardada }: PropsApartado) {
   const a = useApartado(
     ficha,
-    (f) => ({ formaPagoPref: f.formaPagoPref, iban: '', titularCuenta: f.titularCuenta ?? '' }),
+    (f) => ({ formaPagoPref: f.formaPagoPref, iban: '', titularidadCuenta: (f.titularidadCuenta ?? '') as TitularidadCuenta | '', titularCuenta: f.titularCuenta ?? '' }),
     (v) => {
       if (v.iban.trim() && !esIbanValido(v.iban)) return 'Revisa el IBAN: los dígitos de control no cuadran.'
       if (v.formaPagoPref === 'DOMICILIACION' && !v.iban.trim() && !ficha.ibanEnmascarado) return 'Para domiciliar los recibos hace falta el IBAN de la cuenta.'
       if (/[<>]/.test(v.titularCuenta)) return 'El titular no puede llevar «<» ni «>».'
+      if (v.titularidadCuenta && v.titularidadCuenta !== 'PROPIA' && !v.titularCuenta.trim()) return 'Escribe el nombre del titular de la cuenta.'
       return null
     },
     // El IBAN solo va si se ha escrito uno nuevo: en blanco se queda el que había.
-    (v) => ({ formaPagoPref: v.formaPagoPref, ...(v.iban.trim() ? { iban: normalizarIban(v.iban) } : {}), titularCuenta: opcional(v.titularCuenta) }),
+    // Si la cuenta es del propio hermano, el nombre del titular sobra.
+    (v) => ({
+      formaPagoPref: v.formaPagoPref, ...(v.iban.trim() ? { iban: normalizarIban(v.iban) } : {}),
+      titularidadCuenta: v.titularidadCuenta || null,
+      titularCuenta: v.titularidadCuenta === 'PROPIA' ? null : opcional(v.titularCuenta),
+    }),
     onGuardada,
   )
   const v = a.valores
@@ -303,7 +320,7 @@ export function CuotaYPago({ ficha, onGuardada }: PropsApartado) {
       vista={
         <Rejilla lista>
           <Dato etiqueta="Forma de pago" valor={FORMA_DE_PAGO[ficha.formaPagoPref]} />
-          <Dato etiqueta="Titular de la cuenta" valor={ficha.titularCuenta} />
+          <Dato etiqueta="Titular de la cuenta" valor={[ficha.titularidadCuenta ? TITULARIDAD_CUENTA[ficha.titularidadCuenta] : null, ficha.titularCuenta].filter(Boolean).join(': ') || null} />
           <Dato etiqueta="IBAN" valor={ficha.ibanEnmascarado} completo />
         </Rejilla>
       }
@@ -321,7 +338,10 @@ export function CuotaYPago({ ficha, onGuardada }: PropsApartado) {
             placeholder="ES00 0000 0000 0000 0000 0000"
             ayuda={ficha.ibanEnmascarado ? `Ahora: ${ficha.ibanEnmascarado}. Déjalo en blanco para no cambiarla.` : undefined}
           />
-          <Campo etiqueta="Titular de la cuenta" valor={v.titularCuenta} onCambiar={a.campo('titularCuenta')} completo ayuda="Si no es el propio hermano" />
+          <Opciones etiqueta="¿De quién es la cuenta?" valor={v.titularidadCuenta} onCambiar={a.campo('titularidadCuenta')} opciones={TITULARIDAD_CUENTA} vacio="Sin indicar" />
+          {v.titularidadCuenta !== 'PROPIA' && (
+            <Campo etiqueta="Nombre del titular" valor={v.titularCuenta} onCambiar={a.campo('titularCuenta')} ayuda="Si no es el propio hermano" />
+          )}
         </Rejilla>
       }
     />

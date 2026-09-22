@@ -1,4 +1,4 @@
-import type { EstadoCivil, FormaDePago, Sexo } from '../../../lib/api/perfil'
+import type { EstadoCivil, FormaDePago, Sexo, TitularidadCuenta } from '../../../lib/api/perfil'
 import { PARENTESCOS } from '../../../lib/api/auth'
 import { METODO_PAGO } from '../recibos/etiquetas'
 
@@ -17,6 +17,13 @@ export const ESTADO_CIVIL: Record<EstadoCivil, string> = {
 /** Las que tienen sentido para los recibos de un hermano: la tarjeta es de ventanilla. */
 export const FORMAS_DE_PAGO: FormaDePago[] = ['DOMICILIACION', 'TRANSFERENCIA', 'BIZUM', 'EFECTIVO']
 export const FORMA_DE_PAGO: Record<FormaDePago, string> = METODO_PAGO
+
+/** Quién es el titular de la cuenta, visto desde la ficha. */
+export const TITULARIDAD_CUENTA: Record<TitularidadCuenta, string> = {
+  PROPIA: 'El propio hermano o hermana',
+  FAMILIAR_HERMANO: 'Un familiar que es hermano',
+  OTRA_PERSONA: 'Otra persona',
+}
 
 export const PARENTESCO: Record<string, string> = Object.fromEntries(PARENTESCOS.map((p) => [p.value, p.label]))
 

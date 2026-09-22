@@ -87,9 +87,9 @@ export const USER_EDITABLE_FIELDS = [
   'nombre', 'primerApellido', 'segundoApellido', 'fechaNacimiento', 'dni',
   'sexo', 'estadoCivil', 'profesion', 'lugarNacimiento',
   'telefono', 'telefonoFijo', 'email', 'email2',
-  'direccion', 'poblacion', 'codigoPostal', 'provincia', 'pais',
-  'fechaBautismo', 'parroquiaBautismo',
-  'formaPagoPref', 'iban', 'titularCuenta',
+  'direccion', 'poblacion', 'codigoPostal', 'provincia', 'comunidadAutonoma', 'pais', 'boletin',
+  'fechaBautismo', 'lugarBautismo', 'parroquiaBautismo',
+  'formaPagoPref', 'iban', 'titularCuenta', 'titularidadCuenta',
   'parentesco'
 ] as const;
 
@@ -101,7 +101,7 @@ export const USER_EDITABLE_FIELDS = [
 //
 // Los datos bancarios no: el censo no los enseña (ver HERMANO_SAFE_SELECT) y
 // tampoco los escribe. Los cambia el propio hermano, desde su área.
-const CAMPOS_BANCARIOS = ['formaPagoPref', 'iban', 'titularCuenta'] as const;
+const CAMPOS_BANCARIOS = ['formaPagoPref', 'iban', 'titularCuenta', 'titularidadCuenta'] as const;
 type CampoBancario = typeof CAMPOS_BANCARIOS[number];
 const sinBancarios = USER_EDITABLE_FIELDS.filter(
   (campo): campo is Exclude<typeof USER_EDITABLE_FIELDS[number], CampoBancario> => !(CAMPOS_BANCARIOS as readonly string[]).includes(campo)
@@ -130,7 +130,10 @@ export const HERMANO_SAFE_SELECT = {
   // El resto de la ficha, sin los datos bancarios.
   primerApellido: true, segundoApellido: true, sexo: true, estadoCivil: true,
   profesion: true, lugarNacimiento: true, telefonoFijo: true, email2: true,
-  provincia: true, pais: true, fechaBautismo: true, parroquiaBautismo: true,
+  provincia: true, comunidadAutonoma: true, pais: true, boletin: true,
+  fechaBautismo: true, lugarBautismo: true, parroquiaBautismo: true,
+  // Los documentos del alta: solo el nombre, se descargan con sesión del CMS.
+  foto: true, certificadoBautismo: true,
   fechaJura: true, presentadoPor: true, presentadoPor2: true
 } satisfies Prisma.HermanoSelect;
 

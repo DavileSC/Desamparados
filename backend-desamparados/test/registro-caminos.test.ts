@@ -35,8 +35,8 @@ describe('lo que acepta el esquema del alta', () => {
   const usuario = adulto('quien@ejemplo.test', dniValido(12345678));
 
   test('los tres caminos son válidos', () => {
-    assert.ok(valida({ usuario, titular: { fechaNacimiento: '1986-11-03' } }));
-    assert.ok(valida({ usuario, titular: { fechaNacimiento: '1986-11-03' }, menores: [{ nombre: 'Lucía', fechaNacimiento: '2017-04-12' }] }));
+    assert.ok(valida({ usuario, titular: { fechaNacimiento: '1986-11-03', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1986-12-28' } }));
+    assert.ok(valida({ usuario, titular: { fechaNacimiento: '1986-11-03', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1986-12-28' }, menores: [{ nombre: 'Lucía', fechaNacimiento: '2017-04-12' }] }));
     assert.ok(valida({ usuario, menores: [{ nombre: 'Lucía', fechaNacimiento: '2017-04-12' }] }));
   });
 
@@ -98,7 +98,7 @@ describe('el alta contra la base de datos', () => {
   test('camino 1: un adulto que se hace hermano tiene una ficha, la suya', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('solo-yo');
-    await RegistroService.registerUser({ usuario: adulto(email, nuevoDni()), titular: { fechaNacimiento: '1986-11-03' } });
+    await RegistroService.registerUser({ usuario: adulto(email, nuevoDni()), titular: { fechaNacimiento: '1986-11-03', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1986-12-28' } });
 
     const { user, fichas } = await fichasDe(email);
     assert.equal(user!.active, false, 'la cuenta nace bloqueada');
@@ -113,7 +113,7 @@ describe('el alta contra la base de datos', () => {
     const email = nuevoCorreo('yo-y-los-mios');
     await RegistroService.registerUser({
       usuario: adulto(email, nuevoDni()),
-      titular: { fechaNacimiento: '1986-11-03' },
+      titular: { fechaNacimiento: '1986-11-03', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1986-12-28' },
       menores: [
         { nombre: 'Lucía', parentesco: 'HIJO', fechaNacimiento: '2017-04-12' },
         { nombre: 'Martín', parentesco: 'HIJO', fechaNacimiento: '2019-06-30' },
@@ -203,7 +203,7 @@ describe('el alta contra la base de datos', () => {
     await assert.rejects(
       () => RegistroService.registerUser({
         usuario: adulto(nuevoCorreo('nino-solo'), nuevoDni()),
-        titular: { fechaNacimiento: '2015-03-01' },
+        titular: { fechaNacimiento: '2015-03-01', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '2015-12-28' },
       }),
       (e: HttpError) => e instanceof HttpError && /tiene que apuntarte un adulto/.test(e.message),
     );

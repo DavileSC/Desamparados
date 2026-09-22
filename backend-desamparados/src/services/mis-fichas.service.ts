@@ -16,6 +16,7 @@ import { comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano } from '../
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
 import { enmascararIban } from '../domain/iban.js';
+import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 
 /**
  * Las fichas que cuelgan de una cuenta: la suya y las de quien tenga a su
@@ -166,7 +167,7 @@ export class MisFichasService {
       const actual = await tx.hermano.findFirst({
         where: { id: hermanoId, userId: managerUserId },
         select: {
-          activo: true, fechaBaja: true,
+          activo: true, fechaBaja: true, foto: true, certificadoBautismo: true,
           _count: { select: { recibos: true, papeletas: true, citas: true, transacciones: true, prendas: true } }
         }
       });
@@ -177,7 +178,7 @@ export class MisFichasService {
       if (pendiente && !conHistorial) {
         await tx.hermano.delete({ where: { id: hermanoId } });
         // Retirar una solicitud no cambia nada de la cuenta: no se desactiva.
-        return { retirada: true, cuentaDesactivada: false };
+        return { retirada: true, cuentaDesactivada: false, documentos: documentosDe([actual]) };
       }
 
       // La baja familiar libera el número igual que la de secretaría
@@ -207,6 +208,7 @@ export class MisFichasService {
     });
 
     if (resultado.retirada) {
+      await borrarDocumentosPrivados(resultado.documentos ?? []);
       // Como en rechazarSolicitud: solo el estado, sin los datos de la ficha borrada.
       await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_SOLICITUD_RETIRAR, meta ?? {}, 'hermano', hermanoId, {
         antes: { estado: 'pendiente' }, despues: { estado: 'eliminada' }

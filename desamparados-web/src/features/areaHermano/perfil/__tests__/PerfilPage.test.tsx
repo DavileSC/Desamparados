@@ -139,10 +139,10 @@ describe('PerfilPage', () => {
     expect(cuerpoDelPut(simulado)).toBeNull()
 
     await user.clear(screen.getByLabelText('IBAN nuevo'))
-    await user.type(screen.getByLabelText('Titular de la cuenta'), 'Ana Pérez')
+    await user.type(screen.getByLabelText('Nombre del titular'), 'Ana Pérez')
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(cuerpoDelPut(simulado)).not.toBeNull())
-    expect(cuerpoDelPut(simulado)).toEqual({ formaPagoPref: 'DOMICILIACION', titularCuenta: 'Ana Pérez' })
+    expect(cuerpoDelPut(simulado)).toEqual({ formaPagoPref: 'DOMICILIACION', titularidadCuenta: null, titularCuenta: 'Ana Pérez' })
   })
 
   // Quien solo apuntó a menores no tiene ficha: antes se le enseñaba la de su
