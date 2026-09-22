@@ -1,199 +1,27 @@
-import nodemailer, { type Transporter } from 'nodemailer';
-import { enmascararEmail } from '../utils/log-privacidad.js';
-import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../utils/buzon-pruebas.js';
-import { emailDeSecretaria, escudoUrl, lineasDeSecretaria } from '../domain/datos-entidad.js';
-import { AuditoriaService, ACCIONES_AUDITORIA } from './auditoria.service.js';
-
+/**
+ * Los correos que manda la casa: recuperar la contraseña, la papeleta de
+ * sitio, la confirmación de un alta, el aviso a Secretaría de una solicitud
+ * nueva, su aprobación o rechazo, el recordatorio de una ausencia y el
+ * formulario de contacto.
+ *
+ * Cómo se maquetan está en `correos/plantilla` y por dónde salen en
+ * `correos/envio`: aquí solo queda lo que dice cada correo.
+ */
 import QRCode from 'qrcode';
 import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactoDto } from '../dtos/contacto.dto';
-
-/**
- * Lo único que `EmailService` necesita de un transporte. Lo cumplen tanto el de
- * nodemailer como el buzón de pruebas, así que el motor de envío no tiene que
- * saber cuál de los dos tiene delante.
- */
-interface TransporteDeCorreo {
-  sendMail(correo: CorreoParaBuzon): Promise<unknown>;
-}
+import { escudoUrl } from '../domain/datos-entidad.js';
+import { COLORES, bloqueDeSecretaria, enlacesDelPie, esc, maquetar } from './correos/plantilla.js';
+import { cuentaDeContacto, enviarCorreo } from './correos/envio.js';
 
 export class EmailService {
-  /**
-   * Se resuelve en el primer envío y no al importar: el buzón de pruebas se
-   * decide con EMAIL_BUZON_PRUEBAS, y leyéndola al importar el módulo quedaba
-   * fijada antes de que `dotenv` terminara de cargar el .env.
-   */
-  private static transporter: TransporteDeCorreo | undefined;
-
-  private static getTransporter(): TransporteDeCorreo {
-    if (this.transporter) return this.transporter;
-
-    if (buzonPedido()) {
-      console.log('📬 [Email] EMAIL_BUZON_PRUEBAS activo: los correos se escriben en storage/correos y no se envían.');
-      this.transporter = buzonDePruebas();
-    } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-      });
-    } else {
-      // Sin cuenta configurada NO se abre conexión: se falla en el acto.
-      //
-      // Antes se creaba igualmente el transporte de Gmail con credenciales
-      // vacías, y cada envío se quedaba esperando al SMTP hasta agotar el
-      // tiempo. Desde que aprobar, rechazar y dar de baja mandan correo, eso
-      // colgaba la suite de tests entera —cinco ficheros hacen esas
-      // operaciones— y habría colgado también al CI, que no tiene ningún .env.
-      //
-      // En producción no puede darse: `config/entorno.ts` exige EMAIL_USER y
-      // EMAIL_PASS para que el servidor arranque.
-      this.transporter = {
-        sendMail: () => Promise.reject(new Error(
-          'No hay cuenta de correo configurada (faltan EMAIL_USER y EMAIL_PASS). ' +
-          'Para revisar los correos en local, pon EMAIL_BUZON_PRUEBAS=true.'
-        )),
-      };
-    }
-    return this.transporter;
-  }
-
-  /**
-   * Cuenta de envío propia del formulario de contacto (CONTACT_EMAIL_USER y
-   * CONTACT_EMAIL_PASS). El formulario es público: un spam repartido entre
-   * muchas IP podía agotar la cuota diaria de la cuenta de Gmail y dejar sin
-   * salir los correos de recuperación de contraseña, que usan EMAIL_*. Sin esas
-   * dos variables se sigue usando EMAIL_* como hasta ahora.
-   *
-   * Se resuelve en el primer envío y no al importar: `undefined` = sin mirar
-   * todavía, `null` = no configurada.
-   */
-  private static cuentaContacto: { transporter: Transporter; usuario: string } | null | undefined;
-
-  private static getCuentaContacto() {
-    if (this.cuentaContacto !== undefined) return this.cuentaContacto;
-    const usuario = process.env.CONTACT_EMAIL_USER;
-    const pass = process.env.CONTACT_EMAIL_PASS;
-    if (usuario && pass) {
-      this.cuentaContacto = { transporter: nodemailer.createTransport({ service: 'gmail', auth: { user: usuario, pass } }), usuario };
-    } else {
-      if (usuario || pass) console.warn('[Email] CONTACT_EMAIL_USER y CONTACT_EMAIL_PASS van juntas y falta una: el contacto sale por la cuenta de EMAIL_USER.');
-      this.cuentaContacto = null;
-    }
-    return this.cuentaContacto;
-  }
-
-  // CONFIGURACIÓN GLOBAL DE COLORES
-  private static readonly COLORS = {
-    primario: '#5c1919',   // Rojo Burdeos
-    secundario: '#d4af37', // Dorado
-    fondo: '#f9f9f9',
-    texto: '#333333'
-  };
-
-  /**
-   * Escapa caracteres HTML de datos que vienen de la BD (nombres, puestos...)
-   * para impedir HTML/Phishing injection en los correos (un hermano
-   * registrado como "<b>Estafador</b>" no puede maquillar el email).
-   */
-  private static esc(text: string | null | undefined): string {
-    if (text === null || text === undefined) return '';
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  /**
-   * PLANTILLA MAESTRA (Layout)
-   * Centraliza el HTML, head, body, header, footer y estilos comunes.
-   */
-  private static getHtmlLayout(tituloCabecera: string, subtitulo: string, contenidoPrincipal: string, footerExtra: string = '', legalExtra: string = ''): string {
-    const { primario, fondo, texto } = this.COLORS;
-    const year = new Date().getFullYear();
-    // Ni escudo ni dirección de contacto si no están confirmados: antes iban
-    // escritos a mano un placeholder y un dominio que no es nuestro.
-    const emailSecretaria = this.esc(emailDeSecretaria() ?? '');
-
-    return `
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>${tituloCabecera}</title>
-    </head>
-    <body style="margin: 0; padding: 0; background-color: ${fondo}; font-family: 'Georgia', 'Times New Roman', serif; -webkit-font-smoothing: antialiased;">
-      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: ${fondo};">
-        <tr>
-          <td align="center" style="padding: 40px 10px;">
-            <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #eaeaeb; border-top: 6px solid ${primario}; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-              
-              <tr>
-                <td style="padding: 40px 40px 20px 40px; text-align: center; border-bottom: 1px solid #f0f0f0;">
-                  ${escudoUrl ? `<img src="${escudoUrl}" alt="Escudo del Grupo Parroquial" width="80" style="display: block; margin: 0 auto 15px auto; border: 0;">` : ''}
-                  <h1 style="color: ${primario}; margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: normal;">Grupo Parroquial de los Desamparados</h1>
-                  <p style="margin: 10px 0 0; color: #888; font-size: 13px; font-family: 'Arial', sans-serif; text-transform: uppercase; letter-spacing: 1px;">${subtitulo}</p>
-                </td>
-              </tr>
-
-              <tr>
-                <td style="padding: 30px 40px; color: ${texto}; font-size: 15px; line-height: 1.8;">
-                  ${contenidoPrincipal}
-                </td>
-              </tr>
-
-              <tr>
-                <td style="background-color: #2b2b2b; color: #999999; padding: 30px 40px; font-family: 'Arial', sans-serif; font-size: 11px; line-height: 1.5; text-align: center;">
-                  <p style="margin-top: 0; color: #ffffff;">&copy; ${year} GRUPO PARROQUIAL DE LOS DESAMPARADOS</p>
-                  ${footerExtra}
-                  <p style="text-align: justify;"><strong>Aviso Legal y Protección de Datos:</strong> En cumplimiento del RGPD, le informamos que sus datos serán tratados por el Grupo Parroquial. Este mensaje es confidencial. No responda a este correo automatizado.${emailSecretaria ? ` Dudas en <em>${emailSecretaria}</em>` : ''}</p>
-                  ${legalExtra}
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>`;
-  }
-
-  /**
-   * Bloque con el horario y la dirección de Secretaría. Devuelve cadena vacía
-   * mientras el Grupo Parroquial no confirme esos datos (shared/datos-entidad.json):
-   * antes iban escritos a mano en la plantilla, y el correo citaba un horario y
-   * una «C/ Falsa, 123» a los que un solicitante podía presentarse de verdad.
-   */
-  private static bloqueDeSecretaria(titulo: string): string {
-    const lineas = lineasDeSecretaria();
-    if (lineas.length === 0) return '';
-
-    const { primario } = this.COLORS;
-    const [primera, ...resto] = lineas.map((linea) => this.esc(linea));
-    const secundarias = resto.length
-      ? `<span style="color: #888; font-size: 12px; margin-top: 8px; display: block;">${resto.join(' · ')}</span>`
-      : '';
-
-    return `
-      <table width="100%" style="background-color: #fcfcfc; border: 1px solid #eeeeee; padding: 20px; text-align: center; font-family: 'Arial', sans-serif; font-size: 13px; color: #555; margin-top: 20px;">
-        <tr>
-          <td>
-            <strong style="color: ${primario}; font-size: 14px; display: block; margin-bottom: 5px;">${this.esc(titulo)}</strong>
-            ${primera}
-            ${secundarias}
-          </td>
-        </tr>
-      </table>`;
-  }
 
   // --- MÉTODOS DE NEGOCIO ---
 
   static async enviarRecuperacionContrasena(emailDestino: string, nombreHermano: string, token: string) {
     const enlaceReset = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${encodeURIComponent(token)}`;
-    const { primario } = this.COLORS;
-    const nombre = this.esc(nombreHermano);
+    const { primario } = COLORES;
+    const nombre = esc(nombreHermano);
 
     const content = `
       <p style="margin-top: 0;">Estimado/a hermano/a <strong>${nombre}</strong>,</p>
@@ -205,17 +33,17 @@ export class EmailService {
     `;
 
     const asunto = `🔐 Restablecer Contraseña - Portal del Hermano`;
-    return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout("Recuperación de Contraseña", "Portal del Hermano", content));
+    return await enviarCorreo(emailDestino, asunto, maquetar("Recuperación de Contraseña", "Portal del Hermano", content));
   }
 
   // Nota: Tenías dos funciones 'enviarPapeleta' y 'enviarRecuperacionContrasena' haciendo lo mismo (enviando papeletas). 
   // He dejado una sola función robusta para la papeleta.
   static async enviarPapeleta(emailDestino: string, nombreHermano: string, datos: DatosPapeleta) {
-    const { primario, secundario } = this.COLORS;
-    const nombre = this.esc(nombreHermano);
-    const puesto = this.esc(datos.puesto) || 'Por asignar en Fiscalía';
-    const tramo = this.esc(datos.tramo) || 'Tramo General';
-    const obs = datos.observaciones ? `<p style="font-style: italic; color: #666; margin: 10px 0 5px 0;">Notas: ${this.esc(datos.observaciones)}</p>` : '';
+    const { primario, secundario } = COLORES;
+    const nombre = esc(nombreHermano);
+    const puesto = esc(datos.puesto) || 'Por asignar en Fiscalía';
+    const tramo = esc(datos.tramo) || 'Tramo General';
+    const obs = datos.observaciones ? `<p style="font-style: italic; color: #666; margin: 10px 0 5px 0;">Notas: ${esc(datos.observaciones)}</p>` : '';
 
     // QR generado EN LOCAL (librería 'qrcode'): no enviamos datos personales
     // a servicios externos (api.qrserver.com). Cumplimiento RGPD.
@@ -227,7 +55,7 @@ export class EmailService {
 
     const content = `
       <p style="margin-top: 0;">Estimado/a hermano/a <strong>${nombre}</strong>,</p>
-      <p>La Secretaría certifica que ha abonado correctamente la limosna de salida, autorizándole a realizar la Estación de Penitencia el próximo <strong>${this.esc(datos.fechaSalida)}</strong>.</p>
+      <p>La Secretaría certifica que ha abonado correctamente la limosna de salida, autorizándole a realizar la Estación de Penitencia el próximo <strong>${esc(datos.fechaSalida)}</strong>.</p>
       
       <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fcfcfc; border: 1px dashed #cccccc; border-radius: 4px; margin: 20px 0;">
         <tr>
@@ -251,11 +79,11 @@ export class EmailService {
               <tr>
                 <td width="50%" valign="top">
                   <span style="font-family: 'Arial', sans-serif; font-size: 12px; color: #999; text-transform: uppercase;">Hora de Acceso</span><br>
-                  <strong style="color: #333;">${this.esc(datos.horaSalida)}</strong>
+                  <strong style="color: #333;">${esc(datos.horaSalida)}</strong>
                 </td>
                 <td width="50%" valign="top">
                   <span style="font-family: 'Arial', sans-serif; font-size: 12px; color: #999; text-transform: uppercase;">Puerta</span><br>
-                  <strong style="color: #333;">${this.esc(datos.accesoPuerta)}</strong>
+                  <strong style="color: #333;">${esc(datos.accesoPuerta)}</strong>
                 </td>
               </tr>
             </table>
@@ -275,17 +103,17 @@ export class EmailService {
       </div>
     `;
 
-    const footerLinks = this.getFooterLinks();
+    const footerLinks = enlacesDelPie();
     // El asunto es texto, no HTML: con el nombre escapado, «O'Brien» llegaba
     // como «O&#39;Brien». Los saltos de línea los aplana nodemailer.
     const asunto = `📜 Papeleta de Sitio ${datos.year} - ${nombreHermano}`;
     
-    return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout(`Papeleta de Sitio ${datos.year}`, `Papeleta de Sitio - ${datos.year}`, content, footerLinks));
+    return await enviarCorreo(emailDestino, asunto, maquetar(`Papeleta de Sitio ${datos.year}`, `Papeleta de Sitio - ${datos.year}`, content, footerLinks));
   }
 
   static async enviarConfirmacionRegistro(emailDestino: string, nombreHermano: string) {
-    const { primario, secundario } = this.COLORS;
-    const nombre = this.esc(nombreHermano);
+    const { primario, secundario } = COLORES;
+    const nombre = esc(nombreHermano);
 
     const content = `
       <p style="margin-top: 0;">Estimado/a en Cristo, <strong>${nombre}</strong>:</p>
@@ -302,7 +130,7 @@ export class EmailService {
         <li>Certificado de Bautismo (copia expedida por su parroquia).</li>
       </ul>
 
-      ${this.bloqueDeSecretaria('Atención al Hermano en Secretaría')}
+      ${bloqueDeSecretaria('Atención al Hermano en Secretaría')}
 
       <div style="text-align: center; margin-top: 30px; font-style: italic;">
         <p>Que nuestros Sagrados Titulares le guarden y bendigan.</p>
@@ -312,7 +140,7 @@ export class EmailService {
 
     // Sin escapar: el asunto es texto, no HTML (ver enviarPapeleta).
     const asunto = `📋 Solicitud de Registro Recibida - ${nombreHermano}`;
-    return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout("Acuse de Recibo", "Secretaría General", content));
+    return await enviarCorreo(emailDestino, asunto, maquetar("Acuse de Recibo", "Secretaría General", content));
   }
 
   /**
@@ -333,8 +161,8 @@ export class EmailService {
       return false;
     }
 
-    const { primario, secundario } = this.COLORS;
-    const nombreCompleto = this.esc([datos.nombre, datos.apellidos].filter(Boolean).join(' '));
+    const { primario, secundario } = COLORES;
+    const nombreCompleto = esc([datos.nombre, datos.apellidos].filter(Boolean).join(' '));
     const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cms/hermanos`;
 
     const content = `
@@ -342,7 +170,7 @@ export class EmailService {
 
       <div style="background-color: #fafafa; border-left: 4px solid ${secundario}; padding: 20px 25px; margin: 25px 0;">
         <p style="margin: 0 0 6px 0;"><strong>Solicitante:</strong> ${nombreCompleto}</p>
-        <p style="margin: 0 0 6px 0;"><strong>Correo:</strong> ${this.esc(datos.email)}</p>
+        <p style="margin: 0 0 6px 0;"><strong>Correo:</strong> ${esc(datos.email)}</p>
         ${/* Un alta puede traer varias personas: el adulto y los menores a su cargo. */ ''}
         ${datos.fichas && datos.fichas > 1 ? `<p style="margin: 0;"><strong>Fichas que trae:</strong> ${datos.fichas} (incluye menores a su cargo)</p>` : ''}
       </div>
@@ -355,7 +183,7 @@ export class EmailService {
     `;
 
     const asunto = `📥 Solicitud de ingreso nueva - ${[datos.nombre, datos.apellidos].filter(Boolean).join(' ')}`;
-    return await this.enviarEmailBase(destino, asunto, this.getHtmlLayout('Solicitud de ingreso nueva', 'Aviso interno · Secretaría', content));
+    return await enviarCorreo(destino, asunto, maquetar('Solicitud de ingreso nueva', 'Aviso interno · Secretaría', content));
   }
 
   /**
@@ -363,8 +191,8 @@ export class EmailService {
    * Antes aprobar era mudo y el solicitante no se enteraba de nada.
    */
   static async enviarAprobacionSolicitud(emailDestino: string, nombreHermano: string, numerosDeHermano: number[]) {
-    const { primario, secundario } = this.COLORS;
-    const nombre = this.esc(nombreHermano);
+    const { primario, secundario } = COLORES;
+    const nombre = esc(nombreHermano);
     const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/hermanos/acceso`;
 
     // Una cuenta puede tener varias fichas (los hijos de un tutor) y se aprueban
@@ -374,7 +202,7 @@ export class EmailService {
     const bloqueNumero = numerosDeHermano.length
       ? `<div style="background-color: #fcfcfc; border: 1px dashed #cccccc; padding: 20px; text-align: center; margin: 25px 0;">
            <span style="font-family: 'Arial', sans-serif; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1px;">${varios ? 'Números de hermano' : 'Número de hermano'}</span><br>
-           <strong style="font-size: 28px; color: ${primario};">${this.esc(numerosDeHermano.join(', '))}</strong>
+           <strong style="font-size: 28px; color: ${primario};">${esc(numerosDeHermano.join(', '))}</strong>
          </div>`
       : '';
 
@@ -401,7 +229,7 @@ export class EmailService {
     `;
 
     const asunto = `✅ Su solicitud ha sido aprobada - ${nombreHermano}`;
-    return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout('Solicitud aprobada', 'Secretaría General', content));
+    return await enviarCorreo(emailDestino, asunto, maquetar('Solicitud aprobada', 'Secretaría General', content));
   }
 
   /**
@@ -415,7 +243,7 @@ export class EmailService {
    * base el nombre que `rechazarSolicitud` acaba de borrar.
    */
   static async enviarBajaORechazo(emailDestino: string, nombreHermano: string, motivo: 'rechazo' | 'baja') {
-    const nombre = this.esc(nombreHermano);
+    const nombre = esc(nombreHermano);
     const esRechazo = motivo === 'rechazo';
 
     const cuerpo = esRechazo
@@ -427,7 +255,7 @@ export class EmailService {
     const content = `
       <p style="margin-top: 0;">Estimado/a <strong>${nombre}</strong>:</p>
       ${cuerpo}
-      ${this.bloqueDeSecretaria('Contacto con Secretaría')}
+      ${bloqueDeSecretaria('Contacto con Secretaría')}
       <div style="text-align: center; margin-top: 30px; font-style: italic;">
         <p>Le agradecemos el interés mostrado por nuestro Grupo Parroquial.</p>
         <p style="margin-top: 20px; font-weight: bold; font-style: normal; font-size: 14px;">El Secretario</p>
@@ -437,16 +265,16 @@ export class EmailService {
     const asunto = esRechazo
       ? 'Resolución de su solicitud de ingreso'
       : 'Baja en el censo de hermanos';
-    return await this.enviarEmailBase(
+    return await enviarCorreo(
       emailDestino,
       asunto,
-      this.getHtmlLayout(asunto, 'Secretaría General', content)
+      maquetar(asunto, 'Secretaría General', content)
     );
   }
 
   static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string) {
-    const { primario, secundario } = this.COLORS;
-    const nombre = this.esc(nombreHermano);
+    const { primario, secundario } = COLORES;
+    const nombre = esc(nombreHermano);
 
     const content = `
       <p style="margin-top: 0;">Estimado/a hermano/a en Cristo, <strong>${nombre}</strong>:</p>
@@ -463,7 +291,7 @@ export class EmailService {
         <li>Recibo de la cuota anual de hermano (en caso de tenerla pendiente).</li>
       </ul>
 
-      ${this.bloqueDeSecretaria('Horario de Reparto de Puestos')}
+      ${bloqueDeSecretaria('Horario de Reparto de Puestos')}
 
       <div style="text-align: center; margin-top: 30px; font-style: italic;">
         <p>Esperamos contar con su presencia acompañando a nuestros Sagrados Titulares.</p>
@@ -475,7 +303,7 @@ export class EmailService {
     // Nota: El asunto en tu código original decía "Solicitud de Registro Recibida", lo he cambiado por uno más adecuado.
     const asunto = `⚠️ Aviso de Salida Procesional - Recogida de Puesto pendiente`;
     
-    return await this.enviarEmailBase(emailDestino, asunto, this.getHtmlLayout("Aviso de Salida Procesional", "Secretaría y Albacería", content, '', infoExtra));
+    return await enviarCorreo(emailDestino, asunto, maquetar("Aviso de Salida Procesional", "Secretaría y Albacería", content, '', infoExtra));
   }
 
   static async enviarContacto(datos: ContactoDto): Promise<boolean> {
@@ -485,11 +313,11 @@ export class EmailService {
       return false;
     }
 
-    const nombre = this.esc(datos.nombre);
-    const email = this.esc(datos.email);
-    const telefono = datos.telefono?.trim() ? this.esc(datos.telefono) : 'No indicado';
-    const asunto = this.esc(datos.asunto);
-    const mensaje = this.esc(datos.mensaje).replace(/\r?\n/g, '<br>');
+    const nombre = esc(datos.nombre);
+    const email = esc(datos.email);
+    const telefono = datos.telefono?.trim() ? esc(datos.telefono) : 'No indicado';
+    const asunto = esc(datos.asunto);
+    const mensaje = esc(datos.mensaje).replace(/\r?\n/g, '<br>');
     const content = `
       <p><strong>Nombre:</strong> ${nombre}</p>
       <p><strong>Email:</strong> ${email}</p>
@@ -501,60 +329,7 @@ export class EmailService {
 
     // `datos.email` llega validado por contact.schema.ts (sin comas ni ángulos):
     // es seguro como Reply-To.
-    return this.enviarEmailBase(destino, `[Contacto web] ${datos.asunto}`, this.getHtmlLayout('Nuevo mensaje de contacto', 'Formulario web', content), datos.email, this.getCuentaContacto());
+    return enviarCorreo(destino, `[Contacto web] ${datos.asunto}`, maquetar('Nuevo mensaje de contacto', 'Formulario web', content), datos.email, cuentaDeContacto());
   }
 
-  /**
-   * Enlaces del pie de los correos. Solo se pinta el enlace a la normativa si
-   * NORMATIVA_URL está configurada: un `href="#"` en un correo es un enlace
-   * muerto que ya no se puede corregir una vez enviado.
-   */
-  private static getFooterLinks(): string {
-    const estilo = 'color: #ffffff; text-decoration: underline;';
-    const secretaria = process.env.CONTACT_EMAIL_TO || process.env.EMAIL_USER;
-    const enlaces: string[] = [];
-
-    if (process.env.NORMATIVA_URL) {
-      enlaces.push(`<a href="${process.env.NORMATIVA_URL}" style="${estilo}">Descargar Normativa</a>`);
-    }
-    if (secretaria) {
-      enlaces.push(`<a href="mailto:${secretaria}" style="${estilo}">Contactar Secretaría</a>`);
-    }
-    if (enlaces.length === 0) return '';
-
-    return `<p style="margin: 10px 0 15px 0;">${enlaces.join(' | ')}</p>`;
-  }
-
-  // --- MOTOR DE ENVÍO ---
-  private static async enviarEmailBase(
-    to: string,
-    subject: string,
-    html: string,
-    replyTo?: string,
-    cuenta?: { transporter: Transporter; usuario: string } | null,
-  ): Promise<boolean> {
-    try {
-      await (cuenta?.transporter ?? this.getTransporter()).sendMail({
-        from: `"${process.env.EMAIL_FROM_NAME || 'Secretaría'}" <${cuenta?.usuario ?? process.env.EMAIL_USER}>`,
-        to,
-        subject,
-        html,
-        ...(replyTo ? { replyTo } : {}),
-      });
-      console.log(`✅ Email enviado con éxito a: ${enmascararEmail(to)}`);
-      return true;
-    } catch (error) {
-      console.error(`❌ Error enviando email a ${enmascararEmail(to)}:`, error);
-      // El fallo va también a la auditoría: es el único sitio donde el staff
-      // puede verlo. La dirección se guarda ENMASCARADA — la auditoría ya
-      // retiene IP y navegador, y no hace falta añadirle correos completos para
-      // saber que algo no salió.
-      await AuditoriaService.log(ACCIONES_AUDITORIA.EMAIL_FALLIDO, {}, 'email', undefined, {
-        para: enmascararEmail(to),
-        asunto: subject,
-        motivo: error instanceof Error ? error.message.slice(0, 250) : 'desconocido',
-      });
-      return false;
-    }
-  }
 }

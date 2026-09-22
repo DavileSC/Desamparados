@@ -1,4 +1,6 @@
-import { ProcesionService } from '../services/procesion.service.js';
+import { MiProcesionService } from '../services/procesion/mi-procesion.service.js';
+import { PapeletasService } from '../services/procesion/papeletas.service.js';
+import { TurnosService } from '../services/procesion/turnos.service.js';
 import { handleHttp, HttpError } from '../utils/error.handle.js';
 import { instanteLimiteAusencias } from '../domain/datos-procesion.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
@@ -11,26 +13,26 @@ export class ProcesionController {
   // ============================================================
 
   static getDias = manejar('Error obteniendo días', async (_req, res) => {
-    const dias = await ProcesionService.getDiasDisponibles();
+    const dias = await MiProcesionService.getDiasDisponibles();
     res.json(dias);
   });
 
   static avisarAsistencia = manejar('Error al avisar asistencia', async (req, res) => {
     const userId = req.user!.id; 
-    const data = await ProcesionService.avisarAsistencia(userId, req.body);
+    const data = await MiProcesionService.avisarAsistencia(userId, req.body);
     res.status(201).json(data);
   });
 
   static cancelarAsistencia = manejar('Error al cancelar la cita', async (req, res) => {
     const userId = req.user!.id;
     const citaId = Number(req.params.id);
-    await ProcesionService.cancelarAsistencia(userId, citaId);
+    await MiProcesionService.cancelarAsistencia(userId, citaId);
     res.status(200).json({ message: 'Cita cancelada correctamente.' });
   });
 
   static getMisPapeletas = manejar('Error obteniendo el historial de papeletas', async (req, res) => {
     const userId = req.user!.id;
-    const papeletas = await ProcesionService.getMisPapeletas(userId, req.query);
+    const papeletas = await MiProcesionService.getMisPapeletas(userId, req.query);
     res.status(200).json(papeletas);
   });
 
@@ -39,12 +41,12 @@ export class ProcesionController {
   // ============================================================
 
   static getListadoHoy = manejar('Error obteniendo listado de hoy', async (_req, res) => {
-    const lista = await ProcesionService.getAsistentesDelDia(new Date());
+    const lista = await PapeletasService.getAsistentesDelDia(new Date());
     res.json(lista);
   });
 
   static inscribirManual = manejar('Error al realizar inscripción', async (req, res) => {
-    const result = await ProcesionService.inscribirYFacturar(req.body, AuditoriaService.metaFromReq(req));
+    const result = await PapeletasService.inscribirYFacturar(req.body, AuditoriaService.metaFromReq(req));
     res.status(200).json({
       msg: 'Inscripción realizada. Recibo generado y correo enviado.',
       data: result
@@ -53,7 +55,7 @@ export class ProcesionController {
 
   static anularPapeleta = manejar('Error al anular la papeleta', async (req, res) => {
     const papeletaId = Number(req.params.id);
-    const result = await ProcesionService.anularPapeleta(papeletaId, AuditoriaService.metaFromReq(req));
+    const result = await PapeletasService.anularPapeleta(papeletaId, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
@@ -63,7 +65,7 @@ export class ProcesionController {
 
   static getListadoProcesion = manejar('Error generando el censo de la procesión', async (req, res) => {
     const year = Number(req.params.year);
-    const listado = await ProcesionService.getListadoProcesion(year);
+    const listado = await PapeletasService.getListadoProcesion(year);
     res.status(200).json(listado);
   });
 
@@ -77,7 +79,7 @@ export class ProcesionController {
     if (!limite) throw new HttpError('La fecha límite debe ser una fecha válida que no sea posterior a hoy.');
     const cierreDefinitivo = cuerpo.cierreDefinitivo === true;
 
-    const result = await ProcesionService.procesarAusencias(limite, cierreDefinitivo, AuditoriaService.metaFromReq(req));
+    const result = await PapeletasService.procesarAusencias(limite, cierreDefinitivo, AuditoriaService.metaFromReq(req));
     res.status(200).json(result);
   });
 
@@ -86,37 +88,37 @@ export class ProcesionController {
   // ============================================================
 
   static getTodosTurnos = manejar('Error obteniendo los turnos', async (_req, res) => {
-    const turnos = await ProcesionService.getTodosLosTurnos();
+    const turnos = await TurnosService.getTodosLosTurnos();
     res.status(200).json(turnos);
   });
 
   static crearTurno = manejar('Error creando el turno', async (req, res) => {
-    const nuevoTurno = await ProcesionService.crearTurno(req.body, AuditoriaService.metaFromReq(req));
+    const nuevoTurno = await TurnosService.crearTurno(req.body, AuditoriaService.metaFromReq(req));
     res.status(201).json(nuevoTurno);
   });
 
   static deleteTurno = manejar('Error eliminando turno', async (req, res) => {
     const turnoId = Number(req.params.id);
-    await ProcesionService.eliminarTurno(turnoId, AuditoriaService.metaFromReq(req));
+    await TurnosService.eliminarTurno(turnoId, AuditoriaService.metaFromReq(req));
     res.status(200).json({ message: 'Turno eliminado correctamente' });
   });
 
   static getCuadrante = manejar('Error obteniendo cuadrante de la Junta', async (_req, res) => {
-    const cuadrante = await ProcesionService.getCuadranteTurnos();
+    const cuadrante = await TurnosService.getCuadranteTurnos();
     res.status(200).json(cuadrante);
   });
 
   static apuntarmeTurno = manejar('Error al apuntarse al turno', async (req, res) => {
     const userId = req.user!.id; 
     const turnoId = Number(req.params.id);
-    await ProcesionService.apuntarmeATurno(userId, turnoId);
+    await TurnosService.apuntarmeATurno(userId, turnoId);
     res.status(200).json({ message: 'Te has apuntado al turno correctamente.' });
   });
 
   static desapuntarmeTurno = manejar('Error al borrarse del turno', async (req, res) => {
     const userId = req.user!.id; 
     const turnoId = Number(req.params.id);
-    await ProcesionService.desapuntarmeDeTurno(userId, turnoId);
+    await TurnosService.desapuntarmeDeTurno(userId, turnoId);
     res.status(200).json({ message: 'Te has borrado del turno.' });
   });
 }

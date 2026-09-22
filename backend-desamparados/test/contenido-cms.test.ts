@@ -104,13 +104,13 @@ describe('listas del HTML alineadas con la web (C4)', () => {
     assert.match(limpio, /title="c"/);
   });
 
-  test('las etiquetas y los atributos son los mismos que en desamparados-web/src/lib/sanitizeHtml.ts', () => {
+  test('las etiquetas y los atributos son los mismos que en desamparados-web/src/lib/limpiarHtml.ts', () => {
     // Si alguien cambia una lista y no la otra, el servidor guarda algo que la web
     // pinta distinto. Se lee el fichero de la web en vez de copiarlo aquí.
-    const web = readFileSync(new URL('../../desamparados-web/src/lib/sanitizeHtml.ts', import.meta.url), 'utf8');
+    const web = readFileSync(new URL('../../desamparados-web/src/lib/limpiarHtml.ts', import.meta.url), 'utf8');
     const lista = (nombre: string) => {
       const bloque = new RegExp(String.raw`const ${nombre} = \[([\s\S]*?)\]`).exec(web);
-      assert.ok(bloque, `no encuentro ${nombre} en sanitizeHtml.ts`);
+      assert.ok(bloque, `no encuentro ${nombre} en limpiarHtml.ts`);
       return [...bloque[1].matchAll(/'([a-z0-9-]+)'/g)].map((m) => m[1]).sort();
     };
     assert.deepEqual([...ETIQUETAS_CMS].sort(), lista('ETIQUETAS_PERMITIDAS'));

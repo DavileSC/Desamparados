@@ -16,7 +16,10 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
-import { ProcesionService } from '../src/services/procesion.service.js';
+import { idCategoriaDeRecibos } from '../src/services/recibos/comunes.js';
+import { MiProcesionService } from '../src/services/procesion/mi-procesion.service.js';
+import { PapeletasService } from '../src/services/procesion/papeletas.service.js';
+import { TurnosService } from '../src/services/procesion/turnos.service.js';
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
@@ -137,13 +140,13 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     const turno = await e.turno(new Date(Date.now() + 60 * 60 * 1000));
     const cita = await db.cita.create({ data: { hermanoId: hermano.id, turnoId: turno.id } });
 
-    const { recibo, papeleta } = await ProcesionService.inscribirYFacturar(
+    const { recibo, papeleta } = await PapeletasService.inscribirYFacturar(
       { hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio', citaId: cita.id }, e.meta
     );
     assert.equal(recibo.estado, EstadoPago.PAGADO);
     assert.equal(recibo.concepto, `Papeleta Sitio ${YEAR}`);
 
-    const respuesta = await ProcesionService.anularPapeleta(papeleta.id, e.meta);
+    const respuesta = await PapeletasService.anularPapeleta(papeleta.id, e.meta);
     assert.equal(respuesta.estadoRecibo, EstadoPago.DEVUELTO);
 
     // El recibo sigue el grafo: PAGADO -> DEVUELTO, nunca un ANULADO forzado.
@@ -167,7 +170,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     assert.equal(detalles.despues.recibo.estado, EstadoPago.DEVUELTO);
 
     // Reinscribir: antes daba 500 porque el recibo devuelto ocupaba el concepto.
-    const segunda = await ProcesionService.inscribirYFacturar(
+    const segunda = await PapeletasService.inscribirYFacturar(
       { hermanoId: hermano.id, metodoPago: MetodoPago.BIZUM, puesto: 'Vara' }, e.meta
     );
     assert.equal(segunda.recibo.concepto, `Papeleta Sitio ${YEAR} (reemisión 2)`);
@@ -182,7 +185,7 @@ test('D2: si Tesorería devuelve el recibo de una papeleta, la papeleta queda an
   const e = await escenario();
   try {
     const hermano = await e.hermano();
-    const { recibo, papeleta } = await ProcesionService.inscribirYFacturar(
+    const { recibo, papeleta } = await PapeletasService.inscribirYFacturar(
       { hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta
     );
 
@@ -294,26 +297,26 @@ test('D4: con precios a 0 la papeleta nace exenta y sin asiento; «12,50» cobra
       const hermano = await e.hermano({ tieneTunicaPropia: false });
 
       await fijarConfiguracion({ precio_papeleta_sitio: '0', precio_alquiler_tunica: '0' });
-      const gratis = await ProcesionService.inscribirYFacturar({ hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
+      const gratis = await PapeletasService.inscribirYFacturar({ hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
       assert.equal(gratis.recibo.estado, EstadoPago.EXENTO);
       assert.equal(String(gratis.recibo.importe), '0');
       assert.equal(gratis.recibo.metodoPago, null);
       assert.deepEqual(await apuntes(gratis.recibo.id), [], 'el dinero que no existe no deja asientos');
 
       // Anular una papeleta exenta no mueve el recibo (EXENTO es final) ni inventa reversos.
-      const anulada = await ProcesionService.anularPapeleta(gratis.papeleta.id, e.meta);
+      const anulada = await PapeletasService.anularPapeleta(gratis.papeleta.id, e.meta);
       assert.equal(anulada.estadoRecibo, EstadoPago.EXENTO);
       assert.deepEqual(await apuntes(gratis.recibo.id), []);
 
       await fijarConfiguracion({ precio_papeleta_sitio: '12,50', precio_alquiler_tunica: '2,5' });
-      const conComa = await ProcesionService.inscribirYFacturar({ hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
+      const conComa = await PapeletasService.inscribirYFacturar({ hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
       assert.equal(String(conComa.recibo.importe), '15', 'papeleta 12,50 + alquiler 2,50');
       assert.equal(conComa.recibo.estado, EstadoPago.PAGADO);
 
       await fijarConfiguracion({ precio_papeleta_sitio: '-5' });
       const otro = await e.hermano();
       await assert.rejects(
-        ProcesionService.inscribirYFacturar({ hermanoId: otro.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta),
+        PapeletasService.inscribirYFacturar({ hermanoId: otro.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta),
         (err: unknown) => err instanceof HttpError && err.status === 409 && /no es un importe válido/.test(err.message)
       );
       assert.equal(await db.recibo.count({ where: { hermanoId: otro.id } }), 0, 'un precio ilegible no cobra nada');
@@ -393,7 +396,7 @@ test('D6: la papeleta de mesa y la de tesorería llevan la misma fecha, hora y p
 
       // Camino 1: inscripción en mesa.
       const enMesa = await e.hermano();
-      await ProcesionService.inscribirYFacturar({ hermanoId: enMesa.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
+      await PapeletasService.inscribirYFacturar({ hermanoId: enMesa.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
 
       // Camino 2: cobro en tesorería de una papeleta que estaba pendiente.
       const enTesoreria = await e.hermano();
@@ -467,7 +470,7 @@ test('D16: los apuntados de un día no cuentan las citas canceladas', async (t) 
     await db.cita.create({ data: { hermanoId: a.id, turnoId: turno.id, estado: EstadoCita.RESERVADA } });
     await db.cita.create({ data: { hermanoId: b.id, turnoId: turno.id, estado: EstadoCita.CANCELADA } });
 
-    const dia = (await ProcesionService.getDiasDisponibles()).find((d) => d.id === turno.id);
+    const dia = (await MiProcesionService.getDiasDisponibles()).find((d) => d.id === turno.id);
     assert.equal(dia?.genteApuntada, 1);
   } finally {
     await e.recoger();
@@ -483,16 +486,16 @@ test('D16: dos avisos a la vez para dos días no dejan al hermano con dos citas;
     const t2 = await e.turno(new Date(Date.now() + 2 * 60 * 60 * 1000));
 
     const resultados = await Promise.allSettled([
-      ProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id }),
-      ProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id }),
+      MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id }),
+      MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id }),
     ]);
     assert.equal(resultados.filter((r) => r.status === 'fulfilled').length, 1, 'solo una reserva puede ganar');
     const reservadas = await db.cita.findMany({ where: { hermanoId: hermano.id, estado: EstadoCita.RESERVADA } });
     assert.equal(reservadas.length, 1);
 
     // La cita es única por [hermano, turno]: cancelar y volver a pedir el mismo día chocaba con la clave.
-    await ProcesionService.cancelarAsistencia(e.usuario.id, reservadas[0].id);
-    const otraVez = await ProcesionService.avisarAsistencia(e.usuario.id, { turnoId: reservadas[0].turnoId, hermanoId: hermano.id });
+    await MiProcesionService.cancelarAsistencia(e.usuario.id, reservadas[0].id);
+    const otraVez = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: reservadas[0].turnoId, hermanoId: hermano.id });
     assert.equal(otraVez.id, reservadas[0].id);
     assert.equal(otraVez.estado, EstadoCita.RESERVADA);
   } finally {
@@ -534,7 +537,7 @@ test('P5: marca como no presentado a quien no vino, le escribe y audita cuántas
     const cita = await db.cita.create({ data: { hermanoId: hermano.id, turnoId: turno.id } });
     recordatoriosEnviados.mock.resetCalls();
 
-    const resultado = await ProcesionService.procesarAusencias(new Date(Date.UTC(2001, 0, 2)), false, e.meta);
+    const resultado = await PapeletasService.procesarAusencias(new Date(Date.UTC(2001, 0, 2)), false, e.meta);
     assert.equal(resultado.procesadas, 1);
     assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cita.id } })).estado, EstadoCita.NO_PRESENTADO);
     assert.equal(recordatoriosEnviados.mock.callCount(), 1);
@@ -546,7 +549,7 @@ test('P5: marca como no presentado a quien no vino, le escribe y audita cuántas
     assert.equal(detalles.estadoNuevo, EstadoCita.NO_PRESENTADO);
 
     // El servicio tampoco acepta una fecha futura aunque se le llame sin pasar por el esquema.
-    await assert.rejects(ProcesionService.procesarAusencias(new Date(Date.now() + 60_000), false, e.meta), HttpError);
+    await assert.rejects(PapeletasService.procesarAusencias(new Date(Date.now() + 60_000), false, e.meta), HttpError);
   } finally {
     await e.recoger();
   }
@@ -581,7 +584,7 @@ test('P5: sin fecha límite, el turno de hoy que aún no ha terminado no cuenta 
 
     // Antes se comparaba `turno.fecha` (medianoche, ya pasada) y esta cita
     // quedaba NO_PRESENTADO con su correo de «no viniste» por la mañana.
-    const resultado = await ProcesionService.procesarAusencias(new Date(), false, e.meta);
+    const resultado = await PapeletasService.procesarAusencias(new Date(), false, e.meta);
     assert.equal(resultado.procesadas, 0);
     assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cita.id } })).estado, EstadoCita.RESERVADA);
     assert.equal(recordatoriosEnviados.mock.callCount(), 0);
@@ -639,7 +642,7 @@ test('D2: un recibo «papeleta sitio AAAA» en minúsculas no impide inscribir: 
       { hermanoId: hermano.id, year: YEAR, concepto: `papeleta sitio ${YEAR}`, importe: 5, tipo: 'OTRO' }, e.meta
     );
 
-    const { recibo } = await ProcesionService.inscribirYFacturar(
+    const { recibo } = await PapeletasService.inscribirYFacturar(
       { hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta
     );
     assert.equal(recibo.concepto, `Papeleta Sitio ${YEAR} (reemisión 2)`);
@@ -656,7 +659,7 @@ test('la primera vez que varios cobros piden a la vez una categoría, todos obti
   const nombre = `Prueba carrera ${Date.now()}`;
   try {
     const ids = await Promise.all(
-      Array.from({ length: 6 }, () => ReciboService.idCategoriaDeRecibos(TipoTransaccion.GASTO, nombre))
+      Array.from({ length: 6 }, () => idCategoriaDeRecibos(TipoTransaccion.GASTO, nombre))
     );
     assert.equal(new Set(ids).size, 1, 'todas deben recibir la misma categoría');
     assert.equal(await db.categoriaTransaccion.count({ where: { nombre } }), 1);
@@ -674,7 +677,7 @@ test('D19: crear y borrar un turno queda auditado con sus datos', async (t) => {
   const e = await escenario();
   try {
     // Un día fijo y lejano: con «mañana + 1 h» el fin podía cruzar la medianoche de Madrid.
-    const turno = await ProcesionService.crearTurno({
+    const turno = await TurnosService.crearTurno({
       fecha: '2030-05-10',
       horaInicio: '2030-05-10T18:00:00+02:00',
       horaFin: '2030-05-10T21:00:00+02:00',
@@ -685,7 +688,7 @@ test('D19: crear y borrar un turno queda auditado con sus datos', async (t) => {
     const alta = await auditoria(ACCIONES_AUDITORIA.TURNO_CREAR, turno.id);
     assert.equal((alta?.detalles as { despues: { capacidadEstimada: number } }).despues.capacidadEstimada, 40);
 
-    await ProcesionService.eliminarTurno(turno.id, e.meta);
+    await TurnosService.eliminarTurno(turno.id, e.meta);
     const baja = await auditoria(ACCIONES_AUDITORIA.TURNO_ELIMINAR, turno.id);
     assert.equal((baja?.detalles as { antes: { capacidadEstimada: number } }).antes.capacidadEstimada, 40);
   } finally {
@@ -727,26 +730,26 @@ test('Turnos: editar las horas de un turno sigue las mismas reglas que crearlo',
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    const turno = await ProcesionService.crearTurno({
+    const turno = await TurnosService.crearTurno({
       fecha: '2030-05-10', horaInicio: '2030-05-10T18:00:00+02:00', horaFin: '2030-05-10T21:00:00+02:00', capacidadEstimada: 40
     }, e.meta);
     e.turnos.push(turno.id);
 
     // Un fin anterior al inicio que ya tenía.
     await assert.rejects(
-      ProcesionService.actualizarTurno(turno.id, { horaFin: new Date('2030-05-10T17:00:00+02:00') }, e.meta),
+      TurnosService.actualizarTurno(turno.id, { horaFin: new Date('2030-05-10T17:00:00+02:00') }, e.meta),
       (err: unknown) => err instanceof HttpError && err.status === 400 && /posterior a la hora de inicio/.test(err.message)
     );
     // Un inicio de otro día.
     await assert.rejects(
-      ProcesionService.actualizarTurno(turno.id, { horaInicio: new Date('2030-05-09T18:00:00+02:00') }, e.meta),
+      TurnosService.actualizarTurno(turno.id, { horaInicio: new Date('2030-05-09T18:00:00+02:00') }, e.meta),
       (err: unknown) => err instanceof HttpError && err.status === 400 && /hora de inicio tiene que ser del mismo día/.test(err.message)
     );
     const intacto = await db.turno.findUniqueOrThrow({ where: { id: turno.id } });
     assert.equal(intacto.horaFin.toISOString(), '2030-05-10T19:00:00.000Z');
 
     // Y un cambio válido se guarda.
-    const ampliado = await ProcesionService.actualizarTurno(turno.id, { horaFin: new Date('2030-05-10T22:00:00+02:00') }, e.meta);
+    const ampliado = await TurnosService.actualizarTurno(turno.id, { horaFin: new Date('2030-05-10T22:00:00+02:00') }, e.meta);
     assert.equal(ampliado.horaFin.toISOString(), '2030-05-10T20:00:00.000Z');
   } finally {
     await e.recoger();

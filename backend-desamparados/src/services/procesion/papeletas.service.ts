@@ -1,195 +1,37 @@
-import { CrearTurnoDto } from './../dtos/procesion.dto';
-import db from '../config/db';
+/**
+ * La mesa de reparto: lo que hace Secretaría el día que se dan las papeletas.
+ * Quién se espera hoy, cuánto cuesta cada papeleta, inscribir y cobrar,
+ * anular una devuelta, el listado que se llevan los diputados de tramo y el
+ * repaso de quien avisó y no vino.
+ *
+ * Aquí se mueve dinero del Grupo Parroquial: cada operación deja su rastro en
+ * la auditoría y el importe lo calcula siempre el servidor.
+ */
+import db from '../../config/db';
 import { EstadoCita, EstadoPago, Prisma, TipoRecibo, TipoTransaccion } from '@prisma/client';
-import { AvisarAsistenciaDto, CrearInscripcionManualDto } from '../dtos/procesion.dto';
-import { EmailService } from './email.service';
-import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
-import { ReciboService } from './recibo.service.js';
-import { HttpError, NotFoundError } from '../utils/error.handle';
-import { transactionWithRetry } from '../utils/transaction-retry.js';
-import { enmascararEmail } from '../utils/log-privacidad.js';
-import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
-import { puedeTransicionar } from '../domain/recibo-estados.js';
+import { CrearInscripcionManualDto } from '../../dtos/procesion.dto';
+import { EmailService } from '../email.service';
+import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
+import {
+  devolverCobroEnTransaccion, idCategoriaDevoluciones, idCategoriaIngresos,
+  leerDatosEvento, retirarPapeletaEnTransaccion,
+} from '../recibos/comunes.js';
+import { HttpError, NotFoundError } from '../../utils/error.handle';
+import { transactionWithRetry } from '../../utils/transaction-retry.js';
+import { enmascararEmail } from '../../utils/log-privacidad.js';
+import { puedeTransicionar } from '../../domain/recibo-estados.js';
 import {
   PRECIO_ALQUILER_POR_DEFECTO,
   PRECIO_PAPELETA_POR_DEFECTO,
   conceptoPapeleta,
   estadoReciboPapeleta,
   importePapeleta,
-  leerPrecio,
-  motivoTurnoInvalido
-} from '../domain/datos-procesion.js';
+  leerPrecio
+} from '../../domain/datos-procesion.js';
 
 const NOTA_ANULACION = 'Anulado por devolución de la papeleta de sitio.';
 
-/** Un turno en la auditoría, con las fechas en ISO. */
-function fotoTurno(t: { fecha: Date; horaInicio: Date; horaFin: Date; capacidadEstimada: number; activo: boolean }) {
-  return {
-    fecha: t.fecha.toISOString(),
-    horaInicio: t.horaInicio.toISOString(),
-    horaFin: t.horaFin.toISOString(),
-    capacidadEstimada: t.capacidadEstimada,
-    activo: t.activo
-  };
-}
-
-export class ProcesionService {
-
-  // ============================================================
-  //  ZONA WEB / APP (Para el Hermano)
-  // ============================================================
-
-  /**
-   * Obtener días disponibles y cuánta gente va a ir.
-   */
-  static async getDiasDisponibles() {
-    const turnos = await db.turno.findMany({
-      where: {
-        activo: true,
-        fecha: { gte: new Date() } // Solo futuros
-      },
-      orderBy: { fecha: 'asc' },
-      include: {
-        _count: {
-          // Solo las que siguen en pie: con las canceladas, un día medio vacío
-          // parecía lleno mientras el aforo (que ya filtraba) dejaba reservar.
-          select: { citas: { where: { estado: EstadoCita.RESERVADA } } }
-        }
-      }
-    });
-
-    return turnos.map(t => ({
-      id: t.id,
-      fecha: t.fecha,
-      horaInicio: t.horaInicio,
-      horaFin: t.horaFin,
-      // Info útil para el usuario: "Hay 15 apuntados"
-      genteApuntada: t._count.citas
-    }));
-  }
-
-  /**
-   * El hermano avisa: "Voy a ir este día".
-   */
-  static async avisarAsistencia(userId: number, { turnoId, hermanoId }: AvisarAsistenciaDto) {
-
-    // 0. BARRERA BOLA: Verificar que este hermano pertenece a este usuario
-    const checkPropiedad = await db.hermano.findFirst({
-      where: { id: hermanoId, userId: userId, activo: true }
-    });
-    if (!checkPropiedad) {
-      throw new HttpError('No tienes permisos para apuntar a este cofrade.');
-    }
-
-    const year = new Date().getFullYear();
-
-    // Todas las comprobaciones y la creación van en la misma transacción
-    // serializable. Fuera de ella, dos avisos a la vez (doble clic, o dos
-    // dispositivos de la misma familia) pasaban los dos el «Ya tienes un día
-    // reservado» y el hermano acababa con dos citas; y el aforo podía
-    // rebasarse por lo mismo.
-    return await transactionWithRetry(async (tx) => {
-      const turno = await tx.turno.findUnique({ where: { id: turnoId } });
-      if (!turno || !turno.activo || turno.fecha < new Date()) {
-        throw new HttpError('El turno no existe o ya no está disponible.');
-      }
-
-      // 1. Verificar si ya tiene papeleta este año
-      const yaTienePapeleta = await tx.papeletaSitio.findFirst({
-        where: { hermanoId, year }
-      });
-      if (yaTienePapeleta) throw new HttpError('Ya tienes tu papeleta de este año.');
-
-      // 2. Verificar si ya avisó para otro día (evitar duplicados)
-      const avisoPrevio = await tx.cita.findFirst({
-        where: {
-          hermanoId,
-          estado: EstadoCita.RESERVADA,
-          turno: { fecha: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } }
-        }
-      });
-      if (avisoPrevio) throw new HttpError('Ya tienes un día reservado.');
-
-      const ocupacion = await tx.cita.count({
-        where: { turnoId, estado: EstadoCita.RESERVADA }
-      });
-      if (ocupacion >= turno.capacidadEstimada) {
-        throw new HttpError('Este turno ya ha alcanzado su capacidad máxima.');
-      }
-
-      // La cita es única por [hermano, turno]: quien canceló este mismo día y
-      // vuelve a pedirlo recupera su cita en vez de chocar con la clave.
-      const anterior = await tx.cita.findUnique({
-        where: { hermanoId_turnoId: { hermanoId, turnoId } }
-      });
-      if (anterior) {
-        return tx.cita.update({
-          where: { id: anterior.id },
-          data: { estado: EstadoCita.RESERVADA }
-        });
-      }
-
-      return tx.cita.create({
-        data: { turnoId, hermanoId, estado: EstadoCita.RESERVADA }
-      });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-  }
-
-  /**
-   * El hermano cancela su cita por si le surge un imprevisto.
-   */
-  static async cancelarAsistencia(userId: number, citaId: number) {
-    // Seguridad: Buscar la cita asegurando que el hermano pertenece al usuario logueado
-    const cita = await db.cita.findFirst({
-      where: {
-        id: citaId,
-        hermano: { userId: userId }
-      }
-    });
-
-    if (!cita) throw new NotFoundError('Cita no encontrada o no autorizada.');
-    if (cita.estado !== EstadoCita.RESERVADA) throw new HttpError('Esta cita ya no se puede cancelar.');
-
-    return await db.cita.update({
-      where: { id: citaId },
-      data: { estado: EstadoCita.CANCELADA }
-    });
-  }
-
-  /**
-   * El hermano ve su historial de salidas (y las de sus hijos).
-   */
-  static async getMisPapeletas(userId: number, query: { page?: unknown; limit?: unknown } = {}) {
-    const paginacion = sanearPaginacion(query);
-    const where = { hermano: { userId } };
-
-    const [data, total] = await db.$transaction([
-      db.papeletaSitio.findMany({
-        where,
-        include: {
-          hermano: { select: { nombre: true, apellidos: true } },
-          recibo: { select: { estado: true, importe: true } }
-        },
-        orderBy: [
-          { year: 'desc' },
-          { hermano: { nombre: 'asc' } },
-          { id: 'asc' } // Desempate: dos papeletas del mismo año y del mismo hermano —una por
-                        // titular y otra por hijo homónimo— saldrían en orden arbitrario y una
-                        // podría aparecer en dos páginas y otra en ninguna.
-        ],
-        skip: paginacion.skip,
-        take: paginacion.take,
-      }),
-      db.papeletaSitio.count({ where })
-    ]);
-
-    return respuestaPaginada(data, total, paginacion);
-  }
-
-
-  // ============================================================
-  //  ZONA ADMIN (La mesa de reparto)
-  // ============================================================
+export class PapeletasService {
 
   /**
    * Listado de quién esperamos HOY.
@@ -253,13 +95,13 @@ export class ProcesionService {
     });
     if (!hermano) throw new NotFoundError('No se encontró al hermano para calcular el importe.');
 
-    const importeFinal = await ProcesionService.calcularImportePapeleta(hermano.tieneTunicaPropia);
+    const importeFinal = await PapeletasService.calcularImportePapeleta(hermano.tieneTunicaPropia);
     // 0 € nace EXENTO, sin asiento contable: ver estadoReciboPapeleta.
     const estadoRecibo = estadoReciboPapeleta(importeFinal);
     const cobrado = estadoRecibo === EstadoPago.PAGADO;
     // La categoría del ingreso se resuelve antes de abrir la transacción: ver
-    // ReciboService.idCategoriaDeRecibos.
-    const categoriaIngresosId = cobrado ? await ReciboService.idCategoriaIngresos() : null;
+    // idCategoriaDeRecibos.
+    const categoriaIngresosId = cobrado ? await idCategoriaIngresos() : null;
 
     // Todo o nada, y serializable: la comprobación de «ya tiene papeleta» va
     // dentro para que dos inscripciones a la vez no la pasen las dos.
@@ -361,7 +203,7 @@ export class ProcesionService {
     // 5. Enviar Email (Fuera de la transacción), con los mismos datos del
     // evento que el cobro en tesorería.
     if (hermano.user?.email) {
-      const evento = await ReciboService.leerDatosEvento();
+      const evento = await leerDatosEvento();
       EmailService.enviarPapeleta(hermano.user.email, hermano.nombre, {
         year: yearActual,
         concepto: result.recibo.concepto,
@@ -389,8 +231,8 @@ export class ProcesionService {
    */
   static async anularPapeleta(papeletaId: number, meta?: MetaDeAuditoria) {
     // Si el recibo estaba cobrado hará falta su reverso; la categoría se
-    // resuelve antes de abrir la transacción (ver ReciboService.idCategoriaDeRecibos).
-    const categoriaDevolucionesId = await ReciboService.idCategoriaDevoluciones();
+    // resuelve antes de abrir la transacción (ver `idCategoriaDeRecibos` en recibos/comunes).
+    const categoriaDevolucionesId = await idCategoriaDevoluciones();
 
     const resultado = await db.$transaction(async (tx) => {
       const papeleta = await tx.papeletaSitio.findUnique({
@@ -404,7 +246,7 @@ export class ProcesionService {
       let estadoFinal: EstadoPago = recibo.estado;
 
       if (recibo.estado === EstadoPago.PAGADO) {
-        await ReciboService.devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, observaciones);
+        await devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, observaciones);
         estadoFinal = EstadoPago.DEVUELTO;
       } else if (puedeTransicionar(recibo.estado, EstadoPago.ANULADO)) {
         const transicion = await tx.recibo.updateMany({
@@ -421,7 +263,7 @@ export class ProcesionService {
       }
 
       // Libera la cita y borra la papeleta (hueco en la procesión y clave [hermano, año]).
-      await ReciboService.retirarPapeletaEnTransaccion(tx, recibo.id);
+      await retirarPapeletaEnTransaccion(tx, recibo.id);
 
       return { papeleta, recibo, estadoFinal };
     });
@@ -444,11 +286,6 @@ export class ProcesionService {
       estadoRecibo: estadoFinal
     };
   }
-
-
-  // ============================================================
-  //  ZONA ADMIN (Listados Finales y Mantenimiento)
-  // ============================================================
 
   /**
    * Genera el censo de la procesión para los diputados de tramo / mayordomos.
@@ -549,161 +386,5 @@ export class ProcesionService {
     }
 
     return { message: `Se han procesado ${count} ausencias. Citas actualizadas a NO_PRESENTADO y correos enviados.`, procesadas: count };
-  }
-
-  /**
-   * Listar absolutamente todos los turnos para el panel de control de Secretaría.
-   * Incluye los pasados, los inactivos y la ocupación real.
-   */
-  static async getTodosLosTurnos() {
-    return await db.turno.findMany({
-      orderBy: { fecha: 'desc' },
-      include: {
-        _count: {
-          select: { citas: { where: { estado: EstadoCita.RESERVADA } } }
-        }
-      }
-    });
-  }
-
-  /**
-   * Crear un nuevo día de reparto en la Casa Grupo Parroquial.
-   */
-  static async crearTurno(data: CrearTurnoDto, meta?: MetaDeAuditoria) {
-    // 1. Convertimos los textos (strings) a fechas reales de JavaScript
-    const fechaInicio = new Date(data.horaInicio);
-    const fechaFin = new Date(data.horaFin);
-
-    // 2. Las horas, del mismo día (de Madrid) que el turno y en orden: procesar
-    // ausencias decide por horaFin si el turno ya terminó (ver motivoTurnoInvalido).
-    const motivo = motivoTurnoInvalido(data.fecha, fechaInicio, fechaFin);
-    if (motivo) throw new HttpError(motivo);
-
-    // 3. Lo guardamos en la base de datos
-    const turno = await db.turno.create({
-      data: {
-        fecha: new Date(data.fecha),
-        horaInicio: fechaInicio,
-        horaFin: fechaFin,
-        capacidadEstimada: data.capacidadEstimada,
-        activo: true // Por defecto lo abrimos al crearlo
-      }
-    });
-
-    await AuditoriaService.log(ACCIONES_AUDITORIA.TURNO_CREAR, meta ?? {}, 'turno', turno.id, { despues: fotoTurno(turno) });
-    return turno;
-  }
-
-  /**
-   * Modificar un turno existente (Ej: Se pone malo el tesorero y hay que bajar el aforo a la mitad).
-   */
-  static async actualizarTurno(
-    turnoId: number,
-    data: { capacidadEstimada?: number, activo?: boolean, horaInicio?: Date, horaFin?: Date },
-    meta?: MetaDeAuditoria
-  ) {
-    const turno = await db.turno.findUnique({ where: { id: turnoId } });
-    if (!turno) throw new NotFoundError('Turno no encontrado');
-
-    // Solo actualizamos las horas si nos las envían; se valida el turno tal y
-    // como quedaría (la hora nueva con la otra que ya tenía), con las mismas
-    // reglas que al crearlo.
-    const horaInicio = data.horaInicio ? new Date(data.horaInicio) : undefined;
-    const horaFin = data.horaFin ? new Date(data.horaFin) : undefined;
-    if (horaInicio || horaFin) {
-      const motivo = motivoTurnoInvalido(turno.fecha, horaInicio ?? turno.horaInicio, horaFin ?? turno.horaFin);
-      if (motivo) throw new HttpError(motivo);
-    }
-
-    const actualizado = await db.turno.update({
-      where: { id: turnoId },
-      data: {
-        capacidadEstimada: data.capacidadEstimada,
-        activo: data.activo,
-        horaInicio,
-        horaFin
-      }
-    });
-
-    await AuditoriaService.log(ACCIONES_AUDITORIA.TURNO_ACTUALIZAR, meta ?? {}, 'turno', turnoId, {
-      antes: fotoTurno(turno),
-      despues: fotoTurno(actualizado)
-    });
-    return actualizado;
-  }
-
-  /**
-   * Elimina un día de reparto (Solo si nos hemos equivocado al crearlo y no hay nadie apuntado).
-   */
-  static async eliminarTurno(turnoId: number, meta?: MetaDeAuditoria) {
-    const turno = await db.turno.findUnique({ where: { id: turnoId } });
-    if (!turno) throw new NotFoundError('Turno no encontrado');
-
-    const ocupacion = await db.cita.count({ where: { turnoId } });
-    if (ocupacion > 0) {
-      throw new HttpError('No puedes borrar este día porque ya hay hermanos con cita. Desactívalo en su lugar.');
-    }
-
-    const borrado = await db.turno.delete({ where: { id: turnoId } });
-    await AuditoriaService.log(ACCIONES_AUDITORIA.TURNO_ELIMINAR, meta ?? {}, 'turno', turnoId, { antes: fotoTurno(turno) });
-    return borrado;
-  }
-
-  /**
-   * Un miembro de la Junta dice: "Yo voy a cubrir este turno".
-   */
-  static async apuntarmeATurno(userId: number, turnoId: number) {
-    // 1. EL BLINDAJE: ¿Es de la Junta?
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user || !user.esJuntaDeGobierno) {
-      throw new HttpError('Solo los miembros de la Junta de Gobierno pueden apuntarse a trabajar en los turnos.');
-    }
-
-    const turno = await db.turno.findUnique({ where: { id: turnoId } });
-    if (!turno) throw new NotFoundError('Turno no encontrado');
-
-    return await db.turno.update({
-      where: { id: turnoId },
-      data: { responsables: { connect: { id: userId } } }
-    });
-  }
-
-  /**
-   * Un miembro de la Junta dice: "Al final me ha surgido algo, me borro de este turno".
-   */
-  static async desapuntarmeDeTurno(userId: number, turnoId: number) {
-    return await db.turno.update({
-      where: { id: turnoId },
-      data: {
-        responsables: {
-          disconnect: { id: userId }
-        }
-      }
-    });
-  }
-
-  /**
-   * (MODIFICACIÓN) Ver el calendario completo con la gente que viene a sacar papeleta
-   * Y los miembros de la Junta que van a estar trabajando.
-   */
-  static async getCuadranteTurnos() {
-    return await db.turno.findMany({
-      orderBy: { fecha: 'asc' },
-      include: {
-        // Cuántos hermanos de la calle vienen
-        _count: {
-          select: { citas: { where: { estado: EstadoCita.RESERVADA } } }
-        },
-        // Qué miembros de la Junta están apuntados para trabajar
-        responsables: {
-          select: {
-            id: true,
-            nombre: true,
-            apellidos: true,
-            role: true // Muy útil para saber si hay algún TESORERO apuntado para cobrar
-          }
-        }
-      }
-    });
   }
 }

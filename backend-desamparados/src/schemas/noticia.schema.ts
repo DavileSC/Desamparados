@@ -4,7 +4,7 @@ import { rutaImagenPublica } from './portada.schema';
 import { aRutaPropia, esImagenPropia } from '../utils/rutas-propias';
 
 // El contenido del CMS viene de un editor WYSIWYG: aceptamos HTML.
-// La defensa contra XSS NO es este schema, sino el sanitizeHtml() del servicio
+// La defensa contra XSS NO es este schema, sino el saneado de HTML del servicio
 // (que elimina <script>, event handlers, etc. y conserva el formato legítimo).
 const contenidoHtml = type("string > 0").describe("el contenido HTML de la noticia");
 

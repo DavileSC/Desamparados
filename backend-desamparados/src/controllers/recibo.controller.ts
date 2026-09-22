@@ -1,5 +1,6 @@
 import { Response, Request } from 'express';
 import { ReciboService, type ConsultaRecibos } from '../services/recibo.service.js';
+import { MisRecibosService } from '../services/mis-recibos.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
@@ -13,13 +14,13 @@ export class ReciboController {
 
   static getMyRecibos = manejar('Error obteniendo tus recibos', async (req, res) => {
     const userId = req.user!.id;
-    const recibosFamiliares = await ReciboService.getRecibosByUsuarioFamilia(userId, req.query);
+    const recibosFamiliares = await MisRecibosService.getRecibosByUsuarioFamilia(userId, req.query);
     res.status(200).json(recibosFamiliares);
   });
 
   static getMyRecibo = manejar('Error obteniendo el recibo', async (req, res) => {
     const userId = req.user!.id;
-    const recibo = await ReciboService.getReciboFamiliar(userId, Number(req.params.id));
+    const recibo = await MisRecibosService.getReciboFamiliar(userId, Number(req.params.id));
     res.status(200).json(recibo);
   });
 

@@ -5,7 +5,7 @@ import { normalizarVideo } from '../domain/video-galeria.js';
 /**
  * Saneado del HTML que se escribe en el CMS (noticias y páginas). Es la defensa
  * principal contra XSS almacenado; la del navegador (desamparados-web,
- * `lib/sanitizeHtml.ts`) es la segunda barrera y aplica estas mismas reglas de
+ * `lib/limpiarHtml.ts`) es la segunda barrera y aplica estas mismas reglas de
  * imágenes y enlaces: si se cambia una, hay que cambiar la otra.
  *
  * Antes se usaban los valores por defecto de sanitize-html, que dejan pasar:
@@ -19,7 +19,7 @@ import { normalizarVideo } from '../domain/video-galeria.js';
 
 /**
  * Las etiquetas y los atributos, IGUALES a los de la web (`ETIQUETAS_PERMITIDAS`
- * y `ATRIBUTOS_PERMITIDOS` en desamparados-web/src/lib/sanitizeHtml.ts): con
+ * y `ATRIBUTOS_PERMITIDOS` en desamparados-web/src/lib/limpiarHtml.ts): con
  * listas distintas, lo que el servidor guarda la web lo pintaba de otra manera
  * (las celdas combinadas y los `title` se perdían aquí y no allí).
  * `test/contenido-cms.test.ts` lee el fichero de la web y avisa si se separan.
@@ -115,7 +115,7 @@ export function extractoPlano(extracto: string): string {
  *    un `upsert` del documento entero tal y como llega, así que sin esto el
  *    HTML del CMS se almacenaba literal: un `<script>` o una `<img>` de un
  *    tercero metidos con un PUT a mano se guardaban, y la única barrera era el
- *    saneado del navegador (`lib/sanitizeHtml.ts`), contra la regla de que todo
+ *    saneado del navegador (`lib/limpiarHtml.ts`), contra la regla de que todo
  *    se valida en el servidor. La imagen externa, además, se pintaba en el
  *    propio CMS al abrir la página a editar: la IP de quien edita viajaba al
  *    tercero.

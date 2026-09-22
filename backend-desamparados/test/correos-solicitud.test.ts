@@ -19,6 +19,7 @@ import { readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { EmailService } from '../src/services/email.service.js';
 import { buzonDePruebas, buzonPedido } from '../src/utils/buzon-pruebas.js';
+import { ponerCuentaDeContacto, ponerTransporte } from '../src/services/correos/envio.js';
 import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
 import { PASSWORD_PRUEBA } from './fixtures/usuarios.js';
@@ -35,7 +36,6 @@ function transporteFalso() {
   return { enviados, sendMail: async (opciones: Enviado) => { enviados.push(opciones); return {}; } };
 }
 
-const internos = EmailService as unknown as { transporter: unknown; cuentaContacto: unknown };
 
 // Sin esto el proceso se queda vivo con la conexión de Prisma abierta y el
 // ejecutor de tests no termina nunca.
@@ -60,14 +60,14 @@ const entornoOriginal = {
 function conBuzonDePruebas() {
   delete process.env.EMAIL_USER;
   delete process.env.EMAIL_PASS;
-  internos.transporter = buzonDePruebas();
-  internos.cuentaContacto = undefined;
+  ponerTransporte(buzonDePruebas());
+  ponerCuentaDeContacto(undefined);
 }
 
 afterEach(async () => {
   await rm(carpetaCorreos(), { recursive: true, force: true });
-  internos.transporter = undefined;
-  internos.cuentaContacto = undefined;
+  ponerTransporte(undefined);
+  ponerCuentaDeContacto(undefined);
   for (const [clave, valor] of Object.entries(entornoOriginal)) {
     if (valor === undefined) delete process.env[clave];
     else process.env[clave] = valor;
@@ -92,7 +92,7 @@ describe('buzón de pruebas', () => {
     process.env.EMAIL_USER = 'secretaria@example.es';
     process.env.EMAIL_PASS = 'clave-de-aplicacion';
     const transporte = transporteFalso();
-    internos.transporter = transporte;
+    ponerTransporte(transporte);
 
     await EmailService.enviarConfirmacionRegistro('ana@example.es', 'Ana Ruiz');
 
@@ -113,8 +113,8 @@ function conCuentaDeVerdad() {
   process.env.EMAIL_PASS = 'clave-de-aplicacion';
   delete process.env.EMAIL_BUZON_PRUEBAS;
   const transporte = transporteFalso();
-  internos.transporter = transporte;
-  internos.cuentaContacto = undefined;
+  ponerTransporte(transporte);
+  ponerCuentaDeContacto(undefined);
   return transporte;
 }
 
@@ -138,9 +138,9 @@ describe('un correo que no sale deja rastro', () => {
     process.env.EMAIL_USER = 'secretaria@example.es';
     process.env.EMAIL_PASS = 'clave-de-aplicacion';
     delete process.env.EMAIL_BUZON_PRUEBAS;
-    internos.transporter = {
+    ponerTransporte({
       sendMail: async () => { throw new Error('535 Authentication failed'); },
-    };
+    });
     const antes = new Date();
 
     const enviado = await EmailService.enviarConfirmacionRegistro('ana@example.es', 'Ana Ruiz');
@@ -318,7 +318,7 @@ describe('sin cuenta configurada no se toca la red', () => {
     delete process.env.EMAIL_USER;
     delete process.env.EMAIL_PASS;
     delete process.env.EMAIL_BUZON_PRUEBAS;
-    internos.transporter = undefined;
+    ponerTransporte(undefined);
     const crear = mock.method(nodemailer, 'createTransport', () => { throw new Error('no debería crearse'); });
 
     try {

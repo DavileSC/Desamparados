@@ -21,6 +21,7 @@ import app from '../src/app.js';
 import { contactoSchema } from '../src/schemas/contacto.schema.js';
 import { motivoDescarte, MIN_MS_RELLENO } from '../src/controllers/contacto.controller.js';
 import { EmailService } from '../src/services/email.service.js';
+import { ponerCuentaDeContacto, ponerTransporte } from '../src/services/correos/envio.js';
 
 const valido = { nombre: 'Ana', email: 'ana@example.es', asunto: 'Besapiés', mensaje: 'Quería preguntar por el horario.' };
 const validar = (cambios: Record<string, unknown>) => contactoSchema({ body: { ...valido, ...cambios } });
@@ -135,13 +136,11 @@ function transporteFalso() {
 }
 
 describe('EmailService', () => {
-  const internos = EmailService as unknown as { transporter: unknown; cuentaContacto: unknown };
-  const transporterOriginal = internos.transporter;
   const entorno = { EMAIL_USER: process.env.EMAIL_USER, CONTACT_EMAIL_USER: process.env.CONTACT_EMAIL_USER, CONTACT_EMAIL_PASS: process.env.CONTACT_EMAIL_PASS, CONTACT_EMAIL_TO: process.env.CONTACT_EMAIL_TO };
 
   afterEach(() => {
-    internos.transporter = transporterOriginal;
-    internos.cuentaContacto = undefined;
+    ponerTransporte(undefined);
+    ponerCuentaDeContacto(undefined);
     for (const [clave, valor] of Object.entries(entorno)) {
       if (valor === undefined) delete process.env[clave];
       else process.env[clave] = valor;
@@ -150,7 +149,7 @@ describe('EmailService', () => {
 
   test('los asuntos llevan el nombre tal cual y el cuerpo lo lleva escapado', async () => {
     const general = transporteFalso();
-    internos.transporter = general;
+    ponerTransporte(general);
     process.env.EMAIL_USER = 'secretaria@example.es';
 
     await EmailService.enviarConfirmacionRegistro('hermano@example.es', "Seán O'Brien <b>");
@@ -168,7 +167,7 @@ describe('EmailService', () => {
   test('con CONTACT_EMAIL_USER y CONTACT_EMAIL_PASS, el contacto sale por su propia cuenta', async () => {
     const general = transporteFalso();
     const contacto = transporteFalso();
-    internos.transporter = general;
+    ponerTransporte(general);
     const crear = mock.method(nodemailer, 'createTransport', () => contacto);
     process.env.EMAIL_USER = 'secretaria@example.es';
     process.env.CONTACT_EMAIL_USER = 'contacto@example.es';
@@ -189,7 +188,7 @@ describe('EmailService', () => {
 
   test('sin cuenta propia (o a medias), el contacto sale por EMAIL_USER como antes', async () => {
     const general = transporteFalso();
-    internos.transporter = general;
+    ponerTransporte(general);
     const crear = mock.method(nodemailer, 'createTransport', () => transporteFalso());
     const aviso = mock.method(console, 'warn', () => {});
     process.env.EMAIL_USER = 'secretaria@example.es';
