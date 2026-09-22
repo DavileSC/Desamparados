@@ -115,8 +115,11 @@ function pdfDe(bytes: number) {
 async function clamdFalso(respuesta: string) {
   const falso = net.createServer((socket) => {
     socket.on('data', (datos) => {
+      // El socket podría estar en modo texto; aquí nunca lo está, pero así no
+      // hace falta una conversión a ciegas para leer los últimos cuatro bytes.
+      const trozo = Buffer.isBuffer(datos) ? datos : Buffer.from(datos);
       // El trozo de longitud 0 cierra el flujo: entonces se contesta.
-      if (datos.subarray(-4).equals(Buffer.alloc(4))) socket.end(`${respuesta}\0`);
+      if (trozo.subarray(-4).equals(Buffer.alloc(4))) socket.end(`${respuesta}\0`);
     });
   });
   await new Promise<void>((r) => falso.listen(0, '127.0.0.1', r));

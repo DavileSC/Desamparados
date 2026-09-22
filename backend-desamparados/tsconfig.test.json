@@ -1,0 +1,20 @@
+{
+  /*
+   * Los tests, comprobados también.
+   *
+   * El `tsconfig.json` de al lado excluye `**\/*.test.ts` porque solo describe
+   * lo que se compila a `dist/`. El efecto secundario era que las pruebas
+   * quedaban fuera del compilador: un test podía dejar de probar lo que decía
+   * —alcanzando por dentro algo que se había movido— y seguir «compilando»,
+   * porque nadie lo compilaba. Pasó con el transporte de correo.
+   *
+   * Esto no emite nada: solo comprueba. `npm run comprobar-tipos`.
+   */
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

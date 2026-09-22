@@ -346,12 +346,11 @@ test('la comprobación del último ADMIN bloquea las filas de los ADMIN activos'
 test('pedir la recuperación responde sin esperar al trabajo, exista o no el correo', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const hermano = await crearUsuarioPrueba(Role.USER);
-  const servicio = AuthService as unknown as { prepararRecuperacion: (email: string) => Promise<void> };
-  const original = servicio.prepararRecuperacion;
+  const original = AuthService.prepararRecuperacion;
   const pedidos: string[] = [];
   try {
     // El trabajo de verdad tarda medio segundo: si la respuesta lo esperara, se notaría.
-    servicio.prepararRecuperacion = async (email: string) => {
+    AuthService.prepararRecuperacion = async (email: string) => {
       pedidos.push(email);
       await new Promise((resolve) => setTimeout(resolve, 500));
     };
@@ -364,7 +363,7 @@ test('pedir la recuperación responde sin esperar al trabajo, exista o no el cor
     }
     assert.equal(pedidos.length, 2, 'el trabajo se lanza en los dos casos');
   } finally {
-    servicio.prepararRecuperacion = original;
+    AuthService.prepararRecuperacion = original;
     await borrarUsuarioPrueba(hermano.id);
   }
 });

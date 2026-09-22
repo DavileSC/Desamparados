@@ -109,8 +109,14 @@ export class TransaccionService {
    * único de la base (sin mayúsculas, tildes ni ñ: ver claveNombreCategoria). Se
    * comprueba aquí antes de escribir para dar un mensaje que diga con cuál choca
    * y si está desactivada; el índice solo cubre la carrera entre dos altas.
+   *
+   * Es de uso interno, pero no va como `private`: la prueba de esa carrera
+   * necesita saltárselo una vez para provocar el P2002 a propósito, y con
+   * `private` solo se alcanzaba con un `as unknown as` que el compilador no
+   * mira. Así, si se renombra o se mueve, la prueba deja de compilar en vez de
+   * dejar de probar en silencio.
    */
-  private static async exigirNombreLibre(nombre: string, tipo: TipoTransaccion, salvoId?: number) {
+  static async exigirNombreLibre(nombre: string, tipo: TipoTransaccion, salvoId?: number) {
     const delMismoTipo = await db.categoriaTransaccion.findMany({ where: { tipo }, select: { id: true, nombre: true, activa: true } });
     const clave = claveNombreCategoria(nombre);
     const choque = delMismoTipo.find((c) => c.id !== salvoId && claveNombreCategoria(c.nombre) === clave);

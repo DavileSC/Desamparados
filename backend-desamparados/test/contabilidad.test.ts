@@ -65,8 +65,10 @@ describe('where de Prisma a partir de los filtros', () => {
 
   test('buscar «juan pérez» exige cada palabra en el concepto o en el hermano', () => {
     const where = whereContable({ q: 'juan pérez' });
-    assert.equal(where.AND?.length, 2);
-    const primera = (where.AND as { OR: unknown[] }[])[0];
+    // `AND` admite una condición suelta o una lista; aquí siempre es la lista.
+    const condiciones = where.AND as { OR: unknown[] }[];
+    assert.equal(condiciones.length, 2);
+    const primera = condiciones[0];
     assert.deepEqual(primera.OR, [
       { concepto: { contains: 'juan' } },
       { hermano: { is: { nombre: { contains: 'juan' } } } },

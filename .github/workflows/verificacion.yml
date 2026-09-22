@@ -95,8 +95,11 @@ jobs:
       - name: Validar el esquema de Prisma
         run: npx prisma validate
 
-      - name: Comprobar tipos
-        run: npx tsc --noEmit
+      # `tsconfig.test.json` y no el de siempre: el principal excluye
+      # `**/*.test.ts`, así que las pruebas quedaban fuera del compilador y una
+      # que dejara de probar lo que dice seguía pasando. Este las incluye.
+      - name: Comprobar tipos (código y pruebas)
+        run: npm run comprobar-tipos
 
       # Si MariaDB no respondiera, este paso falla: las pruebas nunca llegan a
       # ejecutarse «en verde» con la mitad omitidas.

@@ -246,13 +246,18 @@ type FichaLeida = { id: number; numeroHermano: number | null };
 function conTransaccionDeMentira(tx: unknown) {
   const original = db.$transaction;
   let intentos = 0;
-  (db as unknown as Record<string, unknown>).$transaction = async (operacion: (tx: unknown) => Promise<unknown>) => {
+  // `$transaction` tiene dos firmas (la del lote y la del callback) y aquí solo
+  // se imita la segunda, así que el de mentira se marca con el tipo entero. La
+  // conversión va sobre la función, no sobre `db`: antes era un
+  // `as unknown as Record<string, unknown>`, que borraba también el nombre, y
+  // si Prisma lo cambiara esto seguiría compilando sin sustituir nada.
+  db.$transaction = (async (operacion: (tx: unknown) => Promise<unknown>) => {
     intentos += 1;
     return operacion(tx);
-  };
+  }) as typeof db.$transaction;
   return {
     intentos: () => intentos,
-    restaurar: () => { (db as unknown as Record<string, unknown>).$transaction = original; },
+    restaurar: () => { db.$transaction = original; },
   };
 }
 

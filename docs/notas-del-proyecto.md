@@ -141,6 +141,23 @@ que declara omisiones cuando la base sí está disponible es una suite que mient
 *project references* y sin `-b` no comprueba nada. (`tsc --noEmit -p
 tsconfig.app.json` sí funciona para comprobar solo la aplicación.)
 
+**El typecheck del backend es `npm run comprobar-tipos`, no `tsc --noEmit`.** El
+`tsconfig.json` describe lo que se compila a `dist/`, así que excluye
+`**/*.test.ts`: con `tsc --noEmit` a secas, **las pruebas quedan fuera del
+compilador**. Durante meses no lo estuvieron, y el efecto es traicionero: un
+test puede dejar de probar lo que dice y seguir «pasando», porque nadie lo
+compila. Pasó al partir `EmailService`, con dos ficheros escribiendo encima de
+campos privados que ya no existían. `tsconfig.test.json` los incluye y es lo que
+corre el CI.
+
+**Un test que alcanza los interiores de un servicio con `as unknown as` no lo
+protege nadie**, ni siquiera con lo anterior: el cast borra justo el nombre que
+habría que comprobar. Si un test necesita sustituir una pieza interna, la pieza
+se declara alcanzable (como `TransaccionService.exigirNombreLibre`, que dejó de
+ser `private` por eso) o sale a su propio módulo con una puerta declarada (como
+`ponerTransporte` en `services/correos/envio.ts`). Así, moverla rompe la
+compilación en vez de vaciar la prueba en silencio.
+
 **Los ficheros de test del backend van uno detrás de otro**
 (`--test-concurrency=1`, en `npm test` y en el CI). Comparten la base de datos, y
 varios trabajan sobre su estado global: generar cuotas emite un recibo a *todos*

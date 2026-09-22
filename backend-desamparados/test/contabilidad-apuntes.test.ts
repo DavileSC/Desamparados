@@ -335,13 +335,12 @@ describe('nombres de categoría como los compara la base de datos', () => {
     const aRenombrar = await db.categoriaTransaccion.create({ data: { nombre: `ZZTest Otra ${SUFIJO}`, tipo: TipoTransaccion.GASTO } });
     categoriasCreadas.push(existente.id, aRenombrar.id);
 
-    const servicio = TransaccionService as unknown as { exigirNombreLibre: (...args: unknown[]) => Promise<void> };
-    const original = servicio.exigirNombreLibre;
+    const original = TransaccionService.exigirNombreLibre;
     const saltarLaPrimera = () => {
       let primera = true;
-      servicio.exigirNombreLibre = function (this: unknown, ...args: unknown[]) {
-        if (primera) { primera = false; return Promise.resolve(); }
-        return original.apply(this, args);
+      TransaccionService.exigirNombreLibre = async (nombre, tipo, salvoId) => {
+        if (primera) { primera = false; return; }
+        return original(nombre, tipo, salvoId);
       };
     };
     const esElMismo409 = (e: unknown) => {
@@ -357,7 +356,7 @@ describe('nombres de categoría como los compara la base de datos', () => {
       saltarLaPrimera();
       await assert.rejects(TransaccionService.renombrarCategoria(aRenombrar.id, `ZZTest Carrera ${SUFIJO}`), esElMismo409);
     } finally {
-      servicio.exigirNombreLibre = original;
+      TransaccionService.exigirNombreLibre = original;
     }
     assert.equal((await db.categoriaTransaccion.findUnique({ where: { id: aRenombrar.id } }))!.nombre, `ZZTest Otra ${SUFIJO}`);
   });

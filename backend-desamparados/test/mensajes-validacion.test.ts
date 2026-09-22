@@ -5,7 +5,7 @@ import { mensajeValidacion } from '../src/config/mensajes-validacion.js';
 import { email, password } from '../src/config/common.js';
 
 /** Mensajes por campo, como los devuelve `validate`. */
-function mensajes(esquema: ReturnType<typeof type>, datos: unknown): Record<string, string> {
+function mensajes(esquema: (datos: unknown) => unknown, datos: unknown): Record<string, string> {
   const resultado = esquema(datos);
   assert.ok(resultado instanceof ArkErrors, 'los datos de prueba deben ser inválidos');
   return Object.fromEntries([...resultado].map((p) => [p.path.join('.'), mensajeValidacion(p)]));

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "tsx --test --test-concurrency=1 \"test/**/*.test.ts\"",
+    "comprobar-tipos": "tsc -p tsconfig.test.json",
     "migrate": "prisma migrate dev --name init",
     "migrate:deploy": "prisma migrate deploy",
     "dev": "prisma generate && nodemon --exec tsx src/index.ts",
