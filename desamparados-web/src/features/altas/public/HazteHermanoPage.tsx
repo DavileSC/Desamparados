@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { flushSync } from 'react-dom'
-import { useForm, type FieldErrors } from 'react-hook-form'
+import { useForm, useWatch, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Alert, Box, Checkbox, FormControl, FormControlLabel, FormHelperText, Grid, TextField, Typography,
@@ -49,7 +49,7 @@ export default function HazteHermanoPage() {
   const [vueltaPedida, setVueltaPedida] = useState<string | null>(null)
 
   const {
-    register, handleSubmit, setError, setFocus, trigger, reset, getValues, setValue, watch,
+    register, handleSubmit, setError, setFocus, trigger, reset, getValues, setValue, watch, control,
     formState: { errors, isSubmitting },
   } = useForm<MembershipFormData>({
     resolver: zodResolver(membershipSchema),
@@ -60,7 +60,13 @@ export default function HazteHermanoPage() {
 
   const PASOS = pasosDe(camino)
   const esUltimo = paso === PASOS.length - 1
-  const menores = watch('menores')
+  /**
+   * `useWatch` y no `watch('menores')`: el valor se lee para pintar, y `watch`
+   * devuelve funciones que el compilador de React no puede memorizar, así que
+   * renunciaba a memorizar la pantalla entera. `watch` se sigue usando, pero
+   * solo se pasa hacia abajo (a `PasoMenores`), que es lo que sí necesita.
+   */
+  const menores = useWatch({ control, name: 'menores' })
 
   const pasoDe = (campo: Campo) => PASOS.findIndex((p) => p.campos.includes(campo))
   /** El primer campo en orden de pasos, para llevar allí a la persona cuando algo falla. */

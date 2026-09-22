@@ -3,6 +3,7 @@ import { Box, InputAdornment, MenuItem, Paper, TextField } from '@mui/material'
 import SwapVertIcon from '@mui/icons-material/SwapVert'
 import CampoBusqueda from './CampoBusqueda'
 import PastillasFiltro, { type Pastilla } from './PastillasFiltro'
+import { SIN_VALOR_VISIBLE, anchoControl } from './controles'
 
 export interface Opcion { valor: string; etiqueta: string }
 
@@ -28,18 +29,6 @@ interface Props<C extends string> {
   /** Lo que ocupan esos controles propios (la suma de sus `anchoControl`), para repartir la barra. */
   anchoHijos?: number
 }
-
-// Sin esto, un desplegable sin filtro enseña su etiqueta dentro, como si estuviera vacío, en vez de «Todos».
-export const SIN_VALOR_VISIBLE = { inputLabel: { shrink: true }, select: { displayEmpty: true } } as const
-
-/**
- * Cómo se reparte un control en la barra: parte de `base` píxeles y crece
- * hasta llenar su fila. Así, quepan todos o no, cada fila queda llena de
- * borde a borde: lo que baja a la siguiente se estira en vez de quedarse
- * suelto a un lado. En el móvil, con menos sitio que `base`, cada control
- * ocupa su fila entera.
- */
-export const anchoControl = (base: number, peso = 1) => ({ flex: `${peso} 1 ${base}px`, minWidth: 0 })
 
 const HUECO = 12 // gap: 1.5
 const ANCHO_BUSQUEDA = 280

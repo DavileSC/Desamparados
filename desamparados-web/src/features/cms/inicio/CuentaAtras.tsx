@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material'
-import { useTemaCms } from '../../../app/temaCms'
+import { useTemaCms } from '../../../app/useTemaCms'
 import { cuentaAtrasEstacion } from '../../../domain/sabadoDePasion'
 import { designTokens } from '../../../theme'
 

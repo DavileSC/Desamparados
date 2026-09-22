@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { GlobalStyles } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
 import {
@@ -6,25 +6,15 @@ import {
   crearTemaCms,
   graficasCms,
   superficiesCms,
-  type GraficasCms,
   type ModoCms,
-  type SuperficiesCms,
 } from '../theme/cms'
+import { ContextoTemaCms, type ValorTemaCms } from './useTemaCms'
 
 /** Dónde recuerda el navegador el modo elegido. Es por persona y por equipo. */
 export const CLAVE_TEMA_CMS = 'cms-tema'
 
 /** Sin nada guardado, oscuro: es la dirección elegida; quien prefiera claro lo cambia una vez. */
 const POR_DEFECTO: ModoCms = 'oscuro'
-
-interface ValorTemaCms {
-  modo: ModoCms
-  cambiarModo: (modo: ModoCms) => void
-  superficies: SuperficiesCms
-  graficas: GraficasCms
-}
-
-const Contexto = createContext<ValorTemaCms | null>(null)
 
 /**
  * localStorage puede lanzar (modo privado, almacenamiento bloqueado, iframes) y
@@ -60,17 +50,11 @@ export function TemaCmsProvider({ children }: { children: React.ReactNode }) {
   const tema = useMemo(() => crearTemaCms(modo), [modo])
 
   return (
-    <Contexto.Provider value={valor}>
+    <ContextoTemaCms.Provider value={valor}>
       <ThemeProvider theme={tema}>
         <GlobalStyles styles={ESTILOS_GLOBALES_CMS} />
         {children}
       </ThemeProvider>
-    </Contexto.Provider>
+    </ContextoTemaCms.Provider>
   )
-}
-
-export function useTemaCms(): ValorTemaCms {
-  const valor = useContext(Contexto)
-  if (!valor) throw new Error('useTemaCms solo funciona dentro de TemaCmsProvider')
-  return valor
 }

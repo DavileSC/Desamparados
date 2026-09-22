@@ -19,7 +19,7 @@ const ICONOS: Record<AdminReceiptStatus, ComponentType<SvgIconProps>> = {
 }
 
 /** El tono de un estado en el modo en que esté el CMS. */
-export function useTonoEstado(estado: AdminReceiptStatus) {
+function useTonoEstado(estado: AdminReceiptStatus) {
   const oscuro = useTheme().palette.mode === 'dark'
   return ESTADOS_RECIBO[estado][oscuro ? 'oscuro' : 'claro']
 }

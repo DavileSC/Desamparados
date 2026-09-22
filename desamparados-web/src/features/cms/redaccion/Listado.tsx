@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
-import { useTemaCms } from '../../../app/temaCms'
+import { useTemaCms } from '../../../app/useTemaCms'
 import { haceCuanto } from './completitud'
 import { rejillaFila } from './rejilla'
 
@@ -80,18 +80,6 @@ export function Grupo({ titulo, cifra, children }: { titulo: string; cifra?: num
       <Box component="ul" sx={{ m: 0, p: 0 }}>{children}</Box>
     </Box>
   )
-}
-
-/**
- * Lo que dice la raya cuando hay una destacada. La frase de siempre («las 3 más
- * recientes») dejaría de ser verdad: la primera plaza es la que se ha fijado a
- * mano y las otras se siguen llenando por fecha. Sin destacada devuelve
- * `undefined` y la raya usa su frase de siempre.
- */
-export function textoPortada(resumen: { portada: { limite: number; fijada: number | null } } | null) {
-  if (!resumen?.portada.fijada) return undefined
-  const resto = resumen.portada.limite - 1
-  return `Hasta aquí sale en la portada: la destacada y ${resto === 1 ? 'la más reciente' : `las ${resto} más recientes`}.`
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, TextField } from '@mui/material'
 import Boton from '../../../components/Boton'
 import { PARENTESCOS, type Parentesco } from '../../../lib/api/auth'
@@ -34,14 +34,29 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
 
   const esPropia = modo === 'yo'
 
-  useEffect(() => {
+  /**
+   * Cada vez que se abre, el formulario empieza limpio. Se ajusta durante el
+   * render y no en un efecto: React lo resuelve antes de pintar, así que no
+   * hay una primera vuelta enseñando lo de la vez anterior. Y solo al abrir,
+   * nunca al cerrar, para que el diálogo no se vacíe de golpe mientras se
+   * desvanece.
+   *
+   * Los apellidos del adulto solo se proponen para un hijo o para él mismo: un
+   * sobrino o un ahijado llevan los suyos y no hay que sugerir otros.
+   *
+   * Depende solo de `modo`, no de los apellidos. El efecto que había antes
+   * escuchaba también a `apellidosDelTitular`, así que si el perfil se
+   * refrescaba con el diálogo abierto, el formulario se borraba con lo que
+   * hubiera escrito dentro.
+   */
+  const [ultimoModo, setUltimoModo] = useState(modo)
+  if (modo !== ultimoModo) {
+    setUltimoModo(modo)
     if (modo) {
-      // Los apellidos del adulto solo se proponen para un hijo o para él mismo:
-      // un sobrino o un ahijado llevan los suyos y no hay que sugerir otros.
       setDatos({ ...VACIO, apellidos: apellidosDelTitular })
       setError(null)
     }
-  }, [modo, apellidosDelTitular])
+  }
 
   const cambiar = (campo: keyof typeof VACIO) => (e: { target: { value: string } }) => {
     const valor = e.target.value

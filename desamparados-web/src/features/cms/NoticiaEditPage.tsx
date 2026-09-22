@@ -17,7 +17,7 @@ import CampoImagen from './CampoImagen'
 import EditorTexto from './EditorTexto'
 import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDeNoticia, tieneTexto } from './redaccion/completitud'
-import { useTemaCms } from '../../app/temaCms'
+import { useTemaCms } from '../../app/useTemaCms'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
 import { crearNoticia, noticiaDelCms, actualizarNoticia, type NoticiaDeLaApi, type DatosDeNoticia } from '../../lib/api/noticias'
 

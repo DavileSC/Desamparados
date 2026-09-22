@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { TemaCmsProvider, useTemaCms, CLAVE_TEMA_CMS } from '../temaCms'
+import { TemaCmsProvider, CLAVE_TEMA_CMS } from '../temaCms'
+import { useTemaCms } from '../useTemaCms'
 
 function Sonda() {
   const { modo, cambiarModo, graficas } = useTemaCms()

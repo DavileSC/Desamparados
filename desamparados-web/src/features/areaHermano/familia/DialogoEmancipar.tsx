@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, Typography } from '@mui/material'
 import Boton from '../../../components/Boton'
 import CampoContrasena from '../../../components/CampoContrasena'
@@ -27,15 +27,25 @@ export default function DialogoEmancipar({ ficha, onCerrar, onHecho }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
 
-  useEffect(() => {
+  /**
+   * Cada vez que se abre con una ficha, el formulario empieza limpio. Se
+   * ajusta durante el render y no en un efecto: React lo resuelve antes de
+   * pintar, así que no hay una primera vuelta enseñando lo que se escribió la
+   * vez anterior.
+   *
+   * Solo se limpia al abrir, nunca al cerrar: mientras el diálogo se
+   * desvanece se sigue viendo lo que había, en vez de vaciarse de golpe.
+   */
+  const [ultimaFicha, setUltimaFicha] = useState(ficha)
+  if (ficha !== ultimaFicha) {
+    setUltimaFicha(ficha)
     if (ficha) {
-      // El correo que tenga en su ficha, si es suyo de verdad y no el del tutor.
       setEmail('')
       setPassword('')
       setDni(ficha.dni ?? '')
       setError(null)
     }
-  }, [ficha])
+  }
 
   const guardar = async () => {
     if (!ficha) return

@@ -4,7 +4,7 @@ import { METODOS, PERIODOS, PERIODO_POR_DEFECTO, fechasInvertidas, type FiltrosU
 import { COLOR_GASTO, COLOR_INGRESO, etiquetaMetodo } from './formato'
 import CampoBusqueda from '../listados/CampoBusqueda'
 import PastillasFiltro, { type Pastilla } from '../listados/PastillasFiltro'
-import { SIN_VALOR_VISIBLE, anchoControl } from '../listados/BarraListado'
+import { SIN_VALOR_VISIBLE, anchoControl } from '../listados/controles'
 
 interface Props {
   filtros: FiltrosUi

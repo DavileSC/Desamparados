@@ -1,7 +1,7 @@
 import { Box, Paper, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Link } from 'react-router-dom'
-import { useTemaCms } from '../../../app/temaCms'
+import { useTemaCms } from '../../../app/useTemaCms'
 import { repartirTareas, type Prioridad, type Tarea } from './tareas'
 import { contar } from './plural'
 

@@ -48,6 +48,14 @@ export function BloqueDePagina({ bloque }: { bloque: Bloque }) {
   return (
     <Box>
       {bloque.titulo && !pintaSuTitulo(bloque) && <TituloDeSeccion title={bloque.titulo} centered />}
+      {/*
+        El aviso da por hecho que un componente resuelto durante el render se
+        acaba de crear ahí, y entonces perdería su estado en cada vuelta. Aquí
+        no: `componenteDeBloque` solo busca en `REGISTRO_BLOQUES`, que es una
+        constante de módulo con los diez componentes ya declarados. La regla no
+        ve a través del índice.
+      */}
+      {/* eslint-disable-next-line react/static-components */}
       <Componente bloque={bloque as never} />
     </Box>
   )

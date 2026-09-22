@@ -11,7 +11,7 @@ import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined'
 import UnpublishedOutlinedIcon from '@mui/icons-material/UnpublishedOutlined'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { Link } from 'react-router-dom'
-import { useTemaCms } from '../../../app/temaCms'
+import { useTemaCms } from '../../../app/useTemaCms'
 import { fechaCorta, haceCuanto, queLeFalta, type Pieza } from './completitud'
 import { rejillaFila } from './rejilla'
 

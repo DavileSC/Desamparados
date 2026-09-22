@@ -2,7 +2,7 @@
  * Los bloques con fotos o vídeos: la foto suelta y la galería, con su
  * reordenación y su subida en tandas.
  */
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Chip, IconButton, Stack, Tooltip, Typography } from '@mui/material'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
@@ -66,8 +66,13 @@ export function FormularioGaleria({ bloque, onCambio }: Props<BloqueGaleria>) {
   // Las fotos terminan de subir segundos después de elegirlas, y mientras tanto
   // se puede seguir escribiendo: se añaden sobre la galería de ESE momento, no
   // sobre la de cuando se eligieron, o se perdería lo escrito entretanto.
+  // El ref se pone al día en un efecto, después de pintar, y no durante el
+  // render: escribirlo mientras se pinta es lo que React desaconseja, porque
+  // un render que se descarte dejaría el ref apuntando a algo que nunca llegó
+  // a verse. Sin lista de dependencias corre en cada vuelta, así que para
+  // cuando termina una subida ya tiene lo último.
   const alDia = useRef({ bloque, onCambio })
-  alDia.current = { bloque, onCambio }
+  useEffect(() => { alDia.current = { bloque, onCambio } })
   const anadirSubidas = (rutas: string[]) => {
     const { bloque: actual, onCambio: cambiarActual } = alDia.current
     setClaves((actuales) => [...actuales, ...rutas.map(() => siguienteClave())])

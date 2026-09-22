@@ -375,8 +375,13 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     await user.click(screen.getByRole('button', { name: /añadir bloque/i }))
     await user.click(await screen.findByRole('menuitem', { name: nombre }))
   }
-  const ultimoPut = (llamadas: { metodo: string; cuerpo: unknown }[]) =>
-    (llamadas.filter((l) => l.metodo === 'PUT').at(-1)?.cuerpo as { datos: { bloques: Record<string, unknown>[] } }).datos
+  const ultimoPut = (llamadas: { metodo: string; cuerpo: unknown }[]) => {
+    // Si no hubo ningún PUT, el fallo se decía solo como «no se puede leer
+    // 'datos' de undefined», que no cuenta nada de lo que ha pasado.
+    const ultima = llamadas.filter((l) => l.metodo === 'PUT').at(-1)
+    if (!ultima) throw new Error('no se ha mandado ningún PUT: la pantalla no llegó a guardar')
+    return (ultima.cuerpo as { datos: { bloques: Record<string, unknown>[] } }).datos
+  }
 
   it('una cronología recién añadida avisa del hito sin periodo, y no se manda', async () => {
     const user = userEvent.setup()
