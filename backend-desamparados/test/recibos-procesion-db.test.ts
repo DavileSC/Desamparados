@@ -485,19 +485,23 @@ test('D16: dos avisos a la vez para dos días no dejan al hermano con dos citas;
     const t1 = await e.turno(new Date(Date.now() + 60 * 60 * 1000));
     const t2 = await e.turno(new Date(Date.now() + 2 * 60 * 60 * 1000));
 
-    const resultados = await Promise.allSettled([
-      MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id }),
-      MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id }),
-    ]);
-    assert.equal(resultados.filter((r) => r.status === 'fulfilled').length, 1, 'solo una reserva puede ganar');
-    const reservadas = await db.cita.findMany({ where: { hermanoId: hermano.id, estado: EstadoCita.RESERVADA } });
-    assert.equal(reservadas.length, 1);
+    // Reservar exige el plazo abierto (plazo-papeletas.test.ts prueba el cerrado).
+    await conConfiguracion({ papeletas_abiertas: 'true' }, async () => {
+      await fijarConfiguracion({ papeletas_abiertas: 'true' });
+      const resultados = await Promise.allSettled([
+        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id }),
+        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id }),
+      ]);
+      assert.equal(resultados.filter((r) => r.status === 'fulfilled').length, 1, 'solo una reserva puede ganar');
+      const reservadas = await db.cita.findMany({ where: { hermanoId: hermano.id, estado: EstadoCita.RESERVADA } });
+      assert.equal(reservadas.length, 1);
 
-    // La cita es única por [hermano, turno]: cancelar y volver a pedir el mismo día chocaba con la clave.
-    await MiProcesionService.cancelarAsistencia(e.usuario.id, reservadas[0].id);
-    const otraVez = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: reservadas[0].turnoId, hermanoId: hermano.id });
-    assert.equal(otraVez.id, reservadas[0].id);
-    assert.equal(otraVez.estado, EstadoCita.RESERVADA);
+      // La cita es única por [hermano, turno]: cancelar y volver a pedir el mismo día chocaba con la clave.
+      await MiProcesionService.cancelarAsistencia(e.usuario.id, reservadas[0].id);
+      const otraVez = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: reservadas[0].turnoId, hermanoId: hermano.id });
+      assert.equal(otraVez.id, reservadas[0].id);
+      assert.equal(otraVez.estado, EstadoCita.RESERVADA);
+    });
   } finally {
     await e.recoger();
   }

@@ -6,6 +6,7 @@ import { comprobarEsAdulto, comprobarEsMenor } from '../domain/fechas-hermano.js
 import { EmailService } from './email.service';
 import { HttpError } from '../utils/error.handle';
 import { enmascararEmail } from '../utils/log-privacidad.js';
+import { apellidosTrasCambio } from '../domain/apellidos.js';
 
 /**
  * Darse de alta: el formulario de «Hazte hermano» y la petición de volver de
@@ -72,6 +73,9 @@ export class RegistroService {
       }
     }
 
+    // Los apellidos del adulto: por separado si vienen así, y si no, partidos.
+    const apellidosDelAdulto = apellidosTrasCambio(usuario)!;
+
     const hashedPassword = await encrypt(usuario.password);
 
     // 1. TRANSACCIÓN RÁPIDA DE BASE DE DATOS
@@ -85,7 +89,7 @@ export class RegistroService {
           role: Role.USER,
           active: false, // <--- Nace bloqueado, pendiente de pago/aprobación
           nombre: usuario.nombre,
-          apellidos: usuario.apellidos,
+          apellidos: apellidosDelAdulto.apellidos,
           telefono: usuario.telefono,
           direccion: usuario.direccion,
           poblacion: usuario.poblacion,
@@ -111,7 +115,7 @@ export class RegistroService {
             ...contacto,
             esTitular: true,
             nombre: usuario.nombre,
-            apellidos: usuario.apellidos,
+            ...apellidosDelAdulto,
             dni: usuario.dni,
             fechaNacimiento: new Date(titular.fechaNacimiento),
           }] : []),
@@ -121,7 +125,7 @@ export class RegistroService {
             nombre: menor.nombre,
             // Los del adulto solo como respaldo: un sobrino o un ahijado llevan
             // los suyos, y el formulario los pide en blanco cuando no es un hijo.
-            apellidos: menor.apellidos || usuario.apellidos,
+            ...(apellidosTrasCambio(menor) ?? apellidosDelAdulto),
             dni: menor.dni || null,
             email: menor.email || usuario.email,
             parentesco: menor.parentesco ?? null,

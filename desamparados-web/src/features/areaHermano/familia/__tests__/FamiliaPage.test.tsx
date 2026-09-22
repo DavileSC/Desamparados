@@ -11,7 +11,7 @@ const haceAnios = (anios: number) =>
   new Date(hoy.getFullYear() - anios, hoy.getMonth(), hoy.getDate()).toISOString()
 
 const ficha = (id: number, nombre: string, extra: Record<string, unknown> = {}) => ({
-  id, nombre, apellidos: 'Ruiz Montes', email: 'javier@ejemplo.test', telefono: '661223344',
+  id, nombre, apellidos: 'Ruiz Montes', primerApellido: 'Ruiz', segundoApellido: 'Montes', email: 'javier@ejemplo.test', telefono: '661223344',
   direccion: 'Calle Alameda 84', poblacion: 'Málaga', codigoPostal: '29013',
   fechaAlta: haceAnios(1), fechaNacimiento: haceAnios(40), numeroHermano: 308, activo: true,
   esTitular: false, parentesco: 'HIJO', ...extra,
@@ -57,8 +57,9 @@ describe('FamiliaPage', () => {
     await u.click(await screen.findByRole('button', { name: /hacerme hermano/i }))
     const dialogo = await screen.findByRole('dialog')
     await u.type(within(dialogo).getByLabelText('Nombre'), 'Javier')
-    await u.clear(within(dialogo).getByLabelText('Apellidos'))
-    await u.type(within(dialogo).getByLabelText('Apellidos'), 'Ruiz Montes')
+    await u.clear(within(dialogo).getByLabelText('Primer apellido'))
+    await u.type(within(dialogo).getByLabelText('Primer apellido'), 'Ruiz')
+    await u.type(within(dialogo).getByLabelText('Segundo apellido'), 'Montes')
     await u.type(within(dialogo).getByLabelText('Fecha de nacimiento'), '1986-11-03')
     await u.type(within(dialogo).getByLabelText('Tu DNI/NIE'), '12345678Z')
     await u.click(within(dialogo).getByRole('button', { name: 'Guardar' }))
@@ -67,6 +68,8 @@ describe('FamiliaPage', () => {
     const [, init] = simulado.mock.calls.find(([, i]) => i?.method === 'POST')!
     const cuerpo = JSON.parse(String(init.body))
     expect(cuerpo.dni).toBe('12345678Z')
+    // Los apellidos van por separado: el servidor compone los dos juntos.
+    expect(cuerpo).toMatchObject({ primerApellido: 'Ruiz', segundoApellido: 'Montes' })
     // Su propia ficha no es «de» nadie: va sin parentesco.
     expect(cuerpo.parentesco).toBeUndefined()
   })

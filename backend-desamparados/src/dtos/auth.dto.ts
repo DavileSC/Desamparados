@@ -8,6 +8,8 @@ export interface MenorAltaDto {
   nombre: string;
   /** Sin ellos se heredan los del adulto, que es lo normal con un hijo. */
   apellidos?: string;
+  primerApellido?: string;
+  segundoApellido?: string;
   /** Un niño no tiene; uno de quince, casi siempre sí. */
   dni?: string;
   email?: string;
@@ -28,6 +30,8 @@ export interface RegisterDto {
     dni: string;       // Necesario para User
     nombre: string;
     apellidos: string;
+    primerApellido?: string;
+    segundoApellido?: string;
     telefono: string;  // Necesario para contacto
     direccion?: string;
     poblacion?: string;

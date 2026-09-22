@@ -46,6 +46,7 @@ const NoticiasAdminPage = lazy(() => import('../features/cms/NoticiasAdminPage')
 const PublicacionesAdminPage = lazy(() => import('../features/cms/PublicacionesAdminPage'))
 const AgendaAdminPage = lazy(() => import('../features/cms/AgendaAdminPage'))
 const HermanosAdminPage = lazy(() => import('../features/cms/HermanosAdminPage'))
+const ProcesionAdminPage = lazy(() => import('../features/cms/ProcesionAdminPage'))
 const HermanoEditPage = lazy(() => import('../features/cms/HermanoEditPage'))
 const NoticiaEditPage = lazy(() => import('../features/cms/NoticiaEditPage'))
 const PublicacionEditPage = lazy(() => import('../features/cms/PublicacionEditPage'))
@@ -71,10 +72,8 @@ const NuevaContrasenaPage = lazy(() => import('../features/altas/auth/NuevaContr
 
 // Brother area pages
 const PerfilPage = lazy(() => import('../features/areaHermano/perfil/PerfilPage'))
-const EditarPerfilPage = lazy(() => import('../features/areaHermano/perfil/EditarPerfilPage'))
 const FamiliaPage = lazy(() => import('../features/areaHermano/familia/FamiliaPage'))
 const ProcesionPage = lazy(() => import('../features/areaHermano/procesion/ProcesionPage'))
-const PapeletaPage = lazy(() => import('../features/areaHermano/procesion/PapeletaPage'))
 const HistoricoPage = lazy(() => import('../features/areaHermano/procesion/HistoricoPage'))
 const RecibosPage = lazy(() => import('../features/areaHermano/recibos/RecibosPage'))
 const ReciboPage = lazy(() => import('../features/areaHermano/recibos/ReciboPage'))
@@ -171,10 +170,12 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/area-hermano/perfil" replace /> },
           { path: 'perfil', element: withSuspense(PerfilPage) },
-          { path: 'perfil/editar', element: withSuspense(EditarPerfilPage) },
+          // La edición se hace ya en el propio perfil, apartado a apartado.
+          { path: 'perfil/editar', element: <Navigate to="/area-hermano/perfil" replace /> },
           { path: 'familia', element: withSuspense(FamiliaPage) },
           { path: 'procesion', element: withSuspense(ProcesionPage) },
-          { path: 'procesion/papeleta', element: withSuspense(PapeletaPage) },
+          // La papeleta se pide y se consulta ya en la propia página de Procesión.
+          { path: 'procesion/papeleta', element: <Navigate to="/area-hermano/procesion" replace /> },
           { path: 'procesion/historico', element: withSuspense(HistoricoPage) },
           { path: 'recibos', element: withSuspense(RecibosPage) },
           { path: 'recibos/:id', element: withSuspense(ReciboPage) },
@@ -207,6 +208,7 @@ const router = createBrowserRouter([
           { path: 'agenda/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</ExigeRol> },
           { path: 'hermanos', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanosAdminPage)}</ExigeRol> },
           { path: 'hermanos/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</ExigeRol> },
+          { path: 'procesion', element: <ExigeRol roles={rolesPorRutaCms.procesion}>{withSuspense(ProcesionAdminPage)}</ExigeRol> },
           { path: 'tesoreria', element: <ExigeRol roles={rolesPorRutaCms.tesoreria}>{withSuspense(TesoreriaAdminPage)}</ExigeRol> },
           { path: 'inventario', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</ExigeRol> },
           { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },

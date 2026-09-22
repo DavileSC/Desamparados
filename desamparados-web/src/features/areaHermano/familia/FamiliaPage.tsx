@@ -118,7 +118,7 @@ export default function FamiliaPage() {
 
       <DialogoAnadirFicha
         modo={anadiendo}
-        apellidosDelTitular={propia?.apellidos ?? ''}
+        primerApellidoDelTitular={propia?.primerApellido ?? ''}
         onCerrar={() => setAnadiendo(null)}
         onHecho={(mensaje) => { setAnadiendo(null); void tras(mensaje) }}
       />

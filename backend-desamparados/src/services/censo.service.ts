@@ -15,6 +15,7 @@ import { encrypt } from '../utils/bcrypt.handle';
 import { comprobarBajaNoFutura, comprobarFechasHermano, diaDeHoy, instanteDeDia } from '../domain/fechas-hermano';
 import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
+import { apellidosTrasCambio } from '../domain/apellidos.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { ORDENES_CENSO, ordenDe } from '../domain/ordenacion.js';
 import { EmailService } from './email.service';
@@ -159,6 +160,9 @@ export class CensoService {
       if (!actual) throw new NotFoundError(HERMANO_ERRORS.HERMANO_NOT_FOUND);
 
       const cambios = sinFechasDelMismoDia(pedidos, actual);
+      const apellidos = apellidosTrasCambio(data, actual);
+      if (apellidos) Object.assign(cambios, apellidos);
+      if (actual.esTitular) delete cambios.parentesco;
       const deBaja = !actual.activo && actual.fechaBaja !== null;
 
       // La fecha de baja solo se corrige donde ya hay una baja. Ponérsela a una

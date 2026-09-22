@@ -12,6 +12,10 @@ import {
 const textoLibre = (etiqueta: string) =>
   z.string().refine(esTextoValido, `${etiqueta} es obligatorio y no puede llevar < ni >`)
 
+/** Un texto que puede ir vacío (el segundo apellido), pero sin < ni >. */
+const textoOpcional = (etiqueta: string) =>
+  z.string().refine((valor) => !/[<>]/.test(valor), `${etiqueta} no puede llevar < ni >`)
+
 /**
  * Los tres caminos del alta. Lo primero que se pregunta, porque ordena todo lo
  * demás: qué campos se piden y en qué pasos.
@@ -44,7 +48,8 @@ export const MAYORIA_DE_EDAD = 18
  */
 const menorSchema = z.object({
   nombre: textoLibre('El nombre'),
-  apellidos: textoLibre('Los apellidos'),
+  primerApellido: textoLibre('El primer apellido'),
+  segundoApellido: textoOpcional('El segundo apellido'),
   parentesco: z.enum(['HIJO', 'SOBRINO', 'NIETO', 'AHIJADO', 'OTRO']),
   fechaNacimiento: z.string().min(1, 'La fecha de nacimiento es obligatoria'),
   // '' es «no tiene»: el cliente de la API no manda los campos vacíos.
@@ -58,7 +63,7 @@ const menorSchema = z.object({
 export type MenorFormData = z.infer<typeof menorSchema>
 
 export const menorVacio: MenorFormData = {
-  nombre: '', apellidos: '', parentesco: 'HIJO', fechaNacimiento: '', dni: '', email: '',
+  nombre: '', primerApellido: '', segundoApellido: '', parentesco: 'HIJO', fechaNacimiento: '', dni: '', email: '',
 }
 
 /**
@@ -69,7 +74,8 @@ export const menorVacio: MenorFormData = {
 export const membershipSchema = z.object({
   camino: z.enum(CAMINOS),
   nombre: textoLibre('El nombre'),
-  apellidos: textoLibre('Los apellidos'),
+  primerApellido: textoLibre('El primer apellido'),
+  segundoApellido: textoOpcional('El segundo apellido'),
   email: z.string().trim().email('Introduce un email válido').max(254, 'El email es demasiado largo'),
   password: contrasenaNueva,
   // El DNI se pide siempre: es de la cuenta, no de la ficha, y quien solo

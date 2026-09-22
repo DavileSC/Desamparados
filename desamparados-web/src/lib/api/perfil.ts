@@ -3,10 +3,17 @@ import { paramsPagina, type RespuestaPaginada } from './tipos'
 import { normalizarDni } from '../validacion/identidad'
 import type { Parentesco } from './auth'
 
+export type Sexo = 'HOMBRE' | 'MUJER'
+export type EstadoCivil = 'SOLTERO' | 'CASADO' | 'PAREJA_DE_HECHO' | 'SEPARADO' | 'DIVORCIADO' | 'VIUDO'
+export type FormaDePago = 'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'
+
 export interface ApiProfile {
   id: number
   nombre: string
+  /** Los dos juntos, como se enseñan: los compone el servidor desde los sueltos. */
   apellidos: string
+  primerApellido: string | null
+  segundoApellido: string | null
   /** Puede no tenerlo: un menor pequeño se apunta sin DNI. */
   dni: string | null
   email: string | null
@@ -22,6 +29,28 @@ export interface ApiProfile {
   esTitular: boolean
   /** Qué es para el titular. Null en la suya propia y en las de antes del campo. */
   parentesco: Parentesco | null
+  sexo: Sexo | null
+  estadoCivil: EstadoCivil | null
+  profesion: string | null
+  lugarNacimiento: string | null
+  telefonoFijo: string | null
+  email2: string | null
+  provincia: string | null
+  pais: string | null
+  fechaBautismo: string | null
+  parroquiaBautismo: string | null
+  /** Los lleva Secretaría: se ven, no se editan desde aquí. */
+  fechaJura: string | null
+  presentadoPor: string | null
+  presentadoPor2: string | null
+  tieneTunicaPropia: boolean
+  tunica: string | null
+  alturaHombro: number | null
+  puesto: string | null
+  formaPagoPref: FormaDePago
+  /** La cuenta nunca llega entera: «ES•• •••• … 1332». */
+  ibanEnmascarado: string | null
+  titularCuenta: string | null
 }
 
 /**
@@ -58,26 +87,50 @@ export function misFichas(
   return llamarApi<RespuestaPaginada<ApiProfile>>(`/hermanos/mis-perfiles?${paramsPagina(pagina)}`)
 }
 
-export interface DatosDePerfil {
+/**
+ * Lo que se cambia de una ficha desde «Mi perfil», apartado a apartado: solo
+ * van los campos del apartado que se guarda. `null` vacía un dato opcional.
+ * Los apellidos van por separado: el servidor compone los dos juntos.
+ */
+export type CambiosDeFicha = Partial<{
   nombre: string
-  apellidos: string
+  primerApellido: string
+  segundoApellido: string | null
+  fechaNacimiento: string
+  dni: string
+  sexo: Sexo | null
+  estadoCivil: EstadoCivil | null
+  profesion: string | null
+  lugarNacimiento: string | null
+  parentesco: Parentesco
   email: string
+  email2: string | null
   telefono: string
+  telefonoFijo: string | null
   direccion: string
-  poblacion: string
   codigoPostal: string
-}
+  poblacion: string
+  provincia: string | null
+  pais: string | null
+  fechaBautismo: string | null
+  parroquiaBautismo: string | null
+  formaPagoPref: FormaDePago
+  iban: string | null
+  titularCuenta: string | null
+}>
 
-export function actualizarMiFicha(id: number, payload: DatosDePerfil) {
+export function actualizarFicha(id: number, cambios: CambiosDeFicha) {
+  const { dni, ...resto } = cambios
   return llamarApi<{ message: string; data: ApiProfile }>(`/hermanos/mis-perfiles/${id}`, {
     method: 'PUT',
-    json: payload,
+    json: { ...resto, ...(dni ? { dni: normalizarDni(dni) } : {}) },
   })
 }
 
 export interface DatosDeFichaNueva {
   nombre: string
-  apellidos: string
+  primerApellido: string
+  segundoApellido: string
   fechaNacimiento: string
   /** Sin parentesco cuando es su propia ficha: se reconoce por el DNI. */
   parentesco?: Parentesco
@@ -99,7 +152,8 @@ export function anadirFicha(payload: DatosDeFichaNueva) {
     method: 'POST',
     json: {
       nombre: payload.nombre,
-      apellidos: payload.apellidos,
+      primerApellido: payload.primerApellido,
+      ...(payload.segundoApellido.trim() ? { segundoApellido: payload.segundoApellido } : {}),
       fechaNacimiento: payload.fechaNacimiento,
       ...(payload.parentesco ? { parentesco: payload.parentesco } : {}),
       ...(payload.dni ? { dni: normalizarDni(payload.dni) } : {}),

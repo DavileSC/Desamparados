@@ -9,6 +9,7 @@ import { ESTADO_RECIBO } from '../../areaHermano/recibos/etiquetas'
 import { ETIQUETA_TIPO } from '../ropero'
 import Pildora from '../listados/Pildora'
 import { SITUACION, iniciales, situacionDe } from './situacion'
+import { ESTADO_CIVIL, SEXO } from '../../areaHermano/perfil/etiquetas'
 
 interface Props {
   id: number
@@ -69,6 +70,10 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
   const correo = ficha.email ?? ficha.user?.email ?? null
   const telefono = ficha.telefono ?? ficha.user?.telefono ?? null
   const poblacion = [ficha.codigoPostal, ficha.poblacion].filter(Boolean).join(' ')
+  const provincia = [ficha.provincia, ficha.pais].filter(Boolean).join(' · ')
+  const presentado = [ficha.presentadoPor, ficha.presentadoPor2].filter(Boolean).join(' y ')
+  const bautismo = [ficha.fechaBautismo ? dia(ficha.fechaBautismo) : null, ficha.parroquiaBautismo].filter(Boolean).join(' · ')
+  const personal = [ficha.sexo ? SEXO[ficha.sexo] : null, ficha.estadoCivil ? ESTADO_CIVIL[ficha.estadoCivil] : null].filter(Boolean).join(' · ')
   const familia = ficha.user?.hermanos ?? []
   const recibo = ficha.recibos?.[0]
   const papeleta = ficha.papeletas?.[0]
@@ -77,10 +82,17 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
   const campos: [string, string | null][] = [
     ['DNI', ficha.dni],
     ['Fecha de nacimiento', `${dia(ficha.fechaNacimiento)} · ${edad(ficha.fechaNacimiento)} años`],
-    ['Teléfono', telefono],
-    ['Correo', correo],
+    ['Natural de', ficha.lugarNacimiento],
+    ['Sexo y estado civil', personal || null],
+    ['Profesión', ficha.profesion],
+    ['Teléfono', [telefono, ficha.telefonoFijo].filter(Boolean).join(' · ') || null],
+    ['Correo', [correo, ficha.email2].filter(Boolean).join(' · ') || null],
     ['Dirección', ficha.direccion],
     ['Población', poblacion || null],
+    ['Provincia y país', provincia || null],
+    ['Fecha de jura', ficha.fechaJura ? dia(ficha.fechaJura) : null],
+    ['Presentado por', presentado || null],
+    ['Bautismo', bautismo || null],
     ['Túnica', ficha.tieneTunicaPropia ? `Propia${ficha.tunica ? ` · talla ${ficha.tunica}` : ''}` : ficha.tunica ? `Talla ${ficha.tunica}` : null],
     ['Altura al hombro', ficha.alturaHombro ? `${ficha.alturaHombro} cm` : null],
     ['Puesto habitual', ficha.puesto],

@@ -28,8 +28,8 @@ export function pasosDe(camino: Camino | null): Paso[] {
     {
       titulo: 'Tus datos',
       campos: conFichaPropia(camino)
-        ? ['nombre', 'apellidos', 'dni', 'fechaNacimiento']
-        : ['nombre', 'apellidos', 'dni'],
+        ? ['nombre', 'primerApellido', 'segundoApellido', 'dni', 'fechaNacimiento']
+        : ['nombre', 'primerApellido', 'segundoApellido', 'dni'],
     },
     ...(conMenores(camino) ? [{ titulo: 'A quién apuntas', campos: ['menores'] as Campo[] }] : []),
     { titulo: 'Contacto y domicilio', campos: ['email', 'telefono', 'direccion', 'ciudad', 'codigoPostal'] },
@@ -43,7 +43,9 @@ export const CAMPOS_API: Record<string, Campo> = {
   'usuario.email': 'email',
   'usuario.telefono': 'telefono',
   'usuario.nombre': 'nombre',
-  'usuario.apellidos': 'apellidos',
+  'usuario.apellidos': 'primerApellido',
+  'usuario.primerApellido': 'primerApellido',
+  'usuario.segundoApellido': 'segundoApellido',
   'usuario.direccion': 'direccion',
   'usuario.poblacion': 'ciudad',
   'usuario.codigoPostal': 'codigoPostal',
@@ -52,7 +54,7 @@ export const CAMPOS_API: Record<string, Campo> = {
 }
 
 export const VALORES_INICIALES: MembershipFormData = {
-  camino: 'HERMANO', nombre: '', apellidos: '', email: '', password: '', dni: '', telefono: '',
+  camino: 'HERMANO', nombre: '', primerApellido: '', segundoApellido: '', email: '', password: '', dni: '', telefono: '',
   direccion: '', ciudad: '', codigoPostal: '', fechaNacimiento: '', menores: [], aceptarPolitica: false,
   comentarioAdicional: '',
 }

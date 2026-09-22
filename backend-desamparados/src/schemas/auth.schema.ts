@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { email, password, dni, textoRequerido, telefono, idParam, codigoPostal } from '../config/common';
+import { email, password, dni, textoRequerido, textoOpcional, telefono, idParam, codigoPostal } from '../config/common';
 
 // =================================================================
 //  1. ESQUEMAS BASE REUTILIZABLES
@@ -12,6 +12,9 @@ const usuarioSchema = type({
     dni: dni,
     nombre: textoRequerido,
     apellidos: textoRequerido,
+    // Por separado, si el formulario los manda así: mandan sobre `apellidos`.
+    "primerApellido?": textoRequerido,
+    "segundoApellido?": textoOpcional,
     telefono: telefono,
     direccion: textoRequerido,
     poblacion: textoRequerido,
@@ -44,6 +47,8 @@ export type ParentescoAlta = (typeof PARENTESCOS)[number];
 const menorSchema = type({
     nombre: textoRequerido,
     "apellidos?": "string",  // Sin ellos se heredan los del adulto: ver auth.service
+    "primerApellido?": textoRequerido,
+    "segundoApellido?": textoOpcional,
     "dni?": dni,             // Si viene, pasa por la validación de la letra
     "email?": email,
     "parentesco?": "'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO'",

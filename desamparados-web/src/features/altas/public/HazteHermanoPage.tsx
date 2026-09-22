@@ -325,7 +325,10 @@ export default function HazteHermanoPage() {
                                       <TextField label="Nombre" autoComplete="given-name" {...campo('nombre')} />
                                     </Grid>
                                     <Grid size={{ xs: 12, sm: 6 }}>
-                                      <TextField label="Apellidos" autoComplete="family-name" {...campo('apellidos')} />
+                                      <TextField label="Primer apellido" autoComplete="family-name" {...campo('primerApellido')} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                      <TextField label="Segundo apellido" autoComplete="off" {...campo('segundoApellido')} />
                                     </Grid>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                       <TextField
@@ -357,7 +360,7 @@ export default function HazteHermanoPage() {
                                       register={register}
                                       setValue={setValue}
                                       watch={watch}
-                                      apellidosDelTitular={getValues('apellidos')}
+                                      primerApellidoDelTitular={getValues('primerApellido')}
                                       hoy={hoy}
                                     />
                                   </Grid>

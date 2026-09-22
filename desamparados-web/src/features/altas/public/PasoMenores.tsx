@@ -14,7 +14,7 @@ interface Props {
   setValue: UseFormSetValue<MembershipFormData>
   watch: UseFormWatch<MembershipFormData>
   /** Los del adulto: se proponen como respaldo, solo cuando es hijo o hija. */
-  apellidosDelTitular: string
+  primerApellidoDelTitular: string
   hoy: string
 }
 
@@ -27,21 +27,21 @@ interface Props {
  * cuando el parentesco es hijo o hija, y por eso se pregunta el parentesco:
  * con cualquier otro, Secretaría pedirá la autorización de los padres.
  */
-export default function PasoMenores({ menores, errores, register, setValue, watch, apellidosDelTitular, hoy }: Props) {
+export default function PasoMenores({ menores, errores, register, setValue, watch, primerApellidoDelTitular, hoy }: Props) {
   const anadir = () => setValue('menores', [...menores, { ...menorVacio }], { shouldValidate: false })
 
   const quitar = (indice: number) =>
     setValue('menores', menores.filter((_, i) => i !== indice), { shouldValidate: false })
 
-  // Al pasar a hijo/a se proponen los apellidos del adulto, si aún no ha
-  // escrito otros; al dejar de serlo se retiran, que es justo el error que se
+  // Al pasar a hijo/a se propone el primer apellido del adulto, si aún no ha
+  // escrito otro; al dejar de serlo se retira, que es justo el error que se
   // colaba con un sobrino.
   const cambiarParentesco = (indice: number, valor: string) => {
-    const actuales = watch(`menores.${indice}.apellidos`)
-    if (valor === 'HIJO' && !actuales) {
-      setValue(`menores.${indice}.apellidos`, apellidosDelTitular)
-    } else if (valor !== 'HIJO' && actuales === apellidosDelTitular) {
-      setValue(`menores.${indice}.apellidos`, '')
+    const actual = watch(`menores.${indice}.primerApellido`)
+    if (valor === 'HIJO' && !actual) {
+      setValue(`menores.${indice}.primerApellido`, primerApellidoDelTitular)
+    } else if (valor !== 'HIJO' && actual === primerApellidoDelTitular) {
+      setValue(`menores.${indice}.primerApellido`, '')
     }
   }
 
@@ -56,7 +56,7 @@ export default function PasoMenores({ menores, errores, register, setValue, watc
 
       {menores.map((menor, indice) => {
         const fallo = Array.isArray(fallosDeMenores) ? fallosDeMenores[indice] : undefined
-        const campo = (nombre: 'nombre' | 'apellidos' | 'fechaNacimiento' | 'dni' | 'email', ayuda?: string) => ({
+        const campo = (nombre: 'nombre' | 'primerApellido' | 'segundoApellido' | 'fechaNacimiento' | 'dni' | 'email', ayuda?: string) => ({
           fullWidth: true,
           error: !!fallo?.[nombre],
           helperText: fallo?.[nombre]?.message ?? ayuda,
@@ -106,7 +106,10 @@ export default function PasoMenores({ menores, errores, register, setValue, watc
                 <TextField label="Nombre" {...campo('nombre')} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField label="Apellidos" {...campo('apellidos')} />
+                <TextField label="Primer apellido" {...campo('primerApellido')} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField label="Segundo apellido" {...campo('segundoApellido')} />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField

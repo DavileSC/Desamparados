@@ -107,6 +107,9 @@ describe('HermanoEditPage', () => {
     })
     const cuerpo = JSON.parse(opciones.body as string)
     expect(cuerpo.dni).toBe('20000001X')
+    // Los apellidos van por separado: los dos juntos los compone el servidor.
+    expect(cuerpo).toMatchObject({ primerApellido: 'Gómez Marín' })
+    expect(cuerpo).not.toHaveProperty('apellidos')
     // Sin tocarlas, las fechas no viajan: reenviarlas las reescribía en el servidor.
     expect(cuerpo).not.toHaveProperty('fechaNacimiento')
     expect(cuerpo).not.toHaveProperty('fechaAlta')

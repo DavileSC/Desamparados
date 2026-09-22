@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react'
-import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
-import { darDeBajaHermano, emanciparHermano, fichaDeHermano, reactivarHermano, actualizarHermano, type AdminBrother } from '../../lib/api/hermanos'
+import { darDeBajaHermano, emanciparHermano, fichaDeHermano, reactivarHermano, actualizarHermano, type AdminBrother, type DatosDeFichaDeHermano } from '../../lib/api/hermanos'
+import { PARENTESCOS } from '../../lib/api/auth'
+import { ESTADO_CIVIL, SEXO } from '../areaHermano/perfil/etiquetas'
+
+const PARENTESCO = Object.fromEntries(PARENTESCOS.map((p) => [p.value, p.label]))
 
 const MAYORIA_DE_EDAD = 18
 
@@ -58,21 +62,33 @@ const esCuentaSuprimida = (f: AdminBrother) => f.user?.email?.endsWith('@elimina
 // aprobarlas o dejaban a alguien de baja pero activo. Ahora hay botones para
 // dar de baja y reactivar, y la fecha de baja solo se corrige si ya la hay.
 type Formulario = {
-  nombre: string; apellidos: string; dni: string; fechaNacimiento: string
-  telefono: string; email: string; direccion: string; poblacion: string; codigoPostal: string
+  nombre: string; primerApellido: string; segundoApellido: string; dni: string; fechaNacimiento: string
+  sexo: string; estadoCivil: string; profesion: string; lugarNacimiento: string; parentesco: string
+  telefono: string; telefonoFijo: string; email: string; email2: string
+  direccion: string; poblacion: string; codigoPostal: string; provincia: string; pais: string
   numeroHermano: string; fechaAlta: string; fechaBaja: string
+  fechaJura: string; presentadoPor: string; presentadoPor2: string; fechaBautismo: string; parroquiaBautismo: string
   tieneTunicaPropia: boolean; tunica: string; alturaHombro: string; puesto: string
 }
+
+/** Lo opcional vacío viaja como `null`: así se borra en el servidor. */
+const opcional = (valor: string) => (valor.trim() === '' ? null : valor.trim())
 
 /** Lo que cambia al dar de baja o reactivar: se refresca sin tocar lo que se esté editando. */
 const camposDeEstado = (f: AdminBrother) => ({
   numeroHermano: f.numeroHermano?.toString() ?? '', fechaAlta: aDia(f.fechaAlta), fechaBaja: aDia(f.fechaBaja),
 })
 
-const desdeFicha = (f: AdminBrother): Formulario => ({
-  nombre: f.nombre, apellidos: f.apellidos, dni: f.dni ?? '', fechaNacimiento: aDia(f.fechaNacimiento),
-  telefono: f.telefono ?? '', email: f.email ?? '', direccion: f.direccion ?? '',
-  poblacion: f.poblacion ?? '', codigoPostal: f.codigoPostal ?? '',
+const desdeFicha = (f: AdminBrother & { parentesco?: string | null }): Formulario => ({
+  nombre: f.nombre, primerApellido: f.primerApellido ?? f.apellidos, segundoApellido: f.segundoApellido ?? '',
+  dni: f.dni ?? '', fechaNacimiento: aDia(f.fechaNacimiento),
+  sexo: f.sexo ?? '', estadoCivil: f.estadoCivil ?? '', profesion: f.profesion ?? '', lugarNacimiento: f.lugarNacimiento ?? '',
+  parentesco: f.parentesco ?? '',
+  telefono: f.telefono ?? '', telefonoFijo: f.telefonoFijo ?? '', email: f.email ?? '', email2: f.email2 ?? '',
+  direccion: f.direccion ?? '', poblacion: f.poblacion ?? '', codigoPostal: f.codigoPostal ?? '',
+  provincia: f.provincia ?? '', pais: f.pais ?? '',
+  fechaJura: aDia(f.fechaJura), presentadoPor: f.presentadoPor ?? '', presentadoPor2: f.presentadoPor2 ?? '',
+  fechaBautismo: aDia(f.fechaBautismo), parroquiaBautismo: f.parroquiaBautismo ?? '',
   ...camposDeEstado(f),
   tieneTunicaPropia: f.tieneTunicaPropia, tunica: f.tunica ?? '',
   alturaHombro: f.alturaHombro?.toString() ?? '', puesto: f.puesto ?? '',
@@ -138,11 +154,28 @@ export default function HermanoEditPage() {
     // hora: reenviar un alta sin cambiarla la reescribía (y, leída como día UTC,
     // la movía al día anterior sin rastro en la auditoría).
     const tocada = (clave: 'fechaNacimiento' | 'fechaAlta' | 'fechaBaja') => !!form[clave] && form[clave] !== inicial?.[clave]
+    // Bautismo y jura se pueden vaciar: si se tocan, viajan (vacías, como null).
+    const cambiada = (clave: 'fechaBautismo' | 'fechaJura') => form[clave] !== inicial?.[clave]
     try {
       await actualizarHermano(Number(id), {
         nombre: form.nombre,
-        apellidos: form.apellidos,
+        primerApellido: form.primerApellido.trim(),
+        segundoApellido: opcional(form.segundoApellido),
         ...(form.dni ? { dni: form.dni } : {}),
+        sexo: (form.sexo || null) as DatosDeFichaDeHermano['sexo'],
+        estadoCivil: (form.estadoCivil || null) as DatosDeFichaDeHermano['estadoCivil'],
+        profesion: opcional(form.profesion),
+        lugarNacimiento: opcional(form.lugarNacimiento),
+        ...(!ficha.esTitular && form.parentesco ? { parentesco: form.parentesco as DatosDeFichaDeHermano['parentesco'] } : {}),
+        telefonoFijo: opcional(form.telefonoFijo),
+        email2: opcional(form.email2),
+        provincia: opcional(form.provincia),
+        pais: opcional(form.pais),
+        ...(cambiada('fechaBautismo') ? { fechaBautismo: form.fechaBautismo || null } : {}),
+        parroquiaBautismo: opcional(form.parroquiaBautismo),
+        ...(cambiada('fechaJura') ? { fechaJura: form.fechaJura || null } : {}),
+        presentadoPor: opcional(form.presentadoPor),
+        presentadoPor2: opcional(form.presentadoPor2),
         ...(tocada('fechaNacimiento') ? { fechaNacimiento: form.fechaNacimiento } : {}),
         ...(form.telefono ? { telefono: form.telefono } : {}),
         ...(form.email ? { email: form.email } : {}),
@@ -246,6 +279,14 @@ export default function HermanoEditPage() {
     />
   )
 
+  /** Un desplegable de la ficha; con `vacio`, se puede dejar sin indicar. */
+  const opciones = (clave: keyof Formulario, etiqueta: string, mapa: Record<string, string>, vacio = true) => (
+    <TextField select label={etiqueta} value={form[clave] as string} onChange={(e) => campo(clave, e.target.value as never)} fullWidth>
+      {vacio && <MenuItem value=""><em>Sin indicar</em></MenuItem>}
+      {Object.entries(mapa).map(([valor, textoOpcion]) => <MenuItem key={valor} value={valor}>{textoOpcion}</MenuItem>)}
+    </TextField>
+  )
+
   return (
     <>
       <Helmet><title>Editar hermano | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
@@ -264,20 +305,30 @@ export default function HermanoEditPage() {
             <Typography variant="h6" sx={{ mb: 2 }}>Datos personales</Typography>
             <Stack spacing={2}>
               {texto('nombre', 'Nombre')}
-              {texto('apellidos', 'Apellidos')}
+              {texto('primerApellido', 'Primer apellido')}
+              {texto('segundoApellido', 'Segundo apellido')}
               {texto('dni', 'DNI')}
               {texto('fechaNacimiento', 'Fecha de nacimiento', 'date')}
+              {opciones('sexo', 'Sexo', SEXO)}
+              {opciones('estadoCivil', 'Estado civil', ESTADO_CIVIL)}
+              {texto('profesion', 'Profesión')}
+              {texto('lugarNacimiento', 'Natural de')}
+              {!ficha.esTitular && opciones('parentesco', 'Parentesco con el titular de la cuenta', PARENTESCO, false)}
             </Stack>
           </Box>
           <Divider />
           <Box>
             <Typography variant="h6" sx={{ mb: 2 }}>Contacto</Typography>
             <Stack spacing={2}>
-              {texto('telefono', 'Teléfono')}
+              {texto('telefono', 'Teléfono móvil')}
+              {texto('telefonoFijo', 'Teléfono fijo')}
               {texto('email', 'Correo electrónico')}
+              {texto('email2', 'Segundo correo')}
               {texto('direccion', 'Dirección')}
               {texto('poblacion', 'Población')}
               {texto('codigoPostal', 'Código postal')}
+              {texto('provincia', 'Provincia')}
+              {texto('pais', 'País')}
             </Stack>
           </Box>
           <Divider />
@@ -307,6 +358,11 @@ export default function HermanoEditPage() {
                 helperText: 'Lo asignan «Aprobar» o «Reactivar».',
               })}
               {texto('fechaAlta', 'Fecha de alta', 'date')}
+              {texto('fechaJura', 'Fecha de jura', 'date')}
+              {texto('presentadoPor', 'Presentado por')}
+              {texto('presentadoPor2', 'Presentado también por')}
+              {texto('fechaBautismo', 'Fecha de bautismo', 'date', { helperText: 'Opcional. Dato religioso: solo lo ven el hermano y la gestión del censo.' })}
+              {texto('parroquiaBautismo', 'Parroquia de bautismo')}
               {estado === 'baja' && texto('fechaBaja', 'Fecha de baja', 'date', {
                 helperText: 'Solo para corregir la fecha. No puede ser anterior al alta.',
                 slotProps: { inputLabel: { shrink: true }, htmlInput: { min: form.fechaAlta || undefined, max: hoy } },

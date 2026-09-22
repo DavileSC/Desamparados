@@ -65,3 +65,25 @@ export function esTextoValido(valor: string): boolean {
   const texto = valor.trim()
   return texto.length > 0 && !/[<>]/.test(texto)
 }
+
+/** El IBAN como lo guarda el servidor: sin espacios ni guiones y en mayúsculas. */
+export function normalizarIban(valor: string): string {
+  return valor.replace(/[\s-]/g, '').toUpperCase()
+}
+
+/**
+ * IBAN con su dígito de control (módulo 97), igual que el servidor: una cuenta
+ * mal copiada es un recibo que el banco devuelve. Un IBAN español, 24 caracteres.
+ */
+export function esIbanValido(valor: string): boolean {
+  const iban = normalizarIban(valor)
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false
+  if (iban.startsWith('ES') && iban.length !== 24) return false
+  const reordenado = iban.slice(4) + iban.slice(0, 4)
+  let resto = 0
+  for (const caracter of reordenado) {
+    const cifras = /[A-Z]/.test(caracter) ? String(caracter.charCodeAt(0) - 55) : caracter
+    for (const cifra of cifras) resto = (resto * 10 + Number(cifra)) % 97
+  }
+  return resto === 1
+}

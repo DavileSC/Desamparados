@@ -13,7 +13,7 @@ const usuario = () => userEvent.setup({ delay: null })
 type Usuario = ReturnType<typeof usuario>
 
 const DATOS: Record<string, string> = {
-  Nombre: 'Juan', Apellidos: 'Pérez Ruiz', 'DNI/NIE': '12345678Z', 'Fecha de nacimiento': '1990-04-12',
+  Nombre: 'Juan', 'Primer apellido': 'Pérez', 'Segundo apellido': 'Ruiz', 'DNI/NIE': '12345678Z', 'Fecha de nacimiento': '1990-04-12',
   Email: 'juan@ejemplo.es', Teléfono: '600123456',
   Dirección: 'Calle Real 14', Ciudad: 'Málaga', 'Código postal': '29013',
   Contraseña: 'Prueba-2026-Segura',
@@ -22,7 +22,7 @@ const DATOS: Record<string, string> = {
 // El formulario va por pasos: todos están en el DOM (así la tarjeta mide
 // siempre lo mismo) pero solo se ve, y se puede usar, el paso actual. El
 // primero no tiene campos: pregunta quién se apunta, y de eso depende el resto.
-const PASO_1 = ['Nombre', 'Apellidos', 'DNI/NIE', 'Fecha de nacimiento']
+const PASO_1 = ['Nombre', 'Primer apellido', 'Segundo apellido', 'DNI/NIE', 'Fecha de nacimiento']
 const PASO_2 = ['Email', 'Teléfono', 'Dirección', 'Ciudad', 'Código postal']
 
 /** Elegir camino es el «Continuar» del primer paso. */
@@ -34,7 +34,7 @@ const CAMINO_CON_MENORES = /^Queremos ser hermanos$/
 const CAMINO_SOLO_MENORES = /^Apunto a un familiar$/
 
 /**
- * Los campos de un menor, acotados a su bloque: «Nombre» y «Apellidos» también
+ * Los campos de un menor, acotados a su bloque: «Nombre» y los apellidos también
  * están en el paso del adulto, y todos los pasos viven en el DOM a la vez.
  */
 const bloqueMenor = (indice: number) => screen.getByRole('group', { name: new RegExp(`^Menor ${indice + 1}`) })
@@ -50,7 +50,7 @@ async function rellenarMenor(u: Usuario, indice: number, datos: Record<string, s
 
 /**
  * El paso que se está usando. Todos viven en el DOM a la vez y los que no
- * tocan van `inert`, así que «Nombre» o «Apellidos» aparecen varias veces
+ * tocan van `inert`, así que «Nombre» o «Primer apellido» aparecen varias veces
  * (el del adulto y el de cada menor): hay que buscar dentro del que toca.
  */
 const pasoActivo = () =>
@@ -209,9 +209,9 @@ describe('HazteHermanoPage', () => {
     // El primer menor sale ya puesto: nadie elige este camino para luego tener
     // que pulsar «añadir».
     expect(screen.getByText('Paso 3 de 5')).toBeInTheDocument()
-    await rellenarMenor(u, 0, { Nombre: 'Lucía', Apellidos: 'Pérez Cano', 'Fecha de nacimiento': '2017-04-12' })
+    await rellenarMenor(u, 0, { Nombre: 'Lucía', 'Primer apellido': 'Pérez', 'Segundo apellido': 'Cano', 'Fecha de nacimiento': '2017-04-12' })
     await u.click(screen.getByRole('button', { name: /añadir otro menor/i }))
-    await rellenarMenor(u, 1, { Nombre: 'Martín', Apellidos: 'Pérez Cano', 'Fecha de nacimiento': '2019-06-30' })
+    await rellenarMenor(u, 1, { Nombre: 'Martín', 'Primer apellido': 'Pérez', 'Segundo apellido': 'Cano', 'Fecha de nacimiento': '2019-06-30' })
 
     await continuar(u)
     await rellenar(u, PASO_2)
@@ -242,9 +242,9 @@ describe('HazteHermanoPage', () => {
 
     // Su DNI sí se pide: es el de la cuenta. Su nacimiento no.
     expect(screen.getByLabelText('DNI/NIE')).toBeInTheDocument()
-    await rellenar(u, ['Nombre', 'Apellidos', 'DNI/NIE'])
+    await rellenar(u, ['Nombre', 'Primer apellido', 'Segundo apellido', 'DNI/NIE'])
     await continuar(u)
-    await rellenarMenor(u, 0, { Nombre: 'Lucía', Apellidos: 'Pérez Cano', 'Fecha de nacimiento': '2017-04-12' })
+    await rellenarMenor(u, 0, { Nombre: 'Lucía', 'Primer apellido': 'Pérez', 'Segundo apellido': 'Cano', 'Fecha de nacimiento': '2017-04-12' })
     await continuar(u)
     await rellenar(u, PASO_2)
     await continuar(u)

@@ -79,9 +79,18 @@ export const WHERE_SITUACION: Record<NonNullable<SearchHermanoQuery['estado']>, 
 // El objeto que llega a Prisma se construye SOLO con estas claves. Nunca `{...body}`:
 // Prisma acepta escrituras anidadas (user.update, recibos.updateMany...) y con el body
 // crudo cualquier hermano podía ascenderse a ADMIN o marcar sus recibos como pagados.
+//
+// `apellidos` no está: lo compone el servidor desde los dos sueltos
+// (domain/apellidos.ts). Los datos bancarios sí: el hermano cambia su cuenta él
+// mismo. El parentesco, solo en las fichas a cargo (lo mira updateProfileIfOwned).
 export const USER_EDITABLE_FIELDS = [
-  'nombre', 'apellidos', 'fechaNacimiento', 'dni', 'telefono', 'email',
-  'direccion', 'poblacion', 'codigoPostal'
+  'nombre', 'primerApellido', 'segundoApellido', 'fechaNacimiento', 'dni',
+  'sexo', 'estadoCivil', 'profesion', 'lugarNacimiento',
+  'telefono', 'telefonoFijo', 'email', 'email2',
+  'direccion', 'poblacion', 'codigoPostal', 'provincia', 'pais',
+  'fechaBautismo', 'parroquiaBautismo',
+  'formaPagoPref', 'iban', 'titularCuenta',
+  'parentesco'
 ] as const;
 
 // Sin `activo`: la edición genérica de la ficha no da altas ni bajas. Esas van
@@ -89,14 +98,25 @@ export const USER_EDITABLE_FIELDS = [
 // liberan el número, tocan la cuenta y dejan rastro en la auditoría.
 // `fechaBaja` sigue aquí solo para CORREGIR la fecha de una ficha que ya está
 // de baja (lo comprueba updateAdminMode).
+//
+// Los datos bancarios no: el censo no los enseña (ver HERMANO_SAFE_SELECT) y
+// tampoco los escribe. Los cambia el propio hermano, desde su área.
+const CAMPOS_BANCARIOS = ['formaPagoPref', 'iban', 'titularCuenta'] as const;
+type CampoBancario = typeof CAMPOS_BANCARIOS[number];
+const sinBancarios = USER_EDITABLE_FIELDS.filter(
+  (campo): campo is Exclude<typeof USER_EDITABLE_FIELDS[number], CampoBancario> => !(CAMPOS_BANCARIOS as readonly string[]).includes(campo)
+);
+
 export const ADMIN_EDITABLE_FIELDS = [
-  ...USER_EDITABLE_FIELDS,
+  ...sinBancarios,
   'tieneTunicaPropia', 'tunica', 'alturaHombro', 'puesto',
   'esTitular', 'numeroHermano',
-  'fechaAlta', 'fechaBaja'
+  'fechaAlta', 'fechaBaja',
+  // La jura y quién lo presentó los lleva Secretaría: el hermano los ve y no los toca.
+  'fechaJura', 'presentadoPor', 'presentadoPor2'
 ] as const;
 
-export type EditableField = typeof ADMIN_EDITABLE_FIELDS[number];
+export type EditableField = typeof ADMIN_EDITABLE_FIELDS[number] | typeof USER_EDITABLE_FIELDS[number];
 
 // Campos de la ficha que se pueden mostrar al staff sin exponer datos bancarios
 export const HERMANO_SAFE_SELECT = {
@@ -106,7 +126,12 @@ export const HERMANO_SAFE_SELECT = {
   // Quién es para el titular: «Mi familia» lo enseña, porque una ficha a cargo
   // de alguien que no es su padre se gestiona distinto (autorización aparte).
   parentesco: true,
-  tieneTunicaPropia: true, tunica: true, alturaHombro: true, puesto: true
+  tieneTunicaPropia: true, tunica: true, alturaHombro: true, puesto: true,
+  // El resto de la ficha, sin los datos bancarios.
+  primerApellido: true, segundoApellido: true, sexo: true, estadoCivil: true,
+  profesion: true, lugarNacimiento: true, telefonoFijo: true, email2: true,
+  provincia: true, pais: true, fechaBautismo: true, parroquiaBautismo: true,
+  fechaJura: true, presentadoPor: true, presentadoPor2: true
 } satisfies Prisma.HermanoSelect;
 
 /** Una ficha pendiente de aprobación: nunca activa y sin baja. */
@@ -115,7 +140,7 @@ export const FICHA_PENDIENTE = { activo: false, fechaBaja: null } satisfies Pris
 /** Solo las cuentas de hermano raso (USER) se bloquean/borran al perder sus fichas. */
 export const esCuentaStaff = (role: Role) => role !== Role.USER;
 
-export const CAMPOS_FECHA = ['fechaNacimiento', 'fechaAlta', 'fechaBaja'] as const;
+export const CAMPOS_FECHA = ['fechaNacimiento', 'fechaAlta', 'fechaBaja', 'fechaBautismo', 'fechaJura'] as const;
 
 /**
  * Quita de los cambios las fechas que caen en el mismo día (de Madrid) que ya

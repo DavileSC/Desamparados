@@ -1,6 +1,7 @@
 import { MiProcesionService } from '../services/procesion/mi-procesion.service.js';
 import { PapeletasService } from '../services/procesion/papeletas.service.js';
 import { TurnosService } from '../services/procesion/turnos.service.js';
+import { PlazoPapeletasService } from '../services/procesion/plazo.service.js';
 import { handleHttp, HttpError } from '../utils/error.handle.js';
 import { instanteLimiteAusencias } from '../domain/datos-procesion.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
@@ -15,6 +16,20 @@ export class ProcesionController {
   static getDias = manejar('Error obteniendo días', async (_req, res) => {
     const dias = await MiProcesionService.getDiasDisponibles();
     res.json(dias);
+  });
+
+  static getMiEstado = manejar('Error obteniendo tu procesión', async (req, res) => {
+    res.json(await MiProcesionService.getMiEstado(req.user!.id));
+  });
+
+  static getPlazo = manejar('Error obteniendo el plazo de papeletas', async (_req, res) => {
+    res.json(await PlazoPapeletasService.estadoParaSecretaria());
+  });
+
+  static cambiarPlazo = manejar('Error cambiando el plazo de papeletas', async (req, res) => {
+    const { abierto, avisar, borradorNoticia } = req.body as { abierto: boolean; avisar?: boolean; borradorNoticia?: boolean };
+    const resultado = await PlazoPapeletasService.cambiar(abierto, { avisar, borradorNoticia }, AuditoriaService.metaFromReq(req));
+    res.json(resultado);
   });
 
   static avisarAsistencia = manejar('Error al avisar asistencia', async (req, res) => {

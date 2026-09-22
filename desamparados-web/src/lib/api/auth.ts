@@ -38,7 +38,8 @@ export type Parentesco = (typeof PARENTESCOS)[number]['value']
 /** Un menor a cargo de quien abre la cuenta. DNI y correo, solo si ya los tiene. */
 export interface MenorAlta {
   nombre: string
-  apellidos: string
+  primerApellido: string
+  segundoApellido: string
   fechaNacimiento: string
   parentesco: Parentesco
   dni?: string
@@ -50,7 +51,8 @@ export interface RegistroData {
   password: string
   dni: string
   nombre: string
-  apellidos: string
+  primerApellido: string
+  segundoApellido: string
   telefono: string
   direccion: string
   poblacion: string
@@ -68,6 +70,13 @@ export interface RegistroData {
  * cargo; solo menores, uno que no entra en el censo y abre la cuenta para
  * gestionarlos.
  */
+/** Los dos apellidos, y los dos juntos: el servidor compone los suyos desde los sueltos. */
+function apellidos(primero: string, segundo: string) {
+  const p = primero.trim()
+  const s = segundo.trim()
+  return { apellidos: [p, s].filter(Boolean).join(' '), primerApellido: p, ...(s ? { segundoApellido: s } : {}) }
+}
+
 export function register(data: RegistroData) {
   return llamarApi<{ user: { id: number; email: string }; fichas: number; message: string }>('/auth/register', {
     method: 'POST',
@@ -81,7 +90,8 @@ export function register(data: RegistroData) {
         // escribe «+34 600 12 34 56» está dando un teléfono correcto.
         dni: normalizarDni(data.dni),
         nombre: data.nombre,
-        apellidos: data.apellidos,
+        // Por separado, y juntos para los servidores de antes de separarlos.
+        ...apellidos(data.primerApellido, data.segundoApellido),
         telefono: normalizarTelefono(data.telefono),
         direccion: data.direccion,
         poblacion: data.poblacion,
@@ -92,7 +102,7 @@ export function register(data: RegistroData) {
         ? {
             menores: data.menores.map((menor) => ({
               nombre: menor.nombre,
-              apellidos: menor.apellidos,
+              ...apellidos(menor.primerApellido, menor.segundoApellido),
               fechaNacimiento: menor.fechaNacimiento,
               parentesco: menor.parentesco,
               // Vacíos se omiten: el servidor los quiere ausentes, no en blanco.

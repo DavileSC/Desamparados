@@ -39,6 +39,15 @@
     { "valor": "290134", "valido": false, "normalizado": "290134" },
     { "valor": "2901A", "valido": false, "normalizado": "2901A" }
   ],
+  "iban": [
+    { "valor": "ES9121000418450200051332", "valido": true, "normalizado": "ES9121000418450200051332" },
+    { "valor": "es91 2100 0418 4502 0005 1332", "valido": true, "normalizado": "ES9121000418450200051332" },
+    { "valor": "ES91-2100-0418-4502-0005-1332", "valido": true, "normalizado": "ES9121000418450200051332" },
+    { "valor": "ES9121000418450200051333", "valido": false, "normalizado": "ES9121000418450200051333" },
+    { "valor": "ES91210004184502000513", "valido": false, "normalizado": "ES91210004184502000513" },
+    { "valor": "DE89370400440532013000", "valido": true, "normalizado": "DE89370400440532013000" },
+    { "valor": "1234", "valido": false, "normalizado": "1234" }
+  ],
   "texto": [
     { "valor": "Calle Real 14", "valido": true },
     { "valor": "  Málaga  ", "valido": true },

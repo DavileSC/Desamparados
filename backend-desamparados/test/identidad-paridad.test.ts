@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { ArkErrors } from 'arktype';
-import { dni, telefono, textoRequerido, codigoPostal } from '../src/config/common.js';
+import { dni, iban, telefono, textoRequerido, codigoPostal } from '../src/config/common.js';
 
 // La misma tabla que lee desamparados-web/src/lib/validacion/__tests__/identidad.test.ts.
 // Son dos paquetes sin código compartido: esta tabla es lo único que impide
@@ -13,6 +13,7 @@ const casos = JSON.parse(
 ) as {
   dni: { valor: string; valido: boolean; normalizado: string }[];
   telefono: { valor: string; valido: boolean; normalizado: string }[];
+  iban: { valor: string; valido: boolean; normalizado: string }[];
   codigoPostal: { valor: string; valido: boolean; normalizado: string }[];
   texto: { valor: string; valido: boolean }[];
 };
@@ -72,5 +73,14 @@ test('el código postal: el servidor acepta y recorta lo mismo que el formulario
     if (fueAceptado) {
       assert.equal(resultado, caso.normalizado, `código postal recortado ${JSON.stringify(caso.valor)}`);
     }
+  }
+});
+
+test('el IBAN: el servidor acepta y normaliza lo mismo que el formulario', () => {
+  for (const caso of casos.iban) {
+    const resultado = iban(caso.valor);
+    const fueAceptado = !(resultado instanceof ArkErrors);
+    assert.equal(fueAceptado, caso.valido, `IBAN ${JSON.stringify(caso.valor)}`);
+    if (fueAceptado) assert.equal(resultado, caso.normalizado, `IBAN normalizado ${JSON.stringify(caso.valor)}`);
   }
 });

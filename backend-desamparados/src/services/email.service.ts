@@ -1,8 +1,8 @@
 /**
  * Los correos que manda la casa: recuperar la contraseña, la papeleta de
  * sitio, la confirmación de un alta, el aviso a Secretaría de una solicitud
- * nueva, su aprobación o rechazo, el recordatorio de una ausencia y el
- * formulario de contacto.
+ * nueva, su aprobación o rechazo, la apertura de las papeletas, el
+ * recordatorio de una ausencia y el formulario de contacto.
  *
  * Cómo se maquetan está en `correos/plantilla` y por dónde salen en
  * `correos/envio`: aquí solo queda lo que dice cada correo.
@@ -270,6 +270,44 @@ export class EmailService {
       asunto,
       maquetar(asunto, 'Secretaría General', content)
     );
+  }
+
+  /**
+   * Se abre la solicitud de papeletas: un correo por cuenta, con las fichas de
+   * esa cuenta que pueden salir y los días de reparto. El nombre de cada ficha
+   * va porque quien recibe el correo muchas veces pide también las de sus
+   * menores.
+   */
+  static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number) {
+    const { primario, secundario } = COLORES;
+    const enlace = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/area-hermano/procesion`;
+    const lista = (elementos: string[]) =>
+      `<ul style="font-size: 14px; color: #444; margin-top: 0; padding-left: 20px; line-height: 1.6;">${elementos.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>`;
+
+    const content = `
+      <p style="margin-top: 0;">Estimado/a hermano/a en Cristo, <strong>${esc(nombreCuenta)}</strong>:</p>
+      <p>Le comunicamos que ya está <strong>abierta la solicitud de papeletas de sitio</strong> para la Estación de Penitencia de ${year}. Puede pedirla desde el área de hermanos y elegir el día en que pasará a recogerla.</p>
+
+      <div style="background-color: #fafafa; border-left: 4px solid ${secundario}; padding: 20px 25px; margin: 30px 0;">
+        <h2 style="margin: 0 0 10px 0; font-size: 14px; color: ${primario}; font-family: 'Arial', sans-serif; text-transform: uppercase; letter-spacing: 1px;">Días de reparto</h2>
+        ${lista(dias)}
+      </div>
+
+      <p style="margin-bottom: 10px;">Puede pedirla para:</p>
+      ${lista(fichas)}
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${enlace}" style="background-color: ${primario}; color: #ffffff; padding: 12px 25px; text-decoration: none; font-family: 'Arial', sans-serif; font-size: 14px; border-radius: 4px; display: inline-block;">Pedir la papeleta</a>
+      </div>
+
+      <div style="text-align: center; margin-top: 30px; font-style: italic;">
+        <p>Esperamos contar con su presencia acompañando a nuestros Sagrados Titulares.</p>
+        <p style="margin-top: 20px; font-weight: bold; font-style: normal; font-size: 14px;">El Secretario</p>
+      </div>
+    `;
+
+    const asunto = `Abierta la solicitud de papeletas de sitio ${year}`;
+    return await enviarCorreo(emailDestino, asunto, maquetar('Papeletas de sitio', 'Secretaría General', content));
   }
 
   static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string) {

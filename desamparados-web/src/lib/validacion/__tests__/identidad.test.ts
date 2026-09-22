@@ -9,6 +9,7 @@ import {
   normalizarDni, esDniValido,
   normalizarTelefono, esTelefonoValido,
   esCodigoPostalValido, esTextoValido,
+  normalizarIban, esIbanValido,
 } from '../identidad'
 
 // La misma tabla que lee backend-desamparados/test/identidad-paridad.test.ts.
@@ -25,6 +26,7 @@ const casos = JSON.parse(
 ) as {
   dni: { valor: string; valido: boolean; normalizado: string }[]
   telefono: { valor: string; valido: boolean; normalizado: string }[]
+  iban: { valor: string; valido: boolean; normalizado: string }[]
   codigoPostal: { valor: string; valido: boolean }[]
   texto: { valor: string; valido: boolean }[]
 }
@@ -33,6 +35,11 @@ describe('reglas de identidad', () => {
   it.each(casos.dni)('DNI $valor', ({ valor, valido, normalizado }) => {
     expect(normalizarDni(valor)).toBe(normalizado)
     expect(esDniValido(valor)).toBe(valido)
+  })
+
+  it.each(casos.iban)('IBAN $valor', ({ valor, valido, normalizado }) => {
+    expect(normalizarIban(valor)).toBe(normalizado)
+    expect(esIbanValido(valor)).toBe(valido)
   })
 
   it.each(casos.telefono)('teléfono $valor', ({ valor, valido, normalizado }) => {

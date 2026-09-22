@@ -14,6 +14,8 @@ import { encrypt } from '../utils/bcrypt.handle';
 import { CreateHermanoDto, UpdateHermanoDto, EmancipateHermanoDto } from '../dtos/hermano.dto';
 import { comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano } from '../domain/fechas-hermano';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
+import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
+import { enmascararIban } from '../domain/iban.js';
 
 /**
  * Las fichas que cuelgan de una cuenta: la suya y las de quien tenga a su
@@ -48,7 +50,10 @@ export class MisFichasService {
       db.hermano.count({ where })
     ]);
 
-    return respuestaPaginada(data, total, paginacion);
+    // La cuenta bancaria nunca vuelve entera: basta para reconocerla. Para
+    // cambiarla se escribe la nueva.
+    const fichas = data.map(({ iban, ...ficha }) => ({ ...ficha, ibanEnmascarado: enmascararIban(iban) }));
+    return respuestaPaginada(fichas, total, paginacion);
   }
 
   static async createDependentProfile(managerUserId: number, data: CreateHermanoDto, meta?: MetaDeAuditoria) {
@@ -76,7 +81,7 @@ export class MisFichasService {
         nombre: data.nombre,
         // De un hijo se heredan si no vienen; de un sobrino o un ahijado no
         // valen, y por eso el formulario los pide en blanco cuando no es hijo.
-        apellidos: data.apellidos || manager.apellidos,
+        ...(apellidosTrasCambio(data) ?? partirApellidos(manager.apellidos)),
         dni: data.dni || null,
         // La ficha del propio titular no tiene parentesco: no es de nadie.
         parentesco: esTitular ? null : (data.parentesco ?? null),
@@ -108,6 +113,16 @@ export class MisFichasService {
     if (!hermano) return null; // Devolvemos null para que el Controller lance el 403 IDOR
 
     const dataToUpdate = sinFechasDelMismoDia(prepareUpdateData(data, USER_EDITABLE_FIELDS) as Record<string, unknown>, hermano);
+    // La ficha del titular no es de nadie: no lleva parentesco.
+    if (hermano.esTitular) delete dataToUpdate.parentesco;
+    const apellidos = apellidosTrasCambio(data, hermano);
+    if (apellidos) Object.assign(dataToUpdate, apellidos);
+    // Domiciliar sin cuenta dejaría a Tesorería con un recibo que no puede cobrar.
+    const forma = dataToUpdate.formaPagoPref ?? hermano.formaPagoPref;
+    const cuenta = dataToUpdate.iban !== undefined ? dataToUpdate.iban : hermano.iban;
+    if (forma === 'DOMICILIACION' && !cuenta) {
+      throw new HttpError('Para domiciliar los recibos hace falta el IBAN de la cuenta.');
+    }
     if (typeof dataToUpdate.dni === 'string' && dataToUpdate.dni !== hermano.dni) {
       await comprobarDniLibre(dataToUpdate.dni, hermanoId);
     }
@@ -120,7 +135,8 @@ export class MisFichasService {
 
     // Auditoría tras confirmar: el hermano cambió datos de su ficha o de la de un familiar
     if (detalles) await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_ACTUALIZAR, meta ?? {}, 'hermano', hermanoId, detalles);
-    return actualizado;
+    const { iban: cuentaGuardada, ...resto } = actualizado;
+    return { ...resto, ibanEnmascarado: enmascararIban(cuentaGuardada) };
   }
 
   /**

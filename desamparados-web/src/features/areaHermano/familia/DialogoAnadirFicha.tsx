@@ -12,12 +12,13 @@ type Modo = 'menor' | 'yo' | null
 interface Props {
   /** `menor`: alguien a su cargo. `yo`: su propia ficha, si aún no la tiene. */
   modo: Modo
-  apellidosDelTitular: string
+  /** Se propone para un hijo o para la ficha propia; un sobrino lleva los suyos. */
+  primerApellidoDelTitular: string
   onCerrar: () => void
   onHecho: (mensaje: string) => void
 }
 
-const VACIO = { nombre: '', apellidos: '', fechaNacimiento: '', parentesco: 'HIJO' as Parentesco, dni: '', email: '' }
+const VACIO = { nombre: '', primerApellido: '', segundoApellido: '', fechaNacimiento: '', parentesco: 'HIJO' as Parentesco, dni: '', email: '' }
 
 /**
  * Apuntar a alguien desde el área de hermanos.
@@ -27,7 +28,7 @@ const VACIO = { nombre: '', apellidos: '', fechaNacimiento: '', parentesco: 'HIJ
  * a otros y luego se anima. Lo segundo se reconoce por el DNI, que es el mismo
  * de la cuenta: el servidor la crea entonces como ficha de titular.
  */
-export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar, onHecho }: Props) {
+export default function DialogoAnadirFicha({ modo, primerApellidoDelTitular, onCerrar, onHecho }: Props) {
   const [datos, setDatos] = useState(VACIO)
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -41,11 +42,11 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
    * nunca al cerrar, para que el diálogo no se vacíe de golpe mientras se
    * desvanece.
    *
-   * Los apellidos del adulto solo se proponen para un hijo o para él mismo: un
-   * sobrino o un ahijado llevan los suyos y no hay que sugerir otros.
+   * El primer apellido del adulto solo se propone para un hijo o para él mismo:
+   * un sobrino o un ahijado llevan los suyos y no hay que sugerir otros.
    *
    * Depende solo de `modo`, no de los apellidos. El efecto que había antes
-   * escuchaba también a `apellidosDelTitular`, así que si el perfil se
+   * escuchaba también a los apellidos del titular, así que si el perfil se
    * refrescaba con el diálogo abierto, el formulario se borraba con lo que
    * hubiera escrito dentro.
    */
@@ -53,7 +54,7 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
   if (modo !== ultimoModo) {
     setUltimoModo(modo)
     if (modo) {
-      setDatos({ ...VACIO, apellidos: apellidosDelTitular })
+      setDatos({ ...VACIO, primerApellido: primerApellidoDelTitular })
       setError(null)
     }
   }
@@ -62,10 +63,10 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
     const valor = e.target.value
     setDatos((previos) => {
       if (campo !== 'parentesco') return { ...previos, [campo]: valor }
-      // Al dejar de ser hijo/a, los apellidos heredados estorban.
-      const apellidos = valor === 'HIJO' ? (previos.apellidos || apellidosDelTitular)
-        : previos.apellidos === apellidosDelTitular ? '' : previos.apellidos
-      return { ...previos, parentesco: valor as Parentesco, apellidos }
+      // Al dejar de ser hijo/a, el apellido heredado estorba.
+      const primerApellido = valor === 'HIJO' ? (previos.primerApellido || primerApellidoDelTitular)
+        : previos.primerApellido === primerApellidoDelTitular ? '' : previos.primerApellido
+      return { ...previos, parentesco: valor as Parentesco, primerApellido }
     })
   }
 
@@ -73,8 +74,8 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
     setError(null)
     const edad = datos.fechaNacimiento ? aniosCumplidos(datos.fechaNacimiento) : null
 
-    if (!datos.nombre.trim() || !datos.apellidos.trim() || !datos.fechaNacimiento) {
-      setError('Faltan el nombre, los apellidos o la fecha de nacimiento.')
+    if (!datos.nombre.trim() || !datos.primerApellido.trim() || !datos.fechaNacimiento) {
+      setError('Faltan el nombre, el primer apellido o la fecha de nacimiento.')
       return
     }
     if (esPropia && (edad === null || edad < MAYORIA_DE_EDAD)) {
@@ -98,7 +99,8 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
     try {
       await anadirFicha({
         nombre: datos.nombre.trim(),
-        apellidos: datos.apellidos.trim(),
+        primerApellido: datos.primerApellido.trim(),
+        segundoApellido: datos.segundoApellido.trim(),
         fechaNacimiento: datos.fechaNacimiento,
         ...(esPropia ? {} : { parentesco: datos.parentesco }),
         ...(datos.dni ? { dni: datos.dni } : {}),
@@ -135,11 +137,14 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
               slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: hoy } }}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12 }}>
             <TextField fullWidth label="Nombre" value={datos.nombre} onChange={cambiar('nombre')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Apellidos" value={datos.apellidos} onChange={cambiar('apellidos')} />
+            <TextField fullWidth label="Primer apellido" value={datos.primerApellido} onChange={cambiar('primerApellido')} />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth label="Segundo apellido" value={datos.segundoApellido} onChange={cambiar('segundoApellido')} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField

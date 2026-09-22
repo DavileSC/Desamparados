@@ -34,6 +34,36 @@ export const telefono = type("string")
     .matching(/^[0-9]{9}$/)
     .describe("un teléfono válido (9 dígitos)");
 
+// Texto opcional de la ficha (profesión, parroquia, provincia...): puede ir
+// vacío, y como todo texto libre, sin «<» ni «>».
+export const textoOpcional = type("string <= 160")
+    .matching(/^[^<>]*$/)
+    .describe("un texto sin «<» ni «>», de 160 caracteres como mucho");
+
+// IBAN: sin espacios y en mayúsculas, con el dígito de control comprobado
+// (módulo 97, ISO 13616). El hermano lo cambia él mismo desde su área, y una
+// cuenta mal copiada es un recibo devuelto por el banco. Devuelve el limpio.
+export function normalizarIban(valor: string): string {
+    return valor.replace(/[\s-]/g, '').toUpperCase();
+}
+
+export function esIbanValido(iban: string): boolean {
+    if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+    if (iban.startsWith('ES') && iban.length !== 24) return false;
+    const reordenado = iban.slice(4) + iban.slice(0, 4);
+    let resto = 0;
+    for (const caracter of reordenado) {
+        const cifras = /[A-Z]/.test(caracter) ? String(caracter.charCodeAt(0) - 55) : caracter;
+        for (const cifra of cifras) resto = (resto * 10 + Number(cifra)) % 97;
+    }
+    return resto === 1;
+}
+
+export const iban = type("string").pipe(
+    normalizarIban,
+    type("string").narrow(esIbanValido).describe("un IBAN válido (revisa los dígitos de control)"),
+);
+
 // Código postal (5 dígitos). Vivía suelto como `type(...).matching(...)` dentro
 // de auth.schema.ts: nadie podía atarlo a la tabla de shared/casos-identidad.json
 // (que sí ata DNI y teléfono), así que el regex del servidor podía cambiar sin

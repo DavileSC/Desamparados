@@ -11,6 +11,7 @@ import { AvisarAsistenciaDto } from '../../dtos/procesion.dto';
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { transactionWithRetry } from '../../utils/transaction-retry.js';
 import { sanearPaginacion, respuestaPaginada } from '../../domain/paginacion.js';
+import { PlazoPapeletasService } from './plazo.service.js';
 
 export class MiProcesionService {
 
@@ -39,7 +40,9 @@ export class MiProcesionService {
       horaInicio: t.horaInicio,
       horaFin: t.horaFin,
       // Info útil para el usuario: "Hay 15 apuntados"
-      genteApuntada: t._count.citas
+      genteApuntada: t._count.citas,
+      // Para avisar de un día casi lleno y no ofrecer uno completo.
+      capacidad: t.capacidadEstimada
     }));
   }
 
@@ -56,18 +59,24 @@ export class MiProcesionService {
       throw new HttpError('No tienes permisos para apuntar a este cofrade.');
     }
 
-    const year = new Date().getFullYear();
-
     // Todas las comprobaciones y la creación van en la misma transacción
     // serializable. Fuera de ella, dos avisos a la vez (doble clic, o dos
     // dispositivos de la misma familia) pasaban los dos el «Ya tienes un día
     // reservado» y el hermano acababa con dos citas; y el aforo podía
     // rebasarse por lo mismo.
     return await transactionWithRetry(async (tx) => {
+      // Con el plazo cerrado no se reserva, lo intente la pantalla o alguien a mano.
+      if (!(await PlazoPapeletasService.estaAbierto(tx))) {
+        throw new HttpError('La solicitud de papeletas no está abierta.', 409);
+      }
+
       const turno = await tx.turno.findUnique({ where: { id: turnoId } });
       if (!turno || !turno.activo || turno.fecha < new Date()) {
         throw new HttpError('El turno no existe o ya no está disponible.');
       }
+      // El año de la procesión es el del reparto, no el de hoy: un plazo
+      // abierto en diciembre es para la Semana Santa del año siguiente.
+      const year = turno.fecha.getFullYear();
 
       // 1. Verificar si ya tiene papeleta este año
       const yaTienePapeleta = await tx.papeletaSitio.findFirst({
@@ -108,6 +117,52 @@ export class MiProcesionService {
         data: { turnoId, hermanoId, estado: EstadoCita.RESERVADA }
       });
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  /**
+   * Todo lo que necesita la pantalla de Procesión del hermano: si el plazo
+   * está abierto, los días de reparto, y por cada ficha de la cuenta su cita
+   * reservada, su papeleta de este año y la última que tuvo.
+   */
+  static async getMiEstado(userId: number) {
+    const [abierto, year, precios] = await Promise.all([
+      PlazoPapeletasService.estaAbierto(),
+      PlazoPapeletasService.anioDeLaProcesion(),
+      PlazoPapeletasService.precios(),
+    ]);
+    const inicioAnio = new Date(year, 0, 1);
+    const finAnio = new Date(year + 1, 0, 1);
+
+    const fichas = await db.hermano.findMany({
+      where: { userId, fechaBaja: null },
+      orderBy: [{ esTitular: 'desc' }, { fechaNacimiento: 'asc' }],
+      select: {
+        id: true, nombre: true, apellidos: true, esTitular: true, parentesco: true, activo: true,
+        tieneTunicaPropia: true,
+        citas: {
+          where: { estado: EstadoCita.RESERVADA, turno: { fecha: { gte: inicioAnio, lt: finAnio } } },
+          select: { id: true, turno: { select: { id: true, fecha: true, horaInicio: true, horaFin: true } } },
+          take: 1,
+        },
+        papeletas: {
+          orderBy: { year: 'desc' },
+          take: 2,
+          select: { id: true, year: true, puesto: true, tramo: true, numero: true, recibo: { select: { estado: true } } },
+        },
+      },
+    });
+
+    const dias = abierto ? await MiProcesionService.getDiasDisponibles() : [];
+
+    return {
+      abierto, year, precios, dias,
+      fichas: fichas.map(({ citas, papeletas, ...ficha }) => ({
+        ...ficha,
+        cita: citas[0] ?? null,
+        papeleta: papeletas.find((p) => p.year === year) ?? null,
+        ultima: papeletas.find((p) => p.year < year) ?? null,
+      })),
+    };
   }
 
   /**

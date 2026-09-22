@@ -14,7 +14,8 @@ import {
   yearParamSchema,
   crearTurnoSchema,
   procesarAusenciasSchema,
-  misPapeletasQuerySchema
+  misPapeletasQuerySchema,
+  plazoPapeletasSchema
 } from '../schemas/procesion.schema.js';
 
 const procesionRouter = Router();
@@ -29,6 +30,7 @@ const rolesJunta = [Role.ADMIN, Role.TESORERIA, Role.SECRETARIA, Role.ALBACERIA,
 //  ZONA HERMANO (APP)
 // ==========================================
 procesionRouter.get('/dias', ProcesionController.getDias);
+procesionRouter.get('/mi-estado', ProcesionController.getMiEstado);
 procesionRouter.post('/avisar', validate(avisarAsistenciaSchema), ProcesionController.avisarAsistencia);
 procesionRouter.delete('/avisar/:id', validateId, ProcesionController.cancelarAsistencia);
 procesionRouter.get('/mis-papeletas', validate(misPapeletasQuerySchema), ProcesionController.getMisPapeletas);
@@ -52,6 +54,10 @@ procesionRouter.post('/admin/procesar-ausencias', checkRole([Role.ADMIN, Role.SE
 procesionRouter.get('/admin/turnos', checkRole(rolesJunta), ProcesionController.getTodosTurnos);
 procesionRouter.post('/admin/turnos', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(crearTurnoSchema), ProcesionController.crearTurno);
 procesionRouter.delete('/admin/turnos/:id', checkRole([Role.ADMIN, Role.SECRETARIA]), validateId, ProcesionController.deleteTurno);
+
+// El plazo de la solicitud en el área de hermanos: lo ve la Junta, lo cambia Secretaría.
+procesionRouter.get('/admin/plazo', checkRole(rolesJunta), ProcesionController.getPlazo);
+procesionRouter.post('/admin/plazo', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(plazoPapeletasSchema), ProcesionController.cambiarPlazo);
 
 procesionRouter.get('/admin/cuadrante', checkRole(rolesJunta), ProcesionController.getCuadrante);
 procesionRouter.post('/admin/turnos/:id/apuntarme', checkRole(rolesJunta), validateId, ProcesionController.apuntarmeTurno);

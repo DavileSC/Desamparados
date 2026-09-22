@@ -73,3 +73,13 @@ export const procesarAusenciasSchema = type({
 export const misPapeletasQuerySchema = type({
     query: { ...paginacionQuery }
 });
+
+// 7. Abrir o cerrar la solicitud de papeletas del área de hermanos. Avisar por
+// correo y dejar un borrador de noticia solo cuentan al abrir.
+export const plazoPapeletasSchema = type({
+    body: {
+        abierto: "boolean",
+        "avisar?": "boolean",
+        "borradorNoticia?": "boolean"
+    }
+});

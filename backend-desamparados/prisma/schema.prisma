@@ -136,21 +136,61 @@ enum Parentesco {
   OTRO
 }
 
+// Cómo se enseñan están en el frontend; aquí solo los valores posibles.
+enum Sexo {
+  HOMBRE
+  MUJER
+}
+
+enum EstadoCivil {
+  SOLTERO
+  CASADO
+  PAREJA_DE_HECHO
+  SEPARADO
+  DIVORCIADO
+  VIUDO
+}
+
 model Hermano {
   id Int @id @default(autoincrement())
 
   // DATOS PERSONALES
   nombre          String
+  /// Los dos apellidos juntos, como se buscan, se ordenan y se enseñan. Lo
+  /// escribe el servidor a partir de los dos de abajo (domain/apellidos.ts):
+  /// no se toca a mano, o se desacompasaría de ellos.
   apellidos       String
+  primerApellido  String?
+  segundoApellido String?
   dni             String?  @unique // Puede ser null (niños)
   fechaNacimiento DateTime
+  sexo            Sexo?
+  estadoCivil     EstadoCivil?
+  profesion       String?
+  /// «Natural de»: dónde nació.
+  lugarNacimiento String?
 
   // CONTACTO ESPECÍFICO
   telefono     String?
+  telefonoFijo String?
   email        String?
+  /// Un segundo correo, opcional: para quien quiere los avisos en dos sitios.
+  email2       String?
   direccion    String?
   poblacion    String?
   codigoPostal String?
+  provincia    String?
+  pais         String?
+
+  // VIDA COFRADE
+  // Bautismo y parroquia son datos religiosos (RGPD, art. 9): opcionales, y
+  // solo los ven el propio hermano y la gestión del censo.
+  fechaBautismo     DateTime?
+  parroquiaBautismo String?
+  /// Los tres siguientes los lleva Secretaría: el hermano los ve, no los edita.
+  fechaJura         DateTime?
+  presentadoPor     String?
+  presentadoPor2    String?
 
   // DATOS DE HERMANDAD
   fechaAlta DateTime  @default(now())

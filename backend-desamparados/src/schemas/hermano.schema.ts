@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { dni, textoRequerido, telefono, email, password, ordenQuery } from '../config/common';
+import { dni, textoRequerido, textoOpcional, telefono, email, iban, password, ordenQuery } from '../config/common';
 import { ORDENES_CENSO } from '../domain/ordenacion.js';
 
 // ==========================================
@@ -14,17 +14,43 @@ const datosProcesionSchema = type({
     "puesto?": "string"
 });
 
-// El cuerpo base para actualizar (Datos personales básicos)
+const diaOpcional = type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha AAAA-MM-DD").or("null");
+const opcional = textoOpcional.or("null");
+
+// El cuerpo base para actualizar: lo que el hermano edita de su ficha o de la
+// de alguien a su cargo. `null` vacía un dato opcional.
+//
+// `apellidos` juntos se sigue admitiendo por los clientes de antes; los
+// formularios nuevos mandan los dos por separado y el servidor los compone.
 const baseUpdateBody = type({
     "nombre?": textoRequerido,
     "apellidos?": "string",
+    "primerApellido?": textoRequerido,
+    "segundoApellido?": opcional,
     "fechaNacimiento?": type("string").matching(/^\d{4}-\d{2}-\d{2}$/),
     "dni?": dni,
+    "sexo?": "'HOMBRE' | 'MUJER' | null",
+    "estadoCivil?": "'SOLTERO' | 'CASADO' | 'PAREJA_DE_HECHO' | 'SEPARADO' | 'DIVORCIADO' | 'VIUDO' | null",
+    "profesion?": opcional,
+    "lugarNacimiento?": opcional,
     "telefono?": telefono,
+    "telefonoFijo?": telefono.or("null"),
     "email?": email,
+    "email2?": email.or("null"),
     "direccion?": "string",
     "poblacion?": "string",
-    "codigoPostal?": "string"
+    "codigoPostal?": "string",
+    "provincia?": opcional,
+    "pais?": opcional,
+    // Bautismo y parroquia: datos religiosos, siempre opcionales.
+    "fechaBautismo?": diaOpcional,
+    "parroquiaBautismo?": opcional,
+    // La cuenta la cambia el propio hermano.
+    "formaPagoPref?": "'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'",
+    "iban?": iban.or("null"),
+    "titularCuenta?": opcional,
+    // Solo cuenta en las fichas a cargo: la del titular no es de nadie.
+    "parentesco?": "'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO'"
 });
 
 
@@ -38,6 +64,8 @@ export const addProfileSchema = type({
     body: type({
         nombre: textoRequerido,
         "apellidos?": "string",
+        "primerApellido?": textoRequerido,
+        "segundoApellido?": opcional,
         fechaNacimiento: type("string").matching(/^\d{4}-\d{2}-\d{2}$/),
         // No todo menor a cargo de alguien es su hijo: puede ser su sobrino, su
         // nieto o su ahijado, y Secretaría necesita saberlo para pedir la
@@ -75,7 +103,10 @@ export const updateAdminHermanoSchema = type({
         // más se corrigen a mano. La baja solo se corrige en fichas que ya
         // están de baja (lo comprueba el servicio, que conoce el estado).
         "fechaAlta?": fechaDia,
-        "fechaBaja?": fechaDia
+        "fechaBaja?": fechaDia,
+        "fechaJura?": diaOpcional,
+        "presentadoPor?": opcional,
+        "presentadoPor2?": opcional
     }))
 });
 

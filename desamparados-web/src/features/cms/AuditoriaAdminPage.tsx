@@ -32,6 +32,8 @@ const ACCIONES: Record<string, string> = {
   TURNO_ACTUALIZAR: 'Editar un turno de reparto',
   TURNO_ELIMINAR: 'Borrar un turno de reparto',
   AUSENCIAS_PROCESAR: 'Procesar ausencias',
+  PLAZO_PAPELETAS_ABRIR: 'Abrir la solicitud de papeletas',
+  PLAZO_PAPELETAS_CERRAR: 'Cerrar la solicitud de papeletas',
   SOLICITUD_APROBAR: 'Aprobar una solicitud de alta',
   SOLICITUD_RECHAZAR: 'Rechazar una solicitud de alta',
   HERMANO_BAJA: 'Dar de baja a un hermano',
@@ -82,6 +84,12 @@ const CAMPOS: Record<string, string> = {
   fichasPendientes: 'Fichas pendientes', fichasAprobadas: 'Fichas aprobadas', fichasEliminadas: 'Fichas eliminadas',
   userId: 'Cuenta (id)', id: 'Ficha', role: 'Cargo', value: 'Valor', origen: 'Origen',
   totalProcesados: 'Hermanos procesados', estado: 'Estado',
+  primerApellido: 'Primer apellido', segundoApellido: 'Segundo apellido', sexo: 'Sexo', estadoCivil: 'Estado civil',
+  profesion: 'Profesión', lugarNacimiento: 'Natural de', telefonoFijo: 'Teléfono fijo', email2: 'Segundo correo',
+  provincia: 'Provincia', pais: 'País', fechaBautismo: 'Fecha de bautismo', parroquiaBautismo: 'Parroquia de bautismo',
+  fechaJura: 'Fecha de jura', presentadoPor: 'Presentado por', presentadoPor2: 'Presentado también por',
+  formaPagoPref: 'Forma de pago', parentesco: 'Parentesco',
+  abierto: 'Solicitud abierta', avisados: 'Cuentas avisadas por correo', noticiaId: 'Borrador de noticia',
 }
 
 const etiqueta = (campo: string) => CAMPOS[campo] ?? campo

@@ -1,6 +1,7 @@
 import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 import type { Parentesco } from './auth'
+import type { EstadoCivil, Sexo } from './perfil'
 import type { Prenda } from './inventario'
 import type { ReceiptStatus } from './recibos'
 
@@ -24,6 +25,22 @@ export interface AdminBrother {
   tunica: string | null
   alturaHombro: number | null
   puesto: string | null
+  // El resto de la ficha, sin datos bancarios (el censo no los ve).
+  primerApellido: string | null
+  segundoApellido: string | null
+  sexo: Sexo | null
+  estadoCivil: EstadoCivil | null
+  profesion: string | null
+  lugarNacimiento: string | null
+  telefonoFijo: string | null
+  email2: string | null
+  provincia: string | null
+  pais: string | null
+  fechaBautismo: string | null
+  parroquiaBautismo: string | null
+  fechaJura: string | null
+  presentadoPor: string | null
+  presentadoPor2: string | null
   user?: { email: string | null; telefono: string | null }
 }
 
@@ -88,7 +105,23 @@ export function rechazarSolicitud(id: number) {
 
 export interface DatosDeFichaDeHermano {
   nombre?: string
-  apellidos?: string
+  primerApellido?: string
+  segundoApellido?: string | null
+  sexo?: Sexo | null
+  estadoCivil?: EstadoCivil | null
+  profesion?: string | null
+  lugarNacimiento?: string | null
+  telefonoFijo?: string | null
+  email2?: string | null
+  provincia?: string | null
+  pais?: string | null
+  fechaBautismo?: string | null
+  parroquiaBautismo?: string | null
+  /** La jura y los padrinos los lleva Secretaría: el hermano no los toca. */
+  fechaJura?: string | null
+  presentadoPor?: string | null
+  presentadoPor2?: string | null
+  parentesco?: Parentesco
   dni?: string
   fechaNacimiento?: string
   telefono?: string
