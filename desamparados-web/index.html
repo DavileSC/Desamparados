@@ -6,6 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Grupo Parroquial de Nuestra Señora de los Desamparados de Málaga. Devoción, historia y patrimonio en el corazón de la ciudad." />
     <title>Grupo Parroquial de los Desamparados | Málaga</title>
+
+    <!--
+      La vista previa al pegar un enlace (WhatsApp, Facebook, X…).
+
+      Va aquí, en el HTML estático, y no solo en `MetaDePagina`: esos robots NO
+      ejecutan JavaScript, así que de una web como esta —sin renderizado en el
+      servidor— solo leen este fichero. Lo que pone React con Helmet lo ve
+      Google, que sí ejecuta, pero no el que comparte una noticia por WhatsApp.
+
+      Por eso estas son las del sitio, no las de cada página: hacen que
+      cualquier enlace se vea como del Grupo Parroquial, con su foto, en vez de
+      como un enlace pelado. Para que cada página traiga la suya haría falta
+      prerenderizar o servir el HTML desde el servidor.
+
+      `og:url` no va: el robot usa la dirección que ha pedido, y una fija aquí
+      apuntaría siempre a la portada.
+    -->
+    <meta property="og:site_name" content="Grupo Parroquial de los Desamparados" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:title" content="Grupo Parroquial de los Desamparados | Málaga" />
+    <meta property="og:description" content="Grupo Parroquial de Nuestra Señora de los Desamparados de Málaga. Devoción, historia y patrimonio en el corazón de la ciudad." />
+    <meta property="og:image" content="https://www.desamparadosmalaga.com/images/hero-1920.webp" />
+    <meta property="og:image:alt" content="Nuestra Señora de los Desamparados" />
+    <meta name="twitter:card" content="summary_large_image" />
     <!-- Imagen LCP de la portada: la precargamos en la versión que toque según el viewport -->
   </head>
   <body>

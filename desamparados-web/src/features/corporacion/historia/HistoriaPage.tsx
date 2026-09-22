@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async'
+import MetaDePagina from '../../../components/MetaDePagina'
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -65,13 +65,10 @@ export default function HistoriaPage() {
   return (
     <>
       {/* En la vista previa, la pestaña sigue siendo la del CMS. */}
-      {!borrador && <Helmet>
-        <title>{`${cabecera.titulo} | Desamparados`}</title>
-        <meta
-          name="description"
-          content="Historia del Grupo Parroquial de Nuestra Señora de los Desamparados: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga."
-        />
-      </Helmet>}
+      {!borrador && <MetaDePagina
+        titulo={cabecera.titulo}
+        descripcion="Historia del Grupo Parroquial de Nuestra Señora de los Desamparados: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga."
+      />}
 
       <Box sx={{ position: 'relative', isolation: 'isolate', '& a:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 4 } }}>
         {cabecera.foto !== '' && <FondoDePagina url={cabecera.foto} />}

@@ -4,7 +4,10 @@ import DatosDeIdentificacion from './DatosDeIdentificacion'
 
 export default function AvisoLegalPage() {
   return (
-    <MarcoPaginaLegal title="Aviso Legal">
+    <MarcoPaginaLegal
+      title="Aviso Legal"
+      descripcion="Datos identificativos del Grupo Parroquial de Nuestra Señora de los Desamparados de Málaga y condiciones de uso de esta web, conforme a la LSSI-CE."
+    >
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. Datos identificativos
       </Typography>

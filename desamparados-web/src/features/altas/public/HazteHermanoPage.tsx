@@ -6,7 +6,7 @@ import {
   Alert, Box, Checkbox, FormControl, FormControlLabel, FormHelperText, Grid, TextField, Typography,
 } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
-import { Helmet } from 'react-helmet-async'
+import MetaDePagina from '../../../components/MetaDePagina'
 import { Link } from 'react-router-dom'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import { Revela } from '../../../components/SeccionAnimada'
@@ -182,13 +182,10 @@ export default function HazteHermanoPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Hazte hermano | Desamparados</title>
-        <meta
-          name="description"
-          content="Solicita tu alta como hermano del Grupo Parroquial de Nuestra Señora de los Desamparados. Rellena la solicitud y formaliza el alta en Secretaría."
-        />
-      </Helmet>
+      <MetaDePagina
+        titulo="Hazte hermano"
+        descripcion="Solicita tu alta como hermano del Grupo Parroquial de Nuestra Señora de los Desamparados. Rellena la solicitud y formaliza el alta en Secretaría."
+      />
 
       <Box
         component="section"

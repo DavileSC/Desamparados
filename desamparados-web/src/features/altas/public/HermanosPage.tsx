@@ -1,6 +1,6 @@
 import { Box, Typography, Grid } from '@mui/material'
-import { Helmet } from 'react-helmet-async'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
+import MetaDePagina from '../../../components/MetaDePagina'
 import CabeceraDePagina from '../../../components/CabeceraDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import Boton from '../../../components/Boton'
@@ -9,9 +9,10 @@ import { SECCION_TRAS_CABECERA } from '../../../components/espaciado'
 export default function HermanosPage() {
   return (
     <>
-      <Helmet>
-        <title>Hermanos | Desamparados</title>
-      </Helmet>
+      <MetaDePagina
+        titulo="Hermanos"
+        descripcion="Qué supone ser hermano del Grupo Parroquial de los Desamparados de Málaga y cómo solicitar el alta."
+      />
 
       <CabeceraDePagina
         title="Hermanos"

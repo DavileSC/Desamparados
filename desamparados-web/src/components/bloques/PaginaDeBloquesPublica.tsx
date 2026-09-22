@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
-import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import ContenedorDePagina from '../ContenedorDePagina'
+import MetaDePagina from '../MetaDePagina'
 import CabeceraDePagina from '../CabeceraDePagina'
 import FondoDePagina from '../FondoDePagina'
 import SeccionAnimada from '../SeccionAnimada'
@@ -26,6 +26,12 @@ import { SECCION_TRAS_CABECERA } from '../espaciado'
  * El título de la pestaña sale de la cabecera del documento, así que también se
  * edita desde el CMS. Era lo que ya decía cada página («Cultos | Desamparados»),
  * pero escrito a mano en dos sitios que podían separarse.
+ *
+ * La descripción para buscadores sale del subtítulo, por lo mismo: es la frase
+ * que ya resume la página, se escribe en el CMS y el esquema la limita a 200
+ * caracteres, que es lo que cabe en un resultado de búsqueda. Sin esto, las 22
+ * páginas de bloques compartían la descripción de `index.html` y en Google se
+ * leían todas igual.
  */
 export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }) {
   // En la vista previa del CMS, lo que se está escribiendo; fuera, lo guardado.
@@ -44,7 +50,7 @@ export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }
   return (
     <>
       {/* En la vista previa, la pestaña sigue siendo la del CMS. */}
-      {!borrador && <Helmet><title>{`${pagina.cabecera.titulo} | Desamparados`}</title></Helmet>}
+      {!borrador && <MetaDePagina titulo={pagina.cabecera.titulo} descripcion={pagina.cabecera.subtitulo || undefined} />}
       {/* La caja aísla el fondo: su `zIndex: -1` se queda detrás de la página y
           no se va por detrás del documento. Abarca cabecera y bloques, y ahí
           acaba: el pie queda fuera y la foto no lo pisa. */}

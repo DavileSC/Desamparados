@@ -1,21 +1,21 @@
-import { Helmet } from 'react-helmet-async'
 import { Box } from '@mui/material'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
+import MetaDePagina from '../../components/MetaDePagina'
 import CabeceraDePagina from '../../components/CabeceraDePagina'
 import SeccionAnimada from '../../components/SeccionAnimada'
 import { SECCION_TRAS_CABECERA } from '../../components/espaciado'
 
 interface MarcoPaginaLegalProps {
   title: string
+  /** Para buscadores: qué resuelve esta página, en una frase. */
+  descripcion: string
   children: React.ReactNode
 }
 
-export default function MarcoPaginaLegal({ title, children }: MarcoPaginaLegalProps) {
+export default function MarcoPaginaLegal({ title, descripcion, children }: MarcoPaginaLegalProps) {
   return (
     <>
-      <Helmet>
-        <title>{`${title} | Desamparados`}</title>
-      </Helmet>
+      <MetaDePagina titulo={title} descripcion={descripcion} />
       <CabeceraDePagina title={title} />
       <SeccionAnimada sx={SECCION_TRAS_CABECERA}>
         <ContenedorDePagina>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Helmet } from 'react-helmet-async'
+import MetaDePagina from '../../../components/MetaDePagina'
 import { Link, useParams } from 'react-router-dom'
 import { Alert, Box, CircularProgress, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -51,10 +51,7 @@ export default function NoticiaDetallePage() {
 
   return (
     <>
-      <Helmet>
-        <title>{`${noticia.titulo} | Desamparados`}</title>
-        <meta name="description" content={noticia.extracto} />
-      </Helmet>
+      <MetaDePagina titulo={noticia.titulo} descripcion={noticia.extracto} />
 
       <Box
         component="header"

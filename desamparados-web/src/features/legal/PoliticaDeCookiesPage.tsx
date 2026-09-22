@@ -3,7 +3,10 @@ import MarcoPaginaLegal from './MarcoPaginaLegal'
 
 export default function PoliticaDeCookiesPage() {
   return (
-    <MarcoPaginaLegal title="Política de Cookies">
+    <MarcoPaginaLegal
+      title="Política de Cookies"
+      descripcion="Qué cookies y almacenamiento local usa esta web, para qué sirven y cómo cambiar la decisión sobre ellas en cualquier momento."
+    >
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. ¿Qué son las cookies?
       </Typography>
