@@ -31,6 +31,48 @@
     <meta property="og:image" content="https://www.desamparadosmalaga.com/images/hero-1920.webp" />
     <meta property="og:image:alt" content="Nuestra Señora de los Desamparados" />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <!--
+      Quién es el Grupo Parroquial, en el formato que leen los buscadores
+      (schema.org). Es lo que alimenta el panel lateral de Google y lo que
+      relaciona esta web con los perfiles oficiales.
+
+      Está aquí y no en React por lo mismo que las etiquetas de arriba: así
+      viaja en el HTML tal cual, sin depender de que nadie ejecute JavaScript.
+      `src/config/site.ts` sigue siendo la fuente de verdad y
+      `__tests__/datos-estructurados.test.ts` compara los dos: si cambia un
+      perfil o el correo y aquí no, el test lo dice.
+
+      NO lleva `legalName`, `taxID` ni la dirección fiscal: son los datos que
+      siguen pendientes de confirmar en `site.ts`. Un dato inventado aquí lo
+      publicaría Google como bueno. `location` sí va: es dónde está la
+      parroquia, que es un dato real y el que busca quien quiere venir.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ReligiousOrganization",
+        "name": "Grupo Parroquial de Nuestra Señora de los Desamparados",
+        "url": "https://www.desamparadosmalaga.com/",
+        "email": "info@desamparadosmalaga.com",
+        "image": "https://www.desamparadosmalaga.com/images/hero-1920.webp",
+        "sameAs": [
+          "https://www.facebook.com/desamparadosmalaga/",
+          "https://www.instagram.com/desamparadosmalaga/",
+          "https://x.com/GPDesamparados"
+        ],
+        "location": {
+          "@type": "Place",
+          "name": "Iglesia Parroquial Santa María Goretti",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "C. Corregidor Paz Guzmán, 13",
+            "addressLocality": "Málaga",
+            "addressCountry": "ES"
+          }
+        }
+      }
+    </script>
     <!-- Imagen LCP de la portada: la precargamos en la versión que toque según el viewport -->
   </head>
   <body>

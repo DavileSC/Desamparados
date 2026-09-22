@@ -1,0 +1,54 @@
+import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { site } from '../config/site'
+
+/**
+ * Los datos estructurados viven en `index.html` para que viajen en el HTML sin
+ * depender de JavaScript, pero la fuente de verdad sigue siendo `site.ts`.
+ * Dos sitios que dicen lo mismo se separan solos: esto lo impide.
+ */
+const html = readFileSync(join(process.cwd(), 'index.html'), 'utf8')
+
+function jsonLd(): Record<string, unknown> {
+  const bloque = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)
+  if (!bloque) throw new Error('index.html ya no lleva datos estructurados')
+  return JSON.parse(bloque[1]) as Record<string, unknown>
+}
+
+describe('los datos estructurados de index.html', () => {
+  it('es JSON válido y se declara como schema.org', () => {
+    const datos = jsonLd()
+    expect(datos['@context']).toBe('https://schema.org')
+    expect(datos['@type']).toBe('ReligiousOrganization')
+  })
+
+  it('dice el mismo nombre y el mismo correo que site.ts', () => {
+    const datos = jsonLd()
+    expect(datos.name).toBe(site.nombre)
+    expect(datos.email).toBe(site.contacto.email)
+  })
+
+  it('enumera exactamente los perfiles que site.ts da por buenos', () => {
+    // Un `null` en `site.redes` significa «todavía no nos han dado la URL».
+    // Anunciarle a Google un perfil que no existe es peor que no anunciarlo.
+    const declarados = Object.values(site.redes).filter((u): u is string => u !== null)
+    expect(jsonLd().sameAs).toEqual(declarados)
+  })
+
+  it('sitúa la parroquia donde dice site.sede', () => {
+    const lugar = jsonLd().location as { name: string; address: Record<string, string> }
+    expect(lugar.name).toBe(site.sede.nombre)
+    expect(lugar.address.streetAddress).toBe(site.sede.direccion)
+    expect(lugar.address.addressLocality).toBe(site.sede.localidad)
+  })
+
+  it('no publica los datos legales que siguen pendientes de confirmar', () => {
+    // Mientras `site.ts` los tenga a null, aquí no pueden aparecer: Google los
+    // daría por buenos y un dato inventado no se retira fácil.
+    const datos = jsonLd()
+    expect(datos.legalName).toBeUndefined()
+    expect(datos.taxID).toBeUndefined()
+    expect(datos.address).toBeUndefined()
+  })
+})

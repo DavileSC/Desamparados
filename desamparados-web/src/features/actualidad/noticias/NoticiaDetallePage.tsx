@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import MetaDePagina from '../../../components/MetaDePagina'
+import FichaDeNoticia from '../../../components/FichaDeNoticia'
 import { Link, useParams } from 'react-router-dom'
 import { Alert, Box, CircularProgress, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -52,6 +53,7 @@ export default function NoticiaDetallePage() {
   return (
     <>
       <MetaDePagina titulo={noticia.titulo} descripcion={noticia.extracto} />
+      <FichaDeNoticia noticia={noticia} />
 
       <Box
         component="header"
