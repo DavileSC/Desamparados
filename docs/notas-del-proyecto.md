@@ -324,3 +324,50 @@ el script y el arranque, y la fija `test/paginas-sin-migrar.test.ts`.
 **La lección general:** cuando cambie la *forma* de algo guardado como JSON,
 el cambio necesita su propio paso de migración y alguien que avise si falta. El
 compilador no ve dentro de una columna JSON.
+
+---
+
+## 10. Las fotos del CMS se recortan a 1920 px de lado
+
+Al subir una foto se le quitan los metadatos (el EXIF con el GPS), se recomprime
+y **se reduce si pasa de 1920 px de lado mayor**. Ese tope es el ancho de la
+foto más grande que la web sirve de serie (`hero-1920.webp`); no hay ningún
+sitio donde se pinte nada mayor.
+
+Hasta septiembre de 2026 no existía el tope: se recomprimía, pero una foto
+recién hecha con el móvil entraba con sus 4000 px y se servía así a todo el
+mundo, también al móvil que la iba a pintar a 400. Con doce fotos, una galería
+eran decenas de MB por visita.
+
+**Las animaciones se dejan del tamaño que vengan.** Al resolver una WebP
+animada, el alto que ve sharp es el de todos los fotogramas apilados, y un tope
+de alto la encogería sin motivo.
+
+Y **nunca se agranda** (`withoutEnlargement`): subir la resolución de una foto
+pequeña solo la emborrona y la engorda.
+
+---
+
+## 11. El contraste de la web pública
+
+El tema público es oscuro (`#262326` de fondo) y los pares que se usan de
+verdad cumplen WCAG AA:
+
+| Sobre el fondo | Contraste | |
+|---|---|---|
+| Texto principal (`#ffffff`) | 15,6:1 | ✅ |
+| Texto secundario (`#e4e2df`) | 12,0:1 | ✅ |
+| Dorado de los enlaces activos (`#c1ac00`) | 6,8:1 | ✅ |
+| Blanco sobre el granate de los botones (`#a03d44`) | 6,5:1 | ✅ |
+
+**Dos combinaciones no cumplen y por eso no se usan así:**
+
+- **El granate como texto sobre el fondo oscuro: 2,4:1.** Vale para un relleno
+  con texto blanco encima, no para escribir con él. El único sitio donde se
+  usaba de color de letra era el `:hover` del menú del área de hermanos.
+- **Blanco sobre el dorado: 2,3:1.** No hay ningún `color="secondary"` relleno
+  en la web, y no debe haberlo: el dorado es para escribir sobre el fondo
+  oscuro, no para rellenar con texto blanco encima.
+
+Antes de meter un color nuevo, calcular el contraste. El cálculo es el de WCAG
+sobre la luminancia relativa; cualquier comprobador en línea vale.

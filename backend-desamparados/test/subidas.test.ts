@@ -22,7 +22,7 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { publicStorageDir, MAX_BYTES_IMAGEN, MAX_BYTES_PDF } from '../src/middleware/upload.middleware.js';
-import { recodificarSinMetadatos } from '../src/controllers/subida.controller.js';
+import { recodificarSinMetadatos, LADO_MAXIMO } from '../src/controllers/subida.controller.js';
 import { parseClamdResponse, reiniciarAvisoSinAntivirus, scanBufferClamav } from '../src/utils/clamd.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
@@ -176,6 +176,27 @@ describe('fotos sin metadatos (C5)', () => {
   test('un archivo que no se puede decodificar no se recodifica: lanza', async () => {
     const roto = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7)]);
     await assert.rejects(recodificarSinMetadatos(roto, 'image/jpeg'));
+  });
+
+  test('una foto enorme se reduce al lado máximo, y una pequeña se deja como está', async () => {
+    // Sin esto, una foto recién hecha con el móvil (4000 px de ancho y varios
+    // MB) se publicaba a tamaño completo y se servía así también al móvil que
+    // la iba a pintar a 400.
+    const enorme = await sharp(fotoConRuido(4000, 3000), { raw: { width: 4000, height: 3000, channels: 3 } }).jpeg().toBuffer();
+    const reducida = await sharp(await recodificarSinMetadatos(enorme, 'image/jpeg')).metadata();
+    assert.equal(reducida.width, LADO_MAXIMO);
+    assert.equal(reducida.height, LADO_MAXIMO * 3 / 4, 'mantiene la proporción');
+
+    const pequena = await sharp(fotoConRuido(300, 200), { raw: { width: 300, height: 200, channels: 3 } }).jpeg().toBuffer();
+    const igual = await sharp(await recodificarSinMetadatos(pequena, 'image/jpeg')).metadata();
+    assert.deepEqual([igual.width, igual.height], [300, 200], 'nunca se agranda una foto');
+  });
+
+  test('una foto vertical se reduce por su lado largo, que es el alto', async () => {
+    const vertical = await sharp(fotoConRuido(2000, 3000), { raw: { width: 2000, height: 3000, channels: 3 } }).jpeg().toBuffer();
+    const reducida = await sharp(await recodificarSinMetadatos(vertical, 'image/jpeg')).metadata();
+    assert.equal(reducida.height, LADO_MAXIMO);
+    assert.equal(reducida.width, LADO_MAXIMO * 2 / 3);
   });
 
   test('la foto subida se guarda sin EXIF y enderezada', async (t) => {

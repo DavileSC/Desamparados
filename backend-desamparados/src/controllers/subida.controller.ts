@@ -11,9 +11,23 @@ import { MAX_BYTES_IMAGEN, privateStorageDir } from '../middleware/upload.middle
 type Codificacion = (imagen: Sharp) => Sharp;
 
 /**
- * Vuelve a codificar una foto sin sus metadatos. Una foto del móvil lleva en el
- * EXIF las coordenadas GPS de donde se hizo (la casa de un hermano, el colegio
- * de un menor) y se publicaba tal cual en /storage/public.
+ * El lado mayor que se guarda de una foto, en píxeles.
+ *
+ * Antes no había ninguno: una foto de móvil entraba con sus 4000 px de ancho y
+ * se servía así a todo el mundo, móviles incluidos. Se recomprimía —eso sí se
+ * hacía— pero seguía pesando megas y se pintaba a menos de la mitad de su
+ * tamaño. Doce fotos de una galería podían ser decenas de MB por visita.
+ *
+ * 1920 es el ancho de la foto más grande que la web sirve de serie
+ * (`hero-1920.webp`); no hay ningún sitio donde se pinte nada mayor.
+ */
+export const LADO_MAXIMO = 1920;
+
+/**
+ * Vuelve a codificar una foto sin sus metadatos y sin pasar de `LADO_MAXIMO`.
+ * Una foto del móvil lleva en el EXIF las coordenadas GPS de donde se hizo (la
+ * casa de un hermano, el colegio de un menor) y se publicaba tal cual en
+ * /storage/public.
  *
  * Los metadatos se quitan SIEMPRE, aunque el resultado pese algo más que el
  * original: la privacidad no se negocia por unos KB. Lo que se cuida es no
@@ -36,8 +50,21 @@ type Codificacion = (imagen: Sharp) => Sharp;
 export async function recodificarSinMetadatos(original: Buffer, mime: string): Promise<Buffer> {
   // 'error' y no el 'warning' por defecto: una foto con un aviso menor de
   // libvips se puede publicar; una que no se puede decodificar, no.
-  const leer = () => sharp(original, { failOn: 'error', animated: true }).rotate();
   const datos = await sharp(original, { failOn: 'error', animated: true }).metadata();
+
+  // Una animación se deja del tamaño que venga: al resolverla, el alto que ve
+  // sharp es el de todos los fotogramas apilados, y un tope de alto la
+  // encogería sin motivo. Son raras y pequeñas.
+  const animada = (datos.pages ?? 1) > 1;
+
+  const leer = () => {
+    const imagen = sharp(original, { failOn: 'error', animated: true }).rotate();
+    return animada
+      ? imagen
+      // `withoutEnlargement`: si ya es más pequeña, se deja como está. Nunca se
+      // agranda una foto, que solo la emborronaría y la engordaría.
+      : imagen.resize({ width: LADO_MAXIMO, height: LADO_MAXIMO, fit: 'inside', withoutEnlargement: true });
+  };
 
   let codificaciones: Codificacion[];
   switch (mime) {
