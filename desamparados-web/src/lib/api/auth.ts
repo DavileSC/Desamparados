@@ -58,6 +58,8 @@ export interface RegistroData {
   /** La suya, si se hace hermano. Sin ella, la cuenta es solo para gestionar. */
   fechaNacimiento?: string
   menores?: MenorAlta[]
+  /** Campo trampa: escondido en el formulario, solo lo rellena un robot. */
+  comentarioAdicional?: string
 }
 
 /**
@@ -99,6 +101,10 @@ export function register(data: RegistroData) {
             })),
           }
         : {}),
+      // Siempre presente, aunque vaya vacío: si solo se mandara cuando lleva
+      // algo, su ausencia distinguiría a la persona del robot y la trampa
+      // dejaría de estar escondida.
+      comentarioAdicional: data.comentarioAdicional ?? '',
     },
   })
 }

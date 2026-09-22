@@ -6,6 +6,7 @@ import { AuthService, CuentaSinCmsError, Testigo2FACaducadoError } from '../serv
 import { handleHttp } from '../utils/error.handle';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
 import { AuditoriaService } from '../services/auditoria.service';
+import { trampaRellena } from '../domain/senales-de-robot';
 import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookieSesion, limpiarCookiesAuth, COOKIE_2FA } from '../utils/cookies';
 import type { AreaSesion } from '../utils/cookies';
 import { verifyToken } from '../utils/jwt.handle';
@@ -20,7 +21,25 @@ export class AuthController {
   // =================================================================
 
   static register = manejar('Error registrando usuario', async (req, res) => {
-    const body: RegisterDto = req.body;
+    const { comentarioAdicional, ...body } = req.body as RegisterDto;
+
+    // Al robot se le responde lo mismo que a una persona: si notara la
+    // diferencia, aprendería a esquivar la trampa. No se crea nada ni se
+    // manda ningún correo a Secretaría.
+    //
+    // Aquí solo se mira el campo trampa, y NO el tiempo de relleno que sí
+    // descarta en el formulario de contacto: el alta son varios pasos, nadie
+    // la termina en tres segundos, y perder en silencio el alta de un hermano
+    // de verdad es mucho peor que perder un mensaje. La trampa, en cambio, es
+    // segura: quien usa la web no puede rellenarla sin querer.
+    if (trampaRellena(comentarioAdicional)) {
+      console.warn('[Alta] Solicitud descartada como spam (campo trampa relleno).');
+      return res.status(201).json({
+        fichas: (body.menores?.length ?? 0) + (body.titular ? 1 : 0),
+        message: 'Solicitud enviada correctamente. Revisa tu email y pásate por Secretaría para formalizar tu alta.',
+      });
+    }
+
     const result = await RegistroService.registerUser(body);
 
     // Ahora devuelve un 201 Created con el mensaje de "Pásate por Secretaría"

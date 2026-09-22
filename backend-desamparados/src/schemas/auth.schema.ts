@@ -74,7 +74,11 @@ export const registerSchema = type({
     body: {
         usuario: usuarioSchema,
         "titular?": { fechaNacimiento: diaNacimiento },
-        "menores?": menorSchema.array().moreThanLength(0).atMostLength(MAXIMO_MENORES_POR_ALTA)
+        "menores?": menorSchema.array().moreThanLength(0).atMostLength(MAXIMO_MENORES_POR_ALTA),
+        // El campo trampa para robots. Se admite y se ignora: quien lo rellena
+        // recibe la misma respuesta que una persona, pero no se le crea nada.
+        // Con tope de longitud para que no sirva de cubo donde volcar texto.
+        "comentarioAdicional?": "string <= 200"
     }
 });
 

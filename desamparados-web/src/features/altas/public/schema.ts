@@ -81,6 +81,10 @@ export const membershipSchema = z.object({
   codigoPostal: z.string().refine(esCodigoPostalValido, 'El código postal son cinco dígitos'),
   fechaNacimiento: z.string(),
   menores: z.array(menorSchema),
+  // Campo trampa: escondido en el formulario. Sin validación ninguna —una
+  // persona nunca lo ve, así que no hay nada que corregirle— y opcional,
+  // para que una web antigua en caché durante un despliegue siga enviando.
+  comentarioAdicional: z.string().optional(),
   aceptarPolitica: z.boolean().refine((value) => value === true, {
     message: 'Debes aceptar la política de privacidad',
   }),

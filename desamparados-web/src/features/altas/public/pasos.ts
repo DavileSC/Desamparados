@@ -54,5 +54,6 @@ export const CAMPOS_API: Record<string, Campo> = {
 export const VALORES_INICIALES: MembershipFormData = {
   camino: 'HERMANO', nombre: '', apellidos: '', email: '', password: '', dni: '', telefono: '',
   direccion: '', ciudad: '', codigoPostal: '', fechaNacimiento: '', menores: [], aceptarPolitica: false,
+  comentarioAdicional: '',
 }
 

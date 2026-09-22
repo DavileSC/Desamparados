@@ -41,6 +41,12 @@ export interface RegisterDto {
 
   /** Los menores que apunta. */
   menores?: MenorAltaDto[];
+
+  /**
+   * Campo trampa: en la web está escondido y ninguna persona lo ve. Si llega
+   * con algo escrito, lo ha rellenado un programa.
+   */
+  comentarioAdicional?: string;
 }
 
 /** Pedir volver tras una baja. */

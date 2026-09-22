@@ -19,7 +19,7 @@ import { ArkErrors } from 'arktype';
 import nodemailer from 'nodemailer';
 import app from '../src/app.js';
 import { contactoSchema } from '../src/schemas/contacto.schema.js';
-import { motivoDescarte, MIN_MS_RELLENO } from '../src/controllers/contacto.controller.js';
+import { motivoDescarte, MIN_MS_RELLENO } from '../src/domain/senales-de-robot.js';
 import { EmailService } from '../src/services/email.service.js';
 import { ponerCuentaDeContacto, ponerTransporte } from '../src/services/correos/envio.js';
 

@@ -35,6 +35,9 @@ import { CAMPOS_API, VALORES_INICIALES, pasosDe, type Campo } from './pasos'
 const ESCRITORIO = '@media (min-width:1024px)'
 
 
+/** Fuera de la pantalla pero en el árbol: un robot lo rellena, una persona no lo ve. */
+const TRAMPA_OCULTA = { position: 'absolute', left: '-10000px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' } as const
+
 /** Botones del pie de la tarjeta: misma altura los dos y sin partir el texto en móvil. */
 const BOTON_PIE = { borderRadius: '3px', height: 48, py: 0, whiteSpace: 'nowrap' } as const
 
@@ -246,6 +249,26 @@ export default function HazteHermanoPage() {
                     />
                   ) : (
                     <Box component="form" noValidate onSubmit={alEnviar} sx={{ display: 'grid', gap: { xs: 2.5, md: 3 } }}>
+                      {/* Campo trampa para robots, escondido fuera de la pantalla.
+                          Ni el nombre ni la etiqueta son de los que autocompletan el
+                          navegador o los gestores de contraseñas (web, url, nombre…), y
+                          los data-* les piden expresamente que lo ignoren: si lo
+                          rellenaran por una persona, su alta se descartaría como si
+                          fuera de un robot. */}
+                      <Box aria-hidden="true" sx={TRAMPA_OCULTA}>
+                        <label htmlFor="alta-comentario-adicional">Deja este campo vacío</label>
+                        <input
+                          id="alta-comentario-adicional"
+                          type="text"
+                          tabIndex={-1}
+                          autoComplete="off"
+                          data-lpignore="true"
+                          data-1p-ignore="true"
+                          data-bwignore="true"
+                          data-form-type="other"
+                          {...register('comentarioAdicional')}
+                        />
+                      </Box>
                       <Box>
                         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
                           {camino ? `Paso ${paso + 1} de ${PASOS.length}` : 'Solicitud de alta'}
