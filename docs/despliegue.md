@@ -410,6 +410,31 @@ docker compose up -d --build
 Las imágenes se reconstruyen, las migraciones nuevas se aplican solas y los
 contenedores se sustituyen. Los pasos 3 y 4 no se repiten.
 
+**Si la base se sembró antes del 18 de septiembre de 2026, hay un paso más, y
+va antes de que nadie abra el CMS:**
+
+```bash
+docker compose run --rm herramientas npm run migrar:bloques             # dice qué haría
+docker compose run --rm herramientas npm run migrar:bloques -- --aplicar
+```
+
+Desde que toda la web pública se edita por bloques, el Recorrido, la Sagrada
+Titular y la Historia tienen otra forma en `ContenidoPagina`. `prisma migrate
+deploy` no la cambia: es contenido, no esquema. Y `mezclarConDefectos` solo
+conserva del documento guardado las claves que existen en los valores por
+defecto, así que **un documento con la forma antigua se queda sin ninguna: esas
+tres páginas vuelven a los textos de partida y lo que se hubiera editado
+desaparece sin un solo error**. Por eso va aquí y no en «lo que más fácilmente
+se olvida».
+
+Sin `--aplicar` solo informa, y es idempotente: una fila que ya tiene `bloques`
+se deja como está, así que correrlo dos veces no pisa nada. En una base recién
+sembrada no hace falta —la siembra ya escribe la forma nueva— pero tampoco
+estorba.
+
+Si no se está seguro de si toca, el arranque de la API lo dice: si quedan filas
+con la forma antigua, lo avisa en el registro nada más levantar.
+
 La web queda fuera de servicio unos segundos mientras se cambia el contenedor
 de nginx. Si algún día molesta, la salida es construir antes
 (`docker compose build`) y levantar después: la parada se reduce a lo que tarde

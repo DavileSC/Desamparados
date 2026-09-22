@@ -22,6 +22,7 @@
     "2fa:cifrar-secretos": "node --import tsx scripts/cifrar-secretos-2fa.ts",
     "2fa:rescatar": "node --import tsx scripts/rescatar-2fa.ts",
     "limpiar:huerfanos": "node --import tsx scripts/limpiar-huerfanos.ts",
+    "migrar:bloques": "node --import tsx scripts/migrar-a-bloques.ts",
     "correos:muestra": "node --import tsx scripts/muestra-correos.ts"
   },
   "keywords": [],

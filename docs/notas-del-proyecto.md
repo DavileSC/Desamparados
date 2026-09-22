@@ -295,3 +295,32 @@ rellenan ahí y aparecen solos.**
 que el email y el nombre se leen **antes** de la transacción. Por el mismo motivo
 el asunto de ese correo no lleva el nombre: si el envío falla, el asunto acaba en
 la auditoría, y eso devolvería a la base el dato que se acaba de borrar.
+
+---
+
+## 9. El contenido también migra, y `prisma migrate` no lo hace
+
+Desde que toda la web pública se edita por bloques, el Recorrido, la Sagrada
+Titular y la Historia tienen otra forma dentro de `ContenidoPagina.datos`. Eso
+es **contenido, no esquema**: `prisma migrate deploy` no lo toca, así que una
+base sembrada antes del 18 de septiembre de 2026 llega al despliegue con la
+forma antigua.
+
+Lo que pasa entonces no es un error, y por eso es peligroso: `mezclarConDefectos`
+solo conserva del documento guardado las claves que existen en los valores por
+defecto. Con la forma antigua no queda ninguna, esas tres páginas **vuelven a
+los textos de partida y lo editado desaparece en silencio**.
+
+Lo convierte `npm run migrar:bloques -- --aplicar` (sin `--aplicar` solo
+informa, y es idempotente). Va **antes de que nadie abra el CMS**, y está en
+[`despliegue.md`](despliegue.md), en «Despliegues posteriores».
+
+Por si aun así se olvida, **el arranque de la API lo avisa** en el registro
+cuando quedan filas sin convertir. Es un aviso y no una barrera: el contenido no
+es el esquema, y dejar la web caída sería peor que esas tres páginas con sus
+textos de partida. La detección vive en `domain/paginas-sin-migrar.ts`, la usan
+el script y el arranque, y la fija `test/paginas-sin-migrar.test.ts`.
+
+**La lección general:** cuando cambie la *forma* de algo guardado como JSON,
+el cambio necesita su propio paso de migración y alguien que avise si falta. El
+compilador no ve dentro de una columna JSON.

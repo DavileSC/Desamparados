@@ -22,6 +22,7 @@
  *   npx tsx scripts/migrar-a-bloques.ts --aplicar  # lo hace
  */
 import db from '../src/config/db.js';
+import type { PaginaAnteriorABloques } from '../src/domain/paginas-sin-migrar.js';
 
 const APLICAR = process.argv.includes('--aplicar');
 
@@ -115,7 +116,12 @@ function historiaABloques(viejo: Record<string, never>): Documento {
   };
 }
 
-const CONVERSORES: Record<string, (viejo: Record<string, never>) => Documento> = {
+/**
+ * Las claves son las de `PAGINAS_ANTERIORES_A_BLOQUES`, y el tipo lo exige:
+ * el arranque de la API avisa leyendo esa misma lista, así que añadir una
+ * página aquí y olvidarla allí (o al revés) no compila.
+ */
+const CONVERSORES: Record<PaginaAnteriorABloques, (viejo: Record<string, never>) => Documento> = {
   recorrido: recorridoABloques,
   titular: titularABloques,
   historia: historiaABloques,

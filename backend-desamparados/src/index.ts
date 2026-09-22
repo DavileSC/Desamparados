@@ -42,6 +42,30 @@ const alEscuchar = (error?: Error) => {
 };
 const server: Server = HOST ? app.listen(PORT, HOST, alEscuchar) : app.listen(PORT, alEscuchar);
 
+// Aviso, no barrera. Un despliegue que se salte la conversión a bloques no
+// falla: el CMS abre, `mezclarConDefectos` descarta las claves de la forma
+// antigua y el Recorrido, la Titular y la Historia vuelven a los textos de
+// partida, perdiendo lo editado sin un solo error. Eso es justo lo que no se
+// nota, así que se dice al arrancar. No se impide arrancar porque el contenido
+// no es el esquema: dejar la web caída sería peor que estas tres páginas con
+// sus textos de partida.
+const { paginasSinMigrarABloques } = await import('./domain/paginas-sin-migrar');
+void paginasSinMigrarABloques()
+  .then((pendientes) => {
+    if (pendientes.length === 0) return;
+    const cuales = pendientes.join(', ');
+    console.warn(
+      `⚠️  [Contenido] ${cuales} ${pendientes.length === 1 ? 'sigue' : 'siguen'} con la forma anterior a los bloques. ` +
+      'Lanza `npm run migrar:bloques -- --aplicar` ANTES de que nadie abra el CMS: si no, lo que se hubiera ' +
+      'editado en esas páginas desaparece en silencio. Ver docs/despliegue.md, «Despliegues posteriores».'
+    );
+  })
+  .catch((error) => {
+    // Si la base no responde, ya se quejará la primera petición: aquí no se
+    // convierte un aviso en un fallo de arranque.
+    console.warn(`[Contenido] No se pudo comprobar si falta convertir páginas a bloques: ${describirErrorParaLog(error)}`);
+  });
+
 server.on('error', (error: NodeJS.ErrnoException) => {
   if (error.code === 'EADDRINUSE') {
     console.error(`El puerto ${PORT} ya está en uso: ¿queda otro backend arrancado? (ver docs/notas-del-proyecto.md, sección 5)`);
