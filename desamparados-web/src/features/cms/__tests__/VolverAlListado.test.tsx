@@ -85,13 +85,16 @@ describe('volver de editar no pierde la página del listado', () => {
     const usuario = userEvent.setup()
     const router = montar(`/cms/hermanos${CONSULTA}`)
 
+    // Primero se abre la ficha al lado de la lista; desde ella se edita.
+    await usuario.click(await screen.findByRole('link', { name: /gómez marín, rocío/i }))
     await usuario.click(await screen.findByRole('link', { name: /editar rocío gómez marín/i }))
     await screen.findByDisplayValue('Rocío')
 
     await usuario.click(screen.getByRole('button', { name: 'Cancelar' }))
 
+    // Vuelve a la página 5, y con la misma ficha abierta.
     expect(router.state.location.pathname).toBe('/cms/hermanos')
-    expect(router.state.location.search).toBe(CONSULTA)
+    expect(router.state.location.search).toBe(`${CONSULTA}&ficha=214`)
   })
 
   it('quien llega tecleando la URL, sin state, vuelve al listado pelado', async () => {

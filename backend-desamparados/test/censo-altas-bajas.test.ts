@@ -623,6 +623,21 @@ describe('el censo no enseña datos bancarios (P2)', () => {
 });
 
 // =====================================================================
+describe('la ficha del censo trae la cuenta entera', () => {
+  test('enseña las otras fichas de la cuenta con su parentesco, y no la propia', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const { usuario, ficha: titular } = await hermanoActivo();
+    const sobrino = await ficha(usuario.id, { esTitular: false, parentesco: 'SOBRINO', fechaNacimiento: new Date('2014-06-01') });
+
+    const res = await como(secretaria, Role.SECRETARIA, `/api/hermanos/admin/${titular.id}`);
+    assert.equal(res.status, 200);
+    const { user } = await res.json() as { user: { hermanos: { id: number; parentesco: string | null }[] } };
+    assert.deepEqual(user.hermanos.map((h) => [h.id, h.parentesco]), [[sobrino.id, 'SOBRINO']]);
+    for (const h of user.hermanos) assert.ok(!('iban' in h) && !('dni' in h), 'la ficha de al lado sale con lo justo');
+  });
+});
+
+// =====================================================================
 describe('configuración y consultas de administración (P4 y S10)', () => {
   test('cada clave valida su valor', () => {
     assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', '12,5'), { ok: true, valor: '12.5' });

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, Box, Button, CircularProgress, Paper, Stack, Tab, Tabs, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import EditIcon from '@mui/icons-material/Edit'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../altas/auth/store'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
@@ -13,6 +12,8 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
+import ListaCenso from './censo/ListaCenso'
+import FichaCenso from './censo/FichaCenso'
 
 const SITUACIONES: Opcion[] = [
   { valor: 'activo', etiqueta: 'Activos' },
@@ -48,6 +49,19 @@ export default function HermanosAdminPage() {
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
   const vista = params.get('vista') === 'solicitudes' ? 'solicitudes' : 'censo'
+  // La ficha abierta a la derecha, también en la URL: «Editar ficha» y el botón
+  // de atrás del navegador vuelven a ella, con la lista como estaba.
+  const fichaAbierta = Number(params.get('ficha')) || null
+  const enlaceFicha = useCallback((id: number) => {
+    const siguientes = new URLSearchParams(params)
+    siguientes.set('ficha', String(id))
+    return `?${siguientes.toString()}`
+  }, [params])
+  const cerrarFicha = () => setParams((anteriores) => {
+    const siguientes = new URLSearchParams(anteriores)
+    siguientes.delete('ficha')
+    return siguientes
+  })
   // Búsqueda, filtros y orden, en la URL como la página.
   const [filtros, cambiarFiltros] = useFiltrosUrl(FILTROS_CENSO)
   const [brothers, setBrothers] = useState<AdminBrother[]>([])
@@ -287,8 +301,26 @@ export default function HermanosAdminPage() {
       ]}
       orden={{ clave: 'orden', opciones: ORDENES_CENSO }}
     />
-    {loading ? <CircularProgress aria-label="Cargando censo" /> : <Stack spacing={2}>{brothers.map((brother) => <Paper key={brother.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Box><Typography variant="h6">{brother.nombre} {brother.apellidos}</Typography><Typography variant="body2" color="text.secondary">{brother.numeroHermano ? `N.º ${brother.numeroHermano}` : 'Sin número'} · {brother.email ?? brother.user?.email ?? 'Sin email'} · {brother.activo ? 'Activo' : brother.fechaBaja ? 'De baja' : 'Solicitud pendiente'}</Typography></Box>{puedeGestionar && <Button aria-label={`Editar ${brother.nombre} ${brother.apellidos}`} startIcon={<EditIcon />} component={Link} to={`/cms/hermanos/${brother.id}/editar`} state={{ volver: consultaListado }}>Editar</Button>}</Paper>)}{brothers.length === 0 && <Alert severity="info">No hay hermanos con esta búsqueda o estos filtros.</Alert>}</Stack>}
-    {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="censo de hermanos" />}
+    {loading ? <CircularProgress aria-label="Cargando censo" /> : (
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(300px, 380px) minmax(0, 1fr)' }, gap: 2.5, alignItems: 'start' }}>
+        {/* En el móvil no caben las dos: con una ficha abierta se ve la ficha, y «Volver a la lista» la cierra. */}
+        <Box sx={{ display: { xs: fichaAbierta ? 'none' : 'block', md: 'block' }, minWidth: 0 }}>
+          {brothers.length > 0
+            ? <ListaCenso hermanos={brothers} abierta={fichaAbierta} enlace={enlaceFicha} />
+            : <Alert severity="info">No hay hermanos con esta búsqueda o estos filtros.</Alert>}
+          {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="censo de hermanos" />}
+        </Box>
+        <Box sx={{ display: { xs: fichaAbierta ? 'block' : 'none', md: 'block' }, position: { md: 'sticky' }, top: { md: 16 }, minWidth: 0 }}>
+          {fichaAbierta
+            ? <FichaCenso key={fichaAbierta} id={fichaAbierta} puedeGestionar={puedeGestionar} volver={consultaListado} enlace={enlaceFicha} onCerrar={cerrarFicha} />
+            : (
+              <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                <Typography>Elige a un hermano de la lista para ver su ficha.</Typography>
+              </Paper>
+            )}
+        </Box>
+      </Box>
+    )}
     </>}
   </>
 }

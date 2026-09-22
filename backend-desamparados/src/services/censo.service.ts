@@ -97,7 +97,28 @@ export class CensoService {
       where: { id },
       select: {
         ...HERMANO_SAFE_SELECT,
-        user: { select: { email: true, telefono: true } },
+        user: {
+          select: {
+            email: true, telefono: true,
+            // Las otras fichas de la misma cuenta: el titular y quienes están a
+            // su cargo, con su parentesco. La ficha del censo las enseña para
+            // pasar de una a otra sin volver a buscar.
+            hermanos: {
+              where: { id: { not: id } },
+              orderBy: [{ esTitular: 'desc' }, { fechaNacimiento: 'asc' }],
+              select: {
+                id: true, nombre: true, apellidos: true, fechaNacimiento: true,
+                numeroHermano: true, esTitular: true, parentesco: true, activo: true, fechaBaja: true
+              }
+            }
+          }
+        },
+        // Lo que tiene del ropero ahora mismo, no su historial.
+        prendas: {
+          where: { estado: 'PRESTADA' },
+          orderBy: { numero: 'asc' },
+          select: { id: true, numero: true, tipo: true, talla: true }
+        },
         recibos: {
           orderBy: { year: 'desc' },
           select: {

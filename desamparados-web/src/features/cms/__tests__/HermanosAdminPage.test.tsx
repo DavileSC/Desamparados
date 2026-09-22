@@ -14,7 +14,11 @@ function responderCenso(censo: Censo, solicitudes: unknown[]) {
   // Desde la Tarea 6 las solicitudes también llegan paginadas.
   const paginaSolicitudes = { data: solicitudes, meta: { total: solicitudes.length, page: 1, limit: 20, totalPages: Math.ceil(solicitudes.length / 20) } }
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
-    const cuerpo = String(url).includes('solicitudes') ? paginaSolicitudes : censo
+    // La ficha abierta a la derecha se pide aparte: responde con esa fila del censo.
+    const ficha = /\/hermanos\/admin\/(\d+)$/.exec(String(url))
+    const cuerpo = String(url).includes('solicitudes') ? paginaSolicitudes
+      : ficha ? censo.data.find((h) => (h as { id: number }).id === Number(ficha[1]))
+      : censo
     return Promise.resolve(new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } }))
   }))
 }
@@ -84,10 +88,10 @@ describe('HermanosAdminPage', () => {
       { data: [{ id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, email: null, activo: true }], meta: { total: 1, page: 1, limit: 100, totalPages: 1 } },
       [{ id: 1, email: 'nuevo@ejemplo.invalido', nombre: 'Nuevo', apellidos: 'Hermano', createdAt: '2026-08-01T00:00:00.000Z', hermanos: [{ id: 9 }] }],
     )
-    renderWithProviders(<HermanosAdminPage />)
+    renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?ficha=5' })
 
     expect(await screen.findByRole('tab', { name: /solicitudes \(1\)/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /editar rocío/i })).toHaveAttribute('href', '/cms/hermanos/5/editar')
+    expect(await screen.findByRole('link', { name: /editar rocío/i })).toHaveAttribute('href', '/cms/hermanos/5/editar')
   })
 
   it('un hermano raso que llegara al listado no ve el botón de editar', async () => {
@@ -97,9 +101,9 @@ describe('HermanosAdminPage', () => {
       { data: [{ id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, email: null, activo: true }], meta: { total: 1, page: 1, limit: 100, totalPages: 1 } },
       [],
     )
-    renderWithProviders(<HermanosAdminPage />)
+    renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?ficha=5' })
 
-    await screen.findByText('Rocío Gómez Marín')
+    await screen.findByRole('heading', { name: 'Gómez Marín, Rocío' })
     expect(screen.queryByRole('link', { name: /editar rocío/i })).not.toBeInTheDocument()
   })
 
@@ -351,5 +355,38 @@ describe('HermanosAdminPage', () => {
       expect(ultima).not.toMatch(/estado=|numero=|q=/)
     })
     expect(screen.getByRole('textbox', { name: /buscar por nombre/i })).toHaveValue('')
+  })
+
+  it('cada fila abre su ficha al lado, con la familia de la cuenta y sin perder los filtros', async () => {
+    const user = userEvent.setup()
+    const rocio = {
+      id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, dni: '12345678Z', email: null, activo: true, fechaBaja: null,
+      fechaNacimiento: '1980-02-10T00:00:00.000Z', fechaAlta: '2009-03-14T10:00:00.000Z', esTitular: true, tieneTunicaPropia: false,
+      tunica: 'L', alturaHombro: null, puesto: null, telefono: null, direccion: null, poblacion: null, codigoPostal: null,
+    }
+    const ficha = {
+      ...rocio,
+      user: { email: 'rocio@ejemplo.invalido', telefono: null, hermanos: [
+        { id: 6, nombre: 'Pablo', apellidos: 'Ruiz Gómez', fechaNacimiento: '2014-06-01T00:00:00.000Z', numeroHermano: null, esTitular: false, parentesco: 'SOBRINO', activo: false, fechaBaja: null },
+      ] },
+      recibos: [], papeletas: [], prendas: [{ id: 1, numero: '007', tipo: 'TUNICA', talla: 'L' }],
+    }
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => Promise.resolve(
+      /\/hermanos\/admin\/5$/.test(String(url))
+        ? new Response(JSON.stringify(ficha), { status: 200, headers: { 'Content-Type': 'application/json' } })
+        : respuestaCenso(String(url).includes('solicitudes') ? [] : [rocio]))))
+    renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?estado=activo' })
+
+    await user.click(await screen.findByRole('link', { name: /gómez marín, rocío/i }))
+
+    expect(await screen.findByRole('heading', { name: 'Gómez Marín, Rocío' })).toBeInTheDocument()
+    // El correo de la cuenta cuando la ficha no tiene uno propio.
+    expect(screen.getByText('rocio@ejemplo.invalido')).toBeInTheDocument()
+    // Un sobrino no es «hijo»: sale con su parentesco.
+    expect(screen.getByRole('link', { name: /ruiz gómez, pablo.*sobrino o sobrina/i })).toBeInTheDocument()
+    expect(screen.getByText('Túnica 007 (L)')).toBeInTheDocument()
+    // La fila abierta queda marcada y el filtro sigue puesto.
+    expect(screen.getByRole('link', { name: /gómez marín, rocío/i })).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByRole('button', { name: /quitar el filtro situación/i })).toBeInTheDocument()
   })
 })

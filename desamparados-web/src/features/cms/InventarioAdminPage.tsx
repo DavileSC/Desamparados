@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { crearEnser, crearPrenda, eliminarEnser, eliminarPrenda, listarEnseres, opcionesDeEnseres, listarPrendas, devolverPrenda, type Enser, type FiltrosPrendas, type Prenda } from '../../lib/api/inventario'
 import { usePaginacion } from '../../hooks/usePaginacion'
@@ -16,6 +14,8 @@ import { DialogoDevolucion, DialogoPrestamo } from './DialogosRopero'
 import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, ETIQUETA_TIPO, esCantidadValida } from './ropero'
 import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
+import TablaEnseres from './inventario/TablaEnseres'
+import TablaPrendas from './inventario/TablaPrendas'
 
 const emptyEnser = { nombre: '', referencia: '', categoria: '', ubicacion: '', cantidadOptimo: '0', cantidadBueno: '0', cantidadReparar: '0' }
 const emptyPrenda = { numero: '', tipo: 'TUNICA', talla: '', estado: 'DISPONIBLE', observaciones: '' }
@@ -255,7 +255,10 @@ export default function InventarioAdminPage() {
         orden={{ clave: 'orden', opciones: ORDENES_PRENDAS }}
       />
     )}
-    <Stack spacing={2}>{tab === 0 ? listaEnseres.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}><Typography>{item.nombre} · {item.cantidadTotal} unidades{item.cantidadReparar > 0 ? ` (${item.cantidadReparar} a reparar)` : ''} · {item.ubicacion || 'Sin ubicación'}</Typography><Stack direction="row"><Button aria-label={`Editar ${item.nombre}`} component={Link} to={`/cms/inventario/${item.id}/editar`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.nombre}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>) : listaPrendas.map((item) => <Paper key={item.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}><Typography>{item.numero} · {ETIQUETA_TIPO[item.tipo] ?? item.tipo} · {ETIQUETA_ESTADO[item.estado] ?? item.estado}{item.hermano ? ` · ${item.hermano.nombre} ${item.hermano.apellidos}${item.hermano.numeroHermano ? ` (nº ${item.hermano.numeroHermano})` : ''}` : ''}</Typography><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>{item.estado === 'DISPONIBLE' && <Button aria-label={`Prestar ${item.numero}`} onClick={() => setPrestando(item)}>Prestar</Button>}{item.estado === 'PRESTADA' && <Button aria-label={`Devolver ${item.numero}`} onClick={() => setDevolviendo(item)}>Devolver</Button>}<Button aria-label={`Editar ${item.numero}`} component={Link} to={`/cms/inventario/${item.id}/editar?tipo=prenda`} state={{ volver: consultaListado }}><EditIcon /></Button><Button color="error" aria-label={`Eliminar ${item.numero}`} onClick={() => setPorBorrar(item)}><DeleteIcon /></Button></Stack></Paper>)}{(tab === 0 ? metaEnseres : metaPrendas) && (tab === 0 ? listaEnseres : listaPrendas).length === 0 && <Alert severity="info">{tab === 0 ? 'No hay enseres con esta búsqueda o estos filtros.' : 'No hay prendas con esta búsqueda o estos filtros.'}</Alert>}</Stack>
+    {/* Hasta que llega la primera página no se pinta la tabla: vacía, diría «No hay enseres» mientras carga. */}
+    {tab === 0
+      ? metaEnseres && <TablaEnseres enseres={listaEnseres} volver={consultaListado} onBorrar={setPorBorrar} />
+      : metaPrendas && <TablaPrendas prendas={listaPrendas} volver={consultaListado} onPrestar={setPrestando} onDevolver={setDevolviendo} onBorrar={setPorBorrar} />}
     {tab === 0
       ? metaEnseres && <Paginador meta={metaEnseres} onPagina={enseres.irAPagina} onTamano={enseres.cambiarTamano} etiqueta="los enseres" />
       : metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}

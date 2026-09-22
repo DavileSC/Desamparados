@@ -1,5 +1,8 @@
 import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
+import type { Parentesco } from './auth'
+import type { Prenda } from './inventario'
+import type { ReceiptStatus } from './recibos'
 
 export interface AdminBrother {
   id: number
@@ -109,8 +112,30 @@ export interface DatosDeFichaDeHermano {
   fechaBaja?: string
 }
 
+/** Otra ficha de la misma cuenta: el titular o alguien a su cargo. */
+export interface FichaDeLaCuenta {
+  id: number
+  nombre: string
+  apellidos: string
+  fechaNacimiento: string
+  numeroHermano: number | null
+  esTitular: boolean
+  parentesco: Parentesco | null
+  activo: boolean
+  fechaBaja: string | null
+}
+
+/** La ficha tal como la lee Secretaría: con la cuenta, lo pagado, las papeletas y lo que tiene del ropero. */
+export interface FichaDelCenso extends AdminBrother {
+  parentesco: Parentesco | null
+  user?: { email: string | null; telefono: string | null; hermanos?: FichaDeLaCuenta[] }
+  recibos?: { id: number; year: number; concepto: string; estado: ReceiptStatus; fechaPago: string | null }[]
+  papeletas?: { id: number; year: number; puesto: string; tramo: string | null }[]
+  prendas?: { id: number; numero: string; tipo: Prenda['tipo']; talla: string | null }[]
+}
+
 export function fichaDeHermano(id: number) {
-  return llamarApi<AdminBrother>(`/hermanos/admin/${id}`)
+  return llamarApi<FichaDelCenso>(`/hermanos/admin/${id}`)
 }
 
 export function actualizarHermano(id: number, payload: DatosDeFichaDeHermano) {
