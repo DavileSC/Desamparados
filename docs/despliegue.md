@@ -19,8 +19,12 @@ viven en el repositorio y se despliegan con él:
 
 ## Qué hay que contratar
 
-**Nada de esto está contratado todavía.** Los requisitos salen de decisiones ya
-tomadas en el código, así que conviene comprobarlos *antes* de pagar nada.
+**Ya está contratado:** un **OVH VPS-1**, 2 vCores, 4 GB de memoria y 40 GB de
+disco, con Ubuntu y Docker ya instalados. Todavía no hay nada desplegado en él.
+
+Los requisitos de abajo salen de decisiones ya tomadas en el código. Se dejan
+escritos porque son los que hay que volver a comprobar el día que se cambie de
+máquina o de proveedor.
 
 ### Requisitos que no se pueden negociar
 
@@ -55,6 +59,34 @@ real y no un número holgado: Docker añade lo suyo por encima.
 Dos núcleos sobran. El disco depende de cuántas fotos y PDF suba el Grupo
 Parroquial: 40 GB dan para mucho tiempo, contando las copias de seguridad
 locales y las imágenes de Docker (unos 2 GB entre todas).
+
+#### La swap no es opcional en esta máquina
+
+El VPS vino **sin swap ninguna**, como suelen venir los de OVH. Con 4 GB justos
+y ClamAV dentro, eso es un riesgo real: `freshclam` recarga la base de firmas
+cada pocas horas y durante ese rato el consumo se dispara. Sin colchón, el
+núcleo no ralentiza nada, **mata un proceso**, y el candidato es el contenedor
+más grande — que puede ser la base de datos.
+
+Se añadieron 2 GB de swapfile, con `swappiness` baja para que sea un colchón de
+emergencia y no algo que el sistema use a diario (en un servidor web, usarla a
+diario se nota en la latencia):
+
+```bash
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swap.conf && sudo sysctl --system
+```
+
+La línea en `/etc/fstab` es lo que la deja puesta tras un reinicio. Sin ella, la
+swap desaparece al primer arranque y nadie se entera hasta que algo muere.
+
+Con el montaje completo la estimación es de 1,7–2,3 GB en contenedores
+(ClamAV se lleva la mayor parte), así que quedan entre 1 y 1,6 GB libres. Es
+suficiente para la web, pero **no da para meter servicios grandes al lado**:
+una analítica auto-alojada como Umami, que necesita además su propio
+PostgreSQL, se comería la mitad de ese margen.
 
 ### El dominio
 
