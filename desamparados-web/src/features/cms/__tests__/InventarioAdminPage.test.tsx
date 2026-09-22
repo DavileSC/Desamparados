@@ -19,7 +19,7 @@ describe('InventarioAdminPage', () => {
   it('cada listado pasa página por su cuenta', async () => {
     // Con un solo parámetro compartido, pasar página en enseres movería el ropero.
     const user = userEvent.setup()
-    // Una instancia de Response por llamada: `apiFetch` lee el cuerpo con
+    // Una instancia de Response por llamada: `llamarApi` lee el cuerpo con
     // `res.text()` y la pantalla hace dos peticiones, una por listado.
     const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(
       JSON.stringify({ data: [], meta: { total: 120, page: 1, limit: 20, totalPages: 6 } }),

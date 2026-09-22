@@ -15,23 +15,23 @@ export default function PapeletaPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    let cancelled = false
+    let cancelado = false
 
     // La papeleta vigente es la más reciente y el servidor ordena por año
     // descendente: con la primera página basta, no hace falta el histórico entero.
     misPapeletas({ pagina: 1, porPagina: 10 })
       .then((respuesta) => {
-        if (!cancelled) setTickets(respuesta.data)
+        if (!cancelado) setTickets(respuesta.data)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar tu papeleta.')
+        if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar tu papeleta.')
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelado) setLoading(false)
       })
 
     return () => {
-      cancelled = true
+      cancelado = true
     }
   }, [])
 

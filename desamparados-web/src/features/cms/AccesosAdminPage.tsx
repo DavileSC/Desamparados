@@ -12,7 +12,7 @@ import { useAuthStore } from '../altas/auth/store'
 import {
   buscarCandidatos, CARGOS_CMS, darAcceso, cuentasDeStaff, quitarAcceso,
   type CandidatoACargo, type CargoCms, type MiembroDelStaff,
-} from '../../lib/api/admin'
+} from '../../lib/api/accesos'
 
 const CARGO_POR_DEFECTO: CargoCms = 'REDES'
 

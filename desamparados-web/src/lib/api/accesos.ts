@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 
 /**
  * Quién tiene acceso al CMS y con qué cargo.
@@ -31,10 +31,10 @@ export interface CandidatoACargo {
   email: string
 }
 
-export const cuentasDeStaff = () => apiFetch<MiembroDelStaff[]>('/admin/staff')
+export const cuentasDeStaff = () => llamarApi<MiembroDelStaff[]>('/admin/staff')
 
 export const buscarCandidatos = (q: string) =>
-  apiFetch<CandidatoACargo[]>(`/admin/users/search${q ? `?q=${encodeURIComponent(q)}` : ''}`)
+  llamarApi<CandidatoACargo[]>(`/admin/users/search${q ? `?q=${encodeURIComponent(q)}` : ''}`)
 
 /**
  * Da acceso, o cambia el cargo de quien ya lo tiene. Es la misma ruta: el
@@ -44,8 +44,8 @@ export const buscarCandidatos = (q: string) =>
  * Corta las sesiones abiertas de esa persona, así que el cambio es inmediato.
  */
 export const darAcceso = (userId: number, role: CargoCms) =>
-  apiFetch<{ message: string }>('/admin/staff/promote', { method: 'POST', json: { userId, role } })
+  llamarApi<{ message: string }>('/admin/staff/promote', { method: 'POST', json: { userId, role } })
 
 /** Quita el cargo: vuelve a ser hermano raso y sale del CMS al momento. */
 export const quitarAcceso = (userId: number) =>
-  apiFetch<{ message: string }>('/admin/staff/demote', { method: 'POST', json: { userId } })
+  llamarApi<{ message: string }>('/admin/staff/demote', { method: 'POST', json: { userId } })

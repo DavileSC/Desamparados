@@ -5,12 +5,12 @@ import CabeceraDePagina from '../../components/CabeceraDePagina'
 import SeccionAnimada from '../../components/SeccionAnimada'
 import { SECCION_TRAS_CABECERA } from '../../components/espaciado'
 
-interface LegalPageLayoutProps {
+interface MarcoPaginaLegalProps {
   title: string
   children: React.ReactNode
 }
 
-export default function MarcoPaginaLegal({ title, children }: LegalPageLayoutProps) {
+export default function MarcoPaginaLegal({ title, children }: MarcoPaginaLegalProps) {
   return (
     <>
       <Helmet>

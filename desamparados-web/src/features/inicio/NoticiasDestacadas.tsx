@@ -6,14 +6,14 @@ import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import TarjetaNoticia from '../../components/TarjetaNoticia'
 import CintaDestacada from './CintaDestacada'
 import { noticiasDePortada } from '../../lib/api/noticias'
-import { useHomeData } from './useHomeData'
+import { useDatosDePortada } from './useDatosDePortada'
 import { useTextosPortada } from './useContenidoPortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import { SERIF, ceja, enlaceBloque } from './estilos'
 
 // En portada caben tres noticias; el resto está en el archivo.
 const MAX_NOTICIAS = 3
-const fetchNews = () => noticiasDePortada(MAX_NOTICIAS)
+const pedirNoticias = () => noticiasDePortada(MAX_NOTICIAS)
 
 /**
  * Actualidad: bloque oscuro con tres noticias en tarjetas claras.
@@ -23,7 +23,7 @@ const fetchNews = () => noticiasDePortada(MAX_NOTICIAS)
  * destacada.
  */
 export default function NoticiasDestacadas() {
-  const { data: news = [], isPending, isError, refetch } = useHomeData('news', fetchNews)
+  const { data: noticias = [], isPending, isError, refetch } = useDatosDePortada('noticias', pedirNoticias)
   const textos = useTextosPortada()
 
   return (
@@ -46,17 +46,17 @@ export default function NoticiasDestacadas() {
             </Box>
           </Revela>
         </Box>
-        <AvisosDeInicio loading={isPending} error={isError} empty={!news.length} label="la actualidad" emptyMessage="No hay noticias publicadas por el momento." retry={() => { void refetch() }} />
-        {news.length > 0 && (
+        <AvisosDeInicio loading={isPending} error={isError} empty={!noticias.length} label="la actualidad" emptyMessage="No hay noticias publicadas por el momento." retry={() => { void refetch() }} />
+        {noticias.length > 0 && (
           <Box
             component="ul"
             aria-label={textos.actualidad.titulo}
             sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 3.25 } }}
           >
-            {news.slice(0, MAX_NOTICIAS).map((noticia, i) => (
+            {noticias.slice(0, MAX_NOTICIAS).map((noticia, i) => (
               <Revela key={noticia.id} as="li" efecto="crecer" orden={3 + i} sx={{ display: 'flex', position: 'relative' }}>
                 {noticia.fijada && <CintaDestacada />}
-                <TarjetaNoticia news={noticia} indice={i} />
+                <TarjetaNoticia noticia={noticia} indice={i} />
               </Revela>
             ))}
           </Box>

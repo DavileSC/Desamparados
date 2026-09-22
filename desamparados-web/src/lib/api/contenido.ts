@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 
 /**
  * Las páginas con documento editable. La misma lista que `SLUGS_CONTENIDO` en
@@ -131,11 +131,11 @@ export const CLAVE_TITULAR = ['contenido', 'titular'] as const
 export const CLAVE_CORPORACION = ['contenido', 'corporacion'] as const
 
 /** El contenido de una página, ya mezclado por el servidor. Se lee sin sesión. */
-export const getContenido = <T,>(slug: SlugContenido) => apiFetch<T>(`/contenido/${slug}`)
+export const getContenido = <T,>(slug: SlugContenido) => llamarApi<T>(`/contenido/${slug}`)
 
 /** Sustituye el documento entero (CMS). */
 export const guardarContenido = (slug: SlugContenido, datos: unknown) =>
-  apiFetch<{ message: string; data: unknown }>(`/contenido/${slug}`, { method: 'PUT', json: { datos } })
+  llamarApi<{ message: string; data: unknown }>(`/contenido/${slug}`, { method: 'PUT', json: { datos } })
 
 /** Los párrafos de un relato: una línea en blanco separa uno del siguiente. */
 export const parrafosDe = (relato: string): string[] =>

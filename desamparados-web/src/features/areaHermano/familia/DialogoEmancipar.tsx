@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, Typography } from '@mui/material'
 import Boton from '../../../components/Boton'
 import CampoContrasena from '../../../components/CampoContrasena'
-import { LONGITUD_MINIMA } from '../../../lib/passwordPolicy'
+import { LONGITUD_MINIMA } from '../../../lib/politicaDeContrasena'
 import { emanciparFicha, type ApiProfile } from '../../../lib/api/perfil'
-import { ApiError } from '../../../lib/api/client'
+import { ErrorDeApi } from '../../../lib/api/cliente'
 import { esDniValido } from '../../../lib/validacion/identidad'
 
 interface Props {
@@ -49,7 +49,7 @@ export default function DialogoEmancipar({ ficha, onCerrar, onHecho }: Props) {
       await emanciparFicha(ficha.id, { newEmail: email.trim(), newPassword: password, ...(dni ? { newDni: dni } : {}) })
       onHecho(`${ficha.nombre} ya tiene su propia cuenta. A partir de ahora entra con su correo y gestiona sus datos.`)
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'No se ha podido crear la cuenta. Inténtalo de nuevo.')
+      setError(e instanceof ErrorDeApi ? e.message : 'No se ha podido crear la cuenta. Inténtalo de nuevo.')
     } finally {
       setGuardando(false)
     }

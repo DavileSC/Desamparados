@@ -1,13 +1,13 @@
 import { Button, type ButtonProps } from '@mui/material'
 import { forwardRef } from 'react'
 
-interface AppButtonProps extends Omit<ButtonProps, 'variant'> {
+interface BotonProps extends Omit<ButtonProps, 'variant'> {
   appVariant?: 'primary' | 'secondary' | 'outline'
   /** Destino cuando se usa como enlace de router: <Boton component={Link} to="/ruta"> */
   to?: string
 }
 
-const Boton = forwardRef<HTMLButtonElement, AppButtonProps>(
+const Boton = forwardRef<HTMLButtonElement, BotonProps>(
   ({ appVariant = 'primary', sx, ...props }, ref) => {
     const variantStyles = {
       primary: {

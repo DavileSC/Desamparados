@@ -44,7 +44,7 @@ interface Props {
  * publicar nada.
  *
  * Lo que produce encaja a propósito con lo que el servidor deja pasar
- * (`backend/src/utils/sanear-html.ts` y `lib/sanitizeHtml.ts`): sin `class`, sin
+ * (`backend/src/utils/sanear-html.ts` y `lib/limpiarHtml.ts`): sin `class`, sin
  * estilos en línea y con imágenes que solo pueden ser rutas propias. De ahí que
  * la imagen se suba desde aquí en vez de pedir una URL: una externa la borraría
  * el saneado al guardar, y el editor enseñaría una foto que nadie más vería.

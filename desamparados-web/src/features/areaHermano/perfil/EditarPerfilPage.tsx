@@ -34,14 +34,14 @@ export default function EditarPerfilPage() {
   })
 
   useEffect(() => {
-    let cancelled = false
+    let cancelado = false
 
     // Sin argumentos, misFichas pide la familia entera en una sola página:
     // esta pantalla elige una ficha, y un selector paginado escondería alguna.
     misFichas()
       .then((respuesta) => {
         const currentProfile = fichaPropia(respuesta.data)
-        if (cancelled) return
+        if (cancelado) return
         if (!currentProfile) {
           setError('No se ha encontrado ningún perfil asociado a tu cuenta.')
           return
@@ -59,14 +59,14 @@ export default function EditarPerfilPage() {
         })
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar tu perfil.')
+        if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar tu perfil.')
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelado) setLoading(false)
       })
 
     return () => {
-      cancelled = true
+      cancelado = true
     }
   }, [reset])
 

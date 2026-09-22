@@ -11,7 +11,7 @@ import { noticiasDePortada, archivoDeNoticias } from '../../lib/api/noticias'
 import { traerProximosEventos, eventosPublicos } from '../../lib/api/agenda'
 import { useListadoPaginado, type Pagina } from '../../hooks/useListadoPaginado'
 import { usePublicacionesPaginadas } from '../../features/publicaciones/usePublicacionesPaginadas'
-import type { EventItem, NewsItem } from '../../types'
+import type { Acto, Noticia } from '../../types'
 import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/contenido'
 
 /**
@@ -109,7 +109,7 @@ const pedirRecientes = () => noticiasDePortada(3)
 const pedirProximos = () => traerProximosEventos(4)
 
 function NoticiasRecientes({ titulo }: PropsListado) {
-  const { items, loading, error } = useCargaUnica<NewsItem>(pedirRecientes, 'No se han podido cargar las noticias.')
+  const { items, loading, error } = useCargaUnica<Noticia>(pedirRecientes, 'No se han podido cargar las noticias.')
   return (
     <>
       <Encabezado titulo={titulo} enlace={{ texto: 'Ver todas las noticias', ruta: '/actualidad/noticias' }} />
@@ -120,7 +120,7 @@ function NoticiasRecientes({ titulo }: PropsListado) {
         <Box component="ul" aria-label={titulo || 'Últimas noticias'} sx={rejillaDeNoticias}>
           {items.map((noticia, i) => (
             <Box component="li" key={noticia.id} sx={{ display: 'flex' }}>
-              <TarjetaNoticia news={noticia} indice={i} />
+              <TarjetaNoticia noticia={noticia} indice={i} />
             </Box>
           ))}
         </Box>
@@ -130,7 +130,7 @@ function NoticiasRecientes({ titulo }: PropsListado) {
 }
 
 function AgendaProxima({ titulo }: PropsListado) {
-  const { items, loading, error } = useCargaUnica<EventItem>(pedirProximos, 'No se ha podido cargar la agenda.')
+  const { items, loading, error } = useCargaUnica<Acto>(pedirProximos, 'No se ha podido cargar la agenda.')
   return (
     <>
       <Encabezado titulo={titulo} enlace={{ texto: 'Ver agenda completa', ruta: '/actualidad/agenda' }} />
@@ -139,7 +139,7 @@ function AgendaProxima({ titulo }: PropsListado) {
   )
 }
 
-function ListaDeEventos({ eventos, loading, error }: { eventos: EventItem[]; loading: boolean; error: string | null }) {
+function ListaDeEventos({ eventos, loading, error }: { eventos: Acto[]; loading: boolean; error: string | null }) {
   return (
     <>
       {loading && <CircularProgress aria-label="Cargando agenda" />}
@@ -149,7 +149,7 @@ function ListaDeEventos({ eventos, loading, error }: { eventos: EventItem[]; loa
         <Grid container spacing={4}>
           {eventos.map((evento) => (
             <Grid key={evento.id} size={{ xs: 12, md: 6 }}>
-              <TarjetaEvento event={evento} />
+              <TarjetaEvento acto={evento} />
             </Grid>
           ))}
         </Grid>
@@ -216,7 +216,7 @@ function ArchivoDeNoticias({ titulo }: PropsListado) {
             const destacada = hayDestacada && i === 0
             return (
               <Box component="li" key={noticia.id} sx={{ display: 'flex', gridColumn: destacada ? '1 / -1' : undefined }}>
-                <TarjetaNoticia news={noticia} indice={destacada ? INDICE_DESTACADA : indiceEnDiagonal(hayDestacada ? i - 1 : i)} destacada={destacada} volver={consultaArchivo} />
+                <TarjetaNoticia noticia={noticia} indice={destacada ? INDICE_DESTACADA : indiceEnDiagonal(hayDestacada ? i - 1 : i)} destacada={destacada} volver={consultaArchivo} />
               </Box>
             )
           })}
@@ -244,7 +244,7 @@ function Publicaciones({ titulo, categoria, etiqueta, vacio, fallo }: PropsLista
       <Grid container spacing={3}>
         {items.map((publicacion) => (
           <Grid key={publicacion.id} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <TarjetaPublicacion publication={publicacion} />
+            <TarjetaPublicacion publicacion={publicacion} />
           </Grid>
         ))}
       </Grid>

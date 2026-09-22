@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { apiFetch, ApiError } from '../client'
+import { llamarApi, ErrorDeApi } from '../cliente'
 
 function responder(status: number, cuerpo: unknown) {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
@@ -7,18 +7,18 @@ function responder(status: number, cuerpo: unknown) {
   ))
 }
 
-async function errorDe(ruta: string): Promise<ApiError> {
+async function errorDe(ruta: string): Promise<ErrorDeApi> {
   try {
-    await apiFetch(ruta, { auth: false })
+    await llamarApi(ruta, { auth: false })
   } catch (e) {
-    return e as ApiError
+    return e as ErrorDeApi
   }
   throw new Error('la petición debía fallar')
 }
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-describe('apiFetch ante un 400 de validación', () => {
+describe('llamarApi ante un 400 de validación', () => {
   it('dice qué campos fallan, no solo «Error de validación»', async () => {
     responder(400, {
       status: 'error',

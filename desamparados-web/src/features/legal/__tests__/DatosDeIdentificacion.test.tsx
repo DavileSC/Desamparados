@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
-import IdentificationDetails from '../IdentificationDetails'
+import DatosDeIdentificacion from '../DatosDeIdentificacion'
 import { site, faltanDatosIdentificativos, DATO_PENDIENTE } from '../../../config/site'
 
-describe('IdentificationDetails', () => {
+describe('DatosDeIdentificacion', () => {
   it('muestra el correo de contacto real', () => {
-    renderWithProviders(<IdentificationDetails />)
+    renderWithProviders(<DatosDeIdentificacion />)
     expect(screen.getByText(site.contacto.email)).toBeInTheDocument()
   })
 
   it('marca como pendientes los datos que el Grupo Parroquial no ha confirmado', () => {
-    renderWithProviders(<IdentificationDetails />)
+    renderWithProviders(<DatosDeIdentificacion />)
     const pendientes = screen.queryAllByText(new RegExp(DATO_PENDIENTE, 'i'))
     if (faltanDatosIdentificativos) {
       expect(pendientes.length).toBeGreaterThan(0)

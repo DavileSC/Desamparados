@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 
 /**
  * Valores cerrados que devuelve el backend. Se declaran aquí en vez de
@@ -57,5 +57,5 @@ export interface PanelResponse {
 
 /** Sin año, el ejercicio en curso. */
 export function traerPanelDeHoy(anio?: number) {
-  return apiFetch<PanelResponse>(anio === undefined ? '/panel' : `/panel?anio=${anio}`)
+  return llamarApi<PanelResponse>(anio === undefined ? '/panel' : `/panel?anio=${anio}`)
 }

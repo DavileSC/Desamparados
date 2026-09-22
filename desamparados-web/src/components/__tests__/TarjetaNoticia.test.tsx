@@ -2,50 +2,50 @@ import { describe, it, expect } from 'vitest'
 import { fireEvent, screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../test/test-utils'
 import TarjetaNoticia from '../TarjetaNoticia'
-import type { NewsItem } from '../../types'
+import type { Noticia } from '../../types'
 
-const mockNews: NewsItem = {
+const noticiaDePrueba: Noticia = {
   id: '1',
-  title: 'Solemne triduo',
-  excerpt: 'Tres jornadas de oración',
-  category: 'Noticias',
-  date: '2026-08-29T10:00:00.000Z',
+  titulo: 'Solemne triduo',
+  extracto: 'Tres jornadas de oración',
+  categoria: 'Noticias',
+  fecha: '2026-08-29T10:00:00.000Z',
   slug: 'solemne-triduo',
 }
 
 describe('TarjetaNoticia', () => {
   it('es un enlace a la ficha con fecha, título y extracto', () => {
-    renderWithProviders(<TarjetaNoticia news={mockNews} />)
+    renderWithProviders(<TarjetaNoticia noticia={noticiaDePrueba} />)
     const tarjeta = screen.getByRole('link', { name: /solemne triduo/i })
     expect(tarjeta).toHaveAttribute('href', '/actualidad/noticias/solemne-triduo')
     expect(within(tarjeta).getByRole('heading', { level: 3 })).toHaveTextContent('Solemne triduo')
     expect(within(tarjeta).getByText('Tres jornadas de oración')).toBeInTheDocument()
-    expect(tarjeta.querySelector('time')).toHaveAttribute('datetime', mockNews.date)
+    expect(tarjeta.querySelector('time')).toHaveAttribute('datetime', noticiaDePrueba.fecha)
   })
 
   it('no repite la categoría: en el archivo todas son noticias', () => {
     // Se rompe si vuelve la etiqueta «NOTICIAS» en cada tarjeta.
-    renderWithProviders(<TarjetaNoticia news={mockNews} />)
+    renderWithProviders(<TarjetaNoticia noticia={noticiaDePrueba} />)
     expect(screen.queryByText(/^noticias$/i)).not.toBeInTheDocument()
   })
 
   it('sin foto pone una placa con la inicial, y con foto la usa', () => {
-    const { unmount } = renderWithProviders(<TarjetaNoticia news={mockNews} />)
+    const { unmount } = renderWithProviders(<TarjetaNoticia noticia={noticiaDePrueba} />)
     expect(screen.getByTestId('placa-noticia')).toHaveTextContent('S')
     unmount()
 
-    renderWithProviders(<TarjetaNoticia news={{ ...mockNews, image: '/storage/triduo.jpg' }} />)
+    renderWithProviders(<TarjetaNoticia noticia={{ ...noticiaDePrueba, imagen: '/storage/triduo.jpg' }} />)
     expect(screen.getByRole('link').querySelector('img')).toHaveAttribute('src', '/storage/triduo.jpg')
     expect(screen.queryByTestId('placa-noticia')).not.toBeInTheDocument()
   })
 
   it('marca la destacada para que el listado le dé todo el ancho', () => {
-    renderWithProviders(<TarjetaNoticia news={mockNews} destacada />)
+    renderWithProviders(<TarjetaNoticia noticia={noticiaDePrueba} destacada />)
     expect(screen.getByRole('link')).toHaveAttribute('data-destacada', 'true')
   })
 
   it('si la foto no carga, pone la placa y no el icono de imagen rota', () => {
-    renderWithProviders(<TarjetaNoticia news={{ ...mockNews, image: '/storage/public/ya-no-esta.jpg' }} />)
+    renderWithProviders(<TarjetaNoticia noticia={{ ...noticiaDePrueba, imagen: '/storage/public/ya-no-esta.jpg' }} />)
     fireEvent.error(screen.getByRole('link').querySelector('img')!)
     expect(screen.getByTestId('placa-noticia')).toHaveTextContent('S')
     expect(screen.getByRole('link').querySelector('img')).toBeNull()

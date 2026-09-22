@@ -1,12 +1,12 @@
 import { Box, Typography, Button } from '@mui/material'
 import { Link } from 'react-router-dom'
-import { useCookieConsent } from '../hooks/useCookieConsent'
+import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
 
 export default function AvisoDeCookies() {
-  const { pending, accept, decline } = useCookieConsent()
+  const { sinDecidir, aceptar, rechazar } = useConsentimientoDeCookies()
 
   // Solo se muestra mientras el usuario no haya decidido. "Rechazar" también se recuerda.
-  if (!pending) return null
+  if (!sinDecidir) return null
 
   return (
     <Box
@@ -47,7 +47,7 @@ export default function AvisoDeCookies() {
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, flexShrink: 0 }}>
           <Button
-            onClick={decline}
+            onClick={rechazar}
             sx={{
               color: 'text.primary',
               border: '1px solid rgba(204, 196, 201, 0.3)',
@@ -58,7 +58,7 @@ export default function AvisoDeCookies() {
             Rechazar
           </Button>
           <Button
-            onClick={accept}
+            onClick={aceptar}
             sx={{
               backgroundColor: 'primary.main',
               color: 'primary.contrastText',

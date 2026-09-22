@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 import type { ContactFormData } from '../../features/contacto/schema'
 
 /**
@@ -9,5 +9,5 @@ import type { ContactFormData } from '../../features/contacto/schema'
  * reloj de este ordenador con el del servidor.
  */
 export function enviarMensajeDeContacto(data: ContactFormData, tiempoRelleno: number) {
-  return apiFetch<{ message: string }>('/contact', { method: 'POST', json: { ...data, comentarioAdicional: data.comentarioAdicional ?? '', tiempoRelleno }, auth: false })
+  return llamarApi<{ message: string }>('/contact', { method: 'POST', json: { ...data, comentarioAdicional: data.comentarioAdicional ?? '', tiempoRelleno }, auth: false })
 }

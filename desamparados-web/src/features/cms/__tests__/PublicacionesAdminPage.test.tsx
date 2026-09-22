@@ -21,7 +21,7 @@ const borrador = {
 const resumen = { publicadas: 4, borradores: 1, incompletas: 2, ultimaPublicacion: '2026-03-01T00:00:00.000Z', portada: { limite: 3, ids: [4, 3, 2], fijada: null } }
 
 /**
- * Una instancia de Response por llamada: `apiFetch` lee el cuerpo con
+ * Una instancia de Response por llamada: `llamarApi` lee el cuerpo con
  * `res.text()` y reutilizar la misma la dejaría consumida en la segunda.
  */
 function responder(data: unknown[], meta: Record<string, number> = { total: data.length, page: 1, limit: 20, totalPages: 1 }) {

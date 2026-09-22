@@ -13,16 +13,16 @@ import FilaRedaccion from './redaccion/FilaRedaccion'
 import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion, textoPortada } from './redaccion/Listado'
 import { piezasDePublicacion } from './redaccion/completitud'
 import { TIPOS_PUBLICACION, nombreTipo } from './portadaPublicacion'
-import { eliminarPublicacion, publicacionesDelCms, actualizarPublicacion, type ApiPublication, type EstadoPublicacion, type ResumenPublicaciones } from '../../lib/api/publicaciones'
+import { eliminarPublicacion, publicacionesDelCms, actualizarPublicacion, type PublicacionDeLaApi, type EstadoPublicacion, type ResumenPublicaciones } from '../../lib/api/publicaciones'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
-import type { PublicationItem } from '../../types'
+import type { Publicacion } from '../../types'
 
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
-// Lo que useHomeData('publications') tiene cacheado 60 s: tras destacar hay que
+// Lo que useDatosDePortada('publicaciones') tiene cacheado 60 s: tras destacar hay que
 // pedirlo de nuevo o la portada seguiría con el orden de antes.
-const CLAVE_PUBLICACIONES_PORTADA = ['home', 'publications']
+const CLAVE_PUBLICACIONES_PORTADA = ['portada', 'publicaciones']
 const FILTROS = { q: {}, estado: { validos: ESTADOS }, tipo: { validos: TIPOS_PUBLICACION.map((t) => t.value) } }
 
 /**
@@ -37,15 +37,15 @@ const FILTROS = { q: {}, estado: { validos: ESTADOS }, tipo: { validos: TIPOS_PU
  * ficha (PublicacionEditPage), también para una nueva.
  */
 export default function PublicacionesAdminPage() {
-  const [items, setItems] = useState<ApiPublication[]>([])
+  const [items, setItems] = useState<PublicacionDeLaApi[]>([])
   const [resumen, setResumen] = useState<ResumenPublicaciones | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
   // El aviso que deja la ficha al guardar («Publicada: ya se puede descargar…»).
   const [notice, setNotice] = useState<string | null>((location.state as { aviso?: string } | null)?.aviso ?? null)
-  const [porBorrar, setPorBorrar] = useState<ApiPublication | null>(null)
-  const [porCambiar, setPorCambiar] = useState<ApiPublication | null>(null)
+  const [porBorrar, setPorBorrar] = useState<PublicacionDeLaApi | null>(null)
+  const [porCambiar, setPorCambiar] = useState<PublicacionDeLaApi | null>(null)
   // La consulta actual viaja con el enlace de editar (página, tamaño y filtros):
   // así la pantalla de edición sabe a qué página del listado devolver.
   const consultaListado = location.search
@@ -58,26 +58,26 @@ export default function PublicacionesAdminPage() {
   // orden inverso y dejar en pantalla los datos de una página con la URL
   // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
   // Las llamadas de después de borrar o publicar la omiten: no hay carrera.
-  const load = useCallback(
+  const cargar = useCallback(
     (vigente: () => boolean = () => true) => publicacionesDelCms(
       { pagina, porPagina },
-      { q: filtros.q, estado: filtros.estado as EstadoPublicacion | '', categoria: filtros.tipo as PublicationItem['category'] | '' },
+      { q: filtros.q, estado: filtros.estado as EstadoPublicacion | '', categoria: filtros.tipo as Publicacion['categoria'] | '' },
     ).then((respuesta) => { if (!vigente()) return; setItems(respuesta.data); setMeta(respuesta.meta); setResumen(respuesta.resumen) }),
     [pagina, porPagina, filtros.q, filtros.estado, filtros.tipo]
   )
 
   useEffect(() => {
     let cancelado = false
-    load(() => !cancelado)
+    cargar(() => !cancelado)
       .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se han podido cargar las publicaciones.') })
       .finally(() => { if (!cancelado) setLoading(false) })
     return () => { cancelado = true }
-  }, [load])
+  }, [cargar])
 
   const borrar = async () => {
     if (!porBorrar) return
     setNotice(null)
-    try { await eliminarPublicacion(porBorrar.id); await load(); setNotice('Publicación eliminada.') }
+    try { await eliminarPublicacion(porBorrar.id); await cargar(); setNotice('Publicación eliminada.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar la publicación.') }
     finally { setPorBorrar(null) }
   }
@@ -88,7 +88,7 @@ export default function PublicacionesAdminPage() {
     setNotice(null)
     try {
       await actualizarPublicacion(porCambiar.id, { visible: publicar })
-      await load()
+      await cargar()
       setNotice(publicar ? 'Publicada: ya se puede descargar desde la web.' : 'Pasada a borrador: ya no se ve en la web.')
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido cambiar la publicación.') }
     finally { setPorCambiar(null) }
@@ -96,13 +96,13 @@ export default function PublicacionesAdminPage() {
 
   const queryClient = useQueryClient()
   // Sin diálogo: destacar no rompe nada y se deshace con el mismo clic.
-  const fijar = async (publicacion: ApiPublication) => {
+  const fijar = async (publicacion: PublicacionDeLaApi) => {
     const destacar = !publicacion.fijada
     setNotice(null)
     try {
       await actualizarPublicacion(publicacion.id, { fijada: destacar })
       void queryClient.invalidateQueries({ queryKey: CLAVE_PUBLICACIONES_PORTADA })
-      await load()
+      await cargar()
       setNotice(destacar
         ? 'Destacada: va la primera de la portada hasta que destaques otra.'
         : 'Ya no está destacada: la portada vuelve a ir por fecha.')
@@ -117,7 +117,7 @@ export default function PublicacionesAdminPage() {
   const publicadas = items.filter((p) => p.visible)
   const hayFiltro = Boolean(filtros.q || filtros.estado || filtros.tipo)
   const conCifra = filtros.estado === '' && !filtros.q
-  const fila = (publicacion: ApiPublication, enPortada: boolean) => (
+  const fila = (publicacion: PublicacionDeLaApi, enPortada: boolean) => (
     <FilaRedaccion
       key={publicacion.id}
       titulo={publicacion.titulo} visible={publicacion.visible} fecha={publicacion.fecha} editadaEl={publicacion.updatedAt}

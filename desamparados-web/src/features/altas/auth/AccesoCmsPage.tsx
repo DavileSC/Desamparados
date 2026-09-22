@@ -11,15 +11,15 @@ import CampoContrasena from '../../../components/CampoContrasena'
 import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, cerrarSesionApi, type LoginResponse } from '../../../lib/api/auth'
-import { ApiError } from '../../../lib/api/client'
+import { ErrorDeApi } from '../../../lib/api/cliente'
 
 function errorMessage(e: unknown, fallback: string) {
-  return e instanceof ApiError ? e.message : fallback
+  return e instanceof ErrorDeApi ? e.message : fallback
 }
 
 /** Código de error que acompaña al mensaje en las respuestas del login. */
 function codigoError(e: unknown): string | undefined {
-  if (!(e instanceof ApiError) || !e.payload || typeof e.payload !== 'object') return undefined
+  if (!(e instanceof ErrorDeApi) || !e.payload || typeof e.payload !== 'object') return undefined
   const { error } = e.payload as { error?: unknown }
   return typeof error === 'string' ? error : undefined
 }
@@ -58,7 +58,7 @@ export default function AccesoCmsPage() {
     defaultValues: { code: '' },
   })
 
-  const handleResponse = async (response: LoginResponse) => {
+  const alResponder = async (response: LoginResponse) => {
     if (response.status === '2FA_NEEDED') {
       setPending2FA({ message: response.message })
       return
@@ -81,7 +81,7 @@ export default function AccesoCmsPage() {
   const onSubmitCredentials = async (data: LoginFormData) => {
     setRechazado(false)
     try {
-      await handleResponse(await apiLogin(data.email, data.password, data.recordarme, 'cms'))
+      await alResponder(await apiLogin(data.email, data.password, data.recordarme, 'cms'))
     } catch (e) {
       // Cuenta de hermano con la contraseña correcta: el servidor no crea la
       // sesión y se le indica su acceso, con enlace, en vez del error genérico.
@@ -95,7 +95,7 @@ export default function AccesoCmsPage() {
 
   const onSubmit2FA = async (data: TwoFactorFormData) => {
     try {
-      await handleResponse(await verify2FA(data.code))
+      await alResponder(await verify2FA(data.code))
     } catch (e) {
       // El paso de la contraseña caducó (5 min) o su testigo ya se usó: de
       // nada sirve seguir probando códigos, hay que volver al primer paso.

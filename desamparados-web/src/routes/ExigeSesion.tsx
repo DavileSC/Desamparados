@@ -2,18 +2,18 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../features/altas/auth/store'
 import CargandoPagina from '../components/CargandoPagina'
 
-interface RequireAuthProps {
+interface ExigeSesionProps {
   children: React.ReactNode
 }
 
-export default function ExigeSesion({ children }: RequireAuthProps) {
-  const status = useAuthStore((state) => state.status)
+export default function ExigeSesion({ children }: ExigeSesionProps) {
+  const estado = useAuthStore((state) => state.status)
   const hermano = useAuthStore((state) => state.hermano)
   const location = useLocation()
 
   // Mientras no sepamos qué sesiones hay no podemos mandar a nadie al login:
   // expulsaría a quien sí la tiene cada vez que recarga la página.
-  if (status === 'cargando') return <CargandoPagina />
+  if (estado === 'cargando') return <CargandoPagina />
 
   // Solo la sesión del área de hermanos abre el área de hermanos. Estar dentro
   // del CMS no es estar dentro del portal: son dos accesos distintos.

@@ -12,7 +12,7 @@ const json = (cuerpo: unknown) =>
  * cualquier otra ruta, una lista vacía con su `meta`, que es lo que esperan los
  * bloques que además piden noticias, agenda o publicaciones.
  *
- * Una instancia de `Response` NUEVA por llamada: `apiFetch` lee el cuerpo con
+ * Una instancia de `Response` NUEVA por llamada: `llamarApi` lee el cuerpo con
  * `res.text()` y reutilizar la misma la dejaría consumida en la segunda.
  */
 export function responderPortada(textos: TextosPortada, imagenes: unknown[] = []) {

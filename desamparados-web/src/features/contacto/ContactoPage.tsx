@@ -7,6 +7,6 @@ import PaginaDeBloquesPublica from '../../components/bloques/PaginaDeBloquesPubl
  * de código porque lo que envía llega por correo. Hasta septiembre de 2026 la
  * página entera estaba escrita en este fichero.
  */
-export default function ContactPage() {
+export default function ContactoPage() {
   return <PaginaDeBloquesPublica slug="contacto" />
 }

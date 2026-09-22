@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { contrasenaNueva, contrasenaExistente } from '../../../lib/passwordPolicy'
+import { contrasenaNueva, contrasenaExistente } from '../../../lib/politicaDeContrasena'
 
 // El acceso NO aplica la política: quien tenga una contraseña anterior al
 // endurecimiento del mínimo seguiría siendo válida, y rechazarla aquí lo dejaría

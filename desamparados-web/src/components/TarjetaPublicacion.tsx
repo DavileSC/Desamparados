@@ -1,22 +1,22 @@
 import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import TarjetaCristal from './TarjetaCristal'
-import type { PublicationItem } from '../types'
+import type { Publicacion } from '../types'
 
-interface PublicationCardProps {
-  publication: PublicationItem
+interface TarjetaPublicacionProps {
+  publicacion: Publicacion
 }
 
-export default function TarjetaPublicacion({ publication }: PublicationCardProps) {
+export default function TarjetaPublicacion({ publicacion }: TarjetaPublicacionProps) {
   // Una portada cuyo fichero ya no está se quita, como si no la tuviera: mejor
   // que el icono de imagen rota ocupando la cabeza de la tarjeta.
   const [portadaRota, setPortadaRota] = useState<string | null>(null)
-  const categoryLabel =
-    publication.category === 'boletin'
+  const rotuloCategoria =
+    publicacion.categoria === 'boletin'
       ? 'Boletín'
-      : publication.category === 'dossier'
+      : publicacion.categoria === 'dossier'
         ? 'Dossier de prensa'
-        : publication.category === 'anuario'
+        : publicacion.categoria === 'anuario'
           ? 'Anuario'
           : 'Historia'
 
@@ -32,7 +32,7 @@ export default function TarjetaPublicacion({ publication }: PublicationCardProps
     >
       <Box
         component="a"
-        href={publication.fileUrl || '#'}
+        href={publicacion.archivoUrl || '#'}
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -41,12 +41,12 @@ export default function TarjetaPublicacion({ publication }: PublicationCardProps
           color: 'inherit',
         }}
       >
-        {publication.image && portadaRota !== publication.image && (
+        {publicacion.imagen && portadaRota !== publicacion.imagen && (
           <Box
             component="img"
-            src={publication.image}
-            onError={() => setPortadaRota(publication.image ?? null)}
-            alt={publication.title}
+            src={publicacion.imagen}
+            onError={() => setPortadaRota(publicacion.imagen ?? null)}
+            alt={publicacion.titulo}
             loading="lazy"
             decoding="async"
             sx={{
@@ -61,18 +61,18 @@ export default function TarjetaPublicacion({ publication }: PublicationCardProps
         )}
         <Box sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Typography variant="overline" sx={{ color: 'secondary.main', fontSize: '11px', mb: 1 }}>
-            {categoryLabel}
+            {rotuloCategoria}
           </Typography>
           <Typography variant="h5" component="h3" sx={{ color: 'text.primary', mb: 1, fontSize: '20px' }}>
-            {publication.title}
+            {publicacion.titulo}
           </Typography>
-          {publication.description && (
+          {publicacion.descripcion && (
             <Typography variant="body2" sx={{ color: 'text.secondary', flex: 1 }}>
-              {publication.description}
+              {publicacion.descripcion}
             </Typography>
           )}
           <Typography variant="caption" sx={{ display: 'block', mt: 2, color: 'text.secondary', opacity: 0.7 }}>
-            {new Date(publication.date).toLocaleDateString('es-ES', {
+            {new Date(publicacion.fecha).toLocaleDateString('es-ES', {
               year: 'numeric',
               month: 'long',
             })}

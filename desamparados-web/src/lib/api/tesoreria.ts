@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export type AdminReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
@@ -28,7 +28,7 @@ export interface ReceiptBrother {
   numeroHermano: number | null
 }
 
-export interface NewReceiptPayload {
+export interface DatosDeRecibo {
   hermanoId: number
   year: number
   concepto: string
@@ -44,30 +44,30 @@ export type FiltrosRecibos = { q?: string; estado?: AdminReceiptStatus | ''; tip
 
 export function recibosDelCms(year: string | undefined, pagina: { pagina: number; porPagina: number }, filtros: FiltrosRecibos = {}) {
   // Un año a medio escribir («20») sería un 400: se pide sin filtro de año.
-  return apiFetch<RespuestaPaginada<AdminReceipt>>(`/recibos/admin?${paramsPagina(pagina, { ...filtros, year: esAnioCompleto(year) ? year : undefined })}`)
+  return llamarApi<RespuestaPaginada<AdminReceipt>>(`/recibos/admin?${paramsPagina(pagina, { ...filtros, year: esAnioCompleto(year) ? year : undefined })}`)
 }
 
 /** Recibos y euros de cada estado, con la búsqueda, el año y el tipo del listado pero sin su estado. */
 export type ResumenRecibos = { estados: Record<AdminReceiptStatus, { cuenta: number; total: number }> }
 
 export function resumenDeRecibos(year: string | undefined, filtros: Pick<FiltrosRecibos, 'q' | 'tipo'> = {}) {
-  return apiFetch<ResumenRecibos>(`/recibos/admin/resumen?${new URLSearchParams(Object.entries({ ...filtros, year: esAnioCompleto(year) ? year : undefined })
+  return llamarApi<ResumenRecibos>(`/recibos/admin/resumen?${new URLSearchParams(Object.entries({ ...filtros, year: esAnioCompleto(year) ? year : undefined })
     .filter((par): par is [string, string] => Boolean(par[1]))).toString()}`)
 }
 
 export function generarCuotas(payload: { year: number; importe: number; concepto: string }) {
-  return apiFetch<{ message: string; omitidos?: number }>('/recibos/admin/generar', { method: 'POST', json: payload })
+  return llamarApi<{ message: string; omitidos?: number }>('/recibos/admin/generar', { method: 'POST', json: payload })
 }
 
 export function cobrarRecibo(id: number, metodoPago: PaymentMethod) {
-  return apiFetch<{ message: string; reciboId: number; estado: AdminReceiptStatus }>(`/recibos/admin/${id}/pagar`, { method: 'POST', json: { metodoPago } })
+  return llamarApi<{ message: string; reciboId: number; estado: AdminReceiptStatus }>(`/recibos/admin/${id}/pagar`, { method: 'POST', json: { metodoPago } })
 }
 
-export function crearRecibo(payload: NewReceiptPayload) {
-  return apiFetch<{ message: string; reciboId: number; estado: AdminReceiptStatus }>('/recibos/admin', { method: 'POST', json: payload })
+export function crearRecibo(payload: DatosDeRecibo) {
+  return llamarApi<{ message: string; reciboId: number; estado: AdminReceiptStatus }>('/recibos/admin', { method: 'POST', json: payload })
 }
 
 /** Hermanos activos cuyo nombre, apellidos o número coinciden con `q` (dos letras como mínimo). */
 export function buscarHermanosConRecibo(q: string) {
-  return apiFetch<ReceiptBrother[]>(`/recibos/admin/hermanos?${new URLSearchParams({ q }).toString()}`)
+  return llamarApi<ReceiptBrother[]>(`/recibos/admin/hermanos?${new URLSearchParams({ q }).toString()}`)
 }

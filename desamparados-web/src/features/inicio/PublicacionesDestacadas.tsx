@@ -4,14 +4,14 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import { publicacionesDePortada } from '../../lib/api/publicaciones'
-import type { PublicationItem } from '../../types'
-import { useHomeData } from './useHomeData'
+import type { Publicacion } from '../../types'
+import { useDatosDePortada } from './useDatosDePortada'
 import { useTextosPortada } from './useContenidoPortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import CintaDestacada from './CintaDestacada'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 
-const CATEGORIAS: Record<PublicationItem['category'], { nombre: string; corto: string }> = {
+const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
   boletin: { nombre: 'Boletín informativo', corto: 'boletín' },
   anuario: { nombre: 'Anuario', corto: 'anuario' },
   dossier: { nombre: 'Dossier', corto: 'dossier' },
@@ -19,7 +19,7 @@ const CATEGORIAS: Record<PublicationItem['category'], { nombre: string; corto: s
 }
 
 // Un color fijo por tipo de publicación: la cubierta dice qué es antes de leerla.
-const CUBIERTAS: Record<PublicationItem['category'], { fondo: string; texto: string; cifra: string }> = {
+const CUBIERTAS: Record<Publicacion['categoria'], { fondo: string; texto: string; cifra: string }> = {
   boletin: { fondo: GRANATE, texto: '#fbe9e7', cifra: '#fbe9e7' },
   anuario: { fondo: PAPEL, texto: '#3a3538', cifra: GRANATE },
   dossier: { fondo: '#3a3437', texto: '#e3d8bf', cifra: GOLD },
@@ -32,12 +32,12 @@ const mesCorto = (iso: string) => mes(iso).slice(0, 3)
 const anio = (iso: string) => new Date(iso).getFullYear()
 
 /** La cifra grande de la cubierta: el número del boletín («n.º 12»), el curso de un anuario («25·26») o, si no, el año. */
-function cifra(publicacion: PublicationItem) {
-  const numero = publicacion.title.match(/n\.?\s*º\s*(\d+)/i)
+function cifra(publicacion: Publicacion) {
+  const numero = publicacion.titulo.match(/n\.?\s*º\s*(\d+)/i)
   if (numero) return numero[1]
-  const curso = publicacion.title.match(/(\d{4})\s*[-–/]\s*(\d{4})/)
+  const curso = publicacion.titulo.match(/(\d{4})\s*[-–/]\s*(\d{4})/)
   if (curso) return `${curso[1].slice(2)}·${curso[2].slice(2)}`
-  return String(anio(publicacion.date))
+  return String(anio(publicacion.fecha))
 }
 
 const versal = { fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase' } as const
@@ -58,23 +58,23 @@ const boton = {
 } as const
 
 /** Tapa del ejemplar: la portada subida desde el CMS o, sin ella, una cubierta tipográfica del color de su tipo. */
-function Cubierta({ publicacion, pequena = false }: { publicacion: PublicationItem; pequena?: boolean }) {
-  if (publicacion.image) {
-    return <Box component="img" src={publicacion.image} alt="" sx={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
+function Cubierta({ publicacion, pequena = false }: { publicacion: Publicacion; pequena?: boolean }) {
+  if (publicacion.imagen) {
+    return <Box component="img" src={publicacion.imagen} alt="" sx={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
   }
-  const colores = CUBIERTAS[publicacion.category]
+  const colores = CUBIERTAS[publicacion.categoria]
   const texto = cifra(publicacion)
   const larga = texto.length > 3
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: pequena ? 2.25 : { xs: 2.5, md: 3 }, backgroundColor: colores.fondo, color: colores.texto }}>
-      <Box component="span" sx={{ ...versal, fontSize: pequena ? 9 : 11 }}>{CATEGORIAS[publicacion.category].nombre}</Box>
+      <Box component="span" sx={{ ...versal, fontSize: pequena ? 9 : 11 }}>{CATEGORIAS[publicacion.categoria].nombre}</Box>
       <Box
         component="span"
         sx={{ fontFamily: SERIF, lineHeight: 0.9, color: colores.cifra, fontSize: pequena ? 30 : larga ? { xs: 56, md: 64 } : { xs: 96, md: 112 } }}
       >
         {texto}
       </Box>
-      <Box component="span" sx={{ ...versal, fontSize: pequena ? 9 : 11 }}>{mes(publicacion.date)} · {anio(publicacion.date)}</Box>
+      <Box component="span" sx={{ ...versal, fontSize: pequena ? 9 : 11 }}>{mes(publicacion.fecha)} · {anio(publicacion.fecha)}</Box>
     </Box>
   )
 }
@@ -134,7 +134,7 @@ const renglones = {
 } as const
 
 /** El boletín como objeto: el último de frente y, detrás, los dos anteriores. */
-function Ejemplares({ destacada, anteriores }: { destacada: PublicationItem; anteriores: PublicationItem[] }) {
+function Ejemplares({ destacada, anteriores }: { destacada: Publicacion; anteriores: Publicacion[] }) {
   const contenido = (
     <>
       <Box sx={{ position: 'absolute', left: { xs: '15%', md: 40 }, right: { xs: '15%', md: 10 }, bottom: { xs: 6, md: 18 }, height: 40, background: 'radial-gradient(closest-side, rgba(0, 0, 0, 0.65), transparent)', filter: 'blur(4px)' }} />
@@ -155,8 +155,8 @@ function Ejemplares({ destacada, anteriores }: { destacada: PublicationItem; ant
 
   // Todo lo que dice ya está en el texto de al lado: para el lector de pantalla es decorado.
   // Con ratón, pinchar el ejemplar también descarga; el teclado usa el botón.
-  return destacada.fileUrl ? (
-    <Box component="a" href={destacada.fileUrl} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true" sx={escena}>
+  return destacada.archivoUrl ? (
+    <Box component="a" href={destacada.archivoUrl} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true" sx={escena}>
       {contenido}
     </Box>
   ) : (
@@ -171,9 +171,9 @@ function Ejemplares({ destacada, anteriores }: { destacada: PublicationItem; ant
  * si no de la más reciente: el servidor las manda ya en ese orden.
  */
 export default function PublicacionesDestacadas() {
-  const { data: publications = [], isPending, isError, refetch } = useHomeData('publications', publicacionesDePortada)
+  const { data: publicaciones = [], isPending, isError, refetch } = useDatosDePortada('publicaciones', publicacionesDePortada)
   const textos = useTextosPortada()
-  const [destacada, ...resto] = publications
+  const [destacada, ...resto] = publicaciones
   const otras = resto.slice(0, 2)
 
   return (
@@ -223,31 +223,31 @@ export default function PublicacionesDestacadas() {
             <Box sx={{ gridColumn: { lg: 1 }, gridRow: { lg: 1 } }}>
               <Revela orden={1}>
                 <Typography id="publicaciones-titulo" component="h2" sx={cejaTitulo}>
-                  Publicaciones · {mes(destacada.date)} {anio(destacada.date)}
+                  Publicaciones · {mes(destacada.fecha)} {anio(destacada.fecha)}
                 </Typography>
               </Revela>
               <Revela efecto="cortina" orden={2}>
                 <Typography variant="h3" component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 34, md: 52 }, lineHeight: 1.06, letterSpacing: '-0.015em', color: '#fff', textWrap: 'balance' }}>
-                  {destacada.title}
+                  {destacada.titulo}
                 </Typography>
               </Revela>
               <Revela orden={3}>
-                {destacada.description && (
+                {destacada.descripcion && (
                   <Typography sx={{ mt: 2.5, maxWidth: 470, fontSize: 16, lineHeight: 1.7, color: '#d9d5d0' }}>
-                    {destacada.description}
+                    {destacada.descripcion}
                   </Typography>
                 )}
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 3.75 }}>
-                  {destacada.fileUrl && (
+                  {destacada.archivoUrl && (
                     <Box
                       component="a"
-                      href={destacada.fileUrl}
+                      href={destacada.archivoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{ ...boton, backgroundColor: PAPEL, color: '#1b1c1a', '&:hover': { backgroundColor: '#fff' } }}
                     >
                       <FileDownloadOutlinedIcon sx={{ fontSize: 20 }} />
-                      Descargar {CATEGORIAS[destacada.category].corto}
+                      Descargar {CATEGORIAS[destacada.categoria].corto}
                       <span className="home-visually-hidden"> (PDF, nueva pestaña)</span>
                     </Box>
                   )}
@@ -271,7 +271,7 @@ export default function PublicacionesDestacadas() {
                       <Box component="li" key={publicacion.id}>
                         <Box
                           component="a"
-                          href={publicacion.fileUrl}
+                          href={publicacion.archivoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{
@@ -285,10 +285,10 @@ export default function PublicacionesDestacadas() {
                           }}
                         >
                           <Box component="span" sx={{ display: 'block', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#a79fa4' }}>
-                            {mesCorto(publicacion.date)} {anio(publicacion.date)}
+                            {mesCorto(publicacion.fecha)} {anio(publicacion.fecha)}
                           </Box>
                           <Box component="span" className="titulo" sx={{ display: 'block', mt: 0.75, fontFamily: SERIF, fontSize: 17, lineHeight: 1.3, color: '#f2f0ed', transition: 'color .25s ease' }}>
-                            {publicacion.title}
+                            {publicacion.titulo}
                           </Box>
                           <span className="home-visually-hidden"> (PDF, nueva pestaña)</span>
                         </Box>
@@ -302,7 +302,7 @@ export default function PublicacionesDestacadas() {
         ) : (
           <Box sx={{ maxWidth: 640 }}>
             <Typography id="publicaciones-titulo" component="h2" sx={cejaTitulo}>Publicaciones</Typography>
-            <AvisosDeInicio loading={isPending} error={isError} empty={!publications.length} label="las publicaciones" emptyMessage="No hay publicaciones disponibles por el momento." retry={() => { void refetch() }} />
+            <AvisosDeInicio loading={isPending} error={isError} empty={!publicaciones.length} label="las publicaciones" emptyMessage="No hay publicaciones disponibles por el momento." retry={() => { void refetch() }} />
           </Box>
         )}
       </ContenedorDePagina>

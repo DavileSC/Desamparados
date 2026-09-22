@@ -1,11 +1,11 @@
 import { Box, type BoxProps } from '@mui/material'
 import { forwardRef } from 'react'
 
-interface GlassCardProps extends BoxProps {
+interface TarjetaCristalProps extends BoxProps {
   goldBorder?: boolean
 }
 
-const TarjetaCristal = forwardRef<HTMLDivElement, GlassCardProps>(
+const TarjetaCristal = forwardRef<HTMLDivElement, TarjetaCristalProps>(
   ({ goldBorder = false, sx, children, ...props }, ref) => (
     <Box
       ref={ref}

@@ -7,7 +7,7 @@ import { site, legal, faltanDatosIdentificativos, DATO_PENDIENTE } from '../../c
  * Grupo Parroquial aún no ha confirmado se muestran como pendientes y el aviso final
  * desaparece solo en cuanto se rellenan allí.
  */
-export default function IdentificationDetails() {
+export default function DatosDeIdentificacion() {
   const filas: Array<[string, string]> = [
     ['Denominación', legal(site.entidad.denominacion)],
     ['NIF', legal(site.entidad.nif)],

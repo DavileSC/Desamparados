@@ -1,7 +1,7 @@
 import { Box, Typography, Button } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 
-interface SectionTitleProps {
+interface TituloDeSeccionProps {
   title: string
   actionLabel?: string
   actionHref?: string
@@ -13,7 +13,7 @@ export default function TituloDeSeccion({
   actionLabel,
   actionHref = '#',
   centered = false,
-}: SectionTitleProps) {
+}: TituloDeSeccionProps) {
   return (
     <Box
       sx={{

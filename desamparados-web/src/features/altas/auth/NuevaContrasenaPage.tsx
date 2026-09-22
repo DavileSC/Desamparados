@@ -8,7 +8,7 @@ import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
 import CampoContrasena from '../../../components/CampoContrasena'
 import { requestPasswordReset as apiRequestPasswordReset, resetPassword as apiResetPassword } from '../../../lib/api/auth'
-import { ApiError } from '../../../lib/api/client'
+import { ErrorDeApi } from '../../../lib/api/cliente'
 import { requestPasswordResetSchema, resetPasswordSchema, type RequestPasswordResetFormData, type ResetPasswordFormData } from './schema'
 
 export default function NuevaContrasenaPage() {
@@ -38,7 +38,7 @@ export default function NuevaContrasenaPage() {
       setSuccess(true)
       window.setTimeout(() => navigate('/hermanos/acceso', { replace: true }), 1800)
     } catch (error) {
-      setSubmitError(error instanceof ApiError ? error.message : 'No se ha podido actualizar la contraseña.')
+      setSubmitError(error instanceof ErrorDeApi ? error.message : 'No se ha podido actualizar la contraseña.')
     }
   }
 
@@ -48,7 +48,7 @@ export default function NuevaContrasenaPage() {
       await apiRequestPasswordReset(data.email)
       setRequestSent(true)
     } catch (error) {
-      setSubmitError(error instanceof ApiError ? error.message : 'No se ha podido solicitar la recuperación.')
+      setSubmitError(error instanceof ErrorDeApi ? error.message : 'No se ha podido solicitar la recuperación.')
     }
   }
 

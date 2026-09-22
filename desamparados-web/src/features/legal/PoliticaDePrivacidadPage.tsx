@@ -1,9 +1,9 @@
 import { Typography } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
-import IdentificationDetails from './IdentificationDetails'
+import DatosDeIdentificacion from './DatosDeIdentificacion'
 import { emailDerechos } from '../../config/site'
 
-export default function PrivacyPolicyPage() {
+export default function PoliticaDePrivacidadPage() {
   return (
     <MarcoPaginaLegal title="Política de Privacidad">
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
         El responsable del tratamiento de los datos personales recogidos a través de este sitio web es:
       </Typography>
 
-      <IdentificationDetails />
+      <DatosDeIdentificacion />
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
         2. Finalidad del tratamiento

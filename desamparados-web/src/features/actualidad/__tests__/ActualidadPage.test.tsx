@@ -16,7 +16,7 @@ const noticia = {
 /**
  * La pantalla pide dos extremos distintos, así que las respuestas se enrutan
  * por la URL (nunca por la posición en mock.calls) y cada llamada recibe su
- * propia instancia de Response: `apiFetch` consume el cuerpo con `res.text()`.
+ * propia instancia de Response: `llamarApi` consume el cuerpo con `res.text()`.
  */
 function responder() {
   const simulado = vi.fn().mockImplementation((url: RequestInfo | URL) => {

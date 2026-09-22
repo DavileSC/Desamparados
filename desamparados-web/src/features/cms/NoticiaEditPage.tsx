@@ -19,7 +19,7 @@ import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDeNoticia, tieneTexto } from './redaccion/completitud'
 import { useTemaCms } from '../../app/temaCms'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { crearNoticia, noticiaDelCms, actualizarNoticia, type ApiNews, type NewsPayload } from '../../lib/api/noticias'
+import { crearNoticia, noticiaDelCms, actualizarNoticia, type NoticiaDeLaApi, type DatosDeNoticia } from '../../lib/api/noticias'
 
 /** Lo que cabe en las tres líneas de la tarjeta de la portada; pasarse no impide guardar. */
 const EXTRACTO_RECOMENDADO = 180
@@ -47,7 +47,7 @@ export default function NoticiaEditPage() {
   const queryClient = useQueryClient()
   const [confirmando, setConfirmando] = useState<Accion | null>(null)
   const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, guardar: guardarFicha } =
-    useFichaCms<ApiNews, NewsPayload>({
+    useFichaCms<NoticiaDeLaApi, DatosDeNoticia>({
       listado: '/cms/noticias',
       origen: nueva ? null : Number(id),
       cargar: noticiaDelCms,
@@ -68,7 +68,7 @@ export default function NoticiaEditPage() {
 
   const guardar = async (accion: Accion) => {
     setConfirmando(null)
-    const payload: NewsPayload = {
+    const datos: DatosDeNoticia = {
       ...form,
       visible: accion === 'publicar' || accion === 'guardar',
       // El esquema pide contenido no vacío; un borrador puede no tener texto aún.
@@ -80,8 +80,8 @@ export default function NoticiaEditPage() {
     }
     await guardarFicha(
       async () => {
-        if (nueva) await crearNoticia(payload)
-        else await actualizarNoticia(Number(id), payload)
+        if (nueva) await crearNoticia(datos)
+        else await actualizarNoticia(Number(id), datos)
         // El contador de borradores del menú sale del panel del Inicio.
         void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
       },
@@ -203,10 +203,10 @@ export default function NoticiaEditPage() {
             <Panel titulo="Así sale en la portada">
               {/* La tarjeta de verdad, la misma que en la web, pero sin poder pulsarla. */}
               <div inert style={{ pointerEvents: 'none' }} data-testid="vista-previa-tarjeta">
-                <TarjetaNoticia news={{
-                  id: String(id ?? 'nueva'), slug: form.slug || 'vista-previa', category: 'Noticias',
-                  title: form.titulo.trim() || 'Título de la noticia', excerpt: form.extracto ?? '', content: form.contenido,
-                  image: form.imagenUrl || undefined, date: form.fecha ? `${form.fecha}T12:00:00` : new Date().toISOString(),
+                <TarjetaNoticia noticia={{
+                  id: String(id ?? 'nueva'), slug: form.slug || 'vista-previa', categoria: 'Noticias',
+                  titulo: form.titulo.trim() || 'Título de la noticia', extracto: form.extracto ?? '', contenido: form.contenido,
+                  imagen: form.imagenUrl || undefined, fecha: form.fecha ? `${form.fecha}T12:00:00` : new Date().toISOString(),
                 }} />
               </div>
             </Panel>
@@ -233,7 +233,7 @@ export default function NoticiaEditPage() {
   )
 }
 
-function vacia(): NewsPayload {
+function vacia(): DatosDeNoticia {
   return { titulo: '', contenido: '', extracto: '', imagenUrl: '', visible: false, fecha: hoy(), slug: '' }
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { sesionActual, cerrarSesionApi } from '../../../lib/api/auth'
-import { ApiError } from '../../../lib/api/client'
+import { ErrorDeApi } from '../../../lib/api/cliente'
 import { useAuthStore, CLAVE_PERSISTENCIA_ANTIGUA } from './store'
 
 /**
@@ -12,7 +12,7 @@ export const ESPERAS_REINTENTO_MS = [1000, 3000, 8000]
 // Solo un 401 decía «no hay sesión», pero /auth/me ya no devuelve 401 nunca:
 // solo quedan los fallos pasajeros que sí merecen reintento.
 const esPasajero = (error: unknown) =>
-  !(error instanceof ApiError) || error.status === 429 || error.status >= 500
+  !(error instanceof ErrorDeApi) || error.status === 429 || error.status >= 500
 
 async function preguntarSesion() {
   for (let intento = 0; ; intento++) {

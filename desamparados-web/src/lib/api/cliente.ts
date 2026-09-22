@@ -14,17 +14,17 @@ import { useAuthStore } from '../../features/altas/auth/store'
  */
 const BASE_URL = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '')
 
-export class ApiError extends Error {
+export class ErrorDeApi extends Error {
   status: number
   payload: unknown
   fields: Record<string, string>
 
-  constructor(message: string, status: number, payload?: unknown) {
+  constructor(message: string, status: number, datos?: unknown) {
     super(message)
-    this.name = 'ApiError'
+    this.name = 'ErrorDeApi'
     this.status = status
-    this.payload = payload
-    this.fields = extractFieldErrors(payload)
+    this.payload = datos
+    this.fields = erroresPorCampo(datos)
   }
 }
 
@@ -37,37 +37,37 @@ interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
   auth?: boolean
 }
 
-function extractMessage(payload: unknown): string | null {
-  if (!payload || typeof payload !== 'object') return null
-  const p = payload as Record<string, unknown>
+function mensajeDelCuerpo(datos: unknown): string | null {
+  if (!datos || typeof datos !== 'object') return null
+  const p = datos as Record<string, unknown>
   if (typeof p.message === 'string' && p.message) return p.message
   if (typeof p.error === 'string' && p.error) return p.error
   return null
 }
 
 // El validador del backend devuelve { errors: [{ field, message }] }
-function extractFieldErrors(payload: unknown): Record<string, string> {
-  if (!payload || typeof payload !== 'object') return {}
-  const errors = (payload as { errors?: unknown }).errors
+function erroresPorCampo(datos: unknown): Record<string, string> {
+  if (!datos || typeof datos !== 'object') return {}
+  const errors = (datos as { errors?: unknown }).errors
   if (!Array.isArray(errors)) return {}
-  const out: Record<string, string> = {}
+  const salida: Record<string, string> = {}
   for (const e of errors) {
     if (e && typeof e === 'object' && typeof (e as { field?: unknown }).field === 'string') {
-      out[(e as { field: string }).field] = String((e as { message?: unknown }).message ?? '')
+      salida[(e as { field: string }).field] = String((e as { message?: unknown }).message ?? '')
     }
   }
-  return out
+  return salida
 }
 
 /**
  * El mensaje que verá quien use la pantalla. Un 400 de validación trae el
  * mensaje genérico «Error de validación» y el detalle en `errors`: las pantallas
- * que pintan cada campo usan `ApiError.fields`, pero las que solo enseñan un
+ * que pintan cada campo usan `ErrorDeApi.fields`, pero las que solo enseñan un
  * aviso se quedaban sin saber qué corregir. Se añaden hasta tres campos.
  */
-function mensajeDeError(payload: unknown): string | null {
-  const mensaje = extractMessage(payload)
-  const campos = Object.entries(extractFieldErrors(payload))
+function mensajeDeError(datos: unknown): string | null {
+  const mensaje = mensajeDelCuerpo(datos)
+  const campos = Object.entries(erroresPorCampo(datos))
   if (campos.length === 0) return mensaje
   const detalle = campos.slice(0, 3).map(([campo, texto]) => (texto ? `${campo}: ${texto}` : campo)).join('; ')
   const resto = campos.length > 3 ? ` (y ${campos.length - 3} más)` : ''
@@ -100,7 +100,7 @@ function refrescarSesiones(): Promise<void> {
   return refrescando
 }
 
-export async function apiFetch<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+export async function llamarApi<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const { json, formData, auth = true, headers, ...rest } = options
 
   let res: Response
@@ -117,15 +117,15 @@ export async function apiFetch<T>(path: string, options: ApiRequestOptions = {})
       body: json !== undefined ? JSON.stringify(json) : formData,
     })
   } catch {
-    throw new ApiError('No se ha podido conectar con el servidor. Inténtalo de nuevo en unos minutos.', 0)
+    throw new ErrorDeApi('No se ha podido conectar con el servidor. Inténtalo de nuevo en unos minutos.', 0)
   }
 
-  const text = await res.text()
-  let payload: unknown = null
+  const texto = await res.text()
+  let datos: unknown = null
   try {
-    payload = text ? JSON.parse(text) : null
+    datos = texto ? JSON.parse(texto) : null
   } catch {
-    payload = text
+    datos = texto
   }
 
   if (!res.ok) {
@@ -138,8 +138,8 @@ export async function apiFetch<T>(path: string, options: ApiRequestOptions = {})
       // buena a quien seguía dentro.
       void refrescarSesiones()
     }
-    throw new ApiError(mensajeDeError(payload) ?? `Error ${res.status}`, res.status, payload)
+    throw new ErrorDeApi(mensajeDeError(datos) ?? `Error ${res.status}`, res.status, datos)
   }
 
-  return payload as T
+  return datos as T
 }

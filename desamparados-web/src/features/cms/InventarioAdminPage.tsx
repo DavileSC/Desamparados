@@ -107,7 +107,7 @@ export default function InventarioAdminPage() {
   // página con la URL diciendo otra. Solo la última carga en marcha tiene
   // derecho a escribir. Las llamadas de después de crear, borrar, asignar o
   // devolver la omiten: no hay carrera.
-  const load = useCallback((vigente: () => boolean = () => true) => Promise.all([
+  const cargar = useCallback((vigente: () => boolean = () => true) => Promise.all([
     listarEnseres({ pagina: enseres.pagina, porPagina: enseres.porPagina }, {
       search: filtrosEnseres.q,
       categoria: filtrosEnseres.categoria,
@@ -127,10 +127,10 @@ export default function InventarioAdminPage() {
 
   useEffect(() => {
     let cancelado = false
-    load(() => !cancelado)
+    cargar(() => !cancelado)
       .catch((e: unknown) => { if (!cancelado) setError(mensaje(e, 'No se ha podido cargar el inventario.')) })
     return () => { cancelado = true }
-  }, [load])
+  }, [cargar])
 
   // Cada ventana se limpia al abrirse, no al cerrarse: así no se vacía a la vista mientras se va.
   const abrirAlta = () => {
@@ -148,7 +148,7 @@ export default function InventarioAdminPage() {
     finally { setGuardando(false) }
     setCreando(null)
     setNotice(aviso)
-    await load().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
+    await cargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
   }
 
   // Un enser nuevo puede traer una categoría o una ubicación que aún no estaba en los filtros.
@@ -162,13 +162,13 @@ export default function InventarioAdminPage() {
   }
   const savePrenda = () => guardar(() => crearPrenda(prendaForm), 'Prenda creada correctamente.', 'No se ha podido guardar la prenda.')
   const nombreDe = (item: Enser | Prenda) => ('nombre' in item ? item.nombre : `Prenda ${item.numero}`)
-  const borrar = async () => { if (!porBorrar) return; try { if (tab === 0) await eliminarEnser(porBorrar.id); else await eliminarPrenda(porBorrar.id); await load(); setNotice('Elemento eliminado correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido eliminar el elemento.')) } finally { setPorBorrar(null) } }
+  const borrar = async () => { if (!porBorrar) return; try { if (tab === 0) await eliminarEnser(porBorrar.id); else await eliminarPrenda(porBorrar.id); await cargar(); setNotice('Elemento eliminado correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido eliminar el elemento.')) } finally { setPorBorrar(null) } }
   const cantidadesValidas = CANTIDADES_ENSER.every(([campo]) => esCantidadValida(enserForm[campo]))
   const prestada = async (aviso: string) => {
     setPrestando(null)
     setError(null)
     setNotice(aviso)
-    await load().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
+    await cargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
   }
   const devolver = async (necesitaLavado: boolean) => {
     const prenda = devolviendo
@@ -176,7 +176,7 @@ export default function InventarioAdminPage() {
     if (!prenda) return
     try {
       await devolverPrenda(prenda.id, necesitaLavado)
-      await load()
+      await cargar()
       setNotice(necesitaLavado ? `Prenda ${prenda.numero} devuelta: pasa al taller.` : `Prenda ${prenda.numero} devuelta: queda disponible.`)
     } catch (e: unknown) { setError(mensaje(e, 'No se ha podido registrar la devolución.')) }
   }

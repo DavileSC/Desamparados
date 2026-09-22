@@ -20,13 +20,14 @@ import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom'
 import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import LogoutIcon from '@mui/icons-material/Logout'
+import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
 import { cerrarSesion } from '../features/altas/auth/session'
 
-const drawerWidth = 260
+const ANCHO_CAJON = 260
 
-const menuItems = [
+const entradasDelMenu = [
   { label: 'Mi perfil', href: '/area-hermano/perfil', icon: <PersonIcon /> },
   // Las fichas de quienes están a su cargo: un menor apuntado por su padre, su
   // tío o su padrino. Sin esta pantalla, el alta de un menor solo se podía
@@ -39,50 +40,57 @@ const menuItems = [
 export default function MarcoAreaHermano() {
   const theme = useTheme()
   const location = useLocation()
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [cajonAbierto, setCajonAbierto] = useState(false)
 
-  const handleDrawerToggle = () => setMobileOpen(!mobileOpen)
+  const alternarCajon = () => setCajonAbierto(!cajonAbierto)
 
-  const isActive = (href: string) =>
+  const esActiva = (href: string) =>
     location.pathname === href || location.pathname.startsWith(`${href}/`)
 
-  const drawer = (
+  const cajon = (
     <Box sx={{ height: '100%', backgroundColor: '#100e11' }}>
       <Box sx={{ p: 3, borderBottom: '1px solid rgba(204, 196, 201, 0.2)' }}>
-        <Typography
+        <Box
           component={Link}
           to="/"
-          sx={{
-            fontFamily: designTokens.fonts.heading,
-            fontSize: '20px',
-            color: 'text.primary',
-            textDecoration: 'none',
-            display: 'block',
-          }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none' }}
         >
-          DESAMPARADOS
-        </Typography>
-        <Typography variant="overline" sx={{ color: 'text.secondary', fontSize: '10px' }}>
-          Área de Hermanos
-        </Typography>
+          <EscudoDelGrupo alto={40} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontFamily: designTokens.fonts.heading,
+                fontSize: '20px',
+                lineHeight: 1.15,
+                color: 'text.primary',
+                display: 'block',
+              }}
+            >
+              DESAMPARADOS
+            </Typography>
+            <Typography variant="overline" sx={{ color: 'text.secondary', fontSize: '10px' }}>
+              Área de Hermanos
+            </Typography>
+          </Box>
+        </Box>
       </Box>
       <List sx={{ py: 2 }}>
-        {menuItems.map((item) => {
-          const active = isActive(item.href)
+        {entradasDelMenu.map((item) => {
+          const activa = esActiva(item.href)
           return (
             <ListItem key={item.label} disablePadding>
               <ListItemButton
                 component={Link}
                 to={item.href}
-                selected={active}
-                onClick={() => setMobileOpen(false)}
+                selected={activa}
+                onClick={() => setCajonAbierto(false)}
                 sx={{
                   px: 3,
                   py: 1.5,
-                  color: active ? 'secondary.contrastText' : 'text.secondary',
-                  backgroundColor: active ? 'primary.main' : 'transparent',
+                  color: activa ? 'secondary.contrastText' : 'text.secondary',
+                  backgroundColor: activa ? 'primary.main' : 'transparent',
                   '&:hover': {
-                    backgroundColor: active ? 'primary.main' : 'rgba(255,255,255,0.05)',
+                    backgroundColor: activa ? 'primary.main' : 'rgba(255,255,255,0.05)',
                   },
                 }}
               >
@@ -129,15 +137,15 @@ export default function MarcoAreaHermano() {
         position="fixed"
         elevation={0}
         sx={{
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
+          width: { md: `calc(100% - ${ANCHO_CAJON}px)` },
+          ml: { md: `${ANCHO_CAJON}px` },
           backgroundColor: 'rgba(38, 35, 38, 0.95)',
           borderBottom: '1px solid rgba(204, 196, 201, 0.2)',
           display: { md: 'none' },
         }}
       >
         <Toolbar>
-          <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2 }}>
+          <IconButton color="inherit" edge="start" onClick={alternarCajon} sx={{ mr: 2 }}>
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" sx={{ fontFamily: designTokens.fonts.heading }}>
@@ -148,29 +156,29 @@ export default function MarcoAreaHermano() {
 
       <Box
         component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        sx={{ width: { md: ANCHO_CAJON }, flexShrink: { md: 0 } }}
       >
         <Drawer
           variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
+          open={cajonAbierto}
+          onClose={alternarCajon}
           ModalProps={{ keepMounted: true }}
           slotProps={{
-            paper: { sx: { width: drawerWidth, backgroundColor: '#100e11' } },
+            paper: { sx: { width: ANCHO_CAJON, backgroundColor: '#100e11' } },
           }}
           sx={{ display: { xs: 'block', md: 'none' } }}
         >
-          {drawer}
+          {cajon}
         </Drawer>
         <Drawer
           variant="permanent"
           open
           slotProps={{
-            paper: { sx: { width: drawerWidth, backgroundColor: '#100e11', borderRight: 'none' } },
+            paper: { sx: { width: ANCHO_CAJON, backgroundColor: '#100e11', borderRight: 'none' } },
           }}
           sx={{ display: { xs: 'none', md: 'block' } }}
         >
-          {drawer}
+          {cajon}
         </Drawer>
       </Box>
 
@@ -180,7 +188,7 @@ export default function MarcoAreaHermano() {
           flexGrow: 1,
           p: { xs: 3, md: 5 },
           pt: { xs: 10, md: 5 },
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          width: { md: `calc(100% - ${ANCHO_CAJON}px)` },
           backgroundColor: 'background.default',
         }}
       >

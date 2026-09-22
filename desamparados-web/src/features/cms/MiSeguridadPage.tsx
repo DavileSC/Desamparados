@@ -3,11 +3,11 @@ import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from '@
 import { Helmet } from 'react-helmet-async'
 import { useAuthStore } from '../altas/auth/store'
 import { sesionActual, activar2FA, desactivar2FA, generarQr2FA } from '../../lib/api/auth'
-import { ApiError } from '../../lib/api/client'
+import { ErrorDeApi } from '../../lib/api/cliente'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 
 function errorMessage(e: unknown, fallback: string) {
-  return e instanceof ApiError ? e.message : fallback
+  return e instanceof ErrorDeApi ? e.message : fallback
 }
 
 /**
@@ -48,7 +48,7 @@ export default function MiSeguridadPage() {
       setError(errorMessage(e, 'No se ha podido generar el QR. Inténtalo de nuevo.'))
       // 409: el servidor dice que ya está activo (activado desde otra pestaña,
       // por ejemplo). Se refresca la cuenta para que la pantalla lo refleje.
-      if (e instanceof ApiError && e.status === 409) await refrescarSesion().catch(() => undefined)
+      if (e instanceof ErrorDeApi && e.status === 409) await refrescarSesion().catch(() => undefined)
     } finally {
       setOcupado(false)
     }

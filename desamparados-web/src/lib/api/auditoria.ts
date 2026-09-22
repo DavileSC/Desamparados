@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface AuditEntry {
@@ -18,4 +18,4 @@ export interface AuditEntry {
 }
 
 export const registrosDeAuditoria = (pagina: { pagina: number; porPagina: number }) =>
-  apiFetch<RespuestaPaginada<AuditEntry>>(`/admin/audit-logs?${paramsPagina(pagina)}`)
+  llamarApi<RespuestaPaginada<AuditEntry>>(`/admin/audit-logs?${paramsPagina(pagina)}`)

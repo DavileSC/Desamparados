@@ -62,7 +62,7 @@ export default function AgendaAdminPage() {
   // orden inverso y dejar en pantalla los datos de una página con la URL
   // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
   // Las llamadas de después de borrar la omiten: no hay carrera.
-  const load = useCallback(
+  const cargar = useCallback(
     // Una carga buena borra el error de la anterior: si no, la alerta se queda puesta para siempre.
     (vigente: () => boolean = () => true) => eventosDelCms(
       { pagina, porPagina },
@@ -74,16 +74,16 @@ export default function AgendaAdminPage() {
 
   useEffect(() => {
     let cancelado = false
-    load(() => !cancelado)
+    cargar(() => !cancelado)
       .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.') })
       .finally(() => { if (!cancelado) setLoading(false) })
     return () => { cancelado = true }
-  }, [load])
+  }, [cargar])
 
   const borrar = async () => {
     if (!porBorrar) return
     setNotice(null)
-    try { await eliminarEvento(porBorrar.id); await load(); setNotice('Evento eliminado.') }
+    try { await eliminarEvento(porBorrar.id); await cargar(); setNotice('Evento eliminado.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar el evento.') }
     finally { setPorBorrar(null) }
   }

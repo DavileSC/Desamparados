@@ -11,7 +11,7 @@ const evento = {
 }
 
 /**
- * Una instancia de Response por llamada: `apiFetch` lee el cuerpo con
+ * Una instancia de Response por llamada: `llamarApi` lee el cuerpo con
  * `res.text()` y reutilizar la misma la dejaría consumida en la segunda.
  */
 function responder(data: unknown[], meta: Record<string, number>) {

@@ -25,7 +25,7 @@ export const contactSchema = z.object({
   telefono: z.string().trim().refine(telefonoValido, 'Introduce un teléfono válido (puede llevar el prefijo del país, como +34)'),
   asunto: z.string().trim().min(1, 'El asunto es obligatorio').max(160, 'El asunto es demasiado largo').regex(SIN_ANGULOS, 'El asunto no puede llevar los caracteres < ni >'),
   mensaje: z.string().min(10, 'El mensaje debe tener al menos 10 caracteres').max(5000, 'El mensaje no puede pasar de 5000 caracteres'),
-  // Campo trampa: está escondido y una persona lo deja vacío. Ver ContactPage.
+  // Campo trampa: está escondido y una persona lo deja vacío. Ver ContactoPage.
   comentarioAdicional: z.string().optional(),
 })
 

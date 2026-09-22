@@ -10,7 +10,7 @@ const DIAS_SEMANA = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const TEXTO = '#1b1c1a'
 const TENUE = '#8a8076'
 
-interface MiniCalendarProps {
+interface MiniCalendarioProps {
   /** Primer día del mes visible. */
   mes: Date
   hoy: Date
@@ -30,7 +30,7 @@ const navSx = {
 }
 
 /** El calendario del mes en la tarjeta de papel: los días con acto son botones con un punto del color de su tipo. */
-export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetroceder, onCambiarMes, onElegir }: MiniCalendarProps) {
+export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetroceder, onCambiarMes, onElegir }: MiniCalendarioProps) {
   const hoyMs = inicioDelDia(hoy).getTime()
   const dias = diasDeLaRejilla(mes).map((dia) => {
     const delMes = dia.getMonth() === mes.getMonth()

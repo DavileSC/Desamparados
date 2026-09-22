@@ -4,12 +4,12 @@ import CloseIcon from '@mui/icons-material/Close'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
-interface ImageGalleryProps {
+interface GaleriaDeFotosProps {
   images: { src: string; alt: string }[]
   columns?: number
 }
 
-export default function GaleriaDeFotos({ images, columns = 3 }: ImageGalleryProps) {
+export default function GaleriaDeFotos({ images, columns = 3 }: GaleriaDeFotosProps) {
   const [open, setOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
 

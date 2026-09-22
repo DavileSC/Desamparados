@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
-import ContactPage from '../ContactPage'
+import ContactoPage from '../ContactoPage'
 import { contactSchema, telefonoValido } from '../schema'
 import { stubFetchPublico } from '../../../test/fetchPublico'
 
@@ -24,11 +24,11 @@ async function rellenar(usuario: ReturnType<typeof userEvent.setup>, { email = '
   await usuario.type(screen.getByLabelText('Mensaje'), 'Quería preguntar por el horario del besapiés.')
 }
 
-describe('ContactPage', () => {
+describe('ContactoPage', () => {
   it('envía sin teléfono, con el campo trampa vacío y el tiempo que se ha tardado en rellenarlo', async () => {
     const usuario = userEvent.setup()
     const simulado = responderBien()
-    renderWithProviders(<ContactPage />)
+    renderWithProviders(<ContactoPage />)
 
     await rellenar(usuario)
     await usuario.click(screen.getByRole('button', { name: /enviar mensaje/i }))
@@ -44,7 +44,7 @@ describe('ContactPage', () => {
 
   it('el campo trampa no se ve, no se alcanza con el tabulador y los lectores de pantalla lo ignoran', () => {
     responderBien()
-    const { container } = renderWithProviders(<ContactPage />)
+    const { container } = renderWithProviders(<ContactoPage />)
     const trampa = container.querySelector<HTMLInputElement>('#contacto-comentario-adicional')!
     expect(trampa).toBeInTheDocument()
     expect(trampa.tabIndex).toBe(-1)
@@ -62,7 +62,7 @@ describe('ContactPage', () => {
     // el aviso tiene que salir de nuestro esquema.
     const usuario = userEvent.setup()
     const simulado = responderBien()
-    renderWithProviders(<ContactPage />)
+    renderWithProviders(<ContactoPage />)
 
     await rellenar(usuario, { email: 'ana@example' })
     await usuario.click(screen.getByRole('button', { name: /enviar mensaje/i }))
@@ -74,7 +74,7 @@ describe('ContactPage', () => {
   it('avisa si el teléfono no tiene pinta de teléfono', async () => {
     const usuario = userEvent.setup()
     const simulado = responderBien()
-    renderWithProviders(<ContactPage />)
+    renderWithProviders(<ContactoPage />)
 
     await rellenar(usuario, { telefono: '123' })
     await usuario.click(screen.getByRole('button', { name: /enviar mensaje/i }))

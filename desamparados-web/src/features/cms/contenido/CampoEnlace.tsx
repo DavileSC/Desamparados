@@ -38,7 +38,7 @@ export default function CampoEnlace({ etiqueta, valor, onCambio, opcional = fals
 
   const opciones = useMemo<Destino[]>(() => [
     ...DESTINOS_FIJOS,
-    ...(data?.noticias ?? []).map((n) => ({ ruta: `${PREFIJO_NOTICIA}${n.slug}`, nombre: n.title, grupo: 'Noticias' })),
+    ...(data?.noticias ?? []).map((n) => ({ ruta: `${PREFIJO_NOTICIA}${n.slug}`, nombre: n.titulo, grupo: 'Noticias' })),
   ], [data])
 
   const roto = valor !== '' && !esDestinoValido(valor)

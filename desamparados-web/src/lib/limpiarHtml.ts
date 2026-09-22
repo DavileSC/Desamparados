@@ -77,7 +77,7 @@ DOMPurify.addHook('afterSanitizeAttributes', (nodo) => {
   }
 })
 
-export function sanitizeHtml(html: string): string {
+export function limpiarHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ETIQUETAS_PERMITIDAS,
     ALLOWED_ATTR: ATRIBUTOS_PERMITIDOS,

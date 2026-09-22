@@ -13,15 +13,15 @@ import FilaRedaccion from './redaccion/FilaRedaccion'
 import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion, textoPortada } from './redaccion/Listado'
 import { piezasDeNoticia } from './redaccion/completitud'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { eliminarNoticia, noticiasDelCms, actualizarNoticia, type ApiNews, type EstadoNoticia, type ResumenNoticias } from '../../lib/api/noticias'
+import { eliminarNoticia, noticiasDelCms, actualizarNoticia, type NoticiaDeLaApi, type EstadoNoticia, type ResumenNoticias } from '../../lib/api/noticias'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
-// Lo que useHomeData('news') tiene cacheado 60 s: tras destacar hay que pedirlo
+// Lo que useDatosDePortada('noticias') tiene cacheado 60 s: tras destacar hay que pedirlo
 // de nuevo o la portada seguiría enseñando el orden de antes.
-const CLAVE_NOTICIAS_PORTADA = ['home', 'news']
+const CLAVE_NOTICIAS_PORTADA = ['portada', 'noticias']
 const FILTROS = { q: {}, estado: { validos: ESTADOS } }
 
 /**
@@ -38,15 +38,15 @@ const FILTROS = { q: {}, estado: { validos: ESTADOS } }
  * noticia y es fácil cerrarla sin querer.
  */
 export default function NoticiasAdminPage() {
-  const [items, setItems] = useState<ApiNews[]>([])
+  const [items, setItems] = useState<NoticiaDeLaApi[]>([])
   const [resumen, setResumen] = useState<ResumenNoticias | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
   // El aviso que deja la ficha al guardar («Noticia publicada.»).
   const [notice, setNotice] = useState<string | null>((location.state as { aviso?: string } | null)?.aviso ?? null)
-  const [porBorrar, setPorBorrar] = useState<ApiNews | null>(null)
-  const [porCambiar, setPorCambiar] = useState<ApiNews | null>(null)
+  const [porBorrar, setPorBorrar] = useState<NoticiaDeLaApi | null>(null)
+  const [porCambiar, setPorCambiar] = useState<NoticiaDeLaApi | null>(null)
   // La consulta actual viaja con el enlace de editar (página, tamaño y filtros):
   // así la pantalla de edición sabe a qué página del listado devolver.
   const consultaListado = location.search
@@ -59,7 +59,7 @@ export default function NoticiasAdminPage() {
   // orden inverso y dejar en pantalla los datos de una página con la URL
   // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
   // Las llamadas de después de borrar o publicar la omiten: no hay carrera.
-  const load = useCallback(
+  const cargar = useCallback(
     (vigente: () => boolean = () => true) => noticiasDelCms({ pagina, porPagina }, { q: filtros.q, estado: filtros.estado as EstadoNoticia | '' })
       .then((response) => { if (!vigente()) return; setItems(response.data); setMeta(response.meta); setResumen(response.resumen) }),
     [pagina, porPagina, filtros.q, filtros.estado]
@@ -67,11 +67,11 @@ export default function NoticiasAdminPage() {
 
   useEffect(() => {
     let cancelado = false
-    load(() => !cancelado)
+    cargar(() => !cancelado)
       .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se han podido cargar las noticias.') })
       .finally(() => { if (!cancelado) setLoading(false) })
     return () => { cancelado = true }
-  }, [load])
+  }, [cargar])
 
   // El menú cuenta los borradores con el panel del Inicio: tras borrar o
   // publicar, se le pide el número nuevo en vez de esperar a que caduque.
@@ -82,7 +82,7 @@ export default function NoticiasAdminPage() {
   const borrar = async () => {
     if (!porBorrar) return
     setNotice(null)
-    try { await eliminarNoticia(porBorrar.id); refrescarMenu(); await load(); setNotice('Noticia eliminada.') }
+    try { await eliminarNoticia(porBorrar.id); refrescarMenu(); await cargar(); setNotice('Noticia eliminada.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar la noticia.') }
     finally { setPorBorrar(null) }
   }
@@ -94,20 +94,20 @@ export default function NoticiasAdminPage() {
     try {
       await actualizarNoticia(porCambiar.id, { visible: publicar })
       refrescarMenu()
-      await load()
+      await cargar()
       setNotice(publicar ? 'Noticia publicada: ya se ve en la web.' : 'Noticia pasada a borrador: ya no se ve en la web.')
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido cambiar la noticia.') }
     finally { setPorCambiar(null) }
   }
 
   // Sin diálogo: destacar no rompe nada y se deshace con el mismo clic.
-  const fijar = async (noticia: ApiNews) => {
+  const fijar = async (noticia: NoticiaDeLaApi) => {
     const destacar = !noticia.fijada
     setNotice(null)
     try {
       await actualizarNoticia(noticia.id, { fijada: destacar })
       refrescarPortada()
-      await load()
+      await cargar()
       setNotice(destacar
         ? 'Destacada: va la primera de la portada hasta que destaques otra.'
         : 'Ya no está destacada: la portada vuelve a ir por fecha.')
@@ -121,7 +121,7 @@ export default function NoticiasAdminPage() {
   const borradores = items.filter((n) => !n.visible)
   const publicadas = items.filter((n) => n.visible)
   const hayFiltro = Boolean(filtros.q || filtros.estado)
-  const fila = (noticia: ApiNews, enPortada: boolean) => (
+  const fila = (noticia: NoticiaDeLaApi, enPortada: boolean) => (
     <FilaRedaccion
       key={noticia.id}
       titulo={noticia.titulo} visible={noticia.visible} fecha={noticia.fecha} editadaEl={noticia.updatedAt}

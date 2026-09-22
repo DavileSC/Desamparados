@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import EditorTexto from '../EditorTexto'
-import { ETIQUETAS_PERMITIDAS } from '../../../lib/sanitizeHtml'
+import { ETIQUETAS_PERMITIDAS } from '../../../lib/limpiarHtml'
 
 describe('EditorTexto', () => {
   it('pinta el contenido que recibe, ya maquetado y no como etiquetas sueltas', async () => {

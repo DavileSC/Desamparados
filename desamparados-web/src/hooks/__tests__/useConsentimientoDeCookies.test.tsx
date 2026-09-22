@@ -1,20 +1,20 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { useCookieConsent } from '../useCookieConsent'
+import { useConsentimientoDeCookies } from '../useConsentimientoDeCookies'
 
 function Banner() {
-  const { pending, decline } = useCookieConsent()
-  return pending ? <button onClick={decline}>Rechazar cookies</button> : null
+  const { sinDecidir, rechazar } = useConsentimientoDeCookies()
+  return sinDecidir ? <button onClick={rechazar}>Rechazar cookies</button> : null
 }
 
 function PieDePagina() {
-  const { reset } = useCookieConsent()
-  return <button onClick={reset}>Gestionar cookies</button>
+  const { volverAPreguntar } = useConsentimientoDeCookies()
+  return <button onClick={volverAPreguntar}>Gestionar cookies</button>
 }
 
 afterEach(() => localStorage.clear())
 
-describe('useCookieConsent', () => {
+describe('useConsentimientoDeCookies', () => {
   it('permite reabrir el banner desde otra instancia del hook y volver a decidir', () => {
     render(<><Banner /><PieDePagina /></>)
     fireEvent.click(screen.getByText('Rechazar cookies'))

@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export type TipoApunte = 'INGRESO' | 'GASTO'
@@ -70,15 +70,15 @@ export function paramsFiltros(filtros: FiltrosContables): URLSearchParams {
   return params
 }
 
-export const balanceDelEjercicio = () => apiFetch<Balance>('/transacciones/balance')
+export const balanceDelEjercicio = () => llamarApi<Balance>('/transacciones/balance')
 /** El orden solo es del libro: al resumen le da igual en qué orden se sumen los apuntes. */
 export const libroMayor = (pagina: { pagina: number; porPagina: number }, filtros: FiltrosContables = {}, orden?: string) => {
   const filtrado = paramsFiltros(filtros).toString()
-  return apiFetch<RespuestaPaginada<Transaction>>(`/transacciones/libro-mayor?${paramsPagina(pagina, { orden })}${filtrado ? `&${filtrado}` : ''}`)
+  return llamarApi<RespuestaPaginada<Transaction>>(`/transacciones/libro-mayor?${paramsPagina(pagina, { orden })}${filtrado ? `&${filtrado}` : ''}`)
 }
 export const resumenDeTesoreria = (filtros: FiltrosContables = {}) => {
   const filtrado = paramsFiltros(filtros).toString()
-  return apiFetch<ResumenContable>(`/transacciones/resumen${filtrado ? `?${filtrado}` : ''}`)
+  return llamarApi<ResumenContable>(`/transacciones/resumen${filtrado ? `?${filtrado}` : ''}`)
 }
 /** `todas`: también las desactivadas, que la gestión y los filtros del histórico necesitan ver. */
 export const listarCategorias = (tipo?: TipoApunte, todas = false) => {
@@ -86,12 +86,12 @@ export const listarCategorias = (tipo?: TipoApunte, todas = false) => {
   if (tipo) params.set('tipo', tipo)
   if (todas) params.set('todas', 'true')
   const consulta = params.toString()
-  return apiFetch<Category[]>(`/transacciones/categorias${consulta ? `?${consulta}` : ''}`)
+  return llamarApi<Category[]>(`/transacciones/categorias${consulta ? `?${consulta}` : ''}`)
 }
-export const crearApunte = (json: ApunteManual) => apiFetch<{ message: string }>('/transacciones', { method: 'POST', json })
+export const crearApunte = (json: ApunteManual) => llamarApi<{ message: string }>('/transacciones', { method: 'POST', json })
 /** Solo apuntes manuales: los de un recibo responden 409 y se corrigen desde el recibo. */
-export const actualizarApunte = (id: number, json: ApunteManual) => apiFetch<{ message: string }>(`/transacciones/${id}`, { method: 'PUT', json })
-export const eliminarApunte = (id: number) => apiFetch<{ message: string }>(`/transacciones/${id}`, { method: 'DELETE' })
-export const crearCategoriaDeApunte = (json: { nombre: string; tipo: TipoApunte }) => apiFetch<{ message: string }>('/transacciones/categorias', { method: 'POST', json })
-export const renombrarCategoria = (id: number, nombre: string) => apiFetch<{ message: string }>(`/transacciones/categorias/${id}`, { method: 'PUT', json: { nombre } })
-export const cambiarEstadoCategoria = (id: number, activa: boolean) => apiFetch<{ message: string }>(`/transacciones/categorias/${id}/activa`, { method: 'PATCH', json: { activa } })
+export const actualizarApunte = (id: number, json: ApunteManual) => llamarApi<{ message: string }>(`/transacciones/${id}`, { method: 'PUT', json })
+export const eliminarApunte = (id: number) => llamarApi<{ message: string }>(`/transacciones/${id}`, { method: 'DELETE' })
+export const crearCategoriaDeApunte = (json: { nombre: string; tipo: TipoApunte }) => llamarApi<{ message: string }>('/transacciones/categorias', { method: 'POST', json })
+export const renombrarCategoria = (id: number, nombre: string) => llamarApi<{ message: string }>(`/transacciones/categorias/${id}`, { method: 'PUT', json: { nombre } })
+export const cambiarEstadoCategoria = (id: number, activa: boolean) => llamarApi<{ message: string }>(`/transacciones/categorias/${id}/activa`, { method: 'PATCH', json: { activa } })

@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import { limpiarHtml } from '../../lib/limpiarHtml'
 import type { BloqueTexto as Datos } from '../../lib/api/contenido'
 
 /** Cuerpo de texto con formato. El HTML llega saneado del servidor y se vuelve
@@ -15,7 +15,7 @@ export default function BloqueTexto({ bloque }: { bloque: Datos }) {
         // el suyo de abajo: se sumaban al espacio entre bloques, que ya lo pone la página.
         '& > :first-child': { mt: 0 }, '& > :last-child': { mb: 0 },
       }}
-      dangerouslySetInnerHTML={{ __html: sanitizeHtml(bloque.html) }}
+      dangerouslySetInnerHTML={{ __html: limpiarHtml(bloque.html) }}
     />
   )
 }

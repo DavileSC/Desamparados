@@ -1,5 +1,6 @@
 import { Outlet, Link } from 'react-router-dom'
 import { Box, Container } from '@mui/material'
+import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
 
@@ -20,13 +21,18 @@ export default function MarcoAcceso() {
           position: 'absolute',
           top: 24,
           left: { xs: '20px', md: '64px' },
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.25,
           fontFamily: designTokens.fonts.heading,
           fontSize: '22px',
+          lineHeight: 1,
           color: 'text.primary',
           textDecoration: 'none',
           zIndex: 10,
         }}
       >
+        <EscudoDelGrupo alto={38} />
         DESAMPARADOS
       </Box>
 

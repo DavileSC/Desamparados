@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 import type { AuthUser } from '../../features/altas/auth/store'
 import { normalizarDni, normalizarTelefono } from '../validacion/identidad'
 
@@ -17,7 +17,7 @@ export function login(
   recordarme = false,
   contexto: 'cms' | 'hermanos' = 'cms'
 ) {
-  return apiFetch<LoginResponse>('/auth/login', {
+  return llamarApi<LoginResponse>('/auth/login', {
     method: 'POST',
     auth: false,
     json: { email, password, recordarme, contexto },
@@ -67,7 +67,7 @@ export interface RegistroData {
  * gestionarlos.
  */
 export function register(data: RegistroData) {
-  return apiFetch<{ user: { id: number; email: string }; fichas: number; message: string }>('/auth/register', {
+  return llamarApi<{ user: { id: number; email: string }; fichas: number; message: string }>('/auth/register', {
     method: 'POST',
     auth: false,
     json: {
@@ -109,7 +109,7 @@ export function register(data: RegistroData) {
  * servidor no dice quién está en el censo y la pantalla tampoco puede saberlo.
  */
 export function pedirReactivacion(dni: string, email: string) {
-  return apiFetch<{ message: string }>('/auth/reactivacion', {
+  return llamarApi<{ message: string }>('/auth/reactivacion', {
     method: 'POST',
     auth: false,
     json: { dni: normalizarDni(dni), email },
@@ -117,7 +117,7 @@ export function pedirReactivacion(dni: string, email: string) {
 }
 
 export function verify2FA(token2fa: string) {
-  return apiFetch<LoginResponse>('/auth/login/2fa', {
+  return llamarApi<LoginResponse>('/auth/login/2fa', {
     method: 'POST',
     auth: false,
     json: { token2fa },
@@ -125,7 +125,7 @@ export function verify2FA(token2fa: string) {
 }
 
 export function requestPasswordReset(email: string) {
-  return apiFetch<{ message: string }>('/auth/reset-password', {
+  return llamarApi<{ message: string }>('/auth/reset-password', {
     method: 'POST',
     auth: false,
     json: { email },
@@ -135,7 +135,7 @@ export function requestPasswordReset(email: string) {
 // El token viaja en el cuerpo: en la URL quedaría en los registros de acceso, y
 // abre la cuenta durante una hora.
 export function resetPassword(token: string, newPassword: string) {
-  return apiFetch<{ message: string }>('/auth/reset-password/confirmar', {
+  return llamarApi<{ message: string }>('/auth/reset-password/confirmar', {
     method: 'POST',
     auth: false,
     json: { token, newPassword },
@@ -147,7 +147,7 @@ export function resetPassword(token: string, newPassword: string) {
  * para un visitante eso es lo normal, no un error.
  */
 export function sesionActual() {
-  return apiFetch<{ cms: AuthUser | null; hermano: AuthUser | null }>('/auth/me', { auth: false })
+  return llamarApi<{ cms: AuthUser | null; hermano: AuthUser | null }>('/auth/me', { auth: false })
 }
 
 // ===================================================================
@@ -160,12 +160,12 @@ export function sesionActual() {
  * responde 409: hay que desactivarlo antes de configurarlo con otro móvil.
  */
 export function generarQr2FA() {
-  return apiFetch<{ qrCodeUrl: string; secret: string }>('/auth/2fa/generate', { method: 'POST' })
+  return llamarApi<{ qrCodeUrl: string; secret: string }>('/auth/2fa/generate', { method: 'POST' })
 }
 
 /** Paso 2: verifica el primer TOTP y devuelve los respaldos en claro, UNA vez. */
 export function activar2FA(token2fa: string) {
-  return apiFetch<{ message: string; backupCodes: string[] }>('/auth/2fa/enable', {
+  return llamarApi<{ message: string; backupCodes: string[] }>('/auth/2fa/enable', {
     method: 'POST',
     json: { token2fa },
   })
@@ -173,7 +173,7 @@ export function activar2FA(token2fa: string) {
 
 /** Desactiva el 2FA; pide un TOTP vigente o un código de respaldo. */
 export function desactivar2FA(token2fa: string) {
-  return apiFetch<{ message: string }>('/auth/2fa/disable', {
+  return llamarApi<{ message: string }>('/auth/2fa/disable', {
     method: 'POST',
     json: { token2fa },
   })
@@ -181,5 +181,5 @@ export function desactivar2FA(token2fa: string) {
 
 /** Cierra la sesión de un área. La del área contraria no se toca. */
 export function cerrarSesionApi(area: 'cms' | 'hermanos') {
-  return apiFetch<null>('/auth/logout', { method: 'POST', auth: false, json: { area } })
+  return llamarApi<null>('/auth/logout', { method: 'POST', auth: false, json: { area } })
 }

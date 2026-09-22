@@ -3,10 +3,10 @@ import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { GOLD, GRANATE, SERIF } from '../features/inicio/estilos'
-import type { NewsItem } from '../types'
+import type { Noticia } from '../types'
 
-interface NewsCardProps {
-  news: NewsItem
+interface TarjetaNoticiaProps {
+  noticia: Noticia
   /** Posición en su listado: decide el tono de la placa cuando no hay foto. */
   indice?: number
   /**
@@ -44,20 +44,20 @@ const TONOS_PLACA = [
  * título y extracto. La comparten la portada, Actualidad y el archivo, así que
  * una noticia se ve igual en los tres sitios.
  */
-export default function TarjetaNoticia({ news, indice = 0, destacada = false, volver }: NewsCardProps) {
+export default function TarjetaNoticia({ noticia, indice = 0, destacada = false, volver }: TarjetaNoticiaProps) {
   const tono = TONOS_PLACA[indice % TONOS_PLACA.length]
   // Si el fichero de la foto ya no está en el servidor, la placa y no el icono
   // de imagen rota. Se guarda qué dirección falló: si la noticia cambia de foto,
   // la nueva se vuelve a intentar.
   const [fotoRota, setFotoRota] = useState<string | null>(null)
-  const conFoto = Boolean(news.image) && fotoRota !== news.image
+  const conFoto = Boolean(noticia.imagen) && fotoRota !== noticia.imagen
   // La destacada se abre en dos columnas desde sm; en móvil es una tarjeta más.
   const enFila = destacada ? { xs: 'flex', sm: 'grid' } : 'flex'
 
   return (
     <Box
       component={Link}
-      to={`/actualidad/noticias/${news.slug}`}
+      to={`/actualidad/noticias/${noticia.slug}`}
       state={volver ? { volver } : undefined}
       data-destacada={destacada || undefined}
       sx={{
@@ -91,8 +91,8 @@ export default function TarjetaNoticia({ news, indice = 0, destacada = false, vo
         {conFoto ? (
           <Box
             component="img"
-            src={news.image}
-            onError={() => setFotoRota(news.image ?? null)}
+            src={noticia.imagen}
+            onError={() => setFotoRota(noticia.imagen ?? null)}
             alt=""
             loading={destacada ? 'eager' : 'lazy'}
             decoding="async"
@@ -115,7 +115,7 @@ export default function TarjetaNoticia({ news, indice = 0, destacada = false, vo
               lineHeight: 0.8,
             }}
           >
-            {news.title.trim().charAt(0).toUpperCase()}
+            {noticia.titulo.trim().charAt(0).toUpperCase()}
           </Box>
         )}
       </Box>
@@ -130,8 +130,8 @@ export default function TarjetaNoticia({ news, indice = 0, destacada = false, vo
           p: destacada ? { xs: 2.5, sm: 4, md: 6 } : { xs: 2.5, md: 3 },
         }}
       >
-        <Typography component="time" dateTime={news.date} sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: GRANATE }}>
-          {fechaCorta(news.date)}
+        <Typography component="time" dateTime={noticia.fecha} sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: GRANATE }}>
+          {fechaCorta(noticia.fecha)}
         </Typography>
         <Typography
           variant="h3"
@@ -146,11 +146,11 @@ export default function TarjetaNoticia({ news, indice = 0, destacada = false, vo
             transition: 'color .3s ease',
           }}
         >
-          {news.title}
+          {noticia.titulo}
         </Typography>
-        {news.excerpt && (
+        {noticia.extracto && (
           <Typography sx={{ ...recorte(destacada ? 4 : 3), fontSize: destacada ? { xs: 14, md: 16 } : 14, lineHeight: 1.6, color: '#4a454a' }}>
-            {news.excerpt}
+            {noticia.extracto}
           </Typography>
         )}
         <Box

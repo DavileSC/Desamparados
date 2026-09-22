@@ -16,7 +16,7 @@ import CampoPdf from './CampoPdf'
 import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDePublicacion } from './redaccion/completitud'
 import { AYUDA_PDF, AYUDA_PORTADA, ETIQUETA_PORTADA, TIPOS_PUBLICACION } from './portadaPublicacion'
-import { crearPublicacion, publicacionDelCms, actualizarPublicacion, type ApiPublication, type PublicationPayload } from '../../lib/api/publicaciones'
+import { crearPublicacion, publicacionDelCms, actualizarPublicacion, type PublicacionDeLaApi, type DatosDePublicacion } from '../../lib/api/publicaciones'
 
 type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
 
@@ -43,7 +43,7 @@ export default function PublicacionEditPage() {
   const nueva = id === undefined
   const [confirmando, setConfirmando] = useState<Accion | null>(null)
   const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, guardar: guardarFicha } =
-    useFichaCms<ApiPublication, PublicationPayload>({
+    useFichaCms<PublicacionDeLaApi, DatosDePublicacion>({
       listado: '/cms/publicaciones',
       origen: nueva ? null : Number(id),
       cargar: publicacionDelCms,
@@ -64,7 +64,7 @@ export default function PublicacionEditPage() {
 
   const guardar = async (accion: Accion) => {
     setConfirmando(null)
-    const payload: PublicationPayload = {
+    const datos: DatosDePublicacion = {
       ...form,
       visible: accion === 'publicar' || accion === 'guardar',
       // En una nueva, la fecha solo se manda si se ha tocado: si no, el servidor
@@ -72,7 +72,7 @@ export default function PublicacionEditPage() {
       fecha: nueva && form.fecha === inicial.fecha ? undefined : form.fecha,
     }
     await guardarFicha(
-      () => (nueva ? crearPublicacion(payload) : actualizarPublicacion(Number(id), payload)),
+      () => (nueva ? crearPublicacion(datos) : actualizarPublicacion(Number(id), datos)),
       {
         siFalla: 'No se ha podido guardar la publicación.',
         aviso: {
@@ -151,7 +151,7 @@ export default function PublicacionEditPage() {
                   minRows={3}
                   helperText="Lo que se lee bajo el título en la portada y en el listado de publicaciones: qué trae este número."
                 />
-                <TextField select label="Tipo" value={form.categoria} onChange={(e) => campo('categoria', e.target.value as PublicationPayload['categoria'])} sx={{ maxWidth: 280 }}>
+                <TextField select label="Tipo" value={form.categoria} onChange={(e) => campo('categoria', e.target.value as DatosDePublicacion['categoria'])} sx={{ maxWidth: 280 }}>
                   {TIPOS_PUBLICACION.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
                 </TextField>
               </Stack>
@@ -162,9 +162,9 @@ export default function PublicacionEditPage() {
                   Es translúcida: sin el tema y el fondo de la web pública, en el CMS claro se leería gris sobre gris. */}
               <ThemeProvider theme={temaPublico}>
                 <Box inert data-testid="vista-previa-tarjeta" sx={{ p: 2, borderRadius: 1, backgroundColor: 'background.default', color: 'text.primary', fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', '& > *': { maxWidth: 340 } }}>
-                  <TarjetaPublicacion publication={{
-                    id: String(id ?? 'nueva'), title: form.titulo.trim() || 'Título de la publicación', description: form.descripcion || undefined,
-                    image: form.imagenUrl || undefined, date: form.fecha ? `${form.fecha}T12:00:00` : new Date().toISOString(), category: form.categoria,
+                  <TarjetaPublicacion publicacion={{
+                    id: String(id ?? 'nueva'), titulo: form.titulo.trim() || 'Título de la publicación', descripcion: form.descripcion || undefined,
+                    imagen: form.imagenUrl || undefined, fecha: form.fecha ? `${form.fecha}T12:00:00` : new Date().toISOString(), categoria: form.categoria,
                   }} />
                 </Box>
               </ThemeProvider>
@@ -231,7 +231,7 @@ export default function PublicacionEditPage() {
   )
 }
 
-function vacia(): PublicationPayload {
+function vacia(): DatosDePublicacion {
   return { titulo: '', descripcion: '', imagenUrl: '', archivoUrl: '', categoria: 'boletin', visible: false, fecha: hoy() }
 }
 

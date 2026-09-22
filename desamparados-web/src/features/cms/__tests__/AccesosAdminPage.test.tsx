@@ -15,7 +15,7 @@ const CANDIDATOS = [
 ]
 
 /**
- * Cada ruta responde lo suyo. `apiFetch` lee el cuerpo con `res.text()`, así que
+ * Cada ruta responde lo suyo. `llamarApi` lee el cuerpo con `res.text()`, así que
  * hay que devolver una Response nueva en cada llamada.
  */
 function responder(opciones: { staff?: unknown; candidatos?: unknown; alCambiar?: () => Response } = {}) {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { loginSchema, resetPasswordSchema } from '../../features/altas/auth/schema'
 import { membershipSchema } from '../../features/altas/public/schema'
-import { LONGITUD_MINIMA } from '../passwordPolicy'
+import { LONGITUD_MINIMA } from '../politicaDeContrasena'
 
 /** Extrae el mensaje del campo password de un parseo fallido */
 function motivo(resultado: { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } }) {

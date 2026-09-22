@@ -6,9 +6,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import { noticiaPorDireccion } from '../../../lib/api/noticias'
-import type { NewsItem } from '../../../types'
+import type { Noticia } from '../../../types'
 import NoEncontradaPage from '../../noEncontrado/NoEncontradaPage'
-import { sanitizeHtml } from '../../../lib/sanitizeHtml'
+import { limpiarHtml } from '../../../lib/limpiarHtml'
 import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
 
 export default function NoticiaDetallePage() {
@@ -16,34 +16,34 @@ export default function NoticiaDetallePage() {
   // El archivo de noticias del que se vino, con su página: sin esto, «Volver a
   // todas las noticias» devolvía siempre a la primera.
   const volverAlArchivo = useVolverAlListado('/actualidad/noticias')
-  const [news, setNews] = useState<NewsItem | null>(null)
+  const [noticia, setNoticia] = useState<Noticia | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    let cancelled = false
+    let cancelado = false
 
     noticiaPorDireccion(slug)
       .then((data) => {
-        if (!cancelled) setNews(data)
+        if (!cancelado) setNoticia(data)
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'No se ha podido cargar la noticia.')
+        if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar la noticia.')
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelado) setLoading(false)
       })
 
     return () => {
-      cancelled = true
+      cancelado = true
     }
   }, [slug])
 
   if (loading) return <CircularProgress aria-label="Cargando noticia" />
   if (error) return <Alert severity="error">{error}</Alert>
-  if (!news) return <NoEncontradaPage />
+  if (!noticia) return <NoEncontradaPage />
 
-  const fecha = new Date(news.date).toLocaleDateString('es-ES', {
+  const fecha = new Date(noticia.fecha).toLocaleDateString('es-ES', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -52,8 +52,8 @@ export default function NoticiaDetallePage() {
   return (
     <>
       <Helmet>
-        <title>{`${news.title} | Desamparados`}</title>
-        <meta name="description" content={news.excerpt} />
+        <title>{`${noticia.titulo} | Desamparados`}</title>
+        <meta name="description" content={noticia.extracto} />
       </Helmet>
 
       <Box
@@ -66,11 +66,11 @@ export default function NoticiaDetallePage() {
           overflow: 'hidden',
         }}
       >
-        {news.image && (
+        {noticia.imagen && (
           <>
             <Box
               component="img"
-              src={news.image}
+              src={noticia.imagen}
               alt=""
               aria-hidden="true"
               decoding="async"
@@ -87,13 +87,13 @@ export default function NoticiaDetallePage() {
         )}
         <ContenedorDePagina sx={{ position: 'relative', zIndex: 2, maxWidth: '900px !important' }}>
           <Typography variant="overline" sx={{ color: 'secondary.main', display: 'block', mb: 2 }}>
-            {news.category} · <time dateTime={news.date}>{fecha}</time>
+            {noticia.categoria} · <time dateTime={noticia.fecha}>{fecha}</time>
           </Typography>
           <Typography variant="h2" component="h1" sx={{ fontSize: { xs: '32px', md: '52px' }, mb: 2 }}>
-            {news.title}
+            {noticia.titulo}
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary', fontSize: { xs: '16px', md: '18px' } }}>
-            {news.excerpt}
+            {noticia.extracto}
           </Typography>
         </ContenedorDePagina>
       </Box>
@@ -105,7 +105,7 @@ export default function NoticiaDetallePage() {
             variant="body1"
             sx={{ color: 'text.primary', fontSize: { xs: '16px', md: '18px' }, lineHeight: 1.8, whiteSpace: 'pre-line' }}
           >
-            <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(news.content ?? news.excerpt ?? '') }} />
+            <span dangerouslySetInnerHTML={{ __html: limpiarHtml(noticia.contenido ?? noticia.extracto ?? '') }} />
           </Typography>
 
           <Box

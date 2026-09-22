@@ -15,7 +15,7 @@ import { VistaPreviaBloque, VistaPreviaCabecera, VistaPreviaPagina } from './blo
 import { conClave, sinClave, type Fila } from './bloques/filas'
 import { problemaDeBloque, NOMBRE_BLOQUE } from './bloques/formularios'
 import { paginaPublica } from '../../app/cmsNavegacion'
-import { ApiError } from '../../lib/api/client'
+import { ErrorDeApi } from '../../lib/api/cliente'
 import {
   getContenido, guardarContenido,
   type Bloque, type CabeceraPagina, type PaginaDeBloques, type SlugContenido,
@@ -31,7 +31,7 @@ export const AVISO_SIN_TITULO = 'La página se ha quedado sin título. Ponle uno
 const CON_MAQUETACION_PROPIA_EN_HISTORIA = new Set(['cronologia', 'llamada'])
 
 /**
- * Traduce `ApiError.fields` («bloques.2»: motivo) a algo que diga de qué
+ * Traduce `ErrorDeApi.fields` («bloques.2»: motivo) a algo que diga de qué
  * bloque habla, con su posición y su tipo, igual que la comprobación del
  * cliente: es la red de seguridad para lo que el cliente no haya previsto, y
  * el mensaje tiene que ser tan localizable como el suyo.
@@ -49,7 +49,7 @@ function mensajeDelServidor(fields: Record<string, string>, filas: Fila[]): stri
   return `El servidor ha rechazado la página. ${detalle}`
 }
 
-/** Las claves de las filas que nombra `ApiError.fields`, para desplegarlas. */
+/** Las claves de las filas que nombra `ErrorDeApi.fields`, para desplegarlas. */
 function clavesDelServidor(fields: Record<string, string>, filas: Fila[]): Set<number> {
   const claves = new Set<number>()
   for (const campo of Object.keys(fields)) {
@@ -114,9 +114,9 @@ export default function PaginaAdminPage() {
       setInicial(datos)
       void queryClient.invalidateQueries({ queryKey: ['contenido', slug] })
     } catch (e: unknown) {
-      if (e instanceof ApiError && Object.keys(e.fields).length > 0) {
+      if (e instanceof ErrorDeApi && Object.keys(e.fields).length > 0) {
         // Red de seguridad: algo que el cliente no comprobó, pero el servidor
-        // sí. `ApiError.fields` (client.ts) trae el campo y el motivo
+        // sí. `ErrorDeApi.fields` (client.ts) trae el campo y el motivo
         // concretos; con eso se puede decir de qué bloque habla en vez del
         // genérico «Error de validación».
         setError(mensajeDelServidor(e.fields, filas))

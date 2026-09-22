@@ -102,7 +102,7 @@ export default function TesoreriaAdminPage() {
   // Las llamadas de después de generar o cobrar la omiten: no hay carrera.
   // Mientras el año está a medio escribir («2», «20»…) no se pide nada: el
   // listado se queda con el último año completo en vez de parpadear.
-  const load = useCallback((vigente: () => boolean = () => true) => {
+  const cargar = useCallback((vigente: () => boolean = () => true) => {
     if (year && !esAnioCompleto(year)) return Promise.resolve()
     const { q, tipo } = filtros as FiltrosRecibos
     return Promise.all([
@@ -117,11 +117,11 @@ export default function TesoreriaAdminPage() {
   }, [year, pagina, porPagina, filtros])
   useEffect(() => {
     let cancelado = false
-    load(() => !cancelado)
+    cargar(() => !cancelado)
       .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se han podido cargar los recibos.') })
       .finally(() => { if (!cancelado) setLoading(false) })
     return () => { cancelado = true }
-  }, [load])
+  }, [cargar])
 
   // Buscador de la ventana «Nuevo recibo»: espera a que se deje de teclear y
   // descarta las respuestas que lleguen tarde.
@@ -144,7 +144,7 @@ export default function TesoreriaAdminPage() {
   // Tras dar de alta se pasa a ver el año de lo creado; si ya era ese, se recarga a mano.
   const verAnio = async (anio: string) => {
     if (anio !== year) cambiarAnio(anio)
-    else await load().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar los recibos.'))
+    else await cargar().catch((err: unknown) => setError(err instanceof Error ? err.message : 'No se han podido cargar los recibos.'))
   }
 
   // Se limpia al abrir, no al cerrar, y parte del año que se está viendo.
@@ -166,24 +166,24 @@ export default function TesoreriaAdminPage() {
 
   const generate = async () => {
     setWorking(true); setErrorCuotas(null); setNotice(null)
-    let result: Awaited<ReturnType<typeof generarCuotas>>
-    try { result = await generarCuotas({ year: Number(cuotas.year), importe: Number(cuotas.importe), concepto: cuotas.concepto }) }
+    let resultado: Awaited<ReturnType<typeof generarCuotas>>
+    try { resultado = await generarCuotas({ year: Number(cuotas.year), importe: Number(cuotas.importe), concepto: cuotas.concepto }) }
     catch (err: unknown) { setErrorCuotas(err instanceof Error ? err.message : 'No se han podido generar las cuotas.'); return }
     finally { setWorking(false) }
     setGenerando(false)
-    setNotice(`${result.message}${result.omitidos ? ` Omitidos: ${result.omitidos}.` : ''}`)
+    setNotice(`${resultado.message}${resultado.omitidos ? ` Omitidos: ${resultado.omitidos}.` : ''}`)
     await verAnio(cuotas.year)
   }
 
   const emitir = async () => {
     if (!nuevo.hermano || !nuevo.tipo) return
     setWorking(true); setErrorNuevo(null); setNotice(null)
-    let result: Awaited<ReturnType<typeof crearRecibo>>
-    try { result = await crearRecibo({ hermanoId: nuevo.hermano.id, year: Number(nuevo.year), concepto: nuevo.concepto.trim(), importe: leerImporte(nuevo.importe), tipo: nuevo.tipo }) }
+    let resultado: Awaited<ReturnType<typeof crearRecibo>>
+    try { resultado = await crearRecibo({ hermanoId: nuevo.hermano.id, year: Number(nuevo.year), concepto: nuevo.concepto.trim(), importe: leerImporte(nuevo.importe), tipo: nuevo.tipo }) }
     catch (err: unknown) { setErrorNuevo(err instanceof Error ? err.message : 'No se ha podido emitir el recibo.'); return }
     finally { setWorking(false) }
     setEmitiendo(false)
-    setNotice(`${result.message} Queda pendiente de cobro.`)
+    setNotice(`${resultado.message} Queda pendiente de cobro.`)
     await verAnio(nuevo.year)
   }
 
@@ -192,7 +192,7 @@ export default function TesoreriaAdminPage() {
     // Un remesado lo cobra el banco: se da por cobrado por domiciliación, no
     // con el método de la mesa (que por defecto es efectivo).
     const metodo: PaymentMethod = receipt.estado === 'REMESADO' ? 'DOMICILIACION' : payment
-    try { const result = await cobrarRecibo(receipt.id, metodo); setNotice(result.message); await load() }
+    try { const resultado = await cobrarRecibo(receipt.id, metodo); setNotice(resultado.message); await cargar() }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido cobrar el recibo.') }
     finally { setWorking(false) }
   }

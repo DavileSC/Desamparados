@@ -15,12 +15,12 @@ import { useLocation } from 'react-router-dom'
 const InicioPage = lazy(() => import('../features/inicio/InicioPage'))
 const CorporacionPage = lazy(() => import('../features/corporacion/CorporacionPage'))
 const HistoriaPage = lazy(() => import('../features/corporacion/historia/HistoriaPage'))
-const GovernmentPage = lazy(() => import('../features/corporacion/gobierno/GovernmentPage'))
-const ParishPage = lazy(() => import('../features/corporacion/parroquia/ParishPage'))
-const PurposesPage = lazy(() => import('../features/corporacion/fines/PurposesPage'))
+const OrganosDeGobiernoPage = lazy(() => import('../features/corporacion/gobierno/OrganosDeGobiernoPage'))
+const ParroquiaPage = lazy(() => import('../features/corporacion/parroquia/ParroquiaPage'))
+const NuestrosFinesPage = lazy(() => import('../features/corporacion/fines/NuestrosFinesPage'))
 const CaridadPage = lazy(() => import('../features/corporacion/fines/CaridadPage'))
 const FormacionPage = lazy(() => import('../features/corporacion/fines/FormacionPage'))
-const CultsPage = lazy(() => import('../features/corporacion/cultos/CultsPage'))
+const CultosPage = lazy(() => import('../features/corporacion/cultos/CultosPage'))
 const SabadoPasionPage = lazy(() => import('../features/corporacion/sabado-pasion/SabadoPasionPage'))
 const RecorridoPage = lazy(() => import('../features/corporacion/sabado-pasion/RecorridoPage'))
 const TronoPage = lazy(() => import('../features/corporacion/sabado-pasion/TronoPage'))
@@ -37,7 +37,7 @@ const BoletinesPage = lazy(() => import('../features/publicaciones/BoletinesPage
 const DossierPrensaPage = lazy(() => import('../features/publicaciones/DossierPrensaPage'))
 const HermanosPage = lazy(() => import('../features/altas/public/HermanosPage'))
 const HazteHermanoPage = lazy(() => import('../features/altas/public/HazteHermanoPage'))
-const ContactPage = lazy(() => import('../features/contacto/ContactPage'))
+const ContactoPage = lazy(() => import('../features/contacto/ContactoPage'))
 const NoEncontradaPage = lazy(() => import('../features/noEncontrado/NoEncontradaPage'))
 const PortadaAdminPage = lazy(() => import('../features/cms/PortadaAdminPage'))
 const PaginasAdminPage = lazy(() => import('../features/cms/PaginasAdminPage'))
@@ -60,9 +60,9 @@ const PanelPage = lazy(() => import('../features/cms/PanelPage'))
 const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
 
 // Legal pages
-const LegalNoticePage = lazy(() => import('../features/legal/LegalNoticePage'))
-const PrivacyPolicyPage = lazy(() => import('../features/legal/PrivacyPolicyPage'))
-const CookiesPolicyPage = lazy(() => import('../features/legal/CookiesPolicyPage'))
+const AvisoLegalPage = lazy(() => import('../features/legal/AvisoLegalPage'))
+const PoliticaDePrivacidadPage = lazy(() => import('../features/legal/PoliticaDePrivacidadPage'))
+const PoliticaDeCookiesPage = lazy(() => import('../features/legal/PoliticaDeCookiesPage'))
 
 // Auth pages
 const AccesoPage = lazy(() => import('../features/altas/auth/AccesoPage'))
@@ -121,12 +121,12 @@ const router = createBrowserRouter([
           { index: true, element: withSuspense(InicioPage) },
           { path: 'corporacion', element: withSuspense(CorporacionPage) },
           { path: 'corporacion/historia', element: withSuspense(HistoriaPage) },
-          { path: 'corporacion/historia/organos-de-gobierno', element: withSuspense(GovernmentPage) },
-          { path: 'corporacion/parroquia-pasionistas', element: withSuspense(ParishPage) },
-          { path: 'corporacion/nuestros-fines', element: withSuspense(PurposesPage) },
+          { path: 'corporacion/historia/organos-de-gobierno', element: withSuspense(OrganosDeGobiernoPage) },
+          { path: 'corporacion/parroquia-pasionistas', element: withSuspense(ParroquiaPage) },
+          { path: 'corporacion/nuestros-fines', element: withSuspense(NuestrosFinesPage) },
           { path: 'corporacion/nuestros-fines/caridad', element: withSuspense(CaridadPage) },
           { path: 'corporacion/nuestros-fines/formacion', element: withSuspense(FormacionPage) },
-          { path: 'corporacion/cultos', element: withSuspense(CultsPage) },
+          { path: 'corporacion/cultos', element: withSuspense(CultosPage) },
           { path: 'corporacion/sabado-de-pasion', element: withSuspense(SabadoPasionPage) },
           { path: 'corporacion/sabado-de-pasion/recorrido', element: withSuspense(RecorridoPage) },
           { path: 'corporacion/sabado-de-pasion/trono', element: withSuspense(TronoPage) },
@@ -143,10 +143,10 @@ const router = createBrowserRouter([
           { path: 'publicaciones/dossier-prensa', element: withSuspense(DossierPrensaPage) },
           { path: 'hermanos', element: withSuspense(HermanosPage) },
           { path: 'hermanos/hazte-hermano', element: withSuspense(HazteHermanoPage) },
-          { path: 'contacto', element: withSuspense(ContactPage) },
-          { path: 'aviso-legal', element: withSuspense(LegalNoticePage) },
-          { path: 'politica-privacidad', element: withSuspense(PrivacyPolicyPage) },
-          { path: 'politica-cookies', element: withSuspense(CookiesPolicyPage) },
+          { path: 'contacto', element: withSuspense(ContactoPage) },
+          { path: 'aviso-legal', element: withSuspense(AvisoLegalPage) },
+          { path: 'politica-privacidad', element: withSuspense(PoliticaDePrivacidadPage) },
+          { path: 'politica-cookies', element: withSuspense(PoliticaDeCookiesPage) },
           // 404 real (con cabecera y pie): antes cualquier URL errónea redirigía a la portada
           { path: '*', element: withSuspense(NoEncontradaPage) },
         ],

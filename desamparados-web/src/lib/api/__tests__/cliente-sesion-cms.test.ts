@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { waitFor } from '@testing-library/react'
-import { apiFetch, ApiError, SESION_NO_CMS } from '../client'
+import { llamarApi, ErrorDeApi, SESION_NO_CMS } from '../cliente'
 import { useAuthStore, type AuthUser } from '../../../features/altas/auth/store'
 
 const respuesta = (cuerpo: unknown, status = 200) =>
@@ -29,7 +29,7 @@ afterEach(() => { vi.unstubAllGlobals() })
 // las dos sesiones (o de las dos), y la petición que lo recibe no sabe de cuál
 // era: no lleva el área. En vez de vaciar las dos a ciegas, se pregunta al
 // servidor qué queda vivo y se reparte lo que responda.
-describe('apiFetch ante un 401', () => {
+describe('llamarApi ante un 401', () => {
   it('consulta /auth/me y reparte las sesiones que devuelva', async () => {
     const fetchMock = servidor({
       '/contabilidad': () => respuesta({ error: 'No autenticado' }, 401),
@@ -37,7 +37,7 @@ describe('apiFetch ante un 401', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(apiFetch('/contabilidad')).rejects.toBeInstanceOf(ApiError)
+    await expect(llamarApi('/contabilidad')).rejects.toBeInstanceOf(ErrorDeApi)
 
     // La sesión del CMS ha caducado, pero la del área de hermanos seguía viva:
     // se reparte tal cual, no se vacían las dos.
@@ -54,9 +54,9 @@ describe('apiFetch ante un 401', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await Promise.allSettled([
-      apiFetch('/contabilidad'),
-      apiFetch('/contabilidad?page=2'),
-      apiFetch('/contabilidad?page=3'),
+      llamarApi('/contabilidad'),
+      llamarApi('/contabilidad?page=2'),
+      llamarApi('/contabilidad?page=3'),
     ])
 
     await waitFor(() => expect(useAuthStore.getState().cms).toEqual(cmsUser))
@@ -71,7 +71,7 @@ describe('apiFetch ante un 401', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(apiFetch('/contabilidad')).rejects.toBeInstanceOf(ApiError)
+    await expect(llamarApi('/contabilidad')).rejects.toBeInstanceOf(ErrorDeApi)
 
     await waitFor(() => {
       expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: null, hermano: null })
@@ -84,7 +84,7 @@ describe('apiFetch ante un 401', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(apiFetch('/auth/login', { auth: false })).rejects.toBeInstanceOf(ApiError)
+    await expect(llamarApi('/auth/login', { auth: false })).rejects.toBeInstanceOf(ErrorDeApi)
 
     expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/auth/me'))).toBe(false)
     expect(useAuthStore.getState().cms).toEqual(cmsUser)
@@ -94,14 +94,14 @@ describe('apiFetch ante un 401', () => {
 // SESION_NO_CMS ya no dispara ningún rescate: con cookies separadas por área
 // significa solo «has llegado al CMS sin haber entrado por su acceso», no
 // «otra pestaña te ha pisado la cookie». Es un 403 de permisos más.
-describe('apiFetch ante un 403', () => {
+describe('llamarApi ante un 403', () => {
   it('un 403 (SESION_NO_CMS incluido) no toca la sesión ni consulta /auth/me', async () => {
     const fetchMock = servidor({
       '/contabilidad': () => respuesta({ error: SESION_NO_CMS, message: 'Esta sesión no da acceso al gestor de contenidos.' }, 403),
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(apiFetch('/contabilidad')).rejects.toMatchObject({ status: 403 })
+    await expect(llamarApi('/contabilidad')).rejects.toMatchObject({ status: 403 })
 
     expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: cmsUser, hermano: null })
     expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/auth/me'))).toBe(false)

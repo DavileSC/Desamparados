@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface AdminBrother {
@@ -59,31 +59,31 @@ export type FiltrosCenso = {
 }
 
 export function buscarHermanos(filtros: FiltrosCenso, pagina: { pagina: number; porPagina: number }) {
-  return apiFetch<RespuestaPaginada<AdminBrother>>(`/hermanos/admin/search?${paramsPagina(pagina, filtros)}`)
+  return llamarApi<RespuestaPaginada<AdminBrother>>(`/hermanos/admin/search?${paramsPagina(pagina, filtros)}`)
 }
 
 export function solicitudesPendientes(pagina: { pagina: number; porPagina: number }) {
   // Las peticiones de vuelta llegan con las altas: se atienden en la misma
   // pantalla, aunque con otro botón.
-  return apiFetch<RespuestaPaginada<PendingRequest> & { reactivaciones: PeticionVuelta[] }>(
+  return llamarApi<RespuestaPaginada<PendingRequest> & { reactivaciones: PeticionVuelta[] }>(
     `/hermanos/admin/solicitudes?${paramsPagina(pagina)}`,
   )
 }
 
 /** Descartar una petición de vuelta: la ficha se queda de baja, como estaba. */
 export function descartarPeticionVuelta(hermanoId: number) {
-  return apiFetch<{ message: string }>(`/hermanos/admin/reactivaciones/${hermanoId}`, { method: 'DELETE' })
+  return llamarApi<{ message: string }>(`/hermanos/admin/reactivaciones/${hermanoId}`, { method: 'DELETE' })
 }
 
 export function aprobarSolicitud(id: number) {
-  return apiFetch<{ message: string }>(`/hermanos/admin/solicitudes/${id}/aprobar`, { method: 'POST' })
+  return llamarApi<{ message: string }>(`/hermanos/admin/solicitudes/${id}/aprobar`, { method: 'POST' })
 }
 
 export function rechazarSolicitud(id: number) {
-  return apiFetch<{ message: string }>(`/hermanos/admin/solicitudes/${id}/rechazar`, { method: 'DELETE' })
+  return llamarApi<{ message: string }>(`/hermanos/admin/solicitudes/${id}/rechazar`, { method: 'DELETE' })
 }
 
-export interface AdminBrotherPayload {
+export interface DatosDeFichaDeHermano {
   nombre?: string
   apellidos?: string
   dni?: string
@@ -110,16 +110,16 @@ export interface AdminBrotherPayload {
 }
 
 export function fichaDeHermano(id: number) {
-  return apiFetch<AdminBrother>(`/hermanos/admin/${id}`)
+  return llamarApi<AdminBrother>(`/hermanos/admin/${id}`)
 }
 
-export function actualizarHermano(id: number, payload: AdminBrotherPayload) {
-  return apiFetch<AdminBrother>(`/hermanos/admin/${id}`, { method: 'PUT', json: payload })
+export function actualizarHermano(id: number, payload: DatosDeFichaDeHermano) {
+  return llamarApi<AdminBrother>(`/hermanos/admin/${id}`, { method: 'PUT', json: payload })
 }
 
 /** Da de baja a un hermano con la fecha indicada (AAAA-MM-DD); sin ella, hoy. */
 export function darDeBajaHermano(id: number, fechaBaja?: string) {
-  return apiFetch<{ message: string }>(`/hermanos/admin/${id}/baja`, {
+  return llamarApi<{ message: string }>(`/hermanos/admin/${id}/baja`, {
     method: 'DELETE',
     ...(fechaBaja ? { json: { fechaBaja } } : {}),
   })
@@ -127,7 +127,7 @@ export function darDeBajaHermano(id: number, fechaBaja?: string) {
 
 /** Vuelve a dar de alta a un hermano de baja: número nuevo y cuenta con acceso. */
 export function reactivarHermano(id: number) {
-  return apiFetch<{ message: string }>(`/hermanos/admin/${id}/reactivar`, { method: 'POST' })
+  return llamarApi<{ message: string }>(`/hermanos/admin/${id}/reactivar`, { method: 'POST' })
 }
 
 /**
@@ -135,7 +135,7 @@ export function reactivarHermano(id: number) {
  * llega un enlace para ponérsela él.
  */
 export function emanciparHermano(id: number, payload: { newEmail: string; newDni?: string }) {
-  return apiFetch<{ id: number; email: string; nombre: string }>(`/hermanos/admin/${id}/emancipar`, { method: 'POST', json: payload })
+  return llamarApi<{ id: number; email: string; nombre: string }>(`/hermanos/admin/${id}/emancipar`, { method: 'POST', json: payload })
 }
 
 export interface CierreDeHuecos {
@@ -145,5 +145,5 @@ export interface CierreDeHuecos {
 
 /** Da número a los hermanos activos que no lo tienen, por antigüedad. No renumera a nadie. */
 export function cerrarHuecosDeNumero() {
-  return apiFetch<CierreDeHuecos>('/hermanos/admin/cerrar-huecos-numero', { method: 'POST' })
+  return llamarApi<CierreDeHuecos>('/hermanos/admin/cerrar-huecos-numero', { method: 'POST' })
 }

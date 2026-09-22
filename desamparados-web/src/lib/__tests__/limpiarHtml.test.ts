@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeHtml } from '../sanitizeHtml'
+import { limpiarHtml } from '../limpiarHtml'
 
-describe('sanitizeHtml', () => {
+describe('limpiarHtml', () => {
   it('conserva el HTML legítimo que produce el CMS', () => {
     const contenido =
       '<h2>Triduo</h2><p>Los cultos <strong>comienzan</strong> a las <em>19:30</em>.</p>' +
       '<ul><li>Rosario</li><li>Eucaristía</li></ul>' +
       '<img src="/storage/public/imagen.webp" alt="Sagrada Titular">' +
       '<a href="https://ejemplo.org" title="Más información">más información</a>'
-    const limpio = sanitizeHtml(contenido)
+    const limpio = limpiarHtml(contenido)
 
     expect(limpio).toContain('<h2>Triduo</h2>')
     expect(limpio).toContain('<strong>comienzan</strong>')
@@ -27,7 +27,7 @@ describe('sanitizeHtml', () => {
     ['formulario que roba credenciales', '<form action="https://malicioso.example"><input name="p"></form>'],
     ['esquema data ejecutable', '<a href="data:text/html;base64,PHNjcmlwdD4=">enlace</a>'],
   ])('neutraliza %s', (_caso, entrada) => {
-    const limpio = sanitizeHtml(entrada)
+    const limpio = limpiarHtml(entrada)
 
     expect(limpio).not.toMatch(/<script/i)
     expect(limpio).not.toMatch(/<iframe/i)
@@ -38,7 +38,7 @@ describe('sanitizeHtml', () => {
   })
 
   it('no rompe con contenido vacío', () => {
-    expect(sanitizeHtml('')).toBe('')
+    expect(limpiarHtml('')).toBe('')
   })
 
   // Las mismas reglas que el servidor (backend: utils/sanear-html.ts).
@@ -49,7 +49,7 @@ describe('sanitizeHtml', () => {
     ['fuera de las carpetas públicas', '<img src="/storage/private/x.jpg">'],
     ['con ../', '<img src="/storage/public/../x.jpg">'],
   ])('quita una imagen %s', (_caso, imagen) => {
-    expect(sanitizeHtml(`<p>texto</p>${imagen}`)).toBe('<p>texto</p>')
+    expect(limpiarHtml(`<p>texto</p>${imagen}`)).toBe('<p>texto</p>')
   })
 
   it.each([
@@ -57,31 +57,31 @@ describe('sanitizeHtml', () => {
     ['del servidor de desarrollo', 'http://localhost:3001/storage/public/0123456789abcdef0123456789abcdef.jpg'],
     ['relativa al protocolo', '//www.desamparados.es/storage/public/0123456789abcdef0123456789abcdef.jpg?v=2'],
   ])('lee como ruta propia la URL absoluta de una foto nuestra (%s), como el servidor al guardar', (_caso, src) => {
-    expect(sanitizeHtml(`<img src="${src}" alt="Titular">`)).toBe('<img src="/storage/public/0123456789abcdef0123456789abcdef.jpg" alt="Titular">')
+    expect(limpiarHtml(`<img src="${src}" alt="Titular">`)).toBe('<img src="/storage/public/0123456789abcdef0123456789abcdef.jpg" alt="Titular">')
   })
 
   it('una URL absoluta que sale de las carpetas públicas con ../ no pasa', () => {
-    expect(sanitizeHtml('<img src="https://www.desamparados.es/storage/public/../private/x.jpg">')).toBe('')
+    expect(limpiarHtml('<img src="https://www.desamparados.es/storage/public/../private/x.jpg">')).toBe('')
   })
 
   it('conserva las fotos del propio sitio', () => {
-    expect(sanitizeHtml('<img src="/storage/public/0123456789abcdef0123456789abcdef.jpg" alt="a">')).toContain('src="/storage/public/0123456789abcdef0123456789abcdef.jpg"')
-    expect(sanitizeHtml('<img src="/images/hero-1920.webp" alt="b">')).toContain('src="/images/hero-1920.webp"')
+    expect(limpiarHtml('<img src="/storage/public/0123456789abcdef0123456789abcdef.jpg" alt="a">')).toContain('src="/storage/public/0123456789abcdef0123456789abcdef.jpg"')
+    expect(limpiarHtml('<img src="/images/hero-1920.webp" alt="b">')).toContain('src="/images/hero-1920.webp"')
   })
 
   it('no deja enlaces relativos al protocolo', () => {
-    expect(sanitizeHtml('<a href="//otro.example/x">x</a>')).not.toMatch(/href/)
-    expect(sanitizeHtml('<a href="/noticias/x">x</a>')).toContain('href="/noticias/x"')
+    expect(limpiarHtml('<a href="//otro.example/x">x</a>')).not.toMatch(/href/)
+    expect(limpiarHtml('<a href="/noticias/x">x</a>')).toContain('href="/noticias/x"')
   })
 
   it('un enlace con target abre pestaña nueva siempre con rel="noopener noreferrer"', () => {
-    const limpio = sanitizeHtml('<a href="https://ejemplo.org" target="_top" rel="opener">x</a>')
+    const limpio = limpiarHtml('<a href="https://ejemplo.org" target="_top" rel="opener">x</a>')
     expect(limpio).toContain('target="_blank"')
     expect(limpio).toContain('rel="noopener noreferrer"')
     expect(limpio).not.toMatch(/rel="opener"/)
   })
 
   it('conserva las celdas combinadas de las tablas', () => {
-    expect(sanitizeHtml('<table><tr><td colspan="2" rowspan="3">x</td></tr></table>')).toMatch(/colspan="2" rowspan="3"/)
+    expect(limpiarHtml('<table><tr><td colspan="2" rowspan="3">x</td></tr></table>')).toMatch(/colspan="2" rowspan="3"/)
   })
 })

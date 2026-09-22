@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 
 interface RespuestaSubida {
   message: string
@@ -14,7 +14,7 @@ interface RespuestaSubida {
 async function subirArchivoPublico(archivo: File): Promise<string> {
   const formulario = new FormData()
   formulario.append('file', archivo)
-  const respuesta = await apiFetch<RespuestaSubida>('/upload/public', { method: 'POST', formData: formulario })
+  const respuesta = await llamarApi<RespuestaSubida>('/upload/public', { method: 'POST', formData: formulario })
   return `/storage/public/${encodeURIComponent(respuesta.data.filename)}`
 }
 

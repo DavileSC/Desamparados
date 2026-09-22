@@ -12,9 +12,9 @@ import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import { Revela } from '../../../components/SeccionAnimada'
 import Boton from '../../../components/Boton'
 import CampoContrasena from '../../../components/CampoContrasena'
-import { LONGITUD_MINIMA } from '../../../lib/passwordPolicy'
+import { LONGITUD_MINIMA } from '../../../lib/politicaDeContrasena'
 import { register as apiRegister, pedirReactivacion } from '../../../lib/api/auth'
-import { ApiError } from '../../../lib/api/client'
+import { ErrorDeApi } from '../../../lib/api/cliente'
 import { GOLD, SERIF, ceja } from '../../inicio/estilos'
 import {
   conFichaPropia, conMenores, membershipSchema, menorVacio,
@@ -25,66 +25,15 @@ import ProcesoAlta from './ProcesoAlta'
 import SolicitudRecibida from './SolicitudRecibida'
 import EleccionCamino from './EleccionCamino'
 import PasoMenores from './PasoMenores'
+import FondoDeSolicitud from './FondoDeSolicitud'
 
-type Campo = keyof MembershipFormData
-
-/**
- * El formulario cabe en pantalla porque va por pasos: cada uno tiene los
- * campos justos para no tener que bajar, también en un móvil.
- *
- * El primero pregunta quién se apunta, y de esa respuesta depende el resto:
- * quien solo apunta a un menor no da su fecha de nacimiento (no va a tener
- * ficha) y quien trae menores tiene un paso más para ellos. Su DNI sí se pide
- * siempre, porque es el de la cuenta, no el de la ficha.
- */
-type Paso = { titulo: string; campos: Campo[] }
-
-function pasosDe(camino: Camino | null): Paso[] {
-  if (!camino) return [{ titulo: '¿Quién se apunta?', campos: ['camino'] }]
-  return [
-    { titulo: '¿Quién se apunta?', campos: ['camino'] },
-    {
-      titulo: 'Tus datos',
-      campos: conFichaPropia(camino)
-        ? ['nombre', 'apellidos', 'dni', 'fechaNacimiento']
-        : ['nombre', 'apellidos', 'dni'],
-    },
-    ...(conMenores(camino) ? [{ titulo: 'A quién apuntas', campos: ['menores'] as Campo[] }] : []),
-    { titulo: 'Contacto y domicilio', campos: ['email', 'telefono', 'direccion', 'ciudad', 'codigoPostal'] },
-    { titulo: 'Acceso al área de hermanos', campos: ['password', 'aceptarPolitica'] },
-  ]
-}
-
-/** Del `usuario.dni` que manda el servidor al `dni` que conoce el formulario. */
-const CAMPOS_API: Record<string, Campo> = {
-  'usuario.dni': 'dni',
-  'usuario.email': 'email',
-  'usuario.telefono': 'telefono',
-  'usuario.nombre': 'nombre',
-  'usuario.apellidos': 'apellidos',
-  'usuario.direccion': 'direccion',
-  'usuario.poblacion': 'ciudad',
-  'usuario.codigoPostal': 'codigoPostal',
-  'usuario.password': 'password',
-  'hermano.fechaNacimiento': 'fechaNacimiento',
-}
-
-const VALORES_INICIALES: MembershipFormData = {
-  camino: 'HERMANO', nombre: '', apellidos: '', email: '', password: '', dni: '', telefono: '',
-  direccion: '', ciudad: '', codigoPostal: '', fechaNacimiento: '', menores: [], aceptarPolitica: false,
-}
+import { CAMPOS_API, VALORES_INICIALES, pasosDe, type Campo } from './pasos'
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): por debajo la barra va en
 // flujo y mide 56 px en móvil y 64 en tableta; desde ahí es fija de 72 px y se
 // pone encima de la página, así que la sección la deja pasar con su relleno.
 const ESCRITORIO = '@media (min-width:1024px)'
 
-/** Fondo de página: la foto se funde a él en los bordes. */
-const FONDO = '#262326'
-const FONDO_VELO = 'rgba(38, 35, 38, 0.55)'
-const FONDO_VELO_LEVE = 'rgba(38, 35, 38, 0.25)'
-/** Presencia leve: se intuye la corona y el rostro, sin competir con el texto. */
-const OPACIDAD_VIRGEN = 0.18
 
 /** Botones del pie de la tarjeta: misma altura los dos y sin partir el texto en móvil. */
 const BOTON_PIE = { borderRadius: '3px', height: 48, py: 0, whiteSpace: 'nowrap' } as const
@@ -158,7 +107,7 @@ export default function HazteHermanoPage() {
       setVueltaPedida(message)
       setOfrecerVuelta(false)
     } catch (error) {
-      setErrorEnvio(error instanceof ApiError ? error.message : 'No se ha podido enviar la petición. Inténtalo más tarde.')
+      setErrorEnvio(error instanceof ErrorDeApi ? error.message : 'No se ha podido enviar la petición. Inténtalo más tarde.')
     }
   }
 
@@ -181,12 +130,12 @@ export default function HazteHermanoPage() {
     } catch (error) {
       // Un DNI que ya está en el censo es de alguien que estuvo aquí: se le
       // ofrece pedir la vuelta en vez de dejarlo en un callejón sin salida.
-      if (error instanceof ApiError && /ya hay una ficha en el censo/i.test(error.message)) {
+      if (error instanceof ErrorDeApi && /ya hay una ficha en el censo/i.test(error.message)) {
         setOfrecerVuelta(true)
         setErrorEnvio(error.message)
         return
       }
-      if (error instanceof ApiError && Object.keys(error.fields).length > 0) {
+      if (error instanceof ErrorDeApi && Object.keys(error.fields).length > 0) {
         // El servidor dice qué campo falla; enseñarlo bajo su casilla, en su
         // paso, en vez de un «Error de validación» suelto que no dice qué corregir.
         const rechazados: Campo[] = []
@@ -198,7 +147,7 @@ export default function HazteHermanoPage() {
         }
         if (rechazados.length > 0) { irA(primeroEnOrden(rechazados)); return }
       }
-      setErrorEnvio(error instanceof ApiError ? error.message : 'No se ha podido enviar la solicitud. Inténtalo de nuevo en unos minutos.')
+      setErrorEnvio(error instanceof ErrorDeApi ? error.message : 'No se ha podido enviar la solicitud. Inténtalo de nuevo en unos minutos.')
     }
   }
 
@@ -249,50 +198,7 @@ export default function HazteHermanoPage() {
           '& a:focus-visible, & button:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 4 },
         }}
       >
-        {/* La Virgen, velada, detrás de la solicitud. Es la foto de siempre del
-            hero, a su alto completo para que corona y rostro entren enteros en
-            cualquier ventana: a sangre y ampliada, en una pantalla apaisada solo
-            cabía la mitad de arriba y los ojos quedaban en el borde. En
-            escritorio ocupa la columna del texto y se funde al fondo antes de
-            la tarjeta; en móvil va a todo el ancho y la tarjeta tinta el resto.
-            Arriba y abajo se funde al fondo de página, para que no se note el
-            corte con la barra ni con el pie. */}
-        <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, zIndex: -1, overflow: 'hidden', pointerEvents: 'none' }}>
-          <Box
-            component="img"
-            src="/images/hero-1920.webp"
-            srcSet="/images/hero-960.webp 960w, /images/hero-1920.webp 1920w"
-            sizes="(min-width: 900px) 60vw, 100vw"
-            alt=""
-            decoding="async"
-            fetchPriority="low"
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              height: '100%',
-              width: { xs: '100%', md: '60%' },
-              maxWidth: 'none',
-              objectFit: 'cover',
-              // El rostro está al 40 % del ancho de la foto: alineado con el
-              // 40 % de su caja queda bajo el texto, no bajo la tarjeta.
-              objectPosition: '40% 50%',
-              opacity: OPACIDAD_VIRGEN,
-              filter: 'saturate(0.85)',
-            }}
-          />
-          <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${FONDO} 0%, transparent 22%, transparent 76%, ${FONDO} 100%)` }} />
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              background: {
-                xs: `linear-gradient(90deg, ${FONDO_VELO_LEVE} 0%, transparent 30%, ${FONDO_VELO} 100%)`,
-                md: `linear-gradient(90deg, ${FONDO_VELO_LEVE} 0%, transparent 20%, transparent 32%, ${FONDO} 60%)`,
-              },
-            }}
-          />
-        </Box>
+        <FondoDeSolicitud />
         <ContenedorDePagina>
           <Box
             sx={{

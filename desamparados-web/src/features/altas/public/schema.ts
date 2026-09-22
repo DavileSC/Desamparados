@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { contrasenaNueva } from '../../../lib/passwordPolicy'
+import { contrasenaNueva } from '../../../lib/politicaDeContrasena'
 import {
   esDniValido, esTelefonoValido, esCodigoPostalValido, esTextoValido,
 } from '../../../lib/validacion/identidad'

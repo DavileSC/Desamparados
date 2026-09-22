@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material'
 
-interface PageHeaderProps {
+interface CabeceraDePaginaProps {
   title: string
   subtitle?: string
   image?: string
@@ -12,7 +12,7 @@ interface PageHeaderProps {
   sobreFondo?: boolean
 }
 
-export default function CabeceraDePagina({ title, subtitle, image, imageAlt, sobreFondo }: PageHeaderProps) {
+export default function CabeceraDePagina({ title, subtitle, image, imageAlt, sobreFondo }: CabeceraDePaginaProps) {
   const conFotoPropia = Boolean(image) && !sobreFondo
   return (
     <Box

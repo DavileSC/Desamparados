@@ -1,7 +1,7 @@
 import { Typography } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
 
-export default function CookiesPolicyPage() {
+export default function PoliticaDeCookiesPage() {
   return (
     <MarcoPaginaLegal title="Política de Cookies">
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>

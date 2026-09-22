@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export type ReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
@@ -30,7 +30,7 @@ export interface MyReceipt extends ApiReceipt {
  * recibos y el tamaño de página acota las filas que llegan.
  */
 export function misRecibos(pagina: { pagina: number; porPagina: number }) {
-  return apiFetch<RespuestaPaginada<MyReceipt>>(`/recibos/mis-recibos?${paramsPagina(pagina)}`)
+  return llamarApi<RespuestaPaginada<MyReceipt>>(`/recibos/mis-recibos?${paramsPagina(pagina)}`)
 }
 
 /**
@@ -46,5 +46,5 @@ export interface MyReceiptDetail extends MyReceipt {
 
 /** 404 si el recibo no es de su familia: el servidor no distingue «no existe» de «no es tuyo». */
 export function miRecibo(id: number) {
-  return apiFetch<MyReceiptDetail>(`/recibos/mis-recibos/${id}`)
+  return llamarApi<MyReceiptDetail>(`/recibos/mis-recibos/${id}`)
 }

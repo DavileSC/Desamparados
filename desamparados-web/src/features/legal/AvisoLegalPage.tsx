@@ -1,8 +1,8 @@
 import { Typography } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
-import IdentificationDetails from './IdentificationDetails'
+import DatosDeIdentificacion from './DatosDeIdentificacion'
 
-export default function LegalNoticePage() {
+export default function AvisoLegalPage() {
   return (
     <MarcoPaginaLegal title="Aviso Legal">
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
@@ -14,7 +14,7 @@ export default function LegalNoticePage() {
         este sitio web:
       </Typography>
 
-      <IdentificationDetails />
+      <DatosDeIdentificacion />
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
         2. Objeto

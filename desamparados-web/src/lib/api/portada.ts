@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 
 export interface ImagenPortada {
   id?: number
@@ -34,7 +34,7 @@ export interface Portada {
 
 /** Fotos y textos de la portada, de una sola petición. Se leen sin sesión. */
 export async function portadaDelInicio(): Promise<Portada> {
-  const { imagenes, textos } = await apiFetch<{ imagenes: ApiImagenPortada[]; textos: TextosPortada }>('/portada')
+  const { imagenes, textos } = await llamarApi<{ imagenes: ApiImagenPortada[]; textos: TextosPortada }>('/portada')
   return {
     imagenes: imagenes.map((i) => ({ id: i.id, url: i.url, descripcion: i.descripcion ?? '' })),
     textos,
@@ -43,7 +43,7 @@ export async function portadaDelInicio(): Promise<Portada> {
 
 /** Sustituye la lista entera: la posición en el array es el orden en la portada. */
 export function guardarImagenesPortada(imagenes: Pick<ImagenPortada, 'url' | 'descripcion'>[]) {
-  return apiFetch<{ message: string; data: ApiImagenPortada[] }>('/portada/imagenes', {
+  return llamarApi<{ message: string; data: ApiImagenPortada[] }>('/portada/imagenes', {
     method: 'PUT',
     json: { imagenes: imagenes.map(({ url, descripcion }) => ({ url, descripcion })) },
   })

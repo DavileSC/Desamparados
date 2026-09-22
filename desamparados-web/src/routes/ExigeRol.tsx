@@ -2,18 +2,18 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../features/altas/auth/store'
 import CargandoPagina from '../components/CargandoPagina'
 
-interface RequireRoleProps {
+interface ExigeRolProps {
   roles: string[]
   children: React.ReactNode
 }
 
-export default function ExigeRol({ roles, children }: RequireRoleProps) {
-  const status = useAuthStore((state) => state.status)
+export default function ExigeRol({ roles, children }: ExigeRolProps) {
+  const estado = useAuthStore((state) => state.status)
   const cms = useAuthStore((state) => state.cms)
   const location = useLocation()
 
   // Igual que en ExigeSesion: sin saber todavía si hay sesión, esperamos.
-  if (status === 'cargando') return <CargandoPagina />
+  if (estado === 'cargando') return <CargandoPagina />
 
   // El CMS tiene acceso propio, con segundo factor. Sin su sesión se va allí,
   // con `from` para volver a la página que pedía. Tener abierta la del portal

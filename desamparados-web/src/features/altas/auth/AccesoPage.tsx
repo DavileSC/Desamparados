@@ -10,10 +10,10 @@ import CampoContrasena from '../../../components/CampoContrasena'
 import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, type TwoFactorFormData } from './schema'
 import { useAuthStore } from './store'
 import { login as apiLogin, verify2FA, type LoginResponse } from '../../../lib/api/auth'
-import { ApiError } from '../../../lib/api/client'
+import { ErrorDeApi } from '../../../lib/api/cliente'
 
 function errorMessage(e: unknown, fallback: string) {
-  return e instanceof ApiError ? e.message : fallback
+  return e instanceof ErrorDeApi ? e.message : fallback
 }
 
 export default function AccesoPage() {
@@ -38,7 +38,7 @@ export default function AccesoPage() {
     defaultValues: { code: '' },
   })
 
-  const handleResponse = (response: LoginResponse) => {
+  const alResponder = (response: LoginResponse) => {
     if (response.status === '2FA_NEEDED') {
       setPending2FA({ message: response.message })
       return
@@ -53,7 +53,7 @@ export default function AccesoPage() {
 
   const onSubmitCredentials = async (data: LoginFormData) => {
     try {
-      handleResponse(await apiLogin(data.email, data.password, data.recordarme, 'hermanos'))
+      alResponder(await apiLogin(data.email, data.password, data.recordarme, 'hermanos'))
     } catch (e) {
       credentialsForm.setError('root', { message: errorMessage(e, 'Email o contraseña incorrectos') })
     }
@@ -62,7 +62,7 @@ export default function AccesoPage() {
   const onSubmit2FA = async (data: TwoFactorFormData) => {
     if (!pending2FA) return
     try {
-      handleResponse(await verify2FA(data.code))
+      alResponder(await verify2FA(data.code))
     } catch (e) {
       twoFactorForm.setError('root', { message: errorMessage(e, 'Código incorrecto o expirado') })
     }

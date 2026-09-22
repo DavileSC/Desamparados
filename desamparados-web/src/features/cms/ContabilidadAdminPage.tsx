@@ -109,7 +109,7 @@ export default function ContabilidadAdminPage() {
   // cambios rápidos de filtro o de página lanzan dos cargas que pueden
   // resolverse en orden inverso y dejar en pantalla los datos de una consulta
   // con la URL diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
-  const load = useCallback((vigente: () => boolean = () => true) => {
+  const cargar = useCallback((vigente: () => boolean = () => true) => {
     if (alReves) return Promise.resolve()
     return Promise.all([
       resumenDeTesoreria(filtrosApi),
@@ -122,13 +122,13 @@ export default function ContabilidadAdminPage() {
 
   useEffect(() => {
     let cancelado = false
-    load(() => !cancelado)
+    cargar(() => !cancelado)
       .catch((e: unknown) => { if (!cancelado) setError(mensaje(e, 'No se ha podido cargar la contabilidad.')) })
       .finally(() => { if (!cancelado) setCargando(false) })
     return () => { cancelado = true }
-  }, [load])
+  }, [cargar])
 
-  const recargar = () => load().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar la contabilidad.')))
+  const recargar = () => cargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar la contabilidad.')))
 
   // Cada ventana se limpia al abrirse, no al cerrarse: así no se vacía a la vista mientras se va.
   const abrirApunte = (apunte: Transaction | null) => {

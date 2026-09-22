@@ -175,14 +175,14 @@ export default function AuditoriaAdminPage() {
   // clics rápidos en el paginador lanzan dos cargas que pueden resolverse en
   // orden inverso y dejar en pantalla los datos de una página con la URL
   // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
-  const load = useCallback((vigente: () => boolean = () => true) => registrosDeAuditoria({ pagina, porPagina }).then((result) => { if (!vigente()) return; setEntries(result.data); setMeta(result.meta) }), [pagina, porPagina])
+  const cargar = useCallback((vigente: () => boolean = () => true) => registrosDeAuditoria({ pagina, porPagina }).then((result) => { if (!vigente()) return; setEntries(result.data); setMeta(result.meta) }), [pagina, porPagina])
   useEffect(() => {
     let cancelado = false
-    load(() => !cancelado)
+    cargar(() => !cancelado)
       .catch((e: unknown) => { if (!cancelado) setError(e instanceof Error ? e.message : 'No se ha podido cargar la auditoría.') })
       .finally(() => { if (!cancelado) setLoading(false) })
     return () => { cancelado = true }
-  }, [load])
+  }, [cargar])
 
   return <><Helmet><title>Auditoría | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet><Typography variant="h2" component="h1" sx={{ mb: 4 }}>Registro de auditoría</Typography>{error && <Alert severity="error">{error}</Alert>}{loading ? <CircularProgress aria-label="Cargando auditoría" /> : <Stack spacing={2}>{entries.map((entry) => <EntradaAuditoria key={entry.id} entry={entry} />)}{!entries.length && <Alert severity="info">No hay registros de auditoría.</Alert>}</Stack>}{meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="registro de auditoría" />}</>
 }

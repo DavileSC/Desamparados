@@ -15,7 +15,7 @@ import type { ReactNode } from 'react'
 import { site } from '../config/site'
 import { aplanarMenu, menuPublico } from '../config/navegacion'
 import ContenedorDePagina from './ContenedorDePagina'
-import { useCookieConsent } from '../hooks/useCookieConsent'
+import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
 
 type SocialLink = { icon: ReactNode; href: string; label: string }
 
@@ -94,11 +94,11 @@ function Dato({ icono, children }: { icono: ReactNode; children: ReactNode }) {
 }
 
 export default function PieDePagina() {
-  const { accepted, reset: resetCookieConsent } = useCookieConsent()
+  const { aceptadas, volverAPreguntar } = useConsentimientoDeCookies()
   // RGPD: el iframe de Google Maps envía la IP del visitante a Google. Solo se carga si el
   // usuario ha aceptado las cookies o pulsa explícitamente "Mostrar mapa" (click-to-load).
   const [mapRequested, setMapRequested] = useState(false)
-  const showMap = accepted || mapRequested
+  const verMapa = aceptadas || mapRequested
   const year = new Date().getFullYear()
 
   return (
@@ -213,7 +213,7 @@ export default function PieDePagina() {
                 justifyContent: 'center',
               }}
             >
-              {showMap ? (
+              {verMapa ? (
                 <Box
                   component="iframe"
                   src={MAP_EMBED_URL}
@@ -280,7 +280,7 @@ export default function PieDePagina() {
               <MuiLink
                 component="button"
                 type="button"
-                onClick={resetCookieConsent}
+                onClick={volverAPreguntar}
                 sx={{ font: 'inherit', ...enlace, fontSize: 13, border: 0, background: 'none', cursor: 'pointer', p: 0 }}
               >
                 Gestionar cookies

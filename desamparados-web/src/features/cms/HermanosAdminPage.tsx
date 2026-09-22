@@ -81,7 +81,7 @@ export default function HermanosAdminPage() {
   // orden inverso y dejar en pantalla los datos de una página con la URL
   // diciendo otra. Solo la última carga en marcha tiene derecho a escribir.
   // Las llamadas de después de aprobar o rechazar la omiten: no hay carrera.
-  const load = useCallback((vigente: () => boolean = () => true) => Promise.all([
+  const cargar = useCallback((vigente: () => boolean = () => true) => Promise.all([
     puedeGestionar
       ? solicitudesPendientes({ pagina: solicitudes.pagina, porPagina: solicitudes.porPagina })
       : Promise.resolve({ data: [] as PendingRequest[], meta: { total: 0, page: 1, limit: solicitudes.porPagina, totalPages: 0 }, reactivaciones: [] as PeticionVuelta[] }),
@@ -99,11 +99,11 @@ export default function HermanosAdminPage() {
     // La espera del tecleo la pone el buscador (CampoBusqueda); `cancelado` se
     // ocupa de la carga que salió y todavía no ha vuelto.
     let cancelado = false
-    load(() => !cancelado)
+    cargar(() => !cancelado)
       .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar el censo.') })
       .finally(() => { if (!cancelado) setLoading(false) })
     return () => { cancelado = true }
-  }, [load])
+  }, [cargar])
 
   /**
    * Recarga el censo y refresca de paso los contadores del menú («hermanos sin
@@ -113,7 +113,7 @@ export default function HermanosAdminPage() {
    * cambiando de pantalla dentro del CMS.
    *
    * Cuelga de las tres acciones que de verdad mueven esos números —asignar,
-   * aprobar y rechazar— y no de `load()`: `load()` corre también al abrir la
+   * aprobar y rechazar— y no de `cargar()`: `cargar()` corre también al abrir la
    * pantalla, en cada búsqueda o filtro y al cambiar de página. El panel es un agregado caro (censo, dinero, procesión y
    * actividad) y el menú lo tiene observado mientras se está dentro del CMS, así
    * que invalidarlo no deja una marca de caducidad: dispara una petición de
@@ -121,7 +121,7 @@ export default function HermanosAdminPage() {
    * ningún contador.
    */
   const recargarYRefrescarMenu = async () => {
-    await load()
+    await cargar()
     void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
   }
 

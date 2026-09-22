@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useListadoPaginado, type Pagina } from '../../hooks/useListadoPaginado'
 import { publicacionesPublicas } from '../../lib/api/publicaciones'
-import type { PublicationItem } from '../../types'
+import type { Publicacion } from '../../types'
 
 /**
  * Las tres pantallas públicas de publicaciones (todas, boletines y dossieres de
@@ -13,7 +13,7 @@ import type { PublicationItem } from '../../types'
  * `category` a `undefined` pide el listado completo.
  */
 export function usePublicacionesPaginadas(
-  category: PublicationItem['category'] | undefined,
+  category: Publicacion['categoria'] | undefined,
   mensajeError: string,
 ) {
   const pedir = useCallback((pagina: Pagina) => publicacionesPublicas(category, pagina), [category])

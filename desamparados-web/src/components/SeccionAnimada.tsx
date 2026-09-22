@@ -89,7 +89,7 @@ export function Revela({ children, orden = 0, retraso = 0, as = 'div', efecto = 
 
 // Este componente SIEMPRE renderiza un <section> quieto: el fondo nunca se mueve,
 // porque entre bloques oscuros seguidos se vería el corte. Lo que entra es el contenido.
-interface AnimatedSectionProps {
+interface SeccionAnimadaProps {
   children: React.ReactNode
   delay?: number
   /** El contenido ya lleva sus propios <Revela>: no se envuelve en uno común. */
@@ -100,7 +100,7 @@ interface AnimatedSectionProps {
   'aria-labelledby'?: string
 }
 
-export default function SeccionAnimada({ children, delay = 0, cascada = false, sx, ...props }: AnimatedSectionProps) {
+export default function SeccionAnimada({ children, delay = 0, cascada = false, sx, ...props }: SeccionAnimadaProps) {
   return (
     <Box component="section" sx={sx} {...props}>
       {cascada ? children : <Revela retraso={delay}>{children}</Revela>}

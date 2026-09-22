@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion'
 import { Box } from '@mui/material'
 
-interface PageTransitionProps {
+interface TransicionDePaginaProps {
   children: React.ReactNode
 }
 
-export default function TransicionDePagina({ children }: PageTransitionProps) {
+export default function TransicionDePagina({ children }: TransicionDePaginaProps) {
   return (
     <Box
       component={motion.div}

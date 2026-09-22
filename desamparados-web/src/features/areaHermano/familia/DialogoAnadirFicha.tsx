@@ -3,7 +3,7 @@ import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuIte
 import Boton from '../../../components/Boton'
 import { PARENTESCOS, type Parentesco } from '../../../lib/api/auth'
 import { anadirFicha } from '../../../lib/api/perfil'
-import { ApiError } from '../../../lib/api/client'
+import { ErrorDeApi } from '../../../lib/api/cliente'
 import { esDniValido } from '../../../lib/validacion/identidad'
 import { MAYORIA_DE_EDAD, aniosCumplidos } from '../../altas/public/schema'
 
@@ -93,7 +93,7 @@ export default function DialogoAnadirFicha({ modo, apellidosDelTitular, onCerrar
         ? 'Tu ficha queda pendiente de Secretaría. En cuanto la aprueben serás hermano.'
         : `${datos.nombre.trim()} queda apuntado. Secretaría revisará el alta como cualquier otra.`)
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'No se ha podido guardar. Inténtalo de nuevo.')
+      setError(e instanceof ErrorDeApi ? e.message : 'No se ha podido guardar. Inténtalo de nuevo.')
     } finally {
       setGuardando(false)
     }

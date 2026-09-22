@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 import { normalizarDni } from '../validacion/identidad'
 import type { Parentesco } from './auth'
@@ -55,10 +55,10 @@ export const FICHAS_POR_FAMILIA = 50
 export function misFichas(
   pagina: { pagina: number; porPagina: number } = { pagina: 1, porPagina: FICHAS_POR_FAMILIA },
 ) {
-  return apiFetch<RespuestaPaginada<ApiProfile>>(`/hermanos/mis-perfiles?${paramsPagina(pagina)}`)
+  return llamarApi<RespuestaPaginada<ApiProfile>>(`/hermanos/mis-perfiles?${paramsPagina(pagina)}`)
 }
 
-export interface UpdateProfilePayload {
+export interface DatosDePerfil {
   nombre: string
   apellidos: string
   email: string
@@ -68,14 +68,14 @@ export interface UpdateProfilePayload {
   codigoPostal: string
 }
 
-export function actualizarMiFicha(id: number, payload: UpdateProfilePayload) {
-  return apiFetch<{ message: string; data: ApiProfile }>(`/hermanos/mis-perfiles/${id}`, {
+export function actualizarMiFicha(id: number, payload: DatosDePerfil) {
+  return llamarApi<{ message: string; data: ApiProfile }>(`/hermanos/mis-perfiles/${id}`, {
     method: 'PUT',
     json: payload,
   })
 }
 
-export interface AddProfilePayload {
+export interface DatosDeFichaNueva {
   nombre: string
   apellidos: string
   fechaNacimiento: string
@@ -94,8 +94,8 @@ export interface AddProfilePayload {
  *
  * Nace pendiente de Secretaría, como cualquier alta.
  */
-export function anadirFicha(payload: AddProfilePayload) {
-  return apiFetch<ApiProfile>('/hermanos/mis-perfiles', {
+export function anadirFicha(payload: DatosDeFichaNueva) {
+  return llamarApi<ApiProfile>('/hermanos/mis-perfiles', {
     method: 'POST',
     json: {
       nombre: payload.nombre,
@@ -114,7 +114,7 @@ export function anadirFicha(payload: AddProfilePayload) {
  * gestionaba deja de verla.
  */
 export function emanciparFicha(id: number, payload: { newEmail: string; newPassword: string; newDni?: string }) {
-  return apiFetch<{ message: string }>(`/hermanos/mis-perfiles/${id}/emancipar`, {
+  return llamarApi<{ message: string }>(`/hermanos/mis-perfiles/${id}/emancipar`, {
     method: 'POST',
     json: {
       newEmail: payload.newEmail,
