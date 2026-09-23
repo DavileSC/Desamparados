@@ -1,57 +1,96 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { cuentaAtrasEstacion } from '../../../domain/sabadoDePasion'
-import { actosDelCurso, corta, diaMes, racimoInicial, racimosDelCurso, rangoDe } from './racimos'
+import { actosDelCurso, calmaCorta, corta, cuandoFalta, diaMes, diasEntre, momentoDelCurso, rangoDe, tandaInicial, tandasDelCurso } from './tandas'
+import type { Momento } from './tandas'
 import { TIPOS } from '../../inicio/agenda'
 import type { TipoEvento } from '../../../lib/api/panel'
 import { contar } from './plural'
-import { useAnchoMedido } from '../../../components/charts/useAnchoMedido'
 import { fondoTarjeta } from '../../../theme/tarjeta'
 import { segunModo } from '../../../theme/cms'
-import { acercar, aparecer, CIFRA, entrada, llenarTrazo, sinMovimiento, useCuenta } from './animaciones'
+import { acercar, aparecer, CIFRA, entrada, sinMovimiento, useCuenta } from './animaciones'
 
-/** El camino se dibuja en esta caja; los racimos, encima, en porcentajes de ella. */
-const ANCHO = 1000
-const ALTO = 200
-/** Una calle con curvas: la posición en el curso (0 a 1) da el punto del camino. */
-const punto = (p: number) => ({ x: 24 + p * (ANCHO - 48), y: 108 + 46 * Math.sin(p * Math.PI * 2.5 + 0.6) })
-const CAMINO = Array.from({ length: 81 }, (_, i) => punto(i / 80))
-  .map(({ x, y }, i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`)
-  .join(' ')
-
-// El camino va siempre sobre fondo oscuro, en los dos temas: es la pieza que
+// El curso va siempre sobre fondo oscuro, en los dos temas: es la pieza que
 // destaca, y la foto de la Virgen es oscura.
-const OSCURO = { fondo: '#1d1b1e', fondoTemaOscuro: '#100e11', texto: '#ffffff', texto2: '#cbc5c8', tenue: '#8f8a8d', andado: '#a03d44', claro: '#ffb3b4' }
+const OSCURO = { fondo: '#1d1b1e', fondoTemaOscuro: '#100e11', texto: '#ffffff', texto2: '#cbc5c8', tenue: '#8f8a8d', claro: '#ffb3b4' }
 /** Cada tipo de acto con su color de la agenda, en la variante para fondo oscuro. */
 const COLOR = (tipo: TipoEvento) => TIPOS[tipo].oscuro
+/** Solo para lectores de pantalla. */
+const OCULTO = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
 
-/** Retraso de lo que se enciende en el camino: cuando el trazo llega a su sitio (lo que va por delante, al final). */
-const alLlegar = (p: number, recorrido: number) => `${300 + Math.min(p / Math.max(recorrido, 0.01), 1) * 1800}ms`
+/** La frase de arriba: en plena tanda, esperando la próxima o sin nada por delante. */
+function Ahora({ momento, hoy }: { momento: Momento; hoy: Date }) {
+  const pastilla = (texto: string, plena: boolean) => (
+    <Box
+      component="span"
+      sx={{
+        fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap', px: 1, py: '3px', borderRadius: 999,
+        ...(plena ? { backgroundColor: OSCURO.claro, color: '#1d1b1e' } : { backgroundColor: 'rgba(255,255,255,.12)', color: OSCURO.texto2 }),
+      }}
+    >
+      {texto}
+    </Box>
+  )
+
+  let frase
+  if (momento.tipo === 'plena') {
+    const { tanda, quedan, siguiente } = momento
+    frase = (
+      <>
+        {pastilla('En plena tanda', true)}
+        <span>
+          <b>{tanda.nombre}</b>: {quedan === 1 ? 'queda 1 acto' : `quedan ${quedan} actos`} hasta el {diaMes(tanda.fin)}.
+          {' '}Lo siguiente, «{siguiente.titulo}», {cuandoFalta(hoy, siguiente.fecha)}.
+        </span>
+      </>
+    )
+  } else if (momento.tipo === 'calma') {
+    const { tanda } = momento
+    const n = tanda.actos.length
+    frase = (
+      <>
+        {pastilla('Calma', false)}
+        <span>
+          {n === 1
+            ? <>Lo próximo, <b>«{tanda.actos[0].titulo}»</b>, {cuandoFalta(hoy, tanda.inicio)} ({diaMes(tanda.inicio)}).</>
+            : <>La próxima tanda, <b>{tanda.nombre}</b>, empieza {cuandoFalta(hoy, tanda.inicio)} ({diaMes(tanda.inicio)}): {n} actos hasta el {diaMes(tanda.fin)}.</>}
+        </span>
+      </>
+    )
+  } else {
+    frase = <>{pastilla('Calma', false)}<span>No quedan actos en la Agenda hasta la estación.</span></>
+  }
+
+  return (
+    <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', fontSize: 14, lineHeight: 1.4, px: 1.5, py: 1.25, borderRadius: 1.25, backgroundColor: 'rgba(255,255,255,.05)', '& b': { fontWeight: 600 } }}>
+      {frase}
+    </Box>
+  )
+}
 
 /**
  * La pieza que abre el Inicio: la imagen de Nuestra Señora de los Desamparados
- * con los días que faltan para la estación de penitencia, y al lado el curso
- * como un camino de un Sábado de Pasión al siguiente, lleno hasta hoy.
+ * con los días que faltan para la estación de penitencia, y al lado el curso,
+ * de un Sábado de Pasión al siguiente.
  *
- * Todos los actos del curso van en el camino, un punto por acto. Los cercanos
- * se agrupan en racimos con su número; el racimo abierto (de entrada, el
- * próximo) se lista debajo, con sus fechas.
+ * El curso no se dibuja a escala de tiempo: la Hermandad hace muchos actos en
+ * pocas semanas y luego pasa meses sin nada, y una escala recta gastaría el
+ * sitio en la calma. Va por tandas, cada una con un cuadradito por acto, y la
+ * calma entre ellas en corto. Arriba, una frase dice en qué punto estamos; la
+ * tanda abierta (de entrada, la de ahora o la próxima) se lista debajo.
  */
 export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos: PanelResponse['curso']['eventos']; hoy?: Date }) {
-  const { fecha, anterior, dias, porcentaje } = cuentaAtrasEstacion(hoy)
+  const { fecha, dias, porcentaje } = cuentaAtrasEstacion(hoy)
   const diasContados = Math.round(useCuenta(dias, 1600))
-  const recorrido = porcentaje / 100
-  const aqui = punto(recorrido)
   const fondo = segunModo(OSCURO.fondo, OSCURO.fondoTemaOscuro)
 
-  const { referencia, ancho } = useAnchoMedido()
   const actos = actosDelCurso(hoy, eventos)
-  // El camino ocupa el ancho menos sus márgenes (24 de cada 1000 a cada lado).
-  const racimos = racimosDelCurso(actos, hoy, (ancho * (ANCHO - 48)) / ANCHO)
-  const [elegido, setElegido] = useState<number | null>(null)
-  // Con otro ancho los racimos se rehacen: si el elegido ya no existe, se vuelve al próximo.
-  const indiceAbierto = elegido !== null && elegido < racimos.length ? elegido : racimoInicial(racimos)
+  const tandas = tandasDelCurso(actos, hoy)
+  const momento = momentoDelCurso(tandas)
+  const [elegida, setElegida] = useState<number | null>(null)
+  const indiceAbierta = elegida !== null && elegida < tandas.length ? elegida : tandaInicial(tandas)
+  const siguiente = actos.find((a) => !a.pasado)
   const porDelante = actos.filter((a) => !a.pasado).length
   const tipos = (Object.keys(TIPOS) as TipoEvento[]).filter((t) => actos.some((a) => a.tipo === t))
 
@@ -62,7 +101,7 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
       sx={{
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1fr)',
-        // Imagen y camino lado a lado solo cuando el camino tiene sitio de sobra.
+        // Imagen y curso lado a lado solo cuando el curso tiene sitio de sobra.
         '@container (min-width: 860px)': { gridTemplateColumns: 'minmax(260px, 0.8fr) minmax(0, 2fr)' },
         // Siempre oscura, con el mismo velo burdeos que el resto de tarjetas.
         ...fondoTarjeta('burdeos', fondo, 'oscuro'),
@@ -99,8 +138,8 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
         </Box>
       </Box>
 
-      {/* El curso como camino, con todos sus actos. */}
-      <Box sx={{ p: { xs: 2.25, md: 3 }, display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}>
+      {/* El curso por tandas, con todos sus actos. */}
+      <Box sx={{ p: { xs: 2.25, md: 3 }, display: 'flex', flexDirection: 'column', gap: 1.75, minWidth: 0 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '2px 16px', flexWrap: 'wrap' }}>
           <Typography component="h2" sx={{ fontSize: 18, fontWeight: 600 }}>El curso</Typography>
           <Typography sx={{ fontSize: 13, color: OSCURO.texto2 }}>
@@ -108,146 +147,128 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
           </Typography>
         </Box>
 
-        <Box ref={referencia} sx={{ position: 'relative', width: '100%', aspectRatio: `${ANCHO} / ${ALTO}`, mt: 3, mb: 1 }}>
-          <Box
-            role="progressbar"
-            aria-label="Parte del curso recorrida"
-            aria-valuenow={porcentaje}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            sx={{ position: 'absolute', inset: 0 }}
-          >
-            <Box component="svg" viewBox={`0 0 ${ANCHO} ${ALTO}`} aria-hidden="true" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}>
-              <path d={CAMINO} fill="none" stroke="rgba(255,255,255,.16)" strokeWidth={3} strokeDasharray="2 8" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-              <Box
-                component="path"
-                d={CAMINO}
-                fill="none"
-                stroke={OSCURO.andado}
-                strokeWidth={4}
-                strokeLinecap="round"
-                pathLength={1}
-                strokeDasharray="1"
-                strokeDashoffset={1 - recorrido}
-                style={{ ['--hasta' as string]: 1 - recorrido }}
-                sx={{ animation: `${llenarTrazo} 1.8s cubic-bezier(.3, .7, .2, 1) .3s backwards`, ...sinMovimiento }}
-              />
-              {/* Las dos estaciones: la que abrió el curso, encendida; la que lo cierra, por llegar. */}
-              <circle cx={punto(0).x} cy={punto(0).y} r={7} fill={OSCURO.andado} stroke={OSCURO.claro} strokeWidth={2} />
-              <circle cx={punto(1).x} cy={punto(1).y} r={9} fill={fondo} stroke="rgba(255,255,255,.5)" strokeWidth={2} />
-              {/* Un punto por acto, del color de su tipo; los pasados, más apagados. */}
-              {actos.map((acto, i) => {
-                const { x, y } = punto(acto.p)
-                return (
+        <Ahora momento={momento} hoy={hoy} />
+
+        {tandas.length > 0 && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', rowGap: 1 }}>
+            {tandas.map((tanda, i) => {
+              const n = tanda.actos.length
+              const anterior = tandas[i - 1]
+              // La calma en la que estamos, si estamos en una, va en rosa.
+              const calmaDeHoy = anterior?.estado === 'pasada' && tanda.estado === 'porVenir'
+              return (
+                <Fragment key={`${tanda.inicio.getTime()}-${n}`}>
+                  {anterior && (
+                    <Box
+                      sx={{
+                        position: 'relative', display: 'grid', placeItems: 'center', alignContent: 'center', gap: '2px', minWidth: 46, px: 0.75,
+                        fontSize: 11, lineHeight: 1.15, textAlign: 'center',
+                        color: calmaDeHoy ? OSCURO.claro : OSCURO.tenue, fontWeight: calmaDeHoy ? 600 : 400,
+                        '&::before': { content: '""', width: '100%', minWidth: 24, borderTop: `2px dotted ${calmaDeHoy ? OSCURO.claro : 'rgba(255,255,255,.2)'}` },
+                      }}
+                    >
+                      <span>{calmaCorta(diasEntre(anterior.fin, tanda.inicio))}<Box component="span" sx={OCULTO}> sin actos</Box></span>
+                      {calmaDeHoy && <span>hoy</span>}
+                    </Box>
+                  )}
                   <Box
-                    key={i}
-                    component="circle"
-                    cx={x}
-                    cy={y}
-                    r={4}
-                    fill={COLOR(acto.tipo)}
-                    opacity={acto.pasado ? 0.55 : 1}
+                    component="button"
+                    type="button"
+                    onClick={() => setElegida(i)}
+                    aria-expanded={i === indiceAbierta}
+                    aria-controls="curso-detalle"
+                    aria-label={`${tanda.nombre}, ${contar(n, 'acto', 'actos')}, ${rangoDe(tanda)}`}
+                    style={{ ['--hecho' as string]: `${Math.round(tanda.hecho * 100)}%` }}
                     sx={{
-                      transformBox: 'fill-box', transformOrigin: 'center',
-                      animation: `${aparecer} .4s ease-out backwards`, animationDelay: alLlegar(acto.p, recorrido),
+                      // Cada tanda ocupa lo que pesa, no lo que dura.
+                      flex: `${Math.max(n, 2)} 1 0`, minWidth: 64,
+                      display: 'grid', gap: 0.75, alignContent: 'start', p: 1.25, m: 0, position: 'relative', overflow: 'hidden',
+                      textAlign: 'left', fontFamily: 'inherit', color: OSCURO.texto, cursor: 'pointer',
+                      borderRadius: 1.25,
+                      border: `1px solid ${i === indiceAbierta ? 'rgba(255,179,180,.6)' : 'transparent'}`,
+                      backgroundColor: tanda.estado === 'viva' ? 'rgba(160,61,68,.2)' : 'rgba(255,255,255,.04)',
+                      opacity: tanda.estado === 'pasada' ? 0.55 : 1,
+                      '&:hover': { backgroundColor: tanda.estado === 'viva' ? 'rgba(160,61,68,.28)' : 'rgba(255,255,255,.07)' },
+                      '&:focus-visible': { outline: `2px solid ${OSCURO.texto}`, outlineOffset: 2 },
+                      // En la tanda de ahora, lo ya andado de ella, un poco más lleno.
+                      ...(tanda.estado === 'viva' && {
+                        '&::before': { content: '""', position: 'absolute', left: 0, top: 0, bottom: 0, width: 'var(--hecho)', backgroundColor: 'rgba(160,61,68,.25)' },
+                      }),
+                      '& > *': { position: 'relative' },
+                      animation: `${aparecer} .45s cubic-bezier(.2, .9, .3, 1.2) backwards`,
+                      animationDelay: `${200 + i * 70}ms`,
                       ...sinMovimiento,
                     }}
-                  />
-                )
-              })}
-              <Box
-                component="g"
-                sx={{ transformBox: 'fill-box', transformOrigin: 'center', animation: `${aparecer} .5s ease-out 2.1s backwards`, ...sinMovimiento }}
-              >
-                <circle cx={aqui.x} cy={aqui.y} r={13} fill="rgba(255,179,180,.18)" />
-                <circle cx={aqui.x} cy={aqui.y} r={6} fill={OSCURO.claro} />
-              </Box>
-            </Box>
+                  >
+                    <Box component="span" sx={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' }}>{tanda.nombre}</Box>
+                    <Box component="span" sx={{ fontSize: 11.5, color: OSCURO.texto2, whiteSpace: 'nowrap' }}>{contar(n, 'acto', 'actos')}</Box>
+                    <Box component="span" aria-hidden="true" sx={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                      {tanda.actos.map((acto, j) => (
+                        <Box
+                          key={j}
+                          component="span"
+                          title={`${diaMes(acto.fecha)} · ${acto.titulo}`}
+                          sx={{ width: 8, height: 8, borderRadius: '2px', backgroundColor: COLOR(acto.tipo), opacity: acto.pasado ? 0.45 : 1 }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                </Fragment>
+              )
+            })}
           </Box>
-
-          {/* Los racimos, en HTML sobre el dibujo: botones de verdad, del mismo tamaño en cualquier ancho. */}
-          {racimos.map((racimo, i) => {
-            const { x, y } = punto(racimo.p)
-            const n = racimo.actos.length
-            const esAbierto = i === indiceAbierto
-            return (
-              <Box
-                key={`${racimo.p}-${n}`}
-                component="button"
-                type="button"
-                onClick={() => setElegido(i)}
-                aria-expanded={esAbierto}
-                aria-controls="camino-detalle"
-                aria-label={`${contar(n, 'acto', 'actos')}, ${rangoDe(racimo)}`}
-                sx={{
-                  position: 'absolute',
-                  left: `${(x / ANCHO) * 100}%`,
-                  top: `${(y / ALTO) * 100}%`,
-                  // Un banderín por encima del camino, con su palito hasta él: así
-                  // el número no tapa los puntos de los actos ni el de hoy.
-                  // Con `translate` y no `transform`: la animación de aparecer usa `transform` y lo pisaría.
-                  translate: '-50% calc(-100% - 14px)',
-                  '&::after': {
-                    content: '""', position: 'absolute', left: '50%', top: '100%', width: '1px', height: 13,
-                    backgroundColor: racimo.porVenir ? 'rgba(255,255,255,.35)' : 'rgba(255,179,180,.55)',
-                  },
-                  minWidth: 24, height: 24, px: '7px', m: 0,
-                  borderRadius: '12px',
-                  fontFamily: 'inherit', fontSize: 12, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums',
-                  cursor: 'pointer',
-                  // Lo ya pasado, relleno del color de lo andado; lo que viene, hueco.
-                  ...(racimo.porVenir
-                    ? { backgroundColor: '#3a3538', color: OSCURO.texto, border: '1px solid rgba(255,255,255,.4)', boxShadow: '0 0 0 4px rgba(255,255,255,.06)' }
-                    : { backgroundColor: OSCURO.claro, color: '#1d1b1e', border: '1px solid transparent', boxShadow: '0 0 0 4px rgba(255,179,180,.18)' }),
-                  outline: esAbierto ? `2px solid ${OSCURO.claro}` : 'none',
-                  outlineOffset: 2,
-                  '&:focus-visible': { outline: `2px solid ${OSCURO.texto}` },
-                  animation: `${aparecer} .45s cubic-bezier(.2, .9, .3, 1.3) backwards`,
-                  animationDelay: alLlegar(racimo.p, recorrido),
-                  ...sinMovimiento,
-                }}
-              >
-                {n}
-              </Box>
-            )
-          })}
-        </Box>
-
-        {/* Los extremos, debajo del dibujo y no encima: así ningún racimo los tapa. */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, fontSize: 12.5, lineHeight: 1.3, color: OSCURO.texto2 }}>
-          <span>Sábado de Pasión<Box component="span" sx={{ display: 'block', color: OSCURO.tenue }}>{corta(anterior)}</Box></span>
-          <Box component="span" sx={{ textAlign: 'right' }}>Sábado de Pasión<Box component="span" sx={{ display: 'block', color: OSCURO.tenue }}>{corta(fecha)}</Box></Box>
-        </Box>
+        )}
 
         {/*
-          Todas las listas en la misma celda y solo se ve la del racimo abierto:
-          la celda mide lo que la más larga, así que al pulsar otro racimo la
-          tarjeta no cambia de alto (y la foto, que la llena, no se recoloca).
+          Todas las listas en la misma celda y solo se ve la de la tanda abierta:
+          la celda mide lo que la más larga (con su tope), así que al pulsar otra
+          tanda la tarjeta no cambia de alto y la foto, que la llena, no se recoloca.
         */}
-        {racimos.length > 0 && (
-          <Box id="camino-detalle" aria-live="polite" sx={{ display: 'grid', borderTop: '1px solid rgba(255,255,255,.1)', pt: 1.5 }}>
-            {racimos.map((racimo, r) => {
-              const visible = r === indiceAbierto
+        {tandas.length > 0 && (
+          <Box id="curso-detalle" aria-live="polite" sx={{ display: 'grid', borderTop: '1px solid rgba(255,255,255,.1)', pt: 1.5 }}>
+            {tandas.map((tanda, t) => {
+              const visible = t === indiceAbierta
               return (
                 <Box
-                  key={`${racimo.p}-${racimo.actos.length}`}
+                  key={`${tanda.inicio.getTime()}-${tanda.actos.length}`}
                   aria-hidden={!visible}
                   inert={!visible}
-                  sx={{ gridArea: '1 / 1', visibility: visible ? 'visible' : 'hidden', minWidth: 0 }}
+                  sx={{ gridArea: '1 / 1', visibility: visible ? 'visible' : 'hidden', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.75 }}
                 >
-                  <Typography component="h3" sx={{ fontSize: 14, fontWeight: 600, color: OSCURO.texto2, mb: 1 }}>
-                    {contar(racimo.actos.length, 'acto', 'actos')} · {rangoDe(racimo)}
+                  <Typography component="h3" sx={{ fontSize: 13, fontWeight: 600, color: OSCURO.texto2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    {tanda.nombre} · {rangoDe(tanda)} · {contar(tanda.actos.length, 'acto', 'actos')}
                   </Typography>
-                  <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '6px 18px' }}>
-                    {racimo.actos.map((acto, i) => (
-                      <Box component="li" key={i} sx={{ display: 'grid', gridTemplateColumns: '52px minmax(0, 1fr)', gap: 1, alignItems: 'baseline', fontSize: 13.5, opacity: acto.pasado ? 0.7 : 1 }}>
-                        <Box component="span" sx={{ fontSize: 12.5, color: OSCURO.texto2, fontVariantNumeric: 'tabular-nums' }}>{diaMes(acto.fecha)}</Box>
-                        <Box component="span" sx={{ fontWeight: 500, overflowWrap: 'anywhere' }}>
-                          <Box component="span" aria-hidden="true" sx={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', mr: 0.75, verticalAlign: '1px', backgroundColor: COLOR(acto.tipo) }} />
-                          {acto.titulo}
+                  <Box
+                    component="ul"
+                    sx={{
+                      listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '0 16px', alignContent: 'start',
+                      // La Cuaresma trae veinte actos: se desplazan dentro en lugar de estirar la tarjeta.
+                      maxHeight: 236, overflowY: 'auto', scrollbarWidth: 'thin',
+                    }}
+                  >
+                    {tanda.actos.map((acto, i) => {
+                      const esSiguiente = acto === siguiente
+                      return (
+                        <Box
+                          component="li"
+                          key={i}
+                          sx={{
+                            display: 'grid', gridTemplateColumns: '48px minmax(0, 1fr)', gap: 1, alignItems: 'baseline',
+                            py: '5px', px: '6px', borderRadius: 0.75, fontSize: 13.5,
+                            opacity: acto.pasado ? 0.5 : 1,
+                            backgroundColor: esSiguiente ? 'rgba(255,179,180,.1)' : 'transparent',
+                          }}
+                        >
+                          <Box component="span" sx={{ fontSize: 12.5, fontVariantNumeric: 'tabular-nums', color: esSiguiente ? OSCURO.claro : OSCURO.texto2, fontWeight: esSiguiente ? 600 : 400 }}>
+                            {diaMes(acto.fecha)}
+                          </Box>
+                          <Box component="span" sx={{ fontWeight: 500, overflowWrap: 'anywhere' }}>
+                            <Box component="span" aria-hidden="true" sx={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', mr: 0.875, verticalAlign: '1px', backgroundColor: COLOR(acto.tipo) }} />
+                            {acto.titulo}
+                          </Box>
                         </Box>
-                      </Box>
-                    ))}
+                      )
+                    })}
                   </Box>
                 </Box>
               )
