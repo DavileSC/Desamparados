@@ -85,7 +85,7 @@ describe('buzón de pruebas', () => {
     assert.equal(ficheros.length, 1);
     const escrito = await readFile(path.join(carpetaCorreos(), ficheros[0]), 'utf8');
     assert.match(escrito, /ana@example\.es/, 'el fichero dice a quién iba');
-    assert.match(escrito, /Solicitud de Registro Recibida/, 'y lleva el correo entero');
+    assert.match(escrito, /Hemos recibido su solicitud/, 'y lleva el correo entero');
   });
 
   test('con credenciales, el correo sale por el transporte de siempre y no toca el disco', async () => {

@@ -208,11 +208,13 @@ export class PapeletasService {
         year: yearActual,
         concepto: result.recibo.concepto,
         importe: `${importeFinal.toFixed(2)} €`,
+        papeletaId: result.papeleta.id,
         puesto: result.papeleta.puesto,
         tramo: result.papeleta.tramo || '',
+        tunica: result.papeleta.numTunicaAsignada,
         observaciones: result.papeleta.observaciones || '',
         ...evento
-      }).catch(console.error);
+      }, hermano.sexo).catch(console.error);
     }
 
     return result;
@@ -375,12 +377,13 @@ export class PapeletasService {
 
     for (const cita of ausentes) {
       if (marcadas.has(cita.id) && cita.hermano?.user?.email) {
-        const fechaStr = cita.turno.fecha.toLocaleDateString('es-ES');
+        const fechaStr = cita.turno.fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Madrid' });
         // Importante añadir 'await' para que no se sature el servidor si hay 500 emails
         await EmailService.enviarRecordatorioAusencia(
           cita.hermano.user.email,
           cita.hermano.nombre,
-          fechaStr
+          fechaStr,
+          cita.hermano.sexo
         ).catch(() => console.error(`Error enviando email a ${enmascararEmail(cita.hermano.user.email)}`));
       }
     }

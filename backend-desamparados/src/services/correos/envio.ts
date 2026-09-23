@@ -7,6 +7,7 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../../utils/buzon-pruebas.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../auditoria.service.js';
+import { aTexto } from './plantilla.js';
 
 /**
  * Lo único que `EmailService` necesita de un transporte. Lo cumplen tanto el de
@@ -33,7 +34,15 @@ let transporteGuardado: TransporteDeCorreo | undefined;
 export function transporte(): TransporteDeCorreo {
   if (transporteGuardado) return transporteGuardado;
 
-  if (buzonPedido()) {
+  if (process.env.NODE_TEST_CONTEXT !== undefined) {
+    // Dentro de `node --test` nunca se sale a la red, aunque el .env tenga una
+    // cuenta de verdad: con una, cada aprobación, rechazo o baja de los tests
+    // intentaba entrar en Gmail y la suite se quedaba colgada durante horas.
+    // Los tests que miran el correo ponen su propio transporte (ponerTransporte).
+    transporteGuardado = {
+      sendMail: () => Promise.reject(new Error('Envío de correo desactivado dentro de los tests.')),
+    };
+  } else if (buzonPedido()) {
     console.log('📬 [Email] EMAIL_BUZON_PRUEBAS activo: los correos se escriben en storage/correos y no se envían.');
     transporteGuardado = buzonDePruebas();
   } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
@@ -125,7 +134,10 @@ export async function enviarCorreo(
       to,
       subject,
       html,
-      ...(replyTo ? { replyTo } : {}),
+      text: aTexto(html),
+      // Sin Reply-To propio, las respuestas van al buzón de Secretaría si es
+      // otro distinto de la cuenta que envía.
+      ...(replyTo || process.env.CONTACT_EMAIL_TO ? { replyTo: replyTo || process.env.CONTACT_EMAIL_TO } : {}),
     });
     console.log(`✅ Email enviado con éxito a: ${enmascararEmail(to)}`);
     return true;
@@ -141,6 +153,5 @@ export async function enviarCorreo(
       motivo: error instanceof Error ? error.message.slice(0, 250) : 'desconocido',
     });
     return false;
-  
   }
 }

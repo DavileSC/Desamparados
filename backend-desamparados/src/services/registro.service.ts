@@ -189,7 +189,12 @@ export class RegistroService {
 
     // 2. TAREAS ASÍNCRONAS (Envío de Email fuera de la transacción)
     // El "catch" asegura que si falla el email, no se rompa el registro de la API
-    EmailService.enviarConfirmacionRegistro(result.user.email, result.user.nombre)
+    // El certificado solo se da por entregado si es el único que hace falta:
+    // los menores traen el suyo en persona.
+    EmailService.enviarConfirmacionRegistro(result.user.email, result.user.nombre, {
+      sexo: titular?.sexo,
+      certificadoAdjunto: !!documentos.certificadoBautismo && menores.length === 0,
+    })
       .catch(error => {
         console.error(`❌ [Error Email] Fallo al enviar el correo de confirmación a ${enmascararEmail(result.user.email)}:`, error);
       });

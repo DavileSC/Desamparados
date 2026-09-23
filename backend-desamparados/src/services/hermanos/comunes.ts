@@ -210,6 +210,7 @@ export type FichaEmancipable = {
   id: number; userId: number; nombre: string; apellidos: string | null; telefono: string | null;
   direccion: string | null; dni: string | null; email: string | null; activo: boolean;
   esTitular: boolean; fechaNacimiento: Date | null; user: { role: Role };
+  sexo?: 'HOMBRE' | 'MUJER' | null;
 };
 
 /** DNI único entre las fichas: mejor un 409 con mensaje que el P2002 crudo. */
@@ -352,7 +353,7 @@ export async function emanciparFicha(
     // Fuera de la transacción y con catch, como en requestPasswordReset: que
     // falle el correo no puede deshacer una emancipación ya escrita.
     const token = await AuthService.crearEnlaceDeContrasena(cuenta.id, 72);
-    EmailService.enviarRecuperacionContrasena(cuenta.email, cuenta.nombre, token)
+    EmailService.enviarRecuperacionContrasena(cuenta.email, cuenta.nombre, token, { horas: 72, cuentaNueva: true, sexo: hermano.sexo })
       .catch(err => console.error('Error enviando el enlace de emancipación:', err));
   }
 

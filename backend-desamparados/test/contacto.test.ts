@@ -128,7 +128,7 @@ describe('POST /api/contact', () => {
 //  El correo que sale
 // =================================================================
 
-interface Enviado { from: string; to: string; subject: string; html: string; replyTo?: string }
+interface Enviado { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string }
 
 function transporteFalso() {
   const enviados: Enviado[] = [];
@@ -158,10 +158,25 @@ describe('EmailService', () => {
     });
 
     const [registro, papeleta] = general.enviados;
-    assert.equal(registro.subject, "📋 Solicitud de Registro Recibida - Seán O'Brien <b>");
+    assert.equal(registro.subject, 'Hemos recibido su solicitud de ingreso');
     assert.match(registro.html, /Seán O&#39;Brien &lt;b&gt;/);
     assert.doesNotMatch(registro.html, /O'Brien <b>/);
-    assert.equal(papeleta.subject, "📜 Papeleta de Sitio 2027 - Seán O'Brien");
+    assert.equal(papeleta.subject, "Papeleta de sitio 2027: Seán O'Brien");
+  });
+
+  test('cada correo lleva también su versión en texto, sin etiquetas y con el nombre tal cual', async () => {
+    const general = transporteFalso();
+    ponerTransporte(general);
+    process.env.EMAIL_USER = 'secretaria@example.es';
+
+    await EmailService.enviarRecuperacionContrasena('hermano@example.es', "Seán O'Brien", 'abc', { sexo: 'HOMBRE' });
+
+    const [correo] = general.enviados;
+    assert.ok(correo.text, 'sin versión en texto, los filtros de spam desconfían');
+    assert.doesNotMatch(correo.text!, /<[a-z/]/i);
+    assert.match(correo.text!, /Estimado Seán O'Brien:/);
+    assert.match(correo.text!, /reset-password\?token=abc/, 'el enlace tiene que poder copiarse');
+    assert.doesNotMatch(correo.text!, /Para completar/, 'el resumen oculto de la bandeja no va en el texto');
   });
 
   test('con CONTACT_EMAIL_USER y CONTACT_EMAIL_PASS, el contacto sale por su propia cuenta', async () => {

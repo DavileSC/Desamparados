@@ -362,7 +362,7 @@ export class CensoService {
     // como una carta de trámite dirigida a quien ha muerto.
     const destino = motivo === 'FALLECIMIENTO' ? null : hermano.email || hermano.user.email;
     if (destino) {
-      EmailService.enviarBajaORechazo(destino, hermano.nombre, 'baja', motivo === 'IMPAGO')
+      EmailService.enviarBajaORechazo(destino, hermano.nombre, 'baja', motivo === 'IMPAGO', hermano.sexo)
         .catch((err) => console.error('Error enviando el aviso de baja:', err));
     }
 

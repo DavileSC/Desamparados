@@ -7,7 +7,7 @@ export default function PoliticaDePrivacidadPage() {
   return (
     <MarcoPaginaLegal
       title="Política de Privacidad"
-      descripcion="Qué datos personales trata el Grupo Parroquial de los Desamparados, con qué finalidad y cómo ejercer los derechos de acceso, rectificación y supresión."
+      descripcion="Qué datos personales trata el Grupo Parroquial Nuestra Señora de los Desamparados, con qué finalidad y cómo ejercer los derechos de acceso, rectificación y supresión."
     >
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. Responsable del tratamiento

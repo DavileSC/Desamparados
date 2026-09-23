@@ -11,7 +11,7 @@ export default function HermanosPage() {
     <>
       <MetaDePagina
         titulo="Hermanos"
-        descripcion="Qué supone ser hermano del Grupo Parroquial de los Desamparados de Málaga y cómo solicitar el alta."
+        descripcion="Qué supone ser hermano del Grupo Parroquial Nuestra Señora de los Desamparados de Málaga y cómo solicitar el alta."
       />
 
       <CabeceraDePagina
@@ -24,7 +24,7 @@ export default function HermanosPage() {
           <Grid container spacing={6} sx={{ alignItems: 'center' }}>
             <Grid size={{ xs: 12, md: 7 }}>
               <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4 }}>
-                Ser hermano del Grupo Parroquial de los Desamparados es formar parte de una
+                Ser hermano del Grupo Parroquial Nuestra Señora de los Desamparados es formar parte de una
                 comunidad de fe que vive la devoción a nuestra Sagrada Titular y trabaja
                 por el bien común a través de la caridad, la formación y el culto.
               </Typography>

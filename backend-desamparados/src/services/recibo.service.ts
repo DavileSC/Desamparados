@@ -349,8 +349,10 @@ export class ReciboService {
         year: recibo.year,
         importe: `${Number(recibo.importe).toFixed(2)} €`,
         concepto: recibo.concepto,
+        papeletaId: papeleta.id,
         puesto: papeleta.puesto,
         tramo: papeleta.tramo,
+        tunica: papeleta.numTunicaAsignada,
         observaciones: papeleta.observaciones,
         // Van impresos en la papeleta que recibe cada hermano: un valor
         // equivocado se envía y ya no se puede corregir. Misma fuente que la
@@ -363,7 +365,8 @@ export class ReciboService {
       EmailService.enviarPapeleta(
         recibo.hermano.user.email,
         recibo.hermano.nombre,
-        datosEmail
+        datosEmail,
+        recibo.hermano.sexo
       ).catch(error => {
         console.error(`❌ [Error Email] Fallo al enviar papeleta ID ${recibo.id}:`, error);
       });

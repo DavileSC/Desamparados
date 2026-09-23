@@ -140,7 +140,7 @@ export class PlazoPapeletasService {
       void (async () => {
         for (const d of destinatarios) {
           try {
-            await EmailService.enviarAperturaPapeletas(d.email, d.nombre, d.fichas, textos, year);
+            await EmailService.enviarAperturaPapeletas(d.email, d.nombre, d.fichas, textos, year, d.sexo);
           } catch (error) {
             console.error('No se ha podido avisar de la apertura de papeletas', error);
           }
@@ -162,12 +162,17 @@ export class PlazoPapeletasService {
       where: { hermanos: { some: { activo: true } }, NOT: { email: { endsWith: DOMINIO_CUENTA_ELIMINADA } } },
       select: {
         email: true, nombre: true,
-        hermanos: { where: { activo: true }, select: { nombre: true, apellidos: true }, orderBy: { fechaNacimiento: 'asc' } },
+        hermanos: { where: { activo: true }, select: { nombre: true, apellidos: true, esTitular: true, sexo: true }, orderBy: { fechaNacimiento: 'asc' } },
       },
     });
     return cuentas
       .filter((c) => Boolean(c.email))
-      .map((c) => ({ email: c.email, nombre: c.nombre ?? c.hermanos[0]?.nombre ?? '', fichas: c.hermanos.map((h) => `${h.nombre} ${h.apellidos}`) }));
+      .map((c) => ({
+        email: c.email,
+        nombre: c.nombre ?? c.hermanos[0]?.nombre ?? '',
+        sexo: c.hermanos.find((h) => h.esTitular)?.sexo ?? null,
+        fichas: c.hermanos.map((h) => `${h.nombre} ${h.apellidos}`),
+      }));
   }
 }
 

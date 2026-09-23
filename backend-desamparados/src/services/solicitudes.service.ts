@@ -111,7 +111,7 @@ export class SolicitudesService {
   static async aprobarSolicitud(userId: number, meta?: MetaDeAuditoria) {
     const user = await db.user.findUnique({
       where: { id: userId },
-      include: { hermanos: { where: FICHA_PENDIENTE, select: { id: true } } } // Solo las fichas pendientes
+      include: { hermanos: { where: FICHA_PENDIENTE, select: { id: true, esTitular: true, sexo: true } } } // Solo las fichas pendientes
     });
 
     if (!user) throw new NotFoundError(HERMANO_ERRORS.USER_NOT_FOUND);
@@ -165,7 +165,8 @@ export class SolicitudesService {
     EmailService.enviarAprobacionSolicitud(
       user.email,
       user.nombre,
-      aprobadas.map((f) => f.numeroHermano)
+      aprobadas.map((f) => f.numeroHermano),
+      user.hermanos.find((h) => h.esTitular)?.sexo
     ).catch((err) => console.error('Error enviando el aviso de aprobación:', err));
 
     return { message: 'Solicitud aprobada. Los perfiles ya son oficiales y tienen número de hermano asignado.' };
@@ -308,7 +309,7 @@ export class SolicitudesService {
     // quién escribir ni cómo llamarle.
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { role: true, email: true, nombre: true }
+      select: { role: true, email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } }
     });
     if (!user) throw new NotFoundError(HERMANO_ERRORS.USER_NOT_FOUND);
     // SEGURIDAD: jamás se borra una cuenta del staff desde el panel de solicitudes
@@ -362,7 +363,7 @@ export class SolicitudesService {
 
     // Aviso con los datos leídos antes del borrado. Fuera de la transacción y
     // con catch: el rechazo ya está escrito y un correo no puede deshacerlo.
-    EmailService.enviarBajaORechazo(user.email, user.nombre, 'rechazo')
+    EmailService.enviarBajaORechazo(user.email, user.nombre, 'rechazo', false, user.hermanos[0]?.sexo)
       .catch((err) => console.error('Error enviando el aviso de rechazo:', err));
 
     return { message: resultado.message };

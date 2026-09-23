@@ -99,7 +99,7 @@ function RootLayout() {
       <Helmet>
         <link rel="canonical" href={canonical} />
         <meta property="og:url" content={canonical} />
-        <meta property="og:site_name" content="Grupo Parroquial de los Desamparados" />
+        <meta property="og:site_name" content="Grupo Parroquial Nuestra Señora de los Desamparados" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://www.desamparadosmalaga.com/images/hero-1920.webp" />
       </Helmet>

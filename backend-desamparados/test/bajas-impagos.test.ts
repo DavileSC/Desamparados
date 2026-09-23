@@ -155,7 +155,7 @@ describe('bajas con motivo e impagos, contra la base de datos', () => {
     });
     assert.equal(res.status, 200, await res.clone().text());
     assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: ficha.id } })).motivoBaja, 'IMPAGO');
-    assert.deepEqual(correo.mock.calls.at(-1)?.arguments.slice(2), ['baja', true], 'el correo dice que es por impago');
+    assert.deepEqual(correo.mock.calls.at(-1)?.arguments.slice(2, 4), ['baja', true], 'el correo dice que es por impago');
     const lista = await listaEntera();
     assert.ok(!lista.some((f) => f.hermano.id === ficha.id), 'quien está de baja ya no sale');
 

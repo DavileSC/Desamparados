@@ -384,7 +384,10 @@ export class AuthService {
    * Si el email no es de nadie, no hace nada.
    */
   static async prepararRecuperacion(email: string): Promise<void> {
-    const user = await db.user.findUnique({ where: { email }, select: { id: true, email: true, nombre: true } });
+    const user = await db.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } },
+    });
     if (!user) return;
 
     // Una hora de validez: la persona está delante de la pantalla.
@@ -392,7 +395,7 @@ export class AuthService {
 
     // Enviamos el correo. OJO: se pasa el TOKEN en crudo; la URL completa la construye
     // EmailService (antes se construía aquí y el email la volvía a envolver: ?token=https://...?token=).
-    await EmailService.enviarRecuperacionContrasena(user.email, user.nombre, resetToken);
+    await EmailService.enviarRecuperacionContrasena(user.email, user.nombre, resetToken, { horas: 1, sexo: user.hermanos[0]?.sexo });
   }
 
   // 2. Aplicar la nueva contraseña

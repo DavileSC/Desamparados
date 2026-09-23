@@ -74,7 +74,7 @@ describe('MarcoCms', () => {
   it('no lleva cabecera superior con el nombre del Grupo Parroquial', () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<MarcoCms />)
-    expect(screen.queryByText('Grupo Parroquial de los Desamparados')).not.toBeInTheDocument()
+    expect(screen.queryByText('Grupo Parroquial Nuestra Señora de los Desamparados')).not.toBeInTheDocument()
     expect(screen.queryByText('Administración')).not.toBeInTheDocument()
   })
 })
