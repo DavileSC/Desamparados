@@ -1,7 +1,11 @@
-import { Box, Button, Paper, Typography } from '@mui/material'
-import type { AdminReceipt } from '../../../lib/api/tesoreria'
+import { useState } from 'react'
+import { Box, Button, Divider, IconButton, ListItemText, Menu, MenuItem, Paper, Typography } from '@mui/material'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+import { Link } from 'react-router-dom'
+import type { AdminReceipt, AdminReceiptStatus } from '../../../lib/api/tesoreria'
 import { etiquetaMetodo, euros, fechaCorta } from '../contabilidad/formato'
 import SelloEstado from './SelloEstado'
+import { CAMBIOS_DE_ESTADO, accionDeCambio } from './estados'
 
 interface Props {
   recibos: AdminReceipt[]
@@ -12,7 +16,12 @@ interface Props {
   onCobrar: (recibo: AdminReceipt) => void
   onConfirmar: (recibo: AdminReceipt) => void
   onReemitir: (recibo: AdminReceipt) => void
+  /** Remesar, devolver, anular o eximir: abre la confirmación. */
+  onCambiarEstado: (recibo: AdminReceipt, destino: AdminReceiptStatus) => void
 }
+
+/** Los que tienen apuntes en Contabilidad: el cobro, su reverso o la comisión del banco. */
+const conApuntes = (r: AdminReceipt) => r.estado === 'PAGADO' || r.estado === 'DEVUELTO'
 
 /** A partir de este ancho del listado, tabla; por debajo, una tarjeta por recibo. */
 const ANCHO_TABLA = 760
@@ -22,7 +31,7 @@ const ANCHO_TABLA = 760
  * llenan: «Cobrar», «Confirmar» y «Reemitir» miden lo mismo y quedan en
  * columna, en vez de bailar según lo largo de cada palabra.
  */
-const COLUMNAS = 'minmax(0, 1.2fr) minmax(0, 1.5fr) 112px 124px 132px'
+const COLUMNAS = 'minmax(0, 1.2fr) minmax(0, 1.5fr) 112px 124px 176px'
 
 /** La línea de debajo del concepto: lo que hay que saber del estado. */
 function detalle(r: AdminReceipt): string {
@@ -36,8 +45,10 @@ function detalle(r: AdminReceipt): string {
   }
 }
 
-export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onConfirmar, onReemitir }: Props) {
+export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onConfirmar, onReemitir, onCambiarEstado }: Props) {
   const enTabla = `@container (min-width: ${ANCHO_TABLA}px)`
+  const [menu, setMenu] = useState<{ ancla: HTMLElement; recibo: AdminReceipt } | null>(null)
+  const cerrar = () => setMenu(null)
 
   return (
     <Paper sx={{ containerType: 'inline-size', overflow: 'hidden' }}>
@@ -64,7 +75,7 @@ export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onCo
             onClick={accion}
             disabled={ocupado}
             aria-label={etiqueta}
-            sx={{ gridArea: 'accion', justifySelf: 'end', minWidth: 124, height: 40, whiteSpace: 'nowrap', [enTabla]: { justifySelf: 'stretch', minWidth: 0, height: 36 } }}
+            sx={{ minWidth: 124, height: 40, whiteSpace: 'nowrap', [enTabla]: { flex: 1, minWidth: 0, height: 36 } }}
           >
             {texto}
           </Button>
@@ -100,12 +111,32 @@ export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onCo
               {euros(Number(r.importe))}
             </Typography>
             <Box sx={{ gridArea: 'estado' }}><SelloEstado estado={r.estado} /></Box>
-            {r.estado === 'PENDIENTE' && boton('Cobrar', `Cobrar ${r.concepto} de ${nombre}`, () => onCobrar(r))}
-            {r.estado === 'REMESADO' && boton('Confirmar', `Confirmar el cobro de ${r.concepto} de ${nombre}`, () => onConfirmar(r))}
-            {reemitible && boton('Reemitir', `Reemitir ${r.concepto} de ${nombre}`, () => onReemitir(r))}
+            <Box sx={{ gridArea: 'accion', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, [enTabla]: { justifyContent: 'stretch' } }}>
+              {r.estado === 'PENDIENTE' && boton('Cobrar', `Cobrar ${r.concepto} de ${nombre}`, () => onCobrar(r))}
+              {r.estado === 'REMESADO' && boton('Confirmar', `Confirmar el cobro de ${r.concepto} de ${nombre}`, () => onConfirmar(r))}
+              {reemitible && boton('Reemitir', `Reemitir ${r.concepto} de ${nombre}`, () => onReemitir(r))}
+              {(CAMBIOS_DE_ESTADO[r.estado].length > 0 || conApuntes(r)) ? (
+                <IconButton aria-label={`Más acciones de ${r.concepto} de ${nombre}`} onClick={(e) => setMenu({ ancla: e.currentTarget, recibo: r })} disabled={ocupado} sx={{ ml: 'auto', [enTabla]: { ml: 0 } }}>
+                  <MoreVertIcon />
+                </IconButton>
+              ) : <Box sx={{ width: 40, flexShrink: 0 }} />}
+            </Box>
           </Box>
         )
       })}
+      <Menu anchorEl={menu?.ancla} open={menu !== null} onClose={cerrar}>
+        {menu && CAMBIOS_DE_ESTADO[menu.recibo.estado].map((destino) => (
+          <MenuItem key={destino} onClick={() => { cerrar(); onCambiarEstado(menu.recibo, destino) }}>
+            {accionDeCambio(menu.recibo.estado, destino)}
+          </MenuItem>
+        ))}
+        {menu && CAMBIOS_DE_ESTADO[menu.recibo.estado].length > 0 && conApuntes(menu.recibo) && <Divider />}
+        {menu && conApuntes(menu.recibo) && (
+          <MenuItem component={Link} to={`/cms/contabilidad?recibo=${menu.recibo.id}`} onClick={cerrar}>
+            <ListItemText primary="Ver en Contabilidad" secondary="Sus apuntes en el libro de caja" />
+          </MenuItem>
+        )}
+      </Menu>
     </Paper>
   )
 }

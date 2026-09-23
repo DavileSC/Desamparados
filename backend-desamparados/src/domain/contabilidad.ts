@@ -5,7 +5,7 @@
  * método de pago y búsqueda) y los traducen al mismo `where`: así las cifras de
  * arriba de la pantalla cuadran siempre con la lista de abajo.
  */
-import type { MetodoPago, Prisma, TipoTransaccion } from '@prisma/client';
+import type { MetodoPago, Prisma, TipoRecibo, TipoTransaccion } from '@prisma/client';
 
 export const METODOS_PAGO: MetodoPago[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION'];
 const ZONA = 'Europe/Madrid';
@@ -20,6 +20,8 @@ export interface FiltrosContables {
   categorias?: number[];
   metodo?: MetodoPago;
   q?: string;
+  /** Solo los apuntes de este recibo: el enlace desde Tesorería. */
+  recibo?: number;
 }
 
 export type Granularidad = 'mes' | 'anio';
@@ -42,6 +44,7 @@ export function leerFiltros(query: Record<string, unknown>): FiltrosContables {
   }
   if (typeof query.metodo === 'string' && (METODOS_PAGO as string[]).includes(query.metodo)) filtros.metodo = query.metodo as MetodoPago;
   if (typeof query.q === 'string' && query.q.trim()) filtros.q = query.q.trim();
+  if (typeof query.recibo === 'string' && /^[1-9]\d{0,9}$/.test(query.recibo)) filtros.recibo = Number(query.recibo);
   return filtros;
 }
 
@@ -119,6 +122,7 @@ export function whereContable(filtros: FiltrosContables): Prisma.TransaccionWher
   }
   if (filtros.categorias?.length) where.categoriaId = { in: filtros.categorias };
   if (filtros.metodo) where.metodoPago = filtros.metodo;
+  if (filtros.recibo) where.reciboId = filtros.recibo;
   if (filtros.q) {
     // Cada palabra tiene que aparecer en algún sitio: «juan pérez» encuentra al
     // hermano aunque el nombre y los apellidos vivan en columnas distintas.
@@ -254,13 +258,31 @@ export function claveNombreCategoria(nombre: string): string {
 }
 
 /**
+ * Dónde se apunta lo que entra por un recibo al cobrarse: una categoría por
+ * tipo, para que Contabilidad distinga cuánto entra por cuotas, por papeletas
+ * o por donativos. Los donativos van a la misma «Donativos» que los apuntes a
+ * mano: son el mismo dinero, llegue con recibo o sin él.
+ */
+export const CATEGORIA_DE_RECIBO: Record<TipoRecibo, string> = {
+  CUOTA_HERMANO: 'Cuotas de hermanos',
+  PAPELETA_SITIO: 'Papeletas de sitio',
+  DONATIVO: 'Donativos',
+  OTRO: 'Otros recibos',
+};
+/** El reverso de un cobro que se devuelve. */
+export const CATEGORIA_DEVOLUCIONES = 'Devoluciones de recibos';
+/** Lo que cobra el banco por un recibo que devuelve. */
+export const CATEGORIA_COMISIONES = 'Comisiones bancarias';
+
+/**
  * Categorías que los recibos buscan por su nombre al cobrarse o devolverse
- * (recibo.service y procesion.service). Si se renombraran, el siguiente cobro
- * crearía otra con el nombre de siempre y el historial quedaría partido en dos.
+ * (recibos/comunes). Si se renombraran, el siguiente cobro crearía otra con el
+ * nombre de siempre y el historial quedaría partido en dos.
  */
 export const CATEGORIAS_DE_RECIBOS: readonly { nombre: string; tipo: TipoTransaccion }[] = [
-  { nombre: 'Cuotas y papeletas', tipo: 'INGRESO' },
-  { nombre: 'Devoluciones de recibos', tipo: 'GASTO' },
+  ...Object.values(CATEGORIA_DE_RECIBO).map((nombre) => ({ nombre, tipo: 'INGRESO' as const })),
+  { nombre: CATEGORIA_DEVOLUCIONES, tipo: 'GASTO' },
+  { nombre: CATEGORIA_COMISIONES, tipo: 'GASTO' },
 ];
 
 export function esCategoriaDeRecibos(categoria: { nombre: string; tipo: TipoTransaccion }): boolean {

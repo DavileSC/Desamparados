@@ -49,6 +49,8 @@ export interface FiltrosContables {
   categorias?: number[]
   metodo?: MetodoPago
   q?: string
+  /** Solo los apuntes de este recibo: el enlace desde Tesorería. */
+  recibo?: number
 }
 
 export interface ResumenContable {
@@ -57,6 +59,8 @@ export interface ResumenContable {
   anterior: { desde: string; hasta: string; ingresos: number; gastos: number } | null
   serie: { granularidad: 'mes' | 'anio'; puntos: { clave: string; ingresos: number; gastos: number }[] }
   categorias: { id: number; nombre: string; tipo: TipoApunte; total: number; apuntes: number }[]
+  /** Lo que Tesorería tiene aún por cobrar (pendiente y en el banco), de todos los años y sin los filtros. */
+  porCobrar: { importe: number; recibos: number; enElBanco: number }
 }
 
 export function paramsFiltros(filtros: FiltrosContables): URLSearchParams {
@@ -67,6 +71,7 @@ export function paramsFiltros(filtros: FiltrosContables): URLSearchParams {
   if (filtros.categorias?.length) params.set('categorias', filtros.categorias.join(','))
   if (filtros.metodo) params.set('metodo', filtros.metodo)
   if (filtros.q) params.set('q', filtros.q)
+  if (filtros.recibo) params.set('recibo', String(filtros.recibo))
   return params
 }
 

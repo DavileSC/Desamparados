@@ -13,11 +13,10 @@ import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion
 import { HttpError } from '../../utils/error.handle';
 import { CLAVES_EVENTO, datosEvento, type DatosEvento } from '../../domain/datos-procesion.js';
 import { palabrasDeBusqueda } from '../../domain/busqueda-texto.js';
+import { CATEGORIA_COMISIONES, CATEGORIA_DE_RECIBO, CATEGORIA_DEVOLUCIONES } from '../../domain/contabilidad.js';
 
 export type Tx = Prisma.TransactionClient;
 
-export const CATEGORIA_INGRESOS = 'Cuotas y papeletas';
-export const CATEGORIA_DEVOLUCIONES = 'Devoluciones de recibos';
 export const MENSAJE_ESTADO_CAMBIADO = 'El estado del recibo ha cambiado. Recarga la ficha e inténtalo de nuevo.';
 
 // Una cuota en estos estados sigue en pie: impide emitir otra el mismo año.
@@ -45,6 +44,8 @@ export interface ConsultaRecibos {
   q?: string;
   tipo?: TipoRecibo;
   orden?: string;
+  /** Un recibo concreto, por su número: el enlace desde Contabilidad. */
+  recibo?: string;
 }
 
 /**
@@ -74,6 +75,7 @@ export function whereRecibosAdmin(query: ConsultaRecibos, year?: number, estado?
     ...(year ? { year } : {}),
     ...(estado ? { estado } : {}),
     ...(query.tipo ? { tipo: query.tipo } : {}),
+    ...(query.recibo ? { id: Number(query.recibo) } : {}),
     ...whereBusquedaRecibo(query.q)
   };
 }
@@ -198,12 +200,43 @@ export async function idCategoriaDeRecibos(tipo: TipoTransaccion, nombre: string
   }
 }
 
-/** Categoría de ingresos de cuotas y papeletas (ver `idCategoriaDeRecibos`). */
-export function idCategoriaIngresos() {
-  return idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_INGRESOS);
+/** Categoría del ingreso de un recibo cobrado, según su tipo (ver `idCategoriaDeRecibos`). */
+export function idCategoriaIngresos(tipo: TipoRecibo) {
+  return idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_DE_RECIBO[tipo]);
 }
 
 /** Categoría de los reversos de recibos devueltos (ver `idCategoriaDeRecibos`). */
 export function idCategoriaDevoluciones() {
   return idCategoriaDeRecibos(TipoTransaccion.GASTO, CATEGORIA_DEVOLUCIONES);
+}
+
+/** Categoría de la comisión que cobra el banco al devolver un recibo (ver `idCategoriaDeRecibos`). */
+export function idCategoriaComisiones() {
+  return idCategoriaDeRecibos(TipoTransaccion.GASTO, CATEGORIA_COMISIONES);
+}
+
+/**
+ * La comisión que cobra el banco por devolver un recibo, como gasto enlazado
+ * al recibo, dentro de la transacción de quien llama. Va enlazada para que se
+ * vea de dónde sale y para que, como los demás apuntes de recibos, no se
+ * toque desde Contabilidad.
+ */
+export async function apuntarComisionEnTransaccion(
+  tx: Tx,
+  recibo: { id: number; hermanoId: number; metodoPago: MetodoPago | null },
+  importe: number,
+  categoriaComisionesId: number
+) {
+  await tx.transaccion.create({
+    data: {
+      tipo: TipoTransaccion.GASTO,
+      categoriaId: categoriaComisionesId,
+      concepto: `Comisión del banco por devolver el recibo #${recibo.id}`,
+      importe,
+      fecha: new Date(),
+      metodoPago: recibo.metodoPago,
+      hermanoId: recibo.hermanoId,
+      reciboId: recibo.id
+    }
+  });
 }

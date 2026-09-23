@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Box, Button, CircularProgress, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import AddIcon from '@mui/icons-material/Add'
 import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
 import SwapVertIcon from '@mui/icons-material/SwapVert'
@@ -224,6 +224,19 @@ export default function ContabilidadAdminPage() {
     />
 
     <BarraFiltros filtros={filtros} categorias={categories} onCambiar={cambiarFiltros} />
+    {filtros.recibo && (
+      // Al llegar desde Tesorería: solo los apuntes de ese recibo, de cualquier fecha.
+      <Alert
+        severity="info"
+        sx={{ mb: 3 }}
+        action={<Stack direction="row" spacing={1}>
+          <Button color="inherit" size="small" component={Link} to={`/cms/tesoreria?recibo=${filtros.recibo}`}>Ver el recibo</Button>
+          <Button color="inherit" size="small" onClick={() => cambiarFiltros({ recibo: '' })}>Todo el libro</Button>
+        </Stack>}
+      >
+        Apuntes del recibo #{filtros.recibo}, de cualquier fecha. Los demás filtros no se aplican mientras tanto.
+      </Alert>
+    )}
 
     {alReves ? (
       <Alert severity="warning" sx={{ mb: 3 }}>La fecha «Hasta» es anterior a «Desde». Corrígela para ver las cifras y el libro de caja.</Alert>

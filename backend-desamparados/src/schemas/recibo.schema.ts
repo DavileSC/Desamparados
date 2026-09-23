@@ -50,7 +50,9 @@ export const updateReciboSchema = type({
         "estado?": estadoPagoSchema,
         "puesto?": textoRequerido,
         "tramo?": "string",
-        "observaciones?": "string"
+        "observaciones?": "string",
+        // Lo que cobra el banco al devolverlo; solo con estado DEVUELTO (lo comprueba el servicio).
+        "comision?": importeSchema
     }
 });
 
@@ -70,6 +72,7 @@ const filtrosRecibosQuery = {
     "year?": type("string").matching(/^\d{4}$/).describe("un año de cuatro cifras"),
     "tipo?": type("'PAPELETA_SITIO' | 'CUOTA_HERMANO' | 'DONATIVO' | 'OTRO'"),
     "q?": type("string <= 100").describe("un texto de búsqueda de hasta 100 caracteres"),
+    "recibo?": type("string").matching(/^[1-9]\d{0,9}$/).describe("el número de un recibo"),
 };
 
 export const adminRecibosQuerySchema = type({

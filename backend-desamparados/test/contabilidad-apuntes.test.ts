@@ -264,8 +264,8 @@ describe('gestión de categorías (D8)', () => {
 
   test('las categorías de los recibos no se renombran', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const cuotas = await db.categoriaTransaccion.findFirst({ where: { nombre: 'Cuotas y papeletas', tipo: TipoTransaccion.INGRESO } });
-    if (!cuotas) return t.skip('la base no tiene la categoría «Cuotas y papeletas» (npm run seed)');
+    const cuotas = await db.categoriaTransaccion.findFirst({ where: { nombre: 'Cuotas de hermanos', tipo: TipoTransaccion.INGRESO } });
+    if (!cuotas) return t.skip('la base no tiene la categoría «Cuotas de hermanos» (npm run seed)');
     // La lista las marca, para que la pantalla no ofrezca renombrarlas.
     const lista = await pedir('TESORERIA', '/categorias?todas=true');
     const marcadas = lista.cuerpo.filter((c: { deRecibos: boolean }) => c.deRecibos).map((c: { id: number }) => c.id);
@@ -274,7 +274,7 @@ describe('gestión de categorías (D8)', () => {
 
     const res = await pedir('TESORERIA', `/categorias/${cuotas.id}`, 'PUT', { nombre: 'Cuotas' });
     assert.equal(res.status, 409);
-    assert.equal((await db.categoriaTransaccion.findUnique({ where: { id: cuotas.id } }))!.nombre, 'Cuotas y papeletas');
+    assert.equal((await db.categoriaTransaccion.findUnique({ where: { id: cuotas.id } }))!.nombre, 'Cuotas de hermanos');
   });
 
   test('desactivada deja de ofrecerse y de admitir apuntes; reactivada vuelve', async (t) => {

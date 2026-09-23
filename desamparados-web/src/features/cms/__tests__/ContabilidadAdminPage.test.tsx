@@ -14,6 +14,7 @@ const RESUMEN = {
     { id: 1, nombre: 'Cuotas y papeletas', tipo: 'INGRESO', total: 10628, apuntes: 315 },
     { id: 6, nombre: 'Flores y exorno', tipo: 'GASTO', total: 2156, apuntes: 8 },
   ],
+  porCobrar: { importe: 1254.5, recibos: 61, enElBanco: 300 },
 }
 
 // El primero viene de un recibo (se corrige desde el recibo); el segundo es manual.
@@ -266,11 +267,36 @@ describe('apuntes manuales (D8)', () => {
 
     const deRecibo = await screen.findByRole('row', { name: /cuota anual/i })
     expect(within(deRecibo).queryByRole('button', { name: /corregir|borrar/i })).not.toBeInTheDocument()
-    expect(within(deRecibo).getByRole('img', { name: /se corrige desde el recibo/i })).toBeInTheDocument()
+    // Lleva al recibo, en Tesorería, que es donde se corrige.
+    expect(within(deRecibo).getByRole('link', { name: 'Abrir el recibo #5 en Tesorería' })).toHaveAttribute('href', '/cms/tesoreria?recibo=5')
 
     const manual = screen.getByRole('row', { name: /exorno floral/i })
     expect(within(manual).getByRole('button', { name: 'Corregir «Exorno floral»' })).toBeInTheDocument()
     expect(within(manual).getByRole('button', { name: 'Borrar «Exorno floral»' })).toBeInTheDocument()
+  })
+
+  it('dice lo que falta por cobrar y lleva a los pendientes de Tesorería', async () => {
+    servir()
+    renderWithProviders(<ContabilidadAdminPage />)
+
+    const cifras = await screen.findByRole('region', { name: 'Cifras del periodo' })
+    expect(within(cifras).getByText(/61 recibos, 300\s€ en el banco/)).toBeInTheDocument()
+    expect(within(cifras).getByRole('link', { name: 'Ver en Tesorería' })).toHaveAttribute('href', '/cms/tesoreria?estado=PENDIENTE&anio=todos')
+  })
+
+  it('al llegar desde un recibo enseña solo sus apuntes y deja volver al libro entero', async () => {
+    const user = userEvent.setup()
+    const simulado = servir()
+    renderWithProviders(<ContabilidadAdminPage />, { ruta: '/cms/contabilidad?recibo=5&tipo=GASTO' })
+
+    expect(await screen.findByText(/Apuntes del recibo #5/)).toBeInTheDocument()
+    expect(ultima(simulado, 'libro-mayor')).toContain('recibo=5')
+    expect(ultima(simulado, 'libro-mayor')).not.toContain('tipo=')
+    expect(screen.getByRole('link', { name: 'Ver el recibo' })).toHaveAttribute('href', '/cms/tesoreria?recibo=5')
+
+    await user.click(screen.getByRole('button', { name: 'Todo el libro' }))
+    expect(screen.queryByText(/Apuntes del recibo #5/)).not.toBeInTheDocument()
+    expect(ultima(simulado, 'libro-mayor')).not.toContain('recibo=')
   })
 
   it('corregir abre el apunte relleno y manda el cambio con PUT', async () => {

@@ -425,12 +425,16 @@ async function sembrarAlbaceria() {
 // CONTABILIDAD
 // ---------------------------------------------------------------------------
 
-// Las dos primeras las crea sobre la marcha `recibo.service` al cobrar o
-// devolver un recibo; sembrarlas aquí evita que el primer cobro real tenga que
-// crearlas dentro de su transacción.
+// Las de los recibos (ver CATEGORIAS_DE_RECIBOS) las crean también sobre la
+// marcha los cobros y las devoluciones; sembrarlas aquí evita que el primer
+// cobro real tenga que crearlas. «Donativos» es a la vez de los recibos de
+// donativo y de los apuntes a mano.
 export const CATEGORIAS = [
-  { nombre: 'Cuotas y papeletas', tipo: TipoTransaccion.INGRESO },
+  { nombre: 'Cuotas de hermanos', tipo: TipoTransaccion.INGRESO },
+  { nombre: 'Papeletas de sitio', tipo: TipoTransaccion.INGRESO },
+  { nombre: 'Otros recibos', tipo: TipoTransaccion.INGRESO },
   { nombre: 'Devoluciones de recibos', tipo: TipoTransaccion.GASTO },
+  { nombre: 'Comisiones bancarias', tipo: TipoTransaccion.GASTO },
   { nombre: 'Donativos', tipo: TipoTransaccion.INGRESO },
   { nombre: 'Lotería y rifas', tipo: TipoTransaccion.INGRESO },
   { nombre: 'Culto y cera', tipo: TipoTransaccion.GASTO },

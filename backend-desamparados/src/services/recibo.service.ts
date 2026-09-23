@@ -22,17 +22,14 @@ import { agruparImpagos } from '../domain/impagos.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { ORDENES_RECIBOS, ordenDe } from '../domain/ordenacion.js';
 import {
-  ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, devolverCobroEnTransaccion, fotoRecibo,
-  idCategoriaDevoluciones, idCategoriaIngresos, leerDatosEvento, retirarPapeletaEnTransaccion,
+  ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, apuntarComisionEnTransaccion, devolverCobroEnTransaccion, fotoRecibo,
+  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, leerDatosEvento, retirarPapeletaEnTransaccion,
   whereRecibosAdmin, type ConsultaRecibos,
 } from './recibos/comunes.js';
 
 export type { ConsultaRecibos };
 
 type Tx = Prisma.TransactionClient;
-
-const CATEGORIA_INGRESOS = 'Cuotas y papeletas';
-const CATEGORIA_DEVOLUCIONES = 'Devoluciones de recibos';
 
 export class ReciboService {
 
@@ -271,8 +268,11 @@ export class ReciboService {
 
   // Cobrar y emitir papeleta
   static async adminMarcarComoPagado(reciboId: number, metodoPago?: MetodoPago, meta?: MetaDeAuditoria) {
-    // Antes de abrir la transacción: ver idCategoriaDeRecibos.
-    const categoriaIngresosId = await idCategoriaIngresos();
+    // Antes de abrir la transacción: ver idCategoriaDeRecibos. La categoría
+    // depende del tipo del recibo, que no cambia nunca: leerlo aquí fuera es seguro.
+    const previo = await db.recibo.findUnique({ where: { id: reciboId }, select: { tipo: true } });
+    if (!previo) throw new NotFoundError('Recibo no encontrado.');
+    const categoriaIngresosId = await idCategoriaIngresos(previo.tipo);
 
     const { recibo, antes } = await transactionWithRetry(async (tx) => {
       const actual = await tx.recibo.findUnique({ where: { id: reciboId } });
@@ -381,6 +381,11 @@ export class ReciboService {
     // Solo una devolución puede necesitar el reverso; la categoría se resuelve
     // antes de abrir la transacción (ver idCategoriaDeRecibos).
     const categoriaDevolucionesId = data.estado === EstadoPago.DEVUELTO ? await idCategoriaDevoluciones() : null;
+    // La comisión del banco solo tiene sentido al devolver.
+    if (data.comision !== undefined && data.estado !== EstadoPago.DEVUELTO) {
+      throw new HttpError('La comisión del banco solo se apunta al devolver un recibo.');
+    }
+    const categoriaComisionesId = data.comision !== undefined ? await idCategoriaComisiones() : null;
 
     const resultado = await db.$transaction(async (tx) => {
       const actual = await tx.recibo.findUnique({ where: { id: reciboId }, include: { papeleta: true } });
@@ -393,6 +398,10 @@ export class ReciboService {
       // poder probarlo sin base de datos.
       if (cambiaEstado && !puedeTransicionar(actual.estado, destino)) {
         throw new HttpError(`No se puede cambiar un recibo de ${actual.estado} a ${destino}.`);
+      }
+      // Un recibo que ya estaba devuelto no genera otra comisión.
+      if (data.comision !== undefined && !cambiaEstado) {
+        throw new HttpError('Este recibo ya estaba devuelto: su comisión se apuntó entonces.', 409);
       }
 
       let papeletaRetirada: { id: number } | null = null;
@@ -411,6 +420,10 @@ export class ReciboService {
             data: { estado: destino }
           });
           if (transicion.count !== 1) throw new HttpError(MENSAJE_ESTADO_CAMBIADO, 409);
+        }
+
+        if (categoriaComisionesId !== null && data.comision !== undefined) {
+          await apuntarComisionEnTransaccion(tx, actual, data.comision, categoriaComisionesId);
         }
 
         // Coherencia con la mesa de reparto: un recibo de papeleta devuelto o
@@ -438,6 +451,7 @@ export class ReciboService {
         antes: { estado: actual.estado, papeleta: fotoPapeleta(actual.papeleta) },
         despues: {
           estado: cambiaEstado ? destino : actual.estado,
+          ...(cambiaEstado && data.comision !== undefined ? { comision: data.comision } : {}),
           papeleta: papeletaRetirada || !actual.papeleta
             ? null
             : fotoPapeleta({
@@ -457,10 +471,17 @@ export class ReciboService {
       despues: resultado.despues
     });
 
+    // Lo que ha pasado en Contabilidad, dicho en el aviso: desde allí no se ve el porqué.
+    const enContabilidad = [
+      resultado.despues.estado === EstadoPago.DEVUELTO && resultado.antes.estado === EstadoPago.PAGADO ? 'el cobro queda anulado en Contabilidad' : null,
+      'comision' in resultado.despues ? 'la comisión del banco queda apuntada' : null,
+    ].filter(Boolean).join(' y ');
     return {
-      message: resultado.papeletaAnulada
-        ? 'Recibo actualizado. Su papeleta de sitio ha quedado anulada.'
-        : 'Detalles actualizados',
+      message: [
+        'Recibo actualizado.',
+        enContabilidad ? `${enContabilidad[0].toUpperCase()}${enContabilidad.slice(1)}.` : null,
+        resultado.papeletaAnulada ? 'Su papeleta de sitio ha quedado anulada.' : null,
+      ].filter(Boolean).join(' '),
       papeletaAnulada: resultado.papeletaAnulada
     };
   }

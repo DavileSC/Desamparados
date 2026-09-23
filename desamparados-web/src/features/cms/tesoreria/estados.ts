@@ -51,5 +51,27 @@ export const ESTADOS_RECIBO: Record<AdminReceiptStatus, EstadoRecibo> = {
   },
 }
 
+/**
+ * Lo que se puede hacer a mano con un recibo en cada estado: el mismo grafo
+ * que `domain/recibo-estados.ts` del servidor. Cobrar no está: tiene su botón
+ * y su propia operación, porque apunta el ingreso.
+ */
+export const CAMBIOS_DE_ESTADO: Record<AdminReceiptStatus, readonly AdminReceiptStatus[]> = {
+  PENDIENTE: ['REMESADO', 'EXENTO', 'ANULADO'],
+  REMESADO: ['DEVUELTO', 'ANULADO'],
+  PAGADO: ['DEVUELTO'],
+  DEVUELTO: [],
+  ANULADO: [],
+  EXENTO: [],
+}
+
+/** El texto del menú de cada cambio, según de dónde se parte. */
+export function accionDeCambio(origen: AdminReceiptStatus, destino: AdminReceiptStatus): string {
+  if (destino === 'REMESADO') return 'Enviar al banco'
+  if (destino === 'EXENTO') return 'Eximir de pago'
+  if (destino === 'ANULADO') return 'Anular'
+  return origen === 'PAGADO' ? 'Devolver el cobro' : 'Devuelto por el banco'
+}
+
 /** En el orden de los contadores: primero lo que hay que hacer. */
 export const ORDEN_ESTADOS: AdminReceiptStatus[] = ['PENDIENTE', 'REMESADO', 'DEVUELTO', 'PAGADO', 'EXENTO', 'ANULADO']

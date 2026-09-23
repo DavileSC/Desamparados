@@ -33,6 +33,7 @@ function servidor(recibos: unknown[] = []) {
     if (ruta.includes('/recibos/admin/hermanos')) return json([{ id: 5, nombre: 'Ana', apellidos: 'Pérez Ruiz', numeroHermano: 12 }])
     if (init?.method === 'POST' && /\/recibos\/admin$/.test(ruta)) return json({ message: 'Recibo «Cuota anual (reemisión)» emitido.', reciboId: 90, estado: 'PENDIENTE' }, 201)
     if (init?.method === 'POST' && ruta.endsWith('/pagar')) return json({ message: 'Recibo cobrado correctamente.', reciboId: 1, estado: 'PAGADO' })
+    if (init?.method === 'PUT') return json({ message: 'Recibo actualizado. La comisión del banco queda apuntada.', papeletaAnulada: false })
     return json({ data: recibos, meta: { total: recibos.length, page: 1, limit: 20, totalPages: 1 } })
   })
 }
@@ -252,5 +253,65 @@ describe('TesoreriaAdminPage', () => {
 
     expect(screen.queryByRole('button', { name: /reemitir papeleta/i })).not.toBeInTheDocument()
     expect(screen.getByText(/se reemite en la mesa de reparto/i)).toBeInTheDocument()
+  })
+
+  it('un remesado que el banco devuelve se marca desde su menú, con la comisión', async () => {
+    const user = userEvent.setup({ delay: null })
+    const simulado = servidor([recibo(7, 'REMESADO', 'Cuota anual')])
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TesoreriaAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
+    // Sin cobro no hay nada en Contabilidad que ver.
+    expect(screen.queryByRole('menuitem', { name: /ver en contabilidad/i })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Devuelto por el banco' }))
+
+    const ventana = screen.getByRole('dialog')
+    expect(within(ventana).getByText(/no hay cobro que anular/i)).toBeInTheDocument()
+    await user.type(within(ventana).getByLabelText(/comisión del banco/i), '3,5x')
+    expect(within(ventana).getByRole('button', { name: 'Devuelto por el banco' })).toBeDisabled()
+    await user.clear(within(ventana).getByLabelText(/comisión del banco/i))
+    await user.type(within(ventana).getByLabelText(/comisión del banco/i), '3,50')
+    await user.click(within(ventana).getByRole('button', { name: 'Devuelto por el banco' }))
+
+    expect(await screen.findByText(/la comisión del banco queda apuntada/i)).toBeInTheDocument()
+    const [url, init] = llamadas(simulado, (_, i) => i?.method === 'PUT').at(-1)!
+    expect(String(url)).toContain('/recibos/admin/7')
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({ estado: 'DEVUELTO', comision: 3.5 })
+  })
+
+  it('un cobrado se puede devolver avisando del gasto, y lleva a sus apuntes de Contabilidad', async () => {
+    const user = userEvent.setup({ delay: null })
+    vi.stubGlobal('fetch', servidor([{ ...recibo(8, 'PAGADO', 'Donativo'), fechaPago: '2026-02-01T10:00:00.000Z', metodoPago: 'EFECTIVO' }]))
+    renderWithProviders(<TesoreriaAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Donativo de Ana Pérez Ruiz' }))
+    expect(screen.getByRole('menuitem', { name: /ver en contabilidad/i })).toHaveAttribute('href', '/cms/contabilidad?recibo=8')
+    await user.click(screen.getByRole('menuitem', { name: 'Devolver el cobro' }))
+    expect(within(screen.getByRole('dialog')).getByText(/se apunta un gasto de 25,00\s€ que anula el cobro/i)).toBeInTheDocument()
+  })
+
+  it('un pendiente se puede enviar al banco, eximir o anular; uno anulado no ofrece nada', async () => {
+    const user = userEvent.setup({ delay: null })
+    vi.stubGlobal('fetch', servidor([recibo(9, 'PENDIENTE', 'Cuota anual'), recibo(10, 'ANULADO', 'Cuota vieja')]))
+    renderWithProviders(<TesoreriaAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Más acciones de Cuota anual de Ana Pérez Ruiz' }))
+    expect(screen.getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['Enviar al banco', 'Eximir de pago', 'Anular'])
+    expect(screen.queryByRole('button', { name: 'Más acciones de Cuota vieja de Ana Pérez Ruiz' })).not.toBeInTheDocument()
+  })
+
+  it('al llegar desde un apunte enseña solo ese recibo, de cualquier año', async () => {
+    const user = userEvent.setup({ delay: null })
+    const simulado = servidor([recibo(7, 'PAGADO', 'Cuota anual')])
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<TesoreriaAdminPage />, { ruta: '/cms/tesoreria?recibo=7' })
+
+    expect(await screen.findByText(/solo el recibo #7/i)).toBeInTheDocument()
+    await waitFor(() => expect(ultimaAlListado(simulado)).toContain('recibo=7'))
+    expect(ultimaAlListado(simulado)).not.toContain('year=')
+
+    await user.click(screen.getByRole('button', { name: 'Todos los recibos' }))
+    await waitFor(() => expect(ultimaAlListado(simulado)).not.toContain('recibo='))
   })
 })

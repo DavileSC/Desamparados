@@ -1,13 +1,17 @@
 import type { ReactNode } from 'react'
-import { Box, Paper, Typography } from '@mui/material'
+import { Box, Link, Paper, Typography } from '@mui/material'
 import SouthWestIcon from '@mui/icons-material/SouthWest'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import BalanceIcon from '@mui/icons-material/Balance'
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
+import { Link as RouterLink } from 'react-router-dom'
 import type { ResumenContable } from '../../../lib/api/contabilidad'
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, numero, eurosResumen, tramo } from './formato'
 
 const COLOR_RESULTADO = '#6b6266'
+/** El ámbar de «Pendiente» en Tesorería: es el mismo dinero. */
+const COLOR_POR_COBRAR = '#c98a00'
 
 function Cifra({ titulo, icono, color, valor, detalle, apagada = false }: { titulo: string; icono: ReactNode; color: string; valor: string; detalle: ReactNode; apagada?: boolean }) {
   return (
@@ -21,16 +25,21 @@ function Cifra({ titulo, icono, color, valor, detalle, apagada = false }: { titu
   )
 }
 
-/** Ingresos, gastos y resultado de lo filtrado, con el mismo tramo del año anterior al lado. */
+/**
+ * Ingresos, gastos y resultado de lo filtrado, con el mismo tramo del año
+ * anterior al lado. La cuarta, lo que Tesorería tiene aún por cobrar: no es un
+ * movimiento del periodo y no la tocan los filtros, pero es el dinero que
+ * falta por entrar en este libro.
+ */
 export default function CifrasPeriodo({ resumen, tipo }: { resumen: ResumenContable; tipo: FiltrosUi['tipo'] }) {
-  const { totales, anterior } = resumen
+  const { totales, anterior, porCobrar } = resumen
   const comparacion = (valor: number) => anterior && <> · {tramo(anterior.desde, anterior.hasta)}: {eurosResumen(valor)}</>
   const plural = (n: number) => `${numero(n)} ${n === 1 ? 'apunte' : 'apuntes'}`
   // El resultado se lee con palabras: nada de «+» o «−» delante de la cifra.
   const sentido = totales.resultado > 0 ? 'superávit' : totales.resultado < 0 ? 'déficit' : 'equilibrio'
 
   return (
-    <Box component="section" aria-label="Cifras del periodo" sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, mb: 3 }}>
+    <Box component="section" aria-label="Cifras del periodo" sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: 2, mb: 3 }}>
       <Cifra
         titulo="Ingresos"
         icono={<SouthWestIcon />}
@@ -54,6 +63,18 @@ export default function CifrasPeriodo({ resumen, tipo }: { resumen: ResumenConta
         valor={tipo === 'TODO' ? eurosResumen(Math.abs(totales.resultado)) : '—'}
         detalle={tipo === 'TODO' ? sentido : 'Solo con ingresos y gastos'}
         apagada={tipo !== 'TODO'}
+      />
+      <Cifra
+        titulo="Por cobrar"
+        icono={<HourglassEmptyIcon />}
+        color={COLOR_POR_COBRAR}
+        valor={eurosResumen(porCobrar.importe)}
+        detalle={<>
+          {numero(porCobrar.recibos)} {porCobrar.recibos === 1 ? 'recibo' : 'recibos'}
+          {porCobrar.enElBanco > 0 && <>, {eurosResumen(porCobrar.enElBanco)} en el banco</>}
+          {' · '}
+          <Link component={RouterLink} to="/cms/tesoreria?estado=PENDIENTE&anio=todos" sx={{ fontWeight: 600 }}>Ver en Tesorería</Link>
+        </>}
       />
     </Box>
   )

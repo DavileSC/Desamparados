@@ -2,6 +2,7 @@ import { Box, IconButton, Paper, Table, TableBody, TableCell, TableContainer, Ta
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
+import { Link } from 'react-router-dom'
 import type { ResumenContable, Transaction } from '../../../lib/api/contabilidad'
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, etiquetaMetodo, euros, fechaCorta } from './formato'
@@ -79,10 +80,11 @@ export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar
                 {verAcciones && (
                   <TableCell padding="none" align="right" sx={{ whiteSpace: 'nowrap', pr: 1, py: 0.25 }}>
                     {deRecibo ? (
-                      <Tooltip title="Viene de un recibo: se corrige desde el recibo, en Tesorería">
-                        <Box component="span" role="img" tabIndex={0} aria-label="Viene de un recibo: se corrige desde el recibo, en Tesorería" sx={{ display: 'inline-flex', p: 1, color: 'text.disabled' }}>
+                      // Se corrige desde el recibo: el enlace lleva a él, en Tesorería.
+                      <Tooltip title={`Viene del recibo #${a.reciboId}: se corrige desde Tesorería`}>
+                        <IconButton size="small" component={Link} to={`/cms/tesoreria?recibo=${a.reciboId}`} aria-label={`Abrir el recibo #${a.reciboId} en Tesorería`}>
                           <ReceiptLongOutlinedIcon fontSize="small" />
-                        </Box>
+                        </IconButton>
                       </Tooltip>
                     ) : <>
                       {onCorregir && (

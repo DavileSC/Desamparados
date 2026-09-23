@@ -28,12 +28,12 @@ describe('periodos', () => {
 
 describe('filtros en la URL', () => {
   it('sin nada en la URL: todo, año en curso', () => {
-    expect(leerFiltrosUrl(new URLSearchParams())).toEqual({ tipo: 'TODO', periodo: 'anio', desde: '', hasta: '', categoria: '', metodo: '', q: '' })
+    expect(leerFiltrosUrl(new URLSearchParams())).toEqual({ tipo: 'TODO', periodo: 'anio', desde: '', hasta: '', categoria: '', metodo: '', q: '', recibo: '' })
   })
 
   it('lee cada filtro y descarta lo que no reconoce', () => {
     const filtros = leerFiltrosUrl(new URLSearchParams('tipo=GASTO&periodo=personalizado&desde=2026-01-01&hasta=2026-04-30&categoria=6&metodo=BIZUM&q=flores'))
-    expect(filtros).toEqual({ tipo: 'GASTO', periodo: 'personalizado', desde: '2026-01-01', hasta: '2026-04-30', categoria: '6', metodo: 'BIZUM', q: 'flores' })
+    expect(filtros).toEqual({ tipo: 'GASTO', periodo: 'personalizado', desde: '2026-01-01', hasta: '2026-04-30', categoria: '6', metodo: 'BIZUM', q: 'flores', recibo: '' })
     expect(leerFiltrosUrl(new URLSearchParams('tipo=OTRO&periodo=siempre&categoria=x&metodo=CHEQUE')).tipo).toBe('TODO')
     expect(leerFiltrosUrl(new URLSearchParams('periodo=siempre')).periodo).toBe('anio')
   })
@@ -42,6 +42,12 @@ describe('filtros en la URL', () => {
     const ui = leerFiltrosUrl(new URLSearchParams('tipo=INGRESO&categoria=3&metodo=EFECTIVO&q=juan'))
     expect(aFiltrosApi(ui, HOY)).toEqual({ tipo: 'INGRESO', desde: '2026-01-01', hasta: '2026-09-11', categorias: [3], metodo: 'EFECTIVO', q: 'juan' })
     expect(aFiltrosApi(leerFiltrosUrl(new URLSearchParams('periodo=todo')), HOY)).toEqual({})
+  })
+
+  it('con un recibo solo pide sus apuntes, de cualquier fecha y sin los demás filtros', () => {
+    const ui = leerFiltrosUrl(new URLSearchParams('recibo=42&tipo=GASTO&periodo=mes'))
+    expect(aFiltrosApi(ui, HOY)).toEqual({ recibo: 42 })
+    expect(leerFiltrosUrl(new URLSearchParams('recibo=abc')).recibo).toBe('')
   })
 
   it('un periodo personalizado a medias usa solo la fecha que tenga', () => {

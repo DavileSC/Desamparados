@@ -269,10 +269,15 @@ describe('nombres de categoría', () => {
   });
 
   test('las que usan los recibos se reconocen por nombre y tipo', () => {
-    assert.equal(esCategoriaDeRecibos({ nombre: 'cuotas y papeletas', tipo: 'INGRESO' }), true);
+    assert.equal(esCategoriaDeRecibos({ nombre: 'cuotas de HERMANOS', tipo: 'INGRESO' }), true);
     assert.equal(esCategoriaDeRecibos({ nombre: 'Devoluciones de recibos', tipo: 'GASTO' }), true);
-    assert.equal(esCategoriaDeRecibos({ nombre: 'Cuotas y papeletas', tipo: 'GASTO' }), false);
-    assert.equal(esCategoriaDeRecibos({ nombre: 'Donativos', tipo: 'INGRESO' }), false);
+    assert.equal(esCategoriaDeRecibos({ nombre: 'Cuotas de hermanos', tipo: 'GASTO' }), false);
+    for (const nombre of ['Cuotas de hermanos', 'Papeletas de sitio', 'Donativos', 'Otros recibos']) {
+      assert.equal(esCategoriaDeRecibos({ nombre, tipo: 'INGRESO' }), true, nombre);
+    }
+    assert.equal(esCategoriaDeRecibos({ nombre: 'Comisiones bancarias', tipo: 'GASTO' }), true);
+    assert.equal(esCategoriaDeRecibos({ nombre: 'Cuotas y papeletas', tipo: 'INGRESO' }), false, 'la de antes ya no es de los recibos');
+    assert.equal(esCategoriaDeRecibos({ nombre: 'Lotería y rifas', tipo: 'INGRESO' }), false);
   });
 });
 

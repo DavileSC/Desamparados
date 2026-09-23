@@ -417,11 +417,15 @@ export function generarTransacciones(
   const movimientos: TransaccionDemo[] = [];
 
   // 1. Lo que entra por los recibos cobrados, y lo que cuesta cada devolución.
+  // Con las mismas reglas que la aplicación (recibos/comunes): el ingreso, en
+  // la categoría del tipo de recibo; un devuelto de la demo es un adeudo que el
+  // banco rechaza (nunca llegó a cobrarse), así que no lleva reverso sino la
+  // comisión del banco.
   for (const recibo of recibos) {
     const clave = `${recibo.dniHermano}|${recibo.year}|${recibo.concepto}`;
     if (recibo.estado === 'PAGADO' && recibo.fechaPago) {
       movimientos.push({
-        categoria: 'Cuotas y papeletas',
+        categoria: recibo.tipo === 'CUOTA_HERMANO' ? 'Cuotas de hermanos' : 'Papeletas de sitio',
         tipo: 'INGRESO',
         concepto: recibo.concepto,
         importe: recibo.importe,
@@ -433,9 +437,9 @@ export function generarTransacciones(
     }
     if (recibo.estado === 'DEVUELTO') {
       movimientos.push({
-        categoria: 'Devoluciones de recibos',
+        categoria: 'Comisiones bancarias',
         tipo: 'GASTO',
-        concepto: `Devolución de ${recibo.concepto.toLowerCase()}`,
+        concepto: `Comisión del banco por devolver ${recibo.concepto.toLowerCase()}`,
         importe: COMISION_DEVOLUCION,
         // El banco tarda unas tres semanas en devolverlo, pero si eso cae
         // más allá de hoy la comisión aún no se ha cobrado.

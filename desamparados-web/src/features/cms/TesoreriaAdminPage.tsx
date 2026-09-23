@@ -13,6 +13,7 @@ import {
   recibosDelCms,
   resumenDeRecibos,
   cobrarRecibo,
+  cambiarEstadoRecibo,
   buscarHermanosConRecibo,
   type AdminReceipt,
   type AdminReceiptStatus,
@@ -32,6 +33,7 @@ import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import ContadoresEstado from './tesoreria/ContadoresEstado'
 import ListaRecibos from './tesoreria/ListaRecibos'
+import DialogoEstado, { type CambioEstado } from './tesoreria/DialogoEstado'
 
 const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
 const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento' }
@@ -58,6 +60,8 @@ const FILTROS_RECIBOS = {
   estado: { validos: valoresDe(ESTADOS_RECIBO) },
   tipo: { validos: valoresDe(TIPOS_RECIBO) },
   orden: { porDefecto: 'recientes', validos: valoresDe(ORDENES_RECIBOS) },
+  // Un recibo concreto, al llegar desde un apunte de Contabilidad.
+  recibo: {},
 }
 
 // Lo que acepta el servidor: positivo, hasta dos decimales, con punto o con coma
@@ -82,7 +86,9 @@ export default function TesoreriaAdminPage() {
   // El año que se está viendo: filtra el listado y es el que proponen las ventanas de alta.
   // Vacío, se ven todos los años. Va aparte de los filtros de la URL porque se
   // teclea: con la URL de por medio, borrarlo para escribir otro lo rellenaría.
-  const [year, setYear] = useState(String(new Date().getFullYear()))
+  // Los enlaces de Contabilidad piden todos los años: `?anio=todos`, o un recibo
+  // concreto, que puede ser de cualquiera.
+  const [year, setYear] = useState(() => (params.get('anio') === 'todos' || params.get('recibo') ? '' : String(new Date().getFullYear())))
   // Búsqueda, estado, tipo y orden, en la URL como la página.
   const [filtros, cambiarFiltros] = useFiltrosUrl(FILTROS_RECIBOS)
   const [cuotas, setCuotas] = useState({ year: '', importe: '', concepto: CONCEPTO_POR_DEFECTO })
@@ -95,6 +101,8 @@ export default function TesoreriaAdminPage() {
   const [candidatos, setCandidatos] = useState<ReceiptBrother[]>([])
   const [buscando, setBuscando] = useState(false)
   const [payment, setPayment] = useState<PaymentMethod>('EFECTIVO')
+  const [cambio, setCambio] = useState<CambioEstado | null>(null)
+  const [errorCambio, setErrorCambio] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -112,11 +120,11 @@ export default function TesoreriaAdminPage() {
   // listado se queda con el último año completo en vez de parpadear.
   const cargar = useCallback((vigente: () => boolean = () => true) => {
     if (year && !esAnioCompleto(year)) return Promise.resolve()
-    const { q, tipo } = filtros as FiltrosRecibos
+    const { q, tipo, recibo } = filtros as FiltrosRecibos
     return Promise.all([
       recibosDelCms(year, { pagina, porPagina }, filtros as FiltrosRecibos),
       // Los contadores, con los mismos filtros menos el estado: son los que lo eligen.
-      resumenDeRecibos(year, { q, tipo }),
+      resumenDeRecibos(year, { q, tipo, recibo }),
     ]).then(([response, cifras]) => {
       if (!vigente()) return
       setReceipts(response.data); setMeta(response.meta)
@@ -203,6 +211,20 @@ export default function TesoreriaAdminPage() {
     try { const resultado = await cobrarRecibo(receipt.id, metodo); setNotice(resultado.message); await cargar() }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido cobrar el recibo.') }
     finally { setWorking(false) }
+  }
+
+  const abrirCambio = (recibo: AdminReceipt, destino: AdminReceiptStatus) => { setErrorCambio(null); setCambio({ recibo, destino }) }
+  const cambiarEstado = async (comision?: number) => {
+    if (!cambio) return
+    setWorking(true); setErrorCambio(null); setNotice(null)
+    try {
+      const resultado = await cambiarEstadoRecibo(cambio.recibo.id, { estado: cambio.destino, ...(comision !== undefined ? { comision } : {}) })
+      setCambio(null)
+      setNotice(resultado.message)
+      await cargar()
+    } catch (err: unknown) {
+      setErrorCambio(err instanceof Error ? err.message : 'No se ha podido cambiar el estado del recibo.')
+    } finally { setWorking(false) }
   }
 
   const cuotasValidas = Boolean(cuotas.year) && Number(cuotas.importe) > 0 && Boolean(cuotas.concepto)
@@ -317,10 +339,20 @@ export default function TesoreriaAdminPage() {
         sx={{ minWidth: 0 }}
       />
     </BarraListado>
+    {filtros.recibo && (
+      <Alert
+        severity="info"
+        sx={{ mb: 2 }}
+        action={<Button color="inherit" size="small" onClick={() => cambiarFiltros({ recibo: '' })}>Todos los recibos</Button>}
+      >
+        Solo el recibo #{filtros.recibo}, al que lleva su apunte de Contabilidad.
+      </Alert>
+    )}
     <ContadoresEstado resumen={resumen} elegido={filtros.estado as AdminReceiptStatus | ''} onElegir={(estado) => cambiarFiltros({ estado })} />
     {loading ? <CircularProgress aria-label="Cargando recibos" /> : receipts.length === 0
-      ? <Alert severity="info">{filtros.q || filtros.estado || filtros.tipo ? 'No hay recibos con esta búsqueda o estos filtros.' : esAnioCompleto(year) ? 'No hay recibos para este año.' : 'No hay recibos.'}</Alert>
-      : <ListaRecibos recibos={receipts} verAnio={!esAnioCompleto(year)} ocupado={working} onCobrar={pay} onConfirmar={pay} onReemitir={abrirReemision} />}
+      ? <Alert severity="info">{filtros.q || filtros.estado || filtros.tipo ? 'No hay recibos con esta búsqueda o estos filtros.' : filtros.recibo ? `No existe el recibo #${filtros.recibo}.` : esAnioCompleto(year) ? 'No hay recibos para este año.' : 'No hay recibos.'}</Alert>
+      : <ListaRecibos recibos={receipts} verAnio={!esAnioCompleto(year)} ocupado={working} onCobrar={pay} onConfirmar={pay} onReemitir={abrirReemision} onCambiarEstado={abrirCambio} />}
+    <DialogoEstado cambio={cambio} guardando={working} error={errorCambio} onConfirmar={(comision) => void cambiarEstado(comision)} onCancelar={() => setCambio(null)} />
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="recibos" />}
     </>}
   </>

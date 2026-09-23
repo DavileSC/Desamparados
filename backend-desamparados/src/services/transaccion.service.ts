@@ -1,4 +1,4 @@
-import { Prisma, type Transaccion, type TipoTransaccion } from '@prisma/client';
+import { EstadoPago, Prisma, type Transaccion, type TipoTransaccion } from '@prisma/client';
 import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { MetaDeAuditoria, AuditoriaService, ACCIONES_AUDITORIA } from './auditoria.service.js';
@@ -324,7 +324,7 @@ export class TransaccionService {
     const where = whereContable(filtros);
     const anterior = periodoAnterior(filtros);
 
-    const [porTipo, porCategoria, filas, categorias, porTipoAnterior] = await Promise.all([
+    const [porTipo, porCategoria, filas, categorias, porTipoAnterior, pendientes] = await Promise.all([
       db.transaccion.groupBy({ by: ['tipo'], where, _sum: { importe: true }, _count: { _all: true } }),
       db.transaccion.groupBy({ by: ['categoriaId'], where, _sum: { importe: true }, _count: { _all: true } }),
       // Solo tres columnas por apunte: la serie se agrupa por mes de Madrid, y
@@ -335,7 +335,23 @@ export class TransaccionService {
       anterior
         ? db.transaccion.groupBy({ by: ['tipo'], where: whereContable({ ...filtros, ...anterior }), _sum: { importe: true } })
         : Promise.resolve(null),
+      // Lo que falta por entrar, de todos los años y sin los filtros: no es un
+      // movimiento del periodo, es lo que Tesorería tiene aún por cobrar. Los
+      // devueltos no cuentan: se reemiten como recibo nuevo y saldrían dos veces.
+      db.recibo.groupBy({
+        by: ['estado'],
+        where: { estado: { in: [EstadoPago.PENDIENTE, EstadoPago.REMESADO] } },
+        _sum: { importe: true },
+        _count: { _all: true },
+      }),
     ]);
+
+    const pendienteDe = (estado: EstadoPago) => pendientes.find((p) => p.estado === estado);
+    const porCobrar = {
+      importe: Math.round(pendientes.reduce((n, p) => n + Number(p._sum.importe ?? 0), 0) * 100) / 100,
+      recibos: pendientes.reduce((n, p) => n + p._count._all, 0),
+      enElBanco: Number(pendienteDe(EstadoPago.REMESADO)?._sum.importe ?? 0),
+    };
 
     const suma = (grupos: { tipo: string; _sum: { importe: unknown } }[] | null, tipo: 'INGRESO' | 'GASTO') =>
       Number(grupos?.find((g) => g.tipo === tipo)?._sum.importe ?? 0);
@@ -360,6 +376,7 @@ export class TransaccionService {
         apuntesIngreso: apuntes('INGRESO'),
         apuntesGasto: apuntes('GASTO'),
       },
+      porCobrar,
       anterior: anterior && { ...anterior, ingresos: suma(porTipoAnterior, 'INGRESO'), gastos: suma(porTipoAnterior, 'GASTO') },
       serie: { granularidad: gran, puntos },
       categorias: porCategoria

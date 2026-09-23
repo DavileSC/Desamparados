@@ -101,7 +101,7 @@ export class PapeletasService {
     const cobrado = estadoRecibo === EstadoPago.PAGADO;
     // La categoría del ingreso se resuelve antes de abrir la transacción: ver
     // idCategoriaDeRecibos.
-    const categoriaIngresosId = cobrado ? await idCategoriaIngresos() : null;
+    const categoriaIngresosId = cobrado ? await idCategoriaIngresos(TipoRecibo.PAPELETA_SITIO) : null;
 
     // Todo o nada, y serializable: la comprobación de «ya tiene papeleta» va
     // dentro para que dos inscripciones a la vez no la pasen las dos.

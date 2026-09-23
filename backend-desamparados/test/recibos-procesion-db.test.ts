@@ -785,3 +785,111 @@ test('S10: un parámetro repetido en el listado de Tesorería no acaba en 500', 
     await e.recoger();
   }
 });
+
+// ============================================================================
+//  Tesorería y Contabilidad: cada tipo en su categoría, la comisión del banco
+//  y los enlaces entre las dos pantallas
+// ============================================================================
+
+const categoriaDe = async (apunte: { categoriaId: number }) =>
+  (await db.categoriaTransaccion.findUniqueOrThrow({ where: { id: apunte.categoriaId } })).nombre;
+
+test('cada tipo de recibo se apunta al cobrarse en su propia categoría', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    const esperadas = { CUOTA_HERMANO: 'Cuotas de hermanos', DONATIVO: 'Donativos', OTRO: 'Otros recibos' } as const;
+    for (const [tipo, categoria] of Object.entries(esperadas) as [keyof typeof esperadas, string][]) {
+      const recibo = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: `Prueba ${tipo}`, importe: 10, tipo }, e.meta);
+      await ReciboService.adminMarcarComoPagado(recibo.id, MetodoPago.EFECTIVO, e.meta);
+      const [ingreso] = await apuntes(recibo.id);
+      assert.equal(await categoriaDe(ingreso), categoria, tipo);
+    }
+
+    const { recibo } = await PapeletasService.inscribirYFacturar({ hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
+    const [ingreso] = await apuntes(recibo.id);
+    assert.equal(await categoriaDe(ingreso), 'Papeletas de sitio');
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('un recibo que el banco devuelve apunta su comisión; uno cobrado, además, el reverso', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    // Remesado y devuelto: nunca entró dinero, solo sale la comisión.
+    const remesado = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: 'Cuota remesada', importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta);
+    await ReciboService.adminUpdateDetalles(remesado.id, { estado: 'REMESADO' }, e.meta);
+    await ReciboService.adminUpdateDetalles(remesado.id, { estado: 'DEVUELTO', comision: 3.5 }, e.meta);
+    const delRemesado = await apuntes(remesado.id);
+    assert.deepEqual(delRemesado.map((a) => [a.tipo, String(a.importe)]), [[TipoTransaccion.GASTO, '3.5']]);
+    assert.equal(await categoriaDe(delRemesado[0]), 'Comisiones bancarias');
+
+    // Cobrado y devuelto: el reverso del cobro y la comisión.
+    const cobrado = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: 'Donativo devuelto', importe: 20, tipo: 'DONATIVO' }, e.meta);
+    await ReciboService.adminMarcarComoPagado(cobrado.id, MetodoPago.TRANSFERENCIA, e.meta);
+    await ReciboService.adminUpdateDetalles(cobrado.id, { estado: 'DEVUELTO', comision: 2 }, e.meta);
+    const delCobrado = await apuntes(cobrado.id);
+    assert.deepEqual(
+      await Promise.all(delCobrado.map(async (a) => [a.tipo, String(a.importe), await categoriaDe(a)])),
+      [[TipoTransaccion.INGRESO, '20', 'Donativos'], [TipoTransaccion.GASTO, '20', 'Devoluciones de recibos'], [TipoTransaccion.GASTO, '2', 'Comisiones bancarias']],
+    );
+
+    const registro = await auditoria(ACCIONES_AUDITORIA.RECIBO_ACTUALIZAR, cobrado.id);
+    assert.equal((registro?.detalles as { despues: { comision?: number } }).despues.comision, 2);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('la comisión solo va con una devolución nueva: ni sin devolver ni dos veces', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    const recibo = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: 'Cuota sin devolver', importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta);
+    await assert.rejects(
+      ReciboService.adminUpdateDetalles(recibo.id, { estado: 'ANULADO', comision: 3 }, e.meta),
+      (err: unknown) => err instanceof HttpError && err.status === 400,
+    );
+    await ReciboService.adminUpdateDetalles(recibo.id, { estado: 'REMESADO' }, e.meta);
+    await ReciboService.adminUpdateDetalles(recibo.id, { estado: 'DEVUELTO', comision: 3 }, e.meta);
+    await assert.rejects(
+      ReciboService.adminUpdateDetalles(recibo.id, { estado: 'DEVUELTO', comision: 3 }, e.meta),
+      (err: unknown) => err instanceof HttpError && err.status === 409,
+    );
+    assert.equal((await apuntes(recibo.id)).length, 1, 'una sola comisión');
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: recibo.id } })).estado, EstadoPago.DEVUELTO);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('por HTTP, Contabilidad filtra los apuntes de un recibo y Tesorería trae ese recibo; el resumen dice lo pendiente', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}` };
+    const cobrado = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: 'Cuota enlazada', importe: 18, tipo: 'CUOTA_HERMANO' }, e.meta);
+    await ReciboService.adminMarcarComoPagado(cobrado.id, MetodoPago.EFECTIVO, e.meta);
+
+    const libro = await (await fetch(`${baseUrl}/api/transacciones/libro-mayor?recibo=${cobrado.id}`, { headers: cabeceras })).json() as { data: { reciboId: number }[] };
+    assert.deepEqual(libro.data.map((a) => a.reciboId), [cobrado.id]);
+
+    const tesoreria = await (await fetch(`${baseUrl}/api/recibos/admin?recibo=${cobrado.id}`, { headers: cabeceras })).json() as { data: { id: number }[] };
+    assert.deepEqual(tesoreria.data.map((r) => r.id), [cobrado.id]);
+    assert.equal((await fetch(`${baseUrl}/api/recibos/admin?recibo=abc`, { headers: cabeceras })).status, 400);
+
+    const antes = await (await fetch(`${baseUrl}/api/transacciones/resumen`, { headers: cabeceras })).json() as { porCobrar: { importe: number; recibos: number } };
+    await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: 'Cuota pendiente', importe: 7.25, tipo: 'DONATIVO' }, e.meta);
+    const despues = await (await fetch(`${baseUrl}/api/transacciones/resumen`, { headers: cabeceras })).json() as { porCobrar: { importe: number; recibos: number } };
+    assert.equal(despues.porCobrar.recibos, antes.porCobrar.recibos + 1);
+    assert.equal(Math.round((despues.porCobrar.importe - antes.porCobrar.importe) * 100) / 100, 7.25);
+  } finally {
+    await e.recoger();
+  }
+});

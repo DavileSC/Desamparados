@@ -26,6 +26,8 @@ export interface UpdateReciboDto {
   puesto?: string;
   tramo?: string;
   observaciones?: string;
+  /** Lo que cobra el banco al devolver el recibo: se apunta como gasto. */
+  comision?: number;
 }
 
 // Para el filtro de búsqueda del admin

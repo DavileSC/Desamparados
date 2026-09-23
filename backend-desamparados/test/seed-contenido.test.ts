@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { existsSync } from 'node:fs';
+import { CATEGORIAS_DE_RECIBOS } from '../src/domain/contabilidad.js';
 import path from 'node:path';
 import {
   NOTICIAS,
@@ -100,8 +101,7 @@ describe('contenido del seed', () => {
     // Si estos nombres dejan de coincidir, cada cobro crearía una categoría
     // duplicada dentro de su propia transacción.
     const nombres = CATEGORIAS.map((c) => c.nombre);
-    assert.ok(nombres.includes('Cuotas y papeletas'));
-    assert.ok(nombres.includes('Devoluciones de recibos'));
+    for (const c of CATEGORIAS_DE_RECIBOS) assert.ok(nombres.includes(c.nombre), c.nombre);
   });
 
   test('el contenido ya no habla de "Hermandad"', () => {

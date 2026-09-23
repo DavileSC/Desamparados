@@ -40,7 +40,8 @@ export interface DatosDeRecibo {
 export const esAnioCompleto = (year: string | undefined): year is string => Boolean(year && /^\d{4}$/.test(year))
 
 /** Búsqueda (hermano, número o concepto), filtros y orden del listado de recibos. Vacío = sin filtrar. */
-export type FiltrosRecibos = { q?: string; estado?: AdminReceiptStatus | ''; tipo?: ReceiptType | ''; orden?: string }
+/** `recibo`: uno concreto por su número, al llegar desde Contabilidad. */
+export type FiltrosRecibos = { q?: string; estado?: AdminReceiptStatus | ''; tipo?: ReceiptType | ''; orden?: string; recibo?: string }
 
 export function recibosDelCms(year: string | undefined, pagina: { pagina: number; porPagina: number }, filtros: FiltrosRecibos = {}) {
   // Un año a medio escribir («20») sería un 400: se pide sin filtro de año.
@@ -50,7 +51,7 @@ export function recibosDelCms(year: string | undefined, pagina: { pagina: number
 /** Recibos y euros de cada estado, con la búsqueda, el año y el tipo del listado pero sin su estado. */
 export type ResumenRecibos = { estados: Record<AdminReceiptStatus, { cuenta: number; total: number }> }
 
-export function resumenDeRecibos(year: string | undefined, filtros: Pick<FiltrosRecibos, 'q' | 'tipo'> = {}) {
+export function resumenDeRecibos(year: string | undefined, filtros: Pick<FiltrosRecibos, 'q' | 'tipo' | 'recibo'> = {}) {
   return llamarApi<ResumenRecibos>(`/recibos/admin/resumen?${new URLSearchParams(Object.entries({ ...filtros, year: esAnioCompleto(year) ? year : undefined })
     .filter((par): par is [string, string] => Boolean(par[1]))).toString()}`)
 }
@@ -61,6 +62,14 @@ export function generarCuotas(payload: { year: number; importe: number; concepto
 
 export function cobrarRecibo(id: number, metodoPago: PaymentMethod) {
   return llamarApi<{ message: string; reciboId: number; estado: AdminReceiptStatus }>(`/recibos/admin/${id}/pagar`, { method: 'POST', json: { metodoPago } })
+}
+
+/**
+ * Cambia el estado de un recibo (remesar, devolver, anular, eximir). Al
+ * devolverlo, `comision` es lo que cobró el banco: se apunta como gasto.
+ */
+export function cambiarEstadoRecibo(id: number, payload: { estado: AdminReceiptStatus; comision?: number }) {
+  return llamarApi<{ message: string; papeletaAnulada: boolean }>(`/recibos/admin/${id}`, { method: 'PUT', json: payload })
 }
 
 export function crearRecibo(payload: DatosDeRecibo) {

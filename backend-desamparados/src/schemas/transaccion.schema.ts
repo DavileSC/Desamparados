@@ -17,6 +17,7 @@ const filtrosContablesQuery = {
     "categorias?": type('string').matching(/^\d+(,\d+)*$/).describe('una lista de ids separados por comas'),
     "metodo?": metodoPago,
     "q?": type('string').matching(/^[^<>]{0,100}$/).describe('un texto de búsqueda de hasta 100 caracteres'),
+    "recibo?": type('string').matching(/^[1-9]\d{0,9}$/).describe('el número de un recibo'),
 };
 
 /**

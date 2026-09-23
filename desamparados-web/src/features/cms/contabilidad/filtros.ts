@@ -31,6 +31,8 @@ export interface FiltrosUi {
   categoria: string
   metodo: '' | MetodoPago
   q: string
+  /** Los apuntes de un recibo, al llegar desde Tesorería. Vacío: todos. */
+  recibo: string
 }
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/
@@ -78,10 +80,14 @@ export function leerFiltrosUrl(params: URLSearchParams): FiltrosUi {
     categoria: /^\d+$/.test(categoria) ? categoria : '',
     metodo: METODOS.some((m) => m.valor === metodo) ? (metodo as MetodoPago) : '',
     q: params.get('q')?.trim() ?? '',
+    recibo: /^[1-9]\d{0,9}$/.test(params.get('recibo') ?? '') ? params.get('recibo')! : '',
   }
 }
 
 export function aFiltrosApi(ui: FiltrosUi, hoy = new Date()): FiltrosContables {
+  // Los apuntes de un recibo se ven todos, caigan en el periodo que caigan:
+  // un cobro de marzo y su devolución de mayo no se separan.
+  if (ui.recibo) return { recibo: Number(ui.recibo) }
   const rango = ui.periodo === 'personalizado'
     ? { ...(ui.desde && { desde: ui.desde }), ...(ui.hasta && { hasta: ui.hasta }) }
     : rangoDePeriodo(ui.periodo, hoy)
