@@ -18,6 +18,9 @@ import {
 } from './correos/plantilla.js';
 import { cuentaDeContacto, enviarCorreo } from './correos/envio.js';
 
+/** Quien entra en el censo al aprobar la solicitud, con el número que recibe. */
+export interface HermanoAprobado { nombre: string; apellidos: string | null; numeroHermano: number }
+
 const BENDICION = 'Que Nuestra Señora de los Desamparados le guarde y bendiga.';
 
 /** «una hora», «3 días», «12 horas». */
@@ -206,41 +209,46 @@ export class EmailService {
   }
 
   /**
-   * La solicitud ha sido aprobada: ya figura en el censo y tiene número.
+   * La solicitud ha sido aprobada: ya figuran en el censo y tienen número.
    * Antes aprobar era mudo y el solicitante no se enteraba de nada.
+   *
+   * Una cuenta puede traer varias fichas (el adulto y los menores a su cargo) y
+   * se aprueban todas a la vez: el correo dice quién es cada número, o un padre
+   * con tres hijos recibiría tres números sin saber de quién es cada uno.
    */
-  static async enviarAprobacionSolicitud(emailDestino: string, nombreHermano: string, numerosDeHermano: number[], sexo?: Sexo) {
+  static async enviarAprobacionSolicitud(emailDestino: string, nombreCuenta: string, aprobados: HermanoAprobado[], sexo?: Sexo) {
     const { burdeos, linea } = COLORES;
+    const varios = aprobados.length > 1;
+    const ordenados = [...aprobados].sort((a, b) => a.numeroHermano - b.numeroHermano);
 
-    // Una cuenta puede tener varias fichas (los hijos de un tutor) y se aprueban
-    // todas a la vez: el correo las nombra en plural o el padre creería que solo
-    // ha entrado una.
-    const varios = numerosDeHermano.length > 1;
-    const bloqueNumero = numerosDeHermano.length
-      ? `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 24px 0;">
-           <tr><td align="center" style="padding: 20px; border-top: 1px solid ${linea}; border-bottom: 1px solid ${linea};">
-             ${rotulo(varios ? 'Números de hermano' : 'Número de hermano')}<br>
-             <span style="font-size: 36px; line-height: 1.3; color: ${burdeos};">${esc(numerosDeHermano.join(' · '))}</span>
-           </td></tr>
-         </table>`
+    const filas = ordenados.map((h) => `
+        <tr>
+          <td style="padding: 11px 16px 11px 0; border-bottom: 1px solid ${linea}; font-size: 16px;">${esc([h.nombre, h.apellidos].filter(Boolean).join(' '))}</td>
+          <td align="right" style="padding: 11px 0; border-bottom: 1px solid ${linea}; font-size: 20px; color: ${burdeos}; white-space: nowrap;">N.º ${h.numeroHermano}</td>
+        </tr>`).join('');
+    const censo = aprobados.length
+      ? `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 4px 0 24px 0;">
+          <tr>
+            <td style="padding: 0 16px 6px 0; border-bottom: 1px solid ${linea};">${rotulo('Nombre y apellidos')}</td>
+            <td align="right" style="padding: 0 0 6px 0; border-bottom: 1px solid ${linea};">${rotulo('Número de hermano')}</td>
+          </tr>${filas}
+        </table>`
       : '';
 
     const content = [
-      saludo(nombreHermano, sexo),
-      parrafo(`La Secretaría ha <strong>aprobado su solicitud de ingreso</strong>. Desde hoy ${varios ? 'sus perfiles figuran' : 'figura'} en el censo de hermanos del Grupo Parroquial: sea ${segunSexo(sexo, 'bienvenido', 'bienvenida')}.`),
-      bloqueNumero,
-      parrafo(`Conserve ${varios ? 'esos números' : 'ese número'}: ${varios ? 'son los que les identifican' : 'es el que le identifica'} en el censo y ${varios ? 'los' : 'el'} que se le pedirá en Secretaría.`),
+      saludo(nombreCuenta, sexo),
+      parrafo(`La Secretaría ha <strong>aprobado su solicitud de ingreso</strong>. Desde hoy ${varios ? 'forman' : 'forma'} parte del censo de hermanos del Grupo Parroquial:`),
+      censo,
+      parrafo(`Conserve ${varios ? 'estos números' : 'este número'}: ${varios ? 'son los que identifican a cada uno' : 'es el que le identifica'} en el censo y se ${varios ? 'piden' : 'pide'} en Secretaría.`),
       parrafo('Ya puede entrar en el área de hermanos para consultar sus datos, sus recibos y, llegado el momento, pedir su papeleta de sitio.'),
       boton('Entrar en el área de hermanos', urlDeLaWeb('/hermanos/acceso')),
       firma(BENDICION),
     ].join('');
 
     return await enviarCorreo(emailDestino, 'Su solicitud de ingreso ha sido aprobada', maquetar({
-      titulo: `${segunSexo(sexo, 'Bienvenido', 'Bienvenida')} al Grupo Parroquial`,
+      titulo: `${varios ? 'Bienvenidos' : segunSexo(sexo, 'Bienvenido', 'Bienvenida')} al Grupo Parroquial`,
       antetitulo: 'Secretaría',
-      resumen: numerosDeHermano.length
-        ? `Ya figura en el censo de hermanos con el número ${numerosDeHermano.join(', ')}.`
-        : 'Ya figura en el censo de hermanos.',
+      resumen: ordenados.map((h) => `${h.nombre}, n.º ${h.numeroHermano}`).join(' · ') || 'Ya figura en el censo de hermanos.',
       contenido: content,
     }));
   }
@@ -308,7 +316,7 @@ export class EmailService {
       lista(fichas),
       parrafo('La papeleta se paga el día del reparto. Recuerde llevar el DNI.'),
       boton('Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
-      firma('Esperamos contar con su presencia acompañando a nuestros Sagrados Titulares.'),
+      firma('Esperamos contar con su presencia acompañando a Nuestra Señora de los Desamparados.'),
     ].join('');
 
     return await enviarCorreo(emailDestino, `Abierta la solicitud de papeletas de sitio ${year}`, maquetar({
@@ -332,7 +340,7 @@ export class EmailService {
       bloqueDeSecretaria('Horario de reparto'),
       boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')),
       parrafo('Si ya la ha recogido en las últimas horas, no haga caso de este mensaje.', `font-size: 14px; color: ${COLORES.suave};`),
-      firma('Esperamos contar con su presencia acompañando a nuestros Sagrados Titulares.'),
+      firma('Esperamos contar con su presencia acompañando a Nuestra Señora de los Desamparados.'),
     ].join('');
 
     return await enviarCorreo(emailDestino, 'Recordatorio: su papeleta de sitio está sin recoger', maquetar({

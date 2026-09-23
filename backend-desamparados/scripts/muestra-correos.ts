@@ -29,11 +29,12 @@ const { carpetaCorreos } = await import('../src/utils/buzon-pruebas.js');
 
 const SOLICITANTE = { nombre: 'Lucía', apellidos: 'Moreno Gil', email: 'lucia.moreno@ejemplo.local' };
 
-await EmailService.enviarConfirmacionRegistro(SOLICITANTE.email, SOLICITANTE.nombre);
+await EmailService.enviarConfirmacionRegistro(SOLICITANTE.email, SOLICITANTE.nombre, { sexo: 'MUJER' });
 await EmailService.enviarAvisoSolicitud(SOLICITANTE);
-await EmailService.enviarAprobacionSolicitud(SOLICITANTE.email, SOLICITANTE.nombre, [418]);
-await EmailService.enviarBajaORechazo(SOLICITANTE.email, SOLICITANTE.nombre, 'rechazo');
-await EmailService.enviarBajaORechazo(SOLICITANTE.email, SOLICITANTE.nombre, 'baja');
+await EmailService.enviarAprobacionSolicitud(SOLICITANTE.email, SOLICITANTE.nombre, [{ ...SOLICITANTE, numeroHermano: 418 }], 'MUJER');
+await EmailService.enviarBajaORechazo(SOLICITANTE.email, SOLICITANTE.nombre, 'rechazo', false, 'MUJER');
+await EmailService.enviarBajaORechazo(SOLICITANTE.email, SOLICITANTE.nombre, 'baja', false, 'MUJER');
+await EmailService.enviarBajaORechazo(SOLICITANTE.email, SOLICITANTE.nombre, 'baja', true, 'MUJER');
 
 console.log(`\nListo. Los correos están en:\n  ${carpetaCorreos()}\n`);
 console.log('Ábrelos con doble clic. Los bloques de horario y dirección no salen');

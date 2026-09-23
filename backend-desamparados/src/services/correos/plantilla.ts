@@ -6,9 +6,10 @@
  * Vive aparte de los correos en sí porque es pura presentación: lo que cambia
  * cuando se retoca el diseño, no cuando se añade un aviso nuevo.
  *
- * El aire es el de una carta de Secretaría: membrete con el escudo sobre negro,
- * la Virgen, papel blanco con lugar y fecha, etiquetas en cursiva como en un
- * impreso y la cruz antes de la firma. Negro de base y burdeos de acento.
+ * El aire es el de una carta de Secretaría: membrete con el escudo, la imagen
+ * de la Virgen, lugar y fecha, etiquetas en cursiva como en un impreso y la
+ * cruz antes de la firma. Negro para el texto, el escudo y los botones, y
+ * burdeos de acento, sobre una hoja blanca.
  *
  * Todo va con tablas y estilos en línea: es lo único que Gmail, Outlook y el
  * correo del móvil pintan igual. El único <style> es el del ajuste al móvil,
@@ -32,7 +33,8 @@ export const IMAGENES = {
 // Los colores de la casa. Los grises están elegidos para leerse bien sobre su
 // fondo (contraste 4,5:1 como poco), también en el móvil y a pleno sol.
 export const COLORES = {
-  negro: '#141111',      // El fondo del correo, la cabecera, los botones
+  negro: '#141111',      // Escudo, títulos, botones, cabecera de la papeleta
+  fondo: '#eeeae7',      // Alrededor de la hoja
   burdeos: '#6e1a20',    // Acento: filete bajo la Virgen, cruz, títulos de recuadro
   papel: '#ffffff',
   panel: '#f5f2f0',      // Recuadros dentro del papel
@@ -40,7 +42,6 @@ export const COLORES = {
   texto: '#1f1a19',
   suave: '#5c5452',      // Texto secundario (7:1 sobre blanco)
   sobreNegro: '#b3a8a3', // Texto secundario sobre el negro (8:1)
-  claroSobreNegro: '#f1ebe7',
 };
 
 const SERIF = "Georgia, 'Times New Roman', Times, serif";
@@ -212,9 +213,9 @@ export interface Maqueta {
 }
 
 function pie(para: Destinatario): string {
-  const { sobreNegro, claroSobreNegro } = COLORES;
+  const { suave, texto } = COLORES;
   const p = (html: string) => `<p style="margin: 0 0 10px 0;">${html}</p>`;
-  const enlace = (url: string, texto: string) => `<a href="${url}" style="color: ${claroSobreNegro}; text-decoration: underline;">${esc(texto)}</a>`;
+  const enlace = (url: string, titulo: string) => `<a href="${url}" style="color: ${texto}; text-decoration: underline;">${esc(titulo)}</a>`;
 
   if (para === 'interno') {
     return p('Aviso automático de la web del Grupo Parroquial para el buzón de Secretaría.');
@@ -227,14 +228,14 @@ function pie(para: Destinatario): string {
   // contactar mientras el Grupo no confirme un teléfono o una dirección.
   const correo = emailDeSecretaria();
   return [
-    p(`<span style="color: ${claroSobreNegro};">¿Tiene alguna duda?</span> Responda a este correo y le atenderá la Secretaría${correo ? `, o escriba a ${enlace(`mailto:${esc(correo)}`, correo)}` : ''}.`),
-    `<p style="margin: 0; color: ${sobreNegro};">Recibe este correo por su relación con el Grupo Parroquial, que trata sus datos conforme al Reglamento General de Protección de Datos. Más información en nuestra ${enlace(urlDeLaWeb('/politica-privacidad'), 'política de privacidad')}.</p>`,
+    p(`<strong style="color: ${texto};">¿Tiene alguna duda?</strong> Responda a este correo y le atenderá la Secretaría${correo ? `, o escriba a ${enlace(`mailto:${esc(correo)}`, correo)}` : ''}.`),
+    `<p style="margin: 0; color: ${suave};">Recibe este correo por su relación con el Grupo Parroquial, que trata sus datos conforme al Reglamento General de Protección de Datos. Más información en nuestra ${enlace(urlDeLaWeb('/politica-privacidad'), 'política de privacidad')}.</p>`,
   ].join('');
 }
 
 /** El HTML completo de un correo: membrete, Virgen, carta y pie. */
 export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'hermano' }: Maqueta): string {
-  const { negro, burdeos, papel, texto, suave, sobreNegro, claroSobreNegro } = COLORES;
+  const { negro, burdeos, fondo, papel, texto, suave } = COLORES;
   const year = new Date().getFullYear();
   // La Virgen, en lo que recibe un hermano; los avisos internos, sin ella:
   // son trámite y se leen de un vistazo.
@@ -258,22 +259,22 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: ${negro};">
-  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: ${negro}; font-size: 1px; line-height: 1px;" data-resumen>${esc(resumen)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
-  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="${negro}" style="background-color: ${negro};">
+<body style="margin: 0; padding: 0; background-color: ${fondo};">
+  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: ${fondo}; font-size: 1px; line-height: 1px;" data-resumen>${esc(resumen)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="${fondo}" style="background-color: ${fondo};">
     <tr>
-      <td align="center" class="marco" style="padding: 28px 12px 36px 12px;">
-        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px;">
+      <td align="center" class="marco" style="padding: 32px 12px 36px 12px;">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="${papel}" style="max-width: 600px; background-color: ${papel};">
           <tr>
-            <td class="caja" style="padding: 8px 4px 22px 4px;">
+            <td class="caja" style="padding: 24px 44px 22px 44px;">
               <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td valign="middle" style="padding-right: 16px;">
                     <img src="cid:${IMAGENES.escudo.cid}" alt="Escudo del Grupo Parroquial" width="46" height="56" style="display: block; border: 0; width: 46px; height: 56px;">
                   </td>
                   <td valign="middle" style="font-family: ${SERIF};">
-                    <p style="margin: 0; font-size: 13px; font-style: italic; color: ${sobreNegro};">Grupo Parroquial</p>
-                    <p style="margin: 1px 0 0 0; font-size: 19px; line-height: 1.25; color: ${claroSobreNegro};">Nuestra Señora de los Desamparados</p>
+                    <p style="margin: 0; font-size: 13px; font-style: italic; color: ${suave};">Grupo Parroquial</p>
+                    <p style="margin: 1px 0 0 0; font-size: 19px; line-height: 1.25; color: ${negro};">Nuestra Señora de los Desamparados</p>
                   </td>
                 </tr>
               </table>
@@ -286,10 +287,10 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
             </td>
           </tr>` : ''}
           <tr>
-            <td height="5" bgcolor="${burdeos}" style="background-color: ${burdeos}; font-size: 0; line-height: 0;">&nbsp;</td>
+            <td height="4" bgcolor="${burdeos}" style="background-color: ${burdeos}; font-size: 0; line-height: 0;">&nbsp;</td>
           </tr>
           <tr>
-            <td class="caja" bgcolor="${papel}" style="background-color: ${papel}; padding: 30px 44px 40px 44px; font-family: ${SERIF}; font-size: 16px; line-height: 1.65; color: ${texto};">
+            <td class="caja" style="padding: 30px 44px 40px 44px; font-family: ${SERIF}; font-size: 16px; line-height: 1.65; color: ${texto};">
               <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 22px;">
                 <tr>
                   <td style="font-family: ${SERIF}; font-size: 15px; font-variant: small-caps; letter-spacing: 0.6px; color: ${burdeos};">${esc(antetitulo)}</td>
@@ -300,10 +301,12 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
               ${contenido}
             </td>
           </tr>
+        </table>
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px;">
           <tr>
-            <td class="caja" style="padding: 26px 4px 0 4px; font-family: ${SANS}; font-size: 12px; line-height: 1.65; color: ${sobreNegro};">
+            <td class="caja" style="padding: 24px 44px 0 44px; font-family: ${SANS}; font-size: 12px; line-height: 1.65; color: ${suave};">
               ${pie(para)}
-              <p style="margin: 16px 0 0 0; color: ${sobreNegro};">&copy; ${year} ${esc(NOMBRE_GRUPO)} &middot; Málaga</p>
+              <p style="margin: 16px 0 0 0; color: ${suave};">&copy; ${year} ${esc(NOMBRE_GRUPO)} &middot; Málaga</p>
             </td>
           </tr>
         </table>

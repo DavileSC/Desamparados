@@ -111,7 +111,7 @@ export class SolicitudesService {
   static async aprobarSolicitud(userId: number, meta?: MetaDeAuditoria) {
     const user = await db.user.findUnique({
       where: { id: userId },
-      include: { hermanos: { where: FICHA_PENDIENTE, select: { id: true, esTitular: true, sexo: true } } } // Solo las fichas pendientes
+      include: { hermanos: { where: FICHA_PENDIENTE, select: { id: true, esTitular: true, sexo: true, nombre: true, apellidos: true } } } // Solo las fichas pendientes
     });
 
     if (!user) throw new NotFoundError(HERMANO_ERRORS.USER_NOT_FOUND);
@@ -165,7 +165,10 @@ export class SolicitudesService {
     EmailService.enviarAprobacionSolicitud(
       user.email,
       user.nombre,
-      aprobadas.map((f) => f.numeroHermano),
+      aprobadas.flatMap((f) => {
+        const ficha = user.hermanos.find((h) => h.id === f.id);
+        return ficha ? [{ nombre: ficha.nombre, apellidos: ficha.apellidos, numeroHermano: f.numeroHermano }] : [];
+      }),
       user.hermanos.find((h) => h.esTitular)?.sexo
     ).catch((err) => console.error('Error enviando el aviso de aprobación:', err));
 

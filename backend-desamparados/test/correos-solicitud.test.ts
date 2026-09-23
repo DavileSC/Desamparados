@@ -231,6 +231,7 @@ describe('aprobación de la solicitud', () => {
       const ficha = await db.hermano.findFirst({ where: { userId: cuenta.id } });
       assert.ok(ficha?.numeroHermano, 'la ficha debería haber recibido número');
       assert.match(aviso.html, new RegExp(String(ficha.numeroHermano)), 'el correo debe decirle su número');
+      assert.match(aviso.html, new RegExp(`${ficha.nombre}[^<]*${ficha.apellidos}`), 'y de quién es cada número');
     } finally {
       await db.hermano.deleteMany({ where: { userId: cuenta.id } });
       await db.user.deleteMany({ where: { id: cuenta.id } });
