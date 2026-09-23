@@ -59,7 +59,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
         <Typography id="calendario-mes" variant="h5" component="h2">{titulo}</Typography>
         {veAgenda && (
-          <Typography component={Link} to="/cms/agenda" variant="body2" sx={{ fontWeight: 600, textDecoration: 'none', color: 'primary.main' }}>
+          <Typography component={Link} to="/cms/agenda" variant="body2" sx={{ fontWeight: 600, textDecoration: 'none', color: superficies.enlace }}>
             Agenda →
           </Typography>
         )}
@@ -67,7 +67,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: { xs: '3px', sm: '5px' } }}>
         {DIAS_SEMANA.map((d) => (
-          <Typography key={d} aria-hidden="true" sx={{ fontSize: 11, textAlign: 'center', color: 'text.secondary', pb: 0.25 }}>{d}</Typography>
+          <Typography key={d} aria-hidden="true" sx={{ fontSize: 12, textAlign: 'center', color: 'text.secondary', pb: 0.25 }}>{d}</Typography>
         ))}
         {Array.from({ length: huecos }, (_, i) => <Box key={`hueco-${i}`} />)}
         {Array.from({ length: diasDelMes }, (_, i) => {
@@ -93,7 +93,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
                 borderRadius: 1,
                 p: '4px 5px',
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0,
-                fontSize: 11.5,
+                fontSize: 12.5,
                 backgroundColor: clase ? COLOR[clase].fondo : oscuro ? 'rgba(255,255,255,0.035)' : '#f4f2ee',
                 color: clase ? COLOR[clase].texto : 'text.secondary',
                 outline: esHoy ? `1.5px solid ${oscuro ? '#ffb3b4' : '#1b1c1a'}` : hayReparto ? `1px dashed ${oscuro ? 'rgba(255,255,255,0.45)' : '#7b757a'}` : 'none',
@@ -103,19 +103,19 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
             >
               <Box component="span" sx={{ fontWeight: esHoy ? 700 : 500 }}>{dia}</Box>
               {actos[0] && (
-                <Box component="span" sx={{ display: 'none', '@container calendario (min-width: 380px)': { display: 'block' }, fontSize: 10.5, fontWeight: 600, lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <Box component="span" sx={{ display: 'none', '@container calendario (min-width: 380px)': { display: 'block' }, fontSize: 11.5, fontWeight: 600, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {actos[0].title}{actos.length > 1 ? ` +${actos.length - 1}` : ''}
                 </Box>
               )}
               {!actos[0] && hayReparto && (
-                <Box component="span" sx={{ display: 'none', '@container calendario (min-width: 380px)': { display: 'block' }, fontSize: 10.5, lineHeight: 1.15 }}>Reparto</Box>
+                <Box component="span" sx={{ display: 'none', '@container calendario (min-width: 380px)': { display: 'block' }, fontSize: 11.5, lineHeight: 1.2 }}>Reparto</Box>
               )}
             </Box>
           )
         })}
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', mt: 'auto', pt: 1.5, fontSize: 12, color: 'text.secondary' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', mt: 'auto', pt: 1.5, fontSize: 12.5, color: 'text.secondary' }}>
         {clasesDelMes.map((c) => (
           <Box component="span" key={c} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
             <Box component="span" sx={{ width: 10, height: 10, borderRadius: '3px', backgroundColor: COLOR[c].muestra }} />

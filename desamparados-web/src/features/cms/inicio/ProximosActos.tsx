@@ -36,7 +36,7 @@ export default function ProximosActos({
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 2.75, pt: 2.25, pb: 1.5 }}>
         <Typography id="proximos-actos" variant="h5" component="h2">Próximos actos</Typography>
         {veAgenda && (
-          <Typography component={Link} to="/cms/agenda" variant="body2" sx={{ fontWeight: 600, textDecoration: 'none', color: 'primary.main' }}>
+          <Typography component={Link} to="/cms/agenda" variant="body2" sx={{ fontWeight: 600, textDecoration: 'none', color: superficies.enlace }}>
             Agenda →
           </Typography>
         )}

@@ -5,6 +5,7 @@ import { useTemaCms } from '../../../app/useTemaCms'
 import { MECER, fondoResplandor, type TonoResplandor } from '../../../theme/resplandor'
 import { Degradado, Halo } from '../../../components/charts/brillo'
 import { curvaSuave } from '../../../components/charts/ejes'
+import { useAnchoMedido } from '../../../components/charts/useAnchoMedido'
 import { eurosResumen, numero } from '../contabilidad/formato'
 import { contar } from './plural'
 import { aparecerSuave, CIFRA, crecerX, crecerY, entrada, sinMovimiento, trazar, useCuenta } from './animaciones'
@@ -23,20 +24,26 @@ function Valor({ valor, euros = false }: { valor: number; euros?: boolean }) {
 function Area({ valores, color, orden }: { valores: number[]; color: string; orden: number }) {
   const { graficas } = useTemaCms()
   const id = useId().replace(/:/g, '')
+  // Se dibuja al ancho real de la baldosa: estirando una caja fija, el punto
+  // final salía ovalado y la línea más gruesa en las subidas que en lo llano.
+  const { referencia, ancho } = useAnchoMedido()
   if (valores.length < 2) return null
-  const ancho = 200, alto = 52
+  const alto = 52
+  // Margen a los lados para que el halo del último punto no se corte.
+  const margen = 8
   const min = Math.min(...valores), max = Math.max(...valores), rango = max - min || 1
-  const puntos: [number, number][] = valores.map((v, i) => [i * (ancho / (valores.length - 1)), alto - 6 - ((v - min) / rango) * (alto - 16)])
+  const puntos: [number, number][] = valores.map((v, i) => [margen + i * ((ancho - 2 * margen) / (valores.length - 1)), alto - 6 - ((v - min) / rango) * (alto - 18)])
   const d = curvaSuave(puntos)
   const [ux, uy] = puntos[puntos.length - 1]
   const retraso = `${300 + orden * 120}ms`
   return (
-    <Box component="svg" viewBox={`0 0 ${ancho} ${alto}`} preserveAspectRatio="none" aria-hidden="true" sx={{ display: 'block', width: '100%', height: 52, mt: 1.25, overflow: 'visible' }}>
+    <Box ref={referencia} sx={{ mt: 1.25 }}>
+    <Box component="svg" viewBox={`0 0 ${ancho} ${alto}`} width="100%" height={alto} aria-hidden="true" sx={{ display: 'block', overflow: 'visible' }}>
       <defs>
         <Degradado id={`area-${id}`} color={color} arriba={0.45} />
         <Halo id={`halo-${id}`} radio={3} />
       </defs>
-      <Box component="path" d={`${d} L${ancho},${alto} L0,${alto} Z`} fill={`url(#area-${id})`} sx={{ animation: `${aparecerSuave} 1s ease-out backwards`, animationDelay: retraso, ...sinMovimiento }} />
+      <Box component="path" d={`${d} L${puntos[puntos.length - 1][0]},${alto} L${margen},${alto} Z`} fill={`url(#area-${id})`} sx={{ animation: `${aparecerSuave} 1s ease-out backwards`, animationDelay: retraso, ...sinMovimiento }} />
       <path d={d} fill="none" stroke={color} strokeWidth={4} filter={`url(#halo-${id})`} opacity={graficas.brillo} />
       <Box
         component="path"
@@ -50,8 +57,9 @@ function Area({ valores, color, orden }: { valores: number[]; color: string; ord
         strokeDasharray="1"
         sx={{ animation: `${trazar} 1.3s ease-out backwards`, animationDelay: retraso, ...sinMovimiento }}
       />
-      <circle cx={ux} cy={uy} r={6} fill={color} opacity={graficas.brillo * 0.4} />
-      <circle cx={ux} cy={uy} r={2.8} fill={color} />
+      <circle cx={ux} cy={uy} r={7} fill={color} opacity={graficas.brillo * 0.4} />
+      <circle cx={ux} cy={uy} r={3.5} fill={color} />
+    </Box>
     </Box>
   )
 }
@@ -91,7 +99,7 @@ function Variacion({ valor, texto }: { valor: number; texto: string }) {
       component="span"
       sx={{
         display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 0.875, py: 0.125, borderRadius: 99,
-        fontSize: 11.5, fontWeight: 700, whiteSpace: 'nowrap',
+        fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
         color, backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
       }}
     >
@@ -202,7 +210,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
                 <Box key={p.estado} sx={{ flexGrow: p.importe, backgroundColor: p.color, backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0) 60%)' }} />
               ))}
             </Box>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '2px 10px', mt: 0.75, fontSize: 11.5, color: 'text.secondary' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '2px 10px', mt: 0.75, fontSize: 12.5, color: 'text.secondary' }}>
               {partes.filter((p) => p.importe > 0).map((p) => (
                 <Box component="span" key={p.estado} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
                   <Box component="span" sx={{ width: 7, height: 7, borderRadius: '2px', backgroundColor: p.color }} />

@@ -85,7 +85,7 @@ function Tarjeta({
  * es el ejercicio cerrado.
  */
 export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse }) {
-  const { graficas } = useTemaCms()
+  const { graficas, superficies } = useTemaCms()
   const anioActual = panelDeHoy.ejercicio.anio
   const [anio, setAnio] = useState(anioActual)
   const [pestana, setPestana] = useState<Pestana>('hermanos')
@@ -162,7 +162,12 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
         variant="scrollable"
         scrollButtons="auto"
         allowScrollButtonsMobile
-        sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+        sx={{
+          borderBottom: 1, borderColor: 'divider', mb: 2,
+          // La pestaña elegida, en el color de enlace: el granate primario no se lee sobre oscuro.
+          '& .MuiTab-root.Mui-selected': { color: superficies.enlace },
+          '& .MuiTabs-indicator': { backgroundColor: superficies.enlace },
+        }}
       >
         {PESTANAS.map((p) => (
           <Tab key={p.clave} value={p.clave} label={p.etiqueta} id={`pestana-${p.clave}`} aria-controls={`panel-${p.clave}`} />

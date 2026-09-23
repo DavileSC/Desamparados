@@ -62,9 +62,9 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
             animation: `${acercar} 22s ease-out both`, ...sinMovimiento,
           }}
         />
-        <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(16,14,17,0) 30%, rgba(16,14,17,.92) 90%)' }} />
-        <Box sx={{ position: 'relative', p: 2.75 }}>
-          <Typography id="camino-estacion" sx={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: OSCURO.texto2 }}>
+        <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(16,14,17,0) 25%, rgba(16,14,17,.55) 55%, rgba(16,14,17,.95) 92%)' }} />
+        <Box sx={{ position: 'relative', p: 2.75, textShadow: '0 1px 12px rgba(0,0,0,.55)' }}>
+          <Typography id="camino-estacion" sx={{ fontSize: 12.5, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#e6dfe2' }}>
             Sábado de Pasión · {corta(fecha)}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
@@ -107,6 +107,13 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
               style={{ ['--hasta' as string]: 1 - recorrido }}
               sx={{ animation: `${llenarTrazo} 1.8s cubic-bezier(.3, .7, .2, 1) .3s backwards`, ...sinMovimiento }}
             />
+            <Box
+              component="g"
+              sx={{ transformBox: 'fill-box', transformOrigin: 'center', animation: `${aparecer} .5s ease-out 2.1s backwards`, ...sinMovimiento }}
+            >
+              <circle cx={aqui.x} cy={aqui.y} r={13} fill="rgba(255,179,180,.18)" />
+              <circle cx={aqui.x} cy={aqui.y} r={6} fill={OSCURO.claro} />
+            </Box>
             {paradas.map((parada, i) => {
               const { x, y } = punto(parada.p)
               const pasada = parada.p <= recorrido
@@ -130,13 +137,6 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
                 />
               )
             })}
-            <Box
-              component="g"
-              sx={{ transformBox: 'fill-box', transformOrigin: 'center', animation: `${aparecer} .5s ease-out 2.1s backwards`, ...sinMovimiento }}
-            >
-              <circle cx={aqui.x} cy={aqui.y} r={13} fill="rgba(255,179,180,.18)" />
-              <circle cx={aqui.x} cy={aqui.y} r={6} fill={OSCURO.claro} />
-            </Box>
           </Box>
 
           {/* Etiquetas en HTML, no dentro del SVG: así no encogen con él y se leen en cualquier ancho. */}
@@ -161,8 +161,8 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
                   maxWidth: 170,
                 }}
               >
-                <Typography component="span" sx={{ display: 'block', fontSize: 12.5, color: OSCURO.texto2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{parada.titulo}</Typography>
-                <Typography component="span" sx={{ display: 'block', fontSize: 11.5, color: OSCURO.tenue }}>{parada.fecha}</Typography>
+                <Typography component="span" sx={{ display: 'block', fontSize: 13, color: OSCURO.texto2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{parada.titulo}</Typography>
+                <Typography component="span" sx={{ display: 'block', fontSize: 12, color: OSCURO.tenue }}>{parada.fecha}</Typography>
               </Box>
             )
           })}
@@ -173,7 +173,7 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
             Próximas paradas: {proximas.map((p) => `${p.titulo}, ${p.fecha}`).join(' · ')}
           </Typography>
         )}
-        <Typography sx={{ fontSize: 12, color: OSCURO.tenue, mt: 'auto' }}>
+        <Typography sx={{ fontSize: 12.5, color: OSCURO.texto2, mt: 'auto' }}>
           Desde el {corta(anterior)} hasta el {corta(fecha)}
         </Typography>
       </Box>
