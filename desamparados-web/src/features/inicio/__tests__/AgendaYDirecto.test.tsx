@@ -8,7 +8,7 @@ import type { ApiEvent } from '../../../lib/api/agenda'
 import { responderPortada, textosDePrueba } from './ayudas'
 
 function evento(parcial: Partial<ApiEvent> & Pick<ApiEvent, 'id' | 'title' | 'startDate'>): ApiEvent {
-  return { description: null, location: null, endDate: null, visibility: 'public', type: 'CULTO', ...parcial }
+  return { description: null, location: null, endDate: null, type: 'CULTO', ...parcial }
 }
 
 // Las horas van a mediodía UTC: así el día no cambia sea cual sea la zona horaria del equipo.

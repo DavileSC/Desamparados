@@ -7,7 +7,7 @@ import { stubFetchPublico } from '../../../../test/fetchPublico'
 
 const evento = {
   id: 1, title: 'Besapiés', description: null, location: 'Parroquia',
-  startDate: '2026-09-12T18:00:00.000Z', endDate: null, visibility: 'public', type: 'CULTO',
+  startDate: '2026-09-12T18:00:00.000Z', endDate: null, type: 'CULTO',
 }
 
 /**

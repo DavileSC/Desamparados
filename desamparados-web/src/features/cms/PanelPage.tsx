@@ -71,7 +71,7 @@ export default function PanelPage() {
             },
           }}
         >
-          <Box sx={zona('camino')}><CaminoEstacion eventos={data.actividad.proximosEventos} /></Box>
+          <Box sx={zona('camino')}><CaminoEstacion eventos={data.curso.eventos} /></Box>
           <Box sx={zona('cifras')}><Cifras panel={data} /></Box>
           <Box sx={zona('hoy')}><ParaHoy tareas={tareas} role={role} orden={6} /></Box>
           <Box sx={zona('calendario')}><CalendarioMes calendario={data.calendario} role={role} orden={7} /></Box>

@@ -46,6 +46,7 @@ const panel: PanelResponse = {
     reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
   },
   calendario: { mes: '2026-09', eventos: [], diasDeReparto: [] },
+  curso: { eventos: [] },
 }
 
 function responder(cuerpo: unknown, status = 200) {

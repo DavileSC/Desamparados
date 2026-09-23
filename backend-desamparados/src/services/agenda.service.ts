@@ -34,16 +34,11 @@ export class AgendaService {
    * `page` y `limit` llegan crudos de la consulta; quien decide qué es válido
    * (defecto y tope) es sanearPaginacion.
    */
-  static async getEvents(isHermano: boolean, filters: EventFilterDto & { page?: unknown; limit?: unknown }) {
+  static async getEvents(filters: EventFilterDto & { page?: unknown; limit?: unknown }) {
     const paginacion = sanearPaginacion(filters);
     const whereClause: Prisma.EventoWhereInput = {};
 
-    // A) Privacidad
-    if (!isHermano) {
-      whereClause.visibility = 'public';
-    }
-
-    // B) Filtro de Fechas (Mejorado)
+    // A) Filtro de Fechas (Mejorado)
     if (filters.from || filters.to) {
       whereClause.startDate = {}; // Inicializamos el objeto
 
@@ -60,7 +55,7 @@ export class AgendaService {
       whereClause.startDate = { gte: today };
     }
 
-    // C) NUEVO: Filtro por Tipo (Ej: Ver solo Ensayos)
+    // B) Filtro por Tipo (Ej: Ver solo Ensayos)
     if (filters.type) {
       whereClause.type = filters.type;
     }
@@ -82,7 +77,6 @@ export class AgendaService {
           location: true,
           startDate: true,
           endDate: true,
-          visibility: true,
           type: true // <--- Devolvemos el tipo al frontend para que pinte el color
         }
       }),
@@ -93,7 +87,7 @@ export class AgendaService {
   }
 
   /**
-   * El listado del CMS: pasados y futuros, las dos visibilidades. La lectura
+   * El listado del CMS: pasados y futuros. La lectura
    * pública solo enseña desde hoy, y el CMS la usaba: un evento fechado por
    * error en el pasado desaparecía y ya no se podía corregir ni borrar.
    *
@@ -101,25 +95,23 @@ export class AgendaService {
    * reciente hacia atrás, que es el que se suele buscar.
    *
    * Con cada página va un resumen: cuántos hay a cada lado de hoy con la misma
-   * búsqueda y filtros (las cifras de las pestañas), cuántos de los próximos
-   * son solo para hermanos, cuál es el siguiente y qué actos salen ahora en la
-   * portada de la web.
+   * búsqueda y filtros (las cifras de las pestañas), cuál es el siguiente y
+   * qué actos salen ahora en la portada de la web.
    */
-  static async getAdminEvents(periodo: PeriodoAgenda, { page, limit, q, tipo, visibilidad }: AdminEventFilterDto) {
+  static async getAdminEvents(periodo: PeriodoAgenda, { page, limit, q, tipo }: AdminEventFilterDto) {
     const paginacion = sanearPaginacion({ page, limit });
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
     const filtros: Prisma.EventoWhereInput = {
       ...(tipo ? { type: tipo } : {}),
-      ...(visibilidad ? { visibility: visibilidad } : {}),
       ...condicionBusqueda(q, ['title', 'description', 'location'] as const),
     };
     const proximos: Prisma.EventoWhereInput = { startDate: { gte: hoy } };
     const pasados: Prisma.EventoWhereInput = { startDate: { lt: hoy } };
     const where: Prisma.EventoWhereInput = { ...filtros, ...(periodo === 'pasados' ? pasados : proximos) };
 
-    const [eventos, total, cuantosProximos, cuantosPasados, soloHermanos, siguiente, enPortada] = await db.$transaction([
+    const [eventos, total, cuantosProximos, cuantosPasados, siguiente, enPortada] = await db.$transaction([
       db.evento.findMany({
         where,
         // Mismo desempate por id que la lectura pública (ver getEvents).
@@ -133,7 +125,6 @@ export class AgendaService {
           location: true,
           startDate: true,
           endDate: true,
-          visibility: true,
           type: true,
           updatedAt: true
         }
@@ -141,10 +132,9 @@ export class AgendaService {
       db.evento.count({ where }),
       db.evento.count({ where: { ...filtros, ...proximos } }),
       db.evento.count({ where: { ...filtros, ...pasados } }),
-      db.evento.count({ where: { ...proximos, visibility: 'members_only' } }),
       db.evento.findFirst({ where: proximos, orderBy: [{ startDate: 'asc' }, { id: 'asc' }], select: { id: true, title: true, startDate: true } }),
       db.evento.findMany({
-        where: { ...proximos, visibility: 'public' },
+        where: proximos,
         orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
         take: ACTOS_EN_PORTADA,
         select: { id: true, startDate: true },
@@ -156,19 +146,15 @@ export class AgendaService {
       resumen: {
         proximos: cuantosProximos,
         pasados: cuantosPasados,
-        soloHermanos,
         siguiente,
         portada: { limite: ACTOS_EN_PORTADA, ids: actosEnPortada(enPortada).map((e) => e.id) },
       },
     };
   }
 
-  static async getEventById(id: number, isHermano: boolean) {
+  static async getEventById(id: number) {
     const event = await db.evento.findUnique({ where: { id } });
-
-    // Sin sesión, un evento solo para hermanos responde lo mismo que uno que no
-    // existe: un «no tienes permisos» confirmaba que había algo con ese id.
-    if (!event || (!isHermano && event.visibility === 'members_only')) {
+    if (!event) {
       throw new NotFoundError('Evento no encontrado');
     }
     return event;
@@ -193,7 +179,6 @@ static async createEvent(data: CreateEventDto) {
         location: data.location,
         startDate: start,
         endDate: end,
-        visibility: data.visibility,
         type: data.type 
       }
     });
@@ -226,7 +211,6 @@ static async createEvent(data: CreateEventDto) {
         location: data.location,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate === null ? null : (data.endDate ? new Date(data.endDate) : undefined),
-        visibility: data.visibility,
         type: data.type 
       }
     });

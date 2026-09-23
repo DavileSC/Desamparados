@@ -445,11 +445,6 @@ model PapeletaSitio {
 // 6. EVENTOS Y CALENDARIO
 // ---------------------------------------------------------
 
-enum EventVisibility {
-  public
-  members_only
-}
-
 enum TipoEvento {
   CULTO
   PROCESION
@@ -468,8 +463,8 @@ model Evento {
   startDate   DateTime
   endDate     DateTime?
 
-  visibility EventVisibility @default(public)
-  type       TipoEvento      @default(OTRO)
+  // Todos los actos son públicos: la agenda no tiene actos solo para hermanos.
+  type TipoEvento @default(OTRO)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

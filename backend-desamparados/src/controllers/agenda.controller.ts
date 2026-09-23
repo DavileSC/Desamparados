@@ -8,28 +8,24 @@ import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.serv
 export class AgendaController {
 
   static list = manejar('Error obteniendo agenda', async (req, res) => {
-    const isHermano = !!req.user;
     // Los query params ya vienen limpios y tipados gracias a ArkType. La
     // página y el tamaño llegan crudos: quien los sanea es el servicio.
-    const events = await AgendaService.getEvents(isHermano, req.query as any);
+    const events = await AgendaService.getEvents(req.query as any);
     res.status(200).json(events);
   });
 
-  // Listado del CMS (sesión + rol en la ruta): pasados o próximos, de las dos
-  // visibilidades. La query ya viene validada por queryAgendaAdminSchema.
+  // Listado del CMS (sesión + rol en la ruta): pasados o próximos. La query ya viene validada por queryAgendaAdminSchema.
   static adminList = manejar('Error obteniendo agenda', async (req, res) => {
     const periodo = req.query.periodo === 'pasados' ? 'pasados' : 'proximos';
-    const { page, limit, q, tipo, visibilidad } = req.query as AdminEventFilterDto;
-    const events = await AgendaService.getAdminEvents(periodo, { page, limit, q, tipo, visibilidad });
+    const { page, limit, q, tipo } = req.query as AdminEventFilterDto;
+    const events = await AgendaService.getAdminEvents(periodo, { page, limit, q, tipo });
     res.status(200).json(events);
   });
 
   static getOne = manejar('Error obteniendo evento', async (req, res) => {
     // Ya no hace falta isNaN, validateId en la ruta nos protege
-    const id = Number(req.params.id); 
-    const isHermano = !!req.user;
-
-    const event = await AgendaService.getEventById(id, isHermano);
+    const id = Number(req.params.id);
+    const event = await AgendaService.getEventById(id);
     res.status(200).json(event);
   });
 

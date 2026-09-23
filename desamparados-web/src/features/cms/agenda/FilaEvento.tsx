@@ -4,7 +4,6 @@ import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { Link } from 'react-router-dom'
@@ -35,7 +34,6 @@ export default function FilaEvento({ evento, enPortada, volver, onBorrar }: Prop
   const cerrar = () => setMenu(null)
   const inicio = new Date(evento.startDate)
   const fin = finEnOtroDia(evento)
-  const soloHermanos = evento.visibility === 'members_only'
   const avisos = [!evento.location?.trim() && 'Sin lugar', !evento.description?.trim() && 'Sin descripción'].filter(Boolean) as string[]
 
   return (
@@ -67,15 +65,13 @@ export default function FilaEvento({ evento, enPortada, volver, onBorrar }: Prop
             {avisos.map((texto) => <Aviso key={texto}>{texto}</Aviso>)}
           </Box>
         )}
-        {/* En el móvil no hay columnas de tipo y de quién lo ve: van aquí. */}
+        {/* En el móvil no hay columna de tipo: va aquí. */}
         <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1.5, mt: 0.75, flexWrap: 'wrap' }}>
           <PuntoTipo tipo={evento.type} />
-          <Quien soloHermanos={soloHermanos} />
         </Box>
       </Box>
 
       <Box sx={{ gridArea: 'tipo', display: { xs: 'none', md: 'block' } }}><PuntoTipo tipo={evento.type} /></Box>
-      <Box sx={{ gridArea: 'quien', display: { xs: 'none', md: 'block' } }}><Quien soloHermanos={soloHermanos} /></Box>
 
       <Box sx={{ gridArea: 'acciones', display: 'flex', gap: 0.5, justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center' }}>
         <Button
@@ -105,17 +101,6 @@ export default function FilaEvento({ evento, enPortada, volver, onBorrar }: Prop
           </MenuItem>
         </Menu>
       </Box>
-    </Box>
-  )
-}
-
-/** Público o solo para hermanos. Lo público no lleva marca: es lo normal. */
-function Quien({ soloHermanos }: { soloHermanos: boolean }) {
-  const { superficies } = useTemaCms()
-  if (!soloHermanos) return <Typography variant="body2" sx={{ fontSize: 13.5, color: 'text.secondary' }}>Público</Typography>
-  return (
-    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, height: 24, px: 1.25, borderRadius: 12, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', backgroundColor: superficies.pillPendiente, '& svg': { fontSize: 14 } }}>
-      <LockOutlinedIcon aria-hidden="true" />Solo hermanos
     </Box>
   )
 }

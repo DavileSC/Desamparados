@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react'
-import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, MenuItem, Paper, Radio, RadioGroup, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Helmet } from 'react-helmet-async'
@@ -22,7 +22,6 @@ interface Formulario {
   description: string
   location: string
   type: ApiEvent['type']
-  visibility: ApiEvent['visibility']
   dia: string
   hora: string
   conFin: boolean
@@ -30,7 +29,7 @@ interface Formulario {
   horaFin: string
 }
 
-const vacio: Formulario = { title: '', description: '', location: '', type: 'CULTO', visibility: 'public', dia: '', hora: '', conFin: false, diaFin: '', horaFin: '' }
+const vacio: Formulario = { title: '', description: '', location: '', type: 'CULTO', dia: '', hora: '', conFin: false, diaFin: '', horaFin: '' }
 
 const momento = (dia: string, hora: string) => (dia && hora ? new Date(`${dia}T${hora}`) : null)
 
@@ -39,7 +38,7 @@ function desdeEvento(evento: ApiEvent): Formulario {
   const fin = evento.endDate ? new Date(evento.endDate) : null
   return {
     title: evento.title, description: evento.description ?? '', location: evento.location ?? '',
-    type: evento.type, visibility: evento.visibility,
+    type: evento.type,
     dia: aDia(inicio), hora: aHora(inicio),
     conFin: fin !== null, diaFin: fin ? aDia(fin) : '', horaFin: fin ? aHora(fin) : '',
   }
@@ -91,13 +90,12 @@ export default function AgendaEditPage() {
   const yaPaso = Boolean(form.dia && new Date(`${form.dia}T00:00`) < hoy)
   const falta = [form.title.trim() === '' && 'el título', !form.dia && 'el día', !form.hora && 'la hora', form.conFin && !form.horaFin && 'la hora del final'].filter(Boolean) as string[]
   const sePuedeGuardar = falta.length === 0 && !finAntes
-  const publico = form.visibility === 'public'
 
   const guardar = async () => {
     if (!inicio) return
     const datos: DatosDeActo = {
       title: form.title.trim(), description: form.description, location: form.location,
-      type: form.type, visibility: form.visibility,
+      type: form.type,
       startDate: inicio.toISOString(),
       endDate: fin ? fin.toISOString() : null,
     }
@@ -108,8 +106,8 @@ export default function AgendaEditPage() {
         aviso: yaPaso
           ? 'Guardado. Su fecha ya ha pasado: lo tienes en «Pasados» y no sale en la web.'
           : nuevo
-            ? (publico ? 'Añadido a la agenda: ya se ve en la web.' : 'Añadido a la agenda: lo ven los hermanos al entrar con su cuenta.')
-            : (publico ? 'Cambios guardados: ya se ven en la web.' : 'Cambios guardados: ya los ven los hermanos.'),
+            ? 'Añadido a la agenda: ya se ve en la web.'
+            : 'Cambios guardados: ya se ven en la web.',
       },
     )
   }
@@ -117,7 +115,7 @@ export default function AgendaEditPage() {
   const titulo = nuevo ? 'Nuevo evento' : (guardado?.title ?? form.title)
   const estadoTexto = nuevo
     ? (original ? `Copia de «${original}»: cambia el día y guárdalo.` : 'Sin guardar todavía: se verá en la web en cuanto lo guardes.')
-    : `${inicial.visibility === 'public' ? 'En la web' : 'Solo para hermanos'}${guardado?.updatedAt ? ` · guardado ${haceCuanto(guardado.updatedAt)}` : ''}`
+    : `En la web${guardado?.updatedAt ? ` · guardado ${haceCuanto(guardado.updatedAt)}` : ''}`
 
   return (
     <>
@@ -188,31 +186,25 @@ export default function AgendaEditPage() {
             </Paper>
 
             <Panel titulo="Así sale en la portada">
-              {publico ? (
-                // La lista de verdad, la de la tarjeta de papel de la portada, pero sin poder pulsarla.
-                <ThemeProvider theme={temaPublico}>
-                  <Box inert data-testid="vista-previa-evento" sx={{ borderRadius: 1, backgroundColor: PAPEL, fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', overflow: 'hidden' }}>
-                    <ListaDeAgenda
-                      hoy={hoy}
-                      abiertoId="vista-previa"
-                      onAlternar={() => {}}
-                      eventos={[{
-                        id: 'vista-previa',
-                        title: form.title.trim() || 'Título del acto',
-                        description: form.description,
-                        location: form.location.trim() || undefined,
-                        type: form.type,
-                        start: inicio ?? new Date(),
-                        end: fin,
-                      }]}
-                    />
-                  </Box>
-                </ThemeProvider>
-              ) : (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  No sale en la portada ni en la agenda pública: es solo para hermanos. Lo ven al entrar con su cuenta.
-                </Typography>
-              )}
+              {/* La lista de verdad, la de la tarjeta de papel de la portada, pero sin poder pulsarla. */}
+              <ThemeProvider theme={temaPublico}>
+                <Box inert data-testid="vista-previa-evento" sx={{ borderRadius: 1, backgroundColor: PAPEL, fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', overflow: 'hidden' }}>
+                  <ListaDeAgenda
+                    hoy={hoy}
+                    abiertoId="vista-previa"
+                    onAlternar={() => {}}
+                    eventos={[{
+                      id: 'vista-previa',
+                      title: form.title.trim() || 'Título del acto',
+                      description: form.description,
+                      location: form.location.trim() || undefined,
+                      type: form.type,
+                      start: inicio ?? new Date(),
+                      end: fin,
+                    }]}
+                  />
+                </Box>
+              </ThemeProvider>
             </Panel>
           </Stack>
 
@@ -238,12 +230,6 @@ export default function AgendaEditPage() {
               </Stack>
             </Panel>
 
-            <Panel titulo="Quién lo ve">
-              <RadioGroup value={form.visibility} onChange={(e) => campo('visibility', e.target.value as ApiEvent['visibility'])}>
-                <FormControlLabel value="public" control={<Radio size="small" />} label={<Opcion titulo="Público" texto="En la portada y en la agenda de la web, para todos." />} sx={{ alignItems: 'flex-start', mb: 1 }} />
-                <FormControlLabel value="members_only" control={<Radio size="small" />} label={<Opcion titulo="Solo hermanos" texto="Cabildos, ensayos, convivencias: solo quien entra con su cuenta." />} sx={{ alignItems: 'flex-start' }} />
-              </RadioGroup>
-            </Panel>
           </Stack>
         </Box>
       </Box>
@@ -251,15 +237,6 @@ export default function AgendaEditPage() {
       <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="este evento" />
       <Box sx={{ height: 24 }} />
     </>
-  )
-}
-
-function Opcion({ titulo, texto }: { titulo: string; texto: string }) {
-  return (
-    <Box sx={{ pt: 0.75 }}>
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>{titulo}</Typography>
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{texto}</Typography>
-    </Box>
   )
 }
 

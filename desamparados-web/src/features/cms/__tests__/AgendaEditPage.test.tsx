@@ -10,10 +10,10 @@ import AgendaEditPage from '../AgendaEditPage'
 const enLocal = (dia: string, hora: string) => new Date(`${dia}T${hora}`).toISOString()
 const besapies = {
   id: 3, title: 'Besapiés', description: 'A la Virgen de los Desamparados.', location: 'Parroquia',
-  startDate: enLocal('2099-10-12', '18:00'), endDate: null, visibility: 'public', type: 'CULTO',
+  startDate: enLocal('2099-10-12', '18:00'), endDate: null, type: 'CULTO',
   updatedAt: new Date().toISOString(),
 }
-const ensayo = { ...besapies, id: 4, title: 'Ensayo de costaleros', description: null, visibility: 'members_only', type: 'ENSAYO' }
+const ensayo = { ...besapies, id: 4, title: 'Ensayo de costaleros', description: null, type: 'ENSAYO' }
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -65,11 +65,12 @@ describe('AgendaEditPage', () => {
     expect(vista).toHaveTextContent('Culto')
   })
 
-  it('un acto solo para hermanos no tiene vista previa de la portada: lo dice', async () => {
+  it('todo acto tiene su vista previa de la portada, y no se pregunta quién lo ve', async () => {
     montar('/cms/agenda/4/editar')
     expect(await screen.findByDisplayValue('Ensayo de costaleros')).toBeInTheDocument()
-    expect(screen.queryByTestId('vista-previa-evento')).not.toBeInTheDocument()
-    expect(screen.getByText(/no sale en la portada ni en la agenda pública/i)).toBeInTheDocument()
+    expect(screen.getByTestId('vista-previa-evento')).toBeInTheDocument()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(screen.queryByText(/solo hermanos/i)).not.toBeInTheDocument()
   })
 
   it('explica el fallo si el evento no existe', async () => {
@@ -99,7 +100,8 @@ describe('AgendaEditPage', () => {
     expect(await screen.findByText('Añadido a la agenda: ya se ve en la web.')).toBeInTheDocument()
     const peticion = guardado(simulado)!
     expect(peticion.metodo).toBe('POST')
-    expect(peticion.cuerpo).toMatchObject({ title: 'Función principal', startDate: enLocal('2099-11-08', '12:00'), endDate: null, type: 'CULTO', visibility: 'public' })
+    expect(peticion.cuerpo).toMatchObject({ title: 'Función principal', startDate: enLocal('2099-11-08', '12:00'), endDate: null, type: 'CULTO' })
+    expect(peticion.cuerpo).not.toHaveProperty('visibility')
   })
 
   it('no deja guardar si el final es anterior al comienzo', async () => {
@@ -112,15 +114,16 @@ describe('AgendaEditPage', () => {
     expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled()
   })
 
-  it('al editar manda el cambio y quién lo ve', async () => {
+  it('al editar manda el cambio', async () => {
     const usuario = userEvent.setup()
     const simulado = montar('/cms/agenda/3/editar')
-    await usuario.click(await screen.findByRole('radio', { name: /solo hermanos/i }))
+    await usuario.clear(await screen.findByLabelText('Lugar'))
+    await usuario.type(screen.getByLabelText('Lugar'), 'Parroquia de San Juan')
     await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
-    expect(await screen.findByText('Cambios guardados: ya los ven los hermanos.')).toBeInTheDocument()
+    expect(await screen.findByText('Cambios guardados: ya se ven en la web.')).toBeInTheDocument()
     const peticion = guardado(simulado)!
-    expect(peticion).toMatchObject({ metodo: 'PUT', cuerpo: { visibility: 'members_only', startDate: besapies.startDate } })
+    expect(peticion).toMatchObject({ metodo: 'PUT', cuerpo: { location: 'Parroquia de San Juan', startDate: besapies.startDate } })
     expect(peticion.url).toContain('/events/3')
   })
 

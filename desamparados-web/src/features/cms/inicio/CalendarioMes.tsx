@@ -1,28 +1,21 @@
 import { Box, Paper, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { Link } from 'react-router-dom'
 import type { PanelResponse, TipoEvento } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { fondoTarjeta } from '../../../theme/tarjeta'
 import { rolesPorRutaCms } from '../../../app/cmsNavegacion'
 import { entrada } from './animaciones'
+import { TIPOS } from '../../inicio/agenda'
 
 const DIAS_SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
-
-type Clase = 'culto' | 'reunion' | 'otro'
-/** Tres familias bastan para leer el mes de un vistazo; el detalle está en la Agenda. */
-const CLASE: Record<TipoEvento, Clase> = {
-  CULTO: 'culto', PROCESION: 'culto',
-  REUNION: 'reunion', FORMACION: 'reunion',
-  ENSAYO: 'otro', SOCIAL: 'otro', OTRO: 'otro',
-}
-const NOMBRE_CLASE: Record<Clase, string> = { culto: 'Culto y procesión', reunion: 'Reunión y formación', otro: 'Otros actos' }
 
 /** Día del mes (en la hora de España) de un instante ISO. */
 const diaEnMadrid = (iso: string) => Number(new Intl.DateTimeFormat('es-ES', { day: 'numeric', timeZone: 'Europe/Madrid' }).format(new Date(iso)))
 
 /**
- * El mes en curso de un vistazo: qué días hay actos, de qué clase, y qué días
+ * El mes en curso de un vistazo: qué días hay actos, de qué tipo, y qué días
  * hay turno de reparto de papeletas. Lunes primero, como en España.
  */
 export default function CalendarioMes({ calendario, role, hoy = new Date(), orden = 0 }: {
@@ -33,10 +26,10 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
 }) {
   const { modo, superficies } = useTemaCms()
   const oscuro = modo === 'oscuro'
-  const COLOR: Record<Clase, { fondo: string; texto: string; muestra: string }> = {
-    culto: { fondo: oscuro ? 'rgba(160,61,68,0.55)' : 'rgba(110,24,34,0.12)', texto: oscuro ? '#fff' : '#6e1822', muestra: oscuro ? '#a03d44' : '#6e1822' },
-    reunion: { fondo: oscuro ? 'rgba(255,255,255,0.14)' : '#e9e6e2', texto: oscuro ? '#fff' : '#1b1c1a', muestra: oscuro ? 'rgba(255,255,255,0.4)' : '#b9b3b0' },
-    otro: { fondo: oscuro ? 'rgba(222,199,43,0.2)' : 'rgba(193,172,0,0.16)', texto: oscuro ? '#fff' : '#514700', muestra: oscuro ? 'rgba(222,199,43,0.6)' : '#c1ac00' },
+  // Cada tipo con su color de la agenda: el día, velado de ese color; el texto, del color entero en claro.
+  const color = (tipo: TipoEvento) => {
+    const tono = oscuro ? TIPOS[tipo].oscuro : TIPOS[tipo].color
+    return { fondo: alpha(tono, oscuro ? 0.26 : 0.13), texto: oscuro ? '#fff' : tono, muestra: tono }
   }
 
   const [anio, mes] = calendario.mes.split('-').map(Number)
@@ -50,7 +43,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
     const dia = diaEnMadrid(evento.startDate)
     actosPorDia.set(dia, [...(actosPorDia.get(dia) ?? []), evento])
   }
-  const clasesDelMes = [...new Set(calendario.eventos.map((e) => CLASE[e.type]))]
+  const tiposDelMes = (Object.keys(TIPOS) as TipoEvento[]).filter((t) => calendario.eventos.some((e) => e.type === t))
   const veAgenda = role !== undefined && rolesPorRutaCms.agenda.includes(role)
   const titulo = `${MESES[mes - 1][0].toUpperCase()}${MESES[mes - 1].slice(1)} de ${anio}`
 
@@ -73,7 +66,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
         {Array.from({ length: diasDelMes }, (_, i) => {
           const dia = i + 1
           const actos = actosPorDia.get(dia) ?? []
-          const clase = actos[0] ? CLASE[actos[0].type] : null
+          const tipo = actos[0]?.type ?? null
           const hayReparto = reparto.has(dia)
           const esHoy = esteMes && hoy.getDate() === dia
           const semana = Math.floor((huecos + i) / 7)
@@ -94,8 +87,8 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
                 p: '4px 5px',
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0,
                 fontSize: 12.5,
-                backgroundColor: clase ? COLOR[clase].fondo : oscuro ? 'rgba(255,255,255,0.035)' : '#f4f2ee',
-                color: clase ? COLOR[clase].texto : 'text.secondary',
+                backgroundColor: tipo ? color(tipo).fondo : oscuro ? 'rgba(255,255,255,0.035)' : '#f4f2ee',
+                color: tipo ? color(tipo).texto : 'text.secondary',
                 outline: esHoy ? `1.5px solid ${oscuro ? '#ffb3b4' : '#1b1c1a'}` : hayReparto ? `1px dashed ${oscuro ? 'rgba(255,255,255,0.45)' : '#7b757a'}` : 'none',
                 outlineOffset: -1,
                 ...entrada(orden + semana),
@@ -116,10 +109,10 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
       </Box>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', mt: 'auto', pt: 1.5, fontSize: 12.5, color: 'text.secondary' }}>
-        {clasesDelMes.map((c) => (
-          <Box component="span" key={c} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-            <Box component="span" sx={{ width: 10, height: 10, borderRadius: '3px', backgroundColor: COLOR[c].muestra }} />
-            {NOMBRE_CLASE[c]}
+        {tiposDelMes.map((t) => (
+          <Box component="span" key={t} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+            <Box component="span" sx={{ width: 10, height: 10, borderRadius: '3px', backgroundColor: color(t).muestra }} />
+            {TIPOS[t].nombre}
           </Box>
         ))}
         {reparto.size > 0 && (

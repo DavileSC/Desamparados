@@ -3,15 +3,19 @@ import { GRANATE } from './estilos'
 
 export { GOLD, SERIF } from './estilos'
 
-/** Nombre y color de cada tipo de acto; los colores van sobre el papel de la tarjeta de la agenda. */
-export const TIPOS: Record<ApiEvent['type'], { nombre: string; color: string }> = {
-  CULTO: { nombre: 'Culto', color: GRANATE },
-  PROCESION: { nombre: 'Procesión', color: '#a03d44' },
-  FORMACION: { nombre: 'Formación', color: '#7a6420' },
-  SOCIAL: { nombre: 'Convivencia', color: '#4f5b63' },
-  ENSAYO: { nombre: 'Ensayo', color: '#7b757a' },
-  REUNION: { nombre: 'Reunión', color: '#7b757a' },
-  OTRO: { nombre: 'Otro', color: '#7b757a' },
+/**
+ * Nombre y color de cada tipo de acto, uno distinto por tipo: la agenda de la
+ * portada, la del CMS y el Inicio usan estos. `color` va sobre papel claro;
+ * `oscuro`, la misma familia aclarada, sobre los fondos oscuros del CMS.
+ */
+export const TIPOS: Record<ApiEvent['type'], { nombre: string; color: string; oscuro: string }> = {
+  CULTO: { nombre: 'Culto', color: GRANATE, oscuro: '#ff9fa6' },
+  PROCESION: { nombre: 'Procesión', color: '#5b2a86', oscuro: '#c6a3f0' },
+  FORMACION: { nombre: 'Formación', color: '#2b5d8c', oscuro: '#8fc0ef' },
+  ENSAYO: { nombre: 'Ensayo', color: '#a0501a', oscuro: '#f2a66e' },
+  REUNION: { nombre: 'Reunión', color: '#4f5b63', oscuro: '#c2ccd3' },
+  SOCIAL: { nombre: 'Convivencia', color: '#3d6b37', oscuro: '#9fd394' },
+  OTRO: { nombre: 'Otro', color: '#836700', oscuro: '#e3c65a' },
 }
 
 // Las fechas se construyen con año, mes y día, nunca sumando milisegundos:

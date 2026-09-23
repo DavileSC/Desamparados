@@ -10,6 +10,7 @@ import {
   rangoDeMeses,
   rangoDelEjercicio,
 } from '../domain/panel-ejercicio.js';
+import { rangoDelCurso } from '../domain/curso.js';
 
 /**
  * REGLA DE ORO DE ESTE FICHERO
@@ -18,7 +19,8 @@ import {
  * sobre User: el panel es informativo y no puede enseñar datos de personas.
  *
  * Dos excepciones, ninguna de las dos toca datos de una persona:
- *   - Evento: son actos públicos (los próximos y los del mes, para el calendario).
+ *   - Evento: son actos públicos (los próximos, los del mes para el calendario y
+ *     los del curso para el camino a la estación).
  *   - CategoriaTransaccion: es un catálogo (id, nombre de la categoría
  *     contable, p. ej. "Donativos"), no un dato de un hermano ni de un
  *     usuario. Se necesita en `findMany` porque `groupBy` sobre Transaccion
@@ -71,6 +73,14 @@ export interface PanelResponse {
     mes: string;
     eventos: { id: number; title: string; startDate: string; type: TipoEvento }[];
     diasDeReparto: string[];
+  };
+  /**
+   * Todos los actos del curso, de un Sábado de Pasión al siguiente (los dos
+   * incluidos, en Madrid), pasados y por venir: el camino a la estación los
+   * dibuja todos. Tampoco lo toca el selector de ejercicio.
+   */
+  curso: {
+    eventos: { id: number; title: string; startDate: string; type: TipoEvento }[];
   };
 }
 
@@ -148,6 +158,7 @@ export class PanelService {
     const haceUnAnio = inicioDiaMadrid(unAnioAntes(diaHoy));
     const mesHoy = diaHoy.slice(0, 7);
     const rangoMesHoy = rangoDeMeses([mesHoy]);
+    const rangoCurso = rangoDelCurso(diaHoy);
     const altasUltimoAnio = whereAltasAprobadas(haceUnAnio);
     // Las de la serie, en cambio, cubren todo el recorrido de reconstrucción.
     const altasDelRecorrido = whereAltasAprobadas(rangoCenso.desde);
@@ -179,6 +190,7 @@ export class PanelService {
       categorias,
       eventosDelMes,
       turnosDelMes,
+      eventosDelCurso,
     ] = await Promise.all([
       db.hermano.count({ where: { activo: true } }),
       // Las solicitudes pendientes no son altas (ver whereAltasAprobadas).
@@ -264,6 +276,11 @@ export class PanelService {
       }),
       // groupBy y no findMany: solo hace falta saber qué días hay reparto.
       db.turno.groupBy({ by: ['fecha'], where: { fecha: { gte: rangoMesHoy.desde, lt: rangoMesHoy.hasta }, activo: true } }),
+      db.evento.findMany({
+        where: { startDate: { gte: rangoCurso.desde, lt: rangoCurso.hasta } },
+        orderBy: { startDate: 'asc' },
+        select: { id: true, title: true, startDate: true, type: true },
+      }),
     ]);
 
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
@@ -386,6 +403,9 @@ export class PanelService {
         mes: mesHoy,
         eventos: eventosDelMes.map((e) => ({ id: e.id, title: e.title, startDate: e.startDate.toISOString(), type: e.type })),
         diasDeReparto: [...new Set(turnosDelMes.map((t) => diaMadrid(t.fecha)))].sort(),
+      },
+      curso: {
+        eventos: eventosDelCurso.map((e) => ({ id: e.id, title: e.title, startDate: e.startDate.toISOString(), type: e.type })),
       },
     };
   }

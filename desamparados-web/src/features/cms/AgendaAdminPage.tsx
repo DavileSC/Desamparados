@@ -22,7 +22,6 @@ const FILTROS = {
   q: {},
   periodo: { porDefecto: 'proximos', validos: ['proximos', 'pasados'] },
   tipo: { validos: TIPOS_EVENTO.map((t) => t.valor) },
-  visibilidad: { validos: ['public', 'members_only'] },
 }
 
 /**
@@ -30,7 +29,7 @@ const FILTROS = {
  * Publicaciones, pero sin borradores: un acto se ve en la web en cuanto se
  * guarda.
  *
- * Arriba, cuál es el siguiente y cuántos son solo para hermanos; debajo, los
+ * Arriba, cuál es el siguiente; debajo, los
  * actos por meses, con el día como en la agenda de la portada, una marca en
  * los que salen ahora en ella y una raya donde se corta. Cada fila avisa si le
  * falta el lugar o la descripción, que es lo que en la web se nota. Para
@@ -67,9 +66,9 @@ export default function AgendaAdminPage() {
     (vigente: () => boolean = () => true) => eventosDelCms(
       { pagina, porPagina },
       periodo,
-      { q: filtros.q, tipo: filtros.tipo as ApiEvent['type'] | '', visibilidad: filtros.visibilidad as ApiEvent['visibility'] | '' },
+      { q: filtros.q, tipo: filtros.tipo as ApiEvent['type'] | '' },
     ).then((respuesta) => { if (!vigente()) return; setItems(respuesta.eventos); setMeta(respuesta.meta); setResumen(respuesta.resumen); setError(null) }),
-    [pagina, porPagina, periodo, filtros.q, filtros.tipo, filtros.visibilidad]
+    [pagina, porPagina, periodo, filtros.q, filtros.tipo]
   )
 
   useEffect(() => {
@@ -91,8 +90,8 @@ export default function AgendaAdminPage() {
   const portada = resumen?.portada.ids ?? []
   // La raya solo es exacta si se ven los próximos enteros, en orden: con
   // búsqueda, con un tipo o solo con los de hermanos faltan filas entre medias.
-  const conLineaPortada = periodo === 'proximos' && !filtros.q && !filtros.tipo && filtros.visibilidad !== 'members_only'
-  const hayFiltro = Boolean(filtros.q || filtros.tipo || filtros.visibilidad)
+  const conLineaPortada = periodo === 'proximos' && !filtros.q && !filtros.tipo
+  const hayFiltro = Boolean(filtros.q || filtros.tipo)
   const grupos = agruparPorMes(items)
 
   return <>
@@ -109,11 +108,6 @@ export default function AgendaAdminPage() {
       <TextField select size="small" label="Tipo" value={filtros.tipo} onChange={(e) => cambiarFiltros({ tipo: e.target.value })} slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} sx={{ flex: '0 1 170px', minWidth: 140 }}>
         <MenuItem value="">Todos los tipos</MenuItem>
         {TIPOS_EVENTO.map((t) => <MenuItem key={t.valor} value={t.valor}>{t.nombre}</MenuItem>)}
-      </TextField>
-      <TextField select size="small" label="Quién lo ve" value={filtros.visibilidad} onChange={(e) => cambiarFiltros({ visibilidad: e.target.value })} slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} sx={{ flex: '0 1 170px', minWidth: 140 }}>
-        <MenuItem value="">Todos</MenuItem>
-        <MenuItem value="public">Público</MenuItem>
-        <MenuItem value="members_only">Solo hermanos</MenuItem>
       </TextField>
       <ToggleButtonGroup
         exclusive
@@ -139,11 +133,11 @@ export default function AgendaAdminPage() {
     />
 
     {loading ? <CircularProgress aria-label="Cargando agenda" /> : items.length === 0 ? (
-      <Vacio periodo={periodo} hayFiltro={hayFiltro} busqueda={filtros.q} onQuitar={() => cambiarFiltros({ q: '', tipo: '', visibilidad: '' })} />
+      <Vacio periodo={periodo} hayFiltro={hayFiltro} busqueda={filtros.q} onQuitar={() => cambiarFiltros({ q: '', tipo: '' })} />
     ) : (
       <Paper sx={{ overflow: 'hidden' }}>
         <Box aria-hidden="true" sx={{ ...rejillaEvento, display: { xs: 'none', md: 'grid' }, px: 2.5, py: 1.25, gridTemplateAreas: undefined, '& span': { fontSize: 11.5, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary' } }}>
-          <span>Día</span><span>Acto</span><span>Tipo</span><span>Quién lo ve</span><span />
+          <span>Día</span><span>Acto</span><span>Tipo</span><span />
         </Box>
         {grupos.map((grupo) => (
           <Grupo key={grupo.clave} titulo={grupo.titulo}>
@@ -155,7 +149,7 @@ export default function AgendaAdminPage() {
                   <LineaPortada
                     key="corte"
                     limite={portada.length}
-                    texto={`Hasta aquí sale en la portada: ${portada.length === 1 ? 'el próximo acto público' : `los ${portada.length} próximos actos públicos`}.`}
+                    texto={`Hasta aquí sale en la portada: ${portada.length === 1 ? 'el próximo acto' : `los ${portada.length} próximos actos`}.`}
                   />
                 ),
               ]
@@ -168,12 +162,10 @@ export default function AgendaAdminPage() {
   </>
 }
 
-/** «Lo siguiente: Besapiés, mañana a las 20:00 · 3 de los próximos son solo para hermanos». */
+/** «Lo siguiente: Besapiés, mañana a las 20:00». */
 function Resumen({ resumen }: { resumen: ResumenAgenda }) {
-  const { siguiente, soloHermanos } = resumen
-  const partes = [siguiente ? `Lo siguiente: ${siguiente.title}, ${cuandoEs(siguiente.startDate)} a las ${hora(new Date(siguiente.startDate))}` : 'No hay nada en la agenda desde hoy']
-  if (soloHermanos > 0) partes.push(`${soloHermanos} de los próximos ${soloHermanos === 1 ? 'es' : 'son'} solo para hermanos`)
-  return <>{partes.join(' · ')}</>
+  const { siguiente } = resumen
+  return <>{siguiente ? `Lo siguiente: ${siguiente.title}, ${cuandoEs(siguiente.startDate)} a las ${hora(new Date(siguiente.startDate))}` : 'No hay nada en la agenda desde hoy'}</>
 }
 
 function Cifra({ n }: { n?: number }) {

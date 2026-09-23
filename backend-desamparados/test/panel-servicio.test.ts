@@ -12,6 +12,8 @@ import { PanelService } from '../src/services/panel.service.js';
 import { claveMes } from '../src/domain/panel-censo.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { HttpError } from '../src/utils/error.handle.js';
+import { rangoDelCurso } from '../src/domain/curso.js';
+import { diaMadrid } from '../src/domain/contabilidad.js';
 
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -336,6 +338,22 @@ describe('el calendario del Inicio', () => {
     } finally {
       await db.turno.delete({ where: { id: turno.id } });
       await db.evento.deleteMany({ where: { id: { in: [acto.id, lejano.id] } } });
+    }
+  });
+});
+
+describe('el curso del Inicio', () => {
+  test('trae los actos del curso, pasados y por venir, y ninguno de fuera', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const { desde, hasta } = rangoDelCurso(diaMadrid(new Date()));
+    const dentro = await db.evento.create({ data: { title: 'ZZ acto del curso', startDate: new Date(desde.getTime() + 3600000), type: 'REUNION' } });
+    const fuera = await db.evento.create({ data: { title: 'ZZ acto de otro curso', startDate: new Date(hasta.getTime() + 3600000), type: 'CULTO' } });
+    try {
+      const { curso } = await PanelService.getPanel();
+      assert.ok(curso.eventos.some((e) => e.id === dentro.id && e.type === 'REUNION'), 'el primer día del curso cuenta aunque ya haya pasado');
+      assert.ok(!curso.eventos.some((e) => e.id === fuera.id), 'un acto del curso siguiente no va en el camino');
+    } finally {
+      await db.evento.deleteMany({ where: { id: { in: [dentro.id, fuera.id] } } });
     }
   });
 });

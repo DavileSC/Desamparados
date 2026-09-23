@@ -61,6 +61,10 @@ export interface PanelResponse {
     /** AAAA-MM-DD, en Madrid. */
     diasDeReparto: string[]
   }
+  /** Todos los actos del curso, de un Sábado de Pasión al siguiente, pasados y por venir. */
+  curso: {
+    eventos: { id: number; title: string; startDate: string; type: TipoEvento }[]
+  }
 }
 
 /** Sin año, el ejercicio en curso. */

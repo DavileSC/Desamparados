@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { type } from 'arktype';
 import { AgendaController } from '../controllers/agenda.controller.js';
-import { optionalAuthentication } from '../middleware/session.js'; 
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';
@@ -17,8 +16,8 @@ const validateId = validate(type({ params: { id: idParam } }));
 // Roles autorizados para tocar el calendario
 const rolesAgenda = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR];
 
-// LECTURA (Híbrida - Opcionalmente autenticada)
-agendaRoutes.get('/', optionalAuthentication, validate(queryAgendaSchema), AgendaController.list);
+// LECTURA pública: todos los actos son públicos, no hace falta sesión.
+agendaRoutes.get('/', validate(queryAgendaSchema), AgendaController.list);
 
 // El listado del CMS, con los eventos pasados. El orden es de corrección, no
 // de estilo: tiene que ir ANTES de '/:id', que se traga cualquier segmento
@@ -26,7 +25,7 @@ agendaRoutes.get('/', optionalAuthentication, validate(queryAgendaSchema), Agend
 // línea porque este router no tiene un use() de autenticación.
 agendaRoutes.get('/admin', authenticateToken, checkRole(rolesAgenda), validate(queryAgendaAdminSchema), AgendaController.adminList);
 
-agendaRoutes.get('/:id', optionalAuthentication, validateId, AgendaController.getOne);
+agendaRoutes.get('/:id', validateId, AgendaController.getOne);
 
 // GESTIÓN (Estricta - Solo Junta)
 agendaRoutes.post('/', authenticateToken, checkRole(rolesAgenda), validate(agendaSchema), AgendaController.create);

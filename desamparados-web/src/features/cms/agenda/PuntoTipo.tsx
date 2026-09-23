@@ -1,17 +1,18 @@
 import { Box } from '@mui/material'
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { TIPOS } from '../../inicio/agenda'
+import { useTemaCms } from '../../../app/useTemaCms'
 
 /**
- * El tipo con el color que lleva en la agenda de la portada, en un punto: el
- * color está pensado para el papel claro de la web y como fondo de una
- * etiqueta no se leería en el CMS oscuro.
+ * El tipo con su color de la agenda, en un punto. En modo oscuro va la
+ * variante clara del mismo color: la de papel se perdía sobre el fondo negro.
  */
 export default function PuntoTipo({ tipo }: { tipo: ApiEvent['type'] }) {
-  const { nombre, color } = TIPOS[tipo]
+  const { modo } = useTemaCms()
+  const { nombre, color, oscuro } = TIPOS[tipo]
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, fontSize: 13.5, whiteSpace: 'nowrap' }}>
-      <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, boxShadow: '0 0 0 1.5px rgba(255,255,255,0.35)' }} />
+      <Box component="span" aria-hidden="true" sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: modo === 'oscuro' ? oscuro : color }} />
       {nombre}
     </Box>
   )

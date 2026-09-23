@@ -3,8 +3,7 @@
 // D9: el CMS lista también los eventos pasados. Antes usaba la lectura pública,
 //     que solo enseña desde hoy: un evento fechado por error en el pasado
 //     desaparecía del CMS y ya no se podía corregir ni borrar.
-// P6: sin sesión, un evento solo para hermanos responde 404 como uno que no
-//     existe; antes un 400 «No tienes permisos» confirmaba que existía.
+// Todos los actos son públicos: se leen sin sesión, y uno que no existe da 404.
 
 import './fixtures/almacen-temporal.js';
 import assert from 'node:assert/strict';
@@ -47,9 +46,9 @@ before(async () => {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
   const minutos = (n: number) => new Date(hoy.getTime() + n * 60_000);
-  eventos.ayer = (await db.evento.create({ data: { title: `${marca} ayer`, startDate: minutos(-1), visibility: 'members_only' } })).id;
-  eventos.anteayer = (await db.evento.create({ data: { title: `${marca} antes`, startDate: minutos(-2), visibility: 'public' } })).id;
-  eventos.hoy = (await db.evento.create({ data: { title: `${marca} hoy`, startDate: hoy, visibility: 'members_only' } })).id;
+  eventos.ayer = (await db.evento.create({ data: { title: `${marca} ayer`, startDate: minutos(-1) } })).id;
+  eventos.anteayer = (await db.evento.create({ data: { title: `${marca} antes`, startDate: minutos(-2) } })).id;
+  eventos.hoy = (await db.evento.create({ data: { title: `${marca} hoy`, startDate: hoy } })).id;
 });
 
 after(async () => {
@@ -105,24 +104,30 @@ describe('agenda del CMS con eventos pasados (D9)', () => {
   });
 });
 
-describe('evento solo para hermanos sin sesión (P6)', () => {
-  test('responde 404, igual que uno que no existe', async (t) => {
+describe('un acto suelto, sin sesión', () => {
+  test('todos los actos se leen sin sesión', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const res = await como(null, `/${eventos.ayer}`);
+    assert.equal((await como(null, `/${eventos.ayer}`)).status, 200);
+    assert.equal((await como(null, `/${eventos.anteayer}`)).status, 200);
+  });
+
+  test('uno que no existe responde 404', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await como(null, '/999999999');
     assert.equal(res.status, 404);
     assert.equal(((await res.json()) as { error: string }).error, 'Evento no encontrado');
   });
 
-  test('con sesión de hermano se ve, y uno público se ve sin sesión', async (t) => {
+  test('ya no viaja ninguna visibilidad', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    assert.equal((await como(Role.USER, `/${eventos.ayer}`)).status, 200);
-    assert.equal((await como(null, `/${eventos.anteayer}`)).status, 200);
+    const acto = await (await como(null, `/${eventos.ayer}`)).json() as Record<string, unknown>;
+    assert.ok(!('visibility' in acto));
   });
 });
 
 describe('listado de la agenda en el CMS: búsqueda, filtros y resumen', () => {
   type ConResumen = Pagina & {
-    resumen: { proximos: number; pasados: number; soloHermanos: number; siguiente: { id: number } | null; portada: { limite: number; ids: number[] } };
+    resumen: { proximos: number; pasados: number; siguiente: { id: number } | null; portada: { limite: number; ids: number[] } };
   };
 
   test('busca en el título y deja fuera lo que no casa', async (t) => {
@@ -135,23 +140,21 @@ describe('listado de la agenda en el CMS: búsqueda, filtros y resumen', () => {
     assert.equal(resumen.proximos, 0);
   });
 
-  test('filtra por visibilidad y por tipo', async (t) => {
+  test('filtra por tipo', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const q = encodeURIComponent(marca);
-    const publicos = await (await como(Role.SECRETARIA, `/admin?periodo=pasados&limit=50&q=${q}&visibilidad=public`)).json() as Pagina;
-    assert.deepEqual(publicos.data.map((e) => e.id), [eventos.anteayer]);
     const cultos = await (await como(Role.SECRETARIA, `/admin?periodo=pasados&limit=50&q=${q}&tipo=CULTO`)).json() as Pagina;
     assert.equal(cultos.data.length, 0, 'los de prueba son de tipo OTRO');
     assert.equal((await como(Role.SECRETARIA, '/admin?tipo=MISA')).status, 400);
   });
 
-  test('el resumen trae el siguiente acto y la portada solo con públicos', async (t) => {
+  test('el resumen trae el siguiente acto y lo que sale en la portada', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { resumen } = await (await como(Role.SECRETARIA, '/admin')).json() as ConResumen;
     assert.ok(resumen.siguiente, 'hay al menos el de hoy');
     assert.equal(resumen.portada.limite, ACTOS_EN_PORTADA);
-    assert.ok(!resumen.portada.ids.includes(eventos.hoy), 'el de hoy es solo para hermanos: no sale en la portada');
-    assert.ok(resumen.soloHermanos >= 1);
+    assert.ok(resumen.portada.ids.includes(eventos.hoy), 'el de hoy es el primero de los próximos: sale en la portada');
+    assert.ok(!('soloHermanos' in resumen));
   });
 });
 

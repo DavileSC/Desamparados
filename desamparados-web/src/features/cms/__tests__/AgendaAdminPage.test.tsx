@@ -9,18 +9,18 @@ const montar = (ruta = '/cms/agenda') => renderWithProviders(<TemaCmsProvider><A
 
 const evento = {
   id: 3, title: 'Besapiés', description: null, location: 'Parroquia',
-  startDate: '2026-09-12T18:00:00.000Z', endDate: null, visibility: 'public', type: 'CULTO',
+  startDate: '2026-09-12T18:00:00.000Z', endDate: null, type: 'CULTO',
 }
 const cabildo = {
   id: 4, title: 'Cabildo de cuentas', description: 'Aprobación del ejercicio.', location: null,
-  startDate: '2026-09-20T18:00:00.000Z', endDate: null, visibility: 'members_only', type: 'REUNION',
+  startDate: '2026-09-20T18:00:00.000Z', endDate: null, type: 'REUNION',
 }
 const triduo = {
   id: 5, title: 'Triduo', description: 'Tres días de culto.', location: 'Parroquia',
-  startDate: '2026-10-20T18:00:00.000Z', endDate: '2026-10-22T19:00:00.000Z', visibility: 'public', type: 'CULTO',
+  startDate: '2026-10-20T18:00:00.000Z', endDate: '2026-10-22T19:00:00.000Z', type: 'CULTO',
 }
 
-const resumenBase = { proximos: 3, pasados: 12, soloHermanos: 1, siguiente: null, portada: { limite: 5, ids: [3] } }
+const resumenBase = { proximos: 3, pasados: 12, siguiente: null, portada: { limite: 5, ids: [3] } }
 
 /**
  * Una instancia de Response por llamada: `llamarApi` lee el cuerpo con
@@ -65,7 +65,6 @@ describe('AgendaAdminPage', () => {
 
     const reunion = screen.getByRole('heading', { name: 'Cabildo de cuentas' }).closest('li')!
     expect(within(reunion).getAllByText('Reunión').length).toBeGreaterThan(0)
-    expect(within(reunion).getAllByText('Solo hermanos').length).toBeGreaterThan(0)
     expect(within(reunion).getByText('Sin lugar')).toBeInTheDocument()
     expect(within(reunion).queryByText('En portada')).not.toBeInTheDocument()
   })
@@ -83,19 +82,19 @@ describe('AgendaAdminPage', () => {
     responder([evento, cabildo], { total: 2, page: 1, limit: 20, totalPages: 1 })
     montar()
 
-    expect(await screen.findByText('Hasta aquí sale en la portada: el próximo acto público.')).toBeInTheDocument()
+    expect(await screen.findByText('Hasta aquí sale en la portada: el próximo acto.')).toBeInTheDocument()
   })
 
-  it('en la cabecera dice cuál es el siguiente y cuántos son solo para hermanos', async () => {
+  it('en la cabecera dice cuál es el siguiente', async () => {
     const manana = new Date()
     manana.setDate(manana.getDate() + 1)
     manana.setHours(20, 0, 0, 0)
     responder([evento], { total: 1, page: 1, limit: 20, totalPages: 1 }, {
-      ...resumenBase, soloHermanos: 2, siguiente: { id: 3, title: 'Besapiés', startDate: manana.toISOString() },
+      ...resumenBase, siguiente: { id: 3, title: 'Besapiés', startDate: manana.toISOString() },
     })
     montar()
 
-    expect(await screen.findByText('Lo siguiente: Besapiés, mañana a las 20:00 · 2 de los próximos son solo para hermanos')).toBeInTheDocument()
+    expect(await screen.findByText('Lo siguiente: Besapiés, mañana a las 20:00')).toBeInTheDocument()
   })
 
   it('pinta los eventos que llegan en data y ofrece pasar de página', async () => {
@@ -155,13 +154,12 @@ describe('AgendaAdminPage', () => {
     expect(await screen.findByText('No hay eventos pasados')).toBeInTheDocument()
   })
 
-  it('el tipo y quién lo ve viajan al servidor, y sin resultados se pueden quitar', async () => {
+  it('el tipo viaja al servidor, y sin resultados se puede quitar', async () => {
     const usuario = userEvent.setup()
     const simulado = responder([], { total: 0, page: 1, limit: 20, totalPages: 0 })
-    montar('/cms/agenda?tipo=ENSAYO&visibilidad=members_only')
+    montar('/cms/agenda?tipo=ENSAYO')
 
     await waitFor(() => expect(ultimaPeticion(simulado)).toContain('tipo=ENSAYO'))
-    expect(ultimaPeticion(simulado)).toContain('visibilidad=members_only')
     expect(await screen.findByText('Ningún evento próximo con estos filtros.')).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: /quitar los filtros/i }))

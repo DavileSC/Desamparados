@@ -7,11 +7,7 @@ import { contar } from './plural'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { fondoTarjeta } from '../../../theme/tarjeta'
 import { CIFRA, entrada } from './animaciones'
-
-const TIPO: Record<string, string> = {
-  CULTO: 'Culto', PROCESION: 'Procesión', FORMACION: 'Formación', ENSAYO: 'Ensayo',
-  REUNION: 'Reunión', SOCIAL: 'Social', OTRO: 'Otro',
-}
+import PuntoTipo from '../agenda/PuntoTipo'
 
 /** Los cuatro primeros actos convocados. */
 export default function ProximosActos({
@@ -62,7 +58,8 @@ export default function ProximosActos({
               <Typography sx={{ fontSize: 15, fontWeight: 600 }}>{evento.title}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
                 {fecha.toLocaleDateString('es-ES', { weekday: 'long' })} ·{' '}
-                {fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} · {TIPO[evento.type] ?? evento.type}
+                {fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ·{' '}
+                <PuntoTipo tipo={evento.type} />
               </Typography>
             </Box>
           </Box>

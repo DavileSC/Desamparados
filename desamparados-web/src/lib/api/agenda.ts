@@ -9,7 +9,6 @@ export interface ApiEvent {
   location: string | null
   startDate: string
   endDate: string | null
-  visibility: 'public' | 'members_only'
   type: 'CULTO' | 'PROCESION' | 'FORMACION' | 'ENSAYO' | 'REUNION' | 'SOCIAL' | 'OTRO'
   /** Solo lo trae el listado del CMS. */
   updatedAt?: string
@@ -101,7 +100,6 @@ export type PeriodoAgenda = 'proximos' | 'pasados'
 export interface FiltrosAgenda {
   q?: string
   tipo?: ApiEvent['type'] | ''
-  visibilidad?: ApiEvent['visibility'] | ''
 }
 
 /** Lo que el servidor manda con cada página del listado del CMS. */
@@ -109,8 +107,6 @@ export interface ResumenAgenda {
   /** Con la misma búsqueda y filtros: las cifras de las pestañas. */
   proximos: number
   pasados: number
-  /** De los próximos, sin filtros. */
-  soloHermanos: number
   siguiente: { id: number; title: string; startDate: string } | null
   /** Los actos que la portada de la web enseña ahora en su lista. */
   portada: { limite: number; ids: number[] }
@@ -119,13 +115,12 @@ export interface ResumenAgenda {
 /**
  * El CMS tiene su propio extremo (`/events/admin`, con sesión y rol): la lectura
  * pública solo enseña desde hoy, y un evento fechado por error en el pasado
- * desaparecía del CMS sin forma de corregirlo ni borrarlo. Trae las dos
- * visibilidades y el evento crudo (id numérico, visibilidad y fechas sin
- * formatear) para editar y borrar. Los pasados llegan del más reciente hacia atrás.
+ * desaparecía del CMS sin forma de corregirlo ni borrarlo. Trae el evento
+ * crudo (id numérico y fechas sin formatear) para editar y borrar. Los pasados llegan del más reciente hacia atrás.
  */
 export async function eventosDelCms(pagina: { pagina: number; porPagina: number }, periodo: PeriodoAgenda = 'proximos', filtros: FiltrosAgenda = {}) {
   const respuesta = await llamarApi<RespuestaPaginada<ApiEvent> & { resumen: ResumenAgenda }>(
-    `/events/admin?${paramsPagina(pagina, { periodo, q: filtros.q, tipo: filtros.tipo, visibilidad: filtros.visibilidad })}`,
+    `/events/admin?${paramsPagina(pagina, { periodo, q: filtros.q, tipo: filtros.tipo })}`,
   )
   return { eventos: respuesta.data, meta: respuesta.meta, resumen: respuesta.resumen }
 }
@@ -136,7 +131,6 @@ export interface DatosDeActo {
   startDate: string
   endDate?: string | null
   location?: string
-  visibility: 'public' | 'members_only'
   type: ApiEvent['type']
 }
 

@@ -9,7 +9,6 @@
 // comprueban por título o nombre antes de crearse.
 
 import {
-  EventVisibility,
   TipoEvento,
   TipoPublicacion,
   TipoPrenda,
@@ -146,7 +145,6 @@ export const EVENTOS = [
     diasDesdeHoy: 5,
     hora: 19,
     type: TipoEvento.CULTO,
-    visibility: EventVisibility.public,
   },
   {
     title: 'Reunión de la junta de gobierno',
@@ -155,7 +153,6 @@ export const EVENTOS = [
     diasDesdeHoy: 9,
     hora: 20,
     type: TipoEvento.REUNION,
-    visibility: EventVisibility.members_only,
   },
   {
     title: 'Catequesis de adultos: el año litúrgico',
@@ -164,7 +161,6 @@ export const EVENTOS = [
     diasDesdeHoy: 14,
     hora: 19,
     type: TipoEvento.FORMACION,
-    visibility: EventVisibility.public,
   },
   {
     title: 'Convivencia del grupo joven',
@@ -173,7 +169,6 @@ export const EVENTOS = [
     diasDesdeHoy: 21,
     hora: 17,
     type: TipoEvento.SOCIAL,
-    visibility: EventVisibility.public,
   },
   {
     title: 'Solemne triduo a Nuestra Señora de los Desamparados',
@@ -183,7 +178,6 @@ export const EVENTOS = [
     diasFin: 42,
     hora: 19,
     type: TipoEvento.CULTO,
-    visibility: EventVisibility.public,
   },
   {
     title: 'Besamanos a la Sagrada Titular',
@@ -192,7 +186,6 @@ export const EVENTOS = [
     diasDesdeHoy: 43,
     hora: 11,
     type: TipoEvento.CULTO,
-    visibility: EventVisibility.public,
   },
   {
     title: 'Cabildo general ordinario de hermanos',
@@ -201,7 +194,6 @@ export const EVENTOS = [
     diasDesdeHoy: 60,
     hora: 19,
     type: TipoEvento.REUNION,
-    visibility: EventVisibility.members_only,
   },
   {
     title: 'Reparto de papeletas de sitio',
@@ -211,7 +203,6 @@ export const EVENTOS = [
     diasFin: 160,
     hora: 18,
     type: TipoEvento.OTRO,
-    visibility: EventVisibility.members_only,
   },
   {
     title: 'Ensayo general de costaleros',
@@ -220,7 +211,6 @@ export const EVENTOS = [
     diasDesdeHoy: 195,
     hora: 21,
     type: TipoEvento.ENSAYO,
-    visibility: EventVisibility.members_only,
   },
   {
     title: 'Estación de penitencia del Sábado de Pasión',
@@ -229,7 +219,6 @@ export const EVENTOS = [
     diasDesdeHoy: 204,
     hora: 18,
     type: TipoEvento.PROCESION,
-    visibility: EventVisibility.public,
   },
 ];
 
