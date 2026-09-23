@@ -128,7 +128,7 @@ describe('POST /api/contact', () => {
 //  El correo que sale
 // =================================================================
 
-interface Enviado { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string }
+interface Enviado { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string; attachments?: { cid: string }[] }
 
 function transporteFalso() {
   const enviados: Enviado[] = [];
@@ -162,6 +162,21 @@ describe('EmailService', () => {
     assert.match(registro.html, /Seán O&#39;Brien &lt;b&gt;/);
     assert.doesNotMatch(registro.html, /O'Brien <b>/);
     assert.equal(papeleta.subject, "Papeleta de sitio 2027: Seán O'Brien");
+  });
+
+  test('el escudo y la Virgen van dentro del correo; los avisos internos, solo con el escudo', async () => {
+    const general = transporteFalso();
+    ponerTransporte(general);
+    process.env.EMAIL_USER = 'secretaria@example.es';
+
+    await EmailService.enviarConfirmacionRegistro('hermano@example.es', 'Ana', { sexo: 'MUJER' });
+    await EmailService.enviarAvisoSolicitud({ nombre: 'Ana', email: 'ana@example.es' });
+
+    const [alHermano, interno] = general.enviados;
+    const cids = (c: Enviado) => (c.attachments ?? []).map((a) => a.cid).sort();
+    assert.deepEqual(cids(alHermano), ['escudo@desamparados', 'virgen@desamparados']);
+    assert.match(alHermano.html, /src="cid:virgen@desamparados"/);
+    assert.deepEqual(cids(interno), ['escudo@desamparados']);
   });
 
   test('cada correo lleva también su versión en texto, sin etiquetas y con el nombre tal cual', async () => {

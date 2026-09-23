@@ -6,29 +6,44 @@
  * Vive aparte de los correos en sí porque es pura presentación: lo que cambia
  * cuando se retoca el diseño, no cuando se añade un aviso nuevo.
  *
+ * El aire es el de una carta de Secretaría: membrete con el escudo sobre negro,
+ * la Virgen, papel blanco con lugar y fecha, etiquetas en cursiva como en un
+ * impreso y la cruz antes de la firma. Negro de base y burdeos de acento.
+ *
  * Todo va con tablas y estilos en línea: es lo único que Gmail, Outlook y el
  * correo del móvil pintan igual. El único <style> es el del ajuste al móvil,
  * que quien no lo entiende ignora sin romper nada.
  */
-import { emailDeSecretaria, escudoUrl, lineasDeSecretaria } from '../../domain/datos-entidad.js';
+import { fileURLToPath } from 'node:url';
+import { emailDeSecretaria, lineasDeSecretaria } from '../../domain/datos-entidad.js';
 
 export const NOMBRE_GRUPO = 'Grupo Parroquial Nuestra Señora de los Desamparados';
 
-// Los colores de la casa. Los grises están elegidos para leerse bien sobre
-// blanco (contraste 4,5:1 como poco), también en el móvil y a pleno sol.
+/**
+ * Las imágenes van dentro del correo (adjuntos en línea, `cid:`) y no enlazadas
+ * a la web: así se ven aunque la web aún no esté publicada, y no dependen de
+ * que el lector de correo quiera descargar imágenes de fuera.
+ */
+export const IMAGENES = {
+  escudo: { cid: 'escudo@desamparados', archivo: fileURLToPath(new URL('./imagenes/escudo.png', import.meta.url)), tipo: 'image/png' },
+  virgen: { cid: 'virgen@desamparados', archivo: fileURLToPath(new URL('./imagenes/virgen.jpg', import.meta.url)), tipo: 'image/jpeg' },
+} as const;
+
+// Los colores de la casa. Los grises están elegidos para leerse bien sobre su
+// fondo (contraste 4,5:1 como poco), también en el móvil y a pleno sol.
 export const COLORES = {
-  primario: '#5c1919',   // Burdeos
-  dorado: '#b08d2e',     // Dorado viejo: filetes y detalles, nunca texto largo
-  doradoClaro: '#e3cf8f', // Dorado sobre el burdeos de la cabecera
-  fondo: '#f3eee6',      // Crema, alrededor de la tarjeta
-  panel: '#faf7f1',      // Recuadros dentro de la tarjeta
-  linea: '#e6ddcf',
-  texto: '#2b2622',
-  suave: '#5f5750',      // Texto secundario (6,6:1 sobre blanco)
-  etiqueta: '#6f6660',   // Etiquetas en versalitas (5,4:1 sobre blanco)
+  negro: '#141111',      // El fondo del correo, la cabecera, los botones
+  burdeos: '#6e1a20',    // Acento: filete bajo la Virgen, cruz, títulos de recuadro
+  papel: '#ffffff',
+  panel: '#f5f2f0',      // Recuadros dentro del papel
+  linea: '#ddd5d0',
+  texto: '#1f1a19',
+  suave: '#5c5452',      // Texto secundario (7:1 sobre blanco)
+  sobreNegro: '#b3a8a3', // Texto secundario sobre el negro (8:1)
+  claroSobreNegro: '#f1ebe7',
 };
 
-const SERIF = "Georgia, 'Times New Roman', serif";
+const SERIF = "Georgia, 'Times New Roman', Times, serif";
 const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 /**
@@ -47,6 +62,11 @@ export function esc(text: string | null | undefined): string {
 }
 
 export const urlDeLaWeb = (ruta = '') => `${process.env.FRONTEND_URL || 'http://localhost:5173'}${ruta}`;
+
+/** «Málaga, 23 de septiembre de 2026», como encabeza una carta. */
+export function lugarYFecha(fecha = new Date()): string {
+  return `Málaga, ${fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid' })}`;
+}
 
 // --- PIEZAS DEL CUERPO ---
 
@@ -75,32 +95,33 @@ export const segunSexo = (sexo: Sexo, hombre: string, mujer: string) =>
  * se puede pulsar.
  */
 export function boton(texto: string, url: string): string {
-  const { primario, suave } = COLORES;
+  const { negro, suave } = COLORES;
   return `
-    <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 28px auto 8px auto;">
+    <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 28px 0 10px 0;">
       <tr>
-        <td align="center" bgcolor="${primario}" style="border-radius: 4px;">
-          <a href="${url}" target="_blank" style="display: inline-block; padding: 14px 30px; font-family: ${SANS}; font-size: 15px; font-weight: bold; color: #ffffff; text-decoration: none; border-radius: 4px;">${esc(texto)}</a>
+        <td bgcolor="${negro}" style="background-color: ${negro}; border-radius: 2px;">
+          <a href="${url}" target="_blank" style="display: inline-block; padding: 14px 28px; font-family: ${SANS}; font-size: 14px; font-weight: bold; letter-spacing: 0.3px; color: #ffffff; text-decoration: none;">${esc(texto)}&nbsp;&nbsp;&rarr;</a>
         </td>
       </tr>
     </table>
-    <p data-alternativa style="margin: 0 0 24px 0; text-align: center; font-family: ${SANS}; font-size: 12px; line-height: 1.5; color: ${suave};">
+    <p data-alternativa style="margin: 0 0 24px 0; font-family: ${SANS}; font-size: 12px; line-height: 1.5; color: ${suave};">
       Si el botón no funciona, copie esta dirección en el navegador:<br>
       <a href="${url}" style="color: ${suave}; word-break: break-all;">${esc(url)}</a>
     </p>`;
 }
 
 /**
- * Recuadro con filete dorado a la izquierda: lo que el lector tiene que hacer
- * o no pasar por alto. `titulo` es texto; `html` va tal cual.
+ * Recuadro para lo que el lector tiene que hacer o no pasar por alto: papel
+ * algo más oscuro, sin esquinas redondas, con su título en versalitas.
+ * `titulo` es texto; `html` va tal cual.
  */
 export function recuadro(titulo: string | null, html: string): string {
-  const { panel, dorado, primario } = COLORES;
+  const { panel, burdeos, linea } = COLORES;
   return `
     <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 24px 0;">
       <tr>
-        <td style="background-color: ${panel}; border-left: 3px solid ${dorado}; padding: 18px 22px;">
-          ${titulo ? `<p style="margin: 0 0 8px 0; font-family: ${SANS}; font-size: 12px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; color: ${primario};">${esc(titulo)}</p>` : ''}
+        <td style="background-color: ${panel}; border-top: 1px solid ${linea}; border-bottom: 1px solid ${linea}; padding: 18px 22px;">
+          ${titulo ? `<p style="margin: 0 0 6px 0; font-family: ${SERIF}; font-size: 16px; font-weight: bold; font-variant: small-caps; letter-spacing: 0.5px; color: ${burdeos};">${esc(titulo)}</p>` : ''}
           <div style="font-size: 15px; line-height: 1.6;">${html}</div>
         </td>
       </tr>
@@ -108,43 +129,48 @@ export function recuadro(titulo: string | null, html: string): string {
 }
 
 /** Lista con viñetas. Los elementos son texto y se escapan aquí. */
-export function lista(elementos: string[]): string {
-  return `<ul style="margin: 0 0 16px 0; padding-left: 22px;">${elementos.map((e) => `<li style="margin: 0 0 6px 0;">${esc(e)}</li>`).join('')}</ul>`;
+export function lista(elementos: string[], margen = '0 0 16px 0'): string {
+  return `<ul style="margin: ${margen}; padding-left: 22px;">${elementos.map((e) => `<li style="margin: 0 0 6px 0;">${esc(e)}</li>`).join('')}</ul>`;
 }
 
+/** Etiqueta en cursiva, como los rótulos de un impreso («Puesto», «Día»). */
+export const rotulo = (texto: string) =>
+  `<span style="font-family: ${SERIF}; font-style: italic; font-size: 14px; color: ${COLORES.suave};">${esc(texto)}</span>`;
+
 /**
- * Tabla de datos de dos columnas (etiqueta y valor). El valor va tal cual,
- * para poder llevar un enlace: quien llama escapa.
+ * Tabla de datos de dos columnas (rótulo y valor). El valor va tal cual, para
+ * poder llevar un enlace: quien llama escapa.
  */
 export function datos(filas: [string, string][]): string {
-  const { linea, etiqueta } = COLORES;
-  const celdas = filas.map(([nombre, valor], i) => `
+  const { linea } = COLORES;
+  const celdas = filas.map(([nombre, valor]) => `
       <tr>
-        <td valign="top" style="padding: 10px 16px 10px 0; ${i ? `border-top: 1px solid ${linea};` : ''} width: 34%; font-family: ${SANS}; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: ${etiqueta};">${esc(nombre)}</td>
-        <td valign="top" style="padding: 10px 0; ${i ? `border-top: 1px solid ${linea};` : ''} font-size: 15px;">${valor}</td>
+        <td valign="top" width="32%" style="padding: 9px 16px 9px 0; border-bottom: 1px solid ${linea};">${rotulo(nombre)}</td>
+        <td valign="top" style="padding: 9px 0; border-bottom: 1px solid ${linea}; font-size: 15px;">${valor}</td>
       </tr>`).join('');
-  return `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 4px 0 24px 0;">${celdas}</table>`;
+  return `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 4px 0 24px 0; border-top: 1px solid ${linea};">${celdas}</table>`;
 }
 
 /** Cita larga (el mensaje del formulario de contacto). `html` va tal cual. */
 export function cita(html: string): string {
   const { panel, linea } = COLORES;
-  return `<div style="margin: 0 0 16px 0; padding: 18px 22px; background-color: ${panel}; border: 1px solid ${linea}; border-radius: 4px; font-size: 15px; line-height: 1.6;">${html}</div>`;
+  return `<div style="margin: 0 0 16px 0; padding: 18px 22px; background-color: ${panel}; border-top: 1px solid ${linea}; border-bottom: 1px solid ${linea}; font-size: 15px; line-height: 1.6;">${html}</div>`;
 }
 
 /**
- * Despedida y firma. Firma el cargo, no la persona que hoy lo ocupa, igual que
- * el buzón al que se responde.
+ * Despedida y firma, con la cruz delante como en las cartas de la casa.
+ * Firma el cargo, no la persona que hoy lo ocupa, igual que el buzón al que se
+ * responde.
  */
 export function firma(despedida: string | null, cargo = 'La Secretaría'): string {
-  const { primario, suave } = COLORES;
+  const { burdeos, suave, texto } = COLORES;
   return `
-    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 32px;">
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 30px;">
       <tr>
         <td>
-          ${despedida ? `<p style="margin: 0 0 18px 0; font-style: italic; color: ${suave};">${esc(despedida)}</p>` : ''}
-          <p style="margin: 0; font-weight: bold; color: ${primario};">${esc(cargo)}</p>
-          <p style="margin: 2px 0 0 0; font-family: ${SANS}; font-size: 13px; color: ${suave};">${esc(NOMBRE_GRUPO)}</p>
+          ${despedida ? `<p style="margin: 0 0 22px 0; font-style: italic; color: ${suave};">${esc(despedida)}</p>` : ''}
+          <p style="margin: 0; font-size: 16px; color: ${texto};"><span style="color: ${burdeos};">&#10016;</span>&nbsp; ${esc(cargo)}</p>
+          <p style="margin: 2px 0 0 0; font-size: 14px; font-style: italic; color: ${suave};">${esc(NOMBRE_GRUPO)}</p>
         </td>
       </tr>
     </table>`;
@@ -165,7 +191,7 @@ export function bloqueDeSecretaria(titulo: string): string {
 // --- EL ARMAZÓN ---
 
 /**
- * A quién va el correo, que decide el pie:
+ * A quién va el correo, que decide el pie y si lleva la imagen de la Virgen:
  *  - `hermano`: a un hermano o solicitante. Se puede responder: la respuesta
  *    llega a Secretaría. Lleva la nota de protección de datos.
  *  - `interno`: al buzón de Secretaría (aviso de solicitud nueva).
@@ -174,7 +200,7 @@ export function bloqueDeSecretaria(titulo: string): string {
 export type Destinatario = 'hermano' | 'interno' | { contacto: string };
 
 export interface Maqueta {
-  /** El título grande del cuerpo. También el <title> del documento. */
+  /** El título del cuerpo. También el <title> del documento. */
   titulo: string;
   /** La línea pequeña de encima del título: de dónde viene el correo. */
   antetitulo: string;
@@ -186,9 +212,9 @@ export interface Maqueta {
 }
 
 function pie(para: Destinatario): string {
-  const { suave, primario } = COLORES;
+  const { sobreNegro, claroSobreNegro } = COLORES;
   const p = (html: string) => `<p style="margin: 0 0 10px 0;">${html}</p>`;
-  const enlace = (url: string, texto: string) => `<a href="${url}" style="color: ${primario};">${esc(texto)}</a>`;
+  const enlace = (url: string, texto: string) => `<a href="${url}" style="color: ${claroSobreNegro}; text-decoration: underline;">${esc(texto)}</a>`;
 
   if (para === 'interno') {
     return p('Aviso automático de la web del Grupo Parroquial para el buzón de Secretaría.');
@@ -201,15 +227,18 @@ function pie(para: Destinatario): string {
   // contactar mientras el Grupo no confirme un teléfono o una dirección.
   const correo = emailDeSecretaria();
   return [
-    p(`¿Tiene alguna duda? Responda a este correo y le atenderá la Secretaría${correo ? `, o escriba a ${enlace(`mailto:${esc(correo)}`, correo)}` : ''}.`),
-    `<p style="margin: 0; color: ${suave};">Recibe este correo por su relación con el Grupo Parroquial, que trata sus datos conforme al Reglamento General de Protección de Datos. Más información en nuestra ${enlace(urlDeLaWeb('/politica-privacidad'), 'política de privacidad')}.</p>`,
+    p(`<span style="color: ${claroSobreNegro};">¿Tiene alguna duda?</span> Responda a este correo y le atenderá la Secretaría${correo ? `, o escriba a ${enlace(`mailto:${esc(correo)}`, correo)}` : ''}.`),
+    `<p style="margin: 0; color: ${sobreNegro};">Recibe este correo por su relación con el Grupo Parroquial, que trata sus datos conforme al Reglamento General de Protección de Datos. Más información en nuestra ${enlace(urlDeLaWeb('/politica-privacidad'), 'política de privacidad')}.</p>`,
   ].join('');
 }
 
-/** El HTML completo de un correo: cabecera, cuerpo y pie. */
+/** El HTML completo de un correo: membrete, Virgen, carta y pie. */
 export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'hermano' }: Maqueta): string {
-  const { primario, doradoClaro, dorado, fondo, texto, etiqueta, suave } = COLORES;
+  const { negro, burdeos, papel, texto, suave, sobreNegro, claroSobreNegro } = COLORES;
   const year = new Date().getFullYear();
+  // La Virgen, en lo que recibe un hermano; los avisos internos, sin ella:
+  // son trámite y se leen de un vistazo.
+  const conVirgen = para === 'hermano';
 
   return `<!DOCTYPE html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml">
@@ -217,44 +246,64 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="x-apple-disable-message-reformatting">
-  <meta name="color-scheme" content="light">
-  <meta name="supported-color-schemes" content="light">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
   <title>${esc(titulo)}</title>
   <style>
     @media only screen and (max-width: 620px) {
-      .marco { padding: 16px 8px !important; }
-      .caja { padding-left: 24px !important; padding-right: 24px !important; }
-      .titulo { font-size: 24px !important; }
+      .marco { padding: 0 !important; }
+      .caja { padding-left: 22px !important; padding-right: 22px !important; }
+      .titulo { font-size: 23px !important; }
+      .fecha { display: block !important; text-align: left !important; padding-top: 4px !important; }
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: ${fondo};">
-  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: ${fondo}; font-size: 1px; line-height: 1px;" data-resumen>${esc(resumen)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
-  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: ${fondo};">
+<body style="margin: 0; padding: 0; background-color: ${negro};">
+  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: ${negro}; font-size: 1px; line-height: 1px;" data-resumen>${esc(resumen)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="${negro}" style="background-color: ${negro};">
     <tr>
-      <td align="center" class="marco" style="padding: 32px 12px;">
+      <td align="center" class="marco" style="padding: 28px 12px 36px 12px;">
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px;">
           <tr>
-            <td align="center" bgcolor="${primario}" class="caja" style="background-color: ${primario}; padding: 30px 40px 26px 40px; border-radius: 6px 6px 0 0;">
-              ${escudoUrl ? `<img src="${escudoUrl}" alt="" width="64" style="display: block; margin: 0 auto 14px auto; border: 0; height: auto;">` : ''}
-              <p style="margin: 0; font-family: ${SANS}; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: ${doradoClaro};">Grupo Parroquial</p>
-              <p style="margin: 6px 0 0 0; font-family: ${SERIF}; font-size: 21px; line-height: 1.3; color: #ffffff;">Nuestra Señora de los Desamparados</p>
+            <td class="caja" style="padding: 8px 4px 22px 4px;">
+              <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td valign="middle" style="padding-right: 16px;">
+                    <img src="cid:${IMAGENES.escudo.cid}" alt="Escudo del Grupo Parroquial" width="46" height="56" style="display: block; border: 0; width: 46px; height: 56px;">
+                  </td>
+                  <td valign="middle" style="font-family: ${SERIF};">
+                    <p style="margin: 0; font-size: 13px; font-style: italic; color: ${sobreNegro};">Grupo Parroquial</p>
+                    <p style="margin: 1px 0 0 0; font-size: 19px; line-height: 1.25; color: ${claroSobreNegro};">Nuestra Señora de los Desamparados</p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
+          ${conVirgen ? `
           <tr>
-            <td height="3" bgcolor="${dorado}" style="background-color: ${dorado}; font-size: 0; line-height: 0;">&nbsp;</td>
+            <td style="line-height: 0; font-size: 0;">
+              <img src="cid:${IMAGENES.virgen.cid}" alt="Nuestra Señora de los Desamparados" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;">
+            </td>
+          </tr>` : ''}
+          <tr>
+            <td height="5" bgcolor="${burdeos}" style="background-color: ${burdeos}; font-size: 0; line-height: 0;">&nbsp;</td>
           </tr>
           <tr>
-            <td class="caja" bgcolor="#ffffff" style="background-color: #ffffff; padding: 36px 40px 40px 40px; font-family: ${SERIF}; font-size: 16px; line-height: 1.65; color: ${texto}; border-radius: 0 0 6px 6px;">
-              <p style="margin: 0 0 6px 0; font-family: ${SANS}; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: ${etiqueta};">${esc(antetitulo)}</p>
-              <h1 class="titulo" style="margin: 0 0 24px 0; font-family: ${SERIF}; font-size: 27px; line-height: 1.25; font-weight: normal; color: ${primario};">${esc(titulo)}</h1>
+            <td class="caja" bgcolor="${papel}" style="background-color: ${papel}; padding: 30px 44px 40px 44px; font-family: ${SERIF}; font-size: 16px; line-height: 1.65; color: ${texto};">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 22px;">
+                <tr>
+                  <td style="font-family: ${SERIF}; font-size: 15px; font-variant: small-caps; letter-spacing: 0.6px; color: ${burdeos};">${esc(antetitulo)}</td>
+                  <td class="fecha" align="right" style="font-family: ${SERIF}; font-size: 14px; font-style: italic; color: ${suave};">${esc(lugarYFecha())}</td>
+                </tr>
+              </table>
+              <h1 class="titulo" style="margin: 0 0 22px 0; font-family: ${SERIF}; font-size: 26px; line-height: 1.25; font-weight: normal; color: ${negro};">${esc(titulo)}</h1>
               ${contenido}
             </td>
           </tr>
           <tr>
-            <td class="caja" style="padding: 24px 40px 8px 40px; font-family: ${SANS}; font-size: 12px; line-height: 1.6; color: ${suave};">
+            <td class="caja" style="padding: 26px 4px 0 4px; font-family: ${SANS}; font-size: 12px; line-height: 1.65; color: ${sobreNegro};">
               ${pie(para)}
-              <p style="margin: 14px 0 0 0; color: ${suave};">&copy; ${year} ${esc(NOMBRE_GRUPO)}</p>
+              <p style="margin: 16px 0 0 0; color: ${sobreNegro};">&copy; ${year} ${esc(NOMBRE_GRUPO)} &middot; Málaga</p>
             </td>
           </tr>
         </table>
@@ -265,9 +314,18 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
 </html>`;
 }
 
+/** Las imágenes que usa un correo ya maquetado, para adjuntarlas en línea. */
+export function imagenesDe(html: string) {
+  return Object.entries(IMAGENES)
+    .filter(([, imagen]) => html.includes(`cid:${imagen.cid}`))
+    .map(([nombre, imagen]) => ({ filename: `${nombre}${imagen.tipo === 'image/png' ? '.png' : '.jpg'}`, path: imagen.archivo, cid: imagen.cid, contentType: imagen.tipo }));
+}
+
 // --- LA VERSIÓN EN TEXTO ---
 
-const ENTIDADES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ', copy: '©' };
+const ENTIDADES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ', copy: '©', middot: '·', rarr: '', '#10016': '✠',
+};
 
 /**
  * La versión en texto plano del mismo correo, que va junto al HTML. Sin ella
@@ -282,7 +340,7 @@ export function aTexto(html: string): string {
     // La dirección de repuesto del botón sobra: en el texto el botón ya la lleva.
     .replace(/<p data-alternativa[\s\S]*?<\/p>/gi, '')
     .replace(/<a [^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_, url: string, texto: string) => {
-      const limpio = texto.replace(/<[^>]+>/g, '').trim();
+      const limpio = texto.replace(/<[^>]+>/g, '').replace(/&nbsp;|&rarr;/g, ' ').trim();
       return url.startsWith('mailto:') || limpio === url || limpio.replace(/&amp;/g, '&') === url.replace(/&amp;/g, '&') ? limpio : `${limpio} (${url})`;
     })
     .replace(/<br\s*\/?>/gi, '\n')
@@ -291,7 +349,7 @@ export function aTexto(html: string): string {
     .replace(/<\/td>/gi, '\n')
     .replace(/<[^>]+>/g, '')
     .replace(/&#8199;|&#65279;|&#847;/g, '')
-    .replace(/&(amp|lt|gt|quot|#39|nbsp|copy);/g, (_, e: string) => ENTIDADES[e])
+    .replace(/&(amp|lt|gt|quot|#39|nbsp|copy|middot|rarr|#10016);/g, (_, e: string) => ENTIDADES[e])
     .split('\n').map((l) => l.replace(/[ \t]+/g, ' ').trim()).join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

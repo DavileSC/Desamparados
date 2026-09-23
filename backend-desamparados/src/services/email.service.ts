@@ -13,12 +13,12 @@
 import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactoDto } from '../dtos/contacto.dto';
 import {
-  COLORES, bloqueDeSecretaria, boton, cita, datos, esc, firma, lista, maquetar,
+  COLORES, bloqueDeSecretaria, boton, cita, datos, esc, firma, lista, maquetar, rotulo,
   parrafo, recuadro, saludo, segunSexo, urlDeLaWeb, type Sexo,
 } from './correos/plantilla.js';
 import { cuentaDeContacto, enviarCorreo } from './correos/envio.js';
 
-const BENDICION = 'Que nuestros Sagrados Titulares le guarden y bendigan.';
+const BENDICION = 'Que Nuestra Señora de los Desamparados le guarde y bendiga.';
 
 /** «una hora», «3 días», «12 horas». */
 function plazo(horas: number): string {
@@ -73,43 +73,43 @@ export class EmailService {
    * que identifica la papeleta en Secretaría es su número.
    */
   static async enviarPapeleta(emailDestino: string, nombreHermano: string, datosPapeleta: DatosPapeleta, sexo?: Sexo) {
-    const { primario, dorado, doradoClaro, linea, etiqueta, panel } = COLORES;
+    const { negro, burdeos, linea, sobreNegro } = COLORES;
     const referencia = datosPapeleta.papeletaId ? `${datosPapeleta.year}-${String(datosPapeleta.papeletaId).padStart(4, '0')}` : null;
-    const etiquetaDe = (texto: string) =>
-      `<span style="font-family: Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: ${etiqueta};">${esc(texto)}</span>`;
     const celda = (titulo: string, valor: string, columnas = 1) =>
-      `<td ${columnas === 2 ? 'colspan="2"' : 'width="50%"'} valign="top" style="padding: 14px 20px; border-top: 1px solid ${linea};">${etiquetaDe(titulo)}<br><span style="font-size: 16px;">${esc(valor)}</span></td>`;
+      `<td ${columnas === 2 ? 'colspan="2"' : 'width="50%"'} valign="top" style="padding: 12px 20px; border-top: 1px solid ${linea};">${rotulo(titulo)}<br><span style="font-size: 16px;">${esc(valor)}</span></td>`;
 
     const filasExtra = [
       datosPapeleta.tunica ? celda('Túnica', datosPapeleta.tunica) : '',
       datosPapeleta.importe ? celda('Limosna abonada', datosPapeleta.importe) : '',
     ].filter(Boolean);
 
+    // Como la de papel: recuadro negro, cabecera con el año y el número, el
+    // puesto grande y los datos en rejilla.
     const papeleta = `
-      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 28px 0; border: 1px solid ${linea}; border-radius: 6px; border-collapse: separate;">
+      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 28px 0; border: 1px solid ${negro};">
         <tr>
-          <td colspan="2" bgcolor="${primario}" style="background-color: ${primario}; padding: 12px 20px; border-radius: 5px 5px 0 0;">
+          <td colspan="2" bgcolor="${negro}" style="background-color: ${negro}; padding: 11px 20px;">
             <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"><tr>
-              <td style="font-family: Helvetica, Arial, sans-serif; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #ffffff;">Papeleta de sitio · ${datosPapeleta.year}</td>
-              ${referencia ? `<td align="right" style="font-family: Helvetica, Arial, sans-serif; font-size: 12px; letter-spacing: 1px; color: ${doradoClaro};">N.º ${referencia}</td>` : ''}
+              <td style="font-family: Georgia, serif; font-size: 15px; font-style: italic; color: #ffffff;">Papeleta de sitio ${datosPapeleta.year}</td>
+              ${referencia ? `<td align="right" style="font-family: Georgia, serif; font-size: 14px; color: ${sobreNegro};">N.º ${referencia}</td>` : ''}
             </tr></table>
           </td>
         </tr>
         <tr>
-          <td colspan="2" style="padding: 22px 20px 18px 20px; background-color: ${panel}; border-bottom: 2px solid ${dorado};">
-            ${etiquetaDe('Puesto')}<br>
-            <span style="font-size: 26px; line-height: 1.3; color: ${primario};">${esc(datosPapeleta.puesto) || 'Por asignar'}</span>
+          <td colspan="2" style="padding: 20px 20px 18px 20px; border-bottom: 3px solid ${burdeos};">
+            ${rotulo('Puesto')}<br>
+            <span style="font-size: 28px; line-height: 1.25; color: ${burdeos};">${esc(datosPapeleta.puesto) || 'Por asignar'}</span>
             ${datosPapeleta.tramo ? `<br><span style="font-size: 16px;">${esc(datosPapeleta.tramo)}</span>` : ''}
           </td>
         </tr>
         <tr>${celda('Día', datosPapeleta.fechaSalida)}${celda('Hora de entrada', datosPapeleta.horaSalida)}</tr>
         <tr>${celda('Acceso', datosPapeleta.accesoPuerta, 2)}</tr>
-        ${filasExtra.length ? `<tr>${filasExtra.join('')}${filasExtra.length === 1 ? '<td style="border-top: 1px solid ' + linea + ';"></td>' : ''}</tr>` : ''}
-        ${datosPapeleta.observaciones ? `<tr><td colspan="2" style="padding: 14px 20px; border-top: 1px solid ${linea};">${etiquetaDe('Observaciones')}<br><span style="font-size: 15px; font-style: italic;">${esc(datosPapeleta.observaciones)}</span></td></tr>` : ''}
+        ${filasExtra.length ? `<tr>${filasExtra.join('')}${filasExtra.length === 1 ? `<td style="border-top: 1px solid ${linea};"></td>` : ''}</tr>` : ''}
+        ${datosPapeleta.observaciones ? `<tr><td colspan="2" style="padding: 12px 20px; border-top: 1px dashed ${linea};">${rotulo('Observaciones')}<br><span style="font-size: 15px;">${esc(datosPapeleta.observaciones)}</span></td></tr>` : ''}
       </table>`;
 
     const normativa = process.env.NORMATIVA_URL
-      ? parrafo(`Puede consultar la normativa completa de la Estación de Penitencia en <a href="${process.env.NORMATIVA_URL}" style="color: ${primario};">este enlace</a>.`)
+      ? parrafo(`Puede consultar la normativa completa de la Estación de Penitencia en <a href="${process.env.NORMATIVA_URL}" style="color: ${burdeos};">este enlace</a>.`)
       : '';
 
     const content = [
@@ -146,7 +146,7 @@ export class EmailService {
       saludo(nombreHermano, sexo),
       parrafo('La Secretaría acusa recibo de su <strong>solicitud de ingreso</strong> en nuestro Grupo Parroquial. Le agradecemos de corazón que haya dado este paso.'),
       recuadro('Próximo paso: pasar por Secretaría',
-        `Según nuestras Reglas, para completar su alta en el censo de hermanos debe acudir en persona a la Casa del Grupo Parroquial con:${lista(documentos).replace('margin: 0 0 16px 0', 'margin: 10px 0 0 0')}`),
+        `Según nuestras Reglas, para completar su alta en el censo de hermanos debe acudir en persona a la Casa del Grupo Parroquial con:${lista(documentos, '10px 0 0 0')}`),
       bloqueDeSecretaria('Atención en Secretaría'),
       parrafo('Mientras tanto, su solicitud queda pendiente. Le escribiremos de nuevo en cuanto la Secretaría la haya revisado.'),
       firma(BENDICION),
@@ -182,7 +182,7 @@ export class EmailService {
     const nombreCompleto = [datosSolicitud.nombre, datosSolicitud.apellidos].filter(Boolean).join(' ');
     const filas: [string, string][] = [
       ['Solicitante', esc(nombreCompleto)],
-      ['Correo', `<a href="mailto:${esc(datosSolicitud.email)}" style="color: ${COLORES.primario};">${esc(datosSolicitud.email)}</a>`],
+      ['Correo', `<a href="mailto:${esc(datosSolicitud.email)}" style="color: ${COLORES.burdeos};">${esc(datosSolicitud.email)}</a>`],
     ];
     // Un alta puede traer varias personas: el adulto y los menores a su cargo.
     if (datosSolicitud.fichas && datosSolicitud.fichas > 1) {
@@ -210,7 +210,7 @@ export class EmailService {
    * Antes aprobar era mudo y el solicitante no se enteraba de nada.
    */
   static async enviarAprobacionSolicitud(emailDestino: string, nombreHermano: string, numerosDeHermano: number[], sexo?: Sexo) {
-    const { primario, linea, etiqueta, panel } = COLORES;
+    const { burdeos, linea } = COLORES;
 
     // Una cuenta puede tener varias fichas (los hijos de un tutor) y se aprueban
     // todas a la vez: el correo las nombra en plural o el padre creería que solo
@@ -218,9 +218,9 @@ export class EmailService {
     const varios = numerosDeHermano.length > 1;
     const bloqueNumero = numerosDeHermano.length
       ? `<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 8px 0 24px 0;">
-           <tr><td align="center" style="padding: 22px; background-color: ${panel}; border: 1px solid ${linea}; border-radius: 6px;">
-             <span style="font-family: Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: ${etiqueta};">${varios ? 'Números de hermano' : 'Número de hermano'}</span><br>
-             <span style="font-size: 34px; line-height: 1.3; color: ${primario};">${esc(numerosDeHermano.join(' · '))}</span>
+           <tr><td align="center" style="padding: 20px; border-top: 1px solid ${linea}; border-bottom: 1px solid ${linea};">
+             ${rotulo(varios ? 'Números de hermano' : 'Número de hermano')}<br>
+             <span style="font-size: 36px; line-height: 1.3; color: ${burdeos};">${esc(numerosDeHermano.join(' · '))}</span>
            </td></tr>
          </table>`
       : '';
@@ -303,7 +303,7 @@ export class EmailService {
     const content = [
       saludo(nombreCuenta, sexo),
       parrafo(`Ya está <strong>abierta la solicitud de papeletas de sitio</strong> para la Estación de Penitencia de ${year}. Puede pedirla desde el área de hermanos y elegir el día en que pasará a recogerla.`),
-      recuadro('Días de reparto', lista(dias).replace('margin: 0 0 16px 0', 'margin: 0')),
+      recuadro('Días de reparto', lista(dias, '0')),
       parrafo(fichas.length > 1 ? 'Puede pedirla para:' : 'Puede pedirla para su ficha:', 'margin-bottom: 6px;'),
       lista(fichas),
       parrafo('La papeleta se paga el día del reparto. Recuerde llevar el DNI.'),
@@ -328,7 +328,7 @@ export class EmailService {
       saludo(nombreHermano, sexo),
       parrafo(`Tenía cita el <strong>${esc(fechaCita)}</strong> para recoger su papeleta de sitio y, según nuestros registros, no pudo pasar.`),
       parrafo('La organización del cortejo depende de que cada hermano recoja su papeleta dentro del plazo de reparto. Si quiere salir este año, pase a recogerla en cuanto pueda, o pida una cita nueva desde el área de hermanos.'),
-      recuadro('Qué llevar', `${lista(['DNI.', 'El recibo de la cuota anual, si la tiene pendiente.']).replace('margin: 0 0 16px 0', 'margin: 0')}`),
+      recuadro('Qué llevar', lista(['DNI.', 'El recibo de la cuota anual, si la tiene pendiente.'], '0')),
       bloqueDeSecretaria('Horario de reparto'),
       boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')),
       parrafo('Si ya la ha recogido en las últimas horas, no haga caso de este mensaje.', `font-size: 14px; color: ${COLORES.suave};`),
@@ -355,7 +355,7 @@ export class EmailService {
     const content = [
       datos([
         ['Nombre', esc(datosContacto.nombre)],
-        ['Correo', `<a href="mailto:${email}" style="color: ${COLORES.primario};">${email}</a>`],
+        ['Correo', `<a href="mailto:${email}" style="color: ${COLORES.burdeos};">${email}</a>`],
         ['Teléfono', telefono],
         ['Asunto', esc(datosContacto.asunto)],
       ]),

@@ -27,6 +27,8 @@ export interface CorreoParaBuzon {
   html: string;
   text?: string;
   replyTo?: string;
+  /** Imágenes en línea (`cid:`): el buzón las incrusta para verlas al abrir el .html. */
+  attachments?: { path: string; cid: string; contentType: string }[];
 }
 
 /**
@@ -84,10 +86,16 @@ function escapar(texto: string): string {
  * un documento válido. Si la plantilla no trae body (un correo suelto), va
  * delante y el navegador lo abre igual.
  */
-function paginaDelCorreo(correo: CorreoParaBuzon): string {
+async function paginaDelCorreo(correo: CorreoParaBuzon): Promise<string> {
   const cabecera = sobre(correo);
-  const conBody = correo.html.replace(/(<body[^>]*>)/i, `$1\n${cabecera}`);
-  return conBody === correo.html ? `${cabecera}\n${correo.html}` : conBody;
+  // Un navegador no sabe qué es `cid:`: las imágenes en línea se incrustan.
+  let html = correo.html;
+  for (const imagen of correo.attachments ?? []) {
+    const datos = (await fs.readFile(imagen.path)).toString('base64');
+    html = html.split(`cid:${imagen.cid}`).join(`data:${imagen.contentType};base64,${datos}`);
+  }
+  const conBody = html.replace(/(<body[^>]*>)/i, `$1\n${cabecera}`);
+  return conBody === html ? `${cabecera}\n${html}` : conBody;
 }
 
 /**
@@ -102,7 +110,7 @@ export function buzonDePruebas() {
       const marca = new Date().toISOString().replace(/[:.]/g, '-');
       const nombre = `${marca}-${partePlana(correo.subject)}.html`;
       const destino = path.join(carpeta, nombre);
-      await fs.writeFile(destino, paginaDelCorreo(correo), 'utf8');
+      await fs.writeFile(destino, await paginaDelCorreo(correo), 'utf8');
       console.log(`📬 [Buzón de pruebas] Correo escrito en ${destino}`);
       return { messageId: nombre, accepted: [correo.to] };
     },

@@ -7,7 +7,7 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { buzonDePruebas, buzonPedido, type CorreoParaBuzon } from '../../utils/buzon-pruebas.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../auditoria.service.js';
-import { aTexto } from './plantilla.js';
+import { aTexto, imagenesDe } from './plantilla.js';
 
 /**
  * Lo único que `EmailService` necesita de un transporte. Lo cumplen tanto el de
@@ -135,6 +135,8 @@ export async function enviarCorreo(
       subject,
       html,
       text: aTexto(html),
+      // El escudo y la Virgen van dentro del correo, no enlazados a la web.
+      attachments: imagenesDe(html),
       // Sin Reply-To propio, las respuestas van al buzón de Secretaría si es
       // otro distinto de la cuenta que envía.
       ...(replyTo || process.env.CONTACT_EMAIL_TO ? { replyTo: replyTo || process.env.CONTACT_EMAIL_TO } : {}),
