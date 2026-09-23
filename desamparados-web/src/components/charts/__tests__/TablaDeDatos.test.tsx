@@ -3,26 +3,25 @@ import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import TablaDeDatos from '../TablaDeDatos'
 
-// Las consultas van con `hidden: true`: el contenido vive dentro de un
-// `<details>` plegado y jsdom no implementa el plegado igual que un navegador,
-// así que comprobar la apertura a golpe de clic sería probar a jsdom, no a
-// nuestro componente. Lo que importa es que la tabla esté y diga lo mismo.
+// La tabla va fuera de la vista pero en la página: la encuentran los lectores
+// de pantalla (y estas consultas) sin pulsar nada.
 describe('TablaDeDatos', () => {
-  it('ofrece la tabla detrás de «Ver tabla»', () => {
+  it('deja la tabla para los lectores de pantalla, sin «Ver tabla»', () => {
     renderWithProviders(
       <TablaDeDatos titulo="Censo de hermanos" columnas={['Mes', 'Activos']} filas={[['Enero', 1253]]} />,
     )
-    expect(screen.getByText('Ver tabla')).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Activos', hidden: true })).toBeInTheDocument()
-    expect(screen.getByRole('cell', { name: '1253', hidden: true })).toBeInTheDocument()
+    expect(screen.queryByText('Ver tabla')).not.toBeInTheDocument()
+    expect(screen.getByRole('table', { name: 'Censo de hermanos' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Activos' })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '1253' })).toBeInTheDocument()
   })
 
   it('las cifras de la tabla son las mismas que le llegan', () => {
     renderWithProviders(
       <TablaDeDatos titulo="Papeletas" columnas={['Año', 'Total']} filas={[['2025', '604'], ['2026', '612']]} />,
     )
-    expect(screen.getByRole('cell', { name: '604', hidden: true })).toBeInTheDocument()
-    expect(screen.getByRole('cell', { name: '612', hidden: true })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '604' })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '612' })).toBeInTheDocument()
   })
 
   it('sin filas no pinta nada: la gráfica ya dice que no hay datos', () => {

@@ -63,7 +63,8 @@ function Tarjeta({
       component="section"
       sx={{
         ...fondoTarjeta(tono, superficies.card),
-        borderRadius: 1.75, p: 2.75, display: 'flex', flexDirection: 'column', gap: 1.75,
+        // Relativa: ancla la tabla oculta, que si no se iría al borde de la página.
+        position: 'relative', borderRadius: 1.75, p: 2.75, display: 'flex', flexDirection: 'column', gap: 1.75,
         gridColumn: { xs: '1 / -1', lg: `span ${columnas}` },
       }}
     >

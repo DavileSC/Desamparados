@@ -217,7 +217,6 @@ describe('ComoVaElAnio', () => {
     responder(PANEL)
     montar()
     const censo = screen.getByRole('heading', { name: 'Censo de hermanos' }).closest('section') as HTMLElement
-    await userEvent.click(within(censo).getByText('Ver tabla'))
     for (const col of ['Activos', 'Altas', 'Bajas']) {
       expect(within(censo).getByRole('columnheader', { name: col })).toBeInTheDocument()
     }
@@ -248,11 +247,12 @@ describe('ComoVaElAnio', () => {
     expect(within(altura).queryByText('150-159')).not.toBeInTheDocument()
   })
 
-  it('cada gráfica ofrece su tabla', () => {
+  it('cada gráfica lleva su tabla para lectores de pantalla, sin «Ver tabla» a la vista', () => {
     responder(PANEL)
     montar()
+    expect(screen.queryByText('Ver tabla')).not.toBeInTheDocument()
     // Todas menos el cortejo, cuya leyenda ya es la tabla (puesto, número y parte).
-    expect(screen.getAllByText('Ver tabla').length).toBeGreaterThanOrEqual(8)
+    expect(screen.getAllByRole('table', { hidden: true }).length).toBeGreaterThanOrEqual(8)
   })
 
   it('si el ejercicio elegido falla al cargar, avisa y deja volver al actual', async () => {
