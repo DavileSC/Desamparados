@@ -8,14 +8,20 @@ import { numero } from '../contabilidad/formato'
 import { CIFRA, entrada, sinMovimiento, useCuenta } from './animaciones'
 
 /**
- * Un tono por puesto, de la familia burdeos, y el oro para el último: se
- * distinguen sin salir de los colores del Grupo. En oscuro, la misma familia
- * aclarada para que se lea sobre el fondo.
+ * Un tono por puesto, bien distinto de los demás: la serie categórica de las
+ * gráficas del proyecto (azul, naranja, aguamarina, ámbar) más el magenta que
+ * la sigue, en ese orden fijo. Validada con el script de la guía de
+ * visualización sobre las tarjetas reales, en los dos modos: los vecinos se
+ * distinguen también con daltonismo, contando el que cierra el anillo con el
+ * primero. La familia burdeos de antes eran cinco tonos casi iguales.
+ *
+ * «Otros» no es un puesto: va en gris, para que no compita con ellos.
  */
 const TONOS = {
-  claro: ['#6e1822', '#9a3440', '#bf5a64', '#d98c92', '#ecbcbf', '#b39a00'],
-  oscuro: ['#ffb3b4', '#f08f95', '#d8707a', '#b85762', '#8f4450', '#e3c65a'],
+  claro: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'],
+  oscuro: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181'],
 }
+const GRIS_OTROS = { claro: '#a39d99', oscuro: '#7d777b' }
 
 /** El anillo: radio y grosor en unidades del dibujo (100 × 100). */
 const RADIO = 40
@@ -39,17 +45,17 @@ export default function Cortejo({ procesion, orden = 0 }: { procesion: PanelResp
   const totalContado = Math.round(useCuenta(total, 1400))
   const anterior = procesion.porAnio.find((a) => a.anio === procesion.anio - 1)
   const diferencia = anterior ? procesion.papeletas - anterior.total : null
-  // El tono de cada trozo, en los dos modos: lo elige el navegador.
-  const tono = (i: number) => {
-    const k = i === puestos.length - 1 && puestos.length > 1 ? TONOS.claro.length - 1 : i % (TONOS.claro.length - 1)
-    return segunModo(TONOS.claro[k], TONOS.oscuro[k])
-  }
+  // El tono de cada trozo, en los dos modos (lo elige el navegador). El panel
+  // manda como mucho cinco puestos y el resto en «Otros», así que nunca se repite.
+  const tono = (etiqueta: string, i: number) => etiqueta === 'Otros'
+    ? segunModo(GRIS_OTROS.claro, GRIS_OTROS.oscuro)
+    : segunModo(TONOS.claro[i % TONOS.claro.length], TONOS.oscuro[i % TONOS.oscuro.length])
 
   // Cada trozo empieza donde acaba la suma de los anteriores.
   const largos = puestos.map((p) => (p.total / total) * CIRCUNFERENCIA)
   const trozos = puestos.map((p, i) => ({
     ...p,
-    color: tono(i),
+    color: tono(p.etiqueta, i),
     largo: Math.max(0.01, largos[i] - (puestos.length > 1 ? HUECO : 0)),
     desde: largos.slice(0, i).reduce((s, l) => s + l, 0),
   }))

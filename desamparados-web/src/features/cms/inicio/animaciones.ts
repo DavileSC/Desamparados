@@ -55,10 +55,30 @@ export function puedeAnimar(): boolean {
     && window.matchMedia('(prefers-reduced-motion: no-preference)').matches
 }
 
-/** La cifra, contando desde cero hasta `valor` (con frenada al final). */
+/**
+ * ¿Ya se han contado las cifras en esta visita? La cuenta es una bienvenida:
+ * la primera vez que se abre el Inicio tiene gracia, pero al volver desde otra
+ * página obligaba a esperar a que los números subieran para leerlos. Vive en
+ * el módulo, así que dura lo que la pestaña: al recargar, se cuenta otra vez.
+ */
+let yaContado = false
+
+/** Para las pruebas: como si fuera una visita nueva. */
+export function olvidarCuentas() {
+  yaContado = false
+}
+
+/**
+ * La cifra, contando desde cero hasta `valor` (con frenada al final). Solo la
+ * primera vez en la visita: después, y con «reducir movimiento», sale ya entera.
+ */
 export function useCuenta(valor: number, duracion = 1400): number {
-  const [animar] = useState(puedeAnimar)
+  // Todas las cifras de la primera pantalla leen `false` en el mismo pintado y
+  // cuentan juntas; al montarse, marcan la visita como ya contada.
+  const [animar] = useState(() => !yaContado && puedeAnimar())
   const [actual, setActual] = useState(0)
+
+  useEffect(() => { yaContado = true }, [])
 
   useEffect(() => {
     if (!animar) return
