@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../../test/test-utils'
+import { TemaCmsProvider } from '../../../../app/temaCms'
 import ProximosActos from '../ProximosActos'
 import type { PanelResponse } from '../../../../lib/api/panel'
 
@@ -27,7 +28,7 @@ describe('ProximosActos', () => {
   it('recoge las noticias y las publicaciones que enseñaba la actividad del equipo', () => {
     // Al sacar la auditoría del Inicio se llevaba por delante estos dos
     // números, que no son auditoría y el panel viejo ya enseñaba.
-    renderWithProviders(<ProximosActos eventos={[]} actividad={PANEL.actividad} />)
+    renderWithProviders(<TemaCmsProvider><ProximosActos eventos={[]} actividad={PANEL.actividad} /></TemaCmsProvider>)
     expect(screen.getByText(/4 noticias publicadas/)).toBeInTheDocument()
     expect(screen.getByText(/7 publicaciones/)).toBeInTheDocument()
   })
@@ -37,7 +38,7 @@ describe('ProximosActos', () => {
   // `publicaciones.ultima && ...`) y se quedó sin nadie que la mirase.
 
   it('el pie fecha la última publicación', () => {
-    renderWithProviders(<ProximosActos eventos={[]} actividad={PANEL.actividad} />)
+    renderWithProviders(<TemaCmsProvider><ProximosActos eventos={[]} actividad={PANEL.actividad} /></TemaCmsProvider>)
     expect(screen.getByText(/última el 1 jun 2026/)).toBeInTheDocument()
   })
 
@@ -47,7 +48,7 @@ describe('ProximosActos', () => {
       ...PANEL,
       actividad: { ...PANEL.actividad, publicaciones: { total: 0, ultima: null } },
     }
-    renderWithProviders(<ProximosActos eventos={[]} actividad={sinPublicaciones.actividad} />)
+    renderWithProviders(<TemaCmsProvider><ProximosActos eventos={[]} actividad={sinPublicaciones.actividad} /></TemaCmsProvider>)
     expect(screen.getByText(/0 publicaciones/)).toBeInTheDocument()
     expect(screen.queryByText(/última el/)).not.toBeInTheDocument()
   })

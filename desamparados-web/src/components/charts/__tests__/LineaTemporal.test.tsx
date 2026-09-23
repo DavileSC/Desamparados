@@ -36,7 +36,7 @@ describe('LineaTemporal', () => {
     const { container } = renderWithProviders(
       <LineaTemporal puntos={puntos} etiqueta="Hermanos" paleta={graficasCms('oscuro')} />,
     )
-    expect(container.querySelector('[data-testid="linea"]')).toHaveAttribute('stroke', '#ffffff')
+    expect(container.querySelector('[data-testid="linea"]')).toHaveAttribute('stroke', graficasCms('oscuro').acento)
   })
 
   it('formatea los valores si se le pide', () => {

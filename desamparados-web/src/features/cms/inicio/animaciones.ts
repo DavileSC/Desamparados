@@ -25,6 +25,7 @@ const entrar = keyframes`from { opacity: .55; transform: translateY(10px) } to {
 export const trazar = keyframes`from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 }`
 /** Hasta `--hasta` (0 = entero): así se llena solo hasta el punto de hoy. */
 export const llenarTrazo = keyframes`from { stroke-dashoffset: 1 } to { stroke-dashoffset: var(--hasta) }`
+export const aparecerSuave = keyframes`from { opacity: 0 } to { opacity: 1 }`
 export const crecerY = keyframes`from { transform: scaleY(0) } to { transform: scaleY(1) }`
 export const crecerX = keyframes`from { transform: scaleX(0) } to { transform: scaleX(1) }`
 export const aparecer = keyframes`from { transform: scale(.3); opacity: .2 } to { transform: scale(1); opacity: 1 }`
@@ -36,10 +37,13 @@ export const latido = keyframes`
   60% { box-shadow: 0 0 0 7px rgba(227, 73, 72, 0) }
 `
 
-/** Entrada escalonada de una pieza: `orden` la retrasa 70 ms por puesto. */
-export const entrada = (orden = 0) => ({
-  animation: `${entrar} .6s cubic-bezier(.2, .7, .2, 1) backwards`,
-  animationDelay: `${orden * 70}ms`,
+/**
+ * Entrada escalonada de una pieza: `orden` la retrasa 70 ms por puesto.
+ * `y` encadena otra animación que siga después (el vaivén del resplandor).
+ */
+export const entrada = (orden = 0, y?: string) => ({
+  animation: `${entrar} .6s cubic-bezier(.2, .7, .2, 1) backwards${y ? `, ${y}` : ''}`,
+  animationDelay: `${orden * 70}ms${y ? ', 0s' : ''}`,
   ...sinMovimiento,
 })
 

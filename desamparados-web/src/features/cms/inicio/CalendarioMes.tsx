@@ -2,6 +2,7 @@ import { Box, Paper, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import type { PanelResponse, TipoEvento } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
+import { MECER, fondoResplandor } from '../../../theme/resplandor'
 import { rolesPorRutaCms } from '../../../app/cmsNavegacion'
 import { entrada } from './animaciones'
 
@@ -30,7 +31,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
   hoy?: Date
   orden?: number
 }) {
-  const { modo } = useTemaCms()
+  const { modo, superficies } = useTemaCms()
   const oscuro = modo === 'oscuro'
   const COLOR: Record<Clase, { fondo: string; texto: string; muestra: string }> = {
     culto: { fondo: oscuro ? 'rgba(160,61,68,0.55)' : 'rgba(110,24,34,0.12)', texto: oscuro ? '#fff' : '#6e1822', muestra: oscuro ? '#a03d44' : '#6e1822' },
@@ -54,7 +55,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
   const titulo = `${MESES[mes - 1][0].toUpperCase()}${MESES[mes - 1].slice(1)} de ${anio}`
 
   return (
-    <Paper component="section" aria-labelledby="calendario-mes" sx={{ borderRadius: 1.75, p: { xs: 2, md: 2.5 }, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, containerType: 'inline-size', containerName: 'calendario', ...entrada(orden) }}>
+    <Paper component="section" aria-labelledby="calendario-mes" sx={{ ...fondoResplandor(modo, 'rosa', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.5 }, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, containerType: 'inline-size', containerName: 'calendario', ...entrada(orden, MECER) }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
         <Typography id="calendario-mes" variant="h5" component="h2">{titulo}</Typography>
         {veAgenda && (

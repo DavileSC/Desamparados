@@ -16,6 +16,9 @@ interface Props {
 /**
  * Una sola serie, así que un solo color: el orden y la longitud ya distinguen
  * las filas. Pintarlas de colores distintos sugeriría categorías que no hay.
+ *
+ * Cada barra se enciende hacia su extremo (degradado) y acaba en un punto de
+ * luz: el valor es donde brilla.
  */
 export default function BarrasHorizontales({ filas, color, formatoValor }: Props) {
   if (filas.length === 0) {
@@ -30,7 +33,7 @@ export default function BarrasHorizontales({ filas, color, formatoValor }: Props
   const max = Math.max(...filas.map((f) => f.valor))
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {filas.map((fila) => (
         <Box
           key={fila.etiqueta}
@@ -41,15 +44,21 @@ export default function BarrasHorizontales({ filas, color, formatoValor }: Props
           <Typography variant="body2" color="text.secondary" noWrap title={fila.etiqueta}>
             {fila.etiqueta}
           </Typography>
-          <Box sx={{ height: 10, borderRadius: 99, backgroundColor: 'divider', overflow: 'hidden' }}>
+          <Box sx={{ height: 6, borderRadius: 99, backgroundColor: 'divider', position: 'relative' }}>
             <Box
               data-testid="barra"
               sx={{
                 height: '100%',
                 borderRadius: 99,
-                backgroundColor: relleno,
+                backgroundImage: `linear-gradient(90deg, color-mix(in srgb, ${relleno} 25%, transparent), ${relleno})`,
                 // Sin datos, max es 0: la división daría NaN.
                 width: `${max > 0 ? (fila.valor / max) * 100 : 0}%`,
+                position: 'relative',
+                '&::after': fila.valor > 0 ? {
+                  content: '""', position: 'absolute', right: -4, top: '50%', width: 11, height: 11, borderRadius: '50%',
+                  transform: 'translateY(-50%)', backgroundColor: relleno,
+                  boxShadow: `0 0 0 3px color-mix(in srgb, ${relleno} 22%, transparent), 0 0 12px color-mix(in srgb, ${relleno} 70%, transparent)`,
+                } : undefined,
               }}
             />
           </Box>

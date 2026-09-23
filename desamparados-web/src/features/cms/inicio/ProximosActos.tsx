@@ -4,6 +4,8 @@ import type { PanelResponse } from '../../../lib/api/panel'
 import { rolesPorRutaCms } from '../../../app/cmsNavegacion'
 import { fechaCorta } from '../contabilidad/formato'
 import { contar } from './plural'
+import { useTemaCms } from '../../../app/useTemaCms'
+import { MECER, fondoResplandor } from '../../../theme/resplandor'
 import { CIFRA, entrada } from './animaciones'
 
 const TIPO: Record<string, string> = {
@@ -27,9 +29,10 @@ export default function ProximosActos({
   // pulsaban el enlace y ExigeRol los expulsaba a /area-hermano, fuera de
   // todo el CMS.
   const veAgenda = role !== undefined && rolesPorRutaCms.agenda.includes(role)
+  const { modo, superficies } = useTemaCms()
 
   return (
-    <Paper component="section" aria-labelledby="proximos-actos" sx={{ borderRadius: 1.75, height: '100%', display: 'flex', flexDirection: 'column', ...entrada(orden) }}>
+    <Paper component="section" aria-labelledby="proximos-actos" sx={{ ...fondoResplandor(modo, 'oro', superficies.card), borderRadius: 1.75, height: '100%', display: 'flex', flexDirection: 'column', ...entrada(orden, MECER) }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 2.75, pt: 2.25, pb: 1.5 }}>
         <Typography id="proximos-actos" variant="h5" component="h2">Próximos actos</Typography>
         {veAgenda && (

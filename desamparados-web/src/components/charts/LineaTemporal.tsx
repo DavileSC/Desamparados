@@ -1,7 +1,9 @@
+import { useId } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
-import { pasoBonito, pasoEtiquetas } from './ejes'
+import { curvaSuave, pasoBonito, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
+import { Degradado, Halo } from './brillo'
 
 export interface PuntoLinea {
   x: string
@@ -38,12 +40,13 @@ function escala(min: number, max: number) {
 }
 
 /**
- * Una serie en el tiempo, con área. Los valores del primero y el último punto
+ * Una serie en el tiempo: curva suave con brillo sobre un área en degradado. Los valores del primero y el último punto
  * van escritos: el ratón añade detalle, pero nunca es la única forma de leer un
  * dato.
  */
 export default function LineaTemporal({ puntos, etiqueta, paleta, color, formatoValor, etiquetaX }: Props) {
   const theme = useTheme()
+  const id = useId().replace(/:/g, '')
   // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
   const { referencia, ancho: ANCHO } = useAnchoMedido()
 
@@ -55,7 +58,7 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
     )
   }
 
-  const trazo = color ?? paleta.enfasis
+  const trazo = color ?? paleta.acento
   const texto = (valor: number) => (formatoValor ? formatoValor(valor) : String(valor))
   const enX = etiquetaX ?? ((x: string) => x)
 
@@ -69,7 +72,7 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
   const X = (i: number) => IZQ + (puntos.length > 1 ? (i * anchoUtil) / (puntos.length - 1) : anchoUtil / 2)
   const Y = (v: number) => ARRIBA + altoUtil - ((v - suelo) / rango) * altoUtil
 
-  const d = puntos.map((p, i) => `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ')
+  const d = curvaSuave(puntos.map((p, i) => [X(i), Y(p.y)]))
   const primero = puntos[0]
   const ultimo = puntos[puntos.length - 1]
 
@@ -83,9 +86,13 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
         aria-label={`${etiqueta}: de ${texto(primero.y)} a ${texto(ultimo.y)}.`}
         style={{ display: 'block', overflow: 'visible' }}
       >
+        <defs>
+          <Degradado id={`area-${id}`} color={trazo} arriba={0.42} />
+          <Halo id={`halo-${id}`} />
+        </defs>
         {marcas.map((marca) => (
           <g key={marca}>
-            <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER + 8} y2={Y(marca)} stroke={paleta.rejilla} strokeWidth="1" />
+            <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER + 8} y2={Y(marca)} stroke={paleta.rejilla} strokeWidth="1" strokeDasharray="3 5" />
             <text
               x={IZQ - 10}
               y={Y(marca) + 4}
@@ -99,8 +106,9 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
           </g>
         ))}
 
-        <path d={`${d} L${X(puntos.length - 1).toFixed(1)},${Y(suelo).toFixed(1)} L${X(0).toFixed(1)},${Y(suelo).toFixed(1)} Z`} fill={trazo} opacity="0.1" />
-        <path data-testid="linea" d={d} fill="none" stroke={trazo} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={`${d} L${X(puntos.length - 1).toFixed(1)},${Y(suelo).toFixed(1)} L${X(0).toFixed(1)},${Y(suelo).toFixed(1)} Z`} fill={`url(#area-${id})`} />
+        <path d={d} fill="none" stroke={trazo} strokeWidth="5" strokeLinecap="round" filter={`url(#halo-${id})`} opacity={paleta.brillo} />
+        <path data-testid="linea" d={d} fill="none" stroke={trazo} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Primer punto: la etiqueta va DEBAJO, donde no hay trazo. */}
         <circle cx={X(0)} cy={Y(primero.y)} r="4" fill={trazo} stroke={theme.palette.background.paper} strokeWidth="2" />
@@ -108,6 +116,7 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
           {texto(primero.y)}
         </text>
 
+        <circle cx={X(puntos.length - 1)} cy={Y(ultimo.y)} r="11" fill={trazo} opacity={paleta.brillo * 0.35} />
         <circle cx={X(puntos.length - 1)} cy={Y(ultimo.y)} r="5" fill={trazo} stroke={theme.palette.background.paper} strokeWidth="2" />
         <text x={X(puntos.length - 1) + 10} y={Y(ultimo.y) + 4} fontSize="13" fontWeight="700" fill={theme.palette.text.primary}>
           {texto(ultimo.y)}

@@ -11,6 +11,7 @@ import CalendarioMes from './inicio/CalendarioMes'
 import Cortejo from './inicio/Cortejo'
 import ProximosActos from './inicio/ProximosActos'
 import ComoVaElAnio from './inicio/ComoVaElAnio'
+import FondoVivo from './inicio/FondoVivo'
 
 /**
  * El Inicio del CMS. Arriba, el camino a la estación y las cuatro cifras;
@@ -44,7 +45,10 @@ export default function PanelPage() {
   const zona = (nombre: string) => ({ gridArea: nombre, minWidth: 0 })
 
   return (
-    <>
+    // Contexto propio: el fondo animado va detrás de las tarjetas pero
+    // delante del lienzo del CMS.
+    <Box sx={{ position: 'relative', isolation: 'isolate' }}>
+      <FondoVivo />
       <Helmet><title>Inicio | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
 
       <Cabecera asuntosPropios={tuyas.length} asuntosDeLaJunta={deLaJunta.length} role={role} />
@@ -77,6 +81,6 @@ export default function PanelPage() {
       </Box>
 
       <ComoVaElAnio panelDeHoy={data} />
-    </>
+    </Box>
   )
 }

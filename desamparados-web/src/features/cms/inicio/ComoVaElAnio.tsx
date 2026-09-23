@@ -3,6 +3,7 @@ import { Alert, Box, Button, MenuItem, Paper, Tab, Tabs, TextField, Typography }
 import { useQuery } from '@tanstack/react-query'
 import { traerPanelDeHoy, type PanelResponse, type TipoMovimiento } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
+import { fondoResplandor, type TonoResplandor } from '../../../theme/resplandor'
 import LineaTemporal from '../../../components/charts/LineaTemporal'
 import BarrasHorizontales from '../../../components/charts/BarrasHorizontales'
 import ColumnasDivergentes from '../../../components/charts/ColumnasDivergentes'
@@ -48,17 +49,21 @@ const ESTADOS = [
  * vacío, que es lo que pasaba cuando todas medían lo mismo.
  */
 function Tarjeta({
-  titulo, subtitulo, columnas = 6, children,
+  titulo, subtitulo, columnas = 6, tono = 'neutro', children,
 }: {
   titulo: string
   subtitulo: string
   columnas?: number
+  /** El color del resplandor del fondo, por lo que cuenta la gráfica. */
+  tono?: TonoResplandor
   children: React.ReactNode
 }) {
+  const { modo, superficies } = useTemaCms()
   return (
     <Paper
       component="section"
       sx={{
+        ...fondoResplandor(modo, tono, superficies.card),
         borderRadius: 1.75, p: 2.75, display: 'flex', flexDirection: 'column', gap: 1.75,
         gridColumn: { xs: '1 / -1', lg: `span ${columnas}` },
       }}
@@ -200,7 +205,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               gap: 2.5,
             }}
           >
-            <Tarjeta titulo="Censo de hermanos" subtitulo="Hermanos activos al cierre de cada mes" columnas={4}>
+            <Tarjeta tono="burdeos" titulo="Censo de hermanos" subtitulo="Hermanos activos al cierre de cada mes" columnas={4}>
               <LineaTemporal
                 etiqueta="Hermanos activos"
                 paleta={graficas}
@@ -215,7 +220,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               />
             </Tarjeta>
 
-            <Tarjeta titulo="Altas y bajas" subtitulo="Cuántos entran y cuántos se van cada mes" columnas={4}>
+            <Tarjeta tono="azul" titulo="Altas y bajas" subtitulo="Cuántos entran y cuántos se van cada mes" columnas={4}>
               <ColumnasDivergentes
                 meses={datos.censo.movimientosMensuales.map((m) => ({ mes: m.mes, arriba: m.altas, abajo: m.bajas }))}
                 paleta={graficas}
@@ -230,11 +235,11 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               />
             </Tarjeta>
 
-            <Tarjeta titulo="Hermanos por edad" subtitulo="Hermanos activos por tramo de edad, a día de hoy" columnas={4}>
+            <Tarjeta tono="rosa" titulo="Hermanos por edad" subtitulo="Hermanos activos por tramo de edad, a día de hoy" columnas={4}>
               {/* De hoy siempre: la edad de quien estaba activo en 2023 no se puede
                   reconstruir con agregados, y el subtítulo lo dice. */}
               <BarrasHorizontales
-                color={graficas.neutro}
+                color={graficas.acento}
                 formatoValor={numero}
                 filas={panelDeHoy.censo.porEdad.map((t) => ({ etiqueta: t.tramo, valor: t.total }))}
               />
@@ -258,6 +263,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
             }}
           >
             <Tarjeta
+              tono="azul"
               titulo="Ingresos y gastos por mes"
               subtitulo={`Ingresos ${eurosResumen(datos.dinero.ejercicio.ingresos)} · Gastos ${eurosResumen(datos.dinero.ejercicio.gastos)} · Saldo ${eurosResumen(datos.dinero.ejercicio.saldo)}`}
               columnas={8}
@@ -278,7 +284,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               />
             </Tarjeta>
 
-            <Tarjeta titulo="Cobro de recibos" subtitulo={`Recibos del ejercicio ${datos.ejercicio.anio} según su estado`} columnas={4}>
+            <Tarjeta tono="neutro" titulo="Cobro de recibos" subtitulo={`Recibos del ejercicio ${datos.ejercicio.anio} según su estado`} columnas={4}>
               <ProporcionEstados paleta={graficas} formatoImporte={eurosResumen} formatoNumero={numero} estados={filasEstado} />
               <TablaDeDatos
                 titulo="Recibos por estado"
@@ -287,7 +293,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               />
             </Tarjeta>
 
-            <Tarjeta titulo="De dónde entra" subtitulo={`Ingresos de ${datos.ejercicio.anio} por categoría contable`}>
+            <Tarjeta tono="azul" titulo="De dónde entra" subtitulo={`Ingresos de ${datos.ejercicio.anio} por categoría contable`}>
               <BarrasHorizontales
                 color={graficas.entrada}
                 formatoValor={eurosResumen}
@@ -300,7 +306,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               />
             </Tarjeta>
 
-            <Tarjeta titulo="En qué se gasta" subtitulo={`Gastos de ${datos.ejercicio.anio} por categoría contable`}>
+            <Tarjeta tono="burdeos" titulo="En qué se gasta" subtitulo={`Gastos de ${datos.ejercicio.anio} por categoría contable`}>
               <BarrasHorizontales
                 color={graficas.salida}
                 formatoValor={eurosResumen}
@@ -326,7 +332,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               gap: 2.5,
             }}
           >
-            <Tarjeta titulo="Papeletas de sitio" subtitulo="Últimos cinco años, con el ejercicio elegido destacado" columnas={6}>
+            <Tarjeta tono="oro" titulo="Papeletas de sitio" subtitulo="Últimos cinco años, con el ejercicio elegido destacado" columnas={6}>
               <ColumnasPorAnio datos={datos.procesion.porAnio} paleta={graficas} destacado={datos.ejercicio.anio} formatoValor={numero} />
               <TablaDeDatos
                 titulo="Papeletas por año"
@@ -339,9 +345,9 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
                 papeletas hay por puesto. Sí sigue al selector, porque el
                 backend acota `procesion.porPuesto` con el ejercicio elegido
                 (igual que `porAnio` y `papeletas`), y el subtítulo lo dice. */}
-            <Tarjeta titulo="Puestos de la procesión" subtitulo={`Papeletas del ejercicio ${datos.ejercicio.anio}, por puesto`} columnas={6}>
+            <Tarjeta tono="burdeos" titulo="Puestos de la procesión" subtitulo={`Papeletas del ejercicio ${datos.ejercicio.anio}, por puesto`} columnas={6}>
               <BarrasHorizontales
-                color={graficas.neutro}
+                color={graficas.acento}
                 formatoValor={numero}
                 filas={datos.procesion.porPuesto.map((p) => ({ etiqueta: p.etiqueta, valor: p.total }))}
               />
@@ -360,12 +366,13 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
                 con agregados, así que se leen de panelDeHoy y no del ejercicio
                 elegido arriba. */}
             <Tarjeta
+              tono="rosa"
               titulo="Tallas de túnica"
               subtitulo="Hermanos activos a día de hoy, para saber cuántas túnicas de cada talla hacen falta"
               columnas={6}
             >
               <BarrasHorizontales
-                color={graficas.neutro}
+                color={graficas.acento}
                 formatoValor={numero}
                 filas={panelDeHoy.procesion.porTalla.map((t) => ({ etiqueta: t.etiqueta, valor: t.total }))}
               />
@@ -377,12 +384,13 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
             </Tarjeta>
 
             <Tarjeta
+              tono="oro"
               titulo="Altura de hombro"
               subtitulo="Hermanos activos a día de hoy, para repartir los varales del trono"
               columnas={6}
             >
               <BarrasHorizontales
-                color={graficas.neutro}
+                color={graficas.acento}
                 formatoValor={numero}
                 filas={panelDeHoy.procesion.porAlturaHombro.map((a) => ({ etiqueta: a.tramo, valor: a.total }))}
               />

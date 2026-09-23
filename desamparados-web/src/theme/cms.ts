@@ -69,6 +69,10 @@ export interface GraficasCms {
   /** Banda del mes señalado al pasar el ratón. */
   banda: string
   estados: { ok: string; aviso: string; error: string }
+  /** El color de la casa en las gráficas de una sola serie: burdeos en claro, rosa en oscuro. */
+  acento: string
+  /** Cuánto brillan líneas y columnas (opacidad del halo): mucho en oscuro, apenas en claro. */
+  brillo: number
 }
 
 const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
@@ -135,6 +139,8 @@ const GRAFICAS: Record<ModoCms, GraficasCms> = {
     cero: '#b9b3b0',
     banda: 'rgba(27,28,26,0.045)',
     estados: designTokens.dataviz.estados,
+    acento: designTokens.colors.burgundy,
+    brillo: 0.22,
   },
   oscuro: {
     entrada: designTokens.dataviz.seriesOscuras[0], // #3987e5
@@ -146,6 +152,8 @@ const GRAFICAS: Record<ModoCms, GraficasCms> = {
     cero: 'rgba(204,196,201,0.4)',
     banda: 'rgba(255,255,255,0.05)',
     estados: designTokens.dataviz.estados,
+    acento: '#f08a93',
+    brillo: 0.75,
   },
 }
 

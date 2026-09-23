@@ -1,7 +1,9 @@
+import { useId } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
 import { columna, pasoBonito, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
+import { Degradado, Halo } from './brillo'
 
 export interface MesDivergente {
   mes: string
@@ -30,6 +32,7 @@ const ABAJO = 42
  */
 export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, etiquetaAbajo, etiquetaX }: Props) {
   const theme = useTheme()
+  const id = useId().replace(/:/g, '')
   // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
   const { referencia, ancho: ANCHO } = useAnchoMedido()
 
@@ -78,9 +81,15 @@ export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, eti
         aria-label={`${etiquetaArriba}: ${totalArriba}. ${etiquetaAbajo}: ${totalAbajo}.`}
         style={{ display: 'block', overflow: 'visible' }}
       >
+        <defs>
+          {/* La punta de cada columna es lo más luminoso: hacia arriba las altas, hacia abajo las bajas. */}
+          <Degradado id={`arriba-${id}`} color={paleta.entrada} arriba={1} abajo={0.35} />
+          <Degradado id={`abajo-${id}`} color={paleta.salida} arriba={0.35} abajo={1} />
+          <Halo id={`halo-${id}`} radio={3} />
+        </defs>
         {[techo, suelo].map((marca) => (
           <g key={marca}>
-            <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER} y2={Y(marca)} stroke={paleta.rejilla} strokeWidth="1" />
+            <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER} y2={Y(marca)} stroke={paleta.rejilla} strokeWidth="1" strokeDasharray="3 5" />
             <text x={IZQ - 8} y={Y(marca) + 4} textAnchor="end" fontSize="11" fill={theme.palette.text.secondary}>
               {marca > 0 ? `+${marca}` : `−${-marca}`}
             </text>
@@ -94,10 +103,16 @@ export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, eti
           return (
             <g key={m.mes}>
               {m.arriba > 0 && (
-                <path data-testid="columna-arriba" d={columna(x, Y(0) - 1, Y(m.arriba), anchoColumna)} fill={paleta.entrada} />
+                <>
+                  <path d={columna(x, Y(0) - 1, Y(m.arriba), anchoColumna)} fill={paleta.entrada} filter={`url(#halo-${id})`} opacity={paleta.brillo * 0.6} />
+                  <path data-testid="columna-arriba" d={columna(x, Y(0) - 1, Y(m.arriba), anchoColumna)} fill={`url(#arriba-${id})`} />
+                </>
               )}
               {m.abajo > 0 && (
-                <path data-testid="columna-abajo" d={columna(x, Y(0) + 1, Y(-m.abajo), anchoColumna)} fill={paleta.salida} />
+                <>
+                  <path d={columna(x, Y(0) + 1, Y(-m.abajo), anchoColumna)} fill={paleta.salida} filter={`url(#halo-${id})`} opacity={paleta.brillo * 0.6} />
+                  <path data-testid="columna-abajo" d={columna(x, Y(0) + 1, Y(-m.abajo), anchoColumna)} fill={`url(#abajo-${id})`} />
+                </>
               )}
               {i % pasoX === 0 && (
                 <text x={x + anchoColumna / 2} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={theme.palette.text.secondary}>

@@ -167,11 +167,10 @@ describe('el menú del Inicio', () => {
   it('el interruptor de tema arranca en oscuro y recuerda el cambio', async () => {
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />)
-    const claro = screen.getByRole('radio', { name: 'Claro' })
-    const oscuro = screen.getByRole('radio', { name: 'Oscuro' })
-    expect(oscuro).toBeChecked()
-    await userEvent.click(claro)
-    expect(claro).toBeChecked()
+    const interruptor = screen.getByRole('switch', { name: 'Modo oscuro' })
+    expect(interruptor).toBeChecked()
+    await userEvent.click(interruptor)
+    expect(interruptor).not.toBeChecked()
     expect(localStorage.getItem(CLAVE_TEMA_CMS)).toBe('claro')
   })
 

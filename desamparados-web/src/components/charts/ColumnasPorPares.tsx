@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
 import { columna, escalaDesdeCero, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
+import { Degradado } from './brillo'
 
 export interface PuntoPar {
   clave: string
@@ -36,6 +37,7 @@ export default function ColumnasPorPares({
   puntos, paleta, etiquetaA, etiquetaB, formatoValor, etiquetaX, etiquetaXLarga,
 }: Props) {
   const theme = useTheme()
+  const id = useId().replace(/:/g, '')
   // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
   const { referencia, ancho: ANCHO } = useAnchoMedido()
   const [activo, setActivo] = useState<number | null>(null)
@@ -85,9 +87,13 @@ export default function ColumnasPorPares({
         aria-label={`${etiquetaA} y ${etiquetaB} por periodo.`}
         style={{ display: 'block', overflow: 'visible' }}
       >
+        <defs>
+          <Degradado id={`a-${id}`} color={paleta.entrada} arriba={1} abajo={0.3} />
+          <Degradado id={`b-${id}`} color={paleta.salida} arriba={1} abajo={0.3} />
+        </defs>
         {eje.marcas.map((marca) => (
           <g key={marca}>
-            <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER} y2={Y(marca)} stroke={marca === 0 ? paleta.cero : paleta.rejilla} strokeWidth="1" />
+            <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER} y2={Y(marca)} stroke={marca === 0 ? paleta.cero : paleta.rejilla} strokeWidth="1" strokeDasharray={marca === 0 ? undefined : '3 5'} />
             <text x={IZQ - 12} y={Y(marca) + 4} textAnchor="end" fontSize="11" fill={theme.palette.text.secondary} style={{ fontVariantNumeric: 'tabular-nums' }}>
               {formatoValor(marca)}
             </text>
@@ -103,8 +109,8 @@ export default function ColumnasPorPares({
               )}
               {/* Zona de ratón más ancha que las columnas. */}
               <rect data-testid="zona" x={IZQ + ranura * i} y={ARRIBA - 10} width={ranura} height={altoUtil + 30} fill="transparent" />
-              <path data-testid="columna" d={columna(centro - ancho - 1, Y(0), Y(p.a), ancho)} fill={paleta.entrada} />
-              <path data-testid="columna" d={columna(centro + 1, Y(0), Y(p.b), ancho)} fill={paleta.salida} />
+              <path data-testid="columna" d={columna(centro - ancho - 1, Y(0), Y(p.a), ancho)} fill={`url(#a-${id})`} />
+              <path data-testid="columna" d={columna(centro + 1, Y(0), Y(p.b), ancho)} fill={`url(#b-${id})`} />
               {(i % pasoX === 0 || activo === i) && (
                 <text x={centro} y={ALTO - 8} textAnchor="middle" fontSize="12" fill={activo === i ? theme.palette.text.primary : theme.palette.text.secondary} fontWeight={activo === i ? 700 : 400}>
                   {etiquetaX(p.clave)}

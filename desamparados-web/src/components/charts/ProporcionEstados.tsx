@@ -62,12 +62,15 @@ export default function ProporcionEstados({ estados, paleta, formatoImporte, for
 
       {/* 2 px de hueco entre segmentos: sin él, dos colores contiguos se leen
           como uno solo cuando el trozo es estrecho. */}
-      <Box sx={{ display: 'flex', gap: '2px', height: 14, borderRadius: '7px', overflow: 'hidden', my: 2 }} aria-hidden="true">
+      <Box sx={{ display: 'flex', gap: '2px', height: 14, borderRadius: '7px', overflow: 'hidden', my: 2, boxShadow: `0 0 18px color-mix(in srgb, ${paleta.estados.ok} ${Math.round(paleta.brillo * 40)}%, transparent)` }} aria-hidden="true">
         {visibles.map((e) => (
           <Box
             key={e.clave}
             data-testid="segmento"
-            sx={{ flexGrow: e.total, flexBasis: 0, minWidth: 6, backgroundColor: paleta.estados[e.estado] }}
+            sx={{
+              flexGrow: e.total, flexBasis: 0, minWidth: 6, backgroundColor: paleta.estados[e.estado],
+              backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 55%)',
+            }}
           />
         ))}
       </Box>

@@ -1,6 +1,7 @@
 import { Box, Paper, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
+import { MECER, fondoResplandor } from '../../../theme/resplandor'
 import { numero } from '../contabilidad/formato'
 import { CIFRA, encender, entrada, sinMovimiento } from './animaciones'
 
@@ -15,7 +16,7 @@ const DURACION_MS = 2200
  * orden, como los cirios de una fila que se prenden uno tras otro.
  */
 export default function Cortejo({ procesion, orden = 0 }: { procesion: PanelResponse['procesion']; orden?: number }) {
-  const { modo } = useTemaCms()
+  const { modo, superficies } = useTemaCms()
   const puestos = procesion.porPuesto.filter((p) => p.total > 0)
   const total = puestos.reduce((s, p) => s + p.total, 0)
   const porPunto = Math.max(1, Math.ceil(total / MAX_PUNTOS))
@@ -25,7 +26,7 @@ export default function Cortejo({ procesion, orden = 0 }: { procesion: PanelResp
   const inicios = puestos.map((_, i) => puestos.slice(0, i).reduce((s, p) => s + Math.ceil(p.total / porPunto), 0))
 
   return (
-    <Paper component="section" aria-labelledby="cortejo" sx={{ borderRadius: 1.75, p: { xs: 2, md: 2.75 }, height: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', ...entrada(orden) }}>
+    <Paper component="section" aria-labelledby="cortejo" sx={{ ...fondoResplandor(modo, 'burdeos', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.75 }, height: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', ...entrada(orden, MECER) }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2, flexWrap: 'wrap' }}>
         <Typography id="cortejo" variant="h5" component="h2">El cortejo de {procesion.anio}</Typography>
         <Typography variant="body2" color="text.secondary">

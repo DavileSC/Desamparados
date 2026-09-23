@@ -2,17 +2,16 @@ import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import {
   Box, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon,
-  ListItemText, Toolbar, Typography, useMediaQuery, useTheme,
+  ListItemText, Switch, Toolbar, Typography, useMediaQuery, useTheme,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
-import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import { useAuthStore } from '../features/altas/auth/store'
 import { cerrarSesion } from '../features/altas/auth/session'
 import { TemaCmsProvider } from './temaCms'
 import { useTemaCms } from './useTemaCms'
-import { superficiesCms, type ModoCms } from '../theme/cms'
+import { superficiesCms } from '../theme/cms'
 import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu } from './cmsNavegacion'
 import { usePanelDeHoy } from './usePanelDeHoy'
 import { designTokens } from '../theme'
@@ -186,39 +185,40 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
   )
 }
 
-/** Control segmentado de dos opciones: es una elección, no dos botones sueltos. */
+/**
+ * Interruptor del modo oscuro: encendido, oscuro; apagado, claro. Un solo
+ * gesto y el estado se lee de un vistazo, en vez de dos botones que había que
+ * mirar cuál estaba marcado.
+ */
 function InterruptorTema() {
   const { modo, cambiarModo } = useTemaCms()
-  const opciones: { valor: ModoCms; texto: string; Icono: typeof LightModeOutlinedIcon }[] = [
-    { valor: 'claro', texto: 'Claro', Icono: LightModeOutlinedIcon },
-    { valor: 'oscuro', texto: 'Oscuro', Icono: DarkModeOutlinedIcon },
-  ]
+  const oscuro = modo === 'oscuro'
   return (
     <Box
-      role="radiogroup"
-      aria-label="Tema del CMS"
-      sx={{ display: 'flex', gap: '2px', p: '3px', mb: 'var(--cms-tema-mb)', borderRadius: 1.25, backgroundColor: 'rgba(255,255,255,0.06)' }}
+      component="label"
+      sx={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1,
+        minHeight: 'var(--cms-tema-alto)', mb: 'var(--cms-tema-mb)', px: 1.25, py: 0.25,
+        borderRadius: 1.25, backgroundColor: 'rgba(255,255,255,0.06)', cursor: 'pointer',
+        color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600,
+      }}
     >
-      {opciones.map(({ valor, texto, Icono }) => (
-        <Box
-          key={valor}
-          component="button"
-          type="button"
-          role="radio"
-          aria-checked={modo === valor}
-          onClick={() => cambiarModo(valor)}
-          sx={{
-            flex: 1, height: 'var(--cms-tema-alto)', border: 0, cursor: 'pointer', borderRadius: 1,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 0.75,
-            fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
-            backgroundColor: modo === valor ? 'rgba(255,255,255,0.14)' : 'transparent',
-            color: modo === valor ? '#fff' : 'rgba(255,255,255,0.55)',
-          }}
-        >
-          <Icono sx={{ fontSize: 15 }} />
-          {texto}
-        </Box>
-      ))}
+      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+        <DarkModeOutlinedIcon sx={{ fontSize: 16 }} />
+        Modo oscuro
+      </Box>
+      <Switch
+        size="small"
+        checked={oscuro}
+        onChange={(e) => cambiarModo(e.target.checked ? 'oscuro' : 'claro')}
+        slotProps={{ input: { role: 'switch', 'aria-label': 'Modo oscuro' } }}
+        sx={{
+          mr: -0.75,
+          '& .MuiSwitch-switchBase.Mui-checked': { color: '#ffffff' },
+          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#a03d44', opacity: 1 },
+          '& .MuiSwitch-track': { backgroundColor: 'rgba(255,255,255,0.3)' },
+        }}
+      />
     </Box>
   )
 }
@@ -325,6 +325,8 @@ function Contenido() {
             // `barra`: con el menú más alto que la ventana, `barra` medía
             // 100vh y al bajar asomaba el fondo de la página por debajo.
             backgroundColor: SIDEBAR,
+            // Por encima del fondo animado del Inicio, que va fijo a toda la ventana.
+            zIndex: 2,
           }}
         >
           {barra}

@@ -1,10 +1,8 @@
-import { Box, Button, FormControlLabel, Switch, Typography } from '@mui/material'
-import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
+import { Box, Button, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { Link } from 'react-router-dom'
 import { NOMBRE_CARGO } from '../../../app/cmsNavegacion'
 import { contar } from './plural'
-import { useTemaCms } from '../../../app/useTemaCms'
 
 interface Props {
   /** Cuántos asuntos esperan hoy a este cargo. */
@@ -22,7 +20,6 @@ const ATAJOS = [
 ]
 
 export default function Cabecera({ asuntosPropios, asuntosDeLaJunta, role, hoy = new Date() }: Props) {
-  const { modo, cambiarModo } = useTemaCms()
   const cargo = role ? NOMBRE_CARGO[role] ?? '' : ''
   const visibles = ATAJOS.filter((a) => role && a.roles.includes(role))
 
@@ -45,12 +42,6 @@ export default function Cabecera({ asuntosPropios, asuntosDeLaJunta, role, hoy =
         <Typography variant="body1" color="text.secondary">{frase}{resto}</Typography>
       </Box>
       <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* El mismo tema que el interruptor del menú: los dos cambian a la vez. */}
-        <FormControlLabel
-          control={<Switch size="small" checked={modo === 'oscuro'} onChange={(e) => cambiarModo(e.target.checked ? 'oscuro' : 'claro')} />}
-          label={<Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: 14 }}><DarkModeOutlinedIcon sx={{ fontSize: 17 }} />Modo oscuro</Box>}
-          sx={{ mr: 0.5, ml: 0 }}
-        />
         {visibles.map((atajo) => (
           <Button
             key={atajo.href}

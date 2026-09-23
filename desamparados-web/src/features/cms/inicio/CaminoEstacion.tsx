@@ -3,6 +3,7 @@ import type { PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { cuentaAtrasEstacion } from '../../../domain/sabadoDePasion'
 import { corta, paradasDelCurso } from './paradas'
+import { MECER, fondoResplandor } from '../../../theme/resplandor'
 import { acercar, aparecer, CIFRA, entrada, llenarTrazo, sinMovimiento, useCuenta } from './animaciones'
 
 /** El camino se dibuja en esta caja; las etiquetas, encima, en porcentajes de ella. */
@@ -41,12 +42,13 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
         gridTemplateColumns: 'minmax(0, 1fr)',
         // Imagen y camino lado a lado solo cuando el camino tiene sitio para sus etiquetas.
         '@container (min-width: 860px)': { gridTemplateColumns: 'minmax(260px, 0.8fr) minmax(0, 2fr)' },
-        backgroundColor: modo === 'oscuro' ? OSCURO.fondoTemaOscuro : OSCURO.fondo,
+        // Siempre oscura, con el mismo resplandor que el resto de tarjetas.
+        ...fondoResplandor('oscuro', 'burdeos', modo === 'oscuro' ? OSCURO.fondoTemaOscuro : OSCURO.fondo),
         color: OSCURO.texto,
         borderRadius: 1.75,
         overflow: 'hidden',
         height: '100%',
-        ...entrada(0),
+        ...entrada(0, MECER),
       }}
     >
       {/* La imagen, con la cuenta atrás encima. Se acerca muy despacio. */}

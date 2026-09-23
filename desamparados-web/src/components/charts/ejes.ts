@@ -33,3 +33,31 @@ export function pasoEtiquetas(cuantas: number, anchoUtil: number, minimoPorEtiqu
   if (cuantas <= 1 || anchoUtil <= 0) return 1
   return Math.max(1, Math.ceil(cuantas / Math.max(1, Math.floor(anchoUtil / minimoPorEtiqueta))))
 }
+
+/**
+ * Curva suave que pasa por todos los puntos sin inventarse picos: entre dos
+ * meses iguales la línea va recta, y nunca sube por encima del mayor de sus
+ * vecinos (interpolación monótona de Fritsch-Carlson).
+ */
+export function curvaSuave(puntos: [number, number][]): string {
+  const n = puntos.length
+  if (n === 0) return ''
+  if (n < 3) return puntos.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+
+  const pendientes = puntos.slice(1).map(([x, y], i) => (y - puntos[i][1]) / (x - puntos[i][0] || 1))
+  const tangentes = puntos.map((_, i) => {
+    if (i === 0) return pendientes[0]
+    if (i === n - 1) return pendientes[n - 2]
+    const [a, b] = [pendientes[i - 1], pendientes[i]]
+    return a * b <= 0 ? 0 : (2 * a * b) / (a + b)
+  })
+
+  let d = `M${puntos[0][0].toFixed(1)},${puntos[0][1].toFixed(1)}`
+  for (let i = 0; i < n - 1; i++) {
+    const [x0, y0] = puntos[i]
+    const [x1, y1] = puntos[i + 1]
+    const h = (x1 - x0) / 3
+    d += ` C${(x0 + h).toFixed(1)},${(y0 + tangentes[i] * h).toFixed(1)} ${(x1 - h).toFixed(1)},${(y1 - tangentes[i + 1] * h).toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`
+  }
+  return d
+}

@@ -1,7 +1,9 @@
+import { useId } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
 import type { GraficasCms } from '../../theme/cms'
 import { columna, escalaDesdeCero } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
+import { Degradado, Halo } from './brillo'
 
 interface Props {
   datos: { anio: number; total: number }[]
@@ -21,6 +23,7 @@ const ABAJO = 30
 /** Una columna por año, con su valor escrito encima: cinco cifras se leen mejor así que en una línea. */
 export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor }: Props) {
   const theme = useTheme()
+  const id = useId().replace(/:/g, '')
   // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
   const { referencia, ancho: ANCHO } = useAnchoMedido()
   const texto = formatoValor ?? ((v: number) => String(v))
@@ -49,6 +52,11 @@ export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor
         aria-label={datos.map((d) => `${d.anio}: ${texto(d.total)}`).join('. ')}
         style={{ display: 'block', overflow: 'visible' }}
       >
+        <defs>
+          <Degradado id={`elegido-${id}`} color={paleta.acento} arriba={1} abajo={0.35} />
+          <Degradado id={`resto-${id}`} color={paleta.contexto} arriba={1} abajo={0.45} />
+          <Halo id={`halo-${id}`} radio={5} />
+        </defs>
         {/* Las marcas intermedias van por debajo de las cifras de cada columna, así nunca las cruzan. */}
         {eje.marcas.filter((m) => m < eje.techo).map((marca) => (
           <g key={marca}>
@@ -62,7 +70,8 @@ export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor
           const esElegido = d.anio === destacado
           return (
             <g key={d.anio}>
-              <path data-testid="columna" d={columna(x, Y(0), Y(d.total), ancho)} fill={esElegido ? paleta.enfasis : paleta.contexto} />
+              {esElegido && <path d={columna(x, Y(0), Y(d.total), ancho)} fill={paleta.acento} filter={`url(#halo-${id})`} opacity={paleta.brillo} />}
+              <path data-testid="columna" data-elegido={esElegido || undefined} d={columna(x, Y(0), Y(d.total), ancho)} fill={esElegido ? `url(#elegido-${id})` : `url(#resto-${id})`} />
               <text x={x + ancho / 2} y={Y(d.total) - 8} textAnchor="middle" fontSize="12" fontWeight={esElegido ? 700 : 600} fill={esElegido ? theme.palette.text.primary : theme.palette.text.secondary}>
                 {texto(d.total)}
               </text>

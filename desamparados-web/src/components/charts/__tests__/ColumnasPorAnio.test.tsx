@@ -24,8 +24,8 @@ describe('ColumnasPorAnio', () => {
       <ColumnasPorAnio datos={datos} paleta={paleta} destacado={2026} />,
     )
     const columnas = container.querySelectorAll('[data-testid="columna"]')
-    expect(columnas[2]).toHaveAttribute('fill', paleta.enfasis)
-    expect(columnas[0]).toHaveAttribute('fill', paleta.contexto)
+    expect(columnas[2]).toHaveAttribute('data-elegido', 'true')
+    expect(columnas[0]).not.toHaveAttribute('data-elegido')
   })
 
   it('si el año destacado no está en los datos, no destaca ninguno', () => {
@@ -33,7 +33,7 @@ describe('ColumnasPorAnio', () => {
       <ColumnasPorAnio datos={datos} paleta={paleta} destacado={2019} />,
     )
     const colores = [...container.querySelectorAll('[data-testid="columna"]')].map((c) => c.getAttribute('fill'))
-    expect(colores.every((c) => c === paleta.contexto)).toBe(true)
+    expect(colores.every((c) => c?.startsWith('url(#resto-'))).toBe(true)
   })
 
   it('sin datos lo dice', () => {
