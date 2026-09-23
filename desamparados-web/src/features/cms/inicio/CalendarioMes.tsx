@@ -2,7 +2,7 @@ import { Box, Paper, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import type { PanelResponse, TipoEvento } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
-import { MECER, fondoResplandor } from '../../../theme/resplandor'
+import { fondoTarjeta } from '../../../theme/tarjeta'
 import { rolesPorRutaCms } from '../../../app/cmsNavegacion'
 import { entrada } from './animaciones'
 
@@ -55,7 +55,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
   const titulo = `${MESES[mes - 1][0].toUpperCase()}${MESES[mes - 1].slice(1)} de ${anio}`
 
   return (
-    <Paper component="section" aria-labelledby="calendario-mes" sx={{ ...fondoResplandor(modo, 'rosa', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.5 }, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, containerType: 'inline-size', containerName: 'calendario', ...entrada(orden, MECER) }}>
+    <Paper component="section" aria-labelledby="calendario-mes" sx={{ ...fondoTarjeta(modo, 'rosa', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.5 }, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, containerType: 'inline-size', containerName: 'calendario', ...entrada(orden) }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
         <Typography id="calendario-mes" variant="h5" component="h2">{titulo}</Typography>
         {veAgenda && (

@@ -2,7 +2,7 @@ import { useId, type ReactNode } from 'react'
 import { Box, Paper, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
-import { MECER, fondoResplandor, type TonoResplandor } from '../../../theme/resplandor'
+import { fondoTarjeta, type TonoTarjeta } from '../../../theme/tarjeta'
 import { Degradado, Halo } from '../../../components/charts/brillo'
 import { curvaSuave } from '../../../components/charts/ejes'
 import { useAnchoMedido } from '../../../components/charts/useAnchoMedido'
@@ -177,12 +177,12 @@ function Variacion({ valor, texto }: { valor: number; texto: string }) {
 }
 
 function Baldosa({ etiqueta, valor, pie, orden, tono, variacion, children }: {
-  etiqueta: string; valor: ReactNode; pie: string; orden: number; tono: TonoResplandor
+  etiqueta: string; valor: ReactNode; pie: string; orden: number; tono: TonoTarjeta
   variacion?: ReactNode; children?: ReactNode
 }) {
   const { modo, superficies } = useTemaCms()
   return (
-    <Paper sx={{ ...fondoResplandor(modo, tono, superficies.card), p: { xs: 1.75, sm: 2.25 }, borderRadius: 1.75, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1, MECER) }}>
+    <Paper sx={{ ...fondoTarjeta(modo, tono, superficies.card), p: { xs: 1.75, sm: 2.25 }, borderRadius: 1.75, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1) }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{etiqueta}</Typography>
         {variacion}

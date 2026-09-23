@@ -2,7 +2,7 @@ import { Box, Paper, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Link } from 'react-router-dom'
 import { useTemaCms } from '../../../app/useTemaCms'
-import { MECER, fondoResplandor } from '../../../theme/resplandor'
+import { fondoTarjeta } from '../../../theme/tarjeta'
 import { repartirTareas, type Prioridad, type Tarea } from './tareas'
 import { contar } from './plural'
 import { entrada, latido } from './animaciones'
@@ -82,11 +82,11 @@ function Fila({ tarea, conBoton, orden }: { tarea: Tarea; conBoton: boolean; ord
 export default function ParaHoy({ tareas, role, orden = 0 }: { tareas: Tarea[]; role?: string; orden?: number }) {
   const { tuyas, deLaJunta } = repartirTareas(tareas, role)
   const { modo, superficies } = useTemaCms()
-  // El resplandor avisa: rojizo si hay algo urgente, neutro si no.
+  // El velo avisa: burdeos si hay algo urgente, neutro si no.
   const tono = tareas.some((t) => t.prioridad === 'urgente') ? 'burdeos' : 'neutro'
 
   return (
-    <Paper component="section" aria-labelledby="para-hoy" sx={{ ...fondoResplandor(modo, tono, superficies.card), borderRadius: 1.75, height: '100%', ...entrada(orden, MECER) }}>
+    <Paper component="section" aria-labelledby="para-hoy" sx={{ ...fondoTarjeta(modo, tono, superficies.card), borderRadius: 1.75, height: '100%', ...entrada(orden) }}>
       <Box
         sx={{
           display: 'flex', gap: { xs: 0.25, sm: 2 }, px: { xs: 2, md: 2.75 }, pt: 2.25, pb: 1.5,

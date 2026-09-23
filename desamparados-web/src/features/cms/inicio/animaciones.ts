@@ -37,13 +37,10 @@ export const latido = keyframes`
   60% { box-shadow: 0 0 0 7px rgba(227, 73, 72, 0) }
 `
 
-/**
- * Entrada escalonada de una pieza: `orden` la retrasa 70 ms por puesto.
- * `y` encadena otra animación que siga después (el vaivén del resplandor).
- */
-export const entrada = (orden = 0, y?: string) => ({
-  animation: `${entrar} .6s cubic-bezier(.2, .7, .2, 1) backwards${y ? `, ${y}` : ''}`,
-  animationDelay: `${orden * 70}ms${y ? ', 0s' : ''}`,
+/** Entrada escalonada de una pieza: `orden` la retrasa 70 ms por puesto. */
+export const entrada = (orden = 0) => ({
+  animation: `${entrar} .6s cubic-bezier(.2, .7, .2, 1) backwards`,
+  animationDelay: `${orden * 70}ms`,
   ...sinMovimiento,
 })
 

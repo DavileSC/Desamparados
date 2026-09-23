@@ -3,7 +3,7 @@ import { Alert, Box, Button, MenuItem, Paper, Tab, Tabs, TextField, Typography }
 import { useQuery } from '@tanstack/react-query'
 import { traerPanelDeHoy, type PanelResponse, type TipoMovimiento } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
-import { fondoResplandor, type TonoResplandor } from '../../../theme/resplandor'
+import { fondoTarjeta, type TonoTarjeta } from '../../../theme/tarjeta'
 import LineaTemporal from '../../../components/charts/LineaTemporal'
 import BarrasHorizontales from '../../../components/charts/BarrasHorizontales'
 import ColumnasDivergentes from '../../../components/charts/ColumnasDivergentes'
@@ -54,8 +54,8 @@ function Tarjeta({
   titulo: string
   subtitulo: string
   columnas?: number
-  /** El color del resplandor del fondo, por lo que cuenta la gráfica. */
-  tono?: TonoResplandor
+  /** El color del velo de la tarjeta, por lo que cuenta la gráfica. */
+  tono?: TonoTarjeta
   children: React.ReactNode
 }) {
   const { modo, superficies } = useTemaCms()
@@ -63,7 +63,7 @@ function Tarjeta({
     <Paper
       component="section"
       sx={{
-        ...fondoResplandor(modo, tono, superficies.card),
+        ...fondoTarjeta(modo, tono, superficies.card),
         borderRadius: 1.75, p: 2.75, display: 'flex', flexDirection: 'column', gap: 1.75,
         gridColumn: { xs: '1 / -1', lg: `span ${columnas}` },
       }}
