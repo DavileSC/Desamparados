@@ -25,6 +25,7 @@ const panel: PanelResponse = {
       { estado: 'REMESADO', total: 23, importe: 690 },
       { estado: 'DEVUELTO', total: 14, importe: 420 },
     ],
+    devueltosPendientes: { total: 14, importe: 420 },
     ejercicio: { anio: 2026, ingresos: 48300, gastos: 35440, saldo: 12860 },
     serieMensual: [{ mes: '2026-08', ingresos: 4100, gastos: 2240 }, { mes: '2026-09', ingresos: 7600, gastos: 4600 }],
     porCategoria: [{ categoria: 'Cultos y liturgia', tipo: 'GASTO', total: 18, importe: 9800 }],
@@ -150,7 +151,7 @@ describe('Inicio del CMS', () => {
     responder({
       ...panel,
       censo: { activos: 0, altas12m: 0, bajas12m: 0, sinNumeroHermano: 0, serieMensual: [], movimientosMensuales: [], porEdad: [] },
-      dinero: { porEstado: [], ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 }, serieMensual: [], porCategoria: [] },
+      dinero: { porEstado: [], devueltosPendientes: { total: 0, importe: 0 }, ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 }, serieMensual: [], porCategoria: [] },
       procesion: { anio: 2026, papeletas: 0, porAnio: [], porPuesto: [], porTalla: [], porAlturaHombro: [] },
       actividad: { ...panel.actividad, proximosEventos: [], noticias: { publicadas: 0, borradores: 0 }, reparto: { turnosProximos: 0, citasReservadas: 0, capacidadEstimada: 0 } },
     })

@@ -11,6 +11,7 @@ const PANEL: PanelResponse = {
   censo: { activos: 1284, altas12m: 34, bajas12m: 12, sinNumeroHermano: 3, serieMensual: [], movimientosMensuales: [], porEdad: [] },
   dinero: {
     porEstado: [{ estado: 'DEVUELTO', total: 14, importe: 420 }],
+    devueltosPendientes: { total: 14, importe: 420 },
     ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 },
     serieMensual: [],
     porCategoria: [],

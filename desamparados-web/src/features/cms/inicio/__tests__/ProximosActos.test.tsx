@@ -9,7 +9,7 @@ const PANEL: PanelResponse = {
   generadoEn: '2026-09-14T08:00:00.000Z',
   ejercicio: { anio: 2026, cerrado: false },
   censo: { activos: 1284, altas12m: 34, bajas12m: 12, sinNumeroHermano: 3, serieMensual: [], movimientosMensuales: [], porEdad: [] },
-  dinero: { porEstado: [], ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 }, serieMensual: [], porCategoria: [] },
+  dinero: { porEstado: [], devueltosPendientes: { total: 0, importe: 0 }, ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 }, serieMensual: [], porCategoria: [] },
   procesion: { anio: 2026, papeletas: 612, porAnio: [], porPuesto: [], porTalla: [], porAlturaHombro: [] },
   actividad: {
     proximosEventos: [],

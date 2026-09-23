@@ -1,7 +1,8 @@
-import { Box, ButtonBase, Typography, useTheme } from '@mui/material'
+import { Box, ButtonBase, Typography } from '@mui/material'
 import type { AdminReceiptStatus, ResumenRecibos } from '../../../lib/api/tesoreria'
 import { euros } from '../contabilidad/formato'
-import { ESTADOS_RECIBO, ORDEN_ESTADOS } from './estados'
+import { ESTADOS_RECIBO, ORDEN_ESTADOS, tonoDeEstado } from './estados'
+import { segunModo } from '../../../theme/cms'
 
 interface Props {
   /** `null` mientras llega: los contadores se pintan en gris, sin cifras. */
@@ -24,15 +25,14 @@ const ANCHO_EN_FILA = 880
  * pantalla diría 20 pendientes cuando hay 300.
  */
 export default function ContadoresEstado({ resumen, elegido, onElegir }: Props) {
-  const oscuro = useTheme().palette.mode === 'dark'
   const estados = resumen?.estados
   const todos = estados ? ORDEN_ESTADOS.reduce((suma, e) => suma + (estados[e]?.cuenta ?? 0), 0) : null
 
   const contadores = [
-    { clave: '' as const, etiqueta: 'Todos', color: oscuro ? '#cbc5c8' : '#4a454a', fondo: oscuro ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', cuenta: todos, pie: 'recibos' },
+    { clave: '' as const, etiqueta: 'Todos', color: segunModo('#4a454a', '#cbc5c8'), fondo: segunModo('rgba(0,0,0,0.05)', 'rgba(255,255,255,0.08)'), cuenta: todos, pie: 'recibos' },
     ...ORDEN_ESTADOS.map((clave) => {
       const estado = ESTADOS_RECIBO[clave]
-      const tono = estado[oscuro ? 'oscuro' : 'claro']
+      const tono = tonoDeEstado(clave)
       const dato = estados?.[clave]
       return {
         clave,

@@ -5,7 +5,6 @@ import { renderWithProviders } from '../../test/test-utils'
 import MarcoCms from '../MarcoCms'
 import { itemsMenu, rolesPorRutaCms } from '../cmsNavegacion'
 import { useAuthStore } from '../../features/altas/auth/store'
-import { designTokens } from '../../theme'
 import { CLAVE_TEMA_CMS } from '../temaCms'
 
 function entrarComo(role: string) {
@@ -85,6 +84,7 @@ const PANEL_MINIMO = {
   censo: { activos: 1284, altas12m: 34, bajas12m: 12, sinNumeroHermano: 3, serieMensual: [], movimientosMensuales: [], porEdad: [] },
   dinero: {
     porEstado: [{ estado: 'DEVUELTO', total: 14, importe: 420 }],
+    devueltosPendientes: { total: 14, importe: 420 },
     ejercicio: { anio: 2026, ingresos: 0, gastos: 0, saldo: 0 },
     serieMensual: [],
     porCategoria: [],
@@ -145,7 +145,7 @@ describe('el menú del Inicio', () => {
     responder({
       ...PANEL_MINIMO,
       censo: { ...PANEL_MINIMO.censo, sinNumeroHermano: 0 },
-      dinero: { ...PANEL_MINIMO.dinero, porEstado: [] },
+      dinero: { ...PANEL_MINIMO.dinero, porEstado: [], devueltosPendientes: { total: 0, importe: 0 } },
       actividad: { ...PANEL_MINIMO.actividad, noticias: { publicadas: 4, borradores: 0 } },
     })
     entrarComo('ADMIN')
@@ -244,7 +244,9 @@ describe('el CMS no hereda el color de texto de la web pública', () => {
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />)
 
-    expect(getComputedStyle(screen.getByRole('main')).color).toBe('rgb(255, 255, 255)')
+    // El color es la variable del tema del CMS (jsdom no la resuelve): propio, no el heredado.
+    expect(getComputedStyle(screen.getByRole('main')).color).toBe('var(--cms-palette-text-primary)')
+    expect(document.documentElement).toHaveAttribute('data-cms-modo', 'dark')
   })
 
   it('en modo claro el contenido fija el texto oscuro del tema', () => {
@@ -253,11 +255,8 @@ describe('el CMS no hereda el color de texto de la web pública', () => {
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />)
 
-    const { onSurface } = designTokens.colors
-    const [, r, g, b] = /^#(\w{2})(\w{2})(\w{2})$/.exec(onSurface)!
-    const esperado = `rgb(${parseInt(r, 16)}, ${parseInt(g, 16)}, ${parseInt(b, 16)})`
-
-    expect(getComputedStyle(screen.getByRole('main')).color).toBe(esperado)
+    expect(getComputedStyle(screen.getByRole('main')).color).toBe('var(--cms-palette-text-primary)')
+    expect(document.documentElement).toHaveAttribute('data-cms-modo', 'light')
   })
 })
 

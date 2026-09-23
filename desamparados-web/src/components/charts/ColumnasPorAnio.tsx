@@ -22,7 +22,9 @@ const ABAJO = 30
 
 /** Una columna por año, con su valor escrito encima: cinco cifras se leen mejor así que en una línea. */
 export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor }: Props) {
-  const theme = useTheme()
+  // Con el tema del CMS, sus variables CSS: valen para los dos modos sin volver a pintar.
+  const tema = useTheme()
+  const colores = (tema as { vars?: { palette: typeof tema.palette } }).vars?.palette ?? tema.palette
   const id = useId().replace(/:/g, '')
   // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
   const { referencia, ancho: ANCHO } = useAnchoMedido()
@@ -61,7 +63,7 @@ export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor
         {eje.marcas.filter((m) => m < eje.techo).map((marca) => (
           <g key={marca}>
             <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER} y2={Y(marca)} stroke={marca === 0 ? paleta.cero : paleta.rejilla} strokeWidth="1" />
-            <text x={IZQ - 10} y={Y(marca) + 4} textAnchor="end" fontSize="11" fill={theme.palette.text.secondary}>{marca}</text>
+            <text x={IZQ - 10} y={Y(marca) + 4} textAnchor="end" fontSize="11" fill={colores.text.secondary}>{marca}</text>
           </g>
         ))}
 
@@ -72,10 +74,10 @@ export default function ColumnasPorAnio({ datos, paleta, destacado, formatoValor
             <g key={d.anio}>
               {esElegido && <path d={columna(x, Y(0), Y(d.total), ancho)} fill={paleta.acento} filter={`url(#halo-${id})`} opacity={paleta.brillo} />}
               <path data-testid="columna" data-elegido={esElegido || undefined} d={columna(x, Y(0), Y(d.total), ancho)} fill={esElegido ? `url(#elegido-${id})` : `url(#resto-${id})`} />
-              <text x={x + ancho / 2} y={Y(d.total) - 8} textAnchor="middle" fontSize="12" fontWeight={esElegido ? 700 : 600} fill={esElegido ? theme.palette.text.primary : theme.palette.text.secondary}>
+              <text x={x + ancho / 2} y={Y(d.total) - 8} textAnchor="middle" fontSize="12" fontWeight={esElegido ? 700 : 600} fill={esElegido ? colores.text.primary : colores.text.secondary}>
                 {texto(d.total)}
               </text>
-              <text x={x + ancho / 2} y={ALTO - 8} textAnchor="middle" fontSize="12" fontWeight={esElegido ? 700 : 400} fill={esElegido ? theme.palette.text.primary : theme.palette.text.secondary}>
+              <text x={x + ancho / 2} y={ALTO - 8} textAnchor="middle" fontSize="12" fontWeight={esElegido ? 700 : 400} fill={esElegido ? colores.text.primary : colores.text.secondary}>
                 {d.anio}
               </text>
             </g>

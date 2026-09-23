@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
-import { useTemaCms } from '../../../app/useTemaCms'
 import { cuentaAtrasEstacion } from '../../../domain/sabadoDePasion'
 import { actosDelCurso, corta, diaMes, racimoInicial, racimosDelCurso, rangoDe } from './racimos'
 import { TIPOS } from '../../inicio/agenda'
@@ -9,6 +8,7 @@ import type { TipoEvento } from '../../../lib/api/panel'
 import { contar } from './plural'
 import { useAnchoMedido } from '../../../components/charts/useAnchoMedido'
 import { fondoTarjeta } from '../../../theme/tarjeta'
+import { segunModo } from '../../../theme/cms'
 import { acercar, aparecer, CIFRA, entrada, llenarTrazo, sinMovimiento, useCuenta } from './animaciones'
 
 /** El camino se dibuja en esta caja; los racimos, encima, en porcentajes de ella. */
@@ -39,12 +39,11 @@ const alLlegar = (p: number, recorrido: number) => `${300 + Math.min(p / Math.ma
  * próximo) se lista debajo, con sus fechas.
  */
 export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos: PanelResponse['curso']['eventos']; hoy?: Date }) {
-  const { modo } = useTemaCms()
   const { fecha, anterior, dias, porcentaje } = cuentaAtrasEstacion(hoy)
   const diasContados = Math.round(useCuenta(dias, 1600))
   const recorrido = porcentaje / 100
   const aqui = punto(recorrido)
-  const fondo = modo === 'oscuro' ? OSCURO.fondoTemaOscuro : OSCURO.fondo
+  const fondo = segunModo(OSCURO.fondo, OSCURO.fondoTemaOscuro)
 
   const { referencia, ancho } = useAnchoMedido()
   const actos = actosDelCurso(hoy, eventos)
@@ -66,7 +65,7 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
         // Imagen y camino lado a lado solo cuando el camino tiene sitio de sobra.
         '@container (min-width: 860px)': { gridTemplateColumns: 'minmax(260px, 0.8fr) minmax(0, 2fr)' },
         // Siempre oscura, con el mismo velo burdeos que el resto de tarjetas.
-        ...fondoTarjeta('oscuro', 'burdeos', fondo),
+        ...fondoTarjeta('burdeos', fondo, 'oscuro'),
         color: OSCURO.texto,
         borderRadius: 1.75,
         overflow: 'hidden',

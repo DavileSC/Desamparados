@@ -36,7 +36,9 @@ const ABAJO = 30
 export default function ColumnasPorPares({
   puntos, paleta, etiquetaA, etiquetaB, formatoValor, etiquetaX, etiquetaXLarga,
 }: Props) {
-  const theme = useTheme()
+  // Con el tema del CMS, sus variables CSS: valen para los dos modos sin volver a pintar.
+  const tema = useTheme()
+  const colores = (tema as { vars?: { palette: typeof tema.palette } }).vars?.palette ?? tema.palette
   const id = useId().replace(/:/g, '')
   // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
   const { referencia, ancho: ANCHO } = useAnchoMedido()
@@ -94,7 +96,7 @@ export default function ColumnasPorPares({
         {eje.marcas.map((marca) => (
           <g key={marca}>
             <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER} y2={Y(marca)} stroke={marca === 0 ? paleta.cero : paleta.rejilla} strokeWidth="1" strokeDasharray={marca === 0 ? undefined : '3 5'} />
-            <text x={IZQ - 12} y={Y(marca) + 4} textAnchor="end" fontSize="11" fill={theme.palette.text.secondary} style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <text x={IZQ - 12} y={Y(marca) + 4} textAnchor="end" fontSize="11" fill={colores.text.secondary} style={{ fontVariantNumeric: 'tabular-nums' }}>
               {formatoValor(marca)}
             </text>
           </g>
@@ -112,7 +114,7 @@ export default function ColumnasPorPares({
               <path data-testid="columna" d={columna(centro - ancho - 1, Y(0), Y(p.a), ancho)} fill={`url(#a-${id})`} />
               <path data-testid="columna" d={columna(centro + 1, Y(0), Y(p.b), ancho)} fill={`url(#b-${id})`} />
               {(i % pasoX === 0 || activo === i) && (
-                <text x={centro} y={ALTO - 8} textAnchor="middle" fontSize="12" fill={activo === i ? theme.palette.text.primary : theme.palette.text.secondary} fontWeight={activo === i ? 700 : 400}>
+                <text x={centro} y={ALTO - 8} textAnchor="middle" fontSize="12" fill={activo === i ? colores.text.primary : colores.text.secondary} fontWeight={activo === i ? 700 : 400}>
                   {etiquetaX(p.clave)}
                 </text>
               )}
@@ -130,7 +132,7 @@ export default function ColumnasPorPares({
           const centro = IZQ + ranura * i + ranura / 2
           const x = j === 0 ? centro - ancho / 2 - 1 : centro + ancho / 2 + 1
           return (
-            <text key={lado} x={x} y={Y(valor) - 8} textAnchor="middle" fontSize="12" fontWeight="700" fill={theme.palette.text.primary}>
+            <text key={lado} x={x} y={Y(valor) - 8} textAnchor="middle" fontSize="12" fontWeight="700" fill={colores.text.primary}>
               {formatoValor(valor)}
             </text>
           )

@@ -62,7 +62,7 @@ export default function ProporcionEstados({ estados, paleta, formatoImporte, for
 
       {/* 2 px de hueco entre segmentos: sin él, dos colores contiguos se leen
           como uno solo cuando el trozo es estrecho. */}
-      <Box sx={{ display: 'flex', gap: '2px', height: 14, borderRadius: '7px', overflow: 'hidden', my: 2, boxShadow: `0 0 18px color-mix(in srgb, ${paleta.estados.ok} ${Math.round(paleta.brillo * 40)}%, transparent)` }} aria-hidden="true">
+      <Box sx={{ display: 'flex', gap: '2px', height: 14, borderRadius: '7px', overflow: 'hidden', my: 2, boxShadow: `0 0 18px color-mix(in srgb, ${paleta.estados.ok} calc(${paleta.brillo} * 40%), transparent)` }} aria-hidden="true">
         {visibles.map((e) => (
           <Box
             key={e.clave}

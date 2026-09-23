@@ -1,5 +1,5 @@
 import { createTheme, type Theme } from '@mui/material/styles'
-import theme, { designTokens } from './index'
+import theme, { designTokens, themeOptions } from './index'
 
 /**
  * Tema del CMS en dos modos, sobre el mismo juego de tokens que la web pública.
@@ -72,7 +72,8 @@ export interface GraficasCms {
   /** El color de la casa en las gráficas de una sola serie: burdeos en claro, rosa en oscuro. */
   acento: string
   /** Cuánto brillan líneas y columnas (opacidad del halo): mucho en oscuro, apenas en claro. */
-  brillo: number
+  /** Opacidad del halo, como texto CSS ("0.22" o una variable). */
+  brillo: string
 }
 
 const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
@@ -140,7 +141,7 @@ const GRAFICAS: Record<ModoCms, GraficasCms> = {
     banda: 'rgba(27,28,26,0.045)',
     estados: designTokens.dataviz.estados,
     acento: designTokens.colors.burgundy,
-    brillo: 0.22,
+    brillo: '0.22',
   },
   oscuro: {
     entrada: designTokens.dataviz.seriesOscuras[0], // #3987e5
@@ -153,12 +154,64 @@ const GRAFICAS: Record<ModoCms, GraficasCms> = {
     banda: 'rgba(255,255,255,0.05)',
     estados: designTokens.dataviz.estados,
     acento: '#f08a93',
-    brillo: 0.75,
+    brillo: '0.75',
   },
 }
 
 export const superficiesCms = (modo: ModoCms): SuperficiesCms => SUPERFICIES[modo]
 export const graficasCms = (modo: ModoCms): GraficasCms => GRAFICAS[modo]
+
+// ---------------------------------------------------------------------------
+// Los dos modos a la vez, con variables CSS
+// ---------------------------------------------------------------------------
+//
+// En el CMS, claro y oscuro no son dos temas: son dos juegos de variables CSS
+// que cuelgan de un atributo de <html> (`data-cms-modo`). Cambiar de modo es
+// cambiar ese atributo, sin volver a pintar React: antes se rehacía el tema
+// entero y la pantalla se congelaba entre 100 ms (publicado) y 1 s (en
+// desarrollo) antes de cambiar.
+//
+// Por eso los componentes no deciden colores con `modo`: usan estas variables
+// o `segunModo(claro, oscuro)`. Cada variable lleva de respaldo su valor en
+// claro, que es como se ve fuera del CMS (la pantalla de acceso, las pruebas).
+
+/** El atributo de <html> que lleva el modo del CMS: `light` o `dark`. */
+export const ATRIBUTO_MODO = 'data-cms-modo'
+
+const kebab = (clave: string) => clave.replace(/[A-Z]/g, (letra) => `-${letra.toLowerCase()}`)
+const nombreVariable = (grupo: 's' | 'g', clave: string) => `--cms-${grupo}-${kebab(clave)}`
+
+/** Un color distinto en cada modo, que resuelve el navegador (`light-dark`, según el `color-scheme` del CMS). */
+export const segunModo = (claro: string, oscuro: string) => `light-dark(${claro}, ${oscuro})`
+
+/** Las superficies del CMS, válidas en los dos modos. */
+export const SUPERFICIES_CMS = Object.fromEntries(
+  Object.entries(SUPERFICIES.claro).map(([clave, valor]) => [clave, `var(${nombreVariable('s', clave)}, ${valor})`]),
+) as unknown as SuperficiesCms
+
+/** Los colores de las gráficas, válidos en los dos modos. Los de estado son iguales en los dos. */
+export const GRAFICAS_CMS: GraficasCms = {
+  ...(Object.fromEntries(
+    Object.entries(GRAFICAS.claro)
+      .filter(([clave]) => clave !== 'estados')
+      .map(([clave, valor]) => [clave, `var(${nombreVariable('g', clave)}, ${valor})`]),
+  ) as unknown as Omit<GraficasCms, 'estados'>),
+  estados: GRAFICAS.claro.estados,
+}
+
+/** Una fracción del brillo del modo, como opacidad: `brillo(paleta.brillo, 0.6)`. */
+export const brillo = (base: string, fraccion = 1) => (fraccion === 1 ? base : `calc(${base} * ${fraccion})`)
+
+/** Las variables de un modo, para colgarlas de su selector. */
+function variablesDe(modo: ModoCms) {
+  return {
+    colorScheme: modo === 'claro' ? 'light' : 'dark',
+    ...Object.fromEntries(Object.entries(SUPERFICIES[modo]).map(([clave, valor]) => [nombreVariable('s', clave), valor])),
+    ...Object.fromEntries(
+      Object.entries(GRAFICAS[modo]).filter(([clave]) => clave !== 'estados').map(([clave, valor]) => [nombreVariable('g', clave), String(valor)]),
+    ),
+  }
+}
 
 const ACCIONES: Record<ModoCms, Record<string, string>> = {
   claro: {
@@ -179,29 +232,40 @@ const ACCIONES: Record<ModoCms, Record<string, string>> = {
   },
 }
 
+/** La paleta de un modo: la de la web pública (marca, error) con las superficies y los textos del CMS. */
+function paletaCms(modo: ModoCms) {
+  const s = SUPERFICIES[modo]
+  return {
+    primary: themeOptions.palette?.primary,
+    secondary: themeOptions.palette?.secondary,
+    error: themeOptions.palette?.error,
+    background: { default: s.canvas, paper: s.card },
+    text: {
+      primary: s.texto,
+      secondary: s.texto2,
+      disabled: modo === 'claro' ? 'rgba(0, 0, 0, 0.38)' : 'rgba(255, 255, 255, 0.42)',
+    },
+    action: ACCIONES[modo],
+    divider: modo === 'claro' ? s.hairline : s.filete,
+  }
+}
+
+const fuentes = designTokens.fonts.cms
+const titulo = { fontFamily: fuentes.heading }
+const texto = { fontFamily: fuentes.body }
+// Todas las variantes, porque el tema base fija la fuente en cada una.
+const TIPOGRAFIA_CMS = {
+  fontFamily: fuentes.body,
+  h1: titulo, h2: titulo, h3: titulo, h4: titulo, h5: titulo, h6: titulo,
+  subtitle1: texto, subtitle2: texto, body1: texto, body2: texto, button: texto, caption: texto, overline: texto,
+}
+
+/** Un tema del CMS con un modo fijo: la pantalla de acceso (siempre clara) y las pruebas. */
 export function crearTemaCms(modo: ModoCms): Theme {
   const s = superficiesCms(modo)
-  const fuentes = designTokens.fonts.cms
-  const titulo = { fontFamily: fuentes.heading }
-  const texto = { fontFamily: fuentes.body }
   return createTheme(theme, {
-    // Todas las variantes, porque el tema base fija la fuente en cada una.
-    typography: {
-      fontFamily: fuentes.body,
-      h1: titulo, h2: titulo, h3: titulo, h4: titulo, h5: titulo, h6: titulo,
-      subtitle1: texto, subtitle2: texto, body1: texto, body2: texto, button: texto, caption: texto, overline: texto,
-    },
-    palette: {
-      mode: modo === 'claro' ? 'light' : 'dark',
-      background: { default: s.canvas, paper: s.card },
-      text: {
-        primary: s.texto,
-        secondary: s.texto2,
-        disabled: modo === 'claro' ? 'rgba(0, 0, 0, 0.38)' : 'rgba(255, 255, 255, 0.42)',
-      },
-      action: ACCIONES[modo],
-      divider: modo === 'claro' ? s.hairline : s.filete,
-    },
+    typography: TIPOGRAFIA_CMS,
+    palette: { mode: modo === 'claro' ? 'light' : 'dark', ...paletaCms(modo) },
     components: {
       MuiPaper: {
         styleOverrides: {
@@ -232,10 +296,63 @@ export function crearTemaCms(modo: ModoCms): Theme {
 }
 
 /**
+ * El tema del CMS, con los dos modos dentro (variables CSS de MUI): es el
+ * mismo objeto en claro y en oscuro, así que cambiar de modo no rehace los
+ * estilos de ningún componente. Lo que cambia con el modo va en
+ * `applyStyles('dark')`, igual que en `crearTemaCms`.
+ */
+const { palette: _paletaPublica, ...opcionesPublicas } = themeOptions
+const ACCION_OSCURA = SUPERFICIES.oscuro.accionTexto
+export const temaCms: Theme = createTheme(
+  {
+    ...opcionesPublicas,
+    cssVariables: { colorSchemeSelector: ATRIBUTO_MODO, cssVarPrefix: 'cms' },
+    colorSchemes: { light: { palette: paletaCms('claro') }, dark: { palette: paletaCms('oscuro') } },
+    defaultColorScheme: 'dark',
+  },
+  {
+    typography: TIPOGRAFIA_CMS,
+    components: {
+      MuiPaper: {
+        styleOverrides: {
+          root: ({ theme: t }: { theme: Theme }) => ({
+            backgroundImage: 'none',
+            border: `1px solid ${SUPERFICIES.claro.hairline}`,
+            ...t.applyStyles('dark', { border: 0 }),
+          }),
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: ({ theme: t }: { theme: Theme }) => ({
+            variants: [
+              { props: { variant: 'text', color: 'primary' }, style: t.applyStyles('dark', { color: ACCION_OSCURA }) },
+              { props: { variant: 'outlined', color: 'primary' }, style: t.applyStyles('dark', { color: ACCION_OSCURA, borderColor: 'rgba(255, 179, 180, 0.5)', '&:hover': { borderColor: ACCION_OSCURA } }) },
+            ],
+          }),
+        },
+      },
+    },
+  },
+)
+
+/**
  * La fuente del CMS en el `body` mientras el CMS está en pantalla. El tema ya
  * la pone en sus componentes, pero lo que no es un componente de MUI (la barra
  * lateral, las cabeceras de tabla) hereda del `body`, y las ventanas y menús
  * cuelgan directamente de él: sin esto, salían con la fuente de la web pública.
  * Emotion la retira al desmontarse, al volver a la web pública.
+ *
+ * Aquí cuelgan también las variables de cada modo y el fundido del cambio.
  */
-export const ESTILOS_GLOBALES_CMS = { body: { fontFamily: designTokens.fonts.cms.body } } as const
+export const ESTILOS_GLOBALES_CMS = {
+  body: { fontFamily: designTokens.fonts.cms.body },
+  [`[${ATRIBUTO_MODO}="light"]`]: variablesDe('claro'),
+  [`[${ATRIBUTO_MODO}="dark"]`]: variablesDe('oscuro'),
+  // El cambio de modo (ver temaCms): la pantalla nueva aparece sobre la vieja,
+  // que se queda quieta. Si se desvanecieran las dos a la vez, a mitad de
+  // camino se vería un velo gris.
+  '::view-transition-old(root)': { animation: 'none' },
+  '::view-transition-new(root)': { animation: 'cms-aparecer 240ms cubic-bezier(.2, 0, 0, 1) both' },
+  '@keyframes cms-aparecer': { from: { opacity: 0 } },
+} as const

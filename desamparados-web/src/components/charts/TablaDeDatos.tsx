@@ -20,7 +20,7 @@ export default function TablaDeDatos({ titulo, columnas, filas }: Props) {
         sx={{
           cursor: 'pointer', listStyle: 'none', display: 'inline-flex', alignItems: 'center',
           // El granate primario no llega a 3:1 sobre la tarjeta oscura: en oscuro, rosa.
-          fontSize: 13, fontWeight: 600, color: (t) => (t.palette.mode === 'dark' ? '#ffb3b4' : '#6e1822'),
+          fontSize: 13, fontWeight: 600, color: 'light-dark(#6e1822, #ffb3b4)',
           '&::-webkit-details-marker': { display: 'none' },
         }}
       >

@@ -23,7 +23,7 @@ import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { ORDENES_RECIBOS, ordenDe } from '../domain/ordenacion.js';
 import {
   ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, apuntarComisionEnTransaccion, devolverCobroEnTransaccion, fotoRecibo,
-  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, leerDatosEvento, retirarPapeletaEnTransaccion,
+  idCategoriaComisiones, idCategoriaDevoluciones, idCategoriaIngresos, leerDatosEvento, reemitidosDe, retirarPapeletaEnTransaccion,
   whereRecibosAdmin, type ConsultaRecibos,
 } from './recibos/comunes.js';
 
@@ -55,7 +55,9 @@ export class ReciboService {
       db.recibo.count({ where })
     ]);
 
-    return respuestaPaginada(data, total, paginacion);
+    // Un devuelto ya reemitido no pide nada: la pantalla deja de ofrecer reemitirlo.
+    const reemitidos = await reemitidosDe(data.filter((r) => r.estado === EstadoPago.DEVUELTO).map((r) => ({ ...r, hermanoId: r.hermano.id })));
+    return respuestaPaginada(data.map((r) => ({ ...r, reemitido: reemitidos.has(r.id) })), total, paginacion);
   }
 
   /**
@@ -88,7 +90,7 @@ export class ReciboService {
    */
   static async impagos(query: { incluirAnioActual?: string; minimo?: string; page?: unknown; limit?: unknown }) {
     const anioActual = Number(diaDeHoy().slice(0, 4));
-    const recibos = await db.recibo.findMany({
+    const leidos = await db.recibo.findMany({
       where: {
         tipo: TipoRecibo.CUOTA_HERMANO,
         estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] },
@@ -100,6 +102,9 @@ export class ReciboService {
         hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true } },
       },
     });
+    // Una cuota devuelta y ya reemitida no se debe dos veces: cuenta su reemisión.
+    const reemitidas = await reemitidosDe(leidos.filter((r) => r.estado === EstadoPago.DEVUELTO).map((r) => ({ ...r, hermanoId: r.hermano.id, tipo: TipoRecibo.CUOTA_HERMANO })));
+    const recibos = leidos.filter((r) => !reemitidas.has(r.id));
     const filas = agruparImpagos(recibos, Number(query.minimo ?? 1));
     const paginacion = sanearPaginacion(query);
     return {

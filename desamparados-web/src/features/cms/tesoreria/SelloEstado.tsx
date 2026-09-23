@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { Box, useTheme, type SvgIconProps } from '@mui/material'
+import { Box, type SvgIconProps } from '@mui/material'
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
@@ -7,7 +7,7 @@ import UndoRoundedIcon from '@mui/icons-material/UndoRounded'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import type { AdminReceiptStatus } from '../../../lib/api/tesoreria'
-import { ESTADOS_RECIBO } from './estados'
+import { ESTADOS_RECIBO, tonoDeEstado } from './estados'
 
 const ICONOS: Record<AdminReceiptStatus, ComponentType<SvgIconProps>> = {
   PENDIENTE: ScheduleOutlinedIcon,
@@ -18,11 +18,8 @@ const ICONOS: Record<AdminReceiptStatus, ComponentType<SvgIconProps>> = {
   ANULADO: BlockOutlinedIcon,
 }
 
-/** El tono de un estado en el modo en que esté el CMS. */
-function useTonoEstado(estado: AdminReceiptStatus) {
-  const oscuro = useTheme().palette.mode === 'dark'
-  return ESTADOS_RECIBO[estado][oscuro ? 'oscuro' : 'claro']
-}
+/** El tono de un estado, en los dos modos a la vez. */
+const useTonoEstado = tonoDeEstado
 
 /**
  * El sello de estado de un recibo. Ancho fijo: en una columna, todos los

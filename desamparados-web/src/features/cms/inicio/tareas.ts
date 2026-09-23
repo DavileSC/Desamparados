@@ -38,13 +38,14 @@ const TESORERIA = ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR']
 export function tareasDelDia(panel: PanelResponse): Tarea[] {
   const tareas: Tarea[] = []
 
-  const devueltos = panel.dinero.porEstado.find((e) => e.estado === 'DEVUELTO')?.total ?? 0
+  // Los ya reemitidos no piden nada: su recibo nuevo sigue su curso.
+  const devueltos = panel.dinero.devueltosPendientes?.total ?? 0
   if (devueltos > 0) {
     tareas.push({
       clave: 'recibos-devueltos',
       prioridad: 'urgente',
       etiqueta: ETIQUETA.urgente,
-      titulo: contar(devueltos, 'recibo devuelto', 'recibos devueltos'),
+      titulo: `${contar(devueltos, 'recibo devuelto', 'recibos devueltos')} sin reemitir`,
       detalle: `Tesorería · ejercicio ${panel.ejercicio.anio}`,
       cargo: NOMBRE_CARGO.TESORERIA,
       roles: TESORERIA,

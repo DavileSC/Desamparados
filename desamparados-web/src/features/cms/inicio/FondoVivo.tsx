@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import { keyframes } from '@mui/material/styles'
-import { useTemaCms } from '../../../app/useTemaCms'
+import { segunModo } from '../../../theme/cms'
 
 /**
  * El fondo del Inicio: luz de cera en la penumbra. Tres focos burdeos, muy
@@ -33,10 +33,8 @@ const FOCOS = [
 ]
 
 export default function FondoVivo() {
-  const { modo } = useTemaCms()
-  const oscuro = modo === 'oscuro'
-  // Intensidad de cada foco en cada modo.
-  const fuerza = oscuro ? [0.34, 0.5, 0.14] : [0.2, 0.14, 0.22]
+  // Intensidad de cada foco en cada modo: la elige el navegador, sin volver a pintar.
+  const fuerza = { claro: [0.2, 0.14, 0.22], oscuro: [0.34, 0.5, 0.14] }
 
   return (
     <Box aria-hidden="true" sx={{ position: 'fixed', inset: 0, zIndex: -1, overflow: 'hidden', pointerEvents: 'none' }}>
@@ -45,7 +43,7 @@ export default function FondoVivo() {
           key={i}
           sx={{
             position: 'absolute', top: f.arriba, left: f.izquierda, width: f.tam, height: f.tam, borderRadius: '50%',
-            background: `radial-gradient(circle at center, rgba(${f.color}, ${fuerza[i]}) 0%, rgba(${f.color}, 0) 68%)`,
+            background: `radial-gradient(circle at center, ${segunModo(`rgba(${f.color}, ${fuerza.claro[i]})`, `rgba(${f.color}, ${fuerza.oscuro[i]})`)} 0%, rgba(${f.color}, 0) 68%)`,
             filter: 'blur(20px)',
             willChange: 'transform, opacity',
             animation: `${deriva} ${f.deriva}s ease-in-out ${f.retraso}s infinite, ${respira} ${f.respira}s ease-in-out ${f.retraso}s infinite`,

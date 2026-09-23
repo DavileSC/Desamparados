@@ -22,6 +22,7 @@ import {
   type FiltrosContables,
 } from '../domain/contabilidad.js';
 import type { CreateTransaccionDto, UpdateTransaccionDto } from '../dtos/transaccion.dto.js';
+import { devueltosPendientes } from './recibos/comunes.js';
 
 const deTipo = (tipo: TipoTransaccion) => (tipo === 'INGRESO' ? 'ingreso' : 'gasto');
 
@@ -337,7 +338,7 @@ export class TransaccionService {
         : Promise.resolve(null),
       // Lo que falta por entrar, de todos los años y sin los filtros: no es un
       // movimiento del periodo, es lo que Tesorería tiene aún por cobrar. Los
-      // devueltos no cuentan: se reemiten como recibo nuevo y saldrían dos veces.
+      // devueltos van aparte: solo cuentan los que no se han reemitido.
       db.recibo.groupBy({
         by: ['estado'],
         where: { estado: { in: [EstadoPago.PENDIENTE, EstadoPago.REMESADO] } },
@@ -346,11 +347,14 @@ export class TransaccionService {
       }),
     ]);
 
+    // Y los devueltos que aún no se han reemitido: siguen sin cobrarse.
+    const devueltos = await devueltosPendientes();
     const pendienteDe = (estado: EstadoPago) => pendientes.find((p) => p.estado === estado);
     const porCobrar = {
-      importe: Math.round(pendientes.reduce((n, p) => n + Number(p._sum.importe ?? 0), 0) * 100) / 100,
-      recibos: pendientes.reduce((n, p) => n + p._count._all, 0),
+      importe: Math.round((pendientes.reduce((n, p) => n + Number(p._sum.importe ?? 0), 0) + devueltos.importe) * 100) / 100,
+      recibos: pendientes.reduce((n, p) => n + p._count._all, 0) + devueltos.total,
       enElBanco: Number(pendienteDe(EstadoPago.REMESADO)?._sum.importe ?? 0),
+      devueltos: devueltos.importe,
     };
 
     const suma = (grupos: { tipo: string; _sum: { importe: unknown } }[] | null, tipo: 'INGRESO' | 'GASTO') =>

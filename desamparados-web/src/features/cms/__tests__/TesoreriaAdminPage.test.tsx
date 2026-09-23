@@ -314,4 +314,13 @@ describe('TesoreriaAdminPage', () => {
     await user.click(screen.getByRole('button', { name: 'Todos los recibos' }))
     await waitFor(() => expect(ultimaAlListado(simulado)).not.toContain('recibo='))
   })
+
+  it('un devuelto ya reemitido no pide reemitirse otra vez', async () => {
+    vi.stubGlobal('fetch', servidor([{ ...recibo(11, 'DEVUELTO', 'Cuota vieja'), tipo: 'CUOTA_HERMANO', reemitido: true }, { ...recibo(12, 'DEVUELTO', 'Cuota nueva'), tipo: 'CUOTA_HERMANO' }]))
+    renderWithProviders(<TesoreriaAdminPage />)
+
+    expect(await screen.findByText('Devuelto · ya reemitido')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reemitir Cuota vieja de Ana Pérez Ruiz' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reemitir Cuota nueva de Ana Pérez Ruiz' })).toBeInTheDocument()
+  })
 })

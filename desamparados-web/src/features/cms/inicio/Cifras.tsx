@@ -3,6 +3,7 @@ import { Box, Paper, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { fondoTarjeta, type TonoTarjeta } from '../../../theme/tarjeta'
+import { brillo, segunModo } from '../../../theme/cms'
 import { Degradado, Halo } from '../../../components/charts/brillo'
 import { curvaSuave } from '../../../components/charts/ejes'
 import { useAnchoMedido } from '../../../components/charts/useAnchoMedido'
@@ -61,7 +62,7 @@ function Area({ valores, color, orden, extremos }: {
         strokeDasharray="1"
         sx={{ animation: `${trazar} 1.3s ease-out backwards`, animationDelay: retraso, ...sinMovimiento }}
       />
-      <circle cx={ux} cy={uy} r={7} fill={color} opacity={graficas.brillo * 0.4} />
+      <circle cx={ux} cy={uy} r={7} fill={color} style={{ opacity: brillo(graficas.brillo, 0.4) }} />
       <circle cx={ux} cy={uy} r={3.5} fill={color} />
     </Box>
     {extremos && <Extremos izquierda={extremos[0]} derecha={extremos[1]} />}
@@ -180,9 +181,9 @@ function Baldosa({ etiqueta, valor, pie, orden, tono, variacion, children }: {
   etiqueta: string; valor: ReactNode; pie: string; orden: number; tono: TonoTarjeta
   variacion?: ReactNode; children?: ReactNode
 }) {
-  const { modo, superficies } = useTemaCms()
+  const { superficies } = useTemaCms()
   return (
-    <Paper sx={{ ...fondoTarjeta(modo, tono, superficies.card), p: { xs: 1.75, sm: 2.25 }, borderRadius: 1.75, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1) }}>
+    <Paper sx={{ ...fondoTarjeta(tono, superficies.card), p: { xs: 1.75, sm: 2.25 }, borderRadius: 1.75, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1) }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{etiqueta}</Typography>
         {variacion}
@@ -206,7 +207,7 @@ function Baldosa({ etiqueta, valor, pie, orden, tono, variacion, children }: {
  * con un año cerrado despistaría.
  */
 export default function Cifras({ panel }: { panel: PanelResponse }) {
-  const { graficas, modo } = useTemaCms()
+  const { graficas } = useTemaCms()
   const netos = panel.censo.altas12m - panel.censo.bajas12m
 
   // REMESADO cuenta como «por cobrar»: es dinero ya enviado al banco en un
@@ -219,7 +220,8 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
     { estado: 'DEVUELTO', texto: 'Devuelto', color: graficas.estados.error },
   ] as const
   const partes = PARTES.map((p) => {
-    const fila = panel.dinero.porEstado.find((e) => e.estado === p.estado)
+    // De los devueltos, solo los que no se han reemitido: el reemitido ya cuenta como su recibo nuevo.
+    const fila = p.estado === 'DEVUELTO' ? panel.dinero.devueltosPendientes : panel.dinero.porEstado.find((e) => e.estado === p.estado)
     return { ...p, total: fila?.total ?? 0, importe: fila?.importe ?? 0 }
   })
   const porCobrar = partes.reduce((s, e) => ({ total: s.total + e.total, importe: s.importe + e.importe }), { total: 0, importe: 0 })
@@ -268,7 +270,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
         valor={<Valor valor={panel.procesion.papeletas} />}
         pie={anterior ? `de sitio · ${numero(anterior.total)} en ${anterior.anio}` : 'de sitio'}
       >
-        <Columnas valores={anios.map((a) => a.total)} etiquetas={anios.map((a) => String(a.anio))} color={modo === 'oscuro' ? '#c9ab3c' : '#9c8414'} orden={1} />
+        <Columnas valores={anios.map((a) => a.total)} etiquetas={anios.map((a) => String(a.anio))} color={segunModo('#9c8414', '#c9ab3c')} orden={1} />
       </Baldosa>
       <Baldosa orden={2} tono="rosa" etiqueta="Por cobrar" valor={<Valor valor={porCobrar.importe} euros />} pie={contar(porCobrar.total, 'recibo', 'recibos')}>
         {porCobrar.importe > 0 && (
@@ -276,7 +278,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
             <Box
               role="img"
               aria-label={partes.filter((p) => p.importe > 0).map((p) => `${p.texto}: ${eurosResumen(p.importe)}`).join(', ')}
-              sx={{ display: 'flex', gap: '2px', height: 8, borderRadius: 1, overflow: 'hidden', transformOrigin: 'left', boxShadow: `0 0 14px color-mix(in srgb, ${graficas.estados.aviso} ${Math.round(graficas.brillo * 45)}%, transparent)`, animation: `${crecerX} 1.2s cubic-bezier(.3, .7, .2, 1) .4s backwards`, ...sinMovimiento }}
+              sx={{ display: 'flex', gap: '2px', height: 8, borderRadius: 1, overflow: 'hidden', transformOrigin: 'left', boxShadow: `0 0 14px color-mix(in srgb, ${graficas.estados.aviso} calc(${graficas.brillo} * 45%), transparent)`, animation: `${crecerX} 1.2s cubic-bezier(.3, .7, .2, 1) .4s backwards`, ...sinMovimiento }}
             >
               {partes.filter((p) => p.importe > 0).map((p) => (
                 <Box key={p.estado} sx={{ flexGrow: p.importe, backgroundColor: p.color, backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0) 60%)' }} />

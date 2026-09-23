@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
-import type { GraficasCms } from '../../theme/cms'
+import { brillo, type GraficasCms } from '../../theme/cms'
 import { curvaSuave, pasoBonito, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
 import { Degradado, Halo } from './brillo'
@@ -45,7 +45,9 @@ function escala(min: number, max: number) {
  * dato.
  */
 export default function LineaTemporal({ puntos, etiqueta, paleta, color, formatoValor, etiquetaX }: Props) {
-  const theme = useTheme()
+  // Con el tema del CMS, sus variables CSS: valen para los dos modos sin volver a pintar.
+  const tema = useTheme()
+  const colores = (tema as { vars?: { palette: typeof tema.palette } }).vars?.palette ?? tema.palette
   const id = useId().replace(/:/g, '')
   // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
   const { referencia, ancho: ANCHO } = useAnchoMedido()
@@ -98,7 +100,7 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
               y={Y(marca) + 4}
               textAnchor="end"
               fontSize="11"
-              fill={theme.palette.text.secondary}
+              fill={colores.text.secondary}
               style={{ fontVariantNumeric: 'tabular-nums' }}
             >
               {marca}
@@ -111,20 +113,20 @@ export default function LineaTemporal({ puntos, etiqueta, paleta, color, formato
         <path data-testid="linea" d={d} fill="none" stroke={trazo} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Primer punto: la etiqueta va DEBAJO, donde no hay trazo. */}
-        <circle cx={X(0)} cy={Y(primero.y)} r="4" fill={trazo} stroke={theme.palette.background.paper} strokeWidth="2" />
-        <text x={X(0) + 8} y={Y(primero.y) + 20} fontSize="12" fontWeight="600" fill={theme.palette.text.secondary}>
+        <circle cx={X(0)} cy={Y(primero.y)} r="4" fill={trazo} stroke={colores.background.paper} strokeWidth="2" />
+        <text x={X(0) + 8} y={Y(primero.y) + 20} fontSize="12" fontWeight="600" fill={colores.text.secondary}>
           {texto(primero.y)}
         </text>
 
-        <circle cx={X(puntos.length - 1)} cy={Y(ultimo.y)} r="11" fill={trazo} opacity={paleta.brillo * 0.35} />
-        <circle cx={X(puntos.length - 1)} cy={Y(ultimo.y)} r="5" fill={trazo} stroke={theme.palette.background.paper} strokeWidth="2" />
-        <text x={X(puntos.length - 1) + 10} y={Y(ultimo.y) + 4} fontSize="13" fontWeight="700" fill={theme.palette.text.primary}>
+        <circle cx={X(puntos.length - 1)} cy={Y(ultimo.y)} r="11" fill={trazo} style={{ opacity: brillo(paleta.brillo, 0.35) }} />
+        <circle cx={X(puntos.length - 1)} cy={Y(ultimo.y)} r="5" fill={trazo} stroke={colores.background.paper} strokeWidth="2" />
+        <text x={X(puntos.length - 1) + 10} y={Y(ultimo.y) + 4} fontSize="13" fontWeight="700" fill={colores.text.primary}>
           {texto(ultimo.y)}
         </text>
 
         {puntos.map((p, i) => (
           i % paso === 0 && (
-            <text key={p.x} x={X(i)} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={theme.palette.text.secondary}>
+            <text key={p.x} x={X(i)} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={colores.text.secondary}>
               {enX(p.x)}
             </text>
           )

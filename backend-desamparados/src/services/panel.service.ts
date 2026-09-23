@@ -11,6 +11,7 @@ import {
   rangoDelEjercicio,
 } from '../domain/panel-ejercicio.js';
 import { rangoDelCurso } from '../domain/curso.js';
+import { devueltosPendientes } from './recibos/comunes.js';
 
 /**
  * REGLA DE ORO DE ESTE FICHERO
@@ -46,6 +47,8 @@ export interface PanelResponse {
   };
   dinero: {
     porEstado: { estado: EstadoPago; total: number; importe: number }[];
+    /** Los devueltos del ejercicio que aún no se han reemitido: lo que de verdad queda por cobrar y reemitir. */
+    devueltosPendientes: { total: number; importe: number };
     ejercicio: { anio: number; ingresos: number; gastos: number; saldo: number };
     serieMensual: { mes: string; ingresos: number; gastos: number }[];
     porCategoria: { categoria: string; tipo: TipoTransaccion; total: number; importe: number }[];
@@ -284,6 +287,7 @@ export class PanelService {
     ]);
 
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
+    const devueltosDelEjercicio = await devueltosPendientes({ year: anio });
 
     const ingresos = euros2(
       Number(transaccionesPorTipo.find((t) => t.tipo === TipoTransaccion.INGRESO)?._sum.importe ?? 0),
@@ -358,6 +362,7 @@ export class PanelService {
           total: r._count._all,
           importe: euros2(Number(r._sum.importe ?? 0)),
         })),
+        devueltosPendientes: devueltosDelEjercicio,
         ejercicio: { anio, ingresos, gastos, saldo: euros2(ingresos - gastos) },
         serieMensual: serieDinero,
         porCategoria: transaccionesPorCategoria.map((t) => ({

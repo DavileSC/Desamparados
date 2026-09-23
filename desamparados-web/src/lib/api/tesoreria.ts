@@ -18,6 +18,8 @@ export interface AdminReceipt {
   metodoPago: PaymentMethod | null
   tipo?: ReceiptType
   hermano: { id: number; nombre: string; apellidos: string; numeroHermano: number | null }
+  /** Devuelto y ya reemitido: su recibo nuevo sigue su curso y este no pide nada. */
+  reemitido?: boolean
 }
 
 /** Lo justo para elegir a quién se le emite un recibo: sin DNI ni datos de contacto. */

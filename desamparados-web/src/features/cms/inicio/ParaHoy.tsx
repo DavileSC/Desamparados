@@ -81,12 +81,12 @@ function Fila({ tarea, conBoton, orden }: { tarea: Tarea; conBoton: boolean; ord
 /** Lo que hay que hacer hoy: lo tuyo con botón, lo del resto de la junta sin él. */
 export default function ParaHoy({ tareas, role, orden = 0 }: { tareas: Tarea[]; role?: string; orden?: number }) {
   const { tuyas, deLaJunta } = repartirTareas(tareas, role)
-  const { modo, superficies } = useTemaCms()
+  const { superficies } = useTemaCms()
   // El velo avisa: burdeos si hay algo urgente, neutro si no.
   const tono = tareas.some((t) => t.prioridad === 'urgente') ? 'burdeos' : 'neutro'
 
   return (
-    <Paper component="section" aria-labelledby="para-hoy" sx={{ ...fondoTarjeta(modo, tono, superficies.card), borderRadius: 1.75, height: '100%', ...entrada(orden) }}>
+    <Paper component="section" aria-labelledby="para-hoy" sx={{ ...fondoTarjeta(tono, superficies.card), borderRadius: 1.75, height: '100%', ...entrada(orden) }}>
       <Box
         sx={{
           display: 'flex', gap: { xs: 0.25, sm: 2 }, px: { xs: 2, md: 2.75 }, pt: 2.25, pb: 1.5,

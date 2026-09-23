@@ -25,10 +25,10 @@ export default function ProximosActos({
   // pulsaban el enlace y ExigeRol los expulsaba a /area-hermano, fuera de
   // todo el CMS.
   const veAgenda = role !== undefined && rolesPorRutaCms.agenda.includes(role)
-  const { modo, superficies } = useTemaCms()
+  const { superficies } = useTemaCms()
 
   return (
-    <Paper component="section" aria-labelledby="proximos-actos" sx={{ ...fondoTarjeta(modo, 'oro', superficies.card), borderRadius: 1.75, height: '100%', display: 'flex', flexDirection: 'column', ...entrada(orden) }}>
+    <Paper component="section" aria-labelledby="proximos-actos" sx={{ ...fondoTarjeta('oro', superficies.card), borderRadius: 1.75, height: '100%', display: 'flex', flexDirection: 'column', ...entrada(orden) }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', px: 2.75, pt: 2.25, pb: 1.5 }}>
         <Typography id="proximos-actos" variant="h5" component="h2">Próximos actos</Typography>
         {veAgenda && (

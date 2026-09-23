@@ -10,7 +10,7 @@ import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import { useAuthStore } from '../features/altas/auth/store'
 import { cerrarSesion } from '../features/altas/auth/session'
 import { TemaCmsProvider } from './temaCms'
-import { useTemaCms } from './useTemaCms'
+import { useModoCms, useTemaCms } from './useTemaCms'
 import { superficiesCms } from '../theme/cms'
 import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu } from './cmsNavegacion'
 import { usePanelDeHoy } from './usePanelDeHoy'
@@ -191,8 +191,8 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
  * mirar cuál estaba marcado.
  */
 function InterruptorTema() {
-  const { modo, cambiarModo } = useTemaCms()
-  const oscuro = modo === 'oscuro'
+  const { cambiarModo } = useTemaCms()
+  const oscuro = useModoCms() === 'oscuro'
   return (
     <Box
       component="label"

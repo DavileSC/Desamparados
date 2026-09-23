@@ -58,12 +58,12 @@ function Tarjeta({
   tono?: TonoTarjeta
   children: React.ReactNode
 }) {
-  const { modo, superficies } = useTemaCms()
+  const { superficies } = useTemaCms()
   return (
     <Paper
       component="section"
       sx={{
-        ...fondoTarjeta(modo, tono, superficies.card),
+        ...fondoTarjeta(tono, superficies.card),
         borderRadius: 1.75, p: 2.75, display: 'flex', flexDirection: 'column', gap: 1.75,
         gridColumn: { xs: '1 / -1', lg: `span ${columnas}` },
       }}

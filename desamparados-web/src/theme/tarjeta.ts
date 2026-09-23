@@ -1,4 +1,4 @@
-import type { ModoCms } from './cms'
+import { segunModo, type ModoCms } from './cms'
 
 /**
  * El fondo de las tarjetas del Inicio: la tarjeta lisa y quieta con un velo
@@ -27,19 +27,25 @@ const INTENSIDAD: Record<ModoCms, { velo: number; borde: number }> = {
   claro: { velo: 0.05, borde: 0.18 },
 }
 
-/** Estilos (sx) de una tarjeta con velo de color. `base` es el color de tarjeta del tema. */
-export function fondoTarjeta(modo: ModoCms, tono: TonoTarjeta, base: string) {
+/**
+ * Estilos (sx) de una tarjeta con velo de color. `base` es el color de tarjeta.
+ * Valen para los dos modos a la vez (`light-dark`): el modo lo decide el CMS
+ * sin volver a pintar. `fijo` los ata a un modo, para una pieza que no cambia
+ * con el tema (el camino a la estación, siempre oscuro).
+ */
+export function fondoTarjeta(tono: TonoTarjeta, base: string, fijo?: ModoCms) {
   const rgb = TONO[tono]
   const factor = tono === 'neutro' ? 0.5 : 1
-  const { velo, borde } = INTENSIDAD[modo]
-  const capa = `rgba(${rgb}, ${velo * factor})`
+  const en = (modo: ModoCms, que: 'velo' | 'borde') => `rgba(${rgb}, ${INTENSIDAD[modo][que] * factor})`
+  const segun = (claro: string, oscuro: string) => (fijo ? (fijo === 'claro' ? claro : oscuro) : segunModo(claro, oscuro))
+  const capa = segun(en('claro', 'velo'), en('oscuro', 'velo'))
   return {
     backgroundColor: base,
     // Un degradado de un solo color pone el velo encima del color de la
     // tarjeta sin cambiarlo.
     backgroundImage: `linear-gradient(0deg, ${capa}, ${capa})`,
     border: '1px solid',
-    borderColor: `rgba(${rgb}, ${borde * factor})`,
-    boxShadow: modo === 'claro' ? '0 1px 2px rgba(27, 28, 26, 0.05)' : 'none',
+    borderColor: segun(en('claro', 'borde'), en('oscuro', 'borde')),
+    boxShadow: `0 1px 2px ${segun('rgba(27, 28, 26, 0.05)', 'transparent')}`,
   }
 }

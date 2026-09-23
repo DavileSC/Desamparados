@@ -72,6 +72,7 @@ export default function CifrasPeriodo({ resumen, tipo }: { resumen: ResumenConta
         detalle={<>
           {numero(porCobrar.recibos)} {porCobrar.recibos === 1 ? 'recibo' : 'recibos'}
           {porCobrar.enElBanco > 0 && <>, {eurosResumen(porCobrar.enElBanco)} en el banco</>}
+          {porCobrar.devueltos > 0 && <>, {eurosResumen(porCobrar.devueltos)} devueltos</>}
           {' · '}
           <Link component={RouterLink} to="/cms/tesoreria?estado=PENDIENTE&anio=todos" sx={{ fontWeight: 600 }}>Ver en Tesorería</Link>
         </>}

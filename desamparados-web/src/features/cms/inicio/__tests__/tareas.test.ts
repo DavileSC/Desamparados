@@ -11,6 +11,7 @@ const PANEL = {
       { estado: 'PAGADO', total: 1126, importe: 33780 },
       { estado: 'DEVUELTO', total: 14, importe: 420 },
     ],
+    devueltosPendientes: { total: 14, importe: 420 },
     ejercicio: { anio: 2026, ingresos: 48300, gastos: 35440, saldo: 12860 },
     serieMensual: [],
     porCategoria: [],
@@ -28,7 +29,7 @@ const PANEL = {
 const vacio = {
   ...PANEL,
   censo: { ...PANEL.censo, sinNumeroHermano: 0 },
-  dinero: { ...PANEL.dinero, porEstado: [{ estado: 'PAGADO' as const, total: 1126, importe: 33780 }] },
+  dinero: { ...PANEL.dinero, porEstado: [{ estado: 'PAGADO' as const, total: 1126, importe: 33780 }], devueltosPendientes: { total: 0, importe: 0 } },
   actividad: {
     ...PANEL.actividad,
     noticias: { publicadas: 4, borradores: 0 },

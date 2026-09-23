@@ -893,3 +893,29 @@ test('por HTTP, Contabilidad filtra los apuntes de un recibo y Tesorería trae e
     await e.recoger();
   }
 });
+
+test('una cuota devuelta y reemitida se debe una vez: en impagos, en el panel y en el listado', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    const anio = YEAR - 1;
+    const devuelta = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: 'Cuota devuelta', importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta);
+    await ReciboService.adminUpdateDetalles(devuelta.id, { estado: 'REMESADO' }, e.meta);
+    await ReciboService.adminUpdateDetalles(devuelta.id, { estado: 'DEVUELTO' }, e.meta);
+
+    const deudaDe = async () => (await ReciboService.impagos({ minimo: '1', limit: '100' })).data.find((f) => f.hermano.id === hermano.id);
+    assert.deepEqual((await deudaDe())?.cuotas.map((c) => c.estado), [EstadoPago.DEVUELTO], 'sin reemitir, se debe');
+
+    const reemision = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: 'Cuota devuelta (reemisión)', importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta);
+    const deuda = await deudaDe();
+    assert.deepEqual(deuda?.cuotas.map((c) => c.id), [reemision.id], 'reemitida, cuenta solo la nueva');
+    assert.equal(deuda?.total, 30);
+
+    const listado = await ReciboService.getAdminRecibos({ q: hermano.apellidos, limit: '50' } as never, anio);
+    const fila = (listado.data as { id: number; reemitido: boolean }[]).find((r) => r.id === devuelta.id);
+    assert.equal(fila?.reemitido, true);
+  } finally {
+    await e.recoger();
+  }
+});

@@ -92,7 +92,7 @@ export const designTokens = {
   },
 }
 
-const themeOptions: ThemeOptions = {
+export const themeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
     background: {

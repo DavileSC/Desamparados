@@ -116,7 +116,7 @@ export function contadoresDelPanel(panel?: PanelResponse): Record<ClaveContador,
   return {
     noticiasBorradores: panel?.actividad.noticias.borradores ?? 0,
     hermanosSinNumero: panel?.censo.sinNumeroHermano ?? 0,
-    recibosDevueltos: panel?.dinero.porEstado.find((e) => e.estado === 'DEVUELTO')?.total ?? 0,
+    recibosDevueltos: panel?.dinero.devueltosPendientes?.total ?? 0,
   }
 }
 

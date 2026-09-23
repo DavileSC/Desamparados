@@ -39,7 +39,7 @@ function detalle(r: AdminReceipt): string {
     case 'PENDIENTE': return `Emitido el ${fechaCorta(r.fechaEmision)}`
     case 'REMESADO': return 'En el banco, sin confirmar'
     case 'PAGADO': return r.fechaPago ? `Cobrado el ${fechaCorta(r.fechaPago)}${r.metodoPago ? ` · ${etiquetaMetodo(r.metodoPago)}` : ''}` : 'Cobrado'
-    case 'DEVUELTO': return r.tipo === 'PAPELETA_SITIO' ? 'Devuelto: se reemite en la mesa de reparto' : 'Devuelto: hay que reemitirlo'
+    case 'DEVUELTO': return r.reemitido ? 'Devuelto · ya reemitido' : r.tipo === 'PAPELETA_SITIO' ? 'Devuelto: se reemite en la mesa de reparto' : 'Devuelto: hay que reemitirlo'
     case 'EXENTO': return 'Exento de pago'
     case 'ANULADO': return 'Anulado'
   }
@@ -68,7 +68,8 @@ export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onCo
       {recibos.map((r) => {
         const nombre = `${r.hermano.nombre} ${r.hermano.apellidos}`
         const apagado = r.estado === 'EXENTO' || r.estado === 'ANULADO'
-        const reemitible = r.estado === 'DEVUELTO' && r.tipo !== 'PAPELETA_SITIO'
+        const pendiente = r.estado === 'DEVUELTO' && !r.reemitido
+        const reemitible = pendiente && r.tipo !== 'PAPELETA_SITIO'
         const boton = (texto: string, etiqueta: string, accion: () => void) => (
           <Button
             variant="outlined"
@@ -89,7 +90,7 @@ export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onCo
               px: { xs: 2, sm: 2.75 }, py: 1.75,
               borderBottom: 1, borderColor: 'divider', '&:last-of-type': { borderBottom: 0 },
               // Un devuelto pide que alguien haga algo: se distingue también por el fondo.
-              backgroundColor: r.estado === 'DEVUELTO' ? 'rgba(227,73,72,0.07)' : 'transparent',
+              backgroundColor: pendiente ? 'rgba(227,73,72,0.07)' : 'transparent',
               [enTabla]: { gridTemplateColumns: COLUMNAS, gridTemplateAreas: '"hermano concepto importe estado accion"', columnGap: 2.5, py: 1.5, minHeight: 64 },
             }}
           >

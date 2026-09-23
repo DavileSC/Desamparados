@@ -3,6 +3,7 @@ import { keyframes } from '@mui/material/styles'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { fondoTarjeta } from '../../../theme/tarjeta'
+import { segunModo } from '../../../theme/cms'
 import { numero } from '../contabilidad/formato'
 import { CIFRA, entrada, sinMovimiento, useCuenta } from './animaciones'
 
@@ -32,14 +33,17 @@ const dibujar = keyframes`from { stroke-dasharray: 0 ${CIRCUNFERENCIA} }`
  * cortejo) y, al pie, los últimos años.
  */
 export default function Cortejo({ procesion, orden = 0 }: { procesion: PanelResponse['procesion']; orden?: number }) {
-  const { modo, superficies } = useTemaCms()
-  const tonos = TONOS[modo === 'oscuro' ? 'oscuro' : 'claro']
+  const { superficies } = useTemaCms()
   const puestos = procesion.porPuesto.filter((p) => p.total > 0)
   const total = puestos.reduce((s, p) => s + p.total, 0)
   const totalContado = Math.round(useCuenta(total, 1400))
   const anterior = procesion.porAnio.find((a) => a.anio === procesion.anio - 1)
   const diferencia = anterior ? procesion.papeletas - anterior.total : null
-  const tono = (i: number) => (i === puestos.length - 1 && puestos.length > 1 ? tonos[tonos.length - 1] : tonos[i % (tonos.length - 1)])
+  // El tono de cada trozo, en los dos modos: lo elige el navegador.
+  const tono = (i: number) => {
+    const k = i === puestos.length - 1 && puestos.length > 1 ? TONOS.claro.length - 1 : i % (TONOS.claro.length - 1)
+    return segunModo(TONOS.claro[k], TONOS.oscuro[k])
+  }
 
   // Cada trozo empieza donde acaba la suma de los anteriores.
   const largos = puestos.map((p) => (p.total / total) * CIRCUNFERENCIA)
@@ -54,12 +58,12 @@ export default function Cortejo({ procesion, orden = 0 }: { procesion: PanelResp
     <Paper
       component="section"
       aria-labelledby="cortejo"
-      sx={{ ...fondoTarjeta(modo, 'burdeos', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.75 }, height: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2, containerType: 'inline-size', containerName: 'cortejo', ...entrada(orden) }}
+      sx={{ ...fondoTarjeta('burdeos', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.75 }, height: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2, containerType: 'inline-size', containerName: 'cortejo', ...entrada(orden) }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '4px 16px', flexWrap: 'wrap' }}>
         <Typography id="cortejo" variant="h5" component="h2">El cortejo de {procesion.anio}</Typography>
         {diferencia !== null && diferencia !== 0 && (
-          <Typography variant="body2" sx={{ fontWeight: 600, color: diferencia > 0 ? (modo === 'oscuro' ? '#7fd19b' : '#23703f') : 'text.secondary' }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: diferencia > 0 ? segunModo('#23703f', '#7fd19b') : 'text.secondary' }}>
             {diferencia > 0 ? '+' : '−'}{numero(Math.abs(diferencia))} que en {procesion.anio - 1}
           </Typography>
         )}
@@ -85,7 +89,7 @@ export default function Cortejo({ procesion, orden = 0 }: { procesion: PanelResp
               aria-label={`Papeletas por puesto: ${puestos.map((p) => `${p.etiqueta}, ${p.total}`).join('; ')}`}
               sx={{ width: '100%', height: '100%', transform: 'rotate(-90deg)', display: 'block' }}
             >
-              <circle cx="50" cy="50" r={RADIO} fill="none" stroke={modo === 'oscuro' ? 'rgba(255,255,255,0.07)' : '#efe9e5'} strokeWidth={GROSOR} />
+              <circle cx="50" cy="50" r={RADIO} fill="none" stroke={segunModo('#efe9e5', 'rgba(255,255,255,0.07)')} strokeWidth={GROSOR} />
               {trozos.map((t, i) => (
                 <Box
                   key={t.etiqueta}

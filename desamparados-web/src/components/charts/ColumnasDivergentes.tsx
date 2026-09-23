@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { Box, Typography, useTheme } from '@mui/material'
-import type { GraficasCms } from '../../theme/cms'
+import { brillo, type GraficasCms } from '../../theme/cms'
 import { columna, pasoBonito, pasoEtiquetas } from './ejes'
 import { useAnchoMedido } from './useAnchoMedido'
 import { Degradado, Halo } from './brillo'
@@ -31,7 +31,9 @@ const ABAJO = 42
  * en el mismo lado obligarían a restar a ojo.
  */
 export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, etiquetaAbajo, etiquetaX }: Props) {
-  const theme = useTheme()
+  // Con el tema del CMS, sus variables CSS: valen para los dos modos sin volver a pintar.
+  const tema = useTheme()
+  const colores = (tema as { vars?: { palette: typeof tema.palette } }).vars?.palette ?? tema.palette
   const id = useId().replace(/:/g, '')
   // El dibujo se hace a la medida del hueco: alto fijo, sin escalar (ver useAnchoMedido).
   const { referencia, ancho: ANCHO } = useAnchoMedido()
@@ -90,13 +92,13 @@ export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, eti
         {[techo, suelo].map((marca) => (
           <g key={marca}>
             <line x1={IZQ} y1={Y(marca)} x2={ANCHO - DER} y2={Y(marca)} stroke={paleta.rejilla} strokeWidth="1" strokeDasharray="3 5" />
-            <text x={IZQ - 8} y={Y(marca) + 4} textAnchor="end" fontSize="11" fill={theme.palette.text.secondary}>
+            <text x={IZQ - 8} y={Y(marca) + 4} textAnchor="end" fontSize="11" fill={colores.text.secondary}>
               {marca > 0 ? `+${marca}` : `−${-marca}`}
             </text>
           </g>
         ))}
         <line x1={IZQ} y1={Y(0)} x2={ANCHO - DER} y2={Y(0)} stroke={paleta.cero} strokeWidth="1" />
-        <text x={IZQ - 8} y={Y(0) + 4} textAnchor="end" fontSize="11" fill={theme.palette.text.secondary}>0</text>
+        <text x={IZQ - 8} y={Y(0) + 4} textAnchor="end" fontSize="11" fill={colores.text.secondary}>0</text>
 
         {meses.map((m, i) => {
           const x = IZQ + ranura * i + (ranura - anchoColumna) / 2
@@ -104,18 +106,18 @@ export default function ColumnasDivergentes({ meses, paleta, etiquetaArriba, eti
             <g key={m.mes}>
               {m.arriba > 0 && (
                 <>
-                  <path d={columna(x, Y(0) - 1, Y(m.arriba), anchoColumna)} fill={paleta.entrada} filter={`url(#halo-${id})`} opacity={paleta.brillo * 0.6} />
+                  <path d={columna(x, Y(0) - 1, Y(m.arriba), anchoColumna)} fill={paleta.entrada} filter={`url(#halo-${id})`} style={{ opacity: brillo(paleta.brillo, 0.6) }} />
                   <path data-testid="columna-arriba" d={columna(x, Y(0) - 1, Y(m.arriba), anchoColumna)} fill={`url(#arriba-${id})`} />
                 </>
               )}
               {m.abajo > 0 && (
                 <>
-                  <path d={columna(x, Y(0) + 1, Y(-m.abajo), anchoColumna)} fill={paleta.salida} filter={`url(#halo-${id})`} opacity={paleta.brillo * 0.6} />
+                  <path d={columna(x, Y(0) + 1, Y(-m.abajo), anchoColumna)} fill={paleta.salida} filter={`url(#halo-${id})`} style={{ opacity: brillo(paleta.brillo, 0.6) }} />
                   <path data-testid="columna-abajo" d={columna(x, Y(0) + 1, Y(-m.abajo), anchoColumna)} fill={`url(#abajo-${id})`} />
                 </>
               )}
               {i % pasoX === 0 && (
-                <text x={x + anchoColumna / 2} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={theme.palette.text.secondary}>
+                <text x={x + anchoColumna / 2} y={ALTO - ABAJO + 18} textAnchor="middle" fontSize="11" fill={colores.text.secondary}>
                   {enX(m.mes)}
                 </text>
               )}

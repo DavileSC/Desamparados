@@ -35,6 +35,9 @@ export interface PanelResponse {
   }
   dinero: {
     porEstado: { estado: EstadoRecibo; total: number; importe: number }[]
+    /** Los devueltos del ejercicio que aún no se han reemitido: los que de verdad quedan por cobrar. */
+    /** Opcional: un backend anterior no lo manda, y el CMS no puede romperse por eso (cuenta cero). */
+    devueltosPendientes?: { total: number; importe: number }
     ejercicio: { anio: number; ingresos: number; gastos: number; saldo: number }
     serieMensual: { mes: string; ingresos: number; gastos: number }[]
     porCategoria: { categoria: string; tipo: TipoMovimiento; total: number; importe: number }[]

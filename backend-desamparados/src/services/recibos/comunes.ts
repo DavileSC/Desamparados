@@ -14,6 +14,7 @@ import { HttpError } from '../../utils/error.handle';
 import { CLAVES_EVENTO, datosEvento, type DatosEvento } from '../../domain/datos-procesion.js';
 import { palabrasDeBusqueda } from '../../domain/busqueda-texto.js';
 import { CATEGORIA_COMISIONES, CATEGORIA_DE_RECIBO, CATEGORIA_DEVOLUCIONES } from '../../domain/contabilidad.js';
+import { idsReemitidos, type ClaveRecibo } from '../../domain/reemisiones.js';
 
 export type Tx = Prisma.TransactionClient;
 
@@ -239,4 +240,38 @@ export async function apuntarComisionEnTransaccion(
       reciboId: recibo.id
     }
   });
+}
+
+/**
+ * De estos devueltos, cuáles ya tienen reemisión (ver `domain/reemisiones`).
+ * Se leen solo los recibos de sus hermanos, años y tipos: nunca la tabla entera.
+ */
+export async function reemitidosDe(devueltos: ClaveRecibo[]): Promise<Set<number>> {
+  if (devueltos.length === 0) return new Set();
+  const recibos = await db.recibo.findMany({
+    where: {
+      hermanoId: { in: [...new Set(devueltos.map((d) => d.hermanoId))] },
+      year: { in: [...new Set(devueltos.map((d) => d.year))] },
+      tipo: { in: [...new Set(devueltos.map((d) => d.tipo as TipoRecibo))] },
+    },
+    select: { id: true, hermanoId: true, year: true, tipo: true },
+  });
+  return idsReemitidos(devueltos, recibos);
+}
+
+/**
+ * Los devueltos que siguen pendientes (sin reemisión), con lo que suman: son
+ * dinero por cobrar y lo que Tesorería tiene que reemitir.
+ */
+export async function devueltosPendientes(where: Prisma.ReciboWhereInput = {}): Promise<{ total: number; importe: number }> {
+  const devueltos = await db.recibo.findMany({
+    where: { ...where, estado: EstadoPago.DEVUELTO },
+    select: { id: true, hermanoId: true, year: true, tipo: true, importe: true },
+  });
+  const reemitidos = await reemitidosDe(devueltos);
+  const pendientes = devueltos.filter((d) => !reemitidos.has(d.id));
+  return {
+    total: pendientes.length,
+    importe: Math.round(pendientes.reduce((s, d) => s + Number(d.importe) * 100, 0)) / 100,
+  };
 }

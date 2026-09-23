@@ -1,6 +1,7 @@
 import type { AdminReceiptStatus } from '../../../lib/api/tesoreria'
+import { segunModo } from '../../../theme/cms'
 
-type Tono = { texto: string; fondo: string }
+export type Tono = { texto: string; fondo: string }
 
 export interface EstadoRecibo {
   /** «Pendiente»: el sello de cada recibo. */
@@ -71,6 +72,12 @@ export function accionDeCambio(origen: AdminReceiptStatus, destino: AdminReceipt
   if (destino === 'EXENTO') return 'Eximir de pago'
   if (destino === 'ANULADO') return 'Anular'
   return origen === 'PAGADO' ? 'Devolver el cobro' : 'Devuelto por el banco'
+}
+
+/** El tono de un estado en los dos modos a la vez: lo elige el navegador, sin volver a pintar. */
+export function tonoDeEstado(estado: AdminReceiptStatus): Tono {
+  const { claro, oscuro } = ESTADOS_RECIBO[estado]
+  return { texto: segunModo(claro.texto, oscuro.texto), fondo: segunModo(claro.fondo, oscuro.fondo) }
 }
 
 /** En el orden de los contadores: primero lo que hay que hacer. */

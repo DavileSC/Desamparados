@@ -59,8 +59,8 @@ export interface ResumenContable {
   anterior: { desde: string; hasta: string; ingresos: number; gastos: number } | null
   serie: { granularidad: 'mes' | 'anio'; puntos: { clave: string; ingresos: number; gastos: number }[] }
   categorias: { id: number; nombre: string; tipo: TipoApunte; total: number; apuntes: number }[]
-  /** Lo que Tesorería tiene aún por cobrar (pendiente y en el banco), de todos los años y sin los filtros. */
-  porCobrar: { importe: number; recibos: number; enElBanco: number }
+  /** Lo que Tesorería tiene aún por cobrar (pendiente, en el banco y devuelto sin reemitir), de todos los años y sin los filtros. */
+  porCobrar: { importe: number; recibos: number; enElBanco: number; devueltos: number }
 }
 
 export function paramsFiltros(filtros: FiltrosContables): URLSearchParams {

@@ -1,9 +1,9 @@
 import { Box, Paper, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 import { Link } from 'react-router-dom'
 import type { PanelResponse, TipoEvento } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { fondoTarjeta } from '../../../theme/tarjeta'
+import { segunModo } from '../../../theme/cms'
 import { rolesPorRutaCms } from '../../../app/cmsNavegacion'
 import { entrada } from './animaciones'
 import { TIPOS } from '../../inicio/agenda'
@@ -24,12 +24,16 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
   hoy?: Date
   orden?: number
 }) {
-  const { modo, superficies } = useTemaCms()
-  const oscuro = modo === 'oscuro'
+  const { superficies } = useTemaCms()
   // Cada tipo con su color de la agenda: el día, velado de ese color; el texto, del color entero en claro.
+  // (en los dos modos a la vez: lo elige el navegador, sin volver a pintar).
   const color = (tipo: TipoEvento) => {
-    const tono = oscuro ? TIPOS[tipo].oscuro : TIPOS[tipo].color
-    return { fondo: alpha(tono, oscuro ? 0.26 : 0.13), texto: oscuro ? '#fff' : tono, muestra: tono }
+    const { color: claro, oscuro } = TIPOS[tipo]
+    return {
+      fondo: segunModo(`color-mix(in srgb, ${claro} 13%, transparent)`, `color-mix(in srgb, ${oscuro} 26%, transparent)`),
+      texto: segunModo(claro, '#fff'),
+      muestra: segunModo(claro, oscuro),
+    }
   }
 
   const [anio, mes] = calendario.mes.split('-').map(Number)
@@ -48,7 +52,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
   const titulo = `${MESES[mes - 1][0].toUpperCase()}${MESES[mes - 1].slice(1)} de ${anio}`
 
   return (
-    <Paper component="section" aria-labelledby="calendario-mes" sx={{ ...fondoTarjeta(modo, 'rosa', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.5 }, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, containerType: 'inline-size', containerName: 'calendario', ...entrada(orden) }}>
+    <Paper component="section" aria-labelledby="calendario-mes" sx={{ ...fondoTarjeta('rosa', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.5 }, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, containerType: 'inline-size', containerName: 'calendario', ...entrada(orden) }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
         <Typography id="calendario-mes" variant="h5" component="h2">{titulo}</Typography>
         {veAgenda && (
@@ -87,9 +91,9 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
                 p: '4px 5px',
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0,
                 fontSize: 12.5,
-                backgroundColor: tipo ? color(tipo).fondo : oscuro ? 'rgba(255,255,255,0.035)' : '#f4f2ee',
+                backgroundColor: tipo ? color(tipo).fondo : segunModo('#f4f2ee', 'rgba(255,255,255,0.035)'),
                 color: tipo ? color(tipo).texto : 'text.secondary',
-                outline: esHoy ? `1.5px solid ${oscuro ? '#ffb3b4' : '#1b1c1a'}` : hayReparto ? `1px dashed ${oscuro ? 'rgba(255,255,255,0.45)' : '#7b757a'}` : 'none',
+                outline: esHoy ? `1.5px solid ${segunModo('#1b1c1a', '#ffb3b4')}` : hayReparto ? `1px dashed ${segunModo('#7b757a', 'rgba(255,255,255,0.45)')}` : 'none',
                 outlineOffset: -1,
                 ...entrada(orden + semana),
               }}
@@ -117,7 +121,7 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
         ))}
         {reparto.size > 0 && (
           <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-            <Box component="span" sx={{ width: 10, height: 10, borderRadius: '3px', border: `1px dashed ${oscuro ? 'rgba(255,255,255,0.6)' : '#7b757a'}` }} />
+            <Box component="span" sx={{ width: 10, height: 10, borderRadius: '3px', border: `1px dashed ${segunModo('#7b757a', 'rgba(255,255,255,0.6)')}` }} />
             Reparto de papeletas
           </Box>
         )}
