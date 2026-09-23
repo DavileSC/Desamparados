@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
+import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined'
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
@@ -74,6 +75,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
   { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: DirectionsWalkOutlinedIcon },
+  // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
+  { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y enseres', icono: HowToRegOutlinedIcon },
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: Inventory2OutlinedIcon },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon, contador: { de: 'recibosDevueltos', tono: 'error' } },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
@@ -99,6 +102,8 @@ export const rolesPorRutaCms = {
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   procesion: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
+  // Los mismos que pueden inscribir y cobrar en el backend (rolesMesaReparto).
+  'procesion/mesa': ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'],
   tesoreria: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
   inventario: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'],
   contabilidad: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],

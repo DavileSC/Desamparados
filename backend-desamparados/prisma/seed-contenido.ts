@@ -413,7 +413,7 @@ async function sembrarAlbaceria() {
 
   for (const prenda of PRENDAS) {
     await db.prenda.upsert({
-      where: { numero: prenda.numero },
+      where: { tipo_numero: { tipo: prenda.tipo, numero: prenda.numero } },
       update: {},
       create: prenda,
     });

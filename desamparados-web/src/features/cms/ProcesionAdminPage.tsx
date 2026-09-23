@@ -9,6 +9,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../altas/auth/store'
+import { rolesPorRutaCms } from '../../app/cmsNavegacion'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import {
   cambiarPlazo, crearTurno, eliminarTurno, plazoDePapeletas, turnosDeReparto,
@@ -133,7 +134,8 @@ export default function ProcesionAdminPage() {
     <>
       <Helmet><title>Procesión | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Procesión" subtitulo={plazo ? `Días de reparto y solicitud de papeletas de ${plazo.year}.` : undefined}>
-        {puedeCambiar && <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setDia(DIA_VACIO); setErrorDia(null); setCreando(true) }}>Nuevo día de reparto</Button>}
+        {rolesPorRutaCms['procesion/mesa'].includes(role) && <Button variant="outlined" component={Link} to="/cms/procesion/mesa">Abrir la mesa</Button>}
+        {puedeCambiar &&<Button variant="contained" startIcon={<AddIcon />} onClick={() => { setDia(DIA_VACIO); setErrorDia(null); setCreando(true) }}>Nuevo día de reparto</Button>}
       </CabeceraSeccion>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}

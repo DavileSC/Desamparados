@@ -123,6 +123,12 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
   const { data } = usePanelDeHoy()
   const contadores = contadoresDelPanel(data)
   const visibles = itemsMenu.filter((item) => role && item.roles.includes(role))
+  // La entrada que más se ajusta a la dirección: en /cms/procesion/mesa, «Mesa» y no también «Procesión».
+  const hrefActivo = location.pathname === '/cms'
+    ? '/cms'
+    : visibles
+      .filter((item) => item.href !== '/cms' && (location.pathname === item.href || location.pathname.startsWith(`${item.href}/`)))
+      .reduce<string | null>((mejor, item) => (!mejor || item.href.length > mejor.length ? item.href : mejor), null)
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -144,9 +150,7 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
             </Typography>
             <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {items.map((item) => {
-                const activo = item.href === '/cms'
-                  ? location.pathname === '/cms'
-                  : location.pathname.startsWith(item.href)
+                const activo = item.href === hrefActivo
                 const Icono = item.icono
                 const valor = item.contador ? contadores[item.contador.de] : 0
                 return (

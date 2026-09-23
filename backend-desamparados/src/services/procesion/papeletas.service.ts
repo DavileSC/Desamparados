@@ -20,6 +20,8 @@ import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { transactionWithRetry } from '../../utils/transaction-retry.js';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { puedeTransicionar } from '../../domain/recibo-estados.js';
+import { alturaHombroEnCm, normalizarNumeroPrenda, pagaAlquiler } from '../../domain/mesa-procesion.js';
+import { prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida } from './ropa.js';
 import {
   PRECIO_ALQUILER_POR_DEFECTO,
   PRECIO_PAPELETA_POR_DEFECTO,
@@ -30,6 +32,9 @@ import {
 } from '../../domain/datos-procesion.js';
 
 const NOTA_ANULACION = 'Anulado por devolución de la papeleta de sitio.';
+
+/** Un número de prenda de la mesa: sin espacios de más, y vacío es nada. */
+const limpio = (texto: string | null | undefined) => (texto?.trim() ? normalizarNumeroPrenda(texto) : null);
 
 export class PapeletasService {
 
@@ -62,6 +67,12 @@ export class PapeletasService {
    * nadie ha decidido. El valor por defecto solo cuenta si la clave no existe.
    */
   static async calcularImportePapeleta(tieneTunicaPropia: boolean): Promise<number> {
+    const { papeleta, alquiler } = await PapeletasService.precios();
+    return importePapeleta(papeleta, alquiler, tieneTunicaPropia);
+  }
+
+  /** El precio de la papeleta y el del alquiler de túnica, de la configuración. */
+  static async precios(): Promise<{ papeleta: number; alquiler: number }> {
     const [precioBaseConfig, precioAlquilerConfig] = await Promise.all([
       db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } }),
       db.configuracion.findUnique({ where: { key: 'precio_alquiler_tunica' } })
@@ -75,8 +86,7 @@ export class PapeletasService {
     if (!alquiler.ok) {
       throw new HttpError(`El precio del alquiler de túnica configurado («${alquiler.crudo}») no es un importe válido. Corrígelo en la configuración antes de inscribir.`, 409);
     }
-
-    return importePapeleta(base.valor, alquiler.valor, tieneTunicaPropia);
+    return { papeleta: base.valor, alquiler: alquiler.valor };
   }
 
   /**
@@ -95,7 +105,22 @@ export class PapeletasService {
     });
     if (!hermano) throw new NotFoundError('No se encontró al hermano para calcular el importe.');
 
-    const importeFinal = await PapeletasService.calcularImportePapeleta(hermano.tieneTunicaPropia);
+    // La altura de hombro, antes de tocar nada: si no se entiende, no se cobra.
+    let alturaHombro: number | undefined;
+    if (data.alturaHombro !== undefined && data.alturaHombro.trim() !== '') {
+      const cm = alturaHombroEnCm(data.alturaHombro);
+      if (cm === null) throw new HttpError(`No se entiende la altura de hombro «${data.alturaHombro}». Escríbela en metros (1,45) o en centímetros (145).`);
+      alturaHombro = cm;
+    }
+
+    // Con la mesa, el alquiler lo decide de dónde sale la túnica; sin ella, la ficha.
+    const { papeleta: precioBase, alquiler: precioAlquiler } = await PapeletasService.precios();
+    const importeFinal = importePapeleta(precioBase, precioAlquiler, !pagaAlquiler(data.origenTunica, hermano.tieneTunicaPropia));
+    const numeros = {
+      numTunicaAsignada: data.origenTunica && data.origenTunica !== 'ROPERO' ? null : limpio(data.numTunicaAsignada),
+      numCapiroteAsignado: limpio(data.numCapiroteAsignado),
+      numFaraonaAsignada: limpio(data.numFaraonaAsignada),
+    };
     // 0 € nace EXENTO, sin asiento contable: ver estadoReciboPapeleta.
     const estadoRecibo = estadoReciboPapeleta(importeFinal);
     const cobrado = estadoRecibo === EstadoPago.PAGADO;
@@ -111,15 +136,37 @@ export class PapeletasService {
       });
       if (existe) throw new HttpError('Este hermano ya tiene papeleta este año.', 409);
 
-      if (data.citaId) {
-        const cita = await tx.cita.findUnique({ where: { id: data.citaId } });
+      // Quien pidió día y viene, cierra su cita aunque la mesa no la señale:
+      // así no le llega luego el «no viniste».
+      let citaId = data.citaId;
+      if (citaId) {
+        const cita = await tx.cita.findUnique({ where: { id: citaId } });
         if (!cita || cita.hermanoId !== data.hermanoId) {
           throw new HttpError('La cita no pertenece al hermano indicado.');
         }
         if (cita.estado !== EstadoCita.RESERVADA) {
           throw new HttpError('La cita ya no está disponible para esta inscripción.');
         }
+      } else {
+        const reservada = await tx.cita.findFirst({
+          where: { hermanoId: data.hermanoId, estado: EstadoCita.RESERVADA, papeleta: null },
+          orderBy: { id: 'desc' },
+          select: { id: true },
+        });
+        citaId = reservada?.id;
       }
+
+      // La ropa del ropero, prestada a esta persona (o nada, si algo no cuadra).
+      if (data.origenTunica) {
+        await prestarRopaEnTransaccion(tx, data.hermanoId, ropaPedida({ ...data, ...numeros }));
+      }
+
+      // Lo que la mesa sabe ahora de la persona, a su ficha.
+      const ficha: Prisma.HermanoUpdateInput = {};
+      if (alturaHombro !== undefined) ficha.alturaHombro = alturaHombro;
+      if (data.origenTunica === 'PROPIA') ficha.tieneTunicaPropia = true;
+      if (data.origenTunica === 'ROPERO') ficha.tieneTunicaPropia = false;
+      if (Object.keys(ficha).length > 0) await tx.hermano.update({ where: { id: data.hermanoId }, data: ficha });
 
       // Si ya se le anuló una papeleta este año, su recibo sigue ocupando el
       // concepto: la nueva se emite como reemisión (ver conceptoPapeleta).
@@ -148,15 +195,15 @@ export class PapeletasService {
           year: yearActual,
           puesto: data.puesto,
           tramo: data.tramo,
-          numTunicaAsignada: data.numTunicaAsignada,
-          numCapiroteAsignado: data.numCapiroteAsignado,
+          ...numeros,
+          origenTunica: data.origenTunica ?? null,
           observaciones: data.observaciones,
 
           hermanoId: data.hermanoId,
           reciboId: recibo.id,
 
           // Si venía con cita, guardamos el link para historial
-          citaId: data.citaId ?? undefined
+          citaId: citaId ?? undefined
         }
       });
 
@@ -177,9 +224,9 @@ export class PapeletasService {
       }
 
       // 4. Si había cita previa, la cerramos
-      if (data.citaId) {
+      if (citaId) {
         await tx.cita.update({
-          where: { id: data.citaId },
+          where: { id: citaId },
           data: { estado: EstadoCita.ATENDIDA }
         });
       }
@@ -196,7 +243,13 @@ export class PapeletasService {
         importe: String(result.recibo.importe),
         estado: result.recibo.estado,
         metodoPago: result.recibo.metodoPago,
-        citaId: data.citaId ?? null
+        citaId: result.papeleta.citaId,
+        puesto: result.papeleta.puesto,
+        origenTunica: result.papeleta.origenTunica,
+        tunica: result.papeleta.numTunicaAsignada,
+        capirote: result.papeleta.numCapiroteAsignado,
+        faraona: result.papeleta.numFaraonaAsignada,
+        ...(alturaHombro !== undefined && { alturaHombro })
       }
     });
 
@@ -263,6 +316,9 @@ export class PapeletasService {
         // EXENTO, o ya DEVUELTO/ANULADO: estados finales, solo se anota el motivo.
         await tx.recibo.update({ where: { id: recibo.id }, data: { observaciones } });
       }
+
+      // La ropa que se le prestó con esta papeleta, de vuelta al ropero.
+      await recogerRopaEnTransaccion(tx, papeleta.hermanoId, papeleta);
 
       // Libera la cita y borra la papeleta (hueco en la procesión y clave [hermano, año]).
       await retirarPapeletaEnTransaccion(tx, recibo.id);

@@ -35,6 +35,9 @@ export const ACCIONES_AUDITORIA = {
   CATEGORIA_REACTIVAR: 'CATEGORIA_REACTIVAR',
   PAPELETA_ANULAR: 'PAPELETA_ANULAR',
   INSCRIPCION_FACTURAR: 'INSCRIPCION_FACTURAR',
+  // La mesa de la procesión: alta en el momento y corrección de una papeleta
+  MESA_ALTA: 'MESA_ALTA',
+  PAPELETA_EDITAR: 'PAPELETA_EDITAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',

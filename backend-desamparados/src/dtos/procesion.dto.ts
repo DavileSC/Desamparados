@@ -25,9 +25,21 @@ export interface CrearInscripcionManualDto {
 
   // --- DATOS ROPA (ALBACERÍA) ---
   // Lo que se lleva puesto en ese momento
-  numTunicaAsignada?: string;   // Ej: "T-045"
-  numCapiroteAsignado?: string; // Ej: "C-12"
-  
+  numTunicaAsignada?: string;   // Ej: "145-31"
+  numCapiroteAsignado?: string; // Ej: "150"
+  numFaraonaAsignada?: string;  // Ej: "21M"
+
+  /**
+   * De dónde sale la túnica. Con él, la ropa se asigna en el ropero (queda
+   * prestada a la persona) y el alquiler solo se cobra si es del ropero. Sin
+   * él, la inscripción de siempre: la ropa como texto y el alquiler según la ficha.
+   */
+  origenTunica?: 'ROPERO' | 'PROPIA' | 'NINGUNA';
+  /** Prendas que no están en el ropero y se dan de alta al asignarlas. */
+  crearPrendas?: ('TUNICA' | 'CAPIROTE' | 'FARAONA')[];
+  /** La altura de hombro dictada al tallar («1,45» o «145»); se guarda en la ficha. */
+  alturaHombro?: string;
+
   observaciones?: string;
 }
 

@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { textoRequerido, paginacionQuery } from '../config/common.js';
+import { textoRequerido, paginacionQuery, textoOpcional, email, telefono, dni } from '../config/common.js';
 import { esFechaValida, instanteLimiteAusencias } from '../domain/datos-procesion.js';
 
 const metodoPagoSchema = type("'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA'");
@@ -8,6 +8,15 @@ const metodoPagoSchema = type("'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA
 const idCuerpo = type("number.integer > 0").describe("un identificador válido");
 
 const fechaTexto = type("string").narrow((s) => esFechaValida(s)).describe("una fecha válida");
+
+// El número de una prenda como lo escribe la mesa: «145-31», «150», «21M».
+const numeroPrenda = type("string <= 20").matching(/^[^<>]*$/).describe("un número de prenda de 20 caracteres como mucho");
+const tipoRopa = type("'TUNICA' | 'CAPIROTE' | 'FARAONA'");
+// «1,45», «1.5» o «145»: la convierte el servicio (alturaHombroEnCm).
+const alturaHombro = type("string <= 8").describe("una altura de hombro");
+const dia = type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha válida (AAAA-MM-DD)");
+const nombrePropio = type("string <= 80").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("un texto de 80 caracteres como mucho, sin «<» ni «>»");
+const apellidoOpcional = type("string <= 80").matching(/^[^<>]*$/).describe("un apellido sin «<» ni «>»");
 
 // 1. Esquema para el Hermano (Pedir Cita)
 export const avisarAsistenciaSchema = type({
@@ -28,8 +37,12 @@ export const inscribirManualSchema = type({
         puesto: textoRequerido,
 
         "tramo?": "string",
-        "numTunicaAsignada?": "string",
-        "numCapiroteAsignado?": "string",
+        "numTunicaAsignada?": numeroPrenda,
+        "numCapiroteAsignado?": numeroPrenda,
+        "numFaraonaAsignada?": numeroPrenda,
+        "origenTunica?": "'ROPERO' | 'PROPIA' | 'NINGUNA'",
+        "crearPrendas?": tipoRopa.array(),
+        "alturaHombro?": alturaHombro,
         "observaciones?": "string",
         "citaId?": idCuerpo
     }
@@ -81,5 +94,76 @@ export const plazoPapeletasSchema = type({
         abierto: "boolean",
         "avisar?": "boolean",
         "borradorNoticia?": "boolean"
+    }
+});
+
+// ==========================================
+//  LA MESA DE LA PROCESIÓN
+// ==========================================
+
+export const mesaBuscarSchema = type({
+    query: { q: type("string <= 100") }
+});
+
+export const mesaPrendasSchema = type({
+    query: { tipo: tipoRopa, q: numeroPrenda }
+});
+
+export const mesaListadoSchema = type({
+    query: {
+        "year?": type("string").matching(/^\d{4}$/),
+        "q?": type("string <= 100"),
+        "puesto?": type("string <= 80"),
+    }
+});
+
+// Alta en el momento. Un adulto trae DNI, correo y teléfono (se le abre la
+// cuenta); un menor, su tutor: uno del censo o uno nuevo, que abre la cuenta.
+export const mesaAltaSchema = type({
+    body: {
+        nombre: nombrePropio,
+        primerApellido: nombrePropio,
+        "segundoApellido?": apellidoOpcional,
+        fechaNacimiento: dia,
+        "sexo?": "'HOMBRE' | 'MUJER'",
+        "telefono?": telefono,
+        "email?": email,
+        "dni?": dni,
+        "parentesco?": "'HIJO' | 'SOBRINO' | 'NIETO' | 'AHIJADO' | 'OTRO'",
+        // El tutor de un menor: uno del censo o uno nuevo (solo la cuenta).
+        "tutorHermanoId?": idCuerpo,
+        "tutorNuevo?": {
+            nombre: nombrePropio,
+            primerApellido: nombrePropio,
+            "segundoApellido?": apellidoOpcional,
+            dni: dni,
+            telefono: telefono,
+            email: email,
+        },
+    }
+});
+
+// «Editar antes de guardar»: los datos que la mesa comprueba con la persona.
+export const mesaCorregirSchema = type({
+    body: {
+        "nombre?": nombrePropio,
+        "primerApellido?": nombrePropio,
+        "segundoApellido?": apellidoOpcional.or("null"),
+        "fechaNacimiento?": dia,
+        "telefono?": type(telefono).or("''").or("null"),
+        "email?": type(email).or("''").or("null"),
+        "alturaHombro?": alturaHombro.or("null"),
+    }
+});
+
+export const mesaEditarPapeletaSchema = type({
+    body: {
+        "puesto?": textoRequerido,
+        "tramo?": textoOpcional.or("null"),
+        "observaciones?": type("string <= 500").matching(/^[^<>]*$/).or("null"),
+        "numTunicaAsignada?": numeroPrenda.or("null"),
+        "numCapiroteAsignado?": numeroPrenda.or("null"),
+        "numFaraonaAsignada?": numeroPrenda.or("null"),
+        "crearPrendas?": tipoRopa.array(),
     }
 });

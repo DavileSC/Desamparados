@@ -1,5 +1,5 @@
 import db from '../config/db';
-import { Prisma, EstadoPrenda } from '@prisma/client';
+import { Prisma, EstadoPrenda, TipoPrenda } from '@prisma/client';
 import { CreateEnserDto, UpdateEnserDto, EnserFilterDto, CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/inventario.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
@@ -12,6 +12,11 @@ interface ConsultaPaginada {
   page?: unknown;
   limit?: unknown;
 }
+
+/** «Ya hay una túnica con el número…»: el tipo, con su artículo. */
+const NOMBRE_TIPO: Record<TipoPrenda, string> = {
+  TUNICA: 'una túnica', CAPIROTE: 'un capirote', FARAONA: 'una faraona', CAPA: 'una capa', OTRO: 'una prenda',
+};
 
 export class InventarioService {
 
@@ -196,8 +201,9 @@ export class InventarioService {
   }
 
   static async createPrenda(data: CreatePrendaDto) {
-    const existe = await db.prenda.findUnique({ where: { numero: data.numero } });
-    if (existe) throw new HttpError(`El número de prenda ${data.numero} ya existe.`);
+    // Único dentro de su tipo: el capirote 18 y la faraona 18 conviven.
+    const existe = await db.prenda.findUnique({ where: { tipo_numero: { tipo: data.tipo, numero: data.numero } } });
+    if (existe) throw new HttpError(`Ya hay ${NOMBRE_TIPO[data.tipo]} con el número ${data.numero}.`);
 
     return await db.prenda.create({
       data: {
@@ -227,9 +233,11 @@ export class InventarioService {
       }
     }
 
-    if (data.numero) {
-      const existe = await db.prenda.findUnique({ where: { numero: data.numero } });
-      if (existe && existe.id !== id) throw new HttpError(`El número ${data.numero} ya está en uso.`);
+    if (data.numero || data.tipo) {
+      const tipo = data.tipo ?? actual.tipo;
+      const numero = data.numero ?? actual.numero;
+      const existe = await db.prenda.findUnique({ where: { tipo_numero: { tipo, numero } } });
+      if (existe && existe.id !== id) throw new HttpError(`Ya hay ${NOMBRE_TIPO[tipo]} con el número ${numero}.`);
     }
     return await db.prenda.update({
       where: { id },

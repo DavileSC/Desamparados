@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ProcesionController } from '../controllers/procesion.controller.js';
+import { MesaController } from '../controllers/mesa.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';
@@ -15,7 +16,13 @@ import {
   crearTurnoSchema,
   procesarAusenciasSchema,
   misPapeletasQuerySchema,
-  plazoPapeletasSchema
+  plazoPapeletasSchema,
+  mesaBuscarSchema,
+  mesaPrendasSchema,
+  mesaListadoSchema,
+  mesaAltaSchema,
+  mesaCorregirSchema,
+  mesaEditarPapeletaSchema
 } from '../schemas/procesion.schema.js';
 
 const procesionRouter = Router();
@@ -41,6 +48,24 @@ procesionRouter.get('/mis-papeletas', validate(misPapeletasQuerySchema), Procesi
 procesionRouter.get('/admin/hoy', checkRole(rolesMesaReparto), ProcesionController.getListadoHoy);
 procesionRouter.post('/admin/inscribir', checkRole(rolesMesaReparto), validate(inscribirManualSchema), ProcesionController.inscribirManual);
 procesionRouter.delete('/admin/papeletas/:id/anular', checkRole(rolesMesaReparto), validateId, ProcesionController.anularPapeleta);
+
+// ==========================================
+//  ZONA ADMIN (LA MESA DE LA PROCESIÓN)
+// ==========================================
+// Buscar a la persona, darla de alta si no está, corregir sus datos, ver la
+// ropa que se le propone y corregir una papeleta ya hecha. Apuntar y cobrar
+// es `/admin/inscribir`, de arriba.
+const validateIdMesa = validate(type({ params: { id: idParam } }));
+procesionRouter.get('/admin/mesa/apuntados', checkRole(rolesMesaReparto), validate(mesaListadoSchema), MesaController.listado);
+procesionRouter.get('/admin/mesa/personas', checkRole(rolesMesaReparto), validate(mesaBuscarSchema), MesaController.buscar);
+procesionRouter.get('/admin/mesa/esperados', checkRole(rolesMesaReparto), MesaController.esperados);
+procesionRouter.get('/admin/mesa/prendas', checkRole(rolesMesaReparto), validate(mesaPrendasSchema), MesaController.prendas);
+procesionRouter.post('/admin/mesa/personas', checkRole(rolesMesaReparto), validate(mesaAltaSchema), MesaController.alta);
+procesionRouter.get('/admin/mesa/personas/:id', checkRole(rolesMesaReparto), validateIdMesa, MesaController.ficha);
+procesionRouter.patch('/admin/mesa/personas/:id', checkRole(rolesMesaReparto), validate(type({ params: { id: idParam } }).and(mesaCorregirSchema)), MesaController.corregir);
+// Reactivar una baja o aprobar una solicitud es cosa del censo: Secretaría.
+procesionRouter.post('/admin/mesa/personas/:id/activar', checkRole([Role.ADMIN, Role.SECRETARIA]), validateIdMesa, MesaController.activar);
+procesionRouter.patch('/admin/papeletas/:id', checkRole(rolesMesaReparto), validate(type({ params: { id: idParam } }).and(mesaEditarPapeletaSchema)), MesaController.editarPapeleta);
 
 // ==========================================
 //  ZONA ADMIN (LISTADOS Y MANTENIMIENTO)

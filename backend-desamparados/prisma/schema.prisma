@@ -419,6 +419,11 @@ model PapeletaSitio {
   // ASIGNACIÓN DE MATERIAL (ROPA QUE SE LLEVA ESE AÑO)
   numTunicaAsignada   String? // Ej: "140-05" (Código inventario)
   numCapiroteAsignado String? // Ej: "135"
+  /// La faraona de los niños de guardería, numerada aparte de los capirotes.
+  numFaraonaAsignada  String?
+  /// De dónde sale la túnica: del ropero (se cobra el alquiler), propia o
+  /// ninguna (mantilla). Null en las papeletas de antes de la mesa.
+  origenTunica        OrigenTunica?
   observaciones       String?
 
   // RELACIONES
@@ -439,6 +444,12 @@ model PapeletaSitio {
   // Restricción: Un hermano solo sale una vez por año
   @@unique([hermanoId, year])
   @@index([year])
+}
+
+enum OrigenTunica {
+  ROPERO
+  PROPIA
+  NINGUNA
 }
 
 // ---------------------------------------------------------
@@ -496,7 +507,9 @@ model Enser {
 // 2. EL ROPERO (Gestión Unitaria: Túnicas, Capirotes, Faraonas)
 model Prenda {
   id            Int          @id @default(autoincrement())
-  numero        String       @unique // Ej: "TUN-014", "CAP-102", "FAR-005"
+  /// Único dentro de su tipo: capirotes y faraonas se numeran cada uno desde
+  /// el 1, y el capirote 18 y la faraona 18 son prendas distintas.
+  numero        String // Ej: "145-31" (túnica), "150" (capirote), "21M" (faraona)
   tipo          TipoPrenda // Enum a crear: TUNICA, CAPIROTE, FARAONA, CAPA
   talla         String? // Ej: "1.75m", "XL"
   estado        EstadoPrenda @default(DISPONIBLE) // Enum: DISPONIBLE, PRESTADA, TALLER, BAJA
@@ -506,6 +519,8 @@ model Prenda {
   hermanoId       Int?
   hermano         Hermano?  @relation(fields: [hermanoId], references: [id])
   fechaAsignacion DateTime?
+
+  @@unique([tipo, numero])
 }
 
 enum TipoPrenda {
