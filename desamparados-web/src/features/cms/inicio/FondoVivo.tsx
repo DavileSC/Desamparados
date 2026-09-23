@@ -4,7 +4,7 @@ import { useTemaCms } from '../../../app/useTemaCms'
 
 /**
  * El fondo del Inicio: luz de cera en la penumbra. Tres focos burdeos, muy
- * difuminados, que se desplazan despacio detrás de las tarjetas y respiran
+ * difuminados, siempre en movimiento detrás de las tarjetas, que respiran
  * como la llama de un cirio. Igual en claro que en oscuro; en claro, con la
  * luz algo más contenida para que sobre el lienzo se lea como color.
  *
@@ -13,22 +13,23 @@ import { useTemaCms } from '../../../app/useTemaCms'
  */
 const deriva = keyframes`
   0% { transform: translate3d(0, 0, 0) scale(1) }
-  33% { transform: translate3d(6vw, -4vh, 0) scale(1.08) }
-  66% { transform: translate3d(-4vw, 5vh, 0) scale(.94) }
+  25% { transform: translate3d(14vw, -10vh, 0) scale(1.15) }
+  50% { transform: translate3d(4vw, 12vh, 0) scale(.9) }
+  75% { transform: translate3d(-12vw, 4vh, 0) scale(1.1) }
   100% { transform: translate3d(0, 0, 0) scale(1) }
 `
 const respira = keyframes`
-  0%, 100% { opacity: .75 }
+  0%, 100% { opacity: .6 }
   18% { opacity: .95 }
-  26% { opacity: .82 }
+  26% { opacity: .72 }
   55% { opacity: 1 }
-  70% { opacity: .86 }
+  70% { opacity: .78 }
 `
 
 const FOCOS = [
-  { arriba: '-12%', izquierda: '55%', tam: '62vmax', color: '160, 61, 68', deriva: 46, respira: 7, retraso: 0 },
-  { arriba: '45%', izquierda: '-18%', tam: '52vmax', color: '110, 24, 34', deriva: 58, respira: 9, retraso: -14 },
-  { arriba: '70%', izquierda: '60%', tam: '44vmax', color: '240, 138, 147', deriva: 52, respira: 8, retraso: -30 },
+  { arriba: '-12%', izquierda: '55%', tam: '62vmax', color: '160, 61, 68', deriva: 19, respira: 5, retraso: 0 },
+  { arriba: '45%', izquierda: '-18%', tam: '52vmax', color: '110, 24, 34', deriva: 24, respira: 6.5, retraso: -8 },
+  { arriba: '70%', izquierda: '60%', tam: '44vmax', color: '240, 138, 147', deriva: 21, respira: 5.5, retraso: -15 },
 ]
 
 export default function FondoVivo() {

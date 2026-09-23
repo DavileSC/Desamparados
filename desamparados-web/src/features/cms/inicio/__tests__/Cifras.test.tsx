@@ -33,6 +33,35 @@ describe('Cifras', () => {
     expect(screen.getByText('420 €')).toBeInTheDocument()
   })
 
+  it('en hermanos, las altas y bajas de cada mes y el cambio neto en doce meses', () => {
+    const conMovimientos = {
+      ...PANEL,
+      censo: { ...PANEL.censo, movimientosMensuales: [{ mes: '2026-08', altas: 5, bajas: 1 }, { mes: '2026-09', altas: 2, bajas: 0 }] },
+    }
+    renderWithProviders(<TemaCmsProvider><Cifras panel={conMovimientos} /></TemaCmsProvider>)
+    expect(screen.getByRole('img', { name: /ago, 5 altas y 1 bajas; sep, 2 altas y 0 bajas/ })).toBeInTheDocument()
+    expect(screen.getByText('+22 en 12 meses', { exact: false })).toBeInTheDocument()
+  })
+
+  it('la curva del saldo recorre el ejercicio y acaba en la misma cifra que la baldosa', () => {
+    const conSerie = {
+      ...PANEL,
+      dinero: {
+        ...PANEL.dinero,
+        ejercicio: { anio: 2026, ingresos: 300, gastos: 100, saldo: 200 },
+        // Diciembre del año anterior no cuenta: es de otro ejercicio.
+        serieMensual: [
+          { mes: '2025-12', ingresos: 5000, gastos: 0 },
+          { mes: '2026-01', ingresos: 100, gastos: 50 },
+          { mes: '2026-02', ingresos: 200, gastos: 50 },
+        ],
+      },
+    }
+    renderWithProviders(<TemaCmsProvider><Cifras panel={conSerie} /></TemaCmsProvider>)
+    expect(screen.getByText('1 ene · 0 €')).toBeInTheDocument()
+    expect(screen.getByText('feb · 200 €')).toBeInTheDocument()
+  })
+
   // El pie de noticias y publicaciones se mudó a «Próximos actos»: suelto bajo
   // las cifras, y sin título, parecía un resto. Sus tests se fueron con él.
   it('ya no lleva el pie de noticias y publicaciones', () => {

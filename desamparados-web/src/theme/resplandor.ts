@@ -28,7 +28,7 @@ const mecer = keyframes`
 `
 
 /** La animación del vaivén, para encadenarla con otra (la entrada de la tarjeta). */
-export const MECER = `${mecer} 16s ease-in-out infinite alternate`
+export const MECER = `${mecer} 9s ease-in-out infinite alternate`
 
 /** Estilos (sx) de una tarjeta con resplandor. `base` es el color de tarjeta del tema. */
 export function fondoResplandor(modo: ModoCms, tono: TonoResplandor, base: string) {
