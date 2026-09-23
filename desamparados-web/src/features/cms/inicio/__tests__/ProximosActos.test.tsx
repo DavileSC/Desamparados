@@ -16,6 +16,7 @@ const PANEL: PanelResponse = {
     publicaciones: { total: 7, ultima: '2026-06-01T00:00:00.000Z' },
     reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
   },
+  calendario: { mes: '2026-09', eventos: [], diasDeReparto: [] },
 }
 
 /**

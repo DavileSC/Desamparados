@@ -6,7 +6,8 @@ import CssBaseline from '@mui/material/CssBaseline'
 // Variables: un solo fichero por alfabeto cubre todos los pesos. Exo 2 es la
 // de la web pública y Saira la del CMS (ver designTokens.fonts).
 import '@fontsource-variable/exo-2'
-import '@fontsource-variable/saira'
+// Con el eje de anchura: las cifras del Inicio van en Saira estrecha.
+import '@fontsource-variable/saira/wdth.css'
 import './index.css'
 import App from './App.tsx'
 import theme from './theme'

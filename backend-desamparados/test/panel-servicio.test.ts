@@ -316,6 +316,30 @@ describe('servicio del panel', () => {
   });
 });
 
+describe('el calendario del Inicio', () => {
+  test('trae los actos y los días de reparto del mes en curso, y nada de otros meses', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    // El día 15 del mes en curso a mediodía: cae dentro del mes en Madrid sea
+    // cual sea el día de hoy.
+    const ahora = new Date();
+    const mediados = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), 15, 12));
+    const otroMes = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() + 2, 15, 12));
+    const acto = await db.evento.create({ data: { title: 'ZZ acto del mes', startDate: mediados, type: 'CULTO' } });
+    const lejano = await db.evento.create({ data: { title: 'ZZ acto lejano', startDate: otroMes, type: 'CULTO' } });
+    const turno = await db.turno.create({ data: { fecha: mediados, horaInicio: mediados, horaFin: mediados } });
+    try {
+      const { calendario } = await PanelService.getPanel();
+      assert.equal(calendario.mes, mediados.toISOString().slice(0, 7));
+      assert.ok(calendario.eventos.some((e) => e.id === acto.id && e.type === 'CULTO'));
+      assert.ok(!calendario.eventos.some((e) => e.id === lejano.id), 'un acto de otro mes no va en el calendario');
+      assert.ok(calendario.diasDeReparto.includes(mediados.toISOString().slice(0, 10)));
+    } finally {
+      await db.turno.delete({ where: { id: turno.id } });
+      await db.evento.deleteMany({ where: { id: { in: [acto.id, lejano.id] } } });
+    }
+  });
+});
+
 describe('el ejercicio del panel', () => {
   test('sin parámetro, el año en curso y sin cerrar', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);

@@ -4,16 +4,28 @@ import { useAuthStore } from '../altas/auth/store'
 import { usePanelDeHoy } from '../../app/usePanelDeHoy'
 import { tareasDelDia, repartirTareas } from './inicio/tareas'
 import Cabecera from './inicio/Cabecera'
-import ParaHoy from './inicio/ParaHoy'
+import CaminoEstacion from './inicio/CaminoEstacion'
 import Cifras from './inicio/Cifras'
-import CuentaAtras from './inicio/CuentaAtras'
+import ParaHoy from './inicio/ParaHoy'
+import CalendarioMes from './inicio/CalendarioMes'
+import Cortejo from './inicio/Cortejo'
 import ProximosActos from './inicio/ProximosActos'
 import ComoVaElAnio from './inicio/ComoVaElAnio'
 
 /**
- * El Inicio del CMS. Arriba, lo de hoy: las cuatro cifras, qué hay que hacer,
- * los próximos actos y cuánto queda para la estación. Debajo, «Cómo va el año»,
- * que es lo único que cambia con el selector de ejercicio.
+ * El Inicio del CMS. Arriba, el camino a la estación y las cuatro cifras;
+ * debajo, lo de hoy (qué hay que hacer, el mes, el cortejo y los próximos
+ * actos). Al final, «Cómo va el año», que es lo único que cambia con el
+ * selector de ejercicio.
+ *
+ * Rejilla con zonas con nombre y una disposición por ancho: cada pieza tiene
+ * su sitio fijo y las de una misma fila se estiran a la misma altura. Antes
+ * iban en columnas de periódico, y según lo que trajera el día una tarjeta
+ * saltaba de columna o dejaba un hueco al lado.
+ *
+ * El ancho que manda es el del panel, no el de la ventana (consultas de
+ * contenedor): con el menú abierto el panel tiene 250 px menos, y con los
+ * cortes de la ventana las piezas se partían en columnas donde no cabían.
  */
 export default function PanelPage() {
   const role = useAuthStore((state) => state.cms?.role)
@@ -29,6 +41,7 @@ export default function PanelPage() {
 
   const tareas = tareasDelDia(data)
   const { tuyas, deLaJunta } = repartirTareas(tareas, role)
+  const zona = (nombre: string) => ({ gridArea: nombre, minWidth: 0 })
 
   return (
     <>
@@ -36,26 +49,31 @@ export default function PanelPage() {
 
       <Cabecera asuntosPropios={tuyas.length} asuntosDeLaJunta={deLaJunta.length} role={role} />
 
-      {/* Las cifras, a todo lo ancho y antes que nada: son el resumen de la
-          casa. «Para hoy» va debajo, que es donde se actúa. */}
-      <Cifras panel={data} />
-
-      {/* Mosaico: las tres piezas se reparten solas entre las columnas según lo
-          que ocupa cada una. Con dos asuntos pendientes, «Para hoy» encogía y
-          dejaba media pantalla en blanco al lado de una agenda larga; ahora el
-          navegador equilibra las columnas y no queda hueco, tenga el día lo que
-          tenga. `breakInside` impide que una tarjeta se parta entre columnas. */}
-      <Box
-        sx={{
-          mt: 2.5,
-          columnCount: { xs: 1, lg: 2 },
-          columnGap: 3,
-          '& > *': { breakInside: 'avoid', mb: 2.5 },
-        }}
-      >
-        <ParaHoy tareas={tareas} role={role} />
-        <CuentaAtras />
-        <ProximosActos eventos={data.actividad.proximosEventos} actividad={data.actividad} role={role} />
+      <Box sx={{ containerType: 'inline-size', containerName: 'panel' }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 2.5,
+            alignItems: 'stretch',
+            gridTemplateColumns: 'minmax(0, 1fr)',
+            gridTemplateAreas: '"camino" "cifras" "hoy" "calendario" "actos" "cortejo"',
+            '@container panel (min-width: 720px)': {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gridTemplateAreas: '"camino camino" "cifras cifras" "hoy hoy" "calendario actos" "cortejo cortejo"',
+            },
+            '@container panel (min-width: 1080px)': {
+              gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)',
+              gridTemplateAreas: '"camino camino" "cifras cifras" "hoy calendario" "cortejo actos"',
+            },
+          }}
+        >
+          <Box sx={zona('camino')}><CaminoEstacion eventos={data.actividad.proximosEventos} /></Box>
+          <Box sx={zona('cifras')}><Cifras panel={data} /></Box>
+          <Box sx={zona('hoy')}><ParaHoy tareas={tareas} role={role} orden={6} /></Box>
+          <Box sx={zona('calendario')}><CalendarioMes calendario={data.calendario} role={role} orden={7} /></Box>
+          <Box sx={zona('cortejo')}><Cortejo procesion={data.procesion} orden={8} /></Box>
+          <Box sx={zona('actos')}><ProximosActos eventos={data.actividad.proximosEventos} actividad={data.actividad} role={role} orden={9} /></Box>
+        </Box>
       </Box>
 
       <ComoVaElAnio panelDeHoy={data} />

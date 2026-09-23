@@ -18,7 +18,7 @@ import {
  * sobre User: el panel es informativo y no puede enseñar datos de personas.
  *
  * Dos excepciones, ninguna de las dos toca datos de una persona:
- *   - Evento: son actos públicos.
+ *   - Evento: son actos públicos (los próximos y los del mes, para el calendario).
  *   - CategoriaTransaccion: es un catálogo (id, nombre de la categoría
  *     contable, p. ej. "Donativos"), no un dato de un hermano ni de un
  *     usuario. Se necesita en `findMany` porque `groupBy` sobre Transaccion
@@ -61,6 +61,16 @@ export interface PanelResponse {
     noticias: { publicadas: number; borradores: number };
     publicaciones: { total: number; ultima: string | null };
     reparto: { turnosProximos: number; citasReservadas: number; capacidadEstimada: number };
+  };
+  /**
+   * El mes en curso (en Madrid) para el calendario del Inicio: sus actos y los
+   * días con turno de reparto de papeletas. No lo toca el selector de
+   * ejercicio: es la agenda de ahora.
+   */
+  calendario: {
+    mes: string;
+    eventos: { id: number; title: string; startDate: string; type: TipoEvento }[];
+    diasDeReparto: string[];
   };
 }
 
@@ -136,6 +146,8 @@ export class PanelService {
     // Las altas y bajas de los últimos doce meses son cifras DE HOY (van en la
     // tarjeta de hermanos activos), así que no las toca el selector.
     const haceUnAnio = inicioDiaMadrid(unAnioAntes(diaHoy));
+    const mesHoy = diaHoy.slice(0, 7);
+    const rangoMesHoy = rangoDeMeses([mesHoy]);
     const altasUltimoAnio = whereAltasAprobadas(haceUnAnio);
     // Las de la serie, en cambio, cubren todo el recorrido de reconstrucción.
     const altasDelRecorrido = whereAltasAprobadas(rangoCenso.desde);
@@ -165,6 +177,8 @@ export class PanelService {
       citasReservadas,
       capacidad,
       categorias,
+      eventosDelMes,
+      turnosDelMes,
     ] = await Promise.all([
       db.hermano.count({ where: { activo: true } }),
       // Las solicitudes pendientes no son altas (ver whereAltasAprobadas).
@@ -243,6 +257,13 @@ export class PanelService {
       // Catálogo de categorías contables (excepción de la regla de oro: sin
       // datos personales). Hace falta el nombre, no solo el id que da groupBy.
       db.categoriaTransaccion.findMany({ select: { id: true, nombre: true } }),
+      db.evento.findMany({
+        where: { startDate: { gte: rangoMesHoy.desde, lt: rangoMesHoy.hasta } },
+        orderBy: { startDate: 'asc' },
+        select: { id: true, title: true, startDate: true, type: true },
+      }),
+      // groupBy y no findMany: solo hace falta saber qué días hay reparto.
+      db.turno.groupBy({ by: ['fecha'], where: { fecha: { gte: rangoMesHoy.desde, lt: rangoMesHoy.hasta }, activo: true } }),
     ]);
 
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
@@ -360,6 +381,11 @@ export class PanelService {
           citasReservadas,
           capacidadEstimada: capacidad._sum.capacidadEstimada ?? 0,
         },
+      },
+      calendario: {
+        mes: mesHoy,
+        eventos: eventosDelMes.map((e) => ({ id: e.id, title: e.title, startDate: e.startDate.toISOString(), type: e.type })),
+        diasDeReparto: [...new Set(turnosDelMes.map((t) => diaMadrid(t.fecha)))].sort(),
       },
     };
   }

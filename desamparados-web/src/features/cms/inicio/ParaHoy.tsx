@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { repartirTareas, type Prioridad, type Tarea } from './tareas'
 import { contar } from './plural'
+import { entrada, latido } from './animaciones'
 
 const PUNTO: Record<Prioridad, 'error' | 'aviso' | null> = {
   urgente: 'error',
@@ -11,7 +12,7 @@ const PUNTO: Record<Prioridad, 'error' | 'aviso' | null> = {
   programado: null,
 }
 
-function Fila({ tarea, conBoton }: { tarea: Tarea; conBoton: boolean }) {
+function Fila({ tarea, conBoton, orden }: { tarea: Tarea; conBoton: boolean; orden: number }) {
   const { superficies, graficas } = useTemaCms()
   const tono = PUNTO[tarea.prioridad]
   const fondo = tarea.prioridad === 'urgente'
@@ -21,7 +22,7 @@ function Fila({ tarea, conBoton }: { tarea: Tarea; conBoton: boolean }) {
       : superficies.pillNeutro
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: { xs: 2, md: 2.75 }, py: 1.625, borderTop: 1, borderColor: 'divider', flexWrap: 'wrap' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: { xs: 2, md: 2.75 }, py: 1.625, borderTop: 1, borderColor: 'divider', flexWrap: 'wrap', ...entrada(orden) }}>
       <Box
         component="span"
         sx={{
@@ -33,7 +34,12 @@ function Fila({ tarea, conBoton }: { tarea: Tarea; conBoton: boolean }) {
         <Box
           component="span"
           aria-hidden="true"
-          sx={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, backgroundColor: tono ? graficas.estados[tono] : 'text.disabled' }}
+          sx={{
+            width: 8, height: 8, borderRadius: '50%', flexShrink: 0, backgroundColor: tono ? graficas.estados[tono] : 'text.disabled',
+            // Lo urgente late tres veces al entrar y se queda quieto: llama la
+            // atención sin convertirse en ruido.
+            ...(tarea.prioridad === 'urgente' && { animation: `${latido} 2.2s ease-out 1.2s 3`, '@media (prefers-reduced-motion: reduce)': { animation: 'none' } }),
+          }}
         />
         {tarea.etiqueta}
       </Box>
@@ -72,11 +78,11 @@ function Fila({ tarea, conBoton }: { tarea: Tarea; conBoton: boolean }) {
 }
 
 /** Lo que hay que hacer hoy: lo tuyo con botón, lo del resto de la junta sin él. */
-export default function ParaHoy({ tareas, role }: { tareas: Tarea[]; role?: string }) {
+export default function ParaHoy({ tareas, role, orden = 0 }: { tareas: Tarea[]; role?: string; orden?: number }) {
   const { tuyas, deLaJunta } = repartirTareas(tareas, role)
 
   return (
-    <Paper component="section" aria-labelledby="para-hoy" sx={{ borderRadius: 1.75 }}>
+    <Paper component="section" aria-labelledby="para-hoy" sx={{ borderRadius: 1.75, height: '100%', ...entrada(orden) }}>
       <Box
         sx={{
           display: 'flex', gap: { xs: 0.25, sm: 2 }, px: { xs: 2, md: 2.75 }, pt: 2.25, pb: 1.5,
@@ -101,7 +107,7 @@ export default function ParaHoy({ tareas, role }: { tareas: Tarea[]; role?: stri
         </Box>
       )}
 
-      {tuyas.map((tarea) => <Fila key={tarea.clave} tarea={tarea} conBoton />)}
+      {tuyas.map((tarea, i) => <Fila key={tarea.clave} tarea={tarea} conBoton orden={orden + 1 + i} />)}
 
       {deLaJunta.length > 0 && (
         <>
@@ -113,7 +119,7 @@ export default function ParaHoy({ tareas, role }: { tareas: Tarea[]; role?: stri
           >
             En el resto de la junta
           </Typography>
-          {deLaJunta.map((tarea) => <Fila key={tarea.clave} tarea={tarea} conBoton={false} />)}
+          {deLaJunta.map((tarea, i) => <Fila key={tarea.clave} tarea={tarea} conBoton={false} orden={orden + 1 + tuyas.length + i} />)}
         </>
       )}
       <Box sx={{ pb: 1 }} />

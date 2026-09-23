@@ -53,6 +53,14 @@ export interface PanelResponse {
     publicaciones: { total: number; ultima: string | null }
     reparto: { turnosProximos: number; citasReservadas: number; capacidadEstimada: number }
   }
+  /** El mes en curso para el calendario del Inicio: sus actos y los días de reparto. */
+  calendario: {
+    /** AAAA-MM */
+    mes: string
+    eventos: { id: number; title: string; startDate: string; type: TipoEvento }[]
+    /** AAAA-MM-DD, en Madrid. */
+    diasDeReparto: string[]
+  }
 }
 
 /** Sin año, el ejercicio en curso. */

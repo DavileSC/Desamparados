@@ -45,6 +45,7 @@ const panel: PanelResponse = {
     publicaciones: { total: 7, ultima: '2026-06-01T00:00:00.000Z' },
     reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
   },
+  calendario: { mes: '2026-09', eventos: [], diasDeReparto: [] },
 }
 
 function responder(cuerpo: unknown, status = 200) {
@@ -93,13 +94,15 @@ describe('Inicio del CMS', () => {
     expect(screen.getByText('Lo lleva Tesorería')).toBeInTheDocument()
   })
 
-  it('lleva cuenta atrás y próximos actos', async () => {
+  it('lleva el camino a la estación, el mes, el cortejo y los próximos actos', async () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
-    expect(await screen.findByText(/Sábado de Pasión/)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Próximos actos' })).toBeInTheDocument()
-    expect(screen.getByText('Misa de hermandad')).toBeInTheDocument()
+    expect(await screen.findByRole('progressbar', { name: 'Parte del curso recorrida' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Septiembre de 2026' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'El cortejo de 2026' })).toBeInTheDocument()
+    const actos = screen.getByRole('region', { name: 'Próximos actos' })
+    expect(within(actos).getByText('Misa de hermandad')).toBeInTheDocument()
   })
 
   // rolesPorRutaCms.agenda es ['ADMIN','SECRETARIA','HERMANO_MAYOR']: sin este
@@ -117,7 +120,8 @@ describe('Inicio del CMS', () => {
     responder(panel)
     entrarComo('SECRETARIA')
     montar()
-    expect(await screen.findByRole('link', { name: /Agenda →/ })).toBeInTheDocument()
+    const actos = await screen.findByRole('region', { name: 'Próximos actos' })
+    expect(within(actos).getByRole('link', { name: /Agenda →/ })).toBeInTheDocument()
   })
 
   it('lleva «Cómo va el año» debajo', async () => {
