@@ -53,8 +53,8 @@ const DE_2025 = {
     ...PANEL.procesion,
     anio: 2025,
     papeletas: 604,
-    // Puestos distintos de panelDeHoy: sirve para comprobar que «Puestos de
-    // la procesión» SÍ sigue al ejercicio elegido (el backend lo acota).
+    // Puestos distintos de panelDeHoy: sirve para comprobar que el cortejo
+    // SÍ sigue al ejercicio elegido (el backend lo acota).
     porPuesto: [{ etiqueta: 'Nazarenos', total: 388 }],
     // Talla y altura de hombro distintas de panelDeHoy: si «Túnicas y
     // varales» leyera de aquí por error, el test de más abajo lo detectaría,
@@ -94,9 +94,9 @@ describe('ComoVaElAnio', () => {
     montar()
 
     const porTema = {
-      Hermanos: ['Censo de hermanos', 'Altas y bajas', 'Hermanos por edad'],
+      Hermanos: ['Censo de hermanos', 'Hermanos por edad'],
       Dinero: ['Ingresos y gastos por mes', 'De dónde entra', 'En qué se gasta', 'Cobro de recibos'],
-      'Procesión': ['Papeletas de sitio', 'Puestos de la procesión', 'Tallas de túnica', 'Altura de hombro'],
+      'Procesión': ['El cortejo de 2026', 'Tallas de túnica', 'Altura de hombro'],
     } as const
 
     // La primera pestaña sale abierta, y lo de las otras dos no está a la vista.
@@ -195,26 +195,32 @@ describe('ComoVaElAnio', () => {
     expect(within(tarjeta).queryByText('57')).not.toBeInTheDocument()
   })
 
-  it('«Puestos de la procesión» sí sigue al ejercicio elegido, y el subtítulo dice de cuál', async () => {
+  it('el cortejo sí sigue al ejercicio elegido', async () => {
     responder(DE_2025)
     montar()
     await abrir('Procesión')
 
-    const seccionInicial = screen.getByRole('heading', { name: 'Puestos de la procesión' }).closest('section') as HTMLElement
-    expect(within(seccionInicial).getByText('Papeletas del ejercicio 2026, por puesto')).toBeInTheDocument()
-    expect(within(seccionInicial).getAllByText('Acólitos').length).toBeGreaterThan(0)
+    const inicial = screen.getByRole('heading', { name: 'El cortejo de 2026' }).closest('section') as HTMLElement
+    expect(within(inicial).getAllByText('Acólitos').length).toBeGreaterThan(0)
 
     await userEvent.click(screen.getByRole('combobox', { name: /ejercicio/i }))
     await userEvent.click(screen.getByRole('option', { name: '2025' }))
 
-    const cabeceraTrasCambiar = await screen.findByRole('heading', { name: 'Puestos de la procesión' })
-    const tarjeta = cabeceraTrasCambiar.closest('section') as HTMLElement
-
     // El backend acota `porPuesto` con el ejercicio elegido: al cambiar de
     // año, el puesto que solo existía en 2026 desaparece.
-    expect(within(tarjeta).getByText('Papeletas del ejercicio 2025, por puesto')).toBeInTheDocument()
+    const tarjeta = (await screen.findByRole('heading', { name: 'El cortejo de 2025' })).closest('section') as HTMLElement
     expect(within(tarjeta).queryByText('Acólitos')).not.toBeInTheDocument()
     expect(within(tarjeta).getAllByText('Nazarenos').length).toBeGreaterThan(0)
+  })
+
+  it('la tabla del censo lleva también las altas y bajas de cada mes', async () => {
+    responder(PANEL)
+    montar()
+    const censo = screen.getByRole('heading', { name: 'Censo de hermanos' }).closest('section') as HTMLElement
+    await userEvent.click(within(censo).getByText('Ver tabla'))
+    for (const col of ['Activos', 'Altas', 'Bajas']) {
+      expect(within(censo).getByRole('columnheader', { name: col })).toBeInTheDocument()
+    }
   })
 
   it('las tallas y la altura de hombro son siempre de hoy: no cambian con el ejercicio', async () => {
@@ -245,7 +251,8 @@ describe('ComoVaElAnio', () => {
   it('cada gráfica ofrece su tabla', () => {
     responder(PANEL)
     montar()
-    expect(screen.getAllByText('Ver tabla').length).toBeGreaterThanOrEqual(10)
+    // Todas menos el cortejo, cuya leyenda ya es la tabla (puesto, número y parte).
+    expect(screen.getAllByText('Ver tabla').length).toBeGreaterThanOrEqual(8)
   })
 
   it('si el ejercicio elegido falla al cargar, avisa y deja volver al actual', async () => {

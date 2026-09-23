@@ -6,11 +6,10 @@ import { useTemaCms } from '../../../app/useTemaCms'
 import { fondoTarjeta, type TonoTarjeta } from '../../../theme/tarjeta'
 import LineaTemporal from '../../../components/charts/LineaTemporal'
 import BarrasHorizontales from '../../../components/charts/BarrasHorizontales'
-import ColumnasDivergentes from '../../../components/charts/ColumnasDivergentes'
 import ColumnasPorPares from '../../../components/charts/ColumnasPorPares'
-import ColumnasPorAnio from '../../../components/charts/ColumnasPorAnio'
 import ProporcionEstados, { type FilaEstado } from '../../../components/charts/ProporcionEstados'
 import TablaDeDatos from '../../../components/charts/TablaDeDatos'
+import Cortejo from './Cortejo'
 import { euros, eurosResumen, numero, etiquetaPunto, etiquetaPuntoLarga } from '../contabilidad/formato'
 
 /**
@@ -79,7 +78,7 @@ function Tarjeta({
 
 /**
  * «Cómo va el año»: un selector de ejercicio que gobierna las gráficas de esta
- * sección y nada más. La cabecera del Inicio, «Para hoy», los actos y la
+ * sección y nada más. La cabecera del Inicio, «Para hoy», el curso, el mes y la
  * cuenta atrás no cambian nunca; el selector existe porque el Inicio se
  * enseña a la junta en la reunión de principios de año, cuando lo que importa
  * es el ejercicio cerrado.
@@ -210,7 +209,16 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               gap: 2.5,
             }}
           >
-            <Tarjeta tono="burdeos" titulo="Censo de hermanos" subtitulo="Hermanos activos al cierre de cada mes" columnas={4}>
+            {/* El censo y lo que lo mueve, juntos: las altas y bajas de cada mes ya
+                salen en la gráfica de la baldosa de arriba, así que aquí van solo
+                en la tabla. Sin total en el subtítulo: la baldosa cuenta los
+                últimos 365 días y esto, meses enteros, y no cuadrarían. */}
+            <Tarjeta
+              tono="burdeos"
+              titulo="Censo de hermanos"
+              subtitulo="Hermanos activos al cierre de cada mes, con sus altas y bajas en la tabla"
+              columnas={8}
+            >
               <LineaTemporal
                 etiqueta="Hermanos activos"
                 paleta={graficas}
@@ -219,24 +227,12 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
                 etiquetaX={etiquetaPunto}
               />
               <TablaDeDatos
-                titulo="Hermanos activos al cierre de cada mes"
-                columnas={['Mes', 'Activos']}
-                filas={datos.censo.serieMensual.map((p) => [etiquetaPuntoLarga(p.mes), numero(p.activos)])}
-              />
-            </Tarjeta>
-
-            <Tarjeta tono="azul" titulo="Altas y bajas" subtitulo="Cuántos entran y cuántos se van cada mes" columnas={4}>
-              <ColumnasDivergentes
-                meses={datos.censo.movimientosMensuales.map((m) => ({ mes: m.mes, arriba: m.altas, abajo: m.bajas }))}
-                paleta={graficas}
-                etiquetaArriba="Altas"
-                etiquetaAbajo="Bajas"
-                etiquetaX={etiquetaPunto}
-              />
-              <TablaDeDatos
-                titulo="Altas y bajas por mes"
-                columnas={['Mes', 'Altas', 'Bajas']}
-                filas={datos.censo.movimientosMensuales.map((m) => [etiquetaPuntoLarga(m.mes), numero(m.altas), numero(m.bajas)])}
+                titulo="Hermanos activos, altas y bajas de cada mes"
+                columnas={['Mes', 'Activos', 'Altas', 'Bajas']}
+                filas={datos.censo.serieMensual.map((p) => {
+                  const m = datos.censo.movimientosMensuales.find((x) => x.mes === p.mes)
+                  return [etiquetaPuntoLarga(p.mes), numero(p.activos), numero(m?.altas ?? 0), numero(m?.bajas ?? 0)]
+                })}
               />
             </Tarjeta>
 
@@ -337,31 +333,12 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
               gap: 2.5,
             }}
           >
-            <Tarjeta tono="oro" titulo="Papeletas de sitio" subtitulo="Últimos cinco años, con el ejercicio elegido destacado" columnas={6}>
-              <ColumnasPorAnio datos={datos.procesion.porAnio} paleta={graficas} destacado={datos.ejercicio.anio} formatoValor={numero} />
-              <TablaDeDatos
-                titulo="Papeletas por año"
-                columnas={['Año', 'Papeletas']}
-                filas={datos.procesion.porAnio.map((a) => [String(a.anio), numero(a.total)])}
-              />
-            </Tarjeta>
-
-            {/* Lo que Albacería necesita para preparar la estación: cuántas
-                papeletas hay por puesto. Sí sigue al selector, porque el
-                backend acota `procesion.porPuesto` con el ejercicio elegido
-                (igual que `porAnio` y `papeletas`), y el subtítulo lo dice. */}
-            <Tarjeta tono="burdeos" titulo="Puestos de la procesión" subtitulo={`Papeletas del ejercicio ${datos.ejercicio.anio}, por puesto`} columnas={6}>
-              <BarrasHorizontales
-                color={graficas.acento}
-                formatoValor={numero}
-                filas={datos.procesion.porPuesto.map((p) => ({ etiqueta: p.etiqueta, valor: p.total }))}
-              />
-              <TablaDeDatos
-                titulo="Papeletas por puesto"
-                columnas={['Puesto', 'Papeletas']}
-                filas={datos.procesion.porPuesto.map((p) => [p.etiqueta, numero(p.total)])}
-              />
-            </Tarjeta>
+            {/* El cortejo del ejercicio elegido: el anillo por puestos y, al pie,
+                los últimos años. Antes iba también arriba, en lo de hoy, y aquí
+                repetían lo mismo «Papeletas de sitio» y «Puestos de la procesión». */}
+            <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+              <Cortejo procesion={datos.procesion} />
+            </Box>
 
             {/* Túnicas y varales, cada uno en su tarjeta: juntos en una sola
                 a todo lo ancho, las dos gráficas quedaban en dos columnas que

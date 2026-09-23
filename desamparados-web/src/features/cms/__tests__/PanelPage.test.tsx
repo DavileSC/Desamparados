@@ -96,34 +96,23 @@ describe('Inicio del CMS', () => {
     expect(screen.getByText('Lo lleva Tesorería')).toBeInTheDocument()
   })
 
-  it('lleva el camino a la estación, el mes, el cortejo y los próximos actos', async () => {
+  it('lleva el curso y el mes, y nada que los repita', async () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
-    expect(await screen.findByRole('progressbar', { name: 'Parte del curso recorrida' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'El curso' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Septiembre de 2026' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'El cortejo de 2026' })).toBeInTheDocument()
-    const actos = screen.getByRole('region', { name: 'Próximos actos' })
-    expect(within(actos).getByText('Misa de hermandad')).toBeInTheDocument()
+    // Los próximos actos ya están en el curso y en el mes; el cortejo, en «Cómo va el año».
+    expect(screen.queryByRole('heading', { name: 'Próximos actos' })).not.toBeInTheDocument()
+    // (va en la pestaña Procesión, cerrada al entrar)
+    expect(screen.getAllByRole('heading', { name: /^El cortejo de/, hidden: true })).toHaveLength(1)
   })
 
-  // rolesPorRutaCms.agenda es ['ADMIN','SECRETARIA','HERMANO_MAYOR']: sin este
-  // condicional, Tesorería pulsaba «Agenda →» y ExigeRol la expulsaba a
-  // /area-hermano, fuera de todo el CMS (ver el hallazgo crítico de la revisión).
-  it('el enlace a la Agenda de «Próximos actos» no lo ve Tesorería', async () => {
+  it('dice en la cabecera cómo va la web', async () => {
     responder(panel)
-    entrarComo('TESORERIA')
+    entrarComo('ADMIN')
     montar()
-    await screen.findByRole('heading', { name: 'Próximos actos' })
-    expect(screen.queryByRole('link', { name: /Agenda →/ })).not.toBeInTheDocument()
-  })
-
-  it('el enlace a la Agenda de «Próximos actos» sí lo ve Secretaría', async () => {
-    responder(panel)
-    entrarComo('SECRETARIA')
-    montar()
-    const actos = await screen.findByRole('region', { name: 'Próximos actos' })
-    expect(within(actos).getByRole('link', { name: /Agenda →/ })).toBeInTheDocument()
+    expect(await screen.findByText(/^En la web: /)).toBeInTheDocument()
   })
 
   it('lleva «Cómo va el año» debajo', async () => {

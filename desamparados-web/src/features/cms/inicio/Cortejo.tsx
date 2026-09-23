@@ -67,7 +67,7 @@ export default function Cortejo({ procesion, orden = 0 }: { procesion: PanelResp
       sx={{ ...fondoTarjeta('burdeos', superficies.card), borderRadius: 1.75, p: { xs: 2, md: 2.75 }, height: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2, containerType: 'inline-size', containerName: 'cortejo', ...entrada(orden) }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '4px 16px', flexWrap: 'wrap' }}>
-        <Typography id="cortejo" variant="h5" component="h2">El cortejo de {procesion.anio}</Typography>
+        <Typography id="cortejo" variant="h5" component="h3" sx={{ fontSize: 20 }}>El cortejo de {procesion.anio}</Typography>
         {diferencia !== null && diferencia !== 0 && (
           <Typography variant="body2" sx={{ fontWeight: 600, color: diferencia > 0 ? segunModo('#23703f', '#7fd19b') : 'text.secondary' }}>
             {diferencia > 0 ? '+' : '−'}{numero(Math.abs(diferencia))} que en {procesion.anio - 1}
@@ -124,6 +124,7 @@ export default function Cortejo({ procesion, orden = 0 }: { procesion: PanelResp
             sx={{
               listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '12px 24px',
               '@container cortejo (min-width: 400px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+              '@container cortejo (min-width: 960px)': { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' },
             }}
           >
             {trozos.map((t) => (

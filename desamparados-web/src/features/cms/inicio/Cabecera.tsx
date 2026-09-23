@@ -3,12 +3,16 @@ import AddIcon from '@mui/icons-material/Add'
 import { Link } from 'react-router-dom'
 import { NOMBRE_CARGO } from '../../../app/cmsNavegacion'
 import { contar } from './plural'
+import { fechaCorta } from '../contabilidad/formato'
+import type { PanelResponse } from '../../../lib/api/panel'
 
 interface Props {
   /** Cuántos asuntos esperan hoy a este cargo. */
   asuntosPropios: number
   asuntosDeLaJunta: number
   role?: string
+  /** Noticias y publicaciones de la web, en una línea bajo la frase. */
+  actividad?: PanelResponse['actividad']
   hoy?: Date
 }
 
@@ -19,7 +23,7 @@ const ATAJOS = [
   { texto: 'Nueva noticia', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], principal: true },
 ]
 
-export default function Cabecera({ asuntosPropios, asuntosDeLaJunta, role, hoy = new Date() }: Props) {
+export default function Cabecera({ asuntosPropios, asuntosDeLaJunta, role, actividad, hoy = new Date() }: Props) {
   const cargo = role ? NOMBRE_CARGO[role] ?? '' : ''
   const visibles = ATAJOS.filter((a) => role && a.roles.includes(role))
 
@@ -40,6 +44,13 @@ export default function Cabecera({ asuntosPropios, asuntosDeLaJunta, role, hoy =
           Buenos días{cargo && `, ${cargo}`}
         </Typography>
         <Typography variant="body1" color="text.secondary">{frase}{resto}</Typography>
+        {actividad && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, opacity: 0.85 }}>
+            En la web: {contar(actividad.noticias.publicadas, 'noticia publicada', 'noticias publicadas')} ·{' '}
+            {contar(actividad.publicaciones.total, 'publicación', 'publicaciones')}
+            {actividad.publicaciones.ultima && `, la última el ${fechaCorta(actividad.publicaciones.ultima)}`}
+          </Typography>
+        )}
       </Box>
       <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap', alignItems: 'center' }}>
         {visibles.map((atajo) => (

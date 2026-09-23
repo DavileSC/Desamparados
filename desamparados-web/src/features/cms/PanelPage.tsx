@@ -8,16 +8,17 @@ import CaminoEstacion from './inicio/CaminoEstacion'
 import Cifras from './inicio/Cifras'
 import ParaHoy from './inicio/ParaHoy'
 import CalendarioMes from './inicio/CalendarioMes'
-import Cortejo from './inicio/Cortejo'
-import ProximosActos from './inicio/ProximosActos'
 import ComoVaElAnio from './inicio/ComoVaElAnio'
 import FondoVivo from './inicio/FondoVivo'
 
 /**
- * El Inicio del CMS. Arriba, el camino a la estación y las cuatro cifras;
- * debajo, lo de hoy (qué hay que hacer, el mes, el cortejo y los próximos
- * actos). Al final, «Cómo va el año», que es lo único que cambia con el
- * selector de ejercicio.
+ * El Inicio del CMS. Arriba, el camino a la estación con el curso y las
+ * cuatro cifras; debajo, lo de hoy (qué hay que hacer y el mes). Al final,
+ * «Cómo va el año», con el detalle y el selector de ejercicio.
+ *
+ * Cada dato sale una vez por nivel: los actos, en el curso y en el mes (ya no
+ * hay «Próximos actos», que repetía los dos); el cortejo, en «Cómo va el año»,
+ * que ya tenía sus puestos y sus años.
  *
  * Rejilla con zonas con nombre y una disposición por ancho: cada pieza tiene
  * su sitio fijo y las de una misma fila se estiran a la misma altura. Antes
@@ -51,7 +52,7 @@ export default function PanelPage() {
       <FondoVivo />
       <Helmet><title>Inicio | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
 
-      <Cabecera asuntosPropios={tuyas.length} asuntosDeLaJunta={deLaJunta.length} role={role} />
+      <Cabecera asuntosPropios={tuyas.length} asuntosDeLaJunta={deLaJunta.length} role={role} actividad={data.actividad} />
 
       <Box sx={{ containerType: 'inline-size', containerName: 'panel' }}>
         <Box
@@ -60,14 +61,14 @@ export default function PanelPage() {
             gap: 2.5,
             alignItems: 'stretch',
             gridTemplateColumns: 'minmax(0, 1fr)',
-            gridTemplateAreas: '"camino" "cifras" "hoy" "calendario" "actos" "cortejo"',
+            gridTemplateAreas: '"camino" "cifras" "hoy" "calendario"',
             '@container panel (min-width: 720px)': {
               gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              gridTemplateAreas: '"camino camino" "cifras cifras" "hoy hoy" "calendario actos" "cortejo cortejo"',
+              gridTemplateAreas: '"camino camino" "cifras cifras" "hoy hoy" "calendario calendario"',
             },
             '@container panel (min-width: 1080px)': {
               gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)',
-              gridTemplateAreas: '"camino camino" "cifras cifras" "hoy calendario" "cortejo actos"',
+              gridTemplateAreas: '"camino camino" "cifras cifras" "hoy calendario"',
             },
           }}
         >
@@ -75,8 +76,6 @@ export default function PanelPage() {
           <Box sx={zona('cifras')}><Cifras panel={data} /></Box>
           <Box sx={zona('hoy')}><ParaHoy tareas={tareas} role={role} orden={6} /></Box>
           <Box sx={zona('calendario')}><CalendarioMes calendario={data.calendario} role={role} orden={7} /></Box>
-          <Box sx={zona('cortejo')}><Cortejo procesion={data.procesion} orden={8} /></Box>
-          <Box sx={zona('actos')}><ProximosActos eventos={data.actividad.proximosEventos} actividad={data.actividad} role={role} orden={9} /></Box>
         </Box>
       </Box>
 
