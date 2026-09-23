@@ -10,6 +10,7 @@ import {
   adminRecibosQuerySchema,
   adminResumenQuerySchema,
   buscarHermanosQuerySchema,
+  impagosQuerySchema,
   emitirReciboSchema,
   generarCuotasSchema,
   marcarPagadoSchema,
@@ -43,6 +44,14 @@ reciboRoutes.get('/admin', checkRole(rolesTesoreria), validate(adminRecibosQuery
 
 // Los contadores por estado de encima del listado, con sus mismos filtros.
 reciboRoutes.get('/admin/resumen', checkRole(rolesTesoreria), validate(adminResumenQuerySchema), ReciboController.getResumenAdmin);
+
+// Quién debe cuotas. Lo consulta Tesorería, y también Secretaría, que es quien
+// da las bajas por impago y no entra en el resto de Tesorería.
+reciboRoutes.get('/admin/impagos',
+  checkRole([...rolesTesoreria, Role.SECRETARIA]),
+  validate(impagosQuerySchema),
+  ReciboController.impagos
+);
 
 // Buscador para la ventana «Nuevo recibo»: Tesorería no entra en el del censo.
 reciboRoutes.get('/admin/hermanos',

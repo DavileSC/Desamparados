@@ -242,14 +242,17 @@ export class EmailService {
    * asunto en la auditoría (EMAIL_FALLIDO), y en un rechazo eso devolvería a la
    * base el nombre que `rechazarSolicitud` acaba de borrar.
    */
-  static async enviarBajaORechazo(emailDestino: string, nombreHermano: string, motivo: 'rechazo' | 'baja') {
+  static async enviarBajaORechazo(emailDestino: string, nombreHermano: string, motivo: 'rechazo' | 'baja', porImpago = false) {
     const nombre = esc(nombreHermano);
     const esRechazo = motivo === 'rechazo';
 
     const cuerpo = esRechazo
       ? `<p>Le comunicamos que la Secretaría <strong>no ha podido dar curso a su solicitud de ingreso</strong>, y que sus datos han sido eliminados de nuestros registros.</p>
          <p>Si cree que se trata de un error, o desea volver a presentarla, puede ponerse en contacto con la Secretaría y le atenderemos con mucho gusto.</p>`
-      : `<p>Le comunicamos que se ha tramitado su <strong>baja en el censo de hermanos</strong> de nuestro Grupo Parroquial.</p>
+      : porImpago
+        ? `<p>Le comunicamos que se ha tramitado su <strong>baja en el censo de hermanos</strong> de nuestro Grupo Parroquial, al no constar el pago de sus cuotas.</p>
+         <p>Si cree que se trata de un error, o desea ponerse al corriente y reincorporarse, puede ponerse en contacto con la Secretaría.</p>`
+        : `<p>Le comunicamos que se ha tramitado su <strong>baja en el censo de hermanos</strong> de nuestro Grupo Parroquial.</p>
          <p>Si esta baja no responde a su voluntad, o desea reincorporarse más adelante, puede ponerse en contacto con la Secretaría.</p>`;
 
     const content = `

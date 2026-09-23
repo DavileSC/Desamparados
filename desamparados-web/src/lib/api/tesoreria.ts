@@ -71,3 +71,24 @@ export function crearRecibo(payload: DatosDeRecibo) {
 export function buscarHermanosConRecibo(q: string) {
   return llamarApi<ReceiptBrother[]>(`/recibos/admin/hermanos?${new URLSearchParams({ q }).toString()}`)
 }
+
+/** Una cuota de hermano sin pagar: pendiente o devuelta por el banco. */
+export interface CuotaImpagada { id: number; year: number; estado: 'PENDIENTE' | 'DEVUELTO'; importe: number }
+
+/** Un hermano activo que debe cuotas, con lo que debe en total. */
+export interface HermanoConImpagos {
+  hermano: { id: number; nombre: string; apellidos: string; numeroHermano: number | null }
+  cuotas: CuotaImpagada[]
+  total: number
+}
+
+/**
+ * Quién debe cuotas, de quien más debe a quien menos. Sin `incluirAnioActual`
+ * la cuota de este año no cuenta: pendiente a mitad de año no es un impago.
+ */
+export function impagos(filtros: { incluirAnioActual: boolean; minimo: number }, pagina: { pagina: number; porPagina: number }) {
+  return llamarApi<RespuestaPaginada<HermanoConImpagos> & { anioActual: number }>(`/recibos/admin/impagos?${paramsPagina(pagina, {
+    incluirAnioActual: filtros.incluirAnioActual ? 'true' : undefined,
+    minimo: filtros.minimo > 1 ? String(filtros.minimo) : undefined,
+  })}`)
+}

@@ -3,7 +3,7 @@ import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/ma
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { Link } from 'react-router-dom'
-import { fichaDeHermano, type FichaDeLaCuenta, type FichaDelCenso } from '../../../lib/api/hermanos'
+import { MOTIVOS_BAJA, fichaDeHermano, type FichaDeLaCuenta, type FichaDelCenso } from '../../../lib/api/hermanos'
 import { urlDocumentoPrivado } from '../../../lib/api/cliente'
 import { PARENTESCOS } from '../../../lib/api/auth'
 import { ESTADO_RECIBO } from '../../areaHermano/recibos/etiquetas'
@@ -129,7 +129,7 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
                 : 'Sin número'}
             </span>
             <span aria-hidden="true">·</span>
-            <span>{situacion === 'baja' && ficha.fechaBaja ? `De baja desde el ${dia(ficha.fechaBaja)}` : situacion === 'pendiente' ? `Pidió el alta el ${dia(ficha.fechaAlta)}` : `Alta el ${dia(ficha.fechaAlta)}`}</span>
+            <span>{situacion === 'baja' && ficha.fechaBaja ? `De baja desde el ${dia(ficha.fechaBaja)}${ficha.motivoBaja ? ` · ${MOTIVOS_BAJA[ficha.motivoBaja]}` : ''}` : situacion === 'pendiente' ? `Pidió el alta el ${dia(ficha.fechaAlta)}` : `Alta el ${dia(ficha.fechaAlta)}`}</span>
           </Box>
         </Box>
         {puedeGestionar && (

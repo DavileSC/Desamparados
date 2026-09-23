@@ -187,7 +187,7 @@ export class MisFichasService {
       // en el `where` para que dos clics seguidos no den dos bajas.
       const { count } = await tx.hermano.updateMany({
         where: { id: hermanoId, fechaBaja: null },
-        data: { activo: false, fechaBaja, numeroHermano: null }
+        data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: 'VOLUNTARIA' }
       });
       if (count === 0) throw new HttpError(HERMANO_ERRORS.PROFILE_ALREADY_DOWN);
 

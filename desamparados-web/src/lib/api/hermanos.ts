@@ -5,6 +5,16 @@ import type { EstadoCivil, Sexo } from './perfil'
 import type { Prenda } from './inventario'
 import type { ReceiptStatus } from './recibos'
 
+/** Por qué salió del censo. Null en las bajas de antes de guardarlo. */
+export type MotivoBaja = 'VOLUNTARIA' | 'IMPAGO' | 'FALLECIMIENTO' | 'OTRO'
+
+export const MOTIVOS_BAJA: Record<MotivoBaja, string> = {
+  VOLUNTARIA: 'Voluntaria',
+  IMPAGO: 'Impago de cuotas',
+  FALLECIMIENTO: 'Fallecimiento',
+  OTRO: 'Otro motivo',
+}
+
 export interface AdminBrother {
   id: number
   nombre: string
@@ -20,6 +30,7 @@ export interface AdminBrother {
   numeroHermano: number | null
   fechaAlta: string
   fechaBaja: string | null
+  motivoBaja: MotivoBaja | null
   esTitular: boolean
   tieneTunicaPropia: boolean
   tunica: string | null
@@ -185,10 +196,10 @@ export function actualizarHermano(id: number, payload: DatosDeFichaDeHermano) {
 }
 
 /** Da de baja a un hermano con la fecha indicada (AAAA-MM-DD); sin ella, hoy. */
-export function darDeBajaHermano(id: number, fechaBaja?: string) {
+export function darDeBajaHermano(id: number, fechaBaja: string | undefined, motivo: MotivoBaja) {
   return llamarApi<{ message: string }>(`/hermanos/admin/${id}/baja`, {
     method: 'DELETE',
-    ...(fechaBaja ? { json: { fechaBaja } } : {}),
+    json: { ...(fechaBaja ? { fechaBaja } : {}), motivo },
   })
 }
 

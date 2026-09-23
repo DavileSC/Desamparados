@@ -122,7 +122,7 @@ export type EditableField = typeof ADMIN_EDITABLE_FIELDS[number] | typeof USER_E
 export const HERMANO_SAFE_SELECT = {
   id: true, nombre: true, apellidos: true, dni: true, fechaNacimiento: true,
   telefono: true, email: true, direccion: true, poblacion: true, codigoPostal: true,
-  fechaAlta: true, activo: true, numeroHermano: true, fechaBaja: true, esTitular: true,
+  fechaAlta: true, activo: true, numeroHermano: true, fechaBaja: true, motivoBaja: true, esTitular: true,
   // Quién es para el titular: «Mi familia» lo enseña, porque una ficha a cargo
   // de alguien que no es su padre se gestiona distinto (autorización aparte).
   parentesco: true,

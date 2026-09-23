@@ -10,7 +10,7 @@ import {
   esCuentaStaff, getNextNumeroHermano, prepareUpdateData, sinFechasDelMismoDia,
   transaccionReintentable, type FichaEmancipable, type SearchHermanoQuery,
 } from './hermanos/comunes.js';
-import { UpdateAdminHermanoDto } from '../dtos/hermano.dto';
+import { UpdateAdminHermanoDto, type MotivoBaja } from '../dtos/hermano.dto';
 import { encrypt } from '../utils/bcrypt.handle';
 import { comprobarBajaNoFutura, comprobarFechasHermano, diaDeHoy, instanteDeDia } from '../domain/fechas-hermano';
 import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
@@ -257,6 +257,7 @@ export class CensoService {
         data: {
           activo: true,
           fechaBaja: null, // Limpiamos la fecha de baja
+          motivoBaja: null,
           fechaAlta, // Nueva fecha de alta
           numeroHermano: nextNum,
           // Si volvió porque lo pidió desde la web, la petición queda atendida
@@ -303,7 +304,7 @@ export class CensoService {
    * Baja desde secretaría. `fechaBajaTexto` (AAAA-MM-DD) permite anotar la baja
    * con el día en que el hermano avisó; sin ella, la baja es de ahora.
    */
-  static async darDeBajaHermano(hermanoId: number, meta?: MetaDeAuditoria, fechaBajaTexto?: string) {
+  static async darDeBajaHermano(hermanoId: number, meta?: MetaDeAuditoria, fechaBajaTexto?: string, motivo?: MotivoBaja) {
     const hermano = await db.hermano.findUnique({
       where: { id: hermanoId },
       // `user.email` es el respaldo del aviso de baja: las fichas antiguas
@@ -328,7 +329,7 @@ export class CensoService {
       const { count } = await tx.hermano.updateMany({
         where: { id: hermanoId, activo: true },
         // Liberamos el número: al reactivar se le asigna uno nuevo (final de la cola)
-        data: { activo: false, fechaBaja, numeroHermano: null }
+        data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: motivo ?? null }
       });
       if (count === 0) throw new HttpError(HERMANO_ERRORS.HERMANO_ALREADY_DOWN);
 
@@ -352,14 +353,16 @@ export class CensoService {
     // queda aquí, porque en la ficha se borra.
     await AuditoriaService.log(ACCIONES_AUDITORIA.HERMANO_BAJA, meta ?? {}, 'hermano', hermanoId, {
       antes: { activo: true, numeroHermano: hermano.numeroHermano, fechaBaja: null, cuentaActiva: hermano.user.active },
-      despues: { activo: false, numeroHermano: null, fechaBaja: valorParaAuditoria(fechaBaja), cuentaActiva: hermano.user.active && !cuentaBloqueada }
+      despues: { activo: false, numeroHermano: null, fechaBaja: valorParaAuditoria(fechaBaja), motivoBaja: motivo ?? null, cuentaActiva: hermano.user.active && !cuentaBloqueada }
     });
 
     // Aviso de la baja, fuera de la transacción y con catch: la baja ya está
     // escrita y un correo no puede deshacerla.
-    const destino = hermano.email || hermano.user.email;
+    // Tras un fallecimiento no se escribe: el correo le llegaría a la familia
+    // como una carta de trámite dirigida a quien ha muerto.
+    const destino = motivo === 'FALLECIMIENTO' ? null : hermano.email || hermano.user.email;
     if (destino) {
-      EmailService.enviarBajaORechazo(destino, hermano.nombre, 'baja')
+      EmailService.enviarBajaORechazo(destino, hermano.nombre, 'baja', motivo === 'IMPAGO')
         .catch((err) => console.error('Error enviando el aviso de baja:', err));
     }
 

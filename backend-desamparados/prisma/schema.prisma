@@ -150,6 +150,14 @@ enum TitularidadCuenta {
   OTRA_PERSONA
 }
 
+/// Por qué salió del censo. Null en las bajas de antes de guardarlo.
+enum MotivoBaja {
+  VOLUNTARIA
+  IMPAGO
+  FALLECIMIENTO
+  OTRO
+}
+
 enum EstadoCivil {
   SOLTERO
   CASADO
@@ -210,6 +218,7 @@ model Hermano {
   activo    Boolean   @default(true) // Soft Delete del hermano
   numeroHermano   Int?      @unique // Número de hermano, si lo tienen asignado
   fechaBaja DateTime? // Para saber cuándo dejó de pagar/salir
+  motivoBaja MotivoBaja?
 
   // VINCULACIÓN
   esTitular Boolean @default(false) // true = este perfil es el User logueado

@@ -173,7 +173,7 @@ export class MisDatosService {
         // como en cualquier otra baja (una ficha de baja no lo retiene).
         await tx.hermano.update({
           where: { id },
-          data: { activo: false, fechaBaja, numeroHermano: null, ...CONTACTO_FUERA }
+          data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: 'VOLUNTARIA', ...CONTACTO_FUERA }
         });
         fichas.dadasDeBaja += 1;
       }

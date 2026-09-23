@@ -4,6 +4,7 @@ import { AuditoriaService } from '../services/auditoria.service';
 import { SolicitudesService } from '../services/solicitudes.service.js';
 import { MisFichasService } from '../services/mis-fichas.service.js';
 import { CensoService } from '../services/censo.service.js';
+import type { MotivoBaja } from '../dtos/hermano.dto.js';
 
 /**
  * El censo, por sus dos puertas: la del hermano, que solo alcanza sus fichas,
@@ -118,7 +119,8 @@ export class HermanoController {
   static darDeBajaHermano = manejar('Error dando de baja al hermano', async (req, res) => {
     // La fecha es opcional (validada por bajaHermanoSchema): sin ella, la baja es de hoy.
     const fechaBaja = typeof req.body?.fechaBaja === 'string' ? req.body.fechaBaja : undefined;
-    const result = await CensoService.darDeBajaHermano(Number(req.params.id), AuditoriaService.metaFromReq(req), fechaBaja);
+    const motivo = req.body?.motivo as MotivoBaja | undefined;
+    const result = await CensoService.darDeBajaHermano(Number(req.params.id), AuditoriaService.metaFromReq(req), fechaBaja, motivo);
     res.status(200).json(result);
   });
 

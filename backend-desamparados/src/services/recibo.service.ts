@@ -18,6 +18,8 @@ import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { anulaPapeleta, puedeCobrarse, puedeTransicionar, requiereReverso, ESTADOS_COBRABLES } from '../domain/recibo-estados.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { agruparImpagos } from '../domain/impagos.js';
+import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { ORDENES_RECIBOS, ordenDe } from '../domain/ordenacion.js';
 import {
   ESTADOS_CUOTA_VIVA, MENSAJE_ESTADO_CAMBIADO, devolverCobroEnTransaccion, fotoRecibo,
@@ -80,6 +82,33 @@ export class ReciboService {
       estados[g.estado] = { cuenta: g._count._all, total: Number(g._sum.importe ?? 0) };
     }
     return { estados };
+  }
+
+  /**
+   * Hermanos activos que deben cuotas (ver domain/impagos.ts). Se agrupa en
+   * memoria: son como mucho unos cientos de recibos, y agrupar y ordenar por
+   * persona en SQL con Prisma obligaría a dos consultas igual.
+   */
+  static async impagos(query: { incluirAnioActual?: string; minimo?: string; page?: unknown; limit?: unknown }) {
+    const anioActual = Number(diaDeHoy().slice(0, 4));
+    const recibos = await db.recibo.findMany({
+      where: {
+        tipo: TipoRecibo.CUOTA_HERMANO,
+        estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] },
+        hermano: { activo: true },
+        ...(query.incluirAnioActual === 'true' ? {} : { year: { lt: anioActual } }),
+      },
+      select: {
+        id: true, year: true, estado: true, importe: true,
+        hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true } },
+      },
+    });
+    const filas = agruparImpagos(recibos, Number(query.minimo ?? 1));
+    const paginacion = sanearPaginacion(query);
+    return {
+      ...respuestaPaginada(filas.slice(paginacion.skip, paginacion.skip + paginacion.take), filas.length, paginacion),
+      anioActual,
+    };
   }
 
   /**

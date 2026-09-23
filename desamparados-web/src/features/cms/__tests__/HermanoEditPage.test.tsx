@@ -155,7 +155,7 @@ describe('HermanoEditPage', () => {
     expect(screen.queryByLabelText('Fecha de baja')).not.toBeInTheDocument()
   })
 
-  it('en una ficha activa, «Dar de baja» pide la fecha, confirma y no deja pulsar dos veces', { timeout: 20000 }, async () => {
+  it('en una ficha activa, «Dar de baja» pide la fecha y el motivo, confirma y no deja pulsar dos veces', { timeout: 20000 }, async () => {
     const user = userEvent.setup()
     const respuestaBaja = diferida<unknown>()
     let fichaActual: unknown = ficha
@@ -168,6 +168,10 @@ describe('HermanoEditPage', () => {
 
     const dialogo = screen.getByRole('dialog', { name: /dar de baja a rocío/i })
     fireEvent.change(within(dialogo).getByLabelText('Fecha de baja'), { target: { value: '2026-01-20' } })
+    // Sin motivo no se puede dar la baja.
+    expect(within(dialogo).getByRole('button', { name: 'Dar de baja' })).toBeDisabled()
+    await user.click(within(dialogo).getByRole('combobox', { name: 'Motivo' }))
+    await user.click(await screen.findByRole('option', { name: 'Impago de cuotas' }))
     await user.click(within(dialogo).getByRole('button', { name: 'Dar de baja' }))
 
     // Mientras el servidor no contesta, el botón no responde.
@@ -180,7 +184,7 @@ describe('HermanoEditPage', () => {
     const bajas = llamadas.filter((l) => l.metodo === 'DELETE')
     expect(bajas).toHaveLength(1)
     expect(bajas[0].url).toContain('/hermanos/admin/42/baja')
-    expect(bajas[0].cuerpo).toEqual({ fechaBaja: '2026-01-20' })
+    expect(bajas[0].cuerpo).toEqual({ fechaBaja: '2026-01-20', motivo: 'IMPAGO' })
     // La ficha recargada ya está de baja: ahora se ofrece reactivar.
     expect(await screen.findByRole('button', { name: 'Reactivar' })).toBeInTheDocument()
   })

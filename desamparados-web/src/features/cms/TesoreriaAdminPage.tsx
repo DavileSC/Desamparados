@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { useSearchParams } from 'react-router-dom'
+import { useAuthStore } from '../altas/auth/store'
+import ListaImpagos from './impagos/ListaImpagos'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
@@ -70,6 +73,11 @@ const nombreHermano = (h: ReceiptBrother) => `${h.apellidos}, ${h.nombre}${h.num
 interface NuevoRecibo { hermano: ReceiptBrother | null; year: string; concepto: string; importe: string; tipo: EmittableReceiptType | '' }
 
 export default function TesoreriaAdminPage() {
+  const [params, setParams] = useSearchParams()
+  const vista = params.get('vista') === 'impagos' ? 'impagos' : 'recibos'
+  // La baja es de Secretaría: aquí solo la dan quienes también gestionan el censo.
+  const role = useAuthStore((state) => state.cms?.role ?? 'USER')
+  const puedeDarDeBaja = role === 'ADMIN' || role === 'HERMANO_MAYOR'
   const [receipts, setReceipts] = useState<AdminReceipt[]>([])
   // El año que se está viendo: filtra el listado y es el que proponen las ventanas de alta.
   // Vacío, se ven todos los años. Va aparte de los filtros de la URL porque se
@@ -209,6 +217,20 @@ export default function TesoreriaAdminPage() {
         <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCuotas}>Generar cuotas</Button>
       </Stack>
     </CabeceraSeccion>
+    <Tabs
+      value={vista}
+      onChange={(_, valor) => setParams((anteriores) => {
+        const siguientes = new URLSearchParams(anteriores)
+        if (valor === 'impagos') siguientes.set('vista', 'impagos')
+        else siguientes.delete('vista')
+        return siguientes
+      })}
+      sx={{ mb: 3 }}
+    >
+      <Tab value="recibos" label="Recibos" />
+      <Tab value="impagos" label="Impagos" />
+    </Tabs>
+    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeDarDeBaja} /> : <>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}{notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
     <VentanaFormulario
       abierto={generando}
@@ -300,5 +322,6 @@ export default function TesoreriaAdminPage() {
       ? <Alert severity="info">{filtros.q || filtros.estado || filtros.tipo ? 'No hay recibos con esta búsqueda o estos filtros.' : esAnioCompleto(year) ? 'No hay recibos para este año.' : 'No hay recibos.'}</Alert>
       : <ListaRecibos recibos={receipts} verAnio={!esAnioCompleto(year)} ocupado={working} onCobrar={pay} onConfirmar={pay} onReemitir={abrirReemision} />}
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="recibos" />}
+    </>}
   </>
 }

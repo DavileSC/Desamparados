@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
-import { darDeBajaHermano, emanciparHermano, fichaDeHermano, reactivarHermano, actualizarHermano, type AdminBrother, type DatosDeFichaDeHermano } from '../../lib/api/hermanos'
+import { MOTIVOS_BAJA, darDeBajaHermano, emanciparHermano, fichaDeHermano, reactivarHermano, actualizarHermano, type AdminBrother, type DatosDeFichaDeHermano, type MotivoBaja } from '../../lib/api/hermanos'
 import { PARENTESCOS } from '../../lib/api/auth'
 import { ESTADO_CIVIL, SEXO } from '../areaHermano/perfil/etiquetas'
 
@@ -115,6 +115,7 @@ export default function HermanoEditPage() {
   const enMarcha = useRef(false)
   const [dandoDeBaja, setDandoDeBaja] = useState(false)
   const [fechaBajaNueva, setFechaBajaNueva] = useState('')
+  const [motivoBaja, setMotivoBaja] = useState<MotivoBaja | ''>('')
   const [reactivando, setReactivando] = useState(false)
   const [emancipando, setEmancipando] = useState(false)
   const [correoNuevo, setCorreoNuevo] = useState('')
@@ -204,7 +205,7 @@ export default function HermanoEditPage() {
     }
   }
 
-  const abrirBaja = () => { setFechaBajaNueva(hoyDia()); setDandoDeBaja(true) }
+  const abrirBaja = () => { setFechaBajaNueva(hoyDia()); setMotivoBaja(''); setDandoDeBaja(true) }
 
   /** Envuelve baja, reactivación y emancipación: una sola a la vez, y nunca dos veces. */
   const trabajar = async (tarea: () => Promise<void>) => {
@@ -223,7 +224,8 @@ export default function HermanoEditPage() {
 
   const darDeBaja = () => trabajar(async () => {
     try {
-      const { message } = await darDeBajaHermano(Number(id), fechaBajaNueva)
+      if (!motivoBaja) return
+      const { message } = await darDeBajaHermano(Number(id), fechaBajaNueva, motivoBaja)
       setDandoDeBaja(false)
       await refrescar()
       setAviso(message)
@@ -351,7 +353,7 @@ export default function HermanoEditPage() {
               )}
               {estado === 'baja' && (
                 <Alert severity="warning">
-                  De baja desde el {diaLegible(aDia(ficha.fechaBaja))}: no está en el censo ni tiene número.
+                  De baja desde el {diaLegible(aDia(ficha.fechaBaja))}{ficha.motivoBaja ? ` (${MOTIVOS_BAJA[ficha.motivoBaja].toLowerCase()})` : ''}: no está en el censo ni tiene número.
                 </Alert>
               )}
               {estado === 'pendiente' && (
@@ -460,10 +462,25 @@ export default function HermanoEditPage() {
             fullWidth
             sx={{ mt: 3 }}
           />
+          <TextField
+            select
+            label="Motivo"
+            value={motivoBaja}
+            onChange={(e) => setMotivoBaja(e.target.value as MotivoBaja)}
+            helperText={motivoBaja === 'FALLECIMIENTO'
+              ? 'No se envía el correo de baja.'
+              : motivoBaja === 'IMPAGO'
+                ? 'El correo de baja dirá que es por no constar el pago de las cuotas.'
+                : 'Queda en la ficha y en la auditoría.'}
+            fullWidth
+            sx={{ mt: 2 }}
+          >
+            {(Object.entries(MOTIVOS_BAJA) as [MotivoBaja, string][]).map(([valor, texto]) => <MenuItem key={valor} value={valor}>{texto}</MenuItem>)}
+          </TextField>
         </DialogContent>
         <DialogActions>
           <Button disabled={trabajando} onClick={() => setDandoDeBaja(false)}>Volver</Button>
-          <Button variant="contained" color="error" disabled={trabajando || !fechaBajaValida} onClick={() => void darDeBaja()}>
+          <Button variant="contained" color="error" disabled={trabajando || !fechaBajaValida || !motivoBaja} onClick={() => void darDeBaja()}>
             {trabajando ? 'Dando de baja…' : 'Dar de baja'}
           </Button>
         </DialogActions>

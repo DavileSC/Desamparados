@@ -14,6 +14,7 @@ import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import ListaCenso from './censo/ListaCenso'
 import FichaCenso from './censo/FichaCenso'
+import ListaImpagos from './impagos/ListaImpagos'
 
 const SITUACIONES: Opcion[] = [
   { valor: 'activo', etiqueta: 'Activos' },
@@ -48,7 +49,8 @@ export default function HermanosAdminPage() {
   const [params, setParams] = useSearchParams()
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
-  const vista = params.get('vista') === 'solicitudes' ? 'solicitudes' : 'censo'
+  const pedida = params.get('vista')
+  const vista = pedida === 'solicitudes' || pedida === 'impagos' ? pedida : 'censo'
   // La ficha abierta a la derecha, también en la URL: «Editar ficha» y el botón
   // de atrás del navegador vuelven a ella, con la lista como estaba.
   const fichaAbierta = Number(params.get('ficha')) || null
@@ -202,12 +204,13 @@ export default function HermanosAdminPage() {
       {/* Solo cambia `vista`: los filtros y la página del censo siguen ahí al volver. */}
       <Tabs value={vista} onChange={(_, valor) => setParams((anteriores) => {
         const siguientes = new URLSearchParams(anteriores)
-        if (valor === 'solicitudes') siguientes.set('vista', 'solicitudes')
-        else siguientes.delete('vista')
+        if (valor === 'censo') siguientes.delete('vista')
+        else siguientes.set('vista', valor)
         return siguientes
       })}>
         <Tab value="censo" label="Censo" />
         <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
+        <Tab value="impagos" label="Impagos" />
       </Tabs>
       {puedeGestionar && (
         <Button variant="outlined" onClick={() => setPorAsignarNumeros(true)}>Asignar números</Button>
@@ -232,7 +235,7 @@ export default function HermanosAdminPage() {
       onConfirmar={() => { setPorAsignarNumeros(false); void asignarNumeros() }}
       onCancelar={() => setPorAsignarNumeros(false)}
     />
-    {vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
+    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
       {requests.map((request) => (
         <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
           <Box>

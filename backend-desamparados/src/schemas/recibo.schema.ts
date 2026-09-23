@@ -88,6 +88,16 @@ export const misRecibosQuerySchema = type({
     query: { ...paginacionQuery }
 });
 
+// Quién debe cuotas. `minimo`: cuántas cuotas sin pagar como poco (1 a 9).
+export const impagosQuerySchema = type({
+    query: {
+        "incluirAnioActual?": "'true' | 'false'",
+        "minimo?": type("string").matching(/^[1-9]$/),
+        "page?": type("string").matching(/^[1-9]\d*$/),
+        "limit?": type("string").matching(/^[1-9]\d*$/)
+    }
+});
+
 // Buscador de hermanos de la ventana «Nuevo recibo». Dos letras como mínimo
 // para no devolver medio censo con cada pulsación.
 export const buscarHermanosQuerySchema = type({

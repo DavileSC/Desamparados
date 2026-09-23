@@ -118,7 +118,11 @@ export const updateAdminHermanoSchema = type({
 // se da de baja a quien avisó hace unos días con la fecha en que avisó. El
 // cuerpo entero es opcional porque un DELETE sin cuerpo sigue siendo válido.
 export const bajaHermanoSchema = type({
-    "body?": type({ "fechaBaja?": fechaDia }).or("undefined")
+    "body?": type({
+        "fechaBaja?": fechaDia,
+        // Opcional solo para los clientes de antes: la web lo pide siempre.
+        "motivo?": "'VOLUNTARIA' | 'IMPAGO' | 'FALLECIMIENTO' | 'OTRO'"
+    }).or("undefined")
 });
 
 // 4. Buscador Total para Secretaría

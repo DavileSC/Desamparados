@@ -43,6 +43,10 @@ export class ReciboController {
     res.status(200).json(await ReciboService.getResumenAdmin(query, year));
   });
 
+  static impagos = manejar('Error consultando los impagos', async (req, res) => {
+    res.status(200).json(await ReciboService.impagos(req.query as Record<string, string>));
+  });
+
   static buscarHermanos = manejar('Error buscando hermanos', async (req, res) => {
     const hermanos = await ReciboService.buscarHermanos(String(req.query.q));
     res.status(200).json(hermanos);
