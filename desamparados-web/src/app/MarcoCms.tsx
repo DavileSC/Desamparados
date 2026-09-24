@@ -6,6 +6,7 @@ import {
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded'
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded'
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
@@ -178,10 +179,19 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
   const location = useLocation()
   const { data } = usePanelDeHoy()
   const contadores = contadoresDelPanel(data)
-  const [abiertos, setAbiertos] = useState(leerGrupos)
   const visibles = itemsMenu.filter((item) => role && item.roles.includes(role) && item.grupo !== 'cuenta')
   const hrefActivo = entradaActiva(location.pathname, visibles)
   const grupoActivo = visibles.find((item) => item.href === hrefActivo)?.grupo
+  // Al entrar en una página, su grupo se abre; luego se puede plegar como
+  // cualquier otro. Antes el grupo de la página iba abierto a la fuerza, sin
+  // flecha y sin poder plegarse, y parecía un grupo roto.
+  const plegableActivo = GRUPOS.find((g) => g === grupoActivo)
+  const [abiertos, setAbiertos] = useState<Partial<Record<Grupo, boolean>>>(() => ({ ...leerGrupos(), ...(plegableActivo && { [plegableActivo]: true }) }))
+  const [grupoVisto, setGrupoVisto] = useState(plegableActivo)
+  if (plegableActivo !== grupoVisto) {
+    setGrupoVisto(plegableActivo)
+    if (plegableActivo && !abiertos[plegableActivo]) setAbiertos({ ...abiertos, [plegableActivo]: true })
+  }
   // Quien ve pocas secciones las ve todas; plegar es para Administración y el Hermano Mayor.
   const plegable = visibles.length > SECCIONES_SIN_PLEGAR
   const valorDe = (item: ItemMenu) => (item.contador ? contadores[item.contador.de] : 0)
@@ -214,10 +224,9 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
             </Box>
           )
         }
-        // El grupo de la página en la que se está va siempre abierto: no se
-        // puede plegar lo que se tiene delante.
+        // Plegado con la página abierta dentro, el rótulo se queda encendido.
         const esElActivo = grupo === grupoActivo
-        const abierto = esElActivo || abiertos[grupo] === true
+        const abierto = abiertos[grupo] === true
         // Plegado, el grupo no esconde lo que pide atención: suma los avisos de sus secciones.
         const conAviso = items.filter((item) => item.contador && valorDe(item) > 0)
         const avisos = conAviso.reduce((total, item) => total + valorDe(item), 0)
@@ -227,14 +236,13 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
           <Box key={grupo} sx={{ pt: 'var(--cms-area-pt)' }}>
             <ButtonBase
               onClick={() => alternar(grupo)}
-              disabled={esElActivo}
               aria-expanded={abierto}
               aria-controls={idLista}
               sx={{
                 ...rotulo, width: '100%', justifyContent: 'flex-start', gap: 0.75,
                 px: 1.5, pb: 'var(--cms-area-pb)', pt: '2px', borderRadius: 1, fontFamily: 'inherit',
+                ...(esElActivo && !abierto && { color: 'rgba(255,255,255,0.78)' }),
                 '&:hover': { color: 'rgba(255,255,255,0.7)' },
-                '&.Mui-disabled': { color: 'rgba(255,255,255,0.36)' },
               }}
             >
               <Box component="span" sx={{ flexGrow: 1, textAlign: 'left' }}>{grupo}</Box>
@@ -243,7 +251,7 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
                 : <Box component="span" aria-hidden="true" sx={{ letterSpacing: 0, fontVariantNumeric: 'tabular-nums' }}>{items.length}</Box>)}
               <ExpandMoreRoundedIcon
                 aria-hidden="true"
-                sx={{ fontSize: 16, transition: 'transform 150ms', transform: abierto ? 'none' : 'rotate(-90deg)', opacity: esElActivo ? 0 : 1 }}
+                sx={{ fontSize: 16, transition: 'transform 150ms', transform: abierto ? 'none' : 'rotate(-90deg)' }}
               />
             </ButtonBase>
             <Collapse in={abierto} id={idLista}>
@@ -257,50 +265,50 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
 }
 
 /**
- * Interruptor del modo oscuro, en la cabecera: el sol a un lado y la luna al
- * otro, y el estado se lee de un vistazo. Encendido, oscuro.
+ * El modo oscuro, en el desplegable de la cuenta, entre «Mi seguridad» y
+ * «Cerrar sesión»: es lo de cada uno, no del Grupo. Toda la fila cambia el
+ * modo y el menú se queda abierto para ver el cambio. El interruptor es solo
+ * la muestra, con el sol a un lado y la luna al otro.
  */
-function InterruptorTema() {
+function OpcionModoOscuro() {
   const { cambiarModo } = useTemaCms()
   const oscuro = useModoCms() === 'oscuro'
   const pomo = (Icono: typeof LightModeRoundedIcon, color: string) => (
     <Box
       component="span"
       sx={{
-        width: 18, height: 18, borderRadius: '50%', backgroundColor: '#fff',
+        width: 16, height: 16, borderRadius: '50%', backgroundColor: '#fff',
         display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.35)',
       }}
     >
-      <Icono sx={{ fontSize: 13, color }} />
+      <Icono sx={{ fontSize: 12, color }} />
     </Box>
   )
   return (
-    <Switch
-      checked={oscuro}
-      onChange={(e) => cambiarModo(e.target.checked ? 'oscuro' : 'claro')}
-      icon={pomo(LightModeRoundedIcon, '#c98500')}
-      checkedIcon={pomo(DarkModeRoundedIcon, designTokens.colors.burgundy)}
-      disableRipple
-      slotProps={{ input: { role: 'switch', 'aria-label': 'Modo oscuro' } }}
-      sx={{
-        // Sin tocar el `overflow`: el control invisible de MUI mide el triple
-        // y, suelto, se saldría del menú por la derecha. El foco, en el conjunto.
-        width: 40, height: 22, p: 0, flexShrink: 0, borderRadius: 11,
-        '&:has(.Mui-focusVisible)': { outline: '2px solid #fff', outlineOffset: 2 },
-        '& .MuiSwitch-switchBase': {
-          p: '2px',
-          '&.Mui-checked': { transform: 'translateX(18px)' },
-        },
-        '& .MuiSwitch-track': { borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.22)', opacity: 1 },
-        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#a03d44', opacity: 1 },
-      }}
-    />
+    <MenuItem role="menuitemcheckbox" aria-checked={oscuro} onClick={() => cambiarModo(oscuro ? 'claro' : 'oscuro')}>
+      <ListItemIcon><DarkModeOutlinedIcon fontSize="small" /></ListItemIcon>
+      <Box component="span" sx={{ flexGrow: 1, pr: 2 }}>Modo oscuro</Box>
+      <Switch
+        checked={oscuro}
+        icon={pomo(LightModeRoundedIcon, '#c98500')}
+        checkedIcon={pomo(DarkModeRoundedIcon, designTokens.colors.burgundy)}
+        disableRipple
+        tabIndex={-1}
+        slotProps={{ input: { 'aria-hidden': true, tabIndex: -1 } }}
+        sx={{
+          width: 36, height: 20, p: 0, flexShrink: 0, borderRadius: 10, pointerEvents: 'none',
+          '& .MuiSwitch-switchBase': { p: '2px', '&.Mui-checked': { transform: 'translateX(16px)' } },
+          '& .MuiSwitch-track': { borderRadius: 10, backgroundColor: 'text.disabled', opacity: 1 },
+          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#a03d44', opacity: 1 },
+        }}
+      />
+    </MenuItem>
   )
 }
 
 /**
  * El usuario, abajo: su cargo y, al pulsarlo, lo que es suyo y no del Grupo
- * (su seguridad) y la salida.
+ * (su seguridad y el modo oscuro) y la salida.
  */
 function BloqueUsuario({ role, onNavegar }: { role?: string; onNavegar?: () => void }) {
   const [ancla, setAncla] = useState<HTMLElement | null>(null)
@@ -331,7 +339,7 @@ function BloqueUsuario({ role, onNavegar }: { role?: string; onNavegar?: () => v
         >
           {iniciales}
         </Box>
-        <Typography component="span" sx={{ flexGrow: 1, minWidth: 0, textAlign: 'left', fontSize: 13, fontWeight: 600, color: '#fff' }}>{cargo}</Typography>
+        <Typography component="span" sx={{ flexGrow: 1, minWidth: 0, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 600, color: '#fff' }}>{cargo}</Typography>
         <ExpandMoreRoundedIcon aria-hidden="true" sx={{ fontSize: 18, color: 'rgba(255,255,255,0.45)', transform: ancla ? 'rotate(180deg)' : 'none' }} />
       </ButtonBase>
       <Menu
@@ -357,7 +365,8 @@ function BloqueUsuario({ role, onNavegar }: { role?: string; onNavegar?: () => v
             </MenuItem>
           )
         })}
-        {deLaCuenta.length > 0 && <Divider />}
+        <OpcionModoOscuro />
+        <Divider />
         <MenuItem onClick={() => { cerrar(); void cerrarSesion('cms') }}>
           <ListItemIcon><LogoutOutlinedIcon fontSize="small" /></ListItemIcon>
           Cerrar sesión
@@ -386,26 +395,23 @@ function Contenido() {
         flexDirection: 'column',
       }}
     >
-      {/* La marca y, a su derecha, el modo claro u oscuro. */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <Box
-          component={Link}
-          to="/cms"
-          sx={{ pl: 0.5, flexGrow: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
-        >
-          <EscudoDelGrupo alto="var(--cms-escudo)" />
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              sx={{ color: '#fff', fontFamily: designTokens.fonts.cms.heading, fontSize: 'var(--cms-marca)', lineHeight: 1.1, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
-            >
-              DESAMPARADOS
-            </Typography>
-            <Typography sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)', mt: 0.25 }}>
-              CMS
-            </Typography>
-          </Box>
+      {/* La marca. */}
+      <Box
+        component={Link}
+        to="/cms"
+        sx={{ pl: 0.5, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
+      >
+        <EscudoDelGrupo alto="var(--cms-escudo)" />
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            sx={{ color: '#fff', fontFamily: designTokens.fonts.cms.heading, fontSize: 'var(--cms-marca)', lineHeight: 1.1, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
+          >
+            DESAMPARADOS
+          </Typography>
+          <Typography sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)', mt: 0.25 }}>
+            CMS
+          </Typography>
         </Box>
-        <InterruptorTema />
       </Box>
       <Navegacion role={role} onNavegar={() => setMenuAbierto(false)} />
       <Box sx={{ mt: 'auto', pt: 1.5 }} />

@@ -6,6 +6,7 @@ import MarcoCms from '../MarcoCms'
 import { itemsMenu, rolesPorRutaCms } from '../cmsNavegacion'
 import { useAuthStore } from '../../features/altas/auth/store'
 import { CLAVE_TEMA_CMS } from '../temaCms'
+import { useNavigate } from 'react-router-dom'
 
 /** Un enlace del menú por su dirección: plegado su grupo, no tiene nombre accesible. */
 function enlace(container: HTMLElement, href: string) {
@@ -170,13 +171,16 @@ describe('el menú del Inicio', () => {
     expect(enlace(container, '/cms/tesoreria')).toBeInTheDocument()
   })
 
-  it('el interruptor de tema arranca en oscuro y recuerda el cambio', async () => {
+  it('el modo oscuro va en el desplegable de la cuenta, arranca encendido y recuerda el cambio', async () => {
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />)
-    const interruptor = screen.getByRole('switch', { name: 'Modo oscuro' })
-    expect(interruptor).toBeChecked()
-    await userEvent.click(interruptor)
-    expect(interruptor).not.toBeChecked()
+    expect(screen.queryByRole('menuitemcheckbox', { name: 'Modo oscuro' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Cuenta: Administración' }))
+    const opcion = screen.getByRole('menuitemcheckbox', { name: 'Modo oscuro' })
+    expect(opcion).toHaveAttribute('aria-checked', 'true')
+    await userEvent.click(opcion)
+    // El menú se queda abierto para ver el cambio.
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Modo oscuro' })).toHaveAttribute('aria-checked', 'false')
     expect(localStorage.getItem(CLAVE_TEMA_CMS)).toBe('claro')
   })
 
@@ -191,12 +195,6 @@ describe('el menú del Inicio', () => {
     expect(screen.getByRole('menuitem', { name: 'Cerrar sesión' })).toBeInTheDocument()
   })
 
-  it('el interruptor de tema va en la cabecera, junto a la marca', () => {
-    entrarComo('ADMIN')
-    renderWithProviders(<MarcoCms />)
-    const marca = screen.getAllByRole('link')[0]
-    expect(marca.parentElement).toContainElement(screen.getByRole('switch', { name: 'Modo oscuro' }))
-  })
 })
 
 describe('los grupos del menú se pliegan cuando son muchos', () => {
@@ -215,9 +213,36 @@ describe('los grupos del menú se pliegan cuando son muchos', () => {
     renderWithProviders(<MarcoCms />, { ruta: '/cms/tesoreria' })
     expect(screen.getByRole('link', { name: 'Tesorería' })).toBeVisible()
     expect(screen.getByRole('button', { name: /Cuentas/ })).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('button', { name: /Cuentas/ })).toBeDisabled()
     expect(screen.getByRole('button', { name: /^Web/ })).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByRole('link', { name: 'Noticias' })).not.toBeInTheDocument()
+  })
+
+  it('el grupo de la página en la que se está también se pliega, como los demás', async () => {
+    entrarComo('ADMIN')
+    renderWithProviders(<MarcoCms />, { ruta: '/cms/tesoreria' })
+    const cuentas = screen.getByRole('button', { name: /Cuentas/ })
+    expect(cuentas).toBeEnabled()
+    await userEvent.click(cuentas)
+    expect(cuentas).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('navegar a una página de un grupo plegado lo abre, sin recargar', async () => {
+    function IrA({ ruta }: { ruta: string }) {
+      const navegar = useNavigate()
+      return <button onClick={() => navegar(ruta)}>Ir</button>
+    }
+    entrarComo('ADMIN')
+    renderWithProviders(<><MarcoCms /><IrA ruta="/cms/tesoreria" /></>, { ruta: '/cms/agenda' })
+    expect(screen.getByRole('button', { name: /Cuentas/ })).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(screen.getByRole('button', { name: 'Ir' }))
+    expect(screen.getByRole('button', { name: /Cuentas/ })).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('entrar en una página de un grupo plegado lo abre', async () => {
+    localStorage.setItem('cms-menu-grupos', JSON.stringify({ Cuentas: false }))
+    entrarComo('ADMIN')
+    renderWithProviders(<MarcoCms />, { ruta: '/cms/tesoreria' })
+    expect(screen.getByRole('button', { name: /Cuentas/ })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('plegado, el grupo sigue enseñando sus avisos', async () => {
