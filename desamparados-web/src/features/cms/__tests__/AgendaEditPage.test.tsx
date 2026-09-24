@@ -154,6 +154,23 @@ describe('AgendaEditPage', () => {
     expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Ensayo de acólitos', startDate: enLocal('2099-10-21', '18:15') })
   })
 
+  it('un acto en cartel guarda su dedicatoria y enseña cómo sale en la Agenda', async () => {
+    const usuario = userEvent.setup()
+    const simulado = montar('/cms/agenda/3/editar')
+    await screen.findByDisplayValue('Besapiés')
+    expect(screen.queryByLabelText('Dedicatoria')).not.toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('switch', { name: 'Sale en cartel' }))
+    await usuario.type(screen.getByLabelText('Dedicatoria'), 'a Nuestra Señora de los Desamparados')
+    const previa = screen.getByTestId('vista-previa-cartel')
+    expect(previa).toHaveTextContent('a Nuestra Señora de los Desamparados')
+    expect(previa.querySelector('img')).toHaveAttribute('src', '/images/triduo.jpg')
+
+    await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(guardado(simulado)?.metodo).toBe('PUT'))
+    expect(guardado(simulado)!.cuerpo).toMatchObject({ cartel: true, dedicatoria: 'a Nuestra Señora de los Desamparados', fotoCartel: null })
+  })
+
   it('avisa si el día ya ha pasado', async () => {
     const usuario = userEvent.setup()
     montar('/cms/agenda/nuevo')

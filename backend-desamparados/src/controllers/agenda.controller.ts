@@ -2,6 +2,8 @@ import { Response, Request } from 'express';
 import { AgendaService } from '../services/agenda.service.js';
 import type { AdminCalendarioDto, AdminEventFilterDto } from '../dtos/agenda.dto.js';
 import { handleHttp } from '../utils/error.handle.js';
+import { calendarioIcs, nombreDeFichero } from '../domain/calendario-ics.js';
+import { urlDeLaWeb } from '../services/correos/plantilla.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
 
@@ -26,6 +28,27 @@ export class AgendaController {
   static adminCalendario = manejar('Error obteniendo el calendario', async (req, res) => {
     const { desde, hasta, q, tipo } = req.query as unknown as AdminCalendarioDto;
     res.status(200).json(await AgendaService.getAdminCalendario({ desde, hasta, q, tipo }));
+  });
+
+  // «Añadir a mi calendario»: el acto en .ics, para descargar.
+  static ics = manejar('Error preparando el calendario', async (req, res) => {
+    const evento = await AgendaService.getEventById(Number(req.params.id));
+    res
+      .status(200)
+      .type('text/calendar; charset=utf-8')
+      .setHeader('Content-Disposition', `attachment; filename="${nombreDeFichero(evento.title)}"`)
+      .send(calendarioIcs([evento], { urlWeb: urlDeLaWeb() }));
+  });
+
+  // La agenda entera, para suscribirse desde el móvil: los calendarios vuelven a pedirla solos.
+  static suscripcion = manejar('Error preparando el calendario', async (_req, res) => {
+    const actos = await AgendaService.getActosDelCalendario();
+    res
+      .status(200)
+      .type('text/calendar; charset=utf-8')
+      .setHeader('Content-Disposition', 'inline; filename="agenda-desamparados.ics"')
+      .setHeader('Cache-Control', 'public, max-age=900')
+      .send(calendarioIcs(actos, { urlWeb: urlDeLaWeb(), nombre: 'Agenda · Grupo Parroquial Desamparados' }));
   });
 
   static getOne = manejar('Error obteniendo evento', async (req, res) => {

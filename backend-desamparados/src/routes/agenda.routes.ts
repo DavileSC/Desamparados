@@ -27,6 +27,11 @@ agendaRoutes.get('/admin', authenticateToken, checkRole(rolesAgenda), validate(q
 
 agendaRoutes.get('/admin/calendario', authenticateToken, checkRole(rolesAgenda), validate(queryAgendaCalendarioSchema), AgendaController.adminCalendario);
 
+// El calendario para suscribirse y el de cada acto, sin sesión: son públicos
+// como la agenda. El primero, antes de '/:id', que se tragaría el segmento.
+agendaRoutes.get('/calendario.ics', AgendaController.suscripcion);
+agendaRoutes.get('/:id/ics', validateId, AgendaController.ics);
+
 agendaRoutes.get('/:id', validateId, AgendaController.getOne);
 
 // GESTIÓN (Estricta - Solo Junta)

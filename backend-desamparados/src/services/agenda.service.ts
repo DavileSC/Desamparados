@@ -4,6 +4,7 @@ import { CreateEventDto, UpdateEventDto, EventFilterDto, PeriodoAgenda, AdminEve
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 
 /**
  * Los actos que la portada de la web enseña en su lista, sin sesión: los
@@ -13,6 +14,9 @@ import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
  */
 export const ACTOS_EN_PORTADA = 5;
 
+/** Los días de atrás que siguen en el calendario suscrito. */
+export const DIAS_PASADOS_EN_CALENDARIO = 90;
+
 /** Seis semanas de rejilla y algo de holgura: el calendario del CMS no pide más de una vez. */
 export const MAX_DIAS_CALENDARIO = 62;
 
@@ -21,6 +25,12 @@ export function actosEnPortada<E extends { startDate: Date }>(proximosPublicos: 
   if (!primero) return [];
   const finVentana = new Date(primero.startDate.getFullYear(), primero.startDate.getMonth() + 2, 1);
   return proximosPublicos.filter((e) => e.startDate < finVentana).slice(0, ACTOS_EN_PORTADA);
+}
+
+/** Lo del cartel que trae la petición, con los textos vacíos como null (sin tocar lo que no viene). */
+function datosDelCartel(data: Pick<CreateEventDto, 'cartel' | 'dedicatoria' | 'fotoCartel'>) {
+  const limpio = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() || null);
+  return { cartel: data.cartel, dedicatoria: limpio(data.dedicatoria), fotoCartel: limpio(data.fotoCartel) };
 }
 
 export class AgendaService {
@@ -52,10 +62,11 @@ export class AgendaService {
         whereClause.startDate.lte = new Date(filters.to);
       }
     } else {
-      // Comportamiento por defecto: Solo eventos futuros
+      // Por defecto, lo que queda desde hoy: lo que empieza hoy o después y lo
+      // que ya empezó pero no ha terminado (el segundo día de un triduo).
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      whereClause.startDate = { gte: today };
+      whereClause.OR = [{ startDate: { gte: today } }, { endDate: { gte: today } }];
     }
 
     // B) Filtro por Tipo (Ej: Ver solo Ensayos)
@@ -80,7 +91,10 @@ export class AgendaService {
           location: true,
           startDate: true,
           endDate: true,
-          type: true // <--- Devolvemos el tipo al frontend para que pinte el color
+          type: true, // <--- Devolvemos el tipo al frontend para que pinte el color
+          cartel: true,
+          dedicatoria: true,
+          fotoCartel: true,
         }
       }),
       db.evento.count({ where: whereClause })
@@ -129,7 +143,8 @@ export class AgendaService {
           startDate: true,
           endDate: true,
           type: true,
-          updatedAt: true
+          updatedAt: true,
+          cartel: true,
         }
       }),
       db.evento.count({ where }),
@@ -192,6 +207,7 @@ export class AgendaService {
           endDate: true,
           type: true,
           updatedAt: true,
+          cartel: true,
           turno: { select: { id: true } },
         },
       }),
@@ -221,6 +237,20 @@ export class AgendaService {
     return { siguiente, portada: { limite: ACTOS_EN_PORTADA, ids: actosEnPortada(enPortada).map((e) => e.id) } };
   }
 
+  /**
+   * Lo que va en el calendario de quien se suscribe: todo lo que viene y lo
+   * de los últimos tres meses, para que un acto recién pasado no desaparezca
+   * de su móvil nada más celebrarse.
+   */
+  static async getActosDelCalendario() {
+    const desde = new Date(Date.now() - DIAS_PASADOS_EN_CALENDARIO * 24 * 60 * 60 * 1000);
+    return db.evento.findMany({
+      where: { OR: [{ startDate: { gte: desde } }, { endDate: { gte: desde } }] },
+      orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+      take: 1000,
+    });
+  }
+
   static async getEventById(id: number) {
     const event = await db.evento.findUnique({ where: { id } });
     if (!event) {
@@ -248,7 +278,8 @@ static async createEvent(data: CreateEventDto) {
         location: data.location,
         startDate: start,
         endDate: end,
-        type: data.type 
+        type: data.type,
+        ...datosDelCartel(data),
       }
     });
   }
@@ -272,7 +303,7 @@ static async createEvent(data: CreateEventDto) {
       throw new HttpError('La actualización provoca que la fecha de fin sea anterior a la de inicio.');
     }
 
-    return await db.evento.update({
+    const actualizado = await db.evento.update({
       where: { id },
       data: {
         title: data.title,
@@ -280,12 +311,19 @@ static async createEvent(data: CreateEventDto) {
         location: data.location,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate === null ? null : (data.endDate ? new Date(data.endDate) : undefined),
-        type: data.type 
+        type: data.type,
+        ...datosDelCartel(data),
       }
     });
+    // La foto del cartel que se cambia o se quita se borra del servidor si
+    // nada más la usa, como la de una noticia.
+    await borrarSubidasHuerfanas(subidasEnTexto(actual.fotoCartel), { conservar: subidasEnTexto(actualizado.fotoCartel) });
+    return actualizado;
   }
 
   static async deleteEvent(id: number) {
-    return await db.evento.delete({ where: { id } });
+    const borrado = await db.evento.delete({ where: { id } });
+    await borrarSubidasHuerfanas(subidasEnTexto(borrado.fotoCartel));
+    return borrado;
   }
 }

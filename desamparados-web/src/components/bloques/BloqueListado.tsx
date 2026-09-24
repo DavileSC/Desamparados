@@ -8,7 +8,8 @@ import TarjetaEvento from '../TarjetaEvento'
 import TarjetaPublicacion from '../TarjetaPublicacion'
 import Paginador from '../Paginador'
 import { noticiasDePortada, archivoDeNoticias } from '../../lib/api/noticias'
-import { traerProximosEventos, eventosPublicos } from '../../lib/api/agenda'
+import { traerProximosEventos } from '../../lib/api/agenda'
+import AgendaDeCultos from '../../features/actualidad/agenda/AgendaDeCultos'
 import { useListadoPaginado, type Pagina } from '../../hooks/useListadoPaginado'
 import { usePublicacionesPaginadas } from '../../features/publicaciones/usePublicacionesPaginadas'
 import type { Acto, Noticia } from '../../types'
@@ -158,30 +159,21 @@ function ListaDeEventos({ eventos, loading, error }: { eventos: Acto[]; loading:
   )
 }
 
-// Fuera del componente para que no cambie de identidad en cada render: el hook
-// la lleva en las dependencias de su efecto. El listado habla en `data`; la
-// agenda devuelve `eventos` porque el CMS necesita el evento crudo.
-const pedirAgenda = (pagina: Pagina) =>
-  eventosPublicos(pagina).then(({ eventos, meta }) => ({ data: eventos, meta }))
-
+/**
+ * La agenda entera, con los cultos solemnes en su cartel (AgendaDeCultos):
+ * sin paginar, porque un curso cabe en una página.
+ */
 function Agenda({ titulo }: PropsListado) {
-  const { items, meta, loading, error, alCambiarPagina } =
-    useListadoPaginado(pedirAgenda, 'No se ha podido cargar la agenda.')
   return (
     <>
       <Encabezado titulo={titulo} />
-      <ListaDeEventos eventos={items} loading={loading} error={error} />
-      {meta && (
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Paginador meta={meta} onPagina={alCambiarPagina} etiqueta="la agenda" />
-        </Box>
-      )}
+      <AgendaDeCultos />
     </>
   )
 }
 
-// Igual que `pedirAgenda`: el archivo de noticias devuelve `noticias` porque el
-// CMS necesita la noticia cruda.
+// El archivo de noticias devuelve `noticias` porque el CMS necesita la noticia
+// cruda; el listado habla en `data`.
 const pedirNoticias = (pagina: Pagina) =>
   archivoDeNoticias(pagina).then(({ noticias, meta }) => ({ data: noticias, meta }))
 

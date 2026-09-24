@@ -163,6 +163,7 @@ describe('bloques de páginas con diseño o datos propios', () => {
       ['boletines', '/publications/category/boletin?'],
       ['dossier', '/publications/category/dossier?'],
       ['agenda-proxima', '/events?limit=4'],
+      ['agenda', '/events?limit=100'],
     ] as const
     for (const [fuente, url] of casos) {
       const simulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(

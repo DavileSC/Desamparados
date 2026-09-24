@@ -12,6 +12,10 @@ export interface ApiEvent {
   type: 'CULTO' | 'PROCESION' | 'FORMACION' | 'ENSAYO' | 'REUNION' | 'SOCIAL' | 'OTRO'
   /** Solo lo trae el listado del CMS. */
   updatedAt?: string
+  /** Sale en la Agenda pública como un cartel, con su dedicatoria y su foto. */
+  cartel?: boolean
+  dedicatoria?: string | null
+  fotoCartel?: string | null
 }
 
 function enTexto(fecha: string) {
@@ -38,10 +42,6 @@ function aActo(acto: ApiEvent): Acto {
     lugar: acto.location ?? undefined,
     destacado: acto.type === 'CULTO' || acto.type === 'PROCESION',
   }
-}
-
-function pedirPagina(pagina: { pagina: number; porPagina: number }) {
-  return llamarApi<RespuestaPaginada<ApiEvent>>(`/events?${paramsPagina(pagina)}`)
 }
 
 /**
@@ -87,12 +87,6 @@ export async function eventosDelCalendario(
   }))
 }
 
-/** La agenda pública: tarjetas ya formateadas más el `meta` que pinta el paginador. */
-export async function eventosPublicos(pagina: { pagina: number; porPagina: number }) {
-  const respuesta = await pedirPagina(pagina)
-  return { eventos: respuesta.data.map(aActo), meta: respuesta.meta }
-}
-
 /** Las dos pestañas de la agenda del CMS. */
 export type PeriodoAgenda = 'proximos' | 'pasados'
 
@@ -132,6 +126,34 @@ export interface DatosDeActo {
   endDate?: string | null
   location?: string
   type: ApiEvent['type']
+  cartel?: boolean
+  dedicatoria?: string | null
+  fotoCartel?: string | null
+}
+
+/**
+ * Todo lo que queda de la agenda, de una vez: la Agenda pública lo enseña
+ * entero, sin paginar (un curso cabe en una página). El servidor no da más
+ * de cien por petición, que es más de lo que tiene un curso.
+ */
+export async function agendaPublica(): Promise<ApiEvent[]> {
+  const respuesta = await llamarApi<RespuestaPaginada<ApiEvent>>('/events?limit=100')
+  return respuesta.data
+}
+
+const BASE_API = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '')
+
+/** «Añadir a mi calendario»: el acto en .ics. */
+export const urlDelActoEnCalendario = (id: number) => `${BASE_API}/events/${id}/ics`
+
+/**
+ * La agenda entera para suscribirse desde el móvil. Tiene que ser absoluta
+ * (el calendario la pide desde fuera de la web); la API vive en el mismo
+ * dominio que la web.
+ */
+export function urlDeLaSuscripcion(origen = window.location.origin) {
+  const https = new URL(`${BASE_API}/events/calendario.ics`, origen).href
+  return { https, webcal: https.replace(/^https?:/, 'webcal:') }
 }
 
 export function crearEvento(payload: DatosDeActo) {

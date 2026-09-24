@@ -572,6 +572,14 @@ model Evento {
   /// Si lo puso la procesión al crear un día de reparto: se borra con él.
   turno Turno?
 
+  /// Los cultos solemnes salen en la Agenda pública como un cartel, con su
+  /// foto y su dedicatoria («en honor de Nuestra Señora de los Desamparados»).
+  /// Sin foto, la web pone la de la Titular en los cultos y la de la
+  /// procesión en las salidas.
+  cartel      Boolean @default(false)
+  dedicatoria String?
+  fotoCartel  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

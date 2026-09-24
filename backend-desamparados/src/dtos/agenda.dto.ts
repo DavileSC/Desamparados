@@ -10,6 +10,9 @@ export interface CreateEventDto {
   endDate?: string | null;
   location?: string;
   type: TipoEvento; // <--- OBLIGATORIO
+  cartel?: boolean;
+  dedicatoria?: string | null;
+  fotoCartel?: string | null;
 }
 
 export interface UpdateEventDto {
@@ -19,6 +22,9 @@ export interface UpdateEventDto {
   endDate?: string | null;
   location?: string;
   type?: TipoEvento; // <--- OPCIONAL
+  cartel?: boolean;
+  dedicatoria?: string | null;
+  fotoCartel?: string | null;
 }
 
 export interface EventFilterDto {

@@ -84,7 +84,7 @@ export async function contarReferencias(nombre: string): Promise<number> {
     db.imagenPortada.count({ where: { url: menciona } }),
     db.enser.count({ where: { imagenUrl: menciona } }),
     db.pagina.count({ where: { contenido: menciona } }),
-    db.evento.count({ where: { description: menciona } }),
+    db.evento.count({ where: { OR: [{ description: menciona }, { fotoCartel: menciona }] } }),
     // El contenido editable guarda rutas de foto dentro de un JSON (la de
     // «Sábado de Pasión», el plano del recorrido, las de la historia). Son pocas filas: se leen
     // enteras y se busca el nombre en su texto, porque el filtro JSON de Prisma
@@ -113,7 +113,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     db.imagenPortada.findMany({ select: { url: true } }),
     db.enser.findMany({ select: { imagenUrl: true } }),
     db.pagina.findMany({ select: { contenido: true } }),
-    db.evento.findMany({ select: { description: true } }),
+    db.evento.findMany({ select: { description: true, fotoCartel: true } }),
     db.contenidoPagina.findMany({ select: { datos: true } }),
   ]);
   const textos = [
@@ -122,7 +122,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     ...portada.map((i) => i.url),
     ...enseres.map((e) => e.imagenUrl),
     ...paginas.map((p) => p.contenido),
-    ...eventos.map((e) => e.description),
+    ...eventos.flatMap((e) => [e.description, e.fotoCartel]),
     ...contenido.map((p) => JSON.stringify(p.datos)),
     ...rutasDelEntorno(),
   ];

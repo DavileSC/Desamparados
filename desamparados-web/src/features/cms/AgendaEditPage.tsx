@@ -1,10 +1,12 @@
 import { type ReactNode } from 'react'
-import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, MenuItem, Paper, Stack, Switch, TextField, Typography } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Helmet } from 'react-helmet-async'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import ListaDeAgenda from '../inicio/ListaDeAgenda'
+import CartelDeCulto from '../actualidad/agenda/CartelDeCulto'
+import CampoImagen from './CampoImagen'
 import { PAPEL } from '../inicio/estilos'
 import temaPublico from '../../theme'
 import { aDia, aHora } from '../../lib/fechas'
@@ -27,9 +29,13 @@ interface Formulario {
   conFin: boolean
   diaFin: string
   horaFin: string
+  /** En la Agenda pública, como un cartel con foto y dedicatoria. */
+  cartel: boolean
+  dedicatoria: string
+  fotoCartel: string
 }
 
-const vacio: Formulario = { title: '', description: '', location: '', type: 'CULTO', dia: '', hora: '', conFin: false, diaFin: '', horaFin: '' }
+const vacio: Formulario = { title: '', description: '', location: '', type: 'CULTO', dia: '', hora: '', conFin: false, diaFin: '', horaFin: '', cartel: false, dedicatoria: '', fotoCartel: '' }
 
 const momento = (dia: string, hora: string) => (dia && hora ? new Date(`${dia}T${hora}`) : null)
 
@@ -41,6 +47,7 @@ function desdeEvento(evento: ApiEvent): Formulario {
     type: evento.type,
     dia: aDia(inicio), hora: aHora(inicio),
     conFin: fin !== null, diaFin: fin ? aDia(fin) : '', horaFin: fin ? aHora(fin) : '',
+    cartel: evento.cartel ?? false, dedicatoria: evento.dedicatoria ?? '', fotoCartel: evento.fotoCartel ?? '',
   }
 }
 
@@ -101,6 +108,10 @@ export default function AgendaEditPage() {
       type: form.type,
       startDate: inicio.toISOString(),
       endDate: fin ? fin.toISOString() : null,
+      cartel: form.cartel,
+      dedicatoria: form.cartel ? form.dedicatoria.trim() || null : null,
+      // Al quitar el cartel la foto se queda guardada: si vuelve a encenderse, ahí sigue.
+      fotoCartel: form.fotoCartel || null,
     }
     await guardarFicha(
       () => (nuevo ? crearEvento(datos) : actualizarEvento(Number(id), datos)),
@@ -233,8 +244,61 @@ export default function AgendaEditPage() {
               </Stack>
             </Panel>
 
+            <Panel titulo="En la Agenda pública">
+              <Stack spacing={1.5}>
+                <FormControlLabel
+                  control={<Switch checked={form.cartel} onChange={(e) => campo('cartel', e.target.checked)} />}
+                  label="Sale en cartel"
+                />
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: '-4px !important' }}>
+                  Para los cultos solemnes y las salidas: triduo, besamanos, función, Rosario… Con foto, grande y aparte de la lista.
+                </Typography>
+                {form.cartel && <>
+                  <TextField
+                    label="Dedicatoria"
+                    size="small"
+                    value={form.dedicatoria}
+                    onChange={(e) => campo('dedicatoria', e.target.value)}
+                    placeholder="en honor de Nuestra Señora de los Desamparados"
+                    helperText="Va debajo del título, en cursiva. Mejor un título corto («Solemne triduo») y lo demás aquí."
+                    slotProps={{ htmlInput: { maxLength: 191 } }}
+                  />
+                  <CampoImagen
+                    valor={form.fotoCartel}
+                    onCambio={(ruta) => campo('fotoCartel', ruta)}
+                    etiqueta="Foto del cartel"
+                    ayuda={`Sin foto, sale la ${form.type === 'PROCESION' ? 'de la procesión' : 'de la Titular'}. JPG, PNG o WebP de hasta 5 MB. Al quitarla o cambiarla y guardar, la anterior se borra del servidor.`}
+                    apilada
+                  />
+                </>}
+              </Stack>
+            </Panel>
           </Stack>
         </Box>
+
+        {form.cartel && (
+          <Box sx={{ mt: 2.5 }}>
+            <Panel titulo="Así sale en la Agenda">
+              {/* El cartel de verdad, con el tema de la web, sin poder pulsarlo. */}
+              <ThemeProvider theme={temaPublico}>
+                <Box inert data-testid="vista-previa-cartel" sx={{ fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', backgroundColor: '#1d1b1e', p: { xs: 1.5, md: 3 } }}>
+                  <CartelDeCulto evento={{
+                    id: 0,
+                    title: form.title.trim() || 'Título del acto',
+                    description: form.description || null,
+                    location: form.location.trim() || null,
+                    startDate: (inicio ?? new Date()).toISOString(),
+                    endDate: fin ? fin.toISOString() : null,
+                    type: form.type,
+                    cartel: true,
+                    dedicatoria: form.dedicatoria.trim() || null,
+                    fotoCartel: form.fotoCartel || null,
+                  }} />
+                </Box>
+              </ThemeProvider>
+            </Panel>
+          </Box>
+        )}
       </Box>
 
       <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="este evento" />
