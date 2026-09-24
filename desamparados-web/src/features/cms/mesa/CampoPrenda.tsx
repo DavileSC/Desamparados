@@ -15,10 +15,17 @@ interface Props {
   /** Si la prenda no se puede prestar (la tiene otro, está en el taller…). */
   onBloqueo?: (bloqueada: boolean) => void
   autoFocus?: boolean
+  /**
+   * El número que ya tiene la papeleta que se corrige. Ese no se mira en el
+   * ropero: la salida pudo pasar y la prenda estar ya devuelta o prestada a
+   * otro; solo se comprueba si se cambia por otro.
+   */
+  asignada?: string | null
 }
 
 type Estado =
   | { tipo: 'vacio' }
+  | { tipo: 'asignada' }
   | { tipo: 'buscando' }
   | { tipo: 'libre'; prenda: PrendaDelRopero }
   | { tipo: 'suya'; prenda: PrendaDelRopero }
@@ -34,12 +41,14 @@ const normalizar = (texto: string) => texto.trim().replace(/\s+/g, '').toUpperCa
  * está libre (y su talla), si ya la tiene esta persona, quién la tiene si es
  * de otro, o que no está en el ropero, con la opción de darla de alta ahí.
  */
-export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoId, crear, onCrear, onBloqueo, autoFocus }: Props) {
+export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoId, crear, onCrear, onBloqueo, autoFocus, asignada }: Props) {
   const [estado, setEstado] = useState<Estado>({ tipo: 'vacio' })
   const numero = normalizar(valor)
+  const esLaAsignada = Boolean(asignada) && numero === normalizar(asignada ?? '')
 
   useEffect(() => {
     if (!numero) { setEstado({ tipo: 'vacio' }); return }
+    if (esLaAsignada) { setEstado({ tipo: 'asignada' }); return }
     let cancelado = false
     setEstado({ tipo: 'buscando' })
     const espera = window.setTimeout(() => {
@@ -64,7 +73,7 @@ export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoI
         .catch(() => { if (!cancelado) setEstado({ tipo: 'error' }) })
     }, ESPERA_MS)
     return () => { cancelado = true; window.clearTimeout(espera) }
-  }, [numero, tipo, hermanoId])
+  }, [numero, tipo, hermanoId, esLaAsignada])
 
   // Lo que no se puede prestar bloquea el botón de apuntar; «no está» solo si no se da de alta.
   const bloqueada = estado.tipo === 'ocupada' || (estado.tipo === 'falta' && !crear)
@@ -73,6 +82,7 @@ export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoI
   const talla = (p: PrendaDelRopero) => (p.talla ? ` · talla ${p.talla}` : '')
   const ayuda = (() => {
     switch (estado.tipo) {
+      case 'asignada': return 'Asignada en esta papeleta'
       case 'buscando': return 'Mirando en el ropero…'
       case 'libre': return `${estado.prenda.estado === 'LAVADO' ? 'Libre (constaba en el lavado)' : 'Libre en el ropero'}${talla(estado.prenda)}`
       case 'suya': return `Ya la tiene esta persona${talla(estado.prenda)}`

@@ -12,6 +12,7 @@ import {
   generarHermanos,
   generarPapeletas,
   generarPrendas,
+  conCingulosSinDevolver,
   generarRecibos,
   generarReparto,
   generarSolicitudes,
@@ -318,11 +319,44 @@ describe('procesión de demostración', () => {
 describe('reparto y albacería de demostración', () => {
   const hermanos = generarHermanos(300, ANIO);
   const { turnos, citas } = generarReparto(hermanos, ANIO);
-  const prendas = generarPrendas(hermanos);
+  const papeletasSinCingulo = generarPapeletas(hermanos, generarRecibos(hermanos, ANIO));
+  const prendas = generarPrendas(papeletasSinCingulo);
+  const papeletas = conCingulosSinDevolver(papeletasSinCingulo, prendas);
 
   test('es determinista', () => {
     assert.deepEqual(generarReparto(hermanos, ANIO), generarReparto(hermanos, ANIO));
-    assert.deepEqual(generarPrendas(hermanos), generarPrendas(hermanos));
+    assert.deepEqual(generarPrendas(papeletasSinCingulo), generarPrendas(papeletasSinCingulo));
+  });
+
+  test('la ropa de cada papeleta existe en el ropero, y un número no va en dos papeletas del mismo año', () => {
+    const delRopero = new Set(prendas.map((p) => p.numero));
+    const vistas = new Set<string>();
+    for (const p of papeletas) {
+      for (const numero of [p.numTunicaAsignada, p.numCapiroteAsignado]) {
+        if (!numero) continue;
+        assert.ok(delRopero.has(numero), `${numero} no está en el ropero`);
+        const clave = `${p.year}|${numero}`;
+        assert.ok(!vistas.has(clave), `${numero} va en dos papeletas de ${p.year}`);
+        vistas.add(clave);
+      }
+      if (p.origenTunica !== 'ROPERO') assert.equal(p.numTunicaAsignada, null, 'con túnica propia o sin túnica no lleva número del ropero');
+    }
+  });
+
+  test('la ropa se devuelve: lo poco sin devolver lo tiene quien lo llevó en su última papeleta, con su cíngulo', () => {
+    const prestadas = prendas.filter((p) => p.estado === 'PRESTADA');
+    assert.ok(prestadas.length > 0, 'la lista «Sin devolver» saldría vacía');
+    assert.ok(prestadas.length < prendas.length / 5, `${prestadas.length} sin devolver: casi todo tiene que haber vuelto`);
+    for (const prenda of prestadas) {
+      const suyas = papeletas.filter((p) => p.dniHermano === prenda.dniHermano && (p.numTunicaAsignada === prenda.numero || p.numCapiroteAsignado === prenda.numero));
+      assert.ok(suyas.length > 0, `${prenda.numero} está prestada a quien nunca la llevó`);
+    }
+    const cingulos = papeletas.filter((p) => p.cingulo === 'PRESTADO');
+    assert.ok(cingulos.length > 0);
+    for (const p of cingulos) {
+      assert.ok(prestadas.some((t) => t.numero === p.numTunicaAsignada && t.dniHermano === p.dniHermano), 'un cíngulo sin devolver sin su túnica');
+    }
+    assert.ok(papeletas.filter((p) => p.origenTunica === 'ROPERO').every((p) => p.cingulo === 'PRESTADO' || p.cingulo === 'DEVUELTO'));
   });
 
   test('hay turnos por venir, que es lo que cuenta el panel', () => {

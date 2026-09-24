@@ -339,7 +339,10 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     renderWithProviders(<MesaProcesionPage />)
     const tabla = await screen.findByRole('table', { name: 'Apuntados' })
     const aaron = within(tabla).getByRole('row', { name: /Aaron/ })
-    expect(within(aaron).getByText('06/05/2009')).toBeInTheDocument()
+    // La fecha de nacimiento y el teléfono están en la ficha, no en la tabla.
+    expect(within(tabla).queryByRole('columnheader', { name: 'Nacimiento' })).not.toBeInTheDocument()
+    expect(within(tabla).queryByRole('columnheader', { name: 'Teléfono' })).not.toBeInTheDocument()
+    expect(within(aaron).queryByText('623577927')).not.toBeInTheDocument()
     expect(within(aaron).getByText('1,45')).toBeInTheDocument()
     expect(within(aaron).getByText('Propia')).toBeInTheDocument()
     expect(within(aaron).getByText('Recogida')).toBeInTheDocument()
@@ -388,6 +391,34 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     await user.click(screen.getByRole('button', { name: 'Dárselo ahora' }))
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'PATCH' && l.url.includes('/admin/papeletas/5'))).toBe(true))
     expect(llamadas.find((l) => l.url.includes('/admin/papeletas/5'))?.cuerpo).toEqual({ cingulo: 'PRESTADO' })
+  })
+
+  it('al corregir, la ropa que ya tiene la papeleta no se mira en el ropero; solo la que se cambia', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem('mesa.zona', 'listado')
+    const papeleta = {
+      id: 5, year: 2027, puesto: 'Nazareno', puestoPedido: 'Nazareno', tramo: null, observaciones: null,
+      numTunicaAsignada: '140-107', numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: 'ROPERO' as const, cingulo: 'DEVUELTO' as const,
+      recibo: { id: 1, concepto: 'Papeleta Sitio 2027', importe: 0, estado: 'EXENTO' as const, metodoPago: null, tipo: 'PAPELETA_SITIO' },
+    }
+    const otraPersona = { id: 3, numero: '140-107', talla: '140', estado: 'PRESTADA' as const, hermano: { id: 5, nombre: 'Lucía', apellidos: 'Rosillo Mansidao' } }
+    const llamadas = servidor({
+      ficha: { ...FICHA, papeleta, requisitos: AL_DIA },
+      prendas: { '140-107': [otraPersona], '140-200': [{ ...otraPersona, numero: '140-200' }] },
+    })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+
+    // La salida pasó y la túnica ya la tiene otra persona: su papeleta se sigue pudiendo corregir.
+    expect(await screen.findByText('Asignada en esta papeleta')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled()
+    expect(llamadas.some((l) => l.url.includes('/mesa/prendas'))).toBe(false)
+
+    const tunica = screen.getByRole('textbox', { name: 'N.º de túnica' })
+    await user.clear(tunica)
+    await user.type(tunica, '140-200')
+    expect(await screen.findByText('La tiene Lucía Rosillo Mansidao')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled())
   })
 
   it('Alt+número cambia de zona, y cada ordenador la recuerda', async () => {

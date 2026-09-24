@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Alert, Box, Button, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import {
   anularPapeleta, cancelarSolicitud, corregirFicha, corregirPapeleta, corregirSolicitud,
@@ -14,6 +14,9 @@ import { NOMBRE_METODO, alturaEnMetros, euros } from './formato'
 import { mensajeDeFallo } from './enVivo'
 
 type Tocado = 'CAPIROTE' | 'FARAONA' | 'NINGUNO'
+
+/** Dos campos por fila; el primero, algo más ancho. */
+const dosColumnas = { display: 'grid', gap: 1.5, gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', alignItems: 'start' } as const
 
 interface Props {
   ficha: FichaDeMesa
@@ -82,14 +85,14 @@ function CorreccionSolicitud({ ficha, role, puestosUsados, onHecho, onRecargar }
   }
 
   return (
-    <Stack spacing={2.25} component="form" onSubmit={(e) => { e.preventDefault(); void guardar() }}>
+    <Stack spacing={1.5} component="form" onSubmit={(e) => { e.preventDefault(); void guardar() }}>
       <AvisoSituacion ficha={ficha} role={role} onRecargar={onRecargar} />
-      <Alert severity="info" icon={false}>
+      <Alert severity="info" icon={false} sx={{ py: 0 }}>
         Apuntado{solicitud.origen === 'WEB' ? ' desde su área' : ' en la mesa'}, sin recoger
         {ficha.requisitos.totalPendiente > 0 ? ` · debe ${euros(ficha.requisitos.totalPendiente)}` : ' · al día'}
       </Alert>
 
-      <DatosPersona datos={datos} onCambiar={setDatos} />
+      <DatosPersona datos={datos} onCambiar={setDatos} plegados />
 
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.5 }}>
         <Typography component="legend" sx={leyenda}>Lo que pide</Typography>
@@ -141,7 +144,8 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
   // El devuelto ya no se toca aquí; el de antes de contar cíngulos (sin dato), tampoco si no se elige.
   const cinguloEditable = conRopa && papeleta.cingulo !== 'DEVUELTO'
   const cinguloAntes: CinguloEnMesa | null = papeleta.cingulo === 'DEVUELTO' ? null : papeleta.cingulo
-  const [cingulo, setCingulo] = useState<CinguloEnMesa>(cinguloAntes ?? (papeleta.origenTunica === 'ROPERO' ? 'PRESTADO' : papeleta.origenTunica === 'PROPIA' ? 'PROPIO' : 'NINGUNO'))
+  const cinguloInicial: CinguloEnMesa = cinguloAntes ?? (papeleta.origenTunica === 'ROPERO' ? 'PRESTADO' : papeleta.origenTunica === 'PROPIA' ? 'PROPIO' : 'NINGUNO')
+  const [cingulo, setCingulo] = useState<CinguloEnMesa>(cinguloInicial)
   // Prestarlo no gasta uno del ropero si ya lo tiene con esta papeleta o trae otro sin devolver.
   const cinguloSinGastar = papeleta.cingulo === 'PRESTADO' || ficha.cingulosSinDevolver.some((c) => c.papeletaId !== papeleta.id)
   const [altura, setAltura] = useState(alturaEnMetros(ficha.alturaHombro))
@@ -177,7 +181,8 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
           numCapiroteAsignado: tocado === 'CAPIROTE' ? capirote.trim() || null : null,
           numFaraonaAsignada: tocado === 'FARAONA' ? faraona.trim() || null : null,
           crearPrendas: (Object.keys(crear) as TipoRopa[]).filter((t) => crear[t]),
-          ...(cinguloEditable && cingulo !== cinguloAntes && { cingulo }),
+          // Solo si se ha tocado: en las papeletas de antes (sin dato) no se inventa nada.
+          ...(cinguloEditable && cingulo !== cinguloInicial && { cingulo }),
         }),
       })
       onHecho({ tono: 'success', texto: `Papeleta de ${datos.nombre.trim()} corregida.` })
@@ -215,9 +220,9 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
   }
 
   return (
-    <Stack spacing={2.25} component="form" onSubmit={(e) => { e.preventDefault(); void guardar() }}>
+    <Stack spacing={1.5} component="form" onSubmit={(e) => { e.preventDefault(); void guardar() }}>
       <AvisoSituacion ficha={ficha} role={role} onRecargar={onRecargar} />
-      <Alert severity="success" icon={false}>
+      <Alert severity="success" icon={false} sx={{ py: 0 }}>
         Recogida · {recibo.importe === 0 ? 'sin cobro' : `${euros(recibo.importe)} ${recibo.estado === 'PAGADO' ? `pagado${recibo.metodoPago ? ` en ${NOMBRE_METODO[recibo.metodoPago].toLowerCase()}` : ''}` : recibo.estado.toLowerCase()}`}
         {papeleta.puestoPedido && papeleta.puestoPedido !== papeleta.puesto ? ` · pidió ${papeleta.puestoPedido}` : ''}
       </Alert>
@@ -231,42 +236,50 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
         </Alert>
       )}
 
-      <DatosPersona datos={datos} onCambiar={setDatos} />
+      <DatosPersona datos={datos} onCambiar={setDatos} plegados />
 
-      <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.5 }}>
+      <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.25 }}>
         <Typography component="legend" sx={leyenda}>{conRopa ? 'Puesto y ropa' : 'Puesto'}</Typography>
-        <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)' }}>
+        <Box sx={dosColumnas}>
           <CampoPuesto valor={puesto} onCambiar={setPuesto} salida={ficha.salida} usados={puestosUsados} />
-          <TextField size="small" label="Talla (hombro)" placeholder="1,45" value={altura} onChange={(e) => setAltura(e.target.value)} slotProps={{ htmlInput: { inputMode: 'decimal' } }} helperText="En metros" />
+          <TextField size="small" label="Talla (m)" placeholder="1,45" value={altura} onChange={(e) => setAltura(e.target.value)} slotProps={{ htmlInput: { inputMode: 'decimal' } }} />
         </Box>
 
+        {/* Cada prenda en una fila (de dónde sale y su número): así el panel cabe sin bajar. */}
         {conRopa && (
           <>
-            <ToggleButtonGroup exclusive size="small" fullWidth value={origen} onChange={(_e, v: OrigenTunica | null) => v && setOrigen(v)} aria-label="Túnica">
-              <ToggleButton value="ROPERO">Del ropero</ToggleButton>
-              <ToggleButton value="PROPIA">Propia</ToggleButton>
-              <ToggleButton value="NINGUNA">No lleva</ToggleButton>
-            </ToggleButtonGroup>
-            {origen === 'ROPERO' && (
-              <CampoPrenda tipo="TUNICA" etiqueta="N.º de túnica" valor={tunica} onCambiar={setTunica} hermanoId={ficha.id} crear={crear.TUNICA} onCrear={(c) => setCrear({ ...crear, TUNICA: c })} onBloqueo={bloqueoTunica} />
-            )}
-            <ToggleButtonGroup exclusive size="small" fullWidth value={tocado} onChange={(_e, v: Tocado | null) => v && setTocado(v)} aria-label="Capirote o faraona">
-              <ToggleButton value="CAPIROTE">Capirote</ToggleButton>
-              <ToggleButton value="FARAONA">Faraona</ToggleButton>
-              <ToggleButton value="NINGUNO">Ninguno</ToggleButton>
-            </ToggleButtonGroup>
-            {tocado === 'CAPIROTE' && (
-              <CampoPrenda tipo="CAPIROTE" etiqueta="N.º de capirote" valor={capirote} onCambiar={setCapirote} hermanoId={ficha.id} crear={crear.CAPIROTE} onCrear={(c) => setCrear({ ...crear, CAPIROTE: c })} onBloqueo={bloqueoCapirote} />
-            )}
-            {tocado === 'FARAONA' && (
-              <CampoPrenda tipo="FARAONA" etiqueta="N.º de faraona" valor={faraona} onCambiar={setFaraona} hermanoId={ficha.id} crear={crear.FARAONA} onCrear={(c) => setCrear({ ...crear, FARAONA: c })} onBloqueo={bloqueoFaraona} />
-            )}
-            {cinguloEditable
-              ? <CampoCingulo valor={cingulo} onCambiar={setCingulo} quedan={ficha.cingulos.enElRopero} sinGastar={cinguloSinGastar} />
-              : <Typography variant="body2" color="text.secondary">Cíngulo: devuelto.</Typography>}
+            <Box sx={dosColumnas}>
+              <TextField select size="small" label="Túnica" value={origen} onChange={(e) => setOrigen(e.target.value as OrigenTunica)}>
+                <MenuItem value="ROPERO">Del ropero</MenuItem>
+                <MenuItem value="PROPIA">Propia</MenuItem>
+                <MenuItem value="NINGUNA">No lleva</MenuItem>
+              </TextField>
+              {origen === 'ROPERO' && (
+                <CampoPrenda tipo="TUNICA" etiqueta="N.º de túnica" asignada={papeleta.numTunicaAsignada} valor={tunica} onCambiar={setTunica} hermanoId={ficha.id} crear={crear.TUNICA} onCrear={(c) => setCrear({ ...crear, TUNICA: c })} onBloqueo={bloqueoTunica} />
+              )}
+            </Box>
+            <Box sx={dosColumnas}>
+              <TextField select size="small" label="Capirote o faraona" value={tocado} onChange={(e) => setTocado(e.target.value as Tocado)}>
+                <MenuItem value="CAPIROTE">Capirote</MenuItem>
+                <MenuItem value="FARAONA">Faraona</MenuItem>
+                <MenuItem value="NINGUNO">Ninguno</MenuItem>
+              </TextField>
+              {tocado === 'CAPIROTE' && (
+                <CampoPrenda tipo="CAPIROTE" etiqueta="N.º de capirote" asignada={papeleta.numCapiroteAsignado} valor={capirote} onCambiar={setCapirote} hermanoId={ficha.id} crear={crear.CAPIROTE} onCrear={(c) => setCrear({ ...crear, CAPIROTE: c })} onBloqueo={bloqueoCapirote} />
+              )}
+              {tocado === 'FARAONA' && (
+                <CampoPrenda tipo="FARAONA" etiqueta="N.º de faraona" asignada={papeleta.numFaraonaAsignada} valor={faraona} onCambiar={setFaraona} hermanoId={ficha.id} crear={crear.FARAONA} onCrear={(c) => setCrear({ ...crear, FARAONA: c })} onBloqueo={bloqueoFaraona} />
+              )}
+            </Box>
           </>
         )}
-        <TextField size="small" label="Observaciones" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} multiline minRows={1} maxRows={4} />
+        {/* El cíngulo y las observaciones comparten fila: una menos que bajar. */}
+        <Box sx={conRopa ? dosColumnas : undefined}>
+          {conRopa && (cinguloEditable
+            ? <CampoCingulo compacto valor={cingulo} onCambiar={setCingulo} quedan={ficha.cingulos.enElRopero} sinGastar={cinguloSinGastar} />
+            : <TextField size="small" label="Cíngulo" value="Devuelto" disabled />)}
+          <TextField size="small" fullWidth label="Observaciones" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} multiline minRows={1} maxRows={4} />
+        </Box>
       </Box>
 
       {error && <Alert severity="error">{error}</Alert>}

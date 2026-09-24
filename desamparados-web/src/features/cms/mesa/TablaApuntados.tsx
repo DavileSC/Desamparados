@@ -3,7 +3,7 @@ import type { Apuntado, Salida } from '../../../lib/api/mesa'
 import { useColoresContabilidad } from '../contabilidad/tema'
 import { cabeceraTabla } from '../inventario/tabla'
 import Pildora from '../listados/Pildora'
-import { alturaEnMetros, euros, fechaCorta } from './formato'
+import { alturaEnMetros, euros } from './formato'
 
 interface Props {
   apuntados: Apuntado[]
@@ -35,24 +35,23 @@ function Estado({ a }: { a: Apuntado }) {
 }
 
 /**
- * Los apuntados como la hoja de siempre: nombre, apellidos, fecha de
- * nacimiento, teléfono, puesto, talla, túnica y capirote o faraona, y en qué
- * punto está cada uno. Al pulsar una fila se abre la persona en el panel
- * para corregirla. En el Rosario, sin ropa: se va de traje.
+ * Los apuntados como la hoja de siempre: nombre, apellidos, puesto, talla,
+ * túnica, capirote o faraona y cíngulo, y en qué punto está cada uno. La
+ * fecha de nacimiento y el teléfono están en su ficha: al pulsar una fila se
+ * abre la persona en el panel. En el Rosario, sin ropa: se va de traje.
  */
 export default function TablaApuntados({ apuntados, salida, seleccionado, onElegir }: Props) {
   const { fondoCabecera } = useColoresContabilidad()
   const conRopa = salida === 'PASION'
-  const columnas = conRopa ? 10 : 7
+  const columnas = conRopa ? 8 : 5
   return (
     <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 300px)', minHeight: 320 }}>
-      <Table size="small" stickyHeader aria-label="Apuntados" sx={{ minWidth: conRopa ? 1080 : 760, '& td': { whiteSpace: 'nowrap' } }}>
+      <Table size="small" stickyHeader aria-label="Apuntados" sx={{ minWidth: conRopa ? 880 : 560, '& td': { whiteSpace: 'nowrap' } }}>
         <TableHead>
-          <TableRow sx={cabeceraTabla(fondoCabecera)}>
+          {/* La cabecera se queda fija al bajar: su tinte es translúcido en oscuro, así que va sobre el color de la tarjeta para tapar las filas. */}
+          <TableRow sx={{ ...cabeceraTabla(fondoCabecera), '& th': { ...cabeceraTabla(fondoCabecera)['& th'], backgroundColor: 'background.paper', backgroundImage: `linear-gradient(${fondoCabecera}, ${fondoCabecera})` } }}>
             <TableCell>Nombre</TableCell>
             <TableCell>Apellidos</TableCell>
-            <TableCell>Nacimiento</TableCell>
-            <TableCell>Teléfono</TableCell>
             <TableCell>Puesto</TableCell>
             <TableCell align="right">Talla</TableCell>
             {conRopa && <TableCell>Túnica</TableCell>}
@@ -78,8 +77,6 @@ export default function TablaApuntados({ apuntados, salida, seleccionado, onEleg
               >
                 <TableCell sx={{ fontWeight: 600 }}>{a.hermano.nombre}</TableCell>
                 <TableCell>{a.hermano.apellidos}</TableCell>
-                <TableCell sx={{ fontVariantNumeric: 'tabular-nums' }}>{fechaCorta(a.hermano.fechaNacimiento)}</TableCell>
-                <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(!a.hermano.telefono && tenue) }}>{a.hermano.telefono ?? '—'}</TableCell>
                 <TableCell>{a.puesto}{a.puestoPedido && a.puestoPedido !== a.puesto ? <Typography component="span" variant="body2" color="text.secondary"> (pidió {a.puestoPedido})</Typography> : null}</TableCell>
                 <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', ...(!a.hermano.alturaHombro && tenue) }}>{a.hermano.alturaHombro ? alturaEnMetros(a.hermano.alturaHombro) : '—'}</TableCell>
                 {conRopa && <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(!tunica && tenue) }}>{tunica || '—'}</TableCell>}

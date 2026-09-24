@@ -29,10 +29,12 @@ import {
 } from '@prisma/client';
 import { hash } from 'bcryptjs';
 import db from '../src/config/db';
+import { CLAVE_CINGULOS } from '../src/services/procesion/cingulos';
 import {
   generarHermanos,
   generarPapeletas,
   generarPrendas,
+  conCingulosSinDevolver,
   generarRecibos,
   generarReparto,
   generarSolicitudes,
@@ -187,7 +189,10 @@ export async function sembrarDemostracion(): Promise<void> {
   console.log(`   ${movimientos.length} movimientos contables`);
 
   // --- PAPELETAS DE SITIO ---
-  const papeletas = generarPapeletas(hermanos, recibos);
+  // El ropero se calcula ya: quien no ha devuelto la túnica tampoco ha devuelto el cíngulo.
+  const papeletasSinCingulo = generarPapeletas(hermanos, recibos);
+  const prendas = generarPrendas(papeletasSinCingulo);
+  const papeletas = conCingulosSinDevolver(papeletasSinCingulo, prendas);
   await db.papeletaSitio.createMany({
     data: papeletas.map((p) => ({
       hermanoId: idPorDni.get(p.dniHermano)!,
@@ -198,6 +203,8 @@ export async function sembrarDemostracion(): Promise<void> {
       numero: p.numero,
       numTunicaAsignada: p.numTunicaAsignada,
       numCapiroteAsignado: p.numCapiroteAsignado,
+      origenTunica: p.origenTunica,
+      cingulo: p.cingulo,
     })),
   });
   console.log(`   ${papeletas.length} papeletas de sitio`);
@@ -232,7 +239,8 @@ export async function sembrarDemostracion(): Promise<void> {
   console.log(`   ${turnos.length} turnos de reparto con ${citas.length} citas`);
 
   // --- ROPERO ---
-  const prendas = generarPrendas(hermanos);
+  // Los cíngulos no van numerados: el Grupo tiene estos (se cuentan en la mesa).
+  await db.configuracion.upsert({ where: { key: CLAVE_CINGULOS }, update: { value: '70' }, create: { key: CLAVE_CINGULOS, value: '70' } });
   await db.prenda.createMany({
     data: prendas.map((p) => ({
       numero: p.numero,

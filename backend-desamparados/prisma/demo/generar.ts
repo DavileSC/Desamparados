@@ -505,7 +505,14 @@ export interface PapeletaDemo {
   numero: number;
   numTunicaAsignada: string | null;
   numCapiroteAsignado: string | null;
+  origenTunica: 'ROPERO' | 'PROPIA' | 'NINGUNA';
+  /** La ropa se devuelve siempre: el cíngulo prestado ya volvió (salvo quien no lo ha traído, ver `conCingulosSinDevolver`). */
+  cingulo: 'PRESTADO' | 'DEVUELTO' | 'PROPIO' | 'NINGUNO';
 }
+
+/** El ropero de la demostración: TUN-101…TUN-180 y CAP-181…CAP-220 (ver generarPrendas). */
+const TUNICAS_DEL_ROPERO = Array.from({ length: 80 }, (_, i) => `TUN-${101 + i}`);
+const CAPIROTES_DEL_ROPERO = Array.from({ length: 40 }, (_, i) => `CAP-${181 + i}`);
 
 const TRAMOS = ['Tramo 1 · Cruz de guía', 'Tramo 2 · Cristo', 'Tramo 3 · Palio', 'Tramo 4 · Presidencia'];
 
@@ -515,15 +522,31 @@ const FUERA_DEL_CORTEJO = ['Hombre de trono', 'Capataz', 'Músico'];
 /**
  * Una papeleta por cada recibo de papeleta que se llegó a emitir. El sitio sale
  * del puesto del hermano, y quien no tiene túnica propia se lleva una del
- * ropero.
+ * ropero: una que existe y que ese año no lleva nadie más (la del año pasado,
+ * si está libre). Si el ropero se queda sin túnicas o sin capirotes, no se
+ * inventan números.
  */
 export function generarPapeletas(hermanos: HermanoDemo[], recibos: ReciboDemo[]): PapeletaDemo[] {
   const azar = generadorAleatorio(SEMILLAS.procesion);
   const porDni = new Map(hermanos.map((h) => [h.dni, h]));
   const papeletas: PapeletaDemo[] = [];
   const numeroPorAnio = new Map<number, number>();
+  // Año a año, para que «la del año pasado» exista cuando se reparte la de este.
+  const ordenados = recibos.map((r, i) => ({ r, i })).sort((a, b) => a.r.year - b.r.year || a.i - b.i).map(({ r }) => r);
+  const usadas = new Map<string, Set<string>>();
+  const ultima = new Map<string, string>();
+  const elegir = (year: number, dni: string, tipo: 'TUN' | 'CAP', delRopero: string[]) => {
+    const clave = `${year}|${tipo}`;
+    const usadasEseAnio = usadas.get(clave) ?? new Set<string>();
+    usadas.set(clave, usadasEseAnio);
+    const suya = ultima.get(`${dni}|${tipo}`);
+    const libres = delRopero.filter((n) => !usadasEseAnio.has(n));
+    const numero = suya && !usadasEseAnio.has(suya) ? suya : libres.length ? libres[entero(azar(), 0, libres.length - 1)] : null;
+    if (numero) { usadasEseAnio.add(numero); ultima.set(`${dni}|${tipo}`, numero); }
+    return numero;
+  };
 
-  for (const recibo of recibos) {
+  for (const recibo of ordenados) {
     if (recibo.tipo !== 'PAPELETA_SITIO' || recibo.estado === 'ANULADO') continue;
     const hermano = porDni.get(recibo.dniHermano);
     if (!hermano) continue;
@@ -533,6 +556,7 @@ export function generarPapeletas(hermanos: HermanoDemo[], recibos: ReciboDemo[])
 
     const enElCortejo = !FUERA_DEL_CORTEJO.includes(hermano.puesto);
     const delRopero = enElCortejo && !hermano.tieneTunicaPropia;
+    const origenTunica = !enElCortejo ? 'NINGUNA' : delRopero ? 'ROPERO' : 'PROPIA';
     papeletas.push({
       dniHermano: hermano.dni,
       claveRecibo: `${recibo.dniHermano}|${recibo.year}|${recibo.concepto}`,
@@ -540,8 +564,10 @@ export function generarPapeletas(hermanos: HermanoDemo[], recibos: ReciboDemo[])
       puesto: hermano.puesto,
       tramo: enElCortejo ? TRAMOS[entero(azar(), 0, TRAMOS.length - 1)] : null,
       numero: orden,
-      numTunicaAsignada: delRopero ? `TUN-${entero(azar(), 101, 180)}` : null,
-      numCapiroteAsignado: delRopero ? `CAP-${entero(azar(), 181, 220)}` : null,
+      numTunicaAsignada: delRopero ? elegir(recibo.year, hermano.dni, 'TUN', TUNICAS_DEL_ROPERO) : null,
+      numCapiroteAsignado: delRopero ? elegir(recibo.year, hermano.dni, 'CAP', CAPIROTES_DEL_ROPERO) : null,
+      origenTunica,
+      cingulo: origenTunica === 'ROPERO' ? 'DEVUELTO' : origenTunica === 'PROPIA' ? 'PROPIO' : 'NINGUNO',
     });
   }
 
@@ -640,7 +666,7 @@ export interface PrendaDemo {
   numero: string;
   tipo: 'TUNICA' | 'CAPIROTE';
   talla: string;
-  estado: 'DISPONIBLE' | 'PRESTADA' | 'TALLER' | 'BAJA';
+  estado: 'DISPONIBLE' | 'PRESTADA' | 'LAVADO' | 'TALLER' | 'BAJA';
   dniHermano: string | null;
   fechaAsignacion: Date | null;
   observaciones: string | null;
@@ -651,49 +677,58 @@ const TALLAS_ROPERO = { tunica: ['1.55m', '1.62m', '1.70m', '1.78m', '1.85m'], c
 /**
  * El ropero: 80 túnicas y 40 capirotes. La numeración arranca en 101 para no
  * chocar con las prendas del contenido de ejemplo, donde `numero` es único.
+ *
+ * Todo lo prestado se devuelve después de la salida, y las túnicas ya están
+ * lavadas: casi todo está en el ropero, algo roto en el taller y alguna de
+ * baja. Unas pocas siguen sin devolver, en manos de quien las llevó en su
+ * última papeleta: son las que salen en la lista «Sin devolver» de la mesa.
  */
-export function generarPrendas(hermanos: HermanoDemo[], momento: Date = new Date()): PrendaDemo[] {
+export function generarPrendas(papeletas: PapeletaDemo[] = []): PrendaDemo[] {
   const azar = generadorAleatorio(SEMILLAS.procesion + 1);
-  const hoy = inicioDelDia(momento);
-  const candidatos = hermanos.filter((h) => h.activo && !h.tieneTunicaPropia);
+  // Quién llevó cada prenda la última vez, y qué año.
+  const ultimoQueLaLlevo = new Map<string, { dni: string; year: number }>();
+  for (const p of [...papeletas].sort((a, b) => a.year - b.year)) {
+    for (const numero of [p.numTunicaAsignada, p.numCapiroteAsignado]) {
+      if (numero) ultimoQueLaLlevo.set(numero, { dni: p.dniHermano, year: p.year });
+    }
+  }
   const prendas: PrendaDemo[] = [];
-  const yaTiene = new Set<string>();
 
   for (let i = 0; i < 120; i++) {
     const esTunica = i < 80;
+    const numero = `${esTunica ? 'TUN' : 'CAP'}-${101 + i}`;
     const suerte = azar();
-    // Dos de cada tres están repartidas; el resto, en el ropero o en el taller.
-    const previsto = suerte < 0.62 ? 'PRESTADA' : suerte < 0.9 ? 'DISPONIBLE' : suerte < 0.97 ? 'TALLER' : 'BAJA';
-
-    let dniHermano: string | null = null;
-    if (previsto === 'PRESTADA') {
-      // Un hermano no se lleva dos túnicas: si el elegido ya tiene, se prueba
-      // con otro, y si no aparece ninguno la prenda se queda en el ropero.
-      for (let intento = 0; intento < 8 && dniHermano === null; intento++) {
-        const candidato = candidatos[entero(azar(), 0, candidatos.length - 1)];
-        const clave = `${candidato.dni}|${esTunica}`;
-        if (!yaTiene.has(clave)) {
-          yaTiene.add(clave);
-          dniHermano = candidato.dni;
-        }
-      }
-    }
-
-    const estado = previsto === 'PRESTADA' && dniHermano === null ? 'DISPONIBLE' : previsto;
+    const quien = ultimoQueLaLlevo.get(numero);
+    const sinDevolver = suerte < 0.06 ? quien ?? null : null;
+    const estado = sinDevolver ? 'PRESTADA' : suerte < 0.13 ? 'TALLER' : suerte < 0.16 ? 'BAJA' : 'DISPONIBLE';
     const tallas = esTunica ? TALLAS_ROPERO.tunica : TALLAS_ROPERO.capirote;
 
     prendas.push({
-      numero: `${esTunica ? 'TUN' : 'CAP'}-${101 + i}`,
+      numero,
       tipo: esTunica ? 'TUNICA' : 'CAPIROTE',
       talla: tallas[entero(azar(), 0, tallas.length - 1)],
       estado,
-      dniHermano,
-      fechaAsignacion: dniHermano ? new Date(hoy.getTime() - entero(azar(), 30, 400) * DIA) : null,
-      observaciones: estado === 'TALLER' ? 'Pendiente de arreglo en el taller de costura.' : null,
+      dniHermano: sinDevolver?.dni ?? null,
+      // Se la llevó el último día de reparto de ese año, y no la ha traído.
+      fechaAsignacion: sinDevolver ? new Date(Date.UTC(sinDevolver.year, 1, 24, 19)) : null,
+      observaciones: estado === 'TALLER' ? 'Rota: pendiente de arreglo en el taller de costura.' : null,
     });
   }
 
   return prendas;
+}
+
+/**
+ * Quien no ha devuelto su túnica tampoco ha devuelto el cíngulo que se llevó
+ * con ella: su última papeleta lo tiene prestado.
+ */
+export function conCingulosSinDevolver(papeletas: PapeletaDemo[], prendas: PrendaDemo[]): PapeletaDemo[] {
+  const tunicasSinDevolver = new Map(prendas.filter((p) => p.tipo === 'TUNICA' && p.estado === 'PRESTADA').map((p) => [p.numero, p]));
+  return papeletas.map((p) => {
+    const tunica = p.numTunicaAsignada ? tunicasSinDevolver.get(p.numTunicaAsignada) : undefined;
+    const esLaUltima = tunica && tunica.dniHermano === p.dniHermano && tunica.fechaAsignacion?.getUTCFullYear() === p.year;
+    return esLaUltima ? { ...p, cingulo: 'PRESTADO' as const } : p;
+  });
 }
 
 // =====================================================================
