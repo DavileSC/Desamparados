@@ -1,18 +1,21 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import {
-  Box, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon,
-  ListItemText, Switch, Toolbar, Typography, useMediaQuery, useTheme,
+  Box, ButtonBase, Collapse, Divider, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon,
+  ListItemText, Menu, MenuItem, Switch, Toolbar, Typography, useMediaQuery, useTheme,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
-import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
+import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded'
+import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded'
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import { useAuthStore } from '../features/altas/auth/store'
 import { cerrarSesion } from '../features/altas/auth/session'
 import { TemaCmsProvider } from './temaCms'
 import { useModoCms, useTemaCms } from './useTemaCms'
 import { superficiesCms } from '../theme/cms'
-import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu } from './cmsNavegacion'
+import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu, type Grupo, type ItemMenu } from './cmsNavegacion'
 import { usePanelDeHoy } from './usePanelDeHoy'
 import { designTokens } from '../theme'
 
@@ -20,27 +23,25 @@ const SIDEBAR = superficiesCms('oscuro').sidebar // #100e11, la misma en los dos
 
 /**
  * Densidad del menú, en variables CSS que leen la marca, la navegación y el
- * pie. El menú entero (13 secciones en seis áreas, más el tema y el usuario)
- * mide unos 915px en su versión holgada, así que en cualquier pantalla que no
+ * pie. Abierto entero (catorce secciones en cuatro grupos, más el usuario),
+ * el menú de Administración mide unos 800px en su versión holgada, así que en cualquier pantalla que no
  * sea muy alta aparecía una barra de scroll dentro del propio menú. En vez de
  * dejarlo desbordar, la barra se aprieta por tramos de altura de ventana: los
- * aires primero y la altura de las secciones después. Los rótulos de área se
- * quedan en todos los tramos, porque son lo que hace legible un menú de trece
- * secciones. Cada tramo está medido para caber en su altura mínima, de modo que
+ * aires primero y la altura de las secciones después. Los rótulos de grupo se
+ * quedan en todos los tramos, porque son lo que hace legible un menú de
+ * catorce secciones. Cada tramo está medido para caber en su altura mínima, de modo que
  * un 1366×768 (unos 640px de ventana útil) entra sin scroll.
  */
 const densidadDelMenu = {
   '--cms-pad': '16px',
   '--cms-pad-top': '20px',
   '--cms-escudo': '38px',
-  '--cms-marca': '19px',
+  '--cms-marca': '17px',
   '--cms-item': '36px',
   '--cms-item-fuente': '14px',
   '--cms-icono': '20px',
   '--cms-area-pt': '10px',
   '--cms-area-pb': '6px',
-  '--cms-tema-alto': '30px',
-  '--cms-tema-mb': '14px',
   '--cms-pie-pt': '14px',
   '--cms-avatar': '34px',
   '@media (max-height:899px)': {
@@ -49,19 +50,16 @@ const densidadDelMenu = {
     '--cms-item': '32px',
     '--cms-area-pt': '10px',
     '--cms-area-pb': '4px',
-    '--cms-tema-mb': '10px',
   },
   '@media (max-height:819px)': {
     '--cms-pad': '14px',
     '--cms-pad-top': '14px',
     '--cms-escudo': '32px',
-    '--cms-marca': '18px',
+    '--cms-marca': '17px',
     '--cms-item': '30px',
     '--cms-icono': '19px',
     '--cms-area-pt': '8px',
     '--cms-area-pb': '2px',
-    '--cms-tema-alto': '28px',
-    '--cms-tema-mb': '8px',
     '--cms-pie-pt': '12px',
     '--cms-avatar': '32px',
   },
@@ -77,8 +75,6 @@ const densidadDelMenu = {
     '--cms-icono': '18px',
     '--cms-area-pt': '4px',
     '--cms-area-pb': '0px',
-    '--cms-tema-alto': '26px',
-    '--cms-tema-mb': '6px',
     '--cms-pie-pt': '8px',
     '--cms-avatar': '28px',
   },
@@ -92,8 +88,6 @@ const densidadDelMenu = {
     '--cms-item-fuente': '12.5px',
     '--cms-icono': '17px',
     '--cms-area-pt': '3px',
-    '--cms-tema-alto': '24px',
-    '--cms-tema-mb': '5px',
     '--cms-pie-pt': '7px',
     '--cms-avatar': '26px',
   },
@@ -118,70 +112,143 @@ function Contador({ seccion, valor, tono }: { seccion: string; valor: number; to
   )
 }
 
+/** Grupos abiertos o cerrados a mano, recordados en cada ordenador. */
+const CLAVE_GRUPOS = 'cms-menu-grupos'
+
+/** Hasta este número de secciones el menú va abierto entero: plegar solo estorba. */
+const SECCIONES_SIN_PLEGAR = 6
+
+function leerGrupos(): Partial<Record<Grupo, boolean>> {
+  try {
+    const guardado = window.localStorage.getItem(CLAVE_GRUPOS)
+    return guardado ? JSON.parse(guardado) as Partial<Record<Grupo, boolean>> : {}
+  } catch {
+    return {}
+  }
+}
+
+function guardarGrupos(abiertos: Partial<Record<Grupo, boolean>>) {
+  try { window.localStorage.setItem(CLAVE_GRUPOS, JSON.stringify(abiertos)) } catch { /* sin almacenamiento, se olvida al recargar */ }
+}
+
+/** La entrada que más se ajusta a la dirección: en /cms/procesion/mesa, «Mesa» y no también «Procesión». */
+function entradaActiva(pathname: string, entradas: ItemMenu[]): string | null {
+  if (pathname === '/cms') return '/cms'
+  return entradas
+    .filter((item) => item.href !== '/cms' && (pathname === item.href || pathname.startsWith(`${item.href}/`)))
+    .reduce<string | null>((mejor, item) => (!mejor || item.href.length > mejor.length ? item.href : mejor), null)
+}
+
+const rotulo = {
+  fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.36)',
+} as const
+
+function Seccion({ item, activo, valor, onNavegar }: { item: ItemMenu; activo: boolean; valor: number; onNavegar?: () => void }) {
+  const Icono = item.icono
+  return (
+    <ListItem disablePadding>
+      <ListItemButton
+        component={Link}
+        to={item.href}
+        onClick={onNavegar}
+        selected={activo}
+        sx={{
+          borderRadius: 1.5, minHeight: 'var(--cms-item)', py: 0, px: 1.5, gap: 1.5,
+          '& svg': { fontSize: 'var(--cms-icono)' },
+          // Sin esto el alto de la sección no lo manda `--cms-item`,
+          // sino los 4px de margen que el texto trae de serie.
+          '& .MuiListItemText-root': { my: 0 },
+          color: activo ? '#fff' : 'rgba(255,255,255,0.66)',
+          backgroundColor: activo ? 'primary.main' : 'transparent',
+          '&.Mui-selected:hover': { backgroundColor: 'primary.dark' },
+          '&:hover': { backgroundColor: 'rgba(255,255,255,0.06)' },
+        }}
+      >
+        <ListItemIcon sx={{ minWidth: 0, color: 'inherit' }}><Icono fontSize="small" /></ListItemIcon>
+        <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontSize: 'var(--cms-item-fuente)', lineHeight: 1.3 } } }} />
+        {item.contador && valor > 0 && (
+          <Contador seccion={item.label} valor={valor} tono={item.contador.tono} />
+        )}
+      </ListItemButton>
+    </ListItem>
+  )
+}
+
 function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void }) {
   const location = useLocation()
   const { data } = usePanelDeHoy()
   const contadores = contadoresDelPanel(data)
-  const visibles = itemsMenu.filter((item) => role && item.roles.includes(role))
-  // La entrada que más se ajusta a la dirección: en /cms/procesion/mesa, «Mesa» y no también «Procesión».
-  const hrefActivo = location.pathname === '/cms'
-    ? '/cms'
-    : visibles
-      .filter((item) => item.href !== '/cms' && (location.pathname === item.href || location.pathname.startsWith(`${item.href}/`)))
-      .reduce<string | null>((mejor, item) => (!mejor || item.href.length > mejor.length ? item.href : mejor), null)
+  const [abiertos, setAbiertos] = useState(leerGrupos)
+  const visibles = itemsMenu.filter((item) => role && item.roles.includes(role) && item.grupo !== 'cuenta')
+  const hrefActivo = entradaActiva(location.pathname, visibles)
+  const grupoActivo = visibles.find((item) => item.href === hrefActivo)?.grupo
+  // Quien ve pocas secciones las ve todas; plegar es para Administración y el Hermano Mayor.
+  const plegable = visibles.length > SECCIONES_SIN_PLEGAR
+  const valorDe = (item: ItemMenu) => (item.contador ? contadores[item.contador.de] : 0)
+
+  const alternar = (grupo: Grupo) => {
+    const siguiente = { ...abiertos, [grupo]: !abiertos[grupo] }
+    setAbiertos(siguiente)
+    guardarGrupos(siguiente)
+  }
+
+  const lista = (items: ItemMenu[]) => (
+    <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      {items.map((item) => (
+        <Seccion key={item.href} item={item} activo={item.href === hrefActivo} valor={valorDe(item)} onNavegar={onNavegar} />
+      ))}
+    </List>
+  )
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+    <Box component="nav" aria-label="Secciones del CMS" sx={{ display: 'flex', flexDirection: 'column', pt: 'var(--cms-area-pt)' }}>
+      {lista(visibles.filter((item) => item.grupo === 'suelta'))}
       {GRUPOS.map((grupo) => {
         const items = visibles.filter((item) => item.grupo === grupo)
         if (items.length === 0) return null
+        if (!plegable) {
+          return (
+            <Box key={grupo} sx={{ pt: 'var(--cms-area-pt)' }}>
+              <Typography sx={{ ...rotulo, px: 1.5, pb: 'var(--cms-area-pb)' }}>{grupo}</Typography>
+              {lista(items)}
+            </Box>
+          )
+        }
+        // El grupo de la página en la que se está va siempre abierto: no se
+        // puede plegar lo que se tiene delante.
+        const esElActivo = grupo === grupoActivo
+        const abierto = esElActivo || abiertos[grupo] === true
+        // Plegado, el grupo no esconde lo que pide atención: suma los avisos de sus secciones.
+        const conAviso = items.filter((item) => item.contador && valorDe(item) > 0)
+        const avisos = conAviso.reduce((total, item) => total + valorDe(item), 0)
+        const tono = conAviso.some((item) => item.contador?.tono === 'error') ? 'error' : 'aviso'
+        const idLista = `cms-grupo-${grupo.replace(/\s+/g, '-').toLowerCase()}`
         return (
-          <Box
-            key={grupo}
-            sx={{ pt: 'var(--cms-area-pt)' }}
-          >
-            <Typography
+          <Box key={grupo} sx={{ pt: 'var(--cms-area-pt)' }}>
+            <ButtonBase
+              onClick={() => alternar(grupo)}
+              disabled={esElActivo}
+              aria-expanded={abierto}
+              aria-controls={idLista}
               sx={{
-                px: 1.5, pb: 'var(--cms-area-pb)', fontSize: 11, fontWeight: 600,
-                letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.36)',
+                ...rotulo, width: '100%', justifyContent: 'flex-start', gap: 0.75,
+                px: 1.5, pb: 'var(--cms-area-pb)', pt: '2px', borderRadius: 1, fontFamily: 'inherit',
+                '&:hover': { color: 'rgba(255,255,255,0.7)' },
+                '&.Mui-disabled': { color: 'rgba(255,255,255,0.36)' },
               }}
             >
-              {grupo}
-            </Typography>
-            <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {items.map((item) => {
-                const activo = item.href === hrefActivo
-                const Icono = item.icono
-                const valor = item.contador ? contadores[item.contador.de] : 0
-                return (
-                  <ListItem key={item.href} disablePadding>
-                    <ListItemButton
-                      component={Link}
-                      to={item.href}
-                      onClick={onNavegar}
-                      selected={activo}
-                      sx={{
-                        borderRadius: 1.5, minHeight: 'var(--cms-item)', py: 0, px: 1.5, gap: 1.5,
-                        '& svg': { fontSize: 'var(--cms-icono)' },
-                        // Sin esto el alto de la sección no lo manda `--cms-item`,
-                        // sino los 4px de margen que el texto trae de serie.
-                        '& .MuiListItemText-root': { my: 0 },
-                        color: activo ? '#fff' : 'rgba(255,255,255,0.66)',
-                        backgroundColor: activo ? 'primary.main' : 'transparent',
-                        '&.Mui-selected:hover': { backgroundColor: 'primary.dark' },
-                        '&:hover': { backgroundColor: 'rgba(255,255,255,0.06)' },
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 0, color: 'inherit' }}><Icono fontSize="small" /></ListItemIcon>
-                      <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontSize: 'var(--cms-item-fuente)', lineHeight: 1.3 } } }} />
-                      {item.contador && valor > 0 && (
-                        <Contador seccion={item.label} valor={valor} tono={item.contador.tono} />
-                      )}
-                    </ListItemButton>
-                  </ListItem>
-                )
-              })}
-            </List>
+              <Box component="span" sx={{ flexGrow: 1, textAlign: 'left' }}>{grupo}</Box>
+              {!abierto && (avisos > 0
+                ? <Contador seccion={grupo} valor={avisos} tono={tono} />
+                : <Box component="span" aria-hidden="true" sx={{ letterSpacing: 0, fontVariantNumeric: 'tabular-nums' }}>{items.length}</Box>)}
+              <ExpandMoreRoundedIcon
+                aria-hidden="true"
+                sx={{ fontSize: 16, transition: 'transform 150ms', transform: abierto ? 'none' : 'rotate(-90deg)', opacity: esElActivo ? 0 : 1 }}
+              />
+            </ButtonBase>
+            <Collapse in={abierto} id={idLista}>
+              {lista(items)}
+            </Collapse>
           </Box>
         )
       })}
@@ -190,72 +257,112 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
 }
 
 /**
- * Interruptor del modo oscuro: encendido, oscuro; apagado, claro. Un solo
- * gesto y el estado se lee de un vistazo, en vez de dos botones que había que
- * mirar cuál estaba marcado.
+ * Interruptor del modo oscuro, en la cabecera: el sol a un lado y la luna al
+ * otro, y el estado se lee de un vistazo. Encendido, oscuro.
  */
 function InterruptorTema() {
   const { cambiarModo } = useTemaCms()
   const oscuro = useModoCms() === 'oscuro'
-  return (
+  const pomo = (Icono: typeof LightModeRoundedIcon, color: string) => (
     <Box
-      component="label"
+      component="span"
       sx={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1,
-        minHeight: 'var(--cms-tema-alto)', mb: 'var(--cms-tema-mb)', px: 1.25, py: 0.25,
-        borderRadius: 1.25, backgroundColor: 'rgba(255,255,255,0.06)', cursor: 'pointer',
-        color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600,
+        width: 18, height: 18, borderRadius: '50%', backgroundColor: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.35)',
       }}
     >
-      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-        <DarkModeOutlinedIcon sx={{ fontSize: 16 }} />
-        Modo oscuro
-      </Box>
-      <Switch
-        size="small"
-        checked={oscuro}
-        onChange={(e) => cambiarModo(e.target.checked ? 'oscuro' : 'claro')}
-        slotProps={{ input: { role: 'switch', 'aria-label': 'Modo oscuro' } }}
-        sx={{
-          mr: -0.75,
-          '& .MuiSwitch-switchBase.Mui-checked': { color: '#ffffff' },
-          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#a03d44', opacity: 1 },
-          '& .MuiSwitch-track': { backgroundColor: 'rgba(255,255,255,0.3)' },
-        }}
-      />
+      <Icono sx={{ fontSize: 13, color }} />
     </Box>
+  )
+  return (
+    <Switch
+      checked={oscuro}
+      onChange={(e) => cambiarModo(e.target.checked ? 'oscuro' : 'claro')}
+      icon={pomo(LightModeRoundedIcon, '#c98500')}
+      checkedIcon={pomo(DarkModeRoundedIcon, designTokens.colors.burgundy)}
+      disableRipple
+      slotProps={{ input: { role: 'switch', 'aria-label': 'Modo oscuro' } }}
+      sx={{
+        // Sin tocar el `overflow`: el control invisible de MUI mide el triple
+        // y, suelto, se saldría del menú por la derecha. El foco, en el conjunto.
+        width: 40, height: 22, p: 0, flexShrink: 0, borderRadius: 11,
+        '&:has(.Mui-focusVisible)': { outline: '2px solid #fff', outlineOffset: 2 },
+        '& .MuiSwitch-switchBase': {
+          p: '2px',
+          '&.Mui-checked': { transform: 'translateX(18px)' },
+        },
+        '& .MuiSwitch-track': { borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.22)', opacity: 1 },
+        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#a03d44', opacity: 1 },
+      }}
+    />
   )
 }
 
-function BloqueUsuario({ role }: { role?: string }) {
+/**
+ * El usuario, abajo: su cargo y, al pulsarlo, lo que es suyo y no del Grupo
+ * (su seguridad) y la salida.
+ */
+function BloqueUsuario({ role, onNavegar }: { role?: string; onNavegar?: () => void }) {
+  const [ancla, setAncla] = useState<HTMLElement | null>(null)
+  const location = useLocation()
   const cargo = role ? NOMBRE_CARGO[role] ?? role : ''
   const iniciales = cargo.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
+  const deLaCuenta = itemsMenu.filter((item) => item.grupo === 'cuenta' && role && item.roles.includes(role))
+  const cerrar = () => setAncla(null)
   return (
-    <Box sx={{ borderTop: '1px solid rgba(255,255,255,0.08)', pt: 'var(--cms-pie-pt)', px: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-      <Box
-        aria-hidden="true"
+    <Box sx={{ borderTop: '1px solid rgba(255,255,255,0.08)', pt: 'var(--cms-pie-pt)' }}>
+      <ButtonBase
+        onClick={(e) => setAncla(e.currentTarget)}
+        aria-haspopup="menu"
+        aria-expanded={Boolean(ancla)}
+        aria-label={`Cuenta: ${cargo}`}
         sx={{
-          width: 'var(--cms-avatar)', height: 'var(--cms-avatar)', borderRadius: '50%', flexShrink: 0,
-          backgroundColor: designTokens.colors.burgundy, color: '#fff',
-          fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: '100%', px: 1, py: 0.5, borderRadius: 1.5, gap: 1.5, justifyContent: 'flex-start', fontFamily: 'inherit',
+          '&:hover': { backgroundColor: 'rgba(255,255,255,0.06)' },
         }}
       >
-        {iniciales}
-      </Box>
-      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-        <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{cargo}</Typography>
         <Box
-          component="button"
-          type="button"
-          onClick={() => { void cerrarSesion('cms') }}
+          aria-hidden="true"
           sx={{
-            border: 0, background: 'none', p: 0, cursor: 'pointer', fontFamily: 'inherit',
-            fontSize: 12, color: 'rgba(255,255,255,0.45)', '&:hover': { color: '#fff' },
+            width: 'var(--cms-avatar)', height: 'var(--cms-avatar)', borderRadius: '50%', flexShrink: 0,
+            backgroundColor: designTokens.colors.burgundy, color: '#fff',
+            fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          Cerrar sesión
+          {iniciales}
         </Box>
-      </Box>
+        <Typography component="span" sx={{ flexGrow: 1, minWidth: 0, textAlign: 'left', fontSize: 13, fontWeight: 600, color: '#fff' }}>{cargo}</Typography>
+        <ExpandMoreRoundedIcon aria-hidden="true" sx={{ fontSize: 18, color: 'rgba(255,255,255,0.45)', transform: ancla ? 'rotate(180deg)' : 'none' }} />
+      </ButtonBase>
+      <Menu
+        anchorEl={ancla}
+        open={Boolean(ancla)}
+        onClose={cerrar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{ paper: { sx: { minWidth: 220, mt: -1 } } }}
+      >
+        {deLaCuenta.map((item) => {
+          const Icono = item.icono
+          return (
+            <MenuItem
+              key={item.href}
+              component={Link}
+              to={item.href}
+              selected={location.pathname === item.href}
+              onClick={() => { cerrar(); onNavegar?.() }}
+            >
+              <ListItemIcon><Icono fontSize="small" /></ListItemIcon>
+              {item.label}
+            </MenuItem>
+          )
+        })}
+        {deLaCuenta.length > 0 && <Divider />}
+        <MenuItem onClick={() => { cerrar(); void cerrarSesion('cms') }}>
+          <ListItemIcon><LogoutOutlinedIcon fontSize="small" /></ListItemIcon>
+          Cerrar sesión
+        </MenuItem>
+      </Menu>
     </Box>
   )
 }
@@ -279,27 +386,30 @@ function Contenido() {
         flexDirection: 'column',
       }}
     >
-      <Box
-        component={Link}
-        to="/cms"
-        sx={{ px: 1.25, display: 'flex', alignItems: 'center', gap: 1.25, textDecoration: 'none' }}
-      >
-        <EscudoDelGrupo alto="var(--cms-escudo)" />
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            sx={{ color: '#fff', fontFamily: designTokens.fonts.cms.heading, fontSize: 'var(--cms-marca)', lineHeight: 1.1, letterSpacing: '0.04em' }}
-          >
-            DESAMPARADOS
-          </Typography>
-          <Typography sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)', mt: 0.25 }}>
-            CMS
-          </Typography>
+      {/* La marca y, a su derecha, el modo claro u oscuro. */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box
+          component={Link}
+          to="/cms"
+          sx={{ pl: 0.5, flexGrow: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
+        >
+          <EscudoDelGrupo alto="var(--cms-escudo)" />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              sx={{ color: '#fff', fontFamily: designTokens.fonts.cms.heading, fontSize: 'var(--cms-marca)', lineHeight: 1.1, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
+            >
+              DESAMPARADOS
+            </Typography>
+            <Typography sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)', mt: 0.25 }}>
+              CMS
+            </Typography>
+          </Box>
         </Box>
+        <InterruptorTema />
       </Box>
       <Navegacion role={role} onNavegar={() => setMenuAbierto(false)} />
-      <Box sx={{ mt: 'auto' }} />
-      <InterruptorTema />
-      <BloqueUsuario role={role} />
+      <Box sx={{ mt: 'auto', pt: 1.5 }} />
+      <BloqueUsuario role={role} onNavegar={() => setMenuAbierto(false)} />
     </Box>
   )
 

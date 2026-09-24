@@ -7,6 +7,11 @@ import { itemsMenu, rolesPorRutaCms } from '../cmsNavegacion'
 import { useAuthStore } from '../../features/altas/auth/store'
 import { CLAVE_TEMA_CMS } from '../temaCms'
 
+/** Un enlace del menú por su dirección: plegado su grupo, no tiene nombre accesible. */
+function enlace(container: HTMLElement, href: string) {
+  return container.querySelector(`a[href="${href}"]`)
+}
+
 function entrarComo(role: string) {
   useAuthStore.setState({
     status: 'listo',
@@ -20,24 +25,25 @@ describe('MarcoCms', () => {
     useAuthStore.setState({ status: 'cargando', cms: null, hermano: null })
   })
 
+  // El menú del Hermano Mayor va plegado: los permisos se miran con los grupos cerrados también.
   it('el Hermano Mayor ve tesorería y contabilidad', () => {
     entrarComo('HERMANO_MAYOR')
-    renderWithProviders(<MarcoCms />)
-    expect(screen.getByRole('link', { name: 'Tesorería' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Contabilidad' })).toBeInTheDocument()
+    const { container } = renderWithProviders(<MarcoCms />)
+    expect(enlace(container, '/cms/tesoreria')).toBeInTheDocument()
+    expect(enlace(container, '/cms/contabilidad')).toBeInTheDocument()
   })
 
   it('el Hermano Mayor ve noticias y publicaciones: todo salvo la administración del sistema', () => {
     entrarComo('HERMANO_MAYOR')
-    renderWithProviders(<MarcoCms />)
-    expect(screen.getByRole('link', { name: 'Noticias' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Publicaciones' })).toBeInTheDocument()
+    const { container } = renderWithProviders(<MarcoCms />)
+    expect(enlace(container, '/cms/noticias')).toBeInTheDocument()
+    expect(enlace(container, '/cms/publicaciones')).toBeInTheDocument()
   })
 
   it('el community manager no ve tesorería', () => {
     entrarComo('REDES')
-    renderWithProviders(<MarcoCms />)
-    expect(screen.queryByRole('link', { name: 'Tesorería' })).not.toBeInTheDocument()
+    const { container } = renderWithProviders(<MarcoCms />)
+    expect(enlace(container, '/cms/tesoreria')).not.toBeInTheDocument()
   })
 
   it('la barra lateral se queda fija al bajar por la página', () => {
@@ -118,26 +124,27 @@ describe('el menú del Inicio', () => {
   it('agrupa las secciones por áreas', () => {
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />)
-    for (const grupo of ['Hoy', 'Contenido', 'Censo y enseres', 'Cuentas', 'Sistema']) {
+    for (const grupo of ['Web', 'Censo y procesión', 'Cuentas', 'Sistema']) {
       expect(screen.getByText(grupo)).toBeInTheDocument()
     }
+    // El Inicio va suelto, sin rótulo encima.
+    expect(screen.queryByText('Hoy')).not.toBeInTheDocument()
   })
 
   it('un cargo acotado solo ve los grupos que le tocan', () => {
     entrarComo('REDES')
     renderWithProviders(<MarcoCms />)
-    expect(screen.getByText('Contenido')).toBeInTheDocument()
+    expect(screen.getByText('Web')).toBeInTheDocument()
     // Sin Tesorería ni Contabilidad, el grupo «Cuentas» no tiene nada que agrupar.
     expect(screen.queryByText('Cuentas')).not.toBeInTheDocument()
     expect(screen.queryByText('Censo y enseres')).not.toBeInTheDocument()
   })
 
   it('los contadores salen de los datos del panel', async () => {
-    entrarComo('ADMIN')
+    entrarComo('SECRETARIA')
     renderWithProviders(<MarcoCms />)
-    // 2 borradores en Noticias, 3 hermanos sin número.
-    expect(await screen.findByLabelText('Noticias: 2 pendientes')).toHaveTextContent('2')
-    expect(screen.getByLabelText('Hermanos: 3 pendientes')).toHaveTextContent('3')
+    // 3 hermanos sin número; Secretaría ve el menú abierto entero.
+    expect(await screen.findByLabelText('Hermanos: 3 pendientes')).toHaveTextContent('3')
     // Tesorería no lleva número aunque haya 14 devueltos: se ven en su tarjeta.
     expect(screen.queryByLabelText(/^Tesorería:/)).not.toBeInTheDocument()
   })
@@ -151,15 +158,16 @@ describe('el menú del Inicio', () => {
     })
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />)
-    await screen.findByRole('link', { name: 'Noticias' })
+    await screen.findByRole('button', { name: /^Web/ })
     expect(screen.queryByLabelText(/pendientes$/)).not.toBeInTheDocument()
   })
 
   it('si el panel falla, el menú se pinta igual', async () => {
     responder({}, 500)
     entrarComo('ADMIN')
-    renderWithProviders(<MarcoCms />)
-    expect(await screen.findByRole('link', { name: 'Tesorería' })).toBeInTheDocument()
+    const { container } = renderWithProviders(<MarcoCms />)
+    expect(await screen.findByRole('button', { name: /Cuentas/ })).toBeInTheDocument()
+    expect(enlace(container, '/cms/tesoreria')).toBeInTheDocument()
   })
 
   it('el interruptor de tema arranca en oscuro y recuerda el cambio', async () => {
@@ -172,11 +180,65 @@ describe('el menú del Inicio', () => {
     expect(localStorage.getItem(CLAVE_TEMA_CMS)).toBe('claro')
   })
 
-  it('el bloque de usuario dice el cargo y ofrece salir', () => {
+  it('el bloque de usuario dice el cargo y, al pulsarlo, ofrece su seguridad y salir', async () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<MarcoCms />)
     expect(screen.getByText('Secretaría')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument()
+    // Mi seguridad es de quien entra, no una sección del Grupo: no va en el menú lateral.
+    expect(screen.getByRole('navigation', { name: 'Secciones del CMS' }).querySelector('a[href="/cms/mi-seguridad"]')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Cuenta: Secretaría' }))
+    expect(screen.getByRole('menuitem', { name: 'Mi seguridad' })).toHaveAttribute('href', '/cms/mi-seguridad')
+    expect(screen.getByRole('menuitem', { name: 'Cerrar sesión' })).toBeInTheDocument()
+  })
+
+  it('el interruptor de tema va en la cabecera, junto a la marca', () => {
+    entrarComo('ADMIN')
+    renderWithProviders(<MarcoCms />)
+    const marca = screen.getAllByRole('link')[0]
+    expect(marca.parentElement).toContainElement(screen.getByRole('switch', { name: 'Modo oscuro' }))
+  })
+})
+
+describe('los grupos del menú se pliegan cuando son muchos', () => {
+  beforeEach(() => { localStorage.clear(); responder() })
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  it('quien ve pocas secciones las ve todas, sin plegar', () => {
+    entrarComo('SECRETARIA')
+    renderWithProviders(<MarcoCms />)
+    expect(screen.getByRole('link', { name: 'Mesa de procesión' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: /Censo y procesión/ })).not.toBeInTheDocument()
+  })
+
+  it('el grupo de la página en la que se está va abierto y los demás plegados', () => {
+    entrarComo('ADMIN')
+    renderWithProviders(<MarcoCms />, { ruta: '/cms/tesoreria' })
+    expect(screen.getByRole('link', { name: 'Tesorería' })).toBeVisible()
+    expect(screen.getByRole('button', { name: /Cuentas/ })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: /Cuentas/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Web/ })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('link', { name: 'Noticias' })).not.toBeInTheDocument()
+  })
+
+  it('plegado, el grupo sigue enseñando sus avisos', async () => {
+    entrarComo('ADMIN')
+    renderWithProviders(<MarcoCms />)
+    // 2 borradores en Noticias y 3 hermanos sin número, con sus grupos cerrados.
+    expect(await screen.findByLabelText('Web: 2 pendientes')).toHaveTextContent('2')
+    expect(screen.getByLabelText('Censo y procesión: 3 pendientes')).toHaveTextContent('3')
+  })
+
+  it('abrir un grupo lo enseña con sus avisos y se recuerda en el ordenador', async () => {
+    entrarComo('ADMIN')
+    const { unmount } = renderWithProviders(<MarcoCms />)
+    await screen.findByLabelText('Web: 2 pendientes')
+    await userEvent.click(screen.getByRole('button', { name: /^Web/ }))
+    expect(await screen.findByLabelText('Noticias: 2 pendientes')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /^Noticias/ })).toBeVisible()
+    unmount()
+
+    renderWithProviders(<MarcoCms />)
+    expect(screen.getByRole('button', { name: /^Web/ })).toHaveAttribute('aria-expanded', 'true')
   })
 })
 

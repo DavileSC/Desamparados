@@ -94,7 +94,7 @@ describe('PaginasAdminPage', () => {
   })
 
   it('el menú lleva al índice, y el índice y las páginas dejan pasar a los mismos cargos', () => {
-    const entrada = itemsMenu.find((item) => item.grupo === 'Web pública')
+    const entrada = itemsMenu.find((item) => item.label === 'Páginas')
     expect(entrada?.href).toBe('/cms/paginas')
     // Si el índice dejara entrar a quien no puede abrir ninguna página, sería
     // una lista de enlaces que todos le rebotan.

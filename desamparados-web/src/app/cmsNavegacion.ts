@@ -47,8 +47,15 @@ import type { PanelResponse } from '../lib/api/panel'
  * con su formulario fijo, y lo que se publica por entradas (noticias,
  * publicaciones, agenda).
  */
-export const GRUPOS = ['Hoy', 'Web pública', 'Contenido', 'Censo y enseres', 'Cuentas', 'Sistema'] as const
+export const GRUPOS = ['Web', 'Censo y procesión', 'Cuentas', 'Sistema'] as const
 export type Grupo = (typeof GRUPOS)[number]
+
+/**
+ * Dónde va cada entrada: en un grupo del menú, suelta arriba del todo (el
+ * Inicio, que no necesita rótulo) o en el menú de la cuenta, abajo (lo que es
+ * de quien entra y no del Grupo, como su 2FA).
+ */
+export type Lugar = Grupo | 'suelta' | 'cuenta'
 
 /** De dónde sale el número que se enseña junto a una sección. */
 export type ClaveContador = 'noticiasBorradores' | 'hermanosSinNumero'
@@ -57,7 +64,7 @@ export interface ItemMenu {
   label: string
   href: string
   roles: string[]
-  grupo: Grupo
+  grupo: Lugar
   icono: ComponentType<{ fontSize?: 'small' | 'inherit' | 'medium' | 'large' }>
   /** El número dice cuántos hay; el tono, cuánta prisa corre. */
   contador?: { de: ClaveContador; tono: 'aviso' | 'error' }
@@ -66,23 +73,23 @@ export interface ItemMenu {
 const TODOS = ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA']
 
 export const itemsMenu: ItemMenu[] = [
-  { label: 'Inicio', href: '/cms', roles: TODOS, grupo: 'Hoy', icono: HomeOutlinedIcon },
-  { label: 'Páginas', href: '/cms/paginas', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web pública', icono: WebOutlinedIcon },
-  { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ImageOutlinedIcon },
-  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
-  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: MenuBookOutlinedIcon },
-  { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Contenido', icono: CalendarMonthOutlinedIcon },
-  { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
+  { label: 'Inicio', href: '/cms', roles: TODOS, grupo: 'suelta', icono: HomeOutlinedIcon },
+  { label: 'Páginas', href: '/cms/paginas', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: WebOutlinedIcon },
+  { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ImageOutlinedIcon },
+  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
+  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: MenuBookOutlinedIcon },
+  { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon },
+  { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
-  { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: DirectionsWalkOutlinedIcon },
+  { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: DirectionsWalkOutlinedIcon },
   // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
-  { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y enseres', icono: HowToRegOutlinedIcon },
-  { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: Inventory2OutlinedIcon },
+  { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon },
+  { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
   { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
-  { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'Sistema', icono: ShieldOutlinedIcon },
+  { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'cuenta', icono: ShieldOutlinedIcon },
 ]
 
 /** Única fuente de verdad de las `ExigeRol` de `routes/index.tsx`. */
