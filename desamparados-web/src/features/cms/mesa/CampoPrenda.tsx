@@ -58,6 +58,8 @@ export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoI
           const exacta = prendas.find((p) => p.numero === numero)
           if (!exacta) {
             setEstado({ tipo: 'falta', libres: prendas.filter((p) => p.estado === 'DISPONIBLE').slice(0, 4).map((p) => p.numero) })
+          } else if (exacta.enPapeleta && exacta.enPapeleta.id !== hermanoId) {
+            setEstado({ tipo: 'ocupada', texto: `Va en la papeleta de ${exacta.enPapeleta.nombre} ${exacta.enPapeleta.apellidos} de este año` })
           } else if (exacta.estado === 'PRESTADA' && exacta.hermano?.id === hermanoId) {
             setEstado({ tipo: 'suya', prenda: exacta })
           } else if (exacta.estado === 'PRESTADA') {

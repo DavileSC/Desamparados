@@ -137,6 +137,18 @@ describe('MesaProcesionPage · Inscripción', () => {
     expect(screen.getByRole('textbox', { name: 'Buscar en el censo' })).toBeInTheDocument()
   })
 
+  it('un clic de más se deshace desde el aviso: cancela la solicitud recién apuntada', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor({ respuestas: { '/mesa/inscribir': { solicitudId: 99, puesto: 'Nazareno', requisitos: AL_DIA } } })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+    await user.click(await screen.findByRole('button', { name: 'Apuntar' }))
+    await screen.findByText(/apuntado como Nazareno/)
+    await user.click(screen.getByRole('button', { name: 'Deshacer' }))
+    await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/admin/solicitudes/99'))).toBe(true))
+    expect(await screen.findByText('Deshecho: Abel Reyes ya no está apuntado.')).toBeInTheDocument()
+  })
+
   it('lo corregido en los datos va a la ficha antes de apuntar', async () => {
     const user = userEvent.setup()
     const llamadas = servidor({ respuestas: { '/mesa/inscribir': { solicitudId: 99, puesto: 'Nazareno', requisitos: AL_DIA } } })
@@ -291,6 +303,25 @@ describe('MesaProcesionPage · Túnicas', () => {
     await buscarAbel(user)
     expect(await screen.findByText(/Tiene sin devolver: túnica 140-107 y cíngulo/)).toBeInTheDocument()
     expect(screen.getByText('Ya tiene uno prestado: se queda con ese')).toBeInTheDocument()
+  })
+
+  it('si se apuntó a quien no era, se cancela desde Túnicas, con confirmación', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor({ ficha: apuntado })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+    await user.click(await screen.findByRole('button', { name: 'Cancelar la inscripción' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar la inscripción' }))
+    await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/admin/solicitudes/99'))).toBe(true))
+  })
+
+  it('una túnica libre en el ropero pero en la papeleta de otro este año no se da', async () => {
+    const user = userEvent.setup()
+    servidor({ ficha: apuntado, prendas: { '140-107': [{ ...libre('140-107', '140'), enPapeleta: { id: 5, nombre: 'Álvaro', apellidos: 'Gómez Fernández' } }] } })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+    expect(await screen.findByText('Va en la papeleta de Álvaro Gómez Fernández de este año')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Dar la ropa' })).toBeDisabled())
   })
 
   it('sin pagar no sale la túnica: lo dice y manda a Tesorería', async () => {

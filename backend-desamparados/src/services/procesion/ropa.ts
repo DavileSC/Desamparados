@@ -7,7 +7,7 @@
  * corrección de una papeleta, la anulación): o se presta la ropa y se emite
  * la papeleta, o ninguna de las dos cosas.
  */
-import { EstadoPrenda, Prisma, TipoPrenda } from '@prisma/client';
+import { EstadoPrenda, Prisma, TipoPrenda, type Salida } from '@prisma/client';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { normalizarNumeroPrenda, tallaDeTunica } from '../../domain/mesa-procesion.js';
 
@@ -75,6 +75,33 @@ export async function prestarRopaEnTransaccion(tx: Tx, hermanoId: number, pedida
       data: { estado: EstadoPrenda.PRESTADA, hermanoId, fechaAsignacion: new Date() },
     });
     if (count !== 1) throw new HttpError(`${nombre} acaba de cambiar en el ropero. Vuelve a intentarlo.`, 409);
+  }
+}
+
+/** El campo de la papeleta donde va cada tipo de prenda. */
+export const CAMPO_DE_ROPA = { TUNICA: 'numTunicaAsignada', CAPIROTE: 'numCapiroteAsignado', FARAONA: 'numFaraonaAsignada' } as const;
+
+/**
+ * Una prenda va en una sola papeleta de cada salida: dos nazarenos no llevan
+ * la misma túnica en la misma procesión. El ropero solo dice cómo está hoy
+ * (después de la salida todo vuelve y queda libre), así que se mira también
+ * en las papeletas de ese año. `papeletaId` es la que se corrige, que no
+ * choca consigo misma.
+ */
+export async function comprobarQueNoVaEnOtraPapeleta(
+  tx: Tx,
+  donde: { year: number; salida: Salida; papeletaId?: number },
+  ropa: Partial<Record<(typeof CAMPO_DE_ROPA)[TipoRopa], string | null>>,
+) {
+  for (const tipo of Object.keys(CAMPO_DE_ROPA) as TipoRopa[]) {
+    const campo = CAMPO_DE_ROPA[tipo];
+    const numero = ropa[campo];
+    if (!numero) continue;
+    const otra = await tx.papeletaSitio.findFirst({
+      where: { year: donde.year, salida: donde.salida, [campo]: numero, ...(donde.papeletaId && { id: { not: donde.papeletaId } }) },
+      select: { hermano: { select: { nombre: true, apellidos: true } } },
+    });
+    if (otra) throw new HttpError(`${NOMBRE_ROPA[tipo]} ${numero} ya va en la papeleta de ${otra.hermano.nombre} ${otra.hermano.apellidos} de ${donde.year}.`, 409);
   }
 }
 

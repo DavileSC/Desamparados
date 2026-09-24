@@ -174,6 +174,8 @@ export interface PrendaDelRopero {
   talla: string | null
   estado: 'DISPONIBLE' | 'PRESTADA' | 'LAVADO' | 'TALLER' | 'BAJA'
   hermano: { id: number; nombre: string; apellidos: string } | null
+  /** Quién la lleva en su papeleta de este año, si alguien: no se repite en la misma procesión. */
+  enPapeleta?: { id: number; nombre: string; apellidos: string } | null
 }
 
 export type EstadoEnLaMesa = 'por-pagar' | 'lista' | 'recogida'

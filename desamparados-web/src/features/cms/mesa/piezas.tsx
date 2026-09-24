@@ -3,8 +3,12 @@ import { Alert, Autocomplete, Button, TextField } from '@mui/material'
 import { activarPersona, type FichaDeMesa, type Salida } from '../../../lib/api/mesa'
 import { PUESTOS_POR_SALIDA, mensajeDe } from './formato'
 
-/** Lo que dice la mesa al terminar con una persona, y en qué tono. */
-export interface Aviso { texto: string; tono: 'success' | 'info' | 'warning' }
+/**
+ * Lo que dice la mesa al terminar con una persona, y en qué tono. Con
+ * `deshacer`, el aviso lleva un botón para echarlo atrás en el acto (un clic
+ * equivocado); devuelve el aviso de después.
+ */
+export interface Aviso { texto: string; tono: 'success' | 'info' | 'warning'; deshacer?: () => Promise<Aviso> }
 
 const ETIQUETA_SITUACION = { baja: 'está de baja', pendiente: 'tiene el alta pendiente de aprobar' } as const
 

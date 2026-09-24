@@ -3,6 +3,7 @@ import { Alert, Box, Button, Stack, TextField, ToggleButton, ToggleButtonGroup, 
 import { entregarEnMesa, type CinguloEnMesa, type FichaDeMesa, type OrigenTunica, type TipoRopa } from '../../../lib/api/mesa'
 import CampoCingulo, { cinguloInicial } from './CampoCingulo'
 import CampoPrenda from './CampoPrenda'
+import CancelarInscripcion from './CancelarInscripcion'
 import { ropaSinDevolver } from './formato'
 import { leyenda } from './datosDeLaFicha'
 import { AvisoSituacion, CampoPuesto, type Aviso } from './piezas'
@@ -207,6 +208,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
       <Button type="submit" variant="contained" size="large" disabled={enviando || !requisitos.puedeRecoger || !puesto.trim() || Boolean(hayBloqueo)}>
         {enviando ? 'Guardando…' : rosario ? 'Confirmar el puesto' : 'Dar la ropa'}
       </Button>
+      <CancelarInscripcion ficha={ficha} onHecho={onHecho} />
     </Stack>
   )
 }

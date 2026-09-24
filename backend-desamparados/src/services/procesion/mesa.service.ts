@@ -21,7 +21,7 @@ import { CensoService } from '../censo.service.js';
 import { SolicitudesService } from '../solicitudes.service.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { PapeletasService } from './papeletas.service.js';
-import { prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
+import { CAMPO_DE_ROPA, comprobarQueNoVaEnOtraPapeleta, prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
 import { anioDeLaMesa, cuotasQueCuentan, pendienteDe } from './zonas.service.js';
 import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { avisarALaMesa } from './avisos-mesa.js';
@@ -261,7 +261,9 @@ export class MesaService {
 
   /**
    * Prendas del ropero de un tipo cuyo número empieza por lo escrito, con
-   * quién las tiene: la mesa ve al teclear si la túnica está libre.
+   * quién las tiene y en qué papeleta de este año van: la mesa ve al teclear
+   * si la túnica está libre. Libre en el ropero no basta: después de la
+   * salida todo vuelve, y la que ya va en la papeleta de otro no se repite.
    */
   static async prendas(tipo: TipoRopa, q: string) {
     const numero = normalizarNumeroPrenda(q);
@@ -272,8 +274,16 @@ export class MesaService {
       take: 15,
       select: { id: true, numero: true, talla: true, estado: true, hermano: { select: { id: true, nombre: true, apellidos: true } } },
     });
+    const campo = CAMPO_DE_ROPA[tipo];
+    const papeletas = await db.papeletaSitio.findMany({
+      where: { year: anioDeLaProcesion(), salida: 'PASION', [campo]: { in: prendas.map((p) => p.numero) } },
+      select: { [campo]: true, hermano: { select: { id: true, nombre: true, apellidos: true } } },
+    }) as unknown as ({ hermano: { id: number; nombre: string; apellidos: string } } & Record<string, string>)[];
+    const enPapeleta = new Map(papeletas.map((p) => [p[campo], p.hermano]));
     // La exacta primero: «150» antes que «1500».
-    return prendas.sort((a, b) => Number(b.numero === numero) - Number(a.numero === numero));
+    return prendas
+      .map((p) => ({ ...p, enPapeleta: enPapeleta.get(p.numero) ?? null }))
+      .sort((a, b) => Number(b.numero === numero) - Number(a.numero === numero));
   }
 
   /**
@@ -466,6 +476,12 @@ export class MesaService {
       // Solo se toca en el ropero la ropa que cambia.
       const cambia = (campo: keyof typeof ropa) => ropa[campo] !== antes[campo];
       if (conRopa) {
+        // Solo la que cambia: una papeleta vieja con un número repetido se puede seguir corrigiendo en lo demás.
+        await comprobarQueNoVaEnOtraPapeleta(tx, { year: antes.year, salida: antes.salida, papeletaId }, {
+          numTunicaAsignada: cambia('numTunicaAsignada') ? ropa.numTunicaAsignada : null,
+          numCapiroteAsignado: cambia('numCapiroteAsignado') ? ropa.numCapiroteAsignado : null,
+          numFaraonaAsignada: cambia('numFaraonaAsignada') ? ropa.numFaraonaAsignada : null,
+        });
         await recogerRopaEnTransaccion(tx, antes.hermanoId, {
           numTunicaAsignada: cambia('numTunicaAsignada') ? antes.numTunicaAsignada : null,
           numCapiroteAsignado: cambia('numCapiroteAsignado') ? antes.numCapiroteAsignado : null,

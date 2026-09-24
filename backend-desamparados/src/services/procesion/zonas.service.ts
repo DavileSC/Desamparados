@@ -36,7 +36,7 @@ import {
   DATOS_SALIDA, notaDePerdon, pendienteDeLaSalida, requisitosParaRecoger, type CuotaDelHermano,
 } from '../../domain/salidas.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
-import { estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
+import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
 import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { unaVez } from './una-vez.js';
 import { avisarALaMesa } from './avisos-mesa.js';
@@ -384,6 +384,7 @@ export class ZonasService {
           }
         : { numTunicaAsignada: null, numCapiroteAsignado: null, numFaraonaAsignada: null };
       if (conRopa) {
+        await comprobarQueNoVaEnOtraPapeleta(tx, { year: s.year, salida: s.salida }, ropa);
         await prestarRopaEnTransaccion(tx, s.hermanoId, ropaPedida({ origenTunica: origen ?? undefined, ...ropa, crearPrendas: dto.crearPrendas }));
       }
       const cingulo: Cingulo | null = conRopa ? dto.cingulo ?? await cinguloPorDefecto(tx, s.hermanoId, origen ?? 'ROPERO') : null;

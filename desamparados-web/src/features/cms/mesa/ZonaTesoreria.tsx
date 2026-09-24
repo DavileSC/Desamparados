@@ -6,6 +6,7 @@ import {
 import { cobrarEnMesa, perdonarCuotas, type FichaDeMesa, type MetodoEnMesa } from '../../../lib/api/mesa'
 import { leyenda } from './datosDeLaFicha'
 import { AvisoSituacion, type Aviso } from './piezas'
+import CancelarInscripcion from './CancelarInscripcion'
 import { METODOS, NOMBRE_METODO, euros } from './formato'
 import { mensajeDeFallo, useClaveDeOperacion } from './enVivo'
 
@@ -120,6 +121,7 @@ export default function ZonaTesoreria({ ficha, role, onHecho, onRecargar }: Prop
         {ficha.requisitos.cuotasEnElBanco.length > 0 && (
           <Typography variant="body2" color="text.secondary">Tiene {ficha.requisitos.cuotasEnElBanco.length === 1 ? 'una cuota' : `${ficha.requisitos.cuotasEnElBanco.length} cuotas`} en el banco, cobrándose por domiciliación.</Typography>
         )}
+        <CancelarInscripcion ficha={ficha} onHecho={onHecho} />
       </Stack>
     )
   }
@@ -186,6 +188,7 @@ export default function ZonaTesoreria({ ficha, role, onHecho, onRecargar }: Prop
           <Button variant="contained" onClick={() => void perdonar()} disabled={enviando}>Perdonar</Button>
         </DialogActions>
       </Dialog>
+      <CancelarInscripcion ficha={ficha} onHecho={onHecho} />
     </Stack>
   )
 }

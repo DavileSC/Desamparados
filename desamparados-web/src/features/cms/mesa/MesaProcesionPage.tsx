@@ -23,7 +23,7 @@ import ZonaTesoreria from './ZonaTesoreria'
 import ZonaTunicas from './ZonaTunicas'
 import ZonaDevolucion from './ZonaDevolucion'
 import type { Aviso } from './piezas'
-import { CLAVE_MESA, useMesaEnVivo } from './enVivo'
+import { CLAVE_MESA, mensajeDeFallo, useMesaEnVivo } from './enVivo'
 import { NOMBRE_SALIDA, fechaCorta } from './formato'
 
 type Zona = 'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'preparacion' | 'devolucion'
@@ -111,6 +111,9 @@ export default function MesaProcesionPage() {
   const cambiarZona = useCallback((nueva: Zona) => { setZona(nueva); recordar('mesa.zona', nueva); setAviso(null); buscar() }, [buscar])
   const cambiarSalida = (nueva: Salida) => { setSalida(nueva); recordar('mesa.salida', nueva); setAviso(null); buscar() }
   const abrir = (id: number) => { setAviso(null); setModo({ tipo: 'ficha', id }) }
+  const deshacer = async (accion: () => Promise<Aviso>) => {
+    try { hecho(await accion()) } catch (e) { setAviso({ tono: 'warning', texto: mensajeDeFallo(e, 'No se ha podido deshacer.') }) }
+  }
   const hecho = (a: Aviso) => {
     setAviso(a)
     buscar()
@@ -138,7 +141,18 @@ export default function MesaProcesionPage() {
 
   const panel = (
     <Paper component="section" aria-label="Atender" sx={{ p: 2.5, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', displayPrint: 'none' }}>
-      {aviso && <Alert severity={aviso.tono} onClose={() => setAviso(null)} sx={{ mb: 2 }}>{aviso.texto}</Alert>}
+      {aviso && (
+        <Alert
+          severity={aviso.tono}
+          onClose={() => setAviso(null)}
+          action={aviso.deshacer && (
+            <Button color="inherit" size="small" onClick={() => void deshacer(aviso.deshacer!)}>Deshacer</Button>
+          )}
+          sx={{ mb: 2 }}
+        >
+          {aviso.texto}
+        </Alert>
+      )}
 
       {modo.tipo === 'buscar' && (
         <Stack spacing={2}>

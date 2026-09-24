@@ -606,6 +606,31 @@ test('en el Inventario la túnica devuelta va al lavado; lo demás, disponible; 
   }
 });
 
+test('una túnica no va en dos papeletas de la misma salida, aunque el ropero la tenga libre', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const [a, b] = [await e.hermano({ nombre: 'Ana' }), await e.hermano({ nombre: 'Blas' })];
+    const [tunica, otra] = [await e.prenda(TipoPrenda.TUNICA), await e.prenda(TipoPrenda.TUNICA)];
+    const pa = await e.entregar((await e.inscribir(a.id)).solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero, cingulo: 'DEBIDO' });
+    // Después de la salida la devuelve: el ropero la tiene libre, pero va en la papeleta de Ana.
+    await ZonasService.devolver({ hermanoId: a.id, prendas: [{ id: tunica.id }], cingulos: [] }, e.clave(), e.meta);
+
+    const [buscada] = await MesaService.prendas('TUNICA', tunica.numero);
+    assert.equal(buscada.enPapeleta?.id, a.id, 'la mesa sabe en qué papeleta va');
+
+    const sb = (await e.inscribir(b.id)).solicitudId;
+    await assert.rejects(e.entregar(sb, { origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero, cingulo: 'DEBIDO' }), esHttp(409, /ya va en la papeleta de Ana/));
+    const pb = await e.entregar(sb, { origenTunica: 'ROPERO', numTunicaAsignada: otra.numero, cingulo: 'DEBIDO' });
+    await assert.rejects(MesaService.editarPapeleta(pb.papeletaId, { numTunicaAsignada: tunica.numero }, e.meta), esHttp(409, /ya va en la papeleta de Ana/));
+
+    // La suya se sigue corrigiendo en lo demás sin chocar consigo misma.
+    await MesaService.editarPapeleta(pa.papeletaId, { puesto: 'Bocina' }, e.meta);
+  } finally {
+    await e.recoger();
+  }
+});
+
 test('el listado dice en qué punto está cada uno: por pagar, listo o recogido', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();

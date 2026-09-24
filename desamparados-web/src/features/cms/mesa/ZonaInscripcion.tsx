@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material'
-import { corregirFicha, inscribirEnMesa, type FichaDeMesa } from '../../../lib/api/mesa'
+import { cancelarSolicitud, corregirFicha, inscribirEnMesa, type FichaDeMesa } from '../../../lib/api/mesa'
 import DatosPersona from './DatosPersona'
 import { leyenda, useDatosPersona } from './datosDeLaFicha'
 import { AvisoSituacion, CampoPuesto, type Aviso } from './piezas'
@@ -63,9 +63,14 @@ export default function ZonaInscripcion({ ficha, role, puestosUsados, onHecho, o
       })
       renovar()
       const quien = `${datos.nombre.trim()} ${datos.primerApellido.trim()}`
+      // Si no era él (un clic de más), se deshace ahí mismo.
+      const deshacer = async (): Promise<Aviso> => {
+        await cancelarSolicitud(r.solicitudId)
+        return { tono: 'info', texto: `Deshecho: ${quien} ya no está apuntado.` }
+      }
       onHecho(r.requisitos.puedeRecoger
-        ? { tono: 'success', texto: `${quien}, apuntado como ${r.puesto}. Que pase a Túnicas.` }
-        : { tono: 'warning', texto: `${quien}, apuntado como ${r.puesto}. Que pase a Tesorería: tiene ${euros(r.requisitos.totalPendiente)} por pagar.` })
+        ? { tono: 'success', texto: `${quien}, apuntado como ${r.puesto}. Que pase a Túnicas.`, deshacer }
+        : { tono: 'warning', texto: `${quien}, apuntado como ${r.puesto}. Que pase a Tesorería: tiene ${euros(r.requisitos.totalPendiente)} por pagar.`, deshacer })
     } catch (e) {
       setError(mensajeDeFallo(e, 'No se ha podido apuntar.'))
     } finally {
