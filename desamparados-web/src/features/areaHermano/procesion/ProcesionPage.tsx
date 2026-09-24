@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, Checkbox, CircularProgress, FormControlLabel, Radio, RadioGroup, Typography } from '@mui/material'
+import {
+  Alert, Autocomplete, Box, Checkbox, CircularProgress, FormControlLabel, Radio, RadioGroup, Tab, Tabs, TextField, Typography,
+} from '@mui/material'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import EventBusyIcon from '@mui/icons-material/EventBusy'
+import catalogo from '../../../../../shared/puestos-procesion.json'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
-import { anularCita, miProcesion, reservarDia, type DiaDeReparto, type FichaEnLaProcesion, type MiProcesion } from '../../../lib/api/procesion'
+import {
+  anularCita, miProcesion, pagarEnLinea, pedirPapeleta,
+  type DiaDeReparto, type FichaEnLaProcesion, type MiProcesion, type Salida, type SalidaDelHermano,
+} from '../../../lib/api/procesion'
 import { formatearImporte } from '../recibos/etiquetas'
-import { estadoPapeleta } from './estadoPapeleta'
 import { PARENTESCO } from '../perfil/etiquetas'
 
 const ZONA = 'Europe/Madrid'
@@ -25,17 +30,30 @@ const horas = (turno: { horaInicio: string; horaFin: string }) =>
 
 const quienEs = (f: FichaEnLaProcesion) => (f.esTitular ? 'Tú' : f.parentesco ? PARENTESCO[f.parentesco] : 'A tu cargo')
 const sitio = (p: { puesto: string; tramo: string | null }) => [p.puesto, p.tramo].filter(Boolean).join(' · ')
+const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error && e.message ? e.message : porDefecto)
+
+/** Los puestos que se pueden pedir en cada salida (los mismos que ofrece la mesa). */
+const PUESTOS: Record<Salida, string[]> = {
+  PASION: catalogo.puestos.map((p) => p.nombre),
+  ROSARIO: catalogo.rosario.map((p) => p.nombre),
+}
+
+/** Una clave por pago: si la respuesta no llega y se vuelve a pulsar, no se cobra dos veces. */
+const nuevaClave = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('')
 
 /**
- * La papeleta de sitio desde el área de hermanos: se pide para uno mismo y
- * para quienes se tienen a cargo, eligiendo el día del reparto en que se pasa
- * a recogerla. Solo mientras Secretaría tiene abierto el plazo; cerrado, no
- * hay nada que pedir y se enseña la última que se tuvo.
+ * Las salidas del año desde el área de hermanos: la del Sábado de Pasión y el
+ * Rosario vespertino de octubre. Cada una con su plazo, que abre Secretaría.
+ * Se pide salir para uno mismo y para quienes se tienen a cargo, con el
+ * puesto que le gustaría (lo decide el Grupo) y el día del reparto en que se
+ * pasa a recoger la papeleta: la papeleta se tiene al recogerla. Para recogerla hay que estar al día con la cuota de
+ * hermano: aquí se ve lo que falta y se puede pagar.
  */
 export default function ProcesionPage() {
   const [estado, setEstado] = useState<MiProcesion | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  const [elegida, setElegida] = useState<Salida | null>(null)
 
   const cargar = useCallback(() => miProcesion().then(setEstado), [])
 
@@ -43,146 +61,216 @@ export default function ProcesionPage() {
     let cancelado = false
     miProcesion()
       .then((datos) => { if (!cancelado) setEstado(datos) })
-      .catch((e: unknown) => { if (!cancelado) setError(e instanceof Error ? e.message : 'No se ha podido cargar la procesión.') })
+      .catch((e: unknown) => { if (!cancelado) setError(mensaje(e, 'No se ha podido cargar la procesión.')) })
     return () => { cancelado = true }
   }, [])
 
-  const tras = async (mensaje: string) => {
-    setAviso(mensaje)
+  const tras = async (texto: string) => {
+    setAviso(texto)
     setError(null)
-    await cargar().catch((e: unknown) => setError(e instanceof Error ? e.message : 'No se ha podido cargar la procesión.'))
+    await cargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar la procesión.')))
   }
+
+  // Se abre por la salida con el plazo abierto; si no hay ninguna, la Pasión.
+  const salida: Salida = elegida ?? estado?.salidas.find((s) => s.abierto)?.salida ?? 'PASION'
+  const actual = estado?.salidas.find((s) => s.salida === salida)
 
   return (
     <>
       <Helmet><title>Procesión | Desamparados</title><meta name="robots" content="noindex" /></Helmet>
       <SeccionAnimada sx={{ py: { xs: 4, md: 6 } }}>
         <ContenedorDePagina>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, mb: 2 }}>
             <Box>
               <Typography variant="h2" component="h1">Papeleta de sitio</Typography>
-              {estado && <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>Semana Santa de {estado.year}.</Typography>}
+              {actual && <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>{actual.nombre} de {actual.year}.</Typography>}
             </Box>
             <Box component={Link} to="/area-hermano/procesion/historico" sx={{ color: 'primary.light', fontWeight: 600, fontSize: 15 }}>Ver el histórico</Box>
           </Box>
+
+          {estado && (
+            <Tabs value={salida} onChange={(_e, v: Salida) => setElegida(v)} aria-label="Salida" sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+              {estado.salidas.map((s) => <Tab key={s.salida} value={s.salida} label={`${s.nombre}${s.abierto ? ' · abierta' : ''}`} />)}
+            </Tabs>
+          )}
 
           {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
           {aviso && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
           {!estado && !error && <CircularProgress aria-label="Cargando la procesión" />}
 
-          {estado && <Contenido estado={estado} onHecho={(m) => void tras(m)} onError={setError} />}
+          {estado && actual && <Contenido key={salida} estado={estado} salida={actual} onHecho={(m) => void tras(m)} onError={setError} />}
         </ContenedorDePagina>
       </SeccionAnimada>
     </>
   )
 }
 
-function Contenido({ estado, onHecho, onError }: { estado: MiProcesion; onHecho: (mensaje: string) => void; onError: (mensaje: string) => void }) {
-  const conPapeleta = estado.fichas.filter((f) => f.papeleta)
-  const conCita = estado.fichas.filter((f) => !f.papeleta && f.cita)
-  const porPedir = estado.fichas.filter((f) => !f.papeleta && !f.cita)
+interface PropsContenido {
+  estado: MiProcesion
+  salida: SalidaDelHermano
+  onHecho: (mensaje: string) => void
+  onError: (mensaje: string) => void
+}
+
+function Contenido({ estado, salida, onHecho, onError }: PropsContenido) {
+  const de = (f: FichaEnLaProcesion) => f.porSalida[salida.salida]
+  const apuntadas = estado.fichas.filter((f) => de(f).papeleta || de(f).solicitud)
+  const porPedir = estado.fichas.filter((f) => !de(f).papeleta && !de(f).solicitud)
 
   return (
     <Box sx={{ display: 'grid', gap: 3, maxWidth: 980 }}>
-      {conPapeleta.length > 0 && <Papeletas fichas={conPapeleta} />}
-      {conCita.length > 0 && <Citas fichas={conCita} onHecho={onHecho} onError={onError} />}
-
-      {porPedir.length > 0 && (estado.abierto
-        ? <Solicitud estado={estado} fichas={porPedir} onHecho={onHecho} onError={onError} />
-        : <PlazoCerrado fichas={porPedir} />)}
+      <PorPagar estado={estado} salida={salida.salida} onHecho={onHecho} onError={onError} />
+      {apuntadas.length > 0 && <Apuntadas fichas={apuntadas} salida={salida} onHecho={onHecho} onError={onError} />}
+      {porPedir.length > 0 && (salida.abierto
+        ? <Solicitud estado={estado} salida={salida} fichas={porPedir} onHecho={onHecho} onError={onError} />
+        : <PlazoCerrado fichas={porPedir} salida={salida} />)}
     </Box>
   )
 }
 
-/** La papeleta ya dada en la Mesa de Reparto: el sitio y si está pagada. */
-function Papeletas({ fichas }: { fichas: FichaEnLaProcesion[] }) {
+/**
+ * Lo que falta por pagar en la familia: las cuotas de hermano (sin ellas no
+ * se recoge la papeleta) y la voluntad del Rosario si se prometió. Con la
+ * pasarela en línea, se paga desde aquí; si no, en Secretaría o en el reparto.
+ */
+function PorPagar({ estado, salida, onHecho, onError }: { estado: MiProcesion; salida: Salida; onHecho: (m: string) => void; onError: (m: string) => void }) {
+  const [pagando, setPagando] = useState(false)
+  const [clave] = useState(nuevaClave)
+  const lineas = estado.fichas.flatMap((f) => [
+    ...f.cuotasPendientes.map((c) => ({ clave: `r-${c.id}`, reciboId: c.id, solicitudId: null, quien: f.nombre, concepto: c.concepto, importe: c.importe, devuelta: c.estado === 'DEVUELTO' })),
+    ...(['PASION', 'ROSARIO'] as const)
+      .map((s) => f.porSalida[s].solicitud)
+      .filter((s): s is NonNullable<typeof s> => s !== null && s.pendiente > 0)
+      .map((s) => ({ clave: `s-${s.id}`, reciboId: null, solicitudId: s.id, quien: f.nombre, concepto: s.concepto, importe: s.pendiente, devuelta: false })),
+  ])
+  if (lineas.length === 0) return null
+  const total = lineas.reduce((s, l) => s + Math.round(l.importe * 100), 0) / 100
+
+  const pagar = async () => {
+    setPagando(true)
+    try {
+      await pagarEnLinea({
+        reciboIds: lineas.flatMap((l) => (l.reciboId ? [l.reciboId] : [])),
+        solicitudIds: lineas.flatMap((l) => (l.solicitudId ? [l.solicitudId] : [])),
+      }, clave)
+      onHecho(`Pago hecho: ${formatearImporte(total)}. Ya podéis recoger la papeleta en el reparto.`)
+    } catch (e) {
+      onError(mensaje(e, 'No se ha podido hacer el pago.'))
+    } finally {
+      setPagando(false)
+    }
+  }
+
   return (
-    <TarjetaCristal component="section" aria-label="Papeletas de este año" sx={{ p: { xs: 2.5, md: 3.5 } }}>
-      <Typography component="h2" sx={{ fontSize: 19, fontWeight: 600, mb: 2 }}>{fichas.length > 1 ? 'Vuestras papeletas' : 'Tu papeleta'}</Typography>
-      <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', display: 'grid', gap: 1.5 }}>
-        {fichas.map((f) => {
-          const p = f.papeleta!
-          const pago = p.recibo ? estadoPapeleta(p.recibo.estado) : null
-          return (
-            <Box component="li" key={f.id} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: 1, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
-              <span>
-                <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
-                <Typography component="span" sx={{ display: 'block', fontSize: 14, color: 'text.secondary' }}>
-                  {sitio(p)}{p.numero !== null ? ` · n.º ${p.numero}` : ''}
-                </Typography>
-              </span>
-              {pago && <Typography component="span" sx={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', color: pago.color }}>{pago.texto}</Typography>}
-            </Box>
-          )
-        })}
+    <TarjetaCristal component="section" aria-label="Pendiente de pago" sx={{ p: { xs: 2.5, md: 3.5 }, display: 'grid', gap: 2 }}>
+      <Box>
+        <Typography component="h2" sx={{ fontSize: 19, fontWeight: 600 }}>Pendiente de pago</Typography>
+        <Typography sx={{ mt: 0.5, fontSize: 14.5, color: 'text.secondary', lineHeight: 1.55 }}>
+          {salida === 'ROSARIO'
+            ? 'Para salir en el Rosario hay que estar al día con la cuota de hermano, igual que en la Pasión.'
+            : 'Para recoger la papeleta y la túnica hay que estar al día con la cuota de hermano.'}
+          {' '}Si lo necesitas, habla con Secretaría.
+        </Typography>
+      </Box>
+      <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', display: 'grid', gap: 1 }}>
+        {lineas.map((l) => (
+          <Box component="li" key={l.clave} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+            <span>
+              <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{l.concepto}</Typography>
+              <Typography component="span" sx={{ display: 'block', fontSize: 13.5, color: 'text.secondary' }}>{l.quien}{l.devuelta ? ' · devuelta por el banco' : ''}</Typography>
+            </span>
+            <Typography sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatearImporte(l.importe)}</Typography>
+          </Box>
+        ))}
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+        <Typography sx={{ color: 'text.secondary', maxWidth: '52ch', fontSize: 14 }}>
+          {estado.pagoEnLinea
+            ? 'El pago en línea está en pruebas: todavía no se cobra de verdad. También puedes pagar en Secretaría o el día del reparto.'
+            : 'Puedes pagar en Secretaría o el día del reparto, antes de recoger la papeleta.'}
+        </Typography>
+        {estado.pagoEnLinea && (
+          <Boton onClick={() => void pagar()} disabled={pagando}>{pagando ? 'Pagando…' : `Pagar ${formatearImporte(total)}`}</Boton>
+        )}
       </Box>
     </TarjetaCristal>
   )
 }
 
-/** Las citas reservadas, agrupadas por día: la familia suele ir junta. */
-function Citas({ fichas, onHecho, onError }: { fichas: FichaEnLaProcesion[]; onHecho: (m: string) => void; onError: (m: string) => void }) {
-  const [anulando, setAnulando] = useState<number | null>(null)
-  const porTurno = new Map<number, FichaEnLaProcesion[]>()
-  for (const f of fichas) porTurno.set(f.cita!.turno.id, [...(porTurno.get(f.cita!.turno.id) ?? []), f])
+/**
+ * Cómo va cada uno: con la solicitud hecha (pendiente de pago o lista para
+ * recoger) o con la papeleta, que se tiene al recogerla en la mesa.
+ */
+function estadoDe(f: FichaEnLaProcesion, salida: Salida): { texto: string; color: string } {
+  const { papeleta, solicitud } = f.porSalida[salida]
+  if (papeleta) return { texto: 'Papeleta recogida', color: 'success.main' }
+  if ((solicitud?.pendiente ?? 0) > 0 || f.cuotasPendientes.length > 0) return { texto: 'Pendiente de pago', color: 'warning.main' }
+  return { texto: 'Lista para recoger', color: 'info.main' }
+}
 
-  const anular = async (f: FichaEnLaProcesion) => {
-    setAnulando(f.cita!.id)
+function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProcesion[]; salida: SalidaDelHermano; onHecho: (m: string) => void; onError: (m: string) => void }) {
+  const [anulando, setAnulando] = useState<number | null>(null)
+
+  const cancelar = async (f: FichaEnLaProcesion) => {
+    const cita = f.porSalida[salida.salida].solicitud?.cita
+    if (!cita) return
+    setAnulando(cita.id)
     try {
-      await anularCita(f.cita!.id)
-      onHecho(`Cita anulada: ${f.nombre} ya no tiene día de reparto.`)
+      await anularCita(cita.id)
+      onHecho(`Solicitud cancelada: ${f.nombre} ya no sale en el ${salida.nombre}.`)
     } catch (e: unknown) {
-      onError(e instanceof Error ? e.message : 'No se ha podido anular la cita.')
+      onError(mensaje(e, 'No se ha podido cancelar.'))
     } finally {
       setAnulando(null)
     }
   }
 
+  const todasRecogidas = fichas.every((f) => f.porSalida[salida.salida].papeleta)
   return (
-    <>
-      {[...porTurno.values()].map((grupo) => {
-        const turno = grupo[0].cita!.turno
-        return (
-          <TarjetaCristal key={turno.id} component="section" aria-label={`Cita del ${dia(turno)}`} sx={{ p: { xs: 2.5, md: 3.5 }, display: 'grid', gap: 2.25 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-              <EventAvailableIcon sx={{ color: 'success.light' }} aria-hidden="true" />
-              <Typography component="h2" sx={{ fontSize: 19, fontWeight: 600 }}>{grupo.length > 1 ? 'Tenéis cita para recoger las papeletas' : 'Tienes cita para recoger la papeleta'}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'center', p: 2, borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.04)' }}>
-              <Box sx={{ flexShrink: 0, display: 'grid', placeItems: 'center', width: 68, height: 72, borderRadius: '8px', backgroundColor: 'rgba(160,61,68,0.25)' }}>
-                <Typography component="span" sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'primary.light' }}>
-                  {new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, month: 'short' }).format(new Date(turno.fecha)).replace('.', '')}
-                </Typography>
-                <Typography component="span" sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1 }}>
-                  {new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, day: 'numeric' }).format(new Date(turno.fecha))}
-                </Typography>
-              </Box>
+    <TarjetaCristal component="section" aria-label="Este año" sx={{ p: { xs: 2.5, md: 3.5 } }}>
+      <Typography component="h2" sx={{ fontSize: 19, fontWeight: 600, mb: 2 }}>
+        {todasRecogidas ? (fichas.length > 1 ? 'Vuestras papeletas' : 'Tu papeleta') : (fichas.length > 1 ? 'Vuestras solicitudes' : 'Tu solicitud')}
+      </Typography>
+      <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', display: 'grid', gap: 1.5 }}>
+        {fichas.map((f) => {
+          const { papeleta, solicitud } = f.porSalida[salida.salida]
+          const e = estadoDe(f, salida.salida)
+          const cita = solicitud?.cita ?? null
+          const puedeCancelar = !papeleta && solicitud && !solicitud.pagada && cita
+          return (
+            <Box component="li" key={f.id} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
               <span>
-                <Typography component="span" sx={{ display: 'block', fontSize: 18, fontWeight: 600 }}>{dia(turno)}, {horas(turno)}</Typography>
-                <Typography component="span" sx={{ display: 'block', mt: 0.5, fontSize: 14, color: 'text.secondary' }}>Llevad el DNI: las papeletas se pagan allí.</Typography>
+                <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
+                <Typography component="span" sx={{ display: 'block', fontSize: 14, color: 'text.secondary' }}>
+                  {papeleta ? sitio(papeleta) : `Pediste: ${solicitud!.puesto} (lo confirma el Grupo en la mesa)`}
+                  {!papeleta && cita ? ` · ${dia(cita.turno)}, ${horas(cita.turno)}` : ''}
+                </Typography>
               </span>
-            </Box>
-            <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', display: 'grid', gap: 1 }}>
-              {grupo.map((f) => (
-                <Box component="li" key={f.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
-                  <Typography>{f.nombre} {f.apellidos}</Typography>
-                  <Boton appVariant="outline" onClick={() => void anular(f)} disabled={anulando !== null} aria-label={`Anular la cita de ${f.nombre}`} sx={{ py: 0.75, px: 2, fontSize: 13 }}>
-                    {anulando === f.cita!.id ? 'Anulando…' : 'Anular'}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography component="span" sx={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', color: e.color }}>{e.texto}</Typography>
+                {puedeCancelar && (
+                  <Boton appVariant="outline" onClick={() => void cancelar(f)} disabled={anulando !== null} aria-label={`Cancelar la solicitud de ${f.nombre}`} sx={{ py: 0.5, px: 1.75, fontSize: 13 }}>
+                    {anulando === cita.id ? 'Cancelando…' : 'Cancelar'}
                   </Boton>
-                </Box>
-              ))}
+                )}
+              </Box>
             </Box>
-            <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>
-              ¿Otro día? Anula la cita y pide la papeleta de nuevo eligiendo el que os venga bien. El sitio en el cortejo lo da la Mesa de Reparto el día de la cita.
-            </Typography>
-          </TarjetaCristal>
-        )
-      })}
-    </>
+          )
+        })}
+      </Box>
+      {!todasRecogidas && (
+        <Typography sx={{ mt: 2, fontSize: 13.5, color: 'text.secondary' }}>
+          {salida.salida === 'ROSARIO'
+            ? 'Se va en traje. La papeleta se recoge el día del reparto, cuando se confirma el puesto.'
+            : 'La papeleta se recoge el día del reparto, con la túnica: si la tienes en casa del año pasado, tráela. Llevad el DNI.'}
+        </Typography>
+      )}
+    </TarjetaCristal>
   )
 }
 
-function PlazoCerrado({ fichas }: { fichas: FichaEnLaProcesion[] }) {
+function PlazoCerrado({ fichas, salida }: { fichas: FichaEnLaProcesion[]; salida: SalidaDelHermano }) {
+  const rosario = salida.salida === 'ROSARIO'
   return (
     <>
       <TarjetaCristal component="section" sx={{ p: { xs: 2.5, md: 3.5 }, display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
@@ -190,41 +278,53 @@ function PlazoCerrado({ fichas }: { fichas: FichaEnLaProcesion[] }) {
           <EventBusyIcon sx={{ color: 'secondary.main' }} aria-hidden="true" />
         </Box>
         <Box>
-          <Typography component="h2" sx={{ fontSize: 21, fontWeight: 600 }}>La solicitud de papeletas aún no está abierta</Typography>
+          <Typography component="h2" sx={{ fontSize: 21, fontWeight: 600 }}>
+            {rosario ? 'La inscripción del Rosario vespertino aún no está abierta' : 'La solicitud de papeletas aún no está abierta'}
+          </Typography>
           <Typography sx={{ mt: 1, color: 'text.secondary', lineHeight: 1.6, maxWidth: '64ch' }}>
-            Secretaría la abre unas semanas antes del reparto. Cuando se abra podrás pedir aquí la papeleta{fichas.length > 1 ? ' para ti y para quienes tienes a tu cargo' : ''}, y elegir el día en que pasarás a recogerla. Te avisaremos por correo.
+            Secretaría la abre unas semanas antes del reparto. Cuando se abra podrás pedir aquí la papeleta{fichas.length > 1 ? ' para ti y para quienes tienes a tu cargo' : ''}, con el puesto que te gustaría, y elegir el día en que pasarás a recogerla. Te avisaremos por correo.
           </Typography>
         </Box>
       </TarjetaCristal>
       <Box component="section" aria-label="La última papeleta">
         <Typography component="h2" sx={{ fontSize: 17, fontWeight: 600, mb: 0.5 }}>La última vez</Typography>
         <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none' }}>
-          {fichas.map((f) => (
-            <Box component="li" key={f.id} sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between', py: 1.5, borderTop: 1, borderColor: 'divider' }}>
-              <Typography sx={{ fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
-              <Typography sx={{ color: 'text.secondary' }}>{f.ultima ? `${f.ultima.year} · ${sitio(f.ultima)}` : 'Todavía no ha salido'}</Typography>
-            </Box>
-          ))}
+          {fichas.map((f) => {
+            const ultima = f.porSalida[salida.salida].ultima
+            return (
+              <Box component="li" key={f.id} sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between', py: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                <Typography sx={{ fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
+                <Typography sx={{ color: 'text.secondary' }}>{ultima ? `${ultima.year} · ${sitio(ultima)}` : 'Todavía no ha salido'}</Typography>
+              </Box>
+            )
+          })}
         </Box>
       </Box>
     </>
   )
 }
 
-/** Plazo abierto: quién sale y qué día pasa a recogerla. */
-function Solicitud({ estado, fichas, onHecho, onError }: { estado: MiProcesion; fichas: FichaEnLaProcesion[]; onHecho: (m: string) => void; onError: (m: string) => void }) {
+/** Plazo abierto: quién sale, en qué puesto le gustaría y qué día pasa a recogerla. */
+function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiProcesion; salida: SalidaDelHermano; fichas: FichaEnLaProcesion[]; onHecho: (m: string) => void; onError: (m: string) => void }) {
+  const rosario = salida.salida === 'ROSARIO'
   const pueden = fichas.filter((f) => f.activo)
   const [marcadas, setElegidas] = useState<number[]>(() => pueden.map((f) => f.id))
-  // Tras pedir, las que ya tienen cita salen de esta lista: no cuentan aunque sigan marcadas.
+  // Tras pedir, las que ya tienen papeleta salen de esta lista: no cuentan aunque sigan marcadas.
   const elegidas = marcadas.filter((id) => pueden.some((f) => f.id === id))
+  const [puestos, setPuestos] = useState<Record<number, string>>(() =>
+    Object.fromEntries(fichas.map((f) => [f.id, f.porSalida[salida.salida].ultima?.puesto ?? ''])))
+  const [donativo, setDonativo] = useState('')
   const [turnoId, setTurnoId] = useState<number | null>(null)
   const [enviando, setEnviando] = useState(false)
 
   const libres = (d: DiaDeReparto) => d.capacidad - d.genteApuntada
-  const diaElegido = estado.dias.find((d) => d.id === turnoId) ?? null
+  const diaElegido = salida.dias.find((d) => d.id === turnoId) ?? null
   const cuantas = elegidas.length
   const nombres = pueden.filter((f) => elegidas.includes(f.id)).map((f) => f.nombre)
-  const { papeleta, alquilerTunica } = estado.precios
+  const sinPuesto = elegidas.some((id) => !puestos[id]?.trim())
+  const importeDonativo = donativo.trim() ? Number(donativo.replace(',', '.')) : 0
+  const donativoValido = !rosario || (Number.isFinite(importeDonativo) && importeDonativo >= 0 && importeDonativo <= 1000)
+  const cuotaSalida = estado.cuotaSalida ?? 0
 
   const alternar = (id: number) => setElegidas((actuales) => (actuales.includes(id) ? actuales.filter((x) => x !== id) : [...actuales, id]))
 
@@ -235,10 +335,10 @@ function Solicitud({ estado, fichas, onHecho, onError }: { estado: MiProcesion; 
     // Una a una: si una ficha ya tenía papeleta o el día se llena a mitad, las demás siguen.
     for (const id of elegidas) {
       try {
-        await reservarDia(id, turnoId)
+        await pedirPapeleta({ hermanoId: id, turnoId, puesto: puestos[id].trim(), ...(rosario && { donativo: Math.round(importeDonativo * 100) / 100 }) })
       } catch (e: unknown) {
         const nombre = pueden.find((f) => f.id === id)?.nombre ?? ''
-        fallos.push(`${nombre}: ${e instanceof Error ? e.message : 'no se ha podido reservar'}`)
+        fallos.push(`${nombre}: ${mensaje(e, 'no se ha podido pedir')}`)
       }
     }
     setEnviando(false)
@@ -251,39 +351,62 @@ function Solicitud({ estado, fichas, onHecho, onError }: { estado: MiProcesion; 
   return (
     <>
       <Alert severity="success" icon={<EventAvailableIcon />}>
-        <strong>La solicitud de papeletas está abierta.</strong> Elige quién sale y el día en que pasaréis a recogerla.
+        <strong>{rosario ? 'La inscripción del Rosario vespertino está abierta.' : 'La solicitud de papeletas está abierta.'}</strong> Elige quién sale, en qué puesto os gustaría ir y el día en que pasaréis a recogerla.
       </Alert>
 
-      {estado.dias.length === 0 ? (
+      {salida.dias.length === 0 ? (
         <Alert severity="info">Todavía no hay días de reparto publicados. Vuelve en unos días.</Alert>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }, gap: 3, alignItems: 'start' }}>
           <TarjetaCristal component="fieldset" sx={{ m: 0, p: { xs: 2.5, md: 3 }, display: 'grid', gap: 1.25, minWidth: 0 }}>
-            <Typography component="legend" sx={leyenda}>1 · Quién sale</Typography>
-            {fichas.map((f) => (
-              <FormControlLabel
-                key={f.id}
-                disabled={!f.activo}
-                control={<Checkbox checked={elegidas.includes(f.id)} onChange={() => alternar(f.id)} />}
-                sx={{ m: 0, px: 1, py: 0.75, borderRadius: '8px', border: 1, borderColor: 'divider', alignItems: 'center' }}
-                label={
-                  <span>
-                    <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
-                    <Typography component="span" sx={{ display: 'block', fontSize: 13, color: 'text.secondary' }}>
-                      {f.activo
-                        ? `${quienEs(f)} · ${f.ultima ? `el año pasado: ${sitio(f.ultima)}` : 'primera vez'}`
-                        : 'Podrá salir cuando Secretaría apruebe su alta'}
-                    </Typography>
-                  </span>
-                }
+            <Typography component="legend" sx={leyenda}>1 · Quién sale y en qué puesto</Typography>
+            {fichas.map((f) => {
+              const ultima = f.porSalida[salida.salida].ultima
+              const marcada = elegidas.includes(f.id)
+              return (
+                <Box key={f.id} sx={{ px: 1, py: 0.75, borderRadius: '8px', border: 1, borderColor: 'divider', display: 'grid', gap: 1 }}>
+                  <FormControlLabel
+                    disabled={!f.activo}
+                    control={<Checkbox checked={marcada} onChange={() => alternar(f.id)} />}
+                    sx={{ m: 0, alignItems: 'center' }}
+                    label={
+                      <span>
+                        <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
+                        <Typography component="span" sx={{ display: 'block', fontSize: 13, color: 'text.secondary' }}>
+                          {f.activo
+                            ? `${quienEs(f)} · ${ultima ? `la última vez: ${sitio(ultima)}` : 'primera vez'}`
+                            : 'Podrá salir cuando Secretaría apruebe su alta'}
+                        </Typography>
+                      </span>
+                    }
+                  />
+                  {marcada && (
+                    <Autocomplete
+                      freeSolo
+                      autoSelect
+                      options={PUESTOS[salida.salida]}
+                      value={puestos[f.id] ?? ''}
+                      onChange={(_e, v) => setPuestos({ ...puestos, [f.id]: v ?? '' })}
+                      onInputChange={(_e, v, motivo) => { if (motivo === 'input') setPuestos({ ...puestos, [f.id]: v }) }}
+                      renderInput={(params) => <TextField {...params} size="small" label={`Puesto que le gustaría a ${f.nombre}`} />}
+                    />
+                  )}
+                </Box>
+              )
+            })}
+            {rosario && (
+              <TextField
+                size="small" label="La voluntad (opcional)" placeholder="0" value={donativo} onChange={(e) => setDonativo(e.target.value)}
+                error={!donativoValido} helperText={donativoValido ? 'En euros, por persona. Se da en el reparto o se paga aquí.' : 'Un importe entre 0 y 1000 €'}
+                slotProps={{ htmlInput: { inputMode: 'decimal' } }}
               />
-            ))}
+            )}
           </TarjetaCristal>
 
           <TarjetaCristal component="fieldset" sx={{ m: 0, p: { xs: 2.5, md: 3 }, minWidth: 0 }}>
             <Typography component="legend" sx={leyenda}>2 · Día del reparto</Typography>
             <RadioGroup value={turnoId ?? ''} onChange={(e) => setTurnoId(Number(e.target.value))} sx={{ gap: 1.25 }}>
-              {estado.dias.map((d) => {
+              {salida.dias.map((d) => {
                 const quedan = libres(d)
                 const lleno = quedan < Math.max(cuantas, 1)
                 return (
@@ -309,13 +432,13 @@ function Solicitud({ estado, fichas, onHecho, onError }: { estado: MiProcesion; 
         </Box>
       )}
 
-      {estado.dias.length > 0 && (
+      {salida.dias.length > 0 && (
         <TarjetaCristal sx={{ p: { xs: 2.5, md: 3 }, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <Typography sx={{ color: 'text.secondary', maxWidth: '62ch' }}>
-            {cuantas === 0 ? 'Elige quién sale.' : !diaElegido ? `${nombres.join(' y ')}: elige el día del reparto.` : `${nombres.join(' y ')} · ${dia(diaElegido)}, ${horas(diaElegido)}.`}
-            {papeleta !== null && ` La papeleta se paga en el reparto: ${formatearImporte(papeleta)}${alquilerTunica ? `, más ${formatearImporte(alquilerTunica)} de alquiler de túnica a quien no tenga la suya.` : '.'}`}
+            {cuantas === 0 ? 'Elige quién sale.' : sinPuesto ? 'Di en qué puesto os gustaría ir.' : !diaElegido ? `${nombres.join(' y ')}: elige el día del reparto.` : `${nombres.join(' y ')} · ${dia(diaElegido)}, ${horas(diaElegido)}.`}
+            {!rosario && cuotaSalida > 0 && ` La papeleta cuesta ${formatearImporte(cuotaSalida)}.`}
           </Typography>
-          <Boton onClick={() => void pedir()} disabled={enviando || cuantas === 0 || !diaElegido}>
+          <Boton onClick={() => void pedir()} disabled={enviando || cuantas === 0 || !diaElegido || sinPuesto || !donativoValido}>
             {enviando ? 'Pidiendo…' : cuantas > 1 ? `Pedir ${cuantas} papeletas` : 'Pedir la papeleta'}
           </Boton>
         </TarjetaCristal>

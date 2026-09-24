@@ -1,162 +1,298 @@
-import { useState } from 'react'
-import { Alert, Box, Button, CircularProgress, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  Alert, Box, Button, CircularProgress, IconButton, Paper, Stack, Tab, Tabs, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
+} from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined'
+import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { Helmet } from 'react-helmet-async'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
-import { apuntados, fichaDeMesa } from '../../../lib/api/mesa'
+import { apuntados, colasDeLaMesa, fichaDeMesa, type Salida, type ZonaDeBusqueda } from '../../../lib/api/mesa'
 import CabeceraSeccion from '../CabeceraSeccion'
 import CampoBusqueda from '../listados/CampoBusqueda'
 import AltaEnMesa from './AltaEnMesa'
 import BuscadorPersonas from './BuscadorPersonas'
-import FormularioApuntar from './FormularioApuntar'
+import ColaDeZona from './ColaDeZona'
+import FormularioCorreccion from './FormularioCorreccion'
+import PreparacionRopa from './PreparacionRopa'
 import TablaApuntados from './TablaApuntados'
-import { euros, fechaCorta } from './formato'
+import ZonaInscripcion from './ZonaInscripcion'
+import ZonaTesoreria from './ZonaTesoreria'
+import ZonaTunicas from './ZonaTunicas'
+import type { Aviso } from './piezas'
+import { CLAVE_MESA, useMesaEnVivo } from './enVivo'
+import { NOMBRE_SALIDA, fechaCorta } from './formato'
 
+type Zona = 'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'preparacion'
 type Modo = { tipo: 'buscar' } | { tipo: 'ficha'; id: number } | { tipo: 'alta' }
 
-const CLAVE = ['mesa'] as const
+const ZONAS: { valor: Zona; etiqueta: string; soloPasion?: boolean }[] = [
+  { valor: 'inscripcion', etiqueta: 'Inscripción' },
+  { valor: 'tesoreria', etiqueta: 'Tesorería' },
+  { valor: 'tunicas', etiqueta: 'Túnicas' },
+  { valor: 'listado', etiqueta: 'Listado' },
+  { valor: 'preparacion', etiqueta: 'Preparar ropa', soloPasion: true },
+]
+
+const BUSQUEDA_DE: Record<'inscripcion' | 'tesoreria' | 'tunicas' | 'listado', ZonaDeBusqueda> = {
+  inscripcion: 'inscripcion', tesoreria: 'tesoreria', tunicas: 'tunicas', listado: 'todas',
+}
+const ID_BUSCADOR = 'buscador-mesa'
+
+/** Cada ordenador recuerda su zona y su salida: al abrir la mesa, sigue donde estaba. */
+function recordado<T extends string>(clave: string, validos: readonly T[], porDefecto: T): T {
+  try {
+    const guardado = localStorage.getItem(clave)
+    return validos.includes(guardado as T) ? (guardado as T) : porDefecto
+  } catch { return porDefecto }
+}
+function recordar(clave: string, valor: string) {
+  try { localStorage.setItem(clave, valor) } catch { /* sin almacenamiento: no pasa nada */ }
+}
 
 /**
- * La mesa de la procesión: lo que antes era una hoja de cálculo con su panel
- * lateral. A la izquierda, quién sale este año; a la derecha, buscar a la
- * persona (o darla de alta), comprobar sus datos con ella delante y
- * apuntarla con su puesto y su ropa, cobrando.
+ * La mesa de la procesión el día del reparto, por zonas. Cada ordenador es
+ * una zona —Inscripción, Tesorería o Túnicas— y la persona pasa de una a
+ * otra; cada zona ve al momento a quién le toca (la cola) sin recargar.
+ * Además, el listado de apuntados (la hoja de siempre) y la ropa por preparar.
+ *
+ * Hecha para ir rápido y con teclado: F2 lleva al buscador, Enter elige y
+ * confirma, Esc vuelve a buscar, Alt+1…5 cambia de zona. Si se corta la red,
+ * lo dice, y lo que se estaba apuntando no se pierde.
  */
 export default function MesaProcesionPage() {
   const role = useAuthStore((s) => s.cms?.role ?? 'USER')
   const queryClient = useQueryClient()
+  const { conectado } = useMesaEnVivo()
+  const [salida, setSalida] = useState<Salida>(() => recordado('mesa.salida', ['PASION', 'ROSARIO'] as const, 'PASION'))
+  const [zona, setZona] = useState<Zona>(() => recordado('mesa.zona', ZONAS.map((z) => z.valor), 'inscripcion'))
   const [modo, setModo] = useState<Modo>({ tipo: 'buscar' })
-  const [aviso, setAviso] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<Aviso | null>(null)
   const [filtro, setFiltro] = useState<{ q: string; puesto: string }>({ q: '', puesto: '' })
 
+  const zonaVisible: Zona = salida === 'ROSARIO' && zona === 'preparacion' ? 'listado' : zona
+  const operativa = zonaVisible === 'inscripcion' || zonaVisible === 'tesoreria' || zonaVisible === 'tunicas'
+
   const listado = useQuery({
-    queryKey: [...CLAVE, 'apuntados', filtro.q, filtro.puesto],
-    queryFn: () => apuntados(filtro),
+    queryKey: [...CLAVE_MESA, 'apuntados', salida, filtro.q, filtro.puesto],
+    queryFn: () => apuntados(salida, filtro),
     placeholderData: (anterior) => anterior,
+    enabled: zonaVisible === 'listado' || zonaVisible === 'inscripcion' || zonaVisible === 'tunicas',
+  })
+  const colas = useQuery({
+    queryKey: [...CLAVE_MESA, 'colas', salida],
+    queryFn: () => colasDeLaMesa(salida),
+    enabled: zonaVisible === 'tesoreria' || zonaVisible === 'tunicas',
   })
   const idFicha = modo.tipo === 'ficha' ? modo.id : null
   const ficha = useQuery({
-    queryKey: [...CLAVE, 'ficha', idFicha],
-    queryFn: () => fichaDeMesa(idFicha!),
+    queryKey: [...CLAVE_MESA, 'ficha', idFicha, salida],
+    queryFn: () => fichaDeMesa(idFicha!, salida),
     enabled: idFicha !== null,
   })
 
-  const abrir = (id: number) => { setAviso(null); setModo({ tipo: 'ficha', id }) }
-  const hecho = (texto: string) => {
-    setAviso(texto)
+  const buscar = useCallback(() => {
     setModo({ tipo: 'buscar' })
-    void queryClient.invalidateQueries({ queryKey: CLAVE })
+    window.setTimeout(() => document.getElementById(ID_BUSCADOR)?.focus(), 0)
+  }, [])
+  const cambiarZona = useCallback((nueva: Zona) => { setZona(nueva); recordar('mesa.zona', nueva); setAviso(null); buscar() }, [buscar])
+  const cambiarSalida = (nueva: Salida) => { setSalida(nueva); recordar('mesa.salida', nueva); setAviso(null); buscar() }
+  const abrir = (id: number) => { setAviso(null); setModo({ tipo: 'ficha', id }) }
+  const hecho = (a: Aviso) => {
+    setAviso(a)
+    buscar()
+    void queryClient.invalidateQueries({ queryKey: CLAVE_MESA })
   }
 
+  // El teclado: F2 al buscador, Esc a buscar otra vez, Alt+número cambia de zona.
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === 'F2') { e.preventDefault(); buscar() }
+      if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) buscar()
+      if (e.altKey && /^[1-5]$/.test(e.key)) {
+        const z = ZONAS[Number(e.key) - 1]
+        if (z) { e.preventDefault(); cambiarZona(z.valor) }
+      }
+    }
+    window.addEventListener('keydown', alTeclear)
+    return () => window.removeEventListener('keydown', alTeclear)
+  }, [buscar, cambiarZona])
+
+  const puestosUsados = listado.data?.puestos.map((p) => p.puesto) ?? []
   const datos = listado.data
-  const recaudado = datos?.papeletas.reduce((s, p) => s + (p.recibo.estado === 'PAGADO' ? p.recibo.importe : 0), 0) ?? 0
   const total = datos?.puestos.reduce((s, p) => s + p.total, 0) ?? 0
+  const recogidas = datos?.apuntados.filter((p) => p.estado === 'recogida').length ?? 0
+
+  const panel = (
+    <Paper component="section" aria-label="Atender" sx={{ p: 2.5, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', displayPrint: 'none' }}>
+      {aviso && <Alert severity={aviso.tono} onClose={() => setAviso(null)} sx={{ mb: 2 }}>{aviso.texto}</Alert>}
+
+      {modo.tipo === 'buscar' && (
+        <Stack spacing={2}>
+          <Typography variant="h5" component="h2">
+            {zonaVisible === 'inscripcion' ? 'Apuntar' : zonaVisible === 'tesoreria' ? 'Cobrar' : zonaVisible === 'tunicas' ? (salida === 'ROSARIO' ? 'Confirmar el puesto' : 'Dar la ropa') : 'Corregir'}
+          </Typography>
+          <BuscadorPersonas
+            key={`${zonaVisible}-${salida}`}
+            id={ID_BUSCADOR}
+            autoFocus
+            zona={BUSQUEDA_DE[zonaVisible as keyof typeof BUSQUEDA_DE]}
+            salida={salida}
+            onElegir={(p) => abrir(p.id)}
+          />
+          {zonaVisible === 'inscripcion' && (
+            <Button startIcon={<PersonAddAltOutlinedIcon />} onClick={() => { setAviso(null); setModo({ tipo: 'alta' }) }} sx={{ alignSelf: 'start' }}>
+              No está en el censo: darla de alta
+            </Button>
+          )}
+        </Stack>
+      )}
+
+      {modo.tipo !== 'buscar' && (
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+          <Tooltip title="Buscar a otra persona (Esc)">
+            <IconButton aria-label="Buscar a otra persona" onClick={buscar} size="small"><ArrowBackIcon fontSize="small" /></IconButton>
+          </Tooltip>
+          <Box sx={{ minWidth: 0 }}>
+            {modo.tipo === 'alta' && <Typography variant="h5" component="h2">Persona nueva</Typography>}
+            {modo.tipo === 'ficha' && ficha.data && (
+              <>
+                <Typography variant="h5" component="h2" sx={{ overflowWrap: 'anywhere' }}>{ficha.data.nombre} {ficha.data.apellidos}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {ficha.data.numeroHermano ? `N.º ${ficha.data.numeroHermano} · ` : ''}{fechaCorta(ficha.data.fechaNacimiento)}
+                </Typography>
+              </>
+            )}
+          </Box>
+        </Stack>
+      )}
+
+      {modo.tipo === 'alta' && (
+        <AltaEnMesa onCancelar={buscar} onHecha={(id, texto) => { setModo({ tipo: 'ficha', id }); setAviso({ tono: 'success', texto }) }} />
+      )}
+
+      {modo.tipo === 'ficha' && (
+        ficha.isError ? <Alert severity="error">No se ha podido abrir la ficha.</Alert>
+          : !ficha.data ? <CircularProgress aria-label="Cargando la ficha" />
+            : (() => {
+                const f = ficha.data
+                const clave = `${zonaVisible}-${f.id}-${f.salida}-${f.solicitud?.id ?? 'sin'}-${f.papeleta?.id ?? 'sin'}-${f.situacion}`
+                const comun = { ficha: f, role, onHecho: hecho, onRecargar: () => void ficha.refetch() }
+                if (zonaVisible === 'inscripcion') return <ZonaInscripcion key={clave} {...comun} puestosUsados={puestosUsados} />
+                if (zonaVisible === 'tesoreria') return <ZonaTesoreria key={clave} {...comun} />
+                if (zonaVisible === 'tunicas') return <ZonaTunicas key={clave} {...comun} puestosUsados={puestosUsados} onATesoreria={() => { setZona('tesoreria'); recordar('mesa.zona', 'tesoreria') }} />
+                return f.papeleta || f.solicitud
+                  ? <FormularioCorreccion key={clave} {...comun} puestosUsados={puestosUsados} />
+                  : <Alert severity="info">No está apuntado al {NOMBRE_SALIDA[salida]}.</Alert>
+              })()
+      )}
+    </Paper>
+  )
 
   return (
     <>
       <Helmet><title>Mesa de la procesión | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion
         titulo="Mesa de la procesión"
-        subtitulo={datos ? `${total} ${total === 1 ? 'apuntado' : 'apuntados'} en ${datos.year} · ${euros(recaudado)} cobrados` : undefined}
-      />
+        subtitulo={datos ? `${NOMBRE_SALIDA[salida]} ${datos.year} · ${total} ${total === 1 ? 'apuntado' : 'apuntados'}, ${recogidas} ${salida === 'ROSARIO' ? 'confirmados' : 'con la ropa'}` : NOMBRE_SALIDA[salida]}
+      >
+        <ToggleButtonGroup exclusive size="small" value={salida} onChange={(_e, v: Salida | null) => v && cambiarSalida(v)} aria-label="Salida">
+          <ToggleButton value="PASION">Sábado de Pasión</ToggleButton>
+          <ToggleButton value="ROSARIO">Rosario vespertino</ToggleButton>
+        </ToggleButtonGroup>
+      </CabeceraSeccion>
 
-      <Box sx={{ containerType: 'inline-size' }}>
-        <Box
-          sx={{
-            display: 'grid', gap: 3, alignItems: 'start',
-            gridTemplateColumns: 'minmax(0, 1fr)',
-            '@container (min-width: 1100px)': { gridTemplateColumns: 'minmax(0, 1fr) 420px' },
-          }}
-        >
-          {/* En pantallas estrechas, el panel va primero: es donde se trabaja. */}
-          <Paper
-            component="section"
-            aria-label="Apuntar"
+      {!conectado && (
+        <Alert severity="warning" icon={<WifiOffOutlinedIcon />} sx={{ mb: 2, displayPrint: 'none' }}>
+          <strong>Sin conexión con el servidor.</strong> Lo que estés apuntando no se pierde, pero no se guardará hasta que vuelva la red. Cuando vuelva, pulsa otra vez: no se cobra dos veces.
+        </Alert>
+      )}
+
+      <Tabs
+        value={zonaVisible}
+        onChange={(_e, v: Zona) => cambiarZona(v)}
+        variant="scrollable"
+        aria-label="Zona de la mesa"
+        sx={{ mb: 2.5, borderBottom: 1, borderColor: 'divider', displayPrint: 'none' }}
+      >
+        {ZONAS.filter((z) => !(z.soloPasion && salida === 'ROSARIO')).map((z) => (
+          <Tab key={z.valor} value={z.valor} label={z.etiqueta} title={`Alt+${ZONAS.indexOf(z) + 1}`} />
+        ))}
+      </Tabs>
+
+      {zonaVisible === 'preparacion' && <PreparacionRopa />}
+
+      {zonaVisible !== 'preparacion' && (
+        <Box sx={{ containerType: 'inline-size' }}>
+          <Box
             sx={{
-              p: 2.5, order: { xs: -1 }, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto',
-              '@container (min-width: 1100px)': { order: 1 },
+              display: 'grid', gap: 3, alignItems: 'start',
+              gridTemplateColumns: 'minmax(0, 1fr)',
+              '@container (min-width: 1000px)': {
+                gridTemplateColumns: operativa ? 'minmax(0, 1fr) 380px' : 'minmax(0, 1fr) 440px',
+              },
             }}
           >
-            {aviso && <Alert severity="success" onClose={() => setAviso(null)} sx={{ mb: 2 }}>{aviso}</Alert>}
+            {operativa && panel}
 
-            {modo.tipo === 'buscar' && (
-              <Stack spacing={2}>
-                <Typography variant="h5" component="h2">Apuntar</Typography>
-                <BuscadorPersonas autoFocus onElegir={(p) => abrir(p.id)} />
-                <Button startIcon={<PersonAddAltOutlinedIcon />} onClick={() => { setAviso(null); setModo({ tipo: 'alta' }) }} sx={{ alignSelf: 'start' }}>
-                  No está en el censo: darla de alta
-                </Button>
-              </Stack>
+            {zonaVisible === 'inscripcion' && (
+              <Paper sx={{ p: 2 }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary', mb: 1 }}>Cómo va</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Quien pidió la papeleta en su área y lo tiene todo pagado va directo a Túnicas. Aquí se apunta a quien llega sin haberla pedido: después pasa por Tesorería si debe algo.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                  Teclado: <strong>F2</strong> buscar · <strong>Enter</strong> elegir y confirmar · <strong>Esc</strong> volver · <strong>Alt+1…5</strong> zonas.
+                </Typography>
+              </Paper>
+            )}
+            {zonaVisible === 'tesoreria' && (
+              <ColaDeZona titulo="Por cobrar" vacia="Nadie esperando para pagar." filas={colas.data?.porCobrar ?? []} seleccionado={idFicha} onElegir={abrir} />
+            )}
+            {zonaVisible === 'tunicas' && (
+              <ColaDeZona
+                titulo={salida === 'ROSARIO' ? 'Listos para confirmar' : 'Listos para la ropa'}
+                vacia="Nadie esperando todavía."
+                filas={colas.data?.porRecoger ?? []}
+                seleccionado={idFicha}
+                onElegir={abrir}
+              />
             )}
 
-            {modo.tipo !== 'buscar' && (
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
-                <Tooltip title="Buscar a otra persona">
-                  <IconButton aria-label="Buscar a otra persona" onClick={() => setModo({ tipo: 'buscar' })} size="small"><ArrowBackIcon fontSize="small" /></IconButton>
-                </Tooltip>
-                <Box sx={{ minWidth: 0 }}>
-                  {modo.tipo === 'alta' && <Typography variant="h5" component="h2">Persona nueva</Typography>}
-                  {modo.tipo === 'ficha' && ficha.data && (
-                    <>
-                      <Typography variant="h5" component="h2" sx={{ overflowWrap: 'anywhere' }}>{ficha.data.nombre} {ficha.data.apellidos}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {ficha.data.numeroHermano ? `N.º ${ficha.data.numeroHermano} · ` : ''}{fechaCorta(ficha.data.fechaNacimiento)}
-                      </Typography>
-                    </>
+            {zonaVisible === 'listado' && (
+              <>
+                <Box component="section" aria-label="Apuntados" sx={{ minWidth: 0 }}>
+                  <Stack direction="row" spacing={1.5} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <CampoBusqueda etiqueta="Buscar entre los apuntados" valor={filtro.q} onCambiar={(q) => setFiltro({ ...filtro, q })} sx={{ maxWidth: 360 }} />
+                  </Stack>
+                  {datos && datos.puestos.length > 0 && (
+                    <Stack direction="row" spacing={1} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap' }} role="group" aria-label="Filtrar por puesto">
+                      {[{ puesto: '', total }, ...datos.puestos].map((p) => (
+                        <Button
+                          key={p.puesto || 'todos'}
+                          size="small"
+                          variant={filtro.puesto === p.puesto ? 'contained' : 'outlined'}
+                          color={filtro.puesto === p.puesto ? 'primary' : 'inherit'}
+                          aria-pressed={filtro.puesto === p.puesto}
+                          onClick={() => setFiltro({ ...filtro, puesto: p.puesto })}
+                          sx={{ borderRadius: 999, py: 0.25 }}
+                        >
+                          {p.puesto || 'Todos'} · {p.total}
+                        </Button>
+                      ))}
+                    </Stack>
                   )}
+                  {listado.isError && <Alert severity="error">No se ha podido cargar el listado de apuntados.</Alert>}
+                  {!datos && !listado.isError && <CircularProgress aria-label="Cargando los apuntados" />}
+                  {datos && <TablaApuntados apuntados={datos.apuntados} salida={salida} seleccionado={idFicha} onElegir={abrir} />}
                 </Box>
-              </Stack>
+                {panel}
+              </>
             )}
-
-            {modo.tipo === 'alta' && (
-              <AltaEnMesa onCancelar={() => setModo({ tipo: 'buscar' })} onHecha={(id, texto) => { setModo({ tipo: 'ficha', id }); setAviso(texto) }} />
-            )}
-
-            {modo.tipo === 'ficha' && (
-              ficha.isError ? <Alert severity="error">No se ha podido abrir la ficha.</Alert>
-                : !ficha.data ? <CircularProgress aria-label="Cargando la ficha" />
-                  : (
-                    <FormularioApuntar
-                      key={`${ficha.data.id}-${ficha.data.papeleta?.id ?? 'nueva'}-${ficha.data.situacion}`}
-                      ficha={ficha.data}
-                      role={role}
-                      puestosUsados={datos?.puestos.map((p) => p.puesto) ?? []}
-                      onHecho={hecho}
-                      onRecargar={() => void ficha.refetch()}
-                    />
-                  )
-            )}
-          </Paper>
-
-          <Box component="section" aria-label="Apuntados" sx={{ minWidth: 0 }}>
-            <Stack direction="row" spacing={1.5} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-              <CampoBusqueda etiqueta="Buscar entre los apuntados" valor={filtro.q} onCambiar={(q) => setFiltro({ ...filtro, q })} sx={{ maxWidth: 360 }} />
-            </Stack>
-            {datos && datos.puestos.length > 0 && (
-              <Stack direction="row" spacing={1} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap' }} role="group" aria-label="Filtrar por puesto">
-                {[{ puesto: '', total }, ...datos.puestos].map((p) => (
-                  <Button
-                    key={p.puesto || 'todos'}
-                    size="small"
-                    variant={filtro.puesto === p.puesto ? 'contained' : 'outlined'}
-                    color={filtro.puesto === p.puesto ? 'primary' : 'inherit'}
-                    aria-pressed={filtro.puesto === p.puesto}
-                    onClick={() => setFiltro({ ...filtro, puesto: p.puesto })}
-                    sx={{ borderRadius: 999, py: 0.25 }}
-                  >
-                    {p.puesto || 'Todos'} · {p.total}
-                  </Button>
-                ))}
-              </Stack>
-            )}
-            {listado.isError && <Alert severity="error">No se ha podido cargar el listado de apuntados.</Alert>}
-            {!datos && !listado.isError && <CircularProgress aria-label="Cargando los apuntados" />}
-            {datos && <TablaApuntados apuntados={datos.papeletas} seleccionado={idFicha} onElegir={abrir} />}
           </Box>
         </Box>
-      </Box>
+      )}
     </>
   )
 }

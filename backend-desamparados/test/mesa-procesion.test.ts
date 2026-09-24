@@ -1,6 +1,6 @@
 // Reglas de la mesa de la procesión sin base de datos: la altura de hombro
 // dictada al tallar, la talla escrita en el número de la túnica, qué ropa se
-// propone a quien vuelve y cuándo se cobra el alquiler.
+// propone a quien vuelve.
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
@@ -8,7 +8,6 @@ import {
   PUESTOS,
   alturaHombroEnCm,
   normalizarNumeroPrenda,
-  pagaAlquiler,
   propuestaDeRopa,
   tallaDeTunica,
 } from '../src/domain/mesa-procesion.js';
@@ -86,19 +85,6 @@ describe('la ropa que se propone', () => {
     const p = propuestaDeRopa({ ...sinNada, prestadas: [{ tipo: 'FARAONA', numero: '21M' }] });
     assert.equal(p.faraona, '21M');
     assert.equal(p.capirote, null);
-  });
-});
-
-describe('el alquiler de la túnica', () => {
-  test('con la mesa, solo se cobra la túnica del ropero', () => {
-    assert.equal(pagaAlquiler('ROPERO', true), true);
-    assert.equal(pagaAlquiler('PROPIA', false), false);
-    assert.equal(pagaAlquiler('NINGUNA', false), false);
-  });
-
-  test('sin la mesa (la inscripción de antes) manda la ficha', () => {
-    assert.equal(pagaAlquiler(undefined, true), false);
-    assert.equal(pagaAlquiler(undefined, false), true);
   });
 });
 

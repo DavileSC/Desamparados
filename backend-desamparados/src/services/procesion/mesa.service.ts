@@ -1,14 +1,14 @@
 /**
- * La mesa de la procesión: quien atiende a la gente que sale busca a la
- * persona (o la da de alta si no está en el censo), corrige sus datos, ve la
- * ropa que se le propone y la apunta cobrando (eso último lo hace
- * `PapeletasService.inscribirYFacturar`).
+ * La mesa de la procesión: buscar a la persona (o darla de alta si no está en
+ * el censo), leer su ficha con lo que tiene pendiente, corregir sus datos o
+ * su papeleta y el listado de los apuntados. Inscribir, cobrar y dar la ropa,
+ * cada cosa en su zona, están en `ZonasService`.
  *
  * Es lo que antes se llevaba en una hoja de cálculo: nombre, fecha de
  * nacimiento, teléfono, puesto, altura de hombro, túnica y capirote o faraona.
  */
 import { randomBytes } from 'node:crypto';
-import { EstadoCita, EstadoPrenda, Parentesco, Prisma, Role, Sexo, TipoPrenda } from '@prisma/client';
+import { EstadoCita, EstadoPrenda, EstadoSolicitud, Parentesco, Prisma, Role, Sexo, TipoPrenda, type Salida } from '@prisma/client';
 import db from '../../config/db.js';
 import { encrypt } from '../../utils/bcrypt.handle.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
@@ -22,8 +22,14 @@ import { SolicitudesService } from '../solicitudes.service.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { PapeletasService } from './papeletas.service.js';
 import { prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
+import { anioDeLaMesa, cuotasQueCuentan, pendienteDe } from './zonas.service.js';
+import { avisarALaMesa } from './avisos-mesa.js';
+import { DATOS_SALIDA, requisitosParaRecoger } from '../../domain/salidas.js';
 
-const anioDeLaProcesion = () => new Date().getFullYear();
+const anioDeLaProcesion = anioDeLaMesa;
+
+/** Qué busca cada zona: Inscripción, a quien aún no está apuntado; Túnicas, a quien está apuntado y no ha recogido. */
+export type ZonaDeBusqueda = 'inscripcion' | 'tesoreria' | 'tunicas' | 'todas';
 
 /** Cuántas personas devuelve el buscador: la mesa afina escribiendo más. */
 const RESULTADOS = 12;
@@ -57,6 +63,13 @@ export interface CorreccionFichaDto {
   alturaHombro?: string | null;
 }
 
+export interface EdicionSolicitudDto {
+  puesto?: string;
+  observaciones?: string | null;
+  /** Solo el Rosario, y mientras no esté pagado. */
+  donativo?: number;
+}
+
 export interface EdicionPapeletaDto {
   puesto?: string;
   tramo?: string | null;
@@ -64,6 +77,8 @@ export interface EdicionPapeletaDto {
   numTunicaAsignada?: string | null;
   numCapiroteAsignado?: string | null;
   numFaraonaAsignada?: string | null;
+  /** Solo en una papeleta ya recogida: pasar a túnica propia devuelve la del ropero. */
+  origenTunica?: 'ROPERO' | 'PROPIA' | 'NINGUNA';
   crearPrendas?: TipoRopa[];
 }
 
@@ -77,36 +92,46 @@ export class MesaService {
    * las reactiva o aprueba ahí mismo. Con la fecha de nacimiento, que es lo
    * que distingue a dos «Alejandro García».
    */
-  static async buscarPersonas(q: string) {
+  static async buscarPersonas(q: string, opciones: { zona?: ZonaDeBusqueda; salida?: Salida } = {}) {
     const texto = q.trim();
     if (texto.length < 2) return [];
+    const { zona = 'todas', salida = 'PASION' } = opciones;
     const numero = /^\d{1,9}$/.test(texto) ? Number(texto) : null;
     const busqueda = condicionBusqueda(texto, ['nombre', 'apellidos', 'dni', 'telefono', 'email']);
     const year = anioDeLaProcesion();
+    // Los ya apuntados (con solicitud o papeleta) no salen en Inscripción:
+    // para eso está el listado. En Túnicas solo salen los que tienen la
+    // solicitud pendiente de recoger.
+    const porZona: Prisma.HermanoWhereInput =
+      zona === 'inscripcion' ? { papeletas: { none: { year, salida } }, solicitudes: { none: { year, salida, estado: EstadoSolicitud.PENDIENTE } } }
+        : zona === 'tunicas' ? { solicitudes: { some: { year, salida, estado: EstadoSolicitud.PENDIENTE } } }
+          : {};
 
     const personas = await db.hermano.findMany({
-      where: numero !== null ? { OR: [busqueda, { numeroHermano: numero }] } : busqueda,
+      where: { AND: [numero !== null ? { OR: [busqueda, { numeroHermano: numero }] } : busqueda, porZona] },
       take: RESULTADOS,
       orderBy: [{ apellidos: 'asc' }, { nombre: 'asc' }],
       select: {
         id: true, nombre: true, apellidos: true, fechaNacimiento: true, numeroHermano: true,
         activo: true, fechaBaja: true,
-        papeletas: { where: { year }, select: { id: true, puesto: true } },
+        papeletas: { where: { year, salida }, select: { puesto: true } },
+        solicitudes: { where: { year, salida, estado: EstadoSolicitud.PENDIENTE }, select: { puesto: true } },
       },
     });
-    return personas.map(({ activo, fechaBaja, papeletas, ...p }) => ({
+    return personas.map(({ activo, fechaBaja, papeletas, solicitudes, ...p }) => ({
       ...p,
       situacion: situacionDe({ activo, fechaBaja }),
-      papeleta: papeletas[0] ?? null,
+      apuntado: papeletas[0] ? { puesto: papeletas[0].puesto, recogida: true }
+        : solicitudes[0] ? { puesto: solicitudes[0].puesto, recogida: false } : null,
     }));
   }
 
-  /** Quienes pidieron día para hoy y aún no tienen papeleta: la mesa los atiende primero. */
-  static async esperadosHoy() {
+  /** Quienes pidieron día para hoy y aún no han recogido la papeleta. */
+  static async esperadosHoy(salida: Salida = 'PASION') {
     const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
     const fin = new Date(); fin.setHours(23, 59, 59, 999);
     const citas = await db.cita.findMany({
-      where: { estado: EstadoCita.RESERVADA, papeleta: null, turno: { fecha: { gte: inicio, lte: fin } } },
+      where: { estado: EstadoCita.RESERVADA, papeleta: null, turno: { salida, fecha: { gte: inicio, lte: fin } } },
       orderBy: { hermano: { apellidos: 'asc' } },
       select: { id: true, hermano: { select: { id: true, nombre: true, apellidos: true, fechaNacimiento: true } } },
     });
@@ -114,12 +139,13 @@ export class MesaService {
   }
 
   /**
-   * Todo lo que la mesa necesita de una persona para apuntarla: sus datos
-   * (para corregirlos), su situación en el censo, la papeleta de este año si
-   * ya la tiene, la ropa que tiene prestada, lo que llevó la última vez, la
-   * propuesta de ropa y los precios.
+   * Todo lo que la mesa necesita de una persona: sus datos (para
+   * corregirlos), su situación en el censo, su solicitud de la salida (si se
+   * ha apuntado y no ha recogido) o su papeleta (si ya recogió), lo que debe
+   * (y lo que debe su familia, que suele pagar junta), la ropa que tiene
+   * prestada, lo que llevó la última vez y la ropa que se le propone.
    */
-  static async ficha(hermanoId: number) {
+  static async ficha(hermanoId: number, salida: Salida = 'PASION') {
     const year = anioDeLaProcesion();
     const h = await db.hermano.findUnique({
       where: { id: hermanoId },
@@ -130,46 +156,85 @@ export class MesaService {
         tieneTunicaPropia: true, alturaHombro: true, puesto: true,
         prendas: { where: { estado: EstadoPrenda.PRESTADA }, select: { tipo: true, numero: true, talla: true } },
         papeletas: {
+          where: { salida },
           orderBy: { year: 'desc' },
           take: 2,
           select: {
             id: true, year: true, puesto: true, tramo: true, observaciones: true,
             numTunicaAsignada: true, numCapiroteAsignado: true, numFaraonaAsignada: true, origenTunica: true,
-            recibo: { select: { importe: true, estado: true, metodoPago: true } },
+            recibo: { select: { id: true, concepto: true, importe: true, estado: true, metodoPago: true, tipo: true } },
+            solicitud: { select: { puesto: true } },
           },
-        },
-        citas: {
-          where: { estado: EstadoCita.RESERVADA, papeleta: null },
-          orderBy: { id: 'desc' },
-          take: 1,
-          select: { id: true, turno: { select: { fecha: true, horaInicio: true } } },
         },
       },
     });
     if (!h) throw new NotFoundError('No se encontró a esa persona en el censo.');
 
-    const { papeletas, citas, prendas, activo, fechaBaja, ...datos } = h;
+    const { papeletas, prendas, activo, fechaBaja, ...datos } = h;
     const deEsteAnio = papeletas.find((p) => p.year === year) ?? null;
     const anterior = papeletas.find((p) => p.year < year) ?? null;
+    const solicitud = deEsteAnio ? null : await db.solicitud.findFirst({
+      where: { hermanoId, year, salida, estado: EstadoSolicitud.PENDIENTE },
+      include: { recibo: true, cita: { select: { turno: { select: { fecha: true, horaInicio: true } } } } },
+      orderBy: { id: 'desc' },
+    });
+    const cuotaSalida = await PapeletasService.cuotaDeSalida();
+
+    // La familia (las fichas de la misma cuenta) suele pagar junta.
+    const familia = await db.hermano.findMany({
+      where: { userId: h.userId, id: { not: h.id }, fechaBaja: null },
+      orderBy: [{ esTitular: 'desc' }, { fechaNacimiento: 'asc' }],
+      select: { id: true, nombre: true, apellidos: true },
+    });
+    const cuotas = await cuotasQueCuentan(db, [h.id, ...familia.map((f) => f.id)]);
+    const pendienteSalida = solicitud ? pendienteDe(solicitud, cuotaSalida) : 0;
+    const requisitos = requisitosParaRecoger({
+      activo,
+      solicitud: solicitud && { salida, salidaPendiente: pendienteSalida },
+      cuotas: cuotas.get(h.id) ?? [],
+    });
+    const propuesta = propuestaDeRopa({
+      anterior: anterior && { ...anterior, origenTunica: anterior.origenTunica as Origen | null },
+      prestadas: prendas,
+      tieneTunicaPropia: h.tieneTunicaPropia,
+      puestoDeLaFicha: h.puesto,
+    });
 
     return {
       ...datos,
       situacion: situacionDe({ activo, fechaBaja }),
+      salida,
       year,
       prendas,
-      papeleta: deEsteAnio && { ...deEsteAnio, recibo: { ...deEsteAnio.recibo, importe: Number(deEsteAnio.recibo.importe) } },
+      solicitud: solicitud && {
+        id: solicitud.id,
+        puesto: solicitud.puesto,
+        observaciones: solicitud.observaciones,
+        origen: solicitud.origen,
+        donativo: solicitud.donativo === null ? null : Number(solicitud.donativo),
+        /** Lo que falta pagar de la salida (la cuota de salida o el donativo). */
+        pendiente: pendienteSalida,
+        /** Cómo se llamará el recibo de la salida al cobrarlo. */
+        concepto: solicitud.recibo?.concepto ?? `${DATOS_SALIDA[salida].concepto} ${year}`,
+        cita: solicitud.cita && { fecha: solicitud.cita.turno.fecha, horaInicio: solicitud.cita.turno.horaInicio },
+      },
+      papeleta: deEsteAnio && {
+        ...deEsteAnio,
+        puestoPedido: deEsteAnio.solicitud?.puesto ?? null,
+        solicitud: undefined,
+        recibo: { ...deEsteAnio.recibo, importe: Number(deEsteAnio.recibo.importe) },
+      },
+      requisitos,
+      familia: familia
+        .map((f) => ({ ...f, cuotasPendientes: (cuotas.get(f.id) ?? []).filter((c) => c.estado !== 'REMESADO') }))
+        .filter((f) => f.cuotasPendientes.length > 0),
       anterior: anterior && {
         year: anterior.year, puesto: anterior.puesto, origenTunica: anterior.origenTunica,
         numTunicaAsignada: anterior.numTunicaAsignada, numCapiroteAsignado: anterior.numCapiroteAsignado, numFaraonaAsignada: anterior.numFaraonaAsignada,
       },
-      cita: citas[0] ? { id: citas[0].id, fecha: citas[0].turno.fecha, horaInicio: citas[0].turno.horaInicio } : null,
-      propuesta: propuestaDeRopa({
-        anterior: anterior && { ...anterior, origenTunica: anterior.origenTunica as Origen | null },
-        prestadas: prendas,
-        tieneTunicaPropia: h.tieneTunicaPropia,
-        puestoDeLaFicha: h.puesto,
-      }),
-      precios: await PapeletasService.precios(),
+      // Lo que pidió manda sobre lo del año pasado.
+      propuesta: { ...propuesta, puesto: solicitud?.puesto ?? propuesta.puesto },
+      cuotaSalida: salida === 'PASION' ? cuotaSalida : null,
     };
   }
 
@@ -281,6 +346,7 @@ export class MesaService {
     await AuditoriaService.log(ACCIONES_AUDITORIA.MESA_ALTA, meta ?? {}, 'hermano', hermano.id, {
       despues: { numeroHermano: hermano.numeroHermano, menor: !!dto.tutor, cuentaNueva: !!cuenta.nueva },
     });
+    avisarALaMesa({ que: 'alta', hermanoId: hermano.id });
     return hermano;
   }
 
@@ -324,22 +390,47 @@ export class MesaService {
   }
 
   /**
-   * Corregir una papeleta ya emitida: el puesto, el tramo, las observaciones
-   * o la ropa. La ropa que se cambia vuelve al ropero y la nueva queda
-   * prestada. No cambia lo cobrado: pasar de túnica propia a la del ropero (o
-   * al revés) cambia el importe, y eso es anular y volver a apuntar.
+   * Corregir una solicitud aún sin recoger: el puesto que pide, las
+   * observaciones y, en el Rosario, la voluntad (si aún no la ha pagado).
+   */
+  static async editarSolicitud(solicitudId: number, dto: EdicionSolicitudDto, meta?: MetaDeAuditoria) {
+    const antes = await db.solicitud.findUnique({ where: { id: solicitudId }, include: { recibo: true } });
+    if (!antes) throw new NotFoundError('Solicitud no encontrada.');
+    if (antes.estado !== EstadoSolicitud.PENDIENTE) throw new HttpError('Esta solicitud ya no está pendiente. Recarga la ficha.', 409);
+    if (dto.donativo !== undefined && (antes.salida !== 'ROSARIO' || antes.recibo)) {
+      throw new HttpError('El donativo solo se cambia en el Rosario y antes de pagarlo.', 409);
+    }
+    const despues = await db.solicitud.update({
+      where: { id: solicitudId },
+      data: {
+        ...(dto.puesto?.trim() && { puesto: dto.puesto.trim() }),
+        ...(dto.observaciones !== undefined && { observaciones: dto.observaciones?.trim() || null }),
+        ...(dto.donativo !== undefined && { donativo: new Prisma.Decimal(Math.round(dto.donativo * 100) / 100) }),
+      },
+    });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.PAPELETA_EDITAR, meta ?? {}, 'solicitud', solicitudId, {
+      antes: { puesto: antes.puesto, observaciones: antes.observaciones, donativo: antes.donativo?.toString() ?? null },
+      despues: { puesto: despues.puesto, observaciones: despues.observaciones, donativo: despues.donativo?.toString() ?? null },
+    });
+    avisarALaMesa({ que: 'corregido', hermanoId: antes.hermanoId, salida: antes.salida });
+    return { id: despues.id };
+  }
+
+  /**
+   * Corregir una papeleta ya recogida: el puesto, el tramo, las
+   * observaciones y la ropa. La ropa que se cambia vuelve al ropero y la
+   * nueva queda prestada; pasar a túnica propia devuelve la del ropero.
    */
   static async editarPapeleta(papeletaId: number, dto: EdicionPapeletaDto, meta?: MetaDeAuditoria) {
     const antes = await db.papeletaSitio.findUnique({ where: { id: papeletaId } });
     if (!antes) throw new NotFoundError('Papeleta no encontrada.');
-    if (dto.numTunicaAsignada?.trim() && antes.origenTunica && antes.origenTunica !== 'ROPERO') {
-      throw new HttpError('Esta papeleta salió sin túnica del ropero y no pagó alquiler. Para darle una, anúlala y vuelve a apuntarla.', 409);
-    }
+    const conRopa = antes.salida === 'PASION';
+    const origen = conRopa ? dto.origenTunica ?? antes.origenTunica : antes.origenTunica;
 
     const numero = (nuevo: string | null | undefined, viejo: string | null) =>
-      nuevo === undefined ? viejo : nuevo?.trim() ? normalizarNumeroPrenda(nuevo) : null;
+      !conRopa || nuevo === undefined ? viejo : nuevo?.trim() ? normalizarNumeroPrenda(nuevo) : null;
     const ropa = {
-      numTunicaAsignada: numero(dto.numTunicaAsignada, antes.numTunicaAsignada),
+      numTunicaAsignada: origen === 'ROPERO' || origen === null ? numero(dto.numTunicaAsignada, antes.numTunicaAsignada) : null,
       numCapiroteAsignado: numero(dto.numCapiroteAsignado, antes.numCapiroteAsignado),
       numFaraonaAsignada: numero(dto.numFaraonaAsignada, antes.numFaraonaAsignada),
     };
@@ -347,12 +438,12 @@ export class MesaService {
     const despues = await db.$transaction(async (tx) => {
       // Solo se toca en el ropero la ropa que cambia.
       const cambia = (campo: keyof typeof ropa) => ropa[campo] !== antes[campo];
-      await recogerRopaEnTransaccion(tx, antes.hermanoId, {
-        numTunicaAsignada: cambia('numTunicaAsignada') ? antes.numTunicaAsignada : null,
-        numCapiroteAsignado: cambia('numCapiroteAsignado') ? antes.numCapiroteAsignado : null,
-        numFaraonaAsignada: cambia('numFaraonaAsignada') ? antes.numFaraonaAsignada : null,
-      });
-      if (antes.origenTunica) {
+      if (conRopa) {
+        await recogerRopaEnTransaccion(tx, antes.hermanoId, {
+          numTunicaAsignada: cambia('numTunicaAsignada') ? antes.numTunicaAsignada : null,
+          numCapiroteAsignado: cambia('numCapiroteAsignado') ? antes.numCapiroteAsignado : null,
+          numFaraonaAsignada: cambia('numFaraonaAsignada') ? antes.numFaraonaAsignada : null,
+        });
         await prestarRopaEnTransaccion(tx, antes.hermanoId, ropaPedida({
           origenTunica: 'ROPERO',
           numTunicaAsignada: cambia('numTunicaAsignada') ? ropa.numTunicaAsignada : null,
@@ -360,11 +451,15 @@ export class MesaService {
           numFaraonaAsignada: cambia('numFaraonaAsignada') ? ropa.numFaraonaAsignada : null,
           crearPrendas: dto.crearPrendas,
         }));
+        if (origen !== antes.origenTunica && (origen === 'PROPIA' || origen === 'ROPERO')) {
+          await tx.hermano.update({ where: { id: antes.hermanoId }, data: { tieneTunicaPropia: origen === 'PROPIA' } });
+        }
       }
       return tx.papeletaSitio.update({
         where: { id: papeletaId },
         data: {
           ...ropa,
+          origenTunica: origen,
           ...(dto.puesto?.trim() && { puesto: dto.puesto.trim() }),
           ...(dto.tramo !== undefined && { tramo: dto.tramo?.trim() || null }),
           ...(dto.observaciones !== undefined && { observaciones: dto.observaciones?.trim() || null }),
@@ -373,9 +468,10 @@ export class MesaService {
     });
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.PAPELETA_EDITAR, meta ?? {}, 'papeleta', papeletaId, {
-      antes: { puesto: antes.puesto, tramo: antes.tramo, ...Object.fromEntries(Object.keys(ropa).map((k) => [k, antes[k as keyof typeof ropa]])) },
-      despues: { puesto: despues.puesto, tramo: despues.tramo, ...ropa },
+      antes: { puesto: antes.puesto, tramo: antes.tramo, origenTunica: antes.origenTunica, ...Object.fromEntries(Object.keys(ropa).map((k) => [k, antes[k as keyof typeof ropa]])) },
+      despues: { puesto: despues.puesto, tramo: despues.tramo, origenTunica: despues.origenTunica, ...ropa },
     });
+    avisarALaMesa({ que: 'corregido', hermanoId: antes.hermanoId, salida: antes.salida });
     return despues;
   }
 
@@ -395,29 +491,95 @@ export class MesaService {
       : SolicitudesService.aprobarSolicitud(h.userId, meta);
   }
 
-  /** Los apuntados del año, como la hoja: para la tabla de la mesa. */
-  static async listado(year: number, filtro: { q?: string; puesto?: string }) {
+  /**
+   * Los apuntados de una salida, como la hoja: para la tabla de la mesa. Cada
+   * uno con su punto del camino: solicitado con algo por pagar, listo para
+   * recoger, o recogido (y entonces con su papeleta y su ropa).
+   */
+  static async listado(year: number, filtro: { q?: string; puesto?: string; salida?: Salida }) {
+    const salida = filtro.salida ?? 'PASION';
     const busqueda = condicionBusqueda(filtro.q, ['nombre', 'apellidos', 'telefono', 'email']);
-    const papeletas = await db.papeletaSitio.findMany({
-      where: {
-        year,
-        ...(filtro.puesto && { puesto: filtro.puesto }),
-        ...(Object.keys(busqueda).length > 0 && { hermano: busqueda }),
-      },
-      orderBy: [{ hermano: { nombre: 'asc' } }, { hermano: { apellidos: 'asc' } }],
-      select: {
-        id: true, puesto: true, tramo: true, observaciones: true, createdAt: true,
-        numTunicaAsignada: true, numCapiroteAsignado: true, numFaraonaAsignada: true, origenTunica: true,
-        recibo: { select: { importe: true, estado: true, metodoPago: true } },
-        hermano: { select: { id: true, nombre: true, apellidos: true, fechaNacimiento: true, telefono: true, email: true, alturaHombro: true, numeroHermano: true } },
-      },
-    });
-    const puestos = await db.papeletaSitio.groupBy({ by: ['puesto'], where: { year }, _count: { _all: true }, orderBy: { puesto: 'asc' } });
+    const deLaPersona = Object.keys(busqueda).length > 0 ? { hermano: busqueda } : {};
+    const delPuesto = filtro.puesto ? { puesto: filtro.puesto } : {};
+    const hermano = { select: { id: true, nombre: true, apellidos: true, fechaNacimiento: true, telefono: true, email: true, alturaHombro: true, numeroHermano: true, activo: true } } as const;
+
+    const [papeletas, solicitudes, cuotaSalida] = await Promise.all([
+      db.papeletaSitio.findMany({
+        where: { year, salida, ...delPuesto, ...deLaPersona },
+        select: {
+          id: true, puesto: true, tramo: true, observaciones: true, createdAt: true,
+          numTunicaAsignada: true, numCapiroteAsignado: true, numFaraonaAsignada: true, origenTunica: true,
+          recibo: { select: { importe: true, estado: true, metodoPago: true } },
+          solicitud: { select: { puesto: true } },
+          hermano,
+        },
+      }),
+      db.solicitud.findMany({
+        where: { year, salida, estado: EstadoSolicitud.PENDIENTE, ...delPuesto, ...deLaPersona },
+        include: { recibo: true, hermano },
+      }),
+      PapeletasService.cuotaDeSalida(),
+    ]);
+    const cuotas = await cuotasQueCuentan(db, solicitudes.map((s) => s.hermano.id));
+
+    const sinActivo = <T extends { activo: boolean }>({ activo: _activo, ...resto }: T) => resto;
+    const filas = [
+      ...papeletas.map((p) => ({
+        tipo: 'papeleta' as const,
+        id: p.id,
+        puesto: p.puesto,
+        puestoPedido: p.solicitud?.puesto ?? null,
+        tramo: p.tramo,
+        observaciones: p.observaciones,
+        createdAt: p.createdAt,
+        numTunicaAsignada: p.numTunicaAsignada,
+        numCapiroteAsignado: p.numCapiroteAsignado,
+        numFaraonaAsignada: p.numFaraonaAsignada,
+        origenTunica: p.origenTunica,
+        pagado: { importe: Number(p.recibo.importe), estado: p.recibo.estado, metodoPago: p.recibo.metodoPago },
+        estado: 'recogida' as const,
+        pendiente: 0,
+        hermano: sinActivo(p.hermano),
+      })),
+      ...solicitudes.map((s) => {
+        const requisitos = requisitosParaRecoger({
+          activo: s.hermano.activo,
+          solicitud: { salida, salidaPendiente: pendienteDe(s, cuotaSalida) },
+          cuotas: cuotas.get(s.hermano.id) ?? [],
+        });
+        return {
+          tipo: 'solicitud' as const,
+          id: s.id,
+          puesto: s.puesto,
+          puestoPedido: s.puesto,
+          tramo: null,
+          observaciones: s.observaciones,
+          createdAt: s.createdAt,
+          numTunicaAsignada: null,
+          numCapiroteAsignado: null,
+          numFaraonaAsignada: null,
+          origenTunica: null,
+          pagado: s.recibo && { importe: Number(s.recibo.importe), estado: s.recibo.estado, metodoPago: s.recibo.metodoPago },
+          estado: requisitos.puedeRecoger ? 'lista' as const : 'por-pagar' as const,
+          pendiente: requisitos.totalPendiente,
+          hermano: sinActivo(s.hermano),
+        };
+      }),
+    ].sort((a, b) => a.hermano.nombre.localeCompare(b.hermano.nombre, 'es') || a.hermano.apellidos.localeCompare(b.hermano.apellidos, 'es'));
+
+    // Los puestos, de lo recogido y de lo pedido: para filtrar y como sugerencias.
+    const cuenta = new Map<string, number>();
+    for (const f of await Promise.all([
+      db.papeletaSitio.groupBy({ by: ['puesto'], where: { year, salida }, _count: { _all: true } }),
+      db.solicitud.groupBy({ by: ['puesto'], where: { year, salida, estado: EstadoSolicitud.PENDIENTE }, _count: { _all: true } }),
+    ]).then((g) => g.flat())) {
+      cuenta.set(f.puesto, (cuenta.get(f.puesto) ?? 0) + f._count._all);
+    }
     return {
       year,
-      papeletas: papeletas.map((p) => ({ ...p, recibo: { ...p.recibo, importe: Number(p.recibo.importe) } })),
-      puestos: puestos.map((p) => ({ puesto: p.puesto, total: p._count._all })),
+      salida,
+      apuntados: filas,
+      puestos: [...cuenta].map(([puesto, total]) => ({ puesto, total })).sort((a, b) => a.puesto.localeCompare(b.puesto, 'es')),
     };
   }
 }
-

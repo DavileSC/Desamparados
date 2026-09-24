@@ -1,0 +1,95 @@
+import { useState } from 'react'
+import {
+  Alert, Box, Button, CircularProgress, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, TextField, Typography,
+} from '@mui/material'
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
+import { useQuery } from '@tanstack/react-query'
+import { ropaPorPreparar } from '../../../lib/api/mesa'
+import { turnosDeReparto } from '../../../lib/api/procesion'
+import { useColoresContabilidad } from '../contabilidad/tema'
+import { cabeceraTabla } from '../inventario/tabla'
+import Pildora from '../listados/Pildora'
+import { CLAVE_MESA } from './enVivo'
+import { alturaEnMetros, fechaCorta } from './formato'
+
+const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long' })
+const tenue = { color: 'text.disabled' } as const
+
+/**
+ * La ropa que hay que tener preparada antes de cada día de reparto, sacada de
+ * las solicitudes: quién viene, qué puesto pidió, su talla, y la túnica y el
+ * capirote o la faraona que se le proponen (lo que tiene en casa o lo del año
+ * pasado). Se imprime y se prepara en el ropero con tiempo, para que el día
+ * del reparto solo haya que probar y entregar.
+ */
+export default function PreparacionRopa() {
+  const { fondoCabecera } = useColoresContabilidad()
+  const [turnoId, setTurnoId] = useState<number | ''>('')
+  const turnos = useQuery({ queryKey: [...CLAVE_MESA, 'turnos'], queryFn: () => turnosDeReparto('PASION') })
+  const lista = useQuery({
+    queryKey: [...CLAVE_MESA, 'preparacion', turnoId],
+    queryFn: () => ropaPorPreparar(turnoId === '' ? undefined : turnoId),
+  })
+
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const proximos = (turnos.data ?? []).filter((t) => new Date(t.horaFin) >= hoy).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+  const filas = lista.data ?? []
+
+  return (
+    <Stack spacing={2}>
+      <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center', displayPrint: 'none' }}>
+        <TextField select size="small" label="Día de reparto" value={turnoId} onChange={(e) => setTurnoId(e.target.value === '' ? '' : Number(e.target.value))} sx={{ minWidth: 260 }}>
+          <MenuItem value="">Todos los que faltan por recoger</MenuItem>
+          {proximos.map((t) => <MenuItem key={t.id} value={t.id}>{formatoDia.format(new Date(t.fecha))} · {t._count.citas} con cita</MenuItem>)}
+        </TextField>
+        <Button startIcon={<PrintOutlinedIcon />} onClick={() => window.print()} disabled={filas.length === 0}>Imprimir</Button>
+        <Typography variant="body2" color="text.secondary">{filas.length} {filas.length === 1 ? 'persona' : 'personas'}</Typography>
+      </Stack>
+
+      {lista.isError && <Alert severity="error">No se ha podido cargar la ropa por preparar.</Alert>}
+      {lista.isLoading && <CircularProgress aria-label="Cargando la ropa por preparar" />}
+
+      {lista.data && (
+        <TableContainer component={Paper}>
+          <Table size="small" aria-label="Ropa por preparar" sx={{ minWidth: 900, '& td': { whiteSpace: 'nowrap' } }}>
+            <TableHead>
+              <TableRow sx={cabeceraTabla(fondoCabecera)}>
+                <TableCell>Nombre</TableCell>
+                <TableCell>Nacimiento</TableCell>
+                {turnoId === '' && <TableCell>Día</TableCell>}
+                <TableCell>Puesto</TableCell>
+                <TableCell align="right">Talla</TableCell>
+                <TableCell>Túnica</TableCell>
+                <TableCell>Capirote / faraona</TableCell>
+                <TableCell>Cuotas</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filas.map((f) => {
+                const t = f.propuesta.tunica
+                const tunica = t.origen === 'PROPIA' ? 'Propia' : t.origen === 'NINGUNA' ? 'No lleva' : t.numero ? `${t.numero}${f.tallaTunica ? ` (${f.tallaTunica})` : ''}` : 'Buscar una'
+                const tocado = f.propuesta.capirote ?? (f.propuesta.faraona && `${f.propuesta.faraona} (faraona)`)
+                return (
+                  <TableRow key={f.solicitudId}>
+                    <TableCell sx={{ fontWeight: 600 }}>{f.hermano.nombre} {f.hermano.apellidos}</TableCell>
+                    <TableCell sx={{ fontVariantNumeric: 'tabular-nums' }}>{fechaCorta(f.hermano.fechaNacimiento)}</TableCell>
+                    {turnoId === '' && <TableCell sx={!f.dia ? tenue : undefined}>{f.dia ? formatoDia.format(new Date(f.dia)) : 'Sin cita'}</TableCell>}
+                    <TableCell>{f.puesto}</TableCell>
+                    <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', ...(!f.hermano.alturaHombro && tenue) }}>{f.hermano.alturaHombro ? alturaEnMetros(f.hermano.alturaHombro) : '—'}</TableCell>
+                    <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(t.origen === 'ROPERO' && !t.numero && { color: 'warning.main' }) }}>{tunica}</TableCell>
+                    <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(!tocado && tenue) }}>{tocado || '—'}</TableCell>
+                    <TableCell>{f.cuotasPendientes > 0 ? <Pildora texto={`Debe ${f.cuotasPendientes}`} tono="aviso" /> : <Box component="span" sx={tenue}>Al día</Box>}</TableCell>
+                  </TableRow>
+                )
+              })}
+              {filas.length === 0 && (
+                <TableRow><TableCell colSpan={8} sx={{ py: 5, textAlign: 'center', color: 'text.secondary' }}>No hay ropa por preparar{turnoId === '' ? '' : ' para ese día'}.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Stack>
+  )
+}

@@ -95,12 +95,3 @@ export function propuestaDeRopa(entrada: {
     faraona: prestada('FARAONA') ?? anterior?.numFaraonaAsignada ?? null,
   };
 }
-
-/**
- * Si la papeleta paga el alquiler de túnica. Con la mesa, lo decide de dónde
- * sale la túnica: solo la del ropero se alquila (propia o ninguna, como una
- * mantilla, no pagan). Sin origen —la inscripción de antes— manda la ficha.
- */
-export function pagaAlquiler(origen: Origen | undefined, tieneTunicaPropia: boolean): boolean {
-  return origen ? origen === 'ROPERO' : !tieneTunicaPropia;
-}

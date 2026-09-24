@@ -56,7 +56,7 @@ export default function HistoricoPage() {
                 {tickets.map((ticket) => (
                   <TableRow key={ticket.id}>
                     <TableCell>{ticket.hermano.nombre} {ticket.hermano.apellidos}</TableCell>
-                    <TableCell>{ticket.year}</TableCell>
+                    <TableCell>{ticket.year}{ticket.salida === 'ROSARIO' ? ' · Rosario' : ''}</TableCell>
                     <TableCell>{ticket.puesto}</TableCell>
                     <TableCell>{ticket.tramo ?? (ticket.numero !== null ? `Número ${ticket.numero}` : 'Pendiente de asignar')}</TableCell>
                     <TableCell>

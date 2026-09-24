@@ -47,6 +47,14 @@ enum TipoRecibo {
   OTRO
 }
 
+/// Las salidas del año: la del Sábado de Pasión, con túnicas y ropero, y el
+/// Rosario vespertino de octubre, en traje y con donativo. Cada una tiene sus
+/// días de reparto, su plazo, su catálogo de puestos y su papeleta.
+enum Salida {
+  PASION
+  ROSARIO
+}
+
 enum EstadoCita {
   RESERVADA // El hermano ha dicho que viene
   ATENDIDA // Ya vino y se llevó la papeleta
@@ -269,6 +277,7 @@ model Hermano {
   citas     Cita[]
   transacciones Transaccion[]
   prendas   Prenda[]
+  solicitudes Solicitud[]
 
   // Las peticiones de reactivación son pocas y Secretaría las lee enteras cada
   // vez que abre la cola: así no hay que recorrer el censo para encontrarlas.
@@ -289,6 +298,15 @@ model Turno {
 
   // Informativo: ¿Cuánta gente esperamos poder atender bien?
   capacidadEstimada Int @default(100)
+
+  /// De qué salida es el reparto: los de la Pasión y los del Rosario se
+  /// piden por separado.
+  salida Salida @default(PASION)
+
+  /// El acto de la Agenda pública que anuncia este día de reparto, para que
+  /// la gente sepa cuándo ir a apuntarse. Se crea y se borra con el turno.
+  eventoId Int?    @unique
+  evento   Evento? @relation(fields: [eventoId], references: [id], onDelete: SetNull)
 
   activo Boolean @default(true)
 
@@ -314,6 +332,7 @@ model Cita {
 
   // Opcional: Si la cita se completó, generó una papeleta
   papeleta PapeletaSitio?
+  solicitud Solicitud?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -394,6 +413,8 @@ model Recibo {
 
   // Relación opcional: Si es papeleta, se rellena.
   papeleta PapeletaSitio?
+  /// Lo pagado por una solicitud antes de recogerla.
+  solicitud Solicitud?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -408,8 +429,9 @@ model Recibo {
 // ---------------------------------------------------------
 
 model PapeletaSitio {
-  id   Int @id @default(autoincrement())
-  year Int
+  id     Int    @id @default(autoincrement())
+  year   Int
+  salida Salida @default(PASION)
 
   // SITIO
   puesto String // "Cirio", "Varita", "Diputado", "hombre de trono"
@@ -421,8 +443,8 @@ model PapeletaSitio {
   numCapiroteAsignado String? // Ej: "135"
   /// La faraona de los niños de guardería, numerada aparte de los capirotes.
   numFaraonaAsignada  String?
-  /// De dónde sale la túnica: del ropero (se cobra el alquiler), propia o
-  /// ninguna (mantilla). Null en las papeletas de antes de la mesa.
+  /// De dónde sale la túnica: del ropero, propia o ninguna (mantilla). Null
+  /// en las papeletas de antes de la mesa y en las del Rosario (de traje).
   origenTunica        OrigenTunica?
   observaciones       String?
 
@@ -438,12 +460,68 @@ model PapeletaSitio {
   citaId Int?  @unique
   cita   Cita? @relation(fields: [citaId], references: [id])
 
+  /// La solicitud de la que salió, si la hubo.
+  solicitud Solicitud?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Restricción: Un hermano solo sale una vez por año
-  @@unique([hermanoId, year])
-  @@index([year])
+  // Un hermano sale una vez por salida y año: en la Pasión y en el Rosario.
+  @@unique([hermanoId, year, salida])
+  @@index([year, salida])
+}
+
+/// La solicitud de salir: la hace el hermano desde su área (eligiendo día de
+/// reparto) o la apunta la mesa en Inscripción. No es todavía una papeleta ni
+/// genera recibo: la papeleta nace cuando se recoge en Túnicas (con la ropa,
+/// o con el puesto confirmado en el Rosario). Si no aparece a recogerla, no
+/// queda nada que anular.
+model Solicitud {
+  id     Int    @id @default(autoincrement())
+  year   Int
+  salida Salida
+
+  /// El puesto que pide. Lo decide el Grupo: en Túnicas se confirma o se cambia.
+  puesto        String
+  /// La voluntad que dijo dar en el Rosario, en euros. Se cobra en Tesorería
+  /// (o en línea) y puede cambiar al pagar. Null en la Pasión.
+  donativo      Decimal?        @db.Decimal(10, 2)
+  observaciones String?
+  origen        OrigenSolicitud
+  estado        EstadoSolicitud @default(PENDIENTE)
+
+  hermanoId Int
+  hermano   Hermano @relation(fields: [hermanoId], references: [id])
+
+  /// El día de reparto que eligió, si lo eligió.
+  citaId Int?  @unique
+  cita   Cita? @relation(fields: [citaId], references: [id])
+
+  /// Lo pagado por la salida (la cuota de salida o el donativo), si se pagó
+  /// antes de recoger. Al recoger pasa a ser el recibo de la papeleta.
+  reciboId Int?    @unique
+  recibo   Recibo? @relation(fields: [reciboId], references: [id])
+
+  /// La papeleta que salió de ella, al recogerla.
+  papeletaId Int?           @unique
+  papeleta   PapeletaSitio? @relation(fields: [papeletaId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([year, salida, estado])
+  @@index([hermanoId, year, salida])
+}
+
+enum OrigenSolicitud {
+  WEB
+  MESA
+}
+
+enum EstadoSolicitud {
+  PENDIENTE
+  RECOGIDA
+  CANCELADA
 }
 
 enum OrigenTunica {
@@ -476,6 +554,9 @@ model Evento {
 
   // Todos los actos son públicos: la agenda no tiene actos solo para hermanos.
   type TipoEvento @default(OTRO)
+
+  /// Si lo puso la procesión al crear un día de reparto: se borra con él.
+  turno Turno?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -588,6 +669,18 @@ model Publicacion {
 
   @@index([categoria, fecha])
   @@index([visible, fecha])
+}
+
+/// Lo que ya hizo la mesa, por la clave que el ordenador genera al abrir cada
+/// operación. Si se corta la WiFi después de cobrar y la mesa vuelve a pulsar,
+/// la misma clave devuelve lo que ya se hizo en vez de cobrar otra vez.
+model OperacionMesa {
+  clave     String   @id @db.VarChar(64)
+  tipo      String   @db.VarChar(40)
+  resultado Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model Configuracion {

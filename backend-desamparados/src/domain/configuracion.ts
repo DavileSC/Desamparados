@@ -9,8 +9,9 @@
  */
 
 export const CLAVES_CONFIGURACION = [
+  // La cuota de salida de la Pasión: hoy 0 € (no se cobra), pero configurable.
+  // El alquiler de túnica no existe: arreglar o lavar túnicas lo paga el Grupo.
   'precio_papeleta_sitio',
-  'precio_alquiler_tunica',
   // Datos de la salida que la mesa de reparto y Tesorería ponen en el correo
   // de la papeleta (los lee procesion.service.ts de esta misma tabla).
   'procesion_fecha',
@@ -46,8 +47,7 @@ export function normalizarValorConfiguracion(clave: ClaveConfiguracion, valorCru
   const valor = valorCrudo.trim();
 
   switch (clave) {
-    case 'precio_papeleta_sitio':
-    case 'precio_alquiler_tunica': {
+    case 'precio_papeleta_sitio': {
       if (!IMPORTE.test(valor)) {
         return { ok: false, error: 'El precio debe ser un importe en euros mayor o igual que 0, con coma o punto y como mucho dos decimales (por ejemplo, 30 o 12,50).' };
       }

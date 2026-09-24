@@ -11,8 +11,17 @@ import { idParam } from '../config/common.js';
 // AHORA IMPORTAMOS TODO DESDE EL SCHEMA
 import {
   avisarAsistenciaSchema,
-  inscribirManualSchema,
   yearParamSchema,
+  salidaQuerySchema,
+  fechaRosarioSchema,
+  mesaEsperadosSchema,
+  mesaInscribirSchema,
+  mesaCobrarSchema,
+  mesaPerdonarSchema,
+  mesaEntregarSchema,
+  mesaEditarSolicitudSchema,
+  mesaFichaSchema,
+  mesaPreparacionSchema,
   crearTurnoSchema,
   procesarAusenciasSchema,
   misPapeletasQuerySchema,
@@ -36,7 +45,7 @@ const rolesJunta = [Role.ADMIN, Role.TESORERIA, Role.SECRETARIA, Role.ALBACERIA,
 // ==========================================
 //  ZONA HERMANO (APP)
 // ==========================================
-procesionRouter.get('/dias', ProcesionController.getDias);
+procesionRouter.get('/dias', validate(salidaQuerySchema), ProcesionController.getDias);
 procesionRouter.get('/mi-estado', ProcesionController.getMiEstado);
 procesionRouter.post('/avisar', validate(avisarAsistenciaSchema), ProcesionController.avisarAsistencia);
 procesionRouter.delete('/avisar/:id', validateId, ProcesionController.cancelarAsistencia);
@@ -46,22 +55,31 @@ procesionRouter.get('/mis-papeletas', validate(misPapeletasQuerySchema), Procesi
 //  ZONA ADMIN (MESA DE REPARTO)
 // ==========================================
 procesionRouter.get('/admin/hoy', checkRole(rolesMesaReparto), ProcesionController.getListadoHoy);
-procesionRouter.post('/admin/inscribir', checkRole(rolesMesaReparto), validate(inscribirManualSchema), ProcesionController.inscribirManual);
 procesionRouter.delete('/admin/papeletas/:id/anular', checkRole(rolesMesaReparto), validateId, ProcesionController.anularPapeleta);
 
 // ==========================================
 //  ZONA ADMIN (LA MESA DE LA PROCESIÓN)
 // ==========================================
-// Buscar a la persona, darla de alta si no está, corregir sus datos, ver la
-// ropa que se le propone y corregir una papeleta ya hecha. Apuntar y cobrar
-// es `/admin/inscribir`, de arriba.
+// Buscar a la persona, darla de alta si no está, corregir sus datos o su
+// papeleta, y las tres zonas: inscribir, cobrar (o perdonar) y dar la ropa.
 const validateIdMesa = validate(type({ params: { id: idParam } }));
 procesionRouter.get('/admin/mesa/apuntados', checkRole(rolesMesaReparto), validate(mesaListadoSchema), MesaController.listado);
 procesionRouter.get('/admin/mesa/personas', checkRole(rolesMesaReparto), validate(mesaBuscarSchema), MesaController.buscar);
-procesionRouter.get('/admin/mesa/esperados', checkRole(rolesMesaReparto), MesaController.esperados);
+procesionRouter.get('/admin/mesa/esperados', checkRole(rolesMesaReparto), validate(mesaEsperadosSchema), MesaController.esperados);
 procesionRouter.get('/admin/mesa/prendas', checkRole(rolesMesaReparto), validate(mesaPrendasSchema), MesaController.prendas);
 procesionRouter.post('/admin/mesa/personas', checkRole(rolesMesaReparto), validate(mesaAltaSchema), MesaController.alta);
-procesionRouter.get('/admin/mesa/personas/:id', checkRole(rolesMesaReparto), validateIdMesa, MesaController.ficha);
+procesionRouter.get('/admin/mesa/personas/:id', checkRole(rolesMesaReparto), validate(mesaFichaSchema), MesaController.ficha);
+procesionRouter.get('/admin/mesa/colas', checkRole(rolesMesaReparto), validate(salidaQuerySchema), MesaController.colas);
+procesionRouter.get('/admin/mesa/preparacion', checkRole(rolesMesaReparto), validate(mesaPreparacionSchema), MesaController.preparacion);
+procesionRouter.get('/admin/mesa/eventos', checkRole(rolesMesaReparto), MesaController.eventos);
+procesionRouter.post('/admin/mesa/inscribir', checkRole(rolesMesaReparto), validate(mesaInscribirSchema), MesaController.inscribir);
+procesionRouter.post('/admin/mesa/cobrar', checkRole(rolesMesaReparto), validate(mesaCobrarSchema), MesaController.cobrar);
+// Perdonar lo decide el Hermano Mayor y lo marca Tesorería.
+procesionRouter.post('/admin/mesa/perdonar', checkRole([Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR]), validate(mesaPerdonarSchema), MesaController.perdonar);
+procesionRouter.post('/admin/mesa/entregar', checkRole(rolesMesaReparto), validate(mesaEntregarSchema), MesaController.entregar);
+// Una solicitud sin recoger: se corrige o se cancela desde el listado.
+procesionRouter.patch('/admin/solicitudes/:id', checkRole(rolesMesaReparto), validate(type({ params: { id: idParam } }).and(mesaEditarSolicitudSchema)), MesaController.editarSolicitud);
+procesionRouter.delete('/admin/solicitudes/:id', checkRole(rolesMesaReparto), validateId, MesaController.cancelarSolicitud);
 procesionRouter.patch('/admin/mesa/personas/:id', checkRole(rolesMesaReparto), validate(type({ params: { id: idParam } }).and(mesaCorregirSchema)), MesaController.corregir);
 // Reactivar una baja o aprobar una solicitud es cosa del censo: Secretaría.
 procesionRouter.post('/admin/mesa/personas/:id/activar', checkRole([Role.ADMIN, Role.SECRETARIA]), validateIdMesa, MesaController.activar);
@@ -70,19 +88,21 @@ procesionRouter.patch('/admin/papeletas/:id', checkRole(rolesMesaReparto), valid
 // ==========================================
 //  ZONA ADMIN (LISTADOS Y MANTENIMIENTO)
 // ==========================================
-procesionRouter.get('/admin/listado/:year', checkRole(rolesJunta), validate(yearParamSchema), ProcesionController.getListadoProcesion);
+procesionRouter.get('/admin/listado/:year', checkRole(rolesJunta), validate(yearParamSchema.and(salidaQuerySchema)), ProcesionController.getListadoProcesion);
 procesionRouter.post('/admin/procesar-ausencias', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(procesarAusenciasSchema), ProcesionController.procesarAusencias);
 
 // ==========================================
 //  ZONA ADMIN (GESTIÓN DE TURNOS DE REPARTO)
 // ==========================================
-procesionRouter.get('/admin/turnos', checkRole(rolesJunta), ProcesionController.getTodosTurnos);
+procesionRouter.get('/admin/turnos', checkRole(rolesJunta), validate(salidaQuerySchema), ProcesionController.getTodosTurnos);
 procesionRouter.post('/admin/turnos', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(crearTurnoSchema), ProcesionController.crearTurno);
 procesionRouter.delete('/admin/turnos/:id', checkRole([Role.ADMIN, Role.SECRETARIA]), validateId, ProcesionController.deleteTurno);
 
 // El plazo de la solicitud en el área de hermanos: lo ve la Junta, lo cambia Secretaría.
-procesionRouter.get('/admin/plazo', checkRole(rolesJunta), ProcesionController.getPlazo);
+procesionRouter.get('/admin/plazo', checkRole(rolesJunta), validate(salidaQuerySchema), ProcesionController.getPlazo);
 procesionRouter.post('/admin/plazo', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(plazoPapeletasSchema), ProcesionController.cambiarPlazo);
+// La fecha del Rosario vespertino: la fija Secretaría y sale en la Agenda.
+procesionRouter.put('/admin/rosario', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(fechaRosarioSchema), ProcesionController.fijarRosario);
 
 procesionRouter.get('/admin/cuadrante', checkRole(rolesJunta), ProcesionController.getCuadrante);
 procesionRouter.post('/admin/turnos/:id/apuntarme', checkRole(rolesJunta), validateId, ProcesionController.apuntarmeTurno);

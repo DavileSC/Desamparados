@@ -11,8 +11,16 @@ export interface PuestoDelCatalogo {
 
 export const PUESTOS = catalogo.puestos as PuestoDelCatalogo[]
 
-export const puestoDelCatalogo = (nombre: string) =>
-  PUESTOS.find((p) => p.nombre.localeCompare(nombre.trim(), 'es', { sensitivity: 'base' }) === 0) ?? null
+/** Los de cada salida: el Rosario tiene sus propias insignias y su trono, y se va de traje. */
+export const PUESTOS_POR_SALIDA: Record<'PASION' | 'ROSARIO', PuestoDelCatalogo[]> = {
+  PASION: PUESTOS,
+  ROSARIO: catalogo.rosario as PuestoDelCatalogo[],
+}
+
+export const NOMBRE_SALIDA = { PASION: 'Sábado de Pasión', ROSARIO: 'Rosario vespertino' } as const
+
+export const puestoDelCatalogo = (nombre: string, salida: 'PASION' | 'ROSARIO' = 'PASION') =>
+  PUESTOS_POR_SALIDA[salida].find((p) => p.nombre.localeCompare(nombre.trim(), 'es', { sensitivity: 'base' }) === 0) ?? null
 
 /** «06/05/2009», como en la hoja: la fecha de nacimiento es lo que distingue a dos Alejandro García. */
 export function fechaCorta(iso: string) {

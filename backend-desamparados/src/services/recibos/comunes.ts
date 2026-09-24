@@ -9,7 +9,7 @@
  * quien llama.
  */
 import db from '../../config/db';
-import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
+import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion, type Salida } from '@prisma/client';
 import { HttpError } from '../../utils/error.handle';
 import { CLAVES_EVENTO, datosEvento, type DatosEvento } from '../../domain/datos-procesion.js';
 import { palabrasDeBusqueda } from '../../domain/busqueda-texto.js';
@@ -83,15 +83,30 @@ export function whereRecibosAdmin(query: ConsultaRecibos, year?: number, estado?
 
 /**
  * Fecha, hora y puerta de la salida que se imprimen en la papeleta. Una sola
- * fuente para el cobro en tesorería y la inscripción en mesa; el orden de
- * preferencia está en `domain/datos-procesion.ts`.
+ * fuente para el cobro en tesorería y la mesa; el orden de preferencia está
+ * en `domain/datos-procesion.ts`. Los del Rosario salen del acto que
+ * Secretaría pone en la Agenda al fijar su fecha (ver `SalidasService`).
  */
-export async function leerDatosEvento(): Promise<DatosEvento> {
+export async function leerDatosEvento(salida: Salida = 'PASION'): Promise<DatosEvento> {
+  if (salida === 'ROSARIO') {
+    const clave = await db.configuracion.findUnique({ where: { key: CLAVE_EVENTO_ROSARIO } });
+    const acto = clave ? await db.evento.findUnique({ where: { id: Number(clave.value) || 0 } }) : null;
+    if (!acto) return { fechaSalida: 'Octubre, por anunciar', horaSalida: 'Por anunciar', accesoPuerta: 'Consultar en secretaría' };
+    const zona = { timeZone: 'Europe/Madrid' } as const;
+    return {
+      fechaSalida: new Intl.DateTimeFormat('es-ES', { ...zona, weekday: 'long', day: 'numeric', month: 'long' }).format(acto.startDate),
+      horaSalida: `${new Intl.DateTimeFormat('es-ES', { ...zona, hour: '2-digit', minute: '2-digit' }).format(acto.startDate)}h`,
+      accesoPuerta: acto.location?.trim() || 'Consultar en secretaría',
+    };
+  }
   const filas = await db.configuracion.findMany({
     where: { key: { in: Object.values(CLAVES_EVENTO) } }
   });
   return datosEvento(Object.fromEntries(filas.map((f) => [f.key, f.value])));
 }
+
+/** Configuración que guarda qué acto de la Agenda es el Rosario vespertino de este año. */
+export const CLAVE_EVENTO_ROSARIO = 'rosario_evento_id';
 
 // =================================================================
 //  1. GENERACIÓN MASIVA Y EMISIÓN SUELTA (ADMIN)

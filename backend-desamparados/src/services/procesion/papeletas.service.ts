@@ -1,46 +1,62 @@
 /**
- * La mesa de reparto: lo que hace Secretaría el día que se dan las papeletas.
- * Quién se espera hoy, cuánto cuesta cada papeleta, inscribir y cobrar,
- * anular una devuelta, el listado que se llevan los diputados de tramo y el
- * repaso de quien avisó y no vino.
+ * La solicitud y la papeleta de cada salida.
+ *
+ * Pedir salir (desde el área de hermanos o en la mesa) crea una Solicitud: ni
+ * papeleta ni recibo. Lo que haya que pagar de la salida (la cuota de salida,
+ * hoy 0 €, o el donativo del Rosario) se convierte en recibo al pagarlo. La
+ * papeleta nace al recoger en Túnicas: si alguien no aparece, no queda nada
+ * que anular. Aquí también se anula una papeleta, se cancela una solicitud,
+ * el listado de los diputados de tramo y el repaso de quien pidió día y no vino.
  *
  * Aquí se mueve dinero del Grupo Parroquial: cada operación deja su rastro en
  * la auditoría y el importe lo calcula siempre el servidor.
  */
 import db from '../../config/db';
-import { EstadoCita, EstadoPago, Prisma, TipoRecibo, TipoTransaccion } from '@prisma/client';
-import { CrearInscripcionManualDto } from '../../dtos/procesion.dto';
+import { EstadoCita, EstadoPago, EstadoSolicitud, MetodoPago, OrigenSolicitud, Prisma, type Salida } from '@prisma/client';
 import { EmailService } from '../email.service';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
-import {
-  devolverCobroEnTransaccion, idCategoriaDevoluciones, idCategoriaIngresos,
-  leerDatosEvento, retirarPapeletaEnTransaccion,
-} from '../recibos/comunes.js';
+import { devolverCobroEnTransaccion, idCategoriaDevoluciones, retirarPapeletaEnTransaccion } from '../recibos/comunes.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle';
-import { transactionWithRetry } from '../../utils/transaction-retry.js';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { puedeTransicionar } from '../../domain/recibo-estados.js';
-import { alturaHombroEnCm, normalizarNumeroPrenda, pagaAlquiler } from '../../domain/mesa-procesion.js';
-import { prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida } from './ropa.js';
-import {
-  PRECIO_ALQUILER_POR_DEFECTO,
-  PRECIO_PAPELETA_POR_DEFECTO,
-  conceptoPapeleta,
-  estadoReciboPapeleta,
-  importePapeleta,
-  leerPrecio
-} from '../../domain/datos-procesion.js';
+import { leerPrecio } from '../../domain/datos-procesion.js';
+import { CLAVE_CUOTA_SALIDA, CUOTA_SALIDA_POR_DEFECTO, DATOS_SALIDA, conceptoDeSalida } from '../../domain/salidas.js';
+import { recogerRopaEnTransaccion } from './ropa.js';
+import { avisarALaMesa } from './avisos-mesa.js';
+
+type Tx = Prisma.TransactionClient;
 
 const NOTA_ANULACION = 'Anulado por devolución de la papeleta de sitio.';
+const NOTA_CANCELACION = 'Devuelto al cancelar la solicitud de salida.';
 
-/** Un número de prenda de la mesa: sin espacios de más, y vacío es nada. */
-const limpio = (texto: string | null | undefined) => (texto?.trim() ? normalizarNumeroPrenda(texto) : null);
+export interface NuevaSolicitud {
+  hermanoId: number;
+  salida: Salida;
+  year: number;
+  puesto: string;
+  observaciones?: string | null;
+  /** La voluntad del Rosario, en euros. En la Pasión no cuenta: manda la cuota de salida. */
+  donativo?: number;
+  /** El día de reparto que eligió, si lo eligió. */
+  citaId?: number | null;
+  origen: OrigenSolicitud;
+}
+
+export interface DatosDeLaPapeleta {
+  puesto: string;
+  observaciones?: string | null;
+  origenTunica: 'ROPERO' | 'PROPIA' | 'NINGUNA' | null;
+  numTunicaAsignada: string | null;
+  numCapiroteAsignado: string | null;
+  numFaraonaAsignada: string | null;
+}
+
+/** Una solicitud leída con lo que hace falta para cobrarla o recogerla. */
+export type SolicitudConRecibo = Prisma.SolicitudGetPayload<{ include: { recibo: true } }>;
 
 export class PapeletasService {
 
-  /**
-   * Listado de quién esperamos HOY.
-   */
+  /** Listado de quién esperamos HOY. */
   static async getAsistentesDelDia(fecha: Date) {
     const start = new Date(fecha.setHours(0, 0, 0, 0));
     const end = new Date(fecha.setHours(23, 59, 59, 999));
@@ -60,281 +76,189 @@ export class PapeletasService {
   }
 
   /**
-   * Precio de la papeleta para un hermano, leído de la configuración.
-   *
-   * Un precio configurado que no se entiende («treinta», «-5») detiene la
-   * inscripción: cobrar el valor por defecto en su lugar es cobrar algo que
-   * nadie ha decidido. El valor por defecto solo cuenta si la clave no existe.
+   * La cuota de salida de la Pasión, de la configuración. Hoy es 0 € y nadie
+   * la ve; queda por si algún año se cobra. Un valor que no se entiende
+   * detiene la mesa: cobrar otra cosa es cobrar algo que nadie ha decidido.
    */
-  static async calcularImportePapeleta(tieneTunicaPropia: boolean): Promise<number> {
-    const { papeleta, alquiler } = await PapeletasService.precios();
-    return importePapeleta(papeleta, alquiler, tieneTunicaPropia);
+  static async cuotaDeSalida(cliente: Tx | typeof db = db): Promise<number> {
+    const fila = await cliente.configuracion.findUnique({ where: { key: CLAVE_CUOTA_SALIDA } });
+    const leida = leerPrecio(fila?.value, CUOTA_SALIDA_POR_DEFECTO);
+    if (!leida.ok) {
+      throw new HttpError(`La cuota de salida configurada («${leida.crudo}») no es un importe válido. Corrígela en Procesión antes de seguir.`, 409);
+    }
+    return leida.valor;
   }
 
-  /** El precio de la papeleta y el del alquiler de túnica, de la configuración. */
-  static async precios(): Promise<{ papeleta: number; alquiler: number }> {
-    const [precioBaseConfig, precioAlquilerConfig] = await Promise.all([
-      db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } }),
-      db.configuracion.findUnique({ where: { key: 'precio_alquiler_tunica' } })
-    ]);
-
-    const base = leerPrecio(precioBaseConfig?.value, PRECIO_PAPELETA_POR_DEFECTO);
-    if (!base.ok) {
-      throw new HttpError(`El precio de la papeleta configurado («${base.crudo}») no es un importe válido. Corrígelo en la configuración antes de inscribir.`, 409);
-    }
-    const alquiler = leerPrecio(precioAlquilerConfig?.value, PRECIO_ALQUILER_POR_DEFECTO);
-    if (!alquiler.ok) {
-      throw new HttpError(`El precio del alquiler de túnica configurado («${alquiler.crudo}») no es un importe válido. Corrígelo en la configuración antes de inscribir.`, 409);
-    }
-    return { papeleta: base.valor, alquiler: alquiler.valor };
+  /** La solicitud viva (pendiente de recoger) de alguien en una salida y año, si la tiene. */
+  static solicitudPendiente(cliente: Tx | typeof db, hermanoId: number, year: number, salida: Salida) {
+    return cliente.solicitud.findFirst({
+      where: { hermanoId, year, salida, estado: EstadoSolicitud.PENDIENTE },
+      include: { recibo: true },
+      orderBy: { id: 'desc' },
+    });
   }
 
   /**
-   * EL NÚCLEO DEL SISTEMA: Inscribir, Cobrar y Dar Ropa.
-   * Funciona para gente con cita (pasando citaId) y sin cita (citaId null).
-   *
-   * El importe lo calcula SIEMPRE el servidor con los precios de la
-   * configuración; la mesa no manda ninguno.
+   * Crea la solicitud dentro de la transacción de quien llama (el área de
+   * hermanos o la zona de Inscripción). Comprueba dentro que no tenga ya una
+   * pendiente ni la papeleta de esa salida y año, para que dos peticiones a
+   * la vez no pasen las dos (la transacción tiene que ser serializable).
    */
-  static async inscribirYFacturar(data: CrearInscripcionManualDto, meta?: MetaDeAuditoria) {
-    const yearActual = new Date().getFullYear();
-
-    const hermano = await db.hermano.findUnique({
-      where: { id: data.hermanoId, activo: true },
-      include: { user: { select: { email: true } } } // Incluimos el email para el paso final
-    });
-    if (!hermano) throw new NotFoundError('No se encontró al hermano para calcular el importe.');
-
-    // La altura de hombro, antes de tocar nada: si no se entiende, no se cobra.
-    let alturaHombro: number | undefined;
-    if (data.alturaHombro !== undefined && data.alturaHombro.trim() !== '') {
-      const cm = alturaHombroEnCm(data.alturaHombro);
-      if (cm === null) throw new HttpError(`No se entiende la altura de hombro «${data.alturaHombro}». Escríbela en metros (1,45) o en centímetros (145).`);
-      alturaHombro = cm;
+  static async crearSolicitudEnTransaccion(tx: Tx, datos: NuevaSolicitud) {
+    const { hermanoId, salida, year } = datos;
+    const nombre = `${DATOS_SALIDA[salida].nombre} de ${year}`;
+    if (await tx.papeletaSitio.findUnique({ where: { hermanoId_year_salida: { hermanoId, year, salida } } })) {
+      throw new HttpError(`Ya tiene su papeleta del ${nombre}.`, 409);
     }
+    if (await PapeletasService.solicitudPendiente(tx, hermanoId, year, salida)) {
+      throw new HttpError(`Ya está apuntado al ${nombre}.`, 409);
+    }
+    return tx.solicitud.create({
+      data: {
+        hermanoId, salida, year,
+        puesto: datos.puesto.trim(),
+        observaciones: datos.observaciones?.trim() || null,
+        donativo: DATOS_SALIDA[salida].importeLibre ? new Prisma.Decimal(Math.round((datos.donativo ?? 0) * 100) / 100) : null,
+        citaId: datos.citaId ?? undefined,
+        origen: datos.origen,
+      },
+    });
+  }
 
-    // Con la mesa, el alquiler lo decide de dónde sale la túnica; sin ella, la ficha.
-    const { papeleta: precioBase, alquiler: precioAlquiler } = await PapeletasService.precios();
-    const importeFinal = importePapeleta(precioBase, precioAlquiler, !pagaAlquiler(data.origenTunica, hermano.tieneTunicaPropia));
-    const numeros = {
-      numTunicaAsignada: data.origenTunica && data.origenTunica !== 'ROPERO' ? null : limpio(data.numTunicaAsignada),
-      numCapiroteAsignado: limpio(data.numCapiroteAsignado),
-      numFaraonaAsignada: limpio(data.numFaraonaAsignada),
+  /**
+   * El recibo de la salida de una solicitud, ya cobrado (o exento si es 0 €),
+   * con el concepto de siempre: «Papeleta Sitio 2027» o «Donativo Rosario
+   * vespertino 2026». Si ya se le anuló una este año, sale como reemisión.
+   */
+  static async reciboDeSalidaEnTransaccion(
+    tx: Tx,
+    solicitud: { id: number; hermanoId: number; salida: Salida; year: number },
+    importe: number,
+    metodoPago: MetodoPago | null,
+  ) {
+    const conceptos = (await tx.recibo.findMany({ where: { hermanoId: solicitud.hermanoId, year: solicitud.year }, select: { concepto: true } })).map((r) => r.concepto);
+    const pagado = importe > 0;
+    const recibo = await tx.recibo.create({
+      data: {
+        year: solicitud.year,
+        concepto: conceptoDeSalida(solicitud.salida, solicitud.year, conceptos),
+        importe: new Prisma.Decimal(importe),
+        tipo: DATOS_SALIDA[solicitud.salida].tipoRecibo,
+        estado: pagado ? EstadoPago.PAGADO : EstadoPago.EXENTO,
+        metodoPago: pagado ? metodoPago : null,
+        fechaPago: pagado ? new Date() : null,
+        hermanoId: solicitud.hermanoId,
+      },
+    });
+    await tx.solicitud.update({ where: { id: solicitud.id }, data: { reciboId: recibo.id } });
+    return recibo;
+  }
+
+  /**
+   * La papeleta, al recoger en Túnicas: con el puesto confirmado y la ropa
+   * que se lleva. Su recibo es el que pagó la salida o, si no había nada que
+   * pagar, uno exento de 0 €. La solicitud queda recogida y la cita, atendida.
+   */
+  static async crearPapeletaEnTransaccion(tx: Tx, solicitud: SolicitudConRecibo, datos: DatosDeLaPapeleta) {
+    const reciboId = solicitud.reciboId ?? (await PapeletasService.reciboDeSalidaEnTransaccion(tx, solicitud, 0, null)).id;
+    const papeleta = await tx.papeletaSitio.create({
+      data: {
+        year: solicitud.year,
+        salida: solicitud.salida,
+        hermanoId: solicitud.hermanoId,
+        reciboId,
+        citaId: solicitud.citaId ?? undefined,
+        puesto: datos.puesto.trim(),
+        observaciones: datos.observaciones?.trim() || null,
+        origenTunica: datos.origenTunica,
+        numTunicaAsignada: datos.numTunicaAsignada,
+        numCapiroteAsignado: datos.numCapiroteAsignado,
+        numFaraonaAsignada: datos.numFaraonaAsignada,
+      },
+    });
+    const { count } = await tx.solicitud.updateMany({
+      where: { id: solicitud.id, estado: EstadoSolicitud.PENDIENTE },
+      data: { estado: EstadoSolicitud.RECOGIDA, papeletaId: papeleta.id },
+    });
+    if (count !== 1) throw new HttpError('Esta solicitud acaba de cambiar. Recarga la ficha.', 409);
+    if (solicitud.citaId) {
+      await tx.cita.updateMany({ where: { id: solicitud.citaId, estado: { not: EstadoCita.ATENDIDA } }, data: { estado: EstadoCita.ATENDIDA } });
+    }
+    return papeleta;
+  }
+
+  /**
+   * Cancelar una solicitud que no se ha recogido: se echa atrás, o se apuntó
+   * por error. Si ya pagó la salida (el donativo), el cobro se devuelve con su
+   * reverso en contabilidad; la cita, si la tenía, queda cancelada.
+   */
+  static async cancelarSolicitudEnTransaccion(tx: Tx, solicitud: SolicitudConRecibo, categoriaDevolucionesId: number) {
+    // Suelta la cita: si vuelve a pedir el mismo día, la cita es la misma.
+    const { count } = await tx.solicitud.updateMany({
+      where: { id: solicitud.id, estado: EstadoSolicitud.PENDIENTE },
+      data: { estado: EstadoSolicitud.CANCELADA, citaId: null },
+    });
+    if (count !== 1) throw new HttpError('Esta solicitud ya no está pendiente. Recarga la ficha.', 409);
+    const recibo = solicitud.recibo;
+    if (recibo?.estado === EstadoPago.PAGADO) {
+      await devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, [recibo.observaciones, NOTA_CANCELACION].filter(Boolean).join(' · '));
+    }
+    if (solicitud.citaId) {
+      await tx.cita.updateMany({ where: { id: solicitud.citaId, estado: EstadoCita.RESERVADA }, data: { estado: EstadoCita.CANCELADA } });
+    }
+  }
+
+  /** Cancelar una solicitud desde la mesa (el listado), con su rastro. */
+  static async cancelarSolicitud(solicitudId: number, meta?: MetaDeAuditoria) {
+    const categoriaDevolucionesId = await idCategoriaDevoluciones();
+    const solicitud = await db.$transaction(async (tx) => {
+      const s = await tx.solicitud.findUnique({ where: { id: solicitudId }, include: { recibo: true } });
+      if (!s) throw new NotFoundError('Solicitud no encontrada.');
+      await PapeletasService.cancelarSolicitudEnTransaccion(tx, s, categoriaDevolucionesId);
+      return s;
+    });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.SOLICITUD_SALIDA_CANCELAR, meta ?? {}, 'solicitud', solicitudId, {
+      antes: {
+        hermanoId: solicitud.hermanoId, year: solicitud.year, salida: solicitud.salida, puesto: solicitud.puesto,
+        recibo: solicitud.recibo && { id: solicitud.recibo.id, estado: solicitud.recibo.estado },
+      },
+      despues: { estado: EstadoSolicitud.CANCELADA },
+    });
+    avisarALaMesa({ que: 'anulado', hermanoId: solicitud.hermanoId, salida: solicitud.salida });
+    return {
+      message: solicitud.recibo?.estado === EstadoPago.PAGADO
+        ? 'Solicitud cancelada. Lo pagado queda devuelto con su reverso en contabilidad.'
+        : 'Solicitud cancelada.',
     };
-    // 0 € nace EXENTO, sin asiento contable: ver estadoReciboPapeleta.
-    const estadoRecibo = estadoReciboPapeleta(importeFinal);
-    const cobrado = estadoRecibo === EstadoPago.PAGADO;
-    // La categoría del ingreso se resuelve antes de abrir la transacción: ver
-    // idCategoriaDeRecibos.
-    const categoriaIngresosId = cobrado ? await idCategoriaIngresos(TipoRecibo.PAPELETA_SITIO) : null;
-
-    // Todo o nada, y serializable: la comprobación de «ya tiene papeleta» va
-    // dentro para que dos inscripciones a la vez no la pasen las dos.
-    const result = await transactionWithRetry(async (tx) => {
-      const existe = await tx.papeletaSitio.findUnique({
-        where: { hermanoId_year: { hermanoId: data.hermanoId, year: yearActual } }
-      });
-      if (existe) throw new HttpError('Este hermano ya tiene papeleta este año.', 409);
-
-      // Quien pidió día y viene, cierra su cita aunque la mesa no la señale:
-      // así no le llega luego el «no viniste».
-      let citaId = data.citaId;
-      if (citaId) {
-        const cita = await tx.cita.findUnique({ where: { id: citaId } });
-        if (!cita || cita.hermanoId !== data.hermanoId) {
-          throw new HttpError('La cita no pertenece al hermano indicado.');
-        }
-        if (cita.estado !== EstadoCita.RESERVADA) {
-          throw new HttpError('La cita ya no está disponible para esta inscripción.');
-        }
-      } else {
-        const reservada = await tx.cita.findFirst({
-          where: { hermanoId: data.hermanoId, estado: EstadoCita.RESERVADA, papeleta: null },
-          orderBy: { id: 'desc' },
-          select: { id: true },
-        });
-        citaId = reservada?.id;
-      }
-
-      // La ropa del ropero, prestada a esta persona (o nada, si algo no cuadra).
-      if (data.origenTunica) {
-        await prestarRopaEnTransaccion(tx, data.hermanoId, ropaPedida({ ...data, ...numeros }));
-      }
-
-      // Lo que la mesa sabe ahora de la persona, a su ficha.
-      const ficha: Prisma.HermanoUpdateInput = {};
-      if (alturaHombro !== undefined) ficha.alturaHombro = alturaHombro;
-      if (data.origenTunica === 'PROPIA') ficha.tieneTunicaPropia = true;
-      if (data.origenTunica === 'ROPERO') ficha.tieneTunicaPropia = false;
-      if (Object.keys(ficha).length > 0) await tx.hermano.update({ where: { id: data.hermanoId }, data: ficha });
-
-      // Si ya se le anuló una papeleta este año, su recibo sigue ocupando el
-      // concepto: la nueva se emite como reemisión (ver conceptoPapeleta).
-      const recibosDelAnio = await tx.recibo.findMany({
-        where: { hermanoId: data.hermanoId, year: yearActual },
-        select: { concepto: true }
-      });
-
-      // 1. Crear RECIBO (cobrado en mesa, o exento si la papeleta sale gratis)
-      const recibo = await tx.recibo.create({
-        data: {
-          year: yearActual,
-          concepto: conceptoPapeleta(yearActual, recibosDelAnio.map(r => r.concepto)),
-          importe: new Prisma.Decimal(importeFinal),
-          tipo: TipoRecibo.PAPELETA_SITIO,
-          estado: estadoRecibo,
-          metodoPago: cobrado ? data.metodoPago : null,
-          fechaPago: cobrado ? new Date() : null,
-          hermanoId: data.hermanoId
-        }
-      });
-
-      // 2. Crear PAPELETA (Sitio + Ropa)
-      const papeleta = await tx.papeletaSitio.create({
-        data: {
-          year: yearActual,
-          puesto: data.puesto,
-          tramo: data.tramo,
-          ...numeros,
-          origenTunica: data.origenTunica ?? null,
-          observaciones: data.observaciones,
-
-          hermanoId: data.hermanoId,
-          reciboId: recibo.id,
-
-          // Si venía con cita, guardamos el link para historial
-          citaId: citaId ?? undefined
-        }
-      });
-
-      // 3. El ingreso en contabilidad, solo si hubo dinero.
-      if (categoriaIngresosId !== null) {
-        await tx.transaccion.create({
-          data: {
-            tipo: TipoTransaccion.INGRESO,
-            categoriaId: categoriaIngresosId,
-            concepto: recibo.concepto,
-            importe: recibo.importe,
-            fecha: recibo.fechaPago ?? new Date(),
-            metodoPago: recibo.metodoPago,
-            hermanoId: data.hermanoId,
-            reciboId: recibo.id
-          }
-        });
-      }
-
-      // 4. Si había cita previa, la cerramos
-      if (citaId) {
-        await tx.cita.update({
-          where: { id: citaId },
-          data: { estado: EstadoCita.ATENDIDA }
-        });
-      }
-
-      return { recibo, papeleta };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-
-    // Auditoría: cobro + papeleta (dinero del Grupo Parroquial), ya confirmados.
-    await AuditoriaService.log(ACCIONES_AUDITORIA.INSCRIPCION_FACTURAR, meta ?? {}, 'hermano', data.hermanoId, {
-      despues: {
-        reciboId: result.recibo.id,
-        papeletaId: result.papeleta.id,
-        concepto: result.recibo.concepto,
-        importe: String(result.recibo.importe),
-        estado: result.recibo.estado,
-        metodoPago: result.recibo.metodoPago,
-        citaId: result.papeleta.citaId,
-        puesto: result.papeleta.puesto,
-        origenTunica: result.papeleta.origenTunica,
-        tunica: result.papeleta.numTunicaAsignada,
-        capirote: result.papeleta.numCapiroteAsignado,
-        faraona: result.papeleta.numFaraonaAsignada,
-        ...(alturaHombro !== undefined && { alturaHombro })
-      }
-    });
-
-    // 5. Enviar Email (Fuera de la transacción), con los mismos datos del
-    // evento que el cobro en tesorería.
-    if (hermano.user?.email) {
-      const evento = await leerDatosEvento();
-      EmailService.enviarPapeleta(hermano.user.email, hermano.nombre, {
-        year: yearActual,
-        concepto: result.recibo.concepto,
-        importe: `${importeFinal.toFixed(2)} €`,
-        papeletaId: result.papeleta.id,
-        puesto: result.papeleta.puesto,
-        tramo: result.papeleta.tramo || '',
-        tunica: result.papeleta.numTunicaAsignada,
-        observaciones: result.papeleta.observaciones || '',
-        ...evento
-      }, hermano.sexo).catch(console.error);
-    }
-
-    return result;
   }
 
   /**
-   * Emergencia: El hermano devuelve la túnica por enfermedad o hubo un error al cobrar.
-   *
-   * El recibo sigue el grafo de estados como cualquier otro: si estaba
-   * cobrado pasa a DEVUELTO con su asiento de reverso (antes se forzaba a
-   * ANULADO y el ingreso se quedaba en contabilidad como si el dinero siguiera
-   * en caja); si aún no se había cobrado, a ANULADO; si era exento, se queda
-   * como está porque no hubo dinero. La papeleta se borra y su recibo se
-   * conserva, así que el hermano puede volver a inscribirse: su nuevo recibo
-   * sale como reemisión.
+   * Anular una papeleta ya recogida: el hermano no sale (enfermedad, un
+   * error). El recibo sigue el grafo de estados como cualquier otro: si
+   * estaba cobrado pasa a DEVUELTO con su asiento de reverso; si era exento,
+   * se queda como está porque no hubo dinero. La ropa vuelve al ropero, la
+   * papeleta se borra y su solicitud queda cancelada: puede volver a
+   * apuntarse, y su nuevo recibo sale como reemisión.
    */
   static async anularPapeleta(papeletaId: number, meta?: MetaDeAuditoria) {
-    // Si el recibo estaba cobrado hará falta su reverso; la categoría se
-    // resuelve antes de abrir la transacción (ver `idCategoriaDeRecibos` en recibos/comunes).
     const categoriaDevolucionesId = await idCategoriaDevoluciones();
 
     const resultado = await db.$transaction(async (tx) => {
-      const papeleta = await tx.papeletaSitio.findUnique({
-        where: { id: papeletaId },
-        include: { recibo: true }
-      });
+      const papeleta = await tx.papeletaSitio.findUnique({ where: { id: papeletaId }, include: { recibo: true } });
       if (!papeleta) throw new NotFoundError('Papeleta no encontrada');
-
-      const recibo = papeleta.recibo;
-      const observaciones = [recibo.observaciones, NOTA_ANULACION].filter(Boolean).join(' · ');
-      let estadoFinal: EstadoPago = recibo.estado;
-
-      if (recibo.estado === EstadoPago.PAGADO) {
-        await devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, observaciones);
-        estadoFinal = EstadoPago.DEVUELTO;
-      } else if (puedeTransicionar(recibo.estado, EstadoPago.ANULADO)) {
-        const transicion = await tx.recibo.updateMany({
-          where: { id: recibo.id, estado: recibo.estado },
-          data: { estado: EstadoPago.ANULADO, observaciones }
-        });
-        if (transicion.count !== 1) {
-          throw new HttpError('El estado del recibo ha cambiado. Recarga la ficha e inténtalo de nuevo.', 409);
-        }
-        estadoFinal = EstadoPago.ANULADO;
-      } else {
-        // EXENTO, o ya DEVUELTO/ANULADO: estados finales, solo se anota el motivo.
-        await tx.recibo.update({ where: { id: recibo.id }, data: { observaciones } });
-      }
-
-      // La ropa que se le prestó con esta papeleta, de vuelta al ropero.
-      await recogerRopaEnTransaccion(tx, papeleta.hermanoId, papeleta);
-
-      // Libera la cita y borra la papeleta (hueco en la procesión y clave [hermano, año]).
-      await retirarPapeletaEnTransaccion(tx, recibo.id);
-
-      return { papeleta, recibo, estadoFinal };
+      const estadoFinal = await PapeletasService.anularEnTransaccion(tx, papeleta, categoriaDevolucionesId);
+      return { papeleta, recibo: papeleta.recibo, estadoFinal };
     });
 
-    // Auditoría tras confirmar: la anulación implica devolución de dinero.
     const { papeleta, recibo, estadoFinal } = resultado;
     await AuditoriaService.log(ACCIONES_AUDITORIA.PAPELETA_ANULAR, meta ?? {}, 'papeleta', papeletaId, {
       antes: {
-        papeleta: { hermanoId: papeleta.hermanoId, year: papeleta.year, puesto: papeleta.puesto, tramo: papeleta.tramo, citaId: papeleta.citaId },
+        papeleta: { hermanoId: papeleta.hermanoId, year: papeleta.year, salida: papeleta.salida, puesto: papeleta.puesto, tramo: papeleta.tramo, citaId: papeleta.citaId },
         recibo: { id: recibo.id, estado: recibo.estado, importe: String(recibo.importe) }
       },
       despues: { papeleta: null, recibo: { id: recibo.id, estado: estadoFinal } }
     });
+    avisarALaMesa({ que: 'anulado', hermanoId: papeleta.hermanoId, salida: papeleta.salida });
 
     return {
       message: estadoFinal === EstadoPago.DEVUELTO && recibo.estado === EstadoPago.PAGADO
@@ -345,16 +269,46 @@ export class PapeletasService {
     };
   }
 
-  /**
-   * Genera el censo de la procesión para los diputados de tramo / mayordomos.
-   */
-  static async getListadoProcesion(year: number) {
+  /** El recibo, la ropa, la solicitud y la cita de una papeleta que se anula; la papeleta, fuera. */
+  static async anularEnTransaccion(
+    tx: Tx,
+    papeleta: Prisma.PapeletaSitioGetPayload<{ include: { recibo: true } }>,
+    categoriaDevolucionesId: number,
+  ): Promise<EstadoPago> {
+    const recibo = papeleta.recibo;
+    const observaciones = [recibo.observaciones, NOTA_ANULACION].filter(Boolean).join(' · ');
+    let estadoFinal: EstadoPago = recibo.estado;
+
+    if (recibo.estado === EstadoPago.PAGADO) {
+      await devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, observaciones);
+      estadoFinal = EstadoPago.DEVUELTO;
+    } else if (puedeTransicionar(recibo.estado, EstadoPago.ANULADO)) {
+      const transicion = await tx.recibo.updateMany({
+        where: { id: recibo.id, estado: recibo.estado },
+        data: { estado: EstadoPago.ANULADO, observaciones }
+      });
+      if (transicion.count !== 1) {
+        throw new HttpError('El estado del recibo ha cambiado. Recarga la ficha e inténtalo de nuevo.', 409);
+      }
+      estadoFinal = EstadoPago.ANULADO;
+    } else {
+      // EXENTO, o ya DEVUELTO/ANULADO: estados finales, solo se anota el motivo.
+      await tx.recibo.update({ where: { id: recibo.id }, data: { observaciones } });
+    }
+
+    // La ropa que se le prestó con esta papeleta, de vuelta al ropero.
+    await recogerRopaEnTransaccion(tx, papeleta.hermanoId, papeleta);
+    // Su solicitud, cancelada: si vuelve, pide otra.
+    await tx.solicitud.updateMany({ where: { papeletaId: papeleta.id }, data: { estado: EstadoSolicitud.CANCELADA, citaId: null } });
+    // Libera la cita y borra la papeleta (hueco en la procesión y clave [hermano, año, salida]).
+    await retirarPapeletaEnTransaccion(tx, recibo.id);
+    return estadoFinal;
+  }
+
+  /** Genera el censo de la procesión para los diputados de tramo / mayordomos. */
+  static async getListadoProcesion(year: number, salida: Salida = 'PASION') {
     return await db.papeletaSitio.findMany({
-      where: {
-        year: year,
-        // Opcional: Solo traer los que hayan pagado o estén exentos
-        // recibo: { estado: { in: [EstadoPago.PAGADO, EstadoPago.EXENTO] } }
-      },
+      where: { year, salida },
       include: {
         hermano: {
           select: { nombre: true, apellidos: true, telefono: true, alturaHombro: true }
@@ -369,7 +323,8 @@ export class PapeletasService {
   }
 
   /**
-   * Mantenimiento: Procesa a los hermanos que dijeron que venían pero no lo hicieron.
+   * Mantenimiento: procesa a los hermanos que pidieron día pero no vinieron a
+   * recoger la papeleta.
    * @param fechaLimite Instante hasta el que revisar: cuentan los turnos que ya
    *   habían TERMINADO entonces (el controlador lo calcula con instanteLimiteAusencias).
    * @param esCierreDefinitivo Si es TRUE, limpia las citas sin mandar correos de "vuelve a pedir cita".
@@ -390,6 +345,7 @@ export class PapeletasService {
         // de esta tarde entraba ya por la mañana y se mandaba el «no viniste» a
         // quien aún no había tenido ocasión de venir.
         turno: { horaFin: { lt: fechaLimite } },
+        // Pidió día y no pasó a recogerla: esa cita no tiene papeleta.
         papeleta: null
       },
       include: {
@@ -420,9 +376,20 @@ export class PapeletasService {
 
     if (count === 0) return { message: 'No hay ausencias pendientes de procesar.', procesadas: 0 };
 
-    // Si es cierre definitivo, cortamos aquí.
+    // Si es cierre definitivo, sus solicitudes sin recoger se cancelan (las
+    // que ya pagaron la voluntad, no: eso lo resuelve Tesorería) y se corta aquí.
     if (esCierreDefinitivo) {
-      return { message: `CIERRE DE PLAZO: ${count} citas caducadas han sido canceladas.`, procesadas: count };
+      const canceladas = await db.solicitud.updateMany({
+        where: {
+          citaId: { in: idsAusentes }, estado: EstadoSolicitud.PENDIENTE,
+          OR: [{ reciboId: null }, { recibo: { estado: { not: EstadoPago.PAGADO } } }],
+        },
+        data: { estado: EstadoSolicitud.CANCELADA, citaId: null },
+      });
+      return {
+        message: `CIERRE DE PLAZO: ${count} citas caducadas han sido canceladas, y ${canceladas.count} solicitudes sin recoger.`,
+        procesadas: count,
+      };
     }
 
     // Solo se escribe a quien de verdad ha quedado como no presentado.

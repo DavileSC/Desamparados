@@ -7,18 +7,16 @@ import { describe, test } from 'node:test';
 import { EstadoPago } from '@prisma/client';
 import {
   CLAVES_EVENTO,
-  PRECIO_ALQUILER_POR_DEFECTO,
-  PRECIO_PAPELETA_POR_DEFECTO,
   claveConcepto,
-  conceptoPapeleta,
   datosEvento,
-  estadoReciboPapeleta,
   instanteLimiteAusencias,
   motivoTurnoInvalido,
-  importePapeleta,
   leerPrecio,
   parsearImporte,
 } from '../src/domain/datos-procesion.js';
+import { CUOTA_SALIDA_POR_DEFECTO, conceptoDeSalida } from '../src/domain/salidas.js';
+
+const conceptoPapeleta = (year: number, existentes: string[]) => conceptoDeSalida('PASION', year, existentes);
 
 describe('D4 · precios de la configuración', () => {
   test('acepta la coma decimal que escribe cualquiera en España', () => {
@@ -29,12 +27,12 @@ describe('D4 · precios de la configuración', () => {
 
   test('«0» es un precio, no un hueco que rellenar con 30', () => {
     // Antes: Number('0') || 30 === 30.
-    assert.deepEqual(leerPrecio('0', PRECIO_PAPELETA_POR_DEFECTO), { ok: true, valor: 0, configurado: true });
+    assert.deepEqual(leerPrecio('0', 30), { ok: true, valor: 0, configurado: true });
   });
 
   test('«12,50» cobra 12,50 y no 30', () => {
     // Antes: Number('12,50') es NaN y NaN || 30 === 30.
-    assert.deepEqual(leerPrecio('12,50', PRECIO_PAPELETA_POR_DEFECTO), { ok: true, valor: 12.5, configurado: true });
+    assert.deepEqual(leerPrecio('12,50', 30), { ok: true, valor: 12.5, configurado: true });
   });
 
   test('un negativo o un texto no se cobran: se devuelven como error', () => {
@@ -45,22 +43,15 @@ describe('D4 · precios de la configuración', () => {
   });
 
   test('el valor por defecto solo cuenta si la clave no está configurada', () => {
-    assert.deepEqual(leerPrecio(undefined, PRECIO_ALQUILER_POR_DEFECTO), { ok: true, valor: 15, configurado: false });
+    assert.deepEqual(leerPrecio(undefined, 15), { ok: true, valor: 15, configurado: false });
     assert.deepEqual(leerPrecio(null, 30), { ok: true, valor: 30, configurado: false });
     assert.deepEqual(leerPrecio('   ', 30), { ok: true, valor: 30, configurado: false });
   });
 
-  test('sin túnica propia se suma el alquiler, en céntimos exactos', () => {
-    assert.equal(importePapeleta(30, 15, true), 30);
-    assert.equal(importePapeleta(30, 15, false), 45);
-    assert.equal(importePapeleta(0.1, 0.2, false), 0.3); // 0.1 + 0.2 no es 0.30000000000000004
-    assert.equal(importePapeleta(0, 0, false), 0);
+  test('la cuota de salida no se cobra si nadie la configura', () => {
+    assert.equal(CUOTA_SALIDA_POR_DEFECTO, 0);
   });
 
-  test('una papeleta de 0 € nace exenta, sin asiento; si cuesta algo, pagada', () => {
-    assert.equal(estadoReciboPapeleta(0), EstadoPago.EXENTO);
-    assert.equal(estadoReciboPapeleta(12.5), EstadoPago.PAGADO);
-  });
 });
 
 describe('D2 · concepto del recibo al reinscribir', () => {

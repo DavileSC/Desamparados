@@ -17,6 +17,10 @@ export const ESTADO_RECIBO: Record<ReceiptStatus, { texto: string; color: string
   EXENTO: { texto: 'Exento', color: 'text.secondary' },
 }
 
+/** El estado que ve el hermano: una cuota perdonada no es un «Exento» sin más. */
+export const estadoDelRecibo = (r: { estado: ReceiptStatus; perdonada?: boolean }) =>
+  r.estado === 'EXENTO' && r.perdonada ? { texto: 'Perdonada', color: 'success.main' } : ESTADO_RECIBO[r.estado]
+
 export const TIPO_RECIBO: Record<TipoRecibo, string> = {
   PAPELETA_SITIO: 'Papeleta de sitio',
   CUOTA_HERMANO: 'Cuota de hermano',

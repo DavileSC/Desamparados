@@ -6,8 +6,12 @@
  * número de la URL enseñaría el recibo de cualquier otro hermano.
  */
 import db from '../config/db';
-import { NotFoundError } from '../utils/error.handle';
+import { EstadoPago, MetodoPago } from '@prisma/client';
+import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
+import { esPerdonada, pagoEnLineaDisponible } from '../domain/salidas.js';
+import { ACCIONES_AUDITORIA, type MetaDeAuditoria } from './auditoria.service.js';
+import { ZonasService } from './procesion/zonas.service.js';
 
 export class MisRecibosService {
 
@@ -37,13 +41,16 @@ export class MisRecibosService {
         fechaEmision: true,
         fechaPago: true,
         metodoPago: true,
+        // Solo para saber si se perdonó: el texto no sale de aquí.
+        observaciones: true,
         hermano: { select: { nombre: true, apellidos: true, esTitular: true } }
       }
     });
 
     // 404 y no 403: quien pregunta no tiene por qué saber si el recibo existe.
     if (!recibo) throw new NotFoundError('Recibo no encontrado');
-    return recibo;
+    const { observaciones, ...visible } = recibo;
+    return { ...visible, perdonada: esPerdonada(observaciones) };
   }
 
   /**
@@ -79,6 +86,38 @@ export class MisRecibosService {
       db.recibo.count({ where })
     ]);
 
-    return respuestaPaginada(data, total, paginacion);
+    // Las notas de Tesorería no salen al área; solo si la cuota se perdonó.
+    return respuestaPaginada(data.map(({ observaciones, ...r }) => ({ ...r, perdonada: esPerdonada(observaciones) })), total, paginacion);
+  }
+
+  /**
+   * Pagar en línea recibos de la familia: las cuotas pendientes, la
+   * papeleta o el donativo. Hoy la pasarela está SIMULADA (ver
+   * `pagoEnLineaDisponible`): el cobro se apunta como con tarjeta, igual que
+   * en la mesa, y con la misma clave contra dobles cobros.
+   */
+  static async pagarEnLinea(userId: number, pago: { reciboIds?: number[]; solicitudIds?: number[] }, clave: string | undefined, meta?: MetaDeAuditoria) {
+    if (!pagoEnLineaDisponible()) throw new HttpError('El pago en línea todavía no está disponible. Puedes pagar en Secretaría o el día del reparto.', 409);
+    const reciboIds = pago.reciboIds ?? [];
+    const solicitudIds = pago.solicitudIds ?? [];
+    const recibos = await db.recibo.findMany({
+      where: { id: { in: reciboIds }, hermano: { userId, activo: true } },
+      select: { id: true, estado: true, hermanoId: true, concepto: true },
+    });
+    const solicitudes = await db.solicitud.findMany({
+      where: { id: { in: solicitudIds }, hermano: { userId, activo: true } },
+      select: { id: true, hermanoId: true },
+    });
+    if (recibos.length !== new Set(reciboIds).size || solicitudes.length !== new Set(solicitudIds).size) throw new NotFoundError('Recibo no encontrado');
+    const alguno = recibos[0]?.hermanoId ?? solicitudes[0]?.hermanoId;
+    if (alguno === undefined) throw new HttpError('No hay nada que pagar.');
+    // Un reintento del mismo pago (la respuesta no llegó) devuelve lo que ya se hizo.
+    const hecho = clave ? await db.operacionMesa.findUnique({ where: { clave }, select: { clave: true } }) : null;
+    const noPagables = hecho ? [] : recibos.filter((r) => r.estado !== EstadoPago.PENDIENTE && r.estado !== EstadoPago.DEVUELTO);
+    if (noPagables.length > 0) throw new HttpError(`«${noPagables[0].concepto}» no está pendiente de pago.`, 409);
+    return ZonasService.cobrar(
+      { hermanoId: alguno, reciboIds, solicitudes: solicitudIds.map((solicitudId) => ({ solicitudId })), metodoPago: MetodoPago.TARJETA },
+      clave, meta ?? { userId }, ACCIONES_AUDITORIA.PAGO_EN_LINEA,
+    );
   }
 }

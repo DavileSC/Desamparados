@@ -2,6 +2,8 @@ import { MiProcesionService } from '../services/procesion/mi-procesion.service.j
 import { PapeletasService } from '../services/procesion/papeletas.service.js';
 import { TurnosService } from '../services/procesion/turnos.service.js';
 import { PlazoPapeletasService } from '../services/procesion/plazo.service.js';
+import { SalidasService } from '../services/procesion/salidas.service.js';
+import type { Salida } from '@prisma/client';
 import { handleHttp, HttpError } from '../utils/error.handle.js';
 import { instanteLimiteAusencias } from '../domain/datos-procesion.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
@@ -13,8 +15,8 @@ export class ProcesionController {
   //  ZONA HERMANO (APP)
   // ============================================================
 
-  static getDias = manejar('Error obteniendo días', async (_req, res) => {
-    const dias = await MiProcesionService.getDiasDisponibles();
+  static getDias = manejar('Error obteniendo días', async (req, res) => {
+    const dias = await MiProcesionService.getDiasDisponibles((req.query.salida as Salida | undefined) ?? 'PASION');
     res.json(dias);
   });
 
@@ -22,26 +24,32 @@ export class ProcesionController {
     res.json(await MiProcesionService.getMiEstado(req.user!.id));
   });
 
-  static getPlazo = manejar('Error obteniendo el plazo de papeletas', async (_req, res) => {
-    res.json(await PlazoPapeletasService.estadoParaSecretaria());
+  static getPlazo = manejar('Error obteniendo el plazo de papeletas', async (req, res) => {
+    const salida = (req.query.salida as Salida | undefined) ?? 'PASION';
+    const plazo = await PlazoPapeletasService.estadoParaSecretaria(salida);
+    res.json(salida === 'ROSARIO' ? { ...plazo, rosario: await SalidasService.rosario() } : plazo);
   });
 
   static cambiarPlazo = manejar('Error cambiando el plazo de papeletas', async (req, res) => {
-    const { abierto, avisar, borradorNoticia } = req.body as { abierto: boolean; avisar?: boolean; borradorNoticia?: boolean };
-    const resultado = await PlazoPapeletasService.cambiar(abierto, { avisar, borradorNoticia }, AuditoriaService.metaFromReq(req));
+    const { abierto, avisar, borradorNoticia, salida } = req.body as { abierto: boolean; avisar?: boolean; borradorNoticia?: boolean; salida?: Salida };
+    const resultado = await PlazoPapeletasService.cambiar(abierto, { avisar, borradorNoticia, salida }, AuditoriaService.metaFromReq(req));
     res.json(resultado);
   });
 
-  static avisarAsistencia = manejar('Error al avisar asistencia', async (req, res) => {
-    const userId = req.user!.id; 
-    const data = await MiProcesionService.avisarAsistencia(userId, req.body);
+  static fijarRosario = manejar('Error fijando la fecha del Rosario', async (req, res) => {
+    res.json(await SalidasService.fijarRosario(req.body as { inicio: string; lugar?: string | null }, AuditoriaService.metaFromReq(req)));
+  });
+
+  static avisarAsistencia = manejar('Error al pedir la papeleta', async (req, res) => {
+    const userId = req.user!.id;
+    const data = await MiProcesionService.avisarAsistencia(userId, req.body, AuditoriaService.metaFromReq(req));
     res.status(201).json(data);
   });
 
   static cancelarAsistencia = manejar('Error al cancelar la cita', async (req, res) => {
     const userId = req.user!.id;
     const citaId = Number(req.params.id);
-    await MiProcesionService.cancelarAsistencia(userId, citaId);
+    await MiProcesionService.cancelarAsistencia(userId, citaId, AuditoriaService.metaFromReq(req));
     res.status(200).json({ message: 'Cita cancelada correctamente.' });
   });
 
@@ -60,14 +68,6 @@ export class ProcesionController {
     res.json(lista);
   });
 
-  static inscribirManual = manejar('Error al realizar inscripción', async (req, res) => {
-    const result = await PapeletasService.inscribirYFacturar(req.body, AuditoriaService.metaFromReq(req));
-    res.status(200).json({
-      msg: 'Inscripción realizada. Recibo generado y correo enviado.',
-      data: result
-    });
-  });
-
   static anularPapeleta = manejar('Error al anular la papeleta', async (req, res) => {
     const papeletaId = Number(req.params.id);
     const result = await PapeletasService.anularPapeleta(papeletaId, AuditoriaService.metaFromReq(req));
@@ -80,7 +80,7 @@ export class ProcesionController {
 
   static getListadoProcesion = manejar('Error generando el censo de la procesión', async (req, res) => {
     const year = Number(req.params.year);
-    const listado = await PapeletasService.getListadoProcesion(year);
+    const listado = await PapeletasService.getListadoProcesion(year, (req.query.salida as Salida | undefined) ?? 'PASION');
     res.status(200).json(listado);
   });
 
@@ -102,8 +102,8 @@ export class ProcesionController {
   //  ZONA ADMIN (Gestión de Turnos y Voluntariado)
   // ============================================================
 
-  static getTodosTurnos = manejar('Error obteniendo los turnos', async (_req, res) => {
-    const turnos = await TurnosService.getTodosLosTurnos();
+  static getTodosTurnos = manejar('Error obteniendo los turnos', async (req, res) => {
+    const turnos = await TurnosService.getTodosLosTurnos(req.query.salida as Salida | undefined);
     res.status(200).json(turnos);
   });
 

@@ -7,7 +7,7 @@ import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
 import { miRecibo, type MyReceiptDetail } from '../../../lib/api/recibos'
-import { ESTADO_RECIBO, METODO_PAGO, TIPO_RECIBO, formatearFecha, formatearImporte } from './etiquetas'
+import { estadoDelRecibo, METODO_PAGO, TIPO_RECIBO, formatearFecha, formatearImporte } from './etiquetas'
 
 /**
  * Un recibo entero. La fila del listado solo enseña concepto, hermano, importe
@@ -39,7 +39,7 @@ export default function ReciboPage() {
     return () => { cancelado = true }
   }, [id])
 
-  const estado = recibo ? ESTADO_RECIBO[recibo.estado] : null
+  const estado = recibo ? estadoDelRecibo(recibo) : null
 
   return (
     <>

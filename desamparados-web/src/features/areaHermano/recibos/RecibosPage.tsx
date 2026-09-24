@@ -8,7 +8,7 @@ import SeccionAnimada from '../../../components/SeccionAnimada'
 import Paginador from '../../../components/Paginador'
 import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
 import { misRecibos, type MyReceipt } from '../../../lib/api/recibos'
-import { ESTADO_RECIBO, formatearImporte } from './etiquetas'
+import { estadoDelRecibo, formatearImporte } from './etiquetas'
 
 /**
  * Los recibos de la familia, agrupados por año.
@@ -89,7 +89,7 @@ export default function RecibosPage() {
  * por encima del mínimo cómodo en táctil aunque el concepto ocupe una línea.
  */
 function FilaRecibo({ receipt, nombraAlHermano }: { receipt: MyReceipt; nombraAlHermano: boolean }) {
-  const estado = ESTADO_RECIBO[receipt.estado]
+  const estado = estadoDelRecibo(receipt)
   // La página de la que se sale viaja en el `state` para que el detalle sepa
   // volver a ella y no a la primera (`useVolverAlListado`).
   const { search } = useLocation()

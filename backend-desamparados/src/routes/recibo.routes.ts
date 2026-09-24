@@ -17,6 +17,7 @@ import {
   misRecibosQuerySchema,
   updateReciboSchema
 } from '../schemas/recibo.schema.js';
+import { pagarEnLineaSchema } from '../schemas/procesion.schema.js';
 
 const reciboRoutes = Router();
 
@@ -34,6 +35,10 @@ reciboRoutes.get('/mis-recibos', validate(misRecibosQuerySchema), ReciboControll
 // (`getReciboFamiliar`), no aquí: esta ruta no distingue roles, cualquiera con
 // sesión de hermano puede pedirla y solo verá lo suyo.
 reciboRoutes.get('/mis-recibos/:id', validateId, ReciboController.getMyRecibo);
+
+// Pagar en línea recibos de la familia. Hoy la pasarela está simulada: ver
+// `pagoEnLineaDisponible` (en producción solo con PAGO_EN_LINEA=simulado).
+reciboRoutes.post('/mis-recibos/pagar', validate(pagarEnLineaSchema), ReciboController.pagarEnLinea);
 
 // ==========================================
 //  RUTAS DE ADMIN (Tesorería, y ahora también el Hermano Mayor;

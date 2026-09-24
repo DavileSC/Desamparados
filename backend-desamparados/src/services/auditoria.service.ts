@@ -38,6 +38,16 @@ export const ACCIONES_AUDITORIA = {
   // La mesa de la procesión: alta en el momento y corrección de una papeleta
   MESA_ALTA: 'MESA_ALTA',
   PAPELETA_EDITAR: 'PAPELETA_EDITAR',
+  // La mesa por zonas: inscribir, cobrar (o perdonar) y dar la ropa
+  MESA_INSCRIBIR: 'MESA_INSCRIBIR',
+  MESA_COBRAR: 'MESA_COBRAR',
+  RECIBO_PERDONAR: 'RECIBO_PERDONAR',
+  PAPELETA_ENTREGAR: 'PAPELETA_ENTREGAR',
+  SOLICITUD_SALIDA_CANCELAR: 'SOLICITUD_SALIDA_CANCELAR',
+  // El hermano desde su área: pedir la papeleta y pagar en línea
+  SOLICITUD_SALIDA_PEDIR: 'SOLICITUD_SALIDA_PEDIR',
+  PAGO_EN_LINEA: 'PAGO_EN_LINEA',
+  ROSARIO_FECHAR: 'ROSARIO_FECHAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',

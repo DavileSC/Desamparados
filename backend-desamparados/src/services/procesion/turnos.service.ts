@@ -5,14 +5,35 @@
  */
 import { CrearTurnoDto } from './../../dtos/procesion.dto';
 import db from '../../config/db';
-import { EstadoCita } from '@prisma/client';
+import { EstadoCita, Prisma, TipoEvento, type Salida } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { motivoTurnoInvalido } from '../../domain/datos-procesion.js';
+import { DATOS_SALIDA } from '../../domain/salidas.js';
+
+const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
+
+/**
+ * El acto de la Agenda pública que anuncia un día de reparto: así la gente
+ * sabe cuándo ir a apuntarse o a recoger la papeleta, sin entrar al área.
+ */
+function actoDelReparto(t: { salida: Salida; horaInicio: Date; horaFin: Date }): Prisma.EventoCreateInput {
+  const rosario = t.salida === 'ROSARIO';
+  return {
+    title: rosario ? 'Reparto de papeletas del Rosario vespertino' : 'Reparto de papeletas de sitio',
+    description: rosario
+      ? `Día para apuntarse al Rosario vespertino y recoger la papeleta, de ${formatoHora.format(t.horaInicio)} a ${formatoHora.format(t.horaFin)}. Hay que estar al día con la cuota de hermano.`
+      : `Día para recoger la papeleta de sitio y la túnica, de ${formatoHora.format(t.horaInicio)} a ${formatoHora.format(t.horaFin)}. Hay que estar al día con la cuota de hermano y llevar el DNI.`,
+    startDate: t.horaInicio,
+    endDate: t.horaFin,
+    type: TipoEvento.OTRO,
+  };
+}
 
 /** Un turno en la auditoría, con las fechas en ISO. */
-function fotoTurno(t: { fecha: Date; horaInicio: Date; horaFin: Date; capacidadEstimada: number; activo: boolean }) {
+function fotoTurno(t: { fecha: Date; horaInicio: Date; horaFin: Date; capacidadEstimada: number; activo: boolean; salida?: Salida }) {
   return {
+    salida: t.salida,
     fecha: t.fecha.toISOString(),
     horaInicio: t.horaInicio.toISOString(),
     horaFin: t.horaFin.toISOString(),
@@ -27,8 +48,9 @@ export class TurnosService {
    * Listar absolutamente todos los turnos para el panel de control de Secretaría.
    * Incluye los pasados, los inactivos y la ocupación real.
    */
-  static async getTodosLosTurnos() {
+  static async getTodosLosTurnos(salida?: Salida) {
     return await db.turno.findMany({
+      where: salida ? { salida } : {},
       orderBy: { fecha: 'desc' },
       include: {
         _count: {
@@ -51,14 +73,17 @@ export class TurnosService {
     const motivo = motivoTurnoInvalido(data.fecha, fechaInicio, fechaFin);
     if (motivo) throw new HttpError(motivo);
 
-    // 3. Lo guardamos en la base de datos
+    // 3. Lo guardamos, con su acto en la Agenda pública.
+    const salida = data.salida ?? 'PASION';
     const turno = await db.turno.create({
       data: {
         fecha: new Date(data.fecha),
         horaInicio: fechaInicio,
         horaFin: fechaFin,
         capacidadEstimada: data.capacidadEstimada,
-        activo: true // Por defecto lo abrimos al crearlo
+        salida,
+        activo: true, // Por defecto lo abrimos al crearlo
+        evento: { create: actoDelReparto({ salida, horaInicio: fechaInicio, horaFin: fechaFin }) },
       }
     });
 
@@ -96,6 +121,16 @@ export class TurnosService {
         horaFin
       }
     });
+    // El acto de la Agenda sigue al turno: con sus horas mientras está abierto,
+    // fuera si se cierra (y de vuelta si se reabre).
+    if (actualizado.activo) {
+      await db.turno.update({
+        where: { id: turnoId },
+        data: { evento: turno.eventoId ? { update: actoDelReparto(actualizado) } : { create: actoDelReparto(actualizado) } },
+      });
+    } else if (turno.eventoId) {
+      await db.evento.deleteMany({ where: { id: turno.eventoId } });
+    }
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.TURNO_ACTUALIZAR, meta ?? {}, 'turno', turnoId, {
       antes: fotoTurno(turno),
@@ -117,6 +152,7 @@ export class TurnosService {
     }
 
     const borrado = await db.turno.delete({ where: { id: turnoId } });
+    if (turno.eventoId) await db.evento.deleteMany({ where: { id: turno.eventoId } });
     await AuditoriaService.log(ACCIONES_AUDITORIA.TURNO_ELIMINAR, meta ?? {}, 'turno', turnoId, { antes: fotoTurno(turno) });
     return borrado;
   }

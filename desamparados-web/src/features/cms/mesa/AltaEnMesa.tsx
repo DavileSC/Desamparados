@@ -127,7 +127,7 @@ export default function AltaEnMesa({ onHecha, onCancelar }: Props) {
             </Box>
           ) : (
             <>
-              <BuscadorPersonas etiqueta="Buscar al tutor en el censo" sinEsperados onElegir={(p) => setTutor({ tipo: 'censo', id: p.id, nombre: `${p.nombre} ${p.apellidos}` })} />
+              <BuscadorPersonas etiqueta="Buscar al tutor en el censo" onElegir={(p) => setTutor({ tipo: 'censo', id: p.id, nombre: `${p.nombre} ${p.apellidos}` })} />
               <Button size="small" onClick={() => setTutor({ tipo: 'nuevo' })} sx={{ alignSelf: 'start' }}>El tutor no está en el censo</Button>
             </>
           )}

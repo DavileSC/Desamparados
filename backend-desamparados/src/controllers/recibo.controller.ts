@@ -24,6 +24,11 @@ export class ReciboController {
     res.status(200).json(recibo);
   });
 
+  static pagarEnLinea = manejar('Error pagando en línea', async (req, res) => {
+    const { reciboIds, solicitudIds, clave } = req.body as { reciboIds?: number[]; solicitudIds?: number[]; clave?: string };
+    res.json(await MisRecibosService.pagarEnLinea(req.user!.id, { reciboIds, solicitudIds }, clave, AuditoriaService.metaFromReq(req)));
+  });
+
   // =================================================================
   //  ZONA ADMIN / TESORERÍA
   // =================================================================

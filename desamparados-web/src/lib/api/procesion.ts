@@ -3,9 +3,13 @@ import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export type ReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
 
+/** Las dos salidas del año: el Sábado de Pasión y el Rosario vespertino de octubre. */
+export type Salida = 'PASION' | 'ROSARIO'
+
 export interface ApiProcessionTicket {
   id: number
   year: number
+  salida?: Salida
   puesto: string
   tramo: string | null
   numero: number | null
@@ -26,6 +30,7 @@ export function misPapeletas(pagina: { pagina: number; porPagina: number }) {
 /** Un día de reparto: cuándo, y cuánta gente ha reservado ya. */
 export interface DiaDeReparto {
   id: number
+  salida: Salida
   fecha: string
   horaInicio: string
   horaFin: string
@@ -33,7 +38,34 @@ export interface DiaDeReparto {
   capacidad: number
 }
 
-/** Una ficha de la cuenta, con lo que tiene de la procesión de este año y de la anterior. */
+export interface CuotaPorPagar {
+  id: number
+  year: number
+  concepto: string
+  importe: number
+  estado: ReceiptStatus
+}
+
+/**
+ * Lo de una ficha en una salida: su solicitud (pedida, sin recoger), su
+ * papeleta de este año (que nace al recogerla en la mesa) y la última que tuvo.
+ */
+export interface FichaEnUnaSalida {
+  solicitud: {
+    id: number
+    puesto: string
+    donativo: number | null
+    /** Lo que falta pagar de la salida (la voluntad del Rosario, o la cuota de salida si la hay). */
+    pendiente: number
+    concepto: string
+    pagada: boolean
+    cita: { id: number; turno: { id: number; salida: Salida; fecha: string; horaInicio: string; horaFin: string } } | null
+  } | null
+  papeleta: { id: number; year: number; puesto: string; tramo: string | null; numero: number | null } | null
+  ultima: { id: number; year: number; puesto: string; tramo: string | null } | null
+}
+
+/** Una ficha de la cuenta, con lo que debe y lo que tiene de cada salida. */
 export interface FichaEnLaProcesion {
   id: number
   nombre: string
@@ -42,18 +74,27 @@ export interface FichaEnLaProcesion {
   parentesco: string | null
   activo: boolean
   tieneTunicaPropia: boolean
-  cita: { id: number; turno: { id: number; fecha: string; horaInicio: string; horaFin: string } } | null
-  papeleta: { id: number; year: number; puesto: string; tramo: string | null; numero: number | null; recibo: { estado: ReceiptStatus } | null } | null
-  ultima: { id: number; year: number; puesto: string; tramo: string | null } | null
+  cuotasPendientes: CuotaPorPagar[]
+  cuotasEnElBanco: number
+  porSalida: Record<Salida, FichaEnUnaSalida>
+}
+
+export interface SalidaDelHermano {
+  salida: Salida
+  nombre: string
+  /** Si Secretaría ha abierto la solicitud de esta salida. */
+  abierto: boolean
+  year: number
+  /** Vacío con el plazo cerrado. */
+  dias: DiaDeReparto[]
 }
 
 export interface MiProcesion {
-  /** Si Secretaría ha abierto la solicitud de papeletas. */
-  abierto: boolean
-  year: number
-  precios: { papeleta: number | null; alquilerTunica: number | null }
-  /** Vacío con el plazo cerrado. */
-  dias: DiaDeReparto[]
+  salidas: SalidaDelHermano[]
+  /** La cuota de salida de la Pasión: hoy 0 € (y entonces no se enseña nada). */
+  cuotaSalida: number | null
+  /** Si se puede pagar desde el área (hoy, con la pasarela simulada). */
+  pagoEnLinea: boolean
   fichas: FichaEnLaProcesion[]
 }
 
@@ -61,18 +102,30 @@ export function miProcesion() {
   return llamarApi<MiProcesion>('/procesion/mi-estado')
 }
 
-/** Reservar día de reparto para una ficha de la cuenta. Con el plazo cerrado, el servidor lo rechaza. */
-export function reservarDia(hermanoId: number, turnoId: number) {
-  return llamarApi<{ id: number }>('/procesion/avisar', { method: 'POST', json: { hermanoId, turnoId } })
+/**
+ * Pedir la papeleta de una ficha de la cuenta: el día de reparto (que dice la
+ * salida), el puesto que le gustaría y, en el Rosario, la voluntad. Con el
+ * plazo cerrado, el servidor lo rechaza.
+ */
+export function pedirPapeleta(datos: { hermanoId: number; turnoId: number; puesto: string; donativo?: number }) {
+  return llamarApi<{ citaId: number; solicitudId: number }>(
+    '/procesion/avisar', { method: 'POST', json: datos },
+  )
 }
 
 export function anularCita(citaId: number) {
-  return llamarApi<{ id: number }>(`/procesion/avisar/${citaId}`, { method: 'DELETE' })
+  return llamarApi<{ message: string }>(`/procesion/avisar/${citaId}`, { method: 'DELETE' })
+}
+
+/** Pagar en línea lo pendiente de la familia: cuotas y lo de la salida (hoy la pasarela está simulada). */
+export function pagarEnLinea(pago: { reciboIds: number[]; solicitudIds: number[] }, clave: string) {
+  return llamarApi<{ total: number; repetida: boolean }>('/recibos/mis-recibos/pagar', { method: 'POST', json: { ...pago, clave } })
 }
 
 // --- CMS ---
 
 export interface PlazoDePapeletas {
+  salida: Salida
   abierto: boolean
   cambiadoEl: string | null
   year: number
@@ -80,22 +133,38 @@ export interface PlazoDePapeletas {
   primerDia: string | null
   ultimoDia: string | null
   citasReservadas: number
-  precios: { papeleta: number | null; alquilerTunica: number | null }
+  /** Solo la Pasión. */
+  cuotaSalida: number | null
+  /** Solo el Rosario: su acto en la Agenda, si ya tiene fecha. */
+  rosario?: { eventoId: number; inicio: string; lugar: string | null } | null
 }
 
-export function plazoDePapeletas() {
-  return llamarApi<PlazoDePapeletas>('/procesion/admin/plazo')
+const deLaSalida = (salida: Salida) => (salida === 'PASION' ? '' : `?salida=${salida}`)
+
+export function plazoDePapeletas(salida: Salida = 'PASION') {
+  return llamarApi<PlazoDePapeletas>(`/procesion/admin/plazo${deLaSalida(salida)}`)
 }
 
-export function cambiarPlazo(abierto: boolean, opciones: { avisar?: boolean; borradorNoticia?: boolean } = {}) {
+export function cambiarPlazo(abierto: boolean, opciones: { avisar?: boolean; borradorNoticia?: boolean; salida?: Salida } = {}) {
   return llamarApi<{ abierto: boolean; avisados: number; noticiaId: number | null }>('/procesion/admin/plazo', {
     method: 'POST',
     json: { abierto, ...opciones },
   })
 }
 
+/** Fijar (o mover) la fecha del Rosario vespertino: sale en la Agenda pública. */
+export function fijarRosario(datos: { inicio: string; lugar?: string | null }) {
+  return llamarApi<{ eventoId: number; inicio: string; lugar: string | null }>('/procesion/admin/rosario', { method: 'PUT', json: datos })
+}
+
+/** La cuota de salida de la Pasión: la configuración de siempre (solo el administrador). */
+export function cambiarCuotaSalida(valor: string) {
+  return llamarApi<unknown>('/admin/config', { method: 'POST', json: { key: 'precio_papeleta_sitio', value: valor } })
+}
+
 export interface TurnoDeReparto {
   id: number
+  salida: Salida
   fecha: string
   horaInicio: string
   horaFin: string
@@ -104,11 +173,11 @@ export interface TurnoDeReparto {
   _count: { citas: number }
 }
 
-export function turnosDeReparto() {
-  return llamarApi<TurnoDeReparto[]>('/procesion/admin/turnos')
+export function turnosDeReparto(salida?: Salida) {
+  return llamarApi<TurnoDeReparto[]>(`/procesion/admin/turnos${salida ? `?salida=${salida}` : ''}`)
 }
 
-export function crearTurno(datos: { fecha: string; horaInicio: string; horaFin: string; capacidadEstimada: number }) {
+export function crearTurno(datos: { fecha: string; horaInicio: string; horaFin: string; capacidadEstimada: number; salida?: Salida }) {
   return llamarApi<TurnoDeReparto>('/procesion/admin/turnos', { method: 'POST', json: datos })
 }
 

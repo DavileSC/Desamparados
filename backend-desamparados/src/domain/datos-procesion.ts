@@ -1,21 +1,17 @@
-import { EstadoPago } from '@prisma/client';
 import { diaMadrid, esDiaValido, inicioDiaMadrid } from './contabilidad.js';
 
 /**
- * Reglas de la papeleta de sitio que no necesitan base de datos: cuánto se
- * cobra, con qué concepto se emite el recibo y qué datos del evento se
- * imprimen en la papeleta. Viven aquí para poder probarlas en cualquier
- * máquina: son las que, cuando se equivocan, cobran de más o mandan a los
- * hermanos a una hora que no es.
+ * Reglas de la papeleta de sitio que no necesitan base de datos: cómo se lee
+ * un precio de la configuración, cómo se comparan los conceptos de los
+ * recibos y qué datos del evento se imprimen en la papeleta (el concepto y
+ * el importe de cada salida están en `salidas.ts`). Viven aquí para poder
+ * probarlas en cualquier máquina: son las que, cuando se equivocan, cobran de
+ * más o mandan a los hermanos a una hora que no es.
  */
 
 // ---------------------------------------------------------------------------
 //  Precios
 // ---------------------------------------------------------------------------
-
-/** Lo que se cobra si la clave no existe en `Configuracion`. */
-export const PRECIO_PAPELETA_POR_DEFECTO = 30;
-export const PRECIO_ALQUILER_POR_DEFECTO = 15;
 
 // Hasta ocho cifras enteras y dos decimales, con punto o con coma: es lo que
 // cabe en `Decimal(10, 2)` y lo que escribe cualquiera en España («12,50»).
@@ -57,51 +53,9 @@ export function leerPrecio(crudo: string | null | undefined, porDefecto: number)
   return valor === null ? { ok: false, crudo } : { ok: true, valor, configurado: true };
 }
 
-/** Papeleta más alquiler de túnica si el hermano no la tiene propia, en céntimos exactos. */
-export function importePapeleta(precioBase: number, precioAlquiler: number, tieneTunicaPropia: boolean): number {
-  const total = tieneTunicaPropia ? precioBase : precioBase + precioAlquiler;
-  return Math.round(total * 100) / 100;
-}
-
-/**
- * Estado con el que nace el recibo de una papeleta cobrada en mesa.
- *
- * Una papeleta de 0 € nace EXENTO y no PAGADO: la máquina de estados define
- * EXENTO como «el hermano no paga esta vez», que es exactamente esto, y así no
- * se apunta en contabilidad un ingreso de 0 € que luego podría «devolverse»
- * con un reverso de 0 €. El dinero que no existe no deja asientos.
- */
-export function estadoReciboPapeleta(importe: number): EstadoPago {
-  return importe === 0 ? EstadoPago.EXENTO : EstadoPago.PAGADO;
-}
-
 // ---------------------------------------------------------------------------
 //  Concepto del recibo
 // ---------------------------------------------------------------------------
-
-/**
- * Concepto del recibo de una papeleta que no choque con los que el hermano ya
- * tiene ese año.
- *
- * El recibo es único por `[hermanoId, year, concepto]`. Al anular una papeleta
- * su recibo se queda (DEVUELTO o ANULADO) para que contabilidad conserve el
- * rastro, y ocupa «Papeleta Sitio 2026»: volver a inscribir al hermano con el
- * mismo concepto reventaba con un 500. La segunda emisión es «Papeleta Sitio
- * 2026 (reemisión 2)», la tercera «(reemisión 3)», y así.
- *
- * Los conceptos se comparan como los compara la clave única en MariaDB
- * (ver `claveConcepto`): un «papeleta sitio 2026» emitido a mano ocupa el
- * mismo hueco que «Papeleta Sitio 2026».
- */
-export function conceptoPapeleta(year: number, conceptosExistentes: readonly string[]): string {
-  const base = `Papeleta Sitio ${year}`;
-  const usados = new Set(conceptosExistentes.map(claveConcepto));
-  if (!usados.has(claveConcepto(base))) return base;
-  for (let n = 2; ; n += 1) {
-    const candidato = `${base} (reemisión ${n})`;
-    if (!usados.has(claveConcepto(candidato))) return candidato;
-  }
-}
 
 /**
  * Un concepto tal y como lo compara la columna `Recibo.concepto`, que es

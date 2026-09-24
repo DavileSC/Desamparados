@@ -9,11 +9,12 @@ import type { PlazoDePapeletas } from '../../../lib/api/procesion'
 const json = (cuerpo: unknown) => new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } })
 
 const PLAZO: PlazoDePapeletas = {
-  abierto: false, cambiadoEl: null, year: 2027, diasDeReparto: 1,
+  salida: 'PASION', abierto: false, cambiadoEl: null, year: 2027, diasDeReparto: 1,
   primerDia: '2027-03-08T00:00:00.000Z', ultimoDia: '2027-03-08T00:00:00.000Z',
-  citasReservadas: 0, precios: { papeleta: 30, alquilerTunica: 15 },
+  citasReservadas: 0, cuotaSalida: 0,
 }
-const TURNO = { id: 5, fecha: '2027-03-08T00:00:00.000Z', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z', capacidadEstimada: 100, activo: true, _count: { citas: 0 } }
+const ROSARIO: PlazoDePapeletas = { ...PLAZO, salida: 'ROSARIO', year: 2026, cuotaSalida: null, rosario: null }
+const TURNO = { id: 5, salida: 'PASION', fecha: '2027-03-08T00:00:00.000Z', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z', capacidadEstimada: 100, activo: true, _count: { citas: 0 } }
 
 function servidor(plazo = PLAZO, turnos = [TURNO]) {
   const llamadas: { url: string; metodo: string; cuerpo?: unknown }[] = []
@@ -21,7 +22,9 @@ function servidor(plazo = PLAZO, turnos = [TURNO]) {
     const metodo = init.method ?? 'GET'
     llamadas.push({ url: String(url), metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
     if (String(url).includes('/admin/plazo') && metodo === 'POST') return Promise.resolve(json({ abierto: true, avisados: 120, noticiaId: 33 }))
+    if (String(url).includes('/admin/plazo?salida=ROSARIO')) return Promise.resolve(json(ROSARIO))
     if (String(url).includes('/admin/plazo')) return Promise.resolve(json(plazo))
+    if (String(url).includes('/admin/rosario')) return Promise.resolve(json({ eventoId: 9, inicio: '2026-10-17T17:30:00.000Z', lugar: null }))
     return Promise.resolve(json(turnos))
   }))
   return llamadas
@@ -44,7 +47,7 @@ describe('ProcesionAdminPage', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir la solicitud' }))
 
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST')).toBe(true))
-    expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toEqual({ abierto: true, avisar: true, borradorNoticia: true })
+    expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toEqual({ abierto: true, avisar: true, borradorNoticia: true, salida: 'PASION' })
     expect(await screen.findByText(/avisando por correo a 120 cuentas/i)).toBeInTheDocument()
     // El diálogo tarda en cerrarse: hasta entonces el resto de la página queda oculto.
     expect(await screen.findByRole('link', { name: 'borrador de noticia' })).toHaveAttribute('href', '/cms/noticias/33/editar')
@@ -66,5 +69,34 @@ describe('ProcesionAdminPage', () => {
 
     expect(await screen.findByRole('switch', { name: /solicitud de papeletas abierta/i })).toBeDisabled()
     expect(screen.queryByRole('button', { name: /nuevo día de reparto/i })).not.toBeInTheDocument()
+  })
+
+  it('sin cuota de salida lo dice: para salir basta con la cuota de hermano', async () => {
+    servidor()
+    renderWithProviders(<ProcesionAdminPage />)
+    expect(await screen.findByText('No se cobra')).toBeInTheDocument()
+    expect(screen.queryByText(/alquiler/i)).not.toBeInTheDocument()
+  })
+
+  it('el Rosario tiene su plazo, y su fecha (en octubre) se guarda para la Agenda', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor()
+    renderWithProviders(<ProcesionAdminPage />)
+
+    await user.click(await screen.findByRole('tab', { name: 'Rosario vespertino' }))
+    expect(await screen.findByText(/todavía sin fecha/i)).toBeInTheDocument()
+    expect(screen.getByText('La voluntad')).toBeInTheDocument()
+
+    const dia = screen.getByLabelText('Día')
+    await user.type(dia, '2026-11-07')
+    expect(screen.getByText('Tiene que ser en octubre')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
+    await user.clear(dia)
+    await user.type(dia, '2026-10-17')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(llamadas.some((l) => l.metodo === 'PUT' && l.url.includes('/admin/rosario'))).toBe(true))
+    expect(await screen.findByText(/ya sale en la agenda/i)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.url.includes('/admin/turnos?salida=ROSARIO'))).toBe(true)
   })
 })

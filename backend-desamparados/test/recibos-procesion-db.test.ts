@@ -19,6 +19,7 @@ import { ReciboService } from '../src/services/recibo.service.js';
 import { idCategoriaDeRecibos } from '../src/services/recibos/comunes.js';
 import { MiProcesionService } from '../src/services/procesion/mi-procesion.service.js';
 import { PapeletasService } from '../src/services/procesion/papeletas.service.js';
+import { ZonasService } from '../src/services/procesion/zonas.service.js';
 import { TurnosService } from '../src/services/procesion/turnos.service.js';
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
@@ -61,6 +62,9 @@ async function escenario() {
   const hermanos: number[] = [];
   const turnos: number[] = [];
   const meta = { userId: admin.id };
+  // Estas pruebas cobran papeletas: la cuota de salida, a 30 € mientras duran.
+  const cuotaSalida = await db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } });
+  await db.configuracion.upsert({ where: { key: 'precio_papeleta_sitio' }, update: { value: '30' }, create: { key: 'precio_papeleta_sitio', value: '30' } });
 
   const hermano = async (extra: { tieneTunicaPropia?: boolean; activo?: boolean } = {}) => {
     const h = await db.hermano.create({
@@ -87,6 +91,7 @@ async function escenario() {
 
   const recoger = async () => {
     await db.auditLog.deleteMany({ where: { userId: admin.id } });
+    await db.solicitud.deleteMany({ where: { hermanoId: { in: hermanos } } });
     await db.transaccion.deleteMany({ where: { hermanoId: { in: hermanos } } });
     await db.papeletaSitio.deleteMany({ where: { hermanoId: { in: hermanos } } });
     await db.cita.deleteMany({ where: { OR: [{ hermanoId: { in: hermanos } }, { turnoId: { in: turnos } }] } });
@@ -95,9 +100,20 @@ async function escenario() {
     await db.hermano.deleteMany({ where: { id: { in: hermanos } } });
     await borrarUsuarioPrueba(usuario.id);
     await borrarUsuarioPrueba(admin.id);
+    if (cuotaSalida) await db.configuracion.update({ where: { key: cuotaSalida.key }, data: { value: cuotaSalida.value } });
+    else await db.configuracion.deleteMany({ where: { key: 'precio_papeleta_sitio' } });
   };
 
-  return { admin, usuario, meta, hermano, turno, turnos, recoger };
+  /** El camino entero de la mesa: apuntar en Inscripción, cobrar en Tesorería y recoger en Túnicas. */
+  const apuntarYCobrar = async (hermanoId: number, puesto = 'Cirio', metodoPago: 'EFECTIVO' | 'BIZUM' = MetodoPago.EFECTIVO) => {
+    const { solicitudId, requisitos } = await ZonasService.inscribir({ hermanoId, salida: 'PASION', puesto }, undefined, meta);
+    if (requisitos.salidaPendiente > 0) await ZonasService.cobrar({ hermanoId, reciboIds: [], solicitudes: [{ solicitudId }], metodoPago }, undefined, meta);
+    const { papeletaId } = await ZonasService.entregar({ solicitudId, origenTunica: 'PROPIA' }, undefined, meta);
+    const papeleta = await db.papeletaSitio.findUniqueOrThrow({ where: { id: papeletaId } });
+    return { recibo: await db.recibo.findUniqueOrThrow({ where: { id: papeleta.reciboId } }), papeleta };
+  };
+
+  return { admin, usuario, meta, hermano, turno, turnos, apuntarYCobrar, recoger };
 }
 
 async function auditoria(action: string, entityId: number | string) {
@@ -140,9 +156,8 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     const turno = await e.turno(new Date(Date.now() + 60 * 60 * 1000));
     const cita = await db.cita.create({ data: { hermanoId: hermano.id, turnoId: turno.id } });
 
-    const { recibo, papeleta } = await PapeletasService.inscribirYFacturar(
-      { hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio', citaId: cita.id }, e.meta
-    );
+    const { recibo, papeleta } = await e.apuntarYCobrar(hermano.id);
+    assert.equal(papeleta.citaId, cita.id, 'la mesa enlaza la cita que tenía');
     assert.equal(recibo.estado, EstadoPago.PAGADO);
     assert.equal(recibo.concepto, `Papeleta Sitio ${YEAR}`);
 
@@ -170,9 +185,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     assert.equal(detalles.despues.recibo.estado, EstadoPago.DEVUELTO);
 
     // Reinscribir: antes daba 500 porque el recibo devuelto ocupaba el concepto.
-    const segunda = await PapeletasService.inscribirYFacturar(
-      { hermanoId: hermano.id, metodoPago: MetodoPago.BIZUM, puesto: 'Vara' }, e.meta
-    );
+    const segunda = await e.apuntarYCobrar(hermano.id, 'Vara', MetodoPago.BIZUM);
     assert.equal(segunda.recibo.concepto, `Papeleta Sitio ${YEAR} (reemisión 2)`);
     assert.equal(segunda.recibo.estado, EstadoPago.PAGADO);
   } finally {
@@ -185,9 +198,7 @@ test('D2: si Tesorería devuelve el recibo de una papeleta, la papeleta queda an
   const e = await escenario();
   try {
     const hermano = await e.hermano();
-    const { recibo, papeleta } = await PapeletasService.inscribirYFacturar(
-      { hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta
-    );
+    const { recibo, papeleta } = await e.apuntarYCobrar(hermano.id);
 
     const respuesta = await ReciboService.adminUpdateDetalles(recibo.id, { estado: 'DEVUELTO' }, e.meta);
     assert.equal(respuesta.papeletaAnulada, true);
@@ -289,15 +300,15 @@ test('D3: por HTTP, Tesorería emite el recibo y busca al hermano sin ver sus da
 //  D4 · precios de la papeleta
 // ============================================================================
 
-test('D4: con precios a 0 la papeleta nace exenta y sin asiento; «12,50» cobra 12,50; «-5» no inscribe', async (t) => {
+test('D4: con la cuota de salida a 0 la papeleta nace exenta y sin asiento; «12,50» cobra 12,50; «-5» no inscribe', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    await conConfiguracion({ precio_papeleta_sitio: '', precio_alquiler_tunica: '' }, async () => {
+    await conConfiguracion({ precio_papeleta_sitio: '' }, async () => {
       const hermano = await e.hermano({ tieneTunicaPropia: false });
 
-      await fijarConfiguracion({ precio_papeleta_sitio: '0', precio_alquiler_tunica: '0' });
-      const gratis = await PapeletasService.inscribirYFacturar({ hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
+      await fijarConfiguracion({ precio_papeleta_sitio: '0' });
+      const gratis = await e.apuntarYCobrar(hermano.id);
       assert.equal(gratis.recibo.estado, EstadoPago.EXENTO);
       assert.equal(String(gratis.recibo.importe), '0');
       assert.equal(gratis.recibo.metodoPago, null);
@@ -308,15 +319,15 @@ test('D4: con precios a 0 la papeleta nace exenta y sin asiento; «12,50» cobra
       assert.equal(anulada.estadoRecibo, EstadoPago.EXENTO);
       assert.deepEqual(await apuntes(gratis.recibo.id), []);
 
-      await fijarConfiguracion({ precio_papeleta_sitio: '12,50', precio_alquiler_tunica: '2,5' });
-      const conComa = await PapeletasService.inscribirYFacturar({ hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
-      assert.equal(String(conComa.recibo.importe), '15', 'papeleta 12,50 + alquiler 2,50');
+      await fijarConfiguracion({ precio_papeleta_sitio: '12,50' });
+      const conComa = await e.apuntarYCobrar(hermano.id);
+      assert.equal(String(conComa.recibo.importe), '12.5', 'sin alquiler de túnica: solo la cuota de salida');
       assert.equal(conComa.recibo.estado, EstadoPago.PAGADO);
 
       await fijarConfiguracion({ precio_papeleta_sitio: '-5' });
       const otro = await e.hermano();
       await assert.rejects(
-        PapeletasService.inscribirYFacturar({ hermanoId: otro.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta),
+        e.apuntarYCobrar(otro.id),
         (err: unknown) => err instanceof HttpError && err.status === 409 && /no es un importe válido/.test(err.message)
       );
       assert.equal(await db.recibo.count({ where: { hermanoId: otro.id } }), 0, 'un precio ilegible no cobra nada');
@@ -394,9 +405,9 @@ test('D6: la papeleta de mesa y la de tesorería llevan la misma fecha, hora y p
       await fijarConfiguracion({ procesion_hora: '20:15h' });
       papeletasEnviadas.mock.resetCalls();
 
-      // Camino 1: inscripción en mesa.
+      // Camino 1: la mesa, al dar la ropa.
       const enMesa = await e.hermano();
-      await PapeletasService.inscribirYFacturar({ hermanoId: enMesa.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
+      await e.apuntarYCobrar(enMesa.id);
 
       // Camino 2: cobro en tesorería de una papeleta que estaba pendiente.
       const enTesoreria = await e.hermano();
@@ -489,18 +500,21 @@ test('D16: dos avisos a la vez para dos días no dejan al hermano con dos citas;
     await conConfiguracion({ papeletas_abiertas: 'true' }, async () => {
       await fijarConfiguracion({ papeletas_abiertas: 'true' });
       const resultados = await Promise.allSettled([
-        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id }),
-        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id }),
+        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id, puesto: 'Cirio' }),
+        MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id, puesto: 'Cirio' }),
       ]);
       assert.equal(resultados.filter((r) => r.status === 'fulfilled').length, 1, 'solo una reserva puede ganar');
       const reservadas = await db.cita.findMany({ where: { hermanoId: hermano.id, estado: EstadoCita.RESERVADA } });
       assert.equal(reservadas.length, 1);
+      assert.equal(await db.solicitud.count({ where: { hermanoId: hermano.id, estado: 'PENDIENTE' } }), 1, 'y una sola solicitud');
+      assert.equal(await db.papeletaSitio.count({ where: { hermanoId: hermano.id } }), 0, 'la papeleta nace al recoger');
 
       // La cita es única por [hermano, turno]: cancelar y volver a pedir el mismo día chocaba con la clave.
       await MiProcesionService.cancelarAsistencia(e.usuario.id, reservadas[0].id);
-      const otraVez = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: reservadas[0].turnoId, hermanoId: hermano.id });
+      assert.equal(await db.solicitud.count({ where: { hermanoId: hermano.id, estado: 'PENDIENTE' } }), 0, 'cancelar cancela la solicitud');
+      const otraVez = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: reservadas[0].turnoId, hermanoId: hermano.id, puesto: 'Cirio' });
       assert.equal(otraVez.id, reservadas[0].id);
-      assert.equal(otraVez.estado, EstadoCita.RESERVADA);
+      assert.equal((await db.cita.findUniqueOrThrow({ where: { id: otraVez.id } })).estado, EstadoCita.RESERVADA);
     });
   } finally {
     await e.recoger();
@@ -646,9 +660,7 @@ test('D2: un recibo «papeleta sitio AAAA» en minúsculas no impide inscribir: 
       { hermanoId: hermano.id, year: YEAR, concepto: `papeleta sitio ${YEAR}`, importe: 5, tipo: 'OTRO' }, e.meta
     );
 
-    const { recibo } = await PapeletasService.inscribirYFacturar(
-      { hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta
-    );
+    const { recibo } = await e.apuntarYCobrar(hermano.id);
     assert.equal(recibo.concepto, `Papeleta Sitio ${YEAR} (reemisión 2)`);
   } finally {
     await e.recoger();
@@ -807,7 +819,7 @@ test('cada tipo de recibo se apunta al cobrarse en su propia categoría', async 
       assert.equal(await categoriaDe(ingreso), categoria, tipo);
     }
 
-    const { recibo } = await PapeletasService.inscribirYFacturar({ hermanoId: hermano.id, metodoPago: MetodoPago.EFECTIVO, puesto: 'Cirio' }, e.meta);
+    const { recibo } = await e.apuntarYCobrar(hermano.id);
     const [ingreso] = await apuntes(recibo.id);
     assert.equal(await categoriaDe(ingreso), 'Papeletas de sitio');
   } finally {

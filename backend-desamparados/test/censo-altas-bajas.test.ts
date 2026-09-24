@@ -19,7 +19,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { esCuentaAnonimizada } from '../src/domain/cuenta-anonimizada.js';
 import { diferenciasFicha, valorParaAuditoria } from '../src/domain/cambios-ficha.js';
-import { normalizarValorConfiguracion } from '../src/domain/configuracion.js';
+import { esClaveConfiguracion, normalizarValorConfiguracion } from '../src/domain/configuracion.js';
 import { diaDeHoy } from '../src/domain/fechas-hermano.js';
 import { diaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
@@ -75,9 +75,9 @@ after(async () => {
   await db.hermano.deleteMany({ where: { id: { in: creados.hermanos } } });
   for (const id of creados.usuarios) await borrarUsuarioPrueba(id);
   if (precioOriginal === null) {
-    await db.configuracion.deleteMany({ where: { key: 'precio_alquiler_tunica' } });
+    await db.configuracion.deleteMany({ where: { key: 'precio_papeleta_sitio' } });
   } else if (precioOriginal) {
-    await db.configuracion.update({ where: { key: 'precio_alquiler_tunica' }, data: { value: precioOriginal.value } });
+    await db.configuracion.update({ where: { key: 'precio_papeleta_sitio' }, data: { value: precioOriginal.value } });
   }
   await db.$disconnect();
 });
@@ -641,8 +641,10 @@ describe('la ficha del censo trae la cuenta entera', () => {
 describe('configuración y consultas de administración (P4 y S10)', () => {
   test('cada clave valida su valor', () => {
     assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', '12,5'), { ok: true, valor: '12.5' });
-    assert.deepEqual(normalizarValorConfiguracion('precio_alquiler_tunica', ' 030,50 '), { ok: true, valor: '30.50' });
-    assert.deepEqual(normalizarValorConfiguracion('precio_alquiler_tunica', '0'), { ok: true, valor: '0' });
+    assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', ' 030,50 '), { ok: true, valor: '30.50' });
+    assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', '0'), { ok: true, valor: '0' });
+    // El alquiler de túnica ya no existe: no es un ajuste.
+    assert.equal(esClaveConfiguracion('precio_alquiler_tunica'), false);
     // El mismo formato que lee procesion.service.ts: hasta ocho cifras enteras.
     assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', '12345678,99'), { ok: true, valor: '12345678.99' });
     for (const malo of ['12,555', '-1', '30€', 'treinta', '', '1e3', '12.', '123456789']) {
@@ -667,12 +669,12 @@ describe('configuración y consultas de administración (P4 y S10)', () => {
 
   test('un precio con coma se guarda con punto', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const actual = await db.configuracion.findUnique({ where: { key: 'precio_alquiler_tunica' } });
+    const actual = await db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } });
     precioOriginal = actual ? { value: actual.value, descripcion: actual.descripcion } : null;
 
-    const res = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key: 'precio_alquiler_tunica', value: '15,50' } });
+    const res = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key: 'precio_papeleta_sitio', value: '15,50' } });
     assert.equal(res.status, 200);
-    const guardado = await db.configuracion.findUnique({ where: { key: 'precio_alquiler_tunica' } });
+    const guardado = await db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } });
     assert.equal(guardado!.value, '15.50');
   });
 

@@ -13,7 +13,8 @@ import {
 } from '../src/schemas/recibo.schema.js';
 import {
   avisarAsistenciaSchema,
-  inscribirManualSchema,
+  mesaCobrarSchema,
+  mesaInscribirSchema,
   misPapeletasQuerySchema,
   procesarAusenciasSchema,
 } from '../src/schemas/procesion.schema.js';
@@ -87,21 +88,45 @@ describe('D3 · emitir un recibo suelto', () => {
   });
 });
 
-describe('D4 · inscripción en mesa', () => {
-  const inscripcion = { hermanoId: 3, metodoPago: 'EFECTIVO', puesto: 'Cirio' };
+describe('D4 · la mesa por zonas', () => {
+  const inscripcion = { hermanoId: 3, salida: 'PASION', puesto: 'Cirio' };
 
-  test('ya no exige un importe', () => {
-    assert.ok(valido(validar(inscribirManualSchema, { body: inscripcion })));
-  });
-
-  test('y si alguien lo manda, se descarta: el importe lo pone el servidor', () => {
-    const r = validar(inscribirManualSchema, { body: { ...inscripcion, importe: 0.01 } }) as { body: Record<string, unknown> };
+  test('inscribir no lleva importe: si alguien lo manda, se descarta y lo pone el servidor', () => {
+    assert.ok(valido(validar(mesaInscribirSchema, { body: inscripcion })));
+    const r = validar(mesaInscribirSchema, { body: { ...inscripcion, importe: 0.01 } }) as { body: Record<string, unknown> };
     assert.equal(r.body.importe, undefined);
   });
 
+  test('el donativo del Rosario, entre 0 y 1000 € y con dos decimales como mucho', () => {
+    assert.ok(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'ROSARIO', donativo: 0 } })));
+    assert.ok(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'ROSARIO', donativo: 12.5 } })));
+    for (const malo of [-1, 5000, 1.234]) {
+      assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'ROSARIO', donativo: malo } })), false, String(malo));
+    }
+  });
+
+  test('una salida que no existe, un puesto vacío o una clave que no lo es, son un 400', () => {
+    assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'CORPUS' } })), false);
+    assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, puesto: '  ' } })), false);
+    assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, clave: 'a b' } })), false);
+    assert.ok(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, clave: '0b8a2b9c-5d1e-4c7f-9a3b-2e6d8f1a4c7b' } })));
+  });
+
+  test('cobrar: recibos y lo de la salida de una solicitud, sin domiciliar en la mesa', () => {
+    assert.ok(valido(validar(mesaCobrarSchema, { body: { hermanoId: 3, reciboIds: [], solicitudes: [{ solicitudId: 8, importe: 5 }], metodoPago: 'EFECTIVO' } })));
+    assert.equal(valido(validar(mesaCobrarSchema, { body: { hermanoId: 3, reciboIds: [], solicitudes: [{ solicitudId: 8, importe: -5 }], metodoPago: 'EFECTIVO' } })), false);
+    assert.equal(valido(validar(mesaCobrarSchema, { body: { hermanoId: 3, reciboIds: [4], metodoPago: 'DOMICILIACION' } })), false);
+    assert.ok(valido(validar(mesaCobrarSchema, { body: { hermanoId: 3, reciboIds: [4], metodoPago: 'BIZUM' } })));
+  });
+
   test('los identificadores son enteros', () => {
-    assert.equal(valido(validar(avisarAsistenciaSchema, { body: { turnoId: 1.5, hermanoId: 2 } })), false);
-    assert.equal(valido(validar(inscribirManualSchema, { body: { ...inscripcion, citaId: 2.5 } })), false);
+    assert.equal(valido(validar(avisarAsistenciaSchema, { body: { turnoId: 1.5, hermanoId: 2, puesto: 'Cirio' } })), false);
+    assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, hermanoId: 2.5 } })), false);
+  });
+
+  test('la solicitud del área de hermanos pide el puesto que le gustaría', () => {
+    assert.equal(valido(validar(avisarAsistenciaSchema, { body: { turnoId: 1, hermanoId: 2 } })), false);
+    assert.ok(valido(validar(avisarAsistenciaSchema, { body: { turnoId: 1, hermanoId: 2, puesto: 'Cirio' } })));
   });
 });
 

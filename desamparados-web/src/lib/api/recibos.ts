@@ -13,6 +13,8 @@ export interface ApiReceipt {
   fechaEmision: string
   fechaPago: string | null
   estado: ReceiptStatus
+  /** La cuota se perdonó (lo decide el Hermano Mayor): se enseña así en vez de «Exento». */
+  perdonada?: boolean
 }
 
 /** Un recibo de la familia con el miembro al que pertenece. */

@@ -17,34 +17,22 @@ const alturaHombro = type("string <= 8").describe("una altura de hombro");
 const dia = type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha válida (AAAA-MM-DD)");
 const nombrePropio = type("string <= 80").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("un texto de 80 caracteres como mucho, sin «<» ni «>»");
 const apellidoOpcional = type("string <= 80").matching(/^[^<>]*$/).describe("un apellido sin «<» ni «>»");
+const salida = type("'PASION' | 'ROSARIO'");
+const puesto = type("string <= 80").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("un puesto de 80 caracteres como mucho, sin «<» ni «>»");
+// Euros, con dos decimales como mucho y con tope: la voluntad es libre, pero un 5000 es un error de tecleo.
+const donativo = type("number >= 0").narrow((n) => n <= 1000 && Math.round(n * 100) === n * 100).describe("un importe entre 0 y 1000 €, con dos decimales como mucho");
+// La clave que genera el ordenador de la mesa al abrir cada operación: la misma en cada reintento.
+const claveOperacion = type("string").matching(/^[A-Za-z0-9-]{8,64}$/).describe("una clave de operación");
+const observacionesMesa = type("string <= 500").matching(/^[^<>]*$/);
 
-// 1. Esquema para el Hermano (Pedir Cita)
+// 1. La solicitud de la papeleta desde el área de hermanos: el día (que dice
+// la salida), quién va, el puesto que le gustaría y, en el Rosario, la voluntad.
 export const avisarAsistenciaSchema = type({
     body: {
         turnoId: idCuerpo,
-        hermanoId: idCuerpo
-    }
-});
-
-// 2. Esquema para Secretaría/Tesorería (Crear Papeleta y Cobrar)
-// Sin `importe`: lo calcula siempre el servidor con los precios de la
-// configuración. Pedirlo aquí solo servía para que la mesa creyera que
-// mandaba algo que luego se ignoraba.
-export const inscribirManualSchema = type({
-    body: {
         hermanoId: idCuerpo,
-        metodoPago: metodoPagoSchema,
-        puesto: textoRequerido,
-
-        "tramo?": "string",
-        "numTunicaAsignada?": numeroPrenda,
-        "numCapiroteAsignado?": numeroPrenda,
-        "numFaraonaAsignada?": numeroPrenda,
-        "origenTunica?": "'ROPERO' | 'PROPIA' | 'NINGUNA'",
-        "crearPrendas?": tipoRopa.array(),
-        "alturaHombro?": alturaHombro,
-        "observaciones?": "string",
-        "citaId?": idCuerpo
+        puesto: puesto,
+        "donativo?": donativo,
     }
 });
 
@@ -63,8 +51,14 @@ export const crearTurnoSchema = type({
         fecha: fechaTexto, // Fecha ISO
         horaInicio: fechaTexto,
         horaFin: fechaTexto,
-        capacidadEstimada: "number.integer > 0"
+        capacidadEstimada: "number.integer > 0",
+        "salida?": salida
     }
+});
+
+// La salida de la que se habla, en la consulta: sin ella, la Pasión.
+export const salidaQuerySchema = type({
+    query: { "salida?": salida }
 });
 
 // 5. Procesar ausencias. El cuerpo es opcional (sin él, la fecha es «ahora»):
@@ -93,7 +87,16 @@ export const plazoPapeletasSchema = type({
     body: {
         abierto: "boolean",
         "avisar?": "boolean",
-        "borradorNoticia?": "boolean"
+        "borradorNoticia?": "boolean",
+        "salida?": salida
+    }
+});
+
+// La fecha del Rosario vespertino (instante completo, en octubre) y su lugar.
+export const fechaRosarioSchema = type({
+    body: {
+        inicio: fechaTexto,
+        "lugar?": type("string <= 160").matching(/^[^<>]*$/).or("null")
     }
 });
 
@@ -102,7 +105,15 @@ export const plazoPapeletasSchema = type({
 // ==========================================
 
 export const mesaBuscarSchema = type({
-    query: { q: type("string <= 100") }
+    query: {
+        q: type("string <= 100"),
+        "zona?": "'inscripcion' | 'tesoreria' | 'tunicas' | 'todas'",
+        "salida?": salida,
+    }
+});
+
+export const mesaEsperadosSchema = type({
+    query: { "salida?": salida }
 });
 
 export const mesaPrendasSchema = type({
@@ -111,6 +122,7 @@ export const mesaPrendasSchema = type({
 
 export const mesaListadoSchema = type({
     query: {
+        "salida?": salida,
         "year?": type("string").matching(/^\d{4}$/),
         "q?": type("string <= 100"),
         "puesto?": type("string <= 80"),
@@ -164,6 +176,84 @@ export const mesaEditarPapeletaSchema = type({
         "numTunicaAsignada?": numeroPrenda.or("null"),
         "numCapiroteAsignado?": numeroPrenda.or("null"),
         "numFaraonaAsignada?": numeroPrenda.or("null"),
+        "origenTunica?": "'ROPERO' | 'PROPIA' | 'NINGUNA'",
         "crearPrendas?": tipoRopa.array(),
+    }
+});
+
+// Una solicitud aún sin recoger: el puesto que pide, las observaciones y,
+// en el Rosario, la voluntad si aún no la ha pagado.
+export const mesaEditarSolicitudSchema = type({
+    body: {
+        "puesto?": puesto,
+        "observaciones?": observacionesMesa.or("null"),
+        "donativo?": donativo,
+    }
+});
+
+// ==========================================
+//  LA MESA POR ZONAS
+// ==========================================
+
+export const mesaInscribirSchema = type({
+    body: {
+        hermanoId: idCuerpo,
+        salida: salida,
+        puesto: puesto,
+        "observaciones?": observacionesMesa,
+        "donativo?": donativo,
+        "alturaHombro?": alturaHombro,
+        "clave?": claveOperacion,
+    }
+});
+
+export const mesaCobrarSchema = type({
+    body: {
+        hermanoId: idCuerpo,
+        reciboIds: idCuerpo.array().atMostLength(30),
+        "solicitudes?": type({ solicitudId: idCuerpo, "importe?": donativo }).array().atMostLength(30),
+        metodoPago: metodoPagoSchema,
+        "clave?": claveOperacion,
+    }
+});
+
+export const mesaPerdonarSchema = type({
+    body: {
+        reciboIds: idCuerpo.array().atLeastLength(1).atMostLength(30),
+        "motivo?": type("string <= 300").matching(/^[^<>]*$/),
+        "clave?": claveOperacion,
+    }
+});
+
+export const mesaEntregarSchema = type({
+    body: {
+        solicitudId: idCuerpo,
+        "puesto?": puesto,
+        "origenTunica?": "'ROPERO' | 'PROPIA' | 'NINGUNA'",
+        "numTunicaAsignada?": numeroPrenda,
+        "numCapiroteAsignado?": numeroPrenda,
+        "numFaraonaAsignada?": numeroPrenda,
+        "crearPrendas?": tipoRopa.array(),
+        "alturaHombro?": alturaHombro,
+        "observaciones?": observacionesMesa,
+        "clave?": claveOperacion,
+    }
+});
+
+export const mesaFichaSchema = type({
+    params: { id: type("string").matching(/^[1-9]\d{0,9}$/) },
+    query: { "salida?": salida }
+});
+
+export const mesaPreparacionSchema = type({
+    query: { "turnoId?": type("string").matching(/^[1-9]\d{0,9}$/) }
+});
+
+// El hermano paga en línea recibos de su familia (hoy, pasarela simulada).
+export const pagarEnLineaSchema = type({
+    body: {
+        "reciboIds?": idCuerpo.array().atMostLength(30),
+        "solicitudIds?": idCuerpo.array().atMostLength(30),
+        "clave?": claveOperacion,
     }
 });
