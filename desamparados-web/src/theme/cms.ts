@@ -232,13 +232,18 @@ const ACCIONES: Record<ModoCms, Record<string, string>> = {
   },
 }
 
+const ERROR_OSCURO = { main: '#f08a84', dark: '#d9655e', light: '#f7b1ac', contrastText: '#1d1b1e' }
+
 /** La paleta de un modo: la de la web pública (marca, error) con las superficies y los textos del CMS. */
 function paletaCms(modo: ModoCms) {
   const s = SUPERFICIES[modo]
   return {
     primary: themeOptions.palette?.primary,
     secondary: themeOptions.palette?.secondary,
-    error: themeOptions.palette?.error,
+    // El rojo de la marca (#ba1a1a) sobre la tarjeta oscura se queda en 3:1 y
+    // la letra pequeña de los avisos de un campo no se lee: en oscuro, el rojo
+    // claro de la tarjeta del alta.
+    error: modo === 'claro' ? themeOptions.palette?.error : ERROR_OSCURO,
     background: { default: s.canvas, paper: s.card },
     text: {
       primary: s.texto,
