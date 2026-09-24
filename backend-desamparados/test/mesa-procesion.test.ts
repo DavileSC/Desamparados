@@ -81,6 +81,12 @@ describe('la ropa que se propone', () => {
     assert.equal(propuestaDeRopa({ ...sinNada, puestoDeLaFicha: 'Trono' }).puesto, 'Trono');
   });
 
+  test('el cíngulo va con la túnica: del ropero se presta, con la propia lleva el suyo, sin túnica ninguno', () => {
+    assert.equal(propuestaDeRopa(sinNada).cingulo, 'PRESTADO');
+    assert.equal(propuestaDeRopa({ ...sinNada, tieneTunicaPropia: true }).cingulo, 'PROPIO');
+    assert.equal(propuestaDeRopa({ ...sinNada, anterior: { ...anterior, numTunicaAsignada: null, origenTunica: 'NINGUNA' } }).cingulo, 'NINGUNO');
+  });
+
   test('la faraona de guardería se propone aparte del capirote', () => {
     const p = propuestaDeRopa({ ...sinNada, prestadas: [{ tipo: 'FARAONA', numero: '21M' }] });
     assert.equal(p.faraona, '21M');

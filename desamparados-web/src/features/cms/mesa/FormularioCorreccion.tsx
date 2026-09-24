@@ -3,8 +3,9 @@ import { Alert, Box, Button, Stack, TextField, ToggleButton, ToggleButtonGroup, 
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import {
   anularPapeleta, cancelarSolicitud, corregirFicha, corregirPapeleta, corregirSolicitud,
-  type FichaDeMesa, type OrigenTunica, type TipoRopa,
+  type CinguloEnMesa, type FichaDeMesa, type OrigenTunica, type TipoRopa,
 } from '../../../lib/api/mesa'
+import CampoCingulo from './CampoCingulo'
 import CampoPrenda from './CampoPrenda'
 import DatosPersona from './DatosPersona'
 import { leyenda, useDatosPersona } from './datosDeLaFicha'
@@ -124,8 +125,8 @@ function CorreccionSolicitud({ ficha, role, puestosUsados, onHecho, onRecargar }
 
 /**
  * Una papeleta ya recogida: sus datos, su puesto y su ropa (la que se cambia
- * vuelve al ropero). También anularla: si se cobró, el recibo queda devuelto
- * con su apunte.
+ * vuelve al ropero), con el cíngulo: si se le debía, se le da aquí cuando lo
+ * haya. También anularla: si se cobró, el recibo queda devuelto con su apunte.
  */
 function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }: Props) {
   const papeleta = ficha.papeleta!
@@ -137,6 +138,12 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
   const [tocado, setTocado] = useState<Tocado>(papeleta.numFaraonaAsignada ? 'FARAONA' : papeleta.numCapiroteAsignado ? 'CAPIROTE' : 'NINGUNO')
   const [capirote, setCapirote] = useState(papeleta.numCapiroteAsignado ?? '')
   const [faraona, setFaraona] = useState(papeleta.numFaraonaAsignada ?? '')
+  // El devuelto ya no se toca aquí; el de antes de contar cíngulos (sin dato), tampoco si no se elige.
+  const cinguloEditable = conRopa && papeleta.cingulo !== 'DEVUELTO'
+  const cinguloAntes: CinguloEnMesa | null = papeleta.cingulo === 'DEVUELTO' ? null : papeleta.cingulo
+  const [cingulo, setCingulo] = useState<CinguloEnMesa>(cinguloAntes ?? (papeleta.origenTunica === 'ROPERO' ? 'PRESTADO' : papeleta.origenTunica === 'PROPIA' ? 'PROPIO' : 'NINGUNO'))
+  // Prestarlo no gasta uno del ropero si ya lo tiene con esta papeleta o trae otro sin devolver.
+  const cinguloSinGastar = papeleta.cingulo === 'PRESTADO' || ficha.cingulosSinDevolver.some((c) => c.papeletaId !== papeleta.id)
   const [altura, setAltura] = useState(alturaEnMetros(ficha.alturaHombro))
   const [observaciones, setObservaciones] = useState(papeleta.observaciones ?? '')
   const [crear, setCrear] = useState<Record<TipoRopa, boolean>>({ TUNICA: false, CAPIROTE: false, FARAONA: false })
@@ -170,11 +177,25 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
           numCapiroteAsignado: tocado === 'CAPIROTE' ? capirote.trim() || null : null,
           numFaraonaAsignada: tocado === 'FARAONA' ? faraona.trim() || null : null,
           crearPrendas: (Object.keys(crear) as TipoRopa[]).filter((t) => crear[t]),
+          ...(cinguloEditable && cingulo !== cinguloAntes && { cingulo }),
         }),
       })
       onHecho({ tono: 'success', texto: `Papeleta de ${datos.nombre.trim()} corregida.` })
     } catch (e) {
       setError(mensajeDeFallo(e, 'No se ha podido guardar.'))
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  // Se le debía y ya hay: se le da sin tocar nada más.
+  const darCingulo = async () => {
+    setEnviando(true); setError(null)
+    try {
+      await corregirPapeleta(papeleta.id, { cingulo: 'PRESTADO' })
+      onHecho({ tono: 'success', texto: `${datos.nombre.trim()} ya tiene su cíngulo.` })
+    } catch (e) {
+      setError(mensajeDeFallo(e, 'No se ha podido dar el cíngulo.'))
     } finally {
       setEnviando(false)
     }
@@ -200,6 +221,15 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
         Recogida · {recibo.importe === 0 ? 'sin cobro' : `${euros(recibo.importe)} ${recibo.estado === 'PAGADO' ? `pagado${recibo.metodoPago ? ` en ${NOMBRE_METODO[recibo.metodoPago].toLowerCase()}` : ''}` : recibo.estado.toLowerCase()}`}
         {papeleta.puestoPedido && papeleta.puestoPedido !== papeleta.puesto ? ` · pidió ${papeleta.puestoPedido}` : ''}
       </Alert>
+
+      {conRopa && papeleta.cingulo === 'DEBIDO' && (
+        <Alert
+          severity="warning"
+          action={<Button color="inherit" size="small" onClick={() => void darCingulo()} disabled={enviando || ficha.cingulos.enElRopero <= 0}>Dárselo ahora</Button>}
+        >
+          Se le debe el cíngulo: no quedaban al recoger.{ficha.cingulos.enElRopero <= 0 ? ' Sigue sin haber en el ropero.' : ''}
+        </Alert>
+      )}
 
       <DatosPersona datos={datos} onCambiar={setDatos} />
 
@@ -231,6 +261,9 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
             {tocado === 'FARAONA' && (
               <CampoPrenda tipo="FARAONA" etiqueta="N.º de faraona" valor={faraona} onCambiar={setFaraona} hermanoId={ficha.id} crear={crear.FARAONA} onCrear={(c) => setCrear({ ...crear, FARAONA: c })} onBloqueo={bloqueoFaraona} />
             )}
+            {cinguloEditable
+              ? <CampoCingulo valor={cingulo} onCambiar={setCingulo} quedan={ficha.cingulos.enElRopero} sinGastar={cinguloSinGastar} />
+              : <Typography variant="body2" color="text.secondary">Cíngulo: devuelto.</Typography>}
           </>
         )}
         <TextField size="small" label="Observaciones" value={observaciones} onChange={(e) => setObservaciones(e.target.value)} multiline minRows={1} maxRows={4} />

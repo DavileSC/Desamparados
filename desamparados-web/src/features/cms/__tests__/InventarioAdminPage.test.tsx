@@ -86,7 +86,7 @@ describe('InventarioAdminPage', () => {
     await user.click(screen.getByRole('button', { name: /nueva prenda/i }))
     await user.click(within(screen.getByRole('dialog', { name: /nueva prenda/i })).getByLabelText('Estado'))
     const opciones = (await screen.findAllByRole('option')).map((o) => o.textContent)
-    expect(opciones).toEqual(['Disponible', 'En taller', 'De baja'])
+    expect(opciones).toEqual(['Disponible', 'En lavado', 'Para arreglar', 'De baja'])
   })
 
   it('las cantidades de un enser tienen que ser enteras para poder guardarlo', async () => {
@@ -134,11 +134,12 @@ describe('InventarioAdminPage', () => {
     expect(await screen.findByText('Prenda TUN-002 prestada a Ana Ruiz Martín.')).toBeInTheDocument()
   })
 
-  it('«Devolver» pregunta con tres salidas y «Cancelar» no devuelve nada', async () => {
+  it('«Devolver» pregunta con tres salidas y «Cancelar» no devuelve nada; la túnica va siempre al lavado', async () => {
     const user = userEvent.setup()
     const prestada = { ...prenda, estado: 'PRESTADA', hermano: { nombre: 'Ana', apellidos: 'Ruiz', numeroHermano: 123 } }
     const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-      if (init?.method === 'POST') return Promise.resolve(respuestaJson({ message: 'Prenda devuelta con éxito' }))
+      if (init?.method === 'POST') return Promise.resolve(respuestaJson({ message: 'Prenda devuelta con éxito', data: { ...prenda, estado: 'TALLER' } }))
+      if (String(url).includes('/cingulos')) return Promise.resolve(respuestaJson({ total: 0, prestados: 0, enElRopero: 0, debidos: 0 }))
       return Promise.resolve(respuestaJson({ data: [String(url).includes('/enseres') ? enser : prestada], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } }))
     })
     vi.stubGlobal('fetch', simulado)
@@ -154,9 +155,42 @@ describe('InventarioAdminPage', () => {
     expect(devoluciones()).toHaveLength(0)
 
     await user.click(screen.getByRole('button', { name: 'Devolver TUN-002' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /con lavado/i }))
+    const otra = screen.getByRole('dialog')
+    expect(within(otra).getByText(/las túnicas se lavan todas/i)).toBeInTheDocument()
+    expect(within(otra).getByRole('button', { name: 'Vuelve bien: al lavado' })).toBeInTheDocument()
+    await user.click(within(otra).getByRole('button', { name: 'Está rota: al taller' }))
     await waitFor(() => expect(devoluciones()).toHaveLength(1))
-    expect(JSON.parse(String(devoluciones()[0][1]!.body))).toEqual({ necesitaLavado: true })
+    expect(JSON.parse(String(devoluciones()[0][1]!.body))).toEqual({ rota: true })
+    expect(await screen.findByText('Prenda TUN-002 devuelta: al taller, para arreglarla.')).toBeInTheDocument()
+  })
+
+  it('los cíngulos se cuentan: se cambia el total y avisa si no llegan para los que se deben', async () => {
+    const user = userEvent.setup()
+    const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (String(url).includes('/cingulos') && init?.method === 'PUT') return Promise.resolve(respuestaJson({ total: 40, prestados: 30, enElRopero: 10, debidos: 3 }))
+      if (String(url).includes('/cingulos')) return Promise.resolve(respuestaJson({ total: 31, prestados: 30, enElRopero: 1, debidos: 3 }))
+      if (String(url).includes('/prendas/lavadas')) return Promise.resolve(respuestaJson({ ids: [9, 10], lavadas: 2 }))
+      return Promise.resolve(respuestaJson({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }))
+    })
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<InventarioAdminPage />, { ruta: '/cms/inventario?vista=ropero' })
+
+    const tarjeta = await screen.findByRole('region', { name: 'Cíngulos' })
+    expect(await within(tarjeta).findByText(/hay que pedir o hacer 2 más/)).toBeInTheDocument()
+    await user.click(within(tarjeta).getByRole('button', { name: 'Cambiar el total' }))
+    const total = within(tarjeta).getByRole('textbox', { name: 'Cíngulos del Grupo' })
+    await user.clear(total)
+    await user.type(total, '20')
+    expect(within(tarjeta).getByText('No puede ser menos que los 30 prestados')).toBeInTheDocument()
+    await user.clear(total)
+    await user.type(total, '40')
+    await user.click(within(tarjeta).getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(simulado.mock.calls.some(([u, i]) => String(u).includes('/cingulos') && i?.method === 'PUT' && i.body === JSON.stringify({ total: 40 }))).toBe(true))
+    expect(await screen.findByText('Cíngulos del Grupo: 40.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Todo el lavado, limpio' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sí, todo limpio' }))
+    expect(await screen.findByText('2 prendas lavadas quedan disponibles.')).toBeInTheDocument()
   })
 
   it('cada listado filtra por su cuenta, y la pestaña sigue en la URL', async () => {

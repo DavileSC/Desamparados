@@ -8,7 +8,7 @@
  * nacimiento, teléfono, puesto, altura de hombro, túnica y capirote o faraona.
  */
 import { randomBytes } from 'node:crypto';
-import { EstadoCita, EstadoPrenda, EstadoSolicitud, Parentesco, Prisma, Role, Sexo, TipoPrenda, type Salida } from '@prisma/client';
+import { Cingulo, EstadoCita, EstadoPrenda, EstadoSolicitud, Parentesco, Prisma, Role, Sexo, TipoPrenda, type Salida } from '@prisma/client';
 import db from '../../config/db.js';
 import { encrypt } from '../../utils/bcrypt.handle.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
@@ -23,13 +23,18 @@ import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../a
 import { PapeletasService } from './papeletas.service.js';
 import { prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
 import { anioDeLaMesa, cuotasQueCuentan, pendienteDe } from './zonas.service.js';
+import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { avisarALaMesa } from './avisos-mesa.js';
 import { DATOS_SALIDA, requisitosParaRecoger } from '../../domain/salidas.js';
 
 const anioDeLaProcesion = anioDeLaMesa;
 
-/** Qué busca cada zona: Inscripción, a quien aún no está apuntado; Túnicas, a quien está apuntado y no ha recogido. */
-export type ZonaDeBusqueda = 'inscripcion' | 'tesoreria' | 'tunicas' | 'todas';
+/**
+ * Qué busca cada zona: Inscripción, a quien aún no está apuntado; Túnicas, a
+ * quien está apuntado y no ha recogido; Devolución, a quien tiene algo del
+ * ropero sin devolver.
+ */
+export type ZonaDeBusqueda = 'inscripcion' | 'tesoreria' | 'tunicas' | 'devolucion' | 'todas';
 
 /** Cuántas personas devuelve el buscador: la mesa afina escribiendo más. */
 const RESULTADOS = 12;
@@ -80,6 +85,8 @@ export interface EdicionPapeletaDto {
   /** Solo en una papeleta ya recogida: pasar a túnica propia devuelve la del ropero. */
   origenTunica?: 'ROPERO' | 'PROPIA' | 'NINGUNA';
   crearPrendas?: TipoRopa[];
+  /** Dárselo cuando se le debía, o corregir lo que se marcó. */
+  cingulo?: CinguloEnMesa;
 }
 
 /** Un día AAAA-MM-DD como fecha del censo (mediodía UTC: no cambia de día en ningún huso). */
@@ -105,7 +112,8 @@ export class MesaService {
     const porZona: Prisma.HermanoWhereInput =
       zona === 'inscripcion' ? { papeletas: { none: { year, salida } }, solicitudes: { none: { year, salida, estado: EstadoSolicitud.PENDIENTE } } }
         : zona === 'tunicas' ? { solicitudes: { some: { year, salida, estado: EstadoSolicitud.PENDIENTE } } }
-          : {};
+          : zona === 'devolucion' ? { OR: [{ prendas: { some: { estado: EstadoPrenda.PRESTADA } } }, { papeletas: { some: { cingulo: Cingulo.PRESTADO } } }] }
+            : {};
 
     const personas = await db.hermano.findMany({
       where: { AND: [numero !== null ? { OR: [busqueda, { numeroHermano: numero }] } : busqueda, porZona] },
@@ -154,14 +162,18 @@ export class MesaService {
         fechaNacimiento: true, sexo: true, telefono: true, email: true, dni: true, numeroHermano: true,
         activo: true, fechaBaja: true, userId: true, esTitular: true,
         tieneTunicaPropia: true, alturaHombro: true, puesto: true,
-        prendas: { where: { estado: EstadoPrenda.PRESTADA }, select: { tipo: true, numero: true, talla: true } },
+        prendas: {
+          where: { estado: EstadoPrenda.PRESTADA },
+          orderBy: [{ tipo: 'asc' }, { numero: 'asc' }],
+          select: { id: true, tipo: true, numero: true, talla: true, fechaAsignacion: true },
+        },
         papeletas: {
           where: { salida },
           orderBy: { year: 'desc' },
           take: 2,
           select: {
             id: true, year: true, puesto: true, tramo: true, observaciones: true,
-            numTunicaAsignada: true, numCapiroteAsignado: true, numFaraonaAsignada: true, origenTunica: true,
+            numTunicaAsignada: true, numCapiroteAsignado: true, numFaraonaAsignada: true, origenTunica: true, cingulo: true,
             recibo: { select: { id: true, concepto: true, importe: true, estado: true, metodoPago: true, tipo: true } },
             solicitud: { select: { puesto: true } },
           },
@@ -179,6 +191,11 @@ export class MesaService {
       orderBy: { id: 'desc' },
     });
     const cuotaSalida = await PapeletasService.cuotaDeSalida();
+    // Los cíngulos sin devolver, de cualquier salida y año: van con el resto de la ropa.
+    const [cingulosSinDevolver, cingulos] = await Promise.all([
+      db.papeletaSitio.findMany({ where: { hermanoId, cingulo: Cingulo.PRESTADO }, select: { id: true, year: true }, orderBy: { year: 'desc' } }),
+      recuentoDeCingulos(),
+    ]);
 
     // La familia (las fichas de la misma cuenta) suele pagar junta.
     const familia = await db.hermano.findMany({
@@ -205,7 +222,11 @@ export class MesaService {
       situacion: situacionDe({ activo, fechaBaja }),
       salida,
       year,
+      /** Lo que tiene del ropero sin devolver: las prendas numeradas y los cíngulos. */
       prendas,
+      cingulosSinDevolver: cingulosSinDevolver.map((c) => ({ papeletaId: c.id, year: c.year })),
+      /** Cuántos cíngulos quedan: sin ninguno, la mesa propone «se le debe». */
+      cingulos,
       solicitud: solicitud && {
         id: solicitud.id,
         puesto: solicitud.puesto,
@@ -229,7 +250,7 @@ export class MesaService {
         .map((f) => ({ ...f, cuotasPendientes: (cuotas.get(f.id) ?? []).filter((c) => c.estado !== 'REMESADO') }))
         .filter((f) => f.cuotasPendientes.length > 0),
       anterior: anterior && {
-        year: anterior.year, puesto: anterior.puesto, origenTunica: anterior.origenTunica,
+        year: anterior.year, puesto: anterior.puesto, origenTunica: anterior.origenTunica, cingulo: anterior.cingulo,
         numTunicaAsignada: anterior.numTunicaAsignada, numCapiroteAsignado: anterior.numCapiroteAsignado, numFaraonaAsignada: anterior.numFaraonaAsignada,
       },
       // Lo que pidió manda sobre lo del año pasado.
@@ -435,7 +456,13 @@ export class MesaService {
       numFaraonaAsignada: numero(dto.numFaraonaAsignada, antes.numFaraonaAsignada),
     };
 
+    const cingulo = conRopa && dto.cingulo !== undefined ? dto.cingulo : antes.cingulo;
+
     const despues = await db.$transaction(async (tx) => {
+      // Dárselo ahora (se le debía) o corregirlo: si pasa a prestado, tiene que quedar alguno.
+      if (cingulo === Cingulo.PRESTADO && antes.cingulo !== Cingulo.PRESTADO) {
+        await prestarCinguloEnTransaccion(tx, antes.hermanoId, papeletaId);
+      }
       // Solo se toca en el ropero la ropa que cambia.
       const cambia = (campo: keyof typeof ropa) => ropa[campo] !== antes[campo];
       if (conRopa) {
@@ -460,6 +487,7 @@ export class MesaService {
         data: {
           ...ropa,
           origenTunica: origen,
+          cingulo,
           ...(dto.puesto?.trim() && { puesto: dto.puesto.trim() }),
           ...(dto.tramo !== undefined && { tramo: dto.tramo?.trim() || null }),
           ...(dto.observaciones !== undefined && { observaciones: dto.observaciones?.trim() || null }),
@@ -468,8 +496,8 @@ export class MesaService {
     });
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.PAPELETA_EDITAR, meta ?? {}, 'papeleta', papeletaId, {
-      antes: { puesto: antes.puesto, tramo: antes.tramo, origenTunica: antes.origenTunica, ...Object.fromEntries(Object.keys(ropa).map((k) => [k, antes[k as keyof typeof ropa]])) },
-      despues: { puesto: despues.puesto, tramo: despues.tramo, origenTunica: despues.origenTunica, ...ropa },
+      antes: { puesto: antes.puesto, tramo: antes.tramo, origenTunica: antes.origenTunica, cingulo: antes.cingulo, ...Object.fromEntries(Object.keys(ropa).map((k) => [k, antes[k as keyof typeof ropa]])) },
+      despues: { puesto: despues.puesto, tramo: despues.tramo, origenTunica: despues.origenTunica, cingulo: despues.cingulo, ...ropa },
     });
     avisarALaMesa({ que: 'corregido', hermanoId: antes.hermanoId, salida: antes.salida });
     return despues;
@@ -496,7 +524,7 @@ export class MesaService {
    * uno con su punto del camino: solicitado con algo por pagar, listo para
    * recoger, o recogido (y entonces con su papeleta y su ropa).
    */
-  static async listado(year: number, filtro: { q?: string; puesto?: string; salida?: Salida }) {
+  static async listado(year: number, filtro: { q?: string; puesto?: string; salida?: Salida; faltaCingulo?: boolean }) {
     const salida = filtro.salida ?? 'PASION';
     const busqueda = condicionBusqueda(filtro.q, ['nombre', 'apellidos', 'telefono', 'email']);
     const deLaPersona = Object.keys(busqueda).length > 0 ? { hermano: busqueda } : {};
@@ -505,16 +533,17 @@ export class MesaService {
 
     const [papeletas, solicitudes, cuotaSalida] = await Promise.all([
       db.papeletaSitio.findMany({
-        where: { year, salida, ...delPuesto, ...deLaPersona },
+        where: { year, salida, ...delPuesto, ...deLaPersona, ...(filtro.faltaCingulo && { cingulo: Cingulo.DEBIDO }) },
         select: {
           id: true, puesto: true, tramo: true, observaciones: true, createdAt: true,
-          numTunicaAsignada: true, numCapiroteAsignado: true, numFaraonaAsignada: true, origenTunica: true,
+          numTunicaAsignada: true, numCapiroteAsignado: true, numFaraonaAsignada: true, origenTunica: true, cingulo: true,
           recibo: { select: { importe: true, estado: true, metodoPago: true } },
           solicitud: { select: { puesto: true } },
           hermano,
         },
       }),
-      db.solicitud.findMany({
+      // A quien le falta el cíngulo ya recogió: las solicitudes sin recoger no cuentan.
+      filtro.faltaCingulo ? Promise.resolve([]) : db.solicitud.findMany({
         where: { year, salida, estado: EstadoSolicitud.PENDIENTE, ...delPuesto, ...deLaPersona },
         include: { recibo: true, hermano },
       }),
@@ -536,6 +565,7 @@ export class MesaService {
         numCapiroteAsignado: p.numCapiroteAsignado,
         numFaraonaAsignada: p.numFaraonaAsignada,
         origenTunica: p.origenTunica,
+        cingulo: p.cingulo,
         pagado: { importe: Number(p.recibo.importe), estado: p.recibo.estado, metodoPago: p.recibo.metodoPago },
         estado: 'recogida' as const,
         pendiente: 0,
@@ -559,6 +589,7 @@ export class MesaService {
           numCapiroteAsignado: null,
           numFaraonaAsignada: null,
           origenTunica: null,
+          cingulo: null,
           pagado: s.recibo && { importe: Number(s.recibo.importe), estado: s.recibo.estado, metodoPago: s.recibo.metodoPago },
           estado: requisitos.puedeRecoger ? 'lista' as const : 'por-pagar' as const,
           pendiente: requisitos.totalPendiente,
@@ -575,10 +606,13 @@ export class MesaService {
     ]).then((g) => g.flat())) {
       cuenta.set(f.puesto, (cuenta.get(f.puesto) ?? 0) + f._count._all);
     }
+    const faltanCingulos = await db.papeletaSitio.count({ where: { year, salida, cingulo: Cingulo.DEBIDO } });
     return {
       year,
       salida,
       apuntados: filas,
+      /** Cuántos recogieron sin cíngulo porque no quedaban. */
+      faltanCingulos,
       puestos: [...cuenta].map(([puesto, total]) => ({ puesto, total })).sort((a, b) => a.puesto.localeCompare(b.puesto, 'es')),
     };
   }

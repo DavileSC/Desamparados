@@ -2,6 +2,7 @@ import { InventarioService } from '../services/inventario.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
+import { cambiarTotalDeCingulos, recuentoDeCingulos } from '../services/procesion/cingulos.js';
 
 export class InventarioController {
 
@@ -99,12 +100,26 @@ export class InventarioController {
 
   static devolverPrenda = manejar('Error al procesar la devolución de la prenda', async (req, res) => {
     const prendaId = Number(req.params.id);
-    // Asumimos que el body trae { necesitaLavado: true/false } (opcional)
-    const necesitaLavado = req.body.necesitaLavado === true;
-
-    const result = await InventarioService.devolverPrenda(prendaId, necesitaLavado);
-    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_DEVOLVER, AuditoriaService.metaFromReq(req), 'prenda', prendaId, { necesitaLavado });
+    const rota = req.body.rota === true;
+    const result = await InventarioService.devolverPrenda(prendaId, rota);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_DEVOLVER, AuditoriaService.metaFromReq(req), 'prenda', prendaId, { rota, estado: result.estado });
     res.status(200).json({ message: 'Prenda devuelta con éxito', data: result });
+  });
+
+  static prendasLavadas = manejar('Error marcando las prendas como lavadas', async (req, res) => {
+    const resultado = await InventarioService.marcarLavadas(req.body.ids as number[] | undefined);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDAS_LAVADAS, AuditoriaService.metaFromReq(req), 'prenda', resultado.ids.join(','), { despues: resultado });
+    res.json(resultado);
+  });
+
+  static cingulos = manejar('Error contando los cíngulos', async (_req, res) => {
+    res.json(await recuentoDeCingulos());
+  });
+
+  static cambiarCingulos = manejar('Error cambiando el total de cíngulos', async (req, res) => {
+    const { antes, despues } = await cambiarTotalDeCingulos(req.body.total as number);
+    AuditoriaService.log(ACCIONES_AUDITORIA.CINGULOS_TOTAL, AuditoriaService.metaFromReq(req), 'configuracion', 'cingulos_total', { antes: { total: antes }, despues: { total: despues.total } });
+    res.json(despues);
   });
 
   // =================================================================

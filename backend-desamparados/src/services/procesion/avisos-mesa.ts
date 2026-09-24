@@ -11,7 +11,7 @@
 import { EventEmitter } from 'node:events';
 import type { Salida } from '@prisma/client';
 
-export type QueCambia = 'inscrito' | 'cobrado' | 'perdonado' | 'entregado' | 'corregido' | 'anulado' | 'alta';
+export type QueCambia = 'inscrito' | 'cobrado' | 'perdonado' | 'entregado' | 'corregido' | 'anulado' | 'alta' | 'devuelto';
 
 export interface AvisoDeMesa {
   que: QueCambia;

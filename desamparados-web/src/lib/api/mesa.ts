@@ -5,7 +5,8 @@ import type { MetodoPago } from './contabilidad'
 /**
  * La mesa de la procesión por zonas: Inscripción apunta la solicitud,
  * Tesorería cobra (o perdona las cuotas) y Túnicas da la ropa, que es cuando
- * nace la papeleta. Cada ordenador se entera de lo que hacen los otros por un
+ * nace la papeleta. Después de la salida, Devolución recibe la ropa: todo lo
+ * prestado vuelve al ropero. Cada ordenador se entera de lo que hacen los otros por un
  * canal en vivo (`URL_EVENTOS_MESA`).
  *
  * Las operaciones que mueven algo llevan una `clave` que el ordenador genera
@@ -17,7 +18,23 @@ export type Salida = 'PASION' | 'ROSARIO'
 export type Situacion = 'activo' | 'baja' | 'pendiente'
 export type OrigenTunica = 'ROPERO' | 'PROPIA' | 'NINGUNA'
 export type TipoRopa = 'TUNICA' | 'CAPIROTE' | 'FARAONA'
-export type ZonaDeBusqueda = 'inscripcion' | 'tesoreria' | 'tunicas' | 'todas'
+export type ZonaDeBusqueda = 'inscripcion' | 'tesoreria' | 'tunicas' | 'devolucion' | 'todas'
+/** Qué pasa con el cíngulo de una papeleta. Los cíngulos no van numerados: se cuentan. */
+export type Cingulo = 'PRESTADO' | 'DEBIDO' | 'PROPIO' | 'NINGUNO' | 'DEVUELTO'
+/** Lo que la mesa elige al dar la ropa (DEVUELTO lo pone la devolución). */
+export type CinguloEnMesa = Exclude<Cingulo, 'DEVUELTO'>
+
+/** Los cíngulos del ropero. */
+export interface RecuentoDeCingulos {
+  /** Los que tiene el Grupo. */
+  total: number
+  /** Prestados y sin devolver. */
+  prestados: number
+  /** Los que quedan para prestar. */
+  enElRopero: number
+  /** A quien se le deben porque no quedaban. */
+  debidos: number
+}
 export type MetodoEnMesa = Exclude<MetodoPago, 'DOMICILIACION'>
 
 export interface PersonaEncontrada {
@@ -87,7 +104,17 @@ export interface PapeletaDeLaMesa {
   numCapiroteAsignado: string | null
   numFaraonaAsignada: string | null
   origenTunica: OrigenTunica | null
+  cingulo: Cingulo | null
   recibo: { id: number; concepto: string; importe: number; estado: ReceiptStatus; metodoPago: MetodoPago | null; tipo: string }
+}
+
+/** Una prenda numerada del ropero que la persona tiene sin devolver. */
+export interface PrendaPrestada {
+  id: number
+  tipo: string
+  numero: string
+  talla: string | null
+  fechaAsignacion: string | null
 }
 
 export interface FichaDeMesa {
@@ -110,7 +137,11 @@ export interface FichaDeMesa {
   puesto: string | null
   salida: Salida
   year: number
-  prendas: { tipo: string; numero: string; talla: string | null }[]
+  /** Lo que tiene del ropero sin devolver. */
+  prendas: PrendaPrestada[]
+  /** Sus cíngulos sin devolver, por la papeleta con que se le prestaron. */
+  cingulosSinDevolver: { papeletaId: number; year: number }[]
+  cingulos: RecuentoDeCingulos
   solicitud: SolicitudDeLaMesa | null
   papeleta: PapeletaDeLaMesa | null
   requisitos: Requisitos
@@ -123,12 +154,15 @@ export interface FichaDeMesa {
     numTunicaAsignada: string | null
     numCapiroteAsignado: string | null
     numFaraonaAsignada: string | null
+    cingulo: Cingulo | null
   } | null
   propuesta: {
     puesto: string
     tunica: { origen: OrigenTunica; numero: string | null }
     capirote: string | null
     faraona: string | null
+    /** El que va con la túnica: la mesa lo cambia a «se le debe» si no quedan. */
+    cingulo: 'PRESTADO' | 'PROPIO' | 'NINGUNO'
   }
   /** La cuota de salida de la Pasión (hoy 0 €); null en el Rosario. */
   cuotaSalida: number | null
@@ -138,7 +172,7 @@ export interface PrendaDelRopero {
   id: number
   numero: string
   talla: string | null
-  estado: 'DISPONIBLE' | 'PRESTADA' | 'TALLER' | 'BAJA'
+  estado: 'DISPONIBLE' | 'PRESTADA' | 'LAVADO' | 'TALLER' | 'BAJA'
   hermano: { id: number; nombre: string; apellidos: string } | null
 }
 
@@ -157,6 +191,7 @@ export interface Apuntado {
   numCapiroteAsignado: string | null
   numFaraonaAsignada: string | null
   origenTunica: OrigenTunica | null
+  cingulo: Cingulo | null
   /** Lo pagado por la salida, si hay recibo. */
   pagado: { importe: number; estado: ReceiptStatus; metodoPago: MetodoPago | null } | null
   estado: EstadoEnLaMesa
@@ -178,7 +213,16 @@ export interface Apuntados {
   year: number
   salida: Salida
   apuntados: Apuntado[]
+  /** Cuántos recogieron sin cíngulo porque no quedaban. */
+  faltanCingulos: number
   puestos: { puesto: string; total: number }[]
+}
+
+/** Quien tiene algo del ropero sin devolver, y qué. */
+export interface SinDevolver {
+  hermano: { id: number; nombre: string; apellidos: string; fechaNacimiento: string; numeroHermano: number | null; telefono: string | null }
+  prendas: { id: number; tipo: string; numero: string; fechaAsignacion: string | null }[]
+  cingulos: { id: number; year: number }[]
 }
 
 export interface EnCola {
@@ -217,10 +261,11 @@ const conSalida = (salida: Salida, params = new URLSearchParams()) => {
   return consulta ? `?${consulta}` : ''
 }
 
-export function apuntados(salida: Salida, filtro: { q?: string; puesto?: string } = {}) {
+export function apuntados(salida: Salida, filtro: { q?: string; puesto?: string; faltaCingulo?: boolean } = {}) {
   const params = new URLSearchParams()
   if (filtro.q) params.set('q', filtro.q)
   if (filtro.puesto) params.set('puesto', filtro.puesto)
+  if (filtro.faltaCingulo) params.set('faltaCingulo', '1')
   return llamarApi<Apuntados>(`/procesion/admin/mesa/apuntados${conSalida(salida, params)}`)
 }
 
@@ -243,6 +288,14 @@ export function colasDeLaMesa(salida: Salida) {
 
 export function ropaPorPreparar(turnoId?: number) {
   return llamarApi<RopaPorPreparar[]>(`/procesion/admin/mesa/preparacion${turnoId ? `?turnoId=${turnoId}` : ''}`)
+}
+
+export function sinDevolver() {
+  return llamarApi<SinDevolver[]>('/procesion/admin/mesa/sin-devolver')
+}
+
+export function cingulosDeLaMesa() {
+  return llamarApi<RecuentoDeCingulos>('/procesion/admin/mesa/cingulos')
 }
 
 export function prendasDelRopero(tipo: TipoRopa, q: string) {
@@ -331,14 +384,30 @@ export interface Entrega {
   numCapiroteAsignado?: string
   numFaraonaAsignada?: string
   crearPrendas?: TipoRopa[]
+  cingulo?: CinguloEnMesa
   alturaHombro?: string
   observaciones?: string
   clave: string
 }
 
 export function entregarEnMesa(datos: Entrega) {
-  return llamarApi<{ papeletaId: number; puesto: string; numTunicaAsignada: string | null; repetida: boolean }>(
+  return llamarApi<{ papeletaId: number; puesto: string; numTunicaAsignada: string | null; cingulo: Cingulo | null; repetida: boolean }>(
     '/procesion/admin/mesa/entregar', { method: 'POST', json: datos },
+  )
+}
+
+export interface Devolucion {
+  hermanoId: number
+  /** Las prendas que devuelve; `rota`, si hay que arreglarla. */
+  prendas: { id: number; rota?: boolean }[]
+  /** Las papeletas cuyo cíngulo devuelve. */
+  cingulos: number[]
+  clave: string
+}
+
+export function devolverEnMesa(datos: Devolucion) {
+  return llamarApi<{ prendas: { id: number; numero: string; estado: string }[]; cingulos: number; repetida: boolean }>(
+    '/procesion/admin/mesa/devolver', { method: 'POST', json: datos },
   )
 }
 
@@ -350,6 +419,7 @@ export interface CambiosDePapeleta {
   numCapiroteAsignado?: string | null
   numFaraonaAsignada?: string | null
   crearPrendas?: TipoRopa[]
+  cingulo?: CinguloEnMesa
 }
 
 export function corregirPapeleta(id: number, cambios: CambiosDePapeleta) {

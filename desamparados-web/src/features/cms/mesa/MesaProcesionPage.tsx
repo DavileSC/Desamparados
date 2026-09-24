@@ -8,23 +8,25 @@ import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { Helmet } from 'react-helmet-async'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
-import { apuntados, colasDeLaMesa, fichaDeMesa, type Salida, type ZonaDeBusqueda } from '../../../lib/api/mesa'
+import { apuntados, colasDeLaMesa, fichaDeMesa, sinDevolver, type Salida, type ZonaDeBusqueda } from '../../../lib/api/mesa'
 import CabeceraSeccion from '../CabeceraSeccion'
 import CampoBusqueda from '../listados/CampoBusqueda'
 import AltaEnMesa from './AltaEnMesa'
 import BuscadorPersonas from './BuscadorPersonas'
 import ColaDeZona from './ColaDeZona'
 import FormularioCorreccion from './FormularioCorreccion'
+import ListaSinDevolver from './ListaSinDevolver'
 import PreparacionRopa from './PreparacionRopa'
 import TablaApuntados from './TablaApuntados'
 import ZonaInscripcion from './ZonaInscripcion'
 import ZonaTesoreria from './ZonaTesoreria'
 import ZonaTunicas from './ZonaTunicas'
+import ZonaDevolucion from './ZonaDevolucion'
 import type { Aviso } from './piezas'
 import { CLAVE_MESA, useMesaEnVivo } from './enVivo'
 import { NOMBRE_SALIDA, fechaCorta } from './formato'
 
-type Zona = 'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'preparacion'
+type Zona = 'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'preparacion' | 'devolucion'
 type Modo = { tipo: 'buscar' } | { tipo: 'ficha'; id: number } | { tipo: 'alta' }
 
 const ZONAS: { valor: Zona; etiqueta: string; soloPasion?: boolean }[] = [
@@ -33,10 +35,12 @@ const ZONAS: { valor: Zona; etiqueta: string; soloPasion?: boolean }[] = [
   { valor: 'tunicas', etiqueta: 'Túnicas' },
   { valor: 'listado', etiqueta: 'Listado' },
   { valor: 'preparacion', etiqueta: 'Preparar ropa', soloPasion: true },
+  // Al final, para no mover los atajos de siempre: Alt+6.
+  { valor: 'devolucion', etiqueta: 'Devolución', soloPasion: true },
 ]
 
-const BUSQUEDA_DE: Record<'inscripcion' | 'tesoreria' | 'tunicas' | 'listado', ZonaDeBusqueda> = {
-  inscripcion: 'inscripcion', tesoreria: 'tesoreria', tunicas: 'tunicas', listado: 'todas',
+const BUSQUEDA_DE: Record<'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'devolucion', ZonaDeBusqueda> = {
+  inscripcion: 'inscripcion', tesoreria: 'tesoreria', tunicas: 'tunicas', listado: 'todas', devolucion: 'devolucion',
 }
 const ID_BUSCADOR = 'buscador-mesa'
 
@@ -55,10 +59,11 @@ function recordar(clave: string, valor: string) {
  * La mesa de la procesión el día del reparto, por zonas. Cada ordenador es
  * una zona —Inscripción, Tesorería o Túnicas— y la persona pasa de una a
  * otra; cada zona ve al momento a quién le toca (la cola) sin recargar.
- * Además, el listado de apuntados (la hoja de siempre) y la ropa por preparar.
+ * Además, el listado de apuntados (la hoja de siempre), la ropa por preparar
+ * y, después de la salida, la Devolución: todo lo prestado vuelve al ropero.
  *
  * Hecha para ir rápido y con teclado: F2 lleva al buscador, Enter elige y
- * confirma, Esc vuelve a buscar, Alt+1…5 cambia de zona. Si se corta la red,
+ * confirma, Esc vuelve a buscar, Alt+1…6 cambia de zona. Si se corta la red,
  * lo dice, y lo que se estaba apuntando no se pierde.
  */
 export default function MesaProcesionPage() {
@@ -69,21 +74,28 @@ export default function MesaProcesionPage() {
   const [zona, setZona] = useState<Zona>(() => recordado('mesa.zona', ZONAS.map((z) => z.valor), 'inscripcion'))
   const [modo, setModo] = useState<Modo>({ tipo: 'buscar' })
   const [aviso, setAviso] = useState<Aviso | null>(null)
-  const [filtro, setFiltro] = useState<{ q: string; puesto: string }>({ q: '', puesto: '' })
+  const [filtro, setFiltro] = useState<{ q: string; puesto: string; faltaCingulo: boolean }>({ q: '', puesto: '', faltaCingulo: false })
 
-  const zonaVisible: Zona = salida === 'ROSARIO' && zona === 'preparacion' ? 'listado' : zona
-  const operativa = zonaVisible === 'inscripcion' || zonaVisible === 'tesoreria' || zonaVisible === 'tunicas'
+  // En el Rosario se va de traje: no hay ropa que preparar ni que devolver.
+  const zonaVisible: Zona = salida === 'ROSARIO' && (zona === 'preparacion' || zona === 'devolucion') ? 'listado' : zona
+  const operativa = zonaVisible === 'inscripcion' || zonaVisible === 'tesoreria' || zonaVisible === 'tunicas' || zonaVisible === 'devolucion'
 
   const listado = useQuery({
-    queryKey: [...CLAVE_MESA, 'apuntados', salida, filtro.q, filtro.puesto],
-    queryFn: () => apuntados(salida, filtro),
+    queryKey: [...CLAVE_MESA, 'apuntados', salida, filtro.q, filtro.puesto, filtro.faltaCingulo],
+    queryFn: () => apuntados(salida, { ...filtro, faltaCingulo: salida === 'PASION' && filtro.faltaCingulo }),
     placeholderData: (anterior) => anterior,
     enabled: zonaVisible === 'listado' || zonaVisible === 'inscripcion' || zonaVisible === 'tunicas',
   })
   const colas = useQuery({
     queryKey: [...CLAVE_MESA, 'colas', salida],
     queryFn: () => colasDeLaMesa(salida),
+    placeholderData: (anterior) => anterior,
     enabled: zonaVisible === 'tesoreria' || zonaVisible === 'tunicas',
+  })
+  const pendientesDeDevolver = useQuery({
+    queryKey: [...CLAVE_MESA, 'sin-devolver'],
+    queryFn: sinDevolver,
+    enabled: zonaVisible === 'devolucion',
   })
   const idFicha = modo.tipo === 'ficha' ? modo.id : null
   const ficha = useQuery({
@@ -110,7 +122,7 @@ export default function MesaProcesionPage() {
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key === 'F2') { e.preventDefault(); buscar() }
       if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) buscar()
-      if (e.altKey && /^[1-5]$/.test(e.key)) {
+      if (e.altKey && /^[1-6]$/.test(e.key)) {
         const z = ZONAS[Number(e.key) - 1]
         if (z) { e.preventDefault(); cambiarZona(z.valor) }
       }
@@ -131,7 +143,7 @@ export default function MesaProcesionPage() {
       {modo.tipo === 'buscar' && (
         <Stack spacing={2}>
           <Typography variant="h5" component="h2">
-            {zonaVisible === 'inscripcion' ? 'Apuntar' : zonaVisible === 'tesoreria' ? 'Cobrar' : zonaVisible === 'tunicas' ? (salida === 'ROSARIO' ? 'Confirmar el puesto' : 'Dar la ropa') : 'Corregir'}
+            {zonaVisible === 'inscripcion' ? 'Apuntar' : zonaVisible === 'tesoreria' ? 'Cobrar' : zonaVisible === 'tunicas' ? (salida === 'ROSARIO' ? 'Confirmar el puesto' : 'Dar la ropa') : zonaVisible === 'devolucion' ? 'Recibir la ropa' : 'Corregir'}
           </Typography>
           <BuscadorPersonas
             key={`${zonaVisible}-${salida}`}
@@ -177,10 +189,11 @@ export default function MesaProcesionPage() {
           : !ficha.data ? <CircularProgress aria-label="Cargando la ficha" />
             : (() => {
                 const f = ficha.data
-                const clave = `${zonaVisible}-${f.id}-${f.salida}-${f.solicitud?.id ?? 'sin'}-${f.papeleta?.id ?? 'sin'}-${f.situacion}`
+                const clave = `${zonaVisible}-${f.id}-${f.salida}-${f.solicitud?.id ?? 'sin'}-${f.papeleta?.id ?? 'sin'}-${f.papeleta?.cingulo ?? 'sin'}-${f.situacion}-${f.prendas.map((p) => p.id).join('.')}-${f.cingulosSinDevolver.length}`
                 const comun = { ficha: f, role, onHecho: hecho, onRecargar: () => void ficha.refetch() }
                 if (zonaVisible === 'inscripcion') return <ZonaInscripcion key={clave} {...comun} puestosUsados={puestosUsados} />
                 if (zonaVisible === 'tesoreria') return <ZonaTesoreria key={clave} {...comun} />
+                if (zonaVisible === 'devolucion') return <ZonaDevolucion key={clave} ficha={f} onHecho={hecho} />
                 if (zonaVisible === 'tunicas') return <ZonaTunicas key={clave} {...comun} puestosUsados={puestosUsados} onATesoreria={() => { setZona('tesoreria'); recordar('mesa.zona', 'tesoreria') }} />
                 return f.papeleta || f.solicitud
                   ? <FormularioCorreccion key={clave} {...comun} puestosUsados={puestosUsados} />
@@ -243,9 +256,12 @@ export default function MesaProcesionPage() {
                   Quien pidió la papeleta en su área y lo tiene todo pagado va directo a Túnicas. Aquí se apunta a quien llega sin haberla pedido: después pasa por Tesorería si debe algo.
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                  Teclado: <strong>F2</strong> buscar · <strong>Enter</strong> elegir y confirmar · <strong>Esc</strong> volver · <strong>Alt+1…5</strong> zonas.
+                  Teclado: <strong>F2</strong> buscar · <strong>Enter</strong> elegir y confirmar · <strong>Esc</strong> volver · <strong>Alt+1…6</strong> zonas.
                 </Typography>
               </Paper>
+            )}
+            {zonaVisible === 'devolucion' && (
+              <ListaSinDevolver filas={pendientesDeDevolver.data} error={pendientesDeDevolver.isError} seleccionado={idFicha} onElegir={abrir} />
             )}
             {zonaVisible === 'tesoreria' && (
               <ColaDeZona titulo="Por cobrar" vacia="Nadie esperando para pagar." filas={colas.data?.porCobrar ?? []} seleccionado={idFicha} onElegir={abrir} />
@@ -266,6 +282,18 @@ export default function MesaProcesionPage() {
                   <Stack direction="row" spacing={1.5} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
                     <CampoBusqueda etiqueta="Buscar entre los apuntados" valor={filtro.q} onCambiar={(q) => setFiltro({ ...filtro, q })} sx={{ maxWidth: 360 }} />
                   </Stack>
+                  {salida === 'PASION' && datos && (datos.faltanCingulos > 0 || filtro.faltaCingulo) && (
+                    <Button
+                      size="small"
+                      variant={filtro.faltaCingulo ? 'contained' : 'outlined'}
+                      color={filtro.faltaCingulo ? 'warning' : 'inherit'}
+                      aria-pressed={filtro.faltaCingulo}
+                      onClick={() => setFiltro({ ...filtro, faltaCingulo: !filtro.faltaCingulo })}
+                      sx={{ borderRadius: 999, py: 0.25, mb: 1.5 }}
+                    >
+                      Le falta el cíngulo · {datos.faltanCingulos}
+                    </Button>
+                  )}
                   {datos && datos.puestos.length > 0 && (
                     <Stack direction="row" spacing={1} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap' }} role="group" aria-label="Filtrar por puesto">
                       {[{ puesto: '', total }, ...datos.puestos].map((p) => (

@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react'
 import { Alert, Box, Button, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
-import { entregarEnMesa, type FichaDeMesa, type OrigenTunica, type TipoRopa } from '../../../lib/api/mesa'
+import { entregarEnMesa, type CinguloEnMesa, type FichaDeMesa, type OrigenTunica, type TipoRopa } from '../../../lib/api/mesa'
+import CampoCingulo, { cinguloInicial } from './CampoCingulo'
 import CampoPrenda from './CampoPrenda'
+import { ropaSinDevolver } from './formato'
 import { leyenda } from './datosDeLaFicha'
 import { AvisoSituacion, CampoPuesto, type Aviso } from './piezas'
 import { alturaEnMetros, puestoDelCatalogo } from './formato'
@@ -29,9 +31,9 @@ function tocadoInicial(ficha: FichaDeMesa, puesto: string): Tocado {
 /**
  * Zona de Túnicas: con todo pagado (o perdonado), se confirma el puesto, se
  * le da la ropa y entonces nace su papeleta. Llega todo propuesto —la túnica
- * que tiene en casa o la del año pasado, su capirote o su faraona, su
- * talla—: se prueba, se cambia lo que haga falta y se pulsa. En el Rosario se
- * va de traje: solo el puesto.
+ * del año pasado (o la que trae sin devolver), su capirote o su faraona, el
+ * cíngulo, su talla—: se prueba, se cambia lo que haga falta y se pulsa. En
+ * el Rosario se va de traje: solo el puesto.
  *
  * Sin pagar no sale la túnica: si debe algo, se le manda a Tesorería.
  */
@@ -45,6 +47,10 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
   const [tocado, setTocado] = useState<Tocado>(() => tocadoInicial(ficha, inicial))
   const [capirote, setCapirote] = useState(ficha.propuesta.capirote ?? '')
   const [faraona, setFaraona] = useState(ficha.propuesta.faraona ?? '')
+  // Si trae un cíngulo sin devolver, se le cambia por este: no gasta uno del ropero.
+  const traeCingulo = ficha.cingulosSinDevolver.length > 0
+  const quedanCingulos = ficha.cingulos.enElRopero
+  const [cingulo, setCingulo] = useState<CinguloEnMesa>(() => cinguloInicial(ficha.propuesta.cingulo, quedanCingulos, traeCingulo))
   const [altura, setAltura] = useState(alturaEnMetros(ficha.alturaHombro))
   const [observaciones, setObservaciones] = useState(solicitud?.observaciones ?? '')
   const [crear, setCrear] = useState<Record<TipoRopa, boolean>>({ TUNICA: false, CAPIROTE: false, FARAONA: false })
@@ -69,13 +75,19 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
     || (tocado === 'FARAONA' && faraona.trim() && bloqueos.FARAONA))
   const { requisitos } = ficha
 
+  // El cíngulo va con la túnica: del ropero se presta (o se le debe), propia lleva el suyo, sin túnica ninguno.
+  const cambiarOrigen = (nuevo: OrigenTunica) => {
+    setOrigen(nuevo)
+    setCingulo(cinguloInicial(nuevo === 'ROPERO' ? 'PRESTADO' : nuevo === 'PROPIA' ? 'PROPIO' : 'NINGUNO', quedanCingulos, traeCingulo))
+  }
+
   const elegirPuesto = (nuevo: string) => {
     setPuesto(nuevo)
     const c = puestoDelCatalogo(nuevo, ficha.salida)
     if (!c || rosario) return
     setTocado(c.tocado ?? 'NINGUNO')
-    if (!c.tunica) setOrigen('NINGUNA')
-    else if (origen === 'NINGUNA') setOrigen(ficha.tieneTunicaPropia ? 'PROPIA' : 'ROPERO')
+    if (!c.tunica) cambiarOrigen('NINGUNA')
+    else if (origen === 'NINGUNA') cambiarOrigen(ficha.tieneTunicaPropia ? 'PROPIA' : 'ROPERO')
   }
 
   const entregar = async () => {
@@ -94,6 +106,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
           ...(tocado === 'CAPIROTE' && capirote.trim() && { numCapiroteAsignado: capirote.trim() }),
           ...(tocado === 'FARAONA' && faraona.trim() && { numFaraonaAsignada: faraona.trim() }),
           crearPrendas,
+          cingulo,
         }),
       })
       renovar()
@@ -101,7 +114,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
         tono: 'success',
         texto: rosario
           ? `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}, confirmado.`
-          : `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}${r.numTunicaAsignada ? `, túnica ${r.numTunicaAsignada}` : ''}. Recogida.`,
+          : `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}${r.numTunicaAsignada ? `, túnica ${r.numTunicaAsignada}` : ''}${r.cingulo === 'DEBIDO' ? ', sin cíngulo (se le debe)' : ''}. Recogida.`,
       })
     } catch (e) {
       setError(mensajeDeFallo(e, 'No se ha podido dar la ropa.'))
@@ -120,6 +133,11 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
       )}
       {puesto.trim() !== solicitud.puesto && (
         <Typography variant="body2" color="text.secondary">Pidió: {solicitud.puesto}.</Typography>
+      )}
+      {!rosario && (ficha.prendas.length > 0 || traeCingulo) && (
+        <Alert severity="warning" icon={false}>
+          Tiene sin devolver: {ropaSinDevolver(ficha.prendas, ficha.cingulosSinDevolver.length)}. Que lo traiga: se le cambia por lo de este año.
+        </Alert>
       )}
       {!rosario && ficha.anterior && (
         <Typography variant="body2" color="text.secondary">
@@ -144,7 +162,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
           <>
             <Box>
               <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 0.75 }}>Túnica</Typography>
-              <ToggleButtonGroup exclusive size="small" fullWidth value={origen} onChange={(_e, v: OrigenTunica | null) => v && setOrigen(v)} aria-label="Túnica">
+              <ToggleButtonGroup exclusive size="small" fullWidth value={origen} onChange={(_e, v: OrigenTunica | null) => v && cambiarOrigen(v)} aria-label="Túnica">
                 <ToggleButton value="ROPERO">Del ropero</ToggleButton>
                 <ToggleButton value="PROPIA">Propia</ToggleButton>
                 <ToggleButton value="NINGUNA">No lleva</ToggleButton>
@@ -177,6 +195,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
                 crear={crear.FARAONA} onCrear={(c) => setCrear({ ...crear, FARAONA: c })} onBloqueo={bloqueoFaraona}
               />
             )}
+            <CampoCingulo valor={cingulo} onCambiar={setCingulo} quedan={quedanCingulos} sinGastar={traeCingulo} />
           </>
         )}
 

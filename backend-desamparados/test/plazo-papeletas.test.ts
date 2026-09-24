@@ -310,6 +310,32 @@ test('los días de reparto y la fecha del Rosario salen en la Agenda pública', 
   }
 });
 
+test('Secretaría solo ve los días de reparto de este año, y los ya pasados no se borran', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const deEsteAnio = await e.turno(40 * 24, 'ROSARIO');
+    const pasado = await e.turno(-48, 'ROSARIO');
+    const antiguo = await e.turno(-2 * 366 * 24, 'ROSARIO');
+
+    await db.cita.create({ data: { turnoId: deEsteAnio.id, hermanoId: e.titular.id, estado: 'ATENDIDA' } });
+    await db.cita.create({ data: { turnoId: deEsteAnio.id, hermanoId: e.sobrino.id, estado: 'CANCELADA' } });
+
+    const lista = await TurnosService.getTodosLosTurnos('ROSARIO');
+    const ids = lista.map((x) => x.id);
+    assert.ok(ids.includes(deEsteAnio.id), 'el día que viene sale');
+    assert.ok(!ids.includes(antiguo.id), 'el de hace dos años no sale');
+    const dia = lista.find((x) => x.id === deEsteAnio.id)!;
+    assert.equal(dia.citas, 1, 'quien ya vino sigue contando; la anulada, no');
+    assert.equal(dia.vinieron, 1);
+
+    await assert.rejects(TurnosService.eliminarTurno(pasado.id, { userId: e.admin.id }), /ya ha pasado/);
+    assert.ok(await db.turno.findUnique({ where: { id: pasado.id } }), 'el día pasado sigue ahí');
+  } finally {
+    await e.recoger();
+  }
+});
+
 // ---------------------------------------------------------------- ficha
 
 test('el hermano edita su ficha entera, y la de su sobrino con su parentesco', async (t) => {

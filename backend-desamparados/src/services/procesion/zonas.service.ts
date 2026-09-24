@@ -8,9 +8,12 @@
  * - Tesorería: cobra lo que tenga pendiente (las cuotas de hermano, la cuota
  *   de salida si algún año la hay, el donativo del Rosario) o, si el Hermano
  *   Mayor lo decide, perdona la cuota.
- * - Túnicas: con todo pagado (o perdonado), se le da la ropa del ropero, se
- *   le confirma el puesto y entonces nace su papeleta. En el Rosario, que se
- *   va de traje, solo el puesto.
+ * - Túnicas: con todo pagado (o perdonado), se le da la ropa del ropero
+ *   (túnica, capirote o faraona y cíngulo), se le confirma el puesto y
+ *   entonces nace su papeleta. En el Rosario, que se va de traje, solo el
+ *   puesto.
+ * - Devolución: después de la salida, todo lo prestado vuelve al ropero. Las
+ *   túnicas, al lavado; lo roto, al taller.
  *
  * Quien pidió salir desde su área y lo tiene todo pagado va directo a
  * Túnicas. Cada zona se entera al momento de lo que hacen las otras (ver
@@ -18,7 +21,7 @@
  * si la WiFi se corta a medias (ver `una-vez.ts`).
  */
 import {
-  EstadoCita, EstadoPago, EstadoSolicitud, MetodoPago, OrigenSolicitud, Prisma, TipoRecibo, TipoTransaccion, type Salida,
+  Cingulo, EstadoCita, EstadoPago, EstadoPrenda, EstadoSolicitud, MetodoPago, OrigenSolicitud, Prisma, TipoRecibo, TipoTransaccion, type Salida,
 } from '@prisma/client';
 import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
@@ -28,12 +31,13 @@ import { idCategoriaIngresos, leerDatosEvento } from '../recibos/comunes.js';
 import { idsReemitidos } from '../../domain/reemisiones.js';
 import { claveConcepto } from '../../domain/datos-procesion.js';
 import { diaMadrid, inicioDiaMadrid } from '../../domain/contabilidad.js';
-import { alturaHombroEnCm, normalizarNumeroPrenda, propuestaDeRopa, type Origen } from '../../domain/mesa-procesion.js';
+import { alturaHombroEnCm, CINGULO_SEGUN_TUNICA, normalizarNumeroPrenda, propuestaDeRopa, type Origen } from '../../domain/mesa-procesion.js';
 import {
   DATOS_SALIDA, notaDePerdon, pendienteDeLaSalida, requisitosParaRecoger, type CuotaDelHermano,
 } from '../../domain/salidas.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
-import { prestarRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
+import { estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
+import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { unaVez } from './una-vez.js';
 import { avisarALaMesa } from './avisos-mesa.js';
 
@@ -74,8 +78,18 @@ export interface EntregaEnMesa {
   numCapiroteAsignado?: string;
   numFaraonaAsignada?: string;
   crearPrendas?: TipoRopa[];
+  /** Sin decir nada, el que va con la túnica (ver CINGULO_SEGUN_TUNICA). */
+  cingulo?: CinguloEnMesa;
   alturaHombro?: string;
   observaciones?: string;
+}
+
+export interface DevolucionEnMesa {
+  hermanoId: number;
+  /** Las prendas numeradas que devuelve; `rota`, si hay que arreglarla. */
+  prendas: { id: number; rota?: boolean }[];
+  /** Las papeletas cuyo cíngulo prestado devuelve. */
+  cingulos: number[];
 }
 
 const centimos = (n: number) => Math.round(n * 100);
@@ -109,6 +123,21 @@ export async function cuotasQueCuentan(cliente: Cliente, hermanoIds: number[]): 
     porHermano.set(r.hermanoId, lista);
   }
   return porHermano;
+}
+
+/**
+ * El cíngulo cuando la mesa no dice nada: el que va con la túnica. Si toca
+ * prestarlo y no queda ninguno (contando el que trae sin devolver, que se
+ * cambia por el nuevo), se le debe: la ropa no se queda sin dar por eso.
+ */
+async function cinguloPorDefecto(tx: Tx, hermanoId: number, origen: Origen): Promise<Cingulo> {
+  const propuesto = CINGULO_SEGUN_TUNICA[origen];
+  if (propuesto !== Cingulo.PRESTADO) return propuesto;
+  const [{ enElRopero }, trae] = await Promise.all([
+    recuentoDeCingulos(tx),
+    tx.papeletaSitio.count({ where: { hermanoId, cingulo: Cingulo.PRESTADO } }),
+  ]);
+  return enElRopero + trae > 0 ? Cingulo.PRESTADO : Cingulo.DEBIDO;
 }
 
 /** Lo que le queda de la salida a una solicitud, con la cuota de salida ya leída. */
@@ -357,6 +386,8 @@ export class ZonasService {
       if (conRopa) {
         await prestarRopaEnTransaccion(tx, s.hermanoId, ropaPedida({ origenTunica: origen ?? undefined, ...ropa, crearPrendas: dto.crearPrendas }));
       }
+      const cingulo: Cingulo | null = conRopa ? dto.cingulo ?? await cinguloPorDefecto(tx, s.hermanoId, origen ?? 'ROPERO') : null;
+      if (cingulo === Cingulo.PRESTADO) await prestarCinguloEnTransaccion(tx, s.hermanoId, null);
 
       const ficha: Prisma.HermanoUpdateInput = {};
       if (alturaHombro !== undefined) ficha.alturaHombro = alturaHombro;
@@ -367,6 +398,7 @@ export class ZonasService {
       const papeleta = await PapeletasService.crearPapeletaEnTransaccion(tx, s, {
         ...ropa,
         origenTunica: origen,
+        cingulo,
         puesto: dto.puesto?.trim() || s.puesto,
         observaciones: dto.observaciones !== undefined ? dto.observaciones : s.observaciones,
       });
@@ -375,6 +407,7 @@ export class ZonasService {
         papeletaId: papeleta.id, solicitudId: s.id, hermanoId: s.hermanoId, salida: s.salida, year: s.year,
         puestoPedido: s.puesto, puesto: papeleta.puesto, origenTunica: papeleta.origenTunica,
         numTunicaAsignada: papeleta.numTunicaAsignada, numCapiroteAsignado: papeleta.numCapiroteAsignado, numFaraonaAsignada: papeleta.numFaraonaAsignada,
+        cingulo: papeleta.cingulo,
       };
     });
 
@@ -386,6 +419,80 @@ export class ZonasService {
       await ZonasService.mandarPapeleta(resultado.papeletaId).catch(console.error);
     }
     return { ...resultado, repetida };
+  }
+
+  // =================================================================
+  //  DEVOLUCIÓN
+  // =================================================================
+
+  /**
+   * Recibir lo que la persona devuelve después de la salida (el mismo día o
+   * cuando lo lleve a la parroquia). Las túnicas van al lavado, todas; lo
+   * demás, al ropero; lo roto, al taller. El cíngulo vuelve a contar como
+   * del ropero. Lo que no trae sigue a su nombre, sin devolver.
+   */
+  static async devolver(dto: DevolucionEnMesa, clave: string | undefined, meta?: MetaDeAuditoria) {
+    if (dto.prendas.length === 0 && dto.cingulos.length === 0) throw new HttpError('No hay nada que devolver.');
+    const { resultado, repetida } = await unaVez(clave, 'devolver', async (tx) => {
+      const prendas = await tx.prenda.findMany({ where: { id: { in: dto.prendas.map((p) => p.id) } } });
+      const devueltas: { id: number; tipo: string; numero: string; estado: EstadoPrenda }[] = [];
+      for (const pedida of dto.prendas) {
+        const prenda = prendas.find((p) => p.id === pedida.id);
+        if (!prenda) throw new NotFoundError('Alguna prenda ya no está en el ropero. Recarga la ficha.');
+        const estado = estadoAlDevolver(prenda.tipo, pedida.rota === true);
+        const { count } = await tx.prenda.updateMany({
+          where: { id: prenda.id, hermanoId: dto.hermanoId, estado: EstadoPrenda.PRESTADA },
+          data: { estado, hermanoId: null, fechaAsignacion: null },
+        });
+        if (count !== 1) throw new HttpError(`La prenda ${prenda.numero} ya no consta prestada a esta persona. Recarga la ficha.`, 409);
+        devueltas.push({ id: prenda.id, tipo: prenda.tipo, numero: prenda.numero, estado });
+      }
+      const cingulos = [...new Set(dto.cingulos)];
+      if (cingulos.length > 0) {
+        const { count } = await tx.papeletaSitio.updateMany({
+          where: { id: { in: cingulos }, hermanoId: dto.hermanoId, cingulo: Cingulo.PRESTADO },
+          data: { cingulo: Cingulo.DEVUELTO },
+        });
+        if (count !== cingulos.length) throw new HttpError('El cíngulo ya no consta prestado a esta persona. Recarga la ficha.', 409);
+      }
+      return { hermanoId: dto.hermanoId, prendas: devueltas, cingulos: cingulos.length };
+    });
+
+    if (!repetida) {
+      await AuditoriaService.log(ACCIONES_AUDITORIA.MESA_DEVOLVER, meta ?? {}, 'hermano', dto.hermanoId, { despues: resultado });
+      avisarALaMesa({ que: 'devuelto', hermanoId: dto.hermanoId });
+    }
+    return { ...resultado, repetida };
+  }
+
+  /**
+   * Quién tiene algo del ropero sin devolver, y qué: para reclamarlo. Quien
+   * lleva túnica propia o no lleva túnica no tiene nada prestado y no sale.
+   */
+  static async sinDevolver() {
+    const [prendas, cingulos] = await Promise.all([
+      db.prenda.findMany({
+        where: { estado: EstadoPrenda.PRESTADA, hermanoId: { not: null } },
+        select: { id: true, tipo: true, numero: true, fechaAsignacion: true, hermanoId: true },
+        orderBy: [{ tipo: 'asc' }, { numero: 'asc' }],
+      }),
+      db.papeletaSitio.findMany({
+        where: { cingulo: Cingulo.PRESTADO },
+        select: { id: true, year: true, hermanoId: true },
+      }),
+    ]);
+    const ids = [...new Set([...prendas.map((p) => p.hermanoId!), ...cingulos.map((c) => c.hermanoId)])];
+    const hermanos = await db.hermano.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, nombre: true, apellidos: true, fechaNacimiento: true, numeroHermano: true, telefono: true },
+    });
+    return hermanos
+      .map((h) => ({
+        hermano: h,
+        prendas: prendas.filter((p) => p.hermanoId === h.id).map(({ hermanoId: _h, ...p }) => p),
+        cingulos: cingulos.filter((c) => c.hermanoId === h.id).map(({ hermanoId: _h, ...c }) => c),
+      }))
+      .sort((a, b) => a.hermano.apellidos.localeCompare(b.hermano.apellidos, 'es') || a.hermano.nombre.localeCompare(b.hermano.nombre, 'es'));
   }
 
   /**

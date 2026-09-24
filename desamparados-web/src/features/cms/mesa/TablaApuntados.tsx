@@ -15,6 +15,18 @@ interface Props {
 
 const tenue = { color: 'text.disabled' } as const
 
+/** Qué pasó con su cíngulo: el que se le debe salta a la vista. */
+function Cingulo({ a }: { a: Apuntado }) {
+  switch (a.cingulo) {
+    case 'DEBIDO': return <Pildora texto="Se le debe" tono="aviso" />
+    case 'PRESTADO': return <>Prestado</>
+    case 'DEVUELTO': return <>Devuelto</>
+    case 'PROPIO': return <>Propio</>
+    case 'NINGUNO': return <>No lleva</>
+    default: return <>—</>
+  }
+}
+
 /** En qué punto está: con algo por pagar, listo para recoger o ya recogido. */
 function Estado({ a }: { a: Apuntado }) {
   if (a.estado === 'recogida') return <Pildora texto="Recogida" tono="neutro" />
@@ -31,10 +43,10 @@ function Estado({ a }: { a: Apuntado }) {
 export default function TablaApuntados({ apuntados, salida, seleccionado, onElegir }: Props) {
   const { fondoCabecera } = useColoresContabilidad()
   const conRopa = salida === 'PASION'
-  const columnas = conRopa ? 9 : 7
+  const columnas = conRopa ? 10 : 7
   return (
     <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 300px)', minHeight: 320 }}>
-      <Table size="small" stickyHeader aria-label="Apuntados" sx={{ minWidth: conRopa ? 980 : 760, '& td': { whiteSpace: 'nowrap' } }}>
+      <Table size="small" stickyHeader aria-label="Apuntados" sx={{ minWidth: conRopa ? 1080 : 760, '& td': { whiteSpace: 'nowrap' } }}>
         <TableHead>
           <TableRow sx={cabeceraTabla(fondoCabecera)}>
             <TableCell>Nombre</TableCell>
@@ -45,6 +57,7 @@ export default function TablaApuntados({ apuntados, salida, seleccionado, onEleg
             <TableCell align="right">Talla</TableCell>
             {conRopa && <TableCell>Túnica</TableCell>}
             {conRopa && <TableCell>Capirote / faraona</TableCell>}
+            {conRopa && <TableCell>Cíngulo</TableCell>}
             <TableCell>Estado</TableCell>
           </TableRow>
         </TableHead>
@@ -71,6 +84,7 @@ export default function TablaApuntados({ apuntados, salida, seleccionado, onEleg
                 <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', ...(!a.hermano.alturaHombro && tenue) }}>{a.hermano.alturaHombro ? alturaEnMetros(a.hermano.alturaHombro) : '—'}</TableCell>
                 {conRopa && <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(!tunica && tenue) }}>{tunica || '—'}</TableCell>}
                 {conRopa && <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(!tocado && tenue) }}>{tocado || '—'}</TableCell>}
+                {conRopa && <TableCell sx={!a.cingulo ? tenue : undefined}><Cingulo a={a} /></TableCell>}
                 <TableCell><Estado a={a} /></TableCell>
               </TableRow>
             )

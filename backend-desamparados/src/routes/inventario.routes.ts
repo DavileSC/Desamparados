@@ -11,7 +11,7 @@ import { idParam } from '../config/common.js';
 import { 
   createEnserSchema, updateEnserSchema, queryEnserSchema,
   createPrendaSchema, updatePrendaSchema, queryPrendaSchema,
-  asignarPrendaSchema, devolverPrendaSchema, numeroHermanoParamSchema
+  asignarPrendaSchema, devolverPrendaSchema, numeroHermanoParamSchema, prendasLavadasSchema, totalCingulosSchema
 } from '../schemas/inventario.schema.js';
 
 const inventarioRoutes = Router();
@@ -83,6 +83,12 @@ inventarioRoutes.get('/hermanos/:numeroHermano', checkRole(rolesGestores), valid
 // Rutas de acción
 inventarioRoutes.post('/prendas/:id/asignar', checkRole(rolesGestores), validateId, validate(asignarPrendaSchema), InventarioController.asignarPrenda);
 inventarioRoutes.post('/prendas/:id/devolver', checkRole(rolesGestores), validateId, validate(devolverPrendaSchema), InventarioController.devolverPrenda);
+// Las del lavado que ya están limpias vuelven a estar disponibles.
+inventarioRoutes.post('/prendas/lavadas', checkRole(rolesGestores), validate(prendasLavadasSchema), InventarioController.prendasLavadas);
+
+// Los cíngulos no van numerados: se cuentan.
+inventarioRoutes.get('/cingulos', checkRole(rolesGestores), InventarioController.cingulos);
+inventarioRoutes.put('/cingulos', checkRole(rolesGestores), validate(totalCingulosSchema), InventarioController.cambiarCingulos);
 
 
 export { inventarioRoutes };

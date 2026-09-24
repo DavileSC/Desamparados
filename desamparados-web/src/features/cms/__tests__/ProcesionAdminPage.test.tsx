@@ -14,7 +14,7 @@ const PLAZO: PlazoDePapeletas = {
   citasReservadas: 0, cuotaSalida: 0,
 }
 const ROSARIO: PlazoDePapeletas = { ...PLAZO, salida: 'ROSARIO', year: 2026, cuotaSalida: null, rosario: null }
-const TURNO = { id: 5, salida: 'PASION', fecha: '2027-03-08T00:00:00.000Z', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z', capacidadEstimada: 100, activo: true, _count: { citas: 0 } }
+const TURNO = { id: 5, salida: 'PASION', fecha: '2027-03-08T00:00:00.000Z', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z', capacidadEstimada: 100, activo: true, citas: 0, vinieron: 0 }
 
 function servidor(plazo = PLAZO, turnos = [TURNO]) {
   const llamadas: { url: string; metodo: string; cuerpo?: unknown }[] = []
@@ -60,6 +60,30 @@ describe('ProcesionAdminPage', () => {
     expect(await screen.findByRole('switch', { name: /solicitud de papeletas abierta/i })).toBeDisabled()
     expect(screen.getByText(/no se puede abrir/i)).toBeInTheDocument()
     expect(screen.getByText('Todavía no hay días de reparto.')).toBeInTheDocument()
+  })
+
+  it('un día ya pasado no se puede borrar; uno por venir y sin citas, sí', async () => {
+    const PASADO = { ...TURNO, id: 4, fecha: '2026-03-02T00:00:00.000Z', horaInicio: '2026-03-02T18:00:00.000Z', horaFin: '2026-03-02T21:00:00.000Z' }
+    servidor(PLAZO, [PASADO, TURNO])
+    renderWithProviders(<ProcesionAdminPage />)
+
+    expect(await screen.findByRole('button', { name: /borrar el día lunes, 8 de marzo de 2027/i })).toBeEnabled()
+    expect(screen.getByText(/2 de marzo de 2026 · pasado/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /borrar el día lunes, 2 de marzo de 2026/i })).not.toBeInTheDocument()
+  })
+
+  it('los días pasados cuentan a quien vino; el aforo solo sale en los que quedan', async () => {
+    const PASADO = { ...TURNO, id: 4, fecha: '2026-03-02T00:00:00.000Z', horaInicio: '2026-03-02T18:00:00.000Z', horaFin: '2026-03-02T21:00:00.000Z', capacidadEstimada: 80, citas: 47, vinieron: 41 }
+    servidor(PLAZO, [PASADO, { ...TURNO, citas: 12 }])
+    renderWithProviders(<ProcesionAdminPage />)
+
+    const pasado = (await screen.findByText(/2 de marzo de 2026 · pasado/i)).closest('tr')!
+    expect(pasado).toHaveTextContent('47')
+    expect(pasado).toHaveTextContent('41')
+    expect(pasado).not.toHaveTextContent('de 80')
+    const futuro = screen.getByText(/8 de marzo de 2027/i).closest('tr')!
+    expect(futuro).toHaveTextContent('12 de 100')
+    expect(futuro).toHaveTextContent('—')
   })
 
   it('el Hermano Mayor lo ve, pero no abre ni crea días', async () => {

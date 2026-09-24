@@ -12,6 +12,8 @@ const fechaTexto = type("string").narrow((s) => esFechaValida(s)).describe("una 
 // El número de una prenda como lo escribe la mesa: «145-31», «150», «21M».
 const numeroPrenda = type("string <= 20").matching(/^[^<>]*$/).describe("un número de prenda de 20 caracteres como mucho");
 const tipoRopa = type("'TUNICA' | 'CAPIROTE' | 'FARAONA'");
+/** Lo que la mesa elige con el cíngulo (DEVUELTO lo pone la devolución). */
+const cingulo = type("'PRESTADO' | 'DEBIDO' | 'PROPIO' | 'NINGUNO'");
 // «1,45», «1.5» o «145»: la convierte el servicio (alturaHombroEnCm).
 const alturaHombro = type("string <= 8").describe("una altura de hombro");
 const dia = type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha válida (AAAA-MM-DD)");
@@ -107,7 +109,7 @@ export const fechaRosarioSchema = type({
 export const mesaBuscarSchema = type({
     query: {
         q: type("string <= 100"),
-        "zona?": "'inscripcion' | 'tesoreria' | 'tunicas' | 'todas'",
+        "zona?": "'inscripcion' | 'tesoreria' | 'tunicas' | 'devolucion' | 'todas'",
         "salida?": salida,
     }
 });
@@ -126,6 +128,7 @@ export const mesaListadoSchema = type({
         "year?": type("string").matching(/^\d{4}$/),
         "q?": type("string <= 100"),
         "puesto?": type("string <= 80"),
+        "faltaCingulo?": "'1'",
     }
 });
 
@@ -178,6 +181,7 @@ export const mesaEditarPapeletaSchema = type({
         "numFaraonaAsignada?": numeroPrenda.or("null"),
         "origenTunica?": "'ROPERO' | 'PROPIA' | 'NINGUNA'",
         "crearPrendas?": tipoRopa.array(),
+        "cingulo?": cingulo,
     }
 });
 
@@ -217,6 +221,17 @@ export const mesaCobrarSchema = type({
     }
 });
 
+// Lo que devuelve una persona después de la salida: sus prendas (la rota,
+// al taller) y sus cíngulos, por la papeleta con que se prestaron.
+export const mesaDevolverSchema = type({
+    body: {
+        hermanoId: idCuerpo,
+        prendas: type({ id: idCuerpo, "rota?": "boolean" }).array().atMostLength(20),
+        cingulos: idCuerpo.array().atMostLength(20),
+        "clave?": claveOperacion,
+    }
+});
+
 export const mesaPerdonarSchema = type({
     body: {
         reciboIds: idCuerpo.array().atLeastLength(1).atMostLength(30),
@@ -234,6 +249,7 @@ export const mesaEntregarSchema = type({
         "numCapiroteAsignado?": numeroPrenda,
         "numFaraonaAsignada?": numeroPrenda,
         "crearPrendas?": tipoRopa.array(),
+        "cingulo?": cingulo,
         "alturaHombro?": alturaHombro,
         "observaciones?": observacionesMesa,
         "clave?": claveOperacion,

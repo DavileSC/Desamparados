@@ -12,7 +12,7 @@
  * la auditoría y el importe lo calcula siempre el servidor.
  */
 import db from '../../config/db';
-import { EstadoCita, EstadoPago, EstadoSolicitud, MetodoPago, OrigenSolicitud, Prisma, type Salida } from '@prisma/client';
+import { Cingulo, EstadoCita, EstadoPago, EstadoSolicitud, MetodoPago, OrigenSolicitud, Prisma, type Salida } from '@prisma/client';
 import { EmailService } from '../email.service';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
 import { devolverCobroEnTransaccion, idCategoriaDevoluciones, retirarPapeletaEnTransaccion } from '../recibos/comunes.js';
@@ -49,6 +49,7 @@ export interface DatosDeLaPapeleta {
   numTunicaAsignada: string | null;
   numCapiroteAsignado: string | null;
   numFaraonaAsignada: string | null;
+  cingulo?: Cingulo | null;
 }
 
 /** Una solicitud leída con lo que hace falta para cobrarla o recogerla. */
@@ -174,6 +175,7 @@ export class PapeletasService {
         numTunicaAsignada: datos.numTunicaAsignada,
         numCapiroteAsignado: datos.numCapiroteAsignado,
         numFaraonaAsignada: datos.numFaraonaAsignada,
+        cingulo: datos.cingulo ?? null,
       },
     });
     const { count } = await tx.solicitud.updateMany({

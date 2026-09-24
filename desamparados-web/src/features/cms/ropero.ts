@@ -4,7 +4,8 @@ import type { Prenda } from '../../lib/api/inventario'
 export const ETIQUETA_ESTADO: Record<Prenda['estado'], string> = {
   DISPONIBLE: 'Disponible',
   PRESTADA: 'Prestada',
-  TALLER: 'En taller',
+  LAVADO: 'En lavado',
+  TALLER: 'Para arreglar',
   BAJA: 'De baja',
 }
 
@@ -22,7 +23,7 @@ export const ETIQUETA_TIPO: Record<Prenda['tipo'], string> = {
  * la ponen «Prestar» y «Devolver», que guardan también quién tiene la prenda.
  * Elegida a mano quedaba prestada a nadie, o disponible con un hermano apuntado.
  */
-export const ESTADOS_ELEGIBLES: Prenda['estado'][] = ['DISPONIBLE', 'TALLER', 'BAJA']
+export const ESTADOS_ELEGIBLES: Prenda['estado'][] = ['DISPONIBLE', 'LAVADO', 'TALLER', 'BAJA']
 
 /** Las unidades de un lote son enteras: con decimales el servidor las rechaza. Vacío cuenta como 0. */
 export const esCantidadValida = (valor: string) => /^\d*$/.test(valor.trim())

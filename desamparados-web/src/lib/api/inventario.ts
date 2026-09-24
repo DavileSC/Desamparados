@@ -2,7 +2,7 @@ import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export interface Enser { id: number; nombre: string; referencia: string | null; categoria: string | null; ubicacion: string | null; cantidadOptimo: number; cantidadBueno: number; cantidadReparar: number; cantidadTotal: number }
-export interface Prenda { id: number; numero: string; tipo: 'TUNICA' | 'CAPIROTE' | 'FARAONA' | 'CAPA' | 'OTRO'; talla: string | null; estado: 'DISPONIBLE' | 'PRESTADA' | 'TALLER' | 'BAJA'; observaciones: string | null; hermano: { nombre: string; apellidos: string; numeroHermano: number | null } | null }
+export interface Prenda { id: number; numero: string; tipo: 'TUNICA' | 'CAPIROTE' | 'FARAONA' | 'CAPA' | 'OTRO'; talla: string | null; estado: 'DISPONIBLE' | 'PRESTADA' | 'LAVADO' | 'TALLER' | 'BAJA'; observaciones: string | null; hermano: { nombre: string; apellidos: string; numeroHermano: number | null } | null }
 
 // Enseres y ropero son dos listados independientes de la misma pantalla: cada
 // uno pide su propia página, y por eso reciben la suya en vez de compartirla.
@@ -23,7 +23,15 @@ export const actualizarPrenda = (id: number, json: object) => llamarApi<Prenda>(
 export const eliminarPrenda = (id: number) => llamarApi<{ message: string }>(`/inventario/prendas/${id}`, { method: 'DELETE' })
 /** Se presta por número de hermano, no por el id interno de la base de datos (que nadie conoce). */
 export const asignarPrenda = (id: number, numeroHermano: number) => llamarApi<{ message: string }>(`/inventario/prendas/${id}/asignar`, { method: 'POST', json: { numeroHermano } })
-export const devolverPrenda = (id: number, necesitaLavado: boolean) => llamarApi<{ message: string }>(`/inventario/prendas/${id}/devolver`, { method: 'POST', json: { necesitaLavado } })
+/** La túnica va siempre al lavado; lo demás, disponible; lo roto (`rota`), al taller. */
+export const devolverPrenda = (id: number, rota: boolean) => llamarApi<{ message: string; data: Prenda }>(`/inventario/prendas/${id}/devolver`, { method: 'POST', json: { rota } })
+/** Las prendas del lavado que ya están limpias vuelven a estar disponibles; sin ids, todas. */
+export const marcarLavadas = (ids?: number[]) => llamarApi<{ ids: number[]; lavadas: number }>('/inventario/prendas/lavadas', { method: 'POST', json: ids ? { ids } : {} })
+
+/** Los cíngulos no van numerados: se cuentan. */
+export interface RecuentoDeCingulos { total: number; prestados: number; enElRopero: number; debidos: number }
+export const recuentoDeCingulos = () => llamarApi<RecuentoDeCingulos>('/inventario/cingulos')
+export const cambiarTotalDeCingulos = (total: number) => llamarApi<RecuentoDeCingulos>('/inventario/cingulos', { method: 'PUT', json: { total } })
 export const traerEnser = (id: number) => llamarApi<Enser>(`/inventario/enseres/${id}`)
 
 /**

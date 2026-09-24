@@ -140,15 +140,16 @@ describe('préstamos del ropero (D15)', () => {
     assert.equal(ficha.estado, 'PRESTADA');
     assert.ok(ficha.hermano, 'sigue anotado quién la tiene');
 
-    const devolver = await como(Role.ALBACERIA, `/prendas/${prendaId}/devolver`, 'POST', { necesitaLavado: true });
+    // Una túnica devuelta va siempre al lavado: se lavan todas.
+    const devolver = await como(Role.ALBACERIA, `/prendas/${prendaId}/devolver`, 'POST', {});
     assert.equal(devolver.status, 200);
     const devuelta = ((await devolver.json()) as { data: { estado: string; hermano: unknown } }).data;
-    assert.equal(devuelta.estado, 'TALLER');
+    assert.equal(devuelta.estado, 'LAVADO');
     assert.equal(devuelta.hermano, null);
 
     // Lo que no está prestado no se devuelve.
-    assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}/devolver`, 'POST', { necesitaLavado: false })).status, 400);
-    // Del taller vuelve a disponible editando, que no toca el préstamo.
+    assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}/devolver`, 'POST', { rota: true })).status, 400);
+    // Del lavado vuelve a disponible editando, que no toca el préstamo.
     assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}`, 'PUT', { estado: 'DISPONIBLE' })).status, 200);
   });
 

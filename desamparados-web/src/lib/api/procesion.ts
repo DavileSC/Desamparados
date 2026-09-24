@@ -170,7 +170,10 @@ export interface TurnoDeReparto {
   horaFin: string
   capacidadEstimada: number
   activo: boolean
-  _count: { citas: number }
+  /** Las que no se anularon: reservadas, atendidas y las de quien no vino. */
+  citas: number
+  /** Las atendidas: quien vino y se llevó la papeleta. */
+  vinieron: number
 }
 
 export function turnosDeReparto(salida?: Salida) {

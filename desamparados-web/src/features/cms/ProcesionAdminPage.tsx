@@ -56,9 +56,11 @@ export default function ProcesionAdminPage() {
   const { fondoCabecera } = useColoresContabilidad()
 
   const [salida, setSalida] = useState<Salida>('PASION')
-  const [plazoLeido, setPlazo] = useState<PlazoDePapeletas | null>(null)
-  // Al cambiar de salida, el plazo de la otra no vale: se espera al suyo.
-  const plazo = plazoLeido?.salida === salida ? plazoLeido : null
+  const [plazo, setPlazo] = useState<PlazoDePapeletas | null>(null)
+  // Al cambiar de salida se sigue viendo la anterior hasta que llega la nueva:
+  // vaciar la pantalla mientras carga la hacía saltar dos veces.
+  const vista: Salida = plazo?.salida ?? salida
+  const cargando = plazo !== null && plazo.salida !== salida
   const [turnos, setTurnos] = useState<TurnoDeReparto[]>([])
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<{ texto: string; noticiaId: number | null } | null>(null)
@@ -149,7 +151,7 @@ export default function ProcesionAdminPage() {
   return (
     <>
       <Helmet><title>Procesión | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
-      <CabeceraSeccion titulo="Procesión" subtitulo={plazo ? `${NOMBRE[salida]} ${plazo.year}: días de reparto y solicitud de papeletas.` : undefined}>
+      <CabeceraSeccion titulo="Procesión" subtitulo={plazo ? `${NOMBRE[vista]} ${plazo.year}: días de reparto y solicitud de papeletas.` : undefined}>
         {rolesPorRutaCms['procesion/mesa'].includes(role) && <Button variant="outlined" component={Link} to="/cms/procesion/mesa">Abrir la mesa</Button>}
         {puedeCambiar && <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setDia(DIA_VACIO); setErrorDia(null); setCreando(true) }}>Nuevo día de reparto</Button>}
       </CabeceraSeccion>
@@ -169,7 +171,8 @@ export default function ProcesionAdminPage() {
 
       {!plazo && !error && <CircularProgress aria-label="Cargando la procesión" />}
 
-      {plazo && salida === 'ROSARIO' && (
+      <Box aria-busy={cargando} sx={{ opacity: cargando ? 0.55 : 1, transition: cargando ? 'opacity .2s .15s' : 'none' }}>
+      {plazo && vista === 'ROSARIO' && (
         <FechaDelRosario key={plazo.rosario?.eventoId ?? 'sin'} plazo={plazo} puedeCambiar={puedeCambiar} onGuardado={(t) => { setAviso({ texto: t, noticiaId: null }); void recargar() }} onError={setError} />
       )}
 
@@ -178,7 +181,7 @@ export default function ProcesionAdminPage() {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 3, flexWrap: 'wrap' }}>
             <Box sx={{ flex: '1 1 420px' }}>
               <Typography id="plazo-titulo" component="h2" sx={{ fontSize: 18, fontWeight: 600 }}>
-                {salida === 'ROSARIO' ? 'Inscripción del Rosario en el área de hermanos' : 'Solicitud de papeletas en el área de hermanos'}
+                {vista === 'ROSARIO' ? 'Inscripción del Rosario en el área de hermanos' : 'Solicitud de papeletas en el área de hermanos'}
               </Typography>
               <Typography sx={{ mt: 0.75, fontSize: 14.5, color: 'text.secondary', lineHeight: 1.55 }}>
                 Mientras está cerrada, los hermanos no pueden pedir papeleta ni reservar día: ven que el plazo aún no está abierto. La mesa puede apuntar a mano en cualquier momento.
@@ -190,7 +193,7 @@ export default function ProcesionAdminPage() {
               control={
                 <Switch
                   checked={plazo.abierto}
-                  disabled={!puedeCambiar || cambiando || (!plazo.abierto && sinDias)}
+                  disabled={!puedeCambiar || cambiando || cargando || (!plazo.abierto && sinDias)}
                   onChange={(_, abrir) => (abrir ? setAbriendo(true) : setCerrando(true))}
                   slotProps={{ input: { 'aria-label': 'Solicitud de papeletas abierta' } }}
                 />
@@ -202,7 +205,7 @@ export default function ProcesionAdminPage() {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 1.5 }}>
             <Cifra titulo="Días de reparto por delante" valor={String(plazo.diasDeReparto)}
               detalle={plazo.primerDia && plazo.ultimoDia ? (plazo.primerDia === plazo.ultimoDia ? `el ${formatoCorto.format(new Date(plazo.primerDia))}` : `del ${formatoCorto.format(new Date(plazo.primerDia))} al ${formatoCorto.format(new Date(plazo.ultimoDia))}`) : 'ninguno publicado'} />
-            {salida === 'PASION'
+            {vista === 'PASION'
               ? <CuotaDeSalida valor={plazo.cuotaSalida} puedeCambiar={role === 'ADMIN'} onGuardada={() => { setAviso({ texto: 'Cuota de salida guardada.', noticiaId: null }); void recargar() }} onError={setError} />
               : <Cifra titulo="Para participar" valor="La voluntad" detalle="un donativo libre, que puede ser 0 €" />}
             <Cifra titulo="Citas reservadas" valor={String(plazo.citasReservadas)} detalle={plazo.abierto ? 'en los días por delante' : 'se reservan con el plazo abierto'} />
@@ -229,30 +232,35 @@ export default function ProcesionAdminPage() {
                 <TableRow sx={cabeceraTabla(fondoCabecera)}>
                   <TableCell>Día</TableCell>
                   <TableCell>Horario</TableCell>
-                  <TableCell align="right">Aforo</TableCell>
                   <TableCell align="right">Citas</TableCell>
+                  <TableCell align="right">Vinieron</TableCell>
                   {puedeCambiar && <TableCell padding="none" sx={{ width: 64 }}><Box component="span" sx={soloLector}>Acciones</Box></TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {ordenados.map((t) => {
                   const pasado = new Date(t.horaFin).getTime() < ahora
-                  const citas = t._count.citas
+                  const citas = t.citas
                   return (
                     <TableRow key={t.id} hover sx={pasado ? { '& td': { color: 'text.disabled' } } : undefined}>
                       <TableCell sx={{ fontWeight: pasado ? 400 : 600 }}>{mayuscula(formatoDia.format(new Date(t.fecha)))}{pasado ? ' · pasado' : ''}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatoHora.format(new Date(t.horaInicio))} a {formatoHora.format(new Date(t.horaFin))}</TableCell>
-                      <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums' }}>{t.capacidadEstimada}</TableCell>
-                      <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{citas}</TableCell>
+                      {/* El aforo solo importa mientras se puede reservar: en los pasados sobra. */}
+                      <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                        <Box component="span" sx={{ fontWeight: 600 }}>{citas}</Box>
+                        {!pasado && <Box component="span" sx={{ color: 'text.secondary' }}> de {t.capacidadEstimada}</Box>}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{t.vinieron > 0 || pasado ? t.vinieron : '—'}</TableCell>
                       {puedeCambiar && (
                         <TableCell padding="none" align="right" sx={{ pr: 1 }}>
-                          <Tooltip title={citas > 0 ? 'Tiene citas: no se puede borrar' : 'Borrar el día'}>
+                          {/* Un día ya pasado es historia del reparto: no se borra. */}
+                          {!pasado && <Tooltip title={citas > 0 ? 'Tiene citas: no se puede borrar' : 'Borrar el día'}>
                             <span>
                               <IconButton size="small" disabled={citas > 0} aria-label={`Borrar el día ${formatoDia.format(new Date(t.fecha))}`} onClick={() => setPorBorrar(t)}>
                                 <DeleteOutlineIcon fontSize="small" />
                               </IconButton>
                             </span>
-                          </Tooltip>
+                          </Tooltip>}
                         </TableCell>
                       )}
                     </TableRow>
@@ -266,6 +274,7 @@ export default function ProcesionAdminPage() {
           </TableContainer>
         </Box>
       )}
+      </Box>
 
       {/* Abrir avisa a cientos de hermanos: se pregunta antes, y con qué avisar. */}
       <Dialog open={abriendo} onClose={() => !cambiando && setAbriendo(false)} maxWidth="sm" fullWidth>

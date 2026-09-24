@@ -446,6 +446,11 @@ model PapeletaSitio {
   /// De dónde sale la túnica: del ropero, propia o ninguna (mantilla). Null
   /// en las papeletas de antes de la mesa y en las del Rosario (de traje).
   origenTunica        OrigenTunica?
+  /// El cíngulo: se presta (y se devuelve con el resto de la ropa), o no
+  /// había y se le debe, o lleva el suyo, o no lleva. Los cíngulos son
+  /// todos iguales: no van numerados, se cuentan. Null en el Rosario (de
+  /// traje) y en las papeletas de antes.
+  cingulo             Cingulo?
   observaciones       String?
 
   // RELACIONES
@@ -530,6 +535,15 @@ enum OrigenTunica {
   NINGUNA
 }
 
+/// Qué pasa con el cíngulo de una papeleta.
+enum Cingulo {
+  PRESTADO // Se lo llevó: cuenta como fuera del ropero hasta que lo devuelve
+  DEBIDO // No quedaban: hay que dárselo cuando lo haya
+  PROPIO // Lleva el suyo
+  NINGUNO // No lleva (mantilla, sin túnica)
+  DEVUELTO // Lo prestado ya volvió al ropero
+}
+
 // ---------------------------------------------------------
 // 6. EVENTOS Y CALENDARIO
 // ---------------------------------------------------------
@@ -593,7 +607,7 @@ model Prenda {
   numero        String // Ej: "145-31" (túnica), "150" (capirote), "21M" (faraona)
   tipo          TipoPrenda // Enum a crear: TUNICA, CAPIROTE, FARAONA, CAPA
   talla         String? // Ej: "1.75m", "XL"
-  estado        EstadoPrenda @default(DISPONIBLE) // Enum: DISPONIBLE, PRESTADA, TALLER, BAJA
+  estado        EstadoPrenda @default(DISPONIBLE) // DISPONIBLE, PRESTADA, LAVADO, TALLER (rota, para arreglar), BAJA
   observaciones String?
 
   // Relación: ¿Quién se la ha llevado a casa?
@@ -615,6 +629,9 @@ enum TipoPrenda {
 enum EstadoPrenda {
   DISPONIBLE
   PRESTADA
+  /// Devuelta y en el lavado: todas las túnicas se lavan al volver.
+  LAVADO
+  /// Rota: para arreglar.
   TALLER
   BAJA
 }

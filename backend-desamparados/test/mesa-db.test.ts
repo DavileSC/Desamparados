@@ -21,6 +21,8 @@ import { PapeletasService } from '../src/services/procesion/papeletas.service.js
 import { MesaService } from '../src/services/procesion/mesa.service.js';
 import { ZonasService, type EntregaEnMesa } from '../src/services/procesion/zonas.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
+import { InventarioService } from '../src/services/inventario.service.js';
+import { CLAVE_CINGULOS, recuentoDeCingulos } from '../src/services/procesion/cingulos.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -62,6 +64,12 @@ async function escenario() {
   const claves: string[] = [];
   const cuotaSalida = await db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } });
   await db.configuracion.upsert({ where: { key: 'precio_papeleta_sitio' }, update: { value: '0' }, create: { key: 'precio_papeleta_sitio', value: '0' } });
+  const totalCingulos = await db.configuracion.findUnique({ where: { key: CLAVE_CINGULOS } });
+  /** Deja en el ropero `n` cíngulos libres, cuente lo que cuente la base de desarrollo. */
+  const cingulosLibres = async (n: number) => {
+    const { prestados } = await recuentoDeCingulos();
+    await db.configuracion.upsert({ where: { key: CLAVE_CINGULOS }, update: { value: String(prestados + n) }, create: { key: CLAVE_CINGULOS, value: String(prestados + n) } });
+  };
 
   const hermano = async (extra: { nombre?: string; tieneTunicaPropia?: boolean; userId?: number } = {}) => {
     const h = await db.hermano.create({
@@ -102,6 +110,8 @@ async function escenario() {
     await borrarUsuarioPrueba(admin.id);
     if (cuotaSalida) await db.configuracion.update({ where: { key: cuotaSalida.key }, data: { value: cuotaSalida.value } });
     else await db.configuracion.deleteMany({ where: { key: 'precio_papeleta_sitio' } });
+    if (totalCingulos) await db.configuracion.update({ where: { key: CLAVE_CINGULOS }, data: { value: totalCingulos.value } });
+    else await db.configuracion.deleteMany({ where: { key: CLAVE_CINGULOS } });
   };
 
   const inscribir = (hermanoId: number, extra: Partial<Parameters<typeof ZonasService.inscribir>[0]> = {}) =>
@@ -109,7 +119,7 @@ async function escenario() {
   const entregar = (solicitudId: number, extra: Partial<EntregaEnMesa> = {}) =>
     ZonasService.entregar({ solicitudId, origenTunica: 'PROPIA', ...extra }, clave(), meta);
 
-  return { admin, usuario, meta, hermano, cuota, prenda, prendas, turnos, hermanos, usuariosExtra, clave, inscribir, entregar, recoger };
+  return { admin, usuario, meta, hermano, cuota, prenda, prendas, turnos, hermanos, usuariosExtra, clave, inscribir, entregar, recoger, cingulosLibres };
 }
 
 const esHttp = (status: number, patron?: RegExp) => (err: unknown) =>
@@ -487,6 +497,110 @@ test('corregir una solicitud cambia lo pedido; corregir la papeleta cambia la ro
 
     await PapeletasService.anularPapeleta(papeletaId, e.meta);
     assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: cap.id } })).estado, EstadoPrenda.DISPONIBLE);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('el cíngulo va con la túnica del ropero; si no quedan, se le debe y se le da después', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    await e.cingulosLibres(1);
+    const [a, b, c] = [await e.hermano({ nombre: 'Ana' }), await e.hermano({ nombre: 'Blas' }), await e.hermano({ nombre: 'Cruz' })];
+    const [ta, tb] = [await e.prenda(TipoPrenda.TUNICA), await e.prenda(TipoPrenda.TUNICA)];
+
+    // Con túnica del ropero se le presta el cíngulo; con la suya, lleva el suyo.
+    const pa = await e.entregar((await e.inscribir(a.id)).solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: ta.numero });
+    assert.equal(pa.cingulo, 'PRESTADO');
+    assert.equal((await recuentoDeCingulos()).enElRopero, 0);
+    const pc = await e.entregar((await e.inscribir(c.id)).solicitudId);
+    assert.equal(pc.cingulo, 'PROPIO');
+
+    // No queda ninguno: pedirlo se niega, y sin decir nada se le debe.
+    const sb = (await e.inscribir(b.id)).solicitudId;
+    await assert.rejects(e.entregar(sb, { origenTunica: 'ROPERO', numTunicaAsignada: tb.numero, cingulo: 'PRESTADO' }), esHttp(409, /No quedan cíngulos/));
+    const pb = await e.entregar(sb, { origenTunica: 'ROPERO', numTunicaAsignada: tb.numero });
+    assert.equal(pb.cingulo, 'DEBIDO');
+    assert.equal((await MesaService.ficha(b.id)).cingulos.enElRopero, 0);
+    const faltan = await MesaService.listado(YEAR, { faltaCingulo: true });
+    assert.deepEqual(faltan.apuntados.filter((f) => e.hermanos.includes(f.hermano.id)).map((f) => f.hermano.id), [b.id]);
+    assert.ok(faltan.faltanCingulos >= 1);
+
+    // Llegan más cíngulos: se le da el suyo desde el listado.
+    await assert.rejects(MesaService.editarPapeleta(pb.papeletaId, { cingulo: 'PRESTADO' }, e.meta), esHttp(409, /No quedan cíngulos/));
+    await e.cingulosLibres(1);
+    await MesaService.editarPapeleta(pb.papeletaId, { cingulo: 'PRESTADO' }, e.meta);
+    assert.equal((await db.papeletaSitio.findUniqueOrThrow({ where: { id: pb.papeletaId } })).cingulo, 'PRESTADO');
+    assert.equal((await recuentoDeCingulos()).enElRopero, 0);
+
+    // Anular la papeleta devuelve también el cíngulo.
+    await PapeletasService.anularPapeleta(pa.papeletaId, e.meta);
+    assert.equal((await recuentoDeCingulos()).enElRopero, 1);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('después de la salida se devuelve todo: la túnica al lavado, lo roto al taller, el cíngulo al ropero', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    await e.cingulosLibres(1);
+    const h = await e.hermano();
+    const [tunica, capirote] = [await e.prenda(TipoPrenda.TUNICA), await e.prenda(TipoPrenda.CAPIROTE)];
+    const { papeletaId } = await e.entregar((await e.inscribir(h.id)).solicitudId, {
+      origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero, numCapiroteAsignado: capirote.numero,
+    });
+
+    // Quien tiene algo sin devolver sale en el buscador de Devolución y en la lista.
+    assert.equal((await MesaService.buscarPersonas(h.apellidos, { zona: 'devolucion' }))[0]?.id, h.id);
+    const ficha = await MesaService.ficha(h.id);
+    assert.deepEqual(ficha.prendas.map((p) => p.id).sort(), [tunica.id, capirote.id].sort());
+    assert.deepEqual(ficha.cingulosSinDevolver, [{ papeletaId, year: YEAR }]);
+    const lista = (await ZonasService.sinDevolver()).find((f) => f.hermano.id === h.id);
+    assert.equal(lista?.prendas.length, 2);
+    assert.equal(lista?.cingulos.length, 1);
+
+    const clave = e.clave();
+    const devolucion = { hermanoId: h.id, prendas: [{ id: tunica.id }, { id: capirote.id, rota: true }], cingulos: [papeletaId] };
+    const r = await ZonasService.devolver(devolucion, clave, e.meta);
+    assert.equal(r.repetida, false);
+    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: tunica.id } })).estado, EstadoPrenda.LAVADO, 'las túnicas se lavan todas');
+    const rota = await db.prenda.findUniqueOrThrow({ where: { id: capirote.id } });
+    assert.equal(rota.estado, EstadoPrenda.TALLER);
+    assert.equal(rota.hermanoId, null);
+    assert.equal((await db.papeletaSitio.findUniqueOrThrow({ where: { id: papeletaId } })).cingulo, 'DEVUELTO');
+    assert.equal((await ZonasService.devolver(devolucion, clave, e.meta)).repetida, true, 'reintentar no falla');
+    await assert.rejects(ZonasService.devolver(devolucion, e.clave(), e.meta), esHttp(409, /ya no consta prestada/));
+    assert.equal((await ZonasService.sinDevolver()).some((f) => f.hermano.id === h.id), false);
+    assert.equal((await MesaService.buscarPersonas(h.apellidos, { zona: 'devolucion' })).length, 0);
+
+    // Del lavado sale lista para prestar.
+    const lavadas = await InventarioService.marcarLavadas([tunica.id]);
+    assert.deepEqual(lavadas.ids, [tunica.id]);
+    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: tunica.id } })).estado, EstadoPrenda.DISPONIBLE);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('en el Inventario la túnica devuelta va al lavado; lo demás, disponible; lo roto, al taller; y la del lavado se puede prestar', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const h = await e.hermano();
+    const tunica = await e.prenda(TipoPrenda.TUNICA, numeroDePrueba(), { estado: EstadoPrenda.PRESTADA, hermanoId: h.id });
+    const capirote = await e.prenda(TipoPrenda.CAPIROTE, numeroDePrueba(), { estado: EstadoPrenda.PRESTADA, hermanoId: h.id });
+    const faraona = await e.prenda(TipoPrenda.FARAONA, numeroDePrueba(), { estado: EstadoPrenda.PRESTADA, hermanoId: h.id });
+    assert.equal((await InventarioService.devolverPrenda(tunica.id)).estado, EstadoPrenda.LAVADO);
+    assert.equal((await InventarioService.devolverPrenda(capirote.id)).estado, EstadoPrenda.DISPONIBLE);
+    assert.equal((await InventarioService.devolverPrenda(faraona.id, true)).estado, EstadoPrenda.TALLER);
+
+    // En el reparto, meses después, la del lavado ya está limpia aunque nadie lo marcara.
+    const otro = await e.hermano({ nombre: 'Otro' });
+    await e.entregar((await e.inscribir(otro.id)).solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero, cingulo: 'DEBIDO' });
+    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: tunica.id } })).hermanoId, otro.id);
   } finally {
     await e.recoger();
   }

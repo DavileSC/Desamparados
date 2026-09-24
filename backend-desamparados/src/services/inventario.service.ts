@@ -6,6 +6,7 @@ import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { condicionBusqueda, palabrasDeBusqueda } from '../domain/busqueda-texto.js';
 import { ORDENES_ENSERES, ORDENES_PRENDAS, ordenDe } from '../domain/ordenacion.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
+import { estadoAlDevolver } from './procesion/ropa.js';
 
 /** Los valores crudos de la consulta: quien decide qué es válido es sanearPaginacion. */
 interface ConsultaPaginada {
@@ -292,21 +293,36 @@ export class InventarioService {
     return InventarioService.getPrendaById(prendaId);
   }
 
-  static async devolverPrenda(prendaId: number, necesitaLavado: boolean = false) {
+  /**
+   * Registrar que vuelve una prenda: la túnica, siempre al lavado; lo demás,
+   * disponible; lo roto, al taller para arreglarlo.
+   */
+  static async devolverPrenda(prendaId: number, rota: boolean = false) {
+    const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
+    if (!prenda) throw new NotFoundError('Prenda no encontrada.');
     const { count } = await db.prenda.updateMany({
       where: { id: prendaId, estado: EstadoPrenda.PRESTADA },
       data: {
-        estado: necesitaLavado ? EstadoPrenda.TALLER : EstadoPrenda.DISPONIBLE,
+        estado: estadoAlDevolver(prenda.tipo, rota),
         hermanoId: null, // Desvinculamos al hermano
         fechaAsignacion: null
       }
     });
-    if (count === 0) {
-      const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
-      if (!prenda) throw new NotFoundError('Prenda no encontrada.');
-      throw new HttpError('La prenda no está prestada.');
-    }
+    if (count === 0) throw new HttpError('La prenda no está prestada.');
     return InventarioService.getPrendaById(prendaId);
+  }
+
+  /** Las prendas del lavado que ya están limpias (sin `ids`, todas), de vuelta al ropero. */
+  static async marcarLavadas(ids?: number[]) {
+    return db.$transaction(async (tx) => {
+      const lavando = await tx.prenda.findMany({
+        where: { estado: EstadoPrenda.LAVADO, ...(ids && { id: { in: ids } }) },
+        select: { id: true },
+      });
+      const idsLavadas = lavando.map((p) => p.id);
+      await tx.prenda.updateMany({ where: { id: { in: idsLavadas }, estado: EstadoPrenda.LAVADO }, data: { estado: EstadoPrenda.DISPONIBLE } });
+      return { ids: idsLavadas, lavadas: idsLavadas.length };
+    });
   }
 
   // =================================================================

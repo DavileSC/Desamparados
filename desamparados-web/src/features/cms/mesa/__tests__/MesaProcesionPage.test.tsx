@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import { useAuthStore } from '../../../altas/auth/store'
 import MesaProcesionPage from '../MesaProcesionPage'
-import type { Apuntados, Colas, FichaDeMesa, PrendaDelRopero, Requisitos } from '../../../../lib/api/mesa'
+import type { Apuntados, Colas, FichaDeMesa, PrendaDelRopero, Requisitos, SinDevolver } from '../../../../lib/api/mesa'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -16,16 +16,17 @@ const APUNTADOS: Apuntados = {
   year: 2027,
   salida: 'PASION',
   puestos: [{ puesto: 'Guardería', total: 1 }, { puesto: 'Trono', total: 1 }],
+  faltanCingulos: 0,
   apuntados: [
     {
       tipo: 'papeleta', id: 1, puesto: 'Trono', puestoPedido: 'Trono', tramo: null, observaciones: null, createdAt: '2027-03-01T10:00:00.000Z',
-      numTunicaAsignada: null, numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: 'PROPIA',
+      numTunicaAsignada: null, numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: 'PROPIA', cingulo: 'PROPIO',
       pagado: { importe: 0, estado: 'EXENTO', metodoPago: null }, estado: 'recogida', pendiente: 0,
       hermano: { ...hermanoDe(10, 'Aaron', 'Galea Mayorga', '2009-05-06T12:00:00.000Z'), telefono: '623577927', alturaHombro: 145 },
     },
     {
       tipo: 'solicitud', id: 2, puesto: 'Guardería', puestoPedido: 'Guardería', tramo: null, observaciones: null, createdAt: '2027-03-01T10:00:00.000Z',
-      numTunicaAsignada: null, numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: null,
+      numTunicaAsignada: null, numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: null, cingulo: null,
       pagado: null, estado: 'por-pagar', pendiente: 20,
       hermano: hermanoDe(11, 'Abel', 'Velasco Pérez', '2021-06-06T12:00:00.000Z'),
     },
@@ -42,9 +43,10 @@ const FICHA: FichaDeMesa = {
   id: 20, nombre: 'Abel', primerApellido: 'Reyes', segundoApellido: 'Díaz', apellidos: 'Reyes Díaz',
   fechaNacimiento: '2013-08-01T12:00:00.000Z', sexo: 'HOMBRE', telefono: '622661532', email: 'virginia@ejemplo.es', dni: null,
   numeroHermano: 57, esTitular: false, situacion: 'activo', tieneTunicaPropia: false, alturaHombro: null, puesto: null,
-  salida: 'PASION', year: 2027, prendas: [], solicitud: null, papeleta: null, requisitos: DEBE, familia: [],
-  anterior: { year: 2026, puesto: 'Nazareno', origenTunica: 'ROPERO', numTunicaAsignada: '140-107', numCapiroteAsignado: '150', numFaraonaAsignada: null },
-  propuesta: { puesto: 'Nazareno', tunica: { origen: 'ROPERO', numero: '140-107' }, capirote: '150', faraona: null },
+  salida: 'PASION', year: 2027, prendas: [], cingulosSinDevolver: [], cingulos: { total: 10, prestados: 3, enElRopero: 7, debidos: 0 },
+  solicitud: null, papeleta: null, requisitos: DEBE, familia: [],
+  anterior: { year: 2026, puesto: 'Nazareno', origenTunica: 'ROPERO', numTunicaAsignada: '140-107', numCapiroteAsignado: '150', numFaraonaAsignada: null, cingulo: 'DEVUELTO' },
+  propuesta: { puesto: 'Nazareno', tunica: { origen: 'ROPERO', numero: '140-107' }, capirote: '150', faraona: null, cingulo: 'PRESTADO' },
   cuotaSalida: 0,
 }
 
@@ -63,6 +65,8 @@ const libre = (numero: string, talla: string | null = null): PrendaDelRopero => 
 
 interface Opciones {
   ficha?: FichaDeMesa
+  apuntados?: Apuntados
+  sinDevolver?: SinDevolver[]
   prendas?: Record<string, PrendaDelRopero[]>
   /** Respuestas de los POST, por el final de la ruta; `'red'` simula que la WiFi se ha caído. */
   respuestas?: Record<string, unknown | 'red'>
@@ -81,7 +85,8 @@ function servidor(opciones: Opciones = {}) {
         return respuesta === 'red' ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve(json(respuesta))
       }
     }
-    if (url.includes('/mesa/apuntados')) return Promise.resolve(json(APUNTADOS))
+    if (url.includes('/mesa/apuntados')) return Promise.resolve(json(opciones.apuntados ?? APUNTADOS))
+    if (url.includes('/mesa/sin-devolver')) return Promise.resolve(json(opciones.sinDevolver ?? []))
     if (url.includes('/mesa/colas')) return Promise.resolve(json(COLAS))
     if (url.includes('/mesa/esperados')) return Promise.resolve(json([]))
     if (url.includes('/mesa/personas?')) {
@@ -245,13 +250,47 @@ describe('MesaProcesionPage · Túnicas', () => {
     expect(screen.getByText(/En 2026: Nazareno · túnica 140-107 · capirote 150/)).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'N.º de túnica' })).toHaveValue('140-107')
     expect(await screen.findByText('Libre en el ropero · talla 140')).toBeInTheDocument()
+    // El cíngulo va con la túnica del ropero, y se ve cuántos quedan.
+    expect(screen.getByRole('button', { name: 'Se lo lleva' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Quedan 7 en el ropero')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Dar la ropa' }))
 
     await waitFor(() => expect(post(llamadas, '/mesa/entregar')).toHaveLength(1))
     expect(post(llamadas, '/mesa/entregar')[0].cuerpo).toMatchObject({
-      solicitudId: 99, puesto: 'Nazareno', origenTunica: 'ROPERO', numTunicaAsignada: '140-107', numCapiroteAsignado: '150',
+      solicitudId: 99, puesto: 'Nazareno', origenTunica: 'ROPERO', numTunicaAsignada: '140-107', numCapiroteAsignado: '150', cingulo: 'PRESTADO',
     })
     expect(await screen.findByText(/Nazareno, túnica 140-107\. Recogida/)).toBeInTheDocument()
+  })
+
+  it('sin cíngulos en el ropero se le debe; con túnica propia lleva el suyo', async () => {
+    const user = userEvent.setup()
+    const sinCingulos = { ...apuntado, cingulos: { total: 10, prestados: 10, enElRopero: 0, debidos: 2 } }
+    const llamadas = servidor({ ficha: sinCingulos, respuestas: { '/mesa/entregar': { papeletaId: 99, puesto: 'Nazareno', numTunicaAsignada: '140-107', cingulo: 'DEBIDO', repetida: false } } })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+
+    expect(await screen.findByRole('button', { name: 'Se le debe' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Se lo lleva' })).toBeDisabled()
+    expect(screen.getByText(/No quedan cíngulos en el ropero/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Propia' }))
+    expect(screen.getByRole('button', { name: 'Propio' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Del ropero' }))
+    expect(screen.getByRole('button', { name: 'Se le debe' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Dar la ropa' }))
+    await waitFor(() => expect(post(llamadas, '/mesa/entregar')).toHaveLength(1))
+    expect(post(llamadas, '/mesa/entregar')[0].cuerpo).toMatchObject({ cingulo: 'DEBIDO' })
+    expect(await screen.findByText(/sin cíngulo \(se le debe\)\. Recogida/)).toBeInTheDocument()
+  })
+
+  it('quien trae ropa sin devolver lo ve avisado', async () => {
+    const user = userEvent.setup()
+    servidor({ ficha: { ...apuntado, prendas: [{ id: 7, tipo: 'TUNICA', numero: '140-107', talla: '140', fechaAsignacion: null }], cingulosSinDevolver: [{ papeletaId: 70, year: 2026 }] } })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+    expect(await screen.findByText(/Tiene sin devolver: túnica 140-107 y cíngulo/)).toBeInTheDocument()
+    expect(screen.getByText('Ya tiene uno prestado: se queda con ese')).toBeInTheDocument()
   })
 
   it('sin pagar no sale la túnica: lo dice y manda a Tesorería', async () => {
@@ -330,6 +369,27 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/admin/solicitudes/99'))).toBe(true))
   })
 
+  it('«Le falta el cíngulo» filtra el listado, y desde la ficha se le da cuando lo haya', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem('mesa.zona', 'listado')
+    const papeleta = {
+      id: 5, year: 2027, puesto: 'Nazareno', puestoPedido: 'Nazareno', tramo: null, observaciones: null,
+      numTunicaAsignada: '140-107', numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: 'ROPERO' as const, cingulo: 'DEBIDO' as const,
+      recibo: { id: 1, concepto: 'Papeleta Sitio 2027', importe: 0, estado: 'EXENTO' as const, metodoPago: null, tipo: 'PAPELETA_SITIO' },
+    }
+    const llamadas = servidor({ apuntados: { ...APUNTADOS, faltanCingulos: 1 }, ficha: { ...FICHA, papeleta, requisitos: AL_DIA } })
+    renderWithProviders(<MesaProcesionPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Le falta el cíngulo · 1' }))
+    await waitFor(() => expect(llamadas.some((l) => l.url.includes('/mesa/apuntados') && l.url.includes('faltaCingulo=1'))).toBe(true))
+
+    await buscarAbel(user)
+    expect(await screen.findByText(/Se le debe el cíngulo/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Dárselo ahora' }))
+    await waitFor(() => expect(llamadas.some((l) => l.metodo === 'PATCH' && l.url.includes('/admin/papeletas/5'))).toBe(true))
+    expect(llamadas.find((l) => l.url.includes('/admin/papeletas/5'))?.cuerpo).toEqual({ cingulo: 'PRESTADO' })
+  })
+
   it('Alt+número cambia de zona, y cada ordenador la recuerda', async () => {
     const user = userEvent.setup()
     servidor()
@@ -338,5 +398,63 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     await user.keyboard('{Alt>}3{/Alt}')
     expect(screen.getByRole('tab', { name: 'Túnicas' })).toHaveAttribute('aria-selected', 'true')
     expect(localStorage.getItem('mesa.zona')).toBe('tunicas')
+  })
+})
+
+describe('MesaProcesionPage · Devolución', () => {
+  beforeEach(() => localStorage.setItem('mesa.zona', 'devolucion'))
+  const conRopa: FichaDeMesa = {
+    ...FICHA, requisitos: AL_DIA,
+    prendas: [
+      { id: 1, tipo: 'TUNICA', numero: '140-107', talla: '140', fechaAsignacion: '2027-03-08T17:00:00.000Z' },
+      { id: 2, tipo: 'CAPIROTE', numero: '150', talla: null, fechaAsignacion: '2027-03-08T17:00:00.000Z' },
+    ],
+    cingulosSinDevolver: [{ papeletaId: 77, year: 2027 }],
+  }
+  const lista: SinDevolver[] = [{
+    hermano: { id: 20, nombre: 'Abel', apellidos: 'Reyes Díaz', fechaNacimiento: FICHA.fechaNacimiento, numeroHermano: 57, telefono: '622661532' },
+    prendas: [{ id: 1, tipo: 'TUNICA', numero: '140-107', fechaAsignacion: null }, { id: 2, tipo: 'CAPIROTE', numero: '150', fechaAsignacion: null }],
+    cingulos: [{ id: 77, year: 2027 }],
+  }]
+
+  it('la lista dice quién no ha devuelto y qué; lo devuelve todo, lo roto al taller', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor({ ficha: conRopa, sinDevolver: lista, respuestas: { '/mesa/devolver': { prendas: [], cingulos: 1, repetida: false } } })
+    renderWithProviders(<MesaProcesionPage />)
+
+    const pendientes = await screen.findByRole('region', { name: 'Sin devolver' })
+    expect(await within(pendientes).findByText(/túnica 140-107, capirote 150 y cíngulo/)).toBeInTheDocument()
+    await user.click(within(pendientes).getByRole('button', { name: /Abel Reyes Díaz/ }))
+
+    expect(await screen.findByText(/al lavado/)).toBeInTheDocument()
+    await user.click(screen.getAllByLabelText('Rota: al taller')[1])
+    await user.click(screen.getByRole('button', { name: 'Lo devuelve todo' }))
+
+    await waitFor(() => expect(post(llamadas, '/mesa/devolver')).toHaveLength(1))
+    expect(post(llamadas, '/mesa/devolver')[0].cuerpo).toMatchObject({ hermanoId: 20, prendas: [{ id: 1 }, { id: 2, rota: true }], cingulos: [77] })
+    expect(await screen.findByText(/Abel Reyes: lo ha devuelto todo/)).toBeInTheDocument()
+  })
+
+  it('si no trae algo, sigue a su nombre y lo dice', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor({ ficha: conRopa, respuestas: { '/mesa/devolver': { prendas: [], cingulos: 0, repetida: false } } })
+    renderWithProviders(<MesaProcesionPage />)
+    await user.type(await screen.findByRole('textbox', { name: 'Buscar en el censo' }), 'Abel')
+    await user.click(await screen.findByRole('button', { name: /Abel Reyes Díaz/ }))
+    expect(llamadas.some((l) => l.url.includes('/mesa/personas?') && l.url.includes('zona=devolucion'))).toBe(true)
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Cíngulo' }))
+    await user.click(screen.getByRole('button', { name: 'Devolver lo marcado' }))
+    await waitFor(() => expect(post(llamadas, '/mesa/devolver')).toHaveLength(1))
+    expect(post(llamadas, '/mesa/devolver')[0].cuerpo).toMatchObject({ cingulos: [] })
+    expect(await screen.findByText(/Le falta: cíngulo/)).toBeInTheDocument()
+  })
+
+  it('en el Rosario no hay devolución: se va de traje', async () => {
+    localStorage.setItem('mesa.salida', 'ROSARIO')
+    servidor()
+    renderWithProviders(<MesaProcesionPage />)
+    await screen.findByRole('table', { name: 'Apuntados' })
+    expect(screen.queryByRole('tab', { name: 'Devolución' })).not.toBeInTheDocument()
   })
 })

@@ -116,7 +116,10 @@ export default function BuscadorPersonas({
         <Box role="list" aria-label="Resultados de la búsqueda" ref={lista}>
           {resultados.length === 0 && !buscando && (
             <Typography variant="body2" color="text.secondary" sx={{ px: 1.25, py: 1 }}>
-              {zona === 'inscripcion' ? `Nadie sin apuntar con «${texto.trim()}».` : zona === 'tunicas' ? `Nadie con «${texto.trim()}» pendiente de recoger.` : `Nadie con «${texto.trim()}» en el censo.`}
+              {zona === 'inscripcion' ? `Nadie sin apuntar con «${texto.trim()}».`
+                : zona === 'tunicas' ? `Nadie con «${texto.trim()}» pendiente de recoger.`
+                  : zona === 'devolucion' ? `Nadie con «${texto.trim()}» que tenga ropa sin devolver.`
+                    : `Nadie con «${texto.trim()}» en el censo.`}
             </Typography>
           )}
           {resultados.map((p, i) => fila(p, i, (

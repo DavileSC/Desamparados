@@ -54,7 +54,7 @@ export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoI
           } else if (exacta.estado === 'PRESTADA') {
             setEstado({ tipo: 'ocupada', texto: `La tiene ${exacta.hermano ? `${exacta.hermano.nombre} ${exacta.hermano.apellidos}` : 'otra persona'}` })
           } else if (exacta.estado === 'TALLER') {
-            setEstado({ tipo: 'ocupada', texto: 'Está en el taller' })
+            setEstado({ tipo: 'ocupada', texto: 'Está en el taller, para arreglar' })
           } else if (exacta.estado === 'BAJA') {
             setEstado({ tipo: 'ocupada', texto: 'Está dada de baja en el ropero' })
           } else {
@@ -74,7 +74,7 @@ export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoI
   const ayuda = (() => {
     switch (estado.tipo) {
       case 'buscando': return 'Mirando en el ropero…'
-      case 'libre': return `Libre en el ropero${talla(estado.prenda)}`
+      case 'libre': return `${estado.prenda.estado === 'LAVADO' ? 'Libre (constaba en el lavado)' : 'Libre en el ropero'}${talla(estado.prenda)}`
       case 'suya': return `Ya la tiene esta persona${talla(estado.prenda)}`
       case 'ocupada': return estado.texto
       case 'falta': return estado.libres.length ? `No está en el ropero. Libres: ${estado.libres.join(', ')}` : 'No está en el ropero'

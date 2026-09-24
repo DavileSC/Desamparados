@@ -9,10 +9,10 @@ import { imagenOpcional } from './noticia.schema';
 
 // Enums para el Ropero
 const tipoPrendaSchema = type("'TUNICA' | 'CAPIROTE' | 'FARAONA' | 'CAPA' | 'OTRO'");
-const estadoPrendaSchema = type("'DISPONIBLE' | 'PRESTADA' | 'TALLER' | 'BAJA'");
+const estadoPrendaSchema = type("'DISPONIBLE' | 'PRESTADA' | 'LAVADO' | 'TALLER' | 'BAJA'");
 // PRESTADA no se elige: la pone «Asignar», que es lo que guarda también quién
 // la tiene. Dada de alta como prestada, la prenda quedaba prestada a nadie.
-const estadoAltaPrendaSchema = type("'DISPONIBLE' | 'TALLER' | 'BAJA'");
+const estadoAltaPrendaSchema = type("'DISPONIBLE' | 'LAVADO' | 'TALLER' | 'BAJA'");
 
 // Unidades de un lote: enteras. Un 2.5 llegaba hasta Prisma (columna Int) y
 // salía como un 500. El tope solo evita desbordar la columna.
@@ -120,7 +120,11 @@ export const queryPrendaSchema = type({
 const numeroHermanoSchema = type("number.integer > 0");
 
 export const asignarPrendaSchema = type({ body: { numeroHermano: numeroHermanoSchema } });
-export const devolverPrendaSchema = type({ body: { "necesitaLavado?": "boolean" } });
+// Vuelve rota (al taller) o no: la túnica va siempre al lavado.
+export const devolverPrendaSchema = type({ body: { "rota?": "boolean" } });
+// Las prendas del lavado que ya están limpias; sin ids, todas.
+export const prendasLavadasSchema = type({ body: { "ids?": type("number.integer > 0").array().atMostLength(500) } });
+export const totalCingulosSchema = type({ body: { total: type("number.integer >= 0").narrow((n) => n <= 5000).describe("un número de cíngulos entre 0 y 5000") } });
 export const numeroHermanoParamSchema = type({
     params: { numeroHermano: type("string").matching(/^[1-9]\d{0,8}$/).describe("un número de hermano") }
 });

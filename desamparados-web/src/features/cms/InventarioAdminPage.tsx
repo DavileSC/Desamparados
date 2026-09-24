@@ -4,7 +4,10 @@ import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
-import { crearEnser, crearPrenda, eliminarEnser, eliminarPrenda, listarEnseres, opcionesDeEnseres, listarPrendas, devolverPrenda, type Enser, type FiltrosPrendas, type Prenda } from '../../lib/api/inventario'
+import {
+  cambiarTotalDeCingulos, crearEnser, crearPrenda, devolverPrenda, eliminarEnser, eliminarPrenda, listarEnseres, listarPrendas, marcarLavadas,
+  opcionesDeEnseres, recuentoDeCingulos, type Enser, type FiltrosPrendas, type Prenda, type RecuentoDeCingulos,
+} from '../../lib/api/inventario'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
@@ -16,6 +19,7 @@ import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import TablaEnseres from './inventario/TablaEnseres'
 import TablaPrendas from './inventario/TablaPrendas'
+import TarjetaCingulos from './inventario/TarjetaCingulos'
 
 const emptyEnser = { nombre: '', referencia: '', categoria: '', ubicacion: '', cantidadOptimo: '0', cantidadBueno: '0', cantidadReparar: '0' }
 const emptyPrenda = { numero: '', tipo: 'TUNICA', talla: '', estado: 'DISPONIBLE', observaciones: '' }
@@ -83,6 +87,8 @@ export default function InventarioAdminPage() {
   // La prenda que se está prestando o devolviendo: cada una con su diálogo.
   const [prestando, setPrestando] = useState<Prenda | null>(null)
   const [devolviendo, setDevolviendo] = useState<Prenda | null>(null)
+  const [lavandoTodo, setLavandoTodo] = useState(false)
+  const [cingulos, setCingulos] = useState<RecuentoDeCingulos | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [porBorrar, setPorBorrar] = useState<Enser | Prenda | null>(null)
@@ -116,7 +122,9 @@ export default function InventarioAdminPage() {
       orden: filtrosEnseres.orden,
     }),
     listarPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }, filtrosPrendas as FiltrosPrendas),
-  ]).then(([a, b]) => { if (!vigente()) return; setListaEnseres(a.data); setMetaEnseres(a.meta); setListaPrendas(b.data); setMetaPrendas(b.meta) }), [enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina, filtrosEnseres, filtrosPrendas])
+    // Sin el recuento de cíngulos, el ropero se sigue viendo.
+    recuentoDeCingulos().catch(() => null),
+  ]).then(([a, b, c]) => { if (!vigente()) return; setListaEnseres(a.data); setMetaEnseres(a.meta); setListaPrendas(b.data); setMetaPrendas(b.meta); setCingulos(c) }), [enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina, filtrosEnseres, filtrosPrendas])
 
   // Las categorías y ubicaciones en uso, para los desplegables. Si fallan, los
   // filtros se quedan sin opciones pero el listado se sigue viendo.
@@ -170,15 +178,27 @@ export default function InventarioAdminPage() {
     setNotice(aviso)
     await cargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
   }
-  const devolver = async (necesitaLavado: boolean) => {
+  const devolver = async (rota: boolean) => {
     const prenda = devolviendo
     setDevolviendo(null)
     if (!prenda) return
     try {
-      await devolverPrenda(prenda.id, necesitaLavado)
+      const { data } = await devolverPrenda(prenda.id, rota)
       await cargar()
-      setNotice(necesitaLavado ? `Prenda ${prenda.numero} devuelta: pasa al taller.` : `Prenda ${prenda.numero} devuelta: queda disponible.`)
+      setNotice(`Prenda ${prenda.numero} devuelta: ${data.estado === 'TALLER' ? 'al taller, para arreglarla' : data.estado === 'LAVADO' ? 'al lavado' : 'queda disponible'}.`)
     } catch (e: unknown) { setError(mensaje(e, 'No se ha podido registrar la devolución.')) }
+  }
+  const lavadas = async (prenda?: Prenda) => {
+    setLavandoTodo(false)
+    try {
+      const r = await marcarLavadas(prenda && [prenda.id])
+      await cargar()
+      setNotice(prenda ? `Prenda ${prenda.numero} lavada: queda disponible.` : r.lavadas === 0 ? 'No había nada en el lavado.' : `${r.lavadas} ${r.lavadas === 1 ? 'prenda lavada queda disponible' : 'prendas lavadas quedan disponibles'}.`)
+    } catch (e: unknown) { setError(mensaje(e, 'No se han podido marcar como lavadas.')) }
+  }
+  const guardarCingulos = async (total: number) => {
+    setCingulos(await cambiarTotalDeCingulos(total))
+    setNotice(`Cíngulos del Grupo: ${total}.`)
   }
 
   return <>
@@ -189,7 +209,8 @@ export default function InventarioAdminPage() {
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 2 }}>{notice}</Alert>}
     <DialogoPrestamo key={prestando?.id ?? 'cerrado'} prenda={prestando} onCerrar={() => setPrestando(null)} onPrestada={(aviso) => void prestada(aviso)} />
-    <DialogoDevolucion prenda={devolviendo} onElegir={(necesitaLavado) => void devolver(necesitaLavado)} onCancelar={() => setDevolviendo(null)} />
+    <DialogoDevolucion prenda={devolviendo} onElegir={(rota) => void devolver(rota)} onCancelar={() => setDevolviendo(null)} />
+    <DialogoConfirmacion abierto={lavandoTodo} titulo="¿Todo el lavado, limpio?" mensaje="Todas las prendas que constan en el lavado pasan a estar disponibles para prestarlas." textoConfirmar="Sí, todo limpio" onConfirmar={() => void lavadas()} onCancelar={() => setLavandoTodo(false)} />
     <DialogoConfirmacion abierto={porBorrar !== null} titulo={tab === 0 ? '¿Eliminar el enser?' : '¿Eliminar la prenda?'} mensaje={porBorrar ? nombreDe(porBorrar) : ''} textoConfirmar="Eliminar" peligro onConfirmar={() => void borrar()} onCancelar={() => setPorBorrar(null)} />
 
     <VentanaFormulario
@@ -243,7 +264,11 @@ export default function InventarioAdminPage() {
         ]}
         orden={{ clave: 'orden', opciones: ORDENES_ENSERES }}
       />
-    ) : (
+    ) : (<>
+      <TarjetaCingulos recuento={cingulos} onGuardar={guardarCingulos} />
+      <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 1 }}>
+        <Button size="small" onClick={() => setLavandoTodo(true)}>Todo el lavado, limpio</Button>
+      </Stack>
       <BarraListado
         valores={filtrosPrendas}
         onCambiar={cambiarPrendas}
@@ -254,11 +279,11 @@ export default function InventarioAdminPage() {
         ]}
         orden={{ clave: 'orden', opciones: ORDENES_PRENDAS }}
       />
-    )}
+    </>)}
     {/* Hasta que llega la primera página no se pinta la tabla: vacía, diría «No hay enseres» mientras carga. */}
     {tab === 0
       ? metaEnseres && <TablaEnseres enseres={listaEnseres} volver={consultaListado} onBorrar={setPorBorrar} />
-      : metaPrendas && <TablaPrendas prendas={listaPrendas} volver={consultaListado} onPrestar={setPrestando} onDevolver={setDevolviendo} onBorrar={setPorBorrar} />}
+      : metaPrendas && <TablaPrendas prendas={listaPrendas} volver={consultaListado} onPrestar={setPrestando} onDevolver={setDevolviendo} onLavada={(p) => void lavadas(p)} onBorrar={setPorBorrar} />}
     {tab === 0
       ? metaEnseres && <Paginador meta={metaEnseres} onPagina={enseres.irAPagina} onTamano={enseres.cambiarTamano} etiqueta="los enseres" />
       : metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}

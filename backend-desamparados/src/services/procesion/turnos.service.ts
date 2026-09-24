@@ -10,6 +10,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../audito
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { motivoTurnoInvalido } from '../../domain/datos-procesion.js';
 import { DATOS_SALIDA } from '../../domain/salidas.js';
+import { PlazoPapeletasService } from './plazo.service';
 
 const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
 
@@ -45,19 +46,29 @@ function fotoTurno(t: { fecha: Date; horaInicio: Date; horaFin: Date; capacidadE
 export class TurnosService {
 
   /**
-   * Listar absolutamente todos los turnos para el panel de control de Secretaría.
-   * Incluye los pasados, los inactivos y la ocupación real.
+   * Los días de reparto de la salida de este año, para el panel de Secretaría:
+   * los que quedan y los que ya pasaron. Los de otros años no salen (se
+   * guardan: sus citas son el histórico de los hermanos).
+   *
+   * `citas` cuenta todas las que no se anularon: al venir, la cita pasa de
+   * reservada a atendida, y contar solo las reservadas dejaba a 0 los días
+   * ya repartidos. `vinieron`, las atendidas.
    */
-  static async getTodosLosTurnos(salida?: Salida) {
-    return await db.turno.findMany({
-      where: salida ? { salida } : {},
+  static async getTodosLosTurnos(salida: Salida = 'PASION') {
+    const year = await PlazoPapeletasService.anioDeLaProcesion(salida);
+    const turnos = await db.turno.findMany({
+      where: { salida, fecha: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) } },
       orderBy: { fecha: 'desc' },
-      include: {
-        _count: {
-          select: { citas: { where: { estado: EstadoCita.RESERVADA } } }
-        }
-      }
     });
+    const cuentas = await db.cita.groupBy({
+      by: ['turnoId', 'estado'],
+      where: { turnoId: { in: turnos.map((t) => t.id) }, estado: { not: EstadoCita.CANCELADA } },
+      _count: { _all: true },
+    });
+    const cuantas = (turnoId: number, estado?: EstadoCita) => cuentas
+      .filter((c) => c.turnoId === turnoId && (!estado || c.estado === estado))
+      .reduce((s, c) => s + c._count._all, 0);
+    return turnos.map((t) => ({ ...t, citas: cuantas(t.id), vinieron: cuantas(t.id, EstadoCita.ATENDIDA) }));
   }
 
   /**
@@ -140,15 +151,19 @@ export class TurnosService {
   }
 
   /**
-   * Elimina un día de reparto (Solo si nos hemos equivocado al crearlo y no hay nadie apuntado).
+   * Elimina un día de reparto: solo si nos hemos equivocado al crearlo, aún
+   * no ha pasado y no hay nadie apuntado. Uno ya pasado es historia del reparto.
    */
   static async eliminarTurno(turnoId: number, meta?: MetaDeAuditoria) {
     const turno = await db.turno.findUnique({ where: { id: turnoId } });
     if (!turno) throw new NotFoundError('Turno no encontrado');
 
+    if (turno.horaFin.getTime() < Date.now()) {
+      throw new HttpError('Ese día de reparto ya ha pasado: se queda como parte del histórico.');
+    }
     const ocupacion = await db.cita.count({ where: { turnoId } });
     if (ocupacion > 0) {
-      throw new HttpError('No puedes borrar este día porque ya hay hermanos con cita. Desactívalo en su lugar.');
+      throw new HttpError('No puedes borrar este día porque ya hay hermanos con cita.');
     }
 
     const borrado = await db.turno.delete({ where: { id: turnoId } });

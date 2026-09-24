@@ -14,12 +14,15 @@ interface Props {
   volver: string
   onPrestar: (prenda: Prenda) => void
   onDevolver: (prenda: Prenda) => void
+  /** Ya está limpia: del lavado, disponible. */
+  onLavada: (prenda: Prenda) => void
   onBorrar: (prenda: Prenda) => void
 }
 
 const TONO_ESTADO: Record<Prenda['estado'], TonoPildora> = {
   DISPONIBLE: 'ok',
   PRESTADA: 'info',
+  LAVADO: 'neutro',
   TALLER: 'aviso',
   BAJA: 'neutro',
 }
@@ -29,7 +32,7 @@ const TONO_ESTADO: Record<Prenda['estado'], TonoPildora> = {
  * Prestar y devolver son la razón de estar en esta pantalla, así que van
  * siempre a la vista y con su palabra; editar y eliminar, con icono.
  */
-export default function TablaPrendas({ prendas, volver, onPrestar, onDevolver, onBorrar }: Props) {
+export default function TablaPrendas({ prendas, volver, onPrestar, onDevolver, onLavada, onBorrar }: Props) {
   const { fondoCabecera } = useColoresContabilidad()
   return (
     <TableContainer component={Paper}>
@@ -59,6 +62,7 @@ export default function TablaPrendas({ prendas, volver, onPrestar, onDevolver, o
               <TableCell padding="none" align="right" sx={{ whiteSpace: 'nowrap', pr: 1 }}>
                 {p.estado === 'DISPONIBLE' && <Button size="small" aria-label={`Prestar ${p.numero}`} onClick={() => onPrestar(p)} sx={{ mr: 0.5 }}>Prestar</Button>}
                 {p.estado === 'PRESTADA' && <Button size="small" color="inherit" aria-label={`Devolver ${p.numero}`} onClick={() => onDevolver(p)} sx={{ mr: 0.5 }}>Devolver</Button>}
+                {p.estado === 'LAVADO' && <Button size="small" color="inherit" aria-label={`${p.numero} ya lavada`} onClick={() => onLavada(p)} sx={{ mr: 0.5 }}>Ya lavada</Button>}
                 <Tooltip title="Editar">
                   <IconButton size="small" aria-label={`Editar ${p.numero}`} component={Link} to={`/cms/inventario/${p.id}/editar?tipo=prenda`} state={{ volver }}><EditOutlinedIcon fontSize="small" /></IconButton>
                 </Tooltip>

@@ -48,3 +48,14 @@ export const NOMBRE_METODO: Record<string, string> = {
 }
 
 export const mensajeDe = (e: unknown, porDefecto: string) => (e instanceof Error && e.message ? e.message : porDefecto)
+
+const NOMBRE_PRENDA: Record<string, string> = { TUNICA: 'túnica', CAPIROTE: 'capirote', FARAONA: 'faraona', CAPA: 'capa', OTRO: 'prenda' }
+
+/** Una prenda del ropero por su nombre: «túnica 145-31». */
+export const nombrePrenda = (p: { tipo: string; numero: string }) => `${NOMBRE_PRENDA[p.tipo] ?? 'prenda'} ${p.numero}`
+
+/** «túnica 145-31, capirote 150 y cíngulo»: lo que alguien tiene sin devolver. */
+export function ropaSinDevolver(prendas: { tipo: string; numero: string }[], cingulos: number) {
+  const partes = [...prendas.map(nombrePrenda), ...(cingulos > 0 ? [cingulos === 1 ? 'cíngulo' : `${cingulos} cíngulos`] : [])]
+  return partes.length <= 1 ? partes.join('') : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`
+}

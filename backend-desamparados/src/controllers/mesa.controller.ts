@@ -2,7 +2,8 @@ import type { Request, Response } from 'express';
 import type { Salida } from '@prisma/client';
 import { MesaService, type AltaEnMesaDto, type CorreccionFichaDto, type EdicionPapeletaDto, type EdicionSolicitudDto, type ZonaDeBusqueda } from '../services/procesion/mesa.service.js';
 import { PapeletasService } from '../services/procesion/papeletas.service.js';
-import { ZonasService, type CobroEnMesa, type EntregaEnMesa, type InscripcionEnMesa } from '../services/procesion/zonas.service.js';
+import { ZonasService, type CobroEnMesa, type DevolucionEnMesa, type EntregaEnMesa, type InscripcionEnMesa } from '../services/procesion/zonas.service.js';
+import { recuentoDeCingulos } from '../services/procesion/cingulos.js';
 import { escucharLaMesa } from '../services/procesion/avisos-mesa.js';
 import type { TipoRopa } from '../services/procesion/ropa.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
@@ -75,6 +76,7 @@ export class MesaController {
       q: req.query.q as string | undefined,
       puesto: req.query.puesto as string | undefined,
       salida: salidaDe(req),
+      faltaCingulo: req.query.faltaCingulo === '1',
     }));
   });
 
@@ -98,6 +100,19 @@ export class MesaController {
   static entregar = manejar('Error dando la ropa', async (req, res) => {
     const { clave, dto } = sinClave(req.body as EntregaEnMesa & { clave?: string });
     res.json(await ZonasService.entregar(dto, clave, AuditoriaService.metaFromReq(req)));
+  });
+
+  static devolver = manejar('Error recibiendo la devolución', async (req, res) => {
+    const { clave, dto } = sinClave(req.body as DevolucionEnMesa & { clave?: string });
+    res.json(await ZonasService.devolver(dto, clave, AuditoriaService.metaFromReq(req)));
+  });
+
+  static sinDevolver = manejar('Error leyendo quién no ha devuelto la ropa', async (_req, res) => {
+    res.json(await ZonasService.sinDevolver());
+  });
+
+  static cingulos = manejar('Error contando los cíngulos', async (_req, res) => {
+    res.json(await recuentoDeCingulos());
   });
 
   static colas = manejar('Error leyendo las colas de la mesa', async (req, res) => {

@@ -94,29 +94,32 @@ export function DialogoPrestamo({ prenda, onCerrar, onPrestada }: DialogoPrestam
 interface DialogoDevolucionProps {
   /** La prenda que vuelve; null con el diálogo cerrado. */
   prenda: Prenda | null
-  onElegir: (necesitaLavado: boolean) => void
+  onElegir: (rota: boolean) => void
   onCancelar: () => void
 }
 
 /**
- * Registrar la devolución de una prenda: tres salidas claras. Antes era un
- * `window.confirm` que preguntaba por el lavado, y su «Cancelar» no cancelaba:
- * devolvía la prenda igualmente, como si no necesitara lavado.
+ * Registrar la devolución de una prenda: tres salidas claras. Las túnicas se
+ * lavan todas, sin excepción, así que la pregunta es solo si vuelve rota
+ * (al taller, para arreglarla).
  */
 export function DialogoDevolucion({ prenda, onElegir, onCancelar }: DialogoDevolucionProps) {
+  const tunica = prenda?.tipo === 'TUNICA'
   return (
     <Dialog open={prenda !== null} onClose={onCancelar} aria-labelledby="dialogo-devolucion-titulo">
       <DialogTitle id="dialogo-devolucion-titulo">{prenda ? `¿Cómo vuelve la prenda ${prenda.numero}?` : 'Devolver'}</DialogTitle>
       <DialogContent>
         <DialogContentText>
           {prenda?.hermano ? `La tenía ${prenda.hermano.nombre} ${prenda.hermano.apellidos}. ` : ''}
-          Si necesita lavado o algún arreglo, pasa al taller; si vuelve en buen estado, queda disponible para prestarla otra vez.
+          {tunica
+            ? 'Las túnicas se lavan todas: pasa al lavado. Si vuelve rota, al taller para arreglarla.'
+            : 'Si vuelve bien, queda disponible para prestarla otra vez; si vuelve rota, al taller para arreglarla.'}
         </DialogContentText>
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'wrap' }}>
         <Button onClick={onCancelar}>Cancelar</Button>
-        <Button variant="outlined" onClick={() => onElegir(true)}>Con lavado: al taller</Button>
-        <Button variant="contained" onClick={() => onElegir(false)}>Sin lavado: disponible</Button>
+        <Button variant="outlined" onClick={() => onElegir(true)}>Está rota: al taller</Button>
+        <Button variant="contained" onClick={() => onElegir(false)}>{tunica ? 'Vuelve bien: al lavado' : 'Vuelve bien: disponible'}</Button>
       </DialogActions>
     </Dialog>
   )

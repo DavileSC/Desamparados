@@ -59,18 +59,26 @@ export interface PapeletaAnterior {
   origenTunica: Origen | null;
 }
 
+/** Qué se propone con el cíngulo (la mesa lo cambia a «se le debe» si no quedan). */
+export type CinguloPropuesto = 'PRESTADO' | 'PROPIO' | 'NINGUNO';
+
 export interface Propuesta {
   puesto: string;
   tunica: { origen: Origen; numero: string | null };
   capirote: string | null;
   faraona: string | null;
+  cingulo: CinguloPropuesto;
 }
 
+/** El cíngulo va con la túnica: del ropero, se presta; propia, lleva el suyo; sin túnica, ninguno. */
+export const CINGULO_SEGUN_TUNICA: Record<Origen, CinguloPropuesto> = { ROPERO: 'PRESTADO', PROPIA: 'PROPIO', NINGUNA: 'NINGUNO' };
+
 /**
- * Qué ropa proponer a quien llega a la mesa. Primero, lo que ya tiene
- * prestado del ropero (se la llevó a casa y la trae); si no, lo que llevó la
- * última vez; si nunca salió, túnica propia si su ficha lo dice. La mesa lo
- * ve rellenado y cambia lo que haga falta.
+ * Qué ropa proponer a quien llega a la mesa. Primero, lo que tenga sin
+ * devolver del ropero (lo trae y se le vuelve a dar); si no, lo que llevó
+ * la última vez, que ya estará lavado; si nunca salió, túnica propia si su
+ * ficha lo dice. El cíngulo, según la túnica. La mesa lo ve rellenado y
+ * cambia lo que haga falta.
  */
 export function propuestaDeRopa(entrada: {
   anterior: PapeletaAnterior | null;
@@ -93,5 +101,6 @@ export function propuestaDeRopa(entrada: {
     tunica,
     capirote: prestada('CAPIROTE') ?? anterior?.numCapiroteAsignado ?? null,
     faraona: prestada('FARAONA') ?? anterior?.numFaraonaAsignada ?? null,
+    cingulo: CINGULO_SEGUN_TUNICA[tunica.origen],
   };
 }

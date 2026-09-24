@@ -5,7 +5,7 @@ import {
 } from '@mui/material'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import { useQuery } from '@tanstack/react-query'
-import { ropaPorPreparar } from '../../../lib/api/mesa'
+import { cingulosDeLaMesa, ropaPorPreparar } from '../../../lib/api/mesa'
 import { turnosDeReparto } from '../../../lib/api/procesion'
 import { useColoresContabilidad } from '../contabilidad/tema'
 import { cabeceraTabla } from '../inventario/tabla'
@@ -20,8 +20,10 @@ const tenue = { color: 'text.disabled' } as const
  * La ropa que hay que tener preparada antes de cada día de reparto, sacada de
  * las solicitudes: quién viene, qué puesto pidió, su talla, y la túnica y el
  * capirote o la faraona que se le proponen (lo que tiene en casa o lo del año
- * pasado). Se imprime y se prepara en el ropero con tiempo, para que el día
- * del reparto solo haya que probar y entregar.
+ * pasado), y el cíngulo. Se imprime y se prepara en el ropero con tiempo,
+ * para que el día del reparto solo haya que probar y entregar. Si los
+ * cíngulos que harán falta son más que los que quedan, lo avisa: hay que
+ * pedir o hacer más antes del reparto.
  */
 export default function PreparacionRopa() {
   const { fondoCabecera } = useColoresContabilidad()
@@ -31,28 +33,37 @@ export default function PreparacionRopa() {
     queryKey: [...CLAVE_MESA, 'preparacion', turnoId],
     queryFn: () => ropaPorPreparar(turnoId === '' ? undefined : turnoId),
   })
+  const cingulos = useQuery({ queryKey: [...CLAVE_MESA, 'cingulos'], queryFn: cingulosDeLaMesa })
 
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
   const proximos = (turnos.data ?? []).filter((t) => new Date(t.horaFin) >= hoy).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
   const filas = lista.data ?? []
+  const hacenFaltaCingulos = filas.filter((f) => f.propuesta.cingulo === 'PRESTADO').length
+  const quedanCingulos = cingulos.data?.enElRopero ?? null
 
   return (
     <Stack spacing={2}>
       <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center', displayPrint: 'none' }}>
         <TextField select size="small" label="Día de reparto" value={turnoId} onChange={(e) => setTurnoId(e.target.value === '' ? '' : Number(e.target.value))} sx={{ minWidth: 260 }}>
           <MenuItem value="">Todos los que faltan por recoger</MenuItem>
-          {proximos.map((t) => <MenuItem key={t.id} value={t.id}>{formatoDia.format(new Date(t.fecha))} · {t._count.citas} con cita</MenuItem>)}
+          {proximos.map((t) => <MenuItem key={t.id} value={t.id}>{formatoDia.format(new Date(t.fecha))} · {t.citas - t.vinieron} con cita</MenuItem>)}
         </TextField>
         <Button startIcon={<PrintOutlinedIcon />} onClick={() => window.print()} disabled={filas.length === 0}>Imprimir</Button>
         <Typography variant="body2" color="text.secondary">{filas.length} {filas.length === 1 ? 'persona' : 'personas'}</Typography>
       </Stack>
 
+      {lista.data && quedanCingulos !== null && hacenFaltaCingulos > 0 && (
+        <Alert severity={hacenFaltaCingulos > quedanCingulos ? 'warning' : 'info'} sx={{ displayPrint: 'none' }}>
+          Cíngulos: harán falta {hacenFaltaCingulos}{turnoId === '' ? '' : ' ese día'} y en el ropero {quedanCingulos === 1 ? 'queda 1' : `quedan ${quedanCingulos}`}.
+          {hacenFaltaCingulos > quedanCingulos && ` Faltan ${hacenFaltaCingulos - quedanCingulos}: hay que pedir o hacer más.`}
+        </Alert>
+      )}
       {lista.isError && <Alert severity="error">No se ha podido cargar la ropa por preparar.</Alert>}
       {lista.isLoading && <CircularProgress aria-label="Cargando la ropa por preparar" />}
 
       {lista.data && (
         <TableContainer component={Paper}>
-          <Table size="small" aria-label="Ropa por preparar" sx={{ minWidth: 900, '& td': { whiteSpace: 'nowrap' } }}>
+          <Table size="small" aria-label="Ropa por preparar" sx={{ minWidth: 980, '& td': { whiteSpace: 'nowrap' } }}>
             <TableHead>
               <TableRow sx={cabeceraTabla(fondoCabecera)}>
                 <TableCell>Nombre</TableCell>
@@ -62,6 +73,7 @@ export default function PreparacionRopa() {
                 <TableCell align="right">Talla</TableCell>
                 <TableCell>Túnica</TableCell>
                 <TableCell>Capirote / faraona</TableCell>
+                <TableCell>Cíngulo</TableCell>
                 <TableCell>Cuotas</TableCell>
               </TableRow>
             </TableHead>
@@ -79,12 +91,13 @@ export default function PreparacionRopa() {
                     <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', ...(!f.hermano.alturaHombro && tenue) }}>{f.hermano.alturaHombro ? alturaEnMetros(f.hermano.alturaHombro) : '—'}</TableCell>
                     <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(t.origen === 'ROPERO' && !t.numero && { color: 'warning.main' }) }}>{tunica}</TableCell>
                     <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(!tocado && tenue) }}>{tocado || '—'}</TableCell>
+                    <TableCell sx={f.propuesta.cingulo !== 'PRESTADO' ? tenue : undefined}>{f.propuesta.cingulo === 'PRESTADO' ? 'Del ropero' : f.propuesta.cingulo === 'PROPIO' ? 'Propio' : 'No lleva'}</TableCell>
                     <TableCell>{f.cuotasPendientes > 0 ? <Pildora texto={`Debe ${f.cuotasPendientes}`} tono="aviso" /> : <Box component="span" sx={tenue}>Al día</Box>}</TableCell>
                   </TableRow>
                 )
               })}
               {filas.length === 0 && (
-                <TableRow><TableCell colSpan={8} sx={{ py: 5, textAlign: 'center', color: 'text.secondary' }}>No hay ropa por preparar{turnoId === '' ? '' : ' para ese día'}.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} sx={{ py: 5, textAlign: 'center', color: 'text.secondary' }}>No hay ropa por preparar{turnoId === '' ? '' : ' para ese día'}.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

@@ -49,7 +49,7 @@ describe('InventarioEditPage', () => {
 
     await user.click(await screen.findByLabelText('Estado'))
     const opciones = (await screen.findAllByRole('option')).map((o) => o.textContent)
-    expect(opciones).toEqual(['Disponible', 'En taller', 'De baja'])
+    expect(opciones).toEqual(['Disponible', 'En lavado', 'Para arreglar', 'De baja'])
   })
 
   it('no manda un enser con cantidades decimales: avisa antes', async () => {

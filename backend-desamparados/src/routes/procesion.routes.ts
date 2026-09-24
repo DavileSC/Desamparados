@@ -31,7 +31,8 @@ import {
   mesaListadoSchema,
   mesaAltaSchema,
   mesaCorregirSchema,
-  mesaEditarPapeletaSchema
+  mesaEditarPapeletaSchema,
+  mesaDevolverSchema
 } from '../schemas/procesion.schema.js';
 
 const procesionRouter = Router();
@@ -77,6 +78,9 @@ procesionRouter.post('/admin/mesa/cobrar', checkRole(rolesMesaReparto), validate
 // Perdonar lo decide el Hermano Mayor y lo marca Tesorería.
 procesionRouter.post('/admin/mesa/perdonar', checkRole([Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR]), validate(mesaPerdonarSchema), MesaController.perdonar);
 procesionRouter.post('/admin/mesa/entregar', checkRole(rolesMesaReparto), validate(mesaEntregarSchema), MesaController.entregar);
+procesionRouter.post('/admin/mesa/devolver', checkRole(rolesMesaReparto), validate(mesaDevolverSchema), MesaController.devolver);
+procesionRouter.get('/admin/mesa/sin-devolver', checkRole(rolesMesaReparto), MesaController.sinDevolver);
+procesionRouter.get('/admin/mesa/cingulos', checkRole(rolesMesaReparto), MesaController.cingulos);
 // Una solicitud sin recoger: se corrige o se cancela desde el listado.
 procesionRouter.patch('/admin/solicitudes/:id', checkRole(rolesMesaReparto), validate(type({ params: { id: idParam } }).and(mesaEditarSolicitudSchema)), MesaController.editarSolicitud);
 procesionRouter.delete('/admin/solicitudes/:id', checkRole(rolesMesaReparto), validateId, MesaController.cancelarSolicitud);

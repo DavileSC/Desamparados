@@ -1,6 +1,7 @@
 /**
  * La ropa de la procesión en el ropero: prestar a quien sale la túnica y el
- * capirote o la faraona que le da la mesa, y recogerlos si se anula.
+ * capirote o la faraona que le da la mesa, recogerlos si se anula y
+ * recibirlos de vuelta después de la salida: todo lo prestado se devuelve.
  *
  * Todo corre dentro de la transacción de quien llama (la inscripción, la
  * corrección de una papeleta, la anulación): o se presta la ropa y se emite
@@ -24,13 +25,15 @@ export interface RopaPedida {
 }
 
 /**
- * Presta a `hermanoId` cada prenda pedida. Si la persona tenía prestada otra
- * del mismo tipo, esa vuelve al ropero: se lleva una túnica cada vez, y la de
- * antes la entrega en la mesa al recoger la nueva.
+ * Presta a `hermanoId` cada prenda pedida. Si la persona tenía otra del
+ * mismo tipo sin devolver, esa vuelve al ropero: se lleva una túnica cada
+ * vez, y la de antes la entrega en la mesa al recoger la nueva.
  *
- * Se niega, con un mensaje para la mesa, si la prenda no está en el ropero
+ * Una prenda que consta en el lavado se puede prestar: el reparto es meses
+ * después de la devolución y ya estará lavada aunque nadie lo marcara. Se
+ * niega, con un mensaje para la mesa, si la prenda no está en el ropero
  * (salvo que se pida darla de alta), si la tiene otra persona, o si está en
- * el taller o de baja.
+ * el taller (rota) o de baja.
  */
 export async function prestarRopaEnTransaccion(tx: Tx, hermanoId: number, pedidas: RopaPedida[]) {
   for (const pedida of pedidas) {
@@ -51,7 +54,7 @@ export async function prestarRopaEnTransaccion(tx: Tx, hermanoId: number, pedida
     }
 
     if (prenda.estado === EstadoPrenda.BAJA) throw new HttpError(`${nombre} está dada de baja en el ropero.`, 409);
-    if (prenda.estado === EstadoPrenda.TALLER) throw new HttpError(`${nombre} está en el taller.`, 409);
+    if (prenda.estado === EstadoPrenda.TALLER) throw new HttpError(`${nombre} está en el taller, para arreglar.`, 409);
     if (prenda.estado === EstadoPrenda.PRESTADA && prenda.hermanoId !== hermanoId) {
       const quien = prenda.hermano ? `${prenda.hermano.nombre} ${prenda.hermano.apellidos}` : 'otra persona';
       throw new HttpError(`${nombre} la tiene ${quien}.`, 409);
@@ -67,7 +70,7 @@ export async function prestarRopaEnTransaccion(tx: Tx, hermanoId: number, pedida
     const { count } = await tx.prenda.updateMany({
       where: {
         id: prenda.id,
-        OR: [{ estado: EstadoPrenda.DISPONIBLE }, { estado: EstadoPrenda.PRESTADA, hermanoId }],
+        OR: [{ estado: { in: [EstadoPrenda.DISPONIBLE, EstadoPrenda.LAVADO] } }, { estado: EstadoPrenda.PRESTADA, hermanoId }],
       },
       data: { estado: EstadoPrenda.PRESTADA, hermanoId, fechaAsignacion: new Date() },
     });
@@ -109,4 +112,14 @@ export function ropaPedida(data: {
   if (data.numCapiroteAsignado?.trim()) pedidas.push({ tipo: 'CAPIROTE', numero: data.numCapiroteAsignado, crear: crear.has('CAPIROTE') });
   if (data.numFaraonaAsignada?.trim()) pedidas.push({ tipo: 'FARAONA', numero: data.numFaraonaAsignada, crear: crear.has('FARAONA') });
   return pedidas;
+}
+
+/**
+ * Dónde va una prenda que se devuelve: la túnica, siempre al lavado (se
+ * lavan todas, sin excepción); lo demás, al ropero. Lo que vuelve roto, al
+ * taller, para arreglarlo.
+ */
+export function estadoAlDevolver(tipo: TipoPrenda, rota: boolean): EstadoPrenda {
+  if (rota) return EstadoPrenda.TALLER;
+  return tipo === TipoPrenda.TUNICA ? EstadoPrenda.LAVADO : EstadoPrenda.DISPONIBLE;
 }
