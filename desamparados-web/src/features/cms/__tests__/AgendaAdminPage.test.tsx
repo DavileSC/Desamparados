@@ -5,7 +5,7 @@ import { renderWithProviders } from '../../../test/test-utils'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import AgendaAdminPage from '../AgendaAdminPage'
 
-const montar = (ruta = '/cms/agenda') => renderWithProviders(<TemaCmsProvider><AgendaAdminPage /></TemaCmsProvider>, { ruta })
+const montar = (ruta = '/cms/agenda?vista=lista') => renderWithProviders(<TemaCmsProvider><AgendaAdminPage /></TemaCmsProvider>, { ruta })
 
 const evento = {
   id: 3, title: 'Besapiés', description: null, location: 'Parroquia',
@@ -117,7 +117,7 @@ describe('AgendaAdminPage', () => {
 
   it('pide la página que dice la URL', async () => {
     const simulado = responder([], { total: 60, page: 2, limit: 20, totalPages: 3 })
-    montar('/cms/agenda?pagina=2')
+    montar('/cms/agenda?vista=lista&pagina=2')
 
     await waitFor(() => expect(ultimaPeticion(simulado)).toContain('page=2'))
   })
@@ -136,7 +136,7 @@ describe('AgendaAdminPage', () => {
     // pestaña no había forma de corregirlo ni de borrarlo.
     const usuario = userEvent.setup()
     const simulado = responder([evento], { total: 60, page: 2, limit: 20, totalPages: 3 })
-    montar('/cms/agenda?pagina=2')
+    montar('/cms/agenda?vista=lista&pagina=2')
     await waitFor(() => expect(ultimaPeticion(simulado)).toContain('page=2'))
 
     await usuario.click(await screen.findByRole('button', { name: /pasados\s*12/i }))
@@ -148,7 +148,7 @@ describe('AgendaAdminPage', () => {
 
   it('con ?periodo=pasados en la URL (al volver de editar) abre esa pestaña', async () => {
     const simulado = responder([], { total: 0, page: 1, limit: 20, totalPages: 0 })
-    montar('/cms/agenda?periodo=pasados')
+    montar('/cms/agenda?vista=lista&periodo=pasados')
 
     await waitFor(() => expect(ultimaPeticion(simulado)).toContain('periodo=pasados'))
     expect(await screen.findByText('No hay eventos pasados')).toBeInTheDocument()
@@ -157,7 +157,7 @@ describe('AgendaAdminPage', () => {
   it('el tipo viaja al servidor, y sin resultados se puede quitar', async () => {
     const usuario = userEvent.setup()
     const simulado = responder([], { total: 0, page: 1, limit: 20, totalPages: 0 })
-    montar('/cms/agenda?tipo=ENSAYO')
+    montar('/cms/agenda?vista=lista&tipo=ENSAYO')
 
     await waitFor(() => expect(ultimaPeticion(simulado)).toContain('tipo=ENSAYO'))
     expect(await screen.findByText('Ningún evento próximo con estos filtros.')).toBeInTheDocument()
@@ -184,5 +184,109 @@ describe('AgendaAdminPage', () => {
     await waitFor(() => expect(ultimaPeticion(simulado)).toContain('limit=50'))
     // Y la preferencia queda guardada para el resto de la sesión.
     expect(window.sessionStorage.getItem('desamparados:porPagina')).toBe('50')
+  })
+})
+
+describe('AgendaAdminPage en el mes', () => {
+  const reparto = {
+    id: 9, title: 'Reparto de papeletas del Rosario vespertino', description: 'Día para apuntarse.', location: null,
+    startDate: '2026-10-13T16:00:00.000Z', endDate: '2026-10-13T19:00:00.000Z', type: 'OTRO', reparto: true,
+  }
+  const delMes = [{ ...triduo, reparto: false }, reparto]
+
+  function responderMes(data: unknown[] = delMes) {
+    const simulado = vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(
+      JSON.stringify(String(url).includes('/calendario')
+        ? { data, resumen: { siguiente: null, portada: { limite: 5, ids: [5] } } }
+        : { data: [evento], meta: { total: 1, page: 1, limit: 20, totalPages: 1 }, resumen: resumenBase }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )))
+    vi.stubGlobal('fetch', simulado)
+    return simulado
+  }
+
+  const montarMes = (consulta = 'mes=2026-10') => renderWithProviders(<TemaCmsProvider><AgendaAdminPage /></TemaCmsProvider>, { ruta: `/cms/agenda?${consulta}` })
+
+  it('entra por el mes y pide la rejilla entera, de lunes a domingo', async () => {
+    const simulado = responderMes()
+    montarMes()
+
+    expect(await screen.findByRole('heading', { name: 'Octubre de 2026' })).toBeInTheDocument()
+    const peticion = decodeURIComponent(ultimaPeticion(simulado))
+    expect(peticion).toContain('/events/admin/calendario?')
+    // Octubre de 2026 empieza en jueves: la rejilla arranca el lunes 28 de septiembre.
+    expect(new Date(peticion.match(/desde=([^&]+)/)![1]).getDate()).toBe(28)
+    expect(simulado.mock.calls.some(([url]) => String(url).includes('/events/admin?'))).toBe(false)
+  })
+
+  it('un triduo sale en sus tres días y cada casilla dice cuántos actos tiene', async () => {
+    responderMes()
+    montarMes()
+
+    for (const dia of [20, 21, 22]) {
+      expect(await screen.findByRole('button', { name: new RegExp(`${dia} de octubre, 1 acto`) })).toBeInTheDocument()
+    }
+    expect(screen.getByRole('button', { name: /23 de octubre, sin actos/ })).toBeInTheDocument()
+  })
+
+  it('al pulsar un día, el panel enseña sus actos con sus botones y uno nuevo ese día', async () => {
+    responderMes()
+    const usuario = userEvent.setup()
+    montarMes()
+
+    await usuario.click(await screen.findByRole('button', { name: /21 de octubre/ }))
+    const panel = screen.getByRole('region', { name: 'Actos del 21 de octubre' })
+    expect(within(panel).getByRole('heading', { name: 'Triduo' })).toBeInTheDocument()
+    expect(within(panel).getByText(/Del 20 de octubre al 22 de octubre/)).toBeInTheDocument()
+    expect(within(panel).getByText('En portada')).toBeInTheDocument()
+    expect(within(panel).getByRole('link', { name: 'Editar Triduo' })).toHaveAttribute('href', '/cms/agenda/5/editar')
+    expect(within(panel).getByRole('link', { name: /nuevo acto el 21 de octubre/i })).toHaveAttribute('href', '/cms/agenda/nuevo')
+  })
+
+  it('un día de reparto se cambia desde Procesión, no desde la Agenda', async () => {
+    responderMes()
+    const usuario = userEvent.setup()
+    montarMes()
+
+    await usuario.click(await screen.findByRole('button', { name: /13 de octubre/ }))
+    const panel = screen.getByRole('region', { name: 'Actos del 13 de octubre' })
+    expect(within(panel).getByRole('link', { name: /ir a procesión/i })).toHaveAttribute('href', '/cms/procesion')
+    expect(within(panel).queryByRole('link', { name: /^editar/i })).not.toBeInTheDocument()
+    expect(within(panel).queryByText('Sin lugar')).not.toBeInTheDocument()
+  })
+
+  it('el día de la URL es el que se abre', async () => {
+    responderMes()
+    montarMes('mes=2026-10&dia=2026-10-22')
+
+    expect(await screen.findByRole('region', { name: 'Actos del 22 de octubre' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /22 de octubre/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('las flechas cambian de mes y los tipos filtran lo que se pide', async () => {
+    const simulado = responderMes()
+    const usuario = userEvent.setup()
+    montarMes()
+
+    await screen.findByRole('heading', { name: 'Octubre de 2026' })
+    await usuario.click(screen.getByRole('button', { name: 'Mes anterior' }))
+    expect(await screen.findByRole('heading', { name: 'Septiembre de 2026' })).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Culto' }))
+    await waitFor(() => expect(ultimaPeticion(simulado)).toContain('tipo=CULTO'))
+    expect(screen.getByRole('button', { name: 'Culto' })).toHaveAttribute('aria-pressed', 'true')
+    await usuario.click(screen.getByRole('button', { name: 'Culto' }))
+    await waitFor(() => expect(ultimaPeticion(simulado)).not.toContain('tipo='))
+  })
+
+  it('el conmutador lleva a la lista de siempre', async () => {
+    const simulado = responderMes()
+    const usuario = userEvent.setup()
+    montarMes()
+
+    await screen.findByRole('heading', { name: 'Octubre de 2026' })
+    await usuario.click(screen.getByRole('button', { name: /lista/i }))
+    expect(await screen.findByRole('heading', { name: 'Besapiés' })).toBeInTheDocument()
+    expect(ultimaPeticion(simulado)).toContain('/events/admin?')
   })
 })

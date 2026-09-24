@@ -175,3 +175,77 @@ describe('qué actos salen en la portada', () => {
     assert.deepEqual(actosEnPortada([]), []);
   });
 });
+
+describe('calendario de la agenda en el CMS', () => {
+  // En un año lejano, para que la base de desarrollo no meta nada entre medias.
+  const cal: { triduo: number; suelto: number; fuera: number; reparto: number; turno: number } = { triduo: 0, suelto: 0, fuera: 0, reparto: 0, turno: 0 };
+  const desde = new Date(2091, 2, 1).toISOString();
+  const hasta = new Date(2091, 3, 1).toISOString();
+  type Calendario = { data: { id: number; reparto: boolean }[]; resumen: { siguiente: unknown; portada: { ids: number[] } } };
+
+  before(async () => {
+    if (!dbDisponible) return;
+    const crear = async (title: string, startDate: Date, endDate?: Date) =>
+      (await db.evento.create({ data: { title: `${marca} ${title}`, startDate, endDate, type: 'CULTO' } })).id;
+    cal.triduo = await crear('triduo', new Date(2091, 1, 27, 19), new Date(2091, 2, 1, 20));
+    cal.suelto = await crear('suelto', new Date(2091, 2, 10, 19));
+    cal.fuera = await crear('fuera', new Date(2091, 3, 20, 19));
+    const turno = await db.turno.create({
+      data: {
+        fecha: new Date(2091, 2, 15),
+        horaInicio: new Date(2091, 2, 15, 18),
+        horaFin: new Date(2091, 2, 15, 21),
+        evento: { create: { title: `${marca} reparto`, startDate: new Date(2091, 2, 15, 18), endDate: new Date(2091, 2, 15, 21), type: 'OTRO' } },
+      },
+    });
+    cal.turno = turno.id;
+    cal.reparto = turno.eventoId!;
+  });
+
+  after(async () => {
+    if (!dbDisponible) return;
+    await db.turno.deleteMany({ where: { id: cal.turno } });
+    await db.evento.deleteMany({ where: { id: { in: [cal.triduo, cal.suelto, cal.fuera, cal.reparto] } } });
+  });
+
+  const pedir = (rol: Role | null, extra = '') =>
+    como(rol, `/admin/calendario?desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}${extra}`);
+
+  test('sin sesión responde 401 y un hermano raso 403', async (t) => {
+    assert.equal((await pedir(null)).status, 401);
+    if (!dbDisponible) return t.skip(SIN_DB);
+    assert.equal((await pedir(Role.USER)).status, 403);
+  });
+
+  test('trae lo del mes y el triduo que empezó antes, sin lo de después', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const res = await pedir(Role.SECRETARIA);
+    assert.equal(res.status, 200);
+    const { data, resumen } = await res.json() as Calendario;
+    const ids = data.map((e) => e.id);
+    assert.deepEqual(ids, [cal.triduo, cal.suelto, cal.reparto]);
+    assert.ok(resumen.portada && 'siguiente' in resumen, 'con el resumen de hoy');
+  });
+
+  test('marca los actos que puso un día de reparto', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const { data } = await (await pedir(Role.SECRETARIA)).json() as Calendario;
+    assert.deepEqual(data.filter((e) => e.reparto).map((e) => e.id), [cal.reparto]);
+  });
+
+  test('filtra por tipo y por búsqueda', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const otros = await (await pedir(Role.SECRETARIA, '&tipo=OTRO')).json() as Calendario;
+    assert.deepEqual(otros.data.map((e) => e.id), [cal.reparto]);
+    const buscados = await (await pedir(Role.SECRETARIA, `&q=${encodeURIComponent(`${marca} suelto`)}`)).json() as Calendario;
+    assert.deepEqual(buscados.data.map((e) => e.id), [cal.suelto]);
+  });
+
+  test('rechaza un rango al revés, uno demasiado largo o sin fechas', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const q = (d: Date, h: Date) => `/admin/calendario?desde=${encodeURIComponent(d.toISOString())}&hasta=${encodeURIComponent(h.toISOString())}`;
+    assert.equal((await como(Role.SECRETARIA, q(new Date(2091, 3, 1), new Date(2091, 2, 1)))).status, 400);
+    assert.equal((await como(Role.SECRETARIA, q(new Date(2091, 0, 1), new Date(2091, 6, 1)))).status, 400);
+    assert.equal((await como(Role.SECRETARIA, '/admin/calendario')).status, 400);
+  });
+});

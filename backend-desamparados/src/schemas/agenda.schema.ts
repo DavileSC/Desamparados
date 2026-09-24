@@ -47,3 +47,14 @@ export const queryAgendaAdminSchema = type({
         "tipo?": tipoEventoSchema
     }
 });
+
+// El calendario del CMS: la rejilla del mes, de `desde` a `hasta` (instantes
+// ISO, la medianoche del navegador), sin paginar.
+export const queryAgendaCalendarioSchema = type({
+    query: {
+        desde: type("string").matching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/),
+        hasta: type("string").matching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/),
+        "q?": "string",
+        "tipo?": tipoEventoSchema
+    }
+});

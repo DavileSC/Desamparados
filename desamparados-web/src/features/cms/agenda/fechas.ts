@@ -14,6 +14,13 @@ export function finEnOtroDia(evento: Pick<ApiEvent, 'startDate' | 'endDate'>): D
   return inicioDelDia(fin).getTime() !== inicioDelDia(new Date(evento.startDate)).getTime() ? fin : null
 }
 
+/**
+ * Lo que al acto le falta y en la web se nota: sin lugar, la línea bajo el
+ * título se queda en la hora; sin descripción, al abrirlo no sale nada.
+ */
+export const loQueFalta = (evento: Pick<ApiEvent, 'location' | 'description'>) =>
+  [!evento.location?.trim() && 'Sin lugar', !evento.description?.trim() && 'Sin descripción'].filter(Boolean) as string[]
+
 /** Los actos de una página en apartados por mes, en el orden en que llegan: «Octubre», «Enero 2027». */
 export function agruparPorMes<E extends Pick<ApiEvent, 'startDate'>>(eventos: E[], hoy = new Date()) {
   const grupos: { clave: string; titulo: string; eventos: E[] }[] = []

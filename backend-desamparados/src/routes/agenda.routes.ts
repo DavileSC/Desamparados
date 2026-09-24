@@ -8,7 +8,7 @@ import { validate } from '../config/validate.js';
 import { idParam } from '../config/common.js';
 
 // --- CORRECCIÓN: Importamos también updateAgendaSchema ---
-import { agendaSchema, updateAgendaSchema, queryAgendaSchema, queryAgendaAdminSchema } from '../schemas/agenda.schema.js';
+import { agendaSchema, updateAgendaSchema, queryAgendaSchema, queryAgendaAdminSchema, queryAgendaCalendarioSchema } from '../schemas/agenda.schema.js';
 
 const agendaRoutes = Router();
 const validateId = validate(type({ params: { id: idParam } }));
@@ -24,6 +24,8 @@ agendaRoutes.get('/', validate(queryAgendaSchema), AgendaController.list);
 // suelto y rechazaría «admin» por no ser un id. Lleva su sesión y su rol en
 // línea porque este router no tiene un use() de autenticación.
 agendaRoutes.get('/admin', authenticateToken, checkRole(rolesAgenda), validate(queryAgendaAdminSchema), AgendaController.adminList);
+
+agendaRoutes.get('/admin/calendario', authenticateToken, checkRole(rolesAgenda), validate(queryAgendaCalendarioSchema), AgendaController.adminCalendario);
 
 agendaRoutes.get('/:id', validateId, AgendaController.getOne);
 

@@ -1,6 +1,6 @@
 import db from '../config/db';
 import { Prisma, TipoEvento } from '@prisma/client';
-import { CreateEventDto, UpdateEventDto, EventFilterDto, PeriodoAgenda, AdminEventFilterDto } from '../dtos/agenda.dto';
+import { CreateEventDto, UpdateEventDto, EventFilterDto, PeriodoAgenda, AdminEventFilterDto, AdminCalendarioDto } from '../dtos/agenda.dto';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
@@ -12,6 +12,9 @@ import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
  * (EventsAndLive y AgendaList en el frontend).
  */
 export const ACTOS_EN_PORTADA = 5;
+
+/** Seis semanas de rejilla y algo de holgura: el calendario del CMS no pide más de una vez. */
+export const MAX_DIAS_CALENDARIO = 62;
 
 export function actosEnPortada<E extends { startDate: Date }>(proximosPublicos: E[]): E[] {
   const primero = proximosPublicos[0];
@@ -150,6 +153,72 @@ export class AgendaService {
         portada: { limite: ACTOS_EN_PORTADA, ids: actosEnPortada(enPortada).map((e) => e.id) },
       },
     };
+  }
+
+  /**
+   * El mes del calendario del CMS: los actos que tocan algún día entre `desde`
+   * y `hasta` (la rejilla entera, con los días de los meses de al lado), sin
+   * paginar. Un triduo que empezó antes de `desde` y sigue dentro también
+   * entra: si no, sus últimos días saldrían vacíos.
+   *
+   * Cada acto dice si lo puso un día de reparto (`reparto`), que se cambia
+   * desde Procesión y no desde la Agenda. Con ellos va lo mismo que en el
+   * listado sobre hoy: cuál es el siguiente y qué actos salen en la portada.
+   */
+  static async getAdminCalendario({ desde, hasta, q, tipo }: AdminCalendarioDto) {
+    const inicio = new Date(desde);
+    const fin = new Date(hasta);
+    if (!(fin > inicio)) throw new HttpError('El final del calendario tiene que ir después del principio.');
+    if (fin.getTime() - inicio.getTime() > MAX_DIAS_CALENDARIO * 86_400_000) {
+      throw new HttpError(`El calendario pide como mucho ${MAX_DIAS_CALENDARIO} días de una vez.`);
+    }
+
+    const where: Prisma.EventoWhereInput = {
+      ...(tipo ? { type: tipo } : {}),
+      ...condicionBusqueda(q, ['title', 'description', 'location'] as const),
+      startDate: { lt: fin },
+      OR: [{ startDate: { gte: inicio } }, { endDate: { gte: inicio } }],
+    };
+    const [eventos, resumen] = await Promise.all([
+      db.evento.findMany({
+        where,
+        orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          location: true,
+          startDate: true,
+          endDate: true,
+          type: true,
+          updatedAt: true,
+          turno: { select: { id: true } },
+        },
+      }),
+      AgendaService.resumenDeHoy(),
+    ]);
+
+    return {
+      data: eventos.map(({ turno, ...evento }) => ({ ...evento, reparto: turno !== null })),
+      resumen,
+    };
+  }
+
+  /** Cuál es el siguiente acto desde hoy y cuáles salen ahora en la portada de la web. */
+  private static async resumenDeHoy() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const proximos: Prisma.EventoWhereInput = { startDate: { gte: hoy } };
+    const [siguiente, enPortada] = await db.$transaction([
+      db.evento.findFirst({ where: proximos, orderBy: [{ startDate: 'asc' }, { id: 'asc' }], select: { id: true, title: true, startDate: true } }),
+      db.evento.findMany({
+        where: proximos,
+        orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+        take: ACTOS_EN_PORTADA,
+        select: { id: true, startDate: true },
+      }),
+    ]);
+    return { siguiente, portada: { limite: ACTOS_EN_PORTADA, ids: actosEnPortada(enPortada).map((e) => e.id) } };
   }
 
   static async getEventById(id: number) {

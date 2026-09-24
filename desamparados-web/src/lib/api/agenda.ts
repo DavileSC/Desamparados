@@ -149,3 +149,20 @@ export function eliminarEvento(id: number) {
 export function traerEvento(id: number) {
   return llamarApi<ApiEvent>(`/events/${id}`)
 }
+
+/** Un acto del calendario del CMS: el de siempre y si lo puso un día de reparto, que se cambia desde Procesión. */
+export type EventoDelCalendario = ApiEvent & { reparto: boolean }
+
+/** Lo que el calendario del CMS sabe de hoy: el siguiente acto y los que salen en la portada. */
+export type ResumenDeHoy = Pick<ResumenAgenda, 'siguiente' | 'portada'>
+
+/**
+ * El mes del calendario del CMS: todos los actos que tocan algún día de la
+ * rejilla, de `desde` a `hasta` (la medianoche de este navegador), sin paginar.
+ */
+export async function calendarioDelCms(desde: Date, hasta: Date, tipo: ApiEvent['type'] | '' = '') {
+  const params = new URLSearchParams({ desde: desde.toISOString(), hasta: hasta.toISOString() })
+  if (tipo) params.set('tipo', tipo)
+  const respuesta = await llamarApi<{ data: EventoDelCalendario[]; resumen: ResumenDeHoy }>(`/events/admin/calendario?${params}`)
+  return { eventos: respuesta.data, resumen: respuesta.resumen }
+}

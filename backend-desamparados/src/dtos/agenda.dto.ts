@@ -37,3 +37,11 @@ export interface AdminEventFilterDto {
   q?: string; // Palabras que buscar en el título, la descripción y el lugar
   tipo?: TipoEvento;
 }
+
+/** El calendario del CMS: los actos entre dos instantes (ISO), ya validados por queryAgendaCalendarioSchema. */
+export interface AdminCalendarioDto {
+  desde: string;
+  hasta: string;
+  q?: string;
+  tipo?: TipoEvento;
+}

@@ -141,6 +141,19 @@ describe('AgendaEditPage', () => {
     expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Besapiés', location: 'Parroquia', startDate: enLocal('2099-10-19', '18:00') })
   })
 
+  it('desde el día del calendario, el acto nuevo nace con ese día y sin nada que guardar', async () => {
+    const usuario = userEvent.setup()
+    const simulado = montar({ pathname: '/cms/agenda/nuevo', state: { fecha: '2099-10-21' } })
+    expect(await screen.findByLabelText('Día')).toHaveValue('2099-10-21')
+
+    await usuario.type(screen.getByLabelText('Título'), 'Ensayo de acólitos')
+    await usuario.type(screen.getByLabelText('Hora'), '18:15')
+    await usuario.click(screen.getByRole('button', { name: 'Añadir a la agenda' }))
+
+    await waitFor(() => expect(guardado(simulado)?.metodo).toBe('POST'))
+    expect(guardado(simulado)!.cuerpo).toMatchObject({ title: 'Ensayo de acólitos', startDate: enLocal('2099-10-21', '18:15') })
+  })
+
   it('avisa si el día ya ha pasado', async () => {
     const usuario = userEvent.setup()
     montar('/cms/agenda/nuevo')

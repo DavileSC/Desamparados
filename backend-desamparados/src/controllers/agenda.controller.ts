@@ -1,6 +1,6 @@
 import { Response, Request } from 'express';
 import { AgendaService } from '../services/agenda.service.js';
-import type { AdminEventFilterDto } from '../dtos/agenda.dto.js';
+import type { AdminCalendarioDto, AdminEventFilterDto } from '../dtos/agenda.dto.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
@@ -20,6 +20,12 @@ export class AgendaController {
     const { page, limit, q, tipo } = req.query as AdminEventFilterDto;
     const events = await AgendaService.getAdminEvents(periodo, { page, limit, q, tipo });
     res.status(200).json(events);
+  });
+
+  // El mes del calendario del CMS (sesión + rol en la ruta). La query ya viene validada por queryAgendaCalendarioSchema.
+  static adminCalendario = manejar('Error obteniendo el calendario', async (req, res) => {
+    const { desde, hasta, q, tipo } = req.query as unknown as AdminCalendarioDto;
+    res.status(200).json(await AgendaService.getAdminCalendario({ desde, hasta, q, tipo }));
   });
 
   static getOne = manejar('Error obteniendo evento', async (req, res) => {

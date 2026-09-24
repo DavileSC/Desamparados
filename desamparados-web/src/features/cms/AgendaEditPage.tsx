@@ -60,13 +60,16 @@ export default function AgendaEditPage() {
   const nuevo = id === undefined
   const { state } = useLocation()
   const copiaDe = nuevo ? (state as { copiaDe?: unknown } | null)?.copiaDe : undefined
+  // Desde el panel del día del calendario, el acto nuevo nace con ese día puesto.
+  const fecha = nuevo ? (state as { fecha?: unknown } | null)?.fecha : undefined
+  const diaInicial = typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha : ''
   const { cargado, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, setForm, guardar: guardarFicha } =
     useFichaCms<ApiEvent, Formulario>({
       listado: '/cms/agenda',
       origen: nuevo ? (typeof copiaDe === 'number' ? copiaDe : null) : Number(id),
       cargar: traerEvento,
       aFormulario: desdeEvento,
-      vacio,
+      vacio: diaInicial ? { ...vacio, dia: diaInicial } : vacio,
       errorAlCargar: nuevo
         ? 'No se ha podido cargar el evento que duplicar: empieza uno en blanco.'
         : 'No se ha podido cargar el evento.',

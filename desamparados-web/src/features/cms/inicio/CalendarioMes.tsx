@@ -7,6 +7,7 @@ import { segunModo } from '../../../theme/cms'
 import { rolesPorRutaCms } from '../../../app/cmsNavegacion'
 import { entrada } from './animaciones'
 import { TIPOS } from '../../inicio/agenda'
+import { colorDelTipo, veloDelTipo } from '../agenda/tiposEvento'
 
 const DIAS_SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
@@ -25,14 +26,14 @@ export default function CalendarioMes({ calendario, role, hoy = new Date(), orde
   orden?: number
 }) {
   const { superficies } = useTemaCms()
-  // Cada tipo con su color de la agenda: el día, velado de ese color; el texto, del color entero en claro.
+  // Cada tipo con su color del CMS: el día, velado de ese color; el texto, en su tinta de papel en claro.
   // (en los dos modos a la vez: lo elige el navegador, sin volver a pintar).
   const color = (tipo: TipoEvento) => {
-    const { color: claro, oscuro } = TIPOS[tipo]
     return {
-      fondo: segunModo(`color-mix(in srgb, ${claro} 13%, transparent)`, `color-mix(in srgb, ${oscuro} 26%, transparent)`),
-      texto: segunModo(claro, '#fff'),
-      muestra: segunModo(claro, oscuro),
+      fondo: veloDelTipo(tipo, 13, 26),
+      // El texto sigue en la tinta de papel: sobre el velo claro se lee mejor que el color vivo.
+      texto: segunModo(TIPOS[tipo].color, '#fff'),
+      muestra: colorDelTipo(tipo),
     }
   }
 
