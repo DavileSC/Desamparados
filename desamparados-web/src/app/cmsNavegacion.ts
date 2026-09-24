@@ -51,7 +51,7 @@ export const GRUPOS = ['Hoy', 'Web pública', 'Contenido', 'Censo y enseres', 'C
 export type Grupo = (typeof GRUPOS)[number]
 
 /** De dónde sale el número que se enseña junto a una sección. */
-export type ClaveContador = 'noticiasBorradores' | 'hermanosSinNumero' | 'recibosDevueltos'
+export type ClaveContador = 'noticiasBorradores' | 'hermanosSinNumero'
 
 export interface ItemMenu {
   label: string
@@ -78,7 +78,7 @@ export const itemsMenu: ItemMenu[] = [
   // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
   { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y enseres', icono: HowToRegOutlinedIcon },
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y enseres', icono: Inventory2OutlinedIcon },
-  { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon, contador: { de: 'recibosDevueltos', tono: 'error' } },
+  { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
   { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
@@ -116,12 +116,15 @@ export const rolesPorRutaCms = {
   'mi-seguridad': ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],
 } satisfies Record<string, string[]>
 
-/** Los tres números del menú, del mismo panel que alimenta el Inicio. */
+/**
+ * Los números del menú, del mismo panel que alimenta el Inicio. Tesorería no
+ * lleva: los devueltos ya se ven en su tarjeta y en el Inicio, y un segundo
+ * número (solo los que faltan por reemitir) confundía más que avisaba.
+ */
 export function contadoresDelPanel(panel?: PanelResponse): Record<ClaveContador, number> {
   return {
     noticiasBorradores: panel?.actividad.noticias.borradores ?? 0,
     hermanosSinNumero: panel?.censo.sinNumeroHermano ?? 0,
-    recibosDevueltos: panel?.dinero.devueltosPendientes?.total ?? 0,
   }
 }
 

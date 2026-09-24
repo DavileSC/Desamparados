@@ -135,10 +135,11 @@ describe('el menú del Inicio', () => {
   it('los contadores salen de los datos del panel', async () => {
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />)
-    // 2 borradores en Noticias, 3 hermanos sin número, 14 recibos devueltos.
+    // 2 borradores en Noticias, 3 hermanos sin número.
     expect(await screen.findByLabelText('Noticias: 2 pendientes')).toHaveTextContent('2')
     expect(screen.getByLabelText('Hermanos: 3 pendientes')).toHaveTextContent('3')
-    expect(screen.getByLabelText('Tesorería: 14 urgentes')).toHaveTextContent('14')
+    // Tesorería no lleva número aunque haya 14 devueltos: se ven en su tarjeta.
+    expect(screen.queryByLabelText(/^Tesorería:/)).not.toBeInTheDocument()
   })
 
   it('sin nada pendiente no pinta contadores', async () => {
@@ -151,10 +152,7 @@ describe('el menú del Inicio', () => {
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />)
     await screen.findByRole('link', { name: 'Noticias' })
-    // Los dos tonos: «pendientes» (aviso) y también «urgentes», el de recibos
-    // devueltos, que es el más visible del menú.
     expect(screen.queryByLabelText(/pendientes$/)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText(/urgentes$/)).not.toBeInTheDocument()
   })
 
   it('si el panel falla, el menú se pinta igual', async () => {
