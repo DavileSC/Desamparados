@@ -8,13 +8,19 @@ import type { Barrio } from './barrio'
  * las calles, por el camino más corto.
  *
  * Entran todas las vías del mapa, peatonales incluidas (una procesión pasa por
- * plazas y calles peatonales). Dos vías se unen donde comparten un punto, que
- * es como OpenStreetMap dibuja los cruces.
+ * plazas y calles peatonales), pero las peatonales y las de servicio cuentan
+ * más largas de lo que son: sin eso, el camino más corto ataja por aceras,
+ * caminos de parque y aparcamientos, y la línea se mete entre los edificios.
+ * Dos vías se unen donde comparten un punto, que es como OpenStreetMap dibuja
+ * los cruces.
  */
 export interface Grafo {
   nodos: Coordenada[]
   vecinos: { a: number; metros: number }[][]
 }
+
+/** Cuánto «pesa» cada metro según la clase de vía. */
+const RECARGO: Record<string, number> = { mayor: 1, menor: 1, servicio: 1.5, peatonal: 2.5 }
 
 const clave = (c: Coordenada) => `${c[0].toFixed(7)},${c[1].toFixed(7)}`
 
@@ -35,10 +41,11 @@ export function construirGrafo(barrio: Barrio): Grafo {
   }
   for (const calle of barrio.calles.features) {
     const puntos = calle.geometry.coordinates as Coordenada[]
+    const recargo = RECARGO[calle.properties.clase] ?? 1
     for (let i = 1; i < puntos.length; i++) {
       const a = nodo(puntos[i - 1])
       const b = nodo(puntos[i])
-      const d = metros(puntos[i - 1], puntos[i])
+      const d = metros(puntos[i - 1], puntos[i]) * recargo
       vecinos[a].push({ a: b, metros: d })
       vecinos[b].push({ a, metros: d })
     }
@@ -118,6 +125,16 @@ export function caminoMasCorto(grafo: Grafo, desde: number, hasta: number): Coor
 const MAXIMO_PARA_PEGAR = 60
 
 /**
+ * Un salto corto que por las calles obliga a un rodeo largo se hace en recto:
+ * cruzar una plaza, o la mediana de una avenida de doble calzada, que en
+ * OpenStreetMap son dos vías sin un punto en común.
+ */
+const SALTO_CORTO = 60
+const RODEO = 3
+
+const largo = (camino: Coordenada[]) => camino.reduce((s, p, i) => (i === 0 ? 0 : s + metros(camino[i - 1], p)), 0)
+
+/**
  * La línea del recorrido a partir de sus esquinas. Pegada a las calles, cada
  * tramo va de una esquina a la siguiente por el camino más corto; si una
  * esquina cae lejos de toda calle, o no hay camino, ese tramo va recto.
@@ -136,7 +153,11 @@ export function lineaDelRecorrido(esquinas: Coordenada[], pegado: boolean, grafo
   }
   for (let i = 1; i < esquinas.length; i++) {
     const a = cercanos[i - 1], b = cercanos[i]
-    const camino = a.metros <= MAXIMO_PARA_PEGAR && b.metros <= MAXIMO_PARA_PEGAR ? caminoMasCorto(grafo, a.nodo, b.nodo) : null
+    let camino = a.metros <= MAXIMO_PARA_PEGAR && b.metros <= MAXIMO_PARA_PEGAR ? caminoMasCorto(grafo, a.nodo, b.nodo) : null
+    if (camino) {
+      const recto = metros(grafo.nodos[a.nodo], grafo.nodos[b.nodo])
+      if (recto <= SALTO_CORTO && largo(camino) > recto * RODEO) camino = [grafo.nodos[a.nodo], grafo.nodos[b.nodo]]
+    }
     anade(camino ?? [esquinas[i - 1], esquinas[i]])
   }
   // Seis decimales: unos 10 cm, de sobra, y la mitad de texto al guardar.

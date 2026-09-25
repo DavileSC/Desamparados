@@ -32,4 +32,25 @@ describe('el recorrido pegado a las calles', () => {
     const lejos: Coordenada = [0.01, 0.01]
     expect(lineaDelRecorrido([A, lejos], true, grafo)).toEqual([A, lejos])
   })
+
+  it('prefiere la calzada a un atajo peatonal un poco más corto', () => {
+    // De A a C por la calzada (A-B-C, 200 m) o por un camino peatonal en diagonal (unos 157 m).
+    const conAtajo: Barrio = {
+      ...BARRIO,
+      calles: { ...BARRIO.calles, features: [...BARRIO.calles.features, { ...calle(A, C), properties: { clase: 'peatonal' as const, nombre: '' } }] },
+    }
+    const linea = lineaDelRecorrido([A, C], true, construirGrafo(conAtajo))
+    expect(linea).toHaveLength(3)
+  })
+
+  it('un salto corto que por las calles sería un rodeo largo va recto', () => {
+    // Dos calles sueltas separadas 10 m, unidas solo dando la vuelta muy lejos.
+    const E: Coordenada = [0, 0.0001], F: Coordenada = [0.001, 0.0001]
+    const lejos1: Coordenada = [0, 0.005], lejos2: Coordenada = [0.001, 0.005]
+    const partido: Barrio = {
+      ...BARRIO,
+      calles: { ...BARRIO.calles, features: [calle(A, B), calle(E, F), calle(A, lejos1), calle(lejos1, lejos2), calle(lejos2, F)] },
+    }
+    expect(lineaDelRecorrido([A, E], true, construirGrafo(partido))).toEqual([A, E])
+  })
 })
