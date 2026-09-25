@@ -130,27 +130,13 @@ export default function CajonMovil({ abierto, alCerrar }: { abierto: boolean; al
         const abierta = Boolean(seccionesAbiertas[entrada.href])
         return (
           <Fragment key={entrada.href}>
-            <ListItem
-              disablePadding
-              secondaryAction={
-                hijos.length > 0 ? (
-                  <IconButton
-                    edge="end"
-                    aria-label={`${abierta ? 'Plegar' : 'Desplegar'} ${entrada.label}`}
-                    aria-expanded={abierta}
-                    onClick={() => alternarSeccion(entrada.href)}
-                    sx={{ color: active ? 'secondary.contrastText' : 'text.secondary' }}
-                  >
-                    {abierta ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                  </IconButton>
-                ) : undefined
-              }
-            >
+            {/* Las secciones con subpáginas no llevan a ninguna: pulsarlas las despliega. */}
+            <ListItem disablePadding>
               <ListItemButton
-                component={Link}
-                to={entrada.href}
+                {...(hijos.length > 0
+                  ? { onClick: () => alternarSeccion(entrada.href), 'aria-expanded': abierta }
+                  : { component: Link, to: entrada.href, onClick: alCerrar })}
                 selected={active}
-                onClick={alCerrar}
                 sx={{
                   px: 3,
                   py: 1.5,
@@ -180,6 +166,7 @@ export default function CajonMovil({ abierto, alCerrar }: { abierto: boolean; al
                     },
                   }}
                 />
+                {hijos.length > 0 && (abierta ? <ExpandLessIcon /> : <ExpandMoreIcon />)}
               </ListItemButton>
             </ListItem>
             {hijos.length > 0 && (

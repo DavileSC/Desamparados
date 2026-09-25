@@ -1,7 +1,8 @@
 /**
  * El menú de escritorio: una entrada por sección y, en las que tienen
  * subpáginas, un panel que se abre al pasar el ratón o al llegar con el
- * teclado.
+ * teclado. El título de esas secciones no lleva a ninguna página: para eso
+ * están las subpáginas de dentro; pulsarlo solo abre o cierra el panel.
  */
 import { useState, useRef, type FocusEvent, type KeyboardEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -40,8 +41,8 @@ function EnlaceDesplegable({ entrada, secundario = false }: { entrada: EntradaMe
 
 /**
  * Entrada de primer nivel del menú de escritorio. Si tiene subpáginas, despliega
- * un panel al pasar el ratón o al llegar con el teclado; Escape lo cierra y
- * devuelve el foco al enlace de la sección.
+ * un panel al pasar el ratón, al llegar con el teclado o al pulsarla (en una
+ * tableta no hay ratón); Escape lo cierra y devuelve el foco a la sección.
  */
 function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
   const theme = useTheme()
@@ -51,7 +52,7 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
   const [abiertaEn, setAbiertaEn] = useState<string | null>(null)
   const abierta = abiertaEn === location.pathname
   const setAbierta = (valor: boolean) => setAbiertaEn(valor ? location.pathname : null)
-  const enlaceRef = useRef<HTMLAnchorElement>(null)
+  const enlaceRef = useRef<HTMLButtonElement>(null)
   const hijos = entrada.hijos ?? []
   const desplegable = hijos.length > 0
   const activa = esActiva(location.pathname, entrada.href)
@@ -75,8 +76,9 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
     >
       <Button
         ref={enlaceRef}
-        component={Link}
-        to={entrada.href}
+        {...(desplegable
+          ? { onClick: () => setAbierta(!abierta) }
+          : { component: Link, to: entrada.href })}
         aria-haspopup={desplegable ? 'true' : undefined}
         aria-expanded={desplegable ? abierta : undefined}
         // Chevron solo en las secciones que despliegan; gira al abrirse.

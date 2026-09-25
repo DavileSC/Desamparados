@@ -39,14 +39,28 @@ function navEscritorio() {
 describe('BarraDeNavegacion en escritorio', () => {
   beforeEach(() => simularAncho(1440))
 
-  it('muestra las siete secciones del mapa del sitio, incluida Hermanos', () => {
+  it('muestra las siete secciones; las que despliegan no llevan a ninguna página', () => {
     renderWithProviders(<BarraDeNavegacion />)
     const nav = navEscritorio()
-    const etiquetas = ['Inicio', 'Corporación', 'Sagrada titular', 'Actualidad', 'Publicaciones', 'Hermanos', 'Contacto']
-    for (const etiqueta of etiquetas) {
+    for (const etiqueta of ['Inicio', 'Contacto']) {
       expect(within(nav).getByRole('link', { name: etiqueta, hidden: true })).toBeInTheDocument()
     }
-    expect(within(nav).getByRole('link', { name: 'Hermanos', hidden: true })).toHaveAttribute('href', '/hermanos')
+    for (const etiqueta of ['Corporación', 'Sagrada titular', 'Actualidad', 'Publicaciones', 'Hermanos']) {
+      expect(within(nav).getByRole('button', { name: etiqueta, hidden: true })).not.toHaveAttribute('href')
+      expect(within(nav).queryByRole('link', { name: etiqueta, hidden: true })).not.toBeInTheDocument()
+    }
+  })
+
+  it('pulsar una sección abre y cierra su desplegable', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />)
+    const titular = within(navEscritorio()).getByRole('button', { name: 'Sagrada titular', hidden: true })
+    act(() => titular.focus())
+    await user.click(titular)
+    expect(titular).toHaveAttribute('aria-expanded', 'false')
+    await user.click(titular)
+    expect(titular).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: 'Ajuar', hidden: true })).toHaveAttribute('href', '/sagrada-titular/ajuar')
   })
 
   it('no enseña las subpáginas hasta que se abre una sección', () => {
@@ -57,7 +71,7 @@ describe('BarraDeNavegacion en escritorio', () => {
   it('al pasar el ratón por Corporación despliega sus subpáginas con sus enlaces', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
-    await user.hover(within(navEscritorio()).getByRole('link', { name: 'Corporación', hidden: true }))
+    await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
 
     expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toHaveAttribute('href', '/corporacion/historia')
     expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true })).toHaveAttribute(
@@ -70,7 +84,7 @@ describe('BarraDeNavegacion en escritorio', () => {
   it('cierra el desplegable al retirar el ratón', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
-    const corporacion = within(navEscritorio()).getByRole('link', { name: 'Corporación', hidden: true })
+    const corporacion = within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true })
     await user.hover(corporacion)
     expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toBeInTheDocument()
 
@@ -81,7 +95,7 @@ describe('BarraDeNavegacion en escritorio', () => {
   it('abre la sección al llegar con el teclado y la cierra con Escape', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
-    const hermanos = within(navEscritorio()).getByRole('link', { name: 'Hermanos', hidden: true })
+    const hermanos = within(navEscritorio()).getByRole('button', { name: 'Hermanos', hidden: true })
     act(() => hermanos.focus())
     expect(hermanos).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('link', { name: 'Login hermanos', hidden: true })).toHaveAttribute('href', '/hermanos/acceso')
@@ -99,7 +113,7 @@ describe('BarraDeNavegacion en escritorio', () => {
   it('marca con un chevron solo las secciones que despliegan', () => {
     renderWithProviders(<BarraDeNavegacion />)
     const nav = navEscritorio()
-    const corporacion = within(nav).getByRole('link', { name: 'Corporación', hidden: true })
+    const corporacion = within(nav).getByRole('button', { name: 'Corporación', hidden: true })
     const contacto = within(nav).getByRole('link', { name: 'Contacto', hidden: true })
     expect(within(corporacion).getByTestId('ExpandMoreIcon')).toBeInTheDocument()
     expect(within(contacto).queryByTestId('ExpandMoreIcon')).not.toBeInTheDocument()
@@ -115,8 +129,10 @@ describe('BarraDeNavegacion en móvil', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
 
     const cajon = screen.getByRole('presentation')
-    expect(within(cajon).getByRole('link', { name: 'Corporación' })).toHaveAttribute('href', '/corporacion')
-    expect(within(cajon).getByRole('link', { name: 'Hermanos' })).toHaveAttribute('href', '/hermanos')
+    // Las secciones con subpáginas solo se despliegan; Contacto sí lleva a su página.
+    expect(within(cajon).getByRole('button', { name: 'Corporación' })).toHaveAttribute('aria-expanded', 'false')
+    expect(within(cajon).queryByRole('link', { name: 'Hermanos' })).not.toBeInTheDocument()
+    expect(within(cajon).getByRole('link', { name: 'Contacto' })).toHaveAttribute('href', '/contacto')
     expect(within(cajon).queryByRole('link', { name: 'Historia' })).not.toBeInTheDocument()
   })
 
@@ -124,11 +140,11 @@ describe('BarraDeNavegacion en móvil', () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
-    await user.click(screen.getByRole('button', { name: 'Desplegar Corporación' }))
+    await user.click(screen.getByRole('button', { name: 'Corporación' }))
 
     expect(screen.getByRole('link', { name: 'Historia' })).toHaveAttribute('href', '/corporacion/historia')
     expect(screen.getByRole('link', { name: 'Órganos de Gobierno' })).toHaveAttribute('href', '/corporacion/historia/organos-de-gobierno')
-    expect(screen.getByRole('button', { name: 'Plegar Corporación' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Corporación' })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('llega con la sección de la página actual ya desplegada', async () => {
