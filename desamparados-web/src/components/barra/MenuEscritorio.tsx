@@ -1,8 +1,8 @@
 /**
  * El menú de escritorio: una entrada por sección y, en las que tienen
  * subpáginas, un panel que se abre al pasar el ratón o al llegar con el
- * teclado. El título de esas secciones no lleva a ninguna página: para eso
- * están las subpáginas de dentro; pulsarlo solo abre o cierra el panel.
+ * teclado. El título de esas secciones no es clicable: no lleva a ninguna
+ * página, para eso están las subpáginas de dentro.
  */
 import { useState, useRef, type FocusEvent, type KeyboardEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -41,8 +41,8 @@ function EnlaceDesplegable({ entrada, secundario = false }: { entrada: EntradaMe
 
 /**
  * Entrada de primer nivel del menú de escritorio. Si tiene subpáginas, despliega
- * un panel al pasar el ratón, al llegar con el teclado o al pulsarla (en una
- * tableta no hay ratón); Escape lo cierra y devuelve el foco a la sección.
+ * un panel al pasar el ratón o al llegar con el teclado; Escape lo cierra y
+ * devuelve el foco a la sección.
  */
 function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
   const theme = useTheme()
@@ -77,7 +77,7 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
       <Button
         ref={enlaceRef}
         {...(desplegable
-          ? { onClick: () => setAbierta(!abierta) }
+          ? { disableRipple: true, tabIndex: 0 }
           : { component: Link, to: entrada.href })}
         aria-haspopup={desplegable ? 'true' : undefined}
         aria-expanded={desplegable ? abierta : undefined}
@@ -107,6 +107,8 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
           minWidth: 'auto',
           borderRadius: 0,
           color: activa ? 'secondary.main' : 'text.primary',
+          // El título que despliega no se pulsa: sin la mano del enlace.
+          cursor: desplegable ? 'default' : 'pointer',
           '& .MuiButton-endIcon': { ml: 0.25, mr: -0.25 },
           // Subrayado del activo como pseudo-elemento: no altera la altura del botón
           '&::after': {

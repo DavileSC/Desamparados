@@ -51,13 +51,11 @@ describe('BarraDeNavegacion en escritorio', () => {
     }
   })
 
-  it('pulsar una sección abre y cierra su desplegable', async () => {
+  it('pulsar el título de una sección no hace nada: el panel sigue abierto', async () => {
     const user = userEvent.setup()
     renderWithProviders(<BarraDeNavegacion />)
     const titular = within(navEscritorio()).getByRole('button', { name: 'Sagrada titular', hidden: true })
-    act(() => titular.focus())
     await user.click(titular)
-    expect(titular).toHaveAttribute('aria-expanded', 'false')
     await user.click(titular)
     expect(titular).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('link', { name: 'Ajuar', hidden: true })).toHaveAttribute('href', '/sagrada-titular/ajuar')
