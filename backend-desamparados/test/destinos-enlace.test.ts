@@ -15,7 +15,7 @@ const valida = (bloque: { tipo: string }) => !(esquemaDeBloque(bloque.tipo as ne
 
 describe('destinos de los enlaces', () => {
   test('todas las páginas del catálogo y las demás rutas declaradas valen', () => {
-    assert.ok(RUTAS_DESTINO.size >= 29);
+    assert.ok(RUTAS_DESTINO.size >= 25);
     for (const ruta of RUTAS_DESTINO) assert.ok(esDestinoValido(ruta), ruta);
   });
 
@@ -59,7 +59,7 @@ describe('destinos de los enlaces', () => {
       }
     };
     recorrer(defectos, false);
-    assert.ok(enlaces.length > 10);
+    assert.ok(enlaces.length >= 7);
     for (const enlace of enlaces) assert.ok(esDestinoValido(enlace), enlace);
   });
 });

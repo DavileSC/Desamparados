@@ -22,7 +22,7 @@ export const VELO_ARRIBA = 0.72
 export const VELO_SCROLL = 0.86
 
 /** Si una entrada del menú es la de la página que se está viendo. */
-export function esActiva(pathname: string, href: string) {
-  if (href === '/') return pathname === '/'
+export function esActiva(pathname: string, href: string, exacta = false) {
+  if (href === '/' || exacta) return pathname === href
   return pathname === href || pathname.startsWith(`${href}/`)
 }

@@ -15,7 +15,7 @@ import { menuPublico, type EntradaMenu } from '../../config/navegacion'
 function EnlaceDesplegable({ entrada, secundario = false }: { entrada: EntradaMenu; secundario?: boolean }) {
   const theme = useTheme()
   const location = useLocation()
-  const activa = esActiva(location.pathname, entrada.href)
+  const activa = esActiva(location.pathname, entrada.href, entrada.exacta)
   return (
     <Box
       component={Link}

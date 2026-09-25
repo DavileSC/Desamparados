@@ -49,7 +49,7 @@ test('la siembra deja una fila por página editable, con los textos de siempre',
   // pasaba a comprobar documentos que no eran los suyos.
   const documento = (slug: string) => filas.find((f) => f.slug === slug)!.datos as any;
 
-  assert.equal(documento('corporacion').bloques.length, 2);
+  assert.equal(documento('nuestros-fines').bloques.length, 2);
   // Los cinco hitos de siempre viven ahora en el bloque de cronología.
   const cronologia = documento('historia').bloques.find((b: any) => b.tipo === 'cronologia');
   assert.equal(cronologia.hitos.length, 5);
@@ -60,9 +60,6 @@ test('la siembra deja una fila por página editable, con los textos de siempre',
   // El recorrido guarda sus paradas dentro del bloque de itinerario.
   const itinerario = documento('recorrido').bloques.find((b: any) => b.tipo === 'itinerario');
   assert.equal(itinerario.paradas.length, 9);
-  // La Titular nace sin bloque de galería: las fotos y los vídeos los sube el
-  // Grupo Parroquial desde el CMS, y un bloque de galería vacío no es válido.
-  assert.ok(!documento('titular').bloques.some((b: any) => b.tipo === 'galeria'));
   // Y las páginas convertidas en esta tanda traen ya su contenido de siempre.
   assert.ok(documento('cultos').bloques.length >= 2, 'Cultos se siembra con su texto y sus tarjetas');
   assert.ok(documento('ajuar').bloques.length >= 1, 'Ajuar se siembra con su texto');
@@ -269,9 +266,9 @@ test('el HTML de un bloque se guarda saneado, no como llegó', async (t) => {
   // —no el esquema suelto— porque el defecto no estaba en el esquema sino en
   // que nadie llamaba al saneado por el camino.
   const redes = await crearUsuarioPrueba(Role.REDES);
-  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'nuestros-fines' } });
   try {
-    const nuevo = porDefecto('corporacion') as any;
+    const nuevo = porDefecto('nuestros-fines') as any;
     nuevo.bloques = [{
       tipo: 'texto',
       titulo: '',
@@ -279,7 +276,7 @@ test('el HTML de un bloque se guarda saneado, no como llegó', async (t) => {
         + '<a href="javascript:alert(2)">pulsa</a>',
     }];
 
-    const respuesta = await fetch(`${baseUrl}/api/contenido/corporacion`, {
+    const respuesta = await fetch(`${baseUrl}/api/contenido/nuestros-fines`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Cookie: cookieCms(redes.id, Role.REDES) },
       body: JSON.stringify({ datos: nuevo }),
@@ -288,14 +285,14 @@ test('el HTML de un bloque se guarda saneado, no como llegó', async (t) => {
 
     // Se comprueba en la BASE, no en la respuesta: lo que importa es lo que
     // queda almacenado, que es lo que servirá a cualquier consumidor futuro.
-    const fila = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+    const fila = await db.contenidoPagina.findUnique({ where: { slug: 'nuestros-fines' } });
     const html = ((fila!.datos as any).bloques[0].html) as string;
     assert.ok(html.includes('<p>Hola</p>'), 'el contenido legítimo se conserva');
     assert.ok(!html.includes('<script'), 'el script no puede quedar almacenado');
     assert.ok(!html.includes('rastreador.ejemplo'), 'una imagen de fuera filtra la IP de quien la vea');
     assert.ok(!html.includes('javascript:'), 'un enlace con javascript: tampoco');
   } finally {
-    await db.contenidoPagina.update({ where: { slug: 'corporacion' }, data: { datos: antes!.datos as object } });
+    await db.contenidoPagina.update({ where: { slug: 'nuestros-fines' }, data: { datos: antes!.datos as object } });
     await borrarUsuarioPrueba(redes.id);
   }
 });
@@ -309,9 +306,9 @@ test('el vídeo de una galería se guarda ya normalizado, no como se pegó', asy
   // normalización no vive en el esquema —`paginaDeBloquesSchema` descarta la
   // salida de cada bloque— sino en el paso previo, `sanearBloques`.
   const redes = await crearUsuarioPrueba(Role.REDES);
-  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'nuestros-fines' } });
   try {
-    const nuevo = porDefecto('corporacion') as any;
+    const nuevo = porDefecto('nuestros-fines') as any;
     nuevo.bloques = [{
       tipo: 'galeria',
       titulo: 'Galería',
@@ -324,18 +321,18 @@ test('el vídeo de una galería se guarda ya normalizado, no como se pegó', asy
       }],
     }];
 
-    const respuesta = await fetch(`${baseUrl}/api/contenido/corporacion`, {
+    const respuesta = await fetch(`${baseUrl}/api/contenido/nuestros-fines`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Cookie: cookieCms(redes.id, Role.REDES) },
       body: JSON.stringify({ datos: nuevo }),
     });
     assert.equal(respuesta.status, 200);
 
-    const fila = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+    const fila = await db.contenidoPagina.findUnique({ where: { slug: 'nuestros-fines' } });
     const url = ((fila!.datos as any).bloques[0].medios[0].url) as string;
     assert.equal(url, 'https://www.youtube-nocookie.com/embed/aaaaaaaaaaa');
   } finally {
-    await db.contenidoPagina.update({ where: { slug: 'corporacion' }, data: { datos: antes!.datos as object } });
+    await db.contenidoPagina.update({ where: { slug: 'nuestros-fines' }, data: { datos: antes!.datos as object } });
     await borrarUsuarioPrueba(redes.id);
   }
 });
@@ -346,7 +343,7 @@ test('una galería con un vídeo que no es de YouTube ni de Vimeo se rechaza', a
   // libre, quien edite el CMS podría incrustar cualquier página dentro del sitio.
   const redes = await crearUsuarioPrueba(Role.REDES);
   try {
-    const nuevo = porDefecto('corporacion') as any;
+    const nuevo = porDefecto('nuestros-fines') as any;
     nuevo.bloques = [{
       tipo: 'galeria',
       titulo: 'Galería',
@@ -359,7 +356,7 @@ test('una galería con un vídeo que no es de YouTube ni de Vimeo se rechaza', a
       }],
     }];
 
-    const respuesta = await fetch(`${baseUrl}/api/contenido/corporacion`, {
+    const respuesta = await fetch(`${baseUrl}/api/contenido/nuestros-fines`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Cookie: cookieCms(redes.id, Role.REDES) },
       body: JSON.stringify({ datos: nuevo }),
@@ -376,26 +373,26 @@ test('un bloque que solo lleva porquería se rechaza, no se guarda en blanco', a
   // nada al limpiarlo, y un bloque vacío no pinta nada. Si se saneara después
   // de validar, esto se habría guardado como un hueco.
   const redes = await crearUsuarioPrueba(Role.REDES);
-  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'nuestros-fines' } });
   try {
-    const nuevo = porDefecto('corporacion') as any;
+    const nuevo = porDefecto('nuestros-fines') as any;
     nuevo.bloques = [{ tipo: 'texto', titulo: '', html: '<script>alert(1)</script>' }];
 
-    const respuesta = await fetch(`${baseUrl}/api/contenido/corporacion`, {
+    const respuesta = await fetch(`${baseUrl}/api/contenido/nuestros-fines`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Cookie: cookieCms(redes.id, Role.REDES) },
       body: JSON.stringify({ datos: nuevo }),
     });
     assert.equal(respuesta.status, 400);
 
-    const fila = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+    const fila = await db.contenidoPagina.findUnique({ where: { slug: 'nuestros-fines' } });
     assert.deepEqual(fila!.datos, antes!.datos, 'la página no se toca');
   } finally {
     // Se restaura aunque el 400 no debiera haber tocado nada: si esta prueba
     // falla es justamente porque SÍ se guardó, y entonces dejaría la página
     // envenenada para los demás tests del fichero. Un test que al romperse
     // ensucia la base convierte un fallo en varios y esconde el de verdad.
-    await db.contenidoPagina.update({ where: { slug: 'corporacion' }, data: { datos: antes!.datos as object } });
+    await db.contenidoPagina.update({ where: { slug: 'nuestros-fines' }, data: { datos: antes!.datos as object } });
     await borrarUsuarioPrueba(redes.id);
   }
 });
@@ -408,10 +405,10 @@ test('una página con los seis tipos de bloque se guarda y se lee tal cual', asy
   // mismos campos que arma el CMS (`BLOQUE_NUEVO` en formularios.tsx, ya
   // rellenos), por la ruta de verdad.
   const redes = await crearUsuarioPrueba(Role.REDES);
-  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'corporacion' } });
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'nuestros-fines' } });
   const FOTO = '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp';
   try {
-    const nuevo = porDefecto('corporacion') as any;
+    const nuevo = porDefecto('nuestros-fines') as any;
     nuevo.bloques = [
       { tipo: 'texto', titulo: '', html: '<p>Un párrafo</p>' },
       { tipo: 'foto', titulo: 'La Titular', url: FOTO, alt: 'La Virgen en su trono', pie: 'Camarín' },
@@ -443,7 +440,7 @@ test('una página con los seis tipos de bloque se guarda y se lee tal cual', asy
       },
     ];
 
-    const respuesta = await fetch(`${baseUrl}/api/contenido/corporacion`, {
+    const respuesta = await fetch(`${baseUrl}/api/contenido/nuestros-fines`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Cookie: cookieCms(redes.id, Role.REDES) },
       body: JSON.stringify({ datos: nuevo }),
@@ -452,7 +449,7 @@ test('una página con los seis tipos de bloque se guarda y se lee tal cual', asy
 
     // Y se lee sin sesión, que es como lo pide la web pública: el orden y los
     // seis tipos, intactos.
-    const leido = await (await fetch(`${baseUrl}/api/contenido/corporacion`)).json() as any;
+    const leido = await (await fetch(`${baseUrl}/api/contenido/nuestros-fines`)).json() as any;
     assert.deepEqual(
       leido.bloques.map((b: { tipo: string }) => b.tipo),
       ['texto', 'foto', 'galeria', 'tarjetas', 'llamada', 'datos'],
@@ -461,7 +458,7 @@ test('una página con los seis tipos de bloque se guarda y se lee tal cual', asy
     assert.equal(leido.bloques[4].boton, 'Hazte hermano');
     assert.equal(leido.bloques[5].lineas[0].etiqueta, 'Misa de hermandad');
   } finally {
-    await db.contenidoPagina.update({ where: { slug: 'corporacion' }, data: { datos: antes!.datos as object } });
+    await db.contenidoPagina.update({ where: { slug: 'nuestros-fines' }, data: { datos: antes!.datos as object } });
     await borrarUsuarioPrueba(redes.id);
   }
 });

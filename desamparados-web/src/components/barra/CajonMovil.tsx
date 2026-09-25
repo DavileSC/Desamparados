@@ -40,7 +40,7 @@ const iconosPorSeccion: Record<string, ReactNode> = {
 function EnlaceCajon({ entrada, nivel, alNavegar }: { entrada: EntradaMenu; nivel: 1 | 2; alNavegar: () => void }) {
   const theme = useTheme()
   const location = useLocation()
-  const activa = esActiva(location.pathname, entrada.href)
+  const activa = esActiva(location.pathname, entrada.href, entrada.exacta)
   return (
     <ListItemButton
       component={Link}

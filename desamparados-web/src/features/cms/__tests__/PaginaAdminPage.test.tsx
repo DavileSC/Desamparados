@@ -51,7 +51,7 @@ function montar(respuestaPut?: { status: number; cuerpo: unknown }, datos: unkno
   }))
   const router = createMemoryRouter(
     [{ path: '/cms', element: <h1>Panel</h1> }, { path: '/cms/paginas/:slug', element: <PaginaAdminPage /> }],
-    { initialEntries: ['/cms/paginas/corporacion'] },
+    { initialEntries: ['/cms/paginas/nuestros-fines'] },
   )
   render(
     <HelmetProvider>
@@ -138,7 +138,7 @@ describe('PaginaAdminPage', () => {
 
     await waitFor(() => {
       const envio = llamadas.find((l) => l.metodo === 'PUT')
-      expect(envio!.url).toContain('/contenido/corporacion')
+      expect(envio!.url).toContain('/contenido/nuestros-fines')
       const bloques = (envio!.cuerpo as { datos: { bloques: { tipo: string }[] } }).datos.bloques
       expect(bloques.map((b) => b.tipo)).toEqual(['tarjetas', 'texto'])
     })
@@ -240,7 +240,7 @@ describe('PaginaAdminPage', () => {
     await screen.findByDisplayValue('Corporación')
 
     const previa = screen.getByRole('link', { name: /abrir la publicada/i })
-    expect(previa).toHaveAttribute('href', '/corporacion')
+    expect(previa).toHaveAttribute('href', '/corporacion/nuestros-fines')
     expect(previa).toHaveAttribute('target', '_blank')
     expect(previa).toHaveAttribute('rel', expect.stringContaining('noopener'))
   })
@@ -503,7 +503,7 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     expect(pagina).toHaveTextContent('Corporación y sus fines')
     expect(pagina).toHaveTextContent('Historia')
     // La página del borrador no pide lo guardado al servidor.
-    expect(llamadas.filter((l) => l.metodo === 'GET' && l.url.includes('/contenido/corporacion'))).toHaveLength(1)
+    expect(llamadas.filter((l) => l.metodo === 'GET' && l.url.includes('/contenido/nuestros-fines'))).toHaveLength(1)
     expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
 
     await user.click(within(ventana).getByRole('button', { name: /cerrar la vista previa/i }))

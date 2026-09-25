@@ -49,6 +49,7 @@ describe('menuPublico', () => {
         '  Agenda /actualidad/agenda',
         '  Noticias /actualidad/noticias',
         'Publicaciones /publicaciones',
+        '  Todas las publicaciones /publicaciones',
         '  Boletines /publicaciones/boletines',
         '  Dossier prensa /publicaciones/dossier-prensa',
         'Hermanos /hermanos',
@@ -61,10 +62,19 @@ describe('menuPublico', () => {
 
   it('cada enlace del menú es una ruta declarada en el router', () => {
     const rutas = rutasDelRouter()
-    const rotos = aplanarMenu(menuPublico)
+    // Las secciones con subpáginas no enlazan: su `href` es solo el prefijo.
+    const enlaces = aplanarMenu(menuPublico).filter((e) => !menuPublico.includes(e) || !e.hijos?.length)
+    const rotos = enlaces
       .map((e) => e.href)
       .filter((href) => !rutas.has(href))
     expect(rotos, 'llevarían al visitante al 404').toEqual([])
+  })
+
+  it('las portadas de sección ya no existen: el título solo despliega', () => {
+    const rutas = rutasDelRouter()
+    for (const seccion of menuPublico.filter((e) => e.hijos?.length && e.href !== '/publicaciones')) {
+      expect(rutas.has(seccion.href), seccion.href).toBe(false)
+    }
   })
 
   it('aplanarMenu devuelve todas las entradas, en orden de lectura', () => {

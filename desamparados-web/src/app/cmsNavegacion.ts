@@ -101,7 +101,7 @@ export const rolesPorRutaCms = {
   // índice a quien no puede abrir ninguna página sería enseñarle una lista de
   // enlaces que todos le rebotan.
   paginas: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
-  'paginas/corporacion': ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  'paginas/:slug': ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   // Las fotos de la cabecera son contenido: los mismos roles que las noticias.
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],

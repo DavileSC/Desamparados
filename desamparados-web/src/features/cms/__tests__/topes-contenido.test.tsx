@@ -34,8 +34,8 @@ afterEach(() => { vi.unstubAllGlobals() })
 
 function montarLasPantallas() {
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: unknown) => Promise.resolve(
-    String(url).includes('/contenido/corporacion')
-      ? respuesta(POR_DEFECTO.corporacion)
+    String(url).includes('/contenido/nuestros-fines')
+      ? respuesta(POR_DEFECTO['nuestros-fines'])
       : String(url).includes('/contenido/historia')
       ? respuesta(POR_DEFECTO.historia)
       : respuesta({ imagenes: [{ id: 1, url: '/storage/public/una.webp', descripcion: 'Una', orden: 0 }], textos: POR_DEFECTO.portada }),
@@ -54,7 +54,7 @@ function montarLasPantallas() {
         <ThemeProvider theme={crearTemaCms('claro')}>
           <RouterProvider router={rutaDe(<PortadaAdminPage />, '/cms/portada')} />
           <RouterProvider router={rutaDe(<PaginaAdminPage />, '/cms/paginas/:slug', '/cms/paginas/historia')} />
-          <RouterProvider router={rutaDe(<PaginaAdminPage />, '/cms/paginas/:slug', '/cms/paginas/corporacion')} />
+          <RouterProvider router={rutaDe(<PaginaAdminPage />, '/cms/paginas/:slug', '/cms/paginas/nuestros-fines')} />
         </ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>,
@@ -71,7 +71,7 @@ describe('topes de longitud del CMS', () => {
     // despliega abajo con los demás bloques.
     await screen.findByDisplayValue('Desamparados Málaga')
     await screen.findByDisplayValue('Corporación · Historia')
-    await screen.findByDisplayValue('Corporación')
+    await screen.findByDisplayValue('Nuestros Fines')
 
     // El constructor de páginas SÍ desmonta lo que pliega, así que sus
     // formularios hay que abrirlos: si no, ningún `maxLength` de un bloque

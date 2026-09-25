@@ -1,7 +1,7 @@
 /**
  * Convierte a la forma de bloques las filas de `ContenidoPagina` que se
- * guardaron con la forma antigua: el Recorrido, la Sagrada Titular y la
- * Historia.
+ * guardaron con la forma antigua: el Recorrido y la Historia. (La Sagrada
+ * Titular también, pero su página se quitó y su fila la borra una migración.)
  *
  * Por qué hace falta y no basta con la siembra: `mezclarConDefectos` solo
  * conserva del documento guardado las claves que existen en los valores por
@@ -49,25 +49,6 @@ function recorridoABloques(viejo: Record<string, never>): Documento {
   }
   return {
     cabecera: { titulo: d.titulo, subtitulo: d.subtitulo, foto: '', fotoAlt: '' },
-    bloques,
-  };
-}
-
-/** La Titular de antes: ceja, título, presentación y galería. */
-function titularABloques(viejo: Record<string, never>): Documento {
-  const d = viejo as unknown as {
-    ceja: string; titulo: string; subtitulo: string;
-    galeria: { tipo: string; url: string; portada: string; alt: string; pie: string }[];
-  };
-  const bloques: unknown[] = [];
-  if (d.subtitulo?.trim()) bloques.push(parrafo(d.subtitulo));
-  // Una galería vacía no es un bloque válido: sin medios, no se crea.
-  if (d.galeria?.length) bloques.push({ tipo: 'galeria', titulo: '', medios: d.galeria });
-  return {
-    // La ceja («Sagrada Titular») era el rótulo pequeño de encima del título, y
-    // en una página de bloques ese papel lo hace el título de la cabecera; el
-    // título largo pasa a subtítulo, que es donde se lee igual que antes.
-    cabecera: { titulo: d.ceja || d.titulo, subtitulo: d.titulo, foto: '', fotoAlt: '' },
     bloques,
   };
 }
@@ -123,7 +104,6 @@ function historiaABloques(viejo: Record<string, never>): Documento {
  */
 const CONVERSORES: Record<PaginaAnteriorABloques, (viejo: Record<string, never>) => Documento> = {
   recorrido: recorridoABloques,
-  titular: titularABloques,
   historia: historiaABloques,
 };
 

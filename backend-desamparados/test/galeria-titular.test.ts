@@ -1,8 +1,9 @@
 // test/galeria-titular.test.ts
 //
 // La galería de fotos y vídeos, que desde el constructor de páginas es un
-// bloque más (`galeria`) y ya no un documento con forma propia: la página de la
-// Sagrada Titular la lleva como cualquier otra página puede llevarla.
+// bloque más (`galeria`) y ya no un documento con forma propia. Nació en la
+// portada de la Sagrada Titular, que se quitó el 25-09-2026; hoy la lleva el
+// Sábado de Pasión, y cualquier otra página puede llevarla.
 //
 // Las reglas que se fijan aquí son las que no se pueden dejar al formulario:
 //  - Una foto tiene que ser nuestra (/storage/public/… o /images/…): una URL
@@ -44,18 +45,18 @@ const falla = (medios: unknown[]) => esquemaDeBloque('galeria' as never)(bloque(
 /** El camino de la ruta: primero se prepara el documento, después se valida. */
 function guardar(medios: unknown[]) {
   const preparado = sanearBloques({
-    cabecera: { titulo: 'Sagrada Titular', subtitulo: '', foto: '', fotoAlt: '' },
+    cabecera: { titulo: 'Sábado de Pasión', subtitulo: '', foto: '', fotoAlt: '' },
     bloques: [bloque(medios)],
   }) as { bloques: { medios: { url: string }[] }[] };
 
-  const salida = esquemaDeSlug('titular')(preparado);
+  const salida = esquemaDeSlug('sabado-de-pasion')(preparado);
   return { rechazado: salida instanceof ArkErrors, medios: preparado.bloques[0].medios };
 }
 
-describe('la página de la Titular ya es una página de bloques', () => {
+describe('la galería va en una página de bloques', () => {
   test('el slug está declarado y sus textos de partida están en forma de bloques', () => {
-    assert.ok((SLUGS_CONTENIDO as readonly string[]).includes('titular'), 'falta el slug titular');
-    const defectos = porDefecto('titular') as { cabecera?: unknown; bloques?: unknown };
+    assert.ok((SLUGS_CONTENIDO as readonly string[]).includes('sabado-de-pasion'), 'falta el slug sabado-de-pasion');
+    const defectos = porDefecto('sabado-de-pasion') as { cabecera?: unknown; bloques?: unknown };
     assert.ok(defectos.cabecera, 'faltan los valores de partida de la cabecera');
     assert.ok(Array.isArray(defectos.bloques), 'los valores de partida deben traer la lista de bloques');
   });

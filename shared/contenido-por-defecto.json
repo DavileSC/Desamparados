@@ -214,83 +214,6 @@
       }
     ]
   },
-  "titular": {
-    "cabecera": {
-      "titulo": "Sagrada Titular",
-      "subtitulo": "Nuestra Señora de los Desamparados",
-      "foto": "/images/hero-960.jpg",
-      "fotoAlt": "Nuestra Señora de los Desamparados"
-    },
-    "bloques": [
-      {
-        "tipo": "texto",
-        "titulo": "",
-        "html": "<p>Imágenes y vídeos de nuestra Amantísima Titular, de sus cultos y de su salida procesional.</p>"
-      },
-      {
-        "tipo": "tarjetas",
-        "titulo": "",
-        "tarjetas": [
-          {
-            "titulo": "Desamparados",
-            "descripcion": "Historia y devoción a nuestra Amantísima Titular.",
-            "enlace": "/sagrada-titular/desamparados"
-          },
-          {
-            "titulo": "Ajuar",
-            "descripcion": "Manto, corona y joyas de la Sagrada Titular.",
-            "enlace": "/sagrada-titular/ajuar"
-          }
-        ]
-      }
-    ]
-  },
-  "corporacion": {
-    "cabecera": {
-      "titulo": "Corporación",
-      "subtitulo": "Grupo Parroquial de Nuestra Señora de los Desamparados.",
-      "foto": "",
-      "fotoAlt": ""
-    },
-    "bloques": [
-      {
-        "tipo": "texto",
-        "titulo": "",
-        "html": "<p>El Grupo Parroquial de Nuestra Señora de los Desamparados, Santo Cristo de la Buena Muerte y San Juan de la Palma es una corporación religiosa fundada en el seno de la Parroquia de los Padres Pasionistas de Málaga. Desde sus orígenes, el Grupo Parroquial ha vivido su fe a través de la devoción a la Santísima Virgen bajo la advocación de los Desamparados, acogiendo a cuantos buscan consuelo y esperanza.</p><p>Como Grupo Parroquial, desarrollamos una intensa labor espiritual, caritativa y formativa al servicio de la Iglesia y de la ciudad. Nuestra comunidad de hermanos y cofrades se reúne en torno a los cultos, la oración, la enseñanza de la fe y la entrega a los más necesitados, manteniendo vivas las tradiciones que nos definen.</p><p>A continuación puedes conocer más sobre nuestra historia, nuestra sede parroquial, los fines que nos mueven, los cultos que celebramos y nuestra estación de penitencia del Sábado de Pasión.</p>"
-      },
-      {
-        "tipo": "tarjetas",
-        "titulo": "Explora la sección",
-        "tarjetas": [
-          {
-            "titulo": "Historia",
-            "descripcion": "Orígenes y evolución de nuestro Grupo Parroquial.",
-            "enlace": "/corporacion/historia"
-          },
-          {
-            "titulo": "Parroquia",
-            "descripcion": "Nuestra sede canónica y la comunidad pasionista.",
-            "enlace": "/corporacion/parroquia-pasionistas"
-          },
-          {
-            "titulo": "Nuestros fines",
-            "descripcion": "Caridad y formación como ejes de nuestra acción.",
-            "enlace": "/corporacion/nuestros-fines"
-          },
-          {
-            "titulo": "Cultos",
-            "descripcion": "Celebraciones y devociones en honor a nuestra Sagrada Titular.",
-            "enlace": "/corporacion/cultos"
-          },
-          {
-            "titulo": "Sábado de Pasión",
-            "descripcion": "Nuestra salida procesional por las calles de Málaga.",
-            "enlace": "/corporacion/sabado-de-pasion"
-          }
-        ]
-      }
-    ]
-  },
   "cultos": {
     "cabecera": {
       "titulo": "Cultos",
@@ -601,26 +524,6 @@
         "tipo": "texto",
         "titulo": "",
         "html": "<p>El ajuar de la Sagrada Titular está compuesto por piezas de extraordinario valor artístico y devocional, fruto del afecto y la generosidad de los hermanos a lo largo de la historia de la corporación. Cada elemento ha sido confeccionado con los mejores materiales y con el más fino trabajo de bordado y orfebrería.</p><p>El manto principal, de rico terciopelo, luce bordados en oro que representan motivos marianos y los emblemas del Grupo Parroquial. La corona, obra de orfebrería detallada, realza la majestad de la imagen, acompañada de joyas, rosarios y otros enseres que completan su atavío para las principales celebraciones litúrgicas y procesionales.</p><p>El ajuar se va enriqueciendo con nuevas donaciones y restauraciones que garantizan su conservación para las futuras generaciones, manteniendo vivo el esplendor con el que la Virgen de los Desamparados preside cada acto de culto y cada estación de penitencia.</p>"
-      }
-    ]
-  },
-  "actualidad": {
-    "cabecera": {
-      "titulo": "Actualidad",
-      "subtitulo": "Toda la información de nuestra corporación: noticias, cultos y eventos.",
-      "foto": "",
-      "fotoAlt": ""
-    },
-    "bloques": [
-      {
-        "tipo": "listado",
-        "titulo": "Últimas noticias",
-        "fuente": "noticias-recientes"
-      },
-      {
-        "tipo": "listado",
-        "titulo": "Próximos cultos y eventos",
-        "fuente": "agenda-proxima"
       }
     ]
   },

@@ -49,7 +49,7 @@ after(async () => {
 
 describe('páginas que siguen con la forma anterior a los bloques', () => {
   test('la lista es la que convierte el script de migración', () => {
-    assert.deepEqual([...PAGINAS_ANTERIORES_A_BLOQUES], ['recorrido', 'titular', 'historia']);
+    assert.deepEqual([...PAGINAS_ANTERIORES_A_BLOQUES], ['recorrido', 'historia']);
   });
 
   test('una base ya convertida no tiene ninguna pendiente', async (t) => {

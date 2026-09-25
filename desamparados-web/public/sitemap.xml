@@ -2,12 +2,10 @@
 <!-- Generado por scripts/generar-sitemap.mjs. No editar a mano. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://www.desamparadosmalaga.com/</loc></url>
-  <url><loc>https://www.desamparadosmalaga.com/actualidad</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/actualidad/agenda</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/actualidad/noticias</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/aviso-legal</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/contacto</loc></url>
-  <url><loc>https://www.desamparadosmalaga.com/corporacion</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/corporacion/cultos</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/corporacion/historia</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/corporacion/historia/organos-de-gobierno</loc></url>
@@ -19,14 +17,12 @@
   <url><loc>https://www.desamparadosmalaga.com/corporacion/sabado-de-pasion/enseres</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/corporacion/sabado-de-pasion/recorrido</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/corporacion/sabado-de-pasion/trono</loc></url>
-  <url><loc>https://www.desamparadosmalaga.com/hermanos</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/hermanos/hazte-hermano</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/politica-cookies</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/politica-privacidad</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/publicaciones</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/publicaciones/boletines</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/publicaciones/dossier-prensa</loc></url>
-  <url><loc>https://www.desamparadosmalaga.com/sagrada-titular</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/sagrada-titular/ajuar</loc></url>
   <url><loc>https://www.desamparadosmalaga.com/sagrada-titular/desamparados</loc></url>
 </urlset>

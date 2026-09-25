@@ -4,16 +4,16 @@ import { ArkErrors } from 'arktype';
 import { esquemaDeSlug } from '../src/schemas/contenido.schema.js';
 import { SLUGS_CONTENIDO, porDefecto } from '../src/domain/contenido.js';
 
-const CABECERA = { titulo: 'Corporación', subtitulo: 'Grupo Parroquial.', foto: '', fotoAlt: '' };
+const CABECERA = { titulo: 'Nuestros Fines', subtitulo: 'Caridad y formación.', foto: '', fotoAlt: '' };
 const TEXTO = { tipo: 'texto', titulo: '', html: '<p>Hola</p>' };
 const doc = (bloques: unknown[]) => ({ cabecera: CABECERA, bloques });
-const valida = (valor: unknown) => esquemaDeSlug('corporacion')(valor);
+const valida = (valor: unknown) => esquemaDeSlug('nuestros-fines')(valor);
 const falla = (valor: unknown) => valida(valor) instanceof ArkErrors;
 
 describe('el documento de una página de bloques', () => {
   test('el slug está declarado y trae valores de partida', () => {
-    assert.ok((SLUGS_CONTENIDO as readonly string[]).includes('corporacion'));
-    const defectos = porDefecto('corporacion') as { cabecera?: unknown; bloques?: unknown[] };
+    assert.ok((SLUGS_CONTENIDO as readonly string[]).includes('nuestros-fines'));
+    const defectos = porDefecto('nuestros-fines') as { cabecera?: unknown; bloques?: unknown[] };
     assert.ok(defectos.cabecera, 'faltan los valores de partida de la cabecera');
     assert.ok(Array.isArray(defectos.bloques));
   });

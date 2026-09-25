@@ -13,8 +13,16 @@
 
 export interface EntradaMenu {
   label: string
+  /**
+   * En una sección con subpáginas no es un enlace: el título solo despliega y
+   * se entra por las de dentro. Ahí `href` es el prefijo de sus rutas, lo que
+   * marca la sección como activa. Sus páginas de portada se quitaron el
+   * 25-09-2026 y esas direcciones dan «Página no encontrada».
+   */
   href: string
   hijos?: EntradaMenu[]
+  /** Activa solo en su ruta exacta, no en las que cuelgan de ella. */
+  exacta?: true
 }
 
 export const menuPublico: EntradaMenu[] = [
@@ -69,6 +77,8 @@ export const menuPublico: EntradaMenu[] = [
     label: 'Publicaciones',
     href: '/publicaciones',
     hijos: [
+      // El archivo entero: el único sitio donde salen los anuarios y las de historia.
+      { label: 'Todas las publicaciones', href: '/publicaciones', exacta: true },
       { label: 'Boletines', href: '/publicaciones/boletines' },
       { label: 'Dossier prensa', href: '/publicaciones/dossier-prensa' },
     ],

@@ -10,7 +10,7 @@ import defectos from '../../../shared/contenido-por-defecto.json' with { type: '
  * en `string` y con él el mapa de esquemas y `porDefecto` sin comprobación.
  * De que las dos listas no se separen se encarga `paginas-catalogo.test.ts`.
  */
-export const SLUGS_CONTENIDO = ['portada', 'recorrido', 'historia', 'titular', 'corporacion', 'parroquia', 'organos-de-gobierno', 'nuestros-fines', 'caridad', 'formacion', 'cultos', 'sabado-de-pasion', 'trono', 'enseres', 'desamparados', 'ajuar', 'actualidad', 'agenda', 'noticias', 'publicaciones', 'boletines', 'dossier-prensa', 'contacto'] as const;
+export const SLUGS_CONTENIDO = ['portada', 'recorrido', 'historia', 'parroquia', 'organos-de-gobierno', 'nuestros-fines', 'caridad', 'formacion', 'cultos', 'sabado-de-pasion', 'trono', 'enseres', 'desamparados', 'ajuar', 'agenda', 'noticias', 'publicaciones', 'boletines', 'dossier-prensa', 'contacto'] as const;
 export type SlugContenido = (typeof SLUGS_CONTENIDO)[number];
 
 export const esSlugContenido = (valor: unknown): valor is SlugContenido =>

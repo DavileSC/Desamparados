@@ -16,7 +16,8 @@ test('los valores por defecto pasan su propio esquema', () => {
   // (`bloques-esquemas.test.ts`). Aquí se comprueba que el documento entero
   // sigue pasando, que es lo que la siembra escribe.
   assert.ok(valida('recorrido', porDefecto('recorrido')));
-  assert.ok(valida('titular', porDefecto('titular')));
+  // La galería del Sábado de Pasión es la que siembra fotos de partida.
+  assert.ok(valida('sabado-de-pasion', porDefecto('sabado-de-pasion')));
 });
 
 test('un título que no es texto se rechaza', () => {

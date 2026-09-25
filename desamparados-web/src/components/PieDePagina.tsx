@@ -42,7 +42,7 @@ const columnas: { titulo: string; rutas: string[] }[] = [
       '/corporacion/nuestros-fines',
       '/corporacion/cultos',
       '/corporacion/sabado-de-pasion',
-      '/sagrada-titular',
+      '/sagrada-titular/desamparados',
     ],
   },
   {

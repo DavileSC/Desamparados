@@ -6,12 +6,12 @@ import { llamarApi } from './cliente'
  * por bloques (las que declara `shared/paginas-publicas.json`).
  */
 export type SlugContenido =
-  | 'portada' | 'recorrido' | 'historia' | 'titular'
-  | 'corporacion' | 'parroquia' | 'organos-de-gobierno'
+  | 'portada' | 'recorrido' | 'historia'
+  | 'parroquia' | 'organos-de-gobierno'
   | 'nuestros-fines' | 'caridad' | 'formacion' | 'cultos'
   | 'sabado-de-pasion' | 'trono' | 'enseres'
   | 'desamparados' | 'ajuar'
-  | 'actualidad' | 'agenda' | 'noticias'
+  | 'agenda' | 'noticias'
   | 'publicaciones' | 'boletines' | 'dossier-prensa'
   | 'contacto'
 
@@ -127,8 +127,6 @@ export interface PaginaDeBloques { cabecera: CabeceraPagina; bloques: Bloque[] }
  * divergencia no se puede ni escribir.
  */
 export const CLAVE_RECORRIDO = ['contenido', 'recorrido'] as const
-export const CLAVE_TITULAR = ['contenido', 'titular'] as const
-export const CLAVE_CORPORACION = ['contenido', 'corporacion'] as const
 
 /** El contenido de una página, ya mezclado por el servidor. Se lee sin sesión. */
 export const getContenido = <T,>(slug: SlugContenido) => llamarApi<T>(`/contenido/${slug}`)

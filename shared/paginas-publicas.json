@@ -13,13 +13,6 @@
   ],
   "paginas": [
     {
-      "slug": "corporacion",
-      "nombre": "Corporación",
-      "ruta": "/corporacion",
-      "grupo": "Corporación",
-      "descripcion": "Portada de la sección: qué es el Grupo Parroquial y accesos al resto."
-    },
-    {
       "slug": "historia",
       "nombre": "Historia",
       "ruta": "/corporacion/historia",
@@ -97,13 +90,6 @@
       "descripcion": "El acompañamiento musical y las insignias."
     },
     {
-      "slug": "titular",
-      "nombre": "Sagrada Titular",
-      "ruta": "/sagrada-titular",
-      "grupo": "Sagrada Titular",
-      "descripcion": "La portada de la sección, con la galería de fotos y vídeos."
-    },
-    {
       "slug": "desamparados",
       "nombre": "Desamparados",
       "ruta": "/sagrada-titular/desamparados",
@@ -116,13 +102,6 @@
       "ruta": "/sagrada-titular/ajuar",
       "grupo": "Sagrada Titular",
       "descripcion": "El manto, la corona y las joyas de la Sagrada Titular."
-    },
-    {
-      "slug": "actualidad",
-      "nombre": "Actualidad",
-      "ruta": "/actualidad",
-      "grupo": "Actualidad",
-      "descripcion": "Portada de la sección: las últimas noticias y los próximos actos."
     },
     {
       "slug": "agenda",

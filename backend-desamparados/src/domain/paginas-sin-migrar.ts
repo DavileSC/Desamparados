@@ -9,10 +9,12 @@
 import db from '../config/db.js';
 
 /**
- * Las tres páginas que existieron antes de que toda la web pública pasara a
- * bloques, cada una con su forma propia en `ContenidoPagina`.
+ * Las páginas que existieron antes de que toda la web pública pasara a
+ * bloques, cada una con su forma propia en `ContenidoPagina`. La de la Titular
+ * también lo era, pero su página se quitó (25-09-2026) y la migración
+ * `sin_portadas_de_seccion` borra su fila.
  */
-export const PAGINAS_ANTERIORES_A_BLOQUES = ['recorrido', 'titular', 'historia'] as const;
+export const PAGINAS_ANTERIORES_A_BLOQUES = ['recorrido', 'historia'] as const;
 
 export type PaginaAnteriorABloques = (typeof PAGINAS_ANTERIORES_A_BLOQUES)[number];
 

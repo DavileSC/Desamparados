@@ -98,6 +98,6 @@ describe('PaginasAdminPage', () => {
     expect(entrada?.href).toBe('/cms/paginas')
     // Si el índice dejara entrar a quien no puede abrir ninguna página, sería
     // una lista de enlaces que todos le rebotan.
-    expect(rolesPorRutaCms.paginas).toEqual(rolesPorRutaCms['paginas/corporacion'])
+    expect(rolesPorRutaCms.paginas).toEqual(rolesPorRutaCms['paginas/:slug'])
   })
 })
