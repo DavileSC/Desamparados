@@ -1,11 +1,12 @@
 import { Box } from '@mui/material'
-import GaleriaMedios from '../GaleriaMedios'
+import GaleriaMedios, { type FormatoGaleria } from '../GaleriaMedios'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueGaleria as Datos } from '../../lib/api/contenido'
 
 /**
  * Fotos y vídeos: en pase (el de siempre, el mismo componente que usaba la
- * página de la Sagrada Titular), en cuadrícula o en mosaico. El vídeo no carga
+ * página de la Sagrada Titular), en cuadrícula, en mosaico, en tiras, en un
+ * montón de estampas o en carteles que se inclinan. El vídeo no carga
  * el marco de YouTube hasta que alguien pulsa el play, y la dirección llega ya
  * normalizada del servidor: aquí no se decide nada sobre seguridad.
  *
@@ -22,7 +23,7 @@ export default function BloqueGaleria({ bloque }: { bloque: Datos }) {
     <Box sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto' }}>
       <GaleriaMedios
         medios={listos}
-        formato={valorDe(bloque, 'disposicion') as 'pase' | 'cuadricula' | 'mosaico'}
+        formato={valorDe(bloque, 'disposicion') as FormatoGaleria}
         columnas={Number(valorDe(bloque, 'columnas'))}
       />
     </Box>

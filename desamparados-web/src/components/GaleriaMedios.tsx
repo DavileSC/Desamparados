@@ -6,7 +6,12 @@ import type { MedioGaleria } from '../lib/api/contenido'
 import Escenario from './galeria/Escenario'
 import CarrilMovil from './galeria/CarrilMovil'
 import VisorGaleria from './galeria/VisorGaleria'
+import Tiras from './galeria/Tiras'
+import Estampas from './galeria/Estampas'
+import Carteles from './galeria/Carteles'
 import { imagenDe, useMedidas } from './galeria/formato'
+
+export type FormatoGaleria = 'pase' | 'cuadricula' | 'mosaico' | 'tiras' | 'estampas' | 'carteles'
 
 interface Props {
   medios: MedioGaleria[]
@@ -14,11 +19,12 @@ interface Props {
   disposicion?: 'escritorio' | 'movil'
   /**
    * Cómo se enseñan: en pase (el de siempre), en una cuadrícula de recortes
-   * iguales o en mosaico, cada foto con su forma. Las dos últimas abren el
-   * mismo visor a pantalla completa al pulsar.
+   * iguales, en mosaico (cada foto con su forma), en tiras que se abren, en un
+   * montón de estampas o en carteles que se inclinan. Todas menos el pase
+   * abren el mismo visor a pantalla completa al pulsar.
    */
-  formato?: 'pase' | 'cuadricula' | 'mosaico'
-  /** Columnas de la cuadrícula o del mosaico en escritorio. */
+  formato?: FormatoGaleria
+  /** Columnas de la cuadrícula, del mosaico o de los carteles en escritorio. */
   columnas?: number
 }
 
@@ -72,7 +78,13 @@ export default function GaleriaMedios({ medios, disposicion, formato = 'pase', c
 
   return (
     <>
-      {formato !== 'pase'
+      {formato === 'tiras'
+        ? <Tiras medios={medios} onAbrir={abrir} />
+        : formato === 'estampas'
+        ? <Estampas medios={medios} onAbrir={abrir} />
+        : formato === 'carteles'
+        ? <Carteles medios={medios} columnas={columnas} onAbrir={abrir} />
+        : formato !== 'pase'
         ? <Rejilla medios={medios} mosaico={formato === 'mosaico'} columnas={columnas} onAbrir={abrir} />
         : escritorio
         ? <Escenario medios={medios} actual={indiceSeguro} onIr={ir} onAbrir={abrir} medidaDe={medidaDe} medir={medir} quieta={visor !== null || sinMovimiento} />

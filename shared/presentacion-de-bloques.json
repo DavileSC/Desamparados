@@ -115,7 +115,10 @@
         "valores": [
           "pase",
           "cuadricula",
-          "mosaico"
+          "mosaico",
+          "tiras",
+          "estampas",
+          "carteles"
         ]
       },
       "columnas": {
@@ -346,7 +349,8 @@
       "estilo": {
         "valores": [
           "grande",
-          "compacta"
+          "compacta",
+          "rueda"
         ]
       }
     },

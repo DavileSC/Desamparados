@@ -168,6 +168,15 @@ describe('los bloques nuevos', () => {
     expect(screen.getByText(/^Faltan \d+ días para el/)).toBeInTheDocument()
   })
 
+  it('cuenta atrás con números que ruedan: un rodillo por cifra, callado, y la frase para quien no ve', () => {
+    renderWithProviders(<BloquesDePagina bloques={[{ tipo: 'cuentaAtras', titulo: '', fecha: '2099-03-20T18:00', texto: '', textoFinal: '', presentacion: { estilo: 'rueda' } }]} />)
+    expect(screen.getByText(/^Faltan \d+ días para el/)).toBeInTheDocument()
+    // Días (cinco cifras a tantos años vista), horas, minutos y segundos: cada
+    // cifra es un rodillo con del 0 al 9, así que hay un «9» por rodillo.
+    expect(screen.getAllByText('9')).toHaveLength(11)
+    expect(screen.getByText('seg')).toBeInTheDocument()
+  })
+
   it('las tarjetas pueden llevar foto o icono', () => {
     renderWithProviders(<BloquesDePagina bloques={[{ tipo: 'tarjetas', titulo: '', tarjetas: [
       { titulo: 'Caridad', descripcion: '', enlace: '', foto: FOTO, fotoAlt: 'Reparto de alimentos' },
