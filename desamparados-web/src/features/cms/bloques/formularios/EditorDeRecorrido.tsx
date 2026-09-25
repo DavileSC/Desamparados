@@ -79,7 +79,7 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
       medidor = new ResizeObserver(() => m.resize())
       medidor.observe(contenedor.current)
       m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
-      m.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: ATRIBUCION }), 'bottom-right')
+      m.addControl(new maplibregl.AttributionControl({ compact: false, customAttribution: ATRIBUCION }), 'bottom-right')
       m.on('load', () => {
         if (!vivo) return
         // Para editar, plano: los edificios en relieve taparían las calles.

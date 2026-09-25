@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Box, Button, IconButton, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
+import { Box, IconButton, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import ReplayIcon from '@mui/icons-material/Replay'
@@ -7,7 +7,7 @@ import SwipeVerticalIcon from '@mui/icons-material/SwipeVertical'
 import { useReducedMotion } from 'framer-motion'
 import maplibregl, { type GeoJSONSource, type Map as Mapa, type Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { GOLD, GRANATE, SERIF } from '../../features/inicio/estilos'
+import { GOLD, GRANATE } from '../../features/inicio/estilos'
 import { ATRIBUCION, cargarBarrio, mapaVivo } from '../mapa/barrio'
 import { estiloDelMapa } from '../mapa/estilo'
 import { useModoEdicion } from './modoEdicion'
@@ -22,12 +22,17 @@ const CAMARA_CERCA = { zoom: 16.6, pitch: 52, bearing: -12 }
 const GRANATE_CLARO = '#fc858a'
 /** Lo que mide cada calle de la lista: algo más que un giro de la rueda del ratón (100 px), para que un giro avance una parada y nunca dos. */
 const ALTO_CALLE = { xs: 110, md: 110 }
+/** Lo que se ve de la lista mientras el mapa está quieto: el alto del mapa, o en el móvil lo que queda de pantalla debajo. */
+const VISTA_LISTA = { xs: 'max(0px, 54svh - 88px)', md: 'max(420px, 100svh - 128px)' }
+
 /**
- * Lo que queda debajo de la última calle para que llegue a lo alto del mapa
- * (el alto del mapa, o de lo que queda de pantalla en el móvil, menos una
- * calle). Ahí va el cierre del recorrido.
+ * El alto de cada calle para que, con `n` calles, la lista mida lo que se ve
+ * de ella más un gesto por calle: n · alto = vista + (n − 1) · ALTO_CALLE.
  */
-const ALTO_CIERRE = { xs: `max(0px, calc(54svh - 88px - ${ALTO_CALLE.xs}px))`, md: `max(0px, calc(100svh - 128px - ${ALTO_CALLE.md}px))` }
+const altoDeCalleCon = (n: number) => ({
+  xs: `calc((${ALTO_CALLE.xs * Math.max(0, n - 1)}px + ${VISTA_LISTA.xs}) / ${Math.max(1, n)})`,
+  md: `calc((${ALTO_CALLE.md * Math.max(0, n - 1)}px + ${VISTA_LISTA.md}) / ${Math.max(1, n)})`,
+})
 
 type Camara = 'sigue' | 'entero'
 
@@ -52,10 +57,6 @@ function cajaDe(linea: Coordenada[]) {
  * enseña el recorrido entero. Si baja mientras se reproduce, el play se para y
  * el mapa vuelve a ir con el scroll. Un texto encima lo explica.
  *
- * Al llegar a la última parada la cámara se aleja sola y enseña el recorrido
- * entero ya dibujado, y debajo de la lista sale el cierre (los kilómetros, las
- * paradas y el horario); si se vuelve a subir, la cámara vuelve con el trono.
- *
  * Con «reducir movimiento» la cámara empieza enseñando el recorrido entero y
  * no se desliza. En la vista en vivo del constructor sale entero y dibujado.
  */
@@ -77,8 +78,6 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
 
   const contenedor = useRef<HTMLDivElement>(null)
   const sitio = useRef<HTMLDivElement>(null)
-  /** La columna de las paradas: la lista y el cierre de debajo. */
-  const columna = useRef<HTMLDivElement>(null)
   const lista = useRef<HTMLOListElement>(null)
   const mapa = useRef<Mapa | null>(null)
   const trono = useRef<Marker | null>(null)
@@ -95,8 +94,6 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const rotuloSalida = useRef<HTMLSpanElement | null>(null)
   const camaraActual = useRef(camara)
   camaraActual.current = camara
-  /** Si la cámara se alejó sola al llegar al final (y tiene que volver sola al trono). */
-  const alejadaSola = useRef(false)
 
   /** Pone el trono y la línea en esa fracción del recorrido. */
   const pinta = useCallback((f: number) => {
@@ -125,8 +122,8 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const destinoDelScroll = useCallback((): number => {
     const caja = sitio.current?.getBoundingClientRect()
     const ol = lista.current
-    if (!caja || !ol || !columna.current) return 0
-    const cajaLista = columna.current.getBoundingClientRect()
+    if (!caja || !ol) return 0
+    const cajaLista = ol.getBoundingClientRect()
     const alLado = cajaLista.left >= caja.right - 1
     const inicio = alLado ? caja.top : caja.bottom + 16
     const fin = alLado ? caja.bottom : window.innerHeight
@@ -286,16 +283,6 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     return () => cancelAnimationFrame(marco)
   }, [listo, pinta, reducir])
 
-  // Al llegar a la última parada, la cámara se aleja para enseñar el recorrido
-  // entero; si se vuelve atrás, vuelve con el trono. Solo si iba siguiéndolo:
-  // quien eligió «Recorrido entero» ya lo está viendo.
-  useEffect(() => {
-    if (!listo || enConstructor) return
-    const llegado = paradas.length > 1 && alcanzada === paradas.length - 1
-    if (llegado && camaraActual.current === 'sigue') { alejadaSola.current = true; setCamara('entero') }
-    else if (!llegado && alejadaSola.current) { alejadaSola.current = false; setCamara('sigue') }
-  }, [alcanzada, listo, enConstructor, paradas.length])
-
   // Cambio de cámara: al trono, de cerca, o el recorrido entero desde arriba.
   useEffect(() => {
     const m = mapa.current
@@ -330,7 +317,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     centro.current = linea[0]
     if (camaraActual.current === 'sigue') mapa.current?.jumpTo({ center: linea[0] })
     const caja = sitio.current?.getBoundingClientRect()
-    const cajaLista = columna.current?.getBoundingClientRect()
+    const cajaLista = lista.current?.getBoundingClientRect()
     if (!caja || !cajaLista) return
     const alLado = cajaLista.left >= caja.right - 1
     const inicio = alLado ? caja.top : caja.bottom + 16
@@ -339,10 +326,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   }
 
   const actual = alcanzada >= 0 ? paradas[alcanzada] : null
-  const alFinal = paradas.length > 0 && alcanzada === paradas.length - 1
-  const kilometros = ((hechos.at(-1) ?? 0) / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })
-  const primeraHora = paradas.find((p) => p.hora)?.hora
-  const ultimaHora = paradas.findLast((p) => p.hora)?.hora
+  const altoDeCalle = altoDeCalleCon(paradas.length)
   const botonMapa = {
     width: 34, height: 34, color: '#fff', backgroundColor: 'rgba(16, 14, 17, .85)', border: '1px solid rgba(204, 196, 201, .3)',
     '&:hover': { backgroundColor: 'rgba(16, 14, 17, .95)', borderColor: GOLD },
@@ -369,8 +353,14 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
           position: 'sticky', top: { xs: 72, md: 104 }, alignSelf: 'start', zIndex: 3,
           height: { xs: '46svh', md: 'calc(100svh - 128px)' }, minHeight: { xs: 300, md: 420 },
           mb: { xs: 2, md: 0 }, overflow: 'hidden', border: '1px solid rgba(204, 196, 201, 0.14)', backgroundColor: '#1a181b',
-          '& .maplibregl-ctrl-attrib': { backgroundColor: 'rgba(16, 14, 17, .75)' },
-          '& .maplibregl-ctrl-attrib a, & .maplibregl-ctrl-attrib-inner': { color: '#a9a3a7' },
+          // El reconocimiento a OpenStreetMap que pide su licencia (ODbL): siempre
+          // a la vista, legible sobre el mapa oscuro y con el enlace a sus
+          // condiciones. No se pliega en un botón «i». Con las dos clases, para
+          // ganar a la hoja de MapLibre, que le pone un fondo blanco a medias.
+          '& .maplibregl-ctrl.maplibregl-ctrl-attrib': { backgroundColor: 'rgba(16, 14, 17, .88)', padding: '3px 8px', borderTopLeftRadius: '4px' },
+          '& .maplibregl-ctrl-attrib-inner': { color: '#e4e2df', fontSize: 12, lineHeight: 1.4 },
+          '& .maplibregl-ctrl-attrib a': { color: '#e4e2df', textDecoration: 'underline', textUnderlineOffset: '2px' },
+          '& .maplibregl-ctrl-attrib a:hover': { color: GOLD },
         }}
       >
         {/* El contenedor del mapa, dentro de una caja: MapLibre le pone su propio
@@ -398,7 +388,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             </Tooltip>
             <ToggleButtonGroup
               exclusive size="small" value={camara}
-              onChange={(_, valor: Camara | null) => { if (valor) { alejadaSola.current = false; setCamara(valor) } }}
+              onChange={(_, valor: Camara | null) => valor && setCamara(valor)}
               aria-label="Qué enseña la cámara"
               sx={{
                 backgroundColor: 'rgba(16, 14, 17, .85)',
@@ -413,10 +403,12 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
         )}
       </Box>
 
-      {/* Una calle por gesto: cada calle mide más que un giro de rueda (unos
-          100 px), y el cierre de debajo hace que el scroll del recorrido sea
-          justo una calle por calle. Así un giro nunca salta dos. */}
-      <Box ref={columna}>
+      {/* Una calle por gesto, y sin hueco al final. El recorrido va de la lista
+          arriba del todo junto al mapa a la lista acabando justo al pie del
+          mapa (en el móvil, de la pantalla), así que da para lo que mide la
+          lista menos el mapa. Las calles se estiran lo justo para que eso sea
+          un giro de rueda y algo (ALTO_CALLE) por cada calle: la última,
+          «Regreso al templo», llega al pie del mapa y ahí se acaba. */}
       <Box component="ol" ref={lista} sx={{ listStyle: 'none', m: 0, p: 0 }}>
         {paradas.map((parada, i) => (
           <Box
@@ -425,7 +417,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             key={`${parada.hora}-${parada.lugar}-${i}`}
             sx={{
               display: 'grid', gridTemplateColumns: '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'baseline',
-              minHeight: ALTO_CALLE, boxSizing: 'border-box', alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
+              minHeight: altoDeCalle, boxSizing: 'border-box', alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
               opacity: i <= alcanzada ? 1 : 0.4, transition: 'opacity .5s ease',
             }}
           >
@@ -441,29 +433,6 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, color: 'text.primary' }}>{parada.lugar}</Typography>
           </Box>
         ))}
-      </Box>
-      {/* El cierre: ocupa el hueco que deja la última calle al subir hasta lo
-          alto del mapa, y se enciende al llegar a ella. */}
-      <Box sx={{
-        minHeight: ALTO_CIERRE, boxSizing: 'border-box', py: 4, display: 'grid', alignContent: 'center', justifyItems: 'start', gap: 1.25,
-        opacity: alFinal ? 1 : 0.35, transform: alFinal ? 'none' : 'translateY(10px)',
-        transition: reducir ? 'none' : 'opacity .7s ease, transform .7s ease',
-      }}>
-        <Typography component="span" sx={{ fontSize: 12, letterSpacing: '.22em', textTransform: 'uppercase', color: GOLD }}>
-          {circular ? 'Fin del recorrido · de vuelta al templo' : 'Fin del recorrido'}
-        </Typography>
-        <Typography component="p" sx={{ fontFamily: SERIF, fontWeight: 300, fontSize: { xs: 34, md: 44 }, lineHeight: 1.05, color: '#fff' }}>
-          {kilometros} km
-        </Typography>
-        <Typography component="p" sx={{ fontSize: 15, color: '#e3d8bf' }}>
-          {paradas.length} {paradas.length === 1 ? 'parada' : 'paradas'}
-          {primeraHora && ultimaHora && primeraHora !== ultimaHora ? ` · de ${primeraHora} a ${ultimaHora}` : ''}
-        </Typography>
-        <Button size="small" startIcon={<ReplayIcon />} onClick={volverAEmpezar}
-          sx={{ mt: 1, color: '#e4e2df', border: '1px solid rgba(204, 196, 201, .3)', px: 1.75, '&:hover': { borderColor: GOLD, backgroundColor: 'rgba(222,199,43,.06)' } }}>
-          Volver a empezar
-        </Button>
-      </Box>
       </Box>
     </Box>
     </Box>
