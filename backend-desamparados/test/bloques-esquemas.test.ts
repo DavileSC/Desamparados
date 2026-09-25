@@ -235,22 +235,29 @@ describe('bloque de itinerario', () => {
     assert.ok(falla('itinerario', doc(Array.from({ length: 61 }, () => PARADA))));
   });
 
-  test('acepta el plano con su trazado y las paradas situadas en él', () => {
-    const conPlano = {
-      ...doc([{ ...PARADA, enRuta: 0 }, { hora: '21:30', lugar: 'Entrada', enRuta: 1 }]),
-      plano: { url: '/images/recorrido-2025.webp', alt: 'Plano del recorrido' },
-      trazado: [{ x: 66.4, y: 30.6 }, { x: 62.8, y: 11 }, { x: 39.6, y: 19 }],
-    };
-    assert.ok(!falla('itinerario', conPlano));
+  test('la hora puede ir vacía mientras no se sepa', () => {
+    assert.ok(!falla('itinerario', doc([{ ...PARADA, hora: '' }])));
   });
 
-  test('un plano sin descripción, un trazado de un punto o un punto fuera del plano no valen', () => {
+  test('acepta el recorrido sobre el mapa y las paradas situadas en él', () => {
+    const conMapa = {
+      ...doc([{ ...PARADA, enRuta: 0 }, { hora: '21:30', lugar: 'Entrada', enRuta: 1 }]),
+      recorrido: {
+        esquinas: [[-4.4487, 36.7122], [-4.4492, 36.7136]],
+        linea: [[-4.4487, 36.7122], [-4.4489, 36.7129], [-4.4492, 36.7136]],
+        pegado: true,
+      },
+    };
+    assert.ok(!falla('itinerario', conMapa));
+  });
+
+  test('una línea de un punto, una coordenada imposible o una parada fuera del recorrido no valen', () => {
     const base = doc([PARADA]);
-    assert.ok(falla('itinerario', { ...base, plano: { url: '/images/recorrido-2025.webp', alt: '' } }));
-    assert.ok(falla('itinerario', { ...base, trazado: [{ x: 10, y: 10 }] }), 'un punto suelto no es una línea');
-    assert.ok(falla('itinerario', { ...base, trazado: [{ x: 10, y: 10 }, { x: 120, y: 10 }] }));
+    const recorrido = (linea: unknown[]) => ({ ...base, recorrido: { esquinas: [], linea, pegado: false } });
+    assert.ok(falla('itinerario', recorrido([[-4.44, 36.71]])), 'un punto suelto no es una línea');
+    assert.ok(falla('itinerario', recorrido([[-4.44, 36.71], [-4.44, 136.71]])));
+    assert.ok(falla('itinerario', recorrido([[-4.44, 36.71], ['-4.44', 36.71]])));
     assert.ok(falla('itinerario', doc([{ ...PARADA, enRuta: 1.5 }])));
-    assert.ok(falla('itinerario', { ...base, plano: { url: 'https://otra-web.com/plano.jpg', alt: 'Plano' } }));
   });
 });
 

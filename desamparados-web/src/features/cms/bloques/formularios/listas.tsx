@@ -2,6 +2,7 @@
  * Los bloques que son una lista de piezas iguales: tarjetas, líneas de datos y
  * paradas de un itinerario. Los tres se añaden, se ordenan y se borran igual.
  */
+import { lazy, Suspense } from 'react'
 import { Button, Divider, IconButton, MenuItem, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
@@ -13,8 +14,10 @@ import CampoImagen from '../../CampoImagen'
 import { ICONOS } from '../../../../components/bloques/iconos'
 import { valorDe } from '../../../../components/bloques/presentacion'
 import EditorDeLineas from './EditorDeLineas'
-import EditorDeTrazado from './EditorDeTrazado'
 import { intercambiar, type Props } from './comunes'
+
+// El editor del mapa lleva MapLibre: se descarga solo al abrir un itinerario.
+const EditorDeRecorrido = lazy(() => import('./EditorDeRecorrido'))
 import type { BloqueTarjetas, BloqueDatos, BloqueItinerario, TarjetaEnlace, IconoTarjeta } from '../../../../lib/api/contenido'
 
 const TARJETA_NUEVA = { titulo: '', descripcion: '', enlace: '' }
@@ -123,7 +126,7 @@ export function FormularioItinerario({ bloque, onCambio }: Props<BloqueItinerari
             label={`Hora ${indice + 1}`} value={parada.hora}
             onChange={(e) => cambiar(indice, 'hora', e.target.value)}
             size="small" sx={{ width: { sm: 120 } }}
-            placeholder="17:30"
+            placeholder="Sin hora"
             slotProps={{ htmlInput: { maxLength: 5, inputMode: 'numeric' } }}
           />
           <TextField
@@ -159,58 +162,38 @@ export function FormularioItinerario({ bloque, onCambio }: Props<BloqueItinerari
       </Button>
       <Typography variant="caption" color="text.secondary">
         {cabenMas
-          ? 'La hora va en formato de 24 horas, como 17:30. Se enseña tal cual dentro de la pastilla.'
+          ? 'La hora va en formato de 24 horas, como 17:30. Puede quedar vacía mientras no se sepa: la web dice «por confirmar».'
           : `Son ya ${topes.paradasPorItinerario} paradas, el máximo de un itinerario.`}
       </Typography>
 
       <Divider sx={{ pt: 1 }} />
-      <PlanoDelRecorrido bloque={bloque} onCambio={onCambio} />
+      <RecorridoDelMapa bloque={bloque} onCambio={onCambio} />
     </Stack>
   )
 }
 
 /**
- * El plano del recorrido y su trazado. Solo se ven con la disposición «Sobre
- * el plano»; con las demás se guardan igual, por si se vuelve a ella.
+ * El recorrido sobre el mapa del barrio. Solo se ve con la disposición «Sobre
+ * el mapa»; con las demás se guarda igual, por si se vuelve a ella.
  */
-function PlanoDelRecorrido({ bloque, onCambio }: Props<BloqueItinerario>) {
-  const plano = bloque.plano ?? { url: '', alt: '' }
-  const trazado = bloque.trazado ?? []
+function RecorridoDelMapa({ bloque, onCambio }: Props<BloqueItinerario>) {
   const enUso = valorDe(bloque, 'disposicion') === 'plano'
-
   return (
     <Stack spacing={1.5}>
-      <Typography variant="subtitle2">Plano del recorrido</Typography>
+      <Typography variant="subtitle2">Recorrido sobre el mapa</Typography>
       <Typography variant="body2" color="text.secondary">
         {enUso
-          ? 'Al bajar por las horas, la línea del recorrido se dibuja sobre el plano y el trono llega a cada parada.'
-          : 'Se ve eligiendo «Sobre el plano» en la pestaña Presentación: al bajar por las horas, la línea del recorrido se dibuja sobre el plano.'}
+          ? 'Al bajar por las paradas, la línea del recorrido se dibuja por las calles y el trono llega a cada una. Quien lo ve puede darle al play.'
+          : 'Se ve eligiendo «Sobre el mapa» en la pestaña Presentación: al bajar por las paradas, la línea del recorrido se dibuja por las calles.'}
       </Typography>
-      <CampoImagen
-        etiqueta="Plano"
-        ayuda="Una captura del mapa con las calles, apaisada, sin la línea dibujada: la línea la pone la web."
-        apaisada
-        valor={plano.url}
-        onCambio={(url) => onCambio({ plano: { ...plano, url } })}
-      />
-      {plano.url !== '' && (
-        <>
-          <TextField
-            label="Qué se ve en el plano" value={plano.alt}
-            onChange={(e) => onCambio({ plano: { ...plano, alt: e.target.value } })}
-            helperText="En una frase, para quien usa un lector de pantalla: «Plano del recorrido por el barrio, del templo al templo»."
-            slotProps={{ htmlInput: { maxLength: topes.descripcion } }}
-            size="small" fullWidth
-          />
-          <EditorDeTrazado
-            plano={plano.url}
-            trazado={trazado}
-            paradas={bloque.paradas}
-            onTrazado={(nuevo) => onCambio({ trazado: nuevo })}
-            onParadas={(paradas) => onCambio({ paradas })}
-          />
-        </>
-      )}
+      <Suspense fallback={<Typography variant="body2" color="text.secondary">Cargando el mapa…</Typography>}>
+        <EditorDeRecorrido
+          recorrido={bloque.recorrido}
+          paradas={bloque.paradas}
+          onRecorrido={(recorrido) => onCambio({ recorrido })}
+          onParadas={(paradas) => onCambio({ paradas })}
+        />
+      </Suspense>
     </Stack>
   )
 }

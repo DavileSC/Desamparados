@@ -1,9 +1,17 @@
+import { lazy, Suspense } from 'react'
 import { Box, Grid, Typography } from '@mui/material'
 import TarjetaCristal from '../TarjetaCristal'
-import RecorridoEnPlano from './RecorridoEnPlano'
+import { hayWebGL } from '../mapa/barrio'
 import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueItinerario as Datos } from '../../lib/api/contenido'
+
+// El mapa lleva MapLibre (unos 800 KB): se descarga aparte, solo en la página
+// que lo usa, y mientras llega se ve el itinerario en línea.
+const RecorridoEnMapa = lazy(() => import('./RecorridoEnMapa'))
+
+/** Lo que se lee donde iría la hora mientras no se sabe. */
+const SIN_HORA = 'Por confirmar'
 
 /** Oculto a la vista, presente para los lectores de pantalla. */
 const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
@@ -12,8 +20,9 @@ const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidde
  * Las paradas de la procesión con su hora: en tarjetas a dos columnas (el de
  * siempre, el marcado que tenía `RecorridoPage`), en una línea vertical que
  * une las paradas como el recorrido que son, en una tabla compacta o sobre el
- * plano, con la línea del recorrido dibujándose al bajar (`RecorridoEnPlano`).
- * Sin plano o sin trazado, «sobre el plano» se pinta como la línea.
+ * mapa del barrio, con la línea del recorrido dibujándose al bajar
+ * (`RecorridoEnMapa`). Sin recorrido dibujado, o en un navegador sin WebGL,
+ * «sobre el mapa» se pinta como la línea.
  *
  * El itinerario repite lugares (la procesión pasa dos veces por la misma
  * plaza): las claves necesitan el índice o React se lía al reordenar.
@@ -22,9 +31,13 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
   const disposicion = valorDe(bloque, 'disposicion')
   const ultima = bloque.paradas.length - 1
 
-  const { plano, trazado } = bloque
-  if (disposicion === 'plano' && plano && plano.url !== '' && trazado && trazado.length >= 2) {
-    return <RecorridoEnPlano bloque={{ ...bloque, plano, trazado }} />
+  const { recorrido } = bloque
+  if (disposicion === 'plano' && recorrido && recorrido.linea.length >= 2 && hayWebGL()) {
+    return (
+      <Suspense fallback={<BloqueItinerario bloque={{ ...bloque, presentacion: { ...bloque.presentacion, disposicion: 'linea' } }} />}>
+        <RecorridoEnMapa bloque={{ ...bloque, recorrido }} />
+      </Suspense>
+    )
   }
 
   if (disposicion === 'linea' || disposicion === 'plano') {
@@ -33,8 +46,8 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
         {bloque.paradas.map((parada, i) => (
           <Box component="li" key={`${parada.hora}-${parada.lugar}-${i}`}
             sx={{ display: 'grid', gridTemplateColumns: '72px 24px minmax(0, 1fr)', alignItems: 'start', columnGap: 2 }}>
-            <Typography sx={{ color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums', textAlign: 'right', pt: '2px' }}>
-              {parada.hora}
+            <Typography sx={{ color: parada.hora ? 'secondary.main' : 'text.secondary', fontWeight: parada.hora ? 700 : 400, fontSize: parada.hora ? undefined : 12, fontVariantNumeric: 'tabular-nums', textAlign: 'right', pt: '2px' }}>
+              {parada.hora || SIN_HORA}
             </Typography>
             <Box aria-hidden sx={{ position: 'relative', alignSelf: 'stretch', display: 'flex', justifyContent: 'center' }}>
               <Box sx={{ position: 'absolute', top: i === 0 ? 12 : 0, bottom: i === ultima ? 'calc(100% - 12px)' : 0, width: '2px', backgroundColor: 'rgba(222, 199, 43, 0.35)' }} />
@@ -56,7 +69,7 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
         <tbody>
           {bloque.paradas.map((parada, i) => (
             <Box component="tr" key={`${parada.hora}-${parada.lugar}-${i}`} sx={{ borderTop: i === 0 ? 0 : '1px solid', borderColor: 'divider' }}>
-              <Box component="td" sx={{ py: 1.25, pr: 3, width: 80, color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{parada.hora}</Box>
+              <Box component="td" sx={{ py: 1.25, pr: 3, width: 80, color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{parada.hora || '—'}</Box>
               <Box component="td" sx={{ py: 1.25, color: 'text.primary' }}>{parada.lugar}</Box>
             </Box>
           ))}
@@ -76,7 +89,7 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
                 backgroundColor: 'rgba(110, 24, 34, 0.25)', color: 'secondary.main', fontWeight: 600,
               }}
             >
-              {parada.hora}
+              {parada.hora || SIN_HORA}
             </Box>
             <Typography variant="body1" sx={{ color: 'text.primary' }}>{parada.lugar}</Typography>
           </TarjetaCristal>

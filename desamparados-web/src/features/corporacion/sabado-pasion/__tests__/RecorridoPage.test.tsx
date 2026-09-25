@@ -89,7 +89,7 @@ describe('RecorridoPage', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red')))
     renderWithProviders(<RecorridoPage />)
 
-    expect(await screen.findByText('Salida desde la Parroquia de los Desamparados')).toBeInTheDocument()
+    expect(await screen.findByText('Salida desde el Templo')).toBeInTheDocument()
     expect(screen.getByText(/El itinerario de la procesión/)).toBeInTheDocument()
   })
 })

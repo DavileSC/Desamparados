@@ -16,14 +16,21 @@ export type SlugContenido =
   | 'contacto'
 
 export interface ParadaRecorrido {
+  /** HH:mm, o vacía mientras no se sepa. */
   hora: string
   lugar: string
-  /** Dónde cae en el trazado del plano, de 0 (salida) a 1 (entrada). Sin ella, se reparte entre sus vecinas. */
+  /** Dónde cae en el recorrido del mapa, de 0 (salida) a 1 (entrada). Sin ella, se reparte entre sus vecinas. */
   enRuta?: number
 }
 
-/** Un punto del trazado, en tanto por ciento del ancho (x) y del alto (y) del plano. */
-export interface PuntoDePlano { x: number; y: number }
+/** Un punto del mapa: [longitud, latitud], como en GeoJSON. */
+export type Coordenada = [number, number]
+
+/**
+ * El recorrido sobre el mapa: las esquinas que se pulsaron en el CMS y la línea
+ * que sale de ellas (pegada a las calles si `pegado`).
+ */
+export interface RecorridoEnMapa { esquinas: Coordenada[]; linea: Coordenada[]; pegado: boolean }
 
 /**
  * Un medio de la galería. `url` es una ruta nuestra si es foto, y la dirección
@@ -129,9 +136,8 @@ export interface BloqueDatos extends BloqueBase { tipo: 'datos'; lineas: LineaDa
 export interface BloqueItinerario extends BloqueBase {
   tipo: 'itinerario'
   paradas: ParadaRecorrido[]
-  /** El plano del recorrido y la línea que se dibuja encima: solo los usa la disposición «plano». */
-  plano?: { url: string; alt: string }
-  trazado?: PuntoDePlano[]
+  /** El recorrido sobre el mapa: solo lo usa la disposición «plano» («Sobre el mapa»). */
+  recorrido?: RecorridoEnMapa
 }
 export interface BloqueCronologia extends BloqueBase { tipo: 'cronologia'; hitos: HitoHistoria[] }
 /**

@@ -18,5 +18,6 @@
   "respuesta": 1200,
   "ancla": 40,
   "puntosPorTrazado": 400,
-  "pasosPorBloque": 12
+  "pasosPorBloque": 12,
+  "puntosPorLinea": 4000
 }

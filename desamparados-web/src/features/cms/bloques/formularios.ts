@@ -159,9 +159,9 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       return null
     case 'itinerario':
       if (bloque.paradas.some((p) => p.lugar.trim() === '')) return 'tiene una parada sin lugar'
-      if (bloque.paradas.some((p) => !/^([01]\d|2[0-3]):[0-5]\d$/.test(p.hora))) return 'tiene una hora que no es una hora (usa 17:30)'
-      if (bloque.plano && bloque.plano.url !== '' && bloque.plano.alt.trim() === '') return 'tiene el plano sin descripción'
-      if (bloque.trazado && bloque.trazado.length === 1) return 'tiene un recorrido de un solo punto: pulsa al menos otro en el plano'
+      // Vacía vale: la hora puede no saberse todavía y la web dice «por confirmar».
+      if (bloque.paradas.some((p) => p.hora !== '' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(p.hora))) return 'tiene una hora que no es una hora (usa 17:30, o déjala vacía)'
+      if (bloque.recorrido && bloque.recorrido.esquinas.length === 1) return 'tiene un recorrido de una sola esquina: pulsa al menos otra en el mapa'
       return null
     case 'cronologia': {
       const n = bloque.hitos.findIndex((h) => h.periodo.trim() === '')

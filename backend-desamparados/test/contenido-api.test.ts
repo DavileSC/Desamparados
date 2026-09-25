@@ -57,9 +57,11 @@ test('la siembra deja una fila por página editable, con los textos de siempre',
   assert.equal(documento('noticias').bloques[0].fuente, 'noticias');
   assert.equal(documento('contacto').bloques[0].tipo, 'contacto');
   assert.equal(documento('portada').hero.titulo, 'Desamparados Málaga');
-  // El recorrido guarda sus paradas dentro del bloque de itinerario.
+  // El recorrido guarda sus paradas dentro del bloque de itinerario: las
+  // diecinueve calles de 2025, y el recorrido sobre el mapa.
   const itinerario = documento('recorrido').bloques.find((b: any) => b.tipo === 'itinerario');
-  assert.equal(itinerario.paradas.length, 9);
+  assert.equal(itinerario.paradas.length, 19);
+  assert.ok(itinerario.recorrido.linea.length >= 2, 'el recorrido se siembra con su línea sobre el mapa');
   // Y las páginas convertidas en esta tanda traen ya su contenido de siempre.
   assert.ok(documento('cultos').bloques.length >= 2, 'Cultos se siembra con su texto y sus tarjetas');
   assert.ok(documento('ajuar').bloques.length >= 1, 'Ajuar se siembra con su texto');
