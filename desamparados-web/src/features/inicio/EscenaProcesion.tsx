@@ -4,6 +4,7 @@ import { useMediaQuery } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import { Revela } from '../../components/SeccionAnimada'
+import ParrafoQueSeEnciende from '../../components/ParrafoQueSeEnciende'
 import { CURVA_ENTRADA } from '../../components/entrada'
 import { SERIF } from './estilos'
 import { useTextosPortada } from './useContenidoPortada'
@@ -64,7 +65,8 @@ export default function EscenaProcesion() {
               y conserva el corte a dos líneas que antes daba el <br /> a mano. */}
           <h2 id="procession-title" style={{ whiteSpace: 'pre-line', fontFamily: SERIF }}>{sabadoDePasion.titulo}</h2>
         </Revela>
-        <Revela orden={2}><p>{sabadoDePasion.parrafo}</p></Revela>
+        {/* Sin entrada propia: su efecto es encenderse palabra a palabra según se baja. */}
+        <ParrafoQueSeEnciende texto={sabadoDePasion.parrafo} className="procession-scene-parrafo" />
         <Revela orden={3}>
           <Link to="/sabado-de-pasion" className="procession-scene-link">
             {sabadoDePasion.enlace} <ArrowForwardIcon fontSize="small" />

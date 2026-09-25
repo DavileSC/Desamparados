@@ -1,5 +1,7 @@
 import { Box, Typography } from '@mui/material'
-import { Revela } from '../SeccionAnimada'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { motion, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
+import { useModoEdicion } from './modoEdicion'
 import { GOLD, GRANATE, SERIF, ceja } from '../../features/inicio/estilos'
 import { parrafosDe, type BloqueCronologia as Datos, type HitoHistoria } from '../../lib/api/contenido'
 import { idDeHito } from './cronologia'
@@ -15,12 +17,21 @@ const GRANATE_CLARO = '#fc858a'
 const HUECO = { xs: 7, md: 11 } as const
 /** Dónde está el punto del raíl respecto al alto del periodo. */
 const PUNTO_TOP = { xs: 14, md: 20 } as const
+/** El mismo PUNTO_TOP en píxeles, para las cuentas del raíl (md desde 900 px, como el tema). */
+const puntoTopPx = () => (window.innerWidth >= 900 ? PUNTO_TOP.md : PUNTO_TOP.xs)
+/** La línea de lectura: a qué altura de la pantalla (0 arriba, 1 abajo) se enciende cada época. */
+const LINEA_DE_LECTURA = 0.6
+/** El oro apagado con el que arranca el relleno del raíl. */
+const GOLD_SUAVE = '#c4af79'
+/** El punto encendido de un hito sin tono, y su halo. */
+const PUNTO_ENCENDIDO = { backgroundColor: GOLD, borderColor: GOLD }
+const HALO_ORO = 'rgba(222, 199, 43, .14)'
 
 /** Color del periodo y del punto de cada hito según su tono. */
 const TONOS = {
   ninguno: null,
-  granate: { texto: GRANATE_CLARO, punto: { backgroundColor: GRANATE, borderColor: GRANATE_CLARO } },
-  oro: { texto: GOLD, punto: { backgroundColor: GOLD, borderColor: GOLD } },
+  granate: { texto: GRANATE_CLARO, punto: { backgroundColor: GRANATE, borderColor: GRANATE_CLARO }, halo: 'rgba(252, 133, 138, .14)' },
+  oro: { texto: GOLD, punto: { backgroundColor: GOLD, borderColor: GOLD }, halo: HALO_ORO },
 } as const
 
 /**
@@ -38,19 +49,87 @@ const TONOS = {
  */
 export default function BloqueCronologia({ bloque, conAnclas = false }: { bloque: Datos; conAnclas?: boolean }) {
   if (valorDe(bloque, 'disposicion') === 'horizontal') return <CronologiaHorizontal bloque={bloque} conAnclas={conAnclas} />
+  return <CronologiaVertical bloque={bloque} conAnclas={conAnclas} />
+}
+
+/**
+ * La cronología en vertical, con el raíl vivo: según se baja, el raíl se va
+ * llenando de oro, cada época se enciende cuando su punto cruza la línea de
+ * lectura y el periodo acompaña mientras se lee un relato largo. Todo sigue al
+ * scroll: si se sube, se vuelve a apagar.
+ *
+ * Con «reducir movimiento», o en la vista en vivo del constructor, sale todo
+ * encendido y quieto, como era antes.
+ */
+function CronologiaVertical({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean }) {
+  const lista = useRef<HTMLOListElement>(null)
+  const reducir = useReducedMotion()
+  const enConstructor = useModoEdicion() !== null
+  const vivo = !reducir && !enConstructor
+
+  // Hasta dónde llega el relleno: del primer punto al último. Se mide, porque
+  // el último hito puede ser tan largo como quiera y el raíl acaba en su punto.
+  const [largo, setLargo] = useState(0)
+  useLayoutEffect(() => {
+    const ol = lista.current
+    if (!ol) return
+    const mide = () => {
+      const puntos = ol.querySelectorAll<HTMLElement>('[data-punto]')
+      if (puntos.length === 0) return
+      setLargo(puntos[puntos.length - 1].getBoundingClientRect().top - puntos[0].getBoundingClientRect().top)
+    }
+    mide()
+    const observador = new ResizeObserver(mide)
+    observador.observe(ol)
+    return () => observador.disconnect()
+  }, [bloque.hitos.length])
+
+  // Cuánto del raíl queda por encima de la línea de lectura, de 0 a 1.
+  const { scrollY } = useScroll()
+  const llenado = useTransform(scrollY, () => {
+    const ol = lista.current
+    if (!ol || largo === 0) return 0
+    const primerPunto = ol.getBoundingClientRect().top + puntoTopPx()
+    return Math.min(1, Math.max(0, (window.innerHeight * LINEA_DE_LECTURA - primerPunto) / largo))
+  })
+  const escala = useSpring(llenado, { stiffness: 120, damping: 24, mass: 0.4 })
+
   return (
-    <Box component="ol" aria-label={bloque.titulo || 'Cronología'} sx={{ listStyle: 'none', m: 0, p: 0, maxWidth: 1072, mx: 'auto' }}>
-      {bloque.hitos.map((hito, indice) => (
-        <HitoDeLaLinea
-          // Clave posicional: un hito no tiene identificador, y ninguno de sus
-          // elementos guarda estado propio que pudiera quedarse en otra fila.
-          key={indice}
-          hito={hito}
-          id={conAnclas ? idDeHito(indice) : undefined}
-          primero={indice === 0}
-          ultimo={indice === bloque.hitos.length - 1}
+    <Box sx={{ position: 'relative', maxWidth: 1072, mx: 'auto' }}>
+      {vivo && largo > 0 && (
+        <Box
+          component={motion.div}
+          aria-hidden="true"
+          style={{ scaleY: escala, x: '-50%' }}
+          sx={{
+            position: 'absolute',
+            // El eje del raíl: el centro de su columna (200 + 40 de hueco + 20 en escritorio; 12 en móvil).
+            left: { xs: 12, md: 260 },
+            top: PUNTO_TOP,
+            height: largo,
+            width: '2px',
+            transformOrigin: 'top',
+            // Encima del filete gris, debajo de los puntos.
+            zIndex: 1,
+            background: `linear-gradient(${GOLD_SUAVE}, ${GOLD})`,
+            pointerEvents: 'none',
+          }}
         />
-      ))}
+      )}
+      <Box component="ol" ref={lista} aria-label={bloque.titulo || 'Cronología'} sx={{ listStyle: 'none', m: 0, p: 0 }}>
+        {bloque.hitos.map((hito, indice) => (
+          <HitoDeLaLinea
+            // Clave posicional: un hito no tiene identificador, y ninguno de sus
+            // elementos guarda estado propio que pudiera quedarse en otra fila.
+            key={indice}
+            hito={hito}
+            id={conAnclas ? idDeHito(indice) : undefined}
+            primero={indice === 0}
+            ultimo={indice === bloque.hitos.length - 1}
+            vivo={vivo}
+          />
+        ))}
+      </Box>
     </Box>
   )
 }
@@ -60,6 +139,7 @@ interface HitoDeLaLineaProps {
   id?: string
   primero: boolean
   ultimo: boolean
+  vivo: boolean
 }
 
 /**
@@ -67,13 +147,22 @@ interface HitoDeLaLineaProps {
  * escritorio van en tres columnas; en móvil el periodo pasa encima del texto
  * y el raíl se pega al margen izquierdo.
  */
-function HitoDeLaLinea({ hito, id, primero, ultimo }: HitoDeLaLineaProps) {
+function HitoDeLaLinea({ hito, id, primero, ultimo, vivo }: HitoDeLaLineaProps) {
   const tono = TONOS[hito.tono] ?? null
   const parrafos = parrafosDe(hito.relato)
 
+  // Encendido cuando su punto ha cruzado la línea de lectura; apagado otra vez
+  // si se sube y el punto vuelve a quedar por debajo.
+  const punto = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: punto, offset: [`start ${LINEA_DE_LECTURA * 100}%`, `end ${LINEA_DE_LECTURA * 100}%`] })
+  const [alcanzado, setAlcanzado] = useState(false)
+  useMotionValueEvent(scrollYProgress, 'change', (p) => setAlcanzado(p > 0))
+  const encendido = !vivo || alcanzado
+  const transicion = 'opacity .7s ease, transform .7s ease, color .5s ease'
+
   return (
-    <Revela
-      as="li"
+    <Box
+      component="li"
       sx={{
         display: 'grid',
         gridTemplateColumns: { xs: '24px minmax(0, 1fr)', md: '200px 40px minmax(0, 1fr)' },
@@ -85,10 +174,15 @@ function HitoDeLaLinea({ hito, id, primero, ultimo }: HitoDeLaLineaProps) {
       }}
       id={id}
     >
-      <Box sx={{ gridArea: 'periodo', textAlign: { md: 'right' }, pt: { md: '6px' } }}>
+      {/* En escritorio el periodo se queda a la vista mientras se lee su relato. */}
+      <Box sx={{ gridArea: 'periodo', textAlign: { md: 'right' }, pt: { md: '6px' }, alignSelf: 'start', position: { md: 'sticky' }, top: { md: 112 } }}>
         <Typography
           component="span"
-          sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 40, md: 52 }, lineHeight: 1, letterSpacing: '-0.02em', color: tono?.texto ?? '#fff' }}
+          sx={{
+            display: 'block', fontFamily: SERIF, fontSize: { xs: 40, md: 52 }, lineHeight: 1, letterSpacing: '-0.02em',
+            color: encendido ? tono?.texto ?? '#fff' : 'rgba(255, 255, 255, 0.4)',
+            transition: transicion,
+          }}
         >
           {hito.periodo}
         </Typography>
@@ -119,23 +213,29 @@ function HitoDeLaLinea({ hito, id, primero, ultimo }: HitoDeLaLineaProps) {
         }}
       >
         <Box
+          ref={punto}
+          data-punto
           sx={{
             position: 'absolute',
             left: '50%',
             top: PUNTO_TOP,
             width: 13,
             height: 13,
-            transform: 'translateX(-50%)',
+            zIndex: 2,
+            transform: `translateX(-50%) scale(${vivo && alcanzado ? 1.15 : 1})`,
             borderRadius: '50%',
             boxSizing: 'border-box',
             border: '2px solid #cbc5c8',
             backgroundColor: FONDO,
+            transition: 'background-color .4s, border-color .4s, transform .4s, box-shadow .6s',
             ...tono?.punto,
+            // Encendido, el punto se rellena (de oro si el hito no tiene tono) y echa un halo.
+            ...(vivo && alcanzado ? { ...(tono?.punto ?? PUNTO_ENCENDIDO), boxShadow: `0 0 0 6px ${tono?.halo ?? HALO_ORO}` } : {}),
           }}
         />
       </Box>
 
-      <Box sx={{ gridArea: 'cuerpo' }}>
+      <Box sx={{ gridArea: 'cuerpo', opacity: encendido ? 1 : 0.38, transform: encendido ? 'none' : 'translateY(14px)', transition: transicion }}>
         {/* h3: el bloque cuelga de un h2 (su título, o el oculto «Cronología»
             de Historia), y cada hito es una parte de él. */}
         <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 26, md: 30 }, lineHeight: 1.2, letterSpacing: '-0.01em', mb: 2 }}>
@@ -147,24 +247,29 @@ function HitoDeLaLinea({ hito, id, primero, ultimo }: HitoDeLaLineaProps) {
           </Typography>
         ))}
         {hito.foto.url !== '' && (
-          <Revela efecto="desvelar" retraso={0.2} sx={{ mt: 4 }}>
+          <Box sx={{ mt: 4 }}>
+            {/* La foto se descubre de izquierda a derecha al encenderse su época. */}
             <Box
               component="img"
               src={hito.foto.url}
               alt={hito.foto.alt}
               loading="lazy"
               decoding="async"
-              sx={{ display: 'block', width: '100%', maxWidth: 560, aspectRatio: '560 / 340', objectFit: 'cover' }}
+              sx={{
+                display: 'block', width: '100%', maxWidth: 560, aspectRatio: '560 / 340', objectFit: 'cover',
+                clipPath: encendido ? 'inset(0 0 0 0)' : 'inset(0 100% 0 0)',
+                transition: 'clip-path 1.2s cubic-bezier(.2, .7, .15, 1)',
+              }}
             />
             {hito.foto.pie !== '' && (
               <Typography component="span" sx={{ ...ceja, mb: 0, mt: 1.75, fontSize: 12, letterSpacing: '0.12em' }}>
                 {hito.foto.pie}
               </Typography>
             )}
-          </Revela>
+          </Box>
         )}
       </Box>
-    </Revela>
+    </Box>
   )
 }
 

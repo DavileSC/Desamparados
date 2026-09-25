@@ -32,6 +32,8 @@
 .procession-scene-eyebrow { display: block; color: #e3d8bf; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 24px; }
 .home-refined .procession-scene h2 { font-weight: 400; font-size: clamp(36px, 4.4vw, 64px); line-height: 1.18; letter-spacing: -.025em; margin: 0; max-width: 760px; }
 .procession-scene-content p { max-width: 470px; color: #e4e2df; font-size: 17px; line-height: 1.75; margin: 24px 0 26px; }
+/* El párrafo que se enciende: más grande y más fino, que es la frase que se lee al pasar. */
+.procession-scene-content .procession-scene-parrafo { max-width: 26ch; font-size: clamp(22px, 2.4vw, 30px); font-weight: 300; line-height: 1.5; margin: 32px 0 30px; }
 .procession-scene-link { display: inline-flex; align-items: center; gap: 22px; min-height: 48px; padding-block: 8px; border-bottom: 1px solid #c4af79; color: #fff; font-size: 14px; font-weight: 600; }
 .procession-scene-link svg { transition: transform .25s ease; }
 .procession-scene-link:hover svg { transform: translateX(5px); }
@@ -42,6 +44,7 @@
   .procession-scene-image img { object-position: 53% center; }
   .procession-scene-content { width: calc(100% - 40px); padding-block: 100px; }
   .procession-scene-content p { font-size: 15px; }
+  .procession-scene-content .procession-scene-parrafo { font-size: 21px; }
   .procession-scene-eyebrow { font-size: 11px; margin-bottom: 20px; }
   .procession-scene-shade { background: linear-gradient(180deg, rgba(16,14,17,.5), rgba(16,14,17,.82)); }
 }
