@@ -25,9 +25,11 @@ const esFiltro = (valor: string | null): valor is Filtro => FILTROS.some((f) => 
 export default function AgendaDeCultos() {
   const [eventos, setEventos] = useState<ApiEvent[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [params, setParams] = useSearchParams()
-  const ver = params.get('ver')
-  const filtro: Filtro = esFiltro(ver) ? ver : 'todo'
+  const [params] = useSearchParams()
+  const [filtro, setFiltro] = useState<Filtro>(() => {
+    const ver = params.get('ver')
+    return esFiltro(ver) ? ver : 'todo'
+  })
 
   useEffect(() => {
     let vigente = true
@@ -37,12 +39,16 @@ export default function AgendaDeCultos() {
     return () => { vigente = false }
   }, [])
 
-  const elegir = (valor: Filtro) => setParams((antes) => {
-    const siguientes = new URLSearchParams(antes)
-    if (valor === 'todo') siguientes.delete('ver')
-    else siguientes.set('ver', valor)
-    return siguientes
-  }, { replace: true })
+  // El filtro cambia aquí y la dirección se reescribe aparte: pasarlo por el
+  // router volvía a pintar la web entera (barra, cabecera, bloques) en cada
+  // clic y el cambio se notaba lento.
+  const elegir = (valor: Filtro) => {
+    setFiltro(valor)
+    const url = new URL(window.location.href)
+    if (valor === 'todo') url.searchParams.delete('ver')
+    else url.searchParams.set('ver', valor)
+    window.history.replaceState(window.history.state, '', url)
+  }
 
   const visibles = (eventos ?? []).filter((e) => pasaElFiltro(e, filtro))
   const tramos = enTramos(visibles)
@@ -54,6 +60,7 @@ export default function AgendaDeCultos() {
           <ButtonBase
             key={f.valor}
             onClick={() => elegir(f.valor)}
+            disableRipple
             aria-pressed={filtro === f.valor}
             sx={{
               minHeight: 44, fontFamily: 'inherit', fontSize: 15, whiteSpace: 'nowrap',
