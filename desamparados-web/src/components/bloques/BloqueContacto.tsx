@@ -12,6 +12,7 @@ import Boton from '../Boton'
 import { contactSchema, type ContactFormData } from '../../features/contacto/schema'
 import { enviarMensajeDeContacto } from '../../lib/api/contacto'
 import type { BloqueContacto as Datos, LineaDatos } from '../../lib/api/contenido'
+import { valorDe } from './presentacion'
 
 // Trampa para robots: fuera de la vista, del tabulador y de los lectores de
 // pantalla. Una persona no la ve ni la rellena; un programa que rellena todo
@@ -69,7 +70,10 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
   const [success, setSuccess] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const tiempoRelleno = useTiempoRelleno()
-  const conTarjeta = bloque.lineas.length > 0
+  // Los datos, al lado del formulario (el de siempre), debajo o sin ellos.
+  const disposicion = valorDe(bloque, 'disposicion')
+  const conTarjeta = bloque.lineas.length > 0 && disposicion !== 'solo'
+  const alLado = conTarjeta && disposicion === 'lado'
 
   const {
     register,
@@ -103,7 +107,7 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
 
   return (
     <Grid container spacing={6}>
-      <Grid size={{ xs: 12, md: conTarjeta ? 7 : 12 }}>
+      <Grid size={{ xs: 12, md: alLado ? 7 : 12 }}>
         <Box
           component="form"
           onSubmit={handleSubmit(onSubmit)}
@@ -191,7 +195,7 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
       </Grid>
 
       {conTarjeta && (
-        <Grid size={{ xs: 12, md: 5 }}>
+        <Grid size={{ xs: 12, md: alLado ? 5 : 12 }}>
           <TarjetaCristal sx={{ p: 4, height: '100%' }}>
             {bloque.tituloDatos && (
               <Typography variant="h4" component="h2" sx={{ mb: 4 }}>

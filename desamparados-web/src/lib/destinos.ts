@@ -25,11 +25,20 @@ const RUTAS = new Set(DESTINOS_FIJOS.map((d) => d.ruta))
 export const PREFIJO_NOTICIA = DESTINOS.prefijoNoticia
 const NOTICIA = new RegExp(`^${PREFIJO_NOTICIA.replace(/\//g, '\\/')}[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
+/** El ancla de un bloque: como un slug. La misma que `ANCLA` en el servidor. */
+export const ANCLA = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
 /**
  * `true` si el enlace lleva a una página que existe. El mismo criterio que el
- * servidor: una de las rutas fijas, o la de una noticia.
+ * servidor: una de las rutas fijas, o la de una noticia, con un ancla detrás
+ * si se quiere (`/historia#fundacion`).
  */
-export const esDestinoValido = (enlace: string): boolean => RUTAS.has(enlace) || NOTICIA.test(enlace)
+export function esDestinoValido(enlace: string): boolean {
+  const almohadilla = enlace.indexOf('#')
+  const ruta = almohadilla === -1 ? enlace : enlace.slice(0, almohadilla)
+  if (almohadilla !== -1 && !ANCLA.test(enlace.slice(almohadilla + 1))) return false
+  return RUTAS.has(ruta) || NOTICIA.test(ruta)
+}
 
 /** El nombre legible de una ruta fija, o `null` si no es de la lista. */
 export const nombreDeDestino = (enlace: string): string | null =>

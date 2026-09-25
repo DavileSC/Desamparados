@@ -7,6 +7,7 @@ import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import FondoDePagina from '../../../components/FondoDePagina'
 import { Revela } from '../../../components/SeccionAnimada'
 import BloquesDePagina from '../../../components/bloques/BloquesDePagina'
+import MarcoEditable from '../../../components/bloques/MarcoEditable'
 import BloqueCronologia from '../../../components/bloques/BloqueCronologia'
 import { idDeHito } from '../../../components/bloques/cronologia'
 import { GOLD, SERIF, ceja, enlaceBloque } from '../../inicio/estilos'
@@ -70,7 +71,7 @@ export default function HistoriaPage() {
         descripcion="Historia del Grupo Parroquial de Nuestra Señora de los Desamparados: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga."
       />}
 
-      <Box sx={{ position: 'relative', isolation: 'isolate', '& a:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 4 } }}>
+      <Box sx={{ position: 'relative', isolation: 'isolate', overflowX: 'clip', '& a:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 4 } }}>
         {cabecera.foto !== '' && <FondoDePagina url={cabecera.foto} />}
 
         <Box component="header" sx={{ pt: { xs: 8, md: 14 }, pb: { xs: 7, md: 12 }, [ESCRITORIO]: { pt: 'calc(72px + 96px)' } }}>
@@ -139,6 +140,7 @@ export default function HistoriaPage() {
           <BloqueDeHistoria
             key={`${bloque.tipo}-${posicion}`}
             bloque={bloque}
+            posicion={posicion}
             idTitulo={`historia-bloque-${posicion + 1}`}
             conAnclas={posicion === conIndice}
           />
@@ -149,7 +151,25 @@ export default function HistoriaPage() {
 }
 
 /** Cada bloque de Historia, con el aspecto que le toca en esta página. */
-function BloqueDeHistoria({ bloque, idTitulo, conAnclas }: { bloque: Bloque; idTitulo: string; conAnclas: boolean }) {
+function BloqueDeHistoria({ bloque, posicion, idTitulo, conAnclas }: { bloque: Bloque; posicion: number; idTitulo: string; conAnclas: boolean }) {
+  // La cronología y el cierre tienen su maquetación aquí: el marco editable
+  // (oculto, programado, pulsable en el constructor) se les pone a mano. Los
+  // demás lo llevan dentro de `BloquesDePagina`.
+  if (bloque.tipo === 'cronologia' || bloque.tipo === 'llamada') {
+    return <MarcoEditable bloque={bloque} indice={posicion}><BloqueEspecial bloque={bloque} idTitulo={idTitulo} conAnclas={conAnclas} /></MarcoEditable>
+  }
+  return (
+    <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
+      <ContenedorDePagina>
+        <Box sx={{ maxWidth: 1072, mx: 'auto' }}>
+          <BloquesDePagina bloques={[bloque]} desde={posicion} />
+        </Box>
+      </ContenedorDePagina>
+    </Box>
+  )
+}
+
+function BloqueEspecial({ bloque, idTitulo, conAnclas }: { bloque: Bloque; idTitulo: string; conAnclas: boolean }) {
   if (bloque.tipo === 'cronologia') {
     return (
       <Box component="section" aria-labelledby={idTitulo} sx={{ backgroundColor: TINTA_VELADA, py: { xs: 8, md: 13 } }}>
@@ -163,16 +183,7 @@ function BloqueDeHistoria({ bloque, idTitulo, conAnclas }: { bloque: Bloque; idT
   }
 
   if (bloque.tipo === 'llamada') return <Cierre bloque={bloque} idTitulo={idTitulo} />
-
-  return (
-    <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
-      <ContenedorDePagina>
-        <Box sx={{ maxWidth: 1072, mx: 'auto' }}>
-          <BloquesDePagina bloques={[bloque]} />
-        </Box>
-      </ContenedorDePagina>
-    </Box>
-  )
+  return null
 }
 
 /** El cierre de la página: rótulo, frase grande y un enlace con flecha. */

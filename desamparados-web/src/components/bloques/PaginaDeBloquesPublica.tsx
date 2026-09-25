@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Box } from '@mui/material'
+import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ContenedorDePagina from '../ContenedorDePagina'
 import MetaDePagina from '../MetaDePagina'
@@ -46,6 +48,7 @@ export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }
   // Mientras carga y si falla, el contenido de partida: la página no puede
   // quedarse en blanco porque el servidor tarde o no conteste.
   const pagina = borrador ?? data ?? ((POR_DEFECTO as Record<string, unknown>)[slug] as PaginaDeBloques)
+  useBajarAlAncla(Boolean(data))
 
   return (
     <>
@@ -54,7 +57,11 @@ export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }
       {/* La caja aísla el fondo: su `zIndex: -1` se queda detrás de la página y
           no se va por detrás del documento. Abarca cabecera y bloques, y ahí
           acaba: el pie queda fuera y la foto no lo pisa. */}
-      <Box sx={{ position: 'relative', isolation: 'isolate' }}>
+      {/* `overflow-x: clip` recorta las franjas de color de los bloques, que van
+          de lado a lado de la ventana: en Windows, ese ancho incluye la barra de
+          desplazamiento y sin esto la página se movería de lado. `clip` y no
+          `hidden`, que rompería el `position: sticky` de dentro. */}
+      <Box sx={{ position: 'relative', isolation: 'isolate', overflowX: 'clip' }}>
         {Boolean(pagina.cabecera.foto) && <FondoDePagina url={pagina.cabecera.foto} />}
         <CabeceraDePagina
           title={pagina.cabecera.titulo}
@@ -71,4 +78,19 @@ export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }
       </Box>
     </>
   )
+}
+
+/**
+ * Con un ancla en la dirección (`/historia#fundacion`), baja hasta el bloque
+ * que la lleva. El router no lo hace solo, y además el bloque no existe hasta
+ * que llega el contenido: por eso se intenta otra vez cuando llega.
+ */
+function useBajarAlAncla(cargado: boolean) {
+  const { hash } = useLocation()
+  useEffect(() => {
+    if (!hash) return
+    const id = decodeURIComponent(hash.slice(1))
+    const marco = requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView?.({ block: 'start' }))
+    return () => cancelAnimationFrame(marco)
+  }, [hash, cargado])
 }

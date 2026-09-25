@@ -1,7 +1,7 @@
 import type { Bloque } from '../../../lib/api/contenido'
 
 /**
- * Aparte de `EditorDeBloques.tsx` a propósito: son funciones sueltas, no un
+ * Aparte de `constructor/ListaDeBloques.tsx` a propósito: son funciones sueltas, no un
  * componente, y ese fichero ya exporta el editor por defecto. Exportar las dos
  * cosas del mismo fichero rompe el *fast refresh* de Vite (aviso
  * `react/only-export-components`). Por lo mismo están aparte

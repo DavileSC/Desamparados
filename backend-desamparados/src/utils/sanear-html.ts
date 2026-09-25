@@ -150,13 +150,18 @@ export function sanearBloques(datos: unknown): unknown {
 
 function sanearBloque(bloque: unknown): unknown {
   if (typeof bloque !== 'object' || bloque === null) return bloque;
-  const { tipo, html, medios } = bloque as { tipo?: unknown; html?: unknown; medios?: unknown };
+  const { tipo, html, medios, url } = bloque as { tipo?: unknown; html?: unknown; medios?: unknown; url?: unknown };
 
-  if (tipo === 'texto' && typeof html === 'string') {
+  // La foto con texto lleva el mismo HTML con formato que el bloque de texto.
+  if ((tipo === 'texto' || tipo === 'fotoTexto') && typeof html === 'string') {
     return { ...bloque, html: sanearContenidoCms(html) };
   }
   if (tipo === 'galeria' && Array.isArray(medios)) {
     return { ...bloque, medios: medios.map(normalizarMedio) };
+  }
+  // El vídeo suelto, como uno de la galería: la dirección que se pega del navegador.
+  if (tipo === 'video' && typeof url === 'string') {
+    return { ...bloque, url: normalizarVideo(url) ?? url };
   }
   return bloque;
 }

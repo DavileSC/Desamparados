@@ -11,5 +11,10 @@
   "lineasPorBloque": 20,
   "textoTarjeta": 400,
   "paradasPorItinerario": 60,
-  "hitosPorCronologia": 30
+  "hitosPorCronologia": 30,
+  "botonesPorBloque": 4,
+  "preguntasPorBloque": 30,
+  "descargasPorBloque": 20,
+  "respuesta": 1200,
+  "ancla": 40
 }

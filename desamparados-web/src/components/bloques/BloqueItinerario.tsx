@@ -1,20 +1,65 @@
 import { Box, Grid, Typography } from '@mui/material'
 import TarjetaCristal from '../TarjetaCristal'
+import { GOLD } from '../../features/inicio/estilos'
+import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueItinerario as Datos } from '../../lib/api/contenido'
 
+/** Oculto a la vista, presente para los lectores de pantalla. */
+const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
+
 /**
- * Las paradas de la procesión con su hora.
+ * Las paradas de la procesión con su hora: en tarjetas a dos columnas (el de
+ * siempre, el marcado que tenía `RecorridoPage`), en una línea vertical que
+ * une las paradas como el recorrido que son, o en una tabla compacta.
  *
- * Mismo marcado que tenía `RecorridoPage` a mano, para que convertir esa página
- * a bloques no le cambie el aspecto.
+ * El itinerario repite lugares (la procesión pasa dos veces por la misma
+ * plaza): las claves necesitan el índice o React se lía al reordenar.
  */
 export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
+  const disposicion = valorDe(bloque, 'disposicion')
+  const ultima = bloque.paradas.length - 1
+
+  if (disposicion === 'linea') {
+    return (
+      <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, '720px'), mx: 'auto' }}>
+        {bloque.paradas.map((parada, i) => (
+          <Box component="li" key={`${parada.hora}-${parada.lugar}-${i}`}
+            sx={{ display: 'grid', gridTemplateColumns: '72px 24px minmax(0, 1fr)', alignItems: 'start', columnGap: 2 }}>
+            <Typography sx={{ color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums', textAlign: 'right', pt: '2px' }}>
+              {parada.hora}
+            </Typography>
+            <Box aria-hidden sx={{ position: 'relative', alignSelf: 'stretch', display: 'flex', justifyContent: 'center' }}>
+              <Box sx={{ position: 'absolute', top: i === 0 ? 12 : 0, bottom: i === ultima ? 'calc(100% - 12px)' : 0, width: '2px', backgroundColor: 'rgba(222, 199, 43, 0.35)' }} />
+              <Box sx={{ position: 'relative', mt: '6px', width: 12, height: 12, borderRadius: '50%', border: `2px solid ${GOLD}`, backgroundColor: 'background.default' }} />
+            </Box>
+            <Typography sx={{ color: 'text.primary', pb: 3 }}>{parada.lugar}</Typography>
+          </Box>
+        ))}
+      </Box>
+    )
+  }
+
+  if (disposicion === 'tabla') {
+    return (
+      <Box component="table" sx={{ width: '100%', maxWidth: anchoMaximo(bloque, '720px'), mx: 'auto', borderCollapse: 'collapse' }}>
+        <Box component="thead" sx={soloLector}>
+          <tr><th scope="col">Hora</th><th scope="col">Lugar</th></tr>
+        </Box>
+        <tbody>
+          {bloque.paradas.map((parada, i) => (
+            <Box component="tr" key={`${parada.hora}-${parada.lugar}-${i}`} sx={{ borderTop: i === 0 ? 0 : '1px solid', borderColor: 'divider' }}>
+              <Box component="td" sx={{ py: 1.25, pr: 3, width: 80, color: 'secondary.main', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{parada.hora}</Box>
+              <Box component="td" sx={{ py: 1.25, color: 'text.primary' }}>{parada.lugar}</Box>
+            </Box>
+          ))}
+        </tbody>
+      </Box>
+    )
+  }
+
   return (
-    <Grid container spacing={2}>
+    <Grid container spacing={2} sx={{ maxWidth: anchoMaximo(bloque, 'none'), mx: 'auto' }}>
       {bloque.paradas.map((parada, i) => (
-        // El itinerario repite lugares (la procesión pasa dos veces por la
-        // misma plaza): la clave necesita el índice o React se lía al
-        // reordenar las paradas desde el CMS.
         <Grid key={`${parada.hora}-${parada.lugar}-${i}`} size={{ xs: 12, md: 6 }}>
           <TarjetaCristal sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3 }}>
             <Box

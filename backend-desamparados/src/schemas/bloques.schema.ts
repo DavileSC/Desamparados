@@ -1,9 +1,12 @@
-import { type } from 'arktype';
+import { type, ArkErrors } from 'arktype';
 import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
+import presentacion from '../../../shared/presentacion-de-bloques.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
 import { medioGaleriaSchema, problemaDelMedio } from './medios.schema.js';
 import type { TipoBloque } from '../domain/bloques.js';
 import { esDestinoValido } from '../domain/destinos.js';
+import { problemaDePresentacion } from '../domain/presentacion.js';
+import { esPdfPropio } from '../utils/rutas-propias.js';
 
 /** Un texto visible, sin `<` ni `>`: se pinta como texto plano. */
 const texto = (max: number) => type(`0 <= string <= ${max}`)
@@ -71,6 +74,11 @@ const tarjetaSchema = type({
   // los 200 de una descripción el texto que ya tenía la web no entraba.
   descripcion: texto(topes.textoTarjeta),
   enlace: sinEnlace.or(enlaceInterno),
+  // Opcionales, llegaron con las opciones de presentación: una foto arriba de
+  // la tarjeta o un icono de la lista cerrada. Una tarjeta de antes no los trae.
+  'foto?': sinFoto.or(rutaImagenPublica),
+  'fotoAlt?': DESCRIPCION,
+  'icono?': type.enumerated('', ...presentacion.iconosDeTarjeta),
 });
 
 const tarjetasSchema = type({
@@ -86,9 +94,12 @@ const tarjetasSchema = type({
   // (fotoSchema): en cuanto hay contenido, el título deja de ser opcional. El
   // enlace no entra aquí: «/» (la portada) es un destino legítimo.
   const indice = datos.tarjetas.findIndex((tarjeta) => tarjeta.titulo.trim() === '');
-  return indice === -1
+  if (indice !== -1) return ctx.reject({ path: ['tarjetas', indice, 'titulo'], problem: 'no puede quedar en blanco' });
+  // Como toda foto de la web: con descripción en cuanto está.
+  const sinAlt = datos.tarjetas.findIndex((tarjeta) => (tarjeta.foto ?? '') !== '' && (tarjeta.fotoAlt ?? '').trim() === '');
+  return sinAlt === -1
     ? true
-    : ctx.reject({ path: ['tarjetas', indice, 'titulo'], problem: 'no puede quedar en blanco' });
+    : ctx.reject({ path: ['tarjetas', sinAlt, 'fotoAlt'], problem: 'es obligatoria cuando la tarjeta lleva foto' });
 });
 
 /**
@@ -281,6 +292,160 @@ const contactoSchema = type({
     : ctx.reject({ path: ['lineas', indice, 'etiqueta'], problem: 'no puede quedar en blanco' });
 });
 
+/** Que un texto obligatorio no sea solo espacios. */
+const enBlanco = (valor: string) => valor.trim() === '';
+
+/**
+ * Foto con texto: una foto a un lado y un texto con formato al otro, con un
+ * botón opcional debajo. Es el «dos columnas» de las webs, hecho bloque para
+ * que en el móvil se apile siempre bien (la foto encima) en vez de dejar a
+ * quien edita componer columnas a mano.
+ */
+const fotoTextoSchema = type({
+  ...comunes,
+  tipo: "'fotoTexto'",
+  url: rutaImagenPublica,
+  alt: DESCRIPCION,
+  pie: ETIQUETA,
+  // Saneado antes de validar, como el del bloque de texto.
+  html: type(`1 <= string <= ${topes.html}`),
+  boton: ETIQUETA,
+  enlace: sinEnlace.or(enlaceInterno),
+}).narrow((datos, ctx) => {
+  if (enBlanco(datos.alt)) return ctx.reject({ path: ['alt'], problem: 'es obligatoria: describe lo que se ve' });
+  if (enBlanco(datos.html)) return ctx.reject({ path: ['html'], problem: 'no puede quedar en blanco' });
+  // Botón y destino van juntos: uno sin el otro es un botón que no lleva a
+  // ninguna parte o un destino al que no se llega.
+  if (!enBlanco(datos.boton) && datos.enlace === '') return ctx.reject({ path: ['enlace'], problem: 'falta: el botón necesita a dónde llevar' });
+  if (enBlanco(datos.boton) && datos.enlace !== '') return ctx.reject({ path: ['boton'], problem: 'falta el texto del botón' });
+  return true;
+});
+
+/** Una cita: unas palabras destacadas y, si se quiere, de quién son. */
+const citaSchema = type({
+  ...comunes,
+  tipo: "'cita'",
+  texto: PARRAFO,
+  autor: ETIQUETA,
+  fuente: DESCRIPCION,
+}).narrow((datos, ctx) => enBlanco(datos.texto)
+  ? ctx.reject({ path: ['texto'], problem: 'no puede quedar en blanco' })
+  : true);
+
+/**
+ * Un vídeo suelto de YouTube o Vimeo. Las mismas reglas que un vídeo de la
+ * galería (`problemaDelMedio`): dirección ya normalizada por `sanearBloques`,
+ * portada propia para no llamar a YouTube hasta que alguien pulse el play, y
+ * descripción obligatoria.
+ */
+const videoSchema = type({
+  ...comunes,
+  tipo: "'video'",
+  url: 'string <= 300',
+  portada: sinFoto.or(rutaImagenPublica),
+  alt: DESCRIPCION,
+  pie: ETIQUETA,
+}).narrow((datos, ctx) => {
+  const problema = problemaDelMedio({ ...datos, tipo: 'video' });
+  return problema ? ctx.reject({ path: [problema.campo], problem: problema.problema }) : true;
+});
+
+/** Uno o varios botones en fila, cada uno a una página del sitio. */
+const botonSchema = type({
+  texto: ETIQUETA,
+  enlace: enlaceInterno,
+  estilo: "'principal' | 'secundario'",
+});
+
+const botonesSchema = type({
+  ...comunes,
+  tipo: "'botones'",
+  botones: botonSchema.array().atLeastLength(1).atMostLength(topes.botonesPorBloque),
+}).narrow((datos, ctx) => {
+  const indice = datos.botones.findIndex((boton) => enBlanco(boton.texto));
+  return indice === -1
+    ? true
+    : ctx.reject({ path: ['botones', indice, 'texto'], problem: 'no puede quedar en blanco: es lo que se lee en el botón' });
+});
+
+/**
+ * Preguntas plegables: la pregunta a la vista y la respuesta al pulsarla. La
+ * respuesta es texto plano con los párrafos separados por una línea en blanco,
+ * como el relato de un hito: nada que sanear.
+ */
+const preguntaSchema = type({ pregunta: TITULO, respuesta: texto(topes.respuesta) });
+
+const preguntasSchema = type({
+  ...comunes,
+  tipo: "'preguntas'",
+  preguntas: preguntaSchema.array().atLeastLength(1).atMostLength(topes.preguntasPorBloque),
+}).narrow((datos, ctx) => {
+  for (const [indice, item] of datos.preguntas.entries()) {
+    if (enBlanco(item.pregunta)) return ctx.reject({ path: ['preguntas', indice, 'pregunta'], problem: 'no puede quedar en blanco' });
+    if (enBlanco(item.respuesta)) return ctx.reject({ path: ['preguntas', indice, 'respuesta'], problem: 'no puede quedar en blanco' });
+  }
+  return true;
+});
+
+/** Documentos para descargar: PDF subidos desde el CMS, nada de enlaces externos. */
+const archivoSchema = type({
+  titulo: TITULO,
+  descripcion: DESCRIPCION,
+  url: type('string <= 300').narrow(esPdfPropio).describe('un PDF subido desde el CMS'),
+});
+
+const descargasSchema = type({
+  ...comunes,
+  tipo: "'descargas'",
+  archivos: archivoSchema.array().atLeastLength(1).atMostLength(topes.descargasPorBloque),
+}).narrow((datos, ctx) => {
+  const indice = datos.archivos.findIndex((archivo) => enBlanco(archivo.titulo));
+  return indice === -1
+    ? true
+    : ctx.reject({ path: ['archivos', indice, 'titulo'], problem: 'no puede quedar en blanco' });
+});
+
+/**
+ * Un mapa de Google con un lugar. Se guarda la dirección que se buscaría en
+ * Google Maps, no coordenadas: es lo que sabe escribir quien edita. El mapa no
+ * se carga hasta que el visitante acepta las cookies o lo pide (RGPD), como el
+ * del pie.
+ */
+const mapaSchema = type({
+  ...comunes,
+  tipo: "'mapa'",
+  lugar: TITULO,
+  direccion: texto(topes.lugar),
+}).narrow((datos, ctx) => enBlanco(datos.direccion)
+  ? ctx.reject({ path: ['direccion'], problem: 'no puede quedar en blanco: es lo que se busca en el mapa' })
+  : true);
+
+/**
+ * Cuenta atrás hasta una fecha y hora de Madrid (el Sábado de Pasión, un
+ * triduo). Al llegar, en vez de ceros se lee `textoFinal`.
+ */
+const FECHA_Y_HORA = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d)$/;
+
+const cuentaAtrasSchema = type({
+  ...comunes,
+  tipo: "'cuentaAtras'",
+  fecha: type('string').matching(FECHA_Y_HORA).describe('una fecha y hora, como 2027-03-20T18:00'),
+  texto: ETIQUETA,
+  textoFinal: DESCRIPCION,
+}).narrow((datos, ctx) => {
+  const [anio, mes, dia] = datos.fecha.slice(0, 10).split('-').map(Number);
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+  return fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === dia
+    ? true
+    : ctx.reject({ path: ['fecha'], problem: 'no es una fecha del calendario' });
+});
+
+/** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
+const espacioSchema = type({
+  ...comunes,
+  tipo: "'espacio'",
+});
+
 const POR_TIPO = {
   texto: textoSchema,
   foto: fotoSchema,
@@ -292,9 +457,41 @@ const POR_TIPO = {
   cronologia: cronologiaSchema,
   listado: listadoSchema,
   contacto: contactoSchema,
+  fotoTexto: fotoTextoSchema,
+  cita: citaSchema,
+  video: videoSchema,
+  botones: botonesSchema,
+  preguntas: preguntasSchema,
+  descargas: descargasSchema,
+  mapa: mapaSchema,
+  cuentaAtras: cuentaAtrasSchema,
+  espacio: espacioSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];
+
+/**
+ * Qué falla en un bloque, con la ruta dentro de él, o `null` si vale: su
+ * esquema según el tipo y, además, su presentación. Lo usan la página entera y
+ * las secciones guardadas, que son bloques sueltos.
+ */
+export function problemaDeBloque(bloque: unknown): { path: (string | number)[]; problem: string } | null {
+  const tipo = (bloque as { tipo?: unknown } | null)?.tipo;
+  // El mapa de esquemas es la única autoridad sobre qué tipo se sabe validar:
+  // un tipo inventado y uno del catálogo al que le falte esquema caen aquí.
+  const esquema = typeof tipo === 'string' ? esquemaDeBloque(tipo as never) : undefined;
+  if (!esquema) return { path: ['tipo'], problem: `no es un tipo de bloque conocido: «${String(tipo)}»` };
+  const salida = esquema(bloque);
+  if (salida instanceof ArkErrors) return { path: [], problem: salida.summary };
+  const mal = problemaDePresentacion(tipo as string, (bloque as { presentacion?: unknown }).presentacion);
+  if (mal) {
+    return {
+      path: ['presentacion', ...(mal.campo ? [mal.campo] : [])],
+      problem: `la presentación${mal.campo ? ` («${mal.campo}»)` : ''} ${mal.problema}`,
+    };
+  }
+  return null;
+}
 
 /**
  * La cabecera de la página. Está siempre y no se puede quitar.

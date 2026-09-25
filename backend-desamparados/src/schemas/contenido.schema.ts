@@ -1,8 +1,9 @@
-import { type, ArkErrors } from 'arktype';
+import { type } from 'arktype';
 import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
 import type { SlugContenido } from '../domain/contenido.js';
-import { cabeceraSchema, esquemaDeBloque } from './bloques.schema.js';
+import { cabeceraSchema, problemaDeBloque } from './bloques.schema.js';
+import { anclaDe } from '../domain/presentacion.js';
 
 /**
  * Un texto visible de la web. Sin `<` ni `>`: estos campos se pintan como texto
@@ -61,25 +62,22 @@ const paginaDeBloquesSchema = type({
   cabecera: cabeceraSchema,
   bloques: type('unknown[]').atMostLength(40),
 }).narrow((datos, ctx) => {
+  const anclas = new Map<string, number>();
   for (const [indice, bloque] of datos.bloques.entries()) {
-    const tipo = (bloque as { tipo?: unknown })?.tipo;
-    // El mapa de esquemas es la única autoridad aquí sobre qué tipo se sabe
-    // validar: un tipo inventado y un tipo declarado en el catálogo al que se
-    // le olvidó el esquema (`esquemaDeBloque` devuelve `undefined`) caen en la
-    // MISMA rama. Preguntarle antes al catálogo (`esTipoBloque`) duplicaba la
-    // pregunta y dejaba una rama que ningún test ejercitaba de verdad. Que el
-    // catálogo compartido y este mapa no se desincronicen lo vigila el test de
-    // cobertura en `bloques-esquemas.test.ts`, no esta guarda.
-    const esquema = typeof tipo === 'string' ? esquemaDeBloque(tipo as never) : undefined;
-    if (!esquema) {
-      return ctx.reject({
-        path: ['bloques', indice, 'tipo'],
-        problem: `no es un tipo de bloque conocido: «${String(tipo)}»`,
-      });
-    }
-    const salida = esquema(bloque);
-    if (salida instanceof ArkErrors) {
-      return ctx.reject({ path: ['bloques', indice], problem: salida.summary });
+    const problema = problemaDeBloque(bloque);
+    if (problema) return ctx.reject({ path: ['bloques', indice, ...problema.path], problem: problema.problem });
+    // Dos bloques con la misma ancla: un enlace a `#ancla` solo puede bajar a
+    // uno, y el otro se quedaría sin que nadie supiera por qué.
+    const ancla = anclaDe(bloque);
+    if (ancla !== '') {
+      const antes = anclas.get(ancla);
+      if (antes !== undefined) {
+        return ctx.reject({
+          path: ['bloques', indice, 'presentacion', 'ancla'],
+          problem: `repite el ancla «${ancla}» del bloque ${antes + 1}`,
+        });
+      }
+      anclas.set(ancla, indice);
     }
   }
   return true;
@@ -92,8 +90,6 @@ const ESQUEMAS = {
   // catálogo para que el tipo de `esquemaDeSlug` siga siendo comprobable.
   historia: paginaDeBloquesSchema,
   recorrido: paginaDeBloquesSchema,
-  titular: paginaDeBloquesSchema,
-  corporacion: paginaDeBloquesSchema,
   parroquia: paginaDeBloquesSchema,
   'organos-de-gobierno': paginaDeBloquesSchema,
   'nuestros-fines': paginaDeBloquesSchema,
@@ -105,7 +101,6 @@ const ESQUEMAS = {
   enseres: paginaDeBloquesSchema,
   desamparados: paginaDeBloquesSchema,
   ajuar: paginaDeBloquesSchema,
-  actualidad: paginaDeBloquesSchema,
   agenda: paginaDeBloquesSchema,
   noticias: paginaDeBloquesSchema,
   publicaciones: paginaDeBloquesSchema,

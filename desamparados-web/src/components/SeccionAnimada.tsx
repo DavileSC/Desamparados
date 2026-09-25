@@ -1,4 +1,5 @@
 import { motion, useReducedMotion, type TargetAndTransition } from 'framer-motion'
+import { useModoEdicion } from './bloques/modoEdicion'
 import { Box, type SxProps, type Theme } from '@mui/material'
 import { CURVA_ENTRADA } from './entrada'
 
@@ -57,9 +58,12 @@ interface RevelaProps {
  */
 export function Revela({ children, orden = 0, retraso = 0, as = 'div', efecto = 'subir', alMontar = false, sx, className, id }: RevelaProps) {
   const reduceMotion = useReducedMotion()
+  // En la vista en vivo del constructor, quieta: la página se vuelve a pintar
+  // con cada tecla, y la entrada se quedaba a medias, con el bloque apagado.
+  const enConstructor = useModoEdicion() !== null
 
   // Con prefers-reduced-motion activo, visible desde el principio: nunca queda en opacity:0.
-  if (reduceMotion) {
+  if (reduceMotion || enConstructor) {
     return <Box component={as} sx={sx} className={className} id={id}>{children}</Box>
   }
 

@@ -9,6 +9,15 @@ import BloqueItinerario from './BloqueItinerario'
 import BloqueCronologia from './BloqueCronologia'
 import BloqueListado from './BloqueListado'
 import BloqueContacto from './BloqueContacto'
+import BloqueFotoTexto from './BloqueFotoTexto'
+import BloqueCita from './BloqueCita'
+import BloqueVideo from './BloqueVideo'
+import BloqueBotones from './BloqueBotones'
+import BloquePreguntas from './BloquePreguntas'
+import BloqueDescargas from './BloqueDescargas'
+import BloqueMapa from './BloqueMapa'
+import BloqueCuentaAtras from './BloqueCuentaAtras'
+import BloqueEspacio from './BloqueEspacio'
 import type { Bloque } from '../../lib/api/contenido'
 
 /**
@@ -30,6 +39,15 @@ export const REGISTRO_BLOQUES: Record<string, ComponentType<{ bloque: never }>> 
   cronologia: BloqueCronologia as ComponentType<{ bloque: never }>,
   listado: BloqueListado as ComponentType<{ bloque: never }>,
   contacto: BloqueContacto as ComponentType<{ bloque: never }>,
+  fotoTexto: BloqueFotoTexto as ComponentType<{ bloque: never }>,
+  cita: BloqueCita as ComponentType<{ bloque: never }>,
+  video: BloqueVideo as ComponentType<{ bloque: never }>,
+  botones: BloqueBotones as ComponentType<{ bloque: never }>,
+  preguntas: BloquePreguntas as ComponentType<{ bloque: never }>,
+  descargas: BloqueDescargas as ComponentType<{ bloque: never }>,
+  mapa: BloqueMapa as ComponentType<{ bloque: never }>,
+  cuentaAtras: BloqueCuentaAtras as ComponentType<{ bloque: never }>,
+  espacio: BloqueEspacio as ComponentType<{ bloque: never }>,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]

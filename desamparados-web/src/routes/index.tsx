@@ -36,6 +36,7 @@ const DossierPrensaPage = lazy(() => import('../features/publicaciones/DossierPr
 const HazteHermanoPage = lazy(() => import('../features/altas/public/HazteHermanoPage'))
 const ContactoPage = lazy(() => import('../features/contacto/ContactoPage'))
 const NoEncontradaPage = lazy(() => import('../features/noEncontrado/NoEncontradaPage'))
+const PaginaEnVivo = lazy(() => import('../features/cms/constructor/PaginaEnVivo'))
 const PortadaAdminPage = lazy(() => import('../features/cms/PortadaAdminPage'))
 const PaginasAdminPage = lazy(() => import('../features/cms/PaginasAdminPage'))
 const PaginaAdminPage = lazy(() => import('../features/cms/PaginaAdminPage'))
@@ -181,6 +182,14 @@ const router = createBrowserRouter([
           { path: 'recibos/:id', element: withSuspense(ReciboPage) },
           { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
         ],
+      },
+      {
+        // La vista en vivo del constructor de páginas: la página pública con lo
+        // que se está escribiendo, dentro de un iframe del propio CMS. Va fuera
+        // de <MarcoCms /> (sin menú del CMS) y fuera de <MarcoPublico /> (sin la
+        // barra ni el pie ni el aviso de cookies de la web).
+        path: '/cms/vista-previa/:slug',
+        element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{withSuspense(PaginaEnVivo)}</ExigeRol>,
       },
       {
         path: '/cms/acceso',

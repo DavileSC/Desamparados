@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Alert, Box, Button, CircularProgress, Grid } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Grid, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import TituloDeSeccion from '../TituloDeSeccion'
 import TarjetaNoticia from '../TarjetaNoticia'
@@ -14,6 +14,7 @@ import { useListadoPaginado, type Pagina } from '../../hooks/useListadoPaginado'
 import { usePublicacionesPaginadas } from '../../features/publicaciones/usePublicacionesPaginadas'
 import type { Acto, Noticia } from '../../types'
 import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/contenido'
+import { valorDe } from './presentacion'
 
 /**
  * Lo que el Grupo Parroquial publica desde otras pantallas del CMS —noticias,
@@ -36,26 +37,44 @@ export default function BloqueListado({ bloque }: { bloque: Datos }) {
   // Una fuente que esta versión de la web no conoce (un documento guardado por
   // una versión más nueva) no pinta nada, como un tipo de bloque desconocido.
   if (!Listado) return null
-  return <Listado titulo={bloque.titulo} />
+  return <Listado titulo={bloque.titulo} bloque={bloque} />
 }
 
-type PropsListado = { titulo: string }
+/**
+ * Lo que recibe cada listado: su título y el bloque, del que lee su
+ * presentación (cuántos, en tarjetas o en lista, cuántas columnas).
+ */
+type PropsListado = { titulo: string; bloque: Datos }
+
+/** Cuántos elementos enseña un listado corto: los de siempre (`auto`) o los que diga. */
+const cantidadDe = (bloque: Datos, siempre: number) => {
+  const valor = valorDe(bloque, 'cantidad')
+  return valor === 'auto' ? siempre : Number(valor)
+}
+
+/** Las columnas de una rejilla en escritorio: las de siempre (`auto`) o las que diga. */
+const columnasDe = (bloque: Datos, siempre: number) => {
+  const valor = valorDe(bloque, 'columnas')
+  return valor === 'auto' ? siempre : Number(valor)
+}
+
+const enLista = (bloque: Datos) => valorDe(bloque, 'disposicion') === 'lista'
 
 const LISTADOS: Record<FuenteListado, (props: PropsListado) => ReactNode> = {
   'noticias-recientes': NoticiasRecientes,
   'agenda-proxima': AgendaProxima,
   noticias: ArchivoDeNoticias,
   agenda: Agenda,
-  publicaciones: ({ titulo }) => (
-    <Publicaciones titulo={titulo} etiqueta="publicaciones"
+  publicaciones: ({ titulo, bloque }) => (
+    <Publicaciones titulo={titulo} bloque={bloque} etiqueta="publicaciones"
       vacio="No hay publicaciones disponibles." fallo="No se han podido cargar las publicaciones." />
   ),
-  boletines: ({ titulo }) => (
-    <Publicaciones titulo={titulo} categoria="boletin" etiqueta="boletines"
+  boletines: ({ titulo, bloque }) => (
+    <Publicaciones titulo={titulo} bloque={bloque} categoria="boletin" etiqueta="boletines"
       vacio="No hay boletines disponibles." fallo="No se han podido cargar los boletines." />
   ),
-  dossier: ({ titulo }) => (
-    <Publicaciones titulo={titulo} categoria="dossier" etiqueta="dossieres de prensa"
+  dossier: ({ titulo, bloque }) => (
+    <Publicaciones titulo={titulo} bloque={bloque} categoria="dossier" etiqueta="dossieres de prensa"
       vacio="No hay dossieres disponibles." fallo="No se han podido cargar los dossieres." />
   ),
 }
@@ -78,11 +97,50 @@ function Encabezado({ titulo, enlace }: { titulo: string; enlace?: { texto: stri
   )
 }
 
-const rejillaDeNoticias = {
+const rejillaDeNoticias = (columnas = 3) => ({
   listStyle: 'none', m: 0, p: 0, display: 'grid',
-  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' },
+  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: `repeat(${columnas}, 1fr)` },
   gap: { xs: 3, md: 3.25 },
-} as const
+}) as const
+
+/** «3 oct 2026», como en las tarjetas de noticia. */
+const fechaDeLista = (iso: string) => {
+  const fecha = new Date(iso)
+  if (Number.isNaN(fecha.getTime())) return iso
+  return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+interface FilaDeLista { clave: string; fecha: string; texto: string; ruta?: string; detalle?: string }
+
+/**
+ * Un listado en lista y no en tarjetas: una línea por elemento, con la fecha
+ * a un lado. Ocupa mucho menos y cabe bien entre otros bloques.
+ */
+function ListaSencilla({ etiqueta, filas }: { etiqueta: string; filas: FilaDeLista[] }) {
+  return (
+    <Box component="ul" aria-label={etiqueta} sx={{ listStyle: 'none', m: 0, p: 0, maxWidth: 850, mx: 'auto' }}>
+      {filas.map((fila, i) => {
+        const texto = (
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ color: 'text.primary', fontWeight: 600 }}>{fila.texto}</Typography>
+            {fila.detalle && <Typography variant="body2" sx={{ color: 'text.secondary' }}>{fila.detalle}</Typography>}
+          </Box>
+        )
+        return (
+          <Box component="li" key={fila.clave}
+            sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '140px minmax(0, 1fr)' }, columnGap: 3, rowGap: 0.5, py: 1.75, borderTop: i === 0 ? 0 : '1px solid', borderColor: 'divider' }}>
+            <Typography component="span" sx={{ color: 'secondary.main', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', pt: '3px' }}>
+              {fila.fecha}
+            </Typography>
+            {fila.ruta
+              ? <Box component={Link} to={fila.ruta} sx={{ textDecoration: 'none', color: 'inherit', '&:hover p:first-of-type': { color: 'secondary.main' } }}>{texto}</Box>
+              : texto}
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
 
 /**
  * Carga de una sola vez, sin paginar: los listados cortos de Actualidad.
@@ -105,20 +163,24 @@ function useCargaUnica<T>(pedir: () => Promise<T[]>, mensajeError: string) {
   return { items, loading, error }
 }
 
-// Tres noticias: las tarjetas van de tres en tres, como en la portada y el archivo.
-const pedirRecientes = () => noticiasDePortada(3)
-const pedirProximos = () => traerProximosEventos(4)
-
-function NoticiasRecientes({ titulo }: PropsListado) {
-  const { items, loading, error } = useCargaUnica<Noticia>(pedirRecientes, 'No se han podido cargar las noticias.')
+// De siempre, tres noticias (las tarjetas van de tres en tres, como en la
+// portada y el archivo) y cuatro actos a dos columnas.
+function NoticiasRecientes({ titulo, bloque }: PropsListado) {
+  const cuantas = cantidadDe(bloque, 3)
+  const pedir = useCallback(() => noticiasDePortada(cuantas), [cuantas])
+  const { items, loading, error } = useCargaUnica<Noticia>(pedir, 'No se han podido cargar las noticias.')
   return (
     <>
       <Encabezado titulo={titulo} enlace={{ texto: 'Ver todas las noticias', ruta: '/noticias' }} />
       {loading && <CircularProgress aria-label="Cargando noticias" />}
       {error && <Alert severity="error">{error}</Alert>}
       {!loading && !error && items.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
-      {!loading && !error && items.length > 0 && (
-        <Box component="ul" aria-label={titulo || 'Últimas noticias'} sx={rejillaDeNoticias}>
+      {!loading && !error && items.length > 0 && enLista(bloque) && (
+        <ListaSencilla etiqueta={titulo || 'Últimas noticias'}
+          filas={items.map((n) => ({ clave: n.id, fecha: fechaDeLista(n.fecha), texto: n.titulo, detalle: n.extracto, ruta: `/noticias/${n.slug}` }))} />
+      )}
+      {!loading && !error && items.length > 0 && !enLista(bloque) && (
+        <Box component="ul" aria-label={titulo || 'Últimas noticias'} sx={rejillaDeNoticias(columnasDe(bloque, 3))}>
           {items.map((noticia, i) => (
             <Box component="li" key={noticia.id} sx={{ display: 'flex' }}>
               <TarjetaNoticia noticia={noticia} indice={i} />
@@ -130,17 +192,23 @@ function NoticiasRecientes({ titulo }: PropsListado) {
   )
 }
 
-function AgendaProxima({ titulo }: PropsListado) {
-  const { items, loading, error } = useCargaUnica<Acto>(pedirProximos, 'No se ha podido cargar la agenda.')
+function AgendaProxima({ titulo, bloque }: PropsListado) {
+  const cuantos = cantidadDe(bloque, 4)
+  const pedir = useCallback(() => traerProximosEventos(cuantos), [cuantos])
+  const { items, loading, error } = useCargaUnica<Acto>(pedir, 'No se ha podido cargar la agenda.')
+  const lista = enLista(bloque) && !loading && !error && items.length > 0
   return (
     <>
       <Encabezado titulo={titulo} enlace={{ texto: 'Ver agenda completa', ruta: '/agenda' }} />
-      <ListaDeEventos eventos={items} loading={loading} error={error} />
+      {lista
+        ? <ListaSencilla etiqueta={titulo || 'Próximos actos'}
+            filas={items.map((a) => ({ clave: a.id, fecha: a.fecha, texto: a.titulo, detalle: [a.hora, a.lugar].filter(Boolean).join(' · ') }))} />
+        : <ListaDeEventos eventos={items} loading={loading} error={error} columnas={columnasDe(bloque, 2)} />}
     </>
   )
 }
 
-function ListaDeEventos({ eventos, loading, error }: { eventos: Acto[]; loading: boolean; error: string | null }) {
+function ListaDeEventos({ eventos, loading, error, columnas }: { eventos: Acto[]; loading: boolean; error: string | null; columnas: number }) {
   return (
     <>
       {loading && <CircularProgress aria-label="Cargando agenda" />}
@@ -149,7 +217,7 @@ function ListaDeEventos({ eventos, loading, error }: { eventos: Acto[]; loading:
       {!loading && !error && eventos.length > 0 && (
         <Grid container spacing={4}>
           {eventos.map((evento) => (
-            <Grid key={evento.id} size={{ xs: 12, md: 6 }}>
+            <Grid key={evento.id} size={{ xs: 12, md: 12 / columnas }}>
               <TarjetaEvento acto={evento} />
             </Grid>
           ))}
@@ -186,7 +254,7 @@ const indiceEnDiagonal = (posicion: number) => posicion + Math.floor(posicion / 
 // «piedra» (2) no coincide con ninguna de las dos tarjetas de debajo.
 const INDICE_DESTACADA = 2
 
-function ArchivoDeNoticias({ titulo }: PropsListado) {
+function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
   const { items, meta, loading, error, alCambiarPagina } =
     useListadoPaginado(pedirNoticias, 'No se han podido cargar las noticias.')
   // La página en la que está el visitante viaja con cada tarjeta: al volver
@@ -203,7 +271,7 @@ function ArchivoDeNoticias({ titulo }: PropsListado) {
       {error && <Alert severity="error">{error}</Alert>}
       {!loading && !error && items.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
       {!loading && !error && items.length > 0 && (
-        <Box component="ul" aria-label={titulo || 'Noticias'} sx={rejillaDeNoticias}>
+        <Box component="ul" aria-label={titulo || 'Noticias'} sx={rejillaDeNoticias(columnasDe(bloque, 3))}>
           {items.map((noticia, i) => {
             const destacada = hayDestacada && i === 0
             return (
@@ -219,7 +287,7 @@ function ArchivoDeNoticias({ titulo }: PropsListado) {
   )
 }
 
-function Publicaciones({ titulo, categoria, etiqueta, vacio, fallo }: PropsListado & {
+function Publicaciones({ titulo, bloque, categoria, etiqueta, vacio, fallo }: PropsListado & {
   categoria?: 'boletin' | 'dossier'
   /** Lo que se pagina: para el paginador y el aviso de carga. */
   etiqueta: string
@@ -235,7 +303,7 @@ function Publicaciones({ titulo, categoria, etiqueta, vacio, fallo }: PropsLista
       {!loading && !error && items.length === 0 && <Alert severity="info">{vacio}</Alert>}
       <Grid container spacing={3}>
         {items.map((publicacion) => (
-          <Grid key={publicacion.id} size={{ xs: 12, sm: 6, lg: 3 }}>
+          <Grid key={publicacion.id} size={{ xs: 12, sm: 6, lg: 12 / columnasDe(bloque, 4) }}>
             <TarjetaPublicacion publicacion={publicacion} />
           </Grid>
         ))}

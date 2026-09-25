@@ -100,6 +100,8 @@ export const ACCIONES_AUDITORIA = {
   PUBLICACION_ELIMINAR: 'PUBLICACION_ELIMINAR',
   PORTADA_ACTUALIZAR: 'PORTADA_ACTUALIZAR',
   CONTENIDO_ACTUALIZAR: 'CONTENIDO_ACTUALIZAR',
+  SECCION_GUARDAR: 'SECCION_GUARDAR',
+  SECCION_BORRAR: 'SECCION_BORRAR',
   // Correo que no salió. No es una acción de nadie, pero se guarda aquí porque
   // es el único sitio del CMS donde el staff puede enterarse: antes el fallo
   // moría en un console.error y el alta se daba por buena sin avisar a nadie.

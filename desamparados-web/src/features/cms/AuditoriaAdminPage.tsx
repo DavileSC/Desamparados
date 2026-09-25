@@ -72,6 +72,8 @@ const ACCIONES: Record<string, string> = {
   PUBLICACION_ELIMINAR: 'Borrar una publicación',
   PORTADA_ACTUALIZAR: 'Cambiar la portada',
   CONTENIDO_ACTUALIZAR: 'Cambiar los textos de una página',
+  SECCION_GUARDAR: 'Guardar una sección del constructor',
+  SECCION_BORRAR: 'Borrar una sección del constructor',
 }
 
 /** Nombre legible de los campos que aparecen en los detalles; el resto va tal cual. */

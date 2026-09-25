@@ -2,21 +2,23 @@
  * Los bloques que son una lista de piezas iguales: tarjetas, líneas de datos y
  * paradas de un itinerario. Los tres se añaden, se ordenan y se borran igual.
  */
-import { Button, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import { Button, IconButton, MenuItem, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import topes from '../../../../../../shared/topes-contenido.json'
 import CampoEnlace from '../../contenido/CampoEnlace'
+import CampoImagen from '../../CampoImagen'
+import { ICONOS } from '../../../../components/bloques/iconos'
 import EditorDeLineas from './EditorDeLineas'
 import { intercambiar, type Props } from './comunes'
-import type { BloqueTarjetas, BloqueDatos, BloqueItinerario } from '../../../../lib/api/contenido'
+import type { BloqueTarjetas, BloqueDatos, BloqueItinerario, TarjetaEnlace, IconoTarjeta } from '../../../../lib/api/contenido'
 
 const TARJETA_NUEVA = { titulo: '', descripcion: '', enlace: '' }
 
 export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) {
-  const cambiar = (indice: number, campo: 'titulo' | 'descripcion' | 'enlace', valor: string) =>
+  const cambiar = (indice: number, campo: keyof TarjetaEnlace, valor: string) =>
     onCambio({ tarjetas: bloque.tarjetas.map((t, i) => (i === indice ? { ...t, [campo]: valor } : t)) })
 
   const anadir = () => onCambio({ tarjetas: [...bloque.tarjetas, { ...TARJETA_NUEVA }] })
@@ -52,6 +54,25 @@ export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) 
           <CampoEnlace etiqueta={`Enlace de la tarjeta ${indice + 1}`} valor={tarjeta.enlace} opcional
             onCambio={(ruta) => cambiar(indice, 'enlace', ruta)}
             ayuda="Opcional. Sin enlace, la tarjeta es informativa y no lleva a ninguna parte." />
+          {/* Foto o icono, no los dos: con foto, el icono no se pinta. */}
+          <CampoImagen valor={tarjeta.foto ?? ''} onCambio={(foto) => cambiar(indice, 'foto', foto)}
+            etiqueta={`Foto de la tarjeta ${indice + 1}`} apaisada
+            ayuda="Opcional. Va arriba de la tarjeta, recortada a lo ancho." />
+          {(tarjeta.foto ?? '') !== '' ? (
+            <TextField label="Descripción de la foto" value={tarjeta.fotoAlt ?? ''} size="small" fullWidth
+              onChange={(e) => cambiar(indice, 'fotoAlt', e.target.value)}
+              helperText="Obligatoria con foto: lo que se ve, en una frase."
+              slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
+          ) : (
+            <TextField select label="Icono" value={tarjeta.icono ?? ''} size="small" fullWidth
+              onChange={(e) => cambiar(indice, 'icono', e.target.value as IconoTarjeta | '')}
+              helperText="Opcional. Un icono redondo encima del título.">
+              <MenuItem value="">Sin icono</MenuItem>
+              {Object.entries(ICONOS).map(([clave, { Icono, nombre }]) => (
+                <MenuItem key={clave} value={clave}><Icono fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />{nombre}</MenuItem>
+              ))}
+            </TextField>
+          )}
         </Stack>
       ))}
       <Button startIcon={<AddIcon />} onClick={anadir} disabled={!cabenMas} sx={{ alignSelf: 'flex-start' }}>

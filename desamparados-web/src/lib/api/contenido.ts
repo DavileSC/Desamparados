@@ -77,10 +77,40 @@ export interface HitoHistoria {
  * `bloques.schema.ts` (nada de uniones arktype con `narrow`, que ahí sí
  * revientan: eso es cosa del servidor, aquí es solo el tipo de TypeScript).
  */
-export interface BloqueBase { tipo: string; titulo: string }
+/**
+ * Cómo se ve un bloque: las opciones de `shared/presentacion-de-bloques.json`,
+ * comunes y propias de su tipo, más cuatro campos libres. Todo es opcional: lo
+ * que falta se pinta como siempre (el primer valor de cada lista). El servidor
+ * valida cada opción contra ese mismo catálogo (`domain/presentacion.ts`).
+ */
+export interface Presentacion {
+  [opcion: string]: string | boolean | undefined
+  /** Foto del fondo, cuando `fondo` es `foto`. */
+  fondoFoto?: string
+  /** Para enlazar al bloque: `/historia#fundacion`. */
+  ancla?: string
+  /** AAAA-MM-DD: el bloque se ve desde ese día (incluido). */
+  desde?: string
+  /** AAAA-MM-DD: el bloque se ve hasta ese día (incluido). */
+  hasta?: string
+}
+
+export interface BloqueBase { tipo: string; titulo: string; presentacion?: Presentacion }
 export interface BloqueTexto extends BloqueBase { tipo: 'texto'; html: string }
 export interface BloqueFoto extends BloqueBase { tipo: 'foto'; url: string; alt: string; pie: string }
-export interface TarjetaEnlace { titulo: string; descripcion: string; enlace: string }
+/** Los iconos que puede llevar una tarjeta: lista cerrada, la del catálogo compartido. */
+export type IconoTarjeta =
+  | 'iglesia' | 'corazon' | 'manos' | 'libro' | 'calendario' | 'grupo' | 'lugar' | 'reloj'
+  | 'estrella' | 'musica' | 'flor' | 'sol' | 'foto' | 'correo' | 'telefono' | 'info'
+export interface TarjetaEnlace {
+  titulo: string
+  descripcion: string
+  enlace: string
+  /** Opcionales: una foto arriba de la tarjeta (con su descripción) o un icono. */
+  foto?: string
+  fotoAlt?: string
+  icono?: IconoTarjeta | ''
+}
 export interface BloqueTarjetas extends BloqueBase { tipo: 'tarjetas'; tarjetas: TarjetaEnlace[] }
 /** Mismos medios que la galería de la Titular, y con las mismas reglas: el
  *  servidor los valida con el esquema compartido `medios.schema.ts`. */
@@ -101,6 +131,23 @@ export type FuenteListado =
   | 'publicaciones' | 'boletines' | 'dossier'
 export interface BloqueListado extends BloqueBase { tipo: 'listado'; fuente: FuenteListado }
 export interface BloqueContacto extends BloqueBase { tipo: 'contacto'; tituloDatos: string; lineas: LineaDatos[] }
+/** Foto a un lado y texto con formato al otro, con un botón opcional (los dos o ninguno). */
+export interface BloqueFotoTexto extends BloqueBase {
+  tipo: 'fotoTexto'; url: string; alt: string; pie: string; html: string; boton: string; enlace: string
+}
+export interface BloqueCita extends BloqueBase { tipo: 'cita'; texto: string; autor: string; fuente: string }
+/** Un vídeo suelto: las mismas reglas que uno de la galería. */
+export interface BloqueVideo extends BloqueBase { tipo: 'video'; url: string; portada: string; alt: string; pie: string }
+export interface BotonDeBloque { texto: string; enlace: string; estilo: 'principal' | 'secundario' }
+export interface BloqueBotones extends BloqueBase { tipo: 'botones'; botones: BotonDeBloque[] }
+export interface PreguntaFrecuente { pregunta: string; respuesta: string }
+export interface BloquePreguntas extends BloqueBase { tipo: 'preguntas'; preguntas: PreguntaFrecuente[] }
+export interface ArchivoDescarga { titulo: string; descripcion: string; url: string }
+export interface BloqueDescargas extends BloqueBase { tipo: 'descargas'; archivos: ArchivoDescarga[] }
+export interface BloqueMapa extends BloqueBase { tipo: 'mapa'; lugar: string; direccion: string }
+/** `fecha` es AAAA-MM-DDTHH:mm en hora de Madrid. */
+export interface BloqueCuentaAtras extends BloqueBase { tipo: 'cuentaAtras'; fecha: string; texto: string; textoFinal: string }
+export interface BloqueEspacio extends BloqueBase { tipo: 'espacio' }
 
 export type Bloque =
   | BloqueTexto
@@ -113,6 +160,15 @@ export type Bloque =
   | BloqueCronologia
   | BloqueListado
   | BloqueContacto
+  | BloqueFotoTexto
+  | BloqueCita
+  | BloqueVideo
+  | BloqueBotones
+  | BloquePreguntas
+  | BloqueDescargas
+  | BloqueMapa
+  | BloqueCuentaAtras
+  | BloqueEspacio
 
 /** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
 export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }
@@ -134,6 +190,38 @@ export const getContenido = <T,>(slug: SlugContenido) => llamarApi<T>(`/contenid
 /** Sustituye el documento entero (CMS). */
 export const guardarContenido = (slug: SlugContenido, datos: unknown) =>
   llamarApi<{ message: string; data: unknown }>(`/contenido/${slug}`, { method: 'PUT', json: { datos } })
+
+/** Una versión del historial de una página, sin su documento. */
+export interface VersionDePagina {
+  id: number
+  fecha: string
+  /** Quién guardó; vacío en la versión de antes de empezar el historial. */
+  autor: string
+  /** La publicada ahora (la más reciente). */
+  actual: boolean
+  titulo: string
+  bloques: number
+}
+
+/** El historial de una página, de la más nueva a la más antigua (CMS). */
+export const versionesDePagina = (slug: SlugContenido) => llamarApi<VersionDePagina[]>(`/contenido/${slug}/versiones`)
+
+/** El documento de una versión, con la forma de ahora (CMS). */
+export const versionDePagina = (slug: SlugContenido, id: number) => llamarApi<PaginaDeBloques>(`/contenido/${slug}/versiones/${id}`)
+
+/** Unos bloques con nombre, para ponerlos igual en otra página. */
+export interface SeccionGuardada {
+  id: number
+  nombre: string
+  bloques: Bloque[]
+  autor: string
+  fecha: string
+}
+
+export const seccionesGuardadas = () => llamarApi<SeccionGuardada[]>('/secciones')
+export const guardarSeccion = (nombre: string, bloques: Bloque[]) =>
+  llamarApi<SeccionGuardada>('/secciones', { method: 'POST', json: { nombre, bloques } })
+export const borrarSeccion = (id: number) => llamarApi<void>(`/secciones/${id}`, { method: 'DELETE' })
 
 /** Los párrafos de un relato: una línea en blanco separa uno del siguiente. */
 export const parrafosDe = (relato: string): string[] =>

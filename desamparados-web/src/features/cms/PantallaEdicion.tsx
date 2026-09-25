@@ -20,6 +20,13 @@ interface Props {
    * Descartar vuelve el formulario a lo guardado, sin salir de la pantalla.
    */
   onDescartar?: () => void
+  /**
+   * Sin tope de ancho: para el constructor de páginas, que pone el editor y la
+   * vista en vivo lado a lado y necesita la pantalla entera.
+   */
+  anchoCompleto?: boolean
+  /** Controles de más en la barra de guardar (el deshacer del constructor). */
+  extra?: ReactNode
   children: ReactNode
 }
 
@@ -31,7 +38,7 @@ interface Props {
  * navegador o pulsando otra sección del menú lateral. Necesita un data router
  * (`createBrowserRouter`), que es lo que monta la aplicación.
  */
-export default function PantallaEdicion({ titulo, nombre, sucio, guardando = false, volverA, onGuardar, onDescartar, children }: Props) {
+export default function PantallaEdicion({ titulo, nombre, sucio, guardando = false, volverA, onGuardar, onDescartar, anchoCompleto = false, extra, children }: Props) {
   const navegar = useNavigate()
   const [confirmandoGuardado, setConfirmandoGuardado] = useState(false)
   const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
@@ -49,7 +56,7 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
           el aire a la derecha, y en un portátil la columna ocupa casi todo.
           El tope no es la pantalla entera: un formulario de lado a lado se
           lee peor y los campos cortos se estirarían sin motivo. */}
-      <Box sx={{ maxWidth: ANCHO_EDICION, mx: 'auto' }}>
+      <Box sx={{ maxWidth: anchoCompleto ? 'none' : ANCHO_EDICION, mx: 'auto' }}>
         <Typography variant="h2" component="h1" sx={{ mb: 0.5 }}>{titulo}</Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>{nombre}</Typography>
 
@@ -86,6 +93,7 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
               borderColor: sucio ? 'primary.main' : 'divider',
             }}
           >
+            {extra}
             <Typography variant="body2" aria-live="polite" sx={{ flex: '1 1 auto', fontWeight: sucio ? 600 : 400, color: sucio ? 'text.primary' : 'text.secondary' }}>
               {guardando ? 'Guardando…' : sucio ? 'Hay cambios sin guardar' : 'Sin cambios pendientes'}
             </Typography>

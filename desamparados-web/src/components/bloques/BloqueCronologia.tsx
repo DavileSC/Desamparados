@@ -3,6 +3,7 @@ import { Revela } from '../SeccionAnimada'
 import { GOLD, GRANATE, SERIF, ceja } from '../../features/inicio/estilos'
 import { parrafosDe, type BloqueCronologia as Datos, type HitoHistoria } from '../../lib/api/contenido'
 import { idDeHito } from './cronologia'
+import { valorDe } from './presentacion'
 
 /** El fondo de la página: el hueco del punto del raíl se rellena con él. */
 const FONDO = '#262326'
@@ -36,6 +37,7 @@ const TONOS = {
  * bloques con anclas repetirían ids.
  */
 export default function BloqueCronologia({ bloque, conAnclas = false }: { bloque: Datos; conAnclas?: boolean }) {
+  if (valorDe(bloque, 'disposicion') === 'horizontal') return <CronologiaHorizontal bloque={bloque} conAnclas={conAnclas} />
   return (
     <Box component="ol" aria-label={bloque.titulo || 'Cronología'} sx={{ listStyle: 'none', m: 0, p: 0, maxWidth: 1072, mx: 'auto' }}>
       {bloque.hitos.map((hito, indice) => (
@@ -163,5 +165,48 @@ function HitoDeLaLinea({ hito, id, primero, ultimo }: HitoDeLaLineaProps) {
         )}
       </Box>
     </Revela>
+  )
+}
+
+/**
+ * La cronología en horizontal: los hitos en fila sobre un raíl, cada uno en
+ * su columna, y la fila se desliza de lado cuando no caben. Para historias
+ * cortas o para una franja de fechas; con relatos largos se lee mejor en
+ * vertical.
+ */
+function CronologiaHorizontal({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean }) {
+  return (
+    <Box
+      component="ol"
+      aria-label={bloque.titulo || 'Cronología'}
+      sx={{
+        listStyle: 'none', m: 0, p: 0, pb: 2,
+        display: 'grid', gridAutoFlow: 'column', gridAutoColumns: { xs: '78%', sm: '46%', md: 'minmax(260px, 1fr)' }, gap: { xs: 3, md: 4 },
+        overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'thin',
+      }}
+    >
+      {bloque.hitos.map((hito, indice) => {
+        const tono = TONOS[hito.tono] ?? null
+        return (
+          <Box component="li" key={indice} id={conAnclas ? idDeHito(indice) : undefined} sx={{ scrollSnapAlign: 'start', minWidth: 0 }}>
+            <Box aria-hidden sx={{ position: 'relative', height: 13, mb: 3, '&::before': { content: '""', position: 'absolute', top: 6, left: 0, right: { xs: -24, md: -32 }, height: '1px', backgroundColor: FILETE } }}>
+              <Box sx={{ position: 'relative', width: 13, height: 13, borderRadius: '50%', boxSizing: 'border-box', border: '2px solid #cbc5c8', backgroundColor: FONDO, ...tono?.punto }} />
+            </Box>
+            <Typography component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 34, md: 40 }, lineHeight: 1, color: tono?.texto ?? 'text.primary' }}>
+              {hito.periodo}
+            </Typography>
+            <Typography component="span" sx={{ ...ceja, mb: 2, mt: 1, letterSpacing: '0.22em' }}>{hito.etiqueta}</Typography>
+            {hito.foto.url !== '' && (
+              <Box component="img" src={hito.foto.url} alt={hito.foto.alt} loading="lazy" decoding="async"
+                sx={{ display: 'block', width: '100%', aspectRatio: '16 / 10', objectFit: 'cover', mb: 2 }} />
+            )}
+            <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 22, md: 24 }, lineHeight: 1.25, mb: 1.5 }}>{hito.titulo}</Typography>
+            {parrafosDe(hito.relato).map((parrafo, i) => (
+              <Typography key={i} sx={{ color: 'text.secondary', fontSize: 15.5, lineHeight: 1.7, mb: 1.5, '&:last-of-type': { mb: 0 } }}>{parrafo}</Typography>
+            ))}
+          </Box>
+        )
+      })}
+    </Box>
   )
 }

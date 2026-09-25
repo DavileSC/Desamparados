@@ -1,7 +1,19 @@
-import { Box, Stack } from '@mui/material'
+import { Box } from '@mui/material'
 import TituloDeSeccion from '../TituloDeSeccion'
 import { componenteDeBloque, pintaSuTitulo } from './registro'
+import BandaDeFondo, { type Fondo } from './BandaDeFondo'
+import MarcoEditable from './MarcoEditable'
+import { useModoEdicion } from './modoEdicion'
+import { libreDe, siDe, valorDe, visibilidadDe } from './presentacion'
+import { GOLD } from '../../features/inicio/estilos'
 import type { Bloque } from '../../lib/api/contenido'
+
+/** El aire encima de un bloque, según su espaciado. `normal` es el de siempre. */
+const ESPACIO = {
+  compacto: { xs: 3, md: 4 },
+  normal: { xs: 5, md: 8 },
+  amplio: { xs: 8, md: 13 },
+} as const
 
 /**
  * Pinta los bloques de una página en su orden.
@@ -9,54 +21,72 @@ import type { Bloque } from '../../lib/api/contenido'
  * Un tipo que no esté en el registro se salta en vez de tirar la página entera:
  * el servidor ya lo rechaza al guardar, pero un documento guardado antes de
  * retirar un tipo del catálogo seguiría en la base.
+ *
+ * Los que hoy no se ven (ocultos o fuera de sus fechas) se quitan antes de
+ * repartir el aire entre bloques: si no, el primero visible heredaría el hueco
+ * de encima de uno que no está. En la vista en vivo del CMS se ven todos.
+ *
+ * `desde` es la posición del primero en el documento: Historia pinta sus
+ * bloques de uno en uno y así cada uno sigue sabiendo cuál es.
  */
-export default function BloquesDePagina({ bloques }: { bloques: Bloque[] }) {
-  if (bloques.length === 0) return null
+export default function BloquesDePagina({ bloques, desde = 0 }: { bloques: Bloque[]; desde?: number }) {
+  const modo = useModoEdicion()
+  const aPintar = bloques
+    .map((bloque, i) => ({ bloque, indice: desde + i }))
+    .filter(({ bloque }) => modo !== null || visibilidadDe(bloque) === 'visible')
+  if (aPintar.length === 0) return null
 
   return (
-    <Stack spacing={{ xs: 5, md: 8 }}>
-      {bloques.map((bloque, indice) => {
-        // La clave es posicional porque `Bloque` no tiene identificador propio: el
-        // prefijo del tipo evita que React reutilice el nodo de un bloque de un
-        // tipo para pintar otro distinto al cambiar el número de bloques, pero no
-        // distingue dos bloques del mismo tipo entre sí. Al reordenar dos bloques
-        // de texto (o dos de tarjetas), cada uno sí recibe un índice distinto
-        // —el de la posición 0 pasa a la 1 y viceversa—, pero el conjunto de
-        // claves que ve React es el mismo de antes: sigue habiendo un
-        // `texto-0` y un `texto-1`. Sin una clave que se mueva con el bloque,
-        // React no detecta que los elementos han cambiado de sitio: reutiliza
-        // cada instancia en su posición y solo le pasa las props del bloque
-        // que ahora la ocupa. Hoy es inofensivo
-        // porque los tres bloques son funciones puras sin estado; en cuanto haya
-        // uno con estado propio —la galería de la fase 2, con su vídeo en
-        // reproducción o su foto ampliada—, ese estado se quedaría pegado a la
-        // posición al reordenar en vez de viajar con el bloque. Hará falta darle
-        // a cada bloque un identificador estable antes de que eso ocurra.
-        return <BloqueDePagina key={`${bloque.tipo}-${indice}`} bloque={bloque} />
-      })}
-    </Stack>
+    <Box>
+      {aPintar.map(({ bloque, indice }, orden) => (
+        // La clave es posicional porque `Bloque` no tiene identificador propio;
+        // el prefijo del tipo evita que React reutilice el nodo de un bloque de
+        // un tipo para pintar otro distinto. Al reordenar dos bloques del mismo
+        // tipo, el estado propio de uno (el vídeo en reproducción de una
+        // galería) se queda en su posición: es una rareza visible, no un fallo.
+        <BloqueDePagina key={`${bloque.tipo}-${indice}`} bloque={bloque} indice={indice} primero={orden === 0} />
+      ))}
+    </Box>
   )
 }
 
 /**
- * Un bloque con su título de sección. Lo usa también la vista previa del CMS,
- * para que un bloque suelto se pinte exactamente como dentro de la página.
+ * Un bloque con su presentación: el aire de encima, el separador, la franja de
+ * color, el ancla y su título de sección. Lo usa también la vista en vivo del
+ * CMS, para que un bloque se pinte exactamente como dentro de la página.
  */
-export function BloqueDePagina({ bloque }: { bloque: Bloque }) {
+export function BloqueDePagina({ bloque, indice = 0, primero = true }: { bloque: Bloque; indice?: number; primero?: boolean }) {
   const Componente = componenteDeBloque(bloque)
   if (!Componente) return null
+
+  const fondo = valorDe(bloque, 'fondo') as Fondo
+  const ancla = libreDe(bloque, 'ancla')
+  const espacio = ESPACIO[valorDe(bloque, 'espacio') as keyof typeof ESPACIO] ?? ESPACIO.normal
+  const centrado = valorDe(bloque, 'alineacionTitulo') === 'centro'
+
   return (
-    <Box>
-      {bloque.titulo && !pintaSuTitulo(bloque) && <TituloDeSeccion title={bloque.titulo} centered />}
-      {/*
-        El aviso da por hecho que un componente resuelto durante el render se
-        acaba de crear ahí, y entonces perdería su estado en cada vuelta. Aquí
-        no: `componenteDeBloque` solo busca en `REGISTRO_BLOQUES`, que es una
-        constante de módulo con los diez componentes ya declarados. La regla no
-        ve a través del índice.
-      */}
-      {/* eslint-disable-next-line react/static-components */}
-      <Componente bloque={bloque as never} />
+    <Box id={ancla || undefined} sx={{ mt: primero ? 0 : espacio, scrollMarginTop: 96 }}>
+      <MarcoEditable bloque={bloque} indice={indice}>
+        {siDe(bloque, 'separador') && (
+          <Box aria-hidden sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center', mb: { xs: 4, md: 6 } }}>
+            <Box sx={{ width: 56, height: '1px', backgroundColor: 'rgba(222, 199, 43, 0.6)' }} />
+            <Box sx={{ width: 7, height: 7, transform: 'rotate(45deg)', border: `1px solid ${GOLD}` }} />
+            <Box sx={{ width: 56, height: '1px', backgroundColor: 'rgba(222, 199, 43, 0.6)' }} />
+          </Box>
+        )}
+        <BandaDeFondo fondo={fondo} foto={libreDe(bloque, 'fondoFoto')}>
+          {bloque.titulo && !pintaSuTitulo(bloque) && <TituloDeSeccion title={bloque.titulo} centered={centrado} />}
+          {/*
+            El aviso da por hecho que un componente resuelto durante el render se
+            acaba de crear ahí, y entonces perdería su estado en cada vuelta. Aquí
+            no: `componenteDeBloque` solo busca en `REGISTRO_BLOQUES`, que es una
+            constante de módulo con todos los componentes ya declarados. La regla
+            no ve a través del índice.
+          */}
+          {/* eslint-disable-next-line react/static-components */}
+          <Componente bloque={bloque as never} />
+        </BandaDeFondo>
+      </MarcoEditable>
     </Box>
   )
 }

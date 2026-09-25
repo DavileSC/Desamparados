@@ -20,6 +20,7 @@ import { contactoRoutes } from './routes/contacto.routes.js';
 import { panelRoutes } from './routes/panel.routes.js';
 import { portadaRoutes } from './routes/portada.routes.js';
 import { contenidoRoutes } from './routes/contenido.routes.js';
+import { seccionesRoutes } from './routes/secciones.routes.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
 import { notFoundHandler, globalErrorHandler } from './middleware/error.middleware'; // Manejo de errores global
@@ -152,6 +153,7 @@ app.use('/api/procesion', procesionRoutes); // Citas, papeletas y turnos
 app.use('/api/transacciones', transaccionRoutes); // Contabilidad
 app.use('/api/panel', panelRoutes);      // Panel del CMS
 app.use('/api/portada', portadaRoutes);  // Fotos de la cabecera del inicio
+app.use('/api/secciones', seccionesRoutes); // Secciones guardadas del constructor de páginas
 app.use('/api/contenido', contenidoRoutes); // Textos editables de la portada, el recorrido y la historia
 
 // ==========================================

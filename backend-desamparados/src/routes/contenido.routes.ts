@@ -1,9 +1,11 @@
 import { Router } from 'express';
+import { type } from 'arktype';
 import { Role } from '@prisma/client';
 import { ContenidoController } from '../controllers/contenido.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
+import { idParam } from '../config/common.js';
 import { esSlugContenido } from '../domain/contenido.js';
 import { guardarContenidoSchema } from '../schemas/contenido.schema.js';
 import { sanearBloques } from '../utils/sanear-html.js';
@@ -15,6 +17,11 @@ const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
 // La web la lee sin sesión.
 contenidoRoutes.get('/:slug', ContenidoController.leer);
+
+// El historial es del CMS: quién cambió qué y cuándo no es para la web.
+const idVersion = type({ params: { slug: 'string', id: idParam } });
+contenidoRoutes.get('/:slug/versiones', authenticateToken, checkRole(rolesCMS), ContenidoController.versiones);
+contenidoRoutes.get('/:slug/versiones/:id', authenticateToken, checkRole(rolesCMS), validate(idVersion), ContenidoController.version);
 
 /**
  * El esquema depende del slug, así que el `validate` se elige en tiempo de

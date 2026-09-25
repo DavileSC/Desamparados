@@ -782,3 +782,37 @@ model ContenidoPagina {
   datos     Json
   updatedAt DateTime @updatedAt
 }
+
+// Cada guardado de una página deja aquí una copia del documento entero, con
+// quién y cuándo: el historial del constructor de páginas, desde el que se
+// puede volver a una versión anterior. Se guardan las últimas por página (ver
+// `VERSIONES_POR_PAGINA` en contenido.service.ts).
+//
+// El autor va copiado (id y nombre) y no como relación: una versión tiene que
+// seguir diciendo quién la hizo aunque esa cuenta se borre.
+//
+// OJO: como `ContenidoPagina`, sus fotos cuentan en `utils/ficheros-publicos.ts`:
+// si no, restaurar una versión devolvería fotos ya borradas del disco.
+model VersionContenido {
+  id          Int      @id @default(autoincrement())
+  slug        String
+  datos       Json
+  autorId     Int?
+  autorNombre String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([slug, createdAt])
+}
+
+// Secciones guardadas del constructor: uno o varios bloques con un nombre, para
+// ponerlos igual en otra página. Se guardan ya validados, con la misma regla
+// que los bloques de una página.
+model SeccionGuardada {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  bloques     Json
+  autorId     Int?
+  autorNombre String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

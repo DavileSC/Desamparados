@@ -47,7 +47,7 @@ export default function PaginasAdminPage() {
  * editar, y plegarlo todo de entrada obligaría a abrir tres secciones antes de
  * encontrar nada. Plegar sirve para apartar lo que ahora no se toca.
  *
- * La estructura es la del patrón de divulgación, la misma que `EditorDeBloques`
+ * La estructura es la del patrón de divulgación, la misma que `constructor/ListaDeBloques`
  * y por el mismo motivo: el encabezado lleva SOLO el botón que pliega, y lo
  * demás va fuera de él. Un `Accordion` de MUI mete un `<button>` en el resumen,
  * y dentro de un botón no puede haber enlaces.

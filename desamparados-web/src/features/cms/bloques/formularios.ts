@@ -3,28 +3,25 @@ import { FormularioTexto, FormularioLlamada, FormularioListado, FormularioContac
 import { FormularioFoto, FormularioGaleria } from './formularios/medios'
 import { FormularioTarjetas, FormularioDatos, FormularioItinerario } from './formularios/listas'
 import { FormularioCronologia } from './formularios/cronologia'
+import {
+  FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
+  FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio,
+} from './formularios/nuevos'
+import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
+import { libreDe, valorDe } from '../../../components/bloques/presentacion'
 import type { Props } from './formularios/comunes'
 import { problemaDelMedio } from '../contenido/medios'
 import { esDestinoValido } from '../../../lib/destinos'
 import type { Bloque } from '../../../lib/api/contenido'
 
-/** Nombre visible de cada tipo. Es lo que lee quien edita. */
-export const NOMBRE_BLOQUE: Record<string, string> = {
-  texto: 'Texto',
-  foto: 'Foto',
-  galeria: 'Galería',
-  tarjetas: 'Tarjetas',
-  llamada: 'Llamada',
-  datos: 'Datos',
-  itinerario: 'Itinerario',
-  cronologia: 'Cronología',
-  listado: 'Listado',
-  contacto: 'Formulario de contacto',
-}
+/** Nombre visible de cada tipo. Es lo que lee quien edita; sale de la ficha de la galería. */
+export const NOMBRE_BLOQUE: Record<string, string> = Object.fromEntries(
+  Object.entries(FICHA_DE_BLOQUE).map(([tipo, ficha]) => [tipo, ficha.nombre]),
+)
 
 // El registro es, a propósito, un `Record` de un solo tipo de componente: cada
 // formulario recibe su propio `Bloque` concreto, no `never`. TypeScript no
-// puede comprobar por sí solo que `EditorDeBloques` invoca cada uno con el
+// puede comprobar por sí solo que `ListaDeBloques` invoca cada uno con el
 // bloque de su mismo tipo (lo hace por `bloque.tipo`, en tiempo de ejecución):
 // la misma idea insegura-a-propósito que ya usa `components/bloques/registro.tsx`
 // para la web pública, aunque allí un cast directo basta —su `{ bloque: never
@@ -41,7 +38,19 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   cronologia: FormularioCronologia as unknown as ComponentType<Props<never>>,
   listado: FormularioListado as unknown as ComponentType<Props<never>>,
   contacto: FormularioContacto as unknown as ComponentType<Props<never>>,
+  fotoTexto: FormularioFotoTexto as unknown as ComponentType<Props<never>>,
+  cita: FormularioCita as unknown as ComponentType<Props<never>>,
+  video: FormularioVideo as unknown as ComponentType<Props<never>>,
+  botones: FormularioBotones as unknown as ComponentType<Props<never>>,
+  preguntas: FormularioPreguntas as unknown as ComponentType<Props<never>>,
+  descargas: FormularioDescargas as unknown as ComponentType<Props<never>>,
+  mapa: FormularioMapa as unknown as ComponentType<Props<never>>,
+  cuentaAtras: FormularioCuentaAtras as unknown as ComponentType<Props<never>>,
+  espacio: FormularioEspacio as unknown as ComponentType<Props<never>>,
 }
+
+/** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
+export const SIN_TITULO = new Set(['espacio'])
 
 /** Un bloque recién añadido, con sus campos vacíos. */
 export const BLOQUE_NUEVO: Record<string, object> = {
@@ -61,6 +70,49 @@ export const BLOQUE_NUEVO: Record<string, object> = {
   // Nace con la fuente más corriente elegida: un listado siempre enseña algo.
   listado: { tipo: 'listado', titulo: '', fuente: 'noticias-recientes' },
   contacto: { tipo: 'contacto', titulo: '', tituloDatos: 'Datos de contacto', lineas: [] },
+  fotoTexto: { tipo: 'fotoTexto', titulo: '', url: '', alt: '', pie: '', html: '', boton: '', enlace: '' },
+  cita: { tipo: 'cita', titulo: '', texto: '', autor: '', fuente: '' },
+  video: { tipo: 'video', titulo: '', url: '', portada: '', alt: '', pie: '' },
+  botones: { tipo: 'botones', titulo: '', botones: [{ texto: '', enlace: '/', estilo: 'principal' }] },
+  preguntas: { tipo: 'preguntas', titulo: '', preguntas: [{ pregunta: '', respuesta: '' }] },
+  descargas: { tipo: 'descargas', titulo: '', archivos: [{ titulo: '', descripcion: '', url: '' }] },
+  mapa: { tipo: 'mapa', titulo: '', lugar: '', direccion: '' },
+  // La fecha la pone `bloqueNuevo`: dentro de un mes a las 18:00, para que la
+  // vista en vivo enseñe ya una cuenta y no un hueco.
+  cuentaAtras: { tipo: 'cuentaAtras', titulo: '', fecha: '', texto: '', textoFinal: '' },
+  espacio: { tipo: 'espacio', titulo: '' },
+}
+
+/** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
+function dentroDeUnMes(): string {
+  const fecha = new Date()
+  fecha.setMonth(fecha.getMonth() + 1)
+  const dos = (n: number) => String(n).padStart(2, '0')
+  return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}T18:00`
+}
+
+/** Un bloque nuevo de ese tipo, listo para añadir: copia fresca, nunca el objeto de la tabla. */
+export function bloqueNuevo(tipo: string): Bloque {
+  const bloque = structuredClone(BLOQUE_NUEVO[tipo]) as Bloque
+  if (bloque.tipo === 'cuentaAtras') bloque.fecha = dentroDeUnMes()
+  return bloque
+}
+
+const ANCLA = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+/**
+ * Qué falla en la presentación, o `null`. Solo lo que se puede dejar mal desde
+ * la pestaña (el servidor valida el resto): un fondo de foto sin foto, unas
+ * fechas cruzadas o un ancla con otros caracteres.
+ */
+export function problemaDePresentacion(bloque: Bloque): string | null {
+  if (valorDe(bloque, 'fondo') === 'foto' && libreDe(bloque, 'fondoFoto') === '') return 'tiene el fondo de foto sin foto'
+  const desde = libreDe(bloque, 'desde')
+  const hasta = libreDe(bloque, 'hasta')
+  if (desde && hasta && desde > hasta) return 'tiene la fecha «hasta» antes que «desde»: no se vería nunca'
+  const ancla = libreDe(bloque, 'ancla')
+  if (ancla && !ANCLA.test(ancla)) return 'tiene un ancla con caracteres que no valen (solo minúsculas, cifras y guiones)'
+  return null
 }
 
 /**
@@ -116,6 +168,35 @@ export function problemaDeBloque(bloque: Bloque): string | null {
     case 'contacto':
       if (bloque.lineas.some((l) => l.etiqueta.trim() === '')) return 'tiene una línea sin concepto'
       return null
+    case 'fotoTexto':
+      if (bloque.url.trim() === '') return 'no tiene foto'
+      if (bloque.alt.trim() === '') return 'no tiene descripción de la foto'
+      if (bloque.html.trim() === '') return 'no tiene texto'
+      if (bloque.boton.trim() !== '' && bloque.enlace === '') return 'tiene un botón sin destino'
+      if (bloque.boton.trim() === '' && bloque.enlace !== '') return 'tiene un destino sin texto en el botón'
+      if (bloque.enlace !== '' && !esDestinoValido(bloque.enlace)) return `lleva el botón a una página que no existe (${bloque.enlace})`
+      return null
+    case 'cita':
+      return bloque.texto.trim() === '' ? 'está vacía' : null
+    case 'video':
+      return problemaDelMedio({ tipo: 'video', url: bloque.url, portada: bloque.portada, alt: bloque.alt, pie: bloque.pie })
+    case 'botones': {
+      if (bloque.botones.some((b) => b.texto.trim() === '')) return 'tiene un botón sin texto'
+      const roto = bloque.botones.find((b) => !esDestinoValido(b.enlace))
+      return roto ? `lleva un botón a una página que no existe (${roto.enlace})` : null
+    }
+    case 'preguntas': {
+      const sin = bloque.preguntas.findIndex((p) => p.pregunta.trim() === '' || p.respuesta.trim() === '')
+      return sin === -1 ? null : `tiene la pregunta ${sin + 1} sin completar`
+    }
+    case 'descargas': {
+      const sin = bloque.archivos.findIndex((a) => a.titulo.trim() === '' || a.url === '')
+      return sin === -1 ? null : `tiene el documento ${sin + 1} sin nombre o sin PDF`
+    }
+    case 'mapa':
+      return bloque.direccion.trim() === '' ? 'no tiene dirección' : null
+    case 'cuentaAtras':
+      return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(bloque.fecha) ? null : 'no tiene fecha y hora'
     default:
       return null
   }

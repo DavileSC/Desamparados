@@ -14,7 +14,18 @@ export const RUTAS_DESTINO: ReadonlySet<string> = new Set([
 const NOTICIA = new RegExp(`^${destinos.prefijoNoticia.replace(/\//g, '\\/')}[a-z0-9]+(?:-[a-z0-9]+)*$`);
 
 /**
+ * El ancla de un bloque (`presentacion.ancla`): minúsculas, cifras y guiones,
+ * como un slug. Es lo que va detrás de la almohadilla en `/historia#fundacion`.
+ */
+export const ANCLA = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
  * `true` si el enlace lleva a una página que existe en la web.
+ *
+ * Puede llevar un ancla detrás (`/historia#fundacion`), que baja hasta el
+ * bloque que la tenga. Del ancla solo se comprueba la forma: que un bloque de
+ * esa página la lleve de verdad es cosa de quien edita, y si no, la página se
+ * abre por arriba, que no es ningún error.
  *
  * Antes bastaba con que empezara por una barra: «/hola» se
  * guardaba y la tarjeta llevaba a «página no encontrada». Ahora solo valen las
@@ -22,5 +33,8 @@ const NOTICIA = new RegExp(`^${destinos.prefijoNoticia.replace(/\//g, '\\/')}[a-
  * patrón anterior: nada de `//otro.test` ni de `javascript:`.
  */
 export function esDestinoValido(enlace: string): boolean {
-  return RUTAS_DESTINO.has(enlace) || NOTICIA.test(enlace);
+  const almohadilla = enlace.indexOf('#');
+  const ruta = almohadilla === -1 ? enlace : enlace.slice(0, almohadilla);
+  if (almohadilla !== -1 && !ANCLA.test(enlace.slice(almohadilla + 1))) return false;
+  return RUTAS_DESTINO.has(ruta) || NOTICIA.test(ruta);
 }

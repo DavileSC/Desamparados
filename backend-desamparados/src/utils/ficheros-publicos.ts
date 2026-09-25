@@ -95,14 +95,34 @@ export async function contarReferencias(nombre: string): Promise<number> {
 }
 
 async function contarEnContenido(nombre: string): Promise<number> {
-  const paginas = await db.contenidoPagina.findMany({ select: { datos: true } });
+  const paginas = await jsonDeContenido();
   // Con `clave()` a los dos lados, como en el resto de la familia: el nombre se
   // compara sin mirar mayúsculas porque las subidas antiguas podían guardar la
   // extensión en mayúsculas y en Linux «<hex>.JPG» y «<hex>.jpg» son ficheros
   // distintos. Siendo esta la cuenta que decide si una foto publicada se borra,
   // un fallo de comparación aquí se paga borrando lo que sigue en uso.
-  const mencionados = new Set([...subidasEnTexto(...paginas.map((p) => JSON.stringify(p.datos)))].map(clave));
+  const mencionados = new Set([...subidasEnTexto(...paginas)].map(clave));
   return mencionados.has(clave(nombre)) ? 1 : 0;
+}
+
+/**
+ * El texto de todos los JSON del constructor de páginas: los documentos
+ * publicados, sus versiones anteriores y las secciones guardadas. Las tres
+ * cuentan: una foto que ya no está en la página pero sí en una versión tiene
+ * que seguir en el disco, o restaurar esa versión la dejaría rota. Se libera
+ * cuando la versión sale del historial (`ContenidoService`).
+ */
+async function jsonDeContenido(): Promise<string[]> {
+  const [paginas, versiones, secciones] = await Promise.all([
+    db.contenidoPagina.findMany({ select: { datos: true } }),
+    db.versionContenido.findMany({ select: { datos: true } }),
+    db.seccionGuardada.findMany({ select: { bloques: true } }),
+  ]);
+  return [
+    ...paginas.map((p) => JSON.stringify(p.datos)),
+    ...versiones.map((v) => JSON.stringify(v.datos)),
+    ...secciones.map((s) => JSON.stringify(s.bloques)),
+  ];
 }
 
 /** Todos los ficheros subidos que menciona alguna tabla (para el script de huérfanos). */
@@ -114,7 +134,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     db.enser.findMany({ select: { imagenUrl: true } }),
     db.pagina.findMany({ select: { contenido: true } }),
     db.evento.findMany({ select: { description: true, fotoCartel: true } }),
-    db.contenidoPagina.findMany({ select: { datos: true } }),
+    jsonDeContenido(),
   ]);
   const textos = [
     ...noticias.flatMap((n) => [n.imagenUrl, n.contenido]),
@@ -123,7 +143,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     ...enseres.map((e) => e.imagenUrl),
     ...paginas.map((p) => p.contenido),
     ...eventos.flatMap((e) => [e.description, e.fotoCartel]),
-    ...contenido.map((p) => JSON.stringify(p.datos)),
+    ...contenido,
     ...rutasDelEntorno(),
   ];
   return subidasEnTexto(...textos);

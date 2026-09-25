@@ -11,7 +11,11 @@
     "",
     "Detrás, los tres que sirven a páginas con diseño o datos propios: la",
     "cronología de Historia, los listados vivos (noticias, agenda y",
-    "publicaciones) y el formulario de Contacto."
+    "publicaciones) y el formulario de Contacto.",
+    "",
+    "Los nueve del final llegaron con las opciones de presentación (25-09-2026):",
+    "foto con texto, cita, vídeo suelto, botones, preguntas plegables,",
+    "descargas en PDF, mapa, cuenta atrás y espacio."
   ],
   "tipos": [
     "texto",
@@ -23,6 +27,15 @@
     "itinerario",
     "cronologia",
     "listado",
-    "contacto"
+    "contacto",
+    "fotoTexto",
+    "cita",
+    "video",
+    "botones",
+    "preguntas",
+    "descargas",
+    "mapa",
+    "cuentaAtras",
+    "espacio"
   ]
 }

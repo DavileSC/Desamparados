@@ -1,0 +1,383 @@
+{
+  "_comentario": [
+    "Las opciones de presentación de los bloques: cómo se ven, no qué dicen.",
+    "Lo leen los dos lados: el servidor construye con esto el esquema de",
+    "`presentacion` de cada bloque y rechaza cualquier otro valor, y el CMS",
+    "pinta con esto los controles de la pestaña «Presentación».",
+    "",
+    "Regla: el PRIMER valor de cada lista es el de siempre, el que se usa",
+    "cuando el bloque no dice nada. Así una página guardada antes de que",
+    "existieran estas opciones se ve exactamente igual que antes.",
+    "",
+    "Una opción es una lista de valores (`valores`) o un sí/no (`siNo`, que por",
+    "defecto es no). Los campos de texto libres (la foto del fondo, el ancla y",
+    "las fechas de visibilidad) no están aquí: tienen reglas propias y los",
+    "valida el esquema a mano.",
+    "",
+    "`iconosDeTarjeta` es la lista cerrada de iconos que puede llevar una",
+    "tarjeta (contenido, no presentación, pero es igual de cerrado): cada nombre",
+    "es un icono que la web sabe pintar."
+  ],
+  "comunes": {
+    "fondo": {
+      "valores": [
+        "ninguno",
+        "papel",
+        "granate",
+        "oscuro",
+        "foto"
+      ]
+    },
+    "ancho": {
+      "valores": [
+        "normal",
+        "estrecho",
+        "ancho"
+      ]
+    },
+    "espacio": {
+      "valores": [
+        "normal",
+        "compacto",
+        "amplio"
+      ]
+    },
+    "alineacionTitulo": {
+      "valores": [
+        "centro",
+        "izquierda"
+      ]
+    },
+    "separador": {
+      "siNo": true
+    },
+    "oculto": {
+      "siNo": true
+    }
+  },
+  "porTipo": {
+    "texto": {
+      "estilo": {
+        "valores": [
+          "normal",
+          "entradilla",
+          "destacado"
+        ]
+      },
+      "columnas": {
+        "valores": [
+          "1",
+          "2"
+        ]
+      },
+      "alineacion": {
+        "valores": [
+          "izquierda",
+          "centro",
+          "justificado"
+        ]
+      },
+      "capitular": {
+        "siNo": true
+      }
+    },
+    "foto": {
+      "tamano": {
+        "valores": [
+          "grande",
+          "pequena",
+          "mediana",
+          "completa"
+        ]
+      },
+      "proporcion": {
+        "valores": [
+          "original",
+          "16:9",
+          "4:3",
+          "1:1",
+          "3:4"
+        ]
+      },
+      "marco": {
+        "valores": [
+          "ninguno",
+          "fino",
+          "dorado"
+        ]
+      },
+      "ampliable": {
+        "siNo": true
+      }
+    },
+    "galeria": {
+      "disposicion": {
+        "valores": [
+          "pase",
+          "cuadricula",
+          "mosaico"
+        ]
+      },
+      "columnas": {
+        "valores": [
+          "3",
+          "2",
+          "4"
+        ]
+      }
+    },
+    "tarjetas": {
+      "columnas": {
+        "valores": [
+          "auto",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "estilo": {
+        "valores": [
+          "cristal",
+          "papel",
+          "contorno",
+          "granate"
+        ]
+      },
+      "orientacion": {
+        "valores": [
+          "vertical",
+          "horizontal"
+        ]
+      },
+      "alineacion": {
+        "valores": [
+          "izquierda",
+          "centro"
+        ]
+      }
+    },
+    "llamada": {
+      "estilo": {
+        "valores": [
+          "recuadro",
+          "franja",
+          "sencilla"
+        ]
+      },
+      "boton": {
+        "valores": [
+          "granate",
+          "dorado",
+          "contorno"
+        ]
+      },
+      "alineacion": {
+        "valores": [
+          "centro",
+          "izquierda"
+        ]
+      }
+    },
+    "datos": {
+      "disposicion": {
+        "valores": [
+          "lista",
+          "cuadricula",
+          "tabla"
+        ]
+      }
+    },
+    "itinerario": {
+      "disposicion": {
+        "valores": [
+          "tarjetas",
+          "linea",
+          "tabla"
+        ]
+      }
+    },
+    "cronologia": {
+      "disposicion": {
+        "valores": [
+          "vertical",
+          "horizontal"
+        ]
+      }
+    },
+    "listado": {
+      "cantidad": {
+        "valores": [
+          "auto",
+          "2",
+          "3",
+          "4",
+          "6",
+          "8",
+          "9",
+          "12"
+        ]
+      },
+      "disposicion": {
+        "valores": [
+          "tarjetas",
+          "lista"
+        ]
+      },
+      "columnas": {
+        "valores": [
+          "auto",
+          "2",
+          "3",
+          "4"
+        ]
+      }
+    },
+    "contacto": {
+      "disposicion": {
+        "valores": [
+          "lado",
+          "debajo",
+          "solo"
+        ]
+      }
+    },
+    "fotoTexto": {
+      "lado": {
+        "valores": [
+          "izquierda",
+          "derecha"
+        ]
+      },
+      "anchoFoto": {
+        "valores": [
+          "mitad",
+          "tercio"
+        ]
+      },
+      "proporcion": {
+        "valores": [
+          "original",
+          "4:3",
+          "1:1",
+          "3:4"
+        ]
+      },
+      "alineacionVertical": {
+        "valores": [
+          "centro",
+          "arriba"
+        ]
+      }
+    },
+    "cita": {
+      "estilo": {
+        "valores": [
+          "clasica",
+          "grande",
+          "franja"
+        ]
+      },
+      "alineacion": {
+        "valores": [
+          "centro",
+          "izquierda"
+        ]
+      }
+    },
+    "video": {
+      "tamano": {
+        "valores": [
+          "grande",
+          "mediana",
+          "completa"
+        ]
+      }
+    },
+    "botones": {
+      "alineacion": {
+        "valores": [
+          "centro",
+          "izquierda"
+        ]
+      },
+      "tamano": {
+        "valores": [
+          "normal",
+          "grande"
+        ]
+      }
+    },
+    "preguntas": {
+      "estilo": {
+        "valores": [
+          "lineas",
+          "tarjetas"
+        ]
+      },
+      "abrirPrimera": {
+        "siNo": true
+      }
+    },
+    "descargas": {
+      "disposicion": {
+        "valores": [
+          "lista",
+          "tarjetas"
+        ]
+      }
+    },
+    "mapa": {
+      "alto": {
+        "valores": [
+          "medio",
+          "bajo",
+          "alto"
+        ]
+      },
+      "estilo": {
+        "valores": [
+          "oscuro",
+          "natural"
+        ]
+      }
+    },
+    "cuentaAtras": {
+      "estilo": {
+        "valores": [
+          "grande",
+          "compacta"
+        ]
+      }
+    },
+    "espacio": {
+      "alto": {
+        "valores": [
+          "mediano",
+          "pequeno",
+          "grande"
+        ]
+      },
+      "linea": {
+        "siNo": true
+      }
+    }
+  },
+  "iconosDeTarjeta": [
+    "iglesia",
+    "corazon",
+    "manos",
+    "libro",
+    "calendario",
+    "grupo",
+    "lugar",
+    "reloj",
+    "estrella",
+    "musica",
+    "flor",
+    "sol",
+    "foto",
+    "correo",
+    "telefono",
+    "info"
+  ]
+}
