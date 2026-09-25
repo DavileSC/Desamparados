@@ -15,7 +15,10 @@
     "",
     "Los nueve del final llegaron con las opciones de presentación (25-09-2026):",
     "foto con texto, cita, vídeo suelto, botones, preguntas plegables,",
-    "descargas en PDF, mapa, cuenta atrás y espacio."
+    "descargas en PDF, mapa, cuenta atrás y espacio.",
+    "",
+    "Detrás, «foto fija y texto que pasa» (fotoFija, 25-09-2026): una foto quieta",
+    "que cambia según se lee cada parte del texto de al lado."
   ],
   "tipos": [
     "texto",
@@ -36,6 +39,7 @@
     "descargas",
     "mapa",
     "cuentaAtras",
-    "espacio"
+    "espacio",
+    "fotoFija"
   ]
 }

@@ -126,7 +126,136 @@
             "hora": "21:30",
             "lugar": "Entrada en la Parroquia de los Desamparados"
           }
-        ]
+        ],
+        "plano": {
+          "url": "/images/recorrido-2025.webp",
+          "alt": "Plano del recorrido procesional por el barrio, con el templo como inicio y final"
+        },
+        "trazado": [
+          {
+            "x": 66.37,
+            "y": 30.63
+          },
+          {
+            "x": 62.83,
+            "y": 11.05
+          },
+          {
+            "x": 39.56,
+            "y": 19.04
+          },
+          {
+            "x": 38.94,
+            "y": 20.91
+          },
+          {
+            "x": 41.59,
+            "y": 35.55
+          },
+          {
+            "x": 37.17,
+            "y": 38.22
+          },
+          {
+            "x": 25.93,
+            "y": 59.52
+          },
+          {
+            "x": 9.12,
+            "y": 66.18
+          },
+          {
+            "x": 9.12,
+            "y": 71.9
+          },
+          {
+            "x": 10,
+            "y": 82.56
+          },
+          {
+            "x": 10.88,
+            "y": 93.61
+          },
+          {
+            "x": 68.14,
+            "y": 74.57
+          },
+          {
+            "x": 70.53,
+            "y": 90.55
+          },
+          {
+            "x": 76.55,
+            "y": 88.55
+          },
+          {
+            "x": 74.96,
+            "y": 77.5
+          },
+          {
+            "x": 88.41,
+            "y": 72.84
+          },
+          {
+            "x": 88.5,
+            "y": 74.57
+          },
+          {
+            "x": 94.87,
+            "y": 72.84
+          },
+          {
+            "x": 93.81,
+            "y": 66.18
+          },
+          {
+            "x": 79.82,
+            "y": 70.17
+          },
+          {
+            "x": 78.76,
+            "y": 61.25
+          },
+          {
+            "x": 82.3,
+            "y": 60.85
+          },
+          {
+            "x": 83.36,
+            "y": 52.2
+          },
+          {
+            "x": 80.35,
+            "y": 48.6
+          },
+          {
+            "x": 80.53,
+            "y": 45.94
+          },
+          {
+            "x": 83.63,
+            "y": 44.87
+          },
+          {
+            "x": 81.42,
+            "y": 31.42
+          },
+          {
+            "x": 78.32,
+            "y": 32.22
+          },
+          {
+            "x": 77.43,
+            "y": 27.3
+          },
+          {
+            "x": 66.37,
+            "y": 30.63
+          }
+        ],
+        "presentacion": {
+          "disposicion": "plano"
+        }
       }
     ]
   },
@@ -476,9 +605,46 @@
     },
     "bloques": [
       {
-        "tipo": "texto",
+        "tipo": "fotoFija",
         "titulo": "",
-        "html": "<p>El trono de Nuestra Señora de los Desamparados es una de las piezas más destacadas del patrimonio artístico y devocional del Grupo Parroquial. Diseñado para resaltar la belleza de la Sagrada Titular, combina la solidez de la ebanistería con el brillo de los metales, los bordados y las flores que lo adornan en su salida procesional.</p><p>Cada detalle del trono ha sido pensado para crear un conjunto armonioso que acompañe la imagen de la Virgen. Sus líneas, inspiradas en la tradición cofrade malagueña, se enriquecen con apliques dorados, lámparas de cristal y un exorno floral que varía cada año para vestir de manera única el paso de palio.</p><p>El trono es portado por una cuadrilla de costaleros que, con esfuerzo y devoción, hacen posible que la Virgen avance entre el pueblo. Su andar pausado y solemne marca el ritmo de la procesión, generando momentos de gran emoción en cada una de las calles que recorre.</p><p>Alrededor del trono se organizan los cargos de la procesión, los hermanos de luz y la música, configurando una comitiva que honra a la Sagrada Titular y que expresa la identidad propia del Grupo Parroquial en el Sábado de Pasión.</p>"
+        "pasos": [
+          {
+            "titulo": "Patrimonio y devoción",
+            "texto": "El trono de Nuestra Señora de los Desamparados es una de las piezas más destacadas del patrimonio artístico y devocional del Grupo Parroquial. Diseñado para resaltar la belleza de la Sagrada Titular, combina la solidez de la ebanistería con el brillo de los metales, los bordados y las flores que lo adornan en su salida procesional.",
+            "foto": {
+              "url": "/images/trono-candeleria.webp",
+              "alt": "El trono de la Virgen, entre la candelería",
+              "pie": "El trono"
+            }
+          },
+          {
+            "titulo": "Un conjunto armonioso",
+            "texto": "Cada detalle del trono ha sido pensado para crear un conjunto armonioso que acompañe la imagen de la Virgen. Sus líneas, inspiradas en la tradición cofrade malagueña, se enriquecen con apliques dorados, lámparas de cristal y un exorno floral que varía cada año para vestir de manera única el paso de palio.",
+            "foto": {
+              "url": "/images/trono-cera.webp",
+              "alt": "Cirios y flores blancas del exorno del trono",
+              "pie": "Cera y flor"
+            }
+          },
+          {
+            "titulo": "El andar de la Virgen",
+            "texto": "El trono es portado por una cuadrilla de costaleros que, con esfuerzo y devoción, hacen posible que la Virgen avance entre el pueblo. Su andar pausado y solemne marca el ritmo de la procesión, generando momentos de gran emoción en cada una de las calles que recorre.",
+            "foto": {
+              "url": "/images/trono-varales.webp",
+              "alt": "Los portadores, en fila junto al trono",
+              "pie": "Bajo los varales"
+            }
+          },
+          {
+            "titulo": "La comitiva",
+            "texto": "Alrededor del trono se organizan los cargos de la procesión, los hermanos de luz y la música, configurando una comitiva que honra a la Sagrada Titular y que expresa la identidad propia del Grupo Parroquial en el Sábado de Pasión.",
+            "foto": {
+              "url": "/images/trono-comitiva.webp",
+              "alt": "El trono avanza entre ciriales y el público",
+              "pie": "La comitiva"
+            }
+          }
+        ]
       }
     ]
   },

@@ -192,7 +192,8 @@
         "valores": [
           "tarjetas",
           "linea",
-          "tabla"
+          "tabla",
+          "plano"
         ]
       }
     },
@@ -359,6 +360,14 @@
       },
       "linea": {
         "siNo": true
+      }
+    },
+    "fotoFija": {
+      "lado": {
+        "valores": [
+          "izquierda",
+          "derecha"
+        ]
       }
     }
   },

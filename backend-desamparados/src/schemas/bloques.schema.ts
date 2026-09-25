@@ -189,19 +189,41 @@ const datosSchema = type({
 const hora = type('string').matching(/^([01]\d|2[0-3]):[0-5]\d$/)
   .describe('una hora en formato 24 h, como 17:30');
 
-const paradaSchema = type({ hora, lugar: texto(topes.lugar) });
+/**
+ * Dónde cae la parada en el trazado del plano: la fracción del recorrido, de 0
+ * (la salida) a 1 (la entrada). Opcional: sin ella, la parada se reparte entre
+ * sus vecinas.
+ */
+const paradaSchema = type({ hora, lugar: texto(topes.lugar), 'enRuta?': '0 <= number <= 1' });
+
+/**
+ * Un punto del trazado, en tanto por ciento del ancho y del alto del plano:
+ * así sirve a cualquier tamaño de pantalla y no depende de los píxeles de la
+ * foto que se suba.
+ */
+const puntoSchema = type({ x: '0 <= number <= 100', y: '0 <= number <= 100' });
 
 const itinerarioSchema = type({
   ...comunes,
   tipo: "'itinerario'",
   paradas: paradaSchema.array().atLeastLength(1).atMostLength(topes.paradasPorItinerario),
+  // El plano y su trazado: opcionales, llegaron con la disposición «plano»
+  // (25-09-2026). Un itinerario de antes no los trae.
+  'plano?': { url: sinFoto.or(rutaImagenPublica), alt: DESCRIPCION },
+  'trazado?': puntoSchema.array().atMostLength(topes.puntosPorTrazado),
 }).narrow((datos, ctx) => {
   // Una parada sin lugar es una hora suelta: no dice por dónde pasa la
   // procesión, que es justo para lo que se consulta esta página.
   const indice = datos.paradas.findIndex((parada) => parada.lugar.trim() === '');
-  return indice === -1
-    ? true
-    : ctx.reject({ path: ['paradas', indice, 'lugar'], problem: 'no puede quedar en blanco' });
+  if (indice !== -1) return ctx.reject({ path: ['paradas', indice, 'lugar'], problem: 'no puede quedar en blanco' });
+  if (datos.plano && datos.plano.url !== '' && datos.plano.alt.trim() === '') {
+    return ctx.reject({ path: ['plano', 'alt'], problem: 'es obligatorio cuando hay un plano' });
+  }
+  // El trazado es una línea: un punto suelto no dibuja nada.
+  if (datos.trazado && datos.trazado.length === 1) {
+    return ctx.reject({ path: ['trazado'], problem: 'necesita al menos dos puntos' });
+  }
+  return true;
 });
 
 /**
@@ -318,6 +340,33 @@ const fotoTextoSchema = type({
   // ninguna parte o un destino al que no se llega.
   if (!enBlanco(datos.boton) && datos.enlace === '') return ctx.reject({ path: ['enlace'], problem: 'falta: el botón necesita a dónde llevar' });
   if (enBlanco(datos.boton) && datos.enlace !== '') return ctx.reject({ path: ['boton'], problem: 'falta el texto del botón' });
+  return true;
+});
+
+/**
+ * Foto fija y texto que pasa: unas partes de texto, cada una con su foto. Al
+ * leer, la foto se queda quieta a un lado y cambia a la de la parte que se lee.
+ * Para Trono, Enseres o Ajuar, donde cada párrafo habla de una pieza.
+ *
+ * La foto es obligatoria en cada parte: es lo que cambia. El texto es plano
+ * con los párrafos separados por una línea en blanco, como el relato de la
+ * cronología.
+ */
+const pasoFotoFijaSchema = type({
+  titulo: TITULO,
+  texto: texto(topes.relato),
+  foto: { url: rutaImagenPublica, alt: DESCRIPCION, pie: ETIQUETA },
+});
+
+const fotoFijaSchema = type({
+  ...comunes,
+  tipo: "'fotoFija'",
+  pasos: pasoFotoFijaSchema.array().atLeastLength(1).atMostLength(topes.pasosPorBloque),
+}).narrow((datos, ctx) => {
+  for (const [indice, paso] of datos.pasos.entries()) {
+    if (enBlanco(paso.texto)) return ctx.reject({ path: ['pasos', indice, 'texto'], problem: 'no puede quedar en blanco' });
+    if (enBlanco(paso.foto.alt)) return ctx.reject({ path: ['pasos', indice, 'foto', 'alt'], problem: 'es obligatoria: describe lo que se ve' });
+  }
   return true;
 });
 
@@ -466,6 +515,7 @@ const POR_TIPO = {
   mapa: mapaSchema,
   cuentaAtras: cuentaAtrasSchema,
   espacio: espacioSchema,
+  fotoFija: fotoFijaSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

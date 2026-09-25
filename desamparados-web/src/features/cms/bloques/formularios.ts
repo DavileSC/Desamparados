@@ -3,6 +3,7 @@ import { FormularioTexto, FormularioLlamada, FormularioListado, FormularioContac
 import { FormularioFoto, FormularioGaleria } from './formularios/medios'
 import { FormularioTarjetas, FormularioDatos, FormularioItinerario } from './formularios/listas'
 import { FormularioCronologia } from './formularios/cronologia'
+import { FormularioFotoFija } from './formularios/fotoFija'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio,
@@ -47,6 +48,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   mapa: FormularioMapa as unknown as ComponentType<Props<never>>,
   cuentaAtras: FormularioCuentaAtras as unknown as ComponentType<Props<never>>,
   espacio: FormularioEspacio as unknown as ComponentType<Props<never>>,
+  fotoFija: FormularioFotoFija as unknown as ComponentType<Props<never>>,
 }
 
 /** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
@@ -81,6 +83,7 @@ export const BLOQUE_NUEVO: Record<string, object> = {
   // vista en vivo enseñe ya una cuenta y no un hueco.
   cuentaAtras: { tipo: 'cuentaAtras', titulo: '', fecha: '', texto: '', textoFinal: '' },
   espacio: { tipo: 'espacio', titulo: '' },
+  fotoFija: { tipo: 'fotoFija', titulo: '', pasos: [{ titulo: '', texto: '', foto: { url: '', alt: '', pie: '' } }] },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
@@ -157,6 +160,8 @@ export function problemaDeBloque(bloque: Bloque): string | null {
     case 'itinerario':
       if (bloque.paradas.some((p) => p.lugar.trim() === '')) return 'tiene una parada sin lugar'
       if (bloque.paradas.some((p) => !/^([01]\d|2[0-3]):[0-5]\d$/.test(p.hora))) return 'tiene una hora que no es una hora (usa 17:30)'
+      if (bloque.plano && bloque.plano.url !== '' && bloque.plano.alt.trim() === '') return 'tiene el plano sin descripción'
+      if (bloque.trazado && bloque.trazado.length === 1) return 'tiene un recorrido de un solo punto: pulsa al menos otro en el plano'
       return null
     case 'cronologia': {
       const n = bloque.hitos.findIndex((h) => h.periodo.trim() === '')
@@ -195,6 +200,14 @@ export function problemaDeBloque(bloque: Bloque): string | null {
     }
     case 'mapa':
       return bloque.direccion.trim() === '' ? 'no tiene dirección' : null
+    case 'fotoFija': {
+      const sinFoto = bloque.pasos.findIndex((p) => p.foto.url === '')
+      if (sinFoto !== -1) return `tiene la parte ${sinFoto + 1} sin foto`
+      const sinAlt = bloque.pasos.findIndex((p) => p.foto.alt.trim() === '')
+      if (sinAlt !== -1) return `tiene la foto de la parte ${sinAlt + 1} sin descripción`
+      const sinTexto = bloque.pasos.findIndex((p) => p.texto.trim() === '')
+      return sinTexto === -1 ? null : `tiene la parte ${sinTexto + 1} sin texto`
+    }
     case 'cuentaAtras':
       return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(bloque.fecha) ? null : 'no tiene fecha y hora'
     default:

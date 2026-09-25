@@ -18,6 +18,7 @@ import BloqueDescargas from './BloqueDescargas'
 import BloqueMapa from './BloqueMapa'
 import BloqueCuentaAtras from './BloqueCuentaAtras'
 import BloqueEspacio from './BloqueEspacio'
+import BloqueFotoFija from './BloqueFotoFija'
 import type { Bloque } from '../../lib/api/contenido'
 
 /**
@@ -48,6 +49,7 @@ export const REGISTRO_BLOQUES: Record<string, ComponentType<{ bloque: never }>> 
   mapa: BloqueMapa as ComponentType<{ bloque: never }>,
   cuentaAtras: BloqueCuentaAtras as ComponentType<{ bloque: never }>,
   espacio: BloqueEspacio as ComponentType<{ bloque: never }>,
+  fotoFija: BloqueFotoFija as ComponentType<{ bloque: never }>,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]

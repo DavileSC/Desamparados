@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -233,6 +233,44 @@ describe('bloque de itinerario', () => {
     // Vacío no pinta nada; la página puede no llevar bloque de itinerario.
     assert.ok(falla('itinerario', doc([])));
     assert.ok(falla('itinerario', doc(Array.from({ length: 61 }, () => PARADA))));
+  });
+
+  test('acepta el plano con su trazado y las paradas situadas en él', () => {
+    const conPlano = {
+      ...doc([{ ...PARADA, enRuta: 0 }, { hora: '21:30', lugar: 'Entrada', enRuta: 1 }]),
+      plano: { url: '/images/recorrido-2025.webp', alt: 'Plano del recorrido' },
+      trazado: [{ x: 66.4, y: 30.6 }, { x: 62.8, y: 11 }, { x: 39.6, y: 19 }],
+    };
+    assert.ok(!falla('itinerario', conPlano));
+  });
+
+  test('un plano sin descripción, un trazado de un punto o un punto fuera del plano no valen', () => {
+    const base = doc([PARADA]);
+    assert.ok(falla('itinerario', { ...base, plano: { url: '/images/recorrido-2025.webp', alt: '' } }));
+    assert.ok(falla('itinerario', { ...base, trazado: [{ x: 10, y: 10 }] }), 'un punto suelto no es una línea');
+    assert.ok(falla('itinerario', { ...base, trazado: [{ x: 10, y: 10 }, { x: 120, y: 10 }] }));
+    assert.ok(falla('itinerario', doc([{ ...PARADA, enRuta: 1.5 }])));
+    assert.ok(falla('itinerario', { ...base, plano: { url: 'https://otra-web.com/plano.jpg', alt: 'Plano' } }));
+  });
+});
+
+describe('bloque de foto fija y texto que pasa', () => {
+  const PASO = { titulo: 'El trono', texto: 'Una pieza del patrimonio.', foto: { url: '/images/trono-cera.webp', alt: 'Cirios del trono', pie: '' } };
+  const doc = (pasos: unknown[]) => ({ tipo: 'fotoFija', titulo: '', pasos });
+
+  test('acepta las partes con su foto', () => {
+    assert.ok(!falla('fotoFija', doc([PASO, { ...PASO, titulo: '' }])));
+  });
+
+  test('cada parte necesita texto y una foto descrita', () => {
+    assert.ok(falla('fotoFija', doc([{ ...PASO, texto: '  ' }])));
+    assert.ok(falla('fotoFija', doc([{ ...PASO, foto: { ...PASO.foto, url: '' } }])), 'la foto es lo que cambia: no puede faltar');
+    assert.ok(falla('fotoFija', doc([{ ...PASO, foto: { ...PASO.foto, alt: ' ' } }])));
+  });
+
+  test('ni vacío ni desmedido', () => {
+    assert.ok(falla('fotoFija', doc([])));
+    assert.ok(falla('fotoFija', doc(Array.from({ length: topes.pasosPorBloque + 1 }, () => PASO))));
   });
 });
 

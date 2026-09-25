@@ -1,5 +1,6 @@
 import { Box, Grid, Typography } from '@mui/material'
 import TarjetaCristal from '../TarjetaCristal'
+import RecorridoEnPlano from './RecorridoEnPlano'
 import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueItinerario as Datos } from '../../lib/api/contenido'
@@ -10,7 +11,9 @@ const soloLector = { position: 'absolute', width: 1, height: 1, overflow: 'hidde
 /**
  * Las paradas de la procesión con su hora: en tarjetas a dos columnas (el de
  * siempre, el marcado que tenía `RecorridoPage`), en una línea vertical que
- * une las paradas como el recorrido que son, o en una tabla compacta.
+ * une las paradas como el recorrido que son, en una tabla compacta o sobre el
+ * plano, con la línea del recorrido dibujándose al bajar (`RecorridoEnPlano`).
+ * Sin plano o sin trazado, «sobre el plano» se pinta como la línea.
  *
  * El itinerario repite lugares (la procesión pasa dos veces por la misma
  * plaza): las claves necesitan el índice o React se lía al reordenar.
@@ -19,7 +22,12 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
   const disposicion = valorDe(bloque, 'disposicion')
   const ultima = bloque.paradas.length - 1
 
-  if (disposicion === 'linea') {
+  const { plano, trazado } = bloque
+  if (disposicion === 'plano' && plano && plano.url !== '' && trazado && trazado.length >= 2) {
+    return <RecorridoEnPlano bloque={{ ...bloque, plano, trazado }} />
+  }
+
+  if (disposicion === 'linea' || disposicion === 'plano') {
     return (
       <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, '720px'), mx: 'auto' }}>
         {bloque.paradas.map((parada, i) => (

@@ -30,6 +30,7 @@ const DIBUJOS: Record<string, ReactNode> = {
   preguntas: <>{[14, 30, 46].map((y) => <g key={y}>{raya(14, y, 70, 0.55)}<path d={`M100 ${y - 1} l4 4 l4 -4`} stroke={A} strokeWidth={1.5} fill="none" opacity={0.5} /><rect x={14} y={y + 9} width={92} height={0.8} fill={A} opacity={0.2} /></g>)}</>,
   foto: <>{foto(20, 10, 80, 44)}{raya(40, 60, 40, 0.3)}</>,
   fotoTexto: <>{foto(10, 14, 48, 44)}{raya(66, 18, 40, 0.6)}{raya(66, 28, 44)}{raya(66, 36, 42)}{raya(66, 44, 30)}{boton(66, 52, 26)}</>,
+  fotoFija: <>{foto(10, 10, 46, 52)}{raya(66, 14, 36, 0.25)}{raya(66, 21, 40, 0.2)}{raya(66, 32, 38, 0.6)}{raya(66, 40, 44, 0.6)}{raya(66, 48, 30, 0.6)}{raya(66, 58, 36, 0.2)}</>,
   galeria: <>{foto(10, 12, 32, 22)}{foto(44, 12, 32, 22)}{foto(78, 12, 32, 22)}{foto(10, 38, 32, 22)}{foto(44, 38, 32, 22)}{foto(78, 38, 32, 22)}</>,
   video: <>{caja(14, 10, 92, 52, 0.16)}<circle cx={60} cy={36} r={11} fill={A} opacity={0.5} /><path d="M56 30 L66 36 L56 42 Z" fill="#fff" opacity={0.9} /></>,
   tarjetas: <>{[10, 44, 78].map((x) => <g key={x}>{caja(x, 12, 32, 48, 0.12)}{raya(x + 4, 20, 18, 0.6)}{raya(x + 4, 30, 24)}{raya(x + 4, 37, 20)}</g>)}</>,

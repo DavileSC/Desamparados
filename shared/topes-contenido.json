@@ -16,5 +16,7 @@
   "preguntasPorBloque": 30,
   "descargasPorBloque": 20,
   "respuesta": 1200,
-  "ancla": 40
+  "ancla": 40,
+  "puntosPorTrazado": 400,
+  "pasosPorBloque": 12
 }

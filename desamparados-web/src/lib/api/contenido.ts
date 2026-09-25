@@ -15,7 +15,15 @@ export type SlugContenido =
   | 'publicaciones' | 'boletines' | 'dossier-prensa'
   | 'contacto'
 
-export interface ParadaRecorrido { hora: string; lugar: string }
+export interface ParadaRecorrido {
+  hora: string
+  lugar: string
+  /** Dónde cae en el trazado del plano, de 0 (salida) a 1 (entrada). Sin ella, se reparte entre sus vecinas. */
+  enRuta?: number
+}
+
+/** Un punto del trazado, en tanto por ciento del ancho (x) y del alto (y) del plano. */
+export interface PuntoDePlano { x: number; y: number }
 
 /**
  * Un medio de la galería. `url` es una ruta nuestra si es foto, y la dirección
@@ -118,7 +126,13 @@ export interface BloqueGaleria extends BloqueBase { tipo: 'galeria'; medios: Med
 export interface BloqueLlamada extends BloqueBase { tipo: 'llamada'; texto: string; boton: string; enlace: string }
 export interface LineaDatos { etiqueta: string; valor: string }
 export interface BloqueDatos extends BloqueBase { tipo: 'datos'; lineas: LineaDatos[] }
-export interface BloqueItinerario extends BloqueBase { tipo: 'itinerario'; paradas: ParadaRecorrido[] }
+export interface BloqueItinerario extends BloqueBase {
+  tipo: 'itinerario'
+  paradas: ParadaRecorrido[]
+  /** El plano del recorrido y la línea que se dibuja encima: solo los usa la disposición «plano». */
+  plano?: { url: string; alt: string }
+  trazado?: PuntoDePlano[]
+}
 export interface BloqueCronologia extends BloqueBase { tipo: 'cronologia'; hitos: HitoHistoria[] }
 /**
  * De dónde saca sus elementos un bloque de listado. Lista cerrada, la misma que
@@ -148,6 +162,9 @@ export interface BloqueMapa extends BloqueBase { tipo: 'mapa'; lugar: string; di
 /** `fecha` es AAAA-MM-DDTHH:mm en hora de Madrid. */
 export interface BloqueCuentaAtras extends BloqueBase { tipo: 'cuentaAtras'; fecha: string; texto: string; textoFinal: string }
 export interface BloqueEspacio extends BloqueBase { tipo: 'espacio' }
+/** Una parte de «foto fija y texto que pasa»: su texto y la foto que se ve mientras se lee. */
+export interface PasoFotoFija { titulo: string; texto: string; foto: { url: string; alt: string; pie: string } }
+export interface BloqueFotoFija extends BloqueBase { tipo: 'fotoFija'; pasos: PasoFotoFija[] }
 
 export type Bloque =
   | BloqueTexto
@@ -169,6 +186,7 @@ export type Bloque =
   | BloqueMapa
   | BloqueCuentaAtras
   | BloqueEspacio
+  | BloqueFotoFija
 
 /** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
 export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }

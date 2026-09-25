@@ -95,13 +95,18 @@ const ENLACES: Record<string, string[]> = {
 function textoDe(slug: string): string {
   const pagina = (POR_DEFECTO as Record<string, unknown>)[slug] as {
     cabecera: { titulo: string; subtitulo: string }
-    bloques: { titulo: string; html?: string; tarjetas?: { titulo: string; descripcion: string }[] }[]
+    bloques: {
+      titulo: string; html?: string; tarjetas?: { titulo: string; descripcion: string }[]
+      // La foto fija guarda el texto en sus partes (Trono pasó a ella el 25-09-2026).
+      pasos?: { titulo: string; texto: string }[]
+    }[]
   }
   const trozos = [pagina.cabecera.titulo, pagina.cabecera.subtitulo]
   for (const bloque of pagina.bloques) {
     trozos.push(bloque.titulo)
     if (bloque.html) trozos.push(bloque.html.replace(/<[^>]*>/g, ' '))
     for (const tarjeta of bloque.tarjetas ?? []) trozos.push(tarjeta.titulo, tarjeta.descripcion)
+    for (const paso of bloque.pasos ?? []) trozos.push(paso.titulo, paso.texto)
   }
   return trozos.join(' ').replace(/\s+/g, ' ')
 }
