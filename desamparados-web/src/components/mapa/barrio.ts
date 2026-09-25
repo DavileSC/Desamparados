@@ -1,4 +1,5 @@
-import type { FeatureCollection, LineString, Polygon } from 'geojson'
+import type { Feature, FeatureCollection, LineString, Polygon } from 'geojson'
+import type { Coordenada } from '../../lib/api/contenido'
 
 /**
  * El mapa del barrio: las calles, los edificios y las zonas verdes de
@@ -59,3 +60,43 @@ export function hayWebGL(): boolean {
  * vuelve a montar mientras el anterior aún tenía el mapa.
  */
 export const mapaVivo = (m: { style?: unknown } | null | undefined): boolean => Boolean(m?.style)
+
+/** Más lejos que esto de la salida, ningún edificio se toma por el templo. */
+const TEMPLO_A_MENOS_DE = 35
+
+const METROS_POR_GRADO = 111320
+
+/** Metros de un punto al segmento a-b (aproximación plana: es un barrio). */
+function aSegmento(p: Coordenada, a: Coordenada, b: Coordenada): number {
+  const coseno = Math.cos((p[1] * Math.PI) / 180)
+  const ax = (a[0] - p[0]) * METROS_POR_GRADO * coseno, ay = (a[1] - p[1]) * METROS_POR_GRADO
+  const dx = (b[0] - p[0]) * METROS_POR_GRADO * coseno - ax, dy = (b[1] - p[1]) * METROS_POR_GRADO - ay
+  const l2 = dx * dx + dy * dy
+  const t = l2 === 0 ? 0 : Math.min(1, Math.max(0, -(ax * dx + ay * dy) / l2))
+  return Math.hypot(ax + dx * t, ay + dy * t)
+}
+
+/**
+ * El templo: el edificio más cercano a la salida del recorrido, si está a
+ * menos de 35 m. El recorrido sale de la iglesia y vuelve a ella, así que el
+ * mapa la destaca; no hay que marcarla a mano, y si algún año cambia la
+ * salida, cambia con ella. `null` si no hay ninguno tan cerca.
+ */
+export function edificioDelTemplo(barrio: Barrio, salida: Coordenada): Feature<Polygon, { alto: number }> | null {
+  let mejor: { edificio: Feature<Polygon, { alto: number }>; metros: number } | null = null
+  for (const edificio of barrio.edificios.features) {
+    const anillo = edificio.geometry.coordinates[0] as Coordenada[]
+    for (let i = 1; i < anillo.length; i++) {
+      const m = aSegmento(salida, anillo[i - 1], anillo[i])
+      if (m < (mejor?.metros ?? TEMPLO_A_MENOS_DE)) mejor = { edificio, metros: m }
+    }
+  }
+  return mejor?.edificio ?? null
+}
+
+/** Un punto en medio del edificio, para poner encima la cruz de la salida. */
+export function centroDe(edificio: Feature<Polygon>): Coordenada {
+  const anillo = edificio.geometry.coordinates[0] as Coordenada[]
+  const xs = anillo.map((p) => p[0]), ys = anillo.map((p) => p[1])
+  return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2]
+}

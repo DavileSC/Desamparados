@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { construirGrafo, lineaDelRecorrido } from '../grafo'
-import type { Barrio } from '../barrio'
+import { centroDe, edificioDelTemplo, type Barrio } from '../barrio'
 import type { Coordenada } from '../../../lib/api/contenido'
 
 // Un cuadrado de cuatro calles de 0,001° de lado (unos 100 m).
@@ -52,5 +52,28 @@ describe('el recorrido pegado a las calles', () => {
       calles: { ...BARRIO.calles, features: [calle(A, B), calle(E, F), calle(A, lejos1), calle(lejos1, lejos2), calle(lejos2, F)] },
     }
     expect(lineaDelRecorrido([A, E], true, construirGrafo(partido))).toEqual([A, E])
+  })
+})
+
+describe('el templo en el mapa', () => {
+  const edificio = (x: number, alto: number) => ({
+    type: 'Feature' as const, properties: { alto },
+    geometry: { type: 'Polygon' as const, coordinates: [[[x, 0.0002], [x + 0.0002, 0.0002], [x + 0.0002, 0.0004], [x, 0.0004], [x, 0.0002]]] },
+  })
+  const cerca = edificio(0, 16), lejos = edificio(0.002, 20)
+  const conEdificios: Barrio = { ...BARRIO, edificios: { type: 'FeatureCollection', features: [lejos, cerca] } }
+
+  it('es el edificio más cercano a la salida', () => {
+    expect(edificioDelTemplo(conEdificios, A)).toBe(cerca)
+  })
+
+  it('si no hay ninguno a menos de 35 m de la salida, no se marca ninguno', () => {
+    expect(edificioDelTemplo(conEdificios, [0.01, 0.01])).toBeNull()
+  })
+
+  it('la cruz va en medio del edificio', () => {
+    const [x, y] = centroDe(cerca)
+    expect(x).toBeCloseTo(0.0001)
+    expect(y).toBeCloseTo(0.0003)
   })
 })

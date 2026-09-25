@@ -1,3 +1,4 @@
+import type { Feature, Polygon } from 'geojson'
 import type { ExpressionSpecification, StyleSpecification } from 'maplibre-gl'
 import type { Barrio } from './barrio'
 
@@ -19,14 +20,22 @@ const vacia = { type: 'FeatureCollection' as const, features: [] }
 const anchoCalle = (mayor: number, menor: number, otra: number): ExpressionSpecification =>
   ['match', ['get', 'clase'], 'mayor', mayor, 'menor', menor, otra]
 
-export function estiloDelMapa(barrio: Barrio): StyleSpecification {
+/**
+ * Con `templo`, ese edificio sale de los demás y se pinta aparte: en relieve,
+ * en oro viejo, con un halo dorado en el suelo. Es de donde sale y adonde
+ * vuelve el recorrido.
+ */
+export function estiloDelMapa(barrio: Barrio, templo: Feature<Polygon> | null = null): StyleSpecification {
+  const edificios = templo ? { ...barrio.edificios, features: barrio.edificios.features.filter((f) => f !== templo) } : barrio.edificios
+  const delTemplo = templo ? { type: 'FeatureCollection' as const, features: [templo] } : vacia
   return {
     version: 8,
     // Una URL entera: MapLibre pide las letras desde su worker, que no sabe de rutas relativas.
     glyphs: `${window.location.origin}/mapas/fuentes/{fontstack}/{range}.pbf`,
     sources: {
       calles: { type: 'geojson', data: barrio.calles },
-      edificios: { type: 'geojson', data: barrio.edificios },
+      edificios: { type: 'geojson', data: edificios },
+      templo: { type: 'geojson', data: delTemplo },
       verdes: { type: 'geojson', data: barrio.verdes },
       rutaEntera: { type: 'geojson', data: vacia },
       rutaHecha: { type: 'geojson', data: vacia },
@@ -55,9 +64,20 @@ export function estiloDelMapa(barrio: Barrio): StyleSpecification {
         id: 'peatonales', type: 'line', source: 'calles', filter: ['==', ['get', 'clase'], 'peatonal'],
         paint: { 'line-color': '#3a3437', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.6, 17, 2, 19, 4], 'line-dasharray': [2, 1.5] },
       },
+      // El halo del templo, en el suelo: debajo de los edificios, para que
+      // asome alrededor de la iglesia sin tapar a las vecinas.
+      {
+        id: 'templo-halo', type: 'line', source: 'templo',
+        paint: { 'line-color': ORO, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 6, 18, 22], 'line-blur': ['interpolate', ['linear'], ['zoom'], 14, 6, 18, 18], 'line-opacity': 0.55 },
+      },
+      { id: 'templo-suelo', type: 'fill', source: 'templo', paint: { 'fill-color': ORO, 'fill-opacity': 0.3 } },
       {
         id: 'edificios', type: 'fill-extrusion', source: 'edificios',
         paint: { 'fill-extrusion-color': '#2b2729', 'fill-extrusion-height': ['get', 'alto'], 'fill-extrusion-opacity': 0.92 },
+      },
+      {
+        id: 'templo', type: 'fill-extrusion', source: 'templo',
+        paint: { 'fill-extrusion-color': '#8a7630', 'fill-extrusion-height': ['get', 'alto'], 'fill-extrusion-opacity': 0.95, 'fill-extrusion-vertical-gradient': true },
       },
       {
         id: 'ruta-entera', type: 'line', source: 'rutaEntera',

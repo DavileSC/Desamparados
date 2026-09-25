@@ -14,7 +14,7 @@ import LoopIcon from '@mui/icons-material/Loop'
 import maplibregl, { type GeoJSONSource, type Map as Mapa, type Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import topes from '../../../../../../shared/topes-contenido.json'
-import { ATRIBUCION, cargarBarrio, hayWebGL, mapaVivo } from '../../../../components/mapa/barrio'
+import { ATRIBUCION, cargarBarrio, edificioDelTemplo, hayWebGL, mapaVivo } from '../../../../components/mapa/barrio'
 import { estiloDelMapa, ORO } from '../../../../components/mapa/estilo'
 import { construirGrafo, lineaDelRecorrido, type Grafo } from '../../../../components/mapa/grafo'
 import { fraccionMasCercana, posicionesEnRuta, puntoEn } from '../../../../components/bloques/recorrido'
@@ -63,7 +63,7 @@ export default function EditorDeRecorrido({ recorrido, paradas, onRecorrido, onP
       const inicio = ultimo.current.actual.linea[0]
       const m = new maplibregl.Map({
         container: contenedor.current,
-        style: estiloDelMapa(barrio),
+        style: estiloDelMapa(barrio, inicio ? edificioDelTemplo(barrio, inicio) : null),
         center: inicio ?? [(barrio.caja[0] + barrio.caja[2]) / 2, (barrio.caja[1] + barrio.caja[3]) / 2],
         zoom: 15.4,
         attributionControl: false,

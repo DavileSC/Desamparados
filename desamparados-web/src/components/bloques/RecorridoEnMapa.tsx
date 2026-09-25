@@ -8,7 +8,7 @@ import { useReducedMotion } from 'framer-motion'
 import maplibregl, { type GeoJSONSource, type Map as Mapa, type Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { GOLD, GRANATE } from '../../features/inicio/estilos'
-import { ATRIBUCION, cargarBarrio, mapaVivo } from '../mapa/barrio'
+import { ATRIBUCION, cargarBarrio, centroDe, edificioDelTemplo, mapaVivo } from '../mapa/barrio'
 import { estiloDelMapa } from '../mapa/estilo'
 import { useModoEdicion } from './modoEdicion'
 import { anchoMaximo } from './presentacion'
@@ -147,9 +147,11 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     let medidor: ResizeObserver | null = null
     cargarBarrio().then((barrio) => {
       if (!vivo || !contenedor.current) return
+      // La iglesia de la que sale y a la que vuelve: se destaca, y la cruz va encima.
+      const templo = edificioDelTemplo(barrio, linea[0])
       const m = new maplibregl.Map({
         container: contenedor.current,
-        style: estiloDelMapa(barrio),
+        style: estiloDelMapa(barrio, templo),
         interactive: false,
         attributionControl: false,
         center: linea[0],
@@ -173,7 +175,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
       salida.innerHTML = `<svg viewBox="0 0 20 20" width="20" height="20" style="display:block;margin:0 auto 3px;fill:${GOLD};filter:drop-shadow(0 0 6px rgba(222,199,43,.8))"><path d="M8.5 1h3v5h5v3h-5v10h-3V9h-5V6h5z"/></svg><span style="display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:${GOLD};background:rgba(16,14,17,.85);padding:3px 8px;border:1px solid rgba(222,199,43,.5);white-space:nowrap;transition:opacity .4s">${circular ? 'Salida y entrada' : 'Salida'}</span>`
       // Un poco por encima del punto: al salir y al volver, el trono está
       // justo ahí con el nombre de su calle al lado, y no deben pisarse.
-      new maplibregl.Marker({ element: salida, anchor: 'bottom', offset: [0, -16] }).setLngLat(linea[0]).addTo(m)
+      new maplibregl.Marker({ element: salida, anchor: 'bottom', offset: [0, -16] }).setLngLat(templo ? centroDe(templo) : linea[0]).addTo(m)
       rotuloSalida.current = salida.querySelector('span')
 
       const punto = document.createElement('div')
