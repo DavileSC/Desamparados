@@ -15,105 +15,105 @@
     {
       "slug": "historia",
       "nombre": "Historia",
-      "ruta": "/corporacion/historia",
+      "ruta": "/historia",
       "grupo": "Corporación",
       "descripcion": "La cronología del Grupo Parroquial, con su fondo velado y su índice de momentos."
     },
     {
       "slug": "parroquia",
       "nombre": "Parroquia - Pasionistas",
-      "ruta": "/corporacion/parroquia-pasionistas",
+      "ruta": "/parroquia-pasionistas",
       "grupo": "Corporación",
       "descripcion": "La sede canónica y la comunidad pasionista que acompaña al Grupo Parroquial."
     },
     {
       "slug": "organos-de-gobierno",
       "nombre": "Órganos de Gobierno",
-      "ruta": "/corporacion/historia/organos-de-gobierno",
+      "ruta": "/historia/organos-de-gobierno",
       "grupo": "Corporación",
       "descripcion": "La Junta de Gobierno y los cargos que la componen."
     },
     {
       "slug": "nuestros-fines",
       "nombre": "Nuestros Fines",
-      "ruta": "/corporacion/nuestros-fines",
+      "ruta": "/nuestros-fines",
       "grupo": "Corporación",
       "descripcion": "Caridad y formación, los dos ejes de la acción del Grupo Parroquial."
     },
     {
       "slug": "caridad",
       "nombre": "Caridad",
-      "ruta": "/corporacion/nuestros-fines/caridad",
+      "ruta": "/nuestros-fines/caridad",
       "grupo": "Corporación",
       "descripcion": "La ayuda social y la obra asistencial."
     },
     {
       "slug": "formacion",
       "nombre": "Formación",
-      "ruta": "/corporacion/nuestros-fines/formacion",
+      "ruta": "/nuestros-fines/formacion",
       "grupo": "Corporación",
       "descripcion": "La educación en la fe y la transmisión de los valores cofrades."
     },
     {
       "slug": "cultos",
       "nombre": "Cultos",
-      "ruta": "/corporacion/cultos",
+      "ruta": "/cultos",
       "grupo": "Corporación",
       "descripcion": "Las celebraciones y devociones del año."
     },
     {
       "slug": "sabado-de-pasion",
       "nombre": "Sábado de Pasión",
-      "ruta": "/corporacion/sabado-de-pasion",
+      "ruta": "/sabado-de-pasion",
       "grupo": "Sábado de Pasión",
       "descripcion": "La salida procesional y los accesos a sus tres páginas."
     },
     {
       "slug": "recorrido",
       "nombre": "Recorrido",
-      "ruta": "/corporacion/sabado-de-pasion/recorrido",
+      "ruta": "/sabado-de-pasion/recorrido",
       "grupo": "Sábado de Pasión",
       "descripcion": "El itinerario de la estación de penitencia, con sus horas."
     },
     {
       "slug": "trono",
       "nombre": "Trono",
-      "ruta": "/corporacion/sabado-de-pasion/trono",
+      "ruta": "/sabado-de-pasion/trono",
       "grupo": "Sábado de Pasión",
       "descripcion": "El trono de la Sagrada Titular."
     },
     {
       "slug": "enseres",
       "nombre": "Enseres",
-      "ruta": "/corporacion/sabado-de-pasion/enseres",
+      "ruta": "/sabado-de-pasion/enseres",
       "grupo": "Sábado de Pasión",
       "descripcion": "El acompañamiento musical y las insignias."
     },
     {
       "slug": "desamparados",
       "nombre": "Desamparados",
-      "ruta": "/sagrada-titular/desamparados",
+      "ruta": "/desamparados",
       "grupo": "Sagrada Titular",
       "descripcion": "La historia y la devoción a la Amantísima Titular."
     },
     {
       "slug": "ajuar",
       "nombre": "Ajuar",
-      "ruta": "/sagrada-titular/ajuar",
+      "ruta": "/ajuar",
       "grupo": "Sagrada Titular",
       "descripcion": "El manto, la corona y las joyas de la Sagrada Titular."
     },
     {
       "slug": "agenda",
       "nombre": "Agenda",
-      "ruta": "/actualidad/agenda",
+      "ruta": "/agenda",
       "grupo": "Actualidad",
       "descripcion": "El calendario de cultos y actos. Los actos se escriben en «Agenda»."
     },
     {
       "slug": "noticias",
       "nombre": "Noticias",
-      "ruta": "/actualidad/noticias",
+      "ruta": "/noticias",
       "grupo": "Actualidad",
       "descripcion": "El archivo de noticias. Las noticias se escriben en «Noticias»."
     },

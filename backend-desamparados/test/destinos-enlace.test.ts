@@ -1,6 +1,6 @@
 // Un enlace escrito en el CMS (tarjetas, botón de una llamada) tiene que llevar
 // a una página que exista. Antes bastaba con empezar por «/», y una tarjeta con
-// «/corporacion/hola» se guardaba y llevaba a «página no encontrada».
+// «/hola» se guardaba y llevaba a «página no encontrada».
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
@@ -20,16 +20,16 @@ describe('destinos de los enlaces', () => {
   });
 
   test('una ruta que no existe no vale, aunque parezca del sitio', () => {
-    assert.equal(esDestinoValido('/corporacion/hola'), false);
-    assert.equal(esDestinoValido('/corporacion/historia/'), false);
-    assert.equal(esDestinoValido('/actualidad/noticias'), true);
+    assert.equal(esDestinoValido('/hola'), false);
+    assert.equal(esDestinoValido('/historia/'), false);
+    assert.equal(esDestinoValido('/noticias'), true);
   });
 
   test('una noticia vale por su slug, con el formato que genera el servidor', () => {
-    assert.ok(esDestinoValido('/actualidad/noticias/apertura-del-curso-2026'));
-    assert.equal(esDestinoValido('/actualidad/noticias/Apertura'), false);
-    assert.equal(esDestinoValido('/actualidad/noticias/a/b'), false);
-    assert.equal(esDestinoValido('/actualidad/noticias/-a'), false);
+    assert.ok(esDestinoValido('/noticias/apertura-del-curso-2026'));
+    assert.equal(esDestinoValido('/noticias/Apertura'), false);
+    assert.equal(esDestinoValido('/noticias/a/b'), false);
+    assert.equal(esDestinoValido('/noticias/-a'), false);
   });
 
   test('nada de fuera del sitio', () => {
@@ -39,10 +39,10 @@ describe('destinos de los enlaces', () => {
   });
 
   test('la tarjeta y la llamada lo aplican; la tarjeta sigue pudiendo ir sin enlace', () => {
-    assert.ok(valida(tarjetas('/corporacion/historia')));
+    assert.ok(valida(tarjetas('/historia')));
     assert.ok(valida(tarjetas('')));
-    assert.ok(!valida(tarjetas('/corporacion/hola')));
-    assert.ok(valida(llamada('/hermanos/hazte-hermano')));
+    assert.ok(!valida(tarjetas('/hola')));
+    assert.ok(valida(llamada('/hazte-hermano')));
     assert.ok(!valida(llamada('/hermanos/hazteme')));
     assert.ok(!valida(llamada('')));
   });

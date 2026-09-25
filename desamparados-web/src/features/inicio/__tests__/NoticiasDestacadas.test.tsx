@@ -28,7 +28,7 @@ describe('NoticiasDestacadas', () => {
     renderWithProviders(<NoticiasDestacadas />)
 
     const tarjeta = await screen.findByRole('link', { name: /apertura del curso/i })
-    expect(tarjeta).toHaveAttribute('href', '/actualidad/noticias/apertura-curso')
+    expect(tarjeta).toHaveAttribute('href', '/noticias/apertura-curso')
     expect(within(tarjeta).getByRole('heading', { level: 3 })).toHaveTextContent(APERTURA.titulo)
     expect(within(tarjeta).getByText(APERTURA.extracto)).toBeInTheDocument()
     // La fecha va en un <time> legible por máquinas; el texto visible es corto («7 sep 2026»).
@@ -58,7 +58,7 @@ describe('NoticiasDestacadas', () => {
     const lista = screen.getByRole('list', { name: /últimas noticias/i })
     expect(within(lista).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.queryByRole('link', { name: /cabildo general/i })).toBeNull()
-    expect(screen.getByRole('link', { name: /ver todas/i })).toHaveAttribute('href', '/actualidad/noticias')
+    expect(screen.getByRole('link', { name: /ver todas/i })).toHaveAttribute('href', '/noticias')
   })
 
   it('la destacada lleva su cinta y las demás no', async () => {

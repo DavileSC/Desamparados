@@ -139,7 +139,7 @@ export default function AgendaAdminPage() {
   return <>
     <Helmet><title>Agenda | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Agenda" subtitulo={deHoy && <Resumen resumen={deHoy} />}>
-      <Button variant="outlined" color="inherit" startIcon={<OpenInNewIcon />} href="/actualidad/agenda" target="_blank" rel="noopener" sx={{ borderColor: 'divider' }}>Ver en la web</Button>
+      <Button variant="outlined" color="inherit" startIcon={<OpenInNewIcon />} href="/agenda" target="_blank" rel="noopener" sx={{ borderColor: 'divider' }}>Ver en la web</Button>
       <Button variant="contained" startIcon={<AddIcon />} component={Link} to="/cms/agenda/nuevo" state={{ volver: consultaListado }}>Nuevo evento</Button>
     </CabeceraSeccion>
     {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}

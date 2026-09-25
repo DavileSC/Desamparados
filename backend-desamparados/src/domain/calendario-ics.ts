@@ -129,7 +129,7 @@ function vevento(acto: ActoIcs, dominio: string, urlAgenda: string): string[] {
 /** Un calendario con los actos dados. Con `nombre`, es el de la suscripción. */
 export function calendarioIcs(actos: ActoIcs[], { urlWeb, nombre }: { urlWeb: string; nombre?: string }): string {
   const dominio = new URL(urlWeb).hostname;
-  const urlAgenda = `${urlWeb.replace(/\/+$/, '')}/actualidad/agenda`;
+  const urlAgenda = `${urlWeb.replace(/\/+$/, '')}/agenda`;
   const lineas = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',

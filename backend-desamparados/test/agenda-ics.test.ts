@@ -38,7 +38,7 @@ describe('el calendario en formato iCalendar', () => {
     assert.match(ics, /DTEND;TZID=Europe\/Madrid:20261103T200000\r\n/);
     assert.match(ics, /RRULE:FREQ=DAILY;COUNT=3\r\n/);
     assert.match(ics, /UID:evento-7@desamparados\.example\r\n/);
-    assert.match(ics, /URL:https:\/\/desamparados\.example\/actualidad\/agenda\r\n/);
+    assert.match(ics, /URL:https:\/\/desamparados\.example\/agenda\r\n/);
     assert.match(ics, /BEGIN:VTIMEZONE[\s\S]*TZID:Europe\/Madrid/);
   });
 

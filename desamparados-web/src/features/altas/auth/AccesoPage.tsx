@@ -176,7 +176,7 @@ export default function AccesoPage() {
           sx={{ mt: 3, textAlign: 'center', color: 'text.secondary', fontSize: '13px' }}
         >
           ¿Aún no eres hermano?{' '}
-          <Box component="a" href="/hermanos/hazte-hermano" sx={{ color: 'secondary.main', textDecoration: 'underline' }}>
+          <Box component="a" href="/hazte-hermano" sx={{ color: 'secondary.main', textDecoration: 'underline' }}>
             Solicita tu alta
           </Box>
         </Typography>

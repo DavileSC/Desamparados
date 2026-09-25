@@ -36,7 +36,7 @@ export default function NuevaContrasenaPage() {
     try {
       await apiResetPassword(token, data.password)
       setSuccess(true)
-      window.setTimeout(() => navigate('/hermanos/acceso', { replace: true }), 1800)
+      window.setTimeout(() => navigate('/acceso', { replace: true }), 1800)
     } catch (error) {
       setSubmitError(error instanceof ErrorDeApi ? error.message : 'No se ha podido actualizar la contraseña.')
     }
@@ -81,7 +81,7 @@ export default function NuevaContrasenaPage() {
             <Boton type="submit" fullWidth disabled={isSubmitting}>Actualizar contraseña</Boton>
           </Box>
         )}
-        <Typography component={Link} to="/hermanos/acceso" sx={{ display: 'block', mt: 3, textAlign: 'center', color: 'secondary.main' }}>
+        <Typography component={Link} to="/acceso" sx={{ display: 'block', mt: 3, textAlign: 'center', color: 'secondary.main' }}>
           Volver al acceso
         </Typography>
       </TarjetaCristal>

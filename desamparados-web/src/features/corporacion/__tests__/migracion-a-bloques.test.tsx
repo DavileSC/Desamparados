@@ -83,11 +83,11 @@ const ANTES: Record<string, string[]> = {
 
 /** Los enlaces que tenía cada página y que no pueden haberse perdido. */
 const ENLACES: Record<string, string[]> = {
-  'nuestros-fines': ['/corporacion/nuestros-fines/caridad', '/corporacion/nuestros-fines/formacion'],
+  'nuestros-fines': ['/nuestros-fines/caridad', '/nuestros-fines/formacion'],
   'sabado-de-pasion': [
-    '/corporacion/sabado-de-pasion/recorrido',
-    '/corporacion/sabado-de-pasion/trono',
-    '/corporacion/sabado-de-pasion/enseres',
+    '/sabado-de-pasion/recorrido',
+    '/sabado-de-pasion/trono',
+    '/sabado-de-pasion/enseres',
   ],
 }
 

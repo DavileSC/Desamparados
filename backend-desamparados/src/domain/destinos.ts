@@ -16,7 +16,7 @@ const NOTICIA = new RegExp(`^${destinos.prefijoNoticia.replace(/\//g, '\\/')}[a-
 /**
  * `true` si el enlace lleva a una página que existe en la web.
  *
- * Antes bastaba con que empezara por una barra: «/corporacion/hola» se
+ * Antes bastaba con que empezara por una barra: «/hola» se
  * guardaba y la tarjeta llevaba a «página no encontrada». Ahora solo valen las
  * rutas de la lista y las de las noticias. De paso cierra lo que ya cerraba el
  * patrón anterior: nada de `//otro.test` ni de `javascript:`.

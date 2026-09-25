@@ -2,7 +2,7 @@
   "_comentario": [
     "Adónde puede llevar un enlace que se escribe en el CMS (tarjetas y botón",
     "del bloque de llamada), además de las páginas por bloques de",
-    "paginas-publicas.json y de cada noticia (/actualidad/noticias/<slug>).",
+    "paginas-publicas.json y de cada noticia (/noticias/<slug>).",
     "",
     "Lo leen los dos lados: el servidor rechaza cualquier otra ruta al guardar",
     "y el CMS ofrece esta lista en el selector, para que no se pueda escribir",
@@ -13,11 +13,11 @@
   ],
   "otros": [
     { "ruta": "/", "nombre": "Inicio (portada)", "grupo": "General" },
-    { "ruta": "/hermanos/hazte-hermano", "nombre": "Hazte hermano", "grupo": "Hermanos" },
-    { "ruta": "/hermanos/acceso", "nombre": "Acceso de hermanos", "grupo": "Hermanos" },
+    { "ruta": "/hazte-hermano", "nombre": "Hazte hermano", "grupo": "Hermanos" },
+    { "ruta": "/acceso", "nombre": "Acceso de hermanos", "grupo": "Hermanos" },
     { "ruta": "/aviso-legal", "nombre": "Aviso legal", "grupo": "Legal" },
     { "ruta": "/politica-privacidad", "nombre": "Política de privacidad", "grupo": "Legal" },
     { "ruta": "/politica-cookies", "nombre": "Política de cookies", "grupo": "Legal" }
   ],
-  "prefijoNoticia": "/actualidad/noticias/"
+  "prefijoNoticia": "/noticias/"
 }

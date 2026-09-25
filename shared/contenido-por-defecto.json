@@ -210,7 +210,7 @@
         "titulo": "Quién gobierna hoy el Grupo Parroquial",
         "texto": "Seguir leyendo",
         "boton": "Órganos de Gobierno",
-        "enlace": "/corporacion/historia/organos-de-gobierno"
+        "enlace": "/historia/organos-de-gobierno"
       }
     ]
   },
@@ -254,7 +254,7 @@
           {
             "titulo": "Sábado de Pasión",
             "descripcion": "Estación de penitencia por las calles de Málaga, momento culminante del año cofrade del Grupo Parroquial.",
-            "enlace": "/corporacion/sabado-de-pasion"
+            "enlace": "/sabado-de-pasion"
           },
           {
             "titulo": "Cultos de Navidad y Semana Santa",
@@ -356,12 +356,12 @@
           {
             "titulo": "Caridad",
             "descripcion": "Ayuda social, obra asistencial y cercanía con los más desfavorecidos. La caridad es el corazón de nuestro Grupo Parroquial, expresión visible del amor de Dios a través del servicio concreto a los hermanos.",
-            "enlace": "/corporacion/nuestros-fines/caridad"
+            "enlace": "/nuestros-fines/caridad"
           },
           {
             "titulo": "Formación",
             "descripcion": "Educación en la fe, transmisión de valores cofrades y crecimiento espiritual. La formación prepara a los hermanos para vivir con coherencia su compromiso bautismal y cofrade.",
-            "enlace": "/corporacion/nuestros-fines/formacion"
+            "enlace": "/nuestros-fines/formacion"
           }
         ]
       }
@@ -451,17 +451,17 @@
           {
             "titulo": "Recorrido",
             "descripcion": "Itinerario oficial de la estación de penitencia por las calles de Málaga.",
-            "enlace": "/corporacion/sabado-de-pasion/recorrido"
+            "enlace": "/sabado-de-pasion/recorrido"
           },
           {
             "titulo": "Trono",
             "descripcion": "El trono de nuestra Sagrada Titular, símbolo de devoción y arte cofrade.",
-            "enlace": "/corporacion/sabado-de-pasion/trono"
+            "enlace": "/sabado-de-pasion/trono"
           },
           {
             "titulo": "Enseres",
             "descripcion": "Acompañamiento musical e insignias que acompañan a la corporación.",
-            "enlace": "/corporacion/sabado-de-pasion/enseres"
+            "enlace": "/sabado-de-pasion/enseres"
           }
         ]
       }

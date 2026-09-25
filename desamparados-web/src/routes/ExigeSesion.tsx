@@ -18,7 +18,7 @@ export default function ExigeSesion({ children }: ExigeSesionProps) {
   // Solo la sesión del área de hermanos abre el área de hermanos. Estar dentro
   // del CMS no es estar dentro del portal: son dos accesos distintos.
   if (!hermano) {
-    return <Navigate to="/hermanos/acceso" state={{ from: location }} replace />
+    return <Navigate to="/acceso" state={{ from: location }} replace />
   }
 
   return <>{children}</>

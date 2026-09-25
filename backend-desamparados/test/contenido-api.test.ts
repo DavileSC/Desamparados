@@ -427,12 +427,12 @@ test('una página con los seis tipos de bloque se guarda y se lee tal cual', asy
       },
       {
         tipo: 'tarjetas', titulo: 'Explora la sección',
-        tarjetas: [{ titulo: 'Historia', descripcion: 'Orígenes.', enlace: '/corporacion/historia' }],
+        tarjetas: [{ titulo: 'Historia', descripcion: 'Orígenes.', enlace: '/historia' }],
       },
       {
         tipo: 'llamada', titulo: '¿Quieres ser hermano?',
         texto: 'Las solicitudes se abren en septiembre.',
-        boton: 'Hazte hermano', enlace: '/hermanos/hazte-hermano',
+        boton: 'Hazte hermano', enlace: '/hazte-hermano',
       },
       {
         tipo: 'datos', titulo: 'Horario de cultos',

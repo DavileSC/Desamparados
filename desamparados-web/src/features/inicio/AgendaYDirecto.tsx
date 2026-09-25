@@ -187,7 +187,7 @@ export default function AgendaYDirecto() {
               <Typography sx={{ mt: 2.75, mb: 3.5, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: '#e4e2df' }}>
                 {textos.agenda.parrafo}
               </Typography>
-              <Box component={Link} to="/actualidad/agenda" sx={enlaceBloque}>
+              <Box component={Link} to="/agenda" sx={enlaceBloque}>
                 {textos.agenda.enlace} <ArrowForwardIcon />
               </Box>
               {stream && (

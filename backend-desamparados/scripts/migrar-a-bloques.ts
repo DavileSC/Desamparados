@@ -77,7 +77,7 @@ function historiaABloques(viejo: Record<string, never>): Documento {
       titulo: d.cierre.titulo,
       texto: d.cierre.ceja,
       boton: d.cierre.enlace,
-      enlace: '/corporacion/historia/organos-de-gobierno',
+      enlace: '/historia/organos-de-gobierno',
     });
   }
   const fondo = d.fondo?.url ?? '';

@@ -12,7 +12,7 @@ const contenido = {
   cabecera: { titulo: 'Corporación', subtitulo: 'Grupo Parroquial.', foto: '', fotoAlt: '' },
   bloques: [
     { tipo: 'texto', titulo: '', html: '<p>Un párrafo</p>' },
-    { tipo: 'tarjetas', titulo: 'Explora la sección', tarjetas: [{ titulo: 'Historia', descripcion: 'Orígenes.', enlace: '/corporacion/historia' }] },
+    { tipo: 'tarjetas', titulo: 'Explora la sección', tarjetas: [{ titulo: 'Historia', descripcion: 'Orígenes.', enlace: '/historia' }] },
   ],
 }
 
@@ -240,7 +240,7 @@ describe('PaginaAdminPage', () => {
     await screen.findByDisplayValue('Corporación')
 
     const previa = screen.getByRole('link', { name: /abrir la publicada/i })
-    expect(previa).toHaveAttribute('href', '/corporacion/nuestros-fines')
+    expect(previa).toHaveAttribute('href', '/nuestros-fines')
     expect(previa).toHaveAttribute('target', '_blank')
     expect(previa).toHaveAttribute('rel', expect.stringContaining('noopener'))
   })
@@ -445,22 +445,22 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     await user.click(screen.getByRole('button', { name: /^Tarjetas/ }))
 
     const campo = screen.getByRole('combobox', { name: /enlace de la tarjeta 1/i })
-    expect(campo).toHaveValue('Historia · /corporacion/historia')
+    expect(campo).toHaveValue('Historia · /historia')
     await user.clear(campo)
     await user.type(campo, 'cultos')
-    await user.click(await screen.findByRole('option', { name: /cultos · \/corporacion\/cultos/i }))
+    await user.click(await screen.findByRole('option', { name: /cultos · \/cultos/i }))
     await guardar(user)
 
     await waitFor(() => {
       const envio = llamadas.find((l) => l.metodo === 'PUT')
       const bloques = (envio!.cuerpo as { datos: { bloques: { tipo: string; tarjetas?: { enlace: string }[] }[] } }).datos.bloques
-      expect(bloques.find((b) => b.tipo === 'tarjetas')!.tarjetas![0].enlace).toBe('/corporacion/cultos')
+      expect(bloques.find((b) => b.tipo === 'tarjetas')!.tarjetas![0].enlace).toBe('/cultos')
     })
   })
 
   it('un enlace guardado a una página que no existe se señala y no deja guardar', async () => {
     const user = userEvent.setup()
-    const roto = { ...contenido, bloques: [{ tipo: 'tarjetas', titulo: '', tarjetas: [{ titulo: 'Hola', descripcion: '', enlace: '/corporacion/hola' }] }] }
+    const roto = { ...contenido, bloques: [{ tipo: 'tarjetas', titulo: '', tarjetas: [{ titulo: 'Hola', descripcion: '', enlace: '/hola' }] }] }
     const llamadas = montar(undefined, roto)
     await screen.findByDisplayValue('Corporación')
 
@@ -468,8 +468,8 @@ describe('PaginaAdminPage: cronología, listado y contacto', () => {
     await user.type(screen.getByRole('textbox', { name: /^subtítulo/i }), ' Más.')
     await guardar(user)
 
-    expect(await screen.findByText(/el bloque 1 \(tarjetas\) tiene la tarjeta 1 enlazada a una página que no existe \(\/corporacion\/hola\)/i)).toBeInTheDocument()
-    expect(screen.getByText(/«\/corporacion\/hola» no es ninguna página de la web/i)).toBeInTheDocument()
+    expect(await screen.findByText(/el bloque 1 \(tarjetas\) tiene la tarjeta 1 enlazada a una página que no existe \(\/hola\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/«\/hola» no es ninguna página de la web/i)).toBeInTheDocument()
     expect(llamadas.some((l) => l.metodo === 'PUT')).toBe(false)
   })
 

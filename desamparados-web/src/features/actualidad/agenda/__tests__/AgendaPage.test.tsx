@@ -79,7 +79,7 @@ describe('AgendaPage', () => {
   it('los filtros dejan ver solo una parte, y la dirección lo recuerda', async () => {
     responder([apertura, catequesis, triduo, cabildo])
     const usuario = userEvent.setup()
-    renderWithProviders(<AgendaPage />, { ruta: '/actualidad/agenda?ver=formacion' })
+    renderWithProviders(<AgendaPage />, { ruta: '/agenda?ver=formacion' })
 
     expect(await screen.findByText('Catequesis de adultos')).toBeInTheDocument()
     expect(screen.queryByText('Cabildo de hermanos')).not.toBeInTheDocument()

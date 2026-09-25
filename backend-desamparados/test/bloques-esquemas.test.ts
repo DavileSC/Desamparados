@@ -58,7 +58,7 @@ describe('bloque de foto', () => {
 });
 
 describe('bloque de tarjetas', () => {
-  const TARJETA = { titulo: 'Historia', descripcion: 'Orígenes del Grupo Parroquial.', enlace: '/corporacion/historia' };
+  const TARJETA = { titulo: 'Historia', descripcion: 'Orígenes del Grupo Parroquial.', enlace: '/historia' };
   const doc = (tarjetas: unknown[]) => ({ tipo: 'tarjetas', titulo: 'Explora la sección', tarjetas });
 
   test('acepta tarjetas con enlace interno', () => {
@@ -154,7 +154,7 @@ describe('bloque de llamada', () => {
   const LLAMADA = {
     tipo: 'llamada', titulo: '¿Quieres ser hermano?',
     texto: 'Las solicitudes se abren cada año en septiembre.',
-    boton: 'Hazte hermano', enlace: '/hermanos/hazte-hermano',
+    boton: 'Hazte hermano', enlace: '/hazte-hermano',
   };
 
   test('acepta una llamada con su botón y su destino', () => {

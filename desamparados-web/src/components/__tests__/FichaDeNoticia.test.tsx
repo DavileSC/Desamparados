@@ -28,7 +28,7 @@ describe('FichaDeNoticia', () => {
     expect(ficha.headline).toBe(NOTICIA.titulo)
     expect(ficha.datePublished).toBe(NOTICIA.fecha)
     expect(ficha.articleSection).toBe('Cultos')
-    expect(ficha.mainEntityOfPage).toBe('https://www.desamparadosmalaga.com/actualidad/noticias/triduo-titular')
+    expect(ficha.mainEntityOfPage).toBe('https://www.desamparadosmalaga.com/noticias/triduo-titular')
     expect(ficha.image).toBe(NOTICIA.imagen)
   })
 

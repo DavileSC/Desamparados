@@ -27,15 +27,15 @@ interface Acceso {
 // «Hazte hermano» abre el mosaico en su propia placa: captar hermanos es lo que
 // más importa de este bloque. El destino se queda en el código; el texto llega
 // por props desde el documento (`textos.accesos.placa`).
-const HAZTE_HERMANO = { href: '/hermanos/hazte-hermano' }
+const HAZTE_HERMANO = { href: '/hazte-hermano' }
 
 // «Acceso de hermanos» no está aquí a propósito: el menú ya lo muestra siempre.
 // Tampoco la agenda ni el recorrido: tienen bloque propio en la portada, y los
 // accesos son para lo que no se ve en ella.
 const ACCESOS: Acceso[] = [
-  { clave: 'sede', icon: <ChurchOutlinedIcon fontSize="inherit" />, href: '/corporacion/parroquia-pasionistas' },
-  { clave: 'caridad', icon: <VolunteerActivismOutlinedIcon fontSize="inherit" />, href: '/corporacion/nuestros-fines/caridad' },
-  { clave: 'historia', icon: <HistoryEduOutlinedIcon fontSize="inherit" />, href: '/corporacion/historia' },
+  { clave: 'sede', icon: <ChurchOutlinedIcon fontSize="inherit" />, href: '/parroquia-pasionistas' },
+  { clave: 'caridad', icon: <VolunteerActivismOutlinedIcon fontSize="inherit" />, href: '/nuestros-fines/caridad' },
+  { clave: 'historia', icon: <HistoryEduOutlinedIcon fontSize="inherit" />, href: '/historia' },
   { clave: 'boletines', icon: <ArticleOutlinedIcon fontSize="inherit" />, href: '/publicaciones/boletines' },
 ]
 

@@ -23,9 +23,9 @@ describe('destinos de los enlaces del CMS', () => {
   })
 
   it('una ruta inventada no vale; una noticia, sí', () => {
-    expect(esDestinoValido('/corporacion/hola')).toBe(false)
+    expect(esDestinoValido('/hola')).toBe(false)
     expect(esDestinoValido('//otro.test')).toBe(false)
-    expect(esDestinoValido('/corporacion/historia')).toBe(true)
+    expect(esDestinoValido('/historia')).toBe(true)
     expect(esDestinoValido(`${PREFIJO_NOTICIA}apertura-del-curso`)).toBe(true)
   })
 })

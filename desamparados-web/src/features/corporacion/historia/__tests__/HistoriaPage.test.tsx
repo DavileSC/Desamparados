@@ -79,7 +79,7 @@ describe('HistoriaPage', () => {
 
     expect(await screen.findByRole('link', { name: /Órganos de Gobierno/ })).toHaveAttribute(
       'href',
-      '/corporacion/historia/organos-de-gobierno',
+      '/historia/organos-de-gobierno',
     )
     expect(screen.getByRole('heading', { level: 2, name: 'Quién gobierna hoy el Grupo Parroquial' })).toBeInTheDocument()
     expect(screen.getByText('Seguir leyendo')).toBeInTheDocument()

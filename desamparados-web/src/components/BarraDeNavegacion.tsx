@@ -208,7 +208,7 @@ export default function BarraDeNavegacion() {
 
             <Button
               component={Link}
-              to="/hermanos/acceso"
+              to="/acceso"
               variant="contained"
               disableElevation
               sx={{

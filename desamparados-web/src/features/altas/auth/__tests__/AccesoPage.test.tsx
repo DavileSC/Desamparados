@@ -22,9 +22,9 @@ afterEach(() => { vi.unstubAllGlobals() })
 
 function montar() {
   const router = createMemoryRouter([
-    { path: '/hermanos/acceso', element: <AccesoPage /> },
+    { path: '/acceso', element: <AccesoPage /> },
     { path: '*', element: <SondaRuta /> },
-  ], { initialEntries: ['/hermanos/acceso'] })
+  ], { initialEntries: ['/acceso'] })
   return render(<RouterProvider router={router} />)
 }
 

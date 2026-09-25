@@ -113,7 +113,7 @@ function NoticiasRecientes({ titulo }: PropsListado) {
   const { items, loading, error } = useCargaUnica<Noticia>(pedirRecientes, 'No se han podido cargar las noticias.')
   return (
     <>
-      <Encabezado titulo={titulo} enlace={{ texto: 'Ver todas las noticias', ruta: '/actualidad/noticias' }} />
+      <Encabezado titulo={titulo} enlace={{ texto: 'Ver todas las noticias', ruta: '/noticias' }} />
       {loading && <CircularProgress aria-label="Cargando noticias" />}
       {error && <Alert severity="error">{error}</Alert>}
       {!loading && !error && items.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
@@ -134,7 +134,7 @@ function AgendaProxima({ titulo }: PropsListado) {
   const { items, loading, error } = useCargaUnica<Acto>(pedirProximos, 'No se ha podido cargar la agenda.')
   return (
     <>
-      <Encabezado titulo={titulo} enlace={{ texto: 'Ver agenda completa', ruta: '/actualidad/agenda' }} />
+      <Encabezado titulo={titulo} enlace={{ texto: 'Ver agenda completa', ruta: '/agenda' }} />
       <ListaDeEventos eventos={items} loading={loading} error={error} />
     </>
   )

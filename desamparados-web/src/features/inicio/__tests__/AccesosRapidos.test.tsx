@@ -26,10 +26,10 @@ describe('AccesosRapidos', () => {
     const destinos = within(lista).getAllByRole('link').map((enlace) => enlace.getAttribute('href'))
 
     expect(destinos).toEqual([
-      '/hermanos/hazte-hermano',
-      '/corporacion/parroquia-pasionistas',
-      '/corporacion/nuestros-fines/caridad',
-      '/corporacion/historia',
+      '/hazte-hermano',
+      '/parroquia-pasionistas',
+      '/nuestros-fines/caridad',
+      '/historia',
       '/publicaciones/boletines',
       '/contacto',
     ])
@@ -53,7 +53,7 @@ describe('AccesosRapidos', () => {
     const lista = screen.getByRole('list', { name: /accesos directos/i })
     const [primero] = within(lista).getAllByRole('link')
 
-    expect(primero).toHaveAttribute('href', '/hermanos/hazte-hermano')
+    expect(primero).toHaveAttribute('href', '/hazte-hermano')
     expect(primero).toHaveAccessibleName(/hazte hermano.*forma parte de nuestra historia.*quiero ser hermano/i)
     expect(primero).toHaveAccessibleDescription(/comunidad de fe/i)
   })
@@ -97,7 +97,7 @@ describe('AccesosRapidos', () => {
     renderWithProviders(<AccesosRapidos />)
 
     const enlace = await screen.findByRole('link', { name: /nuestros orígenes/i })
-    expect(enlace).toHaveAttribute('href', '/corporacion/historia')
+    expect(enlace).toHaveAttribute('href', '/historia')
   })
 
   it('una tesela que el documento no trae conserva su texto de siempre', async () => {

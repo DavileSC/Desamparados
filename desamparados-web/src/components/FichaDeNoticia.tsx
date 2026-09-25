@@ -30,7 +30,7 @@ export default function FichaDeNoticia({ noticia }: { noticia: Noticia }) {
       description: noticia.extracto,
       datePublished: noticia.fecha,
       articleSection: noticia.categoria,
-      mainEntityOfPage: `${DOMINIO}/actualidad/noticias/${noticia.slug}`,
+      mainEntityOfPage: `${DOMINIO}/noticias/${noticia.slug}`,
       publisher: {
         '@type': 'ReligiousOrganization',
         name: site.nombre,

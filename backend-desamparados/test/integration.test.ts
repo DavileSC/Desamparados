@@ -1136,7 +1136,7 @@ test('con 2FA activo, entrar por el CMS sí pide el segundo factor', async (t) =
 test('una sesión abierta en el área de hermanos no vale para el CMS', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
 
-  // El caso que hace falta cerrar: un ADMIN con 2FA entra por /hermanos/acceso,
+  // El caso que hace falta cerrar: un ADMIN con 2FA entra por /acceso,
   // donde solo se le pide la contraseña, y usa esa cookie contra la API del CMS.
   // Si el servidor la acepta, el segundo factor del CMS es evitable sin navegador.
   const admin = await crearUsuarioPrueba(Role.ADMIN);

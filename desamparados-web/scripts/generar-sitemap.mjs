@@ -40,7 +40,8 @@ const rutas = [...bloque.matchAll(/path:\s*'([^']+)'/g)]
   .map((m) => m[1])
   // Las rutas con parámetro (`:slug`) son contenido dinámico: sus URLs reales
   // dependen de la base de datos y no se pueden enumerar desde aquí.
-  .filter((ruta) => !ruta.includes(':') && ruta !== '*')
+  // Las que acaban en `/*` solo llevan las direcciones de antes a las nuevas.
+  .filter((ruta) => !ruta.includes(':') && !ruta.includes('*'))
 
 const urls = ['/', ...rutas.map((r) => `/${r}`)]
 const unicas = [...new Set(urls)].sort((a, b) => (a === '/' ? -1 : b === '/' ? 1 : a.localeCompare(b)))

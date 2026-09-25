@@ -37,21 +37,21 @@ const columnas: { titulo: string; rutas: string[] }[] = [
   {
     titulo: 'Corporación',
     rutas: [
-      '/corporacion/historia',
-      '/corporacion/historia/organos-de-gobierno',
-      '/corporacion/nuestros-fines',
-      '/corporacion/cultos',
-      '/corporacion/sabado-de-pasion',
-      '/sagrada-titular/desamparados',
+      '/historia',
+      '/historia/organos-de-gobierno',
+      '/nuestros-fines',
+      '/cultos',
+      '/sabado-de-pasion',
+      '/desamparados',
     ],
   },
   {
     titulo: 'Actualidad',
-    rutas: ['/actualidad/agenda', '/actualidad/noticias', '/publicaciones/boletines', '/publicaciones/dossier-prensa'],
+    rutas: ['/agenda', '/noticias', '/publicaciones/boletines', '/publicaciones/dossier-prensa'],
   },
   {
     titulo: 'Hermanos',
-    rutas: ['/hermanos/hazte-hermano', '/hermanos/acceso', '/contacto'],
+    rutas: ['/hazte-hermano', '/acceso', '/contacto'],
   },
 ]
 

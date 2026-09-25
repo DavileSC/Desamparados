@@ -21,7 +21,7 @@ const NOTICIAS_OFRECIDAS = 50
  * Elegir adónde lleva un enlace, de entre las páginas que existen.
  *
  * Era un campo de texto libre y se podía escribir cualquier ruta:
- * «/corporacion/hola» se guardaba y la tarjeta llevaba a «página no
+ * «/hola» se guardaba y la tarjeta llevaba a «página no
  * encontrada». Ahora se elige de la lista (las páginas de la web agrupadas como
  * en su menú, y las noticias publicadas) y el servidor rechaza cualquier otra.
  *

@@ -66,7 +66,7 @@ export default function EscenaProcesion() {
         </Revela>
         <Revela orden={2}><p>{sabadoDePasion.parrafo}</p></Revela>
         <Revela orden={3}>
-          <Link to="/corporacion/sabado-de-pasion" className="procession-scene-link">
+          <Link to="/sabado-de-pasion" className="procession-scene-link">
             {sabadoDePasion.enlace} <ArrowForwardIcon fontSize="small" />
           </Link>
         </Revela>

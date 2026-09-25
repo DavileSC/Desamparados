@@ -1,6 +1,6 @@
 User-agent: *
 Disallow: /cms
 Disallow: /area-hermano
-Disallow: /hermanos/acceso
+Disallow: /acceso
 Disallow: /reset-password
 Sitemap: https://www.desamparadosmalaga.com/sitemap.xml

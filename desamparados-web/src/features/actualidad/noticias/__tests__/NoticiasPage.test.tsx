@@ -110,7 +110,7 @@ describe('NoticiasPage: el error de una página no se queda pegado', () => {
 
 describe('NoticiasPage: volver de una noticia no pierde la página', () => {
   it('desde la página 3 del archivo, «Volver a todas las noticias» devuelve a la página 3', async () => {
-    // El enlace de la ficha apuntaba a `/actualidad/noticias` a secas, así que
+    // El enlace de la ficha apuntaba a `/noticias` a secas, así que
     // el visitante que entraba en una noticia de la página 3 volvía a la 1.
     stubFetchPublico(vi.fn().mockImplementation((url: RequestInfo | URL) =>
       Promise.resolve(new Response(
@@ -122,15 +122,15 @@ describe('NoticiasPage: volver de una noticia no pierde la página', () => {
     const usuario = userEvent.setup()
     renderWithProviders(
       <Routes>
-        <Route path="/actualidad/noticias" element={<NoticiasPage />} />
-        <Route path="/actualidad/noticias/:slug" element={<NoticiaDetallePage />} />
+        <Route path="/noticias" element={<NoticiasPage />} />
+        <Route path="/noticias/:slug" element={<NoticiaDetallePage />} />
       </Routes>,
-      { ruta: '/actualidad/noticias?pagina=3' },
+      { ruta: '/noticias?pagina=3' },
     )
 
     await usuario.click(await screen.findByText(/triduo de septiembre/i))
 
     const volver = await screen.findByRole('link', { name: /volver a todas las noticias/i })
-    expect(volver).toHaveAttribute('href', '/actualidad/noticias?pagina=3')
+    expect(volver).toHaveAttribute('href', '/noticias?pagina=3')
   })
 })

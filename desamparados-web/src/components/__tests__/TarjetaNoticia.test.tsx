@@ -17,7 +17,7 @@ describe('TarjetaNoticia', () => {
   it('es un enlace a la ficha con fecha, título y extracto', () => {
     renderWithProviders(<TarjetaNoticia noticia={noticiaDePrueba} />)
     const tarjeta = screen.getByRole('link', { name: /solemne triduo/i })
-    expect(tarjeta).toHaveAttribute('href', '/actualidad/noticias/solemne-triduo')
+    expect(tarjeta).toHaveAttribute('href', '/noticias/solemne-triduo')
     expect(within(tarjeta).getByRole('heading', { level: 3 })).toHaveTextContent('Solemne triduo')
     expect(within(tarjeta).getByText('Tres jornadas de oración')).toBeInTheDocument()
     expect(tarjeta.querySelector('time')).toHaveAttribute('datetime', noticiaDePrueba.fecha)

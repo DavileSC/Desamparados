@@ -58,7 +58,7 @@ describe('BarraDeNavegacion en escritorio', () => {
     await user.click(titular)
     await user.click(titular)
     expect(titular).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Ajuar', hidden: true })).toHaveAttribute('href', '/sagrada-titular/ajuar')
+    expect(screen.getByRole('link', { name: 'Ajuar', hidden: true })).toHaveAttribute('href', '/ajuar')
   })
 
   it('no enseña las subpáginas hasta que se abre una sección', () => {
@@ -71,12 +71,12 @@ describe('BarraDeNavegacion en escritorio', () => {
     renderWithProviders(<BarraDeNavegacion />)
     await user.hover(within(navEscritorio()).getByRole('button', { name: 'Corporación', hidden: true }))
 
-    expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toHaveAttribute('href', '/corporacion/historia')
+    expect(screen.getByRole('link', { name: 'Historia', hidden: true })).toHaveAttribute('href', '/historia')
     expect(screen.getByRole('link', { name: 'Órganos de Gobierno', hidden: true })).toHaveAttribute(
       'href',
-      '/corporacion/historia/organos-de-gobierno',
+      '/historia/organos-de-gobierno',
     )
-    expect(screen.getByRole('link', { name: 'Enseres', hidden: true })).toHaveAttribute('href', '/corporacion/sabado-de-pasion/enseres')
+    expect(screen.getByRole('link', { name: 'Enseres', hidden: true })).toHaveAttribute('href', '/sabado-de-pasion/enseres')
   })
 
   it('cierra el desplegable al retirar el ratón', async () => {
@@ -96,7 +96,7 @@ describe('BarraDeNavegacion en escritorio', () => {
     const hermanos = within(navEscritorio()).getByRole('button', { name: 'Hermanos', hidden: true })
     act(() => hermanos.focus())
     expect(hermanos).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Login hermanos', hidden: true })).toHaveAttribute('href', '/hermanos/acceso')
+    expect(screen.getByRole('link', { name: 'Login hermanos', hidden: true })).toHaveAttribute('href', '/acceso')
 
     await user.keyboard('{Escape}')
     expect(hermanos).toHaveAttribute('aria-expanded', 'false')
@@ -140,17 +140,17 @@ describe('BarraDeNavegacion en móvil', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await user.click(screen.getByRole('button', { name: 'Corporación' }))
 
-    expect(screen.getByRole('link', { name: 'Historia' })).toHaveAttribute('href', '/corporacion/historia')
-    expect(screen.getByRole('link', { name: 'Órganos de Gobierno' })).toHaveAttribute('href', '/corporacion/historia/organos-de-gobierno')
+    expect(screen.getByRole('link', { name: 'Historia' })).toHaveAttribute('href', '/historia')
+    expect(screen.getByRole('link', { name: 'Órganos de Gobierno' })).toHaveAttribute('href', '/historia/organos-de-gobierno')
     expect(screen.getByRole('button', { name: 'Corporación' })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('llega con la sección de la página actual ya desplegada', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<BarraDeNavegacion />, { ruta: '/sagrada-titular/ajuar' })
+    renderWithProviders(<BarraDeNavegacion />, { ruta: '/ajuar' })
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
 
-    expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/sagrada-titular/ajuar')
+    expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/ajuar')
     expect(screen.queryByRole('link', { name: 'Historia' })).not.toBeInTheDocument()
   })
 })

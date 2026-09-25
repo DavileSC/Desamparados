@@ -2,6 +2,7 @@
  * Las medidas y los colores que comparten las tres caras de la barra: la de
  * escritorio, la de móvil y el cajón.
  */
+import { aplanarMenu, type EntradaMenu } from '../../config/navegacion'
 
 // El menú debe seguir siendo de escritorio en portátiles con escalado de Windows
 // (la anchura CSS puede ser bastante menor que la resolución física).
@@ -25,4 +26,13 @@ export const VELO_SCROLL = 0.86
 export function esActiva(pathname: string, href: string, exacta = false) {
   if (href === '/' || exacta) return pathname === href
   return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+/**
+ * Una sección de primer nivel está activa si lo está alguna de sus subpáginas:
+ * ya no cuelgan de ella (/historia, no /corporacion/historia).
+ */
+export function seccionActiva(pathname: string, seccion: EntradaMenu) {
+  if (!seccion.hijos?.length) return esActiva(pathname, seccion.href, seccion.exacta)
+  return aplanarMenu(seccion.hijos).some((e) => esActiva(pathname, e.href, e.exacta))
 }

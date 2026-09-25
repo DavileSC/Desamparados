@@ -48,7 +48,7 @@ export default function ProcesoAlta() {
       </Box>
 
       <Box sx={{ mt: 2.5, display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 3, rowGap: 0.5 }}>
-        <Box component={Link} to="/hermanos/acceso" sx={enlaceLateral}>
+        <Box component={Link} to="/acceso" sx={enlaceLateral}>
           Ya soy hermano
           <ArrowForwardIcon />
         </Box>

@@ -12,7 +12,7 @@ const TEXTO: Bloque = { tipo: 'texto', titulo: '', html: '<p>Un párrafo</p>' }
 const FOTO: Bloque = { tipo: 'foto', titulo: '', url: '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp', alt: 'La Virgen', pie: 'Camarín' }
 const TARJETAS: Bloque = {
   tipo: 'tarjetas', titulo: 'Explora la sección',
-  tarjetas: [{ titulo: 'Historia', descripcion: 'Orígenes.', enlace: '/corporacion/historia' }],
+  tarjetas: [{ titulo: 'Historia', descripcion: 'Orígenes.', enlace: '/historia' }],
 }
 
 describe('BloquesDePagina', () => {
@@ -44,7 +44,7 @@ describe('BloquesDePagina', () => {
 
   it('las tarjetas enlazan donde dicen', () => {
     renderWithProviders(<BloquesDePagina bloques={[TARJETAS]} />)
-    expect(screen.getByRole('link', { name: /Historia/ })).toHaveAttribute('href', '/corporacion/historia')
+    expect(screen.getByRole('link', { name: /Historia/ })).toHaveAttribute('href', '/historia')
   })
 
   it('una página sin bloques no revienta', () => {
@@ -83,7 +83,7 @@ describe('bloques de la segunda fase', () => {
   const LLAMADA: Bloque = {
     tipo: 'llamada', titulo: '¿Quieres ser hermano?',
     texto: 'Las solicitudes se abren cada año en septiembre.',
-    boton: 'Hazte hermano', enlace: '/hermanos/hazte-hermano',
+    boton: 'Hazte hermano', enlace: '/hazte-hermano',
   }
 
   const DATOS: Bloque = {
@@ -114,7 +114,7 @@ describe('bloques de la segunda fase', () => {
   it('la llamada lleva su botón al destino que dice', () => {
     renderWithProviders(<BloquesDePagina bloques={[LLAMADA]} />)
     expect(screen.getByText('Las solicitudes se abren cada año en septiembre.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Hazte hermano' })).toHaveAttribute('href', '/hermanos/hazte-hermano')
+    expect(screen.getByRole('link', { name: 'Hazte hermano' })).toHaveAttribute('href', '/hazte-hermano')
   })
 
   it('los datos van en una lista de definiciones, con el valor junto a su concepto', () => {
@@ -153,7 +153,7 @@ describe('bloques de páginas con diseño o datos propios', () => {
     renderWithProviders(<BloquesDePagina bloques={[{ tipo: 'listado', titulo: 'Últimas noticias', fuente: 'noticias-recientes' }]} />)
 
     expect(screen.getAllByRole('heading', { name: 'Últimas noticias' })).toHaveLength(1)
-    expect(screen.getByRole('link', { name: /ver todas las noticias/i })).toHaveAttribute('href', '/actualidad/noticias')
+    expect(screen.getByRole('link', { name: /ver todas las noticias/i })).toHaveAttribute('href', '/noticias')
     expect(await screen.findByText('No hay noticias publicadas.')).toBeInTheDocument()
     vi.unstubAllGlobals()
   })

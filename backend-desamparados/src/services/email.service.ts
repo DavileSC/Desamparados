@@ -249,7 +249,7 @@ export class EmailService {
       censo,
       parrafo(`Conserve ${varios ? 'estos números' : 'este número'}: ${varios ? 'son los que identifican a cada uno' : 'es el que le identifica'} en el censo y se ${varios ? 'piden' : 'pide'} en Secretaría.`),
       parrafo('Ya puede entrar en el área de hermanos para consultar sus datos, sus recibos y, llegado el momento, pedir su papeleta de sitio.'),
-      boton('Entrar en el área de hermanos', urlDeLaWeb('/hermanos/acceso')),
+      boton('Entrar en el área de hermanos', urlDeLaWeb('/acceso')),
       firma(BENDICION),
     ].join('');
 

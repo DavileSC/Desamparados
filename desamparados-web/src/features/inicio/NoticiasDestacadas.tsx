@@ -41,7 +41,7 @@ export default function NoticiasDestacadas() {
             </Revela>
           </Box>
           <Revela orden={2}>
-            <Box component={Link} to="/actualidad/noticias" sx={enlaceBloque}>
+            <Box component={Link} to="/noticias" sx={enlaceBloque}>
               {textos.actualidad.enlace} <span className="home-visually-hidden">las noticias</span> <ArrowForwardIcon />
             </Box>
           </Revela>

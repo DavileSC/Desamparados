@@ -21,7 +21,7 @@ import MailIcon from '@mui/icons-material/Mail'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import EscudoDelGrupo from '../EscudoDelGrupo'
-import { esActiva } from './estilos'
+import { esActiva, seccionActiva } from './estilos'
 import { menuPublico, type EntradaMenu } from '../../config/navegacion'
 
 // Iconos del cajón móvil, por sección. Viven aquí y no en `config/navegacion.ts`
@@ -73,11 +73,11 @@ function EnlaceCajon({ entrada, nivel, alNavegar }: { entrada: EntradaMenu; nive
 export default function CajonMovil({ abierto, alCerrar }: { abierto: boolean; alCerrar: () => void }) {
   const theme = useTheme()
   const location = useLocation()
-  const estaActiva = (href: string) => esActiva(location.pathname, href)
+  const estaActiva = (seccion: EntradaMenu) => seccionActiva(location.pathname, seccion)
   // El cajón se abre con la sección de la página actual ya desplegada; se
   // calcula al montarlo, que es cuando `BarraDeNavegacion` lo pide abrir.
   const [seccionesAbiertas, setSeccionesAbiertas] = useState<Record<string, boolean>>(() => {
-    const seccionActual = menuPublico.find((entrada) => entrada.href !== '/' && estaActiva(entrada.href))
+    const seccionActual = menuPublico.find((entrada) => entrada.href !== '/' && estaActiva(entrada))
     return seccionActual ? { [seccionActual.href]: true } : {}
   })
   const alternarSeccion = (href: string) => setSeccionesAbiertas((prev) => ({ ...prev, [href]: !prev[href] }))
@@ -125,7 +125,7 @@ export default function CajonMovil({ abierto, alCerrar }: { abierto: boolean; al
     </Box>
     <List sx={{ py: 2 }}>
       {menuPublico.map((entrada) => {
-        const active = estaActiva(entrada.href)
+        const active = estaActiva(entrada)
         const hijos = entrada.hijos ?? []
         const abierta = Boolean(seccionesAbiertas[entrada.href])
         return (

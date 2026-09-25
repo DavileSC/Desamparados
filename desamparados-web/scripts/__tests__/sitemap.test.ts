@@ -17,7 +17,7 @@ function rutasPublicasDelRouter(): string[] {
 
   const rutas = [...bloque.matchAll(/path:\s*'([^']+)'/g)]
     .map((m) => m[1])
-    .filter((ruta) => !ruta.includes(':') && ruta !== '*')
+    .filter((ruta) => !ruta.includes(':') && !ruta.includes('*'))
 
   return [...new Set(['/', ...rutas.map((r) => `/${r}`)])].sort()
 }
@@ -43,7 +43,7 @@ describe('sitemap.xml', () => {
   })
 
   it('no indexa el área privada ni el CMS', () => {
-    const privadas = ['/cms', '/area-hermano', '/hermanos/acceso', '/reset-password']
+    const privadas = ['/cms', '/area-hermano', '/acceso', '/reset-password']
     for (const url of urlsDelSitemap()) {
       for (const privada of privadas) {
         expect(url.startsWith(privada), `${url} no debería indexarse`).toBe(false)

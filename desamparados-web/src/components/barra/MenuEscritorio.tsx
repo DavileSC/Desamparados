@@ -8,7 +8,7 @@ import { useState, useRef, type FocusEvent, type KeyboardEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Box, Button, useTheme } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { compactMq, esActiva, tinta } from './estilos'
+import { compactMq, esActiva, seccionActiva, tinta } from './estilos'
 import { menuPublico, type EntradaMenu } from '../../config/navegacion'
 
 /** Enlace de una subpágina dentro del desplegable de escritorio. */
@@ -55,7 +55,7 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
   const enlaceRef = useRef<HTMLButtonElement>(null)
   const hijos = entrada.hijos ?? []
   const desplegable = hijos.length > 0
-  const activa = esActiva(location.pathname, entrada.href)
+  const activa = seccionActiva(location.pathname, entrada)
 
   const vieneDeFuera = (e: FocusEvent<HTMLDivElement>) => !e.currentTarget.contains(e.relatedTarget as Node | null)
 

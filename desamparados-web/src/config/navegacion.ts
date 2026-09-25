@@ -15,9 +15,10 @@ export interface EntradaMenu {
   label: string
   /**
    * En una sección con subpáginas no es un enlace: el título solo despliega y
-   * se entra por las de dentro. Ahí `href` es el prefijo de sus rutas, lo que
-   * marca la sección como activa. Sus páginas de portada se quitaron el
-   * 25-09-2026 y esas direcciones dan «Página no encontrada».
+   * se entra por las de dentro, y su `href` es solo su clave. Sus portadas se
+   * quitaron el 25-09-2026 y las subpáginas dejaron de colgar de ella
+   * (/corporacion/historia es ahora /historia): la sección se marca activa
+   * cuando lo está alguna de las suyas (`seccionActiva`).
    */
   href: string
   hijos?: EntradaMenu[]
@@ -33,26 +34,26 @@ export const menuPublico: EntradaMenu[] = [
     hijos: [
       {
         label: 'Historia',
-        href: '/corporacion/historia',
-        hijos: [{ label: 'Órganos de Gobierno', href: '/corporacion/historia/organos-de-gobierno' }],
+        href: '/historia',
+        hijos: [{ label: 'Órganos de Gobierno', href: '/historia/organos-de-gobierno' }],
       },
-      { label: 'Parroquia - Pasionistas', href: '/corporacion/parroquia-pasionistas' },
+      { label: 'Parroquia - Pasionistas', href: '/parroquia-pasionistas' },
       {
         label: 'Nuestros fines',
-        href: '/corporacion/nuestros-fines',
+        href: '/nuestros-fines',
         hijos: [
-          { label: 'Caridad', href: '/corporacion/nuestros-fines/caridad' },
-          { label: 'Formación', href: '/corporacion/nuestros-fines/formacion' },
+          { label: 'Caridad', href: '/nuestros-fines/caridad' },
+          { label: 'Formación', href: '/nuestros-fines/formacion' },
         ],
       },
-      { label: 'Cultos', href: '/corporacion/cultos' },
+      { label: 'Cultos', href: '/cultos' },
       {
         label: 'Sábado de Pasión',
-        href: '/corporacion/sabado-de-pasion',
+        href: '/sabado-de-pasion',
         hijos: [
-          { label: 'Recorrido', href: '/corporacion/sabado-de-pasion/recorrido' },
-          { label: 'Trono', href: '/corporacion/sabado-de-pasion/trono' },
-          { label: 'Enseres', href: '/corporacion/sabado-de-pasion/enseres' },
+          { label: 'Recorrido', href: '/sabado-de-pasion/recorrido' },
+          { label: 'Trono', href: '/sabado-de-pasion/trono' },
+          { label: 'Enseres', href: '/sabado-de-pasion/enseres' },
         ],
       },
     ],
@@ -61,16 +62,16 @@ export const menuPublico: EntradaMenu[] = [
     label: 'Sagrada titular',
     href: '/sagrada-titular',
     hijos: [
-      { label: 'Desamparados', href: '/sagrada-titular/desamparados' },
-      { label: 'Ajuar', href: '/sagrada-titular/ajuar' },
+      { label: 'Desamparados', href: '/desamparados' },
+      { label: 'Ajuar', href: '/ajuar' },
     ],
   },
   {
     label: 'Actualidad',
     href: '/actualidad',
     hijos: [
-      { label: 'Agenda', href: '/actualidad/agenda' },
-      { label: 'Noticias', href: '/actualidad/noticias' },
+      { label: 'Agenda', href: '/agenda' },
+      { label: 'Noticias', href: '/noticias' },
     ],
   },
   {
@@ -87,8 +88,8 @@ export const menuPublico: EntradaMenu[] = [
     label: 'Hermanos',
     href: '/hermanos',
     hijos: [
-      { label: 'Hazte hermano', href: '/hermanos/hazte-hermano' },
-      { label: 'Login hermanos', href: '/hermanos/acceso' },
+      { label: 'Hazte hermano', href: '/hazte-hermano' },
+      { label: 'Login hermanos', href: '/acceso' },
     ],
   },
   { label: 'Contacto', href: '/contacto' },

@@ -129,7 +129,7 @@ export default function NoticiasAdminPage() {
       imagenUrl={noticia.imagenUrl} enPortada={enPortada} fijada={noticia.fijada}
       piezas={piezasDeNoticia(noticia)} avisos={{ foto: 'Sin foto', extracto: 'Sin extracto' }} resumen={noticia.extracto}
       editar={`/cms/noticias/${noticia.id}/editar`} volver={consultaListado}
-      enLaWeb={{ href: `/actualidad/noticias/${noticia.slug}`, texto: 'Ver en la web' }}
+      enLaWeb={{ href: `/noticias/${noticia.slug}`, texto: 'Ver en la web' }}
       onCambiarVisible={() => setPorCambiar(noticia)} onFijar={() => void fijar(noticia)} onBorrar={() => setPorBorrar(noticia)}
     />
   )
@@ -137,7 +137,7 @@ export default function NoticiasAdminPage() {
   return <>
     <Helmet><title>Noticias | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Noticias" subtitulo={resumen && <ResumenRedaccion cifras={resumen} />}>
-      <Button variant="outlined" color="inherit" startIcon={<OpenInNewIcon />} href="/actualidad/noticias" target="_blank" rel="noopener" sx={{ borderColor: 'divider' }}>Ver en la web</Button>
+      <Button variant="outlined" color="inherit" startIcon={<OpenInNewIcon />} href="/noticias" target="_blank" rel="noopener" sx={{ borderColor: 'divider' }}>Ver en la web</Button>
       <Button variant="contained" startIcon={<AddIcon />} component={Link} to="/cms/noticias/nueva" state={{ volver: consultaListado }}>Nueva noticia</Button>
     </CabeceraSeccion>
     {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}

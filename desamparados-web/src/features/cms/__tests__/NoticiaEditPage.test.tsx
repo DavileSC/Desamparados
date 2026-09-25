@@ -69,8 +69,8 @@ describe('NoticiaEditPage', () => {
 
   it('una publicada dice dónde verla y su dirección ya no se puede cambiar', async () => {
     montar('/cms/noticias/7/editar')
-    expect(await screen.findByRole('link', { name: /ver en la web/i })).toHaveAttribute('href', '/actualidad/noticias/apertura-curso-cofrade')
-    expect(screen.getByText('/actualidad/noticias/apertura-curso-cofrade')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /ver en la web/i })).toHaveAttribute('href', '/noticias/apertura-curso-cofrade')
+    expect(screen.getByText('/noticias/apertura-curso-cofrade')).toBeInTheDocument()
     expect(screen.queryByLabelText(/dirección/i)).not.toBeInTheDocument()
   })
 })

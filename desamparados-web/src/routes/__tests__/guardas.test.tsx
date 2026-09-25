@@ -19,7 +19,7 @@ function montarRuta(elemento: React.ReactElement, { ruta }: { ruta: string }) {
   const rutas: RouteObject[] = [
     { path: ruta, element: elemento },
     { path: '/cms/acceso', element: <p>acceso del cms</p> },
-    { path: '/hermanos/acceso', element: <p>acceso de hermanos</p> },
+    { path: '/acceso', element: <p>acceso de hermanos</p> },
     { path: '/cms', element: <p>inicio del cms</p> },
   ]
   const router = createMemoryRouter(rutas, { initialEntries: [ruta] })

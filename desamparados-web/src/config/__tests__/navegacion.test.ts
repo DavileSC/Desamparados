@@ -7,7 +7,7 @@ import fuente from '../../routes/index.tsx?raw'
 /**
  * Rutas reales del router, leídas del fuente como hace `scripts/generar-sitemap.mjs`:
  * el bloque público (lo que cuelga de <MarcoPublico />) más las rutas absolutas
- * que viven fuera de él, como `/hermanos/acceso`.
+ * que viven fuera de él, como `/acceso`.
  */
 function rutasDelRouter(): Set<string> {
   const inicio = fuente.indexOf('<MarcoPublico />')
@@ -31,30 +31,30 @@ describe('menuPublico', () => {
       [
         'Inicio /',
         'Corporación /corporacion',
-        '  Historia /corporacion/historia',
-        '    Órganos de Gobierno /corporacion/historia/organos-de-gobierno',
-        '  Parroquia - Pasionistas /corporacion/parroquia-pasionistas',
-        '  Nuestros fines /corporacion/nuestros-fines',
-        '    Caridad /corporacion/nuestros-fines/caridad',
-        '    Formación /corporacion/nuestros-fines/formacion',
-        '  Cultos /corporacion/cultos',
-        '  Sábado de Pasión /corporacion/sabado-de-pasion',
-        '    Recorrido /corporacion/sabado-de-pasion/recorrido',
-        '    Trono /corporacion/sabado-de-pasion/trono',
-        '    Enseres /corporacion/sabado-de-pasion/enseres',
+        '  Historia /historia',
+        '    Órganos de Gobierno /historia/organos-de-gobierno',
+        '  Parroquia - Pasionistas /parroquia-pasionistas',
+        '  Nuestros fines /nuestros-fines',
+        '    Caridad /nuestros-fines/caridad',
+        '    Formación /nuestros-fines/formacion',
+        '  Cultos /cultos',
+        '  Sábado de Pasión /sabado-de-pasion',
+        '    Recorrido /sabado-de-pasion/recorrido',
+        '    Trono /sabado-de-pasion/trono',
+        '    Enseres /sabado-de-pasion/enseres',
         'Sagrada titular /sagrada-titular',
-        '  Desamparados /sagrada-titular/desamparados',
-        '  Ajuar /sagrada-titular/ajuar',
+        '  Desamparados /desamparados',
+        '  Ajuar /ajuar',
         'Actualidad /actualidad',
-        '  Agenda /actualidad/agenda',
-        '  Noticias /actualidad/noticias',
+        '  Agenda /agenda',
+        '  Noticias /noticias',
         'Publicaciones /publicaciones',
         '  Todas las publicaciones /publicaciones',
         '  Boletines /publicaciones/boletines',
         '  Dossier prensa /publicaciones/dossier-prensa',
         'Hermanos /hermanos',
-        '  Hazte hermano /hermanos/hazte-hermano',
-        '  Login hermanos /hermanos/acceso',
+        '  Hazte hermano /hazte-hermano',
+        '  Login hermanos /acceso',
         'Contacto /contacto',
       ].join('\n'),
     )

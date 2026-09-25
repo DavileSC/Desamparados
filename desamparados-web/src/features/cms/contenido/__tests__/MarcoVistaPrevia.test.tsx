@@ -6,7 +6,7 @@ function Contenido({ onBoton, onEnviar }: { onBoton: () => void; onEnviar: () =>
   return (
     <>
       <button type="button" onClick={onBoton}>Medio siguiente</button>
-      <a href="/corporacion/historia">Historia</a>
+      <a href="/historia">Historia</a>
       <form onSubmit={onEnviar}><button type="submit">Enviar</button></form>
     </>
   )

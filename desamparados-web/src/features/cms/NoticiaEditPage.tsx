@@ -179,7 +179,7 @@ export default function NoticiaEditPage() {
                   fullWidth
                 />
                 {publicada && guardada && (
-                  <Button size="small" href={`/actualidad/noticias/${guardada.slug}`} target="_blank" rel="noopener" startIcon={<OpenInNewIcon />} sx={{ alignSelf: 'flex-start' }}>
+                  <Button size="small" href={`/noticias/${guardada.slug}`} target="_blank" rel="noopener" startIcon={<OpenInNewIcon />} sx={{ alignSelf: 'flex-start' }}>
                     Ver en la web
                   </Button>
                 )}
@@ -269,7 +269,7 @@ function Direccion({ nueva, slug, automatica, onCambio }: { nueva: boolean; slug
     return (
       <>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', p: 1.25, borderRadius: 1, backgroundColor: 'action.hover', fontFamily: 'monospace', fontSize: 12.5, overflowWrap: 'anywhere', '& svg': { fontSize: 16, color: 'text.secondary', flexShrink: 0 } }}>
-          <LockOutlinedIcon aria-hidden="true" />/actualidad/noticias/{slug}
+          <LockOutlinedIcon aria-hidden="true" />/noticias/{slug}
         </Box>
         <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
           Fija: cambiarla rompería los enlaces que ya se hayan compartido.
@@ -285,7 +285,7 @@ function Direccion({ nueva, slug, automatica, onCambio }: { nueva: boolean; slug
       // Solo lo que admite el servidor: minúsculas, números y guiones.
       onChange={(e) => onCambio(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
       placeholder={automatica || 'se crea con el título'}
-      helperText={`Vacía, se crea con el título${automatica ? `: /actualidad/noticias/${automatica}` : ''}. Queda fija al guardar.`}
+      helperText={`Vacía, se crea con el título${automatica ? `: /noticias/${automatica}` : ''}. Queda fija al guardar.`}
       slotProps={{ inputLabel: { shrink: true } }}
       fullWidth
     />

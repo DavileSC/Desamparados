@@ -40,8 +40,8 @@ describe('Hero', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [] })))
     renderWithProviders(<Hero />)
 
-    expect(screen.getByRole('link', { name: /conoce el grupo parroquial/i })).toHaveAttribute('href', '/corporacion/historia')
-    expect(screen.getByRole('link', { name: /agenda y cultos/i })).toHaveAttribute('href', '/actualidad/agenda')
+    expect(screen.getByRole('link', { name: /conoce el grupo parroquial/i })).toHaveAttribute('href', '/historia')
+    expect(screen.getByRole('link', { name: /agenda y cultos/i })).toHaveAttribute('href', '/agenda')
     expect(screen.queryByRole('link', { name: /ver actualidad/i })).not.toBeInTheDocument()
   })
 

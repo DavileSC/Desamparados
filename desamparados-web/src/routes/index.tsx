@@ -6,6 +6,7 @@ import MarcoAcceso from '../app/MarcoAcceso'
 import MarcoAreaHermano from '../app/MarcoAreaHermano'
 import ExigeSesion from './ExigeSesion'
 import ExigeRol from './ExigeRol'
+import DireccionAntigua from './DireccionAntigua'
 import MarcoCms from '../app/MarcoCms'
 import { rolesPorRutaCms } from '../app/cmsNavegacion'
 import { Helmet } from 'react-helmet-async'
@@ -115,36 +116,42 @@ const router = createBrowserRouter([
         element: <MarcoPublico />,
         children: [
           { index: true, element: withSuspense(InicioPage) },
-          { path: 'corporacion/historia', element: withSuspense(HistoriaPage) },
-          { path: 'corporacion/historia/organos-de-gobierno', element: withSuspense(OrganosDeGobiernoPage) },
-          { path: 'corporacion/parroquia-pasionistas', element: withSuspense(ParroquiaPage) },
-          { path: 'corporacion/nuestros-fines', element: withSuspense(NuestrosFinesPage) },
-          { path: 'corporacion/nuestros-fines/caridad', element: withSuspense(CaridadPage) },
-          { path: 'corporacion/nuestros-fines/formacion', element: withSuspense(FormacionPage) },
-          { path: 'corporacion/cultos', element: withSuspense(CultosPage) },
-          { path: 'corporacion/sabado-de-pasion', element: withSuspense(SabadoPasionPage) },
-          { path: 'corporacion/sabado-de-pasion/recorrido', element: withSuspense(RecorridoPage) },
-          { path: 'corporacion/sabado-de-pasion/trono', element: withSuspense(TronoPage) },
-          { path: 'corporacion/sabado-de-pasion/enseres', element: withSuspense(EnseresPage) },
-          { path: 'sagrada-titular/desamparados', element: withSuspense(DesamparadosPage) },
-          { path: 'sagrada-titular/ajuar', element: withSuspense(AjuarPage) },
-          { path: 'actualidad/agenda', element: withSuspense(AgendaPage) },
-          { path: 'actualidad/noticias', element: withSuspense(NoticiasPage) },
-          { path: 'actualidad/noticias/:slug', element: withSuspense(NoticiaDetallePage) },
+          { path: 'historia', element: withSuspense(HistoriaPage) },
+          { path: 'historia/organos-de-gobierno', element: withSuspense(OrganosDeGobiernoPage) },
+          { path: 'parroquia-pasionistas', element: withSuspense(ParroquiaPage) },
+          { path: 'nuestros-fines', element: withSuspense(NuestrosFinesPage) },
+          { path: 'nuestros-fines/caridad', element: withSuspense(CaridadPage) },
+          { path: 'nuestros-fines/formacion', element: withSuspense(FormacionPage) },
+          { path: 'cultos', element: withSuspense(CultosPage) },
+          { path: 'sabado-de-pasion', element: withSuspense(SabadoPasionPage) },
+          { path: 'sabado-de-pasion/recorrido', element: withSuspense(RecorridoPage) },
+          { path: 'sabado-de-pasion/trono', element: withSuspense(TronoPage) },
+          { path: 'sabado-de-pasion/enseres', element: withSuspense(EnseresPage) },
+          { path: 'desamparados', element: withSuspense(DesamparadosPage) },
+          { path: 'ajuar', element: withSuspense(AjuarPage) },
+          { path: 'agenda', element: withSuspense(AgendaPage) },
+          { path: 'noticias', element: withSuspense(NoticiasPage) },
+          { path: 'noticias/:slug', element: withSuspense(NoticiaDetallePage) },
           { path: 'publicaciones', element: withSuspense(PublicacionesPage) },
           { path: 'publicaciones/boletines', element: withSuspense(BoletinesPage) },
           { path: 'publicaciones/dossier-prensa', element: withSuspense(DossierPrensaPage) },
-          { path: 'hermanos/hazte-hermano', element: withSuspense(HazteHermanoPage) },
+          { path: 'hazte-hermano', element: withSuspense(HazteHermanoPage) },
           { path: 'contacto', element: withSuspense(ContactoPage) },
           { path: 'aviso-legal', element: withSuspense(AvisoLegalPage) },
           { path: 'politica-privacidad', element: withSuspense(PoliticaDePrivacidadPage) },
           { path: 'politica-cookies', element: withSuspense(PoliticaDeCookiesPage) },
+          // Las direcciones de antes de quitar las portadas de sección (25-09-2026):
+          // /corporacion/historia sigue llevando a /historia, y así con todas.
+          { path: 'corporacion/*', element: <DireccionAntigua /> },
+          { path: 'sagrada-titular/*', element: <DireccionAntigua /> },
+          { path: 'actualidad/*', element: <DireccionAntigua /> },
+          { path: 'hermanos/*', element: <DireccionAntigua /> },
           // 404 real (con cabecera y pie): antes cualquier URL errónea redirigía a la portada
           { path: '*', element: withSuspense(NoEncontradaPage) },
         ],
       },
       {
-        path: '/hermanos/acceso',
+        path: '/acceso',
         element: <MarcoAcceso />,
         children: [{ index: true, element: withSuspense(AccesoPage) }],
       },
@@ -200,7 +207,7 @@ const router = createBrowserRouter([
           { path: 'agenda/nuevo', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</ExigeRol> },
           { path: 'agenda/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</ExigeRol> },
           { path: 'hermanos', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanosAdminPage)}</ExigeRol> },
-          { path: 'hermanos/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</ExigeRol> },
+          { path: ':id/editar', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</ExigeRol> },
           { path: 'procesion', element: <ExigeRol roles={rolesPorRutaCms.procesion}>{withSuspense(ProcesionAdminPage)}</ExigeRol> },
           { path: 'procesion/mesa', element: <ExigeRol roles={rolesPorRutaCms['procesion/mesa']}>{withSuspense(MesaProcesionPage)}</ExigeRol> },
           { path: 'tesoreria', element: <ExigeRol roles={rolesPorRutaCms.tesoreria}>{withSuspense(TesoreriaAdminPage)}</ExigeRol> },

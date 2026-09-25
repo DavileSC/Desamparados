@@ -57,7 +57,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
   return (
     <Box
       component={Link}
-      to={`/actualidad/noticias/${noticia.slug}`}
+      to={`/noticias/${noticia.slug}`}
       state={volver ? { volver } : undefined}
       data-destacada={destacada || undefined}
       sx={{

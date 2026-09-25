@@ -147,7 +147,7 @@ export default function AccesoCmsPage() {
           {rechazado && (
             <Alert severity="error" role="alert" sx={{ mb: 2 }}>
               Esta cuenta no pertenece al equipo del CMS. Si eres hermano, entra por el{' '}
-              <Link to="/hermanos/acceso">acceso del área de hermanos</Link>.
+              <Link to="/acceso">acceso del área de hermanos</Link>.
             </Alert>
           )}
 
