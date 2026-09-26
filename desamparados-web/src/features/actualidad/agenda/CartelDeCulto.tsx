@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { GOLD, SERIF } from '../../inicio/estilos'
-import { claseDelCartel, cuandoEnCartel, fotoDelCartel, hora } from './cultos'
+import { claseDelCartel, cuandoEnCartel, fotoDelCartel, hora, notaDelActo } from './cultos'
 import EnlacesDelActo from './EnlacesDelActo'
 
 const ORO_SUAVE = '#c9b25a'
@@ -12,9 +12,7 @@ const ORO_SUAVE = '#c9b25a'
  */
 export default function CartelDeCulto({ evento }: { evento: ApiEvent }) {
   const foto = fotoDelCartel(evento)
-  // El lugar y la descripción, como una frase: con su punto final, sin doblarlo.
-  const nota = [evento.location?.trim(), evento.description?.trim()].filter(Boolean)
-    .map((t) => (/[.!?…]$/.test(t!) ? t : `${t}.`)).join(' ')
+  const nota = notaDelActo(evento)
   return (
     <Box
       component="article"

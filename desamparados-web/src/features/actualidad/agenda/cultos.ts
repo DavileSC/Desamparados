@@ -1,5 +1,5 @@
 import type { ApiEvent } from '../../../lib/api/agenda'
-import { TIPOS, inicioDelDia } from '../../inicio/agenda'
+import { TIPOS, inicioDeMes, inicioDelDia } from '../../inicio/agenda'
 
 /** Los filtros de la Agenda pública, de texto: lo que busca quien entra, no los siete tipos. */
 export const FILTROS = [
@@ -16,29 +16,12 @@ const GRUPO: Record<ApiEvent['type'], Exclude<Filtro, 'todo'>> = {
 }
 export const pasaElFiltro = (evento: ApiEvent, filtro: Filtro) => filtro === 'todo' || GRUPO[evento.type] === filtro
 
-/** Un tramo de la página: un cartel o la lista de los actos que van hasta el siguiente. */
-export type Tramo = { cartel: ApiEvent } | { actos: ApiEvent[] }
-
-/** Los actos, en orden, partidos por los carteles: lista, cartel, lista, cartel… */
-export function enTramos(eventos: ApiEvent[]): Tramo[] {
-  const tramos: Tramo[] = []
-  let tanda: ApiEvent[] = []
-  for (const evento of eventos) {
-    if (!evento.cartel) { tanda.push(evento); continue }
-    if (tanda.length) tramos.push({ actos: tanda })
-    tanda = []
-    tramos.push({ cartel: evento })
-  }
-  if (tanda.length) tramos.push({ actos: tanda })
-  return tramos
-}
-
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const mayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1)
 
 /** Los días que abarca un acto, en la hora de este navegador. */
-function dias(evento: ApiEvent): Date[] {
+export function diasDelActo(evento: ApiEvent): Date[] {
   const inicio = inicioDelDia(new Date(evento.startDate))
   const fin = evento.endDate ? inicioDelDia(new Date(evento.endDate)) : inicio
   const lista: Date[] = []
@@ -59,17 +42,9 @@ function variosDias(lista: Date[]) {
   return `${numeros.slice(0, -1).join(', ')} y ${numeros[numeros.length - 1]} de ${MESES[primero.getMonth()]}`
 }
 
-/** En la lista: «3 de octubre, sábado» o «13 y 14 de octubre». */
-export function cuandoEnLista(evento: ApiEvent) {
-  const lista = dias(evento)
-  if (lista.length > 1) return mayuscula(variosDias(lista))
-  const d = lista[0]
-  return `${d.getDate()} de ${MESES[d.getMonth()]}, ${DIAS[d.getDay()]}`
-}
-
 /** En el cartel: «Sábado 24 de octubre» o «Días 3, 4 y 5 de noviembre». */
 export function cuandoEnCartel(evento: ApiEvent) {
-  const lista = dias(evento)
+  const lista = diasDelActo(evento)
   if (lista.length > 1) {
     const texto = variosDias(lista)
     return texto.startsWith('del ') ? mayuscula(texto) : `Días ${texto}`
@@ -106,4 +81,42 @@ export function urlDelMapa(lugar: string | null | undefined): string | null {
   if (!limpio) return null
   const consulta = /málaga/i.test(limpio) ? limpio : `${limpio}, Málaga`
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(consulta)}`
+}
+
+/** Qué es el acto, en la ventana: «Culto solemne» si va en cartel; si no, su tipo. */
+export const claseDelActo = (evento: ApiEvent) => (evento.cartel ? claseDelCartel(evento) : TIPOS[evento.type].nombre)
+
+/** El lugar y la descripción, como una frase: con su punto final, sin doblarlo. */
+export function notaDelActo(evento: ApiEvent) {
+  return [evento.location?.trim(), evento.description?.trim()].filter(Boolean)
+    .map((t) => (/[.!?…]$/.test(t!) ? t : `${t}.`)).join(' ')
+}
+
+/** Un día como clave: «2026-11-03», en la hora de este navegador. */
+export const claveDelDia = (dia: Date) =>
+  `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, '0')}-${String(dia.getDate()).padStart(2, '0')}`
+
+/** Si el acto cae ese día: un triduo del 3 al 5 cae el 3, el 4 y el 5. */
+export function caeEnElDia(evento: ApiEvent, dia: Date) {
+  const clave = claveDelDia(dia)
+  return diasDelActo(evento).some((d) => claveDelDia(d) === clave)
+}
+
+/**
+ * El primer día del acto que se ve en ese mes: el suyo o, si viene del mes
+ * anterior (un triduo del 30 al 2), el día 1. Ahí va su título y ahí se ancla su ventana.
+ */
+export function primerDiaEnElMes(evento: ApiEvent, mes: Date) {
+  return diasDelActo(evento).find((d) => d.getFullYear() === mes.getFullYear() && d.getMonth() === mes.getMonth()) ?? null
+}
+
+/** El último mes al que se puede llegar: el del último día del último acto, y nunca antes que el de hoy. */
+export function ultimoMes(eventos: ApiEvent[], hoy: Date) {
+  let ultimo = inicioDeMes(hoy)
+  for (const evento of eventos) {
+    const dias = diasDelActo(evento)
+    const mes = inicioDeMes(dias[dias.length - 1])
+    if (mes > ultimo) ultimo = mes
+  }
+  return ultimo
 }

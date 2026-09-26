@@ -2,25 +2,17 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Alert, Box, ButtonBase, CircularProgress, Collapse, Typography } from '@mui/material'
 import { agendaPublica, urlDeLaSuscripcion, type ApiEvent } from '../../../lib/api/agenda'
-import { GOLD, GRANATE, PAPEL } from '../../inicio/estilos'
-import { FILTROS, cuandoEnLista, enTramos, hora, pasaElFiltro, type Filtro } from './cultos'
-import CartelDeCulto from './CartelDeCulto'
-import EnlacesDelActo from './EnlacesDelActo'
+import { GOLD } from '../../inicio/estilos'
+import { FILTROS, pasaElFiltro, type Filtro } from './cultos'
+import CalendarioDeCultos from './CalendarioDeCultos'
 
-const TINTA = '#1b1c1a'
-const TINTA2 = '#4a454a'
-const TENUE = '#7b6f5e'
-const REGLA = '#eae2d5'
 const esFiltro = (valor: string | null): valor is Filtro => FILTROS.some((f) => f.valor === valor)
 
 /**
- * La Agenda pública: lo que viene, de una vez y sin paginar, con los cultos
- * solemnes en su cartel (foto de la Titular, título, dedicatoria, cuándo y
- * dónde) y, entre cartel y cartel, los demás actos en una lista corta.
- *
- * Cada acto se puede añadir al calendario (.ics) y lleva al mapa; al final,
- * la suscripción a la agenda entera. El filtro va en la dirección (`?ver=`):
- * un enlace a «Cultos y salidas» abre eso.
+ * La Agenda pública: lo que viene, de una vez y sin paginar, en un calendario
+ * de pared (CalendarioDeCultos). Cada acto se abre en su ventana, con su .ics
+ * y el camino en el mapa; al final, la suscripción a la agenda entera. El
+ * filtro va en la dirección (`?ver=`): un enlace a «Cultos y salidas» abre eso.
  */
 export default function AgendaDeCultos() {
   const [eventos, setEventos] = useState<ApiEvent[] | null>(null)
@@ -51,7 +43,6 @@ export default function AgendaDeCultos() {
   }
 
   const visibles = (eventos ?? []).filter((e) => pasaElFiltro(e, filtro))
-  const tramos = enTramos(visibles)
 
   return (
     <Box>
@@ -77,51 +68,15 @@ export default function AgendaDeCultos() {
 
       {error && <Alert severity="error">{error}</Alert>}
       {!error && eventos === null && <CircularProgress aria-label="Cargando la agenda" />}
-      {eventos !== null && tramos.length === 0 && (
+      {eventos !== null && visibles.length === 0 && (
         <Typography sx={{ color: 'rgba(255,255,255,0.75)' }}>
           {filtro === 'todo' ? 'No hay actos anunciados por ahora.' : 'No hay actos de este tipo anunciados por ahora.'}
         </Typography>
       )}
 
-      <Box sx={{ display: 'grid', gap: { xs: 2.5, md: 3 } }}>
-        {tramos.map((tramo, i) => ('cartel' in tramo
-          ? <CartelDeCulto key={`c${tramo.cartel.id}`} evento={tramo.cartel} />
-          : <Lista key={`l${tramo.actos[0].id}`} titulo={i === 0 ? 'Próximamente' : 'Y además'} actos={tramo.actos} />))}
-      </Box>
+      {visibles.length > 0 && <CalendarioDeCultos eventos={visibles} />}
 
       {eventos !== null && <Suscripcion />}
-    </Box>
-  )
-}
-
-/** Los actos de entre dos carteles, en papel: cuándo, a qué hora, qué y dónde. */
-function Lista({ titulo, actos }: { titulo: string; actos: ApiEvent[] }) {
-  return (
-    <Box component="section" aria-label={titulo} sx={{ backgroundColor: PAPEL, color: TINTA, px: { xs: 2, md: 4 }, pt: 2.25, pb: 1.5 }}>
-      <Typography component="h3" sx={{ fontSize: 12, letterSpacing: '0.24em', textTransform: 'uppercase', color: TENUE, fontWeight: 600, mb: 0.5 }}>
-        {titulo}
-      </Typography>
-      <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-        {actos.map((evento, i) => (
-          <Box
-            component="li"
-            key={evento.id}
-            sx={{
-              // En el móvil, el día y la hora en una línea; debajo, el acto y los enlaces.
-              display: 'grid', gridTemplateColumns: { xs: 'auto minmax(0, 1fr)', md: '170px 56px minmax(0, 1fr) auto' }, columnGap: { xs: 1, md: 1.75 },
-              alignItems: 'baseline', py: 1.25, borderTop: i === 0 ? 0 : `1px solid ${REGLA}`, fontSize: 15,
-            }}
-          >
-            <Box component="span" sx={{ color: GRANATE, fontWeight: 600 }}>{cuandoEnLista(evento)}</Box>
-            <Box component="span" sx={{ color: TINTA2, fontVariantNumeric: 'tabular-nums', '&::before': { content: { xs: '"· "', md: '""' } } }}>{hora(evento)}</Box>
-            <Box component="span" sx={{ gridColumn: { xs: '1 / -1', md: 'auto' } }}>
-              {evento.title}
-              {evento.location?.trim() && <Box component="span" sx={{ display: 'block', fontSize: 13.5, color: TINTA2 }}>{evento.location}</Box>}
-            </Box>
-            <Box sx={{ gridColumn: { xs: '1 / -1', md: 'auto' } }}><EnlacesDelActo evento={evento} /></Box>
-          </Box>
-        ))}
-      </Box>
     </Box>
   )
 }

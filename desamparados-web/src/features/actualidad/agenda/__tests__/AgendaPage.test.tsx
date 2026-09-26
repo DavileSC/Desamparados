@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
@@ -34,46 +34,98 @@ function responder(data: unknown[]) {
   return simulado
 }
 
-afterEach(() => { vi.unstubAllGlobals() })
+const mes = (nombre: string) => screen.findByRole('heading', { name: nombre })
+const dia = (nombre: RegExp) => screen.findByRole('button', { name: nombre })
+
+// El calendario abre en el mes de hoy como mínimo: hoy es el 26 de septiembre de 2026.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 8, 26, 12))
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 
 describe('AgendaPage', () => {
-  it('pide todo lo que viene de una vez, sin paginar', async () => {
-    const simulado = responder([apertura])
+  it('pide todo lo que viene de una vez y lo enseña en el mes del próximo acto', async () => {
+    const simulado = responder([apertura, catequesis])
     renderWithProviders(<AgendaPage />)
 
-    expect(await screen.findByText('Eucaristía de apertura de curso')).toBeInTheDocument()
+    expect(await mes('Septiembre 2026')).toBeInTheDocument()
+    expect(await dia(/^29 de septiembre: Eucaristía de apertura de curso/)).toBeInTheDocument()
     expect(String(simulado.mock.calls[0]?.[0])).toContain('/events?limit=100')
-    expect(screen.queryByRole('button', { name: /ir a la página 2/i })).not.toBeInTheDocument()
   })
 
-  it('los cultos solemnes salen en su cartel, entre la lista de lo demás', async () => {
-    responder([apertura, catequesis, triduo, cabildo])
-    renderWithProviders(<AgendaPage />)
-
-    const cartel = await screen.findByRole('article', { name: 'Solemne triduo' })
-    expect(within(cartel).getByText('Culto solemne')).toBeInTheDocument()
-    expect(within(cartel).getByText('en honor de Nuestra Señora de los Desamparados')).toBeInTheDocument()
-    expect(within(cartel).getByText('Días 3, 4 y 5 de noviembre')).toBeInTheDocument()
-    // Sin foto propia, la de la Titular.
-    expect(within(cartel).getByRole('img')).toHaveAttribute('src', '/images/triduo.jpg')
-
-    const antes = screen.getByRole('region', { name: 'Próximamente' })
-    expect(within(antes).getByText('Eucaristía de apertura de curso')).toBeInTheDocument()
-    expect(within(antes).getByText('29 de septiembre, martes')).toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Y además' })).getByText('Cabildo de hermanos')).toBeInTheDocument()
-  })
-
-  it('cada acto se añade al calendario y, si tiene lugar, lleva al mapa', async () => {
+  it('al pulsar un día, el acto sale en una ventana con el calendario y el mapa', async () => {
     responder([apertura, catequesis])
+    const usuario = userEvent.setup()
     renderWithProviders(<AgendaPage />)
 
-    const calendario = await screen.findByRole('link', { name: 'Añadir a mi calendario: Eucaristía de apertura de curso' })
-    expect(calendario).toHaveAttribute('href', '/api/events/1/ics')
-    const mapa = screen.getByRole('link', { name: 'Cómo llegar: Parroquia de los Padres Pasionistas' })
+    await usuario.click(await dia(/^29 de septiembre/))
+    const ventana = screen.getByRole('dialog', { name: 'Eucaristía de apertura de curso' })
+    expect(within(ventana).getByText('Culto')).toBeInTheDocument()
+    expect(within(ventana).getByText('Martes 29 de septiembre, a las 19:00')).toBeInTheDocument()
+    expect(within(ventana).getByRole('link', { name: 'Añadir a mi calendario: Eucaristía de apertura de curso' })).toHaveAttribute('href', '/api/events/1/ics')
+    const mapa = within(ventana).getByRole('link', { name: 'Cómo llegar: Parroquia de los Padres Pasionistas' })
     expect(mapa.getAttribute('href')).toContain(encodeURIComponent('Parroquia de los Padres Pasionistas, Málaga'))
     expect(mapa).toHaveAttribute('target', '_blank')
+
+    await usuario.click(within(ventana).getByRole('button', { name: 'Cerrar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await usuario.click(await dia(/^29 de septiembre/))
+    await usuario.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('el próximo acto va marcado, y la leyenda lo dice y lo abre', async () => {
+    responder([apertura, catequesis])
+    const usuario = userEvent.setup()
+    renderWithProviders(<AgendaPage />)
+
+    expect(await dia(/^29 de septiembre: .*\. Próximo acto$/)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: /^Próximo acto: Eucaristía de apertura de curso, martes 29 de septiembre$/ }))
+    expect(screen.getByRole('dialog', { name: 'Eucaristía de apertura de curso' })).toBeInTheDocument()
+  })
+
+  it('se pasa de mes con las flechas, y los solemnes enseñan su foto', async () => {
+    responder([apertura, catequesis, triduo, cabildo])
+    const usuario = userEvent.setup()
+    renderWithProviders(<AgendaPage />)
+
+    await mes('Septiembre 2026')
+    expect(screen.getByRole('button', { name: 'Mes anterior' })).toBeDisabled()
+    await usuario.click(screen.getByRole('button', { name: 'Mes siguiente' }))
+    expect(await mes('Octubre 2026')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Mes siguiente' }))
+    expect(await mes('Noviembre 2026')).toBeInTheDocument()
+    // El cabildo es lo último: no hay más meses.
+    expect(screen.getByRole('button', { name: 'Mes siguiente' })).toBeDisabled()
+
+    // El triduo cae en sus tres días.
+    expect(screen.getByRole('button', { name: /^4 de noviembre: Solemne triduo/ })).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: /^3 de noviembre: Solemne triduo/ }))
+    const ventana = screen.getByRole('dialog', { name: 'Solemne triduo' })
+    expect(within(ventana).getByText('Culto solemne')).toBeInTheDocument()
+    expect(within(ventana).getByText('en honor de Nuestra Señora de los Desamparados')).toBeInTheDocument()
+    expect(within(ventana).getByText('Días 3, 4 y 5 de noviembre, a las 19:00')).toBeInTheDocument()
+    // Sin foto propia, la de la Titular.
+    expect(within(ventana).getByRole('img')).toHaveAttribute('src', '/images/triduo.jpg')
+  })
+
+  it('«Siguiente» pasa al acto siguiente aunque sea de otro mes', async () => {
+    responder([apertura, catequesis])
+    const usuario = userEvent.setup()
+    renderWithProviders(<AgendaPage />)
+
+    await usuario.click(await dia(/^29 de septiembre/))
+    expect(screen.getByRole('button', { name: 'Acto anterior' })).toBeDisabled()
+    await usuario.click(screen.getByRole('button', { name: 'Acto siguiente' }))
+    expect(await mes('Octubre 2026')).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Catequesis de adultos' })).toBeInTheDocument()
     // La catequesis no tiene lugar: no hay a dónde llegar.
-    expect(screen.getAllByRole('link', { name: /^cómo llegar/i })).toHaveLength(1)
+    expect(screen.queryByRole('link', { name: /^cómo llegar/i })).not.toBeInTheDocument()
   })
 
   it('los filtros dejan ver solo una parte, y la dirección lo recuerda', async () => {
@@ -81,13 +133,16 @@ describe('AgendaPage', () => {
     const usuario = userEvent.setup()
     renderWithProviders(<AgendaPage />, { ruta: '/agenda?ver=formacion' })
 
-    expect(await screen.findByText('Catequesis de adultos')).toBeInTheDocument()
-    expect(screen.queryByText('Cabildo de hermanos')).not.toBeInTheDocument()
+    // Solo la catequesis: el calendario abre en su mes.
+    expect(await mes('Octubre 2026')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^8 de octubre: Catequesis de adultos\. Próximo acto$/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Formación' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Mes siguiente' })).toBeDisabled()
 
     await usuario.click(screen.getByRole('button', { name: 'Cultos y salidas' }))
-    expect(screen.getByRole('article', { name: 'Solemne triduo' })).toBeInTheDocument()
-    expect(screen.queryByText('Catequesis de adultos')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^8 de octubre/ })).not.toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Mes siguiente' }))
+    expect(await dia(/^3 de noviembre: Solemne triduo/)).toBeInTheDocument()
   })
 
   it('la suscripción ofrece Google, el enlace webcal y copiarlo', async () => {
