@@ -28,16 +28,14 @@ const ANTES: Record<string, string[]> = {
     'Vocal de Cultos', 'Vocal de Caridad', 'Vocal de Formación',
   ],
   parroquia: [
-    'atendida por la\n              Congregación de la Pasión'.replace(/\s+/g, ' '),
-    'Los Padres Pasionistas, con su espiritualidad centrada en la Cruz',
-    'En el templo parroquial se celebran los cultos principales',
-    'La comunidad pasionista y el Grupo Parroquial mantienen una estrecha colaboración',
+    'Parroquia de Santa María Goretti',
+    'Horarios y despacho',
+    'Los Pasionistas', 'La parroquia en fechas', 'Congregación de la Pasión de Jesucristo',
   ],
   'nuestros-fines': [
-    'como fines esenciales, la práctica de la caridad',
-    'Caridad', 'Formación',
-    'Ayuda social, obra asistencial y cercanía con los más desfavorecidos',
-    'Educación en la fe, transmisión de valores cofrades',
+    'Culto', 'Caridad', 'Formación',
+    'La ayuda a quien la necesita, desde la parroquia',
+    'Catequesis, charlas y encuentros para crecer en la fe',
   ],
   caridad: [
     'La caridad constituye uno de los fines fundamentales',

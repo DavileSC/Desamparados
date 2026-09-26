@@ -49,7 +49,9 @@ test('la siembra deja una fila por página editable, con los textos de siempre',
   // pasaba a comprobar documentos que no eran los suyos.
   const documento = (slug: string) => filas.find((f) => f.slug === slug)!.datos as any;
 
-  assert.equal(documento('nuestros-fines').bloques.length, 2);
+  // Los tres fines, cada uno con su página.
+  const fines = documento('nuestros-fines').bloques.find((b: any) => b.tipo === 'tarjetas');
+  assert.deepEqual(fines.tarjetas.map((t: any) => t.enlace), ['/cultos', '/nuestros-fines/caridad', '/nuestros-fines/formacion']);
   // Los cinco hitos de siempre viven ahora en el bloque de cronología.
   const cronologia = documento('historia').bloques.find((b: any) => b.tipo === 'cronologia');
   assert.equal(cronologia.hitos.length, 5);

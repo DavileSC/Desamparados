@@ -71,7 +71,7 @@ describe('topes de longitud del CMS', () => {
     // despliega abajo con los demás bloques.
     await screen.findByDisplayValue('Desamparados Málaga')
     await screen.findByDisplayValue('Corporación · Historia')
-    await screen.findByDisplayValue('Nuestros Fines')
+    await screen.findByDisplayValue('Nuestros fines')
 
     // El constructor de páginas SÍ desmonta lo que pliega, así que sus
     // formularios hay que abrirlos: si no, ningún `maxLength` de un bloque
