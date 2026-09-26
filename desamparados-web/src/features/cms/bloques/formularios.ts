@@ -233,6 +233,7 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       return null
     }
     case 'dibujo':
+      if (bloque.foto && bloque.foto.url !== '' && bloque.foto.alt.trim() === '') return 'tiene la ilustración sin descripción'
       return bloque.html.trim() === '' ? 'no tiene texto' : null
     case 'cuentaAtras':
       return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(bloque.fecha) ? null : 'no tiene fecha y hora'

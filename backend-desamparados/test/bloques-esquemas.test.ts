@@ -323,6 +323,14 @@ describe('bloque de dibujo', () => {
     assert.ok(!falla('dibujo', { ...DIBUJO, dibujo: 'signoPasionista' }));
   });
 
+  test('una ilustración en lugar del dibujo, siempre descrita', () => {
+    const foto = { url: '/images/templo-goretti.webp', alt: 'Ilustración del templo' };
+    assert.ok(!falla('dibujo', { ...DIBUJO, foto }));
+    assert.ok(!falla('dibujo', { ...DIBUJO, foto: { url: '', alt: '' } }), 'sin foto vale el dibujo de líneas');
+    assert.ok(falla('dibujo', { ...DIBUJO, foto: { ...foto, alt: ' ' } }));
+    assert.ok(falla('dibujo', { ...DIBUJO, foto: { ...foto, url: 'https://otra-web.com/templo.png' } }));
+  });
+
   test('ni dibujos inventados ni texto vacío', () => {
     assert.ok(falla('dibujo', { ...DIBUJO, dibujo: 'catedral' }));
     assert.ok(falla('dibujo', { ...DIBUJO, html: '   ' }));

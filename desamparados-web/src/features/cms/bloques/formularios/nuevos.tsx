@@ -149,6 +149,14 @@ export function FormularioDibujo({ bloque, onCambio }: Props<BloqueDibujo>) {
         helperText="Se dibuja solo al bajar por la página. El lado se elige en «Presentación».">
         {DIBUJOS.map((d) => <MenuItem key={d.valor} value={d.valor}>{d.nombre}</MenuItem>)}
       </TextField>
+      <CampoImagen valor={bloque.foto?.url ?? ''} etiqueta="Ilustración (opcional)" apaisada
+        onCambio={(url) => onCambio({ foto: { url, alt: bloque.foto?.alt ?? '' } })}
+        ayuda="Si subes una, se ve en lugar del dibujo de líneas. Mejor en PNG o WebP con el fondo transparente." />
+      {(bloque.foto?.url ?? '') !== '' && (
+        <CampoTexto etiqueta="Descripción de la ilustración" valor={bloque.foto?.alt ?? ''} maxLength={topes.descripcion}
+          onCambio={(alt) => onCambio({ foto: { url: bloque.foto?.url ?? '', alt } })}
+          ayuda="Lo que se ve, en una frase. Es lo que oye quien usa un lector de pantalla." />
+      )}
       <EditorTexto valor={bloque.html} onCambio={(html) => onCambio({ html })} etiqueta="Texto al lado del dibujo" />
     </Stack>
   )

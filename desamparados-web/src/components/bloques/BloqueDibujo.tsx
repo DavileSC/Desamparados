@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
-import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion'
+import { motion, useMotionTemplate, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion'
 import { SERIF } from '../../features/inicio/estilos'
 import { limpiarHtml } from '../../lib/limpiarHtml'
 import { useModoEdicion } from './modoEdicion'
@@ -17,6 +17,9 @@ import type { BloqueDibujo as Datos, NombreDeDibujo } from '../../lib/api/conten
  * sobre papel). Con «reducir movimiento», o en la vista del constructor, sale
  * ya dibujado.
  *
+ * Con ilustración (`foto`), se pinta ella en lugar del dibujo de líneas: se
+ * levanta desde el suelo al bajar, sobre un filete de oro que se tiende debajo.
+ *
  * Pinta su propio título (ver `pintaSuTitulo` en `registro.tsx`): va en la
  * columna del texto y no encima de los dos.
  */
@@ -27,18 +30,24 @@ export default function BloqueDibujo({ bloque }: { bloque: Datos }) {
   const { scrollYProgress } = useScroll({ target: marco, offset: ['start 85%', 'center 40%'] })
   const derecha = valorDe(bloque, 'ladoDibujo') === 'derecha'
   const Dibujo = DIBUJOS[bloque.dibujo]
-  if (!Dibujo) return null
+  const foto = bloque.foto?.url ? bloque.foto : null
+  if (!Dibujo && !foto) return null
   const quieto = reducir || enConstructor
+  // Una ilustración es apaisada: se le da más ancho que al dibujo, que es casi cuadrado.
+  const imagen = foto ? 'minmax(0, 1.3fr)' : 'minmax(0, 1.15fr)'
+  const texto = 'minmax(0, 1fr)'
 
   return (
     <Box sx={{
       maxWidth: anchoMaximo(bloque, '1150px'), mx: 'auto',
       display: 'grid', alignItems: 'center', gap: { xs: 4, md: 9 },
-      gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: derecha ? 'minmax(0, 1.15fr) minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1.15fr)' },
+      gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: derecha ? `${texto} ${imagen}` : `${imagen} ${texto}` },
       gridTemplateAreas: { xs: '"dibujo" "texto"', md: derecha ? '"texto dibujo"' : '"dibujo texto"' },
     }}>
-      <Box ref={marco} sx={{ gridArea: 'dibujo', color: 'secondary.main', maxWidth: { xs: 320, md: 440 }, width: '100%', mx: 'auto' }}>
-        <Dibujo avance={scrollYProgress} quieto={quieto} />
+      <Box ref={marco} sx={{ gridArea: 'dibujo', color: 'secondary.main', maxWidth: foto ? 'none' : { xs: 320, md: 440 }, width: '100%', mx: 'auto' }}>
+        {foto
+          ? <Ilustracion url={foto.url} alt={foto.alt} avance={scrollYProgress} quieto={quieto} />
+          : <Dibujo avance={scrollYProgress} quieto={quieto} />}
       </Box>
       <Box sx={{ gridArea: 'texto', minWidth: 0 }}>
         {bloque.titulo && (
@@ -56,6 +65,26 @@ export default function BloqueDibujo({ bloque }: { bloque: Datos }) {
           dangerouslySetInnerHTML={{ __html: limpiarHtml(bloque.html) }}
         />
       </Box>
+    </Box>
+  )
+}
+
+/**
+ * La ilustración que sustituye al dibujo: se descubre de abajo arriba, como
+ * un edificio que se levanta, y sube un poco mientras tanto.
+ */
+function Ilustracion({ url, alt, avance, quieto }: PropsDibujo & { url: string; alt: string }) {
+  const tapado = useTransform(avance, [0.05, 0.75], [100, 0], { clamp: true })
+  const recorte = useMotionTemplate`inset(${tapado}% -2% 0 -2%)`
+  const subida = useTransform(avance, [0.05, 0.75], [28, 0], { clamp: true })
+  const suelo = useTransform(avance, [0, 0.45], [0, 1], { clamp: true })
+  return (
+    <Box sx={{ position: 'relative', pb: 2 }}>
+      <Box component={motion.img} src={url} alt={alt} loading="lazy" decoding="async"
+        style={quieto ? undefined : { clipPath: recorte, y: subida }}
+        sx={{ display: 'block', width: '100%', height: 'auto' }} />
+      <Box component={motion.div} aria-hidden style={quieto ? undefined : { scaleX: suelo }}
+        sx={{ position: 'absolute', left: '4%', right: '4%', bottom: 0, height: '1px', backgroundColor: 'secondary.main', transformOrigin: 'center' }} />
     </Box>
   )
 }

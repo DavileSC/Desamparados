@@ -188,7 +188,8 @@ export interface BloqueHorario extends BloqueBase {
 }
 /** Los dibujos que sabe trazar la web: lista cerrada, la misma que valida el servidor. */
 export type NombreDeDibujo = 'templo' | 'signoPasionista'
-export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string }
+/** `foto`: una ilustración que se pinta en lugar del dibujo de líneas (vacía, el dibujo). */
+export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string } }
 
 export type Bloque =
   | BloqueTexto

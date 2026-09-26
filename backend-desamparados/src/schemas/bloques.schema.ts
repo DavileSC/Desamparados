@@ -545,6 +545,9 @@ const horarioSchema = type({
  * lado. Los dibujos son de una lista cerrada, hechos en código: el templo de
  * Santa María Goretti y el signo pasionista. El texto es HTML con formato,
  * saneado antes de validar como el del bloque de texto.
+ *
+ * `foto`, opcional (26-09-2026): una ilustración que se pinta en lugar del
+ * dibujo de líneas, como la del templo. Con descripción, como toda foto.
  */
 export const DIBUJOS = ['templo', 'signoPasionista'] as const;
 
@@ -553,9 +556,14 @@ const dibujoSchema = type({
   tipo: "'dibujo'",
   dibujo: type.enumerated(...DIBUJOS),
   html: type(`1 <= string <= ${topes.html}`),
-}).narrow((datos, ctx) => enBlanco(datos.html)
-  ? ctx.reject({ path: ['html'], problem: 'no puede quedar en blanco' })
-  : true);
+  'foto?': { url: sinFoto.or(rutaImagenPublica), alt: DESCRIPCION },
+}).narrow((datos, ctx) => {
+  if (enBlanco(datos.html)) return ctx.reject({ path: ['html'], problem: 'no puede quedar en blanco' });
+  if (datos.foto && datos.foto.url !== '' && enBlanco(datos.foto.alt)) {
+    return ctx.reject({ path: ['foto', 'alt'], problem: 'es obligatoria: describe lo que se ve' });
+  }
+  return true;
+});
 
 /** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
 const espacioSchema = type({
