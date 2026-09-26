@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles'
 import { useMemo } from 'react'
 import ContenedorDePagina from '../ContenedorDePagina'
 import { GRANATE, PAPEL } from '../../features/inicio/estilos'
+import { VELO_SOBRE_GRANATE } from '../estiloDeBoton'
 
 export type Fondo = 'ninguno' | 'papel' | 'granate' | 'oscuro' | 'foto'
 
@@ -50,6 +51,7 @@ export default function BandaDeFondo({ fondo, foto, children }: { fondo: Fondo; 
         py: { xs: 6, md: 9 },
         backgroundColor: color,
         color: fondo === 'papel' ? TINTA : undefined,
+        ...(fondo === 'granate' && VELO_SOBRE_GRANATE),
         ...(fondo === 'foto' && foto ? {
           backgroundImage: `url("${foto}")`,
           backgroundSize: 'cover',

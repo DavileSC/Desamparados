@@ -67,9 +67,11 @@ export const BOTON = {
   claro: {
     ...base,
     // Un velo del color de la letra, sin borde: crema sobre oscuro y tinta sobre
-    // una franja de papel, que la letra y el velo salen del tema.
+    // una franja de papel, que la letra y el velo salen del tema. Sobre granate,
+    // el velo crema lo volvía rosa y la letra perdía contraste: ahí quien pinta
+    // el fondo pone `--velo-boton` a un velo oscuro (VELO_SOBRE_GRANATE).
     color: 'text.primary',
-    backgroundColor: (t: { palette: { mode: string } }) => (t.palette.mode === 'light' ? 'rgba(27, 28, 26, 0.08)' : 'rgba(243, 239, 230, 0.1)'),
+    backgroundColor: (t: { palette: { mode: string } }) => (t.palette.mode === 'light' ? 'rgba(27, 28, 26, 0.08)' : 'var(--velo-boton, rgba(243, 239, 230, 0.1))'),
     boxShadow: 'none',
     '&:hover': aBlanco(TINTA),
   },
@@ -83,6 +85,9 @@ export const BOTON = {
 } as const
 
 export type EstiloDeBoton = keyof typeof BOTON
+
+/** Para los fondos granate: el botón claro oscurece el granate en vez de aclararlo. */
+export const VELO_SOBRE_GRANATE = { '--velo-boton': 'rgba(10, 9, 11, 0.32)' } as const
 
 /**
  * Enlace de sección («Calendario completo», «Ver todas»): en minúsculas, sin

@@ -9,7 +9,7 @@ import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined'
-import { BOTON } from '../../components/estiloDeBoton'
+import { BOTON, VELO_SOBRE_GRANATE } from '../../components/estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { site } from '../../config/site'
@@ -63,6 +63,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
         alignItems: 'flex-start',
         p: { xs: '30px 24px 26px', md: '40px 38px' },
         backgroundColor: GRANATE,
+        ...VELO_SOBRE_GRANATE,
         color: '#fff',
         textDecoration: 'none',
         transition: 'background-color .3s ease',
