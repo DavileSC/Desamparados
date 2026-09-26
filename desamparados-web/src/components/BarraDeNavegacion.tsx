@@ -11,6 +11,7 @@ import MenuEscritorio from './barra/MenuEscritorio'
 import CajonMovil from './barra/CajonMovil'
 import { DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, socialMq, tinta } from './barra/estilos'
 import { site } from '../config/site'
+import { ESMALTE } from './esmalte'
 
 /**
  * La barra de la web pública. Aquí está el armazón —el velo que se va cerrando
@@ -212,20 +213,13 @@ export default function BarraDeNavegacion() {
               variant="contained"
               disableElevation
               sx={{
-                backgroundColor: '#6e1822',
-                color: '#ffffff',
+                ...ESMALTE.principal,
                 px: 3,
+                minHeight: 44,
                 height: 44,
-                whiteSpace: 'nowrap',
                 flexShrink: 0,
-                // Mismo redondeo y estilo que Boton ("Conoce el Grupo Parroquial")
-                borderRadius: '8px',
                 fontSize: '14px',
-                fontWeight: 600,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                [compactMq]: { px: 1.5, fontSize: '12px' },
-                '&:hover': { backgroundColor: '#5a131c' },
+                [compactMq]: { px: 1.5, fontSize: '13px' },
               }}
             >
               Acceso hermanos

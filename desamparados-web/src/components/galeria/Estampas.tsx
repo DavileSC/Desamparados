@@ -6,6 +6,10 @@ import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
 import { useReducedMotion } from 'framer-motion'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { imagenDe } from './formato'
+import { ESMALTE } from '../esmalte'
+
+/** Los botones del pie de las estampas: esmalte oscuro, algo más bajos. */
+const BOTON_ESTAMPA = { ...ESMALTE.oscuro, minHeight: 40, px: 2, fontSize: 14 } as const
 
 /** El giro de cada estampa del pila, siempre el mismo para la misma foto. */
 const GIROS = [-2, 4, -5, 3, -3, 6, -4, 2]
@@ -115,13 +119,13 @@ export default function Estampas({ medios, onAbrir }: {
         })}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Button variant="outlined" color="inherit" size="small" onClick={anterior} disabled={medios.length < 2} startIcon={<ArrowBackIcon />} aria-label="Estampa anterior" sx={{ '& .MuiButton-startIcon': { mr: { xs: 0, sm: 1 } } }}>
+        <Button size="small" onClick={anterior} disabled={medios.length < 2} startIcon={<ArrowBackIcon />} aria-label="Estampa anterior" sx={{ ...BOTON_ESTAMPA, '& .MuiButton-startIcon': { mr: { xs: 0, sm: 1 } } }}>
           <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Anterior</Box>
         </Button>
-        <Button variant="outlined" color="inherit" size="small" onClick={() => onAbrir(arriba, medio.tipo === 'video')}>
+        <Button size="small" onClick={() => onAbrir(arriba, medio.tipo === 'video')} sx={BOTON_ESTAMPA}>
           {medio.tipo === 'video' ? 'Ver el vídeo' : 'Ampliar'}
         </Button>
-        <Button variant="outlined" color="inherit" size="small" onClick={() => siguiente()} disabled={medios.length < 2} endIcon={<ArrowForwardIcon />} aria-label="Estampa siguiente" sx={{ '& .MuiButton-endIcon': { ml: { xs: 0, sm: 1 } } }}>
+        <Button size="small" onClick={() => siguiente()} disabled={medios.length < 2} endIcon={<ArrowForwardIcon />} aria-label="Estampa siguiente" sx={{ ...BOTON_ESTAMPA, '& .MuiButton-endIcon': { ml: { xs: 0, sm: 1 } } }}>
           <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Siguiente</Box>
         </Button>
       </Box>

@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Box, Button, Typography } from '@mui/material'
 import ContenedorDePagina from './ContenedorDePagina'
+import { ESMALTE } from './esmalte'
 
 interface Props {
   children: ReactNode
@@ -56,7 +57,7 @@ export default class RedDeErrores extends Component<Props, State> {
               No hemos podido mostrar el contenido. El resto del sitio sigue funcionando: vuelve a
               la portada e inténtalo de nuevo. Si se repite, escríbenos y lo revisamos.
             </Typography>
-            <Button variant="contained" color="primary" onClick={this.recargar}>
+            <Button onClick={this.recargar} sx={ESMALTE.principal}>
               Volver a la portada
             </Button>
           </Box>

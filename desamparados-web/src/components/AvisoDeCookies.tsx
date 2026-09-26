@@ -1,6 +1,7 @@
 import { Box, Typography, Button } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
+import { ESMALTE } from './esmalte'
 
 export default function AvisoDeCookies() {
   const { sinDecidir, aceptar, rechazar } = useConsentimientoDeCookies()
@@ -48,23 +49,13 @@ export default function AvisoDeCookies() {
         <Box sx={{ display: 'flex', gap: 2, flexShrink: 0 }}>
           <Button
             onClick={rechazar}
-            sx={{
-              color: 'text.primary',
-              border: '1px solid rgba(204, 196, 201, 0.3)',
-              px: 3,
-              '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)' },
-            }}
+            sx={{ ...ESMALTE.oscuro, px: 3 }}
           >
             Rechazar
           </Button>
           <Button
             onClick={aceptar}
-            sx={{
-              backgroundColor: 'primary.main',
-              color: 'primary.contrastText',
-              px: 3,
-              '&:hover': { backgroundColor: 'primary.dark' },
-            }}
+            sx={{ ...ESMALTE.principal, px: 3 }}
           >
             Aceptar
           </Button>

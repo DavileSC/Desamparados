@@ -3,6 +3,7 @@ import { Alert, Box, ButtonBase, CircularProgress, Collapse, Typography } from '
 import { agendaPublica, urlDeLaSuscripcion, type ApiEvent } from '../../../lib/api/agenda'
 import { GOLD } from '../../inicio/estilos'
 import CalendarioDeCultos from './CalendarioDeCultos'
+import { ESMALTE, enlaceEsmalte } from '../../../components/esmalte'
 
 /**
  * La Agenda pública: lo que viene, de una vez y sin paginar, en un calendario
@@ -46,13 +47,11 @@ function Suscripcion() {
   const copiar = () => {
     navigator.clipboard?.writeText(https).then(() => setCopiado(true), () => setCopiado(false))
   }
-  const enlace = {
-    color: GOLD, fontWeight: 600, fontSize: 14.5, minHeight: 40, display: 'inline-flex', alignItems: 'center',
-    textUnderlineOffset: '3px', textDecorationThickness: '1px', fontFamily: 'inherit',
-  } as const
+  // Enlaces esmalte: en minúsculas y sin subrayar, en oro sobre el fondo de la Agenda.
+  const enlace = { ...enlaceEsmalte, color: GOLD, fontSize: 14.5, minHeight: 40, fontFamily: 'inherit', '&:hover': { color: '#ffffff' } } as const
   return (
     <Box sx={{ mt: 4, textAlign: 'center' }}>
-      <ButtonBase onClick={() => setAbierta((a) => !a)} aria-expanded={abierta} aria-controls="suscripcion-agenda" sx={{ ...enlace, textDecoration: 'underline' }}>
+      <ButtonBase onClick={() => setAbierta((a) => !a)} aria-expanded={abierta} aria-controls="suscripcion-agenda" sx={{ ...ESMALTE.oscuro, fontFamily: 'inherit' }}>
         Suscribirse a la agenda
       </ButtonBase>
       <Collapse in={abierta} id="suscripcion-agenda">
@@ -63,7 +62,7 @@ function Suscripcion() {
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '0 22px' }}>
             <Box component="a" href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}`} target="_blank" rel="noopener noreferrer" sx={enlace}>Google Calendar</Box>
             <Box component="a" href={webcal} sx={enlace}>iPhone, Mac y Outlook</Box>
-            <ButtonBase onClick={copiar} sx={{ ...enlace, textDecoration: 'underline' }}>{copiado ? 'Enlace copiado' : 'Copiar el enlace'}</ButtonBase>
+            <ButtonBase onClick={copiar} sx={enlace}>{copiado ? 'Enlace copiado' : 'Copiar el enlace'}</ButtonBase>
           </Box>
         </Box>
       </Collapse>
