@@ -8,7 +8,7 @@ import { FormularioHorario } from './formularios/horario'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
-  FormularioPuertas,
+  FormularioPuertas, FormularioPrograma,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -55,6 +55,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   dibujo: FormularioDibujo as unknown as ComponentType<Props<never>>,
   anillos: FormularioAnillos as unknown as ComponentType<Props<never>>,
   puertas: FormularioPuertas as unknown as ComponentType<Props<never>>,
+  programa: FormularioPrograma as unknown as ComponentType<Props<never>>,
 }
 
 /** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
@@ -109,6 +110,7 @@ export const BLOQUE_NUEVO: Record<string, object> = {
     tipo: 'puertas', titulo: '',
     puertas: [0, 1].map(() => ({ ceja: '', titulo: '', texto: '', datos: [], boton: '', enlace: '' })),
   },
+  programa: { tipo: 'programa', titulo: 'Programa del curso', filas: [{ cuando: '', mes: 0, titulo: '', texto: '', boton: '', enlace: '' }] },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
@@ -259,6 +261,14 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (sinNombre !== -1) return `tiene un dato de la puerta ${sinNombre + 1} sin nombre`
       const cojo = bloque.puertas.findIndex((p) => (p.boton.trim() === '') !== (p.enlace === ''))
       return cojo === -1 ? null : `tiene el botón de la puerta ${cojo + 1} sin texto o sin destino`
+    }
+    case 'programa': {
+      const sinCuando = bloque.filas.findIndex((f) => f.cuando.trim() === '')
+      if (sinCuando !== -1) return `tiene el culto ${sinCuando + 1} sin decir cuándo`
+      const sinTitulo = bloque.filas.findIndex((f) => f.titulo.trim() === '')
+      if (sinTitulo !== -1) return `tiene el culto ${sinTitulo + 1} sin nombre`
+      const cojo = bloque.filas.findIndex((f) => (f.boton.trim() === '') !== (f.enlace === ''))
+      return cojo === -1 ? null : `tiene el enlace del culto ${cojo + 1} sin texto o sin destino`
     }
     case 'dibujo':
       if (bloque.foto && bloque.foto.url !== '' && bloque.foto.alt.trim() === '') return 'tiene la ilustración sin descripción'

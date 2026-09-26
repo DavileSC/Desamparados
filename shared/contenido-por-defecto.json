@@ -1136,55 +1136,70 @@
     },
     "bloques": [
       {
-        "tipo": "texto",
-        "titulo": "",
-        "html": "<p>La vida espiritual del Grupo Parroquial se alimenta de los cultos que celebramos a lo largo del año. Son ocasiones para rezar juntos, para venerar a Nuestra Señora de los Desamparados y para el encuentro fraterno entre los hermanos.</p><p>Todos se celebran en la parroquia de Santa María Goretti y están abiertos a cualquiera que quiera acompañarnos, sea o no hermano.</p>"
+        "tipo": "fotoTexto",
+        "titulo": "En honor de Nuestra Señora de los Desamparados",
+        "presentacion": {
+          "estilo": "fundido",
+          "lado": "derecha"
+        },
+        "url": "/images/virgen-rostro.jpg",
+        "alt": "Rostro de Nuestra Señora de los Desamparados, con la corona de plata y el encaje",
+        "pie": "",
+        "html": "<p>La vida espiritual del Grupo Parroquial se alimenta de los cultos que celebramos a lo largo del año. Todos en la parroquia de Santa María Goretti, abiertos a quien quiera acompañarnos, sea o no hermano.</p>",
+        "boton": "",
+        "enlace": ""
       },
       {
-        "tipo": "tarjetas",
-        "titulo": "Celebraciones del año",
-        "presentacion": {
-          "columnas": "2",
-          "estilo": "contorno",
-          "orientacion": "horizontal",
-          "alineacion": "izquierda"
-        },
-        "tarjetas": [
+        "tipo": "programa",
+        "titulo": "Programa del curso",
+        "filas": [
           {
-            "titulo": "Cultos mensuales",
-            "descripcion": "Celebración de la Eucaristía y momentos de oración fraterna con los hermanos, generalmente el primer sábado de mes.",
-            "enlace": "",
-            "icono": "calendario"
-          },
-          {
-            "titulo": "Triduo a la Sagrada Titular",
-            "descripcion": "Tres días de culto en noviembre en honor a Nuestra Señora de los Desamparados, con predicación y celebración de los sacramentos.",
-            "enlace": "/desamparados",
-            "icono": "sol"
-          },
-          {
-            "titulo": "Besamanos de la Virgen",
-            "descripcion": "Solemne besamanos durante el cual los devotos y hermanos pueden venerar de cerca la imagen de la Sagrada Titular.",
-            "enlace": "",
-            "icono": "corazon"
-          },
-          {
+            "cuando": "Octubre",
+            "mes": 10,
             "titulo": "Rosario vespertino",
-            "descripcion": "En octubre, el mes del Rosario, la Virgen sale por las calles del barrio mientras se rezan sus misterios.",
-            "enlace": "",
-            "icono": "flor"
+            "texto": "En el mes del Rosario, la Virgen sale por las calles del barrio mientras se rezan sus misterios.",
+            "boton": "",
+            "enlace": ""
           },
           {
-            "titulo": "Sábado de Pasión",
-            "descripcion": "Nuestra salida procesional por las calles de Málaga, momento culminante del año cofrade del Grupo Parroquial.",
-            "enlace": "/sabado-de-pasion",
-            "icono": "estrella"
+            "cuando": "Noviembre",
+            "mes": 11,
+            "titulo": "Solemne Triduo",
+            "texto": "Tres días de culto en honor de la Sagrada Titular, con predicación y celebración de los sacramentos.",
+            "boton": "Sobre la Sagrada Titular",
+            "enlace": "/desamparados"
           },
           {
-            "titulo": "Cultos de Navidad y Semana Santa",
-            "descripcion": "Celebraciones especiales que marcan los grandes momentos litúrgicos del año en la vida parroquial y cofrade.",
-            "enlace": "",
-            "icono": "iglesia"
+            "cuando": "Por anunciar",
+            "mes": 0,
+            "titulo": "Besamanos",
+            "texto": "Los devotos y hermanos pueden venerar de cerca la imagen de la Sagrada Titular.",
+            "boton": "",
+            "enlace": ""
+          },
+          {
+            "cuando": "Diciembre",
+            "mes": 12,
+            "titulo": "Navidad",
+            "texto": "Las celebraciones que abren el año litúrgico en la vida parroquial y cofrade.",
+            "boton": "",
+            "enlace": ""
+          },
+          {
+            "cuando": "Cuaresma",
+            "mes": 3,
+            "titulo": "Semana Santa y Sábado de Pasión",
+            "texto": "Nuestra salida procesional por las calles de Málaga, el momento culminante del año cofrade del Grupo Parroquial.",
+            "boton": "El Sábado de Pasión",
+            "enlace": "/sabado-de-pasion"
+          },
+          {
+            "cuando": "Cada mes",
+            "mes": 0,
+            "titulo": "Culto mensual",
+            "texto": "Eucaristía y oración fraterna con los hermanos, generalmente el primer sábado de mes.",
+            "boton": "",
+            "enlace": ""
           }
         ]
       },
@@ -1198,32 +1213,6 @@
         "texto": "Desde ahora me felicitarán todas las generaciones, porque el Poderoso ha hecho obras grandes por mí.",
         "autor": "María",
         "fuente": "Evangelio según san Lucas, 1, 48-49"
-      },
-      {
-        "tipo": "listado",
-        "titulo": "Próximas citas",
-        "fuente": "agenda-proxima",
-        "presentacion": {
-          "disposicion": "lista"
-        }
-      },
-      {
-        "tipo": "preguntas",
-        "titulo": "Preguntas frecuentes",
-        "preguntas": [
-          {
-            "pregunta": "¿Tengo que ser hermano para ir?",
-            "respuesta": "No. Los cultos están abiertos a todos: hermanos, devotos, vecinos y cualquiera que quiera acercarse."
-          },
-          {
-            "pregunta": "¿Dónde se celebran?",
-            "respuesta": "En la parroquia de Santa María Goretti, nuestra sede. En la página de la parroquia tienes la dirección, el mapa y el horario de misas."
-          },
-          {
-            "pregunta": "¿Cómo me entero de las fechas?",
-            "respuesta": "Las publicamos en la Agenda con su día, hora y lugar. Desde allí puedes añadir cada acto a tu calendario o suscribirte para que te lleguen solos."
-          }
-        ]
       },
       {
         "tipo": "botones",

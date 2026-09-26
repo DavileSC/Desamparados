@@ -16,10 +16,11 @@ import CATALOGO from '../../../../../shared/paginas-publicas.json'
 const ANTES: Record<string, string[]> = {
   // El «Quinario al Santo Cristo» salió a propósito: el Grupo tiene una sola titular.
   cultos: [
+    // Desde el programa del curso (26-09-2026), los cultos van en sus filas.
     'La vida espiritual del Grupo Parroquial se alimenta de los cultos',
-    'Celebraciones del año',
-    'Cultos mensuales', 'Triduo a la Sagrada Titular', 'Besamanos de la Virgen',
-    'Rosario vespertino', 'Sábado de Pasión', 'Cultos de Navidad y Semana Santa', 'Próximas citas',
+    'Programa del curso',
+    'Culto mensual', 'Solemne Triduo', 'Besamanos',
+    'Rosario vespertino', 'Sábado de Pasión', 'Navidad',
     'generalmente el primer sábado de mes',
   ],
   'organos-de-gobierno': [
@@ -101,6 +102,8 @@ function textoDe(slug: string): string {
       fines?: { titulo: string; texto: string }[]
       // Las dos puertas, en sus paneles (Caridad, 26-09-2026).
       puertas?: { ceja: string; titulo: string; texto: string }[]
+      // El programa, en sus filas (Cultos, 26-09-2026).
+      filas?: { cuando: string; titulo: string; texto: string }[]
     }[]
   }
   const trozos = [pagina.cabecera.titulo, pagina.cabecera.subtitulo]
@@ -111,6 +114,7 @@ function textoDe(slug: string): string {
     for (const paso of bloque.pasos ?? []) trozos.push(paso.titulo, paso.texto)
     for (const fin of bloque.fines ?? []) trozos.push(fin.titulo, fin.texto)
     for (const puerta of bloque.puertas ?? []) trozos.push(puerta.ceja, puerta.titulo, puerta.texto)
+    for (const fila of bloque.filas ?? []) trozos.push(fila.cuando, fila.titulo, fila.texto)
   }
   return trozos.join(' ').replace(/\s+/g, ' ')
 }

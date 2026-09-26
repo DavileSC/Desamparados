@@ -248,6 +248,12 @@
       }
     },
     "fotoTexto": {
+      "estilo": {
+        "valores": [
+          "separada",
+          "fundido"
+        ]
+      },
       "lado": {
         "valores": [
           "izquierda",

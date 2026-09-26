@@ -22,5 +22,6 @@
   "puntosPorLinea": 4000,
   "franjasPorHorario": 12,
   "horasPorFranja": 8,
-  "datosPorPuerta": 3
+  "datosPorPuerta": 3,
+  "filasPorPrograma": 12
 }

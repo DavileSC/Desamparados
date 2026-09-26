@@ -17,7 +17,7 @@ import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
   BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
-  BloquePuertas, Puerta,
+  BloquePuertas, Puerta, BloquePrograma,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -242,6 +242,43 @@ export function FormularioPuertas({ bloque, onCambio }: Props<BloquePuertas>) {
         </Stack>
       ))}
       <Typography variant="caption" color="text.secondary">Siempre son dos, una al lado de la otra; en el móvil, una debajo de la otra.</Typography>
+    </Stack>
+  )
+}
+
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+export function FormularioPrograma({ bloque, onCambio }: Props<BloquePrograma>) {
+  return (
+    <Stack spacing={2}>
+      <Typography variant="body2" color="text.secondary">
+        Un culto por fila, en el orden del curso. El mes sirve para que la web marque sola cuál es el próximo y ponga su fecha,
+        sacada de la Agenda (del primer culto o salida anunciado en ese mes).
+      </Typography>
+      <ListaEditable elementos={bloque.filas} onCambio={(filas) => onCambio({ filas })}
+        nuevo={() => ({ cuando: '', mes: 0, titulo: '', texto: '', boton: '', enlace: '' })} nombre="Culto" maximo={topes.filasPorPrograma}
+        pintar={(fila, cambiar, i) => (
+          <>
+            <TextField label={`Cuándo (culto ${i + 1})`} value={fila.cuando} onChange={(e) => cambiar({ cuando: e.target.value })} size="small" fullWidth
+              helperText="Lo que se lee en grande a la izquierda: «Octubre», «Cuaresma», «Cada mes»."
+              slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+            <TextField select label="Mes en que cae" value={fila.mes} onChange={(e) => cambiar({ mes: Number(e.target.value) })} size="small" fullWidth
+              helperText="Sin mes fijo, nunca sale como «Próximo».">
+              <MenuItem value={0}>Sin mes fijo</MenuItem>
+              {MESES.map((mes, m) => <MenuItem key={mes} value={m + 1}>{mes}</MenuItem>)}
+            </TextField>
+            <TextField label="Culto" value={fila.titulo} onChange={(e) => cambiar({ titulo: e.target.value })} size="small" fullWidth
+              slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+            <TextField label="Texto" value={fila.texto} onChange={(e) => cambiar({ texto: e.target.value })} size="small" fullWidth multiline minRows={2}
+              helperText="Opcional. Una o dos líneas."
+              slotProps={{ htmlInput: { maxLength: topes.parrafo } }} />
+            <TextField label="Texto del enlace" value={fila.boton} onChange={(e) => cambiar({ boton: e.target.value })} size="small" fullWidth
+              helperText="Opcional, como «El Sábado de Pasión». Con texto, necesita a dónde llevar."
+              slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+            <CampoEnlace etiqueta={`Destino del enlace ${i + 1}`} valor={fila.enlace} opcional
+              onCambio={(enlace) => cambiar({ enlace })} ayuda="La página a la que lleva. Vacío si no hay enlace." />
+          </>
+        )} />
     </Stack>
   )
 }

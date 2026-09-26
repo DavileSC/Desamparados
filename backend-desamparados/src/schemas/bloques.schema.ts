@@ -635,6 +635,34 @@ const puertasSchema = type({
   return true;
 });
 
+/**
+ * Programa: los cultos del curso, uno por fila, con cuándo son («Octubre»,
+ * «Cada mes»). `mes` (1–12, o 0 si no tiene uno fijo) es lo que deja a la web
+ * marcar sola cuál es el próximo y poner su fecha, sacada de la Agenda.
+ */
+const filaDeProgramaSchema = type({
+  cuando: ETIQUETA,
+  mes: '0 <= number.integer <= 12',
+  titulo: TITULO,
+  texto: PARRAFO,
+  boton: ETIQUETA,
+  enlace: sinEnlace.or(enlaceInterno),
+});
+
+const programaSchema = type({
+  ...comunes,
+  tipo: "'programa'",
+  filas: filaDeProgramaSchema.array().atLeastLength(1).atMostLength(topes.filasPorPrograma),
+}).narrow((datos, ctx) => {
+  for (const [indice, fila] of datos.filas.entries()) {
+    if (enBlanco(fila.cuando)) return ctx.reject({ path: ['filas', indice, 'cuando'], problem: 'no puede quedar en blanco' });
+    if (enBlanco(fila.titulo)) return ctx.reject({ path: ['filas', indice, 'titulo'], problem: 'no puede quedar en blanco' });
+    if (!enBlanco(fila.boton) && fila.enlace === '') return ctx.reject({ path: ['filas', indice, 'enlace'], problem: 'falta: el botón necesita a dónde llevar' });
+    if (enBlanco(fila.boton) && fila.enlace !== '') return ctx.reject({ path: ['filas', indice, 'boton'], problem: 'falta el texto del botón' });
+  }
+  return true;
+});
+
 /** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
 const espacioSchema = type({
   ...comunes,
@@ -666,6 +694,7 @@ const POR_TIPO = {
   dibujo: dibujoSchema,
   anillos: anillosSchema,
   puertas: puertasSchema,
+  programa: programaSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

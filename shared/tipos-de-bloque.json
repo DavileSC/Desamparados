@@ -27,7 +27,10 @@
     "texto alrededor de cada anillo.",
     "",
     "Dos puertas (puertas), 26-09-2026: dos paneles para dos lectores, como",
-    "«Necesito ayuda» y «Quiero ayudar» en Caridad, con sus datos y su botón."
+    "«Necesito ayuda» y «Quiero ayudar» en Caridad, con sus datos y su botón.",
+    "",
+    "Programa (programa), 26-09-2026: los cultos del curso mes a mes, con el",
+    "próximo marcado solo y su fecha sacada de la Agenda."
   ],
   "tipos": [
     "texto",
@@ -53,6 +56,7 @@
     "horario",
     "dibujo",
     "anillos",
-    "puertas"
+    "puertas",
+    "programa"
   ]
 }

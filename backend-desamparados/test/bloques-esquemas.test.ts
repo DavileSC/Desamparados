@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -375,6 +375,25 @@ describe('bloque de dos puertas', () => {
     assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, enlace: '' }, PUERTA] }));
     assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, boton: '' }, PUERTA] }));
     assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, enlace: '/no-existe' }, PUERTA] }));
+  });
+});
+
+describe('bloque de programa', () => {
+  const FILA = { cuando: 'Octubre', mes: 10, titulo: 'Rosario vespertino', texto: 'La Virgen por el barrio.', boton: '', enlace: '' };
+  const PROGRAMA = { tipo: 'programa', titulo: 'Programa del curso', filas: [FILA, { ...FILA, cuando: 'Cada mes', mes: 0 }] };
+
+  test('acepta filas con mes o sin mes fijo', () => {
+    assert.ok(!falla('programa', PROGRAMA));
+    assert.ok(!falla('programa', { ...PROGRAMA, filas: [{ ...FILA, boton: 'El Sábado de Pasión', enlace: '/sabado-de-pasion' }] }));
+  });
+
+  test('el mes va de 0 a 12, y cuándo y título no quedan en blanco', () => {
+    assert.ok(falla('programa', { ...PROGRAMA, filas: [] }));
+    assert.ok(falla('programa', { ...PROGRAMA, filas: [{ ...FILA, mes: 13 }] }));
+    assert.ok(falla('programa', { ...PROGRAMA, filas: [{ ...FILA, mes: 2.5 }] }));
+    assert.ok(falla('programa', { ...PROGRAMA, filas: [{ ...FILA, cuando: '' }] }));
+    assert.ok(falla('programa', { ...PROGRAMA, filas: [{ ...FILA, titulo: ' ' }] }));
+    assert.ok(falla('programa', { ...PROGRAMA, filas: [{ ...FILA, enlace: '/agenda' }] }));
   });
 });
 

@@ -199,6 +199,10 @@ export interface DatoDePuerta { etiqueta: string; valor: string; nota: string; c
 export interface Puerta { ceja: string; titulo: string; texto: string; datos: DatoDePuerta[]; boton: string; enlace: string }
 /** Dos puertas para dos lectores («Necesito ayuda» / «Quiero ayudar»): siempre dos. */
 export interface BloquePuertas extends BloqueBase { tipo: 'puertas'; puertas: [Puerta, Puerta] }
+/** Una fila del programa: `mes` 1–12, o 0 si no tiene uno fijo («Cada mes»). */
+export interface FilaDePrograma { cuando: string; mes: number; titulo: string; texto: string; boton: string; enlace: string }
+/** Los cultos del curso, uno por fila; la web marca sola el próximo. */
+export interface BloquePrograma extends BloqueBase { tipo: 'programa'; filas: FilaDePrograma[] }
 export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string } }
 
 export type Bloque =
@@ -226,6 +230,7 @@ export type Bloque =
   | BloqueDibujo
   | BloqueAnillos
   | BloquePuertas
+  | BloquePrograma
 
 /** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
 export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }
