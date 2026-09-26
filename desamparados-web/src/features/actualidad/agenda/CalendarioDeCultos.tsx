@@ -5,7 +5,7 @@ import { useReducedMotion } from 'framer-motion'
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { GOLD, GRANATE, SERIF } from '../../inicio/estilos'
 import { TIPOS, diasDeLaRejilla, inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from '../../inicio/agenda'
-import { caeEnElDia, claveDelDia, cuandoEnCartel, fotoDelCartel, primerDiaEnElMes, ultimoMes } from './cultos'
+import { claveDelDia, cuandoEnCartel, fotoDelCartel, primerDiaEnElMes, repartoDeLaSemana, ultimoMes } from './cultos'
 import VentanaDelActo from './VentanaDelActo'
 
 const NOCHE = '#161316'
@@ -57,9 +57,13 @@ function Anillo({ quieto }: { quieto: boolean }) {
 /**
  * La Agenda en un calendario de pared: el mes en una hoja oscura con filetes
  * de oro, los días sin nada con el número solo perfilado y los días con acto
- * en oro macizo; los cultos solemnes en granate, y el primero con su foto.
+ * en oro macizo; los cultos solemnes, con su foto.
  *
- * Al pulsar un día se abre el acto en una ventana que crece desde la casilla:
+ * Un acto que va solo es una tarjeta que ocupa sus días seguidos (un triduo,
+ * tres casillas sin rayas por dentro y su nombre una vez). Los que coinciden
+ * se quedan cada uno en sus casillas, con una línea por acto en cada día.
+ *
+ * Al pulsar un acto se abre en una ventana que crece desde su tarjeta:
  * pegada a ella en escritorio y centrada en el móvil. El próximo acto lleva una
  * luz burdeos que recorre su borde, y la leyenda de debajo dice qué significa.
  * Al cambiar de mes, el nombre entra letra a letra y los días caen en cascada.
@@ -111,10 +115,10 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
     setAbierto(null)
   }
 
-  // La ventana se ancla a la casilla del acto, que puede estar en un mes recién pintado.
+  // La ventana se ancla a la tarjeta del acto (a su primer tramo, si cruza de
+  // semana), que puede estar en un mes recién pintado.
   useLayoutEffect(() => {
-    const dia = evento && primerDiaEnElMes(evento, mes)
-    setAncla(dia ? rejilla.current?.querySelector<HTMLElement>(`[data-dia="${claveDelDia(dia)}"]`) ?? null : null)
+    setAncla(evento ? rejilla.current?.querySelector<HTMLElement>(`[data-acto="${evento.id}"]`) ?? null : null)
   }, [evento, mes])
 
   // Solo las semanas del mes: cinco casi siempre, seis si empieza tarde y es largo.
@@ -140,6 +144,16 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const fila = estrecho ? 50 : altoFila ?? FILA_MAX
   const grande = fila >= 96
   const mediano = fila >= 76
+  const numero = {
+    display: 'block', fontSize: { xs: 20, md: grande ? 40 : mediano ? 32 : 26 }, fontWeight: { xs: 700, md: 800 }, lineHeight: 1.1,
+    color: 'transparent', WebkitTextStroke: '0.8px rgba(222,199,43,0.35)',
+  } as const
+  const casilla = {
+    position: 'relative', minWidth: 0, minHeight: 0, p: { xs: '4px 6px', md: mediano ? '8px 10px' : '5px 8px' },
+    textAlign: 'left', fontVariantNumeric: 'tabular-nums', overflow: 'hidden',
+    // Al seguir a la ventana de un acto, que la barra fija de la web no lo tape.
+    scrollMarginBlock: '96px 240px',
+  } as const
 
   const ventana = evento && (
     <VentanaDelActo
@@ -187,83 +201,125 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
         key={claveDelDia(mes)}
         ref={rejilla}
         sx={{
-          display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: `auto repeat(${semanas}, ${fila}px)`,
+          display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
           borderTop: `1px solid ${ORO_BORDE}`, borderLeft: `1px solid ${FILETE}`,
-          '& > *': {
+          '& .pieza': {
             borderRight: `1px solid ${FILETE}`, borderBottom: `1px solid ${FILETE}`,
             ...(animar && !quieto && { animation: `${cae} .6s cubic-bezier(.2,.8,.2,1) both` }),
           },
         }}
       >
         {SEMANA.map((d, i) => (
-          <Box key={d} aria-hidden sx={{ textAlign: 'center', py: 0.75, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: ORO_SUAVE, animationDelay: `${i * 28}ms` }}>{d}</Box>
+          <Box key={d} className="pieza" aria-hidden sx={{ textAlign: 'center', py: 0.75, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: ORO_SUAVE, animationDelay: `${i * 28}ms` }}>{d}</Box>
         ))}
-        {dias.slice(0, semanas * 7).map((dia, i) => {
-          const clave = claveDelDia(dia)
-          const retraso = { animationDelay: `${((i % 7) + Math.floor(i / 7) + 1) * 28}ms` }
-          if (dia.getMonth() !== mes.getMonth()) return <Box key={clave} sx={retraso} />
-
-          const actos = eventos.filter((e) => caeEnElDia(e, dia))
-          const empiezan = actos.filter((e) => claveDelDia(primerDia(e)!) === clave)
-          const principal = empiezan[0] ?? null
-          const domingo = dia.getDay() === 0
-          const numero = {
-            display: 'block', fontSize: { xs: 20, md: grande ? 40 : mediano ? 32 : 26 }, fontWeight: { xs: 700, md: 800 }, lineHeight: 1.1,
-            color: 'transparent', WebkitTextStroke: `0.8px ${domingo ? ROJO : 'rgba(222,199,43,0.35)'}`,
-          } as const
-          const casilla = {
-            position: 'relative', display: 'block', minWidth: 0, height: '100%', p: { xs: '4px 6px', md: mediano ? '8px 10px' : '5px 8px' },
-            textAlign: 'left', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', ...retraso,
-            // Al seguir a la ventana de un día, que la barra fija de la web no lo tape.
-            scrollMarginBlock: '96px 240px',
-          } as const
-
-          if (!actos.length) {
-            return <Box key={clave} sx={casilla}><Box component="span" sx={numero}>{dia.getDate()}</Box></Box>
-          }
-
-          const solemne = actos.some((e) => e.cartel)
-          const conFoto = principal?.cartel ? fotoDelCartel(principal).src : null
-          const esProximo = !!proximo && primerDia(proximo) !== null && claveDelDia(primerDia(proximo)!) === clave
+        {Array.from({ length: semanas }, (_, s) => {
+          const semana = dias.slice(s * 7, s * 7 + 7)
+          const { tarjetas, porDia } = repartoDeLaSemana(eventos, semana, mes)
+          const retraso = (columna: number) => ({ animationDelay: `${(columna + s + 1) * 28}ms` })
+          const empiezaProximo = (dia: Date) => !!proximo && primerDia(proximo) !== null && claveDelDia(primerDia(proximo)!) === claveDelDia(dia)
+          const elegido = (e: ApiEvent) => abierto === e.id
+          const pulsar = (e: ApiEvent) => { if (abierto === e.id) cerrar(); else setAbierto(e.id) }
+          const marcaProximo = (
+            <>
+              <Anillo quieto={quieto} />
+              <Box component="span" aria-hidden sx={{ display: { xs: 'none', md: 'block' }, position: 'absolute', top: mediano ? 10 : 7, right: 8, fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: BURDEOS_CLARO }}>
+                Próximo
+              </Box>
+            </>
+          )
           return (
-            <ButtonBase
-              key={clave}
-              data-dia={clave}
-              data-abre-acto
-              onClick={() => { const e = principal ?? actos[0]; if (abierto === e.id) cerrar(); else setAbierto(e.id) }}
-              aria-haspopup="dialog"
-              aria-label={`${dia.getDate()} de ${nombre.toLowerCase()}: ${actos.map((e) => e.title).join(', ')}${esProximo ? '. Próximo acto' : ''}`}
-              sx={{
-                ...casilla, fontFamily: 'inherit', alignItems: 'flex-start', justifyContent: 'flex-start',
-                bgcolor: solemne ? 'rgba(110,24,34,0.55)' : 'transparent',
-                ...(conFoto && {
-                  backgroundImage: `linear-gradient(rgba(110,24,34,0.5), rgba(18,15,17,0.88)), url("${conFoto}")`,
-                  backgroundSize: 'cover', backgroundPosition: 'center 25%',
-                }),
-                boxShadow: actos.some((e) => e.id === abierto) ? `inset 0 0 0 1px ${GOLD}` : 'none',
-                '&:hover': { bgcolor: solemne ? 'rgba(110,24,34,0.8)' : 'rgba(222,199,43,0.08)' },
-                '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: -2 },
-              }}
-            >
-              <Box component="span" sx={{ ...numero, color: solemne ? '#fff' : GOLD, WebkitTextStroke: 0 }}>{dia.getDate()}</Box>
-              {principal && (
-                <Box component="span" sx={{
-                  display: { xs: 'none', md: '-webkit-box' }, WebkitBoxOrient: 'vertical', WebkitLineClamp: grande ? 2 : 1, overflow: 'hidden',
-                  mt: grande ? 0.75 : 0.25, fontSize: 12.5, fontWeight: 500, lineHeight: 1.25, color: '#f4f1ee',
-                }}>
-                  {principal.title}
-                  {empiezan.length > 1 && <Box component="span" sx={{ color: GOLD }}> y {empiezan.length - 1} más</Box>}
-                </Box>
-              )}
-              {esProximo && (
-                <>
-                  <Anillo quieto={quieto} />
-                  <Box component="span" aria-hidden sx={{ display: { xs: 'none', md: 'block' }, position: 'absolute', top: mediano ? 10 : 7, right: 8, fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: BURDEOS_CLARO }}>
-                    Próximo
+            <Box key={s} sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', height: fila }}>
+              {semana.map((dia, i) => {
+                if (tarjetas.some((t) => i >= t.desde && i <= t.hasta)) return null
+                const delMes = dia.getMonth() === mes.getMonth()
+                const actos = porDia.get(i) ?? []
+                const sx = { ...casilla, gridColumn: i + 1, ...retraso(i) }
+                if (!delMes) return <Box key={i} className="pieza" sx={sx} />
+                if (!actos.length) {
+                  return (
+                    <Box key={i} className="pieza" sx={sx}>
+                      <Box component="span" sx={{ ...numero, ...(dia.getDay() === 0 && { WebkitTextStroke: `0.8px ${ROJO}` }) }}>{dia.getDate()}</Box>
+                    </Box>
+                  )
+                }
+                // Varios actos que coinciden: la casilla del día, con una línea por acto.
+                return (
+                  <Box key={i} className="pieza" sx={{ ...sx, display: 'flex', flexDirection: 'column', gap: 0.25, bgcolor: actos.some((e) => e.cartel) ? 'rgba(110,24,34,0.55)' : 'rgba(222,199,43,0.07)' }}>
+                    <Box component="span" sx={{ ...numero, color: actos.some((e) => e.cartel) ? '#fff' : GOLD, WebkitTextStroke: 0 }}>{dia.getDate()}</Box>
+                    <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {actos.map((e) => (
+                        <ButtonBase
+                          key={e.id}
+                          data-acto={e.id}
+                          data-abre-acto
+                          onClick={() => pulsar(e)}
+                          aria-haspopup="dialog"
+                          aria-label={`${dia.getDate()} de ${nombre.toLowerCase()}: ${e.title}${empiezaProximo(dia) && e.id === proximo?.id ? '. Próximo acto' : ''}`}
+                          sx={{
+                            fontFamily: 'inherit', justifyContent: 'flex-start', minWidth: 0, textAlign: 'left',
+                            // En el móvil no cabe el nombre: cada acto es una franja de color que se pulsa.
+                            flex: { xs: 1, md: 'none' }, minHeight: { xs: 6, md: 0 },
+                            pl: { xs: 0, md: 0.75 }, fontSize: 11.5, fontWeight: 500, lineHeight: 1.3, color: '#f4f1ee',
+                            borderLeft: { md: `2px solid ${e.cartel ? BURDEOS_CLARO : GOLD}` },
+                            bgcolor: { xs: e.cartel ? BURDEOS_CLARO : GOLD, md: 'transparent' },
+                            boxShadow: elegido(e) ? `inset 0 0 0 1px ${GOLD}` : 'none',
+                            '&:hover': { bgcolor: { md: 'rgba(255,255,255,0.08)' } },
+                            '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 1 },
+                          }}
+                        >
+                          <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.title}</Box>
+                        </ButtonBase>
+                      ))}
+                    </Box>
+                    {actos.some((e) => e.id === proximo?.id) && empiezaProximo(dia) && marcaProximo}
                   </Box>
-                </>
-              )}
-            </ButtonBase>
+                )
+              })}
+              {/* Un acto que va solo: una tarjeta de sus días seguidos. */}
+              {tarjetas.map((t) => {
+                const e = t.evento
+                const foto = e.cartel ? fotoDelCartel(e).src : null
+                const [d1, d2] = [semana[t.desde].getDate(), semana[t.hasta].getDate()]
+                const esProximo = e.id === proximo?.id && empiezaProximo(semana[t.desde])
+                return (
+                  <ButtonBase
+                    key={e.id}
+                    className="pieza"
+                    data-acto={e.id}
+                    data-abre-acto
+                    onClick={() => pulsar(e)}
+                    aria-haspopup="dialog"
+                    aria-label={`${d1 === d2 ? d1 : `${d1} al ${d2}`} de ${nombre.toLowerCase()}: ${e.title}${esProximo ? '. Próximo acto' : ''}`}
+                    sx={{
+                      ...casilla, ...retraso(t.desde), gridColumn: `${t.desde + 1} / ${t.hasta + 2}`, gridRow: 1,
+                      fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: grande ? 0.75 : 0.25,
+                      bgcolor: e.cartel ? GRANATE : 'rgba(222,199,43,0.07)',
+                      ...(foto && {
+                        backgroundImage: `linear-gradient(${t.hasta > t.desde ? '90deg' : '180deg'}, rgba(110,24,34,0.5), rgba(18,15,17,0.88)), url("${foto}")`,
+                        backgroundSize: 'cover', backgroundPosition: 'center 25%',
+                      }),
+                      boxShadow: elegido(e) ? `inset 0 0 0 1px ${GOLD}` : 'none',
+                      '&:hover': { bgcolor: e.cartel ? 'rgba(110,24,34,0.8)' : 'rgba(222,199,43,0.13)' },
+                      '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: -2 },
+                    }}
+                  >
+                    {/* Los números de sus días, cada uno sobre su columna. */}
+                    <Box component="span" sx={{ display: 'grid', gridTemplateColumns: `repeat(${t.hasta - t.desde + 1}, minmax(0, 1fr))` }}>
+                      {semana.slice(t.desde, t.hasta + 1).map((dia) => (
+                        <Box component="span" key={dia.getDate()} sx={{ ...numero, color: e.cartel ? '#fff' : GOLD, WebkitTextStroke: 0 }}>{dia.getDate()}</Box>
+                      ))}
+                    </Box>
+                    <Box component="span" sx={{
+                      display: { xs: 'none', md: '-webkit-box' }, WebkitBoxOrient: 'vertical', WebkitLineClamp: grande ? 2 : 1, overflow: 'hidden',
+                      fontSize: 12.5, fontWeight: 500, lineHeight: 1.25, color: '#f4f1ee', textAlign: 'left',
+                    }}>
+                      {e.title}
+                    </Box>
+                    {esProximo && marcaProximo}
+                  </ButtonBase>
+                )
+              })}
+            </Box>
           )
         })}
       </Box>

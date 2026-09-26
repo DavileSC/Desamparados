@@ -105,3 +105,28 @@ export function ultimoMes(eventos: ApiEvent[], hoy: Date) {
   }
   return ultimo
 }
+
+/** Un acto que va solo en sus días de una semana: de qué columna a qué columna. */
+export interface Tarjeta { evento: ApiEvent; desde: number; hasta: number }
+
+/**
+ * Cómo se reparte una semana del calendario (solo sus días del mes). Un acto
+ * que no coincide con ningún otro es una tarjeta que ocupa sus días seguidos;
+ * los que coinciden, aunque sea en un día, se quedan cada uno en sus casillas,
+ * y cada casilla lista lo que hay ese día (`porDia`, por columna).
+ */
+export function repartoDeLaSemana(eventos: ApiEvent[], semana: Date[], mes: Date) {
+  const tramos: Tarjeta[] = []
+  for (const evento of eventos) {
+    const columnas = semana.flatMap((dia, i) => (dia.getMonth() === mes.getMonth() && caeEnElDia(evento, dia) ? [i] : []))
+    if (columnas.length) tramos.push({ evento, desde: columnas[0], hasta: columnas[columnas.length - 1] })
+  }
+  const coincide = (a: Tarjeta, b: Tarjeta) => a !== b && a.desde <= b.hasta && b.desde <= a.hasta
+  const tarjetas = tramos.filter((t) => !tramos.some((otro) => coincide(t, otro)))
+  const porDia = new Map<number, ApiEvent[]>()
+  for (const t of tramos) {
+    if (tarjetas.includes(t)) continue
+    for (let i = t.desde; i <= t.hasta; i++) porDia.set(i, [...(porDia.get(i) ?? []), t.evento])
+  }
+  return { tarjetas, porDia }
+}

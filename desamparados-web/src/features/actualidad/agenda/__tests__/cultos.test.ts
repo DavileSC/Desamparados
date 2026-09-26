@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { ApiEvent } from '../../../../lib/api/agenda'
-import { caeEnElDia, claseDelActo, cuandoEnCartel, fotoDelCartel, notaDelActo, primerDiaEnElMes, ultimoMes, urlDelMapa } from '../cultos'
+import { caeEnElDia, claseDelActo, cuandoEnCartel, fotoDelCartel, notaDelActo, primerDiaEnElMes, repartoDeLaSemana, ultimoMes, urlDelMapa } from '../cultos'
 
 const en = (dia: string, hora = '19:00') => new Date(`${dia}T${hora}`).toISOString()
 const acto = (datos: Partial<ApiEvent>): ApiEvent => ({
@@ -17,6 +17,23 @@ describe('la agenda de cultos', () => {
     expect(primerDiaEnElMes(cruzaMes, new Date(2026, 10, 1))).toEqual(new Date(2026, 10, 1))
     expect(primerDiaEnElMes(cruzaMes, new Date(2026, 9, 1))).toEqual(new Date(2026, 9, 30))
     expect(primerDiaEnElMes(cruzaMes, new Date(2026, 11, 1))).toBeNull()
+  })
+
+  it('un acto solo es una tarjeta de sus días; los que coinciden van día a día', () => {
+    const noviembre = new Date(2026, 10, 1)
+    // Del lunes 2 al domingo 8 de noviembre.
+    const semana = Array.from({ length: 7 }, (_, i) => new Date(2026, 10, 2 + i))
+    const triduo = acto({ id: 1, startDate: en('2026-11-03'), endDate: en('2026-11-05', '20:00') })
+    const otro = acto({ id: 2, startDate: en('2026-11-05'), endDate: en('2026-11-06', '20:00') })
+    const besamanos = acto({ id: 3, startDate: en('2026-11-08', '10:00') })
+    const { tarjetas, porDia } = repartoDeLaSemana([triduo, otro, besamanos], semana, noviembre)
+    // El besamanos va solo: tarjeta. Los dos triduos se tocan el 5: día a día, del 3 al 6.
+    expect(tarjetas.map((t) => [t.evento.id, t.desde, t.hasta])).toEqual([[3, 6, 6]])
+    expect([...porDia].map(([columna, actos]) => [columna, actos.map((e) => e.id)])).toEqual([[1, [1]], [2, [1]], [3, [1, 2]], [4, [2]]])
+    // Un acto que sigue en la semana de al lado se corta en el domingo; los días de otro mes no cuentan.
+    const retiro = acto({ id: 4, startDate: en('2026-11-28'), endDate: en('2026-12-01') })
+    const ultima = Array.from({ length: 7 }, (_, i) => new Date(2026, 10, 30 + i))
+    expect(repartoDeLaSemana([retiro], ultima, noviembre).tarjetas.map((t) => [t.desde, t.hasta])).toEqual([[0, 0]])
   })
 
   it('se puede llegar hasta el mes del último acto, y nunca a antes de hoy', () => {

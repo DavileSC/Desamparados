@@ -106,15 +106,31 @@ describe('AgendaPage', () => {
     // El cabildo es lo último: no hay más meses.
     expect(screen.getByRole('button', { name: 'Mes siguiente' })).toBeDisabled()
 
-    // El triduo cae en sus tres días.
-    expect(screen.getByRole('button', { name: /^4 de noviembre: Solemne triduo/ })).toBeInTheDocument()
-    await usuario.click(screen.getByRole('button', { name: /^3 de noviembre: Solemne triduo/ }))
+    // El triduo es una sola tarjeta de sus tres días.
+    expect(screen.queryByRole('button', { name: /^4 de noviembre/ })).not.toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: /^3 al 5 de noviembre: Solemne triduo$/ }))
     const ventana = screen.getByRole('dialog', { name: 'Solemne triduo' })
     expect(within(ventana).getByText('Culto solemne')).toBeInTheDocument()
     expect(within(ventana).getByText('en honor de Nuestra Señora de los Desamparados')).toBeInTheDocument()
     expect(within(ventana).getByText('Días 3, 4 y 5 de noviembre, a las 19:00')).toBeInTheDocument()
     // Sin foto propia, la de la Titular.
     expect(within(ventana).getByRole('img')).toHaveAttribute('src', '/images/triduo.jpg')
+  })
+
+  it('si dos actos coinciden, cada día lleva una línea por acto', async () => {
+    const otroTriduo = { ...triduo, id: 5, title: 'Triduo a la Virgen', cartel: false, startDate: en('2026-11-05', '19:00'), endDate: en('2026-11-06', '20:00') }
+    responder([triduo, otroTriduo, cabildo])
+    const usuario = userEvent.setup()
+    renderWithProviders(<AgendaPage />)
+
+    await mes('Noviembre 2026')
+    // Ya no son tarjetas de varios días: el 5 tiene los dos.
+    expect(screen.queryByRole('button', { name: /^3 al 5 de noviembre/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '5 de noviembre: Solemne triduo' })).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: '5 de noviembre: Triduo a la Virgen' }))
+    expect(screen.getByRole('dialog', { name: 'Triduo a la Virgen' })).toBeInTheDocument()
+    // El cabildo va solo: sigue siendo su tarjeta.
+    expect(screen.getByRole('button', { name: '23 de noviembre: Cabildo de hermanos' })).toBeInTheDocument()
   })
 
   it('«Siguiente» pasa al acto siguiente aunque sea de otro mes', async () => {
