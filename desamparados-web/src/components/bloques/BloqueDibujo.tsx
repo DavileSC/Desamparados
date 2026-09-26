@@ -70,7 +70,7 @@ export default function BloqueDibujo({ bloque }: { bloque: Datos }) {
 }
 
 /** Lo que tarda la ilustración en encenderse del todo. */
-const ENCENDIDO = 3
+const ENCENDIDO = 5
 
 /**
  * La ilustración que sustituye al dibujo: aparece apagada, como de noche, y se
