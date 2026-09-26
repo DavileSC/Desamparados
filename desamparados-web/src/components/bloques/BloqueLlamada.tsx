@@ -52,7 +52,7 @@ export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
   }
   if (estilo === 'sencilla') return <Box sx={comun}>{contenido}</Box>
   return (
-    <TarjetaCristal goldBorder sx={{ ...comun, p: { xs: 3, md: 5 } }}>
+    <TarjetaCristal sx={{ ...comun, p: { xs: 3, md: 5 } }}>
       {contenido}
     </TarjetaCristal>
   )

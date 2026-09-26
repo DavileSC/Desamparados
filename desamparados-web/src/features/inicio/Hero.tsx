@@ -214,7 +214,7 @@ export default function Hero() {
         </Revela>
         <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
-            <Boton component={Link} to="/historia" endIcon={<ArrowForwardIcon fontSize="small" />} sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
+            <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
               {textos.hero.botonPrincipal}
             </Boton>
             {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta. */}

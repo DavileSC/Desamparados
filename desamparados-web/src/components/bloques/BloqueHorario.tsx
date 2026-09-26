@@ -50,7 +50,6 @@ export default function BloqueHorario({ bloque }: { bloque: Datos }) {
         aria-live="polite"
         sx={{
           display: 'grid', gridTemplateColumns: { xs: '1fr', md: despacho ? 'minmax(0, 1.4fr) minmax(0, 1fr)' : '1fr' },
-          border: '1px solid', borderColor: 'divider', borderTop: '3px solid', borderTopColor: 'secondary.main',
           borderRadius: '4px', overflow: 'hidden',
           background: 'linear-gradient(135deg, rgba(222, 199, 43, .07), rgba(222, 199, 43, 0) 55%)',
         }}

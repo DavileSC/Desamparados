@@ -25,9 +25,11 @@ function columnas(cuantas: number, eleccion: string) {
 
 /** El recuadro de cada estilo. `cristal` es el de siempre. */
 const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas'>, object> = {
-  papel: { backgroundColor: PAPEL, color: '#1b1c1a', border: '1px solid rgba(27, 28, 26, 0.08)', borderRadius: '8px' },
-  contorno: { backgroundColor: 'transparent', border: '1px solid rgba(222, 199, 43, 0.35)', borderRadius: '8px' },
-  granate: { backgroundColor: GRANATE, color: '#fff', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px' },
+  // Sin bordes (26-09-2026): cada estilo se distingue por su fondo. `contorno`
+  // conserva el nombre guardado en las páginas, pero ya es un recuadro sobrio.
+  papel: { backgroundColor: PAPEL, color: '#1b1c1a', borderRadius: '8px' },
+  contorno: { backgroundColor: 'rgba(255, 255, 255, 0.035)', borderRadius: '8px' },
+  granate: { backgroundColor: GRANATE, color: '#fff', borderRadius: '8px' },
 }
 
 /**
@@ -109,12 +111,12 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
   const relleno = foto ? { p: 0, overflow: 'hidden' } : { p: 4 }
   const recuadro = (realce: boolean) => estilo === 'cristal'
     ? (
-      <TarjetaCristal sx={{ ...relleno, height: '100%', ...(realce && { '&:hover': { borderColor: 'rgba(193, 172, 0, 0.3)', transform: 'translateY(-4px)' } }) }}>
+      <TarjetaCristal sx={{ ...relleno, height: '100%', ...(realce && { '&:hover': { transform: 'translateY(-4px)' } }) }}>
         {contenido}
       </TarjetaCristal>
     )
     : (
-      <Box sx={{ ...FONDOS[estilo], ...relleno, height: '100%', transition: 'all 0.3s ease', ...(realce && { '&:hover': { borderColor: GOLD, transform: 'translateY(-4px)' } }) }}>
+      <Box sx={{ ...FONDOS[estilo], ...relleno, height: '100%', transition: 'all 0.3s ease', ...(realce && { '&:hover': { transform: 'translateY(-4px)' } }) }}>
         {contenido}
       </Box>
     )
@@ -149,7 +151,7 @@ function Numeradas({ bloque }: { bloque: Datos }) {
     <Box component="ol" sx={{
       // El ancho de las dos puertas, que en Caridad van justo encima.
       listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, '1100px'), mx: 'auto',
-      display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${porFila}, minmax(0, 1fr))` },
+      display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${porFila}, minmax(0, 1fr))` }, columnGap: 5,
     }}>
       {bloque.tarjetas.map((tarjeta, indice) => {
         const enlace = tarjeta.enlace && esDestinoValido(tarjeta.enlace) ? tarjeta.enlace : ''
@@ -164,13 +166,8 @@ function Numeradas({ bloque }: { bloque: Datos }) {
         )
         return (
           <Box component="li" key={indice} sx={{
-            pt: 3.5, pb: { xs: 3.5, md: 0 }, textAlign: centrada ? 'center' : 'left',
-            borderColor: 'divider',
-            // En el móvil, un filete entre una y otra; en escritorio, entre columnas.
-            // La primera y la última de cada fila van al ras de los bordes.
-            borderTop: { xs: indice === 0 ? 0 : '1px solid', md: 0 },
-            borderLeft: { md: indice % porFila === 0 ? 0 : '1px solid' },
-            pl: { md: indice % porFila === 0 ? 0 : 3.5 }, pr: { md: indice % porFila === porFila - 1 ? 0 : 3.5 },
+            // Sin filetes entre una y otra (26-09-2026): las separa el aire.
+            pt: 3.5, pb: { xs: 1, md: 0 }, textAlign: centrada ? 'center' : 'left',
           }}>
             {enlace ? (
               <Box component={Link} to={enlace} sx={{ display: 'block', textDecoration: 'none', color: 'inherit', '&:hover h3': { color: GOLD } }}>{contenido}</Box>

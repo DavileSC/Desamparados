@@ -120,7 +120,7 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
           '& svg': { fontSize: 18, color: 'currentColor', transition: 'transform .25s ease' },
         }}
       >
-        {placa.boton} <ArrowForwardIcon aria-hidden="true" />
+        {placa.boton}
       </Box>
     </Box>
   )

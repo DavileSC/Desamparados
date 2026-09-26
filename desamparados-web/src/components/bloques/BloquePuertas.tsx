@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Box, ButtonBase, Typography } from '@mui/material'
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import CheckIcon from '@mui/icons-material/Check'
 import { SERIF } from '../../features/inicio/estilos'
@@ -52,7 +51,7 @@ function PanelDePuerta({ puerta, acento, boton }: { puerta: Puerta; acento: stri
     <Box component="section" aria-label={puerta.titulo} sx={{
       display: 'flex', flexDirection: 'column', gap: 2.25,
       p: { xs: 3.5, md: 5.5 }, pb: { md: 5 },
-      backgroundColor: RECUADRO, color: '#ffffff', borderTop: `3px solid ${acento}`, borderRadius: '2px',
+      backgroundColor: RECUADRO, color: '#ffffff', borderRadius: '2px',
     }}>
       {puerta.ceja && (
         <Typography component="span" sx={{ fontSize: 12, letterSpacing: '0.24em', textTransform: 'uppercase', color: acento }}>
@@ -77,7 +76,7 @@ function PanelDePuerta({ puerta, acento, boton }: { puerta: Puerta; acento: stri
       {conBoton && (
         <Box sx={{ mt: 'auto', pt: 1 }}>
           <Box component={Link} to={puerta.enlace} sx={{ ...boton, fontFamily: 'inherit' }}>
-            {puerta.boton} <ArrowForwardIcon aria-hidden sx={{ fontSize: 18 }} />
+            {puerta.boton}
           </Box>
         </Box>
       )}
