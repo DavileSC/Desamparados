@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
-import { motion, useMotionTemplate, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion'
+import { motion, useInView, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion'
 import { SERIF } from '../../features/inicio/estilos'
 import { limpiarHtml } from '../../lib/limpiarHtml'
 import { useModoEdicion } from './modoEdicion'
@@ -18,7 +18,7 @@ import type { BloqueDibujo as Datos, NombreDeDibujo } from '../../lib/api/conten
  * ya dibujado.
  *
  * Con ilustración (`foto`), se pinta ella en lugar del dibujo de líneas: se
- * enciende al bajar, sobre un filete de oro que se tiende debajo.
+ * enciende sola al aparecer, sobre un filete de oro que se tiende debajo.
  *
  * Pinta su propio título (ver `pintaSuTitulo` en `registro.tsx`): va en la
  * columna del texto y no encima de los dos.
@@ -69,29 +69,35 @@ export default function BloqueDibujo({ bloque }: { bloque: Datos }) {
   )
 }
 
+/** Lo que tarda la ilustración en encenderse del todo. */
+const ENCENDIDO = 3
+
 /**
- * La ilustración que sustituye al dibujo: al abrir la página se ve apagada,
- * como de noche, y según se baja va cogiendo brillo y color hasta verse
- * entera, mientras se tiende debajo el filete de oro del suelo.
+ * La ilustración que sustituye al dibujo: aparece apagada, como de noche, y se
+ * enciende sola en unos segundos —brillo y color—, mientras se tiende debajo
+ * el filete de oro del suelo.
  *
- * Lleva su propio seguimiento del scroll, más temprano que el del dibujo: la
- * del templo está arriba de la página y ya se ve al entrar, así que el camino
- * va de donde está al abrir (su centro hacia el 70 % de la pantalla) a cuando
- * ya se ha subido a mirarla (su centro en el 25 %).
+ * Por tiempo y no por scroll: la del templo es lo primero que se ve al abrir
+ * la página, y atada al scroll se iría de la pantalla antes de encenderse.
+ * Empieza cuando está a la vista, así que más abajo en una página también
+ * se ve encenderse.
  */
 function Ilustracion({ url, alt, quieto }: { url: string; alt: string; quieto: boolean }) {
   const marco = useRef<HTMLDivElement>(null)
-  const { scrollYProgress: avance } = useScroll({ target: marco, offset: ['center 70%', 'center 25%'] })
-  const brillo = useTransform(avance, [0, 1], [0.35, 1])
-  const color = useTransform(avance, [0, 1], [0.45, 1])
-  const filtro = useMotionTemplate`brightness(${brillo}) saturate(${color})`
-  const suelo = useTransform(avance, [0, 0.8], [0.15, 1], { clamp: true })
+  const aLaVista = useInView(marco, { once: true, amount: 0.3 })
+  const encendida = quieto || aLaVista
+  const transicion = { duration: ENCENDIDO, ease: [0.22, 0.61, 0.36, 1] as const }
   return (
     <Box ref={marco} sx={{ position: 'relative', pb: 2 }}>
       <Box component={motion.img} src={url} alt={alt} loading="eager" decoding="async"
-        style={quieto ? undefined : { filter: filtro }}
+        initial={quieto ? false : { filter: 'brightness(0.35) saturate(0.45)' }}
+        animate={encendida ? { filter: 'brightness(1) saturate(1)' } : undefined}
+        transition={transicion}
         sx={{ display: 'block', width: '100%', height: 'auto' }} />
-      <Box component={motion.div} aria-hidden style={quieto ? undefined : { scaleX: suelo }}
+      <Box component={motion.div} aria-hidden
+        initial={quieto ? false : { scaleX: 0.15 }}
+        animate={encendida ? { scaleX: 1 } : undefined}
+        transition={transicion}
         sx={{ position: 'absolute', left: '4%', right: '4%', bottom: 0, height: '1px', backgroundColor: 'secondary.main', transformOrigin: 'center' }} />
     </Box>
   )
