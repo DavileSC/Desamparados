@@ -10,9 +10,9 @@ import { esDestinoValido } from '../../lib/destinos'
 const VARIANTE_BOTON = { granate: 'primary', dorado: 'secondary', contorno: 'outline' } as const
 
 /**
- * Un texto y un botón que lleva a otra página del sitio: en un recuadro con
- * filete dorado (el de siempre), entre dos filetes a lo ancho (franja) o sin
- * nada alrededor (sencilla).
+ * Un texto y un botón que lleva a otra página del sitio: en un recuadro sin
+ * borde (el de siempre), entre dos filetes a lo ancho (franja) o sin nada
+ * alrededor (sencilla).
  *
  * El destino siempre es interno (lo exige `bloques.schema.ts`), así que se
  * navega con el `Link` del router y no con un `<a>`: recargar la aplicación

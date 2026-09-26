@@ -1,7 +1,7 @@
 /**
  * Los botones y enlaces de la web (26-09-2026, estilo «Crema» del catálogo de
  * botones, en los colores del Grupo): planos, de esquinas rectas y sin brillos.
- * En reposo, granate o con filete dorado; al pasar el ratón, pasan a blanco.
+ * En reposo, granate o con un velo crema; al pasar el ratón, pasan a blanco.
  * Ninguno lleva fondo blanco hasta que se pasa por encima.
  *
  * Sustituyen a los de esmalte (con volumen), que a su vez sustituyeron a las
@@ -11,7 +11,7 @@
  *
  * Tres estilos:
  * - `principal`: granate macizo, la acción que importa.
- * - `claro`: filete dorado sobre transparente, la segunda acción de una sección.
+ * - `claro`: velo crema, sin borde, la segunda acción de una sección.
  * - `oscuro`: filete apenas visible, para las acciones secundarias de los
  *   formularios («Cancelar», «Añadir»), que no deben quitarle protagonismo al principal.
  */
@@ -66,10 +66,11 @@ export const BOTON = {
   },
   claro: {
     ...base,
-    // La letra, la del tema: clara sobre oscuro y tinta sobre una franja de papel.
+    // Un velo del color de la letra, sin borde: crema sobre oscuro y tinta sobre
+    // una franja de papel, que la letra y el velo salen del tema.
     color: 'text.primary',
-    backgroundColor: 'transparent',
-    boxShadow: `inset 0 0 0 1px ${ORO}`,
+    backgroundColor: (t: { palette: { mode: string } }) => (t.palette.mode === 'light' ? 'rgba(27, 28, 26, 0.08)' : 'rgba(243, 239, 230, 0.1)'),
+    boxShadow: 'none',
     '&:hover': aBlanco(TINTA),
   },
   oscuro: {

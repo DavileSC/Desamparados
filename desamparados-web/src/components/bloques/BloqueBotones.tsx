@@ -7,7 +7,7 @@ import type { BloqueBotones as Datos } from '../../lib/api/contenido'
 
 /**
  * Uno o varios botones en fila, cada uno a una página del sitio: el principal
- * granate y los secundarios con filete dorado (estiloDeBoton.ts). En el móvil se apilan a lo ancho,
+ * granate y los secundarios con un velo crema (estiloDeBoton.ts). En el móvil se apilan a lo ancho,
  * que es donde se pulsan bien con el dedo.
  */
 export default function BloqueBotones({ bloque }: { bloque: Datos }) {

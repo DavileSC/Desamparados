@@ -11,7 +11,7 @@ import type { BloquePuertas as Datos, DatoDePuerta, Puerta } from '../../lib/api
 
 /**
  * El acento y el botón de cada puerta, en orden: la primera en oro con el
- * botón de filete dorado (la de quien busca ayuda) y la segunda en rosa con el granate
+ * botón de velo crema (la de quien busca ayuda) y la segunda en rosa con el granate
  * (la de quien quiere darla), el mismo rosa de la caridad en Nuestros fines.
  */
 const ACENTOS = ['#dec72b', '#fc858a'] as const

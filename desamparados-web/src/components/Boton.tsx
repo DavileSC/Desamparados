@@ -5,7 +5,7 @@ import { BOTON } from './estiloDeBoton'
 interface BotonProps extends Omit<ButtonProps, 'variant'> {
   /**
    * El estilo del botón (ver `estiloDeBoton.ts`): `primary` granate; `claro`
-   * con filete dorado, para la segunda acción de una sección; `outline` discreto, para
+   * con un velo crema, para la segunda acción de una sección; `outline` discreto, para
    * las acciones secundarias de un formulario. `secondary` queda como `claro`.
    */
   appVariant?: 'primary' | 'secondary' | 'outline' | 'claro'
