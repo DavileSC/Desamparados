@@ -23,5 +23,6 @@
   "franjasPorHorario": 12,
   "horasPorFranja": 8,
   "datosPorPuerta": 3,
-  "filasPorPrograma": 12
+  "filasPorPrograma": 12,
+  "filasPorRelacion": 20
 }

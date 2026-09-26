@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -394,6 +394,23 @@ describe('bloque de programa', () => {
     assert.ok(falla('programa', { ...PROGRAMA, filas: [{ ...FILA, cuando: '' }] }));
     assert.ok(falla('programa', { ...PROGRAMA, filas: [{ ...FILA, titulo: ' ' }] }));
     assert.ok(falla('programa', { ...PROGRAMA, filas: [{ ...FILA, enlace: '/agenda' }] }));
+  });
+});
+
+describe('bloque de relación', () => {
+  const FILA = { cargo: 'Hermano Mayor', nombre: '', texto: 'Representa al Grupo Parroquial.', enlace: '' };
+  const RELACION = { tipo: 'relacion', titulo: 'Junta de Gobierno', mandato: '', nota: '', filas: [FILA] };
+
+  test('acepta cargos sin nombre todavía, con enlace o sin él', () => {
+    assert.ok(!falla('relacion', RELACION));
+    assert.ok(!falla('relacion', { ...RELACION, mandato: '2024 — 2028', filas: [{ ...FILA, nombre: 'Nombre Apellido', enlace: '/cultos' }] }));
+  });
+
+  test('siempre con cargo, sin enlaces inventados y sin filas de más', () => {
+    assert.ok(falla('relacion', { ...RELACION, filas: [] }));
+    assert.ok(falla('relacion', { ...RELACION, filas: [{ ...FILA, cargo: ' ' }] }));
+    assert.ok(falla('relacion', { ...RELACION, filas: [{ ...FILA, enlace: '/no-existe' }] }));
+    assert.ok(falla('relacion', { ...RELACION, filas: Array(21).fill(FILA) }));
   });
 });
 

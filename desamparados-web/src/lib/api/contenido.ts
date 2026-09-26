@@ -203,6 +203,10 @@ export interface BloquePuertas extends BloqueBase { tipo: 'puertas'; puertas: [P
 export interface FilaDePrograma { cuando: string; mes: number; titulo: string; texto: string; boton: string; enlace: string }
 /** Los cultos del curso, uno por fila; la web marca sola el próximo. */
 export interface BloquePrograma extends BloqueBase { tipo: 'programa'; filas: FilaDePrograma[] }
+/** Un cargo de la relación: el nombre puede quedar vacío mientras no se sepa. */
+export interface FilaDeRelacion { cargo: string; nombre: string; texto: string; enlace: string }
+/** La relación de un órgano de gobierno, con el mandato y una nota arriba. */
+export interface BloqueRelacion extends BloqueBase { tipo: 'relacion'; mandato: string; nota: string; filas: FilaDeRelacion[] }
 export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string } }
 
 export type Bloque =
@@ -231,6 +235,7 @@ export type Bloque =
   | BloqueAnillos
   | BloquePuertas
   | BloquePrograma
+  | BloqueRelacion
 
 /** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
 export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }

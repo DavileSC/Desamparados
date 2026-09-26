@@ -1246,59 +1246,58 @@
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>La Junta de Gobierno es el órgano colegiado encargado de la dirección, administración y representación del Grupo Parroquial. Desde sus distintas vocalías, trabaja unida al servicio de los hermanos y de la misión evangelizadora de la corporación.</p><p>Gobernar un grupo parroquial es, sobre todo, servir: cada cargo es una tarea que alguien asume por amor a la Virgen y a sus hermanos, en comunión con la parroquia.</p>"
+        "html": "<p>La Junta de Gobierno es el órgano colegiado encargado de la dirección, administración y representación del Grupo Parroquial. Desde sus distintas vocalías, trabaja unida al servicio de los hermanos y de la misión evangelizadora de la corporación.</p><p>Gobernar un grupo parroquial es, sobre todo, servir: cada cargo es una tarea que alguien asume por amor a la Virgen y a sus hermanos, en comunión con la parroquia.</p>",
+        "presentacion": {
+          "estilo": "carta"
+        }
       },
       {
-        "tipo": "tarjetas",
-        "titulo": "Cargos de la Junta de Gobierno",
-        "presentacion": {
-          "columnas": "2",
-          "estilo": "contorno",
-          "orientacion": "horizontal",
-          "alineacion": "izquierda"
-        },
-        "tarjetas": [
+        "tipo": "relacion",
+        "titulo": "Junta de Gobierno",
+        "mandato": "",
+        "nota": "",
+        "filas": [
           {
-            "titulo": "Hermano Mayor",
-            "descripcion": "Máximo responsable de la corporación, representa al Grupo Parroquial y dirige sus actuaciones con autoridad espiritual y gobierno.",
-            "enlace": "",
-            "icono": "estrella"
+            "cargo": "Hermano Mayor",
+            "nombre": "",
+            "texto": "Representa al Grupo Parroquial y dirige su vida con la Junta.",
+            "enlace": ""
           },
           {
-            "titulo": "Teniente Hermano Mayor",
-            "descripcion": "Segunda autoridad del Grupo Parroquial, asiste al Hermano Mayor en sus funciones y le sustituye en caso de ausencia.",
-            "enlace": "",
-            "icono": "grupo"
+            "cargo": "Teniente Hermano Mayor",
+            "nombre": "",
+            "texto": "Asiste al Hermano Mayor y le sustituye en su ausencia.",
+            "enlace": ""
           },
           {
-            "titulo": "Secretario",
-            "descripcion": "Gestiona la documentación, actas de reuniones, correspondencia oficial y archivo histórico de la corporación.",
-            "enlace": "",
-            "icono": "libro"
+            "cargo": "Secretaría",
+            "nombre": "",
+            "texto": "Actas, correspondencia oficial y archivo de la corporación.",
+            "enlace": ""
           },
           {
-            "titulo": "Tesorero",
-            "descripcion": "Administra los bienes económicos del Grupo Parroquial, elabora los presupuestos y controla los recursos con transparencia.",
-            "enlace": "",
-            "icono": "info"
+            "cargo": "Tesorería",
+            "nombre": "",
+            "texto": "Administra los bienes del Grupo Parroquial, con transparencia.",
+            "enlace": ""
           },
           {
-            "titulo": "Vocal de Cultos",
-            "descripcion": "Coordina la celebración de los cultos, ceremonias y actos de devoción en honor a nuestra Sagrada Titular.",
-            "enlace": "/cultos",
-            "icono": "iglesia"
+            "cargo": "Vocalía de Cultos",
+            "nombre": "",
+            "texto": "Los cultos y las celebraciones en honor de la Titular",
+            "enlace": "/cultos"
           },
           {
-            "titulo": "Vocal de Caridad",
-            "descripcion": "Impulsa las obras asistenciales y canaliza la ayuda social del Grupo Parroquial hacia quienes más lo necesitan.",
-            "enlace": "/nuestros-fines/caridad",
-            "icono": "manos"
+            "cargo": "Vocalía de Caridad",
+            "nombre": "",
+            "texto": "La ayuda a quien la necesita",
+            "enlace": "/nuestros-fines/caridad"
           },
           {
-            "titulo": "Vocal de Formación",
-            "descripcion": "Promueve la educación en la fe, los encuentros formativos y la transmisión de los valores de la corporación.",
-            "enlace": "/nuestros-fines/formacion",
-            "icono": "libro"
+            "cargo": "Vocalía de Formación",
+            "nombre": "",
+            "texto": "Crecer en la fe",
+            "enlace": "/nuestros-fines/formacion"
           }
         ]
       },
@@ -1317,7 +1316,7 @@
         "tipo": "llamada",
         "titulo": "",
         "texto": "¿Quieres hacer llegar algo a la Junta de Gobierno?",
-        "boton": "Escríbenos",
+        "boton": "Escribir a la Junta",
         "enlace": "/contacto"
       }
     ]

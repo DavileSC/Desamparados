@@ -663,6 +663,31 @@ const programaSchema = type({
   return true;
 });
 
+/**
+ * Relación: los cargos de un órgano (la Junta de Gobierno), cada uno con quien
+ * lo ocupa y lo que hace, y arriba el mandato y una nota («Elegida en Cabildo
+ * General el…»). El nombre puede quedar vacío mientras no se sepa: la web pinta
+ * entonces el cargo y su función. `enlace`, opcional, lleva a la página de la
+ * vocalía.
+ */
+const filaDeRelacionSchema = type({
+  cargo: ETIQUETA,
+  nombre: TITULO,
+  texto: DESCRIPCION,
+  enlace: sinEnlace.or(enlaceInterno),
+});
+
+const relacionSchema = type({
+  ...comunes,
+  tipo: "'relacion'",
+  mandato: ETIQUETA,
+  nota: ETIQUETA,
+  filas: filaDeRelacionSchema.array().atLeastLength(1).atMostLength(topes.filasPorRelacion),
+}).narrow((datos, ctx) => {
+  const sinCargo = datos.filas.findIndex((fila) => enBlanco(fila.cargo));
+  return sinCargo === -1 ? true : ctx.reject({ path: ['filas', sinCargo, 'cargo'], problem: 'no puede quedar en blanco' });
+});
+
 /** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
 const espacioSchema = type({
   ...comunes,
@@ -695,6 +720,7 @@ const POR_TIPO = {
   anillos: anillosSchema,
   puertas: puertasSchema,
   programa: programaSchema,
+  relacion: relacionSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

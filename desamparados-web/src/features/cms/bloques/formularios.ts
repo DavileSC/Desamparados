@@ -8,7 +8,7 @@ import { FormularioHorario } from './formularios/horario'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
-  FormularioPuertas, FormularioPrograma,
+  FormularioPuertas, FormularioPrograma, FormularioRelacion,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -56,6 +56,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   anillos: FormularioAnillos as unknown as ComponentType<Props<never>>,
   puertas: FormularioPuertas as unknown as ComponentType<Props<never>>,
   programa: FormularioPrograma as unknown as ComponentType<Props<never>>,
+  relacion: FormularioRelacion as unknown as ComponentType<Props<never>>,
 }
 
 /** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
@@ -110,6 +111,7 @@ export const BLOQUE_NUEVO: Record<string, object> = {
     tipo: 'puertas', titulo: '',
     puertas: [0, 1].map(() => ({ ceja: '', titulo: '', texto: '', datos: [], boton: '', enlace: '' })),
   },
+  relacion: { tipo: 'relacion', titulo: 'Junta de Gobierno', mandato: '', nota: '', filas: [{ cargo: '', nombre: '', texto: '', enlace: '' }] },
   programa: { tipo: 'programa', titulo: 'Programa del curso', filas: [{ cuando: '', mes: 0, titulo: '', texto: '', boton: '', enlace: '' }] },
 }
 
@@ -261,6 +263,10 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (sinNombre !== -1) return `tiene un dato de la puerta ${sinNombre + 1} sin nombre`
       const cojo = bloque.puertas.findIndex((p) => (p.boton.trim() === '') !== (p.enlace === ''))
       return cojo === -1 ? null : `tiene el botón de la puerta ${cojo + 1} sin texto o sin destino`
+    }
+    case 'relacion': {
+      const sinCargo = bloque.filas.findIndex((f) => f.cargo.trim() === '')
+      return sinCargo === -1 ? null : `tiene la fila ${sinCargo + 1} sin cargo`
     }
     case 'programa': {
       const sinCuando = bloque.filas.findIndex((f) => f.cuando.trim() === '')

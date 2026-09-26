@@ -30,7 +30,10 @@
     "«Necesito ayuda» y «Quiero ayudar» en Caridad, con sus datos y su botón.",
     "",
     "Programa (programa), 26-09-2026: los cultos del curso mes a mes, con el",
-    "próximo marcado solo y su fecha sacada de la Agenda."
+    "próximo marcado solo y su fecha sacada de la Agenda.",
+    "",
+    "Relación (relacion), 26-09-2026: los cargos de la Junta de Gobierno, con",
+    "su nombre y su función, el mandato y la fecha del cabildo."
   ],
   "tipos": [
     "texto",
@@ -57,6 +60,7 @@
     "dibujo",
     "anillos",
     "puertas",
-    "programa"
+    "programa",
+    "relacion"
   ]
 }

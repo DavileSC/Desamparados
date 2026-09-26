@@ -17,7 +17,7 @@ import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
   BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
-  BloquePuertas, Puerta, BloquePrograma,
+  BloquePuertas, Puerta, BloquePrograma, BloqueRelacion,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -277,6 +277,34 @@ export function FormularioPrograma({ bloque, onCambio }: Props<BloquePrograma>) 
               slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
             <CampoEnlace etiqueta={`Destino del enlace ${i + 1}`} valor={fila.enlace} opcional
               onCambio={(enlace) => cambiar({ enlace })} ayuda="La página a la que lleva. Vacío si no hay enlace." />
+          </>
+        )} />
+    </Stack>
+  )
+}
+
+export function FormularioRelacion({ bloque, onCambio }: Props<BloqueRelacion>) {
+  return (
+    <Stack spacing={2}>
+      <CampoTexto etiqueta="Mandato" valor={bloque.mandato} onCambio={(mandato) => onCambio({ mandato })}
+        ayuda="Opcional, como «2024 — 2028». Sale junto al título." maxLength={topes.etiqueta} />
+      <CampoTexto etiqueta="Nota" valor={bloque.nota} onCambio={(nota) => onCambio({ nota })}
+        ayuda="Opcional, al otro lado del título: «Elegida en Cabildo General el 12 de junio de 2024»." maxLength={topes.etiqueta} />
+      <ListaEditable elementos={bloque.filas} onCambio={(filas) => onCambio({ filas })}
+        nuevo={() => ({ cargo: '', nombre: '', texto: '', enlace: '' })} nombre="Cargo" maximo={topes.filasPorRelacion}
+        pintar={(fila, cambiar, i) => (
+          <>
+            <TextField label={`Cargo ${i + 1}`} value={fila.cargo} onChange={(e) => cambiar({ cargo: e.target.value })} size="small" fullWidth
+              helperText="Como «Hermano Mayor» o «Vocalía de Cultos». El primero sale algo más grande."
+              slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+            <TextField label="Quién lo ocupa" value={fila.nombre} onChange={(e) => cambiar({ nombre: e.target.value })} size="small" fullWidth
+              helperText="Nombre y apellidos. Vacío, sale solo el cargo con su función."
+              slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+            <TextField label="Qué hace" value={fila.texto} onChange={(e) => cambiar({ texto: e.target.value })} size="small" fullWidth
+              helperText="Una línea. Opcional."
+              slotProps={{ htmlInput: { maxLength: topes.descripcion } }} />
+            <CampoEnlace etiqueta={`Página del cargo ${i + 1}`} valor={fila.enlace} opcional
+              onCambio={(enlace) => cambiar({ enlace })} ayuda="Opcional: la página de la vocalía. Hace de enlace la línea de «Qué hace»." />
           </>
         )} />
     </Stack>

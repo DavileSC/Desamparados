@@ -24,10 +24,11 @@ const ANTES: Record<string, string[]> = {
     'generalmente el primer sábado de mes',
   ],
   'organos-de-gobierno': [
+    // Desde la relación de la Junta (26-09-2026), los cargos van en sus filas.
     'La Junta de Gobierno es el órgano colegiado',
-    'Cargos de la Junta de Gobierno',
-    'Hermano Mayor', 'Teniente Hermano Mayor', 'Secretario', 'Tesorero',
-    'Vocal de Cultos', 'Vocal de Caridad', 'Vocal de Formación',
+    'Junta de Gobierno',
+    'Hermano Mayor', 'Teniente Hermano Mayor', 'Secretaría', 'Tesorería',
+    'Vocalía de Cultos', 'Vocalía de Caridad', 'Vocalía de Formación',
   ],
   parroquia: [
     'Parroquia de Santa María Goretti',
@@ -104,7 +105,8 @@ function textoDe(slug: string): string {
       // Las dos puertas, en sus paneles (Caridad, 26-09-2026).
       puertas?: { ceja: string; titulo: string; texto: string }[]
       // El programa, en sus filas (Cultos, 26-09-2026).
-      filas?: { cuando: string; titulo: string; texto: string }[]
+      // El programa (Cultos) y la relación (Órganos de Gobierno), en sus filas.
+      filas?: { cuando?: string; titulo?: string; cargo?: string; nombre?: string; texto: string }[]
     }[]
   }
   const trozos = [pagina.cabecera.titulo, pagina.cabecera.subtitulo]
@@ -115,7 +117,7 @@ function textoDe(slug: string): string {
     for (const paso of bloque.pasos ?? []) trozos.push(paso.titulo, paso.texto)
     for (const fin of bloque.fines ?? []) trozos.push(fin.titulo, fin.texto)
     for (const puerta of bloque.puertas ?? []) trozos.push(puerta.ceja, puerta.titulo, puerta.texto)
-    for (const fila of bloque.filas ?? []) trozos.push(fila.cuando, fila.titulo, fila.texto)
+    for (const fila of bloque.filas ?? []) trozos.push(fila.cuando ?? '', fila.titulo ?? '', fila.cargo ?? '', fila.nombre ?? '', fila.texto)
   }
   return trozos.join(' ').replace(/\s+/g, ' ')
 }
