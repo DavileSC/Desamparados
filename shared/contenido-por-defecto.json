@@ -78,8 +78,9 @@
     "cabecera": {
       "titulo": "Recorrido",
       "subtitulo": "Itinerario oficial de la estación de penitencia.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/nazarenos-con-cirios.webp",
+      "fotoAlt": "Nazarenos de negro con cirios, en fila por la calle",
+      "encuadre": 45
     },
     "bloques": [
       {
@@ -1239,8 +1240,9 @@
     "cabecera": {
       "titulo": "Órganos de Gobierno",
       "subtitulo": "Junta de Gobierno y órganos de dirección de la corporación.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/virgen-de-perfil.webp",
+      "fotoAlt": "El rostro de la Virgen de los Desamparados de perfil, con corona de plata y encaje",
+      "encuadre": 55
     },
     "bloques": [
       {
@@ -1325,8 +1327,9 @@
     "cabecera": {
       "titulo": "Parroquia - Pasionistas",
       "subtitulo": "Santa María Goretti, nuestra sede canónica, y la comunidad pasionista que la atiende.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/cruz-de-guia.webp",
+      "fotoAlt": "La cruz de guía y los banderines dentro del templo, entre nazarenos, antes de la salida",
+      "encuadre": 35
     },
     "bloques": [
       {
@@ -1547,8 +1550,9 @@
     "cabecera": {
       "titulo": "Nuestros fines",
       "subtitulo": "Culto, caridad y formación: para qué existe el Grupo Parroquial.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/virgen-en-su-altar.webp",
+      "fotoAlt": "La Virgen de los Desamparados en su altar, entre candeleros encendidos y ante un dosel rojo",
+      "encuadre": 35
     },
     "bloques": [
       {
@@ -1604,8 +1608,9 @@
     "cabecera": {
       "titulo": "Caridad",
       "subtitulo": "Mirar con los ojos de la Virgen a quienes hoy están sin amparo.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/rostro.webp",
+      "fotoAlt": "El rostro de la Virgen de los Desamparados, con la mirada alzada y una lágrima en la mejilla",
+      "encuadre": 40
     },
     "bloques": [
       {
@@ -1718,8 +1723,9 @@
     "cabecera": {
       "titulo": "Formación",
       "subtitulo": "Crecer en la fe para entender lo que celebramos.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/cera.webp",
+      "fotoAlt": "Cirios del trono con el emblema pasionista; detrás, la Virgen desenfocada",
+      "encuadre": 40
     },
     "bloques": [
       {
@@ -1766,8 +1772,9 @@
     "cabecera": {
       "titulo": "Sábado de Pasión",
       "subtitulo": "Nuestra salida procesional por las calles de Málaga.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/nazarenos.webp",
+      "fotoAlt": "Nazarenos con capirote blanco bajo un árbol, en blanco y negro",
+      "encuadre": 55
     },
     "bloques": [
       {
@@ -1836,8 +1843,9 @@
     "cabecera": {
       "titulo": "Trono",
       "subtitulo": "El trono de nuestra Sagrada Titular.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/trono-de-noche.webp",
+      "fotoAlt": "El trono de la Virgen entre las casas del barrio, de noche, en blanco y negro",
+      "encuadre": 55
     },
     "bloques": [
       {
@@ -1888,8 +1896,9 @@
     "cabecera": {
       "titulo": "Enseres",
       "subtitulo": "El patrimonio del Grupo Parroquial, pieza a pieza.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/insignias-de-noche.webp",
+      "fotoAlt": "Banderines bordados en plata y cruces del cortejo, de noche por la calle",
+      "encuadre": 45
     },
     "bloques": [
       {
@@ -2097,8 +2106,9 @@
     "cabecera": {
       "titulo": "Desamparados",
       "subtitulo": "Historia y devoción a nuestra Amantísima Titular.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/virgen-dosel-rojo.webp",
+      "fotoAlt": "Nuestra Señora de los Desamparados con corona de plata y rostrillo de encaje, ante un dosel rojo",
+      "encuadre": 35
     },
     "bloques": [
       {
@@ -2112,8 +2122,9 @@
     "cabecera": {
       "titulo": "Ajuar",
       "subtitulo": "Manto, corona y joyas de la Sagrada Titular.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/saya.webp",
+      "fotoAlt": "Las manos de la Virgen sobre la saya bordada en oro, con el rosario y el encaje del pecherín",
+      "encuadre": 40
     },
     "bloques": [
       {
@@ -2142,8 +2153,9 @@
     "cabecera": {
       "titulo": "Noticias",
       "subtitulo": "Últimas noticias del Grupo Parroquial Nuestra Señora de los Desamparados.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/trono-en-la-calle.webp",
+      "fotoAlt": "El trono de la Virgen en la calle, entre ciriales y bajo los árboles",
+      "encuadre": 55
     },
     "bloques": [
       {
@@ -2157,8 +2169,9 @@
     "cabecera": {
       "titulo": "Publicaciones",
       "subtitulo": "Boletines, dossieres de prensa y documentos de nuestra historia.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/manto.webp",
+      "fotoAlt": "El manto de terciopelo azul, bordado en oro, sobre el trono y bajo los árboles",
+      "encuadre": 45
     },
     "bloques": [
       {
@@ -2172,8 +2185,9 @@
     "cabecera": {
       "titulo": "Boletines",
       "subtitulo": "Revista anual del Grupo Parroquial.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/virgen-entre-candeleros.webp",
+      "fotoAlt": "La Virgen de los Desamparados entre candeleros encendidos, ante un dosel rojo",
+      "encuadre": 35
     },
     "bloques": [
       {
@@ -2187,8 +2201,9 @@
     "cabecera": {
       "titulo": "Dossier de Prensa",
       "subtitulo": "Recopilación de apariciones mediáticas.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/hombres-de-trono.webp",
+      "fotoAlt": "Hombres de trono en fila bajo los varales, en la calle",
+      "encuadre": 40
     },
     "bloques": [
       {
@@ -2202,8 +2217,9 @@
     "cabecera": {
       "titulo": "Contacto",
       "subtitulo": "Estamos a tu disposición.",
-      "foto": "",
-      "fotoAlt": ""
+      "foto": "/images/cabeceras/virgen-de-noche.webp",
+      "fotoAlt": "La Virgen de los Desamparados de noche, entre cirios encendidos",
+      "encuadre": 45
     },
     "bloques": [
       {

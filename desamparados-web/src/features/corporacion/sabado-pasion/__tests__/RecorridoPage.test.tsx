@@ -23,6 +23,9 @@ const DE_PARTIDA = POR_DEFECTO.recorrido as unknown as {
 
 const pagina = (bloques: unknown[]) => ({ cabecera: DE_PARTIDA.cabecera, bloques })
 
+/** Las fotos de los bloques: la de la cabecera va aparte y está siempre. */
+const fotosDelContenido = () => screen.queryAllByRole('img').filter((img) => !img.closest('header'))
+
 const responder = (recorrido: unknown) =>
   vi.stubGlobal(
     'fetch',
@@ -40,7 +43,7 @@ describe('RecorridoPage', () => {
 
     expect(await screen.findByText('Plaza nueva')).toBeInTheDocument()
     expect(screen.getByText('18:15')).toBeInTheDocument()
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(fotosDelContenido()).toHaveLength(0)
   })
 
   it('enseña el plano cuando lo hay', async () => {
@@ -82,7 +85,7 @@ describe('RecorridoPage', () => {
     await waitFor(() => {
       expect(screen.queryByText('Itinerario y horarios aproximados')).not.toBeInTheDocument()
     })
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(fotosDelContenido()).toHaveLength(0)
   })
 
   it('si la API falla, enseña el itinerario de siempre', async () => {

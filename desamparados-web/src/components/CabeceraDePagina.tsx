@@ -7,13 +7,10 @@ interface CabeceraDePaginaProps {
   /** Qué se ve en la foto. Sin ella, se repite el título: toda foto necesita
    *  descripción, y una redundancia con el título es mejor que dejarla sin ella. */
   imageAlt?: string
-  /** La página ya trae la foto de fondo detrás de todo (`FondoDePagina`): aquí
-   *  no se pinta nada propio, ni foto ni color, para dejarla pasar. */
-  sobreFondo?: boolean
 }
 
-export default function CabeceraDePagina({ title, subtitle, image, imageAlt, sobreFondo }: CabeceraDePaginaProps) {
-  const conFotoPropia = Boolean(image) && !sobreFondo
+export default function CabeceraDePagina({ title, subtitle, image, imageAlt }: CabeceraDePaginaProps) {
+  const conFotoPropia = Boolean(image)
   return (
     <Box
       component="section"
@@ -23,7 +20,7 @@ export default function CabeceraDePagina({ title, subtitle, image, imageAlt, sob
         // encima. Abajo, poco: el contenido que sigue ya trae su aire (espaciado.ts).
         pt: { xs: 10, md: 14 },
         pb: { xs: 5, md: 7 },
-        backgroundColor: image || sobreFondo ? 'transparent' : 'background.paper',
+        backgroundColor: image ? 'transparent' : 'background.paper',
         overflow: 'hidden',
       }}
     >

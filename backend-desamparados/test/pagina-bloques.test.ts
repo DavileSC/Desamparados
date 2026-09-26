@@ -62,6 +62,17 @@ describe('el documento de una página de bloques', () => {
     assert.ok(con('/storage/private/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp'), 'lo privado no se publica');
   });
 
+  test('el encuadre de la foto es un porcentaje entero, y es opcional', () => {
+    const con = (encuadre: unknown) => falla({ cabecera: { ...CABECERA, encuadre }, bloques: [] });
+    assert.equal(falla({ cabecera: CABECERA, bloques: [] }), false, 'sin encuadre vale');
+    assert.equal(con(0), false);
+    assert.equal(con(100), false);
+    assert.ok(con(-5), 'por encima de la foto');
+    assert.ok(con(101), 'por debajo de la foto');
+    assert.ok(con(40.5), 'con decimales');
+    assert.ok(con('40'), 'como texto');
+  });
+
   // El CMS ya avisa antes de guardar (PaginaAdminPage.tsx), pero esa
   // comprobación vive solo en el navegador: un PUT hecho a mano con el título
   // en blanco tiene que rechazarlo igual, o la página se queda sin título en

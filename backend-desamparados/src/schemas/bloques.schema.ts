@@ -793,12 +793,14 @@ export const cabeceraSchema = type({
   titulo: TITULO,
   subtitulo: DESCRIPCION,
   foto: sinFoto.or(rutaImagenPublica),
-  // La descripción es opcional, al revés que en el plano del recorrido o en las
-  // fotos de los hitos: la foto de la cabecera no se pinta como una foto, es el
-  // fondo velado de la página (`FondoDePagina`) y va fuera del árbol accesible,
-  // así que nadie la oiría. Se sigue guardando lo escrito: describe la foto por
-  // si algún día vuelve a verse como tal.
+  // La descripción es opcional. En Historia, Agenda y Cultos la foto es el
+  // fondo velado de la página y va fuera del árbol accesible. En las demás se
+  // ve a todo el ancho arriba y la lee el lector de pantalla si está escrita;
+  // si no, se trata como decorativa (el título ya dice qué página es).
   fotoAlt: DESCRIPCION,
+  // Qué altura de la foto (0 arriba, 100 abajo) se queda a la vista cuando la
+  // cabecera a sangre la recorta. Solo lo traen esas páginas.
+  'encuadre?': '0 <= number.integer <= 100',
 }).narrow((datos, ctx) => {
   // Un título en blanco (o solo espacios: tres espacios no son un título) deja
   // la página sin título en producción. El CMS ya avisa antes de mandar nada,

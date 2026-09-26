@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Alert, Box, Button, CircularProgress, Dialog, IconButton, Paper, Snackbar, Stack, Tooltip, Typography, useMediaQuery,
+  Alert, Box, Button, CircularProgress, Dialog, IconButton, Paper, Slider, Snackbar, Stack, Tooltip, Typography, useMediaQuery,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
@@ -25,6 +25,7 @@ import { useDeshacer } from './constructor/useDeshacer'
 import { conClave, sinClave, type Fila } from './bloques/filas'
 import { NOMBRE_BLOQUE, bloqueNuevo, problemaDeBloque, problemaDePresentacion } from './bloques/formularios'
 import { libreDe } from '../../components/bloques/presentacion'
+import { ENCUADRE_POR_DEFECTO, tipoDeCabecera } from '../../components/bloques/cabecera'
 import { paginaPublica } from '../../app/cmsNavegacion'
 import { ErrorDeApi } from '../../lib/api/cliente'
 import {
@@ -243,6 +244,8 @@ export default function PaginaAdminPage() {
   if (!cabecera) return <CircularProgress aria-label="Cargando la página" />
 
   const documento: PaginaDeBloques = { cabecera, bloques: sinClave(filas) }
+  // La foto se ve a todo el ancho arriba (y tiene encuadre) o velada detrás de la página.
+  const aSangre = tipoDeCabecera(slug) === 'a-sangre'
   const indiceAbierto = filas.findIndex((f) => f.clave === abierta)
   const seleccionado = indiceAbierto === -1 ? null : indiceAbierto
   const vista = (alto: string) => (
@@ -299,12 +302,41 @@ export default function PaginaAdminPage() {
                 <CampoTexto etiqueta="Subtítulo" valor={cabecera.subtitulo}
                   onCambio={(subtitulo) => cambiarCabecera({ subtitulo }, 'subtitulo')}
                   ayuda="Frase bajo el título." maxLength={topes.descripcion} />
-                <CampoImagen valor={cabecera.foto} onCambio={(foto) => cambiarCabecera({ foto }, 'foto')}
-                  etiqueta="Foto de fondo"
-                  ayuda="Opcional. JPG, PNG o WebP grande y apaisado, de hasta 5 MB. Se ve muy velada detrás de toda la página, hasta el pie. Sin foto, el fondo queda liso." apaisada />
-                <CampoTexto etiqueta="Descripción de la foto" valor={cabecera.fotoAlt}
-                  onCambio={(fotoAlt) => cambiarCabecera({ fotoAlt }, 'fotoAlt')}
-                  ayuda="Opcional: el fondo es decorativo y los lectores de pantalla lo saltan. Escríbela si quieres dejar apuntado qué se ve." maxLength={topes.descripcion} />
+                {aSangre ? (
+                  <>
+                    <CampoImagen valor={cabecera.foto} onCambio={(foto) => cambiarCabecera({ foto }, 'foto')}
+                      etiqueta="Foto de cabecera"
+                      ayuda="JPG, PNG o WebP de hasta 5 MB, apaisada y de al menos 1600 px de ancho. Ocupa todo el ancho arriba de la página, con el título encima de su parte de abajo. Sin foto, la banda queda en granate oscuro." apaisada />
+                    {cabecera.foto !== '' && (
+                      <Box sx={{ px: 1 }}>
+                        <Typography id="encuadre-cabecera" variant="body2" gutterBottom>Encuadre</Typography>
+                        <Slider
+                          aria-labelledby="encuadre-cabecera"
+                          value={cabecera.encuadre ?? ENCUADRE_POR_DEFECTO}
+                          onChange={(_, valor) => cambiarCabecera({ encuadre: valor as number }, 'encuadre')}
+                          min={0} max={100} step={5}
+                          marks={[{ value: 0, label: 'Arriba' }, { value: 50, label: 'Centro' }, { value: 100, label: 'Abajo' }]}
+                          getAriaValueText={(v) => `${v} %`}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          La banda recorta la foto: apaisada en el ordenador y vertical en el móvil. Elige qué parte se queda a la vista; en la vista en vivo se ve al momento.
+                        </Typography>
+                      </Box>
+                    )}
+                    <CampoTexto etiqueta="Descripción de la foto" valor={cabecera.fotoAlt}
+                      onCambio={(fotoAlt) => cambiarCabecera({ fotoAlt }, 'fotoAlt')}
+                      ayuda="Qué se ve en la foto, para quien no la ve: la leen los lectores de pantalla. Sin ella, la foto se trata como adorno." maxLength={topes.descripcion} />
+                  </>
+                ) : (
+                  <>
+                    <CampoImagen valor={cabecera.foto} onCambio={(foto) => cambiarCabecera({ foto }, 'foto')}
+                      etiqueta="Foto de fondo"
+                      ayuda="Opcional. JPG, PNG o WebP grande y apaisado, de hasta 5 MB. Se ve muy velada detrás de toda la página, hasta el pie. Sin foto, el fondo queda liso." apaisada />
+                    <CampoTexto etiqueta="Descripción de la foto" valor={cabecera.fotoAlt}
+                      onCambio={(fotoAlt) => cambiarCabecera({ fotoAlt }, 'fotoAlt')}
+                      ayuda="Opcional: el fondo es decorativo y los lectores de pantalla lo saltan. Escríbela si quieres dejar apuntado qué se ve." maxLength={topes.descripcion} />
+                  </>
+                )}
                 {slug === 'historia' && (
                   <Typography variant="body2" color="text.secondary">
                     En Historia, los bloques de cronología van en una franja oscura y el primero forma el

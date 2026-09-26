@@ -5,10 +5,11 @@ import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ContenedorDePagina from '../ContenedorDePagina'
 import MetaDePagina from '../MetaDePagina'
-import CabeceraDePagina from '../CabeceraDePagina'
 import FondoDePagina from '../FondoDePagina'
 import SeccionAnimada from '../SeccionAnimada'
 import BloquesDePagina from './BloquesDePagina'
+import CabeceraASangre from './CabeceraASangre'
+import { cejaDePagina, tipoDeCabecera } from './cabecera'
 import { useBorradorPagina } from './borrador'
 import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
 import { getContenido, type PaginaDeBloques, type SlugContenido } from '../../lib/api/contenido'
@@ -16,15 +17,16 @@ import { SECCION_SIN_CABECERA, SECCION_TRAS_CABECERA } from '../espaciado'
 
 /**
  * Una página pública compuesta por bloques: su cabecera y, debajo, lo que el
- * CMS haya puesto, con la foto de la cabecera velada detrás de todo.
+ * CMS haya puesto.
  *
  * Es el mismo componente para todas porque lo único que las distingue es su
  * slug. Antes cada una llevaba su texto escrito dentro del `.tsx` y cambiar un
  * párrafo exigía tocar código y desplegar.
  *
- * La foto no se queda en una banda arriba: es el fondo de la página entera,
- * como en Historia. Se queda quieta a la altura de la ventana mientras el
- * texto pasa por encima y termina con el último bloque, sin llegar al pie.
+ * La cabecera es la foto a todo el ancho con el título encima
+ * (`CabeceraASangre`). Las páginas sin cabecera (Agenda, Cultos: ver
+ * `cabecera.ts`) llevan la foto, si la tienen, velada detrás de la página
+ * entera: quieta a la altura de la ventana mientras el texto pasa por encima.
  *
  * El título de la pestaña sale de la cabecera del documento, así que también se
  * edita desde el CMS. Era lo que ya decía cada página («Cultos | Desamparados»),
@@ -38,15 +40,13 @@ import { SECCION_SIN_CABECERA, SECCION_TRAS_CABECERA } from '../espaciado'
  */
 interface Props {
   slug: SlugContenido
-  /**
-   * Sin la cabecera grande (título y subtítulo): para páginas cuyo contenido ya
-   * dice lo que son, como la Agenda, que así enseña su calendario entero al
-   * entrar. El título sigue ahí, oculto, como el h1 de la página.
-   */
-  sinCabecera?: boolean
 }
 
-export default function PaginaDeBloquesPublica({ slug, sinCabecera = false }: Props) {
+export default function PaginaDeBloquesPublica({ slug }: Props) {
+  // Sin la cabecera grande las páginas cuyo contenido ya dice lo que son, como
+  // la Agenda, que así enseña su calendario entero al entrar. El título sigue
+  // ahí, oculto, como el h1 de la página.
+  const sinCabecera = tipoDeCabecera(slug) === 'ninguna'
   // En la vista previa del CMS, lo que se está escribiendo; fuera, lo guardado.
   const borrador = useBorradorPagina()
   const { data } = useQuery({
@@ -73,16 +73,21 @@ export default function PaginaDeBloquesPublica({ slug, sinCabecera = false }: Pr
           desplazamiento y sin esto la página se movería de lado. `clip` y no
           `hidden`, que rompería el `position: sticky` de dentro. */}
       <Box sx={{ position: 'relative', isolation: 'isolate', overflowX: 'clip' }}>
-        {Boolean(pagina.cabecera.foto) && <FondoDePagina url={pagina.cabecera.foto} />}
         {sinCabecera
-          ? <Typography component="h1" sx={visuallyHidden}>{pagina.cabecera.titulo}</Typography>
+          ? (
+            <>
+              {Boolean(pagina.cabecera.foto) && <FondoDePagina url={pagina.cabecera.foto} />}
+              <Typography component="h1" sx={visuallyHidden}>{pagina.cabecera.titulo}</Typography>
+            </>
+          )
           : (
-            <CabeceraDePagina
-              title={pagina.cabecera.titulo}
-              subtitle={pagina.cabecera.subtitulo}
-              image={pagina.cabecera.foto || undefined}
-              imageAlt={pagina.cabecera.fotoAlt}
-              sobreFondo={Boolean(pagina.cabecera.foto)}
+            <CabeceraASangre
+              titulo={pagina.cabecera.titulo}
+              subtitulo={pagina.cabecera.subtitulo}
+              foto={pagina.cabecera.foto}
+              fotoAlt={pagina.cabecera.fotoAlt}
+              encuadre={pagina.cabecera.encuadre}
+              ceja={cejaDePagina(slug, pagina.cabecera.titulo)}
             />
           )}
         <SeccionAnimada sx={sinCabecera ? SECCION_SIN_CABECERA : SECCION_TRAS_CABECERA}>
