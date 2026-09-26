@@ -23,7 +23,7 @@ import { TurnosService } from '../src/services/procesion/turnos.service.js';
 import { SalidasService } from '../src/services/procesion/salidas.service.js';
 import { MisRecibosService } from '../src/services/mis-recibos.service.js';
 import { CLAVE_EVENTO_ROSARIO } from '../src/services/recibos/comunes.js';
-import { DATOS_SALIDA } from '../src/domain/salidas.js';
+import { CLAVE_CUOTA_SALIDA, DATOS_SALIDA } from '../src/domain/salidas.js';
 import { apellidosTrasCambio, componerApellidos, partirApellidos } from '../src/domain/apellidos.js';
 import { enmascararIban } from '../src/domain/iban.js';
 import { esIbanValido, normalizarIban } from '../src/config/common.js';
@@ -36,6 +36,7 @@ let baseUrl: string;
 let plazoPrevio: string | null = null;
 let plazoRosarioPrevio: string | null = null;
 let rosarioPrevio: string | null = null;
+let cuotaPrevia: string | null = null;
 const CLAVE_PLAZO_ROSARIO = DATOS_SALIDA.ROSARIO.clavePlazo;
 
 const avisosDeApertura = mock.method(EmailService, 'enviarAperturaPapeletas', async () => undefined);
@@ -50,13 +51,17 @@ before(async () => {
     plazoPrevio = (await db.configuracion.findUnique({ where: { key: CLAVE_PLAZO } }))?.value ?? null;
     plazoRosarioPrevio = (await db.configuracion.findUnique({ where: { key: CLAVE_PLAZO_ROSARIO } }))?.value ?? null;
     rosarioPrevio = (await db.configuracion.findUnique({ where: { key: CLAVE_EVENTO_ROSARIO } }))?.value ?? null;
+    // Las pruebas cuentan con la cuota de salida de hoy, 0 €: la de la base
+    // puede ser otra (se cambia en Procesión) y se devuelve al terminar.
+    cuotaPrevia = (await db.configuracion.findUnique({ where: { key: CLAVE_CUOTA_SALIDA } }))?.value ?? null;
+    await db.configuracion.upsert({ where: { key: CLAVE_CUOTA_SALIDA }, update: { value: '0' }, create: { key: CLAVE_CUOTA_SALIDA, value: '0' } });
   }
 });
 
 after(async () => {
   mock.restoreAll();
   if (dbDisponible) {
-    for (const [key, previo] of [[CLAVE_PLAZO, plazoPrevio], [CLAVE_PLAZO_ROSARIO, plazoRosarioPrevio], [CLAVE_EVENTO_ROSARIO, rosarioPrevio]] as const) {
+    for (const [key, previo] of [[CLAVE_PLAZO, plazoPrevio], [CLAVE_PLAZO_ROSARIO, plazoRosarioPrevio], [CLAVE_EVENTO_ROSARIO, rosarioPrevio], [CLAVE_CUOTA_SALIDA, cuotaPrevia]] as const) {
       if (previo === null) await db.configuracion.deleteMany({ where: { key } });
       else await db.configuracion.update({ where: { key }, data: { value: previo } });
     }
