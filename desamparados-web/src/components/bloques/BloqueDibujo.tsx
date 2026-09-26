@@ -18,7 +18,7 @@ import type { BloqueDibujo as Datos, NombreDeDibujo } from '../../lib/api/conten
  * ya dibujado.
  *
  * Con ilustración (`foto`), se pinta ella en lugar del dibujo de líneas: se
- * levanta desde el suelo al bajar, sobre un filete de oro que se tiende debajo.
+ * enciende al bajar, sobre un filete de oro que se tiende debajo.
  *
  * Pinta su propio título (ver `pintaSuTitulo` en `registro.tsx`): va en la
  * columna del texto y no encima de los dos.
@@ -46,7 +46,7 @@ export default function BloqueDibujo({ bloque }: { bloque: Datos }) {
     }}>
       <Box ref={marco} sx={{ gridArea: 'dibujo', color: 'secondary.main', maxWidth: foto ? 'none' : { xs: 320, md: 440 }, width: '100%', mx: 'auto' }}>
         {foto
-          ? <Ilustracion url={foto.url} alt={foto.alt} avance={scrollYProgress} quieto={quieto} />
+          ? <Ilustracion url={foto.url} alt={foto.alt} quieto={quieto} />
           : <Dibujo avance={scrollYProgress} quieto={quieto} />}
       </Box>
       <Box sx={{ gridArea: 'texto', minWidth: 0 }}>
@@ -70,18 +70,26 @@ export default function BloqueDibujo({ bloque }: { bloque: Datos }) {
 }
 
 /**
- * La ilustración que sustituye al dibujo: se descubre de abajo arriba, como
- * un edificio que se levanta, y sube un poco mientras tanto.
+ * La ilustración que sustituye al dibujo: al abrir la página se ve apagada,
+ * como de noche, y según se baja va cogiendo brillo y color hasta verse
+ * entera, mientras se tiende debajo el filete de oro del suelo.
+ *
+ * Lleva su propio seguimiento del scroll, más temprano que el del dibujo: la
+ * del templo está arriba de la página y ya se ve al entrar, así que el camino
+ * va de donde está al abrir (su centro hacia el 70 % de la pantalla) a cuando
+ * ya se ha subido a mirarla (su centro en el 25 %).
  */
-function Ilustracion({ url, alt, avance, quieto }: PropsDibujo & { url: string; alt: string }) {
-  const tapado = useTransform(avance, [0.05, 0.75], [100, 0], { clamp: true })
-  const recorte = useMotionTemplate`inset(${tapado}% -2% 0 -2%)`
-  const subida = useTransform(avance, [0.05, 0.75], [28, 0], { clamp: true })
-  const suelo = useTransform(avance, [0, 0.45], [0, 1], { clamp: true })
+function Ilustracion({ url, alt, quieto }: { url: string; alt: string; quieto: boolean }) {
+  const marco = useRef<HTMLDivElement>(null)
+  const { scrollYProgress: avance } = useScroll({ target: marco, offset: ['center 70%', 'center 25%'] })
+  const brillo = useTransform(avance, [0, 1], [0.35, 1])
+  const color = useTransform(avance, [0, 1], [0.45, 1])
+  const filtro = useMotionTemplate`brightness(${brillo}) saturate(${color})`
+  const suelo = useTransform(avance, [0, 0.8], [0.15, 1], { clamp: true })
   return (
-    <Box sx={{ position: 'relative', pb: 2 }}>
-      <Box component={motion.img} src={url} alt={alt} loading="lazy" decoding="async"
-        style={quieto ? undefined : { clipPath: recorte, y: subida }}
+    <Box ref={marco} sx={{ position: 'relative', pb: 2 }}>
+      <Box component={motion.img} src={url} alt={alt} loading="eager" decoding="async"
+        style={quieto ? undefined : { filter: filtro }}
         sx={{ display: 'block', width: '100%', height: 'auto' }} />
       <Box component={motion.div} aria-hidden style={quieto ? undefined : { scaleX: suelo }}
         sx={{ position: 'absolute', left: '4%', right: '4%', bottom: 0, height: '1px', backgroundColor: 'secondary.main', transformOrigin: 'center' }} />
