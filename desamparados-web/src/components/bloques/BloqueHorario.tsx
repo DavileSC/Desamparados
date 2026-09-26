@@ -126,7 +126,10 @@ function PanelMisa({ misa }: { misa: MisaProxima | null }) {
 function PanelDespacho({ estado }: { estado: EstadoDespacho }) {
   return (
     <Box sx={{
-      p: { xs: 3, md: 4.5 }, borderTop: { xs: '1px solid', md: 0 }, borderLeft: { md: '1px solid' }, borderColor: 'divider',
+      // Anchos por pantalla y color aparte: con `borderLeft: { md: '1px solid' }` el
+      // color de la regla de pantalla ganaba al de `borderColor` y la línea salía blanca.
+      p: { xs: 3, md: 4.5 }, borderStyle: 'solid', borderColor: 'divider', borderWidth: 0,
+      borderTopWidth: { xs: 1, md: 0 }, borderLeftWidth: { xs: 0, md: 1 },
       display: 'flex', flexDirection: 'column', justifyContent: 'center',
     }}>
       <Typography component="span" sx={{ ...versalitas, mb: 1.5 }}>Despacho parroquial</Typography>

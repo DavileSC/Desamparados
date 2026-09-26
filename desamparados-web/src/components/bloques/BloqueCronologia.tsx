@@ -289,7 +289,7 @@ function CronologiaHorizontal({ bloque, conAnclas }: { bloque: Datos; conAnclas:
       sx={{
         listStyle: 'none', m: 0, p: 0, pb: 2,
         display: 'grid', gridAutoFlow: 'column', gridAutoColumns: { xs: '78%', sm: '46%', md: 'minmax(260px, 1fr)' }, gap: { xs: 3, md: 4 },
-        overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'thin',
+        overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'thin', scrollbarColor: 'rgba(222, 199, 43, .45) transparent',
       }}
     >
       {bloque.hitos.map((hito, indice) => {
@@ -365,7 +365,9 @@ function CintaViva({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean })
       <Box sx={{
         position: 'sticky', top: 0, height: '100svh', overflow: 'hidden',
         // A sangre, de lado a lado de la ventana, como una franja de fondo.
-        mx: 'calc(50% - 50vw)', display: 'flex', flexDirection: 'column', justifyContent: 'center', pt: 8,
+        mx: 'calc(50% - 50vw)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start',
+        // Arriba y no centrada: centrada dejaba un hueco grande bajo el título antes de fijarse.
+        pt: 'max(120px, 16svh)',
       }}>
         <Box
           component={motion.ol}

@@ -73,17 +73,23 @@ function Trazo({ d, avance, quieto, desde, hasta, grueso = 1.6 }: PropsDibujo & 
   const opacidad = useTransform(largo, (v) => (v > 0 ? 1 : 0))
   return (
     <motion.path d={d} fill="none" stroke="currentColor" strokeWidth={grueso} strokeLinecap="round" strokeLinejoin="round"
-      vectorEffect="non-scaling-stroke" style={quieto ? undefined : { pathLength: largo, opacity: opacidad }} />
+      style={quieto ? undefined : { pathLength: largo, opacity: opacidad }} />
   )
 }
 
 /** Unos trazos repartidos por igual hasta `hasta`, dejando lo que queda para lo que aparece después. */
-function Trazos({ trazos, hasta = 1, ...dibujo }: PropsDibujo & { trazos: (string | [string, number])[]; hasta?: number }) {
+/**
+ * Sin `vector-effect: non-scaling-stroke`: con él, el trazo discontinuo se mide
+ * en píxeles de pantalla y no en el largo normalizado del camino, y el dibujo
+ * se quedaba a medias. El grueso va, pues, en unidades del dibujo: cada uno
+ * da el suyo según su tamaño.
+ */
+function Trazos({ trazos, hasta = 1, grueso: fino = 1.6, ...dibujo }: PropsDibujo & { trazos: (string | [string, number])[]; hasta?: number; grueso?: number }) {
   const tramo = hasta / trazos.length
   return (
     <>
       {trazos.map((trazo, i) => {
-        const [d, grueso] = typeof trazo === 'string' ? [trazo, undefined] : trazo
+        const [d, grueso] = typeof trazo === 'string' ? [trazo, fino] : trazo
         // Cada trazo se solapa un poco con el siguiente: el dibujo no se para entre uno y otro.
         return <Trazo key={i} {...dibujo} d={d} grueso={grueso} desde={i * tramo} hasta={Math.min(hasta, (i + 1.6) * tramo)} />
       })}
@@ -134,10 +140,10 @@ function SignoPasionista(dibujo: PropsDibujo) {
   const lema = useTransform(dibujo.avance, [0.72, 0.95], [0, 1], { clamp: true })
   return (
     <Lienzo viewBox="0 0 240 300" etiqueta="El signo pasionista: un corazón con el lema Jesu XPI Passio, una cruz encima y tres clavos">
-      <Trazos {...dibujo} hasta={0.8} trazos={[
-        ['M120 282 C60 237 22 192 22 146 C22 106 50 79 80 79 C100 79 113 91 120 105 C127 91 140 79 160 79 C190 79 218 106 218 146 C218 192 180 237 120 282 Z', 2],
+      <Trazos {...dibujo} hasta={0.8} grueso={0.9} trazos={[
+        ['M120 282 C60 237 22 192 22 146 C22 106 50 79 80 79 C100 79 113 91 120 105 C127 91 140 79 160 79 C190 79 218 106 218 146 C218 192 180 237 120 282 Z', 1.2],
         'M120 267 C68 227 34 187 34 147 C34 113 57 91 82 91 C99 91 112 102 120 117 C128 102 141 91 158 91 C183 91 206 113 206 147 C206 187 172 227 120 267 Z',
-        ['M120 79 V10 M98 32 H142', 2],
+        ['M120 79 V10 M98 32 H142', 1.2],
         'M104 224 L118 254 M99 226 L109 221',
         'M120 222 V257 M114 222 H126',
         'M136 224 L122 254 M131 221 L141 226',

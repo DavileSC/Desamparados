@@ -44,10 +44,21 @@ export default function BloquesDePagina({ bloques, desde = 0 }: { bloques: Bloqu
         // un tipo para pintar otro distinto. Al reordenar dos bloques del mismo
         // tipo, el estado propio de uno (el vídeo en reproducción de una
         // galería) se queda en su posición: es una rareza visible, no un fallo.
-        <BloqueDePagina key={`${bloque.tipo}-${indice}`} bloque={bloque} indice={indice} primero={orden === 0} />
+        <BloqueDePagina key={`${bloque.tipo}-${indice}`} bloque={bloque} indice={indice} primero={orden === 0}
+          pegado={orden > 0 && mismaFranja(aPintar[orden - 1].bloque, bloque)} />
       ))}
     </Box>
   )
+}
+
+/**
+ * Dos bloques seguidos con la misma franja de color forman una sola: sin el
+ * aire de entre bloques, que dejaría una tira del fondo de la página cortando
+ * la franja. La foto no cuenta: cada una lleva la suya.
+ */
+function mismaFranja(anterior: Bloque, bloque: Bloque): boolean {
+  const fondo = valorDe(bloque, 'fondo')
+  return fondo !== 'ninguno' && fondo !== 'foto' && fondo === valorDe(anterior, 'fondo') && !siDe(bloque, 'separador')
 }
 
 /**
@@ -55,7 +66,7 @@ export default function BloquesDePagina({ bloques, desde = 0 }: { bloques: Bloqu
  * color, el ancla y su título de sección. Lo usa también la vista en vivo del
  * CMS, para que un bloque se pinte exactamente como dentro de la página.
  */
-export function BloqueDePagina({ bloque, indice = 0, primero = true }: { bloque: Bloque; indice?: number; primero?: boolean }) {
+export function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = false }: { bloque: Bloque; indice?: number; primero?: boolean; pegado?: boolean }) {
   const Componente = componenteDeBloque(bloque)
   if (!Componente) return null
 
@@ -65,7 +76,7 @@ export function BloqueDePagina({ bloque, indice = 0, primero = true }: { bloque:
   const centrado = valorDe(bloque, 'alineacionTitulo') === 'centro'
 
   return (
-    <Box id={ancla || undefined} sx={{ mt: primero ? 0 : espacio, scrollMarginTop: 96 }}>
+    <Box id={ancla || undefined} sx={{ mt: primero || pegado ? 0 : espacio, scrollMarginTop: 96 }}>
       <MarcoEditable bloque={bloque} indice={indice}>
         {siDe(bloque, 'separador') && (
           <Box aria-hidden sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center', mb: { xs: 4, md: 6 } }}>
