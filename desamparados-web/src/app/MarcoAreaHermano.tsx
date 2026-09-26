@@ -48,7 +48,7 @@ export default function MarcoAreaHermano() {
     location.pathname === href || location.pathname.startsWith(`${href}/`)
 
   const cajon = (
-    <Box sx={{ height: '100%', backgroundColor: '#100e11' }}>
+    <Box sx={{ height: '100%', backgroundColor: '#070608' }}>
       <Box sx={{ p: 3, borderBottom: '1px solid rgba(204, 196, 201, 0.2)' }}>
         <Box
           component={Link}
@@ -139,7 +139,7 @@ export default function MarcoAreaHermano() {
         sx={{
           width: { md: `calc(100% - ${ANCHO_CAJON}px)` },
           ml: { md: `${ANCHO_CAJON}px` },
-          backgroundColor: 'rgba(38, 35, 38, 0.95)',
+          backgroundColor: 'rgba(18, 17, 19, 0.95)',
           borderBottom: '1px solid rgba(204, 196, 201, 0.2)',
           display: { md: 'none' },
         }}
@@ -164,7 +164,7 @@ export default function MarcoAreaHermano() {
           onClose={alternarCajon}
           ModalProps={{ keepMounted: true }}
           slotProps={{
-            paper: { sx: { width: ANCHO_CAJON, backgroundColor: '#100e11' } },
+            paper: { sx: { width: ANCHO_CAJON, backgroundColor: '#070608' } },
           }}
           sx={{ display: { xs: 'block', md: 'none' } }}
         >
@@ -174,7 +174,7 @@ export default function MarcoAreaHermano() {
           variant="permanent"
           open
           slotProps={{
-            paper: { sx: { width: ANCHO_CAJON, backgroundColor: '#100e11', borderRight: 'none' } },
+            paper: { sx: { width: ANCHO_CAJON, backgroundColor: '#070608', borderRight: 'none' } },
           }}
           sx={{ display: { xs: 'none', md: 'block' } }}
         >

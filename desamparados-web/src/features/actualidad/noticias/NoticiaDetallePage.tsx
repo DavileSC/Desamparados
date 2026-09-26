@@ -79,7 +79,7 @@ export default function NoticiaDetallePage() {
               sx={{
                 position: 'absolute',
                 inset: 0,
-                background: 'linear-gradient(to top, rgba(38, 35, 38, 0.97) 0%, rgba(38, 35, 38, 0.6) 100%)',
+                background: 'linear-gradient(to top, rgba(18, 17, 19, 0.97) 0%, rgba(18, 17, 19, 0.6) 100%)',
               }}
             />
           </>

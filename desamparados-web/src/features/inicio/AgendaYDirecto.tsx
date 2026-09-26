@@ -32,7 +32,7 @@ function AvisoDirecto({ url, titulo, texto }: { url: string; titulo: string; tex
         p: 2,
         maxWidth: 320,
         borderRadius: '10px',
-        backgroundColor: 'rgba(16, 14, 17, 0.52)',
+        backgroundColor: 'rgba(7, 6, 8, 0.52)',
         backdropFilter: 'blur(14px) saturate(1.15)',
         color: '#fff',
         textDecoration: 'none',
@@ -167,8 +167,8 @@ export default function AgendaYDirecto() {
           inset: 0,
           zIndex: -1,
           background: {
-            xs: 'rgba(16, 14, 17, 0.76)',
-            md: 'linear-gradient(90deg, rgba(16, 14, 17, 0.9), rgba(16, 14, 17, 0.68) 45%, rgba(16, 14, 17, 0.55))',
+            xs: 'rgba(7, 6, 8, 0.76)',
+            md: 'linear-gradient(90deg, rgba(7, 6, 8, 0.9), rgba(7, 6, 8, 0.68) 45%, rgba(7, 6, 8, 0.55))',
           },
         }}
       />

@@ -7,7 +7,7 @@ import { designTokens } from '../../theme'
 export const GOLD = '#dec72b'
 /** Fuente de los títulos de la web pública. Sale del tema: ver designTokens.fonts. */
 export const SERIF = designTokens.fonts.heading
-export const TINTA = '#1d1b1e'
+export const TINTA = '#0c0b0d'
 export const PAPEL = '#f7f3ec'
 export const GRANATE = '#6e1822'
 

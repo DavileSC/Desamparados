@@ -20,7 +20,7 @@ import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu, type Grupo, type I
 import { usePanelDeHoy } from './usePanelDeHoy'
 import { designTokens } from '../theme'
 
-const SIDEBAR = superficiesCms('oscuro').sidebar // #100e11, la misma en los dos modos
+const SIDEBAR = superficiesCms('oscuro').sidebar // #070608, la misma en los dos modos
 
 /**
  * Densidad del menú, en variables CSS que leen la marca, la navegación y el

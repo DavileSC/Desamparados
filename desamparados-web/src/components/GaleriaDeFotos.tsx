@@ -85,7 +85,7 @@ export default function GaleriaDeFotos({ images, columns = 3 }: GaleriaDeFotosPr
         slotProps={{
           paper: {
             sx: {
-              backgroundColor: 'rgba(16, 14, 17, 0.95)',
+              backgroundColor: 'rgba(7, 6, 8, 0.95)',
               boxShadow: 'none',
               overflow: 'hidden',
             },

@@ -68,7 +68,7 @@ export default function CartelInclinado({ imagen, etiqueta, antetitulo, titulo, 
         {(antetitulo || titulo) && (
           <Box sx={{
             position: 'absolute', left: 0, right: 0, bottom: 0, p: { xs: '48px 14px 14px', md: '60px 18px 18px' },
-            background: 'linear-gradient(transparent, rgba(16,14,17,.92))', transform: 'translateZ(40px)',
+            background: 'linear-gradient(transparent, rgba(7,6,8,.92))', transform: 'translateZ(40px)',
           }}>
             {antetitulo && (
               <Typography component="span" sx={{ display: 'block', fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#e3d8bf' }}>

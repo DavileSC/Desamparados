@@ -8,7 +8,7 @@ import { idDeHito } from './cronologia'
 import { valorDe } from './presentacion'
 
 /** El fondo de la página: el hueco del punto del raíl se rellena con él. */
-const FONDO = '#262326'
+const FONDO = '#121113'
 const FILETE = 'rgba(204, 196, 201, 0.22)'
 /** Rosa claro del tema (`primary.light`): el granate puro no se lee sobre tinta. */
 const GRANATE_CLARO = '#fc858a'

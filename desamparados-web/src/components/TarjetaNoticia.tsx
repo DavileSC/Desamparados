@@ -35,8 +35,8 @@ const recorte = (lineas: number) => ({ display: '-webkit-box', WebkitLineClamp: 
 // Las placas de las noticias sin foto alternan tono: tres seguidas del mismo color pesan como un solo bloque.
 const TONOS_PLACA = [
   { tono: 'granate', fondo: GRANATE, letra: '#fbe9e7' },
-  { tono: 'tinta', fondo: '#121012', letra: GOLD },
-  { tono: 'piedra', fondo: '#3a3538', letra: '#e3d8bf' },
+  { tono: 'tinta', fondo: '#080708', letra: GOLD },
+  { tono: 'piedra', fondo: '#242125', letra: '#e3d8bf' },
 ] as const
 
 /**

@@ -91,7 +91,7 @@ export default function CajonMovil({ abierto, alCerrar }: { abierto: boolean; al
       paper: {
         sx: {
           width: 288,
-          backgroundColor: '#100e11',
+          backgroundColor: '#070608',
           borderRight: '1px solid rgba(204, 196, 201, 0.2)',
         },
       },

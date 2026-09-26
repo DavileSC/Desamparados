@@ -12,7 +12,7 @@ const TarjetaCristal = forwardRef<HTMLDivElement, TarjetaCristalProps>(
       sx={{
         // Sobre la banda de papel de un bloque (tema claro) el cristal oscuro
         // sería una mancha: ahí la tarjeta es blanca con un filete.
-        background: (t) => (t.palette.mode === 'light' ? '#ffffff' : 'rgba(38, 35, 38, 0.6)'),
+        background: (t) => (t.palette.mode === 'light' ? '#ffffff' : 'rgba(18, 17, 19, 0.6)'),
         backdropFilter: 'blur(12px)',
         border: (t) => (goldBorder
           ? '1px solid rgba(193, 172, 0, 0.2)'

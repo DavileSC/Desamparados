@@ -44,7 +44,7 @@ export default function Tiras({ medios, onAbrir }: {
                 ? `${video ? 'Ver el vídeo' : 'Ampliar la foto'}: ${medio.alt}`
                 : `Abrir: ${medio.pie || medio.alt}`}
               sx={{
-                position: 'absolute', inset: 0, overflow: 'hidden', display: 'block', backgroundColor: '#1d1b1e',
+                position: 'absolute', inset: 0, overflow: 'hidden', display: 'block', backgroundColor: '#0c0b0d',
                 cursor: esta ? 'zoom-in' : 'pointer',
                 '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 2 },
               }}
@@ -75,7 +75,7 @@ export default function Tiras({ medios, onAbrir }: {
               {medio.pie && (
                 <Typography component="span" aria-hidden sx={{
                   position: 'absolute', left: 0, right: 0, bottom: 0, p: { xs: '48px 16px 14px', md: '60px 24px 22px' },
-                  background: 'linear-gradient(transparent, rgba(16,14,17,.85))', color: '#fff', textAlign: 'left',
+                  background: 'linear-gradient(transparent, rgba(7,6,8,.85))', color: '#fff', textAlign: 'left',
                   fontSize: { xs: 18, md: 24 }, lineHeight: 1.25,
                   opacity: esta ? 1 : 0, transform: esta ? 'none' : 'translateY(12px)',
                   transition: esta ? 'opacity .5s .25s, transform .5s .25s' : 'opacity .2s, transform .2s',

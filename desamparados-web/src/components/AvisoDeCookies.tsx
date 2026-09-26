@@ -18,7 +18,7 @@ export default function AvisoDeCookies() {
         left: 0,
         right: 0,
         zIndex: 9999,
-        backgroundColor: 'rgba(16, 14, 17, 0.95)',
+        backgroundColor: 'rgba(7, 6, 8, 0.95)',
         backdropFilter: 'blur(12px)',
         borderTop: '1px solid rgba(204, 196, 201, 0.2)',
         p: { xs: 2, md: 3 },

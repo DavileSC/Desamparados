@@ -14,8 +14,8 @@ describe('tema del CMS', () => {
   it('el modo oscuro es el de la web pública: mismo lienzo y tarjeta tintada', () => {
     const oscuro = crearTemaCms('oscuro')
     expect(oscuro.palette.mode).toBe('dark')
-    expect(oscuro.palette.background.default).toBe(designTokens.colors.primaryContainer) // #262326
-    expect(oscuro.palette.background.paper).toBe(designTokens.colors.onPrimaryFixed) // #1d1b1e
+    expect(oscuro.palette.background.default).toBe(designTokens.colors.primaryContainer) // #121113
+    expect(oscuro.palette.background.paper).toBe(designTokens.colors.onPrimaryFixed) // #0c0b0d
     expect(oscuro.palette.text.primary).toBe('#ffffff')
   })
 
@@ -49,14 +49,14 @@ describe('tema del CMS', () => {
   })
 
   it('la barra lateral es la misma tinta en los dos modos', () => {
-    expect(superficiesCms('claro').sidebar).toBe(designTokens.colors.primary) // #100e11
+    expect(superficiesCms('claro').sidebar).toBe(designTokens.colors.primary) // #070608
     expect(superficiesCms('oscuro').sidebar).toBe(designTokens.colors.primary)
   })
 
   it('el bloque destacado va siempre en el tono contrario al tema', () => {
     // Es lo que lo hace destacar en los dos: papel sobre oscuro, tinta sobre claro.
     expect(superficiesCms('oscuro').inverso).toBe('#fbf9f6')
-    expect(superficiesCms('claro').inverso).toBe('#1d1b1e')
+    expect(superficiesCms('claro').inverso).toBe('#0c0b0d')
     expect(superficiesCms('oscuro').inversoTexto).toBe('#1b1c1a')
     expect(superficiesCms('claro').inversoTexto).toBe('#ffffff')
   })

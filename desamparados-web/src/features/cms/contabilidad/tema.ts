@@ -19,7 +19,7 @@ const COLORES = {
   /** Carril vacío de una barra de reparto. */
   carril: segunModo('#f1eeea', 'rgba(255,255,255,0.08)'),
   /** El detalle al pasar el ratón va siempre oscuro; en oscuro, con borde para separarse de la tarjeta. */
-  emergente: segunModo('#1b1c1a', '#100e11'),
+  emergente: segunModo('#1b1c1a', '#070608'),
   emergenteBorde: segunModo('transparent', 'rgba(204,196,201,0.18)'),
 }
 

@@ -281,7 +281,7 @@ export default function AgendaEditPage() {
             <Panel titulo="Así sale en la Agenda">
               {/* El cartel de verdad, con el tema de la web, sin poder pulsarlo. */}
               <ThemeProvider theme={temaPublico}>
-                <Box inert data-testid="vista-previa-cartel" sx={{ fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', backgroundColor: '#1d1b1e', p: { xs: 1.5, md: 3 } }}>
+                <Box inert data-testid="vista-previa-cartel" sx={{ fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', backgroundColor: '#0c0b0d', p: { xs: 1.5, md: 3 } }}>
                   <CartelDeCulto evento={{
                     id: 0,
                     title: form.title.trim() || 'Título del acto',

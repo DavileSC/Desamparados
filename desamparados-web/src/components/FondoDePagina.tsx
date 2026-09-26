@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 
 /** Fondo de página: la foto se funde a él por arriba y por abajo de la ventana. */
-const FONDO = '#262326'
+const FONDO = '#121113'
 /** La foto apenas se intuye: es un velo, no una foto que competir con el texto. */
 const OPACIDAD = 0.16
 

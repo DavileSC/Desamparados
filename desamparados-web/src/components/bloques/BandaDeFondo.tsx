@@ -39,7 +39,7 @@ export default function BandaDeFondo({ fondo, foto, children }: { fondo: Fondo; 
 
   if (fondo === 'ninguno') return <>{children}</>
 
-  const color = { papel: PAPEL, granate: GRANATE, oscuro: '#161416', foto: '#161416' }[fondo]
+  const color = { papel: PAPEL, granate: GRANATE, oscuro: '#0a090b', foto: '#0a090b' }[fondo]
   const banda = (
     <Box
       data-fondo={fondo}
@@ -55,7 +55,7 @@ export default function BandaDeFondo({ fondo, foto, children }: { fondo: Fondo; 
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           // El velo va encima de la foto y debajo del texto: la foto se intuye y el texto se lee.
-          '&::before': { content: '""', position: 'absolute', inset: 0, zIndex: -1, backgroundColor: 'rgba(22, 20, 22, 0.78)' },
+          '&::before': { content: '""', position: 'absolute', inset: 0, zIndex: -1, backgroundColor: 'rgba(10, 9, 11, 0.78)' },
         } : {}),
       }}
     >

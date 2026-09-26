@@ -55,7 +55,7 @@ export default function BloqueFotoFija({ bloque }: { bloque: Datos }) {
           position: 'sticky', top: { xs: 72, md: 112 }, alignSelf: 'start', zIndex: 2,
           order: { md: derecha ? 2 : 0 },
           height: { xs: '40svh', md: 'calc(100svh - 160px)' }, maxHeight: 760, overflow: 'hidden',
-          backgroundColor: '#1d1b1e',
+          backgroundColor: '#0c0b0d',
         }}
       >
         {bloque.pasos.map((paso, i) => (

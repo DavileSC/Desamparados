@@ -83,7 +83,7 @@ const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
     hairline: '#e3dfda',
     filete: '#efebe6',
     sidebar: designTokens.colors.primary,
-    inverso: designTokens.colors.onPrimaryFixed, // #1d1b1e
+    inverso: designTokens.colors.onPrimaryFixed, // #0c0b0d
     inversoTexto: '#ffffff',
     inversoTenue: 'rgba(255,255,255,0.55)',
     inversoPista: 'rgba(255,255,255,0.12)',
@@ -103,8 +103,8 @@ const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
     tenue: designTokens.colors.outline, // #7b757a
   },
   oscuro: {
-    canvas: designTokens.colors.primaryContainer, // #262326
-    card: designTokens.colors.onPrimaryFixed, // #1d1b1e
+    canvas: designTokens.colors.primaryContainer, // #121113
+    card: designTokens.colors.onPrimaryFixed, // #0c0b0d
     hairline: 'transparent',
     filete: designTokens.colors.glassBorder, // rgba(204,196,201,0.1)
     sidebar: designTokens.colors.primary,
@@ -121,7 +121,7 @@ const SUPERFICIES: Record<ModoCms, SuperficiesCms> = {
     pillPendiente: 'rgba(237,161,0,0.18)',
     pillNeutro: 'rgba(255,255,255,0.08)',
     avisoTexto: '#f2c264',
-    emergente: designTokens.colors.primary, // #100e11
+    emergente: designTokens.colors.primary, // #070608
     emergenteBorde: 'rgba(204,196,201,0.18)',
     texto: '#ffffff',
     texto2: designTokens.colors.primaryFixedDim, // #cbc5c8
@@ -232,7 +232,7 @@ const ACCIONES: Record<ModoCms, Record<string, string>> = {
   },
 }
 
-const ERROR_OSCURO = { main: '#f08a84', dark: '#d9655e', light: '#f7b1ac', contrastText: '#1d1b1e' }
+const ERROR_OSCURO = { main: '#f08a84', dark: '#d9655e', light: '#f7b1ac', contrastText: '#0c0b0d' }
 
 /** La paleta de un modo: la de la web pública (marca, error) con las superficies y los textos del CMS. */
 function paletaCms(modo: ModoCms) {

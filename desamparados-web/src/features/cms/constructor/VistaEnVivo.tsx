@@ -86,7 +86,7 @@ export default function VistaEnVivo({ slug, documento, seleccionado, onSeleccion
             src={rutaDeLaVistaEnVivo(slug)}
             title="Vista en vivo de la página"
             sx={{
-              position: 'absolute', top: 0, left: 0, border: 0, backgroundColor: '#262326',
+              position: 'absolute', top: 0, left: 0, border: 0, backgroundColor: '#121113',
               width: ancho, height: medida.alto > 0 ? medida.alto / escala : '100%',
               transform: `scale(${escala})`, transformOrigin: 'top left',
               boxShadow: aparato === 'escritorio' ? 'none' : '0 0 0 1px rgba(0,0,0,0.2), 0 12px 40px rgba(0,0,0,0.25)',

@@ -24,7 +24,7 @@ import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 const ESCRITORIO = '@media (min-width:1024px)'
 
 /** La cronología va en tinta translúcida: sigue siendo un bloque y deja pasar el velo. */
-const TINTA_VELADA = 'rgba(29, 27, 30, 0.55)'
+const TINTA_VELADA = 'rgba(12, 11, 13, 0.55)'
 const FILETE = 'rgba(204, 196, 201, 0.22)'
 const FILETE_LEVE = 'rgba(204, 196, 201, 0.1)'
 

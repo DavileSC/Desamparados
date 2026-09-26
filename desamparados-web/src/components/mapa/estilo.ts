@@ -12,7 +12,7 @@ import type { Barrio } from './barrio'
  * tampoco se piden letras a nadie.
  */
 export const ORO = '#dec72b'
-export const FONDO_MAPA = '#1a181b'
+export const FONDO_MAPA = '#0b0a0c'
 const FUENTE = ['OpenSansSemibold']
 
 const vacia = { type: 'FeatureCollection' as const, features: [] }
@@ -48,7 +48,7 @@ export function estiloDelMapa(barrio: Barrio, templo: Feature<Polygon> | null = 
         id: 'calles-borde', type: 'line', source: 'calles', filter: ['!=', ['get', 'clase'], 'peatonal'],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': '#121012',
+          'line-color': '#080708',
           'line-width': ['interpolate', ['exponential', 1.6], ['zoom'], 14, 2, 17, anchoCalle(16, 10, 6), 19, anchoCalle(40, 26, 14)],
         },
       },
@@ -62,7 +62,7 @@ export function estiloDelMapa(barrio: Barrio, templo: Feature<Polygon> | null = 
       },
       {
         id: 'peatonales', type: 'line', source: 'calles', filter: ['==', ['get', 'clase'], 'peatonal'],
-        paint: { 'line-color': '#3a3437', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.6, 17, 2, 19, 4], 'line-dasharray': [2, 1.5] },
+        paint: { 'line-color': '#242125', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.6, 17, 2, 19, 4], 'line-dasharray': [2, 1.5] },
       },
       // El halo del templo, en el suelo: debajo de los edificios, para que
       // asome alrededor de la iglesia sin tapar a las vecinas.

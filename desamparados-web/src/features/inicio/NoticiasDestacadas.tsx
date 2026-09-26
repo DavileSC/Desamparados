@@ -27,7 +27,7 @@ export default function NoticiasDestacadas() {
   const textos = useTextosPortada()
 
   return (
-    <SeccionAnimada cascada id="actualidad" aria-labelledby="actualidad-titulo" sx={{ py: { xs: 8, md: 11 }, backgroundColor: '#262326' }}>
+    <SeccionAnimada cascada id="actualidad" aria-labelledby="actualidad-titulo" sx={{ py: { xs: 8, md: 11 }, backgroundColor: '#121113' }}>
       <ContenedorDePagina>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, mb: { xs: 4, md: 5.5 } }}>
           <Box>

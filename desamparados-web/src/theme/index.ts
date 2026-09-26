@@ -2,14 +2,14 @@ import { createTheme, type ThemeOptions } from '@mui/material/styles'
 
 export const designTokens = {
   colors: {
-    primary: '#100e11',
+    primary: '#070608',
     surface: '#fbf9f6',
     surfaceVariant: '#e4e2df',
     primaryFixed: '#e8e0e4',
     onSecondaryContainer: '#741d26',
     outlineVariant: 'rgba(204, 196, 201, 0.2)',
     onTertiaryFixed: '#201c00',
-    onPrimaryFixed: '#1d1b1e',
+    onPrimaryFixed: '#0c0b0d',
     onPrimaryFixedVariant: '#494649',
     surfaceContainerLowest: '#ffffff',
     onSecondary: '#ffffff',
@@ -20,7 +20,7 @@ export const designTokens = {
     surfaceContainerLow: '#f5f3f0',
     onSurfaceVariant: '#4a454a',
     onPrimaryContainer: '#8f8a8d',
-    primaryContainer: '#262326',
+    primaryContainer: '#121113',
     onSurface: '#1b1c1a',
     background: '#fbf9f6',
     onTertiaryContainer: '#494000',
@@ -50,7 +50,7 @@ export const designTokens = {
     surfaceContainerHighest: '#e4e2df',
     secondary: '#a03d44',
     burgundy: '#6e1822',
-    glass: 'rgba(38, 35, 38, 0.6)',
+    glass: 'rgba(18, 17, 19, 0.6)',
     glassBorder: 'rgba(204, 196, 201, 0.1)',
   },
   // Las únicas fuentes del proyecto: ningún componente escribe un nombre de
@@ -78,7 +78,7 @@ export const designTokens = {
   },
   /**
    * Colores de los gráficos. Validados con el script de la skill dataviz sobre
-   * las superficies reales del proyecto (#fbf9f6 y #262326): pasan la banda de
+   * las superficies reales del proyecto (#fbf9f6 y #121113): pasan la banda de
    * luminosidad, el suelo de croma, la separación para daltonismo y el suelo de
    * visión normal. No sustituir a ojo: hay que revalidar.
    *

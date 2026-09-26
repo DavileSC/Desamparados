@@ -44,8 +44,8 @@ export const fondoDesenfocado = (desenfoque: number, brillo: number) => ({
 /** Botón redondo translúcido de las flechas y el cierre. */
 export const botonRedondo = (tamano: number) => ({
   width: tamano, height: tamano, color: 'common.white', border: '1px solid rgba(255,255,255,0.28)',
-  backgroundColor: 'rgba(16,14,17,0.5)', backdropFilter: 'blur(6px)',
-  '&:hover': { backgroundColor: 'rgba(16,14,17,0.75)' },
+  backgroundColor: 'rgba(7,6,8,0.5)', backdropFilter: 'blur(6px)',
+  '&:hover': { backgroundColor: 'rgba(7,6,8,0.75)' },
   '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 2 },
 }) as const
 

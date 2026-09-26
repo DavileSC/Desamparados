@@ -41,7 +41,7 @@ const ACCESOS: Acceso[] = [
 
 const CONTACTO: Acceso = { clave: 'contacto', icon: <MailOutlinedIcon fontSize="inherit" />, href: '/contacto' }
 
-const FONDO_TESELA = '#262326'
+const FONDO_TESELA = '#121113'
 
 function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa'] }) {
   const id = useId()

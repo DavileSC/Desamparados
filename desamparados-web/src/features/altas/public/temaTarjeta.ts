@@ -13,7 +13,7 @@ const BORDE_CAMPO_HOVER = 'rgba(204, 196, 201, 0.7)'
  * desenfoque. Bordes rectos, como los bloques de la portada.
  */
 export const TARJETA = {
-  backgroundColor: 'rgba(29, 27, 30, 0.66)',
+  backgroundColor: 'rgba(12, 11, 13, 0.66)',
   backdropFilter: 'blur(16px) saturate(120%)',
   WebkitBackdropFilter: 'blur(16px) saturate(120%)',
   boxShadow: '0 30px 60px -30px rgba(0, 0, 0, 0.8)',
@@ -27,7 +27,7 @@ export const TARJETA = {
  */
 export const temaTarjeta: Theme = createTheme(theme, {
   palette: {
-    error: { main: '#f08a84', dark: '#d9655e', light: '#f7b1ac', contrastText: '#1d1b1e' },
+    error: { main: '#f08a84', dark: '#d9655e', light: '#f7b1ac', contrastText: '#0c0b0d' },
   },
   components: {
     MuiOutlinedInput: {

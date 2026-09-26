@@ -16,9 +16,9 @@
 import { Box } from '@mui/material'
 
 /** Fondo de página: la foto se funde a él en los bordes. */
-const FONDO = '#262326'
-const FONDO_VELO = 'rgba(38, 35, 38, 0.55)'
-const FONDO_VELO_LEVE = 'rgba(38, 35, 38, 0.25)'
+const FONDO = '#121113'
+const FONDO_VELO = 'rgba(18, 17, 19, 0.55)'
+const FONDO_VELO_LEVE = 'rgba(18, 17, 19, 0.25)'
 /** Presencia leve: se intuye la corona y el rostro, sin competir con el texto. */
 const OPACIDAD_VIRGEN = 0.18
 

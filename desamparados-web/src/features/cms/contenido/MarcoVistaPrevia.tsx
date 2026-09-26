@@ -123,7 +123,7 @@ export default function MarcoVistaPrevia({ children, sinTope = false, sinAviso =
           overscrollBehavior: 'contain',
           // Mientras se mide, un alto razonable: sin él, el formulario pega un salto.
           minHeight: alto > 0 ? undefined : 240,
-          backgroundColor: '#1d1b1e',
+          backgroundColor: '#0c0b0d',
         }}
       >
         <Box

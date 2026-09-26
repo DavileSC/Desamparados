@@ -172,7 +172,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
 
       const salida = document.createElement('div')
       salida.setAttribute('aria-hidden', 'true')
-      salida.innerHTML = `<svg viewBox="0 0 20 20" width="20" height="20" style="display:block;margin:0 auto 3px;fill:${GOLD};filter:drop-shadow(0 0 6px rgba(222,199,43,.8))"><path d="M8.5 1h3v5h5v3h-5v10h-3V9h-5V6h5z"/></svg><span style="display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:${GOLD};background:rgba(16,14,17,.85);padding:3px 8px;border:1px solid rgba(222,199,43,.5);white-space:nowrap;transition:opacity .4s">${circular ? 'Salida y entrada' : 'Salida'}</span>`
+      salida.innerHTML = `<svg viewBox="0 0 20 20" width="20" height="20" style="display:block;margin:0 auto 3px;fill:${GOLD};filter:drop-shadow(0 0 6px rgba(222,199,43,.8))"><path d="M8.5 1h3v5h5v3h-5v10h-3V9h-5V6h5z"/></svg><span style="display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:${GOLD};background:rgba(7,6,8,.85);padding:3px 8px;border:1px solid rgba(222,199,43,.5);white-space:nowrap;transition:opacity .4s">${circular ? 'Salida y entrada' : 'Salida'}</span>`
       // Un poco por encima del punto: al salir y al volver, el trono está
       // justo ahí con el nombre de su calle al lado, y no deben pisarse.
       new maplibregl.Marker({ element: salida, anchor: 'bottom', offset: [0, -16] }).setLngLat(templo ? centroDe(templo) : linea[0]).addTo(m)
@@ -189,7 +189,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
       Object.assign(nombre.style, {
         position: 'absolute', left: '24px', top: '50%', transform: 'translateY(-50%)', whiteSpace: 'nowrap',
         maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', padding: '2px 7px', fontSize: '11.5px',
-        color: '#fff', background: 'rgba(16,14,17,.82)', borderLeft: `2px solid ${GOLD}`, fontFamily: 'inherit',
+        color: '#fff', background: 'rgba(7,6,8,.82)', borderLeft: `2px solid ${GOLD}`, fontFamily: 'inherit',
       })
       punto.appendChild(nombre)
       etiqueta.current = nombre
@@ -330,8 +330,8 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const actual = alcanzada >= 0 ? paradas[alcanzada] : null
   const altoDeCalle = altoDeCalleCon(paradas.length)
   const botonMapa = {
-    width: 34, height: 34, color: '#fff', backgroundColor: 'rgba(16, 14, 17, .85)', border: '1px solid rgba(204, 196, 201, .3)',
-    '&:hover': { backgroundColor: 'rgba(16, 14, 17, .95)', borderColor: GOLD },
+    width: 34, height: 34, color: '#fff', backgroundColor: 'rgba(7, 6, 8, .85)', border: '1px solid rgba(204, 196, 201, .3)',
+    '&:hover': { backgroundColor: 'rgba(7, 6, 8, .95)', borderColor: GOLD },
   }
 
   return (
@@ -354,12 +354,12 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
         sx={{
           position: 'sticky', top: { xs: 72, md: 104 }, alignSelf: 'start', zIndex: 3,
           height: { xs: '46svh', md: 'calc(100svh - 128px)' }, minHeight: { xs: 300, md: 420 },
-          mb: { xs: 2, md: 0 }, overflow: 'hidden', border: '1px solid rgba(204, 196, 201, 0.14)', backgroundColor: '#1a181b',
+          mb: { xs: 2, md: 0 }, overflow: 'hidden', border: '1px solid rgba(204, 196, 201, 0.14)', backgroundColor: '#0b0a0c',
           // El reconocimiento a OpenStreetMap que pide su licencia (ODbL): siempre
           // a la vista, legible sobre el mapa oscuro y con el enlace a sus
           // condiciones. No se pliega en un botón «i». Con las dos clases, para
           // ganar a la hoja de MapLibre, que le pone un fondo blanco a medias.
-          '& .maplibregl-ctrl.maplibregl-ctrl-attrib': { backgroundColor: 'rgba(16, 14, 17, .88)', padding: '3px 8px', borderTopLeftRadius: '4px' },
+          '& .maplibregl-ctrl.maplibregl-ctrl-attrib': { backgroundColor: 'rgba(7, 6, 8, .88)', padding: '3px 8px', borderTopLeftRadius: '4px' },
           '& .maplibregl-ctrl-attrib-inner': { color: '#e4e2df', fontSize: 12, lineHeight: 1.4 },
           '& .maplibregl-ctrl-attrib a': { color: '#e4e2df', textDecoration: 'underline', textUnderlineOffset: '2px' },
           '& .maplibregl-ctrl-attrib a:hover': { color: GOLD },
@@ -393,9 +393,9 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
               onChange={(_, valor: Camara | null) => valor && setCamara(valor)}
               aria-label="Qué enseña la cámara"
               sx={{
-                backgroundColor: 'rgba(16, 14, 17, .85)',
+                backgroundColor: 'rgba(7, 6, 8, .85)',
                 '& .MuiToggleButton-root': { color: '#e4e2df', borderColor: 'rgba(204, 196, 201, .3)', textTransform: 'none', fontSize: 12.5, py: 0.5, px: 1.25 },
-                '& .Mui-selected': { color: '#100e11 !important', backgroundColor: `${GOLD} !important` },
+                '& .Mui-selected': { color: '#070608 !important', backgroundColor: `${GOLD} !important` },
               }}
             >
               <ToggleButton value="sigue">Seguir al trono</ToggleButton>

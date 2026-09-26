@@ -13,7 +13,7 @@ import { acercar, aparecer, CIFRA, entrada, sinMovimiento, useCuenta } from './a
 
 // El curso va siempre sobre fondo oscuro, en los dos temas: es la pieza que
 // destaca, y la foto de la Virgen es oscura.
-const OSCURO = { fondo: '#1d1b1e', fondoTemaOscuro: '#100e11', texto: '#ffffff', texto2: '#cbc5c8', tenue: '#8f8a8d', claro: '#ffb3b4' }
+const OSCURO = { fondo: '#0c0b0d', fondoTemaOscuro: '#070608', texto: '#ffffff', texto2: '#cbc5c8', tenue: '#8f8a8d', claro: '#ffb3b4' }
 /** Cada tipo de acto con su color de la agenda, en la variante para fondo oscuro. */
 const COLOR = (tipo: TipoEvento) => TIPOS[tipo].oscuro
 /** Solo para lectores de pantalla. */
@@ -26,7 +26,7 @@ function Ahora({ momento, hoy }: { momento: Momento; hoy: Date }) {
       component="span"
       sx={{
         fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap', px: 1, py: '3px', borderRadius: 999,
-        ...(plena ? { backgroundColor: OSCURO.claro, color: '#1d1b1e' } : { backgroundColor: 'rgba(255,255,255,.12)', color: OSCURO.texto2 }),
+        ...(plena ? { backgroundColor: OSCURO.claro, color: '#0c0b0d' } : { backgroundColor: 'rgba(255,255,255,.12)', color: OSCURO.texto2 }),
       }}
     >
       {texto}
@@ -123,7 +123,7 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
             animation: `${acercar} 22s ease-out both`, ...sinMovimiento,
           }}
         />
-        <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(16,14,17,0) 25%, rgba(16,14,17,.55) 55%, rgba(16,14,17,.95) 92%)' }} />
+        <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(7,6,8,0) 25%, rgba(7,6,8,.55) 55%, rgba(7,6,8,.95) 92%)' }} />
         <Box sx={{ position: 'relative', p: 2.75, textShadow: '0 1px 12px rgba(0,0,0,.55)' }}>
           <Typography id="camino-estacion" sx={{ fontSize: 12.5, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#e6dfe2' }}>
             Sábado de Pasión · {corta(fecha)}

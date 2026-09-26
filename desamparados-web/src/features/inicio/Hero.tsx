@@ -91,7 +91,7 @@ export default function Hero() {
         alignItems: 'flex-end',
         overflow: 'hidden',
         // Lo que se ve antes de que llegue la primera foto.
-        backgroundColor: '#1d1b1e',
+        backgroundColor: '#0c0b0d',
       }}
     >
       {/* Capa de imagen ligeramente mayor que el hero para que al moverse no asome el fondo.
@@ -155,7 +155,7 @@ export default function Hero() {
           inset: 0,
           zIndex: 1,
           background:
-            'linear-gradient(to top, #262326 0%, rgba(16,14,17,.76) 18%, rgba(16,14,17,.12) 65%), linear-gradient(to left, rgba(16,14,17,.38), transparent 70%)',
+            'linear-gradient(to top, #121113 0%, rgba(7,6,8,.76) 18%, rgba(7,6,8,.12) 65%), linear-gradient(to left, rgba(7,6,8,.38), transparent 70%)',
         }}
       />
 

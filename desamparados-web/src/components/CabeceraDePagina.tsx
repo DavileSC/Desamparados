@@ -52,7 +52,7 @@ export default function CabeceraDePagina({ title, subtitle, image, imageAlt, sob
               position: 'absolute',
               inset: 0,
               background:
-                'linear-gradient(to top, rgba(38, 35, 38, 0.95) 0%, rgba(38, 35, 38, 0.6) 100%)',
+                'linear-gradient(to top, rgba(18, 17, 19, 0.95) 0%, rgba(18, 17, 19, 0.6) 100%)',
             }}
           />
         </>

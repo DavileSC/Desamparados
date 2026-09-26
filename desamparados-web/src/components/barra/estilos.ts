@@ -14,11 +14,11 @@ export const desktopMq = `@media (min-width:${DESKTOP_NAV_MIN}px)`
 export const compactMq = `@media (max-width:1299px)`
 export const socialMq = `@media (min-width:1700px)`
 
-// Velo de la barra de escritorio, en opacidad de la tinta #100e11. 0,72 es el
+// Velo de la barra de escritorio, en opacidad de la tinta #070608. 0,72 es el
 // mínimo: sobre una foto blanca deja el texto blanco en 7,7:1 y el dorado del
 // enlace activo justo en 4,5:1 (AA); por debajo, el dorado deja de leerse.
 // Al hacer scroll sube a 0,86.
-export const tinta = (opacidad: number) => `rgba(16, 14, 17, ${opacidad.toFixed(3)})`
+export const tinta = (opacidad: number) => `rgba(7, 6, 8, ${opacidad.toFixed(3)})`
 export const VELO_ARRIBA = 0.72
 export const VELO_SCROLL = 0.86
 

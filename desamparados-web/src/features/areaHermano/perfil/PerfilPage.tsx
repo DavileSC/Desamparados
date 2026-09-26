@@ -106,7 +106,7 @@ export default function PerfilPage() {
                       display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.25, minWidth: 150, minHeight: 56, px: 2.25, py: 1,
                       borderRadius: '8px', border: '1px solid',
                       borderColor: abierta ? 'rgba(255,179,180,0.45)' : 'rgba(204,196,201,0.12)',
-                      backgroundColor: abierta ? 'rgba(160,61,68,0.22)' : 'rgba(38,35,38,0.6)',
+                      backgroundColor: abierta ? 'rgba(160,61,68,0.22)' : 'rgba(18,17,19,0.6)',
                       '&:hover': { borderColor: 'rgba(255,179,180,0.45)' },
                       '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: 2 },
                     }}

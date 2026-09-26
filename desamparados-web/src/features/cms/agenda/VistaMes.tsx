@@ -96,7 +96,7 @@ export default function VistaMes({ primero, dias, porDia, elegido, portada, hoy 
                   alignSelf: { xs: 'center', md: 'flex-start' }, width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
                   display: 'inline-grid', placeItems: 'center', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums',
                   backgroundColor: esHoy ? superficies.enlace : 'transparent',
-                  color: esHoy ? segunModo('#fff', '#1d1b1e') : 'text.primary',
+                  color: esHoy ? segunModo('#fff', '#0c0b0d') : 'text.primary',
                   opacity: fuera && !esHoy ? 0.4 : 1,
                 }}
               >

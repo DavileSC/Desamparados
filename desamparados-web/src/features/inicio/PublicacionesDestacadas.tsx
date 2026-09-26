@@ -21,9 +21,9 @@ const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: stri
 // Un color fijo por tipo de publicación: la cubierta dice qué es antes de leerla.
 const CUBIERTAS: Record<Publicacion['categoria'], { fondo: string; texto: string; cifra: string }> = {
   boletin: { fondo: GRANATE, texto: '#fbe9e7', cifra: '#fbe9e7' },
-  anuario: { fondo: PAPEL, texto: '#3a3538', cifra: GRANATE },
-  dossier: { fondo: '#3a3437', texto: '#e3d8bf', cifra: GOLD },
-  historia: { fondo: PAPEL, texto: '#3a3538', cifra: GRANATE },
+  anuario: { fondo: PAPEL, texto: '#242125', cifra: GRANATE },
+  dossier: { fondo: '#242125', texto: '#e3d8bf', cifra: GOLD },
+  historia: { fondo: PAPEL, texto: '#242125', cifra: GRANATE },
 }
 
 const mes = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { month: 'long' })
@@ -129,7 +129,7 @@ const renglones = {
   display: 'flex',
   flexDirection: 'column',
   gap: '12px',
-  '& i': { display: 'block', height: 6, backgroundColor: 'rgba(29, 27, 30, 0.1)' },
+  '& i': { display: 'block', height: 6, backgroundColor: 'rgba(12, 11, 13, 0.1)' },
   '& i:nth-of-type(3n)': { width: '70%' },
 } as const
 

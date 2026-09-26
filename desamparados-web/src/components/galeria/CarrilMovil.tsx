@@ -58,7 +58,7 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
                 key={`${imagenDe(m)}-${i}`}
                 onClick={() => onAbrir(i, esVideo)}
                 aria-label={esVideo ? `Reproducir: ${m.alt}` : `Ampliar: ${m.alt}`}
-                sx={{ position: 'relative', flex: '0 0 100%', aspectRatio: '4 / 5', maxHeight: '70vh', scrollSnapAlign: 'start', overflow: 'hidden', bgcolor: '#100e11' }}
+                sx={{ position: 'relative', flex: '0 0 100%', aspectRatio: '4 / 5', maxHeight: '70vh', scrollSnapAlign: 'start', overflow: 'hidden', bgcolor: '#070608' }}
               >
                 <Box component="img" src={imagenDe(m)} alt="" aria-hidden="true" loading="lazy" sx={fondoDesenfocado(26, 0.45)} />
                 <Box
@@ -71,7 +71,7 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
                   sx={{ position: 'relative', width: '100%', height: '100%', display: 'block', objectFit: formato === 'h' ? 'cover' : 'contain' }}
                 />
                 {esVideo && (
-                  <Box aria-hidden="true" sx={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 72, height: 72, borderRadius: '50%', border: `2px solid ${DORADO}`, bgcolor: 'rgba(16,14,17,0.55)', color: DORADO, display: 'grid', placeItems: 'center' }}>
+                  <Box aria-hidden="true" sx={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 72, height: 72, borderRadius: '50%', border: `2px solid ${DORADO}`, bgcolor: 'rgba(7,6,8,0.55)', color: DORADO, display: 'grid', placeItems: 'center' }}>
                     <PlayArrowIcon sx={{ fontSize: 34 }} />
                   </Box>
                 )}
@@ -80,7 +80,7 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
           })}
         </Box>
         {varios && (
-          <Box aria-hidden="true" sx={{ position: 'absolute', top: 14, right: 14, height: 28, px: 1.5, display: 'inline-flex', alignItems: 'center', borderRadius: 999, bgcolor: 'rgba(16,14,17,0.65)', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', pointerEvents: 'none' }}>
+          <Box aria-hidden="true" sx={{ position: 'absolute', top: 14, right: 14, height: 28, px: 1.5, display: 'inline-flex', alignItems: 'center', borderRadius: 999, bgcolor: 'rgba(7,6,8,0.65)', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', pointerEvents: 'none' }}>
             {dos(actual + 1)} / {dos(medios.length)}
           </Box>
         )}

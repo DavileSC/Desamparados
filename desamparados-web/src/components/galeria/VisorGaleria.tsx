@@ -75,7 +75,7 @@ function Medio({ medio, activo, reproduciendo, onReproducir, medidaDe, medir }: 
         <IconButton
           onClick={onReproducir}
           aria-label={`Reproducir: ${medio.alt}`}
-          sx={{ position: 'absolute', inset: 0, m: 'auto', width: 88, height: 88, border: `2px solid ${DORADO}`, color: DORADO, bgcolor: 'rgba(16,14,17,0.55)', '&:hover': { bgcolor: 'rgba(16,14,17,0.75)' } }}
+          sx={{ position: 'absolute', inset: 0, m: 'auto', width: 88, height: 88, border: `2px solid ${DORADO}`, color: DORADO, bgcolor: 'rgba(7,6,8,0.55)', '&:hover': { bgcolor: 'rgba(7,6,8,0.75)' } }}
         >
           <PlayArrowIcon sx={{ fontSize: 42 }} />
         </IconButton>
@@ -132,7 +132,7 @@ function VisorEscritorio({ medios, indice, medio, varios, onIr, onCerrar, reprod
           <span><b style={{ color: 'rgba(255,255,255,0.8)' }}>Esc</b> para cerrar</span>
         </Box>
       </Box>
-      <Box component="aside" sx={{ width: 320, flexShrink: 0, boxSizing: 'border-box', p: 3.5, bgcolor: 'rgba(16,14,17,0.85)', borderLeft: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box component="aside" sx={{ width: 320, flexShrink: 0, boxSizing: 'border-box', p: 3.5, bgcolor: 'rgba(7,6,8,0.85)', borderLeft: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography sx={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', fontVariantNumeric: 'tabular-nums' }}>
             <Box component="b" sx={{ color: 'common.white', fontWeight: 600 }}>{dos(indice + 1)}</Box> / {dos(medios.length)}

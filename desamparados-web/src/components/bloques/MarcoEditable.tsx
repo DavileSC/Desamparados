@@ -63,7 +63,7 @@ export default function MarcoEditable({ bloque, indice, children }: { bloque: Bl
           sx={{
             position: 'absolute', top: -4, left: -4, zIndex: 6,
             px: 1.25, py: 0.5, borderRadius: '6px',
-            backgroundColor: '#1d1b1e', color: '#e3d8bf', border: '1px solid rgba(222, 199, 43, 0.5)',
+            backgroundColor: '#0c0b0d', color: '#e3d8bf', border: '1px solid rgba(222, 199, 43, 0.5)',
             fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
           }}
         >

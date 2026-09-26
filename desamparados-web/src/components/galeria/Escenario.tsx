@@ -58,7 +58,7 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
       onFocusCapture={() => setEncima(true)}
       onBlurCapture={() => setEncima(false)}
     >
-      <Box sx={{ position: 'relative', aspectRatio: '16 / 9', maxHeight: '78vh', width: '100%', borderRadius: 1.5, overflow: 'hidden', bgcolor: '#100e11' }}>
+      <Box sx={{ position: 'relative', aspectRatio: '16 / 9', maxHeight: '78vh', width: '100%', borderRadius: 1.5, overflow: 'hidden', bgcolor: '#070608' }}>
         <Box component="img" key={`fondo-${actual}`} src={imagenDe(medio)} alt="" aria-hidden="true" sx={{ ...fondoDesenfocado(38, 0.45), animation: `${entra} 500ms ease-out` }} />
         <ButtonBase
           onClick={() => onAbrir(actual, esVideo)}
@@ -83,7 +83,7 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
         </ButtonBase>
 
         {esVideo && (
-          <Box aria-hidden="true" sx={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 96, height: 96, borderRadius: '50%', border: `2px solid ${DORADO}`, bgcolor: 'rgba(16,14,17,0.55)', color: DORADO, display: 'grid', placeItems: 'center', pointerEvents: 'none', backdropFilter: 'blur(6px)' }}>
+          <Box aria-hidden="true" sx={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 96, height: 96, borderRadius: '50%', border: `2px solid ${DORADO}`, bgcolor: 'rgba(7,6,8,0.55)', color: DORADO, display: 'grid', placeItems: 'center', pointerEvents: 'none', backdropFilter: 'blur(6px)' }}>
             <PlayArrowIcon sx={{ fontSize: 44 }} />
           </Box>
         )}
@@ -94,7 +94,7 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
           </Typography>
         )}
 
-        <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, px: 4, pt: 10, pb: 3, background: 'linear-gradient(to top, rgba(16,14,17,0.9), rgba(16,14,17,0))', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, pointerEvents: 'none' }}>
+        <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, px: 4, pt: 10, pb: 3, background: 'linear-gradient(to top, rgba(7,6,8,0.9), rgba(7,6,8,0))', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, pointerEvents: 'none' }}>
           <Typography sx={{ fontSize: 20, fontWeight: 500, maxWidth: 680, textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>{medio.pie || medio.alt}</Typography>
           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, fontSize: 13, color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap' }}>
             <OpenInFullIcon sx={{ fontSize: 16 }} />{esVideo ? 'Pulsa para verlo' : 'Pulsa para ampliar'}
@@ -129,7 +129,7 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
                 >
                   <Box component="img" src={imagenDe(m)} alt="" loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   {m.tipo === 'video' && (
-                    <Box aria-hidden="true" sx={{ position: 'absolute', right: 6, bottom: 6, width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(16,14,17,0.7)', color: DORADO, display: 'grid', placeItems: 'center' }}>
+                    <Box aria-hidden="true" sx={{ position: 'absolute', right: 6, bottom: 6, width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(7,6,8,0.7)', color: DORADO, display: 'grid', placeItems: 'center' }}>
                       <PlayArrowIcon sx={{ fontSize: 14 }} />
                     </Box>
                   )}
