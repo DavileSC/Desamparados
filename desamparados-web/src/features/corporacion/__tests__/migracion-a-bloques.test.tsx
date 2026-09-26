@@ -38,16 +38,14 @@ const ANTES: Record<string, string[]> = {
     'Catequesis, charlas y encuentros para crecer en la fe',
   ],
   caridad: [
-    'La caridad constituye uno de los fines fundamentales',
-    'A través de la Vocalía de Caridad',
-    'La obra asistencial no se entiende sin la participación activa',
-    'Queremos que nuestro Grupo Parroquial sea una comunidad acogedora',
+    'La caridad es uno de los fines del Grupo Parroquial',
+    'Qué hacemos', 'Familias en dificultad', 'Enfermos y mayores',
+    'Voluntarios',
   ],
   formacion: [
-    'La formación cristiana es uno de los pilares',
-    'Durante el año se organizan diferentes actividades formativas',
-    'La formación también abarca la transmisión de los valores cofrades',
-    'Desde la Vocalía de Formación se promueve un itinerario formativo continuo',
+    'La formación es uno de los pilares del Grupo Parroquial',
+    'Qué ofrecemos', 'Catequesis y charlas', 'La espiritualidad de la Pasión',
+    'Jóvenes y nuevos hermanos',
   ],
   'sabado-de-pasion': [
     'El Sábado de Pasión es el día grande de nuestro Grupo Parroquial',
