@@ -92,7 +92,7 @@ function Ilustracion({ url, alt, quieto }: { url: string; alt: string; quieto: b
   return (
     <Box ref={marco} sx={{ position: 'relative', pb: 2 }}>
       <Box component={motion.img} src={url} alt={alt} loading="eager" decoding="async"
-        initial={quieto ? false : { filter: 'brightness(0.15) saturate(0.2)' }}
+        initial={quieto ? false : { filter: 'brightness(0.3) saturate(0.3)' }}
         animate={encendida ? { filter: 'brightness(1) saturate(1)' } : undefined}
         transition={transicion}
         sx={{ display: 'block', width: '100%', height: 'auto' }} />
