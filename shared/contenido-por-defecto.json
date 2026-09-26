@@ -1726,43 +1726,10 @@
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>La formación es uno de los pilares del Grupo Parroquial. No se trata de acumular conocimientos, sino de ayudar a cada hermano a conocer mejor a Dios, a vivir el Evangelio en lo de cada día y a entender lo que celebramos: por qué rezamos un triduo, qué significa el besamanos o por qué salimos a la calle.</p><p>Todo lo que proponemos está abierto a hermanos, devotos y a cualquiera que quiera acercarse.</p>"
-      },
-      {
-        "tipo": "tarjetas",
-        "titulo": "Qué ofrecemos",
         "presentacion": {
-          "columnas": "2",
-          "estilo": "contorno",
-          "orientacion": "horizontal",
-          "alineacion": "izquierda"
+          "estilo": "carta"
         },
-        "tarjetas": [
-          {
-            "titulo": "Catequesis y charlas",
-            "descripcion": "Sesiones durante el curso para profundizar en la fe, la liturgia y la devoción a la Virgen.",
-            "enlace": "",
-            "icono": "libro"
-          },
-          {
-            "titulo": "Retiros y oración",
-            "descripcion": "Momentos para parar, rezar juntos y prepararse para los tiempos fuertes del año.",
-            "enlace": "",
-            "icono": "sol"
-          },
-          {
-            "titulo": "La espiritualidad de la Pasión",
-            "descripcion": "De la mano de los Pasionistas, que nos acompañan en la parroquia, con la Cruz como escuela de amor.",
-            "enlace": "",
-            "icono": "iglesia"
-          },
-          {
-            "titulo": "Jóvenes y nuevos hermanos",
-            "descripcion": "Una atención especial para que conozcan la historia, los fines y las tradiciones del Grupo.",
-            "enlace": "",
-            "icono": "grupo"
-          }
-        ]
+        "html": "<p>La formación es uno de los pilares del Grupo Parroquial. No se trata de acumular conocimientos, sino de ayudar a cada hermano a conocer mejor a Dios, a vivir el Evangelio en lo de cada día y a entender lo que celebramos: por qué rezamos un triduo, qué significa el besamanos o por qué salimos a la calle.</p><h3>Catequesis y charlas</h3><p>Durante el curso, sesiones para profundizar en la fe, la liturgia y la devoción a la Virgen.</p><h3>Retiros y oración</h3><p>Momentos para parar, rezar juntos y prepararse para los tiempos fuertes del año: el Adviento y la Cuaresma.</p><h3>La espiritualidad de la Pasión</h3><p>De la mano de los Pasionistas, que nos acompañan en la parroquia, con la Cruz como escuela de amor.</p><h3>Jóvenes y nuevos hermanos</h3><p>Una atención especial para que conozcan la historia, los fines y las tradiciones del Grupo.</p><p>Todo lo que proponemos está abierto a hermanos, devotos y a cualquiera que quiera acercarse, y las fechas se anuncian en la Agenda. La preparación para los sacramentos la lleva la parroquia de Santa María Goretti: pregunta en el despacho parroquial, los martes y viernes de 18:00 a 20:00.</p>"
       },
       {
         "tipo": "cita",
@@ -1774,24 +1741,6 @@
         "texto": "María conservaba todas estas cosas, meditándolas en su corazón.",
         "autor": "",
         "fuente": "Evangelio según san Lucas, 2, 19"
-      },
-      {
-        "tipo": "preguntas",
-        "titulo": "Preguntas frecuentes",
-        "preguntas": [
-          {
-            "pregunta": "¿Tengo que ser hermano para ir?",
-            "respuesta": "No. Las sesiones están abiertas a todos: hermanos, devotos y cualquiera que quiera acercarse."
-          },
-          {
-            "pregunta": "¿Cuándo son las próximas sesiones?",
-            "respuesta": "Las anunciamos en la Agenda, con su fecha, hora y lugar. Desde allí puedes añadirlas a tu calendario."
-          },
-          {
-            "pregunta": "¿Preparáis para los sacramentos?",
-            "respuesta": "La parroquia de Santa María Goretti tiene catequesis de niños, jóvenes y adultos y prepara bautizos y bodas. Pregunta en el despacho parroquial, los martes y viernes de 18:00 a 20:00."
-          }
-        ]
       },
       {
         "tipo": "botones",

@@ -11,6 +11,14 @@ const ESTILOS = {
   entradilla: { fontSize: { xs: '1.15rem', md: '1.3rem' }, lineHeight: 1.7, color: 'text.primary' },
   // Destacado: con un filete dorado a la izquierda, como un aviso.
   destacado: { borderLeft: '3px solid', borderColor: 'secondary.main', pl: { xs: 2.5, md: 4 }, py: 0.5, fontSize: '1.08rem', color: 'text.primary' },
+  // Carta: una columna estrecha que se lee como una página de libro. El primer
+  // párrafo, algo mayor; los subtítulos, en versalitas doradas y pequeñas.
+  carta: {
+    fontSize: '1.06rem', lineHeight: 1.85,
+    '& > p:first-of-type': { fontSize: { xs: '1.12rem', md: '1.2rem' }, color: 'text.primary' },
+    '& h2, & h3': { fontSize: 13, fontWeight: 600, letterSpacing: '0.26em', textTransform: 'uppercase', color: '#c4af79', mt: 5, mb: 1 },
+    '& h2 + p, & h3 + p': { mt: 0 },
+  },
 } as const
 
 /** Cuerpo de texto con formato. El HTML llega saneado del servidor y se vuelve
@@ -18,11 +26,12 @@ const ESTILOS = {
 export default function BloqueTexto({ bloque }: { bloque: Datos }) {
   const estilo = ESTILOS[valorDe(bloque, 'estilo') as keyof typeof ESTILOS] ?? ESTILOS.normal
   const dosColumnas = valorDe(bloque, 'columnas') === '2'
+  const carta = valorDe(bloque, 'estilo') === 'carta'
   const alineacion = valorDe(bloque, 'alineacion')
   return (
     <Box
       sx={{
-        maxWidth: anchoMaximo(bloque, dosColumnas ? '1100px' : '850px'), mx: 'auto', color: 'text.secondary', lineHeight: 1.8,
+        maxWidth: anchoMaximo(bloque, dosColumnas ? '1100px' : carta ? '680px' : '850px'), mx: 'auto', color: 'text.secondary', lineHeight: 1.8,
         textAlign: alineacion === 'justificado' ? 'justify' : alineacion === 'centro' ? 'center' : 'left',
         '& p': { mb: 3 }, '& h2, & h3': { color: 'text.primary', mt: 4, mb: 2 },
         '& img': { maxWidth: '100%', height: 'auto', borderRadius: 1 },

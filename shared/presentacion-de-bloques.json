@@ -61,7 +61,8 @@
         "valores": [
           "normal",
           "entradilla",
-          "destacado"
+          "destacado",
+          "carta"
         ]
       },
       "columnas": {

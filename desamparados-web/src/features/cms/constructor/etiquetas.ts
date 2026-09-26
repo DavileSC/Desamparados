@@ -40,7 +40,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   normal: 'Normal', estrecho: 'Estrecho', ancho: 'Todo el ancho',
   compacto: 'Poco', amplio: 'Mucho',
   centro: 'Centrado', izquierda: 'Izquierda', derecha: 'Derecha', justificado: 'Justificado',
-  entradilla: 'Entradilla', destacado: 'Destacado',
+  entradilla: 'Entradilla', destacado: 'Destacado', carta: 'Carta',
   grande: 'Grande', pequena: 'Pequeña', mediana: 'Mediana', completa: 'De lado a lado',
   original: 'Original', fino: 'Filete fino', dorado: 'Dorado',
   pase: 'Pase', cuadricula: 'Cuadrícula', mosaico: 'Mosaico', tiras: 'Tiras', estampas: 'Estampas', carteles: 'Carteles',

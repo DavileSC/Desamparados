@@ -46,8 +46,9 @@ const ANTES: Record<string, string[]> = {
     'Necesito ayuda', 'Quiero ayudar', 'Cáritas parroquial de Santa María Goretti',
   ],
   formacion: [
+    // Desde la carta (26-09-2026), las propuestas son subtítulos del texto.
     'La formación es uno de los pilares del Grupo Parroquial',
-    'Qué ofrecemos', 'Catequesis y charlas', 'La espiritualidad de la Pasión',
+    'Catequesis y charlas', 'Retiros y oración', 'La espiritualidad de la Pasión',
     'Jóvenes y nuevos hermanos',
   ],
   'sabado-de-pasion': [
