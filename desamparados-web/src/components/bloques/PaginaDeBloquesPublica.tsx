@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Box } from '@mui/material'
+import { Box, Typography } from '@mui/material'
+import { visuallyHidden } from '@mui/utils'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ContenedorDePagina from '../ContenedorDePagina'
@@ -11,7 +12,7 @@ import BloquesDePagina from './BloquesDePagina'
 import { useBorradorPagina } from './borrador'
 import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
 import { getContenido, type PaginaDeBloques, type SlugContenido } from '../../lib/api/contenido'
-import { SECCION_TRAS_CABECERA } from '../espaciado'
+import { SECCION_SIN_CABECERA, SECCION_TRAS_CABECERA } from '../espaciado'
 
 /**
  * Una página pública compuesta por bloques: su cabecera y, debajo, lo que el
@@ -35,7 +36,17 @@ import { SECCION_TRAS_CABECERA } from '../espaciado'
  * páginas de bloques compartían la descripción de `index.html` y en Google se
  * leían todas igual.
  */
-export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }) {
+interface Props {
+  slug: SlugContenido
+  /**
+   * Sin la cabecera grande (título y subtítulo): para páginas cuyo contenido ya
+   * dice lo que son, como la Agenda, que así enseña su calendario entero al
+   * entrar. El título sigue ahí, oculto, como el h1 de la página.
+   */
+  sinCabecera?: boolean
+}
+
+export default function PaginaDeBloquesPublica({ slug, sinCabecera = false }: Props) {
   // En la vista previa del CMS, lo que se está escribiendo; fuera, lo guardado.
   const borrador = useBorradorPagina()
   const { data } = useQuery({
@@ -63,14 +74,18 @@ export default function PaginaDeBloquesPublica({ slug }: { slug: SlugContenido }
           `hidden`, que rompería el `position: sticky` de dentro. */}
       <Box sx={{ position: 'relative', isolation: 'isolate', overflowX: 'clip' }}>
         {Boolean(pagina.cabecera.foto) && <FondoDePagina url={pagina.cabecera.foto} />}
-        <CabeceraDePagina
-          title={pagina.cabecera.titulo}
-          subtitle={pagina.cabecera.subtitulo}
-          image={pagina.cabecera.foto || undefined}
-          imageAlt={pagina.cabecera.fotoAlt}
-          sobreFondo={Boolean(pagina.cabecera.foto)}
-        />
-        <SeccionAnimada sx={SECCION_TRAS_CABECERA}>
+        {sinCabecera
+          ? <Typography component="h1" sx={visuallyHidden}>{pagina.cabecera.titulo}</Typography>
+          : (
+            <CabeceraDePagina
+              title={pagina.cabecera.titulo}
+              subtitle={pagina.cabecera.subtitulo}
+              image={pagina.cabecera.foto || undefined}
+              imageAlt={pagina.cabecera.fotoAlt}
+              sobreFondo={Boolean(pagina.cabecera.foto)}
+            />
+          )}
+        <SeccionAnimada sx={sinCabecera ? SECCION_SIN_CABECERA : SECCION_TRAS_CABECERA}>
           <ContenedorDePagina>
             <BloquesDePagina bloques={pagina.bloques} />
           </ContenedorDePagina>

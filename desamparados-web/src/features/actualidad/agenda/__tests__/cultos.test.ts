@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { ApiEvent } from '../../../../lib/api/agenda'
-import { caeEnElDia, claseDelActo, cuandoEnCartel, fotoDelCartel, notaDelActo, pasaElFiltro, primerDiaEnElMes, ultimoMes, urlDelMapa } from '../cultos'
+import { caeEnElDia, claseDelActo, cuandoEnCartel, fotoDelCartel, notaDelActo, primerDiaEnElMes, ultimoMes, urlDelMapa } from '../cultos'
 
 const en = (dia: string, hora = '19:00') => new Date(`${dia}T${hora}`).toISOString()
 const acto = (datos: Partial<ApiEvent>): ApiEvent => ({
@@ -40,13 +40,6 @@ describe('la agenda de cultos', () => {
     const cruzaMes = acto({ startDate: en('2026-10-30'), endDate: en('2026-11-02') })
     expect(cuandoEnCartel(cruzaMes)).toBe('Del 30 de octubre al 2 de noviembre')
     expect(cuandoEnCartel(acto({ startDate: en('2026-10-13', '18:00'), endDate: en('2026-10-13', '21:00') }))).toBe('Martes 13 de octubre')
-  })
-
-  it('filtra por lo que busca quien entra', () => {
-    expect(pasaElFiltro(acto({ type: 'PROCESION' }), 'cultos')).toBe(true)
-    expect(pasaElFiltro(acto({ type: 'ENSAYO' }), 'vida')).toBe(true)
-    expect(pasaElFiltro(acto({ type: 'FORMACION' }), 'cultos')).toBe(false)
-    expect(pasaElFiltro(acto({ type: 'OTRO' }), 'todo')).toBe(true)
   })
 
   it('sin foto propia, la de la Titular o la de la procesión', () => {

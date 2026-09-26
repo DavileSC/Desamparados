@@ -1,27 +1,18 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { Alert, Box, ButtonBase, CircularProgress, Collapse, Typography } from '@mui/material'
 import { agendaPublica, urlDeLaSuscripcion, type ApiEvent } from '../../../lib/api/agenda'
 import { GOLD } from '../../inicio/estilos'
-import { FILTROS, pasaElFiltro, type Filtro } from './cultos'
 import CalendarioDeCultos from './CalendarioDeCultos'
-
-const esFiltro = (valor: string | null): valor is Filtro => FILTROS.some((f) => f.valor === valor)
 
 /**
  * La Agenda pública: lo que viene, de una vez y sin paginar, en un calendario
  * de pared (CalendarioDeCultos). Cada acto se abre en su ventana, con su .ics
- * y el camino en el mapa; al final, la suscripción a la agenda entera. El
- * filtro va en la dirección (`?ver=`): un enlace a «Cultos y salidas» abre eso.
+ * y el camino en el mapa; al final, la suscripción a la agenda entera. Sin
+ * filtros: con los actos de un mes a la vista no hacen falta.
  */
 export default function AgendaDeCultos() {
   const [eventos, setEventos] = useState<ApiEvent[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [params] = useSearchParams()
-  const [filtro, setFiltro] = useState<Filtro>(() => {
-    const ver = params.get('ver')
-    return esFiltro(ver) ? ver : 'todo'
-  })
 
   useEffect(() => {
     let vigente = true
@@ -31,51 +22,14 @@ export default function AgendaDeCultos() {
     return () => { vigente = false }
   }, [])
 
-  // El filtro cambia aquí y la dirección se reescribe aparte: pasarlo por el
-  // router volvía a pintar la web entera (barra, cabecera, bloques) en cada
-  // clic y el cambio se notaba lento.
-  const elegir = (valor: Filtro) => {
-    setFiltro(valor)
-    const url = new URL(window.location.href)
-    if (valor === 'todo') url.searchParams.delete('ver')
-    else url.searchParams.set('ver', valor)
-    window.history.replaceState(window.history.state, '', url)
-  }
-
-  const visibles = (eventos ?? []).filter((e) => pasaElFiltro(e, filtro))
-
   return (
     <Box>
-      <Box role="group" aria-label="Qué ver" sx={{ display: 'flex', gap: '0 22px', overflowX: 'auto', scrollbarWidth: 'none', mx: { xs: -2, sm: 0 }, px: { xs: 2, sm: 0 }, mb: 3 }}>
-        {FILTROS.map((f) => (
-          <ButtonBase
-            key={f.valor}
-            onClick={() => elegir(f.valor)}
-            disableRipple
-            aria-pressed={filtro === f.valor}
-            sx={{
-              minHeight: 44, fontFamily: 'inherit', fontSize: 15, whiteSpace: 'nowrap',
-              color: filtro === f.valor ? '#fff' : 'rgba(255,255,255,0.7)',
-              borderBottom: '1px solid', borderColor: filtro === f.valor ? GOLD : 'transparent',
-              '&:hover': { color: '#fff' },
-              '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
-            }}
-          >
-            {f.nombre}
-          </ButtonBase>
-        ))}
-      </Box>
-
       {error && <Alert severity="error">{error}</Alert>}
       {!error && eventos === null && <CircularProgress aria-label="Cargando la agenda" />}
-      {eventos !== null && visibles.length === 0 && (
-        <Typography sx={{ color: 'rgba(255,255,255,0.75)' }}>
-          {filtro === 'todo' ? 'No hay actos anunciados por ahora.' : 'No hay actos de este tipo anunciados por ahora.'}
-        </Typography>
+      {eventos?.length === 0 && (
+        <Typography sx={{ color: 'rgba(255,255,255,0.75)' }}>No hay actos anunciados por ahora.</Typography>
       )}
-
-      {visibles.length > 0 && <CalendarioDeCultos eventos={visibles} />}
-
+      {!!eventos?.length && <CalendarioDeCultos eventos={eventos} />}
       {eventos !== null && <Suscripcion />}
     </Box>
   )

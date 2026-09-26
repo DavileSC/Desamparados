@@ -8,5 +8,5 @@ import PaginaDeBloquesPublica from '../../../components/bloques/PaginaDeBloquesP
  * en este fichero.
  */
 export default function AgendaPage() {
-  return <PaginaDeBloquesPublica slug="agenda" />
+  return <PaginaDeBloquesPublica slug="agenda" sinCabecera />
 }

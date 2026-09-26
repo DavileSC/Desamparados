@@ -1,21 +1,6 @@
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { TIPOS, inicioDeMes, inicioDelDia } from '../../inicio/agenda'
 
-/** Los filtros de la Agenda pública, de texto: lo que busca quien entra, no los siete tipos. */
-export const FILTROS = [
-  { valor: 'todo', nombre: 'Todo' },
-  { valor: 'cultos', nombre: 'Cultos y salidas' },
-  { valor: 'formacion', nombre: 'Formación' },
-  { valor: 'vida', nombre: 'Vida de hermandad' },
-] as const
-export type Filtro = (typeof FILTROS)[number]['valor']
-
-const GRUPO: Record<ApiEvent['type'], Exclude<Filtro, 'todo'>> = {
-  CULTO: 'cultos', PROCESION: 'cultos', FORMACION: 'formacion',
-  ENSAYO: 'vida', REUNION: 'vida', SOCIAL: 'vida', OTRO: 'vida',
-}
-export const pasaElFiltro = (evento: ApiEvent, filtro: Filtro) => filtro === 'todo' || GRUPO[evento.type] === filtro
-
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const mayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1)

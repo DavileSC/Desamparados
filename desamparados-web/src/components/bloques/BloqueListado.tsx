@@ -228,8 +228,8 @@ function ListaDeEventos({ eventos, loading, error, columnas }: { eventos: Acto[]
 }
 
 /**
- * La agenda entera, con los cultos solemnes en su cartel (AgendaDeCultos):
- * sin paginar, porque un curso cabe en una página.
+ * La agenda entera, en su calendario de pared (AgendaDeCultos): sin paginar,
+ * porque un curso cabe en una página.
  */
 function Agenda({ titulo }: PropsListado) {
   return (
