@@ -7,7 +7,7 @@ import type { BloqueBotones as Datos } from '../../lib/api/contenido'
 
 /**
  * Uno o varios botones en fila, cada uno a una página del sitio: el principal
- * en granate y los secundarios con contorno. En el móvil se apilan a lo ancho,
+ * en esmalte granate y los secundarios en esmalte crema. En el móvil se apilan a lo ancho,
  * que es donde se pulsan bien con el dedo.
  */
 export default function BloqueBotones({ bloque }: { bloque: Datos }) {
@@ -24,7 +24,7 @@ export default function BloqueBotones({ bloque }: { bloque: Datos }) {
     }}>
       {validos.map((boton, i) => (
         <Boton key={`${boton.enlace}-${i}`} component={Link} to={boton.enlace}
-          appVariant={boton.estilo === 'principal' ? 'primary' : 'outline'}
+          appVariant={boton.estilo === 'principal' ? 'primary' : 'claro'}
           sx={grande ? { px: 5, py: 1.75, fontSize: '1rem' } : undefined}>
           {boton.texto}
         </Boton>

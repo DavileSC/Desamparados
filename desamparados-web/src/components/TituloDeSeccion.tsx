@@ -1,4 +1,5 @@
-import { Box, Typography, Button } from '@mui/material'
+import { Box, Typography } from '@mui/material'
+import { enlaceEsmalte } from './esmalte'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 
 interface TituloDeSeccionProps {
@@ -35,21 +36,9 @@ export default function TituloDeSeccion({
         {title}
       </Typography>
       {actionLabel && (
-        <Button
-          href={actionHref}
-          endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
-          sx={{
-            color: 'secondary.main',
-            typography: 'overline',
-            fontSize: '12px',
-            minHeight: 44,
-            flexShrink: 0,
-            px: 0,
-            '&:hover': { color: 'secondary.light' },
-          }}
-        >
-          {actionLabel}
-        </Button>
+        <Box component="a" href={actionHref} sx={{ ...enlaceEsmalte, flexShrink: 0 }}>
+          {actionLabel} <ArrowForwardIcon aria-hidden />
+        </Box>
       )}
     </Box>
   )

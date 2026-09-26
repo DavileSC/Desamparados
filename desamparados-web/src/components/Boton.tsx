@@ -1,61 +1,35 @@
 import { Button, type ButtonProps } from '@mui/material'
 import { forwardRef } from 'react'
+import { ESMALTE } from './esmalte'
 
 interface BotonProps extends Omit<ButtonProps, 'variant'> {
-  appVariant?: 'primary' | 'secondary' | 'outline'
+  /**
+   * El esmalte del botón (ver `esmalte.ts`): `primary` granate; `claro` crema,
+   * para la segunda acción de una sección; `outline` oscuro y discreto, para
+   * las acciones secundarias de un formulario. `secondary` queda como `claro`.
+   */
+  appVariant?: 'primary' | 'secondary' | 'outline' | 'claro'
   /** Destino cuando se usa como enlace de router: <Boton component={Link} to="/ruta"> */
   to?: string
 }
 
-const Boton = forwardRef<HTMLButtonElement, BotonProps>(
-  ({ appVariant = 'primary', sx, ...props }, ref) => {
-    const variantStyles = {
-      primary: {
-        backgroundColor: '#6e1822',
-        color: '#ffffff',
-        '&:hover': {
-          backgroundColor: '#5a131c',
-          opacity: 0.9,
-        },
-      },
-      secondary: {
-        backgroundColor: 'secondary.main',
-        color: 'secondary.contrastText',
-        '&:hover': {
-          backgroundColor: 'secondary.dark',
-        },
-      },
-      outline: {
-        backgroundColor: 'transparent',
-        color: 'text.primary',
-        border: '1px solid rgba(204, 196, 201, 0.3)',
-        '&:hover': {
-          borderColor: 'secondary.main',
-          color: 'secondary.main',
-          backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        },
-      },
-    }
+const ESMALTE_DE = {
+  primary: ESMALTE.principal,
+  secondary: ESMALTE.claro,
+  claro: ESMALTE.claro,
+  outline: ESMALTE.oscuro,
+} as const
 
-    return (
-      <Button
-        ref={ref}
-        variant="contained"
-        disableElevation
-        sx={{
-          borderRadius: '8px',
-          padding: '14px 32px',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          fontWeight: 600,
-          transition: 'all 0.3s ease',
-          ...variantStyles[appVariant],
-          ...sx,
-        }}
-        {...props}
-      />
-    )
-  }
+const Boton = forwardRef<HTMLButtonElement, BotonProps>(
+  ({ appVariant = 'primary', sx, ...props }, ref) => (
+    <Button
+      ref={ref}
+      variant="contained"
+      disableElevation
+      sx={[ESMALTE_DE[appVariant], ...(Array.isArray(sx) ? sx : [sx])]}
+      {...props}
+    />
+  )
 )
 
 Boton.displayName = 'Boton'

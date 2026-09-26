@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Alert, Box, Button, CircularProgress, Grid, Typography } from '@mui/material'
+import { Alert, Box, CircularProgress, Grid, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import TituloDeSeccion from '../TituloDeSeccion'
 import TarjetaNoticia from '../TarjetaNoticia'
@@ -15,6 +15,7 @@ import { usePublicacionesPaginadas } from '../../features/publicaciones/usePubli
 import type { Acto, Noticia } from '../../types'
 import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/contenido'
 import { valorDe } from './presentacion'
+import { enlaceEsmalte } from '../esmalte'
 
 /**
  * Lo que el Grupo Parroquial publica desde otras pantallas del CMS —noticias,
@@ -89,10 +90,9 @@ function Encabezado({ titulo, enlace }: { titulo: string; enlace?: { texto: stri
   if (!enlace) return null
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-      <Button component={Link} to={enlace.ruta} endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
-        sx={{ color: 'secondary.main', typography: 'overline', fontSize: '12px', minHeight: 44, px: 0 }}>
-        {enlace.texto}
-      </Button>
+      <Box component={Link} to={enlace.ruta} sx={enlaceEsmalte}>
+        {enlace.texto} <ArrowForwardIcon aria-hidden />
+      </Box>
     </Box>
   )
 }

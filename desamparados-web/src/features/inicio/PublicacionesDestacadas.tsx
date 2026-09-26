@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material'
+import { ESMALTE } from '../../components/esmalte'
 import { Link } from 'react-router-dom'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
@@ -44,18 +45,6 @@ const versal = { fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase
 
 // El antetítulo es el h2 de la sección: `.home-refined h2` (home.css) le pondría 40 px sin el !important.
 const cejaTitulo = { ...ceja, fontSize: '11px !important', fontFamily: 'inherit', lineHeight: 1.5 } as const
-
-const boton = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 1.25,
-  minHeight: 48,
-  px: 3,
-  fontSize: 14,
-  fontWeight: 600,
-  textDecoration: 'none',
-  transition: 'background-color .25s ease, border-color .25s ease, color .25s ease',
-} as const
 
 /** Tapa del ejemplar: la portada subida desde el CMS o, sin ella, una cubierta tipográfica del color de su tipo. */
 function Cubierta({ publicacion, pequena = false }: { publicacion: Publicacion; pequena?: boolean }) {
@@ -244,7 +233,7 @@ export default function PublicacionesDestacadas() {
                       href={destacada.archivoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ ...boton, backgroundColor: PAPEL, color: '#1b1c1a', '&:hover': { backgroundColor: '#fff' } }}
+                      sx={ESMALTE.claro}
                     >
                       <FileDownloadOutlinedIcon sx={{ fontSize: 20 }} />
                       Descargar {CATEGORIAS[destacada.categoria].corto}
@@ -254,7 +243,7 @@ export default function PublicacionesDestacadas() {
                   <Box
                     component={Link}
                     to="/publicaciones"
-                    sx={{ ...boton, border: '1px solid rgba(255, 255, 255, 0.7)', color: '#fff', '&:hover': { borderColor: GOLD, color: GOLD } }}
+                    sx={ESMALTE.oscuro}
                   >
                     {textos.publicaciones.boton}
                   </Box>

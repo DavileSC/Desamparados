@@ -9,10 +9,11 @@ import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined'
+import { ESMALTE } from '../../components/esmalte'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { site } from '../../config/site'
-import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
+import { GOLD, GRANATE, SERIF, TINTA, ceja } from './estilos'
 import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
 import type { TextosPortada } from '../../lib/api/portada'
 
@@ -109,25 +110,12 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
         id={`${id}-boton`}
         className="placa-boton"
         sx={{
+          ...ESMALTE.claro,
           position: 'relative',
           mt: { md: 'auto' },
           alignSelf: { xs: 'stretch', md: 'flex-start' },
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 1.25,
-          minHeight: 44,
           px: 2.75,
-          py: 1.5,
-          borderRadius: '3px',
-          backgroundColor: PAPEL,
-          color: GRANATE,
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-          '& svg': { fontSize: 18, transition: 'transform .25s ease' },
+          '& svg': { fontSize: 18, color: GRANATE, transition: 'transform .25s ease' },
         }}
       >
         {placa.boton} <ArrowForwardIcon aria-hidden="true" />
@@ -197,9 +185,9 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
           component="span"
           aria-hidden="true"
           className="tesela-cta"
-          sx={{ pb: '5px', borderBottom: `2px solid ${GOLD}`, color: '#fff', fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', whiteSpace: 'nowrap', transition: 'color .3s ease' }}
+          sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, color: '#fff', fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap', transition: 'color .3s ease', '& svg': { fontSize: 18, color: GOLD, transition: 'transform .25s ease' } }}
         >
-          Escríbenos
+          Escríbenos <ArrowForwardIcon />
         </Box>
       ) : (
         <NorthEastIcon

@@ -6,6 +6,8 @@ import { SERIF } from '../../features/inicio/estilos'
 import { esDestinoValido } from '../../lib/destinos'
 import { useModoEdicion } from './modoEdicion'
 import { anchoMaximo } from './presentacion'
+import { enlaceEsmalte } from '../esmalte'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import type { BloqueAnillos as Datos, FinDeAnillo } from '../../lib/api/contenido'
 
 /** El color de cada anillo, en orden: oro, rosa y crema. Pensados para fondo oscuro. */
@@ -158,10 +160,9 @@ function Fin({ fin, color, alineacion, apagado }: { fin: FinDeAnillo; color: str
       {fin.texto && <Typography sx={{ color: 'text.secondary', fontSize: 15, lineHeight: 1.65 }}>{fin.texto}</Typography>}
       {conBoton && (
         <Box component={Link} to={fin.enlace} sx={{
-          mt: 0.5, color, fontSize: 12, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', textDecoration: 'none',
-          minHeight: 44, display: 'inline-flex', alignItems: 'center', '&:hover': { textDecoration: 'underline', textUnderlineOffset: '6px' },
+          ...enlaceEsmalte, mt: 0.5, color, '& svg': { ...enlaceEsmalte['& svg'], color }, '&:hover': { color: '#fff' },
         }}>
-          {fin.boton} →
+          {fin.boton} <ArrowForwardIcon aria-hidden />
         </Box>
       )}
     </Box>

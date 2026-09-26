@@ -1,3 +1,4 @@
+import { enlaceEsmalte } from '../../components/esmalte'
 import { designTokens } from '../../theme'
 /**
  * Colores y estilos compartidos por los bloques de la portada: el ritmo es
@@ -21,21 +22,9 @@ export const ceja = {
   color: '#e3d8bf',
 } as const
 
-/** Enlace de bloque: mayúsculas espaciadas con subrayado dorado. */
-export const enlaceBloque = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 1.25,
-  minHeight: 44,
-  pb: '6px',
-  borderBottom: `2px solid ${GOLD}`,
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: 700,
-  letterSpacing: '0.26em',
-  textTransform: 'uppercase',
-  textDecoration: 'none',
-  '& svg': { fontSize: 16, transition: 'transform .25s ease' },
-  '&:hover': { color: GOLD },
-  '&:hover svg': { transform: 'translateX(4px)' },
-} as const
+/**
+ * Enlace de bloque: el enlace esmalte (components/esmalte.ts), en minúsculas
+ * y con la flecha dorada. Antes iba en mayúsculas espaciadas con subrayado
+ * dorado, que se parecía demasiado al de otra cofradía.
+ */
+export const enlaceBloque = enlaceEsmalte

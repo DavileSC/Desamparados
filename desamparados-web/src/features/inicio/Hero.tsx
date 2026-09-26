@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material'
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import { enlaceEsmalte } from '../../components/esmalte'
 import Boton from '../../components/Boton'
 import { Revela } from '../../components/SeccionAnimada'
 import { CURVA_ENTRADA } from '../../components/entrada'
@@ -213,11 +214,11 @@ export default function Hero() {
         </Revela>
         <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
-            <Boton component={Link} to="/historia" endIcon={<ArrowForwardIcon fontSize="small" />} sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 11, md: 13 } }}>
+            <Boton component={Link} to="/historia" endIcon={<ArrowForwardIcon fontSize="small" />} sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
               {textos.hero.botonPrincipal}
             </Boton>
             {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta. */}
-            <Box component={Link} to="/agenda" sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, gap: 1, fontSize: 13, color: '#e4e2df', '&:hover': { color: 'white' } }}>
+            <Box component={Link} to="/agenda" sx={{ ...enlaceEsmalte, color: '#e4e2df' }}>
               {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
             </Box>
           </Box>
