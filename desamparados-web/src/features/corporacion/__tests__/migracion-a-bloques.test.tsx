@@ -14,11 +14,12 @@ import CATALOGO from '../../../../../shared/paginas-publicas.json'
  * `CorporacionPage.test.tsx`.
  */
 const ANTES: Record<string, string[]> = {
+  // El «Quinario al Santo Cristo» salió a propósito: el Grupo tiene una sola titular.
   cultos: [
     'La vida espiritual del Grupo Parroquial se alimenta de los cultos',
     'Celebraciones del año',
     'Cultos mensuales', 'Triduo a la Sagrada Titular', 'Besamanos de la Virgen',
-    'Quinario al Santo Cristo', 'Sábado de Pasión', 'Cultos de Navidad y Semana Santa',
+    'Rosario vespertino', 'Sábado de Pasión', 'Cultos de Navidad y Semana Santa', 'Próximas citas',
     'generalmente el primer sábado de mes',
   ],
   'organos-de-gobierno': [
