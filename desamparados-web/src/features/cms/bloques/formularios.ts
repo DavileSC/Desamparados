@@ -7,7 +7,7 @@ import { FormularioFotoFija } from './formularios/fotoFija'
 import { FormularioHorario } from './formularios/horario'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
-  FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo,
+  FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -52,6 +52,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   fotoFija: FormularioFotoFija as unknown as ComponentType<Props<never>>,
   horario: FormularioHorario as unknown as ComponentType<Props<never>>,
   dibujo: FormularioDibujo as unknown as ComponentType<Props<never>>,
+  anillos: FormularioAnillos as unknown as ComponentType<Props<never>>,
 }
 
 /** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
@@ -95,6 +96,12 @@ export const BLOQUE_NUEVO: Record<string, object> = {
     despacho: [], verano: { desde: '', hasta: '' }, lineas: [],
   },
   dibujo: { tipo: 'dibujo', titulo: '', dibujo: 'templo', html: '' },
+  // Nace con los tres fines nombrados: el dibujo es de ellos y así la vista en
+  // vivo enseña ya los anillos con su texto.
+  anillos: {
+    tipo: 'anillos', titulo: '', centro: '', texto: '',
+    fines: ['Culto', 'Caridad', 'Formación'].map((titulo) => ({ titulo, texto: '', boton: '', enlace: '' })),
+  },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
@@ -231,6 +238,12 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (turno !== -1) return `tiene el turno de despacho ${turno + 1} sin días o con las horas al revés`
       if ((bloque.verano.desde === '') !== (bloque.verano.hasta === '')) return 'tiene el verano a medias: pon principio y fin, o ninguno'
       return null
+    }
+    case 'anillos': {
+      const sinNombre = bloque.fines.findIndex((f) => f.titulo.trim() === '')
+      if (sinNombre !== -1) return `tiene el fin ${sinNombre + 1} sin nombre`
+      const cojo = bloque.fines.findIndex((f) => (f.boton.trim() === '') !== (f.enlace === ''))
+      return cojo === -1 ? null : `tiene el botón del fin ${cojo + 1} sin texto o sin destino`
     }
     case 'dibujo':
       if (bloque.foto && bloque.foto.url !== '' && bloque.foto.alt.trim() === '') return 'tiene la ilustración sin descripción'

@@ -21,7 +21,10 @@
     "que cambia según se lee cada parte del texto de al lado.",
     "",
     "Horario vivo (horario) y dibujo que se traza (dibujo), 26-09-2026: la",
-    "próxima misa calculada al momento y un dibujo de líneas con texto al lado."
+    "próxima misa calculada al momento y un dibujo de líneas con texto al lado.",
+    "",
+    "Tres anillos (anillos), 26-09-2026: los tres fines entrelazados, con su",
+    "texto alrededor de cada anillo."
   ],
   "tipos": [
     "texto",
@@ -45,6 +48,7 @@
     "espacio",
     "fotoFija",
     "horario",
-    "dibujo"
+    "dibujo",
+    "anillos"
   ]
 }

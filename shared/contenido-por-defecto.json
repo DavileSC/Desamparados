@@ -1562,38 +1562,33 @@
     },
     "bloques": [
       {
-        "tipo": "texto",
-        "titulo": "",
-        "html": "<p>Como toda hermandad, el Grupo Parroquial existe para tres cosas que no se entienden por separado: dar <strong>culto</strong> a Dios y honrar a su Madre en la advocación de los Desamparados, vivir la <strong>caridad</strong> con quienes hoy se sienten solos o sin amparo, y <strong>formarse</strong> en la fe para vivirla con sentido.</p><p>La salida procesional es lo que más se ve, pero es solo una parte. El resto del año el Grupo reza, ayuda y aprende, y cualquiera puede sumarse.</p>"
-      },
-      {
-        "tipo": "tarjetas",
-        "titulo": "",
+        "tipo": "anillos",
+        "titulo": "Tres cosas que no se entienden por separado",
         "presentacion": {
-          "columnas": "3",
-          "estilo": "contorno",
-          "alineacion": "izquierda"
+          "fondo": "oscuro"
         },
-        "tarjetas": [
+        "centro": "Desamparados",
+        "fines": [
           {
             "titulo": "Culto",
-            "descripcion": "La eucaristía, el triduo, el besamanos y el rosario por el barrio: los momentos en que el Grupo se reúne ante su Titular.",
-            "enlace": "/cultos",
-            "icono": "iglesia"
+            "texto": "La eucaristía, el triduo, el besamanos y el rosario por el barrio: los momentos en que el Grupo se reúne ante su Titular.",
+            "boton": "Ver los cultos",
+            "enlace": "/cultos"
           },
           {
             "titulo": "Caridad",
-            "descripcion": "La ayuda a quien la necesita, desde la parroquia y con lo que aportan los hermanos.",
-            "enlace": "/nuestros-fines/caridad",
-            "icono": "corazon"
+            "texto": "La ayuda a quien la necesita, desde la parroquia y con lo que aportan los hermanos.",
+            "boton": "Qué hacemos",
+            "enlace": "/nuestros-fines/caridad"
           },
           {
             "titulo": "Formación",
-            "descripcion": "Catequesis, charlas y encuentros para crecer en la fe y entender lo que celebramos.",
-            "enlace": "/nuestros-fines/formacion",
-            "icono": "libro"
+            "texto": "Catequesis, charlas y encuentros para crecer en la fe y entender lo que celebramos.",
+            "boton": "Qué ofrecemos",
+            "enlace": "/nuestros-fines/formacion"
           }
-        ]
+        ],
+        "texto": "La salida procesional es lo que más se ve, pero es solo una parte. El resto del año el Grupo reza, ayuda y aprende, y cualquiera puede sumarse."
       },
       {
         "tipo": "cita",

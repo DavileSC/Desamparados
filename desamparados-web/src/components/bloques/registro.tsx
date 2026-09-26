@@ -21,6 +21,7 @@ import BloqueEspacio from './BloqueEspacio'
 import BloqueFotoFija from './BloqueFotoFija'
 import BloqueHorario from './BloqueHorario'
 import BloqueDibujo from './BloqueDibujo'
+import BloqueAnillos from './BloqueAnillos'
 import type { Bloque } from '../../lib/api/contenido'
 
 /**
@@ -54,6 +55,7 @@ export const REGISTRO_BLOQUES: Record<string, ComponentType<{ bloque: never }>> 
   fotoFija: BloqueFotoFija as ComponentType<{ bloque: never }>,
   horario: BloqueHorario as ComponentType<{ bloque: never }>,
   dibujo: BloqueDibujo as ComponentType<{ bloque: never }>,
+  anillos: BloqueAnillos as ComponentType<{ bloque: never }>,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]

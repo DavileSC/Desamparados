@@ -89,6 +89,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   descargas: { nombre: 'Descargas', grupo: 'Información', descripcion: 'Documentos en PDF para descargar.' },
   mapa: { nombre: 'Mapa', grupo: 'Información', descripcion: 'Un lugar en el mapa, con el enlace para llegar.' },
   horario: { nombre: 'Horario vivo', grupo: 'Información', descripcion: 'Misas y despacho, con la próxima misa y cuánto falta, calculado al momento.' },
+  anillos: { nombre: 'Tres anillos', grupo: 'Composición', descripcion: 'Tres fines entrelazados, cada uno con su texto alrededor de su anillo.' },
   dibujo: { nombre: 'Dibujo con texto', grupo: 'Imagen y vídeo', descripcion: 'El templo o el signo pasionista, que se dibujan al bajar, con un texto al lado.' },
   cuentaAtras: { nombre: 'Cuenta atrás', grupo: 'Información', descripcion: 'Días, horas y minutos que faltan para una fecha.' },
   listado: { nombre: 'Listado', grupo: 'Automáticos', descripcion: 'Noticias, actos o publicaciones, que salen solos de otras pantallas.' },

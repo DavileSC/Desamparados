@@ -565,6 +565,35 @@ const dibujoSchema = type({
   return true;
 });
 
+/**
+ * Tres anillos entrelazados: los tres fines del Grupo (culto, caridad y
+ * formación), que no se entienden por separado. Siempre tres, uno por anillo:
+ * el dibujo es de tres. Cada fin con su texto y, si se quiere, un botón a su
+ * página; en el cruce de los tres, una palabra (`centro`), y debajo un párrafo.
+ */
+const finSchema = type({
+  titulo: TITULO,
+  texto: texto(topes.textoTarjeta),
+  boton: ETIQUETA,
+  enlace: sinEnlace.or(enlaceInterno),
+});
+
+const anillosSchema = type({
+  ...comunes,
+  tipo: "'anillos'",
+  centro: ETIQUETA,
+  fines: finSchema.array().exactlyLength(3),
+  texto: PARRAFO,
+}).narrow((datos, ctx) => {
+  for (const [indice, fin] of datos.fines.entries()) {
+    if (enBlanco(fin.titulo)) return ctx.reject({ path: ['fines', indice, 'titulo'], problem: 'no puede quedar en blanco' });
+    // Botón y destino van juntos, como en la foto con texto.
+    if (!enBlanco(fin.boton) && fin.enlace === '') return ctx.reject({ path: ['fines', indice, 'enlace'], problem: 'falta: el botón necesita a dónde llevar' });
+    if (enBlanco(fin.boton) && fin.enlace !== '') return ctx.reject({ path: ['fines', indice, 'boton'], problem: 'falta el texto del botón' });
+  }
+  return true;
+});
+
 /** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
 const espacioSchema = type({
   ...comunes,
@@ -594,6 +623,7 @@ const POR_TIPO = {
   fotoFija: fotoFijaSchema,
   horario: horarioSchema,
   dibujo: dibujoSchema,
+  anillos: anillosSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

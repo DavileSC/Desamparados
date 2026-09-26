@@ -189,6 +189,10 @@ export interface BloqueHorario extends BloqueBase {
 /** Los dibujos que sabe trazar la web: lista cerrada, la misma que valida el servidor. */
 export type NombreDeDibujo = 'templo' | 'signoPasionista'
 /** `foto`: una ilustración que se pinta en lugar del dibujo de líneas (vacía, el dibujo). */
+/** Un fin de los tres anillos: su texto y, si se quiere, un botón a su página. */
+export interface FinDeAnillo { titulo: string; texto: string; boton: string; enlace: string }
+/** Los tres fines entrelazados: siempre tres, uno por anillo; `centro` va en el cruce. */
+export interface BloqueAnillos extends BloqueBase { tipo: 'anillos'; centro: string; fines: [FinDeAnillo, FinDeAnillo, FinDeAnillo]; texto: string }
 export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string } }
 
 export type Bloque =
@@ -214,6 +218,7 @@ export type Bloque =
   | BloqueFotoFija
   | BloqueHorario
   | BloqueDibujo
+  | BloqueAnillos
 
 /** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
 export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }

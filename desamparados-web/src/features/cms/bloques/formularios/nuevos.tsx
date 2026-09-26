@@ -16,7 +16,7 @@ import ListaEditable from './ListaEditable'
 import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
-  BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo,
+  BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -158,6 +158,40 @@ export function FormularioDibujo({ bloque, onCambio }: Props<BloqueDibujo>) {
           ayuda="Lo que se ve, en una frase. Es lo que oye quien usa un lector de pantalla." />
       )}
       <EditorTexto valor={bloque.html} onCambio={(html) => onCambio({ html })} etiqueta="Texto al lado del dibujo" />
+    </Stack>
+  )
+}
+
+/** El color de cada anillo, en el orden en que se dibujan: para que quien edita sepa cuál es cuál. */
+const ANILLO = ['oro, arriba', 'rosa, a la izquierda', 'crema, a la derecha']
+
+export function FormularioAnillos({ bloque, onCambio }: Props<BloqueAnillos>) {
+  const cambiarFin = (indice: number, cambios: Partial<FinDeAnillo>) =>
+    onCambio({ fines: bloque.fines.map((f, i) => (i === indice ? { ...f, ...cambios } : f)) as BloqueAnillos['fines'] })
+  return (
+    <Stack spacing={2}>
+      {bloque.fines.map((fin, i) => (
+        <Stack key={i} spacing={1.5} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          <Typography variant="subtitle2">Anillo {i + 1} ({ANILLO[i]})</Typography>
+          <TextField label={`Nombre del fin ${i + 1}`} value={fin.titulo} size="small" fullWidth
+            onChange={(e) => cambiarFin(i, { titulo: e.target.value })} slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+          <TextField label="Texto" value={fin.texto} size="small" fullWidth multiline minRows={2}
+            onChange={(e) => cambiarFin(i, { texto: e.target.value })} slotProps={{ htmlInput: { maxLength: topes.textoTarjeta } }} />
+          <TextField label="Texto del botón" value={fin.boton} size="small" fullWidth
+            onChange={(e) => cambiarFin(i, { boton: e.target.value })}
+            helperText="Opcional, como «Ver los cultos». Con texto, necesita a dónde llevar."
+            slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+          <CampoEnlace etiqueta={`Destino del botón ${i + 1}`} valor={fin.enlace} opcional
+            onCambio={(enlace) => cambiarFin(i, { enlace })} ayuda="La página a la que lleva. Vacío si no hay botón." />
+        </Stack>
+      ))}
+      <CampoTexto etiqueta="En el cruce de los tres" valor={bloque.centro} onCambio={(centro) => onCambio({ centro })}
+        ayuda="Una palabra pequeña bajo la cruz, como «Desamparados». Opcional." maxLength={topes.etiqueta} />
+      <CampoTexto etiqueta="Texto debajo" valor={bloque.texto} onCambio={(texto) => onCambio({ texto })} multilinea
+        ayuda="Opcional. Un párrafo bajo los anillos." maxLength={topes.parrafo} />
+      <Typography variant="caption" color="text.secondary">
+        Siempre son tres: uno por anillo. Los colores están pensados para fondo oscuro: elige «Oscuro» en Presentación.
+      </Typography>
     </Stack>
   )
 }

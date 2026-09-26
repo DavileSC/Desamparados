@@ -96,6 +96,8 @@ function textoDe(slug: string): string {
       titulo: string; html?: string; tarjetas?: { titulo: string; descripcion: string }[]
       // La foto fija guarda el texto en sus partes (Trono pasó a ella el 25-09-2026).
       pasos?: { titulo: string; texto: string }[]
+      // Los tres anillos guardan su texto en los fines (Nuestros fines, 26-09-2026).
+      fines?: { titulo: string; texto: string }[]
     }[]
   }
   const trozos = [pagina.cabecera.titulo, pagina.cabecera.subtitulo]
@@ -104,6 +106,7 @@ function textoDe(slug: string): string {
     if (bloque.html) trozos.push(bloque.html.replace(/<[^>]*>/g, ' '))
     for (const tarjeta of bloque.tarjetas ?? []) trozos.push(tarjeta.titulo, tarjeta.descripcion)
     for (const paso of bloque.pasos ?? []) trozos.push(paso.titulo, paso.texto)
+    for (const fin of bloque.fines ?? []) trozos.push(fin.titulo, fin.texto)
   }
   return trozos.join(' ').replace(/\s+/g, ' ')
 }
@@ -121,9 +124,9 @@ describe('la conversión de las páginas a bloques no se ha comido nada', () => 
   for (const [slug, destinos] of Object.entries(ENLACES)) {
     it(`«${slug}» conserva sus enlaces`, () => {
       const pagina = (POR_DEFECTO as Record<string, unknown>)[slug] as {
-        bloques: { tarjetas?: { enlace: string }[] }[]
+        bloques: { tarjetas?: { enlace: string }[]; fines?: { enlace: string }[] }[]
       }
-      const enlaces = pagina.bloques.flatMap((b) => (b.tarjetas ?? []).map((t) => t.enlace))
+      const enlaces = pagina.bloques.flatMap((b) => [...(b.tarjetas ?? []), ...(b.fines ?? [])].map((t) => t.enlace))
       for (const destino of destinos) {
         expect(enlaces, `falta el enlace ${destino} en «${slug}»`).toContain(destino)
       }

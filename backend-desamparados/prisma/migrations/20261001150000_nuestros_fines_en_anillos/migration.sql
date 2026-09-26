@@ -1,0 +1,9 @@
+-- Nuestros fines pasa a los tres anillos entrelazados (maqueta C1, «Constelación»):
+-- culto, caridad y formación alrededor de sus anillos, sobre fondo oscuro, con
+-- la cita y la llamada a hacerse hermano debajo.
+--
+-- Solo se sustituye la página que sigue con el texto de partida: si alguien ya
+-- la ha editado en el CMS, se queda como está.
+
+UPDATE `ContenidoPagina` SET `datos` = '{"cabecera":{"titulo":"Nuestros fines","subtitulo":"Culto, caridad y formación: para qué existe el Grupo Parroquial.","foto":"","fotoAlt":""},"bloques":[{"tipo":"anillos","titulo":"Tres cosas que no se entienden por separado","presentacion":{"fondo":"oscuro"},"centro":"Desamparados","fines":[{"titulo":"Culto","texto":"La eucaristía, el triduo, el besamanos y el rosario por el barrio: los momentos en que el Grupo se reúne ante su Titular.","boton":"Ver los cultos","enlace":"/cultos"},{"titulo":"Caridad","texto":"La ayuda a quien la necesita, desde la parroquia y con lo que aportan los hermanos.","boton":"Qué hacemos","enlace":"/nuestros-fines/caridad"},{"titulo":"Formación","texto":"Catequesis, charlas y encuentros para crecer en la fe y entender lo que celebramos.","boton":"Qué ofrecemos","enlace":"/nuestros-fines/formacion"}],"texto":"La salida procesional es lo que más se ve, pero es solo una parte. El resto del año el Grupo reza, ayuda y aprende, y cualquiera puede sumarse."},{"tipo":"cita","titulo":"","presentacion":{"estilo":"grande","alineacion":"centro"},"texto":"Venid a mí todos los que estáis cansados y agobiados, y yo os aliviaré.","autor":"Jesús","fuente":"Evangelio según san Mateo, 11, 28"},{"tipo":"llamada","titulo":"","texto":"Si quieres vivir todo esto desde dentro, hazte hermano del Grupo Parroquial.","boton":"Hazte hermano","enlace":"/hazte-hermano"}]}'
+WHERE `slug` = 'nuestros-fines' AND `datos` LIKE '%Como toda hermandad, el Grupo Parroquial existe para tres cosas%';

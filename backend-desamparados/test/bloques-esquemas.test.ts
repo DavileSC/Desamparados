@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -334,6 +334,24 @@ describe('bloque de dibujo', () => {
   test('ni dibujos inventados ni texto vacío', () => {
     assert.ok(falla('dibujo', { ...DIBUJO, dibujo: 'catedral' }));
     assert.ok(falla('dibujo', { ...DIBUJO, html: '   ' }));
+  });
+});
+
+describe('bloque de tres anillos', () => {
+  const FIN = { titulo: 'Culto', texto: 'La eucaristía y el triduo.', boton: 'Ver los cultos', enlace: '/cultos' };
+  const ANILLOS = { tipo: 'anillos', titulo: 'Tres cosas', centro: 'Desamparados', fines: [FIN, { ...FIN, titulo: 'Caridad' }, { ...FIN, titulo: 'Formación' }], texto: 'La salida es solo una parte.' };
+
+  test('acepta tres fines, con botón o sin él', () => {
+    assert.ok(!falla('anillos', ANILLOS));
+    assert.ok(!falla('anillos', { ...ANILLOS, fines: ANILLOS.fines.map((f) => ({ ...f, boton: '', enlace: '' })) }));
+  });
+
+  test('siempre tres, con nombre, y botón con destino', () => {
+    assert.ok(falla('anillos', { ...ANILLOS, fines: ANILLOS.fines.slice(0, 2) }));
+    assert.ok(falla('anillos', { ...ANILLOS, fines: [...ANILLOS.fines, FIN] }));
+    assert.ok(falla('anillos', { ...ANILLOS, fines: [{ ...FIN, titulo: ' ' }, FIN, FIN] }));
+    assert.ok(falla('anillos', { ...ANILLOS, fines: [{ ...FIN, enlace: '' }, FIN, FIN] }));
+    assert.ok(falla('anillos', { ...ANILLOS, fines: [{ ...FIN, enlace: '/no-existe' }, FIN, FIN] }));
   });
 });
 
