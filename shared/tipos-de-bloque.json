@@ -33,7 +33,10 @@
     "próximo marcado solo y su fecha sacada de la Agenda.",
     "",
     "Relación (relacion), 26-09-2026: los cargos de la Junta de Gobierno, con",
-    "su nombre y su función, el mandato y la fecha del cabildo."
+    "su nombre y su función, el mandato y la fecha del cabildo.",
+    "",
+    "Carrusel de piezas (carrusel), 27-09-2026: una pieza cada vez, con su",
+    "foto grande, su historia y su cartela (autor, año, materiales)."
   ],
   "tipos": [
     "texto",
@@ -61,6 +64,7 @@
     "anillos",
     "puertas",
     "programa",
-    "relacion"
+    "relacion",
+    "carrusel"
   ]
 }

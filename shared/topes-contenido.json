@@ -24,5 +24,7 @@
   "horasPorFranja": 8,
   "datosPorPuerta": 3,
   "filasPorPrograma": 12,
-  "filasPorRelacion": 20
+  "filasPorRelacion": 20,
+  "piezasPorCarrusel": 20,
+  "datosPorPieza": 4
 }

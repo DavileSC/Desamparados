@@ -207,6 +207,16 @@ export interface BloquePrograma extends BloqueBase { tipo: 'programa'; filas: Fi
 export interface FilaDeRelacion { cargo: string; nombre: string; texto: string; enlace: string }
 /** La relación de un órgano de gobierno, con el mandato y una nota arriba. */
 export interface BloqueRelacion extends BloqueBase { tipo: 'relacion'; mandato: string; nota: string; filas: FilaDeRelacion[] }
+/** Un dato de la cartela de una pieza, como «Año · 1997». */
+export interface DatoDePieza { etiqueta: string; valor: string }
+/** Una pieza del carrusel: su foto, su familia, su nombre, su historia y su cartela. */
+export interface PiezaDeCarrusel {
+  familia: string; titulo: string; texto: string
+  foto: { url: string; alt: string; pie: string }
+  datos: DatoDePieza[]
+}
+/** Una pieza cada vez, con la foto grande y su explicación al lado. */
+export interface BloqueCarrusel extends BloqueBase { tipo: 'carrusel'; piezas: PiezaDeCarrusel[] }
 export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string } }
 
 export type Bloque =
@@ -236,6 +246,7 @@ export type Bloque =
   | BloquePuertas
   | BloquePrograma
   | BloqueRelacion
+  | BloqueCarrusel
 
 /** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
 export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }

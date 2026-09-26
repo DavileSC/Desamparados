@@ -4,6 +4,7 @@ import { FormularioFoto, FormularioGaleria } from './formularios/medios'
 import { FormularioTarjetas, FormularioDatos, FormularioItinerario } from './formularios/listas'
 import { FormularioCronologia } from './formularios/cronologia'
 import { FormularioFotoFija } from './formularios/fotoFija'
+import { FormularioCarrusel } from './formularios/carrusel'
 import { FormularioHorario } from './formularios/horario'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
@@ -57,6 +58,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   puertas: FormularioPuertas as unknown as ComponentType<Props<never>>,
   programa: FormularioPrograma as unknown as ComponentType<Props<never>>,
   relacion: FormularioRelacion as unknown as ComponentType<Props<never>>,
+  carrusel: FormularioCarrusel as unknown as ComponentType<Props<never>>,
 }
 
 /** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
@@ -112,6 +114,7 @@ export const BLOQUE_NUEVO: Record<string, object> = {
     puertas: [0, 1].map(() => ({ ceja: '', titulo: '', texto: '', datos: [], boton: '', enlace: '' })),
   },
   relacion: { tipo: 'relacion', titulo: 'Junta de Gobierno', mandato: '', nota: '', filas: [{ cargo: '', nombre: '', texto: '', enlace: '' }] },
+  carrusel: { tipo: 'carrusel', titulo: '', piezas: [{ familia: '', titulo: '', texto: '', foto: { url: '', alt: '', pie: '' }, datos: [] }] },
   programa: { tipo: 'programa', titulo: 'Programa del curso', filas: [{ cuando: '', mes: 0, titulo: '', texto: '', boton: '', enlace: '' }] },
 }
 
@@ -263,6 +266,16 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (sinNombre !== -1) return `tiene un dato de la puerta ${sinNombre + 1} sin nombre`
       const cojo = bloque.puertas.findIndex((p) => (p.boton.trim() === '') !== (p.enlace === ''))
       return cojo === -1 ? null : `tiene el botón de la puerta ${cojo + 1} sin texto o sin destino`
+    }
+    case 'carrusel': {
+      const sinNombre = bloque.piezas.findIndex((p) => p.titulo.trim() === '')
+      if (sinNombre !== -1) return `tiene la pieza ${sinNombre + 1} sin nombre`
+      const sinFoto = bloque.piezas.findIndex((p) => p.foto.url === '')
+      if (sinFoto !== -1) return `tiene la pieza ${sinFoto + 1} sin foto`
+      const sinAlt = bloque.piezas.findIndex((p) => p.foto.alt.trim() === '')
+      if (sinAlt !== -1) return `tiene la foto de la pieza ${sinAlt + 1} sin descripción`
+      const coja = bloque.piezas.findIndex((p) => p.datos.some((d) => (d.etiqueta.trim() === '') !== (d.valor.trim() === '')))
+      return coja === -1 ? null : `tiene un dato de la pieza ${coja + 1} sin nombre o sin valor`
     }
     case 'relacion': {
       const sinCargo = bloque.filas.findIndex((f) => f.cargo.trim() === '')

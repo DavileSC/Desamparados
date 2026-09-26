@@ -25,6 +25,7 @@ import BloqueAnillos from './BloqueAnillos'
 import BloquePuertas from './BloquePuertas'
 import BloquePrograma from './BloquePrograma'
 import BloqueRelacion from './BloqueRelacion'
+import BloqueCarrusel from './BloqueCarrusel'
 import { valorDe } from './presentacion'
 import type { Bloque } from '../../lib/api/contenido'
 
@@ -63,6 +64,7 @@ export const REGISTRO_BLOQUES: Record<string, ComponentType<{ bloque: never }>> 
   puertas: BloquePuertas as ComponentType<{ bloque: never }>,
   programa: BloquePrograma as ComponentType<{ bloque: never }>,
   relacion: BloqueRelacion as ComponentType<{ bloque: never }>,
+  carrusel: BloqueCarrusel as ComponentType<{ bloque: never }>,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]

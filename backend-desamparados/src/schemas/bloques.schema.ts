@@ -688,6 +688,37 @@ const relacionSchema = type({
   return sinCargo === -1 ? true : ctx.reject({ path: ['filas', sinCargo, 'cargo'], problem: 'no puede quedar en blanco' });
 });
 
+/**
+ * Carrusel de piezas: una pieza cada vez, con su foto grande y, al lado, la
+ * familia (Insignias, Orfebrería…), el nombre, su historia y una cartela de
+ * datos (autor, año, materiales). Para Enseres y Ajuar. El pie de la foto es
+ * para el crédito del fotógrafo. Un dato va entero o no va: sin nombre, el
+ * valor no se sabría de qué es.
+ */
+const datoDePiezaSchema = type({ etiqueta: ETIQUETA, valor: TITULO });
+
+const piezaSchema = type({
+  familia: ETIQUETA,
+  titulo: TITULO,
+  texto: texto(topes.textoTarjeta),
+  foto: { url: rutaImagenPublica, alt: DESCRIPCION, pie: ETIQUETA },
+  datos: datoDePiezaSchema.array().atMostLength(topes.datosPorPieza),
+});
+
+const carruselSchema = type({
+  ...comunes,
+  tipo: "'carrusel'",
+  piezas: piezaSchema.array().atLeastLength(1).atMostLength(topes.piezasPorCarrusel),
+}).narrow((datos, ctx) => {
+  for (const [indice, pieza] of datos.piezas.entries()) {
+    if (enBlanco(pieza.titulo)) return ctx.reject({ path: ['piezas', indice, 'titulo'], problem: 'no puede quedar en blanco' });
+    if (enBlanco(pieza.foto.alt)) return ctx.reject({ path: ['piezas', indice, 'foto', 'alt'], problem: 'es obligatoria: describe lo que se ve' });
+    const cojo = pieza.datos.findIndex((dato) => enBlanco(dato.etiqueta) !== enBlanco(dato.valor));
+    if (cojo !== -1) return ctx.reject({ path: ['piezas', indice, 'datos', cojo], problem: 'necesita nombre y valor' });
+  }
+  return true;
+});
+
 /** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
 const espacioSchema = type({
   ...comunes,
@@ -721,6 +752,7 @@ const POR_TIPO = {
   puertas: puertasSchema,
   programa: programaSchema,
   relacion: relacionSchema,
+  carrusel: carruselSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

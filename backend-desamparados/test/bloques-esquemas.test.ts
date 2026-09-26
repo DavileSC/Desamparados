@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -411,6 +411,30 @@ describe('bloque de relación', () => {
     assert.ok(falla('relacion', { ...RELACION, filas: [{ ...FILA, cargo: ' ' }] }));
     assert.ok(falla('relacion', { ...RELACION, filas: [{ ...FILA, enlace: '/no-existe' }] }));
     assert.ok(falla('relacion', { ...RELACION, filas: Array(21).fill(FILA) }));
+  });
+});
+
+describe('bloque de carrusel', () => {
+  const PIEZA = {
+    familia: 'Insignias', titulo: 'Cruz de guía', texto: 'Abre el cortejo.',
+    foto: { url: '/images/enseres/cruz.jpg', alt: 'La cruz de guía', pie: '' },
+    datos: [{ etiqueta: 'Año', valor: '1997' }],
+  };
+  const CARRUSEL = { tipo: 'carrusel', titulo: '', piezas: [PIEZA] };
+
+  test('acepta piezas con cartela o sin ella', () => {
+    assert.ok(!falla('carrusel', CARRUSEL));
+    assert.ok(!falla('carrusel', { ...CARRUSEL, piezas: [{ ...PIEZA, familia: '', texto: '', datos: [] }] }));
+  });
+
+  test('cada pieza con nombre, foto descrita y datos enteros', () => {
+    assert.ok(falla('carrusel', { ...CARRUSEL, piezas: [] }));
+    assert.ok(falla('carrusel', { ...CARRUSEL, piezas: [{ ...PIEZA, titulo: ' ' }] }));
+    assert.ok(falla('carrusel', { ...CARRUSEL, piezas: [{ ...PIEZA, foto: { ...PIEZA.foto, alt: '' } }] }));
+    assert.ok(falla('carrusel', { ...CARRUSEL, piezas: [{ ...PIEZA, foto: { ...PIEZA.foto, url: 'https://otra.web/foto.jpg' } }] }));
+    assert.ok(falla('carrusel', { ...CARRUSEL, piezas: [{ ...PIEZA, datos: [{ etiqueta: 'Año', valor: '' }] }] }));
+    assert.ok(falla('carrusel', { ...CARRUSEL, piezas: [{ ...PIEZA, datos: Array(5).fill(PIEZA.datos[0]) }] }));
+    assert.ok(falla('carrusel', { ...CARRUSEL, piezas: Array(21).fill(PIEZA) }));
   });
 });
 

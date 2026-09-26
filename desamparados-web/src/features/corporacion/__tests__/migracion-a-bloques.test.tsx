@@ -65,9 +65,9 @@ const ANTES: Record<string, string[]> = {
     'Alrededor del trono se organizan los cargos de la procesión',
   ],
   enseres: [
+    // Desde el carrusel de piezas (27-09-2026), las insignias van una a una.
     'Los enseres procesionales son elementos fundamentales',
-    'La música acompaña el paso de Nuestra Señora de los Desamparados',
-    'Las insignias del Grupo Parroquial, como el estandarte',
+    'Cruz de guía', 'Estandarte corporativo', 'Simpecado',
     'El cuidado de los enseres es tarea de todos los hermanos',
   ],
   desamparados: [
@@ -107,6 +107,8 @@ function textoDe(slug: string): string {
       // El programa, en sus filas (Cultos, 26-09-2026).
       // El programa (Cultos) y la relación (Órganos de Gobierno), en sus filas.
       filas?: { cuando?: string; titulo?: string; cargo?: string; nombre?: string; texto: string }[]
+      // El carrusel, en sus piezas (Enseres, 27-09-2026).
+      piezas?: { familia: string; titulo: string; texto: string }[]
     }[]
   }
   const trozos = [pagina.cabecera.titulo, pagina.cabecera.subtitulo]
@@ -118,6 +120,7 @@ function textoDe(slug: string): string {
     for (const fin of bloque.fines ?? []) trozos.push(fin.titulo, fin.texto)
     for (const puerta of bloque.puertas ?? []) trozos.push(puerta.ceja, puerta.titulo, puerta.texto)
     for (const fila of bloque.filas ?? []) trozos.push(fila.cuando ?? '', fila.titulo ?? '', fila.cargo ?? '', fila.nombre ?? '', fila.texto)
+    for (const pieza of bloque.piezas ?? []) trozos.push(pieza.familia, pieza.titulo, pieza.texto)
   }
   return trozos.join(' ').replace(/\s+/g, ' ')
 }
