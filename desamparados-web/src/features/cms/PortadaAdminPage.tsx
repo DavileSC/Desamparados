@@ -20,6 +20,8 @@ import { MAX_FOTOS_PORTADA, useEdicionDePortada } from './portada/useEdicionDePo
 export { MAX_FOTOS_PORTADA }
 
 const AYUDA_FOTO = 'JPG, PNG o WebP apaisado, de al menos 1920 píxeles de ancho y hasta 5 MB.'
+const AYUDA_FOTO_AGENDA = `${AYUDA_FOTO} Va detrás del calendario a todo lo ancho, desenfocada y oscurecida para que no le quite protagonismo. `
+  + 'Sin foto, el bloque queda sobre fondo oscuro liso. Al cambiarla y guardar, la anterior se borra del servidor salvo que la use algo más.'
 const AYUDA_FOTO_SABADO = `${AYUDA_FOTO} Ocupa el fondo del bloque a todo lo ancho. `
   + 'Al cambiarla y guardar, la anterior se borra del servidor salvo que la use algo más.'
 
@@ -230,6 +232,13 @@ export default function PortadaAdminPage() {
             onCambio={(directoTexto) => cambiarAgenda({ directoTexto })}
             maxLength={60}
             ayuda="La línea pequeña bajo ese aviso."
+          />
+          <CampoImagen
+            etiqueta="Foto del fondo"
+            ayuda={AYUDA_FOTO_AGENDA}
+            apaisada
+            valor={textos.agenda.imagenUrl}
+            onCambio={(imagenUrl) => cambiarAgenda({ imagenUrl })}
           />
         </SeccionPlegable>
 

@@ -23,6 +23,7 @@ const TITULO = texto(topes.titulo);
 const PARRAFO = texto(topes.parrafo);
 const ETIQUETA = texto(topes.etiqueta);
 const DESCRIPCION = texto(topes.descripcion);
+const sinFoto = type('string').matching(/^$/);
 
 const heroSchema = type({
   ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO,
@@ -35,6 +36,9 @@ const portadaSchema = type({
   agenda: {
     ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO, enlace: ETIQUETA,
     directoTitulo: ETIQUETA, directoTexto: ETIQUETA,
+    // La foto velada del fondo del bloque. Vacía, el bloque queda sobre fondo
+    // oscuro liso: a diferencia del Sábado de Pasión, aquí la foto es ambiente.
+    imagenUrl: sinFoto.or(rutaImagenPublica),
   },
   accesos: {
     placa: { ceja: ETIQUETA, titulo: TITULO, texto: PARRAFO, boton: ETIQUETA },

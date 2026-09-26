@@ -41,6 +41,14 @@ test('la foto tiene que ser una ruta del propio sitio', () => {
 
   datos.sabadoDePasion.imagenUrl = '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp';
   assert.ok(valida('portada', datos));
+
+  // El fondo de «Agenda y Cultos», con las mismas reglas, y además puede ir sin foto.
+  datos.agenda.imagenUrl = 'https://otro-sitio.example/foto.jpg';
+  assert.ok(!valida('portada', datos));
+  datos.agenda.imagenUrl = '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp';
+  assert.ok(valida('portada', datos));
+  datos.agenda.imagenUrl = '';
+  assert.ok(valida('portada', datos));
 });
 
 test('cada clase de texto acepta su tope justo y rechaza un carácter más', () => {

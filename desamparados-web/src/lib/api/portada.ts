@@ -18,7 +18,8 @@ interface ApiImagenPortada {
 export interface TextosPortada {
   hero: { ceja: string; titulo: string; parrafo: string; botonPrincipal: string; enlaceSecundario: string }
   actualidad: { ceja: string; titulo: string; enlace: string }
-  agenda: { ceja: string; titulo: string; parrafo: string; enlace: string; directoTitulo: string; directoTexto: string }
+  /** `imagenUrl`: la foto velada del fondo; vacía, fondo oscuro liso. */
+  agenda: { ceja: string; titulo: string; parrafo: string; enlace: string; directoTitulo: string; directoTexto: string; imagenUrl: string }
   accesos: {
     placa: { ceja: string; titulo: string; texto: string; boton: string }
     teselas: { clave: string; titulo: string; descripcion: string }[]

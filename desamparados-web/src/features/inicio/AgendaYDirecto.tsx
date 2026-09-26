@@ -145,21 +145,24 @@ export default function AgendaYDirecto() {
         backgroundColor: TINTA,
       }}
     >
-      {/* Bloque de foto a sangre con bordes rectos. La foto es pequeña y va detrás de la tarjeta:
-          desenfocada y velada, sirve de ambiente sin competir con el calendario. */}
-      <Box
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: '-16px',
-          zIndex: -2,
-          backgroundImage: 'url(/images/procesion.jpg)',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 55%',
-          filter: 'blur(3px)',
-        }}
-      />
+      {/* Bloque de foto a sangre con bordes rectos. La foto va detrás de la tarjeta:
+          desenfocada y velada, sirve de ambiente sin competir con el calendario.
+          Se cambia en el CMS; sin foto, el bloque queda sobre el fondo oscuro. */}
+      {textos.agenda.imagenUrl && (
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: '-16px',
+            zIndex: -2,
+            backgroundImage: `url("${textos.agenda.imagenUrl}")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 55%',
+            filter: 'blur(3px)',
+          }}
+        />
+      )}
       <Box
         aria-hidden="true"
         sx={{

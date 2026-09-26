@@ -125,6 +125,7 @@ describe('AgendaYDirecto', () => {
       enlace: 'Ver toda la agenda',
       directoTitulo: 'Síguelo ahora',
       directoTexto: 'Emisión en directo desde la parroquia',
+      imagenUrl: '/images/procesion.jpg',
     }
     responderPortada(textos)
     directo.urlAlternativa = 'https://www.youtube.com/live/ejemplo'
@@ -138,5 +139,22 @@ describe('AgendaYDirecto', () => {
     const aviso = screen.getByRole('link', { name: /síguelo ahora/i })
     expect(aviso).toHaveTextContent('Síguelo ahora')
     expect(aviso).toHaveTextContent('Emisión en directo desde la parroquia')
+  })
+
+  it('pone de fondo la foto elegida en el CMS, y ninguna si se quita', async () => {
+    const fondo = (contenedor: HTMLElement) => [...contenedor.querySelectorAll<HTMLElement>('[aria-hidden="true"]')]
+      .map((el) => getComputedStyle(el).backgroundImage)
+      .find((imagen) => imagen.includes('url('))
+    const textos = textosDePrueba()
+    textos.agenda = { ...textos.agenda, imagenUrl: '/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp' }
+    responderPortada(textos)
+    const { container, unmount } = renderWithProviders(<AgendaYDirecto />)
+    await waitFor(() => expect(fondo(container)).toContain('/storage/public/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.webp'))
+    unmount()
+
+    responderPortada({ ...textos, agenda: { ...textos.agenda, imagenUrl: '' } })
+    const otra = renderWithProviders(<AgendaYDirecto />)
+    // Mientras llega la portada se ve la foto de partida: hay que esperar a la guardada.
+    await waitFor(() => expect(fondo(otra.container)).toBeUndefined())
   })
 })
