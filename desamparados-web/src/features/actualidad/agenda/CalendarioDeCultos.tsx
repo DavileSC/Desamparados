@@ -15,6 +15,8 @@ const ORO_SUAVE = '#c9b25a'
 const ROJO = '#e0705c'
 /** El burdeos de la casa aclarado para el fondo oscuro, el mismo que usa el CMS. */
 const BURDEOS_CLARO = TIPOS.CULTO.oscuro
+/** El granate de los días solemnes, suave: que se note el día sin teñir la hoja. */
+const GRANATE_SUAVE = 'rgba(110,24,34,0.3)'
 const SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
 /** Lo que hay por debajo de la última semana: la leyenda, el margen de la hoja y un poco de aire. */
 const PIE = 88
@@ -25,6 +27,11 @@ const FILA_MIN = 56
 const FILA_MAX = 110
 
 const cae = keyframes`from { opacity: 0; transform: translateY(8px); filter: blur(6px); }`
+/** Los días solemnes, con un filete burdeos que se enciende y se apaga despacio. */
+const respira = keyframes`
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255,159,166,0.15); }
+  50% { box-shadow: inset 0 0 0 1px rgba(255,159,166,0.55), inset 0 0 22px rgba(255,159,166,0.14); }
+`
 const letra = keyframes`from { opacity: 0; transform: translateY(-6px); filter: blur(8px); }`
 const gira = keyframes`
   from { transform: translate(-50%, -50%) rotate(0deg); }
@@ -148,6 +155,11 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
     display: 'block', fontSize: { xs: 20, md: grande ? 40 : mediano ? 32 : 26 }, fontWeight: { xs: 700, md: 800 }, lineHeight: 1.1,
     color: 'transparent', WebkitTextStroke: '0.8px rgba(222,199,43,0.35)',
   } as const
+  // El filete que respira comparte `animation` con la cascada del cambio de mes,
+  // que va por la rejilla: aquí van las dos juntas, y con más peso para que ganen.
+  const solemne = quieto ? {} : {
+    '&&&': { animation: [animar && `${cae} .6s cubic-bezier(.2,.8,.2,1) both`, `${respira} 3.2s ease-in-out infinite`].filter(Boolean).join(', ') },
+  }
   const casilla = {
     position: 'relative', minWidth: 0, minHeight: 0, p: { xs: '4px 6px', md: mediano ? '8px 10px' : '5px 8px' },
     textAlign: 'left', fontVariantNumeric: 'tabular-nums', overflow: 'hidden',
@@ -244,7 +256,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                 }
                 // Varios actos que coinciden: la casilla del día, con una línea por acto.
                 return (
-                  <Box key={i} className="pieza" sx={{ ...sx, display: 'flex', flexDirection: 'column', gap: 0.25, bgcolor: actos.some((e) => e.cartel) ? 'rgba(110,24,34,0.55)' : 'rgba(222,199,43,0.07)' }}>
+                  <Box key={i} className="pieza" sx={{ ...sx, display: 'flex', flexDirection: 'column', gap: 0.25, bgcolor: 'rgba(222,199,43,0.07)', ...(actos.some((e) => e.cartel) && { ...solemne, bgcolor: GRANATE_SUAVE }) }}>
                     <Box component="span" sx={{ ...numero, color: actos.some((e) => e.cartel) ? '#fff' : GOLD, WebkitTextStroke: 0 }}>{dia.getDate()}</Box>
                     <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       {actos.map((e) => (
@@ -293,13 +305,15 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                     sx={{
                       ...casilla, ...retraso(t.desde), gridColumn: `${t.desde + 1} / ${t.hasta + 2}`, gridRow: 1,
                       fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: grande ? 0.75 : 0.25,
-                      bgcolor: e.cartel ? GRANATE : 'rgba(222,199,43,0.07)',
+                      bgcolor: e.cartel ? NOCHE : 'rgba(222,199,43,0.07)',
+                      ...(e.cartel && solemne),
                       ...(foto && {
-                        backgroundImage: `linear-gradient(${t.hasta > t.desde ? '90deg' : '180deg'}, rgba(110,24,34,0.5), rgba(18,15,17,0.88)), url("${foto}")`,
+                        backgroundImage: `linear-gradient(${t.hasta > t.desde ? '90deg' : '180deg'}, rgba(60,18,26,0.6), rgba(18,15,17,0.92)), url("${foto}")`,
                         backgroundSize: 'cover', backgroundPosition: 'center 25%',
                       }),
-                      boxShadow: elegido(e) ? `inset 0 0 0 1px ${GOLD}` : 'none',
-                      '&:hover': { bgcolor: e.cartel ? 'rgba(110,24,34,0.8)' : 'rgba(222,199,43,0.13)' },
+                      // Contorno y no sombra: la sombra es el filete que respira.
+                      outline: elegido(e) ? `1px solid ${GOLD}` : 'none', outlineOffset: -1,
+                      '&:hover': { bgcolor: e.cartel ? 'rgba(110,24,34,0.45)' : 'rgba(222,199,43,0.13)' },
                       '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: -2 },
                     }}
                   >
@@ -329,7 +343,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
         {/* Qué quiere decir cada color: en las tarjetas y en la rayita de cada acto cuando coinciden varios. */}
         <Box component="ul" aria-label="Leyenda" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 18px', fontSize: 13, color: 'rgba(244,241,238,0.72)' }}>
           {[
-            { color: GRANATE, raya: BURDEOS_CLARO, texto: 'Culto solemne' },
+            { color: GRANATE_SUAVE, raya: BURDEOS_CLARO, texto: 'Culto solemne' },
             { color: 'rgba(222,199,43,0.14)', raya: GOLD, texto: 'Otros actos' },
           ].map((l) => (
             <Box component="li" key={l.texto} sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
