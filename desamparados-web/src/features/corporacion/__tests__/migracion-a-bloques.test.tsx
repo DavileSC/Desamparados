@@ -39,9 +39,10 @@ const ANTES: Record<string, string[]> = {
     'Catequesis, charlas y encuentros para crecer en la fe',
   ],
   caridad: [
-    'La caridad es uno de los fines del Grupo Parroquial',
+    // Desde las dos puertas (26-09-2026), los voluntarios y la ayuda van en ellas.
+    'la caridad es casi una obligación',
     'Qué hacemos', 'Familias en dificultad', 'Enfermos y mayores',
-    'Voluntarios',
+    'Necesito ayuda', 'Quiero ayudar', 'Cáritas parroquial de Santa María Goretti',
   ],
   formacion: [
     'La formación es uno de los pilares del Grupo Parroquial',
@@ -98,6 +99,8 @@ function textoDe(slug: string): string {
       pasos?: { titulo: string; texto: string }[]
       // Los tres anillos guardan su texto en los fines (Nuestros fines, 26-09-2026).
       fines?: { titulo: string; texto: string }[]
+      // Las dos puertas, en sus paneles (Caridad, 26-09-2026).
+      puertas?: { ceja: string; titulo: string; texto: string }[]
     }[]
   }
   const trozos = [pagina.cabecera.titulo, pagina.cabecera.subtitulo]
@@ -107,6 +110,7 @@ function textoDe(slug: string): string {
     for (const tarjeta of bloque.tarjetas ?? []) trozos.push(tarjeta.titulo, tarjeta.descripcion)
     for (const paso of bloque.pasos ?? []) trozos.push(paso.titulo, paso.texto)
     for (const fin of bloque.fines ?? []) trozos.push(fin.titulo, fin.texto)
+    for (const puerta of bloque.puertas ?? []) trozos.push(puerta.ceja, puerta.titulo, puerta.texto)
   }
   return trozos.join(' ').replace(/\s+/g, ' ')
 }

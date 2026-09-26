@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -352,6 +352,29 @@ describe('bloque de tres anillos', () => {
     assert.ok(falla('anillos', { ...ANILLOS, fines: [{ ...FIN, titulo: ' ' }, FIN, FIN] }));
     assert.ok(falla('anillos', { ...ANILLOS, fines: [{ ...FIN, enlace: '' }, FIN, FIN] }));
     assert.ok(falla('anillos', { ...ANILLOS, fines: [{ ...FIN, enlace: '/no-existe' }, FIN, FIN] }));
+  });
+});
+
+describe('bloque de dos puertas', () => {
+  const DATO = { etiqueta: 'Despacho', valor: 'Martes y viernes', nota: '18:00 – 20:00', copiable: false };
+  const PUERTA = { ceja: 'Si lo necesitas', titulo: 'Necesito ayuda', texto: 'Acude a Cáritas parroquial.', datos: [DATO], boton: 'Escríbenos', enlace: '/contacto' };
+  const PUERTAS = { tipo: 'puertas', titulo: '', puertas: [PUERTA, { ...PUERTA, titulo: 'Quiero ayudar' }] };
+
+  test('acepta dos puertas, con datos y botón o sin ellos, y un dato aún sin valor', () => {
+    assert.ok(!falla('puertas', PUERTAS));
+    assert.ok(!falla('puertas', { ...PUERTAS, puertas: PUERTAS.puertas.map((p) => ({ ...p, datos: [], boton: '', enlace: '' })) }));
+    assert.ok(!falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, datos: [{ ...DATO, valor: '', copiable: true }] }, PUERTA] }));
+  });
+
+  test('siempre dos, con título, datos con nombre y botón con destino', () => {
+    assert.ok(falla('puertas', { ...PUERTAS, puertas: [PUERTA] }));
+    assert.ok(falla('puertas', { ...PUERTAS, puertas: [PUERTA, PUERTA, PUERTA] }));
+    assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, titulo: ' ' }, PUERTA] }));
+    assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, datos: [{ ...DATO, etiqueta: '' }] }, PUERTA] }));
+    assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, datos: [DATO, DATO, DATO, DATO] }, PUERTA] }));
+    assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, enlace: '' }, PUERTA] }));
+    assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, boton: '' }, PUERTA] }));
+    assert.ok(falla('puertas', { ...PUERTAS, puertas: [{ ...PUERTA, enlace: '/no-existe' }, PUERTA] }));
   });
 });
 

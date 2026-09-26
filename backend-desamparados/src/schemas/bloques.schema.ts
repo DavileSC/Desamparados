@@ -594,6 +594,47 @@ const anillosSchema = type({
   return true;
 });
 
+/**
+ * Dos puertas: dos paneles para dos lectores distintos, como «Necesito ayuda»
+ * y «Quiero ayudar» en Caridad. Siempre dos, uno al lado del otro. Cada uno con
+ * sus datos (el despacho, la dirección, el Bizum…) y un botón.
+ *
+ * Un dato sin valor no se pinta: así se puede dejar preparado el del donativo
+ * hasta que el Grupo lo dé, sin que salga un hueco en la página. `copiable`
+ * pone al lado un botón para copiar el valor (una cuenta, un Bizum).
+ */
+const datoDePuertaSchema = type({
+  etiqueta: ETIQUETA,
+  valor: ETIQUETA,
+  nota: ETIQUETA,
+  copiable: 'boolean',
+});
+
+const puertaSchema = type({
+  ceja: ETIQUETA,
+  titulo: TITULO,
+  texto: PARRAFO,
+  datos: datoDePuertaSchema.array().atMostLength(topes.datosPorPuerta),
+  boton: ETIQUETA,
+  enlace: sinEnlace.or(enlaceInterno),
+});
+
+const puertasSchema = type({
+  ...comunes,
+  tipo: "'puertas'",
+  puertas: puertaSchema.array().exactlyLength(2),
+}).narrow((datos, ctx) => {
+  for (const [indice, puerta] of datos.puertas.entries()) {
+    if (enBlanco(puerta.titulo)) return ctx.reject({ path: ['puertas', indice, 'titulo'], problem: 'no puede quedar en blanco' });
+    const sinNombre = puerta.datos.findIndex((dato) => enBlanco(dato.etiqueta));
+    if (sinNombre !== -1) return ctx.reject({ path: ['puertas', indice, 'datos', sinNombre, 'etiqueta'], problem: 'no puede quedar en blanco' });
+    // Botón y destino van juntos, como en los tres anillos.
+    if (!enBlanco(puerta.boton) && puerta.enlace === '') return ctx.reject({ path: ['puertas', indice, 'enlace'], problem: 'falta: el botón necesita a dónde llevar' });
+    if (enBlanco(puerta.boton) && puerta.enlace !== '') return ctx.reject({ path: ['puertas', indice, 'boton'], problem: 'falta el texto del botón' });
+  }
+  return true;
+});
+
 /** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
 const espacioSchema = type({
   ...comunes,
@@ -624,6 +665,7 @@ const POR_TIPO = {
   horario: horarioSchema,
   dibujo: dibujoSchema,
   anillos: anillosSchema,
+  puertas: puertasSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

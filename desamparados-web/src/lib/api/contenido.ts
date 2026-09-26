@@ -193,6 +193,12 @@ export type NombreDeDibujo = 'templo' | 'signoPasionista'
 export interface FinDeAnillo { titulo: string; texto: string; boton: string; enlace: string }
 /** Los tres fines entrelazados: siempre tres, uno por anillo; `centro` va en el cruce. */
 export interface BloqueAnillos extends BloqueBase { tipo: 'anillos'; centro: string; fines: [FinDeAnillo, FinDeAnillo, FinDeAnillo]; texto: string }
+/** Un dato de una puerta: sin valor no se pinta; `copiable`, con botón de copiar. */
+export interface DatoDePuerta { etiqueta: string; valor: string; nota: string; copiable: boolean }
+/** Uno de los dos paneles: ceja, título, texto, hasta tres datos y un botón opcional. */
+export interface Puerta { ceja: string; titulo: string; texto: string; datos: DatoDePuerta[]; boton: string; enlace: string }
+/** Dos puertas para dos lectores («Necesito ayuda» / «Quiero ayudar»): siempre dos. */
+export interface BloquePuertas extends BloqueBase { tipo: 'puertas'; puertas: [Puerta, Puerta] }
 export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string } }
 
 export type Bloque =
@@ -219,6 +225,7 @@ export type Bloque =
   | BloqueHorario
   | BloqueDibujo
   | BloqueAnillos
+  | BloquePuertas
 
 /** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
 export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }

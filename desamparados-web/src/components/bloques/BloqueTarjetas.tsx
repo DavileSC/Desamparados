@@ -1,13 +1,13 @@
 import { Box, Grid, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import TarjetaCristal from '../TarjetaCristal'
-import { GOLD, GRANATE, PAPEL } from '../../features/inicio/estilos'
+import { GOLD, GRANATE, PAPEL, SERIF } from '../../features/inicio/estilos'
 import { ICONOS } from './iconos'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueTarjetas as Datos, TarjetaEnlace } from '../../lib/api/contenido'
 import { esDestinoValido } from '../../lib/destinos'
 
-type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate'
+type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas'
 
 /**
  * Cuántas columnas ocupa cada tarjeta. En `auto` (el de siempre) depende de
@@ -24,7 +24,7 @@ function columnas(cuantas: number, eleccion: string) {
 }
 
 /** El recuadro de cada estilo. `cristal` es el de siempre. */
-const FONDOS: Record<Exclude<Estilo, 'cristal'>, object> = {
+const FONDOS: Record<Exclude<Estilo, 'cristal' | 'numeradas'>, object> = {
   papel: { backgroundColor: PAPEL, color: '#1b1c1a', border: '1px solid rgba(27, 28, 26, 0.08)', borderRadius: '8px' },
   contorno: { backgroundColor: 'transparent', border: '1px solid rgba(222, 199, 43, 0.35)', borderRadius: '8px' },
   granate: { backgroundColor: GRANATE, color: '#fff', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px' },
@@ -43,6 +43,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
   const estilo = valorDe(bloque, 'estilo') as Estilo
   const horizontal = valorDe(bloque, 'orientacion') === 'horizontal'
   const centrada = valorDe(bloque, 'alineacion') === 'centro'
+  if (estilo === 'numeradas') return <Numeradas bloque={bloque} />
   return (
     // La última fila, si no se llena, va centrada y no pegada a la izquierda.
     <Grid container spacing={3} sx={{ justifyContent: 'center', maxWidth: anchoMaximo(bloque, estrecha ? '1000px' : 'none'), mx: 'auto' }}>
@@ -64,7 +65,7 @@ export default function BloqueTarjetas({ bloque }: { bloque: Datos }) {
  * parte es una promesa que no se cumple, y además aparecería en la lista de
  * enlaces de quien navega con lector de pantalla.
  */
-function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Estilo; horizontal: boolean; centrada: boolean }) {
+function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEnlace; estilo: Exclude<Estilo, 'numeradas'>; horizontal: boolean; centrada: boolean }) {
   const icono = tarjeta.icono ? ICONOS[tarjeta.icono] : null
   const foto = tarjeta.foto ?? ''
   const oscura = estilo === 'granate'
@@ -126,6 +127,57 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
   return (
     <Box component={Link} to={tarjeta.enlace} sx={{ display: 'block', height: '100%', textDecoration: 'none', color: 'inherit' }}>
       {recuadro(true)}
+    </Box>
+  )
+}
+
+/** El rosa de la caridad en Nuestros fines: los números de las tarjetas numeradas. */
+const ROSA = '#fc858a'
+
+/**
+ * Tarjetas numeradas: sin recuadro, en columnas separadas por un filete fino,
+ * cada una con su número grande (01, 02…) encima del título. Una lista de lo
+ * que se hace, que se lee de izquierda a derecha. Ni foto ni icono: el número
+ * hace de icono. En el móvil, una debajo de otra con el filete arriba.
+ */
+function Numeradas({ bloque }: { bloque: Datos }) {
+  const cuantas = bloque.tarjetas.length
+  const eleccion = valorDe(bloque, 'columnas')
+  const porFila = eleccion === 'auto' ? Math.min(cuantas, 4) : Number(eleccion)
+  const centrada = valorDe(bloque, 'alineacion') === 'centro'
+  return (
+    <Box component="ol" sx={{
+      // El ancho de las dos puertas, que en Caridad van justo encima.
+      listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, '1100px'), mx: 'auto',
+      display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${porFila}, minmax(0, 1fr))` },
+    }}>
+      {bloque.tarjetas.map((tarjeta, indice) => {
+        const enlace = tarjeta.enlace && esDestinoValido(tarjeta.enlace) ? tarjeta.enlace : ''
+        const contenido = (
+          <>
+            <Typography component="span" aria-hidden sx={{ display: 'block', fontFamily: SERIF, fontSize: { xs: 38, md: 44 }, lineHeight: 1, fontWeight: 300, color: ROSA, mb: 1.5 }}>
+              {String(indice + 1).padStart(2, '0')}
+            </Typography>
+            <Typography variant="h6" component="h3" sx={{ mb: 1, color: 'text.primary' }}>{tarjeta.titulo}</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>{tarjeta.descripcion}</Typography>
+          </>
+        )
+        return (
+          <Box component="li" key={indice} sx={{
+            pt: 3.5, pb: { xs: 3.5, md: 0 }, textAlign: centrada ? 'center' : 'left',
+            borderColor: 'divider',
+            // En el móvil, un filete entre una y otra; en escritorio, entre columnas.
+            // La primera y la última de cada fila van al ras de los bordes.
+            borderTop: { xs: indice === 0 ? 0 : '1px solid', md: 0 },
+            borderLeft: { md: indice % porFila === 0 ? 0 : '1px solid' },
+            pl: { md: indice % porFila === 0 ? 0 : 3.5 }, pr: { md: indice % porFila === porFila - 1 ? 0 : 3.5 },
+          }}>
+            {enlace ? (
+              <Box component={Link} to={enlace} sx={{ display: 'block', textDecoration: 'none', color: 'inherit', '&:hover h3': { color: GOLD } }}>{contenido}</Box>
+            ) : contenido}
+          </Box>
+        )
+      })}
     </Box>
   )
 }

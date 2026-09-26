@@ -8,6 +8,7 @@ import { FormularioHorario } from './formularios/horario'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
+  FormularioPuertas,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -53,6 +54,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   horario: FormularioHorario as unknown as ComponentType<Props<never>>,
   dibujo: FormularioDibujo as unknown as ComponentType<Props<never>>,
   anillos: FormularioAnillos as unknown as ComponentType<Props<never>>,
+  puertas: FormularioPuertas as unknown as ComponentType<Props<never>>,
 }
 
 /** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
@@ -101,6 +103,11 @@ export const BLOQUE_NUEVO: Record<string, object> = {
   anillos: {
     tipo: 'anillos', titulo: '', centro: '', texto: '',
     fines: ['Culto', 'Caridad', 'Formación'].map((titulo) => ({ titulo, texto: '', boton: '', enlace: '' })),
+  },
+  // Siempre dos: nacen las dos en blanco, sin datos.
+  puertas: {
+    tipo: 'puertas', titulo: '',
+    puertas: [0, 1].map(() => ({ ceja: '', titulo: '', texto: '', datos: [], boton: '', enlace: '' })),
   },
 }
 
@@ -244,6 +251,14 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       if (sinNombre !== -1) return `tiene el fin ${sinNombre + 1} sin nombre`
       const cojo = bloque.fines.findIndex((f) => (f.boton.trim() === '') !== (f.enlace === ''))
       return cojo === -1 ? null : `tiene el botón del fin ${cojo + 1} sin texto o sin destino`
+    }
+    case 'puertas': {
+      const sinTitulo = bloque.puertas.findIndex((p) => p.titulo.trim() === '')
+      if (sinTitulo !== -1) return `tiene la puerta ${sinTitulo + 1} sin título`
+      const sinNombre = bloque.puertas.findIndex((p) => p.datos.some((d) => d.etiqueta.trim() === ''))
+      if (sinNombre !== -1) return `tiene un dato de la puerta ${sinNombre + 1} sin nombre`
+      const cojo = bloque.puertas.findIndex((p) => (p.boton.trim() === '') !== (p.enlace === ''))
+      return cojo === -1 ? null : `tiene el botón de la puerta ${cojo + 1} sin texto o sin destino`
     }
     case 'dibujo':
       if (bloque.foto && bloque.foto.url !== '' && bloque.foto.alt.trim() === '') return 'tiene la ilustración sin descripción'

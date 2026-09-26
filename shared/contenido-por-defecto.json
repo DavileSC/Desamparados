@@ -1423,7 +1423,8 @@
         "presentacion": {
           "alto": "medio",
           "estilo": "oscuro",
-          "disposicion": "lado"
+          "disposicion": "lado",
+          "ancla": "como-llegar"
         },
         "lugar": "Parroquia de Santa María Goretti",
         "direccion": "C. Corregidor Paz Guzmán, 13, 29006 Málaga",
@@ -1621,26 +1622,67 @@
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>La caridad es uno de los fines del Grupo Parroquial y, para una corporación que lleva el nombre de los <strong>Desamparados</strong>, casi una obligación. Buscamos ser signo de la misericordia de Dios con quienes viven en soledad, enfermedad o exclusión.</p><p>No lo hacemos solos: lo hacemos desde la parroquia, junto a quienes ya trabajan en el barrio, y con lo que cada hermano aporta de su tiempo y de su bolsillo.</p>"
+        "presentacion": {
+          "estilo": "entradilla",
+          "alineacion": "centro",
+          "ancho": "estrecho"
+        },
+        "html": "<p>Para una corporación que lleva el nombre de los <strong>Desamparados</strong>, la caridad es casi una obligación: ser signo de la misericordia de Dios con quienes viven en soledad, enfermedad o exclusión. Lo hacemos desde la parroquia, junto a quienes ya trabajan en el barrio, y con lo que cada hermano aporta de su tiempo y de su bolsillo.</p>"
       },
       {
-        "tipo": "cita",
+        "tipo": "puertas",
         "titulo": "",
-        "presentacion": {
-          "estilo": "franja",
-          "alineacion": "centro"
-        },
-        "texto": "Cada vez que lo hicisteis con uno de estos, mis hermanos más pequeños, conmigo lo hicisteis.",
-        "autor": "Jesús",
-        "fuente": "Evangelio según san Mateo, 25, 40"
+        "puertas": [
+          {
+            "ceja": "Si lo necesitas",
+            "titulo": "Necesito ayuda",
+            "texto": "Acude a Cáritas parroquial de Santa María Goretti. Pregunta en el despacho parroquial o escríbenos y te orientamos, con discreción y sin preguntas de más.",
+            "datos": [
+              {
+                "etiqueta": "Despacho",
+                "valor": "Martes y viernes",
+                "nota": "18:00 – 20:00",
+                "copiable": false
+              },
+              {
+                "etiqueta": "Dónde",
+                "valor": "C. Corregidor Paz Guzmán, 13",
+                "nota": "Parroquia de Santa María Goretti",
+                "copiable": false
+              }
+            ],
+            "boton": "Cómo llegar",
+            "enlace": "/parroquia-pasionistas#como-llegar"
+          },
+          {
+            "ceja": "Si puedes dar",
+            "titulo": "Quiero ayudar",
+            "texto": "No hace falta ser hermano ni tener experiencia: basta con ganas y un par de horas cuando se pueda, o con un donativo. Escríbenos y te contamos en qué andamos ahora.",
+            "datos": [
+              {
+                "etiqueta": "Tu tiempo",
+                "valor": "Voluntario",
+                "nota": "Sin experiencia previa",
+                "copiable": false
+              },
+              {
+                "etiqueta": "Donativo",
+                "valor": "",
+                "nota": "",
+                "copiable": true
+              }
+            ],
+            "boton": "Escríbenos",
+            "enlace": "/contacto"
+          }
+        ]
       },
       {
         "tipo": "tarjetas",
         "titulo": "Qué hacemos",
         "presentacion": {
-          "columnas": "2",
-          "estilo": "contorno",
-          "orientacion": "horizontal",
+          "columnas": "4",
+          "estilo": "numeradas",
           "alineacion": "izquierda"
         },
         "tarjetas": [
@@ -1671,34 +1713,15 @@
         ]
       },
       {
-        "tipo": "texto",
-        "titulo": "Voluntarios",
-        "html": "<p>La caridad del Grupo no se entiende sin los hermanos que dedican parte de su tiempo al servicio de los demás. No hace falta experiencia ni mucho tiempo: basta con ganas y un par de horas cuando se pueda.</p><p>Si quieres sumarte, escríbenos y te contamos en qué andamos ahora.</p>"
-      },
-      {
-        "tipo": "preguntas",
-        "titulo": "Preguntas frecuentes",
-        "preguntas": [
-          {
-            "pregunta": "¿Tengo que ser hermano para ayudar?",
-            "respuesta": "No. Cualquiera puede echar una mano o colaborar con un donativo. Escríbenos y te decimos cómo."
-          },
-          {
-            "pregunta": "¿Cómo hago un donativo?",
-            "respuesta": "Escríbenos desde la página de contacto y te indicamos cómo hacerlo llegar y a qué se destina."
-          },
-          {
-            "pregunta": "Necesito ayuda, ¿a quién acudo?",
-            "respuesta": "Puedes acudir a Cáritas parroquial de Santa María Goretti. Pregunta en el despacho parroquial (martes y viernes, de 18:00 a 20:00) o escríbenos y te orientamos."
-          }
-        ]
-      },
-      {
-        "tipo": "llamada",
+        "tipo": "cita",
         "titulo": "",
-        "texto": "¿Quieres echar una mano o colaborar con un donativo?",
-        "boton": "Escríbenos",
-        "enlace": "/contacto"
+        "presentacion": {
+          "estilo": "franja",
+          "alineacion": "centro"
+        },
+        "texto": "Cada vez que lo hicisteis con uno de estos, mis hermanos más pequeños, conmigo lo hicisteis.",
+        "autor": "Jesús",
+        "fuente": "Evangelio según san Mateo, 25, 40"
       }
     ]
   },

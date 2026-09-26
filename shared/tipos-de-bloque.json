@@ -24,7 +24,10 @@
     "próxima misa calculada al momento y un dibujo de líneas con texto al lado.",
     "",
     "Tres anillos (anillos), 26-09-2026: los tres fines entrelazados, con su",
-    "texto alrededor de cada anillo."
+    "texto alrededor de cada anillo.",
+    "",
+    "Dos puertas (puertas), 26-09-2026: dos paneles para dos lectores, como",
+    "«Necesito ayuda» y «Quiero ayudar» en Caridad, con sus datos y su botón."
   ],
   "tipos": [
     "texto",
@@ -49,6 +52,7 @@
     "fotoFija",
     "horario",
     "dibujo",
-    "anillos"
+    "anillos",
+    "puertas"
   ]
 }

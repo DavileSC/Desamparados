@@ -21,5 +21,6 @@
   "pasosPorBloque": 12,
   "puntosPorLinea": 4000,
   "franjasPorHorario": 12,
-  "horasPorFranja": 8
+  "horasPorFranja": 8,
+  "datosPorPuerta": 3
 }

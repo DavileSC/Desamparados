@@ -4,7 +4,7 @@
  * mapa, cuenta atrás y espacio. Aquí va solo el contenido; cómo se ven se
  * elige en la pestaña «Presentación».
  */
-import { Alert, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material'
 import topes from '../../../../../../shared/topes-contenido.json'
 import EditorTexto from '../../EditorTexto'
 import CampoImagen from '../../CampoImagen'
@@ -17,6 +17,7 @@ import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
   BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo, BloqueAnillos, FinDeAnillo,
+  BloquePuertas, Puerta,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -192,6 +193,55 @@ export function FormularioAnillos({ bloque, onCambio }: Props<BloqueAnillos>) {
       <Typography variant="caption" color="text.secondary">
         Siempre son tres: uno por anillo. Los colores están pensados para fondo oscuro: elige «Oscuro» en Presentación.
       </Typography>
+    </Stack>
+  )
+}
+
+/** Cómo se ve cada puerta, para que quien edita sepa cuál es cuál. */
+const PUERTA = ['la de la izquierda, en oro, con botón crema', 'la de la derecha, en rosa, con botón granate']
+
+export function FormularioPuertas({ bloque, onCambio }: Props<BloquePuertas>) {
+  const cambiarPuerta = (indice: number, cambios: Partial<Puerta>) =>
+    onCambio({ puertas: bloque.puertas.map((p, i) => (i === indice ? { ...p, ...cambios } : p)) as BloquePuertas['puertas'] })
+  return (
+    <Stack spacing={2}>
+      {bloque.puertas.map((puerta, i) => (
+        <Stack key={i} spacing={1.5} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          <Typography variant="subtitle2">Puerta {i + 1} ({PUERTA[i]})</Typography>
+          <TextField label="Ceja" value={puerta.ceja} size="small" fullWidth
+            onChange={(e) => cambiarPuerta(i, { ceja: e.target.value })} helperText="Opcional. Unas palabras pequeñas encima, como «Si lo necesitas»."
+            slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+          <TextField label={`Título de la puerta ${i + 1}`} value={puerta.titulo} size="small" fullWidth
+            onChange={(e) => cambiarPuerta(i, { titulo: e.target.value })} slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+          <TextField label="Texto" value={puerta.texto} size="small" fullWidth multiline minRows={2}
+            onChange={(e) => cambiarPuerta(i, { texto: e.target.value })} slotProps={{ htmlInput: { maxLength: topes.parrafo } }} />
+          <Typography variant="body2" color="text.secondary">Datos a la vista (hasta {topes.datosPorPuerta}). Uno sin valor no sale en la web.</Typography>
+          <ListaEditable elementos={puerta.datos} onCambio={(datos) => cambiarPuerta(i, { datos })} minimo={0}
+            nuevo={() => ({ etiqueta: '', valor: '', nota: '', copiable: false })} nombre="Dato" maximo={topes.datosPorPuerta}
+            pintar={(dato, cambiar, j) => (
+              <>
+                <TextField label={`Nombre del dato ${j + 1}`} value={dato.etiqueta} size="small" fullWidth
+                  onChange={(e) => cambiar({ etiqueta: e.target.value })} helperText="Como «Despacho» o «Donativo»."
+                  slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+                <TextField label="Valor" value={dato.valor} size="small" fullWidth
+                  onChange={(e) => cambiar({ valor: e.target.value })} helperText="Lo que se lee en grande. Vacío, el dato no sale."
+                  slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+                <TextField label="Nota" value={dato.nota} size="small" fullWidth
+                  onChange={(e) => cambiar({ nota: e.target.value })} helperText="Opcional. Una línea debajo, como «18:00 – 20:00»."
+                  slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+                <FormControlLabel control={<Switch checked={dato.copiable} onChange={(e) => cambiar({ copiable: e.target.checked })} />}
+                  label="Con botón para copiarlo (una cuenta, un Bizum)" />
+              </>
+            )} />
+          <TextField label="Texto del botón" value={puerta.boton} size="small" fullWidth
+            onChange={(e) => cambiarPuerta(i, { boton: e.target.value })}
+            helperText="Opcional, como «Escríbenos». Con texto, necesita a dónde llevar."
+            slotProps={{ htmlInput: { maxLength: topes.etiqueta } }} />
+          <CampoEnlace etiqueta={`Destino del botón ${i + 1}`} valor={puerta.enlace} opcional
+            onCambio={(enlace) => cambiarPuerta(i, { enlace })} ayuda="La página a la que lleva. Vacío si no hay botón." />
+        </Stack>
+      ))}
+      <Typography variant="caption" color="text.secondary">Siempre son dos, una al lado de la otra; en el móvil, una debajo de la otra.</Typography>
     </Stack>
   )
 }
