@@ -16,7 +16,7 @@ import ListaEditable from './ListaEditable'
 import type { Props } from './comunes'
 import type {
   BloqueFotoTexto, BloqueCita, BloqueVideo, BloqueBotones, BloquePreguntas,
-  BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque,
+  BloqueDescargas, BloqueMapa, BloqueCuentaAtras, BotonDeBloque, BloqueDibujo, NombreDeDibujo,
 } from '../../../../lib/api/contenido'
 
 export function FormularioFotoTexto({ bloque, onCambio }: Props<BloqueFotoTexto>) {
@@ -126,9 +126,30 @@ export function FormularioMapa({ bloque, onCambio }: Props<BloqueMapa>) {
         ayuda="Opcional, como «Parroquia de los Padres Pasionistas»." maxLength={topes.titulo} />
       <CampoTexto etiqueta="Dirección" valor={bloque.direccion} onCambio={(direccion) => onCambio({ direccion })}
         ayuda="Lo que buscarías en Google Maps: calle, número y ciudad." maxLength={topes.lugar} />
+      <CampoTexto etiqueta="Indicaciones" valor={bloque.indicaciones ?? ''} onCambio={(indicaciones) => onCambio({ indicaciones })} multilinea
+        ayuda="Opcional. Para orientarse: el barrio, la entrada. Se lucen con «Datos al lado» en Presentación." maxLength={topes.parrafo} />
       <Typography variant="caption" color="text.secondary">
         El mapa no se carga hasta que el visitante acepta las cookies o pulsa «Mostrar el mapa»: Google recibe su IP.
       </Typography>
+    </Stack>
+  )
+}
+
+/** Los dibujos que sabe trazar la web, con el nombre que lee quien edita. */
+const DIBUJOS: { valor: NombreDeDibujo; nombre: string }[] = [
+  { valor: 'templo', nombre: 'El templo de Santa María Goretti' },
+  { valor: 'signoPasionista', nombre: 'El signo pasionista' },
+]
+
+export function FormularioDibujo({ bloque, onCambio }: Props<BloqueDibujo>) {
+  return (
+    <Stack spacing={2}>
+      <TextField select label="Dibujo" value={bloque.dibujo} size="small" fullWidth
+        onChange={(e) => onCambio({ dibujo: e.target.value as NombreDeDibujo })}
+        helperText="Se dibuja solo al bajar por la página. El lado se elige en «Presentación».">
+        {DIBUJOS.map((d) => <MenuItem key={d.valor} value={d.valor}>{d.nombre}</MenuItem>)}
+      </TextField>
+      <EditorTexto valor={bloque.html} onCambio={(html) => onCambio({ html })} etiqueta="Texto al lado del dibujo" />
     </Stack>
   )
 }

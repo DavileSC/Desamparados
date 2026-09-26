@@ -1341,32 +1341,67 @@
     },
     "bloques": [
       {
-        "tipo": "texto",
-        "titulo": "",
-        "html": "<p>El Grupo Parroquial tiene su sede canónica en la <strong>Parroquia de Santa María Goretti</strong>, en la calle Corregidor Paz Guzmán, en el distrito de Cruz de Humilladero. Es una parroquia de barrio, de unos diez mil vecinos, y desde que se fundó la atiende una comunidad de <strong>Padres Pasionistas</strong>.</p><p>En ella celebramos nuestros cultos y en ella se reúne el Grupo durante el año. Aquí tienes sus horarios, cómo llegar y quiénes son los religiosos que nos acompañan.</p>"
+        "tipo": "dibujo",
+        "titulo": "Santa María Goretti",
+        "presentacion": {
+          "ladoDibujo": "derecha"
+        },
+        "dibujo": "templo",
+        "html": "<p>El Grupo Parroquial tiene su sede canónica en la <strong>Parroquia de Santa María Goretti</strong>, en la calle Corregidor Paz Guzmán, en el distrito de Cruz de Humilladero. Es una parroquia de barrio, de unos diez mil vecinos, y desde que se fundó la atiende una comunidad de <strong>Padres Pasionistas</strong>.</p><p>Su templo, del arquitecto Verdú, se terminó en 1981: una estructura triangular sin columnas, con forma de concha y lucernas circulares. En él celebramos nuestros cultos y en él se reúne el Grupo durante el año.</p>"
       },
       {
-        "tipo": "datos",
+        "tipo": "horario",
         "titulo": "Horarios y despacho",
-        "presentacion": {
-          "disposicion": "cuadricula"
-        },
-        "lineas": [
+        "misas": [
           {
-            "etiqueta": "Misas de lunes a sábado",
-            "valor": "9:30 y 19:00 (en verano, 9:30 y 20:00)"
+            "etiqueta": "Lunes a sábado",
+            "dias": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "horas": [
+              "09:30",
+              "19:00"
+            ],
+            "horasVerano": [
+              "09:30",
+              "20:00"
+            ]
           },
           {
             "etiqueta": "Domingos y festivos",
-            "valor": "10:00 y 12:00"
-          },
+            "dias": [
+              0
+            ],
+            "horas": [
+              "10:00",
+              "12:00"
+            ],
+            "horasVerano": []
+          }
+        ],
+        "despacho": [
+          {
+            "dias": [
+              2,
+              5
+            ],
+            "desde": "18:00",
+            "hasta": "20:00"
+          }
+        ],
+        "verano": {
+          "desde": "07-01",
+          "hasta": "08-31"
+        },
+        "lineas": [
           {
             "etiqueta": "Confesiones",
             "valor": "Antes de cada misa"
-          },
-          {
-            "etiqueta": "Despacho parroquial",
-            "valor": "Martes y viernes, de 18:00 a 20:00"
           },
           {
             "etiqueta": "Teléfono",
@@ -1382,15 +1417,22 @@
         "tipo": "mapa",
         "titulo": "Cómo llegar",
         "presentacion": {
-          "alto": "bajo",
-          "estilo": "oscuro"
+          "alto": "medio",
+          "estilo": "oscuro",
+          "disposicion": "lado"
         },
         "lugar": "Parroquia de Santa María Goretti",
-        "direccion": "C. Corregidor Paz Guzmán, 13, 29006 Málaga"
+        "direccion": "C. Corregidor Paz Guzmán, 13, 29006 Málaga",
+        "indicaciones": "En el barrio, en el distrito de Cruz de Humilladero."
       },
       {
-        "tipo": "texto",
+        "tipo": "dibujo",
         "titulo": "Los Pasionistas",
+        "presentacion": {
+          "fondo": "oscuro",
+          "ladoDibujo": "izquierda"
+        },
+        "dibujo": "signoPasionista",
         "html": "<p>La Congregación de la Pasión de Jesucristo, cuyos religiosos firman con las siglas C.P., la fundó <strong>San Pablo de la Cruz</strong> en Italia, en el siglo XVIII. Su carisma es mantener viva la memoria de la Pasión de Cristo y anunciarla, sobre todo a quienes sufren.</p><p>Llegaron a Málaga en 1972, cuando el obispado erigió esta parroquia y se la encomendó. Desde entonces ha sido una comunidad abierta y volcada con los jóvenes, y su trabajo ha salido de la parroquia: capellanías de colegios y del cementerio, el Teléfono de la Esperanza, ejercicios espirituales y acompañamiento espiritual.</p><p>En el barrio sostienen Cáritas parroquial y el hogar del jubilado, la catequesis de niños, jóvenes y adultos, la preparación de bautizos y bodas y grupos como la Legión de María.</p>"
       },
       {
@@ -1398,7 +1440,8 @@
         "titulo": "",
         "presentacion": {
           "estilo": "grande",
-          "alineacion": "centro"
+          "alineacion": "centro",
+          "fondo": "oscuro"
         },
         "texto": "La Pasión de Jesús es la obra más grande y maravillosa del amor de Dios.",
         "autor": "San Pablo de la Cruz",
@@ -1408,7 +1451,7 @@
         "tipo": "cronologia",
         "titulo": "La parroquia en fechas",
         "presentacion": {
-          "disposicion": "vertical"
+          "disposicion": "cinta"
         },
         "hitos": [
           {

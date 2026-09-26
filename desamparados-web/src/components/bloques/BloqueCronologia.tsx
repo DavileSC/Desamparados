@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, useMediaQuery } from '@mui/material'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { useModoEdicion } from './modoEdicion'
@@ -48,7 +48,9 @@ const TONOS = {
  * bloques con anclas repetirían ids.
  */
 export default function BloqueCronologia({ bloque, conAnclas = false }: { bloque: Datos; conAnclas?: boolean }) {
-  if (valorDe(bloque, 'disposicion') === 'horizontal') return <CronologiaHorizontal bloque={bloque} conAnclas={conAnclas} />
+  const disposicion = valorDe(bloque, 'disposicion')
+  if (disposicion === 'cinta') return <CronologiaCinta bloque={bloque} conAnclas={conAnclas} />
+  if (disposicion === 'horizontal') return <CronologiaHorizontal bloque={bloque} conAnclas={conAnclas} />
   return <CronologiaVertical bloque={bloque} conAnclas={conAnclas} />
 }
 
@@ -312,6 +314,101 @@ function CronologiaHorizontal({ bloque, conAnclas }: { bloque: Datos; conAnclas:
           </Box>
         )
       })}
+    </Box>
+  )
+}
+
+/**
+ * La cronología en cinta: al bajar por la página, la cinta se queda fija en la
+ * pantalla y los hitos pasan de derecha a izquierda, mientras un filete de oro
+ * cuenta lo recorrido. Cuando se acaba la cinta, la página sigue.
+ *
+ * En el móvil, con «reducir movimiento» o en la vista del constructor es la
+ * horizontal de siempre, que se desliza con el dedo: fijar la pantalla en un
+ * móvil se siente como si el scroll se hubiera atascado.
+ */
+function CronologiaCinta({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean }) {
+  const reducir = useReducedMotion()
+  const enConstructor = useModoEdicion() !== null
+  const escritorio = useMediaQuery('(min-width: 900px)')
+  if (reducir || enConstructor || !escritorio) return <CronologiaHorizontal bloque={bloque} conAnclas={conAnclas} />
+  return <CintaViva bloque={bloque} conAnclas={conAnclas} />
+}
+
+/** El ancho de cada hito de la cinta y el hueco entre dos. */
+const ANCHO_HITO = 360
+const HUECO_CINTA = 72
+
+function CintaViva({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean }) {
+  const tramo = useRef<HTMLDivElement>(null)
+  const fila = useRef<HTMLOListElement>(null)
+  // Lo que la cinta mide de más respecto a la ventana: es lo que tiene que
+  // desplazarse, y lo que se añade de alto al tramo para recorrerlo bajando.
+  const [sobra, setSobra] = useState(0)
+  useLayoutEffect(() => {
+    const ol = fila.current
+    if (!ol) return
+    const mide = () => setSobra(Math.max(0, ol.scrollWidth - window.innerWidth))
+    mide()
+    const observador = new ResizeObserver(mide)
+    observador.observe(ol)
+    window.addEventListener('resize', mide)
+    return () => { observador.disconnect(); window.removeEventListener('resize', mide) }
+  }, [bloque.hitos.length])
+
+  const { scrollYProgress } = useScroll({ target: tramo, offset: ['start start', 'end end'] })
+  const x = useSpring(useTransform(scrollYProgress, (v) => -v * sobra), { stiffness: 160, damping: 32, mass: 0.35 })
+  const recorrido = useSpring(scrollYProgress, { stiffness: 160, damping: 32, mass: 0.35 })
+
+  return (
+    <Box ref={tramo} sx={{ position: 'relative', height: `calc(100svh + ${sobra}px)` }}>
+      <Box sx={{
+        position: 'sticky', top: 0, height: '100svh', overflow: 'hidden',
+        // A sangre, de lado a lado de la ventana, como una franja de fondo.
+        mx: 'calc(50% - 50vw)', display: 'flex', flexDirection: 'column', justifyContent: 'center', pt: 8,
+      }}>
+        <Box
+          component={motion.ol}
+          ref={fila}
+          aria-label={bloque.titulo || 'Cronología'}
+          style={{ x }}
+          sx={{
+            listStyle: 'none', m: 0, display: 'flex', gap: `${HUECO_CINTA}px`, width: 'max-content',
+            // El primer hito arranca alineado con el contenido de la página, y el último acaba igual.
+            px: 'max(24px, calc(50vw - 560px))',
+          }}
+        >
+          {bloque.hitos.map((hito, indice) => {
+            const tono = TONOS[hito.tono] ?? null
+            return (
+              <Box component="li" key={indice} id={conAnclas ? idDeHito(indice) : undefined} sx={{ width: ANCHO_HITO, flexShrink: 0 }}>
+                <Box aria-hidden sx={{
+                  position: 'relative', height: 13, mb: 4,
+                  '&::before': { content: '""', position: 'absolute', top: 6, left: 0, right: -HUECO_CINTA, height: '1px', backgroundColor: FILETE },
+                }}>
+                  <Box sx={{ position: 'relative', width: 13, height: 13, borderRadius: '50%', boxSizing: 'border-box', border: '2px solid #cbc5c8', backgroundColor: FONDO, ...tono?.punto }} />
+                </Box>
+                <Typography component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: 88, lineHeight: 0.9, letterSpacing: '-0.03em', color: tono?.texto ?? 'text.primary' }}>
+                  {hito.periodo}
+                </Typography>
+                <Typography component="span" sx={{ ...ceja, mb: 2.5, mt: 2, letterSpacing: '0.22em' }}>{hito.etiqueta}</Typography>
+                {hito.foto.url !== '' && (
+                  <Box component="img" src={hito.foto.url} alt={hito.foto.alt} loading="lazy" decoding="async"
+                    sx={{ display: 'block', width: '100%', aspectRatio: '16 / 10', objectFit: 'cover', mb: 2.5 }} />
+                )}
+                <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.2, mb: 1.5 }}>{hito.titulo}</Typography>
+                {parrafosDe(hito.relato).map((parrafo, i) => (
+                  <Typography key={i} sx={{ color: 'text.secondary', fontSize: 16, lineHeight: 1.7, mb: 1.5, '&:last-of-type': { mb: 0 } }}>{parrafo}</Typography>
+                ))}
+              </Box>
+            )
+          })}
+        </Box>
+        {/* Lo recorrido de la cinta: un filete de oro que se llena al bajar. */}
+        <Box aria-hidden sx={{ mt: 6, mx: 'max(24px, calc(50vw - 560px))', height: '2px', backgroundColor: FILETE, overflow: 'hidden' }}>
+          <Box component={motion.div} style={{ scaleX: recorrido }} sx={{ height: '100%', transformOrigin: 'left', background: `linear-gradient(90deg, ${GOLD_SUAVE}, ${GOLD})` }} />
+        </Box>
+      </Box>
     </Box>
   )
 }

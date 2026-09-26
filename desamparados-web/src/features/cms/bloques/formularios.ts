@@ -4,9 +4,10 @@ import { FormularioFoto, FormularioGaleria } from './formularios/medios'
 import { FormularioTarjetas, FormularioDatos, FormularioItinerario } from './formularios/listas'
 import { FormularioCronologia } from './formularios/cronologia'
 import { FormularioFotoFija } from './formularios/fotoFija'
+import { FormularioHorario } from './formularios/horario'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
-  FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio,
+  FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo,
 } from './formularios/nuevos'
 import { FICHA_DE_BLOQUE } from '../constructor/etiquetas'
 import { libreDe, valorDe } from '../../../components/bloques/presentacion'
@@ -49,6 +50,8 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   cuentaAtras: FormularioCuentaAtras as unknown as ComponentType<Props<never>>,
   espacio: FormularioEspacio as unknown as ComponentType<Props<never>>,
   fotoFija: FormularioFotoFija as unknown as ComponentType<Props<never>>,
+  horario: FormularioHorario as unknown as ComponentType<Props<never>>,
+  dibujo: FormularioDibujo as unknown as ComponentType<Props<never>>,
 }
 
 /** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
@@ -84,6 +87,14 @@ export const BLOQUE_NUEVO: Record<string, object> = {
   cuentaAtras: { tipo: 'cuentaAtras', titulo: '', fecha: '', texto: '', textoFinal: '' },
   espacio: { tipo: 'espacio', titulo: '' },
   fotoFija: { tipo: 'fotoFija', titulo: '', pasos: [{ titulo: '', texto: '', foto: { url: '', alt: '', pie: '' } }] },
+  // Nace con una franja de diario ya rellena: así la vista en vivo enseña ya
+  // la próxima misa, y quien edita ve la forma antes de cambiarla.
+  horario: {
+    tipo: 'horario', titulo: '',
+    misas: [{ etiqueta: 'Lunes a sábado', dias: [1, 2, 3, 4, 5, 6], horas: ['19:00'], horasVerano: [] }],
+    despacho: [], verano: { desde: '', hasta: '' }, lineas: [],
+  },
+  dibujo: { tipo: 'dibujo', titulo: '', dibujo: 'templo', html: '' },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
@@ -208,6 +219,21 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       const sinTexto = bloque.pasos.findIndex((p) => p.texto.trim() === '')
       return sinTexto === -1 ? null : `tiene la parte ${sinTexto + 1} sin texto`
     }
+    case 'horario': {
+      const hora = /^([01]\d|2[0-3]):[0-5]\d$/
+      const sinNombre = bloque.misas.findIndex((f) => f.etiqueta.trim() === '')
+      if (sinNombre !== -1) return `tiene la franja ${sinNombre + 1} sin nombre`
+      const sinDias = bloque.misas.findIndex((f) => f.dias.length === 0)
+      if (sinDias !== -1) return `tiene la franja ${sinDias + 1} sin días`
+      const malas = bloque.misas.findIndex((f) => f.horas.length === 0 || ![...f.horas, ...f.horasVerano].every((h) => hora.test(h)))
+      if (malas !== -1) return `tiene la franja ${malas + 1} sin horas o con una hora mal escrita (usa 19:00)`
+      const turno = bloque.despacho.findIndex((t) => t.dias.length === 0 || !hora.test(t.desde) || !hora.test(t.hasta) || t.hasta <= t.desde)
+      if (turno !== -1) return `tiene el turno de despacho ${turno + 1} sin días o con las horas al revés`
+      if ((bloque.verano.desde === '') !== (bloque.verano.hasta === '')) return 'tiene el verano a medias: pon principio y fin, o ninguno'
+      return null
+    }
+    case 'dibujo':
+      return bloque.html.trim() === '' ? 'no tiene texto' : null
     case 'cuentaAtras':
       return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(bloque.fecha) ? null : 'no tiene fecha y hora'
     default:

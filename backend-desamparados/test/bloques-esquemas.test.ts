@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -278,6 +278,63 @@ describe('bloque de foto fija y texto que pasa', () => {
   test('ni vacío ni desmedido', () => {
     assert.ok(falla('fotoFija', doc([])));
     assert.ok(falla('fotoFija', doc(Array.from({ length: topes.pasosPorBloque + 1 }, () => PASO))));
+  });
+});
+
+describe('bloque de horario', () => {
+  const HORARIO = {
+    tipo: 'horario', titulo: 'Horarios',
+    misas: [
+      { etiqueta: 'Lunes a sábado', dias: [1, 2, 3, 4, 5, 6], horas: ['09:30', '19:00'], horasVerano: ['09:30', '20:00'] },
+      { etiqueta: 'Domingos y festivos', dias: [0], horas: ['10:00', '12:00'], horasVerano: [] },
+    ],
+    despacho: [{ dias: [2, 5], desde: '18:00', hasta: '20:00' }],
+    verano: { desde: '07-01', hasta: '08-31' },
+    lineas: [{ etiqueta: 'Teléfono', valor: '952 331 203' }],
+  };
+
+  test('acepta misas, despacho, verano y líneas', () => {
+    assert.ok(!falla('horario', HORARIO));
+    assert.ok(!falla('horario', { ...HORARIO, despacho: [], lineas: [], verano: { desde: '', hasta: '' } }), 'despacho, líneas y verano son opcionales');
+  });
+
+  test('las horas y los días tienen que ser de verdad', () => {
+    const franja = HORARIO.misas[0];
+    assert.ok(falla('horario', { ...HORARIO, misas: [{ ...franja, horas: ['19h'] }] }));
+    assert.ok(falla('horario', { ...HORARIO, misas: [{ ...franja, horas: [''] }] }), 'aquí la hora no puede ir vacía');
+    assert.ok(falla('horario', { ...HORARIO, misas: [{ ...franja, horas: [] }] }));
+    assert.ok(falla('horario', { ...HORARIO, misas: [{ ...franja, dias: [7] }] }));
+    assert.ok(falla('horario', { ...HORARIO, misas: [{ ...franja, dias: [] }] }));
+    assert.ok(falla('horario', { ...HORARIO, misas: [{ ...franja, etiqueta: ' ' }] }));
+  });
+
+  test('el despacho cierra después de abrir y el verano va entero', () => {
+    assert.ok(falla('horario', { ...HORARIO, despacho: [{ dias: [2], desde: '20:00', hasta: '18:00' }] }));
+    assert.ok(falla('horario', { ...HORARIO, verano: { desde: '07-01', hasta: '' } }));
+    assert.ok(falla('horario', { ...HORARIO, verano: { desde: '13-01', hasta: '08-31' } }));
+  });
+});
+
+describe('bloque de dibujo', () => {
+  const DIBUJO = { tipo: 'dibujo', titulo: 'El templo', dibujo: 'templo', html: '<p>Una iglesia sin columnas.</p>' };
+
+  test('acepta los dibujos de la lista', () => {
+    assert.ok(!falla('dibujo', DIBUJO));
+    assert.ok(!falla('dibujo', { ...DIBUJO, dibujo: 'signoPasionista' }));
+  });
+
+  test('ni dibujos inventados ni texto vacío', () => {
+    assert.ok(falla('dibujo', { ...DIBUJO, dibujo: 'catedral' }));
+    assert.ok(falla('dibujo', { ...DIBUJO, html: '   ' }));
+  });
+});
+
+describe('bloque de mapa', () => {
+  test('las indicaciones son opcionales y en texto plano', () => {
+    const MAPA = { tipo: 'mapa', titulo: '', lugar: 'Parroquia', direccion: 'C. Corregidor Paz Guzmán, 13, Málaga' };
+    assert.ok(!falla('mapa', MAPA));
+    assert.ok(!falla('mapa', { ...MAPA, indicaciones: 'En Cruz de Humilladero.' }));
+    assert.ok(falla('mapa', { ...MAPA, indicaciones: '<b>No</b>' }));
   });
 });
 

@@ -19,5 +19,7 @@
   "ancla": 40,
   "puntosPorTrazado": 400,
   "pasosPorBloque": 12,
-  "puntosPorLinea": 4000
+  "puntosPorLinea": 4000,
+  "franjasPorHorario": 12,
+  "horasPorFranja": 8
 }

@@ -152,8 +152,8 @@ function sanearBloque(bloque: unknown): unknown {
   if (typeof bloque !== 'object' || bloque === null) return bloque;
   const { tipo, html, medios, url } = bloque as { tipo?: unknown; html?: unknown; medios?: unknown; url?: unknown };
 
-  // La foto con texto lleva el mismo HTML con formato que el bloque de texto.
-  if ((tipo === 'texto' || tipo === 'fotoTexto') && typeof html === 'string') {
+  // La foto con texto y el dibujo llevan el mismo HTML con formato que el bloque de texto.
+  if ((tipo === 'texto' || tipo === 'fotoTexto' || tipo === 'dibujo') && typeof html === 'string') {
     return { ...bloque, html: sanearContenidoCms(html) };
   }
   if (tipo === 'galeria' && Array.isArray(medios)) {

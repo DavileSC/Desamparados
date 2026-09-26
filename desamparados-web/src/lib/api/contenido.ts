@@ -164,13 +164,31 @@ export interface PreguntaFrecuente { pregunta: string; respuesta: string }
 export interface BloquePreguntas extends BloqueBase { tipo: 'preguntas'; preguntas: PreguntaFrecuente[] }
 export interface ArchivoDescarga { titulo: string; descripcion: string; url: string }
 export interface BloqueDescargas extends BloqueBase { tipo: 'descargas'; archivos: ArchivoDescarga[] }
-export interface BloqueMapa extends BloqueBase { tipo: 'mapa'; lugar: string; direccion: string }
+/** `indicaciones`: unas líneas para orientarse junto a la dirección (el barrio, la entrada). */
+export interface BloqueMapa extends BloqueBase { tipo: 'mapa'; lugar: string; direccion: string; indicaciones?: string }
 /** `fecha` es AAAA-MM-DDTHH:mm en hora de Madrid. */
 export interface BloqueCuentaAtras extends BloqueBase { tipo: 'cuentaAtras'; fecha: string; texto: string; textoFinal: string }
 export interface BloqueEspacio extends BloqueBase { tipo: 'espacio' }
 /** Una parte de «foto fija y texto que pasa»: su texto y la foto que se ve mientras se lee. */
 export interface PasoFotoFija { titulo: string; texto: string; foto: { url: string; alt: string; pie: string } }
 export interface BloqueFotoFija extends BloqueBase { tipo: 'fotoFija'; pasos: PasoFotoFija[] }
+/**
+ * Una franja de misas: qué días (0 domingo … 6 sábado) y a qué horas (HH:mm).
+ * `horasVerano` vacías: en verano valen las de siempre.
+ */
+export interface FranjaDeMisas { etiqueta: string; dias: number[]; horas: string[]; horasVerano: string[] }
+export interface TurnoDeDespacho { dias: number[]; desde: string; hasta: string }
+/** El verano, de un día del año a otro (MM-DD); vacío, no hay horario de verano. */
+export interface BloqueHorario extends BloqueBase {
+  tipo: 'horario'
+  misas: FranjaDeMisas[]
+  despacho: TurnoDeDespacho[]
+  verano: { desde: string; hasta: string }
+  lineas: LineaDatos[]
+}
+/** Los dibujos que sabe trazar la web: lista cerrada, la misma que valida el servidor. */
+export type NombreDeDibujo = 'templo' | 'signoPasionista'
+export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string }
 
 export type Bloque =
   | BloqueTexto
@@ -193,6 +211,8 @@ export type Bloque =
   | BloqueCuentaAtras
   | BloqueEspacio
   | BloqueFotoFija
+  | BloqueHorario
+  | BloqueDibujo
 
 /** `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. */
 export interface CabeceraPagina { ceja?: string; titulo: string; subtitulo: string; foto: string; fotoAlt: string }

@@ -464,6 +464,9 @@ const mapaSchema = type({
   tipo: "'mapa'",
   lugar: TITULO,
   direccion: texto(topes.lugar),
+  // Opcional, llegó con la disposición «al lado» (26-09-2026): unas líneas
+  // para orientarse (el barrio, la entrada) junto a la dirección.
+  'indicaciones?': PARRAFO,
 }).narrow((datos, ctx) => enBlanco(datos.direccion)
   ? ctx.reject({ path: ['direccion'], problem: 'no puede quedar en blanco: es lo que se busca en el mapa' })
   : true);
@@ -487,6 +490,72 @@ const cuentaAtrasSchema = type({
     ? true
     : ctx.reject({ path: ['fecha'], problem: 'no es una fecha del calendario' });
 });
+
+/**
+ * Horario vivo: las misas y el despacho de la parroquia, con los que la web
+ * calcula a qué hora es la próxima misa y si el despacho está abierto ahora.
+ *
+ * Los días van de 0 (domingo) a 6 (sábado), como `Date.getDay()`. Cada franja
+ * de misas lleva sus horas y, si cambian en verano, las de verano; vacías,
+ * valen las de siempre. El verano va de un día del año a otro (MM-DD) y
+ * puede cruzar el año; sin fechas no hay horario de verano.
+ */
+const diaDeLaSemana = type('0 <= number.integer <= 6');
+const diasSchema = diaDeLaSemana.array().atLeastLength(1).atMostLength(7);
+const DIA_DEL_ANIO = /^$|^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+/** Aquí la hora no puede ir vacía, al revés que en el itinerario: es para lo que está el bloque. */
+const horaFija = type('string').matching(/^([01]\d|2[0-3]):[0-5]\d$/).describe('una hora en formato 24 h, como 19:00');
+
+const franjaDeMisasSchema = type({
+  etiqueta: ETIQUETA,
+  dias: diasSchema,
+  horas: horaFija.array().atLeastLength(1).atMostLength(topes.horasPorFranja),
+  horasVerano: horaFija.array().atMostLength(topes.horasPorFranja),
+});
+
+const turnoDeDespachoSchema = type({ dias: diasSchema, desde: horaFija, hasta: horaFija });
+
+const horarioSchema = type({
+  ...comunes,
+  tipo: "'horario'",
+  misas: franjaDeMisasSchema.array().atLeastLength(1).atMostLength(topes.franjasPorHorario),
+  despacho: turnoDeDespachoSchema.array().atMostLength(topes.franjasPorHorario),
+  verano: {
+    desde: type('string').matching(DIA_DEL_ANIO).describe('un día del año, como 07-01'),
+    hasta: type('string').matching(DIA_DEL_ANIO).describe('un día del año, como 08-31'),
+  },
+  lineas: lineaDatosSchema.array().atMostLength(topes.lineasPorBloque),
+}).narrow((datos, ctx) => {
+  const sinNombre = datos.misas.findIndex((franja) => enBlanco(franja.etiqueta));
+  if (sinNombre !== -1) return ctx.reject({ path: ['misas', sinNombre, 'etiqueta'], problem: 'no puede quedar en blanco: dice qué días son' });
+  // Un turno que acaba antes de empezar nunca estaría abierto.
+  const alReves = datos.despacho.findIndex((turno) => turno.hasta <= turno.desde);
+  if (alReves !== -1) return ctx.reject({ path: ['despacho', alReves, 'hasta'], problem: 'tiene que ser después de la hora de apertura' });
+  // El verano va entero o no va: con una sola fecha no se sabe cuándo acaba.
+  if ((datos.verano.desde === '') !== (datos.verano.hasta === '')) {
+    return ctx.reject({ path: ['verano', datos.verano.desde === '' ? 'desde' : 'hasta'], problem: 'falta: el verano necesita principio y fin' });
+  }
+  const sinEtiqueta = datos.lineas.findIndex((linea) => enBlanco(linea.etiqueta));
+  if (sinEtiqueta !== -1) return ctx.reject({ path: ['lineas', sinEtiqueta, 'etiqueta'], problem: 'no puede quedar en blanco' });
+  return true;
+});
+
+/**
+ * Un dibujo de líneas que se traza al bajar por la página, con un texto al
+ * lado. Los dibujos son de una lista cerrada, hechos en código: el templo de
+ * Santa María Goretti y el signo pasionista. El texto es HTML con formato,
+ * saneado antes de validar como el del bloque de texto.
+ */
+export const DIBUJOS = ['templo', 'signoPasionista'] as const;
+
+const dibujoSchema = type({
+  ...comunes,
+  tipo: "'dibujo'",
+  dibujo: type.enumerated(...DIBUJOS),
+  html: type(`1 <= string <= ${topes.html}`),
+}).narrow((datos, ctx) => enBlanco(datos.html)
+  ? ctx.reject({ path: ['html'], problem: 'no puede quedar en blanco' })
+  : true);
 
 /** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
 const espacioSchema = type({
@@ -515,6 +584,8 @@ const POR_TIPO = {
   cuentaAtras: cuentaAtrasSchema,
   espacio: espacioSchema,
   fotoFija: fotoFijaSchema,
+  horario: horarioSchema,
+  dibujo: dibujoSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

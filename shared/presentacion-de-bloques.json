@@ -204,7 +204,8 @@
       "disposicion": {
         "valores": [
           "vertical",
-          "horizontal"
+          "horizontal",
+          "cinta"
         ]
       }
     },
@@ -343,6 +344,12 @@
           "oscuro",
           "natural"
         ]
+      },
+      "disposicion": {
+        "valores": [
+          "debajo",
+          "lado"
+        ]
       }
     },
     "cuentaAtras": {
@@ -368,6 +375,14 @@
     },
     "fotoFija": {
       "lado": {
+        "valores": [
+          "izquierda",
+          "derecha"
+        ]
+      }
+    },
+    "dibujo": {
+      "ladoDibujo": {
         "valores": [
           "izquierda",
           "derecha"

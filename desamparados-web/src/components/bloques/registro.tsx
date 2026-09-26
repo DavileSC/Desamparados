@@ -19,6 +19,8 @@ import BloqueMapa from './BloqueMapa'
 import BloqueCuentaAtras from './BloqueCuentaAtras'
 import BloqueEspacio from './BloqueEspacio'
 import BloqueFotoFija from './BloqueFotoFija'
+import BloqueHorario from './BloqueHorario'
+import BloqueDibujo from './BloqueDibujo'
 import type { Bloque } from '../../lib/api/contenido'
 
 /**
@@ -50,6 +52,8 @@ export const REGISTRO_BLOQUES: Record<string, ComponentType<{ bloque: never }>> 
   cuentaAtras: BloqueCuentaAtras as ComponentType<{ bloque: never }>,
   espacio: BloqueEspacio as ComponentType<{ bloque: never }>,
   fotoFija: BloqueFotoFija as ComponentType<{ bloque: never }>,
+  horario: BloqueHorario as ComponentType<{ bloque: never }>,
+  dibujo: BloqueDibujo as ComponentType<{ bloque: never }>,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]
@@ -57,8 +61,9 @@ export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.ti
 /**
  * Los bloques que pintan su propio título. El listado lo necesita porque sus
  * versiones cortas llevan al lado el enlace al listado entero («Ver todas las
- * noticias»), que va dentro del mismo encabezado.
+ * noticias»), que va dentro del mismo encabezado. El dibujo lo pone en la
+ * columna del texto, al lado del dibujo y no encima de los dos.
  */
-const CON_TITULO_PROPIO = new Set(['listado'])
+const CON_TITULO_PROPIO = new Set(['listado', 'dibujo'])
 
 export const pintaSuTitulo = (bloque: Bloque) => CON_TITULO_PROPIO.has(bloque.tipo)

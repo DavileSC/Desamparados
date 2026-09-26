@@ -36,6 +36,8 @@ const DIBUJOS: Record<string, ReactNode> = {
   tarjetas: <>{[10, 44, 78].map((x) => <g key={x}>{caja(x, 12, 32, 48, 0.12)}{raya(x + 4, 20, 18, 0.6)}{raya(x + 4, 30, 24)}{raya(x + 4, 37, 20)}</g>)}</>,
   llamada: <>{caja(14, 12, 92, 48, 0.08)}<rect x={14} y={12} width={92} height={48} rx={3} fill="none" stroke={A} strokeOpacity={0.4} />{raya(30, 24, 60)}{raya(36, 32, 48)}{boton(46, 44, 28)}</>,
   botones: <>{boton(16, 32, 26)}{boton(47, 32, 26, false)}{boton(78, 32, 26, false)}</>,
+  horario: <>{caja(14, 8, 92, 22, 0.12)}<circle cx={21} cy={15} r={2} fill={A} opacity={0.7} />{raya(26, 13, 24, 0.4)}<text x={20} y={27} fontSize={9} fill={A} opacity={0.65} fontFamily="serif">Hoy, 19:00</text>{[38, 48, 58].map((y) => <g key={y}>{raya(14, y, 26, 0.45)}<rect x={44} y={y + 2} width={40} height={0.8} fill={A} opacity={0.3} />{raya(88, y, 18, 0.55)}</g>)}</>,
+  dibujo: <><path d="M14 60 H56 M18 60 C28 52 34 34 35 14 C36 34 42 52 52 60 M35 14 Q30 40 24 60 M35 14 Q40 40 46 60 M35 14 V6 M31 9 H39" stroke={A} strokeWidth={1.3} fill="none" opacity={0.6} />{raya(66, 18, 36, 0.6)}{raya(66, 28, 40)}{raya(66, 36, 42)}{raya(66, 44, 30)}</>,
   espacio: <><path d="M60 14 v12 M55 20 l5 -6 l5 6 M60 58 v-12 M55 52 l5 6 l5 -6" stroke={A} strokeWidth={1.5} fill="none" opacity={0.5} /><rect x={20} y={35} width={80} height={1} fill={A} opacity={0.35} /></>,
   datos: <>{[14, 26, 38, 50].map((y) => <g key={y}>{raya(14, y, 28, 0.6)}{raya(50, y, 54)}</g>)}</>,
   itinerario: <><rect x={31} y={12} width={1.5} height={48} fill={A} opacity={0.3} />{[14, 30, 46].map((y) => <g key={y}>{raya(10, y, 14, 0.6)}<circle cx={32} cy={y + 1.5} r={3} fill="none" stroke={A} strokeWidth={1.4} opacity={0.6} />{raya(42, y, 56)}</g>)}</>,

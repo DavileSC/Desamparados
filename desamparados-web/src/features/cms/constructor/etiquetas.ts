@@ -31,6 +31,7 @@ export const ETIQUETA_OPCION: Record<string, string> = {
   abrirPrimera: 'La primera, abierta al entrar',
   alto: 'Alto',
   linea: 'Con una línea fina en medio',
+  ladoDibujo: 'Dibujo a la',
 }
 
 /** El nombre de cada valor, cuando no se lee bien tal cual. */
@@ -47,7 +48,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   auto: 'Automático', cristal: 'Cristal', contorno: 'Contorno',
   vertical: 'Vertical', horizontal: 'Horizontal',
   recuadro: 'Recuadro', franja: 'Franja', sencilla: 'Sencilla',
-  lista: 'Lista', tabla: 'Tabla', tarjetas: 'Tarjetas', linea: 'Línea', plano: 'Sobre el mapa',
+  lista: 'Lista', tabla: 'Tabla', tarjetas: 'Tarjetas', linea: 'Línea', plano: 'Sobre el mapa', cinta: 'Cinta que pasa al bajar',
   lado: 'Datos al lado', debajo: 'Datos debajo', solo: 'Solo el formulario',
   mitad: 'La mitad', tercio: 'Un tercio', arriba: 'Arriba',
   clasica: 'Clásica', lineas: 'Líneas',
@@ -87,6 +88,8 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   cronologia: { nombre: 'Cronología', grupo: 'Información', descripcion: 'Momentos de una historia en orden, con fecha y relato.' },
   descargas: { nombre: 'Descargas', grupo: 'Información', descripcion: 'Documentos en PDF para descargar.' },
   mapa: { nombre: 'Mapa', grupo: 'Información', descripcion: 'Un lugar en el mapa, con el enlace para llegar.' },
+  horario: { nombre: 'Horario vivo', grupo: 'Información', descripcion: 'Misas y despacho, con la próxima misa y cuánto falta, calculado al momento.' },
+  dibujo: { nombre: 'Dibujo con texto', grupo: 'Imagen y vídeo', descripcion: 'El templo o el signo pasionista, que se dibujan al bajar, con un texto al lado.' },
   cuentaAtras: { nombre: 'Cuenta atrás', grupo: 'Información', descripcion: 'Días, horas y minutos que faltan para una fecha.' },
   listado: { nombre: 'Listado', grupo: 'Automáticos', descripcion: 'Noticias, actos o publicaciones, que salen solos de otras pantallas.' },
   contacto: { nombre: 'Formulario de contacto', grupo: 'Automáticos', descripcion: 'El formulario que llega por correo, con los datos al lado.' },
