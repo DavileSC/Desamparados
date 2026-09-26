@@ -1,11 +1,11 @@
 import { Button, type ButtonProps } from '@mui/material'
 import { forwardRef } from 'react'
-import { ESMALTE } from './esmalte'
+import { BOTON } from './estiloDeBoton'
 
 interface BotonProps extends Omit<ButtonProps, 'variant'> {
   /**
-   * El esmalte del botón (ver `esmalte.ts`): `primary` granate; `claro` crema,
-   * para la segunda acción de una sección; `outline` oscuro y discreto, para
+   * El estilo del botón (ver `estiloDeBoton.ts`): `primary` granate; `claro`
+   * con filete dorado, para la segunda acción de una sección; `outline` discreto, para
    * las acciones secundarias de un formulario. `secondary` queda como `claro`.
    */
   appVariant?: 'primary' | 'secondary' | 'outline' | 'claro'
@@ -13,11 +13,11 @@ interface BotonProps extends Omit<ButtonProps, 'variant'> {
   to?: string
 }
 
-const ESMALTE_DE = {
-  primary: ESMALTE.principal,
-  secondary: ESMALTE.claro,
-  claro: ESMALTE.claro,
-  outline: ESMALTE.oscuro,
+const ESTILO_DE = {
+  primary: BOTON.principal,
+  secondary: BOTON.claro,
+  claro: BOTON.claro,
+  outline: BOTON.oscuro,
 } as const
 
 const Boton = forwardRef<HTMLButtonElement, BotonProps>(
@@ -26,7 +26,7 @@ const Boton = forwardRef<HTMLButtonElement, BotonProps>(
       ref={ref}
       variant="contained"
       disableElevation
-      sx={[ESMALTE_DE[appVariant], ...(Array.isArray(sx) ? sx : [sx])]}
+      sx={[ESTILO_DE[appVariant], ...(Array.isArray(sx) ? sx : [sx])]}
       {...props}
     />
   )

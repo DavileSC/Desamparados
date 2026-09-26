@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material'
-import { enlaceEsmalte } from './esmalte'
+import { enlaceConFlecha } from './estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 
 interface TituloDeSeccionProps {
@@ -36,7 +36,7 @@ export default function TituloDeSeccion({
         {title}
       </Typography>
       {actionLabel && (
-        <Box component="a" href={actionHref} sx={{ ...enlaceEsmalte, flexShrink: 0 }}>
+        <Box component="a" href={actionHref} sx={{ ...enlaceConFlecha, flexShrink: 0 }}>
           {actionLabel} <ArrowForwardIcon aria-hidden />
         </Box>
       )}

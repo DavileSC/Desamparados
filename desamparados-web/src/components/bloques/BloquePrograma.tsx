@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { eventosDelCalendario } from '../../lib/api/agenda'
 import { esDestinoValido } from '../../lib/destinos'
-import { enlaceEsmalte } from '../esmalte'
+import { enlaceConFlecha } from '../estiloDeBoton'
 import { anchoMaximo } from './presentacion'
 import { cursoDe, fechaDelActo, proximaFila } from './programa'
 import type { BloquePrograma as Datos, FilaDePrograma } from '../../lib/api/contenido'
@@ -83,7 +83,7 @@ function Fila({ fila, proximo, fecha }: { fila: FilaDePrograma; proximo: boolean
           </>
         )}
         {conBoton && (
-          <Box component={Link} to={fila.enlace} sx={enlaceEsmalte}>
+          <Box component={Link} to={fila.enlace} sx={enlaceConFlecha}>
             {fila.boton} <ArrowForwardIcon aria-hidden />
           </Box>
         )}

@@ -6,10 +6,10 @@ import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
 import { useReducedMotion } from 'framer-motion'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { imagenDe } from './formato'
-import { ESMALTE } from '../esmalte'
+import { BOTON } from '../estiloDeBoton'
 
-/** Los botones del pie de las estampas: esmalte oscuro, algo más bajos. */
-const BOTON_ESTAMPA = { ...ESMALTE.oscuro, minHeight: 40, px: 2, fontSize: 14 } as const
+/** Los botones del pie de las estampas: el estilo discreto, algo más bajos. */
+const BOTON_ESTAMPA = { ...BOTON.oscuro, minHeight: 40, px: 2, fontSize: 14 } as const
 
 /** El giro de cada estampa del pila, siempre el mismo para la misma foto. */
 const GIROS = [-2, 4, -5, 3, -3, 6, -4, 2]

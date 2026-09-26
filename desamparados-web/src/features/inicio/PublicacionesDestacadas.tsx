@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material'
-import { ESMALTE } from '../../components/esmalte'
+import { BOTON } from '../../components/estiloDeBoton'
 import { Link } from 'react-router-dom'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
@@ -233,7 +233,7 @@ export default function PublicacionesDestacadas() {
                       href={destacada.archivoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={ESMALTE.claro}
+                      sx={BOTON.claro}
                     >
                       <FileDownloadOutlinedIcon sx={{ fontSize: 20 }} />
                       Descargar {CATEGORIAS[destacada.categoria].corto}
@@ -243,7 +243,7 @@ export default function PublicacionesDestacadas() {
                   <Box
                     component={Link}
                     to="/publicaciones"
-                    sx={ESMALTE.oscuro}
+                    sx={BOTON.oscuro}
                   >
                     {textos.publicaciones.boton}
                   </Box>

@@ -198,7 +198,7 @@ export function FormularioAnillos({ bloque, onCambio }: Props<BloqueAnillos>) {
 }
 
 /** Cómo se ve cada puerta, para que quien edita sepa cuál es cuál. */
-const PUERTA = ['la de la izquierda, en oro, con botón crema', 'la de la derecha, en rosa, con botón granate']
+const PUERTA = ['la de la izquierda, en oro, con botón de filete dorado', 'la de la derecha, en rosa, con botón granate']
 
 export function FormularioPuertas({ bloque, onCambio }: Props<BloquePuertas>) {
   const cambiarPuerta = (indice: number, cambios: Partial<Puerta>) =>

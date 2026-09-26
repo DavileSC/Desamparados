@@ -11,7 +11,7 @@ import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, 
 import { useAuthStore } from './store'
 import { login as apiLogin, verify2FA, type LoginResponse } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
-import { enlaceEsmalte } from '../../../components/esmalte'
+import { enlaceConFlecha } from '../../../components/estiloDeBoton'
 
 function errorMessage(e: unknown, fallback: string) {
   return e instanceof ErrorDeApi ? e.message : fallback
@@ -118,7 +118,7 @@ export default function AccesoPage() {
               <Button
                 type="button"
                 onClick={() => setPending2FA(null)}
-                sx={{ ...enlaceEsmalte, color: 'text.secondary', alignSelf: 'center' }}
+                sx={{ ...enlaceConFlecha, color: 'text.secondary', alignSelf: 'center' }}
               >
                 Volver
               </Button>

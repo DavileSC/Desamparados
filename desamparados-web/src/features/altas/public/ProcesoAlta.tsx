@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { site } from '../../../config/site'
 import { GOLD, SERIF } from '../../inicio/estilos'
-import { enlaceEsmalte } from '../../../components/esmalte'
+import { enlaceConFlecha } from '../../../components/estiloDeBoton'
 
-/** Enlaces del lateral: el enlace esmalte, en blanco con la flecha dorada. */
-const enlaceLateral = { ...enlaceEsmalte, color: '#fff', fontSize: 14, '& svg': { ...enlaceEsmalte['& svg'], fontSize: 16, color: GOLD }, '&:hover': { color: GOLD } } as const
+/** Enlaces del lateral: el enlace con flecha, en blanco con la flecha dorada. */
+const enlaceLateral = { ...enlaceConFlecha, color: '#fff', fontSize: 14, '& svg': { ...enlaceConFlecha['& svg'], fontSize: 16, color: GOLD }, '&:hover': { color: GOLD } } as const
 
 /**
  * Qué pasa cuando la solicitud ya ha entrado. Es lo que hace el servidor

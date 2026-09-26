@@ -9,7 +9,7 @@ import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import PlayCircleOutlinedIcon from '@mui/icons-material/PlayCircleOutlined'
-import { ESMALTE } from '../../components/esmalte'
+import { BOTON } from '../../components/estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
 import { site } from '../../config/site'
@@ -69,6 +69,8 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
         '@media (hover: hover)': {
           '&:hover': { backgroundColor: '#7a1c27' },
           '&:hover .placa-boton svg': { transform: 'translateX(4px)' },
+          // Toda la placa es el enlace: pasar por ella pone el botón en blanco, como si se pasara por él.
+          '&:hover .placa-boton': { backgroundColor: '#ffffff', color: '#1b1c1a', boxShadow: 'inset 0 0 0 1px #ffffff' },
         },
       }}
     >
@@ -110,12 +112,12 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
         id={`${id}-boton`}
         className="placa-boton"
         sx={{
-          ...ESMALTE.claro,
+          ...BOTON.claro,
           position: 'relative',
           mt: { md: 'auto' },
           alignSelf: { xs: 'stretch', md: 'flex-start' },
           px: 2.75,
-          '& svg': { fontSize: 18, color: GRANATE, transition: 'transform .25s ease' },
+          '& svg': { fontSize: 18, color: 'currentColor', transition: 'transform .25s ease' },
         }}
       >
         {placa.boton} <ArrowForwardIcon aria-hidden="true" />

@@ -1,4 +1,4 @@
-import { enlaceEsmalte } from '../../components/esmalte'
+import { enlaceConFlecha } from '../../components/estiloDeBoton'
 import { designTokens } from '../../theme'
 /**
  * Colores y estilos compartidos por los bloques de la portada: el ritmo es
@@ -23,8 +23,8 @@ export const ceja = {
 } as const
 
 /**
- * Enlace de bloque: el enlace esmalte (components/esmalte.ts), en minúsculas
+ * Enlace de bloque: el enlace con flecha (components/estiloDeBoton.ts), en minúsculas
  * y con la flecha dorada. Antes iba en mayúsculas espaciadas con subrayado
  * dorado, que se parecía demasiado al de otra cofradía.
  */
-export const enlaceBloque = enlaceEsmalte
+export const enlaceBloque = enlaceConFlecha

@@ -1,6 +1,6 @@
 import { Box, Button, Skeleton, Typography } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import { enlaceEsmalte } from '../../components/esmalte'
+import { enlaceConFlecha } from '../../components/estiloDeBoton'
 
 interface AvisosDeInicioProps {
   loading: boolean
@@ -35,7 +35,7 @@ export default function AvisosDeInicio({ loading, error, empty, label, emptyMess
       <Typography sx={{ fontSize: 15, color: claro ? '#4a454a' : 'text.secondary' }}>
         {error ? `No se ha podido cargar ${label}. Inténtalo de nuevo en unos instantes.` : emptyMessage}
       </Typography>
-      {error && <Button onClick={retry} startIcon={<RefreshIcon />} sx={{ ...enlaceEsmalte, mt: 1.5, px: 0, color: claro ? '#6e1822' : 'secondary.main', '& svg': { fontSize: 18 } }}>Volver a intentar</Button>}
+      {error && <Button onClick={retry} startIcon={<RefreshIcon />} sx={{ ...enlaceConFlecha, mt: 1.5, px: 0, color: claro ? '#6e1822' : 'secondary.main', '& svg': { fontSize: 18 } }}>Volver a intentar</Button>}
     </Box>
   )
 }

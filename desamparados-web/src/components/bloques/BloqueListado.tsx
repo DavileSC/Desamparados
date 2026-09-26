@@ -15,7 +15,7 @@ import { usePublicacionesPaginadas } from '../../features/publicaciones/usePubli
 import type { Acto, Noticia } from '../../types'
 import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/contenido'
 import { valorDe } from './presentacion'
-import { enlaceEsmalte } from '../esmalte'
+import { enlaceConFlecha } from '../estiloDeBoton'
 
 /**
  * Lo que el Grupo Parroquial publica desde otras pantallas del CMS —noticias,
@@ -90,7 +90,7 @@ function Encabezado({ titulo, enlace }: { titulo: string; enlace?: { texto: stri
   if (!enlace) return null
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-      <Box component={Link} to={enlace.ruta} sx={enlaceEsmalte}>
+      <Box component={Link} to={enlace.ruta} sx={enlaceConFlecha}>
         {enlace.texto} <ArrowForwardIcon aria-hidden />
       </Box>
     </Box>

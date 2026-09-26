@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material'
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import { enlaceEsmalte } from '../../components/esmalte'
+import { enlaceConFlecha } from '../../components/estiloDeBoton'
 import Boton from '../../components/Boton'
 import { Revela } from '../../components/SeccionAnimada'
 import { CURVA_ENTRADA } from '../../components/entrada'
@@ -218,7 +218,7 @@ export default function Hero() {
               {textos.hero.botonPrincipal}
             </Boton>
             {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta. */}
-            <Box component={Link} to="/agenda" sx={{ ...enlaceEsmalte, color: '#e4e2df' }}>
+            <Box component={Link} to="/agenda" sx={{ ...enlaceConFlecha, color: '#e4e2df' }}>
               {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
             </Box>
           </Box>

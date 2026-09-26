@@ -3,7 +3,7 @@ import { Alert, Box, ButtonBase, CircularProgress, Collapse, Typography } from '
 import { agendaPublica, urlDeLaSuscripcion, type ApiEvent } from '../../../lib/api/agenda'
 import { GOLD } from '../../inicio/estilos'
 import CalendarioDeCultos from './CalendarioDeCultos'
-import { ESMALTE, enlaceEsmalte } from '../../../components/esmalte'
+import { BOTON, enlaceConFlecha } from '../../../components/estiloDeBoton'
 
 /**
  * La Agenda pública: lo que viene, de una vez y sin paginar, en un calendario
@@ -47,11 +47,11 @@ function Suscripcion() {
   const copiar = () => {
     navigator.clipboard?.writeText(https).then(() => setCopiado(true), () => setCopiado(false))
   }
-  // Enlaces esmalte: en minúsculas y sin subrayar, en oro sobre el fondo de la Agenda.
-  const enlace = { ...enlaceEsmalte, color: GOLD, fontSize: 14.5, minHeight: 40, fontFamily: 'inherit', '&:hover': { color: '#ffffff' } } as const
+  // Enlaces con flecha: en minúsculas y sin subrayar, en oro sobre el fondo de la Agenda.
+  const enlace = { ...enlaceConFlecha, color: GOLD, fontSize: 14.5, minHeight: 40, fontFamily: 'inherit', '&:hover': { color: '#ffffff' } } as const
   return (
     <Box sx={{ mt: 4, textAlign: 'center' }}>
-      <ButtonBase onClick={() => setAbierta((a) => !a)} aria-expanded={abierta} aria-controls="suscripcion-agenda" sx={{ ...ESMALTE.oscuro, fontFamily: 'inherit' }}>
+      <ButtonBase onClick={() => setAbierta((a) => !a)} aria-expanded={abierta} aria-controls="suscripcion-agenda" sx={{ ...BOTON.oscuro, fontFamily: 'inherit' }}>
         Suscribirse a la agenda
       </ButtonBase>
       <Collapse in={abierta} id="suscripcion-agenda">

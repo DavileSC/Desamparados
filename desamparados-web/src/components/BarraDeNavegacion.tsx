@@ -11,7 +11,7 @@ import MenuEscritorio from './barra/MenuEscritorio'
 import CajonMovil from './barra/CajonMovil'
 import { DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, socialMq, tinta } from './barra/estilos'
 import { site } from '../config/site'
-import { ESMALTE } from './esmalte'
+import { BOTON } from './estiloDeBoton'
 
 /**
  * La barra de la web pública. Aquí está el armazón —el velo que se va cerrando
@@ -213,7 +213,7 @@ export default function BarraDeNavegacion() {
               variant="contained"
               disableElevation
               sx={{
-                ...ESMALTE.principal,
+                ...BOTON.principal,
                 px: 3,
                 minHeight: 44,
                 height: 44,

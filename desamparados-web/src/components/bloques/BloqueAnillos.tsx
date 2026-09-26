@@ -6,7 +6,7 @@ import { SERIF } from '../../features/inicio/estilos'
 import { esDestinoValido } from '../../lib/destinos'
 import { useModoEdicion } from './modoEdicion'
 import { anchoMaximo } from './presentacion'
-import { enlaceEsmalte } from '../esmalte'
+import { enlaceConFlecha } from '../estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import type { BloqueAnillos as Datos, FinDeAnillo } from '../../lib/api/contenido'
 
@@ -160,7 +160,7 @@ function Fin({ fin, color, alineacion, apagado }: { fin: FinDeAnillo; color: str
       {fin.texto && <Typography sx={{ color: 'text.secondary', fontSize: 15, lineHeight: 1.65 }}>{fin.texto}</Typography>}
       {conBoton && (
         <Box component={Link} to={fin.enlace} sx={{
-          ...enlaceEsmalte, mt: 0.5, color, '& svg': { ...enlaceEsmalte['& svg'], color }, '&:hover': { color: '#fff' },
+          ...enlaceConFlecha, mt: 0.5, color, '& svg': { ...enlaceConFlecha['& svg'], color }, '&:hover': { color: '#fff' },
         }}>
           {fin.boton} <ArrowForwardIcon aria-hidden />
         </Box>

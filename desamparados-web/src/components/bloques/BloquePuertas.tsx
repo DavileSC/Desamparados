@@ -6,17 +6,17 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import CheckIcon from '@mui/icons-material/Check'
 import { SERIF } from '../../features/inicio/estilos'
 import { esDestinoValido } from '../../lib/destinos'
-import { ESMALTE } from '../esmalte'
+import { BOTON } from '../estiloDeBoton'
 import { anchoMaximo } from './presentacion'
 import type { BloquePuertas as Datos, DatoDePuerta, Puerta } from '../../lib/api/contenido'
 
 /**
  * El acento y el botón de cada puerta, en orden: la primera en oro con el
- * botón crema (la de quien busca ayuda) y la segunda en rosa con el granate
+ * botón de filete dorado (la de quien busca ayuda) y la segunda en rosa con el granate
  * (la de quien quiere darla), el mismo rosa de la caridad en Nuestros fines.
  */
 const ACENTOS = ['#dec72b', '#fc858a'] as const
-const BOTONES = [ESMALTE.claro, ESMALTE.principal] as const
+const BOTONES = [BOTON.claro, BOTON.principal] as const
 
 /** El recuadro de las puertas: el de la paleta Noche, para que se lea igual sobre cualquier fondo. */
 const RECUADRO = '#1a181b'

@@ -16,7 +16,7 @@ import { site } from '../config/site'
 import { aplanarMenu, menuPublico } from '../config/navegacion'
 import ContenedorDePagina from './ContenedorDePagina'
 import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
-import { ESMALTE } from './esmalte'
+import { BOTON } from './estiloDeBoton'
 
 type SocialLink = { icon: ReactNode; href: string; label: string }
 
@@ -234,7 +234,7 @@ export default function PieDePagina() {
                   <Button
                     size="small"
                     onClick={() => setMapRequested(true)}
-                    sx={{ ...ESMALTE.oscuro, px: 2, minHeight: 36, fontSize: 13 }}
+                    sx={{ ...BOTON.oscuro, px: 2, minHeight: 36, fontSize: 13 }}
                   >
                     Mostrar mapa
                   </Button>

@@ -7,7 +7,7 @@ import { urlDelMapa } from '../../features/actualidad/agenda/cultos'
 import { SERIF } from '../../features/inicio/estilos'
 import { parrafosDe } from '../../lib/api/contenido'
 import { anchoMaximo, valorDe } from './presentacion'
-import { ESMALTE, enlaceEsmalte } from '../esmalte'
+import { BOTON, enlaceConFlecha } from '../estiloDeBoton'
 import type { BloqueMapa as Datos } from '../../lib/api/contenido'
 
 const ALTOS = { bajo: 260, medio: 380, alto: 520 } as const
@@ -50,13 +50,13 @@ export default function BloqueMapa({ bloque }: { bloque: Datos }) {
           <Typography sx={{ color: 'text.secondary', fontSize: 14, mb: 1.5, maxWidth: 360 }}>
             Al mostrar el mapa, tu IP se envía a Google.
           </Typography>
-          <Button onClick={() => setPedido(true)} sx={ESMALTE.oscuro}>Mostrar el mapa</Button>
+          <Button onClick={() => setPedido(true)} sx={BOTON.oscuro}>Mostrar el mapa</Button>
         </Box>
       )}
     </Box>
   )
   const botonLlegar = llegar && (
-    <Box component="a" href={llegar} target="_blank" rel="noopener noreferrer" sx={enlaceEsmalte}>
+    <Box component="a" href={llegar} target="_blank" rel="noopener noreferrer" sx={enlaceConFlecha}>
       <DirectionsOutlinedIcon aria-hidden /> Cómo llegar
     </Box>
   )
