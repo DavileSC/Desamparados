@@ -86,11 +86,13 @@ function Ilustracion({ url, alt, quieto }: { url: string; alt: string; quieto: b
   const marco = useRef<HTMLDivElement>(null)
   const aLaVista = useInView(marco, { once: true, amount: 0.3 })
   const encendida = quieto || aLaVista
-  const transicion = { duration: ENCENDIDO, ease: [0.22, 0.61, 0.36, 1] as const }
+  // Repartido por igual en todo el tiempo: con una curva que frena pronto, casi
+  // todo el cambio se iba en el primer segundo y el resto no se notaba.
+  const transicion = { duration: ENCENDIDO, ease: [0.45, 0.05, 0.4, 1] as const }
   return (
     <Box ref={marco} sx={{ position: 'relative', pb: 2 }}>
       <Box component={motion.img} src={url} alt={alt} loading="eager" decoding="async"
-        initial={quieto ? false : { filter: 'brightness(0.35) saturate(0.45)' }}
+        initial={quieto ? false : { filter: 'brightness(0.15) saturate(0.2)' }}
         animate={encendida ? { filter: 'brightness(1) saturate(1)' } : undefined}
         transition={transicion}
         sx={{ display: 'block', width: '100%', height: 'auto' }} />
