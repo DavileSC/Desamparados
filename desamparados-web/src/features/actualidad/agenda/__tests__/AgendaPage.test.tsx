@@ -60,7 +60,7 @@ describe('AgendaPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Agenda' })).toBeInTheDocument()
   })
 
-  it('al pulsar un día, el acto sale en una ventana con el calendario y el mapa', async () => {
+  it('al pulsar un día, el acto sale en una ventana con su calendario', async () => {
     responder([apertura, catequesis])
     const usuario = userEvent.setup()
     renderWithProviders(<AgendaPage />)
@@ -70,9 +70,10 @@ describe('AgendaPage', () => {
     expect(within(ventana).getByText('Culto')).toBeInTheDocument()
     expect(within(ventana).getByText('Martes 29 de septiembre, a las 19:00')).toBeInTheDocument()
     expect(within(ventana).getByRole('link', { name: 'Añadir a mi calendario: Eucaristía de apertura de curso' })).toHaveAttribute('href', '/api/events/1/ics')
-    const mapa = within(ventana).getByRole('link', { name: 'Cómo llegar: Parroquia de los Padres Pasionistas' })
-    expect(mapa.getAttribute('href')).toContain(encodeURIComponent('Parroquia de los Padres Pasionistas, Málaga'))
-    expect(mapa).toHaveAttribute('target', '_blank')
+    expect(within(ventana).getByText('Parroquia de los Padres Pasionistas.')).toBeInTheDocument()
+    // Ni «Cómo llegar» ni pasar de acto: solo el acto y su calendario.
+    expect(within(ventana).queryByRole('link', { name: /^cómo llegar/i })).not.toBeInTheDocument()
+    expect(within(ventana).queryByRole('button', { name: /siguiente|anterior/i })).not.toBeInTheDocument()
 
     await usuario.click(within(ventana).getByRole('button', { name: 'Cerrar' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -131,20 +132,6 @@ describe('AgendaPage', () => {
     expect(screen.getByRole('dialog', { name: 'Triduo a la Virgen' })).toBeInTheDocument()
     // El cabildo va solo: sigue siendo su tarjeta.
     expect(screen.getByRole('button', { name: '23 de noviembre: Cabildo de hermanos' })).toBeInTheDocument()
-  })
-
-  it('«Siguiente» pasa al acto siguiente aunque sea de otro mes', async () => {
-    responder([apertura, catequesis])
-    const usuario = userEvent.setup()
-    renderWithProviders(<AgendaPage />)
-
-    await usuario.click(await dia(/^29 de septiembre/))
-    expect(screen.getByRole('button', { name: 'Acto anterior' })).toBeDisabled()
-    await usuario.click(screen.getByRole('button', { name: 'Acto siguiente' }))
-    expect(await mes('Octubre 2026')).toBeInTheDocument()
-    expect(await screen.findByRole('dialog', { name: 'Catequesis de adultos' })).toBeInTheDocument()
-    // La catequesis no tiene lugar: no hay a dónde llegar.
-    expect(screen.queryByRole('link', { name: /^cómo llegar/i })).not.toBeInTheDocument()
   })
 
   it('la suscripción ofrece Google, el enlace webcal y copiarlo', async () => {

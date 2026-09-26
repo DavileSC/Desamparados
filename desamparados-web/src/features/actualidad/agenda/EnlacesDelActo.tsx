@@ -3,9 +3,12 @@ import { urlDelActoEnCalendario, type ApiEvent } from '../../../lib/api/agenda'
 import { GOLD, GRANATE } from '../../inicio/estilos'
 import { urlDelMapa } from './cultos'
 
-/** «Añadir a mi calendario» (el .ics del acto) y, si tiene lugar, «Cómo llegar». */
-export default function EnlacesDelActo({ evento, sobreOscuro = false }: { evento: ApiEvent; sobreOscuro?: boolean }) {
-  const mapa = urlDelMapa(evento.location)
+/**
+ * «Añadir a mi calendario» (el .ics del acto) y, si tiene lugar, «Cómo llegar».
+ * La ventana de la Agenda va `sinMapa`: el lugar ya se lee en ella.
+ */
+export default function EnlacesDelActo({ evento, sobreOscuro = false, sinMapa = false }: { evento: ApiEvent; sobreOscuro?: boolean; sinMapa?: boolean }) {
+  const mapa = sinMapa ? null : urlDelMapa(evento.location)
   const estilo = {
     color: sobreOscuro ? GOLD : GRANATE, fontWeight: 600, fontSize: 13.5, minHeight: { xs: 40, md: 30 },
     display: 'inline-flex', alignItems: 'center', textUnderlineOffset: '3px', textDecorationThickness: '1px',

@@ -102,7 +102,6 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
 
   const proximo = eventos[0] ?? null
   const evento = eventos.find((e) => e.id === abierto) ?? null
-  const indice = evento ? eventos.indexOf(evento) : -1
   const primerDia = (e: ApiEvent) => primerDiaEnElMes(e, mes)
 
   const cambiarMes = (nuevo: Date) => {
@@ -174,8 +173,6 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
       quieto={quieto}
       esDialogo={estrecho}
       onCerrar={() => cerrar()}
-      onAnterior={indice > 0 ? () => abrir(eventos[indice - 1]) : undefined}
-      onSiguiente={indice < eventos.length - 1 ? () => abrir(eventos[indice + 1]) : undefined}
     />
   )
 

@@ -18,16 +18,13 @@ interface Props {
   /** En el móvil la ventana va dentro de un Dialog, que ya es el diálogo. */
   esDialogo: boolean
   onCerrar: () => void
-  onAnterior?: () => void
-  onSiguiente?: () => void
 }
 
 /**
  * Un acto de la Agenda, en su ventana: la foto si es solemne, qué es, cuándo,
- * dónde, al calendario y al mapa. «Anterior» y «Siguiente» pasan de acto sin
- * cerrarla, aunque el siguiente sea de otro mes.
+ * dónde y, para no olvidarlo, al calendario del móvil.
  */
-export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCerrar, onAnterior, onSiguiente }: Props) {
+export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCerrar }: Props) {
   const raiz = useRef<HTMLDivElement>(null)
   const cerrar = useRef<HTMLButtonElement>(null)
   const nota = notaDelActo(evento)
@@ -35,7 +32,7 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
 
   // Nace de la casilla: se mide cuando ya está colocada (el Popper la coloca
   // después de montarla) y se anima desde el tamaño y el sitio de la casilla.
-  // Si «Siguiente» lleva a un día que queda fuera de la pantalla, la página la sigue.
+  // Si se abre en otro mes (desde «Próximo acto») y su día queda fuera de la pantalla, la página la sigue.
   useLayoutEffect(() => {
     const el = raiz.current
     if (!el || !origen) return
@@ -43,7 +40,7 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
     if (animar) el.style.opacity = '0'
     const marco = requestAnimationFrame(() => {
       el.style.opacity = ''
-      // La casilla, no la ventana: la ventana aún puede estar donde la dejó el acto anterior.
+      // La casilla, no la ventana: el Popper aún no la ha colocado.
       if (!esDialogo) origen.scrollIntoView?.({ block: 'nearest', behavior: quieto ? 'auto' : 'smooth' })
       const p = el.getBoundingClientRect()
       const c = origen.getBoundingClientRect()
@@ -64,12 +61,6 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
   const teclas = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && !esDialogo) { e.stopPropagation(); onCerrar() }
   }
-
-  const paso = {
-    fontFamily: 'inherit', fontSize: 13, color: 'rgba(244,241,238,0.66)', py: 1, minHeight: 40,
-    '&:hover': { color: GOLD }, '&.Mui-disabled': { opacity: 0.3 },
-    '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
-  } as const
 
   return (
     <Box
@@ -97,7 +88,7 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
       >
         ×
       </ButtonBase>
-      <Box sx={{ p: '16px 18px 12px', display: 'grid', gap: 0.5 }}>
+      <Box sx={{ p: '16px 18px 14px', display: 'grid', gap: 0.5 }}>
         <Typography component="span" sx={{ fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: ORO_SUAVE, pr: 5 }}>
           {claseDelActo(evento)}
         </Typography>
@@ -107,11 +98,7 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
         {evento.dedicatoria && <Typography sx={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.8)', fontSize: 15 }}>{evento.dedicatoria}</Typography>}
         <Typography sx={{ color: GOLD, fontWeight: 500, fontSize: 15.5 }}>{cuandoEnCartel(evento)}, a las {hora(evento)}</Typography>
         {nota && <Typography sx={{ color: 'rgba(244,241,238,0.66)', fontSize: 14.5 }}>{nota}</Typography>}
-        <EnlacesDelActo evento={evento} sobreOscuro />
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(222,199,43,0.2)', px: 2.25 }}>
-        <ButtonBase onClick={onAnterior} disabled={!onAnterior} aria-label="Acto anterior" sx={paso}>‹ Anterior</ButtonBase>
-        <ButtonBase onClick={onSiguiente} disabled={!onSiguiente} aria-label="Acto siguiente" sx={paso}>Siguiente ›</ButtonBase>
+        <EnlacesDelActo evento={evento} sobreOscuro sinMapa />
       </Box>
     </Box>
   )
