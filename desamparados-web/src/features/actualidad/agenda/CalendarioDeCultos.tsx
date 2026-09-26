@@ -326,7 +326,19 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
       </Box>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 24px', mt: 1 }}>
-        <Typography sx={{ fontSize: 13, color: 'rgba(244,241,238,0.62)' }}>Pulsa un día en oro para ver el acto.</Typography>
+        {/* Qué quiere decir cada color: en las tarjetas y en la rayita de cada acto cuando coinciden varios. */}
+        <Box component="ul" aria-label="Leyenda" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 18px', fontSize: 13, color: 'rgba(244,241,238,0.72)' }}>
+          {[
+            { color: GRANATE, raya: BURDEOS_CLARO, texto: 'Culto solemne' },
+            { color: 'rgba(222,199,43,0.14)', raya: GOLD, texto: 'Otros actos' },
+          ].map((l) => (
+            <Box component="li" key={l.texto} sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+              <Box component="span" aria-hidden sx={{ width: 16, height: 16, bgcolor: l.color, borderLeft: `3px solid ${l.raya}` }} />
+              {l.texto}
+            </Box>
+          ))}
+          <Box component="li" sx={{ color: 'rgba(244,241,238,0.55)' }}>Pulsa un acto para verlo.</Box>
+        </Box>
         {proximo && (
           <ButtonBase
             data-abre-acto
