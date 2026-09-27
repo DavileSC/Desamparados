@@ -38,7 +38,7 @@ describe('NoticiasDestacadas', () => {
     expect(screen.getByRole('heading', { level: 2, name: /últimas noticias/i })).toBeInTheDocument()
   })
 
-  it('usa la foto de la noticia y, si no la tiene, una placa con su inicial', async () => {
+  it('usa la foto de la noticia y, si no la tiene, una placa con el escudo', async () => {
     // Se rompe si una noticia sin foto deja un hueco vacío, o si se ignora la foto cuando la hay.
     servir([APERTURA, TRIDUO])
     renderWithProviders(<NoticiasDestacadas />)
@@ -46,8 +46,9 @@ describe('NoticiasDestacadas', () => {
     const conFoto = await screen.findByRole('link', { name: /apertura del curso/i })
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/apertura.jpg')
     const sinFoto = screen.getByRole('link', { name: /solemne triduo/i })
-    expect(sinFoto.querySelector('img')).toBeNull()
-    expect(within(sinFoto).getByTestId('placa-noticia')).toHaveTextContent('S')
+    // La única imagen es el escudo de la placa, no una foto.
+    expect(within(sinFoto).getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', '/images/escudo-grupo.png')
+    expect(sinFoto.querySelectorAll('img')).toHaveLength(1)
   })
 
   it('enseña como mucho tres noticias y enlaza al archivo completo', async () => {

@@ -166,7 +166,10 @@ function Tesela({ icon, title, description, href, ancha }: TeselaProps) {
       <Box
         component="span"
         aria-hidden="true"
-        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 22, md: 26 }, ...(ancha ? {} : { mb: 'auto', pb: { xs: 2.25, md: 2.75 } }) }}
+        // El texto va justo debajo del icono, no empujado al fondo: así todos los
+        // títulos de una fila quedan a la misma altura, sea cual sea el largo de
+        // su descripción (con el texto abajo, «Historia» y «Boletines» no casaban).
+        sx={{ display: 'flex', color: GOLD, fontSize: { xs: 22, md: 26 }, ...(ancha ? {} : { pb: { xs: 2.25, md: 3.5 } }) }}
       >
         {icon}
       </Box>

@@ -4,8 +4,9 @@ import type { EventoCalendario } from '../../lib/api/agenda'
 import { SERIF, TIPOS, inicioDelDia, nombreDelMes } from './agenda'
 import { GRANATE } from './estilos'
 
-// En portada caben cinco actos; el resto está en la agenda completa.
-const MAX_FILAS = 5
+// En portada caben cuatro actos, para que la tarjeta entera quepa en la pantalla
+// de un portátil; el resto está en la agenda completa.
+const MAX_FILAS = 4
 const TEXTO = '#1b1c1a'
 const TENUE = '#8a8076'
 const FILETE = 'inset 0 1px 0 #e3dccf'
@@ -52,7 +53,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
           rowGap: 1,
           alignItems: 'center',
           px: { xs: 2, sm: 3 },
-          py: 2,
+          py: 1.4,
           border: 0,
           background: 'none',
           color: TEXTO,
@@ -62,10 +63,10 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
         }}
       >
         <Box component="span" sx={{ textAlign: 'center' }}>
-          <Box component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: fin ? { xs: 17, sm: 20 } : 28, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE }}>
+          <Box component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: fin ? { xs: 17, sm: 20 } : 25, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE }}>
             {fin ? `${evento.start.getDate()}–${fin.getDate()}` : evento.start.getDate()}
           </Box>
-          <Box component="span" sx={{ display: 'block', mt: 0.75, fontSize: 10, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
+          <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 10, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
             {fin ? `${diaSemana(evento.start)}–${diaSemana(fin)}` : diaSemana(evento.start)}
           </Box>
         </Box>
@@ -99,7 +100,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
       {abierto && evento.description && (
         <Typography
           id={panelId}
-          sx={{ pl: { xs: 'calc(16px + 56px + 14px)', sm: 'calc(24px + 60px + 18px)' }, pr: { xs: 2, sm: 3 }, pb: 2.25, mt: -0.5, fontSize: 13.5, lineHeight: 1.55, color: '#4a454a' }}
+          sx={{ pl: { xs: 'calc(16px + 56px + 14px)', sm: 'calc(24px + 60px + 18px)' }, pr: { xs: 2, sm: 3 }, pb: 1.75, mt: -0.5, fontSize: 13.5, lineHeight: 1.55, color: '#4a454a' }}
         >
           {evento.description}
         </Typography>
@@ -125,7 +126,7 @@ export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: L
     <Box sx={{ py: 1 }}>
       {grupos.map((grupo, i) => (
         <Box key={grupo.clave} sx={{ boxShadow: i ? FILETE : 'none' }}>
-          <Typography component="h3" sx={{ px: { xs: 2, sm: 3 }, pt: 2, pb: 0.5, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#7b6f5e' }}>
+          <Typography component="h3" sx={{ px: { xs: 2, sm: 3 }, pt: 1.5, pb: 0.25, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#7b6f5e' }}>
             {grupo.titulo}
           </Typography>
           <Box component="ul" role="list" sx={{ listStyle: 'none', m: 0, p: 0 }}>

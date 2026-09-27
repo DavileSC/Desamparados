@@ -41,8 +41,9 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
   const leyenda = (Object.keys(TIPOS) as ApiEvent['type'][]).filter(tipo => presentes.has(tipo))
 
   return (
-    <Box sx={{ p: { xs: 2.5, md: 3 }, color: TEXTO }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.75 }}>
+    // Prieto a propósito: la tarjeta entera tiene que caber en la pantalla de un portátil.
+    <Box sx={{ p: { xs: 2.25, md: 2.5 }, color: TEXTO }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
         <IconButton aria-label="Mes anterior" disabled={!puedeRetroceder} onClick={() => onCambiarMes(-1)} sx={navSx}>
           <ChevronLeftIcon fontSize="small" />
         </IconButton>
@@ -54,7 +55,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
         </IconButton>
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: 0.5, textAlign: 'center' }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: 0.25, textAlign: 'center' }}>
         {DIAS_SEMANA.map(letra => (
           <Box key={letra} aria-hidden="true" sx={{ fontSize: 10, letterSpacing: '0.12em', color: TENUE, pb: 0.75 }}>
             {letra}
@@ -64,8 +65,8 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
           const ms = dia.getTime()
           const base = {
             position: 'relative',
-            width: 34,
-            height: 34,
+            width: 31,
+            height: 31,
             mx: 'auto',
             borderRadius: '50%',
             display: 'grid',
@@ -124,7 +125,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
       </Box>
 
       {/* La leyenda guarda su línea aunque el mes no tenga actos: así el calendario no cambia de alto. */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', minHeight: 34, mt: 2, pt: 2, boxShadow: '0 -1px 0 rgba(27, 28, 26, 0.08)' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', minHeight: 30, mt: 1.5, pt: 1.5, boxShadow: '0 -1px 0 rgba(27, 28, 26, 0.08)' }}>
         {leyenda.map(tipo => (
           <Box key={tipo} component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, fontSize: 12, lineHeight: '18px', color: '#6a6258' }}>
             <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: TIPOS[tipo].color }} />
