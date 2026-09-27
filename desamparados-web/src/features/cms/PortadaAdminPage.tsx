@@ -16,6 +16,7 @@ import AccesosRapidos from '../inicio/AccesosRapidos'
 import EscenaProcesion from '../inicio/EscenaProcesion'
 import PublicacionesDestacadas from '../inicio/PublicacionesDestacadas'
 import EdicionTesela from './portada/EdicionTesela'
+import AvisoFotoDeCabecera from './portada/AvisoFotoDeCabecera'
 import { MAX_FOTOS_PORTADA, useEdicionDePortada } from './portada/useEdicionDePortada'
 
 export { MAX_FOTOS_PORTADA }
@@ -122,6 +123,7 @@ export default function PortadaAdminPage() {
                         valor={fila.url}
                         onCambio={(url) => (url ? cambiar(fila.clave, { url }) : quitar(fila.clave))}
                       />
+                      <AvisoFotoDeCabecera url={fila.url} />
                       <TextField
                         label="Qué se ve en la imagen"
                         value={fila.descripcion}
