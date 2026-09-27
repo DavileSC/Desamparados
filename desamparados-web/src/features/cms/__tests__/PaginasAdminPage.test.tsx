@@ -20,8 +20,12 @@ function montar() {
 }
 
 describe('PaginasAdminPage', () => {
-  it('enseña una entrada por cada página del catálogo compartido', () => {
+  it('enseña una entrada por cada página del catálogo compartido', async () => {
+    const user = userEvent.setup()
     montar()
+    for (const grupo of new Set(PAGINAS_PUBLICAS.map((p) => p.grupo))) {
+      await user.click(screen.getByRole('button', { name: new RegExp(grupo) }))
+    }
     // El índice no lleva su propia lista: sale de shared/paginas-publicas.json,
     // que es el mismo fichero que el servidor comprueba. Convertir una página
     // más tiene que hacerla aparecer aquí sola.
@@ -35,9 +39,11 @@ describe('PaginasAdminPage', () => {
     }
   })
 
-  it('cada página ofrece verla en la web, en otra pestaña y sin acceso a esta', () => {
+  it('cada página ofrece verla en la web, en otra pestaña y sin acceso a esta', async () => {
+    const user = userEvent.setup()
     montar()
     const pagina = PAGINAS_PUBLICAS[0]
+    await user.click(screen.getByRole('button', { name: new RegExp(pagina.grupo) }))
     const ver = screen.getByRole('link', { name: new RegExp(`Ver ${pagina.nombre} en la web`) })
     expect(ver).toHaveAttribute('href', pagina.ruta)
     expect(ver).toHaveAttribute('target', '_blank')
@@ -57,16 +63,19 @@ describe('PaginasAdminPage', () => {
     }
   })
 
-  it('cada sección se pliega y se despliega, y arranca abierta', async () => {
+  it('cada sección se despliega y se pliega, y arranca plegada', async () => {
     const user = userEvent.setup()
     montar()
 
-    // Abiertas de entrada: el índice existe para ver de un vistazo qué se puede
-    // editar, y plegado todo obligaría a abrir secciones antes de ver nada.
+    // Plegadas de entrada: así caben todas las secciones en una pantalla.
     const grupo = PAGINAS_PUBLICAS[0].grupo
     const cabecera = screen.getByRole('button', { name: new RegExp(grupo) })
+    expect(cabecera).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('link', { name: PAGINAS_PUBLICAS[0].nombre })).not.toBeInTheDocument()
+
+    await user.click(cabecera)
     expect(cabecera).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: PAGINAS_PUBLICAS[0].nombre })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: PAGINAS_PUBLICAS[0].nombre })).toBeInTheDocument()
 
     await user.click(cabecera)
 
@@ -77,11 +86,9 @@ describe('PaginasAdminPage', () => {
       expect(screen.queryByRole('link', { name: PAGINAS_PUBLICAS[0].nombre })).not.toBeInTheDocument()
     })
 
-    await user.click(cabecera)
-    expect(await screen.findByRole('link', { name: PAGINAS_PUBLICAS[0].nombre })).toBeInTheDocument()
   })
 
-  it('plegar una sección no toca a las demás', async () => {
+  it('abrir una sección no toca a las demás', async () => {
     const user = userEvent.setup()
     montar()
 
@@ -90,7 +97,8 @@ describe('PaginasAdminPage', () => {
 
     await user.click(screen.getByRole('button', { name: new RegExp(grupos[0]) }))
 
-    expect(screen.getByRole('button', { name: new RegExp(grupos[1]) })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: new RegExp(grupos[0]) })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: new RegExp(grupos[1]) })).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('el menú lleva al índice, y el índice y las páginas dejan pasar a los mismos cargos', () => {

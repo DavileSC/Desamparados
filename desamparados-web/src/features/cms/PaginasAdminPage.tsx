@@ -43,9 +43,9 @@ export default function PaginasAdminPage() {
 /**
  * Una sección del índice, plegable.
  *
- * Abierta por omisión: el índice existe para ver de un vistazo qué se puede
- * editar, y plegarlo todo de entrada obligaría a abrir tres secciones antes de
- * encontrar nada. Plegar sirve para apartar lo que ahora no se toca.
+ * Plegada por omisión: así el índice cabe en una pantalla y se ven todas las
+ * secciones de un vistazo, con cuántas páginas tiene cada una; se abre solo
+ * la que se va a tocar.
  *
  * La estructura es la del patrón de divulgación, la misma que `constructor/ListaDeBloques`
  * y por el mismo motivo: el encabezado lleva SOLO el botón que pliega, y lo
@@ -53,7 +53,7 @@ export default function PaginasAdminPage() {
  * y dentro de un botón no puede haber enlaces.
  */
 function GrupoPlegable({ titulo, paginas }: { titulo: string; paginas: PaginaPublica[] }) {
-  const [abierto, setAbierto] = useState(true)
+  const [abierto, setAbierto] = useState(false)
   const id = titulo.toLowerCase().replace(/[^a-z0-9]+/g, '-')
   const idCabecera = `grupo-${id}-cabecera`
   const idDetalle = `grupo-${id}-detalle`
