@@ -1,7 +1,11 @@
 import db from '../config/db.js';
 import { mezclarConDefectos, porDefecto, type SlugContenido } from '../domain/contenido.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
-import { NotFoundError } from '../utils/error.handle.js';
+import { HttpError, NotFoundError } from '../utils/error.handle.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { publicStorageDir } from '../middleware/upload.middleware.js';
+import { topesDeVideo } from '../domain/mp4.js';
 
 /**
  * Cuántas versiones se guardan de cada página. Con más, el historial crece sin
@@ -24,6 +28,26 @@ function resumenDe(datos: unknown): { titulo: string; bloques: number } {
     titulo: typeof documento?.cabecera?.titulo === 'string' ? documento.cabecera.titulo : '',
     bloques: Array.isArray(documento?.bloques) ? documento.bloques.length : 0,
   };
+}
+
+/**
+ * El vídeo del hero, comprobado sobre el fichero: que existe y que no pasa del
+ * tope del hero. La subida ya lo comprobó con el uso «hero», pero un vídeo
+ * subido para una galería (15 MB) también es una ruta válida para el esquema,
+ * y en la portada lo descargaría cada visita.
+ */
+async function comprobarVideoDelHero(datos: object): Promise<void> {
+  const ruta = (datos as { hero?: { video?: unknown } }).hero?.video;
+  if (typeof ruta !== 'string' || ruta === '') return;
+  const { maxBytes } = topesDeVideo('hero');
+  // El esquema ya garantizó `/storage/public/<32 hex>.mp4`: el nombre es seguro.
+  const tamano = await fs.stat(path.join(publicStorageDir, path.basename(ruta)))
+    .then((s) => s.size)
+    .catch(() => null);
+  if (tamano === null) throw new HttpError('El vídeo de la cabecera ya no está en el servidor: vuelve a subirlo.');
+  if (tamano > maxBytes) {
+    throw new HttpError(`El vídeo de la cabecera pesa más de ${Math.round(maxBytes / 1024 / 1024)} MB. Sube uno más ligero para la portada.`);
+  }
 }
 
 export class ContenidoService {
@@ -53,6 +77,7 @@ export class ContenidoService {
    * versión sale de él por antigua.
    */
   static async guardar(slug: SlugContenido, datos: object, autorId?: number): Promise<unknown> {
+    if (slug === 'portada') await comprobarVideoDelHero(datos);
     const anterior = await db.contenidoPagina.findUnique({ where: { slug }, select: { datos: true } });
     const autor = await autorDe(autorId);
 

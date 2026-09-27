@@ -21,6 +21,12 @@ const VIDEO: MedioGaleria = {
   portada: '/storage/public/salida.webp', alt: 'Salida procesional de 2026', pie: '',
 }
 
+/** Un clip subido desde el CMS. */
+const CLIP: MedioGaleria = {
+  tipo: 'video', url: '/storage/public/0123456789abcdef0123456789abcdef.mp4',
+  portada: '/storage/public/salida-clip.webp', alt: 'La salida desde la parroquia', pie: '',
+}
+
 /** La foto grande del escenario: el botón que la amplía. */
 const escenario = () => screen.getByRole('button', { name: /^(ampliar|reproducir): /i })
 
@@ -98,17 +104,55 @@ describe('GaleriaMedios en escritorio (escenario)', () => {
     expect(escenario()).toHaveAccessibleName('Ampliar: El trono en la calle')
   })
 
-  it('un vídeo no llama a YouTube hasta que se pulsa el play', async () => {
+  it('un vídeo no llama a YouTube hasta que se pulsa el play, y entonces suena ahí mismo, sin abrir el visor', async () => {
     const user = userEvent.setup()
     renderWithProviders(<GaleriaMedios medios={[VIDEO]} disposicion="escritorio" />)
 
     expect(document.querySelector('iframe')).toBeNull()
     await user.click(screen.getByRole('button', { name: /reproducir/i }))
 
-    const marco = (await screen.findByRole('dialog')).querySelector('iframe')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    const marco = document.querySelector('iframe')
     expect(marco).not.toBeNull()
     expect(marco!.getAttribute('src')).toContain('youtube-nocookie.com')
     expect(marco!.getAttribute('src')).toContain('autoplay=1')
+  })
+
+  it('en una galería de solo vídeos, un clip nuestro suena en el escenario; el pase espera y sigue cuando acaba', () => {
+    vi.useFakeTimers()
+    renderWithProviders(<GaleriaMedios medios={[CLIP, VIDEO]} disposicion="escritorio" />)
+
+    fireEvent.click(screen.getByRole('button', { name: /reproducir: la salida/i }))
+    const video = document.querySelector('video')!
+    expect(video).toHaveAttribute('src', CLIP.url)
+    expect(video).toHaveAttribute('poster', CLIP.portada)
+    expect(video.controls).toBe(true)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    // Mientras suena, el pase no lo quita de delante.
+    act(() => { vi.advanceTimersByTime(DURACION_PASE * 3) })
+    expect(document.querySelector('video')).not.toBeNull()
+
+    fireEvent.ended(video)
+    expect(document.querySelector('video')).toBeNull()
+    act(() => { vi.advanceTimersByTime(DURACION_PASE) })
+    expect(escenario()).toHaveAccessibleName('Reproducir: Salida procesional de 2026')
+  })
+
+  it('pasar a otro medio para el vídeo', () => {
+    renderWithProviders(<GaleriaMedios medios={[CLIP, VIDEO]} disposicion="escritorio" />)
+    fireEvent.click(screen.getByRole('button', { name: /reproducir: la salida/i }))
+    expect(document.querySelector('video')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /^siguiente$/i }))
+    expect(document.querySelector('video')).toBeNull()
+  })
+
+  it('si la galería mezcla fotos y vídeos, el vídeo se abre en el visor, como antes', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<GaleriaMedios medios={[CLIP, FOTO]} disposicion="escritorio" />)
+    await user.click(screen.getByRole('button', { name: /reproducir: la salida/i }))
+    const visor = await screen.findByRole('dialog', { name: /galería ampliada/i })
+    expect(visor.querySelector('video')).toHaveAttribute('src', CLIP.url)
   })
 
   it('llegar a un vídeo dentro del visor no lo carga: hay que darle al play', async () => {
@@ -144,13 +188,28 @@ describe('GaleriaMedios en el móvil (carril)', () => {
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
-  it('el vídeo del carril se abre ya reproduciéndose; los demás vídeos del visor esperan al play', async () => {
+  it('en una galería de solo vídeos, tocar uno del carril lo reproduce ahí mismo, sin abrir el visor', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<GaleriaMedios medios={[VIDEO, FOTO]} disposicion="movil" />)
+    renderWithProviders(<GaleriaMedios medios={[CLIP, VIDEO]} disposicion="movil" />)
 
-    expect(document.querySelector('iframe')).toBeNull()
-    await user.click(screen.getByRole('button', { name: /reproducir: salida/i }))
-    const visor = await screen.findByRole('dialog')
-    expect(visor.querySelectorAll('iframe')).toHaveLength(1)
+    expect(document.querySelector('video')).toBeNull()
+    await user.click(screen.getByRole('button', { name: /reproducir: la salida/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(document.querySelector('video')).toHaveAttribute('src', CLIP.url)
+    expect(screen.getByText(/toca para verlo$/)).toBeInTheDocument()
+  })
+
+  it('un vídeo que no es el primero del carril también suena al tocarlo', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<GaleriaMedios medios={[VIDEO, CLIP]} disposicion="movil" />)
+    await user.click(screen.getByRole('button', { name: /reproducir: la salida/i }))
+    expect(document.querySelector('video')).toHaveAttribute('src', CLIP.url)
+  })
+
+  it('en el móvil, con fotos y vídeos mezclados, el vídeo se abre en el visor', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<GaleriaMedios medios={[CLIP, FOTO]} disposicion="movil" />)
+    await user.click(screen.getByRole('button', { name: /reproducir: la salida/i }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
 })

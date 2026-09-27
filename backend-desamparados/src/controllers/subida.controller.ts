@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import sharp, { type Sharp } from 'sharp';
 import { scanBufferClamav } from '../utils/clamd.js';
 import { MAX_BYTES_IMAGEN, privateStorageDir } from '../middleware/upload.middleware.js';
+import { esUsoDeVideo, leerMp4, problemaDelVideo, topesDeVideo } from '../domain/mp4.js';
 
 /** Una forma de codificar la foto ya leída (orientada y sin metadatos). */
 type Codificacion = (imagen: Sharp) => Sharp;
@@ -240,6 +241,64 @@ export class SubidaController {
       // todas las comprobaciones.
       if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
       handleHttp(res, e, 'Error subiendo archivo');
+    }
+  }
+
+  /**
+   * POST /api/upload/video/:uso — un MP4 para el hero o para una galería.
+   *
+   * El servidor NO recomprime el vídeo, a diferencia de las fotos: en este VPS
+   * eso costaría minutos de CPU al 100 % por vídeo. Tiene que llegar ya listo
+   * para la web y aquí solo se comprueba que lo está (formato, códec, peso,
+   * duración y tamaño de imagen, leídos de sus cabeceras) y que el antivirus
+   * lo da por bueno. El CMS avisa de todo esto antes de enviar; esto es lo que
+   * manda.
+   */
+  static async subirVideo(req: Request, res: Response) {
+    const { file } = req;
+    const rechazar = async (estado: number, error: string) => {
+      if (file) await fs.unlink(file.path).catch(() => {});
+      return res.status(estado).json({ error });
+    };
+    try {
+      const uso = req.params.uso;
+      if (!esUsoDeVideo(uso)) return rechazar(404, 'No existe ese destino de vídeo.');
+      if (!file) return rechazar(400, 'No has subido ningún vídeo o no es un MP4.');
+
+      // El contenido real, no la extensión ni lo que dice el navegador. Un
+      // .mov renombrado a .mp4 (el formato de los iPhone) muere aquí.
+      const tipoReal = await fileTypeFromFile(file.path);
+      if (tipoReal?.mime !== 'video/mp4' || path.extname(file.filename).toLowerCase() !== '.mp4') {
+        return rechazar(400, 'El archivo no es un MP4. Pásalo por HandBrake (gratuito) con el formato MP4 y el códec H.264.');
+      }
+
+      const { maxBytes } = topesDeVideo(uso);
+      if (file.size > maxBytes) {
+        const megas = Math.round(maxBytes / 1024 / 1024);
+        return rechazar(413, `El vídeo pesa más de ${megas} MB, el máximo aquí. Recórtalo o comprímelo más antes de subirlo.`);
+      }
+
+      const datos = await fs.readFile(file.path);
+      const problema = problemaDelVideo(leerMp4(datos), uso);
+      if (problema) return rechazar(400, problema);
+
+      const antivirus = await scanBufferClamav(datos);
+      if (antivirus.veredicto === 'infectado') {
+        console.error(`[Security] Vídeo RECHAZADO por el antivirus: ${file.originalname} (${antivirus.reason})`);
+        return rechazar(400, 'El archivo ha sido rechazado por el análisis antivirus.');
+      }
+      if (antivirus.veredicto === 'no-disponible') {
+        console.error(`[Security] Subida de vídeo rechazada: el antivirus no está disponible (${antivirus.reason})`);
+        return rechazar(503, 'El análisis antivirus no está disponible, inténtalo más tarde.');
+      }
+
+      res.status(201).json({
+        message: 'Vídeo subido correctamente',
+        data: { filename: file.filename, type: 'video/mp4', size: `${(file.size / 1024).toFixed(2)} KB` },
+      });
+    } catch (e) {
+      if (file?.path) await fs.unlink(file.path).catch(() => {});
+      handleHttp(res, e, 'Error subiendo el vídeo');
     }
   }
 

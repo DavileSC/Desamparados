@@ -4,6 +4,7 @@ import { rutaImagenPublica } from './portada.schema.js';
 import type { SlugContenido } from '../domain/contenido.js';
 import { cabeceraSchema, problemaDeBloque } from './bloques.schema.js';
 import { anclaDe } from '../domain/presentacion.js';
+import { VIDEO_PROPIO } from '../utils/rutas-propias.js';
 
 /**
  * Un texto visible de la web. Sin `<` ni `>`: estos campos se pintan como texto
@@ -25,9 +26,18 @@ const ETIQUETA = texto(topes.etiqueta);
 const DESCRIPCION = texto(topes.descripcion);
 const sinFoto = type('string').matching(/^$/);
 
+const rutaVideoPublica = type('string')
+  .matching(VIDEO_PROPIO)
+  .describe('un vídeo subido desde el CMS (/storage/public/….mp4)');
+
 const heroSchema = type({
   ceja: ETIQUETA, titulo: TITULO, parrafo: PARRAFO,
   botonPrincipal: ETIQUETA, enlaceSecundario: ETIQUETA,
+  // El vídeo de fondo, opcional: vacío, rotan las fotos. Con él, la primera
+  // foto es lo que se ve mientras carga y lo único que ve quien tiene el
+  // «ahorro de datos» o el «reducir movimiento» puestos. Su tope de peso lo
+  // vuelve a comprobar `ContenidoService.guardar` sobre el fichero.
+  video: sinFoto.or(rutaVideoPublica),
 });
 
 const portadaSchema = type({

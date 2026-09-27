@@ -10,6 +10,7 @@ import Tiras from './galeria/Tiras'
 import Estampas from './galeria/Estampas'
 import Carteles from './galeria/Carteles'
 import { imagenDe, useMedidas } from './galeria/formato'
+import { soloVideos } from './bloques/presentacion'
 
 export type FormatoGaleria = 'pase' | 'cuadricula' | 'mosaico' | 'tiras' | 'estampas' | 'carteles'
 
@@ -35,8 +36,11 @@ interface Props {
  *   desenfocado, con pase automático (que se puede parar), contador y
  *   miniaturas.
  * - En el móvil, un carril que se pasa deslizando.
- * - En los dos, al pulsar se abre un visor a pantalla completa donde cada foto
- *   se ajusta sin recortarse, sea horizontal, vertical o cuadrada.
+ * - En los dos, al pulsar una foto se abre un visor a pantalla completa donde
+ *   se ajusta sin recortarse, sea horizontal, vertical o cuadrada. Los vídeos
+ *   también, salvo en una galería de solo vídeos: ahí se reproducen en su
+ *   sitio (`ReproductorEnLinea`), y por eso esa galería va siempre en pase
+ *   (`opcionesFijas`).
  *
  * El formato de cada foto se aprende al cargarla (`useMedidas`): no se le pide
  * a quien la sube.
@@ -58,6 +62,7 @@ export default function GaleriaMedios({ medios, disposicion, formato = 'pase', c
   const [reproduciendo, setReproduciendo] = useState<string[]>([])
 
   const total = medios.length
+  const enLinea = soloVideos(medios)
   // En bucle: después de la última, la primera.
   const ir = useCallback((indice: number) => setActual(((indice % total) + total) % total), [total])
   const irEnVisor = useCallback((indice: number) => {
@@ -87,8 +92,8 @@ export default function GaleriaMedios({ medios, disposicion, formato = 'pase', c
         : formato !== 'pase'
         ? <Rejilla medios={medios} mosaico={formato === 'mosaico'} columnas={columnas} onAbrir={abrir} />
         : escritorio
-        ? <Escenario medios={medios} actual={indiceSeguro} onIr={ir} onAbrir={abrir} medidaDe={medidaDe} medir={medir} quieta={visor !== null || sinMovimiento} />
-        : <CarrilMovil medios={medios} actual={indiceSeguro} onIr={ir} onAbrir={abrir} medidaDe={medidaDe} medir={medir} />}
+        ? <Escenario medios={medios} actual={indiceSeguro} onIr={ir} onAbrir={abrir} enLinea={enLinea} medidaDe={medidaDe} medir={medir} quieta={visor !== null || sinMovimiento} />
+        : <CarrilMovil medios={medios} actual={indiceSeguro} onIr={ir} onAbrir={abrir} enLinea={enLinea} medidaDe={medidaDe} medir={medir} />}
       <VisorGaleria
         medios={medios}
         actual={visor}

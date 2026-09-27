@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { SubidaController } from '../controllers/subida.controller.js';
-import { privateUploadMiddleware, publicUploadMiddleware } from '../middleware/upload.middleware.js';
+import { privateUploadMiddleware, publicUploadMiddleware, videoUploadMiddleware } from '../middleware/upload.middleware.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js'; 
 import { Role } from '@prisma/client';
@@ -32,6 +32,9 @@ subidaRoutes.get('/private/:filename',
 // El Hermano Mayor edita noticias y publicaciones (news.routes.ts, publication.routes.ts):
 // sin él aquí, el CMS le dejaba editar una noticia pero la subida de su foto le daba 403.
 subidaRoutes.post('/public', authenticateToken, checkRole([Role.ADMIN, Role.SECRETARIA, Role.REDES, Role.HERMANO_MAYOR]), publicUploadMiddleware.single('file'), SubidaController.subirArchivo);
-subidaRoutes.post('/private', authenticateToken, checkRole(cmsRoles), privateUploadMiddleware.single('file'), SubidaController.subirArchivo);
+// Vídeos del hero y de las galerías: los mismos roles que suben fotos públicas.
+// Nunca a la carpeta privada ni desde el perfil de un hermano.
+subidaRoutes.post('/video/:uso', authenticateToken, checkRole([Role.ADMIN, Role.SECRETARIA, Role.REDES, Role.HERMANO_MAYOR]), videoUploadMiddleware.single('file'), SubidaController.subirVideo);
+subidaRoutes.post('/private',authenticateToken, checkRole(cmsRoles), privateUploadMiddleware.single('file'), SubidaController.subirArchivo);
 
 export { subidaRoutes };

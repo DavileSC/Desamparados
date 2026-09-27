@@ -1,0 +1,6 @@
+{
+  "hero": { "maxBytes": 5242880, "maxSegundos": 30 },
+  "galeria": { "maxBytes": 15728640, "maxSegundos": 120 },
+  "ladoMayor": 1920,
+  "ladoMenor": 1080
+}

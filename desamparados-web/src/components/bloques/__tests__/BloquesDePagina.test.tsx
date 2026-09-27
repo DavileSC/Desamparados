@@ -106,7 +106,7 @@ describe('bloques de la segunda fase', () => {
     expect(container.querySelector('iframe')).toBeNull()
 
     await userEvent.click(screen.getByRole('button', { name: /Reproducir: Salida procesional/ }))
-    // Se reproduce en el visor, que se abre por encima de la página.
+    // Mezcla fotos y vídeos: se reproduce en el visor, que se abre por encima de la página.
     const visor = await screen.findByRole('dialog', { name: /galería ampliada/i })
     expect(visor.querySelector('iframe')?.getAttribute('src')).toContain('youtube-nocookie.com/embed/')
   })

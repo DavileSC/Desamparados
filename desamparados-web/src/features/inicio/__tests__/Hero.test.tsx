@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { act, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import Hero from '../Hero'
 import { IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS } from '../heroImagenes'
@@ -116,5 +117,71 @@ describe('Hero', () => {
 
     expect(await screen.findByRole('heading', { name: 'Desamparados Málaga', level: 1 })).toBeInTheDocument()
     expect(screen.getByText(/Devoción, historia y patrimonio/)).toBeInTheDocument()
+  })
+
+  describe('con vídeo de fondo', () => {
+    const VIDEO = '/storage/public/0123456789abcdef0123456789abcdef.mp4'
+    const conVideo = () => {
+      const textos = structuredClone(POR_DEFECTO.portada)
+      textos.hero.video = VIDEO
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: FOTOS, textos })))
+    }
+    const videoDe = (contenedor: HTMLElement) => contenedor.querySelector('video')
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+      Reflect.deleteProperty(navigator, 'connection')
+    })
+
+    it('sustituye a las fotos: la primera es lo que se ve mientras carga, y no rota', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      conVideo()
+      const { container } = renderWithProviders(<Hero />)
+
+      await screen.findByRole('button', { name: /pausar el vídeo de fondo/i })
+      const video = videoDe(container)!
+      expect(video).toHaveAttribute('src', VIDEO)
+      expect(video).toHaveAttribute('poster', '/storage/public/primera.webp')
+      // En bucle y sin sonido: sin `muted` ningún navegador lo arranca solo.
+      expect(video.muted).toBe(true)
+      expect(video.loop).toBe(true)
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      act(() => { vi.advanceTimersByTime(INTERVALO_ROTACION_MS * 2) })
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    })
+
+    it('se puede pausar y reanudar', async () => {
+      let parado = false
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockImplementation(() => parado)
+      const pausa = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => { parado = true })
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => { parado = false; return Promise.resolve() })
+      conVideo()
+      renderWithProviders(<Hero />)
+
+      await userEvent.click(await screen.findByRole('button', { name: /pausar el vídeo de fondo/i }))
+      expect(pausa).toHaveBeenCalled()
+      await userEvent.click(screen.getByRole('button', { name: /reanudar el vídeo de fondo/i }))
+      expect(screen.getByRole('button', { name: /pausar el vídeo de fondo/i })).toBeInTheDocument()
+    })
+
+    it('con el ahorro de datos puesto no se descarga: se quedan las fotos', async () => {
+      Object.defineProperty(navigator, 'connection', { value: { saveData: true }, configurable: true })
+      conVideo()
+      const { container } = renderWithProviders(<Hero />)
+
+      expect(await screen.findByRole('img', { name: 'Primera foto' })).toBeInTheDocument()
+      expect(videoDe(container)).toBeNull()
+      expect(screen.queryByRole('button', { name: /vídeo de fondo/i })).not.toBeInTheDocument()
+    })
+
+    it('si el vídeo no carga, vuelven las fotos', async () => {
+      conVideo()
+      const { container } = renderWithProviders(<Hero />)
+
+      await screen.findByRole('button', { name: /pausar el vídeo de fondo/i })
+      fireEvent.error(videoDe(container)!)
+      expect(await screen.findByRole('img', { name: 'Primera foto' })).toBeInTheDocument()
+      expect(videoDe(container)).toBeNull()
+    })
   })
 })

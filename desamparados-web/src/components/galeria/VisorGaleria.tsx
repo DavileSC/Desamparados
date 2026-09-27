@@ -7,6 +7,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import ScreenRotationIcon from '@mui/icons-material/ScreenRotation'
 import type { MedioGaleria } from '../../lib/api/contenido'
+import { esVideoPropio } from '../../lib/videoPropio'
 import { DORADO, botonRedondo, fondoDesenfocado, imagenDe, type Medida } from './formato'
 
 const entra = keyframes`from { opacity: 0; transform: scale(0.98) } to { opacity: 1; transform: none }`
@@ -50,14 +51,30 @@ function Medio({ medio, activo, reproduciendo, onReproducir, medidaDe, medir }: 
       // El mayor marco que cabe con su proporción: el hueco declara su tamaño
       // (container-type: size) y el ancho sale de él, sin deformar el vídeo.
       <Box sx={{ position: 'relative', aspectRatio: String(proporcion), width: `min(100cqw, calc(100cqh * ${proporcion}))`, animation: `${entra} 240ms ease-out` }}>
-        <Box
-          component="iframe"
-          src={`${medio.url}${medio.url.includes('?') ? '&' : '?'}autoplay=1`}
-          title={medio.alt}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          sx={{ width: '100%', height: '100%', border: 0, display: 'block', borderRadius: 1, bgcolor: '#000' }}
-        />
+        {esVideoPropio(medio.url) ? (
+          // Un clip nuestro: lo sirve nginx por trozos, así que empieza en
+          // seguida y quien lo cierra a mitad no se descarga el resto.
+          <Box
+            component="video"
+            src={medio.url}
+            poster={medio.portada}
+            aria-label={medio.alt}
+            controls
+            autoPlay
+            playsInline
+            preload="auto"
+            sx={{ width: '100%', height: '100%', display: 'block', borderRadius: 1, bgcolor: '#000' }}
+          />
+        ) : (
+          <Box
+            component="iframe"
+            src={`${medio.url}${medio.url.includes('?') ? '&' : '?'}autoplay=1`}
+            title={medio.alt}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            sx={{ width: '100%', height: '100%', border: 0, display: 'block', borderRadius: 1, bgcolor: '#000' }}
+          />
+        )}
       </Box>
     )
   }

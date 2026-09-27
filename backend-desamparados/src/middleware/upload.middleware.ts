@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import topesVideo from '../../../shared/topes-video.json' with { type: 'json' };
 
 export const publicStorageDir = path.join(process.cwd(), 'storage', 'public');
 export const privateStorageDir = path.join(process.cwd(), 'storage', 'private');
@@ -69,4 +70,24 @@ export const privateUploadMiddleware = multer({
   storage: createStorage(privateStorageDir),
   fileFilter,
   limits: { fileSize: MAX_BYTES_PDF }
+});
+
+/**
+ * Los vídeos, aparte: solo MP4, solo a la carpeta pública y con su propio tope
+ * (el mayor de sus usos, el de la galería). El de cada uso, más bajo en el
+ * hero, lo aplica el controlador. Si se sube este tope, hay que subir también
+ * `client_max_body_size` de `/api/upload/` en nginx y `StreamMaxLength` de
+ * ClamAV, o el vídeo se cortaría antes de analizarse.
+ */
+export const MAX_BYTES_VIDEO = Math.max(topesVideo.hero.maxBytes, topesVideo.galeria.maxBytes);
+
+const filtroDeVideo = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  cb(null, ext === '.mp4' && ['video/mp4', 'application/octet-stream', ''].includes(file.mimetype ?? ''));
+};
+
+export const videoUploadMiddleware = multer({
+  storage: createStorage(publicStorageDir),
+  fileFilter: filtroDeVideo,
+  limits: { fileSize: MAX_BYTES_VIDEO, files: 1 }
 });

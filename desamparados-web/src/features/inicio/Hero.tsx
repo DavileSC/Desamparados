@@ -1,8 +1,11 @@
-import { useEffect, useState, type MouseEvent } from 'react'
-import { Box, Typography } from '@mui/material'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { Box, IconButton, Typography } from '@mui/material'
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import PauseRoundedIcon from '@mui/icons-material/PauseRounded'
+import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
+import { ahorraDatos } from '../../lib/videoPropio'
 import { enlaceConFlecha } from '../../components/estiloDeBoton'
 import Boton from '../../components/Boton'
 import { Revela } from '../../components/SeccionAnimada'
@@ -37,19 +40,36 @@ export default function Hero() {
   const imagenes = status === 'pending' ? null : data && data.imagenes.length > 0 ? data.imagenes : IMAGENES_POR_DEFECTO
   const total = imagenes?.length ?? 0
 
+  // El vídeo de fondo, si el CMS ha puesto uno. Lo ve solo quien no ha pedido
+  // menos movimiento ni ahorrar datos: los demás se quedan con las fotos, que
+  // no cuestan nada más. La primera foto es además su `poster`, lo que se ve
+  // mientras llega. Si el vídeo falla (borrado, red caída), vuelven las fotos.
+  const [ahorro] = useState(ahorraDatos)
+  const [videoFallido, setVideoFallido] = useState(false)
+  const conVideo = Boolean(textos.hero.video) && imagenes !== null && !reduceMotion && !ahorro && !videoFallido
+  const video = useRef<HTMLVideoElement>(null)
+  // Todo lo que se mueve solo más de cinco segundos tiene que poder pararse
+  // (WCAG 2.2.2): por eso el botón de pausa.
+  const [pausado, setPausado] = useState(false)
+  const alternarPausa = () => {
+    const el = video.current
+    if (!el) return
+    if (el.paused) { void el.play(); setPausado(false) } else { el.pause(); setPausado(true) }
+  }
+
   // Fundidos hechos: la foto visible es `tick % total`. Con una sola foto no
   // hay nada que rotar, y con prefers-reduced-motion tampoco se rota (home.css
   // anula además las transiciones y la rotación quedaría en cortes secos).
   const [tick, setTick] = useState(0)
   useEffect(() => {
-    if (total < 2 || reduceMotion) return
+    if (total < 2 || reduceMotion || conVideo) return
     const id = window.setInterval(() => {
       // En una pestaña en segundo plano no se avanza: al volver no hay salto.
       if (document.hidden) return
       setTick((t) => t + 1)
     }, INTERVALO_ROTACION_MS)
     return () => window.clearInterval(id)
-  }, [total, reduceMotion])
+  }, [total, reduceMotion, conVideo])
   const actual = total > 0 ? tick % total : 0
 
   // Parallax que sigue levemente al ratón: la imagen se mueve en sentido contrario al
@@ -111,7 +131,34 @@ export default function Hero() {
           willChange: 'transform',
         }}
       >
-        {imagenes?.map((imagen, i) => {
+        {conVideo && imagenes && (
+          <Box
+            component={motion.video}
+            ref={video}
+            src={textos.hero.video}
+            poster={imagenes[0]?.url}
+            // Decorativo: lo que dice la cabecera está en sus textos.
+            aria-hidden="true"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onError={() => setVideoFallido(true)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: OPACIDAD_FOTO }}
+            transition={{ duration: FUNDIDO_S, ease: 'easeInOut' }}
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: { xs: '35% center', md: 'center' },
+            }}
+          />
+        )}
+        {!conVideo && imagenes?.map((imagen, i) => {
           // Se montan la visible, las ya enseñadas y la siguiente; las demás
           // no gastan red hasta que se acerca su turno.
           if (i > tick + 1) return null
@@ -160,6 +207,31 @@ export default function Hero() {
         }}
       />
 
+      {conVideo && (
+        <IconButton
+          onClick={alternarPausa}
+          aria-label={pausado ? 'Reanudar el vídeo de fondo' : 'Pausar el vídeo de fondo'}
+          sx={{
+            position: 'absolute',
+            zIndex: 3,
+            // Arriba a la derecha en el móvil, donde abajo no queda sitio libre
+            // entre los botones; abajo a la izquierda en escritorio, lejos de
+            // los textos, que van a la derecha.
+            top: { xs: 12, md: 'auto' },
+            right: { xs: 12, md: 'auto' },
+            left: { md: 28 },
+            bottom: { md: 28 },
+            width: 40,
+            height: 40,
+            color: 'rgba(255,255,255,0.8)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            bgcolor: 'rgba(7,6,8,0.35)',
+            '&:hover': { bgcolor: 'rgba(7,6,8,0.6)', color: '#fff' },
+          }}
+        >
+          {pausado ? <PlayArrowRoundedIcon fontSize="small" /> : <PauseRoundedIcon fontSize="small" />}
+        </IconButton>
+      )}
       <Box
         sx={{
           position: 'relative',

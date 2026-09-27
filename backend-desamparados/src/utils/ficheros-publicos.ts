@@ -17,10 +17,10 @@ import { publicStorageDir } from '../middleware/upload.middleware.js';
  * (`portada/*.webp`, `documentos/pendiente.pdf`) no se tocan nunca, y nada que
  * no pase ese filtro llega a un `path.join`.
  */
-export const RUTA_SUBIDA_PUBLICA = /^\/storage\/public\/([a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf))$/i;
+export const RUTA_SUBIDA_PUBLICA = /^\/storage\/public\/([a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf|mp4))$/i;
 
 /** Las rutas de subida que aparecen dentro de un texto: una URL suelta o el HTML de una noticia. */
-const RUTAS_EN_TEXTO = /\/storage\/public\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf)(?![A-Za-z0-9])/gi;
+const RUTAS_EN_TEXTO = /\/storage\/public\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf|mp4)(?![A-Za-z0-9])/gi;
 
 /**
  * El nombre del fichero si la ruta es una subida del CMS; si no, null. Conserva

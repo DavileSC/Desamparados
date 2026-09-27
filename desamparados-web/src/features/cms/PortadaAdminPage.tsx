@@ -5,6 +5,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import { Helmet } from 'react-helmet-async'
 import PantallaEdicion from './PantallaEdicion'
 import CampoImagen from './CampoImagen'
+import CampoVideo from './CampoVideo'
 import SeccionPlegable from './contenido/SeccionPlegable'
 import CampoTexto from './contenido/CampoTexto'
 import VistaPreviaPortada from './contenido/VistaPreviaPortada'
@@ -163,6 +164,19 @@ export default function PortadaAdminPage() {
               )}
             </Box>
           </Box>
+
+          <Divider sx={{ pt: 1 }} />
+
+          <CampoVideo
+            etiqueta="Vídeo de fondo (opcional)"
+            uso="hero"
+            valor={textos.hero.video}
+            onCambio={(video) => cambiarHero({ video })}
+            ayuda={'Si lo pones, sustituye a las fotos: se repite en bucle y sin sonido, así que conviene uno tranquilo '
+              + 'y sin cortes bruscos, de 8 a 30 segundos. La primera foto de arriba se ve mientras carga, y es lo único '
+              + 'que ve quien tiene activado el ahorro de datos o el «reducir movimiento». Al quitarlo o cambiarlo y '
+              + 'guardar, el anterior se borra del servidor.'}
+          />
         </SeccionPlegable>
 
         <SeccionPlegable titulo="Actualidad" vistaPrevia={vista(<NoticiasDestacadas />)}>

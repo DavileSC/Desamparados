@@ -1,7 +1,7 @@
 import { Box, FormControlLabel, InputAdornment, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import topes from '../../../../../shared/topes-contenido.json'
 import CampoImagen from '../CampoImagen'
-import { OPCIONES_COMUNES, libreDe, opcionesPropias, siDe, valorDe, type Opcion } from '../../../components/bloques/presentacion'
+import { OPCIONES_COMUNES, libreDe, opcionesFijas, opcionesPropias, siDe, valorDe, type Opcion } from '../../../components/bloques/presentacion'
 import { AYUDA_OPCION, ETIQUETA_OPCION, etiquetaDeValor } from './etiquetas'
 import { aAncla } from './utilidades'
 import type { Bloque, Presentacion } from '../../../lib/api/contenido'
@@ -56,15 +56,25 @@ export default function PanelDePresentacion({ bloque, ruta, onCambio }: {
     )
   }
 
-  const propias = Object.entries(opcionesPropias(bloque.tipo))
-  const comunes = Object.entries(OPCIONES_COMUNES).filter(([clave]) => DE_FRANJA.includes(clave))
+  // Las fijas no se enseñan: un control que no cambia nada solo confunde.
+  const fijas = opcionesFijas(bloque)
+  const conVideos = Object.keys(fijas).length > 0
+  const propias = Object.entries(opcionesPropias(bloque.tipo)).filter(([clave]) => !(clave in fijas))
+  const comunes = Object.entries(OPCIONES_COMUNES).filter(([clave]) => DE_FRANJA.includes(clave) && !(clave in fijas))
   const ancla = libreDe(bloque, 'ancla')
   const libre = (clave: 'fondoFoto' | 'ancla' | 'desde' | 'hasta', valor: string) => fijar(clave, valor, '')
 
   return (
     <Stack spacing={3}>
-      {propias.length > 0 && (
+      {(propias.length > 0 || conVideos) && (
         <Seccion titulo="Aspecto del bloque">
+          {conVideos && (
+            <Typography variant="body2" color="text.secondary">
+              Una galería de solo vídeos se ve siempre en pase: el vídeo grande con sus miniaturas debajo, y se
+              reproduce ahí mismo al pulsarlo. Por eso aquí no se elige disposición, columnas ni fondo. Si añades
+              alguna foto, vuelven estas opciones y los vídeos se abren a pantalla completa, como las fotos.
+            </Typography>
+          )}
           {propias.map(([clave, opcion]) => control(clave, opcion))}
         </Seccion>
       )}

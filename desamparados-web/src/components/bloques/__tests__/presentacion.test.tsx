@@ -5,7 +5,7 @@ import { renderWithProviders } from '../../../test/test-utils'
 import BloquesDePagina from '../BloquesDePagina'
 import { ModoEdicionContext } from '../modoEdicion'
 import { ICONOS } from '../iconos'
-import { hoyEnMadrid, valorDe, visibilidadDe } from '../presentacion'
+import { hoyEnMadrid, opcionesFijas, valorDe, visibilidadDe } from '../presentacion'
 import { instanteEnMadrid } from '../fechas'
 import CATALOGO from '../../../../../shared/presentacion-de-bloques.json'
 import type { Bloque } from '../../../lib/api/contenido'
@@ -21,6 +21,27 @@ describe('los ayudantes de la presentación', () => {
     expect(valorDe(TEXTO, 'fondo')).toBe('ninguno')
     expect(valorDe(TEXTO, 'estilo')).toBe('normal')
     expect(valorDe({ tipo: 'foto' }, 'tamano')).toBe('grande')
+  })
+
+  it('una galería de solo vídeos va en pase y sin fondo, diga lo que diga; con fotos, lo que se eligió', () => {
+    const presentacion = { disposicion: 'tiras', columnas: '4', fondo: 'granate' }
+    const foto = { tipo: 'foto' as const, url: FOTO, portada: '', alt: 'Una foto', pie: '' }
+    const video = { tipo: 'video' as const, url: 'https://www.youtube-nocookie.com/embed/abcdefghijk', portada: FOTO, alt: 'Un vídeo', pie: '' }
+    const conVideo = { tipo: 'galeria', presentacion, medios: [video, video] }
+    const mezcla = { tipo: 'galeria', presentacion, medios: [foto, video] }
+    const soloFotos = { tipo: 'galeria', presentacion, medios: [foto] }
+
+    expect(valorDe(conVideo, 'disposicion')).toBe('pase')
+    expect(valorDe(conVideo, 'fondo')).toBe('ninguno')
+    expect(Object.keys(opcionesFijas(conVideo)).sort()).toEqual(['columnas', 'disposicion', 'fondo'])
+    // El ancho y el espacio se siguen eligiendo.
+    expect(valorDe({ ...conVideo, presentacion: { ancho: 'ancho' } }, 'ancho')).toBe('ancho')
+
+    expect(valorDe(mezcla, 'disposicion')).toBe('tiras')
+    expect(opcionesFijas(mezcla)).toEqual({})
+    expect(valorDe(soloFotos, 'disposicion')).toBe('tiras')
+    expect(valorDe(soloFotos, 'fondo')).toBe('granate')
+    expect(opcionesFijas(soloFotos)).toEqual({})
   })
 
   it('un valor que no está en el catálogo vuelve al de siempre', () => {

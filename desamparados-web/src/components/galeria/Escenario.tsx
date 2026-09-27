@@ -8,6 +8,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { DORADO, botonRedondo, fondoDesenfocado, imagenDe, type Medida } from './formato'
+import ReproductorEnLinea from './ReproductorEnLinea'
 
 /** Lo que dura cada foto en el pase automático. */
 export const DURACION_PASE = 6000
@@ -25,6 +26,8 @@ interface Props {
   medir: (evento: SyntheticEvent<HTMLImageElement>) => void
   /** Con el visor abierto, o con «reducir movimiento», no pasa sola. */
   quieta: boolean
+  /** Galería de solo vídeos: se reproducen aquí mismo en vez de abrir el visor. */
+  enLinea?: boolean
 }
 
 const dos = (n: number) => String(n).padStart(2, '0')
@@ -35,15 +38,23 @@ const dos = (n: number) => String(n).padStart(2, '0')
  * de franjas negras; una horizontal llena el escenario. Pasa sola cada pocos
  * segundos, con un botón para pararla (y se para al poner el ratón encima o
  * el foco dentro, para que nadie lea con prisas).
+ *
+ * En una galería de solo vídeos, el vídeo se reproduce aquí mismo al pulsarlo,
+ * sin abrir el visor. Mientras suena, el pase espera; cuando un clip nuestro
+ * acaba, el pase sigue. Si hay fotos, el vídeo se abre en el visor como ellas.
  */
-export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, medir, quieta }: Props) {
+export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, medir, quieta, enLinea = false }: Props) {
   const [pausa, setPausa] = useState(false)
   const [encima, setEncima] = useState(false)
-  const varios = medios.length > 1
-  const enMarcha = varios && !pausa && !encima && !quieta
+  // El medio que se está reproduciendo. Al pasar a otro deja de coincidir con
+  // `actual` y el reproductor se desmonta solo.
+  const [sonando, setSonando] = useState<number | null>(null)
   const medio = medios[actual]
-  const { formato } = medidaDe(medio)
   const esVideo = medio.tipo === 'video'
+  const reproduciendo = esVideo && sonando === actual
+  const varios = medios.length > 1
+  const enMarcha = varios && !pausa && !encima && !quieta && !reproduciendo
+  const { formato } = medidaDe(medio)
 
   useEffect(() => {
     if (!enMarcha) return
@@ -60,8 +71,11 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
     >
       <Box sx={{ position: 'relative', aspectRatio: '16 / 9', maxHeight: '78vh', width: '100%', borderRadius: 1.5, overflow: 'hidden', bgcolor: '#070608' }}>
         <Box component="img" key={`fondo-${actual}`} src={imagenDe(medio)} alt="" aria-hidden="true" sx={{ ...fondoDesenfocado(38, 0.45), animation: `${entra} 500ms ease-out` }} />
+        {reproduciendo ? (
+          <ReproductorEnLinea medio={medio} onTerminar={() => setSonando(null)} />
+        ) : (
         <ButtonBase
-          onClick={() => onAbrir(actual, esVideo)}
+          onClick={() => (esVideo && enLinea ? setSonando(actual) : onAbrir(actual, esVideo))}
           aria-label={esVideo ? `Reproducir: ${medio.alt}` : `Ampliar: ${medio.alt}`}
           sx={{ position: 'absolute', inset: 0, overflow: 'hidden', cursor: esVideo ? 'pointer' : 'zoom-in', '&.Mui-focusVisible': { outline: `3px solid ${DORADO}`, outlineOffset: -3 } }}
         >
@@ -81,25 +95,33 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
             }}
           />
         </ButtonBase>
+        )}
 
-        {esVideo && (
+        {esVideo && !reproduciendo && (
           <Box aria-hidden="true" sx={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 96, height: 96, borderRadius: '50%', border: `2px solid ${DORADO}`, bgcolor: 'rgba(7,6,8,0.55)', color: DORADO, display: 'grid', placeItems: 'center', pointerEvents: 'none', backdropFilter: 'blur(6px)' }}>
             <PlayArrowIcon sx={{ fontSize: 44 }} />
           </Box>
         )}
 
-        {varios && (
+        {varios && !reproduciendo && (
           <Typography aria-hidden="true" sx={{ position: 'absolute', top: 18, right: 24, fontVariantNumeric: 'tabular-nums', fontWeight: 300, fontSize: 36, lineHeight: 1, textShadow: '0 2px 12px rgba(0,0,0,0.5)', pointerEvents: 'none' }}>
             {dos(actual + 1)}<Box component="span" sx={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', ml: 1 }}>/ {dos(medios.length)}</Box>
           </Typography>
         )}
 
+        {/* Con el vídeo sonando, el pie se quita: taparía sus controles. */}
+        {!reproduciendo && (
         <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, px: 4, pt: 10, pb: 3, background: 'linear-gradient(to top, rgba(7,6,8,0.9), rgba(7,6,8,0))', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 3, pointerEvents: 'none' }}>
           <Typography sx={{ fontSize: 20, fontWeight: 500, maxWidth: 680, textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>{medio.pie || medio.alt}</Typography>
           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, fontSize: 13, color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap' }}>
-            <OpenInFullIcon sx={{ fontSize: 16 }} />{esVideo ? 'Pulsa para verlo' : 'Pulsa para ampliar'}
+            {esVideo && enLinea
+              ? <><PlayArrowIcon sx={{ fontSize: 16 }} />Pulsa para verlo</>
+              : esVideo
+              ? <><OpenInFullIcon sx={{ fontSize: 16 }} />Pulsa para verlo</>
+              : <><OpenInFullIcon sx={{ fontSize: 16 }} />Pulsa para ampliar</>}
           </Box>
         </Box>
+        )}
 
         {varios && (
           <>

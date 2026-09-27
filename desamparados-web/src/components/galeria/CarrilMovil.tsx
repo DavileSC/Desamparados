@@ -1,8 +1,9 @@
-import { useEffect, useRef, type SyntheticEvent } from 'react'
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react'
 import { Box, ButtonBase, Typography } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { DORADO, fondoDesenfocado, imagenDe, type Medida } from './formato'
+import ReproductorEnLinea from './ReproductorEnLinea'
 
 interface Props {
   medios: MedioGaleria[]
@@ -11,6 +12,8 @@ interface Props {
   onAbrir: (indice: number, reproducir: boolean) => void
   medidaDe: (medio: MedioGaleria) => Medida
   medir: (evento: SyntheticEvent<HTMLImageElement>) => void
+  /** Galería de solo vídeos: se reproducen aquí mismo en vez de abrir el visor. */
+  enLinea?: boolean
 }
 
 const dos = (n: number) => String(n).padStart(2, '0')
@@ -19,11 +22,15 @@ const dos = (n: number) => String(n).padStart(2, '0')
  * La galería en el móvil: se pasa deslizando con el dedo y cada foto encaja
  * sola (scroll-snap del navegador, que sigue el gesto como el sistema). Las
  * horizontales llenan el recuadro; las verticales se ven enteras sobre su
- * propio fondo desenfocado. Tocar una la abre a pantalla completa.
+ * propio fondo desenfocado. Tocar una foto la abre a pantalla completa. En una
+ * galería de solo vídeos, tocar uno lo reproduce ahí mismo, y deslizar a otro
+ * lo para; si hay fotos, el vídeo se abre a pantalla completa como ellas.
  */
-export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, medir }: Props) {
+export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, medir, enLinea = false }: Props) {
   const carril = useRef<HTMLDivElement>(null)
   const varios = medios.length > 1
+  // El que se está reproduciendo: al deslizar a otro deja de ser el actual y se desmonta.
+  const [sonando, setSonando] = useState<number | null>(null)
 
   // Si `actual` cambia desde fuera (al cerrar el visor en otra foto), el carril la sigue.
   useEffect(() => {
@@ -53,12 +60,22 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
           {medios.map((m, i) => {
             const esVideo = m.tipo === 'video'
             const { formato } = medidaDe(m)
+            const hueco = { position: 'relative', flex: '0 0 100%', aspectRatio: '4 / 5', maxHeight: '70vh', scrollSnapAlign: 'start', overflow: 'hidden', bgcolor: '#070608' } as const
+            if (esVideo && sonando === i && i === actual) {
+              return (
+                <Box key={`${imagenDe(m)}-${i}`} sx={hueco}>
+                  <ReproductorEnLinea medio={m} onTerminar={() => setSonando(null)} />
+                </Box>
+              )
+            }
             return (
               <ButtonBase
                 key={`${imagenDe(m)}-${i}`}
-                onClick={() => onAbrir(i, esVideo)}
+                // El que se toca pasa a ser el actual: si el carril aún no había
+                // acabado de encajar, el vídeo no sonaría.
+                onClick={() => { if (esVideo && enLinea) { onIr(i); setSonando(i) } else onAbrir(i, esVideo) }}
                 aria-label={esVideo ? `Reproducir: ${m.alt}` : `Ampliar: ${m.alt}`}
-                sx={{ position: 'relative', flex: '0 0 100%', aspectRatio: '4 / 5', maxHeight: '70vh', scrollSnapAlign: 'start', overflow: 'hidden', bgcolor: '#070608' }}
+                sx={hueco}
               >
                 <Box component="img" src={imagenDe(m)} alt="" aria-hidden="true" loading="lazy" sx={fondoDesenfocado(26, 0.45)} />
                 <Box
@@ -96,7 +113,11 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
       {(medio.pie || varios) && (
         <Typography sx={{ mt: 1.5, fontSize: 17, fontWeight: 500, lineHeight: 1.35 }}>{medio.pie}</Typography>
       )}
-      {varios && <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>Desliza para pasar · toca para verla en grande</Typography>}
+      {varios && (
+        <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
+          {medio.tipo === 'video' ? 'Desliza para pasar · toca para verlo' : 'Desliza para pasar · toca para verla en grande'}
+        </Typography>
+      )}
     </Box>
   )
 }

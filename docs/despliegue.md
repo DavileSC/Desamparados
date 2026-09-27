@@ -340,6 +340,57 @@ Tres cosas del contenedor del antivirus:
   `restart` lo vuelve a levantar. Si `docker stats` lo muestra rozando el tope,
   se sube en el compose.
 
+### Vídeos propios: el servidor no los recomprime
+
+El hero de la portada y las galerías (y el bloque «Vídeo») admiten vídeos
+subidos desde el CMS, además de los enlaces de YouTube o Vimeo. Para que no
+saturen este VPS, **el servidor nunca convierte un vídeo**: recomprimir con
+ffmpeg dejaría los dos núcleos al 100 % varios minutos por vídeo. El vídeo tiene
+que llegar ya preparado y el servidor solo comprueba que lo está, leyendo sus
+cabeceras (`backend-desamparados/src/domain/mp4.ts`), que no cuesta nada:
+
+| | Hero | Galería y bloque «Vídeo» |
+|---|---|---|
+| Formato | MP4, vídeo H.264, sonido AAC o sin sonido | igual |
+| Peso máximo | 5 MB | 15 MB |
+| Duración máxima | 30 s | 2 minutos |
+| Tamaño de imagen | hasta 1920×1080, horizontal o vertical | igual |
+
+Los topes están en `shared/topes-video.json`, que leen a la vez el servidor y el
+CMS. El CMS los comprueba antes de enviar nada, así que nadie espera a que suban
+15 MB para enterarse de que el vídeo es largo. Si se suben, hay que revisar
+también `client_max_body_size` de `/api/upload/` en nginx (25 MB) y
+`StreamMaxLength` de ClamAV (25 MB).
+
+Lo que ahorra en la web:
+
+- **Galerías**: el vídeo no se descarga hasta que alguien le da al play; hasta
+  entonces se ve su foto de portada, que el CMS saca sola del vídeo al subirlo.
+- **Hero**: quien tiene el «ahorro de datos» del móvil, una conexión lenta o
+  el «reducir movimiento» del sistema ve las fotos y no se descarga el vídeo.
+  Lleva botón de pausa.
+- nginx sirve los MP4 por trozos (Range): el navegador empieza a reproducir
+  en seguida y quien se va a mitad no se descarga el resto.
+
+Lo que cuesta al servidor es el peso, no la duración: un vídeo de 2 minutos y
+15 MB gasta lo mismo que uno de 20 segundos y 15 MB. La duración máxima está
+por la calidad: con más minutos en los mismos megas se ve peor. Por eso, a
+partir de un minuto, conviene exportarlo a 720p. Para vídeos más largos (la
+procesión entera, una homilía), YouTube o Vimeo: ellos los sirven y el VPS no
+gasta nada.
+
+**Cómo preparar un vídeo** (en el ordenador, nunca en el servidor): HandBrake,
+que es gratuito. Preset «Fast 1080p30», contenedor MP4, códec de vídeo H.264,
+marcar «Optimizado para web» y recortar el tramo en la pestaña de inicio y fin.
+Para el hero, además, quitar la pista de sonido (se reproduce sin sonido y solo
+pesaría) y, si pasa de 5 MB, subir el «RF» a 24–26 o bajar a 720p. Los vídeos
+del iPhone vienen en H.265 (.mov): el servidor los rechaza porque Firefox y
+muchos Windows no los reproducen, y HandBrake los convierte.
+
+La política de seguridad de nginx lleva `media-src 'self' blob:`: `'self'` para
+reproducir los vídeos propios y `blob:` para que el CMS pueda abrir el vídeo en
+el navegador antes de subirlo y sacarle la foto de portada.
+
 ## El usuario del sistema y los permisos de `storage`
 
 Los contenedores no corren como root, y la API escribe en una carpeta del

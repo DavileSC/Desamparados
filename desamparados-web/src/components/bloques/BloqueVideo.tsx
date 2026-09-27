@@ -3,16 +3,19 @@ import { Box, ButtonBase, Typography } from '@mui/material'
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
 import { valorDe } from './presentacion'
 import type { BloqueVideo as Datos } from '../../lib/api/contenido'
+import { esVideoPropio } from '../../lib/videoPropio'
 
 const ANCHOS = { mediana: '720px', grande: '1000px', completa: 'none' } as const
 
 /**
- * Un vídeo de YouTube o Vimeo en su sitio, a 16:9.
+ * Un vídeo de YouTube o Vimeo, o un clip subido desde el CMS, en su sitio, a 16:9.
  *
  * Hasta que alguien pulsa el play se enseña la portada nuestra y no se carga
  * nada de YouTube: incrustarlo de entrada deja cookies de terceros y avisa de
  * cada visita, sin que nadie haya pedido ver nada. La dirección llega del
  * servidor ya en su forma sin cookies (`youtube-nocookie`, `player.vimeo`).
+ * Con un clip nuestro pasa lo mismo por otra razón: hasta el play no se
+ * descarga, y la mayoría de las visitas no le dan.
  */
 export default function BloqueVideo({ bloque }: { bloque: Datos }) {
   const [reproduciendo, setReproduciendo] = useState(false)
@@ -24,7 +27,11 @@ export default function BloqueVideo({ bloque }: { bloque: Datos }) {
   return (
     <Box component="figure" sx={{ m: 0, mx: completa ? 'calc(50% - 50vw)' : 'auto', maxWidth: ANCHOS[tamano] ?? ANCHOS.grande }}>
       <Box sx={{ position: 'relative', aspectRatio: '16 / 9', overflow: 'hidden', borderRadius: completa ? 0 : 2, backgroundColor: '#000' }}>
-        {reproduciendo ? (
+        {reproduciendo && esVideoPropio(bloque.url) ? (
+          <Box component="video" src={bloque.url} poster={bloque.portada} aria-label={bloque.alt}
+            controls autoPlay playsInline preload="auto"
+            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', bgcolor: '#000' }} />
+        ) : reproduciendo ? (
           <Box component="iframe" src={`${bloque.url}${separador}autoplay=1`} title={bloque.alt}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen
             sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} />

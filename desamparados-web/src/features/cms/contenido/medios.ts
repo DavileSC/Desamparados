@@ -22,7 +22,7 @@ export const VIDEO_NUEVO: MedioGaleria = { tipo: 'video', url: '', portada: '', 
  */
 export function problemaDelMedio(medio: MedioGaleria): string | null {
   if (medio.url.trim() === '') {
-    return medio.tipo === 'video' ? 'tiene un vídeo sin dirección' : 'tiene una foto sin subir'
+    return medio.tipo === 'video' ? 'tiene un vídeo sin dirección ni subir' : 'tiene una foto sin subir'
   }
   // Sin descripción, el medio no existe para quien use un lector de pantalla.
   if (medio.alt.trim() === '') return 'tiene un medio sin descripción'

@@ -27,3 +27,17 @@ export function subirImagenPublica(archivo: File): Promise<string> {
 export function subirPdfPublico(archivo: File): Promise<string> {
   return subirArchivoPublico(archivo)
 }
+
+/** Dónde va un vídeo: cada sitio tiene su tope de peso y de duración (`shared/topes-video.json`). */
+export type UsoDeVideo = 'hero' | 'galeria'
+
+/**
+ * Un vídeo MP4 (H.264) ya preparado para la web. El servidor no lo recomprime:
+ * comprueba que cumple los topes de su uso y lo guarda tal cual.
+ */
+export async function subirVideoPublico(archivo: File, uso: UsoDeVideo): Promise<string> {
+  const formulario = new FormData()
+  formulario.append('file', archivo)
+  const respuesta = await llamarApi<RespuestaSubida>(`/upload/video/${uso}`, { method: 'POST', formData: formulario })
+  return `/storage/public/${encodeURIComponent(respuesta.data.filename)}`
+}

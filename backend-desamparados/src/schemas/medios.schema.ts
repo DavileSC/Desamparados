@@ -2,10 +2,11 @@ import { type } from 'arktype';
 import topes from '../../../shared/topes-contenido.json' with { type: 'json' };
 import { rutaImagenPublica } from './portada.schema.js';
 import { normalizarVideo } from '../domain/video-galeria.js';
-import { esImagenPropia } from '../utils/rutas-propias.js';
+import { esImagenPropia, esVideoPropio } from '../utils/rutas-propias.js';
 
 /**
- * Un medio de una galería: una foto nuestra o un vídeo de YouTube o Vimeo.
+ * Un medio de una galería: una foto nuestra o un vídeo, de YouTube o Vimeo o
+ * subido desde el CMS (un MP4 corto, `domain/mp4.ts`).
  *
  * Vive aquí, y no dentro de `contenido.schema.ts`, porque lo usan dos sitios
  * con dos formas de validar distintas: la página de la Sagrada Titular, que
@@ -52,12 +53,13 @@ export function problemaDelMedio(
       ? null
       : { campo: 'url', problema: 'tiene que ser una foto subida desde el CMS' };
   }
-  if (normalizarVideo(medio.url) === null) {
-    return { campo: 'url', problema: 'tiene que ser un vídeo de YouTube o Vimeo' };
+  if (!esVideoPropio(medio.url) && normalizarVideo(medio.url) === null) {
+    return { campo: 'url', problema: 'tiene que ser un vídeo de YouTube o Vimeo, o uno subido desde el CMS' };
   }
   return medio.portada === ''
     // Sin portada propia habría que pedirle la miniatura a YouTube nada más
-    // abrir la página, y eso ya avisa a un tercero de la visita.
+    // abrir la página, y eso ya avisa a un tercero de la visita. En un vídeo
+    // nuestro es lo que evita descargarlo entero solo para enseñar la galería.
     ? { campo: 'portada', problema: 'es obligatoria en los vídeos' }
     : null;
 }

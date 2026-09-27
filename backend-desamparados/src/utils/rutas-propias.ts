@@ -23,6 +23,15 @@ export const PDF_DE_RELLENO = '/storage/public/documentos/pendiente.pdf';
 
 export const esImagenPropia = (ruta: string) => IMAGEN_PROPIA.test(ruta);
 
+/**
+ * Un vídeo subido desde el CMS: solo MP4 y solo en la raíz de /storage/public,
+ * que es donde lo deja la subida (`POST /api/upload/video/:uso`). Nada de
+ * vídeos estáticos ni de otras carpetas: no los hay.
+ */
+export const VIDEO_PROPIO = /^\/storage\/public\/[a-f0-9]{32}\.mp4$/i;
+
+export const esVideoPropio = (ruta: string) => VIDEO_PROPIO.test(ruta);
+
 /** Un PDF subido desde el CMS (32 hex en la raíz de /storage/public) o el de relleno del seed. */
 export const esPdfPropio = (ruta: string) => ruta === PDF_DE_RELLENO || /^\/storage\/public\/[a-f0-9]{32}\.pdf$/i.test(ruta);
 

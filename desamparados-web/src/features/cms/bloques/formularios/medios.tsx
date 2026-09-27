@@ -55,8 +55,6 @@ export function FormularioFoto({ bloque, onCambio }: Props<BloqueFoto>) {
 export function FormularioGaleria({ bloque, onCambio }: Props<BloqueGaleria>) {
   const [claves, setClaves] = useState<number[]>(() => bloque.medios.map(siguienteClave))
 
-  const cambiar = (indice: number, cambios: Partial<MedioGaleria>) =>
-    onCambio({ medios: bloque.medios.map((m, i) => (i === indice ? { ...m, ...cambios } : m)) })
 
   const anadir = (medio: MedioGaleria) => {
     setClaves((actuales) => [...actuales, siguienteClave()])
@@ -73,6 +71,13 @@ export function FormularioGaleria({ bloque, onCambio }: Props<BloqueGaleria>) {
   // cuando termina una subida ya tiene lo último.
   const alDia = useRef({ bloque, onCambio })
   useEffect(() => { alDia.current = { bloque, onCambio } })
+
+  // También los cambios de un medio: un vídeo tarda en subir, y al terminar se
+  // aplica sobre la galería de ese momento, con lo escrito mientras tanto.
+  const cambiar = (indice: number, cambios: Partial<MedioGaleria>) => {
+    const { bloque: actual, onCambio: cambiarActual } = alDia.current
+    cambiarActual({ medios: actual.medios.map((m, i) => (i === indice ? { ...m, ...cambios } : m)) })
+  }
   const anadirSubidas = (rutas: string[]) => {
     const { bloque: actual, onCambio: cambiarActual } = alDia.current
     setClaves((actuales) => [...actuales, ...rutas.map(() => siguienteClave())])
@@ -138,8 +143,8 @@ export function FormularioGaleria({ bloque, onCambio }: Props<BloqueGaleria>) {
         </Stack>
       ))}
 
-      {/* Las fotos se suben de una en una o muchas a la vez; los vídeos son
-          enlaces de YouTube o Vimeo, no ficheros, y se añaden aparte. */}
+      {/* Las fotos se suben de una en una o muchas a la vez; los vídeos se
+          añaden aparte, y dentro se elige si son de YouTube o un clip subido. */}
       <SubidaDeFotos
         hueco={topes.mediosPorGaleria - bloque.medios.length}
         onSubidas={anadirSubidas}

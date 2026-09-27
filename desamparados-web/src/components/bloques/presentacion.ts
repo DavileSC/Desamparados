@@ -24,8 +24,34 @@ export const ICONOS_DE_TARJETA = CATALOGO.iconosDeTarjeta
 
 const opcionDe = (tipo: string, clave: string): Opcion | undefined => POR_TIPO[tipo]?.[clave] ?? COMUNES[clave]
 
+/** Si una galería es solo de vídeos (y tiene alguno): entonces se reproducen ahí mismo. */
+export const soloVideos = (medios: { tipo: string }[]): boolean =>
+  medios.length > 0 && medios.every((m) => m.tipo === 'video')
+
+/** Lo que hace falta mirar de un bloque para saber qué opciones tiene fijas. */
+type ConPresentacion = { tipo: string; presentacion?: Presentacion; medios?: { tipo: string }[] }
+
+/**
+ * Las opciones que un bloque no deja elegir, con el valor que llevan.
+ *
+ * Una galería de solo vídeos va siempre en pase (el escenario con miniaturas)
+ * y sin fondo: es la disposición donde el vídeo se reproduce ahí mismo, sin
+ * abrir el visor, y el fondo de la franja competía con el del escenario. Una
+ * que mezcla fotos y vídeos se elige como una de fotos, y sus vídeos se abren
+ * en el visor. Lo guardado no se toca: si se añade una foto, vuelven las
+ * opciones que se hubieran elegido.
+ */
+export function opcionesFijas(bloque: ConPresentacion): Record<string, string> {
+  if (bloque.tipo === 'galeria' && soloVideos(bloque.medios ?? [])) {
+    return { disposicion: 'pase', columnas: '3', fondo: 'ninguno' }
+  }
+  return {}
+}
+
 /** El valor de una opción de lista, o el de siempre si el bloque no lo dice. */
-export function valorDe(bloque: { tipo: string; presentacion?: Presentacion }, clave: string): string {
+export function valorDe(bloque: ConPresentacion, clave: string): string {
+  const fija = opcionesFijas(bloque)[clave]
+  if (fija !== undefined) return fija
   const opcion = opcionDe(bloque.tipo, clave)
   const porDefecto = opcion && 'valores' in opcion ? opcion.valores[0] : ''
   const valor = bloque.presentacion?.[clave]
