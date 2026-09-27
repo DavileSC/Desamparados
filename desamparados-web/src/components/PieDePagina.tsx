@@ -43,6 +43,7 @@ const columnas: { titulo: string; rutas: string[] }[] = [
       '/nuestros-fines',
       '/cultos',
       '/sabado-de-pasion',
+      '/rosario',
       '/desamparados',
     ],
   },

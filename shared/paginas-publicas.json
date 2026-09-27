@@ -62,6 +62,13 @@
       "descripcion": "Las celebraciones y devociones del año."
     },
     {
+      "slug": "rosario",
+      "nombre": "Rosario",
+      "ruta": "/rosario",
+      "grupo": "Corporación",
+      "descripcion": "El Rosario vespertino de octubre: qué es, su itinerario y sus fotos."
+    },
+    {
       "slug": "sabado-de-pasion",
       "nombre": "Sábado de Pasión",
       "ruta": "/sabado-de-pasion",

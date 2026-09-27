@@ -31,7 +31,7 @@ describe('cejaDePagina', () => {
 describe('fotos de partida', () => {
   it('toda página con cabecera a sangre trae foto del repositorio, descripción y encuadre', () => {
     for (const { slug } of CATALOGO.paginas.filter((p) => tipoDeCabecera(p.slug) === 'a-sangre')) {
-      const { cabecera } = (POR_DEFECTO as Record<string, PaginaDeBloques>)[slug]
+      const { cabecera } = (POR_DEFECTO as unknown as Record<string, PaginaDeBloques>)[slug]
       expect(cabecera.foto, slug).toMatch(/^\/images\/cabeceras\/[\w-]+\.webp$/)
       expect(cabecera.fotoAlt.trim(), slug).not.toBe('')
       expect(cabecera.encuadre, slug).toBeGreaterThanOrEqual(0)

@@ -56,6 +56,7 @@ export const menuPublico: EntradaMenu[] = [
           { label: 'Enseres', href: '/sabado-de-pasion/enseres' },
         ],
       },
+      { label: 'Rosario', href: '/rosario' },
     ],
   },
   {

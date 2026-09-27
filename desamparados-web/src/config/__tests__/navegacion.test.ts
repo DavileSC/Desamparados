@@ -42,6 +42,7 @@ describe('menuPublico', () => {
         '    Recorrido /sabado-de-pasion/recorrido',
         '    Trono /sabado-de-pasion/trono',
         '    Enseres /sabado-de-pasion/enseres',
+        '  Rosario /rosario',
         'Sagrada titular /sagrada-titular',
         '  Desamparados /desamparados',
         '  Ajuar /ajuar',

@@ -2102,6 +2102,127 @@
       }
     ]
   },
+  "rosario": {
+    "cabecera": {
+      "titulo": "Rosario vespertino",
+      "subtitulo": "La Virgen por las calles del barrio, al caer la tarde de octubre.",
+      "foto": "/images/cabeceras/virgen-de-noche.webp",
+      "fotoAlt": "La Virgen de los Desamparados con el rosario en la mano, entre cirios encendidos, de noche",
+      "encuadre": 40
+    },
+    "bloques": [
+      {
+        "tipo": "texto",
+        "titulo": "",
+        "html": "<p>El Rosario vespertino es el rezo público y solemne del Santo Rosario al caer la tarde, en procesión por las calles de nuestro barrio. Cada mes de octubre, el mes del Rosario, Nuestra Señora de los Desamparados sale en un trono pequeño y recorre durante algo menos de dos horas las calles de la feligresía.</p><p>La acompañamos los hermanos del Grupo Parroquial, en traje y con la cera en la mano, rezando los misterios a lo largo del camino. Es una salida más íntima y cercana que la del Sábado de Pasión: la Virgen pasa a la puerta de las casas de sus vecinos, y quien quiera puede sumarse al rezo desde la acera.</p>"
+      },
+      {
+        "tipo": "itinerario",
+        "titulo": "Itinerario y horarios aproximados",
+        "paradas": [
+          {
+            "hora": "19:30",
+            "lugar": "Salida desde el Templo"
+          },
+          {
+            "hora": "19:40",
+            "lugar": "C. Corregidor Antonio de Bobadilla"
+          },
+          {
+            "hora": "19:50",
+            "lugar": "C. Corregidor Ruiz de Pereda"
+          },
+          {
+            "hora": "20:00",
+            "lugar": "C. Corregidor Francisco de Molina"
+          },
+          {
+            "hora": "20:10",
+            "lugar": "C. Pedro Zapata"
+          },
+          {
+            "hora": "20:25",
+            "lugar": "C. Villalón"
+          },
+          {
+            "hora": "20:40",
+            "lugar": "C. Juan Gris"
+          },
+          {
+            "hora": "20:50",
+            "lugar": "C. de Alozaina"
+          },
+          {
+            "hora": "21:00",
+            "lugar": "C. Periana"
+          },
+          {
+            "hora": "21:10",
+            "lugar": "Plaza de Nuestra Señora del Carmen"
+          },
+          {
+            "hora": "21:20",
+            "lugar": "C. Corregidor Paz y Guzmán"
+          },
+          {
+            "hora": "21:30",
+            "lugar": "Regreso al Templo"
+          }
+        ]
+      },
+      {
+        "tipo": "galeria",
+        "titulo": "",
+        "presentacion": {
+          "disposicion": "tiras"
+        },
+        "medios": [
+          {
+            "tipo": "foto",
+            "url": "/images/trono-candeleria.webp",
+            "portada": "",
+            "alt": "El trono de la Virgen con la candelería encendida",
+            "pie": ""
+          },
+          {
+            "tipo": "foto",
+            "url": "/images/virgen-rostro.jpg",
+            "portada": "",
+            "alt": "El rostro de Nuestra Señora de los Desamparados",
+            "pie": ""
+          },
+          {
+            "tipo": "foto",
+            "url": "/images/trono-comitiva.webp",
+            "portada": "",
+            "alt": "El trono avanzando entre los hermanos que lo acompañan",
+            "pie": ""
+          },
+          {
+            "tipo": "foto",
+            "url": "/images/trono-cera.webp",
+            "portada": "",
+            "alt": "La cera encendida en el trono",
+            "pie": ""
+          },
+          {
+            "tipo": "foto",
+            "url": "/images/cabeceras/trono-en-la-calle.webp",
+            "portada": "",
+            "alt": "La Virgen en su trono por una calle del barrio",
+            "pie": ""
+          },
+          {
+            "tipo": "foto",
+            "url": "/images/trono-varales.webp",
+            "portada": "",
+            "alt": "Los varales del trono",
+            "pie": ""
+          }
+        ]
+      }
+    ]
+  },
   "desamparados": {
     "cabecera": {
       "titulo": "Desamparados",

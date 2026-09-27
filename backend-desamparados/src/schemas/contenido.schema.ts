@@ -103,6 +103,7 @@ const ESQUEMAS = {
   'sabado-de-pasion': paginaDeBloquesSchema,
   trono: paginaDeBloquesSchema,
   enseres: paginaDeBloquesSchema,
+  rosario: paginaDeBloquesSchema,
   desamparados: paginaDeBloquesSchema,
   ajuar: paginaDeBloquesSchema,
   agenda: paginaDeBloquesSchema,
