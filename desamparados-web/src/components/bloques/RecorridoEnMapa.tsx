@@ -3,7 +3,6 @@ import { Box, IconButton, ToggleButton, ToggleButtonGroup, Tooltip, Typography }
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import ReplayIcon from '@mui/icons-material/Replay'
-import SwipeVerticalIcon from '@mui/icons-material/SwipeVertical'
 import { useReducedMotion } from 'framer-motion'
 import maplibregl, { type GeoJSONSource, type Map as Mapa, type Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -20,19 +19,18 @@ const DURACION_PLAY_MS = 60_000
 /** La cámara que sigue al trono: cerca e inclinada, con los edificios en relieve. */
 const CAMARA_CERCA = { zoom: 16.6, pitch: 52, bearing: -12 }
 const GRANATE_CLARO = '#fc858a'
-/** Lo que mide cada calle de la lista: algo más que un giro de la rueda del ratón (100 px), para que un giro avance una parada y nunca dos. */
-const ALTO_CALLE = { xs: 110, md: 110 }
-/** Lo que se ve de la lista mientras el mapa está quieto: el alto del mapa, o en el móvil lo que queda de pantalla debajo. */
-const VISTA_LISTA = { xs: 'max(0px, 54svh - 88px)', md: 'max(420px, 100svh - 128px)' }
-
 /**
- * El alto de cada calle para que, con `n` calles, la lista mida lo que se ve
- * de ella más un gesto por calle: n · alto = vista + (n − 1) · ALTO_CALLE.
+ * El alto del mapa y, en escritorio, también el de la lista de al lado. Con la
+ * frase de encima y la cabecera, el bloque entero cabe en la pantalla con
+ * holgura: no hace falta dejar el scroll clavado para ver el mapa entero. En
+ * el móvil, mapa y lista van uno encima del otro y también caben juntos.
  */
-const altoDeCalleCon = (n: number) => ({
-  xs: `calc((${ALTO_CALLE.xs * Math.max(0, n - 1)}px + ${VISTA_LISTA.xs}) / ${Math.max(1, n)})`,
-  md: `calc((${ALTO_CALLE.md * Math.max(0, n - 1)}px + ${VISTA_LISTA.md}) / ${Math.max(1, n)})`,
-})
+const ALTO_MAPA = { xs: '40svh', md: 'min(760px, calc(100svh - 210px))' }
+const ALTO_LISTA = { xs: '28svh', md: ALTO_MAPA.md }
+const ALTO_MINIMO = { xs: 230, md: 380 }
+const ALTO_MINIMO_LISTA = { xs: 170, md: ALTO_MINIMO.md }
+/** El recorrido entero, con aire abajo: ahí van el play y los botones de la cámara. */
+const MARGEN_ENTERO = { top: 48, right: 48, left: 48, bottom: 88 }
 
 type Camara = 'sigue' | 'entero'
 
@@ -47,15 +45,12 @@ function cajaDe(linea: Coordenada[]) {
  * El itinerario sobre el mapa del barrio (OpenStreetMap, servido desde la
  * propia web). A un lado el mapa, quieto mientras se lee; al otro, las paradas.
  *
- * Según se baja por las paradas, la línea del recorrido se dibuja por las
- * calles y el trono (un punto granate) llega a cada una; si se sube, vuelve
- * atrás. El recorrido empieza justo cuando el mapa se queda quieto y acaba
- * justo cuando se suelta: no hay tramo de scroll en que el mapa no haga nada.
- *
- * Quien lo ve puede darle al play y verlo andar solo, despacio (un minuto el
- * recorrido entero), volver a empezar, y elegir si la cámara sigue al trono o
- * enseña el recorrido entero. Si baja mientras se reproduce, el play se para y
- * el mapa vuelve a ir con el scroll. Un texto encima lo explica.
+ * El recorrido anda solo con el play, despacio (un minuto entero): la línea
+ * se dibuja por las calles, el trono (un punto granate) llega a cada parada y
+ * la lista de al lado se desliza a su par, con la calle por la que va en el
+ * centro. Se puede pausar, volver a empezar y elegir si la cámara sigue al
+ * trono o enseña el recorrido entero. Antes iba con el scroll de la página,
+ * pero se pasaba en un momento: ahora el scroll solo mueve la página.
  *
  * Con «reducir movimiento» la cámara empieza enseñando el recorrido entero y
  * no se desliza. En la vista en vivo del constructor sale entero y dibujado.
@@ -77,7 +72,8 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const circular = linea.length > 1 && metros(linea[0], linea[linea.length - 1]) < 40
 
   const contenedor = useRef<HTMLDivElement>(null)
-  const sitio = useRef<HTMLDivElement>(null)
+  /** La caja con scroll propio de la lista: es la que se desliza con el trono. */
+  const caja = useRef<HTMLDivElement>(null)
   const lista = useRef<HTMLOListElement>(null)
   const mapa = useRef<Mapa | null>(null)
   const trono = useRef<Marker | null>(null)
@@ -87,8 +83,6 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const objetivo = useRef<Coordenada>(linea[0])
   const centro = useRef<Coordenada>(linea[0])
   const play = useRef<{ desde: number; inicio: number } | null>(null)
-  /** La parada a la que va el trono (su fracción): la marca el scroll, y el reloj lo hace andar hasta ella. */
-  const destino = useRef(enConstructor ? 1 : 0)
   const etiqueta = useRef<HTMLSpanElement | null>(null)
   /** El rótulo «Salida y entrada»: se aparta cuando el trono pasa por su lado. */
   const rotuloSalida = useRef<HTMLSpanElement | null>(null)
@@ -113,31 +107,25 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   }, [linea, hechos, posiciones])
 
   /**
-   * Cuánto del recorrido corresponde al scroll. El 0 es el momento en que el
-   * mapa se queda quieto y la lista empieza a pasar a su lado (o, en el móvil,
-   * por debajo); el 1, cuando la lista llega al final del mapa (o de la
-   * pantalla). Entre medias, cada parada se alcanza cuando pasa por la altura
-   * proporcional de la lista, y el trono anda hasta ella y se para.
+   * Desliza la lista a la par del trono: entre dos paradas, a la altura
+   * proporcional entre sus filas, de modo que la calle por la que va queda en
+   * el centro de la caja. Sin suavizado propio: ya lo lleva el trono.
    */
-  const destinoDelScroll = useCallback((): number => {
-    const caja = sitio.current?.getBoundingClientRect()
-    const ol = lista.current
-    if (!caja || !ol) return 0
-    const cajaLista = ol.getBoundingClientRect()
-    const alLado = cajaLista.left >= caja.right - 1
-    const inicio = alLado ? caja.top : caja.bottom + 16
-    const fin = alLado ? caja.bottom : window.innerHeight
-    const recorre = cajaLista.height - (fin - inicio)
-    const p = recorre <= 0 ? (cajaLista.top <= inicio ? 1 : 0) : Math.min(1, Math.max(0, (inicio - cajaLista.top) / recorre))
+  const sigueLaLista = useCallback((f: number) => {
+    const c = caja.current, ol = lista.current
+    if (!c || !ol || ol.children.length === 0) return
     const filas = Array.from(ol.children) as HTMLElement[]
-    if (filas.length < 2) return p
-    const centros = filas.map((f) => f.offsetTop + f.offsetHeight / 2)
-    const v = centros[0] + p * (centros[centros.length - 1] - centros[0])
-    // De parada en parada: el scroll no deja el trono entre dos, lo lleva a la
-    // parada más cercana a esa altura y el reloj lo hace andar hasta ella.
-    let i = 0
-    centros.forEach((c, j) => { if (Math.abs(c - v) < Math.abs(centros[i] - v)) i = j })
-    return posiciones[i]
+    const centros = filas.map((fila) => fila.offsetTop + fila.offsetHeight / 2)
+    let y = centros[0]
+    if (f >= posiciones[posiciones.length - 1]) y = centros[centros.length - 1]
+    else {
+      const i = posiciones.findIndex((p, k) => f >= p && f < (posiciones[k + 1] ?? Infinity))
+      if (i >= 0) {
+        const t = (f - posiciones[i]) / Math.max(1e-9, posiciones[i + 1] - posiciones[i])
+        y = centros[i] + t * (centros[i + 1] - centros[i])
+      }
+    }
+    c.scrollTop = y - c.clientHeight / 2
   }, [posiciones])
 
   // El mapa: se crea una vez, cuando llegan los datos del barrio.
@@ -166,7 +154,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
       medidor = new ResizeObserver(() => {
         m.resize()
         // Con el recorrido entero a la vista, se vuelve a encuadrar al nuevo tamaño.
-        if (camaraActual.current === 'entero') m.fitBounds(cajaDe(linea), { padding: 48, pitch: 0, bearing: 0, duration: 0 })
+        if (camaraActual.current === 'entero') m.fitBounds(cajaDe(linea), { padding: MARGEN_ENTERO, pitch: 0, bearing: 0, duration: 0 })
       })
       medidor.observe(contenedor.current)
 
@@ -235,24 +223,10 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     })
   }, [listo, alcanzada, posiciones, linea, hechos, paradas.length, enConstructor])
 
-  // Primera pintura y cada vez que se baja o se sube.
+  // Primera pintura: el trono en la salida (en el constructor, el recorrido entero).
   useEffect(() => {
-    if (!listo) return
-    if (enConstructor) { pinta(1); return }
-    destino.current = destinoDelScroll()
-    pinta(destino.current)
-    const alScroll = () => {
-      // Bajar mientras se reproduce devuelve el mapa al scroll.
-      if (play.current) { play.current = null; setReproduciendo(false) }
-      destino.current = destinoDelScroll()
-    }
-    window.addEventListener('scroll', alScroll, { passive: true })
-    window.addEventListener('resize', alScroll)
-    return () => {
-      window.removeEventListener('scroll', alScroll)
-      window.removeEventListener('resize', alScroll)
-    }
-  }, [listo, enConstructor, pinta, destinoDelScroll])
+    if (listo) pinta(enConstructor ? 1 : fraccion.current)
+  }, [listo, enConstructor, pinta])
 
   // El reloj: el play y la cámara que sigue al trono sin dar saltos.
   useEffect(() => {
@@ -263,11 +237,8 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
       if (p) {
         const f = Math.min(1, p.desde + (ahora - p.inicio) / DURACION_PLAY_MS)
         pinta(f)
-        if (f >= 1) { play.current = null; destino.current = 1; setReproduciendo(false) }
-      } else {
-        const d = destino.current, f = fraccion.current
-        // Hasta la parada, frenando al llegar; con «reducir movimiento», de golpe.
-        if (Math.abs(d - f) > 1e-5) pinta(reducir || Math.abs(d - f) < 0.001 ? d : f + (d - f) * 0.06)
+        sigueLaLista(f)
+        if (f >= 1) { play.current = null; setReproduciendo(false) }
       }
       const m = mapa.current
       // Mientras la cámara cambia de plano (acercarse al trono, alejarse al
@@ -283,7 +254,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     }
     marco = requestAnimationFrame(paso)
     return () => cancelAnimationFrame(marco)
-  }, [listo, pinta, reducir])
+  }, [listo, pinta, sigueLaLista, reducir])
 
   // Cambio de cámara: al trono, de cerca, o el recorrido entero desde arriba.
   useEffect(() => {
@@ -291,7 +262,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     if (!listo || !m || !mapaVivo(m)) return
     const duracion = reducir ? 0 : 1200
     if (camara === 'entero') {
-      m.fitBounds(cajaDe(linea), { padding: 48, pitch: 0, bearing: 0, duration: duracion })
+      m.fitBounds(cajaDe(linea), { padding: MARGEN_ENTERO, pitch: 0, bearing: 0, duration: duracion })
     } else {
       centro.current = objetivo.current
       m.easeTo({ center: objetivo.current, ...CAMARA_CERCA, duration: duracion })
@@ -299,36 +270,23 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   }, [camara, listo, linea, reducir])
 
   const alternaPlay = () => {
-    if (play.current) { play.current = null; destino.current = fraccion.current; setReproduciendo(false); return }
+    if (play.current) { play.current = null; setReproduciendo(false); return }
     const desde = fraccion.current >= 0.999 ? 0 : fraccion.current
     play.current = { desde, inicio: performance.now() }
     setReproduciendo(true)
   }
 
-  /**
-   * Volver a empezar: de cero, no marcha atrás. El trono aparece en la salida,
-   * la línea se borra, la cámara salta al principio y la página vuelve de golpe
-   * al comienzo de la lista (un desplazamiento suave haría pasar el scroll por
-   * todas las paradas y el trono desandaría el camino).
-   */
+  /** Volver a empezar: de cero, no marcha atrás. El trono aparece en la salida, la línea se borra y la lista sube arriba. */
   const volverAEmpezar = () => {
     play.current = null
     setReproduciendo(false)
-    destino.current = 0
     pinta(0)
+    if (caja.current) caja.current.scrollTop = 0
     centro.current = linea[0]
     if (camaraActual.current === 'sigue') mapa.current?.jumpTo({ center: linea[0] })
-    const caja = sitio.current?.getBoundingClientRect()
-    const cajaLista = lista.current?.getBoundingClientRect()
-    if (!caja || !cajaLista) return
-    const alLado = cajaLista.left >= caja.right - 1
-    const inicio = alLado ? caja.top : caja.bottom + 16
-    const sobra = cajaLista.top - inicio
-    if (sobra < -1) window.scrollTo({ top: window.scrollY + sobra, behavior: 'instant' })
   }
 
   const actual = alcanzada >= 0 ? paradas[alcanzada] : null
-  const altoDeCalle = altoDeCalleCon(paradas.length)
   const botonMapa = {
     width: 34, height: 34, color: '#fff', backgroundColor: 'rgba(7, 6, 8, .85)', border: '1px solid rgba(204, 196, 201, .3)',
     '&:hover': { backgroundColor: 'rgba(7, 6, 8, .95)', borderColor: GOLD },
@@ -336,11 +294,9 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
 
   return (
     <Box sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto' }}>
-      {/* Cómo se usa: va encima del mapa y de la lista, no dentro de la lista,
-          para que el recorrido empiece justo cuando el mapa se queda quieto. */}
       <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5, color: '#e3d8bf', fontSize: 14 }}>
-        <SwipeVerticalIcon sx={{ fontSize: 20, color: GOLD }} aria-hidden="true" />
-        Baja por las calles para seguir el recorrido en el mapa, o dale al play para verlo andar solo.
+        <PlayArrowIcon sx={{ fontSize: 20, color: GOLD }} aria-hidden="true" />
+        Dale al play para ver el recorrido andar por las calles.
       </Typography>
     <Box
       sx={{
@@ -350,10 +306,9 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
       }}
     >
       <Box
-        ref={sitio}
         sx={{
-          position: 'sticky', top: { xs: 72, md: 104 }, alignSelf: 'start', zIndex: 3,
-          height: { xs: '46svh', md: 'calc(100svh - 128px)' }, minHeight: { xs: 300, md: 420 },
+          position: 'relative', zIndex: 3,
+          height: ALTO_MAPA, minHeight: ALTO_MINIMO,
           mb: { xs: 2, md: 0 }, overflow: 'hidden', border: '1px solid rgba(204, 196, 201, 0.14)', backgroundColor: '#0b0a0c',
           // El reconocimiento a OpenStreetMap que pide su licencia (ODbL): siempre
           // a la vista, legible sobre el mapa oscuro y con el enlace a sus
@@ -405,12 +360,15 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
         )}
       </Box>
 
-      {/* Una calle por gesto, y sin hueco al final. El recorrido va de la lista
-          arriba del todo junto al mapa a la lista acabando justo al pie del
-          mapa (en el móvil, de la pantalla), así que da para lo que mide la
-          lista menos el mapa. Las calles se estiran lo justo para que eso sea
-          un giro de rueda y algo (ALTO_CALLE) por cada calle: la última,
-          «Regreso al templo», llega al pie del mapa y ahí se acaba. */}
+      {/* La lista, con scroll propio y del alto del mapa (en el móvil, debajo y
+          más baja): mientras anda el trono se desliza sola; en pausa, se puede
+          recorrer a mano, sin barra de scroll. */}
+      <Box ref={caja} sx={{
+        position: 'relative', overflowY: 'auto', overscrollBehavior: 'contain',
+        height: ALTO_LISTA, minHeight: ALTO_MINIMO_LISTA,
+        // Se puede recorrer con la rueda o el dedo, pero sin barra a la vista.
+        scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
+      }}>
       <Box component="ol" ref={lista} sx={{ listStyle: 'none', m: 0, p: 0 }}>
         {paradas.map((parada, i) => (
           <Box
@@ -419,7 +377,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             key={`${parada.hora}-${parada.lugar}-${i}`}
             sx={{
               display: 'grid', gridTemplateColumns: '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'baseline',
-              minHeight: altoDeCalle, boxSizing: 'border-box', alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
+              py: 2.25, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
               opacity: i <= alcanzada ? 1 : 0.4, transition: 'opacity .5s ease',
             }}
           >
@@ -435,6 +393,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, color: 'text.primary' }}>{parada.lugar}</Typography>
           </Box>
         ))}
+      </Box>
       </Box>
     </Box>
     </Box>
