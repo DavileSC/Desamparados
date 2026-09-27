@@ -2168,7 +2168,10 @@
             "hora": "21:30",
             "lugar": "Regreso al Templo"
           }
-        ]
+        ],
+        "presentacion": {
+          "disposicion": "indice"
+        }
       },
       {
         "tipo": "galeria",

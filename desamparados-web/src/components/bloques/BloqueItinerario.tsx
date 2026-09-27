@@ -60,6 +60,39 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
     )
   }
 
+  if (disposicion === 'indice') {
+    // Como el índice de un devocionario: la calle, una línea de puntos y la
+    // hora. En el ordenador, a dos columnas que se leen de arriba abajo (la
+    // primera mitad del camino a la izquierda); en el móvil, en una.
+    const filas = Math.ceil(bloque.paradas.length / 2)
+    return (
+      <Box component="ol" sx={{
+        listStyle: 'none', m: 0, p: 0, maxWidth: anchoMaximo(bloque, '900px'), mx: 'auto',
+        display: 'grid', columnGap: 7,
+        gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
+        gridTemplateRows: { md: `repeat(${filas}, auto)` },
+        gridAutoFlow: { xs: 'row', md: 'column' },
+      }}>
+        {bloque.paradas.map((parada, i) => (
+          <Box component="li" key={`${parada.hora}-${parada.lugar}-${i}`}
+            sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, py: 0.875 }}>
+            <Typography component="span" sx={{ color: 'text.primary', fontWeight: i === 0 || i === ultima ? 600 : 400 }}>
+              {parada.lugar}
+            </Typography>
+            <Box component="span" aria-hidden
+              sx={{ flex: '1 1 24px', minWidth: 24, borderBottom: '1px dotted rgba(222, 199, 43, 0.4)', transform: 'translateY(-4px)' }} />
+            <Typography component="span" sx={{
+              flexShrink: 0, fontVariantNumeric: 'tabular-nums',
+              color: parada.hora ? 'secondary.main' : 'text.secondary',
+              fontWeight: parada.hora ? 600 : 400, fontSize: parada.hora ? undefined : 12,
+            }}>
+              {parada.hora || SIN_HORA}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    )
+  }
   if (disposicion === 'tabla') {
     return (
       <Box component="table" sx={{ width: '100%', maxWidth: anchoMaximo(bloque, '720px'), mx: 'auto', borderCollapse: 'collapse' }}>
