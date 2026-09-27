@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
@@ -15,122 +15,145 @@ const noticia = {
   contenido: 'Contenido de la noticia', imagenUrl: null, fecha: '2026-09-10T10:00:00.000Z', visible: true,
 }
 
+/** `cuantas` noticias, de la más reciente a la más antigua: «Noticia 1», «Noticia 2»… */
+const archivo = (cuantas: number) => Array.from({ length: cuantas }, (_, i) => ({
+  ...noticia, id: i + 1, slug: `noticia-${i + 1}`, titulo: `Noticia ${i + 1}`,
+}))
+
+const json = (cuerpo: unknown, status = 200) =>
+  new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
+
+/**
+ * El archivo como lo sirve la API: corta por `page` y `limit`. `falla` decide,
+ * por la dirección pedida, si esa petición da error.
+ */
+function servirArchivo(noticias: typeof noticia[], falla: (url: string) => boolean = () => false) {
+  const fetch = vi.fn().mockImplementation((entrada: RequestInfo | URL) => {
+    const url = String(entrada)
+    if (!url.includes('/archive')) return Promise.resolve(json(noticias.find((n) => url.endsWith(n.slug)) ?? noticia))
+    if (falla(url)) return Promise.resolve(json({ message: 'El archivo de noticias no responde.' }, 500))
+    const params = new URL(url, 'http://localhost').searchParams
+    const page = Number(params.get('page')), limit = Number(params.get('limit'))
+    return Promise.resolve(json({
+      data: noticias.slice((page - 1) * limit, page * limit),
+      meta: { total: noticias.length, page, limit, totalPages: Math.ceil(noticias.length / limit) },
+    }))
+  })
+  stubFetchPublico(fetch)
+  return fetch
+}
+
+const tarjetas = () => within(screen.getByRole('list', { name: /noticias/i })).getAllByRole('listitem')
+
 afterEach(() => { vi.unstubAllGlobals() })
 
-describe('NoticiasPage', () => {
-  it('ofrece pasar de página cuando hay más noticias de las que caben', async () => {
-    // El archivo público servía diez y no lo decía.
-    stubFetchPublico(vi.fn().mockImplementation(() => Promise.resolve(new Response(
-      JSON.stringify({ data: [], meta: { total: 45, page: 1, limit: 20, totalPages: 3 } }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    ))))
+describe('NoticiasPage: «Cargar más» en vez de paginador', () => {
+  it('enseña diez y va cargando de nueve en nueve hasta que no quedan', async () => {
+    servirArchivo(archivo(25))
+    const usuario = userEvent.setup()
     renderWithProviders(<NoticiasPage />)
-    expect(await screen.findByRole('button', { name: /ir a la página 2/i })).toBeInTheDocument()
+
+    expect(await screen.findByRole('link', { name: /noticia 10\b/i })).toBeInTheDocument()
+    expect(tarjetas()).toHaveLength(10)
+
+    await usuario.click(screen.getByRole('button', { name: /cargar más noticias/i }))
+    expect(await screen.findByRole('link', { name: /noticia 19\b/i })).toBeInTheDocument()
+    expect(tarjetas()).toHaveLength(19)
+
+    await usuario.click(screen.getByRole('button', { name: /cargar más noticias/i }))
+    expect(await screen.findByRole('link', { name: /noticia 25\b/i })).toBeInTheDocument()
+    expect(tarjetas()).toHaveLength(25)
+    expect(screen.queryByRole('button', { name: /cargar más/i })).not.toBeInTheDocument()
+  })
+
+  it('sin más noticias de las que caben, no hay botón', async () => {
+    servirArchivo(archivo(4))
+    renderWithProviders(<NoticiasPage />)
+    await screen.findByRole('link', { name: /noticia 4\b/i })
+    expect(screen.queryByRole('button', { name: /cargar más/i })).not.toBeInTheDocument()
+  })
+
+  it('no queda nada del paginador ni del selector de resultados por página', async () => {
+    servirArchivo(archivo(25))
+    renderWithProviders(<NoticiasPage />)
+    await screen.findByRole('link', { name: /noticia 1\b/i })
+    expect(screen.queryByRole('button', { name: /ir a la página/i })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/resultados por página/i)).not.toBeInTheDocument()
   })
 })
 
 describe('NoticiasPage: la noticia destacada', () => {
-  const otra = { ...noticia, id: 2, slug: 'cabildo', titulo: 'Cabildo general', fecha: '2026-08-01T10:00:00.000Z' }
-  const servir = (page: number) => stubFetchPublico(vi.fn().mockImplementation(() => Promise.resolve(new Response(
-    JSON.stringify({ data: [noticia, otra], meta: { total: 45, page, limit: 20, totalPages: 3 } }),
-    { status: 200, headers: { 'Content-Type': 'application/json' } },
-  ))))
-
-  it('en la primera página, la más reciente va destacada y el resto no', async () => {
-    servir(1)
+  it('la más reciente va destacada y el resto no, también tras cargar más', async () => {
+    servirArchivo(archivo(25))
+    const usuario = userEvent.setup()
     renderWithProviders(<NoticiasPage />)
-    const primera = await screen.findByRole('link', { name: /triduo de septiembre/i })
-    expect(primera).toHaveAttribute('data-destacada', 'true')
-    expect(screen.getByRole('link', { name: /cabildo general/i })).not.toHaveAttribute('data-destacada')
-  })
+    expect(await screen.findByRole('link', { name: /noticia 1\b/i })).toHaveAttribute('data-destacada', 'true')
+    expect(screen.getByRole('link', { name: /noticia 2\b/i })).not.toHaveAttribute('data-destacada')
 
-  it('en las páginas siguientes no hay destacada: la primera de la página 3 no es la última noticia', async () => {
-    servir(3)
-    renderWithProviders(<NoticiasPage />, { ruta: '/?pagina=3' })
-    const primera = await screen.findByRole('link', { name: /triduo de septiembre/i })
-    expect(primera).not.toHaveAttribute('data-destacada')
+    await usuario.click(screen.getByRole('button', { name: /cargar más noticias/i }))
+    await screen.findByRole('link', { name: /noticia 19\b/i })
+    expect(screen.getAllByRole('link').filter((enlace) => enlace.getAttribute('data-destacada') === 'true')).toHaveLength(1)
   })
 
   it('las placas sin foto no repiten tono con la de debajo en la rejilla de tres columnas', async () => {
     // Se rompe si el tono vuelve a ir por el índice a secas: cada columna salía
-    // del mismo color fila tras fila.
-    const sinFoto = Array.from({ length: 9 }, (_, i) => ({ ...noticia, id: 10 + i, slug: `n-${i}`, titulo: `Noticia ${i}` }))
-    stubFetchPublico(vi.fn().mockImplementation(() => Promise.resolve(new Response(
-      JSON.stringify({ data: sinFoto, meta: { total: 45, page: 2, limit: 20, totalPages: 3 } }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    ))))
-    renderWithProviders(<NoticiasPage />, { ruta: '/?pagina=2' })
-    await screen.findByRole('link', { name: /noticia 0/i })
+    // del mismo color fila tras fila. La destacada va aparte, a lo ancho.
+    servirArchivo(archivo(10))
+    renderWithProviders(<NoticiasPage />)
+    await screen.findByRole('link', { name: /noticia 10\b/i })
 
-    const tonos = screen.getAllByTestId('placa-noticia').map((placa) => placa.getAttribute('data-tono'))
+    const tonos = screen.getAllByTestId('placa-noticia').slice(1).map((placa) => placa.getAttribute('data-tono'))
     tonos.forEach((tono, i) => {
       if (i + 3 < tonos.length) expect(tonos[i + 3]).not.toBe(tono)
-      if (i % 3 < 2) expect(tonos[i + 1]).not.toBe(tono)
+      if (i % 3 < 2 && i + 1 < tonos.length) expect(tonos[i + 1]).not.toBe(tono)
     })
-  })
-
-  it('el visitante no ve el selector de resultados por página', async () => {
-    // Es una herramienta del CMS: en el archivo público solo estorba.
-    servir(1)
-    renderWithProviders(<NoticiasPage />)
-    await screen.findByRole('link', { name: /triduo de septiembre/i })
-    expect(screen.queryByLabelText(/resultados por página/i)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /ir a la página 2/i })).toBeInTheDocument()
   })
 })
 
-describe('NoticiasPage: el error de una página no se queda pegado', () => {
-  it('vuelve a pintar las noticias cuando la siguiente carga va bien', async () => {
-    // Esta pantalla llevaba su propio bloque de carga, anterior al hook, y con
-    // él el fallo que el hook ya arreglaba: el `setError` del .catch no se
-    // limpiaba nunca en el éxito y la rejilla está condicionada a !error, así
-    // que un tropiezo pasajero al pasar de página dejaba al visitante con el
-    // paginador, una alerta y ni una noticia hasta recargar a mano.
-    vi.stubGlobal('scrollTo', vi.fn()) // jsdom no implementa el scroll suave
-    stubFetchPublico(vi.fn().mockImplementation((url: RequestInfo | URL) =>
-      Promise.resolve(String(url).includes('page=2')
-        ? new Response(JSON.stringify({ message: 'El archivo de noticias no responde.' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
-        : new Response(
-          JSON.stringify({ data: [noticia], meta: { total: 45, page: 1, limit: 20, totalPages: 3 } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ))))
+describe('NoticiasPage: si falla al cargar más', () => {
+  it('se quedan las ya cargadas, avisa y deja volver a intentarlo', async () => {
+    let fallar = true
+    servirArchivo(archivo(25), (url) => fallar && url.includes('limit=19'))
     const usuario = userEvent.setup()
     renderWithProviders(<NoticiasPage />)
 
-    expect(await screen.findByText(/triduo de septiembre/i)).toBeInTheDocument()
+    await screen.findByRole('link', { name: /noticia 10\b/i })
+    await usuario.click(screen.getByRole('button', { name: /cargar más noticias/i }))
 
-    await usuario.click(screen.getByRole('button', { name: /ir a la página 2/i }))
     expect(await screen.findByText(/el archivo de noticias no responde/i)).toBeInTheDocument()
+    expect(tarjetas()).toHaveLength(10)
 
-    await usuario.click(screen.getByRole('button', { name: /ir a la página 1/i }))
-    expect(await screen.findByText(/triduo de septiembre/i)).toBeInTheDocument()
+    fallar = false
+    await usuario.click(screen.getByRole('button', { name: /volver a intentarlo/i }))
+    expect(await screen.findByRole('link', { name: /noticia 19\b/i })).toBeInTheDocument()
     expect(screen.queryByText(/el archivo de noticias no responde/i)).not.toBeInTheDocument()
   })
 })
 
-describe('NoticiasPage: volver de una noticia no pierde la página', () => {
-  it('desde la página 3 del archivo, «Volver a todas las noticias» devuelve a la página 3', async () => {
-    // El enlace de la ficha apuntaba a `/noticias` a secas, así que
-    // el visitante que entraba en una noticia de la página 3 volvía a la 1.
-    stubFetchPublico(vi.fn().mockImplementation((url: RequestInfo | URL) =>
-      Promise.resolve(new Response(
-        JSON.stringify(String(url).includes('/archive')
-          ? { data: [noticia], meta: { total: 45, page: 3, limit: 20, totalPages: 3 } }
-          : noticia),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ))))
+describe('NoticiasPage: volver de una noticia no pierde lo cargado', () => {
+  it('con diecinueve a la vista, «Volver a todas las noticias» vuelve con las diecinueve', async () => {
+    servirArchivo(archivo(25))
     const usuario = userEvent.setup()
     renderWithProviders(
       <Routes>
         <Route path="/noticias" element={<NoticiasPage />} />
         <Route path="/noticias/:slug" element={<NoticiaDetallePage />} />
       </Routes>,
-      { ruta: '/noticias?pagina=3' },
+      { ruta: '/noticias' },
     )
 
-    await usuario.click(await screen.findByText(/triduo de septiembre/i))
+    await screen.findByRole('link', { name: /noticia 10\b/i })
+    await usuario.click(screen.getByRole('button', { name: /cargar más noticias/i }))
+    await usuario.click(await screen.findByRole('link', { name: /noticia 19\b/i }))
 
     const volver = await screen.findByRole('link', { name: /volver a todas las noticias/i })
-    expect(volver).toHaveAttribute('href', '/noticias?pagina=3')
+    expect(volver).toHaveAttribute('href', '/noticias?mostrar=19')
+  })
+
+  it('una dirección con ?mostrar=19 abre ya con diecinueve', async () => {
+    servirArchivo(archivo(25))
+    renderWithProviders(<NoticiasPage />, { ruta: '/?mostrar=19' })
+    expect(await screen.findByRole('link', { name: /noticia 19\b/i })).toBeInTheDocument()
+    expect(tarjetas()).toHaveLength(19)
   })
 })

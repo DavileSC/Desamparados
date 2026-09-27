@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Alert, Box, CircularProgress, Grid, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Grid, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import TituloDeSeccion from '../TituloDeSeccion'
 import TarjetaNoticia from '../TarjetaNoticia'
@@ -10,12 +10,13 @@ import Paginador from '../Paginador'
 import { noticiasDePortada, archivoDeNoticias } from '../../lib/api/noticias'
 import { traerProximosEventos } from '../../lib/api/agenda'
 import AgendaDeCultos from '../../features/actualidad/agenda/AgendaDeCultos'
-import { useListadoPaginado, type Pagina } from '../../hooks/useListadoPaginado'
+import { type Pagina } from '../../hooks/useListadoPaginado'
+import { useCargarMas } from '../../hooks/useCargarMas'
 import { usePublicacionesPaginadas } from '../../features/publicaciones/usePublicacionesPaginadas'
 import type { Acto, Noticia } from '../../types'
 import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/contenido'
 import { valorDe } from './presentacion'
-import { enlaceConFlecha } from '../estiloDeBoton'
+import { BOTON, enlaceConFlecha } from '../estiloDeBoton'
 
 /**
  * Lo que el Grupo Parroquial publica desde otras pantallas del CMS —noticias,
@@ -29,9 +30,10 @@ import { enlaceConFlecha } from '../estiloDeBoton'
  * Este bloque pinta su propio título (ver `pintaSuTitulo` en `registro.tsx`):
  * los listados cortos llevan a su lado el enlace al listado entero, como antes.
  *
- * Los paginados llevan la página en la dirección (`?pagina=`): dos en la misma
- * página compartirían paginador. El CMS no lo impide porque no hay ninguna
- * página que lo pida, y no es un fallo sino una rareza visible.
+ * Los paginados llevan la página en la dirección (`?pagina=`), y el archivo de
+ * noticias cuántas enseña (`?mostrar=`): dos en la misma página compartirían
+ * paginador. El CMS no lo impide porque no hay ninguna página que lo pida, y
+ * no es un fallo sino una rareza visible.
  */
 export default function BloqueListado({ bloque }: { bloque: Datos }) {
   const Listado = LISTADOS[bloque.fuente]
@@ -251,41 +253,67 @@ const pedirNoticias = (pagina: Pagina) =>
 // horizontal ni en vertical.
 const indiceEnDiagonal = (posicion: number) => posicion + Math.floor(posicion / 3)
 // La placa de la destacada queda encima de las dos primeras columnas: la
-// «piedra» (2) no coincide con ninguna de las dos tarjetas de debajo.
+// «piedra» (2) no coincide con ninguna de las dos tarjetas de debajo. La
+// destacada es siempre la primera: con «Cargar más» no hay otras páginas.
 const INDICE_DESTACADA = 2
 
+/** La primera carga: la destacada y tres filas de tres. */
+const PRIMERA_CARGA = 10
+/** Cada «Cargar más»: tres filas más. */
+const LOTE = 9
+
+/**
+ * El archivo de noticias: la última destacada a lo ancho y el resto en
+ * tarjetas, con «Cargar más» al pie en vez de paginador. Las nuevas se añaden
+ * debajo, sin mover lo que ya se estaba viendo.
+ */
 function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
-  const { items, meta, loading, error, alCambiarPagina } =
-    useListadoPaginado(pedirNoticias, 'No se han podido cargar las noticias.')
-  // La página en la que está el visitante viaja con cada tarjeta: al volver
-  // desde la ficha de una noticia aterriza donde estaba, no en la primera.
+  const { items, loading, cargandoMas, hayMas, error, cargarMas } =
+    useCargarMas(pedirNoticias, 'No se han podido cargar las noticias.', { primera: PRIMERA_CARGA, lote: LOTE })
+  // Cuántas hay a la vista viaja con cada tarjeta: al volver desde la ficha de
+  // una noticia siguen cargadas las mismas.
   const { search: consultaArchivo } = useLocation()
-  // Solo la primera de la primera página es la última noticia publicada; en la
-  // página 3, destacar la primera sería destacar una cualquiera.
-  const hayDestacada = meta?.page === 1
 
   return (
     <>
       <Encabezado titulo={titulo} />
       {loading && <CircularProgress aria-label="Cargando noticias" />}
-      {error && <Alert severity="error">{error}</Alert>}
+      {error && items.length === 0 && <Alert severity="error">{error}</Alert>}
       {!loading && !error && items.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
-      {!loading && !error && items.length > 0 && (
+      {items.length > 0 && (
         <Box component="ul" aria-label={titulo || 'Noticias'} sx={rejillaDeNoticias(columnasDe(bloque, 3))}>
           {items.map((noticia, i) => {
-            const destacada = hayDestacada && i === 0
+            const destacada = i === 0
             return (
               <Box component="li" key={noticia.id} sx={{ display: 'flex', gridColumn: destacada ? '1 / -1' : undefined }}>
-                <TarjetaNoticia noticia={noticia} indice={destacada ? INDICE_DESTACADA : indiceEnDiagonal(hayDestacada ? i - 1 : i)} destacada={destacada} volver={consultaArchivo} />
+                <TarjetaNoticia noticia={noticia} indice={destacada ? INDICE_DESTACADA : indiceEnDiagonal(i - 1)} destacada={destacada} volver={consultaArchivo} />
               </Box>
             )
           })}
         </Box>
       )}
-      {meta && <Paginador meta={meta} onPagina={alCambiarPagina} etiqueta="noticias" />}
+      {items.length > 0 && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: { xs: 5, md: 6 } }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          {hayMas && (
+            <Button onClick={cargarMas} disabled={cargandoMas} sx={{ ...BOTON.claro, minWidth: 220 }}>
+              {cargandoMas ? 'Cargando…' : error ? 'Volver a intentarlo' : 'Cargar más noticias'}
+            </Button>
+          )}
+          {/* Para el lector de pantalla: cuántas hay ya, al llegar las nuevas. */}
+          <Box role="status" sx={visualmenteOculto}>
+            {cargandoMas ? '' : `${items.length} noticias a la vista${hayMas ? '' : ', todas'}.`}
+          </Box>
+        </Box>
+      )}
     </>
   )
 }
+
+const visualmenteOculto = {
+  position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0, border: 0,
+  overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
+} as const
 
 function Publicaciones({ titulo, bloque, categoria, etiqueta, vacio, fallo }: PropsListado & {
   categoria?: 'boletin' | 'dossier'
