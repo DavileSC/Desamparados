@@ -166,7 +166,8 @@
         "valores": [
           "recuadro",
           "franja",
-          "sencilla"
+          "sencilla",
+          "fila"
         ]
       },
       "boton": {
@@ -288,7 +289,8 @@
         "valores": [
           "clasica",
           "grande",
-          "franja"
+          "franja",
+          "enfoque"
         ]
       },
       "alineacion": {
@@ -395,6 +397,14 @@
         "valores": [
           "izquierda",
           "derecha"
+        ]
+      }
+    },
+    "anillos": {
+      "disposicion": {
+        "valores": [
+          "anillos",
+          "foco"
         ]
       }
     }

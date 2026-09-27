@@ -5,7 +5,8 @@ import { motion, useInView, useReducedMotion } from 'framer-motion'
 import { SERIF } from '../../features/inicio/estilos'
 import { esDestinoValido } from '../../lib/destinos'
 import { useModoEdicion } from './modoEdicion'
-import { anchoMaximo } from './presentacion'
+import { anchoMaximo, valorDe } from './presentacion'
+import FinesEnFoco from './FinesEnFoco'
 import { enlaceConFlecha } from '../estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import type { BloqueAnillos as Datos, FinDeAnillo } from '../../lib/api/contenido'
@@ -39,6 +40,11 @@ const PUNTOS = [[550, 170], [292, 492], [808, 492]] as const
  * pequeños, y los fines en lista debajo, cada uno con el filete de su color.
  */
 export default function BloqueAnillos({ bloque }: { bloque: Datos }) {
+  // Los mismos tres fines, en otra disposición: los nombres en foco (maqueta B).
+  return valorDe(bloque, 'disposicion') === 'foco' ? <FinesEnFoco bloque={bloque} /> : <AnillosEntrelazados bloque={bloque} />
+}
+
+function AnillosEntrelazados({ bloque }: { bloque: Datos }) {
   const marco = useRef<HTMLDivElement>(null)
   const aLaVista = useInView(marco, { once: true, amount: 0.3 })
   const reducir = useReducedMotion()

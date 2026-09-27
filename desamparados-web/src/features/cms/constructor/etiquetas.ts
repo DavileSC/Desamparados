@@ -55,6 +55,7 @@ const ETIQUETA_VALOR: Record<string, string> = {
   clasica: 'Clásica', lineas: 'Líneas',
   bajo: 'Bajo', medio: 'Medio', alto: 'Alto', natural: 'Natural', compacta: 'Compacta',
   pequeno: 'Pequeño', mediano: 'Mediano',
+  anillos: 'Anillos entrelazados', foco: 'En foco', enfoque: 'Se enfoca al leerla', fila: 'En una fila',
 }
 
 export const etiquetaDeValor = (valor: string): string => ETIQUETA_VALOR[valor] ?? valor
@@ -94,7 +95,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   relacion: { nombre: 'Relación de cargos', grupo: 'Información', descripcion: 'Los cargos de la Junta, con quién los ocupa y qué hace cada uno.' },
   programa: { nombre: 'Programa', grupo: 'Automáticos', descripcion: 'Los cultos del curso mes a mes, con el próximo marcado solo y su fecha de la Agenda.' },
   puertas: { nombre: 'Dos puertas', grupo: 'Composición', descripcion: 'Dos paneles para dos lectores, como «Necesito ayuda» y «Quiero ayudar», con sus datos y un botón.' },
-  anillos: { nombre: 'Tres anillos', grupo: 'Composición', descripcion: 'Tres fines entrelazados, cada uno con su texto alrededor de su anillo.' },
+  anillos: { nombre: 'Tres fines', grupo: 'Composición', descripcion: 'Tres fines que van juntos: en anillos entrelazados, o en foco, una palabra nítida y las otras dos desenfocadas.' },
   dibujo: { nombre: 'Dibujo con texto', grupo: 'Imagen y vídeo', descripcion: 'El templo o el signo pasionista, que se dibujan al bajar, con un texto al lado.' },
   cuentaAtras: { nombre: 'Cuenta atrás', grupo: 'Información', descripcion: 'Días, horas y minutos que faltan para una fecha.' },
   listado: { nombre: 'Listado', grupo: 'Automáticos', descripcion: 'Noticias, actos o publicaciones, que salen solos de otras pantallas.' },

@@ -11,8 +11,9 @@ const VARIANTE_BOTON = { granate: 'primary', dorado: 'secondary', contorno: 'out
 
 /**
  * Un texto y un botón que lleva a otra página del sitio: en un recuadro sin
- * borde (el de siempre), entre dos filetes a lo ancho (franja) o sin nada
- * alrededor (sencilla).
+ * borde (el de siempre), entre dos filetes a lo ancho (franja), sin nada
+ * alrededor (sencilla) o en una fila, el texto a un lado y el botón al otro
+ * (fila).
  *
  * El destino siempre es interno (lo exige `bloques.schema.ts`), así que se
  * navega con el `Link` del router y no con un `<a>`: recargar la aplicación
@@ -51,6 +52,25 @@ export default function BloqueLlamada({ bloque }: { bloque: Datos }) {
     )
   }
   if (estilo === 'sencilla') return <Box sx={comun}>{contenido}</Box>
+  if (estilo === 'fila') {
+    return (
+      <Box sx={{
+        maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto',
+        display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: { xs: 3, md: 6 },
+      }}>
+        {bloque.texto && (
+          <Typography sx={{ maxWidth: 720, fontSize: { xs: 21, md: 26 }, lineHeight: 1.45, fontWeight: 300, color: 'text.primary' }}>
+            {bloque.texto}
+          </Typography>
+        )}
+        {esDestinoValido(bloque.enlace) && (
+          <Box sx={{ flexShrink: 0 }}>
+            <Boton component={Link} to={bloque.enlace} appVariant={variante}>{bloque.boton}</Boton>
+          </Box>
+        )}
+      </Box>
+    )
+  }
   return (
     <TarjetaCristal sx={{ ...comun, p: { xs: 3, md: 5 } }}>
       {contenido}

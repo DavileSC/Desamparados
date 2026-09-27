@@ -5,6 +5,7 @@
  * elige en la pestaña «Presentación».
  */
 import { Alert, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material'
+import { valorDe } from '../../../../components/bloques/presentacion'
 import topes from '../../../../../../shared/topes-contenido.json'
 import EditorTexto from '../../EditorTexto'
 import CampoImagen from '../../CampoImagen'
@@ -167,15 +168,18 @@ export function FormularioDibujo({ bloque, onCambio }: Props<BloqueDibujo>) {
 const ANILLO = ['oro, arriba', 'rosa, a la izquierda', 'crema, a la derecha']
 
 export function FormularioAnillos({ bloque, onCambio }: Props<BloqueAnillos>) {
+  // En foco no hay anillos ni cruce: cada fin es solo una palabra y su texto.
+  const foco = valorDe(bloque, 'disposicion') === 'foco'
   const cambiarFin = (indice: number, cambios: Partial<FinDeAnillo>) =>
     onCambio({ fines: bloque.fines.map((f, i) => (i === indice ? { ...f, ...cambios } : f)) as BloqueAnillos['fines'] })
   return (
     <Stack spacing={2}>
       {bloque.fines.map((fin, i) => (
         <Stack key={i} spacing={1.5} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-          <Typography variant="subtitle2">Anillo {i + 1} ({ANILLO[i]})</Typography>
+          <Typography variant="subtitle2">{foco ? `Fin ${i + 1}` : `Anillo ${i + 1} (${ANILLO[i]})`}</Typography>
           <TextField label={`Nombre del fin ${i + 1}`} value={fin.titulo} size="small" fullWidth
-            onChange={(e) => cambiarFin(i, { titulo: e.target.value })} slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
+            onChange={(e) => cambiarFin(i, { titulo: e.target.value })} slotProps={{ htmlInput: { maxLength: topes.titulo } }}
+            helperText={foco ? 'Una sola palabra: en foco se ve muy grande.' : undefined} />
           <TextField label="Texto" value={fin.texto} size="small" fullWidth multiline minRows={2}
             onChange={(e) => cambiarFin(i, { texto: e.target.value })} slotProps={{ htmlInput: { maxLength: topes.textoTarjeta } }} />
           <TextField label="Texto del botón" value={fin.boton} size="small" fullWidth
@@ -186,12 +190,16 @@ export function FormularioAnillos({ bloque, onCambio }: Props<BloqueAnillos>) {
             onCambio={(enlace) => cambiarFin(i, { enlace })} ayuda="La página a la que lleva. Vacío si no hay botón." />
         </Stack>
       ))}
-      <CampoTexto etiqueta="En el cruce de los tres" valor={bloque.centro} onCambio={(centro) => onCambio({ centro })}
-        ayuda="Una palabra pequeña bajo la cruz, como «Desamparados». Opcional." maxLength={topes.etiqueta} />
-      <CampoTexto etiqueta="Texto debajo" valor={bloque.texto} onCambio={(texto) => onCambio({ texto })} multilinea
-        ayuda="Opcional. Un párrafo bajo los anillos." maxLength={topes.parrafo} />
+      {!foco && (
+        <CampoTexto etiqueta="En el cruce de los tres" valor={bloque.centro} onCambio={(centro) => onCambio({ centro })}
+          ayuda="Una palabra pequeña bajo la cruz, como «Desamparados». Opcional." maxLength={topes.etiqueta} />
+      )}
+      <CampoTexto etiqueta={foco ? 'Texto al lado' : 'Texto debajo'} valor={bloque.texto} onCambio={(texto) => onCambio({ texto })} multilinea
+        ayuda={foco ? 'Opcional. Va a la izquierda, junto al texto del fin enfocado.' : 'Opcional. Un párrafo bajo los anillos.'} maxLength={topes.parrafo} />
       <Typography variant="caption" color="text.secondary">
-        Siempre son tres: uno por anillo. Los colores están pensados para fondo oscuro: elige «Oscuro» en Presentación.
+        {foco
+          ? 'Siempre son tres. El foco pasa solo de uno a otro hasta que alguien pulsa una palabra. En Presentación puedes volver a los anillos.'
+          : 'Siempre son tres: uno por anillo. Los colores están pensados para fondo oscuro: elige «Oscuro» en Presentación. También pueden ir «En foco» (Presentación → Disposición).'}
       </Typography>
     </Stack>
   )

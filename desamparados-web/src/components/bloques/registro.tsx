@@ -81,3 +81,5 @@ const CON_TITULO_PROPIO = new Set(['listado', 'dibujo', 'programa', 'relacion'])
 
 export const pintaSuTitulo = (bloque: Bloque) =>
   CON_TITULO_PROPIO.has(bloque.tipo) || (bloque.tipo === 'fotoTexto' && valorDe(bloque, 'estilo') === 'fundido')
+  // En foco, el título va dentro, pequeño y en oro, sobre las tres palabras.
+  || (bloque.tipo === 'anillos' && valorDe(bloque, 'disposicion') === 'foco')
