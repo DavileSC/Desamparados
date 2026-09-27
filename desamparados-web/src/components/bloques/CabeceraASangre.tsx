@@ -1,6 +1,4 @@
-import { useRef } from 'react'
 import { Box, Typography } from '@mui/material'
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import ContenedorDePagina from '../ContenedorDePagina'
 import { Revela } from '../SeccionAnimada'
 import { GOLD, SERIF, ceja as estiloCeja } from '../../features/inicio/estilos'
@@ -37,30 +35,31 @@ interface Props {
  *   de la foto se queda a la vista, porque la banda es apaisada en escritorio
  *   y vertical en el móvil.
  *
- * Al bajar, la foto se queda un poco atrás (paralaje) y el texto la tapa. Con
- * prefers-reduced-motion, y en la vista en vivo del constructor, se queda quieta.
+ * Al bajar, la foto se queda un poco atrás (paralaje) y el texto la tapa. La
+ * mueve el propio navegador con una animación ligada al desplazamiento
+ * (una `view-timeline` de la banda), en el mismo fotograma que la página: movida
+ * desde JavaScript iba un fotograma tarde y, al subir deprisa, la foto se
+ * quedaba abajo, asomaba el fondo por arriba y daba tirones. Donde el
+ * navegador no sabe hacerlo, con prefers-reduced-motion y en la vista en vivo
+ * del constructor, se queda quieta.
  */
 export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encuadre, ceja }: Props) {
-  const banda = useRef<HTMLElement>(null)
-  const reducir = useReducedMotion()
-  const enConstructor = useModoEdicion() !== null
-  const quieta = Boolean(reducir) || enConstructor
-  const { scrollYProgress } = useScroll({ target: banda, offset: ['start start', 'end start'] })
-  // La foto baja un tercio de lo que sube la banda: se queda atrás. Solo baja,
-  // así que por arriba nunca asoma un hueco (ese borde ya está fuera de la
-  // ventana) y por abajo lo recorta la banda.
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '30%'])
+  const quieta = useModoEdicion() !== null
   const encuadreY = `${Math.min(100, Math.max(0, encuadre ?? ENCUADRE_POR_DEFECTO))}%`
   const conFoto = foto !== ''
 
   return (
     <Box
-      ref={banda}
       component="header"
       sx={{
         position: 'relative',
         overflow: 'hidden',
         isolation: 'isolate',
+        // La línea de tiempo de la paralaje: cuánto ha salido la banda por
+        // arriba. Se declara aquí y no con view() en la foto porque, con el
+        // overflow hidden, la banda sería el desplazador de la foto y view()
+        // no avanzaría nunca.
+        viewTimelineName: '--cabecera',
         // Sin foto (mientras carga o si se quita), granate casi negro: nunca un hueco gris.
         backgroundColor: '#1d0a0e',
         display: 'flex',
@@ -72,10 +71,28 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
     >
       {conFoto && (
         <Box
-          component={motion.div}
           aria-hidden={fotoAlt.trim() === '' ? true : undefined}
-          style={quieta ? undefined : { y }}
-          sx={{ position: 'absolute', inset: 0, zIndex: -2, willChange: quieta ? undefined : 'transform' }}
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: -2,
+            // La foto baja un 30 % de su alto mientras la banda sale por arriba
+            // (del borde de arriba de la banda en lo alto de la ventana a su
+            // borde de abajo): un tercio de lo que sube, así que se queda
+            // atrás. Solo baja, y por abajo la recorta la banda.
+            ...(quieta
+              ? {}
+              : {
+                  '@supports (view-timeline-name: --cabecera)': {
+                    '@media (prefers-reduced-motion: no-preference)': {
+                      '@keyframes quedarseAtras': { from: { transform: 'translateY(0)' }, to: { transform: 'translateY(30%)' } },
+                      animation: 'quedarseAtras linear both',
+                      animationTimeline: '--cabecera',
+                      animationRange: 'exit 0% exit 100%',
+                    },
+                  },
+                }),
+          }}
         >
           <Box
             component="img"
@@ -93,7 +110,9 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
               objectPosition: `50% ${encuadreY}`,
               // Se asienta al entrar: de un poco cerca a su sitio, despacio.
               '@keyframes asentarse': { from: { transform: 'scale(1.06)' }, to: { transform: 'scale(1)' } },
-              animation: quieta ? 'none' : 'asentarse 1.8s cubic-bezier(.2,.7,.1,1) both',
+              ...(quieta
+                ? {}
+                : { '@media (prefers-reduced-motion: no-preference)': { animation: 'asentarse 1.8s cubic-bezier(.2,.7,.1,1) both' } }),
             }}
           />
         </Box>
