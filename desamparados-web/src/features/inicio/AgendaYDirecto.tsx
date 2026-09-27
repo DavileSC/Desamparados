@@ -11,7 +11,8 @@ import { site } from '../../config/site'
 import { useTextosPortada } from './useContenidoPortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import MiniCalendario from './MiniCalendario'
-import ListaDeAgenda from './ListaDeAgenda'
+import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
+import EnCarga from '../../components/esqueleto/EnCarga'
 import { inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from './agenda'
 import { GOLD, PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
 
@@ -127,7 +128,13 @@ export default function AgendaYDirecto() {
   }
   const elegir = (evento: EventoCalendario) => setAbierto(evento.id)
   const alternar = (id: string) => setAbierto(id === abiertoId ? null : id)
-  const sinLista = ventana.isPending || ventana.isError || !eventos.length
+  // La tarjeta sale siempre: el mes no depende del servidor. Lo que espera es
+  // la lista, que lleva su esqueleto mientras llegan el próximo acto y los de
+  // la ventana, y el aviso si no llegan.
+  const reintentando = (proximo.isError || ventana.isError) && (proximo.isFetching || ventana.isFetching)
+  const listaCargando = proximo.isPending || (proximo.isSuccess && ventana.isPending) || reintentando
+  const listaFallo = !listaCargando && (proximo.isError || ventana.isError)
+  const reintentar = () => { void (proximo.isError ? proximo.refetch() : ventana.refetch()) }
 
   return (
     <SeccionAnimada
@@ -206,49 +213,43 @@ export default function AgendaYDirecto() {
 
           {/* La tarjeta de papel es el objeto del bloque: crece al posarse. */}
           <Revela efecto="crecer" orden={2}>
-            {!proximo.isSuccess ? (
-              <AvisosDeInicio loading={proximo.isPending} error={proximo.isError} empty={false} label="la agenda" emptyMessage="" retry={() => { void proximo.refetch() }} />
-            ) : (
-              <AlturaSostenida
-                className="home-papel"
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: '280px 1fr' },
-                  gridTemplateRows: { xs: 'auto 1fr', sm: '1fr' },
-                  backgroundColor: PAPEL,
-                  color: '#1b1c1a',
-                  boxShadow: '0 30px 60px -30px rgba(0, 0, 0, 0.9)',
-                }}
-              >
-                <Box sx={{ boxShadow: { xs: 'inset 0 -1px 0 #e3dccf', sm: 'inset -1px 0 0 #e3dccf' } }}>
-                  <MiniCalendario
-                    mes={mes}
-                    hoy={hoy}
-                    eventos={eventos}
-                    abiertoId={abiertoId}
-                    puedeRetroceder={mes.getTime() > inicioDeMes(hoy).getTime()}
-                    onCambiarMes={cambiarMes}
-                    onElegir={elegir}
-                  />
-                </Box>
-                <Box sx={{ minWidth: 0, opacity: ventana.isPlaceholderData ? 0.6 : 1, transition: 'opacity .2s ease' }}>
-                  {sinLista && (
-                    <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                      <AvisosDeInicio
-                        claro
-                        loading={ventana.isPending}
-                        error={ventana.isError}
-                        empty={!eventos.length}
-                        label="la agenda"
-                        emptyMessage={`No hay actos publicados para ${nombreDelMes(mes, false).toLowerCase()} ni ${nombreDelMes(sumarMeses(mes, 1), false).toLowerCase()}. Publicaremos aquí los nuevos encuentros.`}
-                        retry={() => { void ventana.refetch() }}
-                      />
-                    </Box>
-                  )}
+            <AlturaSostenida
+              className="home-papel"
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '280px 1fr' },
+                gridTemplateRows: { xs: 'auto 1fr', sm: '1fr' },
+                backgroundColor: PAPEL,
+                color: '#1b1c1a',
+                boxShadow: '0 30px 60px -30px rgba(0, 0, 0, 0.9)',
+              }}
+            >
+              <Box sx={{ boxShadow: { xs: 'inset 0 -1px 0 #e3dccf', sm: 'inset -1px 0 0 #e3dccf' } }}>
+                <MiniCalendario
+                  mes={mes}
+                  hoy={hoy}
+                  eventos={eventos}
+                  abiertoId={abiertoId}
+                  puedeRetroceder={mes.getTime() > inicioDeMes(hoy).getTime()}
+                  onCambiarMes={cambiarMes}
+                  onElegir={elegir}
+                />
+              </Box>
+              <Box sx={{ minWidth: 0, opacity: ventana.isPlaceholderData ? 0.6 : 1, transition: 'opacity .2s ease' }}>
+                {listaCargando || listaFallo ? (
+                  <EnCarga papel estado={listaFallo ? 'error' : 'cargando'} que="la agenda" alReintentar={reintentar} esqueleto={<ListaDeAgendaEsqueleto />} />
+                ) : eventos.length === 0 ? (
+                  <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                    <AvisosDeInicio
+                      claro
+                      mensaje={`No hay actos publicados para ${nombreDelMes(mes, false).toLowerCase()} ni ${nombreDelMes(sumarMeses(mes, 1), false).toLowerCase()}. Publicaremos aquí los nuevos encuentros.`}
+                    />
+                  </Box>
+                ) : (
                   <ListaDeAgenda eventos={eventos} abiertoId={abiertoId} hoy={hoy} onAlternar={alternar} />
-                </Box>
-              </AlturaSostenida>
-            )}
+                )}
+              </Box>
+            </AlturaSostenida>
           </Revela>
         </Box>
       </ContenedorDePagina>

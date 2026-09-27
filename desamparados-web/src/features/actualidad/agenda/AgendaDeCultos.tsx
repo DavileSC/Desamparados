@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Alert, Box, ButtonBase, CircularProgress, Collapse, Typography } from '@mui/material'
+import { Box, ButtonBase, Collapse, Typography } from '@mui/material'
 import { agendaPublica, urlDeLaSuscripcion, type ApiEvent } from '../../../lib/api/agenda'
 import { GOLD } from '../../inicio/estilos'
-import CalendarioDeCultos from './CalendarioDeCultos'
+import CalendarioDeCultos, { CalendarioDeCultosEsqueleto } from './CalendarioDeCultos'
+import EnCarga from '../../../components/esqueleto/EnCarga'
 import { BOTON, enlaceConFlecha } from '../../../components/estiloDeBoton'
 
 /**
@@ -13,20 +14,27 @@ import { BOTON, enlaceConFlecha } from '../../../components/estiloDeBoton'
  */
 export default function AgendaDeCultos() {
   const [eventos, setEventos] = useState<ApiEvent[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+  const [intento, setIntento] = useState(0)
 
   useEffect(() => {
     let vigente = true
     agendaPublica()
       .then((recibidos) => { if (vigente) setEventos(recibidos) })
-      .catch((err: unknown) => { if (vigente) setError(err instanceof Error ? err.message : 'No se ha podido cargar la agenda.') })
+      .catch(() => { if (vigente) setError(true) })
     return () => { vigente = false }
-  }, [])
+  }, [intento])
+
+  const reintentar = () => {
+    setError(false)
+    setIntento((n) => n + 1)
+  }
 
   return (
     <Box>
-      {error && <Alert severity="error">{error}</Alert>}
-      {!error && eventos === null && <CircularProgress aria-label="Cargando la agenda" />}
+      {eventos === null && (
+        <EnCarga estado={error ? 'error' : 'cargando'} que="la agenda" alReintentar={reintentar} esqueleto={<CalendarioDeCultosEsqueleto />} />
+      )}
       {eventos?.length === 0 && (
         <Typography sx={{ color: 'rgba(255,255,255,0.75)' }}>No hay actos anunciados por ahora.</Typography>
       )}

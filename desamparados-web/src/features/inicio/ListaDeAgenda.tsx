@@ -3,6 +3,7 @@ import { alpha } from '@mui/material/styles'
 import type { EventoCalendario } from '../../lib/api/agenda'
 import { SERIF, TIPOS, inicioDelDia, nombreDelMes } from './agenda'
 import { CONSULTA_ALTA, CONSULTA_MUY_ALTA, GRANATE, PANTALLA_ALTA } from './estilos'
+import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
 
 /**
  * Cuántos actos caben en portada, según el alto de la pantalla: cuatro en un
@@ -27,6 +28,20 @@ interface ListaDeAgendaProps {
   hoy: Date
   onAlternar: (id: string) => void
 }
+
+/** La rejilla de una fila: el día, el acto y su etiqueta. La comparten la fila y su esqueleto. */
+const filaSx = {
+  width: '100%',
+  display: 'grid',
+  gridTemplateColumns: { xs: '56px 1fr', sm: '60px 1fr auto' },
+  columnGap: { xs: 1.75, sm: 2.25 },
+  rowGap: 1,
+  alignItems: 'center',
+  px: { xs: 2, sm: 3 },
+  py: 1.4,
+  [PANTALLA_ALTA]: { py: 2 },
+} as const
+const mesSx = { px: { xs: 2, sm: 3 }, pt: 1.5, pb: 0.25, [PANTALLA_ALTA]: { pt: 2, pb: 0.5 } } as const
 
 const hora = (fecha: Date) => fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 const diaSemana = (fecha: Date) => fecha.toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')
@@ -56,15 +71,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
         aria-controls={abierto ? panelId : undefined}
         onClick={() => onAlternar(evento.id)}
         sx={{
-          width: '100%',
-          display: 'grid',
-          gridTemplateColumns: { xs: '56px 1fr', sm: '60px 1fr auto' },
-          columnGap: { xs: 1.75, sm: 2.25 },
-          rowGap: 1,
-          alignItems: 'center',
-          px: { xs: 2, sm: 3 },
-          py: 1.4,
-          [PANTALLA_ALTA]: { py: 2 },
+          ...filaSx,
           border: 0,
           background: 'none',
           color: TEXTO,
@@ -138,7 +145,7 @@ export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: L
     <Box sx={{ py: 1 }}>
       {grupos.map((grupo, i) => (
         <Box key={grupo.clave} sx={{ boxShadow: i ? FILETE : 'none' }}>
-          <Typography component="h3" sx={{ px: { xs: 2, sm: 3 }, pt: 1.5, pb: 0.25, [PANTALLA_ALTA]: { pt: 2, pb: 0.5 }, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#7b6f5e' }}>
+          <Typography component="h3" sx={{ ...mesSx, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#7b6f5e' }}>
             {grupo.titulo}
           </Typography>
           <Box component="ul" role="list" sx={{ listStyle: 'none', m: 0, p: 0 }}>
@@ -146,6 +153,32 @@ export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: L
               <Fila key={evento.id} evento={evento} abierto={evento.id === abiertoId} onAlternar={onAlternar} />
             ))}
           </Box>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+/**
+ * La lista mientras llegan los actos: el mes y tantas filas como caben, con el
+ * día, el título, la hora y la etiqueta en huesos del tamaño de los de verdad.
+ */
+export function ListaDeAgendaEsqueleto() {
+  const filas = useFilasQueCaben()
+  return (
+    <Box sx={{ py: 1 }}>
+      <Box sx={mesSx}><Lineas papel anchos={['84px']} linea={16.5} grosor={8} /></Box>
+      {Array.from({ length: filas }, (_, i) => (
+        <Box key={i} sx={{ ...filaSx, boxShadow: i ? FILETE : 'none' }}>
+          <Box sx={{ display: 'grid', justifyItems: 'center', gap: 0.75 }}>
+            <Hueso papel sx={{ width: 30, height: { xs: 25, [PANTALLA_ALTA]: 28 } }} />
+            <Hueso papel sx={{ width: 26, height: 8 }} />
+          </Box>
+          <Box>
+            <Lineas papel anchos={[`${72 - (i % 3) * 12}%`]} linea={{ xs: 20.8, md: 22.1 }} grosor={12} />
+            <Box sx={{ mt: 0.5 }}><Lineas papel anchos={['46%']} linea={18.85} grosor={9} /></Box>
+          </Box>
+          <Hueso papel sx={{ gridColumn: { xs: 2, sm: 'auto' }, width: 76, height: 20, borderRadius: '99px' }} />
         </Box>
       ))}
     </Box>

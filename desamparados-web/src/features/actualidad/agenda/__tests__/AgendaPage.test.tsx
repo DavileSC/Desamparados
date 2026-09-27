@@ -154,6 +154,7 @@ describe('AgendaPage', () => {
 
     stubFetchPublico(() => Promise.resolve(new Response(JSON.stringify({ message: 'La agenda no responde.' }), { status: 500, headers: { 'Content-Type': 'application/json' } })))
     renderWithProviders(<AgendaPage />)
-    expect(await screen.findByText(/la agenda no responde/i)).toBeInTheDocument()
+    expect(await screen.findByText(/No se ha podido cargar la agenda/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /volver a intentar/i })).toBeInTheDocument()
   })
 })

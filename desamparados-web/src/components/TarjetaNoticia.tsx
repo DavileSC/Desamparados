@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { GOLD, GRANATE, PANTALLA_ALTA, SERIF } from '../features/inicio/estilos'
 import type { Noticia } from '../types'
+import Hueso, { Lineas } from './esqueleto/Hueso'
 
 interface TarjetaNoticiaProps {
   noticia: Noticia
@@ -40,6 +41,42 @@ const TONOS_PLACA = [
   { tono: 'piedra', fondo: 'radial-gradient(120% 90% at 30% 20%, #3a353a, #1c1a1e 65%)' },
 ] as const
 
+/** La tarjeta: una columna y, la destacada, dos desde sm. La comparten la tarjeta y su esqueleto. */
+const tarjetaSx = (destacada: boolean) => ({
+  // La destacada se abre en dos columnas desde sm; en móvil es una tarjeta más.
+  display: destacada ? { xs: 'flex', sm: 'grid' } : 'flex',
+  flexDirection: 'column',
+  gridTemplateColumns: destacada ? { sm: '7fr 5fr', lg: '3fr 2fr' } : undefined,
+  width: '100%',
+  backgroundColor: '#18161a',
+  color: '#e4e2df',
+  border: '1px solid rgba(255, 255, 255, 0.07)',
+}) as const
+
+// El marco fija la proporción; la foto va absoluta dentro para que, en la
+// destacada, sea la columna de texto la que marque el alto y no el tamaño
+// natural de la imagen.
+const marcoSx = (destacada: boolean) => ({
+  position: 'relative',
+  overflow: 'hidden',
+  // En el móvil, por su ancho. En escritorio, por el ALTO de la pantalla:
+  // en un portátil bajo la foto se encoge para que la tarjeta quepa
+  // entera, y en un monitor grande crece hasta 320 px.
+  aspectRatio: destacada ? { xs: '3 / 2', sm: 'auto' } : { xs: '16 / 9', md: 'auto' },
+  height: destacada ? undefined : { md: 'clamp(170px, 30vh, 320px)' },
+  minHeight: destacada ? { sm: 340, md: 420 } : undefined,
+}) as const
+
+const cuerpoSx = (destacada: boolean) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: destacada ? 'center' : undefined,
+  gap: destacada ? 2 : 1.25,
+  flex: 1,
+  p: destacada ? { xs: 2.5, sm: 4, md: 6 } : { xs: 2.25, md: 2.5 },
+  ...(destacada ? {} : { [PANTALLA_ALTA]: { p: 3, gap: 1.5 } }),
+}) as const
+
 /**
  * Tarjeta de una noticia sobre fondo oscuro (la paleta Noche): foto, o una
  * placa con el escudo velado si no la hay; fecha, título y extracto. La
@@ -56,8 +93,6 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
   // la nueva se vuelve a intentar.
   const [fotoRota, setFotoRota] = useState<string | null>(null)
   const conFoto = Boolean(noticia.imagen) && fotoRota !== noticia.imagen
-  // La destacada se abre en dos columnas desde sm; en móvil es una tarjeta más.
-  const enFila = destacada ? { xs: 'flex', sm: 'grid' } : 'flex'
 
   return (
     <Box
@@ -66,13 +101,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
       state={volver ? { volver } : undefined}
       data-destacada={destacada || undefined}
       sx={{
-        display: enFila,
-        flexDirection: 'column',
-        gridTemplateColumns: destacada ? { sm: '7fr 5fr', lg: '3fr 2fr' } : undefined,
-        width: '100%',
-        backgroundColor: '#18161a',
-        color: '#e4e2df',
-        border: '1px solid rgba(255, 255, 255, 0.07)',
+        ...tarjetaSx(destacada),
         textDecoration: 'none',
         transition: 'transform .3s ease, border-color .3s ease',
         '& .noticia-foto': { transition: 'transform .6s ease' },
@@ -84,21 +113,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
         },
       }}
     >
-      {/* El marco fija la proporción; la foto va absoluta dentro para que, en la
-          destacada, sea la columna de texto la que marque el alto y no el tamaño
-          natural de la imagen. */}
-      <Box
-        sx={{
-          position: 'relative',
-          overflow: 'hidden',
-          // En el móvil, por su ancho. En escritorio, por el ALTO de la pantalla:
-          // en un portátil bajo la foto se encoge para que la tarjeta quepa
-          // entera, y en un monitor grande crece hasta 320 px.
-          aspectRatio: destacada ? { xs: '3 / 2', sm: 'auto' } : { xs: '16 / 9', md: 'auto' },
-          height: destacada ? undefined : { md: 'clamp(170px, 30vh, 320px)' },
-          minHeight: destacada ? { sm: 340, md: 420 } : undefined,
-        }}
-      >
+      <Box sx={marcoSx(destacada)}>
         {conFoto ? (
           <Box
             component="img"
@@ -130,17 +145,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
         )}
       </Box>
 
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: destacada ? 'center' : undefined,
-          gap: destacada ? 2 : 1.25,
-          flex: 1,
-          p: destacada ? { xs: 2.5, sm: 4, md: 6 } : { xs: 2.25, md: 2.5 },
-          ...(destacada ? {} : { [PANTALLA_ALTA]: { p: 3, gap: 1.5 } }),
-        }}
-      >
+      <Box sx={cuerpoSx(destacada)}>
         <Typography component="time" dateTime={noticia.fecha} sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD }}>
           {fechaCorta(noticia.fecha)}
         </Typography>
@@ -170,6 +175,31 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
           sx={{ mt: destacada ? 1 : 'auto', pt: destacada ? 1 : 0.5, display: 'inline-flex', alignItems: 'center', gap: 1, fontSize: 13, fontWeight: 600, color: '#fff', '& svg': { fontSize: 16, color: GOLD } }}
         >
           Leer noticia <ArrowForwardIcon />
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+/**
+ * La tarjeta mientras llega la noticia: el mismo marco, la foto en blanco y el
+ * texto en líneas del alto de las de verdad (fecha, dos de título, dos de
+ * extracto y «Leer noticia»).
+ */
+export function TarjetaNoticiaEsqueleto({ destacada = false }: { destacada?: boolean }) {
+  return (
+    <Box sx={tarjetaSx(destacada)}>
+      <Box sx={marcoSx(destacada)}>
+        <Hueso sx={{ position: 'absolute', inset: 0, borderRadius: 0 }} />
+      </Box>
+      <Box sx={cuerpoSx(destacada)}>
+        <Lineas anchos={['32%']} linea={16.5} grosor={9} />
+        {destacada
+          ? <Lineas anchos={['92%', '58%']} linea={{ xs: 26.4, sm: 31.2, md: 40.8 }} grosor={{ xs: 15, sm: 18, md: 22 }} />
+          : <Lineas anchos={['94%', '62%']} linea={26} grosor={14} />}
+        <Lineas anchos={destacada ? ['100%', '96%', '88%', '40%'] : ['100%', '70%']} linea={destacada ? { xs: 22.4, md: 25.6 } : 22.4} grosor={9} />
+        <Box sx={{ mt: destacada ? 1 : 'auto', pt: destacada ? 1 : 0.5 }}>
+          <Lineas anchos={['96px']} linea={24} grosor={9} />
         </Box>
       </Box>
     </Box>

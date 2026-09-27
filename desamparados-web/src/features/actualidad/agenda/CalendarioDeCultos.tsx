@@ -7,6 +7,7 @@ import { GOLD, GRANATE, SERIF } from '../../inicio/estilos'
 import { TIPOS, diasDeLaRejilla, inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from '../../inicio/agenda'
 import { claveDelDia, cuandoEnCartel, fotoDelCartel, primerDiaEnElMes, repartoDeLaSemana, ultimoMes } from './cultos'
 import VentanaDelActo from './VentanaDelActo'
+import Hueso from '../../../components/esqueleto/Hueso'
 
 const NOCHE = '#161316'
 const ORO_BORDE = 'rgba(222,199,43,0.4)'
@@ -395,6 +396,37 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
           {ventana}
         </Dialog>
       )}
+    </Box>
+  )
+}
+
+/**
+ * La hoja mientras llegan los actos: el mismo marco, los días de la semana y
+ * cinco semanas de casillas vacías, con el mes y los números en huesos. Las
+ * semanas tienen el alto de siempre en el móvil y uno medio en escritorio (la
+ * hoja de verdad lo ajusta a la pantalla).
+ */
+export function CalendarioDeCultosEsqueleto() {
+  const flecha = { width: 40, height: 40, border: `1px solid ${ORO_BORDE}`, opacity: 0.5 } as const
+  return (
+    <Box sx={{ bgcolor: NOCHE, border: `1px solid ${ORO_BORDE}`, p: { xs: '16px 12px', md: '20px 28px 16px' } }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '10px 14px', mb: 1.5 }}>
+        <Box sx={{ height: { xs: 30, md: 36 }, display: 'flex', alignItems: 'center' }}>
+          <Hueso sx={{ width: 190, height: { xs: 22, md: 26 } }} />
+        </Box>
+        <Box sx={flecha} />
+        <Box sx={flecha} />
+      </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderTop: `1px solid ${ORO_BORDE}`, borderLeft: `1px solid ${FILETE}`, '& > *': { borderRight: `1px solid ${FILETE}`, borderBottom: `1px solid ${FILETE}` } }}>
+        {SEMANA.map((d) => (
+          <Box key={d} aria-hidden sx={{ textAlign: 'center', py: 0.75, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: ORO_SUAVE }}>{d}</Box>
+        ))}
+        {Array.from({ length: 35 }, (_, i) => (
+          <Box key={i} sx={{ height: { xs: 50, md: 96 }, p: { xs: '4px 6px', md: '8px 10px' } }}>
+            <Hueso sx={{ width: { xs: 14, md: 26 }, height: { xs: 14, md: 26 } }} />
+          </Box>
+        ))}
+      </Box>
     </Box>
   )
 }

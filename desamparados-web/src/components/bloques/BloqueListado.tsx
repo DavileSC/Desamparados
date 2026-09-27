@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Alert, Box, Button, CircularProgress, Grid, Typography } from '@mui/material'
+import { Alert, Box, Button, Grid, Typography } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import TituloDeSeccion from '../TituloDeSeccion'
-import TarjetaNoticia from '../TarjetaNoticia'
-import TarjetaEvento from '../TarjetaEvento'
-import TarjetaPublicacion from '../TarjetaPublicacion'
+import TarjetaNoticia, { TarjetaNoticiaEsqueleto } from '../TarjetaNoticia'
+import TarjetaEvento, { TarjetaEventoEsqueleto } from '../TarjetaEvento'
+import TarjetaPublicacion, { TarjetaPublicacionEsqueleto } from '../TarjetaPublicacion'
+import EnCarga from '../esqueleto/EnCarga'
+import { Lineas } from '../esqueleto/Hueso'
 import Paginador from '../Paginador'
 import { noticiasDePortada, archivoDeNoticias } from '../../lib/api/noticias'
 import { traerProximosEventos } from '../../lib/api/agenda'
@@ -69,15 +71,15 @@ const LISTADOS: Record<FuenteListado, (props: PropsListado) => ReactNode> = {
   noticias: ArchivoDeNoticias,
   agenda: Agenda,
   publicaciones: ({ titulo, bloque }) => (
-    <Publicaciones titulo={titulo} bloque={bloque} etiqueta="publicaciones"
+    <Publicaciones titulo={titulo} bloque={bloque} etiqueta="publicaciones" que="las publicaciones"
       vacio="No hay publicaciones disponibles." fallo="No se han podido cargar las publicaciones." />
   ),
   boletines: ({ titulo, bloque }) => (
-    <Publicaciones titulo={titulo} bloque={bloque} categoria="boletin" etiqueta="boletines"
+    <Publicaciones titulo={titulo} bloque={bloque} categoria="boletin" etiqueta="boletines" que="los boletines"
       vacio="No hay boletines disponibles." fallo="No se han podido cargar los boletines." />
   ),
   dossier: ({ titulo, bloque }) => (
-    <Publicaciones titulo={titulo} bloque={bloque} categoria="dossier" etiqueta="dossieres de prensa"
+    <Publicaciones titulo={titulo} bloque={bloque} categoria="dossier" etiqueta="dossieres de prensa" que="los dossieres de prensa"
       vacio="No hay dossieres disponibles." fallo="No se han podido cargar los dossieres." />
   ),
 }
@@ -112,6 +114,13 @@ const fechaDeLista = (iso: string) => {
   return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+/** Una fila de la lista: la fecha a un lado y el texto al otro. La comparten la lista y su esqueleto. */
+const filaDeListaSx = (i: number) => ({
+  display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '140px minmax(0, 1fr)' }, columnGap: 3, rowGap: 0.5,
+  py: 1.75, borderTop: i === 0 ? 0 : '1px solid', borderColor: 'divider',
+}) as const
+const listaSx = { listStyle: 'none', m: 0, p: 0, maxWidth: 850, mx: 'auto' } as const
+
 interface FilaDeLista { clave: string; fecha: string; texto: string; ruta?: string; detalle?: string }
 
 /**
@@ -120,7 +129,7 @@ interface FilaDeLista { clave: string; fecha: string; texto: string; ruta?: stri
  */
 function ListaSencilla({ etiqueta, filas }: { etiqueta: string; filas: FilaDeLista[] }) {
   return (
-    <Box component="ul" aria-label={etiqueta} sx={{ listStyle: 'none', m: 0, p: 0, maxWidth: 850, mx: 'auto' }}>
+    <Box component="ul" aria-label={etiqueta} sx={listaSx}>
       {filas.map((fila, i) => {
         const texto = (
           <Box sx={{ minWidth: 0 }}>
@@ -129,8 +138,7 @@ function ListaSencilla({ etiqueta, filas }: { etiqueta: string; filas: FilaDeLis
           </Box>
         )
         return (
-          <Box component="li" key={fila.clave}
-            sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '140px minmax(0, 1fr)' }, columnGap: 3, rowGap: 0.5, py: 1.75, borderTop: i === 0 ? 0 : '1px solid', borderColor: 'divider' }}>
+          <Box component="li" key={fila.clave} sx={filaDeListaSx(i)}>
             <Typography component="span" sx={{ color: 'secondary.main', fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', pt: '3px' }}>
               {fila.fecha}
             </Typography>
@@ -144,6 +152,32 @@ function ListaSencilla({ etiqueta, filas }: { etiqueta: string; filas: FilaDeLis
   )
 }
 
+/** La lista sencilla mientras llega: `filas` filas con la fecha y el texto en huesos. */
+function ListaSencillaEsqueleto({ filas }: { filas: number }) {
+  return (
+    <Box sx={listaSx}>
+      {Array.from({ length: filas }, (_, i) => (
+        <Box key={i} sx={filaDeListaSx(i)}>
+          <Box sx={{ pt: '3px' }}><Lineas anchos={['90px']} linea={20} grosor={9} /></Box>
+          <Box>
+            <Lineas anchos={[`${78 - (i % 3) * 10}%`]} linea={24} grosor={12} />
+            <Lineas anchos={['52%']} linea={20} grosor={9} />
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+/** Las tarjetas de noticia mientras llegan, en la misma rejilla. */
+function RejillaDeNoticiasEsqueleto({ cuantas, columnas }: { cuantas: number; columnas: number }) {
+  return (
+    <Box sx={rejillaDeNoticias(columnas)}>
+      {Array.from({ length: cuantas }, (_, i) => <Box key={i} sx={{ display: 'flex' }}><TarjetaNoticiaEsqueleto /></Box>)}
+    </Box>
+  )
+}
+
 /**
  * Carga de una sola vez, sin paginar: los listados cortos de Actualidad.
  * `pedir` va fuera de los componentes para que no cambie en cada render.
@@ -152,6 +186,7 @@ function useCargaUnica<T>(pedir: () => Promise<T[]>, mensajeError: string) {
   const [items, setItems] = useState<T[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [intento, setIntento] = useState(0)
 
   useEffect(() => {
     let cancelado = false
@@ -160,9 +195,15 @@ function useCargaUnica<T>(pedir: () => Promise<T[]>, mensajeError: string) {
       .catch((err: unknown) => { if (!cancelado) setError(err instanceof Error ? err.message : mensajeError) })
       .finally(() => { if (!cancelado) setLoading(false) })
     return () => { cancelado = true }
-  }, [pedir, mensajeError])
+  }, [pedir, mensajeError, intento])
 
-  return { items, loading, error }
+  const reintentar = () => {
+    setError(null)
+    setLoading(true)
+    setIntento((n) => n + 1)
+  }
+
+  return { items, loading, error, reintentar }
 }
 
 // De siempre, tres noticias (las tarjetas van de tres en tres, como en la
@@ -170,12 +211,18 @@ function useCargaUnica<T>(pedir: () => Promise<T[]>, mensajeError: string) {
 function NoticiasRecientes({ titulo, bloque }: PropsListado) {
   const cuantas = cantidadDe(bloque, 3)
   const pedir = useCallback(() => noticiasDePortada(cuantas), [cuantas])
-  const { items, loading, error } = useCargaUnica<Noticia>(pedir, 'No se han podido cargar las noticias.')
+  const { items, loading, error, reintentar } = useCargaUnica<Noticia>(pedir, 'No se han podido cargar las noticias.')
   return (
     <>
       <Encabezado titulo={titulo} enlace={{ texto: 'Ver todas las noticias', ruta: '/noticias' }} />
-      {loading && <CircularProgress aria-label="Cargando noticias" />}
-      {error && <Alert severity="error">{error}</Alert>}
+      {(loading || error) && (
+        <EnCarga
+          estado={loading ? 'cargando' : 'error'}
+          que="las noticias"
+          alReintentar={reintentar}
+          esqueleto={enLista(bloque) ? <ListaSencillaEsqueleto filas={cuantas} /> : <RejillaDeNoticiasEsqueleto cuantas={cuantas} columnas={columnasDe(bloque, 3)} />}
+        />
+      )}
       {!loading && !error && items.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
       {!loading && !error && items.length > 0 && enLista(bloque) && (
         <ListaSencilla etiqueta={titulo || 'Últimas noticias'}
@@ -197,26 +244,44 @@ function NoticiasRecientes({ titulo, bloque }: PropsListado) {
 function AgendaProxima({ titulo, bloque }: PropsListado) {
   const cuantos = cantidadDe(bloque, 4)
   const pedir = useCallback(() => traerProximosEventos(cuantos), [cuantos])
-  const { items, loading, error } = useCargaUnica<Acto>(pedir, 'No se ha podido cargar la agenda.')
-  const lista = enLista(bloque) && !loading && !error && items.length > 0
+  const { items, loading, error, reintentar } = useCargaUnica<Acto>(pedir, 'No se ha podido cargar la agenda.')
+  const columnas = columnasDe(bloque, 2)
+  if (loading || error) {
+    return (
+      <>
+        <Encabezado titulo={titulo} enlace={{ texto: 'Ver agenda completa', ruta: '/agenda' }} />
+        <EnCarga
+          estado={loading ? 'cargando' : 'error'}
+          que="la agenda"
+          alReintentar={reintentar}
+          esqueleto={enLista(bloque)
+            ? <ListaSencillaEsqueleto filas={cuantos} />
+            : (
+              <Grid container spacing={4}>
+                {Array.from({ length: cuantos }, (_, i) => <Grid key={i} size={{ xs: 12, md: 12 / columnas }}><TarjetaEventoEsqueleto /></Grid>)}
+              </Grid>
+            )}
+        />
+      </>
+    )
+  }
+  const lista = enLista(bloque) && items.length > 0
   return (
     <>
       <Encabezado titulo={titulo} enlace={{ texto: 'Ver agenda completa', ruta: '/agenda' }} />
       {lista
         ? <ListaSencilla etiqueta={titulo || 'Próximos actos'}
             filas={items.map((a) => ({ clave: a.id, fecha: a.fecha, texto: a.titulo, detalle: [a.hora, a.lugar].filter(Boolean).join(' · ') }))} />
-        : <ListaDeEventos eventos={items} loading={loading} error={error} columnas={columnasDe(bloque, 2)} />}
+        : <ListaDeEventos eventos={items} columnas={columnas} />}
     </>
   )
 }
 
-function ListaDeEventos({ eventos, loading, error, columnas }: { eventos: Acto[]; loading: boolean; error: string | null; columnas: number }) {
+function ListaDeEventos({ eventos, columnas }: { eventos: Acto[]; columnas: number }) {
   return (
     <>
-      {loading && <CircularProgress aria-label="Cargando agenda" />}
-      {error && <Alert severity="error">{error}</Alert>}
-      {!loading && !error && eventos.length === 0 && <Alert severity="info">No hay próximos eventos publicados.</Alert>}
-      {!loading && !error && eventos.length > 0 && (
+      {eventos.length === 0 && <Alert severity="info">No hay próximos eventos publicados.</Alert>}
+      {eventos.length > 0 && (
         <Grid container spacing={4}>
           {eventos.map((evento) => (
             <Grid key={evento.id} size={{ xs: 12, md: 12 / columnas }}>
@@ -277,8 +342,20 @@ function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
   return (
     <>
       <Encabezado titulo={titulo} />
-      {loading && <CircularProgress aria-label="Cargando noticias" />}
-      {error && items.length === 0 && <Alert severity="error">{error}</Alert>}
+      {items.length === 0 && (loading || error) && (
+        <EnCarga
+          // Tras un fallo sin ninguna noticia a la vista, «Volver a intentar» pide lo mismo.
+          estado={loading || cargandoMas ? 'cargando' : 'error'}
+          que="las noticias"
+          alReintentar={cargarMas}
+          esqueleto={(
+            <Box sx={rejillaDeNoticias(columnasDe(bloque, 3))}>
+              <Box sx={{ display: 'flex', gridColumn: '1 / -1' }}><TarjetaNoticiaEsqueleto destacada /></Box>
+              {Array.from({ length: 3 }, (_, i) => <Box key={i} sx={{ display: 'flex' }}><TarjetaNoticiaEsqueleto /></Box>)}
+            </Box>
+          )}
+        />
+      )}
       {!loading && !error && items.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
       {items.length > 0 && (
         <Box component="ul" aria-label={titulo || 'Noticias'} sx={rejillaDeNoticias(columnasDe(bloque, 3))}>
@@ -315,23 +392,41 @@ const visualmenteOculto = {
   overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
 } as const
 
-function Publicaciones({ titulo, bloque, categoria, etiqueta, vacio, fallo }: PropsListado & {
+function Publicaciones({ titulo, bloque, categoria, etiqueta, que, vacio, fallo }: PropsListado & {
   categoria?: 'boletin' | 'dossier'
-  /** Lo que se pagina: para el paginador y el aviso de carga. */
+  /** Lo que se pagina: para el paginador. */
   etiqueta: string
+  /** Lo mismo con su artículo, para el aviso de carga: «los boletines». */
+  que: string
   vacio: string
   fallo: string
 }) {
-  const { items, meta, loading, error, alCambiarPagina } = usePublicacionesPaginadas(categoria, fallo)
+  const { items, meta, loading, error, alCambiarPagina, reintentar } = usePublicacionesPaginadas(categoria, fallo)
+  const columnas = columnasDe(bloque, 4)
   return (
     <>
       <Encabezado titulo={titulo} />
-      {loading && <CircularProgress aria-label={`Cargando ${etiqueta}`} />}
-      {error && <Alert severity="error">{error}</Alert>}
+      {(loading || error) && (
+        <EnCarga
+          estado={loading ? 'cargando' : 'error'}
+          que={que}
+          alReintentar={reintentar}
+          esqueleto={(
+            <Grid container spacing={3}>
+              {Array.from({ length: columnas }, (_, i) => (
+                // Una fila: una tarjeta en el móvil, dos en tableta y todas en escritorio.
+                <Grid key={i} size={{ xs: 12, sm: 6, lg: 12 / columnas }} sx={{ display: { xs: i > 0 ? 'none' : 'block', sm: i > 1 ? 'none' : 'block', lg: 'block' } }}>
+                  <TarjetaPublicacionEsqueleto />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        />
+      )}
       {!loading && !error && items.length === 0 && <Alert severity="info">{vacio}</Alert>}
       <Grid container spacing={3}>
         {items.map((publicacion) => (
-          <Grid key={publicacion.id} size={{ xs: 12, sm: 6, lg: 12 / columnasDe(bloque, 4) }}>
+          <Grid key={publicacion.id} size={{ xs: 12, sm: 6, lg: 12 / columnas }}>
             <TarjetaPublicacion publicacion={publicacion} />
           </Grid>
         ))}

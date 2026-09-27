@@ -127,11 +127,14 @@ describe('HistoriaPage', () => {
     await vi.waitFor(() => expect(screen.queryByRole('navigation', { name: 'Momentos de la historia' })).not.toBeInTheDocument())
   })
 
-  it('mientras el servidor no contesta, enseña la historia de siempre', () => {
+  it('mientras el servidor no contesta, un esqueleto y no la historia de partida', async () => {
+    // Se rompe si, mientras llega, se enseña el contenido de partida: en cuanto
+    // la Secretaría edita la página ya no es el suyo, y se vería un momento el
+    // texto viejo antes de cambiar solo.
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise(() => {})))
     renderWithProviders(<HistoriaPage />)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Historia' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 3, name: HITOS[0].titulo })).toBeInTheDocument()
+    expect(await screen.findByRole('status', { name: 'Cargando esta página' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 3, name: HITOS[0].titulo })).not.toBeInTheDocument()
   })
 })

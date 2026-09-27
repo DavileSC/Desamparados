@@ -10,6 +10,8 @@ import { useDatosDePortada } from './useDatosDePortada'
 import { useTextosPortada } from './useContenidoPortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import CintaDestacada from './CintaDestacada'
+import EnCarga, { estadoDeConsulta } from '../../components/esqueleto/EnCarga'
+import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 
 const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
@@ -188,6 +190,53 @@ function Ejemplares({ destacada, anteriores }: { destacada: Publicacion; anterio
   )
 }
 
+// El texto a la izquierda y el ejemplar a la derecha; en el móvil, el ejemplar
+// arriba. Los comparten el bloque y su esqueleto.
+const rejilla = { display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 380px', lg: '1fr 440px' }, gap: { xs: 4, md: 5, lg: 7 }, alignItems: 'center' } as const
+const columnaDelEjemplar = { position: 'relative', order: { xs: -1, md: 0 }, gridColumn: { md: 2 }, gridRow: { md: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 } } as const
+const columnaDelTexto = { gridColumn: { md: 1 }, gridRow: { md: 1 } } as const
+
+const visualmenteOculto = {
+  position: 'absolute', width: '1px', height: '1px', margin: '-1px', padding: 0, border: 0,
+  overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
+} as const
+
+/**
+ * El bloque mientras llegan las publicaciones: el ejemplar ya en su postura,
+ * en blanco, y a su lado la ceja, el título, la descripción, los dos botones y
+ * las dos anteriores, en huesos del tamaño de los de verdad.
+ */
+function PublicacionesEsqueleto() {
+  return (
+    <Box sx={rejilla}>
+      <Box sx={columnaDelEjemplar}>
+        <Box sx={escena}>
+          <Box className="ejemplar ejemplar-1">
+            <Hueso sx={{ position: 'absolute', inset: 0, borderRadius: 0 }} />
+          </Box>
+        </Box>
+      </Box>
+      <Box sx={columnaDelTexto}>
+        <Box sx={{ mb: 1.75 }}><Lineas anchos={['220px']} linea={16.5} grosor={9} /></Box>
+        <Lineas anchos={['88%', '52%']} linea={{ xs: 36, md: 46.6, lg: 55.1 }} grosor={{ xs: 22, md: 28, lg: 34 }} />
+        <Box sx={{ mt: 2.5, maxWidth: 470 }}><Lineas anchos={['96%', '60%']} linea={27.2} grosor={11} /></Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 3.75 }}>
+          <Hueso sx={{ width: 200, height: 48, borderRadius: 0 }} />
+          <Hueso sx={{ width: 236, height: 48, borderRadius: 0 }} />
+        </Box>
+        <Box sx={{ mt: 5, maxWidth: 520, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: { xs: 0, sm: 3 } }}>
+          {[0, 1].map((i) => (
+            <Box key={i} sx={{ py: 1.75, boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.14)' }}>
+              <Lineas anchos={['64px']} linea={16.5} grosor={8} />
+              <Box sx={{ mt: 0.75 }}><Lineas anchos={['80%']} linea={22.1} grosor={12} /></Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
 /**
  * Publicaciones: bloque de tinta con una publicación en 3D y el resto en lista.
  *
@@ -195,7 +244,8 @@ function Ejemplares({ destacada, anteriores }: { destacada: Publicacion; anterio
  * si no de la más reciente: el servidor las manda ya en ese orden.
  */
 export default function PublicacionesDestacadas() {
-  const { data: publicaciones = [], isPending, isError, refetch } = useDatosDePortada('publicaciones', publicacionesDePortada)
+  const consulta = useDatosDePortada('publicaciones', publicacionesDePortada)
+  const { data: publicaciones = [], isPending, isError, refetch } = consulta
   const textos = useTextosPortada()
   const [destacada, ...resto] = publicaciones
   const otras = resto.slice(0, 2)
@@ -237,15 +287,15 @@ export default function PublicacionesDestacadas() {
           los 64 px de margen la dejarían debajo del título. */}
       <ContenedorDePagina sx={{ position: 'relative', pl: { md: 'max(64px, calc(128px - max(0px, (100vw - 1440px) / 2)))' } }}>
         {destacada ? (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 380px', lg: '1fr 440px' }, gap: { xs: 4, md: 5, lg: 7 }, alignItems: 'center' }}>
+          <Box sx={rejilla}>
             {/* Los ejemplares son el objeto del bloque: crecen al posarse. En tableta
                 apaisada ya van al lado del texto: encima dejaban media pantalla vacía. */}
-            <Revela efecto="crecer" sx={{ position: 'relative', order: { xs: -1, md: 0 }, gridColumn: { md: 2 }, gridRow: { md: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 } }}>
+            <Revela efecto="crecer" sx={columnaDelEjemplar}>
               {/* Sobre el ejemplar, que es lo que hace de portada aquí. */}
               {destacada.fijada && <CintaDestacada />}
               <Ejemplares destacada={destacada} anteriores={otras} />
             </Revela>
-            <Box sx={{ gridColumn: { md: 1 }, gridRow: { md: 1 } }}>
+            <Box sx={columnaDelTexto}>
               <Revela orden={1}>
                 <Typography id="publicaciones-titulo" component="h2" sx={cejaTitulo}>
                   Publicaciones · {mes(destacada.fecha)} {anio(destacada.fecha)}
@@ -326,10 +376,15 @@ export default function PublicacionesDestacadas() {
               )}
             </Box>
           </Box>
+        ) : isPending || isError ? (
+          <>
+            <Typography id="publicaciones-titulo" component="h2" sx={visualmenteOculto}>Publicaciones</Typography>
+            <EnCarga estado={estadoDeConsulta(consulta)} que="las publicaciones" alReintentar={() => { void refetch() }} esqueleto={<PublicacionesEsqueleto />} />
+          </>
         ) : (
           <Box sx={{ maxWidth: 640 }}>
             <Typography id="publicaciones-titulo" component="h2" sx={cejaTitulo}>Publicaciones</Typography>
-            <AvisosDeInicio loading={isPending} error={isError} empty={!publicaciones.length} label="las publicaciones" emptyMessage="No hay publicaciones disponibles por el momento." retry={() => { void refetch() }} />
+            <AvisosDeInicio mensaje="No hay publicaciones disponibles por el momento." />
           </Box>
         )}
       </ContenedorDePagina>

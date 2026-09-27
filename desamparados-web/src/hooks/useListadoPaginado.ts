@@ -25,6 +25,7 @@ export function useListadoPaginado<T>(
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [intento, setIntento] = useState(0)
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion()
 
   useEffect(() => {
@@ -49,12 +50,19 @@ export function useListadoPaginado<T>(
       .finally(() => { if (!cancelado) setLoading(false) })
 
     return () => { cancelado = true }
-  }, [pedir, mensajeError, pagina, porPagina])
+  }, [pedir, mensajeError, pagina, porPagina, intento])
 
   const alCambiarPagina = (numero: number) => {
     irAPagina(numero)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  return { items, meta, loading, error, alCambiarPagina, cambiarTamano }
+  /** Tras un fallo, vuelve a pedir la misma página; mientras, la lista está cargando. */
+  const reintentar = () => {
+    setError(null)
+    setLoading(true)
+    setIntento((n) => n + 1)
+  }
+
+  return { items, meta, loading, error, alCambiarPagina, cambiarTamano, reintentar }
 }

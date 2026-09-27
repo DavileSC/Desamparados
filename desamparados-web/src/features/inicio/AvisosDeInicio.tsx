@@ -1,27 +1,11 @@
-import { Box, Button, Skeleton, Typography } from '@mui/material'
-import RefreshIcon from '@mui/icons-material/Refresh'
-import { enlaceConFlecha } from '../../components/estiloDeBoton'
+import { Box, Typography } from '@mui/material'
 
-interface AvisosDeInicioProps {
-  loading: boolean
-  error: boolean
-  empty: boolean
-  label: string
-  emptyMessage: string
-  retry: () => void
-  /** Sobre fondo claro, como la tarjeta de papel de la agenda. */
-  claro?: boolean
-}
-
-export default function AvisosDeInicio({ loading, error, empty, label, emptyMessage, retry, claro = false }: AvisosDeInicioProps) {
-  if (loading) return (
-    <Box role="status" aria-label={`Cargando ${label}`} sx={{ display: 'grid', gap: 1.5, py: 2, ...(claro && { '& .MuiSkeleton-root': { bgcolor: 'rgba(27,28,26,.08)' } }) }}>
-      <Skeleton variant="rounded" height={90} />
-      <Skeleton width="85%" />
-      <Skeleton width="60%" />
-    </Box>
-  )
-  if (!error && !empty) return null
+/**
+ * Lo que dice un bloque de la portada cuando el servidor ha contestado y no
+ * hay nada que enseñar («No hay noticias publicadas por el momento»). Mientras
+ * carga y si falla, el bloque lleva su esqueleto (`EnCarga`).
+ */
+export default function AvisosDeInicio({ mensaje, claro = false }: { mensaje: string; /** Sobre fondo claro, como la tarjeta de papel de la agenda. */ claro?: boolean }) {
   return (
     <Box
       role="status"
@@ -32,10 +16,7 @@ export default function AvisosDeInicio({ loading, error, empty, label, emptyMess
         background: claro ? 'rgba(27,28,26,.03)' : 'rgba(255,255,255,.025)',
       }}
     >
-      <Typography sx={{ fontSize: 15, color: claro ? '#4a454a' : 'text.secondary' }}>
-        {error ? `No se ha podido cargar ${label}. Inténtalo de nuevo en unos instantes.` : emptyMessage}
-      </Typography>
-      {error && <Button onClick={retry} startIcon={<RefreshIcon />} sx={{ ...enlaceConFlecha, mt: 1.5, px: 0, color: claro ? '#6e1822' : 'secondary.main', '& svg': { fontSize: 18 } }}>Volver a intentar</Button>}
+      <Typography sx={{ fontSize: 15, color: claro ? '#4a454a' : 'text.secondary' }}>{mensaje}</Typography>
     </Box>
   )
 }

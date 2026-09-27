@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import TarjetaCristal from './TarjetaCristal'
 import type { Publicacion } from '../types'
+import { Lineas } from './esqueleto/Hueso'
 
 interface TarjetaPublicacionProps {
   publicacion: Publicacion
@@ -79,6 +80,18 @@ export default function TarjetaPublicacion({ publicacion }: TarjetaPublicacionPr
           </Typography>
         </Box>
       </Box>
+    </TarjetaCristal>
+  )
+}
+
+/** La tarjeta mientras llega la publicación: tipo, título, descripción y fecha en huesos. */
+export function TarjetaPublicacionEsqueleto() {
+  return (
+    <TarjetaCristal sx={{ height: '100%', p: 3 }}>
+      <Box sx={{ mb: 1 }}><Lineas anchos={['30%']} linea={29.3} grosor={8} /></Box>
+      <Box sx={{ mb: 1 }}><Lineas anchos={['82%']} linea={26.7} grosor={14} /></Box>
+      <Lineas anchos={['100%', '64%']} linea={20} grosor={9} />
+      <Box sx={{ mt: 2 }}><Lineas anchos={['40%']} linea={19.9} grosor={8} /></Box>
     </TarjetaCristal>
   )
 }

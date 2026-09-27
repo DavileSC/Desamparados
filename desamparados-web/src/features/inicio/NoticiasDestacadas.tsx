@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
-import TarjetaNoticia from '../../components/TarjetaNoticia'
+import TarjetaNoticia, { TarjetaNoticiaEsqueleto } from '../../components/TarjetaNoticia'
+import EnCarga, { estadoDeConsulta } from '../../components/esqueleto/EnCarga'
 import CintaDestacada from './CintaDestacada'
 import { noticiasDePortada } from '../../lib/api/noticias'
 import { useDatosDePortada } from './useDatosDePortada'
@@ -13,6 +14,11 @@ import { SERIF, ceja, enlaceBloque } from './estilos'
 
 // En portada caben tres noticias; el resto está en el archivo.
 const MAX_NOTICIAS = 3
+
+const rejilla = { listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 3.25 } } as const
+// En tableta van de dos en dos: la tercera se quedaría sola con medio hueco al
+// lado. Ahí se enseñan dos, y el resto está en «Ver todas».
+const visibleEnTableta = (i: number) => (i === 2 ? { xs: 'flex', sm: 'none', md: 'flex' } : 'flex')
 const pedirNoticias = () => noticiasDePortada(MAX_NOTICIAS)
 
 /**
@@ -23,7 +29,8 @@ const pedirNoticias = () => noticiasDePortada(MAX_NOTICIAS)
  * destacada.
  */
 export default function NoticiasDestacadas() {
-  const { data: noticias = [], isPending, isError, refetch } = useDatosDePortada('noticias', pedirNoticias)
+  const consulta = useDatosDePortada('noticias', pedirNoticias)
+  const { data: noticias = [], isPending, isError, refetch } = consulta
   const textos = useTextosPortada()
 
   return (
@@ -46,22 +53,30 @@ export default function NoticiasDestacadas() {
             </Box>
           </Revela>
         </Box>
-        <AvisosDeInicio loading={isPending} error={isError} empty={!noticias.length} label="la actualidad" emptyMessage="No hay noticias publicadas por el momento." retry={() => { void refetch() }} />
-        {noticias.length > 0 && (
-          <Box
-            component="ul"
-            aria-label={textos.actualidad.titulo}
-            sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 3.25 } }}
-          >
+        {isPending || isError ? (
+          <EnCarga
+            estado={estadoDeConsulta(consulta)}
+            que="las noticias"
+            alReintentar={() => { void refetch() }}
+            esqueleto={(
+              <Box sx={rejilla}>
+                {Array.from({ length: MAX_NOTICIAS }, (_, i) => (
+                  <Box key={i} sx={{ display: visibleEnTableta(i) }}><TarjetaNoticiaEsqueleto /></Box>
+                ))}
+              </Box>
+            )}
+          />
+        ) : noticias.length === 0 ? (
+          <AvisosDeInicio mensaje="No hay noticias publicadas por el momento." />
+        ) : (
+          <Box component="ul" aria-label={textos.actualidad.titulo} sx={rejilla}>
             {noticias.slice(0, MAX_NOTICIAS).map((noticia, i) => (
               <Revela
                 key={noticia.id}
                 as="li"
                 efecto="crecer"
                 orden={3 + i}
-                // En tableta van de dos en dos: la tercera se quedaría sola con medio
-                // hueco al lado. Ahí se enseñan dos, y el resto está en «Ver todas».
-                sx={{ display: i === 2 ? { xs: 'flex', sm: 'none', md: 'flex' } : 'flex', position: 'relative' }}
+                sx={{ display: visibleEnTableta(i), position: 'relative' }}
               >
                 {noticia.fijada && <CintaDestacada />}
                 <TarjetaNoticia noticia={noticia} indice={i} />

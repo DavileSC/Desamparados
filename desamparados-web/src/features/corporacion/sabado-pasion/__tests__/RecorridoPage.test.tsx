@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import RecorridoPage from '../RecorridoPage'
 import POR_DEFECTO from '../../../../../../shared/contenido-por-defecto.json'
@@ -88,11 +89,19 @@ describe('RecorridoPage', () => {
     expect(fotosDelContenido()).toHaveLength(0)
   })
 
-  it('si la API falla, enseña el itinerario de siempre', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('sin red')))
+  it('si la API falla, lo avisa y deja volver a intentarlo, sin enseñar el itinerario de partida', async () => {
+    // Se rompe si, sin servidor, se vuelve a enseñar el contenido de partida:
+    // un itinerario que no es el guardado pasaría por el de verdad.
+    const fetch = vi.fn().mockRejectedValue(new Error('sin red'))
+    vi.stubGlobal('fetch', fetch)
+    const usuario = userEvent.setup()
     renderWithProviders(<RecorridoPage />)
 
+    expect(await screen.findByText(/No se ha podido cargar esta página/)).toBeInTheDocument()
+    expect(screen.queryByText('Salida desde el Templo')).not.toBeInTheDocument()
+
+    fetch.mockResolvedValue(new Response(JSON.stringify(DE_PARTIDA), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    await usuario.click(screen.getByRole('button', { name: /volver a intentar/i }))
     expect(await screen.findByText('Salida desde el Templo')).toBeInTheDocument()
-    expect(screen.getByText(/El itinerario de la procesión/)).toBeInTheDocument()
   })
 })

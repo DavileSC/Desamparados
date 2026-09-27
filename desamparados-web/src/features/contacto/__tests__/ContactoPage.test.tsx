@@ -17,7 +17,8 @@ function responderBien() {
 }
 
 async function rellenar(usuario: ReturnType<typeof userEvent.setup>, { email = 'ana@example.es', telefono = '' } = {}) {
-  await usuario.type(screen.getByLabelText('Nombre'), 'Ana')
+  // El formulario llega con el documento de la página: primero su esqueleto.
+  await usuario.type(await screen.findByLabelText('Nombre'), 'Ana')
   await usuario.type(screen.getByLabelText('Email'), email)
   if (telefono) await usuario.type(screen.getByLabelText(/teléfono/i), telefono)
   await usuario.type(screen.getByLabelText('Asunto'), 'Besapiés')
@@ -42,9 +43,10 @@ describe('ContactoPage', () => {
     expect(cuerpo.tiempoRelleno).toBeGreaterThanOrEqual(0)
   })
 
-  it('el campo trampa no se ve, no se alcanza con el tabulador y los lectores de pantalla lo ignoran', () => {
+  it('el campo trampa no se ve, no se alcanza con el tabulador y los lectores de pantalla lo ignoran', async () => {
     responderBien()
     const { container } = renderWithProviders(<ContactoPage />)
+    await screen.findByLabelText('Nombre')
     const trampa = container.querySelector<HTMLInputElement>('#contacto-comentario-adicional')!
     expect(trampa).toBeInTheDocument()
     expect(trampa.tabIndex).toBe(-1)

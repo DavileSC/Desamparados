@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import MetaDePagina from '../../../components/MetaDePagina'
 import FichaDeNoticia from '../../../components/FichaDeNoticia'
 import { Link, useParams } from 'react-router-dom'
-import { Alert, Box, CircularProgress, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
@@ -11,6 +11,12 @@ import type { Noticia } from '../../../types'
 import NoEncontradaPage from '../../noEncontrado/NoEncontradaPage'
 import { limpiarHtml } from '../../../lib/limpiarHtml'
 import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
+import EnCarga from '../../../components/esqueleto/EnCarga'
+import { Lineas } from '../../../components/esqueleto/Hueso'
+
+// La cabecera y el cuerpo de la ficha: los comparten la ficha y su esqueleto.
+const cabeceraSx = { position: 'relative', py: { xs: 10, md: 14 }, mb: { xs: 4, md: 6 }, backgroundColor: 'background.paper', overflow: 'hidden' } as const
+const columna = { maxWidth: '900px !important' } as const
 
 export default function NoticiaDetallePage() {
   const { slug = '' } = useParams<{ slug: string }>()
@@ -20,6 +26,7 @@ export default function NoticiaDetallePage() {
   const [noticia, setNoticia] = useState<Noticia | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [intento, setIntento] = useState(0)
 
   useEffect(() => {
     let cancelado = false
@@ -38,10 +45,17 @@ export default function NoticiaDetallePage() {
     return () => {
       cancelado = true
     }
-  }, [slug])
+  }, [slug, intento])
 
-  if (loading) return <CircularProgress aria-label="Cargando noticia" />
-  if (error) return <Alert severity="error">{error}</Alert>
+  const reintentar = () => {
+    setError(null)
+    setLoading(true)
+    setIntento((n) => n + 1)
+  }
+
+  if (loading || error) {
+    return <EnCarga avisoArriba estado={loading ? 'cargando' : 'error'} que="la noticia" alReintentar={reintentar} esqueleto={<FichaEsqueleto />} />
+  }
   if (!noticia) return <NoEncontradaPage />
 
   const fecha = new Date(noticia.fecha).toLocaleDateString('es-ES', {
@@ -55,16 +69,7 @@ export default function NoticiaDetallePage() {
       <MetaDePagina titulo={noticia.titulo} descripcion={noticia.extracto} />
       <FichaDeNoticia noticia={noticia} />
 
-      <Box
-        component="header"
-        sx={{
-          position: 'relative',
-          py: { xs: 10, md: 14 },
-          mb: { xs: 4, md: 6 },
-          backgroundColor: 'background.paper',
-          overflow: 'hidden',
-        }}
-      >
+      <Box component="header" sx={cabeceraSx}>
         {noticia.imagen && (
           <>
             <Box
@@ -84,7 +89,7 @@ export default function NoticiaDetallePage() {
             />
           </>
         )}
-        <ContenedorDePagina sx={{ position: 'relative', zIndex: 2, maxWidth: '900px !important' }}>
+        <ContenedorDePagina sx={{ position: 'relative', zIndex: 2, ...columna }}>
           <Typography variant="overline" sx={{ color: 'secondary.main', display: 'block', mb: 2 }}>
             {noticia.categoria} · <time dateTime={noticia.fecha}>{fecha}</time>
           </Typography>
@@ -98,7 +103,7 @@ export default function NoticiaDetallePage() {
       </Box>
 
       <SeccionAnimada sx={{ pb: { xs: 8, md: 12 } }}>
-        <ContenedorDePagina sx={{ maxWidth: '900px !important' }}>
+        <ContenedorDePagina sx={columna}>
           <Typography
             component="article"
             variant="body1"
@@ -124,6 +129,32 @@ export default function NoticiaDetallePage() {
           </Box>
         </ContenedorDePagina>
       </SeccionAnimada>
+    </>
+  )
+}
+
+/**
+ * La ficha mientras llega la noticia: la cabecera con la categoría y la fecha,
+ * dos líneas de título y dos de entradilla, y unos párrafos del cuerpo.
+ */
+function FichaEsqueleto() {
+  return (
+    <>
+      <Box sx={cabeceraSx}>
+        <ContenedorDePagina sx={columna}>
+          <Box sx={{ mb: 2 }}><Lineas anchos={['220px']} linea={32} grosor={9} /></Box>
+          <Box sx={{ mb: 2 }}><Lineas anchos={['90%', '55%']} linea={{ xs: 38.4, md: 62.4 }} grosor={{ xs: 22, md: 36 }} /></Box>
+          <Lineas anchos={['96%', '68%']} linea={{ xs: 24, md: 27 }} grosor={10} />
+        </ContenedorDePagina>
+      </Box>
+      <Box sx={{ pb: { xs: 8, md: 12 } }}>
+        <ContenedorDePagina sx={columna}>
+          <Lineas anchos={['100%', '97%', '99%', '62%']} linea={{ xs: 28.8, md: 32.4 }} grosor={10} />
+          <Box sx={{ mt: { xs: 3.5, md: 4 } }}>
+            <Lineas anchos={['98%', '100%', '94%', '40%']} linea={{ xs: 28.8, md: 32.4 }} grosor={10} />
+          </Box>
+        </ContenedorDePagina>
+      </Box>
     </>
   )
 }

@@ -4,11 +4,31 @@ import { Revela } from '../SeccionAnimada'
 import { GOLD, SERIF, ceja as estiloCeja } from '../../features/inicio/estilos'
 import { useModoEdicion } from './modoEdicion'
 import { ENCUADRE_POR_DEFECTO, srcSetDeCabecera } from './cabecera'
+import Hueso, { Lineas } from '../esqueleto/Hueso'
 
 /** Fondo de la página: la foto se funde a él por abajo. */
 const FONDO = '#121113'
 /** En escritorio la barra es fija, de 72 px, y va encima de la foto. */
 const ESCRITORIO = '@media (min-width:1024px)'
+
+/**
+ * La banda: alto mínimo y no fijo, el texto abajo. La comparten la cabecera y
+ * su esqueleto, para que al llegar el contenido no se mueva nada.
+ */
+const bandaSx = {
+  position: 'relative',
+  overflow: 'hidden',
+  isolation: 'isolate',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'flex-end',
+  minHeight: { xs: 440, sm: 500 },
+  [ESCRITORIO]: { minHeight: 'clamp(540px, 74svh, 720px)' },
+} as const
+const textoSx = { width: '100%', pt: 12, pb: { xs: 4, md: 6 }, [ESCRITORIO]: { pt: 'calc(72px + 72px)', pb: 7 } } as const
+const cejaSx = { ...estiloCeja, color: GOLD, m: 0, mb: { xs: 1.5, md: 2 }, fontSize: { xs: 11, md: 12 }, fontWeight: 600, textShadow: '0 1px 10px rgba(0,0,0,0.9)' } as const
+const TITULO = 'clamp(38px, 10.5vw, 60px)'
+const TITULO_ESCRITORIO = 'clamp(64px, 7.2vw, 112px)'
 
 interface Props {
   titulo: string
@@ -52,9 +72,7 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
     <Box
       component="header"
       sx={{
-        position: 'relative',
-        overflow: 'hidden',
-        isolation: 'isolate',
+        ...bandaSx,
         // La línea de tiempo de la paralaje: cuánto ha salido la banda por
         // arriba. Se declara aquí y no con view() en la foto porque, con el
         // overflow hidden, la banda sería el desplazador de la foto y view()
@@ -62,11 +80,6 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
         viewTimelineName: '--cabecera',
         // Sin foto (mientras carga o si se quita), granate casi negro: nunca un hueco gris.
         backgroundColor: '#1d0a0e',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-end',
-        minHeight: { xs: 440, sm: 500 },
-        [ESCRITORIO]: { minHeight: 'clamp(540px, 74svh, 720px)' },
       }}
     >
       {conFoto && (
@@ -139,10 +152,10 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
         }}
       />
 
-      <ContenedorDePagina sx={{ width: '100%', pt: 12, pb: { xs: 4, md: 6 }, [ESCRITORIO]: { pt: 'calc(72px + 72px)', pb: 7 } }}>
+      <ContenedorDePagina sx={textoSx}>
         {ceja.length > 0 && (
           <Revela alMontar>
-            <Typography component="p" sx={{ ...estiloCeja, color: GOLD, m: 0, mb: { xs: 1.5, md: 2 }, fontSize: { xs: 11, md: 12 }, fontWeight: 600, textShadow: '0 1px 10px rgba(0,0,0,0.9)' }}>
+            <Typography component="p" sx={cejaSx}>
               {ceja.join(' · ')}
             </Typography>
           </Revela>
@@ -154,8 +167,8 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
             sx={{
               fontFamily: SERIF,
               fontWeight: 500,
-              fontSize: 'clamp(38px, 10.5vw, 60px)',
-              [ESCRITORIO]: { fontSize: 'clamp(64px, 7.2vw, 112px)' },
+              fontSize: TITULO,
+              [ESCRITORIO]: { fontSize: TITULO_ESCRITORIO },
               lineHeight: 1.02,
               letterSpacing: '-0.02em',
               textWrap: 'balance',
@@ -185,6 +198,28 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
             </Typography>
           </Revela>
         )}
+      </ContenedorDePagina>
+    </Box>
+  )
+}
+
+/**
+ * La cabecera mientras llega la página: la banda con su alto de siempre y el
+ * brillo de lado a lado donde irá la foto; la ceja, que sale del menú y no del
+ * servidor, ya escrita, y el título y el subtítulo en huesos.
+ */
+export function CabeceraASangreEsqueleto({ ceja }: { ceja: string[] }) {
+  return (
+    <Box component="header" sx={{ ...bandaSx, backgroundColor: '#161416' }}>
+      <Hueso sx={{ position: 'absolute', inset: 0, zIndex: -1, borderRadius: 0 }} />
+      <ContenedorDePagina sx={textoSx}>
+        {ceja.length > 0 && <Typography component="p" sx={cejaSx}>{ceja.join(' · ')}</Typography>}
+        <Box sx={{ height: `calc(${TITULO} * 1.02)`, [ESCRITORIO]: { height: `calc(${TITULO_ESCRITORIO} * 1.02)` }, display: 'flex', alignItems: 'center' }}>
+          <Hueso sx={{ width: 'min(64%, 560px)', height: '64%' }} />
+        </Box>
+        <Box sx={{ mt: { xs: 2, md: 2.5 } }}>
+          <Lineas anchos={['min(92%, 470px)', 'min(52%, 270px)']} linea={{ xs: 25.5, md: 30 }} grosor={{ xs: 10, md: 12 }} />
+        </Box>
       </ContenedorDePagina>
     </Box>
   )

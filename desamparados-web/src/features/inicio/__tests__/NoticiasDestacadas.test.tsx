@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import NoticiasDestacadas from '../NoticiasDestacadas'
 import { responderPortada, textosDePrueba } from './ayudas'
@@ -23,6 +24,19 @@ function servir(noticias: unknown[]) {
 }
 
 describe('NoticiasDestacadas', () => {
+  it('si el servidor falla, avisa sin encoger el bloque y deja volver a intentarlo', async () => {
+    // Se rompe si el fallo deja el bloque en blanco o sin forma de reintentar.
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: 'caído' }), { status: 500, headers: { 'Content-Type': 'application/json' } }))
+    vi.stubGlobal('fetch', fetch)
+    renderWithProviders(<NoticiasDestacadas />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se han podido cargar las noticias.')
+
+    fetch.mockResolvedValue(new Response(JSON.stringify([APERTURA]), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    await userEvent.click(screen.getByRole('button', { name: /volver a intentar/i }))
+    expect(await screen.findByRole('link', { name: /apertura del curso/i })).toBeInTheDocument()
+  })
+
   it('pinta cada noticia como una tarjeta enlazada a su ficha, con fecha, título y extracto', async () => {
     servir([APERTURA, TRIDUO, CAMPANA])
     renderWithProviders(<NoticiasDestacadas />)

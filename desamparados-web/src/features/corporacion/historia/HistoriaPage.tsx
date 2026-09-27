@@ -13,6 +13,9 @@ import { idDeHito } from '../../../components/bloques/cronologia'
 import { GOLD, SERIF, ceja, enlaceBloque } from '../../inicio/estilos'
 import { esDestinoValido } from '../../../lib/destinos'
 import { useBorradorPagina } from '../../../components/bloques/borrador'
+import BloquesEsqueleto from '../../../components/bloques/BloquesEsqueleto'
+import EnCarga, { estadoDeConsulta } from '../../../components/esqueleto/EnCarga'
+import { Lineas } from '../../../components/esqueleto/Hueso'
 import {
   getContenido,
   type Bloque, type BloqueCronologia as Cronologia, type BloqueLlamada, type PaginaDeBloques,
@@ -27,6 +30,17 @@ const ESCRITORIO = '@media (min-width:1024px)'
 const TINTA_VELADA = 'rgba(12, 11, 13, 0.55)'
 const FILETE = 'rgba(204, 196, 201, 0.22)'
 const FILETE_LEVE = 'rgba(204, 196, 201, 0.1)'
+
+/** La cabecera: la comparten la página y su esqueleto. */
+const cabeceraSx = { pt: { xs: 8, md: 14 }, pb: { xs: 7, md: 12 }, [ESCRITORIO]: { pt: 'calc(72px + 96px)' } } as const
+const cabeceraRejilla = {
+  display: 'grid',
+  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) 380px' },
+  columnGap: { md: 8 },
+  rowGap: 5,
+  alignItems: 'end',
+} as const
+const TITULO = 'clamp(56px, 8vw, 104px)'
 
 /** Un título que solo oye quien usa lector de pantalla. */
 const soloLector = { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' } as const
@@ -50,47 +64,76 @@ const soloLector = { position: 'absolute', width: '1px', height: '1px', overflow
 export default function HistoriaPage() {
   // En la vista previa del CMS, lo que se está escribiendo; fuera, lo guardado.
   const borrador = useBorradorPagina()
-  const { data } = useQuery({
+  const consulta = useQuery({
     queryKey: ['contenido', 'historia'],
     queryFn: () => getContenido<PaginaDeBloques>('historia'),
     retry: false,
     staleTime: 5 * 60_000,
     enabled: borrador === null,
   })
-  // Mientras carga y si falla, la historia de siempre: la página no puede
-  // quedarse en blanco porque el servidor tarde o no conteste.
-  const { cabecera, bloques } = borrador ?? data ?? (POR_DEFECTO.historia as PaginaDeBloques)
+  const guardada = borrador ?? consulta.data
+  // Mientras llega, la cabecera y el cuerpo en esqueleto, y si no llega, el
+  // aviso (como en las demás páginas de bloques). La de partida solo da el
+  // título de la pestaña.
+  const { cabecera, bloques } = guardada ?? (POR_DEFECTO.historia as PaginaDeBloques)
   const conIndice = bloques.findIndex((bloque) => bloque.tipo === 'cronologia')
   const hitosDelIndice = conIndice === -1 ? [] : (bloques[conIndice] as Cronologia).hitos
+
+  const meta = !borrador && (
+    <MetaDePagina
+      titulo={cabecera.titulo}
+      descripcion="Historia del Grupo Parroquial de Nuestra Señora de los Desamparados: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga."
+    />
+  )
+
+  if (!guardada) {
+    const reintentar = () => { void consulta.refetch() }
+    return (
+      <>
+        {meta}
+        {estadoDeConsulta(consulta) === 'error' ? (
+          <>
+            <Box className="esqueleto-quieto"><CabeceraEsqueleto /></Box>
+            <Box sx={{ pb: { xs: 8, md: 12 } }}>
+              <ContenedorDePagina>
+                <EnCarga avisoArriba estado="error" que="esta página" alReintentar={reintentar} esqueleto={<BloquesEsqueleto />} />
+              </ContenedorDePagina>
+            </Box>
+          </>
+        ) : (
+          <EnCarga
+            estado="cargando"
+            que="esta página"
+            alReintentar={reintentar}
+            esqueleto={(
+              <>
+                <CabeceraEsqueleto />
+                <Box sx={{ pb: { xs: 8, md: 12 } }}><ContenedorDePagina><BloquesEsqueleto /></ContenedorDePagina></Box>
+              </>
+            )}
+          />
+        )}
+      </>
+    )
+  }
 
   return (
     <>
       {/* En la vista previa, la pestaña sigue siendo la del CMS. */}
-      {!borrador && <MetaDePagina
-        titulo={cabecera.titulo}
-        descripcion="Historia del Grupo Parroquial de Nuestra Señora de los Desamparados: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga."
-      />}
+      {meta}
 
       <Box sx={{ position: 'relative', isolation: 'isolate', overflowX: 'clip', '& a:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 4 } }}>
         {cabecera.foto !== '' && <FondoDePagina url={cabecera.foto} />}
 
-        <Box component="header" sx={{ pt: { xs: 8, md: 14 }, pb: { xs: 7, md: 12 }, [ESCRITORIO]: { pt: 'calc(72px + 96px)' } }}>
+        <Box component="header" sx={cabeceraSx}>
           <ContenedorDePagina>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) 380px' },
-                columnGap: { md: 8 },
-                rowGap: 5,
-                alignItems: 'end',
-              }}
-            >
+            <Box sx={cabeceraRejilla}>
               <Box>
                 {cabecera.ceja && <Revela><Typography component="span" sx={ceja}>{cabecera.ceja}</Typography></Revela>}
                 <Revela efecto="cortina" orden={1}>
                   <Typography
                     component="h1"
-                    sx={{ fontFamily: SERIF, fontSize: 'clamp(56px, 8vw, 104px)', lineHeight: 1, letterSpacing: '-0.025em' }}
+                    sx={{ fontFamily: SERIF, fontSize: TITULO, lineHeight: 1, letterSpacing: '-0.025em' }}
                   >
                     {cabecera.titulo}
                   </Typography>
@@ -147,6 +190,35 @@ export default function HistoriaPage() {
         ))}
       </Box>
     </>
+  )
+}
+
+/**
+ * La cabecera mientras llega la historia: la ceja, el titular grande, la
+ * entradilla y el índice de momentos, en huesos del tamaño de los de verdad.
+ */
+function CabeceraEsqueleto() {
+  return (
+    <Box component="header" sx={cabeceraSx}>
+      <ContenedorDePagina>
+        <Box sx={cabeceraRejilla}>
+          <Box>
+            <Box sx={{ mb: 1.75 }}><Lineas anchos={['140px']} linea={16.5} grosor={9} /></Box>
+            <Lineas anchos={['min(70%, 520px)']} linea={TITULO} grosor={`calc(${TITULO} * 0.62)`} />
+            <Box sx={{ mt: { xs: 2.5, md: 3.5 }, maxWidth: '34ch' }}>
+              <Lineas anchos={['96%', '58%']} linea={{ xs: 25.5, md: 30 }} grosor={{ xs: 10, md: 12 }} />
+            </Box>
+          </Box>
+          <Box sx={{ borderTop: `1px solid ${FILETE}`, pt: 1 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Box key={i} sx={{ py: 1.25, borderBottom: `1px solid ${FILETE_LEVE}` }}>
+                <Lineas anchos={[`${88 - i * 9}%`]} linea={21} grosor={9} />
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </ContenedorDePagina>
+    </Box>
   )
 }
 

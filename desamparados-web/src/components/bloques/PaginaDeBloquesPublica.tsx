@@ -8,7 +8,9 @@ import MetaDePagina from '../MetaDePagina'
 import FondoDePagina from '../FondoDePagina'
 import SeccionAnimada from '../SeccionAnimada'
 import BloquesDePagina from './BloquesDePagina'
-import CabeceraASangre from './CabeceraASangre'
+import CabeceraASangre, { CabeceraASangreEsqueleto } from './CabeceraASangre'
+import BloquesEsqueleto from './BloquesEsqueleto'
+import EnCarga, { estadoDeConsulta } from '../esqueleto/EnCarga'
 import { cejaDePagina, tipoDeCabecera } from './cabecera'
 import { useBorradorPagina } from './borrador'
 import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
@@ -37,6 +39,13 @@ import { SECCION_SIN_CABECERA, SECCION_TRAS_CABECERA } from '../espaciado'
  * caracteres, que es lo que cabe en un resultado de búsqueda. Sin esto, las 22
  * páginas de bloques compartían la descripción de `index.html` y en Google se
  * leían todas igual.
+ *
+ * Mientras llega el documento, la cabecera y el cuerpo van en esqueleto; si no
+ * llega, la cabecera se queda quieta y el cuerpo lleva el aviso con «Volver a
+ * intentar». Antes se enseñaba el contenido de partida del repositorio: en
+ * cuanto la Secretaría edita una página ya no es el suyo (se veía un momento el
+ * texto viejo y luego saltaba), y con el servidor caído habría pasado por
+ * verdadero lo que solo es de ejemplo.
  */
 interface Props {
   slug: SlugContenido
@@ -49,17 +58,20 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
   const sinCabecera = tipoDeCabecera(slug) === 'ninguna'
   // En la vista previa del CMS, lo que se está escribiendo; fuera, lo guardado.
   const borrador = useBorradorPagina()
-  const { data } = useQuery({
+  const consulta = useQuery({
     queryKey: ['contenido', slug],
     queryFn: () => getContenido<PaginaDeBloques>(slug),
     retry: false,
     staleTime: 5 * 60_000,
     enabled: borrador === null,
   })
-  // Mientras carga y si falla, el contenido de partida: la página no puede
-  // quedarse en blanco porque el servidor tarde o no conteste.
-  const pagina = borrador ?? data ?? ((POR_DEFECTO as Record<string, unknown>)[slug] as PaginaDeBloques)
+  const { data } = consulta
+  const guardada = borrador ?? data
+  // El de partida solo da el título de la pestaña mientras llega el guardado.
+  const pagina = guardada ?? ((POR_DEFECTO as Record<string, unknown>)[slug] as PaginaDeBloques)
   useBajarAlAncla(Boolean(data))
+  const ceja = cejaDePagina(slug, pagina.cabecera.titulo)
+  const seccion = sinCabecera ? SECCION_SIN_CABECERA : SECCION_TRAS_CABECERA
 
   return (
     <>
@@ -73,28 +85,57 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
           desplazamiento y sin esto la página se movería de lado. `clip` y no
           `hidden`, que rompería el `position: sticky` de dentro. */}
       <Box sx={{ position: 'relative', isolation: 'isolate', overflowX: 'clip' }}>
-        {sinCabecera
-          ? (
-            <>
-              {Boolean(pagina.cabecera.foto) && <FondoDePagina url={pagina.cabecera.foto} />}
-              <Typography component="h1" sx={visuallyHidden}>{pagina.cabecera.titulo}</Typography>
-            </>
-          )
-          : (
-            <CabeceraASangre
-              titulo={pagina.cabecera.titulo}
-              subtitulo={pagina.cabecera.subtitulo}
-              foto={pagina.cabecera.foto}
-              fotoAlt={pagina.cabecera.fotoAlt}
-              encuadre={pagina.cabecera.encuadre}
-              ceja={cejaDePagina(slug, pagina.cabecera.titulo)}
-            />
-          )}
-        <SeccionAnimada sx={sinCabecera ? SECCION_SIN_CABECERA : SECCION_TRAS_CABECERA}>
-          <ContenedorDePagina>
-            <BloquesDePagina bloques={pagina.bloques} />
-          </ContenedorDePagina>
-        </SeccionAnimada>
+        {guardada ? (
+          <>
+            {sinCabecera
+              ? (
+                <>
+                  {Boolean(pagina.cabecera.foto) && <FondoDePagina url={pagina.cabecera.foto} />}
+                  <Typography component="h1" sx={visuallyHidden}>{pagina.cabecera.titulo}</Typography>
+                </>
+              )
+              : (
+                <CabeceraASangre
+                  titulo={pagina.cabecera.titulo}
+                  subtitulo={pagina.cabecera.subtitulo}
+                  foto={pagina.cabecera.foto}
+                  fotoAlt={pagina.cabecera.fotoAlt}
+                  encuadre={pagina.cabecera.encuadre}
+                  ceja={ceja}
+                />
+              )}
+            <SeccionAnimada sx={seccion}>
+              <ContenedorDePagina>
+                <BloquesDePagina bloques={pagina.bloques} />
+              </ContenedorDePagina>
+            </SeccionAnimada>
+          </>
+        ) : estadoDeConsulta(consulta) === 'error' ? (
+          <>
+            {sinCabecera
+              ? <Typography component="h1" sx={visuallyHidden}>{pagina.cabecera.titulo}</Typography>
+              : <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={ceja} /></Box>}
+            <Box sx={seccion}>
+              <ContenedorDePagina>
+                <EnCarga avisoArriba estado="error" que="esta página" alReintentar={() => { void consulta.refetch() }} esqueleto={<BloquesEsqueleto />} />
+              </ContenedorDePagina>
+            </Box>
+          </>
+        ) : (
+          <EnCarga
+            estado="cargando"
+            que="esta página"
+            alReintentar={() => { void consulta.refetch() }}
+            esqueleto={(
+              <>
+                {!sinCabecera && <CabeceraASangreEsqueleto ceja={ceja} />}
+                <Box sx={seccion}>
+                  <ContenedorDePagina><BloquesEsqueleto /></ContenedorDePagina>
+                </Box>
+              </>
+            )}
+          />
+        )}
       </Box>
     </>
   )
