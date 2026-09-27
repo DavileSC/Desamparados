@@ -54,7 +54,15 @@ export default function NoticiasDestacadas() {
             sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 3.25 } }}
           >
             {noticias.slice(0, MAX_NOTICIAS).map((noticia, i) => (
-              <Revela key={noticia.id} as="li" efecto="crecer" orden={3 + i} sx={{ display: 'flex', position: 'relative' }}>
+              <Revela
+                key={noticia.id}
+                as="li"
+                efecto="crecer"
+                orden={3 + i}
+                // En tableta van de dos en dos: la tercera se quedaría sola con medio
+                // hueco al lado. Ahí se enseñan dos, y el resto está en «Ver todas».
+                sx={{ display: i === 2 ? { xs: 'flex', sm: 'none', md: 'flex' } : 'flex', position: 'relative' }}
+              >
                 {noticia.fijada && <CintaDestacada />}
                 <TarjetaNoticia noticia={noticia} indice={i} />
               </Revela>

@@ -176,7 +176,10 @@ export default function AgendaYDirecto() {
         }}
       />
       <ContenedorDePagina>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: { xs: 4, md: 7 }, alignItems: 'start' }}>
+        {/* Texto y tarjeta, lado a lado solo desde 1200 px: entre 900 y 1200 el
+            texto (300 px) y el calendario (280) dejaban a la lista unos 150 px, y
+            cada título salía palabra por palabra. Ahí, el texto va encima. */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '300px 1fr' }, gap: { xs: 4, lg: 7 }, alignItems: 'start' }}>
           <Box>
             <Revela>
               <Typography component="span" sx={ceja}>{textos.agenda.ceja}</Typography>

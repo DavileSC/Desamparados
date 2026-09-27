@@ -1,12 +1,22 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, useMediaQuery } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import type { EventoCalendario } from '../../lib/api/agenda'
 import { SERIF, TIPOS, inicioDelDia, nombreDelMes } from './agenda'
-import { GRANATE } from './estilos'
+import { CONSULTA_ALTA, CONSULTA_MUY_ALTA, GRANATE, PANTALLA_ALTA } from './estilos'
 
-// En portada caben cuatro actos, para que la tarjeta entera quepa en la pantalla
-// de un portátil; el resto está en la agenda completa.
-const MAX_FILAS = 4
+/**
+ * Cuántos actos caben en portada, según el alto de la pantalla: cuatro en un
+ * portátil bajo (la tarjeta entera tiene que verse sin bajar), cinco en uno
+ * normal y seis en un monitor alto. En el móvil la tarjeta va apilada y no
+ * cabe de todos modos: cinco, como siempre. El resto, en la agenda completa.
+ */
+function useFilasQueCaben(): number {
+  const escritorio = useMediaQuery('(min-width: 900px)')
+  const alta = useMediaQuery(CONSULTA_ALTA)
+  const muyAlta = useMediaQuery(CONSULTA_MUY_ALTA)
+  if (!escritorio) return 5
+  return muyAlta ? 6 : alta ? 5 : 4
+}
 const TEXTO = '#1b1c1a'
 const TENUE = '#8a8076'
 const FILETE = 'inset 0 1px 0 #e3dccf'
@@ -54,6 +64,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
           alignItems: 'center',
           px: { xs: 2, sm: 3 },
           py: 1.4,
+          [PANTALLA_ALTA]: { py: 2 },
           border: 0,
           background: 'none',
           color: TEXTO,
@@ -63,7 +74,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
         }}
       >
         <Box component="span" sx={{ textAlign: 'center' }}>
-          <Box component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: fin ? { xs: 17, sm: 20 } : 25, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE }}>
+          <Box component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: fin ? { xs: 17, sm: 20 } : 25, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE, [PANTALLA_ALTA]: { fontSize: fin ? 20 : 28 } }}>
             {fin ? `${evento.start.getDate()}–${fin.getDate()}` : evento.start.getDate()}
           </Box>
           <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 10, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
@@ -111,6 +122,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
 
 /** La lista de la tarjeta de papel, agrupada por meses; el acto abierto enseña su descripción. */
 export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: ListaDeAgendaProps) {
+  const MAX_FILAS = useFilasQueCaben()
   // Si el acto abierto desde el calendario cae más allá de la quinta fila, la lista corre hasta él.
   const indice = eventos.findIndex(e => e.id === abiertoId)
   const desde = indice < MAX_FILAS ? 0 : indice - MAX_FILAS + 1
@@ -126,7 +138,7 @@ export default function ListaDeAgenda({ eventos, abiertoId, hoy, onAlternar }: L
     <Box sx={{ py: 1 }}>
       {grupos.map((grupo, i) => (
         <Box key={grupo.clave} sx={{ boxShadow: i ? FILETE : 'none' }}>
-          <Typography component="h3" sx={{ px: { xs: 2, sm: 3 }, pt: 1.5, pb: 0.25, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#7b6f5e' }}>
+          <Typography component="h3" sx={{ px: { xs: 2, sm: 3 }, pt: 1.5, pb: 0.25, [PANTALLA_ALTA]: { pt: 2, pb: 0.5 }, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#7b6f5e' }}>
             {grupo.titulo}
           </Typography>
           <Box component="ul" role="list" sx={{ listStyle: 'none', m: 0, p: 0 }}>

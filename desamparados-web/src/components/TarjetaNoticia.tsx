@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import { GOLD, GRANATE, SERIF } from '../features/inicio/estilos'
+import { GOLD, GRANATE, PANTALLA_ALTA, SERIF } from '../features/inicio/estilos'
 import type { Noticia } from '../types'
 
 interface TarjetaNoticiaProps {
@@ -91,9 +91,11 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
         sx={{
           position: 'relative',
           overflow: 'hidden',
-          // Apaisada: con 4:3 o 3:2 la tarjeta no cabía entera en una pantalla
-          // de portátil y había que bajar para leer su título.
-          aspectRatio: destacada ? { xs: '3 / 2', sm: 'auto' } : '2 / 1',
+          // En el móvil, por su ancho. En escritorio, por el ALTO de la pantalla:
+          // en un portátil bajo la foto se encoge para que la tarjeta quepa
+          // entera, y en un monitor grande crece hasta 320 px.
+          aspectRatio: destacada ? { xs: '3 / 2', sm: 'auto' } : { xs: '16 / 9', md: 'auto' },
+          height: destacada ? undefined : { md: 'clamp(170px, 30vh, 320px)' },
           minHeight: destacada ? { sm: 340, md: 420 } : undefined,
         }}
       >
@@ -136,6 +138,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
           gap: destacada ? 2 : 1.25,
           flex: 1,
           p: destacada ? { xs: 2.5, sm: 4, md: 6 } : { xs: 2.25, md: 2.5 },
+          ...(destacada ? {} : { [PANTALLA_ALTA]: { p: 3, gap: 1.5 } }),
         }}
       >
         <Typography component="time" dateTime={noticia.fecha} sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD }}>
@@ -158,7 +161,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
           {noticia.titulo}
         </Typography>
         {noticia.extracto && (
-          <Typography sx={{ ...recorte(destacada ? 4 : 2), fontSize: destacada ? { xs: 14, md: 16 } : 14, lineHeight: 1.6, color: '#b8b2ad' }}>
+          <Typography sx={{ ...recorte(destacada ? 4 : 2), ...(destacada ? {} : { [PANTALLA_ALTA]: { WebkitLineClamp: 3 } }), fontSize: destacada ? { xs: 14, md: 16 } : 14, lineHeight: 1.6, color: '#b8b2ad' }}>
             {noticia.extracto}
           </Typography>
         )}

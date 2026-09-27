@@ -12,6 +12,18 @@ export const TINTA = '#0c0b0d'
 export const PAPEL = '#f7f3ec'
 export const GRANATE = '#6e1822'
 
+/**
+ * Pantallas de escritorio según su ALTO, no solo su ancho. Un portátil de
+ * 1280 × 720 y un monitor de 1920 × 1080 son los dos «escritorio», pero en el
+ * primero una tarjeta de 460 px no se ve entera y en el segundo una de 360 se
+ * queda corta. Por debajo de estas alturas, las piezas de la portada se
+ * compactan para caber; por encima, recuperan su aire.
+ */
+export const CONSULTA_ALTA = '(min-width: 900px) and (min-height: 820px)'
+export const CONSULTA_MUY_ALTA = '(min-width: 900px) and (min-height: 1000px)'
+export const PANTALLA_ALTA = `@media ${CONSULTA_ALTA}`
+export const PANTALLA_MUY_ALTA = `@media ${CONSULTA_MUY_ALTA}`
+
 /** Antetítulo en versalitas espaciadas, sobre fondo oscuro o foto. */
 export const ceja = {
   display: 'block',

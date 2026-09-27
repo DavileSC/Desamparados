@@ -4,7 +4,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
 import { SERIF, TIPOS, cubreElDia, diasDeLaRejilla, inicioDelDia, nombreDelMes } from './agenda'
-import { GRANATE } from './estilos'
+import { GRANATE, PANTALLA_ALTA } from './estilos'
 
 const DIAS_SEMANA = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const TEXTO = '#1b1c1a'
@@ -41,9 +41,10 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
   const leyenda = (Object.keys(TIPOS) as ApiEvent['type'][]).filter(tipo => presentes.has(tipo))
 
   return (
-    // Prieto a propósito: la tarjeta entera tiene que caber en la pantalla de un portátil.
-    <Box sx={{ p: { xs: 2.25, md: 2.5 }, color: TEXTO }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+    // Prieto en un portátil bajo, para que la tarjeta entera quepa; con aire en
+    // una pantalla alta (ver PANTALLA_ALTA).
+    <Box sx={{ p: { xs: 2.25, md: 2.5 }, [PANTALLA_ALTA]: { p: 3 }, color: TEXTO }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, [PANTALLA_ALTA]: { mb: 1.75 } }}>
         <IconButton aria-label="Mes anterior" disabled={!puedeRetroceder} onClick={() => onCambiarMes(-1)} sx={navSx}>
           <ChevronLeftIcon fontSize="small" />
         </IconButton>
@@ -55,7 +56,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
         </IconButton>
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: 0.25, textAlign: 'center' }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: 0.25, [PANTALLA_ALTA]: { rowGap: 0.5 }, textAlign: 'center' }}>
         {DIAS_SEMANA.map(letra => (
           <Box key={letra} aria-hidden="true" sx={{ fontSize: 10, letterSpacing: '0.12em', color: TENUE, pb: 0.75 }}>
             {letra}
@@ -67,6 +68,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
             position: 'relative',
             width: 31,
             height: 31,
+            [PANTALLA_ALTA]: { width: 36, height: 36 },
             mx: 'auto',
             borderRadius: '50%',
             display: 'grid',
@@ -125,7 +127,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
       </Box>
 
       {/* La leyenda guarda su línea aunque el mes no tenga actos: así el calendario no cambia de alto. */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', minHeight: 30, mt: 1.5, pt: 1.5, boxShadow: '0 -1px 0 rgba(27, 28, 26, 0.08)' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', minHeight: 30, mt: 1.5, pt: 1.5, [PANTALLA_ALTA]: { mt: 2, pt: 2 }, boxShadow: '0 -1px 0 rgba(27, 28, 26, 0.08)' }}>
         {leyenda.map(tipo => (
           <Box key={tipo} component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, fontSize: 12, lineHeight: '18px', color: '#6a6258' }}>
             <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: TIPOS[tipo].color }} />
