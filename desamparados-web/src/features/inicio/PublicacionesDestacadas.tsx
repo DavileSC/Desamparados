@@ -20,11 +20,12 @@ const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: stri
 }
 
 // Un color fijo por tipo de publicación: la cubierta dice qué es antes de leerla.
-const CUBIERTAS: Record<Publicacion['categoria'], { fondo: string; texto: string; cifra: string }> = {
-  boletin: { fondo: GRANATE, texto: '#fbe9e7', cifra: '#fbe9e7' },
-  anuario: { fondo: PAPEL, texto: '#242125', cifra: GRANATE },
-  dossier: { fondo: '#242125', texto: '#e3d8bf', cifra: GOLD },
-  historia: { fondo: PAPEL, texto: '#242125', cifra: GRANATE },
+// `velo` es el fondo en «r, g, b», para el degradado que va sobre la foto.
+const CUBIERTAS: Record<Publicacion['categoria'], { fondo: string; velo: string; texto: string; cifra: string }> = {
+  boletin: { fondo: GRANATE, velo: '110, 24, 34', texto: '#fbe9e7', cifra: '#fbe9e7' },
+  anuario: { fondo: PAPEL, velo: '247, 243, 236', texto: '#242125', cifra: GRANATE },
+  dossier: { fondo: '#242125', velo: '36, 33, 37', texto: '#e3d8bf', cifra: GOLD },
+  historia: { fondo: PAPEL, velo: '247, 243, 236', texto: '#242125', cifra: GRANATE },
 }
 
 const mes = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { month: 'long' })
@@ -46,13 +47,47 @@ const versal = { fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase
 // El antetítulo es el h2 de la sección: `.home-refined h2` (home.css) le pondría 40 px sin el !important.
 const cejaTitulo = { ...ceja, fontSize: '11px !important', fontFamily: 'inherit', lineHeight: 1.5 } as const
 
-/** Tapa del ejemplar: la portada subida desde el CMS o, sin ella, una cubierta tipográfica del color de su tipo. */
+/**
+ * Tapa del ejemplar. Con la portada subida desde el CMS, cabecera de revista:
+ * la foto a sangre y, encima, el nombre del tipo en grande, una línea con el
+ * Grupo y la fecha, y el número abajo; el velo del color del tipo deja leerlos
+ * y dice qué es. Sola, la foto parecía una foto enmarcada y no un boletín.
+ * Sin portada, una cubierta tipográfica del color de su tipo.
+ */
 function Cubierta({ publicacion, pequena = false }: { publicacion: Publicacion; pequena?: boolean }) {
-  if (publicacion.imagen) {
-    return <Box component="img" src={publicacion.imagen} alt="" sx={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
-  }
   const colores = CUBIERTAS[publicacion.categoria]
   const texto = cifra(publicacion)
+  if (publicacion.imagen) {
+    const velo = (opacidad: number) => `rgba(${colores.velo}, ${opacidad})`
+    return (
+      <Box sx={{ position: 'relative', height: '100%', color: colores.texto }}>
+        <Box component="img" src={publicacion.imagen} alt="" sx={{ position: 'absolute', inset: 0, display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
+        <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${velo(0.88)} 0%, ${velo(0.4)} 22%, ${velo(0)} 38%, ${velo(0)} 70%, ${velo(0.75)} 100%)` }} />
+        <Box sx={{ position: 'relative', px: pequena ? 1.75 : 2, pt: 1.5 }}>
+          <Box
+            component="span"
+            sx={{ display: 'block', fontFamily: SERIF, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', textTransform: 'uppercase', fontSize: pequena ? 40 : { xs: 34, md: 44 } }}
+          >
+            {CATEGORIAS[publicacion.categoria].nombre.split(' ')[0]}
+          </Box>
+          <Box
+            component="span"
+            sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mt: 0.75, pt: 0.75, borderTop: '1px solid currentColor', fontSize: pequena ? 9 : { xs: 8, md: 9 }, letterSpacing: pequena ? '0.2em' : { xs: '0.15em', md: '0.2em' }, textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+          >
+            <span>Grupo Parroquial</span>
+            <span>{mesCorto(publicacion.fecha)} · {anio(publicacion.fecha)}</span>
+          </Box>
+        </Box>
+        <Box
+          component="span"
+          sx={{ position: 'absolute', left: pequena ? 14 : 18, bottom: pequena ? 12 : 16, fontFamily: SERIF, fontWeight: 500, lineHeight: 1, color: colores.cifra, fontSize: pequena ? 28 : { xs: 36, md: 44 } }}
+        >
+          {publicacion.categoria === 'boletin' && <Box component="small" sx={{ fontSize: '0.4em', mr: 0.5, letterSpacing: '0.05em' }}>n.º</Box>}
+          {texto}
+        </Box>
+      </Box>
+    )
+  }
   const larga = texto.length > 3
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: pequena ? 2.25 : { xs: 2.5, md: 3 }, backgroundColor: colores.fondo, color: colores.texto }}>

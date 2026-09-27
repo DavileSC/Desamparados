@@ -54,8 +54,9 @@ describe('PublicacionesDestacadas', () => {
     expect(enlaces[0]).toHaveTextContent(ANUARIO.titulo)
   })
 
-  it('sin imagen pinta una portada tipográfica con el número del boletín; con imagen, la foto', async () => {
-    // Se rompe si una publicación sin portada deja un hueco vacío, o si se ignora la imagen cuando la hay.
+  it('sin imagen pinta una portada tipográfica con el número del boletín; con imagen, la foto con cabecera de revista', async () => {
+    // Se rompe si una publicación sin portada deja un hueco vacío, si se ignora la imagen
+    // cuando la hay o si la foto tapa la cabecera y el número y deja de parecer un boletín.
     servir([BOLETIN])
     const { unmount } = renderWithProviders(<PublicacionesDestacadas />)
     const portada = await screen.findByTestId('portada-publicacion')
@@ -67,6 +68,9 @@ describe('PublicacionesDestacadas', () => {
     renderWithProviders(<PublicacionesDestacadas />)
     const conFoto = await screen.findByTestId('portada-publicacion')
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/portada.jpg')
+    expect(within(conFoto).getByText('Boletín')).toBeInTheDocument()
+    expect(within(conFoto).getByText('Grupo Parroquial')).toBeInTheDocument()
+    expect(conFoto).toHaveTextContent('n.º12')
   })
 
   it('apila detrás del ejemplar las dos publicaciones anteriores, cada una con su cubierta', async () => {
