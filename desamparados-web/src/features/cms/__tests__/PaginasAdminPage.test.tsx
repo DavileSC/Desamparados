@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { MemoryRouter } from 'react-router-dom'
@@ -8,6 +8,10 @@ import { crearTemaCms } from '../../../theme/cms'
 import PaginasAdminPage from '../PaginasAdminPage'
 import { PAGINAS_PUBLICAS, itemsMenu, rolesPorRutaCms } from '../../../app/cmsNavegacion'
 import CATALOGO from '../../../../../shared/paginas-publicas.json'
+
+/** Las secciones que se pliegan: las de una sola página con su mismo nombre son ya un enlace. */
+const seccionesPlegables = () => [...new Set(PAGINAS_PUBLICAS.map((p) => p.grupo))]
+  .filter((grupo) => { const suyas = PAGINAS_PUBLICAS.filter((p) => p.grupo === grupo); return !(suyas.length === 1 && suyas[0].nombre === grupo) })
 
 function montar() {
   render(
@@ -23,7 +27,7 @@ describe('PaginasAdminPage', () => {
   it('enseña una entrada por cada página del catálogo compartido', async () => {
     const user = userEvent.setup()
     montar()
-    for (const grupo of new Set(PAGINAS_PUBLICAS.map((p) => p.grupo))) {
+    for (const grupo of seccionesPlegables()) {
       await user.click(screen.getByRole('button', { name: new RegExp(grupo) }))
     }
     // El índice no lleva su propia lista: sale de shared/paginas-publicas.json,
@@ -92,13 +96,37 @@ describe('PaginasAdminPage', () => {
     const user = userEvent.setup()
     montar()
 
-    const grupos = [...new Set(PAGINAS_PUBLICAS.map((p) => p.grupo))]
+    const grupos = seccionesPlegables()
     expect(grupos.length, 'hacen falta al menos dos grupos para que esto pruebe algo').toBeGreaterThan(1)
 
     await user.click(screen.getByRole('button', { name: new RegExp(grupos[0]) }))
 
     expect(screen.getByRole('button', { name: new RegExp(grupos[0]) })).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: new RegExp(grupos[1]) })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('las subpáginas cuelgan de su página, aunque en el catálogo haya otra por medio', async () => {
+    const user = userEvent.setup()
+    montar()
+    await user.click(screen.getByRole('button', { name: /Sábado de Pasión/ }))
+    await user.click(screen.getByRole('button', { name: /Corporación/ }))
+
+    const madre = screen.getByRole('link', { name: 'Sábado de Pasión' }).closest('li')!
+    for (const hija of ['Recorrido', 'Trono', 'Enseres']) {
+      expect(within(madre).getByRole('link', { name: hija })).toBeInTheDocument()
+    }
+    // En el catálogo, Parroquia va entre Historia y Órganos de Gobierno: la
+    // subpágina se va con su madre y Parroquia no se lleva nada.
+    const historia = screen.getByRole('link', { name: 'Historia' }).closest('li')!
+    expect(within(historia).getByRole('link', { name: 'Órganos de Gobierno' })).toBeInTheDocument()
+    const parroquia = screen.getByRole('link', { name: /^Parroquia/ }).closest('li')!
+    expect(within(parroquia).getAllByRole('link')).toHaveLength(2) // la suya y la de ver en la web
+  })
+
+  it('una sección de una sola página con su nombre es ya el enlace, sin plegar', () => {
+    montar()
+    expect(screen.queryByRole('button', { name: /Rosario/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Rosario' })).toHaveAttribute('href', '/cms/paginas/rosario')
   })
 
   it('el menú lleva al índice, y el índice y las páginas dejan pasar a los mismos cargos', () => {
