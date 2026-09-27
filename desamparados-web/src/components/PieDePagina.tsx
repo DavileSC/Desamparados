@@ -110,7 +110,7 @@ export default function PieDePagina() {
   const year = new Date().getFullYear()
 
   return (
-    <Box component="footer" sx={{ backgroundColor: designTokens.colors.footer, borderTop: `1px solid ${LINEA}` }}>
+    <Box component="footer" data-pie-publico="" sx={{ backgroundColor: designTokens.colors.footer, borderTop: `1px solid ${LINEA}` }}>
       <ContenedorDePagina>
         <Box
           sx={{
