@@ -63,10 +63,10 @@ locales y las imágenes de Docker (unos 2 GB entre todas).
 #### La swap no es opcional en esta máquina
 
 El VPS vino **sin swap ninguna**, como suelen venir los de OVH. Con 4 GB justos
-y ClamAV dentro, eso es un riesgo real: `freshclam` recarga la base de firmas
-cada pocas horas y durante ese rato el consumo se dispara. Sin colchón, el
-núcleo no ralentiza nada, **mata un proceso**, y el candidato es el contenedor
-más grande — que puede ser la base de datos.
+y ClamAV dentro, eso es un riesgo real. Los picos de la recarga de firmas
+están quitados y ClamAV tiene su tope (ver «Tres cosas del contenedor del
+antivirus»), pero el margen sigue siendo corto: sin colchón, el núcleo no
+ralentiza nada, **mata un proceso**, y puede tocarle a la base de datos.
 
 Se añadieron 2 GB de swapfile, con `swappiness` baja para que sea un colchón de
 emergencia y no algo que el sistema use a diario (en un servidor web, usarla a
@@ -316,7 +316,7 @@ el compose siempre lo pone, así que lo que manda es si el contenedor está en
 marcha: si se cae, las subidas del CMS fallan hasta que vuelva. Es lo que se
 quiere.
 
-Dos cosas del contenedor del antivirus:
+Tres cosas del contenedor del antivirus:
 
 - **El primer arranque tarda varios minutos**: se baja la base de firmas
   entera. Hasta que el healthcheck pase, las subidas responden 503. Las firmas
@@ -327,7 +327,18 @@ Dos cosas del contenedor del antivirus:
   esperando un socket que nadie crea y clamd no llega a levantarse. Lo único
   que se añade es `StreamMaxLength 25M`: los PDF de las publicaciones llegan a
   20 MB y, con un tope menor, clamd cortaría el análisis y la subida daría un
-  503 que no se parece en nada al problema.
+  503 que no se parece en nada al problema. También se añade
+  `ConcurrentDatabaseReload no` (ver la tercera).
+- **La memoria está atada.** Al llegar firmas nuevas, clamd por defecto carga
+  la base nueva sin soltar la vieja y `freshclam` la carga otra vez para
+  probarla: dos picos de más de 1 GB cada uno en un VPS de 4. Los dos están
+  quitados (`ConcurrentDatabaseReload no` en `clamd.conf` y
+  `FRESHCLAM_CONF_TestDatabases: "no"` en el compose), así que el consumo se
+  queda en algo más de 1 GB fijo. Mientras recarga, unos segundos, los
+  análisis esperan. Además el contenedor tiene un tope de 1800 MB
+  (`mem_limit`): si se pasa, el núcleo lo mata a él y no a la base de datos, y
+  `restart` lo vuelve a levantar. Si `docker stats` lo muestra rozando el tope,
+  se sube en el compose.
 
 ## El usuario del sistema y los permisos de `storage`
 

@@ -148,6 +148,18 @@ services:
     image: clamav/clamav:1.4
     profiles: ["antivirus"]
     restart: unless-stopped
+    # freshclam, antes de avisar a clamd, carga las firmas nuevas para probarlas:
+    # otro pico de más de 1 GB encima del de clamd. La descarga ya viene firmada
+    # por ClamAV y comprobada; esta prueba de carga es lo único que se quita.
+    environment:
+      FRESHCLAM_CONF_TestDatabases: "no"
+    # Tope de memoria: si algún día las firmas crecen o algo se desmanda, el
+    # núcleo mata a este contenedor y no a la base de datos. restart lo levanta
+    # solo y, mientras tanto, las subidas responden 503. Lo normal es algo más
+    # de 1 GB; si `docker stats` lo muestra rozando el tope, se sube aquí.
+    # memswap igual al tope: que no tire de la swap, que es el colchón del resto.
+    mem_limit: 1800m
+    memswap_limit: 1800m
     volumes:
       - firmas-clamav:/var/lib/clamav
       - ./docker/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
