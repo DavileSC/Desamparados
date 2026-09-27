@@ -23,6 +23,7 @@
     "2fa:rescatar": "node --import tsx scripts/rescatar-2fa.ts",
     "limpiar:huerfanos": "node --import tsx scripts/limpiar-huerfanos.ts",
     "migrar:bloques": "node --import tsx scripts/migrar-a-bloques.ts",
+    "fotos:webp": "node --import tsx scripts/fotos-a-webp.ts",
     "correos:muestra": "node --import tsx scripts/muestra-correos.ts"
   },
   "keywords": [],

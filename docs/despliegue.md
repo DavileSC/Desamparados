@@ -467,6 +467,22 @@ estorba.
 Si no se está seguro de si toca, el arranque de la API lo dice: si quedan filas
 con la forma antigua, lo avisa en el registro nada más levantar.
 
+**Si hay fotos subidas antes del 27 de septiembre de 2026, conviene pasarlas a
+WebP una vez** (desde entonces la subida lo hace sola):
+
+```bash
+docker compose run --rm herramientas npm run fotos:webp                 # dice qué haría y cuánto se ahorra
+docker compose run --rm herramientas npm run fotos:webp -- --aplicar
+```
+
+Reduce a 1920 px, quita metadatos y pasa a WebP los JPG y PNG de
+`storage/public` y las fotos de las fichas de `storage/private`, y cambia sus
+direcciones en la base. Con las fotos de desarrollo, de 42 MB a 12 MB. Primero
+escribe las WebP, luego cambia las direcciones en una transacción y al final
+borra los originales, así que un corte a medias no rompe nada y se puede
+relanzar. Hazlo después de la copia de seguridad del día: los originales no
+vuelven.
+
 La web queda fuera de servicio unos segundos mientras se cambia el contenedor
 de nginx. Si algún día molesta, la salida es construir antes
 (`docker compose build`) y levantar después: la parada se reduce a lo que tarde

@@ -22,7 +22,7 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { publicStorageDir, MAX_BYTES_IMAGEN, MAX_BYTES_PDF } from '../src/middleware/upload.middleware.js';
-import { recodificarSinMetadatos, LADO_MAXIMO } from '../src/controllers/subida.controller.js';
+import { prepararFoto, LADO_MAXIMO } from '../src/controllers/subida.controller.js';
 import { parseClamdResponse, reiniciarAvisoSinAntivirus, scanBufferClamav } from '../src/utils/clamd.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
@@ -139,9 +139,9 @@ describe('fotos sin metadatos (C5)', () => {
     assert.equal(antes.orientation, 6);
     assert.ok(antes.exif, 'la foto de prueba tiene que llevar EXIF para que la prueba signifique algo');
 
-    const limpia = await recodificarSinMetadatos(original, 'image/jpeg');
+    const limpia = await prepararFoto(original);
     const despues = await sharp(limpia).metadata();
-    assert.equal(despues.format, 'jpeg', 'conserva el formato para no romper la extensión');
+    assert.equal(despues.format, 'webp', 'toda foto se publica en WebP');
     assert.equal(despues.exif, undefined, 'el EXIF (con el GPS) debe desaparecer');
     assert.equal(despues.orientation, undefined);
     assert.deepEqual([despues.width, despues.height], [20, 40], 'la foto hecha en vertical debe quedar en vertical');
@@ -150,32 +150,46 @@ describe('fotos sin metadatos (C5)', () => {
   test('un JPEG ya comprimido no engorda al recodificarlo', async () => {
     // Antes salía a calidad 90: uno de calidad 70 crecía un tercio y podía servirse por encima de 5 MB.
     const original = await sharp(fotoConRuido(800, 600), { raw: { width: 800, height: 600, channels: 3 } }).jpeg({ quality: 70 }).toBuffer();
-    const limpia = await recodificarSinMetadatos(original, 'image/jpeg');
+    const limpia = await prepararFoto(original);
     assert.ok(limpia.length <= original.length, `pasó de ${original.length} a ${limpia.length} bytes`);
   });
 
-  test('un PNG de paleta sigue con paleta (y no crece), y uno de 16 bits sigue en 16', async () => {
+  test('un PNG de paleta (un logo, un dibujo) pasa a WebP sin perder ni un píxel y no crece', async () => {
     const paleta = await sharp(fotoConRuido(300, 200), { raw: { width: 300, height: 200, channels: 3 } }).png({ palette: true, colours: 64 }).toBuffer();
-    const conPaleta = await recodificarSinMetadatos(paleta, 'image/png');
-    assert.equal((await sharp(conPaleta).metadata()).isPalette, true);
-    assert.ok(conPaleta.length <= paleta.length * 1.1, `pasó de ${paleta.length} a ${conPaleta.length} bytes`);
+    const webp = await prepararFoto(paleta);
+    assert.equal((await sharp(webp).metadata()).format, 'webp');
+    assert.ok(webp.length <= paleta.length, `pasó de ${paleta.length} a ${webp.length} bytes`);
+    const [antes, despues] = await Promise.all([sharp(paleta).removeAlpha().raw().toBuffer(), sharp(webp).removeAlpha().raw().toBuffer()]);
+    assert.ok(antes.equals(despues), 'sin pérdida: los mismos píxeles');
+  });
+
+  test('un PNG con transparencia la conserva, y uno de 16 bits se publica en WebP', async () => {
+    const recorte = await sharp({ create: { width: 40, height: 40, channels: 4, background: { r: 110, g: 24, b: 34, alpha: 0 } } }).png().toBuffer();
+    const conAlfa = await sharp(await prepararFoto(recorte)).metadata();
+    assert.equal(conAlfa.format, 'webp');
+    assert.equal(conAlfa.hasAlpha, true, 'el fondo transparente no se vuelve negro');
 
     const dieciseis = await sharp({ create: { width: 30, height: 30, channels: 3, background: '#123456' } }).toColourspace('rgb16').png().toBuffer();
-    const limpia = await recodificarSinMetadatos(dieciseis, 'image/png');
-    assert.equal((await sharp(limpia).metadata()).depth, 'ushort');
+    assert.equal((await sharp(await prepararFoto(dieciseis)).metadata()).format, 'webp');
+  });
+
+  test('una foto de verdad pesa bastante menos en WebP que en el JPEG de antes', async () => {
+    const jpeg = await sharp(fotoConRuido(1200, 800), { raw: { width: 1200, height: 800, channels: 3 } }).jpeg({ quality: 85, mozjpeg: true }).toBuffer();
+    const webp = await prepararFoto(jpeg);
+    assert.ok(webp.length < jpeg.length, `pasó de ${jpeg.length} a ${webp.length} bytes`);
   });
 
   test('una WebP animada conserva todos sus fotogramas', async () => {
     const fotograma = (color: string) => sharp({ create: { width: 20, height: 10, channels: 3, background: color } }).png().toBuffer();
     const animada = await sharp([await fotograma('red'), await fotograma('blue'), await fotograma('green')], { join: { animated: true } }).webp().toBuffer();
     assert.equal((await sharp(animada, { animated: true }).metadata()).pages, 3);
-    const limpia = await recodificarSinMetadatos(animada, 'image/webp');
+    const limpia = await prepararFoto(animada);
     assert.equal((await sharp(limpia, { animated: true }).metadata()).pages, 3);
   });
 
   test('un archivo que no se puede decodificar no se recodifica: lanza', async () => {
     const roto = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7)]);
-    await assert.rejects(recodificarSinMetadatos(roto, 'image/jpeg'));
+    await assert.rejects(prepararFoto(roto));
   });
 
   test('una foto enorme se reduce al lado máximo, y una pequeña se deja como está', async () => {
@@ -183,18 +197,18 @@ describe('fotos sin metadatos (C5)', () => {
     // MB) se publicaba a tamaño completo y se servía así también al móvil que
     // la iba a pintar a 400.
     const enorme = await sharp(fotoConRuido(4000, 3000), { raw: { width: 4000, height: 3000, channels: 3 } }).jpeg().toBuffer();
-    const reducida = await sharp(await recodificarSinMetadatos(enorme, 'image/jpeg')).metadata();
+    const reducida = await sharp(await prepararFoto(enorme)).metadata();
     assert.equal(reducida.width, LADO_MAXIMO);
     assert.equal(reducida.height, LADO_MAXIMO * 3 / 4, 'mantiene la proporción');
 
     const pequena = await sharp(fotoConRuido(300, 200), { raw: { width: 300, height: 200, channels: 3 } }).jpeg().toBuffer();
-    const igual = await sharp(await recodificarSinMetadatos(pequena, 'image/jpeg')).metadata();
+    const igual = await sharp(await prepararFoto(pequena)).metadata();
     assert.deepEqual([igual.width, igual.height], [300, 200], 'nunca se agranda una foto');
   });
 
   test('una foto vertical se reduce por su lado largo, que es el alto', async () => {
     const vertical = await sharp(fotoConRuido(2000, 3000), { raw: { width: 2000, height: 3000, channels: 3 } }).jpeg().toBuffer();
-    const reducida = await sharp(await recodificarSinMetadatos(vertical, 'image/jpeg')).metadata();
+    const reducida = await sharp(await prepararFoto(vertical)).metadata();
     assert.equal(reducida.height, LADO_MAXIMO);
     assert.equal(reducida.width, LADO_MAXIMO * 2 / 3);
   });
@@ -209,13 +223,20 @@ describe('fotos sin metadatos (C5)', () => {
     assert.deepEqual([guardada.width, guardada.height], [20, 40]);
   });
 
-  test('la extensión se guarda en minúsculas (si no, nunca casaría con el filtro de borrado)', async (t) => {
+  test('la foto se guarda en WebP con su extensión en minúsculas, y el original no se queda', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
+    const antes = await ficherosEnAlmacen();
     const png = await sharp({ create: { width: 4, height: 4, channels: 3, background: '#fff' } }).png().toBuffer();
     const res = await subir(png, 'FOTO.PNG', 'image/png');
     assert.equal(res.status, 201);
-    const { data } = await res.json() as { data: { filename: string } };
-    assert.match(data.filename, /^[a-f0-9]{32}\.png$/);
+    const { data } = await res.json() as { data: { filename: string; url: string; type: string } };
+    // En minúsculas: si no, nunca casaría con el filtro de borrado de huérfanos.
+    assert.match(data.filename, /^[a-f0-9]{32}\.webp$/);
+    assert.ok(data.url.endsWith(`/storage/public/${data.filename}`));
+    assert.equal(data.type, 'image/webp');
+    const nuevos = (await ficherosEnAlmacen()).filter((f) => !antes.includes(f));
+    assert.deepEqual(nuevos, [data.filename], 'solo queda la WebP, no el PNG que se subió');
+    assert.equal((await sharp(await readFile(path.join(almacenPublico, data.filename))).metadata()).format, 'webp');
   });
 
   test('una foto que dice ser JPEG y no se puede leer se rechaza y no se queda en disco', async (t) => {

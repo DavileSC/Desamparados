@@ -177,7 +177,7 @@ describe('el alta completa contra la base de datos', () => {
   const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
   const ficherosPrivados = () => new Set(fs.readdirSync(privateStorageDir));
 
-  test('la foto y el certificado llegan en multipart y quedan en la ficha, la foto sin metadatos', async (t) => {
+  test('la foto y el certificado llegan en multipart y quedan en la ficha, la foto en WebP y sin metadatos', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('documentos');
     const foto = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#a03d44' } })
@@ -190,10 +190,13 @@ describe('el alta completa contra la base de datos', () => {
     assert.equal(res.status, 201, await res.clone().text());
 
     const [suya] = await fichasDe(email);
-    assert.match(suya.foto ?? '', /^[a-f0-9]{32}\.jpg$/);
+    assert.match(suya.foto ?? '', /^[a-f0-9]{32}\.webp$/, 'la foto se guarda en WebP');
+    assert.ok(!fs.existsSync(path.join(privateStorageDir, suya.foto!.replace(/\.webp$/, '.jpg'))), 'el JPG que se subió no se queda');
     assert.match(suya.certificadoBautismo ?? '', /^[a-f0-9]{32}\.pdf$/);
     const guardada = fs.readFileSync(path.join(privateStorageDir, suya.foto!));
-    assert.equal((await sharp(guardada).metadata()).exif, undefined, 'sin EXIF');
+    const datos = await sharp(guardada).metadata();
+    assert.equal(datos.format, 'webp');
+    assert.equal(datos.exif, undefined, 'sin EXIF');
     assert.ok(fs.existsSync(path.join(privateStorageDir, suya.certificadoBautismo!)));
   });
 

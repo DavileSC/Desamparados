@@ -10,6 +10,13 @@ import { MAX_BYTES_IMAGEN, privateStorageDir } from '../middleware/upload.middle
 /** Una forma de codificar la foto ya leída (orientada y sin metadatos). */
 type Codificacion = (imagen: Sharp) => Sharp;
 
+// El servidor es un VPS pequeño: una foto se procesa con un solo hilo y
+// libvips no guarda nada en caché entre una y otra. Tarda algo más, pero no
+// se come la CPU ni la memoria de todo lo demás mientras alguien sube una
+// galería.
+sharp.concurrency(1);
+sharp.cache(false);
+
 /**
  * El lado mayor que se guarda de una foto, en píxeles.
  *
@@ -23,34 +30,42 @@ type Codificacion = (imagen: Sharp) => Sharp;
  */
 export const LADO_MAXIMO = 1920;
 
+/** Calidad de las fotos en WebP: con las del Grupo, se ve como el JPEG a 85 y pesa un 23 % menos. */
+export const CALIDAD_WEBP = 82;
+
 /**
- * Vuelve a codificar una foto sin sus metadatos y sin pasar de `LADO_MAXIMO`.
- * Una foto del móvil lleva en el EXIF las coordenadas GPS de donde se hizo (la
- * casa de un hermano, el colegio de un menor) y se publicaba tal cual en
- * /storage/public.
+ * Prepara una foto para publicarla: siempre en WebP, sin metadatos y sin
+ * pasar de `LADO_MAXIMO`. Entra JPEG, PNG o WebP y sale WebP, así que quien
+ * la guarda tiene que ponerle la extensión `.webp` (`conExtensionWebp`).
  *
- * Los metadatos se quitan SIEMPRE, aunque el resultado pese algo más que el
- * original: la privacidad no se negocia por unos KB. Lo que se cuida es no
- * estropear ni engordar la foto sin necesidad:
+ * Por qué WebP y no AVIF: pesa algo más (un 29 % con las fotos del Grupo),
+ * pero codifica cinco veces más deprisa en un servidor modesto y lo ve
+ * cualquier móvil, también los iPhone anteriores a iOS 16.4.
+ *
+ * Los metadatos se quitan SIEMPRE: una foto del móvil lleva en el EXIF las
+ * coordenadas GPS de donde se hizo (la casa de un hermano, el colegio de un
+ * menor). Además:
  *  - `rotate()` sin argumentos aplica a los píxeles la orientación del EXIF; al
  *    quitar los metadatos se perdería y la foto hecha en vertical saldría tumbada.
- *  - `animated: true`: una WebP animada conserva todos sus fotogramas (sin él
- *    se quedaba en el primero).
- *  - PNG de paleta sale con paleta (sin ella crecía unas seis veces) y el de 16
- *    bits por canal sigue en 16 (se reducía a 8).
- *  - JPEG a calidad 85 con mozjpeg (a 90, uno de calidad 70 salía un tercio más
- *    pesado).
+ *  - `animated: true`: una WebP animada conserva todos sus fotogramas.
+ *  - Un PNG de paleta (un logo, un dibujo de colores planos) sale sin pérdida:
+ *    con pérdida se ensuciarían los bordes y apenas pesaría menos.
+ *  - `smartSubsample`: los bordes entre colores fuertes (el granate sobre
+ *    blanco) no se emborronan.
  *  - Si la primera codificación pesa más que el original, se prueba otra más
  *    ajustada y se queda la más ligera. El tope de 5 MB lo vuelve a comprobar
- *    el controlador sobre el resultado.
+ *    quien llama sobre el resultado.
  *
- * Se conserva el formato para no romper la extensión del nombre. Exportado para
- * probarlo sin pasar por HTTP.
+ * Exportado para probarlo sin pasar por HTTP y para el script que pasa a WebP
+ * las fotos subidas antes (`scripts/fotos-a-webp.ts`).
  */
-export async function recodificarSinMetadatos(original: Buffer, mime: string): Promise<Buffer> {
+export async function prepararFoto(original: Buffer): Promise<Buffer> {
   // 'error' y no el 'warning' por defecto: una foto con un aviso menor de
   // libvips se puede publicar; una que no se puede decodificar, no.
   const datos = await sharp(original, { failOn: 'error', animated: true }).metadata();
+  if (!['jpeg', 'png', 'webp'].includes(datos.format ?? '')) {
+    throw new Error(`Tipo de imagen no admitido: ${datos.format}`);
+  }
 
   // Una animación se deja del tamaño que venga: al resolverla, el alto que ve
   // sharp es el de todos los fotogramas apilados, y un tope de alto la
@@ -66,37 +81,12 @@ export async function recodificarSinMetadatos(original: Buffer, mime: string): P
       : imagen.resize({ width: LADO_MAXIMO, height: LADO_MAXIMO, fit: 'inside', withoutEnlargement: true });
   };
 
-  let codificaciones: Codificacion[];
-  switch (mime) {
-    case 'image/jpeg':
-      codificaciones = [
-        (imagen) => imagen.jpeg({ quality: 85, mozjpeg: true }),
-        (imagen) => imagen.jpeg({ quality: 75, mozjpeg: true }),
+  const codificaciones: Codificacion[] = datos.isPalette
+    ? [(imagen) => imagen.webp({ lossless: true })]
+    : [
+        (imagen) => imagen.webp({ quality: CALIDAD_WEBP, smartSubsample: true }),
+        (imagen) => imagen.webp({ quality: 72, smartSubsample: true }),
       ];
-      break;
-    case 'image/png': {
-      if (datos.isPalette) {
-        codificaciones = [(imagen) => imagen.png({ palette: true, compressionLevel: 9 })];
-        break;
-      }
-      const profundidad: Codificacion = datos.depth === 'ushort'
-        ? (imagen) => imagen.toColourspace(datos.space === 'grey16' ? 'grey16' : 'rgb16')
-        : (imagen) => imagen;
-      codificaciones = [
-        (imagen) => profundidad(imagen).png(),
-        (imagen) => profundidad(imagen).png({ compressionLevel: 9, adaptiveFiltering: true }),
-      ];
-      break;
-    }
-    case 'image/webp':
-      codificaciones = [
-        (imagen) => imagen.webp({ quality: 85 }),
-        (imagen) => imagen.webp({ quality: 75 }),
-      ];
-      break;
-    default:
-      throw new Error(`Tipo de imagen no admitido para recodificar: ${mime}`);
-  }
 
   let mejor: Buffer | null = null;
   for (const codificar of codificaciones) {
@@ -106,6 +96,9 @@ export async function recodificarSinMetadatos(original: Buffer, mime: string): P
   }
   return mejor!;
 }
+
+/** El nombre del fichero con la extensión `.webp` en lugar de la que traía (`<hex>.jpg` → `<hex>.webp`). */
+export const conExtensionWebp = (nombre: string) => `${path.basename(nombre, path.extname(nombre))}.webp`;
 
 export class SubidaController {
 
@@ -189,13 +182,15 @@ export class SubidaController {
         });
       }
 
-      // ================== FOTOS SIN METADATOS ==================
+      // ================== FOTOS EN WEBP, SIN METADATOS ==================
       // Los PDF se guardan byte a byte: recodificarlos cambiaría el documento.
       let size = file.size;
+      let filename = file.filename;
+      let tipo = fileTypeResult.mime;
       if (esImagen) {
         let limpia: Buffer;
         try {
-          limpia = await recodificarSinMetadatos(original, fileTypeResult.mime);
+          limpia = await prepararFoto(original);
         } catch (error) {
           await fs.unlink(filePath);
           console.warn(`[Upload] No se ha podido recodificar ${file.originalname}:`, error instanceof Error ? error.message : error);
@@ -211,8 +206,12 @@ export class SubidaController {
               error: 'La foto, una vez preparada para la web, pasa de 5 MB. Redúcela antes de subirla.'
           });
         }
-        await fs.writeFile(filePath, limpia);
+        // Sale siempre en WebP: se guarda con su extensión y el original se va.
+        filename = conExtensionWebp(file.filename);
+        await fs.writeFile(path.join(path.dirname(filePath), filename), limpia);
+        if (filename !== file.filename) await fs.unlink(filePath);
         size = limpia.length;
+        tipo = 'image/webp';
       }
 
       // Generamos la URL pública usando una fuente confiable (Variable de entorno).
@@ -223,15 +222,15 @@ export class SubidaController {
       // Construimos la URL que guardaremos en la DB
       const isPrivate = req.path.startsWith('/private');
       const fileUrl = isPrivate
-        ? `${baseUrl}/api/upload/private/${encodeURIComponent(file.filename)}`
-        : `${baseUrl}/storage/public/${encodeURIComponent(file.filename)}`;
+        ? `${baseUrl}/api/upload/private/${encodeURIComponent(filename)}`
+        : `${baseUrl}/storage/public/${encodeURIComponent(filename)}`;
 
       res.status(201).json({
         message: 'Archivo subido correctamente',
         data: {
             url: fileUrl,
-            filename: file.filename,
-            type: fileTypeResult.mime,
+            filename,
+            type: tipo,
             size: `${(size / 1024).toFixed(2)} KB`
         }
       });

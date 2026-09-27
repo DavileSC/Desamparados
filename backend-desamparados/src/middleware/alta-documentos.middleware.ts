@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { fileTypeFromBuffer } from 'file-type';
 import { MAX_BYTES_IMAGEN, privateStorageDir } from './upload.middleware.js';
-import { recodificarSinMetadatos } from '../controllers/subida.controller.js';
+import { conExtensionWebp, prepararFoto } from '../controllers/subida.controller.js';
 import { scanBufferClamav } from '../utils/clamd.js';
 
 /**
@@ -166,12 +166,18 @@ export async function comprobarDocumentosDelAlta(req: Request, res: Response, ne
       if (campo === 'foto') {
         let limpia: Buffer;
         try {
-          limpia = await recodificarSinMetadatos(original, tipo!.mime);
+          limpia = await prepararFoto(original);
         } catch {
           throw new DocumentoRechazado(campo, 'No se ha podido leer la foto. Comprueba que no está dañada.');
         }
         if (limpia.length > reglas.tope) throw new DocumentoRechazado(campo, reglas.pesada, 413);
-        await fs.writeFile(fichero.path, limpia);
+        // Sale en WebP: se guarda con su extensión y el original se va.
+        const enWebp = conExtensionWebp(fichero.filename);
+        const rutaWebp = path.join(path.dirname(fichero.path), enWebp);
+        await fs.writeFile(rutaWebp, limpia);
+        if (enWebp !== fichero.filename) await fs.unlink(fichero.path);
+        fichero.path = rutaWebp;
+        fichero.filename = enWebp;
       }
       documentos[campo] = fichero.filename;
     }
