@@ -17,6 +17,7 @@ import { aplanarMenu, menuPublico } from '../config/navegacion'
 import ContenedorDePagina from './ContenedorDePagina'
 import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
 import { BOTON } from './estiloDeBoton'
+import { designTokens } from '../theme'
 
 type SocialLink = { icon: ReactNode; href: string; label: string }
 
@@ -77,7 +78,12 @@ const tituloColumna = {
   color: 'text.primary',
 } as const
 
+// Relleno y margen negativo a la vez: la maqueta no se mueve, pero el dedo
+// tiene 28 px de alto donde antes tenía 20 (en móvil se fallaba el toque).
 const enlace = {
+  display: 'inline-block',
+  py: '4px',
+  my: '-4px',
   color: 'text.secondary',
   fontSize: 14,
   lineHeight: 1.4,
@@ -104,7 +110,7 @@ export default function PieDePagina() {
   const year = new Date().getFullYear()
 
   return (
-    <Box component="footer" sx={{ backgroundColor: 'background.paper', borderTop: `1px solid ${LINEA}` }}>
+    <Box component="footer" sx={{ backgroundColor: designTokens.colors.footer, borderTop: `1px solid ${LINEA}` }}>
       <ContenedorDePagina>
         <Box
           sx={{
@@ -149,7 +155,7 @@ export default function PieDePagina() {
             </Box>
 
             {socialLinks.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 1, ml: -1 }}>
+              <Box sx={{ display: 'flex', gap: 0.5, ml: -1.5 }}>
                 {socialLinks.map((social) => (
                   <IconButton
                     key={social.label}
@@ -157,7 +163,7 @@ export default function PieDePagina() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`${social.label} (se abre en otra pestaña)`}
-                    sx={{ color: 'text.secondary', '&:hover': { color: 'secondary.main' } }}
+                    sx={{ width: 44, height: 44, color: 'text.secondary', '&:hover': { color: 'secondary.main' } }}
                   >
                     {social.icon}
                   </IconButton>
@@ -168,7 +174,9 @@ export default function PieDePagina() {
 
           {/* Mapa del sitio */}
           {columnas.map((columna) => (
-            <Box key={columna.titulo} component="nav" aria-label={columna.titulo}>
+            // En dos columnas, Corporación (la larga) ocupa dos filas y Hermanos cae
+            // debajo de Actualidad, en vez de quedarse sola con un hueco al lado.
+            <Box key={columna.titulo} component="nav" aria-label={columna.titulo} sx={{ gridRow: columna.titulo === 'Corporación' ? { xs: 'span 2', md: 'auto' } : undefined }}>
               <Typography component="h2" sx={tituloColumna}>{columna.titulo}</Typography>
               <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                 {columna.rutas.flatMap((ruta) => {
@@ -283,7 +291,7 @@ export default function PieDePagina() {
                 component="button"
                 type="button"
                 onClick={volverAPreguntar}
-                sx={{ font: 'inherit', ...enlace, fontSize: 13, border: 0, background: 'none', cursor: 'pointer', p: 0 }}
+                sx={{ font: 'inherit', ...enlace, fontSize: 13, border: 0, background: 'none', cursor: 'pointer', px: 0 }}
               >
                 Gestionar cookies
               </MuiLink>

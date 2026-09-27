@@ -50,6 +50,8 @@ export const designTokens = {
     surfaceContainerHighest: '#e4e2df',
     secondary: '#a03d44',
     burgundy: '#6e1822',
+    /** Pie de página: un escalón más claro que el fondo, para que no se confunda con él ni con el bloque de encima. */
+    footer: '#1a181b',
     glass: 'rgba(18, 17, 19, 0.6)',
     glassBorder: 'rgba(204, 196, 201, 0.1)',
   },

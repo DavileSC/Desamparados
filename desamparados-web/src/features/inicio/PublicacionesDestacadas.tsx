@@ -76,11 +76,11 @@ const INCLINACION = 'rotateY(-22deg) rotateX(4deg)'
 const escena = {
   position: 'relative',
   display: 'block',
-  height: { xs: 380, md: 480 },
+  height: { xs: 330, md: 480 },
   perspective: '1800px',
   '& .ejemplar': {
     position: 'absolute',
-    width: { xs: 236, md: 270 },
+    width: { xs: 208, md: 270 },
     aspectRatio: '3 / 4',
     transformStyle: 'preserve-3d',
     transition: `transform .6s ${CURVA}`,
@@ -100,7 +100,7 @@ const escena = {
     // El pliegue del lomo, a la izquierda de la tapa.
     '&::after': { content: '""', position: 'absolute', inset: 0, boxShadow: 'inset 7px 0 10px -6px rgba(0, 0, 0, 0.55)', pointerEvents: 'none' },
   },
-  '& .ejemplar-1': { left: { xs: '50%', md: 150 }, ml: { xs: '-118px', md: 0 }, top: { xs: 20, md: 34 }, zIndex: 3, transform: `${INCLINACION} rotateZ(1deg)` },
+  '& .ejemplar-1': { left: { xs: '50%', md: 150 }, ml: { xs: '-104px', md: 0 }, top: { xs: 20, md: 34 }, zIndex: 3, transform: `${INCLINACION} rotateZ(1deg)` },
   // Detrás, en abanico, las dos anteriores. En móvil no caben: solo el ejemplar de delante.
   '& .ejemplar-2': { display: { xs: 'none', md: 'block' }, left: 56, top: 20, zIndex: 2, filter: 'brightness(.7)', transform: `${INCLINACION} rotateZ(-5deg)` },
   '& .ejemplar-3': { display: { xs: 'none', md: 'block' }, left: -40, top: 10, zIndex: 1, filter: 'brightness(.5)', transform: `${INCLINACION} rotateZ(-10deg)` },
@@ -226,7 +226,8 @@ export default function PublicacionesDestacadas() {
                     {destacada.descripcion}
                   </Typography>
                 )}
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 3.75 }}>
+                {/* En móvil, uno debajo del otro y a lo ancho: dos anchos distintos apilados parecían descolocados. */}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 3.75, '& > a': { flex: { xs: '1 1 100%', sm: '0 0 auto' } } }}>
                   {destacada.archivoUrl && (
                     <Box
                       component="a"
