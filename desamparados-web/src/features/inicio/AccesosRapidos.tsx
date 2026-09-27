@@ -116,7 +116,8 @@ function PlacaHazteHermano({ placa }: { placa: TextosPortada['accesos']['placa']
           ...BOTON.claro,
           position: 'relative',
           mt: { md: 'auto' },
-          alignSelf: { xs: 'stretch', md: 'flex-start' },
+          // A lo ancho solo en el móvil: en tableta la placa es ancha y el botón quedaba como una franja.
+          alignSelf: { xs: 'stretch', sm: 'flex-start' },
           px: 2.75,
           '& svg': { fontSize: 18, color: 'currentColor', transition: 'transform .25s ease' },
         }}

@@ -117,7 +117,7 @@ export default function PieDePagina() {
             display: 'grid',
             gridTemplateColumns: {
               xs: 'repeat(2, minmax(0, 1fr))',
-              md: 'repeat(3, minmax(0, 1fr))',
+              md: 'minmax(0, 1.3fr) repeat(3, minmax(0, 1fr))',
               lg: 'minmax(0, 1.35fr) repeat(3, minmax(0, 0.8fr)) minmax(0, 1.25fr)',
             },
             columnGap: { xs: 4, lg: 5 },
@@ -125,8 +125,9 @@ export default function PieDePagina() {
             py: { xs: 6, md: 8 },
           }}
         >
-          {/* Identidad y contacto */}
-          <Box sx={{ gridColumn: { xs: '1 / -1', lg: 'auto' } }}>
+          {/* Identidad y contacto. Desde la tableta apaisada, al lado de las columnas:
+              sola en su fila dejaba medio pie vacío. */}
+          <Box sx={{ gridColumn: { xs: '1 / -1', md: 'auto' } }}>
             <Typography component="div" sx={{ ...tituloColumna, color: 'text.secondary', mb: 1 }}>
               Grupo Parroquial
             </Typography>

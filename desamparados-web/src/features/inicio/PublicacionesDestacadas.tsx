@@ -100,9 +100,9 @@ const escena = {
     // El pliegue del lomo, a la izquierda de la tapa.
     '&::after': { content: '""', position: 'absolute', inset: 0, boxShadow: 'inset 7px 0 10px -6px rgba(0, 0, 0, 0.55)', pointerEvents: 'none' },
   },
-  '& .ejemplar-1': { left: { xs: '50%', md: 150 }, ml: { xs: '-104px', md: 0 }, top: { xs: 20, md: 34 }, zIndex: 3, transform: `${INCLINACION} rotateZ(1deg)` },
+  '& .ejemplar-1': { left: { xs: '50%', md: 110, lg: 150 }, ml: { xs: '-104px', md: 0 }, top: { xs: 20, md: 34 }, zIndex: 3, transform: `${INCLINACION} rotateZ(1deg)` },
   // Detrás, en abanico, las dos anteriores. En móvil no caben: solo el ejemplar de delante.
-  '& .ejemplar-2': { display: { xs: 'none', md: 'block' }, left: 56, top: 20, zIndex: 2, filter: 'brightness(.7)', transform: `${INCLINACION} rotateZ(-5deg)` },
+  '& .ejemplar-2': { display: { xs: 'none', md: 'block' }, left: { md: 36, lg: 56 }, top: 20, zIndex: 2, filter: 'brightness(.7)', transform: `${INCLINACION} rotateZ(-5deg)` },
   '& .ejemplar-3': { display: { xs: 'none', md: 'block' }, left: -40, top: 10, zIndex: 1, filter: 'brightness(.5)', transform: `${INCLINACION} rotateZ(-10deg)` },
   // Solo con ratón: la tapa se entreabre y asoma el interior.
   '@media (hover: hover)': {
@@ -202,21 +202,22 @@ export default function PublicacionesDestacadas() {
           los 64 px de margen la dejarían debajo del título. */}
       <ContenedorDePagina sx={{ position: 'relative', pl: { md: 'max(64px, calc(128px - max(0px, (100vw - 1440px) / 2)))' } }}>
         {destacada ? (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 440px' }, gap: { xs: 4, lg: 7 }, alignItems: 'center' }}>
-            {/* Los ejemplares son el objeto del bloque: crecen al posarse. */}
-            <Revela efecto="crecer" sx={{ position: 'relative', order: { xs: -1, lg: 0 }, gridColumn: { lg: 2 }, gridRow: { lg: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 }, ml: { md: 5, lg: 0 } }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 380px', lg: '1fr 440px' }, gap: { xs: 4, md: 5, lg: 7 }, alignItems: 'center' }}>
+            {/* Los ejemplares son el objeto del bloque: crecen al posarse. En tableta
+                apaisada ya van al lado del texto: encima dejaban media pantalla vacía. */}
+            <Revela efecto="crecer" sx={{ position: 'relative', order: { xs: -1, md: 0 }, gridColumn: { md: 2 }, gridRow: { md: 1 }, width: '100%', maxWidth: 440, mx: { xs: 'auto', md: 0 } }}>
               {/* Sobre el ejemplar, que es lo que hace de portada aquí. */}
               {destacada.fijada && <CintaDestacada />}
               <Ejemplares destacada={destacada} anteriores={otras} />
             </Revela>
-            <Box sx={{ gridColumn: { lg: 1 }, gridRow: { lg: 1 } }}>
+            <Box sx={{ gridColumn: { md: 1 }, gridRow: { md: 1 } }}>
               <Revela orden={1}>
                 <Typography id="publicaciones-titulo" component="h2" sx={cejaTitulo}>
                   Publicaciones · {mes(destacada.fecha)} {anio(destacada.fecha)}
                 </Typography>
               </Revela>
               <Revela efecto="cortina" orden={2}>
-                <Typography variant="h3" component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 34, md: 52 }, lineHeight: 1.06, letterSpacing: '-0.015em', color: '#fff', textWrap: 'balance' }}>
+                <Typography variant="h3" component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 34, md: 44, lg: 52 }, lineHeight: 1.06, letterSpacing: '-0.015em', color: '#fff', textWrap: 'balance' }}>
                   {destacada.titulo}
                 </Typography>
               </Revela>
@@ -226,8 +227,9 @@ export default function PublicacionesDestacadas() {
                     {destacada.descripcion}
                   </Typography>
                 )}
-                {/* En móvil, uno debajo del otro y a lo ancho: dos anchos distintos apilados parecían descolocados. */}
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 3.75, '& > a': { flex: { xs: '1 1 100%', sm: '0 0 auto' } } }}>
+                {/* Apilados, a lo ancho: dos anchos distintos uno encima del otro parecían descolocados.
+                    Pasa en el móvil y en la columna estrecha de la tableta apaisada. */}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 3.75, '& > a': { flex: { xs: '1 1 100%', sm: '0 0 auto', md: '1 1 100%', lg: '0 0 auto' } } }}>
                   {destacada.archivoUrl && (
                     <Box
                       component="a"
