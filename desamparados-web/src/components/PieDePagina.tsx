@@ -229,7 +229,7 @@ export default function PieDePagina() {
                   src={MAP_EMBED_URL}
                   width="100%"
                   height="100%"
-                  style={{ border: 0, filter: 'grayscale(100%) invert(92%) contrast(83%)' }}
+                  style={{ border: 0 }}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   title={`Mapa: ${site.sede.nombre}`}

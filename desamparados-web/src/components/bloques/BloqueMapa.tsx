@@ -17,8 +17,8 @@ const ALTOS = { bajo: 260, medio: 380, alto: 520 } as const
  *
  * RGPD, como el mapa del pie: el marco de Google envía la IP del visitante,
  * así que no se carga hasta que ha aceptado las cookies o pulsa «Mostrar el
- * mapa». Hasta entonces, un recuadro que lo explica. En oscuro lleva el mismo
- * filtro que el del pie, para que no sea un fogonazo blanco en la página.
+ * mapa». Hasta entonces, un recuadro que lo explica. Con los colores de
+ * Google, sin filtro, como el del pie: en gris se veía apagado.
  *
  * «Datos al lado»: el mapa a un lado y, al otro, el lugar en grande, la
  * dirección, las indicaciones y el botón para llegar. Así la dirección no es
@@ -28,7 +28,6 @@ export default function BloqueMapa({ bloque }: { bloque: Datos }) {
   const { aceptadas } = useConsentimientoDeCookies()
   const [pedido, setPedido] = useState(false)
   const alto = ALTOS[valorDe(bloque, 'alto') as keyof typeof ALTOS] ?? ALTOS.medio
-  const oscuro = valorDe(bloque, 'estilo') === 'oscuro'
   const direccion = bloque.direccion.trim()
   if (!direccion) return null
   const llegar = urlDelMapa(direccion)
@@ -42,7 +41,7 @@ export default function BloqueMapa({ bloque }: { bloque: Datos }) {
       {aceptadas || pedido ? (
         <Box component="iframe" title={`Mapa: ${titulo}`} loading="lazy" referrerPolicy="no-referrer-when-downgrade"
           src={`https://www.google.com/maps?q=${encodeURIComponent(direccion)}&output=embed`}
-          style={{ border: 0, filter: oscuro ? 'grayscale(100%) invert(92%) contrast(83%)' : undefined }}
+          style={{ border: 0 }}
           sx={{ width: '100%', height: '100%' }} />
       ) : (
         <Box sx={{ textAlign: 'center', px: 3 }}>
