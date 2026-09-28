@@ -359,7 +359,7 @@ export const PAGINAS = [
   {
     slug: 'horario-secretaria',
     titulo: 'Horario de secretaría',
-    contenido: `<p>La secretaría atiende de lunes a viernes, de 18:00 a 21:00, en la casa parroquial.</p>
+    contenido: `<p>La secretaría atiende el primer viernes de cada mes, de 19:30 a 21:00, en la casa parroquial (C. Corregidor Paz Guzmán, 13).</p>
 <p>Durante la cuaresma el horario se amplía para el reparto de papeletas de sitio, según el calendario que se publica en el tablón y en esta web.</p>`,
   },
 ];

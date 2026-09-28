@@ -9,7 +9,10 @@
  * publicado.
  *
  * Obligatorios antes de publicar (art. 10 LSSI-CE y art. 13 RGPD):
- * `denominacion`, `nif`, `domicilio` y un canal de contacto del responsable.
+ * `denominacion`, `domicilio` y un canal de contacto del responsable.
+ *
+ * El NIF no está aquí a propósito: el Grupo Parroquial no quiere publicarlo
+ * (28-09-2026), y todo lo de este fichero acaba en el código de la web.
  */
 export type DatoPendiente = null
 
@@ -18,21 +21,20 @@ export const site = {
   nombre: 'Grupo Parroquial de Nuestra Señora de los Desamparados',
 
   entidad: {
-    /** Denominación jurídica exacta inscrita. PENDIENTE de confirmar. */
-    denominacion: null as string | DatoPendiente,
-    /** NIF/CIF de la entidad. PENDIENTE de confirmar. */
-    nif: null as string | DatoPendiente,
-    /** Domicilio social completo (vía, número, CP y municipio). PENDIENTE de confirmar. */
-    domicilio: null as string | DatoPendiente,
+    /** Denominación jurídica exacta inscrita. */
+    denominacion: 'Parroquia Santa María Goretti - Grupo Parroquial Nuestra Señora de los Desamparados' as string | DatoPendiente,
+    /** Domicilio social completo (vía, número, CP y municipio). */
+    domicilio: 'Calle Corregidor Paz Guzmán, 13, 29006 Málaga' as string | DatoPendiente,
     /** Localidad conocida, usable mientras no haya domicilio completo. */
     localidad: 'Málaga',
   },
 
   contacto: {
-    email: 'info@desamparadosmalaga.com',
-    /** Teléfono oficial. PENDIENTE de confirmar (no publicar uno ficticio). */
-    telefono: null as string | DatoPendiente,
-    horario: 'Lunes a viernes: 18:00h - 21:00h',
+    email: 'goretti.desamparados@gmail.com',
+    /** Teléfono oficial, el mismo que el de Secretaría. */
+    telefono: '644 90 01 67' as string | DatoPendiente,
+    /** El de Secretaría: los textos del alta lo citan entre paréntesis, en minúscula. */
+    horario: 'Primer viernes de cada mes, de 19:30 a 21:00',
   },
 
   /**
@@ -49,7 +51,7 @@ export const site = {
 
   /** Canal para ejercer los derechos RGPD. Cae al email general si no hay uno propio. */
   privacidad: {
-    emailDerechos: null as string | DatoPendiente,
+    emailDerechos: 'goretti.desamparados@gmail.com' as string | DatoPendiente,
   },
 
   /**
@@ -69,9 +71,10 @@ export const site = {
     urlAlternativa: null as string | DatoPendiente,
   },
 
-  /** Documentos públicos enlazados desde los correos automáticos. */
+  /** Documentos públicos. */
   documentos: {
-    normativa: null as string | DatoPendiente,
+    /** Las normas diocesanas de los Grupos Parroquiales, por las que se rige: se enlazan desde el aviso legal. */
+    estatutos: 'https://www.dropbox.com/scl/fi/qm6eg5f22lghfnnt9ens3/01-Grupos-Parroquiales.pdf?rlkey=o4bkqz058m9faddsyd8y59k7r&dl=0' as string | DatoPendiente,
   },
 } as const
 
@@ -86,7 +89,6 @@ export function legal(valor: string | DatoPendiente): string {
 /** `true` si falta algún dato identificativo exigido por la LSSI/RGPD. */
 export const faltanDatosIdentificativos =
   site.entidad.denominacion === null ||
-  site.entidad.nif === null ||
   site.entidad.domicilio === null
 
 /** Canal de contacto para ejercer derechos RGPD. */

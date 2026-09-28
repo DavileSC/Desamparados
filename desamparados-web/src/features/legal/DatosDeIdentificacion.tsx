@@ -10,7 +10,6 @@ import { site, legal, faltanDatosIdentificativos, DATO_PENDIENTE } from '../../c
 export default function DatosDeIdentificacion() {
   const filas: Array<[string, string]> = [
     ['Denominación', legal(site.entidad.denominacion)],
-    ['NIF', legal(site.entidad.nif)],
     ['Domicilio', site.entidad.domicilio ?? `${DATO_PENDIENTE} (${site.entidad.localidad})`],
     ['Correo de contacto', site.contacto.email],
   ]

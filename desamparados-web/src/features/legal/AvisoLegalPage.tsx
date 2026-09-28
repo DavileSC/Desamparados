@@ -1,6 +1,7 @@
-import { Typography } from '@mui/material'
+import { Link, Typography } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
 import DatosDeIdentificacion from './DatosDeIdentificacion'
+import { site } from '../../config/site'
 
 export default function AvisoLegalPage() {
   return (
@@ -18,6 +19,16 @@ export default function AvisoLegalPage() {
       </Typography>
 
       <DatosDeIdentificacion />
+
+      {site.documentos.estatutos && (
+        <Typography component="p" sx={{ mb: 2 }}>
+          El Grupo Parroquial se rige por las{' '}
+          <Link href={site.documentos.estatutos} target="_blank" rel="noopener noreferrer" sx={{ color: 'secondary.main' }}>
+            normas diocesanas de los Grupos Parroquiales
+          </Link>
+          .
+        </Typography>
+      )}
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
         2. Objeto

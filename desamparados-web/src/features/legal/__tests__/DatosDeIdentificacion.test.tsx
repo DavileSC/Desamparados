@@ -21,12 +21,19 @@ describe('DatosDeIdentificacion', () => {
     }
   })
 
+  it('no publica el NIF: el Grupo no quiere', () => {
+    renderWithProviders(<DatosDeIdentificacion />)
+    expect(screen.queryByText(/NIF/)).not.toBeInTheDocument()
+    // Ni una cifra con forma de NIF de entidad (letra, siete cifras y control).
+    expect(document.body).not.toHaveTextContent(/\b[A-Z]\d{7}[A-Z0-9]\b/)
+  })
+
   it('no publica datos identificativos inventados', () => {
     // Vigila que nadie rellene site.ts con marcadores de posición: mientras el
     // dato real no exista debe valer null, no un NIF o un teléfono de relleno.
     const marcadores: Array<[RegExp, string]> = [
       [/0{4,}/, 'una tira de ceros'],
-      [/(\d){5,}/, 'un dígito repetido'],
+      [/(\d)\1{4,}/, 'un dígito repetido'],
       [/123456|987654/, 'una secuencia consecutiva'],
       [/x{3,}/i, 'una x de relleno'],
       [/lorem|ipsum|ejemplo|placeholder|pendiente|tbd|todo/i, 'una palabra de relleno'],
@@ -34,7 +41,6 @@ describe('DatosDeIdentificacion', () => {
     const valores: Array<[string, string]> = (
       [
         ['denominación', site.entidad.denominacion],
-        ['NIF', site.entidad.nif],
         ['domicilio', site.entidad.domicilio],
         ['teléfono', site.contacto.telefono],
       ] as Array<[string, string | null]>

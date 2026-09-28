@@ -2473,15 +2473,19 @@
         "lineas": [
           {
             "etiqueta": "Email",
-            "valor": "info@desamparadosmalaga.com"
+            "valor": "goretti.desamparados@gmail.com"
+          },
+          {
+            "etiqueta": "Teléfono",
+            "valor": "644 90 01 67"
           },
           {
             "etiqueta": "Dirección",
             "valor": "Iglesia Parroquial Santa María Goretti, C. Corregidor Paz Guzmán, 13, Málaga"
           },
           {
-            "etiqueta": "Horario de atención",
-            "valor": "Lunes a viernes, de 18:00 a 21:00"
+            "etiqueta": "Horario de Secretaría",
+            "valor": "Primer viernes de cada mes, de 19:30 a 21:00"
           }
         ]
       }
