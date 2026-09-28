@@ -1,6 +1,6 @@
 import { Box, Typography, useMediaQuery } from '@mui/material'
 import { useLayoutEffect, useRef, useState } from 'react'
-import { motion, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
+import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { useModoEdicion } from './modoEdicion'
 import { GOLD, GRANATE, SERIF, ceja } from '../../features/inicio/estilos'
 import { parrafosDe, type BloqueCronologia as Datos, type HitoHistoria } from '../../lib/api/contenido'
@@ -250,19 +250,7 @@ function HitoDeLaLinea({ hito, id, primero, ultimo, vivo }: HitoDeLaLineaProps) 
         ))}
         {hito.foto.url !== '' && (
           <Box sx={{ mt: 4 }}>
-            {/* La foto se descubre de izquierda a derecha al encenderse su época. */}
-            <Box
-              component="img"
-              src={hito.foto.url}
-              alt={hito.foto.alt}
-              loading="lazy"
-              decoding="async"
-              sx={{
-                display: 'block', width: '100%', maxWidth: 560, aspectRatio: '560 / 340', objectFit: 'cover',
-                clipPath: encendido ? 'inset(0 0 0 0)' : 'inset(0 100% 0 0)',
-                transition: 'clip-path 1.2s cubic-bezier(.2, .7, .15, 1)',
-              }}
-            />
+            <FotoDelHito url={hito.foto.url} alt={hito.foto.alt} vivo={vivo} />
             {hito.foto.pie !== '' && (
               <Typography component="span" sx={{ ...ceja, mb: 0, mt: 1.75, fontSize: 12, letterSpacing: '0.12em' }}>
                 {hito.foto.pie}
@@ -272,6 +260,44 @@ function HitoDeLaLinea({ hito, id, primero, ultimo, vivo }: HitoDeLaLineaProps) 
         )}
       </Box>
     </Box>
+  )
+}
+
+/**
+ * La foto de un hito, que se descubre de izquierda a derecha cuando ella misma
+ * entra en la pantalla y ya ha llegado. Antes se descubría con el punto de su
+ * época, que va arriba del hito: la foto, debajo de los párrafos, estaba aún
+ * fuera de la vista y al bajar ya aparecía descubierta, casi de golpe. Se
+ * vuelve a tapar si se sube por encima de ella.
+ *
+ * La carga diferida la hace este componente y no `loading="lazy"`: Chrome no
+ * descarga una imagen diferida mientras el recorte la tapa entera, así que
+ * solo empezaba a bajarla al descubrirse y aparecía de golpe al llegar.
+ */
+function FotoDelHito({ url, alt, vivo }: { url: string; alt: string; vivo: boolean }) {
+  const ref = useRef<HTMLImageElement>(null)
+  // Se pide con margen, antes de que haga falta, y ya no se suelta.
+  const cerca = useInView(ref, { once: true, margin: '800px 0px 800px 0px' })
+  // Cuando su parte de arriba pasa del 85 % de la pantalla, con algo ya a la vista.
+  const enVista = useInView(ref, { margin: '0px 0px -15% 0px' })
+  const [cargada, setCargada] = useState(false)
+  // Si ya estaba en la caché del navegador, `load` pudo dispararse antes de pintar.
+  useLayoutEffect(() => { if (cerca && ref.current?.complete && ref.current.naturalWidth > 0) setCargada(true) }, [url, cerca])
+  const descubierta = !vivo || (enVista && cargada)
+  return (
+    <Box
+      component="img"
+      ref={ref}
+      src={cerca || !vivo ? url : undefined}
+      alt={alt}
+      decoding="async"
+      onLoad={() => setCargada(true)}
+      sx={{
+        display: 'block', width: '100%', maxWidth: 560, aspectRatio: '560 / 340', objectFit: 'cover',
+        clipPath: descubierta ? 'inset(0 0 0 0)' : 'inset(0 100% 0 0)',
+        transition: 'clip-path 1.4s cubic-bezier(.2, .7, .15, 1)',
+      }}
+    />
   )
 }
 
