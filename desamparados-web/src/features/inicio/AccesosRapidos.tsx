@@ -255,9 +255,9 @@ export default function AccesosRapidos() {
             p: 0,
             display: 'grid',
             gridTemplateColumns: { xs: '1fr 1fr', md: '1.3fr 1fr 1fr' },
+            // El ancho de las demás secciones de la portada, sin tope propio: con él
+            // quedaba metida y descuadrada respecto a Noticias y Agenda.
             gap: { xs: 1.25, md: 1.75 },
-            maxWidth: 1060,
-            mx: 'auto',
           }}
         >
           {/* La placa se descubre de izquierda a derecha; las teselas van creciendo detrás. */}

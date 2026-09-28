@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Link } from 'react-router-dom'
 import { Alert, Box, Grid, TextField, Typography } from '@mui/material'
 import EmailIcon from '@mui/icons-material/Email'
 import PhoneIcon from '@mui/icons-material/Phone'
@@ -187,6 +188,15 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
               {...register('comentarioAdicional')}
             />
           </Box>
+
+          {/* Lo que pide la protección de datos en un formulario así: quién, para qué y dónde leer más. */}
+          <Typography sx={{ color: 'text.secondary', fontSize: 13, lineHeight: 1.6 }}>
+            El Grupo Parroquial usa estos datos solo para contestarte y no los cede a nadie. Más información en la{' '}
+            <Box component={Link} to="/politica-privacidad" sx={{ color: 'secondary.main', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+              política de privacidad
+            </Box>
+            .
+          </Typography>
 
           <Boton type="submit" disabled={isSubmitting}>
             Enviar mensaje

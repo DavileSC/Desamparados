@@ -1,7 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import { BOTON } from '../../components/estiloDeBoton'
 import { Link } from 'react-router-dom'
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import SeccionAnimada, { Revela } from '../../components/SeccionAnimada'
 import { publicacionesDePortada } from '../../lib/api/publicaciones'
@@ -323,7 +322,6 @@ export default function PublicacionesDestacadas() {
                       rel="noopener noreferrer"
                       sx={BOTON.claro}
                     >
-                      <FileDownloadOutlinedIcon sx={{ fontSize: 20 }} />
                       Descargar {CATEGORIAS[destacada.categoria].corto}
                       <span className="home-visually-hidden"> (PDF, nueva pestaña)</span>
                     </Box>

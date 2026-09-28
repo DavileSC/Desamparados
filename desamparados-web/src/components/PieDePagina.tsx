@@ -35,27 +35,31 @@ const socialLinks: SocialLink[] = [
 // deja de pintarse en vez de quedar muerto.
 const entradasMenu = new Map(aplanarMenu(menuPublico).map((entrada) => [entrada.href, entrada.label]))
 
-const columnas: { titulo: string; rutas: string[] }[] = [
-  {
-    titulo: 'Corporación',
-    rutas: [
-      '/historia',
-      '/historia/organos-de-gobierno',
-      '/nuestros-fines',
-      '/cultos',
-      '/sabado-de-pasion',
-      '/rosario',
-      '/desamparados',
-    ],
-  },
-  {
-    titulo: 'Actualidad',
-    rutas: ['/agenda', '/noticias', '/publicaciones/boletines', '/publicaciones/dossier-prensa'],
-  },
-  {
-    titulo: 'Hermanos',
-    rutas: ['/hazte-hermano', '/acceso', '/contacto'],
-  },
+// Los mismos grupos que el menú, y en su orden. Son cinco y caben tres
+// columnas: Corporación, la larga, va sola, y las cortas van de dos en dos.
+const columnas: { titulo: string; rutas: string[] }[][] = [
+  [
+    {
+      titulo: 'Corporación',
+      rutas: [
+        '/historia',
+        '/historia/organos-de-gobierno',
+        '/parroquia-pasionistas',
+        '/nuestros-fines',
+        '/cultos',
+        '/sabado-de-pasion',
+        '/rosario',
+      ],
+    },
+  ],
+  [
+    { titulo: 'Sagrada titular', rutas: ['/desamparados', '/ajuar'] },
+    { titulo: 'Actualidad', rutas: ['/agenda', '/noticias'] },
+  ],
+  [
+    { titulo: 'Publicaciones', rutas: ['/publicaciones', '/publicaciones/boletines', '/publicaciones/dossier-prensa'] },
+    { titulo: 'Hermanos', rutas: ['/hazte-hermano', '/acceso', '/contacto'] },
+  ],
 ]
 
 const legalLinks = [
@@ -174,19 +178,23 @@ export default function PieDePagina() {
           </Box>
 
           {/* Mapa del sitio */}
-          {columnas.map((columna) => (
-            // En dos columnas, Corporación (la larga) ocupa dos filas y Hermanos cae
-            // debajo de Actualidad, en vez de quedarse sola con un hueco al lado.
-            <Box key={columna.titulo} component="nav" aria-label={columna.titulo} sx={{ gridRow: columna.titulo === 'Corporación' ? { xs: 'span 2', md: 'auto' } : undefined }}>
-              <Typography component="h2" sx={tituloColumna}>{columna.titulo}</Typography>
-              <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-                {columna.rutas.flatMap((ruta) => {
-                  const label = entradasMenu.get(ruta)
-                  return label
-                    ? [<li key={ruta}><MuiLink component={Link} to={ruta} sx={enlace}>{label}</MuiLink></li>]
-                    : []
-                })}
-              </Box>
+          {columnas.map((grupos, i) => (
+            // En el móvil (dos columnas), Corporación, la larga, ocupa dos filas y
+            // las otras dos columnas caen una debajo de otra a su lado.
+            <Box key={grupos[0].titulo} sx={{ gridRow: i === 0 ? { xs: 'span 2', md: 'auto' } : undefined, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {grupos.map((grupo) => (
+                <Box key={grupo.titulo} component="nav" aria-label={grupo.titulo}>
+                  <Typography component="h2" sx={tituloColumna}>{grupo.titulo}</Typography>
+                  <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                    {grupo.rutas.flatMap((ruta) => {
+                      const label = entradasMenu.get(ruta)
+                      return label
+                        ? [<li key={ruta}><MuiLink component={Link} to={ruta} sx={enlace}>{label}</MuiLink></li>]
+                        : []
+                    })}
+                  </Box>
+                </Box>
+              ))}
             </Box>
           ))}
 

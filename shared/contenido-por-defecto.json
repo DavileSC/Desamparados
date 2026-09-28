@@ -1326,7 +1326,7 @@
   },
   "parroquia": {
     "cabecera": {
-      "titulo": "Parroquia - Pasionistas",
+      "titulo": "Parroquia · Pasionistas",
       "subtitulo": "Santa María Goretti, nuestra sede canónica, y la comunidad pasionista que la atiende.",
       "foto": "/images/cabeceras/cruz-de-guia.webp",
       "fotoAlt": "La cruz de guía y los banderines dentro del templo, entre nazarenos, antes de la salida",
@@ -2461,8 +2461,8 @@
     "cabecera": {
       "titulo": "Contacto",
       "subtitulo": "Estamos a tu disposición.",
-      "foto": "/images/cabeceras/virgen-de-noche.webp",
-      "fotoAlt": "La Virgen de los Desamparados de noche, entre cirios encendidos",
+      "foto": "/images/cabeceras/nazarenos-con-cirios.webp",
+      "fotoAlt": "Nazarenos con túnica negra y cirios por una avenida arbolada, camino de la cruz de guía",
       "encuadre": 45
     },
     "bloques": [

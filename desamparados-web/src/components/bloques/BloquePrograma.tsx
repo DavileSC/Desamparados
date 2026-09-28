@@ -76,7 +76,8 @@ function Fila({ fila, proximo, fecha }: { fila: FilaDePrograma; proximo: boolean
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, alignItems: { xs: 'flex-start', md: 'flex-end' }, textAlign: { md: 'right' }, mt: { xs: 1, md: 0 } }}>
         {proximo && (
           <>
-            <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.22em', color: '#0a090b', backgroundColor: 'secondary.main', px: 1, py: 0.5, lineHeight: 1.4 }}>
+            {/* Un rótulo con filete, no un bloque relleno: el amarillo macizo era lo único así en la web. */}
+            <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.22em', color: 'secondary.main', border: '1px solid', borderColor: 'rgba(222, 199, 43, 0.5)', px: 1, py: 0.5, lineHeight: 1.4 }}>
               PRÓXIMO
             </Typography>
             {fecha && <Typography component="span" sx={{ fontSize: 15.5, color: 'text.primary' }}>{fecha}</Typography>}

@@ -77,7 +77,7 @@ export default function AccesoPage() {
   return (
     <>
       <Helmet>
-        <title>Acceso de Hermanos | Desamparados</title>
+        <title>Acceso hermanos | Desamparados</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <TarjetaCristal sx={{ width: '100%', p: { xs: 3, md: 5 }, maxWidth: 440, mx: 'auto' }}>
@@ -86,7 +86,7 @@ export default function AccesoPage() {
           component="h1"
           sx={{ mb: 1, textAlign: 'center', fontSize: { xs: '28px', md: '36px' } }}
         >
-          Acceso de Hermanos
+          Acceso hermanos
         </Typography>
 
         {pending2FA ? (
@@ -165,7 +165,7 @@ export default function AccesoPage() {
               <Boton type="submit" fullWidth disabled={credentialsForm.formState.isSubmitting}>
                 Entrar
               </Boton>
-              <Box component={Link} to="/reset-password" sx={{ color: 'secondary.main', textAlign: 'center', fontSize: '13px' }}>
+              <Box component={Link} to="/reset-password" sx={{ color: 'secondary.main', textAlign: 'center', fontSize: '14px', minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 ¿Has olvidado tu contraseña?
               </Box>
             </Box>
@@ -177,7 +177,7 @@ export default function AccesoPage() {
           sx={{ mt: 3, textAlign: 'center', color: 'text.secondary', fontSize: '13px' }}
         >
           ¿Aún no eres hermano?{' '}
-          <Box component="a" href="/hazte-hermano" sx={{ color: 'secondary.main', textDecoration: 'underline' }}>
+          <Box component="a" href="/hazte-hermano" sx={{ color: 'secondary.main', textDecoration: 'underline', display: 'inline-block', py: '12px', my: '-12px' }}>
             Solicita tu alta
           </Box>
         </Typography>

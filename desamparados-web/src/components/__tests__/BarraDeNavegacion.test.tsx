@@ -96,11 +96,14 @@ describe('BarraDeNavegacion en escritorio', () => {
     const hermanos = within(navEscritorio()).getByRole('button', { name: 'Hermanos', hidden: true })
     act(() => hermanos.focus())
     expect(hermanos).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('link', { name: 'Login hermanos', hidden: true })).toHaveAttribute('href', '/acceso')
+    // «Acceso hermanos» está también en el botón de la barra: con la sección abierta, son dos.
+    const accesos = () => screen.queryAllByRole('link', { name: 'Acceso hermanos', hidden: true })
+    expect(accesos()).toHaveLength(2)
+    expect(accesos().every((a) => a.getAttribute('href') === '/acceso')).toBe(true)
 
     await user.keyboard('{Escape}')
     expect(hermanos).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('link', { name: 'Login hermanos', hidden: true })).not.toBeInTheDocument()
+    expect(accesos()).toHaveLength(1)
   })
 
   it('las secciones sin subpáginas no anuncian desplegable', () => {

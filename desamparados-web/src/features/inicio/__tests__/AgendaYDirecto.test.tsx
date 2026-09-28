@@ -56,7 +56,7 @@ describe('AgendaYDirecto', () => {
     servirEventos([APERTURA, TRIDUO])
     renderWithProviders(<AgendaYDirecto />)
 
-    expect(await screen.findByText('Octubre 2026')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Octubre 2026')).toBeInTheDocument()
     // Los días se vuelven pulsables cuando llega la ventana de actos, un momento después del mes.
     await screen.findByRole('button', { name: /20 de octubre, 1 acto/ })
     for (const dia of [20, 21, 22]) {
@@ -91,12 +91,12 @@ describe('AgendaYDirecto', () => {
     const fetchMock = servirEventos([APERTURA, TRIDUO])
     renderWithProviders(<AgendaYDirecto />)
 
-    await screen.findByText('Octubre 2026')
+    await screen.findByLabelText('Octubre 2026')
     expect(screen.getByRole('button', { name: /mes anterior/i })).toBeDisabled()
 
     await userEvent.click(screen.getByRole('button', { name: /mes siguiente/i }))
 
-    expect(await screen.findByText('Noviembre 2026')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Noviembre 2026')).toBeInTheDocument()
     await waitFor(() => {
       const ultima = new URL(String(fetchMock.mock.lastCall?.[0]), 'http://localhost').searchParams
       expect(ultima.get('from')).toBe(new Date(2026, 10, 1).toISOString())

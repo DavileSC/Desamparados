@@ -3,8 +3,9 @@ import { alpha } from '@mui/material/styles'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import type { ApiEvent, EventoCalendario } from '../../lib/api/agenda'
-import { SERIF, TIPOS, cubreElDia, diasDeLaRejilla, inicioDelDia, nombreDelMes } from './agenda'
+import { TIPOS, cubreElDia, diasDeLaRejilla, inicioDelDia, nombreDelMes } from './agenda'
 import { GRANATE, PANTALLA_ALTA } from './estilos'
+import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 
 const DIAS_SEMANA = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const TEXTO = '#1b1c1a'
@@ -48,8 +49,10 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
         <IconButton aria-label="Mes anterior" disabled={!puedeRetroceder} onClick={() => onCambiarMes(-1)} sx={navSx}>
           <ChevronLeftIcon fontSize="small" />
         </IconButton>
-        <Typography aria-live="polite" sx={{ fontFamily: SERIF, fontSize: 19, color: TEXTO }}>
-          {nombreDelMes(mes, true)}
+        {/* Como la hoja de la Agenda: el mes en letra de almanaque y granate, el año en cursiva. */}
+        <Typography aria-live="polite" aria-label={nombreDelMes(mes, true)} sx={{ fontFamily: CORMORANT, fontWeight: 500, fontSize: 25, lineHeight: 1, color: GRANATE }}>
+          <span aria-hidden>{nombreDelMes(mes, false)}</span>
+          <Box component="span" aria-hidden sx={{ fontStyle: 'italic', fontWeight: 400, fontSize: 17, color: '#7a6c70', ml: 0.75 }}>{mes.getFullYear()}</Box>
         </Typography>
         <IconButton aria-label="Mes siguiente" onClick={() => onCambiarMes(1)} sx={navSx}>
           <ChevronRightIcon fontSize="small" />
@@ -73,13 +76,15 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
             borderRadius: '50%',
             display: 'grid',
             placeItems: 'center',
-            fontSize: 13,
+            fontFamily: CORMORANT,
+            fontSize: 17,
+            fontVariantNumeric: 'lining-nums',
             boxShadow: ms === hoyMs ? `inset 0 0 0 1px ${GRANATE}` : 'none',
           } as const
 
           if (!actos.length) {
             return (
-              <Box key={ms} aria-current={ms === hoyMs ? 'date' : undefined} sx={{ ...base, color: TEXTO, opacity: !delMes ? 0.28 : ms < hoyMs ? 0.45 : 1 }}>
+              <Box key={ms} aria-current={ms === hoyMs ? 'date' : undefined} sx={{ ...base, color: dia.getDay() === 0 ? GRANATE : TEXTO, opacity: !delMes ? 0.28 : ms < hoyMs ? 0.45 : 1 }}>
                 {dia.getDate()}
               </Box>
             )
@@ -97,14 +102,14 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
               aria-current={ms === hoyMs ? 'date' : undefined}
               onClick={() => onElegir(actos[0])}
               sx={{
-                // `font` va antes que la base: el atajo pisaría su tamaño de 13 px.
+                // `font` va antes que la base: el atajo pisaría su letra y su tamaño.
                 font: 'inherit',
                 ...base,
                 p: 0,
                 border: 0,
                 cursor: 'pointer',
-                fontWeight: elegido ? 600 : 500,
-                color: elegido ? '#fff' : TEXTO,
+                fontWeight: 600,
+                color: elegido ? '#fff' : dia.getDay() === 0 ? GRANATE : TEXTO,
                 backgroundColor: elegido ? GRANATE : 'transparent',
                 transition: 'background-color .2s ease',
                 '&::after': {

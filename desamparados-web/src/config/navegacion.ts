@@ -37,7 +37,7 @@ export const menuPublico: EntradaMenu[] = [
         href: '/historia',
         hijos: [{ label: 'Órganos de Gobierno', href: '/historia/organos-de-gobierno' }],
       },
-      { label: 'Parroquia - Pasionistas', href: '/parroquia-pasionistas' },
+      { label: 'Parroquia · Pasionistas', href: '/parroquia-pasionistas' },
       {
         label: 'Nuestros fines',
         href: '/nuestros-fines',
@@ -90,7 +90,7 @@ export const menuPublico: EntradaMenu[] = [
     href: '/hermanos',
     hijos: [
       { label: 'Hazte hermano', href: '/hazte-hermano' },
-      { label: 'Login hermanos', href: '/acceso' },
+      { label: 'Acceso hermanos', href: '/acceso' },
     ],
   },
   { label: 'Contacto', href: '/contacto' },

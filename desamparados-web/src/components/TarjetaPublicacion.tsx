@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import TarjetaCristal from './TarjetaCristal'
 import type { Publicacion } from '../types'
-import { Lineas } from './esqueleto/Hueso'
+import Hueso, { Lineas } from './esqueleto/Hueso'
 
 interface TarjetaPublicacionProps {
   publicacion: Publicacion
@@ -42,7 +42,17 @@ export default function TarjetaPublicacion({ publicacion }: TarjetaPublicacionPr
           color: 'inherit',
         }}
       >
-        {publicacion.imagen && portadaRota !== publicacion.imagen && (
+        {!publicacion.imagen || portadaRota === publicacion.imagen ? (
+          // Sin portada (o con una que no carga), una placa velada con el escudo,
+          // como las noticias sin foto: todas las tarjetas miden lo mismo.
+          <Box
+            data-testid="placa-publicacion"
+            aria-hidden="true"
+            sx={{ height: 180, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'linear-gradient(160deg, #262227 0%, #141214 100%)' }}
+          >
+            <Box component="img" src="/images/escudo-grupo.png" alt="" sx={{ width: 84, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }} />
+          </Box>
+        ) : (
           <Box
             component="img"
             src={publicacion.imagen}
@@ -84,14 +94,17 @@ export default function TarjetaPublicacion({ publicacion }: TarjetaPublicacionPr
   )
 }
 
-/** La tarjeta mientras llega la publicación: tipo, título, descripción y fecha en huesos. */
+/** La tarjeta mientras llega la publicación: la portada, y tipo, título, descripción y fecha en huesos. */
 export function TarjetaPublicacionEsqueleto() {
   return (
-    <TarjetaCristal sx={{ height: '100%', p: 3 }}>
-      <Box sx={{ mb: 1 }}><Lineas anchos={['30%']} linea={29.3} grosor={8} /></Box>
-      <Box sx={{ mb: 1 }}><Lineas anchos={['82%']} linea={26.7} grosor={14} /></Box>
-      <Lineas anchos={['100%', '64%']} linea={20} grosor={9} />
-      <Box sx={{ mt: 2 }}><Lineas anchos={['40%']} linea={19.9} grosor={8} /></Box>
+    <TarjetaCristal sx={{ height: '100%', overflow: 'hidden' }}>
+      <Hueso sx={{ height: 180, borderRadius: 0 }} />
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ mb: 1 }}><Lineas anchos={['30%']} linea={29.3} grosor={8} /></Box>
+        <Box sx={{ mb: 1 }}><Lineas anchos={['82%']} linea={26.7} grosor={14} /></Box>
+        <Lineas anchos={['100%', '64%']} linea={20} grosor={9} />
+        <Box sx={{ mt: 2 }}><Lineas anchos={['40%']} linea={19.9} grosor={8} /></Box>
+      </Box>
     </TarjetaCristal>
   )
 }

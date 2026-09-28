@@ -69,7 +69,7 @@ export default function MarcoAreaHermano() {
               DESAMPARADOS
             </Typography>
             <Typography variant="overline" sx={{ color: 'text.secondary', fontSize: '10px' }}>
-              Área de Hermanos
+              Área de hermanos
             </Typography>
           </Box>
         </Box>
@@ -149,7 +149,7 @@ export default function MarcoAreaHermano() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" sx={{ fontFamily: designTokens.fonts.heading }}>
-            Área de Hermanos
+            Área de hermanos
           </Typography>
         </Toolbar>
       </AppBar>

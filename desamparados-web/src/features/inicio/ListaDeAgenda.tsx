@@ -3,6 +3,7 @@ import { alpha } from '@mui/material/styles'
 import type { EventoCalendario } from '../../lib/api/agenda'
 import { SERIF, TIPOS, inicioDelDia, nombreDelMes } from './agenda'
 import { CONSULTA_ALTA, CONSULTA_MUY_ALTA, GRANATE, PANTALLA_ALTA } from './estilos'
+import { CORMORANT } from '../actualidad/agenda/letraAlmanaque'
 import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
 
 /**
@@ -81,7 +82,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
         }}
       >
         <Box component="span" sx={{ textAlign: 'center' }}>
-          <Box component="span" sx={{ display: 'block', fontFamily: SERIF, fontSize: fin ? { xs: 17, sm: 20 } : 25, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE, [PANTALLA_ALTA]: { fontSize: fin ? 20 : 28 } }}>
+          <Box component="span" sx={{ display: 'block', fontFamily: CORMORANT, fontWeight: 500, fontVariantNumeric: 'lining-nums', fontSize: fin ? { xs: 21, sm: 24 } : 31, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE, [PANTALLA_ALTA]: { fontSize: fin ? 24 : 34 } }}>
             {fin ? `${evento.start.getDate()}–${fin.getDate()}` : evento.start.getDate()}
           </Box>
           <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 10, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
@@ -171,7 +172,7 @@ export function ListaDeAgendaEsqueleto() {
       {Array.from({ length: filas }, (_, i) => (
         <Box key={i} sx={{ ...filaSx, boxShadow: i ? FILETE : 'none' }}>
           <Box sx={{ display: 'grid', justifyItems: 'center', gap: 0.75 }}>
-            <Hueso papel sx={{ width: 30, height: { xs: 25, [PANTALLA_ALTA]: 28 } }} />
+            <Hueso papel sx={{ width: 30, height: 25, [PANTALLA_ALTA]: { height: 28 } }} />
             <Hueso papel sx={{ width: 26, height: 8 }} />
           </Box>
           <Box>

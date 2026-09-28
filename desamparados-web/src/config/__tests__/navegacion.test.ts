@@ -33,7 +33,7 @@ describe('menuPublico', () => {
         'Corporación /corporacion',
         '  Historia /historia',
         '    Órganos de Gobierno /historia/organos-de-gobierno',
-        '  Parroquia - Pasionistas /parroquia-pasionistas',
+        '  Parroquia · Pasionistas /parroquia-pasionistas',
         '  Nuestros fines /nuestros-fines',
         '    Caridad /nuestros-fines/caridad',
         '    Formación /nuestros-fines/formacion',
@@ -55,7 +55,7 @@ describe('menuPublico', () => {
         '  Dossier prensa /publicaciones/dossier-prensa',
         'Hermanos /hermanos',
         '  Hazte hermano /hazte-hermano',
-        '  Login hermanos /acceso',
+        '  Acceso hermanos /acceso',
         'Contacto /contacto',
       ].join('\n'),
     )

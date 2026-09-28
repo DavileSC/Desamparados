@@ -33,7 +33,8 @@
 .home-refined .procession-scene h2 { font-weight: 400; font-size: clamp(36px, 4.4vw, 64px); line-height: 1.18; letter-spacing: -.025em; margin: 0; max-width: 760px; }
 .procession-scene-content p { max-width: 470px; color: #e4e2df; font-size: 17px; line-height: 1.75; margin: 24px 0 26px; }
 /* El párrafo que se enciende: más grande y más fino, que es la frase que se lee al pasar. */
-.procession-scene-content .procession-scene-parrafo { max-width: 26ch; font-size: clamp(22px, 2.4vw, 30px); font-weight: 300; line-height: 1.5; margin: 32px 0 30px; }
+/* La sombra deja leer sobre la foto también las palabras que aún no se han encendido. */
+.procession-scene-content .procession-scene-parrafo { max-width: 26ch; font-size: clamp(22px, 2.4vw, 30px); font-weight: 300; line-height: 1.5; margin: 32px 0 30px; text-shadow: 0 1px 2px rgba(7,6,8,.7), 0 2px 18px rgba(7,6,8,.65); }
 /* Enlace esmalte (components/esmalte.ts): en minúsculas, sin subrayado, con la flecha dorada. */
 .procession-scene-link { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; color: #fff; font-size: 16px; font-weight: 600; transition: color .25s ease; }
 .procession-scene-link svg { color: #dec72b; transition: transform .25s ease; }

@@ -13,9 +13,10 @@ import { limpiarHtml } from '../../../lib/limpiarHtml'
 import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
 import EnCarga from '../../../components/esqueleto/EnCarga'
 import { Lineas } from '../../../components/esqueleto/Hueso'
+import { enlaceConFlecha } from '../../../components/estiloDeBoton'
 
 // La cabecera y el cuerpo de la ficha: los comparten la ficha y su esqueleto.
-const cabeceraSx = { position: 'relative', py: { xs: 10, md: 14 }, mb: { xs: 4, md: 6 }, backgroundColor: 'background.paper', overflow: 'hidden' } as const
+const cabeceraSx = { position: 'relative', pt: { xs: 10, md: 14 }, pb: { xs: 4, md: 5 }, mb: { xs: 3, md: 4 }, backgroundColor: 'background.paper', overflow: 'hidden' } as const
 const columna = { maxWidth: '900px !important' } as const
 
 export default function NoticiaDetallePage() {
@@ -58,6 +59,11 @@ export default function NoticiaDetallePage() {
   }
   if (!noticia) return <NoEncontradaPage />
 
+  const cuerpo = noticia.contenido ?? noticia.extracto ?? ''
+  // Un texto en HTML ya trae sus párrafos: con `pre-line`, los saltos de línea
+  // entre etiquetas se pintaban como líneas en blanco de más. Solo el texto
+  // plano (el de antes del editor) necesita que se respeten sus saltos.
+  const esHtml = /<(p|br|h[1-6]|ul|ol|blockquote|div)[\s>]/i.test(cuerpo)
   const fecha = new Date(noticia.fecha).toLocaleDateString('es-ES', {
     day: 'numeric',
     month: 'long',
@@ -107,25 +113,18 @@ export default function NoticiaDetallePage() {
           <Typography
             component="article"
             variant="body1"
-            sx={{ color: 'text.primary', fontSize: { xs: '16px', md: '18px' }, lineHeight: 1.8, whiteSpace: 'pre-line' }}
+            sx={{ color: 'text.primary', fontSize: { xs: '16px', md: '18px' }, lineHeight: 1.8, whiteSpace: esHtml ? 'normal' : 'pre-line', '& p': { m: 0, mb: 2.5 }, '& p:last-child': { mb: 0 } }}
           >
-            <span dangerouslySetInnerHTML={{ __html: limpiarHtml(noticia.contenido ?? noticia.extracto ?? '') }} />
+            <span dangerouslySetInnerHTML={{ __html: limpiarHtml(cuerpo) }} />
           </Typography>
 
           <Box
             component={Link}
             to={volverAlArchivo}
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1,
-              mt: 6,
-              color: 'secondary.main',
-              fontWeight: 600,
-              '&:hover': { textDecoration: 'underline' },
-            }}
+            // Como los demás enlaces con flecha de la web, con la flecha hacia atrás.
+            sx={{ ...enlaceConFlecha, mt: 6, '&:hover svg': { transform: 'translateX(-3px)' } }}
           >
-            <ArrowBackIcon fontSize="small" /> Volver a todas las noticias
+            <ArrowBackIcon aria-hidden /> Volver a todas las noticias
           </Box>
         </ContenedorDePagina>
       </SeccionAnimada>

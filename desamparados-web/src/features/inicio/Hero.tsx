@@ -236,11 +236,13 @@ export default function Hero() {
         sx={{
           position: 'relative',
           zIndex: 2,
-          textAlign: 'right',
+          // A la derecha en pantallas anchas, junto a la foto; en el móvil, a la
+          // izquierda, que es como se lee un párrafo de varias líneas.
+          textAlign: { xs: 'left', md: 'right' },
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'flex-end',
+          alignItems: { xs: 'flex-start', md: 'flex-end' },
           pb: { xs: 5, md: 8 },
           // Mismo margen lateral que el logo de la barra de navegación
           px: { xs: '20px', md: '40px', xl: '48px' },
@@ -249,7 +251,7 @@ export default function Hero() {
         {/* Los textos entran en cascada nada más montarse (no al entrar en vista:
             el hero ya está a la vista), con el título asomando por su cortina. */}
         <Revela alMontar retraso={RETRASO_TEXTOS_S}>
-          <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 10, md: 12 }, mb: 2 }}>
+          <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 11, md: 12 }, mb: 2 }}>
             {textos.hero.ceja}
           </Typography>
         </Revela>
@@ -276,7 +278,7 @@ export default function Hero() {
             sx={{
               color: 'text.secondary',
               maxWidth: '510px',
-              ml: 'auto',
+              ml: { xs: 0, md: 'auto' },
               mb: 3.5,
               fontSize: { xs: '16px', md: '18px' },
             }}
@@ -285,7 +287,7 @@ export default function Hero() {
           </Typography>
         </Revela>
         <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
             <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
               {textos.hero.botonPrincipal}
             </Boton>
