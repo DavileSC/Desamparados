@@ -27,8 +27,13 @@ const SEMANA_LARGA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sá
 const AIRE = 16
 /** La fila con los nombres de los días, que va dentro de lo medido. */
 const CABECERA_SEMANA = 32
-/** El alto de las semanas: lo que quepa en la pantalla, entre estos dos (móvil y escritorio). */
-const FILA = { movil: { min: 40, max: 64 }, escritorio: { min: 44, max: 112 } }
+/**
+ * El alto de una semana, entre estos dos (móvil, tableta y escritorio), en un mes de
+ * cinco semanas. La rejilla entera mide siempre eso por cinco, tenga el mes
+ * cuatro, cinco o seis semanas: la hoja no cambia de tamaño al pasar de mes.
+ */
+const FILA = { movil: { min: 40, max: 64 }, tableta: { min: 44, max: 100 }, escritorio: { min: 44, max: 112 } }
+const SEMANAS_DE_REFERENCIA = 5
 
 /** Al cambiar de mes, los días aparecen en una cascada corta y sin desenfoque. */
 const cae = keyframes`from { opacity: 0; transform: translateY(4px); }`
@@ -51,12 +56,14 @@ const colorDelActo = (e: ApiEvent) => (e.cartel ? GRANATE : TIPOS[e.type].color)
  * una etiqueta granate. Para pasar de mes, el nombre del mes de al lado.
  *
  * En cualquier pantalla, del móvil al escritorio, el mes entero cabe al
- * entrar, con su leyenda: solo salen las semanas que tiene el mes y el alto de
- * las semanas se ajusta a lo que queda de pantalla por debajo.
+ * entrar, con su leyenda: solo salen las semanas que tiene el mes, y el alto
+ * de la rejilla se ajusta a lo que queda de pantalla por debajo. Ese alto es
+ * el mismo en todos los meses: las semanas se lo reparten.
  */
 export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] }) {
   const tema = useTheme()
   const estrecho = useMediaQuery(tema.breakpoints.down('md'))
+  const movil = useMediaQuery(tema.breakpoints.down('sm'))
   const quieto = useReducedMotion() ?? false
   const primero = useMemo(() => inicioDeMes(new Date()), [])
   const ultimo = useMemo(() => ultimoMes(eventos, primero), [eventos, primero])
@@ -74,7 +81,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const rejilla = useRef<HTMLDivElement>(null)
   const marco = useRef<HTMLDivElement>(null)
   const pie = useRef<HTMLDivElement>(null)
-  const [altoFila, setAltoFila] = useState<number | null>(null)
+  const [altoRejilla, setAltoRejilla] = useState<number | null>(null)
 
   const proximo = eventos[0] ?? null
   const evento = eventos.find((e) => e.id === abierto) ?? null
@@ -111,7 +118,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   // empieza la rejilla hasta el borde de abajo, menos lo que ocupa el pie de la
   // hoja (la leyenda, que en el móvil baja a varias líneas) y su margen. Se
   // mide en la página (no en la vista) para que no cambie al bajar.
-  const limites = estrecho ? FILA.movil : FILA.escritorio
+  const limites = movil ? FILA.movil : estrecho ? FILA.tableta : FILA.escritorio
   useEffect(() => {
     const medir = () => {
       const el = marco.current
@@ -120,25 +127,35 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
       const arriba = el.getBoundingClientRect().top + window.scrollY
       const margenDeAbajo = parseFloat(getComputedStyle(hoja).paddingBottom) || 0
       const resto = CABECERA_SEMANA + (pie.current?.offsetHeight ?? 0) + margenDeAbajo + AIRE
+      // Lo que mide la rejilla entera, igual en todos los meses. Lo mínimo: que
+      // en un mes de seis semanas cada una tenga su alto mínimo.
+      const minimo = limites.min * 6
+      const maximo = limites.max * SEMANAS_DE_REFERENCIA
       // Lo mejor: que quepa nada más entrar, sin bajar.
-      const alEntrar = Math.floor((window.innerHeight - arriba - resto) / semanas)
+      const alEntrar = Math.floor(window.innerHeight - arriba - resto)
       // Si no hay sitio (un móvil bajo), que al menos quepa la hoja entera
       // debajo de la barra de la web, al bajar hasta ella.
       const barra = Math.max(0, ...[...document.querySelectorAll('.MuiAppBar-root')].map((b) => b.getBoundingClientRect().height))
       const cabeceraDeLaHoja = el.getBoundingClientRect().top - hoja.getBoundingClientRect().top
-      const conLaHoja = Math.floor((window.innerHeight - barra - AIRE - cabeceraDeLaHoja - resto) / semanas)
-      const alto = alEntrar >= limites.min ? alEntrar : conLaHoja
-      setAltoFila(Math.max(limites.min, Math.min(limites.max, alto)))
+      const conLaHoja = Math.floor(window.innerHeight - barra - AIRE - cabeceraDeLaHoja - resto)
+      const alto = alEntrar >= minimo ? alEntrar : conLaHoja
+      setAltoRejilla(Math.max(minimo, Math.min(maximo, alto)))
     }
     const primera = requestAnimationFrame(medir)
     document.fonts?.ready.then(medir)
     window.addEventListener('resize', medir)
-    // La leyenda cambia de alto al pasar de mes o al estrecharse la pantalla.
+    // La leyenda cambia de alto al pasar de mes o al estrecharse la pantalla, y
+    // lo de encima de la hoja (la cabecera, las fotos) puede acabar de cargar
+    // después de la primera medida: con cualquiera de las dos se vuelve a medir.
+    // Pasar de mes no cambia el alto de la página, así que no hay bucle.
     const observador = typeof ResizeObserver === 'function' ? new ResizeObserver(medir) : null
     if (pie.current) observador?.observe(pie.current)
+    observador?.observe(document.body)
     return () => { cancelAnimationFrame(primera); window.removeEventListener('resize', medir); observador?.disconnect() }
-  }, [limites, semanas])
-  const fila = altoFila ?? limites.max
+  }, [limites])
+  const total = altoRejilla ?? limites.max * SEMANAS_DE_REFERENCIA
+  // Lo que toca a cada semana: decide el tamaño de los números y qué cabe.
+  const fila = Math.floor(total / semanas)
   const grande = fila >= 96
   const mediano = fila >= 76
   const numero = {
@@ -221,6 +238,8 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
           ref={rejilla}
           sx={{
             display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+            // El alto, fijo; las semanas se lo reparten a partes iguales.
+            height: total, boxSizing: 'border-box', gridTemplateRows: `repeat(${semanas}, minmax(0, 1fr))`,
             borderTop: `1px solid ${RAYA}`, borderLeft: `1px solid ${RAYA}`,
             '& .pieza': {
               borderRight: `1px solid ${RAYA}`, borderBottom: `1px solid ${RAYA}`,
@@ -252,7 +271,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
               </Box>
             )
             return (
-              <Box key={s} sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', height: fila }}>
+              <Box key={s} sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', minHeight: 0 }}>
                 {semana.map((dia, i) => {
                   if (tarjetas.some((t) => i >= t.desde && i <= t.hasta)) return null
                   const delMes = dia.getMonth() === mes.getMonth()
