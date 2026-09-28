@@ -2258,7 +2258,123 @@
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>El ajuar de la Sagrada Titular está compuesto por piezas de extraordinario valor artístico y devocional, fruto del afecto y la generosidad de los hermanos a lo largo de la historia de la corporación. Cada elemento ha sido confeccionado con los mejores materiales y con el más fino trabajo de bordado y orfebrería.</p><p>El manto principal, de rico terciopelo, luce bordados en oro que representan motivos marianos y los emblemas del Grupo Parroquial. La corona, obra de orfebrería detallada, realza la majestad de la imagen, acompañada de joyas, rosarios y otros enseres que completan su atavío para las principales celebraciones litúrgicas y procesionales.</p><p>El ajuar se va enriqueciendo con nuevas donaciones y restauraciones que garantizan su conservación para las futuras generaciones, manteniendo vivo el esplendor con el que la Virgen de los Desamparados preside cada acto de culto y cada estación de penitencia.</p>"
+        "html": "<p>El ajuar de la Sagrada Titular está compuesto por piezas de extraordinario valor artístico y devocional, fruto del afecto y la generosidad de los hermanos a lo largo de la historia de la corporación. Cada elemento ha sido confeccionado con los mejores materiales y con el más fino trabajo de bordado y orfebrería.</p><p>El ajuar se va enriqueciendo con nuevas donaciones y restauraciones que garantizan su conservación para las futuras generaciones, manteniendo vivo el esplendor con el que la Virgen de los Desamparados preside cada acto de culto y cada estación de penitencia.</p>"
+      },
+      {
+        "tipo": "carrusel",
+        "titulo": "",
+        "piezas": [
+          {
+            "familia": "Orfebrería",
+            "titulo": "Corona",
+            "texto": "La corona, obra de orfebrería detallada, realza la majestad de la imagen: un resplandor de rayos y estrellas, rematado por la cruz, que enmarca el rostro de la Señora sobre la toca de encaje.",
+            "foto": {
+              "url": "/images/ajuar/corona.webp",
+              "alt": "La Virgen de los Desamparados de perfil, con la corona de rayos y estrellas y la toca de encaje",
+              "pie": ""
+            },
+            "datos": [
+              {
+                "etiqueta": "Resplandor",
+                "valor": "Rayos y estrellas"
+              },
+              {
+                "etiqueta": "Remate",
+                "valor": "Cruz"
+              }
+            ]
+          },
+          {
+            "familia": "Joyería",
+            "titulo": "Corazón de los siete puñales",
+            "texto": "Sobre el pecherín, el corazón traspasado por siete puñales: los siete dolores de María. A su lado, el broche con el nombre de la Virgen.",
+            "foto": {
+              "url": "/images/ajuar/corazon.webp",
+              "alt": "El corazón de plata atravesado por siete puñales, sobre el pecherín de encaje",
+              "pie": ""
+            },
+            "datos": [
+              {
+                "etiqueta": "Puñales",
+                "valor": "Siete"
+              }
+            ]
+          },
+          {
+            "familia": "Bordado",
+            "titulo": "Manto",
+            "texto": "El manto principal, de rico terciopelo, luce bordados en oro que representan motivos marianos y los emblemas del Grupo Parroquial. Así cae sobre el trono al salir a la calle.",
+            "foto": {
+              "url": "/images/ajuar/manto.webp",
+              "alt": "El manto de terciopelo azul, con bordados en oro, cayendo sobre el trono",
+              "pie": ""
+            },
+            "datos": [
+              {
+                "etiqueta": "Tejido",
+                "valor": "Terciopelo azul"
+              },
+              {
+                "etiqueta": "Bordado",
+                "valor": "Oro"
+              }
+            ]
+          },
+          {
+            "familia": "Bordado",
+            "titulo": "Saya",
+            "texto": "Tela clara y cintura bordada en oro, con la flor de lis y la rejilla de hilo; sobre ella, el encaje dorado de la toca de sobremanto.",
+            "foto": {
+              "url": "/images/ajuar/saya.webp",
+              "alt": "La saya clara con la cintura bordada en oro, entre las manos de la Virgen",
+              "pie": ""
+            },
+            "datos": [
+              {
+                "etiqueta": "Bordado",
+                "valor": "Oro"
+              }
+            ]
+          },
+          {
+            "familia": "Joyería",
+            "titulo": "Rosario",
+            "texto": "Cuentas negras facetadas que caen de la mano derecha sobre la saya, con la medalla del anagrama mariano.",
+            "foto": {
+              "url": "/images/ajuar/rosario.webp",
+              "alt": "La mano derecha de la Virgen con el rosario de cuentas negras sobre la saya",
+              "pie": ""
+            },
+            "datos": [
+              {
+                "etiqueta": "Cuentas",
+                "valor": "Negras, facetadas"
+              }
+            ]
+          },
+          {
+            "familia": "Joyería",
+            "titulo": "Perlas",
+            "texto": "La pulsera en la muñeca y el collar a la cintura, junto al puño de encaje y la manga ribeteada en oro.",
+            "foto": {
+              "url": "/images/ajuar/perlas.webp",
+              "alt": "La mano izquierda de la Virgen con la pulsera de perlas y el puño de encaje",
+              "pie": ""
+            },
+            "datos": []
+          },
+          {
+            "familia": "Altar",
+            "titulo": "La Señora, vestida",
+            "texto": "Todo el ajuar junto, como preside sus cultos: corona, toca, corazón y manto, entre la cera encendida.",
+            "foto": {
+              "url": "/images/ajuar/altar.webp",
+              "alt": "La Virgen de los Desamparados en su altar, vestida y entre velas encendidas",
+              "pie": ""
+            },
+            "datos": []
+          }
+        ]
       }
     ]
   },

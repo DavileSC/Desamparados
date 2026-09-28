@@ -76,7 +76,9 @@ const ANTES: Record<string, string[]> = {
     'Cada noviembre, el Grupo Parroquial celebra solemne triduo',
   ],
   ajuar: [
+    // Desde el carrusel de piezas (28-09-2026), el manto y la corona van una a una.
     'El ajuar de la Sagrada Titular está compuesto por piezas',
+    'Corona', 'Manto', 'Saya', 'Rosario',
     'El manto principal, de rico terciopelo',
     'El ajuar se va enriqueciendo con nuevas donaciones',
   ],
