@@ -20,7 +20,7 @@
       "enlace": "Calendario completo",
       "directoTitulo": "Ver en directo",
       "directoTexto": "Retransmisión desde la sede",
-      "imagenUrl": "/images/procesion.jpg"
+      "imagenUrl": "/images/trono-comitiva.webp"
     },
     "accesos": {
       "placa": {
@@ -1100,9 +1100,9 @@
             "titulo": "La primera salida procesional",
             "relato": "La consolidación de la corporación como Grupo Parroquial permitió dar un paso decisivo en su vida pública: la salida procesional del Sábado de Pasión, momento en el que la imagen de la Sagrada Titular recorre las calles del centro histórico de Málaga, acompañada por sus hermanos y por una numerosa feligresía.",
             "foto": {
-              "url": "/images/procesion.jpg",
-              "alt": "El trono de la Sagrada Titular entre el público, en una calle del centro",
-              "pie": "Sábado de Pasión, centro histórico de Málaga"
+              "url": "/images/trono-comitiva.webp",
+              "alt": "El trono de Nuestra Señora de los Desamparados en la calle, entre ciriales y árboles",
+              "pie": "Sábado de Pasión, por las calles de Málaga"
             },
             "tono": "granate"
           },
@@ -1792,30 +1792,30 @@
         "medios": [
           {
             "tipo": "foto",
-            "url": "/images/procesion.jpg",
+            "url": "/images/trono-comitiva.webp",
             "portada": "",
-            "alt": "Procesión del Sábado de Pasión",
+            "alt": "El trono de la Virgen en la calle, entre ciriales y árboles",
             "pie": ""
           },
           {
             "tipo": "foto",
-            "url": "/images/triduo.jpg",
+            "url": "/images/trono-candeleria.webp",
             "portada": "",
-            "alt": "Preparativos del Sábado de Pasión",
+            "alt": "La Virgen de los Desamparados en su trono, con la candelería y las flores blancas",
             "pie": ""
           },
           {
             "tipo": "foto",
-            "url": "/images/hero-thumb.jpg",
+            "url": "/images/trono-varales.webp",
             "portada": "",
-            "alt": "Sagrada Titular",
+            "alt": "Los hombres de trono en fila bajo los varales",
             "pie": ""
           },
           {
             "tipo": "foto",
-            "url": "/images/live.jpg",
+            "url": "/images/trono-cera.webp",
             "portada": "",
-            "alt": "Sede Canónica",
+            "alt": "La cera del trono con el escudo pasionista, y la Virgen detrás",
             "pie": ""
           }
         ]
@@ -1836,7 +1836,7 @@
           },
           {
             "titulo": "Enseres",
-            "descripcion": "Acompañamiento musical e insignias que acompañan a la corporación.",
+            "descripcion": "El patrimonio del Grupo Parroquial, pieza a pieza.",
             "enlace": "/sabado-de-pasion/enseres"
           }
         ]
@@ -2428,7 +2428,7 @@
   "boletines": {
     "cabecera": {
       "titulo": "Boletines",
-      "subtitulo": "Revista anual del Grupo Parroquial.",
+      "subtitulo": "El boletín informativo del Grupo Parroquial, número a número.",
       "foto": "/images/cabeceras/virgen-entre-candeleros.webp",
       "fotoAlt": "La Virgen de los Desamparados entre candeleros encendidos, ante un dosel rojo",
       "encuadre": 35
@@ -2436,15 +2436,15 @@
     "bloques": [
       {
         "tipo": "listado",
-        "titulo": "Boletines anuales",
+        "titulo": "Todos los boletines",
         "fuente": "boletines"
       }
     ]
   },
   "dossier-prensa": {
     "cabecera": {
-      "titulo": "Dossier de Prensa",
-      "subtitulo": "Recopilación de apariciones mediáticas.",
+      "titulo": "Dossier de prensa",
+      "subtitulo": "La información del Grupo Parroquial para los medios y para quien la necesite.",
       "foto": "/images/cabeceras/hombres-de-trono.webp",
       "fotoAlt": "Hombres de trono en fila bajo los varales, en la calle",
       "encuadre": 40
@@ -2452,7 +2452,7 @@
     "bloques": [
       {
         "tipo": "listado",
-        "titulo": "Apariciones mediáticas",
+        "titulo": "Dossieres",
         "fuente": "dossier"
       }
     ]
@@ -2473,19 +2473,15 @@
         "lineas": [
           {
             "etiqueta": "Email",
-            "valor": "info@desamparados.es"
-          },
-          {
-            "etiqueta": "Teléfono",
-            "valor": "+34 951 234 567"
+            "valor": "info@desamparadosmalaga.com"
           },
           {
             "etiqueta": "Dirección",
-            "valor": "Calle Ejemplo, 12, Málaga"
+            "valor": "Iglesia Parroquial Santa María Goretti, C. Corregidor Paz Guzmán, 13, Málaga"
           },
           {
             "etiqueta": "Horario de atención",
-            "valor": "Lunes a Viernes, 9:00 - 14:00"
+            "valor": "Lunes a viernes, de 18:00 a 21:00"
           }
         ]
       }

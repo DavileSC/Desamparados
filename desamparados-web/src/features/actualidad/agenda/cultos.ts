@@ -56,7 +56,7 @@ export function claseDelCartel(evento: ApiEvent) {
 export function fotoDelCartel(evento: ApiEvent): { src: string; alt: string } {
   if (evento.fotoCartel) return { src: evento.fotoCartel, alt: `Cartel: ${evento.title}` }
   return evento.type === 'PROCESION'
-    ? { src: '/images/procesion.jpg', alt: 'Nuestra Señora de los Desamparados por las calles, con sus nazarenos' }
+    ? { src: '/images/trono-comitiva.webp', alt: 'Nuestra Señora de los Desamparados en su trono, por las calles' }
     : { src: '/images/triduo.jpg', alt: 'Nuestra Señora de los Desamparados' }
 }
 

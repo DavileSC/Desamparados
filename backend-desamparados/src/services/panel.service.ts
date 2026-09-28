@@ -49,6 +49,12 @@ export interface PanelResponse {
     porEstado: { estado: EstadoPago; total: number; importe: number }[];
     /** Los devueltos del ejercicio que aún no se han reemitido: lo que de verdad queda por cobrar y reemitir. */
     devueltosPendientes: { total: number; importe: number };
+    /**
+     * Lo que sigue sin cobrarse de ejercicios anteriores (pendiente, en el banco
+     * o devuelto sin reemitir). La cifra del Inicio es la del ejercicio; esto es
+     * lo que falta para llegar a la de Contabilidad, que cuenta todos los años.
+     */
+    anterioresPorCobrar: { total: number; importe: number };
     ejercicio: { anio: number; ingresos: number; gastos: number; saldo: number };
     serieMensual: { mes: string; ingresos: number; gastos: number }[];
     porCategoria: { categoria: string; tipo: TipoTransaccion; total: number; importe: number }[];
@@ -287,7 +293,15 @@ export class PanelService {
     ]);
 
     const nombreCategoria = new Map(categorias.map((c) => [c.id, c.nombre]));
-    const devueltosDelEjercicio = await devueltosPendientes({ year: anio });
+    const [devueltosDelEjercicio, devueltosAnteriores, vivosAnteriores] = await Promise.all([
+      devueltosPendientes({ year: anio }),
+      devueltosPendientes({ year: { lt: anio } }),
+      db.recibo.aggregate({
+        where: { year: { lt: anio }, estado: { in: [EstadoPago.PENDIENTE, EstadoPago.REMESADO] } },
+        _count: { _all: true },
+        _sum: { importe: true },
+      }),
+    ]);
 
     const ingresos = euros2(
       Number(transaccionesPorTipo.find((t) => t.tipo === TipoTransaccion.INGRESO)?._sum.importe ?? 0),
@@ -363,6 +377,10 @@ export class PanelService {
           importe: euros2(Number(r._sum.importe ?? 0)),
         })),
         devueltosPendientes: devueltosDelEjercicio,
+        anterioresPorCobrar: {
+          total: vivosAnteriores._count._all + devueltosAnteriores.total,
+          importe: euros2(Number(vivosAnteriores._sum.importe ?? 0) + devueltosAnteriores.importe),
+        },
         ejercicio: { anio, ingresos, gastos, saldo: euros2(ingresos - gastos) },
         serieMensual: serieDinero,
         porCategoria: transaccionesPorCategoria.map((t) => ({

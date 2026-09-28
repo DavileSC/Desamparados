@@ -38,6 +38,8 @@ export interface PanelResponse {
     /** Los devueltos del ejercicio que aún no se han reemitido: los que de verdad quedan por cobrar. */
     /** Opcional: un backend anterior no lo manda, y el CMS no puede romperse por eso (cuenta cero). */
     devueltosPendientes?: { total: number; importe: number }
+    /** Lo que sigue sin cobrarse de ejercicios anteriores. */
+    anterioresPorCobrar?: { total: number; importe: number }
     ejercicio: { anio: number; ingresos: number; gastos: number; saldo: number }
     serieMensual: { mes: string; ingresos: number; gastos: number }[]
     porCategoria: { categoria: string; tipo: TipoMovimiento; total: number; importe: number }[]

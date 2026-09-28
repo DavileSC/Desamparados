@@ -61,7 +61,7 @@ describe('la agenda de cultos', () => {
 
   it('sin foto propia, la de la Titular o la de la procesión', () => {
     expect(fotoDelCartel(acto({})).src).toBe('/images/triduo.jpg')
-    expect(fotoDelCartel(acto({ type: 'PROCESION' })).src).toBe('/images/procesion.jpg')
+    expect(fotoDelCartel(acto({ type: 'PROCESION' })).src).toBe('/images/trono-comitiva.webp')
     expect(fotoDelCartel(acto({ fotoCartel: '/storage/public/x.jpg' })).src).toBe('/storage/public/x.jpg')
   })
 

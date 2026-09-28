@@ -178,7 +178,7 @@ function Variacion({ valor, texto }: { valor: number; texto: string }) {
 }
 
 function Baldosa({ etiqueta, valor, pie, orden, tono, variacion, children }: {
-  etiqueta: string; valor: ReactNode; pie: string; orden: number; tono: TonoTarjeta
+  etiqueta: string; valor: ReactNode; pie: ReactNode; orden: number; tono: TonoTarjeta
   variacion?: ReactNode; children?: ReactNode
 }) {
   const { superficies } = useTemaCms()
@@ -224,6 +224,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
     const fila = p.estado === 'DEVUELTO' ? panel.dinero.devueltosPendientes : panel.dinero.porEstado.find((e) => e.estado === p.estado)
     return { ...p, total: fila?.total ?? 0, importe: fila?.importe ?? 0 }
   })
+  const anteriores = panel.dinero.anterioresPorCobrar
   const porCobrar = partes.reduce((s, e) => ({ total: s.total + e.total, importe: s.importe + e.importe }), { total: 0, importe: 0 })
 
   const saldo = panel.dinero.ejercicio.saldo
@@ -272,7 +273,17 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
       >
         <Columnas valores={anios.map((a) => a.total)} etiquetas={anios.map((a) => String(a.anio))} color={segunModo('#9c8414', '#c9ab3c')} orden={1} />
       </Baldosa>
-      <Baldosa orden={2} tono="rosa" etiqueta="Por cobrar" valor={<Valor valor={porCobrar.importe} euros />} pie={contar(porCobrar.total, 'recibo', 'recibos')}>
+      <Baldosa
+        orden={2}
+        tono="rosa"
+        etiqueta={`Por cobrar ${panel.dinero.ejercicio.anio}`}
+        valor={<Valor valor={porCobrar.importe} euros />}
+        pie={<>
+          {contar(porCobrar.total, 'recibo', 'recibos')}
+          {/* Lo de otros años también se debe: dicho aquí, esta cifra y la de Contabilidad (todos los años) cuadran. */}
+          {!!anteriores?.importe && <> · y {eurosResumen(anteriores.importe)} de años anteriores</>}
+        </>}
+      >
         {porCobrar.importe > 0 && (
           <Box sx={{ mt: 1.5 }}>
             <Box

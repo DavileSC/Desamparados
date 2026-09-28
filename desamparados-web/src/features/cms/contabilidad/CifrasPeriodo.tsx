@@ -70,7 +70,7 @@ export default function CifrasPeriodo({ resumen, tipo }: { resumen: ResumenConta
         color={COLOR_POR_COBRAR}
         valor={eurosResumen(porCobrar.importe)}
         detalle={<>
-          {numero(porCobrar.recibos)} {porCobrar.recibos === 1 ? 'recibo' : 'recibos'}
+          {numero(porCobrar.recibos)} {porCobrar.recibos === 1 ? 'recibo' : 'recibos'} de todos los años
           {porCobrar.enElBanco > 0 && <>, {eurosResumen(porCobrar.enElBanco)} en el banco</>}
           {porCobrar.devueltos > 0 && <>, {eurosResumen(porCobrar.devueltos)} devueltos</>}
           {' · '}
