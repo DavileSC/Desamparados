@@ -1,5 +1,5 @@
 import { Box, Typography, useMediaQuery } from '@mui/material'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { useModoEdicion } from './modoEdicion'
 import { GOLD, GRANATE, SERIF, ceja } from '../../features/inicio/estilos'
@@ -21,6 +21,8 @@ const PUNTO_TOP = { xs: 14, md: 20 } as const
 const puntoTopPx = () => (window.innerWidth >= 900 ? PUNTO_TOP.md : PUNTO_TOP.xs)
 /** La línea de lectura: a qué altura de la pantalla (0 arriba, 1 abajo) se enciende cada época. */
 const LINEA_DE_LECTURA = 0.6
+/** Safari aún no avisa de cuándo para el scroll: allí se da por parado tras un respiro. */
+const HAY_SCROLLEND = typeof window !== 'undefined' && 'onscrollend' in window
 /** El oro apagado con el que arranca el relleno del raíl. */
 const GOLD_SUAVE = '#c4af79'
 /** El punto encendido de un hito sin tono, y su halo. */
@@ -95,6 +97,55 @@ function CronologiaVertical({ bloque, conAnclas }: { bloque: Datos; conAnclas: b
     return Math.min(1, Math.max(0, (window.innerHeight * LINEA_DE_LECTURA - primerPunto) / largo))
   })
   const escala = useSpring(llenado, { stiffness: 120, damping: 24, mass: 0.4 })
+
+  // De época en época: al parar de hacer scroll, si el principio de la época
+  // siguiente —en la dirección en que se iba— queda a menos de un tercio de
+  // pantalla, la página se desliza hasta él, con su año bajo la barra. Nunca
+  // tira hacia atrás: dentro de una época más larga que la pantalla se lee
+  // bajando con normalidad. (El scroll-snap del navegador se probó y no sirve:
+  // en una época larga devolvía cada ruedazo al principio y no se avanzaba.)
+  // En el constructor no, que se edita dentro.
+  useEffect(() => {
+    const ol = lista.current
+    if (enConstructor || !ol) return
+    let ultimaY = window.scrollY
+    let direccion = 0
+    let propio = false
+    let espera = 0
+    const alParar = () => {
+      if (propio) { propio = false; return }
+      const caja = ol.getBoundingClientRect()
+      // Solo con la cronología en pantalla.
+      if (caja.bottom < 0 || caja.top > window.innerHeight || direccion === 0) return
+      const umbral = window.innerHeight / 3
+      let mejor: number | null = null
+      for (const li of ol.children as HTMLCollectionOf<HTMLElement>) {
+        const margen = parseFloat(getComputedStyle(li).scrollMarginTop) || 0
+        const d = li.getBoundingClientRect().top - margen
+        if (Math.abs(d) < 2) return // ya está en una época
+        const hacia = direccion > 0 ? d > 0 && d <= umbral : d < 0 && d >= -umbral
+        if (hacia && (mejor === null || Math.abs(d) < Math.abs(mejor))) mejor = d
+      }
+      if (mejor === null) return
+      propio = true
+      window.scrollBy({ top: mejor, behavior: reducir ? 'auto' : 'smooth' })
+    }
+    const alMover = () => {
+      const y = window.scrollY
+      if (y !== ultimaY) direccion = Math.sign(y - ultimaY)
+      ultimaY = y
+      // Donde no hay «scrollend» (Safari), se da por parado tras un respiro.
+      window.clearTimeout(espera)
+      if (!HAY_SCROLLEND) espera = window.setTimeout(alParar, 160)
+    }
+    window.addEventListener('scroll', alMover, { passive: true })
+    window.addEventListener('scrollend', alParar)
+    return () => {
+      window.removeEventListener('scroll', alMover)
+      window.removeEventListener('scrollend', alParar)
+      window.clearTimeout(espera)
+    }
+  }, [enConstructor, reducir])
 
   return (
     <Box sx={{ position: 'relative', maxWidth: 1072, mx: 'auto' }}>
@@ -172,6 +223,7 @@ function HitoDeLaLinea({ hito, id, primero, ultimo, vivo }: HitoDeLaLineaProps) 
         columnGap: { xs: 2.5, md: 5 },
         rowGap: { xs: 2, md: 0 },
         pb: ultimo ? 0 : HUECO,
+        // El año queda justo bajo la barra fija al ajustarse (y al saltar desde el índice).
         scrollMarginTop: { xs: 80, md: 104 },
       }}
       id={id}
