@@ -50,7 +50,7 @@ export default function TarjetaPublicacion({ publicacion }: TarjetaPublicacionPr
             aria-hidden="true"
             sx={{ height: 180, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'linear-gradient(160deg, #262227 0%, #141214 100%)' }}
           >
-            <Box component="img" src="/images/escudo-grupo.png" alt="" sx={{ width: 84, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }} />
+            <Box component="img" src="/images/escudo-grupo.webp" alt="" sx={{ width: 84, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }} />
           </Box>
         ) : (
           <Box

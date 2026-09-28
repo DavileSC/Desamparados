@@ -7,7 +7,7 @@ import type { SxProps, Theme } from '@mui/material'
  * invertido y reducido, porque las barras donde se usa son todas de la misma
  * tinta oscura.
  */
-const RUTA_ESCUDO = '/images/escudo-grupo.png'
+const RUTA_ESCUDO = '/images/escudo-grupo.webp'
 
 /**
  * Se dimensiona por altura y el ancho lo pone la proporción del archivo, así

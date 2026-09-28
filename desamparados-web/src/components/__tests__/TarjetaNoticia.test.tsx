@@ -31,7 +31,7 @@ describe('TarjetaNoticia', () => {
 
   it('sin foto pone una placa con el escudo velado, y con foto la usa', () => {
     const { unmount } = renderWithProviders(<TarjetaNoticia noticia={noticiaDePrueba} />)
-    expect(screen.getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', '/images/escudo-grupo.png')
+    expect(screen.getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', '/images/escudo-grupo.webp')
     unmount()
 
     renderWithProviders(<TarjetaNoticia noticia={{ ...noticiaDePrueba, imagen: '/storage/triduo.jpg' }} />)
@@ -50,6 +50,6 @@ describe('TarjetaNoticia', () => {
     expect(screen.getByTestId('placa-noticia')).toBeInTheDocument()
     // Ya no queda la foto rota: la única imagen es el escudo de la placa.
     const imagenes = [...screen.getByRole('link').querySelectorAll('img')].map((img) => img.getAttribute('src'))
-    expect(imagenes).toEqual(['/images/escudo-grupo.png'])
+    expect(imagenes).toEqual(['/images/escudo-grupo.webp'])
   })
 })

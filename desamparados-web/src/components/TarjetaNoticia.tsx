@@ -136,7 +136,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
           >
             <Box
               component="img"
-              src="/images/escudo-grupo.png"
+              src="/images/escudo-grupo.webp"
               alt=""
               className="noticia-foto"
               sx={{ width: destacada ? '26%' : '34%', maxWidth: 220, opacity: 0.16, filter: 'grayscale(1) brightness(1.6)' }}

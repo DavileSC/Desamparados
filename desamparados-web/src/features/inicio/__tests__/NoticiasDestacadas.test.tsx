@@ -61,7 +61,7 @@ describe('NoticiasDestacadas', () => {
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/apertura.jpg')
     const sinFoto = screen.getByRole('link', { name: /solemne triduo/i })
     // La única imagen es el escudo de la placa, no una foto.
-    expect(within(sinFoto).getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', '/images/escudo-grupo.png')
+    expect(within(sinFoto).getByTestId('placa-noticia').querySelector('img')).toHaveAttribute('src', '/images/escudo-grupo.webp')
     expect(sinFoto.querySelectorAll('img')).toHaveLength(1)
   })
 
