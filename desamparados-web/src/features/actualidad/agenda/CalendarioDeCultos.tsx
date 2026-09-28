@@ -28,13 +28,12 @@ const GRIS = '#7a6c70'
 const GRANATE_TINTA = '#3a1016'
 const SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
 const SEMANA_LARGA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
-/** Lo que hay por debajo de la última semana: la leyenda, el margen de la hoja y un poco de aire. */
-const PIE = 88
+/** El aire que se deja entre el pie de la hoja y el borde de la pantalla. */
+const AIRE = 16
 /** La fila con los nombres de los días, que va dentro de lo medido. */
 const CABECERA_SEMANA = 32
-/** El alto de las semanas en escritorio: lo que quepa en la pantalla, entre estos dos. */
-const FILA_MIN = 56
-const FILA_MAX = 112
+/** El alto de las semanas: lo que quepa en la pantalla, entre estos dos (móvil y escritorio). */
+const FILA = { movil: { min: 40, max: 64 }, escritorio: { min: 44, max: 112 } }
 
 /** Al cambiar de mes, los días aparecen en una cascada corta y sin desenfoque. */
 const cae = keyframes`from { opacity: 0; transform: translateY(4px); }`
@@ -56,9 +55,9 @@ const colorDelActo = (e: ApiEvent) => (e.cartel ? GRANATE : TIPOS[e.type].color)
  * pegada a ella en escritorio y centrada en el móvil. El próximo acto lleva
  * una etiqueta granate. Para pasar de mes, el nombre del mes de al lado.
  *
- * En escritorio el mes entero cabe en la pantalla al entrar: solo salen las
- * semanas que tiene el mes y el alto de las semanas se ajusta a lo que queda
- * de pantalla por debajo.
+ * En cualquier pantalla, del móvil al escritorio, el mes entero cabe al
+ * entrar, con su leyenda: solo salen las semanas que tiene el mes y el alto de
+ * las semanas se ajusta a lo que queda de pantalla por debajo.
  */
 export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] }) {
   const tema = useTheme()
@@ -79,6 +78,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const [ancla, setAncla] = useState<HTMLElement | null>(null)
   const rejilla = useRef<HTMLDivElement>(null)
   const marco = useRef<HTMLDivElement>(null)
+  const pie = useRef<HTMLDivElement>(null)
   const [altoFila, setAltoFila] = useState<number | null>(null)
 
   const proximo = eventos[0] ?? null
@@ -112,23 +112,38 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const dias = diasDeLaRejilla(mes)
   const semanas = Math.ceil((dias.findIndex((d) => d.getDate() === 1) + new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate()) / 7)
 
-  // El alto de las semanas: lo que queda de pantalla desde donde empieza la
-  // rejilla, medido en la página (no en la vista) para que no cambie al bajar.
+  // El alto de las semanas, en todas las pantallas: lo que queda desde donde
+  // empieza la rejilla hasta el borde de abajo, menos lo que ocupa el pie de la
+  // hoja (la leyenda, que en el móvil baja a varias líneas) y su margen. Se
+  // mide en la página (no en la vista) para que no cambie al bajar.
+  const limites = estrecho ? FILA.movil : FILA.escritorio
   useEffect(() => {
-    if (estrecho) return
     const medir = () => {
       const el = marco.current
-      if (!el) return
+      const hoja = el?.closest<HTMLElement>('[data-hoja]')
+      if (!el || !hoja) return
       const arriba = el.getBoundingClientRect().top + window.scrollY
-      const sitio = window.innerHeight - arriba - CABECERA_SEMANA - PIE
-      setAltoFila(Math.max(FILA_MIN, Math.min(FILA_MAX, Math.floor(sitio / semanas))))
+      const margenDeAbajo = parseFloat(getComputedStyle(hoja).paddingBottom) || 0
+      const resto = CABECERA_SEMANA + (pie.current?.offsetHeight ?? 0) + margenDeAbajo + AIRE
+      // Lo mejor: que quepa nada más entrar, sin bajar.
+      const alEntrar = Math.floor((window.innerHeight - arriba - resto) / semanas)
+      // Si no hay sitio (un móvil bajo), que al menos quepa la hoja entera
+      // debajo de la barra de la web, al bajar hasta ella.
+      const barra = Math.max(0, ...[...document.querySelectorAll('.MuiAppBar-root')].map((b) => b.getBoundingClientRect().height))
+      const cabeceraDeLaHoja = el.getBoundingClientRect().top - hoja.getBoundingClientRect().top
+      const conLaHoja = Math.floor((window.innerHeight - barra - AIRE - cabeceraDeLaHoja - resto) / semanas)
+      const alto = alEntrar >= limites.min ? alEntrar : conLaHoja
+      setAltoFila(Math.max(limites.min, Math.min(limites.max, alto)))
     }
     const primera = requestAnimationFrame(medir)
     document.fonts?.ready.then(medir)
     window.addEventListener('resize', medir)
-    return () => { cancelAnimationFrame(primera); window.removeEventListener('resize', medir) }
-  }, [estrecho, semanas])
-  const fila = estrecho ? 50 : altoFila ?? FILA_MAX
+    // La leyenda cambia de alto al pasar de mes o al estrecharse la pantalla.
+    const observador = typeof ResizeObserver === 'function' ? new ResizeObserver(medir) : null
+    if (pie.current) observador?.observe(pie.current)
+    return () => { cancelAnimationFrame(primera); window.removeEventListener('resize', medir); observador?.disconnect() }
+  }, [limites, semanas])
+  const fila = altoFila ?? limites.max
   const grande = fila >= 96
   const mediano = fila >= 76
   const numero = {
@@ -155,7 +170,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
 
   const nombre = nombreDelMes(mes, false)
   const pasar = {
-    fontFamily: 'inherit', gap: 0.75, minHeight: 44, px: 1.25, fontSize: { xs: 12.5, md: 13.5 }, fontWeight: 600,
+    fontFamily: 'inherit', gap: 0.75, minHeight: 44, px: { xs: 0.75, md: 1.25 }, fontSize: { xs: 12.5, md: 13.5 }, fontWeight: 600,
     letterSpacing: '0.16em', textTransform: 'uppercase', color: GRANATE, whiteSpace: 'nowrap',
     '&:hover .mes': { textDecoration: 'underline', textUnderlineOffset: '5px', textDecorationThickness: '1px' },
     '&.Mui-disabled': { color: GRANATE, opacity: 0.3 },
@@ -168,24 +183,24 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const clases = [...new Set(eventos.filter((e) => !e.cartel).map((e) => e.type))]
 
   return (
-    <Box sx={{ bgcolor: PAPEL, color: TINTA, borderRadius: '3px', p: { xs: '18px 12px 12px', md: '36px 44px 24px' } }}>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px 24px', mb: { xs: 1.5, md: 2.5 } }}>
+    <Box data-hoja sx={{ bgcolor: PAPEL, color: TINTA, borderRadius: '3px', p: { xs: '14px 12px 10px', md: '32px 44px 20px' } }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '0 24px', mb: { xs: 0.5, md: 2 } }}>
         <Typography
           component="h3"
           aria-live="polite"
           aria-label={`${nombre} ${mes.getFullYear()}`}
-          sx={{ fontFamily: CORMORANT, fontWeight: 500, fontSize: { xs: 44, md: 68 }, lineHeight: 0.95, color: GRANATE, whiteSpace: 'nowrap' }}
+          sx={{ fontFamily: CORMORANT, fontWeight: 500, fontSize: { xs: 34, sm: 44, md: 68 }, lineHeight: 0.95, color: GRANATE, whiteSpace: 'nowrap' }}
         >
           <span aria-hidden>{nombre}</span>
-          <Box component="span" aria-hidden sx={{ fontStyle: 'italic', fontWeight: 400, fontSize: { xs: 20, md: 26 }, color: GRIS, ml: 1.5 }}>de {mes.getFullYear()}</Box>
+          <Box component="span" aria-hidden sx={{ display: { xs: 'none', sm: 'inline' }, fontStyle: 'italic', fontWeight: 400, fontSize: { xs: 20, md: 26 }, color: GRIS, ml: 1.5 }}>de {mes.getFullYear()}</Box>
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', mx: { xs: -1.25, md: 0 }, width: { xs: 'calc(100% + 20px)', md: 'auto' }, justifyContent: { xs: 'space-between', md: 'flex-end' } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: -1.25, md: 0 } }}>
           <ButtonBase aria-label={`Mes anterior: ${anterior}`} disabled={mes <= primero} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, -1)) }} sx={pasar}>
-            <span aria-hidden>‹</span><span className="mes">{anterior}</span>
+            <span aria-hidden>‹</span><MesDeAlLado nombre={anterior} />
           </ButtonBase>
           <Box component="span" aria-hidden sx={{ display: { xs: 'none', md: 'block' }, width: '1px', height: 16, bgcolor: RAYA }} />
           <ButtonBase aria-label={`Mes siguiente: ${siguiente}`} disabled={mes >= ultimo} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, 1)) }} sx={pasar}>
-            <span className="mes">{siguiente}</span><span aria-hidden>›</span>
+            <MesDeAlLado nombre={siguiente} /><span aria-hidden>›</span>
           </ButtonBase>
         </Box>
       </Box>
@@ -348,8 +363,8 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 24px', mt: 1.25 }}>
-        <Box component="ul" aria-label="Leyenda" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 18px', fontSize: 13, color: TINTA_SUAVE }}>
+      <Box ref={pie} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '2px 24px', pt: 1.25 }}>
+        <Box component="ul" aria-label="Leyenda" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: { xs: '2px 14px', md: '4px 18px' }, fontSize: { xs: 12, md: 13 }, color: TINTA_SUAVE }}>
           <Box component="li" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
             <Box component="span" aria-hidden sx={{ width: 14, height: 14, bgcolor: SOLEMNE, border: '1px solid #d9c2b8' }} />
             Culto solemne
@@ -360,13 +375,13 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
               {TIPOS[c].nombre}
             </Box>
           ))}
-          <Box component="li" sx={{ color: GRIS }}>Pulsa un acto para verlo.</Box>
+          <Box component="li" sx={{ display: { xs: 'none', md: 'list-item' }, color: GRIS }}>Pulsa un acto para verlo.</Box>
         </Box>
         {proximo && (
           <ButtonBase
             data-abre-acto
             onClick={() => abrir(proximo)}
-            sx={{ fontFamily: 'inherit', fontSize: 13.5, gap: 1.25, textAlign: 'left', minHeight: 40, color: TINTA, '&:hover .titulo': { textDecoration: 'underline' }, '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: 2 } }}
+            sx={{ fontFamily: 'inherit', fontSize: { xs: 12.5, md: 13.5 }, gap: 1.25, textAlign: 'left', minHeight: 40, color: TINTA, '&:hover .titulo': { textDecoration: 'underline' }, '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: 2 } }}
           >
             <Box component="span" aria-hidden sx={{ flex: 'none', width: 8, height: 8, bgcolor: GRANATE }} />
             <span>
@@ -412,6 +427,19 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
 }
 
 /**
+ * El mes al que lleva un botón: entero en pantallas anchas y en tres letras en
+ * el móvil, donde va en la misma línea que el mes que se ve.
+ */
+function MesDeAlLado({ nombre }: { nombre: string }) {
+  return (
+    <>
+      <Box component="span" className="mes" sx={{ display: { xs: 'none', sm: 'inline' } }}>{nombre}</Box>
+      <Box component="span" className="mes" sx={{ display: { xs: 'inline', sm: 'none' } }}>{nombre.slice(0, 3)}</Box>
+    </>
+  )
+}
+
+/**
  * La hoja mientras llegan los actos: el mismo papel, los días de la semana y
  * cinco semanas de casillas vacías, con el mes y los números en huesos. Las
  * semanas tienen el alto de siempre en el móvil y uno medio en escritorio (la
@@ -419,14 +447,14 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
  */
 export function CalendarioDeCultosEsqueleto() {
   return (
-    <Box sx={{ bgcolor: PAPEL, borderRadius: '3px', p: { xs: '18px 12px 12px', md: '36px 44px 24px' } }}>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px 24px', mb: { xs: 1.5, md: 2.5 } }}>
-        <Box sx={{ height: { xs: 42, md: 65 }, display: 'flex', alignItems: 'center' }}>
-          <Hueso papel sx={{ width: { xs: 180, md: 280 }, height: { xs: 30, md: 46 } }} />
+    <Box sx={{ bgcolor: PAPEL, borderRadius: '3px', p: { xs: '14px 12px 10px', md: '32px 44px 20px' } }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '0 24px', mb: { xs: 0.5, md: 2 } }}>
+        <Box sx={{ height: { xs: 36, md: 65 }, display: 'flex', alignItems: 'center' }}>
+          <Hueso papel sx={{ width: { xs: 150, md: 280 }, height: { xs: 26, md: 46 } }} />
         </Box>
         <Box sx={{ height: 44, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Hueso papel sx={{ width: 90, height: 12 }} />
-          <Hueso papel sx={{ width: 100, height: 12 }} />
+          <Hueso papel sx={{ width: { xs: 36, sm: 90 }, height: 12 }} />
+          <Hueso papel sx={{ width: { xs: 36, sm: 100 }, height: 12 }} />
         </Box>
       </Box>
       <Box aria-hidden sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', height: CABECERA_SEMANA, alignItems: 'center' }}>
@@ -439,7 +467,7 @@ export function CalendarioDeCultosEsqueleto() {
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderTop: `1px solid ${RAYA}`, borderLeft: `1px solid ${RAYA}`, '& > *': { borderRight: `1px solid ${RAYA}`, borderBottom: `1px solid ${RAYA}` } }}>
         {Array.from({ length: 35 }, (_, i) => (
-          <Box key={i} sx={{ height: { xs: 50, md: 96 }, p: { xs: '4px 6px', md: '8px 12px' } }}>
+          <Box key={i} sx={{ height: { xs: 48, md: 88 }, p: { xs: '4px 6px', md: '8px 12px' } }}>
             <Hueso papel sx={{ width: { xs: 14, md: 22 }, height: { xs: 14, md: 22 } }} />
           </Box>
         ))}

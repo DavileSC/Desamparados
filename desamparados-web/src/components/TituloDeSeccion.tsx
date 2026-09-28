@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
 import { enlaceConFlecha } from './estiloDeBoton'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
@@ -7,6 +8,8 @@ interface TituloDeSeccionProps {
   actionLabel?: string
   actionHref?: string
   centered?: boolean
+  /** Algo propio a la derecha del título en vez del enlace (un botón, por ejemplo). */
+  accion?: ReactNode
 }
 
 export default function TituloDeSeccion({
@@ -14,6 +17,7 @@ export default function TituloDeSeccion({
   actionLabel,
   actionHref = '#',
   centered = false,
+  accion,
 }: TituloDeSeccionProps) {
   return (
     <Box
@@ -40,6 +44,7 @@ export default function TituloDeSeccion({
           {actionLabel} <ArrowForwardIcon aria-hidden />
         </Box>
       )}
+      {accion}
     </Box>
   )
 }

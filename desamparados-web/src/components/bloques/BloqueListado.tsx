@@ -11,7 +11,7 @@ import { Lineas } from '../esqueleto/Hueso'
 import Paginador from '../Paginador'
 import { noticiasDePortada, archivoDeNoticias } from '../../lib/api/noticias'
 import { traerProximosEventos } from '../../lib/api/agenda'
-import AgendaDeCultos from '../../features/actualidad/agenda/AgendaDeCultos'
+import AgendaDeCultos, { SuscribirseALaAgenda } from '../../features/actualidad/agenda/AgendaDeCultos'
 import { type Pagina } from '../../hooks/useListadoPaginado'
 import { useCargarMas } from '../../hooks/useCargarMas'
 import { usePublicacionesPaginadas } from '../../features/publicaciones/usePublicacionesPaginadas'
@@ -89,8 +89,9 @@ const LISTADOS: Record<FuenteListado, (props: PropsListado) => ReactNode> = {
  * enlace va solo y a la derecha: un `TituloDeSeccion` vacío dejaría un encabezado
  * sin texto, que un lector de pantalla anuncia igual.
  */
-function Encabezado({ titulo, enlace }: { titulo: string; enlace?: { texto: string; ruta: string } }) {
-  if (titulo) return <TituloDeSeccion title={titulo} actionLabel={enlace?.texto} actionHref={enlace?.ruta} />
+function Encabezado({ titulo, enlace, accion }: { titulo: string; enlace?: { texto: string; ruta: string }; accion?: ReactNode }) {
+  if (titulo) return <TituloDeSeccion title={titulo} actionLabel={enlace?.texto} actionHref={enlace?.ruta} accion={accion} />
+  if (accion) return <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>{accion}</Box>
   if (!enlace) return null
   return (
     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
@@ -296,12 +297,13 @@ function ListaDeEventos({ eventos, columnas }: { eventos: Acto[]; columnas: numb
 
 /**
  * La agenda entera, en su calendario de pared (AgendaDeCultos): sin paginar,
- * porque un curso cabe en una página.
+ * porque un curso cabe en una página. La suscripción va junto al título, a la
+ * vista nada más entrar.
  */
 function Agenda({ titulo }: PropsListado) {
   return (
     <>
-      <Encabezado titulo={titulo} />
+      <Encabezado titulo={titulo} accion={<SuscribirseALaAgenda />} />
       <AgendaDeCultos />
     </>
   )
