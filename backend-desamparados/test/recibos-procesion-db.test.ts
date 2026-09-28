@@ -731,7 +731,7 @@ test('Turnos: crear un turno con horas de otro día o al revés es un 400 con mo
     // Un reparto de la Pasión después de su salida: la papeleta caería en la del año que ya pasó.
     const tardio = await crear({ fecha: '2030-10-04', horaInicio: '2030-10-04T18:00:00+02:00', horaFin: '2030-10-04T21:00:00+02:00' });
     assert.equal(tardio.status, 400);
-    assert.match((await tardio.json() as { error: string }).error, /Para la de 2031/);
+    assert.match((await tardio.json() as { error: string }).error, /para la de 2031/);
 
     const alDiaSiguiente = await crear({ fecha: '2030-02-15', horaInicio: '2030-02-15T22:00:00+01:00', horaFin: '2030-02-16T00:30:00+01:00' });
     assert.equal(alDiaSiguiente.status, 400);

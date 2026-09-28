@@ -55,20 +55,27 @@ const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', '
 /** «28 de marzo», de un `AAAA-MM-DD`. */
 const diaYMes = (dia: string) => `${Number(dia.slice(8, 10))} de ${MESES[Number(dia.slice(5, 7)) - 1]}`;
 
+/** El día anterior a uno dado, en `AAAA-MM-DD`. */
+const anterior = (dia: string) => {
+  const [a, m, d] = dia.split('-').map(Number);
+  return new Date(Date.UTC(a, m - 1, d - 1)).toISOString().slice(0, 10);
+};
+
 /**
  * Por qué un día de reparto (`AAAA-MM-DD`) no vale para su salida, o `null`.
- * La mesa apunta cada papeleta en el año en que se reparte, así que el reparto
- * va dentro del año de su salida y antes de ella: el de la Pasión, antes de su
- * Sábado de Pasión; el del Rosario, como muy tarde en octubre. Un reparto de
- * la Pasión en octubre contaría las papeletas en la salida que ya pasó.
+ * El de la Pasión va del 1 de enero a la víspera del Sábado de Pasión de ese
+ * año; el del Rosario vespertino, en octubre. La mesa apunta cada papeleta en
+ * el año en que se reparte: un reparto de la Pasión en otoño la contaba en la
+ * salida que ya pasó.
  */
-export function motivoRepartoFueraDeSuAnio(dia: string, salida: 'PASION' | 'ROSARIO'): string | null {
+export function motivoRepartoFueraDeTemporada(dia: string, salida: 'PASION' | 'ROSARIO'): string | null {
   const anio = Number(dia.slice(0, 4));
   if (salida === 'PASION') {
-    const sabado = sabadoDePasion(anio);
-    if (dia < sabado) return null;
-    return `El reparto de la Pasión va antes de su salida, dentro del mismo año: el Sábado de Pasión de ${anio} es el ${diaYMes(sabado)}. Para la de ${anio + 1}, pon un día desde el 1 de enero hasta el ${diaYMes(sabadoDePasion(anio + 1))}.`;
+    if (dia < sabadoDePasion(anio)) return null;
+    // Pasada la salida, la siguiente es la del año que viene.
+    return `El reparto de la Pasión va antes de la salida, dentro del mismo año: para la de ${anio + 1}, pon un día del 1 de enero al ${diaYMes(anterior(sabadoDePasion(anio + 1)))} de ${anio + 1}.`;
   }
-  if (Number(dia.slice(5, 7)) <= 10) return null;
-  return `El reparto del Rosario vespertino va antes de su salida, en octubre como muy tarde. Para el de ${anio + 1}, pon un día de ${anio + 1}.`;
+  if (Number(dia.slice(5, 7)) === 10) return null;
+  const suyo = Number(dia.slice(5, 7)) < 10 ? anio : anio + 1;
+  return `El reparto del Rosario vespertino va en octubre: pon un día del 1 al 31 de octubre de ${suyo}.`;
 }

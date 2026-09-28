@@ -10,7 +10,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../audito
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { motivoTurnoInvalido } from '../../domain/datos-procesion.js';
 import { DATOS_SALIDA } from '../../domain/salidas.js';
-import { motivoRepartoFueraDeSuAnio } from '../../domain/curso.js';
+import { motivoRepartoFueraDeTemporada } from '../../domain/curso.js';
 import { diaMadrid } from '../../domain/contabilidad.js';
 import { PlazoPapeletasService } from './plazo.service';
 
@@ -86,11 +86,11 @@ export class TurnosService {
     const motivo = motivoTurnoInvalido(data.fecha, fechaInicio, fechaFin);
     if (motivo) throw new HttpError(motivo);
 
-    // 3. Dentro del año de su salida y antes de ella: la mesa apunta la papeleta
-    // en el año en que se reparte.
+    // 3. En su temporada: la Pasión, del 1 de enero a la víspera de su salida;
+    // el Rosario, en octubre. La mesa apunta la papeleta en el año en que se reparte.
     const salida = data.salida ?? 'PASION';
-    const fueraDeSuAnio = motivoRepartoFueraDeSuAnio(diaMadrid(new Date(data.fecha)), salida);
-    if (fueraDeSuAnio) throw new HttpError(fueraDeSuAnio);
+    const fueraDeTemporada = motivoRepartoFueraDeTemporada(diaMadrid(new Date(data.fecha)), salida);
+    if (fueraDeTemporada) throw new HttpError(fueraDeTemporada);
 
     // 4. Lo guardamos, con su acto en la Agenda pública.
     const turno = await db.turno.create({

@@ -1,7 +1,7 @@
 // test/curso.test.ts
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { motivoRepartoFueraDeSuAnio, rangoDelCurso, sabadoDePasion } from '../src/domain/curso.js';
+import { motivoRepartoFueraDeTemporada, rangoDelCurso, sabadoDePasion } from '../src/domain/curso.js';
 
 describe('el curso, de un Sábado de Pasión al siguiente', () => {
   test('el Sábado de Pasión es ocho días antes de Pascua', () => {
@@ -31,24 +31,23 @@ describe('el curso, de un Sábado de Pasión al siguiente', () => {
   });
 });
 
-describe('los días de reparto, dentro del año de su salida', () => {
-  test('la Pasión se reparte antes de su Sábado de Pasión, y el día mismo ya no', () => {
-    assert.equal(motivoRepartoFueraDeSuAnio('2027-02-12', 'PASION'), null);
-    assert.equal(motivoRepartoFueraDeSuAnio('2027-03-19', 'PASION'), null);
-    assert.match(motivoRepartoFueraDeSuAnio('2027-03-20', 'PASION') ?? '', /Sábado de Pasión de 2027 es el 20 de marzo/);
+describe('los días de reparto, en su temporada', () => {
+  test('la Pasión se reparte del 1 de enero a la víspera de su Sábado de Pasión', () => {
+    assert.equal(motivoRepartoFueraDeTemporada('2027-01-01', 'PASION'), null);
+    assert.equal(motivoRepartoFueraDeTemporada('2027-03-19', 'PASION'), null);
+    // El Sábado de Pasión de 2027 es el 20 de marzo: ese día ya no.
+    assert.match(motivoRepartoFueraDeTemporada('2027-03-20', 'PASION') ?? '', /para la de 2028, pon un día del 1 de enero al 7 de abril de 2028/);
   });
 
   test('un reparto de la Pasión en otoño se rechaza y dice cuándo ponerlo', () => {
     // La mesa lo apuntaría en la salida de 2026, que ya pasó.
-    assert.match(
-      motivoRepartoFueraDeSuAnio('2026-10-01', 'PASION') ?? '',
-      /Para la de 2027, pon un día desde el 1 de enero hasta el 20 de marzo/,
-    );
+    assert.match(motivoRepartoFueraDeTemporada('2026-10-01', 'PASION') ?? '', /para la de 2027, pon un día del 1 de enero al 19 de marzo de 2027/);
   });
 
-  test('el Rosario se reparte hasta octubre', () => {
-    assert.equal(motivoRepartoFueraDeSuAnio('2026-09-20', 'ROSARIO'), null);
-    assert.equal(motivoRepartoFueraDeSuAnio('2026-10-31', 'ROSARIO'), null);
-    assert.match(motivoRepartoFueraDeSuAnio('2026-11-02', 'ROSARIO') ?? '', /en octubre como muy tarde/);
+  test('el Rosario se reparte solo en octubre', () => {
+    assert.equal(motivoRepartoFueraDeTemporada('2026-10-01', 'ROSARIO'), null);
+    assert.equal(motivoRepartoFueraDeTemporada('2026-10-31', 'ROSARIO'), null);
+    assert.match(motivoRepartoFueraDeTemporada('2026-09-20', 'ROSARIO') ?? '', /1 al 31 de octubre de 2026/);
+    assert.match(motivoRepartoFueraDeTemporada('2026-11-02', 'ROSARIO') ?? '', /1 al 31 de octubre de 2027/);
   });
 });
