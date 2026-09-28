@@ -19,6 +19,8 @@ const DURACION_PLAY_MS = 60_000
 /** La cámara que sigue al trono: cerca e inclinada, con los edificios en relieve. */
 const CAMARA_CERCA = { zoom: 16.6, pitch: 52, bearing: -12 }
 const GRANATE_CLARO = '#fc858a'
+/** El granate de la marca, aclarado para leerse sobre el fondo oscuro (5,4:1). */
+const BURDEOS_LEGIBLE = '#e06a78'
 /**
  * El alto del mapa y, en escritorio, también el de la lista de al lado. Con la
  * frase de encima y la cabecera, el bloque entero cabe en la pantalla con
@@ -379,11 +381,10 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             key={`${parada.hora}-${parada.lugar}-${i}`}
             sx={{
               display: 'grid', gridTemplateColumns: '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'baseline',
-              py: 2.25, px: 1.5, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
-              opacity: enConstructor || encendida ? 1 : 0.4,
-              backgroundColor: encendida ? GRANATE : 'transparent',
-              boxShadow: encendida ? `inset 3px 0 0 ${GRANATE_CLARO}` : 'inset 3px 0 0 transparent',
-              transition: 'opacity .5s ease, background-color .5s ease, box-shadow .5s ease',
+              py: 2.25, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
+              opacity: enConstructor || encendida ? 1 : 0.4, transition: 'opacity .5s ease',
+              // Solo el texto va en burdeos, aclarado para que se lea sobre el fondo oscuro.
+              '& > span': { transition: 'color .5s ease', ...(encendida && { color: BURDEOS_LEGIBLE }) },
             }}
           >
             {parada.hora !== '' ? (
@@ -395,7 +396,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
                 hora por confirmar
               </Typography>
             )}
-            <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, color: encendida ? '#fff' : 'text.primary', transition: 'color .5s ease' }}>{parada.lugar}</Typography>
+            <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, color: 'text.primary' }}>{parada.lugar}</Typography>
           </Box>
           )
         })}
