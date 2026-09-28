@@ -72,7 +72,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const circular = linea.length > 1 && metros(linea[0], linea[linea.length - 1]) < 40
 
   const contenedor = useRef<HTMLDivElement>(null)
-  /** La caja con scroll propio de la lista: es la que se desliza con el trono. */
+  /** La caja de la lista: solo se desliza con el trono, nunca a mano. */
   const caja = useRef<HTMLDivElement>(null)
   const lista = useRef<HTMLOListElement>(null)
   const mapa = useRef<Mapa | null>(null)
@@ -360,14 +360,12 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
         )}
       </Box>
 
-      {/* La lista, con scroll propio y del alto del mapa (en el móvil, debajo y
-          más baja): mientras anda el trono se desliza sola; en pausa, se puede
-          recorrer a mano, sin barra de scroll. */}
+      {/* La lista, del alto del mapa (en el móvil, debajo y más baja): solo la
+          mueve el trono. Ni la rueda ni el dedo la desplazan; el scroll pasa a
+          la página. */}
       <Box ref={caja} sx={{
-        position: 'relative', overflowY: 'auto', overscrollBehavior: 'contain',
+        position: 'relative', overflowY: 'hidden',
         height: ALTO_LISTA, minHeight: ALTO_MINIMO_LISTA,
-        // Se puede recorrer con la rueda o el dedo, pero sin barra a la vista.
-        scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
       }}>
       <Box component="ol" ref={lista} sx={{ listStyle: 'none', m: 0, p: 0 }}>
         {paradas.map((parada, i) => (
