@@ -83,11 +83,12 @@ const tituloColumna = {
 } as const
 
 // Relleno y margen negativo a la vez: la maqueta no se mueve, pero el dedo
-// tiene 28 px de alto donde antes tenía 20 (en móvil se fallaba el toque).
+// tiene más alto que la letra. En el móvil, 40 px (con 28 aún se fallaba el
+// toque); en el ordenador, con ratón, bastan 28.
 const enlace = {
   display: 'inline-block',
-  py: '4px',
-  my: '-4px',
+  py: { xs: '10px', md: '4px' },
+  my: { xs: '-10px', md: '-4px' },
   color: 'text.secondary',
   fontSize: 14,
   lineHeight: 1.4,
@@ -185,7 +186,7 @@ export default function PieDePagina() {
               {grupos.map((grupo) => (
                 <Box key={grupo.titulo} component="nav" aria-label={grupo.titulo}>
                   <Typography component="h2" sx={tituloColumna}>{grupo.titulo}</Typography>
-                  <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                  <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 1.25 } }}>
                     {grupo.rutas.flatMap((ruta) => {
                       const label = entradasMenu.get(ruta)
                       return label

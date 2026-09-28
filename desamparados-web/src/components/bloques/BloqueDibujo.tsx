@@ -60,7 +60,7 @@ export default function BloqueDibujo({ bloque }: { bloque: Datos }) {
             color: 'text.secondary', fontSize: { xs: 16, md: 17 }, lineHeight: 1.8, maxWidth: '60ch',
             '& p': { mb: 2.5 }, '& strong': { color: 'text.primary', fontWeight: 600 },
             '& h2, & h3': { color: 'text.primary', mt: 3, mb: 1.5 },
-            '& > :first-child': { mt: 0 }, '& > :last-child': { mb: 0 },
+            '& > :not(* + *)': { mt: 0 }, '& > :last-child': { mb: 0 },
           }}
           dangerouslySetInnerHTML={{ __html: limpiarHtml(bloque.html) }}
         />

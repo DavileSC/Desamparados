@@ -51,7 +51,7 @@ export default function BloqueFotoTexto({ bloque }: { bloque: Datos }) {
           sx={{
             color: 'text.secondary', lineHeight: 1.8,
             '& p': { mb: 2.5 }, '& h2, & h3': { color: 'text.primary', mt: 3, mb: 1.5 },
-            '& > :first-child': { mt: 0 }, '& > :last-child': { mb: 0 },
+            '& > :not(* + *)': { mt: 0 }, '& > :last-child': { mb: 0 },
           }}
           dangerouslySetInnerHTML={{ __html: limpiarHtml(bloque.html) }}
         />

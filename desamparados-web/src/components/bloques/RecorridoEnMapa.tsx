@@ -289,6 +289,9 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   }
 
   const actual = alcanzada >= 0 ? paradas[alcanzada] : null
+  // Sin ninguna hora, «hora por confirmar» en cada calle recargaba la lista:
+  // se dice una vez arriba y la lista va solo con las calles.
+  const sinHoras = paradas.every((parada) => parada.hora === '')
   const botonMapa = {
     width: 34, height: 34, color: '#fff', backgroundColor: 'rgba(7, 6, 8, .85)', border: '1px solid rgba(204, 196, 201, .3)',
     '&:hover': { backgroundColor: 'rgba(7, 6, 8, .95)', borderColor: GOLD },
@@ -298,7 +301,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     <Box sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto' }}>
       <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5, color: '#e3d8bf', fontSize: 14 }}>
         <PlayArrowIcon sx={{ fontSize: 20, color: GOLD }} aria-hidden="true" />
-        Dale al play para ver el recorrido andar por las calles.
+        Dale al play para ver el recorrido andar por las calles.{sinHoras && ' Las horas, por confirmar.'}
       </Typography>
     <Box
       sx={{
@@ -380,14 +383,14 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             // El itinerario repite lugares: la clave necesita el índice.
             key={`${parada.hora}-${parada.lugar}-${i}`}
             sx={{
-              display: 'grid', gridTemplateColumns: '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'center',
+              display: 'grid', gridTemplateColumns: sinHoras ? 'minmax(0, 1fr)' : '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'center',
               py: 2.25, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
               opacity: enConstructor || encendida ? 1 : 0.4, transition: 'opacity .5s ease',
               // Solo el texto va en burdeos, aclarado para que se lea sobre el fondo oscuro.
               '& > span': { transition: 'color .5s ease', ...(encendida && { color: BURDEOS_LEGIBLE }) },
             }}
           >
-            {parada.hora !== '' ? (
+            {sinHoras ? null : parada.hora !== '' ? (
               <Typography component="span" sx={{ fontSize: { xs: 24, md: 28 }, fontWeight: 300, lineHeight: 1.1, color: '#e3d8bf', fontVariantNumeric: 'tabular-nums' }}>
                 {parada.hora}
               </Typography>

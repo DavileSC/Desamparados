@@ -37,7 +37,8 @@ export default function BloqueTexto({ bloque }: { bloque: Datos }) {
         '& img': { maxWidth: '100%', height: 'auto', borderRadius: 1 },
         // El primer párrafo traía el margen de arriba del navegador y el último
         // el suyo de abajo: se sumaban al espacio entre bloques, que ya lo pone la página.
-        '& > :first-child': { mt: 0 }, '& > :last-child': { mb: 0 },
+        // «:not(* + *)» es el primer hijo: con :first-child, Emotion avisa en la consola.
+        '& > :not(* + *)': { mt: 0 }, '& > :last-child': { mb: 0 },
         // En dos columnas, un título no se parte entre las dos.
         ...(dosColumnas && { columnCount: { xs: 1, md: 2 }, columnGap: 6, '& h2, & h3, & img': { breakInside: 'avoid' } }),
         ...(siDe(bloque, 'capitular') && {
