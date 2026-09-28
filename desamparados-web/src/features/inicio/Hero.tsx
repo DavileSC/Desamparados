@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useContext, useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Box, IconButton, Typography } from '@mui/material'
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
@@ -11,7 +11,7 @@ import Boton from '../../components/Boton'
 import { Revela } from '../../components/SeccionAnimada'
 import { CURVA_ENTRADA } from '../../components/entrada'
 import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
-import { usePortada, useTextosPortada } from './useContenidoPortada'
+import { BorradorPortadaContext, usePortada, useTextosPortada } from './useContenidoPortada'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
 const PARALLAX_X = 14
@@ -30,6 +30,9 @@ export default function Hero() {
   // siempre» corre sobre el hook, y con la copia aquí este bloque —el que más
   // se ve— se quedaba justo fuera de esa red.
   const textos = useTextosPortada()
+  // En la vista previa del CMS el título no es el de la pantalla: la pantalla
+  // ya tiene el suyo, «Portada», y dos títulos principales confunden al lector.
+  const enVistaPrevia = useContext(BorradorPortadaContext) !== null
 
   // Las fotos las decide el CMS, y para ellas hace falta el `status` de la
   // consulta: hasta que llega la lista no se pinta ninguna, porque si se
@@ -259,7 +262,7 @@ export default function Hero() {
           <Typography
             id="hero-title"
             variant="h1"
-            component="h1"
+            component={enVistaPrevia ? 'p' : 'h1'}
             sx={{
               color: 'text.primary',
               mb: 2.5,

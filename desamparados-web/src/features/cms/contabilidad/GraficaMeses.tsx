@@ -120,11 +120,15 @@ export default function GraficaMeses({ serie, tipo }: { serie: ResumenContable['
           })()}
         </Box>
       )}
-      {/* La misma serie en tabla, para quien no ve la gráfica. */}
-      <Box component="table" sx={oculto}>
-        <caption>{porMeses ? 'Ingresos y gastos por mes' : 'Ingresos y gastos por año'}</caption>
-        <thead><tr><th scope="col">{porMeses ? 'Mes' : 'Año'}</th>{series.map((s) => <th key={s} scope="col">{s === 'ingresos' ? 'Ingresos' : 'Gastos'}</th>)}</tr></thead>
-        <tbody>{puntos.map((p) => <tr key={p.clave}><th scope="row">{etiquetaPuntoLarga(p.clave)}</th>{series.map((s) => <td key={s}>{euros(p[s])}</td>)}</tr>)}</tbody>
+      {/* La misma serie en tabla, para quien no ve la gráfica. Dentro de una
+          caja oculta: una tabla no respeta el ancho de 1 px y ensanchaba la
+          página en el móvil. */}
+      <Box sx={oculto}>
+        <table>
+          <caption>{porMeses ? 'Ingresos y gastos por mes' : 'Ingresos y gastos por año'}</caption>
+          <thead><tr><th scope="col">{porMeses ? 'Mes' : 'Año'}</th>{series.map((s) => <th key={s} scope="col">{s === 'ingresos' ? 'Ingresos' : 'Gastos'}</th>)}</tr></thead>
+          <tbody>{puntos.map((p) => <tr key={p.clave}><th scope="row">{etiquetaPuntoLarga(p.clave)}</th>{series.map((s) => <td key={s}>{euros(p[s])}</td>)}</tr>)}</tbody>
+        </table>
       </Box>
     </Paper>
   )

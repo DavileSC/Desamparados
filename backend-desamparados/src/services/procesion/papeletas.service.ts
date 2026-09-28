@@ -128,7 +128,7 @@ export class PapeletasService {
 
   /**
    * El recibo de la salida de una solicitud, ya cobrado (o exento si es 0 €),
-   * con el concepto de siempre: «Papeleta Sitio 2027» o «Donativo Rosario
+   * con el concepto de siempre: «Papeleta de sitio 2027» o «Donativo Rosario
    * vespertino 2026». Si ya se le anuló una este año, sale como reemisión.
    */
   static async reciboDeSalidaEnTransaccion(

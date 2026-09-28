@@ -151,7 +151,7 @@ test('inscribir crea la solicitud, sin papeleta ni recibo; sin nada que pagar va
     const papeleta = await db.papeletaSitio.findUniqueOrThrow({ where: { id: hecha.papeletaId }, include: { recibo: true } });
     assert.equal(papeleta.puesto, 'Trono');
     assert.equal(papeleta.recibo.estado, EstadoPago.EXENTO);
-    assert.equal(papeleta.recibo.concepto, `Papeleta Sitio ${YEAR}`);
+    assert.equal(papeleta.recibo.concepto, `Papeleta de sitio ${YEAR}`);
     assert.equal(await db.transaccion.count({ where: { hermanoId: h.id } }), 0, 'sin dinero, sin asiento');
     const recogida = await db.solicitud.findUniqueOrThrow({ where: { id: r.solicitudId } });
     assert.equal(recogida.estado, 'RECOGIDA');

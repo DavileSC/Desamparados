@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Box, Chip, CircularProgress, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import AddIcon from '@mui/icons-material/Add'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import TarjetaCristal from '../../../components/TarjetaCristal'
@@ -72,7 +71,6 @@ export default function FamiliaPage() {
               </Typography>
             </Box>
             <Boton onClick={() => setAnadiendo('menor')}>
-              <AddIcon fontSize="small" style={{ marginRight: 8 }} />
               Apuntar a un menor
             </Boton>
           </Box>

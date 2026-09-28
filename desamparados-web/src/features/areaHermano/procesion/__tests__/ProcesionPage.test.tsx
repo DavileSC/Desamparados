@@ -90,7 +90,7 @@ describe('ProcesionPage', () => {
   it('una solicitud dice lo que pidió, su día, y si está pendiente de pago; se puede cancelar', async () => {
     const user = userEvent.setup()
     const cita = { id: 77, turno: { id: 1, salida: 'PASION' as const, fecha: DIAS[0].fecha, horaInicio: DIAS[0].horaInicio, horaFin: DIAS[0].horaFin } }
-    const solicitud = { id: 4, puesto: 'Nazareno', donativo: null, pendiente: 0, concepto: 'Papeleta Sitio 2027', pagada: false, cita }
+    const solicitud = { id: 4, puesto: 'Nazareno', donativo: null, pendiente: 0, concepto: 'Papeleta de sitio 2027', pagada: false, cita }
     const llamadas = servidor({
       salidas: salidas({ abierto: true, dias: DIAS }),
       fichas: [ficha(1, 'Antonio', { cuotasPendientes: [{ id: 30, year: 2027, concepto: 'Cuota 2027', importe: 20, estado: 'PENDIENTE' }] }, { solicitud })],

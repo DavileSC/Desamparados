@@ -13,7 +13,7 @@ export default function CabeceraSeccion({ titulo, subtitulo, children }: { titul
         <Typography variant="h2" component="h1">{titulo}</Typography>
         {subtitulo && <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{subtitulo}</Typography>}
       </div>
-      {children && <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>{children}</Stack>}
+      {children && <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' }, '& > *': { flex: { xs: '1 1 auto', sm: 'none' } }, '& .MuiButton-root': { whiteSpace: 'nowrap' } }}>{children}</Stack>}
     </Stack>
   )
 }

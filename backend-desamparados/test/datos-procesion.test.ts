@@ -56,22 +56,22 @@ describe('D4 · precios de la configuración', () => {
 
 describe('D2 · concepto del recibo al reinscribir', () => {
   test('la primera papeleta del año lleva el concepto de siempre', () => {
-    assert.equal(conceptoPapeleta(2026, []), 'Papeleta Sitio 2026');
-    assert.equal(conceptoPapeleta(2026, ['Cuota anual']), 'Papeleta Sitio 2026');
+    assert.equal(conceptoPapeleta(2026, []), 'Papeleta de sitio 2026');
+    assert.equal(conceptoPapeleta(2026, ['Cuota anual']), 'Papeleta de sitio 2026');
   });
 
   test('tras una anulación, la nueva sale como reemisión y no choca con la clave única', () => {
-    assert.equal(conceptoPapeleta(2026, ['Papeleta Sitio 2026']), 'Papeleta Sitio 2026 (reemisión 2)');
+    assert.equal(conceptoPapeleta(2026, ['Papeleta de sitio 2026']), 'Papeleta de sitio 2026 (reemisión 2)');
     assert.equal(
-      conceptoPapeleta(2026, ['Papeleta Sitio 2026', 'Papeleta Sitio 2026 (reemisión 2)']),
-      'Papeleta Sitio 2026 (reemisión 3)',
+      conceptoPapeleta(2026, ['Papeleta de sitio 2026', 'Papeleta de sitio 2026 (reemisión 2)']),
+      'Papeleta de sitio 2026 (reemisión 3)',
     );
   });
 
   test('ocupa el primer hueco libre si falta alguna reemisión intermedia', () => {
     assert.equal(
-      conceptoPapeleta(2026, ['Papeleta Sitio 2026', 'Papeleta Sitio 2026 (reemisión 3)']),
-      'Papeleta Sitio 2026 (reemisión 2)',
+      conceptoPapeleta(2026, ['Papeleta de sitio 2026', 'Papeleta de sitio 2026 (reemisión 3)']),
+      'Papeleta de sitio 2026 (reemisión 2)',
     );
   });
 });
@@ -187,7 +187,7 @@ describe('Turnos · horas del mismo día (de Madrid) y en orden', () => {
 
 describe('D2 · conceptos comparados como los compara MariaDB (utf8mb4_unicode_ci)', () => {
   test('sin mayúsculas, sin tildes, con la ñ igual a la n y sin espacios finales', () => {
-    assert.equal(claveConcepto('Papeleta Sitio 2026 (Reemisión 2)  '), 'papeleta sitio 2026 (reemision 2)');
+    assert.equal(claveConcepto('Papeleta de sitio 2026 (Reemisión 2)  '), 'papeleta de sitio 2026 (reemision 2)');
     assert.equal(claveConcepto('Año'), claveConcepto('ano'));
     assert.equal(claveConcepto('PAPELETA'), claveConcepto('papeleta'));
   });
@@ -196,10 +196,10 @@ describe('D2 · conceptos comparados como los compara MariaDB (utf8mb4_unicode_c
     assert.notEqual(claveConcepto(' papeleta'), claveConcepto('papeleta'));
   });
 
-  test('un «papeleta sitio 2026» en minúsculas ocupa el hueco de la primera emisión', () => {
-    // Con un Set sensible a mayúsculas se proponía «Papeleta Sitio 2026», que
+  test('un «papeleta de sitio 2026» en minúsculas ocupa el hueco de la primera emisión', () => {
+    // Con un Set sensible a mayúsculas se proponía «Papeleta de sitio 2026», que
     // chocaba con la clave única y la inscripción daba un 409 sin explicación.
-    assert.equal(conceptoPapeleta(2026, ['papeleta sitio 2026']), 'Papeleta Sitio 2026 (reemisión 2)');
-    assert.equal(conceptoPapeleta(2026, ['Papeleta Sitio 2026', 'PAPELETA SITIO 2026 (REEMISION 2) ']), 'Papeleta Sitio 2026 (reemisión 3)');
+    assert.equal(conceptoPapeleta(2026, ['papeleta de sitio 2026']), 'Papeleta de sitio 2026 (reemisión 2)');
+    assert.equal(conceptoPapeleta(2026, ['Papeleta de sitio 2026', 'PAPELETA DE SITIO 2026 (REEMISION 2) ']), 'Papeleta de sitio 2026 (reemisión 3)');
   });
 });

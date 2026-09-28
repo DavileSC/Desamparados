@@ -31,7 +31,7 @@ export const DATOS_SALIDA: Record<Salida, DatosDeSalida> = {
     nombre: 'Sábado de Pasión',
     conRopa: true,
     clavePlazo: 'papeletas_abiertas',
-    concepto: 'Papeleta Sitio',
+    concepto: 'Papeleta de sitio',
     tipoRecibo: TipoRecibo.PAPELETA_SITIO,
     importeLibre: false,
   },
@@ -65,7 +65,7 @@ export const PUESTOS_POR_SALIDA: Record<Salida, readonly PuestoDelCatalogo[]> = 
 
 /**
  * Concepto del recibo de una papeleta que no choque con los que el hermano ya
- * tiene ese año: «Papeleta Sitio 2026», y si ya se le anuló una, «Papeleta
+ * tiene ese año: «Papeleta de sitio 2026», y si ya se le anuló una, «Papeleta
  * Sitio 2026 (reemisión 2)». El recibo de la papeleta anulada se queda (la
  * contabilidad conserva el rastro) y ocupa su concepto en la clave única.
  */

@@ -1172,14 +1172,6 @@
             "enlace": "/desamparados"
           },
           {
-            "cuando": "Por anunciar",
-            "mes": 0,
-            "titulo": "Besamanos",
-            "texto": "Los devotos y hermanos pueden venerar de cerca la imagen de la Sagrada Titular.",
-            "boton": "",
-            "enlace": ""
-          },
-          {
             "cuando": "Diciembre",
             "mes": 12,
             "titulo": "Navidad",
@@ -1194,6 +1186,14 @@
             "texto": "Nuestra salida procesional por las calles de Málaga, el momento culminante del año cofrade del Grupo Parroquial.",
             "boton": "El Sábado de Pasión",
             "enlace": "/sabado-de-pasion"
+          },
+          {
+            "cuando": "Por anunciar",
+            "mes": 0,
+            "titulo": "Besamanos",
+            "texto": "Los devotos y hermanos pueden venerar de cerca la imagen de la Sagrada Titular.",
+            "boton": "",
+            "enlace": ""
           },
           {
             "cuando": "Cada mes",
@@ -1867,7 +1867,7 @@
           },
           {
             "titulo": "Un conjunto armonioso",
-            "texto": "Cada detalle del trono ha sido pensado para crear un conjunto armonioso que acompañe la imagen de la Virgen. Sus líneas, inspiradas en la tradición cofrade malagueña, se enriquecen con apliques dorados, lámparas de cristal y un exorno floral que varía cada año para vestir de manera única el paso de palio.",
+            "texto": "Cada detalle del trono ha sido pensado para crear un conjunto armonioso que acompañe la imagen de la Virgen. Sus líneas, inspiradas en la tradición cofrade malagueña, se enriquecen con apliques dorados, lámparas de cristal y un exorno floral que varía cada año para vestir de manera única el trono.",
             "foto": {
               "url": "/images/trono-cera.webp",
               "alt": "Cirios y flores blancas del exorno del trono",
@@ -1876,7 +1876,7 @@
           },
           {
             "titulo": "El andar de la Virgen",
-            "texto": "El trono es portado por una cuadrilla de costaleros que, con esfuerzo y devoción, hacen posible que la Virgen avance entre el pueblo. Su andar pausado y solemne marca el ritmo de la procesión, generando momentos de gran emoción en cada una de las calles que recorre.",
+            "texto": "El trono lo llevan sus hombres de trono, que con esfuerzo y devoción hacen posible que la Virgen avance entre el pueblo. Su andar pausado y solemne marca el ritmo de la procesión, generando momentos de gran emoción en cada una de las calles que recorre.",
             "foto": {
               "url": "/images/trono-varales.webp",
               "alt": "Los portadores, en fila junto al trono",
@@ -2242,7 +2242,7 @@
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>La devoción a Nuestra Señora de los Desamparados tiene sus raíces en la tradición mariana valenciana, extendiéndose posteriormente por todo el territorio español. En nuestro Grupo Parroquial, la Virgen de los Desamparados es acogida como Madre y Titular, patrona de aquellos que se sienten solos, olvidados o necesitados de misericordia.</p><p>A lo largo de los años, la imagen titular ha sido venerada en la Sede Canónica de la corporación, siendo centro de los cultos más solemnes y de la piedad de hermanos y devotos. Su rostro sereno y su manto protector invitan a la confianza, recordando que nadie queda desamparado bajo la mirada de María.</p><p>Cada noviembre, el Grupo Parroquial celebra solemne triduo en su honor, culminando con un devoto besamanos que congrega a fieles de toda la ciudad. Estas celebraciones son expresión viva de la fe puesta en la Virgen y del compromiso de la corporación con su advocación.</p>"
+        "html": "<p>La devoción a Nuestra Señora de los Desamparados tiene sus raíces en la tradición mariana valenciana, extendiéndose posteriormente por todo el territorio español. En nuestro Grupo Parroquial, la Virgen de los Desamparados es acogida como Madre y Titular, patrona de aquellos que se sienten solos, olvidados o necesitados de misericordia.</p><p>A lo largo de los años, la imagen titular ha sido venerada en la sede canónica de la corporación, siendo centro de los cultos más solemnes y de la piedad de hermanos y devotos. Su rostro sereno y su manto protector invitan a la confianza, recordando que nadie queda desamparado bajo la mirada de María.</p><p>Cada noviembre, el Grupo Parroquial celebra solemne triduo en su honor, culminando con un devoto besamanos que congrega a fieles de toda la ciudad. Estas celebraciones son expresión viva de la fe puesta en la Virgen y del compromiso de la corporación con su advocación.</p>"
       }
     ]
   },

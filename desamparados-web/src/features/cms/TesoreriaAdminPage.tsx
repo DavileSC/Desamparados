@@ -235,10 +235,8 @@ export default function TesoreriaAdminPage() {
   return <>
     <Helmet><title>Tesorería | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Tesorería">
-      <Stack direction="row" spacing={1}>
-        <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => abrirNuevo()}>Nuevo recibo</Button>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCuotas}>Generar cuotas</Button>
-      </Stack>
+      <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => abrirNuevo()}>Nuevo recibo</Button>
+      <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCuotas}>Generar cuotas</Button>
     </CabeceraSeccion>
     <Tabs
       value={vista}

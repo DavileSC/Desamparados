@@ -85,7 +85,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
           <Box component="span" sx={{ display: 'block', fontFamily: CORMORANT, fontWeight: 500, fontVariantNumeric: 'lining-nums', fontSize: fin ? { xs: 21, sm: 24 } : 31, lineHeight: 1, whiteSpace: 'nowrap', color: GRANATE, [PANTALLA_ALTA]: { fontSize: fin ? 24 : 34 } }}>
             {fin ? `${evento.start.getDate()}–${fin.getDate()}` : evento.start.getDate()}
           </Box>
-          <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 10, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
+          <Box component="span" sx={{ display: 'block', mt: 0.5, fontSize: 11, letterSpacing: fin ? '0.06em' : '0.16em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: TENUE }}>
             {fin ? `${diaSemana(evento.start)}–${diaSemana(fin)}` : diaSemana(evento.start)}
           </Box>
         </Box>
@@ -105,7 +105,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
             px: 1,
             py: 0.375,
             borderRadius: '99px',
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 600,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',

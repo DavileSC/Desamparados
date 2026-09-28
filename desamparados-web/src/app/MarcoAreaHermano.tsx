@@ -69,7 +69,7 @@ export default function MarcoAreaHermano() {
             >
               DESAMPARADOS
             </Typography>
-            <Typography variant="overline" sx={{ color: 'text.secondary', fontSize: '10px' }}>
+            <Typography variant="overline" sx={{ color: 'text.secondary', fontSize: '11px' }}>
               Área de hermanos
             </Typography>
           </Box>

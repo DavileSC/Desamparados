@@ -265,7 +265,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                   boxShadow: { xs: `inset 0 0 0 2px ${GRANATE}`, md: 'none' },
                 }}
               >
-                <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, bgcolor: GRANATE, color: PAPEL, borderRadius: '2px', p: '3px 6px', fontSize: 9.5, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', lineHeight: 1.2 }}>
+                <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, bgcolor: GRANATE, color: PAPEL, borderRadius: '2px', p: '3px 6px', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.2 }}>
                   Próximo
                 </Box>
               </Box>
@@ -311,7 +311,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                               '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: 1 },
                             }}
                           >
-                            <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, flex: 'none', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.08em', color: colorDelActo(e), fontVariantNumeric: 'tabular-nums' }}>{hora(e)}</Box>
+                            <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, flex: 'none', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: colorDelActo(e), fontVariantNumeric: 'tabular-nums' }}>{hora(e)}</Box>
                             <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, fontWeight: 500, lineHeight: 1.3, color: e.cartel ? GRANATE_TINTA : TINTA }}>{e.title}</Box>
                           </ButtonBase>
                         ))}
@@ -351,7 +351,7 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
                       </Box>
                       <Box component="span" sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: '2px', textAlign: 'left', minWidth: 0 }}>
                         {grande && (
-                          <Box component="span" sx={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.08em', color: colorDelActo(e), fontVariantNumeric: 'tabular-nums' }}>{hora(e)}</Box>
+                          <Box component="span" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: colorDelActo(e), fontVariantNumeric: 'tabular-nums' }}>{hora(e)}</Box>
                         )}
                         <Box
                           component="span"

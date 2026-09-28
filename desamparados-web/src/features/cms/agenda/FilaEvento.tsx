@@ -37,7 +37,7 @@ export default function FilaEvento({ evento, enPortada, volver, onBorrar }: Prop
         <Box sx={{ fontSize: fin ? 16 : 24, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap', color: superficies.enlace }}>
           {fin ? `${inicio.getDate()}–${fin.getDate()}` : inicio.getDate()}
         </Box>
-        <Box sx={{ mt: 0.5, fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>
+        <Box sx={{ mt: 0.5, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>
           {fin ? `${diaSemana(inicio)}–${diaSemana(fin)}` : diaSemana(inicio)}
         </Box>
       </Box>

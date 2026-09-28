@@ -326,8 +326,8 @@ export function generarRecibos(hermanos: HermanoDemo[], anio: number, momento: D
                 dniHermano: hermano.dni,
                 year: ejercicio,
                 // El mismo concepto que pone la mesa (domain/salidas.ts): si no, el
-                // libro de caja mezcla «Papeleta Sitio» y «Papeleta de sitio».
-                concepto: `Papeleta Sitio ${ejercicio}`,
+                // libro de caja mezcla dos formas del mismo concepto.
+                concepto: `Papeleta de sitio ${ejercicio}`,
                 importe: precio,
                 tipo: 'PAPELETA_SITIO',
                 fechaEmision: emisionPapeleta,

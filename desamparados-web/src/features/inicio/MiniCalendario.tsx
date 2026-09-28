@@ -61,7 +61,7 @@ export default function MiniCalendario({ mes, hoy, eventos, abiertoId, puedeRetr
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: 0.25, [PANTALLA_ALTA]: { rowGap: 0.5 }, textAlign: 'center' }}>
         {DIAS_SEMANA.map(letra => (
-          <Box key={letra} aria-hidden="true" sx={{ fontSize: 10, letterSpacing: '0.12em', color: TENUE, pb: 0.75 }}>
+          <Box key={letra} aria-hidden="true" sx={{ fontSize: 11, letterSpacing: '0.12em', color: TENUE, pb: 0.75 }}>
             {letra}
           </Box>
         ))}

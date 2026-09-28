@@ -51,7 +51,7 @@ const FICHA: FichaDeMesa = {
 }
 
 const SOLICITUD: NonNullable<FichaDeMesa['solicitud']> = {
-  id: 99, puesto: 'Nazareno', observaciones: null, origen: 'WEB', donativo: null, pendiente: 0, concepto: 'Papeleta Sitio 2027',
+  id: 99, puesto: 'Nazareno', observaciones: null, origen: 'WEB', donativo: null, pendiente: 0, concepto: 'Papeleta de sitio 2027',
   cita: { fecha: '2027-03-08T00:00:00.000Z', horaInicio: '2027-03-08T17:00:00.000Z' },
 }
 
@@ -409,7 +409,7 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     const papeleta = {
       id: 5, year: 2027, puesto: 'Nazareno', puestoPedido: 'Nazareno', tramo: null, observaciones: null,
       numTunicaAsignada: '140-107', numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: 'ROPERO' as const, cingulo: 'DEBIDO' as const,
-      recibo: { id: 1, concepto: 'Papeleta Sitio 2027', importe: 0, estado: 'EXENTO' as const, metodoPago: null, tipo: 'PAPELETA_SITIO' },
+      recibo: { id: 1, concepto: 'Papeleta de sitio 2027', importe: 0, estado: 'EXENTO' as const, metodoPago: null, tipo: 'PAPELETA_SITIO' },
     }
     const llamadas = servidor({ apuntados: { ...APUNTADOS, faltanCingulos: 1 }, ficha: { ...FICHA, papeleta, requisitos: AL_DIA } })
     renderWithProviders(<MesaProcesionPage />)
@@ -430,7 +430,7 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     const papeleta = {
       id: 5, year: 2027, puesto: 'Nazareno', puestoPedido: 'Nazareno', tramo: null, observaciones: null,
       numTunicaAsignada: '140-107', numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: 'ROPERO' as const, cingulo: 'DEVUELTO' as const,
-      recibo: { id: 1, concepto: 'Papeleta Sitio 2027', importe: 0, estado: 'EXENTO' as const, metodoPago: null, tipo: 'PAPELETA_SITIO' },
+      recibo: { id: 1, concepto: 'Papeleta de sitio 2027', importe: 0, estado: 'EXENTO' as const, metodoPago: null, tipo: 'PAPELETA_SITIO' },
     }
     const otraPersona = { id: 3, numero: '140-107', talla: '140', estado: 'PRESTADA' as const, hermano: { id: 5, nombre: 'Lucía', apellidos: 'Rosillo Mansidao' } }
     const llamadas = servidor({

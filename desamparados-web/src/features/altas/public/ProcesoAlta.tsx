@@ -51,7 +51,8 @@ export default function ProcesoAlta() {
         <Box
           component="a"
           href={`mailto:${site.contacto.email}`}
-          sx={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3, '&:hover': { color: GOLD } }}
+          // Alto para el dedo en el móvil, sin mover la línea.
+          sx={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3, '&:hover': { color: GOLD }, display: 'inline-block', py: { xs: '12px', md: 0 }, my: { xs: '-12px', md: 0 } }}
         >
           {site.contacto.email}
         </Box>

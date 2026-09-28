@@ -81,9 +81,9 @@ describe('lo que queda de la salida', () => {
 
 describe('cada salida con su recibo', () => {
   test('la Pasión lleva el concepto de siempre y el Rosario, el suyo', () => {
-    assert.equal(conceptoDeSalida('PASION', 2026, []), 'Papeleta Sitio 2026');
+    assert.equal(conceptoDeSalida('PASION', 2026, []), 'Papeleta de sitio 2026');
     assert.equal(conceptoDeSalida('ROSARIO', 2026, []), 'Donativo Rosario vespertino 2026');
-    assert.equal(conceptoDeSalida('ROSARIO', 2026, ['Papeleta Sitio 2026']), 'Donativo Rosario vespertino 2026');
+    assert.equal(conceptoDeSalida('ROSARIO', 2026, ['Papeleta de sitio 2026']), 'Donativo Rosario vespertino 2026');
     assert.equal(conceptoDeSalida('ROSARIO', 2026, ['donativo rosario vespertino 2026']), 'Donativo Rosario vespertino 2026 (reemisión 2)');
   });
 

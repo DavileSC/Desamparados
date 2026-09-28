@@ -61,7 +61,7 @@ const ANTES: Record<string, string[]> = {
   trono: [
     'El trono de Nuestra Señora de los Desamparados es una de las piezas',
     'Cada detalle del trono ha sido pensado',
-    'El trono es portado por una cuadrilla de costaleros',
+    'El trono lo llevan sus hombres de trono',
     'Alrededor del trono se organizan los cargos de la procesión',
   ],
   enseres: [

@@ -9,6 +9,9 @@ import {
 } from './horario'
 import type { BloqueHorario as Datos } from '../../lib/api/contenido'
 
+/** En el móvil, el teléfono y el correo con 40 px de alto para el dedo; el relleno no mueve la línea. */
+const AL_DEDO = { display: 'inline-block', py: { xs: '10px', md: 0 }, my: { xs: '-10px', md: 0 } } as const
+
 /** Cada cuánto se rehace la cuenta: a la vista basta con que el minuto no se quede atrás. */
 const CADA = 20_000
 
@@ -160,7 +163,7 @@ function Fila({ etiqueta, hoy = false, children }: { etiqueta: string; hoy?: boo
         {hoy && (
           <Box component="span" sx={{
             display: 'inline-block', ml: 1.25, px: 0.9, borderRadius: 999, border: '1px solid', borderColor: 'secondary.main',
-            color: 'secondary.main', fontSize: 10, lineHeight: '18px', letterSpacing: '0.18em', verticalAlign: 'middle',
+            color: 'secondary.main', fontSize: 11, lineHeight: '18px', letterSpacing: '0.18em', verticalAlign: 'middle',
           }}>
             hoy
           </Box>
@@ -178,10 +181,10 @@ function Fila({ etiqueta, hoy = false, children }: { etiqueta: string; hoy?: boo
 function Valor({ texto }: { texto: string }) {
   const limpio = texto.trim()
   if (/^\+?[\d\s]{9,}$/.test(limpio)) {
-    return <EnlaceMui href={`tel:${limpio.replace(/\s/g, '')}`} color="inherit" underline="hover">{limpio}</EnlaceMui>
+    return <EnlaceMui href={`tel:${limpio.replace(/\s/g, '')}`} color="inherit" underline="hover" sx={AL_DEDO}>{limpio}</EnlaceMui>
   }
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio)) {
-    return <EnlaceMui href={`mailto:${limpio}`} color="inherit" underline="hover" sx={{ wordBreak: 'break-all' }}>{limpio}</EnlaceMui>
+    return <EnlaceMui href={`mailto:${limpio}`} color="inherit" underline="hover" sx={{ ...AL_DEDO, wordBreak: 'break-all' }}>{limpio}</EnlaceMui>
   }
   return <>{limpio}</>
 }

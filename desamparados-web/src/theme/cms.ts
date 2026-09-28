@@ -272,6 +272,11 @@ export function crearTemaCms(modo: ModoCms): Theme {
     typography: TIPOGRAFIA_CMS,
     palette: { mode: modo === 'claro' ? 'light' : 'dark', ...paletaCms(modo) },
     components: {
+      // La caja de scroll de una tabla hace de referencia a lo que va con
+      // posición absoluta dentro (los rótulos solo para lectores de pantalla,
+      // como «Acciones»): si no, se escapaban de ella y ensanchaban la página
+      // entera en el móvil.
+      MuiTableContainer: { styleOverrides: { root: { position: 'relative' } } },
       MuiPaper: {
         styleOverrides: {
           root: {
@@ -318,6 +323,11 @@ export const temaCms: Theme = createTheme(
   {
     typography: TIPOGRAFIA_CMS,
     components: {
+      // La caja de scroll de una tabla hace de referencia a lo que va con
+      // posición absoluta dentro (los rótulos solo para lectores de pantalla,
+      // como «Acciones»): si no, se escapaban de ella y ensanchaban la página
+      // entera en el móvil.
+      MuiTableContainer: { styleOverrides: { root: { position: 'relative' } } },
       MuiPaper: {
         styleOverrides: {
           root: ({ theme: t }: { theme: Theme }) => ({
