@@ -99,13 +99,15 @@ describe('AgendaPage', () => {
     renderWithProviders(<AgendaPage />)
 
     await mes('Septiembre 2026')
-    expect(screen.getByRole('button', { name: 'Mes anterior' })).toBeDisabled()
-    await usuario.click(screen.getByRole('button', { name: 'Mes siguiente' }))
+    // Cada botón dice a qué mes lleva.
+    expect(screen.getByRole('button', { name: 'Mes siguiente: Octubre' })).toHaveTextContent('Octubre')
+    expect(screen.getByRole('button', { name: /^Mes anterior/ })).toBeDisabled()
+    await usuario.click(screen.getByRole('button', { name: /^Mes siguiente/ }))
     expect(await mes('Octubre 2026')).toBeInTheDocument()
-    await usuario.click(screen.getByRole('button', { name: 'Mes siguiente' }))
+    await usuario.click(screen.getByRole('button', { name: /^Mes siguiente/ }))
     expect(await mes('Noviembre 2026')).toBeInTheDocument()
     // El cabildo es lo último: no hay más meses.
-    expect(screen.getByRole('button', { name: 'Mes siguiente' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Mes siguiente/ })).toBeDisabled()
 
     // El triduo es una sola tarjeta de sus tres días.
     expect(screen.queryByRole('button', { name: /^4 de noviembre/ })).not.toBeInTheDocument()

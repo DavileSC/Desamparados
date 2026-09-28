@@ -2,79 +2,59 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Box, ButtonBase, ClickAwayListener, Dialog, Popper, Typography, useMediaQuery } from '@mui/material'
 import { keyframes, useTheme } from '@mui/material/styles'
 import { useReducedMotion } from 'framer-motion'
+import '@fontsource/cormorant-garamond/500.css'
+import '@fontsource/cormorant-garamond/600.css'
+import '@fontsource/cormorant-garamond/400-italic.css'
+import '@fontsource/cormorant-garamond/500-italic.css'
 import type { ApiEvent } from '../../../lib/api/agenda'
-import { GOLD, GRANATE, SERIF } from '../../inicio/estilos'
+import { GRANATE } from '../../inicio/estilos'
 import { TIPOS, diasDeLaRejilla, inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from '../../inicio/agenda'
-import { claveDelDia, cuandoEnCartel, fotoDelCartel, primerDiaEnElMes, repartoDeLaSemana, ultimoMes } from './cultos'
+import { claveDelDia, cuandoEnCartel, hora, primerDiaEnElMes, repartoDeLaSemana, ultimoMes } from './cultos'
 import VentanaDelActo from './VentanaDelActo'
 import Hueso from '../../../components/esqueleto/Hueso'
 
-const NOCHE = '#161316'
-const ORO_BORDE = 'rgba(222,199,43,0.4)'
-const FILETE = 'rgba(222,199,43,0.18)'
-const ORO_SUAVE = '#c9b25a'
-const ROJO = '#e0705c'
-/** El burdeos de la casa aclarado para el fondo oscuro, el mismo que usa el CMS. */
-const BURDEOS_CLARO = TIPOS.CULTO.oscuro
-/** El granate de los días solemnes, suave: que se note el día sin teñir la hoja. */
-const GRANATE_SUAVE = 'rgba(110,24,34,0.3)'
+/** La letra de almanaque: el nombre del mes, los números y los cultos solemnes. */
+export const CORMORANT = '"Cormorant Garamond", Georgia, serif'
+export const PAPEL = '#f3eee5'
+/** Los días de otro mes, un poco más apagados que la hoja. */
+const PAPEL_FUERA = '#ece5d9'
+/** Los días de culto solemne: un rosa viejo que se nota sin teñir la hoja. */
+const SOLEMNE = '#ead9d0'
+const RAYA = '#d9cfc1'
+export const TINTA = '#231d20'
+const TINTA_SUAVE = '#5b4f53'
+const GRIS = '#7a6c70'
+/** El granate oscuro de los títulos solemnes, sobre el rosa. */
+const GRANATE_TINTA = '#3a1016'
 const SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
+const SEMANA_LARGA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
 /** Lo que hay por debajo de la última semana: la leyenda, el margen de la hoja y un poco de aire. */
 const PIE = 88
 /** La fila con los nombres de los días, que va dentro de lo medido. */
-const CABECERA_SEMANA = 28
+const CABECERA_SEMANA = 32
 /** El alto de las semanas en escritorio: lo que quepa en la pantalla, entre estos dos. */
 const FILA_MIN = 56
-const FILA_MAX = 110
+const FILA_MAX = 112
 
-const cae = keyframes`from { opacity: 0; transform: translateY(8px); filter: blur(6px); }`
-/** Los días solemnes, con un filete burdeos que se enciende y se apaga despacio. */
-const respira = keyframes`
-  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255,159,166,0.15); }
-  50% { box-shadow: inset 0 0 0 1px rgba(255,159,166,0.55), inset 0 0 22px rgba(255,159,166,0.14); }
-`
-const letra = keyframes`from { opacity: 0; transform: translateY(-6px); filter: blur(8px); }`
-const gira = keyframes`
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-`
+/** Al cambiar de mes, los días aparecen en una cascada corta y sin desenfoque. */
+const cae = keyframes`from { opacity: 0; transform: translateY(4px); }`
+
+/** El color de un acto sobre el papel: el granate, si es solemne; si no, el de su clase. */
+const colorDelActo = (e: ApiEvent) => (e.cartel ? GRANATE : TIPOS[e.type].color)
 
 /**
- * La luz burdeos que da vueltas por el borde del próximo acto. El anillo es
- * la franja de 2 px que deja la máscara; dentro gira un abanico de color.
- */
-function Anillo({ quieto }: { quieto: boolean }) {
-  return (
-    <Box
-      aria-hidden
-      sx={{
-        position: 'absolute', inset: 0, p: '2px', overflow: 'hidden', pointerEvents: 'none', backgroundColor: GRANATE,
-        WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor',
-        mask: 'linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)',
-        '&::before': {
-          content: '""', position: 'absolute', left: '50%', top: '50%', width: '260%', aspectRatio: '1',
-          transform: 'translate(-50%, -50%)',
-          background: `conic-gradient(transparent 0 58%, ${GRANATE} 70%, ${BURDEOS_CLARO} 88%, #fff 90%, transparent 100%)`,
-          animation: quieto ? 'none' : `${gira} 3.2s linear infinite`,
-        },
-      }}
-    />
-  )
-}
-
-/**
- * La Agenda en un calendario de pared: el mes en una hoja oscura con filetes
- * de oro, los días sin nada con el número solo perfilado y los días con acto
- * en oro macizo; los cultos solemnes, con su foto.
+ * La Agenda en una hoja de almanaque: el mes en papel crema con una rejilla
+ * fina, los números en letra romana y el granate del Grupo en los domingos y
+ * en los cultos solemnes, que tiñen su día de rosa viejo. Cada acto lleva su
+ * hora en el color de su clase.
  *
  * Un acto que va solo es una tarjeta que ocupa sus días seguidos (un triduo,
  * tres casillas sin rayas por dentro y su nombre una vez). Los que coinciden
  * se quedan cada uno en sus casillas, con una línea por acto en cada día.
  *
  * Al pulsar un acto se abre en una ventana que crece desde su tarjeta:
- * pegada a ella en escritorio y centrada en el móvil. El próximo acto lleva una
- * luz burdeos que recorre su borde, y la leyenda de debajo dice qué significa.
- * Al cambiar de mes, el nombre entra letra a letra y los días caen en cascada.
+ * pegada a ella en escritorio y centrada en el móvil. El próximo acto lleva
+ * una etiqueta granate. Para pasar de mes, el nombre del mes de al lado.
  *
  * En escritorio el mes entero cabe en la pantalla al entrar: solo salen las
  * semanas que tiene el mes y el alto de las semanas se ajusta a lo que queda
@@ -152,20 +132,16 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   const grande = fila >= 96
   const mediano = fila >= 76
   const numero = {
-    display: 'block', fontSize: { xs: 20, md: grande ? 40 : mediano ? 32 : 26 }, fontWeight: { xs: 700, md: 800 }, lineHeight: 1.1,
-    color: 'transparent', WebkitTextStroke: '0.8px rgba(222,199,43,0.35)',
+    display: 'block', fontFamily: CORMORANT, fontSize: { xs: 20, md: grande ? 30 : mediano ? 26 : 22 }, fontWeight: 500, lineHeight: 1,
+    fontVariantNumeric: 'lining-nums', color: TINTA,
   } as const
-  // El filete que respira comparte `animation` con la cascada del cambio de mes,
-  // que va por la rejilla: aquí van las dos juntas, y con más peso para que ganen.
-  const solemne = quieto ? {} : {
-    '&&&': { animation: [animar && `${cae} .6s cubic-bezier(.2,.8,.2,1) both`, `${respira} 3.2s ease-in-out infinite`].filter(Boolean).join(', ') },
-  }
   const casilla = {
-    position: 'relative', minWidth: 0, minHeight: 0, p: { xs: '4px 6px', md: mediano ? '8px 10px' : '5px 8px' },
-    textAlign: 'left', fontVariantNumeric: 'tabular-nums', overflow: 'hidden',
+    position: 'relative', minWidth: 0, minHeight: 0, p: { xs: '4px 6px', md: mediano ? '8px 12px' : '5px 10px' },
+    textAlign: 'left', overflow: 'hidden', color: TINTA,
     // Al seguir a la ventana de un acto, que la barra fija de la web no lo tape.
     scrollMarginBlock: '96px 240px',
   } as const
+  const foco = { '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: -2 } } as const
 
   const ventana = evento && (
     <VentanaDelActo
@@ -178,188 +154,223 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   )
 
   const nombre = nombreDelMes(mes, false)
-  const flecha = {
-    width: 40, height: 40, fontSize: 18, border: `1px solid ${ORO_BORDE}`, color: GOLD,
-    '&:hover': { borderColor: GOLD }, '&.Mui-disabled': { opacity: 0.3 },
-    '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
+  const pasar = {
+    fontFamily: 'inherit', gap: 0.75, minHeight: 44, px: 1.25, fontSize: { xs: 12.5, md: 13.5 }, fontWeight: 600,
+    letterSpacing: '0.16em', textTransform: 'uppercase', color: GRANATE, whiteSpace: 'nowrap',
+    '&:hover .mes': { textDecoration: 'underline', textUnderlineOffset: '5px', textDecorationThickness: '1px' },
+    '&.Mui-disabled': { color: GRANATE, opacity: 0.3 },
+    '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: 2 },
   } as const
+  const anterior = nombreDelMes(sumarMeses(mes, -1), false)
+  const siguiente = nombreDelMes(sumarMeses(mes, 1), false)
+
+  // Qué quiere decir cada color: las clases de acto que hay en la agenda.
+  const clases = [...new Set(eventos.filter((e) => !e.cartel).map((e) => e.type))]
 
   return (
-    <Box sx={{ bgcolor: NOCHE, border: `1px solid ${ORO_BORDE}`, p: { xs: '16px 12px', md: '20px 28px 16px' }, color: '#f4f1ee' }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '10px 14px', mb: 1.5 }}>
+    <Box sx={{ bgcolor: PAPEL, color: TINTA, borderRadius: '3px', p: { xs: '18px 12px 12px', md: '36px 44px 24px' } }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px 24px', mb: { xs: 1.5, md: 2.5 } }}>
         <Typography
           component="h3"
           aria-live="polite"
           aria-label={`${nombre} ${mes.getFullYear()}`}
-          sx={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 200, fontSize: { xs: 30, md: 36 }, lineHeight: 1, color: GOLD, whiteSpace: 'nowrap' }}
+          sx={{ fontFamily: CORMORANT, fontWeight: 500, fontSize: { xs: 44, md: 68 }, lineHeight: 0.95, color: GRANATE, whiteSpace: 'nowrap' }}
         >
-          <Box component="span" key={claveDelDia(mes)} aria-hidden>
-            {animar && !quieto
-              ? [...nombre].map((l, i) => (
-                <Box component="span" key={i} sx={{ display: 'inline-block', whiteSpace: 'pre', animation: `${letra} .7s cubic-bezier(.2,.8,.2,1) both`, animationDelay: `${i * 40}ms` }}>{l}</Box>
-              ))
-              : nombre}
-          </Box>
-          <Box component="span" aria-hidden sx={{ fontStyle: 'normal', fontWeight: 500, fontSize: 13, letterSpacing: '0.2em', color: ORO_SUAVE, ml: 1.25 }}>{mes.getFullYear()}</Box>
+          <span aria-hidden>{nombre}</span>
+          <Box component="span" aria-hidden sx={{ fontStyle: 'italic', fontWeight: 400, fontSize: { xs: 20, md: 26 }, color: GRIS, ml: 1.5 }}>de {mes.getFullYear()}</Box>
         </Typography>
-        <ButtonBase aria-label="Mes anterior" disabled={mes <= primero} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, -1)) }} sx={flecha}>‹</ButtonBase>
-        <ButtonBase aria-label="Mes siguiente" disabled={mes >= ultimo} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, 1)) }} sx={flecha}>›</ButtonBase>
+        <Box sx={{ display: 'flex', alignItems: 'center', mx: { xs: -1.25, md: 0 }, width: { xs: 'calc(100% + 20px)', md: 'auto' }, justifyContent: { xs: 'space-between', md: 'flex-end' } }}>
+          <ButtonBase aria-label={`Mes anterior: ${anterior}`} disabled={mes <= primero} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, -1)) }} sx={pasar}>
+            <span aria-hidden>‹</span><span className="mes">{anterior}</span>
+          </ButtonBase>
+          <Box component="span" aria-hidden sx={{ display: { xs: 'none', md: 'block' }, width: '1px', height: 16, bgcolor: RAYA }} />
+          <ButtonBase aria-label={`Mes siguiente: ${siguiente}`} disabled={mes >= ultimo} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, 1)) }} sx={pasar}>
+            <span className="mes">{siguiente}</span><span aria-hidden>›</span>
+          </ButtonBase>
+        </Box>
       </Box>
 
       <Box ref={marco}>
-      <Box
-        key={claveDelDia(mes)}
-        ref={rejilla}
-        sx={{
-          display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-          borderTop: `1px solid ${ORO_BORDE}`, borderLeft: `1px solid ${FILETE}`,
-          '& .pieza': {
-            borderRight: `1px solid ${FILETE}`, borderBottom: `1px solid ${FILETE}`,
-            ...(animar && !quieto && { animation: `${cae} .6s cubic-bezier(.2,.8,.2,1) both` }),
-          },
-        }}
-      >
-        {SEMANA.map((d, i) => (
-          <Box key={d} className="pieza" aria-hidden sx={{ textAlign: 'center', py: 0.75, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: ORO_SUAVE, animationDelay: `${i * 28}ms` }}>{d}</Box>
-        ))}
-        {Array.from({ length: semanas }, (_, s) => {
-          const semana = dias.slice(s * 7, s * 7 + 7)
-          const { tarjetas, porDia } = repartoDeLaSemana(eventos, semana, mes)
-          const retraso = (columna: number) => ({ animationDelay: `${(columna + s + 1) * 28}ms` })
-          const empiezaProximo = (dia: Date) => !!proximo && primerDia(proximo) !== null && claveDelDia(primerDia(proximo)!) === claveDelDia(dia)
-          const elegido = (e: ApiEvent) => abierto === e.id
-          const pulsar = (e: ApiEvent) => { if (abierto === e.id) cerrar(); else setAbierto(e.id) }
-          const marcaProximo = (
-            <>
-              <Anillo quieto={quieto} />
-              <Box component="span" aria-hidden sx={{ display: { xs: 'none', md: 'block' }, position: 'absolute', top: mediano ? 10 : 7, right: 8, fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: BURDEOS_CLARO }}>
-                Próximo
-              </Box>
-            </>
-          )
-          return (
-            <Box key={s} sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', height: fila }}>
-              {semana.map((dia, i) => {
-                if (tarjetas.some((t) => i >= t.desde && i <= t.hasta)) return null
-                const delMes = dia.getMonth() === mes.getMonth()
-                const actos = porDia.get(i) ?? []
-                const sx = { ...casilla, gridColumn: i + 1, ...retraso(i) }
-                if (!delMes) return <Box key={i} className="pieza" sx={sx} />
-                if (!actos.length) {
-                  return (
-                    <Box key={i} className="pieza" sx={sx}>
-                      <Box component="span" sx={{ ...numero, ...(dia.getDay() === 0 && { WebkitTextStroke: `0.8px ${ROJO}` }) }}>{dia.getDate()}</Box>
-                    </Box>
-                  )
-                }
-                // Varios actos que coinciden: la casilla del día, con una línea por acto.
-                return (
-                  <Box key={i} className="pieza" sx={{ ...sx, display: 'flex', flexDirection: 'column', gap: 0.25, bgcolor: 'rgba(222,199,43,0.07)', ...(actos.some((e) => e.cartel) && { ...solemne, bgcolor: GRANATE_SUAVE }) }}>
-                    <Box component="span" sx={{ ...numero, color: actos.some((e) => e.cartel) ? '#fff' : GOLD, WebkitTextStroke: 0 }}>{dia.getDate()}</Box>
-                    <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      {actos.map((e) => (
-                        <ButtonBase
-                          key={e.id}
-                          data-acto={e.id}
-                          data-abre-acto
-                          onClick={() => pulsar(e)}
-                          aria-haspopup="dialog"
-                          aria-label={`${dia.getDate()} de ${nombre.toLowerCase()}: ${e.title}${empiezaProximo(dia) && e.id === proximo?.id ? '. Próximo acto' : ''}`}
-                          sx={{
-                            fontFamily: 'inherit', justifyContent: 'flex-start', minWidth: 0, textAlign: 'left',
-                            // En el móvil no cabe el nombre: cada acto es una franja de color que se pulsa.
-                            flex: { xs: 1, md: 'none' }, minHeight: { xs: 6, md: 0 },
-                            pl: { xs: 0, md: 0.75 }, fontSize: 11.5, fontWeight: 500, lineHeight: 1.3, color: '#f4f1ee',
-                            borderLeft: { md: `2px solid ${e.cartel ? BURDEOS_CLARO : GOLD}` },
-                            bgcolor: { xs: e.cartel ? BURDEOS_CLARO : GOLD, md: 'transparent' },
-                            boxShadow: elegido(e) ? `inset 0 0 0 1px ${GOLD}` : 'none',
-                            '&:hover': { bgcolor: { md: 'rgba(255,255,255,0.08)' } },
-                            '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 1 },
-                          }}
-                        >
-                          <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.title}</Box>
-                        </ButtonBase>
-                      ))}
-                    </Box>
-                    {actos.some((e) => e.id === proximo?.id) && empiezaProximo(dia) && marcaProximo}
-                  </Box>
-                )
-              })}
-              {/* Un acto que va solo: una tarjeta de sus días seguidos. */}
-              {tarjetas.map((t) => {
-                const e = t.evento
-                const foto = e.cartel ? fotoDelCartel(e).src : null
-                const [d1, d2] = [semana[t.desde].getDate(), semana[t.hasta].getDate()]
-                const esProximo = e.id === proximo?.id && empiezaProximo(semana[t.desde])
-                return (
-                  <ButtonBase
-                    key={e.id}
-                    className="pieza"
-                    data-acto={e.id}
-                    data-abre-acto
-                    onClick={() => pulsar(e)}
-                    aria-haspopup="dialog"
-                    aria-label={`${d1 === d2 ? d1 : `${d1} al ${d2}`} de ${nombre.toLowerCase()}: ${e.title}${esProximo ? '. Próximo acto' : ''}`}
-                    sx={{
-                      ...casilla, ...retraso(t.desde), gridColumn: `${t.desde + 1} / ${t.hasta + 2}`, gridRow: 1,
-                      fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: grande ? 0.75 : 0.25,
-                      bgcolor: e.cartel ? NOCHE : 'rgba(222,199,43,0.07)',
-                      ...(e.cartel && solemne),
-                      ...(foto && {
-                        backgroundImage: `linear-gradient(${t.hasta > t.desde ? '90deg' : '180deg'}, rgba(60,18,26,0.6), rgba(18,15,17,0.92)), url("${foto}")`,
-                        backgroundSize: 'cover', backgroundPosition: 'center 25%',
-                      }),
-                      // Contorno y no sombra: la sombra es el filete que respira.
-                      outline: elegido(e) ? `1px solid ${GOLD}` : 'none', outlineOffset: -1,
-                      '&:hover': { bgcolor: e.cartel ? 'rgba(110,24,34,0.45)' : 'rgba(222,199,43,0.13)' },
-                      '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: -2 },
-                    }}
-                  >
-                    {/* Los números de sus días, cada uno sobre su columna. */}
-                    <Box component="span" sx={{ display: 'grid', gridTemplateColumns: `repeat(${t.hasta - t.desde + 1}, minmax(0, 1fr))` }}>
-                      {semana.slice(t.desde, t.hasta + 1).map((dia) => (
-                        <Box component="span" key={dia.getDate()} sx={{ ...numero, color: e.cartel ? '#fff' : GOLD, WebkitTextStroke: 0 }}>{dia.getDate()}</Box>
-                      ))}
-                    </Box>
-                    <Box component="span" sx={{
-                      display: { xs: 'none', md: '-webkit-box' }, WebkitBoxOrient: 'vertical', WebkitLineClamp: grande ? 2 : 1, overflow: 'hidden',
-                      fontSize: 12.5, fontWeight: 500, lineHeight: 1.25, color: '#f4f1ee', textAlign: 'left',
-                    }}>
-                      {e.title}
-                    </Box>
-                    {esProximo && marcaProximo}
-                  </ButtonBase>
-                )
-              })}
-            </Box>
-          )
-        })}
-      </Box>
-      </Box>
-
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 24px', mt: 1 }}>
-        {/* Qué quiere decir cada color: en las tarjetas y en la rayita de cada acto cuando coinciden varios. */}
-        <Box component="ul" aria-label="Leyenda" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 18px', fontSize: 13, color: 'rgba(244,241,238,0.72)' }}>
-          {[
-            { color: GRANATE_SUAVE, raya: BURDEOS_CLARO, texto: 'Culto solemne' },
-            { color: 'rgba(222,199,43,0.14)', raya: GOLD, texto: 'Otros actos' },
-          ].map((l) => (
-            <Box component="li" key={l.texto} sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-              <Box component="span" aria-hidden sx={{ width: 16, height: 16, bgcolor: l.color, borderLeft: `3px solid ${l.raya}` }} />
-              {l.texto}
+        <Box aria-hidden sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', height: CABECERA_SEMANA, alignItems: 'center' }}>
+          {SEMANA.map((d, i) => (
+            <Box
+              key={d}
+              sx={{
+                px: { xs: '6px', md: '12px' }, color: i === 6 ? GRANATE : GRIS,
+                fontFamily: { xs: 'inherit', md: CORMORANT }, fontStyle: { md: 'italic' }, fontSize: { xs: 11, md: 17 },
+                letterSpacing: { xs: '0.12em', md: 0 }, textTransform: { xs: 'uppercase', md: 'none' },
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'inline', md: 'none' } }}>{d}</Box>
+              <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>{SEMANA_LARGA[i]}</Box>
             </Box>
           ))}
-          <Box component="li" sx={{ color: 'rgba(244,241,238,0.55)' }}>Pulsa un acto para verlo.</Box>
+        </Box>
+        <Box
+          key={claveDelDia(mes)}
+          ref={rejilla}
+          sx={{
+            display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+            borderTop: `1px solid ${RAYA}`, borderLeft: `1px solid ${RAYA}`,
+            '& .pieza': {
+              borderRight: `1px solid ${RAYA}`, borderBottom: `1px solid ${RAYA}`,
+              ...(animar && !quieto && { animation: `${cae} .45s cubic-bezier(.2,.8,.2,1) both` }),
+            },
+          }}
+        >
+          {Array.from({ length: semanas }, (_, s) => {
+            const semana = dias.slice(s * 7, s * 7 + 7)
+            const { tarjetas, porDia } = repartoDeLaSemana(eventos, semana, mes)
+            const retraso = (columna: number) => ({ animationDelay: `${(columna + s) * 18}ms` })
+            const empiezaProximo = (dia: Date) => !!proximo && primerDia(proximo) !== null && claveDelDia(primerDia(proximo)!) === claveDelDia(dia)
+            const elegido = (e: ApiEvent) => abierto === e.id
+            const pulsar = (e: ApiEvent) => { if (abierto === e.id) cerrar(); else setAbierto(e.id) }
+            // En escritorio, una etiqueta; en el móvil, donde no cabe, un filete granate.
+            const marcaProximo = (
+              <Box
+                component="span"
+                aria-hidden
+                sx={{
+                  position: 'absolute', pointerEvents: 'none',
+                  inset: { xs: 0, md: 'auto' }, top: { md: mediano ? 9 : 6 }, right: { md: 8 },
+                  boxShadow: { xs: `inset 0 0 0 2px ${GRANATE}`, md: 'none' },
+                }}
+              >
+                <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, bgcolor: GRANATE, color: PAPEL, borderRadius: '2px', p: '3px 6px', fontSize: 9.5, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', lineHeight: 1.2 }}>
+                  Próximo
+                </Box>
+              </Box>
+            )
+            return (
+              <Box key={s} sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', height: fila }}>
+                {semana.map((dia, i) => {
+                  if (tarjetas.some((t) => i >= t.desde && i <= t.hasta)) return null
+                  const delMes = dia.getMonth() === mes.getMonth()
+                  const actos = porDia.get(i) ?? []
+                  const sx = { ...casilla, gridColumn: i + 1, ...retraso(i) }
+                  if (!delMes) return <Box key={i} className="pieza" sx={{ ...sx, bgcolor: PAPEL_FUERA }} />
+                  const domingo = dia.getDay() === 0
+                  if (!actos.length) {
+                    return (
+                      <Box key={i} className="pieza" sx={sx}>
+                        <Box component="span" sx={{ ...numero, ...(domingo && { color: GRANATE }) }}>{dia.getDate()}</Box>
+                      </Box>
+                    )
+                  }
+                  const solemne = actos.some((e) => e.cartel)
+                  // Varios actos que coinciden: la casilla del día, con una línea por acto.
+                  return (
+                    <Box key={i} className="pieza" sx={{ ...sx, display: 'flex', flexDirection: 'column', gap: { xs: 0.5, md: 0.75 }, bgcolor: solemne ? SOLEMNE : PAPEL }}>
+                      <Box component="span" sx={{ ...numero, fontWeight: 600, color: solemne || domingo ? GRANATE : TINTA }}>{dia.getDate()}</Box>
+                      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {actos.map((e) => (
+                          <ButtonBase
+                            key={e.id}
+                            data-acto={e.id}
+                            data-abre-acto
+                            onClick={() => pulsar(e)}
+                            aria-haspopup="dialog"
+                            aria-label={`${dia.getDate()} de ${nombre.toLowerCase()}: ${e.title}${empiezaProximo(dia) && e.id === proximo?.id ? '. Próximo acto' : ''}`}
+                            sx={{
+                              fontFamily: 'inherit', justifyContent: 'flex-start', alignItems: 'baseline', gap: 0.75, minWidth: 0, textAlign: 'left',
+                              // En el móvil no cabe el nombre: cada acto es una franja de su color que se pulsa.
+                              flex: { xs: 1, md: 'none' }, minHeight: { xs: 6, md: 0 }, borderRadius: '2px',
+                              px: { md: 0.5 }, mx: { md: -0.5 }, py: { md: '1px' },
+                              bgcolor: { xs: colorDelActo(e), md: 'transparent' },
+                              outline: elegido(e) ? `1px solid ${GRANATE}` : 'none',
+                              '&:hover': { bgcolor: { md: 'rgba(35,29,32,0.06)' } },
+                              '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: 1 },
+                            }}
+                          >
+                            <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, flex: 'none', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.08em', color: colorDelActo(e), fontVariantNumeric: 'tabular-nums' }}>{hora(e)}</Box>
+                            <Box component="span" sx={{ display: { xs: 'none', md: 'block' }, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, fontWeight: 500, lineHeight: 1.3, color: e.cartel ? GRANATE_TINTA : TINTA }}>{e.title}</Box>
+                          </ButtonBase>
+                        ))}
+                      </Box>
+                      {actos.some((e) => e.id === proximo?.id) && empiezaProximo(dia) && marcaProximo}
+                    </Box>
+                  )
+                })}
+                {/* Un acto que va solo: una tarjeta de sus días seguidos. */}
+                {tarjetas.map((t) => {
+                  const e = t.evento
+                  const [d1, d2] = [semana[t.desde].getDate(), semana[t.hasta].getDate()]
+                  const esProximo = e.id === proximo?.id && empiezaProximo(semana[t.desde])
+                  return (
+                    <ButtonBase
+                      key={e.id}
+                      className="pieza"
+                      data-acto={e.id}
+                      data-abre-acto
+                      onClick={() => pulsar(e)}
+                      aria-haspopup="dialog"
+                      aria-label={`${d1 === d2 ? d1 : `${d1} al ${d2}`} de ${nombre.toLowerCase()}: ${e.title}${esProximo ? '. Próximo acto' : ''}`}
+                      sx={{
+                        ...casilla, ...retraso(t.desde), gridColumn: `${t.desde + 1} / ${t.hasta + 2}`, gridRow: 1,
+                        fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: grande ? 0.75 : 0.25,
+                        bgcolor: e.cartel ? SOLEMNE : PAPEL,
+                        outline: elegido(e) ? `1px solid ${GRANATE}` : 'none', outlineOffset: -1,
+                        '&:hover': { bgcolor: e.cartel ? '#e4cfc4' : '#eee8dd' },
+                        ...foco,
+                      }}
+                    >
+                      {/* Los números de sus días, cada uno sobre su columna. */}
+                      <Box component="span" sx={{ display: 'grid', gridTemplateColumns: `repeat(${t.hasta - t.desde + 1}, minmax(0, 1fr))` }}>
+                        {semana.slice(t.desde, t.hasta + 1).map((dia) => (
+                          <Box component="span" key={dia.getDate()} sx={{ ...numero, fontWeight: 600, color: e.cartel || dia.getDay() === 0 ? GRANATE : TINTA }}>{dia.getDate()}</Box>
+                        ))}
+                      </Box>
+                      <Box component="span" sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: '2px', textAlign: 'left', minWidth: 0 }}>
+                        {grande && (
+                          <Box component="span" sx={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.08em', color: colorDelActo(e), fontVariantNumeric: 'tabular-nums' }}>{hora(e)}</Box>
+                        )}
+                        <Box
+                          component="span"
+                          sx={{
+                            display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: grande ? 2 : 1, overflow: 'hidden',
+                            ...(e.cartel
+                              ? { fontFamily: CORMORANT, fontStyle: 'italic', fontWeight: 500, fontSize: grande ? 20 : 17, lineHeight: 1.05, color: GRANATE_TINTA }
+                              : { fontSize: 12.5, fontWeight: 500, lineHeight: 1.25, color: TINTA }),
+                          }}
+                        >
+                          {e.title}
+                        </Box>
+                      </Box>
+                      {/* En el móvil no cabe el nombre: una franja de su color, como los que coinciden. */}
+                      <Box component="span" aria-hidden sx={{ display: { xs: 'block', md: 'none' }, mt: 'auto', height: 6, borderRadius: '2px', bgcolor: colorDelActo(e) }} />
+                      {esProximo && marcaProximo}
+                    </ButtonBase>
+                  )
+                })}
+              </Box>
+            )
+          })}
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 24px', mt: 1.25 }}>
+        <Box component="ul" aria-label="Leyenda" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 18px', fontSize: 13, color: TINTA_SUAVE }}>
+          <Box component="li" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+            <Box component="span" aria-hidden sx={{ width: 14, height: 14, bgcolor: SOLEMNE, border: '1px solid #d9c2b8' }} />
+            Culto solemne
+          </Box>
+          {clases.map((c) => (
+            <Box component="li" key={c} sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+              <Box component="span" aria-hidden sx={{ width: 14, height: 2, bgcolor: TIPOS[c].color }} />
+              {TIPOS[c].nombre}
+            </Box>
+          ))}
+          <Box component="li" sx={{ color: GRIS }}>Pulsa un acto para verlo.</Box>
         </Box>
         {proximo && (
           <ButtonBase
             data-abre-acto
             onClick={() => abrir(proximo)}
-            sx={{ fontFamily: 'inherit', fontSize: 13.5, gap: 1.25, textAlign: 'left', minHeight: 40, color: '#f4f1ee', '&:hover .titulo': { textDecoration: 'underline' }, '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 } }}
+            sx={{ fontFamily: 'inherit', fontSize: 13.5, gap: 1.25, textAlign: 'left', minHeight: 40, color: TINTA, '&:hover .titulo': { textDecoration: 'underline' }, '&.Mui-focusVisible': { outline: `2px solid ${GRANATE}`, outlineOffset: 2 } }}
           >
-            <Box component="span" aria-hidden sx={{ position: 'relative', flex: 'none', width: 18, height: 18 }}><Anillo quieto={quieto} /></Box>
+            <Box component="span" aria-hidden sx={{ flex: 'none', width: 8, height: 8, bgcolor: GRANATE }} />
             <span>
-              <Box component="span" sx={{ color: BURDEOS_CLARO, fontWeight: 600 }}>Próximo acto:</Box>{' '}
+              <Box component="span" sx={{ color: GRANATE, fontWeight: 600 }}>Próximo acto:</Box>{' '}
               <span className="titulo">{proximo.title}</span>, {cuandoEnCartel(proximo).toLowerCase()}
             </span>
           </ButtonBase>
@@ -401,29 +412,35 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
 }
 
 /**
- * La hoja mientras llegan los actos: el mismo marco, los días de la semana y
+ * La hoja mientras llegan los actos: el mismo papel, los días de la semana y
  * cinco semanas de casillas vacías, con el mes y los números en huesos. Las
  * semanas tienen el alto de siempre en el móvil y uno medio en escritorio (la
  * hoja de verdad lo ajusta a la pantalla).
  */
 export function CalendarioDeCultosEsqueleto() {
-  const flecha = { width: 40, height: 40, border: `1px solid ${ORO_BORDE}`, opacity: 0.5 } as const
   return (
-    <Box sx={{ bgcolor: NOCHE, border: `1px solid ${ORO_BORDE}`, p: { xs: '16px 12px', md: '20px 28px 16px' } }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: '10px 14px', mb: 1.5 }}>
-        <Box sx={{ height: { xs: 30, md: 36 }, display: 'flex', alignItems: 'center' }}>
-          <Hueso sx={{ width: 190, height: { xs: 22, md: 26 } }} />
+    <Box sx={{ bgcolor: PAPEL, borderRadius: '3px', p: { xs: '18px 12px 12px', md: '36px 44px 24px' } }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '6px 24px', mb: { xs: 1.5, md: 2.5 } }}>
+        <Box sx={{ height: { xs: 42, md: 65 }, display: 'flex', alignItems: 'center' }}>
+          <Hueso papel sx={{ width: { xs: 180, md: 280 }, height: { xs: 30, md: 46 } }} />
         </Box>
-        <Box sx={flecha} />
-        <Box sx={flecha} />
+        <Box sx={{ height: 44, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Hueso papel sx={{ width: 90, height: 12 }} />
+          <Hueso papel sx={{ width: 100, height: 12 }} />
+        </Box>
       </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderTop: `1px solid ${ORO_BORDE}`, borderLeft: `1px solid ${FILETE}`, '& > *': { borderRight: `1px solid ${FILETE}`, borderBottom: `1px solid ${FILETE}` } }}>
-        {SEMANA.map((d) => (
-          <Box key={d} aria-hidden sx={{ textAlign: 'center', py: 0.75, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: ORO_SUAVE }}>{d}</Box>
+      <Box aria-hidden sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', height: CABECERA_SEMANA, alignItems: 'center' }}>
+        {SEMANA.map((d, i) => (
+          <Box key={d} sx={{ px: { xs: '6px', md: '12px' }, color: i === 6 ? GRANATE : GRIS, fontFamily: { xs: 'inherit', md: CORMORANT }, fontStyle: { md: 'italic' }, fontSize: { xs: 11, md: 17 }, letterSpacing: { xs: '0.12em', md: 0 }, textTransform: { xs: 'uppercase', md: 'none' } }}>
+            <Box component="span" sx={{ display: { xs: 'inline', md: 'none' } }}>{d}</Box>
+            <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>{SEMANA_LARGA[i]}</Box>
+          </Box>
         ))}
+      </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', borderTop: `1px solid ${RAYA}`, borderLeft: `1px solid ${RAYA}`, '& > *': { borderRight: `1px solid ${RAYA}`, borderBottom: `1px solid ${RAYA}` } }}>
         {Array.from({ length: 35 }, (_, i) => (
-          <Box key={i} sx={{ height: { xs: 50, md: 96 }, p: { xs: '4px 6px', md: '8px 10px' } }}>
-            <Hueso sx={{ width: { xs: 14, md: 26 }, height: { xs: 14, md: 26 } }} />
+          <Box key={i} sx={{ height: { xs: 50, md: 96 }, p: { xs: '4px 6px', md: '8px 12px' } }}>
+            <Hueso papel sx={{ width: { xs: 14, md: 22 }, height: { xs: 14, md: 22 } }} />
           </Box>
         ))}
       </Box>

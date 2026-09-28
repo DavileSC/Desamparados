@@ -1,13 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent } from 'react'
 import { Box, ButtonBase, Typography } from '@mui/material'
 import type { ApiEvent } from '../../../lib/api/agenda'
-import { GOLD, SERIF } from '../../inicio/estilos'
+import { GRANATE } from '../../inicio/estilos'
 import { claseDelActo, cuandoEnCartel, fotoDelCartel, hora, notaDelActo } from './cultos'
 import EnlacesDelActo from './EnlacesDelActo'
 
-const CARTEL = '#120f11'
-const ORO_BORDE = 'rgba(222,199,43,0.4)'
-const ORO_SUAVE = '#c9b25a'
+/** La ventana es otra hoja, un punto más clara que el calendario. */
+const HOJA = '#fbf8f2'
+const RAYA = '#d9cfc1'
+const TINTA = '#231d20'
+const GRIS = '#6b5e62'
+const CORMORANT = '"Cormorant Garamond", Georgia, serif'
 
 interface Props {
   evento: ApiEvent
@@ -69,8 +72,8 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
       aria-labelledby={`acto-${evento.id}`}
       onKeyDown={teclas}
       sx={{
-        position: 'relative', width: { xs: 'min(360px, calc(100vw - 32px))', md: 360 }, bgcolor: CARTEL, color: '#f4f1ee',
-        border: `1px solid ${ORO_BORDE}`, boxShadow: '0 30px 60px -20px rgba(0,0,0,0.85)',
+        position: 'relative', width: { xs: 'min(360px, calc(100vw - 32px))', md: 360 }, bgcolor: HOJA, color: TINTA, borderRadius: '3px', overflow: 'hidden',
+        border: `1px solid ${RAYA}`, boxShadow: '0 24px 48px -18px rgba(20,14,16,0.45)',
       }}
     >
       {foto && (
@@ -82,23 +85,23 @@ export default function VentanaDelActo({ evento, origen, quieto, esDialogo, onCe
         aria-label="Cerrar"
         sx={{
           position: 'absolute', top: 8, right: 8, width: 36, height: 36, fontSize: 20, lineHeight: 1,
-          border: `1px solid ${ORO_BORDE}`, bgcolor: 'rgba(18,15,17,0.75)', color: GOLD,
-          '&:hover, &.Mui-focusVisible': { bgcolor: GOLD, color: CARTEL },
+          borderRadius: '18px', border: `1px solid ${RAYA}`, bgcolor: 'rgba(251,248,242,0.9)', color: GRANATE,
+          '&:hover, &.Mui-focusVisible': { bgcolor: GRANATE, borderColor: GRANATE, color: HOJA },
         }}
       >
         ×
       </ButtonBase>
       <Box sx={{ p: '16px 18px 14px', display: 'grid', gap: 0.5 }}>
-        <Typography component="span" sx={{ fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: ORO_SUAVE, pr: 5 }}>
+        <Typography component="span" sx={{ fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: GRIS, pr: 5 }}>
           {claseDelActo(evento)}
         </Typography>
-        <Typography id={`acto-${evento.id}`} component="h3" sx={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 300, fontSize: 26, lineHeight: 1.15, pr: 4 }}>
+        <Typography id={`acto-${evento.id}`} component="h3" sx={{ fontFamily: CORMORANT, fontStyle: 'italic', fontWeight: 500, fontSize: 30, lineHeight: 1.05, color: GRANATE, pr: 4 }}>
           {evento.title}
         </Typography>
-        {evento.dedicatoria && <Typography sx={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.8)', fontSize: 15 }}>{evento.dedicatoria}</Typography>}
-        <Typography sx={{ color: GOLD, fontWeight: 500, fontSize: 15.5 }}>{cuandoEnCartel(evento)}, a las {hora(evento)}</Typography>
-        {nota && <Typography sx={{ color: 'rgba(244,241,238,0.66)', fontSize: 14.5 }}>{nota}</Typography>}
-        <EnlacesDelActo evento={evento} sobreOscuro sinMapa />
+        {evento.dedicatoria && <Typography sx={{ fontStyle: 'italic', color: GRIS, fontSize: 15 }}>{evento.dedicatoria}</Typography>}
+        <Typography sx={{ color: TINTA, fontWeight: 600, fontSize: 15.5 }}>{cuandoEnCartel(evento)}, a las {hora(evento)}</Typography>
+        {nota && <Typography sx={{ color: GRIS, fontSize: 14.5 }}>{nota}</Typography>}
+        <EnlacesDelActo evento={evento} sinMapa />
       </Box>
     </Box>
   )
