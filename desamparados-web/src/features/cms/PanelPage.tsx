@@ -2,32 +2,23 @@ import { Alert, Box, CircularProgress } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useAuthStore } from '../altas/auth/store'
 import { usePanelDeHoy } from '../../app/usePanelDeHoy'
-import { tareasDelDia, repartirTareas } from './inicio/tareas'
+import { tareasDelDia } from './inicio/tareas'
+import Retablo from './inicio/Retablo'
 import Cabecera from './inicio/Cabecera'
-import CaminoEstacion from './inicio/CaminoEstacion'
+import Asuntos from './inicio/Asuntos'
+import ElCurso from './inicio/ElCurso'
 import Cifras from './inicio/Cifras'
-import ParaHoy from './inicio/ParaHoy'
-import CalendarioMes from './inicio/CalendarioMes'
-import ComoVaElAnio from './inicio/ComoVaElAnio'
-import FondoVivo from './inicio/FondoVivo'
 
 /**
- * El Inicio del CMS. Arriba, el camino a la estación con el curso y las
- * cuatro cifras; debajo, lo de hoy (qué hay que hacer y el mes). Al final,
- * «Cómo va el año», con el detalle y el selector de ejercicio.
+ * El Inicio del CMS, en forma de retablo: a la izquierda, la Virgen a todo lo
+ * alto con los días que faltan para la estación; a la derecha, el saludo, los
+ * asuntos que esperan, el curso y las cuatro cifras de la casa.
  *
- * Cada dato sale una vez por nivel: los actos, en el curso y en el mes (ya no
- * hay «Próximos actos», que repetía los dos); el cortejo, en «Cómo va el año»,
- * que ya tenía sus puestos y sus años.
- *
- * Rejilla con zonas con nombre y una disposición por ancho: cada pieza tiene
- * su sitio fijo y las de una misma fila se estiran a la misma altura. Antes
- * iban en columnas de periódico, y según lo que trajera el día una tarjeta
- * saltaba de columna o dejaba un hueco al lado.
+ * El detalle de cada área (el censo, el dinero, la procesión por años) no va
+ * aquí: está en «Datos e informes», de la junta.
  *
  * El ancho que manda es el del panel, no el de la ventana (consultas de
- * contenedor): con el menú abierto el panel tiene 250 px menos, y con los
- * cortes de la ventana las piezas se partían en columnas donde no cabían.
+ * contenedor): con el menú abierto el panel tiene 250 px menos.
  */
 export default function PanelPage() {
   const role = useAuthStore((state) => state.cms?.role)
@@ -41,45 +32,33 @@ export default function PanelPage() {
     return <Alert severity="error">No se ha podido cargar el Inicio. Inténtalo de nuevo en unos minutos.</Alert>
   }
 
-  const tareas = tareasDelDia(data)
-  const { tuyas, deLaJunta } = repartirTareas(tareas, role)
-  const zona = (nombre: string) => ({ gridArea: nombre, minWidth: 0 })
-
   return (
-    // Contexto propio: el fondo animado va detrás de las tarjetas pero
-    // delante del lienzo del CMS.
-    <Box sx={{ position: 'relative', isolation: 'isolate' }}>
-      <FondoVivo />
+    <Box
+      sx={{
+        // A sangre: el retablo llega a los bordes del panel, sin el margen del marco.
+        m: { xs: -2.5, md: -4 },
+        containerType: 'inline-size', containerName: 'inicio',
+      }}
+    >
       <Helmet><title>Inicio | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
-
-      <Cabecera asuntosPropios={tuyas.length} asuntosDeLaJunta={deLaJunta.length} role={role} actividad={data.actividad} />
-
-      <Box sx={{ containerType: 'inline-size', containerName: 'panel' }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 2.5,
-            alignItems: 'stretch',
-            gridTemplateColumns: 'minmax(0, 1fr)',
-            gridTemplateAreas: '"camino" "cifras" "hoy" "calendario"',
-            '@container panel (min-width: 720px)': {
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              gridTemplateAreas: '"camino camino" "cifras cifras" "hoy hoy" "calendario calendario"',
-            },
-            '@container panel (min-width: 1080px)': {
-              gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)',
-              gridTemplateAreas: '"camino camino" "cifras cifras" "hoy calendario"',
-            },
-          }}
-        >
-          <Box sx={zona('camino')}><CaminoEstacion eventos={data.curso.eventos} /></Box>
-          <Box sx={zona('cifras')}><Cifras panel={data} /></Box>
-          <Box sx={zona('hoy')}><ParaHoy tareas={tareas} role={role} orden={6} /></Box>
-          <Box sx={zona('calendario')}><CalendarioMes calendario={data.calendario} role={role} orden={7} /></Box>
+      <Box
+        sx={{
+          display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)',
+          '@container inicio (min-width: 1000px)': {
+            gridTemplateColumns: 'clamp(300px, 28%, 400px) minmax(0, 1fr)',
+            // La Virgen se queda quieta mientras baja el resto.
+            '& > .retablo': { position: 'sticky', top: 0, height: '100vh', alignSelf: 'start' },
+          },
+        }}
+      >
+        <Box className="retablo"><Retablo /></Box>
+        <Box sx={{ px: { xs: 2.5, md: 4, lg: 8 }, py: { xs: 3, md: 6.5 }, display: 'flex', flexDirection: 'column', gap: 3.75, minWidth: 0, containerType: 'inline-size' }}>
+          <Cabecera role={role} actividad={data.actividad} />
+          <Asuntos tareas={tareasDelDia(data)} role={role} />
+          <ElCurso eventos={data.curso.eventos} />
+          <Cifras panel={data} />
         </Box>
       </Box>
-
-      <ComoVaElAnio panelDeHoy={data} />
     </Box>
   )
 }

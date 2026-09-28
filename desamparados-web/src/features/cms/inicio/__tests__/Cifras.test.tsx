@@ -42,7 +42,7 @@ describe('Cifras', () => {
     }
     renderWithProviders(<TemaCmsProvider><Cifras panel={conMovimientos} /></TemaCmsProvider>)
     expect(screen.getByRole('img', { name: /ago, 5 altas y 1 bajas; sep, 2 altas y 0 bajas/ })).toBeInTheDocument()
-    expect(screen.getByText('+22 en 12 meses', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === '+22 en doce meses · 34 / −12')).toBeInTheDocument()
   })
 
   it('la curva del saldo recorre el ejercicio y acaba en la misma cifra que la baldosa', () => {

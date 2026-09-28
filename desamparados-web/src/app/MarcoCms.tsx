@@ -445,7 +445,7 @@ function Contenido() {
             // `barra`: con el menú más alto que la ventana, `barra` medía
             // 100vh y al bajar asomaba el fondo de la página por debajo.
             backgroundColor: SIDEBAR,
-            // Por encima del fondo animado del Inicio, que va fijo a toda la ventana.
+            // Por encima de lo que se queda fijo al bajar (el retablo del Inicio).
             zIndex: 2,
           }}
         >

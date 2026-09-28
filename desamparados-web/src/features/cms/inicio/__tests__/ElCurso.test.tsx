@@ -3,13 +3,13 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import { TemaCmsProvider } from '../../../../app/temaCms'
-import CaminoEstacion from '../CaminoEstacion'
+import ElCurso from '../ElCurso'
 import { actosDelCurso, calmaCorta, cuandoFalta, momentoDelCurso, tandaInicial, tandasDelCurso } from '../tandas'
 import type { PanelResponse } from '../../../../lib/api/panel'
 
 type Eventos = PanelResponse['curso']['eventos']
 const montar = (hoy: Date, eventos: Eventos = []) =>
-  renderWithProviders(<TemaCmsProvider><CaminoEstacion hoy={hoy} eventos={eventos} /></TemaCmsProvider>)
+  renderWithProviders(<TemaCmsProvider><ElCurso hoy={hoy} eventos={eventos} /></TemaCmsProvider>)
 
 let id = 0
 const acto = (fecha: string, title: string, type: Eventos[number]['type'] = 'CULTO'): Eventos[number] =>
@@ -31,48 +31,28 @@ const CURSO: Eventos = [
   acto('2027-03-05', 'Vía Crucis'),
 ]
 
-describe('CaminoEstacion', () => {
-  it('dice cuántos días faltan y para qué fecha', () => {
-    montar(new Date(2026, 8, 11))
-    expect(screen.getByText('190')).toBeInTheDocument()
-    expect(screen.getByText(/Sábado de Pasión · 20 mar 2027/)).toBeInTheDocument()
-  })
-
-
+describe('ElCurso', () => {
   it('enseña qué parte del curso ha pasado y cuántos actos quedan', () => {
     montar(new Date(2026, 8, 23), CURSO)
     // Quedan 8 de la Agenda y el Miércoles de Ceniza.
-    expect(screen.getByText('50 % del curso · 9 actos por delante')).toBeInTheDocument()
+    expect(screen.getByText('50 % recorrido · 9 actos por delante')).toBeInTheDocument()
   })
 
-  it('el mismo día de la estación no cuenta días de más', () => {
-    montar(new Date(2026, 2, 28))
-    expect(screen.getByText('0')).toBeInTheDocument()
-  })
-
-  it('lleva la imagen de Nuestra Señora de los Desamparados', () => {
-    montar(new Date(2026, 8, 11))
-    expect(screen.getByRole('img', { name: 'Nuestra Señora de los Desamparados' })).toBeInTheDocument()
-  })
-
-  it('en la calma dice cuándo empieza la próxima tanda, y la abre', () => {
+  it('en la calma abre la próxima tanda y dice cuándo empieza', () => {
     montar(new Date(2026, 8, 23), CURSO)
-    expect(screen.getByText('Calma')).toBeInTheDocument()
-    expect(screen.getByText(/empieza en 3 semanas \(16 oct\): 4 actos hasta el 18 oct/)).toBeInTheDocument()
+    const octubre = screen.getByRole('button', { name: 'Octubre, 4 actos, 16 oct – 18 oct' })
+    expect(octubre).toHaveAttribute('aria-expanded', 'true')
+    expect(within(octubre).getByText('En 3 semanas · 4 actos')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Octubre · 16 oct – 18 oct · 4 actos' })).toBeInTheDocument()
     const lista = screen.getByRole('list')
     for (const t of ['Triduo · día 1', 'Triduo · día 2', 'Función principal', 'Besamanos']) {
       expect(within(lista).getByText(t)).toBeInTheDocument()
     }
-    expect(screen.getByRole('button', { name: 'Octubre, 4 actos, 16 oct – 18 oct' })).toHaveAttribute('aria-expanded', 'true')
-    // La calma entre tandas, en corto.
-    expect(screen.getByText('4 sem.')).toBeInTheDocument()
   })
 
-  it('en plena tanda dice cuántos actos quedan y cuál es el siguiente', () => {
+  it('la tanda de ahora dice que está en curso', () => {
     montar(new Date(2026, 9, 17), CURSO)
-    expect(screen.getByText('En plena tanda')).toBeInTheDocument()
-    expect(screen.getByText(/quedan 3 actos hasta el 18 oct\. Lo siguiente, «Triduo · día 2», hoy\./)).toBeInTheDocument()
+    expect(within(screen.getByRole('button', { name: /^Octubre/ })).getByText('En curso · 4 actos')).toBeInTheDocument()
   })
 
   it('al pulsar otra tanda, lista la suya', async () => {
@@ -84,11 +64,9 @@ describe('CaminoEstacion', () => {
     expect(screen.getByRole('button', { name: 'Octubre, 4 actos, 16 oct – 18 oct' })).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('pone la Ceniza aunque no esté en la Agenda, y solo los tipos que hay en la leyenda', () => {
+  it('pone la Ceniza aunque no esté en la Agenda', () => {
     montar(new Date(2026, 8, 23))
     expect(screen.getByRole('button', { name: 'Cuaresma, 1 acto, 10 feb' })).toBeInTheDocument()
-    expect(screen.getByText('Culto')).toBeInTheDocument()
-    expect(screen.queryByText('Convivencia')).not.toBeInTheDocument()
   })
 })
 

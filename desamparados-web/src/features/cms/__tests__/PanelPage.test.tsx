@@ -96,16 +96,13 @@ describe('Inicio del CMS', () => {
     expect(screen.getByText('Lo lleva Tesorería')).toBeInTheDocument()
   })
 
-  it('lleva el curso y el mes, y nada que los repita', async () => {
+  it('lleva el retablo con la cuenta atrás y el curso', async () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
-    expect(await screen.findByRole('heading', { name: 'El curso' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Septiembre de 2026' })).toBeInTheDocument()
-    // Los próximos actos ya están en el curso y en el mes; el cortejo, en «Cómo va el año».
-    expect(screen.queryByRole('heading', { name: 'Próximos actos' })).not.toBeInTheDocument()
-    // (va en la pestaña Procesión, cerrada al entrar)
-    expect(screen.getAllByRole('heading', { name: /^El cortejo de/, hidden: true })).toHaveLength(1)
+    expect(await screen.findByRole('img', { name: 'Nuestra Señora de los Desamparados' })).toBeInTheDocument()
+    expect(screen.getByText('para la estación de penitencia')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'El curso' })).toBeInTheDocument()
   })
 
   it('dice en la cabecera cómo va la web', async () => {
@@ -115,11 +112,14 @@ describe('Inicio del CMS', () => {
     expect(await screen.findByText(/^En la web: /)).toBeInTheDocument()
   })
 
-  it('lleva «Cómo va el año» debajo', async () => {
+  it('ya no lleva «Para hoy», el calendario del mes ni «Cómo va el año»', async () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
-    expect(await screen.findByRole('heading', { name: 'Cómo va el año' })).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'El curso' })
+    expect(screen.queryByRole('heading', { name: 'Para hoy' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Septiembre de 2026' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Cómo va el año' })).not.toBeInTheDocument()
   })
 
   it('avisa mientras carga', () => {
@@ -147,6 +147,6 @@ describe('Inicio del CMS', () => {
     entrarComo('ADMIN')
     montar()
     expect(await screen.findByText(/todo al día/i)).toBeInTheDocument()
-    expect(screen.getAllByText(/todavía no hay datos/i).length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: 'Nada pendiente' })).toBeInTheDocument()
   })
 })

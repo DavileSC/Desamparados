@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import { TemaCmsProvider } from '../../../../app/temaCms'
-import ParaHoy from '../ParaHoy'
+import Asuntos from '../Asuntos'
 import type { Tarea } from '../tareas'
 
 const TAREAS: Tarea[] = [
@@ -21,22 +22,23 @@ const TAREAS: Tarea[] = [
 ]
 
 const montar = (tareas: Tarea[], role?: string) =>
-  renderWithProviders(<TemaCmsProvider><ParaHoy tareas={tareas} role={role} /></TemaCmsProvider>)
+  renderWithProviders(<TemaCmsProvider><Asuntos tareas={tareas} role={role} /></TemaCmsProvider>)
 
-describe('ParaHoy', () => {
-  it('el que lleva el asunto ve el botón', () => {
+describe('Asuntos', () => {
+  it('cuenta los asuntos y los reparte entre tuyos y del resto de la junta', () => {
     montar(TAREAS, 'REDES')
-    expect(screen.getByRole('link', { name: /Publicar/ })).toHaveAttribute('href', '/cms/noticias')
+    expect(screen.getByRole('heading', { name: '2 asuntos esperando' })).toBeInTheDocument()
+    expect(screen.getByText('1 tuyo · 1 del resto de la junta')).toBeInTheDocument()
   })
 
-  it('lo del resto de la junta va sin botón y con quién lo lleva', () => {
+  it('el que lleva el asunto ve el enlace; lo del resto, con quién lo lleva', () => {
     montar(TAREAS, 'REDES')
-    expect(screen.getByText('En el resto de la junta')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Publicar/ })).toHaveAttribute('href', '/cms/noticias')
     expect(screen.getByText('Lo lleva Tesorería')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Revisar/ })).not.toBeInTheDocument()
   })
 
-  it('el Hermano Mayor ve todos los botones y ningún «lo lleva»', () => {
+  it('el Hermano Mayor ve todos los enlaces y ningún «lo lleva»', () => {
     montar(TAREAS, 'HERMANO_MAYOR')
     expect(screen.getByRole('link', { name: /Revisar/ })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Publicar/ })).toBeInTheDocument()
@@ -49,8 +51,17 @@ describe('ParaHoy', () => {
     expect(screen.getByText('Pendiente')).toBeInTheDocument()
   })
 
-  it('sin asuntos, lo dice y no deja la tarjeta vacía', () => {
+  it('con muchos, enseña cuatro y el resto con «Ver los N»', async () => {
+    const muchas = Array.from({ length: 6 }, (_, i) => ({ ...TAREAS[1], clave: `t${i}`, titulo: `Asunto ${i + 1}` }))
+    montar(muchas, 'ADMIN')
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Ver los 6' }))
+    expect(screen.getAllByRole('listitem')).toHaveLength(6)
+  })
+
+  it('sin asuntos, lo dice', () => {
     montar([], 'ADMIN')
+    expect(screen.getByRole('heading', { name: 'Nada pendiente' })).toBeInTheDocument()
     expect(screen.getByText(/todo al día/i)).toBeInTheDocument()
   })
 })
