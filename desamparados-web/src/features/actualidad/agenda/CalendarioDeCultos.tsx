@@ -208,11 +208,11 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: -1.25, md: 0 } }}>
           <ButtonBase aria-label={`Mes anterior: ${anterior}`} disabled={mes <= primero} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, -1)) }} sx={pasar}>
-            <span aria-hidden>‹</span><MesDeAlLado nombre={anterior} />
+            <MesDeAlLado nombre={anterior} lado="anterior" />
           </ButtonBase>
           <Box component="span" aria-hidden sx={{ display: { xs: 'none', md: 'block' }, width: '1px', height: 16, bgcolor: RAYA }} />
           <ButtonBase aria-label={`Mes siguiente: ${siguiente}`} disabled={mes >= ultimo} onClick={() => { cerrar(false); cambiarMes(sumarMeses(mes, 1)) }} sx={pasar}>
-            <MesDeAlLado nombre={siguiente} /><span aria-hidden>›</span>
+            <MesDeAlLado nombre={siguiente} lado="siguiente" />
           </ButtonBase>
         </Box>
       </Box>
@@ -440,17 +440,36 @@ export default function CalendarioDeCultos({ eventos }: { eventos: ApiEvent[] })
   )
 }
 
+/** Los doce nombres, para medir el hueco del más largo. */
+const MESES = Array.from({ length: 12 }, (_, i) => nombreDelMes(new Date(2026, i, 1), false))
+
 /**
- * El mes al que lleva un botón: entero en pantallas anchas y en tres letras en
- * el móvil, donde va en la misma línea que el mes que se ve.
+ * El mes al que lleva un botón, con su flecha: entero en pantallas anchas y en
+ * tres letras en el móvil, donde va en la misma línea que el mes que se ve.
+ *
+ * El botón mide siempre lo que el mes más largo: debajo del nombre van todos
+ * los demás, invisibles y en la misma celda. Así, al pasar de mes, ni los
+ * botones ni la raya del medio se mueven; el nombre se arrima a la raya.
  */
-function MesDeAlLado({ nombre }: { nombre: string }) {
-  return (
-    <>
-      <Box component="span" className="mes" sx={{ display: { xs: 'none', sm: 'inline' } }}>{nombre}</Box>
-      <Box component="span" className="mes" sx={{ display: { xs: 'inline', sm: 'none' } }}>{nombre.slice(0, 3)}</Box>
-    </>
+function MesDeAlLado({ nombre, lado }: { nombre: string; lado: 'anterior' | 'siguiente' }) {
+  // Solo el nombre se subraya al pasar por encima, no la flecha.
+  const conFlecha = (texto: string) => (lado === 'anterior' ? <>‹ <span className="mes">{texto}</span></> : <><span className="mes">{texto}</span> ›</>)
+  const capa = (corto: boolean) => (
+    <Box
+      component="span"
+      aria-hidden
+      sx={{
+        display: corto ? { xs: 'inline-grid', sm: 'none' } : { xs: 'none', sm: 'inline-grid' },
+        '& > *': { gridArea: '1 / 1', justifySelf: lado === 'anterior' ? 'end' : 'start' },
+      }}
+    >
+      {MESES.map((m) => (
+        <Box component="span" key={m} sx={{ visibility: 'hidden' }}>{conFlecha(corto ? m.slice(0, 3) : m)}</Box>
+      ))}
+      <span>{conFlecha(corto ? nombre.slice(0, 3) : nombre)}</span>
+    </Box>
   )
+  return <>{capa(false)}{capa(true)}</>
 }
 
 /**
