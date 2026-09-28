@@ -380,7 +380,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             // El itinerario repite lugares: la clave necesita el índice.
             key={`${parada.hora}-${parada.lugar}-${i}`}
             sx={{
-              display: 'grid', gridTemplateColumns: '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'baseline',
+              display: 'grid', gridTemplateColumns: '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'center',
               py: 2.25, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
               opacity: enConstructor || encendida ? 1 : 0.4, transition: 'opacity .5s ease',
               // Solo el texto va en burdeos, aclarado para que se lea sobre el fondo oscuro.
@@ -396,7 +396,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
                 hora por confirmar
               </Typography>
             )}
-            <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, color: 'text.primary' }}>{parada.lugar}</Typography>
+            <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, lineHeight: 1.3, color: 'text.primary' }}>{parada.lugar}</Typography>
           </Box>
           )
         })}
