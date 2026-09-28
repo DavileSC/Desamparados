@@ -18,6 +18,7 @@ import Paginador from '../../../components/Paginador'
 import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
 import { misPapeletas, type ApiProcessionTicket } from '../../../lib/api/procesion'
 import { estadoPapeleta } from './estadoPapeleta'
+import AvisoSuave from '../../../components/AvisoSuave'
 
 export default function HistoricoPage() {
   const { items: tickets, meta, loading, error, alCambiarPagina, cambiarTamano } =
@@ -38,7 +39,7 @@ export default function HistoricoPage() {
           {loading && <CircularProgress aria-label="Cargando histórico" sx={{ mb: 4 }} />}
           {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
           {!loading && !error && tickets.length === 0 && (
-            <Alert severity="info">Todavía no hay papeletas registradas.</Alert>
+            <AvisoSuave>Todavía no hay papeletas registradas.</AvisoSuave>
           )}
 
           {!loading && !error && tickets.length > 0 && <TableContainer component={Paper} sx={{ backgroundColor: 'transparent', overflowX: 'auto' }}>

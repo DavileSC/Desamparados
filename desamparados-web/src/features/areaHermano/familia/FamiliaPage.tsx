@@ -11,6 +11,7 @@ import { PARENTESCOS } from '../../../lib/api/auth'
 import { MAYORIA_DE_EDAD, aniosCumplidos } from '../../altas/public/schema'
 import DialogoAnadirFicha from './DialogoAnadirFicha'
 import DialogoEmancipar from './DialogoEmancipar'
+import AvisoSuave from '../../../components/AvisoSuave'
 
 const nombreParentesco = (valor: string | null) =>
   PARENTESCOS.find((p) => p.value === valor)?.label ?? 'A tu cargo'
@@ -160,9 +161,9 @@ function Ficha({ ficha, etiqueta, onEmancipar }: { ficha: ApiProfile; etiqueta: 
 
       {puedeEmanciparse && (
         <Box>
-          <Alert severity="info" sx={{ mb: 1.5, fontSize: 14 }}>
+          <AvisoSuave sx={{ mb: 1.5, fontSize: 14 }}>
             Ya tiene {MAYORIA_DE_EDAD} años cumplidos: puede tener cuenta propia y gestionar sus datos.
-          </Alert>
+          </AvisoSuave>
           <Boton appVariant="outline" onClick={onEmancipar}>Darle cuenta propia</Boton>
         </Box>
       )}

@@ -39,8 +39,13 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
           {editando && <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>Editando</Typography>}
         </Box>
         {!editando && formulario && onEditar && (
-          <Button size="small" startIcon={<EditOutlinedIcon />} onClick={onEditar} aria-label={`Editar ${titulo.toLowerCase()}`} sx={{ color: 'text.secondary', minHeight: 40 }}>
-            Editar
+          // En el móvil, solo el lápiz: con la palabra, títulos como «Datos
+          // personales» se partían en dos líneas.
+          <Button size="small" startIcon={<EditOutlinedIcon />} onClick={onEditar} aria-label={`Editar ${titulo.toLowerCase()}`} sx={{
+            color: 'text.secondary', minHeight: 40, flexShrink: 0,
+            minWidth: { xs: 40, sm: 64 }, '& .MuiButton-startIcon': { mx: { xs: 0, sm: undefined } },
+          }}>
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Editar</Box>
           </Button>
         )}
       </Box>

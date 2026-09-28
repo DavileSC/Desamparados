@@ -6,6 +6,7 @@ import { anadirFicha } from '../../../lib/api/perfil'
 import { ErrorDeApi } from '../../../lib/api/cliente'
 import { esDniValido } from '../../../lib/validacion/identidad'
 import { MAYORIA_DE_EDAD, aniosCumplidos } from '../../altas/public/schema'
+import AvisoSuave from '../../../components/AvisoSuave'
 
 type Modo = 'menor' | 'yo' | null
 
@@ -167,9 +168,9 @@ export default function DialogoAnadirFicha({ modo, primerApellidoDelTitular, onC
 
           {!esPropia && datos.parentesco !== 'HIJO' && (
             <Grid size={{ xs: 12 }}>
-              <Alert severity="info" sx={{ fontSize: 14 }}>
+              <AvisoSuave sx={{ fontSize: 14 }}>
                 Al no ser hijo o hija tuya, Secretaría te pedirá la autorización firmada de sus padres o tutores legales.
-              </Alert>
+              </AvisoSuave>
             </Grid>
           )}
           {error && <Grid size={{ xs: 12 }}><Alert severity="error" role="alert">{error}</Alert></Grid>}

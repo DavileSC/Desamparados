@@ -17,6 +17,7 @@ import {
 } from '../../../lib/api/procesion'
 import { formatearImporte } from '../recibos/etiquetas'
 import { PARENTESCO } from '../perfil/etiquetas'
+import AvisoSuave from '../../../components/AvisoSuave'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long' })
@@ -355,7 +356,7 @@ function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiPro
       </Alert>
 
       {salida.dias.length === 0 ? (
-        <Alert severity="info">Todavía no hay días de reparto publicados. Vuelve en unos días.</Alert>
+        <AvisoSuave>Todavía no hay días de reparto publicados. Vuelve en unos días.</AvisoSuave>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }, gap: 3, alignItems: 'start' }}>
           <TarjetaCristal component="fieldset" sx={{ m: 0, p: { xs: 2.5, md: 3 }, display: 'grid', gap: 1.25, minWidth: 0 }}>

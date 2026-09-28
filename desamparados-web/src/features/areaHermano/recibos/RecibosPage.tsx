@@ -9,6 +9,7 @@ import Paginador from '../../../components/Paginador'
 import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
 import { misRecibos, type MyReceipt } from '../../../lib/api/recibos'
 import { estadoDelRecibo, formatearImporte } from './etiquetas'
+import AvisoSuave from '../../../components/AvisoSuave'
 
 /**
  * Los recibos de la familia, agrupados por año.
@@ -48,7 +49,7 @@ export default function RecibosPage() {
           {loading && <CircularProgress aria-label="Cargando recibos" sx={{ mb: 4 }} />}
           {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
           {!loading && !error && receipts.length === 0 && (
-            <Alert severity="info">No hay recibos disponibles para tu familia.</Alert>
+            <AvisoSuave>No hay recibos disponibles para tu familia.</AvisoSuave>
           )}
 
           {!loading && !error && receipts.length > 0 && (

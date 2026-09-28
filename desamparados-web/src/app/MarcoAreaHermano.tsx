@@ -20,6 +20,7 @@ import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom'
 import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import LogoutIcon from '@mui/icons-material/Logout'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
@@ -101,10 +102,10 @@ export default function MarcoAreaHermano() {
                     primary: {
                       sx: {
                         fontFamily: theme.typography.button.fontFamily,
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
+                        // Como el menú de la web, no como el del CMS: sin
+                        // mayúsculas ni espaciado.
+                        fontSize: '15px',
+                        fontWeight: activa ? 600 : 500,
                       },
                     },
                   }}
@@ -114,7 +115,23 @@ export default function MarcoAreaHermano() {
           )
         })}
       </List>
-      <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2 }}>
+      <Box sx={{ position: 'absolute', bottom: 0, width: '100%', p: 2, display: 'grid', gap: 0.5 }}>
+        {/* El área es parte de la web: siempre se puede volver a ella. */}
+        <Button
+          fullWidth
+          component={Link}
+          to="/"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => setCajonAbierto(false)}
+          sx={{
+            justifyContent: 'flex-start',
+            color: 'text.secondary',
+            textTransform: 'none', letterSpacing: 0, fontSize: 15, fontWeight: 500,
+            '&:hover': { color: 'text.primary', backgroundColor: 'rgba(255,255,255,0.05)' },
+          }}
+        >
+          Volver a la web
+        </Button>
         <Button
           fullWidth
           startIcon={<LogoutIcon />}
@@ -122,6 +139,7 @@ export default function MarcoAreaHermano() {
           sx={{
             justifyContent: 'flex-start',
             color: 'text.secondary',
+            textTransform: 'none', letterSpacing: 0, fontSize: 15, fontWeight: 500,
             '&:hover': { color: 'primary.main', backgroundColor: 'rgba(255,255,255,0.05)' },
           }}
         >

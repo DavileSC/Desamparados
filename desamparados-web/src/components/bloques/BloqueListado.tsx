@@ -19,6 +19,7 @@ import type { Acto, Noticia } from '../../types'
 import type { BloqueListado as Datos, FuenteListado } from '../../lib/api/contenido'
 import { valorDe } from './presentacion'
 import { BOTON, enlaceConFlecha } from '../estiloDeBoton'
+import AvisoSuave from '../AvisoSuave'
 
 /**
  * Lo que el Grupo Parroquial publica desde otras pantallas del CMS —noticias,
@@ -224,7 +225,7 @@ function NoticiasRecientes({ titulo, bloque }: PropsListado) {
           esqueleto={enLista(bloque) ? <ListaSencillaEsqueleto filas={cuantas} /> : <RejillaDeNoticiasEsqueleto cuantas={cuantas} columnas={columnasDe(bloque, 3)} />}
         />
       )}
-      {!loading && !error && items.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
+      {!loading && !error && items.length === 0 && <AvisoSuave>No hay noticias publicadas.</AvisoSuave>}
       {!loading && !error && items.length > 0 && enLista(bloque) && (
         <ListaSencilla etiqueta={titulo || 'Últimas noticias'}
           filas={items.map((n) => ({ clave: n.id, fecha: fechaDeLista(n.fecha), texto: n.titulo, detalle: n.extracto, ruta: `/noticias/${n.slug}` }))} />
@@ -281,7 +282,7 @@ function AgendaProxima({ titulo, bloque }: PropsListado) {
 function ListaDeEventos({ eventos, columnas }: { eventos: Acto[]; columnas: number }) {
   return (
     <>
-      {eventos.length === 0 && <Alert severity="info">No hay próximos eventos publicados.</Alert>}
+      {eventos.length === 0 && <AvisoSuave>No hay próximos eventos publicados.</AvisoSuave>}
       {eventos.length > 0 && (
         <Grid container spacing={4}>
           {eventos.map((evento) => (
@@ -358,7 +359,7 @@ function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
           )}
         />
       )}
-      {!loading && !error && items.length === 0 && <Alert severity="info">No hay noticias publicadas.</Alert>}
+      {!loading && !error && items.length === 0 && <AvisoSuave>No hay noticias publicadas.</AvisoSuave>}
       {items.length > 0 && (
         <Box component="ul" aria-label={titulo || 'Noticias'} sx={rejillaDeNoticias(columnasDe(bloque, 3))}>
           {items.map((noticia, i) => {
@@ -425,7 +426,7 @@ function Publicaciones({ titulo, bloque, categoria, etiqueta, que, vacio, fallo 
           )}
         />
       )}
-      {!loading && !error && items.length === 0 && <Alert severity="info">{vacio}</Alert>}
+      {!loading && !error && items.length === 0 && <AvisoSuave>{vacio}</AvisoSuave>}
       <Grid container spacing={3}>
         {items.map((publicacion) => (
           <Grid key={publicacion.id} size={{ xs: 12, sm: 6, lg: 12 / columnas }}>

@@ -6,6 +6,7 @@ import Boton from '../../../components/Boton'
 import { PARENTESCOS } from '../../../lib/api/auth'
 import { FILETE_TARJETA } from './temaTarjeta'
 import { MAXIMO_MENORES, menorVacio, type MembershipFormData } from './schema'
+import AvisoSuave from '../../../components/AvisoSuave'
 
 interface Props {
   menores: MembershipFormData['menores']
@@ -127,10 +128,10 @@ export default function PasoMenores({ menores, errores, register, setValue, watc
       })}
 
       {hayAjeno && (
-        <Alert severity="info" sx={{ fontSize: 14 }}>
+        <AvisoSuave sx={{ fontSize: 14 }}>
           Para un menor que no es hijo o hija tuya, Secretaría te pedirá la autorización firmada de sus padres o tutores
           legales cuando pases a formalizar el alta.
-        </Alert>
+        </AvisoSuave>
       )}
 
       {typeof fallosDeMenores?.message === 'string' && (
