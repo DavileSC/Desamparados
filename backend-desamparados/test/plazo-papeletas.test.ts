@@ -290,7 +290,9 @@ test('los días de reparto y la fecha del Rosario salen en la Agenda pública', 
   const e = await escenario();
   const meta = { userId: e.admin.id };
   try {
-    const dia = new Date(Date.now() + 40 * 24 * 60 * 60 * 1000);
+    // Un día fijo de octubre: el reparto del Rosario no puede pasar de octubre,
+    // y «dentro de 40 días» caía en noviembre según cuándo se pasara la prueba.
+    const dia = new Date(Date.UTC(2030, 9, 1));
     const iso = (h: number) => new Date(Date.UTC(dia.getUTCFullYear(), dia.getUTCMonth(), dia.getUTCDate(), h)).toISOString();
     const turno = await TurnosService.crearTurno({ fecha: iso(0).slice(0, 10), horaInicio: iso(16), horaFin: iso(19), capacidadEstimada: 60, salida: 'ROSARIO' }, meta);
     e.turnos.push(turno.id);

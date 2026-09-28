@@ -1049,7 +1049,7 @@
     "cabecera": {
       "ceja": "Corporación · Historia",
       "titulo": "Historia",
-      "subtitulo": "De la devoción popular en la parroquia de los Pasionistas al Sábado de Pasión por el centro de Málaga.",
+      "subtitulo": "De la devoción popular en la parroquia de los Pasionistas al Sábado de Pasión por el barrio de los Corazones.",
       "foto": "/images/hero-1920.webp",
       "fotoAlt": "Nuestra Señora de los Desamparados, muy velada al fondo de la página"
     },
@@ -1098,11 +1098,11 @@
             "periodo": "Años 90",
             "etiqueta": "Sábado de Pasión",
             "titulo": "La primera salida procesional",
-            "relato": "La consolidación de la corporación como Grupo Parroquial permitió dar un paso decisivo en su vida pública: la salida procesional del Sábado de Pasión, momento en el que la imagen de la Sagrada Titular recorre las calles del centro histórico de Málaga, acompañada por sus hermanos y por una numerosa feligresía.",
+            "relato": "La consolidación de la corporación como Grupo Parroquial permitió dar un paso decisivo en su vida pública: la salida procesional del Sábado de Pasión, momento en el que la imagen de la Sagrada Titular recorre las calles del barrio de los Corazones, acompañada por sus hermanos y por una numerosa feligresía.",
             "foto": {
               "url": "/images/trono-comitiva.webp",
               "alt": "El trono de Nuestra Señora de los Desamparados en la calle, entre ciriales y árboles",
-              "pie": "Sábado de Pasión, por las calles de Málaga"
+              "pie": "Sábado de Pasión, por el barrio de los Corazones"
             },
             "tono": "granate"
           },
@@ -1784,7 +1784,7 @@
       {
         "tipo": "texto",
         "titulo": "",
-        "html": "<p>El Sábado de Pasión es el día grande de nuestro Grupo Parroquial. En esta jornada, Nuestra Señora de los Desamparados sale en estación de penitencia por el centro histórico de Málaga, acompañada por sus hermanos y por una multitud de devotos que llenan las calles de fe y emoción.</p><p>La procesión es fruto del trabajo y la ilusión de toda una comunidad. Desde la preparación del trono hasta el acompañamiento musical, cada detalle está pensado para que la salida sea un auténtico acto de fe, arte y devoción.</p>"
+        "html": "<p>El Sábado de Pasión es el día grande de nuestro Grupo Parroquial. En esta jornada, Nuestra Señora de los Desamparados sale en estación de penitencia por las calles del barrio de los Corazones, acompañada por sus hermanos y por una multitud de devotos que llenan las calles de fe y emoción.</p><p>La procesión es fruto del trabajo y la ilusión de toda una comunidad. Desde la preparación del trono hasta el acompañamiento musical, cada detalle está pensado para que la salida sea un auténtico acto de fe, arte y devoción.</p>"
       },
       {
         "tipo": "galeria",
@@ -1826,7 +1826,7 @@
         "tarjetas": [
           {
             "titulo": "Recorrido",
-            "descripcion": "Itinerario oficial de la estación de penitencia por las calles de Málaga.",
+            "descripcion": "Itinerario oficial de la estación de penitencia por las calles del barrio de los Corazones.",
             "enlace": "/sabado-de-pasion/recorrido"
           },
           {

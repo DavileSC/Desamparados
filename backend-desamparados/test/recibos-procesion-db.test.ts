@@ -694,9 +694,9 @@ test('D19: crear y borrar un turno queda auditado con sus datos', async (t) => {
   try {
     // Un día fijo y lejano: con «mañana + 1 h» el fin podía cruzar la medianoche de Madrid.
     const turno = await TurnosService.crearTurno({
-      fecha: '2030-05-10',
-      horaInicio: '2030-05-10T18:00:00+02:00',
-      horaFin: '2030-05-10T21:00:00+02:00',
+      fecha: '2030-02-15',
+      horaInicio: '2030-02-15T18:00:00+01:00',
+      horaFin: '2030-02-15T21:00:00+01:00',
       capacidadEstimada: 40
     }, e.meta);
     e.turnos.push(turno.id);
@@ -720,19 +720,24 @@ test('Turnos: crear un turno con horas de otro día o al revés es un 400 con mo
     const crear = (cuerpo: Record<string, unknown>) =>
       fetch(`${baseUrl}/api/procesion/admin/turnos`, { method: 'POST', headers: cabeceras, body: JSON.stringify({ capacidadEstimada: 40, ...cuerpo }) });
     // Contados solo los de ese día, para no depender de lo que hagan otras pruebas a la vez.
-    const delDia = { fecha: { gte: new Date('2030-05-09T00:00:00Z'), lt: new Date('2030-05-12T00:00:00Z') } };
+    const delDia = { fecha: { gte: new Date('2030-02-14T00:00:00Z'), lt: new Date('2030-02-17T00:00:00Z') } };
     const antes = await db.turno.count({ where: delDia });
 
     // La hora sobre una fecha ficticia: el turno habría parecido terminado desde 1970.
-    const ficticia = await crear({ fecha: '2030-05-10', horaInicio: '1970-01-01T18:00:00Z', horaFin: '1970-01-01T21:00:00Z' });
+    const ficticia = await crear({ fecha: '2030-02-15', horaInicio: '1970-01-01T18:00:00Z', horaFin: '1970-01-01T21:00:00Z' });
     assert.equal(ficticia.status, 400);
-    assert.match((await ficticia.json() as { error: string }).error, /hora de inicio tiene que ser del mismo día que el turno \(10\/05\/2030\)/);
+    assert.match((await ficticia.json() as { error: string }).error, /hora de inicio tiene que ser del mismo día que el turno \(15\/02\/2030\)/);
 
-    const alDiaSiguiente = await crear({ fecha: '2030-05-10', horaInicio: '2030-05-10T22:00:00+02:00', horaFin: '2030-05-11T00:30:00+02:00' });
+    // Un reparto de la Pasión después de su salida: la papeleta caería en la del año que ya pasó.
+    const tardio = await crear({ fecha: '2030-10-04', horaInicio: '2030-10-04T18:00:00+02:00', horaFin: '2030-10-04T21:00:00+02:00' });
+    assert.equal(tardio.status, 400);
+    assert.match((await tardio.json() as { error: string }).error, /Para la de 2031/);
+
+    const alDiaSiguiente = await crear({ fecha: '2030-02-15', horaInicio: '2030-02-15T22:00:00+01:00', horaFin: '2030-02-16T00:30:00+01:00' });
     assert.equal(alDiaSiguiente.status, 400);
     assert.match((await alDiaSiguiente.json() as { error: string }).error, /hora de fin tiene que ser del mismo día/);
 
-    const alReves = await crear({ fecha: '2030-05-10', horaInicio: '2030-05-10T21:00:00+02:00', horaFin: '2030-05-10T18:00:00+02:00' });
+    const alReves = await crear({ fecha: '2030-02-15', horaInicio: '2030-02-15T21:00:00+01:00', horaFin: '2030-02-15T18:00:00+01:00' });
     assert.equal(alReves.status, 400);
     assert.match((await alReves.json() as { error: string }).error, /posterior a la hora de inicio/);
 
@@ -747,26 +752,26 @@ test('Turnos: editar las horas de un turno sigue las mismas reglas que crearlo',
   const e = await escenario();
   try {
     const turno = await TurnosService.crearTurno({
-      fecha: '2030-05-10', horaInicio: '2030-05-10T18:00:00+02:00', horaFin: '2030-05-10T21:00:00+02:00', capacidadEstimada: 40
+      fecha: '2030-02-15', horaInicio: '2030-02-15T18:00:00+01:00', horaFin: '2030-02-15T21:00:00+01:00', capacidadEstimada: 40
     }, e.meta);
     e.turnos.push(turno.id);
 
     // Un fin anterior al inicio que ya tenía.
     await assert.rejects(
-      TurnosService.actualizarTurno(turno.id, { horaFin: new Date('2030-05-10T17:00:00+02:00') }, e.meta),
+      TurnosService.actualizarTurno(turno.id, { horaFin: new Date('2030-02-15T17:00:00+01:00') }, e.meta),
       (err: unknown) => err instanceof HttpError && err.status === 400 && /posterior a la hora de inicio/.test(err.message)
     );
     // Un inicio de otro día.
     await assert.rejects(
-      TurnosService.actualizarTurno(turno.id, { horaInicio: new Date('2030-05-09T18:00:00+02:00') }, e.meta),
+      TurnosService.actualizarTurno(turno.id, { horaInicio: new Date('2030-02-14T18:00:00+01:00') }, e.meta),
       (err: unknown) => err instanceof HttpError && err.status === 400 && /hora de inicio tiene que ser del mismo día/.test(err.message)
     );
     const intacto = await db.turno.findUniqueOrThrow({ where: { id: turno.id } });
-    assert.equal(intacto.horaFin.toISOString(), '2030-05-10T19:00:00.000Z');
+    assert.equal(intacto.horaFin.toISOString(), '2030-02-15T20:00:00.000Z');
 
     // Y un cambio válido se guarda.
-    const ampliado = await TurnosService.actualizarTurno(turno.id, { horaFin: new Date('2030-05-10T22:00:00+02:00') }, e.meta);
-    assert.equal(ampliado.horaFin.toISOString(), '2030-05-10T20:00:00.000Z');
+    const ampliado = await TurnosService.actualizarTurno(turno.id, { horaFin: new Date('2030-02-15T22:00:00+01:00') }, e.meta);
+    assert.equal(ampliado.horaFin.toISOString(), '2030-02-15T21:00:00.000Z');
   } finally {
     await e.recoger();
   }

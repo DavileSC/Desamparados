@@ -214,7 +214,7 @@ export const EVENTOS = [
   },
   {
     title: 'Estación de penitencia del Sábado de Pasión',
-    description: 'Salida procesional de Nuestra Señora de los Desamparados por el centro histórico.',
+    description: 'Salida procesional de Nuestra Señora de los Desamparados por el barrio de los Corazones.',
     location: 'Desde la Parroquia de los Padres Pasionistas',
     diasDesdeHoy: 204,
     hora: 18,

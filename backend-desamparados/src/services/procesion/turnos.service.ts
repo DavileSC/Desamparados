@@ -10,6 +10,8 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../audito
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { motivoTurnoInvalido } from '../../domain/datos-procesion.js';
 import { DATOS_SALIDA } from '../../domain/salidas.js';
+import { motivoRepartoFueraDeSuAnio } from '../../domain/curso.js';
+import { diaMadrid } from '../../domain/contabilidad.js';
 import { PlazoPapeletasService } from './plazo.service';
 
 const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
@@ -84,8 +86,13 @@ export class TurnosService {
     const motivo = motivoTurnoInvalido(data.fecha, fechaInicio, fechaFin);
     if (motivo) throw new HttpError(motivo);
 
-    // 3. Lo guardamos, con su acto en la Agenda pública.
+    // 3. Dentro del año de su salida y antes de ella: la mesa apunta la papeleta
+    // en el año en que se reparte.
     const salida = data.salida ?? 'PASION';
+    const fueraDeSuAnio = motivoRepartoFueraDeSuAnio(diaMadrid(new Date(data.fecha)), salida);
+    if (fueraDeSuAnio) throw new HttpError(fueraDeSuAnio);
+
+    // 4. Lo guardamos, con su acto en la Agenda pública.
     const turno = await db.turno.create({
       data: {
         fecha: new Date(data.fecha),

@@ -50,3 +50,25 @@ export function rangoDelCurso(diaHoy: string): { desde: Date; hasta: Date } {
   const fin = yaPaso ? sabadoDePasion(anio + 1) : deEsteAnio;
   return { desde: inicioDiaMadrid(inicio), hasta: inicioDiaMadrid(siguiente(fin)) };
 }
+
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+/** «28 de marzo», de un `AAAA-MM-DD`. */
+const diaYMes = (dia: string) => `${Number(dia.slice(8, 10))} de ${MESES[Number(dia.slice(5, 7)) - 1]}`;
+
+/**
+ * Por qué un día de reparto (`AAAA-MM-DD`) no vale para su salida, o `null`.
+ * La mesa apunta cada papeleta en el año en que se reparte, así que el reparto
+ * va dentro del año de su salida y antes de ella: el de la Pasión, antes de su
+ * Sábado de Pasión; el del Rosario, como muy tarde en octubre. Un reparto de
+ * la Pasión en octubre contaría las papeletas en la salida que ya pasó.
+ */
+export function motivoRepartoFueraDeSuAnio(dia: string, salida: 'PASION' | 'ROSARIO'): string | null {
+  const anio = Number(dia.slice(0, 4));
+  if (salida === 'PASION') {
+    const sabado = sabadoDePasion(anio);
+    if (dia < sabado) return null;
+    return `El reparto de la Pasión va antes de su salida, dentro del mismo año: el Sábado de Pasión de ${anio} es el ${diaYMes(sabado)}. Para la de ${anio + 1}, pon un día desde el 1 de enero hasta el ${diaYMes(sabadoDePasion(anio + 1))}.`;
+  }
+  if (Number(dia.slice(5, 7)) <= 10) return null;
+  return `El reparto del Rosario vespertino va antes de su salida, en octubre como muy tarde. Para el de ${anio + 1}, pon un día de ${anio + 1}.`;
+}
