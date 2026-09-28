@@ -197,7 +197,7 @@ export default function HermanosAdminPage() {
 
   return <>
     <Helmet><title>Hermanos | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
-    <Typography variant="h2" component="h1" sx={{ mb: 4 }}>Gestión de hermanos</Typography>
+    <Typography variant="h2" component="h1" sx={{ mb: 4 }}>Hermanos</Typography>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 3 }}>

@@ -84,7 +84,7 @@ describe('Inicio del CMS', () => {
 
     expect((await tarjeta('Hermanos activos')).getByText('1.284')).toBeInTheDocument()
     expect((await tarjeta(/^Papeletas 2026$/)).getByText('612')).toBeInTheDocument()
-    expect((await tarjeta('Por cobrar')).getByText('2.820 €')).toBeInTheDocument() // pendientes + remesados + devueltos
+    expect((await tarjeta(/^Por cobrar/)).getByText('2.820 €')).toBeInTheDocument() // pendientes + remesados + devueltos
     expect((await tarjeta(/^Saldo 2026$/)).getByText('12.860 €')).toBeInTheDocument()
   })
 

@@ -128,16 +128,22 @@ function AltasYBajas({ meses, orden }: { meses: PanelResponse['censo']['movimien
 }
 
 /** Columnas con degradado, una por año, que crecen una tras otra; la del año en curso brilla. */
-function Columnas({ valores, etiquetas, color, orden }: { valores: number[]; etiquetas: string[]; color: string; orden: number }) {
+function Columnas({ valores, etiquetas, color, orden, corta }: { valores: number[]; etiquetas: string[]; color: string; orden: number; corta?: (etiqueta: string) => string }) {
   if (valores.length < 2) return null
   // Desde cero: si no, una diferencia pequeña entre años parecería enorme.
   const max = Math.max(1, ...valores)
   return (
-    <Box aria-hidden="true" sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', mt: 1.25 }}>
+    // Si la tarjeta es estrecha (dos por fila en el móvil), las etiquetas van
+    // en corto («’22») para no salirse por la derecha.
+    <Box aria-hidden="true" sx={{
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', mt: 1.25, containerType: 'inline-size',
+      '& .corta': { display: 'none' },
+      ...(corta && { '@container (max-width: 220px)': { '& .larga': { display: 'none' }, '& .corta': { display: 'inline' } } }),
+    }}>
       {valores.map((v, i) => {
         const ultima = i === valores.length - 1
         return (
-          <Box key={i} sx={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+          <Box key={i} sx={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
             <Box sx={{ height: 44, width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
               <Box
                 sx={{
@@ -150,7 +156,10 @@ function Columnas({ valores, etiquetas, color, orden }: { valores: number[]; eti
                 }}
               />
             </Box>
-            <Box component="span" sx={{ fontSize: 12, color: ultima ? 'text.primary' : 'text.secondary', fontWeight: ultima ? 700 : 400 }}>{etiquetas[i]}</Box>
+            <Box component="span" sx={{ fontSize: 12, color: ultima ? 'text.primary' : 'text.secondary', fontWeight: ultima ? 700 : 400, whiteSpace: 'nowrap' }}>
+              <span className="larga">{etiquetas[i]}</span>
+              {corta && <span className="corta">{corta(etiquetas[i])}</span>}
+            </Box>
           </Box>
         )
       })}
@@ -271,7 +280,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
         valor={<Valor valor={panel.procesion.papeletas} />}
         pie={anterior ? `de sitio · ${numero(anterior.total)} en ${anterior.anio}` : 'de sitio'}
       >
-        <Columnas valores={anios.map((a) => a.total)} etiquetas={anios.map((a) => String(a.anio))} color={segunModo('#9c8414', '#c9ab3c')} orden={1} />
+        <Columnas valores={anios.map((a) => a.total)} etiquetas={anios.map((a) => String(a.anio))} corta={(anio) => `’${anio.slice(-2)}`} color={segunModo('#9c8414', '#c9ab3c')} orden={1} />
       </Baldosa>
       <Baldosa
         orden={2}

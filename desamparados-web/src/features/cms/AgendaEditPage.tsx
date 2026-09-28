@@ -93,6 +93,9 @@ export default function AgendaEditPage() {
   const inicio = momento(form.dia, form.hora)
   const fin = form.conFin ? momento(form.diaFin || form.dia, form.horaFin) : null
   const finAntes = Boolean(inicio && fin && fin < inicio)
+  // La vista previa, con el día aunque falte la hora, y sin inventarse una:
+  // antes enseñaba la hora de ahora (y el día de hoy si faltaba el día).
+  const inicioPrevia = inicio ?? (form.dia ? new Date(`${form.dia}T00:00`) : new Date(new Date().setHours(0, 0, 0, 0)))
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
   // Mismo corte que el servidor: lo anterior a hoy a las 00:00 va a «Pasados».
@@ -213,8 +216,9 @@ export default function AgendaEditPage() {
                       description: form.description,
                       location: form.location.trim() || undefined,
                       type: form.type,
-                      start: inicio ?? new Date(),
+                      start: inicioPrevia,
                       end: fin,
+                      sinHora: !inicio,
                     }]}
                   />
                 </Box>
@@ -282,12 +286,12 @@ export default function AgendaEditPage() {
               {/* El cartel de verdad, con el tema de la web, sin poder pulsarlo. */}
               <ThemeProvider theme={temaPublico}>
                 <Box inert data-testid="vista-previa-cartel" sx={{ fontFamily: temaPublico.typography.fontFamily, pointerEvents: 'none', backgroundColor: '#0c0b0d', p: { xs: 1.5, md: 3 } }}>
-                  <CartelDeCulto evento={{
+                  <CartelDeCulto sinHora={!inicio} evento={{
                     id: 0,
                     title: form.title.trim() || 'Título del acto',
                     description: form.description || null,
                     location: form.location.trim() || null,
-                    startDate: (inicio ?? new Date()).toISOString(),
+                    startDate: inicioPrevia.toISOString(),
                     endDate: fin ? fin.toISOString() : null,
                     type: form.type,
                     cartel: true,

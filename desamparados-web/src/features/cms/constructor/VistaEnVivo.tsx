@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Box, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
+import { Box, CircularProgress, Fade, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone'
 import TabletMacIcon from '@mui/icons-material/TabletMac'
 import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
@@ -93,6 +93,17 @@ export default function VistaEnVivo({ slug, documento, seleccionado, onSeleccion
             }}
           />
         </Box>
+        {/* La vista tarda unos segundos en arrancar (es la web entera dentro
+            del marco): hasta que avisa de que está lista, un aviso de carga en
+            vez de un marco en blanco. */}
+        <Fade in={!lista} timeout={{ enter: 0, exit: 400 }} unmountOnExit>
+          <Stack role="status" spacing={1.5} sx={{
+            position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: '#121113', color: '#cfc8cc',
+          }}>
+            <CircularProgress size={28} color="inherit" aria-hidden />
+            <Typography variant="body2">Cargando la vista en vivo…</Typography>
+          </Stack>
+        </Fade>
       </Box>
     </Stack>
   )

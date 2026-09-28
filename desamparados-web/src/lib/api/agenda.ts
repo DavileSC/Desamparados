@@ -63,6 +63,8 @@ export interface EventoCalendario {
   type: ApiEvent['type']
   start: Date
   end: Date | null
+  /** Solo en la vista previa del CMS: el acto aún no tiene hora y no se enseña ninguna. */
+  sinHora?: boolean
 }
 
 /**

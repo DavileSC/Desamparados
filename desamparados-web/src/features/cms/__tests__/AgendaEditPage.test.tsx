@@ -73,6 +73,12 @@ describe('AgendaEditPage', () => {
     expect(screen.queryByText(/solo hermanos/i)).not.toBeInTheDocument()
   })
 
+  it('la vista previa de uno nuevo no se inventa la hora', async () => {
+    montar('/cms/agenda/nuevo')
+    const vista = await screen.findByTestId('vista-previa-evento')
+    expect(vista).not.toHaveTextContent(/\d{2}:\d{2}/)
+  })
+
   it('explica el fallo si el evento no existe', async () => {
     montar('/cms/agenda/999/editar')
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se ha podido cargar/i)

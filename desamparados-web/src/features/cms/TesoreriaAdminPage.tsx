@@ -33,6 +33,7 @@ import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import ContadoresEstado from './tesoreria/ContadoresEstado'
 import ListaRecibos from './tesoreria/ListaRecibos'
+import { NOMBRE_METODO } from './mesa/formato'
 import DialogoEstado, { type CambioEstado } from './tesoreria/DialogoEstado'
 
 const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
@@ -233,7 +234,7 @@ export default function TesoreriaAdminPage() {
 
   return <>
     <Helmet><title>Tesorería | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion titulo="Recibos y tesorería">
+    <CabeceraSeccion titulo="Tesorería">
       <Stack direction="row" spacing={1}>
         <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => abrirNuevo()}>Nuevo recibo</Button>
         <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCuotas}>Generar cuotas</Button>
@@ -314,9 +315,10 @@ export default function TesoreriaAdminPage() {
     </VentanaFormulario>
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2, alignItems: { sm: 'center' } }}>
       <Typography variant="h4" sx={{ flexGrow: 1 }}>{esAnioCompleto(year) ? `Recibos del año ${year}` : 'Recibos de todos los años'}</Typography>
-      {/* No es un filtro: es con qué se cobra al pulsar «Cobrar». */}
-      <TextField size="small" select label="Método de cobro" value={payment} onChange={(event) => setPayment(event.target.value as PaymentMethod)} sx={{ minWidth: { sm: 190 } }}>
-        {methods.map((method) => <MenuItem key={method} value={method}>{method}</MenuItem>)}
+      {/* No es un filtro: es con qué se cobra al pulsar «Cobrar», y así lo dice. */}
+      <TextField size="small" select label="Al pulsar «Cobrar», cobrar en" value={payment} onChange={(event) => setPayment(event.target.value as PaymentMethod)} sx={{ minWidth: { sm: 230 } }}
+        helperText="Los remesados se cobran siempre por domiciliación.">
+        {methods.map((method) => <MenuItem key={method} value={method}>{NOMBRE_METODO[method] ?? method}</MenuItem>)}
       </TextField>
     </Stack>
     <BarraListado

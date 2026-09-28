@@ -100,14 +100,14 @@
       "slug": "desamparados",
       "nombre": "Desamparados",
       "ruta": "/desamparados",
-      "grupo": "Sagrada Titular",
+      "grupo": "Sagrada titular",
       "descripcion": "La historia y la devoción a la Amantísima Titular."
     },
     {
       "slug": "ajuar",
       "nombre": "Ajuar",
       "ruta": "/ajuar",
-      "grupo": "Sagrada Titular",
+      "grupo": "Sagrada titular",
       "descripcion": "El manto, la corona y las joyas de la Sagrada Titular."
     },
     {

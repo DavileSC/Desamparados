@@ -280,7 +280,7 @@ describe('apuntes manuales (D8)', () => {
     renderWithProviders(<ContabilidadAdminPage />)
 
     const cifras = await screen.findByRole('region', { name: 'Cifras del periodo' })
-    expect(within(cifras).getByText(/61 recibos, 300\s€ en el banco/)).toBeInTheDocument()
+    expect(within(cifras).getByText(/61 recibos de todos los años, 300\s€ en el banco/)).toBeInTheDocument()
     expect(within(cifras).getByRole('link', { name: 'Ver en Tesorería' })).toHaveAttribute('href', '/cms/tesoreria?estado=PENDIENTE&anio=todos')
   })
 

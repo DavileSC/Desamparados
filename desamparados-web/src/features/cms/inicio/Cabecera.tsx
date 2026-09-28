@@ -18,7 +18,7 @@ interface Props {
 
 /** Los botones de la cabecera: solo los de las secciones de cada cargo. */
 const ATAJOS = [
-  { texto: 'Nuevo acto', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'] },
+  { texto: 'Nuevo evento', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'] },
   { texto: 'Nuevo apunte', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'] },
   { texto: 'Nueva noticia', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], principal: true },
 ]

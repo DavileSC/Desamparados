@@ -53,7 +53,7 @@ export default function PanelDelDia({ dia, actos, portada, volver, altoMaximo, o
         state={{ volver, fecha: claveDia(dia) }}
         sx={{ borderStyle: 'dashed', borderColor: 'divider', textTransform: 'none', fontWeight: 500 }}
       >
-        Nuevo acto el {nombre}
+        Nuevo evento el {nombre}
       </Button>
     </Paper>
   )

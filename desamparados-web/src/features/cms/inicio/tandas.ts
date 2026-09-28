@@ -98,13 +98,23 @@ export function tandasDelCurso(actos: Acto[], hoy: Date): Tanda[] {
     if (ultimo && previo && (diasEntre(previo.fecha, acto.fecha) < DIAS_DE_CALMA || (enCuaresma(previo) && enCuaresma(acto)))) ultimo.push(acto)
     else grupos.push([acto])
   }
-  return grupos.map((g) => {
+  const tandas = grupos.map((g) => {
     const inicio = g[0].fecha
     const fin = g[g.length - 1].fecha
     const estado = soloDia(fin) < soloDia(hoy) ? 'pasada' : soloDia(inicio) <= soloDia(hoy) ? 'viva' : 'porVenir'
     const hecho = estado === 'viva' ? diasEntre(inicio, hoy) / Math.max(1, diasEntre(inicio, fin)) : estado === 'pasada' ? 1 : 0
-    return { actos: g, inicio, fin, nombre: nombreDe(g), estado, hecho }
+    return { actos: g, inicio, fin, nombre: nombreDe(g), estado, hecho } satisfies Tanda
   })
+  // Dos tandas en el mismo mes se llamarían igual («Noviembre» y «Noviembre»):
+  // esas se nombran por sus días, en corto para que quepan: «3–8 nov».
+  const repetidos = new Set(tandas.map((t) => t.nombre).filter((n, i, todos) => todos.indexOf(n) !== i))
+  return tandas.map((t) => (repetidos.has(t.nombre) ? { ...t, nombre: diasDe(t) } : t))
+}
+
+function diasDe({ inicio, fin }: Pick<Tanda, 'inicio' | 'fin'>): string {
+  if (soloDia(inicio) === soloDia(fin)) return diaMes(inicio)
+  if (inicio.getMonth() === fin.getMonth()) return `${inicio.getDate()}–${diaMes(fin)}`
+  return `${diaMes(inicio)} – ${diaMes(fin)}`
 }
 
 export type Momento =

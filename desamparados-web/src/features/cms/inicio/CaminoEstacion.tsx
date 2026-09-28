@@ -181,7 +181,8 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
                     style={{ ['--hecho' as string]: `${Math.round(tanda.hecho * 100)}%` }}
                     sx={{
                       // Cada tanda ocupa lo que pesa, no lo que dura.
-                      flex: `${Math.max(n, 2)} 1 0`, minWidth: 64,
+                      // Nunca más estrecha que su nombre: si no cabe, baja a otra fila.
+                      flex: `${Math.max(n, 2)} 1 0`, minWidth: 'max-content',
                       display: 'grid', gap: 0.75, alignContent: 'start', p: 1.25, m: 0, position: 'relative', overflow: 'hidden',
                       textAlign: 'left', fontFamily: 'inherit', color: OSCURO.texto, cursor: 'pointer',
                       borderRadius: 1.25,
@@ -202,7 +203,7 @@ export default function CaminoEstacion({ eventos, hoy = new Date() }: { eventos:
                   >
                     <Box component="span" sx={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' }}>{tanda.nombre}</Box>
                     <Box component="span" sx={{ fontSize: 11.5, color: OSCURO.texto2, whiteSpace: 'nowrap' }}>{contar(n, 'acto', 'actos')}</Box>
-                    <Box component="span" aria-hidden="true" sx={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                    <Box component="span" aria-hidden="true" sx={{ display: 'flex', flexWrap: 'wrap', gap: '3px', contain: 'inline-size' }}>
                       {tanda.actos.map((acto, j) => (
                         <Box
                           key={j}

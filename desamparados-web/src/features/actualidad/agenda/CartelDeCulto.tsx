@@ -10,7 +10,11 @@ const ORO_SUAVE = '#c9b25a'
  * Un culto solemne, como un cartel: la foto a un lado y, al otro, qué es,
  * su dedicatoria, cuándo y dónde. En el móvil la foto va arriba.
  */
-export default function CartelDeCulto({ evento }: { evento: ApiEvent }) {
+export default function CartelDeCulto({ evento, sinHora = false }: {
+  evento: ApiEvent
+  /** Solo en la vista previa del CMS, mientras el acto no tiene hora. */
+  sinHora?: boolean
+}) {
   const foto = fotoDelCartel(evento)
   const nota = notaDelActo(evento)
   return (
@@ -39,7 +43,7 @@ export default function CartelDeCulto({ evento }: { evento: ApiEvent }) {
           <Typography sx={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.78)', fontSize: 16 }}>{evento.dedicatoria}</Typography>
         )}
         <Typography sx={{ mt: 0.75, fontSize: { xs: 16, md: 17.5 }, color: '#fff' }}>
-          <Box component="span" sx={{ color: GOLD, fontWeight: 500 }}>{cuandoEnCartel(evento)}</Box>, a las {hora(evento)}
+          <Box component="span" sx={{ color: GOLD, fontWeight: 500 }}>{cuandoEnCartel(evento)}</Box>{!sinHora && <>, a las {hora(evento)}</>}
         </Typography>
         {nota && <Typography sx={{ fontSize: 14.5, color: 'rgba(255,255,255,0.75)', maxWidth: '60ch' }}>{nota}</Typography>}
         <EnlacesDelActo evento={evento} sobreOscuro />

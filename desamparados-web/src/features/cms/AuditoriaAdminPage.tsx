@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, Collapse, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Collapse, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { registrosDeAuditoria, type AuditEntry } from '../../lib/api/auditoria'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
+import { NOMBRE_CARGO } from '../../app/cmsNavegacion'
+import CabeceraSeccion from './CabeceraSeccion'
 
 /**
  * Nombre legible de cada acción (AUDIT_ACTIONS en audit.service.ts). Una acción
@@ -74,6 +76,19 @@ const ACCIONES: Record<string, string> = {
   CONTENIDO_ACTUALIZAR: 'Cambiar los textos de una página',
   SECCION_GUARDAR: 'Guardar una sección del constructor',
   SECCION_BORRAR: 'Borrar una sección del constructor',
+  MESA_ALTA: 'Dar de alta en la mesa de procesión',
+  PAPELETA_EDITAR: 'Corregir una papeleta de sitio',
+  MESA_INSCRIBIR: 'Inscribir en la mesa de procesión',
+  MESA_COBRAR: 'Cobrar en la mesa de procesión',
+  RECIBO_PERDONAR: 'Perdonar un recibo',
+  PAPELETA_ENTREGAR: 'Entregar una papeleta de sitio',
+  SOLICITUD_SALIDA_CANCELAR: 'Cancelar una solicitud de salida',
+  SOLICITUD_SALIDA_PEDIR: 'Pedir la papeleta desde el área de hermanos',
+  PAGO_EN_LINEA: 'Pagar en línea desde el área de hermanos',
+  ROSARIO_FECHAR: 'Poner fecha al Rosario vespertino',
+  REACTIVACION_DESCARTAR: 'Descartar una reactivación',
+  CENSO_CERRAR_HUECOS: 'Cerrar los huecos del censo',
+  EMAIL_FALLIDO: 'Correo que no se pudo enviar',
 }
 
 /** Nombre legible de los campos que aparecen en los detalles; el resto va tal cual. */
@@ -153,29 +168,67 @@ function DetallesAuditoria({ detalles }: { detalles: unknown }) {
   )
 }
 
-function EntradaAuditoria({ entry }: { entry: AuditEntry }) {
+/** Sobre qué recae cada acción, en palabras; un tipo que no esté aquí va tal cual. */
+const ENTIDADES: Record<string, string> = {
+  hermano: 'Hermano', user: 'Cuenta', recibo: 'Recibo', papeleta: 'Papeleta', solicitud: 'Solicitud',
+  transaccion: 'Apunte', categoria: 'Categoría', turno: 'Turno', cita: 'Cita', evento: 'Evento',
+  noticia: 'Noticia', pagina: 'Página', publicacion: 'Publicación', seccion: 'Sección', portada: 'Portada',
+  contenido: 'Contenido', enser: 'Enser', prenda: 'Prenda', email: 'Correo', config: 'Configuración',
+  configuracion: 'Configuración',
+}
+
+const fechaCorta = (iso: string) => new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+/**
+ * Una fila de la tabla y, debajo, sus detalles plegados. El código de la acción
+ * se queda a la vista, en pequeño, cuando tiene nombre: es lo que se busca en
+ * los registros.
+ */
+function FilaAuditoria({ entry }: { entry: AuditEntry }) {
   const [abierto, setAbierto] = useState(false)
   const conDetalles = entry.detalles !== null && entry.detalles !== undefined
   const idDetalles = `detalles-auditoria-${entry.id}`
+  const nombre = ACCIONES[entry.action]
+  const sobre = entry.entityType ? `${ENTIDADES[entry.entityType] ?? entry.entityType}${entry.entityId ? ` #${entry.entityId}` : ''}` : '—'
 
   return (
-    <Paper sx={{ p: 2 }}>
-      <Typography variant="h6">{ACCIONES[entry.action] ?? entry.action}</Typography>
-      {/* El código se queda a la vista: es lo que se busca en los registros. */}
-      <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>{entry.action}</Typography>
-      <Typography variant="body2" color="text.secondary">{entry.user ? `${entry.user.nombre} ${entry.user.apellidos} (${entry.user.role})` : 'Usuario no disponible'} · {new Date(entry.createdAt).toLocaleString('es-ES')}</Typography>
-      <Typography variant="body2" color="text.secondary">{entry.entityType ?? 'Sin entidad'}{entry.entityId ? ` #${entry.entityId}` : ''}{entry.ip ? ` · IP ${entry.ip}` : ''}</Typography>
+    <>
+      <TableRow sx={conDetalles && abierto ? { '& > td': { borderBottom: 0 } } : undefined}>
+        <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{fechaCorta(entry.createdAt)}</TableCell>
+        <TableCell>
+          <Typography variant="body2">{nombre ?? entry.action}</Typography>
+          {nombre && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontFamily: 'monospace' }}>{entry.action}</Typography>}
+        </TableCell>
+        <TableCell>
+          {entry.user ? (
+            <>
+              <Typography variant="body2">{entry.user.nombre} {entry.user.apellidos}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{NOMBRE_CARGO[entry.user.role] ?? entry.user.role}</Typography>
+            </>
+          ) : <Typography variant="body2" color="text.secondary">Sin usuario</Typography>}
+        </TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+          <Typography variant="body2">{sobre}</Typography>
+          {entry.ip && <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>IP {entry.ip}</Typography>}
+        </TableCell>
+        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+          {conDetalles && (
+            <Button size="small" aria-expanded={abierto} aria-controls={idDetalles} onClick={() => setAbierto((actual) => !actual)}>
+              {abierto ? 'Ocultar detalles' : 'Ver detalles'}
+            </Button>
+          )}
+        </TableCell>
+      </TableRow>
       {conDetalles && (
-        <>
-          <Button size="small" sx={{ mt: 1, px: 0 }} aria-expanded={abierto} aria-controls={idDetalles} onClick={() => setAbierto((actual) => !actual)}>
-            {abierto ? 'Ocultar detalles' : 'Ver detalles'}
-          </Button>
-          <Collapse in={abierto} id={idDetalles} unmountOnExit>
-            <DetallesAuditoria detalles={entry.detalles} />
-          </Collapse>
-        </>
+        <TableRow>
+          <TableCell colSpan={5} sx={{ py: 0, ...(abierto ? {} : { borderBottom: 0 }) }}>
+            <Collapse in={abierto} id={idDetalles} unmountOnExit>
+              <Box sx={{ pb: 2 }}><DetallesAuditoria detalles={entry.detalles} /></Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
       )}
-    </Paper>
+    </>
   )
 }
 
@@ -197,5 +250,22 @@ export default function AuditoriaAdminPage() {
     return () => { cancelado = true }
   }, [cargar])
 
-  return <><Helmet><title>Auditoría | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet><Typography variant="h2" component="h1" sx={{ mb: 4 }}>Registro de auditoría</Typography>{error && <Alert severity="error">{error}</Alert>}{loading ? <CircularProgress aria-label="Cargando auditoría" /> : <Stack spacing={2}>{entries.map((entry) => <EntradaAuditoria key={entry.id} entry={entry} />)}{!entries.length && <Alert severity="info">No hay registros de auditoría.</Alert>}</Stack>}{meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="registro de auditoría" />}</>
+  return (
+    <>
+      <Helmet><title>Auditoría | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <CabeceraSeccion titulo="Auditoría" subtitulo={meta ? `${meta.total.toLocaleString('es-ES', { useGrouping: 'always' })} registros, del más reciente al más antiguo` : undefined} />
+      {error && <Alert severity="error">{error}</Alert>}
+      {loading ? <CircularProgress aria-label="Cargando auditoría" /> : !entries.length ? <Alert severity="info">No hay registros de auditoría.</Alert> : (
+        <TableContainer component={Paper}>
+          <Table size="small" aria-label="Registros de auditoría" sx={{ minWidth: 720 }}>
+            <TableHead>
+              <TableRow><TableCell>Fecha</TableCell><TableCell>Acción</TableCell><TableCell>Quién</TableCell><TableCell>Sobre qué</TableCell><TableCell /></TableRow>
+            </TableHead>
+            <TableBody>{entries.map((entry) => <FilaAuditoria key={entry.id} entry={entry} />)}</TableBody>
+          </Table>
+        </TableContainer>
+      )}
+      {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="registro de auditoría" />}
+    </>
+  )
 }

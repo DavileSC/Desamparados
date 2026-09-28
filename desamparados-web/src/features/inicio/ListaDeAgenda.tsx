@@ -94,7 +94,7 @@ function Fila({ evento, abierto, onAlternar }: { evento: EventoCalendario; abier
             {evento.title}
           </Box>
           <Box component="span" sx={{ display: 'block', fontSize: 13, lineHeight: 1.45, color: '#6a6258' }}>
-            {[hora(evento.start), evento.location].filter(Boolean).join(' · ')}
+            {[evento.sinHora ? null : hora(evento.start), evento.location].filter(Boolean).join(' · ')}
           </Box>
         </Box>
         <Box

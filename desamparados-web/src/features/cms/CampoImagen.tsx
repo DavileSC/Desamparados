@@ -91,7 +91,7 @@ export default function CampoImagen({
   return (
     <Box role="group" aria-labelledby={idEtiqueta}>
       <Typography id={idEtiqueta} variant="subtitle2" sx={{ mb: 1 }}>{etiqueta}</Typography>
-      <Stack direction={apilada ? 'column' : { xs: 'column', sm: 'row' }} spacing={apilada ? 1.25 : 2} sx={{ alignItems: apilada ? 'stretch' : { sm: 'center' } }}>
+      <Stack direction={apilada ? 'column' : { xs: 'column', sm: 'row' }} spacing={apilada ? 1.25 : 2} useFlexGap sx={{ alignItems: apilada ? 'stretch' : { sm: 'center' }, flexWrap: 'wrap' }}>
         {valor ? (
           <Box component="img" src={valor} alt="Foto actual" sx={{ ...miniatura, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
         ) : (
@@ -105,12 +105,13 @@ export default function CampoImagen({
             variant="outlined"
             disabled={subiendo}
             startIcon={subiendo ? <CircularProgress size={16} /> : <AddPhotoAlternateOutlinedIcon />}
+            sx={{ whiteSpace: 'nowrap' }}
           >
             {subiendo ? 'Subiendo…' : valor ? 'Cambiar foto' : 'Subir foto'}
             <Box component="input" type="file" accept={TIPOS.join(',')} onChange={elegir} sx={inputOculto} />
           </Button>
           {valor && !sinQuitar && (
-            <Button color="error" startIcon={<DeleteOutlineIcon />} onClick={() => onCambio('')} disabled={subiendo}>
+            <Button color="error" startIcon={<DeleteOutlineIcon />} onClick={() => onCambio('')} disabled={subiendo} sx={{ whiteSpace: 'nowrap' }}>
               Quitar foto
             </Button>
           )}

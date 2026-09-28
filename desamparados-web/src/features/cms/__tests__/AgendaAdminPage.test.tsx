@@ -240,7 +240,7 @@ describe('AgendaAdminPage en el mes', () => {
     expect(within(panel).getByText(/Del 20 de octubre al 22 de octubre/)).toBeInTheDocument()
     expect(within(panel).getByText('En portada')).toBeInTheDocument()
     expect(within(panel).getByRole('link', { name: 'Editar Triduo' })).toHaveAttribute('href', '/cms/agenda/5/editar')
-    expect(within(panel).getByRole('link', { name: /nuevo acto el 21 de octubre/i })).toHaveAttribute('href', '/cms/agenda/nuevo')
+    expect(within(panel).getByRole('link', { name: /nuevo evento el 21 de octubre/i })).toHaveAttribute('href', '/cms/agenda/nuevo')
   })
 
   it('un día de reparto se cambia desde Procesión, no desde la Agenda', async () => {

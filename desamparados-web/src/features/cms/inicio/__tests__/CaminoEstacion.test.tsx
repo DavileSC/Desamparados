@@ -126,6 +126,11 @@ describe('las tandas del curso', () => {
     expect(cruzada[0].nombre).toBe('Sep – oct')
   })
 
+  it('dos tandas del mismo mes no se llaman igual: van por sus días', () => {
+    const dobles = tandasDelCurso(actosDelCurso(hoy, [acto('2026-11-01', 'Uno'), acto('2026-11-02', 'Dos'), acto('2026-11-28', 'Tres')]), hoy)
+    expect(dobles.slice(0, 2).map((t) => t.nombre)).toEqual(['1–2 nov', '28 nov'])
+  })
+
   it('sabe si estamos en plena tanda, en calma o sin nada por delante', () => {
     expect(momentoDelCurso(tandas)).toMatchObject({ tipo: 'calma', tanda: { nombre: 'Octubre' } })
     const enOctubre = new Date(2026, 9, 17)

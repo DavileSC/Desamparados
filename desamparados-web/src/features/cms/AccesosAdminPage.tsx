@@ -133,9 +133,9 @@ export default function AccesosAdminPage() {
   const nombreDe = (m: MiembroDelStaff) => `${m.nombre} ${m.apellidos}`.trim()
 
   return <>
-    <Helmet><title>Accesos al CMS | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>Accesos | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
 
-    <CabeceraSeccion titulo="Accesos al CMS">
+    <CabeceraSeccion titulo="Accesos">
       <Button variant="contained" startIcon={<PersonAddAltOutlinedIcon />} onClick={() => setAbierta(true)}>
         Dar acceso
       </Button>

@@ -25,8 +25,8 @@ export default function PaginasAdminPage() {
 
   return (
     <>
-      <Helmet><title>Páginas de la web | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
-      <CabeceraSeccion titulo="Páginas de la web" />
+      <Helmet><title>Páginas | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <CabeceraSeccion titulo="Páginas" />
 
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, maxWidth: '65ch' }}>
         Estas páginas se componen con bloques: se les añade y se les quita texto, fotos,

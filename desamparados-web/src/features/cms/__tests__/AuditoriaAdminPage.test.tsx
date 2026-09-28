@@ -80,6 +80,6 @@ describe('AuditoriaAdminPage', () => {
       createdAt: '2026-09-11T10:00:00.000Z', user: null,
     }])
     renderWithProviders(<AuditoriaAdminPage />)
-    expect(await screen.findByRole('heading', { name: 'ACCION_NUEVA' })).toBeInTheDocument()
+    expect(await screen.findByText('ACCION_NUEVA')).toBeInTheDocument()
   })
 })
