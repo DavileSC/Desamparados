@@ -368,15 +368,22 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
         height: ALTO_LISTA, minHeight: ALTO_MINIMO_LISTA,
       }}>
       <Box component="ol" ref={lista} sx={{ listStyle: 'none', m: 0, p: 0 }}>
-        {paradas.map((parada, i) => (
+        {paradas.map((parada, i) => {
+          // Solo se enciende la calle por la que va el trono, en granate; las
+          // ya pasadas se apagan como las que faltan. En el constructor, todas.
+          const encendida = !enConstructor && i === alcanzada
+          return (
           <Box
             component="li"
             // El itinerario repite lugares: la clave necesita el índice.
             key={`${parada.hora}-${parada.lugar}-${i}`}
             sx={{
               display: 'grid', gridTemplateColumns: '84px minmax(0, 1fr)', columnGap: 2, alignItems: 'baseline',
-              py: 2.25, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
-              opacity: i <= alcanzada ? 1 : 0.4, transition: 'opacity .5s ease',
+              py: 2.25, px: 1.5, alignContent: 'center', borderBottom: '1px solid rgba(204, 196, 201, 0.14)',
+              opacity: enConstructor || encendida ? 1 : 0.4,
+              backgroundColor: encendida ? GRANATE : 'transparent',
+              boxShadow: encendida ? `inset 3px 0 0 ${GRANATE_CLARO}` : 'inset 3px 0 0 transparent',
+              transition: 'opacity .5s ease, background-color .5s ease, box-shadow .5s ease',
             }}
           >
             {parada.hora !== '' ? (
@@ -388,9 +395,10 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
                 hora por confirmar
               </Typography>
             )}
-            <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, color: 'text.primary' }}>{parada.lugar}</Typography>
+            <Typography component="span" sx={{ fontSize: { xs: 17, md: 19 }, color: encendida ? '#fff' : 'text.primary', transition: 'color .5s ease' }}>{parada.lugar}</Typography>
           </Box>
-        ))}
+          )
+        })}
       </Box>
       </Box>
     </Box>
