@@ -20,8 +20,9 @@ interface Props {
 /**
  * Un párrafo que se va encendiendo palabra a palabra según se baja, y que se
  * apaga otra vez si se sube: sigue al scroll. Empieza cuando el párrafo asoma
- * por abajo y termina cuando su centro llega un poco por debajo del centro de
- * la pantalla, así que centrado ya se lee entero encendido.
+ * por abajo y termina cuando su centro está al 65 % del alto de la pantalla:
+ * al llegar a la mitad de lo que se ve (la barra fija tapa la parte de
+ * arriba) ya está entero encendido, también con el retraso del suavizado.
  *
  * El texto de verdad va una sola vez, oculto a la vista pero no a los lectores
  * de pantalla ni a los tests; las palabras sueltas son solo lo que se pinta.
@@ -33,9 +34,10 @@ export default function ParrafoQueSeEnciende({ texto, className, style }: Props)
   const reducir = useReducedMotion()
   const enConstructor = useModoEdicion() !== null
   const quieto = reducir || enConstructor
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['center 95%', 'center 55%'] })
-  // Suavizado: con la rueda del ratón el avance llega a saltos.
-  const avance = useSpring(scrollYProgress, { stiffness: 140, damping: 26, mass: 0.4 })
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['center 100%', 'center 65%'] })
+  // Suavizado: con la rueda del ratón el avance llega a saltos. Rápido, para
+  // que la luz no se quede detrás del párrafo.
+  const avance = useSpring(scrollYProgress, { stiffness: 220, damping: 32, mass: 0.3 })
   const palabras = texto.trim().split(/\s+/)
 
   return (
