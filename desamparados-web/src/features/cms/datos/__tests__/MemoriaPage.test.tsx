@@ -5,11 +5,12 @@ import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
 import { useAuthStore } from '../../../altas/auth/store'
 import MemoriaPage, { cursoDeHoy, puedeEscribir } from '../MemoriaPage'
+import type { TextosMemoria } from '../../../../lib/api/datos'
 
 const json = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
-const VACIA = { presentacion: null, firmaPresentacion: null, lugarFecha: null, epilogo: null, firmaEpilogo: null, notaPatrimonio: null, fechaCabildo: null }
+const VACIA: TextosMemoria = { presentacion: null, firmaPresentacion: null, lugarFecha: null, epilogo: null, firmaEpilogo: null, notaPatrimonio: null, fechaCabildo: null }
 const memoria = (textos = VACIA) => ({
   curso: 2025, etiqueta: 'Curso 2025–2026', desde: '2025-04-13', hasta: '2026-03-28', textos,
   faltan: [...(textos.presentacion ? [] : ['presentacion']), ...(textos.epilogo ? [] : ['epilogo'])], actualizada: null,

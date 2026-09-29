@@ -92,6 +92,10 @@ const subida = multer({
 const ficherosDe = (req: Request): Express.Multer.File[] =>
   Object.values((req.files ?? {}) as Record<string, Express.Multer.File[]>).flat();
 
+/** Borra los ficheros del alta; los que ya no estén se dan por borrados. */
+const borrarFicheros = (req: Request) =>
+  Promise.all(ficherosDe(req).map((fichero) => fs.unlink(fichero.path).catch(() => {})));
+
 const rechazar = (res: Response, campo: string, message: string, status = 400) =>
   res.status(status).json({ status: 'error', message, errors: [{ field: campo, message }] });
 
@@ -106,7 +110,7 @@ export function recibirAlta(req: Request, res: Response, next: NextFunction) {
     // Pase lo que pase después, lo que no se conserve expresamente se borra.
     res.on('finish', () => {
       if (res.locals.conservarDocumentos) return;
-      for (const fichero of ficherosDe(req)) void fs.unlink(fichero.path).catch(() => {});
+      void borrarFicheros(req);
     });
 
     if (error instanceof DocumentoRechazado) return rechazar(res, error.campo, error.message);
@@ -182,7 +186,12 @@ export async function comprobarDocumentosDelAlta(req: Request, res: Response, ne
       documentos[campo] = fichero.filename;
     }
   } catch (error) {
-    if (error instanceof DocumentoRechazado) return rechazar(res, error.campo, error.message, error.status);
+    if (error instanceof DocumentoRechazado) {
+      // Un documento rechazado se borra antes de responder, no al terminar la
+      // respuesta: quien recibe el 400 no debe encontrarlo aún en disco.
+      await borrarFicheros(req);
+      return rechazar(res, error.campo, error.message, error.status);
+    }
     return next(error);
   }
   req.documentosDelAlta = documentos;
