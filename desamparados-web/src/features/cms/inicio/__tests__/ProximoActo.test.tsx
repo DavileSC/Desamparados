@@ -17,7 +17,8 @@ describe('ProximoActo', () => {
     expect(screen.getByRole('heading', { name: 'Próximo acto · hoy' })).toBeInTheDocument()
     expect(screen.getByText('16')).toBeInTheDocument()
     expect(screen.getByText('oct')).toBeInTheDocument()
-    expect(screen.getByText('Viernes · 19:00')).toBeInTheDocument()
+    expect(screen.getByText('19:00')).toBeInTheDocument()
+    expect(screen.getByText('Viernes')).toBeInTheDocument()
     expect(screen.getByText('Solemne triduo')).toBeInTheDocument()
     expect(screen.getByText('Parroquia de los Padres Pasionistas')).toBeInTheDocument()
   })
@@ -26,6 +27,7 @@ describe('ProximoActo', () => {
     montar({ ...TRIDUO, hora: null, lugar: null }, new Date(2026, 9, 11))
     expect(screen.getByRole('heading', { name: 'Próximo acto · en 5 días' })).toBeInTheDocument()
     expect(screen.getByText('Viernes')).toBeInTheDocument()
+    expect(screen.queryByText(/\d\d:\d\d/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Parroquia/)).not.toBeInTheDocument()
   })
 

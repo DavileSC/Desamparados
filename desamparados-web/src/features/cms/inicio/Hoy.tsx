@@ -9,7 +9,8 @@ import type { Tarea } from './tareas'
 
 /**
  * La pestaña «Hoy»: arriba los asuntos que esperan; debajo, el próximo acto en
- * grande y, a su lado, el curso con lo que viene después. Con los asuntos
+ * una franja a lo ancho y, al pie, el curso con lo que viene después, que se
+ * queda con el alto que sobra. Con los asuntos
  * abiertos («Ver los N»), la lista se queda con todo el hueco y el curso
  * vuelve con «Ver menos».
  */
@@ -31,19 +32,10 @@ export default function Hoy({ tareas, role, eventos, hoy = new Date() }: {
     >
       <Asuntos tareas={tareas} role={role} todos={todos} onTodos={setTodos} />
       {!todos && (
-        <Box
-          sx={{
-            flex: '1 1 0', minHeight: 0, display: 'grid', gap: 'clamp(8px, 1.6vh, 14px)',
-            // En estrecho, una encima de otra: el curso se queda con lo que sobre.
-            gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'auto minmax(260px, 1fr)',
-            '@container columna (min-width: 560px)': { gridTemplateColumns: 'minmax(210px, 250px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)' },
-            // En el móvil la pestaña se desplaza: aquí cada pieza mide lo suyo.
-            '@container columna (max-width: 559px)': { flex: '1 0 auto' },
-          }}
-        >
+        <>
           <ProximoActo acto={proximo} hoy={hoy} />
           <ElCurso actos={actos} hoy={hoy} />
-        </Box>
+        </>
       )}
     </Box>
   )
