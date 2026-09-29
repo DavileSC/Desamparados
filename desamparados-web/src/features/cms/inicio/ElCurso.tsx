@@ -38,13 +38,13 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
       sx={{
         // Se queda con el alto que sobra en el Inicio; lo que no cabe se desplaza dentro.
         flex: '1 1 0', minHeight: 0, overflow: 'hidden',
-        display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 1.8vh, 18px)', p: 'clamp(12px, 2.6vh, 28px)',
+        display: 'flex', flexDirection: 'column', gap: 'clamp(6px, 1.2vh, 12px)', px: 'clamp(12px, 2vw, 24px)', py: 'clamp(10px, 1.8vh, 18px)',
         borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: FONDO_PIEZA,
         '& > *': { flexShrink: 0 },
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '2px 16px', flexWrap: 'wrap' }}>
-        <Typography id="el-curso" component="h2" sx={{ ...SERIF, fontSize: 'clamp(21px, 3vh, 28px)', lineHeight: 1.1 }}>El curso</Typography>
+        <Typography id="el-curso" component="h2" sx={{ ...SERIF, fontSize: 'clamp(20px, 2.6vh, 26px)', lineHeight: 1.1 }}>El curso</Typography>
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
           {porcentaje} % recorrido · {porDelante ? `${contar(porDelante, 'acto', 'actos')} por delante` : 'sin actos por delante'}
         </Typography>
@@ -68,7 +68,7 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                 sx={{
                   // Cada tanda ocupa lo que pesa; nunca más estrecha que su texto.
                   flex: `${Math.max(tanda.actos.length, 1)} 1 0`, minWidth: 'max-content',
-                  px: 1.75, py: 'clamp(6px, 1.3vh, 12px)', m: 0, borderRadius: 1.5, textAlign: 'left', fontFamily: 'inherit', color: 'text.primary', cursor: 'pointer',
+                  px: 1.5, py: 'clamp(4px, .8vh, 7px)', m: 0, borderRadius: 1.5, textAlign: 'left', fontFamily: 'inherit', color: 'text.primary', cursor: 'pointer',
                   border: '1px solid', borderColor: abierta ? `color-mix(in srgb, ${ORO} 60%, transparent)` : FILETE,
                   backgroundColor: abierta ? `color-mix(in srgb, ${ORO} 9%, transparent)` : 'transparent',
                   opacity: tanda.estado === 'pasada' && !abierta ? 0.55 : 1,
@@ -77,8 +77,9 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                   animation: `${aparecer} .45s cubic-bezier(.2, .9, .3, 1.2) backwards`, animationDelay: `${200 + i * 70}ms`, ...sinMovimiento,
                 }}
               >
-                <Box component="span" sx={{ display: 'block', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{tanda.nombre}</Box>
-                <Box component="span" sx={{ display: 'block', fontSize: 12, mt: 0.5, whiteSpace: 'nowrap', color: viva ? ORO : 'text.secondary' }}>{estadoDe(tanda, hoy)}</Box>
+                {/* Nombre y estado en una línea: dos renglones por tanda eran demasiado alto. */}
+                <Box component="span" sx={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{tanda.nombre}</Box>
+                <Box component="span" sx={{ fontSize: 12, ml: 1, whiteSpace: 'nowrap', color: viva ? ORO : 'text.secondary' }}>{estadoDe(tanda, hoy)}</Box>
               </Box>
             )
           })}
@@ -116,7 +117,7 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                       <Box
                         component="li"
                         key={i}
-                        sx={{ display: 'flex', gap: 1.75, alignItems: 'baseline', py: 'clamp(4px, 1vh, 10px)', borderTop: `1px solid ${FILETE_SUAVE}`, opacity: acto.pasado ? 0.5 : 1 }}
+                        sx={{ display: 'flex', gap: 1.75, alignItems: 'baseline', py: 'clamp(3px, .8vh, 8px)', borderTop: `1px solid ${FILETE_SUAVE}`, opacity: acto.pasado ? 0.5 : 1 }}
                       >
                         <Box component="span" sx={{ ...SERIF, width: 56, flexShrink: 0, fontSize: 'clamp(16px, 2.2vh, 20px)', color: esSiguiente ? ORO : 'text.secondary' }}>
                           {diaMes(acto.fecha)}

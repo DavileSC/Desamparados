@@ -13,7 +13,8 @@ interface Props {
 }
 
 /**
- * El saludo del Inicio: la fecha, «Buenos días» con el cargo y cómo va la web.
+ * El saludo del Inicio: «Buenos días» con el cargo y, debajo, la fecha y cómo
+ * va la web en una sola línea.
  * Lo que espera lo cuenta la lista de asuntos, justo debajo. Sin botones de
  * crear: cada cosa se crea desde su sección.
  */
@@ -24,24 +25,27 @@ export default function Cabecera({ role, actividad, hoy = new Date() }: Props) {
   return (
     <Box
       sx={{
-        display: 'flex', flexDirection: 'column', gap: 'clamp(4px, 1vh, 10px)', minWidth: 0,
+        display: 'flex', flexDirection: 'column', gap: 'clamp(2px, .6vh, 6px)', minWidth: 0,
         // En pantallas muy bajas solo queda el saludo: el curso necesita el sitio.
         '@media (max-height: 700px) and (max-width: 719px)': { '& .secundaria': { display: 'none' } },
       }}
     >
-      <Typography className="secundaria" sx={{ ...VERSALITAS, ...unaLinea, fontSize: 11.5, letterSpacing: '0.22em' }}>
-        {hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-      </Typography>
-      <Typography component="h1" sx={{ ...SERIF, fontSize: 'clamp(24px, min(5.4vh, 7vw), 54px)', lineHeight: 1.05 }}>
+      <Typography component="h1" sx={{ ...SERIF, fontSize: 'clamp(24px, min(4.6vh, 7vw), 44px)', lineHeight: 1.05 }}>
         Buenos días{cargo && `, ${cargo}`}
       </Typography>
-      {actividad && (
-        <Typography className="secundaria" sx={{ ...unaLinea, fontSize: 'clamp(13px, 1.7vh, 15px)', color: 'text.secondary' }}>
-          En la web: {contar(actividad.noticias.publicadas, 'noticia publicada', 'noticias publicadas')} ·{' '}
-          {contar(actividad.publicaciones.total, 'publicación', 'publicaciones')}
-          {actividad.publicaciones.ultima && `, la última el ${fechaCorta(actividad.publicaciones.ultima)}`}
-        </Typography>
-      )}
+      {/* La fecha y cómo va la web, en una sola línea: el curso necesita el sitio. */}
+      <Typography className="secundaria" sx={{ ...unaLinea, fontSize: 13.5, color: 'text.secondary' }}>
+        <Box component="span" sx={{ ...VERSALITAS, fontSize: 11.5, letterSpacing: '0.18em' }}>
+          {hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </Box>
+        {actividad && (
+          <>
+            {' · '}En la web: {contar(actividad.noticias.publicadas, 'noticia publicada', 'noticias publicadas')} ·{' '}
+            {contar(actividad.publicaciones.total, 'publicación', 'publicaciones')}
+            {actividad.publicaciones.ultima && `, la última el ${fechaCorta(actividad.publicaciones.ultima)}`}
+          </>
+        )}
+      </Typography>
     </Box>
   )
 }

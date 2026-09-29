@@ -66,7 +66,7 @@ export default function PanelPage() {
         <Box
           sx={{
             minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', containerType: 'inline-size', containerName: 'columna',
-            px: { xs: 2, sm: 3, md: 4, lg: 8 }, pt: 'clamp(12px, min(4vh, 4vw), 52px)', pb: 'clamp(10px, min(2.4vh, 2.6vw), 30px)', gap: 'clamp(10px, min(2.4vh, 2.6vw), 30px)',
+            px: { xs: 2, sm: 3, md: 4, lg: 8 }, pt: 'clamp(12px, min(3vh, 3vw), 32px)', pb: 'clamp(8px, 1.6vh, 16px)', gap: 'clamp(8px, 1.8vh, 18px)',
             '& > *': { flexShrink: 0 },
           }}
         >
@@ -80,7 +80,7 @@ export default function PanelPage() {
           className="cifras"
           sx={{
             minWidth: 0, containerType: 'inline-size', containerName: 'cifras',
-            px: { xs: 2, sm: 3, md: 4 }, pb: 'clamp(12px, min(3vh, 3vw), 32px)', pt: { xs: 0, md: 'clamp(12px, min(2.4vh, 2.6vw), 24px)' },
+            px: { xs: 2, sm: 3, md: 4 }, pb: 'clamp(12px, min(3vh, 3vw), 32px)', pt: { xs: 0, md: 'clamp(8px, 1.6vh, 16px)' },
           }}
         >
           <Cifras panel={data} />

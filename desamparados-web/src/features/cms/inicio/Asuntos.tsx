@@ -8,7 +8,7 @@ import { FILETE, FILETE_SUAVE, ORO, ROSA_URGENTE } from './estiloRetablo'
 
 /** Cuántos asuntos se ven de entrada si no se dice otra cosa; el resto, con «Ver los N». */
 export const A_LA_VISTA = 4
-const PY = 'clamp(6px, 1.4vh, 12px)'
+const PY = 'clamp(5px, 1vh, 9px)'
 
 const COLOR: Record<Prioridad, string> = {
   urgente: ROSA_URGENTE,
