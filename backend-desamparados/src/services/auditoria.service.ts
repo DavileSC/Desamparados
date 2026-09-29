@@ -102,6 +102,10 @@ export const ACCIONES_AUDITORIA = {
   CONTENIDO_ACTUALIZAR: 'CONTENIDO_ACTUALIZAR',
   SECCION_GUARDAR: 'SECCION_GUARDAR',
   SECCION_BORRAR: 'SECCION_BORRAR',
+  // El Inicio del CMS: avisos de la junta y la foto del retablo
+  AVISO_CREAR: 'AVISO_CREAR',
+  AVISO_HECHO: 'AVISO_HECHO',
+  RETABLO_ACTUALIZAR: 'RETABLO_ACTUALIZAR',
   // Correo que no salió. No es una acción de nadie, pero se guarda aquí porque
   // es el único sitio del CMS donde el staff puede enterarse: antes el fallo
   // moría en un console.error y el alta se daba por buena sin avisar a nadie.

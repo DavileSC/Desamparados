@@ -56,6 +56,7 @@ const TesoreriaAdminPage = lazy(() => import('../features/cms/TesoreriaAdminPage
 const InventarioAdminPage = lazy(() => import('../features/cms/InventarioAdminPage'))
 const ContabilidadAdminPage = lazy(() => import('../features/cms/ContabilidadAdminPage'))
 const AuditoriaAdminPage = lazy(() => import('../features/cms/AuditoriaAdminPage'))
+const AjustesInicioPage = lazy(() => import('../features/cms/AjustesInicioPage'))
 const AccesosAdminPage = lazy(() => import('../features/cms/AccesosAdminPage'))
 const PanelPage = lazy(() => import('../features/cms/PanelPage'))
 const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
@@ -227,6 +228,7 @@ const router = createBrowserRouter([
           { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
           { path: 'accesos', element: <ExigeRol roles={rolesPorRutaCms.accesos}>{withSuspense(AccesosAdminPage)}</ExigeRol> },
           { path: 'auditoria', element: <ExigeRol roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditoriaAdminPage)}</ExigeRol> },
+          { path: 'ajustes-inicio', element: <ExigeRol roles={rolesPorRutaCms['ajustes-inicio']}>{withSuspense(AjustesInicioPage)}</ExigeRol> },
         ],
       },
     ],

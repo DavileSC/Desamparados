@@ -41,6 +41,7 @@ function pestanaGuardada(): Pestana {
  */
 export default function PanelPage() {
   const role = useAuthStore((state) => state.cms?.role)
+  const userId = useAuthStore((state) => state.cms?.id)
   const { data, isPending, isError } = usePanelDeHoy()
   const { referencia, alto } = useAltoDisponible()
   const [pestana, setPestana] = useState<Pestana>(pestanaGuardada)
@@ -89,7 +90,7 @@ export default function PanelPage() {
           },
         }}
       >
-        <Retablo />
+        <Retablo foto={data.retablo?.foto ?? undefined} x={data.retablo?.x} y={data.retablo?.y} />
         <Box
           sx={{
             minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', containerType: 'inline-size', containerName: 'columna',
@@ -142,7 +143,7 @@ export default function PanelPage() {
             }}
           >
             {pestana === 'hoy'
-              ? <Hoy tareas={tareas} role={role} eventos={data.curso.eventos} />
+              ? <Hoy tareas={tareas} role={role} userId={userId} eventos={data.curso.eventos} />
               : <Cifras panel={data} />}
           </Box>
         </Box>

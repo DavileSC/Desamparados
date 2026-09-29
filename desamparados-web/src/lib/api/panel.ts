@@ -20,6 +20,30 @@ export interface FilaRecuento {
   total: number
 }
 
+/** Los cargos de la junta (los roles del CMS, sin el hermano raso). */
+export type CargoJunta = 'ADMIN' | 'HERMANO_MAYOR' | 'SECRETARIA' | 'TESORERIA' | 'REDES' | 'ALBACERIA'
+
+/** Un aviso que un cargo apunta a mano en el Inicio, pendiente hasta que alguien lo da por hecho. */
+export interface AvisoJunta {
+  id: number
+  texto: string
+  /** Un cargo, o null si es para toda la junta. */
+  para: CargoJunta | null
+  /** AAAA-MM-DD, o null sin fecha límite. */
+  hasta: string | null
+  urgente: boolean
+  creadoPorId: number | null
+  creadorRol: CargoJunta
+  createdAt: string
+}
+
+/** La foto del retablo (null = la de siempre) y el punto que no se recorta, en %. */
+export interface Retablo {
+  foto: string | null
+  x: number
+  y: number
+}
+
 export interface PanelResponse {
   generadoEn: string
   /** Ejercicio al que corresponden el dinero, la procesión y la serie del censo. */
@@ -71,6 +95,32 @@ export interface PanelResponse {
     /** `location` es opcional: un backend anterior no lo manda. */
     eventos: { id: number; title: string; startDate: string; type: TipoEvento; location?: string | null }[]
   }
+  /** Opcionales: un backend anterior no los manda (sin avisos y con la foto de siempre). */
+  avisos?: AvisoJunta[]
+  retablo?: Retablo
+}
+
+export interface NuevoAviso {
+  texto: string
+  para: CargoJunta | null
+  hasta: string | null
+  urgente: boolean
+}
+
+export function crearAviso(aviso: NuevoAviso) {
+  return llamarApi<AvisoJunta>('/panel/avisos', { method: 'POST', json: aviso })
+}
+
+export function darAvisoPorHecho(id: number) {
+  return llamarApi<void>(`/panel/avisos/${id}/hecho`, { method: 'POST' })
+}
+
+export function traerRetablo() {
+  return llamarApi<Retablo>('/panel/retablo')
+}
+
+export function guardarRetablo(retablo: Retablo) {
+  return llamarApi<Retablo>('/panel/retablo', { method: 'PUT', json: retablo })
 }
 
 /** Sin año, el ejercicio en curso. */

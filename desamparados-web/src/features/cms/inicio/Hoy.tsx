@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Box } from '@mui/material'
+import { Box, useMediaQuery } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
 import Asuntos from './Asuntos'
+import NuevoAviso from './NuevoAviso'
 import ProximoActo from './ProximoActo'
 import ElCurso from './ElCurso'
 import { actosDelCurso } from './tandas'
@@ -13,11 +14,16 @@ import type { Tarea } from './tareas'
  * queda con el alto que sobra. Con los asuntos
  * abiertos («Ver los N»), la lista se queda con todo el hueco y el curso
  * vuelve con «Ver menos».
+ *
+ * En pantallas bajas (un portátil con el escalado de Windows) caben tres filas
+ * de asuntos y no cuatro: con cuatro, el curso se quedaba sin sitio.
  */
-export default function Hoy({ tareas, role, eventos, hoy = new Date() }: {
-  tareas: Tarea[]; role?: string; eventos: PanelResponse['curso']['eventos']; hoy?: Date
+export default function Hoy({ tareas, role, userId, eventos, hoy = new Date() }: {
+  tareas: Tarea[]; role?: string; userId?: number; eventos: PanelResponse['curso']['eventos']; hoy?: Date
 }) {
   const [todos, setTodos] = useState(false)
+  const [avisoNuevo, setAvisoNuevo] = useState(false)
+  const alta = useMediaQuery('(min-height: 700px)')
   const actos = actosDelCurso(hoy, eventos)
   const proximo = actos.find((a) => !a.pasado)
 
@@ -30,7 +36,8 @@ export default function Hoy({ tareas, role, eventos, hoy = new Date() }: {
         '@container columna (max-width: 559px)': { flex: '1 0 auto' },
       }}
     >
-      <Asuntos tareas={tareas} role={role} todos={todos} onTodos={setTodos} />
+      <Asuntos tareas={tareas} role={role} userId={userId} todos={todos} onTodos={setTodos} filas={alta ? 4 : 3} onNuevoAviso={() => setAvisoNuevo(true)} />
+      <NuevoAviso abierto={avisoNuevo} onCerrar={() => setAvisoNuevo(false)} />
       {!todos && (
         <>
           <ProximoActo acto={proximo} hoy={hoy} />

@@ -15,7 +15,17 @@ const FECHA_CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 's
  * En un panel ancho va a la izquierda y se queda quieta mientras baja el
  * resto; en uno estrecho es una franja arriba.
  */
-export default function Retablo({ hoy = new Date() }: { hoy?: Date }) {
+/** La foto de siempre (la del hero de la web) y su encuadre: el rostro de la Virgen. */
+export const FOTO_POR_DEFECTO = '/images/hero-960.webp'
+
+export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x = 50, y = 30 }: {
+  hoy?: Date
+  /** La que haya elegido la junta en «Ajustes del Inicio». */
+  foto?: string
+  /** El punto de la foto que nunca se recorta, en %. */
+  x?: number
+  y?: number
+}) {
   const { fecha, dias } = cuentaAtrasEstacion(hoy)
   const diasContados = Math.round(useCuenta(dias, 1600))
 
@@ -41,10 +51,10 @@ export default function Retablo({ hoy = new Date() }: { hoy?: Date }) {
     >
       <Box
         component="img"
-        src="/images/hero-960.webp"
+        src={foto}
         alt="Nuestra Señora de los Desamparados"
         sx={{
-          position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 30%', opacity: 0.85,
+          position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${x}% ${y}%`, transformOrigin: `${x}% ${y}%`, opacity: 0.85,
           animation: `${acercar} 22s ease-out both`, ...sinMovimiento,
         }}
       />

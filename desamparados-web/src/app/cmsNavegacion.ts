@@ -14,6 +14,7 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined'
 import WebOutlinedIcon from '@mui/icons-material/WebOutlined'
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
 import CATALOGO from '../../../shared/paginas-publicas.json'
 import type { PanelResponse } from '../lib/api/panel'
 
@@ -89,6 +90,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
   { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
+  { label: 'Ajustes del Inicio', href: '/cms/ajustes-inicio', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'cuenta', icono: TuneOutlinedIcon },
   { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'cuenta', icono: ShieldOutlinedIcon },
 ]
 
@@ -118,6 +120,8 @@ export const rolesPorRutaCms = {
   // lo estrecha igual (checkRole(SOLO_ADMIN) en adminRoutes).
   accesos: ['ADMIN'],
   auditoria: ['ADMIN', 'HERMANO_MAYOR'],
+  // La foto del retablo del Inicio: la misma guarda que PUT /api/panel/retablo.
+  'ajustes-inicio': ['ADMIN', 'HERMANO_MAYOR'],
   // La gestión del 2FA propio es de todo el staff: cada cuenta debe poder
   // protegerse, no solo la de ADMIN.
   'mi-seguridad': ['ADMIN', 'REDES', 'SECRETARIA', 'HERMANO_MAYOR', 'TESORERIA', 'ALBACERIA'],

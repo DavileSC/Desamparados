@@ -1,4 +1,4 @@
-import type { PanelResponse } from '../../../lib/api/panel'
+import type { AvisoJunta, PanelResponse } from '../../../lib/api/panel'
 import { NOMBRE_CARGO } from '../../../app/cmsNavegacion'
 import { contar } from './plural'
 
@@ -29,13 +29,53 @@ export interface Tarea {
   roles: string[]
   /** `null` cuando todavía no hay pantalla a la que ir. */
   accion: { texto: string; href: string } | null
+  /** Solo en los avisos de la junta: se dan por hecho desde el propio Inicio. */
+  aviso?: { id: number; creadoPorId: number | null }
 }
 
+const JUNTA = ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA']
 const CONTENIDO = ['ADMIN', 'REDES', 'HERMANO_MAYOR']
 const SECRETARIA = ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR']
 const TESORERIA = ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR']
 
-export function tareasDelDia(panel: PanelResponse): Tarea[] {
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+/** Hoy en España, «AAAA-MM-DD»: la fecha límite de un aviso se compara con esto. */
+const hoyEnMadrid = (hoy: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(hoy)
+const diaCorto = (iso: string) => `${Number(iso.slice(8, 10))} ${MESES[Number(iso.slice(5, 7)) - 1]}`
+const DIA_EN_MS = 24 * 60 * 60 * 1000
+const diasEntre = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / DIA_EN_MS)
+
+/**
+ * Un aviso de la junta como asunto: urgente si se marcó así o si ya pasó su
+ * fecha sin hacerse. Lo lleva su cargo (o toda la junta); el Hermano Mayor y
+ * Administración, como en todo, también.
+ */
+export function tareaDeAviso(aviso: AvisoJunta, hoy: Date = new Date()): Tarea {
+  const dia = hoyEnMadrid(hoy)
+  const vencido = aviso.hasta !== null && aviso.hasta < dia
+  const prioridad: Prioridad = aviso.urgente || vencido ? 'urgente' : 'pendiente'
+  let cuando = ''
+  if (aviso.hasta) {
+    const faltan = diasEntre(dia, aviso.hasta)
+    cuando = faltan < -1 ? ` · vencía el ${diaCorto(aviso.hasta)}` : faltan === -1 ? ' · vencía ayer' : faltan === 0 ? ' · vence hoy' : faltan === 1 ? ' · hasta mañana' : ` · hasta el ${diaCorto(aviso.hasta)}`
+  }
+  const para = aviso.para ? `para ${NOMBRE_CARGO[aviso.para]}` : 'para toda la junta'
+  return {
+    clave: `aviso-${aviso.id}`,
+    prioridad,
+    etiqueta: ETIQUETA[prioridad],
+    titulo: aviso.texto,
+    detalle: `${para} · de ${NOMBRE_CARGO[aviso.creadorRol]}${cuando}`,
+    cargo: aviso.para ? NOMBRE_CARGO[aviso.para] : 'Toda la junta',
+    roles: aviso.para ? [aviso.para, 'ADMIN', 'HERMANO_MAYOR'] : JUNTA,
+    accion: null,
+    aviso: { id: aviso.id, creadoPorId: aviso.creadoPorId },
+  }
+}
+
+const ORDEN: Record<Prioridad, number> = { urgente: 0, pendiente: 1, programado: 2 }
+
+export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date()): Tarea[] {
   const tareas: Tarea[] = []
 
   // Los ya reemitidos no piden nada: su recibo nuevo sigue su curso.
@@ -97,7 +137,10 @@ export function tareasDelDia(panel: PanelResponse): Tarea[] {
     })
   }
 
-  return tareas
+  // Los avisos de la junta, entre los demás por su prioridad: lo urgente arriba.
+  // `sort` es estable, así que dentro de cada prioridad no cambia el orden.
+  for (const aviso of panel.avisos ?? []) tareas.push(tareaDeAviso(aviso, hoy))
+  return tareas.sort((a, b) => ORDEN[a.prioridad] - ORDEN[b.prioridad])
 }
 
 /**

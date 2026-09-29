@@ -816,3 +816,26 @@ model SeccionGuardada {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// Avisos de la junta: lo que un cargo apunta a mano en el Inicio del CMS para
+// otro cargo o para toda la junta («Preparar el orden del día del cabildo»).
+// Salen entre los asuntos de «Hoy» hasta que alguien los da por hecho; entonces
+// no se borran, se marcan (y la auditoría guarda quién y cuándo).
+model AvisoJunta {
+  id          Int       @id @default(autoincrement())
+  texto       String    @db.VarChar(160)
+  // Para quién: un cargo, o null si es para toda la junta.
+  para        Role?
+  // Fecha límite opcional: pasada y sin hacer, el aviso se pone urgente solo.
+  hasta       DateTime? @db.Date
+  urgente     Boolean   @default(false)
+  // Quién lo creó y con qué cargo («de Secretaría»). Sin relación: el aviso
+  // no debe impedir nada sobre la cuenta, y el cargo ya queda guardado aquí.
+  creadoPorId Int?
+  creadorRol  Role
+  createdAt   DateTime  @default(now())
+  hechoAt     DateTime?
+  hechoPorId  Int?
+
+  @@index([hechoAt])
+}
