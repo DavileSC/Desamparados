@@ -106,6 +106,8 @@ export const ACCIONES_AUDITORIA = {
   AVISO_CREAR: 'AVISO_CREAR',
   AVISO_HECHO: 'AVISO_HECHO',
   RETABLO_ACTUALIZAR: 'RETABLO_ACTUALIZAR',
+  // Los textos a mano de la Memoria del curso
+  MEMORIA_ACTUALIZAR: 'MEMORIA_ACTUALIZAR',
   // Correo que no salió. No es una acción de nadie, pero se guarda aquí porque
   // es el único sitio del CMS donde el staff puede enterarse: antes el fallo
   // moría en un console.error y el alta se daba por buena sin avisar a nadie.

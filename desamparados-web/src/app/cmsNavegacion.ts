@@ -15,6 +15,8 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined'
 import WebOutlinedIcon from '@mui/icons-material/WebOutlined'
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
+import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
+import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import CATALOGO from '../../../shared/paginas-publicas.json'
 import type { PanelResponse } from '../lib/api/panel'
 
@@ -43,12 +45,16 @@ import type { PanelResponse } from '../lib/api/panel'
  * Áreas del menú, en el orden en que se pintan. «Censo y enseres» y no
  * «Hermandad»: la corporación es un Grupo Parroquial.
  *
+ * «Junta» es de la junta de gobierno en sentido estricto: los datos e
+ * informes de todas las áreas y la Memoria del curso (que también escribe
+ * Secretaría, su epílogo).
+ *
  * «Web pública» es el apartado del constructor de páginas: páginas de la web
  * pública compuestas por bloques, distinto de «Contenido», que son la portada,
  * con su formulario fijo, y lo que se publica por entradas (noticias,
  * publicaciones, agenda).
  */
-export const GRUPOS = ['Web', 'Censo y procesión', 'Cuentas', 'Sistema'] as const
+export const GRUPOS = ['Web', 'Censo y procesión', 'Cuentas', 'Junta', 'Sistema'] as const
 export type Grupo = (typeof GRUPOS)[number]
 
 /**
@@ -88,6 +94,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
+  { label: 'Datos e informes', href: '/cms/datos', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Junta', icono: InsightsOutlinedIcon },
+  { label: 'Memoria del curso', href: '/cms/memoria', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon },
   { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
   { label: 'Ajustes del Inicio', href: '/cms/ajustes-inicio', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'cuenta', icono: TuneOutlinedIcon },
@@ -116,6 +124,11 @@ export const rolesPorRutaCms = {
   tesoreria: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
   inventario: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'],
   contabilidad: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
+  // Las cifras de todas las áreas y sus informes: la misma guarda que /api/datos.
+  datos: ['ADMIN', 'HERMANO_MAYOR'],
+  // La Memoria la escribe también Secretaría (su epílogo): la guarda de /api/datos/memoria.
+  memoria: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'],
+  'memoria/:curso': ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'],
   // Repartir cargos es repartir privilegios: ni el Hermano Mayor. El backend
   // lo estrecha igual (checkRole(SOLO_ADMIN) en adminRoutes).
   accesos: ['ADMIN'],

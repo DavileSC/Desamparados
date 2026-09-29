@@ -58,6 +58,7 @@ const ACCIONES: Record<string, string> = {
   EVENTO_CREAR: 'Crear un evento de la agenda',
   AVISO_CREAR: 'Poner un aviso de la junta',
   AVISO_HECHO: 'Dar por hecho un aviso de la junta',
+  MEMORIA_ACTUALIZAR: 'Escribir en la Memoria del curso',
   RETABLO_ACTUALIZAR: 'Cambiar la foto del retablo del Inicio',
   EVENTO_ACTUALIZAR: 'Editar un evento de la agenda',
   EVENTO_ELIMINAR: 'Borrar un evento de la agenda',

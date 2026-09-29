@@ -57,6 +57,8 @@ const InventarioAdminPage = lazy(() => import('../features/cms/InventarioAdminPa
 const ContabilidadAdminPage = lazy(() => import('../features/cms/ContabilidadAdminPage'))
 const AuditoriaAdminPage = lazy(() => import('../features/cms/AuditoriaAdminPage'))
 const AjustesInicioPage = lazy(() => import('../features/cms/AjustesInicioPage'))
+const DatosInformesPage = lazy(() => import('../features/cms/datos/DatosInformesPage'))
+const MemoriaPage = lazy(() => import('../features/cms/datos/MemoriaPage'))
 const AccesosAdminPage = lazy(() => import('../features/cms/AccesosAdminPage'))
 const PanelPage = lazy(() => import('../features/cms/PanelPage'))
 const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
@@ -226,6 +228,9 @@ const router = createBrowserRouter([
           { path: 'inventario', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</ExigeRol> },
           { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },
           { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
+          { path: 'datos', element: <ExigeRol roles={rolesPorRutaCms.datos}>{withSuspense(DatosInformesPage)}</ExigeRol> },
+          { path: 'memoria', element: <ExigeRol roles={rolesPorRutaCms.memoria}>{withSuspense(MemoriaPage)}</ExigeRol> },
+          { path: 'memoria/:curso', element: <ExigeRol roles={rolesPorRutaCms['memoria/:curso']}>{withSuspense(MemoriaPage)}</ExigeRol> },
           { path: 'accesos', element: <ExigeRol roles={rolesPorRutaCms.accesos}>{withSuspense(AccesosAdminPage)}</ExigeRol> },
           { path: 'auditoria', element: <ExigeRol roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditoriaAdminPage)}</ExigeRol> },
           { path: 'ajustes-inicio', element: <ExigeRol roles={rolesPorRutaCms['ajustes-inicio']}>{withSuspense(AjustesInicioPage)}</ExigeRol> },

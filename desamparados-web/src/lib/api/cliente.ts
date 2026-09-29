@@ -150,3 +150,25 @@ export async function llamarApi<T>(path: string, options: ApiRequestOptions = {}
 
   return datos as T
 }
+
+/**
+ * Un fichero de la API (un PDF): el contenido y el nombre que propone el
+ * servidor. Los errores llegan igual que en `llamarApi`, con su mensaje.
+ */
+export async function traerArchivo(path: string): Promise<{ blob: Blob; nombre: string | null }> {
+  let res: Response
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { credentials: 'include' })
+  } catch {
+    throw new ErrorDeApi('No se ha podido conectar con el servidor. Inténtalo de nuevo en unos minutos.', 0)
+  }
+  if (!res.ok) {
+    const texto = await res.text()
+    let datos: unknown = texto
+    try { datos = texto ? JSON.parse(texto) : null } catch { /* no era JSON: se queda el texto */ }
+    if (res.status === 401) void refrescarSesiones()
+    throw new ErrorDeApi(mensajeDeError(datos) ?? `Error ${res.status}`, res.status, datos)
+  }
+  const nombre = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? null
+  return { blob: await res.blob(), nombre }
+}

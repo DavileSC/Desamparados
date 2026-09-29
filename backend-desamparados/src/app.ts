@@ -18,6 +18,7 @@ import { transaccionRoutes } from './routes/transaccion.routes.js';
 import { publicacionRoutes } from './routes/publicacion.routes.js';
 import { contactoRoutes } from './routes/contacto.routes.js';
 import { panelRoutes } from './routes/panel.routes.js';
+import { datosRoutes } from './routes/datos.routes.js';
 import { portadaRoutes } from './routes/portada.routes.js';
 import { contenidoRoutes } from './routes/contenido.routes.js';
 import { seccionesRoutes } from './routes/secciones.routes.js';
@@ -152,6 +153,7 @@ app.use('/api/admin', adminRoutes); // GESTIÓN DE STAFF Y ROLES
 app.use('/api/procesion', procesionRoutes); // Citas, papeletas y turnos
 app.use('/api/transacciones', transaccionRoutes); // Contabilidad
 app.use('/api/panel', panelRoutes);      // Panel del CMS
+app.use('/api/datos', datosRoutes);      // Datos e informes de la junta, y la Memoria del curso
 app.use('/api/portada', portadaRoutes);  // Fotos de la cabecera del inicio
 app.use('/api/secciones', seccionesRoutes); // Secciones guardadas del constructor de páginas
 app.use('/api/contenido', contenidoRoutes); // Textos editables de la portada, el recorrido y la historia
