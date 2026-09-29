@@ -4,8 +4,10 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import ReplayIcon from '@mui/icons-material/Replay'
 import { useReducedMotion } from 'framer-motion'
-import maplibregl, { type GeoJSONSource, type Map as Mapa, type Marker } from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
+import type { GeoJSONSource, Map as Mapa, Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import '../mapa/trabajador'
 import { GOLD, GRANATE } from '../../features/inicio/estilos'
 import { ATRIBUCION, cargarBarrio, centroDe, edificioDelTemplo, mapaVivo } from '../mapa/barrio'
 import { estiloDelMapa } from '../mapa/estilo'
@@ -90,6 +92,9 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const rotuloSalida = useRef<HTMLSpanElement | null>(null)
   const camaraActual = useRef(camara)
   camaraActual.current = camara
+  /** Hasta cuándo dura el cambio de plano en curso. MapLibre 6 ya no expone
+   *  `isEasing()` en el mapa, así que se lleva la cuenta aquí. */
+  const planoHasta = useRef(0)
 
   /** Pone el trono y la línea en esa fracción del recorrido. */
   const pinta = useCallback((f: number) => {
@@ -246,7 +251,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
       // Mientras la cámara cambia de plano (acercarse al trono, alejarse al
       // recorrido entero) no se la mueve: un salto la cortaría a medias y se
       // quedaría inclinada a medio zoom. Al acabar, sigue al trono desde ahí.
-      if (m && mapaVivo(m) && camaraActual.current === 'sigue' && !m.isEasing()) {
+      if (m && mapaVivo(m) && camaraActual.current === 'sigue' && performance.now() >= planoHasta.current) {
         const [ox, oy] = objetivo.current
         const [cx, cy] = centro.current
         centro.current = reducir ? [ox, oy] : [cx + (ox - cx) * 0.12, cy + (oy - cy) * 0.12]
@@ -263,6 +268,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     const m = mapa.current
     if (!listo || !m || !mapaVivo(m)) return
     const duracion = reducir ? 0 : 1200
+    planoHasta.current = performance.now() + duracion
     if (camara === 'entero') {
       m.fitBounds(cajaDe(linea), { padding: MARGEN_ENTERO, pitch: 0, bearing: 0, duration: duracion })
     } else {

@@ -44,11 +44,13 @@ export function cargarBarrio(): Promise<Barrio> {
   return enCamino
 }
 
-/** Si el navegador puede pintar el mapa. Sin WebGL, el itinerario se enseña como línea. */
+/**
+ * Si el navegador puede pintar el mapa. Sin WebGL, el itinerario se enseña como línea.
+ * Desde MapLibre 6 hace falta WebGL2: con solo WebGL1 el mapa ya no arranca.
+ */
 export function hayWebGL(): boolean {
   try {
-    const lienzo = document.createElement('canvas')
-    return Boolean(lienzo.getContext('webgl2') ?? lienzo.getContext('webgl'))
+    return Boolean(document.createElement('canvas').getContext('webgl2'))
   } catch {
     return false
   }
