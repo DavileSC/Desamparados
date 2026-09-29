@@ -68,7 +68,8 @@ export interface PanelResponse {
   }
   /** Todos los actos del curso, de un Sábado de Pasión al siguiente, pasados y por venir. */
   curso: {
-    eventos: { id: number; title: string; startDate: string; type: TipoEvento }[]
+    /** `location` es opcional: un backend anterior no lo manda. */
+    eventos: { id: number; title: string; startDate: string; type: TipoEvento; location?: string | null }[]
   }
 }
 

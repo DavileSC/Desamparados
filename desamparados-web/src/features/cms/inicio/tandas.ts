@@ -19,10 +19,19 @@ function diaEnMadrid(iso: string): Date {
   return new Date(Number(partes.year), Number(partes.month) - 1, Number(partes.day))
 }
 
+/** La hora en España, «19:00»; a medianoche no se dice (es un acto de todo el día). */
+function horaEnMadrid(iso: string): string | null {
+  const hora = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso))
+  return hora === '00:00' ? null : hora
+}
+
 export interface Acto {
   fecha: Date
   titulo: string
   tipo: TipoEvento
+  /** «19:00» en España, o nada si es de todo el día. */
+  hora: string | null
+  lugar: string | null
   /** Posición en el curso, de 0 (la estación anterior) a 1 (la próxima). */
   p: number
   /** Ya ha pasado (hoy todavía no cuenta como pasado). */
@@ -39,13 +48,13 @@ export function actosDelCurso(hoy: Date, eventos: PanelResponse['curso']['evento
   const posicion = (f: Date) => (soloDia(f) - soloDia(anterior)) / curso
   const actos = eventos.map((e) => {
     const f = diaEnMadrid(e.startDate)
-    return { fecha: f, titulo: e.title, tipo: e.type }
+    return { fecha: f, titulo: e.title, tipo: e.type, hora: horaEnMadrid(e.startDate), lugar: e.location ?? null }
   })
 
   const domingo = pascua(fecha.getFullYear())
   const ceniza = new Date(domingo.getFullYear(), domingo.getMonth(), domingo.getDate() - 46)
   if (!actos.some((a) => soloDia(a.fecha) === soloDia(ceniza) && /ceniza/i.test(a.titulo))) {
-    actos.push({ fecha: ceniza, titulo: 'Miércoles de Ceniza', tipo: 'CULTO' })
+    actos.push({ fecha: ceniza, titulo: 'Miércoles de Ceniza', tipo: 'CULTO', hora: null, lugar: null })
   }
 
   return actos

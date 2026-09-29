@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -21,8 +22,13 @@ const TAREAS: Tarea[] = [
   },
 ]
 
+// Quien la pone decide si está abierta: aquí, un estado de prueba.
+function ConEstado({ tareas, role }: { tareas: Tarea[]; role?: string }) {
+  const [todos, setTodos] = useState(false)
+  return <Asuntos tareas={tareas} role={role} todos={todos} onTodos={setTodos} />
+}
 const montar = (tareas: Tarea[], role?: string) =>
-  renderWithProviders(<TemaCmsProvider><Asuntos tareas={tareas} role={role} /></TemaCmsProvider>)
+  renderWithProviders(<TemaCmsProvider><ConEstado tareas={tareas} role={role} /></TemaCmsProvider>)
 
 describe('Asuntos', () => {
   it('cuenta los asuntos y los reparte entre tuyos y del resto de la junta', () => {
@@ -51,12 +57,22 @@ describe('Asuntos', () => {
     expect(screen.getByText('Pendiente')).toBeInTheDocument()
   })
 
-  it('con muchos, enseña cuatro y el resto con «Ver los N»', async () => {
-    const muchas = Array.from({ length: 6 }, (_, i) => ({ ...TAREAS[1], clave: `t${i}`, titulo: `Asunto ${i + 1}` }))
-    montar(muchas, 'ADMIN')
+  const varias = (n: number) => Array.from({ length: n }, (_, i) => ({ ...TAREAS[1], clave: `t${i}`, titulo: `Asunto ${i + 1}` }))
+
+  it('hasta cuatro, se ven todos y sin «Ver los N»', () => {
+    montar(varias(4), 'ADMIN')
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Ver los 6' }))
+    expect(screen.queryByRole('button', { name: /Ver los/ })).not.toBeInTheDocument()
+  })
+
+  it('con más de cuatro, enseña tres y el resto con «Ver los N»', async () => {
+    const usuario = userEvent.setup()
+    montar(varias(6), 'ADMIN')
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    await usuario.click(screen.getByRole('button', { name: 'Ver los 6' }))
     expect(screen.getAllByRole('listitem')).toHaveLength(6)
+    await usuario.click(screen.getByRole('button', { name: 'Ver menos' }))
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
   })
 
   it('sin asuntos, lo dice', () => {

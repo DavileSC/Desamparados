@@ -1,169 +1,19 @@
-import { useId, type ReactNode } from 'react'
-import { Box, Paper, Typography } from '@mui/material'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { Box, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { brillo } from '../../../theme/cms'
 import { Degradado, Halo } from '../../../components/charts/brillo'
 import { curvaSuave } from '../../../components/charts/ejes'
-import { useAnchoMedido } from '../../../components/charts/useAnchoMedido'
 import { etiquetaPunto, eurosResumen, numero } from '../contabilidad/formato'
 import { contar } from './plural'
 import { aparecerSuave, crecerX, crecerY, entrada, sinMovimiento, trazar, useCuenta } from './animaciones'
-import { AZUL_GRAFICA, FILETE, ORO_GRAFICA, ROJO_GRAFICA, SERIF, VERDE, VERSALITAS } from './estiloRetablo'
+import { AZUL_GRAFICA, FILETE, FILETE_SUAVE, FONDO_PIEZA, ORO, ORO_GRAFICA, ROJO_GRAFICA, SERIF, VERDE, VERSALITAS } from './estiloRetablo'
 
 /** La cifra grande, contando desde cero. */
 function Valor({ valor, euros = false }: { valor: number; euros?: boolean }) {
   const actual = useCuenta(valor)
   return <>{euros ? eurosResumen(actual) : numero(Math.round(actual))}</>
-}
-
-/**
- * La serie como área: curva suave con brillo sobre un relleno que se
- * desvanece hacia abajo. La línea se dibuja de izquierda a derecha y el área
- * aparece detrás de ella.
- */
-function Area({ valores, color, orden, extremos }: {
-  valores: number[]; color: string; orden: number
-  /** Lo que se escribe bajo el primer y el último punto: «oct · 1.200 €». */
-  extremos?: [string, string]
-}) {
-  const { graficas } = useTemaCms()
-  const id = useId().replace(/:/g, '')
-  // Se dibuja al ancho real de la baldosa: estirando una caja fija, el punto
-  // final salía ovalado y la línea más gruesa en las subidas que en lo llano.
-  const { referencia, ancho } = useAnchoMedido()
-  if (valores.length < 2) return null
-  // El mismo alto que las demás gráficas (--grafica), en cualquier pantalla.
-  const alto = 36
-  // Margen a los lados para que el halo del último punto no se corte.
-  const margen = 8
-  const min = Math.min(...valores), max = Math.max(...valores), rango = max - min || 1
-  const puntos: [number, number][] = valores.map((v, i) => [margen + i * ((ancho - 2 * margen) / (valores.length - 1)), alto - 6 - ((v - min) / rango) * (alto - 18)])
-  const d = curvaSuave(puntos)
-  const [ux, uy] = puntos[puntos.length - 1]
-  const retraso = `${300 + orden * 120}ms`
-  return (
-    <Box ref={referencia} sx={{ mt: 0.75 }}>
-    <Box component="svg" viewBox={`0 0 ${ancho} ${alto}`} width="100%" height={alto} aria-hidden="true" sx={{ display: 'block', overflow: 'visible' }}>
-      <defs>
-        <Degradado id={`area-${id}`} color={color} arriba={0.45} />
-        <Halo id={`halo-${id}`} radio={3} />
-      </defs>
-      <Box component="path" d={`${d} L${puntos[puntos.length - 1][0]},${alto} L${margen},${alto} Z`} fill={`url(#area-${id})`} sx={{ animation: `${aparecerSuave} 1s ease-out backwards`, animationDelay: retraso, ...sinMovimiento }} />
-      <path d={d} fill="none" stroke={color} strokeWidth={4} filter={`url(#halo-${id})`} opacity={graficas.brillo} />
-      <Box
-        component="path"
-        d={d}
-        pathLength={1}
-        fill="none"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        strokeDasharray="1"
-        sx={{ animation: `${trazar} 1.3s ease-out backwards`, animationDelay: retraso, ...sinMovimiento }}
-      />
-      <circle cx={ux} cy={uy} r={7} fill={color} style={{ opacity: brillo(graficas.brillo, 0.4) }} />
-      <circle cx={ux} cy={uy} r={3.5} fill={color} />
-    </Box>
-    {extremos && <Extremos izquierda={extremos[0]} derecha={extremos[1]} />}
-    </Box>
-  )
-}
-
-/** Las dos marcas de los extremos de una serie, bajo el dibujo. */
-function Extremos({ izquierda, derecha }: { izquierda: string; derecha: string }) {
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mt: 0.5, fontSize: 12, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
-      <span>{izquierda}</span>
-      <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{derecha}</Box>
-    </Box>
-  )
-}
-
-/**
- * Altas y bajas de cada mes, arriba y abajo de una raya: se ve en qué meses
- * entra la gente y en cuáles se va, que es lo que la cifra total no cuenta.
- */
-function AltasYBajas({ meses, orden }: { meses: PanelResponse['censo']['movimientosMensuales']; orden: number }) {
-  if (meses.length === 0) return null
-  const tope = Math.max(1, ...meses.map((m) => Math.max(m.altas, m.bajas)))
-  const barra = (valor: number, color: string, arriba: boolean, i: number) => (
-    <Box
-      sx={{
-        width: '100%', height: `${(valor / tope) * 100}%`, minHeight: valor > 0 ? 2 : 0,
-        borderRadius: arriba ? '2px 2px 0 0' : '0 0 2px 2px',
-        backgroundImage: `linear-gradient(${arriba ? '180deg' : '0deg'}, ${color}, color-mix(in srgb, ${color} 35%, transparent))`,
-        transformOrigin: arriba ? 'bottom' : 'top',
-        animation: `${crecerY} .6s cubic-bezier(.2, .7, .2, 1) backwards`, animationDelay: `${350 + orden * 120 + i * 45}ms`, ...sinMovimiento,
-      }}
-    />
-  )
-  return (
-    <Box sx={{ mt: 0.75 }}>
-      <Box
-        role="img"
-        aria-label={`Altas y bajas por mes: ${meses.map((m) => `${etiquetaPunto(m.mes)}, ${m.altas} altas y ${m.bajas} bajas`).join('; ')}`}
-        sx={{ display: 'grid', gridTemplateColumns: `repeat(${meses.length}, minmax(0, 1fr))`, columnGap: '3px' }}
-      >
-        {meses.map((m, i) => (
-          <Box key={m.mes} sx={{ display: 'grid', gridTemplateRows: 'calc(var(--grafica) * .62) 1px calc(var(--grafica) * .38)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>{barra(m.altas, ORO_GRAFICA, true, i)}</Box>
-            <Box sx={{ backgroundColor: 'divider' }} />
-            <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>{barra(m.bajas, ROJO_GRAFICA, false, i)}</Box>
-          </Box>
-        ))}
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mt: 0.5, fontSize: 12, color: 'text.secondary' }}>
-        <span>{etiquetaPunto(meses[0].mes)}</span>
-        <Box component="span" sx={{ display: 'inline-flex', gap: 1.25 }}>
-          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}><Box component="span" sx={{ width: 8, height: 8, borderRadius: '2px', backgroundColor: ORO_GRAFICA }} />altas</Box>
-          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}><Box component="span" sx={{ width: 8, height: 8, borderRadius: '2px', backgroundColor: ROJO_GRAFICA }} />bajas</Box>
-        </Box>
-        <span>{etiquetaPunto(meses[meses.length - 1].mes)}</span>
-      </Box>
-    </Box>
-  )
-}
-
-/** Columnas con degradado, una por año, que crecen una tras otra; la del año en curso brilla. */
-function Columnas({ valores, etiquetas, color, orden, corta }: { valores: number[]; etiquetas: string[]; color: string; orden: number; corta?: (etiqueta: string) => string }) {
-  if (valores.length < 2) return null
-  // Desde cero: si no, una diferencia pequeña entre años parecería enorme.
-  const max = Math.max(1, ...valores)
-  return (
-    // Si la tarjeta es estrecha (dos por fila en el móvil), las etiquetas van
-    // en corto («’22») para no salirse por la derecha.
-    <Box aria-hidden="true" sx={{
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', mt: 0.75, containerType: 'inline-size',
-      '& .corta': { display: 'none' },
-      ...(corta && { '@container (max-width: 220px)': { '& .larga': { display: 'none' }, '& .corta': { display: 'inline' } } }),
-    }}>
-      {valores.map((v, i) => {
-        const ultima = i === valores.length - 1
-        return (
-          <Box key={i} sx={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ height: 'calc(var(--grafica) * .9)', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              <Box
-                sx={{
-                  width: '100%', maxWidth: 26, height: `${Math.max(4, (v / max) * 100)}%`, borderRadius: '3px 3px 1px 1px',
-                  backgroundImage: `linear-gradient(180deg, ${color}, color-mix(in srgb, ${color} 25%, transparent))`,
-                  boxShadow: ultima ? `0 0 12px color-mix(in srgb, ${color} 40%, transparent)` : 'none',
-                  opacity: ultima ? 1 : 0.55,
-                  transformOrigin: 'bottom', animation: `${crecerY} .7s cubic-bezier(.2, .7, .2, 1) backwards`,
-                  animationDelay: `${350 + orden * 120 + i * 70}ms`, ...sinMovimiento,
-                }}
-              />
-            </Box>
-            <Box component="span" sx={{ fontSize: 12, color: ultima ? 'text.primary' : 'text.secondary', fontWeight: ultima ? 700 : 400, whiteSpace: 'nowrap' }}>
-              <span className="larga">{etiquetas[i]}</span>
-              {corta && <span className="corta">{corta(etiquetas[i])}</span>}
-            </Box>
-          </Box>
-        )
-      })}
-    </Box>
-  )
 }
 
 /** La diferencia con su signo: verde si sube, roja si baja. */
@@ -175,45 +25,206 @@ function Diferencia({ valor }: { valor: number }) {
   )
 }
 
-function Baldosa({ etiqueta, valor, pie, orden, children }: {
-  etiqueta: string; valor: ReactNode; pie: ReactNode; orden: number; children?: ReactNode
-}) {
+function Muestra({ color, children }: { color: string; children: ReactNode }) {
   return (
-    <Paper
-      elevation={0}
-      className="baldosa"
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, whiteSpace: 'nowrap' }}>
+      <Box component="span" sx={{ width: 8, height: 8, borderRadius: '2px', flexShrink: 0, backgroundColor: color }} />
+      {children}
+    </Box>
+  )
+}
+
+const Vacio = ({ children }: { children: ReactNode }) => (
+  <Typography sx={{ m: 'auto', fontSize: 14, color: 'text.secondary' }}>{children}</Typography>
+)
+
+/** Un número pequeño sobre o bajo su barra. */
+const rotulo = { fontSize: 11.5, color: 'text.secondary', lineHeight: 1.4, fontVariantNumeric: 'tabular-nums', textAlign: 'center' } as const
+
+/**
+ * Altas arriba y bajas abajo de una raya, cada mes con su número: se ve en qué
+ * meses entra la gente y en cuáles se va. Arriba y abajo miden en la misma
+ * escala: cada mitad es tan alta como su mes mayor.
+ */
+function AltasYBajas({ meses }: { meses: PanelResponse['censo']['movimientosMensuales'] }) {
+  if (meses.length === 0) return <Vacio>Todavía no hay altas ni bajas que contar.</Vacio>
+  const maxAltas = Math.max(1, ...meses.map((m) => m.altas))
+  const maxBajas = Math.max(maxAltas * 0.15, ...meses.map((m) => m.bajas))
+  const barra = (valor: number, tope: number, color: string, arriba: boolean, i: number) => (
+    <Box
       sx={{
-        p: 2, borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: 'transparent', backgroundImage: 'none',
-        display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1),
+        width: '64%', mx: 'auto', height: `${(valor / tope) * 82}%`, minHeight: valor > 0 ? 2 : 0,
+        borderRadius: arriba ? '3px 3px 0 0' : '0 0 3px 3px',
+        backgroundImage: `linear-gradient(${arriba ? '180deg' : '0deg'}, ${color}, color-mix(in srgb, ${color} 40%, transparent))`,
+        opacity: i === meses.length - 1 ? 1 : 0.8,
+        transformOrigin: arriba ? 'bottom' : 'top',
+        animation: `${crecerY} .6s cubic-bezier(.2, .7, .2, 1) backwards`, animationDelay: `${150 + i * 40}ms`, ...sinMovimiento,
       }}
+    />
+  )
+  return (
+    <Box
+      role="img"
+      aria-label={`Altas y bajas por mes: ${meses.map((m) => `${etiquetaPunto(m.mes)}, ${m.altas} altas y ${m.bajas} bajas`).join('; ')}`}
+      sx={{ flex: '1 1 0', minHeight: 0, display: 'grid', gridTemplateColumns: `repeat(${meses.length}, minmax(0, 1fr))`, gridTemplateRows: `minmax(0, ${maxAltas}fr) 1px minmax(0, ${maxBajas}fr) auto` }}
     >
-      <Typography className="etiqueta" sx={VERSALITAS}>{etiqueta}</Typography>
-      <Typography className="valor" sx={{ ...SERIF, fontSize: 'min(20cqi, 34px)', lineHeight: 1, overflowWrap: 'anywhere' }}>
-        {valor}
-      </Typography>
-      <Typography className="pie" sx={{ fontSize: 13, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pie}</Typography>
-      {/* Lo gráfico va al fondo de la baldosa: así las cuatro alinean su pie. */}
-      <Box className="grafica" sx={{ mt: 'auto' }}>{children}</Box>
-    </Paper>
+      {meses.map((m, i) => (
+        <Box key={`a-${m.mes}`} sx={{ gridRow: 1, gridColumn: i + 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', minHeight: 0 }}>
+          <Box aria-hidden="true" sx={rotulo}>{m.altas || ''}</Box>
+          {barra(m.altas, maxAltas, ORO_GRAFICA, true, i)}
+        </Box>
+      ))}
+      <Box sx={{ gridRow: 2, gridColumn: '1 / -1', backgroundColor: 'divider' }} />
+      {meses.map((m, i) => (
+        <Box key={`b-${m.mes}`} sx={{ gridRow: 3, gridColumn: i + 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {barra(m.bajas, maxBajas, ROJO_GRAFICA, false, i)}
+          <Box aria-hidden="true" sx={{ ...rotulo, color: ROJO_GRAFICA }}>{m.bajas ? `−${m.bajas}` : ''}</Box>
+        </Box>
+      ))}
+      {meses.map((m, i) => (
+        <Box key={`m-${m.mes}`} aria-hidden="true" sx={{ gridRow: 4, gridColumn: i + 1, ...rotulo, pt: 0.75, ...(i === meses.length - 1 && { color: 'text.primary', fontWeight: 600 }) }}>
+          {etiquetaPunto(m.mes).split(' ')[0]}
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+/** Una columna por año con su total; la del año en curso brilla. */
+function PorAnio({ anios }: { anios: PanelResponse['procesion']['porAnio'] }) {
+  if (anios.length === 0) return <Vacio>Todavía no hay papeletas de ningún año.</Vacio>
+  // Desde cero: si no, una diferencia pequeña entre años parecería enorme.
+  const max = Math.max(1, ...anios.map((a) => a.total))
+  return (
+    <Box
+      role="img"
+      aria-label={`Papeletas por año: ${anios.map((a) => `${a.anio}, ${a.total}`).join('; ')}`}
+      sx={{ flex: '1 1 0', minHeight: 0, display: 'flex', alignItems: 'stretch', gap: 2 }}
+    >
+      {anios.map((a, i) => {
+        const ultima = i === anios.length - 1
+        return (
+          <Box key={a.anio} sx={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' }}>
+            <Box aria-hidden="true" sx={{ ...rotulo, fontSize: 13, ...(ultima && { color: 'text.primary', fontWeight: 600 }) }}>{numero(a.total)}</Box>
+            <Box
+              sx={{
+                width: '100%', maxWidth: 56, height: `${Math.max(2, (a.total / max) * 82)}%`, borderRadius: '4px 4px 1px 1px',
+                backgroundImage: `linear-gradient(180deg, ${ORO_GRAFICA}, color-mix(in srgb, ${ORO_GRAFICA} 25%, transparent))`,
+                boxShadow: ultima ? `0 0 16px color-mix(in srgb, ${ORO_GRAFICA} 40%, transparent)` : 'none',
+                opacity: ultima ? 1 : 0.55, transformOrigin: 'bottom',
+                animation: `${crecerY} .7s cubic-bezier(.2, .7, .2, 1) backwards`, animationDelay: `${150 + i * 70}ms`, ...sinMovimiento,
+              }}
+            />
+            <Box aria-hidden="true" sx={{ ...rotulo, fontSize: 12.5, pt: 0.75, ...(ultima && { color: 'text.primary', fontWeight: 700 }) }}>{a.anio}</Box>
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
+interface Parte { estado: string; texto: string; color: string; total: number; importe: number }
+
+/** Lo que queda por cobrar, repartido: la barra entera y, debajo, cada parte con sus recibos y su importe. */
+function Reparto({ partes, anteriores }: { partes: Parte[]; anteriores?: { total: number; importe: number } }) {
+  const conImporte = partes.filter((p) => p.importe > 0)
+  if (conImporte.length === 0) return <Vacio>No queda nada por cobrar de este ejercicio.</Vacio>
+  return (
+    <Box sx={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
+      <Box
+        role="img"
+        aria-label={conImporte.map((p) => `${p.texto}: ${eurosResumen(p.importe)}`).join(', ')}
+        sx={{ display: 'flex', gap: '3px', height: 'clamp(16px, 4vh, 28px)', borderRadius: 1.5, overflow: 'hidden', transformOrigin: 'left', animation: `${crecerX} 1.2s cubic-bezier(.3, .7, .2, 1) .2s backwards`, ...sinMovimiento }}
+      >
+        {conImporte.map((p) => <Box key={p.estado} sx={{ flexGrow: p.importe, backgroundColor: p.color }} />)}
+      </Box>
+      <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+        {partes.map((p) => (
+          <Box component="li" key={p.estado} sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 2, alignItems: 'baseline', py: 'clamp(4px, 1vh, 9px)', borderTop: `1px solid ${FILETE_SUAVE}`, fontSize: 14 }}>
+            <Muestra color={p.color}>{p.texto}</Muestra>
+            <Box component="span" sx={{ color: 'text.secondary', fontSize: 13 }}>{contar(p.total, 'recibo', 'recibos')}</Box>
+            <Box component="span" sx={{ ...SERIF, fontSize: 20, minWidth: 90, textAlign: 'right' }}>{eurosResumen(p.importe)}</Box>
+          </Box>
+        ))}
+      </Box>
+      {!!anteriores?.importe && (
+        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+          Y {eurosResumen(anteriores.importe)} de años anteriores ({contar(anteriores.total, 'recibo', 'recibos')}), que se cuentan aparte.
+        </Typography>
+      )}
+    </Box>
+  )
+}
+
+/** El ancho y el alto reales del hueco: la curva se dibuja a su tamaño, sin estirarse. */
+function useTamano() {
+  const referencia = useRef<HTMLDivElement>(null)
+  const [tamano, setTamano] = useState({ ancho: 560, alto: 180 })
+  useEffect(() => {
+    const nodo = referencia.current
+    if (!nodo || typeof ResizeObserver === 'undefined') return
+    const medir = () => {
+      if (nodo.clientWidth > 0 && nodo.clientHeight > 0) setTamano({ ancho: nodo.clientWidth, alto: nodo.clientHeight })
+    }
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(nodo)
+    return () => observador.disconnect()
+  }, [])
+  return { referencia, ...tamano }
+}
+
+/** El saldo acumulado del ejercicio, del 1 de enero (0 €) al cierre de cada mes. */
+function CurvaDelSaldo({ valores, meses, color }: { valores: number[]; meses: string[]; color: string }) {
+  const { graficas } = useTemaCms()
+  const id = useId().replace(/:/g, '')
+  const { referencia, ancho, alto } = useTamano()
+  if (valores.length < 2) return <Vacio>Todavía no hay apuntes este año.</Vacio>
+  const margen = 10
+  const min = Math.min(0, ...valores), max = Math.max(0, ...valores), rango = max - min || 1
+  const y = (v: number) => alto - 8 - ((v - min) / rango) * (alto - 26)
+  const puntos: [number, number][] = valores.map((v, i) => [margen + i * ((ancho - 2 * margen) / (valores.length - 1)), y(v)])
+  const d = curvaSuave(puntos)
+  const [ux, uy] = puntos[puntos.length - 1]
+  return (
+    <Box sx={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Box ref={referencia} sx={{ flex: '1 1 0', minHeight: 0 }}>
+        <Box component="svg" viewBox={`0 0 ${ancho} ${alto}`} width={ancho} height={alto} aria-hidden="true" sx={{ display: 'block', overflow: 'visible' }}>
+          <defs>
+            <Degradado id={`area-${id}`} color={color} arriba={0.4} />
+            <Halo id={`halo-${id}`} radio={3} />
+          </defs>
+          {min < 0 && <line x1={0} x2={ancho} y1={y(0)} y2={y(0)} stroke="currentColor" strokeOpacity={0.2} strokeDasharray="3 4" />}
+          <Box component="path" d={`${d} L${ux},${alto} L${margen},${alto} Z`} fill={`url(#area-${id})`} sx={{ animation: `${aparecerSuave} 1s ease-out .3s backwards`, ...sinMovimiento }} />
+          <path d={d} fill="none" stroke={color} strokeWidth={4} filter={`url(#halo-${id})`} opacity={graficas.brillo} />
+          <Box component="path" d={d} pathLength={1} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" strokeDasharray="1" sx={{ animation: `${trazar} 1.3s ease-out .2s backwards`, ...sinMovimiento }} />
+          <circle cx={ux} cy={uy} r={8} fill={color} style={{ opacity: brillo(graficas.brillo, 0.4) }} />
+          <circle cx={ux} cy={uy} r={4} fill={color} />
+        </Box>
+      </Box>
+      <Box aria-hidden="true" sx={{ display: 'flex', justifyContent: 'space-between', px: `${margen - 6}px`, pt: 0.75, ...rotulo }}>
+        {meses.map((m, i) => <span key={i}>{m}</span>)}
+      </Box>
+    </Box>
   )
 }
 
 /**
- * Las cuatro cifras de hoy, en baldosas a todo lo ancho del Inicio: son el
- * resumen de la casa, cada una con lo que la explica (su curva de doce meses o
- * de cinco años; lo por cobrar, repartido por estado).
- *
- * Van siempre sobre el ejercicio en curso: los años cerrados se miran en
- * «Datos e informes».
+ * Las cuatro cifras de la casa: a la izquierda, en columna, para elegir; a la
+ * derecha, la elegida en grande con su gráfica y lo que la explica. Van
+ * siempre sobre el ejercicio en curso: los años cerrados se miran en «Datos e
+ * informes».
  */
 export default function Cifras({ panel }: { panel: PanelResponse }) {
+  const [elegida, setElegida] = useState(0)
+  const idPanel = useId()
   const netos = panel.censo.altas12m - panel.censo.bajas12m
 
   // REMESADO cuenta como «por cobrar»: es dinero ya enviado al banco en un
   // lote SEPA, pero todavía no está en la cuenta.
   const PARTES = [
     { estado: 'PENDIENTE', texto: 'Pendiente', color: ORO_GRAFICA },
-    { estado: 'REMESADO', texto: 'Banco', color: AZUL_GRAFICA },
+    { estado: 'REMESADO', texto: 'En el banco', color: AZUL_GRAFICA },
     { estado: 'DEVUELTO', texto: 'Devuelto', color: ROJO_GRAFICA },
   ] as const
   const partes = PARTES.map((p) => {
@@ -224,107 +235,133 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
   const anteriores = panel.dinero.anterioresPorCobrar
   const porCobrar = partes.reduce((s, e) => ({ total: s.total + e.total, importe: s.importe + e.importe }), { total: 0, importe: 0 })
 
-  const saldo = panel.dinero.ejercicio.saldo
+  const { ejercicio } = panel.dinero
   // La curva recorre el mismo ejercicio que la cifra: del 1 de enero (0 €) al
   // cierre de cada mes. La serie mensual trae doce meses hacia atrás, y
-  // acumulándola entera la curva acababa en otro número que el de la baldosa.
-  const anioSaldo = panel.dinero.ejercicio.anio
-  const mesesDelEjercicio = panel.dinero.serieMensual.filter((m) => m.mes.startsWith(`${anioSaldo}-`))
+  // acumulándola entera la curva acababa en otro número que el de la cifra.
+  const mesesDelEjercicio = panel.dinero.serieMensual.filter((m) => m.mes.startsWith(`${ejercicio.anio}-`))
   const saldoMes = mesesDelEjercicio.reduce<number[]>(
     (serie, m) => [...serie, Math.round(((serie.at(-1) ?? 0) + m.ingresos - m.gastos) * 100) / 100],
     [0],
   )
+  const ultimoMes = mesesDelEjercicio.at(-1)
 
   const anios = panel.procesion.porAnio
   const anterior = anios.find((a) => a.anio === panel.procesion.anio - 1)
   const diferencia = anterior ? panel.procesion.papeletas - anterior.total : null
+
+  const cifras = [
+    {
+      etiqueta: 'Hermanos activos',
+      valor: <Valor valor={panel.censo.activos} />,
+      titulo: 'Altas y bajas, mes a mes',
+      resumen: <><Diferencia valor={netos} /> en doce meses · {contar(panel.censo.altas12m, 'alta', 'altas')}, {contar(panel.censo.bajas12m, 'baja', 'bajas')}</>,
+      leyenda: <><Muestra color={ORO_GRAFICA}>altas</Muestra><Muestra color={ROJO_GRAFICA}>bajas</Muestra></>,
+      grafica: <AltasYBajas meses={panel.censo.movimientosMensuales} />,
+    },
+    {
+      etiqueta: `Papeletas ${panel.procesion.anio}`,
+      valor: <Valor valor={panel.procesion.papeletas} />,
+      titulo: 'Papeletas de sitio, año a año',
+      resumen: anterior && diferencia !== null ? <><Diferencia valor={diferencia} /> sobre las {numero(anterior.total)} de {anterior.anio}</> : 'Papeletas de sitio sacadas este año',
+      grafica: <PorAnio anios={anios} />,
+    },
+    {
+      etiqueta: `Por cobrar ${ejercicio.anio}`,
+      valor: <Valor valor={porCobrar.importe} euros />,
+      titulo: 'Lo que queda por cobrar',
+      resumen: contar(porCobrar.total, 'recibo', 'recibos'),
+      grafica: <Reparto partes={partes} anteriores={anteriores} />,
+    },
+    {
+      etiqueta: `Saldo ${ejercicio.anio}`,
+      valor: <Valor valor={ejercicio.saldo} euros />,
+      titulo: 'El saldo del año, mes a mes',
+      resumen: <>{ejercicio.saldo >= 0 ? 'Superávit' : 'Déficit'} · {eurosResumen(ejercicio.ingresos)} de ingresos, {eurosResumen(ejercicio.gastos)} de gastos</>,
+      leyenda: ultimoMes ? <><span>1 ene · 0 €</span><Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{`${etiquetaPunto(ultimoMes.mes)} · ${eurosResumen(saldoMes[saldoMes.length - 1])}`}</Box></> : undefined,
+      grafica: <CurvaDelSaldo valores={saldoMes} meses={['', ...mesesDelEjercicio.map((m) => etiquetaPunto(m.mes).split(' ')[0])]} color={ejercicio.saldo >= 0 ? ORO_GRAFICA : ROJO_GRAFICA} />,
+    },
+  ]
+  const actual = cifras[elegida]
 
   return (
     <Box
       component="section"
       aria-label="Cifras de hoy"
       sx={{
-        display: 'grid', gapy: 1.25, px: 2,
-        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-        '@container cifras (min-width: 640px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
-        // Las gráficas, siempre del mismo alto: las cifras van a todo lo ancho
-        // bajo el retablo y el hueco que cambia con la pantalla es el del curso.
-        '--grafica': '36px',
-        // Solo en pantallas de verdad bajas se van.
-        '@media (max-height: 460px)': { '& .grafica': { display: 'none' } },
-        // En el móvil, las cuatro en una fila y solo la cifra.
-        '@container cifras (max-width: 599px)': {
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px',
-          '& .baldosa': { p: 1, gap: 0.5 },
-          '& .etiqueta': { fontSize: 9.5, letterSpacing: '0.04em' },
-          '& .valor': { fontSize: 'clamp(15px, 13cqi, 22px)' },
-          '& .pie, & .grafica': { display: 'none' },
-        },
+        flex: '1 1 0', minHeight: 0, display: 'flex', containerType: 'inline-size', containerName: 'cifras',
+        // En el móvil la pestaña se desplaza: mide lo que lleva.
+        '@container columna (max-width: 559px)': { flex: '1 0 auto' },
       }}
     >
-      <Baldosa
-        orden={0}
-        etiqueta="Hermanos activos"
-        valor={<Valor valor={panel.censo.activos} />}
-        pie={<><Diferencia valor={netos} /> en doce meses · {numero(panel.censo.altas12m)} / −{numero(panel.censo.bajas12m)}</>}
+      <Box
+        sx={{
+          flex: 1, minHeight: 0, display: 'grid', gap: 'clamp(8px, 1.6vh, 14px)',
+          gridTemplateColumns: 'minmax(170px, 210px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)',
+          // En el móvil, las cuatro en una fila arriba y la gráfica debajo.
+          '@container cifras (max-width: 599px)': {
+            gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'auto minmax(0, 1fr)',
+            '& .selector': { gridTemplateRows: 'none', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' },
+            '& .selector button': { px: 1, py: 0.75 },
+            '& .selector .etiqueta': { fontSize: 9, letterSpacing: '0.04em' },
+            '& .selector .valor': { fontSize: 'clamp(15px, 5cqi, 22px)' },
+            // La pestaña se desplaza en el móvil: la gráfica necesita un alto propio.
+            '& .elegida': { minHeight: 300 },
+          },
+        }}
       >
-        <AltasYBajas meses={panel.censo.movimientosMensuales} orden={0} />
-      </Baldosa>
-      <Baldosa
-        orden={1}
-        etiqueta={`Papeletas ${panel.procesion.anio}`}
-        valor={<Valor valor={panel.procesion.papeletas} />}
-        pie={anterior && diferencia !== null ? <><Diferencia valor={diferencia} /> sobre las {numero(anterior.total)} de {anterior.anio}</> : 'de sitio'}
-      >
-        <Columnas valores={anios.map((a) => a.total)} etiquetas={anios.map((a) => String(a.anio))} corta={(anio) => `’${anio.slice(-2)}`} color={ORO_GRAFICA} orden={1} />
-      </Baldosa>
-      <Baldosa
-        orden={2}
-        etiqueta={`Por cobrar ${panel.dinero.ejercicio.anio}`}
-        valor={<Valor valor={porCobrar.importe} euros />}
-        pie={<>
-          {contar(porCobrar.total, 'recibo', 'recibos')}
-          {/* Lo de otros años también se debe: dicho aquí, esta cifra y la de Contabilidad (todos los años) cuadran. */}
-          {!!anteriores?.importe && <> · y {eurosResumen(anteriores.importe)} de años anteriores</>}
-        </>}
-      >
-        {porCobrar.importe > 0 && (
-          <Box sx={{ mt: 0.75 }}>
-            <Box
-              role="img"
-              aria-label={partes.filter((p) => p.importe > 0).map((p) => `${p.texto}: ${eurosResumen(p.importe)}`).join(', ')}
-              sx={{ display: 'flex', gap: '2px', height: 8, borderRadius: 1, overflow: 'hidden', transformOrigin: 'left', animation: `${crecerX} 1.2s cubic-bezier(.3, .7, .2, 1) .4s backwards`, ...sinMovimiento }}
-            >
-              {partes.filter((p) => p.importe > 0).map((p) => (
-                <Box key={p.estado} sx={{ flexGrow: p.importe, backgroundColor: p.color }} />
-              ))}
-            </Box>
-            <Box sx={{ display: 'flex', gap: '2px 7px', mt: 0.75, fontSize: 11.5, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              {partes.filter((p) => p.importe > 0).map((p) => (
-                <Box component="span" key={p.estado} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box component="span" sx={{ width: 7, height: 7, borderRadius: '2px', flexShrink: 0, backgroundColor: p.color }} />
-                  {p.texto}
-                </Box>
-              ))}
-            </Box>
+        <Box className="selector" sx={{ minHeight: 0, display: 'grid', gridTemplateRows: 'repeat(4, minmax(0, 1fr))', gap: 1 }}>
+          {cifras.map((c, i) => {
+            const activa = i === elegida
+            return (
+              <Box
+                key={c.etiqueta}
+                component="button"
+                type="button"
+                aria-pressed={activa}
+                aria-controls={idPanel}
+                onClick={() => setElegida(i)}
+                sx={{
+                  minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.25,
+                  px: 2, py: 1, m: 0, borderRadius: 2, textAlign: 'left', fontFamily: 'inherit', color: 'text.primary', cursor: 'pointer',
+                  border: '1px solid', borderColor: activa ? `color-mix(in srgb, ${ORO} 60%, transparent)` : FILETE,
+                  backgroundColor: activa ? `color-mix(in srgb, ${ORO} 9%, transparent)` : 'transparent',
+                  '&:hover': { borderColor: `color-mix(in srgb, ${ORO} 45%, transparent)` },
+                  '&:focus-visible': { outline: `2px solid ${ORO}`, outlineOffset: 2 },
+                  ...entrada(i + 1),
+                }}
+              >
+                <Box component="span" className="etiqueta" sx={{ ...VERSALITAS, fontSize: 10.5, color: activa ? ORO : 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.etiqueta}</Box>
+                <Box component="span" className="valor" sx={{ ...SERIF, fontSize: 'clamp(24px, 4.6vh, 32px)', lineHeight: 1, whiteSpace: 'nowrap' }}>{c.valor}</Box>
+              </Box>
+            )
+          })}
+        </Box>
+
+        <Box
+          id={idPanel}
+          className="elegida"
+          aria-live="polite"
+          sx={{
+            minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0.75,
+            px: 'clamp(14px, 2vw, 24px)', py: 'clamp(10px, 2vh, 18px)', borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: FONDO_PIEZA,
+            '& > *': { flexShrink: 0 },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '2px 16px', flexWrap: 'wrap' }}>
+            <Typography component="h3" sx={{ ...SERIF, fontSize: 'clamp(19px, 3vh, 24px)', lineHeight: 1.15 }}>{actual.titulo}</Typography>
+            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{actual.resumen}</Typography>
           </Box>
-        )}
-      </Baldosa>
-      <Baldosa
-        orden={3}
-        etiqueta={`Saldo ${panel.dinero.ejercicio.anio}`}
-        valor={<Valor valor={saldo} euros />}
-        pie={saldo >= 0 ? 'Superávit' : 'Déficit'}
-      >
-        <Area
-          valores={saldoMes}
-          color={saldo >= 0 ? ORO_GRAFICA : ROJO_GRAFICA}
-          orden={3}
-          extremos={mesesDelEjercicio.length > 0
-            ? ['1 ene · 0 €', `${etiquetaPunto(mesesDelEjercicio[mesesDelEjercicio.length - 1].mes)} · ${eurosResumen(saldoMes[saldoMes.length - 1])}`]
-            : undefined}
-        />
-      </Baldosa>
+          {actual.leyenda && (
+            <Box sx={{ display: 'flex', justifyContent: elegida === 3 ? 'space-between' : 'flex-start', gap: 2, fontSize: 12.5, color: 'text.secondary', order: elegida === 3 ? 3 : 0 }}>
+              {actual.leyenda}
+            </Box>
+          )}
+          <Box key={elegida} sx={{ flex: '1 1 0 !important', minHeight: 0, display: 'flex', flexDirection: 'column', pt: 1.5 }}>
+            {actual.grafica}
+          </Box>
+        </Box>
+      </Box>
     </Box>
   )
 }

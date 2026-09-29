@@ -346,11 +346,12 @@ describe('el curso del Inicio', () => {
   test('trae los actos del curso, pasados y por venir, y ninguno de fuera', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const { desde, hasta } = rangoDelCurso(diaMadrid(new Date()));
-    const dentro = await db.evento.create({ data: { title: 'ZZ acto del curso', startDate: new Date(desde.getTime() + 3600000), type: 'REUNION' } });
+    const dentro = await db.evento.create({ data: { title: 'ZZ acto del curso', startDate: new Date(desde.getTime() + 3600000), type: 'REUNION', location: 'ZZ sala de juntas' } });
     const fuera = await db.evento.create({ data: { title: 'ZZ acto de otro curso', startDate: new Date(hasta.getTime() + 3600000), type: 'CULTO' } });
     try {
       const { curso } = await PanelService.getPanel();
       assert.ok(curso.eventos.some((e) => e.id === dentro.id && e.type === 'REUNION'), 'el primer día del curso cuenta aunque ya haya pasado');
+      assert.equal(curso.eventos.find((e) => e.id === dentro.id)?.location, 'ZZ sala de juntas', 'el próximo acto del Inicio enseña dónde es');
       assert.ok(!curso.eventos.some((e) => e.id === fuera.id), 'un acto del curso siguiente no va en el camino');
     } finally {
       await db.evento.deleteMany({ where: { id: { in: [dentro.id, fuera.id] } } });

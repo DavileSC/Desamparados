@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import { TemaCmsProvider } from '../../../../app/temaCms'
 import ElCurso from '../ElCurso'
@@ -8,8 +7,6 @@ import { actosDelCurso, calmaCorta, cuandoFalta, momentoDelCurso, tandaInicial, 
 import type { PanelResponse } from '../../../../lib/api/panel'
 
 type Eventos = PanelResponse['curso']['eventos']
-const montar = (hoy: Date, eventos: Eventos = []) =>
-  renderWithProviders(<TemaCmsProvider><ElCurso hoy={hoy} eventos={eventos} /></TemaCmsProvider>)
 
 let id = 0
 const acto = (fecha: string, title: string, type: Eventos[number]['type'] = 'CULTO'): Eventos[number] =>
@@ -31,42 +28,30 @@ const CURSO: Eventos = [
   acto('2027-03-05', 'Vía Crucis'),
 ]
 
+const montar = (hoy: Date, eventos: Eventos = []) =>
+  renderWithProviders(<TemaCmsProvider><ElCurso hoy={hoy} actos={actosDelCurso(hoy, eventos)} /></TemaCmsProvider>)
+
 describe('ElCurso', () => {
   it('enseña qué parte del curso ha pasado y cuántos actos quedan', () => {
     montar(new Date(2026, 8, 23), CURSO)
     // Quedan 8 de la Agenda y el Miércoles de Ceniza.
     expect(screen.getByText('50 % recorrido · 9 actos por delante')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Curso recorrido' })).toHaveAttribute('aria-valuenow', '50')
   })
 
-  it('en la calma abre la próxima tanda y dice cuándo empieza', () => {
+  it('después del próximo acto (que va aparte, en grande), lista lo que viene, con su hora', () => {
     montar(new Date(2026, 8, 23), CURSO)
-    const octubre = screen.getByRole('button', { name: 'Octubre, 4 actos, 16 oct – 18 oct' })
-    expect(octubre).toHaveAttribute('aria-expanded', 'true')
-    expect(within(octubre).getByText('En 3 semanas · 4 actos')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Octubre · 16 oct – 18 oct · 4 actos' })).toBeInTheDocument()
     const lista = screen.getByRole('list')
-    for (const t of ['Triduo · día 1', 'Triduo · día 2', 'Función principal', 'Besamanos']) {
-      expect(within(lista).getByText(t)).toBeInTheDocument()
-    }
+    expect(within(lista).queryByText('Triduo · día 1')).not.toBeInTheDocument()
+    expect(within(lista).getByText('Triduo · día 2')).toBeInTheDocument()
+    expect(within(lista).getByText('Vía Crucis')).toBeInTheDocument()
+    expect(within(lista).queryByText('Reunión de la junta')).not.toBeInTheDocument() // ya pasó
+    expect(within(lista).getAllByText('19:00').length).toBeGreaterThan(0)
   })
 
-  it('la tanda de ahora dice que está en curso', () => {
-    montar(new Date(2026, 9, 17), CURSO)
-    expect(within(screen.getByRole('button', { name: /^Octubre/ })).getByText('En curso · 4 actos')).toBeInTheDocument()
-  })
-
-  it('al pulsar otra tanda, lista la suya', async () => {
-    const usuario = userEvent.setup()
-    montar(new Date(2026, 9, 1), CURSO)
-    await usuario.click(screen.getByRole('button', { name: 'Cuaresma, 4 actos, 10 feb – 5 mar' }))
-    expect(screen.getByRole('heading', { name: 'Cuaresma · 10 feb – 5 mar · 4 actos' })).toBeInTheDocument()
-    expect(within(screen.getByRole('list')).getByText('Vía Crucis')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Octubre, 4 actos, 16 oct – 18 oct' })).toHaveAttribute('aria-expanded', 'false')
-  })
-
-  it('pone la Ceniza aunque no esté en la Agenda', () => {
-    montar(new Date(2026, 8, 23))
-    expect(screen.getByRole('button', { name: 'Cuaresma, 1 acto, 10 feb' })).toBeInTheDocument()
+  it('sin nada más por delante, lo dice', () => {
+    montar(new Date(2027, 2, 4), CURSO)
+    expect(screen.getByText('Nada más hasta la estación de penitencia.')).toBeInTheDocument()
   })
 })
 
@@ -80,6 +65,15 @@ describe('las tandas del curso', () => {
     expect(actos.every((a) => a.p >= 0 && a.p <= 1)).toBe(true)
     expect(actos.find((a) => a.titulo === 'Reunión de la junta')?.pasado).toBe(true)
     expect(actos.find((a) => a.titulo === 'Besamanos')?.pasado).toBe(false)
+  })
+
+  it('cada acto lleva su hora en España y su lugar; a medianoche no hay hora', () => {
+    const [tarde, todoElDia] = actosDelCurso(hoy, [
+      { id: 97, title: 'Triduo', startDate: '2026-10-16T17:00:00.000Z', type: 'CULTO', location: 'Parroquia' },
+      { id: 98, title: 'Jornada de puertas abiertas', startDate: '2026-10-17T22:00:00.000Z', type: 'SOCIAL' },
+    ])
+    expect([tarde.hora, tarde.lugar]).toEqual(['19:00', 'Parroquia'])
+    expect([todoElDia.hora, todoElDia.lugar]).toEqual([null, null])
   })
 
   it('no duplica la Ceniza si ya está en la Agenda', () => {

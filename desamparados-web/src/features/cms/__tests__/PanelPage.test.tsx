@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import PanelPage from '../PanelPage'
@@ -73,19 +74,57 @@ describe('Inicio del CMS', () => {
     expect(screen.getByText(/4 asuntos esperando/)).toBeInTheDocument()
   })
 
-  it('enseña las cuatro cifras de hoy', async () => {
+  it('abre en «Hoy», con un punto si hay algo urgente', async () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
-    // Se buscan DENTRO de su tarjeta: las mismas cifras salen también en las
-    // gráficas y en sus tablas, y una búsqueda suelta sería ambigua.
-    const tarjeta = async (etiqueta: string | RegExp) =>
-      within((await screen.findByText(etiqueta)).closest('.MuiPaper-root') as HTMLElement)
+    const hoy = await screen.findByRole('tab', { name: /Hoy/ })
+    expect(hoy).toHaveAttribute('aria-selected', 'true')
+    expect(within(hoy).getByRole('img', { name: 'hay algo urgente' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^Próximo acto/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'El curso' })).toBeInTheDocument()
+  })
 
-    expect((await tarjeta('Hermanos activos')).getByText('1.284')).toBeInTheDocument()
-    expect((await tarjeta(/^Papeletas 2026$/)).getByText('612')).toBeInTheDocument()
-    expect((await tarjeta(/^Por cobrar/)).getByText('2.820 €')).toBeInTheDocument() // pendientes + remesados + devueltos
-    expect((await tarjeta(/^Saldo 2026$/)).getByText('12.860 €')).toBeInTheDocument()
+  it('sin nada urgente, «Hoy» no lleva el punto', async () => {
+    responder({ ...panel, dinero: { ...panel.dinero, devueltosPendientes: { total: 0, importe: 0 } } })
+    entrarComo('ADMIN')
+    montar()
+    expect(within(await screen.findByRole('tab', { name: /Hoy/ })).queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('en «Cifras», las cuatro cifras de hoy; y la pestaña se recuerda', async () => {
+    const usuario = userEvent.setup()
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    await usuario.click(await screen.findByRole('tab', { name: 'Cifras' }))
+    const cifra = (nombre: RegExp) => within(screen.getByRole('button', { name: nombre }))
+    expect(cifra(/^Hermanos activos/).getByText('1.284')).toBeInTheDocument()
+    expect(cifra(/^Papeletas 2026/).getByText('612')).toBeInTheDocument()
+    expect(cifra(/^Por cobrar/).getByText('2.820 €')).toBeInTheDocument() // pendientes + remesados + devueltos
+    expect(cifra(/^Saldo 2026/).getByText('12.860 €')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'El curso' })).not.toBeInTheDocument()
+    expect(localStorage.getItem('cms.inicio.pestana')).toBe('cifras')
+  })
+
+  it('las flechas pasan de una pestaña a otra', async () => {
+    const usuario = userEvent.setup()
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    await usuario.click(await screen.findByRole('tab', { name: /Hoy/ }))
+    await usuario.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'Cifras' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Cifras' })).toHaveFocus()
+  })
+
+  it('vuelve a la última pestaña abierta', async () => {
+    localStorage.setItem('cms.inicio.pestana', 'cifras')
+    responder(panel)
+    entrarComo('ADMIN')
+    montar()
+    expect(await screen.findByRole('tab', { name: 'Cifras' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('heading', { name: 'Altas y bajas, mes a mes' })).toBeInTheDocument()
   })
 
   it('reparte los asuntos según el cargo', async () => {
@@ -109,7 +148,8 @@ describe('Inicio del CMS', () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
-    expect(await screen.findByText(/^En la web: /)).toBeInTheDocument()
+    // La fecha va delante, en la misma línea.
+    expect(await screen.findByText(/· En la web: 4 noticias publicadas/)).toBeInTheDocument()
   })
 
   it('ya no lleva «Para hoy», el calendario del mes ni «Cómo va el año»', async () => {

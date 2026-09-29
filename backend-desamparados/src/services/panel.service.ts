@@ -89,7 +89,8 @@ export interface PanelResponse {
    * dibuja todos. Tampoco lo toca el selector de ejercicio.
    */
   curso: {
-    eventos: { id: number; title: string; startDate: string; type: TipoEvento }[];
+    /** Con hora (en startDate) y lugar: el Inicio enseña el próximo acto entero. */
+    eventos: { id: number; title: string; startDate: string; type: TipoEvento; location: string | null }[];
   };
 }
 
@@ -288,7 +289,7 @@ export class PanelService {
       db.evento.findMany({
         where: { startDate: { gte: rangoCurso.desde, lt: rangoCurso.hasta } },
         orderBy: { startDate: 'asc' },
-        select: { id: true, title: true, startDate: true, type: true },
+        select: { id: true, title: true, startDate: true, type: true, location: true },
       }),
     ]);
 
@@ -428,7 +429,7 @@ export class PanelService {
         diasDeReparto: [...new Set(turnosDelMes.map((t) => diaMadrid(t.fecha)))].sort(),
       },
       curso: {
-        eventos: eventosDelCurso.map((e) => ({ id: e.id, title: e.title, startDate: e.startDate.toISOString(), type: e.type })),
+        eventos: eventosDelCurso.map((e) => ({ id: e.id, title: e.title, startDate: e.startDate.toISOString(), type: e.type, location: e.location })),
       },
     };
   }
