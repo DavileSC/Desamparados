@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react'
-import { Box, Paper, Typography } from '@mui/material'
+import { Box, Paper, Typography, useMediaQuery } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { brillo } from '../../../theme/cms'
@@ -32,8 +32,10 @@ function Area({ valores, color, orden, extremos }: {
   // Se dibuja al ancho real de la baldosa: estirando una caja fija, el punto
   // final salía ovalado y la línea más gruesa en las subidas que en lo llano.
   const { referencia, ancho } = useAnchoMedido()
+  // En pantallas bajas, más chata: el Inicio tiene que caber sin scroll.
+  const bajo = useMediaQuery('(max-height: 800px)')
   if (valores.length < 2) return null
-  const alto = 52
+  const alto = bajo ? 30 : 52
   // Margen a los lados para que el halo del último punto no se corte.
   const margen = 8
   const min = Math.min(...valores), max = Math.max(...valores), rango = max - min || 1
@@ -106,7 +108,7 @@ function AltasYBajas({ meses, orden }: { meses: PanelResponse['censo']['movimien
         sx={{ display: 'grid', gridTemplateColumns: `repeat(${meses.length}, minmax(0, 1fr))`, columnGap: '3px' }}
       >
         {meses.map((m, i) => (
-          <Box key={m.mes} sx={{ display: 'grid', gridTemplateRows: '30px 1px 18px' }}>
+          <Box key={m.mes} sx={{ display: 'grid', gridTemplateRows: 'calc(var(--grafica) * .62) 1px calc(var(--grafica) * .38)' }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>{barra(m.altas, ORO_GRAFICA, true, i)}</Box>
             <Box sx={{ backgroundColor: 'divider' }} />
             <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>{barra(m.bajas, ROJO_GRAFICA, false, i)}</Box>
@@ -142,7 +144,7 @@ function Columnas({ valores, etiquetas, color, orden, corta }: { valores: number
         const ultima = i === valores.length - 1
         return (
           <Box key={i} sx={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ height: 44, width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            <Box sx={{ height: 'calc(var(--grafica) * .9)', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
               <Box
                 sx={{
                   width: '100%', maxWidth: 26, height: `${Math.max(4, (v / max) * 100)}%`, borderRadius: '3px 3px 1px 1px',
@@ -180,18 +182,19 @@ function Baldosa({ etiqueta, valor, pie, orden, children }: {
   return (
     <Paper
       elevation={0}
+      className="baldosa"
       sx={{
-        p: { xs: 2, sm: 2.5 }, borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: 'transparent', backgroundImage: 'none',
+        p: 'clamp(10px, 2vh, 20px)', borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: 'transparent', backgroundImage: 'none',
         display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1),
       }}
     >
-      <Typography sx={VERSALITAS}>{etiqueta}</Typography>
-      <Typography sx={{ ...SERIF, fontSize: 'clamp(32px, 20cqi, 44px)', lineHeight: 1, overflowWrap: 'anywhere' }}>
+      <Typography className="etiqueta" sx={VERSALITAS}>{etiqueta}</Typography>
+      <Typography className="valor" sx={{ ...SERIF, fontSize: 'min(20cqi, clamp(26px, 4.6vh, 44px))', lineHeight: 1, overflowWrap: 'anywhere' }}>
         {valor}
       </Typography>
-      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{pie}</Typography>
+      <Typography className="pie" sx={{ fontSize: 'clamp(12px, 1.6vh, 13px)', color: 'text.secondary' }}>{pie}</Typography>
       {/* Lo gráfico va al fondo de la baldosa: así las cuatro alinean su pie. */}
-      <Box sx={{ mt: 'auto' }}>{children}</Box>
+      <Box className="grafica" sx={{ mt: 'auto' }}>{children}</Box>
     </Paper>
   )
 }
@@ -242,10 +245,28 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
       component="section"
       aria-label="Cifras de hoy"
       sx={{
-        display: 'grid', gap: 2,
-        // De dos en dos incluso en el móvil: una debajo de otra ocupaban cuatro pantallas.
+        display: 'grid', gap: 'clamp(8px, 1.6vh, 16px)',
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-        '@container (min-width: 900px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+        '@container columna (min-width: 640px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+        // Con poca altura, las gráficas se van: el Inicio tiene que caber sin scroll.
+        // Las gráficas encogen con la altura en vez de irse: en un portátil
+        // (unos 730 px de página) caben enteras, con su leyenda.
+        '--grafica': 'clamp(30px, 5.6vh, 50px)',
+        '@media (max-height: 800px)': {
+          '& .pie': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+          '& .etiqueta': { fontSize: 11 },
+          '& .baldosa': { gap: 0.25 },
+        },
+        // Solo en pantallas de verdad bajas se van.
+        '@media (max-height: 560px)': { '& .grafica': { display: 'none' } },
+        // En el móvil, las cuatro en una fila y solo la cifra.
+        '@container columna (max-width: 599px)': {
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px',
+          '& .baldosa': { p: 1, gap: 0.5 },
+          '& .etiqueta': { fontSize: 9.5, letterSpacing: '0.04em' },
+          '& .valor': { fontSize: 'clamp(15px, 13cqi, 22px)' },
+          '& .pie, & .grafica': { display: 'none' },
+        },
       }}
     >
       <Baldosa

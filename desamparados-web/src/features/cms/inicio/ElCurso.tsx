@@ -35,17 +35,24 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
     <Box
       component="section"
       aria-labelledby="el-curso"
-      sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, p: { xs: 2.25, md: 3.5 }, borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: FONDO_PIEZA }}
+      sx={{
+        // Se queda con el alto que sobra en el Inicio; lo que no cabe se desplaza dentro.
+        flex: '1 1 0', minHeight: 0, overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 1.8vh, 18px)', p: 'clamp(12px, 2.6vh, 28px)',
+        borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: FONDO_PIEZA,
+        '& > *': { flexShrink: 0 },
+      }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '2px 16px', flexWrap: 'wrap' }}>
-        <Typography id="el-curso" component="h2" sx={{ ...SERIF, fontSize: 28 }}>El curso</Typography>
+        <Typography id="el-curso" component="h2" sx={{ ...SERIF, fontSize: 'clamp(21px, 3vh, 28px)', lineHeight: 1.1 }}>El curso</Typography>
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
           {porcentaje} % recorrido · {porDelante ? `${contar(porDelante, 'acto', 'actos')} por delante` : 'sin actos por delante'}
         </Typography>
       </Box>
 
       {tandas.length > 0 && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
+        // En una sola fila: si no caben, la fila se desplaza de lado.
+        <Box sx={{ display: 'flex', gap: 1.25, overflowX: 'auto', scrollbarWidth: 'none' }}>
           {tandas.map((tanda, i) => {
             const abierta = i === indiceAbierta
             const viva = tanda.estado === 'viva'
@@ -61,7 +68,7 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                 sx={{
                   // Cada tanda ocupa lo que pesa; nunca más estrecha que su texto.
                   flex: `${Math.max(tanda.actos.length, 1)} 1 0`, minWidth: 'max-content',
-                  px: 1.75, py: 1.5, m: 0, borderRadius: 1.5, textAlign: 'left', fontFamily: 'inherit', color: 'text.primary', cursor: 'pointer',
+                  px: 1.75, py: 'clamp(6px, 1.3vh, 12px)', m: 0, borderRadius: 1.5, textAlign: 'left', fontFamily: 'inherit', color: 'text.primary', cursor: 'pointer',
                   border: '1px solid', borderColor: abierta ? `color-mix(in srgb, ${ORO} 60%, transparent)` : FILETE,
                   backgroundColor: abierta ? `color-mix(in srgb, ${ORO} 9%, transparent)` : 'transparent',
                   opacity: tanda.estado === 'pasada' && !abierta ? 0.55 : 1,
@@ -79,12 +86,11 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
       )}
 
       {/*
-        Todas las listas en la misma celda y solo se ve la de la tanda abierta:
-        la celda mide lo que la más larga (con su tope), así que al pulsar otra
-        tanda la pieza no cambia de alto.
+        Todas las listas en la misma celda y solo se ve la de la tanda abierta;
+        la celda llena lo que queda de la pieza y cada lista se desplaza dentro.
       */}
       {tandas.length > 0 && (
-        <Box id="curso-detalle" aria-live="polite" sx={{ display: 'grid' }}>
+        <Box id="curso-detalle" aria-live="polite" sx={{ display: 'grid', flex: '1 1 0 !important', minHeight: 0, gridTemplateRows: 'minmax(0, 1fr)' }}>
           {tandas.map((tanda, t) => {
             const visible = t === indiceAbierta
             return (
@@ -92,7 +98,7 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                 key={`${tanda.inicio.getTime()}-${tanda.actos.length}`}
                 aria-hidden={!visible}
                 inert={!visible}
-                sx={{ gridArea: '1 / 1', visibility: visible ? 'visible' : 'hidden', minWidth: 0 }}
+                sx={{ gridArea: '1 / 1', visibility: visible ? 'visible' : 'hidden', minWidth: 0, minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin' }}
               >
                 <Typography component="h3" sx={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>
                   {tanda.nombre} · {rangoDe(tanda)} · {contar(tanda.actos.length, 'acto', 'actos')}
@@ -102,8 +108,6 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                   sx={{
                     listStyle: 'none', m: 0, p: 0, display: 'grid', columnGap: 4, alignContent: 'start',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-                    // La Cuaresma trae veinte actos: se desplazan dentro en lugar de estirar la pieza.
-                    maxHeight: 240, overflowY: 'auto', scrollbarWidth: 'thin',
                   }}
                 >
                   {tanda.actos.map((acto, i) => {
@@ -112,12 +116,12 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                       <Box
                         component="li"
                         key={i}
-                        sx={{ display: 'flex', gap: 1.75, alignItems: 'baseline', py: 1.25, borderTop: `1px solid ${FILETE_SUAVE}`, opacity: acto.pasado ? 0.5 : 1 }}
+                        sx={{ display: 'flex', gap: 1.75, alignItems: 'baseline', py: 'clamp(4px, 1vh, 10px)', borderTop: `1px solid ${FILETE_SUAVE}`, opacity: acto.pasado ? 0.5 : 1 }}
                       >
-                        <Box component="span" sx={{ ...SERIF, width: 60, flexShrink: 0, fontSize: 20, color: esSiguiente ? ORO : 'text.secondary' }}>
+                        <Box component="span" sx={{ ...SERIF, width: 56, flexShrink: 0, fontSize: 'clamp(16px, 2.2vh, 20px)', color: esSiguiente ? ORO : 'text.secondary' }}>
                           {diaMes(acto.fecha)}
                         </Box>
-                        <Box component="span" sx={{ fontSize: 15, fontWeight: esSiguiente ? 500 : 400, overflowWrap: 'anywhere' }}>{acto.titulo}</Box>
+                        <Box component="span" sx={{ fontSize: 'clamp(13.5px, 1.8vh, 15px)', fontWeight: esSiguiente ? 500 : 400, overflowWrap: 'anywhere' }}>{acto.titulo}</Box>
                       </Box>
                     )
                   })}

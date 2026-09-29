@@ -1,4 +1,4 @@
-import { Alert, Box, CircularProgress } from '@mui/material'
+import { Alert, Box, CircularProgress, useMediaQuery } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useAuthStore } from '../altas/auth/store'
 import { usePanelDeHoy } from '../../app/usePanelDeHoy'
@@ -8,21 +8,27 @@ import Cabecera from './inicio/Cabecera'
 import Asuntos from './inicio/Asuntos'
 import ElCurso from './inicio/ElCurso'
 import Cifras from './inicio/Cifras'
+import { useAltoDisponible } from './inicio/useAltoDisponible'
 
 /**
  * El Inicio del CMS, en forma de retablo: a la izquierda, la Virgen a todo lo
  * alto con los días que faltan para la estación; a la derecha, el saludo, los
  * asuntos que esperan, el curso y las cuatro cifras de la casa.
  *
+ * Cabe siempre en la pantalla, sin scroll: mide lo que queda de ventana y el
+ * curso se queda con el hueco que sobra (si sus actos no caben, se desplazan
+ * dentro). Con poca altura se quitan primero las gráficas de las cifras y se
+ * ven menos asuntos a la vez.
+ *
  * El detalle de cada área (el censo, el dinero, la procesión por años) no va
  * aquí: está en «Datos e informes», de la junta.
- *
- * El ancho que manda es el del panel, no el de la ventana (consultas de
- * contenedor): con el menú abierto el panel tiene 250 px menos.
  */
 export default function PanelPage() {
   const role = useAuthStore((state) => state.cms?.role)
   const { data, isPending, isError } = usePanelDeHoy()
+  const { referencia, alto } = useAltoDisponible()
+  const holgado = useMediaQuery('(min-height: 900px)')
+  const justo = useMediaQuery('(max-height: 720px)')
 
   if (isPending) {
     return <CircularProgress aria-label="Cargando el Inicio" />
@@ -34,28 +40,37 @@ export default function PanelPage() {
 
   return (
     <Box
+      ref={referencia}
       sx={{
         // A sangre: el retablo llega a los bordes del panel, sin el margen del marco.
         m: { xs: -2.5, md: -4 },
+        height: alto ?? '100dvh', overflow: 'hidden',
         containerType: 'inline-size', containerName: 'inicio',
       }}
     >
       <Helmet><title>Inicio | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
       <Box
         sx={{
-          display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)',
-          '@container inicio (min-width: 1000px)': {
-            gridTemplateColumns: 'clamp(300px, 28%, 400px) minmax(0, 1fr)',
-            // La Virgen se queda quieta mientras baja el resto.
-            '& > .retablo': { position: 'sticky', top: 0, height: '100vh', alignSelf: 'start' },
+          height: '100%', display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'clamp(96px, 15vh, 170px) minmax(0, 1fr)',
+          '@container inicio (min-width: 720px)': {
+            gridTemplateColumns: 'clamp(220px, 28%, 400px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)',
           },
         }}
       >
-        <Box className="retablo"><Retablo /></Box>
-        <Box sx={{ px: { xs: 2.5, md: 4, lg: 8 }, py: { xs: 3, md: 6.5 }, display: 'flex', flexDirection: 'column', gap: 3.75, minWidth: 0, containerType: 'inline-size' }}>
+        <Retablo />
+        <Box
+          sx={{
+            minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', containerType: 'inline-size', containerName: 'columna',
+            px: { xs: 2, sm: 3, md: 4, lg: 8 }, py: 'clamp(12px, min(4vh, 4vw), 52px)', gap: 'clamp(10px, min(2.4vh, 2.6vw), 30px)',
+            '& > *': { flexShrink: 0 },
+          }}
+        >
           <Cabecera role={role} actividad={data.actividad} />
-          <Asuntos tareas={tareasDelDia(data)} role={role} />
-          <ElCurso eventos={data.curso.eventos} />
+          <Asuntos tareas={tareasDelDia(data)} role={role} aLaVista={holgado ? 4 : justo ? 2 : 3} />
+          <Box sx={{ flex: '1 1 0 !important', minHeight: 110, display: 'flex', flexDirection: 'column' }}>
+            <ElCurso eventos={data.curso.eventos} />
+          </Box>
           <Cifras panel={data} />
         </Box>
       </Box>
