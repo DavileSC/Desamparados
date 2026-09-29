@@ -107,8 +107,8 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                 <Box
                   component="ul"
                   sx={{
-                    listStyle: 'none', m: 0, p: 0, display: 'grid', columnGap: 4, alignContent: 'start',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+                    listStyle: 'none', m: 0, p: 0, display: 'grid', columnGap: 3, alignContent: 'start',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))',
                   }}
                 >
                   {tanda.actos.map((acto, i) => {
@@ -117,12 +117,12 @@ export default function ElCurso({ eventos, hoy = new Date() }: { eventos: PanelR
                       <Box
                         component="li"
                         key={i}
-                        sx={{ display: 'flex', gap: 1.75, alignItems: 'baseline', py: 'clamp(3px, .8vh, 8px)', borderTop: `1px solid ${FILETE_SUAVE}`, opacity: acto.pasado ? 0.5 : 1 }}
+                        sx={{ display: 'flex', gap: 1.25, alignItems: 'baseline', py: 'clamp(3px, .8vh, 8px)', borderTop: `1px solid ${FILETE_SUAVE}`, opacity: acto.pasado ? 0.5 : 1 }}
                       >
-                        <Box component="span" sx={{ ...SERIF, width: 56, flexShrink: 0, fontSize: 'clamp(16px, 2.2vh, 20px)', color: esSiguiente ? ORO : 'text.secondary' }}>
+                        <Box component="span" sx={{ ...SERIF, width: 48, flexShrink: 0, fontSize: 'clamp(16px, 2.2vh, 20px)', color: esSiguiente ? ORO : 'text.secondary' }}>
                           {diaMes(acto.fecha)}
                         </Box>
-                        <Box component="span" sx={{ fontSize: 'clamp(13.5px, 1.8vh, 15px)', fontWeight: esSiguiente ? 500 : 400, overflowWrap: 'anywhere' }}>{acto.titulo}</Box>
+                        <Box component="span" title={acto.titulo} sx={{ fontSize: 'clamp(13.5px, 1.8vh, 15px)', fontWeight: esSiguiente ? 500 : 400, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acto.titulo}</Box>
                       </Box>
                     )
                   })}

@@ -34,7 +34,7 @@ function Area({ valores, color, orden, extremos }: {
   const { referencia, ancho } = useAnchoMedido()
   if (valores.length < 2) return null
   // El mismo alto que las demás gráficas (--grafica), en cualquier pantalla.
-  const alto = 44
+  const alto = 36
   // Margen a los lados para que el halo del último punto no se corte.
   const margen = 8
   const min = Math.min(...valores), max = Math.max(...valores), rango = max - min || 1
@@ -43,7 +43,7 @@ function Area({ valores, color, orden, extremos }: {
   const [ux, uy] = puntos[puntos.length - 1]
   const retraso = `${300 + orden * 120}ms`
   return (
-    <Box ref={referencia} sx={{ mt: 1.25 }}>
+    <Box ref={referencia} sx={{ mt: 0.75 }}>
     <Box component="svg" viewBox={`0 0 ${ancho} ${alto}`} width="100%" height={alto} aria-hidden="true" sx={{ display: 'block', overflow: 'visible' }}>
       <defs>
         <Degradado id={`area-${id}`} color={color} arriba={0.45} />
@@ -100,7 +100,7 @@ function AltasYBajas({ meses, orden }: { meses: PanelResponse['censo']['movimien
     />
   )
   return (
-    <Box sx={{ mt: 1.25 }}>
+    <Box sx={{ mt: 0.75 }}>
       <Box
         role="img"
         aria-label={`Altas y bajas por mes: ${meses.map((m) => `${etiquetaPunto(m.mes)}, ${m.altas} altas y ${m.bajas} bajas`).join('; ')}`}
@@ -135,7 +135,7 @@ function Columnas({ valores, etiquetas, color, orden, corta }: { valores: number
     // Si la tarjeta es estrecha (dos por fila en el móvil), las etiquetas van
     // en corto («’22») para no salirse por la derecha.
     <Box aria-hidden="true" sx={{
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', mt: 1.25, containerType: 'inline-size',
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', mt: 0.75, containerType: 'inline-size',
       '& .corta': { display: 'none' },
       ...(corta && { '@container (max-width: 220px)': { '& .larga': { display: 'none' }, '& .corta': { display: 'inline' } } }),
     }}>
@@ -184,11 +184,11 @@ function Baldosa({ etiqueta, valor, pie, orden, children }: {
       className="baldosa"
       sx={{
         p: 2, borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: 'transparent', backgroundImage: 'none',
-        display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1),
+        display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1),
       }}
     >
       <Typography className="etiqueta" sx={VERSALITAS}>{etiqueta}</Typography>
-      <Typography className="valor" sx={{ ...SERIF, fontSize: 'min(20cqi, 38px)', lineHeight: 1, overflowWrap: 'anywhere' }}>
+      <Typography className="valor" sx={{ ...SERIF, fontSize: 'min(20cqi, 34px)', lineHeight: 1, overflowWrap: 'anywhere' }}>
         {valor}
       </Typography>
       <Typography className="pie" sx={{ fontSize: 13, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pie}</Typography>
@@ -213,7 +213,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
   // lote SEPA, pero todavía no está en la cuenta.
   const PARTES = [
     { estado: 'PENDIENTE', texto: 'Pendiente', color: ORO_GRAFICA },
-    { estado: 'REMESADO', texto: 'En el banco', color: AZUL_GRAFICA },
+    { estado: 'REMESADO', texto: 'Banco', color: AZUL_GRAFICA },
     { estado: 'DEVUELTO', texto: 'Devuelto', color: ROJO_GRAFICA },
   ] as const
   const partes = PARTES.map((p) => {
@@ -244,14 +244,14 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
       component="section"
       aria-label="Cifras de hoy"
       sx={{
-        display: 'grid', gap: 2,
+        display: 'grid', gapy: 1.25, px: 2,
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
         '@container cifras (min-width: 640px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
         // Las gráficas, siempre del mismo alto: las cifras van a todo lo ancho
         // bajo el retablo y el hueco que cambia con la pantalla es el del curso.
-        '--grafica': '44px',
+        '--grafica': '36px',
         // Solo en pantallas de verdad bajas se van.
-        '@media (max-height: 560px)': { '& .grafica': { display: 'none' } },
+        '@media (max-height: 460px)': { '& .grafica': { display: 'none' } },
         // En el móvil, las cuatro en una fila y solo la cifra.
         '@container cifras (max-width: 599px)': {
           gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px',
@@ -289,7 +289,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
         </>}
       >
         {porCobrar.importe > 0 && (
-          <Box sx={{ mt: 1.5 }}>
+          <Box sx={{ mt: 0.75 }}>
             <Box
               role="img"
               aria-label={partes.filter((p) => p.importe > 0).map((p) => `${p.texto}: ${eurosResumen(p.importe)}`).join(', ')}
@@ -299,10 +299,10 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
                 <Box key={p.estado} sx={{ flexGrow: p.importe, backgroundColor: p.color }} />
               ))}
             </Box>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '2px 10px', mt: 0.75, fontSize: 12.5, color: 'text.secondary' }}>
+            <Box sx={{ display: 'flex', gap: '2px 7px', mt: 0.75, fontSize: 11.5, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden' }}>
               {partes.filter((p) => p.importe > 0).map((p) => (
                 <Box component="span" key={p.estado} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box component="span" sx={{ width: 7, height: 7, borderRadius: '2px', backgroundColor: p.color }} />
+                  <Box component="span" sx={{ width: 7, height: 7, borderRadius: '2px', flexShrink: 0, backgroundColor: p.color }} />
                   {p.texto}
                 </Box>
               ))}
