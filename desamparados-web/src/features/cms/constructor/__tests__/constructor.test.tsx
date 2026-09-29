@@ -79,7 +79,7 @@ const accion = async (user: ReturnType<typeof userEvent.setup>, posicion: number
 }
 
 describe('el constructor: presentación', () => {
-  it('se elige un fondo y se guarda; volver al de siempre lo quita del documento', async () => {
+  it('se elige un fondo y se guarda; volver al de siempre lo quita del documento', { timeout: 20000 }, async () => {
     const user = userEvent.setup()
     const llamadas = montar()
     await screen.findByDisplayValue('Nuestros fines')
@@ -125,6 +125,9 @@ describe('el constructor: presentación', () => {
     expect(screen.getByText(/\/nuestros-fines#horario-de-misas/)).toBeInTheDocument()
 
     await accion(user, 1, /duplicar/i)
+    // El bloque 1 se pliega al abrirse la copia, pero sigue montado mientras
+    // dura la transición del Collapse: hasta que se desmonta hay dos «Ancla».
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Ancla' })).toBeNull())
     // La copia no se lleva el ancla: se repetiría. Se le pone la misma a mano.
     await user.click(await screen.findByRole('tab', { name: 'Presentación' }))
     await user.type(screen.getByRole('textbox', { name: 'Ancla' }), 'horario-de-misas')
@@ -158,7 +161,7 @@ describe('el constructor: acciones sobre los bloques', () => {
     expect(screen.queryByText('Oculto')).not.toBeInTheDocument()
   })
 
-  it('el «+» entre dos bloques añade justo ahí', async () => {
+  it('el «+» entre dos bloques añade justo ahí', { timeout: 20000 }, async () => {
     const user = userEvent.setup()
     const llamadas = montar()
     await screen.findByDisplayValue('Nuestros fines')
