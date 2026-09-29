@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react'
-import { Box, Paper, Typography, useMediaQuery } from '@mui/material'
+import { Box, Paper, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { brillo } from '../../../theme/cms'
@@ -32,10 +32,9 @@ function Area({ valores, color, orden, extremos }: {
   // Se dibuja al ancho real de la baldosa: estirando una caja fija, el punto
   // final salía ovalado y la línea más gruesa en las subidas que en lo llano.
   const { referencia, ancho } = useAnchoMedido()
-  // En pantallas bajas, más chata: el Inicio tiene que caber sin scroll.
-  const bajo = useMediaQuery('(max-height: 800px)')
   if (valores.length < 2) return null
-  const alto = bajo ? 30 : 52
+  // El mismo alto que las demás gráficas (--grafica), en cualquier pantalla.
+  const alto = 44
   // Margen a los lados para que el halo del último punto no se corte.
   const margen = 8
   const min = Math.min(...valores), max = Math.max(...valores), rango = max - min || 1
@@ -184,15 +183,15 @@ function Baldosa({ etiqueta, valor, pie, orden, children }: {
       elevation={0}
       className="baldosa"
       sx={{
-        p: 'clamp(10px, 2vh, 20px)', borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: 'transparent', backgroundImage: 'none',
+        p: 2, borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: 'transparent', backgroundImage: 'none',
         display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0, height: '100%', containerType: 'inline-size', ...entrada(orden + 1),
       }}
     >
       <Typography className="etiqueta" sx={VERSALITAS}>{etiqueta}</Typography>
-      <Typography className="valor" sx={{ ...SERIF, fontSize: 'min(20cqi, clamp(26px, 4.6vh, 44px))', lineHeight: 1, overflowWrap: 'anywhere' }}>
+      <Typography className="valor" sx={{ ...SERIF, fontSize: 'min(20cqi, 38px)', lineHeight: 1, overflowWrap: 'anywhere' }}>
         {valor}
       </Typography>
-      <Typography className="pie" sx={{ fontSize: 'clamp(12px, 1.6vh, 13px)', color: 'text.secondary' }}>{pie}</Typography>
+      <Typography className="pie" sx={{ fontSize: 13, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pie}</Typography>
       {/* Lo gráfico va al fondo de la baldosa: así las cuatro alinean su pie. */}
       <Box className="grafica" sx={{ mt: 'auto' }}>{children}</Box>
     </Paper>
@@ -200,7 +199,7 @@ function Baldosa({ etiqueta, valor, pie, orden, children }: {
 }
 
 /**
- * Las cuatro cifras de hoy, en baldosas bajo el curso: son el
+ * Las cuatro cifras de hoy, en baldosas a todo lo ancho del Inicio: son el
  * resumen de la casa, cada una con lo que la explica (su curva de doce meses o
  * de cinco años; lo por cobrar, repartido por estado).
  *
@@ -245,22 +244,16 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
       component="section"
       aria-label="Cifras de hoy"
       sx={{
-        display: 'grid', gap: 'clamp(8px, 1.6vh, 16px)',
+        display: 'grid', gap: 2,
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-        '@container columna (min-width: 640px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
-        // Con poca altura, las gráficas se van: el Inicio tiene que caber sin scroll.
-        // Las gráficas encogen con la altura en vez de irse: en un portátil
-        // (unos 730 px de página) caben enteras, con su leyenda.
-        '--grafica': 'clamp(30px, 5.6vh, 50px)',
-        '@media (max-height: 800px)': {
-          '& .pie': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-          '& .etiqueta': { fontSize: 11 },
-          '& .baldosa': { gap: 0.25 },
-        },
+        '@container cifras (min-width: 640px)': { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+        // Las gráficas, siempre del mismo alto: las cifras van a todo lo ancho
+        // bajo el retablo y el hueco que cambia con la pantalla es el del curso.
+        '--grafica': '44px',
         // Solo en pantallas de verdad bajas se van.
         '@media (max-height: 560px)': { '& .grafica': { display: 'none' } },
         // En el móvil, las cuatro en una fila y solo la cifra.
-        '@container columna (max-width: 599px)': {
+        '@container cifras (max-width: 599px)': {
           gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px',
           '& .baldosa': { p: 1, gap: 0.5 },
           '& .etiqueta': { fontSize: 9.5, letterSpacing: '0.04em' },

@@ -8,8 +8,8 @@ const FECHA_LARGA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'l
 const FECHA_CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
 /**
- * La columna del retablo: la imagen de Nuestra Señora de los Desamparados a
- * todo lo alto, con los días que faltan para la estación de penitencia al pie.
+ * La columna del retablo: la imagen de Nuestra Señora de los Desamparados,
+ * con los días que faltan para la estación de penitencia al pie.
  * Siempre oscura, en los dos temas: la foto lo es.
  *
  * En un panel ancho va a la izquierda y se queda quieta mientras baja el

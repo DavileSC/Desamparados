@@ -11,14 +11,14 @@ import Cifras from './inicio/Cifras'
 import { useAltoDisponible } from './inicio/useAltoDisponible'
 
 /**
- * El Inicio del CMS, en forma de retablo: a la izquierda, la Virgen a todo lo
- * alto con los días que faltan para la estación; a la derecha, el saludo, los
- * asuntos que esperan, el curso y las cuatro cifras de la casa.
+ * El Inicio del CMS, en forma de retablo: a la izquierda, la Virgen con los
+ * días que faltan para la estación; a la derecha, el saludo, los asuntos que
+ * esperan y el curso; y abajo, a todo lo ancho, las cuatro cifras de la casa.
  *
  * Cabe siempre en la pantalla, sin scroll: mide lo que queda de ventana y el
  * curso se queda con el hueco que sobra (si sus actos no caben, se desplazan
- * dentro). Con poca altura se quitan primero las gráficas de las cifras y se
- * ven menos asuntos a la vez.
+ * dentro). Las cifras tienen siempre el mismo alto; con poca altura se ven
+ * menos asuntos a la vez.
  *
  * El detalle de cada área (el censo, el dinero, la procesión por años) no va
  * aquí: está en «Datos e informes», de la junta.
@@ -52,9 +52,13 @@ export default function PanelPage() {
       <Box
         sx={{
           height: '100%', display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'clamp(96px, 15vh, 170px) minmax(0, 1fr)',
+          gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'clamp(96px, 15vh, 170px) minmax(0, 1fr) auto',
+          // En ancho, la Virgen se queda arriba y las cifras cruzan todo el
+          // retablo por abajo, siempre al mismo alto: así las gráficas no
+          // cambian de tamaño con la pantalla.
           '@container inicio (min-width: 720px)': {
-            gridTemplateColumns: 'clamp(220px, 28%, 400px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)',
+            gridTemplateColumns: 'clamp(220px, 28%, 400px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr) auto',
+            '& > .cifras': { gridColumn: '1 / -1' },
           },
         }}
       >
@@ -62,7 +66,7 @@ export default function PanelPage() {
         <Box
           sx={{
             minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', containerType: 'inline-size', containerName: 'columna',
-            px: { xs: 2, sm: 3, md: 4, lg: 8 }, py: 'clamp(12px, min(4vh, 4vw), 52px)', gap: 'clamp(10px, min(2.4vh, 2.6vw), 30px)',
+            px: { xs: 2, sm: 3, md: 4, lg: 8 }, pt: 'clamp(12px, min(4vh, 4vw), 52px)', pb: 'clamp(10px, min(2.4vh, 2.6vw), 30px)', gap: 'clamp(10px, min(2.4vh, 2.6vw), 30px)',
             '& > *': { flexShrink: 0 },
           }}
         >
@@ -71,6 +75,14 @@ export default function PanelPage() {
           <Box sx={{ flex: '1 1 0 !important', minHeight: 110, display: 'flex', flexDirection: 'column' }}>
             <ElCurso eventos={data.curso.eventos} />
           </Box>
+        </Box>
+        <Box
+          className="cifras"
+          sx={{
+            minWidth: 0, containerType: 'inline-size', containerName: 'cifras',
+            px: { xs: 2, sm: 3, md: 4 }, pb: 'clamp(12px, min(3vh, 3vw), 32px)', pt: { xs: 0, md: 'clamp(12px, min(2.4vh, 2.6vw), 24px)' },
+          }}
+        >
           <Cifras panel={data} />
         </Box>
       </Box>
