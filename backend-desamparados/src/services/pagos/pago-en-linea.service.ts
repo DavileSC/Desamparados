@@ -7,7 +7,7 @@
  * Secretaría mientras tanto, cambió el importe…), el pago queda como
  * INCIDENCIA para que Tesorería devuelva el dinero. Nunca se pierde en silencio.
  */
-import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, Prisma } from '@prisma/client';
+import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, OrigenPago, Prisma } from '@prisma/client';
 import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { pendienteDeLaSalida } from '../../domain/salidas.js';
@@ -35,7 +35,48 @@ const aCentimos = (importe: Prisma.Decimal | number) => Math.round(Number(import
 /** La clave de la operación del cobro: la misma en cada aviso repetido del mismo pedido. */
 const claveDelCobro = (pedido: string) => `redsys-${pedido}`;
 
+/**
+ * Lo que aplica un pago que no es del área de hermanos (un pedido de la
+ * tienda, un apadrinamiento). Cada servicio registra el suyo al cargarse:
+ * así la pasarela no importa a la tienda, y la tienda sí a la pasarela.
+ * Si no se puede aplicar, lanza un HttpError y el pago queda como incidencia.
+ */
+type Aplicador = (referenciaId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) => Promise<void>;
+const APLICADORES: Partial<Record<OrigenPago, Aplicador>> = {};
+/** El correo de quien pagó sin cuenta, para las incidencias. */
+const CORREO_DE: Partial<Record<OrigenPago, (referenciaId: number) => Promise<string | null>>> = {};
+
+export function registrarOrigenDePago(origen: OrigenPago, aplicar: Aplicador, correo: (referenciaId: number) => Promise<string | null>) {
+  APLICADORES[origen] = aplicar;
+  CORREO_DE[origen] = correo;
+}
+
 export class PagoEnLineaService {
+  /**
+   * Un pago sin cuenta (la tienda, un apadrinamiento): apunta el pago
+   * pendiente y devuelve el formulario firmado para ir al banco. El importe lo
+   * calcula quien llama, en el servidor, nunca el navegador. `{pedido}` en las
+   * direcciones de vuelta se cambia por el número de pedido.
+   */
+  static async iniciarSinCuenta(p: { origen: OrigenPago; referenciaId: number; centimos: number; metodo: MetodoEnLinea; descripcion: string; urlVuelta: string; urlFallo: string }) {
+    const config = configuracionRedsys();
+    if (p.metodo === 'BIZUM' && !config.bizum) throw new HttpError('El pago con Bizum no está disponible. Paga con tarjeta.', 409);
+    const pedido = await db.$transaction(async (tx) => {
+      const creado = await tx.pagoEnLinea.create({
+        data: { origen: p.origen, referenciaId: p.referenciaId, metodo: p.metodo, importe: new Prisma.Decimal(p.centimos).div(100), reciboIds: [], solicitudIds: [] },
+      });
+      const numero = numeroDePedido(creado.id);
+      await tx.pagoEnLinea.update({ where: { id: creado.id }, data: { pedido: numero } });
+      return numero;
+    });
+    const formulario = formularioDePago({
+      pedido, centimos: p.centimos, metodo: p.metodo, descripcion: p.descripcion,
+      urlAviso: `${process.env.API_URL || 'http://localhost:3001'}/api/pagos/redsys/notificacion`,
+      urlVuelta: p.urlVuelta.replace('{pedido}', pedido), urlFallo: p.urlFallo.replace('{pedido}', pedido),
+    }, config);
+    return { tipo: 'banco' as const, pedido, ...formulario };
+  }
+
   /**
    * Comprueba que todo es de la familia y está pendiente, y calcula el total
    * aquí: el importe no lo dice nunca el navegador.
@@ -141,7 +182,7 @@ export class PagoEnLineaService {
       }
       await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.INCIDENCIA, motivo, ...banco } });
       console.error(`[Pagos] Incidencia en el pedido ${aviso.pedido}: ${motivo}`);
-      await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_INCIDENCIA, { ...meta, userId: pago.userId }, 'PagoEnLinea', pago.id, { pedido: aviso.pedido, motivo });
+      await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_INCIDENCIA, { ...meta, userId: pago.userId ?? undefined }, 'PagoEnLinea', pago.id, { pedido: aviso.pedido, motivo });
     };
 
     const esperado = aCentimos(pago.importe);
@@ -149,17 +190,33 @@ export class PagoEnLineaService {
       await incidencia(`El banco cobró ${(aviso.centimos / 100).toFixed(2)} € y se esperaban ${(esperado / 100).toFixed(2)} €.`);
       return true;
     }
+    // Lo que no es del área de hermanos lo aplica su propio servicio, con la
+    // misma regla: lo que ya no se puede aplicar es incidencia.
+    if (pago.origen !== OrigenPago.AREA_HERMANOS) {
+      const aplicar = APLICADORES[pago.origen];
+      try {
+        if (!aplicar || pago.referenciaId === null) throw new HttpError('El pago no dice qué se pagaba.');
+        await aplicar(pago.referenciaId, pago.metodo as MetodoEnLinea, { ...meta });
+        await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+      } catch (e) {
+        if (!(e instanceof HttpError)) throw e;
+        await incidencia(`No se pudo aplicar el pago: ${e.message}`);
+      }
+      return true;
+    }
+
+    const userId = pago.userId!;
     const reciboIds = pago.reciboIds as number[];
     const solicitudIds = pago.solicitudIds as number[];
     try {
-      const ahora = await this.preparar(pago.userId, { reciboIds, solicitudIds });
+      const ahora = await this.preparar(userId, { reciboIds, solicitudIds });
       if (ahora.centimos !== esperado) {
         await incidencia(`Mientras pagaba cambió lo que debía: ahora son ${(ahora.centimos / 100).toFixed(2)} €.`);
         return true;
       }
       await ZonasService.cobrar(
         { hermanoId: ahora.hermanoId, reciboIds, solicitudes: solicitudIds.map((solicitudId) => ({ solicitudId })), metodoPago: pago.metodo as MetodoEnLinea },
-        claveDelCobro(aviso.pedido), { ...meta, userId: pago.userId }, ACCIONES_AUDITORIA.PAGO_EN_LINEA,
+        claveDelCobro(aviso.pedido), { ...meta, userId }, ACCIONES_AUDITORIA.PAGO_EN_LINEA,
       );
       await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
     } catch (e) {
@@ -184,11 +241,12 @@ export class PagoEnLineaService {
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 50,
     });
-    const usuarios = await db.user.findMany({ where: { id: { in: filas.map((f) => f.userId) } }, select: { id: true, email: true } });
+    const usuarios = await db.user.findMany({ where: { id: { in: filas.flatMap((f) => (f.userId ? [f.userId] : [])) } }, select: { id: true, email: true } });
     const correo = new Map(usuarios.map((u) => [u.id, u.email]));
-    return filas.map((f) => ({
+    const sinCuenta = await Promise.all(filas.map((f) => (f.userId === null && f.referenciaId !== null ? CORREO_DE[f.origen]?.(f.referenciaId) ?? null : null)));
+    return filas.map((f, i) => ({
       id: f.id, pedido: f.pedido, fecha: f.createdAt, importe: Number(f.importe), metodo: f.metodo,
-      autorizacion: f.autorizacion, motivo: f.motivo, correo: correo.get(f.userId) ?? null,
+      autorizacion: f.autorizacion, motivo: f.motivo, correo: (f.userId ? correo.get(f.userId) : sinCuenta[i]) ?? null,
     }));
   }
 

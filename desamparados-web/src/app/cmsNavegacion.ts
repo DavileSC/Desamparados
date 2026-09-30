@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import HowToVoteOutlinedIcon from '@mui/icons-material/HowToVoteOutlined'
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined'
@@ -96,6 +97,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon },
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
+  { label: 'Tienda', href: '/cms/tienda', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: StorefrontOutlinedIcon },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
   { label: 'Datos e informes', href: '/cms/datos', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Junta', icono: InsightsOutlinedIcon },
   { label: 'Informe anual', href: '/cms/informe-anual', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon },
@@ -120,6 +122,8 @@ export const rolesPorRutaCms = {
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  // La tienda: la guarda de /api/tienda/admin.
+  tienda: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'],
   // Los cabildos y el libro de actas: la guarda de /api/cabildos.
   cabildos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   // El boletín y los avisos por correo: la guarda de /api/comunicados.

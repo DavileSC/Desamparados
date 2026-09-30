@@ -740,6 +740,14 @@ model Publicacion {
 }
 
 /// Cómo va un pago con la pasarela del banco (Redsys).
+/// Qué se paga en línea: recibos y salidas del área de hermanos, un pedido de
+/// la tienda o un apadrinamiento.
+enum OrigenPago {
+  AREA_HERMANOS
+  TIENDA
+  APADRINAMIENTO
+}
+
 enum EstadoPagoEnLinea {
   PENDIENTE // El hermano está en la página del banco, o la dejó sin pagar
   PAGADO // El banco avisó de que se cobró y los recibos quedaron pagados
@@ -754,7 +762,12 @@ model PagoEnLinea {
   id           Int               @id @default(autoincrement())
   /// El número de pedido para Redsys: 12 caracteres, los 4 primeros cifras.
   pedido       String?           @unique @db.VarChar(12)
-  userId       Int
+  /// Quién paga desde el área de hermanos. Null en la tienda y los
+  /// apadrinamientos, que se pagan sin cuenta.
+  userId       Int?
+  /// De dónde viene el pago, y qué se paga fuera del área de hermanos.
+  origen       OrigenPago        @default(AREA_HERMANOS)
+  referenciaId Int?
   /// TARJETA o BIZUM.
   metodo       MetodoPago
   importe      Decimal           @db.Decimal(10, 2)
@@ -1068,4 +1081,64 @@ model CabildoVotacion {
   createdAt    DateTime @default(now())
 
   @@index([cabildoId])
+}
+
+enum EstadoPedido {
+  PENDIENTE_PAGO // Se ha ido al banco y aún no ha avisado
+  PAGADO // Cobrado: espera a que lo recojan en Secretaría
+  ENTREGADO
+  CANCELADO // El banco no lo cobró, o se anuló
+}
+
+/// Lo que se vende en la tienda de la web: recuerdos, medallas, estampas…
+model Producto {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @db.VarChar(120)
+  descripcion String   @default("") @db.Text
+  precio      Decimal  @db.Decimal(10, 2)
+  /// URL de la foto, subida desde el CMS.
+  foto        String?
+  /// Cuántos quedan. Null: sin límite (se hace por encargo).
+  existencias Int?
+  activo      Boolean  @default(true)
+  orden       Int      @default(0)
+  lineas      PedidoTiendaLinea[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([activo, orden])
+}
+
+/// Un pedido de la tienda. Se compra sin cuenta y se recoge en Secretaría.
+model PedidoTienda {
+  id          Int          @id @default(autoincrement())
+  /// Para la página de vuelta del banco: sin él, nadie ve un pedido ajeno.
+  token       String       @unique @db.VarChar(32)
+  nombre      String       @db.VarChar(120)
+  email       String       @db.VarChar(191)
+  telefono    String       @db.VarChar(30)
+  estado      EstadoPedido @default(PENDIENTE_PAGO)
+  total       Decimal      @db.Decimal(10, 2)
+  metodo      MetodoPago?
+  pagadoEl    DateTime?
+  entregadoEl DateTime?
+  lineas      PedidoTiendaLinea[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([estado, createdAt])
+}
+
+model PedidoTiendaLinea {
+  id         Int          @id @default(autoincrement())
+  pedidoId   Int
+  pedido     PedidoTienda @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId Int?
+  producto   Producto?    @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  /// Nombre y precio copiados: el pedido no cambia si mañana cambia el producto.
+  nombre     String       @db.VarChar(120)
+  precio     Decimal      @db.Decimal(10, 2)
+  cantidad   Int
+
+  @@index([pedidoId])
 }

@@ -49,6 +49,7 @@ describe('menuPublico', () => {
         'Actualidad /actualidad',
         '  Agenda /agenda',
         '  Noticias /noticias',
+        '  Tienda /tienda',
         'Publicaciones /publicaciones',
         '  Todas las publicaciones /publicaciones',
         '  Boletines /publicaciones/boletines',

@@ -73,6 +73,7 @@ export const menuPublico: EntradaMenu[] = [
     hijos: [
       { label: 'Agenda', href: '/agenda' },
       { label: 'Noticias', href: '/noticias' },
+      { label: 'Tienda', href: '/tienda' },
     ],
   },
   {

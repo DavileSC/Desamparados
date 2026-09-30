@@ -72,6 +72,9 @@ export const ACCIONES_AUDITORIA = {
   // Partida doble: la cuenta de cada categoría y sacar el ejercicio a Excel
   CATEGORIA_CUENTA: 'CATEGORIA_CUENTA',
   CONTABILIDAD_EXPORTAR: 'CONTABILIDAD_EXPORTAR',
+  // La tienda: el pedido pagado (por el banco) y entregado en Secretaría
+  TIENDA_PEDIDO_PAGADO: 'TIENDA_PEDIDO_PAGADO',
+  TIENDA_PEDIDO_ENTREGADO: 'TIENDA_PEDIDO_ENTREGADO',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

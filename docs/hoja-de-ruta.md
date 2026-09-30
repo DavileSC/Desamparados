@@ -109,7 +109,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | 🟡 | A | Ficha completa de patrimonio | Hay enseres con estado, foto y ubicación; faltan varias fotos, descripción y tasación |
-| ⬜ | B | Tienda en línea | La pasarela ya está |
+| ✅ | — | **Tienda en línea** | Hecha: /tienda en la web pública (cesta, compra sin cuenta, pago con la pasarela de Redsys, recogida en Secretaría) y Cuentas → «Tienda» en el CMS (productos con foto, precio y existencias; pedidos por entregar). El aviso del banco descuenta existencias, apunta el ingreso («Ventas de la tienda» → 700) y manda el correo; si ya no queda, incidencia para devolver. La pasarela admite ya pagos sin cuenta (`PagoEnLinea.origen`). Migración `tienda` |
 | ⬜ | B | Apadrinamiento sobre una foto (velas, piezas) | La pasarela ya está |
 
 ## Fase 7 · Extras

@@ -54,6 +54,7 @@ const ComunicadoEditPage = lazy(() => import('../features/cms/ComunicadoEditPage
 const CabildosAdminPage = lazy(() => import('../features/cms/CabildosAdminPage'))
 const CabildoPage = lazy(() => import('../features/cms/CabildoPage'))
 const PartidaDoblePage = lazy(() => import('../features/cms/PartidaDoblePage'))
+const TiendaAdminPage = lazy(() => import('../features/cms/TiendaAdminPage'))
 const PublicacionEditPage = lazy(() => import('../features/cms/PublicacionEditPage'))
 const AgendaEditPage = lazy(() => import('../features/cms/AgendaEditPage'))
 const InventarioEditPage = lazy(() => import('../features/cms/InventarioEditPage'))
@@ -73,6 +74,8 @@ const AvisoLegalPage = lazy(() => import('../features/legal/AvisoLegalPage'))
 const PoliticaDePrivacidadPage = lazy(() => import('../features/legal/PoliticaDePrivacidadPage'))
 const PoliticaDeCookiesPage = lazy(() => import('../features/legal/PoliticaDeCookiesPage'))
 const BajaBoletinPage = lazy(() => import('../features/boletin/BajaBoletinPage'))
+const TiendaPage = lazy(() => import('../features/tienda/TiendaPage'))
+const PedidoTiendaPage = lazy(() => import('../features/tienda/PedidoTiendaPage'))
 
 // Auth pages
 const AccesoPage = lazy(() => import('../features/altas/auth/AccesoPage'))
@@ -149,6 +152,8 @@ const router = createBrowserRouter([
           { path: 'publicaciones/dossier-prensa', element: withSuspense(DossierPrensaPage) },
           { path: 'hazte-hermano', element: withSuspense(HazteHermanoPage) },
           { path: 'contacto', element: withSuspense(ContactoPage) },
+          { path: 'tienda', element: withSuspense(TiendaPage) },
+          { path: 'tienda/pedido/:token', element: withSuspense(PedidoTiendaPage) },
           { path: 'aviso-legal', element: withSuspense(AvisoLegalPage) },
           { path: 'politica-privacidad', element: withSuspense(PoliticaDePrivacidadPage) },
           { path: 'politica-cookies', element: withSuspense(PoliticaDeCookiesPage) },
@@ -248,6 +253,7 @@ const router = createBrowserRouter([
           { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },
           { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
           { path: 'contabilidad/partida-doble', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(PartidaDoblePage)}</ExigeRol> },
+          { path: 'tienda', element: <ExigeRol roles={rolesPorRutaCms.tienda}>{withSuspense(TiendaAdminPage)}</ExigeRol> },
           { path: 'datos', element: <ExigeRol roles={rolesPorRutaCms.datos}>{withSuspense(DatosInformesPage)}</ExigeRol> },
           { path: 'informe-anual', element: <ExigeRol roles={rolesPorRutaCms['informe-anual']}>{withSuspense(InformeAnualPage)}</ExigeRol> },
           { path: 'informe-anual/:anio', element: <ExigeRol roles={rolesPorRutaCms['informe-anual/:anio']}>{withSuspense(InformeAnualPage)}</ExigeRol> },
