@@ -49,6 +49,9 @@ export const ACCIONES_AUDITORIA = {
   // El hermano desde su área: pedir la papeleta y pagar en línea
   SOLICITUD_SALIDA_PEDIR: 'SOLICITUD_SALIDA_PEDIR',
   PAGO_EN_LINEA: 'PAGO_EN_LINEA',
+  // Lo que el banco cobró y no cuadró, y quién de Tesorería lo dio por resuelto
+  PAGO_EN_LINEA_INCIDENCIA: 'PAGO_EN_LINEA_INCIDENCIA',
+  PAGO_EN_LINEA_RESOLVER: 'PAGO_EN_LINEA_RESOLVER',
   ROSARIO_FECHAR: 'ROSARIO_FECHAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
   // Procesión (turnos de reparto y citas)

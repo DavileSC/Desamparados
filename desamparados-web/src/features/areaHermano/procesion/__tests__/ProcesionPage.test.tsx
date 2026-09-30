@@ -29,18 +29,28 @@ const salidas = (pasion: Partial<SalidaDelHermano> = {}, rosario: Partial<Salida
   { salida: 'ROSARIO', nombre: 'Rosario vespertino', abierto: false, year: 2026, dias: [], ...rosario },
 ]
 
+let respuestaDelPago: unknown = { tipo: 'hecho', total: 25, repetida: false }
+let estadoDelPagoEnElServidor: unknown = { estado: 'PAGADO', importe: 25 }
+
 function servidor(estado: Partial<MiProcesion>) {
   const llamadas: { url: string; metodo: string; cuerpo?: unknown }[] = []
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const metodo = init.method ?? 'GET'
     llamadas.push({ url: String(url), metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
+    if (String(url).includes('/mis-recibos/pagar')) return Promise.resolve(json(respuestaDelPago))
+    if (String(url).includes('/mis-recibos/pagos/')) return Promise.resolve(json(estadoDelPagoEnElServidor))
     if (metodo === 'POST' || metodo === 'DELETE') return Promise.resolve(json({ citaId: 1, total: 20, repetida: false }))
-    return Promise.resolve(json({ salidas: salidas(), cuotaSalida: 0, pagoEnLinea: false, fichas: [], ...estado }))
+    return Promise.resolve(json({ salidas: salidas(), cuotaSalida: 0, pagoEnLinea: false, pago: null, fichas: [], ...estado }))
   }))
   return llamadas
 }
 
-afterEach(() => { vi.unstubAllGlobals() })
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  respuestaDelPago = { tipo: 'hecho', total: 25, repetida: false }
+  estadoDelPagoEnElServidor = { estado: 'PAGADO', importe: 25 }
+})
 
 describe('ProcesionPage', () => {
   it('con el plazo cerrado no ofrece pedir nada y enseña la última papeleta', async () => {
@@ -112,6 +122,7 @@ describe('ProcesionPage', () => {
     const solicitud = { id: 6, puesto: 'Vela', donativo: 5, pendiente: 5, concepto: 'Donativo Rosario vespertino 2026', pagada: false, cita: null }
     const llamadas = servidor({
       pagoEnLinea: true,
+      pago: { metodos: ['TARJETA'], pruebas: true },
       fichas: [ficha(1, 'Antonio', { cuotasPendientes: [{ id: 30, year: 2026, concepto: 'Cuota 2026', importe: 20, estado: 'PENDIENTE' }] }, {}, { solicitud })],
     })
     renderWithProviders(<ProcesionPage />)
@@ -119,7 +130,46 @@ describe('ProcesionPage', () => {
     expect(await screen.findByText(/está en pruebas/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Pagar 25,00 €' }))
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST' && l.url.includes('/recibos/mis-recibos/pagar'))).toBe(true))
-    expect(llamadas.find((l) => l.url.includes('/mis-recibos/pagar'))?.cuerpo).toMatchObject({ reciboIds: [30], solicitudIds: [6] })
+    expect(llamadas.find((l) => l.url.includes('/mis-recibos/pagar'))?.cuerpo).toMatchObject({ reciboIds: [30], solicitudIds: [6], metodo: 'TARJETA' })
+    expect(await screen.findByText(/Pago hecho: 25,00 €/)).toBeInTheDocument()
+  })
+
+  it('con el banco, elige Bizum y se va a la página de Redsys con el formulario firmado', async () => {
+    const user = userEvent.setup()
+    respuestaDelPago = { tipo: 'banco', pedido: '00000042AB7Z', url: 'https://sis-t.redsys.es:25443/sis/realizarPago', campos: { Ds_SignatureVersion: 'HMAC_SHA256_V1', Ds_MerchantParameters: 'e30=', Ds_Signature: 'firma' } }
+    const enviados: HTMLFormElement[] = []
+    vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(function (this: HTMLFormElement) { enviados.push(this) })
+    const llamadas = servidor({
+      pagoEnLinea: true,
+      pago: { metodos: ['TARJETA', 'BIZUM'], pruebas: false },
+      fichas: [ficha(1, 'Antonio', { cuotasPendientes: [{ id: 30, year: 2026, concepto: 'Cuota 2026', importe: 20, estado: 'PENDIENTE' }] })],
+    })
+    renderWithProviders(<ProcesionPage />)
+
+    expect(await screen.findByText(/página segura del banco/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pagar 20,00 € con tarjeta' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Pagar con Bizum' }))
+    await waitFor(() => expect(enviados).toHaveLength(1))
+    expect(llamadas.find((l) => l.url.includes('/mis-recibos/pagar'))?.cuerpo).toMatchObject({ reciboIds: [30], metodo: 'BIZUM' })
+    expect(enviados[0].action).toBe('https://sis-t.redsys.es:25443/sis/realizarPago')
+    expect(enviados[0].method).toBe('post')
+    expect((enviados[0].elements.namedItem('Ds_Signature') as HTMLInputElement).value).toBe('firma')
+  })
+
+  it('a la vuelta del banco pregunta cómo fue el pago y lo dice', async () => {
+    const llamadas = servidor({ pago: { metodos: ['TARJETA'], pruebas: false } })
+    renderWithProviders(<ProcesionPage />, { ruta: '/area-hermano/procesion?pago=00000042AB7Z' })
+
+    expect(await screen.findByText(/Pago recibido: 25,00 €/)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.url.includes('/mis-recibos/pagos/00000042AB7Z'))).toBe(true)
+  })
+
+  it('si el banco lo cobró pero ya no cuadra, avisa de que Tesorería lo devuelve', async () => {
+    estadoDelPagoEnElServidor = { estado: 'INCIDENCIA', importe: 20 }
+    servidor({ pago: { metodos: ['TARJETA'], pruebas: false } })
+    renderWithProviders(<ProcesionPage />, { ruta: '/area-hermano/procesion?pago=00000042AB7Z' })
+
+    expect(await screen.findByText(/Tesorería lo revisará y te devolverá el dinero/)).toBeInTheDocument()
   })
 
   it('el Rosario va aparte: su plazo, sus días, sus puestos y la voluntad', async () => {

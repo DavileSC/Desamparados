@@ -103,3 +103,23 @@ export function impagos(filtros: { incluirAnioActual: boolean; minimo: number },
     minimo: filtros.minimo > 1 ? String(filtros.minimo) : undefined,
   })}`)
 }
+
+/** Lo que el banco cobró en línea y no se pudo aplicar a lo que se debía: hay que devolverlo. */
+export interface IncidenciaDePago {
+  id: number
+  pedido: string | null
+  fecha: string
+  importe: number
+  metodo: PaymentMethod
+  autorizacion: string | null
+  motivo: string | null
+  correo: string | null
+}
+
+export function incidenciasDePago() {
+  return llamarApi<IncidenciaDePago[]>('/recibos/admin/pagos-en-linea/incidencias')
+}
+
+export function resolverIncidenciaDePago(id: number) {
+  return llamarApi<{ message: string }>(`/recibos/admin/pagos-en-linea/incidencias/${id}/resolver`, { method: 'POST' })
+}

@@ -17,6 +17,7 @@ import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { transactionWithRetry } from '../../utils/transaction-retry.js';
 import { sanearPaginacion, respuestaPaginada } from '../../domain/paginacion.js';
 import { DATOS_SALIDA, SALIDAS, pagoEnLineaDisponible } from '../../domain/salidas.js';
+import { pagoParaLaWeb } from '../../domain/redsys.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { idCategoriaDevoluciones } from '../recibos/comunes.js';
 import { PlazoPapeletasService } from './plazo.service.js';
@@ -190,6 +191,7 @@ export class MiProcesionService {
       salidas,
       cuotaSalida,
       pagoEnLinea: pagoEnLineaDisponible(),
+      pago: pagoParaLaWeb(),
       fichas: fichas.map(({ solicitudes, papeletas, ...ficha }) => {
         const suyas = cuotas.get(ficha.id) ?? [];
         return {

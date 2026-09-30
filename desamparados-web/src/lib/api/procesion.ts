@@ -95,6 +95,8 @@ export interface MiProcesion {
   cuotaSalida: number | null
   /** Si se puede pagar desde el área (hoy, con la pasarela simulada). */
   pagoEnLinea: boolean
+  /** Con qué se paga en línea y si es de pruebas (no se cobra de verdad). Null si no hay pago en línea. */
+  pago: { metodos: MetodoEnLinea[]; pruebas: boolean } | null
   fichas: FichaEnLaProcesion[]
 }
 
@@ -117,9 +119,41 @@ export function anularCita(citaId: number) {
   return llamarApi<{ message: string }>(`/procesion/avisar/${citaId}`, { method: 'DELETE' })
 }
 
-/** Pagar en línea lo pendiente de la familia: cuotas y lo de la salida (hoy la pasarela está simulada). */
-export function pagarEnLinea(pago: { reciboIds: number[]; solicitudIds: number[] }, clave: string) {
-  return llamarApi<{ total: number; repetida: boolean }>('/recibos/mis-recibos/pagar', { method: 'POST', json: { ...pago, clave } })
+export type MetodoEnLinea = 'TARJETA' | 'BIZUM'
+
+/**
+ * Empezar a pagar lo pendiente de la familia. Con el banco, vuelve el
+ * formulario firmado que hay que enviar a Redsys; simulado, ya está pagado.
+ */
+export type InicioDePago =
+  | { tipo: 'hecho'; total: number; repetida: boolean }
+  | { tipo: 'banco'; pedido: string; url: string; campos: Record<string, string> }
+
+export function pagarEnLinea(pago: { reciboIds: number[]; solicitudIds: number[]; metodo: MetodoEnLinea }, clave: string) {
+  return llamarApi<InicioDePago>('/recibos/mis-recibos/pagar', { method: 'POST', json: { ...pago, clave } })
+}
+
+export type EstadoDelPago = 'PENDIENTE' | 'PAGADO' | 'RECHAZADO' | 'INCIDENCIA'
+
+/** Cómo va un pago, a la vuelta del banco: el aviso del banco puede llegar unos segundos después. */
+export function estadoDelPago(pedido: string) {
+  return llamarApi<{ estado: EstadoDelPago; importe: number }>(`/recibos/mis-recibos/pagos/${encodeURIComponent(pedido)}`)
+}
+
+/** Lleva al hermano a la página del banco: un formulario que se envía solo, como pide Redsys. */
+export function irAlBanco(inicio: { url: string; campos: Record<string, string> }) {
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = inicio.url
+  for (const [nombre, valor] of Object.entries(inicio.campos)) {
+    const campo = document.createElement('input')
+    campo.type = 'hidden'
+    campo.name = nombre
+    campo.value = valor
+    form.appendChild(campo)
+  }
+  document.body.appendChild(form)
+  form.submit()
 }
 
 // --- CMS ---

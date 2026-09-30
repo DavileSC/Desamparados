@@ -1,6 +1,7 @@
 import { EstadoPago, TipoRecibo, type Salida } from '@prisma/client';
 import catalogo from '../../../shared/puestos-procesion.json' with { type: 'json' };
 import { claveConcepto } from './datos-procesion.js';
+import { modoDePago } from './redsys.js';
 
 /**
  * Las salidas del año y lo que las distingue, sin base de datos: la del
@@ -189,15 +190,7 @@ export function notaDePerdon(motivo: string | undefined, fecha: Date = new Date(
 export const esPerdonada = (observaciones: string | null | undefined) =>
   Boolean(observaciones?.includes('Perdonada por decisión del Hermano Mayor'));
 
-/**
- * Si el área de hermanos ofrece pagar en línea. Hoy la pasarela se SIMULA
- * (aún no hay cuenta del banco para cobrar con tarjeta ni Bizum): el pago se
- * da por hecho sin mover dinero. Por eso, en producción solo se enciende a
- * propósito con `PAGO_EN_LINEA=simulado`; fuera de producción está encendido
- * salvo que se apague con `PAGO_EN_LINEA=no`.
- */
+/** Si el área de hermanos ofrece pagar en línea (ver `modoDePago`). */
 export function pagoEnLineaDisponible(env: Record<string, string | undefined> = process.env): boolean {
-  if (env.PAGO_EN_LINEA === 'simulado') return true;
-  if (env.PAGO_EN_LINEA !== undefined) return false;
-  return env.NODE_ENV !== 'production';
+  return modoDePago(env) !== null;
 }

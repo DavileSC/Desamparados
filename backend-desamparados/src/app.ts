@@ -7,6 +7,7 @@ import { registroPeticiones } from './config/registro.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { hermanoRoutes } from './routes/hermano.routes.js';
 import { reciboRoutes } from './routes/recibo.routes.js';
+import { pagoRoutes } from './routes/pago.routes.js';
 import { paginaRoutes } from './routes/pagina.routes.js';
 import { agendaRoutes } from './routes/agenda.routes.js';
 import { noticiaRoutes } from './routes/noticia.routes.js'; 
@@ -110,8 +111,9 @@ app.use(globalLimiter);
 // solo sirve para hacer trabajar al servidor. Las tres rutas que reciben el
 // HTML del CMS (noticias, páginas y publicaciones) admiten 2 MB; su parser se
 // monta ANTES del general, y el general ya no vuelve a leer un cuerpo leído.
-// Sin `express.urlencoded`: la web solo envía JSON y las subidas van en
-// multipart, que lee multer en su propia ruta.
+// Sin `express.urlencoded` general: la web solo envía JSON y las subidas van
+// en multipart, que lee multer en su propia ruta. La única excepción es el
+// aviso del banco, que trae su lector en `pago.routes.ts`.
 const CUERPO_CMS = '2mb';
 const CUERPO_GENERAL = '100kb';
 app.use(['/api/news', '/api/pages', '/api/publications'], express.json({ limit: CUERPO_CMS }));
@@ -142,6 +144,7 @@ app.get(['/health', '/api/health'], (_req, res) => {
 app.use('/api/auth', authRoutes);       // Login y Registro
 app.use('/api/hermanos', hermanoRoutes); // Gestión de Cofrades
 app.use('/api/recibos', reciboRoutes);   // Pagos y Tesorería
+app.use('/api/pagos', pagoRoutes);       // Avisos del banco (Redsys), sin sesión
 app.use('/api/pages', paginaRoutes);     // Contenido estático
 app.use('/api/events', agendaRoutes);    // Agenda
 app.use('/api/news', noticiaRoutes);        // Noticias

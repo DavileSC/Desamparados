@@ -33,6 +33,8 @@ export interface ResultadoEntorno {
 export const HOST_PRODUCCION = '127.0.0.1';
 export const PUERTO_POR_DEFECTO = 3001;
 
+import { claveRedsysValida } from '../domain/redsys.js';
+
 const definida = (valor: string | undefined): valor is string =>
   valor !== undefined && valor.trim() !== '';
 
@@ -88,6 +90,31 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
     errores.push(`AUDIT_RETENTION_DAYS="${entorno.AUDIT_RETENTION_DAYS}" debe ser un número entero de días, 30 o más.`);
   }
 
+  // El pago en línea: un valor mal escrito apagaría el pago sin decir nada, y
+  // unas claves del banco mal copiadas se descubrirían con el primer hermano
+  // que intentara pagar.
+  const pago = entorno.PAGO_EN_LINEA;
+  if (definida(pago) && !['redsys', 'simulado', 'no'].includes(pago)) {
+    errores.push(`PAGO_EN_LINEA="${pago}" debe ser redsys, simulado o no.`);
+  }
+  if (definida(entorno.REDSYS_ENTORNO) && !['pruebas', 'real'].includes(entorno.REDSYS_ENTORNO)) {
+    errores.push(`REDSYS_ENTORNO="${entorno.REDSYS_ENTORNO}" debe ser pruebas o real.`);
+  }
+  if (pago === 'redsys') {
+    if (entorno.REDSYS_ENTORNO === 'real' && (!definida(entorno.REDSYS_COMERCIO) || !definida(entorno.REDSYS_CLAVE))) {
+      errores.push('Con REDSYS_ENTORNO=real hacen falta REDSYS_COMERCIO y REDSYS_CLAVE (los da el banco al contratar el TPV virtual).');
+    }
+    if (definida(entorno.REDSYS_CLAVE) && !claveRedsysValida(entorno.REDSYS_CLAVE)) {
+      errores.push('REDSYS_CLAVE no tiene la forma de una clave de Redsys (32 caracteres en base64): cópiala entera del portal del banco.');
+    }
+    if (definida(entorno.REDSYS_COMERCIO) && !/^\d{1,9}$/.test(entorno.REDSYS_COMERCIO.trim())) {
+      errores.push(`REDSYS_COMERCIO="${entorno.REDSYS_COMERCIO}" debe ser el número de comercio (FUC), solo cifras.`);
+    }
+    if (definida(entorno.REDSYS_TERMINAL) && !esEnteroEnRango(entorno.REDSYS_TERMINAL, 1, 999)) {
+      errores.push(`REDSYS_TERMINAL="${entorno.REDSYS_TERMINAL}" debe ser el número de terminal (normalmente 1).`);
+    }
+  }
+
   if (nodeEnv !== 'production') return { errores, avisos };
 
   // --- Solo en producción ---
@@ -104,6 +131,10 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
   ];
   for (const [nombre, motivo] of obligatorias) {
     if (!definida(entorno[nombre])) errores.push(`Falta ${nombre} (${motivo}).`);
+  }
+
+  if (pago === 'simulado' || (pago === 'redsys' && entorno.REDSYS_ENTORNO !== 'real')) {
+    avisos.push('El pago en línea está en pruebas: los hermanos pueden pagar, pero no se cobra de verdad (PAGO_EN_LINEA / REDSYS_ENTORNO).');
   }
 
   for (const nombre of ['FRONTEND_URL', 'API_URL']) {

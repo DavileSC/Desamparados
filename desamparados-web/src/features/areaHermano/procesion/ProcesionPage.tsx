@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   Alert, Autocomplete, Box, Checkbox, CircularProgress, FormControlLabel, Radio, RadioGroup, Tab, Tabs, TextField, Typography,
 } from '@mui/material'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import EventBusyIcon from '@mui/icons-material/EventBusy'
@@ -12,8 +12,8 @@ import SeccionAnimada from '../../../components/SeccionAnimada'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
 import {
-  anularCita, miProcesion, pagarEnLinea, pedirPapeleta,
-  type DiaDeReparto, type FichaEnLaProcesion, type MiProcesion, type Salida, type SalidaDelHermano,
+  anularCita, estadoDelPago, irAlBanco, miProcesion, pagarEnLinea, pedirPapeleta,
+  type DiaDeReparto, type EstadoDelPago, type FichaEnLaProcesion, type MetodoEnLinea, type MiProcesion, type Salida, type SalidaDelHermano,
 } from '../../../lib/api/procesion'
 import { formatearImporte } from '../recibos/etiquetas'
 import { PARENTESCO } from '../perfil/etiquetas'
@@ -57,6 +57,8 @@ export default function ProcesionPage() {
   const [elegida, setElegida] = useState<Salida | null>(null)
 
   const cargar = useCallback(() => miProcesion().then(setEstado), [])
+  // Estable: la vuelta del banco la tiene entre sus dependencias y no debe volver a preguntar en cada render.
+  const trasPagar = useCallback(() => void cargar().catch(() => undefined), [cargar])
 
   useEffect(() => {
     let cancelado = false
@@ -95,6 +97,7 @@ export default function ProcesionPage() {
             </Tabs>
           )}
 
+          <VueltaDelBanco onPagado={trasPagar} />
           {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
           {aviso && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
           {!estado && !error && <CircularProgress aria-label="Cargando la procesión" />}
@@ -129,6 +132,64 @@ function Contenido({ estado, salida, onHecho, onError }: PropsContenido) {
   )
 }
 
+/** Lo que se le dice al hermano a la vuelta del banco, según lo que haya avisado el banco. */
+const TRAS_EL_BANCO: Record<Exclude<EstadoDelPago, 'PENDIENTE'>, { tono: 'success' | 'error' | 'warning'; texto: (importe: string) => string }> = {
+  PAGADO: { tono: 'success', texto: (i) => `Pago recibido: ${i}. Ya podéis recoger la papeleta en el reparto.` },
+  RECHAZADO: { tono: 'error', texto: () => 'El banco no ha hecho el pago y no se te ha cobrado nada. Puedes intentarlo otra vez.' },
+  INCIDENCIA: { tono: 'warning', texto: (i) => `El banco ha cobrado ${i}, pero no se ha podido aplicar a lo que debías (quizá ya estaba pagado). Tesorería lo revisará y te devolverá el dinero.` },
+}
+
+/** Cada cuánto se pregunta y cuántas veces: el aviso del banco suele llegar antes que el hermano. */
+const ESPERA_MS = 2000
+const INTENTOS = 10
+
+/**
+ * La vuelta de la página del banco (`?pago=<pedido>`). La vuelta no prueba
+ * nada: quien da el pago por hecho es el aviso del banco al servidor, que
+ * puede llegar unos segundos después. Por eso se pregunta hasta saberlo.
+ */
+function VueltaDelBanco({ onPagado }: { onPagado: () => void }) {
+  const [params, setParams] = useSearchParams()
+  const pedido = params.get('pago')
+  const [resultado, setResultado] = useState<{ tono: 'info' | 'success' | 'error' | 'warning'; texto: string } | null>(null)
+
+  useEffect(() => {
+    if (!pedido) return
+    let cancelado = false
+    let intento = 0
+    setResultado({ tono: 'info', texto: 'Comprobando el pago con el banco…' })
+    const preguntar = async () => {
+      try {
+        const { estado, importe } = await estadoDelPago(pedido)
+        if (cancelado) return
+        if (estado !== 'PENDIENTE') {
+          const final = TRAS_EL_BANCO[estado]
+          setResultado({ tono: final.tono, texto: final.texto(formatearImporte(importe)) })
+          if (estado === 'PAGADO') onPagado()
+          return
+        }
+      } catch {
+        if (cancelado) return
+      }
+      intento += 1
+      if (intento < INTENTOS) {
+        setTimeout(() => void preguntar(), ESPERA_MS)
+        return
+      }
+      setResultado({ tono: 'info', texto: 'Aún no tenemos la respuesta del banco. Si has pagado, lo verás aquí en unos minutos; si lo dejaste a medias, no se ha cobrado nada.' })
+    }
+    void preguntar()
+    return () => { cancelado = true }
+  }, [pedido, onPagado])
+
+  if (!resultado) return null
+  const cerrar = () => {
+    setResultado(null)
+    setParams((p) => { p.delete('pago'); return p }, { replace: true })
+  }
+  return <Alert severity={resultado.tono} sx={{ mb: 3 }} onClose={resultado.tono === 'info' ? undefined : cerrar}>{resultado.texto}</Alert>
+}
+
 /**
  * Lo que falta por pagar en la familia: las cuotas de hermano (sin ellas no
  * se recoge la papeleta) y la voluntad del Rosario si se prometió. Con la
@@ -147,20 +208,26 @@ function PorPagar({ estado, salida, onHecho, onError }: { estado: MiProcesion; s
   if (lineas.length === 0) return null
   const total = lineas.reduce((s, l) => s + Math.round(l.importe * 100), 0) / 100
 
-  const pagar = async () => {
+  const pagar = async (metodo: MetodoEnLinea) => {
     setPagando(true)
     try {
-      await pagarEnLinea({
+      const inicio = await pagarEnLinea({
         reciboIds: lineas.flatMap((l) => (l.reciboId ? [l.reciboId] : [])),
         solicitudIds: lineas.flatMap((l) => (l.solicitudId ? [l.solicitudId] : [])),
+        metodo,
       }, clave)
+      if (inicio.tipo === 'banco') {
+        // Se va a la página del banco: el botón sigue en «Pagando…» hasta que cambie la página.
+        irAlBanco(inicio)
+        return
+      }
       onHecho(`Pago hecho: ${formatearImporte(total)}. Ya podéis recoger la papeleta en el reparto.`)
     } catch (e) {
       onError(mensaje(e, 'No se ha podido hacer el pago.'))
-    } finally {
-      setPagando(false)
     }
+    setPagando(false)
   }
+  const pago = estado.pago
 
   return (
     <TarjetaCristal component="section" aria-label="Pendiente de pago" sx={{ p: { xs: 2.5, md: 3.5 }, display: 'grid', gap: 2 }}>
@@ -186,12 +253,20 @@ function PorPagar({ estado, salida, onHecho, onError }: { estado: MiProcesion; s
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
         <Typography sx={{ color: 'text.secondary', maxWidth: '52ch', fontSize: 14 }}>
-          {estado.pagoEnLinea
-            ? 'El pago en línea está en pruebas: todavía no se cobra de verdad. También puedes pagar en Secretaría o el día del reparto.'
-            : 'Puedes pagar en Secretaría o el día del reparto, antes de recoger la papeleta.'}
+          {!pago
+            ? 'Puedes pagar en Secretaría o el día del reparto, antes de recoger la papeleta.'
+            : pago.pruebas
+              ? 'El pago en línea está en pruebas: todavía no se cobra de verdad. También puedes pagar en Secretaría o el día del reparto.'
+              : 'Se paga en la página segura del banco. También puedes pagar en Secretaría o el día del reparto.'}
         </Typography>
-        {estado.pagoEnLinea && (
-          <Boton onClick={() => void pagar()} disabled={pagando}>{pagando ? 'Pagando…' : `Pagar ${formatearImporte(total)}`}</Boton>
+        {pago && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+            {pago.metodos.map((m, i) => (
+              <Boton key={m} appVariant={i === 0 ? 'primary' : 'claro'} onClick={() => void pagar(m)} disabled={pagando}>
+                {pagando ? 'Pagando…' : m === 'BIZUM' ? 'Pagar con Bizum' : pago.metodos.length > 1 ? `Pagar ${formatearImporte(total)} con tarjeta` : `Pagar ${formatearImporte(total)}`}
+              </Boton>
+            ))}
+          </Box>
         )}
       </Box>
     </TarjetaCristal>

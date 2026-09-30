@@ -17,7 +17,7 @@ import {
   misRecibosQuerySchema,
   updateReciboSchema
 } from '../schemas/recibo.schema.js';
-import { pagarEnLineaSchema } from '../schemas/procesion.schema.js';
+import { estadoDePagoSchema, pagarEnLineaSchema } from '../schemas/procesion.schema.js';
 
 const reciboRoutes = Router();
 
@@ -36,9 +36,12 @@ reciboRoutes.get('/mis-recibos', validate(misRecibosQuerySchema), ReciboControll
 // sesión de hermano puede pedirla y solo verá lo suyo.
 reciboRoutes.get('/mis-recibos/:id', validateId, ReciboController.getMyRecibo);
 
-// Pagar en línea recibos de la familia. Hoy la pasarela está simulada: ver
-// `pagoEnLineaDisponible` (en producción solo con PAGO_EN_LINEA=simulado).
+// Pagar en línea recibos de la familia: con Redsys devuelve el formulario
+// para ir al banco; simulado, cobra en el acto (ver `modoDePago`).
 reciboRoutes.post('/mis-recibos/pagar', validate(pagarEnLineaSchema), ReciboController.pagarEnLinea);
+
+// Cómo va un pago propio, a la vuelta del banco. Filtra por usuario en el servicio.
+reciboRoutes.get('/mis-recibos/pagos/:pedido', validate(estadoDePagoSchema), ReciboController.estadoDelPago);
 
 // ==========================================
 //  RUTAS DE ADMIN (Tesorería, y ahora también el Hermano Mayor;
@@ -76,6 +79,10 @@ reciboRoutes.post('/admin/generar',
   validate(generarCuotasSchema), // <-- Escudo contra importes negativos
   ReciboController.generarCuotas
 );
+
+// Lo que el banco cobró y no se pudo aplicar: Tesorería lo devuelve y lo da por resuelto.
+reciboRoutes.get('/admin/pagos-en-linea/incidencias', checkRole(rolesTesoreria), ReciboController.incidenciasDePago);
+reciboRoutes.post('/admin/pagos-en-linea/incidencias/:id/resolver', checkRole(rolesTesoreria), validateId, ReciboController.resolverIncidencia);
 
 reciboRoutes.post('/admin/:id/pagar',
   checkRole(rolesTesoreria),

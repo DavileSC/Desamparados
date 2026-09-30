@@ -19,7 +19,7 @@ pública, CMS y área de hermanos.
 | `backend-desamparados/` | API: Express 5, TypeScript, Prisma 7 sobre MariaDB, validación con arktype |
 | `desamparados-web/` | React 19, Vite, MUI 9, React Query; web pública, CMS (`/cms`) y área de hermanos |
 | `shared/` | JSON que leen los dos lados (tipos de bloque, páginas, topes…). Un cambio aquí toca a ambos |
-| `docs/` | notas, despliegue y traspasos (`traspaso-*.md`, del más reciente hacia atrás) |
+| `docs/` | notas, despliegue, `hoja-de-ruta.md` (qué falta y cómo va: se actualiza con cada commit) y traspasos (`traspaso-*.md`, del más reciente hacia atrás) |
 
 Una tarea que cruza API, web y `shared/` se diseña de punta a punta antes de
 escribir código: primero el contrato (esquema arktype y tipo de `lib/api/`).

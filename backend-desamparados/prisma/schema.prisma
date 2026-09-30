@@ -98,9 +98,9 @@ model User {
 
   // --- SEGURIDAD 2FA ---
   // Guardamos el secreto que comparte el servidor y el móvil del usuario
-  twoFactorSecret  String?
+  twoFactorSecret   String?
   // Para saber si obligarle a meter el código o no
-  twoFactorEnabled Boolean @default(false)
+  twoFactorEnabled  Boolean @default(false)
   // Último intervalo TOTP (30 s) aceptado: impide reutilizar el mismo código
   // mientras siga dentro de su ventana de validez.
   twoFactorLastStep Int?
@@ -186,7 +186,7 @@ model Hermano {
   apellidos       String
   primerApellido  String?
   segundoApellido String?
-  dni             String?  @unique // Puede ser null (niños)
+  dni             String?      @unique // Puede ser null (niños)
   fechaNacimiento DateTime
   sexo            Sexo?
   estadoCivil     EstadoCivil?
@@ -195,19 +195,19 @@ model Hermano {
   lugarNacimiento String?
 
   // CONTACTO ESPECÍFICO
-  telefono     String?
-  telefonoFijo String?
-  email        String?
+  telefono          String?
+  telefonoFijo      String?
+  email             String?
   /// Un segundo correo, opcional: para quien quiere los avisos en dos sitios.
-  email2       String?
-  direccion    String?
-  poblacion    String?
-  codigoPostal String?
-  provincia    String?
+  email2            String?
+  direccion         String?
+  poblacion         String?
+  codigoPostal      String?
+  provincia         String?
   comunidadAutonoma String?
-  pais         String?
+  pais              String?
   /// Quiere recibir el boletín de noticias por correo.
-  boletin      Boolean @default(false)
+  boletin           Boolean @default(false)
 
   // VIDA COFRADE
   // Bautismo y parroquia son datos religiosos (RGPD, art. 9): opcionales, y
@@ -222,11 +222,11 @@ model Hermano {
   presentadoPor2    String?
 
   // DATOS DE HERMANDAD
-  fechaAlta DateTime  @default(now())
-  activo    Boolean   @default(true) // Soft Delete del hermano
-  numeroHermano   Int?      @unique // Número de hermano, si lo tienen asignado
-  fechaBaja DateTime? // Para saber cuándo dejó de pagar/salir
-  motivoBaja MotivoBaja?
+  fechaAlta     DateTime    @default(now())
+  activo        Boolean     @default(true) // Soft Delete del hermano
+  numeroHermano Int?        @unique // Número de hermano, si lo tienen asignado
+  fechaBaja     DateTime? // Para saber cuándo dejó de pagar/salir
+  motivoBaja    MotivoBaja?
 
   // VINCULACIÓN
   esTitular Boolean @default(false) // true = este perfil es el User logueado
@@ -260,10 +260,10 @@ model Hermano {
   puesto String?
 
   // Pago preferido para la generación de recibos (Domiciliación SEPA preparada)
-  formaPagoPref MetodoPago @default(EFECTIVO)
-  iban          String?
+  formaPagoPref     MetodoPago         @default(EFECTIVO)
+  iban              String?
   /// Nombre del titular de la cuenta, cuando no es el propio hermano.
-  titularCuenta String?
+  titularCuenta     String?
   titularidadCuenta TitularidadCuenta?
 
   // DOCUMENTOS DEL ALTA (en storage/private: solo los ve el CMS). Guardan el
@@ -272,12 +272,12 @@ model Hermano {
   certificadoBautismo String?
 
   // HISTORIAL
-  papeletas PapeletaSitio[]
-  recibos   Recibo[]
-  citas     Cita[]
+  papeletas     PapeletaSitio[]
+  recibos       Recibo[]
+  citas         Cita[]
   transacciones Transaccion[]
-  prendas   Prenda[]
-  solicitudes Solicitud[]
+  prendas       Prenda[]
+  solicitudes   Solicitud[]
 
   // Las peticiones de reactivación son pocas y Secretaría las lee enteras cada
   // vez que abre la cola: así no hay que recorrer el censo para encontrarlas.
@@ -331,7 +331,7 @@ model Cita {
   hermano   Hermano @relation(fields: [hermanoId], references: [id])
 
   // Opcional: Si la cita se completó, generó una papeleta
-  papeleta PapeletaSitio?
+  papeleta  PapeletaSitio?
   solicitud Solicitud?
 
   createdAt DateTime @default(now())
@@ -401,10 +401,10 @@ model Recibo {
 
   tipo TipoRecibo @default(PAPELETA_SITIO)
 
-  estado     EstadoPago  @default(PENDIENTE)
-  fechaPago  DateTime?
-  metodoPago MetodoPago?
-  observaciones String? @db.Text
+  estado        EstadoPago  @default(PENDIENTE)
+  fechaPago     DateTime?
+  metodoPago    MetodoPago?
+  observaciones String?     @db.Text
 
   // RELACIONES
   hermanoId Int
@@ -412,16 +412,16 @@ model Recibo {
   recibos   Transaccion[] // Un recibo puede tener varias transacciones (Ej: Papeleta + Donativo)
 
   // Relación opcional: Si es papeleta, se rellena.
-  papeleta PapeletaSitio?
+  papeleta  PapeletaSitio?
   /// Lo pagado por una solicitud antes de recogerla.
   solicitud Solicitud?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([hermanoId, year, concepto])
   @@index([year]) // <-- Búsquedas de tesorería mucho más rápidas
   @@index([hermanoId]) // <-- Para listar rápido los recibos de una familia
-  @@unique([hermanoId, year, concepto])
 }
 
 // ---------------------------------------------------------
@@ -696,6 +696,43 @@ model Publicacion {
   @@index([visible, fecha])
 }
 
+/// Cómo va un pago con la pasarela del banco (Redsys).
+enum EstadoPagoEnLinea {
+  PENDIENTE // El hermano está en la página del banco, o la dejó sin pagar
+  PAGADO // El banco avisó de que se cobró y los recibos quedaron pagados
+  RECHAZADO // El banco avisó de que no se cobró (tarjeta denegada, cancelado…)
+  INCIDENCIA // Se cobró, pero no cuadra con lo que debía: Tesorería lo devuelve
+}
+
+/// Un pago del área de hermanos que pasa por el banco. Se apunta antes de ir a
+/// la página de Redsys, con lo que se paga y el importe calculado aquí; solo el
+/// aviso firmado del banco lo da por pagado, nunca la vuelta del navegador.
+model PagoEnLinea {
+  id           Int               @id @default(autoincrement())
+  /// El número de pedido para Redsys: 12 caracteres, los 4 primeros cifras.
+  pedido       String?           @unique @db.VarChar(12)
+  userId       Int
+  /// TARJETA o BIZUM.
+  metodo       MetodoPago
+  importe      Decimal           @db.Decimal(10, 2)
+  reciboIds    Json
+  solicitudIds Json
+  estado       EstadoPagoEnLinea @default(PENDIENTE)
+  /// El código de respuesta del banco (Ds_Response) y su autorización.
+  respuesta    String?           @db.VarChar(8)
+  autorizacion String?           @db.VarChar(12)
+  /// Qué no cuadró, en una incidencia; y quién la dio por resuelta.
+  motivo       String?           @db.Text
+  resueltaPor  Int?
+  resueltaEl   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([estado, createdAt])
+}
+
 /// Lo que ya hizo la mesa, por la clave que el ordenador genera al abrir cada
 /// operación. Si se corta la WiFi después de cobrar y la mesa vuelve a pulsar,
 /// la misma clave devuelve lo que ya se hizo en vez de cobrar otra vez.
@@ -738,7 +775,7 @@ model AuditLog {
   entityType String? // 'recibo', 'hermano', 'user', 'config'...
   entityId   String? // ID del registro afectado (string para flexibilidad)
   ip         String?
-  userAgent  String? @db.VarChar(250)
+  userAgent  String?  @db.VarChar(250)
   // Estado anterior y nuevo, u otros datos que expliquen el cambio.
   detalles   Json?
   createdAt  DateTime @default(now())

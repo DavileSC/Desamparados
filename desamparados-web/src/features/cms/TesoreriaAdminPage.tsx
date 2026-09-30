@@ -35,6 +35,7 @@ import ContadoresEstado from './tesoreria/ContadoresEstado'
 import ListaRecibos from './tesoreria/ListaRecibos'
 import { NOMBRE_METODO } from './mesa/formato'
 import DialogoEstado, { type CambioEstado } from './tesoreria/DialogoEstado'
+import IncidenciasDePago from './tesoreria/IncidenciasDePago'
 
 const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
 const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento' }
@@ -238,6 +239,7 @@ export default function TesoreriaAdminPage() {
       <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => abrirNuevo()}>Nuevo recibo</Button>
       <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCuotas}>Generar cuotas</Button>
     </CabeceraSeccion>
+    <IncidenciasDePago />
     <Tabs
       value={vista}
       onChange={(_, valor) => setParams((anteriores) => {

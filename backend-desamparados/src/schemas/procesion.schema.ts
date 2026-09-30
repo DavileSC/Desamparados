@@ -265,11 +265,27 @@ export const mesaPreparacionSchema = type({
     query: { "turnoId?": type("string").matching(/^[1-9]\d{0,9}$/) }
 });
 
-// El hermano paga en línea recibos de su familia (hoy, pasarela simulada).
+// El hermano paga en línea recibos de su familia, con tarjeta o Bizum.
 export const pagarEnLineaSchema = type({
     body: {
         "reciboIds?": idCuerpo.array().atMostLength(30),
         "solicitudIds?": idCuerpo.array().atMostLength(30),
+        "metodo?": "'TARJETA' | 'BIZUM'",
         "clave?": claveOperacion,
+    }
+});
+
+// Cómo va un pago, a la vuelta del banco: el pedido tiene la forma de `numeroDePedido`.
+export const estadoDePagoSchema = type({
+    params: { pedido: type("string").matching(/^\d{8}[A-Z0-9]{4}$/) }
+});
+
+// El aviso de Redsys. Llega como formulario, no como JSON; la firma la
+// comprueba el servicio, aquí solo se acota lo que se lee.
+export const avisoRedsysSchema = type({
+    body: {
+        "Ds_SignatureVersion?": "string <= 40",
+        Ds_MerchantParameters: "0 < string <= 8000",
+        Ds_Signature: "0 < string <= 200",
     }
 });

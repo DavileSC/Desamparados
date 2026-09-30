@@ -300,6 +300,36 @@ Opcionales:
 | `NORMATIVA_URL` | Sin ella, el enlace a la normativa no aparece en los correos. Puede apuntar a un PDF subido desde el CMS: ese fichero cuenta como «en uso» y no se borra con `limpiar:huerfanos --borrar` |
 | `SEED_ADMIN_EMAIL` | Obligatoria para sembrar en producción |
 
+### El pago en línea (Redsys)
+
+El área de hermanos cobra cuotas y lo de la salida con el TPV virtual del
+banco. Se contrata **con el banco del Grupo** («TPV virtual Redsys»), y el
+banco entrega el número de comercio (FUC), el terminal y la clave SHA-256.
+Bizum va aparte: se pide que lo activen en el mismo TPV.
+
+| Variable | Efecto |
+|---|---|
+| `PAGO_EN_LINEA` | `redsys` para cobrar con el banco; `simulado` da los pagos por hechos sin mover dinero; `no` o sin definir, apagado |
+| `REDSYS_ENTORNO` | `pruebas` (por defecto) no cobra; `real` cobra de verdad y exige las claves |
+| `REDSYS_COMERCIO`, `REDSYS_TERMINAL`, `REDSYS_CLAVE` | Las que da el banco. En pruebas, sin ellas se usan las públicas de Redsys |
+| `REDSYS_BIZUM=si` | Solo si el banco ha activado Bizum en el TPV |
+
+Tres cosas que no se ven:
+
+- **El banco avisa del cobro a `API_URL/api/pagos/redsys/notificacion`.** Solo
+  ese aviso, firmado, da un recibo por pagado; la vuelta del navegador no
+  cuenta. La dirección tiene que ser pública y con https (lo es con este
+  montaje). En el portal del banco, la «notificación online» tiene que estar
+  activada y en modo HTTP (POST), no por correo.
+- **Lo que el banco cobra y ya no cuadra** (el recibo se pagó en Secretaría
+  mientras el hermano estaba en la página del banco, o el importe cambió)
+  queda como incidencia arriba de Tesorería. El dinero se devuelve desde el
+  portal del banco con el número de pedido y se marca como devuelto.
+- **Probarlo antes de cobrar:** con `REDSYS_ENTORNO=pruebas` todo el camino
+  funciona sin mover dinero (tarjeta 4548 8100 0000 0003, 12/49, CVV 123). Al
+  arrancar con pruebas o simulado en producción, el backend lo avisa en el
+  registro.
+
 ### El antivirus, tal como funciona de verdad
 
 `src/utils/clamd.ts` decide así:

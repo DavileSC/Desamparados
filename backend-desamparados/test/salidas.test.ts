@@ -114,10 +114,11 @@ describe('el perdón de la cuota', () => {
   });
 });
 
-describe('el pago en línea (simulado)', () => {
+describe('el pago en línea: si se ofrece', () => {
   test('en producción, solo si se enciende a propósito', () => {
     assert.equal(pagoEnLineaDisponible({ NODE_ENV: 'production' }), false);
     assert.equal(pagoEnLineaDisponible({ NODE_ENV: 'production', PAGO_EN_LINEA: 'simulado' }), true);
+    assert.equal(pagoEnLineaDisponible({ NODE_ENV: 'production', PAGO_EN_LINEA: 'redsys' }), true);
   });
 
   test('fuera de producción está encendido salvo que se apague', () => {

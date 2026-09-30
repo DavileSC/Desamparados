@@ -1,6 +1,7 @@
 import { Response, Request } from 'express';
 import { ReciboService, type ConsultaRecibos } from '../services/recibo.service.js';
 import { MisRecibosService } from '../services/mis-recibos.service.js';
+import { PagoEnLineaService, type MetodoEnLinea } from '../services/pagos/pago-en-linea.service.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
@@ -25,8 +26,21 @@ export class ReciboController {
   });
 
   static pagarEnLinea = manejar('Error pagando en línea', async (req, res) => {
-    const { reciboIds, solicitudIds, clave } = req.body as { reciboIds?: number[]; solicitudIds?: number[]; clave?: string };
-    res.json(await MisRecibosService.pagarEnLinea(req.user!.id, { reciboIds, solicitudIds }, clave, AuditoriaService.metaFromReq(req)));
+    const { reciboIds = [], solicitudIds = [], metodo = 'TARJETA', clave } = req.body as { reciboIds?: number[]; solicitudIds?: number[]; metodo?: MetodoEnLinea; clave?: string };
+    res.json(await PagoEnLineaService.iniciar(req.user!.id, { reciboIds, solicitudIds, metodo }, clave, AuditoriaService.metaFromReq(req)));
+  });
+
+  static estadoDelPago = manejar('Error consultando el pago', async (req, res) => {
+    res.json(await PagoEnLineaService.estado(req.user!.id, String(req.params.pedido)));
+  });
+
+  static incidenciasDePago = manejar('Error obteniendo las incidencias de pago', async (_req, res) => {
+    res.json(await PagoEnLineaService.incidencias());
+  });
+
+  static resolverIncidencia = manejar('Error resolviendo la incidencia', async (req, res) => {
+    await PagoEnLineaService.resolver(Number(req.params.id), AuditoriaService.metaFromReq(req));
+    res.json({ message: 'Incidencia resuelta' });
   });
 
   // =================================================================
