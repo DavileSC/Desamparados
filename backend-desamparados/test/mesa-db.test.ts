@@ -19,7 +19,8 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
 import { PapeletasService } from '../src/services/procesion/papeletas.service.js';
 import { MesaService } from '../src/services/procesion/mesa.service.js';
-import { ZonasService, type EntregaEnMesa } from '../src/services/procesion/zonas.service.js';
+import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
+import { anioDeLaMesa, ZonasService, type EntregaEnMesa } from '../src/services/procesion/zonas.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { InventarioService } from '../src/services/inventario.service.js';
 import { CLAVE_CINGULOS, recuentoDeCingulos } from '../src/services/procesion/cingulos.js';
@@ -46,7 +47,10 @@ after(async () => {
   await db.$disconnect();
 });
 
-const YEAR = new Date().getFullYear();
+// El año de la salida que atiende la mesa, que no es el natural: pasada la
+// Semana Santa es el siguiente (ver `anioDeLaMesa`). Sin base, el natural: esas
+// pruebas se omiten igual.
+const YEAR = await anioDeLaMesa('PASION').catch(() => new Date().getFullYear());
 
 // Números de prenda que no chocan con los del ropero de desarrollo.
 let serie = 0;
@@ -329,7 +333,8 @@ test('el Rosario: su propia solicitud, con la voluntad que se ajusta al cobrar, 
     assert.equal(cobro.total, 3);
     const recibo = await db.recibo.findUniqueOrThrow({ where: { id: cobro.cobrados[0].id } });
     assert.equal(recibo.tipo, TipoRecibo.DONATIVO);
-    assert.equal(recibo.concepto, `Donativo Rosario vespertino ${YEAR}`);
+    // El Rosario lleva su propio año: el de octubre, no el de la Pasión.
+    assert.equal(recibo.concepto, `Donativo Rosario vespertino ${await anioDeLaMesa('ROSARIO')}`);
 
     const tunica = await e.prenda(TipoPrenda.TUNICA);
     const hecha = await e.entregar(rosario.solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero, puesto: 'Trono' });
@@ -793,6 +798,31 @@ test('el canal en vivo avisa a los demás puestos de lo que se hace en uno', asy
     assert.deepEqual(aviso, { que: 'inscrito', hermanoId: h.id, salida: 'PASION' });
   } finally {
     corte.abort();
+    await e.recoger();
+  }
+});
+
+// Septiembre de 2026: un hermano pidió desde su área la Pasión de 2027 (la
+// de 2026 ya había pasado) y la pagó, pero la mesa buscaba en el año natural y
+// no lo encontraba en ninguna parte. El año de la mesa es el de la salida.
+test('lo que se pide desde el área sale en la mesa: en el listado, en Túnicas y en su ficha', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const h = await e.hermano({ nombre: 'Desdelaweb' });
+    const year = await PlazoPapeletasService.anioDeLaProcesion('PASION');
+    await db.solicitud.create({ data: { hermanoId: h.id, year, salida: 'PASION', puesto: 'Nazareno', origen: 'WEB' } });
+
+    const listado = await fetch(`${baseUrl}/api/procesion/admin/mesa/apuntados?q=${encodeURIComponent(h.apellidos)}`, {
+      headers: { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}` },
+    });
+    assert.equal(listado.status, 200);
+    assert.match(JSON.stringify(await listado.json()), new RegExp(`"id":${h.id},`), 'sin año en la petición, el listado es el de la salida');
+    const enTunicas = await MesaService.buscarPersonas(h.apellidos, { zona: 'tunicas' });
+    assert.deepEqual(enTunicas.map((p) => p.id), [h.id]);
+    const ficha = await MesaService.ficha(h.id);
+    assert.ok(ficha.solicitud, 'la ficha de la mesa ve la solicitud');
+  } finally {
     await e.recoger();
   }
 });

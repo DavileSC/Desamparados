@@ -24,8 +24,17 @@ const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: '
 const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, hour: '2-digit', minute: '2-digit' })
 const mayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1)
 
-/** «Martes 9 de marzo» y «de 18:00 a 21:00». */
-const dia = (turno: { fecha: string }) => mayuscula(formatoDia.format(new Date(turno.fecha)))
+const formatoAnio = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, year: 'numeric' })
+
+/**
+ * «Martes 9 de marzo» y «de 18:00 a 21:00». Si el día es de otro año (la
+ * Pasión que se pide en otoño es la del año siguiente), lleva el año.
+ */
+const dia = (turno: { fecha: string }) => {
+  const fecha = new Date(turno.fecha)
+  const anio = formatoAnio.format(fecha)
+  return mayuscula(formatoDia.format(fecha)) + (anio === formatoAnio.format(new Date()) ? '' : ` de ${anio}`)
+}
 const horas = (turno: { horaInicio: string; horaFin: string }) =>
   `de ${formatoHora.format(new Date(turno.horaInicio))} a ${formatoHora.format(new Date(turno.horaFin))}`
 
@@ -55,6 +64,8 @@ export default function ProcesionPage() {
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [elegida, setElegida] = useState<Salida | null>(null)
+  // Mientras se espera la respuesta del banco no se ofrece pagar otra vez.
+  const [comprobando, setComprobando] = useState(false)
 
   const cargar = useCallback(() => miProcesion().then(setEstado), [])
   // Estable: la vuelta del banco la tiene entre sus dependencias y no debe volver a preguntar en cada render.
@@ -97,12 +108,12 @@ export default function ProcesionPage() {
             </Tabs>
           )}
 
-          <VueltaDelBanco onPagado={trasPagar} />
+          <VueltaDelBanco onPagado={trasPagar} onComprobando={setComprobando} />
           {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
           {aviso && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
           {!estado && !error && <CircularProgress aria-label="Cargando la procesión" />}
 
-          {estado && actual && <Contenido key={salida} estado={estado} salida={actual} onHecho={(m) => void tras(m)} onError={setError} />}
+          {estado && actual && <Contenido key={salida} estado={estado} salida={actual} comprobando={comprobando} onHecho={(m) => void tras(m)} onError={setError} />}
         </ContenedorDePagina>
       </SeccionAnimada>
     </>
@@ -112,18 +123,19 @@ export default function ProcesionPage() {
 interface PropsContenido {
   estado: MiProcesion
   salida: SalidaDelHermano
+  comprobando: boolean
   onHecho: (mensaje: string) => void
   onError: (mensaje: string) => void
 }
 
-function Contenido({ estado, salida, onHecho, onError }: PropsContenido) {
+function Contenido({ estado, salida, comprobando, onHecho, onError }: PropsContenido) {
   const de = (f: FichaEnLaProcesion) => f.porSalida[salida.salida]
   const apuntadas = estado.fichas.filter((f) => de(f).papeleta || de(f).solicitud)
   const porPedir = estado.fichas.filter((f) => !de(f).papeleta && !de(f).solicitud)
 
   return (
     <Box sx={{ display: 'grid', gap: 3, maxWidth: 980 }}>
-      <PorPagar estado={estado} salida={salida.salida} onHecho={onHecho} onError={onError} />
+      <PorPagar estado={estado} salida={salida.salida} comprobando={comprobando} onHecho={onHecho} onError={onError} />
       {apuntadas.length > 0 && <Apuntadas fichas={apuntadas} salida={salida} onHecho={onHecho} onError={onError} />}
       {porPedir.length > 0 && (salida.abierto
         ? <Solicitud estado={estado} salida={salida} fichas={porPedir} onHecho={onHecho} onError={onError} />
@@ -142,29 +154,45 @@ const TRAS_EL_BANCO: Record<Exclude<EstadoDelPago, 'PENDIENTE'>, { tono: 'succes
 /** Cada cuánto se pregunta y cuántas veces: el aviso del banco suele llegar antes que el hermano. */
 const ESPERA_MS = 2000
 const INTENTOS = 10
+const COMPROBANDO = 'Comprobando el pago con el banco…'
 
 /**
  * La vuelta de la página del banco (`?pago=<pedido>`). La vuelta no prueba
  * nada: quien da el pago por hecho es el aviso del banco al servidor, que
  * puede llegar unos segundos después. Por eso se pregunta hasta saberlo.
+ *
+ * Si el pago no se hizo, el banco vuelve con `&resultado=no` y no avisa al
+ * servidor: se dice en el acto, sin esperar una respuesta que no va a llegar.
+ * Esa vuelta tampoco prueba nada, pero lo único que puede hacer quien la
+ * escriba a mano es leer que no ha pagado.
  */
-function VueltaDelBanco({ onPagado }: { onPagado: () => void }) {
+function VueltaDelBanco({ onPagado, onComprobando }: { onPagado: () => void; onComprobando: (si: boolean) => void }) {
   const [params, setParams] = useSearchParams()
   const pedido = params.get('pago')
+  const fallido = params.get('resultado') === 'no'
   const [resultado, setResultado] = useState<{ tono: 'info' | 'success' | 'error' | 'warning'; texto: string } | null>(null)
 
   useEffect(() => {
     if (!pedido) return
+    if (fallido) {
+      setResultado({ tono: 'error', texto: 'El pago no se ha completado y no se te ha cobrado nada. Puedes intentarlo otra vez.' })
+      return
+    }
     let cancelado = false
     let intento = 0
-    setResultado({ tono: 'info', texto: 'Comprobando el pago con el banco…' })
+    setResultado({ tono: 'info', texto: COMPROBANDO })
+    onComprobando(true)
+    const terminar = (r: { tono: 'info' | 'success' | 'error' | 'warning'; texto: string }) => {
+      setResultado(r)
+      onComprobando(false)
+    }
     const preguntar = async () => {
       try {
         const { estado, importe } = await estadoDelPago(pedido)
         if (cancelado) return
         if (estado !== 'PENDIENTE') {
           const final = TRAS_EL_BANCO[estado]
-          setResultado({ tono: final.tono, texto: final.texto(formatearImporte(importe)) })
+          terminar({ tono: final.tono, texto: final.texto(formatearImporte(importe)) })
           if (estado === 'PAGADO') onPagado()
           return
         }
@@ -176,18 +204,18 @@ function VueltaDelBanco({ onPagado }: { onPagado: () => void }) {
         setTimeout(() => void preguntar(), ESPERA_MS)
         return
       }
-      setResultado({ tono: 'info', texto: 'Aún no tenemos la respuesta del banco. Si has pagado, lo verás aquí en unos minutos; si lo dejaste a medias, no se ha cobrado nada.' })
+      terminar({ tono: 'info', texto: 'Aún no tenemos la respuesta del banco. Si has pagado, lo verás aquí en unos minutos; si lo dejaste a medias, no se ha cobrado nada.' })
     }
     void preguntar()
-    return () => { cancelado = true }
-  }, [pedido, onPagado])
+    return () => { cancelado = true; onComprobando(false) }
+  }, [pedido, fallido, onPagado, onComprobando])
 
   if (!resultado) return null
   const cerrar = () => {
     setResultado(null)
-    setParams((p) => { p.delete('pago'); return p }, { replace: true })
+    setParams((p) => { p.delete('pago'); p.delete('resultado'); return p }, { replace: true })
   }
-  return <Alert severity={resultado.tono} sx={{ mb: 3 }} onClose={resultado.tono === 'info' ? undefined : cerrar}>{resultado.texto}</Alert>
+  return <Alert severity={resultado.tono} sx={{ mb: 3 }} onClose={resultado.texto === COMPROBANDO ? undefined : cerrar}>{resultado.texto}</Alert>
 }
 
 /**
@@ -195,7 +223,7 @@ function VueltaDelBanco({ onPagado }: { onPagado: () => void }) {
  * se recoge la papeleta) y la voluntad del Rosario si se prometió. Con la
  * pasarela en línea, se paga desde aquí; si no, en Secretaría o en el reparto.
  */
-function PorPagar({ estado, salida, onHecho, onError }: { estado: MiProcesion; salida: Salida; onHecho: (m: string) => void; onError: (m: string) => void }) {
+function PorPagar({ estado, salida, comprobando, onHecho, onError }: { estado: MiProcesion; salida: Salida; comprobando: boolean; onHecho: (m: string) => void; onError: (m: string) => void }) {
   const [pagando, setPagando] = useState(false)
   const [clave] = useState(nuevaClave)
   const lineas = estado.fichas.flatMap((f) => [
@@ -262,7 +290,7 @@ function PorPagar({ estado, salida, onHecho, onError }: { estado: MiProcesion; s
         {pago && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
             {pago.metodos.map((m, i) => (
-              <Boton key={m} appVariant={i === 0 ? 'primary' : 'claro'} onClick={() => void pagar(m)} disabled={pagando}>
+              <Boton key={m} appVariant={i === 0 ? 'primary' : 'claro'} onClick={() => void pagar(m)} disabled={pagando || comprobando}>
                 {pagando ? 'Pagando…' : m === 'BIZUM' ? 'Pagar con Bizum' : pago.metodos.length > 1 ? `Pagar ${formatearImporte(total)} con tarjeta` : `Pagar ${formatearImporte(total)}`}
               </Boton>
             ))}
@@ -280,7 +308,10 @@ function PorPagar({ estado, salida, onHecho, onError }: { estado: MiProcesion; s
 function estadoDe(f: FichaEnLaProcesion, salida: Salida): { texto: string; color: string } {
   const { papeleta, solicitud } = f.porSalida[salida]
   if (papeleta) return { texto: 'Papeleta recogida', color: 'success.main' }
-  if ((solicitud?.pendiente ?? 0) > 0 || f.cuotasPendientes.length > 0) return { texto: 'Pendiente de pago', color: 'warning.main' }
+  // Lo de la salida y la cuota de hermano se dicen aparte: con la papeleta
+  // pagada, «Pendiente de pago» hacía creer que no constaba el pago.
+  if ((solicitud?.pendiente ?? 0) > 0) return { texto: 'Pendiente de pago', color: 'warning.main' }
+  if (f.cuotasPendientes.length > 0) return { texto: 'Falta la cuota', color: 'warning.main' }
   return { texto: 'Lista para recoger', color: 'info.main' }
 }
 

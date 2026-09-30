@@ -36,6 +36,7 @@ import {
   DATOS_SALIDA, notaDePerdon, pendienteDeLaSalida, requisitosParaRecoger, type CuotaDelHermano,
 } from '../../domain/salidas.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
+import { PlazoPapeletasService } from './plazo.service.js';
 import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
 import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { unaVez } from './una-vez.js';
@@ -44,8 +45,13 @@ import { avisarALaMesa } from './avisos-mesa.js';
 type Tx = Prisma.TransactionClient;
 type Cliente = Tx | typeof db;
 
-/** El año de la mesa: el reparto va antes de su salida, dentro del mismo año. */
-export const anioDeLaMesa = () => new Date().getFullYear();
+/**
+ * El año de la salida que atiende la mesa: el mismo que ve el hermano al
+ * pedirla (`anioDeLaProcesion`). No es el año natural: pasada la Semana
+ * Santa, la Pasión que se pide es la del año siguiente, y con el año natural
+ * la mesa no encontraba esas solicitudes.
+ */
+export const anioDeLaMesa = (salida: Salida, cliente?: Cliente) => PlazoPapeletasService.anioDeLaProcesion(salida, cliente);
 
 export interface InscripcionEnMesa {
   hermanoId: number;
@@ -171,7 +177,7 @@ export class ZonasService {
     if (!hermano.activo) throw new HttpError(`${hermano.nombre} no está en activo: Secretaría tiene que darla de alta o reactivarla antes.`, 409);
     if (!dto.puesto.trim()) throw new HttpError('Falta el puesto.');
     const alturaHombro = alturaDictada(dto.alturaHombro);
-    const year = anioDeLaMesa();
+    const year = await anioDeLaMesa(dto.salida);
 
     const { resultado, repetida } = await unaVez(clave, 'inscribir', async (tx) => {
       // Si pidió día para esta salida sin llegar a pedir la papeleta (citas de antes), se enlaza.
@@ -527,10 +533,11 @@ export class ZonasService {
   // =================================================================
 
   /** Lo que le falta a una persona para recoger la papeleta de una salida. */
-  static async requisitos(cliente: Cliente, hermanoId: number, salida: Salida, year = anioDeLaMesa()) {
+  static async requisitos(cliente: Cliente, hermanoId: number, salida: Salida, year?: number) {
+    const anio = year ?? await anioDeLaMesa(salida, cliente);
     const [h, solicitud, cuotas, cuotaSalida] = await Promise.all([
       cliente.hermano.findUnique({ where: { id: hermanoId }, select: { activo: true } }),
-      PapeletasService.solicitudPendiente(cliente, hermanoId, year, salida),
+      PapeletasService.solicitudPendiente(cliente, hermanoId, anio, salida),
       cuotasQueCuentan(cliente, [hermanoId]),
       PapeletasService.cuotaDeSalida(cliente),
     ]);
@@ -548,7 +555,7 @@ export class ZonasService {
    * por la mesa; a los demás se les encuentra con el buscador.
    */
   static async colas(salida: Salida) {
-    const year = anioDeLaMesa();
+    const year = await anioDeLaMesa(salida);
     const hoy = diaMadrid(new Date());
     const cuotaSalida = await PapeletasService.cuotaDeSalida();
     const solicitudes = await db.solicitud.findMany({
@@ -605,7 +612,7 @@ export class ZonasService {
    * ropero con tiempo. Por día de reparto, o todos los pendientes.
    */
   static async preparacion(turnoId?: number) {
-    const year = anioDeLaMesa();
+    const year = await anioDeLaMesa('PASION');
     const solicitudes = await db.solicitud.findMany({
       where: { year, salida: 'PASION', estado: EstadoSolicitud.PENDIENTE, ...(turnoId && { cita: { turnoId } }) },
       orderBy: [{ hermano: { apellidos: 'asc' } }, { hermano: { nombre: 'asc' } }],

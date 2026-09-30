@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import type { Salida } from '@prisma/client';
 import { MesaService, type AltaEnMesaDto, type CorreccionFichaDto, type EdicionPapeletaDto, type EdicionSolicitudDto, type ZonaDeBusqueda } from '../services/procesion/mesa.service.js';
 import { PapeletasService } from '../services/procesion/papeletas.service.js';
-import { ZonasService, type CobroEnMesa, type DevolucionEnMesa, type EntregaEnMesa, type InscripcionEnMesa } from '../services/procesion/zonas.service.js';
+import { anioDeLaMesa, ZonasService, type CobroEnMesa, type DevolucionEnMesa, type EntregaEnMesa, type InscripcionEnMesa } from '../services/procesion/zonas.service.js';
 import { recuentoDeCingulos } from '../services/procesion/cingulos.js';
 import { escucharLaMesa } from '../services/procesion/avisos-mesa.js';
 import type { TipoRopa } from '../services/procesion/ropa.js';
@@ -71,7 +71,8 @@ export class MesaController {
   });
 
   static listado = manejar('Error leyendo los apuntados', async (req, res) => {
-    const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
+    // Sin año, el de la salida que se está repartiendo, no el natural (ver `anioDeLaMesa`).
+    const year = req.query.year ? Number(req.query.year) : await anioDeLaMesa(salidaDe(req));
     res.json(await MesaService.listado(year, {
       q: req.query.q as string | undefined,
       puesto: req.query.puesto as string | undefined,

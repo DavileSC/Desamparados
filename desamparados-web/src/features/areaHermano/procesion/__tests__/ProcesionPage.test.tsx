@@ -97,7 +97,7 @@ describe('ProcesionPage', () => {
     expect(await screen.findByText(/papeletas pedidas/i)).toBeInTheDocument()
   })
 
-  it('una solicitud dice lo que pidió, su día, y si está pendiente de pago; se puede cancelar', async () => {
+  it('una solicitud dice lo que pidió, su día (con el año si no es este) y que falta la cuota; se puede cancelar', async () => {
     const user = userEvent.setup()
     const cita = { id: 77, turno: { id: 1, salida: 'PASION' as const, fecha: DIAS[0].fecha, horaInicio: DIAS[0].horaInicio, horaFin: DIAS[0].horaFin } }
     const solicitud = { id: 4, puesto: 'Nazareno', donativo: null, pendiente: 0, concepto: 'Papeleta de sitio 2027', pagada: false, cita }
@@ -109,8 +109,11 @@ describe('ProcesionPage', () => {
 
     const tarjeta = await screen.findByRole('region', { name: 'Este año' })
     expect(within(tarjeta).getByRole('heading', { name: 'Tu solicitud' })).toBeInTheDocument()
-    expect(within(tarjeta).getByText(/Pediste: Nazareno \(lo confirma el Grupo en la mesa\) · Lunes, 8 de marzo, de 18:00 a 21:00/)).toBeInTheDocument()
-    expect(within(tarjeta).getByText('Pendiente de pago')).toBeInTheDocument()
+    const conAnio = new Date().getFullYear() === 2027 ? '' : ' de 2027'
+    expect(within(tarjeta).getByText(`Pediste: Nazareno (lo confirma el Grupo en la mesa) · Lunes, 8 de marzo${conAnio}, de 18:00 a 21:00`, { exact: false })).toBeInTheDocument()
+    // La salida está pagada (nada pendiente): lo que falta es la cuota, y se dice así.
+    expect(within(tarjeta).getByText('Falta la cuota')).toBeInTheDocument()
+    expect(within(tarjeta).queryByText('Pendiente de pago')).not.toBeInTheDocument()
     // Sin pasarela, se dice dónde pagar.
     expect(screen.getByText(/Puedes pagar en Secretaría o el día del reparto/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /cancelar la solicitud de antonio/i }))
@@ -170,6 +173,36 @@ describe('ProcesionPage', () => {
     renderWithProviders(<ProcesionPage />, { ruta: '/area-hermano/procesion?pago=00000042AB7Z' })
 
     expect(await screen.findByText(/Tesorería lo revisará y te devolverá el dinero/)).toBeInTheDocument()
+  })
+
+  it('lo que falta de la propia salida sí es «Pendiente de pago»', async () => {
+    const solicitud = { id: 6, puesto: 'Vela', donativo: 5, pendiente: 5, concepto: 'Donativo Rosario vespertino 2026', pagada: false, cita: null }
+    servidor({ fichas: [ficha(1, 'Antonio', {}, {}, { solicitud })], salidas: salidas({}, { abierto: true }) })
+    renderWithProviders(<ProcesionPage />)
+
+    const tarjeta = await screen.findByRole('region', { name: 'Este año' })
+    expect(within(tarjeta).getByText('Pendiente de pago')).toBeInTheDocument()
+  })
+
+  it('si el pago no se hizo, lo dice en el acto y sin preguntar al servidor', async () => {
+    const llamadas = servidor({ pago: { metodos: ['TARJETA'], pruebas: false } })
+    renderWithProviders(<ProcesionPage />, { ruta: '/area-hermano/procesion?pago=00000042AB7Z&resultado=no' })
+
+    expect(await screen.findByText(/El pago no se ha completado y no se te ha cobrado nada/)).toBeInTheDocument()
+    expect(llamadas.some((l) => l.url.includes('/mis-recibos/pagos/'))).toBe(false)
+  })
+
+  it('mientras comprueba el pago con el banco no deja pagar otra vez', async () => {
+    estadoDelPagoEnElServidor = { estado: 'PENDIENTE', importe: 20 }
+    servidor({
+      pago: { metodos: ['TARJETA', 'BIZUM'], pruebas: false },
+      fichas: [ficha(1, 'Antonio', { cuotasPendientes: [{ id: 30, year: 2026, concepto: 'Cuota 2026', importe: 20, estado: 'PENDIENTE' }] })],
+    })
+    renderWithProviders(<ProcesionPage />, { ruta: '/area-hermano/procesion?pago=00000042AB7Z' })
+
+    expect(await screen.findByText('Comprobando el pago con el banco…')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Pagar 20,00 € con tarjeta' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Pagar con Bizum' })).toBeDisabled()
   })
 
   it('el Rosario va aparte: su plazo, sus días, sus puestos y la voluntad', async () => {

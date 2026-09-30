@@ -126,7 +126,9 @@ export interface PeticionDePago {
   metodo: 'TARJETA' | 'BIZUM';
   descripcion: string;
   urlAviso: string;
+  /** Adónde vuelve el hermano si pagó, y si no se hizo el pago (el banco no avisa entonces). */
   urlVuelta: string;
+  urlFallo: string;
 }
 
 /** Lo que la web manda a Redsys en un formulario: la URL y los tres campos. */
@@ -145,7 +147,7 @@ export function formularioDePago(p: PeticionDePago, c: ConfiguracionRedsys): For
     DS_MERCHANT_TERMINAL: c.terminal,
     DS_MERCHANT_MERCHANTURL: p.urlAviso,
     DS_MERCHANT_URLOK: p.urlVuelta,
-    DS_MERCHANT_URLKO: p.urlVuelta,
+    DS_MERCHANT_URLKO: p.urlFallo,
     DS_MERCHANT_PRODUCTDESCRIPTION: p.descripcion.slice(0, 125),
     DS_MERCHANT_CONSUMERLANGUAGE: '001',
     // «C» solo tarjeta, «z» solo Bizum: el hermano ya eligió en la web.

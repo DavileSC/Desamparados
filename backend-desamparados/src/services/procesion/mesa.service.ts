@@ -27,7 +27,6 @@ import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } f
 import { avisarALaMesa } from './avisos-mesa.js';
 import { DATOS_SALIDA, requisitosParaRecoger } from '../../domain/salidas.js';
 
-const anioDeLaProcesion = anioDeLaMesa;
 
 /**
  * Qué busca cada zona: Inscripción, a quien aún no está apuntado; Túnicas, a
@@ -105,7 +104,7 @@ export class MesaService {
     const { zona = 'todas', salida = 'PASION' } = opciones;
     const numero = /^\d{1,9}$/.test(texto) ? Number(texto) : null;
     const busqueda = condicionBusqueda(texto, ['nombre', 'apellidos', 'dni', 'telefono', 'email']);
-    const year = anioDeLaProcesion();
+    const year = await anioDeLaMesa(salida);
     // Los ya apuntados (con solicitud o papeleta) no salen en Inscripción:
     // para eso está el listado. En Túnicas solo salen los que tienen la
     // solicitud pendiente de recoger.
@@ -154,7 +153,7 @@ export class MesaService {
    * prestada, lo que llevó la última vez y la ropa que se le propone.
    */
   static async ficha(hermanoId: number, salida: Salida = 'PASION') {
-    const year = anioDeLaProcesion();
+    const year = await anioDeLaMesa(salida);
     const h = await db.hermano.findUnique({
       where: { id: hermanoId },
       select: {
@@ -276,7 +275,7 @@ export class MesaService {
     });
     const campo = CAMPO_DE_ROPA[tipo];
     const papeletas = await db.papeletaSitio.findMany({
-      where: { year: anioDeLaProcesion(), salida: 'PASION', [campo]: { in: prendas.map((p) => p.numero) } },
+      where: { year: await anioDeLaMesa('PASION'), salida: 'PASION', [campo]: { in: prendas.map((p) => p.numero) } },
       select: { [campo]: true, hermano: { select: { id: true, nombre: true, apellidos: true } } },
     }) as unknown as ({ hermano: { id: number; nombre: string; apellidos: string } } & Record<string, string>)[];
     const enPapeleta = new Map(papeletas.map((p) => [p[campo], p.hermano]));

@@ -329,6 +329,13 @@ Tres cosas que no se ven:
   funciona sin mover dinero (tarjeta 4548 8100 0000 0003, 12/49, CVV 123). Al
   arrancar con pruebas o simulado en producción, el backend lo avisa en el
   registro.
+- **Probarlo en local con el banco de verdad** (su entorno de pruebas): el
+  aviso necesita una dirección pública. Con
+  `cloudflared tunnel --url http://localhost:3001` se abre una, y en el
+  `.env` del backend van `PAGO_EN_LINEA=redsys`, `API_URL=<la del túnel>` y
+  `FRONTEND_URL` con el puerto de Vite (el banco devuelve ahí al hermano).
+  Bizum no se puede terminar con el terminal público de Redsys (error SIS0475
+  al autenticarse): hace falta el de pruebas del banco con Bizum activado.
 
 ### El antivirus, tal como funciona de verdad
 

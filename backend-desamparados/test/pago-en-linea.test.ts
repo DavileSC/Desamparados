@@ -51,7 +51,7 @@ describe('la firma de Redsys', () => {
   });
 
   test('la firma del formulario es la del pedido y el importe va en céntimos', () => {
-    const f = formularioDePago({ pedido: '00000042AB7Z', centimos: 1250, metodo: 'BIZUM', descripcion: 'Cuota 2026', urlAviso: 'https://x/aviso', urlVuelta: 'https://x/vuelta' }, PRUEBAS);
+    const f = formularioDePago({ pedido: '00000042AB7Z', centimos: 1250, metodo: 'BIZUM', descripcion: 'Cuota 2026', urlAviso: 'https://x/aviso', urlVuelta: 'https://x/vuelta', urlFallo: 'https://x/fallo' }, PRUEBAS);
     const datos = JSON.parse(Buffer.from(f.campos.Ds_MerchantParameters, 'base64').toString()) as Record<string, string>;
     assert.equal(datos.DS_MERCHANT_AMOUNT, '1250');
     assert.equal(datos.DS_MERCHANT_PAYMETHODS, 'z');
@@ -77,7 +77,10 @@ describe('la firma de Redsys', () => {
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
-const modoPrevio = process.env.PAGO_EN_LINEA;
+// El .env del equipo puede tener sus propias claves o Bizum encendido: las
+// pruebas van con las públicas de Redsys y sin Bizum, sea cual sea.
+const VARIABLES = ['PAGO_EN_LINEA', 'REDSYS_ENTORNO', 'REDSYS_COMERCIO', 'REDSYS_TERMINAL', 'REDSYS_CLAVE', 'REDSYS_BIZUM'] as const;
+const previas = Object.fromEntries(VARIABLES.map((v) => [v, process.env[v]]));
 
 before(async () => {
   server = app.listen(0);
@@ -85,12 +88,15 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
+  for (const v of VARIABLES) delete process.env[v];
   process.env.PAGO_EN_LINEA = 'redsys';
 });
 
 after(async () => {
-  if (modoPrevio === undefined) delete process.env.PAGO_EN_LINEA;
-  else process.env.PAGO_EN_LINEA = modoPrevio;
+  for (const v of VARIABLES) {
+    if (previas[v] === undefined) delete process.env[v];
+    else process.env[v] = previas[v];
+  }
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
   await db.$disconnect();
 });
@@ -142,6 +148,7 @@ test('el banco avisa del cobro: el recibo queda pagado una sola vez', async (t) 
     const datos = JSON.parse(Buffer.from(inicio.campos.Ds_MerchantParameters, 'base64').toString()) as Record<string, string>;
     assert.equal(datos.DS_MERCHANT_AMOUNT, '3000', 'el importe lo calcula el servidor');
     assert.match(datos.DS_MERCHANT_URLOK, new RegExp(`/area-hermano/procesion\\?pago=${inicio.pedido}$`));
+    assert.match(datos.DS_MERCHANT_URLKO, new RegExp(`/area-hermano/procesion\\?pago=${inicio.pedido}&resultado=no$`), 'sin pago vuelve diciéndolo');
     assert.equal((await PagoEnLineaService.estado(e.usuario.id, inicio.pedido)).estado, EstadoPagoEnLinea.PENDIENTE);
     assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: recibo.id } })).estado, EstadoPago.PENDIENTE, 'empezar no paga nada');
 

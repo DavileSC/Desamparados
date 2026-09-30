@@ -105,6 +105,7 @@ export class PagoEnLineaService {
       descripcion: listo.conceptos.length ? listo.conceptos.join(', ') : 'Salida procesional',
       urlAviso: `${process.env.API_URL || 'http://localhost:3001'}/api/pagos/redsys/notificacion`,
       urlVuelta: urlDeLaWeb(`/area-hermano/procesion?pago=${pedido}`),
+      urlFallo: urlDeLaWeb(`/area-hermano/procesion?pago=${pedido}&resultado=no`),
     }, config);
     return { tipo: 'banco', pedido, ...formulario };
   }

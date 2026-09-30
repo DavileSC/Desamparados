@@ -19,7 +19,7 @@ import { ReciboService } from '../src/services/recibo.service.js';
 import { idCategoriaDeRecibos } from '../src/services/recibos/comunes.js';
 import { MiProcesionService } from '../src/services/procesion/mi-procesion.service.js';
 import { PapeletasService } from '../src/services/procesion/papeletas.service.js';
-import { ZonasService } from '../src/services/procesion/zonas.service.js';
+import { anioDeLaMesa, ZonasService } from '../src/services/procesion/zonas.service.js';
 import { TurnosService } from '../src/services/procesion/turnos.service.js';
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
@@ -49,7 +49,10 @@ after(async () => {
   await db.$disconnect();
 });
 
-const YEAR = new Date().getFullYear();
+// El año de la salida que atiende la mesa, que no es el natural: pasada la
+// Semana Santa es el siguiente (ver `anioDeLaMesa`). Sin base, el natural: esas
+// pruebas se omiten igual.
+const YEAR = await anioDeLaMesa('PASION').catch(() => new Date().getFullYear());
 
 /**
  * Un escenario desechable: un administrador (el que firma la auditoría), un
@@ -159,7 +162,8 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     const { recibo, papeleta } = await e.apuntarYCobrar(hermano.id);
     assert.equal(papeleta.citaId, cita.id, 'la mesa enlaza la cita que tenía');
     assert.equal(recibo.estado, EstadoPago.PAGADO);
-    assert.equal(recibo.concepto, `Papeleta de sitio ${YEAR}`);
+    // Con un día de reparto por delante, la salida es la del año de ese día.
+    assert.equal(recibo.concepto, `Papeleta de sitio ${turno.fecha.getFullYear()}`);
 
     const respuesta = await PapeletasService.anularPapeleta(papeleta.id, e.meta);
     assert.equal(respuesta.estadoRecibo, EstadoPago.DEVUELTO);
@@ -186,7 +190,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
 
     // Reinscribir: antes daba 500 porque el recibo devuelto ocupaba el concepto.
     const segunda = await e.apuntarYCobrar(hermano.id, 'Vara', MetodoPago.BIZUM);
-    assert.equal(segunda.recibo.concepto, `Papeleta de sitio ${YEAR} (reemisión 2)`);
+    assert.equal(segunda.recibo.concepto, `Papeleta de sitio ${turno.fecha.getFullYear()} (reemisión 2)`);
     assert.equal(segunda.recibo.estado, EstadoPago.PAGADO);
   } finally {
     await e.recoger();
@@ -916,7 +920,8 @@ test('una cuota devuelta y reemitida se debe una vez: en impagos, en el panel y 
   const e = await escenario();
   try {
     const hermano = await e.hermano();
-    const anio = YEAR - 1;
+    // Una cuota del año natural pasado, no del de la mesa.
+    const anio = new Date().getFullYear() - 1;
     const devuelta = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: anio, concepto: 'Cuota devuelta', importe: 30, tipo: 'CUOTA_HERMANO' }, e.meta);
     await ReciboService.adminUpdateDetalles(devuelta.id, { estado: 'REMESADO' }, e.meta);
     await ReciboService.adminUpdateDetalles(devuelta.id, { estado: 'DEVUELTO' }, e.meta);
