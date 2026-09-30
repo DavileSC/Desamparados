@@ -76,7 +76,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | ✅ | A | Papeleta de sitio en PDF con código QR | Hecha: A4 que se imprime en la mesa al dar la ropa (y se reimprime desde el listado), adjunta al correo, y tarjeta con el QR en Procesión del área de hermanos |
 | ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos. **La papeleta con QR ya está**: el código, en `papeleta-qr.ts` (ver abajo) |
 | 🟡 | B | Cortejo por antigüedad, automático | Hay solicitud de puesto, tramo y número en la papeleta; falta el reparto automático |
-| 🔨 | A | Túnica propuesta según la medida | Hay altura al hombro y tallas; falta proponerla sola |
+| ✅ | A | Túnica propuesta según la medida | Hecha: sin túnica en casa ni libre la de antes, se propone la libre de talla más cercana a su altura al hombro (+5/−3 cm), en la ficha de la mesa y en la hoja del ropero sin repetir |
 
 **El código del QR de la papeleta** (contrato entre A y B), en
 `backend-desamparados/src/domain/papeleta-qr.ts`:

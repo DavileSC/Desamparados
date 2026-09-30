@@ -288,6 +288,23 @@ describe('MesaProcesionPage · Túnicas', () => {
     expect(llamadas.some((l) => l.metodo === 'GET' && l.url.endsWith('/procesion/admin/papeletas/99/pdf'))).toBe(true)
   })
 
+  it('sin túnica en casa ni la de antes libre, propone la de su talla y lo dice', async () => {
+    const user = userEvent.setup()
+    const porTalla = { ...apuntado, alturaHombro: 145, propuesta: { ...apuntado.propuesta, tunica: { origen: 'ROPERO' as const, numero: '146-03', porTalla: true } } }
+    servidor({ ficha: porTalla })
+    renderWithProviders(<MesaProcesionPage />)
+
+    const cola = await screen.findByRole('region', { name: 'Listos para la ropa' })
+    await user.click(await within(cola).findByRole('button', { name: /Abel Reyes Díaz/ }))
+    expect(await screen.findByRole('textbox', { name: 'N.º de túnica' })).toHaveValue('146-03')
+    expect(screen.getByText(/Propuesta por su talla \(1,45 m al hombro\)/)).toBeInTheDocument()
+
+    // Si la mesa escribe otra, el aviso ya no es de esa.
+    await user.clear(screen.getByRole('textbox', { name: 'N.º de túnica' }))
+    await user.type(screen.getByRole('textbox', { name: 'N.º de túnica' }), '150-01')
+    expect(screen.queryByText(/Propuesta por su talla/)).not.toBeInTheDocument()
+  })
+
   it('sin cíngulos en el ropero se le debe; con túnica propia lleva el suyo', async () => {
     const user = userEvent.setup()
     const sinCingulos = { ...apuntado, cingulos: { total: 10, prestados: 10, enElRopero: 0, debidos: 2 } }

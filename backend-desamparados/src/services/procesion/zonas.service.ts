@@ -38,7 +38,7 @@ import {
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
 import { PlazoPapeletasService } from './plazo.service.js';
 import { archivoDePapeleta, datosDeLaPapeleta, papeletaEnPdf } from './papeleta-pdf.js';
-import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
+import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, tunicasLibres, type TipoRopa } from './ropa.js';
 import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { unaVez } from './una-vez.js';
 import { avisarALaMesa } from './avisos-mesa.js';
@@ -637,14 +637,32 @@ export class ZonasService {
       },
     });
     const cuotas = await cuotasQueCuentan(db, solicitudes.map((s) => s.hermano.id));
-    return solicitudes.map((s) => {
+    // La túnica de su talla, sin dar la misma a dos: primero se apartan las que
+    // ya le tocan a alguien (la de casa o la de antes, libre), y luego se
+    // reparten las demás por orden de la lista.
+    const libres = await tunicasLibres(db, year);
+    const sinRopero = solicitudes.map((s) => {
+      const anterior = s.hermano.papeletas[0] ?? null;
+      return propuestaDeRopa({
+        anterior: anterior && { ...anterior, origenTunica: anterior.origenTunica as Origen | null },
+        prestadas: s.hermano.prendas,
+        tieneTunicaPropia: s.hermano.tieneTunicaPropia,
+        puestoDeLaFicha: s.puesto,
+      });
+    });
+    const apartadas = new Set(sinRopero.flatMap((p) => (p.tunica.numero ? [p.tunica.numero] : [])));
+    let quedan = libres.filter((t) => !apartadas.has(t.numero));
+    return solicitudes.map((s, i) => {
       const anterior = s.hermano.papeletas[0] ?? null;
       const propuesta = propuestaDeRopa({
         anterior: anterior && { ...anterior, origenTunica: anterior.origenTunica as Origen | null },
         prestadas: s.hermano.prendas,
         tieneTunicaPropia: s.hermano.tieneTunicaPropia,
         puestoDeLaFicha: s.puesto,
+        // La de antes cuenta como libre para él si lo está: la ha apartado arriba.
+        ropero: { libres: [...quedan, ...libres.filter((t) => t.numero === sinRopero[i].tunica.numero)], alturaHombro: s.hermano.alturaHombro },
       });
+      if (propuesta.tunica.porTalla) quedan = quedan.filter((t) => t.numero !== propuesta.tunica.numero);
       const pendientes = (cuotas.get(s.hermano.id) ?? []).filter((c) => c.estado !== EstadoPago.REMESADO);
       return {
         solicitudId: s.id,

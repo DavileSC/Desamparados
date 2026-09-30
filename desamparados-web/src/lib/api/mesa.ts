@@ -159,7 +159,8 @@ export interface FichaDeMesa {
   } | null
   propuesta: {
     puesto: string
-    tunica: { origen: OrigenTunica; numero: string | null }
+    /** `porTalla`: no tenía una en casa ni estaba libre la de antes; esta la elige su altura al hombro. */
+    tunica: { origen: OrigenTunica; numero: string | null; porTalla?: boolean }
     capirote: string | null
     faraona: string | null
     /** El que va con la túnica: la mesa lo cambia a «se le debe» si no quedan. */

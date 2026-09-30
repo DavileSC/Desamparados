@@ -80,7 +80,7 @@ export default function PreparacionRopa() {
             <TableBody>
               {filas.map((f) => {
                 const t = f.propuesta.tunica
-                const tunica = t.origen === 'PROPIA' ? 'Propia' : t.origen === 'NINGUNA' ? 'No lleva' : t.numero ? `${t.numero}${f.tallaTunica ? ` (${f.tallaTunica})` : ''}` : 'Buscar una'
+                const tunica = t.origen === 'PROPIA' ? 'Propia' : t.origen === 'NINGUNA' ? 'No lleva' : t.numero ? `${t.numero}${f.tallaTunica ? ` (${f.tallaTunica})` : ''}${t.porTalla ? ' · por su talla' : ''}` : 'Buscar una'
                 const tocado = f.propuesta.capirote ?? (f.propuesta.faraona && `${f.propuesta.faraona} (faraona)`)
                 return (
                   <TableRow key={f.solicitudId}>

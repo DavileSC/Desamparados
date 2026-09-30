@@ -9,7 +9,8 @@
  */
 import { EstadoPrenda, Prisma, TipoPrenda, type Salida } from '@prisma/client';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
-import { normalizarNumeroPrenda, tallaDeTunica } from '../../domain/mesa-procesion.js';
+import { normalizarNumeroPrenda, tallaDeTunica, type TunicaLibre } from '../../domain/mesa-procesion.js';
+import db from '../../config/db.js';
 
 type Tx = Prisma.TransactionClient;
 export type TipoRopa = 'TUNICA' | 'CAPIROTE' | 'FARAONA';
@@ -149,4 +150,18 @@ export function ropaPedida(data: {
 export function estadoAlDevolver(tipo: TipoPrenda, rota: boolean): EstadoPrenda {
   if (rota) return EstadoPrenda.TALLER;
   return tipo === TipoPrenda.TUNICA ? EstadoPrenda.LAVADO : EstadoPrenda.DISPONIBLE;
+}
+
+/**
+ * Las túnicas que se pueden proponer ahora: disponibles en el ropero y que no
+ * van ya en la papeleta de otro de esta salida (la regla con que la mesa las
+ * da). Para proponer la de su talla a quien no tiene ninguna.
+ */
+export async function tunicasLibres(cliente: Tx | typeof db, year: number): Promise<TunicaLibre[]> {
+  const [libres, enPapeletas] = await Promise.all([
+    cliente.prenda.findMany({ where: { tipo: 'TUNICA', estado: 'DISPONIBLE' }, select: { numero: true, talla: true }, orderBy: { numero: 'asc' } }),
+    cliente.papeletaSitio.findMany({ where: { year, salida: 'PASION', numTunicaAsignada: { not: null } }, select: { numTunicaAsignada: true } }),
+  ]);
+  const ocupadas = new Set(enPapeletas.map((p) => p.numTunicaAsignada));
+  return libres.filter((t) => !ocupadas.has(t.numero));
 }
