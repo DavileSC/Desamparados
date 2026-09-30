@@ -178,6 +178,7 @@ export default function ContabilidadAdminPage() {
   return <>
     <Helmet><title>Contabilidad | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Contabilidad">
+      <Button variant="outlined" component={Link} to="/cms/contabilidad/partida-doble">Partida doble</Button>
       <Button variant="outlined" startIcon={<SellOutlinedIcon />} onClick={() => setGestionAbierta(true)}>Categorías</Button>
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => abrirApunte(null)}>Nuevo apunte</Button>
     </CabeceraSeccion>

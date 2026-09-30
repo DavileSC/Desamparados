@@ -69,6 +69,9 @@ export const ACCIONES_AUDITORIA = {
   // Cabildos: darlo por celebrado (fija el quórum) y aprobar su acta
   CABILDO_CELEBRAR: 'CABILDO_CELEBRAR',
   CABILDO_ACTA_APROBAR: 'CABILDO_ACTA_APROBAR',
+  // Partida doble: la cuenta de cada categoría y sacar el ejercicio a Excel
+  CATEGORIA_CUENTA: 'CATEGORIA_CUENTA',
+  CONTABILIDAD_EXPORTAR: 'CONTABILIDAD_EXPORTAR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

@@ -362,6 +362,9 @@ model CategoriaTransaccion {
   nombre String // Ej: "Lotería Navidad", "Flores Cuaresma"
   tipo   TipoTransaccion // Para saber si debe salir en el desplegable de Ingresos o de Gastos
   activa Boolean         @default(true) // Soft-delete: si ya no venden lotería, la ocultan pero no se borra el historial
+  /// La cuenta del plan de las entidades sin fines lucrativos para la partida
+  /// doble. Null: la que se propone por el nombre (domain/partida-doble.ts).
+  cuentaContable String? @db.VarChar(10)
 
   transacciones Transaccion[]
 

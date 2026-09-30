@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { TransaccionController } from '../controllers/transaccion.controller.js';
+import { PartidaDobleController } from '../controllers/partida-doble.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
 import {
   categoriasQuerySchema,
+  cuentaCategoriaSchema,
+  diarioSchema,
+  ejercicioSchema,
   createCategoriaSchema,
   createTransaccionSchema,
   estadoCategoriaSchema,
@@ -34,6 +38,13 @@ transaccionRoutes.put('/categorias/:id', validate(renombrarCategoriaSchema), Tra
 transaccionRoutes.patch('/categorias/:id/activa', validate(estadoCategoriaSchema), TransaccionController.cambiarEstadoCategoria);
 
 // --- LIBRO MAYOR ---
+// La partida doble: el plan de cuentas, el ejercicio y su Excel. Antes de /:id.
+transaccionRoutes.get('/partida-doble/plan', PartidaDobleController.plan);
+transaccionRoutes.put('/partida-doble/categorias/:id', validate(cuentaCategoriaSchema), PartidaDobleController.asignarCuenta);
+transaccionRoutes.get('/partida-doble/:anio', validate(ejercicioSchema), PartidaDobleController.ejercicio);
+transaccionRoutes.get('/partida-doble/:anio/diario', validate(diarioSchema), PartidaDobleController.diario);
+transaccionRoutes.get('/partida-doble/:anio/excel', validate(ejercicioSchema), PartidaDobleController.excel);
+
 transaccionRoutes.get('/libro-mayor', validate(libroMayorQuerySchema), TransaccionController.getLibroMayor);
 // Totales, serie y reparto por categoría para los mismos filtros que el libro mayor.
 transaccionRoutes.get('/resumen', validate(resumenQuerySchema), TransaccionController.getResumen);

@@ -28,6 +28,8 @@ const ACCIONES: Record<string, string> = {
   BOLETIN_BAJA: 'Darse de baja del boletín',
   CABILDO_CELEBRAR: 'Dar un cabildo por celebrado',
   CABILDO_ACTA_APROBAR: 'Aprobar el acta de un cabildo',
+  CATEGORIA_CUENTA: 'Cambiar la cuenta contable de una categoría',
+  CONTABILIDAD_EXPORTAR: 'Exportar la contabilidad a Excel',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',

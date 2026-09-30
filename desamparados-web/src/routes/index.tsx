@@ -53,6 +53,7 @@ const ComunicadosAdminPage = lazy(() => import('../features/cms/ComunicadosAdmin
 const ComunicadoEditPage = lazy(() => import('../features/cms/ComunicadoEditPage'))
 const CabildosAdminPage = lazy(() => import('../features/cms/CabildosAdminPage'))
 const CabildoPage = lazy(() => import('../features/cms/CabildoPage'))
+const PartidaDoblePage = lazy(() => import('../features/cms/PartidaDoblePage'))
 const PublicacionEditPage = lazy(() => import('../features/cms/PublicacionEditPage'))
 const AgendaEditPage = lazy(() => import('../features/cms/AgendaEditPage'))
 const InventarioEditPage = lazy(() => import('../features/cms/InventarioEditPage'))
@@ -246,6 +247,7 @@ const router = createBrowserRouter([
           { path: 'inventario', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</ExigeRol> },
           { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },
           { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
+          { path: 'contabilidad/partida-doble', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(PartidaDoblePage)}</ExigeRol> },
           { path: 'datos', element: <ExigeRol roles={rolesPorRutaCms.datos}>{withSuspense(DatosInformesPage)}</ExigeRol> },
           { path: 'informe-anual', element: <ExigeRol roles={rolesPorRutaCms['informe-anual']}>{withSuspense(InformeAnualPage)}</ExigeRol> },
           { path: 'informe-anual/:anio', element: <ExigeRol roles={rolesPorRutaCms['informe-anual/:anio']}>{withSuspense(InformeAnualPage)}</ExigeRol> },
