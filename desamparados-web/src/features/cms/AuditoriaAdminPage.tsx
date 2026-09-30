@@ -23,6 +23,7 @@ const ACCIONES: Record<string, string> = {
   NORMA43_APLICAR: 'Aplicar el extracto del banco',
   CENSO_EXPORTAR: 'Exportar el censo',
   CENSO_IMPORTAR: 'Importar el censo',
+  CORTEJO_REPARTIR: 'Repartir el cortejo por antigüedad',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',

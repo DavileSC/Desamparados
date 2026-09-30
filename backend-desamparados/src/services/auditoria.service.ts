@@ -61,6 +61,8 @@ export const ACCIONES_AUDITORIA = {
   // El censo en Excel o CSV: sacarlo entero es una salida de datos personales
   CENSO_EXPORTAR: 'CENSO_EXPORTAR',
   CENSO_IMPORTAR: 'CENSO_IMPORTAR',
+  // El cortejo: repartir las papeletas en los tramos por antigüedad
+  CORTEJO_REPARTIR: 'CORTEJO_REPARTIR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

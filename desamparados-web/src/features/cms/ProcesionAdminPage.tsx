@@ -19,6 +19,7 @@ import { useColoresContabilidad } from './contabilidad/tema'
 import { cabeceraTabla, soloLector } from './inventario/tabla'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
+import Cortejo from './cortejo/Cortejo'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -274,6 +275,8 @@ export default function ProcesionAdminPage() {
           </TableContainer>
         </Box>
       )}
+
+      {plazo && <Cortejo key={salida} salida={salida} puedeCambiar={puedeCambiar} onAviso={(texto) => setAviso({ texto, noticiaId: null })} />}
       </Box>
 
       {/* Abrir avisa a cientos de hermanos: se pregunta antes, y con qué avisar. */}

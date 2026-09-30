@@ -75,7 +75,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 |---|---|---|---|
 | ⬜ | A | Papeleta de sitio en PDF con código QR | La librería de QR ya está en el backend |
 | ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos |
-| 🟡 | B | Cortejo por antigüedad, automático | Hay solicitud de puesto, tramo y número en la papeleta; falta el reparto automático |
+| ✅ | — | **Cortejo por antigüedad, automático** | Hecha: Procesión → «Cortejo». Los tramos de cada salida (nombre y plazas) y los puestos que se reparten van en la configuración; «Repartir por antigüedad» pone a los más nuevos delante y a los más antiguos junto al trono, en proporción a las plazas, y escribe tramo y lugar en cada papeleta. Enseña antes cuántas cambian y la lista de cada tramo |
 | 🟡 | A | Túnica propuesta según la medida | Hay altura al hombro y tallas; falta proponerla sola |
 
 ## Fase 3 · Comunicación

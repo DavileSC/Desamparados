@@ -221,3 +221,39 @@ export function crearTurno(datos: { fecha: string; horaInicio: string; horaFin: 
 export function eliminarTurno(id: number) {
   return llamarApi<{ message: string }>(`/procesion/admin/turnos/${id}`, { method: 'DELETE' })
 }
+
+// --- El cortejo por antigüedad ---
+
+export interface ConfiguracionCortejo {
+  /** Del primero (el que abre) al último (junto al trono). */
+  tramos: { nombre: string; plazas: number }[]
+  /** Los puestos que se reparten en los tramos. */
+  puestos: string[]
+}
+
+export interface EstadoCortejo {
+  salida: Salida
+  year: number
+  config: ConfiguracionCortejo
+  papeletas: number
+  reparto: {
+    tramos: { nombre: string; plazas: number; asignados: number }[]
+    /** Papeletas de puestos que no se reparten (trono, acólitos…): no se tocan. */
+    fuera: number
+    /** Papeletas que cambiarían de tramo o de lugar al repartir. */
+    cambios: number
+  }
+  /** Cómo está ahora, por tramos; `tramo: null` son las que aún no tienen. */
+  actual: {
+    tramo: string | null
+    hermanos: { papeletaId: number; numero: number | null; puesto: string; seReparte: boolean; nombre: string; apellidos: string; numeroHermano: number | null }[]
+  }[]
+}
+
+export const estadoCortejo = (salida: Salida) => llamarApi<EstadoCortejo>(`/procesion/admin/cortejo?salida=${salida}`)
+
+export const guardarTramosCortejo = (salida: Salida, config: ConfiguracionCortejo) =>
+  llamarApi<ConfiguracionCortejo>('/procesion/admin/cortejo/configuracion', { method: 'PUT', json: { salida, ...config } })
+
+export const repartirCortejo = (salida: Salida, year: number) =>
+  llamarApi<{ message: string; cambiadas: number }>('/procesion/admin/cortejo/aplicar', { method: 'POST', json: { salida, year } })
