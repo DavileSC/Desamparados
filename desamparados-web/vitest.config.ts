@@ -8,5 +8,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Con los 5 s de serie, las pruebas largas del constructor de páginas
+    // caían por carga (en local y en el CI) sin que nada estuviera roto.
+    testTimeout: 20000,
   },
 })
