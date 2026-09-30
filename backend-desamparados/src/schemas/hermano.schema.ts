@@ -110,7 +110,9 @@ export const updateAdminHermanoSchema = type({
         "fechaBaja?": fechaDia,
         "fechaJura?": diaOpcional,
         "presentadoPor?": opcional,
-        "presentadoPor2?": opcional
+        "presentadoPor2?": opcional,
+        "fechaMedalla?": diaOpcional,
+        "tratamiento?": type("string <= 40").or("null")
     }))
 });
 
@@ -135,6 +137,11 @@ export const searchHermanoSchema = type({
         "tieneTunicaPropia?": "'true' | 'false'",
         "estado?": "'activo' | 'baja' | 'pendiente'",
         "numero?": "'con' | 'sin'",
+        "correo?": "'con' | 'sin'",
+        "cuenta?": "'con' | 'sin'",
+        "edad?": "'menores' | 'adultos'",
+        "medalla?": "'con' | 'sin'",
+        "boletin?": "'si'",
         "orden?": ordenQuery(ORDENES_CENSO),
         "page?": type("string").matching(/^[1-9]\d*$/), // Número mayor que 0
         "limit?": type("string").matching(/^[1-9]\d*$/)
@@ -156,5 +163,12 @@ export const emancipateByStaffSchema = type({
     body: {
         newEmail: email,
         "newDni?": dni
+    }
+});
+// Las listas guardadas del censo: un nombre y la consulta de la URL.
+export const guardarListaSchema = type({
+    body: {
+        nombre: "0 < string <= 80",
+        consulta: "string <= 1000",
     }
 });

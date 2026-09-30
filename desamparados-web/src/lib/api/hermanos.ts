@@ -58,6 +58,10 @@ export interface AdminBrother {
   fechaJura: string | null
   presentadoPor: string | null
   presentadoPor2: string | null
+  /** Cuándo se le impuso la medalla. */
+  fechaMedalla: string | null
+  /** Cómo se le nombra en las cartas y la papeleta («Rvdo. P.»…); sin él, según el sexo. */
+  tratamiento: string | null
   user?: { email: string | null; telefono: string | null }
 }
 
@@ -92,6 +96,11 @@ export type FiltrosCenso = {
   q?: string
   estado?: '' | 'activo' | 'baja' | 'pendiente'
   numero?: '' | 'con' | 'sin'
+  correo?: '' | 'con' | 'sin'
+  cuenta?: '' | 'con' | 'sin'
+  edad?: '' | 'menores' | 'adultos'
+  medalla?: '' | 'con' | 'sin'
+  boletin?: '' | 'si'
   orden?: string
 }
 
@@ -141,6 +150,8 @@ export interface DatosDeFichaDeHermano {
   fechaJura?: string | null
   presentadoPor?: string | null
   presentadoPor2?: string | null
+  fechaMedalla?: string | null
+  tratamiento?: string | null
   parentesco?: Parentesco
   dni?: string
   fechaNacimiento?: string
@@ -225,3 +236,14 @@ export interface CierreDeHuecos {
 export function cerrarHuecosDeNumero() {
   return llamarApi<CierreDeHuecos>('/hermanos/admin/cerrar-huecos-numero', { method: 'POST' })
 }
+
+/** Una búsqueda del censo guardada con nombre: sus filtros, como van en la URL. */
+export interface ListaGuardada { id: number; nombre: string; consulta: string }
+
+export const listasDelCenso = () => llamarApi<ListaGuardada[]>('/hermanos/admin/listas')
+
+/** Con un nombre que ya existe, la sustituye. */
+export const guardarListaDelCenso = (nombre: string, consulta: string) =>
+  llamarApi<ListaGuardada>('/hermanos/admin/listas', { method: 'POST', json: { nombre, consulta } })
+
+export const borrarListaDelCenso = (id: number) => llamarApi<{ message: string }>(`/hermanos/admin/listas/${id}`, { method: 'DELETE' })

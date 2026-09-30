@@ -218,6 +218,10 @@ model Hermano {
   parroquiaBautismo String?
   /// Los tres siguientes los lleva Secretaría: el hermano los ve, no los edita.
   fechaJura         DateTime?
+  /// Cuándo se le impuso la medalla del Grupo Parroquial.
+  fechaMedalla      DateTime?
+  /// Cómo se le nombra en las cartas y la papeleta («D.», «Dña.», «Rvdo. P.»…). Sin él, según el sexo.
+  tratamiento       String?   @db.VarChar(40)
   presentadoPor     String?
   presentadoPor2    String?
 
@@ -742,6 +746,21 @@ model PagoEnLinea {
 
   @@index([userId, createdAt])
   @@index([estado, createdAt])
+}
+
+/// Una búsqueda del CMS guardada con nombre («Menores con túnica propia»):
+/// los filtros tal como van en la URL del listado. Las comparte toda la junta.
+model ListaGuardada {
+  id        Int      @id @default(autoincrement())
+  /// De qué listado es: hoy, «censo».
+  pantalla  String   @db.VarChar(30)
+  nombre    String   @db.VarChar(80)
+  /// Los filtros, como la consulta de la URL (`estado=activo&edad=menores`).
+  consulta  String   @db.Text
+  autorId   Int?
+  createdAt DateTime @default(now())
+
+  @@unique([pantalla, nombre])
 }
 
 /// Lo que ya hizo la mesa, por la clave que el ordenador genera al abrir cada

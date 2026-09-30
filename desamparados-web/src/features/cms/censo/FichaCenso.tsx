@@ -94,6 +94,8 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
     ['Boletín de noticias', ficha.boletin ? 'Sí' : 'No'],
     ['Fecha de jura', ficha.fechaJura ? dia(ficha.fechaJura) : null],
     ['Presentado por', presentado || null],
+    ['Medalla', ficha.fechaMedalla ? `Impuesta el ${dia(ficha.fechaMedalla)}` : null],
+    ['Tratamiento', ficha.tratamiento || null],
     ['Bautismo', bautismo || null],
     ['Túnica', ficha.tieneTunicaPropia ? `Propia${ficha.tunica ? ` · talla ${ficha.tunica}` : ''}` : ficha.tunica ? `Talla ${ficha.tunica}` : null],
     ['Altura al hombro', ficha.alturaHombro ? `${ficha.alturaHombro} cm` : null],

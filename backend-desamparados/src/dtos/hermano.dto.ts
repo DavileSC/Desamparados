@@ -65,6 +65,8 @@ export interface UpdateAdminHermanoDto extends UpdateHermanoDto {
   fechaJura?: string | null;
   presentadoPor?: string | null;
   presentadoPor2?: string | null;
+  fechaMedalla?: string | null;
+  tratamiento?: string | null;
 }
 
 // Baja desde secretaría: sin fecha, se toma la de hoy.

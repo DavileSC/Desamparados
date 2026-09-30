@@ -27,6 +27,8 @@ export interface DatosDeLaPapeleta {
   referencia: string;
   nombre: string;
   sexo: Sexo | null;
+  /** El de la ficha («Rvdo. P.»…); sin él, «D.» o «Dña.» según el sexo. */
+  tratamiento?: string | null;
   numeroHermano: number | null;
   puesto: string;
   tramo: string | null;
@@ -52,7 +54,7 @@ const euros = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
 export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta | null> {
   const p = await db.papeletaSitio.findUnique({
     where: { id },
-    include: { recibo: true, hermano: { select: { nombre: true, apellidos: true, sexo: true, numeroHermano: true } } },
+    include: { recibo: true, hermano: { select: { nombre: true, apellidos: true, sexo: true, numeroHermano: true, tratamiento: true } } },
   });
   if (!p) return null;
   const importe = Number(p.recibo.importe);
@@ -63,6 +65,7 @@ export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta |
     referencia: referenciaDe(p.year, p.id),
     nombre: `${p.hermano.nombre} ${p.hermano.apellidos}`.trim(),
     sexo: p.hermano.sexo,
+    tratamiento: p.hermano.tratamiento,
     numeroHermano: p.hermano.numeroHermano,
     puesto: p.puesto,
     tramo: p.tramo,
@@ -84,8 +87,15 @@ const ANCHO = A4.ancho - 2 * MARGEN;
 const ORO_TEXTO = '#8a6a30'; // el oro de los filetes no llega a 4,5:1 sobre blanco; para leer, este
 const fecha = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
 
-/** «D.» o «Dña.» delante del nombre, como en los correos; sin sexo en la ficha, solo el nombre. */
-const conTratamiento = (d: DatosDeLaPapeleta) => (d.sexo === 'MUJER' ? `Dña. ${d.nombre}` : d.sexo === 'HOMBRE' ? `D. ${d.nombre}` : d.nombre);
+/**
+ * El tratamiento delante del nombre: el de la ficha si Secretaría lo puso; si
+ * no, «D.» o «Dña.» según el sexo, como en los correos; sin sexo, solo el nombre.
+ */
+const conTratamiento = (d: DatosDeLaPapeleta) => {
+  const propio = d.tratamiento?.trim();
+  if (propio) return `${propio} ${d.nombre}`;
+  return d.sexo === 'MUJER' ? `Dña. ${d.nombre}` : d.sexo === 'HOMBRE' ? `D. ${d.nombre}` : d.nombre;
+};
 
 /**
  * Un texto en una línea, bajando la letra hasta que quepa (un nombre o un

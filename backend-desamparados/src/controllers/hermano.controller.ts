@@ -4,6 +4,7 @@ import { AuditoriaService } from '../services/auditoria.service';
 import { SolicitudesService } from '../services/solicitudes.service.js';
 import { MisFichasService } from '../services/mis-fichas.service.js';
 import { CensoService } from '../services/censo.service.js';
+import { ListasService } from '../services/listas.service.js';
 import type { MotivoBaja } from '../dtos/hermano.dto.js';
 
 /**
@@ -16,6 +17,22 @@ import type { MotivoBaja } from '../dtos/hermano.dto.js';
  * volver a mirarlo.
  */
 export class HermanoController {
+  // --- Las búsquedas guardadas del censo ---
+
+  static listas = manejar('Error leyendo las listas guardadas', async (_req, res) => {
+    res.json(await ListasService.listar('censo'));
+  });
+
+  static guardarLista = manejar('Error guardando la lista', async (req, res) => {
+    const { nombre, consulta } = req.body as { nombre: string; consulta: string };
+    res.json(await ListasService.guardar('censo', nombre, consulta, req.user?.id));
+  });
+
+  static borrarLista = manejar('Error borrando la lista', async (req, res) => {
+    await ListasService.borrar(Number(req.params.id));
+    res.json({ message: 'Lista borrada' });
+  });
+
 
   // ========================================================
   // --- RUTAS FAMILIARES (Prevención BOLA/IDOR Crítica) ---

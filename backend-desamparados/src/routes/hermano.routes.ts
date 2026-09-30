@@ -15,7 +15,8 @@ import {
     searchHermanoSchema,
     emancipateSchema,
     emancipateByStaffSchema,
-    bajaHermanoSchema
+    bajaHermanoSchema,
+    guardarListaSchema
 } from '../schemas/hermano.schema';
 
 /**
@@ -57,6 +58,12 @@ hermanoRouter.delete('/admin/solicitudes/:id/rechazar', checkRole(rolesGestionCe
 hermanoRouter.delete('/admin/reactivaciones/:id', checkRole(rolesGestionCenso), validateId, HermanoController.descartarReactivacion);
 
 // 4. Operaciones sobre un Hermano Específico
+// Las búsquedas guardadas del censo. Antes de `/admin/:id`: si no, «listas» se
+// leería como un id y validateId respondería 400.
+hermanoRouter.get('/admin/listas', checkRole(rolesGestionCenso), HermanoController.listas);
+hermanoRouter.post('/admin/listas', checkRole(rolesGestionCenso), validate(guardarListaSchema), HermanoController.guardarLista);
+hermanoRouter.delete('/admin/listas/:id', checkRole(rolesGestionCenso), validateId, HermanoController.borrarLista);
+
 hermanoRouter.get('/admin/:id', checkRole(rolesGestionCenso), validateId, HermanoController.getById);
 hermanoRouter.put('/admin/:id', checkRole(rolesGestionCenso), validateId, validate(updateAdminHermanoSchema), HermanoController.updateAdmin);
 // La baja admite un cuerpo opcional con la fecha ({ fechaBaja: 'AAAA-MM-DD' }).

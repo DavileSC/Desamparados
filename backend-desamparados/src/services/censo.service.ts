@@ -17,6 +17,7 @@ import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio } from '../domain/apellidos.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
+import { filtrosAvanzados } from '../domain/filtros-censo.js';
 import { ORDENES_CENSO, ordenDe } from '../domain/ordenacion.js';
 import { EmailService } from './email.service';
 
@@ -48,6 +49,10 @@ export class CensoService {
     if (query.tieneTunicaPropia) where.tieneTunicaPropia = query.tieneTunicaPropia === 'true';
     if (query.estado) Object.assign(where, WHERE_SITUACION[query.estado]);
     if (query.numero) where.numeroHermano = query.numero === 'con' ? { not: null } : null;
+    // Se suman a las de la búsqueda, que también van en AND: asignarlas encima
+    // borraba lo buscado.
+    const avanzados = filtrosAvanzados(query, new Date());
+    if (avanzados.length) where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), ...avanzados];
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
