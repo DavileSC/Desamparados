@@ -103,7 +103,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 |---|---|---|---|
 | ⬜ | B | Importar y exportar el censo (Excel / CSV) | Imprescindible para instalarlo a otra corporación |
 | ⬜ | B | Cabildos y actas | Convocatoria, quórum, votaciones y libro de actas |
-| 🔨 | A | Difuntos y sufragios | Hay baja por fallecimiento; faltan fecha del óbito, aniversarios y misas |
+| ✅ | A | Difuntos y sufragios | Hecho: pestaña «Difuntos» del censo con próximos aniversarios y registro; fecha del óbito al dar la baja; sufragios (misas, oraciones) que pueden ir a la Agenda y avisar a la familia; pésame por correo, nunca a la cuenta del difunto. Migración `difuntos_y_sufragios` |
 | ✅ | A | Ficha: medalla, tratamiento y listas guardadas | Hecha: fecha de la medalla y tratamiento (que usa la papeleta); en el censo, «Más filtros» (correo, cuenta, edad, medalla, boletín) y listas guardadas con nombre, compartidas por la junta. Migración `ficha_medalla_y_listas` |
 
 ## Fase 5 · Tesorería avanzada

@@ -16,7 +16,11 @@ import {
     emancipateSchema,
     emancipateByStaffSchema,
     bajaHermanoSchema,
-    guardarListaSchema
+    guardarListaSchema,
+    difuntosQuerySchema,
+    fijarDefuncionSchema,
+    nuevoSufragioSchema,
+    pesameSchema
 } from '../schemas/hermano.schema';
 
 /**
@@ -63,6 +67,15 @@ hermanoRouter.delete('/admin/reactivaciones/:id', checkRole(rolesGestionCenso), 
 hermanoRouter.get('/admin/listas', checkRole(rolesGestionCenso), HermanoController.listas);
 hermanoRouter.post('/admin/listas', checkRole(rolesGestionCenso), validate(guardarListaSchema), HermanoController.guardarLista);
 hermanoRouter.delete('/admin/listas/:id', checkRole(rolesGestionCenso), validateId, HermanoController.borrarLista);
+
+// Los difuntos y sus sufragios. También antes de `/admin/:id`.
+hermanoRouter.get('/admin/difuntos', checkRole(rolesGestionCenso), validate(difuntosQuerySchema), HermanoController.difuntos);
+hermanoRouter.get('/admin/difuntos/aniversarios', checkRole(rolesGestionCenso), HermanoController.aniversarios);
+hermanoRouter.get('/admin/difuntos/:id', checkRole(rolesGestionCenso), validateId, HermanoController.difunto);
+hermanoRouter.put('/admin/difuntos/:id/defuncion', checkRole(rolesGestionCenso), validateId, validate(fijarDefuncionSchema), HermanoController.fijarDefuncion);
+hermanoRouter.post('/admin/difuntos/:id/sufragios', checkRole(rolesGestionCenso), validateId, validate(nuevoSufragioSchema), HermanoController.crearSufragio);
+hermanoRouter.post('/admin/difuntos/:id/pesame', checkRole(rolesGestionCenso), validateId, validate(pesameSchema), HermanoController.enviarPesame);
+hermanoRouter.delete('/admin/sufragios/:id', checkRole(rolesGestionCenso), validateId, HermanoController.borrarSufragio);
 
 hermanoRouter.get('/admin/:id', checkRole(rolesGestionCenso), validateId, HermanoController.getById);
 hermanoRouter.put('/admin/:id', checkRole(rolesGestionCenso), validateId, validate(updateAdminHermanoSchema), HermanoController.updateAdmin);

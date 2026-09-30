@@ -171,6 +171,44 @@ export class EmailService {
     }));
   }
 
+  /**
+   * El pésame a la familia de un hermano difunto. Va a quien Secretaría
+   * decida (lo propone el censo: otra ficha de la familia o el titular de la
+   * cuenta), nunca a la cuenta del propio difunto.
+   */
+  static async enviarPesame(emailDestino: string, difunto: string, sexo?: Sexo) {
+    const hermano = sexo === 'MUJER' ? 'hermana' : 'hermano';
+    const content = [
+      parrafo('Estimada familia:'),
+      parrafo(`El Grupo Parroquial les acompaña en el dolor por el fallecimiento de <strong>${esc(difunto)}</strong>, ${hermano} de esta corporación. Lo encomendamos a Nuestra Señora de los Desamparados y ofreceremos sufragios por su eterno descanso.`),
+      parrafo('Les haremos saber la fecha de la misa en su memoria. Para cualquier cosa que necesiten, estamos a su disposición en Secretaría.'),
+      firma('Descanse en paz.'),
+    ].join('');
+    return await enviarCorreo(emailDestino, `Nuestro pésame por ${difunto}`, maquetar({
+      titulo: 'Nuestro más sentido pésame',
+      antetitulo: 'En memoria',
+      resumen: `El Grupo Parroquial les acompaña por el fallecimiento de ${difunto}.`,
+      contenido: content,
+    }));
+  }
+
+  /** El aviso a la familia de un sufragio por su difunto: qué, cuándo y dónde. */
+  static async enviarAvisoSufragio(emailDestino: string, difunto: string, sufragio: { que: string; cuando: string; donde: string | null }) {
+    const content = [
+      parrafo('Estimada familia:'),
+      parrafo(`Les comunicamos que el Grupo Parroquial ofrecerá una <strong>${esc(sufragio.que.toLowerCase())}</strong> por el eterno descanso de <strong>${esc(difunto)}</strong>.`),
+      recuadro(sufragio.que, `${esc(sufragio.cuando)}${sufragio.donde ? `<br>${esc(sufragio.donde)}` : ''}`),
+      parrafo('Será un honor contar con su presencia.'),
+      firma(BENDICION),
+    ].join('');
+    return await enviarCorreo(emailDestino, `${sufragio.que} por ${difunto}`, maquetar({
+      titulo: `${sufragio.que} por ${difunto}`,
+      antetitulo: 'En memoria',
+      resumen: `${sufragio.cuando}${sufragio.donde ? `, ${sufragio.donde}` : ''}.`,
+      contenido: content,
+    }));
+  }
+
   static async enviarConfirmacionRegistro(emailDestino: string, nombreHermano: string, opciones: { sexo?: Sexo; certificadoAdjunto?: boolean } = {}) {
     const { sexo, certificadoAdjunto = false } = opciones;
     const documentos = ['DNI original.'];

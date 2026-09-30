@@ -206,11 +206,14 @@ export function actualizarHermano(id: number, payload: DatosDeFichaDeHermano) {
   return llamarApi<AdminBrother>(`/hermanos/admin/${id}`, { method: 'PUT', json: payload })
 }
 
-/** Da de baja a un hermano con la fecha indicada (AAAA-MM-DD); sin ella, hoy. */
-export function darDeBajaHermano(id: number, fechaBaja: string | undefined, motivo: MotivoBaja) {
+/**
+ * Da de baja a un hermano con la fecha indicada (AAAA-MM-DD); sin ella, hoy.
+ * Por fallecimiento, `fechaDefuncion` es el día en que falleció (sin él, el de la baja).
+ */
+export function darDeBajaHermano(id: number, fechaBaja: string | undefined, motivo: MotivoBaja, fechaDefuncion?: string) {
   return llamarApi<{ message: string }>(`/hermanos/admin/${id}/baja`, {
     method: 'DELETE',
-    json: { ...(fechaBaja ? { fechaBaja } : {}), motivo },
+    json: { ...(fechaBaja ? { fechaBaja } : {}), motivo, ...(motivo === 'FALLECIMIENTO' && fechaDefuncion ? { fechaDefuncion } : {}) },
   })
 }
 

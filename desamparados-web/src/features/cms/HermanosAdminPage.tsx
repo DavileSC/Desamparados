@@ -16,6 +16,7 @@ import ListaCenso from './censo/ListaCenso'
 import FichaCenso from './censo/FichaCenso'
 import ListaImpagos from './impagos/ListaImpagos'
 import ListasGuardadas from './censo/ListasGuardadas'
+import VistaDifuntos from './difuntos/VistaDifuntos'
 import TuneIcon from '@mui/icons-material/Tune'
 
 const SITUACIONES: Opcion[] = [
@@ -76,7 +77,7 @@ export default function HermanosAdminPage() {
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
   const pedida = params.get('vista')
-  const vista = pedida === 'solicitudes' || pedida === 'impagos' ? pedida : 'censo'
+  const vista = pedida === 'solicitudes' || pedida === 'impagos' || pedida === 'difuntos' ? pedida : 'censo'
   // La ficha abierta a la derecha, también en la URL: «Editar ficha» y el botón
   // de atrás del navegador vuelven a ella, con la lista como estaba.
   const fichaAbierta = Number(params.get('ficha')) || null
@@ -246,6 +247,7 @@ export default function HermanosAdminPage() {
         <Tab value="censo" label="Censo" />
         <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
         <Tab value="impagos" label="Impagos" />
+        <Tab value="difuntos" label="Difuntos" />
       </Tabs>
       {puedeGestionar && (
         <Button variant="outlined" onClick={() => setPorAsignarNumeros(true)}>Asignar números</Button>
@@ -270,7 +272,7 @@ export default function HermanosAdminPage() {
       onConfirmar={() => { setPorAsignarNumeros(false); void asignarNumeros() }}
       onCancelar={() => setPorAsignarNumeros(false)}
     />
-    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
+    {vista === 'difuntos' ? <VistaDifuntos puedeGestionar={puedeGestionar} /> : vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
       {requests.map((request) => (
         <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
           <Box>

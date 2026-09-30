@@ -5,6 +5,7 @@ import { SolicitudesService } from '../services/solicitudes.service.js';
 import { MisFichasService } from '../services/mis-fichas.service.js';
 import { CensoService } from '../services/censo.service.js';
 import { ListasService } from '../services/listas.service.js';
+import { DifuntosService, type NuevoSufragio } from '../services/difuntos.service.js';
 import type { MotivoBaja } from '../dtos/hermano.dto.js';
 
 /**
@@ -17,6 +18,39 @@ import type { MotivoBaja } from '../dtos/hermano.dto.js';
  * volver a mirarlo.
  */
 export class HermanoController {
+  // --- Los difuntos ---
+
+  static difuntos = manejar('Error leyendo los difuntos', async (req, res) => {
+    res.json(await DifuntosService.listar(req.query.q as string | undefined));
+  });
+
+  static aniversarios = manejar('Error leyendo los aniversarios', async (_req, res) => {
+    res.json(await DifuntosService.aniversarios());
+  });
+
+  static difunto = manejar('Error leyendo la ficha del difunto', async (req, res) => {
+    res.json(await DifuntosService.ficha(Number(req.params.id)));
+  });
+
+  static fijarDefuncion = manejar('Error guardando el día del fallecimiento', async (req, res) => {
+    await DifuntosService.fijarDefuncion(Number(req.params.id), (req.body as { fecha: string }).fecha, AuditoriaService.metaFromReq(req));
+    res.json({ message: 'Guardado' });
+  });
+
+  static crearSufragio = manejar('Error guardando el sufragio', async (req, res) => {
+    res.json(await DifuntosService.crearSufragio(Number(req.params.id), req.body as NuevoSufragio, AuditoriaService.metaFromReq(req)));
+  });
+
+  static borrarSufragio = manejar('Error borrando el sufragio', async (req, res) => {
+    await DifuntosService.borrarSufragio(Number(req.params.id), AuditoriaService.metaFromReq(req));
+    res.json({ message: 'Sufragio borrado' });
+  });
+
+  static enviarPesame = manejar('Error enviando el pésame', async (req, res) => {
+    await DifuntosService.enviarPesame(Number(req.params.id), (req.body as { email: string }).email, AuditoriaService.metaFromReq(req));
+    res.json({ message: 'Pésame enviado' });
+  });
+
   // --- Las búsquedas guardadas del censo ---
 
   static listas = manejar('Error leyendo las listas guardadas', async (_req, res) => {
@@ -137,7 +171,8 @@ export class HermanoController {
     // La fecha es opcional (validada por bajaHermanoSchema): sin ella, la baja es de hoy.
     const fechaBaja = typeof req.body?.fechaBaja === 'string' ? req.body.fechaBaja : undefined;
     const motivo = req.body?.motivo as MotivoBaja | undefined;
-    const result = await CensoService.darDeBajaHermano(Number(req.params.id), AuditoriaService.metaFromReq(req), fechaBaja, motivo);
+    const fechaDefuncion = typeof req.body?.fechaDefuncion === 'string' ? req.body.fechaDefuncion : undefined;
+    const result = await CensoService.darDeBajaHermano(Number(req.params.id), AuditoriaService.metaFromReq(req), fechaBaja, motivo, fechaDefuncion);
     res.status(200).json(result);
   });
 

@@ -226,11 +226,13 @@ model Hermano {
   presentadoPor2    String?
 
   // DATOS DE HERMANDAD
-  fechaAlta     DateTime    @default(now())
-  activo        Boolean     @default(true) // Soft Delete del hermano
-  numeroHermano Int?        @unique // Número de hermano, si lo tienen asignado
-  fechaBaja     DateTime? // Para saber cuándo dejó de pagar/salir
-  motivoBaja    MotivoBaja?
+  fechaAlta      DateTime    @default(now())
+  activo         Boolean     @default(true) // Soft Delete del hermano
+  numeroHermano  Int?        @unique // Número de hermano, si lo tienen asignado
+  fechaBaja      DateTime? // Para saber cuándo dejó de pagar/salir
+  motivoBaja     MotivoBaja?
+  /// Si falleció, el día. Se pone al dar la baja por fallecimiento (sin él, el de la baja).
+  fechaDefuncion DateTime?
 
   // VINCULACIÓN
   esTitular Boolean @default(false) // true = este perfil es el User logueado
@@ -282,6 +284,7 @@ model Hermano {
   transacciones Transaccion[]
   prendas       Prenda[]
   solicitudes   Solicitud[]
+  sufragios     Sufragio[]
 
   // Las peticiones de reactivación son pocas y Secretaría las lee enteras cada
   // vez que abre la cola: así no hay que recorrer el censo para encontrarlas.
@@ -761,6 +764,32 @@ model ListaGuardada {
   createdAt DateTime @default(now())
 
   @@unique([pantalla, nombre])
+}
+
+enum TipoSufragio {
+  MISA_FUNERAL
+  MISA_ANIVERSARIO
+  MISA_SUFRAGIO
+  ORACION
+}
+
+/// Lo que el Grupo Parroquial ofrece por un hermano difunto: la misa del
+/// funeral, las de aniversario, otras misas y oraciones. Puede ir a la Agenda.
+model Sufragio {
+  id             Int          @id @default(autoincrement())
+  hermanoId      Int
+  hermano        Hermano      @relation(fields: [hermanoId], references: [id])
+  tipo           TipoSufragio
+  fecha          DateTime
+  lugar          String?      @db.VarChar(200)
+  notas          String?      @db.Text
+  /// El acto de la Agenda, si se publicó.
+  eventoId       Int?
+  /// Cuándo se avisó a la familia por correo, si se avisó.
+  familiaAvisada DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([hermanoId, fecha])
 }
 
 /// Lo que ya hizo la mesa, por la clave que el ordenador genera al abrir cada

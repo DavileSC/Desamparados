@@ -117,6 +117,7 @@ export default function HermanoEditPage() {
   const enMarcha = useRef(false)
   const [dandoDeBaja, setDandoDeBaja] = useState(false)
   const [fechaBajaNueva, setFechaBajaNueva] = useState('')
+  const [fechaDefuncion, setFechaDefuncion] = useState('')
   const [motivoBaja, setMotivoBaja] = useState<MotivoBaja | ''>('')
   const [reactivando, setReactivando] = useState(false)
   const [emancipando, setEmancipando] = useState(false)
@@ -229,7 +230,7 @@ export default function HermanoEditPage() {
   const darDeBaja = () => trabajar(async () => {
     try {
       if (!motivoBaja) return
-      const { message } = await darDeBajaHermano(Number(id), fechaBajaNueva, motivoBaja)
+      const { message } = await darDeBajaHermano(Number(id), fechaBajaNueva, motivoBaja, fechaDefuncion || undefined)
       setDandoDeBaja(false)
       await refrescar()
       setAviso(message)
@@ -487,6 +488,18 @@ export default function HermanoEditPage() {
           >
             {(Object.entries(MOTIVOS_BAJA) as [MotivoBaja, string][]).map(([valor, texto]) => <MenuItem key={valor} value={valor}>{texto}</MenuItem>)}
           </TextField>
+          {motivoBaja === 'FALLECIMIENTO' && (
+            <TextField
+              label="Fecha del fallecimiento"
+              type="date"
+              value={fechaDefuncion}
+              onChange={(e) => setFechaDefuncion(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: aDia(ficha.fechaAlta), max: hoy } }}
+              helperText="Si no es la de la baja. De ella salen sus aniversarios, en la pestaña «Difuntos»."
+              fullWidth
+              sx={{ mt: 2 }}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button disabled={trabajando} onClick={() => setDandoDeBaja(false)}>Volver</Button>

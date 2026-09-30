@@ -52,6 +52,11 @@ export const ACCIONES_AUDITORIA = {
   // Lo que el banco cobró y no cuadró, y quién de Tesorería lo dio por resuelto
   PAGO_EN_LINEA_INCIDENCIA: 'PAGO_EN_LINEA_INCIDENCIA',
   PAGO_EN_LINEA_RESOLVER: 'PAGO_EN_LINEA_RESOLVER',
+  // Los difuntos: el día del óbito, los sufragios y el pésame a la familia
+  DEFUNCION_FIJAR: 'DEFUNCION_FIJAR',
+  SUFRAGIO_CREAR: 'SUFRAGIO_CREAR',
+  SUFRAGIO_BORRAR: 'SUFRAGIO_BORRAR',
+  PESAME_ENVIAR: 'PESAME_ENVIAR',
   ROSARIO_FECHAR: 'ROSARIO_FECHAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
   // Procesión (turnos de reparto y citas)
