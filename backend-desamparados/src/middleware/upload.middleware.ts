@@ -91,3 +91,27 @@ export const videoUploadMiddleware = multer({
   fileFilter: filtroDeVideo,
   limits: { fileSize: MAX_BYTES_VIDEO, files: 1 }
 });
+
+/**
+ * Ficheros de datos que se leen y no se guardan (el extracto del banco, la
+ * hoja del censo): a memoria, uno solo y por debajo del megabyte que nginx
+ * deja pasar al resto de `/api/`. Qué tipo es lo decide quien lo lee.
+ */
+export const MAX_BYTES_DATOS = 900 * 1024;
+
+export const ficheroDeDatosMiddleware = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_BYTES_DATOS, files: 1 }
+});
+
+/**
+ * El texto de un fichero de datos: UTF-8 si lo es, y si no Latin-1, que es
+ * como sale casi todo lo que exportan los bancos y Excel en España.
+ */
+export function textoDeFichero(buffer: Buffer): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+  } catch {
+    return buffer.toString('latin1');
+  }
+}

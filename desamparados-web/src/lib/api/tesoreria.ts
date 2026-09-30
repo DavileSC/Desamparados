@@ -185,3 +185,39 @@ export const traerFicheroRemesa = (id: number) => traerArchivo(`/recibos/admin/r
 
 export const cobrarRemesa = (id: number) =>
   llamarApi<{ message: string; cobrados: number; devueltos: number }>(`/recibos/admin/remesas/${id}/cobrar`, { method: 'POST' })
+
+// --- El extracto del banco (Norma 43) ---
+
+/** Lo que haría el extracto: devoluciones y cobros de remesas que reconoce, y lo dudoso. */
+export interface PreviaNorma43 {
+  /** Si el fichero no se entiende o no cuadra: con alguno, no se aplica. */
+  errores: string[]
+  cuentas: { cuenta: string; desde: string; hasta: string; movimientos: number }[]
+  devoluciones: {
+    reciboId: number
+    concepto: string
+    importe: number
+    estado: AdminReceiptStatus
+    fecha: string
+    hermano: ReceiptBrother
+    /** Ya estaba devuelto: subir otra vez el extracto no lo toca. */
+    yaAplicado: boolean
+  }[]
+  cobros: { remesaId: number; mensajeId: string; fechaCobro: string; importe: number; fecha: string; yaAplicado: boolean }[]
+  /** Parecen de una remesa, pero no se sabe de qué recibo: a mano. */
+  dudosos: { linea: number; fecha: string; signo: 'CARGO' | 'ABONO'; importe: number; texto: string; motivo: string }[]
+  /** Movimientos que no son de ninguna remesa. */
+  ajenos: number
+}
+
+const conFichero = (fichero: File) => {
+  const formulario = new FormData()
+  formulario.append('fichero', fichero)
+  return formulario
+}
+
+export const previaNorma43 = (fichero: File) =>
+  llamarApi<PreviaNorma43>('/recibos/admin/remesas/norma43/previa', { method: 'POST', formData: conFichero(fichero) })
+
+export const aplicarNorma43 = (fichero: File) =>
+  llamarApi<{ message: string; devueltos: number; cobradas: number; omitidos: string[] }>('/recibos/admin/remesas/norma43/aplicar', { method: 'POST', formData: conFichero(fichero) })

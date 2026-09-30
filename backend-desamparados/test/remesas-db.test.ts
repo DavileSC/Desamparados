@@ -22,6 +22,8 @@ import { HttpError } from '../src/utils/error.handle.js';
 import { diaDeHoy } from '../src/domain/fechas-hermano.js';
 import { fechaCobroMinima } from '../src/domain/sepa.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { extracto } from './fixtures/norma43.js';
+import { Norma43Service } from '../src/services/norma43.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const YEAR = 2097;
@@ -251,6 +253,76 @@ test('las rutas de remesas piden sesión del CMS, y el fichero sale como XML des
 
     const mal = await fetch(`${baseUrl}/api/recibos/admin/remesas/previa`, { method: 'POST', headers: cookie, body: JSON.stringify({ fechaCobro: 'mañana' }) });
     assert.equal(mal.status, 400);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('el extracto Norma 43 devuelve lo que el banco devolvió y cobra la remesa, y la segunda vez no hace nada', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const a = await e.hermano();
+    const b = await e.hermano();
+    const ra = await e.recibo(a.id, '30.00');
+    const rb = await e.recibo(b.id, '12.50');
+    const remesa = await RemesaService.generar({ fechaCobro: fechaCobro(), year: YEAR }, e.meta);
+    // El banco ya cargó los adeudos: la remesa es del 1 de septiembre de 2026.
+    await db.remesa.update({ where: { id: remesa.id }, data: { fechaCobro: new Date('2026-09-01T00:00:00Z') } });
+
+    const fichero = extracto([
+      { fecha: '260901', signo: 2, centimos: 4250, conceptos: ['ABONO ADEUDOS SEPA', remesa.mensajeId] },
+      { fecha: '260908', signo: 1, centimos: 1250, conceptos: [`DEVOLUCION REC-${rb.id}`, 'AM04 SALDO INSUFICIENTE'] },
+      { fecha: '260910', signo: 1, centimos: 5000, conceptos: ['RECIBO LUZ'] },
+    ]);
+
+    const previa = await Norma43Service.previa(fichero);
+    assert.deepEqual(previa.errores, []);
+    assert.deepEqual(previa.devoluciones.map((d) => [d.reciboId, d.yaAplicado]), [[rb.id, false]]);
+    assert.deepEqual(previa.cobros.map((c) => [c.remesaId, c.yaAplicado]), [[remesa.id, false]]);
+    assert.equal(previa.ajenos, 1);
+    // La vista previa no toca nada.
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: rb.id } })).estado, EstadoPago.REMESADO);
+
+    const aplicado = await Norma43Service.aplicar(fichero, e.meta);
+    assert.deepEqual(aplicado.omitidos, []);
+    assert.equal(aplicado.devueltos, 1);
+    assert.equal(aplicado.cobradas, 1);
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: rb.id } })).estado, EstadoPago.DEVUELTO);
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: ra.id } })).estado, EstadoPago.PAGADO);
+    assert.equal((await db.remesa.findUniqueOrThrow({ where: { id: remesa.id } })).estado, EstadoRemesa.COBRADA);
+    // Solo el cobrado lleva asiento; el devuelto nunca llegó a entrar.
+    assert.equal(await db.transaccion.count({ where: { reciboId: rb.id } }), 0);
+    assert.equal(await db.transaccion.count({ where: { reciboId: ra.id } }), 1);
+
+    const otraVez = await Norma43Service.aplicar(fichero, e.meta);
+    assert.deepEqual([otraVez.devueltos, otraVez.cobradas], [0, 0]);
+    assert.equal(await db.transaccion.count({ where: { reciboId: ra.id } }), 1);
+
+    await assert.rejects(Norma43Service.aplicar('esto no es un extracto', e.meta), (err: unknown) => err instanceof HttpError && err.status === 400);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('las rutas del extracto piden sesión y leen el fichero subido', async (t) => {
+  for (const ruta of ['/api/recibos/admin/remesas/norma43/previa', '/api/recibos/admin/remesas/norma43/aplicar']) {
+    assert.equal((await fetch(`${baseUrl}${ruta}`, { method: 'POST' })).status, 401, ruta);
+  }
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const cookie = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.TESORERIA)}` };
+    const formulario = new FormData();
+    formulario.append('fichero', new Blob([extracto([{ fecha: '261002', signo: 2, centimos: 100 }])]), 'extracto.n43');
+    const res = await fetch(`${baseUrl}/api/recibos/admin/remesas/norma43/previa`, { method: 'POST', headers: cookie, body: formulario });
+    assert.equal(res.status, 200);
+    const cuerpo = await res.json() as { cuentas: { cuenta: string }[]; ajenos: number };
+    assert.deepEqual(cuerpo.cuentas.map((c) => c.cuenta), ['••••0513']);
+    assert.equal(cuerpo.ajenos, 1);
+
+    const sinFichero = await fetch(`${baseUrl}/api/recibos/admin/remesas/norma43/previa`, { method: 'POST', headers: cookie });
+    assert.equal(sinFichero.status, 400);
   } finally {
     await e.recoger();
   }

@@ -57,6 +57,7 @@ export const ACCIONES_AUDITORIA = {
   // Remesas SEPA: generar el fichero para el banco y darla por cobrada
   REMESA_GENERAR: 'REMESA_GENERAR',
   REMESA_COBRAR: 'REMESA_COBRAR',
+  NORMA43_APLICAR: 'NORMA43_APLICAR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

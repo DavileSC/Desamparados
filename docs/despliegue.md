@@ -368,8 +368,12 @@ Lo que no se ve:
 - **La fecha de cobro** tiene que ser un día hábil de los bancos (TARGET2) con
   dos días hábiles de margen. Si el banco del Grupo pide más, se sube
   `DIAS_HABILES_DE_MARGEN` en el mismo fichero.
-- **Las devoluciones** se marcan a mano en la lista de recibos, antes de dar
-  la remesa por cobrada. La Norma 43 (en la hoja de ruta) lo hará sola.
+- **Las devoluciones y el cobro** salen del extracto del banco: en Remesas,
+  «Extracto del banco» lee el fichero Norma 43 de la banca en línea, marca
+  como devueltos los recibos que el banco devolvió (los reconoce por el
+  `REC-…` o la referencia del mandato) y da por cobradas las remesas que
+  abonó. Lo que no sabe casar lo enseña y no lo toca. También se pueden
+  marcar a mano.
 
 ### El antivirus, tal como funciona de verdad
 

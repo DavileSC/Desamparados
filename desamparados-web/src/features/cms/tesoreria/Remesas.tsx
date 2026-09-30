@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Alert, AlertTitle, Box, Button, Chip, CircularProgress, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import DownloadIcon from '@mui/icons-material/Download'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
 import {
   cobrarRemesa, estadoRemesas, esAnioCompleto, generarRemesa, previaRemesa, traerFicheroRemesa,
   type EstadoRemesas, type FiltroRemesa, type PreviaRemesa, type ReceiptType, type Remesa,
@@ -10,6 +11,7 @@ import { guardarEnDisco } from '../../../lib/api/datos'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import VentanaFormulario from '../VentanaFormulario'
 import { euros } from '../contabilidad/formato'
+import ExtractoNorma43 from './ExtractoNorma43'
 
 const TIPOS: Record<ReceiptType, string> = {
   CUOTA_HERMANO: 'Cuotas de hermano', PAPELETA_SITIO: 'Papeletas de sitio', DONATIVO: 'Donativos', OTRO: 'Otros',
@@ -32,8 +34,8 @@ const aFiltro = (f: Filtro): FiltroRemesa => ({
 /**
  * Remesas SEPA: se juntan los recibos pendientes de quienes domicilian, se
  * genera el fichero y Tesorería lo sube a la banca en línea. Cuando el banco
- * carga los adeudos, la remesa se da por cobrada; los que devuelva se marcan
- * antes como devueltos, uno a uno, desde la lista de recibos.
+ * carga los adeudos, la remesa se da por cobrada. Las devoluciones y el cobro
+ * pueden salir también del extracto del banco (Norma 43), sin marcarlos a mano.
  */
 export default function Remesas() {
   const [estado, setEstado] = useState<EstadoRemesas | null>(null)
@@ -48,6 +50,7 @@ export default function Remesas() {
   const [errorGenerar, setErrorGenerar] = useState<string | null>(null)
   const [ocupada, setOcupada] = useState<number | null>(null)
   const [aCobrar, setACobrar] = useState<Remesa | null>(null)
+  const [extracto, setExtracto] = useState(false)
 
   const cargar = useCallback(() => estadoRemesas().then(setEstado), [])
   useEffect(() => {
@@ -118,7 +121,10 @@ export default function Remesas() {
           Junta los recibos pendientes de quienes domicilian y genera el fichero para subirlo a la banca en línea.
         </Typography>
       </Box>
-      <Button variant="contained" startIcon={<AccountBalanceIcon />} onClick={abrir} disabled={!estado.configurada}>Nueva remesa</Button>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ flexShrink: 0, '& .MuiButton-root': { whiteSpace: 'nowrap' } }}>
+        <Button variant="outlined" startIcon={<UploadFileIcon />} onClick={() => { setAviso(null); setExtracto(true) }}>Extracto del banco</Button>
+        <Button variant="contained" startIcon={<AccountBalanceIcon />} onClick={abrir} disabled={!estado.configurada}>Nueva remesa</Button>
+      </Stack>
     </Stack>
 
     {!estado.configurada && (
@@ -229,11 +235,17 @@ export default function Remesas() {
       </>}
     </VentanaFormulario>
 
+    <ExtractoNorma43
+      abierto={extracto}
+      onCerrar={() => setExtracto(false)}
+      onAplicado={(texto) => { setExtracto(false); setAviso(texto); void cargar().catch(() => undefined) }}
+    />
+
     <DialogoConfirmacion
       abierto={aCobrar !== null}
       titulo="Dar la remesa por cobrada"
       mensaje={aCobrar
-        ? `${aCobrar.enElBanco === 1 ? 'El recibo que sigue' : `Los ${aCobrar.enElBanco} recibos que siguen`} en el banco ${aCobrar.enElBanco === 1 ? 'pasa' : 'pasan'} a pagados y se apunta su ingreso en Contabilidad. Si el banco devolvió alguno, márcalo antes como devuelto desde la lista de recibos.`
+        ? `${aCobrar.enElBanco === 1 ? 'El recibo que sigue' : `Los ${aCobrar.enElBanco} recibos que siguen`} en el banco ${aCobrar.enElBanco === 1 ? 'pasa' : 'pasan'} a pagados y se apunta su ingreso en Contabilidad. Si el banco devolvió alguno, márcalo antes como devuelto (a mano o subiendo el extracto del banco).`
         : ''}
       textoConfirmar="Dar por cobrada"
       onConfirmar={() => void cobrar()}
