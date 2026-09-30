@@ -94,7 +94,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | 🟡 | B | Boletín y avisos masivos, segmentados | Hay la casilla de suscripción y la plantilla de correo; falta el editor y el envío |
-| ⬜ | A | Cartas y circulares en PDF con los datos de cada hermano | Reutiliza el motor de los informes |
+| 🔨 | A | Cartas y circulares en PDF con los datos de cada hermano | Reutiliza el motor de los informes |
 | ⬜ | A | Etiquetas postales | Para los hermanos sin correo |
 
 ## Fase 4 · Secretaría
