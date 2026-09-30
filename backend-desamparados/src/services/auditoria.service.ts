@@ -66,6 +66,9 @@ export const ACCIONES_AUDITORIA = {
   // Boletín y avisos: mandar uno y darse de baja desde el enlace del correo
   COMUNICADO_ENVIAR: 'COMUNICADO_ENVIAR',
   BOLETIN_BAJA: 'BOLETIN_BAJA',
+  // Cabildos: darlo por celebrado (fija el quórum) y aprobar su acta
+  CABILDO_CELEBRAR: 'CABILDO_CELEBRAR',
+  CABILDO_ACTA_APROBAR: 'CABILDO_ACTA_APROBAR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

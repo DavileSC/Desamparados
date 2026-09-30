@@ -51,6 +51,8 @@ const HermanoEditPage = lazy(() => import('../features/cms/HermanoEditPage'))
 const NoticiaEditPage = lazy(() => import('../features/cms/NoticiaEditPage'))
 const ComunicadosAdminPage = lazy(() => import('../features/cms/ComunicadosAdminPage'))
 const ComunicadoEditPage = lazy(() => import('../features/cms/ComunicadoEditPage'))
+const CabildosAdminPage = lazy(() => import('../features/cms/CabildosAdminPage'))
+const CabildoPage = lazy(() => import('../features/cms/CabildoPage'))
 const PublicacionEditPage = lazy(() => import('../features/cms/PublicacionEditPage'))
 const AgendaEditPage = lazy(() => import('../features/cms/AgendaEditPage'))
 const InventarioEditPage = lazy(() => import('../features/cms/InventarioEditPage'))
@@ -226,6 +228,8 @@ const router = createBrowserRouter([
           { path: 'noticias', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiasAdminPage)}</ExigeRol> },
           { path: 'comunicados', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadosAdminPage)}</ExigeRol> },
           { path: 'comunicados/:id', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadoEditPage)}</ExigeRol> },
+          { path: 'cabildos', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{withSuspense(CabildosAdminPage)}</ExigeRol> },
+          { path: 'cabildos/:id', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{withSuspense(CabildoPage)}</ExigeRol> },
           { path: 'noticias/nueva', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
           { path: 'noticias/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
           { path: 'publicaciones', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionesAdminPage)}</ExigeRol> },

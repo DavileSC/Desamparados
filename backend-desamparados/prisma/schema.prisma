@@ -275,12 +275,14 @@ model Hermano {
   certificadoBautismo String?
 
   // HISTORIAL
-  papeletas     PapeletaSitio[]
-  recibos       Recibo[]
-  citas         Cita[]
-  transacciones Transaccion[]
-  prendas       Prenda[]
-  solicitudes   Solicitud[]
+  papeletas          PapeletaSitio[]
+  recibos            Recibo[]
+  citas              Cita[]
+  transacciones      Transaccion[]
+  prendas            Prenda[]
+  solicitudes        Solicitud[]
+  /// Los cabildos a los que asistió.
+  asistenciasCabildo CabildoAsistencia[]
 
   // Las peticiones de reactivación son pocas y Secretaría las lee enteras cada
   // vez que abre la cola: así no hay que recorrer el censo para encontrarlas.
@@ -420,7 +422,7 @@ model Recibo {
   solicitud Solicitud?
   /// La remesa que lo mandó al banco, si se cobró (o se intentó) por domiciliación.
   remesaId  Int?
-  remesa    Remesa?   @relation(fields: [remesaId], references: [id], onDelete: SetNull)
+  remesa    Remesa?        @relation(fields: [remesaId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -956,18 +958,20 @@ enum EstadoEnvio {
 /// Un boletín o un aviso masivo por correo. El cuerpo, saneado como el resto
 /// del contenido del CMS; a quién va, por el segmento elegido.
 model Comunicado {
-  id         Int              @id @default(autoincrement())
-  tipo       TipoComunicado
-  asunto     String           @db.VarChar(150)
-  cuerpo     String           @db.LongText
+  id          Int               @id @default(autoincrement())
+  tipo        TipoComunicado
+  asunto      String            @db.VarChar(150)
+  cuerpo      String            @db.LongText
   /// Los filtros del segmento, tal como se eligieron (ver domain/comunicados.ts).
-  segmento   Json
-  estado     EstadoComunicado @default(BORRADOR)
-  enviadoEl  DateTime?
+  segmento    Json
+  estado      EstadoComunicado  @default(BORRADOR)
+  enviadoEl   DateTime?
   /// Quién lo escribió y quién lo mandó, copiados: sobreviven a las cuentas.
   autorId     Int?
   autorNombre String?
   envios      ComunicadoEnvio[]
+  /// El cabildo del que es convocatoria, si lo es.
+  cabildos    Cabildo[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -991,4 +995,74 @@ model ComunicadoEnvio {
 
   @@unique([comunicadoId, email])
   @@index([comunicadoId, estado])
+}
+
+enum TipoCabildo {
+  ORDINARIO
+  EXTRAORDINARIO
+}
+
+enum EstadoCabildo {
+  CONVOCADO // Con fecha y orden del día; aún no se ha celebrado
+  CELEBRADO // Ya se celebró: asistencia y votaciones apuntadas, el acta en redacción
+  ACTA_APROBADA // El acta está aprobada: pasa al libro de actas y ya no se toca
+}
+
+enum Mayoria {
+  SIMPLE // Más votos a favor que en contra
+  DOS_TERCIOS // Dos tercios de los votos emitidos (reforma de reglas, por ejemplo)
+}
+
+/// Un cabildo de hermanos: su convocatoria, quién asistió, qué se votó y su acta.
+model Cabildo {
+  id             Int           @id @default(autoincrement())
+  tipo           TipoCabildo
+  fecha          DateTime
+  lugar          String        @db.VarChar(191)
+  /// Los puntos del orden del día, en orden.
+  ordenDelDia    Json
+  estado         EstadoCabildo @default(CONVOCADO)
+  /// Al darlo por celebrado se guarda el censo con voto de ese día: el quórum
+  /// del acta no debe cambiar si mañana hay altas o bajas.
+  censoConVoto   Int?
+  enSegunda      Boolean       @default(false)
+  acta           String        @default("") @db.LongText
+  actaAprobadaEl DateTime?
+  /// El borrador de aviso con la convocatoria, en Boletín y avisos.
+  convocatoriaId Int?
+  convocatoria   Comunicado?   @relation(fields: [convocatoriaId], references: [id], onDelete: SetNull)
+
+  asistencias CabildoAsistencia[]
+  votaciones  CabildoVotacion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fecha])
+}
+
+model CabildoAsistencia {
+  id           Int      @id @default(autoincrement())
+  cabildoId    Int
+  cabildo      Cabildo  @relation(fields: [cabildoId], references: [id], onDelete: Cascade)
+  hermanoId    Int
+  hermano      Hermano  @relation(fields: [hermanoId], references: [id], onDelete: Cascade)
+  registradaEl DateTime @default(now())
+
+  @@unique([cabildoId, hermanoId])
+  @@index([hermanoId])
+}
+
+model CabildoVotacion {
+  id           Int      @id @default(autoincrement())
+  cabildoId    Int
+  cabildo      Cabildo  @relation(fields: [cabildoId], references: [id], onDelete: Cascade)
+  asunto       String   @db.VarChar(300)
+  mayoria      Mayoria  @default(SIMPLE)
+  aFavor       Int
+  enContra     Int
+  abstenciones Int
+  createdAt    DateTime @default(now())
+
+  @@index([cabildoId])
 }

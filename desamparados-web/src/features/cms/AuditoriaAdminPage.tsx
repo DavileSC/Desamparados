@@ -26,6 +26,8 @@ const ACCIONES: Record<string, string> = {
   CORTEJO_REPARTIR: 'Repartir el cortejo por antigüedad',
   COMUNICADO_ENVIAR: 'Enviar un boletín o aviso',
   BOLETIN_BAJA: 'Darse de baja del boletín',
+  CABILDO_CELEBRAR: 'Dar un cabildo por celebrado',
+  CABILDO_ACTA_APROBAR: 'Aprobar el acta de un cabildo',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',

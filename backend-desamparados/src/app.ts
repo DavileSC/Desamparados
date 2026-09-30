@@ -8,6 +8,7 @@ import { authRoutes } from './routes/auth.routes.js';
 import { hermanoRoutes } from './routes/hermano.routes.js';
 import { reciboRoutes } from './routes/recibo.routes.js';
 import { comunicadosRoutes } from './routes/comunicados.routes.js';
+import { cabildosRoutes } from './routes/cabildos.routes.js';
 import { pagoRoutes } from './routes/pago.routes.js';
 import { paginaRoutes } from './routes/pagina.routes.js';
 import { agendaRoutes } from './routes/agenda.routes.js';
@@ -110,14 +111,14 @@ app.use(globalLimiter);
 // Cuerpos JSON. El tope general es 100 KB: ningún formulario de la web se
 // acerca, y un cuerpo grande sin sesión (el formulario de contacto, el login)
 // solo sirve para hacer trabajar al servidor. Las rutas que reciben el HTML
-// del CMS (noticias, páginas, publicaciones y comunicados) admiten 2 MB; su parser se
+// del CMS (noticias, páginas, publicaciones, comunicados y actas) admiten 2 MB; su parser se
 // monta ANTES del general, y el general ya no vuelve a leer un cuerpo leído.
 // Sin `express.urlencoded` general: la web solo envía JSON y las subidas van
 // en multipart, que lee multer en su propia ruta. La única excepción es el
 // aviso del banco, que trae su lector en `pago.routes.ts`.
 const CUERPO_CMS = '2mb';
 const CUERPO_GENERAL = '100kb';
-app.use(['/api/news', '/api/pages', '/api/publications', '/api/comunicados'], express.json({ limit: CUERPO_CMS }));
+app.use(['/api/news', '/api/pages', '/api/publications', '/api/comunicados', '/api/cabildos'], express.json({ limit: CUERPO_CMS }));
 app.use(express.json({ limit: CUERPO_GENERAL }));
 
 // Sin `hpp`: con Express 5, `req.query` es un getter que vuelve a analizar la
@@ -159,6 +160,7 @@ app.use('/api/transacciones', transaccionRoutes); // Contabilidad
 app.use('/api/panel', panelRoutes);      // Panel del CMS
 app.use('/api/datos', datosRoutes);      // Datos e informes de la junta, y la Memoria del curso
 app.use('/api/comunicados', comunicadosRoutes); // Boletín y avisos por correo
+app.use('/api/cabildos', cabildosRoutes); // Cabildos y libro de actas
 app.use('/api/portada', portadaRoutes);  // Fotos de la cabecera del inicio
 app.use('/api/secciones', seccionesRoutes); // Secciones guardadas del constructor de páginas
 app.use('/api/contenido', contenidoRoutes); // Textos editables de la portada, el recorrido y la historia
