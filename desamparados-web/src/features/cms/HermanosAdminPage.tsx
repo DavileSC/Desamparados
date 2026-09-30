@@ -15,6 +15,8 @@ import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import ListaCenso from './censo/ListaCenso'
 import FichaCenso from './censo/FichaCenso'
 import ListaImpagos from './impagos/ListaImpagos'
+import HojaCenso from './censo/HojaCenso'
+import { site } from '../../config/site'
 import ListasGuardadas from './censo/ListasGuardadas'
 import VistaDifuntos from './difuntos/VistaDifuntos'
 import TuneIcon from '@mui/icons-material/Tune'
@@ -232,7 +234,7 @@ export default function HermanosAdminPage() {
   }
 
   return <>
-    <Helmet><title>Hermanos | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Hermanos | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <Typography variant="h2" component="h1" sx={{ mb: 4 }}>Hermanos</Typography>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
@@ -250,7 +252,13 @@ export default function HermanosAdminPage() {
         <Tab value="difuntos" label="Difuntos" />
       </Tabs>
       {puedeGestionar && (
-        <Button variant="outlined" onClick={() => setPorAsignarNumeros(true)}>Asignar números</Button>
+        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', rowGap: 1.5 }}>
+          <HojaCenso
+            onImportado={(texto) => { setError(null); setNotice(texto); void recargarYRefrescarMenu().catch(() => undefined) }}
+            onError={(texto) => { setNotice(null); setError(texto) }}
+          />
+          <Button variant="outlined" onClick={() => setPorAsignarNumeros(true)}>Asignar números</Button>
+        </Stack>
       )}
     </Box>
     {/* Rechazar borra datos personales (y a veces la cuenta entera): se pregunta antes. */}

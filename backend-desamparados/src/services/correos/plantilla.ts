@@ -16,9 +16,9 @@
  * que quien no lo entiende ignora sin romper nada.
  */
 import { fileURLToPath } from 'node:url';
-import { emailDeSecretaria, lineasDeSecretaria } from '../../domain/datos-entidad.js';
+import { emailDeSecretaria, identidad, lineasDeSecretaria } from '../../domain/datos-entidad.js';
 
-export const NOMBRE_GRUPO = 'Grupo Parroquial Nuestra Señora de los Desamparados';
+export const NOMBRE_GRUPO = identidad.nombre;
 
 /**
  * Las imágenes van dentro del correo (adjuntos en línea, `cid:`) y no enlazadas
@@ -64,9 +64,9 @@ export function esc(text: string | null | undefined): string {
 
 export const urlDeLaWeb = (ruta = '') => `${process.env.FRONTEND_URL || 'http://localhost:5173'}${ruta}`;
 
-/** «Málaga, 23 de septiembre de 2026», como encabeza una carta. */
+/** «Málaga, 23 de septiembre de 2026», como encabeza una carta (con la localidad de la corporación). */
 export function lugarYFecha(fecha = new Date()): string {
-  return `Málaga, ${fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid' })}`;
+  return `${identidad.localidad}, ${fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid' })}`;
 }
 
 // --- PIEZAS DEL CUERPO ---
@@ -274,7 +274,7 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
                   </td>
                   <td valign="middle" style="font-family: ${SERIF};">
                     <p style="margin: 0; font-size: 13px; font-style: italic; color: ${suave};">Grupo Parroquial</p>
-                    <p style="margin: 1px 0 0 0; font-size: 19px; line-height: 1.25; color: ${negro};">Nuestra Señora de los Desamparados</p>
+                    <p style="margin: 1px 0 0 0; font-size: 19px; line-height: 1.25; color: ${negro};">${esc(identidad.titular)}</p>
                   </td>
                 </tr>
               </table>
@@ -283,7 +283,7 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
           ${conVirgen ? `
           <tr>
             <td style="line-height: 0; font-size: 0;">
-              <img src="cid:${IMAGENES.virgen.cid}" alt="Nuestra Señora de los Desamparados" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;">
+              <img src="cid:${IMAGENES.virgen.cid}" alt="${esc(identidad.titular)}" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;">
             </td>
           </tr>` : ''}
           <tr>
@@ -306,7 +306,7 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
           <tr>
             <td class="caja" style="padding: 24px 44px 0 44px; font-family: ${SANS}; font-size: 12px; line-height: 1.65; color: ${suave};">
               ${pie(para)}
-              <p style="margin: 16px 0 0 0; color: ${suave};">&copy; ${year} ${esc(NOMBRE_GRUPO)} &middot; Málaga</p>
+              <p style="margin: 16px 0 0 0; color: ${suave};">&copy; ${year} ${esc(NOMBRE_GRUPO)} &middot; ${esc(identidad.localidad)}</p>
             </td>
           </tr>
         </table>

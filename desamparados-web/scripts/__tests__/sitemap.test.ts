@@ -7,7 +7,8 @@ import { join } from 'node:path'
 // Esta prueba lo detecta en CI antes de que Google lo vea.
 
 const raiz = process.cwd()
-const DOMINIO = 'https://www.desamparadosmalaga.com'
+const { identidad } = JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
+const DOMINIO = `https://${identidad.dominio}`
 
 function rutasPublicasDelRouter(): string[] {
   const fuente = readFileSync(join(raiz, 'src/routes/index.tsx'), 'utf8')

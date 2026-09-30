@@ -11,6 +11,7 @@ import MarcoCms from '../app/MarcoCms'
 import { rolesPorRutaCms } from '../app/cmsNavegacion'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
+import { site } from '../config/site'
 
 // Public pages
 const InicioPage = lazy(() => import('../features/inicio/InicioPage'))
@@ -47,8 +48,17 @@ const AgendaAdminPage = lazy(() => import('../features/cms/AgendaAdminPage'))
 const HermanosAdminPage = lazy(() => import('../features/cms/HermanosAdminPage'))
 const ProcesionAdminPage = lazy(() => import('../features/cms/ProcesionAdminPage'))
 const MesaProcesionPage = lazy(() => import('../features/cms/mesa/MesaProcesionPage'))
+const CortejoDirectoPage = lazy(() => import('../features/cms/CortejoDirectoPage'))
 const HermanoEditPage = lazy(() => import('../features/cms/HermanoEditPage'))
 const NoticiaEditPage = lazy(() => import('../features/cms/NoticiaEditPage'))
+const ComunicadosAdminPage = lazy(() => import('../features/cms/ComunicadosAdminPage'))
+const ComunicadoEditPage = lazy(() => import('../features/cms/ComunicadoEditPage'))
+const CabildosAdminPage = lazy(() => import('../features/cms/CabildosAdminPage'))
+const CabildoPage = lazy(() => import('../features/cms/CabildoPage'))
+const PartidaDoblePage = lazy(() => import('../features/cms/PartidaDoblePage'))
+const TiendaAdminPage = lazy(() => import('../features/cms/TiendaAdminPage'))
+const ApadrinamientosAdminPage = lazy(() => import('../features/cms/ApadrinamientosAdminPage'))
+const CampanaApadrinamientoPage = lazy(() => import('../features/cms/CampanaApadrinamientoPage'))
 const PublicacionEditPage = lazy(() => import('../features/cms/PublicacionEditPage'))
 const AgendaEditPage = lazy(() => import('../features/cms/AgendaEditPage'))
 const InventarioEditPage = lazy(() => import('../features/cms/InventarioEditPage'))
@@ -68,6 +78,11 @@ const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
 const AvisoLegalPage = lazy(() => import('../features/legal/AvisoLegalPage'))
 const PoliticaDePrivacidadPage = lazy(() => import('../features/legal/PoliticaDePrivacidadPage'))
 const PoliticaDeCookiesPage = lazy(() => import('../features/legal/PoliticaDeCookiesPage'))
+const BajaBoletinPage = lazy(() => import('../features/boletin/BajaBoletinPage'))
+const TiendaPage = lazy(() => import('../features/tienda/TiendaPage'))
+const PedidoTiendaPage = lazy(() => import('../features/tienda/PedidoTiendaPage'))
+const ApadrinaPage = lazy(() => import('../features/apadrinamiento/ApadrinaPage'))
+const GraciasApadrinamientoPage = lazy(() => import('../features/apadrinamiento/GraciasApadrinamientoPage'))
 
 // Auth pages
 const AccesoPage = lazy(() => import('../features/altas/auth/AccesoPage'))
@@ -97,15 +112,15 @@ function withSuspense(Component: React.ComponentType) {
  */
 function RootLayout() {
   const location = useLocation()
-  const canonical = `https://www.desamparadosmalaga.com${location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '')}`
+  const canonical = `${site.url}${location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '')}`
   return (
     <>
       <Helmet>
         <link rel="canonical" href={canonical} />
         <meta property="og:url" content={canonical} />
-        <meta property="og:site_name" content="Grupo Parroquial Nuestra Señora de los Desamparados" />
+        <meta property="og:site_name" content={site.nombre} />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://www.desamparadosmalaga.com/images/hero-1920.webp" />
+        <meta property="og:image" content={`${site.url}/images/hero-1920.webp`} />
       </Helmet>
       <ScrollRestoration />
       <Outlet />
@@ -144,6 +159,10 @@ const router = createBrowserRouter([
           { path: 'publicaciones/dossier-prensa', element: withSuspense(DossierPrensaPage) },
           { path: 'hazte-hermano', element: withSuspense(HazteHermanoPage) },
           { path: 'contacto', element: withSuspense(ContactoPage) },
+          { path: 'tienda', element: withSuspense(TiendaPage) },
+          { path: 'tienda/pedido/:token', element: withSuspense(PedidoTiendaPage) },
+          { path: 'apadrina', element: withSuspense(ApadrinaPage) },
+          { path: 'apadrina/gracias/:token', element: withSuspense(GraciasApadrinamientoPage) },
           { path: 'aviso-legal', element: withSuspense(AvisoLegalPage) },
           { path: 'politica-privacidad', element: withSuspense(PoliticaDePrivacidadPage) },
           { path: 'politica-cookies', element: withSuspense(PoliticaDeCookiesPage) },
@@ -156,6 +175,15 @@ const router = createBrowserRouter([
           // 404 real (con cabecera y pie): antes cualquier URL errónea redirigía a la portada
           { path: '*', element: withSuspense(NoEncontradaPage) },
         ],
+      },
+      // La baja del boletín, desde el enlace de cada correo y sin sesión. Con el
+      // marco público, pero FUERA del bloque de arriba a propósito: es un enlace
+      // de un solo uso, no una página que buscar, y el sitemap (y su prueba)
+      // recorren ese bloque entero.
+      {
+        path: '/boletin/baja',
+        element: <MarcoPublico />,
+        children: [{ index: true, element: withSuspense(BajaBoletinPage) }],
       },
       {
         path: '/acceso',
@@ -213,6 +241,10 @@ const router = createBrowserRouter([
           // Historia se edita ya como las demás páginas; la dirección vieja sigue llevando a ella.
           { path: 'historia', element: <Navigate to="/cms/paginas/historia" replace /> },
           { path: 'noticias', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiasAdminPage)}</ExigeRol> },
+          { path: 'comunicados', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadosAdminPage)}</ExigeRol> },
+          { path: 'comunicados/:id', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadoEditPage)}</ExigeRol> },
+          { path: 'cabildos', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{withSuspense(CabildosAdminPage)}</ExigeRol> },
+          { path: 'cabildos/:id', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{withSuspense(CabildoPage)}</ExigeRol> },
           { path: 'noticias/nueva', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
           { path: 'noticias/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
           { path: 'publicaciones', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionesAdminPage)}</ExigeRol> },
@@ -225,10 +257,15 @@ const router = createBrowserRouter([
           { path: ':id/editar', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</ExigeRol> },
           { path: 'procesion', element: <ExigeRol roles={rolesPorRutaCms.procesion}>{withSuspense(ProcesionAdminPage)}</ExigeRol> },
           { path: 'procesion/mesa', element: <ExigeRol roles={rolesPorRutaCms['procesion/mesa']}>{withSuspense(MesaProcesionPage)}</ExigeRol> },
+          { path: 'procesion/directo', element: <ExigeRol roles={rolesPorRutaCms['procesion/directo']}>{withSuspense(CortejoDirectoPage)}</ExigeRol> },
           { path: 'tesoreria', element: <ExigeRol roles={rolesPorRutaCms.tesoreria}>{withSuspense(TesoreriaAdminPage)}</ExigeRol> },
           { path: 'inventario', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</ExigeRol> },
           { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },
           { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
+          { path: 'contabilidad/partida-doble', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(PartidaDoblePage)}</ExigeRol> },
+          { path: 'tienda', element: <ExigeRol roles={rolesPorRutaCms.tienda}>{withSuspense(TiendaAdminPage)}</ExigeRol> },
+          { path: 'apadrinamientos', element: <ExigeRol roles={rolesPorRutaCms.apadrinamientos}>{withSuspense(ApadrinamientosAdminPage)}</ExigeRol> },
+          { path: 'apadrinamientos/:id', element: <ExigeRol roles={rolesPorRutaCms.apadrinamientos}>{withSuspense(CampanaApadrinamientoPage)}</ExigeRol> },
           { path: 'datos', element: <ExigeRol roles={rolesPorRutaCms.datos}>{withSuspense(DatosInformesPage)}</ExigeRol> },
           { path: 'cartas', element: <ExigeRol roles={rolesPorRutaCms.cartas}>{withSuspense(CartasPage)}</ExigeRol> },
           { path: 'informe-anual', element: <ExigeRol roles={rolesPorRutaCms['informe-anual']}>{withSuspense(InformeAnualPage)}</ExigeRol> },

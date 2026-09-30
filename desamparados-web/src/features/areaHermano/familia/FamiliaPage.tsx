@@ -11,6 +11,7 @@ import { MAYORIA_DE_EDAD, aniosCumplidos } from '../../altas/public/schema'
 import DialogoAnadirFicha from './DialogoAnadirFicha'
 import DialogoEmancipar from './DialogoEmancipar'
 import AvisoSuave from '../../../components/AvisoSuave'
+import { site } from '../../../config/site'
 
 const nombreParentesco = (valor: string | null) =>
   PARENTESCOS.find((p) => p.value === valor)?.label ?? 'A tu cargo'
@@ -60,7 +61,7 @@ export default function FamiliaPage() {
 
   return (
     <>
-      <Helmet><title>Mi familia | Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Mi familia | ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <SeccionAnimada>
         <ContenedorDePagina>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 3 }}>

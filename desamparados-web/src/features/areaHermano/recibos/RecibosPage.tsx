@@ -10,6 +10,7 @@ import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
 import { misRecibos, type MyReceipt } from '../../../lib/api/recibos'
 import { estadoDelRecibo, formatearImporte } from './etiquetas'
 import AvisoSuave from '../../../components/AvisoSuave'
+import { site } from '../../../config/site'
 
 /**
  * Los recibos de la familia, agrupados por año.
@@ -37,7 +38,7 @@ export default function RecibosPage() {
   return (
     <>
       <Helmet>
-        <title>Recibos | Desamparados</title>
+        <title>{`Recibos | ${site.nombreCorto}`}</title>
       </Helmet>
 
       <SeccionAnimada sx={{ py: { xs: 4, md: 6 } }}>

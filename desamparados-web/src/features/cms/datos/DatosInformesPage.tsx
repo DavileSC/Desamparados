@@ -9,6 +9,7 @@ import { useAltoDisponible } from '../inicio/useAltoDisponible'
 import { entrada } from '../inicio/animaciones'
 import { FILETE, FONDO_PIEZA, ORO, ROJO_GRAFICA, SERIF, VERDE, VERSALITAS } from '../inicio/estiloRetablo'
 import GraficaDatos, { Muestra } from './GraficaDatos'
+import { site } from '../../../config/site'
 
 const decimal = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
@@ -83,7 +84,7 @@ export default function DatosInformesPage() {
         '& > *': { flexShrink: 0 },
       }}
     >
-      <Helmet><title>Datos e informes | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Datos e informes | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>

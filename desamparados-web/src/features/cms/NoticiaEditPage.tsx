@@ -20,6 +20,7 @@ import { haceCuanto, piezasDeNoticia, tieneTexto } from './redaccion/completitud
 import { useTemaCms } from '../../app/useTemaCms'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
 import { crearNoticia, noticiaDelCms, actualizarNoticia, type NoticiaDeLaApi, type DatosDeNoticia } from '../../lib/api/noticias'
+import { site } from '../../config/site'
 
 /** Lo que cabe en las tres líneas de la tarjeta de la portada; pasarse no impide guardar. */
 const EXTRACTO_RECOMENDADO = 180
@@ -107,7 +108,7 @@ export default function NoticiaEditPage() {
 
   return (
     <>
-      <Helmet><title>{`${nueva ? 'Nueva noticia' : 'Editar noticia'} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`${nueva ? 'Nueva noticia' : 'Editar noticia'} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <Box sx={{ maxWidth: ANCHO_EDICION, mx: 'auto' }}>
         <Button component={Link} to={volverAlListado} startIcon={<ArrowBackIcon />} size="small" color="inherit" sx={{ mb: 1.5, color: 'text.secondary' }}>Noticias</Button>
 

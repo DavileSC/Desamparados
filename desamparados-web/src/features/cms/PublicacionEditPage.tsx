@@ -17,6 +17,7 @@ import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDePublicacion } from './redaccion/completitud'
 import { AYUDA_PDF, AYUDA_PORTADA, ETIQUETA_PORTADA, TIPOS_PUBLICACION } from './portadaPublicacion'
 import { crearPublicacion, publicacionDelCms, actualizarPublicacion, type PublicacionDeLaApi, type DatosDePublicacion } from '../../lib/api/publicaciones'
+import { site } from '../../config/site'
 
 type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
 
@@ -95,7 +96,7 @@ export default function PublicacionEditPage() {
 
   return (
     <>
-      <Helmet><title>{`${nueva ? 'Nueva publicación' : 'Editar publicación'} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`${nueva ? 'Nueva publicación' : 'Editar publicación'} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <Box sx={{ maxWidth: ANCHO_EDICION, mx: 'auto' }}>
         <Button component={Link} to={volverAlListado} startIcon={<ArrowBackIcon />} size="small" color="inherit" sx={{ mb: 1.5, color: 'text.secondary' }}>Publicaciones</Button>
 

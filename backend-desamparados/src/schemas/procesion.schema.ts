@@ -289,3 +289,24 @@ export const avisoRedsysSchema = type({
         Ds_Signature: "0 < string <= 200",
     }
 });
+
+// El cortejo: los tramos (del primero al del trono) con sus plazas, y los
+// puestos que se reparten en ellos. Que no se repitan y que no falte nada lo
+// comprueba `problemaConfiguracion`, con mensajes en castellano.
+const nombreTramo = type("string <= 60").matching(/^[^<>]+$/).describe("un nombre de tramo de 60 caracteres como mucho, sin «<» ni «>»");
+
+export const cortejoQuerySchema = type({
+    query: { "salida?": salida, "year?": type(/^\d{4}$/).describe("un año de cuatro cifras") }
+});
+
+export const cortejoConfiguracionSchema = type({
+    body: {
+        salida,
+        tramos: type({ nombre: nombreTramo, plazas: type("1 <= number.integer <= 500").describe("entre 1 y 500 plazas") }).array().atMostLength(30),
+        puestos: puesto.array().atMostLength(20),
+    }
+});
+
+export const cortejoAplicarSchema = type({
+    body: { salida, year: type("2000 <= number.integer <= 2100").describe("un año entre 2000 y 2100") }
+});

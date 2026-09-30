@@ -8,6 +8,7 @@ import { subirImagenPublica } from '../../lib/api/subida'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
 import { FOTO_POR_DEFECTO } from './inicio/Retablo'
 import { ORO_CLARO } from './inicio/estiloRetablo'
+import { site } from '../../config/site'
 
 const TIPOS = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 5 * 1024 * 1024
@@ -98,7 +99,7 @@ export default function AjustesInicioPage() {
 
   return (
     <>
-      <Helmet><title>Ajustes del Inicio | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Ajustes del Inicio | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Ajustes del Inicio" subtitulo="La foto del retablo que ve toda la junta al entrar al CMS." />
       <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, display: 'grid', gap: 4, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 420px) minmax(0, 1fr)' } }}>
         <Stack spacing={1.5} sx={{ minWidth: 0 }}>

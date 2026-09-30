@@ -37,3 +37,6 @@ backups/
 *.age
 # ...salvo las migraciones de Prisma, que sí se versionan.
 !prisma/migrations/**/*.sql
+
+# Lo que deja tsc al comprobar los tipos (npm run comprobar-tipos).
+*.tsbuildinfo

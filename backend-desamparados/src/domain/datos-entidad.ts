@@ -21,17 +21,22 @@ export interface DatosSecretaria {
 }
 
 /**
- * Cómo se llama la corporación: «Grupo Parroquial» + «Nuestra Señora de los
- * Desamparados», y su ciudad. Lo que se escriba nuevo lo lee de aquí, no a
- * mano: instalarlo para otra corporación es cambiar este fichero.
+ * Quién es la corporación: nombre, tipo, advocación, localidad y dominio. Lo que
+ * cambia de una instalación a otra vive en `shared/datos-entidad.json`, no en
+ * el código, para poder montar la web para otra corporación sin tocarlo.
  */
-export interface NombreEntidad {
+export interface Identidad {
+  nombre: string;
+  nombreCorto: string;
+  /** «Grupo Parroquial», «Hermandad»…: la papeleta lo pone encima de la advocación. */
   tipo: string;
   titular: string;
-  ciudad: string;
+  localidad: string;
+  dominio: string;
+  descripcion: string;
 }
 
-export const entidad: NombreEntidad = datos.nombre;
+export const identidad: Identidad = datos.identidad;
 
 export const secretaria: DatosSecretaria = datos.secretaria;
 

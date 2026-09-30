@@ -66,8 +66,8 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 |---|---|---|---|
 | ✅ | — | **Pasarela de pago (Redsys: tarjeta y Bizum)** | Hecha: pago desde Procesión, aviso firmado del banco, incidencias en Tesorería; probado de punta a punta con el entorno de pruebas de Redsys el 30-09-2026 (pago con tarjeta y aviso del banco por un túnel). Bizum llega a la pantalla de Bizum, pero el terminal público de pruebas no deja autenticarse: se probará con el terminal de pruebas del banco. Migración `pagos_en_linea`. **Para cobrar de verdad faltan las claves del banco** (ver `despliegue.md`, «El pago en línea») |
 | ✅ | A | Donativos en línea desde la web pública | Hecho: bloque «Donativo» del constructor (importes y destinos editables), pago con tarjeta o Bizum sin cuenta, apunte en la contabilidad y gracias por correo. Migración `donativos_en_linea`. Falta colocarlo en una página desde el CMS (Caridad, por ejemplo) |
-| 🟡 | B | Remesas SEPA (XML de adeudos) | Hay IBAN y titular en la ficha y el estado «remesado» en los recibos. Falta generar el fichero para el banco |
-| ⬜ | B | Devoluciones con la Norma 43 | Subir el extracto del banco y casar cobros y devoluciones solos |
+| ✅ | — | **Remesas SEPA (XML de adeudos)** | Hecha: Tesorería → Remesas junta los pendientes de quienes domicilian (con los que se quedan fuera y por qué), genera el `pain.008.001.02` (validado contra el XSD oficial), lo guarda para volver a descargarlo y da la remesa por cobrada con sus asientos. El mandato lleva la fecha en que el hermano dio la cuenta. Migración `remesas_sepa`. **Para usarlo faltan el identificador de acreedor y la cuenta del Grupo** (ver `despliegue.md`, «Las remesas SEPA») |
+| ✅ | — | **Devoluciones con la Norma 43** | Hecha: Tesorería → Remesas → «Extracto del banco». Lee el fichero Norma 43 (comprueba totales y saldos), reconoce las devoluciones por el `REC-…` o el mandato que el banco repite y el abono de cada remesa por su identificador o su total; enseña lo que hará y lo dudoso antes de aplicarlo. Subir dos veces el mismo extracto no hace nada |
 
 ## Fase 2 · Procesión
 
@@ -75,7 +75,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 |---|---|---|---|
 | ✅ | A | Papeleta de sitio en PDF con código QR | Hecha: A4 que se imprime en la mesa al dar la ropa (y se reimprime desde el listado), adjunta al correo, y tarjeta con el QR en Procesión del área de hermanos |
 | ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos. **La papeleta con QR ya está**: el código, en `papeleta-qr.ts` (ver abajo) |
-| 🟡 | B | Cortejo por antigüedad, automático | Hay solicitud de puesto, tramo y número en la papeleta; falta el reparto automático |
+| ✅ | — | **Cortejo por antigüedad, automático** | Hecha: Procesión → «Cortejo». Los tramos de cada salida (nombre y plazas) y los puestos que se reparten van en la configuración; «Repartir por antigüedad» pone a los más nuevos delante y a los más antiguos junto al trono, en proporción a las plazas, y escribe tramo y lugar en cada papeleta. Enseña antes cuántas cambian y la lista de cada tramo |
 | ✅ | A | Túnica propuesta según la medida | Hecha: sin túnica en casa ni libre la de antes, se propone la libre de talla más cercana a su altura al hombro (+5/−3 cm), en la ficha de la mesa y en la hoja del ropero sin repetir |
 
 **El código del QR de la papeleta** (contrato entre A y B), en
@@ -93,7 +93,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| 🟡 | B | Boletín y avisos masivos, segmentados | Hay la casilla de suscripción y la plantilla de correo; falta el editor y el envío |
+| ✅ | — | **Boletín y avisos masivos, segmentados** | Hecha: Web → «Boletín y avisos». El boletín va solo a los suscritos y lleva su enlace de baja firmado; el aviso, a los activos del segmento (papeleta de una salida, cuotas pendientes, edad, población). Recuento de direcciones antes de enviar, prueba a uno mismo, un correo por dirección y envío poco a poco en segundo plano, que se reanuda si el servidor se reinicia y deja reintentar los fallidos. Migración `comunicados` |
 | ✅ | A | Cartas y circulares en PDF con los datos de cada hermano | Hecho: sección «Cartas» (Secretaría) con campos ({{nombre}}, {{tratamiento}}…), destinatarios de una búsqueda o lista guardada del censo (nunca difuntos), vista previa y PDF de todas, con la dirección en la ventana del sobre. Migración `cartas` |
 | ⬜ | A | Etiquetas postales | Para los hermanos sin correo |
 
@@ -101,8 +101,8 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| ⬜ | B | Importar y exportar el censo (Excel / CSV) | Imprescindible para instalarlo a otra corporación |
-| ⬜ | B | Cabildos y actas | Convocatoria, quórum, votaciones y libro de actas |
+| ✅ | — | **Importar y exportar el censo (Excel / CSV)** | Hecha: Hermanos → «Exportar» (Excel o CSV, activos o con bajas, sin datos bancarios, con rastro en la auditoría) e «Importar» (reconoce los títulos habituales, enseña antes qué filas entran y por qué no las otras, no duplica a quien ya está, da cuenta propia a quien trae DNI y correo y número por antigüedad a los activos que no lo traen). Dependencia nueva: `exceljs` |
+| ✅ | — | **Cabildos y actas** | Hecha: Junta → «Cabildos». Convocar (con la convocatoria como borrador de aviso a los mayores de edad), apuntar la asistencia con el quórum a la vista (voto: activos, mayores de edad y con un año de antigüedad; reglas en `Configuracion`), votaciones por mayoría simple o de dos tercios, celebrarlo en primera o segunda convocatoria (fija el censo con voto), redactar y aprobar el acta, que queda cerrada. Acta y libro de actas del año en PDF. Migración `cabildos` |
 | ✅ | A | Difuntos y sufragios | Hecho: pestaña «Difuntos» del censo con próximos aniversarios y registro; fecha del óbito al dar la baja; sufragios (misas, oraciones) que pueden ir a la Agenda y avisar a la familia; pésame por correo, nunca a la cuenta del difunto. Migración `difuntos_y_sufragios` |
 | ✅ | A | Ficha: medalla, tratamiento y listas guardadas | Hecha: fecha de la medalla y tratamiento (que usa la papeleta); en el censo, «Más filtros» (correo, cuenta, edad, medalla, boletín) y listas guardadas con nombre, compartidas por la junta. Migración `ficha_medalla_y_listas` |
 
@@ -110,7 +110,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| 🟡 | B | Contabilidad por partida doble (plan de entidades sin fines lucrativos) | Hoy es partida simple por categorías, enlazada a los recibos |
+| ✅ | — | **Contabilidad por partida doble (plan de entidades sin fines lucrativos)** | Hecha: Contabilidad → «Partida doble». Cada categoría tiene su cuenta del plan (propuesta por el nombre, se cambia en «Plan de cuentas»); los asientos salen de los apuntes del libro de caja (570 Caja si es en efectivo, 572 Bancos si no), así que lo que apunten la lotería o la caja de la tienda entra solo. Cuenta de resultados, sumas y saldos, libro diario y Excel del ejercicio. Migración `cuenta_de_categoria` |
 | ⬜ | B | Modelo 182 y certificados de donación | **Antes, confirmar** que el Grupo tiene NIF propio y no depende del del Obispado |
 | ⬜ | A | Lotería y talonarios | |
 | 🟡 | A | Caja de tienda (TPV) | La mesa de procesión ya cobra por zonas |
@@ -120,14 +120,14 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | 🟡 | A | Ficha completa de patrimonio | Hay enseres con estado, foto y ubicación; faltan varias fotos, descripción y tasación |
-| ⬜ | B | Tienda en línea | La pasarela ya está |
-| ⬜ | B | Apadrinamiento sobre una foto (velas, piezas) | La pasarela ya está |
+| ✅ | — | **Tienda en línea** | Hecha: /tienda en la web pública (cesta, compra sin cuenta, pago con la pasarela de Redsys, recogida en Secretaría) y Cuentas → «Tienda» en el CMS (productos con foto, precio y existencias; pedidos por entregar). El aviso del banco descuenta existencias, apunta el ingreso («Ventas de la tienda» → 700) y manda el correo; si ya no queda, incidencia para devolver. La pasarela admite ya pagos sin cuenta (`PagoEnLinea.origen`). Migración `tienda` |
+| ✅ | — | **Apadrinamiento sobre una foto (velas, piezas)** | Hecho: /apadrina en la web (bajo «Sagrada titular»), con cada campaña en su foto y las piezas encima; se elige una libre, se dan los datos (dedicatoria y si sale el nombre) y se paga sin cuenta. En el CMS, Censo y procesión → «Apadrinamientos»: se pulsa en la foto para poner una pieza y se ve quién apadrinó cada una. El aviso del banco la marca apadrinada, apunta el ingreso («Apadrinamientos» → 740) y manda el correo; si otro se adelantó, incidencia para devolver. Migración `apadrinamientos` |
 
 ## Fase 7 · Extras
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| 🟡 | B | Posición del cortejo en directo | Hay recorrido en el mapa, simulado |
+| ✅ | — | **Posición del cortejo en directo** | Hecha: Censo y procesión → «Cortejo en directo», pensada para el móvil de quien va en la calle. «Empezar» manda la posición del GPS (cada 15 s como poco, y la repite cada minuto si se está parado) y mantiene la pantalla encendida; si el GPS falla, se marca a mano la parada. El mapa del recorrido pregunta cada 20 s: con posición de menos de 10 minutos y a menos de 150 m de la línea, pone el trono allí con «En directo» y retira el play; si no, sigue la reproducción. La web no dice quién la manda. Migración `cortejo_en_directo` |
 | ⏸ | — | Notificaciones push | Exige hacer la web instalable; el correo cubre lo mismo |
 | ⏸ | — | Firma en pantalla | Poco valor legal; basta un consentimiento registrado con fecha |
 | ⏸ | — | Asistente con IA | Vistoso, pero lo último que decide una compra |
@@ -136,8 +136,8 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| ⬜ | B | Lo propio del Grupo, a configuración | Hoy el nombre está en el código y las salidas son un enum (`PASION`, `ROSARIO`) |
-| ⬜ | B | Guion de instalación y de actualización de varias copias | |
+| 🟡 | B | Lo propio del Grupo, a configuración | Hecha la identidad: nombre, nombre corto, advocación, localidad, dominio y descripción viven en `shared/datos-entidad.json` (bloque `identidad`), y de ahí los leen la API (correos, PDF, actas, iCal), la web (`site.ts`, títulos, rótulos, dirección canónica) y, al generarse, `index.html`, el manifest, `robots.txt`, el sitemap y nginx. **Falta decidir**: las salidas siguen siendo un enum (`PASION`, `ROSARIO`) con sus nombres en unas 15 pantallas y correos, y «el Grupo Parroquial» sigue en decenas de frases con su género (para una Hermandad serían «la»/«de la»). |
+| 🟡 | B | Guion de instalación y de actualización de varias copias | Escritos: `docker/instalar.sh` (servidor limpio: usuario, `.env` con secretos, certificado, arranque, siembra), `docker/actualizar.sh` (copia antes, avance rápido, migraciones, comprobación) y `docker/actualizar-copias.sh` (todas por ssh, parando en la primera que falle). Guía en docs/despliegue.md, «Una instalación por corporación». **Falta probarlos en un servidor Linux de verdad** |
 | ⬜ | A | Contrato de encargado del tratamiento | Cada cliente es responsable de los datos de sus hermanos |
 | ⬜ | A | Licencias y fotos de ejemplo | Fuentes, mapas de OpenStreetMap y fotos de Commons |
 

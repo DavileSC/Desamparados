@@ -14,11 +14,27 @@
  * El NIF no está aquí a propósito: el Grupo Parroquial no quiere publicarlo
  * (28-09-2026), y todo lo de este fichero acaba en el código de la web.
  */
+import ENTIDAD from '../../../shared/datos-entidad.json'
+
 export type DatoPendiente = null
+
+/**
+ * Quién es la corporación y cómo se la contacta: vive en
+ * `shared/datos-entidad.json`, que lee también la API (correos, PDF). Montar la
+ * web para otra corporación empieza por ese fichero, no por el código.
+ */
+const { identidad, secretaria } = ENTIDAD
 
 export const site = {
   /** Nombre comercial con el que se identifica la web. */
-  nombre: 'Grupo Parroquial de Nuestra Señora de los Desamparados',
+  nombre: identidad.nombre,
+  /** El de las pestañas del navegador y el rótulo de la barra. */
+  nombreCorto: identidad.nombreCorto,
+  /** La advocación: pies de foto y textos alternativos. */
+  titular: identidad.titular,
+  /** La dirección de la web pública, sin barra al final. */
+  url: `https://${identidad.dominio}`,
+  descripcion: identidad.descripcion,
 
   entidad: {
     /** Denominación jurídica exacta inscrita. */
@@ -26,15 +42,16 @@ export const site = {
     /** Domicilio social completo (vía, número, CP y municipio). */
     domicilio: 'Calle Corregidor Paz Guzmán, 13, 29006 Málaga' as string | DatoPendiente,
     /** Localidad conocida, usable mientras no haya domicilio completo. */
-    localidad: 'Málaga',
+    localidad: identidad.localidad,
   },
 
+  // Los de Secretaría, los mismos que firman los correos de la API.
   contacto: {
-    email: 'goretti.desamparados@gmail.com',
+    email: secretaria.email ?? '',
     /** Teléfono oficial, el mismo que el de Secretaría. */
-    telefono: '644 90 01 67' as string | DatoPendiente,
+    telefono: secretaria.telefono as string | DatoPendiente,
     /** El de Secretaría: los textos del alta lo citan entre paréntesis, en minúscula. */
-    horario: 'Primer viernes de cada mes, de 19:30 a 21:00',
+    horario: secretaria.horario ?? '',
   },
 
   /**

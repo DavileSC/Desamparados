@@ -10,6 +10,7 @@ import {
 } from '../../../lib/api/datos'
 import { FILETE, FONDO_PIEZA, ORO, ROSA_URGENTE, SERIF, VERSALITAS } from '../inicio/estiloRetablo'
 import { useAltoDisponible } from '../inicio/useAltoDisponible'
+import { site } from '../../../config/site'
 
 /**
  * El año que se abre sin elegir: de enero a marzo, el anterior (es cuando se
@@ -185,7 +186,7 @@ export default function InformeAnualPage() {
       ref={referencia}
       sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, height: { md: alto ? `${Math.max(alto - 32, 460)}px` : 'auto' }, '& > *': { flexShrink: 0 } }}
     >
-      <Helmet><title>{`Informe anual ${anio} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Informe anual ${anio} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>

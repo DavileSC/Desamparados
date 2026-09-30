@@ -1,0 +1,203 @@
+/**
+ * Apadrinar sobre una foto: cada campaña es una foto (el trono, el manto, la
+ * candelería) con sus piezas marcadas encima, y cada pieza la costea quien
+ * quiera, sin cuenta y pagando por la pasarela de siempre, como la tienda.
+ *
+ * Una pieza se apadrina una vez. Queda apadrinada con el aviso firmado del
+ * banco (o en el acto, con el pago simulado); si mientras tanto la apadrinó
+ * otro, el pago queda como incidencia para devolverlo. El nombre de quien
+ * apadrina solo sale en la foto si lo pidió.
+ */
+import crypto from 'node:crypto';
+import { EstadoPedido, MetodoPago, OrigenPago, Prisma, TipoTransaccion } from '@prisma/client';
+import db from '../config/db';
+import { HttpError, NotFoundError } from '../utils/error.handle';
+import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
+import { PagoEnLineaService, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
+import { idCategoriaDeRecibos } from './recibos/comunes.js';
+import { enviarCorreo } from './correos/envio.js';
+import { datos, esc, firma, maquetar, parrafo, urlDeLaWeb } from './correos/plantilla.js';
+import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
+import { aCentimos } from '../domain/sepa.js';
+
+export const CATEGORIA_APADRINAMIENTOS = 'Apadrinamientos';
+const PAGADOS = [EstadoPedido.PAGADO, EstadoPedido.ENTREGADO];
+
+export interface DatosCampana { titulo: string; descripcion: string; foto: string; activa: boolean }
+export interface DatosPieza { nombre: string; precio: number; x: number; y: number }
+export interface DatosApadrinar { piezaId: number; nombre: string; email: string; telefono: string; dedicatoria: string | null; mostrarNombre: boolean; metodo: MetodoEnLinea }
+
+const euros = (centimos: number) => `${(centimos / 100).toFixed(2).replace('.', ',')} €`;
+
+/** La campaña con sus piezas y, de cada una, si está apadrinada y por quién (si lo quiso decir). */
+async function campanaCompleta(id: number, conDatosPrivados: boolean) {
+  const c = await db.campanaApadrinamiento.findUnique({
+    where: { id },
+    include: { piezas: { orderBy: { id: 'asc' }, include: { apadrinamientos: { where: { estado: { in: PAGADOS } }, orderBy: { id: 'asc' }, take: 1 } } } },
+  });
+  if (!c) throw new NotFoundError('Campaña no encontrada.');
+  return {
+    id: c.id, titulo: c.titulo, descripcion: c.descripcion, foto: c.foto, activa: c.activa,
+    piezas: c.piezas.map((p) => {
+      const a = p.apadrinamientos[0];
+      return {
+        id: p.id, nombre: p.nombre, precio: Number(p.precio), x: Number(p.x), y: Number(p.y),
+        apadrinada: Boolean(a),
+        padrino: a && (a.mostrarNombre || conDatosPrivados) ? a.nombre : null,
+        dedicatoria: a && (a.mostrarNombre || conDatosPrivados) ? a.dedicatoria : null,
+        ...(conDatosPrivados && a ? { contacto: { email: a.email, telefono: a.telefono, pagadoEl: a.pagadoEl, mostrarNombre: a.mostrarNombre } } : {}),
+      };
+    }),
+  };
+}
+
+function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; dedicatoria: string | null; pieza: { nombre: string; campana: { titulo: string } } }) {
+  return maquetar({
+    titulo: 'Gracias por apadrinar',
+    antetitulo: 'Apadrinamientos del Grupo Parroquial',
+    resumen: `Has apadrinado ${a.pieza.nombre}.`,
+    contenido: [
+      parrafo(`Hola, ${esc(a.nombre)}:`),
+      parrafo(`Hemos recibido tu donativo. Gracias de corazón: ${esc(a.pieza.nombre)} ya es tuya en «${esc(a.pieza.campana.titulo)}».`),
+      datos([
+        ['Pieza', esc(a.pieza.nombre)],
+        ['Donativo', esc(euros(aCentimos(a.importe)))],
+        ...(a.dedicatoria ? [['Dedicatoria', esc(a.dedicatoria)] as [string, string]] : []),
+      ]),
+      parrafo('Si necesitas el certificado del donativo para la declaración de la renta, pídelo en Secretaría respondiendo a este correo.'),
+      firma(null, 'La Junta de Gobierno'),
+    ].join(''),
+  });
+}
+
+async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) {
+  const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_APADRINAMIENTOS);
+  const hecho = await db.$transaction(async (tx) => {
+    const a = await tx.apadrinamiento.findUnique({ where: { id: apadrinamientoId }, include: { pieza: { include: { campana: true } } } });
+    if (!a) throw new HttpError('El apadrinamiento ya no existe.');
+    if (a.estado !== EstadoPedido.PENDIENTE_PAGO) throw new HttpError('El apadrinamiento ya no estaba pendiente de pago.');
+    const otro = await tx.apadrinamiento.findFirst({ where: { piezaId: a.piezaId, estado: { in: PAGADOS } }, select: { id: true } });
+    if (otro) throw new HttpError(`«${a.pieza.nombre}» la apadrinó otra persona mientras se pagaba.`);
+    const pagado = await tx.apadrinamiento.update({
+      where: { id: apadrinamientoId },
+      data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date() },
+      include: { pieza: { include: { campana: true } } },
+    });
+    await tx.transaccion.create({
+      data: {
+        tipo: TipoTransaccion.INGRESO, categoriaId, concepto: `Apadrinamiento: ${a.pieza.nombre} (${a.pieza.campana.titulo})`.slice(0, 190),
+        importe: a.importe, fecha: new Date(), metodoPago: metodo as MetodoPago,
+      },
+    });
+    return pagado;
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  await AuditoriaService.log(ACCIONES_AUDITORIA.APADRINAMIENTO_PAGADO, meta, 'apadrinamiento', apadrinamientoId, { despues: { piezaId: hecho.piezaId, importe: hecho.importe.toString() } });
+  void enviarCorreo(hecho.email, 'Gracias por apadrinar', correoDeApadrinamiento(hecho));
+}
+
+registrarOrigenDePago(OrigenPago.APADRINAMIENTO, aplicarPago, async (id) => (await db.apadrinamiento.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);
+
+export class ApadrinamientosService {
+  /** Las campañas activas, para la web pública, con cuántas piezas quedan libres. */
+  static async campanasPublicas() {
+    const lista = await db.campanaApadrinamiento.findMany({ where: { activa: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true } });
+    const campanas = await Promise.all(lista.map(({ id }) => campanaCompleta(id, false)));
+    return {
+      pagoDisponible: modoDePago() !== null,
+      metodos: modoDePago() === 'redsys' ? pagoParaLaWeb()?.metodos ?? ['TARJETA'] : ['TARJETA'],
+      campanas: campanas.map((c) => ({ ...c, libres: c.piezas.filter((p) => !p.apadrinada).length })),
+    };
+  }
+
+  static async campanaPublica(id: number) {
+    const c = await campanaCompleta(id, false);
+    if (!c.activa) throw new NotFoundError('Campaña no encontrada.');
+    return c;
+  }
+
+  /** Apadrinar una pieza libre: se apunta y se va al banco (o se paga en el acto, simulado). */
+  static async apadrinar(d: DatosApadrinar, meta: MetaDeAuditoria) {
+    const modo = modoDePago();
+    if (!modo) throw new HttpError('Todavía no se puede apadrinar en línea. Pregunta en Secretaría.', 409);
+    const pieza = await db.piezaApadrinable.findUnique({
+      where: { id: d.piezaId },
+      include: { campana: true, apadrinamientos: { where: { estado: { in: PAGADOS } }, select: { id: true }, take: 1 } },
+    });
+    if (!pieza || !pieza.campana.activa) throw new NotFoundError('Esa pieza ya no se puede apadrinar.');
+    if (pieza.apadrinamientos.length > 0) throw new HttpError(`«${pieza.nombre}» ya está apadrinada. Elige otra.`, 409);
+
+    const a = await db.apadrinamiento.create({
+      data: {
+        token: crypto.randomBytes(16).toString('hex'), piezaId: pieza.id,
+        nombre: d.nombre.trim(), email: d.email.trim().toLowerCase(), telefono: d.telefono.trim(),
+        dedicatoria: d.dedicatoria?.trim() || null, mostrarNombre: d.mostrarNombre, importe: pieza.precio,
+      },
+    });
+    if (modo === 'simulado') {
+      await aplicarPago(a.id, d.metodo, meta);
+      return { tipo: 'hecho' as const, token: a.token };
+    }
+    const banco = await PagoEnLineaService.iniciarSinCuenta({
+      origen: OrigenPago.APADRINAMIENTO, referenciaId: a.id, centimos: aCentimos(pieza.precio), metodo: d.metodo,
+      descripcion: `Apadrinamiento: ${pieza.nombre}`.slice(0, 120),
+      urlVuelta: urlDeLaWeb(`/apadrina/gracias/${a.token}`),
+      urlFallo: urlDeLaWeb(`/apadrina/gracias/${a.token}?resultado=no`),
+    });
+    return { ...banco, token: a.token };
+  }
+
+  /** Cómo va un apadrinamiento, para quien lo hizo (con su enlace). */
+  static async apadrinamientoPublico(token: string) {
+    const a = await db.apadrinamiento.findUnique({ where: { token }, include: { pieza: { include: { campana: true } } } });
+    if (!a) throw new NotFoundError('No se encuentra ese apadrinamiento.');
+    return { estado: a.estado, nombre: a.nombre, pieza: a.pieza.nombre, campana: a.pieza.campana.titulo, campanaId: a.pieza.campanaId, importe: Number(a.importe) };
+  }
+
+  // --- La gestión, desde el CMS ---
+
+  static async campanas() {
+    const lista = await db.campanaApadrinamiento.findMany({ orderBy: [{ activa: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }], select: { id: true } });
+    const campanas = await Promise.all(lista.map(({ id }) => campanaCompleta(id, true)));
+    return campanas.map((c) => ({
+      id: c.id, titulo: c.titulo, foto: c.foto, activa: c.activa, piezas: c.piezas.length,
+      apadrinadas: c.piezas.filter((p) => p.apadrinada).length,
+      recaudado: c.piezas.filter((p) => p.apadrinada).reduce((s, p) => s + p.precio, 0),
+    }));
+  }
+
+  static campana(id: number) {
+    return campanaCompleta(id, true);
+  }
+
+  static async crearCampana(d: DatosCampana) {
+    const c = await db.campanaApadrinamiento.create({ data: { ...d, titulo: d.titulo.trim(), descripcion: d.descripcion.trim() } });
+    return campanaCompleta(c.id, true);
+  }
+
+  static async actualizarCampana(id: number, d: DatosCampana) {
+    await db.campanaApadrinamiento.update({ where: { id }, data: { ...d, titulo: d.titulo.trim(), descripcion: d.descripcion.trim() } }).catch(() => { throw new NotFoundError('Campaña no encontrada.'); });
+    return campanaCompleta(id, true);
+  }
+
+  static async ponerPieza(campanaId: number, d: DatosPieza) {
+    await db.piezaApadrinable.create({ data: { campanaId, nombre: d.nombre.trim(), precio: new Prisma.Decimal(d.precio), x: new Prisma.Decimal(d.x), y: new Prisma.Decimal(d.y) } });
+    return campanaCompleta(campanaId, true);
+  }
+
+  static async cambiarPieza(campanaId: number, piezaId: number, d: DatosPieza) {
+    const pagada = await db.apadrinamiento.count({ where: { piezaId, estado: { in: PAGADOS } } });
+    const pieza = await db.piezaApadrinable.findFirst({ where: { id: piezaId, campanaId } });
+    if (!pieza) throw new NotFoundError('Pieza no encontrada.');
+    // Apadrinada, se puede mover o renombrar, pero no cambiar lo que se pagó.
+    if (pagada > 0 && Number(pieza.precio) !== d.precio) throw new HttpError('Esa pieza ya está apadrinada: su precio no se cambia.', 409);
+    await db.piezaApadrinable.update({ where: { id: piezaId }, data: { nombre: d.nombre.trim(), precio: new Prisma.Decimal(d.precio), x: new Prisma.Decimal(d.x), y: new Prisma.Decimal(d.y) } });
+    return campanaCompleta(campanaId, true);
+  }
+
+  static async quitarPieza(campanaId: number, piezaId: number) {
+    const pagada = await db.apadrinamiento.count({ where: { piezaId, estado: { in: PAGADOS } } });
+    if (pagada > 0) throw new HttpError('Esa pieza ya está apadrinada: no se quita.', 409);
+    await db.piezaApadrinable.deleteMany({ where: { id: piezaId, campanaId } });
+    return campanaCompleta(campanaId, true);
+  }
+}

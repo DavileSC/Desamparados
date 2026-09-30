@@ -19,6 +19,7 @@ import { HttpError } from '../../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
 import { leerPrecio } from '../../domain/datos-procesion.js';
 import { CLAVE_CUOTA_SALIDA, CUOTA_SALIDA_POR_DEFECTO, DATOS_SALIDA } from '../../domain/salidas.js';
+import { identidad } from '../../domain/datos-entidad.js';
 
 /** La clave del plazo de la Pasión, la de siempre. */
 export const CLAVE_PLAZO = DATOS_SALIDA.PASION.clavePlazo;
@@ -195,7 +196,7 @@ function contenidoNoticia(dias: { fecha: Date; horaInicio: Date; horaFin: Date }
   const lista = dias.map((d) => `<li>${describirTurno(d)}</li>`).join('');
   if (salida === 'ROSARIO') {
     return [
-      `<p>Ya está abierta la inscripción para el Rosario vespertino de ${year}, en el que acompañamos a Nuestra Señora de los Desamparados por las calles rezando el Santo Rosario.</p>`,
+      `<p>Ya está abierta la inscripción para el Rosario vespertino de ${year}, en el que acompañamos a ${identidad.titular} por las calles rezando el Santo Rosario.</p>`,
       '<p>Cada hermano puede apuntarse desde el área de hermanos, para sí y para quienes tiene a su cargo, pedir el puesto en que le gustaría ir y elegir el día en que pasará a recoger su papeleta:</p>',
       `<ul>${lista}</ul>`,
       '<p>Se va en traje. Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano.</p>',

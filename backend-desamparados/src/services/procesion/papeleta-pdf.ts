@@ -12,7 +12,7 @@ import type { Salida, Sexo } from '@prisma/client';
 import db from '../../config/db.js';
 import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
 import { DATOS_SALIDA } from '../../domain/salidas.js';
-import { entidad } from '../../domain/datos-entidad.js';
+import { identidad } from '../../domain/datos-entidad.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
 import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, MARFIL, NEGRO, ORO,
@@ -161,9 +161,9 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
     // Cabecera: escudo, nombre del Grupo y la referencia.
     doc.image(IMAGENES.escudoOro, MARGEN, 33, { fit: [61.5, 75], align: 'center', valign: 'center' });
     const xTexto = MARGEN + 82.5;
-    rotulo(doc, versalitas(entidad.tipo), xTexto, 45, { letra: LETRA.textoFuerte, tam: 8.25, color: ORO_TEXTO, espaciado: 2.6 });
-    ajustado(doc, entidad.titular, xTexto, 58, { letra: LETRA.titulo, tam: 19, minimo: 14, ancho: 290, color: NEGRO });
-    rotulo(doc, entidad.ciudad, xTexto, 84, { tam: 9.75, color: GRIS });
+    rotulo(doc, versalitas(identidad.tipo), xTexto, 45, { letra: LETRA.textoFuerte, tam: 8.25, color: ORO_TEXTO, espaciado: 2.6 });
+    ajustado(doc, identidad.titular, xTexto, 58, { letra: LETRA.titulo, tam: 19, minimo: 14, ancho: 290, color: NEGRO });
+    rotulo(doc, identidad.localidad, xTexto, 84, { tam: 9.75, color: GRIS });
     etiqueta(doc, 'Referencia', MARGEN, 50, ANCHO, 'right');
     rotulo(doc, d.referencia, MARGEN, 62, { letra: LETRA.titulo, tam: 16.5, color: NEGRO, ancho: ANCHO, alinear: 'right' });
 
@@ -239,7 +239,7 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
       MARGEN, yPie - 4, { width: 320, lineGap: 2 },
     );
     rotulo(doc, `Expedida el ${fecha.format(d.expedida)}`, MARGEN, yPie - 2, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
-    rotulo(doc, `Secretaría del ${entidad.tipo}`, MARGEN, yPie + 11, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
+    rotulo(doc, `Secretaría del ${identidad.tipo}`, MARGEN, yPie + 11, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
     doc.rect(0, A4.alto - 4.5, A4.ancho, 4.5).fill(NEGRO);
   });
 }

@@ -4,6 +4,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import ReplayIcon from '@mui/icons-material/Replay'
 import { useReducedMotion } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
 import * as maplibregl from 'maplibre-gl'
 import type { GeoJSONSource, Map as Mapa, Marker } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -13,11 +14,15 @@ import { ATRIBUCION, cargarBarrio, centroDe, edificioDelTemplo, mapaVivo } from 
 import { estiloDelMapa } from '../mapa/estilo'
 import { useModoEdicion } from './modoEdicion'
 import { anchoMaximo } from './presentacion'
-import { acumulados, metros, paradaAlcanzada, posicionesEnRuta, tramoHasta } from './recorrido'
+import { DISTANCIA_MAXIMA_M, acumulados, metros, paradaAlcanzada, posicionesEnRuta, sobreElRecorrido, tramoHasta } from './recorrido'
+import { cortejoEnDirecto } from '../../lib/api/cortejoDirecto'
 import type { BloqueItinerario, Coordenada, RecorridoEnMapa as Recorrido } from '../../lib/api/contenido'
 
 /** Lo que tarda el play en andar el recorrido entero: despacio, para verlo. */
 const DURACION_PLAY_MS = 60_000
+/** Cada cuánto se pregunta dónde va el cortejo cuando está en la calle. */
+const SONDEO_MS = 20_000
+const horaCorta = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 /** La cámara que sigue al trono: cerca e inclinada, con los edificios en relieve. */
 const CAMARA_CERCA = { zoom: 16.6, pitch: 52, bearing: -12 }
 const GRANATE_CLARO = '#fc858a'
@@ -70,6 +75,18 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const [alcanzada, setAlcanzada] = useState(enConstructor ? paradas.length - 1 : -1)
   const [listo, setListo] = useState(false)
   const [error, setError] = useState(false)
+
+  // El cortejo en la calle: mientras lo esté, el trono va donde diga el móvil
+  // de la Junta y el play se retira. En el constructor no se pregunta.
+  const directo = useQuery({ queryKey: ['cortejo-directo'], queryFn: cortejoEnDirecto, refetchInterval: SONDEO_MS, staleTime: 0, enabled: !enConstructor })
+  const enCalle = useMemo(() => {
+    const d = directo.data
+    if (!d?.enDirecto || d.lng === undefined || d.lat === undefined || !d.actualizadoEl) return null
+    const sobre = sobreElRecorrido(linea, [d.lng, d.lat])
+    return sobre.distancia <= DISTANCIA_MAXIMA_M ? { fraccion: sobre.fraccion, hora: horaCorta(d.actualizadoEl) } : null
+  }, [directo.data, linea])
+  const enCalleRef = useRef(enCalle)
+  useEffect(() => { enCalleRef.current = enCalle }, [enCalle])
 
   const hechos = useMemo(() => acumulados(linea), [linea])
   const posiciones = useMemo(() => posicionesEnRuta(paradas), [paradas])
@@ -235,13 +252,21 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     if (listo) pinta(enConstructor ? 1 : fraccion.current)
   }, [listo, enConstructor, pinta])
 
+  // Cada posición nueva del directo: el trono, la línea hecha y la lista, allí.
+  useEffect(() => {
+    if (!listo || !enCalle) return
+    play.current = null
+    pinta(enCalle.fraccion)
+    sigueLaLista(enCalle.fraccion)
+  }, [listo, enCalle, pinta, sigueLaLista])
+
   // El reloj: el play y la cámara que sigue al trono sin dar saltos.
   useEffect(() => {
     if (!listo) return
     let marco = 0
     const paso = (ahora: number) => {
       const p = play.current
-      if (p) {
+      if (p && !enCalleRef.current) {
         const f = Math.min(1, p.desde + (ahora - p.inicio) / DURACION_PLAY_MS)
         pinta(f)
         sigueLaLista(f)
@@ -307,7 +332,9 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
     <Box sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto' }}>
       <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5, color: '#e3d8bf', fontSize: 14 }}>
         <PlayArrowIcon sx={{ fontSize: 20, color: GOLD }} aria-hidden="true" />
-        Dale al play para ver el recorrido andar por las calles.{sinHoras && ' Las horas, por confirmar.'}
+        {enCalle
+          ? 'El cortejo está en la calle: el punto granate es por donde va ahora, y se actualiza solo.'
+          : <>Dale al play para ver el recorrido andar por las calles.{sinHoras && ' Las horas, por confirmar.'}</>}
       </Typography>
     <Box
       sx={{
@@ -341,7 +368,13 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
             {error ? 'No se pudo cargar el mapa. Las paradas están al lado.' : 'Cargando el mapa…'}
           </Typography>
         )}
-        {listo && (
+        {listo && enCalle && (
+          <Box role="status" sx={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.5, backgroundColor: 'rgba(7, 6, 8, .88)', border: `1px solid ${GRANATE_CLARO}`, color: '#fff', fontSize: 13 }}>
+            <Box component="span" aria-hidden="true" sx={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: GRANATE_CLARO, animation: reducir ? 'none' : 'latido 1.6s ease-in-out infinite', '@keyframes latido': { '50%': { opacity: 0.3 } } }} />
+            En directo · posición de las {enCalle.hora}
+          </Box>
+        )}
+        {listo && !enCalle && (
           <Box sx={{ position: 'absolute', left: 12, bottom: { xs: 30, sm: 12 }, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', maxWidth: 'calc(100% - 24px)' }}>
             <Tooltip title={reproduciendo ? 'Pausa' : 'Ver el recorrido andando solo'}>
               <IconButton size="small" onClick={alternaPlay} aria-label={reproduciendo ? 'Pausar el recorrido' : 'Ver el recorrido andando solo'}

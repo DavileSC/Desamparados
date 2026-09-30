@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ProcesionController } from '../controllers/procesion.controller.js';
 import { MesaController } from '../controllers/mesa.controller.js';
+import { CortejoController } from '../controllers/cortejo.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';
@@ -11,6 +12,9 @@ import { idParam } from '../config/common.js';
 // AHORA IMPORTAMOS TODO DESDE EL SCHEMA
 import {
   avisarAsistenciaSchema,
+  cortejoQuerySchema,
+  cortejoConfiguracionSchema,
+  cortejoAplicarSchema,
   yearParamSchema,
   salidaQuerySchema,
   fechaRosarioSchema,
@@ -95,6 +99,12 @@ procesionRouter.get('/admin/papeletas/:id/pdf', checkRole(rolesMesaReparto), val
 //  ZONA ADMIN (LISTADOS Y MANTENIMIENTO)
 // ==========================================
 procesionRouter.get('/admin/listado/:year', checkRole(rolesJunta), validate(yearParamSchema.and(salidaQuerySchema)), ProcesionController.getListadoProcesion);
+
+// El cortejo por antigüedad: lo ve la Junta; los tramos y el reparto los deciden
+// Secretaría y la administración, como los días de reparto.
+procesionRouter.get('/admin/cortejo', checkRole(rolesJunta), validate(cortejoQuerySchema), CortejoController.estado);
+procesionRouter.put('/admin/cortejo/configuracion', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(cortejoConfiguracionSchema), CortejoController.guardarConfiguracion);
+procesionRouter.post('/admin/cortejo/aplicar', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(cortejoAplicarSchema), CortejoController.aplicar);
 procesionRouter.post('/admin/procesar-ausencias', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(procesarAusenciasSchema), ProcesionController.procesarAusencias);
 
 // ==========================================

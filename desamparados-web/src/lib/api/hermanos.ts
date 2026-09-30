@@ -1,4 +1,4 @@
-import { llamarApi } from './cliente'
+import { llamarApi, traerArchivo } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 import type { Parentesco } from './auth'
 import type { EstadoCivil, Sexo } from './perfil'
@@ -239,6 +239,39 @@ export interface CierreDeHuecos {
 export function cerrarHuecosDeNumero() {
   return llamarApi<CierreDeHuecos>('/hermanos/admin/cerrar-huecos-numero', { method: 'POST' })
 }
+
+// --- El censo en Excel o CSV ---
+
+/** El censo para descargar: solo los activos o también las bajas. Sin datos bancarios. */
+export const exportarCenso = (formato: 'xlsx' | 'csv', bajas: boolean) =>
+  traerArchivo(`/hermanos/admin/censo/exportar?${new URLSearchParams({ formato, bajas: bajas ? 'si' : 'no' }).toString()}`)
+
+/** Lo que entraría de un fichero del censo, y por qué no entran las filas que no. */
+export interface PreviaImportacionCenso {
+  filas: number
+  importables: number
+  /** Con DNI y un correo libre: reciben su propia cuenta. */
+  conCuenta: number
+  deBaja: number
+  /** Activos sin número: lo reciben a continuación del último. */
+  sinNumero: number
+  domiciliadas: number
+  /** Cada título de la primera fila y qué dato es; `null` si no se reconoce. */
+  columnas: { titulo: string; clave: string | null }[]
+  errores: { fila: number; errores: string[] }[]
+}
+
+const conFichero = (fichero: File) => {
+  const formulario = new FormData()
+  formulario.append('fichero', fichero)
+  return formulario
+}
+
+export const previaImportacionCenso = (fichero: File) =>
+  llamarApi<PreviaImportacionCenso>('/hermanos/admin/censo/importar/previa', { method: 'POST', formData: conFichero(fichero) })
+
+export const importarCenso = (fichero: File) =>
+  llamarApi<{ message: string; importadas: number }>('/hermanos/admin/censo/importar', { method: 'POST', formData: conFichero(fichero) })
 
 /** Una búsqueda del censo guardada con nombre: sus filtros, como van en la URL. */
 export interface ListaGuardada { id: number; nombre: string; consulta: string }

@@ -271,6 +271,9 @@ model Hermano {
   /// Nombre del titular de la cuenta, cuando no es el propio hermano.
   titularCuenta     String?
   titularidadCuenta TitularidadCuenta?
+  /// Cuándo autorizó el adeudo (el mandato SEPA): al domiciliar o al cambiar de
+  /// cuenta, porque una cuenta nueva es un mandato nuevo. Va en cada remesa.
+  fechaMandato      DateTime?
 
   // DOCUMENTOS DEL ALTA (en storage/private: solo los ve el CMS). Guardan el
   // nombre del fichero, no la URL, para no atarse al dominio de la API.
@@ -278,13 +281,15 @@ model Hermano {
   certificadoBautismo String?
 
   // HISTORIAL
-  papeletas     PapeletaSitio[]
-  recibos       Recibo[]
-  citas         Cita[]
-  transacciones Transaccion[]
-  prendas       Prenda[]
-  solicitudes   Solicitud[]
-  sufragios     Sufragio[]
+  papeletas          PapeletaSitio[]
+  recibos            Recibo[]
+  citas              Cita[]
+  transacciones      Transaccion[]
+  prendas            Prenda[]
+  solicitudes        Solicitud[]
+  /// Los cabildos a los que asistió.
+  asistenciasCabildo CabildoAsistencia[]
+  sufragios          Sufragio[]
 
   // Las peticiones de reactivación son pocas y Secretaría las lee enteras cada
   // vez que abre la cola: así no hay que recorrer el censo para encontrarlas.
@@ -360,10 +365,13 @@ enum TipoTransaccion {
 
 // NUEVO: Modelo dinámico de categorías
 model CategoriaTransaccion {
-  id     Int             @id @default(autoincrement())
-  nombre String // Ej: "Lotería Navidad", "Flores Cuaresma"
-  tipo   TipoTransaccion // Para saber si debe salir en el desplegable de Ingresos o de Gastos
-  activa Boolean         @default(true) // Soft-delete: si ya no venden lotería, la ocultan pero no se borra el historial
+  id             Int             @id @default(autoincrement())
+  nombre         String // Ej: "Lotería Navidad", "Flores Cuaresma"
+  tipo           TipoTransaccion // Para saber si debe salir en el desplegable de Ingresos o de Gastos
+  activa         Boolean         @default(true) // Soft-delete: si ya no venden lotería, la ocultan pero no se borra el historial
+  /// La cuenta del plan de las entidades sin fines lucrativos para la partida
+  /// doble. Null: la que se propone por el nombre (domain/partida-doble.ts).
+  cuentaContable String?         @db.VarChar(10)
 
   transacciones Transaccion[]
 
@@ -422,6 +430,9 @@ model Recibo {
   papeleta  PapeletaSitio?
   /// Lo pagado por una solicitud antes de recogerla.
   solicitud Solicitud?
+  /// La remesa que lo mandó al banco, si se cobró (o se intentó) por domiciliación.
+  remesaId  Int?
+  remesa    Remesa?        @relation(fields: [remesaId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -429,6 +440,38 @@ model Recibo {
   @@unique([hermanoId, year, concepto])
   @@index([year]) // <-- Búsquedas de tesorería mucho más rápidas
   @@index([hermanoId]) // <-- Para listar rápido los recibos de una familia
+  @@index([remesaId])
+}
+
+enum EstadoRemesa {
+  ENVIADA // El fichero está generado; el banco aún no ha cargado los adeudos
+  COBRADA // Tesorería la dio por cobrada: los recibos que seguían remesados, pagados
+}
+
+/// Un lote de adeudos domiciliados (SEPA CORE) para subir a la banca en línea.
+/// Guarda el fichero tal cual salió: si se pierde o hay que reenviarlo, se
+/// descarga el mismo, con los mismos identificadores que el banco ya conoce.
+model Remesa {
+  id          Int          @id @default(autoincrement())
+  /// El MsgId del fichero: el banco rechaza dos ficheros con el mismo.
+  mensajeId   String       @unique @db.VarChar(35)
+  /// El día en que el banco carga los adeudos (ReqdColltnDt).
+  fechaCobro  DateTime     @db.Date
+  numRecibos  Int
+  total       Decimal      @db.Decimal(10, 2)
+  xml         String       @db.LongText
+  estado      EstadoRemesa @default(ENVIADA)
+  cobradaEl   DateTime?
+  /// Quién la generó, copiado: la remesa sobrevive a la cuenta del tesorero.
+  autorId     Int?
+  autorNombre String?
+
+  recibos Recibo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
 }
 
 // ---------------------------------------------------------
@@ -704,6 +747,14 @@ model Publicacion {
 }
 
 /// Cómo va un pago con la pasarela del banco (Redsys).
+/// Qué se paga en línea: recibos y salidas del área de hermanos, un pedido de
+/// la tienda o un apadrinamiento.
+enum OrigenPago {
+  AREA_HERMANOS
+  TIENDA
+  APADRINAMIENTO
+}
+
 enum EstadoPagoEnLinea {
   PENDIENTE // El hermano está en la página del banco, o la dejó sin pagar
   PAGADO // El banco avisó de que se cobró y los recibos quedaron pagados
@@ -724,8 +775,12 @@ model PagoEnLinea {
   id           Int               @id @default(autoincrement())
   /// El número de pedido para Redsys: 12 caracteres, los 4 primeros cifras.
   pedido       String?           @unique @db.VarChar(12)
-  /// Quién paga, si tiene cuenta. Un donativo desde la web pública no la necesita.
+  /// Quién paga, si tiene cuenta. La tienda, los apadrinamientos y los
+  /// donativos de la web pública se pagan sin ella.
   userId       Int?
+  /// De dónde viene el pago, y qué se paga fuera del área de hermanos.
+  origen       OrigenPago        @default(AREA_HERMANOS)
+  referenciaId Int?
   tipo         TipoPagoEnLinea   @default(RECIBOS)
   /// Del donativo: el destino que eligió, la página desde la que donó y, si
   /// los dio, su nombre y su correo (para darle las gracias).
@@ -971,4 +1026,260 @@ model InformeAnual {
   // «Presentado al Cabildo General de hermanos el …», en la portada.
   fechaCabildo      String?  @db.VarChar(120)
   updatedAt         DateTime @updatedAt
+}
+
+enum TipoComunicado {
+  BOLETIN // Solo a quien está suscrito: es su consentimiento
+  AVISO // Comunicación del Grupo a los activos del segmento (cuotas, cabildos…)
+}
+
+enum EstadoComunicado {
+  BORRADOR
+  ENVIANDO // Hay envíos pendientes: el servidor los va mandando poco a poco
+  ENVIADO
+}
+
+enum EstadoEnvio {
+  PENDIENTE
+  ENVIADO
+  FALLIDO
+}
+
+/// Un boletín o un aviso masivo por correo. El cuerpo, saneado como el resto
+/// del contenido del CMS; a quién va, por el segmento elegido.
+model Comunicado {
+  id          Int               @id @default(autoincrement())
+  tipo        TipoComunicado
+  asunto      String            @db.VarChar(150)
+  cuerpo      String            @db.LongText
+  /// Los filtros del segmento, tal como se eligieron (ver domain/comunicados.ts).
+  segmento    Json
+  estado      EstadoComunicado  @default(BORRADOR)
+  enviadoEl   DateTime?
+  /// Quién lo escribió y quién lo mandó, copiados: sobreviven a las cuentas.
+  autorId     Int?
+  autorNombre String?
+  envios      ComunicadoEnvio[]
+  /// El cabildo del que es convocatoria, si lo es.
+  cabildos    Cabildo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
+/// Cada destinatario de un comunicado. Se apuntan todos al pulsar «Enviar» y
+/// el servidor los va mandando: si se reinicia a medias, sigue por donde iba
+/// y a nadie le llega dos veces.
+model ComunicadoEnvio {
+  id           Int         @id @default(autoincrement())
+  comunicadoId Int
+  comunicado   Comunicado  @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+  email        String      @db.VarChar(191)
+  /// A quién saluda: el nombre si la dirección es de una sola ficha.
+  nombre       String?
+  sexo         Sexo?
+  estado       EstadoEnvio @default(PENDIENTE)
+  enviadoEl    DateTime?
+
+  @@unique([comunicadoId, email])
+  @@index([comunicadoId, estado])
+}
+
+enum TipoCabildo {
+  ORDINARIO
+  EXTRAORDINARIO
+}
+
+enum EstadoCabildo {
+  CONVOCADO // Con fecha y orden del día; aún no se ha celebrado
+  CELEBRADO // Ya se celebró: asistencia y votaciones apuntadas, el acta en redacción
+  ACTA_APROBADA // El acta está aprobada: pasa al libro de actas y ya no se toca
+}
+
+enum Mayoria {
+  SIMPLE // Más votos a favor que en contra
+  DOS_TERCIOS // Dos tercios de los votos emitidos (reforma de reglas, por ejemplo)
+}
+
+/// Un cabildo de hermanos: su convocatoria, quién asistió, qué se votó y su acta.
+model Cabildo {
+  id             Int           @id @default(autoincrement())
+  tipo           TipoCabildo
+  fecha          DateTime
+  lugar          String        @db.VarChar(191)
+  /// Los puntos del orden del día, en orden.
+  ordenDelDia    Json
+  estado         EstadoCabildo @default(CONVOCADO)
+  /// Al darlo por celebrado se guarda el censo con voto de ese día: el quórum
+  /// del acta no debe cambiar si mañana hay altas o bajas.
+  censoConVoto   Int?
+  enSegunda      Boolean       @default(false)
+  acta           String        @default("") @db.LongText
+  actaAprobadaEl DateTime?
+  /// El borrador de aviso con la convocatoria, en Boletín y avisos.
+  convocatoriaId Int?
+  convocatoria   Comunicado?   @relation(fields: [convocatoriaId], references: [id], onDelete: SetNull)
+
+  asistencias CabildoAsistencia[]
+  votaciones  CabildoVotacion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fecha])
+}
+
+model CabildoAsistencia {
+  id           Int      @id @default(autoincrement())
+  cabildoId    Int
+  cabildo      Cabildo  @relation(fields: [cabildoId], references: [id], onDelete: Cascade)
+  hermanoId    Int
+  hermano      Hermano  @relation(fields: [hermanoId], references: [id], onDelete: Cascade)
+  registradaEl DateTime @default(now())
+
+  @@unique([cabildoId, hermanoId])
+  @@index([hermanoId])
+}
+
+model CabildoVotacion {
+  id           Int      @id @default(autoincrement())
+  cabildoId    Int
+  cabildo      Cabildo  @relation(fields: [cabildoId], references: [id], onDelete: Cascade)
+  asunto       String   @db.VarChar(300)
+  mayoria      Mayoria  @default(SIMPLE)
+  aFavor       Int
+  enContra     Int
+  abstenciones Int
+  createdAt    DateTime @default(now())
+
+  @@index([cabildoId])
+}
+
+enum EstadoPedido {
+  PENDIENTE_PAGO // Se ha ido al banco y aún no ha avisado
+  PAGADO // Cobrado: espera a que lo recojan en Secretaría
+  ENTREGADO
+  CANCELADO // El banco no lo cobró, o se anuló
+}
+
+/// Lo que se vende en la tienda de la web: recuerdos, medallas, estampas…
+model Producto {
+  id          Int                 @id @default(autoincrement())
+  nombre      String              @db.VarChar(120)
+  descripcion String              @default("") @db.Text
+  precio      Decimal             @db.Decimal(10, 2)
+  /// URL de la foto, subida desde el CMS.
+  foto        String?
+  /// Cuántos quedan. Null: sin límite (se hace por encargo).
+  existencias Int?
+  activo      Boolean             @default(true)
+  orden       Int                 @default(0)
+  lineas      PedidoTiendaLinea[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([activo, orden])
+}
+
+/// Un pedido de la tienda. Se compra sin cuenta y se recoge en Secretaría.
+model PedidoTienda {
+  id          Int                 @id @default(autoincrement())
+  /// Para la página de vuelta del banco: sin él, nadie ve un pedido ajeno.
+  token       String              @unique @db.VarChar(32)
+  nombre      String              @db.VarChar(120)
+  email       String              @db.VarChar(191)
+  telefono    String              @db.VarChar(30)
+  estado      EstadoPedido        @default(PENDIENTE_PAGO)
+  total       Decimal             @db.Decimal(10, 2)
+  metodo      MetodoPago?
+  pagadoEl    DateTime?
+  entregadoEl DateTime?
+  lineas      PedidoTiendaLinea[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([estado, createdAt])
+}
+
+model PedidoTiendaLinea {
+  id         Int          @id @default(autoincrement())
+  pedidoId   Int
+  pedido     PedidoTienda @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId Int?
+  producto   Producto?    @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  /// Nombre y precio copiados: el pedido no cambia si mañana cambia el producto.
+  nombre     String       @db.VarChar(120)
+  precio     Decimal      @db.Decimal(10, 2)
+  cantidad   Int
+
+  @@index([pedidoId])
+}
+
+/// Una campaña de apadrinamiento: una foto (el trono, el manto, la
+/// candelería) con sus piezas marcadas encima, para que cada una la costee
+/// quien quiera.
+model CampanaApadrinamiento {
+  id          Int                @id @default(autoincrement())
+  titulo      String             @db.VarChar(150)
+  descripcion String             @default("") @db.Text
+  foto        String
+  activa      Boolean            @default(true)
+  piezas      PiezaApadrinable[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+/// Una pieza sobre la foto, en porcentaje del ancho y del alto (así sirve a
+/// cualquier tamaño de pantalla). Se apadrina una vez.
+model PiezaApadrinable {
+  id              Int                   @id @default(autoincrement())
+  campanaId       Int
+  campana         CampanaApadrinamiento @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  nombre          String                @db.VarChar(120)
+  precio          Decimal               @db.Decimal(10, 2)
+  x               Decimal               @db.Decimal(5, 2)
+  y               Decimal               @db.Decimal(5, 2)
+  /// El apadrinamiento pagado, cuando lo hay.
+  apadrinamientos Apadrinamiento[]
+
+  @@index([campanaId])
+}
+
+/// Quien apadrina una pieza. Sin cuenta, como la tienda.
+model Apadrinamiento {
+  id            Int              @id @default(autoincrement())
+  token         String           @unique @db.VarChar(32)
+  piezaId       Int
+  pieza         PiezaApadrinable @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  nombre        String           @db.VarChar(120)
+  email         String           @db.VarChar(191)
+  telefono      String           @db.VarChar(30)
+  dedicatoria   String?          @db.VarChar(200)
+  /// Si quiere que su nombre salga en la foto.
+  mostrarNombre Boolean          @default(false)
+  estado        EstadoPedido     @default(PENDIENTE_PAGO)
+  importe       Decimal          @db.Decimal(10, 2)
+  metodo        MetodoPago?
+  pagadoEl      DateTime?
+  createdAt     DateTime         @default(now())
+
+  @@index([piezaId, estado])
+}
+
+/// Dónde va el cortejo en la calle, para el mapa del recorrido. Una sola fila
+/// (id 1): solo interesa la última posición, no el rastro.
+model CortejoEnDirecto {
+  id            Int      @id @default(1)
+  /// Si está en la calle. Al terminar se apaga y el mapa vuelve a la reproducción.
+  enMarcha      Boolean  @default(false)
+  lng           Decimal  @db.Decimal(9, 6)
+  lat           Decimal  @db.Decimal(9, 6)
+  /// Metros de margen que da el GPS; null si se marcó a mano una parada.
+  precision     Int?
+  /// Quién la manda, para saber a quién llamar si se queda parada.
+  autorId       Int?
+  autorNombre   String?  @db.VarChar(120)
+  actualizadoEl DateTime @default(now())
 }

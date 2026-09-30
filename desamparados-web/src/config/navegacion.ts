@@ -65,6 +65,7 @@ export const menuPublico: EntradaMenu[] = [
     hijos: [
       { label: 'Desamparados', href: '/desamparados' },
       { label: 'Ajuar', href: '/ajuar' },
+      { label: 'Apadrina', href: '/apadrina' },
     ],
   },
   {
@@ -73,6 +74,7 @@ export const menuPublico: EntradaMenu[] = [
     hijos: [
       { label: 'Agenda', href: '/agenda' },
       { label: 'Noticias', href: '/noticias' },
+      { label: 'Tienda', href: '/tienda' },
     ],
   },
   {

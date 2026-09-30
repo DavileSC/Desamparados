@@ -25,6 +25,7 @@ import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
 import { cerrarSesion } from '../features/altas/auth/session'
+import { site } from '../config/site'
 
 const ANCHO_CAJON = 260
 
@@ -67,7 +68,7 @@ export default function MarcoAreaHermano() {
                 display: 'block',
               }}
             >
-              DESAMPARADOS
+              {site.nombreCorto.toUpperCase()}
             </Typography>
             <Typography variant="overline" sx={{ color: 'text.secondary', fontSize: '11px' }}>
               Área de hermanos

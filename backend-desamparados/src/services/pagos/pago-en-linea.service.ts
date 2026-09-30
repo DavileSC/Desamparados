@@ -9,7 +9,7 @@
  * Secretaría mientras tanto, cambió el importe…), el pago queda como
  * INCIDENCIA para que Tesorería devuelva el dinero. Nunca se pierde en silencio.
  */
-import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, Prisma, TipoPagoEnLinea } from '@prisma/client';
+import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, OrigenPago, Prisma, TipoPagoEnLinea } from '@prisma/client';
 import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { pendienteDeLaSalida } from '../../domain/salidas.js';
@@ -29,7 +29,48 @@ export interface LoQueSePaga {
   solicitudIds: number[];
 }
 
+/**
+ * Lo que aplica un pago que no es del área de hermanos (un pedido de la
+ * tienda, un apadrinamiento). Cada servicio registra el suyo al cargarse:
+ * así la pasarela no importa a la tienda, y la tienda sí a la pasarela.
+ * Si no se puede aplicar, lanza un HttpError y el pago queda como incidencia.
+ */
+type Aplicador = (referenciaId: number, metodo: MetodoEnLinea, meta: MetaDeAuditoria) => Promise<void>;
+const APLICADORES: Partial<Record<OrigenPago, Aplicador>> = {};
+/** El correo de quien pagó sin cuenta, para las incidencias. */
+const CORREO_DE: Partial<Record<OrigenPago, (referenciaId: number) => Promise<string | null>>> = {};
+
+export function registrarOrigenDePago(origen: OrigenPago, aplicar: Aplicador, correo: (referenciaId: number) => Promise<string | null>) {
+  APLICADORES[origen] = aplicar;
+  CORREO_DE[origen] = correo;
+}
+
 export class PagoEnLineaService {
+  /**
+   * Un pago sin cuenta (la tienda, un apadrinamiento): apunta el pago
+   * pendiente y devuelve el formulario firmado para ir al banco. El importe lo
+   * calcula quien llama, en el servidor, nunca el navegador. `{pedido}` en las
+   * direcciones de vuelta se cambia por el número de pedido.
+   */
+  static async iniciarSinCuenta(p: { origen: OrigenPago; referenciaId: number; centimos: number; metodo: MetodoEnLinea; descripcion: string; urlVuelta: string; urlFallo: string }) {
+    const config = configuracionRedsys();
+    if (p.metodo === 'BIZUM' && !config.bizum) throw new HttpError('El pago con Bizum no está disponible. Paga con tarjeta.', 409);
+    const pedido = await db.$transaction(async (tx) => {
+      const creado = await tx.pagoEnLinea.create({
+        data: { origen: p.origen, referenciaId: p.referenciaId, metodo: p.metodo, importe: new Prisma.Decimal(p.centimos).div(100), reciboIds: [], solicitudIds: [] },
+      });
+      const numero = numeroDePedido(creado.id);
+      await tx.pagoEnLinea.update({ where: { id: creado.id }, data: { pedido: numero } });
+      return numero;
+    });
+    const formulario = formularioDePago({
+      pedido, centimos: p.centimos, metodo: p.metodo, descripcion: p.descripcion,
+      urlAviso: urlDelAviso(),
+      urlVuelta: p.urlVuelta.replace('{pedido}', pedido), urlFallo: p.urlFallo.replace('{pedido}', pedido),
+    }, config);
+    return { tipo: 'banco' as const, pedido, ...formulario };
+  }
+
   /**
    * Comprueba que todo es de la familia y está pendiente, y calcula el total
    * aquí: el importe no lo dice nunca el navegador.
@@ -148,6 +189,22 @@ export class PagoEnLineaService {
       await DonativoService.aplicar(pago, banco, meta);
       return true;
     }
+
+    // Lo que no es del área de hermanos lo aplica su propio servicio, con la
+    // misma regla: lo que ya no se puede aplicar es incidencia.
+    if (pago.origen !== OrigenPago.AREA_HERMANOS) {
+      const aplicar = APLICADORES[pago.origen];
+      try {
+        if (!aplicar || pago.referenciaId === null) throw new HttpError('El pago no dice qué se pagaba.');
+        await aplicar(pago.referenciaId, pago.metodo as MetodoEnLinea, { ...meta });
+        await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+      } catch (e) {
+        if (!(e instanceof HttpError)) throw e;
+        await incidencia(`No se pudo aplicar el pago: ${e.message}`);
+      }
+      return true;
+    }
+
     const reciboIds = pago.reciboIds as number[];
     const solicitudIds = pago.solicitudIds as number[];
     const userId = pago.userId;
@@ -190,12 +247,14 @@ export class PagoEnLineaService {
     });
     const usuarios = await db.user.findMany({ where: { id: { in: filas.flatMap((f) => (f.userId === null ? [] : [f.userId])) } }, select: { id: true, email: true } });
     const correo = new Map(usuarios.map((u) => [u.id, u.email]));
-    // De un donativo, el correo que dejó el donante (si lo dejó): es a quien hay que devolverle el dinero.
-    const deQuien = (f: (typeof filas)[number]) =>
-      (f.userId !== null ? correo.get(f.userId) : (f.donativo as { email?: string | null } | null)?.email) ?? null;
-    return filas.map((f) => ({
+    // Sin cuenta: de un donativo, el correo que dejó el donante; de la tienda o
+    // de un apadrinamiento, el que dé su servicio. Es a quien hay que devolverle el dinero.
+    const sinCuenta = await Promise.all(filas.map((f) => (f.userId === null && f.referenciaId !== null ? CORREO_DE[f.origen]?.(f.referenciaId) ?? null : null)));
+    const deQuien = (f: (typeof filas)[number], i: number) =>
+      (f.userId !== null ? correo.get(f.userId) : (f.donativo as { email?: string | null } | null)?.email ?? sinCuenta[i]) ?? null;
+    return filas.map((f, i) => ({
       id: f.id, pedido: f.pedido, fecha: f.createdAt, importe: Number(f.importe), metodo: f.metodo,
-      autorizacion: f.autorizacion, motivo: f.motivo, correo: deQuien(f), donativo: f.tipo === TipoPagoEnLinea.DONATIVO,
+      autorizacion: f.autorizacion, motivo: f.motivo, correo: deQuien(f, i), donativo: f.tipo === TipoPagoEnLinea.DONATIVO,
     }));
   }
 

@@ -19,6 +19,7 @@ import { superficiesCms } from '../theme/cms'
 import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu, type Grupo, type ItemMenu } from './cmsNavegacion'
 import { usePanelDeHoy } from './usePanelDeHoy'
 import { designTokens } from '../theme'
+import { site } from '../config/site'
 
 const SIDEBAR = superficiesCms('oscuro').sidebar // #070608, la misma en los dos modos
 
@@ -117,11 +118,12 @@ function Contador({ seccion, valor, tono }: { seccion: string; valor: number; to
 const CLAVE_GRUPOS = 'cms-menu-grupos'
 
 /**
- * Hasta este número de secciones el menú va abierto entero: plegar solo
- * estorba. Siete desde que Secretaría tiene «Cartas» (octubre de 2026): así
- * sigue viéndolo todo, y plegar queda para Administración y el Hermano Mayor.
+ * Hasta este número de secciones el menú va abierto entero: plegar solo estorba.
+ * Secretaría, con el boletín, los cabildos, la tienda, el cortejo en directo y
+ * las cartas, llega a once contando el Inicio; Administración y el Hermano
+ * Mayor pasan de dieciocho, que es para quien está pensado plegar.
  */
-const SECCIONES_SIN_PLEGAR = 7
+const SECCIONES_SIN_PLEGAR = 11
 
 function leerGrupos(): Partial<Record<Grupo, boolean>> {
   try {
@@ -410,7 +412,7 @@ function Contenido() {
           <Typography
             sx={{ color: '#fff', fontFamily: designTokens.fonts.cms.heading, fontSize: 'var(--cms-marca)', lineHeight: 1.1, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
           >
-            DESAMPARADOS
+            {site.nombreCorto.toUpperCase()}
           </Typography>
           <Typography sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)', mt: 0.25 }}>
             CMS

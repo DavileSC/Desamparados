@@ -17,6 +17,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { calendarioIcs, horario, nombreDeFichero, plegar, textoIcs } from '../src/domain/calendario-ics.js';
+import { identidad } from '../src/domain/datos-entidad.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const actualizado = new Date('2026-09-20T10:00:00Z');
@@ -33,7 +34,7 @@ after(() => db.$disconnect());
 describe('el calendario en formato iCalendar', () => {
   test('un triduo es un acto de una hora repetido tres días, en hora de Madrid', () => {
     assert.deepEqual(horario(triduo), { desde: '20261103T190000', hasta: '20261103T200000', dias: 3 });
-    const ics = calendarioIcs([triduo], { urlWeb: 'https://desamparados.example' });
+    const ics = calendarioIcs([triduo], { urlWeb: 'https://desamparados.example', autor: 'Grupo de prueba' });
     assert.match(ics, /DTSTART;TZID=Europe\/Madrid:20261103T190000\r\n/);
     assert.match(ics, /DTEND;TZID=Europe\/Madrid:20261103T200000\r\n/);
     assert.match(ics, /RRULE:FREQ=DAILY;COUNT=3\r\n/);
@@ -57,7 +58,7 @@ describe('el calendario en formato iCalendar', () => {
 
   test('escapa comas, puntos y coma y saltos de línea', () => {
     assert.equal(textoIcs('Rosario; misa, y\nbesamanos'), 'Rosario\\; misa\\, y\\nbesamanos');
-    const ics = calendarioIcs([triduo], { urlWeb: 'https://desamparados.example' });
+    const ics = calendarioIcs([triduo], { urlWeb: 'https://desamparados.example', autor: 'Grupo de prueba' });
     assert.match(ics, /LOCATION:Parroquia de los Padres Pasionistas\\, Málaga/);
   });
 
@@ -69,7 +70,7 @@ describe('el calendario en formato iCalendar', () => {
   });
 
   test('la dedicatoria va en el título y el calendario de suscripción lleva su nombre', () => {
-    const ics = calendarioIcs([triduo], { urlWeb: 'https://desamparados.example', nombre: 'Agenda' });
+    const ics = calendarioIcs([triduo], { urlWeb: 'https://desamparados.example', nombre: 'Agenda', autor: 'Grupo de prueba' });
     assert.match(ics.replace(/\r\n /g, ''), /SUMMARY:Solemne triduo en honor de Nuestra Señora de los Desamparados/);
     assert.match(ics, /X-WR-CALNAME:Agenda\r\n/);
     assert.match(ics, /REFRESH-INTERVAL;VALUE=DURATION:PT12H/);
@@ -135,7 +136,7 @@ describe('los calendarios por HTTP y el cartel', () => {
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type') ?? '', /^text\/calendar/);
     const cuerpo = await res.text();
-    assert.match(cuerpo, /X-WR-CALNAME:Agenda · Grupo Parroquial Desamparados/);
+    assert.ok(cuerpo.includes(`X-WR-CALNAME:Agenda · ${identidad.nombre}`), 'el calendario lleva el nombre de la corporación');
     assert.match(cuerpo, new RegExp(`UID:evento-${creados[0]}@`));
   });
 

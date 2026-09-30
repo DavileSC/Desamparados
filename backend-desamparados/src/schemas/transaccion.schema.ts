@@ -102,3 +102,15 @@ export const estadoCategoriaSchema = type({
     params: { id: idParam },
     body: { activa: 'boolean' }
 });
+
+// La partida doble de un ejercicio, y la cuenta del plan de una categoría.
+const anio = type(/^\d{4}$/).describe('un año de cuatro cifras');
+export const ejercicioSchema = type({ params: { anio } });
+export const diarioSchema = type({
+  params: { anio },
+  query: { "pagina?": type(/^\d{1,5}$/).describe('un número de página'), "porPagina?": type(/^(25|50|100)$/).describe('25, 50 o 100') },
+});
+export const cuentaCategoriaSchema = type({
+  params: { id: type(/^\d+$/).describe('un ID numérico válido') },
+  body: { cuenta: type(/^\d{3}$/).describe('una cuenta de tres cifras').or('null') },
+});

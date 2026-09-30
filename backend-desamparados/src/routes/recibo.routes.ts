@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import { ReciboController } from '../controllers/recibo.controller.js';
+import { RemesaController } from '../controllers/remesa.controller.js';
+import { Norma43Controller } from '../controllers/norma43.controller.js';
+import { ficheroDeDatosMiddleware } from '../middleware/upload.middleware.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';
@@ -14,6 +17,7 @@ import {
   emitirReciboSchema,
   generarCuotasSchema,
   marcarPagadoSchema,
+  remesaSchema,
   misRecibosQuerySchema,
   updateReciboSchema
 } from '../schemas/recibo.schema.js';
@@ -83,6 +87,19 @@ reciboRoutes.post('/admin/generar',
 // Lo que el banco cobró y no se pudo aplicar: Tesorería lo devuelve y lo da por resuelto.
 reciboRoutes.get('/admin/pagos-en-linea/incidencias', checkRole(rolesTesoreria), ReciboController.incidenciasDePago);
 reciboRoutes.post('/admin/pagos-en-linea/incidencias/:id/resolver', checkRole(rolesTesoreria), validateId, ReciboController.resolverIncidencia);
+
+// Remesas SEPA: el fichero de adeudos para la banca en línea. Antes de las
+// rutas con `/admin/:id`, aunque hoy no chocan por la forma.
+reciboRoutes.get('/admin/remesas', checkRole(rolesTesoreria), RemesaController.estado);
+reciboRoutes.post('/admin/remesas/previa', checkRole(rolesTesoreria), validate(remesaSchema), RemesaController.previa);
+reciboRoutes.post('/admin/remesas', checkRole(rolesTesoreria), validate(remesaSchema), RemesaController.generar);
+reciboRoutes.get('/admin/remesas/:id/fichero', checkRole(rolesTesoreria), validateId, RemesaController.fichero);
+reciboRoutes.post('/admin/remesas/:id/cobrar', checkRole(rolesTesoreria), validateId, RemesaController.darPorCobrada);
+
+// El extracto del banco en Norma 43: casa devoluciones y cobros de las remesas.
+// El fichero va a memoria y no se guarda: se lee y se descarta.
+reciboRoutes.post('/admin/remesas/norma43/previa', checkRole(rolesTesoreria), ficheroDeDatosMiddleware.single('fichero'), Norma43Controller.previa);
+reciboRoutes.post('/admin/remesas/norma43/aplicar', checkRole(rolesTesoreria), ficheroDeDatosMiddleware.single('fichero'), Norma43Controller.aplicar);
 
 reciboRoutes.post('/admin/:id/pagar',
   checkRole(rolesTesoreria),

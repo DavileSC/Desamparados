@@ -12,6 +12,7 @@ import { loginSchema, twoFactorSchema, type LoginFormInput, type LoginFormData, 
 import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, cerrarSesionApi, type LoginResponse } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
+import { site } from '../../../config/site'
 
 function errorMessage(e: unknown, fallback: string) {
   return e instanceof ErrorDeApi ? e.message : fallback
@@ -121,7 +122,7 @@ export default function AccesoCmsPage() {
     <ThemeProvider theme={TEMA_ACCESO}>
       <GlobalStyles styles={ESTILOS_GLOBALES_CMS} />
       <Helmet>
-        <title>Acceso a la administración | CMS Desamparados</title>
+        <title>{`Acceso a la administración | CMS ${site.nombreCorto}`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <Box

@@ -10,6 +10,7 @@ import CampoContrasena from '../../../components/CampoContrasena'
 import { requestPasswordReset as apiRequestPasswordReset, resetPassword as apiResetPassword } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
 import { requestPasswordResetSchema, resetPasswordSchema, type RequestPasswordResetFormData, type ResetPasswordFormData } from './schema'
+import { site } from '../../../config/site'
 
 export default function NuevaContrasenaPage() {
   const [searchParams] = useSearchParams()
@@ -54,7 +55,7 @@ export default function NuevaContrasenaPage() {
 
   return (
     <>
-      <Helmet><title>{`${token ? 'Nueva contraseña' : 'Recuperar contraseña'} | Desamparados`}</title></Helmet>
+      <Helmet><title>{`${token ? 'Nueva contraseña' : 'Recuperar contraseña'} | ${site.nombreCorto}`}</title></Helmet>
       <TarjetaCristal sx={{ width: '100%', p: { xs: 3, md: 5 }, maxWidth: 440, mx: 'auto' }}>
         <Typography variant="h3" component="h1" sx={{ mb: 1, textAlign: 'center', fontSize: { xs: '28px', md: '36px' } }}>
           {token ? 'Nueva contraseña' : 'Recuperar contraseña'}

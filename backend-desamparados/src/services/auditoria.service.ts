@@ -61,6 +61,31 @@ export const ACCIONES_AUDITORIA = {
   CARTAS_GENERAR: 'CARTAS_GENERAR',
   ROSARIO_FECHAR: 'ROSARIO_FECHAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
+  // Remesas SEPA: generar el fichero para el banco y darla por cobrada
+  REMESA_GENERAR: 'REMESA_GENERAR',
+  REMESA_COBRAR: 'REMESA_COBRAR',
+  NORMA43_APLICAR: 'NORMA43_APLICAR',
+  // El censo en Excel o CSV: sacarlo entero es una salida de datos personales
+  CENSO_EXPORTAR: 'CENSO_EXPORTAR',
+  CENSO_IMPORTAR: 'CENSO_IMPORTAR',
+  // El cortejo: repartir las papeletas en los tramos por antigüedad
+  CORTEJO_REPARTIR: 'CORTEJO_REPARTIR',
+  // Boletín y avisos: mandar uno y darse de baja desde el enlace del correo
+  COMUNICADO_ENVIAR: 'COMUNICADO_ENVIAR',
+  BOLETIN_BAJA: 'BOLETIN_BAJA',
+  // Cabildos: darlo por celebrado (fija el quórum) y aprobar su acta
+  CABILDO_CELEBRAR: 'CABILDO_CELEBRAR',
+  CABILDO_ACTA_APROBAR: 'CABILDO_ACTA_APROBAR',
+  // Partida doble: la cuenta de cada categoría y sacar el ejercicio a Excel
+  CATEGORIA_CUENTA: 'CATEGORIA_CUENTA',
+  CONTABILIDAD_EXPORTAR: 'CONTABILIDAD_EXPORTAR',
+  // La tienda: el pedido pagado (por el banco) y entregado en Secretaría
+  TIENDA_PEDIDO_PAGADO: 'TIENDA_PEDIDO_PAGADO',
+  TIENDA_PEDIDO_ENTREGADO: 'TIENDA_PEDIDO_ENTREGADO',
+  // Un apadrinamiento pagado (por el banco)
+  APADRINAMIENTO_PAGADO: 'APADRINAMIENTO_PAGADO',
+  CORTEJO_DIRECTO_EMPEZAR: 'CORTEJO_DIRECTO_EMPEZAR',
+  CORTEJO_DIRECTO_TERMINAR: 'CORTEJO_DIRECTO_TERMINAR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

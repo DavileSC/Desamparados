@@ -59,3 +59,16 @@ export const limitadorContacto = rateLimit({
 		message: 'Demasiados mensajes desde esta IP. Espera unos minutos e inténtalo de nuevo.'
 	}
 });
+
+// Las compras de la tienda, sin cuenta: cada una apunta un pedido y puede
+// mandar un correo. Holgado para quien reintenta un pago, corto para un robot.
+export const limitadorCompras = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	limit: 10,
+	standardHeaders: 'draft-7',
+	legacyHeaders: false,
+	message: {
+		status: 429,
+		message: 'Demasiados pedidos desde esta IP. Espera unos minutos e inténtalo de nuevo.'
+	}
+});

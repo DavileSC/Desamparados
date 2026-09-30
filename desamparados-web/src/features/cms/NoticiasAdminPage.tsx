@@ -18,6 +18,7 @@ import { eliminarNoticia, noticiasDelCms, actualizarNoticia, type NoticiaDeLaApi
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
+import { site } from '../../config/site'
 
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
 // Lo que useDatosDePortada('noticias') tiene cacheado 60 s: tras destacar hay que pedirlo
@@ -135,7 +136,7 @@ export default function NoticiasAdminPage() {
   )
 
   return <>
-    <Helmet><title>Noticias | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Noticias | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Noticias" subtitulo={resumen && <ResumenRedaccion cifras={resumen} />}>
       <Button variant="outlined" color="inherit" startIcon={<OpenInNewIcon />} href="/noticias" target="_blank" rel="noopener" sx={{ borderColor: 'divider' }}>Ver en la web</Button>
       <Button variant="contained" startIcon={<AddIcon />} component={Link} to="/cms/noticias/nueva" state={{ volver: consultaListado }}>Nueva noticia</Button>

@@ -1,4 +1,5 @@
 import type { ImagenPortada } from '../../lib/api/portada'
+import { site } from '../../config/site'
 
 /**
  * Ajustes de la rotación de fotos de la cabecera. Viven fuera de Hero.tsx
@@ -8,7 +9,7 @@ import type { ImagenPortada } from '../../lib/api/portada'
 
 /** Sin fotos en el CMS (o sin API) la portada enseña la de siempre. */
 export const IMAGENES_POR_DEFECTO: ImagenPortada[] = [
-  { url: '/images/hero-1920.webp', descripcion: 'Nuestra Señora de los Desamparados en su trono procesional' },
+  { url: '/images/hero-1920.webp', descripcion: `${site.titular} en su trono procesional` },
 ]
 /** Lo que se queda cada foto antes de fundirse con la siguiente. */
 export const INTERVALO_ROTACION_MS = 7000

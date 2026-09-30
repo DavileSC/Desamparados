@@ -8,7 +8,7 @@
  * ningún sobre. Si el texto no cabe en una hoja, sigue en la siguiente; la
  * carta del siguiente hermano empieza siempre en hoja nueva.
  */
-import { entidad, secretaria } from '../../domain/datos-entidad.js';
+import { identidad, secretaria } from '../../domain/datos-entidad.js';
 import { rellenar, tratamientoDe, type DestinatarioDeCarta } from '../../domain/cartas.js';
 import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO,
@@ -51,9 +51,9 @@ function cabecera(doc: Doc, d: DestinatarioConDireccion, texto: TextoDeCarta, ho
     doc.rect(0, 0, A4.ancho, 4.5).fill(BURDEOS);
     doc.image(IMAGENES.escudoOro, MARGEN, 30, { fit: [46, 56], align: 'center', valign: 'center' });
     const x = MARGEN + 62;
-    rotulo(doc, versalitas(entidad.tipo), x, 38, { letra: LETRA.textoFuerte, tam: 7.5, color: ORO_TEXTO, espaciado: 2.2 });
-    rotulo(doc, entidad.titular, x, 50, { letra: LETRA.titulo, tam: 15, color: NEGRO, ancho: 300 });
-    rotulo(doc, entidad.ciudad, x, 70, { tam: 9, color: GRIS });
+    rotulo(doc, versalitas(identidad.tipo), x, 38, { letra: LETRA.textoFuerte, tam: 7.5, color: ORO_TEXTO, espaciado: 2.2 });
+    rotulo(doc, identidad.titular, x, 50, { letra: LETRA.titulo, tam: 15, color: NEGRO, ancho: 300 });
+    rotulo(doc, identidad.localidad, x, 70, { tam: 9, color: GRIS });
     doc.rect(MARGEN, 100, ANCHO / 2 - 10, 0.75).fill(ORO);
     doc.rect(A4.ancho / 2 + 10, 100, ANCHO / 2 - 10, 0.75).fill(ORO);
     rombo(doc, A4.ancho / 2, 100.4, 3.5, BURDEOS);
@@ -67,7 +67,7 @@ function cabecera(doc: Doc, d: DestinatarioConDireccion, texto: TextoDeCarta, ho
     }
   });
   const yFecha = VENTANA.y + 4 * 15 + 22;
-  rotulo(doc, `${entidad.ciudad}, ${fechaLarga.format(hoy)}`, MARGEN, yFecha, { tam: 10.5, color: NEGRO, ancho: ANCHO, alinear: 'right' });
+  rotulo(doc, `${identidad.localidad}, ${fechaLarga.format(hoy)}`, MARGEN, yFecha, { tam: 10.5, color: NEGRO, ancho: ANCHO, alinear: 'right' });
   let y = yFecha + 30;
   if (texto.asunto.trim()) {
     doc.font(LETRA.textoFuerte).fontSize(11).fillColor(NEGRO).text(rellenar(texto.asunto, d), MARGEN, y, { width: ANCHO });

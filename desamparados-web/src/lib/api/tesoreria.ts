@@ -1,4 +1,4 @@
-import { llamarApi } from './cliente'
+import { llamarApi, traerArchivo } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export type AdminReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
@@ -123,3 +123,101 @@ export function incidenciasDePago() {
 export function resolverIncidenciaDePago(id: number) {
   return llamarApi<{ message: string }>(`/recibos/admin/pagos-en-linea/incidencias/${id}/resolver`, { method: 'POST' })
 }
+
+// --- Remesas SEPA ---
+
+/** Una remesa ya generada: su fichero se descarga aparte. */
+export interface Remesa {
+  id: number
+  /** El identificador del fichero, el que se ve en la banca en línea. */
+  mensajeId: string
+  /** AAAA-MM-DD: el día en que el banco carga los adeudos. */
+  fechaCobro: string
+  numRecibos: number
+  total: number
+  estado: 'ENVIADA' | 'COBRADA'
+  cobradaEl: string | null
+  autorNombre: string | null
+  createdAt: string
+  /** Recibos que siguen remesados, sin cobrar ni devolver. */
+  enElBanco: number
+}
+
+export interface EstadoRemesas {
+  /** El servidor tiene los datos del Grupo como acreedor. */
+  configurada: boolean
+  /** Qué le falta, si no los tiene. */
+  problemas: string[]
+  /** El primer día que se puede pedir de cobro (AAAA-MM-DD). */
+  fechaCobroMinima: string
+  remesas: Remesa[]
+}
+
+export type MotivoExclusion = 'SIN_IBAN' | 'IBAN_NO_VALIDO' | 'DE_BAJA' | 'IMPORTE_CERO'
+
+/** Qué entraría en una remesa y qué se queda fuera, con el porqué. */
+export interface PreviaRemesa {
+  fechaCobro: string
+  numRecibos: number
+  total: number
+  excluidos: {
+    reciboId: number
+    concepto: string
+    importe: number
+    hermano: ReceiptBrother
+    motivo: MotivoExclusion
+    texto: string
+  }[]
+}
+
+export interface FiltroRemesa { fechaCobro: string; year?: number; tipo?: ReceiptType }
+
+export const estadoRemesas = () => llamarApi<EstadoRemesas>('/recibos/admin/remesas')
+
+export const previaRemesa = (filtro: FiltroRemesa) =>
+  llamarApi<PreviaRemesa>('/recibos/admin/remesas/previa', { method: 'POST', json: filtro })
+
+export const generarRemesa = (filtro: FiltroRemesa) =>
+  llamarApi<Omit<Remesa, 'enElBanco'>>('/recibos/admin/remesas', { method: 'POST', json: filtro })
+
+/** El fichero XML de la remesa, para subirlo a la banca en línea. */
+export const traerFicheroRemesa = (id: number) => traerArchivo(`/recibos/admin/remesas/${id}/fichero`)
+
+export const cobrarRemesa = (id: number) =>
+  llamarApi<{ message: string; cobrados: number; devueltos: number }>(`/recibos/admin/remesas/${id}/cobrar`, { method: 'POST' })
+
+// --- El extracto del banco (Norma 43) ---
+
+/** Lo que haría el extracto: devoluciones y cobros de remesas que reconoce, y lo dudoso. */
+export interface PreviaNorma43 {
+  /** Si el fichero no se entiende o no cuadra: con alguno, no se aplica. */
+  errores: string[]
+  cuentas: { cuenta: string; desde: string; hasta: string; movimientos: number }[]
+  devoluciones: {
+    reciboId: number
+    concepto: string
+    importe: number
+    estado: AdminReceiptStatus
+    fecha: string
+    hermano: ReceiptBrother
+    /** Ya estaba devuelto: subir otra vez el extracto no lo toca. */
+    yaAplicado: boolean
+  }[]
+  cobros: { remesaId: number; mensajeId: string; fechaCobro: string; importe: number; fecha: string; yaAplicado: boolean }[]
+  /** Parecen de una remesa, pero no se sabe de qué recibo: a mano. */
+  dudosos: { linea: number; fecha: string; signo: 'CARGO' | 'ABONO'; importe: number; texto: string; motivo: string }[]
+  /** Movimientos que no son de ninguna remesa. */
+  ajenos: number
+}
+
+const conFichero = (fichero: File) => {
+  const formulario = new FormData()
+  formulario.append('fichero', fichero)
+  return formulario
+}
+
+export const previaNorma43 = (fichero: File) =>
+  llamarApi<PreviaNorma43>('/recibos/admin/remesas/norma43/previa', { method: 'POST', formData: conFichero(fichero) })
+
+export const aplicarNorma43 = (fichero: File) =>
+  llamarApi<{ message: string; devueltos: number; cobradas: number; omitidos: string[] }>('/recibos/admin/remesas/norma43/aplicar', { method: 'POST', formData: conFichero(fichero) })

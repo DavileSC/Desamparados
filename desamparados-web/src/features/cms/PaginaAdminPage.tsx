@@ -28,6 +28,7 @@ import { libreDe } from '../../components/bloques/presentacion'
 import { ENCUADRE_POR_DEFECTO, tipoDeCabecera } from '../../components/bloques/cabecera'
 import { paginaPublica } from '../../app/cmsNavegacion'
 import { ErrorDeApi } from '../../lib/api/cliente'
+import { site } from '../../config/site'
 import {
   getContenido, guardarContenido,
   type Bloque, type CabeceraPagina, type PaginaDeBloques, type SlugContenido,
@@ -254,7 +255,7 @@ export default function PaginaAdminPage() {
 
   return (
     <>
-      <Helmet><title>{`${cabecera.titulo} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`${cabecera.titulo} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
       <PantallaEdicion
         titulo={cabecera.titulo || 'Página'}

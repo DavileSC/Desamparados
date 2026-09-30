@@ -19,6 +19,7 @@ import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
 import { misPapeletas, type ApiProcessionTicket } from '../../../lib/api/procesion'
 import { estadoPapeleta } from './estadoPapeleta'
 import AvisoSuave from '../../../components/AvisoSuave'
+import { site } from '../../../config/site'
 
 export default function HistoricoPage() {
   const { items: tickets, meta, loading, error, alCambiarPagina, cambiarTamano } =
@@ -27,7 +28,7 @@ export default function HistoricoPage() {
   return (
     <>
       <Helmet>
-        <title>Histórico de Procesiones | Desamparados</title>
+        <title>{`Histórico de Procesiones | ${site.nombreCorto}`}</title>
       </Helmet>
 
       <SeccionAnimada sx={{ py: { xs: 4, md: 6 } }}>

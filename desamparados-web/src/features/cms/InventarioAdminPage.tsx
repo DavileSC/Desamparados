@@ -20,6 +20,7 @@ import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import TablaEnseres from './inventario/TablaEnseres'
 import TablaPrendas from './inventario/TablaPrendas'
 import TarjetaCingulos from './inventario/TarjetaCingulos'
+import { site } from '../../config/site'
 
 const emptyEnser = { nombre: '', referencia: '', categoria: '', ubicacion: '', cantidadOptimo: '0', cantidadBueno: '0', cantidadReparar: '0' }
 const emptyPrenda = { numero: '', tipo: 'TUNICA', talla: '', estado: 'DISPONIBLE', observaciones: '' }
@@ -202,7 +203,7 @@ export default function InventarioAdminPage() {
   }
 
   return <>
-    <Helmet><title>Inventario | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Inventario | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Inventario">
       <Button variant="contained" startIcon={<AddIcon />} onClick={abrirAlta}>{tab === 0 ? 'Nuevo enser' : 'Nueva prenda'}</Button>
     </CabeceraSeccion>

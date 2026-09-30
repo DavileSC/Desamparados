@@ -3,6 +3,7 @@ import { enMadrid, euros, fechaLarga, numero, valorEscrito, vistazo } from '../.
 import { entradilla as entradillaDe } from '../../domain/entradillas.js';
 import type { Periodo } from '../../domain/periodo-datos.js';
 import { diaMadrid } from '../../domain/contabilidad.js';
+import { identidad } from '../../domain/datos-entidad.js';
 import {
   A4, ALTO_BARRA, ANCHO_UTIL, BURDEOS, BURDEOS_VIVO, CREMA, FIN, GRIS, HUECO_COLUMNAS, IMAGENES, LETRA, MARFIL, MX, NEGRO, ORO, ORO_CLARO, ORO_PALIDO,
   Paginas, aBuffer, bandaCapitulo, colorDePapel, bandaInforme, entradilla, fila, grafica, hueco, leyenda, marcaBorrador, marcaHecho,
@@ -315,7 +316,7 @@ function portada(doc: Doc, periodo: Periodo, textos: TextosInforme) {
     const centro = (t: string, y: number, o: Parameters<typeof rotulo>[4]) => rotulo(doc, t, 0, y, { ancho: A4.ancho, alinear: 'center', ...o });
     centro('INFORME ANUAL', 222, { letra: LETRA.textoFuerte, tam: 9, color: ORO_CLARO, espaciado: 4 });
     centro('del Grupo Parroquial', 250, { letra: LETRA.cursiva, tam: 15, color: ORO_CLARO });
-    centro('Nuestra Señora de los Desamparados', 270, { letra: LETRA.titulo, tam: 24, color: CREMA });
+    centro(identidad.titular, 270, { letra: LETRA.titulo, tam: 24, color: CREMA });
     // Dos filetes de oro y el rombo burdeos entre el nombre y el año.
     const yRaya = 328;
     doc.rect(cx - 104, yRaya, 90, 0.75).fill(ORO);
@@ -329,7 +330,7 @@ function portada(doc: Doc, periodo: Periodo, textos: TextosInforme) {
     doc.rect(0, yPie, A4.ancho, alto).fill(BURDEOS);
     doc.rect(0, yPie, A4.ancho, 0.75).fill(ORO);
     const x = 54;
-    rotuloVersalitas(doc, 'Málaga', x, yPie + 42, { tam: 8.5, color: ORO_CLARO, espaciado: 2.6 });
+    rotuloVersalitas(doc, identidad.localidad, x, yPie + 42, { tam: 8.5, color: ORO_CLARO, espaciado: 2.6 });
     const cabildo = textos.fechaCabildo?.trim();
     if (cabildo) {
       ['Presentado al Cabildo General de hermanos', `el ${cabildo}`].forEach((l, i) =>

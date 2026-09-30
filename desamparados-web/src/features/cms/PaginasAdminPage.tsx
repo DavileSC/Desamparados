@@ -6,6 +6,7 @@ import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import CabeceraSeccion from './CabeceraSeccion'
 import { PAGINAS_PUBLICAS, type PaginaPublica } from '../../app/cmsNavegacion'
+import { site } from '../../config/site'
 
 /**
  * El índice del apartado «Web pública»: qué páginas se editan por bloques,
@@ -25,7 +26,7 @@ export default function PaginasAdminPage() {
 
   return (
     <>
-      <Helmet><title>Páginas | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Páginas | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Páginas" />
 
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, maxWidth: '65ch' }}>

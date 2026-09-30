@@ -1,8 +1,13 @@
 import type { ComponentType } from 'react'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import HowToVoteOutlinedIcon from '@mui/icons-material/HowToVoteOutlined'
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
+import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined'
+import SensorsOutlinedIcon from '@mui/icons-material/SensorsOutlined'
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
@@ -86,6 +91,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ImageOutlinedIcon },
   { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
   { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: MenuBookOutlinedIcon },
+  { label: 'Boletín y avisos', href: '/cms/comunicados', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'], grupo: 'Web', icono: EmailOutlinedIcon },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon },
   { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
@@ -93,11 +99,15 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: DirectionsWalkOutlinedIcon },
   // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
   { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon },
+  { label: 'Cortejo en directo', href: '/cms/procesion/directo', roles: ['ADMIN', 'SECRETARIA', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: SensorsOutlinedIcon },
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon },
+  { label: 'Apadrinamientos', href: '/cms/apadrinamientos', roles: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: VolunteerActivismOutlinedIcon },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
+  { label: 'Tienda', href: '/cms/tienda', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: StorefrontOutlinedIcon },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
   { label: 'Datos e informes', href: '/cms/datos', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Junta', icono: InsightsOutlinedIcon },
   { label: 'Informe anual', href: '/cms/informe-anual', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon },
+  { label: 'Cabildos', href: '/cms/cabildos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Junta', icono: HowToVoteOutlinedIcon },
   { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
   { label: 'Ajustes del Inicio', href: '/cms/ajustes-inicio', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'cuenta', icono: TuneOutlinedIcon },
@@ -118,6 +128,16 @@ export const rolesPorRutaCms = {
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  // Los apadrinamientos: la guarda de /api/apadrinamientos/admin.
+  apadrinamientos: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'],
+  // El cortejo en directo: la guarda de /api/cortejo-directo/admin.
+  'procesion/directo': ['ADMIN', 'SECRETARIA', 'ALBACERIA', 'HERMANO_MAYOR'],
+  // La tienda: la guarda de /api/tienda/admin.
+  tienda: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'],
+  // Los cabildos y el libro de actas: la guarda de /api/cabildos.
+  cabildos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
+  // El boletín y los avisos por correo: la guarda de /api/comunicados.
+  comunicados: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   // Llevan los datos del censo: los mismos que lo gestionan (la guarda de /api/cartas).

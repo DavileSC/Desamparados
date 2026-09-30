@@ -18,11 +18,12 @@ import {
   parrafo, recuadro, saludo, segunSexo, urlDeLaWeb, type Sexo,
 } from './correos/plantilla.js';
 import { cuentaDeContacto, enviarCorreo } from './correos/envio.js';
+import { identidad } from '../domain/datos-entidad.js';
 
 /** Quien entra en el censo al aprobar la solicitud, con el número que recibe. */
 export interface HermanoAprobado { nombre: string; apellidos: string | null; numeroHermano: number }
 
-const BENDICION = 'Que Nuestra Señora de los Desamparados le guarde y bendiga.';
+const BENDICION = `Que ${identidad.titular} le guarde y bendiga.`;
 
 /** «una hora», «3 días», «12 horas». */
 function plazo(horas: number): string {
@@ -390,7 +391,7 @@ export class EmailService {
         ? 'Se va en traje. Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto.'
         : 'Para recoger la papeleta hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto. Recuerde llevar el DNI.'),
       boton(rosario ? 'Apuntarme al Rosario' : 'Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
-      firma('Esperamos contar con su presencia acompañando a Nuestra Señora de los Desamparados.'),
+      firma(`Esperamos contar con su presencia acompañando a ${identidad.titular}.`),
     ].join('');
 
     const titulo = rosario ? `Rosario vespertino ${year}` : `Papeletas de sitio ${year}`;
@@ -415,7 +416,7 @@ export class EmailService {
       bloqueDeSecretaria('Horario de reparto'),
       boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')),
       parrafo('Si ya la ha recogido en las últimas horas, no haga caso de este mensaje.', `font-size: 14px; color: ${COLORES.suave};`),
-      firma('Esperamos contar con su presencia acompañando a Nuestra Señora de los Desamparados.'),
+      firma(`Esperamos contar con su presencia acompañando a ${identidad.titular}.`),
     ].join('');
 
     return await enviarCorreo(emailDestino, 'Recordatorio: su papeleta de sitio está sin recoger', maquetar({

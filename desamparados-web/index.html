@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="es">
   <head>
+    <!-- Generado desde index.plantilla.html por scripts/generar-identidad.mjs: no se edita a mano. -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -54,9 +55,10 @@
 
       Está aquí y no en React por lo mismo que las etiquetas de arriba: así
       viaja en el HTML tal cual, sin depender de que nadie ejecute JavaScript.
-      `src/config/site.ts` sigue siendo la fuente de verdad y
-      `__tests__/datos-estructurados.test.ts` compara los dos: si cambia un
-      perfil o el correo y aquí no, el test lo dice.
+      El nombre, la dirección de la web, el correo y el teléfono salen de
+      `shared/datos-entidad.json` al generar index.html (scripts/generar-identidad.mjs).
+      Los perfiles (`sameAs`) y la sede son de esta corporación y van escritos
+      aquí: al montar la web para otra, se cambian aquí y en `src/config/site.ts`.
 
       NO lleva `legalName`, `taxID` ni la dirección fiscal: son los datos que
       siguen pendientes de confirmar en `site.ts`. Un dato inventado aquí lo
@@ -67,7 +69,7 @@
       {
         "@context": "https://schema.org",
         "@type": "ReligiousOrganization",
-        "name": "Grupo Parroquial de Nuestra Señora de los Desamparados",
+        "name": "Grupo Parroquial Nuestra Señora de los Desamparados",
         "url": "https://www.desamparadosmalaga.com/",
         "email": "goretti.desamparados@gmail.com",
         "telephone": "+34 644 90 01 67",

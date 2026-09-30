@@ -23,6 +23,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import EscudoDelGrupo from '../EscudoDelGrupo'
 import { esActiva, seccionActiva } from './estilos'
 import { menuPublico, type EntradaMenu } from '../../config/navegacion'
+import { site } from '../../config/site'
 
 // Iconos del cajón móvil, por sección. Viven aquí y no en `config/navegacion.ts`
 // para que el árbol del menú siga siendo datos puros, sin React.
@@ -115,7 +116,7 @@ export default function CajonMovil({ abierto, alCerrar }: { abierto: boolean; al
               mb: 0.5,
             }}
           >
-            DESAMPARADOS DE MÁLAGA
+            {`${site.nombreCorto} de ${site.entidad.localidad}`.toUpperCase()}
           </Box>
           <Box sx={{ typography: 'overline', color: 'text.secondary', fontSize: '11px' }}>
             Grupo Parroquial

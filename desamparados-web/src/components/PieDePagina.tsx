@@ -53,8 +53,8 @@ const columnas: { titulo: string; rutas: string[] }[][] = [
     },
   ],
   [
-    { titulo: 'Sagrada titular', rutas: ['/desamparados', '/ajuar'] },
-    { titulo: 'Actualidad', rutas: ['/agenda', '/noticias'] },
+    { titulo: 'Sagrada titular', rutas: ['/desamparados', '/ajuar', '/apadrina'] },
+    { titulo: 'Actualidad', rutas: ['/agenda', '/noticias', '/tienda'] },
   ],
   [
     { titulo: 'Publicaciones', rutas: ['/publicaciones', '/publicaciones/boletines', '/publicaciones/dossier-prensa'] },
@@ -142,7 +142,7 @@ export default function PieDePagina() {
               variant="h4"
               sx={{ display: 'block', color: 'text.primary', textDecoration: 'none', fontSize: 22, lineHeight: 1.25, mb: 0.75 }}
             >
-              Nuestra Señora de los Desamparados
+              {site.titular}
             </Typography>
             <Typography sx={{ color: 'text.secondary', fontSize: 13, letterSpacing: '0.08em', mb: 3 }}>
               {site.sede.localidad}

@@ -3,6 +3,7 @@ import { Box, Container } from '@mui/material'
 import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
+import { site } from '../config/site'
 
 export default function MarcoAcceso() {
   return (
@@ -33,7 +34,7 @@ export default function MarcoAcceso() {
         }}
       >
         <EscudoDelGrupo alto={38} />
-        DESAMPARADOS
+        {site.nombreCorto.toUpperCase()}
       </Box>
 
       <Container

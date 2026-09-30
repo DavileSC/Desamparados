@@ -1,4 +1,4 @@
-import { llamarApi } from './cliente'
+import { llamarApi, traerArchivo } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
 export type TipoApunte = 'INGRESO' | 'GASTO'
@@ -100,3 +100,42 @@ export const eliminarApunte = (id: number) => llamarApi<{ message: string }>(`/t
 export const crearCategoriaDeApunte = (json: { nombre: string; tipo: TipoApunte }) => llamarApi<{ message: string }>('/transacciones/categorias', { method: 'POST', json })
 export const renombrarCategoria = (id: number, nombre: string) => llamarApi<{ message: string }>(`/transacciones/categorias/${id}`, { method: 'PUT', json: { nombre } })
 export const cambiarEstadoCategoria = (id: number, activa: boolean) => llamarApi<{ message: string }>(`/transacciones/categorias/${id}/activa`, { method: 'PATCH', json: { activa } })
+
+// --- La partida doble ---
+
+export interface CuentaDelPlan { codigo: string; nombre: string }
+
+export interface PlanDeCuentas {
+  cuentas: CuentaDelPlan[]
+  categorias: { id: number; nombre: string; tipo: 'INGRESO' | 'GASTO'; activa: boolean; cuenta: string; nombreCuenta: string; propuesta: boolean }[]
+}
+
+export interface EjercicioContable {
+  anio: number
+  asientos: number
+  /** Categorías que aún usan la cuenta propuesta por su nombre. */
+  categoriasPropuestas: number
+  sumas: { cuenta: string; nombre: string; debe: number; haber: number; saldo: number }[]
+  resultados: {
+    ingresos: { cuenta: string; nombre: string; importe: number }[]
+    gastos: { cuenta: string; nombre: string; importe: number }[]
+    totalIngresos: number
+    totalGastos: number
+    excedente: number
+  }
+}
+
+export interface PaginaDelDiario {
+  total: number
+  pagina: number
+  porPagina: number
+  asientos: { numero: number; apunteId: number; fecha: string; concepto: string; lineas: { cuenta: string; nombre: string; debe: number; haber: number }[] }[]
+}
+
+export const planDeCuentas = () => llamarApi<PlanDeCuentas>('/transacciones/partida-doble/plan')
+export const asignarCuenta = (categoriaId: number, cuenta: string | null) =>
+  llamarApi<PlanDeCuentas>(`/transacciones/partida-doble/categorias/${categoriaId}`, { method: 'PUT', json: { cuenta } })
+export const ejercicioContable = (anio: number) => llamarApi<EjercicioContable>(`/transacciones/partida-doble/${anio}`)
+export const libroDiario = (anio: number, pagina: number, porPagina = 50) =>
+  llamarApi<PaginaDelDiario>(`/transacciones/partida-doble/${anio}/diario?pagina=${pagina}&porPagina=${porPagina}`)
+export const contabilidadEnExcel = (anio: number) => traerArchivo(`/transacciones/partida-doble/${anio}/excel`)

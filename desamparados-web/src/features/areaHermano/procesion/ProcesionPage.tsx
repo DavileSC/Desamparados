@@ -18,6 +18,7 @@ import {
 import { formatearImporte } from '../recibos/etiquetas'
 import { PARENTESCO } from '../perfil/etiquetas'
 import AvisoSuave from '../../../components/AvisoSuave'
+import { site } from '../../../config/site'
 import TarjetaPapeleta from './TarjetaPapeleta'
 
 const ZONA = 'Europe/Madrid'
@@ -92,7 +93,7 @@ export default function ProcesionPage() {
 
   return (
     <>
-      <Helmet><title>Procesión | Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Procesión | ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <SeccionAnimada sx={{ py: { xs: 4, md: 6 } }}>
         <ContenedorDePagina>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, mb: 2 }}>

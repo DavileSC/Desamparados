@@ -8,6 +8,7 @@ import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { MOTIVOS_BAJA, darDeBajaHermano, emanciparHermano, fichaDeHermano, reactivarHermano, actualizarHermano, type AdminBrother, type DatosDeFichaDeHermano, type MotivoBaja } from '../../lib/api/hermanos'
 import { PARENTESCOS } from '../../lib/api/auth'
 import { ESTADO_CIVIL, SEXO } from '../areaHermano/perfil/etiquetas'
+import { site } from '../../config/site'
 
 const PARENTESCO = Object.fromEntries(PARENTESCOS.map((p) => [p.value, p.label]))
 
@@ -300,7 +301,7 @@ export default function HermanoEditPage() {
 
   return (
     <>
-      <Helmet><title>Editar hermano | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Editar hermano | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       {aviso && <Alert severity="success" sx={{ mb: 3 }}>{aviso}</Alert>}
       <PantallaEdicion

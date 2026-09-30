@@ -16,6 +16,7 @@ import { comprobarEsAdulto, comprobarEsMenor, comprobarFechasHermano } from '../
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
 import { enmascararIban } from '../domain/iban.js';
+import { renuevaMandato } from '../domain/sepa.js';
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 
 /**
@@ -128,6 +129,11 @@ export class MisFichasService {
       await comprobarDniLibre(dataToUpdate.dni, hermanoId);
     }
     const detalles = diferenciasFicha(hermano, dataToUpdate);
+    // Domiciliar o cambiar de cuenta es autorizar el adeudo de nuevo: la
+    // remesa manda esta fecha como la de firma del mandato.
+    if (renuevaMandato(hermano, { formaPagoPref: String(forma), iban: typeof cuenta === 'string' ? cuenta : null })) {
+      dataToUpdate.fechaMandato = new Date();
+    }
 
     const actualizado = await db.hermano.update({
       where: { id: hermanoId },

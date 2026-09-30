@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material'
 import { Link, useLocation } from 'react-router-dom'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
+import { site } from '../../config/site'
 
 export default function NoEncontradaPage() {
   const location = useLocation()
@@ -10,7 +11,7 @@ export default function NoEncontradaPage() {
   return (
     <>
       <Helmet>
-        <title>Página no encontrada | Desamparados</title>
+        <title>{`Página no encontrada | ${site.nombreCorto}`}</title>
         {/* Una SPA no puede devolver un 404 HTTP: al menos evitamos que se indexe */}
         <meta name="robots" content="noindex" />
       </Helmet>

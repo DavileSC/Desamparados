@@ -103,7 +103,7 @@ export default function BarraDeNavegacion() {
               }}
             >
               <Escudo alto={36} />
-              DESAMPARADOS
+              {site.nombreCorto.toUpperCase()}
             </Box>
             <IconButton
               edge="end"
@@ -172,7 +172,7 @@ export default function BarraDeNavegacion() {
             }}
           >
             <Escudo alto={46} altoCompacto={32} />
-            DESAMPARADOS
+            {site.nombreCorto.toUpperCase()}
           </Box>
 
           {/* Los desplegables cuelgan por debajo de la barra: nada de `overflow: hidden` por el camino. */}

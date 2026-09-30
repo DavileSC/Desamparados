@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import type { Color, Cuerpo, Formato, Grafica } from '../../domain/datos-areas.js';
 import { euros, numero } from '../../domain/datos-areas.js';
 import type { Trozo } from '../../domain/entradillas.js';
+import { identidad } from '../../domain/datos-entidad.js';
 
 /**
  * Las piezas con que se componen los PDF de «Datos e informes»: la hoja, la
@@ -100,7 +101,7 @@ export function nuevoDocumento(titulo: string): Doc {
     margins: { top: INICIO_SIGUE, bottom: A4.alto - FIN, left: MX, right: MX },
     bufferPages: true,
     autoFirstPage: true,
-    info: { Title: titulo, Author: 'Grupo Parroquial Nuestra Señora de los Desamparados', Creator: 'CMS del Grupo Parroquial' },
+    info: { Title: titulo, Author: identidad.nombre, Creator: `CMS de ${identidad.nombreCorto}` },
   });
   doc.registerFont(LETRA.fina, ruta('./fuentes/Newsreader-Light.ttf'));
   doc.registerFont(LETRA.titulo, ruta('./fuentes/Newsreader-Regular.ttf'));
@@ -282,7 +283,7 @@ export function bandaCapitulo(doc: Doc, o: { cabecera: string; antetitulo: strin
     doc.rect(0, 0, A4.ancho, 126).fill(NEGRO);
     doc.rect(0, 122.25, A4.ancho, 3.75).fill(BURDEOS);
     rotulo(doc, o.cabecera, MX, 17, { tam: 8.25, color: CREMA, opacidad: 0.75 });
-    rotulo(doc, 'Grupo Parroquial Nuestra Señora de los Desamparados', MX, 17, { tam: 8.25, color: CREMA, opacidad: 0.75, ancho: ANCHO_UTIL, alinear: 'right' });
+    rotulo(doc, identidad.nombre, MX, 17, { tam: 8.25, color: CREMA, opacidad: 0.75, ancho: ANCHO_UTIL, alinear: 'right' });
     const numeral = o.numeral ? 60 : 0;
     rotuloVersalitas(doc, o.antetitulo, MX, 62, { tam: 8.25, color: ORO_CLARO, ancho: ANCHO_UTIL - numeral });
     doc.font(LETRA.tituloMedio).fontSize(32);
@@ -313,7 +314,7 @@ export function bandaInforme(doc: Doc, titulo: string, derecha: string[]) {
     doc.rect(0, 108.75, A4.ancho, 3.75).fill(BURDEOS);
     doc.image(IMAGENES.escudoOro, MX, 20, { height: 69 });
     const x = MX + 72;
-    rotuloVersalitas(doc, 'Grupo Parroquial Nuestra Señora de los Desamparados', x, 36, { tam: 8, color: ORO_CLARO, ancho: ANCHO_UTIL - 72 });
+    rotuloVersalitas(doc, identidad.nombre, x, 36, { tam: 8, color: ORO_CLARO, ancho: ANCHO_UTIL - 72 });
     doc.font(LETRA.texto).fontSize(9);
     const anchoDerecha = Math.max(...derecha.map((l) => doc.widthOfString(l)));
     doc.font(LETRA.tituloMedio).fontSize(29);

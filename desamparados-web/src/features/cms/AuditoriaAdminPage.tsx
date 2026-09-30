@@ -7,6 +7,7 @@ import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import { NOMBRE_CARGO } from '../../app/cmsNavegacion'
 import CabeceraSeccion from './CabeceraSeccion'
+import { site } from '../../config/site'
 
 /**
  * Nombre legible de cada acción (AUDIT_ACTIONS en audit.service.ts). Una acción
@@ -18,6 +19,23 @@ const ACCIONES: Record<string, string> = {
   CONFIG_UPDATE: 'Cambiar la configuración',
   '2FA_RESET_ADMIN': 'Restablecer el segundo factor de otra persona',
   RECIBO_COBRAR: 'Cobrar un recibo',
+  REMESA_GENERAR: 'Generar una remesa de adeudos',
+  REMESA_COBRAR: 'Dar una remesa por cobrada',
+  NORMA43_APLICAR: 'Aplicar el extracto del banco',
+  CENSO_EXPORTAR: 'Exportar el censo',
+  CENSO_IMPORTAR: 'Importar el censo',
+  CORTEJO_REPARTIR: 'Repartir el cortejo por antigüedad',
+  COMUNICADO_ENVIAR: 'Enviar un boletín o aviso',
+  BOLETIN_BAJA: 'Darse de baja del boletín',
+  CABILDO_CELEBRAR: 'Dar un cabildo por celebrado',
+  CABILDO_ACTA_APROBAR: 'Aprobar el acta de un cabildo',
+  CATEGORIA_CUENTA: 'Cambiar la cuenta contable de una categoría',
+  CONTABILIDAD_EXPORTAR: 'Exportar la contabilidad a Excel',
+  TIENDA_PEDIDO_PAGADO: 'Pedido de la tienda pagado',
+  TIENDA_PEDIDO_ENTREGADO: 'Entregar un pedido de la tienda',
+  APADRINAMIENTO_PAGADO: 'Apadrinamiento pagado',
+  CORTEJO_DIRECTO_EMPEZAR: 'Sacar el cortejo en directo',
+  CORTEJO_DIRECTO_TERMINAR: 'Terminar el cortejo en directo',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',
@@ -256,7 +274,7 @@ export default function AuditoriaAdminPage() {
 
   return (
     <>
-      <Helmet><title>Auditoría | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Auditoría | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Auditoría" subtitulo={meta ? `${meta.total.toLocaleString('es-ES', { useGrouping: 'always' })} registros, del más reciente al más antiguo` : undefined} />
       {error && <Alert severity="error">{error}</Alert>}
       {loading ? <CircularProgress aria-label="Cargando auditoría" /> : !entries.length ? <Alert severity="info">No hay registros de auditoría.</Alert> : (

@@ -6,6 +6,7 @@ import PantallaEdicion from './PantallaEdicion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
 import { traerEnser, traerPrenda, actualizarEnser, actualizarPrenda, type Prenda } from '../../lib/api/inventario'
 import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, esCantidadValida } from './ropero'
+import { site } from '../../config/site'
 
 type FormEnser = { nombre: string; referencia: string; categoria: string; ubicacion: string; cantidadOptimo: string; cantidadBueno: string; cantidadReparar: string }
 type FormPrenda = { numero: string; tipo: string; talla: string; estado: string; observaciones: string }
@@ -91,7 +92,7 @@ export default function InventarioEditPage() {
 
   return (
     <>
-      <Helmet><title>Editar inventario | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Editar inventario | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       <PantallaEdicion
         titulo={esPrenda ? 'Editar prenda' : 'Editar enser'}

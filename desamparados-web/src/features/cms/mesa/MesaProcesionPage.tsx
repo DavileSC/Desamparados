@@ -25,6 +25,7 @@ import ZonaDevolucion from './ZonaDevolucion'
 import type { Aviso } from './piezas'
 import { CLAVE_MESA, mensajeDeFallo, useMesaEnVivo } from './enVivo'
 import { NOMBRE_SALIDA, fechaCorta } from './formato'
+import { site } from '../../../config/site'
 
 type Zona = 'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'preparacion' | 'devolucion'
 type Modo = { tipo: 'buscar' } | { tipo: 'ficha'; id: number } | { tipo: 'alta' }
@@ -225,7 +226,7 @@ export default function MesaProcesionPage() {
 
   return (
     <>
-      <Helmet><title>Mesa de la procesión | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Mesa de la procesión | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion
         titulo="Mesa de la procesión"
         subtitulo={datos ? `${NOMBRE_SALIDA[salida]} ${datos.year} · ${total} ${total === 1 ? 'apuntado' : 'apuntados'}, ${recogidas} ${salida === 'ROSARIO' ? 'confirmados' : 'con la ropa'}` : NOMBRE_SALIDA[salida]}
