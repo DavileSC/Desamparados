@@ -36,6 +36,7 @@ import ListaRecibos from './tesoreria/ListaRecibos'
 import { NOMBRE_METODO } from './mesa/formato'
 import DialogoEstado, { type CambioEstado } from './tesoreria/DialogoEstado'
 import IncidenciasDePago from './tesoreria/IncidenciasDePago'
+import Remesas from './tesoreria/Remesas'
 
 const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
 const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento' }
@@ -80,7 +81,8 @@ interface NuevoRecibo { hermano: ReceiptBrother | null; year: string; concepto: 
 
 export default function TesoreriaAdminPage() {
   const [params, setParams] = useSearchParams()
-  const vista = params.get('vista') === 'impagos' ? 'impagos' : 'recibos'
+  const vistaPedida = params.get('vista')
+  const vista = vistaPedida === 'impagos' || vistaPedida === 'remesas' ? vistaPedida : 'recibos'
   // La baja es de Secretaría: aquí solo la dan quienes también gestionan el censo.
   const role = useAuthStore((state) => state.cms?.role ?? 'USER')
   const puedeDarDeBaja = role === 'ADMIN' || role === 'HERMANO_MAYOR'
@@ -244,7 +246,7 @@ export default function TesoreriaAdminPage() {
       value={vista}
       onChange={(_, valor) => setParams((anteriores) => {
         const siguientes = new URLSearchParams(anteriores)
-        if (valor === 'impagos') siguientes.set('vista', 'impagos')
+        if (valor === 'impagos' || valor === 'remesas') siguientes.set('vista', valor)
         else siguientes.delete('vista')
         return siguientes
       })}
@@ -252,8 +254,9 @@ export default function TesoreriaAdminPage() {
     >
       <Tab value="recibos" label="Recibos" />
       <Tab value="impagos" label="Impagos" />
+      <Tab value="remesas" label="Remesas" />
     </Tabs>
-    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeDarDeBaja} /> : <>
+    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeDarDeBaja} /> : vista === 'remesas' ? <Remesas /> : <>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}{notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
     <VentanaFormulario
       abierto={generando}

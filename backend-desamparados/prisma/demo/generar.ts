@@ -105,6 +105,21 @@ export interface HermanoDemo {
   puesto: string;
   tieneTunicaPropia: boolean;
   formaPagoPref: (typeof METODOS_PAGO)[number];
+  /** Solo quien domicilia: sin cuenta, Tesorería no tendría nada que remesar. */
+  iban: string | null;
+}
+
+/**
+ * Una cuenta española con el control del IBAN bien calculado, sacada del DNI:
+ * sin tirar del generador aleatorio, que movería todo lo que se genera
+ * después. La entidad 9999 no existe: ninguna cuenta de la demo es de nadie.
+ */
+function ibanDemo(numeroDni: number): string {
+  const bban = `99990001${String(numeroDni % 100).padStart(2, '0')}${String(numeroDni).padStart(10, '0').slice(-10)}`;
+  let resto = 0;
+  // «ES00» al final, con las letras en cifras (E=14, S=28).
+  for (const cifra of `${bban}142800`) resto = (resto * 10 + Number(cifra)) % 97;
+  return `ES${String(98 - resto).padStart(2, '0')}${bban}`;
 }
 
 /** Letra del DNI por el algoritmo oficial, para que no chirríen a la vista. */
@@ -217,7 +232,10 @@ export function generarHermanos(cantidad: number, anio: number, momento: Date = 
       puesto,
       tieneTunicaPropia: azar() < 0.55,
       formaPagoPref: METODOS_PAGO[entero(azar(), 0, METODOS_PAGO.length - 1)],
+      iban: null,
     });
+    const alta = hermanos[hermanos.length - 1];
+    if (alta.formaPagoPref === 'DOMICILIACION') alta.iban = ibanDemo(numeroDni);
   }
 
   return hermanos;

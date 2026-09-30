@@ -54,6 +54,9 @@ export const ACCIONES_AUDITORIA = {
   PAGO_EN_LINEA_RESOLVER: 'PAGO_EN_LINEA_RESOLVER',
   ROSARIO_FECHAR: 'ROSARIO_FECHAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
+  // Remesas SEPA: generar el fichero para el banco y darla por cobrada
+  REMESA_GENERAR: 'REMESA_GENERAR',
+  REMESA_COBRAR: 'REMESA_COBRAR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

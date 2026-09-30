@@ -108,3 +108,14 @@ export const buscarHermanosQuerySchema = type({
         q: type("2 <= string <= 100").describe("un texto de búsqueda de 2 a 100 caracteres")
     }
 });
+
+// Remesas SEPA: el día en que el banco carga los adeudos y, si se quiere, solo
+// un año o un tipo de recibo (la cuota de este año, sin las papeletas…). Que
+// la fecha sea un día hábil con margen suficiente lo decide el servicio.
+export const remesaSchema = type({
+    body: {
+        fechaCobro: type(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha AAAA-MM-DD"),
+        "year?": anioSchema,
+        "tipo?": "'PAPELETA_SITIO' | 'CUOTA_HERMANO' | 'DONATIVO' | 'OTRO'"
+    }
+});

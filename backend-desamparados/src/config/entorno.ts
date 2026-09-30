@@ -34,6 +34,7 @@ export const HOST_PRODUCCION = '127.0.0.1';
 export const PUERTO_POR_DEFECTO = 3001;
 
 import { claveRedsysValida } from '../domain/redsys.js';
+import { leerAcreedorSepa } from '../domain/sepa.js';
 
 const definida = (valor: string | undefined): valor is string =>
   valor !== undefined && valor.trim() !== '';
@@ -113,6 +114,13 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
     if (definida(entorno.REDSYS_TERMINAL) && !esEnteroEnRango(entorno.REDSYS_TERMINAL, 1, 999)) {
       errores.push(`REDSYS_TERMINAL="${entorno.REDSYS_TERMINAL}" debe ser el número de terminal (normalmente 1).`);
     }
+  }
+
+  // Las remesas SEPA: si se empiezan a rellenar los datos del acreedor, que
+  // estén todos y bien. Un identificador mal copiado no falla al generar el
+  // fichero: lo rechaza el banco días después, con la remesa entera.
+  if (Object.keys(entorno).some((nombre) => nombre.startsWith('SEPA_ACREEDOR_') && definida(entorno[nombre]))) {
+    errores.push(...leerAcreedorSepa(entorno).problemas);
   }
 
   if (nodeEnv !== 'production') return { errores, avisos };

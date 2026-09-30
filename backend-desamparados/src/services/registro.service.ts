@@ -101,6 +101,8 @@ export class RegistroService {
       return {
         formaPagoPref: 'DOMICILIACION' as const,
         iban: pago.iban,
+        // Dar la cuenta en el alta es autorizar el adeudo: la fecha del mandato SEPA.
+        fechaMandato: new Date(),
         titularidadCuenta: propia
           ? (esElAdulto ? 'PROPIA' as const : titular ? 'FAMILIAR_HERMANO' as const : 'OTRA_PERSONA' as const)
           : pago.titularidad,

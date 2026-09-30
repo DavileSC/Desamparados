@@ -265,6 +265,9 @@ model Hermano {
   /// Nombre del titular de la cuenta, cuando no es el propio hermano.
   titularCuenta     String?
   titularidadCuenta TitularidadCuenta?
+  /// Cuándo autorizó el adeudo (el mandato SEPA): al domiciliar o al cambiar de
+  /// cuenta, porque una cuenta nueva es un mandato nuevo. Va en cada remesa.
+  fechaMandato      DateTime?
 
   // DOCUMENTOS DEL ALTA (en storage/private: solo los ve el CMS). Guardan el
   // nombre del fichero, no la URL, para no atarse al dominio de la API.
@@ -415,6 +418,9 @@ model Recibo {
   papeleta  PapeletaSitio?
   /// Lo pagado por una solicitud antes de recogerla.
   solicitud Solicitud?
+  /// La remesa que lo mandó al banco, si se cobró (o se intentó) por domiciliación.
+  remesaId  Int?
+  remesa    Remesa?   @relation(fields: [remesaId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -422,6 +428,38 @@ model Recibo {
   @@unique([hermanoId, year, concepto])
   @@index([year]) // <-- Búsquedas de tesorería mucho más rápidas
   @@index([hermanoId]) // <-- Para listar rápido los recibos de una familia
+  @@index([remesaId])
+}
+
+enum EstadoRemesa {
+  ENVIADA // El fichero está generado; el banco aún no ha cargado los adeudos
+  COBRADA // Tesorería la dio por cobrada: los recibos que seguían remesados, pagados
+}
+
+/// Un lote de adeudos domiciliados (SEPA CORE) para subir a la banca en línea.
+/// Guarda el fichero tal cual salió: si se pierde o hay que reenviarlo, se
+/// descarga el mismo, con los mismos identificadores que el banco ya conoce.
+model Remesa {
+  id          Int          @id @default(autoincrement())
+  /// El MsgId del fichero: el banco rechaza dos ficheros con el mismo.
+  mensajeId   String       @unique @db.VarChar(35)
+  /// El día en que el banco carga los adeudos (ReqdColltnDt).
+  fechaCobro  DateTime     @db.Date
+  numRecibos  Int
+  total       Decimal      @db.Decimal(10, 2)
+  xml         String       @db.LongText
+  estado      EstadoRemesa @default(ENVIADA)
+  cobradaEl   DateTime?
+  /// Quién la generó, copiado: la remesa sobrevive a la cuenta del tesorero.
+  autorId     Int?
+  autorNombre String?
+
+  recibos Recibo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
 }
 
 // ---------------------------------------------------------

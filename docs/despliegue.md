@@ -337,6 +337,40 @@ Tres cosas que no se ven:
   Bizum no se puede terminar con el terminal público de Redsys (error SIS0475
   al autenticarse): hace falta el de pruebas del banco con Bizum activado.
 
+### Las remesas SEPA (adeudos domiciliados)
+
+Tesorería cobra los recibos de quienes domicilian con un fichero de adeudos
+(`pain.008.001.02`, SEPA CORE) que se genera en Tesorería → Remesas y se sube
+a mano a la banca en línea. Hay que contratar con el banco del Grupo los
+**adeudos directos SEPA (Core)**: el banco da el **identificador de acreedor**.
+
+| Variable | Efecto |
+|---|---|
+| `SEPA_ACREEDOR_NOMBRE` | El nombre del Grupo tal como sale en el extracto del hermano (sin tildes: se quitan solas) |
+| `SEPA_ACREEDOR_ID` | El identificador de acreedor que da el banco (en España, `ES` + control + sufijo + NIF, p. ej. `ES26000G12345678`) |
+| `SEPA_ACREEDOR_IBAN` | La cuenta del Grupo donde se cobran |
+| `SEPA_ACREEDOR_BIC` | Opcional: con el IBAN basta |
+
+Sin ellas, Tesorería ve qué recibos entrarían pero no puede generar el
+fichero, y la pantalla dice qué falta. Si se rellena alguna, el backend no
+arranca hasta que estén todas y bien (el control del identificador y del IBAN
+se comprueba al arrancar).
+
+Lo que no se ve:
+
+- **Los adeudos van todos como recurrentes (`RCUR`)**, y el banco del hermano
+  como `NOTPROVIDED`. Es lo que aceptan los bancos españoles desde 2016; si el
+  del Grupo pidiera `FRST` en el primer adeudo de cada mandato, se cambia en
+  `backend-desamparados/src/domain/sepa.ts`.
+- **El mandato**: cada adeudo lleva la fecha en que el hermano dio la cuenta
+  (al darse de alta o al cambiarla desde su área). La referencia incluye esa
+  fecha: una cuenta nueva es un mandato nuevo.
+- **La fecha de cobro** tiene que ser un día hábil de los bancos (TARGET2) con
+  dos días hábiles de margen. Si el banco del Grupo pide más, se sube
+  `DIAS_HABILES_DE_MARGEN` en el mismo fichero.
+- **Las devoluciones** se marcan a mano en la lista de recibos, antes de dar
+  la remesa por cobrada. La Norma 43 (en la hoja de ruta) lo hará sola.
+
 ### El antivirus, tal como funciona de verdad
 
 `src/utils/clamd.ts` decide así:

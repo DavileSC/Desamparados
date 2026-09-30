@@ -126,6 +126,9 @@ export async function sembrarDemostracion(): Promise<void> {
       alturaHombro: h.alturaHombro,
       puesto: h.puesto,
       formaPagoPref: h.formaPagoPref as MetodoPago,
+      iban: h.iban,
+      // Dio la cuenta al darse de alta: es la fecha de su mandato SEPA.
+      fechaMandato: h.iban ? h.fechaAlta : null,
     })),
   });
 

@@ -18,6 +18,8 @@ const ACCIONES: Record<string, string> = {
   CONFIG_UPDATE: 'Cambiar la configuración',
   '2FA_RESET_ADMIN': 'Restablecer el segundo factor de otra persona',
   RECIBO_COBRAR: 'Cobrar un recibo',
+  REMESA_GENERAR: 'Generar una remesa de adeudos',
+  REMESA_COBRAR: 'Dar una remesa por cobrada',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',
