@@ -154,11 +154,15 @@ export async function llamarApi<T>(path: string, options: ApiRequestOptions = {}
 /**
  * Un fichero de la API (un PDF): el contenido y el nombre que propone el
  * servidor. Los errores llegan igual que en `llamarApi`, con su mensaje.
+ * Con `json`, se pide por POST con ese cuerpo (las cartas aún sin guardar).
  */
-export async function traerArchivo(path: string): Promise<{ blob: Blob; nombre: string | null }> {
+export async function traerArchivo(path: string, json?: unknown): Promise<{ blob: Blob; nombre: string | null }> {
   let res: Response
   try {
-    res = await fetch(`${BASE_URL}${path}`, { credentials: 'include' })
+    res = await fetch(`${BASE_URL}${path}`, {
+      credentials: 'include',
+      ...(json !== undefined && { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(json) }),
+    })
   } catch {
     throw new ErrorDeApi('No se ha podido conectar con el servidor. Inténtalo de nuevo en unos minutos.', 0)
   }

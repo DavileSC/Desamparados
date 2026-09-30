@@ -792,6 +792,22 @@ model Sufragio {
   @@index([hermanoId, fecha])
 }
 
+/// Una carta o circular de Secretaría: el texto con sus campos
+/// ({{nombre}}…), la firma y a quién va (los filtros del censo, como la URL).
+/// Se guarda para reutilizarla de un año a otro.
+model Carta {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @db.VarChar(120)
+  asunto      String   @db.VarChar(200)
+  cuerpo      String   @db.Text
+  consulta    String   @db.Text
+  firmaCargo  String   @db.VarChar(80)
+  firmaNombre String?  @db.VarChar(120)
+  autorId     Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 /// Lo que ya hizo la mesa, por la clave que el ordenador genera al abrir cada
 /// operación. Si se corta la WiFi después de cobrar y la mesa vuelve a pulsar,
 /// la misma clave devuelve lo que ya se hizo en vez de cobrar otra vez.

@@ -8,6 +8,7 @@ import { authRoutes } from './routes/auth.routes.js';
 import { hermanoRoutes } from './routes/hermano.routes.js';
 import { reciboRoutes } from './routes/recibo.routes.js';
 import { pagoRoutes } from './routes/pago.routes.js';
+import { cartaRoutes } from './routes/carta.routes.js';
 import { paginaRoutes } from './routes/pagina.routes.js';
 import { agendaRoutes } from './routes/agenda.routes.js';
 import { noticiaRoutes } from './routes/noticia.routes.js'; 
@@ -143,6 +144,7 @@ app.get(['/health', '/api/health'], (_req, res) => {
 // 2FA, rescate...) agotarían la cuota de 10/15 min sin ser objetivos de fuerza bruta.
 app.use('/api/auth', authRoutes);       // Login y Registro
 app.use('/api/hermanos', hermanoRoutes); // Gestión de Cofrades
+app.use('/api/cartas', cartaRoutes);     // Cartas y circulares de Secretaría
 app.use('/api/recibos', reciboRoutes);   // Pagos y Tesorería
 app.use('/api/pagos', pagoRoutes);       // Avisos del banco (Redsys), sin sesión
 app.use('/api/pages', paginaRoutes);     // Contenido estático

@@ -59,6 +59,7 @@ const AuditoriaAdminPage = lazy(() => import('../features/cms/AuditoriaAdminPage
 const AjustesInicioPage = lazy(() => import('../features/cms/AjustesInicioPage'))
 const DatosInformesPage = lazy(() => import('../features/cms/datos/DatosInformesPage'))
 const InformeAnualPage = lazy(() => import('../features/cms/datos/InformeAnualPage'))
+const CartasPage = lazy(() => import('../features/cms/cartas/CartasPage'))
 const AccesosAdminPage = lazy(() => import('../features/cms/AccesosAdminPage'))
 const PanelPage = lazy(() => import('../features/cms/PanelPage'))
 const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
@@ -229,6 +230,7 @@ const router = createBrowserRouter([
           { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },
           { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
           { path: 'datos', element: <ExigeRol roles={rolesPorRutaCms.datos}>{withSuspense(DatosInformesPage)}</ExigeRol> },
+          { path: 'cartas', element: <ExigeRol roles={rolesPorRutaCms.cartas}>{withSuspense(CartasPage)}</ExigeRol> },
           { path: 'informe-anual', element: <ExigeRol roles={rolesPorRutaCms['informe-anual']}>{withSuspense(InformeAnualPage)}</ExigeRol> },
           { path: 'informe-anual/:anio', element: <ExigeRol roles={rolesPorRutaCms['informe-anual/:anio']}>{withSuspense(InformeAnualPage)}</ExigeRol> },
           { path: 'accesos', element: <ExigeRol roles={rolesPorRutaCms.accesos}>{withSuspense(AccesosAdminPage)}</ExigeRol> },

@@ -17,6 +17,7 @@ import WebOutlinedIcon from '@mui/icons-material/WebOutlined'
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
 import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
+import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import CATALOGO from '../../../shared/paginas-publicas.json'
 import type { PanelResponse } from '../lib/api/panel'
 
@@ -88,6 +89,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon },
   { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
+  { label: 'Cartas', href: '/cms/cartas', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: MailOutlinedIcon },
   { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: DirectionsWalkOutlinedIcon },
   // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
   { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon },
@@ -118,6 +120,8 @@ export const rolesPorRutaCms = {
   publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
+  // Llevan los datos del censo: los mismos que lo gestionan (la guarda de /api/cartas).
+  cartas: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   procesion: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   // Los mismos que pueden inscribir y cobrar en el backend (rolesMesaReparto).
   'procesion/mesa': ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'],

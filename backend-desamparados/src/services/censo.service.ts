@@ -30,9 +30,12 @@ import { EmailService } from './email.service';
  */
 export class CensoService {
 
-  static async searchHermanos(query: SearchHermanoQuery) {
-    const paginacion = sanearPaginacion(query);
-
+  /**
+   * Las condiciones de la búsqueda del censo, sin la paginación: las usan el
+   * listado y lo que se hace con una búsqueda entera (las cartas a quienes
+   * salen en ella). Un solo sitio para que las dos elijan a los mismos.
+   */
+  static whereDelCenso(query: SearchHermanoQuery): Prisma.HermanoWhereInput {
     // Un número suelto busca también al hermano con ese número: en la
     // secretaría a un hermano se le conoce tanto por el número como por el nombre.
     const texto = query.q?.trim() ?? '';
@@ -53,6 +56,12 @@ export class CensoService {
     // borraba lo buscado.
     const avanzados = filtrosAvanzados(query, new Date());
     if (avanzados.length) where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), ...avanzados];
+    return where;
+  }
+
+  static async searchHermanos(query: SearchHermanoQuery) {
+    const paginacion = sanearPaginacion(query);
+    const where = CensoService.whereDelCenso(query);
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({

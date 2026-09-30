@@ -116,8 +116,12 @@ function Contador({ seccion, valor, tono }: { seccion: string; valor: number; to
 /** Grupos abiertos o cerrados a mano, recordados en cada ordenador. */
 const CLAVE_GRUPOS = 'cms-menu-grupos'
 
-/** Hasta este número de secciones el menú va abierto entero: plegar solo estorba. */
-const SECCIONES_SIN_PLEGAR = 6
+/**
+ * Hasta este número de secciones el menú va abierto entero: plegar solo
+ * estorba. Siete desde que Secretaría tiene «Cartas» (octubre de 2026): así
+ * sigue viéndolo todo, y plegar queda para Administración y el Hermano Mayor.
+ */
+const SECCIONES_SIN_PLEGAR = 7
 
 function leerGrupos(): Partial<Record<Grupo, boolean>> {
   try {

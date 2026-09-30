@@ -57,6 +57,8 @@ export const ACCIONES_AUDITORIA = {
   SUFRAGIO_CREAR: 'SUFRAGIO_CREAR',
   SUFRAGIO_BORRAR: 'SUFRAGIO_BORRAR',
   PESAME_ENVIAR: 'PESAME_ENVIAR',
+  // Las cartas: se generan con datos de muchos hermanos a la vez
+  CARTAS_GENERAR: 'CARTAS_GENERAR',
   ROSARIO_FECHAR: 'ROSARIO_FECHAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
   // Procesión (turnos de reparto y citas)
