@@ -47,6 +47,7 @@ const AgendaAdminPage = lazy(() => import('../features/cms/AgendaAdminPage'))
 const HermanosAdminPage = lazy(() => import('../features/cms/HermanosAdminPage'))
 const ProcesionAdminPage = lazy(() => import('../features/cms/ProcesionAdminPage'))
 const MesaProcesionPage = lazy(() => import('../features/cms/mesa/MesaProcesionPage'))
+const CortejoDirectoPage = lazy(() => import('../features/cms/CortejoDirectoPage'))
 const HermanoEditPage = lazy(() => import('../features/cms/HermanoEditPage'))
 const NoticiaEditPage = lazy(() => import('../features/cms/NoticiaEditPage'))
 const ComunicadosAdminPage = lazy(() => import('../features/cms/ComunicadosAdminPage'))
@@ -254,6 +255,7 @@ const router = createBrowserRouter([
           { path: ':id/editar', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</ExigeRol> },
           { path: 'procesion', element: <ExigeRol roles={rolesPorRutaCms.procesion}>{withSuspense(ProcesionAdminPage)}</ExigeRol> },
           { path: 'procesion/mesa', element: <ExigeRol roles={rolesPorRutaCms['procesion/mesa']}>{withSuspense(MesaProcesionPage)}</ExigeRol> },
+          { path: 'procesion/directo', element: <ExigeRol roles={rolesPorRutaCms['procesion/directo']}>{withSuspense(CortejoDirectoPage)}</ExigeRol> },
           { path: 'tesoreria', element: <ExigeRol roles={rolesPorRutaCms.tesoreria}>{withSuspense(TesoreriaAdminPage)}</ExigeRol> },
           { path: 'inventario', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</ExigeRol> },
           { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },

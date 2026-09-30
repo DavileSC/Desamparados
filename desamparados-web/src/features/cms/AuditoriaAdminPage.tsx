@@ -33,6 +33,8 @@ const ACCIONES: Record<string, string> = {
   TIENDA_PEDIDO_PAGADO: 'Pedido de la tienda pagado',
   TIENDA_PEDIDO_ENTREGADO: 'Entregar un pedido de la tienda',
   APADRINAMIENTO_PAGADO: 'Apadrinamiento pagado',
+  CORTEJO_DIRECTO_EMPEZAR: 'Sacar el cortejo en directo',
+  CORTEJO_DIRECTO_TERMINAR: 'Terminar el cortejo en directo',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',

@@ -11,6 +11,7 @@ import { comunicadosRoutes } from './routes/comunicados.routes.js';
 import { cabildosRoutes } from './routes/cabildos.routes.js';
 import { tiendaRoutes } from './routes/tienda.routes.js';
 import { apadrinamientosRoutes } from './routes/apadrinamientos.routes.js';
+import { cortejoDirectoRoutes } from './routes/cortejo-directo.routes.js';
 import { pagoRoutes } from './routes/pago.routes.js';
 import { paginaRoutes } from './routes/pagina.routes.js';
 import { agendaRoutes } from './routes/agenda.routes.js';
@@ -165,6 +166,7 @@ app.use('/api/comunicados', comunicadosRoutes); // Boletín y avisos por correo
 app.use('/api/cabildos', cabildosRoutes); // Cabildos y libro de actas
 app.use('/api/tienda', tiendaRoutes); // Tienda en línea: el catálogo y la compra, sin sesión
 app.use('/api/apadrinamientos', apadrinamientosRoutes); // Apadrinar piezas sobre una foto, sin sesión
+app.use('/api/cortejo-directo', cortejoDirectoRoutes); // Dónde va el cortejo en la calle
 app.use('/api/portada', portadaRoutes);  // Fotos de la cabecera del inicio
 app.use('/api/secciones', seccionesRoutes); // Secciones guardadas del constructor de páginas
 app.use('/api/contenido', contenidoRoutes); // Textos editables de la portada, el recorrido y la historia

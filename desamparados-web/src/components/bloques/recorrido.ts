@@ -52,10 +52,27 @@ export const puntoEn = (linea: Coordenada[], fraccion: number, hechos?: number[]
 
 /** La fracción del recorrido del punto de la línea más cercano a `p`. Para situar una parada pulsando en el mapa. */
 export function fraccionMasCercana(linea: Coordenada[], p: Coordenada): number {
-  if (linea.length < 2) return 0
+  return sobreElRecorrido(linea, p).fraccion
+}
+
+/**
+ * Más lejos que esto de la línea, la posición no se pinta: el GPS de un móvil
+ * entre fachadas se desvía unas decenas de metros, pero a cien y pico ya no
+ * dice por qué calle va, y el trono saltaría a una que no es.
+ */
+export const DISTANCIA_MAXIMA_M = 150
+
+/**
+ * El punto del recorrido más cercano a otro, en fracción, y a cuántos metros
+ * queda: la posición del cortejo en directo llega del GPS de un móvil y hay
+ * que llevarla a la calle (y saber si está tan lejos que no es de fiar).
+ */
+export function sobreElRecorrido(linea: Coordenada[], p: Coordenada): { fraccion: number; distancia: number } {
+  if (linea.length === 0) return { fraccion: 0, distancia: Infinity }
+  if (linea.length < 2) return { fraccion: 0, distancia: metros(linea[0], p) }
   const hechos = acumulados(linea)
   const total = hechos[hechos.length - 1]
-  if (total === 0) return 0
+  if (total === 0) return { fraccion: 0, distancia: metros(linea[0], p) }
   const coseno = Math.cos((p[1] * Math.PI) / 180)
   const x = (c: Coordenada) => (c[0] - p[0]) * METROS_POR_GRADO * coseno
   const y = (c: Coordenada) => (c[1] - p[1]) * METROS_POR_GRADO
@@ -68,7 +85,7 @@ export function fraccionMasCercana(linea: Coordenada[], p: Coordenada): number {
     const distancia = Math.hypot(ax + dx * t, ay + dy * t)
     if (distancia < mejor.distancia) mejor = { distancia, recorrido: hechos[i - 1] + (hechos[i] - hechos[i - 1]) * t }
   }
-  return mejor.recorrido / total
+  return { fraccion: mejor.recorrido / total, distancia: mejor.distancia }
 }
 
 /**

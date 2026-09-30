@@ -1193,3 +1193,19 @@ model Apadrinamiento {
 
   @@index([piezaId, estado])
 }
+
+/// Dónde va el cortejo en la calle, para el mapa del recorrido. Una sola fila
+/// (id 1): solo interesa la última posición, no el rastro.
+model CortejoEnDirecto {
+  id            Int      @id @default(1)
+  /// Si está en la calle. Al terminar se apaga y el mapa vuelve a la reproducción.
+  enMarcha      Boolean  @default(false)
+  lng           Decimal  @db.Decimal(9, 6)
+  lat           Decimal  @db.Decimal(9, 6)
+  /// Metros de margen que da el GPS; null si se marcó a mano una parada.
+  precision     Int?
+  /// Quién la manda, para saber a quién llamar si se queda parada.
+  autorId       Int?
+  autorNombre   String?  @db.VarChar(120)
+  actualizadoEl DateTime @default(now())
+}

@@ -116,7 +116,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| 🟡 | B | Posición del cortejo en directo | Hay recorrido en el mapa, simulado |
+| ✅ | — | **Posición del cortejo en directo** | Hecha: Censo y procesión → «Cortejo en directo», pensada para el móvil de quien va en la calle. «Empezar» manda la posición del GPS (cada 15 s como poco, y la repite cada minuto si se está parado) y mantiene la pantalla encendida; si el GPS falla, se marca a mano la parada. El mapa del recorrido pregunta cada 20 s: con posición de menos de 10 minutos y a menos de 150 m de la línea, pone el trono allí con «En directo» y retira el play; si no, sigue la reproducción. La web no dice quién la manda. Migración `cortejo_en_directo` |
 | ⏸ | — | Notificaciones push | Exige hacer la web instalable; el correo cubre lo mismo |
 | ⏸ | — | Firma en pantalla | Poco valor legal; basta un consentimiento registrado con fecha |
 | ⏸ | — | Asistente con IA | Vistoso, pero lo último que decide una compra |

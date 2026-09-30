@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fraccionMasCercana, metros, paradaAlcanzada, posicionesEnRuta, puntoEn, tramoHasta } from '../recorrido'
+import { fraccionMasCercana, metros, paradaAlcanzada, posicionesEnRuta, puntoEn, sobreElRecorrido, tramoHasta } from '../recorrido'
 import type { Coordenada } from '../../../lib/api/contenido'
 
 // Una L en Málaga: unos 100 m hacia el este y otros 100 hacia el norte.
@@ -42,5 +42,15 @@ describe('las cuentas del recorrido sobre el mapa', () => {
     expect(paradaAlcanzada([0, 0.5, 1], 0.49)).toBe(0)
     expect(paradaAlcanzada([0, 0.5, 1], 0.5)).toBe(1)
     expect(paradaAlcanzada([0.1, 0.5, 1], 0)).toBe(-1)
+  })
+
+  it('la posición del GPS se lleva a la calle y dice a cuántos metros queda', () => {
+    const cerca = sobreElRecorrido(ELE, [-4.45 + ESTE, 36.71 + NORTE / 2])
+    expect(cerca.fraccion).toBeCloseTo(0.75, 2)
+    expect(cerca.distancia).toBeLessThan(1)
+    const lejos = sobreElRecorrido(ELE, [-4.45 + ESTE / 2, 36.71 - 3 * NORTE])
+    expect(lejos.fraccion).toBeCloseTo(0.25, 2)
+    expect(lejos.distancia).toBeCloseTo(300, -1)
+    expect(sobreElRecorrido([], ELE[0]).distancia).toBe(Infinity)
   })
 })
