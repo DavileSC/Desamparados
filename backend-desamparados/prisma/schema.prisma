@@ -704,14 +704,25 @@ enum EstadoPagoEnLinea {
   INCIDENCIA // Se cobró, pero no cuadra con lo que debía: Tesorería lo devuelve
 }
 
-/// Un pago del área de hermanos que pasa por el banco. Se apunta antes de ir a
+/// Qué se paga: recibos del área de hermanos o un donativo desde la web pública.
+enum TipoPagoEnLinea {
+  RECIBOS
+  DONATIVO
+}
+
+/// Un pago que pasa por el banco: recibos del área de hermanos o un donativo. Se apunta antes de ir a
 /// la página de Redsys, con lo que se paga y el importe calculado aquí; solo el
 /// aviso firmado del banco lo da por pagado, nunca la vuelta del navegador.
 model PagoEnLinea {
   id           Int               @id @default(autoincrement())
   /// El número de pedido para Redsys: 12 caracteres, los 4 primeros cifras.
   pedido       String?           @unique @db.VarChar(12)
-  userId       Int
+  /// Quién paga, si tiene cuenta. Un donativo desde la web pública no la necesita.
+  userId       Int?
+  tipo         TipoPagoEnLinea   @default(RECIBOS)
+  /// Del donativo: el destino que eligió, la página desde la que donó y, si
+  /// los dio, su nombre y su correo (para darle las gracias).
+  donativo     Json?
   /// TARJETA o BIZUM.
   metodo       MetodoPago
   importe      Decimal           @db.Decimal(10, 2)

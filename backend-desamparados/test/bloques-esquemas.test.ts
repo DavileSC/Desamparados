@@ -6,7 +6,7 @@ import { esquemaDeBloque } from '../src/schemas/bloques.schema.js';
 import { TIPOS_BLOQUE } from '../src/domain/bloques.js';
 
 type Tipo = 'texto' | 'foto' | 'galeria' | 'tarjetas' | 'llamada' | 'datos' | 'itinerario'
-  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel';
+  | 'cronologia' | 'listado' | 'contacto' | 'fotoFija' | 'horario' | 'dibujo' | 'mapa' | 'anillos' | 'puertas' | 'programa' | 'relacion' | 'carrusel' | 'donativo';
 
 const falla = (tipo: Tipo, valor: unknown) =>
   esquemaDeBloque(tipo)(valor) instanceof ArkErrors;
@@ -513,5 +513,29 @@ describe('bloque de contacto', () => {
 
   test('el título de la tarjeta no admite HTML', () => {
     assert.ok(falla('contacto', { ...doc([LINEA]), tituloDatos: '<b>Hola</b>' }));
+  });
+});
+
+describe('bloque de donativo', () => {
+  const doc = (extra: Record<string, unknown> = {}) => ({ tipo: 'donativo', titulo: 'Colabora', texto: '', importes: [5, 10, 20], destinos: ['Caridad', 'Cultos'], ...extra });
+
+  test('acepta sus importes y sus destinos, y también sin destinos', () => {
+    assert.ok(!falla('donativo', doc()));
+    assert.ok(!falla('donativo', doc({ destinos: [] })), 'sin destinos no se elige: va a lo que haga falta');
+  });
+
+  test('al menos un importe, enteros y dentro de los límites, sin repetir', () => {
+    assert.ok(falla('donativo', doc({ importes: [] })));
+    assert.ok(falla('donativo', doc({ importes: [0] })));
+    assert.ok(falla('donativo', doc({ importes: [topes.donativoMaximoEuros + 1] })));
+    assert.ok(falla('donativo', doc({ importes: [7.5] })), 'los sugeridos, en euros enteros');
+    assert.ok(falla('donativo', doc({ importes: [10, 10] })));
+    assert.ok(falla('donativo', doc({ importes: Array.from({ length: topes.importesPorDonativo + 1 }, (_, i) => i + 1) })));
+  });
+
+  test('un destino no queda en blanco ni se repite', () => {
+    assert.ok(falla('donativo', doc({ destinos: ['Caridad', ' '] })));
+    assert.ok(falla('donativo', doc({ destinos: ['Caridad', 'caridad'] })));
+    assert.ok(falla('donativo', doc({ destinos: ['<b>Caridad</b>'] })), 'sin HTML');
   });
 });

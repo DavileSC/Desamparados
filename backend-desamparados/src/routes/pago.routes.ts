@@ -1,6 +1,8 @@
 import express, { Router } from 'express';
 import { validate } from '../config/validate.js';
 import { avisoRedsysSchema } from '../schemas/procesion.schema.js';
+import { donativoSchema, estadoDeDonativoSchema } from '../schemas/pago.schema.js';
+import { limitadorDonativo } from '../config/limiter.js';
 import { PagoController } from '../controllers/pago.controller.js';
 
 const pagoRoutes = Router();
@@ -13,5 +15,14 @@ pagoRoutes.post('/redsys/notificacion',
   validate(avisoRedsysSchema),
   PagoController.avisoRedsys,
 );
+
+// Lo que la web pública necesita para ofrecer el donativo: con qué se paga y
+// si es de pruebas. Sin sesión: lo ve cualquiera que abra la página.
+pagoRoutes.get('/metodos', PagoController.metodos);
+
+// El donativo desde la web pública, sin cuenta. Se comprueba contra el bloque
+// «Donativo» de la página desde la que se hace (ver DonativoService).
+pagoRoutes.post('/donativo', limitadorDonativo, validate(donativoSchema), PagoController.donar);
+pagoRoutes.get('/donativo/:pedido', validate(estadoDeDonativoSchema), PagoController.estadoDelDonativo);
 
 export { pagoRoutes };

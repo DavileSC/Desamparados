@@ -33,6 +33,22 @@ export const authLimiter = rateLimit({
 
 // El formulario público puede provocar spam de correo, por lo que tiene un
 // límite propio más estricto que el resto de lecturas de la API.
+/**
+ * Empezar un donativo apunta un pago pendiente y habla con el banco: sin
+ * sesión, se acota como el formulario de contacto, algo más holgado porque
+ * quien se equivoca de tarjeta vuelve a intentarlo.
+ */
+export const limitadorDonativo = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	limit: 10,
+	standardHeaders: 'draft-7',
+	legacyHeaders: false,
+	message: {
+		status: 429,
+		message: 'Demasiados intentos de donativo desde esta IP. Espera unos minutos e inténtalo de nuevo.'
+	}
+});
+
 export const limitadorContacto = rateLimit({
 	windowMs: 15 * 60 * 1000,
 	limit: 5,

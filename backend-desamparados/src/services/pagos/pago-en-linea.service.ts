@@ -1,39 +1,33 @@
 /**
- * El pago en línea del área de hermanos, de punta a punta: lo que se paga,
- * el viaje a la página del banco, el aviso del banco y lo que no cuadra.
+ * El pago en línea, de punta a punta: lo que se paga, el viaje a la página
+ * del banco, el aviso del banco y lo que no cuadra. Los recibos del área de
+ * hermanos están aquí; el donativo de la web pública, en `donativo.service.ts`,
+ * y el aviso del banco reparte a uno u otro.
  *
  * El dinero manda: si el banco avisa de que cobró, ese cobro queda apuntado
  * pase lo que pase. Si ya no se puede aplicar a lo que se pagaba (se pagó en
  * Secretaría mientras tanto, cambió el importe…), el pago queda como
  * INCIDENCIA para que Tesorería devuelva el dinero. Nunca se pierde en silencio.
  */
-import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, Prisma } from '@prisma/client';
+import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, Prisma, TipoPagoEnLinea } from '@prisma/client';
 import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { pendienteDeLaSalida } from '../../domain/salidas.js';
-import { configuracionRedsys, formularioDePago, leerAviso, modoDePago, numeroDePedido, type FormularioRedsys } from '../../domain/redsys.js';
+import { configuracionRedsys, formularioDePago, leerAviso, modoDePago, numeroDePedido } from '../../domain/redsys.js';
 import { urlDeLaWeb } from '../correos/plantilla.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
 import { MisRecibosService } from '../mis-recibos.service.js';
 import { PapeletasService } from '../procesion/papeletas.service.js';
 import { ZonasService } from '../procesion/zonas.service.js';
+import { DonativoService } from './donativo.service.js';
+import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
 
-export type MetodoEnLinea = 'TARJETA' | 'BIZUM';
+export type { InicioDePago, MetodoEnLinea } from './comunes.js';
 
 export interface LoQueSePaga {
   reciboIds: number[];
   solicitudIds: number[];
 }
-
-/** Lo que devuelve empezar un pago: hecho ya (simulado) o el formulario para ir al banco. */
-export type InicioDePago =
-  | { tipo: 'hecho'; total: number; repetida: boolean }
-  | ({ tipo: 'banco'; pedido: string } & FormularioRedsys);
-
-const aCentimos = (importe: Prisma.Decimal | number) => Math.round(Number(importe) * 100);
-
-/** La clave de la operación del cobro: la misma en cada aviso repetido del mismo pedido. */
-const claveDelCobro = (pedido: string) => `redsys-${pedido}`;
 
 export class PagoEnLineaService {
   /**
@@ -103,7 +97,7 @@ export class PagoEnLineaService {
       centimos: listo.centimos,
       metodo: pago.metodo,
       descripcion: listo.conceptos.length ? listo.conceptos.join(', ') : 'Salida procesional',
-      urlAviso: `${process.env.API_URL || 'http://localhost:3001'}/api/pagos/redsys/notificacion`,
+      urlAviso: urlDelAviso(),
       urlVuelta: urlDeLaWeb(`/area-hermano/procesion?pago=${pedido}`),
       urlFallo: urlDeLaWeb(`/area-hermano/procesion?pago=${pedido}&resultado=no`),
     }, config);
@@ -141,7 +135,7 @@ export class PagoEnLineaService {
       }
       await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.INCIDENCIA, motivo, ...banco } });
       console.error(`[Pagos] Incidencia en el pedido ${aviso.pedido}: ${motivo}`);
-      await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_INCIDENCIA, { ...meta, userId: pago.userId }, 'PagoEnLinea', pago.id, { pedido: aviso.pedido, motivo });
+      await AuditoriaService.log(ACCIONES_AUDITORIA.PAGO_EN_LINEA_INCIDENCIA, { ...meta, userId: pago.userId ?? undefined }, 'PagoEnLinea', pago.id, { pedido: aviso.pedido, motivo });
     };
 
     const esperado = aCentimos(pago.importe);
@@ -149,17 +143,27 @@ export class PagoEnLineaService {
       await incidencia(`El banco cobró ${(aviso.centimos / 100).toFixed(2)} € y se esperaban ${(esperado / 100).toFixed(2)} €.`);
       return true;
     }
+    // El donativo no tiene nada que casar: se apunta tal cual.
+    if (pago.tipo === TipoPagoEnLinea.DONATIVO) {
+      await DonativoService.aplicar(pago, banco, meta);
+      return true;
+    }
     const reciboIds = pago.reciboIds as number[];
     const solicitudIds = pago.solicitudIds as number[];
+    const userId = pago.userId;
+    if (userId === null) {
+      await incidencia('El pago de recibos no tiene de quién es.');
+      return true;
+    }
     try {
-      const ahora = await this.preparar(pago.userId, { reciboIds, solicitudIds });
+      const ahora = await this.preparar(userId, { reciboIds, solicitudIds });
       if (ahora.centimos !== esperado) {
         await incidencia(`Mientras pagaba cambió lo que debía: ahora son ${(ahora.centimos / 100).toFixed(2)} €.`);
         return true;
       }
       await ZonasService.cobrar(
         { hermanoId: ahora.hermanoId, reciboIds, solicitudes: solicitudIds.map((solicitudId) => ({ solicitudId })), metodoPago: pago.metodo as MetodoEnLinea },
-        claveDelCobro(aviso.pedido), { ...meta, userId: pago.userId }, ACCIONES_AUDITORIA.PAGO_EN_LINEA,
+        claveDelCobro(aviso.pedido), { ...meta, userId }, ACCIONES_AUDITORIA.PAGO_EN_LINEA,
       );
       await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
     } catch (e) {
@@ -172,7 +176,7 @@ export class PagoEnLineaService {
 
   /** Cómo va un pago propio, para la vuelta del banco (el aviso puede llegar después). */
   static async estado(userId: number, pedido: string) {
-    const pago = await db.pagoEnLinea.findFirst({ where: { pedido, userId }, select: { estado: true, importe: true } });
+    const pago = await db.pagoEnLinea.findFirst({ where: { pedido, userId, tipo: TipoPagoEnLinea.RECIBOS }, select: { estado: true, importe: true } });
     if (!pago) throw new NotFoundError('No se encontró ese pago.');
     return { estado: pago.estado, importe: Number(pago.importe) };
   }
@@ -184,11 +188,14 @@ export class PagoEnLineaService {
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 50,
     });
-    const usuarios = await db.user.findMany({ where: { id: { in: filas.map((f) => f.userId) } }, select: { id: true, email: true } });
+    const usuarios = await db.user.findMany({ where: { id: { in: filas.flatMap((f) => (f.userId === null ? [] : [f.userId])) } }, select: { id: true, email: true } });
     const correo = new Map(usuarios.map((u) => [u.id, u.email]));
+    // De un donativo, el correo que dejó el donante (si lo dejó): es a quien hay que devolverle el dinero.
+    const deQuien = (f: (typeof filas)[number]) =>
+      (f.userId !== null ? correo.get(f.userId) : (f.donativo as { email?: string | null } | null)?.email) ?? null;
     return filas.map((f) => ({
       id: f.id, pedido: f.pedido, fecha: f.createdAt, importe: Number(f.importe), metodo: f.metodo,
-      autorizacion: f.autorizacion, motivo: f.motivo, correo: correo.get(f.userId) ?? null,
+      autorizacion: f.autorizacion, motivo: f.motivo, correo: deQuien(f), donativo: f.tipo === TipoPagoEnLinea.DONATIVO,
     }));
   }
 

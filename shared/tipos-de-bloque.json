@@ -36,7 +36,10 @@
     "su nombre y su función, el mandato y la fecha del cabildo.",
     "",
     "Carrusel de piezas (carrusel), 27-09-2026: una pieza cada vez, con su",
-    "foto grande, su historia y su cartela (autor, año, materiales)."
+    "foto grande, su historia y su cartela (autor, año, materiales).",
+    "",
+    "Donativo (donativo), 01-10-2026: importes sugeridos y destinos, y se paga",
+    "con tarjeta o Bizum por la pasarela del banco, sin cuenta en la web."
   ],
   "tipos": [
     "texto",
@@ -65,6 +68,7 @@
     "puertas",
     "programa",
     "relacion",
-    "carrusel"
+    "carrusel",
+    "donativo"
   ]
 }

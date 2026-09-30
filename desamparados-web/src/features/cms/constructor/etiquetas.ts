@@ -80,6 +80,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   fotoTexto: { nombre: 'Foto con texto', grupo: 'Imagen y vídeo', descripcion: 'Foto a un lado y texto al otro, con un botón si quieres.' },
   galeria: { nombre: 'Galería', grupo: 'Imagen y vídeo', descripcion: 'Varias fotos y vídeos: en pase, cuadrícula, mosaico, tiras, estampas o carteles.' },
   carrusel: { nombre: 'Carrusel de piezas', grupo: 'Imagen y vídeo', descripcion: 'Una pieza cada vez: la foto grande y, al lado, su historia y su cartela.' },
+  donativo: { nombre: 'Donativo', grupo: 'Automáticos', descripcion: 'Importes sugeridos y el pago con tarjeta o Bizum en el banco, sin cuenta en la web.' },
   fotoFija: { nombre: 'Foto fija y texto que pasa', grupo: 'Imagen y vídeo', descripcion: 'La foto se queda quieta y cambia según se lee cada parte del texto.' },
   video: { nombre: 'Vídeo', grupo: 'Imagen y vídeo', descripcion: 'Un vídeo de YouTube o Vimeo, que no se carga hasta darle al play.' },
   tarjetas: { nombre: 'Tarjetas', grupo: 'Composición', descripcion: 'Una rejilla de tarjetas con título, texto, foto o icono y enlace.' },

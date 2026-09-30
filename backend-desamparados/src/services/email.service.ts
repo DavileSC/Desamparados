@@ -151,6 +151,26 @@ export class EmailService {
    * Acuse de la solicitud de ingreso. `certificadoAdjunto`: si subió el
    * certificado de bautismo con el formulario no se le pide otra vez.
    */
+  /**
+   * Las gracias por un donativo en línea, si el donante dejó su correo. Sin
+   * nombre, el saludo no se lo inventa. No es un certificado de donación: eso
+   * es otra cosa, con NIF, y la emite Tesorería.
+   */
+  static async enviarGraciasDonativo(emailDestino: string, nombre: string | null, importe: string, destino: string | null) {
+    const content = [
+      nombre ? saludo(nombre) : parrafo('Estimado/a amigo/a:'),
+      parrafo(`Hemos recibido su donativo de <strong>${esc(importe)}</strong>${destino ? ` para <strong>${esc(destino)}</strong>` : ''}. Muchas gracias por su generosidad con el Grupo Parroquial.`),
+      parrafo('Este correo es solo un acuse. Si necesita un justificante para su declaración, escriba a Secretaría y se lo preparamos.'),
+      firma(BENDICION),
+    ].join('');
+    return await enviarCorreo(emailDestino, 'Gracias por su donativo', maquetar({
+      titulo: 'Gracias por su donativo',
+      antetitulo: 'Donativo',
+      resumen: `Hemos recibido su donativo de ${importe}.`,
+      contenido: content,
+    }));
+  }
+
   static async enviarConfirmacionRegistro(emailDestino: string, nombreHermano: string, opciones: { sexo?: Sexo; certificadoAdjunto?: boolean } = {}) {
     const { sexo, certificadoAdjunto = false } = opciones;
     const documentos = ['DNI original.'];

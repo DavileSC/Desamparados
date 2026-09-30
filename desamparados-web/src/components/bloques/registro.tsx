@@ -18,6 +18,7 @@ import BloqueDescargas from './BloqueDescargas'
 import BloqueMapa from './BloqueMapa'
 import BloqueCuentaAtras from './BloqueCuentaAtras'
 import BloqueEspacio from './BloqueEspacio'
+import BloqueDonativo from './BloqueDonativo'
 import BloqueFotoFija from './BloqueFotoFija'
 import BloqueHorario from './BloqueHorario'
 import BloqueDibujo from './BloqueDibujo'
@@ -65,6 +66,7 @@ export const REGISTRO_BLOQUES: Record<string, ComponentType<{ bloque: never }>> 
   programa: BloquePrograma as ComponentType<{ bloque: never }>,
   relacion: BloqueRelacion as ComponentType<{ bloque: never }>,
   carrusel: BloqueCarrusel as ComponentType<{ bloque: never }>,
+  donativo: BloqueDonativo as ComponentType<{ bloque: never }>,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]

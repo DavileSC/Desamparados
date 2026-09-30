@@ -217,6 +217,8 @@ export interface PiezaDeCarrusel {
 }
 /** Una pieza cada vez, con la foto grande y su explicación al lado. */
 export interface BloqueCarrusel extends BloqueBase { tipo: 'carrusel'; piezas: PiezaDeCarrusel[] }
+/** Donativo: importes sugeridos en euros enteros y, si se quiere, destinos entre los que elegir. */
+export interface BloqueDonativo extends BloqueBase { tipo: 'donativo'; texto: string; importes: number[]; destinos: string[] }
 export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string } }
 
 export type Bloque =
@@ -247,6 +249,7 @@ export type Bloque =
   | BloquePrograma
   | BloqueRelacion
   | BloqueCarrusel
+  | BloqueDonativo
 
 /**
  * `ceja` solo la trae Historia, cuya cabecera tiene diseño propio. `encuadre`,

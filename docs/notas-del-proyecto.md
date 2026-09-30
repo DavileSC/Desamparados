@@ -72,6 +72,13 @@ puede crear la base «sombra». Se escribe el SQL con
 se guarda en `prisma/migrations/<fecha>_<nombre>/migration.sql` y se aplica con
 `npx prisma migrate deploy`.
 
+**Y hay que revisar los nombres de tabla antes de guardarlo.** La MariaDB de
+Windows guarda las tablas en minúsculas (`lower_case_table_names`), así que un
+`ALTER TABLE` sale como `` `pagoenlinea` `` en vez de `` `PagoEnLinea` ``. En
+Windows funciona; en el servidor Linux, donde los nombres distinguen
+mayúsculas, la migración falla y la API no arranca. Un `CREATE TABLE` sale
+bien porque el nombre lo pone Prisma; los `ALTER` hay que corregirlos a mano.
+
 ---
 
 ## 4. Cómo comprobar de verdad que una ruta está protegida
