@@ -12,6 +12,7 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import PantallaEdicion from './PantallaEdicion'
 import CabeceraSeccion from './CabeceraSeccion'
 import EditorTexto from './EditorTexto'
+import { site } from '../../config/site'
 
 const LISTADO = '/cms/comunicados'
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
@@ -135,7 +136,7 @@ export default function ComunicadoEditPage() {
   if (original.estado !== 'BORRADOR') {
     const total = progreso ? progreso.enviados + progreso.fallidos + progreso.pendientes : 0
     return <>
-      <Helmet><title>{`${original.asunto} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`${original.asunto} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo={titulo} subtitulo={original.para}>
         <Button component={Link} to={LISTADO}>Volver al listado</Button>
       </CabeceraSeccion>
@@ -162,7 +163,7 @@ export default function ComunicadoEditPage() {
   }
 
   return <>
-    <Helmet><title>{`${original.asunto} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`${original.asunto} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
     {aviso && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
     <PantallaEdicion titulo="Escribir el comunicado" nombre={original.asunto} sucio={sucio} guardando={guardando} volverA={LISTADO} onGuardar={guardar}>

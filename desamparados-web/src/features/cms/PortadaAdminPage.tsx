@@ -18,6 +18,7 @@ import PublicacionesDestacadas from '../inicio/PublicacionesDestacadas'
 import EdicionTesela from './portada/EdicionTesela'
 import AvisoFotoDeCabecera from './portada/AvisoFotoDeCabecera'
 import { MAX_FOTOS_PORTADA, useEdicionDePortada } from './portada/useEdicionDePortada'
+import { site } from '../../config/site'
 
 export { MAX_FOTOS_PORTADA }
 
@@ -45,7 +46,7 @@ export default function PortadaAdminPage() {
 
   return (
     <>
-      <Helmet><title>Portada | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Portada | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       {guardado && !sucio && <Alert severity="success" sx={{ mb: 3 }}>Cambios guardados. La portada ya los enseña.</Alert>}
       <PantallaEdicion

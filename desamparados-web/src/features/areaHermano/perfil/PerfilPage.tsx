@@ -10,6 +10,7 @@ import { misFichas, type ApiProfile } from '../../../lib/api/perfil'
 import { aniosCumplidos } from '../../altas/public/schema'
 import { Contacto, CuotaYPago, DatosPersonales, VidaCofrade } from './apartados'
 import { PARENTESCO, aDia, diaLegible } from './etiquetas'
+import { site } from '../../../config/site'
 
 /** La del titular primero; luego las de quienes tiene a su cargo, de mayor a menor. */
 const ordenar = (fichas: ApiProfile[]) =>
@@ -63,7 +64,7 @@ export default function PerfilPage() {
 
   return (
     <>
-      <Helmet><title>Mi perfil | Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Mi perfil | ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <SeccionAnimada sx={{ py: { xs: 4, md: 6 } }}>
         <ContenedorDePagina>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, mb: 3 }}>

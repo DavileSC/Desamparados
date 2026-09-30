@@ -7,6 +7,7 @@ import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import { NOMBRE_CARGO } from '../../app/cmsNavegacion'
 import CabeceraSeccion from './CabeceraSeccion'
+import { site } from '../../config/site'
 
 /**
  * Nombre legible de cada acción (AUDIT_ACTIONS en audit.service.ts). Una acción
@@ -273,7 +274,7 @@ export default function AuditoriaAdminPage() {
 
   return (
     <>
-      <Helmet><title>Auditoría | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Auditoría | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Auditoría" subtitulo={meta ? `${meta.total.toLocaleString('es-ES', { useGrouping: 'always' })} registros, del más reciente al más antiguo` : undefined} />
       {error && <Alert severity="error">{error}</Alert>}
       {loading ? <CircularProgress aria-label="Cargando auditoría" /> : !entries.length ? <Alert severity="info">No hay registros de auditoría.</Alert> : (

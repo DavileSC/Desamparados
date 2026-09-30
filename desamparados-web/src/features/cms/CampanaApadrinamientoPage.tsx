@@ -11,6 +11,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import CampoImagen from './CampoImagen'
 import { euros, fechaCorta } from './contabilidad/formato'
+import { site } from '../../config/site'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const PRECIO = /^\d{1,5}(?:[.,]\d{1,2})?$/
@@ -68,7 +69,7 @@ export default function CampanaApadrinamientoPage() {
 
   const apadrinadas = c.piezas.filter((p) => p.apadrinada)
   return <>
-    <Helmet><title>{`${c.titulo} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`${c.titulo} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo={c.titulo} subtitulo={`${apadrinadas.length} de ${c.piezas.length} piezas apadrinadas · ${euros(apadrinadas.reduce((s, p) => s + p.precio, 0))}${c.activa ? '' : ' · retirada de la web'}`}>
       <Button variant="outlined" onClick={() => { setErrorVentana(null); setDatos({ titulo: c.titulo, descripcion: c.descripcion, foto: c.foto, activa: c.activa }) }}>Cambiar datos</Button>
       <Button component={Link} to="/cms/apadrinamientos">Volver</Button>

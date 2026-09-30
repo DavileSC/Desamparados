@@ -18,6 +18,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import EditorTexto from './EditorTexto'
 import { fechaCabildo } from './cabildos/formato'
+import { site } from '../../config/site'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const plural = (n: number, uno: string, varios: string) => (n === 1 ? `1 ${uno}` : `${n} ${varios}`)
@@ -103,7 +104,7 @@ export default function CabildoPage() {
   }
 
   return <>
-    <Helmet><title>Cabildo | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Cabildo | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo={`Cabildo ${c.tipo === 'ORDINARIO' ? 'ordinario' : 'extraordinario'}`} subtitulo={`${fechaCabildo(c.fecha)} · ${c.lugar}`}>
       <Chip label={ESTADO[c.estado]} color={cerrado ? 'success' : 'default'} />
       {c.estado !== 'CONVOCADO' && <Button variant="outlined" startIcon={<DownloadIcon />} onClick={() => void descargarActa()}>Acta en PDF</Button>}

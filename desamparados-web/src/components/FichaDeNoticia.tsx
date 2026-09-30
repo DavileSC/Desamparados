@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { site } from '../config/site'
 import type { Noticia } from '../types'
 
-const DOMINIO = 'https://www.desamparadosmalaga.com'
+const DOMINIO = site.url
 
 /**
  * La noticia, descrita para los buscadores (schema.org `NewsArticle`).

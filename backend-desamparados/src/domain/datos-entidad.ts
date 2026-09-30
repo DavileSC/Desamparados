@@ -20,6 +20,22 @@ export interface DatosSecretaria {
   email: string | null;
 }
 
+/**
+ * Quién es la corporación: nombre, advocación, localidad y dominio. Lo que
+ * cambia de una instalación a otra vive en `shared/datos-entidad.json`, no en
+ * el código, para poder montar la web para otra corporación sin tocarlo.
+ */
+export interface Identidad {
+  nombre: string;
+  nombreCorto: string;
+  titular: string;
+  localidad: string;
+  dominio: string;
+  descripcion: string;
+}
+
+export const identidad: Identidad = datos.identidad;
+
 export const secretaria: DatosSecretaria = datos.secretaria;
 
 export const escudoUrl: string | null = datos.escudoUrl;

@@ -17,6 +17,7 @@ import PuntoTipo from './agenda/PuntoTipo'
 import { TIPOS_EVENTO } from './agenda/tiposEvento'
 import { haceCuanto } from './redaccion/completitud'
 import { crearEvento, traerEvento, actualizarEvento, type ApiEvent, type DatosDeActo } from '../../lib/api/agenda'
+import { site } from '../../config/site'
 
 /** El formulario: día y hora por separado, que es como se piensa un acto. */
 interface Formulario {
@@ -136,7 +137,7 @@ export default function AgendaEditPage() {
 
   return (
     <>
-      <Helmet><title>{`${nuevo ? 'Nuevo evento' : 'Editar evento'} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`${nuevo ? 'Nuevo evento' : 'Editar evento'} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <Box sx={{ maxWidth: ANCHO_EDICION, mx: 'auto' }}>
         <Button component={Link} to={volverAlListado} startIcon={<ArrowBackIcon />} size="small" color="inherit" sx={{ mb: 1.5, color: 'text.secondary' }}>Agenda</Button>
 

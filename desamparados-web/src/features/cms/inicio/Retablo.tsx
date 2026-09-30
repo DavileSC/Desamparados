@@ -3,6 +3,7 @@ import { cuentaAtrasEstacion } from '../../../domain/sabadoDePasion'
 import { CORMORANT } from '../../actualidad/agenda/letraAlmanaque'
 import { acercar, sinMovimiento, useCuenta } from './animaciones'
 import { ORO_CLARO } from './estiloRetablo'
+import { site } from '../../../config/site'
 
 const FECHA_LARGA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
 const FECHA_CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -52,7 +53,7 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
       <Box
         component="img"
         src={foto}
-        alt="Nuestra Señora de los Desamparados"
+        alt={site.titular}
         sx={{
           position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${x}% ${y}%`, transformOrigin: `${x}% ${y}%`, opacity: 0.85,
           animation: `${acercar} 22s ease-out both`, ...sinMovimiento,

@@ -19,6 +19,7 @@ import { superficiesCms } from '../theme/cms'
 import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu, type Grupo, type ItemMenu } from './cmsNavegacion'
 import { usePanelDeHoy } from './usePanelDeHoy'
 import { designTokens } from '../theme'
+import { site } from '../config/site'
 
 const SIDEBAR = superficiesCms('oscuro').sidebar // #070608, la misma en los dos modos
 
@@ -411,7 +412,7 @@ function Contenido() {
           <Typography
             sx={{ color: '#fff', fontFamily: designTokens.fonts.cms.heading, fontSize: 'var(--cms-marca)', lineHeight: 1.1, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
           >
-            DESAMPARADOS
+            {site.nombreCorto.toUpperCase()}
           </Typography>
           <Typography sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)', mt: 0.25 }}>
             CMS

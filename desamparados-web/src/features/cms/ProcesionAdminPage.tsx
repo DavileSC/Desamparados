@@ -20,6 +20,7 @@ import { cabeceraTabla, soloLector } from './inventario/tabla'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import Cortejo from './cortejo/Cortejo'
+import { site } from '../../config/site'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -151,7 +152,7 @@ export default function ProcesionAdminPage() {
 
   return (
     <>
-      <Helmet><title>Procesión | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Procesión | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Procesión" subtitulo={plazo ? `${NOMBRE[vista]} ${plazo.year}: días de reparto y solicitud de papeletas.` : undefined}>
         {rolesPorRutaCms['procesion/mesa'].includes(role) && <Button variant="outlined" component={Link} to="/cms/procesion/mesa">Abrir la mesa</Button>}
         {puedeCambiar && <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setDia(DIA_VACIO); setErrorDia(null); setCreando(true) }}>Nuevo día de reparto</Button>}

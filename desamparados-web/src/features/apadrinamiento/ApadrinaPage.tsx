@@ -9,6 +9,7 @@ import FotoConPiezas from '../../components/apadrinamiento/FotoConPiezas'
 import { apadrinar, campanasPublicas, type CampanasPublicas, type Pieza } from '../../lib/api/apadrinamientos'
 import type { MetodoEnLinea } from '../../lib/api/tienda'
 import { irAlBanco } from '../../lib/api/procesion'
+import { site } from '../../config/site'
 
 const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
 const VACIO = { nombre: '', email: '', telefono: '', dedicatoria: '', mostrarNombre: true, metodo: 'TARJETA' as MetodoEnLinea }
@@ -51,7 +52,7 @@ export default function ApadrinaPage() {
   }
 
   return <>
-    <MetaDePagina titulo="Apadrina" descripcion="Apadrina una vela, una flor o una pieza del ajuar de Nuestra Señora de los Desamparados." />
+    <MetaDePagina titulo="Apadrina" descripcion={`Apadrina una vela, una flor o una pieza del ajuar de ${site.titular}.`} />
     <CabeceraDePagina title="Apadrina" subtitle="Elige sobre la foto la pieza que quieres costear. Las marcadas con ✓ ya tienen padrino." />
     <ContenedorDePagina>
       <Box sx={{ py: { xs: 4, md: 6 }, display: 'grid', gap: 6 }}>

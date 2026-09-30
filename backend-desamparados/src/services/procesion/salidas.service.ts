@@ -10,8 +10,9 @@ import db from '../../config/db.js';
 import { HttpError } from '../../utils/error.handle.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { CLAVE_EVENTO_ROSARIO } from '../recibos/comunes.js';
+import { identidad } from '../../domain/datos-entidad.js';
 
-const DESCRIPCION = 'Rezamos el Santo Rosario por la tarde acompañando a Nuestra Señora de los Desamparados por las calles. Se va en traje.';
+const DESCRIPCION = `Rezamos el Santo Rosario por la tarde acompañando a ${identidad.titular} por las calles. Se va en traje.`;
 
 export class SalidasService {
   /** El acto del Rosario de este año en la Agenda, si ya tiene fecha. */

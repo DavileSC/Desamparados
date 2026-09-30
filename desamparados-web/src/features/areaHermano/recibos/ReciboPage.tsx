@@ -8,6 +8,7 @@ import SeccionAnimada from '../../../components/SeccionAnimada'
 import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
 import { miRecibo, type MyReceiptDetail } from '../../../lib/api/recibos'
 import { estadoDelRecibo, METODO_PAGO, TIPO_RECIBO, formatearFecha, formatearImporte } from './etiquetas'
+import { site } from '../../../config/site'
 
 /**
  * Un recibo entero. La fila del listado solo enseña concepto, hermano, importe
@@ -44,7 +45,7 @@ export default function ReciboPage() {
   return (
     <>
       <Helmet>
-        <title>{`${recibo ? `${recibo.concepto} | Recibos` : 'Recibo'} | Desamparados`}</title>
+        <title>{`${recibo ? `${recibo.concepto} | Recibos` : 'Recibo'} | ${site.nombreCorto}`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 

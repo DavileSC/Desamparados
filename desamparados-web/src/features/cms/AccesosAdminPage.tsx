@@ -9,6 +9,7 @@ import VentanaFormulario from './VentanaFormulario'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { NOMBRE_CARGO } from '../../app/cmsNavegacion'
 import { useAuthStore } from '../altas/auth/store'
+import { site } from '../../config/site'
 import {
   buscarCandidatos, CARGOS_CMS, darAcceso, cuentasDeStaff, quitarAcceso,
   type CandidatoACargo, type CargoCms, type MiembroDelStaff,
@@ -133,7 +134,7 @@ export default function AccesosAdminPage() {
   const nombreDe = (m: MiembroDelStaff) => `${m.nombre} ${m.apellidos}`.trim()
 
   return <>
-    <Helmet><title>Accesos | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Accesos | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
 
     <CabeceraSeccion titulo="Accesos">
       <Button variant="contained" startIcon={<PersonAddAltOutlinedIcon />} onClick={() => setAbierta(true)}>

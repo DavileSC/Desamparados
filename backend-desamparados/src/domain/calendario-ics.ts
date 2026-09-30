@@ -126,14 +126,18 @@ function vevento(acto: ActoIcs, dominio: string, urlAgenda: string): string[] {
   ];
 }
 
-/** Un calendario con los actos dados. Con `nombre`, es el de la suscripción. */
-export function calendarioIcs(actos: ActoIcs[], { urlWeb, nombre }: { urlWeb: string; nombre?: string }): string {
+/**
+ * Un calendario con los actos dados. Con `nombre`, es el de la suscripción.
+ * `autor` es la corporación, que firma el PRODID: llega de fuera para que este
+ * fichero siga sin depender de nada.
+ */
+export function calendarioIcs(actos: ActoIcs[], { urlWeb, nombre, autor }: { urlWeb: string; nombre?: string; autor: string }): string {
   const dominio = new URL(urlWeb).hostname;
   const urlAgenda = `${urlWeb.replace(/\/+$/, '')}/agenda`;
   const lineas = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Grupo Parroquial Nuestra Señora de los Desamparados//Agenda//ES',
+    `PRODID:-//${autor}//Agenda//ES`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     ...(nombre ? [

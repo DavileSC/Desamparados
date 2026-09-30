@@ -37,6 +37,7 @@ import { NOMBRE_METODO } from './mesa/formato'
 import DialogoEstado, { type CambioEstado } from './tesoreria/DialogoEstado'
 import IncidenciasDePago from './tesoreria/IncidenciasDePago'
 import Remesas from './tesoreria/Remesas'
+import { site } from '../../config/site'
 
 const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
 const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento' }
@@ -236,7 +237,7 @@ export default function TesoreriaAdminPage() {
   const nuevoValido = nuevo.hermano !== null && esAnioCompleto(nuevo.year) && nuevo.concepto.trim() !== '' && importeNuevo > 0 && nuevo.tipo !== ''
 
   return <>
-    <Helmet><title>Tesorería | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Tesorería | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Tesorería">
       <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => abrirNuevo()}>Nuevo recibo</Button>
       <Button variant="contained" startIcon={<AddIcon />} onClick={abrirCuotas}>Generar cuotas</Button>

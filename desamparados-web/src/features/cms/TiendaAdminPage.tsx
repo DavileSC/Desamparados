@@ -13,6 +13,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import CampoImagen from './CampoImagen'
 import { euros, fechaCorta } from './contabilidad/formato'
+import { site } from '../../config/site'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const PRECIO = /^\d{1,5}(?:[.,]\d{1,2})?$/
@@ -82,7 +83,7 @@ export default function TiendaAdminPage() {
   const valido = Boolean(f && f.nombre.trim() && PRECIO.test(f.precio.trim()) && Number(f.precio.replace(',', '.')) > 0 && (f.existencias.trim() === '' || /^\d+$/.test(f.existencias.trim())))
 
   return <>
-    <Helmet><title>Tienda | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Tienda | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Tienda" subtitulo="Lo que se vende en la web y los pedidos por recoger en Secretaría.">
       <Button variant="outlined" component={Link} to="/tienda" target="_blank" startIcon={<OpenInNewIcon />}>Ver la tienda</Button>
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setErrorForm(null); setEditando({ id: null, form: VACIO, original: VACIO }) }}>Nuevo producto</Button>

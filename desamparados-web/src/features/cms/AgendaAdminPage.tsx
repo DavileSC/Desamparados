@@ -21,6 +21,7 @@ import { eliminarEvento, eventosDelCms, type ApiEvent, type PeriodoAgenda, type 
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
+import { site } from '../../config/site'
 
 type Vista = 'mes' | 'lista'
 
@@ -137,7 +138,7 @@ export default function AgendaAdminPage() {
   )
 
   return <>
-    <Helmet><title>Agenda | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Agenda | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Agenda" subtitulo={deHoy && <Resumen resumen={deHoy} />}>
       <Button variant="outlined" color="inherit" startIcon={<OpenInNewIcon />} href="/agenda" target="_blank" rel="noopener" sx={{ borderColor: 'divider' }}>Ver en la web</Button>
       <Button variant="contained" startIcon={<AddIcon />} component={Link} to="/cms/agenda/nuevo" state={{ volver: consultaListado }}>Nuevo evento</Button>

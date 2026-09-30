@@ -16,6 +16,7 @@ import ListaCenso from './censo/ListaCenso'
 import FichaCenso from './censo/FichaCenso'
 import ListaImpagos from './impagos/ListaImpagos'
 import HojaCenso from './censo/HojaCenso'
+import { site } from '../../config/site'
 
 const SITUACIONES: Opcion[] = [
   { valor: 'activo', etiqueta: 'Activos' },
@@ -197,7 +198,7 @@ export default function HermanosAdminPage() {
   }
 
   return <>
-    <Helmet><title>Hermanos | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Hermanos | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <Typography variant="h2" component="h1" sx={{ mb: 4 }}>Hermanos</Typography>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}

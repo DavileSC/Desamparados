@@ -36,6 +36,7 @@ import { PERIODO_POR_DEFECTO, aFiltrosApi, fechasInvertidas, leerFiltrosUrl, typ
 import { aApunteManual, apunteCompleto, apunteDesde, apunteNuevo, type FormApunte } from './contabilidad/apunte'
 import { euros, fechaCorta } from './contabilidad/formato'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
+import { site } from '../../config/site'
 
 // Valor de cada filtro que equivale a no filtrar: no se escribe en la URL.
 const SIN_FILTRO: Partial<Record<keyof FiltrosUi, string>> = { tipo: 'TODO', periodo: PERIODO_POR_DEFECTO }
@@ -176,7 +177,7 @@ export default function ContabilidadAdminPage() {
   const sucio = JSON.stringify(form) !== JSON.stringify(formInicial)
 
   return <>
-    <Helmet><title>Contabilidad | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Contabilidad | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Contabilidad">
       <Button variant="outlined" component={Link} to="/cms/contabilidad/partida-doble">Partida doble</Button>
       <Button variant="outlined" startIcon={<SellOutlinedIcon />} onClick={() => setGestionAbierta(true)}>Categorías</Button>

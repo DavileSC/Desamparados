@@ -14,7 +14,9 @@ import { dirname, join } from 'node:path'
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
 const RUTAS = join(raiz, 'src/routes/index.tsx')
 const SITEMAP = join(raiz, 'public/sitemap.xml')
-const DOMINIO = 'https://www.desamparadosmalaga.com'
+// El dominio es el de la corporación: sale del fichero que comparten la API y la web.
+const { identidad } = JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
+const DOMINIO = `https://${identidad.dominio}`
 
 // Por debajo de este número algo ha cambiado en el router y el recorte de abajo
 // ya no encuentra el bloque público: mejor romper el build que publicar un

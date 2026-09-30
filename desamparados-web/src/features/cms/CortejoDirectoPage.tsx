@@ -9,6 +9,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import { cortejoParaLaJunta, enviarPosicion, terminarDirecto, type CortejoParaLaJunta, type PosicionCortejo } from '../../lib/api/cortejoDirecto'
 import { getContenido, type BloqueItinerario, type PaginaDeBloques } from '../../lib/api/contenido'
 import { DISTANCIA_MAXIMA_M, posicionesEnRuta, puntoEn, sobreElRecorrido } from '../../components/bloques/recorrido'
+import { site } from '../../config/site'
 
 /** Cada cuánto, como poco, se manda la posición: el GPS avisa a cada paso y el servidor no lo necesita. */
 const CADA_MS = 15_000
@@ -123,7 +124,7 @@ export default function CortejoDirectoPage() {
   if (!estado) return error ? <Alert severity="error">{error}</Alert> : <CircularProgress aria-label="Cargando el directo" />
 
   return <>
-    <Helmet><title>Cortejo en directo | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Cortejo en directo | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Cortejo en directo" subtitulo="Desde el móvil de quien va en la calle: el mapa del recorrido de la web enseña por dónde va.">
       <Button variant="outlined" component={Link} to="/sabado-de-pasion/recorrido" target="_blank" startIcon={<OpenInNewIcon />}>Ver el mapa</Button>
     </CabeceraSeccion>

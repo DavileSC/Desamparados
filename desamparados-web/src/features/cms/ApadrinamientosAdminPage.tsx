@@ -9,6 +9,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import CampoImagen from './CampoImagen'
 import { euros } from './contabilidad/formato'
+import { site } from '../../config/site'
 
 const VACIA: DatosCampana = { titulo: '', descripcion: '', foto: '', activa: true }
 
@@ -41,7 +42,7 @@ export default function ApadrinamientosAdminPage() {
   }
 
   return <>
-    <Helmet><title>Apadrinamientos | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Apadrinamientos | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Apadrinamientos" subtitulo="Fotos con piezas para que cada una la costee un padrino.">
       <Button variant="outlined" component={Link} to="/apadrina" target="_blank" startIcon={<OpenInNewIcon />}>Ver en la web</Button>
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setErrorNueva(null); setNueva(VACIA) }}>Nueva campaña</Button>

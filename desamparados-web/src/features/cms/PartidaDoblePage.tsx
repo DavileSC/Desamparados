@@ -12,6 +12,7 @@ import {
 import { guardarEnDisco } from '../../lib/api/datos'
 import CabeceraSeccion from './CabeceraSeccion'
 import { euros } from './contabilidad/formato'
+import { site } from '../../config/site'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const importe = (n: number) => (n ? euros(n) : '')
@@ -68,7 +69,7 @@ export default function PartidaDoblePage() {
 
   const r = ejercicio?.resultados
   return <>
-    <Helmet><title>Partida doble | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Partida doble | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Partida doble" subtitulo="El libro de caja con sus cuentas del plan de las entidades sin fines lucrativos.">
       <TextField size="small" label="Ejercicio" type="number" value={anio} onChange={(e) => { setAnio(e.target.value); setPagina(1) }} sx={{ width: 120 }} />
       <Button variant="outlined" startIcon={<DownloadIcon />} disabled={!anioValido} onClick={() => void descargar()}>Excel</Button>

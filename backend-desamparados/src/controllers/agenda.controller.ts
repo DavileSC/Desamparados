@@ -6,6 +6,7 @@ import { calendarioIcs, nombreDeFichero } from '../domain/calendario-ics.js';
 import { urlDeLaWeb } from '../services/correos/plantilla.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
+import { identidad } from '../domain/datos-entidad.js';
 
 export class AgendaController {
 
@@ -37,7 +38,7 @@ export class AgendaController {
       .status(200)
       .type('text/calendar; charset=utf-8')
       .setHeader('Content-Disposition', `attachment; filename="${nombreDeFichero(evento.title)}"`)
-      .send(calendarioIcs([evento], { urlWeb: urlDeLaWeb() }));
+      .send(calendarioIcs([evento], { urlWeb: urlDeLaWeb(), autor: identidad.nombre }));
   });
 
   // La agenda entera, para suscribirse desde el móvil: los calendarios vuelven a pedirla solos.
@@ -48,7 +49,7 @@ export class AgendaController {
       .type('text/calendar; charset=utf-8')
       .setHeader('Content-Disposition', 'inline; filename="agenda-desamparados.ics"')
       .setHeader('Cache-Control', 'public, max-age=900')
-      .send(calendarioIcs(actos, { urlWeb: urlDeLaWeb(), nombre: 'Agenda · Grupo Parroquial Desamparados' }));
+      .send(calendarioIcs(actos, { urlWeb: urlDeLaWeb(), nombre: `Agenda · ${identidad.nombre}`, autor: identidad.nombre }));
   });
 
   static getOne = manejar('Error obteniendo evento', async (req, res) => {

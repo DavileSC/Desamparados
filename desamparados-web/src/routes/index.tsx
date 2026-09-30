@@ -11,6 +11,7 @@ import MarcoCms from '../app/MarcoCms'
 import { rolesPorRutaCms } from '../app/cmsNavegacion'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
+import { site } from '../config/site'
 
 // Public pages
 const InicioPage = lazy(() => import('../features/inicio/InicioPage'))
@@ -110,15 +111,15 @@ function withSuspense(Component: React.ComponentType) {
  */
 function RootLayout() {
   const location = useLocation()
-  const canonical = `https://www.desamparadosmalaga.com${location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '')}`
+  const canonical = `${site.url}${location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '')}`
   return (
     <>
       <Helmet>
         <link rel="canonical" href={canonical} />
         <meta property="og:url" content={canonical} />
-        <meta property="og:site_name" content="Grupo Parroquial Nuestra Señora de los Desamparados" />
+        <meta property="og:site_name" content={site.nombre} />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://www.desamparadosmalaga.com/images/hero-1920.webp" />
+        <meta property="og:image" content={`${site.url}/images/hero-1920.webp`} />
       </Helmet>
       <ScrollRestoration />
       <Outlet />

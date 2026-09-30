@@ -5,6 +5,7 @@ import { useAuthStore } from '../altas/auth/store'
 import { sesionActual, activar2FA, desactivar2FA, generarQr2FA } from '../../lib/api/auth'
 import { ErrorDeApi } from '../../lib/api/cliente'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
+import { site } from '../../config/site'
 
 function errorMessage(e: unknown, fallback: string) {
   return e instanceof ErrorDeApi ? e.message : fallback
@@ -89,7 +90,7 @@ export default function MiSeguridadPage() {
   return (
     <>
       <Helmet>
-        <title>Mi seguridad | CMS Desamparados</title>
+        <title>{`Mi seguridad | CMS ${site.nombreCorto}`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 

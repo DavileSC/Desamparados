@@ -1,5 +1,6 @@
 import type { ApiEvent } from '../../../lib/api/agenda'
 import { TIPOS, inicioDeMes, inicioDelDia } from '../../inicio/agenda'
+import { site } from '../../../config/site'
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
@@ -56,8 +57,8 @@ export function claseDelCartel(evento: ApiEvent) {
 export function fotoDelCartel(evento: ApiEvent): { src: string; alt: string } {
   if (evento.fotoCartel) return { src: evento.fotoCartel, alt: `Cartel: ${evento.title}` }
   return evento.type === 'PROCESION'
-    ? { src: '/images/trono-comitiva.webp', alt: 'Nuestra Señora de los Desamparados en su trono, por las calles' }
-    : { src: '/images/triduo.jpg', alt: 'Nuestra Señora de los Desamparados' }
+    ? { src: '/images/trono-comitiva.webp', alt: `${site.titular} en su trono, por las calles` }
+    : { src: '/images/triduo.jpg', alt: site.titular }
 }
 
 /** «Cómo llegar»: el lugar en el mapa. Con «Málaga» detrás, para que no busque en todo el mundo. */

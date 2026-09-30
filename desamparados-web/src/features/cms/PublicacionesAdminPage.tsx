@@ -19,6 +19,7 @@ import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import type { Publicacion } from '../../types'
+import { site } from '../../config/site'
 
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
 // Lo que useDatosDePortada('publicaciones') tiene cacheado 60 s: tras destacar hay que
@@ -133,7 +134,7 @@ export default function PublicacionesAdminPage() {
   )
 
   return <>
-    <Helmet><title>Publicaciones | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Publicaciones | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Publicaciones" subtitulo={resumen && <ResumenRedaccion cifras={resumen} />}>
       <Button variant="outlined" color="inherit" startIcon={<OpenInNewIcon />} href="/publicaciones" target="_blank" rel="noopener" sx={{ borderColor: 'divider' }}>Ver en la web</Button>
       <Button variant="contained" startIcon={<AddIcon />} component={Link} to="/cms/publicaciones/nueva" state={{ volver: consultaListado }}>Nueva publicación</Button>

@@ -9,6 +9,7 @@ import { guardarEnDisco } from '../../lib/api/datos'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import { fechaCabildo } from './cabildos/formato'
+import { site } from '../../config/site'
 
 const ESTADO: Record<CabildoEnLista['estado'], { texto: string; color: 'default' | 'info' | 'success' }> = {
   CONVOCADO: { texto: 'Convocado', color: 'info' },
@@ -66,7 +67,7 @@ export default function CabildosAdminPage() {
   const valido = Boolean(nuevo.fecha) && nuevo.lugar.trim() !== ''
 
   return <>
-    <Helmet><title>Cabildos | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Cabildos | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Cabildos" subtitulo="Convocatoria, asistencia y quórum, votaciones y libro de actas.">
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setNuevo(VACIO); setErrorNuevo(null); setAbierta(true) }}>Convocar</Button>
     </CabeceraSeccion>

@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async'
+import { site } from '../config/site'
 
 /**
  * El título y la descripción de una página, en un solo sitio.
@@ -21,7 +22,7 @@ export default function MetaDePagina({ titulo, descripcion, conSufijo = true }: 
   descripcion?: string
   conSufijo?: boolean
 }) {
-  const completo = conSufijo ? `${titulo} | Desamparados` : titulo
+  const completo = conSufijo ? `${titulo} | ${site.nombreCorto}` : titulo
   return (
     <Helmet>
       <title>{completo}</title>

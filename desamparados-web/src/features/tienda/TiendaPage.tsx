@@ -9,6 +9,7 @@ import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
 import { catalogo, comprar, type Catalogo, type MetodoEnLinea } from '../../lib/api/tienda'
 import { irAlBanco } from '../../lib/api/procesion'
+import { site } from '../../config/site'
 
 const CLAVE_CESTA = 'tienda-cesta'
 const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
@@ -72,7 +73,7 @@ export default function TiendaPage() {
   }
 
   return <>
-    <MetaDePagina titulo="Tienda" descripcion="Recuerdos del Grupo Parroquial Nuestra Señora de los Desamparados. Se compran en línea y se recogen en Secretaría." />
+    <MetaDePagina titulo="Tienda" descripcion={`Recuerdos del ${site.nombre}. Se compran en línea y se recogen en Secretaría.`} />
     <CabeceraDePagina title="Tienda" subtitle="Recuerdos del Grupo Parroquial. Se pagan aquí y se recogen en Secretaría." />
     <ContenedorDePagina>
       <Box sx={{ py: { xs: 4, md: 6 } }}>

@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
 import { bajaDelBoletin } from '../../lib/api/comunicados'
+import { site } from '../../config/site'
 
 /**
  * La baja del boletín desde el enlace del correo, sin entrar. Pide pulsar un
@@ -26,7 +27,7 @@ export default function BajaBoletinPage() {
   return (
     <>
       <Helmet>
-        <title>Baja del boletín | Desamparados</title>
+        <title>{`Baja del boletín | ${site.nombreCorto}`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <Box component="section" sx={{ py: { xs: 12, md: 18 }, textAlign: 'center' }}>

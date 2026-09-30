@@ -10,6 +10,7 @@ import Hoy from './inicio/Hoy'
 import Cifras from './inicio/Cifras'
 import { useAltoDisponible } from './inicio/useAltoDisponible'
 import { ORO, ROSA_URGENTE, FILETE } from './inicio/estiloRetablo'
+import { site } from '../../config/site'
 
 const PESTANAS = [
   { clave: 'hoy', texto: 'Hoy' },
@@ -80,7 +81,7 @@ export default function PanelPage() {
         containerType: 'inline-size', containerName: 'inicio',
       }}
     >
-      <Helmet><title>Inicio | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Inicio | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <Box
         sx={{
           height: '100%', display: 'grid',

@@ -7,6 +7,7 @@ import { comunicados, crearComunicado, type ComunicadoEnLista, type TipoComunica
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import { fechaCorta } from './contabilidad/formato'
+import { site } from '../../config/site'
 
 const TIPOS: Record<TipoComunicado, { nombre: string; explicacion: string }> = {
   BOLETIN: { nombre: 'Boletín', explicacion: 'Noticias y vida del Grupo. Solo lo reciben los hermanos que se han suscrito, y lleva el enlace para darse de baja.' },
@@ -51,7 +52,7 @@ export default function ComunicadosAdminPage() {
   }
 
   return <>
-    <Helmet><title>Boletín y avisos | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>{`Boletín y avisos | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion titulo="Boletín y avisos" subtitulo="Correos a los hermanos: el boletín a los suscritos y los avisos a quien toque.">
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setNuevo({ tipo: 'BOLETIN', asunto: '' }); setErrorNuevo(null); setAbierta(true) }}>Nuevo</Button>
     </CabeceraSeccion>
