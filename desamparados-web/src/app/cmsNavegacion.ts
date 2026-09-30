@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined'
@@ -85,6 +86,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ImageOutlinedIcon },
   { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
   { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: MenuBookOutlinedIcon },
+  { label: 'Boletín y avisos', href: '/cms/comunicados', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'], grupo: 'Web', icono: EmailOutlinedIcon },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon },
   { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
@@ -116,6 +118,8 @@ export const rolesPorRutaCms = {
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  // El boletín y los avisos por correo: la guarda de /api/comunicados.
+  comunicados: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   procesion: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],

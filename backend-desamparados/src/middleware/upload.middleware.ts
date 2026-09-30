@@ -94,8 +94,9 @@ export const videoUploadMiddleware = multer({
 
 /**
  * Ficheros de datos que se leen y no se guardan (el extracto del banco, la
- * hoja del censo): a memoria, uno solo y por debajo del megabyte que nginx
- * deja pasar al resto de `/api/`. Qué tipo es lo decide quien lo lee.
+ * hoja del censo): a memoria y uno solo. Un censo de miles de fichas en Excel
+ * ocupa unos cientos de KB; el tope queda holgado y por debajo de los 3 MB
+ * que nginx deja pasar a `/api/`. Qué tipo es lo decide quien lo lee.
  */
 export const MAX_BYTES_DATOS = 900 * 1024;
 

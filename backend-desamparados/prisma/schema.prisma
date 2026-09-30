@@ -935,3 +935,60 @@ model InformeAnual {
   fechaCabildo      String?  @db.VarChar(120)
   updatedAt         DateTime @updatedAt
 }
+
+enum TipoComunicado {
+  BOLETIN // Solo a quien está suscrito: es su consentimiento
+  AVISO // Comunicación del Grupo a los activos del segmento (cuotas, cabildos…)
+}
+
+enum EstadoComunicado {
+  BORRADOR
+  ENVIANDO // Hay envíos pendientes: el servidor los va mandando poco a poco
+  ENVIADO
+}
+
+enum EstadoEnvio {
+  PENDIENTE
+  ENVIADO
+  FALLIDO
+}
+
+/// Un boletín o un aviso masivo por correo. El cuerpo, saneado como el resto
+/// del contenido del CMS; a quién va, por el segmento elegido.
+model Comunicado {
+  id         Int              @id @default(autoincrement())
+  tipo       TipoComunicado
+  asunto     String           @db.VarChar(150)
+  cuerpo     String           @db.LongText
+  /// Los filtros del segmento, tal como se eligieron (ver domain/comunicados.ts).
+  segmento   Json
+  estado     EstadoComunicado @default(BORRADOR)
+  enviadoEl  DateTime?
+  /// Quién lo escribió y quién lo mandó, copiados: sobreviven a las cuentas.
+  autorId     Int?
+  autorNombre String?
+  envios      ComunicadoEnvio[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
+/// Cada destinatario de un comunicado. Se apuntan todos al pulsar «Enviar» y
+/// el servidor los va mandando: si se reinicia a medias, sigue por donde iba
+/// y a nadie le llega dos veces.
+model ComunicadoEnvio {
+  id           Int         @id @default(autoincrement())
+  comunicadoId Int
+  comunicado   Comunicado  @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+  email        String      @db.VarChar(191)
+  /// A quién saluda: el nombre si la dirección es de una sola ficha.
+  nombre       String?
+  sexo         Sexo?
+  estado       EstadoEnvio @default(PENDIENTE)
+  enviadoEl    DateTime?
+
+  @@unique([comunicadoId, email])
+  @@index([comunicadoId, estado])
+}

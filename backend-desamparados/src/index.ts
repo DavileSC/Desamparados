@@ -42,6 +42,10 @@ const alEscuchar = (error?: Error) => {
 };
 const server: Server = HOST ? app.listen(PORT, HOST, alEscuchar) : app.listen(PORT, alEscuchar);
 
+// Un boletín que se quedó a medias (el servidor se reinició mientras enviaba)
+// sigue por donde iba. A nadie le llega dos veces: cada envío está apuntado.
+void import('./services/comunicados.service.js').then(({ ComunicadosService }) => ComunicadosService.reanudar());
+
 // Aviso, no barrera. Un despliegue que se salte la conversión a bloques no
 // falla: el CMS abre, `mezclarConDefectos` descarta las claves de la forma
 // antigua y el Recorrido, la Titular y la Historia vuelven a los textos de

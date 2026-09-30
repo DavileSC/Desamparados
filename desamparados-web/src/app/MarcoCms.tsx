@@ -116,8 +116,12 @@ function Contador({ seccion, valor, tono }: { seccion: string; valor: number; to
 /** Grupos abiertos o cerrados a mano, recordados en cada ordenador. */
 const CLAVE_GRUPOS = 'cms-menu-grupos'
 
-/** Hasta este número de secciones el menú va abierto entero: plegar solo estorba. */
-const SECCIONES_SIN_PLEGAR = 6
+/**
+ * Hasta este número de secciones el menú va abierto entero: plegar solo estorba.
+ * Secretaría, con el boletín, llega a siete; Administración y el Hermano Mayor
+ * pasan de doce, que es para quien está pensado plegar.
+ */
+const SECCIONES_SIN_PLEGAR = 7
 
 function leerGrupos(): Partial<Record<Grupo, boolean>> {
   try {

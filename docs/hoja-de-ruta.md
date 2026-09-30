@@ -82,7 +82,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| 🟡 | B | Boletín y avisos masivos, segmentados | Hay la casilla de suscripción y la plantilla de correo; falta el editor y el envío |
+| ✅ | — | **Boletín y avisos masivos, segmentados** | Hecha: Web → «Boletín y avisos». El boletín va solo a los suscritos y lleva su enlace de baja firmado; el aviso, a los activos del segmento (papeleta de una salida, cuotas pendientes, edad, población). Recuento de direcciones antes de enviar, prueba a uno mismo, un correo por dirección y envío poco a poco en segundo plano, que se reanuda si el servidor se reinicia y deja reintentar los fallidos. Migración `comunicados` |
 | ⬜ | A | Cartas y circulares en PDF con los datos de cada hermano | Reutiliza el motor de los informes |
 | ⬜ | A | Etiquetas postales | Para los hermanos sin correo |
 

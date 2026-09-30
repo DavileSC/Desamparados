@@ -63,6 +63,9 @@ export const ACCIONES_AUDITORIA = {
   CENSO_IMPORTAR: 'CENSO_IMPORTAR',
   // El cortejo: repartir las papeletas en los tramos por antigüedad
   CORTEJO_REPARTIR: 'CORTEJO_REPARTIR',
+  // Boletín y avisos: mandar uno y darse de baja desde el enlace del correo
+  COMUNICADO_ENVIAR: 'COMUNICADO_ENVIAR',
+  BOLETIN_BAJA: 'BOLETIN_BAJA',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

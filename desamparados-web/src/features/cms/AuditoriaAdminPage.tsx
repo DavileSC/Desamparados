@@ -24,6 +24,8 @@ const ACCIONES: Record<string, string> = {
   CENSO_EXPORTAR: 'Exportar el censo',
   CENSO_IMPORTAR: 'Importar el censo',
   CORTEJO_REPARTIR: 'Repartir el cortejo por antigüedad',
+  COMUNICADO_ENVIAR: 'Enviar un boletín o aviso',
+  BOLETIN_BAJA: 'Darse de baja del boletín',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',

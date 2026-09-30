@@ -49,6 +49,8 @@ const ProcesionAdminPage = lazy(() => import('../features/cms/ProcesionAdminPage
 const MesaProcesionPage = lazy(() => import('../features/cms/mesa/MesaProcesionPage'))
 const HermanoEditPage = lazy(() => import('../features/cms/HermanoEditPage'))
 const NoticiaEditPage = lazy(() => import('../features/cms/NoticiaEditPage'))
+const ComunicadosAdminPage = lazy(() => import('../features/cms/ComunicadosAdminPage'))
+const ComunicadoEditPage = lazy(() => import('../features/cms/ComunicadoEditPage'))
 const PublicacionEditPage = lazy(() => import('../features/cms/PublicacionEditPage'))
 const AgendaEditPage = lazy(() => import('../features/cms/AgendaEditPage'))
 const InventarioEditPage = lazy(() => import('../features/cms/InventarioEditPage'))
@@ -67,6 +69,7 @@ const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
 const AvisoLegalPage = lazy(() => import('../features/legal/AvisoLegalPage'))
 const PoliticaDePrivacidadPage = lazy(() => import('../features/legal/PoliticaDePrivacidadPage'))
 const PoliticaDeCookiesPage = lazy(() => import('../features/legal/PoliticaDeCookiesPage'))
+const BajaBoletinPage = lazy(() => import('../features/boletin/BajaBoletinPage'))
 
 // Auth pages
 const AccesoPage = lazy(() => import('../features/altas/auth/AccesoPage'))
@@ -156,6 +159,15 @@ const router = createBrowserRouter([
           { path: '*', element: withSuspense(NoEncontradaPage) },
         ],
       },
+      // La baja del boletín, desde el enlace de cada correo y sin sesión. Con el
+      // marco público, pero FUERA del bloque de arriba a propósito: es un enlace
+      // de un solo uso, no una página que buscar, y el sitemap (y su prueba)
+      // recorren ese bloque entero.
+      {
+        path: '/boletin/baja',
+        element: <MarcoPublico />,
+        children: [{ index: true, element: withSuspense(BajaBoletinPage) }],
+      },
       {
         path: '/acceso',
         element: <MarcoAcceso />,
@@ -212,6 +224,8 @@ const router = createBrowserRouter([
           // Historia se edita ya como las demás páginas; la dirección vieja sigue llevando a ella.
           { path: 'historia', element: <Navigate to="/cms/paginas/historia" replace /> },
           { path: 'noticias', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiasAdminPage)}</ExigeRol> },
+          { path: 'comunicados', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadosAdminPage)}</ExigeRol> },
+          { path: 'comunicados/:id', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadoEditPage)}</ExigeRol> },
           { path: 'noticias/nueva', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
           { path: 'noticias/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
           { path: 'publicaciones', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionesAdminPage)}</ExigeRol> },
