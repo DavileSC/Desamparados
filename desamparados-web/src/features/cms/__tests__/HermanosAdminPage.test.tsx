@@ -390,3 +390,53 @@ describe('HermanosAdminPage', () => {
     expect(screen.getByRole('button', { name: /quitar el filtro situación/i })).toBeInTheDocument()
   })
 })
+
+describe('los filtros de más y las listas guardadas', () => {
+  /** El censo vacío, las listas que haya y lo que se pida, apuntado. */
+  function servidor(listas: unknown[] = []) {
+    const llamadas: { url: string; metodo: string; cuerpo?: Record<string, unknown> }[] = []
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
+      const metodo = init.method ?? 'GET'
+      llamadas.push({ url: String(url), metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
+      const cuerpo = String(url).includes('/admin/listas')
+        ? (metodo === 'POST' ? { id: 9, nombre: 'Menores', consulta: 'edad=menores' } : listas)
+        : String(url).includes('solicitudes') ? { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }
+        : censoVacio
+      return Promise.resolve(new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    }))
+    return llamadas
+  }
+  const buscadas = (llamadas: ReturnType<typeof servidor>) => llamadas.filter((l) => l.url.includes('/admin/search')).map((l) => new URL(l.url, 'http://x').searchParams)
+
+  it('«Más filtros» abre los de edad, correo, cuenta, medalla y boletín, y filtran el censo', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor()
+    renderWithProviders(<HermanosAdminPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Más filtros' }))
+    await user.click(screen.getByRole('combobox', { name: 'Edad' }))
+    await user.click(await screen.findByRole('option', { name: 'Menores de 18' }))
+    await waitFor(() => expect(buscadas(llamadas).some((p) => p.get('edad') === 'menores')).toBe(true))
+  })
+
+  it('guarda la búsqueda de ahora con un nombre, y una guardada se aplica entera', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor([{ id: 7, nombre: 'Sin correo', consulta: 'correo=sin' }])
+    renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?edad=menores' })
+
+    expect(await screen.findByRole('button', { name: 'Menos filtros' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Guardar esta lista' }))
+    await user.type(await screen.findByRole('textbox', { name: 'Nombre' }), 'Menores')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toEqual({ nombre: 'Menores', consulta: 'edad=menores' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await user.click(screen.getByRole('combobox', { name: 'Listas guardadas' }))
+    await user.click(await screen.findByRole('option', { name: 'Sin correo' }))
+    await waitFor(() => {
+      const ultima = buscadas(llamadas).at(-1)!
+      expect(ultima.get('correo')).toBe('sin')
+      expect(ultima.get('edad')).toBeNull()
+    })
+  })
+})

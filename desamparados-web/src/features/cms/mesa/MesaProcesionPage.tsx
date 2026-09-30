@@ -8,7 +8,7 @@ import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { Helmet } from 'react-helmet-async'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
-import { apuntados, colasDeLaMesa, fichaDeMesa, sinDevolver, type Salida, type ZonaDeBusqueda } from '../../../lib/api/mesa'
+import { apuntados, colasDeLaMesa, fichaDeMesa, imprimirPapeleta, sinDevolver, type Salida, type ZonaDeBusqueda } from '../../../lib/api/mesa'
 import CabeceraSeccion from '../CabeceraSeccion'
 import CampoBusqueda from '../listados/CampoBusqueda'
 import AltaEnMesa from './AltaEnMesa'
@@ -112,6 +112,9 @@ export default function MesaProcesionPage() {
   const cambiarZona = useCallback((nueva: Zona) => { setZona(nueva); recordar('mesa.zona', nueva); setAviso(null); buscar() }, [buscar])
   const cambiarSalida = (nueva: Salida) => { setSalida(nueva); recordar('mesa.salida', nueva); setAviso(null); buscar() }
   const abrir = (id: number) => { setAviso(null); setModo({ tipo: 'ficha', id }) }
+  const imprimir = async (papeletaId: number) => {
+    try { await imprimirPapeleta(papeletaId) } catch (e) { setAviso({ tono: 'warning', texto: mensajeDeFallo(e, 'No se ha podido abrir la papeleta.') }) }
+  }
   const deshacer = async (accion: () => Promise<Aviso>) => {
     try { hecho(await accion()) } catch (e) { setAviso({ tono: 'warning', texto: mensajeDeFallo(e, 'No se ha podido deshacer.') }) }
   }
@@ -146,8 +149,11 @@ export default function MesaProcesionPage() {
         <Alert
           severity={aviso.tono}
           onClose={() => setAviso(null)}
-          action={aviso.deshacer && (
-            <Button color="inherit" size="small" onClick={() => void deshacer(aviso.deshacer!)}>Deshacer</Button>
+          action={(aviso.deshacer || aviso.papeletaId) && (
+            <Stack direction="row" spacing={0.5}>
+              {aviso.papeletaId && <Button color="inherit" size="small" onClick={() => void imprimir(aviso.papeletaId!)}>Imprimir papeleta</Button>}
+              {aviso.deshacer && <Button color="inherit" size="small" onClick={() => void deshacer(aviso.deshacer!)}>Deshacer</Button>}
+            </Stack>
           )}
           sx={{ mb: 2 }}
         >
@@ -328,7 +334,7 @@ export default function MesaProcesionPage() {
                   )}
                   {listado.isError && <Alert severity="error">No se ha podido cargar el listado de apuntados.</Alert>}
                   {!datos && !listado.isError && <CircularProgress aria-label="Cargando los apuntados" />}
-                  {datos && <TablaApuntados apuntados={datos.apuntados} salida={salida} seleccionado={idFicha} onElegir={abrir} />}
+                  {datos && <TablaApuntados apuntados={datos.apuntados} salida={salida} seleccionado={idFicha} onElegir={abrir} onImprimir={(id) => void imprimir(id)} />}
                 </Box>
                 {panel}
               </>

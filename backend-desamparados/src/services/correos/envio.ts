@@ -127,6 +127,8 @@ export async function enviarCorreo(
   html: string,
   replyTo?: string,
   cuenta?: CuentaDeContacto | null,
+  /** Archivos que van con el correo (la papeleta en PDF), además de las imágenes de la plantilla. */
+  adjuntos: { filename: string; content: Buffer; contentType: string }[] = [],
 ): Promise<boolean> {
   try {
     await (cuenta?.transporter ?? transporte()).sendMail({
@@ -136,7 +138,7 @@ export async function enviarCorreo(
       html,
       text: aTexto(html),
       // El escudo y la Virgen van dentro del correo, no enlazados a la web.
-      attachments: imagenesDe(html),
+      attachments: [...imagenesDe(html), ...adjuntos],
       // Sin Reply-To propio, las respuestas van al buzón de Secretaría si es
       // otro distinto de la cuenta que envía.
       ...(replyTo || process.env.CONTACT_EMAIL_TO ? { replyTo: replyTo || process.env.CONTACT_EMAIL_TO } : {}),

@@ -826,3 +826,34 @@ test('lo que se pide desde el área sale en la mesa: en el listado, en Túnicas 
     await e.recoger();
   }
 });
+
+// Octubre de 2026: a quien no tiene túnica en casa ni está libre la de antes
+// se le propone la de su talla, sin dar la misma a dos en la hoja del ropero.
+// La altura es rara a propósito (2,15 m), para que las túnicas reales de la
+// base de desarrollo no entren en juego.
+test('la túnica de su talla: en su ficha y, sin repetir, en la hoja de preparación', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const cerca = await e.prenda(TipoPrenda.TUNICA, `216-${numeroDePrueba()}`);
+    const lejos = await e.prenda(TipoPrenda.TUNICA, `219-${numeroDePrueba()}`);
+    const ana = await e.hermano({ nombre: 'Ana' });
+    const bea = await e.hermano({ nombre: 'Bea' });
+    await e.inscribir(ana.id, { alturaHombro: '2,15' });
+    await e.inscribir(bea.id, { alturaHombro: '2,15' });
+
+    const ficha = await MesaService.ficha(ana.id);
+    assert.deepEqual(ficha.propuesta.tunica, { origen: 'ROPERO', numero: cerca.numero, porTalla: true }, 'la más cercana a su altura');
+
+    const hoja = await ZonasService.preparacion();
+    const de = (id: number) => hoja.find((f) => f.hermano.id === id)!.propuesta.tunica;
+    assert.deepEqual(new Set([de(ana.id).numero, de(bea.id).numero]), new Set([cerca.numero, lejos.numero]), 'una a cada una, sin repetir');
+    assert.equal(de(ana.id).porTalla && de(bea.id).porTalla, true);
+
+    // Dada a Ana, ya no es libre: a Bea se le propone la otra.
+    await e.entregar((await db.solicitud.findFirstOrThrow({ where: { hermanoId: ana.id, estado: 'PENDIENTE' } })).id, { origenTunica: 'ROPERO', numTunicaAsignada: cerca.numero, cingulo: 'NINGUNO' });
+    assert.equal((await MesaService.ficha(bea.id)).propuesta.tunica.numero, lejos.numero);
+  } finally {
+    await e.recoger();
+  }
+});

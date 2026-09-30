@@ -74,11 +74,12 @@ export class EmailService {
 
   /**
    * La papeleta, cuando se recoge en la mesa (en la Pasión, con la ropa; en
-   * el Rosario, con el puesto confirmado). Sin QR: el que llevaba solo
-   * decía «año-nombre», cualquiera podía fabricarlo y nadie lo escaneaba. Lo
-   * que identifica la papeleta en Secretaría es su número.
+   * el Rosario, con el puesto confirmado). El QR no va en el cuerpo, que
+   * muchos clientes de correo esconden o recortan: va en el PDF adjunto, el
+   * mismo que se imprime en la mesa. Lo que la identifica en Secretaría es su
+   * número.
    */
-  static async enviarPapeleta(emailDestino: string, nombreHermano: string, datosPapeleta: DatosPapeleta, sexo?: Sexo) {
+  static async enviarPapeleta(emailDestino: string, nombreHermano: string, datosPapeleta: DatosPapeleta, sexo?: Sexo, pdf?: { nombre: string; contenido: Buffer }) {
     const { negro, burdeos, linea, sobreNegro } = COLORES;
     const rosario = datosPapeleta.salida === 'ROSARIO';
     const nombrePapeleta = rosario ? 'Rosario vespertino' : 'Papeleta de sitio';
@@ -129,7 +130,9 @@ export class EmailService {
       recuadro('Antes de salir', rosario
         ? 'Se va en traje oscuro, con la medalla del Grupo Parroquial. Se ruega puntualidad y recogimiento durante el rezo.'
         : 'Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla del Grupo Parroquial y calzado oscuro. Guarde silencio durante la formación.'),
-      parrafo('Conserve este correo: puede enseñarlo en el acceso si se le pide.'),
+      parrafo(pdf
+        ? 'Le adjuntamos su papeleta en PDF, con el código que se lee en la puerta del templo. También la tiene en el área de hermanos, en Procesión, para enseñarla desde el móvil.'
+        : 'Conserve este correo: puede enseñarlo en el acceso si se le pide. Su papeleta, con el código que se lee en la puerta, está en el área de hermanos, en Procesión.'),
       rosario ? '' : normativa,
       firma(BENDICION),
     ].join('');
@@ -142,13 +145,71 @@ export class EmailService {
       antetitulo: rosario ? 'Rosario vespertino' : 'Estación de Penitencia',
       resumen: `${datosPapeleta.puesto || 'Puesto por asignar'} · ${datosPapeleta.fechaSalida}, ${datosPapeleta.horaSalida}.`,
       contenido: content,
-    }));
+    }), undefined, undefined, pdf ? [{ filename: pdf.nombre, content: pdf.contenido, contentType: 'application/pdf' }] : []);
   }
 
   /**
    * Acuse de la solicitud de ingreso. `certificadoAdjunto`: si subió el
    * certificado de bautismo con el formulario no se le pide otra vez.
    */
+  /**
+   * Las gracias por un donativo en línea, si el donante dejó su correo. Sin
+   * nombre, el saludo no se lo inventa. No es un certificado de donación: eso
+   * es otra cosa, con NIF, y la emite Tesorería.
+   */
+  static async enviarGraciasDonativo(emailDestino: string, nombre: string | null, importe: string, destino: string | null) {
+    const content = [
+      nombre ? saludo(nombre) : parrafo('Estimado/a amigo/a:'),
+      parrafo(`Hemos recibido su donativo de <strong>${esc(importe)}</strong>${destino ? ` para <strong>${esc(destino)}</strong>` : ''}. Muchas gracias por su generosidad con el Grupo Parroquial.`),
+      parrafo('Este correo es solo un acuse. Si necesita un justificante para su declaración, escriba a Secretaría y se lo preparamos.'),
+      firma(BENDICION),
+    ].join('');
+    return await enviarCorreo(emailDestino, 'Gracias por su donativo', maquetar({
+      titulo: 'Gracias por su donativo',
+      antetitulo: 'Donativo',
+      resumen: `Hemos recibido su donativo de ${importe}.`,
+      contenido: content,
+    }));
+  }
+
+  /**
+   * El pésame a la familia de un hermano difunto. Va a quien Secretaría
+   * decida (lo propone el censo: otra ficha de la familia o el titular de la
+   * cuenta), nunca a la cuenta del propio difunto.
+   */
+  static async enviarPesame(emailDestino: string, difunto: string, sexo?: Sexo) {
+    const hermano = sexo === 'MUJER' ? 'hermana' : 'hermano';
+    const content = [
+      parrafo('Estimada familia:'),
+      parrafo(`El Grupo Parroquial les acompaña en el dolor por el fallecimiento de <strong>${esc(difunto)}</strong>, ${hermano} de esta corporación. Lo encomendamos a Nuestra Señora de los Desamparados y ofreceremos sufragios por su eterno descanso.`),
+      parrafo('Les haremos saber la fecha de la misa en su memoria. Para cualquier cosa que necesiten, estamos a su disposición en Secretaría.'),
+      firma('Descanse en paz.'),
+    ].join('');
+    return await enviarCorreo(emailDestino, `Nuestro pésame por ${difunto}`, maquetar({
+      titulo: 'Nuestro más sentido pésame',
+      antetitulo: 'En memoria',
+      resumen: `El Grupo Parroquial les acompaña por el fallecimiento de ${difunto}.`,
+      contenido: content,
+    }));
+  }
+
+  /** El aviso a la familia de un sufragio por su difunto: qué, cuándo y dónde. */
+  static async enviarAvisoSufragio(emailDestino: string, difunto: string, sufragio: { que: string; cuando: string; donde: string | null }) {
+    const content = [
+      parrafo('Estimada familia:'),
+      parrafo(`Les comunicamos que el Grupo Parroquial ofrecerá una <strong>${esc(sufragio.que.toLowerCase())}</strong> por el eterno descanso de <strong>${esc(difunto)}</strong>.`),
+      recuadro(sufragio.que, `${esc(sufragio.cuando)}${sufragio.donde ? `<br>${esc(sufragio.donde)}` : ''}`),
+      parrafo('Será un honor contar con su presencia.'),
+      firma(BENDICION),
+    ].join('');
+    return await enviarCorreo(emailDestino, `${sufragio.que} por ${difunto}`, maquetar({
+      titulo: `${sufragio.que} por ${difunto}`,
+      antetitulo: 'En memoria',
+      resumen: `${sufragio.cuando}${sufragio.donde ? `, ${sufragio.donde}` : ''}.`,
+      contenido: content,
+    }));
+  }
+
   static async enviarConfirmacionRegistro(emailDestino: string, nombreHermano: string, opciones: { sexo?: Sexo; certificadoAdjunto?: boolean } = {}) {
     const { sexo, certificadoAdjunto = false } = opciones;
     const documentos = ['DNI original.'];

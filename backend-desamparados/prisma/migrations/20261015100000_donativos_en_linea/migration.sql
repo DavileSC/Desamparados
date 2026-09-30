@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `PagoEnLinea` ADD COLUMN `donativo` JSON NULL,
+    ADD COLUMN `tipo` ENUM('RECIBOS', 'DONATIVO') NOT NULL DEFAULT 'RECIBOS',
+    MODIFY `userId` INTEGER NULL;
+

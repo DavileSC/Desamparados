@@ -719,6 +719,30 @@ const carruselSchema = type({
   return true;
 });
 
+/**
+ * Donativo: unos importes sugeridos (y «otro», que escribe el donante),
+ * destinos si el Grupo quiere que se elija («Caridad», «Cultos»…) y el pago
+ * por la pasarela del banco, sin cuenta en la web.
+ *
+ * Lo editable es lo que se ofrece; el formulario y el cobro son de código. El
+ * servidor vuelve a leer este bloque al cobrar: un importe fuera de los
+ * límites o un destino que no está aquí no pasan aunque se escriban a mano.
+ */
+const donativoSchema = type({
+  ...comunes,
+  tipo: "'donativo'",
+  texto: PARRAFO,
+  importes: type(`${topes.donativoMinimoEuros} <= number.integer <= ${topes.donativoMaximoEuros}`).array().atLeastLength(1).atMostLength(topes.importesPorDonativo),
+  destinos: ETIQUETA.array().atMostLength(topes.destinosPorDonativo),
+}).narrow((datos, ctx) => {
+  if (new Set(datos.importes).size !== datos.importes.length) return ctx.reject({ path: ['importes'], problem: 'tiene importes repetidos' });
+  const vacio = datos.destinos.findIndex(enBlanco);
+  if (vacio !== -1) return ctx.reject({ path: ['destinos', vacio], problem: 'no puede quedar en blanco' });
+  const normal = datos.destinos.map((d) => d.trim().toLocaleLowerCase('es-ES'));
+  if (new Set(normal).size !== normal.length) return ctx.reject({ path: ['destinos'], problem: 'tiene destinos repetidos' });
+  return true;
+});
+
 /** Aire entre dos bloques, con una línea si se quiere. Todo es presentación. */
 const espacioSchema = type({
   ...comunes,
@@ -753,6 +777,7 @@ const POR_TIPO = {
   programa: programaSchema,
   relacion: relacionSchema,
   carrusel: carruselSchema,
+  donativo: donativoSchema,
 } as const;
 
 export const esquemaDeBloque = (tipo: TipoBloque) => POR_TIPO[tipo as keyof typeof POR_TIPO];

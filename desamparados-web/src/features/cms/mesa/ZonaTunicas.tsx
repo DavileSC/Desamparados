@@ -113,6 +113,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
       renovar()
       onHecho({
         tono: 'success',
+        papeletaId: r.papeletaId,
         texto: rosario
           ? `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}, confirmado.`
           : `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}${r.numTunicaAsignada ? `, túnica ${r.numTunicaAsignada}` : ''}${r.cingulo === 'DEBIDO' ? ', sin cíngulo (se le debe)' : ''}. Recogida.`,
@@ -174,6 +175,11 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
                 tipo="TUNICA" etiqueta="N.º de túnica" valor={tunica} onCambiar={setTunica} hermanoId={ficha.id}
                 crear={crear.TUNICA} onCrear={(c) => setCrear({ ...crear, TUNICA: c })} onBloqueo={bloqueoTunica} autoFocus
               />
+            )}
+            {origen === 'ROPERO' && ficha.propuesta.tunica.porTalla && tunica === ficha.propuesta.tunica.numero && (
+              <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: '-8px !important' }}>
+                Propuesta por su talla{ficha.alturaHombro ? ` (${alturaEnMetros(ficha.alturaHombro)} m al hombro)` : ''}: no tenía túnica en casa ni estaba libre la de antes. Que se la pruebe.
+              </Typography>
             )}
 
             <Box>

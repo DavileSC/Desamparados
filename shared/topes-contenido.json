@@ -26,5 +26,9 @@
   "filasPorPrograma": 12,
   "filasPorRelacion": 20,
   "piezasPorCarrusel": 20,
-  "datosPorPieza": 4
+  "datosPorPieza": 4,
+  "importesPorDonativo": 6,
+  "destinosPorDonativo": 6,
+  "donativoMinimoEuros": 1,
+  "donativoMaximoEuros": 5000
 }

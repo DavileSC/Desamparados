@@ -6,6 +6,7 @@ import { FormularioCronologia } from './formularios/cronologia'
 import { FormularioFotoFija } from './formularios/fotoFija'
 import { FormularioCarrusel } from './formularios/carrusel'
 import { FormularioHorario } from './formularios/horario'
+import { FormularioDonativo } from './formularios/donativo'
 import {
   FormularioFotoTexto, FormularioCita, FormularioVideo, FormularioBotones, FormularioPreguntas,
   FormularioDescargas, FormularioMapa, FormularioCuentaAtras, FormularioEspacio, FormularioDibujo, FormularioAnillos,
@@ -59,6 +60,7 @@ export const FORMULARIOS: Record<string, ComponentType<Props<never>>> = {
   programa: FormularioPrograma as unknown as ComponentType<Props<never>>,
   relacion: FormularioRelacion as unknown as ComponentType<Props<never>>,
   carrusel: FormularioCarrusel as unknown as ComponentType<Props<never>>,
+  donativo: FormularioDonativo as unknown as ComponentType<Props<never>>,
 }
 
 /** Los bloques que no llevan título de sección: su contenido ya lo dice todo, o no dice nada. */
@@ -116,6 +118,8 @@ export const BLOQUE_NUEVO: Record<string, object> = {
   relacion: { tipo: 'relacion', titulo: 'Junta de Gobierno', mandato: '', nota: '', filas: [{ cargo: '', nombre: '', texto: '', enlace: '' }] },
   carrusel: { tipo: 'carrusel', titulo: '', piezas: [{ familia: '', titulo: '', texto: '', foto: { url: '', alt: '', pie: '' }, datos: [] }] },
   programa: { tipo: 'programa', titulo: 'Programa del año', filas: [{ cuando: '', mes: 0, titulo: '', texto: '', boton: '', enlace: '' }] },
+  // Nace con importes corrientes y sin destinos: se puede publicar tal cual.
+  donativo: { tipo: 'donativo', titulo: 'Colabora con un donativo', texto: '', importes: [5, 10, 20, 50], destinos: [] },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */
@@ -267,6 +271,10 @@ export function problemaDeBloque(bloque: Bloque): string | null {
       const cojo = bloque.puertas.findIndex((p) => (p.boton.trim() === '') !== (p.enlace === ''))
       return cojo === -1 ? null : `tiene el botón de la puerta ${cojo + 1} sin texto o sin destino`
     }
+    case 'donativo':
+      if (bloque.importes.length === 0) return 'no tiene ningún importe sugerido'
+      if (bloque.destinos.some((d) => d.trim() === '')) return 'tiene un destino en blanco'
+      return null
     case 'carrusel': {
       const sinNombre = bloque.piezas.findIndex((p) => p.titulo.trim() === '')
       if (sinNombre !== -1) return `tiene la pieza ${sinNombre + 1} sin nombre`

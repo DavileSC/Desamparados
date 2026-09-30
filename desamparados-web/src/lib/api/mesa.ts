@@ -1,4 +1,5 @@
-import { llamarApi } from './cliente'
+import { llamarApi, traerArchivo } from './cliente'
+import { guardarEnDisco } from './datos'
 import type { ReceiptStatus } from './procesion'
 import type { MetodoPago } from './contabilidad'
 
@@ -158,7 +159,8 @@ export interface FichaDeMesa {
   } | null
   propuesta: {
     puesto: string
-    tunica: { origen: OrigenTunica; numero: string | null }
+    /** `porTalla`: no tenía una en casa ni estaba libre la de antes; esta la elige su altura al hombro. */
+    tunica: { origen: OrigenTunica; numero: string | null; porTalla?: boolean }
     capirote: string | null
     faraona: string | null
     /** El que va con la túnica: la mesa lo cambia a «se le debe» si no quedan. */
@@ -438,4 +440,21 @@ export function cancelarSolicitud(id: number) {
 
 export function anularPapeleta(id: number) {
   return llamarApi<{ message: string }>(`/procesion/admin/papeletas/${id}/anular`, { method: 'DELETE' })
+}
+
+/**
+ * Abre la papeleta en A4 en otra pestaña para imprimirla en la mesa. La
+ * pestaña se abre ya, en el mismo clic, porque el navegador bloquea las que
+ * nacen después de esperar al servidor; si aun así la bloquea, se descarga.
+ */
+export async function imprimirPapeleta(papeletaId: number) {
+  const ventana = window.open('', '_blank')
+  try {
+    const archivo = await traerArchivo(`/procesion/admin/papeletas/${papeletaId}/pdf`)
+    if (ventana) ventana.location.href = URL.createObjectURL(archivo.blob)
+    else guardarEnDisco(archivo, `papeleta-${papeletaId}.pdf`)
+  } catch (e) {
+    ventana?.close()
+    throw e
+  }
 }

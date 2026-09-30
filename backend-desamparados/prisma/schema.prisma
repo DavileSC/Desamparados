@@ -218,15 +218,21 @@ model Hermano {
   parroquiaBautismo String?
   /// Los tres siguientes los lleva Secretaría: el hermano los ve, no los edita.
   fechaJura         DateTime?
+  /// Cuándo se le impuso la medalla del Grupo Parroquial.
+  fechaMedalla      DateTime?
+  /// Cómo se le nombra en las cartas y la papeleta («D.», «Dña.», «Rvdo. P.»…). Sin él, según el sexo.
+  tratamiento       String?   @db.VarChar(40)
   presentadoPor     String?
   presentadoPor2    String?
 
   // DATOS DE HERMANDAD
-  fechaAlta     DateTime    @default(now())
-  activo        Boolean     @default(true) // Soft Delete del hermano
-  numeroHermano Int?        @unique // Número de hermano, si lo tienen asignado
-  fechaBaja     DateTime? // Para saber cuándo dejó de pagar/salir
-  motivoBaja    MotivoBaja?
+  fechaAlta      DateTime    @default(now())
+  activo         Boolean     @default(true) // Soft Delete del hermano
+  numeroHermano  Int?        @unique // Número de hermano, si lo tienen asignado
+  fechaBaja      DateTime? // Para saber cuándo dejó de pagar/salir
+  motivoBaja     MotivoBaja?
+  /// Si falleció, el día. Se pone al dar la baja por fallecimiento (sin él, el de la baja).
+  fechaDefuncion DateTime?
 
   // VINCULACIÓN
   esTitular Boolean @default(false) // true = este perfil es el User logueado
@@ -283,6 +289,7 @@ model Hermano {
   solicitudes        Solicitud[]
   /// Los cabildos a los que asistió.
   asistenciasCabildo CabildoAsistencia[]
+  sufragios          Sufragio[]
 
   // Las peticiones de reactivación son pocas y Secretaría las lee enteras cada
   // vez que abre la cola: así no hay que recorrer el censo para encontrarlas.
@@ -358,13 +365,13 @@ enum TipoTransaccion {
 
 // NUEVO: Modelo dinámico de categorías
 model CategoriaTransaccion {
-  id     Int             @id @default(autoincrement())
-  nombre String // Ej: "Lotería Navidad", "Flores Cuaresma"
-  tipo   TipoTransaccion // Para saber si debe salir en el desplegable de Ingresos o de Gastos
-  activa Boolean         @default(true) // Soft-delete: si ya no venden lotería, la ocultan pero no se borra el historial
+  id             Int             @id @default(autoincrement())
+  nombre         String // Ej: "Lotería Navidad", "Flores Cuaresma"
+  tipo           TipoTransaccion // Para saber si debe salir en el desplegable de Ingresos o de Gastos
+  activa         Boolean         @default(true) // Soft-delete: si ya no venden lotería, la ocultan pero no se borra el historial
   /// La cuenta del plan de las entidades sin fines lucrativos para la partida
   /// doble. Null: la que se propone por el nombre (domain/partida-doble.ts).
-  cuentaContable String? @db.VarChar(10)
+  cuentaContable String?         @db.VarChar(10)
 
   transacciones Transaccion[]
 
@@ -755,19 +762,29 @@ enum EstadoPagoEnLinea {
   INCIDENCIA // Se cobró, pero no cuadra con lo que debía: Tesorería lo devuelve
 }
 
-/// Un pago del área de hermanos que pasa por el banco. Se apunta antes de ir a
+/// Qué se paga: recibos del área de hermanos o un donativo desde la web pública.
+enum TipoPagoEnLinea {
+  RECIBOS
+  DONATIVO
+}
+
+/// Un pago que pasa por el banco: recibos del área de hermanos o un donativo. Se apunta antes de ir a
 /// la página de Redsys, con lo que se paga y el importe calculado aquí; solo el
 /// aviso firmado del banco lo da por pagado, nunca la vuelta del navegador.
 model PagoEnLinea {
   id           Int               @id @default(autoincrement())
   /// El número de pedido para Redsys: 12 caracteres, los 4 primeros cifras.
   pedido       String?           @unique @db.VarChar(12)
-  /// Quién paga desde el área de hermanos. Null en la tienda y los
-  /// apadrinamientos, que se pagan sin cuenta.
+  /// Quién paga, si tiene cuenta. La tienda, los apadrinamientos y los
+  /// donativos de la web pública se pagan sin ella.
   userId       Int?
   /// De dónde viene el pago, y qué se paga fuera del área de hermanos.
   origen       OrigenPago        @default(AREA_HERMANOS)
   referenciaId Int?
+  tipo         TipoPagoEnLinea   @default(RECIBOS)
+  /// Del donativo: el destino que eligió, la página desde la que donó y, si
+  /// los dio, su nombre y su correo (para darle las gracias).
+  donativo     Json?
   /// TARJETA o BIZUM.
   metodo       MetodoPago
   importe      Decimal           @db.Decimal(10, 2)
@@ -787,6 +804,47 @@ model PagoEnLinea {
 
   @@index([userId, createdAt])
   @@index([estado, createdAt])
+}
+
+/// Una búsqueda del CMS guardada con nombre («Menores con túnica propia»):
+/// los filtros tal como van en la URL del listado. Las comparte toda la junta.
+model ListaGuardada {
+  id        Int      @id @default(autoincrement())
+  /// De qué listado es: hoy, «censo».
+  pantalla  String   @db.VarChar(30)
+  nombre    String   @db.VarChar(80)
+  /// Los filtros, como la consulta de la URL (`estado=activo&edad=menores`).
+  consulta  String   @db.Text
+  autorId   Int?
+  createdAt DateTime @default(now())
+
+  @@unique([pantalla, nombre])
+}
+
+enum TipoSufragio {
+  MISA_FUNERAL
+  MISA_ANIVERSARIO
+  MISA_SUFRAGIO
+  ORACION
+}
+
+/// Lo que el Grupo Parroquial ofrece por un hermano difunto: la misa del
+/// funeral, las de aniversario, otras misas y oraciones. Puede ir a la Agenda.
+model Sufragio {
+  id             Int          @id @default(autoincrement())
+  hermanoId      Int
+  hermano        Hermano      @relation(fields: [hermanoId], references: [id])
+  tipo           TipoSufragio
+  fecha          DateTime
+  lugar          String?      @db.VarChar(200)
+  notas          String?      @db.Text
+  /// El acto de la Agenda, si se publicó.
+  eventoId       Int?
+  /// Cuándo se avisó a la familia por correo, si se avisó.
+  familiaAvisada DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([hermanoId, fecha])
 }
 
 /// Lo que ya hizo la mesa, por la clave que el ordenador genera al abrir cada
@@ -1092,39 +1150,39 @@ enum EstadoPedido {
 
 /// Lo que se vende en la tienda de la web: recuerdos, medallas, estampas…
 model Producto {
-  id          Int      @id @default(autoincrement())
-  nombre      String   @db.VarChar(120)
-  descripcion String   @default("") @db.Text
-  precio      Decimal  @db.Decimal(10, 2)
+  id          Int                 @id @default(autoincrement())
+  nombre      String              @db.VarChar(120)
+  descripcion String              @default("") @db.Text
+  precio      Decimal             @db.Decimal(10, 2)
   /// URL de la foto, subida desde el CMS.
   foto        String?
   /// Cuántos quedan. Null: sin límite (se hace por encargo).
   existencias Int?
-  activo      Boolean  @default(true)
-  orden       Int      @default(0)
+  activo      Boolean             @default(true)
+  orden       Int                 @default(0)
   lineas      PedidoTiendaLinea[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
   @@index([activo, orden])
 }
 
 /// Un pedido de la tienda. Se compra sin cuenta y se recoge en Secretaría.
 model PedidoTienda {
-  id          Int          @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   /// Para la página de vuelta del banco: sin él, nadie ve un pedido ajeno.
-  token       String       @unique @db.VarChar(32)
-  nombre      String       @db.VarChar(120)
-  email       String       @db.VarChar(191)
-  telefono    String       @db.VarChar(30)
-  estado      EstadoPedido @default(PENDIENTE_PAGO)
-  total       Decimal      @db.Decimal(10, 2)
+  token       String              @unique @db.VarChar(32)
+  nombre      String              @db.VarChar(120)
+  email       String              @db.VarChar(191)
+  telefono    String              @db.VarChar(30)
+  estado      EstadoPedido        @default(PENDIENTE_PAGO)
+  total       Decimal             @db.Decimal(10, 2)
   metodo      MetodoPago?
   pagadoEl    DateTime?
   entregadoEl DateTime?
   lineas      PedidoTiendaLinea[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
   @@index([estado, createdAt])
 }
@@ -1147,14 +1205,14 @@ model PedidoTiendaLinea {
 /// candelería) con sus piezas marcadas encima, para que cada una la costee
 /// quien quiera.
 model CampanaApadrinamiento {
-  id          Int      @id @default(autoincrement())
-  titulo      String   @db.VarChar(150)
-  descripcion String   @default("") @db.Text
+  id          Int                @id @default(autoincrement())
+  titulo      String             @db.VarChar(150)
+  descripcion String             @default("") @db.Text
   foto        String
-  activa      Boolean  @default(true)
+  activa      Boolean            @default(true)
   piezas      PiezaApadrinable[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }
 
 /// Una pieza sobre la foto, en porcentaje del ancho y del alto (así sirve a

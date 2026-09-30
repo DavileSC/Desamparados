@@ -64,7 +64,8 @@ export type CinguloPropuesto = 'PRESTADO' | 'PROPIO' | 'NINGUNO';
 
 export interface Propuesta {
   puesto: string;
-  tunica: { origen: Origen; numero: string | null };
+  /** `porTalla`: no tenía una en casa ni estaba libre la de antes; esta la elige su altura al hombro. */
+  tunica: { origen: Origen; numero: string | null; porTalla?: boolean };
   capirote: string | null;
   faraona: string | null;
   cingulo: CinguloPropuesto;
@@ -72,6 +73,43 @@ export interface Propuesta {
 
 /** El cíngulo va con la túnica: del ropero, se presta; propia, lleva el suyo; sin túnica, ninguno. */
 export const CINGULO_SEGUN_TUNICA: Record<Origen, CinguloPropuesto> = { ROPERO: 'PRESTADO', PROPIA: 'PROPIO', NINGUNA: 'NINGUNO' };
+
+/** Una túnica libre del ropero: su número y la talla que tenga apuntada, si la tiene. */
+export interface TunicaLibre { numero: string; talla: string | null }
+
+/**
+ * Cuánto puede alejarse la talla de una túnica de la altura al hombro para
+ * proponerla. Más larga se recoge con el cíngulo; más corta enseña el tobillo,
+ * así que por abajo se admite menos.
+ */
+export const HOLGURA_TUNICA_CM = { masLarga: 5, masCorta: 3 };
+
+/** La talla de una túnica en centímetros: la de su número («145-31») o, si no, la apuntada («1,45»). */
+export function tallaEnCm(t: TunicaLibre): number | null {
+  const delNumero = tallaDeTunica(t.numero);
+  if (delNumero) return Number(delNumero);
+  return t.talla ? alturaHombroEnCm(t.talla) : null;
+}
+
+/**
+ * La túnica libre que mejor le va a una altura al hombro: la de talla más
+ * cercana dentro de la holgura y, a igual distancia, la más larga. Null si
+ * no hay ninguna de su talla (o no se sabe su altura): entonces la mesa busca.
+ */
+export function tunicaParaSuTalla(alturaCm: number | null, libres: TunicaLibre[]): TunicaLibre | null {
+  if (!alturaCm) return null;
+  let mejor: { t: TunicaLibre; talla: number } | null = null;
+  for (const t of libres) {
+    const talla = tallaEnCm(t);
+    if (talla === null) continue;
+    const diferencia = talla - alturaCm;
+    if (diferencia > HOLGURA_TUNICA_CM.masLarga || -diferencia > HOLGURA_TUNICA_CM.masCorta) continue;
+    const distancia = Math.abs(diferencia);
+    const actual = mejor && Math.abs(mejor.talla - alturaCm);
+    if (!mejor || actual === null || distancia < actual || (distancia === actual && talla > mejor.talla)) mejor = { t, talla };
+  }
+  return mejor?.t ?? null;
+}
 
 /**
  * Qué ropa proponer a quien llega a la mesa. Primero, lo que tenga sin
@@ -85,8 +123,14 @@ export function propuestaDeRopa(entrada: {
   prestadas: { tipo: string; numero: string }[];
   tieneTunicaPropia: boolean;
   puestoDeLaFicha: string | null;
+  /**
+   * Las túnicas libres del ropero y su altura al hombro. Con ellas, si va del
+   * ropero sin túnica en casa y la de antes ya no está libre (o nunca tuvo),
+   * se le propone la de su talla. Sin ellas, como siempre.
+   */
+  ropero?: { libres: TunicaLibre[]; alturaHombro: number | null };
 }): Propuesta {
-  const { anterior, prestadas, tieneTunicaPropia, puestoDeLaFicha } = entrada;
+  const { anterior, prestadas, tieneTunicaPropia, puestoDeLaFicha, ropero } = entrada;
   const prestada = (tipo: string) => prestadas.find((p) => p.tipo === tipo)?.numero ?? null;
 
   let tunica: Propuesta['tunica'];
@@ -95,6 +139,13 @@ export function propuestaDeRopa(entrada: {
   else if (anterior?.origenTunica === 'PROPIA' || (!anterior?.numTunicaAsignada && tieneTunicaPropia)) tunica = { origen: 'PROPIA', numero: null };
   else if (anterior?.origenTunica === 'NINGUNA') tunica = { origen: 'NINGUNA', numero: null };
   else tunica = { origen: 'ROPERO', numero: anterior?.numTunicaAsignada ?? null };
+
+  const anteriorLibre = tunica.numero !== null && ropero?.libres.some((t) => t.numero === tunica.numero);
+  if (ropero && tunica.origen === 'ROPERO' && !tunicaEnCasa && !anteriorLibre) {
+    const deSuTalla = tunicaParaSuTalla(ropero.alturaHombro, ropero.libres);
+    // Sin ninguna de su talla, se deja la de antes (la mesa verá que no está libre) o el hueco.
+    if (deSuTalla) tunica = { origen: 'ROPERO', numero: deSuTalla.numero, porTalla: true };
+  }
 
   return {
     puesto: anterior?.puesto ?? puestoDeLaFicha ?? '',

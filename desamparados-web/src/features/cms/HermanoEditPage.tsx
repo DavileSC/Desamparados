@@ -70,6 +70,7 @@ type Formulario = {
   boletin: boolean
   numeroHermano: string; fechaAlta: string; fechaBaja: string
   fechaJura: string; presentadoPor: string; presentadoPor2: string; fechaBautismo: string; lugarBautismo: string; parroquiaBautismo: string
+  fechaMedalla: string; tratamiento: string
   tieneTunicaPropia: boolean; tunica: string; alturaHombro: string; puesto: string
 }
 
@@ -90,6 +91,7 @@ const desdeFicha = (f: AdminBrother & { parentesco?: string | null }): Formulari
   direccion: f.direccion ?? '', poblacion: f.poblacion ?? '', codigoPostal: f.codigoPostal ?? '',
   provincia: f.provincia ?? '', comunidadAutonoma: f.comunidadAutonoma ?? '', pais: f.pais ?? '', boletin: f.boletin,
   fechaJura: aDia(f.fechaJura), presentadoPor: f.presentadoPor ?? '', presentadoPor2: f.presentadoPor2 ?? '',
+  fechaMedalla: aDia(f.fechaMedalla), tratamiento: f.tratamiento ?? '',
   fechaBautismo: aDia(f.fechaBautismo), lugarBautismo: f.lugarBautismo ?? '', parroquiaBautismo: f.parroquiaBautismo ?? '',
   ...camposDeEstado(f),
   tieneTunicaPropia: f.tieneTunicaPropia, tunica: f.tunica ?? '',
@@ -116,6 +118,7 @@ export default function HermanoEditPage() {
   const enMarcha = useRef(false)
   const [dandoDeBaja, setDandoDeBaja] = useState(false)
   const [fechaBajaNueva, setFechaBajaNueva] = useState('')
+  const [fechaDefuncion, setFechaDefuncion] = useState('')
   const [motivoBaja, setMotivoBaja] = useState<MotivoBaja | ''>('')
   const [reactivando, setReactivando] = useState(false)
   const [emancipando, setEmancipando] = useState(false)
@@ -157,8 +160,8 @@ export default function HermanoEditPage() {
     // hora: reenviar un alta sin cambiarla la reescribía (y, leída como día UTC,
     // la movía al día anterior sin rastro en la auditoría).
     const tocada = (clave: 'fechaNacimiento' | 'fechaAlta' | 'fechaBaja') => !!form[clave] && form[clave] !== inicial?.[clave]
-    // Bautismo y jura se pueden vaciar: si se tocan, viajan (vacías, como null).
-    const cambiada = (clave: 'fechaBautismo' | 'fechaJura') => form[clave] !== inicial?.[clave]
+    // Bautismo, jura y medalla se pueden vaciar: si se tocan, viajan (vacías, como null).
+    const cambiada = (clave: 'fechaBautismo' | 'fechaJura' | 'fechaMedalla') => form[clave] !== inicial?.[clave]
     try {
       await actualizarHermano(Number(id), {
         nombre: form.nombre,
@@ -182,6 +185,8 @@ export default function HermanoEditPage() {
         ...(cambiada('fechaJura') ? { fechaJura: form.fechaJura || null } : {}),
         presentadoPor: opcional(form.presentadoPor),
         presentadoPor2: opcional(form.presentadoPor2),
+        ...(cambiada('fechaMedalla') ? { fechaMedalla: form.fechaMedalla || null } : {}),
+        tratamiento: opcional(form.tratamiento),
         ...(tocada('fechaNacimiento') ? { fechaNacimiento: form.fechaNacimiento } : {}),
         ...(form.telefono ? { telefono: form.telefono } : {}),
         ...(form.email ? { email: form.email } : {}),
@@ -226,7 +231,7 @@ export default function HermanoEditPage() {
   const darDeBaja = () => trabajar(async () => {
     try {
       if (!motivoBaja) return
-      const { message } = await darDeBajaHermano(Number(id), fechaBajaNueva, motivoBaja)
+      const { message } = await darDeBajaHermano(Number(id), fechaBajaNueva, motivoBaja, fechaDefuncion || undefined)
       setDandoDeBaja(false)
       await refrescar()
       setAviso(message)
@@ -373,6 +378,12 @@ export default function HermanoEditPage() {
               {texto('fechaJura', 'Fecha de jura', 'date')}
               {texto('presentadoPor', 'Presentado por')}
               {texto('presentadoPor2', 'Presentado también por')}
+              {texto('fechaMedalla', 'Imposición de la medalla', 'date')}
+              {texto('tratamiento', 'Tratamiento', 'text', {
+                placeholder: 'D., Dña., Rvdo. P., Ilmo. Sr. D.…',
+                helperText: 'Cómo se le nombra en la papeleta y las cartas. Vacío: «D.» o «Dña.» según el sexo.',
+                slotProps: { htmlInput: { maxLength: 40 } },
+              })}
               {texto('fechaBautismo', 'Fecha de bautismo', 'date', { helperText: 'Opcional. Dato religioso: solo lo ven el hermano y la gestión del censo.' })}
               {texto('lugarBautismo', 'Bautizado/a en')}
               {texto('parroquiaBautismo', 'Parroquia de bautismo')}
@@ -478,6 +489,18 @@ export default function HermanoEditPage() {
           >
             {(Object.entries(MOTIVOS_BAJA) as [MotivoBaja, string][]).map(([valor, texto]) => <MenuItem key={valor} value={valor}>{texto}</MenuItem>)}
           </TextField>
+          {motivoBaja === 'FALLECIMIENTO' && (
+            <TextField
+              label="Fecha del fallecimiento"
+              type="date"
+              value={fechaDefuncion}
+              onChange={(e) => setFechaDefuncion(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: aDia(ficha.fechaAlta), max: hoy } }}
+              helperText="Si no es la de la baja. De ella salen sus aniversarios, en la pestaña «Difuntos»."
+              fullWidth
+              sx={{ mt: 2 }}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button disabled={trabajando} onClick={() => setDandoDeBaja(false)}>Volver</Button>

@@ -17,6 +17,7 @@ import { esCuentaAnonimizada } from '../domain/cuenta-anonimizada';
 import { diferenciasFicha, valorParaAuditoria } from '../domain/cambios-ficha';
 import { apellidosTrasCambio } from '../domain/apellidos.js';
 import { condicionBusqueda } from '../domain/busqueda-texto.js';
+import { filtrosAvanzados } from '../domain/filtros-censo.js';
 import { ORDENES_CENSO, ordenDe } from '../domain/ordenacion.js';
 import { EmailService } from './email.service';
 
@@ -48,6 +49,10 @@ export class CensoService {
     if (query.tieneTunicaPropia) where.tieneTunicaPropia = query.tieneTunicaPropia === 'true';
     if (query.estado) Object.assign(where, WHERE_SITUACION[query.estado]);
     if (query.numero) where.numeroHermano = query.numero === 'con' ? { not: null } : null;
+    // Se suman a las de la búsqueda, que también van en AND: asignarlas encima
+    // borraba lo buscado.
+    const avanzados = filtrosAvanzados(query, new Date());
+    if (avanzados.length) where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), ...avanzados];
 
     const [data, total] = await db.$transaction([
       db.hermano.findMany({
@@ -304,7 +309,7 @@ export class CensoService {
    * Baja desde secretaría. `fechaBajaTexto` (AAAA-MM-DD) permite anotar la baja
    * con el día en que el hermano avisó; sin ella, la baja es de ahora.
    */
-  static async darDeBajaHermano(hermanoId: number, meta?: MetaDeAuditoria, fechaBajaTexto?: string, motivo?: MotivoBaja) {
+  static async darDeBajaHermano(hermanoId: number, meta?: MetaDeAuditoria, fechaBajaTexto?: string, motivo?: MotivoBaja, fechaDefuncionTexto?: string) {
     const hermano = await db.hermano.findUnique({
       where: { id: hermanoId },
       // `user.email` es el respaldo del aviso de baja: las fichas antiguas
@@ -322,6 +327,12 @@ export class CensoService {
     const fechaBaja = fechaBajaTexto && fechaBajaTexto !== diaDeHoy() ? instanteDeDia(fechaBajaTexto, 'fechaBaja') : new Date();
     comprobarBajaNoFutura(fechaBaja);
     comprobarFechasHermano(hermano.fechaAlta, fechaBaja);
+    // Por fallecimiento, el día del óbito: el que se diga o, si no, el de la baja.
+    let fechaDefuncion: Date | null = null;
+    if (motivo === 'FALLECIMIENTO') {
+      fechaDefuncion = fechaDefuncionTexto ? instanteDeDia(fechaDefuncionTexto, 'fechaDefuncion') : fechaBaja;
+      comprobarBajaNoFutura(fechaDefuncion);
+    }
 
     const cuentaBloqueada = await transaccionReintentable(async (tx) => {
       // El estado va en el `where` (ver reactivarHermano): dos clics seguidos
@@ -329,7 +340,7 @@ export class CensoService {
       const { count } = await tx.hermano.updateMany({
         where: { id: hermanoId, activo: true },
         // Liberamos el número: al reactivar se le asigna uno nuevo (final de la cola)
-        data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: motivo ?? null }
+        data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: motivo ?? null, ...(fechaDefuncion && { fechaDefuncion }) }
       });
       if (count === 0) throw new HttpError(HERMANO_ERRORS.HERMANO_ALREADY_DOWN);
 

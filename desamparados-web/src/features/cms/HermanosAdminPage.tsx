@@ -17,6 +17,9 @@ import FichaCenso from './censo/FichaCenso'
 import ListaImpagos from './impagos/ListaImpagos'
 import HojaCenso from './censo/HojaCenso'
 import { site } from '../../config/site'
+import ListasGuardadas from './censo/ListasGuardadas'
+import VistaDifuntos from './difuntos/VistaDifuntos'
+import TuneIcon from '@mui/icons-material/Tune'
 
 const SITUACIONES: Opcion[] = [
   { valor: 'activo', etiqueta: 'Activos' },
@@ -27,6 +30,15 @@ const CON_SIN_NUMERO: Opcion[] = [
   { valor: 'con', etiqueta: 'Con número' },
   { valor: 'sin', etiqueta: 'Sin número' },
 ]
+// Los filtros que hacen útil una lista guardada: van tras «Más filtros».
+const CON_SIN = (con: string, sin: string): Opcion[] => [{ valor: 'con', etiqueta: con }, { valor: 'sin', etiqueta: sin }]
+const CORREO = CON_SIN('Con correo', 'Sin correo')
+const CUENTA = CON_SIN('Con cuenta bancaria', 'Sin cuenta bancaria')
+const EDADES: Opcion[] = [{ valor: 'menores', etiqueta: 'Menores de 18' }, { valor: 'adultos', etiqueta: 'Adultos' }]
+const MEDALLA = CON_SIN('Con medalla', 'Sin medalla')
+const BOLETIN: Opcion[] = [{ valor: 'si', etiqueta: 'Reciben el boletín' }]
+const FILTROS_AVANZADOS = ['correo', 'cuenta', 'edad', 'medalla', 'boletin'] as const
+
 const ORDENES_CENSO: Opcion[] = [
   { valor: 'apellidos', etiqueta: 'Apellidos (A-Z)' },
   { valor: 'numero', etiqueta: 'Número de hermano' },
@@ -38,7 +50,22 @@ const FILTROS_CENSO = {
   q: {},
   estado: { validos: valoresDe(SITUACIONES) },
   numero: { validos: valoresDe(CON_SIN_NUMERO) },
+  correo: { validos: valoresDe(CORREO) },
+  cuenta: { validos: valoresDe(CUENTA) },
+  edad: { validos: valoresDe(EDADES) },
+  medalla: { validos: valoresDe(MEDALLA) },
+  boletin: { validos: valoresDe(BOLETIN) },
   orden: { porDefecto: 'apellidos', validos: valoresDe(ORDENES_CENSO) },
+}
+type ClaveFiltroCenso = keyof typeof FILTROS_CENSO
+
+/** Los filtros puestos, como van en la URL y en una lista guardada (sin el orden de siempre). */
+function consultaDe(filtros: Record<ClaveFiltroCenso, string>): string {
+  const p = new URLSearchParams()
+  for (const [clave, valor] of Object.entries(filtros) as [ClaveFiltroCenso, string][]) {
+    if (valor && !(clave === 'orden' && valor === 'apellidos')) p.set(clave, valor)
+  }
+  return p.toString()
 }
 
 export default function HermanosAdminPage() {
@@ -52,7 +79,7 @@ export default function HermanosAdminPage() {
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
   const pedida = params.get('vista')
-  const vista = pedida === 'solicitudes' || pedida === 'impagos' ? pedida : 'censo'
+  const vista = pedida === 'solicitudes' || pedida === 'impagos' || pedida === 'difuntos' ? pedida : 'censo'
   // La ficha abierta a la derecha, también en la URL: «Editar ficha» y el botón
   // de atrás del navegador vuelven a ella, con la lista como estaba.
   const fichaAbierta = Number(params.get('ficha')) || null
@@ -68,6 +95,15 @@ export default function HermanosAdminPage() {
   })
   // Búsqueda, filtros y orden, en la URL como la página.
   const [filtros, cambiarFiltros] = useFiltrosUrl(FILTROS_CENSO)
+  const avanzadosPuestos = FILTROS_AVANZADOS.filter((clave) => filtros[clave]).length
+  const [masFiltros, setMasFiltros] = useState(avanzadosPuestos > 0)
+  // Una lista guardada cambia todos los filtros a la vez: lo que no trae, se quita.
+  const aplicarLista = (consulta: string) => {
+    const leida = new URLSearchParams(consulta)
+    const cambios = Object.fromEntries((Object.keys(FILTROS_CENSO) as ClaveFiltroCenso[]).map((clave) => [clave, leida.get(clave) ?? '']))
+    cambiarFiltros(cambios)
+    if (FILTROS_AVANZADOS.some((clave) => leida.get(clave))) setMasFiltros(true)
+  }
   const [brothers, setBrothers] = useState<AdminBrother[]>([])
   const [requests, setRequests] = useState<PendingRequest[]>([])
   // Las peticiones de volver llegan con las solicitudes, en la misma respuesta.
@@ -213,6 +249,7 @@ export default function HermanosAdminPage() {
         <Tab value="censo" label="Censo" />
         <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
         <Tab value="impagos" label="Impagos" />
+        <Tab value="difuntos" label="Difuntos" />
       </Tabs>
       {puedeGestionar && (
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', rowGap: 1.5 }}>
@@ -243,7 +280,7 @@ export default function HermanosAdminPage() {
       onConfirmar={() => { setPorAsignarNumeros(false); void asignarNumeros() }}
       onCancelar={() => setPorAsignarNumeros(false)}
     />
-    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
+    {vista === 'difuntos' ? <VistaDifuntos puedeGestionar={puedeGestionar} /> : vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
       {requests.map((request) => (
         <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
           <Box>
@@ -312,6 +349,27 @@ export default function HermanosAdminPage() {
       ]}
       orden={{ clave: 'orden', opciones: ORDENES_CENSO }}
     />
+    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mt: 1, mb: masFiltros ? 1 : 2 }}>
+      <Button size="small" startIcon={<TuneIcon />} onClick={() => setMasFiltros((v) => !v)} aria-expanded={masFiltros}>
+        {masFiltros ? 'Menos filtros' : `Más filtros${avanzadosPuestos ? ` (${avanzadosPuestos})` : ''}`}
+      </Button>
+      <ListasGuardadas consulta={consultaDe(filtros)} onAplicar={aplicarLista} />
+    </Stack>
+    {masFiltros && (
+      <Box sx={{ mb: 2 }}>
+        <BarraListado
+          valores={filtros}
+          onCambiar={cambiarFiltros}
+          filtros={[
+            { clave: 'correo', etiqueta: 'Correo', todos: 'Con y sin correo', opciones: CORREO },
+            { clave: 'cuenta', etiqueta: 'Cuenta bancaria', todos: 'Con y sin cuenta', opciones: CUENTA },
+            { clave: 'edad', etiqueta: 'Edad', todos: 'Todas las edades', opciones: EDADES },
+            { clave: 'medalla', etiqueta: 'Medalla', todos: 'Con y sin medalla', opciones: MEDALLA },
+            { clave: 'boletin', etiqueta: 'Boletín', todos: 'Lo reciban o no', opciones: BOLETIN },
+          ]}
+        />
+      </Box>
+    )}
     {loading ? <CircularProgress aria-label="Cargando censo" /> : (
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(300px, 380px) minmax(0, 1fr)' }, gap: 2.5, alignItems: 'start' }}>
         {/* En el móvil no caben las dos: con una ficha abierta se ve la ficha, y «Volver a la lista» la cierra. */}

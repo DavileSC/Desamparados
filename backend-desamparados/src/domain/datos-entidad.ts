@@ -21,13 +21,15 @@ export interface DatosSecretaria {
 }
 
 /**
- * Quién es la corporación: nombre, advocación, localidad y dominio. Lo que
+ * Quién es la corporación: nombre, tipo, advocación, localidad y dominio. Lo que
  * cambia de una instalación a otra vive en `shared/datos-entidad.json`, no en
  * el código, para poder montar la web para otra corporación sin tocarlo.
  */
 export interface Identidad {
   nombre: string;
   nombreCorto: string;
+  /** «Grupo Parroquial», «Hermandad»…: la papeleta lo pone encima de la advocación. */
+  tipo: string;
   titular: string;
   localidad: string;
   dominio: string;

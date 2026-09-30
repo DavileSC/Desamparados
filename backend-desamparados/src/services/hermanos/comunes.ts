@@ -60,6 +60,16 @@ export interface SearchHermanoQuery {
   estado?: 'activo' | 'baja' | 'pendiente';
   /** Con número de hermano o todavía sin él. */
   numero?: 'con' | 'sin';
+  /** Con correo donde escribirle o sin él (a quien hay que mandarle las cartas por correo postal). */
+  correo?: 'con' | 'sin';
+  /** Con cuenta bancaria para domiciliar o sin ella. */
+  cuenta?: 'con' | 'sin';
+  /** Menores de 18 años o adultos, a día de hoy. */
+  edad?: 'menores' | 'adultos';
+  /** Con la medalla ya impuesta o todavía sin ella. */
+  medalla?: 'con' | 'sin';
+  /** Solo los que reciben el boletín. */
+  boletin?: 'si';
   orden?: string;
   page?: string;
   limit?: string;
@@ -113,7 +123,9 @@ export const ADMIN_EDITABLE_FIELDS = [
   'esTitular', 'numeroHermano',
   'fechaAlta', 'fechaBaja',
   // La jura y quién lo presentó los lleva Secretaría: el hermano los ve y no los toca.
-  'fechaJura', 'presentadoPor', 'presentadoPor2'
+  'fechaJura', 'presentadoPor', 'presentadoPor2',
+  // La medalla y cómo se le nombra en las cartas, también.
+  'fechaMedalla', 'tratamiento'
 ] as const;
 
 export type EditableField = typeof ADMIN_EDITABLE_FIELDS[number] | typeof USER_EDITABLE_FIELDS[number];
@@ -134,7 +146,7 @@ export const HERMANO_SAFE_SELECT = {
   fechaBautismo: true, lugarBautismo: true, parroquiaBautismo: true,
   // Los documentos del alta: solo el nombre, se descargan con sesión del CMS.
   foto: true, certificadoBautismo: true,
-  fechaJura: true, presentadoPor: true, presentadoPor2: true
+  fechaJura: true, presentadoPor: true, presentadoPor2: true, fechaMedalla: true, tratamiento: true
 } satisfies Prisma.HermanoSelect;
 
 /** Una ficha pendiente de aprobación: nunca activa y sin baja. */
@@ -143,7 +155,7 @@ export const FICHA_PENDIENTE = { activo: false, fechaBaja: null } satisfies Pris
 /** Solo las cuentas de hermano raso (USER) se bloquean/borran al perder sus fichas. */
 export const esCuentaStaff = (role: Role) => role !== Role.USER;
 
-export const CAMPOS_FECHA = ['fechaNacimiento', 'fechaAlta', 'fechaBaja', 'fechaBautismo', 'fechaJura'] as const;
+export const CAMPOS_FECHA = ['fechaNacimiento', 'fechaAlta', 'fechaBaja', 'fechaBautismo', 'fechaJura', 'fechaMedalla'] as const;
 
 /**
  * Quita de los cambios las fechas que caen en el mismo día (de Madrid) que ya

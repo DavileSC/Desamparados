@@ -65,7 +65,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | ✅ | — | **Pasarela de pago (Redsys: tarjeta y Bizum)** | Hecha: pago desde Procesión, aviso firmado del banco, incidencias en Tesorería; probado de punta a punta con el entorno de pruebas de Redsys el 30-09-2026 (pago con tarjeta y aviso del banco por un túnel). Bizum llega a la pantalla de Bizum, pero el terminal público de pruebas no deja autenticarse: se probará con el terminal de pruebas del banco. Migración `pagos_en_linea`. **Para cobrar de verdad faltan las claves del banco** (ver `despliegue.md`, «El pago en línea») |
-| ⬜ | A | Donativos en línea desde la web pública | La pasarela ya está |
+| ✅ | A | Donativos en línea desde la web pública | Hecho: bloque «Donativo» del constructor (importes y destinos editables), pago con tarjeta o Bizum sin cuenta, apunte en la contabilidad y gracias por correo. Migración `donativos_en_linea`. Falta colocarlo en una página desde el CMS (Caridad, por ejemplo) |
 | ✅ | — | **Remesas SEPA (XML de adeudos)** | Hecha: Tesorería → Remesas junta los pendientes de quienes domicilian (con los que se quedan fuera y por qué), genera el `pain.008.001.02` (validado contra el XSD oficial), lo guarda para volver a descargarlo y da la remesa por cobrada con sus asientos. El mandato lleva la fecha en que el hermano dio la cuenta. Migración `remesas_sepa`. **Para usarlo faltan el identificador de acreedor y la cuenta del Grupo** (ver `despliegue.md`, «Las remesas SEPA») |
 | ✅ | — | **Devoluciones con la Norma 43** | Hecha: Tesorería → Remesas → «Extracto del banco». Lee el fichero Norma 43 (comprueba totales y saldos), reconoce las devoluciones por el `REC-…` o el mandato que el banco repite y el abono de cada remesa por su identificador o su total; enseña lo que hará y lo dudoso antes de aplicarlo. Subir dos veces el mismo extracto no hace nada |
 
@@ -73,17 +73,28 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| ⬜ | A | Papeleta de sitio en PDF con código QR | La librería de QR ya está en el backend |
-| ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos |
+| ✅ | A | Papeleta de sitio en PDF con código QR | Hecha: A4 que se imprime en la mesa al dar la ropa (y se reimprime desde el listado), adjunta al correo, y tarjeta con el QR en Procesión del área de hermanos |
+| ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos. **La papeleta con QR ya está**: el código, en `papeleta-qr.ts` (ver abajo) |
 | ✅ | — | **Cortejo por antigüedad, automático** | Hecha: Procesión → «Cortejo». Los tramos de cada salida (nombre y plazas) y los puestos que se reparten van en la configuración; «Repartir por antigüedad» pone a los más nuevos delante y a los más antiguos junto al trono, en proporción a las plazas, y escribe tramo y lugar en cada papeleta. Enseña antes cuántas cambian y la lista de cada tramo |
-| 🟡 | A | Túnica propuesta según la medida | Hay altura al hombro y tallas; falta proponerla sola |
+| ✅ | A | Túnica propuesta según la medida | Hecha: sin túnica en casa ni libre la de antes, se propone la libre de talla más cercana a su altura al hombro (+5/−3 cm), en la ficha de la mesa y en la hoja del ropero sin repetir |
+
+**El código del QR de la papeleta** (contrato entre A y B), en
+`backend-desamparados/src/domain/papeleta-qr.ts`:
+
+- El QR lleva solo el texto `DSP1.<id de la papeleta>.<firma>`: sin datos
+  personales ni URL.
+- `codigoDePapeleta(id)` lo genera (la papeleta, A) y
+  `leerCodigoDePapeleta(texto)` devuelve el id o null si es falso (el
+  escaneo, B).
+- Si la papeleta sigue valiendo (no anulada, de esta salida y año) lo decide
+  el escaneo mirando la base, no el código.
 
 ## Fase 3 · Comunicación
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | ✅ | — | **Boletín y avisos masivos, segmentados** | Hecha: Web → «Boletín y avisos». El boletín va solo a los suscritos y lleva su enlace de baja firmado; el aviso, a los activos del segmento (papeleta de una salida, cuotas pendientes, edad, población). Recuento de direcciones antes de enviar, prueba a uno mismo, un correo por dirección y envío poco a poco en segundo plano, que se reanuda si el servidor se reinicia y deja reintentar los fallidos. Migración `comunicados` |
-| ⬜ | A | Cartas y circulares en PDF con los datos de cada hermano | Reutiliza el motor de los informes |
+| 🔨 | A | Cartas y circulares en PDF con los datos de cada hermano | Reutiliza el motor de los informes |
 | ⬜ | A | Etiquetas postales | Para los hermanos sin correo |
 
 ## Fase 4 · Secretaría
@@ -92,8 +103,8 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 |---|---|---|---|
 | ✅ | — | **Importar y exportar el censo (Excel / CSV)** | Hecha: Hermanos → «Exportar» (Excel o CSV, activos o con bajas, sin datos bancarios, con rastro en la auditoría) e «Importar» (reconoce los títulos habituales, enseña antes qué filas entran y por qué no las otras, no duplica a quien ya está, da cuenta propia a quien trae DNI y correo y número por antigüedad a los activos que no lo traen). Dependencia nueva: `exceljs` |
 | ✅ | — | **Cabildos y actas** | Hecha: Junta → «Cabildos». Convocar (con la convocatoria como borrador de aviso a los mayores de edad), apuntar la asistencia con el quórum a la vista (voto: activos, mayores de edad y con un año de antigüedad; reglas en `Configuracion`), votaciones por mayoría simple o de dos tercios, celebrarlo en primera o segunda convocatoria (fija el censo con voto), redactar y aprobar el acta, que queda cerrada. Acta y libro de actas del año en PDF. Migración `cabildos` |
-| 🟡 | A | Difuntos y sufragios | Hay baja por fallecimiento; faltan fecha del óbito, aniversarios y misas |
-| 🟡 | A | Ficha: medalla, tratamiento y listas guardadas | La ficha está casi completa |
+| ✅ | A | Difuntos y sufragios | Hecho: pestaña «Difuntos» del censo con próximos aniversarios y registro; fecha del óbito al dar la baja; sufragios (misas, oraciones) que pueden ir a la Agenda y avisar a la familia; pésame por correo, nunca a la cuenta del difunto. Migración `difuntos_y_sufragios` |
+| ✅ | A | Ficha: medalla, tratamiento y listas guardadas | Hecha: fecha de la medalla y tratamiento (que usa la papeleta); en el censo, «Más filtros» (correo, cuenta, edad, medalla, boletín) y listas guardadas con nombre, compartidas por la junta. Migración `ficha_medalla_y_listas` |
 
 ## Fase 5 · Tesorería avanzada
 

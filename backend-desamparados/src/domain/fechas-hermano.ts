@@ -34,9 +34,9 @@ export const mismoDia = (a: Date | null | undefined, b: Date | null | undefined)
  *   razone en Madrid (el panel, la auditoría, el propio formulario).
  * - Nacimiento: medianoche UTC, que es como lo guarda el registro y lo que
  *   esperan quienes lo leen como día UTC; en Madrid cae también el mismo día.
- * - Bautismo y jura: como el alta, el comienzo del día en Madrid.
+ * - Bautismo, jura y medalla: como el alta, el comienzo del día en Madrid.
  */
-export function instanteDeDia(dia: string, campo: 'fechaAlta' | 'fechaBaja' | 'fechaNacimiento' | 'fechaBautismo' | 'fechaJura'): Date {
+export function instanteDeDia(dia: string, campo: 'fechaAlta' | 'fechaBaja' | 'fechaNacimiento' | 'fechaBautismo' | 'fechaJura' | 'fechaMedalla' | 'fechaDefuncion'): Date {
   if (!esDiaValido(dia)) throw new HttpError(`Fecha inválida en ${campo}.`);
   if (campo === 'fechaNacimiento') {
     const [anio, mes, d] = dia.split('-').map(Number);

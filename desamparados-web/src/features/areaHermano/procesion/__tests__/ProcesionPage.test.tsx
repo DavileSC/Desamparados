@@ -9,7 +9,7 @@ const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuer
 
 const vacia: FichaEnUnaSalida = { solicitud: null, papeleta: null, ultima: null }
 const ficha = (id: number, nombre: string, extra: Partial<FichaEnLaProcesion> = {}, pasion: Partial<FichaEnUnaSalida> = {}, rosario: Partial<FichaEnUnaSalida> = {}): FichaEnLaProcesion => ({
-  id, nombre, apellidos: 'Benítez Salas', esTitular: true, parentesco: null, activo: true, tieneTunicaPropia: true,
+  id, nombre, apellidos: 'Benítez Salas', esTitular: true, parentesco: null, activo: true, tieneTunicaPropia: true, numeroHermano: 120,
   cuotasPendientes: [], cuotasEnElBanco: 0,
   porSalida: {
     PASION: { ...vacia, ultima: { id: 9, year: 2026, puesto: 'Cirio', tramo: 'Tramo 3' }, ...pasion },
@@ -24,9 +24,11 @@ const DIAS = [
 ]
 const DIA_ROSARIO = { id: 5, salida: 'ROSARIO' as const, fecha: '2026-10-03T00:00:00.000Z', horaInicio: '2026-10-03T16:00:00.000Z', horaFin: '2026-10-03T19:00:00.000Z', genteApuntada: 3, capacidad: 60 }
 
+const EVENTO = { fechaSalida: 'Sábado de Pasión', horaSalida: '19:30h', accesoPuerta: 'Casa parroquial' }
+
 const salidas = (pasion: Partial<SalidaDelHermano> = {}, rosario: Partial<SalidaDelHermano> = {}): SalidaDelHermano[] => [
-  { salida: 'PASION', nombre: 'Sábado de Pasión', abierto: false, year: 2027, dias: [], ...pasion },
-  { salida: 'ROSARIO', nombre: 'Rosario vespertino', abierto: false, year: 2026, dias: [], ...rosario },
+  { salida: 'PASION', nombre: 'Sábado de Pasión', abierto: false, year: 2027, evento: EVENTO, dias: [], ...pasion },
+  { salida: 'ROSARIO', nombre: 'Rosario vespertino', abierto: false, year: 2026, evento: EVENTO, dias: [], ...rosario },
 ]
 
 let respuestaDelPago: unknown = { tipo: 'hecho', total: 25, repetida: false }
@@ -203,6 +205,30 @@ describe('ProcesionPage', () => {
     expect(await screen.findByText('Comprobando el pago con el banco…')).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Pagar 20,00 € con tarjeta' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Pagar con Bizum' })).toBeDisabled()
+  })
+
+  it('recogida la papeleta, enseña la tarjeta con el QR para la puerta', async () => {
+    const papeleta = { id: 12, year: 2027, puesto: 'Nazareno', tramo: 'Tramo 3 · Virgen', numero: 40, referencia: '2027-0012', tunica: '145-31', qr: { codigo: 'DSP1.12.AAAAAAAAAAAAAAAA', svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>' } }
+    servidor({ fichas: [ficha(1, 'Antonio', {}, { papeleta })] })
+    renderWithProviders(<ProcesionPage />)
+
+    const tarjeta = await screen.findByRole('article', { name: 'Papeleta de Antonio Benítez Salas' })
+    const qr = within(tarjeta).getByRole('img', { name: 'Código QR de la papeleta 2027-0012' })
+    expect(qr.getAttribute('src')).toMatch(/^data:image\/svg\+xml/)
+    expect(within(tarjeta).getByText('Nazareno')).toBeInTheDocument()
+    expect(within(tarjeta).getByText('Tramo 3 · Virgen')).toBeInTheDocument()
+    expect(within(tarjeta).getByText('Hermano n.º 120')).toBeInTheDocument()
+    expect(within(tarjeta).getByText('145-31')).toBeInTheDocument()
+    expect(within(tarjeta).getByText('19:30h')).toBeInTheDocument()
+  })
+
+  it('sin papeleta recogida no hay tarjeta', async () => {
+    const solicitud = { id: 4, puesto: 'Nazareno', donativo: null, pendiente: 0, concepto: 'Papeleta de sitio 2027', pagada: true, cita: null }
+    servidor({ fichas: [ficha(1, 'Antonio', {}, { solicitud })] })
+    renderWithProviders(<ProcesionPage />)
+
+    await screen.findByRole('region', { name: 'Este año' })
+    expect(screen.queryByRole('article', { name: /Papeleta de/ })).not.toBeInTheDocument()
   })
 
   it('el Rosario va aparte: su plazo, sus días, sus puestos y la voluntad', async () => {

@@ -27,8 +27,11 @@ export interface CorreoParaBuzon {
   html: string;
   text?: string;
   replyTo?: string;
-  /** Imágenes en línea (`cid:`): el buzón las incrusta para verlas al abrir el .html. */
-  attachments?: { path: string; cid: string; contentType: string }[];
+  /**
+   * Imágenes en línea (`cid:`), que el buzón incrusta para verlas al abrir el
+   * .html, y archivos adjuntos (la papeleta en PDF), que deja a su lado.
+   */
+  attachments?: ({ path: string; cid: string; contentType: string } | { filename: string; content: Buffer; contentType: string })[];
 }
 
 /**
@@ -91,6 +94,7 @@ async function paginaDelCorreo(correo: CorreoParaBuzon): Promise<string> {
   // Un navegador no sabe qué es `cid:`: las imágenes en línea se incrustan.
   let html = correo.html;
   for (const imagen of correo.attachments ?? []) {
+    if (!('cid' in imagen)) continue;
     const datos = (await fs.readFile(imagen.path)).toString('base64');
     html = html.split(`cid:${imagen.cid}`).join(`data:${imagen.contentType};base64,${datos}`);
   }
@@ -111,6 +115,9 @@ export function buzonDePruebas() {
       const nombre = `${marca}-${partePlana(correo.subject)}.html`;
       const destino = path.join(carpeta, nombre);
       await fs.writeFile(destino, await paginaDelCorreo(correo), 'utf8');
+      for (const adjunto of correo.attachments ?? []) {
+        if ('content' in adjunto) await fs.writeFile(path.join(carpeta, `${marca}-${partePlana(adjunto.filename)}`), adjunto.content);
+      }
       console.log(`📬 [Buzón de pruebas] Correo escrito en ${destino}`);
       return { messageId: nombre, accepted: [correo.to] };
     },

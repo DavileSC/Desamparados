@@ -137,6 +137,23 @@ describe('HermanoEditPage', () => {
     expect(guardado.cuerpo).not.toHaveProperty('fechaNacimiento')
   })
 
+  it('la medalla y el tratamiento los pone Secretaría y viajan al guardar', { timeout: 20000 }, async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor(() => ficha)
+    montar()
+    fireEvent.change(await screen.findByLabelText('Imposición de la medalla'), { target: { value: '2020-12-08' } })
+    await user.type(screen.getByRole('textbox', { name: 'Tratamiento' }), 'Rvdo. P.')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    const guardado = await vi.waitFor(() => {
+      const put = llamadas.find((l) => l.metodo === 'PUT')
+      expect(put).toBeDefined()
+      return put!
+    })
+    expect(guardado.cuerpo).toMatchObject({ fechaMedalla: '2020-12-08', tratamiento: 'Rvdo. P.' })
+  })
+
   it('enseña el alta en el día de Madrid, no en el de UTC', async () => {
     // Aprobada a las 00:30 del 1 de septiembre en Málaga: 22:30 UTC del 31 de agosto.
     responder({ ...ficha, fechaAlta: '2026-08-31T22:30:00.000Z' })

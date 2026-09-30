@@ -1,39 +1,33 @@
 /**
- * El pago en línea del área de hermanos, de punta a punta: lo que se paga,
- * el viaje a la página del banco, el aviso del banco y lo que no cuadra.
+ * El pago en línea, de punta a punta: lo que se paga, el viaje a la página
+ * del banco, el aviso del banco y lo que no cuadra. Los recibos del área de
+ * hermanos están aquí; el donativo de la web pública, en `donativo.service.ts`,
+ * y el aviso del banco reparte a uno u otro.
  *
  * El dinero manda: si el banco avisa de que cobró, ese cobro queda apuntado
  * pase lo que pase. Si ya no se puede aplicar a lo que se pagaba (se pagó en
  * Secretaría mientras tanto, cambió el importe…), el pago queda como
  * INCIDENCIA para que Tesorería devuelva el dinero. Nunca se pierde en silencio.
  */
-import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, OrigenPago, Prisma } from '@prisma/client';
+import { EstadoPago, EstadoPagoEnLinea, EstadoSolicitud, OrigenPago, Prisma, TipoPagoEnLinea } from '@prisma/client';
 import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { pendienteDeLaSalida } from '../../domain/salidas.js';
-import { configuracionRedsys, formularioDePago, leerAviso, modoDePago, numeroDePedido, type FormularioRedsys } from '../../domain/redsys.js';
+import { configuracionRedsys, formularioDePago, leerAviso, modoDePago, numeroDePedido } from '../../domain/redsys.js';
 import { urlDeLaWeb } from '../correos/plantilla.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
 import { MisRecibosService } from '../mis-recibos.service.js';
 import { PapeletasService } from '../procesion/papeletas.service.js';
 import { ZonasService } from '../procesion/zonas.service.js';
+import { DonativoService } from './donativo.service.js';
+import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
 
-export type MetodoEnLinea = 'TARJETA' | 'BIZUM';
+export type { InicioDePago, MetodoEnLinea } from './comunes.js';
 
 export interface LoQueSePaga {
   reciboIds: number[];
   solicitudIds: number[];
 }
-
-/** Lo que devuelve empezar un pago: hecho ya (simulado) o el formulario para ir al banco. */
-export type InicioDePago =
-  | { tipo: 'hecho'; total: number; repetida: boolean }
-  | ({ tipo: 'banco'; pedido: string } & FormularioRedsys);
-
-const aCentimos = (importe: Prisma.Decimal | number) => Math.round(Number(importe) * 100);
-
-/** La clave de la operación del cobro: la misma en cada aviso repetido del mismo pedido. */
-const claveDelCobro = (pedido: string) => `redsys-${pedido}`;
 
 /**
  * Lo que aplica un pago que no es del área de hermanos (un pedido de la
@@ -71,7 +65,7 @@ export class PagoEnLineaService {
     });
     const formulario = formularioDePago({
       pedido, centimos: p.centimos, metodo: p.metodo, descripcion: p.descripcion,
-      urlAviso: `${process.env.API_URL || 'http://localhost:3001'}/api/pagos/redsys/notificacion`,
+      urlAviso: urlDelAviso(),
       urlVuelta: p.urlVuelta.replace('{pedido}', pedido), urlFallo: p.urlFallo.replace('{pedido}', pedido),
     }, config);
     return { tipo: 'banco' as const, pedido, ...formulario };
@@ -144,7 +138,7 @@ export class PagoEnLineaService {
       centimos: listo.centimos,
       metodo: pago.metodo,
       descripcion: listo.conceptos.length ? listo.conceptos.join(', ') : 'Salida procesional',
-      urlAviso: `${process.env.API_URL || 'http://localhost:3001'}/api/pagos/redsys/notificacion`,
+      urlAviso: urlDelAviso(),
       urlVuelta: urlDeLaWeb(`/area-hermano/procesion?pago=${pedido}`),
       urlFallo: urlDeLaWeb(`/area-hermano/procesion?pago=${pedido}&resultado=no`),
     }, config);
@@ -190,6 +184,12 @@ export class PagoEnLineaService {
       await incidencia(`El banco cobró ${(aviso.centimos / 100).toFixed(2)} € y se esperaban ${(esperado / 100).toFixed(2)} €.`);
       return true;
     }
+    // El donativo no tiene nada que casar: se apunta tal cual.
+    if (pago.tipo === TipoPagoEnLinea.DONATIVO) {
+      await DonativoService.aplicar(pago, banco, meta);
+      return true;
+    }
+
     // Lo que no es del área de hermanos lo aplica su propio servicio, con la
     // misma regla: lo que ya no se puede aplicar es incidencia.
     if (pago.origen !== OrigenPago.AREA_HERMANOS) {
@@ -205,9 +205,13 @@ export class PagoEnLineaService {
       return true;
     }
 
-    const userId = pago.userId!;
     const reciboIds = pago.reciboIds as number[];
     const solicitudIds = pago.solicitudIds as number[];
+    const userId = pago.userId;
+    if (userId === null) {
+      await incidencia('El pago de recibos no tiene de quién es.');
+      return true;
+    }
     try {
       const ahora = await this.preparar(userId, { reciboIds, solicitudIds });
       if (ahora.centimos !== esperado) {
@@ -229,7 +233,7 @@ export class PagoEnLineaService {
 
   /** Cómo va un pago propio, para la vuelta del banco (el aviso puede llegar después). */
   static async estado(userId: number, pedido: string) {
-    const pago = await db.pagoEnLinea.findFirst({ where: { pedido, userId }, select: { estado: true, importe: true } });
+    const pago = await db.pagoEnLinea.findFirst({ where: { pedido, userId, tipo: TipoPagoEnLinea.RECIBOS }, select: { estado: true, importe: true } });
     if (!pago) throw new NotFoundError('No se encontró ese pago.');
     return { estado: pago.estado, importe: Number(pago.importe) };
   }
@@ -241,12 +245,16 @@ export class PagoEnLineaService {
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 50,
     });
-    const usuarios = await db.user.findMany({ where: { id: { in: filas.flatMap((f) => (f.userId ? [f.userId] : [])) } }, select: { id: true, email: true } });
+    const usuarios = await db.user.findMany({ where: { id: { in: filas.flatMap((f) => (f.userId === null ? [] : [f.userId])) } }, select: { id: true, email: true } });
     const correo = new Map(usuarios.map((u) => [u.id, u.email]));
+    // Sin cuenta: de un donativo, el correo que dejó el donante; de la tienda o
+    // de un apadrinamiento, el que dé su servicio. Es a quien hay que devolverle el dinero.
     const sinCuenta = await Promise.all(filas.map((f) => (f.userId === null && f.referenciaId !== null ? CORREO_DE[f.origen]?.(f.referenciaId) ?? null : null)));
+    const deQuien = (f: (typeof filas)[number], i: number) =>
+      (f.userId !== null ? correo.get(f.userId) : (f.donativo as { email?: string | null } | null)?.email ?? sinCuenta[i]) ?? null;
     return filas.map((f, i) => ({
       id: f.id, pedido: f.pedido, fecha: f.createdAt, importe: Number(f.importe), metodo: f.metodo,
-      autorizacion: f.autorizacion, motivo: f.motivo, correo: (f.userId ? correo.get(f.userId) : sinCuenta[i]) ?? null,
+      autorizacion: f.autorizacion, motivo: f.motivo, correo: deQuien(f, i), donativo: f.tipo === TipoPagoEnLinea.DONATIVO,
     }));
   }
 

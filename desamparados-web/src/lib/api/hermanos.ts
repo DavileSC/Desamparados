@@ -58,6 +58,10 @@ export interface AdminBrother {
   fechaJura: string | null
   presentadoPor: string | null
   presentadoPor2: string | null
+  /** Cuándo se le impuso la medalla. */
+  fechaMedalla: string | null
+  /** Cómo se le nombra en las cartas y la papeleta («Rvdo. P.»…); sin él, según el sexo. */
+  tratamiento: string | null
   user?: { email: string | null; telefono: string | null }
 }
 
@@ -92,6 +96,11 @@ export type FiltrosCenso = {
   q?: string
   estado?: '' | 'activo' | 'baja' | 'pendiente'
   numero?: '' | 'con' | 'sin'
+  correo?: '' | 'con' | 'sin'
+  cuenta?: '' | 'con' | 'sin'
+  edad?: '' | 'menores' | 'adultos'
+  medalla?: '' | 'con' | 'sin'
+  boletin?: '' | 'si'
   orden?: string
 }
 
@@ -141,6 +150,8 @@ export interface DatosDeFichaDeHermano {
   fechaJura?: string | null
   presentadoPor?: string | null
   presentadoPor2?: string | null
+  fechaMedalla?: string | null
+  tratamiento?: string | null
   parentesco?: Parentesco
   dni?: string
   fechaNacimiento?: string
@@ -195,11 +206,14 @@ export function actualizarHermano(id: number, payload: DatosDeFichaDeHermano) {
   return llamarApi<AdminBrother>(`/hermanos/admin/${id}`, { method: 'PUT', json: payload })
 }
 
-/** Da de baja a un hermano con la fecha indicada (AAAA-MM-DD); sin ella, hoy. */
-export function darDeBajaHermano(id: number, fechaBaja: string | undefined, motivo: MotivoBaja) {
+/**
+ * Da de baja a un hermano con la fecha indicada (AAAA-MM-DD); sin ella, hoy.
+ * Por fallecimiento, `fechaDefuncion` es el día en que falleció (sin él, el de la baja).
+ */
+export function darDeBajaHermano(id: number, fechaBaja: string | undefined, motivo: MotivoBaja, fechaDefuncion?: string) {
   return llamarApi<{ message: string }>(`/hermanos/admin/${id}/baja`, {
     method: 'DELETE',
-    json: { ...(fechaBaja ? { fechaBaja } : {}), motivo },
+    json: { ...(fechaBaja ? { fechaBaja } : {}), motivo, ...(motivo === 'FALLECIMIENTO' && fechaDefuncion ? { fechaDefuncion } : {}) },
   })
 }
 
@@ -258,3 +272,14 @@ export const previaImportacionCenso = (fichero: File) =>
 
 export const importarCenso = (fichero: File) =>
   llamarApi<{ message: string; importadas: number }>('/hermanos/admin/censo/importar', { method: 'POST', formData: conFichero(fichero) })
+
+/** Una búsqueda del censo guardada con nombre: sus filtros, como van en la URL. */
+export interface ListaGuardada { id: number; nombre: string; consulta: string }
+
+export const listasDelCenso = () => llamarApi<ListaGuardada[]>('/hermanos/admin/listas')
+
+/** Con un nombre que ya existe, la sustituye. */
+export const guardarListaDelCenso = (nombre: string, consulta: string) =>
+  llamarApi<ListaGuardada>('/hermanos/admin/listas', { method: 'POST', json: { nombre, consulta } })
+
+export const borrarListaDelCenso = (id: number) => llamarApi<{ message: string }>(`/hermanos/admin/listas/${id}`, { method: 'DELETE' })

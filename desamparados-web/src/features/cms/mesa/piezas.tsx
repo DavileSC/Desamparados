@@ -8,7 +8,13 @@ import { PUESTOS_POR_SALIDA, mensajeDe } from './formato'
  * `deshacer`, el aviso lleva un botón para echarlo atrás en el acto (un clic
  * equivocado); devuelve el aviso de después.
  */
-export interface Aviso { texto: string; tono: 'success' | 'info' | 'warning'; deshacer?: () => Promise<Aviso> }
+export interface Aviso {
+  texto: string
+  tono: 'success' | 'info' | 'warning'
+  deshacer?: () => Promise<Aviso>
+  /** La papeleta recién recogida: el aviso ofrece imprimirla para dársela en mano. */
+  papeletaId?: number
+}
 
 const ETIQUETA_SITUACION = { baja: 'está de baja', pendiente: 'tiene el alta pendiente de aprobar' } as const
 

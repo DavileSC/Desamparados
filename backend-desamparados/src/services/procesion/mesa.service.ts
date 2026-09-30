@@ -21,7 +21,7 @@ import { CensoService } from '../censo.service.js';
 import { SolicitudesService } from '../solicitudes.service.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { PapeletasService } from './papeletas.service.js';
-import { CAMPO_DE_ROPA, comprobarQueNoVaEnOtraPapeleta, prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
+import { CAMPO_DE_ROPA, comprobarQueNoVaEnOtraPapeleta, prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida, tunicasLibres, type TipoRopa } from './ropa.js';
 import { anioDeLaMesa, cuotasQueCuentan, pendienteDe } from './zonas.service.js';
 import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { avisarALaMesa } from './avisos-mesa.js';
@@ -214,6 +214,8 @@ export class MesaService {
       prestadas: prendas,
       tieneTunicaPropia: h.tieneTunicaPropia,
       puestoDeLaFicha: h.puesto,
+      // En el Rosario se va de traje: no hay túnica que buscar.
+      ...(salida === 'PASION' && { ropero: { libres: await tunicasLibres(db, year), alturaHombro: h.alturaHombro } }),
     });
 
     return {

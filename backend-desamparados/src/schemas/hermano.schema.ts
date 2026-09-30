@@ -110,7 +110,9 @@ export const updateAdminHermanoSchema = type({
         "fechaBaja?": fechaDia,
         "fechaJura?": diaOpcional,
         "presentadoPor?": opcional,
-        "presentadoPor2?": opcional
+        "presentadoPor2?": opcional,
+        "fechaMedalla?": diaOpcional,
+        "tratamiento?": type("string <= 40").or("null")
     }))
 });
 
@@ -121,7 +123,9 @@ export const bajaHermanoSchema = type({
     "body?": type({
         "fechaBaja?": fechaDia,
         // Opcional solo para los clientes de antes: la web lo pide siempre.
-        "motivo?": "'VOLUNTARIA' | 'IMPAGO' | 'FALLECIMIENTO' | 'OTRO'"
+        "motivo?": "'VOLUNTARIA' | 'IMPAGO' | 'FALLECIMIENTO' | 'OTRO'",
+        // Con motivo fallecimiento: el día en que falleció, si no es el de la baja.
+        "fechaDefuncion?": fechaDia
     }).or("undefined")
 });
 
@@ -135,6 +139,11 @@ export const searchHermanoSchema = type({
         "tieneTunicaPropia?": "'true' | 'false'",
         "estado?": "'activo' | 'baja' | 'pendiente'",
         "numero?": "'con' | 'sin'",
+        "correo?": "'con' | 'sin'",
+        "cuenta?": "'con' | 'sin'",
+        "edad?": "'menores' | 'adultos'",
+        "medalla?": "'con' | 'sin'",
+        "boletin?": "'si'",
         "orden?": ordenQuery(ORDENES_CENSO),
         "page?": type("string").matching(/^[1-9]\d*$/), // Número mayor que 0
         "limit?": type("string").matching(/^[1-9]\d*$/)
@@ -165,4 +174,36 @@ export const exportarCensoSchema = type({
         "formato?": "'xlsx' | 'csv'",
         "bajas?": "'si' | 'no'"
     }
+});
+
+// Las listas guardadas del censo: un nombre y la consulta de la URL.
+export const guardarListaSchema = type({
+    body: {
+        nombre: "0 < string <= 80",
+        consulta: "string <= 1000",
+    }
+});
+
+// Los difuntos: el día del óbito, los sufragios y el pésame.
+export const difuntosQuerySchema = type({
+    query: { "q?": "string <= 100" }
+});
+
+export const fijarDefuncionSchema = type({
+    body: { fecha: fechaDia }
+});
+
+export const nuevoSufragioSchema = type({
+    body: {
+        tipo: "'MISA_FUNERAL' | 'MISA_ANIVERSARIO' | 'MISA_SUFRAGIO' | 'ORACION'",
+        fecha: type("string").matching(/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/).describe("una fecha y hora AAAA-MM-DDTHH:mm"),
+        "lugar?": type("string <= 200").or("null"),
+        "notas?": type("string <= 2000").or("null"),
+        "enAgenda?": "boolean",
+        "avisarA?": type(email).or("''").or("null"),
+    }
+});
+
+export const pesameSchema = type({
+    body: { email }
 });
