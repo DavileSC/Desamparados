@@ -65,7 +65,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | ✅ | — | **Pasarela de pago (Redsys: tarjeta y Bizum)** | Hecha: pago desde Procesión, aviso firmado del banco, incidencias en Tesorería; probado de punta a punta con el entorno de pruebas de Redsys el 30-09-2026 (pago con tarjeta y aviso del banco por un túnel). Bizum llega a la pantalla de Bizum, pero el terminal público de pruebas no deja autenticarse: se probará con el terminal de pruebas del banco. Migración `pagos_en_linea`. **Para cobrar de verdad faltan las claves del banco** (ver `despliegue.md`, «El pago en línea») |
-| ⬜ | A | Donativos en línea desde la web pública | La pasarela ya está |
+| 🔨 | A | Donativos en línea desde la web pública | En marcha: un bloque «Donativo» del constructor, con importes y destinos editables, que cobra con la pasarela |
 | 🟡 | B | Remesas SEPA (XML de adeudos) | Hay IBAN y titular en la ficha y el estado «remesado» en los recibos. Falta generar el fichero para el banco |
 | ⬜ | B | Devoluciones con la Norma 43 | Subir el extracto del banco y casar cobros y devoluciones solos |
 
