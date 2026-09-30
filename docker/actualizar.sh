@@ -61,6 +61,8 @@ else
   CONF=/etc/desamparados/copia.env
   [[ -r "$CONF" ]] || fallo "No encuentro $CONF (la configuración de las copias, ver docs/despliegue.md). Si ya tienes una copia de hoy, repite con --sin-copia."
   log "Copia de seguridad antes de actualizar…"
+  # El fichero es del servidor, no del repositorio: no hay nada que seguir.
+  # shellcheck source=/dev/null
   ( set -a; . "$CONF"; set +a; PROYECTO_DIR="$PROYECTO_DIR" bash ./backend-desamparados/scripts/backup-vps.sh ) \
     || fallo "La copia de seguridad ha fallado: no se actualiza sin ella."
 fi

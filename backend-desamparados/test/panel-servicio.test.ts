@@ -103,11 +103,13 @@ before(async () => {
   });
   categoriaPruebaId = categoria.id;
 
-  const hoy = new Date();
+  // El mes en curso es el de Madrid, como lo cuenta el panel: con el de UTC,
+  // entre las 00:00 y las 02:00 del día 1 las transacciones caían en el mes anterior.
+  const [anioHoy, mesHoy] = diaMadrid(new Date()).split('-').map(Number);
   for (const [i, importe] of IMPORTES_ARRASTRE.entries()) {
     // Un día distinto por importe, dentro del mes en curso: cada uno cae en
     // su propia fila de groupBy(['tipo','fecha']).
-    const fecha = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1 + i));
+    const fecha = new Date(Date.UTC(anioHoy, mesHoy - 1, 1 + i));
     const transaccion = await db.transaccion.create({
       data: {
         tipo: TipoTransaccion.INGRESO,
@@ -322,9 +324,11 @@ describe('el calendario del Inicio', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     // El día 15 del mes en curso a mediodía: cae dentro del mes en Madrid sea
     // cual sea el día de hoy.
-    const ahora = new Date();
-    const mediados = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), 15, 12));
-    const otroMes = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() + 2, 15, 12));
+    // El mes de Madrid, que es el que pide el Inicio: con el de UTC, la prueba
+    // fallaba entre las 00:00 y las 02:00 del día 1.
+    const [anio, mes] = diaMadrid(new Date()).split('-').map(Number);
+    const mediados = new Date(Date.UTC(anio, mes - 1, 15, 12));
+    const otroMes = new Date(Date.UTC(anio, mes + 1, 15, 12));
     const acto = await db.evento.create({ data: { title: 'ZZ acto del mes', startDate: mediados, type: 'CULTO' } });
     const lejano = await db.evento.create({ data: { title: 'ZZ acto lejano', startDate: otroMes, type: 'CULTO' } });
     const turno = await db.turno.create({ data: { fecha: mediados, horaInicio: mediados, horaFin: mediados } });
