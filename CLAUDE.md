@@ -11,6 +11,9 @@ pública, CMS y área de hermanos.
 - Antes de tocar nada delicado, leer `docs/notas-del-proyecto.md`: recoge las
   trampas que no se ven en el código. No repetirlas aquí.
 - Los comentarios explican **por qué**, no qué: así está escrito todo el código.
+- Se trabaja en **dos PC a la vez (A y B)**, cada uno con sus tareas: antes de
+  coger una, leer el reparto en `docs/hoja-de-ruta.md`. Si no sabes en cuál
+  estás, pregúntalo.
 
 ## Mapa
 

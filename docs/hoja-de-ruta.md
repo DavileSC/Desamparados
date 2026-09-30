@@ -22,6 +22,36 @@ su migración anotada si la lleva.
 
 ---
 
+## Reparto entre los dos PC
+
+Desde el 30-09-2026 se trabaja en dos equipos a la vez, cada uno con su Claude:
+
+- **A**: las tareas más sencillas y acotadas.
+- **B**: las complejas, las que necesitan más contexto y más tokens.
+
+Cada uno coge **solo las suyas** (columna «PC»). Las marcadas con «—» están
+hechas o aparcadas.
+
+**Dependencias entre los dos:**
+
+- El escaneo del QR (B) necesita la papeleta con QR (A): A la hace primero.
+- La lotería y la caja de tienda (A) apuntan en la contabilidad de hoy; la
+  partida doble (B) tiene que recoger también lo que ellas apunten.
+- Las remesas SEPA van antes que la Norma 43 (las dos, B).
+
+**Para no pisarse:**
+
+- `git pull` antes de empezar cada tarea (y `npx prisma generate` en el
+  backend); subir cada tarea en cuanto esté en verde, sin acumular.
+- Migraciones: `git pull` justo antes de crear una y subirla enseguida. La
+  hora del nombre de la carpeta distingue al PC: `…100000_` en A, `…200000_`
+  en B.
+- `schema.prisma`, `app.ts`, las acciones de auditoría, el menú del CMS y
+  este fichero los tocan los dos: en un conflicto, se juntan los cambios a
+  mano, nunca se descarta lo del otro.
+- Al empezar una tarea, marcarla 🔨 aquí y subirlo: así el otro sabe que está
+  cogida.
+
 ## Regla para todo lo que venga
 
 Lo propio del Grupo (nombre, escudo, colores, salidas, puestos, importes, datos
@@ -32,73 +62,73 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 ## Fase 1 · Cobros
 
-| | Tarea | Notas |
-|---|---|---|
-| ✅ | **Pasarela de pago (Redsys: tarjeta y Bizum)** | Hecha: pago desde Procesión, aviso firmado del banco, incidencias en Tesorería; probado de punta a punta con el entorno de pruebas de Redsys el 30-09-2026 (pago con tarjeta y aviso del banco por un túnel). Bizum llega a la pantalla de Bizum, pero el terminal público de pruebas no deja autenticarse: se probará con el terminal de pruebas del banco. Migración `pagos_en_linea`. **Para cobrar de verdad faltan las claves del banco** (ver `despliegue.md`, «El pago en línea») |
-| ⬜ | Donativos en línea desde la web pública | La pasarela ya está |
-| 🟡 | Remesas SEPA (XML de adeudos) | Hay IBAN y titular en la ficha y el estado «remesado» en los recibos. Falta generar el fichero para el banco |
-| ⬜ | Devoluciones con la Norma 43 | Subir el extracto del banco y casar cobros y devoluciones solos |
+| | PC | Tarea | Notas |
+|---|---|---|---|
+| ✅ | — | **Pasarela de pago (Redsys: tarjeta y Bizum)** | Hecha: pago desde Procesión, aviso firmado del banco, incidencias en Tesorería; probado de punta a punta con el entorno de pruebas de Redsys el 30-09-2026 (pago con tarjeta y aviso del banco por un túnel). Bizum llega a la pantalla de Bizum, pero el terminal público de pruebas no deja autenticarse: se probará con el terminal de pruebas del banco. Migración `pagos_en_linea`. **Para cobrar de verdad faltan las claves del banco** (ver `despliegue.md`, «El pago en línea») |
+| ⬜ | A | Donativos en línea desde la web pública | La pasarela ya está |
+| 🟡 | B | Remesas SEPA (XML de adeudos) | Hay IBAN y titular en la ficha y el estado «remesado» en los recibos. Falta generar el fichero para el banco |
+| ⬜ | B | Devoluciones con la Norma 43 | Subir el extracto del banco y casar cobros y devoluciones solos |
 
 ## Fase 2 · Procesión
 
-| | Tarea | Notas |
-|---|---|---|
-| ⬜ | Papeleta de sitio en PDF con código QR | La librería de QR ya está en el backend |
-| ⬜ | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos |
-| 🟡 | Cortejo por antigüedad, automático | Hay solicitud de puesto, tramo y número en la papeleta; falta el reparto automático |
-| 🟡 | Túnica propuesta según la medida | Hay altura al hombro y tallas; falta proponerla sola |
+| | PC | Tarea | Notas |
+|---|---|---|---|
+| ⬜ | A | Papeleta de sitio en PDF con código QR | La librería de QR ya está en el backend |
+| ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos |
+| 🟡 | B | Cortejo por antigüedad, automático | Hay solicitud de puesto, tramo y número en la papeleta; falta el reparto automático |
+| 🟡 | A | Túnica propuesta según la medida | Hay altura al hombro y tallas; falta proponerla sola |
 
 ## Fase 3 · Comunicación
 
-| | Tarea | Notas |
-|---|---|---|
-| 🟡 | Boletín y avisos masivos, segmentados | Hay la casilla de suscripción y la plantilla de correo; falta el editor y el envío |
-| ⬜ | Cartas y circulares en PDF con los datos de cada hermano | Reutiliza el motor de los informes |
-| ⬜ | Etiquetas postales | Para los hermanos sin correo |
+| | PC | Tarea | Notas |
+|---|---|---|---|
+| 🟡 | B | Boletín y avisos masivos, segmentados | Hay la casilla de suscripción y la plantilla de correo; falta el editor y el envío |
+| ⬜ | A | Cartas y circulares en PDF con los datos de cada hermano | Reutiliza el motor de los informes |
+| ⬜ | A | Etiquetas postales | Para los hermanos sin correo |
 
 ## Fase 4 · Secretaría
 
-| | Tarea | Notas |
-|---|---|---|
-| ⬜ | Importar y exportar el censo (Excel / CSV) | Imprescindible para instalarlo a otra corporación |
-| ⬜ | Cabildos y actas | Convocatoria, quórum, votaciones y libro de actas |
-| 🟡 | Difuntos y sufragios | Hay baja por fallecimiento; faltan fecha del óbito, aniversarios y misas |
-| 🟡 | Ficha: medalla, tratamiento y listas guardadas | La ficha está casi completa |
+| | PC | Tarea | Notas |
+|---|---|---|---|
+| ⬜ | B | Importar y exportar el censo (Excel / CSV) | Imprescindible para instalarlo a otra corporación |
+| ⬜ | B | Cabildos y actas | Convocatoria, quórum, votaciones y libro de actas |
+| 🟡 | A | Difuntos y sufragios | Hay baja por fallecimiento; faltan fecha del óbito, aniversarios y misas |
+| 🟡 | A | Ficha: medalla, tratamiento y listas guardadas | La ficha está casi completa |
 
 ## Fase 5 · Tesorería avanzada
 
-| | Tarea | Notas |
-|---|---|---|
-| 🟡 | Contabilidad por partida doble (plan de entidades sin fines lucrativos) | Hoy es partida simple por categorías, enlazada a los recibos |
-| ⬜ | Modelo 182 y certificados de donación | **Antes, confirmar** que el Grupo tiene NIF propio y no depende del del Obispado |
-| ⬜ | Lotería y talonarios | |
-| 🟡 | Caja de tienda (TPV) | La mesa de procesión ya cobra por zonas |
+| | PC | Tarea | Notas |
+|---|---|---|---|
+| 🟡 | B | Contabilidad por partida doble (plan de entidades sin fines lucrativos) | Hoy es partida simple por categorías, enlazada a los recibos |
+| ⬜ | B | Modelo 182 y certificados de donación | **Antes, confirmar** que el Grupo tiene NIF propio y no depende del del Obispado |
+| ⬜ | A | Lotería y talonarios | |
+| 🟡 | A | Caja de tienda (TPV) | La mesa de procesión ya cobra por zonas |
 
 ## Fase 6 · Patrimonio y recaudación
 
-| | Tarea | Notas |
-|---|---|---|
-| 🟡 | Ficha completa de patrimonio | Hay enseres con estado, foto y ubicación; faltan varias fotos, descripción y tasación |
-| ⬜ | Tienda en línea | La pasarela ya está |
-| ⬜ | Apadrinamiento sobre una foto (velas, piezas) | La pasarela ya está |
+| | PC | Tarea | Notas |
+|---|---|---|---|
+| 🟡 | A | Ficha completa de patrimonio | Hay enseres con estado, foto y ubicación; faltan varias fotos, descripción y tasación |
+| ⬜ | B | Tienda en línea | La pasarela ya está |
+| ⬜ | B | Apadrinamiento sobre una foto (velas, piezas) | La pasarela ya está |
 
 ## Fase 7 · Extras
 
-| | Tarea | Notas |
-|---|---|---|
-| 🟡 | Posición del cortejo en directo | Hay recorrido en el mapa, simulado |
-| ⏸ | Notificaciones push | Exige hacer la web instalable; el correo cubre lo mismo |
-| ⏸ | Firma en pantalla | Poco valor legal; basta un consentimiento registrado con fecha |
-| ⏸ | Asistente con IA | Vistoso, pero lo último que decide una compra |
+| | PC | Tarea | Notas |
+|---|---|---|---|
+| 🟡 | B | Posición del cortejo en directo | Hay recorrido en el mapa, simulado |
+| ⏸ | — | Notificaciones push | Exige hacer la web instalable; el correo cubre lo mismo |
+| ⏸ | — | Firma en pantalla | Poco valor legal; basta un consentimiento registrado con fecha |
+| ⏸ | — | Asistente con IA | Vistoso, pero lo último que decide una compra |
 
 ## Fase 8 · Preparar la venta
 
-| | Tarea | Notas |
-|---|---|---|
-| ⬜ | Lo propio del Grupo, a configuración | Hoy el nombre está en el código y las salidas son un enum (`PASION`, `ROSARIO`) |
-| ⬜ | Guion de instalación y de actualización de varias copias | |
-| ⬜ | Contrato de encargado del tratamiento | Cada cliente es responsable de los datos de sus hermanos |
-| ⬜ | Licencias y fotos de ejemplo | Fuentes, mapas de OpenStreetMap y fotos de Commons |
+| | PC | Tarea | Notas |
+|---|---|---|---|
+| ⬜ | B | Lo propio del Grupo, a configuración | Hoy el nombre está en el código y las salidas son un enum (`PASION`, `ROSARIO`) |
+| ⬜ | B | Guion de instalación y de actualización de varias copias | |
+| ⬜ | A | Contrato de encargado del tratamiento | Cada cliente es responsable de los datos de sus hermanos |
+| ⬜ | A | Licencias y fotos de ejemplo | Fuentes, mapas de OpenStreetMap y fotos de Commons |
 
 ---
 
