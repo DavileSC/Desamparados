@@ -115,7 +115,7 @@ export const BLOQUE_NUEVO: Record<string, object> = {
   },
   relacion: { tipo: 'relacion', titulo: 'Junta de Gobierno', mandato: '', nota: '', filas: [{ cargo: '', nombre: '', texto: '', enlace: '' }] },
   carrusel: { tipo: 'carrusel', titulo: '', piezas: [{ familia: '', titulo: '', texto: '', foto: { url: '', alt: '', pie: '' }, datos: [] }] },
-  programa: { tipo: 'programa', titulo: 'Programa del curso', filas: [{ cuando: '', mes: 0, titulo: '', texto: '', boton: '', enlace: '' }] },
+  programa: { tipo: 'programa', titulo: 'Programa del año', filas: [{ cuando: '', mes: 0, titulo: '', texto: '', boton: '', enlace: '' }] },
 }
 
 /** La fecha de un mes más tarde a las 18:00, como AAAA-MM-DDTHH:mm. */

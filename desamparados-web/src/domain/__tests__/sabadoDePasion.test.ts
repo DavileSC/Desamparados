@@ -32,31 +32,18 @@ describe('Sábado de Pasión', () => {
 
 describe('cuenta atrás de la estación', () => {
   it('antes de la estación, apunta a la de este año', () => {
-    const { fecha, anterior, dias } = cuentaAtrasEstacion(new Date(2026, 0, 15))
+    const { fecha, dias } = cuentaAtrasEstacion(new Date(2026, 0, 15))
     expect(comoTexto(fecha)).toBe('2026-03-28')
-    expect(comoTexto(anterior)).toBe('2025-04-12') // Pascua 2025 (20 abr) menos 8
     expect(dias).toBe(72)
   })
 
   it('pasada la estación, apunta a la del año que viene', () => {
-    const { fecha, anterior, dias, porcentaje } = cuentaAtrasEstacion(new Date(2026, 8, 11))
+    const { fecha, dias } = cuentaAtrasEstacion(new Date(2026, 8, 11))
     expect(comoTexto(fecha)).toBe('2027-03-20')
-    expect(comoTexto(anterior)).toBe('2026-03-28')
     expect(dias).toBe(190)
-    expect(porcentaje).toBe(47) // 167 días de curso de 357
   })
 
   it('el mismo día de la estación no la da por pasada', () => {
-    const { dias, porcentaje } = cuentaAtrasEstacion(new Date(2026, 2, 28))
-    expect(dias).toBe(0)
-    expect(porcentaje).toBe(100)
-  })
-
-  it('el porcentaje se queda siempre entre 0 y 100', () => {
-    for (const fecha of [new Date(2026, 2, 29), new Date(2026, 11, 31), new Date(2027, 2, 19)]) {
-      const { porcentaje } = cuentaAtrasEstacion(fecha)
-      expect(porcentaje).toBeGreaterThanOrEqual(0)
-      expect(porcentaje).toBeLessThanOrEqual(100)
-    }
+    expect(cuentaAtrasEstacion(new Date(2026, 2, 28)).dias).toBe(0)
   })
 })

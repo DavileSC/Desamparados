@@ -1,10 +1,9 @@
-import { inicioDiaMadrid } from './contabilidad.js';
-
 /**
- * El curso del Grupo Parroquial va de un Sábado de Pasión (la estación de
- * penitencia, ocho días antes de Pascua) al siguiente. Es el mismo cálculo que
- * `domain/sabadoDePasion.ts` del frontend, que dibuja el curso con estos actos:
- * si los dos discreparan, en el camino faltarían o sobrarían actos.
+ * El Sábado de Pasión (la estación de penitencia, ocho días antes de Pascua)
+ * y la temporada de reparto de cada salida. Es el mismo cálculo que
+ * `domain/sabadoDePasion.ts` del frontend (la cuenta atrás del Inicio).
+ *
+ * No marca periodos: el Grupo lleva su año del 1 de enero al 31 de diciembre.
  */
 
 /** Domingo de Pascua por el algoritmo de Meeus/Butcher (calendario gregoriano). */
@@ -28,27 +27,6 @@ function pascua(anio: number): { mes: number; dia: number } {
 export function sabadoDePasion(anio: number): string {
   const { mes, dia } = pascua(anio);
   return new Date(Date.UTC(anio, mes - 1, dia - 8)).toISOString().slice(0, 10);
-}
-
-/** El día siguiente a uno dado, en `AAAA-MM-DD`. */
-const siguiente = (dia: string) => {
-  const [a, m, d] = dia.split('-').map(Number);
-  return new Date(Date.UTC(a, m - 1, d + 1)).toISOString().slice(0, 10);
-};
-
-/**
- * El curso en el que cae `diaHoy` (día de Madrid, `AAAA-MM-DD`), como rango de
- * instantes: desde el principio del Sábado de Pasión anterior hasta el final
- * del próximo, los dos incluidos. El mismo día de la estación todavía es del
- * curso que acaba.
- */
-export function rangoDelCurso(diaHoy: string): { desde: Date; hasta: Date } {
-  const anio = Number(diaHoy.slice(0, 4));
-  const deEsteAnio = sabadoDePasion(anio);
-  const yaPaso = diaHoy > deEsteAnio;
-  const inicio = yaPaso ? deEsteAnio : sabadoDePasion(anio - 1);
-  const fin = yaPaso ? sabadoDePasion(anio + 1) : deEsteAnio;
-  return { desde: inicioDiaMadrid(inicio), hasta: inicioDiaMadrid(siguiente(fin)) };
 }
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];

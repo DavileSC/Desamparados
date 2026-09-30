@@ -260,7 +260,7 @@ export function FormularioPrograma({ bloque, onCambio }: Props<BloquePrograma>) 
   return (
     <Stack spacing={2}>
       <Typography variant="body2" color="text.secondary">
-        Un culto por fila, en el orden del curso. El mes sirve para que la web marque sola cuál es el próximo y ponga su fecha,
+        Un culto por fila, en el orden del año. El mes sirve para que la web marque sola cuál es el próximo y ponga su fecha,
         sacada de la Agenda (del primer culto o salida anunciado en ese mes).
       </Typography>
       <ListaEditable elementos={bloque.filas} onCambio={(filas) => onCambio({ filas })}

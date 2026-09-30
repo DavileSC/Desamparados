@@ -25,7 +25,7 @@ const PANEL: PanelResponse = {
     reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
   },
   calendario: { mes: '2026-09', eventos: [], diasDeReparto: [] },
-  curso: { eventos: [] },
+  anio: { eventos: [] },
 }
 
 const montar = (panel: PanelResponse) => renderWithProviders(<TemaCmsProvider><Cifras panel={panel} /></TemaCmsProvider>)

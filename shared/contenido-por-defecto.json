@@ -1153,8 +1153,16 @@
       },
       {
         "tipo": "programa",
-        "titulo": "Programa del curso",
+        "titulo": "Programa del año",
         "filas": [
+          {
+            "cuando": "Cuaresma",
+            "mes": 3,
+            "titulo": "Semana Santa y Sábado de Pasión",
+            "texto": "Nuestra salida procesional por las calles de Málaga, el momento culminante del año cofrade del Grupo Parroquial.",
+            "boton": "El Sábado de Pasión",
+            "enlace": "/sabado-de-pasion"
+          },
           {
             "cuando": "Octubre",
             "mes": 10,
@@ -1172,26 +1180,18 @@
             "enlace": "/desamparados"
           },
           {
-            "cuando": "Diciembre",
-            "mes": 12,
-            "titulo": "Navidad",
-            "texto": "Las celebraciones que abren el año litúrgico en la vida parroquial y cofrade.",
-            "boton": "",
-            "enlace": ""
-          },
-          {
-            "cuando": "Cuaresma",
-            "mes": 3,
-            "titulo": "Semana Santa y Sábado de Pasión",
-            "texto": "Nuestra salida procesional por las calles de Málaga, el momento culminante del año cofrade del Grupo Parroquial.",
-            "boton": "El Sábado de Pasión",
-            "enlace": "/sabado-de-pasion"
-          },
-          {
             "cuando": "Por anunciar",
             "mes": 0,
             "titulo": "Besamanos",
             "texto": "Los devotos y hermanos pueden venerar de cerca la imagen de la Sagrada Titular.",
+            "boton": "",
+            "enlace": ""
+          },
+          {
+            "cuando": "Diciembre",
+            "mes": 12,
+            "titulo": "Navidad",
+            "texto": "Las celebraciones que abren el año litúrgico en la vida parroquial y cofrade.",
             "boton": "",
             "enlace": ""
           },

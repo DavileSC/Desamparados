@@ -18,8 +18,8 @@ const area = (clave: AreaDato['clave'], nombre: string, informe: string, etiquet
 
 const DATOS: DatosResponse = {
   generadoEn: '2026-09-29T12:00:00Z',
-  periodo: { clave: 'curso-2026', tipo: 'curso', anio: 2026, etiqueta: 'Curso 2026–2027', desde: '2026-03-29', hasta: '2027-03-20', enCurso: true, anioPasion: 2027, anioRosario: 2026, meses: ['2026-03'] },
-  periodos: [{ clave: 'curso-2026', etiqueta: 'Curso 2026–2027' }, { clave: 'ejercicio-2026', etiqueta: 'Ejercicio 2026' }],
+  periodo: { clave: '2026', anio: 2026, etiqueta: '2026', desde: '2026-01-01', hasta: '2026-12-31', enMarcha: true, comparaHasta: '2025-09-29', meses: ['2026-01'] },
+  periodos: [{ clave: '2026', etiqueta: '2026 (en marcha)' }, { clave: '2025', etiqueta: '2025' }],
   areas: [
     area('hermanos', 'Hermanos', 'Informe de hermanos', ['Hermanos activos', 'Altas', 'Bajas', 'Edad media']),
     area('dinero', 'Dinero', 'Informe de cuentas', ['Resultado', 'Ingresos', 'Gastos', 'Por cobrar']),
@@ -36,6 +36,7 @@ describe('Datos e informes', () => {
 
     expect(await screen.findByRole('heading', { name: 'Gráfica de Hermanos activos' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Informe de hermanos · PDF' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Informe anual' })).toHaveAttribute('href', '/cms/informe-anual/2026')
 
     await usuario.click(screen.getByRole('button', { name: /Edad media/ }))
     expect(screen.getByRole('heading', { name: 'Gráfica de Edad media' })).toBeInTheDocument()
@@ -47,7 +48,7 @@ describe('Datos e informes', () => {
     expect(screen.getByRole('button', { name: 'Informe de cuentas · PDF' })).toBeInTheDocument()
   })
 
-  it('el informe de la pestaña se pide con su periodo', async () => {
+  it('el informe de la pestaña se pide con su año', async () => {
     const fetch = vi.fn(async (url: string) =>
       String(url).includes('/informe/')
         ? new Response(new Blob(['%PDF-']), { status: 200, headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="informe.pdf"' } })
@@ -58,7 +59,7 @@ describe('Datos e informes', () => {
     renderWithProviders(<DatosInformesPage />, { ruta: '/cms/datos' })
 
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Informe de hermanos · PDF' }))
-    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/datos\/informe\/hermanos\?periodo=curso-2026$/), expect.anything()))
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/datos\/informe\/hermanos\?anio=2026$/), expect.anything()))
   })
 
   it('las cifras se escriben como en el PDF', () => {

@@ -1,6 +1,6 @@
 import { type } from 'arktype';
 
-const cursoParam = type('string').matching(/^\d{4}$/).describe('un curso por el año en que empieza (por ejemplo, 2025)');
+const anioParam = type('string').matching(/^\d{4}$/).describe('un año (por ejemplo, 2026)');
 
 // Textos largos (presentación, epílogo, nota): van a un PDF, pero como todo
 // texto libre del CMS, sin «<» ni «>».
@@ -11,10 +11,10 @@ export const areaInformeSchema = type({
   params: { area: "'hermanos' | 'dinero' | 'procesion' | 'inventario' | 'web' | 'agenda'" },
 });
 
-export const cursoMemoriaSchema = type({ params: { curso: cursoParam } });
+export const anioInformeSchema = type({ params: { anio: anioParam } });
 
-export const guardarMemoriaSchema = type({
-  params: { curso: cursoParam },
+export const guardarInformeAnualSchema = type({
+  params: { anio: anioParam },
   body: {
     'presentacion?': textoLargo,
     'firmaPresentacion?': textoCorto,

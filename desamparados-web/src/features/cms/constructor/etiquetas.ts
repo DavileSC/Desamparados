@@ -93,7 +93,7 @@ export const FICHA_DE_BLOQUE: Record<string, FichaDeBloque> = {
   mapa: { nombre: 'Mapa', grupo: 'Información', descripcion: 'Un lugar en el mapa, con el enlace para llegar.' },
   horario: { nombre: 'Horario vivo', grupo: 'Información', descripcion: 'Misas y despacho, con la próxima misa y cuánto falta, calculado al momento.' },
   relacion: { nombre: 'Relación de cargos', grupo: 'Información', descripcion: 'Los cargos de la Junta, con quién los ocupa y qué hace cada uno.' },
-  programa: { nombre: 'Programa', grupo: 'Automáticos', descripcion: 'Los cultos del curso mes a mes, con el próximo marcado solo y su fecha de la Agenda.' },
+  programa: { nombre: 'Programa', grupo: 'Automáticos', descripcion: 'Los cultos del año mes a mes, con el próximo marcado solo y su fecha de la Agenda.' },
   puertas: { nombre: 'Dos puertas', grupo: 'Composición', descripcion: 'Dos paneles para dos lectores, como «Necesito ayuda» y «Quiero ayudar», con sus datos y un botón.' },
   anillos: { nombre: 'Tres fines', grupo: 'Composición', descripcion: 'Tres fines que van juntos: en anillos entrelazados, o en foco, una palabra nítida y las otras dos desenfocadas.' },
   dibujo: { nombre: 'Dibujo con texto', grupo: 'Imagen y vídeo', descripcion: 'El templo o el signo pasionista, que se dibujan al bajar, con un texto al lado.' },

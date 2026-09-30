@@ -90,8 +90,8 @@ export interface PanelResponse {
     /** AAAA-MM-DD, en Madrid. */
     diasDeReparto: string[]
   }
-  /** Todos los actos del curso, de un Sábado de Pasión al siguiente, pasados y por venir. */
-  curso: {
+  /** Todos los actos del año natural en marcha (1 de enero – 31 de diciembre), pasados y por venir. */
+  anio: {
     /** `location` es opcional: un backend anterior no lo manda. */
     eventos: { id: number; title: string; startDate: string; type: TipoEvento; location?: string | null }[]
   }

@@ -46,7 +46,7 @@ import type { PanelResponse } from '../lib/api/panel'
  * «Hermandad»: la corporación es un Grupo Parroquial.
  *
  * «Junta» es de la junta de gobierno en sentido estricto: los datos e
- * informes de todas las áreas y la Memoria del curso (que también escribe
+ * informes de todas las áreas y el Informe anual (que también escribe
  * Secretaría, su epílogo).
  *
  * «Web pública» es el apartado del constructor de páginas: páginas de la web
@@ -95,7 +95,7 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
   { label: 'Datos e informes', href: '/cms/datos', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Junta', icono: InsightsOutlinedIcon },
-  { label: 'Memoria del curso', href: '/cms/memoria', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon },
+  { label: 'Informe anual', href: '/cms/informe-anual', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon },
   { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon },
   { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
   { label: 'Ajustes del Inicio', href: '/cms/ajustes-inicio', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'cuenta', icono: TuneOutlinedIcon },
@@ -126,9 +126,9 @@ export const rolesPorRutaCms = {
   contabilidad: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
   // Las cifras de todas las áreas y sus informes: la misma guarda que /api/datos.
   datos: ['ADMIN', 'HERMANO_MAYOR'],
-  // La Memoria la escribe también Secretaría (su epílogo): la guarda de /api/datos/memoria.
-  memoria: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'],
-  'memoria/:curso': ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'],
+  // El Informe anual lo escribe también Secretaría (su epílogo): la guarda de /api/datos/informe-anual.
+  'informe-anual': ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'],
+  'informe-anual/:anio': ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'],
   // Repartir cargos es repartir privilegios: ni el Hermano Mayor. El backend
   // lo estrecha igual (checkRole(SOLO_ADMIN) en adminRoutes).
   accesos: ['ADMIN'],

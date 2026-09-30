@@ -48,7 +48,7 @@ const panel: PanelResponse = {
     reparto: { turnosProximos: 2, citasReservadas: 6, capacidadEstimada: 40 },
   },
   calendario: { mes: '2026-09', eventos: [], diasDeReparto: [] },
-  curso: { eventos: [] },
+  anio: { eventos: [] },
 }
 
 function responder(cuerpo: unknown, status = 200) {
@@ -82,7 +82,7 @@ describe('Inicio del CMS', () => {
     expect(hoy).toHaveAttribute('aria-selected', 'true')
     expect(within(hoy).getByRole('img', { name: 'hay algo urgente' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /^Próximo acto/ })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'El curso' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^El año \d{4}$/ })).toBeInTheDocument()
   })
 
   it('sin nada urgente, «Hoy» no lleva el punto', async () => {
@@ -103,7 +103,7 @@ describe('Inicio del CMS', () => {
     expect(cifra(/^Papeletas 2026/).getByText('612')).toBeInTheDocument()
     expect(cifra(/^Por cobrar/).getByText('2.820 €')).toBeInTheDocument() // pendientes + remesados + devueltos
     expect(cifra(/^Saldo 2026/).getByText('12.860 €')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'El curso' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /^El año \d{4}$/ })).not.toBeInTheDocument()
     expect(localStorage.getItem('cms.inicio.pestana')).toBe('cifras')
   })
 
@@ -135,13 +135,13 @@ describe('Inicio del CMS', () => {
     expect(screen.getByText('Lo lleva Tesorería')).toBeInTheDocument()
   })
 
-  it('lleva el retablo con la cuenta atrás y el curso', async () => {
+  it('lleva el retablo con la cuenta atrás y el año', async () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
     expect(await screen.findByRole('img', { name: 'Nuestra Señora de los Desamparados' })).toBeInTheDocument()
     expect(screen.getByText('para la estación de penitencia')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'El curso' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^El año \d{4}$/ })).toBeInTheDocument()
   })
 
   it('dice en la cabecera cómo va la web', async () => {
@@ -156,7 +156,7 @@ describe('Inicio del CMS', () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
-    await screen.findByRole('heading', { name: 'El curso' })
+    await screen.findByRole('heading', { name: /^El año \d{4}$/ })
     expect(screen.queryByRole('heading', { name: 'Para hoy' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Septiembre de 2026' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Cómo va el año' })).not.toBeInTheDocument()

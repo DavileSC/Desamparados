@@ -9,7 +9,7 @@ import { devueltosPendientes } from './recibos/comunes.js';
 /**
  * REGLA DE ORO, la misma que la del panel del Inicio: solo `count`, `groupBy` y
  * `aggregate` (y un AVG en SQL para la edad media). Nada de `findMany` sobre
- * Hermano ni User: «Datos e informes» y la Memoria son cifras de conjunto y no
+ * Hermano ni User: «Datos e informes» y el Informe anual son cifras de conjunto y no
  * pueden sacar datos de una persona.
  *
  * Tres excepciones, ninguna toca datos de nadie: los actos de la Agenda (son
@@ -70,18 +70,19 @@ function porMes<T>(filas: T[], fecha: (f: T) => Date | null, cuantos: (f: T) => 
   return meses.map((mes) => ({ mes, total: cuenta.get(mes) ?? 0 }));
 }
 
-const enRango = (p: Periodo) => ({ gte: p.inicio, lt: p.fin });
+const enRango = (p: { inicio: Date; fin: Date }) => ({ gte: p.inicio, lt: p.fin });
 
 async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
+  // El año anterior entero, o hasta el mismo día si este va en marcha.
   const antes = periodoAnterior(p, hoy);
   // El instante del cierre: el final del periodo o ahora, lo que llegue antes.
   const cierre = p.fin < hoy ? p.fin : hoy;
   const altasAprobadas = { OR: [{ activo: true }, { fechaBaja: { not: null } }] } satisfies Prisma.HermanoWhereInput;
-  const cincoPeriodos = [4, 3, 2, 1, 0].map((n) => periodoDe(p.tipo, p.anio - n, hoy));
+  const cincoPeriodos = [4, 3, 2, 1, 0].map((n) => periodoDe(p.anio - n, hoy));
 
-  // Los recibos por cobrar: los del ejercicio, o los emitidos durante el curso.
-  const recibosDelPeriodo: Prisma.ReciboWhereInput = p.tipo === 'ejercicio' ? { year: p.anio } : { fechaEmision: enRango(p) };
-  const papeletasPorCobrar: Prisma.ReciboWhereInput = { tipo: TipoRecibo.PAPELETA_SITIO, year: p.anioPasion };
+  // Los recibos por cobrar del año, y de ellos los de las papeletas de su salida.
+  const recibosDelPeriodo: Prisma.ReciboWhereInput = { year: p.anio };
+  const papeletasPorCobrar: Prisma.ReciboWhereInput = { tipo: TipoRecibo.PAPELETA_SITIO, year: p.anio };
   const vivos = [EstadoPago.PENDIENTE, EstadoPago.REMESADO];
 
   const [
@@ -124,12 +125,12 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
     db.recibo.groupBy({ by: ['estado'], _count: { _all: true }, _sum: { importe: true }, where: { ...recibosDelPeriodo, estado: { in: vivos } } }),
     devueltosPendientes(recibosDelPeriodo),
 
-    db.papeletaSitio.count({ where: { year: p.anioPasion, salida: Salida.PASION } }),
-    db.papeletaSitio.groupBy({ by: ['puesto'], _count: { _all: true }, where: { year: p.anioPasion, salida: Salida.PASION } }),
-    db.papeletaSitio.groupBy({ by: ['year'], _count: { _all: true }, where: { salida: Salida.PASION, year: { gt: p.anioPasion - 5, lte: p.anioPasion } } }),
-    db.papeletaSitio.count({ where: { year: p.anioRosario, salida: Salida.ROSARIO } }),
-    db.papeletaSitio.count({ where: { year: p.anioRosario - 1, salida: Salida.ROSARIO } }),
-    db.papeletaSitio.groupBy({ by: ['puesto'], _count: { _all: true }, where: { year: p.anioRosario, salida: Salida.ROSARIO } }),
+    db.papeletaSitio.count({ where: { year: p.anio, salida: Salida.PASION } }),
+    db.papeletaSitio.groupBy({ by: ['puesto'], _count: { _all: true }, where: { year: p.anio, salida: Salida.PASION } }),
+    db.papeletaSitio.groupBy({ by: ['year'], _count: { _all: true }, where: { salida: Salida.PASION, year: { gt: p.anio - 5, lte: p.anio } } }),
+    db.papeletaSitio.count({ where: { year: p.anio, salida: Salida.ROSARIO } }),
+    db.papeletaSitio.count({ where: { year: p.anio - 1, salida: Salida.ROSARIO } }),
+    db.papeletaSitio.groupBy({ by: ['puesto'], _count: { _all: true }, where: { year: p.anio, salida: Salida.ROSARIO } }),
     db.recibo.groupBy({ by: ['estado'], _count: { _all: true }, _sum: { importe: true }, where: { ...papeletasPorCobrar, estado: { in: vivos } } }),
     devueltosPendientes(papeletasPorCobrar),
 
@@ -159,7 +160,6 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
 
   const altasMes = porMes(fechasAlta, (f) => f.fechaAlta, (f) => f._count._all, p.meses);
   const bajasMes = porMes(fechasBaja, (f) => f.fechaBaja, (f) => f._count._all, p.meses);
-  const etiquetaCierre = (q: Periodo) => (q.tipo === 'curso' ? `${String(q.anio).slice(2)}–${String(q.anio + 1).slice(2)}` : String(q.anio));
   const papeletasAnio = new Map(papeletasPorAnio.map((f) => [f.year, f._count._all]));
 
   return {
@@ -171,7 +171,7 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
       anterior: { altas: altasAntes, bajas: bajasAntes },
       bajasPorMotivo: bajasPorMotivo.map((m) => ({ motivo: m.motivoBaja, total: m._count._all })),
       porMes: p.meses.map((mes, i) => ({ mes, altas: altasMes[i].total, bajas: bajasMes[i].total })),
-      cierres: cincoPeriodos.map((q, i) => ({ etiqueta: etiquetaCierre(q), activos: cierres[i] })),
+      cierres: cincoPeriodos.map((q, i) => ({ etiqueta: String(q.anio), activos: cierres[i] })),
       edadMedia: edad.media === null ? null : Math.round(edad.media * 10) / 10,
       menores: edad.menores,
       porEdad: TRAMOS_EDAD.map(({ tramo }, i) => ({ tramo, total: porEdad[i] })),
@@ -189,11 +189,11 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
       porCobrar: partes(recibosVivos, devueltos),
     },
     procesion: {
-      anio: p.anioPasion,
+      anio: p.anio,
       papeletas,
       porPuesto: agruparPorTextoLibre(expandir(puestos), 8),
-      porAnio: [4, 3, 2, 1, 0].map((n) => ({ anio: p.anioPasion - n, total: papeletasAnio.get(p.anioPasion - n) ?? 0 })),
-      rosario: { anio: p.anioRosario, papeletas: rosario, anterior: rosarioAntes, porPuesto: agruparPorTextoLibre(expandir(puestosRosario), 8) },
+      porAnio: [4, 3, 2, 1, 0].map((n) => ({ anio: p.anio - n, total: papeletasAnio.get(p.anio - n) ?? 0 })),
+      rosario: { anio: p.anio, papeletas: rosario, anterior: rosarioAntes, porPuesto: agruparPorTextoLibre(expandir(puestosRosario), 8) },
       porCobrar: partes(papeletasVivas, papeletasDevueltas),
     },
     inventario: {

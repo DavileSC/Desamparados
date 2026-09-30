@@ -12,14 +12,14 @@ import {
 
 const PIE_DE_CIFRAS = 'Cifras de conjunto de los registros del Grupo: ninguna página nombra a un hermano.';
 
-/** Lo que necesita el cuerpo de un área para escribirse, en la Memoria o suelto. */
+/** Lo que necesita el cuerpo de un área para escribirse, en el Informe anual o suelto. */
 interface Contexto {
   p: Paginas;
   area: Area;
   crudos: DatosCrudos;
   periodo: Periodo;
   hoy: Date;
-  /** La nota de patrimonio, que solo va en la Memoria. */
+  /** La nota de patrimonio, que solo va en el Informe anual. */
   notaPatrimonio?: string | null;
 }
 
@@ -89,9 +89,8 @@ function dinero(ctx: Contexto) {
   comienzo(ctx);
   partidas(ctx);
   fila(ctx.p, [[resultado.grafica], [porCobrar.grafica]], { altoColumnas: 124 });
-  if (ctx.periodo.enCurso) {
-    const del = ctx.periodo.tipo === 'curso' ? 'el curso anterior' : 'el año anterior';
-    nota(ctx, `«Antes» es ${del} entero; este va hasta hoy. Para comparar partida a partida, mejor al cierre.`);
+  if (ctx.periodo.comparaHasta) {
+    nota(ctx, `«Antes» es ${ctx.periodo.anio - 1} hasta el ${fechaLarga(ctx.periodo.comparaHasta).replace(/ de \d{4}$/, '')}: el mismo tramo del año, para comparar lo mismo.`);
   }
 }
 
@@ -286,18 +285,16 @@ export async function informeDeArea(area: Area, periodo: Periodo, crudos: DatosC
   const aDia = `a ${fechaLarga(diaMadrid(hoy))}`;
   const derecha = area.clave === 'inventario'
     ? ['Inventario', aDia]
-    : [periodo.etiqueta, periodo.enCurso ? aDia : `${fechaCorta(periodo.desde)} – ${fechaCorta(periodo.hasta)}`];
+    : [`Año ${periodo.anio}`, periodo.enMarcha ? aDia : 'del 1 de enero al 31 de diciembre'];
   bandaInforme(doc, area.informe, derecha);
   CUERPOS[area.clave]({ p, area, crudos, periodo, hoy });
   pies(doc, PIE_DE_CIFRAS);
   return aBuffer(doc);
 }
 
-const fechaCorta = (dia: string) => `${Number(dia.slice(8, 10))}/${Number(dia.slice(5, 7))}/${dia.slice(0, 4)}`;
+// ---------------------------------------------------------------- el Informe anual
 
-// ---------------------------------------------------------------- la Memoria
-
-export interface TextosMemoria {
+export interface TextosInforme {
   presentacion: string | null;
   firmaPresentacion: string | null;
   lugarFecha: string | null;
@@ -309,34 +306,34 @@ export interface TextosMemoria {
 
 interface Capitulo { numero: string; titulo: string; descripcion: string; pagina?: number }
 
-/** La portada: negro, el escudo en oro, los años grandes y un pie burdeos. */
-function portada(doc: Doc, periodo: Periodo, textos: TextosMemoria) {
+/** La portada: negro, el escudo en oro, «Informe anual» con el nombre del Grupo, el año grande y una franja burdeos. */
+function portada(doc: Doc, periodo: Periodo, textos: TextosInforme) {
   sinMargenes(doc, () => {
     const cx = A4.ancho / 2;
     doc.rect(0, 0, A4.ancho, A4.alto).fill(NEGRO);
     doc.image(IMAGENES.escudoOro, cx - 46, 72, { height: 112 });
     const centro = (t: string, y: number, o: Parameters<typeof rotulo>[4]) => rotulo(doc, t, 0, y, { ancho: A4.ancho, alinear: 'center', ...o });
-    centro('MEMORIA DEL CURSO', 236, { letra: LETRA.textoFuerte, tam: 8.5, color: ORO_CLARO, espaciado: 3.6 });
-    centro(String(periodo.anio), 262, { letra: LETRA.fina, tam: 112, color: CREMA });
-    // Dos filetes de oro y el rombo burdeos entre los años.
-    const yRaya = 382;
+    centro('INFORME ANUAL', 222, { letra: LETRA.textoFuerte, tam: 9, color: ORO_CLARO, espaciado: 4 });
+    centro('del Grupo Parroquial', 250, { letra: LETRA.cursiva, tam: 15, color: ORO_CLARO });
+    centro('Nuestra Señora de los Desamparados', 270, { letra: LETRA.titulo, tam: 24, color: CREMA });
+    // Dos filetes de oro y el rombo burdeos entre el nombre y el año.
+    const yRaya = 328;
     doc.rect(cx - 104, yRaya, 90, 0.75).fill(ORO);
     doc.rect(cx + 14, yRaya, 90, 0.75).fill(ORO);
     rombo(doc, cx, yRaya + 0.4, 4.5, BURDEOS, ORO);
-    centro(String(periodo.anio + 1), 396, { letra: LETRA.fina, tam: 112, color: CREMA });
-    centro(`De Domingo de Ramos de ${periodo.anio} a Sábado de Pasión de ${periodo.anio + 1}`, 540, { letra: LETRA.cursiva, tam: 13.5, color: CREMA, opacidad: 0.75 });
+    centro(String(periodo.anio), 352, { letra: LETRA.fina, tam: 150, color: CREMA });
+    centro(`Del 1 de enero al 31 de diciembre de ${periodo.anio}`, 548, { letra: LETRA.cursiva, tam: 13.5, color: CREMA, opacidad: 0.75 });
 
-    const yPie = A4.alto - 142.5;
-    doc.rect(0, yPie, A4.ancho, 142.5).fill(BURDEOS);
+    const alto = 96;
+    const yPie = A4.alto - alto;
+    doc.rect(0, yPie, A4.ancho, alto).fill(BURDEOS);
     doc.rect(0, yPie, A4.ancho, 0.75).fill(ORO);
     const x = 54;
-    rotulo(doc, 'Grupo Parroquial', x, yPie + 42, { letra: LETRA.cursiva, tam: 12.5, color: ORO_CLARO });
-    rotulo(doc, 'Nuestra Señora de los Desamparados', x, yPie + 58, { letra: LETRA.titulo, tam: 18.5, color: CREMA });
-    rotuloVersalitas(doc, 'Málaga', x, yPie + 84, { tam: 8, color: ORO_CLARO, espaciado: 2.6 });
+    rotuloVersalitas(doc, 'Málaga', x, yPie + 42, { tam: 8.5, color: ORO_CLARO, espaciado: 2.6 });
     const cabildo = textos.fechaCabildo?.trim();
     if (cabildo) {
-      ['Presentada al Cabildo', 'General de hermanos', `el ${cabildo}`].forEach((l, i) =>
-        rotulo(doc, l, x, yPie + 50 + i * 13, { tam: 9, color: CREMA, opacidad: 0.8, ancho: A4.ancho - 2 * x, alinear: 'right' }));
+      ['Presentado al Cabildo General de hermanos', `el ${cabildo}`].forEach((l, i) =>
+        rotulo(doc, l, x, yPie + 36 + i * 13, { tam: 9, color: CREMA, opacidad: 0.8, ancho: A4.ancho - 2 * x, alinear: 'right' }));
     }
   });
 }
@@ -378,26 +375,25 @@ function lugarYFecha(p: Paginas, texto: string | null) {
 }
 
 /**
- * La Memoria del curso, entera: portada, índice, presentación, el curso de un
- * vistazo, los capítulos de cada área y el epílogo. `borrador` avisa en cada
- * página y deja a la vista lo que falta por escribir.
+ * El Informe anual del Grupo Parroquial, entero: portada, índice,
+ * presentación, el año de un vistazo, los capítulos de cada área y el epílogo.
+ * `borrador` avisa en cada página y deja a la vista lo que falta por escribir.
  */
-export async function memoriaDelCurso(
-  periodo: Periodo, areas: Area[], crudos: DatosCrudos, textos: TextosMemoria, opciones: { borrador: boolean; hoy?: Date },
+export async function informeAnual(
+  periodo: Periodo, areas: Area[], crudos: DatosCrudos, textos: TextosInforme, opciones: { borrador: boolean; hoy?: Date },
 ): Promise<Buffer> {
   const hoy = opciones.hoy ?? new Date();
-  const curso = `${periodo.anio}–${periodo.anio + 1}`;
-  const titulo = `Memoria del curso ${curso}`;
+  const titulo = `Informe anual ${periodo.anio}`;
   const doc = nuevoDocumento(titulo);
   const p = new Paginas(doc, titulo);
   const porClave = Object.fromEntries(areas.map((a) => [a.clave, a])) as Record<ClaveArea, Area>;
 
   const capitulos: Capitulo[] = [
     { numero: 'I', titulo: 'Presentación del Hermano Mayor', descripcion: 'Carta a los hermanos.' },
-    { numero: 'II', titulo: 'El curso de un vistazo', descripcion: 'Las cifras clave, frente al curso anterior.' },
+    { numero: 'II', titulo: 'El año de un vistazo', descripcion: 'Las cifras clave, frente al año anterior.' },
     { numero: 'III', titulo: 'Cultos y actos', descripcion: 'Cultos, formación, convivencias y cabildos, mes a mes.' },
     { numero: 'IV', titulo: 'Hermanos', descripcion: 'Censo al cierre, altas y bajas con sus motivos, edades.' },
-    { numero: 'V', titulo: 'Sábado de Pasión y Rosario vespertino', descripcion: 'Papeletas de sitio, el cortejo por puestos y la salida de octubre.' },
+    { numero: 'V', titulo: 'Sábado de Pasión y Rosario vespertino', descripcion: `Las dos salidas de ${periodo.anio}: papeletas de sitio y el cortejo por puestos.` },
     { numero: 'VI', titulo: 'Cuentas', descripcion: 'Ingresos y gastos por partida, y lo que queda por cobrar.' },
     { numero: 'VII', titulo: 'Patrimonio', descripcion: 'Enseres, túnicas y capirotes; estrenos, restauraciones y donaciones.' },
     { numero: 'VIII', titulo: 'Comunicación', descripcion: 'Noticias, publicaciones y páginas de la web.' },
@@ -419,14 +415,14 @@ export async function memoriaDelCurso(
 
   abrir(cPresentacion);
   if (textos.presentacion?.trim()) parrafos(p, textos.presentacion);
-  else hueco(p, '[Falta la carta del Hermano Mayor: se escribe en «Datos e informes › Memoria del curso».]');
+  else hueco(p, '[Falta la carta del Hermano Mayor: se escribe en «Datos e informes › Informe anual».]');
   p.y += 14;
   lugarYFecha(p, textos.lugarFecha);
   const yFirma = p.sitio(ALTO_FIRMA);
   firma(doc, MX + ANCHO_UTIL - 172, yFirma, 'El Hermano Mayor', textos.firmaPresentacion);
 
   abrir(cVistazo);
-  paginaVistazo(p, porClave, crudos, hoy);
+  paginaVistazo(p, periodo, porClave, crudos, hoy);
 
   abrir(cCultos);
   CUERPOS.agenda(ctx('agenda'));
@@ -443,12 +439,12 @@ export async function memoriaDelCurso(
 
   abrir(cEpilogo);
   if (textos.epilogo?.trim()) parrafos(p, textos.epilogo);
-  else hueco(p, '[Falta el epílogo del Secretario: se escribe en «Datos e informes › Memoria del curso».]');
+  else hueco(p, '[Falta el epílogo del Secretario: se escribe en «Datos e informes › Informe anual».]');
   // La fórmula, las dos firmas y el sello, abajo del todo si hay sitio.
   const altoCierre = 28 + (textos.lugarFecha?.trim() ? 30 : 0) + 20 + ALTO_FIRMA + 24 + 78;
   let y = p.sitio(altoCierre);
   y = Math.max(y + 10, FIN - altoCierre);
-  rotulo(doc, 'Y para que así conste, se firma la presente Memoria.', MX, y, { letra: LETRA.titulo, tam: 13.5, color: NEGRO, ancho: ANCHO_UTIL });
+  rotulo(doc, 'Y para que así conste, se firma el presente Informe anual.', MX, y, { letra: LETRA.titulo, tam: 13.5, color: NEGRO, ancho: ANCHO_UTIL });
   p.y = y + 28;
   lugarYFecha(p, textos.lugarFecha);
   y = p.y + 20;
@@ -467,10 +463,11 @@ export async function memoriaDelCurso(
   return aBuffer(doc);
 }
 
-/** II · Ocho cifras frente al curso anterior, hermanos y papeletas en cinco cursos, y el reparto del gasto. */
-function paginaVistazo(p: Paginas, areas: Record<ClaveArea, Area>, crudos: DatosCrudos, hoy: Date) {
+/** II · Ocho cifras frente al año anterior, hermanos y papeletas en cinco años, y el reparto del gasto. */
+function paginaVistazo(p: Paginas, periodo: Periodo, areas: Record<ClaveArea, Area>, crudos: DatosCrudos, hoy: Date) {
   const doc = p.doc;
-  entradilla(p, [{ texto: 'Ocho cifras para resumir el curso, cada una junto a la del curso anterior.' }]);
+  const antes = periodo.comparaHasta ? `la de ${periodo.anio - 1} a estas alturas` : `la de ${periodo.anio - 1}`;
+  entradilla(p, [{ texto: `Ocho cifras para resumir el año, cada una junto a ${antes}.` }]);
   tarjetas(p, vistazo(crudos, hoy).map((c) => ({
     etiqueta: c.etiqueta,
     valor: c.valor,
@@ -479,7 +476,7 @@ function paginaVistazo(p: Paginas, areas: Record<ClaveArea, Area>, crudos: Datos
   const hermanos = areas.hermanos.cifras[0].grafica;
   const papeletas = areas.procesion.cifras[1].grafica;
   fila(p, [
-    [{ ...hermanos, titulo: 'Hermanos, cinco cursos', pie: undefined }],
+    [{ ...hermanos, titulo: 'Hermanos, cinco años', pie: undefined }],
     [{ ...papeletas, titulo: 'Papeletas, cinco salidas', pie: undefined }],
   ], { altoColumnas: 124 });
 

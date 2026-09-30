@@ -79,7 +79,7 @@ function Tarjeta({
 
 /**
  * «Cómo va el año»: un selector de ejercicio que gobierna las gráficas de esta
- * sección y nada más. La cabecera del Inicio, «Para hoy», el curso, el mes y la
+ * sección y nada más. La cabecera del Inicio, «Para hoy», el año, el mes y la
  * cuenta atrás no cambian nunca; el selector existe porque el Inicio se
  * enseña a la junta en la reunión de principios de año, cuando lo que importa
  * es el ejercicio cerrado.

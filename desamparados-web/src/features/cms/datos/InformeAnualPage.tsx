@@ -4,24 +4,24 @@ import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
-import { sabadoDePasion } from '../../../domain/sabadoDePasion'
 import {
-  guardarEnDisco, guardarMemoria, traerMemoria, traerMemoriaPdf,
-  type CampoMemoria, type MemoriaResponse, type TextosMemoria,
+  guardarEnDisco, guardarInformeAnual, traerInformeAnual, traerInformeAnualPdf,
+  type CampoInforme, type InformeAnualResponse, type TextosInforme,
 } from '../../../lib/api/datos'
 import { FILETE, FONDO_PIEZA, ORO, ROSA_URGENTE, SERIF, VERSALITAS } from '../inicio/estiloRetablo'
 import { useAltoDisponible } from '../inicio/useAltoDisponible'
 
-/** El curso en marcha, por el año en que empezó (el día después de su Sábado de Pasión). */
-export function cursoDeHoy(hoy = new Date()): number {
-  const anio = hoy.getFullYear()
-  const sabado = sabadoDePasion(anio)
-  const despues = new Date(sabado.getFullYear(), sabado.getMonth(), sabado.getDate() + 1)
-  return hoy >= despues ? anio : anio - 1
+/**
+ * El año que se abre sin elegir: de enero a marzo, el anterior (es cuando se
+ * termina de escribir y se presenta al cabildo); desde abril, el de ahora, que
+ * se va preparando mientras transcurre.
+ */
+export function anioPorDefecto(hoy = new Date()): number {
+  return hoy.getMonth() < 3 ? hoy.getFullYear() - 1 : hoy.getFullYear()
 }
 
 /** Lo que escribe cada cargo: igual que `puedeEscribir` del backend. */
-export function puedeEscribir(role: string | undefined, campo: CampoMemoria): boolean {
+export function puedeEscribir(role: string | undefined, campo: CampoInforme): boolean {
   if (role === 'ADMIN' || role === 'HERMANO_MAYOR') return true
   return role === 'SECRETARIA' && (campo === 'epilogo' || campo === 'firmaEpilogo')
 }
@@ -33,18 +33,18 @@ interface Capitulo { numero: string; titulo: string; clave: ClaveCapitulo }
 const CAPITULOS: Capitulo[] = [
   { numero: '', titulo: 'Portada', clave: 'portada' },
   { numero: 'I', titulo: 'Presentación del Hermano Mayor', clave: 'presentacion' },
-  { numero: 'II', titulo: 'El curso de un vistazo', clave: 'datos' },
+  { numero: 'II', titulo: 'El año de un vistazo', clave: 'datos' },
   { numero: 'III', titulo: 'Cultos y actos', clave: 'datos' },
   { numero: 'IV', titulo: 'Hermanos', clave: 'datos' },
   { numero: 'V', titulo: 'Sábado de Pasión y Rosario', clave: 'datos' },
   { numero: 'VI', titulo: 'Cuentas', clave: 'datos' },
   { numero: 'VII', titulo: 'Patrimonio', clave: 'patrimonio' },
   { numero: 'VIII', titulo: 'Comunicación', clave: 'datos' },
-  { numero: '·', titulo: 'Epílogo del Secretario', clave: 'epilogo' },
+  { numero: '—', titulo: 'Epílogo del Secretario', clave: 'epilogo' },
 ]
 
 /** Los campos que se escriben en cada capítulo: el primero es el texto largo. */
-const CAMPOS: Record<Exclude<ClaveCapitulo, 'datos'>, { campo: CampoMemoria; etiqueta: string; largo?: boolean; ayuda?: string }[]> = {
+const CAMPOS: Record<Exclude<ClaveCapitulo, 'datos'>, { campo: CampoInforme; etiqueta: string; largo?: boolean; ayuda?: string }[]> = {
   portada: [{ campo: 'fechaCabildo', etiqueta: 'Fecha del cabildo', ayuda: 'Sale al pie de la portada: «Presentada al Cabildo General de hermanos el …». Déjalo en blanco si aún no hay fecha.' }],
   presentacion: [
     { campo: 'presentacion', etiqueta: 'Texto de la presentación', largo: true },
@@ -67,7 +67,7 @@ const TITULO_EDITOR: Record<Exclude<ClaveCapitulo, 'datos'>, string> = {
 
 const ESPERA_GUARDADO = 900
 
-function estadoDe(cap: Capitulo, textos: TextosMemoria): { texto: string; tono: 'ok' | 'falta' | 'hecho' } {
+function estadoDe(cap: Capitulo, textos: TextosInforme): { texto: string; tono: 'ok' | 'falta' | 'hecho' } {
   if (cap.clave === 'datos') return { texto: 'de los datos', tono: 'ok' }
   if (cap.clave === 'portada') return { texto: textos.fechaCabildo ? 'con fecha del cabildo' : 'de los datos', tono: 'ok' }
   if (cap.clave === 'patrimonio') return { texto: textos.notaPatrimonio ? 'datos y nota' : 'datos + nota opcional', tono: 'ok' }
@@ -78,43 +78,43 @@ function estadoDe(cap: Capitulo, textos: TextosMemoria): { texto: string; tono: 
 const palabras = (t: string | null) => (t?.trim() ? t.trim().split(/\s+/).length : 0)
 
 /**
- * Junta › Memoria del curso: los textos que se escriben a mano (presentación,
- * epílogo, nota de patrimonio y fecha del cabildo) y el PDF. El resto de la
- * Memoria sale solo de las cifras. Se guarda sola mientras se escribe.
+ * Junta › Informe anual: los textos que se escriben a mano (presentación,
+ * epílogo, nota de patrimonio y fecha del cabildo) y el PDF. El resto del
+ * Informe sale solo de las cifras del año. Se guarda solo mientras se escribe.
  *
- * La definitiva espera a la presentación y al epílogo; el borrador sale
+ * El definitivo espera a la presentación y al epílogo; el borrador sale
  * siempre, con lo que falta a la vista.
  */
-export default function MemoriaPage() {
-  const { curso: cursoRuta } = useParams()
+export default function InformeAnualPage() {
+  const { anio: anioRuta } = useParams()
   const navigate = useNavigate()
   const role = useAuthStore((s) => s.cms?.role)
-  const hoy = cursoDeHoy()
-  const curso = cursoRuta && /^\d{4}$/.test(cursoRuta) ? Number(cursoRuta) : hoy - 1
+  const actual = new Date().getFullYear()
+  const anio = anioRuta && /^\d{4}$/.test(anioRuta) ? Number(anioRuta) : anioPorDefecto()
   const cliente = useQueryClient()
   const { referencia, alto } = useAltoDisponible()
-  const clave = ['memoria', curso]
+  const clave = ['informe-anual', anio]
 
-  const { data, isPending, isError } = useQuery({ queryKey: clave, queryFn: () => traerMemoria(curso) })
+  const { data, isPending, isError } = useQuery({ queryKey: clave, queryFn: () => traerInformeAnual(anio) })
 
-  const [textos, setTextos] = useState<TextosMemoria | null>(null)
-  const pendientes = useRef<Partial<TextosMemoria>>({})
+  const [textos, setTextos] = useState<TextosInforme | null>(null)
+  const pendientes = useRef<Partial<TextosInforme>>({})
   const reloj = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [elegido, setElegido] = useState<Exclude<ClaveCapitulo, 'datos'>>(role === 'SECRETARIA' ? 'epilogo' : 'presentacion')
 
-  // Lo escrito en pantalla se carga una vez por curso: después manda lo que se
+  // Lo escrito en pantalla se carga una vez por año: después manda lo que se
   // teclea. Si se recargara con cada guardado, borraría lo que llega mientras.
   const cargado = useRef<number | null>(null)
   useEffect(() => {
-    if (data && data.curso === curso && cargado.current !== curso) {
-      cargado.current = curso
+    if (data && data.anio === anio && cargado.current !== anio) {
+      cargado.current = anio
       setTextos(data.textos)
     }
-  }, [data, curso])
+  }, [data, anio])
 
   const guardar = useMutation({
-    mutationFn: (cambios: Partial<TextosMemoria>) => guardarMemoria(curso, cambios),
-    onSuccess: (respuesta) => cliente.setQueryData<MemoriaResponse>(clave, (antes) => (antes ? { ...antes, faltan: respuesta.faltan, actualizada: respuesta.actualizada } : respuesta)),
+    mutationFn: (cambios: Partial<TextosInforme>) => guardarInformeAnual(anio, cambios),
+    onSuccess: (respuesta) => cliente.setQueryData<InformeAnualResponse>(clave, (antes) => (antes ? { ...antes, faltan: respuesta.faltan, actualizada: respuesta.actualizada } : respuesta)),
   })
 
   const volcar = () => {
@@ -126,9 +126,9 @@ export default function MemoriaPage() {
     return Promise.resolve()
   }
   // Lo que quede por guardar al salir de la pantalla, se guarda.
-  useEffect(() => () => { void volcar() }, [curso])
+  useEffect(() => () => { void volcar() }, [anio])
 
-  const escribir = (campo: CampoMemoria, valor: string) => {
+  const escribir = (campo: CampoInforme, valor: string) => {
     setTextos((t) => (t ? { ...t, [campo]: valor } : t))
     pendientes.current = { ...pendientes.current, [campo]: valor }
     if (reloj.current) clearTimeout(reloj.current)
@@ -142,9 +142,9 @@ export default function MemoriaPage() {
       const ventana = borrador ? window.open('', '_blank') : null
       try {
         await volcar()
-        const archivo = await traerMemoriaPdf(curso, borrador)
+        const archivo = await traerInformeAnualPdf(anio, borrador)
         if (ventana) ventana.location.href = URL.createObjectURL(archivo.blob)
-        else guardarEnDisco(archivo, `memoria-del-curso-${curso}-${curso + 1}.pdf`)
+        else guardarEnDisco(archivo, `informe-anual-${anio}.pdf`)
       } catch (e) {
         ventana?.close()
         throw e
@@ -152,12 +152,12 @@ export default function MemoriaPage() {
     },
   })
 
-  if (isPending || ((!textos || cargado.current !== curso) && !isError)) return <CircularProgress aria-label="Cargando la Memoria" />
-  if (isError || !data || !textos) return <Alert severity="error">No se ha podido cargar la Memoria. Inténtalo de nuevo en unos minutos.</Alert>
+  if (isPending || ((!textos || cargado.current !== anio) && !isError)) return <CircularProgress aria-label="Cargando el Informe anual" />
+  if (isError || !data || !textos) return <Alert severity="error">No se ha podido cargar el Informe anual. Inténtalo de nuevo en unos minutos.</Alert>
 
   const faltan = data.faltan
   const avisoFalta = faltan.length === 2 ? 'Faltan la presentación y el epílogo' : faltan[0] === 'presentacion' ? 'Falta la presentación' : faltan[0] === 'epilogo' ? 'Falta el epílogo' : null
-  const cursos = Array.from({ length: 6 }, (_, i) => hoy - i)
+  const anios = Array.from({ length: 6 }, (_, i) => actual - i)
   const campos = CAMPOS[elegido]
   // El texto largo llena el hueco: tantas filas como quepan bajo los campos cortos.
   const cortos = campos.filter((c) => !c.largo).length
@@ -185,18 +185,18 @@ export default function MemoriaPage() {
       ref={referencia}
       sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, height: { md: alto ? `${Math.max(alto - 32, 460)}px` : 'auto' }, '& > *': { flexShrink: 0 } }}
     >
-      <Helmet><title>{`Memoria del curso ${curso}–${curso + 1} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Informe anual ${anio} | CMS Desamparados`}</title><meta name="robots" content="noindex" /></Helmet>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
           <Box component="span" sx={{ ...VERSALITAS, fontSize: 10.5 }}>
-            {role === 'SECRETARIA' ? 'Junta' : <Box component={Link} to={`/cms/datos?periodo=curso-${curso}`} sx={{ color: ORO, textDecoration: 'none' }}>Datos e informes</Box>} › Memoria
+            {role === 'SECRETARIA' ? 'Junta' : <Box component={Link} to={`/cms/datos?anio=${anio}`} sx={{ color: ORO, textDecoration: 'none' }}>Datos e informes</Box>} › Informe anual
           </Box>
-          <Typography component="h1" sx={{ ...SERIF, fontSize: 'clamp(26px, 4.4vh, 32px)', lineHeight: 1.05 }}>{`Memoria del curso ${curso}–${curso + 1}`}</Typography>
+          <Typography component="h1" sx={{ ...SERIF, fontSize: 'clamp(26px, 4.4vh, 32px)', lineHeight: 1.05 }}>{`Informe anual ${anio}`}</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
-          <TextField select size="small" label="Curso" value={curso} onChange={(e) => { void volcar(); navigate(`/cms/memoria/${e.target.value}`) }} sx={{ minWidth: 150 }}>
-            {cursos.map((c) => <MenuItem key={c} value={c}>{`${c}–${c + 1}`}{c === hoy ? ' (en marcha)' : ''}</MenuItem>)}
+          <TextField select size="small" label="Año" value={anio} onChange={(e) => { void volcar(); navigate(`/cms/informe-anual/${e.target.value}`) }} sx={{ minWidth: 150 }}>
+            {anios.map((a) => <MenuItem key={a} value={a}>{a}{a === actual ? ' (en marcha)' : ''}</MenuItem>)}
           </TextField>
           <Button variant="outlined" disabled={pdf.isPending} onClick={() => pdf.mutate(true)}>Ver borrador</Button>
           <Box component="span" title={avisoFalta ? `${avisoFalta}: mientras, «Ver borrador».` : undefined}>
@@ -210,7 +210,7 @@ export default function MemoriaPage() {
       {pdf.isError && <Alert severity="error" onClose={() => pdf.reset()}>{pdf.error.message}</Alert>}
 
       <Box sx={{ flex: { md: '1 1 0 !important' }, minHeight: 0, display: 'grid', gap: 1.75, gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(260px, 360px) minmax(0, 1fr)' }, gridTemplateRows: { md: 'minmax(0, 1fr)' } }}>
-        <Box component="nav" aria-label="Capítulos de la Memoria" sx={{ minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin', display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: '1px', p: 1, borderRadius: 2.5, border: `1px solid ${FILETE}` }}>
+        <Box component="nav" aria-label="Capítulos del Informe anual" sx={{ minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin', display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: '1px', p: 1, borderRadius: 2.5, border: `1px solid ${FILETE}` }}>
           <Box component="span" sx={{ ...VERSALITAS, fontSize: 10.5, px: 1.5, pb: 0.75 }}>Capítulos</Box>
           {CAPITULOS.map((cap) => {
             const estado = estadoDe(cap, textos)

@@ -10,7 +10,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../audito
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { motivoTurnoInvalido } from '../../domain/datos-procesion.js';
 import { DATOS_SALIDA } from '../../domain/salidas.js';
-import { motivoRepartoFueraDeTemporada } from '../../domain/curso.js';
+import { motivoRepartoFueraDeTemporada } from '../../domain/sabado-de-pasion.js';
 import { diaMadrid } from '../../domain/contabilidad.js';
 import { PlazoPapeletasService } from './plazo.service';
 

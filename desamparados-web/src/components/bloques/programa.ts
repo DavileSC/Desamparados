@@ -57,9 +57,7 @@ export function fechaDelActo(acto: EventoCalendario): string {
   return `${dia.charAt(0).toUpperCase()}${dia.slice(1)} · ${hora}`
 }
 
-/** El curso cofrade en que cae una fecha: de septiembre a agosto («2026 — 2027»). */
-export function cursoDe(ahora = new Date()): string {
-  const { anio, mes } = anioYMes(ahora)
-  const empieza = mes >= 9 ? anio : anio - 1
-  return `${empieza} — ${empieza + 1}`
+/** El año en que cae una fecha, en hora de Madrid: el Grupo lleva su año de enero a diciembre. */
+export function anioDe(ahora = new Date()): string {
+  return String(anioYMes(ahora).anio)
 }

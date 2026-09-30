@@ -10,7 +10,6 @@ import {
   rangoDeMeses,
   rangoDelEjercicio,
 } from '../domain/panel-ejercicio.js';
-import { rangoDelCurso } from '../domain/curso.js';
 import { devueltosPendientes } from './recibos/comunes.js';
 
 /**
@@ -84,11 +83,11 @@ export interface PanelResponse {
     diasDeReparto: string[];
   };
   /**
-   * Todos los actos del curso, de un Sábado de Pasión al siguiente (los dos
-   * incluidos, en Madrid), pasados y por venir: el camino a la estación los
-   * dibuja todos. Tampoco lo toca el selector de ejercicio.
+   * Todos los actos del año natural en marcha (del 1 de enero al 31 de
+   * diciembre, en Madrid), pasados y por venir: el Inicio los reparte en
+   * tandas. No lo toca el selector de ejercicio: es siempre el de hoy.
    */
-  curso: {
+  anio: {
     /** Con hora (en startDate) y lugar: el Inicio enseña el próximo acto entero. */
     eventos: { id: number; title: string; startDate: string; type: TipoEvento; location: string | null }[];
   };
@@ -168,7 +167,8 @@ export class PanelService {
     const haceUnAnio = inicioDiaMadrid(unAnioAntes(diaHoy));
     const mesHoy = diaHoy.slice(0, 7);
     const rangoMesHoy = rangoDeMeses([mesHoy]);
-    const rangoCurso = rangoDelCurso(diaHoy);
+    const anioHoy = Number(diaHoy.slice(0, 4));
+    const rangoAnio = { desde: inicioDiaMadrid(`${anioHoy}-01-01`), hasta: inicioDiaMadrid(`${anioHoy + 1}-01-01`) };
     const altasUltimoAnio = whereAltasAprobadas(haceUnAnio);
     // Las de la serie, en cambio, cubren todo el recorrido de reconstrucción.
     const altasDelRecorrido = whereAltasAprobadas(rangoCenso.desde);
@@ -200,7 +200,7 @@ export class PanelService {
       categorias,
       eventosDelMes,
       turnosDelMes,
-      eventosDelCurso,
+      eventosDelAnio,
     ] = await Promise.all([
       db.hermano.count({ where: { activo: true } }),
       // Las solicitudes pendientes no son altas (ver whereAltasAprobadas).
@@ -287,7 +287,7 @@ export class PanelService {
       // groupBy y no findMany: solo hace falta saber qué días hay reparto.
       db.turno.groupBy({ by: ['fecha'], where: { fecha: { gte: rangoMesHoy.desde, lt: rangoMesHoy.hasta }, activo: true } }),
       db.evento.findMany({
-        where: { startDate: { gte: rangoCurso.desde, lt: rangoCurso.hasta } },
+        where: { startDate: { gte: rangoAnio.desde, lt: rangoAnio.hasta } },
         orderBy: { startDate: 'asc' },
         select: { id: true, title: true, startDate: true, type: true, location: true },
       }),
@@ -428,8 +428,8 @@ export class PanelService {
         eventos: eventosDelMes.map((e) => ({ id: e.id, title: e.title, startDate: e.startDate.toISOString(), type: e.type })),
         diasDeReparto: [...new Set(turnosDelMes.map((t) => diaMadrid(t.fecha)))].sort(),
       },
-      curso: {
-        eventos: eventosDelCurso.map((e) => ({ id: e.id, title: e.title, startDate: e.startDate.toISOString(), type: e.type, location: e.location })),
+      anio: {
+        eventos: eventosDelAnio.map((e) => ({ id: e.id, title: e.title, startDate: e.startDate.toISOString(), type: e.type, location: e.location })),
       },
     };
   }

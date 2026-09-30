@@ -7,7 +7,7 @@ import type { Recuento } from './panel-agrupar.js';
  * área y, de cada una, la gráfica que la explica.
  *
  * Todo sale de aquí y en la misma forma para la pantalla del CMS y para los
- * PDF (el informe de cada área y la Memoria del curso): así los títulos, las
+ * PDF (el informe de cada área y el Informe anual): así los títulos, las
  * notas y los números no pueden decir una cosa en la pantalla y otra en papel.
  *
  * Es puro: recibe las cifras de conjunto (`DatosCrudos`, que junta
@@ -166,9 +166,13 @@ const MESES_LARGOS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'ju
 /** «28 de marzo de 2026». */
 export const fechaLarga = (dia: string) => `${Number(dia.slice(8, 10))} de ${MESES_LARGOS[Number(dia.slice(5, 7)) - 1]} de ${dia.slice(0, 4)}`;
 
-/** El nombre que se le da dentro de una frase: «el curso», «el año». */
-const elPeriodo = (p: Periodo) => (p.tipo === 'curso' ? 'el curso' : 'el año');
-const delAnterior = (p: Periodo) => (p.tipo === 'curso' ? 'del curso anterior' : 'del año anterior');
+/** El año dentro de una frase: «Ninguna baja en 2026». */
+const elPeriodo = (p: Periodo) => String(p.anio);
+/**
+ * Con qué se compara, dicho: con el año en marcha, el anterior hasta el mismo
+ * día («a estas alturas de 2025»); con el año cerrado, el anterior entero.
+ */
+const delAnterior = (p: Periodo) => (p.comparaHasta ? `a estas alturas de ${p.anio - 1}` : `en ${p.anio - 1}`);
 
 // ---------------------------------------------------------------- las seis áreas
 
@@ -188,12 +192,12 @@ function hermanos(d: DatosCrudos['hermanos'], p: Periodo): Area {
         etiqueta: 'Hermanos activos',
         valor: d.activos,
         formato: 'numero',
-        nota: `${diferencia(crecimiento)} en ${elPeriodo(p)}${p.enCurso ? ', a día de hoy' : ''}`,
+        nota: `${diferencia(crecimiento)} en ${elPeriodo(p)}${p.enMarcha ? ', a día de hoy' : ''}`,
         tono: crecimiento >= 0 ? 'bueno' : 'malo',
         grafica: {
-          titulo: p.tipo === 'curso' ? 'Hermanos al cierre de cada curso' : 'Hermanos al cierre de cada año',
+          titulo: 'Hermanos al cierre de cada año',
           resumen: primero ? `${diferencia(d.activos - primero.activos)} desde ${primero.etiqueta}` : '',
-          pie: p.enCurso ? 'El último, a día de hoy.' : undefined,
+          pie: p.enMarcha ? 'El último, a día de hoy.' : undefined,
           cuerpo: { tipo: 'columnas', etiquetas: d.cierres.map((c) => c.etiqueta), series: [{ nombre: 'hermanos', color: 'oro', valores: d.cierres.map((c) => c.activos) }], formato: 'numero', destacar: d.cierres.length - 1 },
         },
       },
@@ -236,7 +240,7 @@ function hermanos(d: DatosCrudos['hermanos'], p: Periodo): Area {
         nota: `${contar(d.menores, 'menor', 'menores')} de edad`,
         grafica: {
           titulo: 'Por edades',
-          resumen: `${contar(conEdad, 'hermano', 'hermanos')}${p.enCurso ? ', hoy' : `, al ${fechaLarga(p.hasta)}`}`,
+          resumen: `${contar(conEdad, 'hermano', 'hermanos')}${p.enMarcha ? ', hoy' : `, al ${fechaLarga(p.hasta)}`}`,
           vacio: conEdad === 0 ? 'Todavía no hay hermanos que contar.' : undefined,
           cuerpo: { tipo: 'barras', colores: ['oro'], filas: d.porEdad.map((t) => ({ etiqueta: t.tramo, valores: [t.total], nota: numero(t.total) })) },
         },
@@ -567,16 +571,16 @@ function agenda(d: DatosCrudos['agenda'], p: Periodo, hoy: Date): Area {
     informe: 'Informe de cultos y actos',
     cifras: [
       {
-        etiqueta: p.tipo === 'curso' ? 'Actos del curso' : 'Actos del año',
+        etiqueta: 'Actos del año',
         valor: d.actos.length,
         formato: 'numero',
-        nota: p.enCurso ? `${contar(celebrados, 'celebrado', 'celebrados')}, ${numero(d.actos.length - celebrados)} por venir` : `${numero(d.anterior)} ${delAnterior(p)}`,
+        nota: p.enMarcha ? `${contar(celebrados, 'celebrado', 'celebrados')}, ${numero(d.actos.length - celebrados)} por venir` : `${numero(d.anterior)} ${delAnterior(p)}`,
         grafica: {
           titulo: 'Actos, mes a mes',
-          resumen: p.tipo === 'curso' ? 'de Sábado de Pasión a Sábado de Pasión' : `de enero a diciembre de ${p.anio}`,
+          resumen: `de enero a diciembre de ${p.anio}`,
           leyenda: capas.map((c) => ({ texto: c.nombre, color: c.color })),
           vacio: d.actos.length === 0 ? `No hay actos en la agenda de ${elPeriodo(p)}.` : undefined,
-          cuerpo: { tipo: 'apiladas', etiquetas: etiquetasDeMeses(meses), capas, hoy: p.enCurso ? meses.indexOf(mesHoy) : undefined },
+          cuerpo: { tipo: 'apiladas', etiquetas: etiquetasDeMeses(meses), capas, hoy: p.enMarcha ? meses.indexOf(mesHoy) : undefined },
         },
       },
       cifraLista('Cultos', ['CULTO'], 'Los cultos', 'triduos, besamanos y misas'),
@@ -590,14 +594,13 @@ export function areasDe(d: DatosCrudos, p: Periodo, hoy: Date): Area[] {
   return [hermanos(d.hermanos, p), dinero(d.dinero, p), procesion(d.procesion), inventario(d.inventario), web(d.web, p), agenda(d.agenda, p, hoy)];
 }
 
-// ---------------------------------------------------------------- la Memoria: el curso de un vistazo
+// ---------------------------------------------------------------- el Informe anual: el año de un vistazo
 
 export interface CifraVistazo { etiqueta: string; valor: string; antes: string; cambio: string; tono?: 'bueno' | 'malo' }
 
 /**
- * Las ocho cifras de la segunda página de la Memoria, cada una frente a la del
- * curso anterior. Con `actosAntes`: los del curso anterior, que la Agenda de
- * este no trae.
+ * Las ocho cifras de la segunda página del Informe anual, cada una frente a la
+ * del año anterior (hasta el mismo día, si este va en marcha).
  */
 export function vistazo(d: DatosCrudos, hoy: Date): CifraVistazo[] {
   const ahora = hoy.toISOString();

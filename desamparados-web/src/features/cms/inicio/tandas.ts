@@ -1,5 +1,5 @@
 import type { PanelResponse, TipoEvento } from '../../../lib/api/panel'
-import { cuentaAtrasEstacion, pascua } from '../../../domain/sabadoDePasion'
+import { pascua } from '../../../domain/sabadoDePasion'
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const MESES_LARGOS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -32,26 +32,33 @@ export interface Acto {
   /** «19:00» en España, o nada si es de todo el día. */
   hora: string | null
   lugar: string | null
-  /** Posición en el curso, de 0 (la estación anterior) a 1 (la próxima). */
+  /** Posición en el año, de 0 (el 1 de enero) a 1 (el 31 de diciembre por la noche). */
   p: number
   /** Ya ha pasado (hoy todavía no cuenta como pasado). */
   pasado: boolean
 }
 
+/** Qué parte del año ha pasado, de 0 a 100: el Grupo lleva su año del 1 de enero al 31 de diciembre. */
+export function parteDelAnio(hoy: Date): number {
+  const inicio = Date.UTC(hoy.getFullYear(), 0, 1)
+  const fin = Date.UTC(hoy.getFullYear() + 1, 0, 1)
+  return Math.min(100, Math.max(0, Math.round(((soloDia(hoy) - inicio) / (fin - inicio)) * 100)))
+}
+
 /**
- * Todos los actos del curso, en orden, con el Miércoles de Ceniza aunque no
+ * Todos los actos del año, en orden, con el Miércoles de Ceniza aunque no
  * esté en la Agenda: sin él, la Cuaresma no se ve empezar y su tanda no sabe llamarse así.
  */
-export function actosDelCurso(hoy: Date, eventos: PanelResponse['curso']['eventos']): Acto[] {
-  const { fecha, anterior } = cuentaAtrasEstacion(hoy)
-  const curso = soloDia(fecha) - soloDia(anterior)
-  const posicion = (f: Date) => (soloDia(f) - soloDia(anterior)) / curso
+export function actosDelAnio(hoy: Date, eventos: PanelResponse['anio']['eventos']): Acto[] {
+  const inicio = Date.UTC(hoy.getFullYear(), 0, 1)
+  const largo = Date.UTC(hoy.getFullYear() + 1, 0, 1) - inicio
+  const posicion = (f: Date) => (soloDia(f) - inicio) / largo
   const actos = eventos.map((e) => {
     const f = diaEnMadrid(e.startDate)
     return { fecha: f, titulo: e.title, tipo: e.type, hora: horaEnMadrid(e.startDate), lugar: e.location ?? null }
   })
 
-  const domingo = pascua(fecha.getFullYear())
+  const domingo = pascua(hoy.getFullYear())
   const ceniza = new Date(domingo.getFullYear(), domingo.getMonth(), domingo.getDate() - 46)
   if (!actos.some((a) => soloDia(a.fecha) === soloDia(ceniza) && /ceniza/i.test(a.titulo))) {
     actos.push({ fecha: ceniza, titulo: 'Miércoles de Ceniza', tipo: 'CULTO', hora: null, lugar: null })
@@ -59,8 +66,8 @@ export function actosDelCurso(hoy: Date, eventos: PanelResponse['curso']['evento
 
   return actos
     .map((a) => ({ ...a, p: posicion(a.fecha), pasado: soloDia(a.fecha) < soloDia(hoy) }))
-    // Por si llega alguno del borde: solo cuenta el curso.
-    .filter((a) => a.p >= 0 && a.p <= 1)
+    // Por si llega alguno del borde: solo cuenta el año.
+    .filter((a) => a.p >= 0 && a.p < 1)
     .sort((a, b) => a.p - b.p)
 }
 
@@ -76,8 +83,8 @@ export interface Tanda {
 }
 
 /**
- * Días sin actos a partir de los cuales empieza otra tanda. La Hermandad vive
- * a golpes —el Triduo de mayo, la vuelta en septiembre, la Cuaresma— y entre
+ * Días sin actos a partir de los cuales empieza otra tanda. El Grupo vive a
+ * golpes —la Cuaresma, el Triduo de mayo, la vuelta en septiembre— y entre
  * medias puede pasar meses sin nada: dos semanas de calma ya separan.
  */
 export const DIAS_DE_CALMA = 14
@@ -95,11 +102,15 @@ function nombreDe(actos: Acto[]): string {
 
 /**
  * Parte los actos (ya en orden) en tandas: empieza otra tras `DIAS_DE_CALMA`
- * días sin actos. Desde la Ceniza, todo es una sola tanda: la Cuaresma.
+ * días sin actos. De la Ceniza al Domingo de Resurrección, todo es una sola
+ * tanda: la Cuaresma, con el Sábado de Pasión dentro. Lo que viene después ya
+ * es el resto del año.
  */
-export function tandasDelCurso(actos: Acto[], hoy: Date): Tanda[] {
+export function tandasDelAnio(actos: Acto[], hoy: Date): Tanda[] {
   const ceniza = actos.find((a) => /ceniza/i.test(a.titulo))
-  const enCuaresma = (a: Acto) => ceniza !== undefined && soloDia(a.fecha) >= soloDia(ceniza.fecha)
+  const resurreccion = ceniza ? pascua(ceniza.fecha.getFullYear()) : null
+  const enCuaresma = (a: Acto) => ceniza !== undefined && resurreccion !== null
+    && soloDia(a.fecha) >= soloDia(ceniza.fecha) && soloDia(a.fecha) <= soloDia(resurreccion)
   const grupos: Acto[][] = []
   for (const acto of actos) {
     const ultimo = grupos.at(-1)
@@ -131,8 +142,8 @@ export type Momento =
   | { tipo: 'calma'; tanda: Tanda }
   | { tipo: 'fin' }
 
-/** En qué punto del curso estamos: dentro de una tanda, esperando la próxima o sin nada por delante. */
-export function momentoDelCurso(tandas: Tanda[]): Momento {
+/** En qué punto del año estamos: dentro de una tanda, esperando la próxima o sin nada por delante. */
+export function momentoDelAnio(tandas: Tanda[]): Momento {
   const viva = tandas.find((t) => t.estado === 'viva')
   if (viva) {
     const quedan = viva.actos.filter((a) => !a.pasado)

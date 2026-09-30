@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cursoDe, fechaDelActo, proximaFila } from '../programa'
+import { anioDe, fechaDelActo, proximaFila } from '../programa'
 import type { EventoCalendario } from '../../../lib/api/agenda'
 import type { FilaDePrograma } from '../../../lib/api/contenido'
 
@@ -39,8 +39,10 @@ describe('fechas', () => {
     expect(fechaDelActo(acto('2026-10-17T18:00:00Z'))).toBe('Sábado, 17 de octubre · 20:00')
   })
 
-  it('el curso va de septiembre a agosto', () => {
-    expect(cursoDe(new Date('2026-09-26T10:00:00+02:00'))).toBe('2026 — 2027')
-    expect(cursoDe(new Date('2027-08-31T10:00:00+02:00'))).toBe('2026 — 2027')
+  it('el año es el natural, en hora de Madrid', () => {
+    expect(anioDe(new Date('2026-09-26T10:00:00+02:00'))).toBe('2026')
+    // A las 23:30 de Nochevieja en Madrid aún es 2026; a las 00:30, ya 2027.
+    expect(anioDe(new Date('2026-12-31T22:30:00Z'))).toBe('2026')
+    expect(anioDe(new Date('2026-12-31T23:30:00Z'))).toBe('2027')
   })
 })

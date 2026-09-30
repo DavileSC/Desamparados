@@ -15,11 +15,6 @@ describe('periodos', () => {
     expect(rangoDePeriodo('3meses', HOY)).toEqual({ desde: '2026-07-01', hasta: '2026-09-11' })
   })
 
-  it('el curso empieza en septiembre: el de este mes de septiembre ya es el nuevo', () => {
-    expect(rangoDePeriodo('curso', HOY)).toEqual({ desde: '2026-09-01', hasta: '2026-09-11' })
-    expect(rangoDePeriodo('curso', new Date(2026, 4, 3))).toEqual({ desde: '2025-09-01', hasta: '2026-05-03' })
-  })
-
   it('el año anterior va completo y el histórico no tiene fechas', () => {
     expect(rangoDePeriodo('anioAnterior', HOY)).toEqual({ desde: '2025-01-01', hasta: '2025-12-31' })
     expect(rangoDePeriodo('todo', HOY)).toEqual({})

@@ -2,7 +2,7 @@ import { llamarApi, traerArchivo } from './cliente'
 import type { TipoEvento } from './panel'
 
 /**
- * «Datos e informes» y la Memoria del curso. La forma es la de
+ * «Datos e informes» y el Informe anual. La forma es la de
  * `backend-desamparados/src/domain/datos-areas.ts`: el servidor ya lo da dicho
  * en palabras (títulos, notas, etiquetas) para que la pantalla y los PDF digan
  * lo mismo. Aquí solo se pinta.
@@ -48,16 +48,17 @@ export interface AreaDato {
   cifras: CifraDato[]
 }
 
+/** Un año natural, del 1 de enero al 31 de diciembre: el Grupo no lleva cursos. */
 export interface PeriodoDato {
   clave: string
-  tipo: 'curso' | 'ejercicio'
   anio: number
   etiqueta: string
   desde: string
   hasta: string
-  enCurso: boolean
-  anioPasion: number
-  anioRosario: number
+  /** Si es el año de hoy: las cifras son «hasta hoy». */
+  enMarcha: boolean
+  /** Hasta qué día del año anterior se compara, si este va en marcha. */
+  comparaHasta: string | null
   meses: string[]
 }
 
@@ -68,15 +69,15 @@ export interface DatosResponse {
   areas: AreaDato[]
 }
 
-export const traerDatos = (periodo?: string) =>
-  llamarApi<DatosResponse>(`/datos${periodo ? `?periodo=${encodeURIComponent(periodo)}` : ''}`)
+export const traerDatos = (anio?: string) =>
+  llamarApi<DatosResponse>(`/datos${anio ? `?anio=${encodeURIComponent(anio)}` : ''}`)
 
-export const traerInforme = (area: ClaveArea, periodo: string) =>
-  traerArchivo(`/datos/informe/${area}?periodo=${encodeURIComponent(periodo)}`)
+export const traerInforme = (area: ClaveArea, anio: string) =>
+  traerArchivo(`/datos/informe/${area}?anio=${encodeURIComponent(anio)}`)
 
-// ---------------------------------------------------------------- la Memoria
+// ---------------------------------------------------------------- el Informe anual
 
-export interface TextosMemoria {
+export interface TextosInforme {
   presentacion: string | null
   firmaPresentacion: string | null
   lugarFecha: string | null
@@ -85,25 +86,24 @@ export interface TextosMemoria {
   notaPatrimonio: string | null
   fechaCabildo: string | null
 }
-export type CampoMemoria = keyof TextosMemoria
+export type CampoInforme = keyof TextosInforme
 
-export interface MemoriaResponse {
-  curso: number
-  etiqueta: string
+export interface InformeAnualResponse {
+  anio: number
   desde: string
   hasta: string
-  textos: TextosMemoria
+  textos: TextosInforme
   faltan: ('presentacion' | 'epilogo')[]
   actualizada: string | null
 }
 
-export const traerMemoria = (curso: number) => llamarApi<MemoriaResponse>(`/datos/memoria/${curso}`)
+export const traerInformeAnual = (anio: number) => llamarApi<InformeAnualResponse>(`/datos/informe-anual/${anio}`)
 
-export const guardarMemoria = (curso: number, cambios: Partial<TextosMemoria>) =>
-  llamarApi<MemoriaResponse>(`/datos/memoria/${curso}`, { method: 'PUT', json: cambios })
+export const guardarInformeAnual = (anio: number, cambios: Partial<TextosInforme>) =>
+  llamarApi<InformeAnualResponse>(`/datos/informe-anual/${anio}`, { method: 'PUT', json: cambios })
 
-export const traerMemoriaPdf = (curso: number, borrador: boolean) =>
-  traerArchivo(`/datos/memoria/${curso}/pdf${borrador ? '?borrador=1' : ''}`)
+export const traerInformeAnualPdf = (anio: number, borrador: boolean) =>
+  traerArchivo(`/datos/informe-anual/${anio}/pdf${borrador ? '?borrador=1' : ''}`)
 
 /** Descarga un fichero ya traído, con el nombre que propuso el servidor. */
 export function guardarEnDisco({ blob, nombre }: { blob: Blob; nombre: string | null }, porDefecto: string) {

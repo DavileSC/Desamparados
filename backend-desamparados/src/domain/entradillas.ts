@@ -3,14 +3,14 @@ import { euros, numero } from './datos-areas.js';
 import type { Periodo } from './periodo-datos.js';
 
 /**
- * El párrafo con que abre cada capítulo de la Memoria y cada informe: las
+ * El párrafo con que abre cada capítulo del Informe anual y cada informe: las
  * cifras de ese área contadas en una o dos frases.
  *
  * Solo dice lo que sale de los datos. Nada de «el reparto se abre en
  * Cuaresma» ni del porqué de una cifra: eso lo escriben el Hermano Mayor y el
- * Secretario en sus textos. Y distingue un periodo en marcha («hasta hoy»,
- * «aún no tiene») de uno cerrado («al cierre», «no tuvo»), porque la misma
- * Memoria se genera a mitad de curso para revisarla y al final para el cabildo.
+ * Secretario en sus textos. Y distingue un año en marcha («hasta hoy», «aún
+ * no tiene») de uno cerrado («al cierre», «no tuvo»), porque el mismo Informe
+ * anual se genera a mitad de año para revisarlo y al cerrarlo para el cabildo.
  */
 
 /** Un trozo de la frase; los `fuerte` van en negrita (la cifra que la sostiene). */
@@ -37,10 +37,7 @@ function mesQueConcentra(porMes: { mes: string; valor: number }[], total: number
 
 const nombreDelMes = (mes: string) => MESES_LARGOS[Number(mes.slice(5, 7)) - 1];
 
-function comienzo(p: Periodo): string {
-  if (p.enCurso) return 'Hasta hoy';
-  return p.tipo === 'curso' ? 'Al cierre del curso' : 'Al cierre del año';
-}
+const comienzo = (p: Periodo) => (p.enMarcha ? 'Hasta hoy' : `Al cierre de ${p.anio}`);
 
 function hermanos(d: DatosCrudos['hermanos'], p: Periodo): Trozo[] {
   const cambio = d.activos - d.activosAlEmpezar;
@@ -65,7 +62,7 @@ function hermanos(d: DatosCrudos['hermanos'], p: Periodo): Trozo[] {
 }
 
 function dinero(d: DatosCrudos['dinero'], p: Periodo): Trozo[] {
-  if (d.ingresos + d.gastos === 0) return [{ texto: `No hay apuntes en ${p.tipo === 'curso' ? 'el curso' : 'el año'}.` }];
+  if (d.ingresos + d.gastos === 0) return [{ texto: `No hay apuntes en ${p.anio}.` }];
   const resultado = d.ingresos - d.gastos;
   const trozos: Trozo[] = [
     { texto: `${comienzo(p)}, las cuentas dejan un ` },
@@ -85,15 +82,15 @@ function procesion(d: DatosCrudos['procesion'], p: Periodo): Trozo[] {
   const frente = (a: number, b: number) => (b === 0 ? '' : a > b ? `, ${numero(a - b)} más que la anterior` : a < b ? `, ${numero(b - a)} menos que la anterior` : ', las mismas que la anterior');
   const trozos: Trozo[] = [];
   if (d.papeletas > 0) {
-    trozos.push({ texto: `La salida del Sábado de Pasión de ${d.anio} ${p.enCurso ? 'reúne' : 'reunió'} ` }, { texto: contar(d.papeletas, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(d.papeletas, anterior)}.` });
+    trozos.push({ texto: `La salida del Sábado de Pasión de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ` }, { texto: contar(d.papeletas, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(d.papeletas, anterior)}.` });
   } else {
-    trozos.push({ texto: `La salida del Sábado de Pasión de ${d.anio} ${p.enCurso ? 'aún no tiene' : 'no tuvo'} papeletas.` });
+    trozos.push({ texto: `La salida del Sábado de Pasión de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
     if (anterior > 0) trozos.push({ texto: ` La de ${d.anio - 1} reunió ` }, { texto: contar(anterior, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(anterior, del(d.anio - 2))}.` });
   }
   const r = d.rosario;
   trozos.push({ texto: r.papeletas > 0
-    ? ` El Rosario vespertino de ${r.anio} ${p.enCurso ? 'reúne' : 'reunió'} ${contar(r.papeletas, 'papeleta', 'papeletas')}.`
-    : ` El Rosario vespertino de ${r.anio} ${p.enCurso ? 'aún no tiene' : 'no tuvo'} papeletas.` });
+    ? ` El Rosario vespertino de ${r.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ${contar(r.papeletas, 'papeleta', 'papeletas')}.`
+    : ` El Rosario vespertino de ${r.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
   return trozos;
 }
 
@@ -114,7 +111,7 @@ function inventario(d: DatosCrudos['inventario']): Trozo[] {
 }
 
 function web(d: DatosCrudos['web'], p: Periodo): Trozo[] {
-  const cuando = p.enCurso ? `En lo que va de ${p.tipo === 'curso' ? 'curso' : 'año'}` : `En ${p.tipo === 'curso' ? 'el curso' : 'el año'}`;
+  const cuando = p.enMarcha ? 'En lo que va de año' : `En ${p.anio}`;
   const trozos: Trozo[] = [
     { texto: `${cuando}, la web ha publicado ` },
     { texto: contar(d.noticias, 'noticia', 'noticias'), fuerte: true },
@@ -133,7 +130,7 @@ function web(d: DatosCrudos['web'], p: Periodo): Trozo[] {
 }
 
 function agenda(d: DatosCrudos['agenda'], p: Periodo, hoy: Date): Trozo[] {
-  const de = p.tipo === 'curso' ? 'del curso' : 'del año';
+  const de = `de ${p.anio}`;
   if (d.actos.length === 0) return [{ texto: `No hay actos en la Agenda ${de}.` }];
   const cuantos = (...tipos: string[]) => d.actos.filter((a) => tipos.includes(a.type)).length;
   const grupos: [number, string, string][] = [
@@ -149,7 +146,7 @@ function agenda(d: DatosCrudos['agenda'], p: Periodo, hoy: Date): Trozo[] {
     { texto: contar(d.actos.length, 'acto', 'actos'), fuerte: true },
     { texto: `: ${enumerar(partes)}.` },
   ];
-  if (p.enCurso) {
+  if (p.enMarcha) {
     const ahora = hoy.toISOString();
     const hechos = d.actos.filter((a) => a.startDate < ahora).length;
     const quedan = d.actos.length - hechos;

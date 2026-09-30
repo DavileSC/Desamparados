@@ -12,7 +12,6 @@ import { PanelService } from '../src/services/panel.service.js';
 import { claveMes } from '../src/domain/panel-censo.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { HttpError } from '../src/utils/error.handle.js';
-import { rangoDelCurso } from '../src/domain/curso.js';
 import { diaMadrid } from '../src/domain/contabilidad.js';
 
 let dbDisponible = false;
@@ -342,17 +341,18 @@ describe('el calendario del Inicio', () => {
   });
 });
 
-describe('el curso del Inicio', () => {
-  test('trae los actos del curso, pasados y por venir, y ninguno de fuera', async (t) => {
+describe('el año del Inicio', () => {
+  test('trae los actos del año natural, pasados y por venir, y ninguno de fuera', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const { desde, hasta } = rangoDelCurso(diaMadrid(new Date()));
-    const dentro = await db.evento.create({ data: { title: 'ZZ acto del curso', startDate: new Date(desde.getTime() + 3600000), type: 'REUNION', location: 'ZZ sala de juntas' } });
-    const fuera = await db.evento.create({ data: { title: 'ZZ acto de otro curso', startDate: new Date(hasta.getTime() + 3600000), type: 'CULTO' } });
+    const anio = Number(diaMadrid(new Date()).slice(0, 4));
+    // El 1 de enero a mediodía y el 1 de enero siguiente, en Madrid.
+    const dentro = await db.evento.create({ data: { title: 'ZZ acto del año', startDate: new Date(`${anio}-01-01T11:00:00Z`), type: 'REUNION', location: 'ZZ sala de juntas' } });
+    const fuera = await db.evento.create({ data: { title: 'ZZ acto del año que viene', startDate: new Date(`${anio + 1}-01-01T11:00:00Z`), type: 'CULTO' } });
     try {
-      const { curso } = await PanelService.getPanel();
-      assert.ok(curso.eventos.some((e) => e.id === dentro.id && e.type === 'REUNION'), 'el primer día del curso cuenta aunque ya haya pasado');
-      assert.equal(curso.eventos.find((e) => e.id === dentro.id)?.location, 'ZZ sala de juntas', 'el próximo acto del Inicio enseña dónde es');
-      assert.ok(!curso.eventos.some((e) => e.id === fuera.id), 'un acto del curso siguiente no va en el camino');
+      const { anio: delAnio } = await PanelService.getPanel();
+      assert.ok(delAnio.eventos.some((e) => e.id === dentro.id && e.type === 'REUNION'), 'el 1 de enero cuenta aunque ya haya pasado');
+      assert.equal(delAnio.eventos.find((e) => e.id === dentro.id)?.location, 'ZZ sala de juntas', 'el próximo acto del Inicio enseña dónde es');
+      assert.ok(!delAnio.eventos.some((e) => e.id === fuera.id), 'un acto del año siguiente no va');
     } finally {
       await db.evento.deleteMany({ where: { id: { in: [dentro.id, fuera.id] } } });
     }

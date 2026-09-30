@@ -38,12 +38,8 @@ export function sabadoDePasion(anio: number): Date {
 export interface CuentaAtrasEstacion {
   /** La próxima estación de penitencia. */
   fecha: Date
-  /** La última celebrada: marca el principio del curso. */
-  anterior: Date
   /** Días que faltan; 0 el mismo día. */
   dias: number
-  /** Parte del curso recorrida desde la estación anterior, de 0 a 100. */
-  porcentaje: number
 }
 
 const DIA_EN_MS = 24 * 60 * 60 * 1000
@@ -55,12 +51,6 @@ export function cuentaAtrasEstacion(hoy: Date): CuentaAtrasEstacion {
   // El mismo día de la estación todavía cuenta como «hoy es la estación».
   const yaPasó = soloDia(hoy) > soloDia(deEsteAnio)
   const fecha = yaPasó ? sabadoDePasion(hoy.getFullYear() + 1) : deEsteAnio
-  const anterior = yaPasó ? deEsteAnio : sabadoDePasion(hoy.getFullYear() - 1)
-
   const dias = Math.round((soloDia(fecha) - soloDia(hoy)) / DIA_EN_MS)
-  const curso = soloDia(fecha) - soloDia(anterior)
-  const recorrido = soloDia(hoy) - soloDia(anterior)
-  const porcentaje = Math.min(100, Math.max(0, Math.round((recorrido / curso) * 100)))
-
-  return { fecha, anterior, dias, porcentaje }
+  return { fecha, dias }
 }

@@ -143,7 +143,7 @@ export default function PanelPage() {
             }}
           >
             {pestana === 'hoy'
-              ? <Hoy tareas={tareas} role={role} userId={userId} eventos={data.curso.eventos} />
+              ? <Hoy tareas={tareas} role={role} userId={userId} eventos={data.anio.eventos} />
               : <Cifras panel={data} />}
           </Box>
         </Box>

@@ -13,7 +13,7 @@ export const CIFRA = {
 /**
  * Las animaciones del Inicio. Cada una cuenta algo del dato que mueve —la
  * cifra sube hasta su valor, la curva se dibuja en el orden de los meses, el
- * curso se llena hasta hoy, el cortejo se enciende tramo a tramo— y todas
+ * año se llena hasta hoy, el cortejo se enciende tramo a tramo— y todas
  * parten de un estado visible: si no llegan a correr, el panel se lee igual.
  *
  * Con «reducir movimiento» en el sistema no corre ninguna.

@@ -4,27 +4,27 @@ import type { PanelResponse } from '../../../lib/api/panel'
 import Asuntos from './Asuntos'
 import NuevoAviso from './NuevoAviso'
 import ProximoActo from './ProximoActo'
-import ElCurso from './ElCurso'
-import { actosDelCurso } from './tandas'
+import ElAnio from './ElAnio'
+import { actosDelAnio } from './tandas'
 import type { Tarea } from './tareas'
 
 /**
  * La pestaña «Hoy»: arriba los asuntos que esperan; debajo, el próximo acto en
- * una franja a lo ancho y, al pie, el curso con lo que viene después, que se
+ * una franja a lo ancho y, al pie, el año con lo que viene después, que se
  * queda con el alto que sobra. Con los asuntos
- * abiertos («Ver los N»), la lista se queda con todo el hueco y el curso
+ * abiertos («Ver los N»), la lista se queda con todo el hueco y el año
  * vuelve con «Ver menos».
  *
  * En pantallas bajas (un portátil con el escalado de Windows) caben tres filas
- * de asuntos y no cuatro: con cuatro, el curso se quedaba sin sitio.
+ * de asuntos y no cuatro: con cuatro, el año se quedaba sin sitio.
  */
 export default function Hoy({ tareas, role, userId, eventos, hoy = new Date() }: {
-  tareas: Tarea[]; role?: string; userId?: number; eventos: PanelResponse['curso']['eventos']; hoy?: Date
+  tareas: Tarea[]; role?: string; userId?: number; eventos: PanelResponse['anio']['eventos']; hoy?: Date
 }) {
   const [todos, setTodos] = useState(false)
   const [avisoNuevo, setAvisoNuevo] = useState(false)
   const alta = useMediaQuery('(min-height: 700px)')
-  const actos = actosDelCurso(hoy, eventos)
+  const actos = actosDelAnio(hoy, eventos)
   const proximo = actos.find((a) => !a.pasado)
 
   return (
@@ -41,7 +41,7 @@ export default function Hoy({ tareas, role, userId, eventos, hoy = new Date() }:
       {!todos && (
         <>
           <ProximoActo acto={proximo} hoy={hoy} />
-          <ElCurso actos={actos} hoy={hoy} />
+          <ElAnio actos={actos} hoy={hoy} />
         </>
       )}
     </Box>

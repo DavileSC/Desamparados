@@ -74,7 +74,7 @@ export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.ti
  * versiones cortas llevan al lado el enlace al listado entero («Ver todas las
  * noticias»), que va dentro del mismo encabezado. El dibujo lo pone en la
  * columna del texto, al lado del dibujo y no encima de los dos. El programa lo
- * lleva con el curso al otro lado; la relación, con el mandato; y la foto con
+ * lleva con el año al otro lado; la relación, con el mandato; y la foto con
  * texto fundida, sobre la foto.
  */
 const CON_TITULO_PROPIO = new Set(['listado', 'dibujo', 'programa', 'relacion'])

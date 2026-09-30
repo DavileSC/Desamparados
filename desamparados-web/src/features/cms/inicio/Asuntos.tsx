@@ -12,7 +12,7 @@ import { FILETE, FILETE_SUAVE, ORO, ROSA_URGENTE } from './estiloRetablo'
  * Cuántos se ven de entrada: si caben todos en `filas`, todos; si no, uno
  * menos y «Ver los N». Así la lista nunca pasa de ese alto y lo de debajo no
  * se mueve. `filas` es 4 en pantallas altas y 3 en las bajas, donde con cuatro
- * el curso se quedaba sin sitio.
+ * el año se quedaba sin sitio.
  */
 export const aLaVista = (cuantos: number, filas = 4) => (cuantos <= filas ? cuantos : filas - 1)
 const PY = 'clamp(5px, 1vh, 9px)'

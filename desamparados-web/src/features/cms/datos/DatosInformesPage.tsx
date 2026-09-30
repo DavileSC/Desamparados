@@ -24,34 +24,31 @@ export function escribirCifra(c: Pick<CifraDato, 'valor' | 'formato'>): string {
   }
 }
 
-/** El curso de la Memoria que toca a un periodo: el mismo curso, o el que acaba en ese ejercicio. */
-const cursoDelPeriodo = (tipo: 'curso' | 'ejercicio', anio: number) => (tipo === 'curso' ? anio : anio - 1)
-
 /**
  * Junta › Datos e informes: cómo va el Grupo, área por área, con una gráfica
  * protagonista (como las Cifras del Inicio) y el informe de cada área en PDF.
- * El periodo y la pestaña viajan en la dirección: se puede volver o mandar el
- * enlace y se abre igual.
+ * Siempre por año natural. El año y la pestaña viajan en la dirección: se
+ * puede volver o mandar el enlace y se abre igual.
  *
  * Cabe en la pantalla sin scroll: la gráfica se queda con el alto que sobra.
  */
 export default function DatosInformesPage() {
   const [params, setParams] = useSearchParams()
-  const periodoPedido = params.get('periodo') ?? undefined
+  const anioPedido = params.get('anio') ?? undefined
   const { referencia, alto } = useAltoDisponible()
   const [elegidas, setElegidas] = useState<Partial<Record<ClaveArea, number>>>({})
   const botones = useRef<(HTMLButtonElement | null)[]>([])
   const idPanel = useId()
 
   const { data, isPending, isError, isFetching } = useQuery({
-    queryKey: ['datos', periodoPedido ?? 'actual'],
-    queryFn: () => traerDatos(periodoPedido),
+    queryKey: ['datos', anioPedido ?? 'actual'],
+    queryFn: () => traerDatos(anioPedido),
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   })
 
   const informe = useMutation({
-    mutationFn: ({ area, periodo }: { area: AreaDato; periodo: string }) => traerInforme(area.clave, periodo).then((f) => ({ f, area })),
+    mutationFn: ({ area, anio }: { area: AreaDato; anio: string }) => traerInforme(area.clave, anio).then((f) => ({ f, area })),
     onSuccess: ({ f, area }) => guardarEnDisco(f, `${area.informe}.pdf`),
   })
 
@@ -77,8 +74,6 @@ export default function DatosInformesPage() {
     botones.current[siguiente]?.focus()
   }
 
-  const curso = cursoDelPeriodo(data.periodo.tipo, data.periodo.anio)
-
   return (
     <Box
       ref={referencia}
@@ -99,14 +94,14 @@ export default function DatosInformesPage() {
           <TextField
             select
             size="small"
-            label="Periodo"
+            label="Año"
             value={data.periodo.clave}
-            onChange={(e) => cambiar({ periodo: e.target.value })}
-            sx={{ minWidth: 190 }}
+            onChange={(e) => cambiar({ anio: e.target.value })}
+            sx={{ minWidth: 160 }}
           >
             {data.periodos.map((p) => <MenuItem key={p.clave} value={p.clave}>{p.etiqueta}</MenuItem>)}
           </TextField>
-          <Button variant="contained" component={Link} to={`/cms/memoria/${curso}`}>Memoria del curso</Button>
+          <Button variant="contained" component={Link} to={`/cms/informe-anual/${data.periodo.anio}`}>Informe anual</Button>
         </Box>
       </Box>
 
@@ -143,7 +138,7 @@ export default function DatosInformesPage() {
           size="small"
           disabled={informe.isPending}
           startIcon={informe.isPending ? <CircularProgress size={14} /> : undefined}
-          onClick={() => informe.mutate({ area, periodo: data.periodo.clave })}
+          onClick={() => informe.mutate({ area, anio: data.periodo.clave })}
           sx={{ mb: 0.5, whiteSpace: 'nowrap' }}
         >
           {`${area.informe} · PDF`}

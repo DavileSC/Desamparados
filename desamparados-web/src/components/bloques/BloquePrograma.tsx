@@ -6,14 +6,14 @@ import { eventosDelCalendario } from '../../lib/api/agenda'
 import { esDestinoValido } from '../../lib/destinos'
 import { enlaceConFlecha } from '../estiloDeBoton'
 import { anchoMaximo } from './presentacion'
-import { cursoDe, fechaDelActo, proximaFila } from './programa'
+import { anioDe, fechaDelActo, proximaFila } from './programa'
 import type { BloquePrograma as Datos, FilaDePrograma } from '../../lib/api/contenido'
 
 /** Cuántos actos futuros se piden a la Agenda: sobran para encontrar el próximo culto de cualquier mes. */
 const ACTOS = 60
 
 /**
- * El programa del curso: un culto por fila, con cuándo es en letra fina a la
+ * El programa del año: un culto por fila, con cuándo es en letra fina a la
  * izquierda —como el programa de una temporada—, qué es en el centro y, a la
  * derecha, su enlace si lo tiene.
  *
@@ -21,7 +21,7 @@ const ACTOS = 60
  * del primer culto o salida de la Agenda en ese mes (ver `proximaFila`). Sin
  * Agenda, o mientras llega, el programa se lee igual, sin marca.
  *
- * Pinta su propio título, con el curso en que estamos al otro lado.
+ * Pinta su propio título, con el año en que estamos al otro lado.
  */
 export default function BloquePrograma({ bloque }: { bloque: Datos }) {
   const { data: actos } = useQuery({
@@ -42,7 +42,7 @@ export default function BloquePrograma({ bloque }: { bloque: Datos }) {
         {bloque.titulo
           ? <Typography component="h2" sx={{ fontSize: 13, fontWeight: 500, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c4af79', m: 0 }}>{bloque.titulo}</Typography>
           : <span />}
-        <Typography component="span" sx={{ fontSize: 14, color: 'text.secondary' }}>{cursoDe()}</Typography>
+        <Typography component="span" sx={{ fontSize: 14, color: 'text.secondary' }}>{anioDe()}</Typography>
       </Box>
       <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0 }}>
         {bloque.filas.map((fila, i) => (

@@ -5,7 +5,6 @@ export const PERIODOS = [
   { valor: 'mes', etiqueta: 'Este mes' },
   { valor: '3meses', etiqueta: 'Últimos 3 meses' },
   { valor: 'anio', etiqueta: 'Año en curso' },
-  { valor: 'curso', etiqueta: 'Curso cofrade' },
   { valor: 'anioAnterior', etiqueta: 'Año anterior' },
   { valor: 'todo', etiqueta: 'Todo el histórico' },
   { valor: 'personalizado', etiqueta: 'Fechas a elegir' },
@@ -58,8 +57,6 @@ export function rangoDePeriodo(periodo: Exclude<Periodo, 'personalizado'>, hoy =
     case 'mes': return { desde: dia(new Date(anio, hoy.getMonth(), 1)), hasta: dia(hoy) }
     case '3meses': return { desde: dia(new Date(anio, hoy.getMonth() - 2, 1)), hasta: dia(hoy) }
     case 'anio': return { desde: `${anio}-01-01`, hasta: dia(hoy) }
-    // El curso cofrade arranca en septiembre.
-    case 'curso': return { desde: `${hoy.getMonth() >= 8 ? anio : anio - 1}-09-01`, hasta: dia(hoy) }
     case 'anioAnterior': return { desde: `${anio - 1}-01-01`, hasta: `${anio - 1}-12-31` }
     case 'todo': return {}
   }

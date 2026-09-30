@@ -1,24 +1,21 @@
 import { diaMadrid, inicioDiaMadrid } from './contabilidad.js';
-import { sabadoDePasion } from './curso.js';
 import { HttpError } from '../utils/error.handle.js';
 
 /**
- * El periodo de «Datos e informes»: un curso (de un Sábado de Pasión al
- * siguiente) o un ejercicio (del 1 de enero al 31 de diciembre).
+ * El periodo de «Datos e informes» y del Informe anual: un año natural, del 1
+ * de enero al 31 de diciembre. El Grupo Parroquial lleva así sus cuentas y su
+ * vida; nada de cursos de Sábado de Pasión a Sábado de Pasión ni de septiembre
+ * a agosto.
  *
- * Los cursos no se pisan: el curso 2025–2026 empieza el día DESPUÉS del Sábado
- * de Pasión de 2025 y termina con el de 2026, incluido. La estación de ese día
- * cierra el curso, así que se cuenta en el que acaba, no en el que empieza. Es
- * distinto del camino del Inicio (`rangoDelCurso`), que enseña los dos sábados
- * porque dibuja, no suma.
+ * Con el año en marcha, las cifras son «hasta hoy» y se comparan con el año
+ * anterior hasta el mismo día: comparar nueve meses con doce hacía que a mitad
+ * de año siempre pareciera que se iba peor.
  */
 export interface Periodo {
-  /** `curso-2025` o `ejercicio-2026`: lo que viaja en `?periodo=`. */
+  /** `2026`: lo que viaja en `?anio=`. */
   clave: string;
-  tipo: 'curso' | 'ejercicio';
-  /** El año en que empieza. */
   anio: number;
-  /** «Curso 2025–2026», «Ejercicio 2026». */
+  /** «2026». */
   etiqueta: string;
   /** Primer y último día, en `AAAA-MM-DD` (los dos incluidos). */
   desde: string;
@@ -26,13 +23,11 @@ export interface Periodo {
   /** Instantes para las consultas: [inicio, fin). */
   inicio: Date;
   fin: Date;
-  /** Si hoy cae dentro: las cifras son «hasta hoy», no del periodo entero. */
-  enCurso: boolean;
-  /** La salida del Sábado de Pasión que le toca: la que cierra el curso, o la del año. */
-  anioPasion: number;
-  /** El Rosario vespertino de octubre que cae dentro. */
-  anioRosario: number;
-  /** Los meses que recorre, en `AAAA-MM`. */
+  /** Si hoy cae dentro: las cifras son «hasta hoy», no del año entero. */
+  enMarcha: boolean;
+  /** Hasta qué día del año anterior se compara (`AAAA-MM-DD`), o `null` si el año ya se cerró y se compara entero. */
+  comparaHasta: string | null;
+  /** Los doce meses, en `AAAA-MM`. */
   meses: string[];
 }
 
@@ -41,74 +36,61 @@ const siguiente = (dia: string) => {
   return new Date(Date.UTC(a, m - 1, d + 1)).toISOString().slice(0, 10);
 };
 
-function mesesEntre(desde: string, hasta: string): string[] {
-  const meses: string[] = [];
-  let [a, m] = desde.split('-').map(Number);
-  const [af, mf] = hasta.split('-').map(Number);
-  while (a < af || (a === af && m <= mf)) {
-    meses.push(`${a}-${String(m).padStart(2, '0')}`);
-    m += 1;
-    if (m > 12) { m = 1; a += 1; }
-  }
-  return meses;
+/** El mismo día un año antes; el 29 de febrero se queda en el 28. */
+function unAnioAntes(dia: string): string {
+  const [a, m, d] = dia.split('-').map(Number);
+  const ultimo = new Date(Date.UTC(a - 1, m, 0)).getUTCDate();
+  return `${a - 1}-${String(m).padStart(2, '0')}-${String(Math.min(d, ultimo)).padStart(2, '0')}`;
 }
 
-export function periodoDe(tipo: 'curso' | 'ejercicio', anio: number, hoy: Date): Periodo {
+export function periodoDe(anio: number, hoy: Date): Periodo {
   const diaHoy = diaMadrid(hoy);
-  const desde = tipo === 'curso' ? siguiente(sabadoDePasion(anio)) : `${anio}-01-01`;
-  const hasta = tipo === 'curso' ? sabadoDePasion(anio + 1) : `${anio}-12-31`;
+  const desde = `${anio}-01-01`;
+  const hasta = `${anio}-12-31`;
+  const enMarcha = diaHoy >= desde && diaHoy <= hasta;
   return {
-    clave: `${tipo}-${anio}`,
-    tipo,
+    clave: String(anio),
     anio,
-    etiqueta: tipo === 'curso' ? `Curso ${anio}–${anio + 1}` : `Ejercicio ${anio}`,
+    etiqueta: String(anio),
     desde,
     hasta,
     inicio: inicioDiaMadrid(desde),
     fin: inicioDiaMadrid(siguiente(hasta)),
-    enCurso: diaHoy >= desde && diaHoy <= hasta,
-    anioPasion: tipo === 'curso' ? anio + 1 : anio,
-    anioRosario: anio,
-    meses: mesesEntre(desde, hasta),
+    enMarcha,
+    comparaHasta: enMarcha ? unAnioAntes(diaHoy) : null,
+    meses: Array.from({ length: 12 }, (_, i) => `${anio}-${String(i + 1).padStart(2, '0')}`),
   };
 }
 
-/** El curso en el que cae hoy, por el año en que empezó. */
-export function cursoDeHoy(hoy: Date): number {
-  const diaHoy = diaMadrid(hoy);
-  const anio = Number(diaHoy.slice(0, 4));
-  return diaHoy > sabadoDePasion(anio) ? anio : anio - 1;
-}
+export const anioDeHoy = (hoy: Date) => Number(diaMadrid(hoy).slice(0, 4));
 
 /** Antes no hay nada que enseñar. */
 export const ANIO_MINIMO_DATOS = 2000;
 
-/**
- * Lee `?periodo=`. Sin valor, el curso en marcha. Cualquier otra cosa que no
- * sea `curso-AAAA` o `ejercicio-AAAA` de un año con sentido es un 400.
- */
+/** Lee `?anio=`. Sin valor, el año en marcha. Un año por venir o mal escrito es un 400. */
 export function leerPeriodo(valor: unknown, hoy: Date): Periodo {
-  if (valor === undefined || valor === null || valor === '') return periodoDe('curso', cursoDeHoy(hoy), hoy);
-  const coincide = /^(curso|ejercicio)-(\d{4})$/.exec(String(valor).trim());
-  const tipo = coincide?.[1] as 'curso' | 'ejercicio' | undefined;
-  const anio = Number(coincide?.[2]);
-  const tope = tipo === 'curso' ? cursoDeHoy(hoy) : Number(diaMadrid(hoy).slice(0, 4));
-  if (!tipo || anio < ANIO_MINIMO_DATOS || anio > tope) {
-    throw new HttpError('El periodo tiene que ser un curso o un ejercicio que ya haya empezado (por ejemplo, curso-2025 o ejercicio-2026).', 400);
+  if (valor === undefined || valor === null || valor === '') return periodoDe(anioDeHoy(hoy), hoy);
+  const texto = String(valor).trim();
+  const anio = Number(texto);
+  if (!/^\d{4}$/.test(texto) || anio < ANIO_MINIMO_DATOS || anio > anioDeHoy(hoy)) {
+    throw new HttpError('El año tiene que ser uno que ya haya empezado (por ejemplo, 2026).', 400);
   }
-  return periodoDe(tipo, anio, hoy);
+  return periodoDe(anio, hoy);
 }
 
-/** El mismo tipo de periodo, un año antes: para comparar. */
-export const periodoAnterior = (p: Periodo, hoy: Date) => periodoDe(p.tipo, p.anio - 1, hoy);
+/**
+ * Con qué se compara: el año anterior entero o, si este va en marcha, el
+ * anterior hasta el mismo día (incluido).
+ */
+export function periodoAnterior(p: Periodo, hoy: Date): { inicio: Date; fin: Date } {
+  const antes = periodoDe(p.anio - 1, hoy);
+  return { inicio: antes.inicio, fin: p.comparaHasta ? inicioDiaMadrid(siguiente(p.comparaHasta)) : antes.fin };
+}
 
-/** Los que se ofrecen en el desplegable: el curso y el ejercicio en marcha y los cinco anteriores de cada uno. */
+/** Los que se ofrecen en el desplegable: el año en marcha y los cinco anteriores. */
 export function periodosDisponibles(hoy: Date): { clave: string; etiqueta: string }[] {
-  const curso = cursoDeHoy(hoy);
-  const ejercicio = Number(diaMadrid(hoy).slice(0, 4));
-  const lista = (tipo: 'curso' | 'ejercicio', desde: number) =>
-    Array.from({ length: 6 }, (_, i) => desde - i)
-      .filter((a) => a >= ANIO_MINIMO_DATOS)
-      .map((a) => ({ clave: `${tipo}-${a}`, etiqueta: tipo === 'curso' ? `Curso ${a}–${a + 1}` : `Ejercicio ${a}` }));
-  return [...lista('curso', curso), ...lista('ejercicio', ejercicio)];
+  const actual = anioDeHoy(hoy);
+  return Array.from({ length: 6 }, (_, i) => actual - i)
+    .filter((a) => a >= ANIO_MINIMO_DATOS)
+    .map((a) => ({ clave: String(a), etiqueta: a === actual ? `${a} (en marcha)` : String(a) }));
 }

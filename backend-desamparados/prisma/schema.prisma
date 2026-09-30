@@ -841,22 +841,22 @@ model AvisoJunta {
 }
 
 // ---------------------------------------------------------
-// LA MEMORIA DEL CURSO
+// EL INFORME ANUAL
 // ---------------------------------------------------------
-// Los textos que se escriben a mano antes de generar la Memoria en PDF: la
-// presentación del Hermano Mayor, el epílogo del Secretario y una nota de
-// patrimonio (estrenos, restauraciones y donaciones). El resto de la Memoria
-// sale de las cifras de conjunto. Una fila por curso, que se nombra por el año
-// en que empieza: 2025 es el curso 2025–2026.
-model MemoriaCurso {
-  curso             Int      @id
+// Los textos que se escriben a mano antes de generar el Informe anual en PDF:
+// la presentación del Hermano Mayor, el epílogo del Secretario y una nota de
+// patrimonio (estrenos, restauraciones y donaciones). El resto del Informe
+// sale de las cifras de conjunto. Una fila por año natural: el Grupo lleva su
+// ejercicio del 1 de enero al 31 de diciembre.
+model InformeAnual {
+  anio              Int      @id
   presentacion      String?  @db.Text
   firmaPresentacion String?  @db.VarChar(120)
   lugarFecha        String?  @db.VarChar(120)
   epilogo           String?  @db.Text
   firmaEpilogo      String?  @db.VarChar(120)
   notaPatrimonio    String?  @db.Text
-  // «Presentada al Cabildo General de hermanos el …», en la portada.
+  // «Presentado al Cabildo General de hermanos el …», en la portada.
   fechaCabildo      String?  @db.VarChar(120)
   updatedAt         DateTime @updatedAt
 }

@@ -16,9 +16,10 @@ import CATALOGO from '../../../../../shared/paginas-publicas.json'
 const ANTES: Record<string, string[]> = {
   // El «Quinario al Santo Cristo» salió a propósito: el Grupo tiene una sola titular.
   cultos: [
-    // Desde el programa del curso (26-09-2026), los cultos van en sus filas.
+    // Desde el programa (26-09-2026), los cultos van en sus filas; desde el
+    // 30-09-2026 es «del año»: el Grupo no lleva cursos.
     'La vida espiritual del Grupo Parroquial se alimenta de los cultos',
-    'Programa del curso',
+    'Programa del año',
     'Culto mensual', 'Solemne Triduo', 'Besamanos',
     'Rosario vespertino', 'Sábado de Pasión', 'Navidad',
     'generalmente el primer sábado de mes',
