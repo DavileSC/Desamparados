@@ -31,7 +31,7 @@ export class DatosController {
     const periodo = leerPeriodo(req.query.periodo, hoy);
     const crudos = await DatosService.crudos(periodo, hoy);
     const area = areasDe(crudos, periodo, hoy).find((a) => a.clave === (req.params.area as ClaveArea))!;
-    enviarPdf(res, await informeDeArea(area, periodo, hoy), `${area.informe} ${periodo.etiqueta}`);
+    enviarPdf(res, await informeDeArea(area, periodo, crudos, hoy), `${area.informe} ${periodo.etiqueta}`);
   });
 
   static leerMemoria = manejar('Error leyendo la Memoria', async (req, res) => {

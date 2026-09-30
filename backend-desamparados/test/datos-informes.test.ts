@@ -15,6 +15,7 @@ import { cursoDeHoy, leerPeriodo, periodoDe, periodosDisponibles } from '../src/
 import { areasDe, etiquetasDeMeses, valorEscrito, vistazo, type DatosCrudos } from '../src/domain/datos-areas.js';
 import { puedeEscribir } from '../src/services/memoria.service.js';
 import { informeDeArea, memoriaDelCurso } from '../src/services/informes/informes.js';
+import { entradilla, enTexto } from '../src/domain/entradillas.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 /** Un curso sin datos reales: la prueba escribe su Memoria y la borra al acabar. */
@@ -177,6 +178,38 @@ describe('las cifras, en palabras', () => {
   });
 });
 
+describe('las entradillas de la Memoria y los informes', () => {
+  const cerrado = periodoDe('curso', 2025, HOY);
+  const enMarcha = periodoDe('curso', 2026, HOY);
+
+  test('cuentan las cifras en una o dos frases, con la que las sostiene en negrita', () => {
+    const trozos = entradilla('hermanos', crudos(), cerrado, HOY);
+    assert.equal(enTexto(trozos), 'Al cierre del curso, el Grupo cuenta con 228 hermanos, 95 más que al empezar. Se han dado 99 altas y 4 bajas. La edad media es de 42,2 años y 22 hermanos son menores de edad.');
+    assert.deepEqual(trozos.filter((t) => t.fuerte).map((t) => t.texto), ['228 hermanos']);
+  });
+
+  test('un curso en marcha dice «hasta hoy» y «aún no»; uno cerrado, «al cierre» y «no tuvo»', () => {
+    assert.match(enTexto(entradilla('dinero', crudos(), enMarcha, HOY)), /^Hasta hoy, las cuentas dejan un superávit de 4\.314 €/);
+    assert.match(enTexto(entradilla('procesion', crudos({ papeletas: 0 }), enMarcha, HOY)), /de 2026 aún no tiene papeletas\. La de 2025 reunió 131 papeletas de sitio\./);
+    assert.match(enTexto(entradilla('procesion', crudos({ papeletas: 0 }), cerrado, HOY)), /de 2026 no tuvo papeletas/);
+  });
+
+  test('los singulares concuerdan', () => {
+    const agenda = enTexto(entradilla('agenda', crudos(), enMarcha, HOY));
+    assert.equal(agenda, 'La Agenda del curso tiene 1 acto: 1 culto. Se ha celebrado 1.');
+    assert.match(enTexto(entradilla('web', crudos(), cerrado, HOY)), /El boletín aún no tiene suscritos\.$/);
+  });
+
+  test('las túnicas son femeninas y los capirotes masculinos', () => {
+    const [, , tunicas, capirotes] = areasDe(crudos(), cerrado, HOY)[3].cifras;
+    assert.equal(tunicas.grafica.titulo, 'Las túnicas, por estado');
+    assert.equal(capirotes.grafica.titulo, 'Los capirotes, por estado');
+    const estados = (c: typeof tunicas) => (c.grafica.cuerpo.tipo === 'barras' ? c.grafica.cuerpo.filas.map((f) => f.etiqueta) : []);
+    assert.ok(estados(tunicas).includes('Prestadas'));
+    assert.ok(estados(capirotes).includes('Prestados'));
+  });
+});
+
 describe('quién escribe la Memoria', () => {
   test('el Hermano Mayor y Administración, todo; Secretaría, su epílogo y su firma', () => {
     assert.equal(puedeEscribir('HERMANO_MAYOR', 'presentacion'), true);
@@ -192,7 +225,7 @@ describe('los PDF', () => {
   const p = periodoDe('curso', 2025, HOY);
 
   test('el informe de un área es un PDF', async () => {
-    const pdf = await informeDeArea(areasDe(crudos(), p, HOY)[0], p, HOY);
+    const pdf = await informeDeArea(areasDe(crudos(), p, HOY)[0], p, crudos(), HOY);
     assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
   });
 
@@ -202,6 +235,15 @@ describe('los PDF', () => {
     assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
     const paginas = pdf.toString('latin1').match(/\/Type \/Page\b/g)?.length ?? 0;
     assert.ok(paginas >= 11, `portada, índice y nueve capítulos: ${paginas} páginas`);
+  });
+
+  test('una carta larga sigue en otra página en vez de cortarse', async () => {
+    const textos = { presentacion: null, firmaPresentacion: null, lugarFecha: null, epilogo: null, firmaEpilogo: null, notaPatrimonio: null, fechaCabildo: null };
+    const paginasDe = (pdf: Buffer) => pdf.toString('latin1').match(/\/Type \/Page\b/g)?.length ?? 0;
+    const corta = await memoriaDelCurso(p, areasDe(crudos(), p, HOY), crudos(), textos, { borrador: false, hoy: HOY });
+    const carta = Array.from({ length: 12 }, () => 'Queridos hermanos, gracias por este curso. '.repeat(20)).join('\n\n');
+    const larga = await memoriaDelCurso(p, areasDe(crudos(), p, HOY), crudos(), { ...textos, presentacion: carta }, { borrador: false, hoy: HOY });
+    assert.ok(paginasDe(larga) > paginasDe(corta), `${paginasDe(larga)} páginas con la carta larga, ${paginasDe(corta)} sin ella`);
   });
 });
 

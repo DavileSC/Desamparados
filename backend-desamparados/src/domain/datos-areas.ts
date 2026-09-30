@@ -385,16 +385,18 @@ function procesion(d: DatosCrudos['procesion']): Area {
 
 const ESTADOS_PRENDA: { estado: EstadoPrenda; texto: string; color: Color }[] = [
   { estado: 'DISPONIBLE', texto: 'Disponibles', color: 'verde' },
-  { estado: 'PRESTADA', texto: 'Prestadas', color: 'oro' },
+  // «Prestadas» o «Prestados»: el único estado que concuerda con la prenda.
+  { estado: 'PRESTADA', texto: 'Prestad', color: 'oro' },
   { estado: 'LAVADO', texto: 'En el lavado', color: 'azul' },
   { estado: 'TALLER', texto: 'En el taller', color: 'rojo' },
   { estado: 'BAJA', texto: 'De baja', color: 'gris' },
 ];
 
-function prendas(d: DatosCrudos['inventario'], tipo: TipoPrenda, nombre: string, plural: string): Cifra {
+function prendas(d: DatosCrudos['inventario'], tipo: TipoPrenda, nombre: string, plural: string, femenino: boolean): Cifra {
   const de = (estado: EstadoPrenda) => d.prendas.find((x) => x.tipo === tipo && x.estado === estado)?.total ?? 0;
   const utiles = ESTADOS_PRENDA.filter((e) => e.estado !== 'BAJA').reduce((s, e) => s + de(e.estado), 0);
-  const filas = ESTADOS_PRENDA.map((e, i) => ({ etiqueta: e.texto, valores: ESTADOS_PRENDA.map((_, j) => (i === j ? de(e.estado) : 0)), nota: numero(de(e.estado)) }));
+  const texto = (e: (typeof ESTADOS_PRENDA)[number]) => (e.estado === 'PRESTADA' ? `${e.texto}${femenino ? 'as' : 'os'}` : e.texto);
+  const filas = ESTADOS_PRENDA.map((e, i) => ({ etiqueta: texto(e), valores: ESTADOS_PRENDA.map((_, j) => (i === j ? de(e.estado) : 0)), nota: numero(de(e.estado)) }));
   return {
     etiqueta: nombre,
     valor: de('DISPONIBLE'),
@@ -402,7 +404,7 @@ function prendas(d: DatosCrudos['inventario'], tipo: TipoPrenda, nombre: string,
     sufijo: `de ${numero(utiles)}`,
     nota: `disponibles; ${numero(de('TALLER'))} en el taller`,
     grafica: {
-      titulo: `Los ${plural}, por estado`,
+      titulo: `${femenino ? 'Las' : 'Los'} ${plural}, por estado`,
       resumen: `${numero(utiles)} útiles${de('BAJA') ? ` y ${numero(de('BAJA'))} de baja` : ''}`,
       vacio: utiles + de('BAJA') === 0 ? `No hay ${plural} en el ropero.` : undefined,
       cuerpo: { tipo: 'barras', colores: ESTADOS_PRENDA.map((e) => e.color), filas },
@@ -446,8 +448,8 @@ function inventario(d: DatosCrudos['inventario']): Area {
           cuerpo: { tipo: 'barras', colores: ['rojo'], filas: aReparar.map((e) => ({ etiqueta: e.nombre, valores: [e.reparar], nota: `${numero(e.reparar)} de ${numero(e.total)}` })) },
         },
       },
-      prendas(d, 'TUNICA', 'Túnicas', 'túnicas'),
-      prendas(d, 'CAPIROTE', 'Capirotes', 'capirotes'),
+      prendas(d, 'TUNICA', 'Túnicas', 'túnicas', true),
+      prendas(d, 'CAPIROTE', 'Capirotes', 'capirotes', false),
     ],
   };
 }
@@ -532,7 +534,7 @@ const GRUPOS_AGENDA: { nombre: string; tipos: TipoEvento[]; color: Color }[] = [
 ];
 
 /** Día y hora de Madrid de un acto. */
-function enMadrid(iso: string): { dia: string; hora: string } {
+export function enMadrid(iso: string): { dia: string; hora: string } {
   const partes = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(iso));
   const v = (t: string) => partes.find((x) => x.type === t)?.value ?? '';
   return { dia: `${v('year')}-${v('month')}-${v('day')}`, hora: `${v('hour') === '24' ? '00' : v('hour')}:${v('minute')}` };
@@ -556,7 +558,7 @@ function agenda(d: DatosCrudos['agenda'], p: Periodo, hoy: Date): Area {
     const filas = lista(tipos);
     return {
       etiqueta, valor: filas.length, formato: 'numero', nota,
-      grafica: { titulo, resumen: `${numero(filas.filter((f) => f.pasado).length)} celebrados, ${numero(filas.filter((f) => !f.pasado).length)} por venir`, vacio: filas.length === 0 ? `Ninguno en ${elPeriodo(p)}.` : undefined, cuerpo: { tipo: 'lista', filas } },
+      grafica: { titulo, resumen: `${contar(filas.filter((f) => f.pasado).length, 'celebrado', 'celebrados')}, ${numero(filas.filter((f) => !f.pasado).length)} por venir`, vacio: filas.length === 0 ? `Ninguno en ${elPeriodo(p)}.` : undefined, cuerpo: { tipo: 'lista', filas } },
     };
   };
   return {
@@ -568,7 +570,7 @@ function agenda(d: DatosCrudos['agenda'], p: Periodo, hoy: Date): Area {
         etiqueta: p.tipo === 'curso' ? 'Actos del curso' : 'Actos del año',
         valor: d.actos.length,
         formato: 'numero',
-        nota: p.enCurso ? `${numero(celebrados)} celebrados, ${numero(d.actos.length - celebrados)} por venir` : `${numero(d.anterior)} ${delAnterior(p)}`,
+        nota: p.enCurso ? `${contar(celebrados, 'celebrado', 'celebrados')}, ${numero(d.actos.length - celebrados)} por venir` : `${numero(d.anterior)} ${delAnterior(p)}`,
         grafica: {
           titulo: 'Actos, mes a mes',
           resumen: p.tipo === 'curso' ? 'de Sábado de Pasión a Sábado de Pasión' : `de enero a diciembre de ${p.anio}`,
