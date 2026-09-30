@@ -73,10 +73,21 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| ⬜ | A | Papeleta de sitio en PDF con código QR | La librería de QR ya está en el backend |
-| ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos |
+| 🔨 | A | Papeleta de sitio en PDF con código QR | La librería de QR ya está en el backend. **Contrato del QR hecho** (ver abajo); falta el PDF |
+| ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos. Puede empezar ya: el código del QR está fijado (ver abajo) |
 | 🟡 | B | Cortejo por antigüedad, automático | Hay solicitud de puesto, tramo y número en la papeleta; falta el reparto automático |
 | 🟡 | A | Túnica propuesta según la medida | Hay altura al hombro y tallas; falta proponerla sola |
+
+**El código del QR de la papeleta** (contrato entre A y B), en
+`backend-desamparados/src/domain/papeleta-qr.ts`:
+
+- El QR lleva solo el texto `DSP1.<id de la papeleta>.<firma>`: sin datos
+  personales ni URL.
+- `codigoDePapeleta(id)` lo genera (la papeleta, A) y
+  `leerCodigoDePapeleta(texto)` devuelve el id o null si es falso (el
+  escaneo, B).
+- Si la papeleta sigue valiendo (no anulada, de esta salida y año) lo decide
+  el escaneo mirando la base, no el código.
 
 ## Fase 3 · Comunicación
 
