@@ -38,6 +38,11 @@ COPY backend-desamparados/src /app/backend-desamparados/src
 # otro origen dejaría fuera la cookie de sesión, que es SameSite=Strict.
 RUN npm run build
 
+# El sitio de nginx con el dominio de la corporación, del mismo fichero que la
+# web: aquí hay Node y en la imagen de nginx no.
+COPY docker/nginx/sitio.conf docker/nginx/generar-sitio.mjs /app/nginx/
+RUN node /app/nginx/generar-sitio.mjs /app/shared/datos-entidad.json /app/nginx/sitio.conf /app/nginx/sitio-generado.conf
+
 # ---------------------------------------------------------------------------
 FROM nginx:1.27-alpine AS servidor
 
@@ -55,7 +60,7 @@ COPY docker/nginx/seguridad-sin-hsts.conf /etc/nginx/snippets/desamparados-segur
 
 # El sitio de producción. En local, compose.local.yaml monta encima de esta
 # misma ruta el de docker/nginx/sitio-local.conf.
-COPY docker/nginx/sitio.conf /etc/nginx/conf.d/desamparados.conf
+COPY --from=construccion /app/nginx/sitio-generado.conf /etc/nginx/conf.d/desamparados.conf
 
 COPY --from=construccion /app/desamparados-web/dist /var/www/desamparados/dist
 

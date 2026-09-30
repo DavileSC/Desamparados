@@ -90,8 +90,12 @@ PostgreSQL, se comería la mitad de ese margen.
 
 ### El dominio
 
-También está sin comprar. El `server_name` de `docker/nginx/sitio.conf` es un
-marcador de posición. Al elegirlo, recordar que **la API vivirá bajo ese mismo
+También está sin comprar. Se escribe en un único sitio, `identidad.dominio` de
+`shared/datos-entidad.json` (siempre con `www.`): de ahí lo toman la web (su
+dirección canónica, el sitemap, `robots.txt`), la imagen de nginx al
+construirse (`docker/nginx/generar-sitio.mjs` rellena `sitio.conf`) y
+`docker/instalar.sh`, que lo pone en `FRONTEND_URL` y `API_URL`. Al elegirlo,
+recordar que **la API vivirá bajo ese mismo
 dominio en la ruta `/api/`**, así que no hace falta un subdominio aparte para
 ella — y de hecho no debe tenerlo.
 
@@ -159,7 +163,7 @@ Son cuatro ficheros en `docker/nginx/`, y la imagen los coloca en su sitio:
 | `comun.conf` | `conf.d/00-comun.conf` (contexto `http`) | `server_tokens off` y el formato de registro |
 | `seguridad.conf` | `snippets/desamparados-seguridad.conf` | Las cabeceras de seguridad de la web |
 | `seguridad-sin-hsts.conf` | `snippets/…-sin-hsts.conf` | Igual, sin HSTS. **Solo lo usa la prueba en local** |
-| `sitio.conf` | `conf.d/desamparados.conf` | Los tres `server`: el 80 que redirige, el 443 sin `www` y el sitio |
+| `sitio.conf` | `conf.d/desamparados.conf` | Los tres `server`: el 80 que redirige, el 443 sin `www` y el sitio. Lleva `__DOMINIO__` y `__DOMINIO_SIN_WWW__`, que rellena `generar-sitio.mjs` al construir la imagen |
 
 Las decisiones que están escritas ahí y conviene no deshacer por descuido:
 
@@ -633,6 +637,66 @@ los imports o añadir un empaquetador. Para una API de este tamaño no compensa:
 `tsx` (en `dependencies`, no en las de desarrollo) transpila al arrancar en uno
 o dos segundos. La imagen de producción no lleva `devDependencies`; las lleva
 la de `herramientas`, porque el CLI de Prisma hace falta para las migraciones.
+
+## Una instalación por corporación
+
+La web se vende con **una instalación por cliente**: su servidor, su base y su
+dominio. Todo lo que distingue a una corporación de otra está en
+`shared/datos-entidad.json` (nombre, nombre corto, advocación, localidad,
+dominio, datos de Secretaría) y en el `.env` (secretos y claves del banco). El
+código es el mismo para todas.
+
+### Instalar una nueva
+
+En un servidor limpio con Docker y su plugin compose:
+
+```bash
+sudo git clone <repositorio> /srv/desamparados
+cd /srv/desamparados
+# shared/datos-entidad.json con los datos de la corporación, y el dominio
+# apuntando ya a este servidor.
+sudo ./docker/instalar.sh secretaria@corporacion.es
+```
+
+Hace en orden lo de «El usuario del sistema…» y «Orden de una puesta en
+producción»: crea el usuario, genera el `.env` con secretos nuevos, prepara
+`storage/`, pide el certificado, levanta todo, siembra y cifra los secretos
+del doble factor. Si se corta, se vuelve a lanzar: no pisa un `.env` que ya
+exista ni repite el certificado. **La contraseña del administrador sale una
+sola vez por pantalla.** Lo que no puede adivinar (correo saliente, copias,
+Redsys, SEPA) lo dice al terminar.
+
+Con `--sin-certificado` se salta el paso 4, para probar antes de tener el
+dominio.
+
+### Actualizar una
+
+```bash
+cd /srv/desamparados
+sudo -u desamparados ./docker/actualizar.sh           # a lo último de main
+sudo -u desamparados ./docker/actualizar.sh v1.4.0    # a una versión concreta
+```
+
+Hace la copia de seguridad **antes** de tocar nada (lee
+`/etc/desamparados/copia.env`; sin ella se niega, salvo con `--sin-copia`),
+trae el código solo por avance rápido, construye las imágenes con la web aún en
+marcha, levanta (las migraciones se aplican solas) y espera a que la API esté
+sana. No vuelve atrás solo: con la base ya migrada, el código anterior no la
+entendería. Si algo falla, dice cómo restaurar.
+
+### Actualizar todas
+
+Desde tu equipo, con un fichero de instalaciones (nombre, destino de ssh y,
+si no es la de siempre, carpeta):
+
+```bash
+./docker/actualizar-copias.sh copias.txt          # se para en la primera que falle
+./docker/actualizar-copias.sh copias.txt --seguir # sigue con las demás
+```
+
+Se para en la primera que falle a propósito: una versión que sale mal debe
+quedarse en una corporación, no en todas. El usuario de ssh necesita poder
+ejecutar `sudo -u desamparados ./docker/actualizar.sh` sin contraseña.
 
 ## Rotar `TOTP_ENC_KEY`
 
