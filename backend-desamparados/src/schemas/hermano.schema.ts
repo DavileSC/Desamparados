@@ -158,3 +158,11 @@ export const emancipateByStaffSchema = type({
         "newDni?": dni
     }
 });
+// Exportar el censo: en Excel (por defecto) o CSV, y solo los activos salvo
+// que se pidan también las bajas.
+export const exportarCensoSchema = type({
+    query: {
+        "formato?": "'xlsx' | 'csv'",
+        "bajas?": "'si' | 'no'"
+    }
+});

@@ -78,7 +78,7 @@ export function leerNorma43(contenido: string): ExtractoN43 {
   let ultimo: MovimientoN43 | null = null;
   let finDeFichero = false;
 
-  const lineas = contenido.replace(/^﻿/, '').split(/\r?\n/);
+  const lineas = contenido.replace(/^\uFEFF/, '').split(/\r?\n/);
   lineas.forEach((cruda, i) => {
     const n = i + 1;
     if (cruda.trim() === '') return;

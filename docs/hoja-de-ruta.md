@@ -90,7 +90,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 
 | | PC | Tarea | Notas |
 |---|---|---|---|
-| ⬜ | B | Importar y exportar el censo (Excel / CSV) | Imprescindible para instalarlo a otra corporación |
+| ✅ | — | **Importar y exportar el censo (Excel / CSV)** | Hecha: Hermanos → «Exportar» (Excel o CSV, activos o con bajas, sin datos bancarios, con rastro en la auditoría) e «Importar» (reconoce los títulos habituales, enseña antes qué filas entran y por qué no las otras, no duplica a quien ya está, da cuenta propia a quien trae DNI y correo y número por antigüedad a los activos que no lo traen). Dependencia nueva: `exceljs` |
 | ⬜ | B | Cabildos y actas | Convocatoria, quórum, votaciones y libro de actas |
 | 🟡 | A | Difuntos y sufragios | Hay baja por fallecimiento; faltan fecha del óbito, aniversarios y misas |
 | 🟡 | A | Ficha: medalla, tratamiento y listas guardadas | La ficha está casi completa |

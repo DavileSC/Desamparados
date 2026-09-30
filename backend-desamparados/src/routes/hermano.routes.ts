@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { type } from 'arktype';
 import { HermanoController } from '../controllers/hermano.controller';
+import { CensoHojaController } from '../controllers/censo-hoja.controller';
+import { ficheroDeDatosMiddleware } from '../middleware/upload.middleware';
 import { authenticateToken } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
 import { Role } from '@prisma/client';
@@ -15,7 +17,8 @@ import {
     searchHermanoSchema,
     emancipateSchema,
     emancipateByStaffSchema,
-    bajaHermanoSchema
+    bajaHermanoSchema,
+    exportarCensoSchema
 } from '../schemas/hermano.schema';
 
 /**
@@ -46,6 +49,11 @@ hermanoRouter.get('/admin/search', checkRole(rolesGestionCenso), validate(search
 hermanoRouter.get('/admin/all', checkRole(rolesGestionCenso), HermanoController.getAll);
 hermanoRouter.post('/admin/reordenar-censo', checkRole(rolesGestionCenso), HermanoController.reordenarCenso);
 hermanoRouter.post('/admin/cerrar-huecos-numero', checkRole(rolesGestionCenso), HermanoController.cerrarHuecosNumero);
+
+// El censo en Excel o CSV: sacarlo y traer el de otra parte. Antes de /admin/:id.
+hermanoRouter.get('/admin/censo/exportar', checkRole(rolesGestionCenso), validate(exportarCensoSchema), CensoHojaController.exportar);
+hermanoRouter.post('/admin/censo/importar/previa', checkRole(rolesGestionCenso), ficheroDeDatosMiddleware.single('fichero'), CensoHojaController.previa);
+hermanoRouter.post('/admin/censo/importar', checkRole(rolesGestionCenso), ficheroDeDatosMiddleware.single('fichero'), CensoHojaController.importar);
 
 // 3. Gestión de Solicitudes
 hermanoRouter.get('/admin/solicitudes', checkRole(rolesGestionCenso), HermanoController.getSolicitudes);

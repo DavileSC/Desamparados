@@ -58,6 +58,9 @@ export const ACCIONES_AUDITORIA = {
   REMESA_GENERAR: 'REMESA_GENERAR',
   REMESA_COBRAR: 'REMESA_COBRAR',
   NORMA43_APLICAR: 'NORMA43_APLICAR',
+  // El censo en Excel o CSV: sacarlo entero es una salida de datos personales
+  CENSO_EXPORTAR: 'CENSO_EXPORTAR',
+  CENSO_IMPORTAR: 'CENSO_IMPORTAR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

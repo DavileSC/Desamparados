@@ -15,6 +15,7 @@ import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import ListaCenso from './censo/ListaCenso'
 import FichaCenso from './censo/FichaCenso'
 import ListaImpagos from './impagos/ListaImpagos'
+import HojaCenso from './censo/HojaCenso'
 
 const SITUACIONES: Opcion[] = [
   { valor: 'activo', etiqueta: 'Activos' },
@@ -213,7 +214,13 @@ export default function HermanosAdminPage() {
         <Tab value="impagos" label="Impagos" />
       </Tabs>
       {puedeGestionar && (
-        <Button variant="outlined" onClick={() => setPorAsignarNumeros(true)}>Asignar números</Button>
+        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', rowGap: 1.5 }}>
+          <HojaCenso
+            onImportado={(texto) => { setError(null); setNotice(texto); void recargarYRefrescarMenu().catch(() => undefined) }}
+            onError={(texto) => { setNotice(null); setError(texto) }}
+          />
+          <Button variant="outlined" onClick={() => setPorAsignarNumeros(true)}>Asignar números</Button>
+        </Stack>
       )}
     </Box>
     {/* Rechazar borra datos personales (y a veces la cuenta entera): se pregunta antes. */}
