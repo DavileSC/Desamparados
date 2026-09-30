@@ -56,6 +56,17 @@ const recibosPruebaId: number[] = [];
  */
 const IMPORTES_ARRASTRE = [10.1, 10.2] as const;
 
+/**
+ * El año y el mes en curso EN MADRID, que es como cuenta los meses el panel.
+ * Con `getUTCMonth()`, las dos primeras horas de cada mes (en Madrid ya es el
+ * día 1; en hora universal, aún el último del anterior) las pruebas creaban
+ * sus datos en el mes que acababa de terminar y fallaban.
+ */
+const mesDeMadrid = () => {
+  const [anio, mes] = claveMes(new Date()).split('-').map(Number);
+  return { anio, mes: mes - 1 };
+};
+
 before(async () => {
   const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 3000).unref());
   const consulta = db.$queryRaw`SELECT 1`.then(() => 'ok' as const).catch(() => 'error' as const);
@@ -103,11 +114,10 @@ before(async () => {
   });
   categoriaPruebaId = categoria.id;
 
-  const hoy = new Date();
   for (const [i, importe] of IMPORTES_ARRASTRE.entries()) {
     // Un día distinto por importe, dentro del mes en curso: cada uno cae en
     // su propia fila de groupBy(['tipo','fecha']).
-    const fecha = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), 1 + i));
+    const fecha = new Date(Date.UTC(mesDeMadrid().anio, mesDeMadrid().mes, 1 + i, 12));
     const transaccion = await db.transaccion.create({
       data: {
         tipo: TipoTransaccion.INGRESO,
@@ -322,9 +332,9 @@ describe('el calendario del Inicio', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     // El día 15 del mes en curso a mediodía: cae dentro del mes en Madrid sea
     // cual sea el día de hoy.
-    const ahora = new Date();
-    const mediados = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), 15, 12));
-    const otroMes = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() + 2, 15, 12));
+    const { anio, mes } = mesDeMadrid();
+    const mediados = new Date(Date.UTC(anio, mes, 15, 12));
+    const otroMes = new Date(Date.UTC(anio, mes + 2, 15, 12));
     const acto = await db.evento.create({ data: { title: 'ZZ acto del mes', startDate: mediados, type: 'CULTO' } });
     const lejano = await db.evento.create({ data: { title: 'ZZ acto lejano', startDate: otroMes, type: 'CULTO' } });
     const turno = await db.turno.create({ data: { fecha: mediados, horaInicio: mediados, horaFin: mediados } });
