@@ -27,6 +27,12 @@ export const IMAGENES = {
 
 export const NEGRO = '#161214';
 export const BURDEOS = '#5c1622';
+/**
+ * El burdeos de las gráficas. El de las bandas, junto al negro, se confundía:
+ * los dos son casi igual de oscuros. Este se distingue a simple vista y en una
+ * fotocopia en blanco y negro sale gris medio, no negro.
+ */
+export const BURDEOS_VIVO = '#a3303f';
 export const ORO = '#b08d52';
 export const ORO_CLARO = '#cdae72';
 export const ORO_PALIDO = '#ddd0b3';
@@ -46,7 +52,7 @@ const TIPOS: Record<string, string> = {
   'tipo:CULTO': NEGRO,
   'tipo:PROCESION': '#7d6f73',
   'tipo:ENSAYO': '#7d6f73',
-  'tipo:REUNION': BURDEOS,
+  'tipo:REUNION': BURDEOS_VIVO,
   'tipo:FORMACION': ORO,
   'tipo:SOCIAL': ORO_MEDIO,
   'tipo:OTRO': GRIS_CLARO,
@@ -59,7 +65,7 @@ const TIPOS: Record<string, string> = {
  */
 export function colorDePapel(c: Color, varios: boolean): string {
   if (c.startsWith('tipo:')) return TIPOS[c] ?? GRIS_CLARO;
-  if (c === 'rojo') return BURDEOS;
+  if (c === 'rojo') return BURDEOS_VIVO;
   if (!varios) return NEGRO;
   const varias: Record<string, string> = { verde: NEGRO, oro: ORO, azul: ORO_PALIDO, gris: GRIS_CLARO };
   return varias[c] ?? GRIS_CLARO;
@@ -462,7 +468,7 @@ function columnas(doc: Doc, c: Extract<Cuerpo, { tipo: 'columnas' }>, x: number,
       if (v <= 0) return;
       const h = ((base - tope) * v) / max;
       const destacada = c.destacar === undefined || c.destacar === i;
-      const tono = destacada ? [NEGRO, BURDEOS][j] ?? GRIS_CLARO : ORO_PALIDO;
+      const tono = destacada ? [NEGRO, BURDEOS_VIVO][j] ?? GRIS_CLARO : ORO_PALIDO;
       doc.rect(x0 + j * (w + 1.5), base - h, w, h).fill(tono);
       if (conValores) rotulo(doc, corto(v, c.formato), x0 + j * (w + 1.5) - 12, base - h - 11, { tam: 8.5, color: destacada && c.destacar !== undefined ? NEGRO : GRIS, ancho: w + 24, alinear: 'center' });
     });
@@ -562,7 +568,7 @@ const coloresDeLeyenda = (g: Grafica) => {
   return (g.leyenda ?? []).map((l, j) => ({
     texto: l.texto,
     // En columnas, la leyenda sigue el orden de las series (negro, burdeos); en lo demás, su color.
-    color: c.tipo === 'columnas' ? [NEGRO, BURDEOS][j] ?? GRIS_CLARO : colorDePapel(l.color, c.tipo === 'apiladas' || (c.tipo === 'barras' && c.colores.length > 1)),
+    color: c.tipo === 'columnas' ? [NEGRO, BURDEOS_VIVO][j] ?? GRIS_CLARO : colorDePapel(l.color, c.tipo === 'apiladas' || (c.tipo === 'barras' && c.colores.length > 1)),
   }));
 };
 

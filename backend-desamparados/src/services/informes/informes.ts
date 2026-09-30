@@ -4,7 +4,7 @@ import { entradilla as entradillaDe } from '../../domain/entradillas.js';
 import type { Periodo } from '../../domain/periodo-datos.js';
 import { diaMadrid } from '../../domain/contabilidad.js';
 import {
-  A4, ALTO_BARRA, ANCHO_UTIL, BURDEOS, CREMA, FIN, GRIS, HUECO_COLUMNAS, IMAGENES, LETRA, MARFIL, MX, NEGRO, ORO, ORO_CLARO, ORO_PALIDO,
+  A4, ALTO_BARRA, ANCHO_UTIL, BURDEOS, BURDEOS_VIVO, CREMA, FIN, GRIS, HUECO_COLUMNAS, IMAGENES, LETRA, MARFIL, MX, NEGRO, ORO, ORO_CLARO, ORO_PALIDO,
   Paginas, aBuffer, bandaCapitulo, colorDePapel, bandaInforme, entradilla, fila, grafica, hueco, leyenda, marcaBorrador, marcaHecho,
   nuevoDocumento, parrafos, pies, rombo, rotulo, rotuloVersalitas, sinMargenes, tarjetas, tituloDeBloque, vacio,
   altoDeVacio, type Doc, type Tarjeta,
@@ -124,7 +124,7 @@ function enseres(ctx: Contexto, g: Grafica) {
     doc.y += 15;
   };
   let y = tituloDeBloque(doc, g.titulo, ctx.area.alcance ? 'el inventario, a día de hoy' : g.resumen, MX, p.sitio(25 + 16 + 15 + ALTO_BARRA * 3), ANCHO_UTIL);
-  doc.y = leyenda(doc, [{ texto: 'óptimo', color: NEGRO }, { texto: 'bueno', color: ORO }, { texto: 'a reparar', color: BURDEOS }], MX, y);
+  doc.y = leyenda(doc, [{ texto: 'óptimo', color: NEGRO }, { texto: 'bueno', color: ORO }, { texto: 'a reparar', color: BURDEOS_VIVO }], MX, y);
   cabecera();
   inv.enseres.forEach((e, i) => {
     if (doc.y + ALTO_BARRA > FIN) {
@@ -135,7 +135,7 @@ function enseres(ctx: Contexto, g: Grafica) {
     if (i % 2 === 0) doc.rect(MX, y, ANCHO_UTIL, ALTO_BARRA).fill(MARFIL);
     rotulo(doc, e.nombre, MX + 6, y + 5.5, { tam: 9.5, color: NEGRO, ancho: etiqueta - 10 });
     let xx = MX + etiqueta;
-    for (const [v, c] of [[e.optimo, NEGRO], [e.bueno, ORO], [e.reparar, BURDEOS]] as const) {
+    for (const [v, c] of [[e.optimo, NEGRO], [e.bueno, ORO], [e.reparar, BURDEOS_VIVO]] as const) {
       if (!v) continue;
       const w = (zona * v) / max;
       doc.rect(xx, y + 6, Math.max(w - 0.75, 0.75), 7.5).fill(c);
@@ -485,7 +485,7 @@ function paginaVistazo(p: Paginas, periodo: Periodo, areas: Record<ClaveArea, Ar
   const total = gastos.reduce((s, g) => s + g.importe, 0);
   if (!total) return;
   const partes = [...gastos.slice(0, 4), ...(gastos.length > 4 ? [{ categoria: 'Otros', importe: gastos.slice(4).reduce((s, g) => s + g.importe, 0) }] : [])];
-  const tonos = [NEGRO, BURDEOS, ORO, ORO_PALIDO, '#ebe4d6'];
+  const tonos = [NEGRO, BURDEOS_VIVO, ORO, ORO_PALIDO, '#ebe4d6'];
   let y = tituloDeBloque(doc, 'Adónde fue cada euro', `${euros(total)} de gasto`, MX, p.sitio(25 + 14 + 44), ANCHO_UTIL);
   let x = MX;
   partes.forEach((g, i) => {
