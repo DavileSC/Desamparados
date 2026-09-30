@@ -10,6 +10,11 @@
     "Confirmados por el Grupo Parroquial el 28-09-2026. Pendiente de unificar con site.ts",
     "el día que estos datos se editen desde el CMS: hasta entonces, cambiar los dos a la vez."
   ],
+  "nombre": {
+    "tipo": "Grupo Parroquial",
+    "titular": "Nuestra Señora de los Desamparados",
+    "ciudad": "Málaga"
+  },
   "secretaria": {
     "horario": "Primer viernes de cada mes, de 19:30 a 21:00",
     "direccion": "C. Corregidor Paz Guzmán, 13, 29006 Málaga",

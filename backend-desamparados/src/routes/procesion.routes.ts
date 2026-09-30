@@ -88,6 +88,8 @@ procesionRouter.patch('/admin/mesa/personas/:id', checkRole(rolesMesaReparto), v
 // Reactivar una baja o aprobar una solicitud es cosa del censo: Secretaría.
 procesionRouter.post('/admin/mesa/personas/:id/activar', checkRole([Role.ADMIN, Role.SECRETARIA]), validateIdMesa, MesaController.activar);
 procesionRouter.patch('/admin/papeletas/:id', checkRole(rolesMesaReparto), validate(type({ params: { id: idParam } }).and(mesaEditarPapeletaSchema)), MesaController.editarPapeleta);
+// La papeleta en A4 para imprimirla en la mesa al dar la ropa (o reimprimirla).
+procesionRouter.get('/admin/papeletas/:id/pdf', checkRole(rolesMesaReparto), validateIdMesa, MesaController.papeletaPdf);
 
 // ==========================================
 //  ZONA ADMIN (LISTADOS Y MANTENIMIENTO)

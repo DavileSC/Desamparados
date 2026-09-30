@@ -112,7 +112,15 @@ async function buscarAbel(user: ReturnType<typeof userEvent.setup>) {
 const como = (role: string) => useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'mesa@ejemplo.es', role, perfiles: [], origen: 'cms' }, hermano: null })
 
 beforeEach(() => { localStorage.clear(); como('TESORERIA') })
-afterEach(() => { vi.unstubAllGlobals() })
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
+
+/** La pestaña donde se abre la papeleta para imprimirla: se abre en el clic y luego se le da el PDF. */
+function pestanaDeImpresion() {
+  const pestana = { location: { href: '' }, close: vi.fn() }
+  vi.spyOn(window, 'open').mockReturnValue(pestana as unknown as Window)
+  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:papeleta') }))
+  return pestana
+}
 
 describe('MesaProcesionPage · Inscripción', () => {
   it('busca solo entre los no apuntados y apunta sin cobrar; si debe algo, lo manda a Tesorería', async () => {
@@ -272,6 +280,12 @@ describe('MesaProcesionPage · Túnicas', () => {
       solicitudId: 99, puesto: 'Nazareno', origenTunica: 'ROPERO', numTunicaAsignada: '140-107', numCapiroteAsignado: '150', cingulo: 'PRESTADO',
     })
     expect(await screen.findByText(/Nazareno, túnica 140-107\. Recogida/)).toBeInTheDocument()
+
+    // Recogida, se imprime la papeleta para dársela en mano.
+    const pestana = pestanaDeImpresion()
+    await user.click(screen.getByRole('button', { name: 'Imprimir papeleta' }))
+    await waitFor(() => expect(pestana.location.href).toBe('blob:papeleta'))
+    expect(llamadas.some((l) => l.metodo === 'GET' && l.url.endsWith('/procesion/admin/papeletas/99/pdf'))).toBe(true)
   })
 
   it('sin cíngulos en el ropero se le debe; con túnica propia lleva el suyo', async () => {
@@ -379,6 +393,22 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     expect(within(aaron).getByText('Recogida')).toBeInTheDocument()
     expect(within(tabla).getByText('Debe 20,00 €')).toBeInTheDocument()
     expect(screen.getByText(/2 apuntados, 1 con la ropa/)).toBeInTheDocument()
+  })
+
+  it('desde el listado se reimprime la papeleta de quien ya la recogió, sin abrir su ficha', async () => {
+    localStorage.setItem('mesa.zona', 'listado')
+    const user = userEvent.setup()
+    const llamadas = servidor()
+    renderWithProviders(<MesaProcesionPage />)
+    const tabla = await screen.findByRole('table', { name: 'Apuntados' })
+    const pestana = pestanaDeImpresion()
+
+    await user.click(within(tabla).getByRole('button', { name: /Imprimir la papeleta de Aaron/ }))
+    await waitFor(() => expect(pestana.location.href).toBe('blob:papeleta'))
+    expect(llamadas.some((l) => l.url.endsWith('/procesion/admin/papeletas/1/pdf'))).toBe(true)
+    expect(llamadas.some((l) => /\/mesa\/personas\/\d+$/.test(l.url.split('?')[0])), 'no abre la ficha').toBe(false)
+    // Solo las recogidas se imprimen: la solicitud sin recoger no tiene botón.
+    expect(within(tabla).getAllByRole('button', { name: /Imprimir la papeleta/ })).toHaveLength(1)
   })
 
   it('desde el listado, una solicitud sin recoger se corrige o se cancela', async () => {

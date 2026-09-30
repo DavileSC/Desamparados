@@ -1,4 +1,5 @@
-import { Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
+import { IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material'
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import type { Apuntado, Salida } from '../../../lib/api/mesa'
 import { useColoresContabilidad } from '../contabilidad/tema'
 import { cabeceraTabla } from '../inventario/tabla'
@@ -11,6 +12,8 @@ interface Props {
   /** De quién es la ficha abierta en el panel, para marcar su fila. */
   seleccionado: number | null
   onElegir: (hermanoId: number) => void
+  /** Reimprimir la papeleta de quien ya la recogió (una perdida, una en mal estado). */
+  onImprimir: (papeletaId: number) => void
 }
 
 const tenue = { color: 'text.disabled' } as const
@@ -40,7 +43,7 @@ function Estado({ a }: { a: Apuntado }) {
  * fecha de nacimiento y el teléfono están en su ficha: al pulsar una fila se
  * abre la persona en el panel. En el Rosario, sin ropa: se va de traje.
  */
-export default function TablaApuntados({ apuntados, salida, seleccionado, onElegir }: Props) {
+export default function TablaApuntados({ apuntados, salida, seleccionado, onElegir, onImprimir }: Props) {
   const { fondoCabecera } = useColoresContabilidad()
   const conRopa = salida === 'PASION'
   const columnas = conRopa ? 8 : 5
@@ -82,7 +85,24 @@ export default function TablaApuntados({ apuntados, salida, seleccionado, onEleg
                 {conRopa && <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(!tunica && tenue) }}>{tunica || '—'}</TableCell>}
                 {conRopa && <TableCell sx={{ fontVariantNumeric: 'tabular-nums', ...(!tocado && tenue) }}>{tocado || '—'}</TableCell>}
                 {conRopa && <TableCell sx={!a.cingulo ? tenue : undefined}><Cingulo a={a} /></TableCell>}
-                <TableCell><Estado a={a} /></TableCell>
+                <TableCell>
+                  <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+                    <Estado a={a} />
+                    {a.tipo === 'papeleta' && (
+                      <Tooltip title="Imprimir la papeleta">
+                        {/* La fila abre la ficha: el clic del botón no debe llegar a ella. */}
+                        <IconButton
+                          size="small"
+                          aria-label={`Imprimir la papeleta de ${a.hermano.nombre} ${a.hermano.apellidos}`}
+                          onClick={(e) => { e.stopPropagation(); onImprimir(a.id) }}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          <PrintOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Stack>
+                </TableCell>
               </TableRow>
             )
           })}

@@ -113,6 +113,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
       renovar()
       onHecho({
         tono: 'success',
+        papeletaId: r.papeletaId,
         texto: rosario
           ? `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}, confirmado.`
           : `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}${r.numTunicaAsignada ? `, túnica ${r.numTunicaAsignada}` : ''}${r.cingulo === 'DEBIDO' ? ', sin cíngulo (se le debe)' : ''}. Recogida.`,

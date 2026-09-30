@@ -37,6 +37,7 @@ import {
 } from '../../domain/salidas.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
 import { PlazoPapeletasService } from './plazo.service.js';
+import { archivoDePapeleta, datosDeLaPapeleta, papeletaEnPdf } from './papeleta-pdf.js';
 import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, type TipoRopa } from './ropa.js';
 import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { unaVez } from './una-vez.js';
@@ -514,6 +515,10 @@ export class ZonasService {
     const destino = p?.hermano.user.email ?? p?.hermano.email;
     if (!p || !destino) return;
     const importe = Number(p.recibo.importe);
+    // El PDF es un extra: si fallara, el correo sale igual, sin él.
+    const pdf = await datosDeLaPapeleta(p.id)
+      .then(async (d) => (d ? { nombre: archivoDePapeleta(d), contenido: await papeletaEnPdf(d) } : undefined))
+      .catch((e: unknown) => { console.error('[Papeleta] No se pudo generar el PDF para el correo:', e); return undefined; });
     EmailService.enviarPapeleta(destino, p.hermano.nombre, {
       year: p.year,
       salida: p.salida,
@@ -525,7 +530,7 @@ export class ZonasService {
       tunica: p.numTunicaAsignada,
       observaciones: p.observaciones || '',
       ...(await leerDatosEvento(p.salida)),
-    }, p.hermano.sexo ?? undefined).catch(console.error);
+    }, p.hermano.sexo ?? undefined, pdf).catch(console.error);
   }
 
   // =================================================================

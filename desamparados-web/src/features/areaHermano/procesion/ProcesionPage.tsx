@@ -18,6 +18,7 @@ import {
 import { formatearImporte } from '../recibos/etiquetas'
 import { PARENTESCO } from '../perfil/etiquetas'
 import AvisoSuave from '../../../components/AvisoSuave'
+import TarjetaPapeleta from './TarjetaPapeleta'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long' })
@@ -132,10 +133,17 @@ function Contenido({ estado, salida, comprobando, onHecho, onError }: PropsConte
   const de = (f: FichaEnLaProcesion) => f.porSalida[salida.salida]
   const apuntadas = estado.fichas.filter((f) => de(f).papeleta || de(f).solicitud)
   const porPedir = estado.fichas.filter((f) => !de(f).papeleta && !de(f).solicitud)
+  // Recogida la papeleta, lo primero es la tarjeta con el QR: es lo que se enseña en la puerta.
+  const conPapeleta = estado.fichas.filter((f) => de(f).papeleta?.qr)
 
   return (
     <Box sx={{ display: 'grid', gap: 3, maxWidth: 980 }}>
       <PorPagar estado={estado} salida={salida.salida} comprobando={comprobando} onHecho={onHecho} onError={onError} />
+      {conPapeleta.length > 0 && (
+        <Box component="section" aria-label="Papeletas para enseñar en la puerta" sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+          {conPapeleta.map((f) => <TarjetaPapeleta key={f.id} ficha={f} salida={salida} />)}
+        </Box>
+      )}
       {apuntadas.length > 0 && <Apuntadas fichas={apuntadas} salida={salida} onHecho={onHecho} onError={onError} />}
       {porPedir.length > 0 && (salida.abierto
         ? <Solicitud estado={estado} salida={salida} fichas={porPedir} onHecho={onHecho} onError={onError} />

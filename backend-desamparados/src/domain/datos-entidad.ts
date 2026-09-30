@@ -20,6 +20,19 @@ export interface DatosSecretaria {
   email: string | null;
 }
 
+/**
+ * Cómo se llama la corporación: «Grupo Parroquial» + «Nuestra Señora de los
+ * Desamparados», y su ciudad. Lo que se escriba nuevo lo lee de aquí, no a
+ * mano: instalarlo para otra corporación es cambiar este fichero.
+ */
+export interface NombreEntidad {
+  tipo: string;
+  titular: string;
+  ciudad: string;
+}
+
+export const entidad: NombreEntidad = datos.nombre;
+
 export const secretaria: DatosSecretaria = datos.secretaria;
 
 export const escudoUrl: string | null = datos.escudoUrl;

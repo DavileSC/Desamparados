@@ -18,6 +18,10 @@ import { transactionWithRetry } from '../../utils/transaction-retry.js';
 import { sanearPaginacion, respuestaPaginada } from '../../domain/paginacion.js';
 import { DATOS_SALIDA, SALIDAS, pagoEnLineaDisponible } from '../../domain/salidas.js';
 import { pagoParaLaWeb } from '../../domain/redsys.js';
+import QRCode from 'qrcode';
+import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
+import { referenciaDe } from './papeleta-pdf.js';
+import { leerDatosEvento } from '../recibos/comunes.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { idCategoriaDevoluciones } from '../recibos/comunes.js';
 import { PlazoPapeletasService } from './plazo.service.js';
@@ -149,15 +153,18 @@ export class MiProcesionService {
    */
   static async getMiEstado(userId: number) {
     const salidas = await Promise.all(SALIDAS.map(async (salida) => {
-      const [abierto, year] = await Promise.all([
+      const [abierto, year, evento] = await Promise.all([
         PlazoPapeletasService.estaAbierto(salida),
         PlazoPapeletasService.anioDeLaProcesion(salida),
+        leerDatosEvento(salida),
       ]);
       return {
         salida,
         nombre: DATOS_SALIDA[salida].nombre,
         abierto,
         year,
+        /** Día, hora de entrada y acceso: los que lleva la papeleta. */
+        evento,
         dias: abierto ? await MiProcesionService.getDiasDisponibles(salida) : [],
       };
     }));
@@ -169,7 +176,7 @@ export class MiProcesionService {
       orderBy: [{ esTitular: 'desc' }, { fechaNacimiento: 'asc' }],
       select: {
         id: true, nombre: true, apellidos: true, esTitular: true, parentesco: true, activo: true,
-        tieneTunicaPropia: true,
+        tieneTunicaPropia: true, numeroHermano: true,
         solicitudes: {
           where: { estado: EstadoSolicitud.PENDIENTE },
           include: { recibo: true, cita: { select: { id: true, turno: { select: { id: true, salida: true, fecha: true, horaInicio: true, horaFin: true } } } } },
@@ -179,13 +186,19 @@ export class MiProcesionService {
           orderBy: { year: 'desc' },
           take: 6,
           select: {
-            id: true, year: true, salida: true, puesto: true, tramo: true, numero: true,
+            id: true, year: true, salida: true, puesto: true, tramo: true, numero: true, numTunicaAsignada: true,
             recibo: { select: { estado: true, importe: true } },
           },
         },
       },
     });
     const cuotas = await cuotasQueCuentan(db, fichas.map((f) => f.id));
+    // El QR de las papeletas de este año, que el hermano enseña en la puerta desde el móvil.
+    const deEsteAnio = fichas.flatMap((f) => f.papeletas.filter((p) => p.year === anioDe(p.salida)));
+    const qrs = new Map(await Promise.all(deEsteAnio.map(async (p) => {
+      const codigo = codigoDePapeleta(p.id);
+      return [p.id, { codigo, svg: await QRCode.toString(codigo, { type: 'svg', errorCorrectionLevel: 'M', margin: 0 }) }] as const;
+    })));
 
     return {
       salidas,
@@ -212,7 +225,13 @@ export class MiProcesionService {
                 pagada: s.recibo?.estado === EstadoPago.PAGADO,
                 cita: s.cita,
               },
-              papeleta: p && { id: p.id, year: p.year, puesto: p.puesto, tramo: p.tramo, numero: p.numero },
+              papeleta: p && {
+                id: p.id, year: p.year, puesto: p.puesto, tramo: p.tramo, numero: p.numero,
+                referencia: referenciaDe(p.year, p.id),
+                tunica: p.numTunicaAsignada,
+                /** El texto del QR y el QR dibujado (SVG), para la tarjeta de la puerta. */
+                qr: qrs.get(p.id) ?? null,
+              },
               ultima: papeletas.find((x) => x.salida === salida && x.year < year) ?? null,
             }];
           })),

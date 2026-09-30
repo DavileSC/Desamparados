@@ -61,7 +61,19 @@ export interface FichaEnUnaSalida {
     pagada: boolean
     cita: { id: number; turno: { id: number; salida: Salida; fecha: string; horaInicio: string; horaFin: string } } | null
   } | null
-  papeleta: { id: number; year: number; puesto: string; tramo: string | null; numero: number | null } | null
+  /** La papeleta de este año, ya recogida: con su QR para enseñarlo en la puerta. */
+  papeleta: {
+    id: number
+    year: number
+    puesto: string
+    tramo: string | null
+    numero: number | null
+    /** «2027-0012». */
+    referencia: string
+    tunica: string | null
+    /** El texto del QR y el QR ya dibujado (SVG). */
+    qr: { codigo: string; svg: string } | null
+  } | null
   ultima: { id: number; year: number; puesto: string; tramo: string | null } | null
 }
 
@@ -73,6 +85,7 @@ export interface FichaEnLaProcesion {
   esTitular: boolean
   parentesco: string | null
   activo: boolean
+  numeroHermano: number | null
   tieneTunicaPropia: boolean
   cuotasPendientes: CuotaPorPagar[]
   cuotasEnElBanco: number
@@ -85,6 +98,8 @@ export interface SalidaDelHermano {
   /** Si Secretaría ha abierto la solicitud de esta salida. */
   abierto: boolean
   year: number
+  /** Día, hora de entrada y acceso de la salida: los que lleva la papeleta. */
+  evento: { fechaSalida: string; horaSalida: string; accesoPuerta: string }
   /** Vacío con el plazo cerrado. */
   dias: DiaDeReparto[]
 }

@@ -8,7 +8,8 @@ import { escucharLaMesa } from '../services/procesion/avisos-mesa.js';
 import type { TipoRopa } from '../services/procesion/ropa.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { manejar } from '../utils/manejar.js';
-import { HttpError } from '../utils/error.handle.js';
+import { HttpError, NotFoundError } from '../utils/error.handle.js';
+import { archivoDePapeleta, datosDeLaPapeleta, papeletaEnPdf } from '../services/procesion/papeleta-pdf.js';
 
 const salidaDe = (req: Request) => (req.query.salida as Salida | undefined) ?? 'PASION';
 /** La clave de la operación va en el cuerpo; el resto es el DTO. */
@@ -68,6 +69,18 @@ export class MesaController {
 
   static cancelarSolicitud = manejar('Error cancelando la solicitud', async (req, res) => {
     res.json(await PapeletasService.cancelarSolicitud(Number(req.params.id), AuditoriaService.metaFromReq(req)));
+  });
+
+  static papeletaPdf = manejar('Error generando la papeleta', async (req, res) => {
+    const datos = await datosDeLaPapeleta(Number(req.params.id));
+    if (!datos) throw new NotFoundError('No se encontró esa papeleta.');
+    const pdf = await papeletaEnPdf(datos);
+    res.setHeader('Content-Type', 'application/pdf');
+    // En línea: la mesa la abre en otra pestaña para imprimirla.
+    res.setHeader('Content-Disposition', `inline; filename="${archivoDePapeleta(datos)}"`);
+    // Lleva datos de una persona: que no se quede en ninguna caché compartida.
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.status(200).send(pdf);
   });
 
   static listado = manejar('Error leyendo los apuntados', async (req, res) => {

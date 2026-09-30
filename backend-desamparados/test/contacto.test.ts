@@ -128,7 +128,7 @@ describe('POST /api/contact', () => {
 //  El correo que sale
 // =================================================================
 
-interface Enviado { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string; attachments?: { cid: string }[] }
+interface Enviado { from: string; to: string; subject: string; html: string; text?: string; replyTo?: string; attachments?: ({ cid: string } | { filename: string; content: Buffer })[] }
 
 function transporteFalso() {
   const enviados: Enviado[] = [];
@@ -173,7 +173,7 @@ describe('EmailService', () => {
     await EmailService.enviarAvisoSolicitud({ nombre: 'Ana', email: 'ana@example.es' });
 
     const [alHermano, interno] = general.enviados;
-    const cids = (c: Enviado) => (c.attachments ?? []).map((a) => a.cid).sort();
+    const cids = (c: Enviado) => (c.attachments ?? []).flatMap((a) => ('cid' in a ? [a.cid] : [])).sort();
     assert.deepEqual(cids(alHermano), ['escudo@desamparados', 'virgen@desamparados']);
     assert.match(alHermano.html, /src="cid:virgen@desamparados"/);
     assert.deepEqual(cids(interno), ['escudo@desamparados']);

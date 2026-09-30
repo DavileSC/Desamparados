@@ -73,11 +73,12 @@ export class EmailService {
 
   /**
    * La papeleta, cuando se recoge en la mesa (en la Pasión, con la ropa; en
-   * el Rosario, con el puesto confirmado). Sin QR: el que llevaba solo
-   * decía «año-nombre», cualquiera podía fabricarlo y nadie lo escaneaba. Lo
-   * que identifica la papeleta en Secretaría es su número.
+   * el Rosario, con el puesto confirmado). El QR no va en el cuerpo, que
+   * muchos clientes de correo esconden o recortan: va en el PDF adjunto, el
+   * mismo que se imprime en la mesa. Lo que la identifica en Secretaría es su
+   * número.
    */
-  static async enviarPapeleta(emailDestino: string, nombreHermano: string, datosPapeleta: DatosPapeleta, sexo?: Sexo) {
+  static async enviarPapeleta(emailDestino: string, nombreHermano: string, datosPapeleta: DatosPapeleta, sexo?: Sexo, pdf?: { nombre: string; contenido: Buffer }) {
     const { negro, burdeos, linea, sobreNegro } = COLORES;
     const rosario = datosPapeleta.salida === 'ROSARIO';
     const nombrePapeleta = rosario ? 'Rosario vespertino' : 'Papeleta de sitio';
@@ -128,7 +129,9 @@ export class EmailService {
       recuadro('Antes de salir', rosario
         ? 'Se va en traje oscuro, con la medalla del Grupo Parroquial. Se ruega puntualidad y recogimiento durante el rezo.'
         : 'Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla del Grupo Parroquial y calzado oscuro. Guarde silencio durante la formación.'),
-      parrafo('Conserve este correo: puede enseñarlo en el acceso si se le pide.'),
+      parrafo(pdf
+        ? 'Le adjuntamos su papeleta en PDF, con el código que se lee en la puerta del templo. También la tiene en el área de hermanos, en Procesión, para enseñarla desde el móvil.'
+        : 'Conserve este correo: puede enseñarlo en el acceso si se le pide. Su papeleta, con el código que se lee en la puerta, está en el área de hermanos, en Procesión.'),
       rosario ? '' : normativa,
       firma(BENDICION),
     ].join('');
@@ -141,7 +144,7 @@ export class EmailService {
       antetitulo: rosario ? 'Rosario vespertino' : 'Estación de Penitencia',
       resumen: `${datosPapeleta.puesto || 'Puesto por asignar'} · ${datosPapeleta.fechaSalida}, ${datosPapeleta.horaSalida}.`,
       contenido: content,
-    }));
+    }), undefined, undefined, pdf ? [{ filename: pdf.nombre, content: pdf.contenido, contentType: 'application/pdf' }] : []);
   }
 
   /**
