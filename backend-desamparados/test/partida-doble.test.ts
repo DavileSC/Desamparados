@@ -11,6 +11,8 @@ describe('la cuenta de cada categoría', () => {
     assert.equal(cuentaPropuesta('Cuotas de hermanos', 'INGRESO'), '720');
     assert.equal(cuentaPropuesta('Papeletas de sitio', 'INGRESO'), '721');
     assert.equal(cuentaPropuesta('Donativos', 'INGRESO'), '740');
+    assert.equal(cuentaPropuesta('Apadrinamientos', 'INGRESO'), '740');
+    assert.equal(cuentaPropuesta('Apadrinamientos', 'INGRESO'), '740');
     assert.equal(cuentaPropuesta('Lotería y rifas', 'INGRESO'), '722');
     assert.equal(cuentaPropuesta('Comisiones bancarias', 'GASTO'), '626');
     assert.equal(cuentaPropuesta('Culto y cera', 'GASTO'), '602');

@@ -53,7 +53,7 @@ const columnas: { titulo: string; rutas: string[] }[][] = [
     },
   ],
   [
-    { titulo: 'Sagrada titular', rutas: ['/desamparados', '/ajuar'] },
+    { titulo: 'Sagrada titular', rutas: ['/desamparados', '/ajuar', '/apadrina'] },
     { titulo: 'Actualidad', rutas: ['/agenda', '/noticias', '/tienda'] },
   ],
   [

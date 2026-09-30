@@ -75,6 +75,8 @@ export const ACCIONES_AUDITORIA = {
   // La tienda: el pedido pagado (por el banco) y entregado en Secretaría
   TIENDA_PEDIDO_PAGADO: 'TIENDA_PEDIDO_PAGADO',
   TIENDA_PEDIDO_ENTREGADO: 'TIENDA_PEDIDO_ENTREGADO',
+  // Un apadrinamiento pagado (por el banco)
+  APADRINAMIENTO_PAGADO: 'APADRINAMIENTO_PAGADO',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

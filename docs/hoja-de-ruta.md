@@ -110,7 +110,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 |---|---|---|---|
 | 🟡 | A | Ficha completa de patrimonio | Hay enseres con estado, foto y ubicación; faltan varias fotos, descripción y tasación |
 | ✅ | — | **Tienda en línea** | Hecha: /tienda en la web pública (cesta, compra sin cuenta, pago con la pasarela de Redsys, recogida en Secretaría) y Cuentas → «Tienda» en el CMS (productos con foto, precio y existencias; pedidos por entregar). El aviso del banco descuenta existencias, apunta el ingreso («Ventas de la tienda» → 700) y manda el correo; si ya no queda, incidencia para devolver. La pasarela admite ya pagos sin cuenta (`PagoEnLinea.origen`). Migración `tienda` |
-| ⬜ | B | Apadrinamiento sobre una foto (velas, piezas) | La pasarela ya está |
+| ✅ | — | **Apadrinamiento sobre una foto (velas, piezas)** | Hecho: /apadrina en la web (bajo «Sagrada titular»), con cada campaña en su foto y las piezas encima; se elige una libre, se dan los datos (dedicatoria y si sale el nombre) y se paga sin cuenta. En el CMS, Censo y procesión → «Apadrinamientos»: se pulsa en la foto para poner una pieza y se ve quién apadrinó cada una. El aviso del banco la marca apadrinada, apunta el ingreso («Apadrinamientos» → 740) y manda el correo; si otro se adelantó, incidencia para devolver. Migración `apadrinamientos` |
 
 ## Fase 7 · Extras
 

@@ -1142,3 +1142,54 @@ model PedidoTiendaLinea {
 
   @@index([pedidoId])
 }
+
+/// Una campaña de apadrinamiento: una foto (el trono, el manto, la
+/// candelería) con sus piezas marcadas encima, para que cada una la costee
+/// quien quiera.
+model CampanaApadrinamiento {
+  id          Int      @id @default(autoincrement())
+  titulo      String   @db.VarChar(150)
+  descripcion String   @default("") @db.Text
+  foto        String
+  activa      Boolean  @default(true)
+  piezas      PiezaApadrinable[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Una pieza sobre la foto, en porcentaje del ancho y del alto (así sirve a
+/// cualquier tamaño de pantalla). Se apadrina una vez.
+model PiezaApadrinable {
+  id              Int                   @id @default(autoincrement())
+  campanaId       Int
+  campana         CampanaApadrinamiento @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  nombre          String                @db.VarChar(120)
+  precio          Decimal               @db.Decimal(10, 2)
+  x               Decimal               @db.Decimal(5, 2)
+  y               Decimal               @db.Decimal(5, 2)
+  /// El apadrinamiento pagado, cuando lo hay.
+  apadrinamientos Apadrinamiento[]
+
+  @@index([campanaId])
+}
+
+/// Quien apadrina una pieza. Sin cuenta, como la tienda.
+model Apadrinamiento {
+  id            Int              @id @default(autoincrement())
+  token         String           @unique @db.VarChar(32)
+  piezaId       Int
+  pieza         PiezaApadrinable @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  nombre        String           @db.VarChar(120)
+  email         String           @db.VarChar(191)
+  telefono      String           @db.VarChar(30)
+  dedicatoria   String?          @db.VarChar(200)
+  /// Si quiere que su nombre salga en la foto.
+  mostrarNombre Boolean          @default(false)
+  estado        EstadoPedido     @default(PENDIENTE_PAGO)
+  importe       Decimal          @db.Decimal(10, 2)
+  metodo        MetodoPago?
+  pagadoEl      DateTime?
+  createdAt     DateTime         @default(now())
+
+  @@index([piezaId, estado])
+}

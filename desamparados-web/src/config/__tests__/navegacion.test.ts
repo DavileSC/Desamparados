@@ -46,6 +46,7 @@ describe('menuPublico', () => {
         'Sagrada titular /sagrada-titular',
         '  Desamparados /desamparados',
         '  Ajuar /ajuar',
+        '  Apadrina /apadrina',
         'Actualidad /actualidad',
         '  Agenda /agenda',
         '  Noticias /noticias',

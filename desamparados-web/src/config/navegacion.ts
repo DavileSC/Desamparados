@@ -65,6 +65,7 @@ export const menuPublico: EntradaMenu[] = [
     hijos: [
       { label: 'Desamparados', href: '/desamparados' },
       { label: 'Ajuar', href: '/ajuar' },
+      { label: 'Apadrina', href: '/apadrina' },
     ],
   },
   {

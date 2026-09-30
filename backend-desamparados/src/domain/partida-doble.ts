@@ -63,7 +63,7 @@ const REGLAS: Record<Tipo, [RegExp, string][]> = {
   INGRESO: [
     [/cuota/, '720'],
     [/papeleta|salida|inscripcion/, '721'],
-    [/donativ|donacion|limosna|ofrenda|legado|subvencion/, '740'],
+    [/donativ|donacion|limosna|ofrenda|legado|subvencion|apadrin/, '740'],
     [/loteria|rifa|sorteo|tombola|promocion/, '722'],
     [/patrocin|colabora/, '723'],
     [/venta|tienda|recuerdo|mercader/, '700'],

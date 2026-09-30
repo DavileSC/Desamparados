@@ -3,6 +3,7 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import HowToVoteOutlinedIcon from '@mui/icons-material/HowToVoteOutlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
+import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined'
@@ -96,6 +97,7 @@ export const itemsMenu: ItemMenu[] = [
   // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
   { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon },
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon },
+  { label: 'Apadrinamientos', href: '/cms/apadrinamientos', roles: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: VolunteerActivismOutlinedIcon },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
   { label: 'Tienda', href: '/cms/tienda', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: StorefrontOutlinedIcon },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
@@ -122,6 +124,8 @@ export const rolesPorRutaCms = {
   portada: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   noticias: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
   publicaciones: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
+  // Los apadrinamientos: la guarda de /api/apadrinamientos/admin.
+  apadrinamientos: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'],
   // La tienda: la guarda de /api/tienda/admin.
   tienda: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'],
   // Los cabildos y el libro de actas: la guarda de /api/cabildos.

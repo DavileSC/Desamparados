@@ -32,6 +32,7 @@ const ACCIONES: Record<string, string> = {
   CONTABILIDAD_EXPORTAR: 'Exportar la contabilidad a Excel',
   TIENDA_PEDIDO_PAGADO: 'Pedido de la tienda pagado',
   TIENDA_PEDIDO_ENTREGADO: 'Entregar un pedido de la tienda',
+  APADRINAMIENTO_PAGADO: 'Apadrinamiento pagado',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',
   CUOTAS_GENERAR: 'Generar las cuotas',
