@@ -35,7 +35,7 @@ const como = (role: string) =>
   useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'secre@ejemplo.es', role, perfiles: [], origen: 'cms' }, hermano: null })
 
 beforeEach(() => como('SECRETARIA'))
-afterEach(() => { vi.unstubAllGlobals() })
+afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
 
 describe('ProcesionAdminPage', () => {
   it('abrir pregunta antes y avisa por correo y deja el borrador de noticia', async () => {
@@ -111,6 +111,28 @@ describe('ProcesionAdminPage', () => {
     renderWithProviders(<ProcesionAdminPage />)
     expect(await screen.findByRole('tab', { name: 'Traslado' })).toBeInTheDocument()
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Sábado de Pasión', 'Rosario vespertino', 'Traslado'])
+  })
+
+  it('con una sola salida no hay pestañas', async () => {
+    servidor(PLAZO, [TURNO], { salidas: [salidaPasion] })
+    renderWithProviders(<ProcesionAdminPage />)
+    expect(await screen.findByRole('switch', { name: /solicitud de papeletas abierta/i })).toBeInTheDocument()
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+  })
+
+  it('recuerda la salida elegida al volver', async () => {
+    const user = userEvent.setup()
+    servidor()
+    const { unmount } = renderWithProviders(<ProcesionAdminPage />)
+    await user.click(await screen.findByRole('tab', { name: 'Rosario vespertino' }))
+    expect(localStorage.getItem('procesion.salida')).toBe('rosario-vespertino')
+    unmount()
+
+    const llamadas = servidor()
+    renderWithProviders(<ProcesionAdminPage />)
+    expect(await screen.findByRole('tab', { name: 'Rosario vespertino' })).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(llamadas.some((l) => l.url.includes('/admin/plazo?salida=rosario-vespertino'))).toBe(true))
+    expect(llamadas.some((l) => l.url.includes('/admin/plazo?salida=sabado-de-pasion'))).toBe(false)
   })
 
   it('sin salidas activas lo dice y lleva a crearlas', async () => {

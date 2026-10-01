@@ -11,9 +11,10 @@ const guardar = (clave: string, valor: string) => { try { localStorage.setItem(c
 
 /** La salida con la que trabaja una pantalla, recordada por slug: con un id, una salida borrada y creada de nuevo se confundiría. */
 export function useSalidaElegida(recordar: string) {
-  const { data = [], isLoading } = useSalidas()
+  const { data = [], isLoading, isError } = useSalidas()
   const [slug, setSlug] = useState(() => leer(recordar))
   const salida = data.find((s) => s.slug === slug) ?? data[0] ?? null
   const elegir = (nuevo: string) => { setSlug(nuevo); guardar(recordar, nuevo) }
-  return { salidas: data, salida, elegir, cargando: isLoading }
+  // Sin salidas por un fallo no es lo mismo que sin salidas activas: la pantalla lo dice distinto.
+  return { salidas: data, salida, elegir, cargando: isLoading, error: isError }
 }

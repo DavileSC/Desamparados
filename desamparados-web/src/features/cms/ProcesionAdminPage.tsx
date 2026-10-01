@@ -14,7 +14,8 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import {
   cambiarPlazo, crearTurno, eliminarTurno, plazoDePapeletas, turnosDeReparto, type PlazoDePapeletas, type TurnoDeReparto,
 } from '../../lib/api/procesion'
-import { useSalidas } from '../procesion/useSalidas'
+import AvisoSinSalidas from '../procesion/AvisoSinSalidas'
+import { useSalidaElegida } from '../procesion/useSalidas'
 import { useColoresContabilidad } from './contabilidad/tema'
 import { cabeceraTabla, soloLector } from './inventario/tabla'
 import CabeceraSeccion from './CabeceraSeccion'
@@ -48,9 +49,8 @@ export default function ProcesionAdminPage() {
   const puedeCambiar = role === 'ADMIN' || role === 'SECRETARIA'
   const { fondoCabecera } = useColoresContabilidad()
 
-  const { data: salidas = [], isLoading: cargandoSalidas, isError: errorSalidas } = useSalidas()
-  const [elegida, setElegida] = useState<string | null>(null)
-  const salida = salidas.find((s) => s.slug === elegida) ?? salidas[0] ?? null
+  // Recordada por slug, como en la mesa y la puerta: al volver, sigue en la misma salida.
+  const { salidas, salida, elegir, cargando: cargandoSalidas, error: errorSalidas } = useSalidaElegida('procesion.salida')
   const slug = salida?.slug ?? null
   const [plazo, setPlazo] = useState<PlazoDePapeletas | null>(null)
   // Al cambiar de salida se sigue viendo la anterior hasta que llega la nueva:
@@ -152,9 +152,7 @@ export default function ProcesionAdminPage() {
     return (
       <>
         <CabeceraSeccion titulo="Procesión" />
-        {errorSalidas
-          ? <Alert severity="error">No se han podido cargar las salidas.</Alert>
-          : <Alert severity="info">No hay salidas activas. Créalas en <Box component={Link} to="/cms/procesion/salidas" sx={enlace}>Procesión → Salidas</Box>.</Alert>}
+        <AvisoSinSalidas error={errorSalidas} />
       </>
     )
   }
@@ -167,9 +165,12 @@ export default function ProcesionAdminPage() {
         {puedeCambiar && <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setDia(DIA_VACIO); setErrorDia(null); setCreando(true) }}>Nuevo día de reparto</Button>}
       </CabeceraSeccion>
 
-      <Tabs value={salida.slug} onChange={(_e, v: string) => { setElegida(v); setAviso(null); setError(null) }} variant="scrollable" aria-label="Salida" sx={{ mb: 2.5, borderBottom: 1, borderColor: 'divider' }}>
-        {salidas.map((s) => <Tab key={s.slug} value={s.slug} label={s.nombre} />)}
-      </Tabs>
+      {/* Con una sola salida no hay nada que elegir: sin pestañas. */}
+      {salidas.length > 1 && (
+        <Tabs value={salida.slug} onChange={(_e, v: string) => { elegir(v); setAviso(null); setError(null) }} variant="scrollable" aria-label="Salida" sx={{ mb: 2.5, borderBottom: 1, borderColor: 'divider' }}>
+          {salidas.map((s) => <Tab key={s.slug} value={s.slug} label={s.nombre} />)}
+        </Tabs>
+      )}
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
       {aviso && (

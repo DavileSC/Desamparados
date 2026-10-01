@@ -8,6 +8,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { crearTemaCms } from '../../../../theme/cms'
 import PuertaTemploPage from '../PuertaTemploPage'
 import { salidasDePrueba, esListaDeSalidas } from '../../../../test/salidas'
+import type { Salida } from '../../../../lib/api/salidas'
+import { useAuthStore } from '../../../altas/auth/store'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -19,12 +21,12 @@ const ESTADO = {
   faltan: [LUIS, ANA], ultimas: [],
 }
 
-afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
+afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); useAuthStore.setState({ cms: null }) })
 
-function montar(escaneo: unknown, salidas = salidasDePrueba) {
+function montar(escaneo: unknown, salidas: Salida[] | 'error' = salidasDePrueba) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
-    if (esListaDeSalidas(ruta)) return Promise.resolve(json(salidas))
+    if (esListaDeSalidas(ruta)) return Promise.resolve(salidas === 'error' ? json({ error: 'Fallo' }, 500) : json(salidas))
     if (ruta.endsWith('/puerta/escanear')) return Promise.resolve(json(escaneo))
     if (init.method === 'POST' && ruta.includes('/puerta/papeletas/')) return Promise.resolve(json({ veredicto: 'ENTRA', papeleta: { ...ANA, entradaEl: '2027-04-10T16:00:00.000Z' } }))
     return Promise.resolve(json(ESTADO))
@@ -78,10 +80,23 @@ describe('PuertaTemploPage', () => {
     expect(localStorage.getItem('puerta.salida')).toBe('rosario-vespertino')
   })
 
-  it('sin salidas activas lo dice y lleva a crearlas', async () => {
+  it('sin salidas activas lo dice y, a Secretaría, la lleva a crearlas', async () => {
+    useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [], origen: 'cms' }, hermano: null })
     montar({ veredicto: 'FALSO', papeleta: null }, [])
     expect(await screen.findByText(/no hay salidas activas/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Procesión → Salidas' })).toHaveAttribute('href', '/cms/procesion/salidas')
+  })
+
+  it('un diputado de la puerta ve el aviso sin enlace', async () => {
+    useAuthStore.setState({ status: 'listo', cms: { id: 2, email: 'puerta@ejemplo.es', role: 'TESORERIA', perfiles: [], origen: 'cms' }, hermano: null })
+    montar({ veredicto: 'FALSO', papeleta: null }, [])
+    expect(await screen.findByText(/pídelas a secretaría/i)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Procesión → Salidas' })).not.toBeInTheDocument()
+  })
+
+  it('si no se pueden cargar las salidas, lo dice como error', async () => {
+    montar({ veredicto: 'FALSO', papeleta: null }, 'error')
+    expect(await screen.findByText('No se han podido cargar las salidas.')).toBeInTheDocument()
   })
 
   it('un código falso se dice en rojo', async () => {

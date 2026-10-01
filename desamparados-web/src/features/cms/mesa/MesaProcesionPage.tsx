@@ -6,10 +6,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined'
 import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { Helmet } from 'react-helmet-async'
-import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
 import { apuntados, colasDeLaMesa, fichaDeMesa, imprimirPapeleta, sinDevolver, type ZonaDeBusqueda } from '../../../lib/api/mesa'
+import AvisoSinSalidas from '../../procesion/AvisoSinSalidas'
 import SelectorSalida from '../../procesion/SelectorSalida'
 import { useSalidaElegida } from '../../procesion/useSalidas'
 import CabeceraSeccion from '../CabeceraSeccion'
@@ -74,7 +74,7 @@ export default function MesaProcesionPage() {
   const role = useAuthStore((s) => s.cms?.role ?? 'USER')
   const queryClient = useQueryClient()
   const { conectado } = useMesaEnVivo()
-  const { salidas, salida, elegir, cargando } = useSalidaElegida('mesa.salida')
+  const { salidas, salida, elegir, cargando, error: errorSalidas } = useSalidaElegida('mesa.salida')
   // Mientras llegan las salidas no hay ninguna: las consultas esperan (`enabled`).
   const slug = salida?.slug ?? ''
   const conRopa = salida?.conRopa ?? false
@@ -156,9 +156,7 @@ export default function MesaProcesionPage() {
     return (
       <>
         <CabeceraSeccion titulo="Mesa de la procesión" />
-        <Alert severity="info">
-          No hay salidas activas. Créalas en <Box component={Link} to="/cms/procesion/salidas" sx={{ color: 'inherit', fontWeight: 600 }}>Procesión → Salidas</Box>.
-        </Alert>
+        <AvisoSinSalidas error={errorSalidas} />
       </>
     )
   }

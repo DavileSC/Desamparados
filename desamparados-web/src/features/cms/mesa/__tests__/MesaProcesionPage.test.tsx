@@ -72,8 +72,8 @@ interface Opciones {
   prendas?: Record<string, PrendaDelRopero[]>
   /** Respuestas de los POST, por el final de la ruta; `'red'` simula que la WiFi se ha caído. */
   respuestas?: Record<string, unknown | 'red'>
-  /** Las salidas activas: las dos de siempre si no se dice otra cosa. */
-  salidas?: Salida[]
+  /** Las salidas activas: las dos de siempre si no se dice otra cosa; `'error'` simula que no se pueden cargar. */
+  salidas?: Salida[] | 'error'
 }
 
 function servidor(opciones: Opciones = {}) {
@@ -84,7 +84,7 @@ function servidor(opciones: Opciones = {}) {
     const metodo = init.method ?? 'GET'
     llamadas.push({ url, metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
     const ruta = url.split('?')[0]
-    if (esListaDeSalidas(url)) return Promise.resolve(json(opciones.salidas ?? salidasDePrueba))
+    if (esListaDeSalidas(url)) return Promise.resolve(opciones.salidas === 'error' ? json({ error: 'Fallo' }, 500) : json(opciones.salidas ?? salidasDePrueba))
     for (const [final, respuesta] of Object.entries(opciones.respuestas ?? {})) {
       if (metodo === 'POST' && ruta.endsWith(final)) {
         return respuesta === 'red' ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve(json(respuesta))
@@ -596,11 +596,26 @@ describe('MesaProcesionPage · Salidas', () => {
     expect(localStorage.getItem('mesa.salida')).toBe('rosario-vespertino')
   })
 
-  it('sin salidas activas lo dice y lleva a crearlas', async () => {
+  it('sin salidas activas lo dice y, a Secretaría, la lleva a crearlas', async () => {
+    como('SECRETARIA')
     servidor({ salidas: [] })
     renderWithProviders(<MesaProcesionPage />)
     expect(await screen.findByText(/no hay salidas activas/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Procesión → Salidas' })).toHaveAttribute('href', '/cms/procesion/salidas')
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+  })
+
+  it('quien no puede crear salidas ve el aviso sin enlace', async () => {
+    servidor({ salidas: [] })
+    renderWithProviders(<MesaProcesionPage />)
+    expect(await screen.findByText(/no hay salidas activas\. pídelas a secretaría\./i)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Procesión → Salidas' })).not.toBeInTheDocument()
+  })
+
+  it('si no se pueden cargar las salidas, lo dice como error', async () => {
+    servidor({ salidas: 'error' })
+    renderWithProviders(<MesaProcesionPage />)
+    expect(await screen.findByText('No se han podido cargar las salidas.')).toBeInTheDocument()
+    expect(screen.queryByText(/no hay salidas activas/i)).not.toBeInTheDocument()
   })
 })

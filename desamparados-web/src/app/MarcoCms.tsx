@@ -120,11 +120,11 @@ const CLAVE_GRUPOS = 'cms-menu-grupos'
 /**
  * Hasta este número de secciones el menú va abierto entero: plegar solo estorba.
  * Secretaría, con el boletín, los cabildos, la tienda, el cortejo en directo,
- * la puerta del templo, las cartas y la lotería, llega a trece contando el
- * Inicio; Administración y el Hermano Mayor pasan de dieciocho, que es para
+ * la puerta del templo, las cartas, la lotería y las salidas, llega a catorce
+ * contando el Inicio; Administración y el Hermano Mayor pasan de dieciocho, que es para
  * quien está pensado plegar.
  */
-const SECCIONES_SIN_PLEGAR = 13
+const SECCIONES_SIN_PLEGAR = 14
 
 function leerGrupos(): Partial<Record<Grupo, boolean>> {
   try {

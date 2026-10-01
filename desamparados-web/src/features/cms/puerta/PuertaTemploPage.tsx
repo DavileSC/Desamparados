@@ -3,12 +3,12 @@ import {
   Alert, Box, Button, CircularProgress, LinearProgress, List, ListItem, ListItemText, Paper, Stack, Tab, Tabs, TextField, Typography,
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
-import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import CabeceraSeccion from '../CabeceraSeccion'
 import LectorQr from './LectorQr'
 import { deshacerEntrada, entrarAMano, escanearPapeleta, estadoPuerta, type Lectura, type PapeletaEnPuerta, type Veredicto } from '../../../lib/api/puerta'
 import type { Salida } from '../../../lib/api/salidas'
+import AvisoSinSalidas from '../../procesion/AvisoSinSalidas'
 import SelectorSalida from '../../procesion/SelectorSalida'
 import { useSalidaElegida } from '../../procesion/useSalidas'
 import { site } from '../../../config/site'
@@ -60,7 +60,7 @@ function vibrar(v: Veredicto) {
  */
 export default function PuertaTemploPage() {
   const cliente = useQueryClient()
-  const { salidas, salida, elegir, cargando } = useSalidaElegida('puerta.salida')
+  const { salidas, salida, elegir, cargando, error: errorSalidas } = useSalidaElegida('puerta.salida')
   // Mientras llegan las salidas, la consulta espera (`enabled`).
   const slug = salida?.slug ?? ''
   const [camara, setCamara] = useState(false)
@@ -119,9 +119,7 @@ export default function PuertaTemploPage() {
   if (!salida) {
     return <>
       <CabeceraSeccion titulo="Puerta del templo" />
-      <Alert severity="info">
-        No hay salidas activas. Créalas en <Box component={Link} to="/cms/procesion/salidas" sx={{ color: 'inherit', fontWeight: 600 }}>Procesión → Salidas</Box>.
-      </Alert>
+      <AvisoSinSalidas error={errorSalidas} />
     </>
   }
 
