@@ -29,9 +29,16 @@ export interface Salida {
   indicaciones: string | null
   anio: number
   fechaDelAnio: string | null
+  /**
+   * El acto de la Agenda de una salida a mano, con su instante (ISO) y su
+   * lugar; `null` en una `PASCUA` o en una `MANUAL` sin fecha fijada todavía.
+   * `fechaDelAnio` solo da el día: esto es lo que deja rellenar la fecha, la
+   * hora y el lugar ya fijados al volver a abrir la ficha.
+   */
+  acto: { inicio: string; lugar: string | null } | null
 }
 
-export type DatosSalida = Omit<Salida, 'id' | 'eventoId' | 'plazoAbierto' | 'cortejo' | 'anio' | 'fechaDelAnio'>
+export type DatosSalida = Omit<Salida, 'id' | 'eventoId' | 'plazoAbierto' | 'cortejo' | 'anio' | 'fechaDelAnio' | 'acto'>
 
 export const CLAVE_SALIDAS = ['salidas'] as const
 

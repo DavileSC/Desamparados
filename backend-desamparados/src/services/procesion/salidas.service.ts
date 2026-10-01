@@ -142,6 +142,7 @@ export class SalidasService {
       horaSalida: s.horaSalida, lugar: s.lugar, eventoId: s.eventoId, plazoAbierto: s.plazoAbierto,
       puestos: s.puestos as unknown as PuestoDelCatalogo[], cortejo: s.cortejo as unknown as ConfiguracionCortejo | null,
       indicaciones: s.indicaciones, anio, fechaDelAnio: fechaDeSalida(regla, anio),
+      acto: s.acto ? { inicio: s.acto.startDate.toISOString(), lugar: s.acto.location } : null,
     };
   }
 

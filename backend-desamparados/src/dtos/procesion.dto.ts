@@ -65,4 +65,11 @@ export interface SalidaWeb {
   anio: number;
   /** Su fecha ese año (fechaDeSalida), AAAA-MM-DD; null si una MANUAL no la tiene todavía. */
   fechaDelAnio: string | null;
+  /**
+   * El acto de la Agenda de una salida a mano, con su día, su hora y su
+   * lugar; `null` en una `PASCUA` o en una `MANUAL` sin fecha fijada todavía.
+   * `fechaDelAnio` solo da el día: esto es lo que necesita el CMS para
+   * rellenar el formulario con lo que ya hay fijado.
+   */
+  acto: { inicio: string; lugar: string | null } | null;
 }

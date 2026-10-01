@@ -21,12 +21,12 @@ const PASION: Salida = {
   id: 1, slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', orden: 0, activa: true, conRopa: true,
   cobro: 'CUOTA', importeCuota: 0, fecha: 'PASCUA', diasDesdePascua: -8, horaSalida: '19:00', lugar: 'Templo parroquial',
   eventoId: null, plazoAbierto: true, puestos: [{ nombre: 'Nazareno', tunica: true, tocado: 'CAPIROTE', alturaHombro: false }],
-  cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: '2026-03-28',
+  cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: '2026-03-28', acto: null,
 }
 const ROSARIO: Salida = {
   id: 2, slug: 'rosario-vespertino', nombre: 'Rosario vespertino', orden: 1, activa: false, conRopa: false,
   cobro: 'DONATIVO', importeCuota: 0, fecha: 'MANUAL', diasDesdePascua: null, horaSalida: null, lugar: null,
-  eventoId: null, plazoAbierto: false, puestos: [], cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: null,
+  eventoId: null, plazoAbierto: false, puestos: [], cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: null, acto: null,
 }
 
 function montar(ruta = '/cms/procesion/salidas') {

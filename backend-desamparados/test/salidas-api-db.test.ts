@@ -182,6 +182,11 @@ test('fijar la fecha de una salida a mano crea su acto en la Agenda', async (t) 
       body: JSON.stringify({ inicio: '2099-10-17T18:00:00.000Z', lugar: 'Templo' }),
     });
     assert.equal(fechada.status, 200);
+    // La respuesta trae el acto ya enlazado: el CMS lo necesita para rellenar
+    // la fecha, la hora y el lugar ya fijados al volver a abrir la ficha.
+    const cuerpo = await fechada.json();
+    assert.equal(cuerpo.acto?.lugar, 'Templo');
+    assert.ok(cuerpo.acto?.inicio);
 
     const fila = await db.salida.findUniqueOrThrow({ where: { id } });
     assert.ok(fila.eventoId);

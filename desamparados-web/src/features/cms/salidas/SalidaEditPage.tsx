@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import {
-  Alert, Box, Button, CircularProgress, FormControlLabel, IconButton, MenuItem, Paper, Stack, Switch, TextField, Typography,
+  Alert, Box, Button, CircularProgress, FormControlLabel, IconButton, MenuItem, Paper, Radio, RadioGroup, Stack, Switch, TextField, Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
@@ -18,6 +18,14 @@ import { fechaConDia } from './formato'
 import { site } from '../../../config/site'
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
+
+/** Un instante ISO como «AAAA-MM-DDTHH:mm» en hora de Madrid, para un campo datetime-local. */
+function aCampoFechaMadrid(iso: string): string {
+  const d = new Date(iso)
+  const dia = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+  const hora = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d)
+  return `${dia}T${hora}`
+}
 
 function Seccion({ titulo, detalle, children }: { titulo: string; detalle?: string; children: ReactNode }) {
   return (
@@ -112,11 +120,10 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado }: SeccionProps) {
   const [diasDesdePascua, setDiasDesdePascua] = useState(salida.diasDesdePascua !== null ? String(salida.diasDesdePascua) : '')
   const [horaPascua, setHoraPascua] = useState(salida.horaSalida ?? '')
   const [lugarPascua, setLugarPascua] = useState(salida.lugar ?? '')
-  // A mano: la fecha de este año no trae la hora exacta del acto (solo el día,
-  // en fechaDelAnio), así que el campo empieza vacío y hay que volver a escribirla
-  // para moverla; no es una limitación de esta pantalla, es lo que da la API.
-  const [fechaHoraManual, setFechaHoraManual] = useState('')
-  const [lugarManual, setLugarManual] = useState('')
+  // A mano: se parte del acto ya fijado (si lo hay), pasado a hora de Madrid:
+  // es la hora del Grupo, y el navegador de quien edita puede estar en otra.
+  const [fechaHoraManual, setFechaHoraManual] = useState(salida.acto ? aCampoFechaMadrid(salida.acto.inicio) : '')
+  const [lugarManual, setLugarManual] = useState(salida.acto?.lugar ?? '')
   const [fechaDelAnio, setFechaDelAnio] = useState(salida.fechaDelAnio)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -143,8 +150,10 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado }: SeccionProps) {
         if (fechaHoraManual) {
           const fijada = await fijarFechaDeSalida(salida.id, { inicio: new Date(fechaHoraManual).toISOString(), lugar: lugarManual.trim() || null })
           setFechaDelAnio(fijada.fechaDelAnio)
-          setFechaHoraManual('')
-          setLugarManual('')
+          if (fijada.acto) {
+            setFechaHoraManual(aCampoFechaMadrid(fijada.acto.inicio))
+            setLugarManual(fijada.acto.lugar ?? '')
+          }
         }
       }
       onGuardado()
@@ -163,10 +172,11 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado }: SeccionProps) {
       </Typography>
 
       <Stack spacing={0.5}>
-        <TextField select label="Cuándo es" value={tipo} onChange={(e) => setTipo(e.target.value as DatosSalida['fecha'])} disabled={!puedeGuardar} sx={{ maxWidth: 280 }}>
-          <MenuItem value="PASCUA">Por la Pascua</MenuItem>
-          <MenuItem value="MANUAL">A mano</MenuItem>
-        </TextField>
+        <Typography variant="subtitle2">Cuándo es</Typography>
+        <RadioGroup row value={tipo} onChange={(e) => setTipo(e.target.value as DatosSalida['fecha'])}>
+          <FormControlLabel value="PASCUA" control={<Radio disabled={!puedeGuardar} />} label="Por la Pascua" />
+          <FormControlLabel value="MANUAL" control={<Radio disabled={!puedeGuardar} />} label="A mano" />
+        </RadioGroup>
       </Stack>
 
       {tipo === 'PASCUA' ? (
@@ -232,10 +242,13 @@ function SeccionCobro({ salida, puedeGuardar, onGuardado }: SeccionProps) {
   return (
     <Seccion titulo="Cobro">
       {error && <Alert severity="error">{error}</Alert>}
-      <TextField select label="Cómo se cobra" value={cobro} onChange={(e) => setCobro(e.target.value as DatosSalida['cobro'])} disabled={!puedeGuardar} sx={{ maxWidth: 280 }}>
-        <MenuItem value="CUOTA">Cuota</MenuItem>
-        <MenuItem value="DONATIVO">Donativo</MenuItem>
-      </TextField>
+      <Stack spacing={0.5}>
+        <Typography variant="subtitle2">Cómo se cobra</Typography>
+        <RadioGroup row value={cobro} onChange={(e) => setCobro(e.target.value as DatosSalida['cobro'])}>
+          <FormControlLabel value="CUOTA" control={<Radio disabled={!puedeGuardar} />} label="Cuota" />
+          <FormControlLabel value="DONATIVO" control={<Radio disabled={!puedeGuardar} />} label="Donativo" />
+        </RadioGroup>
+      </Stack>
       {cobro === 'CUOTA' && (
         <Stack spacing={0.5}>
           <TextField label="Importe de la cuota (€)" value={importe} onChange={(e) => setImporte(e.target.value)} error={!importeValido} disabled={!puedeGuardar} sx={{ maxWidth: 220 }} />
