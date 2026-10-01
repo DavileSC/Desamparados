@@ -14,18 +14,34 @@ const CORPORACION = /Grupo Parroquial|\b(?:el|del|al|nuestro|El|Del|Al|Nuestro)\
 // «del ${identidad.nombre}», «el ${identidad.tipo}»…: la Tarea 4 encontró este
 // fallo de concordancia (un artículo escrito a mano delante del nombre propio
 // de la corporación interpolado) porque no contiene la palabra «Grupo» y el
-// patrón de arriba no lo ve. En TypeScript interpola con `${…}`.
-const CORPORACION_INTERPOLADA_TS = /\b(?:el|del|al|El|Del|Al)\s+\$\{\s*identidad\.(?:nombre|tipo|tipoCorto)\b/;
+// patrón de arriba no lo ve. En TypeScript interpola con `${…}`. `identidad\w*`
+// y no solo `identidad`: la ronda 1 de arreglos encontró que `plantilla.ts` y
+// `componer.ts` reciben la identidad en un parámetro `identidadInstalacion`
+// (para poder probar con otra instalación), y el literal `identidad` a secas
+// no lo veía.
+const CORPORACION_INTERPOLADA_TS = /\b(?:el|del|al|El|Del|Al)\s+\$\{\s*identidad\w*\.(?:nombre|tipo|tipoCorto)\b/;
 // La misma frase en JSX interpola con `{…}` (sin el `$`) y lee `site.…` en la
-// web o `identidad.…` en el backend.
-const CORPORACION_INTERPOLADA_JSX = /\b(?:el|del|al|El|Del|Al)\s+\{\s*(?:site|identidad)\.(?:nombre|tipo|tipoCorto)\s*\}/;
-// Solo la salida, no cualquier «{…nombre…}»: un `nombre` suelto sin punto no
-// cae aquí (lo usan cosas ajenas a una salida, como el mes de PanelDelDia.tsx o
-// el parámetro genérico de deArticulo/aArticulo en el propio domain/articulos.ts),
-// y «del {hermano.nombre}» tampoco, porque se exige uno de los nombres con los
-// que el código llama a una instancia de Salida (ver los barridos de las
-// Tareas 4 y 5: `salida`, `s`, `otra`, `principal`, `sola`), no cualquier `X.nombre`.
-const SALIDA_EN_CODIGO = /\b(?:del|al|en el)\s+(?:\$\{|\{)\s*(?:salida|s|otra|principal|sola)\.nombre\b[^}]*\}/;
+// web o `identidad.…`/`identidadInstalacion.…` en el backend. `site` se deja
+// sin `\w*` a propósito: en la web hay identificadores que empiezan por
+// «site» sin ser la identidad (`site_name`, `sitemap`), y ninguno de ellos
+// lleva otro sufijo para este dato.
+const CORPORACION_INTERPOLADA_JSX = /\b(?:el|del|al|El|Del|Al)\s+\{\s*(?:site|identidad\w*)\.(?:nombre|tipo|tipoCorto)\s*\}/;
+// Solo la salida, no cualquier «{…nombre…}» suelto: un `nombre` sin punto
+// delante no cae aquí (lo usan cosas ajenas a una salida, como el mes de
+// PanelDelDia.tsx o el parámetro genérico de deArticulo/aArticulo en el propio
+// domain/articulos.ts), porque siempre exige un objeto.
+//
+// La ronda 1 de arreglos encontró que una lista cerrada de nombres de variable
+// (`salida`, `s`, `otra`…) deja sin protección a cualquier salida que se llame
+// de otra forma (`sal`, `item`, `datos.salida`, `otraSalida`, `salida?.nombre`
+// con encadenado opcional…): renombrar la variable bastaba para colarse. Por
+// eso ahora el patrón casa cualquier cadena de propiedades que acabe en
+// `.nombre` (con `?.` opcional). Lo que no sea una salida de verdad («del
+// {hermano.nombre}», por ejemplo) no se descarta acotando por nombre de
+// variable: se apunta en `EXCEPCIONES`, con fichero y motivo, igual que
+// cualquier otro hallazgo justificado (comprobado al ejecutar la prueba: hoy
+// no hay ninguno, ver el informe de esta ronda).
+const SALIDA_EN_CODIGO = /\b(?:del|al|en el)\s+(?:\$\{|\{)\s*[\w$]+(?:\??\.[\w$]+)*\??\.nombre\b[^}]*\}/;
 const SALIDA_EN_PLANTILLA = /\b(?:del|al|en el)\s+\{\{\s*salida\s*\}\}/;
 
 /** Lo que sí puede llevarlo escrito, con su porqué. Fichero relativo a la raíz y un trozo de la línea. */
