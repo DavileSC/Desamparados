@@ -15,6 +15,7 @@
  * correo del móvil pintan igual. El único <style> es el del ajuste al móvil,
  * que quien no lo entiende ignora sin romper nada.
  */
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { emailDeSecretaria, identidad, lineasDeSecretaria } from '../../domain/datos-entidad.js';
 
@@ -318,6 +319,17 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
 }
 
 /** Las imágenes que usa un correo ya maquetado, para adjuntarlas en línea. */
+/**
+ * El correo para verlo en el navegador (la vista previa de Emails): las
+ * imágenes `cid:` solo las entiende un lector de correo, así que aquí van
+ * dentro del HTML. Se leen una vez y se guardan.
+ */
+let enLinea: [string, string][] | null = null;
+export function conImagenesEnLinea(html: string): string {
+  enLinea ??= Object.values(IMAGENES).map((i) => [`cid:${i.cid}`, `data:${i.tipo};base64,${readFileSync(i.archivo).toString('base64')}`]);
+  return enLinea.reduce((h, [cid, datos]) => h.split(cid).join(datos), html);
+}
+
 export function imagenesDe(html: string) {
   return Object.entries(IMAGENES)
     .filter(([, imagen]) => html.includes(`cid:${imagen.cid}`))

@@ -16,6 +16,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditor
 import { PagoEnLineaService, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { enviarCorreo } from './correos/envio.js';
+import { PlantillasCorreoService } from './plantillas-correo.service.js';
 import { datos, esc, firma, maquetar, parrafo, urlDeLaWeb } from './correos/plantilla.js';
 import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
 import { aCentimos } from '../domain/sepa.js';
@@ -56,24 +57,20 @@ async function campanaCompleta(id: number, conDatosPrivados: boolean) {
   };
 }
 
+/** El correo de las gracias, de su plantilla (Emails → «Gracias por apadrinar»). */
 function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; dedicatoria: string | null; nif: string | null; pieza: { nombre: string; campana: { titulo: string } } }) {
-  return maquetar({
-    titulo: 'Gracias por apadrinar',
-    antetitulo: 'Apadrinamientos del Grupo Parroquial',
-    resumen: `Has apadrinado ${a.pieza.nombre}.`,
-    contenido: [
-      parrafo(`Hola, ${esc(a.nombre)}:`),
-      parrafo(`Hemos recibido tu donativo. Gracias de corazón: ${esc(a.pieza.nombre)} ya es tuya en «${esc(a.pieza.campana.titulo)}».`),
-      datos([
+  return PlantillasCorreoService.correo('apadrinamiento', {
+    campos: { nombre: a.nombre, pieza: a.pieza.nombre, campana: a.pieza.campana.titulo },
+    bloques: {
+      datos: datos([
         ['Pieza', esc(a.pieza.nombre)],
         ['Donativo', esc(euros(aCentimos(a.importe)))],
         ...(a.dedicatoria ? [['Dedicatoria', esc(a.dedicatoria)] as [string, string]] : []),
       ]),
-      parrafo(a.nif
+      certificado: parrafo(a.nif
         ? 'Como pediste, te mandaremos el certificado para la renta cuando acabe el año.'
         : 'Si necesitas el certificado del donativo para la declaración de la renta, pídelo en Secretaría respondiendo a este correo.'),
-      firma(null, 'La Junta de Gobierno'),
-    ].join(''),
+    },
   });
 }
 
@@ -99,7 +96,7 @@ async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta
     return pagado;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   await AuditoriaService.log(ACCIONES_AUDITORIA.APADRINAMIENTO_PAGADO, meta, 'apadrinamiento', apadrinamientoId, { despues: { piezaId: hecho.piezaId, importe: hecho.importe.toString() } });
-  void enviarCorreo(hecho.email, 'Gracias por apadrinar', correoDeApadrinamiento(hecho));
+  void correoDeApadrinamiento(hecho).then(({ asunto, html }) => enviarCorreo(hecho.email, asunto, html)).catch(console.error);
 }
 
 registrarOrigenDePago(OrigenPago.APADRINAMIENTO, aplicarPago, async (id) => (await db.apadrinamiento.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);

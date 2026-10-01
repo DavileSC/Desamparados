@@ -52,6 +52,8 @@ const SalidaEditPage = lazy(() => import('../features/cms/salidas/SalidaEditPage
 const MesaProcesionPage = lazy(() => import('../features/cms/mesa/MesaProcesionPage'))
 const CortejoDirectoPage = lazy(() => import('../features/cms/CortejoDirectoPage'))
 const PuertaTemploPage = lazy(() => import('../features/cms/puerta/PuertaTemploPage'))
+const EmailsPage = lazy(() => import('../features/cms/emails/EmailsPage'))
+const EmailEditPage = lazy(() => import('../features/cms/emails/EmailEditPage'))
 const HermanoEditPage = lazy(() => import('../features/cms/HermanoEditPage'))
 const NoticiaEditPage = lazy(() => import('../features/cms/NoticiaEditPage'))
 const ComunicadosAdminPage = lazy(() => import('../features/cms/ComunicadosAdminPage'))
@@ -245,6 +247,8 @@ const router = createBrowserRouter([
           // Historia se edita ya como las demás páginas; la dirección vieja sigue llevando a ella.
           { path: 'historia', element: <Navigate to="/cms/paginas/historia" replace /> },
           { path: 'noticias', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiasAdminPage)}</ExigeRol> },
+          { path: 'emails', element: <ExigeRol roles={rolesPorRutaCms.emails}>{withSuspense(EmailsPage)}</ExigeRol> },
+          { path: 'emails/:id', element: <ExigeRol roles={rolesPorRutaCms['emails/:id']}>{withSuspense(EmailEditPage)}</ExigeRol> },
           { path: 'comunicados', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadosAdminPage)}</ExigeRol> },
           { path: 'comunicados/:id', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadoEditPage)}</ExigeRol> },
           { path: 'cabildos', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{withSuspense(CabildosAdminPage)}</ExigeRol> },

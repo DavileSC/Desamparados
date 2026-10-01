@@ -115,8 +115,12 @@ function conCuentaDeVerdad() {
   const transporte = transporteFalso();
   ponerTransporte(transporte);
   ponerCuentaDeContacto(undefined);
+  ultimoTransporte = transporte;
   return transporte;
 }
+
+/** El transporte de la prueba en marcha: `dejarSalirLosCorreos` mira lo que va llegando. */
+let ultimoTransporte: ReturnType<typeof transporteFalso> | undefined;
 
 describe('los correos no inventan datos de la entidad', () => {
   test('el acuse de registro no lleva la dirección, el horario ni el escudo de relleno', async () => {
@@ -169,8 +173,23 @@ before(async () => {
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), limite]);
 });
 
-/** Los envíos van sin `await` a propósito (no pueden frenar la operación). */
-const dejarSalirLosCorreos = () => new Promise((resolve) => setImmediate(resolve));
+/**
+ * Los envíos van sin `await` a propósito (no pueden frenar la operación), y
+ * antes de salir leen de la base la plantilla en uso: se espera hasta que
+ * dejen de llegar correos, con un tope para no colgar la suite.
+ */
+async function dejarSalirLosCorreos() {
+  let antes = ultimoTransporte?.enviados.length ?? 0;
+  let quietos = 0;
+  // Hasta que haya llegado alguno y lleven 200 ms sin llegar más; como mucho, 3 s.
+  for (let i = 0; i < 60; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const ahora = ultimoTransporte?.enviados.length ?? 0;
+    quietos = ahora === antes ? quietos + 1 : 0;
+    antes = ahora;
+    if (ahora > 0 && quietos >= 4) return;
+  }
+}
 
 describe('aviso a Secretaría de una solicitud nueva', () => {
   test('al registrarse sale el acuse al solicitante Y el aviso al buzón de Secretaría', async (t) => {
