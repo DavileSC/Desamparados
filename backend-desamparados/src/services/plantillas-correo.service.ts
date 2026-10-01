@@ -11,6 +11,7 @@ import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { comunes, componer, usoObligado, type Relleno } from './correos/componer.js';
 import { conImagenesEnLinea, recuadro } from './correos/plantilla.js';
+import type { Identidad } from '../domain/datos-entidad.js';
 import { enviarCorreo } from './correos/envio.js';
 import {
   CAMPOS_COMUNES, USOS, problemasDePlantilla, usoDe, type ClaveDeUso, type TextoDePlantilla, type UsoDeCorreo,
@@ -45,14 +46,20 @@ const limpio = (d: DatosPlantilla) => ({
 });
 
 /**
- * Para la vista previa: cada campo con su ejemplo y cada bloque fijo como un
- * recuadro que dice qué irá ahí. No se inventa una papeleta de ejemplo: el
- * bloque lo pinta el sistema igual que siempre.
+ * Para la vista previa: cada campo del uso con su ejemplo y cada bloque fijo
+ * como un recuadro que dice qué irá ahí. No se inventa una papeleta de
+ * ejemplo: el bloque lo pinta el sistema igual que siempre.
+ *
+ * Los campos comunes no llevan ejemplo: van con los valores de verdad de la
+ * instalación (`comunes()`, el mismo relleno que el correo real). Con el
+ * ejemplo fijo del catálogo, otra corporación veía «al Grupo Parroquial» en
+ * su propia vista previa, y {{grupo}} y {{titular}}, sin ejemplo, salían vacíos.
  */
-function rellenoDeEjemplo(uso: UsoDeCorreo): Relleno {
+function rellenoDeEjemplo(uso: UsoDeCorreo, identidadInstalacion?: Identidad): Relleno {
   return {
-    campos: Object.fromEntries([...CAMPOS_COMUNES, ...uso.campos].map((c) => [c.clave, c.ejemplo ?? ''])),
+    campos: { ...comunes(identidadInstalacion), ...Object.fromEntries(uso.campos.map((c) => [c.clave, c.ejemplo ?? ''])) },
     bloques: Object.fromEntries(uso.bloques.map((b) => [b.clave, recuadro(`[[${b.clave}]]`, `Aquí irá: ${b.ayuda.charAt(0).toLowerCase()}${b.ayuda.slice(1)}.`)])),
+    identidad: identidadInstalacion,
   };
 }
 
@@ -142,10 +149,14 @@ export class PlantillasCorreoService {
     return PlantillasCorreoService.listar();
   }
 
-  /** Cómo quedaría, con datos de ejemplo, y lo que impediría guardarla. */
-  static vistaPrevia(uso: string, texto: TextoDePlantilla) {
+  /**
+   * Cómo quedaría, con datos de ejemplo, y lo que impediría guardarla. La
+   * identidad solo la pasan las pruebas, como en `componer`: producción usa
+   * la de esta instalación.
+   */
+  static vistaPrevia(uso: string, texto: TextoDePlantilla, identidadInstalacion?: Identidad) {
     const u = usoValido(uso);
-    const { asunto, html } = componer(u, texto, rellenoDeEjemplo(u));
+    const { asunto, html } = componer(u, texto, rellenoDeEjemplo(u, identidadInstalacion));
     return { asunto, html: conImagenesEnLinea(html), problemas: problemasDePlantilla(u, texto) };
   }
 

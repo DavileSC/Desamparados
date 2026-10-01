@@ -337,12 +337,12 @@
         {
           "clave": "de_la_salida",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
-          "ejemplo": "del Sábado de Pasión"
+          "ejemplo": "del Rosario vespertino"
         },
         {
           "clave": "la_salida",
           "ayuda": "La salida con su artículo",
-          "ejemplo": "el Sábado de Pasión"
+          "ejemplo": "el Rosario vespertino"
         }
       ],
       "bloques": [
@@ -425,12 +425,12 @@
         {
           "clave": "de_la_salida",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
-          "ejemplo": "del Sábado de Pasión"
+          "ejemplo": "del Rosario vespertino"
         },
         {
           "clave": "la_salida",
           "ayuda": "La salida con su artículo",
-          "ejemplo": "el Sábado de Pasión"
+          "ejemplo": "el Rosario vespertino"
         }
       ],
       "bloques": [
@@ -490,12 +490,12 @@
         {
           "clave": "de_la_salida",
           "ayuda": "«de» y la salida con su artículo, contraído si toca",
-          "ejemplo": "del Sábado de Pasión"
+          "ejemplo": "del Rosario vespertino"
         },
         {
           "clave": "la_salida",
           "ayuda": "La salida con su artículo",
-          "ejemplo": "el Sábado de Pasión"
+          "ejemplo": "el Rosario vespertino"
         }
       ],
       "bloques": [

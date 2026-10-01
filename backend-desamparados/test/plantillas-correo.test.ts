@@ -6,6 +6,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { USOS, leerCuerpo, problemasDePlantilla, resumenDe, usoDe } from '../src/domain/plantillas-correo.js';
 import { componer } from '../src/services/correos/componer.js';
+import { PlantillasCorreoService } from '../src/services/plantillas-correo.service.js';
+import { identidad, type Identidad } from '../src/domain/datos-entidad.js';
 
 test('cada texto original del catálogo es una plantilla válida de su uso', () => {
   const claves = USOS.map((u) => u.clave);
@@ -61,4 +63,38 @@ test('componer: campos rellenos y escapados, bloques en su sitio, firma del carg
 
 test('el resumen del buzón es el primer párrafo que no es el saludo', () => {
   assert.equal(resumenDe('{{saludo}}\n\nYa está **abierta** la solicitud de {{anio}}.', { saludo: 'Estimado Juan:', anio: '2027' }), 'Ya está abierta la solicitud de 2027.');
+});
+
+// La vista previa la miran quienes escriben la plantilla: si los campos de la
+// corporación salieran del `ejemplo` fijo del catálogo, otra instalación vería
+// «al Grupo Parroquial» en su propio correo, y {{grupo}} y {{titular}}, que no
+// tienen ejemplo, saldrían vacíos.
+test('la vista previa rellena los campos de la corporación con la identidad de la instalación', () => {
+  const texto = { asunto: '{{grupo}}', titulo: 'Bienvenido {{a_la_corporacion}}', cuerpo: 'Hola, {{nombre}}.', despedida: 'Que {{titular}} le guarde.' };
+  const previa = PlantillasCorreoService.vistaPrevia('alta_aprobada', texto);
+  assert.equal(previa.asunto, identidad.nombre);
+  assert.match(previa.html, /Bienvenido al Grupo Parroquial/);
+  assert.ok(previa.html.includes(`Que ${identidad.titular} le guarde.`), 'la titular no puede salir vacía');
+  assert.match(previa.html, /Hola, Juan\./, 'los campos propios del uso siguen con su ejemplo');
+
+  const hermandad: Identidad = { ...identidad, nombre: 'Hermandad de la Vera Cruz', tipo: 'Hermandad', tipoCorto: 'Hermandad', articulo: 'la', titular: 'Nuestro Padre Jesús de la Vera Cruz', descripcion: 'Hermandad de ejemplo, para las pruebas.' };
+  const otra = PlantillasCorreoService.vistaPrevia('alta_aprobada', texto, hermandad);
+  assert.equal(otra.asunto, 'Hermandad de la Vera Cruz');
+  assert.match(otra.html, /Bienvenido a la Hermandad/);
+  assert.ok(otra.html.includes('Que Nuestro Padre Jesús de la Vera Cruz le guarde.'));
+  assert.doesNotMatch(otra.html, /Grupo/);
+});
+
+// Una vista previa que titula «Rosario vespertino» y luego habla «del Sábado
+// de Pasión» hace dudar a quien la revisa de si el campo está bien puesto.
+test('los ejemplos de los campos de la salida hablan de la misma salida', () => {
+  for (const uso of USOS) {
+    const ejemplo = (clave: string) => uso.campos.find((c) => c.clave === clave)?.ejemplo;
+    const salida = ejemplo('salida');
+    if (!salida) continue;
+    for (const clave of ['de_la_salida', 'la_salida']) {
+      const valor = ejemplo(clave);
+      if (valor !== undefined) assert.ok(valor.endsWith(` ${salida}`), `${uso.clave}: ${clave} «${valor}» no es «${salida}»`);
+    }
+  }
 });
