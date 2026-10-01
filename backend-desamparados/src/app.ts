@@ -10,6 +10,7 @@ import { reciboRoutes } from './routes/recibo.routes.js';
 import { comunicadosRoutes } from './routes/comunicados.routes.js';
 import { cabildosRoutes } from './routes/cabildos.routes.js';
 import { tiendaRoutes } from './routes/tienda.routes.js';
+import { plantillasCorreoRoutes } from './routes/plantillas-correo.routes.js';
 import { loteriaRoutes } from './routes/loteria.routes.js';
 import { apadrinamientosRoutes } from './routes/apadrinamientos.routes.js';
 import { cortejoDirectoRoutes } from './routes/cortejo-directo.routes.js';
@@ -168,6 +169,7 @@ app.use('/api/datos', datosRoutes);      // Datos e informes de la junta, y la M
 app.use('/api/comunicados', comunicadosRoutes); // Boletín y avisos por correo
 app.use('/api/cabildos', cabildosRoutes); // Cabildos y libro de actas
 app.use('/api/tienda', tiendaRoutes); // Tienda en línea: el catálogo y la compra, sin sesión
+app.use('/api/plantillas-correo', plantillasCorreoRoutes); // Emails: las plantillas de los correos
 app.use('/api/loteria', loteriaRoutes); // Lotería: sorteos, talonarios y su contabilidad
 app.use('/api/apadrinamientos', apadrinamientosRoutes); // Apadrinar piezas sobre una foto, sin sesión
 app.use('/api/cortejo-directo', cortejoDirectoRoutes); // Dónde va el cortejo en la calle

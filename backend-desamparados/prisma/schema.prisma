@@ -1234,6 +1234,26 @@ model PedidoTienda {
   @@index([estado, createdAt])
 }
 
+/// Una plantilla de correo (sección Emails del CMS). Cada una es para un uso
+/// (la bienvenida, la papeleta, el pésame… ver shared/usos-de-correo.json) y
+/// de cada uso hay como mucho una en uso; sin ninguna, sale el texto original.
+model PlantillaCorreo {
+  id          Int      @id @default(autoincrement())
+  nombre      String   @db.VarChar(120)
+  uso         String   @db.VarChar(40)
+  asunto      String   @db.VarChar(200)
+  titulo      String   @db.VarChar(200)
+  cuerpo      String   @db.Text
+  despedida   String   @default("") @db.VarChar(300)
+  enUso       Boolean  @default(false)
+  /// Quién la cambió por última vez, copiado: sobrevive a la cuenta.
+  autorNombre String?  @db.VarChar(120)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([uso, enUso])
+}
+
 /// Una caja de la tienda, del abrir al cerrar: lo que se vende en persona en
 /// Secretaría o en la casa del Grupo. Solo hay una abierta a la vez; al
 /// cerrarla se cuenta el efectivo y queda escrito lo que debía haber.

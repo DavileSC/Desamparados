@@ -33,22 +33,13 @@ import {
 import type { DatosDelDonativo } from './pagos/donativo.service.js';
 import { certificadosEnPdf } from './modelo-182-pdf.js';
 import { enviarCorreo } from './correos/envio.js';
-import { esc, firma, maquetar, parrafo } from './correos/plantilla.js';
+import { PlantillasCorreoService } from './plantillas-correo.service.js';
 
 const eurosTexto = (c: number) => `${(c / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
+/** El correo del certificado, de su plantilla (Emails → «Certificado de donativos»). */
 function correoDelCertificado(nombre: string, ejercicio: number, centimos: number) {
-  return maquetar({
-    titulo: 'Tu certificado de donativos',
-    antetitulo: `Ejercicio ${ejercicio}`,
-    resumen: `El certificado de lo que diste al Grupo en ${ejercicio}, para la renta.`,
-    contenido: [
-      parrafo(`Hola, ${esc(nombre)}:`),
-      parrafo(`Te mandamos el certificado de tus donativos de ${ejercicio} (${esc(eurosTexto(centimos))}). Va también en la declaración que el Grupo presenta a Hacienda (el Modelo 182), así que te saldrá en el borrador de la renta; guárdalo por si te lo piden.`),
-      parrafo('Gracias por tu generosidad.'),
-      firma(null, 'Tesorería'),
-    ].join(''),
-  });
+  return PlantillasCorreoService.correo('certificado_donativos', { campos: { nombre, ejercicio, importe: eurosTexto(centimos) } });
 }
 
 const CLAVE = 'modelo_182';
@@ -310,7 +301,8 @@ export class Modelo182Service {
     let enviados = 0;
     for (const d of conCorreo) {
       const pdf = await certificadosEnPdf(r.configuracion, ejercicio, [d]);
-      const ok = await enviarCorreo(d.email!, `Tu certificado de donativos de ${ejercicio}`, correoDelCertificado(d.nombre, ejercicio, d.centimos), undefined, null,
+      const correo = await correoDelCertificado(d.nombre, ejercicio, d.centimos);
+      const ok = await enviarCorreo(d.email!, correo.asunto, correo.html, undefined, null,
         [{ filename: `certificado-donativos-${ejercicio}.pdf`, content: pdf, contentType: 'application/pdf' }]);
       if (ok) enviados += 1;
     }

@@ -1,0 +1,778 @@
+{
+  "_comentario": [
+    "Los usos de las plantillas de correo (sección Emails del CMS): qué correo es cada uno, qué campos y bloques admite y su texto original.",
+    "El texto original es el que sale si no hay ninguna plantilla en uso para ese correo. Se edita aquí para otra instalación.",
+    "Formato del cuerpo: párrafos separados por una línea en blanco; **negrita**; líneas con «- » son una lista; líneas con «> » son un recuadro (si la primera va entera en negrita, es su título); un bloque fijo va solo en su línea, [[asi]]; los campos van entre llaves, {{asi}}.",
+    "Campos de todos los correos: {{grupo}} (el nombre del Grupo) y {{titular}}. Cada uso añade los suyos."
+  ],
+  "comunes": [
+    {
+      "clave": "grupo",
+      "ayuda": "El nombre del Grupo Parroquial"
+    },
+    {
+      "clave": "titular",
+      "ayuda": "La advocación titular"
+    }
+  ],
+  "usos": [
+    {
+      "clave": "contrasena_recuperar",
+      "grupo": "Cuenta",
+      "nombre": "Recuperar la contraseña",
+      "descripcion": "Cuando alguien pulsa «He olvidado mi contraseña».",
+      "antetitulo": "Área de hermanos",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "plazo",
+          "ayuda": "Cuánto vale el enlace",
+          "ejemplo": "una hora"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "enlace",
+          "ayuda": "El botón con el enlace para elegir contraseña",
+          "obligatorio": true
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Restablecer su contraseña del área de hermanos",
+        "titulo": "Restablecer su contraseña",
+        "cuerpo": "{{saludo}}\n\nHemos recibido una petición para restablecer la contraseña de su cuenta en el área de hermanos. Para elegir una nueva, pulse el botón:\n\n[[enlace]]\n\nEl enlace caduca en {{plazo}} y solo puede usarse una vez.\n\n> Si no ha pedido este cambio, puede ignorar este correo: su contraseña actual sigue funcionando y nadie más ha visto este enlace.",
+        "despedida": ""
+      }
+    },
+    {
+      "clave": "contrasena_cuenta_nueva",
+      "grupo": "Cuenta",
+      "nombre": "Cuenta propia de un hermano",
+      "descripcion": "Cuando Secretaría separa a un hermano de la cuenta de su familia y le crea la suya.",
+      "antetitulo": "Área de hermanos",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "plazo",
+          "ayuda": "Cuánto vale el enlace",
+          "ejemplo": "3 días"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "enlace",
+          "ayuda": "El botón con el enlace para crear la contraseña",
+          "obligatorio": true
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Su cuenta en el área de hermanos",
+        "titulo": "Su cuenta en el área de hermanos",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría le ha creado una **cuenta propia en el área de hermanos**, separada de la de su familia. Para entrar por primera vez, elija su contraseña:\n\n[[enlace]]\n\nEl enlace caduca en {{plazo}} y solo puede usarse una vez. Si caduca, pida uno nuevo desde «He olvidado mi contraseña».",
+        "despedida": ""
+      }
+    },
+    {
+      "clave": "solicitud_recibida",
+      "grupo": "Altas y bajas",
+      "nombre": "Solicitud de ingreso recibida",
+      "descripcion": "Al que acaba de pedir el ingreso por la web.",
+      "antetitulo": "Secretaría",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "documentos",
+          "ayuda": "Lo que tiene que llevar a Secretaría (el certificado de bautismo, solo si no lo subió)"
+        },
+        {
+          "clave": "secretaria",
+          "ayuda": "Dirección, horario y contacto de Secretaría"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Hemos recibido su solicitud de ingreso",
+        "titulo": "Hemos recibido su solicitud",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría acusa recibo de su **solicitud de ingreso** en nuestro Grupo Parroquial. Le agradecemos de corazón que haya dado este paso.\n\n[[documentos]]\n\n[[secretaria]]\n\nMientras tanto, su solicitud queda pendiente. Le escribiremos de nuevo en cuanto la Secretaría la haya revisado.",
+        "despedida": "Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "alta_aprobada",
+      "grupo": "Altas y bajas",
+      "nombre": "Bienvenida a los nuevos hermanos",
+      "descripcion": "Cuando Secretaría aprueba la solicitud y el hermano entra en el censo con su número.",
+      "antetitulo": "Secretaría",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "bienvenido",
+          "ayuda": "«Bienvenido», «Bienvenida» o «Bienvenidos»",
+          "ejemplo": "Bienvenido"
+        },
+        {
+          "clave": "forma_parte",
+          "ayuda": "«forma parte» o «forman parte», si entran varios",
+          "ejemplo": "forma parte"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "censo",
+          "ayuda": "La tabla con el nombre y el número de hermano de cada uno",
+          "obligatorio": true
+        },
+        {
+          "clave": "boton",
+          "ayuda": "El botón para entrar en el área de hermanos"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Su solicitud de ingreso ha sido aprobada",
+        "titulo": "{{bienvenido}} al Grupo Parroquial",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría ha **aprobado su solicitud de ingreso**. Desde hoy {{forma_parte}} del censo de hermanos del Grupo Parroquial:\n\n[[censo]]\n\nConserve el número de hermano: es el que identifica a cada uno en el censo y se pide en Secretaría.\n\nYa puede entrar en el área de hermanos para consultar sus datos, sus recibos y, llegado el momento, pedir su papeleta de sitio.\n\n[[boton]]",
+        "despedida": "Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "solicitud_rechazada",
+      "grupo": "Altas y bajas",
+      "nombre": "Solicitud de ingreso rechazada",
+      "descripcion": "Cuando Secretaría no da curso a una solicitud (sus datos se borran).",
+      "antetitulo": "Secretaría",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "secretaria",
+          "ayuda": "Dirección, horario y contacto de Secretaría"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Resolución de su solicitud de ingreso",
+        "titulo": "Resolución de su solicitud",
+        "cuerpo": "{{saludo}}\n\nLe comunicamos que la Secretaría **no ha podido dar curso a su solicitud de ingreso**, y que sus datos han sido eliminados de nuestros registros.\n\nSi cree que se trata de un error, o desea volver a presentarla, responda a este correo y le atenderemos con mucho gusto.\n\n[[secretaria]]",
+        "despedida": "Le agradecemos el interés mostrado por nuestro Grupo Parroquial."
+      }
+    },
+    {
+      "clave": "baja",
+      "grupo": "Altas y bajas",
+      "nombre": "Baja en el censo",
+      "descripcion": "Cuando se tramita la baja de un hermano (salvo por impago).",
+      "antetitulo": "Secretaría",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "secretaria",
+          "ayuda": "Dirección, horario y contacto de Secretaría"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Baja en el censo de hermanos",
+        "titulo": "Baja en el censo de hermanos",
+        "cuerpo": "{{saludo}}\n\nLe comunicamos que se ha tramitado su **baja en el censo de hermanos** del Grupo Parroquial.\n\nSi esta baja no responde a su voluntad, o desea volver más adelante, responda a este correo y la Secretaría le atenderá.\n\n[[secretaria]]",
+        "despedida": "Le agradecemos el tiempo que ha formado parte de esta casa, que sigue abierta para cuando quiera volver. Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "baja_impago",
+      "grupo": "Altas y bajas",
+      "nombre": "Baja por impago",
+      "descripcion": "Cuando la baja es porque no constan las cuotas pagadas.",
+      "antetitulo": "Secretaría",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "secretaria",
+          "ayuda": "Dirección, horario y contacto de Secretaría"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Baja en el censo de hermanos",
+        "titulo": "Baja en el censo de hermanos",
+        "cuerpo": "{{saludo}}\n\nLe comunicamos que se ha tramitado su **baja en el censo de hermanos** del Grupo Parroquial, al no constar el pago de sus cuotas.\n\n> **¿Es un error?**\n> Si ya las ha pagado, o desea ponerse al corriente y reincorporarse, responda a este correo y la Secretaría lo revisará con usted.\n\n[[secretaria]]",
+        "despedida": "Quedamos a su disposición."
+      }
+    },
+    {
+      "clave": "apertura_pasion",
+      "grupo": "Procesión",
+      "nombre": "Abiertas las papeletas de la Estación de Penitencia",
+      "descripcion": "A cada cuenta, cuando se abre el plazo para pedir la papeleta del Sábado de Pasión.",
+      "antetitulo": "Estación de Penitencia",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "anio",
+          "ayuda": "El año de la salida",
+          "ejemplo": "2027"
+        },
+        {
+          "clave": "primer_dia",
+          "ayuda": "El primer día de reparto",
+          "ejemplo": "lunes, 15 de marzo"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "dias",
+          "ayuda": "Los días de reparto, en un recuadro"
+        },
+        {
+          "clave": "fichas",
+          "ayuda": "Para quién de la cuenta puede pedirla"
+        },
+        {
+          "clave": "boton",
+          "ayuda": "El botón para pedir la papeleta"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Abierta la solicitud de papeletas de sitio {{anio}}",
+        "titulo": "Papeletas de sitio {{anio}}",
+        "cuerpo": "{{saludo}}\n\nYa está **abierta la solicitud de papeletas de sitio** para la Estación de Penitencia de {{anio}}. Puede pedirla desde el área de hermanos y elegir el día en que pasará a recogerla.\n\n[[dias]]\n\n[[fichas]]\n\nPara recoger la papeleta hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto. Recuerde llevar el DNI.\n\n[[boton]]",
+        "despedida": "Esperamos contar con su presencia acompañando a {{titular}}."
+      }
+    },
+    {
+      "clave": "apertura_rosario",
+      "grupo": "Procesión",
+      "nombre": "Abierta la inscripción del Rosario vespertino",
+      "descripcion": "A cada cuenta, cuando se abre la inscripción del Rosario de octubre.",
+      "antetitulo": "Rosario vespertino",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "anio",
+          "ayuda": "El año de la salida",
+          "ejemplo": "2027"
+        },
+        {
+          "clave": "primer_dia",
+          "ayuda": "El primer día de reparto",
+          "ejemplo": "lunes, 5 de octubre"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "dias",
+          "ayuda": "Los días de reparto, en un recuadro"
+        },
+        {
+          "clave": "fichas",
+          "ayuda": "Para quién de la cuenta puede pedirla"
+        },
+        {
+          "clave": "boton",
+          "ayuda": "El botón para apuntarse"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Abierta la inscripción del Rosario vespertino {{anio}}",
+        "titulo": "Rosario vespertino {{anio}}",
+        "cuerpo": "{{saludo}}\n\nYa está **abierta la inscripción para el Rosario vespertino** de {{anio}}. Puede apuntarse desde el área de hermanos, pedir el puesto en que le gustaría ir y elegir el día en que pasará a recoger su papeleta.\n\n[[dias]]\n\n[[fichas]]\n\nSe va en traje. Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto.\n\n[[boton]]",
+        "despedida": "Esperamos contar con su presencia acompañando a {{titular}}."
+      }
+    },
+    {
+      "clave": "papeleta_pasion",
+      "grupo": "Procesión",
+      "nombre": "Papeleta de sitio (Estación de Penitencia)",
+      "descripcion": "Al recoger la papeleta del Sábado de Pasión, con el PDF y su QR adjuntos.",
+      "antetitulo": "Estación de Penitencia",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "anio",
+          "ayuda": "El año de la salida",
+          "ejemplo": "2027"
+        },
+        {
+          "clave": "fecha",
+          "ayuda": "El día de la salida",
+          "ejemplo": "sábado, 20 de marzo"
+        },
+        {
+          "clave": "hora",
+          "ayuda": "La hora de entrada",
+          "ejemplo": "17:30"
+        },
+        {
+          "clave": "puesto",
+          "ayuda": "El puesto en el cortejo",
+          "ejemplo": "Nazareno de cirio"
+        },
+        {
+          "clave": "nombre_completo",
+          "ayuda": "Nombre y apellidos",
+          "ejemplo": "Juan Pérez Ruiz"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "papeleta",
+          "ayuda": "La papeleta: puesto, tramo, día, hora, acceso y ropa",
+          "obligatorio": true
+        },
+        {
+          "clave": "adjunto",
+          "ayuda": "Dónde está la papeleta con el QR (adjunta o en el área de hermanos)"
+        },
+        {
+          "clave": "normativa",
+          "ayuda": "El enlace a la normativa, si está configurado"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Papeleta de sitio {{anio}}: {{nombre_completo}}",
+        "titulo": "Su papeleta de sitio {{anio}}",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría certifica que está al día con el Grupo Parroquial y le autoriza a realizar la Estación de Penitencia el próximo **{{fecha}}**. Estos son los datos de su sitio:\n\n[[papeleta]]\n\n> **Antes de salir**\n> Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla del Grupo Parroquial y calzado oscuro. Guarde silencio durante la formación.\n\n[[adjunto]]\n\n[[normativa]]",
+        "despedida": "Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "papeleta_rosario",
+      "grupo": "Procesión",
+      "nombre": "Papeleta del Rosario vespertino",
+      "descripcion": "Al confirmar el puesto en el Rosario de octubre.",
+      "antetitulo": "Rosario vespertino",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "anio",
+          "ayuda": "El año de la salida",
+          "ejemplo": "2027"
+        },
+        {
+          "clave": "fecha",
+          "ayuda": "El día del Rosario",
+          "ejemplo": "sábado, 17 de octubre"
+        },
+        {
+          "clave": "hora",
+          "ayuda": "La hora",
+          "ejemplo": "19:00"
+        },
+        {
+          "clave": "puesto",
+          "ayuda": "El puesto",
+          "ejemplo": "Vela"
+        },
+        {
+          "clave": "nombre_completo",
+          "ayuda": "Nombre y apellidos",
+          "ejemplo": "Juan Pérez Ruiz"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "papeleta",
+          "ayuda": "La papeleta: puesto, día, hora y acceso",
+          "obligatorio": true
+        },
+        {
+          "clave": "adjunto",
+          "ayuda": "Dónde está la papeleta con el QR (adjunta o en el área de hermanos)"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Rosario vespertino {{anio}}: {{nombre_completo}}",
+        "titulo": "Su puesto en el Rosario vespertino {{anio}}",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría le confirma su puesto en el Rosario vespertino del **{{fecha}}**. Estos son los datos de su sitio:\n\n[[papeleta]]\n\n> **Antes de salir**\n> Se va en traje oscuro, con la medalla del Grupo Parroquial. Se ruega puntualidad y recogimiento durante el rezo.\n\n[[adjunto]]",
+        "despedida": "Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "papeleta_sin_recoger",
+      "grupo": "Procesión",
+      "nombre": "Papeleta sin recoger",
+      "descripcion": "A quien tenía cita para recoger la papeleta y no pasó.",
+      "antetitulo": "Estación de Penitencia",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "fecha_cita",
+          "ayuda": "El día de la cita",
+          "ejemplo": "lunes, 8 de marzo"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "secretaria",
+          "ayuda": "Dirección, horario y contacto de Secretaría"
+        },
+        {
+          "clave": "boton",
+          "ayuda": "El botón para ir al área de hermanos"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Recordatorio: su papeleta de sitio está sin recoger",
+        "titulo": "Su papeleta sigue sin recoger",
+        "cuerpo": "{{saludo}}\n\nTenía cita el **{{fecha_cita}}** para recoger su papeleta de sitio y, según nuestros registros, no pudo pasar.\n\nLa organización del cortejo depende de que cada hermano recoja su papeleta dentro del plazo de reparto. Si quiere salir este año, pase a recogerla en cuanto pueda, o pida una cita nueva desde el área de hermanos.\n\n> **Qué llevar**\n> - DNI.\n> - El recibo de la cuota anual, si la tiene pendiente.\n\n[[secretaria]]\n\n[[boton]]\n\nSi ya la ha recogido en las últimas horas, no haga caso de este mensaje.",
+        "despedida": "Esperamos contar con su presencia acompañando a {{titular}}."
+      }
+    },
+    {
+      "clave": "donativo_gracias",
+      "grupo": "Donativos y tienda",
+      "nombre": "Gracias por el donativo",
+      "descripcion": "A quien dona desde la web y deja su correo.",
+      "antetitulo": "Donativo",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado/a María:», o «Estimado/a amigo/a:» si no dio su nombre",
+          "ejemplo": "Estimado/a María:"
+        },
+        {
+          "clave": "importe",
+          "ayuda": "Lo donado",
+          "ejemplo": "20,00 €"
+        },
+        {
+          "clave": "para_destino",
+          "ayuda": "« para Caridad», o nada si no eligió destino",
+          "ejemplo": " para Caridad"
+        }
+      ],
+      "bloques": [],
+      "porDefecto": {
+        "asunto": "Gracias por su donativo",
+        "titulo": "Gracias por su donativo",
+        "cuerpo": "{{saludo}}\n\nHemos recibido su donativo de **{{importe}}**{{para_destino}}. Muchas gracias por su generosidad con el Grupo Parroquial.\n\nEste correo es solo un acuse. Si necesita un justificante para su declaración, escriba a Secretaría y se lo preparamos.",
+        "despedida": "Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "apadrinamiento",
+      "grupo": "Donativos y tienda",
+      "nombre": "Gracias por apadrinar",
+      "descripcion": "A quien apadrina una pieza, cuando el banco confirma el pago.",
+      "antetitulo": "Apadrinamientos del Grupo Parroquial",
+      "firma": "La Junta de Gobierno",
+      "campos": [
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "pieza",
+          "ayuda": "La pieza apadrinada",
+          "ejemplo": "Vela 12"
+        },
+        {
+          "clave": "campana",
+          "ayuda": "La campaña",
+          "ejemplo": "Candelería de la Virgen"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "datos",
+          "ayuda": "La pieza, el donativo y la dedicatoria"
+        },
+        {
+          "clave": "certificado",
+          "ayuda": "Si pidió el certificado para la renta, que se le mandará"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Gracias por apadrinar",
+        "titulo": "Gracias por apadrinar",
+        "cuerpo": "Hola, {{nombre}}:\n\nHemos recibido tu donativo. Gracias de corazón: {{pieza}} ya es tuya en «{{campana}}».\n\n[[datos]]\n\n[[certificado]]",
+        "despedida": ""
+      }
+    },
+    {
+      "clave": "pedido_tienda",
+      "grupo": "Donativos y tienda",
+      "nombre": "Pedido de la tienda pagado",
+      "descripcion": "A quien compra en la tienda de la web, cuando el banco confirma el pago.",
+      "antetitulo": "Tienda del Grupo Parroquial",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "numero",
+          "ayuda": "El número del pedido",
+          "ejemplo": "42"
+        },
+        {
+          "clave": "total",
+          "ayuda": "El total",
+          "ejemplo": "35,00 €"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "lineas",
+          "ayuda": "Lo comprado, con su precio y el total",
+          "obligatorio": true
+        },
+        {
+          "clave": "secretaria",
+          "ayuda": "Dónde y cuándo recogerlo"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Pedido n.º {{numero}} pagado",
+        "titulo": "Pedido pagado",
+        "cuerpo": "Hola, {{nombre}}:\n\nHemos recibido el pago de tu pedido n.º {{numero}}. Muchas gracias: lo que se recauda en la tienda ayuda a sostener el culto y la caridad del Grupo.\n\n[[lineas]]\n\nPuedes recogerlo en Secretaría. Trae este correo o di tu número de pedido.\n\n[[secretaria]]",
+        "despedida": ""
+      }
+    },
+    {
+      "clave": "certificado_donativos",
+      "grupo": "Donativos y tienda",
+      "nombre": "Certificado de donativos",
+      "descripcion": "Al mandar desde Tesorería el certificado para la renta, con el PDF adjunto.",
+      "antetitulo": "Ejercicio {{ejercicio}}",
+      "firma": "Tesorería",
+      "campos": [
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "ejercicio",
+          "ayuda": "El año de los donativos",
+          "ejemplo": "2026"
+        },
+        {
+          "clave": "importe",
+          "ayuda": "Lo donado en el año",
+          "ejemplo": "120,00 €"
+        }
+      ],
+      "bloques": [],
+      "porDefecto": {
+        "asunto": "Tu certificado de donativos de {{ejercicio}}",
+        "titulo": "Tu certificado de donativos",
+        "cuerpo": "Hola, {{nombre}}:\n\nTe mandamos el certificado de tus donativos de {{ejercicio}} ({{importe}}). Va también en la declaración que el Grupo presenta a Hacienda (el Modelo 182), así que te saldrá en el borrador de la renta; guárdalo por si te lo piden.\n\nGracias por tu generosidad.",
+        "despedida": ""
+      }
+    },
+    {
+      "clave": "pesame",
+      "grupo": "Difuntos",
+      "nombre": "Pésame a la familia",
+      "descripcion": "A la familia de un hermano difunto, cuando Secretaría lo manda desde el censo.",
+      "antetitulo": "En memoria",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "difunto",
+          "ayuda": "Nombre y apellidos del difunto",
+          "ejemplo": "José García Ruiz"
+        },
+        {
+          "clave": "hermano",
+          "ayuda": "«hermano» o «hermana»",
+          "ejemplo": "hermano"
+        }
+      ],
+      "bloques": [],
+      "porDefecto": {
+        "asunto": "Nuestro pésame por {{difunto}}",
+        "titulo": "Nuestro más sentido pésame",
+        "cuerpo": "Estimada familia:\n\nEl Grupo Parroquial les acompaña en el dolor por el fallecimiento de **{{difunto}}**, {{hermano}} de esta corporación. Lo encomendamos a {{titular}} y ofreceremos sufragios por su eterno descanso.\n\nLes haremos saber la fecha de la misa en su memoria. Para cualquier cosa que necesiten, estamos a su disposición en Secretaría.",
+        "despedida": "Descanse en paz."
+      }
+    },
+    {
+      "clave": "sufragio",
+      "grupo": "Difuntos",
+      "nombre": "Aviso de un sufragio",
+      "descripcion": "A la familia, cuando se ofrece una misa u oración por su difunto.",
+      "antetitulo": "En memoria",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "difunto",
+          "ayuda": "Nombre y apellidos del difunto",
+          "ejemplo": "José García Ruiz"
+        },
+        {
+          "clave": "que",
+          "ayuda": "Qué se ofrece",
+          "ejemplo": "Misa"
+        },
+        {
+          "clave": "que_minusculas",
+          "ayuda": "Lo mismo, en minúscula, para mitad de frase",
+          "ejemplo": "misa"
+        },
+        {
+          "clave": "cuando",
+          "ayuda": "Día y hora",
+          "ejemplo": "viernes, 6 de noviembre, 20:00"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "cuando",
+          "ayuda": "Qué, cuándo y dónde, en un recuadro",
+          "obligatorio": true
+        }
+      ],
+      "porDefecto": {
+        "asunto": "{{que}} por {{difunto}}",
+        "titulo": "{{que}} por {{difunto}}",
+        "cuerpo": "Estimada familia:\n\nLes comunicamos que el Grupo Parroquial ofrecerá una **{{que_minusculas}}** por el eterno descanso de **{{difunto}}**.\n\n[[cuando]]\n\nSerá un honor contar con su presencia.",
+        "despedida": "Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "libre",
+      "grupo": "Boletín y avisos",
+      "nombre": "Plantilla para el boletín o un aviso",
+      "descripcion": "Un punto de partida para redactar en «Boletín y avisos»: convocatorias, cultos, recordatorios… El saludo y la firma los pone el boletín.",
+      "antetitulo": "Aviso del Grupo Parroquial",
+      "firma": "La Secretaría",
+      "libre": true,
+      "campos": [],
+      "bloques": [],
+      "porDefecto": {
+        "asunto": "",
+        "titulo": "",
+        "cuerpo": "",
+        "despedida": ""
+      }
+    }
+  ]
+}

@@ -287,6 +287,16 @@ en `/cms/auditoria`. Antes moría en un `console.error`: el alta se completaba, 
 solicitante no recibía nada y nadie se enteraba. La dirección se guarda
 **enmascarada**.
 
+**El texto de los correos no está en el código.** Los que leen hermanos y
+donantes salen de una plantilla (CMS → Emails): la que esté en uso para ese
+correo o, si no hay ninguna, su texto original en `shared/usos-de-correo.json`.
+El código solo prepara los campos (`{{nombre}}`…) y los bloques fijos
+(`[[papeleta]]`…). Para cambiar un texto de partida, se cambia ese JSON; para
+añadir un campo o un bloque a un correo, se declara allí y se rellena en su
+`enviar…`: la revisión de la plantilla rechaza lo que el catálogo no declara.
+El aviso interno a Secretaría y el del formulario de contacto siguen en el
+código: no los lee ningún hermano.
+
 **Los correos salen deliberadamente incompletos.** El horario de Secretaría, la
 dirección, el teléfono y el escudo viven en `shared/datos-entidad.json` con el
 mismo criterio que `config/site.ts` en la web: `null` es «pendiente de confirmar»

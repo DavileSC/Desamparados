@@ -18,6 +18,7 @@ import type { Server } from 'node:http';
 import { ArkErrors } from 'arktype';
 import nodemailer from 'nodemailer';
 import app from '../src/app.js';
+import db from '../src/config/db.js';
 import { contactoSchema } from '../src/schemas/contacto.schema.js';
 import { motivoDescarte, MIN_MS_RELLENO } from '../src/domain/senales-de-robot.js';
 import { EmailService } from '../src/services/email.service.js';
@@ -74,7 +75,8 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-after(() => { server.close(); });
+// Los correos leen de la base su plantilla en uso: sin cerrar la conexión, el proceso no termina.
+after(async () => { server.close(); await db.$disconnect(); });
 
 afterEach(() => { mock.restoreAll(); });
 

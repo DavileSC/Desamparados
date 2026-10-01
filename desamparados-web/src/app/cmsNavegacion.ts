@@ -25,6 +25,7 @@ import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
 import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
+import DraftsOutlinedIcon from '@mui/icons-material/DraftsOutlined'
 import CATALOGO from '../../../shared/paginas-publicas.json'
 import type { PanelResponse } from '../lib/api/panel'
 
@@ -94,6 +95,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
   { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: MenuBookOutlinedIcon },
   { label: 'Boletín y avisos', href: '/cms/comunicados', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'], grupo: 'Web', icono: EmailOutlinedIcon },
+  // Las plantillas de los correos que manda la web: Secretaría y el Hermano Mayor.
+  { label: 'Emails', href: '/cms/emails', roles: ['SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: DraftsOutlinedIcon },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon },
   { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
@@ -148,6 +151,9 @@ export const rolesPorRutaCms = {
   cabildos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   // El boletín y los avisos por correo: la guarda de /api/comunicados.
   comunicados: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'],
+  // Las plantillas de los correos: la guarda de /api/plantillas-correo.
+  emails: ['SECRETARIA', 'HERMANO_MAYOR'],
+  'emails/:id': ['SECRETARIA', 'HERMANO_MAYOR'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   // Llevan los datos del censo: los mismos que lo gestionan (la guarda de /api/cartas).

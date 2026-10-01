@@ -12,6 +12,7 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import PantallaEdicion from './PantallaEdicion'
 import CabeceraSeccion from './CabeceraSeccion'
 import EditorTexto from './EditorTexto'
+import { plantillasLibres } from '../../lib/api/emails'
 import { site } from '../../config/site'
 
 const LISTADO = '/cms/comunicados'
@@ -39,6 +40,13 @@ export default function ComunicadoEditPage() {
   const [cuenta, setCuenta] = useState<{ correos: number; sinCorreo: number; para: string } | null>(null)
   const [confirmar, setConfirmar] = useState<'enviar' | 'borrar' | null>(null)
   const [progreso, setProgreso] = useState<{ enviados: number; fallidos: number; pendientes: number } | null>(null)
+  // Las plantillas libres de Emails; si no llegan (sin permiso, o sin red), no hay desplegable.
+  const [libres, setLibres] = useState<Awaited<ReturnType<typeof plantillasLibres>> | null>(null)
+  useEffect(() => {
+    let cancelado = false
+    plantillasLibres().then((l) => { if (!cancelado) setLibres(l) }).catch(() => undefined)
+    return () => { cancelado = true }
+  }, [])
 
   const cargar = useCallback(async () => {
     const c = await comunicado(id)
@@ -175,6 +183,16 @@ export default function ComunicadoEditPage() {
           </TextField>
           <TextField label="Asunto" value={form.asunto} onChange={(e) => campo('asunto', e.target.value)} slotProps={{ htmlInput: { maxLength: 150 } }} fullWidth />
         </Stack>
+        {libres && libres.length > 0 && (
+          <TextField select size="small" label="Partir de una plantilla" value="" sx={{ maxWidth: 420 }}
+            helperText="Pone el asunto y el texto de la plantilla en lugar de lo escrito. Se crean en Emails."
+            onChange={(e) => {
+              const p = libres.find((x) => x.id === Number(e.target.value))
+              if (p) setForm({ ...form, asunto: p.asunto || form.asunto, cuerpo: p.cuerpo })
+            }}>
+            {libres.map((p) => <MenuItem key={p.id} value={p.id}>{p.nombre}</MenuItem>)}
+          </TextField>
+        )}
         <EditorTexto
           valor={form.cuerpo}
           onCambio={(html) => campo('cuerpo', html)}

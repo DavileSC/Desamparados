@@ -4,8 +4,12 @@
  * nueva, su aprobación o rechazo, la baja, la apertura de las papeletas, el
  * recordatorio de una papeleta sin recoger y el formulario de contacto.
  *
- * Cómo se maquetan está en `correos/plantilla` y por dónde salen en
- * `correos/envio`: aquí solo queda lo que dice cada correo.
+ * El texto de los correos a hermanos y donantes es una plantilla que se
+ * edita en el CMS (Emails; ver `plantillas-correo.service`): aquí cada correo
+ * prepara sus campos ({{nombre}}, {{fecha}}…) y sus bloques fijos (la
+ * papeleta, el enlace…), que siguen siendo código para que nadie los rompa.
+ * El aviso interno a Secretaría y el del formulario de contacto no son
+ * plantillas: no los lee ningún hermano.
  *
  * Criterio común: asuntos sin emojis y en minúscula normal, saludo según el
  * sexo de la ficha, firma del cargo y nada que el Grupo no haya confirmado.
@@ -18,12 +22,14 @@ import {
   parrafo, recuadro, saludo, segunSexo, urlDeLaWeb, type Sexo,
 } from './correos/plantilla.js';
 import { cuentaDeContacto, enviarCorreo } from './correos/envio.js';
-import { identidad } from '../domain/datos-entidad.js';
+import { PlantillasCorreoService } from './plantillas-correo.service.js';
 
 /** Quien entra en el censo al aprobar la solicitud, con el número que recibe. */
 export interface HermanoAprobado { nombre: string; apellidos: string | null; numeroHermano: number }
 
-const BENDICION = `Que ${identidad.titular} le guarde y bendiga.`;
+/** «Estimado Juan:», como lo pone el campo {{saludo}} (sin HTML: la plantilla lo escapa). */
+const textoDeSaludo = (nombre: string, sexo?: Sexo) =>
+  `${sexo === 'HOMBRE' ? 'Estimado' : sexo === 'MUJER' ? 'Estimada' : 'Estimado/a'} ${nombre}:`;
 
 /** «una hora», «3 días», «12 horas». */
 function plazo(horas: number): string {
@@ -45,31 +51,11 @@ export class EmailService {
   ) {
     const { horas = 1, cuentaNueva = false, sexo } = opciones;
     const enlace = urlDeLaWeb(`/reset-password?token=${encodeURIComponent(token)}`);
-
-    const content = cuentaNueva
-      ? [
-        saludo(nombreHermano, sexo),
-        parrafo('La Secretaría le ha creado una <strong>cuenta propia en el área de hermanos</strong>, separada de la de su familia. Para entrar por primera vez, elija su contraseña:'),
-        boton('Crear mi contraseña', enlace),
-        parrafo(`El enlace caduca en ${plazo(horas)} y solo puede usarse una vez. Si caduca, pida uno nuevo desde «He olvidado mi contraseña».`),
-        firma(null),
-      ].join('')
-      : [
-        saludo(nombreHermano, sexo),
-        parrafo('Hemos recibido una petición para restablecer la contraseña de su cuenta en el área de hermanos. Para elegir una nueva, pulse el botón:'),
-        boton('Elegir una contraseña nueva', enlace),
-        parrafo(`El enlace caduca en ${plazo(horas)} y solo puede usarse una vez.`),
-        recuadro(null, 'Si no ha pedido este cambio, puede ignorar este correo: su contraseña actual sigue funcionando y nadie más ha visto este enlace.'),
-        firma(null),
-      ].join('');
-
-    const titulo = cuentaNueva ? 'Su cuenta en el área de hermanos' : 'Restablecer su contraseña';
-    return await enviarCorreo(emailDestino, cuentaNueva ? titulo : 'Restablecer su contraseña del área de hermanos', maquetar({
-      titulo,
-      antetitulo: 'Área de hermanos',
-      resumen: cuentaNueva ? `Elija su contraseña para entrar. El enlace vale ${plazo(horas)}.` : `Enlace para elegir una contraseña nueva, válido ${plazo(horas)}.`,
-      contenido: content,
-    }));
+    const { asunto, html } = await PlantillasCorreoService.correo(cuentaNueva ? 'contrasena_cuenta_nueva' : 'contrasena_recuperar', {
+      campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano, plazo: plazo(horas) },
+      bloques: { enlace: boton(cuentaNueva ? 'Crear mi contraseña' : 'Elegir una contraseña nueva', enlace) },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   /**
@@ -120,32 +106,18 @@ export class EmailService {
     const normativa = process.env.NORMATIVA_URL
       ? parrafo(`Puede consultar la normativa completa de la Estación de Penitencia en <a href="${process.env.NORMATIVA_URL}" style="color: ${burdeos};">este enlace</a>.`)
       : '';
+    const adjunto = parrafo(pdf
+      ? 'Le adjuntamos su papeleta en PDF, con el código que se lee en la puerta del templo. También la tiene en el área de hermanos, en Procesión, para enseñarla desde el móvil.'
+      : 'Conserve este correo: puede enseñarlo en el acceso si se le pide. Su papeleta, con el código que se lee en la puerta, está en el área de hermanos, en Procesión.');
 
-    const content = [
-      saludo(nombreHermano, sexo),
-      parrafo(rosario
-        ? `La Secretaría le confirma su puesto en el Rosario vespertino del <strong>${esc(datosPapeleta.fechaSalida)}</strong>. Estos son los datos de su sitio:`
-        : `La Secretaría certifica que está al día con el Grupo Parroquial y le autoriza a realizar la Estación de Penitencia el próximo <strong>${esc(datosPapeleta.fechaSalida)}</strong>. Estos son los datos de su sitio:`),
-      papeleta,
-      recuadro('Antes de salir', rosario
-        ? 'Se va en traje oscuro, con la medalla del Grupo Parroquial. Se ruega puntualidad y recogimiento durante el rezo.'
-        : 'Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla del Grupo Parroquial y calzado oscuro. Guarde silencio durante la formación.'),
-      parrafo(pdf
-        ? 'Le adjuntamos su papeleta en PDF, con el código que se lee en la puerta del templo. También la tiene en el área de hermanos, en Procesión, para enseñarla desde el móvil.'
-        : 'Conserve este correo: puede enseñarlo en el acceso si se le pide. Su papeleta, con el código que se lee en la puerta, está en el área de hermanos, en Procesión.'),
-      rosario ? '' : normativa,
-      firma(BENDICION),
-    ].join('');
-
-    // El asunto es texto, no HTML: con el nombre escapado, «O'Brien» llegaba
-    // como «O&#39;Brien». Los saltos de línea los aplana nodemailer.
-    const asunto = `${nombrePapeleta} ${datosPapeleta.year}: ${nombreHermano}`;
-    return await enviarCorreo(emailDestino, asunto, maquetar({
-      titulo: rosario ? `Su puesto en el Rosario vespertino ${datosPapeleta.year}` : `Su papeleta de sitio ${datosPapeleta.year}`,
-      antetitulo: rosario ? 'Rosario vespertino' : 'Estación de Penitencia',
-      resumen: `${datosPapeleta.puesto || 'Puesto por asignar'} · ${datosPapeleta.fechaSalida}, ${datosPapeleta.horaSalida}.`,
-      contenido: content,
-    }), undefined, undefined, pdf ? [{ filename: pdf.nombre, content: pdf.contenido, contentType: 'application/pdf' }] : []);
+    const { asunto, html } = await PlantillasCorreoService.correo(rosario ? 'papeleta_rosario' : 'papeleta_pasion', {
+      campos: {
+        saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano.split(' ')[0], nombre_completo: nombreHermano,
+        anio: datosPapeleta.year, fecha: datosPapeleta.fechaSalida, hora: datosPapeleta.horaSalida, puesto: datosPapeleta.puesto || 'Por asignar',
+      },
+      bloques: { papeleta, adjunto, normativa },
+    });
+    return await enviarCorreo(emailDestino, asunto, html, undefined, undefined, pdf ? [{ filename: pdf.nombre, content: pdf.contenido, contentType: 'application/pdf' }] : []);
   }
 
   /**
@@ -158,18 +130,10 @@ export class EmailService {
    * es otra cosa, con NIF, y la emite Tesorería.
    */
   static async enviarGraciasDonativo(emailDestino: string, nombre: string | null, importe: string, destino: string | null) {
-    const content = [
-      nombre ? saludo(nombre) : parrafo('Estimado/a amigo/a:'),
-      parrafo(`Hemos recibido su donativo de <strong>${esc(importe)}</strong>${destino ? ` para <strong>${esc(destino)}</strong>` : ''}. Muchas gracias por su generosidad con el Grupo Parroquial.`),
-      parrafo('Este correo es solo un acuse. Si necesita un justificante para su declaración, escriba a Secretaría y se lo preparamos.'),
-      firma(BENDICION),
-    ].join('');
-    return await enviarCorreo(emailDestino, 'Gracias por su donativo', maquetar({
-      titulo: 'Gracias por su donativo',
-      antetitulo: 'Donativo',
-      resumen: `Hemos recibido su donativo de ${importe}.`,
-      contenido: content,
-    }));
+    const { asunto, html } = await PlantillasCorreoService.correo('donativo_gracias', {
+      campos: { saludo: nombre ? textoDeSaludo(nombre) : 'Estimado/a amigo/a:', importe, para_destino: destino ? ` para ${destino}` : '' },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   /**
@@ -178,60 +142,34 @@ export class EmailService {
    * cuenta), nunca a la cuenta del propio difunto.
    */
   static async enviarPesame(emailDestino: string, difunto: string, sexo?: Sexo) {
-    const hermano = sexo === 'MUJER' ? 'hermana' : 'hermano';
-    const content = [
-      parrafo('Estimada familia:'),
-      parrafo(`El Grupo Parroquial les acompaña en el dolor por el fallecimiento de <strong>${esc(difunto)}</strong>, ${hermano} de esta corporación. Lo encomendamos a Nuestra Señora de los Desamparados y ofreceremos sufragios por su eterno descanso.`),
-      parrafo('Les haremos saber la fecha de la misa en su memoria. Para cualquier cosa que necesiten, estamos a su disposición en Secretaría.'),
-      firma('Descanse en paz.'),
-    ].join('');
-    return await enviarCorreo(emailDestino, `Nuestro pésame por ${difunto}`, maquetar({
-      titulo: 'Nuestro más sentido pésame',
-      antetitulo: 'En memoria',
-      resumen: `El Grupo Parroquial les acompaña por el fallecimiento de ${difunto}.`,
-      contenido: content,
-    }));
+    const { asunto, html } = await PlantillasCorreoService.correo('pesame', {
+      campos: { difunto, hermano: sexo === 'MUJER' ? 'hermana' : 'hermano' },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   /** El aviso a la familia de un sufragio por su difunto: qué, cuándo y dónde. */
   static async enviarAvisoSufragio(emailDestino: string, difunto: string, sufragio: { que: string; cuando: string; donde: string | null }) {
-    const content = [
-      parrafo('Estimada familia:'),
-      parrafo(`Les comunicamos que el Grupo Parroquial ofrecerá una <strong>${esc(sufragio.que.toLowerCase())}</strong> por el eterno descanso de <strong>${esc(difunto)}</strong>.`),
-      recuadro(sufragio.que, `${esc(sufragio.cuando)}${sufragio.donde ? `<br>${esc(sufragio.donde)}` : ''}`),
-      parrafo('Será un honor contar con su presencia.'),
-      firma(BENDICION),
-    ].join('');
-    return await enviarCorreo(emailDestino, `${sufragio.que} por ${difunto}`, maquetar({
-      titulo: `${sufragio.que} por ${difunto}`,
-      antetitulo: 'En memoria',
-      resumen: `${sufragio.cuando}${sufragio.donde ? `, ${sufragio.donde}` : ''}.`,
-      contenido: content,
-    }));
+    const { asunto, html } = await PlantillasCorreoService.correo('sufragio', {
+      campos: { difunto, que: sufragio.que, que_minusculas: sufragio.que.toLowerCase(), cuando: `${sufragio.cuando}${sufragio.donde ? `, ${sufragio.donde}` : ''}` },
+      bloques: { cuando: recuadro(sufragio.que, `${esc(sufragio.cuando)}${sufragio.donde ? `<br>${esc(sufragio.donde)}` : ''}`) },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   static async enviarConfirmacionRegistro(emailDestino: string, nombreHermano: string, opciones: { sexo?: Sexo; certificadoAdjunto?: boolean } = {}) {
     const { sexo, certificadoAdjunto = false } = opciones;
     const documentos = ['DNI original.'];
     if (!certificadoAdjunto) documentos.push('Certificado de bautismo (copia expedida por su parroquia).');
-
-    const content = [
-      saludo(nombreHermano, sexo),
-      parrafo('La Secretaría acusa recibo de su <strong>solicitud de ingreso</strong> en nuestro Grupo Parroquial. Le agradecemos de corazón que haya dado este paso.'),
-      recuadro('Próximo paso: pasar por Secretaría',
-        `Según nuestras Reglas, para completar su alta en el censo de hermanos debe acudir en persona a la Casa del Grupo Parroquial con:${lista(documentos, '10px 0 0 0')}`),
-      bloqueDeSecretaria('Atención en Secretaría'),
-      parrafo('Mientras tanto, su solicitud queda pendiente. Le escribiremos de nuevo en cuanto la Secretaría la haya revisado.'),
-      firma(BENDICION),
-    ].join('');
-
-    // Sin escapar: el asunto es texto, no HTML (ver enviarPapeleta).
-    return await enviarCorreo(emailDestino, 'Hemos recibido su solicitud de ingreso', maquetar({
-      titulo: 'Hemos recibido su solicitud',
-      antetitulo: 'Secretaría',
-      resumen: 'Para completar el alta, pase por Secretaría con su DNI.',
-      contenido: content,
-    }));
+    const { asunto, html } = await PlantillasCorreoService.correo('solicitud_recibida', {
+      campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano },
+      bloques: {
+        documentos: recuadro('Próximo paso: pasar por Secretaría',
+          `Según nuestras Reglas, para completar su alta en el censo de hermanos debe acudir en persona a la Casa del Grupo Parroquial con:${lista(documentos, '10px 0 0 0')}`),
+        secretaria: bloqueDeSecretaria('Atención en Secretaría'),
+      },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   /**
@@ -305,22 +243,15 @@ export class EmailService {
         </table>`
       : '';
 
-    const content = [
-      saludo(nombreCuenta, sexo),
-      parrafo(`La Secretaría ha <strong>aprobado su solicitud de ingreso</strong>. Desde hoy ${varios ? 'forman' : 'forma'} parte del censo de hermanos del Grupo Parroquial:`),
-      censo,
-      parrafo(`Conserve ${varios ? 'estos números' : 'este número'}: ${varios ? 'son los que identifican a cada uno' : 'es el que le identifica'} en el censo y se ${varios ? 'piden' : 'pide'} en Secretaría.`),
-      parrafo('Ya puede entrar en el área de hermanos para consultar sus datos, sus recibos y, llegado el momento, pedir su papeleta de sitio.'),
-      boton('Entrar en el área de hermanos', urlDeLaWeb('/acceso')),
-      firma(BENDICION),
-    ].join('');
-
-    return await enviarCorreo(emailDestino, 'Su solicitud de ingreso ha sido aprobada', maquetar({
-      titulo: `${varios ? 'Bienvenidos' : segunSexo(sexo, 'Bienvenido', 'Bienvenida')} al Grupo Parroquial`,
-      antetitulo: 'Secretaría',
-      resumen: ordenados.map((h) => `${h.nombre}, n.º ${h.numeroHermano}`).join(' · ') || 'Ya figura en el censo de hermanos.',
-      contenido: content,
-    }));
+    const { asunto, html } = await PlantillasCorreoService.correo('alta_aprobada', {
+      campos: {
+        saludo: textoDeSaludo(nombreCuenta, sexo), nombre: nombreCuenta,
+        bienvenido: varios ? 'Bienvenidos' : segunSexo(sexo, 'Bienvenido', 'Bienvenida'),
+        forma_parte: varios ? 'forman parte' : 'forma parte',
+      },
+      bloques: { censo, boton: boton('Entrar en el área de hermanos', urlDeLaWeb('/acceso')) },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   /**
@@ -335,40 +266,12 @@ export class EmailService {
    * base el nombre que `rechazarSolicitud` acaba de borrar.
    */
   static async enviarBajaORechazo(emailDestino: string, nombreHermano: string, motivo: 'rechazo' | 'baja', porImpago = false, sexo?: Sexo) {
-    const esRechazo = motivo === 'rechazo';
-
-    const cuerpo = esRechazo
-      ? [
-        parrafo('Le comunicamos que la Secretaría <strong>no ha podido dar curso a su solicitud de ingreso</strong>, y que sus datos han sido eliminados de nuestros registros.'),
-        parrafo('Si cree que se trata de un error, o desea volver a presentarla, responda a este correo y le atenderemos con mucho gusto.'),
-      ]
-      : porImpago
-        ? [
-          parrafo('Le comunicamos que se ha tramitado su <strong>baja en el censo de hermanos</strong> del Grupo Parroquial, al no constar el pago de sus cuotas.'),
-          recuadro('¿Es un error?', 'Si ya las ha pagado, o desea ponerse al corriente y reincorporarse, responda a este correo y la Secretaría lo revisará con usted.'),
-        ]
-        : [
-          parrafo('Le comunicamos que se ha tramitado su <strong>baja en el censo de hermanos</strong> del Grupo Parroquial.'),
-          parrafo('Si esta baja no responde a su voluntad, o desea volver más adelante, responda a este correo y la Secretaría le atenderá.'),
-        ];
-
-    const despedida = esRechazo
-      ? 'Le agradecemos el interés mostrado por nuestro Grupo Parroquial.'
-      : porImpago
-        ? 'Quedamos a su disposición.'
-        : `Le agradecemos el tiempo que ha formado parte de esta casa, que sigue abierta para cuando quiera volver. ${BENDICION}`;
-
-    const content = [saludo(nombreHermano, sexo), ...cuerpo, bloqueDeSecretaria('Contacto con Secretaría'), firma(despedida)].join('');
-
-    const asunto = esRechazo ? 'Resolución de su solicitud de ingreso' : 'Baja en el censo de hermanos';
-    return await enviarCorreo(emailDestino, asunto, maquetar({
-      titulo: esRechazo ? 'Resolución de su solicitud' : 'Baja en el censo de hermanos',
-      antetitulo: 'Secretaría',
-      resumen: esRechazo
-        ? 'La Secretaría no ha podido dar curso a su solicitud de ingreso.'
-        : porImpago ? 'Se ha tramitado su baja al no constar el pago de sus cuotas.' : 'Se ha tramitado su baja en el censo de hermanos.',
-      contenido: content,
-    }));
+    const uso = motivo === 'rechazo' ? 'solicitud_rechazada' : porImpago ? 'baja_impago' : 'baja';
+    const { asunto, html } = await PlantillasCorreoService.correo(uso, {
+      campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano },
+      bloques: { secretaria: bloqueDeSecretaria('Contacto con Secretaría') },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   /**
@@ -379,28 +282,15 @@ export class EmailService {
    */
   static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo?: Sexo, salida: Salida = 'PASION') {
     const rosario = salida === 'ROSARIO';
-    const content = [
-      saludo(nombreCuenta, sexo),
-      parrafo(rosario
-        ? `Ya está <strong>abierta la inscripción para el Rosario vespertino</strong> de ${year}. Puede apuntarse desde el área de hermanos, pedir el puesto en que le gustaría ir y elegir el día en que pasará a recoger su papeleta.`
-        : `Ya está <strong>abierta la solicitud de papeletas de sitio</strong> para la Estación de Penitencia de ${year}. Puede pedirla desde el área de hermanos y elegir el día en que pasará a recogerla.`),
-      recuadro('Días de reparto', lista(dias, '0')),
-      parrafo(fichas.length > 1 ? 'Puede pedirla para:' : 'Puede pedirla para su ficha:', 'margin-bottom: 6px;'),
-      lista(fichas),
-      parrafo(rosario
-        ? 'Se va en traje. Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto.'
-        : 'Para recoger la papeleta hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto. Recuerde llevar el DNI.'),
-      boton(rosario ? 'Apuntarme al Rosario' : 'Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
-      firma(`Esperamos contar con su presencia acompañando a ${identidad.titular}.`),
-    ].join('');
-
-    const titulo = rosario ? `Rosario vespertino ${year}` : `Papeletas de sitio ${year}`;
-    return await enviarCorreo(emailDestino, rosario ? `Abierta la inscripción del Rosario vespertino ${year}` : `Abierta la solicitud de papeletas de sitio ${year}`, maquetar({
-      titulo,
-      antetitulo: rosario ? 'Rosario vespertino' : 'Estación de Penitencia',
-      resumen: `Ya puede pedir su papeleta y elegir el día de reparto. Primer día: ${dias[0] ?? 'por anunciar'}.`,
-      contenido: content,
-    }));
+    const { asunto, html } = await PlantillasCorreoService.correo(rosario ? 'apertura_rosario' : 'apertura_pasion', {
+      campos: { saludo: textoDeSaludo(nombreCuenta, sexo), nombre: nombreCuenta, anio: year, primer_dia: dias[0] ?? 'por anunciar' },
+      bloques: {
+        dias: recuadro('Días de reparto', lista(dias, '0')),
+        fichas: parrafo(fichas.length > 1 ? 'Puede pedirla para:' : 'Puede pedirla para su ficha:', 'margin-bottom: 6px;') + lista(fichas),
+        boton: boton(rosario ? 'Apuntarme al Rosario' : 'Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
+      },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   /**
@@ -408,23 +298,11 @@ export class EmailService {
    * día de la cita, ya escrito para leerlo («lunes, 8 de marzo»).
    */
   static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string, sexo?: Sexo) {
-    const content = [
-      saludo(nombreHermano, sexo),
-      parrafo(`Tenía cita el <strong>${esc(fechaCita)}</strong> para recoger su papeleta de sitio y, según nuestros registros, no pudo pasar.`),
-      parrafo('La organización del cortejo depende de que cada hermano recoja su papeleta dentro del plazo de reparto. Si quiere salir este año, pase a recogerla en cuanto pueda, o pida una cita nueva desde el área de hermanos.'),
-      recuadro('Qué llevar', lista(['DNI.', 'El recibo de la cuota anual, si la tiene pendiente.'], '0')),
-      bloqueDeSecretaria('Horario de reparto'),
-      boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')),
-      parrafo('Si ya la ha recogido en las últimas horas, no haga caso de este mensaje.', `font-size: 14px; color: ${COLORES.suave};`),
-      firma(`Esperamos contar con su presencia acompañando a ${identidad.titular}.`),
-    ].join('');
-
-    return await enviarCorreo(emailDestino, 'Recordatorio: su papeleta de sitio está sin recoger', maquetar({
-      titulo: 'Su papeleta sigue sin recoger',
-      antetitulo: 'Estación de Penitencia',
-      resumen: `Tenía cita el ${fechaCita} y no consta que pasara. Aún está a tiempo.`,
-      contenido: content,
-    }));
+    const { asunto, html } = await PlantillasCorreoService.correo('papeleta_sin_recoger', {
+      campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano, fecha_cita: fechaCita },
+      bloques: { secretaria: bloqueDeSecretaria('Horario de reparto'), boton: boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')) },
+    });
+    return await enviarCorreo(emailDestino, asunto, html);
   }
 
   static async enviarContacto(datosContacto: ContactoDto): Promise<boolean> {

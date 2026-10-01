@@ -16,6 +16,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditor
 import { PagoEnLineaService, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { enviarCorreo } from './correos/envio.js';
+import { PlantillasCorreoService } from './plantillas-correo.service.js';
 import { bloqueDeSecretaria, datos, esc, firma, maquetar, parrafo, urlDeLaWeb } from './correos/plantilla.js';
 import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
 import { aCentimos } from '../domain/sepa.js';
@@ -48,22 +49,17 @@ const resumenProducto = (p: { id: number; nombre: string; descripcion: string; p
 });
 
 /** El correo de «pedido pagado», con lo que se compró y dónde recogerlo. */
+/** El correo de «pedido pagado», de su plantilla (Emails → «Pedido de la tienda pagado»). */
 function correoDePedido(p: { nombre: string; id: number; total: Prisma.Decimal; lineas: { nombre: string; precio: Prisma.Decimal; cantidad: number }[] }) {
-  return maquetar({
-    titulo: 'Pedido pagado',
-    antetitulo: 'Tienda del Grupo Parroquial',
-    resumen: `Tu pedido n.º ${p.id} está pagado. Recógelo en Secretaría.`,
-    contenido: [
-      parrafo(`Hola, ${esc(p.nombre)}:`),
-      parrafo(`Hemos recibido el pago de tu pedido n.º ${p.id}. Muchas gracias: lo que se recauda en la tienda ayuda a sostener el culto y la caridad del Grupo.`),
-      datos([
+  return PlantillasCorreoService.correo('pedido_tienda', {
+    campos: { nombre: p.nombre, numero: p.id, total: euros(aCentimos(p.total)) },
+    bloques: {
+      lineas: datos([
         ...p.lineas.map((l): [string, string] => [`${l.cantidad} × ${esc(l.nombre)}`, esc(euros(aCentimos(l.precio) * l.cantidad))]),
         ['Total', `<strong>${esc(euros(aCentimos(p.total)))}</strong>`],
       ]),
-      parrafo('Puedes recogerlo en Secretaría. Trae este correo o di tu número de pedido.'),
-      bloqueDeSecretaria('Dónde y cuándo'),
-      firma(null, 'La Secretaría'),
-    ].join(''),
+      secretaria: bloqueDeSecretaria('Dónde y cuándo'),
+    },
   });
 }
 
@@ -101,7 +97,7 @@ async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDe
     return pagado;
   });
   await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_PEDIDO_PAGADO, meta, 'pedido', pedidoId, { despues: { total: pedido.total.toString(), metodo } });
-  void enviarCorreo(pedido.email, `Pedido n.º ${pedido.id} pagado`, correoDePedido(pedido));
+  void correoDePedido(pedido).then(({ asunto, html }) => enviarCorreo(pedido.email, asunto, html)).catch(console.error);
 }
 
 registrarOrigenDePago(OrigenPago.TIENDA, aplicarPago, async (id) => (await db.pedidoTienda.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);
