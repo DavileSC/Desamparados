@@ -138,7 +138,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 |---|---|---|---|
 | 🟡 | B | Lo propio del Grupo, a configuración | Hecha la identidad: nombre, nombre corto, advocación, localidad, dominio y descripción viven en `shared/datos-entidad.json` (bloque `identidad`), y de ahí los leen la API (correos, PDF, actas, iCal), la web (`site.ts`, títulos, rótulos, dirección canónica) y, al generarse, `index.html`, el manifest, `robots.txt`, el sitemap y nginx. **Falta decidir**: las salidas siguen siendo un enum (`PASION`, `ROSARIO`) con sus nombres en unas 15 pantallas y correos, y «el Grupo Parroquial» sigue en decenas de frases con su género (para una Hermandad serían «la»/«de la»). |
 | 🟡 | B | Guion de instalación y de actualización de varias copias | Escritos: `docker/instalar.sh` (servidor limpio: usuario, `.env` con secretos, certificado, arranque, siembra), `docker/actualizar.sh` (copia antes, avance rápido, migraciones, comprobación) y `docker/actualizar-copias.sh` (todas por ssh, parando en la primera que falle). Guía en docs/despliegue.md, «Una instalación por corporación». **Falta probarlos en un servidor Linux de verdad** |
-| ⬜ | A | Contrato de encargado del tratamiento | Cada cliente es responsable de los datos de sus hermanos |
+| ✅ | A | Contrato de encargado del tratamiento | Hecho: plantilla en `docs/venta/contrato-encargado-tratamiento.md` (art. 28 RGPD), con dos opciones según quién contrate el servidor y tres anexos sacados del código: datos e interesados, subencargados y medidas de seguridad. Se firma antes de cargar el censo; que la revise un abogado antes de la primera firma. Sin migración |
 | ⬜ | A | Licencias y fotos de ejemplo | Fuentes, mapas de OpenStreetMap y fotos de Commons |
 
 ---

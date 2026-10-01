@@ -646,6 +646,11 @@ dominio. Todo lo que distingue a una corporación de otra está en
 dominio, datos de Secretaría) y en el `.env` (secretos y claves del banco). El
 código es el mismo para todas.
 
+**Antes de cargar su censo**, el contrato de encargado del tratamiento firmado:
+la corporación es responsable de los datos de sus hermanos y quien instala y
+mantiene, encargado. Plantilla y cómo rellenarla en
+[`venta/contrato-encargado-tratamiento.md`](venta/contrato-encargado-tratamiento.md).
+
 ### Instalar una nueva
 
 En un servidor limpio con Docker y su plugin compose:
