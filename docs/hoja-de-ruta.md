@@ -74,7 +74,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | ✅ | A | Papeleta de sitio en PDF con código QR | Hecha: A4 que se imprime en la mesa al dar la ropa (y se reimprime desde el listado), adjunta al correo, y tarjeta con el QR en Procesión del área de hermanos |
-| ⬜ | B | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos. **La papeleta con QR ya está**: el código, en `papeleta-qr.ts` (ver abajo) |
+| 🔨 | A | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos. **La papeleta con QR ya está**: el código, en `papeleta-qr.ts` (ver abajo) |
 | ✅ | — | **Cortejo por antigüedad, automático** | Hecha: Procesión → «Cortejo». Los tramos de cada salida (nombre y plazas) y los puestos que se reparten van en la configuración; «Repartir por antigüedad» pone a los más nuevos delante y a los más antiguos junto al trono, en proporción a las plazas, y escribe tramo y lugar en cada papeleta. Enseña antes cuántas cambian y la lista de cada tramo |
 | ✅ | A | Túnica propuesta según la medida | Hecha: sin túnica en casa ni libre la de antes, se propone la libre de talla más cercana a su altura al hombro (+5/−3 cm), en la ficha de la mesa y en la hoja del ropero sin repetir |
 
@@ -111,7 +111,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | ✅ | — | **Contabilidad por partida doble (plan de entidades sin fines lucrativos)** | Hecha: Contabilidad → «Partida doble». Cada categoría tiene su cuenta del plan (propuesta por el nombre, se cambia en «Plan de cuentas»); los asientos salen de los apuntes del libro de caja (570 Caja si es en efectivo, 572 Bancos si no), así que lo que apunten la lotería o la caja de la tienda entra solo. Cuenta de resultados, sumas y saldos, libro diario y Excel del ejercicio. Migración `cuenta_de_categoria` |
-| ⬜ | B | Modelo 182 y certificados de donación | **Antes, confirmar** que el Grupo tiene NIF propio y no depende del del Obispado |
+| 🔨 | A | Modelo 182 y certificados de donación | Confirmado (01-10-2026): el Grupo tiene NIF propio |
 | ✅ | A | Lotería y talonarios | Hecha: Cuentas → «Lotería». El sorteo (uno o varios números, décimos y su precio, lo que cuesta y lo que juega la participación; el resto, donativo) no deja emitir más participaciones de las que juegan los décimos. Talonarios numerados, a quién se dieron (de uno en uno o por tramos), liquidación con lo vendido y cómo se pagó, y deshacerla. La compra de los décimos (gasto, «Compra de lotería» → 600) y cada liquidación (ingreso, «Lotería y rifas» → 722) se apuntan solas y no se tocan a mano en Contabilidad. Premios tras el sorteo (lo que cobra cada participación) y PDF de las participaciones con su matriz, cinco por hoja. Migración `loteria` |
 | 🟡 | A | Caja de tienda (TPV) | La mesa de procesión ya cobra por zonas |
 
