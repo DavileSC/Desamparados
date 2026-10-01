@@ -315,9 +315,9 @@ MIT (242), ISC (23), Apache-2.0 (13), BSD-3-Clause (6), BSD-2-Clause (5), MIT/X1
 | yargs-parser | 18.1.3 | ISC |
 | zip-stream | 4.1.1 | MIT |
 
-## La web: 189 paquetes
+## La web: 190 paquetes
 
-MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), (MIT OR Apache-2.0) (1), (MPL-2.0 OR Apache-2.0) (1), Apache-2.0 (1), 0BSD (1)
+MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), Apache-2.0 (2), (MIT OR Apache-2.0) (1), (MPL-2.0 OR Apache-2.0) (1), 0BSD (1)
 
 **A mirar:** @fontsource-variable/exo-2 5.3.0 (OFL-1.1); @fontsource-variable/saira 5.3.0 (OFL-1.1); @fontsource/cormorant-garamond 5.3.0 (OFL-1.1); dompurify 3.4.14 ((MPL-2.0 OR Apache-2.0)).
 
@@ -448,6 +448,7 @@ MIT (164), ISC (10), BSD-3-Clause (6), OFL-1.1 (3), BSD-2-Clause (2), (MIT OR Ap
 | jsesc | 3.1.0 | MIT |
 | json-parse-even-better-errors | 2.3.1 | MIT |
 | json-stringify-pretty-compact | 4.0.0 | MIT |
+| jsqr | 1.4.0 | Apache-2.0 |
 | kdbush | 4.1.0 | ISC |
 | lines-and-columns | 1.2.4 | MIT |
 | linkifyjs | 4.3.3 | MIT |

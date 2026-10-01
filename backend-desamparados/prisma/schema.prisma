@@ -507,6 +507,12 @@ model PapeletaSitio {
   cingulo             Cingulo?
   observaciones       String?
 
+  /// Cuándo entró en el templo para la salida: lo apunta quien escanea el QR
+  /// en la puerta (o lo marca a mano si no trae la papeleta). Null: aún no.
+  entradaEl  DateTime?
+  /// Quién lo apuntó, copiado: el registro sobrevive a la cuenta de quien escanea.
+  entradaPor String?   @db.VarChar(120)
+
   // RELACIONES
   hermanoId Int
   hermano   Hermano @relation(fields: [hermanoId], references: [id])

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ProcesionController } from '../controllers/procesion.controller.js';
 import { MesaController } from '../controllers/mesa.controller.js';
 import { CortejoController } from '../controllers/cortejo.controller.js';
+import { PuertaController } from '../controllers/puerta.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { Role } from '@prisma/client';
@@ -36,7 +37,9 @@ import {
   mesaAltaSchema,
   mesaCorregirSchema,
   mesaEditarPapeletaSchema,
-  mesaDevolverSchema
+  mesaDevolverSchema,
+  puertaEscanearSchema,
+  puertaEntradaSchema
 } from '../schemas/procesion.schema.js';
 
 const procesionRouter = Router();
@@ -105,6 +108,12 @@ procesionRouter.get('/admin/listado/:year', checkRole(rolesJunta), validate(year
 procesionRouter.get('/admin/cortejo', checkRole(rolesJunta), validate(cortejoQuerySchema), CortejoController.estado);
 procesionRouter.put('/admin/cortejo/configuracion', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(cortejoConfiguracionSchema), CortejoController.guardarConfiguracion);
 procesionRouter.post('/admin/cortejo/aplicar', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(cortejoAplicarSchema), CortejoController.aplicar);
+// La puerta del templo: los diputados leen el QR de las papeletas al entrar.
+// La Junta entera, que es quien está en la puerta (y el Hermano Mayor la sigue en vivo).
+procesionRouter.get('/admin/puerta', checkRole(rolesJunta), validate(salidaQuerySchema), PuertaController.estado);
+procesionRouter.post('/admin/puerta/escanear', checkRole(rolesJunta), validate(puertaEscanearSchema), PuertaController.escanear);
+procesionRouter.post('/admin/puerta/papeletas/:id', checkRole(rolesJunta), validate(type({ params: { id: idParam } }).and(puertaEntradaSchema)), PuertaController.entrar);
+procesionRouter.delete('/admin/puerta/papeletas/:id', checkRole(rolesJunta), validateId, PuertaController.deshacer);
 procesionRouter.post('/admin/procesar-ausencias', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(procesarAusenciasSchema), ProcesionController.procesarAusencias);
 
 // ==========================================

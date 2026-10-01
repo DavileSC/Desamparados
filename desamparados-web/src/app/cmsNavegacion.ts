@@ -9,6 +9,7 @@ import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined'
 import SensorsOutlinedIcon from '@mui/icons-material/SensorsOutlined'
+import QrCodeScannerOutlinedIcon from '@mui/icons-material/QrCodeScannerOutlined'
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
@@ -100,6 +101,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: DirectionsWalkOutlinedIcon },
   // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
   { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon },
+  // Leer el QR de las papeletas al entrar: la Junta que está en la puerta.
+  { label: 'Puerta del templo', href: '/cms/procesion/puerta', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: QrCodeScannerOutlinedIcon },
   { label: 'Cortejo en directo', href: '/cms/procesion/directo', roles: ['ADMIN', 'SECRETARIA', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: SensorsOutlinedIcon },
   { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon },
   { label: 'Apadrinamientos', href: '/cms/apadrinamientos', roles: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: VolunteerActivismOutlinedIcon },
@@ -135,6 +138,8 @@ export const rolesPorRutaCms = {
   apadrinamientos: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'],
   // El cortejo en directo: la guarda de /api/cortejo-directo/admin.
   'procesion/directo': ['ADMIN', 'SECRETARIA', 'ALBACERIA', 'HERMANO_MAYOR'],
+  // La puerta del templo: la guarda de /api/procesion/admin/puerta (rolesJunta).
+  'procesion/puerta': ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA', 'HERMANO_MAYOR'],
   // La tienda: la guarda de /api/tienda/admin.
   tienda: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'],
   // La lotería: la guarda de /api/loteria.

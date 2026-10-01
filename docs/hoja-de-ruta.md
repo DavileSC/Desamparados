@@ -34,7 +34,7 @@ hechas o aparcadas.
 
 **Dependencias entre los dos:**
 
-- El escaneo del QR (B) necesita la papeleta con QR (A): A la hace primero.
+- El escaneo del QR necesita la papeleta con QR: hechas las dos (A).
 - La lotería y la caja de tienda (A) apuntan en la contabilidad de hoy; la
   partida doble (B) tiene que recoger también lo que ellas apunten.
 - Las remesas SEPA van antes que la Norma 43 (las dos, B).
@@ -74,7 +74,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | | PC | Tarea | Notas |
 |---|---|---|---|
 | ✅ | A | Papeleta de sitio en PDF con código QR | Hecha: A4 que se imprime en la mesa al dar la ropa (y se reimprime desde el listado), adjunta al correo, y tarjeta con el QR en Procesión del área de hermanos |
-| 🔨 | A | Escaneo del QR en la puerta del templo | Asistencia en vivo por tramos. **La papeleta con QR ya está**: el código, en `papeleta-qr.ts` (ver abajo) |
+| ✅ | A | Escaneo del QR en la puerta del templo | Hecho: Censo y procesión → «Puerta del templo», pensada para el móvil. La cámara lee el QR de la papeleta (lector nativo en Android, `jsqr` en iPhone) o un lector de mano por el campo de texto; dice en grande si entra, si ya entró, si es de otra salida, anulada o falsa, y vibra. Cuentas por tramo que se refrescan solas cada 5 s, lista de los que faltan para marcar a mano a quien llega sin papeleta, y «Deshacer» (queda en la auditoría). Dos diputados leyendo la misma no la apuntan dos veces. Migración `puerta_del_templo` |
 | ✅ | — | **Cortejo por antigüedad, automático** | Hecha: Procesión → «Cortejo». Los tramos de cada salida (nombre y plazas) y los puestos que se reparten van en la configuración; «Repartir por antigüedad» pone a los más nuevos delante y a los más antiguos junto al trono, en proporción a las plazas, y escribe tramo y lugar en cada papeleta. Enseña antes cuántas cambian y la lista de cada tramo |
 | ✅ | A | Túnica propuesta según la medida | Hecha: sin túnica en casa ni libre la de antes, se propone la libre de talla más cercana a su altura al hombro (+5/−3 cm), en la ficha de la mesa y en la hoja del ropero sin repetir |
 

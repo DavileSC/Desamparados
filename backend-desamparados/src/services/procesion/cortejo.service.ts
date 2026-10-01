@@ -20,7 +20,7 @@ const clave = (salida: Salida) => `cortejo_${salida}`;
 const aJson = (c: ConfiguracionCortejo) => ({ tramos: c.tramos.map((t) => ({ nombre: t.nombre, plazas: t.plazas })), puestos: [...c.puestos] });
 
 /** Lo guardado, si es válido; si no (nunca se guardó, o se estropeó a mano), lo de por defecto. */
-async function leerConfiguracion(salida: Salida): Promise<ConfiguracionCortejo> {
+export async function leerConfiguracion(salida: Salida): Promise<ConfiguracionCortejo> {
   const fila = await db.configuracion.findUnique({ where: { key: clave(salida) } });
   if (fila) {
     try {
