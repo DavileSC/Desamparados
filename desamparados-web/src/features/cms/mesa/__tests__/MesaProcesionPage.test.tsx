@@ -5,6 +5,8 @@ import { renderWithProviders } from '../../../../test/test-utils'
 import { useAuthStore } from '../../../altas/auth/store'
 import MesaProcesionPage from '../MesaProcesionPage'
 import type { Apuntados, Colas, FichaDeMesa, PrendaDelRopero, Requisitos, SinDevolver } from '../../../../lib/api/mesa'
+import type { Salida } from '../../../../lib/api/salidas'
+import { salidasDePrueba, salidaRosario, esListaDeSalidas } from '../../../../test/salidas'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -14,7 +16,7 @@ const hermanoDe = (id: number, nombre: string, apellidos: string, fechaNacimient
 
 const APUNTADOS: Apuntados = {
   year: 2027,
-  salida: 'PASION',
+  salida: 'sabado-de-pasion',
   puestos: [{ puesto: 'Guardería', total: 1 }, { puesto: 'Trono', total: 1 }],
   faltanCingulos: 0,
   apuntados: [
@@ -43,7 +45,7 @@ const FICHA: FichaDeMesa = {
   id: 20, nombre: 'Abel', primerApellido: 'Reyes', segundoApellido: 'Díaz', apellidos: 'Reyes Díaz',
   fechaNacimiento: '2013-08-01T12:00:00.000Z', sexo: 'HOMBRE', telefono: '622661532', email: 'virginia@ejemplo.es', dni: null,
   numeroHermano: 57, esTitular: false, situacion: 'activo', tieneTunicaPropia: false, alturaHombro: null, puesto: null,
-  salida: 'PASION', year: 2027, prendas: [], cingulosSinDevolver: [], cingulos: { total: 10, prestados: 3, enElRopero: 7, debidos: 0 },
+  salida: 'sabado-de-pasion', year: 2027, prendas: [], cingulosSinDevolver: [], cingulos: { total: 10, prestados: 3, enElRopero: 7, debidos: 0 },
   solicitud: null, papeleta: null, requisitos: DEBE, familia: [],
   anterior: { year: 2026, puesto: 'Nazareno', origenTunica: 'ROPERO', numTunicaAsignada: '140-107', numCapiroteAsignado: '150', numFaraonaAsignada: null, cingulo: 'DEVUELTO' },
   propuesta: { puesto: 'Nazareno', tunica: { origen: 'ROPERO', numero: '140-107' }, capirote: '150', faraona: null, cingulo: 'PRESTADO' },
@@ -56,7 +58,7 @@ const SOLICITUD: NonNullable<FichaDeMesa['solicitud']> = {
 }
 
 const COLAS: Colas = {
-  salida: 'PASION', year: 2027,
+  salida: 'sabado-de-pasion', year: 2027,
   porCobrar: [{ solicitudId: 99, hermano: { id: 20, nombre: 'Abel', apellidos: 'Reyes Díaz', fechaNacimiento: FICHA.fechaNacimiento, numeroHermano: 57 }, puesto: 'Nazareno', conCitaHoy: false, totalPendiente: 20, motivos: [], puedeRecoger: false }],
   porRecoger: [{ solicitudId: 98, hermano: { id: 20, nombre: 'Abel', apellidos: 'Reyes Díaz', fechaNacimiento: FICHA.fechaNacimiento, numeroHermano: 57 }, puesto: 'Nazareno', conCitaHoy: true, totalPendiente: 0, motivos: [], puedeRecoger: true }],
 }
@@ -70,6 +72,8 @@ interface Opciones {
   prendas?: Record<string, PrendaDelRopero[]>
   /** Respuestas de los POST, por el final de la ruta; `'red'` simula que la WiFi se ha caído. */
   respuestas?: Record<string, unknown | 'red'>
+  /** Las salidas activas: las dos de siempre si no se dice otra cosa. */
+  salidas?: Salida[]
 }
 
 function servidor(opciones: Opciones = {}) {
@@ -80,6 +84,7 @@ function servidor(opciones: Opciones = {}) {
     const metodo = init.method ?? 'GET'
     llamadas.push({ url, metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
     const ruta = url.split('?')[0]
+    if (esListaDeSalidas(url)) return Promise.resolve(json(opciones.salidas ?? salidasDePrueba))
     for (const [final, respuesta] of Object.entries(opciones.respuestas ?? {})) {
       if (metodo === 'POST' && ruta.endsWith(final)) {
         return respuesta === 'red' ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve(json(respuesta))
@@ -136,7 +141,7 @@ describe('MesaProcesionPage · Inscripción', () => {
     await user.click(screen.getByRole('button', { name: 'Apuntar' }))
 
     await waitFor(() => expect(post(llamadas, '/mesa/inscribir')).toHaveLength(1))
-    expect(post(llamadas, '/mesa/inscribir')[0].cuerpo).toMatchObject({ hermanoId: 20, salida: 'PASION', puesto: 'Nazareno' })
+    expect(post(llamadas, '/mesa/inscribir')[0].cuerpo).toMatchObject({ hermanoId: 20, salida: 'sabado-de-pasion', puesto: 'Nazareno' })
     expect(post(llamadas, '/mesa/inscribir')[0].cuerpo?.clave).toMatch(/^[0-9a-f]{32}$/)
     // Los datos no se han tocado: no se corrige la ficha.
     expect(llamadas.some((l) => l.metodo === 'PATCH')).toBe(false)
@@ -214,8 +219,8 @@ describe('MesaProcesionPage · Tesorería', () => {
 
   it('en el Rosario cobra la voluntad de la solicitud, con lo que dé al final', async () => {
     const user = userEvent.setup()
-    localStorage.setItem('mesa.salida', 'ROSARIO')
-    const ficha = { ...FICHA, salida: 'ROSARIO' as const, requisitos: { ...AL_DIA, salidaPagada: false, salidaPendiente: 5, totalPendiente: 5, puedeRecoger: false },
+    localStorage.setItem('mesa.salida', 'rosario-vespertino')
+    const ficha = { ...FICHA, salida: 'rosario-vespertino' as const, requisitos: { ...AL_DIA, salidaPagada: false, salidaPendiente: 5, totalPendiente: 5, puedeRecoger: false },
       solicitud: { ...SOLICITUD, puesto: 'Vela', donativo: 5, pendiente: 5, concepto: 'Donativo Rosario vespertino 2027' } }
     const llamadas = servidor({ ficha, respuestas: { '/mesa/cobrar': { cobrados: [{ id: 70, concepto: 'Donativo Rosario vespertino 2027', importe: 3 }], total: 3, repetida: false } } })
     renderWithProviders(<MesaProcesionPage />)
@@ -380,8 +385,8 @@ describe('MesaProcesionPage · Túnicas', () => {
 
   it('en el Rosario se va de traje: solo se confirma el puesto', async () => {
     const user = userEvent.setup()
-    localStorage.setItem('mesa.salida', 'ROSARIO')
-    const llamadas = servidor({ ficha: { ...apuntado, salida: 'ROSARIO', solicitud: { ...SOLICITUD, puesto: 'Vela' } }, respuestas: { '/mesa/entregar': { papeletaId: 99, puesto: 'Vela', numTunicaAsignada: null, repetida: false } } })
+    localStorage.setItem('mesa.salida', 'rosario-vespertino')
+    const llamadas = servidor({ ficha: { ...apuntado, salida: 'rosario-vespertino', solicitud: { ...SOLICITUD, puesto: 'Vela' } }, respuestas: { '/mesa/entregar': { papeletaId: 99, puesto: 'Vela', numTunicaAsignada: null, repetida: false } } })
     renderWithProviders(<MesaProcesionPage />)
     await buscarAbel(user)
 
@@ -390,7 +395,7 @@ describe('MesaProcesionPage · Túnicas', () => {
     await user.click(screen.getByRole('button', { name: 'Confirmar el puesto' }))
     await waitFor(() => expect(post(llamadas, '/mesa/entregar')).toHaveLength(1))
     expect(post(llamadas, '/mesa/entregar')[0].cuerpo).not.toHaveProperty('origenTunica')
-    expect(llamadas.some((l) => l.url.includes('/mesa/personas/20?salida=ROSARIO'))).toBe(true)
+    expect(llamadas.some((l) => l.url.includes('/mesa/personas/20?salida=rosario-vespertino'))).toBe(true)
   })
 })
 
@@ -560,10 +565,42 @@ describe('MesaProcesionPage · Devolución', () => {
   })
 
   it('en el Rosario no hay devolución: se va de traje', async () => {
-    localStorage.setItem('mesa.salida', 'ROSARIO')
+    localStorage.setItem('mesa.salida', 'rosario-vespertino')
     servidor()
     renderWithProviders(<MesaProcesionPage />)
     await screen.findByRole('table', { name: 'Apuntados' })
     expect(screen.queryByRole('tab', { name: 'Devolución' })).not.toBeInTheDocument()
+  })
+})
+
+describe('MesaProcesionPage · Salidas', () => {
+  it('con una sola salida sin ropa no hay selector, ni zonas de ropa', async () => {
+    servidor({ salidas: [salidaRosario], apuntados: { ...APUNTADOS, salida: 'rosario-vespertino' } })
+    renderWithProviders(<MesaProcesionPage />)
+    expect(await screen.findByRole('tab', { name: 'Inscripción' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Salida' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Preparar ropa' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Devolución' })).not.toBeInTheDocument()
+    expect(await screen.findByText(/^Rosario vespertino 2027/)).toBeInTheDocument()
+  })
+
+  it('con dos salidas se elige, se recuerda y todo se pide de la elegida', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem('mesa.zona', 'listado')
+    const llamadas = servidor()
+    renderWithProviders(<MesaProcesionPage />)
+    await screen.findByRole('table', { name: 'Apuntados' })
+    expect(llamadas.some((l) => l.url.includes('/mesa/apuntados?salida=sabado-de-pasion'))).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Rosario vespertino' }))
+    await waitFor(() => expect(llamadas.some((l) => l.url.includes('/mesa/apuntados?salida=rosario-vespertino'))).toBe(true))
+    expect(localStorage.getItem('mesa.salida')).toBe('rosario-vespertino')
+  })
+
+  it('sin salidas activas lo dice y lleva a crearlas', async () => {
+    servidor({ salidas: [] })
+    renderWithProviders(<MesaProcesionPage />)
+    expect(await screen.findByText(/no hay salidas activas/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Procesión → Salidas' })).toHaveAttribute('href', '/cms/procesion/salidas')
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
   })
 })

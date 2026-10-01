@@ -9,6 +9,8 @@ import { mensajeDe } from './formato'
 interface Props {
   onHecha: (id: number, aviso: string) => void
   onCancelar: () => void
+  /** El slug de la salida de la mesa: el buscador del tutor lo pide, aunque aquí no importe. */
+  salida: string
 }
 
 type Quien = 'ADULTO' | 'MENOR'
@@ -31,7 +33,7 @@ const VACIO_TUTOR = { nombre: '', primerApellido: '', segundoApellido: '', dni: 
  * de su tutor, que puede estar ya en el censo o abrirse aquí mismo. La ficha
  * nace en activo y con número de hermano.
  */
-export default function AltaEnMesa({ onHecha, onCancelar }: Props) {
+export default function AltaEnMesa({ onHecha, onCancelar, salida }: Props) {
   const [quien, setQuien] = useState<Quien>('ADULTO')
   const [persona, setPersona] = useState(VACIA)
   const [tutor, setTutor] = useState<Tutor>(null)
@@ -127,7 +129,7 @@ export default function AltaEnMesa({ onHecha, onCancelar }: Props) {
             </Box>
           ) : (
             <>
-              <BuscadorPersonas etiqueta="Buscar al tutor en el censo" onElegir={(p) => setTutor({ tipo: 'censo', id: p.id, nombre: `${p.nombre} ${p.apellidos}` })} />
+              <BuscadorPersonas etiqueta="Buscar al tutor en el censo" salida={salida} onElegir={(p) => setTutor({ tipo: 'censo', id: p.id, nombre: `${p.nombre} ${p.apellidos}` })} />
               <Button size="small" onClick={() => setTutor({ tipo: 'nuevo' })} sx={{ alignSelf: 'start' }}>El tutor no está en el censo</Button>
             </>
           )}

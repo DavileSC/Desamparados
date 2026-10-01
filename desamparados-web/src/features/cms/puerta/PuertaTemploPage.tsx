@@ -1,14 +1,16 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import {
-  Alert, Box, Button, LinearProgress, List, ListItem, ListItemText, Paper, Stack, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Typography,
+  Alert, Box, Button, CircularProgress, LinearProgress, List, ListItem, ListItemText, Paper, Stack, Tab, Tabs, TextField, Typography,
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import CabeceraSeccion from '../CabeceraSeccion'
 import LectorQr from './LectorQr'
-import { NOMBRE_SALIDA } from '../mesa/formato'
 import { deshacerEntrada, entrarAMano, escanearPapeleta, estadoPuerta, type Lectura, type PapeletaEnPuerta, type Veredicto } from '../../../lib/api/puerta'
-import type { Salida } from '../../../lib/api/procesion'
+import type { Salida } from '../../../lib/api/salidas'
+import SelectorSalida from '../../procesion/SelectorSalida'
+import { useSalidaElegida } from '../../procesion/useSalidas'
 import { site } from '../../../config/site'
 
 /** Las cuentas se refrescan solas: varios diputados escanean a la vez en distintas puertas. */
@@ -31,12 +33,17 @@ const TEXTO: Record<Veredicto, { titulo: string; tono: 'success' | 'warning' | '
   FALSO: { titulo: 'No es una papeleta válida', tono: 'error' },
 }
 
-function explicacion(l: Lectura, salida: Salida, year?: number): string {
+function explicacion(l: Lectura, salida: Salida, salidas: Salida[], year?: number): string {
   const p = l.papeleta
   switch (l.veredicto) {
     case 'ENTRA': return p ? sitio(p) : ''
     case 'REPETIDA': return p?.entradaEl ? `Entró a las ${hora(p.entradaEl)}${p.entradaPor ? `, lo apuntó ${p.entradaPor}` : ''}.` : ''
-    case 'OTRA_SALIDA': return p ? `Es del ${NOMBRE_SALIDA[p.salida]} ${p.year}, no del ${NOMBRE_SALIDA[salida]}${year ? ` ${year}` : ''}.` : ''
+    case 'OTRA_SALIDA': {
+      if (!p) return ''
+      // Una salida ya desactivada no está en la lista: se dice sin nombre.
+      const otra = salidas.find((s) => s.slug === p.salida)?.nombre
+      return `Es ${otra ? `del ${otra}` : 'de otra salida,'} ${p.year}, no del ${salida.nombre}${year ? ` ${year}` : ''}.`
+    }
     case 'ANULADA': return 'La papeleta se anuló: que pase por la mesa.'
     case 'FALSO': return 'El código no es de una papeleta del Grupo, o está dañado. Búscalo por su nombre en «Faltan».'
   }
@@ -53,7 +60,9 @@ function vibrar(v: Veredicto) {
  */
 export default function PuertaTemploPage() {
   const cliente = useQueryClient()
-  const [salida, setSalida] = useState<Salida>('PASION')
+  const { salidas, salida, elegir, cargando } = useSalidaElegida('puerta.salida')
+  // Mientras llegan las salidas, la consulta espera (`enabled`).
+  const slug = salida?.slug ?? ''
   const [camara, setCamara] = useState(false)
   const [lectura, setLectura] = useState<Lectura | null>(null)
   const [pausado, setPausado] = useState(false)
@@ -63,8 +72,8 @@ export default function PuertaTemploPage() {
   const [error, setError] = useState<string | null>(null)
   const ultimo = useRef<{ texto: string; en: number } | null>(null)
 
-  const clave = ['puerta', salida]
-  const { data: estado, error: errorCarga } = useQuery({ queryKey: clave, queryFn: () => estadoPuerta(salida), refetchInterval: SONDEO_MS, staleTime: 0 })
+  const clave = ['puerta', slug]
+  const { data: estado, error: errorCarga } = useQuery({ queryKey: clave, queryFn: () => estadoPuerta(slug), refetchInterval: SONDEO_MS, staleTime: 0, enabled: Boolean(salida) })
   const refrescar = useCallback(() => cliente.invalidateQueries({ queryKey: ['puerta'] }), [cliente])
 
   const mostrar = useCallback((l: Lectura) => {
@@ -82,12 +91,12 @@ export default function PuertaTemploPage() {
     const ahora = Date.now()
     if (ultimo.current && ultimo.current.texto === limpio && ahora - ultimo.current.en < REPETICION_MS) return
     ultimo.current = { texto: limpio, en: ahora }
-    try { mostrar(await escanearPapeleta(limpio.slice(0, 64), salida)) }
+    try { mostrar(await escanearPapeleta(limpio.slice(0, 64), slug)) }
     catch (err: unknown) { setError(mensaje(err, 'No se ha podido comprobar la papeleta. Vuelve a intentarlo.')) }
-  }, [mostrar, salida])
+  }, [mostrar, slug])
 
   const aMano = async (p: PapeletaEnPuerta) => {
-    try { mostrar(await entrarAMano(p.id, salida)) }
+    try { mostrar(await entrarAMano(p.id, slug)) }
     catch (err: unknown) { setError(mensaje(err, 'No se ha podido apuntar la entrada.')) }
   }
 
@@ -103,19 +112,26 @@ export default function PuertaTemploPage() {
     return lista.filter((p) => `${nombre(p)} ${p.numeroHermano ?? ''} ${p.tramo ?? ''}`.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().includes(q))
   }, [estado, buscar])
 
-  const cambiarSalida = (nueva: Salida) => { setSalida(nueva); setLectura(null); setError(null) }
+  const cambiarSalida = (nueva: string) => { elegir(nueva); setLectura(null); setError(null) }
   const tono = lectura ? TEXTO[lectura.veredicto] : null
+
+  if (cargando) return <CircularProgress aria-label="Cargando la puerta" />
+  if (!salida) {
+    return <>
+      <CabeceraSeccion titulo="Puerta del templo" />
+      <Alert severity="info">
+        No hay salidas activas. Créalas en <Box component={Link} to="/cms/procesion/salidas" sx={{ color: 'inherit', fontWeight: 600 }}>Procesión → Salidas</Box>.
+      </Alert>
+    </>
+  }
 
   return <>
     <Helmet><title>{`Puerta del templo | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion
       titulo="Puerta del templo"
-      subtitulo={estado ? `${NOMBRE_SALIDA[salida]} ${estado.year} · ${estado.dentro} de ${estado.total} dentro` : NOMBRE_SALIDA[salida]}
+      subtitulo={estado ? `${salida.nombre} ${estado.year} · ${estado.dentro} de ${estado.total} dentro` : salida.nombre}
     >
-      <ToggleButtonGroup exclusive size="small" value={salida} onChange={(_e, v: Salida | null) => v && cambiarSalida(v)} aria-label="Salida">
-        <ToggleButton value="PASION">{NOMBRE_SALIDA.PASION}</ToggleButton>
-        <ToggleButton value="ROSARIO">{NOMBRE_SALIDA.ROSARIO}</ToggleButton>
-      </ToggleButtonGroup>
+      <SelectorSalida salidas={salidas} valor={slug} onChange={cambiarSalida} />
     </CabeceraSeccion>
 
     <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 5fr) minmax(0, 4fr)' }, alignItems: 'start' }}>
@@ -127,7 +143,7 @@ export default function PuertaTemploPage() {
               action={lectura.veredicto === 'ENTRA' && lectura.papeleta ? <Button color="inherit" size="small" onClick={() => void deshacer(lectura.papeleta!)}>Deshacer</Button> : undefined}>
               <Typography sx={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>{tono.titulo}</Typography>
               {lectura.papeleta && <Typography sx={{ fontSize: 19, fontWeight: 600, mt: 0.5 }}>{nombre(lectura.papeleta)}{lectura.papeleta.numeroHermano ? ` · n.º ${lectura.papeleta.numeroHermano}` : ''}</Typography>}
-              <Typography sx={{ mt: 0.25 }}>{explicacion(lectura, salida, estado?.year)}</Typography>
+              <Typography sx={{ mt: 0.25 }}>{explicacion(lectura, salida, salidas, estado?.year)}</Typography>
             </Alert>
           )}
         </Box>

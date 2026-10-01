@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
 import ComunicadoEditPage from '../ComunicadoEditPage'
+import { salidasDePrueba, esListaDeSalidas } from '../../../test/salidas'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 const BORRADOR = {
@@ -19,6 +21,7 @@ afterEach(() => { vi.unstubAllGlobals() })
 function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, pendientes: 0 }) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
+    if (esListaDeSalidas(ruta)) return Promise.resolve(json(salidasDePrueba))
     if (ruta.endsWith('/destinatarios')) return Promise.resolve(json({ para: 'Hermanos activos', fichas: 12, correos: 10, sinCorreo: 2 }))
     if (ruta.endsWith('/prueba')) return Promise.resolve(json({ message: 'Prueba enviada a ana@ejemplo.es.' }))
     if (ruta.endsWith('/enviar')) return Promise.resolve(json({ message: 'Enviando a 10 direcciones.', destinatarios: 10 }))
@@ -31,7 +34,8 @@ function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, pendie
     [{ path: '/cms/comunicados', element: <h1>Listado</h1> }, { path: '/cms/comunicados/:id', element: <ComunicadoEditPage /> }],
     { initialEntries: ['/cms/comunicados/7'] },
   )
-  render(<HelmetProvider><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
+  const cliente = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(<HelmetProvider><QueryClientProvider client={cliente}><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></QueryClientProvider></HelmetProvider>)
   return fetch
 }
 
@@ -46,6 +50,21 @@ describe('ComunicadoEditPage', () => {
     await waitFor(() => {
       const ultima = fetch.mock.calls.filter(([url]) => String(url).endsWith('/destinatarios')).at(-1)!
       expect(JSON.parse(String((ultima[1] as RequestInit).body)).segmento.conDeuda).toBe(true)
+    })
+  })
+
+  it('«con papeleta» ofrece las salidas activas y filtra por su id', async () => {
+    const user = userEvent.setup()
+    const fetch = montar(BORRADOR)
+    await screen.findByText(/Llegará a 10 direcciones/)
+
+    await user.click(screen.getByRole('combobox', { name: 'Papeleta' }))
+    const opciones = within(await screen.findByRole('listbox')).getAllByRole('option').map((o) => o.textContent)
+    expect(opciones).toEqual(['Da igual', 'Con papeleta del Sábado de Pasión', 'Con papeleta del Rosario vespertino'])
+    await user.click(screen.getByRole('option', { name: 'Con papeleta del Rosario vespertino' }))
+    await waitFor(() => {
+      const ultima = fetch.mock.calls.filter(([url]) => String(url).endsWith('/destinatarios')).at(-1)!
+      expect(JSON.parse(String((ultima[1] as RequestInit).body)).segmento.conPapeleta).toBe(2)
     })
   })
 

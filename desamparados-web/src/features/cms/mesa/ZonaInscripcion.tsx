@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { cancelarSolicitud, corregirFicha, inscribirEnMesa, type FichaDeMesa } from '../../../lib/api/mesa'
+import type { Salida } from '../../../lib/api/salidas'
 import DatosPersona from './DatosPersona'
 import { leyenda, useDatosPersona } from './datosDeLaFicha'
 import { AvisoSituacion, CampoPuesto, type Aviso } from './piezas'
@@ -9,6 +10,7 @@ import { mensajeDeFallo, useClaveDeOperacion } from './enVivo'
 
 interface Props {
   ficha: FichaDeMesa
+  salida: Salida
   role: string
   puestosUsados: string[]
   onHecho: (aviso: Aviso) => void
@@ -21,7 +23,7 @@ interface Props {
  * Grupo: se puede cambiar en Túnicas). No se cobra aquí: si debe algo, pasa
  * por Tesorería; si no, directo a Túnicas.
  */
-export default function ZonaInscripcion({ ficha, role, puestosUsados, onHecho, onRecargar }: Props) {
+export default function ZonaInscripcion({ ficha, salida, role, puestosUsados, onHecho, onRecargar }: Props) {
   const { datos, setDatos, correccion } = useDatosPersona(ficha)
   const [puesto, setPuesto] = useState(ficha.propuesta.puesto)
   const [altura, setAltura] = useState(alturaEnMetros(ficha.alturaHombro))
@@ -31,8 +33,8 @@ export default function ZonaInscripcion({ ficha, role, puestosUsados, onHecho, o
   const [error, setError] = useState<string | null>(null)
   const { clave, renovar } = useClaveDeOperacion()
 
-  const rosario = ficha.salida === 'ROSARIO'
-  const conAltura = puestoDelCatalogo(puesto, ficha.salida)?.alturaHombro || ficha.alturaHombro !== null || altura !== ''
+  const conDonativo = salida.cobro === 'DONATIVO'
+  const conAltura = puestoDelCatalogo(puesto, salida.puestos)?.alturaHombro || ficha.alturaHombro !== null || altura !== ''
   const importeDonativo = donativo.trim() ? Number(donativo.replace(',', '.')) : 0
   const donativoValido = Number.isFinite(importeDonativo) && importeDonativo >= 0 && importeDonativo <= 1000
   const deuda = ficha.requisitos.cuotasPendientes.reduce((s, c) => s + c.importe, 0)
@@ -59,7 +61,7 @@ export default function ZonaInscripcion({ ficha, role, puestosUsados, onHecho, o
         clave,
         ...(observaciones.trim() && { observaciones: observaciones.trim() }),
         ...(altura.trim() && { alturaHombro: altura.trim() }),
-        ...(rosario && { donativo: Math.round(importeDonativo * 100) / 100 }),
+        ...(conDonativo && { donativo: Math.round(importeDonativo * 100) / 100 }),
       })
       renovar()
       const quien = `${datos.nombre.trim()} ${datos.primerApellido.trim()}`
@@ -88,14 +90,14 @@ export default function ZonaInscripcion({ ficha, role, puestosUsados, onHecho, o
       <DatosPersona datos={datos} onCambiar={setDatos} />
 
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.5 }}>
-        <Typography component="legend" sx={leyenda}>{rosario ? 'Rosario vespertino' : 'Procesión'}</Typography>
+        <Typography component="legend" sx={leyenda}>{salida.nombre}</Typography>
         <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: conAltura ? 'minmax(0, 2fr) minmax(0, 1fr)' : '1fr' }}>
-          <CampoPuesto valor={puesto} onCambiar={setPuesto} salida={ficha.salida} usados={puestosUsados} />
+          <CampoPuesto valor={puesto} onCambiar={setPuesto} puestos={salida.puestos} usados={puestosUsados} />
           {conAltura && (
             <TextField size="small" label="Talla (hombro)" placeholder="1,45" value={altura} onChange={(e) => setAltura(e.target.value)} slotProps={{ htmlInput: { inputMode: 'decimal' } }} helperText="En metros" />
           )}
         </Box>
-        {rosario && (
+        {conDonativo && (
           <TextField
             size="small" label="Donativo (la voluntad)" placeholder="0" value={donativo} onChange={(e) => setDonativo(e.target.value)}
             error={!donativoValido} helperText={donativoValido ? 'En euros. Puede ser 0; se cobra en Tesorería.' : 'Un importe entre 0 y 1000 €'}

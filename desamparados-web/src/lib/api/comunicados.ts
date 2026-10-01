@@ -5,7 +5,8 @@ export type EstadoComunicado = 'BORRADOR' | 'ENVIANDO' | 'ENVIADO'
 
 /** A quién va, además de ser activo (y suscrito, en el boletín). Vacío no filtra. */
 export interface Segmento {
-  conPapeleta?: 'PASION' | 'ROSARIO' | null
+  /** El id de la salida. */
+  conPapeleta?: number | null
   conDeuda?: boolean
   edad?: 'MAYORES' | 'MENORES' | null
   poblacion?: string | null

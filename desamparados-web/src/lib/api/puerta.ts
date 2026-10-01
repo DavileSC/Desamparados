@@ -1,5 +1,5 @@
 import { llamarApi } from './cliente'
-import type { Salida } from './procesion'
+import { deLaSalida } from './procesion'
 
 /** Lo que dice la puerta al leer una papeleta (ver `domain/puerta.ts` del backend). */
 export type Veredicto = 'ENTRA' | 'REPETIDA' | 'OTRA_SALIDA' | 'ANULADA' | 'FALSO'
@@ -13,7 +13,8 @@ export interface PapeletaEnPuerta {
   tramo: string | null
   numero: number | null
   year: number
-  salida: Salida
+  /** El slug de su salida. */
+  salida: string
   entradaEl: string | null
   entradaPor: string | null
 }
@@ -30,7 +31,8 @@ export interface TramoEnPuerta {
 }
 
 export interface EstadoPuerta {
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
   year: number
   total: number
   dentro: number
@@ -39,10 +41,10 @@ export interface EstadoPuerta {
   ultimas: PapeletaEnPuerta[]
 }
 
-export const estadoPuerta = (salida: Salida) => llamarApi<EstadoPuerta>(`/procesion/admin/puerta?salida=${salida}`)
-export const escanearPapeleta = (codigo: string, salida: Salida) =>
+export const estadoPuerta = (salida: string) => llamarApi<EstadoPuerta>(`/procesion/admin/puerta?${deLaSalida(salida)}`)
+export const escanearPapeleta = (codigo: string, salida: string) =>
   llamarApi<Lectura>('/procesion/admin/puerta/escanear', { method: 'POST', json: { codigo, salida } })
-export const entrarAMano = (id: number, salida: Salida) =>
+export const entrarAMano = (id: number, salida: string) =>
   llamarApi<Lectura>(`/procesion/admin/puerta/papeletas/${id}`, { method: 'POST', json: { salida } })
 export const deshacerEntrada = (id: number) =>
   llamarApi<PapeletaEnPuerta>(`/procesion/admin/puerta/papeletas/${id}`, { method: 'DELETE' })

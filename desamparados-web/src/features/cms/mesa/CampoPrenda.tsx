@@ -9,6 +9,8 @@ interface Props {
   onCambiar: (valor: string) => void
   /** De quién es la ficha: una prenda que ya tiene esa persona está bien. */
   hermanoId: number
+  /** El slug de la salida: en qué papeleta va cada prenda depende de la salida. */
+  salida: string
   /** Darla de alta en el ropero al apuntar, si no está. */
   crear: boolean
   onCrear: (crear: boolean) => void
@@ -41,7 +43,7 @@ const normalizar = (texto: string) => texto.trim().replace(/\s+/g, '').toUpperCa
  * está libre (y su talla), si ya la tiene esta persona, quién la tiene si es
  * de otro, o que no está en el ropero, con la opción de darla de alta ahí.
  */
-export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoId, crear, onCrear, onBloqueo, autoFocus, asignada }: Props) {
+export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoId, salida, crear, onCrear, onBloqueo, autoFocus, asignada }: Props) {
   const [estado, setEstado] = useState<Estado>({ tipo: 'vacio' })
   const numero = normalizar(valor)
   const esLaAsignada = Boolean(asignada) && numero === normalizar(asignada ?? '')
@@ -52,7 +54,7 @@ export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoI
     let cancelado = false
     setEstado({ tipo: 'buscando' })
     const espera = window.setTimeout(() => {
-      prendasDelRopero(tipo, numero)
+      prendasDelRopero(tipo, numero, salida)
         .then((prendas) => {
           if (cancelado) return
           const exacta = prendas.find((p) => p.numero === numero)
@@ -75,7 +77,7 @@ export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoI
         .catch(() => { if (!cancelado) setEstado({ tipo: 'error' }) })
     }, ESPERA_MS)
     return () => { cancelado = true; window.clearTimeout(espera) }
-  }, [numero, tipo, hermanoId, esLaAsignada])
+  }, [numero, tipo, hermanoId, salida, esLaAsignada])
 
   // Lo que no se puede prestar bloquea el botón de apuntar; «no está» solo si no se da de alta.
   const bloqueada = estado.tipo === 'ocupada' || (estado.tipo === 'falta' && !crear)

@@ -6,6 +6,7 @@ import HistoricoPage from '../HistoricoPage'
 const papeleta = {
   id: 3,
   year: 2026,
+  salida: { slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión' },
   puesto: 'Cirio',
   tramo: 'Tramo 3 Virgen',
   numero: null,
@@ -34,6 +35,7 @@ describe('HistoricoPage', () => {
 
     expect(await screen.findByText(/tramo 3 virgen/i)).toBeInTheDocument()
     expect(screen.getByText('Ana Pérez Ruiz')).toBeInTheDocument()
+    expect(screen.getByText('2026 · Sábado de Pasión')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /ir a la página 2/i })).toBeInTheDocument()
     expect(String(simulado.mock.calls[0]?.[0])).toContain('/procesion/mis-papeletas?')
   })

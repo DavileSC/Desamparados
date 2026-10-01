@@ -4,6 +4,7 @@ import {
   Stack, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from '@mui/material'
 import { cobrarEnMesa, perdonarCuotas, type FichaDeMesa, type MetodoEnMesa } from '../../../lib/api/mesa'
+import type { Salida } from '../../../lib/api/salidas'
 import { leyenda } from './datosDeLaFicha'
 import { AvisoSituacion, type Aviso } from './piezas'
 import CancelarInscripcion from './CancelarInscripcion'
@@ -12,6 +13,7 @@ import { mensajeDeFallo, useClaveDeOperacion } from './enVivo'
 
 interface Props {
   ficha: FichaDeMesa
+  salida: Salida
   role: string
   onHecho: (aviso: Aviso) => void
   onRecargar: () => void
@@ -32,18 +34,18 @@ interface Linea {
 
 /**
  * Zona de Tesorería: cobrar de una vez lo que la persona tiene pendiente (sus
- * cuotas, las de su familia si paga por ellos, la papeleta o el donativo del
- * Rosario) o, si el Hermano Mayor lo decide, perdonar la cuota. Todo viene
+ * cuotas, las de su familia si paga por ellos, y la cuota o el donativo
+ * de la salida) o, si el Hermano Mayor lo decide, perdonar la cuota. Todo viene
  * marcado: lo normal es confirmar el importe y la forma de pago, y pulsar.
  */
-export default function ZonaTesoreria({ ficha, role, onHecho, onRecargar }: Props) {
+export default function ZonaTesoreria({ ficha, salida, role, onHecho, onRecargar }: Props) {
   const solicitud = ficha.solicitud
   const lineas: Linea[] = [
-    // Lo de la salida (la cuota de salida o la voluntad del Rosario): se vuelve recibo al cobrarlo.
+    // Lo de la salida (la cuota de salida o la voluntad en las de donativo): se vuelve recibo al cobrarlo.
     ...(solicitud && solicitud.pendiente > 0
       ? [{
           clave: `s-${solicitud.id}`, solicitudId: solicitud.id, quien: null, concepto: solicitud.concepto, importe: solicitud.pendiente,
-          cuota: false, devuelta: false, donativo: ficha.salida === 'ROSARIO',
+          cuota: false, devuelta: false, donativo: salida.cobro === 'DONATIVO',
         }]
       : []),
     ...ficha.requisitos.cuotasPendientes.map((c) => ({

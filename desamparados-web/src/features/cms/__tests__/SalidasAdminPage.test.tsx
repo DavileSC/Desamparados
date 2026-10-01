@@ -17,13 +17,13 @@ vi.mock('../../../lib/api/salidas', async (importOriginal) => {
   return { ...real, salidasDelCms: vi.fn(), crearSalida: vi.fn(), editarSalida: vi.fn(), fijarFechaDeSalida: vi.fn() }
 })
 
-const PASION: Salida = {
+const pasion: Salida = {
   id: 1, slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', orden: 0, activa: true, conRopa: true,
   cobro: 'CUOTA', importeCuota: 0, fecha: 'PASCUA', diasDesdePascua: -8, horaSalida: '19:00', lugar: 'Templo parroquial',
   eventoId: null, plazoAbierto: true, puestos: [{ nombre: 'Nazareno', tunica: true, tocado: 'CAPIROTE', alturaHombro: false }],
   cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: '2026-03-28', acto: null,
 }
-const ROSARIO: Salida = {
+const rosario: Salida = {
   id: 2, slug: 'rosario-vespertino', nombre: 'Rosario vespertino', orden: 1, activa: false, conRopa: false,
   cobro: 'DONATIVO', importeCuota: 0, fecha: 'MANUAL', diasDesdePascua: null, horaSalida: null, lugar: null,
   eventoId: null, plazoAbierto: false, puestos: [], cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: null, acto: null,
@@ -48,7 +48,7 @@ function montar(ruta = '/cms/procesion/salidas') {
 
 beforeEach(() => {
   useAuthStore.setState({ status: 'listo', cms: { id: 1, email: 'secre@ejemplo.es', role: 'SECRETARIA', perfiles: [], origen: 'cms' }, hermano: null })
-  vi.mocked(salidasDelCms).mockResolvedValue([PASION, ROSARIO])
+  vi.mocked(salidasDelCms).mockResolvedValue([pasion, rosario])
 })
 
 describe('SalidasAdminPage', () => {
@@ -65,7 +65,7 @@ describe('SalidasAdminPage', () => {
   it('«Nueva salida» abre la ventana; el nombre propone el slug y al guardar crea y navega a editar', async () => {
     const usuario = userEvent.setup()
     vi.mocked(crearSalida).mockResolvedValue({
-      ...PASION, id: 42, slug: 'traslado', nombre: 'Traslado', diasDesdePascua: -3, fechaDelAnio: '2026-04-02',
+      ...pasion, id: 42, slug: 'traslado', nombre: 'Traslado', diasDesdePascua: -3, fechaDelAnio: '2026-04-02',
     })
     const router = montar()
     await screen.findByText('Sábado de Pasión')

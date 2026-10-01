@@ -1,15 +1,13 @@
 import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
+import type { Salida } from './salidas'
 
 export type ReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
-
-/** Las dos salidas del año: el Sábado de Pasión y el Rosario vespertino de octubre. */
-export type Salida = 'PASION' | 'ROSARIO'
 
 export interface ApiProcessionTicket {
   id: number
   year: number
-  salida?: Salida
+  salida: { slug: string; nombre: string }
   puesto: string
   tramo: string | null
   numero: number | null
@@ -30,7 +28,8 @@ export function misPapeletas(pagina: { pagina: number; porPagina: number }) {
 /** Un día de reparto: cuándo, y cuánta gente ha reservado ya. */
 export interface DiaDeReparto {
   id: number
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
   fecha: string
   horaInicio: string
   horaFin: string
@@ -59,7 +58,7 @@ export interface FichaEnUnaSalida {
     pendiente: number
     concepto: string
     pagada: boolean
-    cita: { id: number; turno: { id: number; salida: Salida; fecha: string; horaInicio: string; horaFin: string } } | null
+    cita: { id: number; turno: { id: number; salidaId: number; fecha: string; horaInicio: string; horaFin: string } } | null
   } | null
   /** La papeleta de este año, ya recogida: con su QR para enseñarlo en la puerta. */
   papeleta: {
@@ -89,12 +88,20 @@ export interface FichaEnLaProcesion {
   tieneTunicaPropia: boolean
   cuotasPendientes: CuotaPorPagar[]
   cuotasEnElBanco: number
-  porSalida: Record<Salida, FichaEnUnaSalida>
+  /** Por slug de la salida: una entrada por cada salida activa. */
+  porSalida: Record<string, FichaEnUnaSalida>
 }
 
 export interface SalidaDelHermano {
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
+  salidaId: number
   nombre: string
+  conRopa: boolean
+  cobro: Salida['cobro']
+  /** La cuota de la salida; null en las de donativo, donde se da la voluntad. */
+  cuotaSalida: number | null
+  indicaciones: string | null
   /** Si Secretaría ha abierto la solicitud de esta salida. */
   abierto: boolean
   year: number
@@ -105,9 +112,8 @@ export interface SalidaDelHermano {
 }
 
 export interface MiProcesion {
+  /** Las activas, por su orden. */
   salidas: SalidaDelHermano[]
-  /** La cuota de salida de la Pasión: hoy 0 € (y entonces no se enseña nada). */
-  cuotaSalida: number | null
   /** Si se puede pagar desde el área (hoy, con la pasarela simulada). */
   pagoEnLinea: boolean
   /** Con qué se paga en línea y si es de pruebas (no se cobra de verdad). Null si no hay pago en línea. */
@@ -174,7 +180,8 @@ export function irAlBanco(inicio: { url: string; campos: Record<string, string> 
 // --- CMS ---
 
 export interface PlazoDePapeletas {
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
   abierto: boolean
   cambiadoEl: string | null
   year: number
@@ -182,38 +189,29 @@ export interface PlazoDePapeletas {
   primerDia: string | null
   ultimoDia: string | null
   citasReservadas: number
-  /** Solo la Pasión. */
+  /** Null en las de donativo. */
   cuotaSalida: number | null
-  /** Solo el Rosario: su acto en la Agenda, si ya tiene fecha. */
-  rosario?: { eventoId: number; inicio: string; lugar: string | null } | null
+  /** Solo en las de fecha a mano: su acto en la Agenda, o null si aún no tiene fecha. */
+  fecha?: { eventoId: number; inicio: string; lugar: string | null } | null
 }
 
-const deLaSalida = (salida: Salida) => (salida === 'PASION' ? '' : `?salida=${salida}`)
+/** Todas las rutas de la procesión piden la salida: suponer una, con varias, sería equivocarse en silencio. */
+export const deLaSalida = (slug: string) => `salida=${encodeURIComponent(slug)}`
 
-export function plazoDePapeletas(salida: Salida = 'PASION') {
-  return llamarApi<PlazoDePapeletas>(`/procesion/admin/plazo${deLaSalida(salida)}`)
+export function plazoDePapeletas(salida: string) {
+  return llamarApi<PlazoDePapeletas>(`/procesion/admin/plazo?${deLaSalida(salida)}`)
 }
 
-export function cambiarPlazo(abierto: boolean, opciones: { avisar?: boolean; borradorNoticia?: boolean; salida?: Salida } = {}) {
+export function cambiarPlazo(abierto: boolean, salida: string, opciones: { avisar?: boolean; borradorNoticia?: boolean } = {}) {
   return llamarApi<{ abierto: boolean; avisados: number; noticiaId: number | null }>('/procesion/admin/plazo', {
     method: 'POST',
-    json: { abierto, ...opciones },
+    json: { abierto, ...opciones, salida },
   })
-}
-
-/** Fijar (o mover) la fecha del Rosario vespertino: sale en la Agenda pública. */
-export function fijarRosario(datos: { inicio: string; lugar?: string | null }) {
-  return llamarApi<{ eventoId: number; inicio: string; lugar: string | null }>('/procesion/admin/rosario', { method: 'PUT', json: datos })
-}
-
-/** La cuota de salida de la Pasión: la configuración de siempre (solo el administrador). */
-export function cambiarCuotaSalida(valor: string) {
-  return llamarApi<unknown>('/admin/config', { method: 'POST', json: { key: 'precio_papeleta_sitio', value: valor } })
 }
 
 export interface TurnoDeReparto {
   id: number
-  salida: Salida
+  salidaId: number
   fecha: string
   horaInicio: string
   horaFin: string
@@ -225,11 +223,11 @@ export interface TurnoDeReparto {
   vinieron: number
 }
 
-export function turnosDeReparto(salida?: Salida) {
-  return llamarApi<TurnoDeReparto[]>(`/procesion/admin/turnos${salida ? `?salida=${salida}` : ''}`)
+export function turnosDeReparto(salida: string) {
+  return llamarApi<TurnoDeReparto[]>(`/procesion/admin/turnos?${deLaSalida(salida)}`)
 }
 
-export function crearTurno(datos: { fecha: string; horaInicio: string; horaFin: string; capacidadEstimada: number; salida?: Salida }) {
+export function crearTurno(datos: { fecha: string; horaInicio: string; horaFin: string; capacidadEstimada: number; salida: string }) {
   return llamarApi<TurnoDeReparto>('/procesion/admin/turnos', { method: 'POST', json: datos })
 }
 
@@ -247,7 +245,8 @@ export interface ConfiguracionCortejo {
 }
 
 export interface EstadoCortejo {
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
   year: number
   config: ConfiguracionCortejo
   papeletas: number
@@ -265,10 +264,10 @@ export interface EstadoCortejo {
   }[]
 }
 
-export const estadoCortejo = (salida: Salida) => llamarApi<EstadoCortejo>(`/procesion/admin/cortejo?salida=${salida}`)
+export const estadoCortejo = (salida: string) => llamarApi<EstadoCortejo>(`/procesion/admin/cortejo?${deLaSalida(salida)}`)
 
-export const guardarTramosCortejo = (salida: Salida, config: ConfiguracionCortejo) =>
+export const guardarTramosCortejo = (salida: string, config: ConfiguracionCortejo) =>
   llamarApi<ConfiguracionCortejo>('/procesion/admin/cortejo/configuracion', { method: 'PUT', json: { salida, ...config } })
 
-export const repartirCortejo = (salida: Salida, year: number) =>
+export const repartirCortejo = (salida: string, year: number) =>
   llamarApi<{ message: string; cambiadas: number }>('/procesion/admin/cortejo/aplicar', { method: 'POST', json: { salida, year } })

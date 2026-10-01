@@ -25,13 +25,13 @@ const tenue = { color: 'text.disabled' } as const
  * cíngulos que harán falta son más que los que quedan, lo avisa: hay que
  * pedir o hacer más antes del reparto.
  */
-export default function PreparacionRopa() {
+export default function PreparacionRopa({ salida }: { salida: string }) {
   const { fondoCabecera } = useColoresContabilidad()
   const [turnoId, setTurnoId] = useState<number | ''>('')
-  const turnos = useQuery({ queryKey: [...CLAVE_MESA, 'turnos'], queryFn: () => turnosDeReparto('PASION') })
+  const turnos = useQuery({ queryKey: [...CLAVE_MESA, 'turnos', salida], queryFn: () => turnosDeReparto(salida) })
   const lista = useQuery({
-    queryKey: [...CLAVE_MESA, 'preparacion', turnoId],
-    queryFn: () => ropaPorPreparar(turnoId === '' ? undefined : turnoId),
+    queryKey: [...CLAVE_MESA, 'preparacion', salida, turnoId],
+    queryFn: () => ropaPorPreparar(salida, turnoId === '' ? undefined : turnoId),
   })
   const cingulos = useQuery({ queryKey: [...CLAVE_MESA, 'cingulos'], queryFn: cingulosDeLaMesa })
 

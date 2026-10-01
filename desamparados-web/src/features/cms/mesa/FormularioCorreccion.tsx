@@ -5,6 +5,7 @@ import {
   anularPapeleta, cancelarSolicitud, corregirFicha, corregirPapeleta, corregirSolicitud,
   type CinguloEnMesa, type FichaDeMesa, type OrigenTunica, type TipoRopa,
 } from '../../../lib/api/mesa'
+import type { Salida } from '../../../lib/api/salidas'
 import CampoCingulo from './CampoCingulo'
 import CampoPrenda from './CampoPrenda'
 import DatosPersona from './DatosPersona'
@@ -20,6 +21,7 @@ const dosColumnas = { display: 'grid', gap: 1.5, gridTemplateColumns: 'minmax(0,
 
 interface Props {
   ficha: FichaDeMesa
+  salida: Salida
   role: string
   puestosUsados: string[]
   onHecho: (aviso: Aviso) => void
@@ -36,10 +38,10 @@ export default function FormularioCorreccion(props: Props) {
 
 /**
  * Una solicitud sin recoger: sus datos, el puesto que pide, las
- * observaciones y, en el Rosario, la voluntad si aún no la ha pagado. O
+ * observaciones y, en las salidas de donativo, la voluntad si aún no la ha pagado. O
  * cancelarla: se echa atrás, o se apuntó por error (si pagó, se le devuelve).
  */
-function CorreccionSolicitud({ ficha, role, puestosUsados, onHecho, onRecargar }: Props) {
+function CorreccionSolicitud({ ficha, salida, role, puestosUsados, onHecho, onRecargar }: Props) {
   const solicitud = ficha.solicitud!
   const { datos, setDatos, correccion } = useDatosPersona(ficha)
   const [puesto, setPuesto] = useState(solicitud.puesto)
@@ -48,8 +50,8 @@ function CorreccionSolicitud({ ficha, role, puestosUsados, onHecho, onRecargar }
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cancelando, setCancelando] = useState(false)
-  // La voluntad se cambia mientras no esté pagada: en el Rosario, sin recibo todavía.
-  const donativoEditable = ficha.salida === 'ROSARIO' && solicitud.pendiente === (solicitud.donativo ?? 0)
+  // La voluntad se cambia mientras no esté pagada: en las de donativo, sin recibo todavía.
+  const donativoEditable = salida.cobro === 'DONATIVO' && solicitud.pendiente === (solicitud.donativo ?? 0)
   const importeDonativo = donativo.trim() ? Number(donativo.replace(',', '.')) : 0
   const donativoValido = !donativoEditable || (Number.isFinite(importeDonativo) && importeDonativo >= 0 && importeDonativo <= 1000)
 
@@ -96,7 +98,7 @@ function CorreccionSolicitud({ ficha, role, puestosUsados, onHecho, onRecargar }
 
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.5 }}>
         <Typography component="legend" sx={leyenda}>Lo que pide</Typography>
-        <CampoPuesto valor={puesto} onCambiar={setPuesto} salida={ficha.salida} usados={puestosUsados} />
+        <CampoPuesto valor={puesto} onCambiar={setPuesto} puestos={salida.puestos} usados={puestosUsados} />
         {donativoEditable && (
           <TextField size="small" label="Donativo (la voluntad)" value={donativo} onChange={(e) => setDonativo(e.target.value)}
             error={!donativoValido} helperText={donativoValido ? 'En euros. Se cobra en Tesorería.' : 'Un importe entre 0 y 1000 €'} slotProps={{ htmlInput: { inputMode: 'decimal' } }} />
@@ -131,10 +133,10 @@ function CorreccionSolicitud({ ficha, role, puestosUsados, onHecho, onRecargar }
  * vuelve al ropero), con el cíngulo: si se le debía, se le da aquí cuando lo
  * haya. También anularla: si se cobró, el recibo queda devuelto con su apunte.
  */
-function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }: Props) {
+function CorreccionPapeleta({ ficha, salida, role, puestosUsados, onHecho, onRecargar }: Props) {
   const papeleta = ficha.papeleta!
   const { datos, setDatos, correccion } = useDatosPersona(ficha)
-  const conRopa = ficha.salida === 'PASION'
+  const conRopa = salida.conRopa
   const [puesto, setPuesto] = useState(papeleta.puesto)
   const [origen, setOrigen] = useState<OrigenTunica>(papeleta.origenTunica ?? 'ROPERO')
   const [tunica, setTunica] = useState(papeleta.numTunicaAsignada ?? '')
@@ -241,7 +243,7 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.25 }}>
         <Typography component="legend" sx={leyenda}>{conRopa ? 'Puesto y ropa' : 'Puesto'}</Typography>
         <Box sx={dosColumnas}>
-          <CampoPuesto valor={puesto} onCambiar={setPuesto} salida={ficha.salida} usados={puestosUsados} />
+          <CampoPuesto valor={puesto} onCambiar={setPuesto} puestos={salida.puestos} usados={puestosUsados} />
           <TextField size="small" label="Talla (m)" placeholder="1,45" value={altura} onChange={(e) => setAltura(e.target.value)} slotProps={{ htmlInput: { inputMode: 'decimal' } }} />
         </Box>
 
@@ -255,7 +257,7 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
                 <MenuItem value="NINGUNA">No lleva</MenuItem>
               </TextField>
               {origen === 'ROPERO' && (
-                <CampoPrenda tipo="TUNICA" etiqueta="N.º de túnica" asignada={papeleta.numTunicaAsignada} valor={tunica} onCambiar={setTunica} hermanoId={ficha.id} crear={crear.TUNICA} onCrear={(c) => setCrear({ ...crear, TUNICA: c })} onBloqueo={bloqueoTunica} />
+                <CampoPrenda tipo="TUNICA" etiqueta="N.º de túnica" asignada={papeleta.numTunicaAsignada} valor={tunica} onCambiar={setTunica} hermanoId={ficha.id} salida={ficha.salida} crear={crear.TUNICA} onCrear={(c) => setCrear({ ...crear, TUNICA: c })} onBloqueo={bloqueoTunica} />
               )}
             </Box>
             <Box sx={dosColumnas}>
@@ -265,10 +267,10 @@ function CorreccionPapeleta({ ficha, role, puestosUsados, onHecho, onRecargar }:
                 <MenuItem value="NINGUNO">Ninguno</MenuItem>
               </TextField>
               {tocado === 'CAPIROTE' && (
-                <CampoPrenda tipo="CAPIROTE" etiqueta="N.º de capirote" asignada={papeleta.numCapiroteAsignado} valor={capirote} onCambiar={setCapirote} hermanoId={ficha.id} crear={crear.CAPIROTE} onCrear={(c) => setCrear({ ...crear, CAPIROTE: c })} onBloqueo={bloqueoCapirote} />
+                <CampoPrenda tipo="CAPIROTE" etiqueta="N.º de capirote" asignada={papeleta.numCapiroteAsignado} valor={capirote} onCambiar={setCapirote} hermanoId={ficha.id} salida={ficha.salida} crear={crear.CAPIROTE} onCrear={(c) => setCrear({ ...crear, CAPIROTE: c })} onBloqueo={bloqueoCapirote} />
               )}
               {tocado === 'FARAONA' && (
-                <CampoPrenda tipo="FARAONA" etiqueta="N.º de faraona" asignada={papeleta.numFaraonaAsignada} valor={faraona} onCambiar={setFaraona} hermanoId={ficha.id} crear={crear.FARAONA} onCrear={(c) => setCrear({ ...crear, FARAONA: c })} onBloqueo={bloqueoFaraona} />
+                <CampoPrenda tipo="FARAONA" etiqueta="N.º de faraona" asignada={papeleta.numFaraonaAsignada} valor={faraona} onCambiar={setFaraona} hermanoId={ficha.id} salida={ficha.salida} crear={crear.FARAONA} onCrear={(c) => setCrear({ ...crear, FARAONA: c })} onBloqueo={bloqueoFaraona} />
               )}
             </Box>
           </>

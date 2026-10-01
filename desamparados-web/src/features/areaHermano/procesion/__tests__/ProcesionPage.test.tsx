@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import ProcesionPage from '../ProcesionPage'
 import type { FichaEnLaProcesion, FichaEnUnaSalida, MiProcesion, SalidaDelHermano } from '../../../../lib/api/procesion'
+import type { Salida } from '../../../../lib/api/salidas'
+import { salidasDePrueba, salidaRosario, esListaDeSalidas } from '../../../../test/salidas'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -12,37 +14,44 @@ const ficha = (id: number, nombre: string, extra: Partial<FichaEnLaProcesion> = 
   id, nombre, apellidos: 'Benítez Salas', esTitular: true, parentesco: null, activo: true, tieneTunicaPropia: true, numeroHermano: 120,
   cuotasPendientes: [], cuotasEnElBanco: 0,
   porSalida: {
-    PASION: { ...vacia, ultima: { id: 9, year: 2026, puesto: 'Cirio', tramo: 'Tramo 3' }, ...pasion },
-    ROSARIO: { ...vacia, ...rosario },
+    'sabado-de-pasion': { ...vacia, ultima: { id: 9, year: 2026, puesto: 'Cirio', tramo: 'Tramo 3' }, ...pasion },
+    'rosario-vespertino': { ...vacia, ...rosario },
   },
   ...extra,
 })
 
 const DIAS = [
-  { id: 1, salida: 'PASION' as const, fecha: '2027-03-08T00:00:00.000Z', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z', genteApuntada: 34, capacidad: 100 },
-  { id: 2, salida: 'PASION' as const, fecha: '2027-03-09T00:00:00.000Z', horaInicio: '2027-03-09T17:00:00.000Z', horaFin: '2027-03-09T20:00:00.000Z', genteApuntada: 100, capacidad: 100 },
+  { id: 1, salida: 'sabado-de-pasion', fecha: '2027-03-08T00:00:00.000Z', horaInicio: '2027-03-08T17:00:00.000Z', horaFin: '2027-03-08T20:00:00.000Z', genteApuntada: 34, capacidad: 100 },
+  { id: 2, salida: 'sabado-de-pasion', fecha: '2027-03-09T00:00:00.000Z', horaInicio: '2027-03-09T17:00:00.000Z', horaFin: '2027-03-09T20:00:00.000Z', genteApuntada: 100, capacidad: 100 },
 ]
-const DIA_ROSARIO = { id: 5, salida: 'ROSARIO' as const, fecha: '2026-10-03T00:00:00.000Z', horaInicio: '2026-10-03T16:00:00.000Z', horaFin: '2026-10-03T19:00:00.000Z', genteApuntada: 3, capacidad: 60 }
+const diaDelRosario = { id: 5, salida: 'rosario-vespertino', fecha: '2026-10-03T00:00:00.000Z', horaInicio: '2026-10-03T16:00:00.000Z', horaFin: '2026-10-03T19:00:00.000Z', genteApuntada: 3, capacidad: 60 }
 
 const EVENTO = { fechaSalida: 'Sábado de Pasión', horaSalida: '19:30h', accesoPuerta: 'Casa parroquial' }
 
 const salidas = (pasion: Partial<SalidaDelHermano> = {}, rosario: Partial<SalidaDelHermano> = {}): SalidaDelHermano[] => [
-  { salida: 'PASION', nombre: 'Sábado de Pasión', abierto: false, year: 2027, evento: EVENTO, dias: [], ...pasion },
-  { salida: 'ROSARIO', nombre: 'Rosario vespertino', abierto: false, year: 2026, evento: EVENTO, dias: [], ...rosario },
+  {
+    salida: 'sabado-de-pasion', salidaId: 1, nombre: 'Sábado de Pasión', conRopa: true, cobro: 'CUOTA', cuotaSalida: 0, indicaciones: null,
+    abierto: false, year: 2027, evento: EVENTO, dias: [], ...pasion,
+  },
+  {
+    salida: 'rosario-vespertino', salidaId: 2, nombre: 'Rosario vespertino', conRopa: false, cobro: 'DONATIVO', cuotaSalida: null, indicaciones: null,
+    abierto: false, year: 2026, evento: EVENTO, dias: [], ...rosario,
+  },
 ]
 
 let respuestaDelPago: unknown = { tipo: 'hecho', total: 25, repetida: false }
 let estadoDelPagoEnElServidor: unknown = { estado: 'PAGADO', importe: 25 }
 
-function servidor(estado: Partial<MiProcesion>) {
+function servidor(estado: Partial<MiProcesion>, catalogo: Salida[] = salidasDePrueba) {
   const llamadas: { url: string; metodo: string; cuerpo?: unknown }[] = []
   vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const metodo = init.method ?? 'GET'
     llamadas.push({ url: String(url), metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
+    if (esListaDeSalidas(String(url))) return Promise.resolve(json(catalogo))
     if (String(url).includes('/mis-recibos/pagar')) return Promise.resolve(json(respuestaDelPago))
     if (String(url).includes('/mis-recibos/pagos/')) return Promise.resolve(json(estadoDelPagoEnElServidor))
     if (metodo === 'POST' || metodo === 'DELETE') return Promise.resolve(json({ citaId: 1, total: 20, repetida: false }))
-    return Promise.resolve(json({ salidas: salidas(), cuotaSalida: 0, pagoEnLinea: false, pago: null, fichas: [], ...estado }))
+    return Promise.resolve(json({ salidas: salidas(), pagoEnLinea: false, pago: null, fichas: [], ...estado }))
   }))
   return llamadas
 }
@@ -77,7 +86,7 @@ describe('ProcesionPage', () => {
     })
     renderWithProviders(<ProcesionPage />)
 
-    expect(await screen.findByText(/la solicitud de papeletas está abierta/i)).toBeInTheDocument()
+    expect(await screen.findByText(/la solicitud de papeletas del Sábado de Pasión está abierta/i)).toBeInTheDocument()
     // Una ficha pendiente de Secretaría no puede salir todavía.
     expect(screen.getByRole('checkbox', { name: /carmen/i })).toBeDisabled()
     // Un día completo no se ofrece.
@@ -101,7 +110,7 @@ describe('ProcesionPage', () => {
 
   it('una solicitud dice lo que pidió, su día (con el año si no es este) y que falta la cuota; se puede cancelar', async () => {
     const user = userEvent.setup()
-    const cita = { id: 77, turno: { id: 1, salida: 'PASION' as const, fecha: DIAS[0].fecha, horaInicio: DIAS[0].horaInicio, horaFin: DIAS[0].horaFin } }
+    const cita = { id: 77, turno: { id: 1, salidaId: 1, fecha: DIAS[0].fecha, horaInicio: DIAS[0].horaInicio, horaFin: DIAS[0].horaFin } }
     const solicitud = { id: 4, puesto: 'Nazareno', donativo: null, pendiente: 0, concepto: 'Papeleta de sitio 2027', pagada: false, cita }
     const llamadas = servidor({
       salidas: salidas({ abierto: true, dias: DIAS }),
@@ -234,13 +243,13 @@ describe('ProcesionPage', () => {
   it('el Rosario va aparte: su plazo, sus días, sus puestos y la voluntad', async () => {
     const user = userEvent.setup()
     const llamadas = servidor({
-      salidas: salidas({}, { abierto: true, dias: [DIA_ROSARIO] }),
+      salidas: salidas({}, { abierto: true, dias: [diaDelRosario] }),
       fichas: [ficha(1, 'Antonio')],
     })
     renderWithProviders(<ProcesionPage />)
 
     // Se abre por la salida con el plazo abierto.
-    expect(await screen.findByText(/inscripción del Rosario vespertino está abierta/i)).toBeInTheDocument()
+    expect(await screen.findByText(/solicitud de papeletas del Rosario vespertino está abierta/i)).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /Rosario vespertino · abierta/ })).toHaveAttribute('aria-selected', 'true')
     await user.type(screen.getByRole('combobox', { name: /le gustaría a Antonio/ }), 'Vel')
     await user.click(await screen.findByRole('option', { name: 'Vela' }))
@@ -250,5 +259,38 @@ describe('ProcesionPage', () => {
 
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'POST')).toBe(true))
     expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toEqual({ hermanoId: 1, turnoId: 5, puesto: 'Vela', donativo: 5 })
+  })
+
+  it('con tres salidas activas y dos con el plazo abierto, se ofrecen esas dos', async () => {
+    const user = userEvent.setup()
+    const TRASLADO: SalidaDelHermano = { ...salidas()[1], salida: 'traslado', salidaId: 3, nombre: 'Traslado', abierto: true, dias: [{ ...diaDelRosario, id: 6, salida: 'traslado' }] }
+    servidor({
+      salidas: [...salidas({}, { abierto: true, dias: [diaDelRosario] }), TRASLADO],
+      fichas: [ficha(1, 'Antonio')].map((f) => ({ ...f, porSalida: { ...f.porSalida, traslado: vacia } })),
+    }, [...salidasDePrueba, { ...salidaRosario, id: 3, slug: 'traslado', nombre: 'Traslado', puestos: [{ nombre: 'Bocina', tunica: false, tocado: null, alturaHombro: false }] }])
+    renderWithProviders(<ProcesionPage />)
+
+    const pestanas = await screen.findAllByRole('tab')
+    expect(pestanas.map((t) => t.textContent)).toEqual(['Sábado de Pasión', 'Rosario vespertino · abierta', 'Traslado · abierta'])
+    // Se abre por la primera con el plazo abierto, y la otra abierta también deja pedir.
+    expect(screen.getByRole('tab', { name: /Rosario vespertino/ })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText(/solicitud de papeletas del Rosario vespertino está abierta/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: /Traslado/ }))
+    expect(await screen.findByText(/solicitud de papeletas del Traslado está abierta/i)).toBeInTheDocument()
+    // Los puestos son los de esa salida.
+    await user.click(screen.getByRole('combobox', { name: /le gustaría a Antonio/ }))
+    expect(await screen.findByRole('option', { name: 'Bocina' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Vela' })).not.toBeInTheDocument()
+    // La que no está abierta no ofrece pedir.
+    await user.click(screen.getByRole('tab', { name: 'Sábado de Pasión' }))
+    expect(await screen.findByText(/del Sábado de Pasión aún no está abierta/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /pedir/i })).not.toBeInTheDocument()
+  })
+
+  it('sin salidas activas lo dice', async () => {
+    servidor({ salidas: [], fichas: [ficha(1, 'Antonio')] })
+    renderWithProviders(<ProcesionPage />)
+    expect(await screen.findByText(/no hay ninguna salida/i)).toBeInTheDocument()
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
   })
 })

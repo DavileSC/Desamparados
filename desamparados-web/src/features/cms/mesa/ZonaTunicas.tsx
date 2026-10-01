@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Alert, Box, Button, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import { entregarEnMesa, type CinguloEnMesa, type FichaDeMesa, type OrigenTunica, type TipoRopa } from '../../../lib/api/mesa'
+import type { Salida } from '../../../lib/api/salidas'
 import CampoCingulo, { cinguloInicial } from './CampoCingulo'
 import CampoPrenda from './CampoPrenda'
 import CancelarInscripcion from './CancelarInscripcion'
@@ -14,6 +15,7 @@ type Tocado = 'CAPIROTE' | 'FARAONA' | 'NINGUNO'
 
 interface Props {
   ficha: FichaDeMesa
+  salida: Salida
   role: string
   puestosUsados: string[]
   onHecho: (aviso: Aviso) => void
@@ -23,10 +25,10 @@ interface Props {
 }
 
 /** El tocado que se propone: el que trae prestado, el del año pasado o el del puesto. */
-function tocadoInicial(ficha: FichaDeMesa, puesto: string): Tocado {
+function tocadoInicial(ficha: FichaDeMesa, puesto: string, salida: Salida): Tocado {
   if (ficha.propuesta.faraona) return 'FARAONA'
   if (ficha.propuesta.capirote) return 'CAPIROTE'
-  return puestoDelCatalogo(puesto)?.tocado ?? 'NINGUNO'
+  return puestoDelCatalogo(puesto, salida.puestos)?.tocado ?? 'NINGUNO'
 }
 
 /**
@@ -34,18 +36,18 @@ function tocadoInicial(ficha: FichaDeMesa, puesto: string): Tocado {
  * le da la ropa y entonces nace su papeleta. Llega todo propuesto —la túnica
  * del año pasado (o la que trae sin devolver), su capirote o su faraona, el
  * cíngulo, su talla—: se prueba, se cambia lo que haga falta y se pulsa. En
- * el Rosario se va de traje: solo el puesto.
+ * una salida sin ropa (de traje) solo se confirma el puesto.
  *
  * Sin pagar no sale la túnica: si debe algo, se le manda a Tesorería.
  */
-export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRecargar, onATesoreria }: Props) {
+export default function ZonaTunicas({ ficha, salida, role, puestosUsados, onHecho, onRecargar, onATesoreria }: Props) {
   const solicitud = ficha.solicitud
-  const rosario = ficha.salida === 'ROSARIO'
+  const sinRopa = !salida.conRopa
   const inicial = solicitud?.puesto ?? ficha.propuesta.puesto
   const [puesto, setPuesto] = useState(inicial)
   const [origen, setOrigen] = useState<OrigenTunica>(ficha.propuesta.tunica.origen)
   const [tunica, setTunica] = useState(ficha.propuesta.tunica.numero ?? '')
-  const [tocado, setTocado] = useState<Tocado>(() => tocadoInicial(ficha, inicial))
+  const [tocado, setTocado] = useState<Tocado>(() => tocadoInicial(ficha, inicial, salida))
   const [capirote, setCapirote] = useState(ficha.propuesta.capirote ?? '')
   const [faraona, setFaraona] = useState(ficha.propuesta.faraona ?? '')
   // Si trae un cíngulo sin devolver, se le cambia por este: no gasta uno del ropero.
@@ -66,12 +68,12 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
   const bloqueoCapirote = useCallback((b: boolean) => bloquear('CAPIROTE', b), [])
   const bloqueoFaraona = useCallback((b: boolean) => bloquear('FARAONA', b), [])
 
-  if (ficha.papeleta) return <Alert severity="info">Ya ha recogido{rosario ? '' : ' la ropa'}: {ficha.papeleta.puesto}. Para cambiar algo, búscalo en el listado.</Alert>
+  if (ficha.papeleta) return <Alert severity="info">Ya ha recogido{sinRopa ? '' : ' la ropa'}: {ficha.papeleta.puesto}. Para cambiar algo, búscalo en el listado.</Alert>
   if (!solicitud) return <Alert severity="info">Todavía no está apuntado: que pase por Inscripción.</Alert>
 
-  const catalogo = puestoDelCatalogo(puesto, ficha.salida)
+  const catalogo = puestoDelCatalogo(puesto, salida.puestos)
   const conAltura = catalogo?.alturaHombro || ficha.alturaHombro !== null || altura !== ''
-  const hayBloqueo = !rosario && ((origen === 'ROPERO' && tunica.trim() && bloqueos.TUNICA)
+  const hayBloqueo = !sinRopa && ((origen === 'ROPERO' && tunica.trim() && bloqueos.TUNICA)
     || (tocado === 'CAPIROTE' && capirote.trim() && bloqueos.CAPIROTE)
     || (tocado === 'FARAONA' && faraona.trim() && bloqueos.FARAONA))
   const { requisitos } = ficha
@@ -84,8 +86,8 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
 
   const elegirPuesto = (nuevo: string) => {
     setPuesto(nuevo)
-    const c = puestoDelCatalogo(nuevo, ficha.salida)
-    if (!c || rosario) return
+    const c = puestoDelCatalogo(nuevo, salida.puestos)
+    if (!c || sinRopa) return
     setTocado(c.tocado ?? 'NINGUNO')
     if (!c.tunica) cambiarOrigen('NINGUNA')
     else if (origen === 'NINGUNA') cambiarOrigen(ficha.tieneTunicaPropia ? 'PROPIA' : 'ROPERO')
@@ -101,7 +103,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
         puesto: puesto.trim(),
         observaciones: observaciones.trim(),
         ...(altura.trim() && { alturaHombro: altura.trim() }),
-        ...(!rosario && {
+        ...(!sinRopa && {
           origenTunica: origen,
           ...(origen === 'ROPERO' && tunica.trim() && { numTunicaAsignada: tunica.trim() }),
           ...(tocado === 'CAPIROTE' && capirote.trim() && { numCapiroteAsignado: capirote.trim() }),
@@ -114,7 +116,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
       onHecho({
         tono: 'success',
         papeletaId: r.papeletaId,
-        texto: rosario
+        texto: sinRopa
           ? `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}, confirmado.`
           : `${ficha.nombre} ${ficha.primerApellido ?? ''}: ${r.puesto}${r.numTunicaAsignada ? `, túnica ${r.numTunicaAsignada}` : ''}${r.cingulo === 'DEBIDO' ? ', sin cíngulo (se le debe)' : ''}. Recogida.`,
       })
@@ -130,18 +132,18 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
       <AvisoSituacion ficha={ficha} role={role} onRecargar={onRecargar} />
       {!requisitos.puedeRecoger && (
         <Alert severity="error" action={<Button color="inherit" size="small" onClick={onATesoreria}>A Tesorería</Button>}>
-          <strong>{rosario ? 'Todavía no se le confirma el puesto.' : 'La túnica no sale todavía.'}</strong> {requisitos.motivos.join(' ')}
+          <strong>{sinRopa ? 'Todavía no se le confirma el puesto.' : 'La túnica no sale todavía.'}</strong> {requisitos.motivos.join(' ')}
         </Alert>
       )}
       {puesto.trim() !== solicitud.puesto && (
         <Typography variant="body2" color="text.secondary">Pidió: {solicitud.puesto}.</Typography>
       )}
-      {!rosario && (ficha.prendas.length > 0 || traeCingulo) && (
+      {!sinRopa && (ficha.prendas.length > 0 || traeCingulo) && (
         <Alert severity="warning" icon={false}>
           Tiene sin devolver: {ropaSinDevolver(ficha.prendas, ficha.cingulosSinDevolver.length)}. Que lo traiga: se le cambia por lo de este año.
         </Alert>
       )}
-      {!rosario && ficha.anterior && (
+      {!sinRopa && ficha.anterior && (
         <Typography variant="body2" color="text.secondary">
           En {ficha.anterior.year}: {ficha.anterior.puesto}
           {ficha.anterior.numTunicaAsignada && ` · túnica ${ficha.anterior.numTunicaAsignada}`}
@@ -152,15 +154,15 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
       )}
 
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.5 }}>
-        <Typography component="legend" sx={leyenda}>{rosario ? 'Puesto' : 'Puesto y ropa'}</Typography>
+        <Typography component="legend" sx={leyenda}>{sinRopa ? 'Puesto' : 'Puesto y ropa'}</Typography>
         <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: conAltura ? 'minmax(0, 2fr) minmax(0, 1fr)' : '1fr' }}>
-          <CampoPuesto valor={puesto} onCambiar={elegirPuesto} salida={ficha.salida} usados={puestosUsados} />
+          <CampoPuesto valor={puesto} onCambiar={elegirPuesto} puestos={salida.puestos} usados={puestosUsados} />
           {conAltura && (
             <TextField size="small" label="Talla (hombro)" placeholder="1,45" value={altura} onChange={(e) => setAltura(e.target.value)} slotProps={{ htmlInput: { inputMode: 'decimal' } }} helperText="En metros" />
           )}
         </Box>
 
-        {!rosario && (
+        {!sinRopa && (
           <>
             <Box>
               <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 0.75 }}>Túnica</Typography>
@@ -172,7 +174,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
             </Box>
             {origen === 'ROPERO' && (
               <CampoPrenda
-                tipo="TUNICA" etiqueta="N.º de túnica" valor={tunica} onCambiar={setTunica} hermanoId={ficha.id}
+                tipo="TUNICA" etiqueta="N.º de túnica" valor={tunica} onCambiar={setTunica} hermanoId={ficha.id} salida={ficha.salida}
                 crear={crear.TUNICA} onCrear={(c) => setCrear({ ...crear, TUNICA: c })} onBloqueo={bloqueoTunica} autoFocus
               />
             )}
@@ -192,13 +194,13 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
             </Box>
             {tocado === 'CAPIROTE' && (
               <CampoPrenda
-                tipo="CAPIROTE" etiqueta="N.º de capirote" valor={capirote} onCambiar={setCapirote} hermanoId={ficha.id}
+                tipo="CAPIROTE" etiqueta="N.º de capirote" valor={capirote} onCambiar={setCapirote} hermanoId={ficha.id} salida={ficha.salida}
                 crear={crear.CAPIROTE} onCrear={(c) => setCrear({ ...crear, CAPIROTE: c })} onBloqueo={bloqueoCapirote}
               />
             )}
             {tocado === 'FARAONA' && (
               <CampoPrenda
-                tipo="FARAONA" etiqueta="N.º de faraona" valor={faraona} onCambiar={setFaraona} hermanoId={ficha.id}
+                tipo="FARAONA" etiqueta="N.º de faraona" valor={faraona} onCambiar={setFaraona} hermanoId={ficha.id} salida={ficha.salida}
                 crear={crear.FARAONA} onCrear={(c) => setCrear({ ...crear, FARAONA: c })} onBloqueo={bloqueoFaraona}
               />
             )}
@@ -212,7 +214,7 @@ export default function ZonaTunicas({ ficha, role, puestosUsados, onHecho, onRec
       {error && <Alert severity="error">{error}</Alert>}
 
       <Button type="submit" variant="contained" size="large" disabled={enviando || !requisitos.puedeRecoger || !puesto.trim() || Boolean(hayBloqueo)}>
-        {enviando ? 'Guardando…' : rosario ? 'Confirmar el puesto' : 'Dar la ropa'}
+        {enviando ? 'Guardando…' : sinRopa ? 'Confirmar el puesto' : 'Dar la ropa'}
       </Button>
       <CancelarInscripcion ficha={ficha} onHecho={onHecho} />
     </Stack>

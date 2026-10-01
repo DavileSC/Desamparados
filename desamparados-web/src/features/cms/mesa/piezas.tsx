@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Alert, Autocomplete, Button, TextField } from '@mui/material'
-import { activarPersona, type FichaDeMesa, type Salida } from '../../../lib/api/mesa'
-import { PUESTOS_POR_SALIDA, mensajeDe } from './formato'
+import { activarPersona, type FichaDeMesa } from '../../../lib/api/mesa'
+import type { PuestoDelCatalogo } from '../../../lib/api/salidas'
+import { mensajeDe } from './formato'
 
 /**
  * Lo que dice la mesa al terminar con una persona, y en qué tono. Con
@@ -44,10 +45,10 @@ export function AvisoSituacion({ ficha, role, onRecargar }: { ficha: FichaDeMesa
 }
 
 /** El puesto: los del catálogo de la salida y los que ya se han dado, o uno escrito a mano. */
-export function CampoPuesto({ valor, onCambiar, salida, usados, autoFocus }: {
-  valor: string; onCambiar: (v: string) => void; salida: Salida; usados: string[]; autoFocus?: boolean
+export function CampoPuesto({ valor, onCambiar, puestos, usados, autoFocus }: {
+  valor: string; onCambiar: (v: string) => void; puestos: PuestoDelCatalogo[]; usados: string[]; autoFocus?: boolean
 }) {
-  const opciones = [...new Set([...PUESTOS_POR_SALIDA[salida].map((p) => p.nombre), ...usados])]
+  const opciones = [...new Set([...puestos.map((p) => p.nombre), ...usados])]
   return (
     <Autocomplete
       freeSolo

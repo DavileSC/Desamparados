@@ -2,15 +2,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { Alert, Autocomplete, Box, Button, Chip, CircularProgress, IconButton, Paper, Stack, TextField, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
-import { estadoCortejo, guardarTramosCortejo, repartirCortejo, type ConfiguracionCortejo, type EstadoCortejo, type Salida } from '../../../lib/api/procesion'
+import { estadoCortejo, guardarTramosCortejo, repartirCortejo, type ConfiguracionCortejo, type EstadoCortejo } from '../../../lib/api/procesion'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
-import { PUESTOS_POR_SALIDA } from '../mesa/formato'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const plural = (n: number, uno: string, varios: string) => (n === 1 ? `1 ${uno}` : `${n} ${varios}`)
 
 interface Props {
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
+  /** Los nombres de los puestos del catálogo de la salida: los que se ofrecen para repartir. */
+  puestos: string[]
   /** Secretaría y la administración: el resto de la Junta lo ve y no lo toca. */
   puedeCambiar: boolean
   onAviso: (texto: string) => void
@@ -22,7 +24,7 @@ interface Props {
  * Repartir reescribe el tramo y el lugar de las papeletas de los puestos que
  * se reparten; el resto (trono, acólitos, mantillas…) no se toca.
  */
-export default function Cortejo({ salida, puedeCambiar, onAviso }: Props) {
+export default function Cortejo({ salida, puestos, puedeCambiar, onAviso }: Props) {
   const [estado, setEstado] = useState<EstadoCortejo | null>(null)
   const [borrador, setBorrador] = useState<ConfiguracionCortejo | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +74,6 @@ export default function Cortejo({ salida, puedeCambiar, onAviso }: Props) {
   }
 
   const repartibles = estado.papeletas - estado.reparto.fuera
-  const opcionesPuesto = PUESTOS_POR_SALIDA[salida].map((p) => p.nombre)
 
   return (
     <Box component="section" aria-labelledby="cortejo-titulo" sx={{ mt: 4 }}>
@@ -111,7 +112,7 @@ export default function Cortejo({ salida, puedeCambiar, onAviso }: Props) {
           multiple
           freeSolo
           disabled={!puedeCambiar}
-          options={opcionesPuesto}
+          options={puestos}
           value={borrador.puestos}
           onChange={(_, valor) => setBorrador({ ...borrador, puestos: valor.map(String) })}
           renderValue={(valor, getItemProps) => valor.map((opcion, index) => <Chip size="small" label={opcion} {...getItemProps({ index })} key={opcion} />)}

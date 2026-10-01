@@ -7,22 +7,24 @@ import { HelmetProvider } from 'react-helmet-async'
 import { MemoryRouter } from 'react-router-dom'
 import { crearTemaCms } from '../../../../theme/cms'
 import PuertaTemploPage from '../PuertaTemploPage'
+import { salidasDePrueba, esListaDeSalidas } from '../../../../test/salidas'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
-const ANA = { id: 7, nombre: 'Ana', apellidos: 'Ruiz Gil', numeroHermano: 120, puesto: 'Nazareno', tramo: 'Tramo 2', numero: 4, year: 2027, salida: 'PASION', entradaEl: null, entradaPor: null }
+const ANA = { id: 7, nombre: 'Ana', apellidos: 'Ruiz Gil', numeroHermano: 120, puesto: 'Nazareno', tramo: 'Tramo 2', numero: 4, year: 2027, salida: 'sabado-de-pasion', entradaEl: null, entradaPor: null }
 const LUIS = { ...ANA, id: 8, nombre: 'Luis', apellidos: 'Mora Paz', numeroHermano: 33, tramo: 'Tramo 1', numero: 1 }
 const ESTADO = {
-  salida: 'PASION', year: 2027, total: 2, dentro: 0,
+  salida: 'sabado-de-pasion', year: 2027, total: 2, dentro: 0,
   tramos: [{ tramo: 'Tramo 1', total: 1, dentro: 0 }, { tramo: 'Tramo 2', total: 1, dentro: 0 }],
   faltan: [LUIS, ANA], ultimas: [],
 }
 
-afterEach(() => { vi.unstubAllGlobals() })
+afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
 
-function montar(escaneo: unknown) {
+function montar(escaneo: unknown, salidas = salidasDePrueba) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
+    if (esListaDeSalidas(ruta)) return Promise.resolve(json(salidas))
     if (ruta.endsWith('/puerta/escanear')) return Promise.resolve(json(escaneo))
     if (init.method === 'POST' && ruta.includes('/puerta/papeletas/')) return Promise.resolve(json({ veredicto: 'ENTRA', papeleta: { ...ANA, entradaEl: '2027-04-10T16:00:00.000Z' } }))
     return Promise.resolve(json(ESTADO))
@@ -54,7 +56,32 @@ describe('PuertaTemploPage', () => {
     expect(await screen.findByText('Adelante')).toBeInTheDocument()
     expect(screen.getByText('Ana Ruiz Gil · n.º 120')).toBeInTheDocument()
     const envio = fetch.mock.calls.find(([u]) => String(u).endsWith('/puerta/escanear'))!
-    expect(JSON.parse(String((envio[1] as RequestInit).body))).toEqual({ codigo: 'DSP1.7.abcdefghijklmnop', salida: 'PASION' })
+    expect(JSON.parse(String((envio[1] as RequestInit).body))).toEqual({ codigo: 'DSP1.7.abcdefghijklmnop', salida: 'sabado-de-pasion' })
+  })
+
+  it('la papeleta de otra salida dice de cuál es, por su nombre', async () => {
+    const user = userEvent.setup()
+    montar({ veredicto: 'OTRA_SALIDA', papeleta: { ...ANA, salida: 'rosario-vespertino', year: 2026 } })
+    await screen.findByText('Luis Mora Paz')
+    expect(screen.getByRole('group', { name: 'Salida' })).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+    expect(await screen.findByText('Es del Rosario vespertino 2026, no del Sábado de Pasión 2027.')).toBeInTheDocument()
+  })
+
+  it('cambiar de salida pide la puerta de la otra y lo recuerda', async () => {
+    const user = userEvent.setup()
+    const fetch = montar({ veredicto: 'FALSO', papeleta: null })
+    await screen.findByText('Luis Mora Paz')
+    expect(fetch.mock.calls.some(([u]) => String(u).includes('/puerta?salida=sabado-de-pasion'))).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Rosario vespertino' }))
+    expect(fetch.mock.calls.some(([u]) => String(u).includes('/puerta?salida=rosario-vespertino'))).toBe(true)
+    expect(localStorage.getItem('puerta.salida')).toBe('rosario-vespertino')
+  })
+
+  it('sin salidas activas lo dice y lleva a crearlas', async () => {
+    montar({ veredicto: 'FALSO', papeleta: null }, [])
+    expect(await screen.findByText(/no hay salidas activas/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Procesión → Salidas' })).toHaveAttribute('href', '/cms/procesion/salidas')
   })
 
   it('un código falso se dice en rojo', async () => {

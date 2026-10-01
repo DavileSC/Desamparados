@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Alert, Box, Button, CircularProgress, IconButton, Paper, Stack, Tab, Tabs, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
+  Alert, Box, Button, CircularProgress, IconButton, Paper, Stack, Tab, Tabs, Tooltip, Typography,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined'
 import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { Helmet } from 'react-helmet-async'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
-import { apuntados, colasDeLaMesa, fichaDeMesa, imprimirPapeleta, sinDevolver, type Salida, type ZonaDeBusqueda } from '../../../lib/api/mesa'
+import { apuntados, colasDeLaMesa, fichaDeMesa, imprimirPapeleta, sinDevolver, type ZonaDeBusqueda } from '../../../lib/api/mesa'
+import SelectorSalida from '../../procesion/SelectorSalida'
+import { useSalidaElegida } from '../../procesion/useSalidas'
 import CabeceraSeccion from '../CabeceraSeccion'
 import CampoBusqueda from '../listados/CampoBusqueda'
 import AltaEnMesa from './AltaEnMesa'
@@ -24,20 +27,20 @@ import ZonaTunicas from './ZonaTunicas'
 import ZonaDevolucion from './ZonaDevolucion'
 import type { Aviso } from './piezas'
 import { CLAVE_MESA, mensajeDeFallo, useMesaEnVivo } from './enVivo'
-import { NOMBRE_SALIDA, fechaCorta } from './formato'
+import { fechaCorta } from './formato'
 import { site } from '../../../config/site'
 
 type Zona = 'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'preparacion' | 'devolucion'
 type Modo = { tipo: 'buscar' } | { tipo: 'ficha'; id: number } | { tipo: 'alta' }
 
-const ZONAS: { valor: Zona; etiqueta: string; soloPasion?: boolean }[] = [
+const ZONAS: { valor: Zona; etiqueta: string; soloConRopa?: boolean }[] = [
   { valor: 'inscripcion', etiqueta: 'Inscripción' },
   { valor: 'tesoreria', etiqueta: 'Tesorería' },
   { valor: 'tunicas', etiqueta: 'Túnicas' },
   { valor: 'listado', etiqueta: 'Listado' },
-  { valor: 'preparacion', etiqueta: 'Preparar ropa', soloPasion: true },
+  { valor: 'preparacion', etiqueta: 'Preparar ropa', soloConRopa: true },
   // Al final, para no mover los atajos de siempre: Alt+6.
-  { valor: 'devolucion', etiqueta: 'Devolución', soloPasion: true },
+  { valor: 'devolucion', etiqueta: 'Devolución', soloConRopa: true },
 ]
 
 const BUSQUEDA_DE: Record<'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'devolucion', ZonaDeBusqueda> = {
@@ -45,7 +48,7 @@ const BUSQUEDA_DE: Record<'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 
 }
 const ID_BUSCADOR = 'buscador-mesa'
 
-/** Cada ordenador recuerda su zona y su salida: al abrir la mesa, sigue donde estaba. */
+/** Cada ordenador recuerda su zona (y su salida, en `useSalidaElegida`): al abrir la mesa, sigue donde estaba. */
 function recordado<T extends string>(clave: string, validos: readonly T[], porDefecto: T): T {
   try {
     const guardado = localStorage.getItem(clave)
@@ -71,27 +74,30 @@ export default function MesaProcesionPage() {
   const role = useAuthStore((s) => s.cms?.role ?? 'USER')
   const queryClient = useQueryClient()
   const { conectado } = useMesaEnVivo()
-  const [salida, setSalida] = useState<Salida>(() => recordado('mesa.salida', ['PASION', 'ROSARIO'] as const, 'PASION'))
+  const { salidas, salida, elegir, cargando } = useSalidaElegida('mesa.salida')
+  // Mientras llegan las salidas no hay ninguna: las consultas esperan (`enabled`).
+  const slug = salida?.slug ?? ''
+  const conRopa = salida?.conRopa ?? false
   const [zona, setZona] = useState<Zona>(() => recordado('mesa.zona', ZONAS.map((z) => z.valor), 'inscripcion'))
   const [modo, setModo] = useState<Modo>({ tipo: 'buscar' })
   const [aviso, setAviso] = useState<Aviso | null>(null)
   const [filtro, setFiltro] = useState<{ q: string; puesto: string; faltaCingulo: boolean }>({ q: '', puesto: '', faltaCingulo: false })
 
-  // En el Rosario se va de traje: no hay ropa que preparar ni que devolver.
-  const zonaVisible: Zona = salida === 'ROSARIO' && (zona === 'preparacion' || zona === 'devolucion') ? 'listado' : zona
+  // En una salida de traje no hay ropa que preparar ni que devolver.
+  const zonaVisible: Zona = !conRopa && (zona === 'preparacion' || zona === 'devolucion') ? 'listado' : zona
   const operativa = zonaVisible === 'inscripcion' || zonaVisible === 'tesoreria' || zonaVisible === 'tunicas' || zonaVisible === 'devolucion'
 
   const listado = useQuery({
-    queryKey: [...CLAVE_MESA, 'apuntados', salida, filtro.q, filtro.puesto, filtro.faltaCingulo],
-    queryFn: () => apuntados(salida, { ...filtro, faltaCingulo: salida === 'PASION' && filtro.faltaCingulo }),
+    queryKey: [...CLAVE_MESA, 'apuntados', slug, filtro.q, filtro.puesto, filtro.faltaCingulo],
+    queryFn: () => apuntados(slug, { ...filtro, faltaCingulo: conRopa && filtro.faltaCingulo }),
     placeholderData: (anterior) => anterior,
-    enabled: zonaVisible === 'listado' || zonaVisible === 'inscripcion' || zonaVisible === 'tunicas',
+    enabled: Boolean(salida) && (zonaVisible === 'listado' || zonaVisible === 'inscripcion' || zonaVisible === 'tunicas'),
   })
   const colas = useQuery({
-    queryKey: [...CLAVE_MESA, 'colas', salida],
-    queryFn: () => colasDeLaMesa(salida),
+    queryKey: [...CLAVE_MESA, 'colas', slug],
+    queryFn: () => colasDeLaMesa(slug),
     placeholderData: (anterior) => anterior,
-    enabled: zonaVisible === 'tesoreria' || zonaVisible === 'tunicas',
+    enabled: Boolean(salida) && (zonaVisible === 'tesoreria' || zonaVisible === 'tunicas'),
   })
   const pendientesDeDevolver = useQuery({
     queryKey: [...CLAVE_MESA, 'sin-devolver'],
@@ -100,9 +106,9 @@ export default function MesaProcesionPage() {
   })
   const idFicha = modo.tipo === 'ficha' ? modo.id : null
   const ficha = useQuery({
-    queryKey: [...CLAVE_MESA, 'ficha', idFicha, salida],
-    queryFn: () => fichaDeMesa(idFicha!, salida),
-    enabled: idFicha !== null,
+    queryKey: [...CLAVE_MESA, 'ficha', idFicha, slug],
+    queryFn: () => fichaDeMesa(idFicha!, slug),
+    enabled: idFicha !== null && Boolean(salida),
   })
 
   const buscar = useCallback(() => {
@@ -110,7 +116,7 @@ export default function MesaProcesionPage() {
     window.setTimeout(() => document.getElementById(ID_BUSCADOR)?.focus(), 0)
   }, [])
   const cambiarZona = useCallback((nueva: Zona) => { setZona(nueva); recordar('mesa.zona', nueva); setAviso(null); buscar() }, [buscar])
-  const cambiarSalida = (nueva: Salida) => { setSalida(nueva); recordar('mesa.salida', nueva); setAviso(null); buscar() }
+  const cambiarSalida = (nueva: string) => { elegir(nueva); setAviso(null); buscar() }
   const abrir = (id: number) => { setAviso(null); setModo({ tipo: 'ficha', id }) }
   const imprimir = async (papeletaId: number) => {
     try { await imprimirPapeleta(papeletaId) } catch (e) { setAviso({ tono: 'warning', texto: mensajeDeFallo(e, 'No se ha podido abrir la papeleta.') }) }
@@ -143,6 +149,20 @@ export default function MesaProcesionPage() {
   const total = datos?.puestos.reduce((s, p) => s + p.total, 0) ?? 0
   const recogidas = datos?.apuntados.filter((p) => p.estado === 'recogida').length ?? 0
 
+  if (cargando) {
+    return <CircularProgress aria-label="Cargando la mesa" />
+  }
+  if (!salida) {
+    return (
+      <>
+        <CabeceraSeccion titulo="Mesa de la procesión" />
+        <Alert severity="info">
+          No hay salidas activas. Créalas en <Box component={Link} to="/cms/procesion/salidas" sx={{ color: 'inherit', fontWeight: 600 }}>Procesión → Salidas</Box>.
+        </Alert>
+      </>
+    )
+  }
+
   const panel = (
     <Paper component="section" aria-label="Atender" sx={{ p: 2.5, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', displayPrint: 'none' }}>
       {aviso && (
@@ -164,14 +184,14 @@ export default function MesaProcesionPage() {
       {modo.tipo === 'buscar' && (
         <Stack spacing={2}>
           <Typography variant="h5" component="h2">
-            {zonaVisible === 'inscripcion' ? 'Apuntar' : zonaVisible === 'tesoreria' ? 'Cobrar' : zonaVisible === 'tunicas' ? (salida === 'ROSARIO' ? 'Confirmar el puesto' : 'Dar la ropa') : zonaVisible === 'devolucion' ? 'Recibir la ropa' : 'Corregir'}
+            {zonaVisible === 'inscripcion' ? 'Apuntar' : zonaVisible === 'tesoreria' ? 'Cobrar' : zonaVisible === 'tunicas' ? (conRopa ? 'Dar la ropa' : 'Confirmar el puesto') : zonaVisible === 'devolucion' ? 'Recibir la ropa' : 'Corregir'}
           </Typography>
           <BuscadorPersonas
-            key={`${zonaVisible}-${salida}`}
+            key={`${zonaVisible}-${slug}`}
             id={ID_BUSCADOR}
             autoFocus
             zona={BUSQUEDA_DE[zonaVisible as keyof typeof BUSQUEDA_DE]}
-            salida={salida}
+            salida={slug}
             onElegir={(p) => abrir(p.id)}
           />
           {zonaVisible === 'inscripcion' && (
@@ -202,7 +222,7 @@ export default function MesaProcesionPage() {
       )}
 
       {modo.tipo === 'alta' && (
-        <AltaEnMesa onCancelar={buscar} onHecha={(id, texto) => { setModo({ tipo: 'ficha', id }); setAviso({ tono: 'success', texto }) }} />
+        <AltaEnMesa salida={slug} onCancelar={buscar} onHecha={(id, texto) => { setModo({ tipo: 'ficha', id }); setAviso({ tono: 'success', texto }) }} />
       )}
 
       {modo.tipo === 'ficha' && (
@@ -211,14 +231,14 @@ export default function MesaProcesionPage() {
             : (() => {
                 const f = ficha.data
                 const clave = `${zonaVisible}-${f.id}-${f.salida}-${f.solicitud?.id ?? 'sin'}-${f.papeleta?.id ?? 'sin'}-${f.papeleta?.cingulo ?? 'sin'}-${f.situacion}-${f.prendas.map((p) => p.id).join('.')}-${f.cingulosSinDevolver.length}`
-                const comun = { ficha: f, role, onHecho: hecho, onRecargar: () => void ficha.refetch() }
+                const comun = { ficha: f, salida, role, onHecho: hecho, onRecargar: () => void ficha.refetch() }
                 if (zonaVisible === 'inscripcion') return <ZonaInscripcion key={clave} {...comun} puestosUsados={puestosUsados} />
                 if (zonaVisible === 'tesoreria') return <ZonaTesoreria key={clave} {...comun} />
                 if (zonaVisible === 'devolucion') return <ZonaDevolucion key={clave} ficha={f} onHecho={hecho} />
                 if (zonaVisible === 'tunicas') return <ZonaTunicas key={clave} {...comun} puestosUsados={puestosUsados} onATesoreria={() => { setZona('tesoreria'); recordar('mesa.zona', 'tesoreria') }} />
                 return f.papeleta || f.solicitud
                   ? <FormularioCorreccion key={clave} {...comun} puestosUsados={puestosUsados} />
-                  : <Alert severity="info">No está apuntado al {NOMBRE_SALIDA[salida]}.</Alert>
+                  : <Alert severity="info">No está apuntado al {salida.nombre}.</Alert>
               })()
       )}
     </Paper>
@@ -229,12 +249,9 @@ export default function MesaProcesionPage() {
       <Helmet><title>{`Mesa de la procesión | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion
         titulo="Mesa de la procesión"
-        subtitulo={datos ? `${NOMBRE_SALIDA[salida]} ${datos.year} · ${total} ${total === 1 ? 'apuntado' : 'apuntados'}, ${recogidas} ${salida === 'ROSARIO' ? 'confirmados' : 'con la ropa'}` : NOMBRE_SALIDA[salida]}
+        subtitulo={datos ? `${salida.nombre} ${datos.year} · ${total} ${total === 1 ? 'apuntado' : 'apuntados'}, ${recogidas} ${conRopa ? 'con la ropa' : 'confirmados'}` : salida.nombre}
       >
-        <ToggleButtonGroup exclusive size="small" value={salida} onChange={(_e, v: Salida | null) => v && cambiarSalida(v)} aria-label="Salida">
-          <ToggleButton value="PASION">Sábado de Pasión</ToggleButton>
-          <ToggleButton value="ROSARIO">Rosario vespertino</ToggleButton>
-        </ToggleButtonGroup>
+        <SelectorSalida salidas={salidas} valor={slug} onChange={cambiarSalida} />
       </CabeceraSeccion>
 
       {!conectado && (
@@ -250,12 +267,12 @@ export default function MesaProcesionPage() {
         aria-label="Zona de la mesa"
         sx={{ mb: 2.5, borderBottom: 1, borderColor: 'divider', displayPrint: 'none' }}
       >
-        {ZONAS.filter((z) => !(z.soloPasion && salida === 'ROSARIO')).map((z) => (
+        {ZONAS.filter((z) => conRopa || !z.soloConRopa).map((z) => (
           <Tab key={z.valor} value={z.valor} label={z.etiqueta} title={`Alt+${ZONAS.indexOf(z) + 1}`} />
         ))}
       </Tabs>
 
-      {zonaVisible === 'preparacion' && <PreparacionRopa />}
+      {zonaVisible === 'preparacion' && <PreparacionRopa salida={slug} />}
 
       {zonaVisible !== 'preparacion' && (
         <Box sx={{ containerType: 'inline-size' }}>
@@ -289,7 +306,7 @@ export default function MesaProcesionPage() {
             )}
             {zonaVisible === 'tunicas' && (
               <ColaDeZona
-                titulo={salida === 'ROSARIO' ? 'Listos para confirmar' : 'Listos para la ropa'}
+                titulo={conRopa ? 'Listos para la ropa' : 'Listos para confirmar'}
                 vacia="Nadie esperando todavía."
                 filas={colas.data?.porRecoger ?? []}
                 seleccionado={idFicha}
@@ -303,7 +320,7 @@ export default function MesaProcesionPage() {
                   <Stack direction="row" spacing={1.5} useFlexGap sx={{ mb: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
                     <CampoBusqueda etiqueta="Buscar entre los apuntados" valor={filtro.q} onCambiar={(q) => setFiltro({ ...filtro, q })} sx={{ maxWidth: 360 }} />
                   </Stack>
-                  {salida === 'PASION' && datos && (datos.faltanCingulos > 0 || filtro.faltaCingulo) && (
+                  {conRopa && datos && (datos.faltanCingulos > 0 || filtro.faltaCingulo) && (
                     <Button
                       size="small"
                       variant={filtro.faltaCingulo ? 'contained' : 'outlined'}

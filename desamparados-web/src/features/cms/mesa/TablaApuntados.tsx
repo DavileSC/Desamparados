@@ -1,6 +1,7 @@
 import { IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
-import type { Apuntado, Salida } from '../../../lib/api/mesa'
+import type { Apuntado } from '../../../lib/api/mesa'
+import type { Salida } from '../../../lib/api/salidas'
 import { useColoresContabilidad } from '../contabilidad/tema'
 import { cabeceraTabla } from '../inventario/tabla'
 import Pildora from '../listados/Pildora'
@@ -41,11 +42,11 @@ function Estado({ a }: { a: Apuntado }) {
  * Los apuntados como la hoja de siempre: nombre, apellidos, puesto, talla,
  * túnica, capirote o faraona y cíngulo, y en qué punto está cada uno. La
  * fecha de nacimiento y el teléfono están en su ficha: al pulsar una fila se
- * abre la persona en el panel. En el Rosario, sin ropa: se va de traje.
+ * abre la persona en el panel. En una salida sin ropa se va de traje: sin esas columnas.
  */
 export default function TablaApuntados({ apuntados, salida, seleccionado, onElegir, onImprimir }: Props) {
   const { fondoCabecera } = useColoresContabilidad()
-  const conRopa = salida === 'PASION'
+  const conRopa = salida.conRopa
   const columnas = conRopa ? 8 : 5
   return (
     <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 300px)', minHeight: 320 }}>

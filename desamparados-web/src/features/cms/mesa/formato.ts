@@ -1,26 +1,9 @@
-import catalogo from '../../../../../shared/puestos-procesion.json'
 import type { MetodoPago } from '../../../lib/api/contabilidad'
+import type { PuestoDelCatalogo } from '../../../lib/api/salidas'
 
-/** Un puesto del catálogo y la ropa que suele llevar (shared/puestos-procesion.json). */
-export interface PuestoDelCatalogo {
-  nombre: string
-  tunica: boolean
-  tocado: 'CAPIROTE' | 'FARAONA' | null
-  alturaHombro: boolean
-}
-
-export const PUESTOS = catalogo.puestos as PuestoDelCatalogo[]
-
-/** Los de cada salida: el Rosario tiene sus propias insignias y su trono, y se va de traje. */
-export const PUESTOS_POR_SALIDA: Record<'PASION' | 'ROSARIO', PuestoDelCatalogo[]> = {
-  PASION: PUESTOS,
-  ROSARIO: catalogo.rosario as PuestoDelCatalogo[],
-}
-
-export const NOMBRE_SALIDA = { PASION: 'Sábado de Pasión', ROSARIO: 'Rosario vespertino' } as const
-
-export const puestoDelCatalogo = (nombre: string, salida: 'PASION' | 'ROSARIO' = 'PASION') =>
-  PUESTOS_POR_SALIDA[salida].find((p) => p.nombre.localeCompare(nombre.trim(), 'es', { sensitivity: 'base' }) === 0) ?? null
+/** El puesto del catálogo de la salida con ese nombre, sin mirar mayúsculas ni tildes: la mesa lo escribe a mano. */
+export const puestoDelCatalogo = (nombre: string, puestos: PuestoDelCatalogo[]) =>
+  puestos.find((p) => p.nombre.localeCompare(nombre.trim(), 'es', { sensitivity: 'base' }) === 0) ?? null
 
 /** «06/05/2009», como en la hoja: la fecha de nacimiento es lo que distingue a dos Alejandro García. */
 export function fechaCorta(iso: string) {

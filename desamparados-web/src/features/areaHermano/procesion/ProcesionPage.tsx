@@ -6,20 +6,20 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import EventBusyIcon from '@mui/icons-material/EventBusy'
-import catalogo from '../../../../../shared/puestos-procesion.json'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
 import {
   anularCita, estadoDelPago, irAlBanco, miProcesion, pagarEnLinea, pedirPapeleta,
-  type DiaDeReparto, type EstadoDelPago, type FichaEnLaProcesion, type MetodoEnLinea, type MiProcesion, type Salida, type SalidaDelHermano,
+  type DiaDeReparto, type EstadoDelPago, type FichaEnLaProcesion, type MetodoEnLinea, type MiProcesion, type SalidaDelHermano,
 } from '../../../lib/api/procesion'
 import { formatearImporte } from '../recibos/etiquetas'
 import { PARENTESCO } from '../perfil/etiquetas'
 import AvisoSuave from '../../../components/AvisoSuave'
 import { site } from '../../../config/site'
 import TarjetaPapeleta from './TarjetaPapeleta'
+import { useSalidas } from '../../procesion/useSalidas'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long' })
@@ -44,18 +44,12 @@ const quienEs = (f: FichaEnLaProcesion) => (f.esTitular ? 'Tú' : f.parentesco ?
 const sitio = (p: { puesto: string; tramo: string | null }) => [p.puesto, p.tramo].filter(Boolean).join(' · ')
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error && e.message ? e.message : porDefecto)
 
-/** Los puestos que se pueden pedir en cada salida (los mismos que ofrece la mesa). */
-const PUESTOS: Record<Salida, string[]> = {
-  PASION: catalogo.puestos.map((p) => p.nombre),
-  ROSARIO: catalogo.rosario.map((p) => p.nombre),
-}
-
 /** Una clave por pago: si la respuesta no llega y se vuelve a pulsar, no se cobra dos veces. */
 const nuevaClave = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('')
 
 /**
- * Las salidas del año desde el área de hermanos: la del Sábado de Pasión y el
- * Rosario vespertino de octubre. Cada una con su plazo, que abre Secretaría.
+ * Las salidas activas del año desde el área de hermanos, cada una con su
+ * plazo, que abre Secretaría.
  * Se pide salir para uno mismo y para quienes se tienen a cargo, con el
  * puesto que le gustaría (lo decide el Grupo) y el día del reparto en que se
  * pasa a recoger la papeleta: la papeleta se tiene al recogerla. Para recogerla hay que estar al día con la cuota de
@@ -65,7 +59,7 @@ export default function ProcesionPage() {
   const [estado, setEstado] = useState<MiProcesion | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
-  const [elegida, setElegida] = useState<Salida | null>(null)
+  const [elegida, setElegida] = useState<string | null>(null)
   // Mientras se espera la respuesta del banco no se ofrece pagar otra vez.
   const [comprobando, setComprobando] = useState(false)
 
@@ -87,8 +81,8 @@ export default function ProcesionPage() {
     await cargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar la procesión.')))
   }
 
-  // Se abre por la salida con el plazo abierto; si no hay ninguna, la Pasión.
-  const salida: Salida = elegida ?? estado?.salidas.find((s) => s.abierto)?.salida ?? 'PASION'
+  // Se abre por la primera salida con el plazo abierto; si no hay ninguna, por la primera.
+  const salida = elegida ?? estado?.salidas.find((s) => s.abierto)?.salida ?? estado?.salidas[0]?.salida ?? null
   const actual = estado?.salidas.find((s) => s.salida === salida)
 
   return (
@@ -104,8 +98,8 @@ export default function ProcesionPage() {
             <Box component={Link} to="/area-hermano/procesion/historico" sx={{ color: 'primary.light', fontWeight: 600, fontSize: 15 }}>Ver el histórico</Box>
           </Box>
 
-          {estado && (
-            <Tabs value={salida} onChange={(_e, v: Salida) => setElegida(v)} aria-label="Salida" sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+          {estado && actual && (
+            <Tabs value={actual.salida} onChange={(_e, v: string) => setElegida(v)} aria-label="Salida" sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
               {estado.salidas.map((s) => <Tab key={s.salida} value={s.salida} label={`${s.nombre}${s.abierto ? ' · abierta' : ''}`} />)}
             </Tabs>
           )}
@@ -115,7 +109,8 @@ export default function ProcesionPage() {
           {aviso && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
           {!estado && !error && <CircularProgress aria-label="Cargando la procesión" />}
 
-          {estado && actual && <Contenido key={salida} estado={estado} salida={actual} comprobando={comprobando} onHecho={(m) => void tras(m)} onError={setError} />}
+          {estado && estado.salidas.length === 0 && <AvisoSuave>Ahora mismo no hay ninguna salida en preparación.</AvisoSuave>}
+          {estado && actual && <Contenido key={actual.salida} estado={estado} salida={actual} comprobando={comprobando} onHecho={(m) => void tras(m)} onError={setError} />}
         </ContenedorDePagina>
       </SeccionAnimada>
     </>
@@ -139,7 +134,7 @@ function Contenido({ estado, salida, comprobando, onHecho, onError }: PropsConte
 
   return (
     <Box sx={{ display: 'grid', gap: 3, maxWidth: 980 }}>
-      <PorPagar estado={estado} salida={salida.salida} comprobando={comprobando} onHecho={onHecho} onError={onError} />
+      <PorPagar estado={estado} salida={salida} comprobando={comprobando} onHecho={onHecho} onError={onError} />
       {conPapeleta.length > 0 && (
         <Box component="section" aria-label="Papeletas para enseñar en la puerta" sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
           {conPapeleta.map((f) => <TarjetaPapeleta key={f.id} ficha={f} salida={salida} />)}
@@ -147,7 +142,7 @@ function Contenido({ estado, salida, comprobando, onHecho, onError }: PropsConte
       )}
       {apuntadas.length > 0 && <Apuntadas fichas={apuntadas} salida={salida} onHecho={onHecho} onError={onError} />}
       {porPedir.length > 0 && (salida.abierto
-        ? <Solicitud estado={estado} salida={salida} fichas={porPedir} onHecho={onHecho} onError={onError} />
+        ? <Solicitud salida={salida} fichas={porPedir} onHecho={onHecho} onError={onError} />
         : <PlazoCerrado fichas={porPedir} salida={salida} />)}
     </Box>
   )
@@ -229,16 +224,16 @@ function VueltaDelBanco({ onPagado, onComprobando }: { onPagado: () => void; onC
 
 /**
  * Lo que falta por pagar en la familia: las cuotas de hermano (sin ellas no
- * se recoge la papeleta) y la voluntad del Rosario si se prometió. Con la
+ * se recoge la papeleta) y lo de cada salida: su cuota o la voluntad prometida. Con la
  * pasarela en línea, se paga desde aquí; si no, en Secretaría o en el reparto.
  */
-function PorPagar({ estado, salida, comprobando, onHecho, onError }: { estado: MiProcesion; salida: Salida; comprobando: boolean; onHecho: (m: string) => void; onError: (m: string) => void }) {
+function PorPagar({ estado, salida, comprobando, onHecho, onError }: { estado: MiProcesion; salida: SalidaDelHermano; comprobando: boolean; onHecho: (m: string) => void; onError: (m: string) => void }) {
   const [pagando, setPagando] = useState(false)
   const [clave] = useState(nuevaClave)
   const lineas = estado.fichas.flatMap((f) => [
     ...f.cuotasPendientes.map((c) => ({ clave: `r-${c.id}`, reciboId: c.id, solicitudId: null, quien: f.nombre, concepto: c.concepto, importe: c.importe, devuelta: c.estado === 'DEVUELTO' })),
-    ...(['PASION', 'ROSARIO'] as const)
-      .map((s) => f.porSalida[s].solicitud)
+    ...estado.salidas
+      .map((s) => f.porSalida[s.salida]?.solicitud ?? null)
       .filter((s): s is NonNullable<typeof s> => s !== null && s.pendiente > 0)
       .map((s) => ({ clave: `s-${s.id}`, reciboId: null, solicitudId: s.id, quien: f.nombre, concepto: s.concepto, importe: s.pendiente, devuelta: false })),
   ])
@@ -271,9 +266,9 @@ function PorPagar({ estado, salida, comprobando, onHecho, onError }: { estado: M
       <Box>
         <Typography component="h2" sx={{ fontSize: 19, fontWeight: 600 }}>Pendiente de pago</Typography>
         <Typography sx={{ mt: 0.5, fontSize: 14.5, color: 'text.secondary', lineHeight: 1.55 }}>
-          {salida === 'ROSARIO'
-            ? 'Para salir en el Rosario hay que estar al día con la cuota de hermano, igual que en la Pasión.'
-            : 'Para recoger la papeleta y la túnica hay que estar al día con la cuota de hermano.'}
+          {salida.conRopa
+            ? 'Para recoger la papeleta y la túnica hay que estar al día con la cuota de hermano.'
+            : `Para salir en el ${salida.nombre} hay que estar al día con la cuota de hermano.`}
           {' '}Si lo necesitas, habla con Secretaría.
         </Typography>
       </Box>
@@ -314,7 +309,7 @@ function PorPagar({ estado, salida, comprobando, onHecho, onError }: { estado: M
  * Cómo va cada uno: con la solicitud hecha (pendiente de pago o lista para
  * recoger) o con la papeleta, que se tiene al recogerla en la mesa.
  */
-function estadoDe(f: FichaEnLaProcesion, salida: Salida): { texto: string; color: string } {
+function estadoDe(f: FichaEnLaProcesion, salida: string): { texto: string; color: string } {
   const { papeleta, solicitud } = f.porSalida[salida]
   if (papeleta) return { texto: 'Papeleta recogida', color: 'success.main' }
   // Lo de la salida y la cuota de hermano se dicen aparte: con la papeleta
@@ -376,9 +371,9 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
       </Box>
       {!todasRecogidas && (
         <Typography sx={{ mt: 2, fontSize: 13.5, color: 'text.secondary' }}>
-          {salida.salida === 'ROSARIO'
-            ? 'Se va en traje. La papeleta se recoge el día del reparto, cuando se confirma el puesto.'
-            : 'La papeleta se recoge el día del reparto, con la túnica: si la tienes en casa del año pasado, tráela. Llevad el DNI.'}
+          {salida.conRopa
+            ? 'La papeleta se recoge el día del reparto, con la túnica: si la tienes en casa del año pasado, tráela. Llevad el DNI.'
+            : 'Se va en traje. La papeleta se recoge el día del reparto, cuando se confirma el puesto.'}
         </Typography>
       )}
     </TarjetaCristal>
@@ -386,7 +381,6 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
 }
 
 function PlazoCerrado({ fichas, salida }: { fichas: FichaEnLaProcesion[]; salida: SalidaDelHermano }) {
-  const rosario = salida.salida === 'ROSARIO'
   return (
     <>
       <TarjetaCristal component="section" sx={{ p: { xs: 2.5, md: 3.5 }, display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
@@ -395,7 +389,7 @@ function PlazoCerrado({ fichas, salida }: { fichas: FichaEnLaProcesion[]; salida
         </Box>
         <Box>
           <Typography component="h2" sx={{ fontSize: 21, fontWeight: 600 }}>
-            {rosario ? 'La inscripción del Rosario vespertino aún no está abierta' : 'La solicitud de papeletas aún no está abierta'}
+            La solicitud de papeletas del {salida.nombre} aún no está abierta
           </Typography>
           <Typography sx={{ mt: 1, color: 'text.secondary', lineHeight: 1.6, maxWidth: '64ch' }}>
             Secretaría la abre unas semanas antes del reparto. Cuando se abra podrás pedir aquí la papeleta{fichas.length > 1 ? ' para ti y para quienes tienes a tu cargo' : ''}, con el puesto que te gustaría, y elegir el día en que pasarás a recogerla. Te avisaremos por correo.
@@ -421,8 +415,11 @@ function PlazoCerrado({ fichas, salida }: { fichas: FichaEnLaProcesion[]; salida
 }
 
 /** Plazo abierto: quién sale, en qué puesto le gustaría y qué día pasa a recogerla. */
-function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiProcesion; salida: SalidaDelHermano; fichas: FichaEnLaProcesion[]; onHecho: (m: string) => void; onError: (m: string) => void }) {
-  const rosario = salida.salida === 'ROSARIO'
+function Solicitud({ salida, fichas, onHecho, onError }: { salida: SalidaDelHermano; fichas: FichaEnLaProcesion[]; onHecho: (m: string) => void; onError: (m: string) => void }) {
+  const conDonativo = salida.cobro === 'DONATIVO'
+  // Los puestos que se pueden pedir: el catálogo de la salida, el mismo que ofrece la mesa.
+  const { data: catalogo = [] } = useSalidas()
+  const opcionesPuesto = catalogo.find((s) => s.slug === salida.salida)?.puestos.map((p) => p.nombre) ?? []
   const pueden = fichas.filter((f) => f.activo)
   const [marcadas, setElegidas] = useState<number[]>(() => pueden.map((f) => f.id))
   // Tras pedir, las que ya tienen papeleta salen de esta lista: no cuentan aunque sigan marcadas.
@@ -439,8 +436,8 @@ function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiPro
   const nombres = pueden.filter((f) => elegidas.includes(f.id)).map((f) => f.nombre)
   const sinPuesto = elegidas.some((id) => !puestos[id]?.trim())
   const importeDonativo = donativo.trim() ? Number(donativo.replace(',', '.')) : 0
-  const donativoValido = !rosario || (Number.isFinite(importeDonativo) && importeDonativo >= 0 && importeDonativo <= 1000)
-  const cuotaSalida = estado.cuotaSalida ?? 0
+  const donativoValido = !conDonativo || (Number.isFinite(importeDonativo) && importeDonativo >= 0 && importeDonativo <= 1000)
+  const cuotaSalida = salida.cuotaSalida ?? 0
 
   const alternar = (id: number) => setElegidas((actuales) => (actuales.includes(id) ? actuales.filter((x) => x !== id) : [...actuales, id]))
 
@@ -451,7 +448,7 @@ function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiPro
     // Una a una: si una ficha ya tenía papeleta o el día se llena a mitad, las demás siguen.
     for (const id of elegidas) {
       try {
-        await pedirPapeleta({ hermanoId: id, turnoId, puesto: puestos[id].trim(), ...(rosario && { donativo: Math.round(importeDonativo * 100) / 100 }) })
+        await pedirPapeleta({ hermanoId: id, turnoId, puesto: puestos[id].trim(), ...(conDonativo && { donativo: Math.round(importeDonativo * 100) / 100 }) })
       } catch (e: unknown) {
         const nombre = pueden.find((f) => f.id === id)?.nombre ?? ''
         fallos.push(`${nombre}: ${mensaje(e, 'no se ha podido pedir')}`)
@@ -467,7 +464,7 @@ function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiPro
   return (
     <>
       <Alert severity="success" icon={<EventAvailableIcon />}>
-        <strong>{rosario ? 'La inscripción del Rosario vespertino está abierta.' : 'La solicitud de papeletas está abierta.'}</strong> Elige quién sale, en qué puesto os gustaría ir y el día en que pasaréis a recogerla.
+        <strong>La solicitud de papeletas del {salida.nombre} está abierta.</strong> Elige quién sale, en qué puesto os gustaría ir y el día en que pasaréis a recogerla.
       </Alert>
 
       {salida.dias.length === 0 ? (
@@ -500,7 +497,7 @@ function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiPro
                     <Autocomplete
                       freeSolo
                       autoSelect
-                      options={PUESTOS[salida.salida]}
+                      options={opcionesPuesto}
                       value={puestos[f.id] ?? ''}
                       onChange={(_e, v) => setPuestos({ ...puestos, [f.id]: v ?? '' })}
                       onInputChange={(_e, v, motivo) => { if (motivo === 'input') setPuestos({ ...puestos, [f.id]: v }) }}
@@ -510,7 +507,7 @@ function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiPro
                 </Box>
               )
             })}
-            {rosario && (
+            {conDonativo && (
               <TextField
                 size="small" label="La voluntad (opcional)" placeholder="0" value={donativo} onChange={(e) => setDonativo(e.target.value)}
                 error={!donativoValido} helperText={donativoValido ? 'En euros, por persona. Se da en el reparto o se paga aquí.' : 'Un importe entre 0 y 1000 €'}
@@ -552,7 +549,7 @@ function Solicitud({ estado, salida, fichas, onHecho, onError }: { estado: MiPro
         <TarjetaCristal sx={{ p: { xs: 2.5, md: 3 }, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <Typography sx={{ color: 'text.secondary', maxWidth: '62ch' }}>
             {cuantas === 0 ? 'Elige quién sale.' : sinPuesto ? 'Di en qué puesto os gustaría ir.' : !diaElegido ? `${nombres.join(' y ')}: elige el día del reparto.` : `${nombres.join(' y ')} · ${dia(diaElegido)}, ${horas(diaElegido)}.`}
-            {!rosario && cuotaSalida > 0 && ` La papeleta cuesta ${formatearImporte(cuotaSalida)}.`}
+            {cuotaSalida > 0 && ` La papeleta cuesta ${formatearImporte(cuotaSalida)}.`}
           </Typography>
           <Boton onClick={() => void pedir()} disabled={enviando || cuantas === 0 || !diaElegido || sinPuesto || !donativoValido}>
             {enviando ? 'Pidiendo…' : cuantas > 1 ? `Pedir ${cuantas} papeletas` : 'Pedir la papeleta'}

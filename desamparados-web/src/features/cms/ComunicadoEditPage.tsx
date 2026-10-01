@@ -13,6 +13,7 @@ import PantallaEdicion from './PantallaEdicion'
 import CabeceraSeccion from './CabeceraSeccion'
 import EditorTexto from './EditorTexto'
 import { site } from '../../config/site'
+import { useSalidas } from '../procesion/useSalidas'
 
 const LISTADO = '/cms/comunicados'
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
@@ -33,6 +34,7 @@ export default function ComunicadoEditPage() {
   const navegar = useNavigate()
   const [original, setOriginal] = useState<ComunicadoCompleto | null>(null)
   const [form, setForm] = useState<DatosComunicado | null>(null)
+  const { data: salidas = [] } = useSalidas()
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -188,10 +190,9 @@ export default function ComunicadoEditPage() {
             {form.tipo === 'BOLETIN' ? 'A los hermanos activos suscritos al boletín' : 'A los hermanos activos'}{', y de ellos, solo a quienes cumplan lo que marques aquí.'}
           </Typography>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(3, minmax(0, 1fr))' } }}>
-            <TextField select size="small" label="Papeleta" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.conPapeleta ?? ''} onChange={(e) => segmento({ conPapeleta: (e.target.value || null) as Segmento['conPapeleta'] })}>
+            <TextField select size="small" label="Papeleta" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.conPapeleta ?? ''} onChange={(e) => segmento({ conPapeleta: e.target.value === '' ? null : Number(e.target.value) })}>
               <MenuItem value="">Da igual</MenuItem>
-              <MenuItem value="PASION">Con papeleta del Sábado de Pasión</MenuItem>
-              <MenuItem value="ROSARIO">Con papeleta del Rosario</MenuItem>
+              {salidas.map((s) => <MenuItem key={s.id} value={s.id}>Con papeleta del {s.nombre}</MenuItem>)}
             </TextField>
             <TextField select size="small" label="Edad" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.edad ?? ''} onChange={(e) => segmento({ edad: (e.target.value || null) as Segmento['edad'] })}>
               <MenuItem value="">Da igual</MenuItem>

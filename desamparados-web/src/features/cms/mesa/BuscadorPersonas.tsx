@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Box, ButtonBase, CircularProgress, InputAdornment, Stack, TextField, Typography } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import {
-  buscarPersonas, esperadosHoy, type Esperado, type PersonaEncontrada, type Salida, type ZonaDeBusqueda,
+  buscarPersonas, esperadosHoy, type Esperado, type PersonaEncontrada, type ZonaDeBusqueda,
 } from '../../../lib/api/mesa'
 import Pildora from '../listados/Pildora'
 import { fechaCorta } from './formato'
@@ -12,7 +12,8 @@ interface Props {
   onElegir: (persona: { id: number; nombre: string; apellidos: string }) => void
   /** Qué busca la zona: Inscripción no ve a los ya apuntados; Túnicas, solo a los que no han recogido. */
   zona?: ZonaDeBusqueda
-  salida?: Salida
+  /** El slug de la salida: «apuntado» y los esperados de hoy son de esa salida. */
+  salida: string
   /** Con la lista de quién pidió día para hoy mientras no se escribe nada. */
   conEsperados?: boolean
   autoFocus?: boolean
@@ -29,7 +30,7 @@ const ESPERA_MS = 250
  * Enter elige el primero, las flechas se mueven por la lista.
  */
 export default function BuscadorPersonas({
-  etiqueta = 'Buscar en el censo', onElegir, zona = 'todas', salida = 'PASION', conEsperados, autoFocus, id,
+  etiqueta = 'Buscar en el censo', onElegir, zona = 'todas', salida, conEsperados, autoFocus, id,
 }: Props) {
   const [texto, setTexto] = useState('')
   const [resultados, setResultados] = useState<PersonaEncontrada[] | null>(null)
@@ -52,7 +53,7 @@ export default function BuscadorPersonas({
     let cancelado = false
     setBuscando(true)
     const espera = window.setTimeout(() => {
-      buscarPersonas(q, zona, salida)
+      buscarPersonas(q, salida, zona)
         .then((r) => { if (!cancelado) { setResultados(r); setMarcado(0); setError(false) } })
         .catch(() => { if (!cancelado) setError(true) })
         .finally(() => { if (!cancelado) setBuscando(false) })

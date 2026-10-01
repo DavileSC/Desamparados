@@ -2,6 +2,7 @@ import { llamarApi, traerArchivo } from './cliente'
 import { guardarEnDisco } from './datos'
 import type { ReceiptStatus } from './procesion'
 import type { MetodoPago } from './contabilidad'
+import { deLaSalida } from './procesion'
 
 /**
  * La mesa de la procesión por zonas: Inscripción apunta la solicitud,
@@ -15,7 +16,6 @@ import type { MetodoPago } from './contabilidad'
  * volver a pulsar no cobra dos veces.
  */
 
-export type Salida = 'PASION' | 'ROSARIO'
 export type Situacion = 'activo' | 'baja' | 'pendiente'
 export type OrigenTunica = 'ROPERO' | 'PROPIA' | 'NINGUNA'
 export type TipoRopa = 'TUNICA' | 'CAPIROTE' | 'FARAONA'
@@ -136,7 +136,8 @@ export interface FichaDeMesa {
   /** En centímetros. */
   alturaHombro: number | null
   puesto: string | null
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
   year: number
   /** Lo que tiene del ropero sin devolver. */
   prendas: PrendaPrestada[]
@@ -166,7 +167,7 @@ export interface FichaDeMesa {
     /** El que va con la túnica: la mesa lo cambia a «se le debe» si no quedan. */
     cingulo: 'PRESTADO' | 'PROPIO' | 'NINGUNO'
   }
-  /** La cuota de salida de la Pasión (hoy 0 €); null en el Rosario. */
+  /** La cuota de la salida; null en las de donativo. */
   cuotaSalida: number | null
 }
 
@@ -215,7 +216,8 @@ export interface Apuntado {
 
 export interface Apuntados {
   year: number
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
   apuntados: Apuntado[]
   /** Cuántos recogieron sin cíngulo porque no quedaban. */
   faltanCingulos: number
@@ -240,7 +242,8 @@ export interface EnCola {
 }
 
 export interface Colas {
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
   year: number
   porCobrar: EnCola[]
   porRecoger: EnCola[]
@@ -259,13 +262,13 @@ export interface RopaPorPreparar {
 /** El canal en vivo de la mesa (eventos del servidor). */
 export const URL_EVENTOS_MESA = `${(import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '')}/procesion/admin/mesa/eventos`
 
-const conSalida = (salida: Salida, params = new URLSearchParams()) => {
-  if (salida !== 'PASION') params.set('salida', salida)
-  const consulta = params.toString()
-  return consulta ? `?${consulta}` : ''
+/** La salida va siempre: el servidor no supone ninguna. */
+const conSalida = (salida: string, params = new URLSearchParams()) => {
+  params.set('salida', salida)
+  return `?${params.toString()}`
 }
 
-export function apuntados(salida: Salida, filtro: { q?: string; puesto?: string; faltaCingulo?: boolean } = {}) {
+export function apuntados(salida: string, filtro: { q?: string; puesto?: string; faltaCingulo?: boolean } = {}) {
   const params = new URLSearchParams()
   if (filtro.q) params.set('q', filtro.q)
   if (filtro.puesto) params.set('puesto', filtro.puesto)
@@ -273,25 +276,25 @@ export function apuntados(salida: Salida, filtro: { q?: string; puesto?: string;
   return llamarApi<Apuntados>(`/procesion/admin/mesa/apuntados${conSalida(salida, params)}`)
 }
 
-export function buscarPersonas(q: string, zona: ZonaDeBusqueda = 'todas', salida: Salida = 'PASION') {
+export function buscarPersonas(q: string, salida: string, zona: ZonaDeBusqueda = 'todas') {
   const params = new URLSearchParams({ q, zona })
   return llamarApi<PersonaEncontrada[]>(`/procesion/admin/mesa/personas${conSalida(salida, params)}`)
 }
 
-export function esperadosHoy(salida: Salida = 'PASION') {
+export function esperadosHoy(salida: string) {
   return llamarApi<Esperado[]>(`/procesion/admin/mesa/esperados${conSalida(salida)}`)
 }
 
-export function fichaDeMesa(id: number, salida: Salida = 'PASION') {
+export function fichaDeMesa(id: number, salida: string) {
   return llamarApi<FichaDeMesa>(`/procesion/admin/mesa/personas/${id}${conSalida(salida)}`)
 }
 
-export function colasDeLaMesa(salida: Salida) {
+export function colasDeLaMesa(salida: string) {
   return llamarApi<Colas>(`/procesion/admin/mesa/colas${conSalida(salida)}`)
 }
 
-export function ropaPorPreparar(turnoId?: number) {
-  return llamarApi<RopaPorPreparar[]>(`/procesion/admin/mesa/preparacion${turnoId ? `?turnoId=${turnoId}` : ''}`)
+export function ropaPorPreparar(salida: string, turnoId?: number) {
+  return llamarApi<RopaPorPreparar[]>(`/procesion/admin/mesa/preparacion?${deLaSalida(salida)}${turnoId ? `&turnoId=${turnoId}` : ''}`)
 }
 
 export function sinDevolver() {
@@ -302,8 +305,8 @@ export function cingulosDeLaMesa() {
   return llamarApi<RecuentoDeCingulos>('/procesion/admin/mesa/cingulos')
 }
 
-export function prendasDelRopero(tipo: TipoRopa, q: string) {
-  return llamarApi<PrendaDelRopero[]>(`/procesion/admin/mesa/prendas?tipo=${tipo}&q=${encodeURIComponent(q)}`)
+export function prendasDelRopero(tipo: TipoRopa, q: string, salida: string) {
+  return llamarApi<PrendaDelRopero[]>(`/procesion/admin/mesa/prendas?tipo=${tipo}&q=${encodeURIComponent(q)}&${deLaSalida(salida)}`)
 }
 
 export interface DatosDeAlta {
@@ -346,7 +349,8 @@ export function activarPersona(id: number) {
 
 export interface Inscripcion {
   hermanoId: number
-  salida: Salida
+  /** El slug de la salida. */
+  salida: string
   puesto: string
   observaciones?: string
   donativo?: number
