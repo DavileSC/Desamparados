@@ -96,6 +96,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | ✅ | — | **Boletín y avisos masivos, segmentados** | Hecha: Web → «Boletín y avisos». El boletín va solo a los suscritos y lleva su enlace de baja firmado; el aviso, a los activos del segmento (papeleta de una salida, cuotas pendientes, edad, población). Recuento de direcciones antes de enviar, prueba a uno mismo, un correo por dirección y envío poco a poco en segundo plano, que se reanuda si el servidor se reinicia y deja reintentar los fallidos. Migración `comunicados` |
 | ✅ | A | Cartas y circulares en PDF con los datos de cada hermano | Hecho: sección «Cartas» (Secretaría) con campos ({{nombre}}, {{tratamiento}}…), destinatarios de una búsqueda o lista guardada del censo (nunca difuntos), vista previa y PDF de todas, con la dirección en la ventana del sobre. Migración `cartas` |
 | ✅ | A | Etiquetas postales | Hecho: Cartas → «Etiquetas postales». De partida, los activos sin correo electrónico (o cualquier lista guardada del censo; nunca difuntos, y sin dirección, la del titular); una por hermano o una por casa («Familia …»); hojas A4 de 24, 21 y 14 (`shared/formatos-de-etiquetas.json`) y se puede empezar en una hoja ya gastada. Las direcciones largas se parten, nunca se recortan. Sin migración |
+| 🔨 | A | Emails: plantillas de los correos | Plantillas editables, una por uso (bienvenida, papeleta, pésame…), con varias por uso y una en uso; las tocan Secretaría y el Hermano Mayor |
 
 ## Fase 4 · Secretaría
 
