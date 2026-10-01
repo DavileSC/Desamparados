@@ -6,11 +6,11 @@ import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
 import { plantillaIdSchema, plantillaSchema, usarPlantillaSchema, vistaPreviaSchema } from '../schemas/plantillas-correo.schema.js';
 
-// Las plantillas de los correos (Emails): las llevan Secretaría y el Hermano Mayor.
+// Las plantillas de los correos (Emails): las llevan Secretaría, el Hermano Mayor y Administración.
 const plantillasCorreoRoutes = Router();
 plantillasCorreoRoutes.use(authenticateToken);
 
-const rolesEmails = [Role.SECRETARIA, Role.HERMANO_MAYOR];
+const rolesEmails = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR];
 
 // Las libres se eligen al redactar en «Boletín y avisos»: también las ve quien escribe allí.
 plantillasCorreoRoutes.get('/libres', checkRole([Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR, Role.REDES]), C.libres);

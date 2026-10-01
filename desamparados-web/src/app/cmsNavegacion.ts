@@ -95,8 +95,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
   { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: MenuBookOutlinedIcon },
   { label: 'Boletín y avisos', href: '/cms/comunicados', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'], grupo: 'Web', icono: EmailOutlinedIcon },
-  // Las plantillas de los correos que manda la web: Secretaría y el Hermano Mayor.
-  { label: 'Emails', href: '/cms/emails', roles: ['SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: DraftsOutlinedIcon },
+  // Las plantillas de los correos que manda la web: Secretaría, el Hermano Mayor y Administración.
+  { label: 'Emails', href: '/cms/emails', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: DraftsOutlinedIcon },
   { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon },
   { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
@@ -152,8 +152,8 @@ export const rolesPorRutaCms = {
   // El boletín y los avisos por correo: la guarda de /api/comunicados.
   comunicados: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'],
   // Las plantillas de los correos: la guarda de /api/plantillas-correo.
-  emails: ['SECRETARIA', 'HERMANO_MAYOR'],
-  'emails/:id': ['SECRETARIA', 'HERMANO_MAYOR'],
+  emails: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
+  'emails/:id': ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   agenda: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   hermanos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   // Llevan los datos del censo: los mismos que lo gestionan (la guarda de /api/cartas).
