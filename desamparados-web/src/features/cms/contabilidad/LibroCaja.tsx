@@ -2,6 +2,7 @@ import { Box, IconButton, Paper, Table, TableBody, TableCell, TableContainer, Ta
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
 import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumberOutlined'
 import { Link } from 'react-router-dom'
 import type { ResumenContable, Transaction } from '../../../lib/api/contabilidad'
@@ -65,6 +66,7 @@ export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar
             const importe = <Typography component="span" sx={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{euros(Number(a.importe))}</Typography>
             const deRecibo = a.reciboId != null
             const sorteo = a.talonarioLoteria?.sorteoId ?? a.compraDeLoteria?.id ?? null
+            const deCaja = a.ventaDeCaja != null
             return (
               <TableRow key={a.id} hover sx={{ '& td': { verticalAlign: 'top' }, '& td:first-of-type': { boxShadow: `inset 4px 0 0 ${color}` } }}>
                 <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}>{fechaCorta(a.fecha)}</TableCell>
@@ -86,6 +88,12 @@ export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar
                       <Tooltip title={`Viene del recibo #${a.reciboId}: se corrige desde Tesorería`}>
                         <IconButton size="small" component={Link} to={`/cms/tesoreria?recibo=${a.reciboId}`} aria-label={`Abrir el recibo #${a.reciboId} en Tesorería`}>
                           <ReceiptLongOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : deCaja ? (
+                      <Tooltip title="Es una venta de la caja de la tienda: se anula desde la caja">
+                        <IconButton size="small" component={Link} to="/cms/tienda?vista=caja" aria-label="Abrir la caja de la tienda">
+                          <StorefrontOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     ) : sorteo !== null ? (

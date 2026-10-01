@@ -405,6 +405,8 @@ model Transaccion {
   /// Si es la liquidación de un talonario de lotería, o la compra de sus décimos.
   talonarioLoteria TalonarioLoteria?
   compraDeLoteria  SorteoLoteria?
+  /// Si es una venta de la caja de la tienda: se corrige desde la caja, no a mano.
+  ventaDeCaja      CajaVenta?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -665,6 +667,23 @@ model Enser {
 
   imagenUrl        String?
   fechaAdquisicion DateTime?
+
+  // LA FICHA DE PATRIMONIO: lo que piden el seguro, el Obispado o una
+  // restauración. Todo opcional: un lote de hachetas no necesita autor.
+  descripcion   String?   @db.Text
+  /// Autor, taller u orfebre.
+  autor         String?   @db.VarChar(160)
+  /// Texto libre: «1958», «hacia 1890», «s. XVIII».
+  epoca         String?   @db.VarChar(80)
+  materiales    String?   @db.VarChar(255)
+  dimensiones   String?   @db.VarChar(120)
+  /// El estado de conservación y las intervenciones (restauraciones, limpiezas).
+  conservacion  String?   @db.Text
+  /// Más fotos de la pieza, además de la principal: [{ url, pie }].
+  fotos         Json?
+  valorTasacion Decimal?  @db.Decimal(12, 2)
+  fechaTasacion DateTime?
+  tasadoPor     String?   @db.VarChar(160)
 }
 
 // 2. EL ROPERO (Gestión Unitaria: Túnicas, Capirotes, Faraonas)
@@ -1176,19 +1195,21 @@ enum EstadoPedido {
 
 /// Lo que se vende en la tienda de la web: recuerdos, medallas, estampas…
 model Producto {
-  id          Int                 @id @default(autoincrement())
-  nombre      String              @db.VarChar(120)
-  descripcion String              @default("") @db.Text
-  precio      Decimal             @db.Decimal(10, 2)
+  id           Int                 @id @default(autoincrement())
+  nombre       String              @db.VarChar(120)
+  descripcion  String              @default("") @db.Text
+  precio       Decimal             @db.Decimal(10, 2)
   /// URL de la foto, subida desde el CMS.
-  foto        String?
+  foto         String?
   /// Cuántos quedan. Null: sin límite (se hace por encargo).
-  existencias Int?
-  activo      Boolean             @default(true)
-  orden       Int                 @default(0)
-  lineas      PedidoTiendaLinea[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  existencias  Int?
+  activo       Boolean             @default(true)
+  orden        Int                 @default(0)
+  lineas       PedidoTiendaLinea[]
+  /// Lo vendido en la caja de la tienda.
+  lineasDeCaja CajaVentaLinea[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@index([activo, orden])
 }
@@ -1211,6 +1232,62 @@ model PedidoTienda {
   updatedAt   DateTime            @updatedAt
 
   @@index([estado, createdAt])
+}
+
+/// Una caja de la tienda, del abrir al cerrar: lo que se vende en persona en
+/// Secretaría o en la casa del Grupo. Solo hay una abierta a la vez; al
+/// cerrarla se cuenta el efectivo y queda escrito lo que debía haber.
+model CajaSesion {
+  id               Int         @id @default(autoincrement())
+  abiertaEl        DateTime    @default(now())
+  /// Quién la abrió y quién la cerró, copiados: la caja sobrevive a la cuenta.
+  abiertaPor       String?     @db.VarChar(120)
+  /// El cambio con que se empieza.
+  fondoInicial     Decimal     @db.Decimal(10, 2)
+  cerradaEl        DateTime?
+  cerradaPor       String?     @db.VarChar(120)
+  /// Lo que debía haber en efectivo (fondo y ventas en efectivo) y lo que se contó.
+  efectivoEsperado Decimal?    @db.Decimal(10, 2)
+  efectivoContado  Decimal?    @db.Decimal(10, 2)
+  observaciones    String?     @db.Text
+  ventas           CajaVenta[]
+
+  @@index([cerradaEl])
+  @@index([abiertaEl])
+}
+
+/// Una venta de la caja. Apunta su ingreso en la contabilidad al momento; si
+/// se anula (solo con la caja abierta), el apunte se quita y vuelven las existencias.
+model CajaVenta {
+  id            Int              @id @default(autoincrement())
+  sesionId      Int
+  sesion        CajaSesion       @relation(fields: [sesionId], references: [id], onDelete: Restrict)
+  total         Decimal          @db.Decimal(10, 2)
+  metodo        MetodoPago
+  vendidaEl     DateTime         @default(now())
+  vendedor      String?          @db.VarChar(120)
+  anuladaEl     DateTime?
+  anuladaPor    String?          @db.VarChar(120)
+  transaccionId Int?             @unique
+  transaccion   Transaccion?     @relation(fields: [transaccionId], references: [id], onDelete: SetNull)
+  lineas        CajaVentaLinea[]
+
+  @@index([sesionId])
+}
+
+/// Lo vendido: un producto del catálogo, o algo suelto escrito a mano.
+model CajaVentaLinea {
+  id         Int       @id @default(autoincrement())
+  ventaId    Int
+  venta      CajaVenta @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  productoId Int?
+  producto   Producto? @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  /// Nombre y precio copiados, como en los pedidos en línea.
+  nombre     String    @db.VarChar(120)
+  precio     Decimal   @db.Decimal(10, 2)
+  cantidad   Int
+
+  @@index([ventaId])
 }
 
 model PedidoTiendaLinea {
@@ -1259,16 +1336,16 @@ model PiezaApadrinable {
 
 /// Quien apadrina una pieza. Sin cuenta, como la tienda.
 model Apadrinamiento {
-  id            Int              @id @default(autoincrement())
-  token         String           @unique @db.VarChar(32)
-  piezaId       Int
-  pieza         PiezaApadrinable @relation(fields: [piezaId], references: [id], onDelete: Cascade)
-  nombre        String           @db.VarChar(120)
-  email         String           @db.VarChar(191)
-  telefono      String           @db.VarChar(30)
-  dedicatoria   String?          @db.VarChar(200)
+  id                Int              @id @default(autoincrement())
+  token             String           @unique @db.VarChar(32)
+  piezaId           Int
+  pieza             PiezaApadrinable @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  nombre            String           @db.VarChar(120)
+  email             String           @db.VarChar(191)
+  telefono          String           @db.VarChar(30)
+  dedicatoria       String?          @db.VarChar(200)
   /// Si quiere que su nombre salga en la foto.
-  mostrarNombre Boolean          @default(false)
+  mostrarNombre     Boolean          @default(false)
   /// Para el certificado de donación y el Modelo 182, si lo pidió: su NIF,
   /// su nombre y sus apellidos por separado (el `nombre` de arriba es el que
   /// sale en la foto, y Hacienda los pide en orden) y su código postal (de él
@@ -1277,11 +1354,11 @@ model Apadrinamiento {
   nombreFiscal      String?          @db.VarChar(120)
   apellidosFiscales String?          @db.VarChar(120)
   codigoPostal      String?          @db.VarChar(5)
-  estado        EstadoPedido     @default(PENDIENTE_PAGO)
-  importe       Decimal          @db.Decimal(10, 2)
-  metodo        MetodoPago?
-  pagadoEl      DateTime?
-  createdAt     DateTime         @default(now())
+  estado            EstadoPedido     @default(PENDIENTE_PAGO)
+  importe           Decimal          @db.Decimal(10, 2)
+  metodo            MetodoPago?
+  pagadoEl          DateTime?
+  createdAt         DateTime         @default(now())
 
   @@index([piezaId, estado])
 }

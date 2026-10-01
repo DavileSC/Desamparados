@@ -46,6 +46,8 @@ inventarioRoutes.get('/enseres', checkRole(rolesGestores), validate(queryEnserSc
 // '/enseres/:id', que se tragaría el segmento.
 inventarioRoutes.get('/enseres/opciones', checkRole(rolesGestores), InventarioController.opcionesEnseres);
 inventarioRoutes.get('/enseres/:id', checkRole(rolesGestores), validateId, InventarioController.getOneEnser);
+// La ficha en PDF, para el seguro, el Obispado o una restauración.
+inventarioRoutes.get('/enseres/:id/ficha', checkRole(rolesGestores), validateId, InventarioController.fichaEnser);
 
 // GESTIÓN (Solo roles autorizados)
 inventarioRoutes.post('/enseres', checkRole(rolesGestores), validate(createEnserSchema), InventarioController.createEnser);

@@ -92,6 +92,11 @@ export const ACCIONES_AUDITORIA = {
   TIENDA_PEDIDO_ENTREGADO: 'TIENDA_PEDIDO_ENTREGADO',
   // Un apadrinamiento pagado (por el banco)
   APADRINAMIENTO_PAGADO: 'APADRINAMIENTO_PAGADO',
+  // La caja de la tienda: abrirla, cada venta, anular una y cerrarla con el arqueo
+  CAJA_ABRIR: 'CAJA_ABRIR',
+  CAJA_VENDER: 'CAJA_VENDER',
+  CAJA_ANULAR: 'CAJA_ANULAR',
+  CAJA_CERRAR: 'CAJA_CERRAR',
   CORTEJO_DIRECTO_EMPEZAR: 'CORTEJO_DIRECTO_EMPEZAR',
   CORTEJO_DIRECTO_TERMINAR: 'CORTEJO_DIRECTO_TERMINAR',
   // Una entrada al templo apuntada por error, que vuelve a faltar

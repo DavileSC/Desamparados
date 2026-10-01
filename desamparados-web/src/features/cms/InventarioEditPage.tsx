@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Alert, CircularProgress, MenuItem, Select, Stack, TextField } from '@mui/material'
+import { Alert, Button, CircularProgress, Divider, MenuItem, Select, Stack, TextField } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
-import { traerEnser, traerPrenda, actualizarEnser, actualizarPrenda, type Prenda } from '../../lib/api/inventario'
+import { traerEnser, traerFichaEnser, traerPrenda, actualizarEnser, actualizarPrenda, type Prenda } from '../../lib/api/inventario'
+import { guardarEnDisco } from '../../lib/api/datos'
+import FichaPatrimonio from './inventario/FichaPatrimonio'
+import { fichaDelEnser, fichaParaGuardar, leerTasacion, type FormFicha } from './inventario/ficha'
 import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, esCantidadValida } from './ropero'
 import { site } from '../../config/site'
 
-type FormEnser = { nombre: string; referencia: string; categoria: string; ubicacion: string; cantidadOptimo: string; cantidadBueno: string; cantidadReparar: string }
+type FormEnser = { nombre: string; referencia: string; categoria: string; ubicacion: string; cantidadOptimo: string; cantidadBueno: string; cantidadReparar: string; ficha: FormFicha }
 type FormPrenda = { numero: string; tipo: string; talla: string; estado: string; observaciones: string }
 
 const tipos = ['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO']
@@ -46,6 +49,7 @@ export default function InventarioEditPage() {
           return {
             nombre: e.nombre, referencia: e.referencia ?? '', categoria: e.categoria ?? '', ubicacion: e.ubicacion ?? '',
             cantidadOptimo: String(e.cantidadOptimo), cantidadBueno: String(e.cantidadBueno), cantidadReparar: String(e.cantidadReparar),
+            ficha: fichaDelEnser(e),
           } as FormEnser
         })
 
@@ -64,14 +68,19 @@ export default function InventarioEditPage() {
         setError(AVISO_CANTIDADES)
         return
       }
+      if (leerTasacion(e.ficha.valorTasacion) === undefined) {
+        setError('El valor de la tasación tiene que ser un importe, con dos decimales como mucho.')
+        return
+      }
     }
     setGuardando(true)
     try {
       if (esPrenda) await actualizarPrenda(Number(id), form)
       else {
-        const e = form as FormEnser
+        const { ficha, ...e } = form as FormEnser
         await actualizarEnser(Number(id), {
           ...e,
+          ...fichaParaGuardar(ficha),
           cantidadOptimo: Number(e.cantidadOptimo),
           cantidadBueno: Number(e.cantidadBueno),
           cantidadReparar: Number(e.cantidadReparar),
@@ -82,6 +91,11 @@ export default function InventarioEditPage() {
       setError(e instanceof Error ? e.message : 'No se ha podido guardar el elemento.')
       setGuardando(false)
     }
+  }
+
+  const bajarFicha = async () => {
+    try { guardarEnDisco(await traerFichaEnser(Number(id)), `ficha-patrimonio-${id}.pdf`) }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : 'No se ha podido sacar la ficha.') }
   }
 
   if (error && !form) return <Alert severity="error">{error}</Alert>
@@ -147,6 +161,12 @@ export default function InventarioEditPage() {
                 />
               ))}
             </Stack>
+            <Divider sx={{ my: 1 }} />
+            <FichaPatrimonio valor={enser.ficha} onChange={(ficha) => setForm((actual) => (actual ? { ...actual, ficha } : actual))} />
+            {/* La ficha en PDF sale de lo guardado: con cambios sin guardar, primero guardar. */}
+            <Button variant="outlined" onClick={() => void bajarFicha()} disabled={JSON.stringify(form) !== inicial} sx={{ alignSelf: 'flex-start' }}>
+              Ficha en PDF
+            </Button>
           </Stack>
         )}
       </PantallaEdicion>

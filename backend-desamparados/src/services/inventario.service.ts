@@ -1,6 +1,6 @@
 import db from '../config/db';
 import { Prisma, EstadoPrenda, TipoPrenda } from '@prisma/client';
-import { CreateEnserDto, UpdateEnserDto, EnserFilterDto, CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/inventario.dto';
+import { CreateEnserDto, FichaPatrimonioDto, UpdateEnserDto, EnserFilterDto, CreatePrendaDto, UpdatePrendaDto, PrendaFilterDto } from '../dtos/inventario.dto';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { condicionBusqueda, palabrasDeBusqueda } from '../domain/busqueda-texto.js';
@@ -73,6 +73,31 @@ export class InventarioService {
     };
   }
 
+  /**
+   * Lo de la ficha que llega en el cuerpo, listo para Prisma. Lo que no llega
+   * no se toca; vacío o null, se borra. Las fotos sin dirección se descartan.
+   */
+  private static fichaDePatrimonio(d: FichaPatrimonioDto) {
+    const texto = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() || null);
+    return {
+      descripcion: texto(d.descripcion),
+      autor: texto(d.autor),
+      epoca: texto(d.epoca),
+      materiales: texto(d.materiales),
+      dimensiones: texto(d.dimensiones),
+      conservacion: texto(d.conservacion),
+      ...(d.fotos !== undefined ? { fotos: d.fotos.filter((f) => f.url).map((f) => ({ url: f.url!, pie: f.pie.trim() })) } : {}),
+      ...(d.valorTasacion !== undefined ? { valorTasacion: d.valorTasacion === null ? null : new Prisma.Decimal(d.valorTasacion) } : {}),
+      ...(d.fechaTasacion !== undefined ? { fechaTasacion: d.fechaTasacion ? new Date(d.fechaTasacion) : null } : {}),
+      tasadoPor: texto(d.tasadoPor),
+    };
+  }
+
+  /** Todas las fotos de un enser, la principal y las de la ficha. */
+  private static fotosDe(e: { imagenUrl: string | null; fotos: Prisma.JsonValue }) {
+    return subidasEnTexto(e.imagenUrl, e.fotos ? JSON.stringify(e.fotos) : null);
+  }
+
   static async getEnserById(id: number) {
     const enser = await db.enser.findUnique({ where: { id } });
     if (!enser) throw new NotFoundError('Enser no encontrado');
@@ -97,7 +122,8 @@ export class InventarioService {
         fechaAdquisicion: data.fechaAdquisicion ? new Date(data.fechaAdquisicion) : null,
         // El esquema la valida (ruta propia o vacía); antes se descartaba y la
         // foto subida quedaba huérfana en el disco.
-        imagenUrl: data.imagenUrl || null
+        imagenUrl: data.imagenUrl || null,
+        ...InventarioService.fichaDePatrimonio(data),
       }
     });
   }
@@ -123,21 +149,22 @@ export class InventarioService {
         cantidadTotal: optimo + bueno + reparar,
         fechaAdquisicion: data.fechaAdquisicion ? new Date(data.fechaAdquisicion) : undefined,
         // Sin `imagenUrl` en el cuerpo, la foto se queda; vacía o null, se quita.
-        ...(data.imagenUrl !== undefined ? { imagenUrl: data.imagenUrl || null } : {})
+        ...(data.imagenUrl !== undefined ? { imagenUrl: data.imagenUrl || null } : {}),
+        ...InventarioService.fichaDePatrimonio(data),
       }
     });
 
-    // La foto sustituida o quitada se borra del disco si nadie más la usa.
-    await borrarSubidasHuerfanas(subidasEnTexto(actual.imagenUrl), {
-      conservar: subidasEnTexto(actualizado.imagenUrl)
+    // Las fotos sustituidas o quitadas se borran del disco si nadie más las usa.
+    await borrarSubidasHuerfanas(InventarioService.fotosDe(actual), {
+      conservar: InventarioService.fotosDe(actualizado)
     });
     return actualizado;
   }
 
   static async deleteEnser(id: number) {
     const borrado = await db.enser.delete({ where: { id } });
-    // La foto del enser, si la tenía, sale del disco si nadie más la usa.
-    await borrarSubidasHuerfanas(subidasEnTexto(borrado.imagenUrl));
+    // Sus fotos salen del disco si nadie más las usa.
+    await borrarSubidasHuerfanas(InventarioService.fotosDe(borrado));
     return borrado;
   }
 
@@ -332,7 +359,8 @@ export class InventarioService {
   static async getResumenInventario() {
     // 1. Resumen de enseres (Lotes)
     const enseres = await db.enser.aggregate({
-      _sum: { cantidadOptimo: true, cantidadBueno: true, cantidadReparar: true, cantidadTotal: true }
+      _sum: { cantidadOptimo: true, cantidadBueno: true, cantidadReparar: true, cantidadTotal: true, valorTasacion: true },
+      _count: { valorTasacion: true }
     });
 
     // 2. Resumen de Ropero (Unitario)
@@ -345,7 +373,10 @@ export class InventarioService {
       enseres: {
         optimos: enseres._sum.cantidadOptimo || 0,
         reparar: enseres._sum.cantidadReparar || 0,
-        total: enseres._sum.cantidadTotal || 0
+        total: enseres._sum.cantidadTotal || 0,
+        // Lo que suman las tasaciones, y de cuántas piezas: el resto no está tasado.
+        valorTasado: Number(enseres._sum.valorTasacion ?? 0),
+        tasados: enseres._count.valorTasacion
       },
       ropero // Devuelve un array detallando ej: {tipo: TUNICA, estado: PRESTADA, count: 45}
     };

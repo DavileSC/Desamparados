@@ -29,6 +29,8 @@ export interface Transaction {
   /** Igual con la lotería: la liquidación de un talonario o la compra de los décimos de ese sorteo. */
   talonarioLoteria?: { sorteoId: number } | null
   compraDeLoteria?: { id: number } | null
+  /** Si es una venta de la caja de la tienda: se anula desde la caja. */
+  ventaDeCaja?: { id: number } | null
   categoria: { nombre: string }
   hermano: { nombre: string; apellidos: string } | null
 }

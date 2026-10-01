@@ -1,4 +1,5 @@
 import { InventarioService } from '../services/inventario.service.js';
+import { fichaDePatrimonioEnPdf } from '../services/ficha-patrimonio-pdf.js';
 import { handleHttp } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 import { AuditoriaService, ACCIONES_AUDITORIA } from '../services/auditoria.service.js';
@@ -18,6 +19,15 @@ export class InventarioController {
 
   static opcionesEnseres = manejar('Error obteniendo las categorías y ubicaciones', async (_req, res) => {
     res.status(200).json(await InventarioService.opcionesEnseres());
+  });
+
+  static fichaEnser = manejar('Error generando la ficha de patrimonio', async (req, res) => {
+    const enser = await InventarioService.getEnserById(Number(req.params.id));
+    const pdf = await fichaDePatrimonioEnPdf(enser);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="ficha-patrimonio-${enser.id}.pdf"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).send(pdf);
   });
 
   static getOneEnser = manejar('Error obteniendo ficha del enser', async (req, res) => {

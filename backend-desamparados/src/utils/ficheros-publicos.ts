@@ -127,23 +127,28 @@ async function jsonDeContenido(): Promise<string[]> {
 
 /** Todos los ficheros subidos que menciona alguna tabla (para el script de huérfanos). */
 export async function subidasReferenciadas(): Promise<Set<string>> {
-  const [noticias, publicaciones, portada, enseres, paginas, eventos, contenido] = await Promise.all([
+  const [noticias, publicaciones, portada, enseres, paginas, eventos, contenido, productos, campanas] = await Promise.all([
     db.noticia.findMany({ select: { imagenUrl: true, contenido: true } }),
     db.publicacion.findMany({ select: { imagenUrl: true, archivoUrl: true, descripcion: true } }),
     db.imagenPortada.findMany({ select: { url: true } }),
-    db.enser.findMany({ select: { imagenUrl: true } }),
+    db.enser.findMany({ select: { imagenUrl: true, fotos: true } }),
     db.pagina.findMany({ select: { contenido: true } }),
     db.evento.findMany({ select: { description: true, fotoCartel: true } }),
     jsonDeContenido(),
+    // La tienda y los apadrinamientos también suben fotos: sin contarlas, la limpieza las borraba.
+    db.producto.findMany({ select: { foto: true } }),
+    db.campanaApadrinamiento.findMany({ select: { foto: true } }),
   ]);
   const textos = [
     ...noticias.flatMap((n) => [n.imagenUrl, n.contenido]),
     ...publicaciones.flatMap((p) => [p.imagenUrl, p.archivoUrl, p.descripcion]),
     ...portada.map((i) => i.url),
-    ...enseres.map((e) => e.imagenUrl),
+    ...enseres.flatMap((e) => [e.imagenUrl, e.fotos ? JSON.stringify(e.fotos) : null]),
     ...paginas.map((p) => p.contenido),
     ...eventos.flatMap((e) => [e.description, e.fotoCartel]),
     ...contenido,
+    ...productos.map((p) => p.foto),
+    ...campanas.map((c) => c.foto),
     ...rutasDelEntorno(),
   ];
   return subidasEnTexto(...textos);

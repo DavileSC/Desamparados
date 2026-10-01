@@ -4,7 +4,21 @@ import { TipoPrenda, EstadoPrenda } from '@prisma/client';
 //  1. ENSERES (Lotes: Viacrucis, Hachetas, etc.)
 // =================================================================
 
-export interface CreateEnserDto {
+/** La ficha de patrimonio de un enser: lo que piden el seguro, el Obispado o una restauración. */
+export interface FichaPatrimonioDto {
+  descripcion?: string | null;
+  autor?: string | null;
+  epoca?: string | null;
+  materiales?: string | null;
+  dimensiones?: string | null;
+  conservacion?: string | null;
+  fotos?: { url: string | null; pie: string }[];
+  valorTasacion?: number | null;
+  fechaTasacion?: string | null;
+  tasadoPor?: string | null;
+}
+
+export interface CreateEnserDto extends FichaPatrimonioDto {
   nombre: string;
   referencia?: string; // Sustituye al antiguo 'codigo'
   categoria?: string;
@@ -19,7 +33,7 @@ export interface CreateEnserDto {
   fechaAdquisicion?: string; // ISO Date string
 }
 
-export interface UpdateEnserDto {
+export interface UpdateEnserDto extends FichaPatrimonioDto {
   nombre?: string;
   referencia?: string;
   categoria?: string;

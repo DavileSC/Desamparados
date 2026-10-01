@@ -12,6 +12,7 @@ import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import CampoImagen from './CampoImagen'
+import Caja from './tienda/Caja'
 import { euros, fechaCorta } from './contabilidad/formato'
 import { site } from '../../config/site'
 
@@ -38,7 +39,8 @@ const ESTADOS: Record<EstadoPedido, string> = { PENDIENTE_PAGO: 'Sin pagar', PAG
  */
 export default function TiendaAdminPage() {
   const [params, setParams] = useSearchParams()
-  const vista = params.get('vista') === 'pedidos' ? 'pedidos' : 'productos'
+  const vistaPedida = params.get('vista')
+  const vista = vistaPedida === 'pedidos' || vistaPedida === 'caja' ? vistaPedida : 'productos'
   const [lista, setLista] = useState<Producto[] | null>(null)
   const [pedidos, setPedidos] = useState<PedidoDelCms[] | null>(null)
   const [estado, setEstado] = useState<EstadoPedido | ''>('PAGADO')
@@ -84,16 +86,17 @@ export default function TiendaAdminPage() {
 
   return <>
     <Helmet><title>{`Tienda | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion titulo="Tienda" subtitulo="Lo que se vende en la web y los pedidos por recoger en Secretaría.">
+    <CabeceraSeccion titulo="Tienda" subtitulo="Lo que se vende en la web y en Secretaría, la caja del día y los pedidos por recoger.">
       <Button variant="outlined" component={Link} to="/tienda" target="_blank" startIcon={<OpenInNewIcon />}>Ver la tienda</Button>
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setErrorForm(null); setEditando({ id: null, form: VACIO, original: VACIO }) }}>Nuevo producto</Button>
     </CabeceraSeccion>
     {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
     {aviso && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
 
-    <Tabs value={vista} onChange={(_, v: string) => setParams(v === 'pedidos' ? { vista: 'pedidos' } : {})} sx={{ mb: 2 }}>
+    <Tabs value={vista} onChange={(_, v: string) => setParams(v === 'pedidos' || v === 'caja' ? { vista: v } : {})} sx={{ mb: 2 }}>
       <Tab value="productos" label="Productos" />
       <Tab value="pedidos" label="Pedidos" />
+      <Tab value="caja" label="Caja" />
     </Tabs>
 
     {vista === 'productos' && (!lista ? <CircularProgress aria-label="Cargando los productos" /> : lista.length === 0
@@ -115,6 +118,8 @@ export default function TiendaAdminPage() {
           ))}
         </Paper>
       ))}
+
+    {vista === 'caja' && <Caja />}
 
     {vista === 'pedidos' && <>
       <TextField select size="small" label="Pedidos" value={estado} onChange={(e) => setEstado(e.target.value as EstadoPedido | '')} sx={{ mb: 2, minWidth: 220 }}>

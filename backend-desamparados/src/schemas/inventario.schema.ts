@@ -21,6 +21,18 @@ const cantidadSchema = type("0 <= number.integer <= 100000");
 // Validador de fecha común
 const fechaIsoSchema = type("string").matching(/^\d{4}-\d{2}-\d{2}/);
 
+// La ficha de patrimonio: textos sin etiquetas, la tasación en euros con dos
+// decimales y hasta doce fotos más, cada una con su pie.
+const textoCorto = (max: number) => type(`string <= ${max}`).matching(/^[^<>]*$/).or("null");
+const textoLargo = (max: number) => type(`string <= ${max}`).matching(/^[^<>]*$/).or("null");
+const tasacionSchema = type("0 <= number <= 9999999999.99")
+    .narrow((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6)
+    .describe("un importe en euros con dos decimales como mucho")
+    .or("null");
+export const MAX_FOTOS_ENSER = 12;
+const fotosSchema = type({ url: imagenOpcional, pie: type("string <= 160").matching(/^[^<>]*$/) })
+    .array().atMostLength(MAX_FOTOS_ENSER);
+
 // =================================================================
 //  1. SCHEMAS DE ENSERES (Lotes)
 // =================================================================
@@ -38,7 +50,18 @@ export const createEnserSchema = type({
         "cantidadReparar?": cantidadSchema,
         
         "imagenUrl?": imagenOpcional,
-        "fechaAdquisicion?": fechaIsoSchema
+        "fechaAdquisicion?": fechaIsoSchema,
+        // La ficha de patrimonio (todo opcional; vacío o null, se borra).
+        "descripcion?": textoLargo(5000),
+        "autor?": textoCorto(160),
+        "epoca?": textoCorto(80),
+        "materiales?": textoCorto(255),
+        "dimensiones?": textoCorto(120),
+        "conservacion?": textoLargo(5000),
+        "fotos?": fotosSchema,
+        "valorTasacion?": tasacionSchema,
+        "fechaTasacion?": fechaIsoSchema.or("'' | null"),
+        "tasadoPor?": textoCorto(160),
     }
 });
 
@@ -54,7 +77,18 @@ export const updateEnserSchema = type({
         "cantidadReparar?": cantidadSchema,
         
         "imagenUrl?": imagenOpcional,
-        "fechaAdquisicion?": fechaIsoSchema
+        "fechaAdquisicion?": fechaIsoSchema,
+        // La ficha de patrimonio (todo opcional; vacío o null, se borra).
+        "descripcion?": textoLargo(5000),
+        "autor?": textoCorto(160),
+        "epoca?": textoCorto(80),
+        "materiales?": textoCorto(255),
+        "dimensiones?": textoCorto(120),
+        "conservacion?": textoLargo(5000),
+        "fotos?": fotosSchema,
+        "valorTasacion?": tasacionSchema,
+        "fechaTasacion?": fechaIsoSchema.or("'' | null"),
+        "tasadoPor?": textoCorto(160),
     }
 });
 

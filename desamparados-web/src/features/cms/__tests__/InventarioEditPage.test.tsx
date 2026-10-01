@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
@@ -50,6 +50,29 @@ describe('InventarioEditPage', () => {
     await user.click(await screen.findByLabelText('Estado'))
     const opciones = (await screen.findAllByRole('option')).map((o) => o.textContent)
     expect(opciones).toEqual(['Disponible', 'En lavado', 'Para arreglar', 'De baja'])
+  })
+
+  it('la ficha de patrimonio se carga, se corrige y se manda: lo vacío, a null', async () => {
+    const user = userEvent.setup()
+    const simulado = montar('/cms/inventario/4/editar', {
+      ...enser, autor: 'Taller de Seco Velasco', epoca: '1958', valorTasacion: '18500.5', fechaTasacion: '2025-03-01T00:00:00.000Z',
+      fotos: [{ url: '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp', pie: 'Detalle' }],
+    })
+    expect(await screen.findByLabelText('Autor o taller')).toHaveValue('Taller de Seco Velasco')
+    expect(screen.getByLabelText('Valor (€)')).toHaveValue('18500,5')
+    expect(screen.getByLabelText('Pie de la foto 2')).toHaveValue('Detalle')
+    // Con cambios sin guardar, la ficha en PDF espera: sale de lo guardado.
+    await user.clear(screen.getByLabelText('Época'))
+    expect(screen.getByRole('button', { name: 'Ficha en PDF' })).toBeDisabled()
+    await user.clear(screen.getByLabelText('Valor (€)'))
+    await user.type(screen.getByLabelText('Valor (€)'), '19.000,25')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(simulado.mock.calls.some(([, i]) => (i as RequestInit | undefined)?.method === 'PUT')).toBe(true))
+    const put = simulado.mock.calls.find(([, i]) => (i as RequestInit | undefined)?.method === 'PUT')
+    const cuerpo = JSON.parse(String((put![1] as RequestInit).body))
+    expect(cuerpo).toMatchObject({ epoca: null, autor: 'Taller de Seco Velasco', valorTasacion: 19000.25, fechaTasacion: '2025-03-01' })
+    expect(cuerpo.fotos).toEqual([{ url: '/storage/public/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp', pie: 'Detalle' }])
   })
 
   it('no manda un enser con cantidades decimales: avisa antes', async () => {
