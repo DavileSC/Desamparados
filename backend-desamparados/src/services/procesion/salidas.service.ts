@@ -12,9 +12,39 @@ import { FechaSalida, Prisma, TipoEvento, type Evento, type Salida } from '@pris
 import db from '../../config/db.js';
 import { HttpError } from '../../utils/error.handle.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
-import { diaMadrid, type ReglaFecha } from '../../domain/fecha-salida.js';
+import { diaMadrid, fechaDeSalida, anioDeLaSalida, type ReglaFecha } from '../../domain/fecha-salida.js';
+import type { PuestoDelCatalogo } from '../../domain/salidas.js';
+import type { ConfiguracionCortejo } from '../../domain/cortejo.js';
+import type { DatosSalida, SalidaWeb } from '../../dtos/procesion.dto.js';
 
 export type SalidaConActo = Salida & { acto: Evento | null };
+
+/** Con `PASCUA` y sin días desde la Pascua no hay fecha que calcular: ni al crear ni al editar. */
+function comprobarFecha(datos: Pick<DatosSalida, 'fecha' | 'diasDesdePascua'>): void {
+  if (datos.fecha === 'PASCUA' && datos.diasDesdePascua == null) {
+    throw new HttpError('Di cuántos días antes o después de la Pascua es la salida.', 400);
+  }
+}
+
+/**
+ * De los datos del formulario a lo que espera Prisma: el importe en
+ * `Decimal`, los puestos como JSON y, con `MANUAL`, `diasDesdePascua` siempre
+ * a `null` (con `PASCUA` calculada sola, un valor a mano sobrante solo
+ * confundiría). Sirve igual para el alta (todos los campos) que para la
+ * edición (solo los que cambian): lo que no venga en `datos` no se toca.
+ */
+function normalizar(datos: Partial<DatosSalida>): Record<string, unknown> {
+  const { puestos, importeCuota, diasDesdePascua, fecha, ...resto } = datos;
+  return {
+    ...resto,
+    ...(fecha !== undefined ? { fecha } : {}),
+    ...(fecha === 'MANUAL'
+      ? { diasDesdePascua: null }
+      : diasDesdePascua !== undefined ? { diasDesdePascua } : {}),
+    ...(importeCuota !== undefined ? { importeCuota: new Prisma.Decimal(importeCuota) } : {}),
+    ...(puestos !== undefined ? { puestos: puestos as unknown as Prisma.InputJsonValue } : {}),
+  };
+}
 
 type Cliente = Prisma.TransactionClient | typeof db;
 
@@ -61,6 +91,58 @@ export class SalidasService {
       include: { acto: true },
       orderBy: [{ orden: 'asc' }, { id: 'asc' }],
     });
+  }
+
+  /** Alta de una salida desde el CMS. El slug es único: repetido, 409. */
+  static async crear(datos: DatosSalida, meta?: MetaDeAuditoria): Promise<SalidaConActo> {
+    comprobarFecha(datos);
+    try {
+      const s = await db.salida.create({ data: normalizar(datos) as Prisma.SalidaCreateInput, include: { acto: true } });
+      await AuditoriaService.log(ACCIONES_AUDITORIA.SALIDA_CREAR, meta ?? {}, 'salida', s.id, { despues: { slug: s.slug, nombre: s.nombre } });
+      return s;
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new HttpError('Ya hay una salida con ese nombre corto.', 409);
+      throw e;
+    }
+  }
+
+  /**
+   * Edita los campos que lleguen (el resto se queda como estaba). La fecha a
+   * mano no se toca aquí: va por `fijarFecha`, que mueve el acto de la
+   * Agenda. `comprobarFecha` mira la fila ya fusionada con los cambios, para
+   * detectar tanto un `PASCUA` nuevo sin días como uno que ya lo era y se
+   * queda sin ellos al tocar otro campo.
+   */
+  static async editar(id: number, cambios: Partial<DatosSalida>, meta?: MetaDeAuditoria): Promise<SalidaConActo> {
+    const antes = await SalidasService.porId(id);
+    comprobarFecha({ ...antes, ...cambios } as DatosSalida);
+    try {
+      const s = await db.salida.update({ where: { id }, data: normalizar(cambios) as Prisma.SalidaUpdateInput, include: { acto: true } });
+      await AuditoriaService.log(ACCIONES_AUDITORIA.SALIDA_EDITAR, meta ?? {}, 'salida', s.id, {
+        antes: Object.fromEntries(Object.keys(cambios).map((c) => {
+          const valor = (antes as Record<string, unknown>)[c];
+          return [c, valor instanceof Prisma.Decimal ? valor.toNumber() : valor];
+        })),
+        despues: cambios,
+      } as unknown as Prisma.InputJsonValue);
+      return s;
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new HttpError('Ya hay una salida con ese nombre corto.', 409);
+      throw e;
+    }
+  }
+
+  /** Lo que la web necesita: la fila y su fecha de este año, ya calculada. */
+  static paraLaWeb(s: SalidaConActo, hoy = diaMadrid(new Date())): SalidaWeb {
+    const regla = reglaDe(s);
+    const anio = anioDeLaSalida(regla, hoy);
+    return {
+      id: s.id, slug: s.slug, nombre: s.nombre, orden: s.orden, activa: s.activa, conRopa: s.conRopa,
+      cobro: s.cobro, importeCuota: Number(s.importeCuota), fecha: s.fecha, diasDesdePascua: s.diasDesdePascua,
+      horaSalida: s.horaSalida, lugar: s.lugar, eventoId: s.eventoId, plazoAbierto: s.plazoAbierto,
+      puestos: s.puestos as unknown as PuestoDelCatalogo[], cortejo: s.cortejo as unknown as ConfiguracionCortejo | null,
+      indicaciones: s.indicaciones, anio, fechaDelAnio: fechaDeSalida(regla, anio),
+    };
   }
 
   /** El acto de la Agenda de una salida a mano, si ya tiene fecha. */

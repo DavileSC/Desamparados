@@ -22,6 +22,7 @@ import { subidaRoutes } from './routes/subida.routes.js';
 import { inventarioRoutes } from './routes/inventario.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { procesionRoutes } from './routes/procesion.routes.js';
+import { salidasRoutes, salidasCmsRoutes } from './routes/salidas.routes.js';
 import { transaccionRoutes } from './routes/transaccion.routes.js';
 import { publicacionRoutes } from './routes/publicacion.routes.js';
 import { contactoRoutes } from './routes/contacto.routes.js';
@@ -162,6 +163,8 @@ app.use('/api/upload', subidaRoutes); // Subida de archivos
 app.use('/api/inventario', inventarioRoutes); // Inventario de enseres
 app.use('/api/admin', adminRoutes); // GESTIÓN DE STAFF Y ROLES
 app.use('/api/procesion', procesionRoutes); // Citas, papeletas y turnos
+app.use('/api/salidas', salidasRoutes);  // Las salidas activas, para la web y el área de hermanos
+app.use('/api/cms/salidas', salidasCmsRoutes); // Alta, edición y fecha de las salidas, desde el CMS
 app.use('/api/transacciones', transaccionRoutes); // Contabilidad
 app.use('/api/panel', panelRoutes);      // Panel del CMS
 app.use('/api/datos', datosRoutes);      // Datos e informes de la junta, y la Memoria del curso

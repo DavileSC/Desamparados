@@ -1,3 +1,6 @@
+import type { PuestoDelCatalogo } from '../domain/salidas.js';
+import type { ConfiguracionCortejo } from '../domain/cortejo.js';
+
 // 1. LA SOLICITUD DE LA PAPELETA (ÁREA DE HERMANOS)
 // Cuando el hermano dice "Quiero salir de cirio y pasaré el martes"
 export interface AvisarAsistenciaDto {
@@ -18,4 +21,48 @@ export interface CrearTurnoDto {
   capacidadEstimada: number; // Cuántos hermanos se espera atender
   /** El slug de la salida del reparto: el controlador la busca y la pasa al servicio. */
   salida: string;
+}
+
+// 3. LA SALIDA PROCESIONAL (CMS)
+// Lo que da de alta o cambia Secretaría. La fecha a mano no entra aquí: se
+// fija con su propia ruta (crea el acto de la Agenda).
+export interface DatosSalida {
+  nombre: string;
+  slug: string;
+  orden: number;
+  activa: boolean;
+  conRopa: boolean;
+  cobro: 'CUOTA' | 'DONATIVO';
+  importeCuota: number;
+  fecha: 'PASCUA' | 'MANUAL';
+  diasDesdePascua: number | null;
+  horaSalida: string | null;
+  lugar: string | null;
+  puestos: PuestoDelCatalogo[];
+  indicaciones: string | null;
+}
+
+/** La salida tal como la necesitan la web y el CMS: su fila y la fecha de este año, ya calculada. */
+export interface SalidaWeb {
+  id: number;
+  slug: string;
+  nombre: string;
+  orden: number;
+  activa: boolean;
+  conRopa: boolean;
+  cobro: 'CUOTA' | 'DONATIVO';
+  importeCuota: number;
+  fecha: 'PASCUA' | 'MANUAL';
+  diasDesdePascua: number | null;
+  horaSalida: string | null;
+  lugar: string | null;
+  eventoId: number | null;
+  plazoAbierto: boolean;
+  puestos: PuestoDelCatalogo[];
+  cortejo: ConfiguracionCortejo | null;
+  indicaciones: string | null;
+  /** El año de la próxima vez que sale (anioDeLaSalida). */
+  anio: number;
+  /** Su fecha ese año (fechaDeSalida), AAAA-MM-DD; null si una MANUAL no la tiene todavía. */
+  fechaDelAnio: string | null;
 }
