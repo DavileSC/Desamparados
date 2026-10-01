@@ -19,6 +19,7 @@ import EdicionTesela from './portada/EdicionTesela'
 import AvisoFotoDeCabecera from './portada/AvisoFotoDeCabecera'
 import { MAX_FOTOS_PORTADA, useEdicionDePortada } from './portada/useEdicionDePortada'
 import { site } from '../../config/site'
+import { deLaCorporacion } from '../../domain/articulos'
 
 export { MAX_FOTOS_PORTADA }
 
@@ -92,7 +93,7 @@ export default function PortadaAdminPage() {
             valor={textos.hero.botonPrincipal}
             onCambio={(botonPrincipal) => cambiarHero({ botonPrincipal })}
             maxLength={60}
-            ayuda="El botón claro. Sigue llevando a la página del Grupo Parroquial."
+            ayuda={`El botón claro. Sigue llevando a la página ${deLaCorporacion()}.`}
           />
           <CampoTexto
             etiqueta="Enlace secundario"

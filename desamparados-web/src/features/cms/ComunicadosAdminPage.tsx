@@ -8,9 +8,10 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import { fechaCorta } from './contabilidad/formato'
 import { site } from '../../config/site'
+import { deLaCorporacion } from '../../domain/articulos'
 
 const TIPOS: Record<TipoComunicado, { nombre: string; explicacion: string }> = {
-  BOLETIN: { nombre: 'Boletín', explicacion: 'Noticias y vida del Grupo. Solo lo reciben los hermanos que se han suscrito, y lleva el enlace para darse de baja.' },
+  BOLETIN: { nombre: 'Boletín', explicacion: `Noticias y vida ${deLaCorporacion({ corto: true })}. Solo lo reciben los hermanos que se han suscrito, y lleva el enlace para darse de baja.` },
   AVISO: { nombre: 'Aviso', explicacion: 'Algo que los hermanos tienen que saber (cuotas, cabildos, reparto de papeletas). Lo reciben todos los activos del segmento que elijas.' },
 }
 

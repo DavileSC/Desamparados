@@ -10,6 +10,7 @@ import {
   NOMBRE_SUFRAGIO, aniversarios, borrarSufragio, crearSufragio, difuntos, enviarPesame, fichaDifunto, fijarDefuncion,
   type Aniversario, type FichaDifunto, type TipoSufragio,
 } from '../../../lib/api/difuntos'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 const zona = { timeZone: 'Europe/Madrid' } as const
 const diaLargo = new Intl.DateTimeFormat('es-ES', { ...zona, day: 'numeric', month: 'long', year: 'numeric' })
@@ -183,7 +184,7 @@ function Ficha({ id, puedeGestionar, onVolver }: { id: number; puedeGestionar: b
         <DialogTitle>Enviar el pésame</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Le llegará a la familia una carta del Grupo Parroquial acompañándoles por el fallecimiento de {ficha.nombre} {ficha.apellidos}.
+            Le llegará a la familia una carta {deLaCorporacion()} acompañándoles por el fallecimiento de {ficha.nombre} {ficha.apellidos}.
           </Typography>
           <TextField label="Correo de la familia" type="email" value={pesame ?? ''} onChange={(e) => setPesame(e.target.value)} fullWidth autoFocus />
         </DialogContent>

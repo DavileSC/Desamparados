@@ -12,6 +12,7 @@ import AvisoSinSalidas from '../../procesion/AvisoSinSalidas'
 import SelectorSalida from '../../procesion/SelectorSalida'
 import { useSalidaElegida } from '../../procesion/useSalidas'
 import { site } from '../../../config/site'
+import { deArticulo, deLaCorporacion } from '../../../domain/articulos'
 
 /** Las cuentas se refrescan solas: varios diputados escanean a la vez en distintas puertas. */
 const SONDEO_MS = 5_000
@@ -41,11 +42,11 @@ function explicacion(l: Lectura, salida: Salida, salidas: Salida[], year?: numbe
     case 'OTRA_SALIDA': {
       if (!p) return ''
       // Una salida ya desactivada no está en la lista: se dice sin nombre.
-      const otra = salidas.find((s) => s.slug === p.salida)?.nombre
-      return `Es ${otra ? `del ${otra}` : 'de otra salida,'} ${p.year}, no del ${salida.nombre}${year ? ` ${year}` : ''}.`
+      const otra = salidas.find((s) => s.slug === p.salida)
+      return `Es ${otra ? deArticulo(otra.articulo, otra.nombre) : 'de otra salida,'} ${p.year}, no ${deArticulo(salida.articulo, salida.nombre)}${year ? ` ${year}` : ''}.`
     }
     case 'ANULADA': return 'La papeleta se anuló: que pase por la mesa.'
-    case 'FALSO': return 'El código no es de una papeleta del Grupo, o está dañado. Búscalo por su nombre en «Faltan».'
+    case 'FALSO': return `El código no es de una papeleta ${deLaCorporacion({ corto: true })}, o está dañado. Búscalo por su nombre en «Faltan».`
   }
 }
 

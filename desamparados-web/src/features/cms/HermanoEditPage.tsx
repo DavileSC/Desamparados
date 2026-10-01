@@ -350,7 +350,7 @@ export default function HermanoEditPage() {
           </Box>
           <Divider />
           <Box>
-            <Typography variant="h6" sx={{ mb: 2 }}>Grupo Parroquial</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>{site.tipo}</Typography>
             <Stack spacing={2}>
               {estado === 'activo' && (
                 <Typography variant="body2" color="text.secondary">

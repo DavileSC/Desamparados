@@ -21,6 +21,7 @@ import TablaEnseres from './inventario/TablaEnseres'
 import TablaPrendas from './inventario/TablaPrendas'
 import TarjetaCingulos from './inventario/TarjetaCingulos'
 import { site } from '../../config/site'
+import { deLaCorporacion } from '../../domain/articulos'
 
 const emptyEnser = { nombre: '', referencia: '', categoria: '', ubicacion: '', cantidadOptimo: '0', cantidadBueno: '0', cantidadReparar: '0' }
 const emptyPrenda = { numero: '', tipo: 'TUNICA', talla: '', estado: 'DISPONIBLE', observaciones: '' }
@@ -199,7 +200,7 @@ export default function InventarioAdminPage() {
   }
   const guardarCingulos = async (total: number) => {
     setCingulos(await cambiarTotalDeCingulos(total))
-    setNotice(`Cíngulos del Grupo: ${total}.`)
+    setNotice(`Cíngulos ${deLaCorporacion({ corto: true })}: ${total}.`)
   }
 
   return <>

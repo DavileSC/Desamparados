@@ -13,6 +13,7 @@ import CampoPdf from '../../CampoPdf'
 import CampoTexto from '../../contenido/CampoTexto'
 import CampoEnlace from '../../contenido/CampoEnlace'
 import CamposDeMedio from '../../contenido/CamposDeMedio'
+import { deLaCorporacion } from '../../../../domain/articulos'
 import ListaEditable from './ListaEditable'
 import type { Props } from './comunes'
 import type {
@@ -110,7 +111,7 @@ export function FormularioDescargas({ bloque, onCambio }: Props<BloqueDescargas>
       pintar={(archivo, cambiar, i) => (
         <>
           <TextField label={`Nombre del documento ${i + 1}`} value={archivo.titulo} onChange={(e) => cambiar({ titulo: e.target.value })} size="small" fullWidth
-            helperText="Como se lee en la web: «Reglas del Grupo Parroquial»."
+            helperText={`Como se lee en la web: «Reglas ${deLaCorporacion()}».`}
             slotProps={{ htmlInput: { maxLength: topes.titulo } }} />
           <TextField label="Descripción" value={archivo.descripcion} onChange={(e) => cambiar({ descripcion: e.target.value })} size="small" fullWidth
             helperText="Opcional. Una línea debajo del nombre."

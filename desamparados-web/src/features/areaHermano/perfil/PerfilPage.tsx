@@ -11,6 +11,7 @@ import { aniosCumplidos } from '../../altas/public/schema'
 import { Contacto, CuotaYPago, DatosPersonales, VidaCofrade } from './apartados'
 import { PARENTESCO, aDia, diaLegible } from './etiquetas'
 import { site } from '../../../config/site'
+import { laCorporacion } from '../../../domain/articulos'
 
 /** La del titular primero; luego las de quienes tiene a su cargo, de mayor a menor. */
 const ordenar = (fichas: ApiProfile[]) =>
@@ -71,7 +72,7 @@ export default function PerfilPage() {
             <Box>
               <Typography variant="h2" component="h1">Mi perfil</Typography>
               <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>
-                {fichas.length > 1 ? 'Tu ficha y las de quienes tienes a tu cargo.' : 'Tus datos en el Grupo Parroquial.'}
+                {fichas.length > 1 ? 'Tu ficha y las de quienes tienes a tu cargo.' : `Tus datos en ${laCorporacion()}.`}
               </Typography>
             </Box>
             <Box component={Link} to="/area-hermano/familia" sx={{ color: 'primary.light', fontWeight: 600, fontSize: 15 }}>Apuntar a un menor</Box>

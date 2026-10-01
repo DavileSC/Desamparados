@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material'
 import type { RecuentoDeCingulos } from '../../../lib/api/inventario'
+import { deLaCorporacion, mayuscula } from '../../../domain/articulos'
 
 interface Props {
   recuento: RecuentoDeCingulos | null
@@ -39,7 +40,7 @@ export default function TarjetaCingulos({ recuento, onGuardar }: Props) {
       {editando && recuento && (
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'flex-start' }} component="form" onSubmit={(e) => { e.preventDefault(); if (valido) void guardar() }}>
           <TextField
-            size="small" label="Cíngulos del Grupo" value={texto} onChange={(e) => setTexto(e.target.value)} autoFocus error={!valido}
+            size="small" label={`Cíngulos ${deLaCorporacion({ corto: true })}`} value={texto} onChange={(e) => setTexto(e.target.value)} autoFocus error={!valido}
             helperText={valido ? 'Todos, estén prestados o en el ropero' : `No puede ser menos que los ${recuento.prestados} prestados`}
             slotProps={{ htmlInput: { inputMode: 'numeric' } }} sx={{ width: 220 }}
           />
@@ -51,7 +52,7 @@ export default function TarjetaCingulos({ recuento, onGuardar }: Props) {
 
       {recuento && (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: 1.25 }}>
-          <Cifra titulo="Del Grupo" valor={recuento.total} />
+          <Cifra titulo={mayuscula(deLaCorporacion({ corto: true }))} valor={recuento.total} />
           <Cifra titulo="En el ropero" valor={recuento.enElRopero} />
           <Cifra titulo="Prestados" valor={recuento.prestados} detalle="sin devolver" />
           <Cifra titulo="Se deben" valor={recuento.debidos} detalle="no había al recoger" />

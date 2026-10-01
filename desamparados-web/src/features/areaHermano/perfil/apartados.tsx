@@ -9,6 +9,7 @@ import {
 import { aniosCumplidos } from '../../altas/public/schema'
 import Apartado, { Dato, Rejilla } from './Apartado'
 import { ESTADO_CIVIL, FORMAS_DE_PAGO, FORMA_DE_PAGO, PARENTESCO, SEXO, TITULARIDAD_CUENTA, aDia, diaLegible } from './etiquetas'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 interface PropsApartado {
   ficha: ApiProfile
@@ -275,7 +276,7 @@ export function VidaCofrade({ ficha, onGuardada }: PropsApartado) {
       formulario={
         <>
           <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
-            Son datos opcionales. Solo los ves tú y la Secretaría del Grupo Parroquial.
+            Son datos opcionales. Solo los ves tú y la Secretaría {deLaCorporacion()}.
           </Typography>
           <Rejilla>
             <Campo etiqueta="Fecha de bautismo" valor={v.fechaBautismo} onCambiar={a.campo('fechaBautismo')} tipo="date" />

@@ -30,6 +30,10 @@ export const site = {
   nombre: identidad.nombre,
   /** El de las pestañas del navegador y el rótulo de la barra. */
   nombreCorto: identidad.nombreCorto,
+  /** La clase de corporación suelta, para un rótulo o una versalita («Grupo Parroquial», «Hermandad»). Con artículo, domain/articulos.ts. */
+  tipo: identidad.tipo,
+  /** La misma clase, corta y sin el segundo sustantivo, para un rótulo ya situado («Datos del Grupo»). */
+  tipoCorto: identidad.tipoCorto,
   /** La advocación: pies de foto y textos alternativos. */
   titular: identidad.titular,
   /** La dirección de la web pública, sin barra al final. */

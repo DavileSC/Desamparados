@@ -32,6 +32,7 @@ import PasoMenores from './PasoMenores'
 import FondoDeSolicitud from './FondoDeSolicitud'
 
 import { CAMPOS_API, VALORES_INICIALES, pasosDe, type Campo } from './pasos'
+import { deLaCorporacion, laCorporacion } from '../../../domain/articulos'
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): por debajo la barra va en
 // flujo y mide 56 px en móvil y 64 en tableta; desde ahí es fija de 72 px y se
@@ -227,7 +228,7 @@ export default function HazteHermanoPage() {
     <>
       <MetaDePagina
         titulo="Hazte hermano"
-        descripcion="Solicita tu alta como hermano del Grupo Parroquial de Nuestra Señora de los Desamparados. Rellena la solicitud y formaliza el alta en Secretaría."
+        descripcion={`Solicita tu alta como hermano ${deLaCorporacion()} de Nuestra Señora de los Desamparados. Rellena la solicitud y formaliza el alta en Secretaría.`}
       />
 
       <Box
@@ -269,7 +270,7 @@ export default function HazteHermanoPage() {
               <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 17, lineHeight: 1.7, color: 'text.secondary', maxWidth: '44ch' }}>
                 Ser hermano es acompañar a Nuestra Señora de los Desamparados todo el año: en los
                 cultos, en la estación de penitencia del Sábado de Pasión y en la labor de caridad y
-                formación del Grupo Parroquial. La solicitud se rellena aquí y se formaliza después en
+                formación {deLaCorporacion()}. La solicitud se rellena aquí y se formaliza después en
                 Secretaría.
               </Typography>
               <Typography sx={{ display: { xs: 'block', md: 'none' }, fontSize: 15, lineHeight: 1.6, color: 'text.secondary' }}>
@@ -452,7 +453,7 @@ export default function HazteHermanoPage() {
                                     </Grid>
                                     <Grid size={{ xs: 12 }}>
                                       <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-                                        Solo los ve la Secretaría del Grupo Parroquial.
+                                        Solo los ve la Secretaría {deLaCorporacion()}.
                                       </Typography>
                                     </Grid>
                                   </>
@@ -653,7 +654,7 @@ export default function HazteHermanoPage() {
                                         />
                                         <FormHelperText sx={{ ml: '33px', mt: 0.25, fontSize: 13 }}>
                                           {errors.aceptarPolitica?.message
-                                            ?? 'Usamos tus datos solo para tramitar el alta y tu relación con el Grupo Parroquial.'}
+                                            ?? `Usamos tus datos solo para tramitar el alta y tu relación con ${laCorporacion()}.`}
                                         </FormHelperText>
                                       </FormControl>
                                     </Grid>

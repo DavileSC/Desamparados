@@ -11,6 +11,7 @@ import ProporcionEstados, { type FilaEstado } from '../../../components/charts/P
 import TablaDeDatos from '../../../components/charts/TablaDeDatos'
 import Cortejo from './Cortejo'
 import { euros, eurosResumen, numero, etiquetaPunto, etiquetaPuntoLarga } from '../contabilidad/formato'
+import { laCorporacion, mayuscula } from '../../../domain/articulos'
 
 /**
  * Los tres temas en que se reparten las gráficas. Todas juntas eran once
@@ -126,7 +127,7 @@ export default function ComoVaElAnio({ panelDeHoy }: { panelDeHoy: PanelResponse
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
         <Box>
           <Typography variant="overline" color="text.secondary" sx={{ display: 'block' }}>
-            El Grupo Parroquial en datos · igual para toda la junta
+            {mayuscula(laCorporacion())} en datos · igual para toda la junta
           </Typography>
           <Typography id="como-va" variant="h4" component="h2" sx={{ fontSize: 30, mt: 1 }}>
             Cómo va el año

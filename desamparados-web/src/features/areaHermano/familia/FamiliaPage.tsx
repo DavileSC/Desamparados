@@ -12,6 +12,7 @@ import DialogoAnadirFicha from './DialogoAnadirFicha'
 import DialogoEmancipar from './DialogoEmancipar'
 import AvisoSuave from '../../../components/AvisoSuave'
 import { site } from '../../../config/site'
+import { laCorporacion } from '../../../domain/articulos'
 
 const nombreParentesco = (valor: string | null) =>
   PARENTESCOS.find((p) => p.value === valor)?.label ?? 'A tu cargo'
@@ -68,7 +69,7 @@ export default function FamiliaPage() {
             <Box>
               <Typography variant="h1" sx={{ fontSize: { xs: 30, md: 38 }, m: 0 }}>Mi familia</Typography>
               <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>
-                Las personas a tu cargo en el Grupo Parroquial.
+                {`Las personas a tu cargo en ${laCorporacion()}.`}
               </Typography>
             </Box>
             <Boton onClick={() => setAnadiendo('menor')}>

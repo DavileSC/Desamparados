@@ -20,6 +20,10 @@ import AvisoSuave from '../../../components/AvisoSuave'
 import { site } from '../../../config/site'
 import TarjetaPapeleta from './TarjetaPapeleta'
 import { useSalidas } from '../../procesion/useSalidas'
+import { conArticulo, deArticulo, laCorporacion, type Articulo } from '../../../domain/articulos'
+
+/** El artículo de una salida del catálogo público por su slug: `SalidaDelHermano` no lo trae, así que se busca en `useSalidas()`. */
+const articuloDe = (catalogo: { slug: string; articulo: Articulo }[], slug: string): Articulo => catalogo.find((s) => s.slug === slug)?.articulo ?? 'el'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long' })
@@ -230,6 +234,7 @@ function VueltaDelBanco({ onPagado, onComprobando }: { onPagado: () => void; onC
 function PorPagar({ estado, salida, comprobando, onHecho, onError }: { estado: MiProcesion; salida: SalidaDelHermano; comprobando: boolean; onHecho: (m: string) => void; onError: (m: string) => void }) {
   const [pagando, setPagando] = useState(false)
   const [clave] = useState(nuevaClave)
+  const { data: catalogo = [] } = useSalidas()
   const lineas = estado.fichas.flatMap((f) => [
     ...f.cuotasPendientes.map((c) => ({ clave: `r-${c.id}`, reciboId: c.id, solicitudId: null, quien: f.nombre, concepto: c.concepto, importe: c.importe, devuelta: c.estado === 'DEVUELTO' })),
     ...estado.salidas
@@ -268,7 +273,7 @@ function PorPagar({ estado, salida, comprobando, onHecho, onError }: { estado: M
         <Typography sx={{ mt: 0.5, fontSize: 14.5, color: 'text.secondary', lineHeight: 1.55 }}>
           {salida.conRopa
             ? 'Para recoger la papeleta y la túnica hay que estar al día con la cuota de hermano.'
-            : `Para salir en el ${salida.nombre} hay que estar al día con la cuota de hermano.`}
+            : `Para salir en ${conArticulo(articuloDe(catalogo, salida.salida), salida.nombre)} hay que estar al día con la cuota de hermano.`}
           {' '}Si lo necesitas, habla con Secretaría.
         </Typography>
       </Box>
@@ -321,6 +326,8 @@ function estadoDe(f: FichaEnLaProcesion, salida: string): { texto: string; color
 
 function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProcesion[]; salida: SalidaDelHermano; onHecho: (m: string) => void; onError: (m: string) => void }) {
   const [anulando, setAnulando] = useState<number | null>(null)
+  const { data: catalogo = [] } = useSalidas()
+  const articulo = articuloDe(catalogo, salida.salida)
 
   const cancelar = async (f: FichaEnLaProcesion) => {
     const cita = f.porSalida[salida.salida].solicitud?.cita
@@ -328,7 +335,7 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
     setAnulando(cita.id)
     try {
       await anularCita(cita.id)
-      onHecho(`Solicitud cancelada: ${f.nombre} ya no sale en el ${salida.nombre}.`)
+      onHecho(`Solicitud cancelada: ${f.nombre} ya no sale en ${conArticulo(articulo, salida.nombre)}.`)
     } catch (e: unknown) {
       onError(mensaje(e, 'No se ha podido cancelar.'))
     } finally {
@@ -353,7 +360,7 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
               <span>
                 <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
                 <Typography component="span" sx={{ display: 'block', fontSize: 14, color: 'text.secondary' }}>
-                  {papeleta ? sitio(papeleta) : `Pediste: ${solicitud!.puesto} (lo confirma el Grupo en la mesa)`}
+                  {papeleta ? sitio(papeleta) : `Pediste: ${solicitud!.puesto} (lo confirma ${laCorporacion({ corto: true })} en la mesa)`}
                   {!papeleta && cita ? ` · ${dia(cita.turno)}, ${horas(cita.turno)}` : ''}
                 </Typography>
               </span>
@@ -381,6 +388,8 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
 }
 
 function PlazoCerrado({ fichas, salida }: { fichas: FichaEnLaProcesion[]; salida: SalidaDelHermano }) {
+  const { data: catalogo = [] } = useSalidas()
+  const articulo = articuloDe(catalogo, salida.salida)
   return (
     <>
       <TarjetaCristal component="section" sx={{ p: { xs: 2.5, md: 3.5 }, display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
@@ -389,7 +398,7 @@ function PlazoCerrado({ fichas, salida }: { fichas: FichaEnLaProcesion[]; salida
         </Box>
         <Box>
           <Typography component="h2" sx={{ fontSize: 21, fontWeight: 600 }}>
-            La solicitud de papeletas del {salida.nombre} aún no está abierta
+            {`La solicitud de papeletas ${deArticulo(articulo, salida.nombre)} aún no está abierta`}
           </Typography>
           <Typography sx={{ mt: 1, color: 'text.secondary', lineHeight: 1.6, maxWidth: '64ch' }}>
             Secretaría la abre unas semanas antes del reparto. Cuando se abra podrás pedir aquí la papeleta{fichas.length > 1 ? ' para ti y para quienes tienes a tu cargo' : ''}, con el puesto que te gustaría, y elegir el día en que pasarás a recogerla. Te avisaremos por correo.
@@ -464,7 +473,7 @@ function Solicitud({ salida, fichas, onHecho, onError }: { salida: SalidaDelHerm
   return (
     <>
       <Alert severity="success" icon={<EventAvailableIcon />}>
-        <strong>La solicitud de papeletas del {salida.nombre} está abierta.</strong> Elige quién sale, en qué puesto os gustaría ir y el día en que pasaréis a recogerla.
+        <strong>{`La solicitud de papeletas ${deArticulo(articuloDe(catalogo, salida.salida), salida.nombre)} está abierta.`}</strong> Elige quién sale, en qué puesto os gustaría ir y el día en que pasaréis a recogerla.
       </Alert>
 
       {salida.dias.length === 0 ? (

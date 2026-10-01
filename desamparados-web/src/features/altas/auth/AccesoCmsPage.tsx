@@ -13,6 +13,7 @@ import { useAuthStore, isStaffRole } from './store'
 import { login as apiLogin, verify2FA, cerrarSesionApi, type LoginResponse } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
 import { site } from '../../../config/site'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 function errorMessage(e: unknown, fallback: string) {
   return e instanceof ErrorDeApi ? e.message : fallback
@@ -190,7 +191,7 @@ export default function AccesoCmsPage() {
           ) : (
             <>
               <Typography variant="body2" sx={{ mb: 4, textAlign: 'center', color: 'text.secondary' }}>
-                Área reservada al equipo del Grupo Parroquial.
+                {`Área reservada al equipo ${deLaCorporacion()}.`}
               </Typography>
               <Box
                 component="form"

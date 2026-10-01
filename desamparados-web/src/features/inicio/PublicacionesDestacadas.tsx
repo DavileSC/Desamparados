@@ -12,6 +12,7 @@ import CintaDestacada from './CintaDestacada'
 import EnCarga, { estadoDeConsulta } from '../../components/esqueleto/EnCarga'
 import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
+import { site } from '../../config/site'
 
 const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
   boletin: { nombre: 'Boletín informativo', corto: 'boletín' },
@@ -75,7 +76,7 @@ function Cubierta({ publicacion, pequena = false }: { publicacion: Publicacion; 
             component="span"
             sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mt: 0.75, pt: 0.75, borderTop: '1px solid currentColor', fontSize: pequena ? 9 : { xs: 8, md: 9 }, letterSpacing: pequena ? '0.2em' : { xs: '0.15em', md: '0.2em' }, textTransform: 'uppercase', whiteSpace: 'nowrap' }}
           >
-            <span>Grupo Parroquial</span>
+            <span>{site.tipo}</span>
             <span>{mesCorto(publicacion.fecha)} · {anio(publicacion.fecha)}</span>
           </Box>
         </Box>

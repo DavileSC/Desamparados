@@ -2,12 +2,13 @@ import { Typography } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
 import DatosDeIdentificacion from './DatosDeIdentificacion'
 import { emailDerechos } from '../../config/site'
+import { deLaCorporacion, laCorporacion } from '../../domain/articulos'
 
 export default function PoliticaDePrivacidadPage() {
   return (
     <MarcoPaginaLegal
       title="Política de Privacidad"
-      descripcion="Qué datos personales trata el Grupo Parroquial Nuestra Señora de los Desamparados, con qué finalidad y cómo ejercer los derechos de acceso, rectificación y supresión."
+      descripcion={`Qué datos personales trata ${laCorporacion()} Nuestra Señora de los Desamparados, con qué finalidad y cómo ejercer los derechos de acceso, rectificación y supresión.`}
     >
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. Responsable del tratamiento
@@ -32,7 +33,7 @@ export default function PoliticaDePrivacidadPage() {
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
         La base jurídica para el tratamiento de los datos es el consentimiento del interesado y la
-        ejecución de la relación contractual o de membresía con el Grupo Parroquial.
+        ejecución de la relación contractual o de membresía con {laCorporacion()}.
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
@@ -40,14 +41,14 @@ export default function PoliticaDePrivacidadPage() {
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
         El interesado tiene derecho a acceder, rectificar, suprimir, oponerse, limitar el tratamiento y
-        solicitar la portabilidad de sus datos dirigiéndose por escrito a la dirección del Grupo Parroquial.
+        solicitar la portabilidad de sus datos dirigiéndose por escrito a la dirección {deLaCorporacion()}.
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
         5. Conservación y destinatarios
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
-        Los datos se conservarán mientras exista la relación con el Grupo Parroquial y, posteriormente, durante los
+        Los datos se conservarán mientras exista la relación con {laCorporacion()} y, posteriormente, durante los
         plazos legales aplicables. Podrán acceder a ellos proveedores necesarios para el funcionamiento del
         sitio, bajo las garantías exigidas por la normativa. No se venden datos personales.
       </Typography>

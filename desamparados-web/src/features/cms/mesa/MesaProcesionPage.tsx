@@ -29,6 +29,7 @@ import type { Aviso } from './piezas'
 import { CLAVE_MESA, mensajeDeFallo, useMesaEnVivo } from './enVivo'
 import { fechaCorta } from './formato'
 import { site } from '../../../config/site'
+import { aArticulo } from '../../../domain/articulos'
 
 type Zona = 'inscripcion' | 'tesoreria' | 'tunicas' | 'listado' | 'preparacion' | 'devolucion'
 type Modo = { tipo: 'buscar' } | { tipo: 'ficha'; id: number } | { tipo: 'alta' }
@@ -236,7 +237,7 @@ export default function MesaProcesionPage() {
                 if (zonaVisible === 'tunicas') return <ZonaTunicas key={clave} {...comun} puestosUsados={puestosUsados} onATesoreria={() => { setZona('tesoreria'); recordar('mesa.zona', 'tesoreria') }} />
                 return f.papeleta || f.solicitud
                   ? <FormularioCorreccion key={clave} {...comun} puestosUsados={puestosUsados} />
-                  : <Alert severity="info">No está apuntado al {salida.nombre}.</Alert>
+                  : <Alert severity="info">{`No está apuntado ${aArticulo(salida.articulo, salida.nombre)}.`}</Alert>
               })()
       )}
     </Paper>

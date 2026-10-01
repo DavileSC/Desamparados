@@ -15,6 +15,7 @@ import EditorTexto from './EditorTexto'
 import { plantillasLibres } from '../../lib/api/emails'
 import { site } from '../../config/site'
 import { useSalidas } from '../procesion/useSalidas'
+import { deArticulo } from '../../domain/articulos'
 
 const LISTADO = '/cms/comunicados'
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
@@ -210,7 +211,7 @@ export default function ComunicadoEditPage() {
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(3, minmax(0, 1fr))' } }}>
             <TextField select size="small" label="Papeleta" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.conPapeleta ?? ''} onChange={(e) => segmento({ conPapeleta: e.target.value === '' ? null : Number(e.target.value) })}>
               <MenuItem value="">Da igual</MenuItem>
-              {salidas.map((s) => <MenuItem key={s.id} value={s.id}>Con papeleta del {s.nombre}</MenuItem>)}
+              {salidas.map((s) => <MenuItem key={s.id} value={s.id}>{`Con papeleta ${deArticulo(s.articulo, s.nombre)}`}</MenuItem>)}
             </TextField>
             <TextField select size="small" label="Edad" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.edad ?? ''} onChange={(e) => segmento({ edad: (e.target.value || null) as Segmento['edad'] })}>
               <MenuItem value="">Da igual</MenuItem>

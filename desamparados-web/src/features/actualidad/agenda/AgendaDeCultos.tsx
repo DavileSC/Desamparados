@@ -5,6 +5,7 @@ import { GRANATE } from '../../inicio/estilos'
 import CalendarioDeCultos, { CalendarioDeCultosEsqueleto, TINTA } from './CalendarioDeCultos'
 import EnCarga from '../../../components/esqueleto/EnCarga'
 import { BOTON, enlaceConFlecha } from '../../../components/estiloDeBoton'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 /** La hoja de la suscripción, la misma que la ventana de un acto. */
 const HOJA = '#fbf8f2'
@@ -85,7 +86,7 @@ export function SuscribirseALaAgenda() {
       >
         <Box sx={{ p: 2.5, display: 'grid', gap: 1 }}>
           <Typography sx={{ color: '#5b4f53', fontSize: 14.5 }}>
-            Los cultos y actos del Grupo aparecen solos en el calendario de tu móvil, y se actualizan si cambia algo.
+            {`Los cultos y actos ${deLaCorporacion({ corto: true })} aparecen solos en el calendario de tu móvil, y se actualizan si cambia algo.`}
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '0 22px' }}>
             <Box component="a" href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}`} target="_blank" rel="noopener noreferrer" sx={enlace}>Google Calendar</Box>

@@ -134,7 +134,7 @@ export default function PieDePagina() {
               sola en su fila dejaba medio pie vacío. */}
           <Box sx={{ gridColumn: { xs: '1 / -1', md: 'auto' } }}>
             <Typography component="div" sx={{ ...tituloColumna, color: 'text.secondary', mb: 1 }}>
-              Grupo Parroquial
+              {site.tipo}
             </Typography>
             <Typography
               component={Link}

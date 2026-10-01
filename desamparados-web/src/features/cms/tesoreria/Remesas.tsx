@@ -12,6 +12,7 @@ import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import VentanaFormulario from '../VentanaFormulario'
 import { euros } from '../contabilidad/formato'
 import ExtractoNorma43 from './ExtractoNorma43'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 const TIPOS: Record<ReceiptType, string> = {
   CUOTA_HERMANO: 'Cuotas de hermano', PAPELETA_SITIO: 'Papeletas de sitio', DONATIVO: 'Donativos', OTRO: 'Otros',
@@ -129,7 +130,7 @@ export default function Remesas() {
 
     {!estado.configurada && (
       <Alert severity="warning" sx={{ mb: 3 }}>
-        <AlertTitle>Faltan los datos del Grupo como acreedor</AlertTitle>
+        <AlertTitle>{`Faltan los datos ${deLaCorporacion({ corto: true })} como acreedor`}</AlertTitle>
         Para generar remesas, quien administra el servidor tiene que poner los datos que da el banco al contratar los adeudos:
         <Box component="ul" sx={{ m: 0, mt: 1, pl: 2.5 }}>{estado.problemas.map((p) => <li key={p}>{p}</li>)}</Box>
       </Alert>

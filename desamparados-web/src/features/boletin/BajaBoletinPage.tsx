@@ -6,6 +6,7 @@ import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
 import { bajaDelBoletin } from '../../lib/api/comunicados'
 import { site } from '../../config/site'
+import { deLaCorporacion } from '../../domain/articulos'
 
 /**
  * La baja del boletín desde el enlace del correo, sin entrar. Pide pulsar un
@@ -37,7 +38,7 @@ export default function BajaBoletinPage() {
           </Typography>
           {estado === 'pregunta' || estado === 'enviando' ? <>
             <Typography sx={{ color: 'text.secondary', maxWidth: 560, mx: 'auto', mb: 4 }}>
-              Dejarás de recibir el boletín del Grupo Parroquial en este correo. Los avisos que tienen que ver con tu
+              Dejarás de recibir el boletín {deLaCorporacion()} en este correo. Los avisos que tienen que ver con tu
               ficha (cuotas, cabildos, la papeleta de sitio) te seguirán llegando.
             </Typography>
             <Boton onClick={() => void darDeBaja()} disabled={estado === 'enviando'}>

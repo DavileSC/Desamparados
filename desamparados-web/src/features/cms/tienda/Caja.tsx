@@ -10,6 +10,7 @@ import { productos as traerProductos, type Producto } from '../../../lib/api/tie
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import VentanaFormulario from '../VentanaFormulario'
 import { euros } from '../contabilidad/formato'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const hora = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
@@ -177,7 +178,7 @@ export default function Caja() {
                 </Button>
               ))}
             </Stack>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>La tarjeta y el Bizum se cobran en el datáfono o en el móvil del Grupo; aquí solo se apunta cómo se pagó.</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>{`La tarjeta y el Bizum se cobran en el datáfono o en el móvil ${deLaCorporacion({ corto: true })}; aquí solo se apunta cómo se pagó.`}</Typography>
           </Paper>
         </Box>
       )}

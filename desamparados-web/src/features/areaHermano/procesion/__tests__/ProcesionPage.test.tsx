@@ -287,6 +287,20 @@ describe('ProcesionPage', () => {
     expect(screen.queryByRole('button', { name: /pedir/i })).not.toBeInTheDocument()
   })
 
+  it('una salida con artículo «la» dice «de la», no «del» (domain/articulos.ts)', async () => {
+    const MAGNA: SalidaDelHermano = {
+      ...salidas()[1], salida: 'procesion-magna', salidaId: 4, nombre: 'Procesión Magna', abierto: true, dias: [{ ...diaDelRosario, id: 7, salida: 'procesion-magna' }],
+    }
+    servidor(
+      { salidas: [MAGNA], fichas: [{ ...ficha(1, 'Antonio'), porSalida: { 'procesion-magna': vacia } }] },
+      [{ ...salidaRosario, id: 4, slug: 'procesion-magna', nombre: 'Procesión Magna', articulo: 'la' }],
+    )
+    renderWithProviders(<ProcesionPage />)
+
+    expect(await screen.findByText(/La solicitud de papeletas de la Procesión Magna está abierta/)).toBeInTheDocument()
+    expect(screen.queryByText(/del Procesión Magna/)).not.toBeInTheDocument()
+  })
+
   it('sin salidas activas lo dice', async () => {
     servidor({ salidas: [], fichas: [ficha(1, 'Antonio')] })
     renderWithProviders(<ProcesionPage />)

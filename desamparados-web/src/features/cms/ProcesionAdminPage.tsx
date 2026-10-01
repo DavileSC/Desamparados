@@ -22,6 +22,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import Cortejo from './cortejo/Cortejo'
 import { site } from '../../config/site'
+import { deArticulo, laCorporacion, type Articulo } from '../../domain/articulos'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -183,14 +184,14 @@ export default function ProcesionAdminPage() {
       {!plazo && !error && <CircularProgress aria-label="Cargando la procesión" />}
 
       <Box aria-busy={cargando} sx={{ opacity: cargando ? 0.55 : 1, transition: cargando ? 'opacity .2s .15s' : 'none' }}>
-      {plazo && vista.fecha === 'MANUAL' && <FechaDeLaSalida nombre={vista.nombre} fecha={plazo.fecha ?? null} />}
+      {plazo && vista.fecha === 'MANUAL' && <FechaDeLaSalida nombre={vista.nombre} articulo={vista.articulo} fecha={plazo.fecha ?? null} />}
 
       {plazo && (
         <Paper component="section" aria-labelledby="plazo-titulo" sx={{ p: { xs: 2.5, md: 3 }, mb: 3, maxWidth: 900, display: 'grid', gap: 2.25 }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 3, flexWrap: 'wrap' }}>
             <Box sx={{ flex: '1 1 420px' }}>
               <Typography id="plazo-titulo" component="h2" sx={{ fontSize: 18, fontWeight: 600 }}>
-                Solicitud de papeletas del {vista.nombre} en el área de hermanos
+                Solicitud de papeletas {deArticulo(vista.articulo, vista.nombre)} en el área de hermanos
               </Typography>
               <Typography sx={{ mt: 0.75, fontSize: 14.5, color: 'text.secondary', lineHeight: 1.55 }}>
                 Mientras está cerrada, los hermanos no pueden pedir papeleta ni reservar día: ven que el plazo aún no está abierto. La mesa puede apuntar a mano en cualquier momento.
@@ -290,7 +291,7 @@ export default function ProcesionAdminPage() {
 
       {/* Abrir avisa a cientos de hermanos: se pregunta antes, y con qué avisar. */}
       <Dialog open={abriendo} onClose={() => !cambiando && setAbriendo(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{`¿Abrir la solicitud de papeletas del ${salida.nombre}?`}</DialogTitle>
+        <DialogTitle>{`¿Abrir la solicitud de papeletas ${deArticulo(salida.articulo, salida.nombre)}?`}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
             Los hermanos podrán pedir la papeleta desde su área y elegir uno de los {plazo?.diasDeReparto ?? 0} días de reparto publicados.
@@ -355,14 +356,14 @@ export default function ProcesionAdminPage() {
  * año. Se fija en Procesión → Salidas, que la pone en la Agenda pública; aquí
  * solo se enseña, porque sin ella no se puede abrir la solicitud.
  */
-function FechaDeLaSalida({ nombre, fecha }: { nombre: string; fecha: { inicio: string } | null }) {
+function FechaDeLaSalida({ nombre, articulo, fecha }: { nombre: string; articulo: Articulo; fecha: { inicio: string } | null }) {
   return (
     <Paper component="section" aria-labelledby="fecha-titulo" sx={{ p: { xs: 2.5, md: 3 }, mb: 3, maxWidth: 900, display: 'grid', gap: 1 }}>
-      <Typography id="fecha-titulo" component="h2" sx={{ fontSize: 18, fontWeight: 600 }}>Fecha del {nombre}</Typography>
+      <Typography id="fecha-titulo" component="h2" sx={{ fontSize: 18, fontWeight: 600 }}>{`Fecha ${deArticulo(articulo, nombre)}`}</Typography>
       <Typography sx={{ fontSize: 14.5, color: 'text.secondary', lineHeight: 1.55 }}>
         {fecha
           ? `Sale el ${formatoDia.format(new Date(fecha.inicio))} a las ${formatoHora.format(new Date(fecha.inicio))}. Está en la Agenda pública.`
-          : 'Todavía sin fecha. La decide el Grupo cada año; hasta que la tenga no se puede abrir la solicitud.'}
+          : `Todavía sin fecha. La decide ${laCorporacion({ corto: true })} cada año; hasta que la tenga no se puede abrir la solicitud.`}
       </Typography>
       <Box component={Link} to="/cms/procesion/salidas" sx={{ ...enlace, color: 'primary.main', justifySelf: 'start' }}>Cambiar la fecha en Salidas</Box>
     </Paper>

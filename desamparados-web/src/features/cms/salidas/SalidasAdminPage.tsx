@@ -11,6 +11,7 @@ import CabeceraSeccion from '../CabeceraSeccion'
 import VentanaNuevaSalida from './VentanaNuevaSalida'
 import { resumenCobro, resumenFecha } from './formato'
 import { site } from '../../../config/site'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
 
@@ -36,7 +37,7 @@ export default function SalidasAdminPage() {
 
   return <>
     <Helmet><title>{`Salidas | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion titulo="Salidas" subtitulo="Las salidas procesionales del Grupo: su fecha, su cobro, su ropa y sus puestos.">
+    <CabeceraSeccion titulo="Salidas" subtitulo={`Las salidas procesionales ${deLaCorporacion({ corto: true })}: su fecha, su cobro, su ropa y sus puestos.`}>
       {puedeGuardar && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreando(true)}>Nueva salida</Button>}
     </CabeceraSeccion>
 

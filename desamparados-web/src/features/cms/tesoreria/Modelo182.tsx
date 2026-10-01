@@ -10,6 +10,10 @@ import {
 import { guardarEnDisco } from '../../../lib/api/datos'
 import VentanaFormulario from '../VentanaFormulario'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
+import { deLaCorporacion } from '../../../domain/articulos'
+
+/** «del Grupo» (o lo que toque): la forma corta, para un rótulo o un texto ya situado. */
+const delGrupo = () => deLaCorporacion({ corto: true })
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 /** El último año cerrado: el 182 se presenta en enero del año siguiente. */
@@ -92,7 +96,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
         <TextField label="Ejercicio" size="small" value={texto} onChange={(e) => cambiarAnio(e.target.value)} sx={{ width: 120 }} slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 4 } }} />
-        {r && <Button variant="outlined" onClick={() => { setErrorDatos(null); setEditando({ ...r.configuracion, nif: r.configuracion.nif ?? '' }) }}>{puedeCambiar ? 'Datos del Grupo' : 'Ver datos del Grupo'}</Button>}
+        {r && <Button variant="outlined" onClick={() => { setErrorDatos(null); setEditando({ ...r.configuracion, nif: r.configuracion.nif ?? '' }) }}>{puedeCambiar ? `Datos ${delGrupo()}` : `Ver datos ${delGrupo()}`}</Button>}
         {isFetching && <CircularProgress size={20} aria-label="Cargando" />}
       </Stack>
 
@@ -118,7 +122,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
         <Paper sx={{ p: 2.5 }}>
           <Typography component="h2" sx={{ fontWeight: 600, mb: 1 }}>Presentar en Hacienda</Typography>
           {r.faltaParaElFichero.length > 0
-            ? <Alert severity="warning">Para sacar el fichero falta {r.faltaParaElFichero.join(', ')}. Ponlo en «Datos del Grupo».</Alert>
+            ? <Alert severity="warning">Para sacar el fichero falta {r.faltaParaElFichero.join(', ')}. Ponlo en «Datos {delGrupo()}».</Alert>
             : <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-start' } }}>
               <TextField label="Número de justificante" size="small" value={justificante} onChange={(e) => setJustificante(e.target.value.replace(/\D/g, '').slice(0, 13))}
                 error={!justificanteValido} helperText="13 cifras que empiezan por 182. Si presentas otra vez el mismo año, usa otro número." sx={{ maxWidth: 320 }} />
@@ -128,7 +132,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
               </Button>
             </Stack>}
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-            En la Sede electrónica de la Agencia Tributaria: Modelo 182 → «Presentación mediante fichero». Hace falta el certificado digital del Grupo o de quien lo represente.
+            En la Sede electrónica de la Agencia Tributaria: Modelo 182 → «Presentación mediante fichero». Hace falta el certificado digital {delGrupo()} o de quien lo represente.
           </Typography>
         </Paper>
 
@@ -161,7 +165,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
               Ya se mandaron el {new Date(r.enviados.el).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} ({r.enviados.cuantos}). Mandarlos otra vez llega a todos de nuevo.
             </Alert>
           )}
-          {!r.configuracion.nif && r.declarados.length > 0 && <Alert severity="info" sx={{ mb: 1.5 }}>Los certificados llevan el NIF del Grupo: ponlo en «Datos del Grupo» para sacarlos.</Alert>}
+          {!r.configuracion.nif && r.declarados.length > 0 && <Alert severity="info" sx={{ mb: 1.5 }}>Los certificados llevan el NIF {delGrupo()}: ponlo en «Datos {delGrupo()}» para sacarlos.</Alert>}
           {r.declarados.length === 0
             ? <Typography color="text.secondary">No hay donativos con NIF en {r.ejercicio}.</Typography>
             : <TableContainer>
@@ -181,7 +185,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
                       <TableCell>
                         {d.nombre}
                         {d.nifRepresentante && <Typography variant="body2" color="text.secondary">Menor de 14: representante {d.nifRepresentante}</Typography>}
-                        {d.provinciaSupuesta && <Typography variant="body2" color="warning.main">Sin código postal: se declara en la provincia del Grupo</Typography>}
+                        {d.provinciaSupuesta && <Typography variant="body2" color="warning.main">Sin código postal: se declara en la provincia {delGrupo()}</Typography>}
                       </TableCell>
                       <TableCell>{d.nif}</TableCell>
                       <TableCell align="right">{euros182(d.centimos)}</TableCell>
@@ -213,7 +217,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
 
       <VentanaFormulario
         abierto={editando !== null}
-        titulo="Datos del Grupo para el Modelo 182"
+        titulo={`Datos ${delGrupo()} para el Modelo 182`}
         textoGuardar="Guardar"
         sucio={editando !== null && JSON.stringify({ ...editando, nif: editando.nif || null }) !== JSON.stringify(r?.configuracion)}
         guardando={guardando}
@@ -223,8 +227,8 @@ export default function Modelo182({ puedeCambiar }: Props) {
         onCerrar={() => setEditando(null)}
       >
         {editando && <>
-          <Typography variant="body2" color="text.secondary">Se guardan aquí, en la base de datos del Grupo: no salen en la web.</Typography>
-          <TextField label="NIF del Grupo" value={editando.nif ?? ''} onChange={(e) => setEditando({ ...editando, nif: e.target.value.toUpperCase() })} disabled={!puedeCambiar} fullWidth slotProps={{ htmlInput: { maxLength: 12 } }} />
+          <Typography variant="body2" color="text.secondary">Se guardan aquí, en la base de datos {delGrupo()}: no salen en la web.</Typography>
+          <TextField label={`NIF ${delGrupo()}`} value={editando.nif ?? ''} onChange={(e) => setEditando({ ...editando, nif: e.target.value.toUpperCase() })} disabled={!puedeCambiar} fullWidth slotProps={{ htmlInput: { maxLength: 12 } }} />
           <TextField label="Teléfono de contacto con Hacienda" value={editando.telefono} onChange={(e) => setEditando({ ...editando, telefono: e.target.value })} disabled={!puedeCambiar} fullWidth helperText="Nueve cifras" />
           <TextField label="Persona de contacto (apellidos y nombre)" value={editando.contacto} onChange={(e) => setEditando({ ...editando, contacto: e.target.value })} disabled={!puedeCambiar} fullWidth />
           <TextField label="Quién firma los certificados" value={editando.firmanteNombre} onChange={(e) => setEditando({ ...editando, firmanteNombre: e.target.value })} disabled={!puedeCambiar} fullWidth />

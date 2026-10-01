@@ -119,7 +119,7 @@ export default function CajonMovil({ abierto, alCerrar }: { abierto: boolean; al
             {`${site.nombreCorto} de ${site.entidad.localidad}`.toUpperCase()}
           </Box>
           <Box sx={{ typography: 'overline', color: 'text.secondary', fontSize: '11px' }}>
-            Grupo Parroquial
+            {site.tipo}
           </Box>
         </Box>
       </Box>

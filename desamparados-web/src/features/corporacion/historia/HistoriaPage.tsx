@@ -21,6 +21,8 @@ import {
   type Bloque, type BloqueCronologia as Cronologia, type BloqueLlamada, type PaginaDeBloques,
 } from '../../../lib/api/contenido'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
+import { deLaCorporacion } from '../../../domain/articulos'
+import { site } from '../../../config/site'
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): desde ahí la barra es fija de
 // 72 px y se pone encima de la página, así que la cabecera la deja pasar.
@@ -82,7 +84,7 @@ export default function HistoriaPage() {
   const meta = !borrador && (
     <MetaDePagina
       titulo={cabecera.titulo}
-      descripcion="Historia del Grupo Parroquial de Nuestra Señora de los Desamparados: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga."
+      descripcion={`Historia ${deLaCorporacion()} de ${site.titular}: de la devoción en la Parroquia de los Padres Pasionistas a la salida procesional del Sábado de Pasión por Málaga.`}
     />
   )
 

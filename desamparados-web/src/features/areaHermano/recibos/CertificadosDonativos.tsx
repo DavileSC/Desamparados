@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import Boton from '../../../components/Boton'
 import { euros182, misCertificados, traerMiCertificado } from '../../../lib/api/modelo182'
 import { guardarEnDisco } from '../../../lib/api/datos'
+import { aLaCorporacion } from '../../../domain/articulos'
 
 /**
  * Los certificados de donativos de la cuenta, para la declaración de la
@@ -32,7 +33,7 @@ export default function CertificadosDonativos() {
         Certificados para la renta
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 2 }}>
-        Las cuotas y los donativos al Grupo desgravan. El certificado de cada año, con lo que se declara a Hacienda.
+        {`Las cuotas y los donativos ${aLaCorporacion({ corto: true })} desgravan. El certificado de cada año, con lo que se declara a Hacienda.`}
       </Typography>
       {!data.disponibles && <Alert severity="info" sx={{ mb: 2 }}>Los certificados estarán aquí en cuanto Tesorería los prepare.</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
