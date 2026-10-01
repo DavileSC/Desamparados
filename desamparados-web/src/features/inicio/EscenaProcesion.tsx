@@ -45,9 +45,9 @@ export default function EscenaProcesion() {
         viewport={{ once: true }}
         transition={{ duration: POSADO_S, ease: CURVA_ENTRADA }}
       >
-        {/* Nazarenos de capirote blanco en la avenida de Andalucía (Quino Al, Unsplash, licencia Unsplash).
-            Va recortada por la derecha: el original pixela caras del público a la izquierda.
-            Foto y alt editables desde el CMS; ver FOTO_DEL_REPOSITORIO arriba. */}
+        {/* Nazarenos del Grupo en la salida procesional, con la bandera blanca en el centro.
+            Recortada en vertical sobre ella: fuera quedan casi todo el público y el rótulo
+            de una tienda. Foto y alt editables desde el CMS; ver FOTO_DEL_REPOSITORIO arriba. */}
         <img
           src={sabadoDePasion.imagenUrl}
           srcSet={esLaDelRepositorio ? SRCSET_DEL_REPOSITORIO : undefined}

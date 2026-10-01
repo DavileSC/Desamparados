@@ -461,49 +461,19 @@ async function sembrarContabilidad() {
 // ---------------------------------------------------------------------------
 
 /**
- * Fotos de relleno para ver rotar la cabecera del inicio mientras el Grupo
- * Parroquial elige las suyas. Vienen de Wikimedia Commons con licencias
- * Creative Commons que obligan a citar al autor: si alguna se quedara en la
- * web real habría que acreditarla, aunque lo previsto es sustituirlas desde
- * el CMS (Portada). El seed no las repone si ya hay alguna foto guardada.
+ * Las fotos con que arranca la cabecera del inicio, para que rote desde el
+ * primer día; se cambian desde el CMS (Portada). Son del Grupo, como las de
+ * public/images: antes eran de otras hermandades, de Wikimedia Commons, y
+ * habrían salido sin el crédito que su licencia exige (docs/venta/licencias.md).
+ * Una foto ajena no entra aquí. El seed no las repone si ya hay alguna guardada.
  */
 export const IMAGENES_PORTADA = [
-  {
-    archivo: '01-amor-trono.webp',
-    descripcion: 'Trono de palio de noche, con un nazareno de capirote blanco delante',
-    autor: 'Pedro J Pacheco', licencia: 'CC BY-SA 4.0',
-    fuente: 'https://commons.wikimedia.org/wiki/File:Amor_Trono_4.jpg',
-  },
-  {
-    archivo: '02-dolores-virgen.webp',
-    descripcion: 'Trono de palio dorado bajo los árboles, con la candelería encendida',
-    autor: 'Pedro J Pacheco', licencia: 'CC BY-SA 4.0',
-    fuente: 'https://commons.wikimedia.org/wiki/File:Dolores_-_Trono_de_la_Virgen.jpg',
-  },
-  {
-    archivo: '03-malaga-nazarenos.webp',
-    descripcion: 'Primer plano de un nazareno con el capirote de raso granate',
-    autor: 'Sten Dueland', licencia: 'CC BY-SA 2.0',
-    fuente: 'https://commons.wikimedia.org/wiki/File:Málaga_semana_santa_(17188297095).jpg',
-  },
-  {
-    archivo: '04-penas-virgen.webp',
-    descripcion: 'Trono de la Virgen bajo palio, con la orfebrería plateada iluminada',
-    autor: 'Pedro J Pacheco', licencia: 'CC BY-SA 4.0',
-    fuente: 'https://commons.wikimedia.org/wiki/File:Penas_-_Trono_de_la_Virgen_2.jpg',
-  },
-  {
-    archivo: '05-desamparados-virgen.webp',
-    descripcion: 'Nuestra Señora de los Desamparados en su trono, de día, a hombros de los portadores',
-    autor: 'Jesusplaza02', licencia: 'CC BY-SA 3.0',
-    fuente: 'https://commons.wikimedia.org/wiki/File:Nuestra_señora_de_los_Desamparados.jpg',
-  },
-  {
-    archivo: '06-gitanos-maria.webp',
-    descripcion: 'Lateral del trono de la Virgen con el palio granate y los portadores encapuchados',
-    autor: 'Pedro J Pacheco', licencia: 'CC BY-SA 4.0',
-    fuente: 'https://commons.wikimedia.org/wiki/File:Gitanos_-_Lateral_Trono_de_Maria.jpg',
-  },
+  { archivo: '01-virgen-rostro.webp', descripcion: 'El rostro de Nuestra Señora de los Desamparados, con su corona de plata' },
+  { archivo: '02-trono-en-la-calle.webp', descripcion: 'El trono de la Virgen por la calle, entre los varales de la presidencia' },
+  { archivo: '03-nazarenos.webp', descripcion: 'Nazarenos del Grupo, de capirote negro, con sus cirios y la bandera blanca en la salida procesional' },
+  { archivo: '04-virgen-entre-candeleros.webp', descripcion: 'La Virgen en su altar, entre candeleros encendidos y el dosel rojo' },
+  { archivo: '05-hombres-de-trono.webp', descripcion: 'Los hombres de trono, en fila junto al trono antes de la salida' },
+  { archivo: '06-trono-de-noche.webp', descripcion: 'El trono de noche entre los edificios, con la candelería encendida, en blanco y negro' },
 ];
 
 /** La ruta que se guarda en la base de datos y que valida portada.schema.ts. */

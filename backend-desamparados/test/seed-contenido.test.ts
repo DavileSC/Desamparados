@@ -142,7 +142,6 @@ describe('contenido del seed', () => {
     for (const imagen of IMAGENES_PORTADA) {
       assert.ok(existsSync(path.join(ORIGEN_IMAGENES_PORTADA, imagen.archivo)), `falta ${imagen.archivo} en prisma/activos/portada`);
       assert.ok(imagen.descripcion.trim().length > 0 && !/[<>]/.test(imagen.descripcion), `descripción inválida en ${imagen.archivo}`);
-      assert.ok(imagen.autor && imagen.licencia && imagen.fuente, `${imagen.archivo} sin atribución`);
       // Lo que guarda el seed tiene que poder guardarse también desde el CMS.
       assert.ok(!(rutaImagenPublica(urlImagenPortada(imagen.archivo)) instanceof ArkErrors), `la ruta de ${imagen.archivo} no pasa portada.schema`);
     }

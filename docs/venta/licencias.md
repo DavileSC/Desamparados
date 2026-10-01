@@ -52,8 +52,7 @@ este Grupo solo cubre unos 400 m alrededor del suyo.
 
 | Fotos | De quién | Qué permite |
 |---|---|---|
-| Casi todas las de `public/images`: cabeceras, trono, Virgen, hero, triduo, ajuar y enseres | **Del Grupo**, según el historial del proyecto. Conviene tener por escrito el permiso de quien las hizo | Las usa el Grupo en su web. **No se entregan a otro cliente**: son contenido suyo |
-| `nazarenos-1200/1280/1600/1920.webp` y `cabeceras/nazarenos(-1000).webp` (nazarenos de capirote blanco en la avenida de Andalucía) | **Quino Al, en Unsplash** | Licencia de Unsplash: uso comercial gratis y sin atribución obligatoria. No se puede vender la foto tal cual. **Son nazarenos de otra cofradía**: mejor cambiarla por una del Grupo |
+| Todas las de `public/images` (cabeceras, trono, Virgen, hero, nazarenos, triduo, ajuar y enseres) y las fotos de partida de la portada (`prisma/activos/portada`) | **Del Grupo**, según el historial del proyecto. Conviene tener por escrito el permiso de quien las hizo | Las usa el Grupo en su web. **No se entregan a otro cliente**: son contenido suyo |
 | `templo-goretti.webp`, la ilustración de la parroquia | **Generada con IA** para el proyecto, tomando una foto del templo como referencia (confirmado el 01-10-2026) | Se puede usar. Es un dibujo nuevo del edificio, que se ve desde la calle, y no una copia de la foto. Si se rehace, que siga así: la foto como referencia, nunca calcada |
 | El escudo y el escudo en oro | **Del Grupo** | Su marca. Cada cliente trae la suya |
 
@@ -66,6 +65,14 @@ banderines, manto y candelería) y se han quitado las tres piezas que no tenían
 una foto propia que encajara: simpecado, libro de reglas e incensario. La
 migración `enseres_sin_fotos_ajenas` hace lo mismo en las bases ya desplegadas.
 Los autores y los años de esas piezas **siguen siendo de ejemplo**.
+
+**Tampoco las de la portada ni la de Unsplash.** El seed ponía en la portada
+seis fotos de Commons, cinco de otras hermandades, con su autor apuntado en el
+código pero sin crédito en la web: cualquier instalación nueva las habría
+enseñado sin él. Ahora arranca con seis del Grupo. Y la foto de los nazarenos
+de la portada y de la cabecera de Sábado de Pasión, que era de Unsplash y de
+otra cofradía, es ahora una del Grupo en la salida procesional, con el mismo
+nombre de fichero (la migración `nazarenos_del_grupo` cambia su descripción).
 
 **Regla para lo que venga:** una foto que no sea del cliente solo entra con
 autor, licencia y enlace apuntados aquí. Las de licencia CC BY o CC BY-SA
