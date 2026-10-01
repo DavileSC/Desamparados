@@ -10,12 +10,14 @@
  */
 import { MotivoBaja, type Prisma } from '@prisma/client';
 import db from '../../config/db.js';
-import { NotFoundError } from '../../utils/error.handle.js';
+import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import type { SearchHermanoQuery } from '../hermanos/comunes.js';
 import { CensoService } from '../censo.service.js';
 import { consultaLimpia } from '../listas.service.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
-import { cartasEnPdf, type DestinatarioConDireccion, type TextoDeCarta } from './carta-pdf.js';
+import { cartasEnPdf, type TextoDeCarta } from './carta-pdf.js';
+import { etiquetasEnPdf } from './etiquetas-pdf.js';
+import { FORMATOS_DE_ETIQUETAS, porHoja, sobresDe, tieneDireccion, type DestinatarioPostal } from '../../domain/etiquetas.js';
 
 /** Tope de cartas de una vez: un censo entero cabe de sobra, y un PDF de más no lo imprime nadie. */
 export const MAX_CARTAS = 3000;
@@ -50,14 +52,14 @@ export class CartasService {
   }
 
   /** Los hermanos de una búsqueda del censo, sin difuntos y con su dirección (o la del titular). */
-  static async destinatarios(consulta: string, tope = MAX_CARTAS): Promise<DestinatarioConDireccion[]> {
+  static async destinatarios(consulta: string, tope = MAX_CARTAS): Promise<DestinatarioPostal[]> {
     const query = Object.fromEntries(new URLSearchParams(consultaLimpia('censo', consulta))) as SearchHermanoQuery;
     const hermanos = await db.hermano.findMany({
       where: { AND: [CensoService.whereDelCenso(query), NO_DIFUNTO] },
       orderBy: [{ apellidos: 'asc' }, { nombre: 'asc' }, { id: 'asc' }],
       take: tope,
       select: {
-        nombre: true, apellidos: true, sexo: true, tratamiento: true, numeroHermano: true, userId: true,
+        nombre: true, apellidos: true, sexo: true, tratamiento: true, numeroHermano: true, userId: true, esTitular: true,
         direccion: true, codigoPostal: true, poblacion: true, provincia: true,
       },
     });
@@ -74,13 +76,19 @@ export class CartasService {
     });
   }
 
-  /** Cuántas cartas saldrían y cuántas sin dirección (esas no caben en un sobre). */
+  /**
+   * Cuántas cartas saldrían, cuántas sin dirección (esas no caben en un sobre)
+   * y en cuántas casas distintas viven los que sí la tienen (las etiquetas de
+   * una por domicilio).
+   */
   static async recuento(consulta: string) {
     const todos = await this.destinatarios(consulta, MAX_CARTAS + 1);
+    const dentro = todos.slice(0, MAX_CARTAS);
     return {
-      total: Math.min(todos.length, MAX_CARTAS),
+      total: dentro.length,
       demasiados: todos.length > MAX_CARTAS,
-      sinDireccion: todos.filter((d) => vacio(d.direccion)).length,
+      sinDireccion: dentro.filter((d) => !tieneDireccion(d)).length,
+      domicilios: sobresDe(dentro, true).length,
     };
   }
 
@@ -90,6 +98,17 @@ export class CartasService {
     if (destinatarios.length === 0) throw new NotFoundError('Nadie sale en esa búsqueda: no hay a quién escribir.');
     const pdf = await cartasEnPdf(texto, destinatarios);
     if (!prueba) await AuditoriaService.log(ACCIONES_AUDITORIA.CARTAS_GENERAR, meta, 'carta', undefined, { asunto: texto.asunto, consulta: consultaLimpia('censo', consulta), cartas: destinatarios.length });
+    return pdf;
+  }
+
+  /** Las etiquetas postales de esa búsqueda: solo de quien tiene dirección, una por hermano o por casa. */
+  static async etiquetas(o: { consulta: string; formato: string; saltar: number; porDomicilio: boolean }, meta: MetaDeAuditoria) {
+    const formato = FORMATOS_DE_ETIQUETAS[o.formato];
+    if (o.saltar >= porHoja(formato)) throw new HttpError(`Esa hoja tiene ${porHoja(formato)} etiquetas: no se pueden haber gastado ${o.saltar}.`);
+    const sobres = sobresDe(await this.destinatarios(o.consulta), o.porDomicilio);
+    if (sobres.length === 0) throw new NotFoundError('Nadie con dirección sale en esa búsqueda: no hay etiquetas que imprimir.');
+    const pdf = await etiquetasEnPdf(sobres, formato, o.saltar);
+    await AuditoriaService.log(ACCIONES_AUDITORIA.ETIQUETAS_GENERAR, meta, 'carta', undefined, { consulta: consultaLimpia('censo', o.consulta), etiquetas: sobres.length, formato: o.formato, porDomicilio: o.porDomicilio });
     return pdf;
   }
 }

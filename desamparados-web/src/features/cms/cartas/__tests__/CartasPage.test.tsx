@@ -13,8 +13,8 @@ function servidor() {
     const metodo = init.method ?? 'GET'
     llamadas.push({ url: String(url), metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
     const u = String(url)
-    if (u.includes('/cartas/pdf')) return Promise.resolve(new Response(new Blob(['%PDF-']), { status: 200, headers: { 'Content-Type': 'application/pdf' } }))
-    if (u.includes('/cartas/destinatarios')) return Promise.resolve(json({ total: 245, demasiados: false, sinDireccion: 3 }))
+    if (u.includes('/cartas/pdf') || u.includes('/cartas/etiquetas')) return Promise.resolve(new Response(new Blob(['%PDF-']), { status: 200, headers: { 'Content-Type': 'application/pdf' } }))
+    if (u.includes('/cartas/destinatarios')) return Promise.resolve(json({ total: 245, demasiados: false, sinDireccion: 3, domicilios: 200 }))
     if (u.includes('/hermanos/admin/listas')) return Promise.resolve(json([{ id: 1, nombre: 'Sin correo', consulta: 'correo=sin' }]))
     if (metodo === 'POST' && u.endsWith('/cartas')) return Promise.resolve(json({ ...CARTA, id: 9, ...JSON.parse(String(init.body)) }))
     return Promise.resolve(json([CARTA]))
@@ -69,5 +69,27 @@ describe('CartasPage', () => {
     await waitFor(() => expect(pestana.location.href).toBe('blob:cartas'))
     expect(llamadas.find((l) => l.url.includes('/cartas/pdf'))?.cuerpo).toMatchObject({ prueba: true, consulta: 'estado=activo', asunto: 'Convocatoria' })
     expect(screen.getByRole('button', { name: 'Imprimir las 245 cartas' })).toBeInTheDocument()
+  })
+
+  it('las etiquetas van de partida a los activos sin correo, una por casa, y empiezan donde se quedó la hoja', async () => {
+    const user = userEvent.setup()
+    const pestana = { location: { href: '' }, close: vi.fn() }
+    vi.spyOn(window, 'open').mockReturnValue(pestana as unknown as Window)
+    const llamadas = servidor()
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:etiquetas') }))
+    renderWithProviders(<CartasPage />)
+    await user.click(await screen.findByRole('button', { name: 'Etiquetas postales' }))
+
+    const panel = await screen.findByRole('region', { name: 'Etiquetas postales' })
+    expect(await within(panel).findByText(/245 hermanos; 3 no tienen dirección/)).toBeInTheDocument()
+    expect(within(panel).getByRole('button', { name: 'Imprimir 200 etiquetas (9 hojas)' })).toBeInTheDocument()
+    await user.click(within(panel).getByRole('switch', { name: /Una por domicilio/ }))
+    const gastadas = within(panel).getByRole('spinbutton', { name: 'Ya gastadas de la hoja' })
+    await user.clear(gastadas)
+    await user.type(gastadas, '5')
+    await user.click(within(panel).getByRole('button', { name: 'Imprimir 242 etiquetas (11 hojas)' }))
+
+    await waitFor(() => expect(pestana.location.href).toBe('blob:etiquetas'))
+    expect(llamadas.find((l) => l.url.includes('/cartas/etiquetas'))?.cuerpo).toEqual({ consulta: 'estado=activo&correo=sin', formato: '3x8', saltar: 5, porDomicilio: false })
   })
 })

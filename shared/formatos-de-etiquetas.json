@@ -1,0 +1,8 @@
+{
+  "$comentario": "Las hojas A4 de etiquetas adhesivas que se venden en cualquier papelería (Apli, Avery y sus copias). Medidas del fabricante, en milímetros: si se tocan, las etiquetas se corren. El primero es el que sale elegido.",
+  "formatos": {
+    "3x8": { "nombre": "24 por hoja (70 × 37 mm, sin márgenes)", "columnas": 3, "filas": 8, "ancho": 70, "alto": 37, "izquierda": 0, "arriba": 0.5, "pasoX": 70, "pasoY": 37 },
+    "3x7": { "nombre": "21 por hoja (63,5 × 38,1 mm)", "columnas": 3, "filas": 7, "ancho": 63.5, "alto": 38.1, "izquierda": 7.2, "arriba": 15.15, "pasoX": 66, "pasoY": 38.1 },
+    "2x7": { "nombre": "14 por hoja (99,1 × 38,1 mm)", "columnas": 2, "filas": 7, "ancho": 99.1, "alto": 38.1, "izquierda": 4.65, "arriba": 15.15, "pasoX": 101.6, "pasoY": 38.1 }
+  }
+}

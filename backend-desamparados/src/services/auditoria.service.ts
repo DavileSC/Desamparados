@@ -59,6 +59,7 @@ export const ACCIONES_AUDITORIA = {
   PESAME_ENVIAR: 'PESAME_ENVIAR',
   // Las cartas: se generan con datos de muchos hermanos a la vez
   CARTAS_GENERAR: 'CARTAS_GENERAR',
+  ETIQUETAS_GENERAR: 'ETIQUETAS_GENERAR',
   ROSARIO_FECHAR: 'ROSARIO_FECHAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
   // Remesas SEPA: generar el fichero para el banco y darla por cobrada

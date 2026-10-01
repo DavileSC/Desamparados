@@ -59,7 +59,7 @@ test('las cartas: a quién, el PDF de prueba y el de todas, y guardarlas', async
     assert.deepEqual((await CartasService.destinatarios(`q=${marca}&estado=baja`)).map((d) => d.nombre), [], 'ni pidiendo las bajas sale el difunto');
 
     const recuento = await como(secretaria.id, Role.SECRETARIA, `/destinatarios?consulta=${encodeURIComponent(`q=${marca}`)}`);
-    assert.deepEqual(await recuento.json(), { total: 2, demasiados: false, sinDireccion: 0 });
+    assert.deepEqual(await recuento.json(), { total: 2, demasiados: false, sinDireccion: 0, domicilios: 1 });
 
     // El PDF: la prueba, una hoja; todas, una por hermano, y queda en la auditoría.
     const prueba = await como(secretaria.id, Role.SECRETARIA, '/pdf', { method: 'POST', json: { ...texto, consulta: `q=${marca}`, prueba: true } });
@@ -70,6 +70,19 @@ test('las cartas: a quién, el PDF de prueba y el de todas, y guardarlas', async
     assert.equal(paginas(Buffer.from(await todas.arrayBuffer())), 2);
     assert.equal(await db.auditLog.count({ where: { userId: secretaria.id, action: 'CARTAS_GENERAR' } }), 1, 'la prueba no cuenta; las de verdad, sí');
     assert.equal((await como(secretaria.id, Role.SECRETARIA, '/pdf', { method: 'POST', json: { ...texto, consulta: 'q=NadieSeLlamaAsi123' } })).status, 404);
+
+    // Las etiquetas: una hoja; saltando las 23 gastadas de una de 24, la segunda va a otra hoja.
+    const etiquetas = (cuerpo: Record<string, unknown>) => como(secretaria.id, Role.SECRETARIA, '/etiquetas', { method: 'POST', json: { consulta: `q=${marca}`, formato: '3x8', saltar: 0, porDomicilio: false, ...cuerpo } });
+    const unaHoja = await etiquetas({});
+    assert.equal(unaHoja.status, 200);
+    assert.equal(unaHoja.headers.get('content-type'), 'application/pdf');
+    assert.equal(paginas(Buffer.from(await unaHoja.arrayBuffer())), 1);
+    assert.equal(paginas(Buffer.from(await (await etiquetas({ saltar: 23 })).arrayBuffer())), 2);
+    assert.equal(paginas(Buffer.from(await (await etiquetas({ saltar: 23, porDomicilio: true })).arrayBuffer())), 1, 'padre e hija, una sola etiqueta');
+    assert.equal(await db.auditLog.count({ where: { userId: secretaria.id, action: 'ETIQUETAS_GENERAR' } }), 3);
+    assert.equal((await etiquetas({ formato: 'A4' })).status, 400);
+    assert.equal((await etiquetas({ saltar: 24 })).status, 400);
+    assert.equal((await etiquetas({ consulta: 'q=NadieSeLlamaAsi123' })).status, 404);
 
     // Solo quien gestiona el censo.
     assert.equal((await como(albacea.id, Role.ALBACERIA, '/')).status, 403);

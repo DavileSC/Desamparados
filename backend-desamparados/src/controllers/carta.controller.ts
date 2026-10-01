@@ -34,4 +34,13 @@ export class CartaController {
     res.setHeader('Cache-Control', 'private, no-store');
     res.status(200).send(pdf);
   });
+
+  static etiquetas = manejar('Error generando las etiquetas', async (req, res) => {
+    const pdf = await CartasService.etiquetas(req.body as { consulta: string; formato: string; saltar: number; porDomicilio: boolean }, AuditoriaService.metaFromReq(req));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="etiquetas.pdf"');
+    // Direcciones de los hermanos: como las cartas, fuera de cualquier caché compartida.
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.status(200).send(pdf);
+  });
 }

@@ -9,7 +9,8 @@
  * carta del siguiente hermano empieza siempre en hoja nueva.
  */
 import { identidad, secretaria } from '../../domain/datos-entidad.js';
-import { rellenar, tratamientoDe, type DestinatarioDeCarta } from '../../domain/cartas.js';
+import { rellenar, type DestinatarioDeCarta } from '../../domain/cartas.js';
+import { lineasDeDireccion, nombreCompleto } from '../../domain/etiquetas.js';
 import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
@@ -37,14 +38,6 @@ const VENTANA = { x: 105 * MM, y: 50 * MM, ancho: 85 * MM };
 const ORO_TEXTO = '#8a6a30';
 const fechaLarga = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
 
-/** Las líneas de la dirección, sin las que falten. */
-function lineasDeDireccion(d: DestinatarioConDireccion): string[] {
-  const nombre = [tratamientoDe(d), d.nombre, d.apellidos].filter(Boolean).join(' ');
-  const localidad = [d.codigoPostal, d.poblacion].filter(Boolean).join(' ');
-  const provincia = d.provincia && d.provincia.trim().toLowerCase() !== d.poblacion?.trim().toLowerCase() ? `(${d.provincia})` : null;
-  return [nombre, d.direccion, [localidad, provincia].filter(Boolean).join(' ')].filter((l): l is string => Boolean(l && l.trim()));
-}
-
 /** El membrete, la dirección, la fecha y el asunto: lo de la primera hoja de cada carta. */
 function cabecera(doc: Doc, d: DestinatarioConDireccion, texto: TextoDeCarta, hoy: Date): number {
   sinMargenes(doc, () => {
@@ -61,7 +54,7 @@ function cabecera(doc: Doc, d: DestinatarioConDireccion, texto: TextoDeCarta, ho
     // En la ventana del sobre.
     doc.font(LETRA.texto).fontSize(11).fillColor(NEGRO);
     let y = VENTANA.y;
-    for (const linea of lineasDeDireccion(d)) {
+    for (const linea of lineasDeDireccion({ ...d, aQuien: nombreCompleto(d) })) {
       doc.text(linea, VENTANA.x, y, { width: VENTANA.ancho, lineBreak: false, ellipsis: true });
       y += 15;
     }

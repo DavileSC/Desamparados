@@ -1,4 +1,5 @@
 import { type } from 'arktype';
+import { CLAVES_DE_FORMATO } from '../domain/etiquetas.js';
 
 const texto = {
     asunto: "string <= 200",
@@ -15,6 +16,11 @@ export const cartaSchema = type({
 // El PDF, de una carta guardada o todavía sin guardar: la prueba es solo la del primero.
 export const pdfCartaSchema = type({
     body: { consulta: "string <= 1000", "prueba?": "boolean", ...texto }
+});
+
+// Las etiquetas postales: de qué búsqueda, en qué hoja y cuántas de ella ya se gastaron.
+export const etiquetasSchema = type({
+    body: { consulta: "string <= 1000", formato: type.enumerated(...CLAVES_DE_FORMATO), saltar: "0 <= number.integer < 100", porDomicilio: "boolean" }
 });
 
 export const recuentoCartaSchema = type({

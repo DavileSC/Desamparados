@@ -6,6 +6,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import CabeceraSeccion from '../CabeceraSeccion'
+import EtiquetasPostales from './EtiquetasPostales'
 import { listasDelCenso } from '../../../lib/api/hermanos'
 import {
   CAMPOS_DE_CARTA, borrarCarta, cartas, crearCarta, destinatariosDeCarta, guardarCarta, pdfDeCartas,
@@ -29,17 +30,19 @@ function camposDesconocidos(texto: string): string[] {
  * que se rellenan con cada hermano ({{nombre}}…), se eligen los
  * destinatarios con una búsqueda del censo (los activos, o una lista
  * guardada allí) y se imprimen todas en un PDF, una por hermano, con la
- * dirección donde cae la ventana del sobre. Se guardan para otro año.
+ * dirección donde cae la ventana del sobre. Se guardan para otro año. Para
+ * los sobres sin ventana o los paquetes, las etiquetas postales.
  */
 export default function CartasPage() {
   const queryClient = useQueryClient()
   const lista = useQuery({ queryKey: CLAVE, queryFn: cartas })
-  const [abierta, setAbierta] = useState<Carta | 'nueva' | null>(null)
+  const [abierta, setAbierta] = useState<Carta | 'nueva' | 'etiquetas' | null>(null)
 
   return (
     <>
       <Helmet><title>Cartas | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Cartas" subtitulo="Cartas y circulares a los hermanos, en PDF, listas para imprimir y meter en un sobre de ventana.">
+        <Button variant="outlined" onClick={() => setAbierta('etiquetas')}>Etiquetas postales</Button>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAbierta('nueva')}>Nueva carta</Button>
       </CabeceraSeccion>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(240px, 320px) minmax(0, 1fr)' }, gap: 2.5, alignItems: 'start' }}>
@@ -50,7 +53,7 @@ export default function CartasPage() {
             <Paper>
               <List aria-label="Cartas guardadas" dense>
                 {lista.data.map((c) => (
-                  <ListItemButton key={c.id} selected={abierta !== 'nueva' && abierta?.id === c.id} onClick={() => setAbierta(c)}>
+                  <ListItemButton key={c.id} selected={typeof abierta === 'object' && abierta?.id === c.id} onClick={() => setAbierta(c)}>
                     <ListItemText primary={c.nombre} secondary={c.asunto || 'Sin asunto'} />
                   </ListItemButton>
                 ))}
@@ -59,7 +62,9 @@ export default function CartasPage() {
           )}
         </Box>
         <Box sx={{ display: { xs: abierta ? 'block' : 'none', md: 'block' }, minWidth: 0 }}>
-          {abierta
+          {abierta === 'etiquetas'
+            ? <EtiquetasPostales onVolver={() => setAbierta(null)} />
+            : abierta
             ? <Editor key={abierta === 'nueva' ? 'nueva' : abierta.id} carta={abierta === 'nueva' ? null : abierta}
                 onGuardada={(c) => { setAbierta(c); void queryClient.invalidateQueries({ queryKey: CLAVE }) }}
                 onBorrada={() => { setAbierta(null); void queryClient.invalidateQueries({ queryKey: CLAVE }) }}
