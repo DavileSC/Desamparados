@@ -75,7 +75,7 @@ function SeccionDatos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
     <Seccion titulo="Datos">
       {error && <Alert severity="error">{error}</Alert>}
       <TextField label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} disabled={!puedeGuardar} fullWidth />
-      <TextField label="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} disabled={!puedeGuardar} fullWidth />
+      <TextField label="Nombre corto (en la dirección)" value={slug} onChange={(e) => setSlug(e.target.value)} disabled={!puedeGuardar} fullWidth />
       <TextField
         label="Orden"
         type="number"

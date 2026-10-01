@@ -57,7 +57,9 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
       const salida = await crearSalida({
         nombre: form.nombre.trim(),
         slug: slugDe(form.slug),
-        orden: salidas.length,
+        // Detrás de la última. Contarlas repetía orden: las sembradas van 1 y 2,
+        // y la tercera recibía un 2.
+        orden: salidas.reduce((mayor, s) => Math.max(mayor, s.orden), 0) + 1,
         activa: true,
         conRopa: false,
         cobro: form.cobro,
@@ -93,10 +95,10 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
     >
       <TextField label="Nombre" value={form.nombre} onChange={(e) => cambiarNombre(e.target.value)} autoFocus fullWidth />
       <TextField
-        label="Slug"
+        label="Nombre corto (en la dirección)"
         value={form.slug}
         onChange={(e) => cambiarSlug(e.target.value)}
-        helperText="La dirección corta con la que la API identifica la salida."
+        helperText="Minúsculas y guiones: así se identifica la salida en las direcciones."
         fullWidth
       />
       <Stack spacing={0.5}>

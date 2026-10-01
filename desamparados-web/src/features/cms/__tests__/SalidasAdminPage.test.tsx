@@ -18,13 +18,13 @@ vi.mock('../../../lib/api/salidas', async (importOriginal) => {
 })
 
 const pasion: Salida = {
-  id: 1, slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', orden: 0, activa: true, conRopa: true,
+  id: 1, slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', orden: 1, activa: true, conRopa: true,
   cobro: 'CUOTA', importeCuota: 0, fecha: 'PASCUA', diasDesdePascua: -8, horaSalida: '19:00', lugar: 'Templo parroquial',
   eventoId: null, plazoAbierto: true, puestos: [{ nombre: 'Nazareno', tunica: true, tocado: 'CAPIROTE', alturaHombro: false }],
   cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: '2026-03-28', acto: null,
 }
 const rosario: Salida = {
-  id: 2, slug: 'rosario-vespertino', nombre: 'Rosario vespertino', orden: 1, activa: false, conRopa: false,
+  id: 2, slug: 'rosario-vespertino', nombre: 'Rosario vespertino', orden: 2, activa: false, conRopa: false,
   cobro: 'DONATIVO', importeCuota: 0, fecha: 'MANUAL', diasDesdePascua: null, horaSalida: null, lugar: null,
   eventoId: null, plazoAbierto: false, puestos: [], cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: null, acto: null,
 }
@@ -62,7 +62,7 @@ describe('SalidasAdminPage', () => {
     expect(filas[1]).toHaveTextContent('Desactivada')
   })
 
-  it('«Nueva salida» abre la ventana; el nombre propone el slug y al guardar crea y navega a editar', async () => {
+  it('«Nueva salida» abre la ventana; el nombre propone el nombre corto y al guardar crea y navega a editar', async () => {
     const usuario = userEvent.setup()
     vi.mocked(crearSalida).mockResolvedValue({
       ...pasion, id: 42, slug: 'traslado', nombre: 'Traslado', diasDesdePascua: -3, fechaDelAnio: '2026-04-02',
@@ -74,7 +74,7 @@ describe('SalidasAdminPage', () => {
     expect(screen.getByRole('dialog', { name: 'Nueva salida' })).toBeInTheDocument()
 
     await usuario.type(screen.getByLabelText('Nombre'), 'Traslado')
-    expect(screen.getByLabelText('Slug')).toHaveValue('traslado')
+    expect(screen.getByLabelText('Nombre corto (en la dirección)')).toHaveValue('traslado')
 
     await usuario.type(screen.getByLabelText('Días desde el Domingo de Resurrección'), '-3')
     // Sin primer puesto no se puede crear: la API exige al menos uno.
@@ -87,6 +87,8 @@ describe('SalidasAdminPage', () => {
     const datos = vi.mocked(crearSalida).mock.calls[0][0]
     expect(datos.fecha).toBe('PASCUA')
     expect(datos.diasDesdePascua).toBe(-3)
+    // Detrás de la última: con las sembradas (1 y 2), el 3; contarlas daría 2, repetido.
+    expect(datos.orden).toBe(3)
     expect(datos.puestos).toEqual([{ nombre: 'Acompañante', tunica: false, tocado: null, alturaHombro: false }])
     expect(router.state.location.pathname).toBe('/cms/procesion/salidas/42/editar')
   })

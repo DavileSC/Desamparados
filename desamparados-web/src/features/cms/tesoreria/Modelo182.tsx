@@ -87,7 +87,7 @@ export default function Modelo182({ puedeCambiar }: Props) {
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 760 }}>
         La declaración de donativos del año para Hacienda (se presenta en enero) y los certificados para que cada donante desgrave.
         Entran los donativos pagados{r?.configuracion.cuotas ? ' y las cuotas de hermano' : ''}, y los donativos y apadrinamientos en línea de quien pidió certificado.
-        Lo pagado por una salida (papeleta o donativo del Rosario) no entra: tiene contraprestación.
+        Las papeletas y los donativos de las salidas no entran: tienen contraprestación.
       </Typography>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
