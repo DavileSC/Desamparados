@@ -3,8 +3,8 @@ import { diaMadrid, esDiaValido, inicioDiaMadrid } from './contabilidad.js';
 /**
  * Reglas de la papeleta de sitio que no necesitan base de datos: cómo se lee
  * un precio de la configuración, cómo se comparan los conceptos de los
- * recibos y qué datos del evento se imprimen en la papeleta (el concepto y
- * el importe de cada salida están en `salidas.ts`). Viven aquí para poder
+ * recibos y la forma de los datos del evento que se imprimen en la papeleta
+ * (el concepto y el importe de cada salida están en `salidas.ts`). Viven aquí para poder
  * probarlas en cualquier máquina: son las que, cuando se equivocan, cobran de
  * más o mandan a los hermanos a una hora que no es.
  */
@@ -77,48 +77,14 @@ export function claveConcepto(concepto: string): string {
 //  Datos del evento impresos en la papeleta
 // ---------------------------------------------------------------------------
 
-/** Claves de `Configuracion` con los datos de la salida. */
-export const CLAVES_EVENTO = {
-  fecha: 'procesion_fecha',
-  hora: 'procesion_hora',
-  acceso: 'procesion_acceso',
-} as const;
-
+/**
+ * Fecha, hora y puerta de la salida tal como se imprimen en la papeleta y en
+ * el correo. Salen de la fila de la salida (ver `leerDatosEvento`).
+ */
 export interface DatosEvento {
   fechaSalida: string;
   horaSalida: string;
   accesoPuerta: string;
-}
-
-const EVENTO_POR_DEFECTO: DatosEvento = {
-  // El Sábado de Pasión es cuando sale este Grupo Parroquial.
-  fechaSalida: 'Sábado de Pasión',
-  horaSalida: '19:30h',
-  accesoPuerta: 'Consultar en secretaría',
-};
-
-function primerValor(...candidatos: (string | null | undefined)[]): string | undefined {
-  return candidatos.find((c): c is string => typeof c === 'string' && c.trim() !== '')?.trim();
-}
-
-/**
- * Fecha, hora y puerta de la salida, de una sola fuente para las dos formas de
- * sacar la papeleta (cobro en tesorería e inscripción en mesa). Antes la mesa
- * llevaba escrito «Viernes Santo, 19:00, Casa Grupo Parroquial» mientras
- * tesorería leía `PROCESION_*`: el mismo año, dos papeletas con dos horas.
- *
- * Orden: tabla `Configuracion` (editable sin redesplegar) → variables
- * `PROCESION_FECHA/HORA/ACCESO` del entorno → valores por defecto.
- */
-export function datosEvento(
-  config: Partial<Record<(typeof CLAVES_EVENTO)[keyof typeof CLAVES_EVENTO], string | null | undefined>>,
-  env: Record<string, string | undefined> = process.env,
-): DatosEvento {
-  return {
-    fechaSalida: primerValor(config[CLAVES_EVENTO.fecha], env.PROCESION_FECHA) ?? EVENTO_POR_DEFECTO.fechaSalida,
-    horaSalida: primerValor(config[CLAVES_EVENTO.hora], env.PROCESION_HORA) ?? EVENTO_POR_DEFECTO.horaSalida,
-    accesoPuerta: primerValor(config[CLAVES_EVENTO.acceso], env.PROCESION_ACCESO) ?? EVENTO_POR_DEFECTO.accesoPuerta,
-  };
 }
 
 // ---------------------------------------------------------------------------

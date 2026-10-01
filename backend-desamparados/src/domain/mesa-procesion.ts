@@ -1,5 +1,3 @@
-import catalogo from '../../../shared/puestos-procesion.json' with { type: 'json' };
-
 /**
  * Reglas de la mesa de la procesión que no necesitan base de datos: la altura
  * de hombro tal como la dicta quien talla, la talla que lleva escrita el
@@ -8,16 +6,6 @@ import catalogo from '../../../shared/puestos-procesion.json' with { type: 'json
 
 export type Tocado = 'CAPIROTE' | 'FARAONA';
 export type Origen = 'ROPERO' | 'PROPIA' | 'NINGUNA';
-
-export interface PuestoDelCatalogo {
-  nombre: string;
-  tunica: boolean;
-  tocado: Tocado | null;
-  alturaHombro: boolean;
-}
-
-/** Los puestos que sugiere la mesa (shared/puestos-procesion.json). */
-export const PUESTOS: readonly PuestoDelCatalogo[] = catalogo.puestos as PuestoDelCatalogo[];
 
 /** Lo que hace el tallaje al hombro razonable: ni un niño ni un error de tecleo. */
 const ALTURA_MINIMA_CM = 100;

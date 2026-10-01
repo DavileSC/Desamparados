@@ -6,17 +6,15 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { EstadoPago } from '@prisma/client';
 import {
-  CLAVES_EVENTO,
   claveConcepto,
-  datosEvento,
   instanteLimiteAusencias,
   motivoTurnoInvalido,
   leerPrecio,
   parsearImporte,
 } from '../src/domain/datos-procesion.js';
-import { CUOTA_SALIDA_POR_DEFECTO, conceptoDeSalida } from '../src/domain/salidas.js';
+import { conceptoDeSalida } from '../src/domain/salidas.js';
 
-const conceptoPapeleta = (year: number, existentes: string[]) => conceptoDeSalida('PASION', year, existentes);
+const conceptoPapeleta = (year: number, existentes: string[]) => conceptoDeSalida({ nombre: 'Sábado de Pasión', cobro: 'CUOTA' }, year, existentes);
 
 describe('D4 · precios de la configuración', () => {
   test('acepta la coma decimal que escribe cualquiera en España', () => {
@@ -48,10 +46,6 @@ describe('D4 · precios de la configuración', () => {
     assert.deepEqual(leerPrecio('   ', 30), { ok: true, valor: 30, configurado: false });
   });
 
-  test('la cuota de salida no se cobra si nadie la configura', () => {
-    assert.equal(CUOTA_SALIDA_POR_DEFECTO, 0);
-  });
-
 });
 
 describe('D2 · concepto del recibo al reinscribir', () => {
@@ -73,35 +67,6 @@ describe('D2 · concepto del recibo al reinscribir', () => {
       conceptoPapeleta(2026, ['Papeleta de sitio 2026', 'Papeleta de sitio 2026 (reemisión 3)']),
       'Papeleta de sitio 2026 (reemisión 2)',
     );
-  });
-});
-
-describe('D6 · datos del evento impresos en la papeleta', () => {
-  test('la configuración manda sobre el entorno', () => {
-    const datos = datosEvento(
-      { [CLAVES_EVENTO.fecha]: 'Sábado de Pasión, 28 de marzo', [CLAVES_EVENTO.hora]: '20:00h' },
-      { PROCESION_FECHA: 'Viernes Santo', PROCESION_HORA: '19:00', PROCESION_ACCESO: 'Puerta lateral' },
-    );
-    assert.deepEqual(datos, {
-      fechaSalida: 'Sábado de Pasión, 28 de marzo',
-      horaSalida: '20:00h',
-      accesoPuerta: 'Puerta lateral',
-    });
-  });
-
-  test('sin configuración, las variables PROCESION_*', () => {
-    const datos = datosEvento({}, { PROCESION_FECHA: 'Sábado de Pasión', PROCESION_HORA: '19:30h', PROCESION_ACCESO: 'Casa parroquial' });
-    assert.deepEqual(datos, { fechaSalida: 'Sábado de Pasión', horaSalida: '19:30h', accesoPuerta: 'Casa parroquial' });
-  });
-
-  test('sin nada, los valores por defecto (y nunca «Viernes Santo, 19:00»)', () => {
-    const datos = datosEvento({}, {});
-    assert.deepEqual(datos, { fechaSalida: 'Sábado de Pasión', horaSalida: '19:30h', accesoPuerta: 'Consultar en secretaría' });
-  });
-
-  test('un valor en blanco en la configuración no tapa al del entorno', () => {
-    const datos = datosEvento({ [CLAVES_EVENTO.hora]: '  ' }, { PROCESION_HORA: '19:30h' });
-    assert.equal(datos.horaSalida, '19:30h');
   });
 });
 

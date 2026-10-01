@@ -196,8 +196,11 @@ export async function sembrarDemostracion(): Promise<void> {
   const papeletasSinCingulo = generarPapeletas(hermanos, recibos);
   const prendas = generarPrendas(papeletasSinCingulo);
   const papeletas = conCingulosSinDevolver(papeletasSinCingulo, prendas);
+  // Las de la demostración son todas de la Pasión, la salida con ropero.
+  const pasion = await db.salida.findUniqueOrThrow({ where: { slug: 'sabado-de-pasion' } });
   await db.papeletaSitio.createMany({
     data: papeletas.map((p) => ({
+      salidaId: pasion.id,
       hermanoId: idPorDni.get(p.dniHermano)!,
       reciboId: idPorClaveRecibo.get(p.claveRecibo)!,
       year: p.year,
@@ -216,6 +219,7 @@ export async function sembrarDemostracion(): Promise<void> {
   const { turnos, citas } = generarReparto(hermanos, anio);
   await db.turno.createMany({
     data: turnos.map((t) => ({
+      salidaId: pasion.id,
       fecha: t.fecha,
       horaInicio: t.horaInicio,
       horaFin: t.horaFin,

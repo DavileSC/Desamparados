@@ -11,8 +11,8 @@ export type TipoComunicado = 'BOLETIN' | 'AVISO';
 
 /** Los filtros del segmento. Vacíos, no filtran: todos los activos (o los suscritos, en el boletín). */
 export interface Segmento {
-  /** Solo quien tiene papeleta de esa salida este año. */
-  conPapeleta?: 'PASION' | 'ROSARIO' | null;
+  /** Solo quien tiene papeleta de esa salida (su id) este año. */
+  conPapeleta?: number | null;
   /** Solo quien debe cuotas (pendientes o devueltas). */
   conDeuda?: boolean;
   edad?: 'MAYORES' | 'MENORES' | null;
@@ -20,10 +20,17 @@ export interface Segmento {
   poblacion?: string | null;
 }
 
-/** «Suscritos al boletín · con papeleta de la Pasión · de Málaga», para enseñar a quién va. */
-export function describirSegmento(tipo: TipoComunicado, s: Segmento): string {
+/**
+ * «Suscritos al boletín · con papeleta del Sábado de Pasión · de Málaga», para
+ * enseñar a quién va. `nombres` traduce el id de la salida a su nombre: las
+ * salidas son filas del CMS y aquí no hay base de datos.
+ */
+export function describirSegmento(tipo: TipoComunicado, s: Segmento, nombres: ReadonlyMap<number, string> = new Map()): string {
   const partes = [tipo === 'BOLETIN' ? 'Hermanos activos suscritos al boletín' : 'Hermanos activos'];
-  if (s.conPapeleta) partes.push(`con papeleta ${s.conPapeleta === 'PASION' ? 'del Sábado de Pasión' : 'del Rosario'}`);
+  if (s.conPapeleta) {
+    const nombre = nombres.get(s.conPapeleta);
+    partes.push(nombre ? `con papeleta del ${nombre}` : 'con papeleta de la salida');
+  }
   if (s.conDeuda) partes.push('con cuotas pendientes');
   if (s.edad) partes.push(s.edad === 'MAYORES' ? 'mayores de edad' : 'menores de edad');
   if (s.poblacion?.trim()) partes.push(`de ${s.poblacion.trim()}`);

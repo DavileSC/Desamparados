@@ -1,56 +1,17 @@
-import { EstadoPago, TipoRecibo, type Salida } from '@prisma/client';
-import catalogo from '../../../shared/puestos-procesion.json' with { type: 'json' };
+import { EstadoPago, TipoRecibo, type CobroSalida } from '@prisma/client';
 import { claveConcepto } from './datos-procesion.js';
 import { modoDePago } from './redsys.js';
 
 /**
- * Las salidas del año y lo que las distingue, sin base de datos: la del
- * Sábado de Pasión (con túnica del ropero y una cuota de salida que hoy es
- * 0 €) y el Rosario vespertino de octubre (en traje, con un donativo libre).
+ * Lo que distingue a cada salida sin base de datos. Las salidas son filas
+ * que define el CMS (`Salida`); aquí solo lo que se deduce de su forma de
+ * cobro: una cuota fija (la papeleta de sitio) o la voluntad del hermano.
  *
- * Las dos piden lo mismo para salir: ser hermano en activo con las cuotas al
+ * Todas piden lo mismo para salir: ser hermano en activo con las cuotas al
  * día (pagadas o perdonadas). Ver `requisitosParaRecoger`.
  */
 
-export const SALIDAS = ['PASION', 'ROSARIO'] as const satisfies readonly Salida[];
-
-export interface DatosDeSalida {
-  nombre: string;
-  /** Si en la última zona se da ropa del ropero (túnica, capirote, faraona). */
-  conRopa: boolean;
-  /** Clave de `Configuracion` que abre y cierra la solicitud en el área de hermanos. */
-  clavePlazo: string;
-  /** Cómo se llama el recibo de la papeleta, sin el año. */
-  concepto: string;
-  tipoRecibo: TipoRecibo;
-  /** Si el importe lo pone el hermano (el donativo) en vez de la configuración. */
-  importeLibre: boolean;
-}
-
-export const DATOS_SALIDA: Record<Salida, DatosDeSalida> = {
-  PASION: {
-    nombre: 'Sábado de Pasión',
-    conRopa: true,
-    clavePlazo: 'papeletas_abiertas',
-    concepto: 'Papeleta de sitio',
-    tipoRecibo: TipoRecibo.PAPELETA_SITIO,
-    importeLibre: false,
-  },
-  ROSARIO: {
-    nombre: 'Rosario vespertino',
-    conRopa: false,
-    clavePlazo: 'papeletas_abiertas_rosario',
-    concepto: 'Donativo Rosario vespertino',
-    tipoRecibo: TipoRecibo.DONATIVO,
-    importeLibre: true,
-  },
-};
-
-/** La cuota de salida de la Pasión: hoy no se cobra, pero queda configurable. */
-export const CLAVE_CUOTA_SALIDA = 'precio_papeleta_sitio';
-export const CUOTA_SALIDA_POR_DEFECTO = 0;
-
-/** Un puesto del catálogo (shared/puestos-procesion.json). */
+/** Un puesto del catálogo de una salida (la columna `Salida.puestos`). */
 export interface PuestoDelCatalogo {
   nombre: string;
   tunica: boolean;
@@ -58,11 +19,10 @@ export interface PuestoDelCatalogo {
   alturaHombro: boolean;
 }
 
-/** Los puestos que sugiere cada salida. Son sugerencias: se puede escribir otro. */
-export const PUESTOS_POR_SALIDA: Record<Salida, readonly PuestoDelCatalogo[]> = {
-  PASION: catalogo.puestos as PuestoDelCatalogo[],
-  ROSARIO: catalogo.rosario as PuestoDelCatalogo[],
-};
+/** El tipo del recibo de la papeleta: la cuota es una papeleta de sitio; la voluntad, un donativo. */
+export function tipoReciboDe(cobro: CobroSalida): TipoRecibo {
+  return cobro === 'DONATIVO' ? TipoRecibo.DONATIVO : TipoRecibo.PAPELETA_SITIO;
+}
 
 /**
  * Concepto del recibo de una papeleta que no choque con los que el hermano ya
@@ -70,8 +30,9 @@ export const PUESTOS_POR_SALIDA: Record<Salida, readonly PuestoDelCatalogo[]> = 
  * Sitio 2026 (reemisión 2)». El recibo de la papeleta anulada se queda (la
  * contabilidad conserva el rastro) y ocupa su concepto en la clave única.
  */
-export function conceptoDeSalida(salida: Salida, year: number, conceptosExistentes: readonly string[]): string {
-  const base = `${DATOS_SALIDA[salida].concepto} ${year}`;
+export function conceptoDeSalida(salida: { nombre: string; cobro: CobroSalida }, year: number, conceptosExistentes: readonly string[]): string {
+  // Los conceptos de siempre: «Papeleta de sitio 2026», «Donativo Rosario vespertino 2026».
+  const base = `${salida.cobro === 'DONATIVO' ? `Donativo ${salida.nombre}` : 'Papeleta de sitio'} ${year}`;
   const usados = new Set(conceptosExistentes.map(claveConcepto));
   if (!usados.has(claveConcepto(base))) return base;
   for (let n = 2; ; n += 1) {
@@ -115,23 +76,22 @@ export const CUOTAS_ATRASADAS_MAXIMAS = 2;
 
 /**
  * Lo que queda por pagar de la salida en una solicitud: nada si ya tiene su
- * recibo pagado (o exento); si no, la cuota de salida en la Pasión (hoy 0 €)
- * o la voluntad que dijo en el Rosario.
+ * recibo pagado (o exento); si no, la cuota de la salida o la voluntad que
+ * dijo el hermano, según cobre la salida.
  */
 export function pendienteDeLaSalida(solicitud: {
-  salida: Salida;
   donativo: number | null;
   recibo: { estado: EstadoPago } | null;
-}, cuotaSalida: number): number {
+}, salida: { cobro: CobroSalida; importeCuota: number }): number {
   const { recibo } = solicitud;
   if (recibo && (recibo.estado === EstadoPago.PAGADO || recibo.estado === EstadoPago.EXENTO)) return 0;
-  const importe = DATOS_SALIDA[solicitud.salida].importeLibre ? solicitud.donativo ?? 0 : cuotaSalida;
+  const importe = salida.cobro === 'DONATIVO' ? solicitud.donativo ?? 0 : salida.importeCuota;
   return Math.round(importe * 100) / 100;
 }
 
 /**
- * Lo que la mesa comprueba antes de dar la ropa (o el puesto, en el
- * Rosario): hermano en activo, con su solicitud, lo de la salida pagado y
+ * Lo que la mesa comprueba antes de dar la ropa (o el puesto, en las
+ * salidas sin ropa): hermano en activo, con su solicitud, lo de la salida pagado y
  * ninguna cuota de hermano sin pagar ni perdonar. Una cuota en el banco no
  * bloquea: el hermano ya la ha pagado por domiciliación y el banco la está
  * cobrando.
@@ -142,7 +102,7 @@ export function pendienteDeLaSalida(solicitud: {
  */
 export function requisitosParaRecoger(entrada: {
   activo: boolean;
-  solicitud: { salida: Salida; salidaPendiente: number } | null;
+  solicitud: { cobro: CobroSalida; salidaPendiente: number } | null;
   cuotas: CuotaDelHermano[];
 }): Requisitos {
   const { activo, solicitud, cuotas } = entrada;
@@ -155,7 +115,7 @@ export function requisitosParaRecoger(entrada: {
   const motivos: string[] = [];
   if (!activo) motivos.push('No está en activo en el censo.');
   if (!solicitud) motivos.push('Todavía no está apuntado.');
-  else if (salidaPendiente > 0) motivos.push(solicitud.salida === 'ROSARIO' ? 'Falta el donativo.' : 'Falta pagar la papeleta.');
+  else if (salidaPendiente > 0) motivos.push(solicitud.cobro === 'DONATIVO' ? 'Falta el donativo.' : 'Falta pagar la papeleta.');
   if (cuotasPendientes.length > 0) {
     motivos.push(cuotasPendientes.length === 1
       ? `Tiene la cuota de ${cuotasPendientes[0].year} sin pagar.`

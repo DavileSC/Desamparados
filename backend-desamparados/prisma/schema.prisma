@@ -47,12 +47,52 @@ enum TipoRecibo {
   OTRO
 }
 
-/// Las salidas del año: la del Sábado de Pasión, con túnicas y ropero, y el
-/// Rosario vespertino de octubre, en traje y con donativo. Cada una tiene sus
-/// días de reparto, su plazo, su catálogo de puestos y su papeleta.
-enum Salida {
-  PASION
-  ROSARIO
+/// Cómo se paga la salida: una cuota fija (la papeleta de sitio) o la
+/// voluntad que dice el hermano (el Rosario vespertino).
+enum CobroSalida {
+  CUOTA
+  DONATIVO
+}
+
+/// De dónde sale la fecha cada año: de la Pascua (las de Semana Santa) o de
+/// un acto de la Agenda que fija la Junta (Gloria, Rosario…).
+enum FechaSalida {
+  PASCUA
+  MANUAL
+}
+
+/// Cada salida procesional de la corporación: las define el CMS, no el
+/// código. Con papeletas no se borra: se desactiva.
+model Salida {
+  id              Int         @id @default(autoincrement())
+  slug            String      @unique
+  nombre          String
+  orden           Int         @default(0)
+  activa          Boolean     @default(true)
+  conRopa         Boolean     @default(false)
+  cobro           CobroSalida @default(CUOTA)
+  importeCuota    Decimal     @default(0) @db.Decimal(8, 2)
+  fecha           FechaSalida
+  /// Con PASCUA: días desde el Domingo de Resurrección (Sábado de Pasión = −8).
+  diasDesdePascua Int?
+  /// Con PASCUA; con MANUAL salen del acto.
+  horaSalida      String?
+  lugar           String?
+  /// Con MANUAL: el acto de la Agenda de este año.
+  eventoId        Int?
+  acto            Evento?     @relation("ActoDeLaSalida", fields: [eventoId], references: [id], onDelete: SetNull)
+  plazoAbierto    Boolean     @default(false)
+  plazoCambiadoEl DateTime?
+  /// PuestoDelCatalogo[]: lo que sugieren la mesa y la solicitud.
+  puestos         Json
+  /// ConfiguracionCortejo; null = cuatro tramos de 30 con «Nazareno».
+  cortejo         Json?
+  /// Vestimenta y comportamiento: van en la papeleta y en los correos.
+  indicaciones    String?     @db.Text
+
+  turnos      Turno[]
+  papeletas   PapeletaSitio[]
+  solicitudes Solicitud[]
 }
 
 enum EstadoCita {
@@ -311,9 +351,9 @@ model Turno {
   // Informativo: ¿Cuánta gente esperamos poder atender bien?
   capacidadEstimada Int @default(100)
 
-  /// De qué salida es el reparto: los de la Pasión y los del Rosario se
-  /// piden por separado.
-  salida Salida @default(PASION)
+  /// De qué salida es el reparto: cada salida pide los suyos por separado.
+  salidaId Int
+  salida   Salida @relation(fields: [salidaId], references: [id])
 
   /// El acto de la Agenda pública que anuncia este día de reparto, para que
   /// la gente sepa cuándo ir a apuntarse. Se crea y se borra con el turno.
@@ -326,6 +366,8 @@ model Turno {
 
   // RELACIÓN: Miembros de la Junta que trabajan ese día
   responsables User[] @relation("TurnosResponsables")
+
+  @@index([salidaId])
 }
 
 // La intención de ir de un hermano
@@ -485,9 +527,10 @@ model Remesa {
 // ---------------------------------------------------------
 
 model PapeletaSitio {
-  id     Int    @id @default(autoincrement())
-  year   Int
-  salida Salida @default(PASION)
+  id       Int    @id @default(autoincrement())
+  year     Int
+  salidaId Int
+  salida   Salida @relation(fields: [salidaId], references: [id])
 
   // SITIO
   puesto String // "Cirio", "Varita", "Diputado", "hombre de trono"
@@ -533,9 +576,9 @@ model PapeletaSitio {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Un hermano sale una vez por salida y año: en la Pasión y en el Rosario.
-  @@unique([hermanoId, year, salida])
-  @@index([year, salida])
+  // Un hermano sale una vez por salida y año.
+  @@unique([hermanoId, year, salidaId])
+  @@index([year, salidaId])
 }
 
 /// La solicitud de salir: la hace el hermano desde su área (eligiendo día de
@@ -544,9 +587,10 @@ model PapeletaSitio {
 /// o con el puesto confirmado en el Rosario). Si no aparece a recogerla, no
 /// queda nada que anular.
 model Solicitud {
-  id     Int    @id @default(autoincrement())
-  year   Int
-  salida Salida
+  id       Int    @id @default(autoincrement())
+  year     Int
+  salidaId Int
+  salida   Salida @relation(fields: [salidaId], references: [id])
 
   /// El puesto que pide. Lo decide el Grupo: en Túnicas se confirma o se cambia.
   puesto        String
@@ -576,8 +620,8 @@ model Solicitud {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([year, salida, estado])
-  @@index([hermanoId, year, salida])
+  @@index([year, salidaId, estado])
+  @@index([hermanoId, year, salidaId])
 }
 
 enum OrigenSolicitud {
@@ -633,6 +677,9 @@ model Evento {
 
   /// Si lo puso la procesión al crear un día de reparto: se borra con él.
   turno Turno?
+
+  /// Las salidas con fecha a mano que toman de aquí su día y su lugar.
+  salidas Salida[] @relation("ActoDeLaSalida")
 
   /// Los cultos solemnes salen en la Agenda pública como un cartel, con su
   /// foto y su dedicatoria («en honor de Nuestra Señora de los Desamparados»).

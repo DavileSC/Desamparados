@@ -6,7 +6,6 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
   tunicaParaSuTalla,
-  PUESTOS,
   alturaHombroEnCm,
   normalizarNumeroPrenda,
   propuestaDeRopa,
@@ -93,15 +92,6 @@ describe('la ropa que se propone', () => {
     assert.equal(p.faraona, '21M');
     assert.equal(p.capirote, null);
   });
-});
-
-test('el catálogo de puestos trae los de la hoja, con su ropa', () => {
-  const puesto = (nombre: string) => PUESTOS.find((p) => p.nombre === nombre);
-  assert.equal(puesto('Nazareno')?.tocado, 'CAPIROTE');
-  assert.equal(puesto('Guardería')?.tocado, 'FARAONA');
-  assert.equal(puesto('Trono')?.alturaHombro, true);
-  assert.equal(puesto('Mantilla')?.tunica, false);
-  assert.equal(new Set(PUESTOS.map((p) => p.nombre)).size, PUESTOS.length);
 });
 
 describe('la túnica de su talla', () => {

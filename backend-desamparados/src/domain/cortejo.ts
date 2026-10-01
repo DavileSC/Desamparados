@@ -111,16 +111,13 @@ export function repartirCortejo(config: ConfiguracionCortejo, papeletas: Papelet
   };
 }
 
-/** Lo que se guarda si el Grupo aún no ha dicho nada: cuatro tramos iguales de nazarenos. */
-export const CORTEJO_POR_DEFECTO: Record<'PASION' | 'ROSARIO', ConfiguracionCortejo> = {
-  PASION: {
-    tramos: [1, 2, 3, 4].map((n) => ({ nombre: `Tramo ${n}`, plazas: 30 })),
-    puestos: ['Nazareno'],
-  },
-  ROSARIO: {
-    tramos: [1, 2].map((n) => ({ nombre: `Tramo ${n}`, plazas: 40 })),
-    puestos: ['Vela'],
-  },
+/**
+ * El cortejo de una salida cuyo `cortejo` es null, porque el Grupo aún no
+ * ha dicho nada: cuatro tramos iguales de nazarenos.
+ */
+export const CORTEJO_POR_DEFECTO: ConfiguracionCortejo = {
+  tramos: [1, 2, 3, 4].map((n) => ({ nombre: `Tramo ${n}`, plazas: 30 })),
+  puestos: ['Nazareno'],
 };
 
 /** `null` si la configuración vale; si no, por qué. */

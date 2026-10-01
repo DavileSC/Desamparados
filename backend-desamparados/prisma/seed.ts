@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import db from '../src/config/db';
 import { sembrarContenido } from './seed-contenido';
 import { sembrarDemostracion } from './seed-demo';
+import { sembrarSalidas } from './seed-salidas';
 import { HERMANO_EMAIL_DESARROLLO, planDeCuentas, type PlanCuentas } from './seed-cuentas';
 
 /**
@@ -115,7 +116,11 @@ async function main() {
   //    albacería y categorías contables) para no ver la web vacía.
   await sembrarContenido();
 
-  // 4. Censo de demostración: 300 hermanos con cinco ejercicios de cuotas,
+  // 4. Las salidas procesionales: sin ellas no hay papeletas, ni repartos, ni
+  //    mesa. Antes de la demostración, que cuelga sus papeletas de la Pasión.
+  await sembrarSalidas();
+
+  // 5. Censo de demostración: 300 hermanos con cinco ejercicios de cuotas,
   //    papeletas, contabilidad, reparto y ropero, para ver el CMS con
   //    contenido de verdad. No se ejecuta en producción, y se puede apagar
   //    con SEED_DEMO=0.
