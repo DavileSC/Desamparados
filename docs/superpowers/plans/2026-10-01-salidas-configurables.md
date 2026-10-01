@@ -932,10 +932,10 @@ Implementar:
 // src/features/cms/salidas/slug.ts
 /** El nombre corto de la dirección, a partir del nombre: lo que valida la API (`^[a-z0-9]+(-[a-z0-9]+)*$`). */
 export const slugDe = (nombre: string) =>
-  nombre.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  nombre.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 ```
 
-Después de escribirlo, comprobar con `grep -n 'u0300' src/features/cms/salidas/slug.ts` que el escape sigue escrito como `̀` y no se ha convertido en el carácter literal.
+`\p{M}` (marcas diacríticas, con la bandera `u`) quita las tildes que `normalize('NFD')` separa, sin escribir escapes `\u` que las herramientas de escritura convierten en caracteres literales.
 
 - [ ] **Paso 2: prueba de la pantalla (falla)**
 
