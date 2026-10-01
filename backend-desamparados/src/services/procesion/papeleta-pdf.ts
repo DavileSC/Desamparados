@@ -12,9 +12,9 @@ import type { Sexo } from '@prisma/client';
 import db from '../../config/db.js';
 import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
 import { identidad } from '../../domain/datos-entidad.js';
+import { deLaCorporacion, type Articulo } from '../../domain/articulos.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
 import type { SalidaImpresa } from '../../dtos/email.dto.js';
-import type { Articulo } from '../../domain/articulos.js';
 import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, MARFIL, NEGRO, ORO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
@@ -242,7 +242,7 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
       MARGEN, yPie - 4, { width: 320, lineGap: 2, height: 44, ellipsis: true },
     );
     rotulo(doc, `Expedida el ${fecha.format(d.expedida)}`, MARGEN, yPie - 2, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
-    rotulo(doc, `Secretaría del ${identidad.tipo}`, MARGEN, yPie + 11, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
+    rotulo(doc, `Secretaría ${deLaCorporacion()}`, MARGEN, yPie + 11, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
     doc.rect(0, A4.alto - 4.5, A4.ancho, 4.5).fill(NEGRO);
   });
 }

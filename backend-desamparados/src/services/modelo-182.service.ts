@@ -24,6 +24,7 @@ import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { identidad, secretaria } from '../domain/datos-entidad.js';
+import { deLaCorporacion } from '../domain/articulos.js';
 import { aniosCumplidos, diaDe } from '../domain/fechas-hermano.js';
 import { nifValido, normalizarNif } from '../domain/nif.js';
 import {
@@ -104,7 +105,7 @@ async function leerConfiguracion(): Promise<ConfiguracionModelo182> {
 
 function faltaParaElFichero(c: ConfiguracionModelo182): string[] {
   const falta: string[] = [];
-  if (!c.nif) falta.push('el NIF del Grupo');
+  if (!c.nif) falta.push(`el NIF ${deLaCorporacion({ corto: true })}`);
   if (!/^\d{9}$/.test(c.telefono)) falta.push('un teléfono de contacto de nueve cifras');
   if (!c.contacto.trim()) falta.push('la persona de contacto');
   return falta;
@@ -220,7 +221,7 @@ export class Modelo182Service {
 
   static async guardarConfiguracion(c: ConfiguracionModelo182, meta: MetaDeAuditoria) {
     const nif = c.nif ? normalizarNif(c.nif) : null;
-    if (nif && !nifValido(nif)) throw new HttpError('El NIF del Grupo no es válido: revisa la letra o la cifra de control.');
+    if (nif && !nifValido(nif)) throw new HttpError(`El NIF ${deLaCorporacion({ corto: true })} no es válido: revisa la letra o la cifra de control.`);
     const limpia: ConfiguracionModelo182 = {
       nif,
       telefono: c.telefono.replace(/\D/g, ''),
@@ -282,7 +283,7 @@ export class Modelo182Service {
   /** Los certificados en un PDF: todos los del ejercicio o solo los de unos NIF. */
   static async certificados(ejercicio: number, nifs?: string[]): Promise<Buffer> {
     const r = await Modelo182Service.resumen(ejercicio);
-    if (!r.configuracion.nif) throw new HttpError('Falta el NIF del Grupo (Tesorería → Modelo 182 → Datos del Grupo).', 409);
+    if (!r.configuracion.nif) throw new HttpError(`Falta el NIF ${deLaCorporacion({ corto: true })} (Tesorería → Modelo 182 → Datos ${deLaCorporacion({ corto: true })}).`, 409);
     const elegidos = nifs ? r.declarados.filter((d) => nifs.includes(d.nif)) : r.declarados;
     if (elegidos.length === 0) throw new NotFoundError('No hay donativos con ese NIF en el ejercicio.');
     return certificadosEnPdf(r.configuracion, ejercicio, elegidos);
@@ -295,7 +296,7 @@ export class Modelo182Service {
    */
   static async enviarCertificados(ejercicio: number, meta: MetaDeAuditoria) {
     const r = await Modelo182Service.resumen(ejercicio);
-    if (!r.configuracion.nif) throw new HttpError('Falta el NIF del Grupo (Tesorería → Modelo 182 → Datos del Grupo).', 409);
+    if (!r.configuracion.nif) throw new HttpError(`Falta el NIF ${deLaCorporacion({ corto: true })} (Tesorería → Modelo 182 → Datos ${deLaCorporacion({ corto: true })}).`, 409);
     const conCorreo = r.declarados.filter((d) => d.email);
     if (conCorreo.length === 0) throw new HttpError('Ningún donante de este año tiene correo: los certificados se descargan y se entregan a mano.', 409);
     let enviados = 0;

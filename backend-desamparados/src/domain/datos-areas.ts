@@ -1,6 +1,7 @@
 import type { EstadoPrenda, MotivoBaja, TipoEvento, TipoPrenda } from '@prisma/client';
 import type { Periodo } from './periodo-datos.js';
 import type { Recuento } from './panel-agrupar.js';
+import { deArticulo, type Articulo } from './articulos.js';
 
 /**
  * «Datos e informes», pestaña a pestaña, ya dicho en palabras: cuatro cifras por
@@ -23,6 +24,8 @@ export interface PorCobrar { estado: 'PENDIENTE' | 'REMESADO' | 'DEVUELTO'; tota
 export interface CifrasDeSalida {
   slug: string;
   nombre: string;
+  /** Con qué se escribe «el Sábado de Pasión» o «la Procesión Magna» (domain/articulos.ts). */
+  articulo: Articulo;
   conRopa: boolean;
   papeletas: number;
   papeletasAnioAnterior: number;
@@ -399,7 +402,7 @@ function procesion(d: DatosCrudos['procesion']): Area {
           grafica: {
             titulo: `${sola.nombre} de ${d.anio}`,
             resumen: contar(sola.papeletas, 'papeleta', 'papeletas'),
-            vacio: sola.papeletas === 0 ? `No hay papeletas del ${sola.nombre} de ${d.anio}.` : undefined,
+            vacio: sola.papeletas === 0 ? `No hay papeletas ${deArticulo(sola.articulo, sola.nombre)} de ${d.anio}.` : undefined,
             cuerpo: { tipo: 'barras', colores: ['azul'], filas: filasPuesto(sola.porPuesto, sola.papeletas) },
           },
         }

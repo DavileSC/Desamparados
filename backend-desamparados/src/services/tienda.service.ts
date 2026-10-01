@@ -21,6 +21,7 @@ import { bloqueDeSecretaria, datos, esc, firma, maquetar, parrafo, urlDeLaWeb } 
 import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
 import { aCentimos } from '../domain/sepa.js';
 import { prepararPedido, type LineaPedida } from '../domain/tienda.js';
+import { deLaCorporacion } from '../domain/articulos.js';
 
 export const CATEGORIA_TIENDA = 'Ventas de la tienda';
 
@@ -142,7 +143,7 @@ export class TiendaService {
     }
     const banco = await PagoEnLineaService.iniciarSinCuenta({
       origen: OrigenPago.TIENDA, referenciaId: pedido.id, centimos: preparado.centimos, metodo: datosCompra.metodo,
-      descripcion: `Tienda del Grupo Parroquial, pedido ${pedido.id}`,
+      descripcion: `Tienda ${deLaCorporacion()}, pedido ${pedido.id}`,
       urlVuelta: urlDeLaWeb(`/tienda/pedido/${pedido.token}`),
       urlFallo: urlDeLaWeb(`/tienda/pedido/${pedido.token}?resultado=no`),
     });

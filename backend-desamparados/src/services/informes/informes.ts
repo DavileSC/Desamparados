@@ -3,7 +3,8 @@ import { enMadrid, euros, fechaLarga, numero, valorEscrito, vistazo } from '../.
 import { entradilla as entradillaDe } from '../../domain/entradillas.js';
 import type { Periodo } from '../../domain/periodo-datos.js';
 import { diaMadrid } from '../../domain/contabilidad.js';
-import { identidad } from '../../domain/datos-entidad.js';
+import { identidad, type Identidad } from '../../domain/datos-entidad.js';
+import { deLaCorporacion } from '../../domain/articulos.js';
 import {
   A4, ALTO_BARRA, ANCHO_UTIL, BURDEOS, BURDEOS_VIVO, CREMA, FIN, GRIS, HUECO_COLUMNAS, IMAGENES, LETRA, MARFIL, MX, NEGRO, ORO, ORO_CLARO, ORO_PALIDO,
   Paginas, aBuffer, bandaCapitulo, colorDePapel, bandaInforme, entradilla, fila, grafica, hueco, leyenda, marcaBorrador, marcaHecho,
@@ -11,7 +12,7 @@ import {
   altoDeVacio, type Doc, type Tarjeta,
 } from './pdf.js';
 
-const PIE_DE_CIFRAS = 'Cifras de conjunto de los registros del Grupo: ninguna página nombra a un hermano.';
+const PIE_DE_CIFRAS = `Cifras de conjunto de los registros ${deLaCorporacion({ corto: true })}: ninguna página nombra a un hermano.`;
 
 /** Lo que necesita el cuerpo de un área para escribirse, en el Informe anual o suelto. */
 interface Contexto {
@@ -307,16 +308,30 @@ export interface TextosInforme {
 
 interface Capitulo { numero: string; titulo: string; descripcion: string; pagina?: number }
 
+/**
+ * Los textos de la portada que dependen de la identidad, aparte de pdfkit:
+ * una función pura para poder probarlos con otra instalación sin generar el
+ * PDF (pdfkit comprime el contenido y el texto no se puede leer del buffer).
+ */
+export function textosPortada(identidadInstalacion: Identidad = identidad) {
+  return {
+    tipo: deLaCorporacion({ identidad: identidadInstalacion }),
+    titular: identidadInstalacion.titular,
+    localidad: identidadInstalacion.localidad,
+  };
+}
+
 /** La portada: negro, el escudo en oro, «Informe anual» con el nombre del Grupo, el año grande y una franja burdeos. */
-function portada(doc: Doc, periodo: Periodo, textos: TextosInforme) {
+export function portada(doc: Doc, periodo: Periodo, textos: TextosInforme, identidadInstalacion: Identidad = identidad) {
+  const t = textosPortada(identidadInstalacion);
   sinMargenes(doc, () => {
     const cx = A4.ancho / 2;
     doc.rect(0, 0, A4.ancho, A4.alto).fill(NEGRO);
     doc.image(IMAGENES.escudoOro, cx - 46, 72, { height: 112 });
-    const centro = (t: string, y: number, o: Parameters<typeof rotulo>[4]) => rotulo(doc, t, 0, y, { ancho: A4.ancho, alinear: 'center', ...o });
+    const centro = (texto: string, y: number, o: Parameters<typeof rotulo>[4]) => rotulo(doc, texto, 0, y, { ancho: A4.ancho, alinear: 'center', ...o });
     centro('INFORME ANUAL', 222, { letra: LETRA.textoFuerte, tam: 9, color: ORO_CLARO, espaciado: 4 });
-    centro('del Grupo Parroquial', 250, { letra: LETRA.cursiva, tam: 15, color: ORO_CLARO });
-    centro(identidad.titular, 270, { letra: LETRA.titulo, tam: 24, color: CREMA });
+    centro(t.tipo, 250, { letra: LETRA.cursiva, tam: 15, color: ORO_CLARO });
+    centro(t.titular, 270, { letra: LETRA.titulo, tam: 24, color: CREMA });
     // Dos filetes de oro y el rombo burdeos entre el nombre y el año.
     const yRaya = 328;
     doc.rect(cx - 104, yRaya, 90, 0.75).fill(ORO);
@@ -330,7 +345,7 @@ function portada(doc: Doc, periodo: Periodo, textos: TextosInforme) {
     doc.rect(0, yPie, A4.ancho, alto).fill(BURDEOS);
     doc.rect(0, yPie, A4.ancho, 0.75).fill(ORO);
     const x = 54;
-    rotuloVersalitas(doc, identidad.localidad, x, yPie + 42, { tam: 8.5, color: ORO_CLARO, espaciado: 2.6 });
+    rotuloVersalitas(doc, t.localidad, x, yPie + 42, { tam: 8.5, color: ORO_CLARO, espaciado: 2.6 });
     const cabildo = textos.fechaCabildo?.trim();
     if (cabildo) {
       ['Presentado al Cabildo General de hermanos', `el ${cabildo}`].forEach((l, i) =>
@@ -351,7 +366,7 @@ function indice(doc: Doc, capitulos: Capitulo[], hoy: Date) {
     y += alto;
   });
   // La nota de privacidad, una sola vez y al pie del índice.
-  const texto = `Las cifras salen de los registros del Grupo a ${fechaLarga(diaMadrid(hoy))} y son siempre de conjunto: ninguna página nombra a un hermano.`;
+  const texto = `Las cifras salen de los registros ${deLaCorporacion({ corto: true })} a ${fechaLarga(diaMadrid(hoy))} y son siempre de conjunto: ninguna página nombra a un hermano.`;
   const yNota = FIN - 44;
   doc.rect(MX, yNota, ANCHO_UTIL, 44).fill(MARFIL);
   doc.rect(MX, yNota, 2.25, 44).fill(BURDEOS);

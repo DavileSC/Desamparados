@@ -17,7 +17,7 @@ import { NoticiaService } from '../noticia.service';
 import { HttpError } from '../../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
 import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-salida.js';
-import type { Articulo } from '../../domain/articulos.js';
+import { deArticulo, type Articulo } from '../../domain/articulos.js';
 import { reglaDe, type SalidaConActo } from './salidas.service.js';
 
 type Cliente = Prisma.TransactionClient | typeof db;
@@ -109,9 +109,11 @@ export class PlazoPapeletasService {
     let avisados = 0;
 
     if (abrir && opciones.borradorNoticia) {
+      // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
+      const articuloNoticia = salida.articulo as Articulo;
       const noticia = await NoticiaService.crear({
-        titulo: `Abierta la inscripción del ${salida.nombre} ${year}`,
-        extracto: `Ya se puede pedir la papeleta del ${salida.nombre} desde el área de hermanos y elegir el día de reparto.`,
+        titulo: `Abierta la inscripción ${deArticulo(articuloNoticia, salida.nombre)} ${year}`,
+        extracto: `Ya se puede pedir la papeleta ${deArticulo(articuloNoticia, salida.nombre)} desde el área de hermanos y elegir el día de reparto.`,
         contenido: contenidoNoticia(dias, year, salida),
         visible: false,
       });
@@ -177,7 +179,8 @@ function contenidoNoticia(dias: { fecha: Date; horaInicio: Date; horaFin: Date }
     ? 'Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano.'
     : 'Para recogerla hay que estar al día con la cuota de hermano. Hay que llevar el DNI.';
   return [
-    `<p>Ya está abierta la inscripción del ${escapar(salida.nombre)} de ${year}.</p>`,
+    // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
+    `<p>Ya está abierta la inscripción ${deArticulo(salida.articulo as Articulo, escapar(salida.nombre))} de ${year}.</p>`,
     '<p>Cada hermano puede pedir su papeleta desde el área de hermanos, para sí y para quienes tiene a su cargo, y elegir el día en que pasará a recogerla:</p>',
     `<ul>${lista}</ul>`,
     `<p>${cobro}</p>`,

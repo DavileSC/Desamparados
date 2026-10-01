@@ -6,6 +6,7 @@
 import type { CabildoCompleto } from '../cabildos.service.js';
 import { extractoPlano } from '../../utils/sanear-html.js';
 import { identidad } from '../../domain/datos-entidad.js';
+import { deArticulo } from '../../domain/articulos.js';
 import {
   ANCHO_UTIL, BURDEOS, GRIS, LETRA, MX, NEGRO, Paginas, aBuffer, bandaInforme, marcaBorrador, nuevoDocumento, parrafos, pies, rotuloVersalitas,
 } from './pdf.js';
@@ -38,7 +39,7 @@ function acta(p: Paginas, c: CabildoCompleto) {
   bandaInforme(doc, `Cabildo ${TIPO[c.tipo]}`, [fechaLarga(c.fecha), c.lugar]);
   p.seccion = `Cabildo ${TIPO[c.tipo]} · ${fechaLarga(c.fecha)}`;
 
-  texto(p, `El ${fechaLarga(c.fecha)}, a las ${hora(c.fecha)}, se reúne en ${c.enSegunda ? 'segunda' : 'primera'} convocatoria el cabildo ${TIPO[c.tipo]} de hermanos del ${identidad.nombre}. Lugar: ${c.lugar}.`);
+  texto(p, `El ${fechaLarga(c.fecha)}, a las ${hora(c.fecha)}, se reúne en ${c.enSegunda ? 'segunda' : 'primera'} convocatoria el cabildo ${TIPO[c.tipo]} de hermanos ${deArticulo(identidad.articulo, identidad.nombre)}. Lugar: ${c.lugar}.`);
 
   apartado(p, 'Asistencia y quórum');
   const q = c.quorum;

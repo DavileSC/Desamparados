@@ -7,6 +7,7 @@ import { CensoService } from '../services/censo.service.js';
 import { ListasService } from '../services/listas.service.js';
 import { DifuntosService, type NuevoSufragio } from '../services/difuntos.service.js';
 import type { MotivoBaja } from '../dtos/hermano.dto.js';
+import { deLaCorporacion } from '../domain/articulos.js';
 
 /**
  * El censo, por sus dos puertas: la del hermano, que solo alcanza sus fichas,
@@ -117,7 +118,7 @@ export class HermanoController {
     res.status(200).json(result);
   });
 
-  static getAll = manejar('Error obteniendo el censo del Grupo Parroquial', async (req, res) => {
+  static getAll = manejar(`Error obteniendo el censo ${deLaCorporacion()}`, async (req, res) => {
     // El saneamiento (defecto, tope) lo decide sanearPaginacion, no el controlador.
     const hermanos = await CensoService.getAllHermanos(req.query);
     res.status(200).json(hermanos);

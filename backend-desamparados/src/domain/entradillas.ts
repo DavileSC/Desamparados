@@ -1,6 +1,7 @@
 import type { ClaveArea, DatosCrudos } from './datos-areas.js';
 import { euros, numero, salidaPrincipal } from './datos-areas.js';
 import type { Periodo } from './periodo-datos.js';
+import { conArticulo, deArticulo, laCorporacion, mayuscula } from './articulos.js';
 
 /**
  * El párrafo con que abre cada capítulo del Informe anual y cada informe: las
@@ -43,7 +44,7 @@ function hermanos(d: DatosCrudos['hermanos'], p: Periodo): Trozo[] {
   const cambio = d.activos - d.activosAlEmpezar;
   const frente = cambio > 0 ? `${numero(cambio)} más que al empezar` : cambio < 0 ? `${numero(-cambio)} menos que al empezar` : 'los mismos que al empezar';
   const trozos: Trozo[] = [
-    { texto: `${comienzo(p)}, el Grupo cuenta con ` },
+    { texto: `${comienzo(p)}, ${laCorporacion({ corto: true })} cuenta con ` },
     { texto: contar(d.activos, 'hermano', 'hermanos'), fuerte: true },
     { texto: `, ${frente}. ` },
   ];
@@ -84,15 +85,15 @@ function procesion(d: DatosCrudos['procesion'], p: Periodo): Trozo[] {
   const anterior = principal.papeletasAnioAnterior;
   const frente = (a: number, b: number) => (b === 0 ? '' : a > b ? `, ${numero(a - b)} más que la anterior` : a < b ? `, ${numero(b - a)} menos que la anterior` : ', las mismas que la anterior');
   if (principal.papeletas > 0) {
-    trozos.push({ texto: `La salida del ${principal.nombre} de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ` }, { texto: contar(principal.papeletas, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(principal.papeletas, anterior)}.` });
+    trozos.push({ texto: `La salida ${deArticulo(principal.articulo, principal.nombre)} de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ` }, { texto: contar(principal.papeletas, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(principal.papeletas, anterior)}.` });
   } else {
-    trozos.push({ texto: `La salida del ${principal.nombre} de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
+    trozos.push({ texto: `La salida ${deArticulo(principal.articulo, principal.nombre)} de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
     if (anterior > 0) trozos.push({ texto: ` La de ${d.anio - 1} reunió ` }, { texto: contar(anterior, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(anterior, del(d.anio - 2))}.` });
   }
   for (const s of d.porSalida.filter((x) => x !== principal)) {
     trozos.push({ texto: s.papeletas > 0
-      ? ` El ${s.nombre} de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ${contar(s.papeletas, 'papeleta', 'papeletas')}.`
-      : ` El ${s.nombre} de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
+      ? ` ${mayuscula(conArticulo(s.articulo, s.nombre))} de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ${contar(s.papeletas, 'papeleta', 'papeletas')}.`
+      : ` ${mayuscula(conArticulo(s.articulo, s.nombre))} de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
   }
   return trozos;
 }
@@ -104,7 +105,7 @@ function inventario(d: DatosCrudos['inventario']): Trozo[] {
   const trozos: Trozo[] = piezas === 0
     ? [{ texto: 'Todavía no hay enseres en el inventario.' }]
     : [
-      { texto: 'El Grupo guarda ' },
+      { texto: `${mayuscula(laCorporacion({ corto: true }))} guarda ` },
       { texto: contar(piezas, 'pieza', 'piezas'), fuerte: true },
       { texto: ` de ${contar(d.enseres.length, 'enser', 'enseres')}; ${reparar === 0 ? 'ninguna necesita' : reparar === 1 ? 'una necesita' : `${numero(reparar)} necesitan`} reparación.` },
     ];

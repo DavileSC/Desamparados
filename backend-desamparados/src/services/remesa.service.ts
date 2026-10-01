@@ -16,6 +16,7 @@ import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { ReciboService } from './recibo.service.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
+import { deLaCorporacion } from '../domain/articulos.js';
 import {
   TEXTO_EXCLUSION, aCentimos, clasificarRecibos, fechaCobroMinima, generarPain008, importeXml, leerAcreedorSepa,
   mensajeIdDeRemesa, problemaFechaCobro, type MotivoExclusion, type ReciboCandidato,
@@ -138,7 +139,7 @@ export class RemesaService {
   static async generar(filtro: FiltroRemesa, meta?: MetaDeAuditoria) {
     comprobarFecha(filtro.fechaCobro);
     const { acreedor, problemas } = leerAcreedorSepa();
-    if (!acreedor) throw new HttpError(`Faltan los datos del Grupo como acreedor SEPA. ${problemas.join(' ')}`, 409);
+    if (!acreedor) throw new HttpError(`Faltan los datos ${deLaCorporacion({ corto: true })} como acreedor SEPA. ${problemas.join(' ')}`, 409);
 
     const autor = meta?.userId
       ? await db.user.findUnique({ where: { id: meta.userId }, select: { nombre: true, apellidos: true } })

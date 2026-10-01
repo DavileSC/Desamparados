@@ -3,6 +3,7 @@ import type { Server } from 'node:http';
 import { comprobarEntorno, hostDeEscucha, puertoDeEscucha } from './config/entorno';
 import { describirErrorParaLog } from './utils/log-privacidad';
 import { resolverClaveTotp } from './utils/cifrado-totp';
+import { deLaCorporacion } from './domain/articulos.js';
 
 /**
  * Punto de entrada del servidor.
@@ -36,7 +37,7 @@ const HOST = hostDeEscucha(); // 127.0.0.1 en producción; todas las interfaces 
 const alEscuchar = (error?: Error) => {
   if (error) return;
   console.log(
-    `🚀 API del Grupo Parroquial escuchando en http://${HOST ?? 'localhost'}:${PORT} ` +
+    `🚀 API ${deLaCorporacion()} escuchando en http://${HOST ?? 'localhost'}:${PORT} ` +
     `(NODE_ENV=${process.env.NODE_ENV}, ${HOST ? `solo en ${HOST}` : 'todas las interfaces'})`
   );
 };

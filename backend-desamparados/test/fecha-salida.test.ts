@@ -51,24 +51,30 @@ describe('el año de la salida en curso', () => {
 
 describe('los días de reparto, antes de su salida', () => {
   test('la víspera vale; el mismo día ya no', () => {
-    assert.equal(motivoRepartoFueraDeTemporada('2027-03-19', PASION, '2026-10-01', 'Sábado de Pasión'), null);
+    assert.equal(motivoRepartoFueraDeTemporada('2027-03-19', PASION, '2026-10-01', 'Sábado de Pasión', 'el'), null);
     assert.match(
-      motivoRepartoFueraDeTemporada('2027-03-20', PASION, '2026-10-01', 'Sábado de Pasión') ?? '',
+      motivoRepartoFueraDeTemporada('2027-03-20', PASION, '2026-10-01', 'Sábado de Pasión', 'el') ?? '',
       /Sábado de Pasión.*20 de marzo de 2027/,
     );
   });
   test('un reparto en otoño vale para la Pasión del año siguiente', () => {
-    assert.equal(motivoRepartoFueraDeTemporada('2026-10-05', PASION, '2026-10-01', 'Sábado de Pasión'), null);
+    assert.equal(motivoRepartoFueraDeTemporada('2026-10-05', PASION, '2026-10-01', 'Sábado de Pasión', 'el'), null);
   });
   test('a mano sin fecha: hay que ponerla antes', () => {
     assert.match(
-      motivoRepartoFueraDeTemporada('2026-10-05', { fecha: 'MANUAL', acto: null }, '2026-10-01', 'Rosario vespertino') ?? '',
+      motivoRepartoFueraDeTemporada('2026-10-05', { fecha: 'MANUAL', acto: null }, '2026-10-01', 'Rosario vespertino', 'el') ?? '',
       /Pon antes la fecha de la salida en la Agenda/,
     );
   });
   test('a mano: antes del acto vale; después, no', () => {
     const r = { fecha: 'MANUAL', acto: '2026-10-17' } as const;
-    assert.equal(motivoRepartoFueraDeTemporada('2026-10-16', r, '2026-10-01', 'Rosario vespertino'), null);
-    assert.match(motivoRepartoFueraDeTemporada('2026-10-18', r, '2026-10-01', 'Rosario vespertino') ?? '', /17 de octubre de 2026/);
+    assert.equal(motivoRepartoFueraDeTemporada('2026-10-16', r, '2026-10-01', 'Rosario vespertino', 'el'), null);
+    assert.match(motivoRepartoFueraDeTemporada('2026-10-18', r, '2026-10-01', 'Rosario vespertino', 'el') ?? '', /17 de octubre de 2026/);
+  });
+  test('con otro artículo, concuerda: «de la», no «del»', () => {
+    assert.match(
+      motivoRepartoFueraDeTemporada('2027-03-20', PASION, '2026-10-01', 'Procesión Magna', 'la') ?? '',
+      /El reparto de la Procesión Magna tiene que ser/,
+    );
   });
 });

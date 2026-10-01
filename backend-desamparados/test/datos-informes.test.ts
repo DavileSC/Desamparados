@@ -120,11 +120,11 @@ function crudos(parcial: { papeletas?: number } = {}): DatosCrudos {
       anio: 2026,
       porSalida: [
         {
-          slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', conRopa: true,
+          slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', articulo: 'el', conRopa: true,
           papeletas: parcial.papeletas ?? 183, papeletasAnioAnterior: 131, porPuesto: [{ etiqueta: 'Nazareno de cirio', total: 90 }],
           serie: [{ anio: 2025, total: 131 }, { anio: 2026, total: parcial.papeletas ?? 183 }],
         },
-        { slug: 'rosario-vespertino', nombre: 'Rosario vespertino', conRopa: false, papeletas: 0, papeletasAnioAnterior: 0, porPuesto: [] },
+        { slug: 'rosario-vespertino', nombre: 'Rosario vespertino', articulo: 'el', conRopa: false, papeletas: 0, papeletasAnioAnterior: 0, porPuesto: [] },
       ],
       porCobrar: [],
     },

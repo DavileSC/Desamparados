@@ -17,9 +17,8 @@
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { emailDeSecretaria, identidad, lineasDeSecretaria } from '../../domain/datos-entidad.js';
-
-export const NOMBRE_GRUPO = identidad.nombre;
+import { emailDeSecretaria, identidad, lineasDeSecretaria, type Identidad } from '../../domain/datos-entidad.js';
+import { deLaCorporacion, laCorporacion } from '../../domain/articulos.js';
 
 /**
  * Las imágenes van dentro del correo (adjuntos en línea, `cid:`) y no enlazadas
@@ -162,9 +161,10 @@ export function cita(html: string): string {
 /**
  * Despedida y firma, con la cruz delante como en las cartas de la casa.
  * Firma el cargo, no la persona que hoy lo ocupa, igual que el buzón al que se
- * responde.
+ * responde. `identidadInstalacion`: otra instalación, para las pruebas (igual
+ * que en domain/articulos.ts).
  */
-export function firma(despedida: string | null, cargo = 'La Secretaría'): string {
+export function firma(despedida: string | null, cargo = 'La Secretaría', identidadInstalacion: Identidad = identidad): string {
   const { burdeos, suave, texto } = COLORES;
   return `
     <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 30px;">
@@ -172,7 +172,7 @@ export function firma(despedida: string | null, cargo = 'La Secretaría'): strin
         <td>
           ${despedida ? `<p style="margin: 0 0 22px 0; font-style: italic; color: ${suave};">${esc(despedida)}</p>` : ''}
           <p style="margin: 0; font-size: 16px; color: ${texto};"><span style="color: ${burdeos};">&#10016;</span>&nbsp; ${esc(cargo)}</p>
-          <p style="margin: 2px 0 0 0; font-size: 14px; font-style: italic; color: ${suave};">${esc(NOMBRE_GRUPO)}</p>
+          <p style="margin: 2px 0 0 0; font-size: 14px; font-style: italic; color: ${suave};">${esc(identidadInstalacion.nombre)}</p>
         </td>
       </tr>
     </table>`;
@@ -211,15 +211,17 @@ export interface Maqueta {
   /** El cuerpo, ya en HTML. */
   contenido: string;
   para?: Destinatario;
+  /** Otra instalación: para las pruebas (igual que en domain/articulos.ts). */
+  identidad?: Identidad;
 }
 
-function pie(para: Destinatario): string {
+export function pie(para: Destinatario, identidadInstalacion: Identidad = identidad): string {
   const { suave, texto } = COLORES;
   const p = (html: string) => `<p style="margin: 0 0 10px 0;">${html}</p>`;
   const enlace = (url: string, titulo: string) => `<a href="${url}" style="color: ${texto}; text-decoration: underline;">${esc(titulo)}</a>`;
 
   if (para === 'interno') {
-    return p('Aviso automático de la web del Grupo Parroquial para el buzón de Secretaría.');
+    return p(`Aviso automático de la web ${deLaCorporacion({ identidad: identidadInstalacion })} para el buzón de Secretaría.`);
   }
   if (typeof para === 'object') {
     return p(`Mensaje enviado desde el formulario de contacto de la web. Si responde a este correo, la respuesta le llegará directamente a ${esc(para.contacto)}.`);
@@ -230,12 +232,12 @@ function pie(para: Destinatario): string {
   const correo = emailDeSecretaria();
   return [
     p(`<strong style="color: ${texto};">¿Tiene alguna duda?</strong> Responda a este correo y le atenderá la Secretaría${correo ? `, o escriba a ${enlace(`mailto:${esc(correo)}`, correo)}` : ''}.`),
-    `<p style="margin: 0; color: ${suave};">Recibe este correo por su relación con el Grupo Parroquial, que trata sus datos conforme al Reglamento General de Protección de Datos. Más información en nuestra ${enlace(urlDeLaWeb('/politica-privacidad'), 'política de privacidad')}.</p>`,
+    `<p style="margin: 0; color: ${suave};">Recibe este correo por su relación con ${laCorporacion({ identidad: identidadInstalacion })}, que trata sus datos conforme al Reglamento General de Protección de Datos. Más información en nuestra ${enlace(urlDeLaWeb('/politica-privacidad'), 'política de privacidad')}.</p>`,
   ].join('');
 }
 
 /** El HTML completo de un correo: membrete, Virgen, carta y pie. */
-export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'hermano' }: Maqueta): string {
+export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'hermano', identidad: identidadInstalacion = identidad }: Maqueta): string {
   const { negro, burdeos, fondo, papel, texto, suave } = COLORES;
   const year = new Date().getFullYear();
   // La Virgen, en lo que recibe un hermano; los avisos internos, sin ella:
@@ -271,11 +273,11 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
               <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td valign="middle" style="padding-right: 16px;">
-                    <img src="cid:${IMAGENES.escudo.cid}" alt="Escudo del Grupo Parroquial" width="46" height="56" style="display: block; border: 0; width: 46px; height: 56px;">
+                    <img src="cid:${IMAGENES.escudo.cid}" alt="Escudo ${deLaCorporacion({ identidad: identidadInstalacion })}" width="46" height="56" style="display: block; border: 0; width: 46px; height: 56px;">
                   </td>
                   <td valign="middle" style="font-family: ${SERIF};">
-                    <p style="margin: 0; font-size: 13px; font-style: italic; color: ${suave};">Grupo Parroquial</p>
-                    <p style="margin: 1px 0 0 0; font-size: 19px; line-height: 1.25; color: ${negro};">${esc(identidad.titular)}</p>
+                    <p style="margin: 0; font-size: 13px; font-style: italic; color: ${suave};">${esc(identidadInstalacion.tipo)}</p>
+                    <p style="margin: 1px 0 0 0; font-size: 19px; line-height: 1.25; color: ${negro};">${esc(identidadInstalacion.titular)}</p>
                   </td>
                 </tr>
               </table>
@@ -284,7 +286,7 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
           ${conVirgen ? `
           <tr>
             <td style="line-height: 0; font-size: 0;">
-              <img src="cid:${IMAGENES.virgen.cid}" alt="${esc(identidad.titular)}" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;">
+              <img src="cid:${IMAGENES.virgen.cid}" alt="${esc(identidadInstalacion.titular)}" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border: 0;">
             </td>
           </tr>` : ''}
           <tr>
@@ -306,8 +308,8 @@ export function maquetar({ titulo, antetitulo, resumen, contenido, para = 'herma
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px;">
           <tr>
             <td class="caja" style="padding: 24px 44px 0 44px; font-family: ${SANS}; font-size: 12px; line-height: 1.65; color: ${suave};">
-              ${pie(para)}
-              <p style="margin: 16px 0 0 0; color: ${suave};">&copy; ${year} ${esc(NOMBRE_GRUPO)} &middot; ${esc(identidad.localidad)}</p>
+              ${pie(para, identidadInstalacion)}
+              <p style="margin: 16px 0 0 0; color: ${suave};">&copy; ${year} ${esc(identidadInstalacion.nombre)} &middot; ${esc(identidadInstalacion.localidad)}</p>
             </td>
           </tr>
         </table>

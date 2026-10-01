@@ -10,6 +10,7 @@
  * lo que aparece en los primeros miles de intentos de un ataque por diccionario,
  * sin añadir dependencias ni llamadas de red al registro.
  */
+import { laCorporacion } from './articulos.js';
 
 export const LONGITUD_MINIMA = 12;
 export const LONGITUD_MAXIMA = 64;
@@ -99,7 +100,7 @@ export function motivoContrasenaDebil(valor: string): string | null {
     // adornos —`Desamparados2026`— y no una frase que la contenga.
     const resto = normalizada.split(raizNormalizada).join('');
     if (resto.length < 5) {
-      return 'es demasiado fácil de adivinar: evita palabras comunes o relacionadas con el Grupo Parroquial';
+      return `es demasiado fácil de adivinar: evita palabras comunes o relacionadas con ${laCorporacion()}`;
     }
   }
 

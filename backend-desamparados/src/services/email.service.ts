@@ -16,7 +16,7 @@
  */
 import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactoDto } from '../dtos/contacto.dto';
-import { conArticulo, deArticulo, type Articulo } from '../domain/articulos.js';
+import { conArticulo, deArticulo, deLaCorporacion, type Articulo } from '../domain/articulos.js';
 import {
   COLORES, bloqueDeSecretaria, boton, cita, datos, esc, lista, maquetar, rotulo,
   parrafo, recuadro, segunSexo, urlDeLaWeb, type Sexo,
@@ -182,7 +182,7 @@ export class EmailService {
       campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano },
       bloques: {
         documentos: recuadro('Próximo paso: pasar por Secretaría',
-          `Según nuestras Reglas, para completar su alta en el censo de hermanos debe acudir en persona a la Casa del Grupo Parroquial con:${lista(documentos, '10px 0 0 0')}`),
+          `Según nuestras Reglas, para completar su alta en el censo de hermanos debe acudir en persona a la Casa ${deLaCorporacion()} con:${lista(documentos, '10px 0 0 0')}`),
         secretaria: bloqueDeSecretaria('Atención en Secretaría'),
       },
     });

@@ -6,7 +6,7 @@
  * Todo lo que escribe Secretaría y todo campo se escapa: el único HTML que
  * entra es el de esta función y el de los bloques fijos, que pone el código.
  */
-import { identidad } from '../../domain/datos-entidad.js';
+import { identidad, type Identidad } from '../../domain/datos-entidad.js';
 import { aLaCorporacion, deLaCorporacion, laCorporacion, nuestraCorporacion } from '../../domain/articulos.js';
 import {
   leerCuerpo, leerLinea, rellenar, resumenDe, usoDe,
@@ -20,6 +20,8 @@ export interface Relleno {
   /** El HTML de cada bloque fijo. Vacío o ausente, el bloque no se pinta. */
   bloques?: Record<string, string>;
   para?: Destinatario;
+  /** Otra instalación: para las pruebas (igual que en domain/articulos.ts). */
+  identidad?: Identidad;
 }
 
 /**
@@ -28,15 +30,15 @@ export interface Relleno {
  * Parroquial» a mano en cada plantilla. `cuerpoParaElEditor` reutiliza esta
  * misma función para el editor del boletín.
  */
-export const comunes = () => ({
-  grupo: identidad.nombre,
-  titular: identidad.titular,
-  la_corporacion: laCorporacion(),
-  de_la_corporacion: deLaCorporacion(),
-  a_la_corporacion: aLaCorporacion(),
-  nuestra_corporacion: nuestraCorporacion(),
-  la_corporacion_corto: laCorporacion({ corto: true }),
-  de_la_corporacion_corto: deLaCorporacion({ corto: true }),
+export const comunes = (identidadInstalacion: Identidad = identidad) => ({
+  grupo: identidadInstalacion.nombre,
+  titular: identidadInstalacion.titular,
+  la_corporacion: laCorporacion({ identidad: identidadInstalacion }),
+  de_la_corporacion: deLaCorporacion({ identidad: identidadInstalacion }),
+  a_la_corporacion: aLaCorporacion({ identidad: identidadInstalacion }),
+  nuestra_corporacion: nuestraCorporacion({ identidad: identidadInstalacion }),
+  la_corporacion_corto: laCorporacion({ corto: true, identidad: identidadInstalacion }),
+  de_la_corporacion_corto: deLaCorporacion({ corto: true, identidad: identidadInstalacion }),
 });
 
 function lineaHtml(linea: string, campos: Record<string, string>): string {
@@ -65,15 +67,15 @@ function bloqueHtml(b: Bloque, campos: Record<string, string>, fijos: Record<str
   }
 }
 
-/** Los campos como texto, con los comunes del Grupo. */
-const aTexto = (campos: Relleno['campos'] = {}) => ({
-  ...comunes(),
+/** Los campos como texto, con los comunes de la corporación. */
+const aTexto = (campos: Relleno['campos'] = {}, identidadInstalacion?: Identidad) => ({
+  ...comunes(identidadInstalacion),
   ...Object.fromEntries(Object.entries(campos).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)])),
 });
 
 /** Compone el correo de un uso con el texto dado. */
 export function componer(uso: UsoDeCorreo, texto: TextoDePlantilla, r: Relleno = {}): { asunto: string; html: string } {
-  const campos = aTexto(r.campos);
+  const campos = aTexto(r.campos, r.identidad);
   const contenido = leerCuerpo(texto.cuerpo).map((b) => bloqueHtml(b, campos, r.bloques ?? {})).join('');
   const despedida = rellenar(texto.despedida, campos).trim();
   return {
@@ -83,8 +85,9 @@ export function componer(uso: UsoDeCorreo, texto: TextoDePlantilla, r: Relleno =
       titulo: rellenar(texto.titulo, campos),
       antetitulo: rellenar(uso.antetitulo, campos),
       resumen: resumenDe(texto.cuerpo, campos),
-      contenido: contenido + firma(despedida || null, uso.firma),
+      contenido: contenido + firma(despedida || null, uso.firma, r.identidad),
       para: r.para,
+      identidad: r.identidad,
     }),
   };
 }

@@ -10,7 +10,7 @@
  * Todo el dinero va en céntimos: con decimales, 0,1 + 0,2 no da 0,3 y una
  * liquidación descuadra.
  */
-import { identidad } from './datos-entidad.js';
+import { deLaCorporacion } from './articulos.js';
 
 export interface NumeroJugado {
   /** Las cinco cifras, con sus ceros a la izquierda: «04512». */
@@ -76,6 +76,6 @@ export function participacionesDelTalonario(numero: number, porTalonario: number
 export const numeroImpreso = (n: number, total: number) => String(n).padStart(Math.max(4, String(total).length), '0');
 
 /** El texto legal de la participación cuando el sorteo no trae uno propio. */
-export const LEYENDA_POR_DEFECTO = `Los décimos quedan depositados en la Secretaría del ${identidad.tipo}. `
+export const LEYENDA_POR_DEFECTO = `Los décimos quedan depositados en la Secretaría ${deLaCorporacion()}. `
   + 'Los premios se pagan en Secretaría, presentando esta participación, y caducan a los tres meses de la celebración del sorteo. '
   + 'Están sujetos a las retenciones que marque la ley.';

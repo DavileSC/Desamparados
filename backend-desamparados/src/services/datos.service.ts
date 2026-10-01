@@ -4,6 +4,7 @@ import { claveMes } from '../domain/panel-censo.js';
 import { agruparPorTextoLibre } from '../domain/panel-agrupar.js';
 import { periodoAnterior, periodoDe, periodosDisponibles, type Periodo } from '../domain/periodo-datos.js';
 import { areasDe, type Area, type DatosCrudos } from '../domain/datos-areas.js';
+import type { Articulo } from '../domain/articulos.js';
 import { devueltosPendientes } from './recibos/comunes.js';
 import { SalidasService } from './procesion/salidas.service.js';
 
@@ -137,7 +138,7 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
           ? db.papeletaSitio.groupBy({ by: ['year'], _count: { _all: true }, where: { salidaId: s.id, year: { gt: p.anio - 5, lte: p.anio } } })
           : Promise.resolve(null),
       ]);
-      return { slug: s.slug, nombre: s.nombre, conRopa: s.conRopa, total, anterior, porPuesto, porAnio };
+      return { slug: s.slug, nombre: s.nombre, articulo: s.articulo, conRopa: s.conRopa, total, anterior, porPuesto, porAnio };
     }))),
     db.recibo.groupBy({ by: ['estado'], _count: { _all: true }, _sum: { importe: true }, where: { ...papeletasPorCobrar, estado: { in: vivos } } }),
     devueltosPendientes(papeletasPorCobrar),
@@ -202,6 +203,8 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
         return {
           slug: s.slug,
           nombre: s.nombre,
+          // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
+          articulo: s.articulo as Articulo,
           conRopa: s.conRopa,
           papeletas: s.total,
           papeletasAnioAnterior: s.anterior,

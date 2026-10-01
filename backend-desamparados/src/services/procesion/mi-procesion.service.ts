@@ -20,6 +20,7 @@ import { conceptoDeSalida, pagoEnLineaDisponible } from '../../domain/salidas.js
 import { pagoParaLaWeb } from '../../domain/redsys.js';
 import QRCode from 'qrcode';
 import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
+import { aArticulo, deArticulo, type Articulo } from '../../domain/articulos.js';
 import { referenciaDe } from './papeleta-pdf.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
@@ -90,9 +91,11 @@ export class MiProcesionService {
         throw new HttpError('El turno no existe o ya no está disponible.');
       }
       const { salida } = turno;
+      // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
+      const articulo = salida.articulo as Articulo;
       // Con el plazo cerrado no se pide, lo intente la pantalla o alguien a mano.
       if (!(await PlazoPapeletasService.estaAbierto(salida, tx))) {
-        throw new HttpError(`La inscripción del ${salida.nombre} no está abierta.`, 409);
+        throw new HttpError(`La inscripción ${deArticulo(articulo, salida.nombre)} no está abierta.`, 409);
       }
       // El año de la salida que se prepara, no el de hoy ni el del reparto: un
       // reparto en otoño es para la salida del año siguiente.
@@ -100,10 +103,10 @@ export class MiProcesionService {
 
       // 1. Ya apuntado a esta salida (o ya con su papeleta): lo dice claro.
       if (await tx.papeletaSitio.findUnique({ where: { hermanoId_year_salidaId: { hermanoId, year, salidaId: salida.id } } })) {
-        throw new HttpError(`Ya tiene su papeleta del ${salida.nombre} de ${year}.`, 409);
+        throw new HttpError(`Ya tiene su papeleta ${deArticulo(articulo, salida.nombre)} de ${year}.`, 409);
       }
       if (await PapeletasService.solicitudPendiente(tx, hermanoId, year, salida.id)) {
-        throw new HttpError(`Ya está apuntado al ${salida.nombre} de ${year}.`, 409);
+        throw new HttpError(`Ya está apuntado ${aArticulo(articulo, salida.nombre)} de ${year}.`, 409);
       }
 
       // 2. Verificar si ya avisó para otro día de esta salida que no ha pasado (evitar duplicados)

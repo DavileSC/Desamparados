@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { deArticulo, type Articulo } from './articulos.js';
 
 /**
  * El boletín y los avisos masivos: a quién van, cómo se pasa el HTML del
@@ -8,6 +9,9 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
  */
 
 export type TipoComunicado = 'BOLETIN' | 'AVISO';
+
+/** El nombre de una salida con su artículo, para componer `del Sábado de Pasión` / `de la Procesión Magna`. */
+export interface SalidaDelSegmento { nombre: string; articulo: Articulo }
 
 /** Los filtros del segmento. Vacíos, no filtran: todos los activos (o los suscritos, en el boletín). */
 export interface Segmento {
@@ -25,11 +29,11 @@ export interface Segmento {
  * enseñar a quién va. `nombres` traduce el id de la salida a su nombre: las
  * salidas son filas del CMS y aquí no hay base de datos.
  */
-export function describirSegmento(tipo: TipoComunicado, s: Segmento, nombres: ReadonlyMap<number, string> = new Map()): string {
+export function describirSegmento(tipo: TipoComunicado, s: Segmento, salidas: ReadonlyMap<number, SalidaDelSegmento> = new Map()): string {
   const partes = [tipo === 'BOLETIN' ? 'Hermanos activos suscritos al boletín' : 'Hermanos activos'];
   if (s.conPapeleta) {
-    const nombre = nombres.get(s.conPapeleta);
-    partes.push(nombre ? `con papeleta del ${nombre}` : 'con papeleta de la salida');
+    const salida = salidas.get(s.conPapeleta);
+    partes.push(salida ? `con papeleta ${deArticulo(salida.articulo, salida.nombre)}` : 'con papeleta de la salida');
   }
   if (s.conDeuda) partes.push('con cuotas pendientes');
   if (s.edad) partes.push(s.edad === 'MAYORES' ? 'mayores de edad' : 'menores de edad');
