@@ -164,6 +164,35 @@ describe('EmailService', () => {
     assert.equal(papeleta.subject, "Papeleta del Sábado de Pasión 2027: Seán O'Brien");
   });
 
+  test('las indicaciones de la salida conservan sus saltos de línea en los correos', async () => {
+    const general = transporteFalso();
+    ponerTransporte(general);
+    process.env.EMAIL_USER = 'secretaria@example.es';
+    const salida = { nombre: 'Rosario vespertino', cobro: 'DONATIVO' as const, conRopa: false, indicaciones: 'Puntualidad.\nMedalla <b>visible</b>.' };
+
+    await EmailService.enviarPapeleta('hermano@example.es', 'Ana', {
+      year: 2027, salida, importe: '', concepto: 'Papeleta', fechaSalida: 'sábado, 16 de octubre', horaSalida: '18:30h', accesoPuerta: 'Parroquia',
+    });
+    await EmailService.enviarAperturaPapeletas('hermano@example.es', 'Ana', ['Ana'], ['lunes, 4 de octubre'], 2027, 'MUJER', salida);
+
+    for (const correo of general.enviados) {
+      assert.match(correo.html, /Puntualidad\.<br>Medalla &lt;b&gt;visible&lt;\/b&gt;\./, correo.subject);
+    }
+  });
+
+  test('el recordatorio de ausencia nombra su salida y no habla de Estación de Penitencia', async () => {
+    const general = transporteFalso();
+    ponerTransporte(general);
+    process.env.EMAIL_USER = 'secretaria@example.es';
+
+    await EmailService.enviarRecordatorioAusencia('hermano@example.es', 'Ana', 'lunes, 4 de octubre', { nombre: 'Rosario vespertino' }, 'MUJER');
+
+    const [correo] = general.enviados;
+    assert.doesNotMatch(correo.html, /Estación de Penitencia|papeleta de sitio/);
+    assert.doesNotMatch(correo.subject, /papeleta de sitio/);
+    assert.match(correo.html, /papeleta del Rosario vespertino/);
+  });
+
   test('el escudo y la Virgen van dentro del correo; los avisos internos, solo con el escudo', async () => {
     const general = transporteFalso();
     ponerTransporte(general);

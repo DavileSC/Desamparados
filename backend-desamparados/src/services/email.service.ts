@@ -24,6 +24,14 @@ export interface HermanoAprobado { nombre: string; apellidos: string | null; num
 
 const BENDICION = `Que ${identidad.titular} le guarde y bendiga.`;
 
+/**
+ * Un texto de varias líneas escrito en el CMS (las indicaciones de una salida):
+ * escapado y con sus saltos de línea, que el HTML del correo se comería.
+ */
+function conSaltos(texto: string): string {
+  return esc(texto).replace(/\r?\n/g, '<br>');
+}
+
 /** «una hora», «3 días», «12 horas». */
 function plazo(horas: number): string {
   if (horas === 1) return 'una hora';
@@ -126,7 +134,7 @@ export class EmailService {
       parrafo(`La Secretaría le confirma su puesto en el ${esc(salida.nombre)} del <strong>${esc(datosPapeleta.fechaSalida)}</strong>. Estos son los datos de su sitio:`),
       papeleta,
       // Las indicaciones las escribe el CMS para cada salida; sin ellas, no hay recuadro.
-      salida.indicaciones?.trim() ? recuadro('Antes de salir', esc(salida.indicaciones.trim())) : '',
+      salida.indicaciones?.trim() ? recuadro('Antes de salir', conSaltos(salida.indicaciones.trim())) : '',
       parrafo(pdf
         ? 'Le adjuntamos su papeleta en PDF, con el código que se lee en la puerta del templo. También la tiene en el área de hermanos, en Procesión, para enseñarla desde el móvil.'
         : 'Conserve este correo: puede enseñarlo en el acceso si se le pide. Su papeleta, con el código que se lee en la puerta, está en el área de hermanos, en Procesión.'),
@@ -385,7 +393,7 @@ export class EmailService {
       parrafo(donativo
         ? 'Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto.'
         : 'Para recoger la papeleta hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto. Recuerde llevar el DNI.'),
-      salida.indicaciones?.trim() ? recuadro('Antes de salir', esc(salida.indicaciones.trim())) : '',
+      salida.indicaciones?.trim() ? recuadro('Antes de salir', conSaltos(salida.indicaciones.trim())) : '',
       boton('Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
       firma(`Esperamos contar con su presencia acompañando a ${identidad.titular}.`),
     ].join('');
@@ -402,10 +410,13 @@ export class EmailService {
    * A quien tenía cita para recoger la papeleta y no pasó. `fechaCita` es el
    * día de la cita, ya escrito para leerlo («lunes, 8 de marzo»).
    */
-  static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string, sexo?: Sexo) {
+  static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string, salida: { nombre: string }, sexo?: Sexo) {
+    // Con el nombre de la salida y no «papeleta de sitio» ni «Estación de
+    // Penitencia»: hay salidas sin ropa (el Rosario) a las que no les cuadra.
+    const papeleta = `papeleta del ${salida.nombre}`;
     const content = [
       saludo(nombreHermano, sexo),
-      parrafo(`Tenía cita el <strong>${esc(fechaCita)}</strong> para recoger su papeleta de sitio y, según nuestros registros, no pudo pasar.`),
+      parrafo(`Tenía cita el <strong>${esc(fechaCita)}</strong> para recoger su ${esc(papeleta)} y, según nuestros registros, no pudo pasar.`),
       parrafo('La organización del cortejo depende de que cada hermano recoja su papeleta dentro del plazo de reparto. Si quiere salir este año, pase a recogerla en cuanto pueda, o pida una cita nueva desde el área de hermanos.'),
       recuadro('Qué llevar', lista(['DNI.', 'El recibo de la cuota anual, si la tiene pendiente.'], '0')),
       bloqueDeSecretaria('Horario de reparto'),
@@ -414,9 +425,9 @@ export class EmailService {
       firma(`Esperamos contar con su presencia acompañando a ${identidad.titular}.`),
     ].join('');
 
-    return await enviarCorreo(emailDestino, 'Recordatorio: su papeleta de sitio está sin recoger', maquetar({
+    return await enviarCorreo(emailDestino, `Recordatorio: su ${papeleta} está sin recoger`, maquetar({
       titulo: 'Su papeleta sigue sin recoger',
-      antetitulo: 'Estación de Penitencia',
+      antetitulo: salida.nombre,
       resumen: `Tenía cita el ${fechaCita} y no consta que pasara. Aún está a tiempo.`,
       contenido: content,
     }));

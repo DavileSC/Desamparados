@@ -114,8 +114,9 @@ export class PapeletasService {
 
   /**
    * El recibo de la salida de una solicitud, ya cobrado (o exento si es 0 €),
-   * con el concepto de siempre: «Papeleta de sitio 2027» o «Donativo Rosario
-   * vespertino 2026». Si ya se le anuló una este año, sale como reemisión.
+   * con el concepto de `conceptoDeSalida`: `Papeleta ${nombre} ${año}` (o
+   * `Donativo …` si la salida cobra donativo). Si ya se le anuló una este
+   * año, sale como reemisión.
    */
   static async reciboDeSalidaEnTransaccion(
     tx: Tx,
@@ -339,7 +340,8 @@ export class PapeletasService {
       },
       include: {
         hermano: { include: { user: true } },
-        turno: true
+        // Su salida, para que el recordatorio la nombre.
+        turno: { include: { salida: true } }
       }
     });
 
@@ -395,6 +397,7 @@ export class PapeletasService {
           cita.hermano.user.email,
           cita.hermano.nombre,
           fechaStr,
+          cita.turno.salida,
           cita.hermano.sexo
         ).catch(() => console.error(`Error enviando email a ${enmascararEmail(cita.hermano.user.email)}`));
       }

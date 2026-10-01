@@ -85,7 +85,7 @@ model Salida {
   plazoCambiadoEl DateTime?
   /// PuestoDelCatalogo[]: lo que sugieren la mesa y la solicitud.
   puestos         Json
-  /// ConfiguracionCortejo; null = cuatro tramos de 30 con «Nazareno».
+  /// ConfiguracionCortejo; null = cuatro tramos de 30 con los puestos de la propia salida (cortejoPorDefecto).
   cortejo         Json?
   /// Vestimenta y comportamiento: van en la papeleta y en los correos.
   indicaciones    String?     @db.Text

@@ -131,6 +131,59 @@ test('con PASCUA y sin días desde la Pascua, 400', async (t) => {
   }
 });
 
+// Lo que Secretaría escribe en el catálogo tiene que pasar luego por las
+// reglas de la solicitud (un puesto de más de 80, o con «<», daría 400 a todo
+// hermano que lo pidiera) y por las de `Evento.location` (191 como mucho).
+for (const [caso, extra] of [
+  ['un puesto de 81 caracteres', { puestos: [{ nombre: 'x'.repeat(81), tunica: false, tocado: null, alturaHombro: false }] }],
+  ['un «<» en el nombre', { nombre: 'Traslado <b>' }],
+  ['un lugar de 161 caracteres', { lugar: 'x'.repeat(161) }],
+  ['21 puestos', { puestos: Array.from({ length: 21 }, (_, i) => ({ nombre: `Puesto ${i}`, tunica: false, tocado: null, alturaHombro: false })) }],
+] as const) {
+  test(`al dar de alta, ${caso} da 400`, async (t) => {
+    if (!dbDisponible) { t.skip(SIN_DB); return; }
+    const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+    const slug = `prueba-salida-${Date.now()}`;
+    try {
+      const res = await fetch(`${baseUrl}/api/cms/salidas`, {
+        method: 'POST',
+        headers: cookieDe(staff.id, Role.SECRETARIA),
+        body: JSON.stringify(datosDeAlta(slug, extra)),
+      });
+      assert.equal(res.status, 400);
+    } finally {
+      await db.salida.deleteMany({ where: { slug } });
+      await borrarUsuarioPrueba(staff.id);
+    }
+  });
+}
+
+test('al fijar la fecha, un lugar de 161 caracteres da 400', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const slug = `prueba-salida-${Date.now()}`;
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, {
+      method: 'POST',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify(datosDeAlta(slug, { fecha: 'MANUAL', diasDesdePascua: null })),
+    });
+    assert.equal(alta.status, 201);
+    const { id } = await alta.json();
+    const res = await fetch(`${baseUrl}/api/cms/salidas/${id}/fecha`, {
+      method: 'PUT',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify({ inicio: '2099-10-17T18:00:00.000Z', lugar: 'x'.repeat(161) }),
+    });
+    assert.equal(res.status, 400);
+    const fila = await db.salida.findUniqueOrThrow({ where: { id } });
+    assert.equal(fila.eventoId, null, 'no se crea el acto');
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
 test('desactivar una salida la quita de /api/salidas, pero no de /api/cms/salidas', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
@@ -187,7 +240,7 @@ test('desactivar una salida con el plazo abierto lo deja cerrado', async (t) => 
 
     const fila = await db.salida.findUniqueOrThrow({ where: { id } });
     assert.equal(fila.activa, false);
-    assert.equal(fila.plazoAbierto, false, 'reactivarla no debe devolverla con el plazo abierto');
+    assert.equal(fila.plazoAbierto, false, 'desactivarla cierra el plazo');
     assert.ok(fila.plazoCambiadoEl && fila.plazoCambiadoEl >= new Date(desde.getTime() - 1000), 'el cierre queda fechado');
   } finally {
     await db.salida.deleteMany({ where: { slug } });
@@ -230,6 +283,47 @@ test('fijar la fecha de una salida a mano crea su acto en la Agenda', async (t) 
   } finally {
     await db.salida.deleteMany({ where: { slug } });
     if (eventoId) await db.evento.deleteMany({ where: { id: eventoId } });
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+test('fijar la fecha de otro año crea un acto nuevo y deja el viejo en la Agenda', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const slug = `prueba-salida-${Date.now()}`;
+  const eventos: number[] = [];
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, {
+      method: 'POST',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify(datosDeAlta(slug, { fecha: 'MANUAL', diasDesdePascua: null })),
+    });
+    assert.equal(alta.status, 201);
+    const { id } = await alta.json();
+    const fijar = (inicio: string) => fetch(`${baseUrl}/api/cms/salidas/${id}/fecha`, {
+      method: 'PUT',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify({ inicio, lugar: 'Templo' }),
+    });
+
+    assert.equal((await fijar('2098-10-17T18:00:00.000Z')).status, 200);
+    const de2098 = (await db.salida.findUniqueOrThrow({ where: { id } })).eventoId!;
+    eventos.push(de2098);
+    // El mismo año: se mueve el acto, no se crea otro.
+    assert.equal((await fijar('2098-10-24T18:00:00.000Z')).status, 200);
+    assert.equal((await db.salida.findUniqueOrThrow({ where: { id } })).eventoId, de2098);
+
+    assert.equal((await fijar('2099-10-16T18:00:00.000Z')).status, 200);
+    const de2099 = (await db.salida.findUniqueOrThrow({ where: { id } })).eventoId!;
+    eventos.push(de2099);
+    assert.notEqual(de2099, de2098, 'otro año, otro acto');
+    const viejo = await db.evento.findUniqueOrThrow({ where: { id: de2098 } });
+    assert.equal(viejo.startDate.toISOString(), '2098-10-24T18:00:00.000Z', 'el de 2098 se queda como estaba');
+    const nuevo = await db.evento.findUniqueOrThrow({ where: { id: de2099 } });
+    assert.equal(nuevo.startDate.toISOString(), '2099-10-16T18:00:00.000Z');
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    if (eventos.length) await db.evento.deleteMany({ where: { id: { in: eventos } } });
     await borrarUsuarioPrueba(staff.id);
   }
 });

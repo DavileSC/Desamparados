@@ -87,6 +87,16 @@ const ZONA = { timeZone: 'Europe/Madrid' } as const;
 const formatoDiaLargo = new Intl.DateTimeFormat('es-ES', { ...ZONA, weekday: 'long', day: 'numeric', month: 'long' });
 const formatoHora = new Intl.DateTimeFormat('es-ES', { ...ZONA, hour: '2-digit', minute: '2-digit' });
 const POR_ANUNCIAR = 'Por anunciar';
+
+/**
+ * «19:30h», como sale la hora del acto de la Agenda. El campo de hora del CMS
+ * guarda «19:30» y la configuración antigua traía «19:30h»: las dos se
+ * imprimen igual. Un texto que no sea una hora se deja como está.
+ */
+function horaImpresa(hora: string): string {
+  const m = /^(\d{1,2}:\d{2})\s*h?$/i.exec(hora);
+  return m ? `${m[1]}h` : hora;
+}
 const EN_SECRETARIA = 'Consultar en secretaría';
 
 /**
@@ -98,15 +108,20 @@ const EN_SECRETARIA = 'Consultar en secretaría';
  * una hora inventada se imprime y ya no se puede corregir.
  *
  * `anio`, el de la papeleta que se imprime: reimprimir una de 2026 en 2027
- * tiene que decir el día de 2026. Sin él, el año que se prepara.
+ * tiene que decir el día de 2026 (o, a mano, «Por anunciar» si el acto
+ * enlazado ya es de otro año). Sin él, el año que se prepara.
  */
 export function leerDatosEvento(salida: SalidaConActo, anio?: number): DatosEvento {
   if (salida.fecha === 'MANUAL') {
     const { acto } = salida;
-    if (!acto) return { fechaSalida: POR_ANUNCIAR, horaSalida: POR_ANUNCIAR, accesoPuerta: EN_SECRETARIA };
+    // La fila enlaza solo el acto del último año fijado (`fijarFecha` crea uno
+    // por año): reimprimir una papeleta de otro año con él diría un día que no
+    // es el suyo, y el suyo ya no se sabe desde aquí.
+    const deOtroAnio = acto && anio !== undefined && Number(diaMadrid(acto.startDate).slice(0, 4)) !== anio;
+    if (!acto || deOtroAnio) return { fechaSalida: POR_ANUNCIAR, horaSalida: POR_ANUNCIAR, accesoPuerta: EN_SECRETARIA };
     return {
       fechaSalida: formatoDiaLargo.format(acto.startDate),
-      horaSalida: `${formatoHora.format(acto.startDate)}h`,
+      horaSalida: horaImpresa(formatoHora.format(acto.startDate)),
       accesoPuerta: acto.location?.trim() || EN_SECRETARIA,
     };
   }
@@ -115,7 +130,7 @@ export function leerDatosEvento(salida: SalidaConActo, anio?: number): DatosEven
   return {
     // A mediodía UTC, el día es el mismo en Madrid en cualquier época del año.
     fechaSalida: dia ? formatoDiaLargo.format(new Date(`${dia}T12:00:00Z`)) : POR_ANUNCIAR,
-    horaSalida: salida.horaSalida?.trim() || POR_ANUNCIAR,
+    horaSalida: salida.horaSalida?.trim() ? horaImpresa(salida.horaSalida.trim()) : POR_ANUNCIAR,
     accesoPuerta: salida.lugar?.trim() || EN_SECRETARIA,
   };
 }

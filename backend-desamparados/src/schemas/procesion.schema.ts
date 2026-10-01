@@ -22,7 +22,9 @@ const apellidoOpcional = type("string <= 80").matching(/^[^<>]*$/).describe("un 
 // El slug de la salida. Si existe lo dice el servicio (`SalidasService.porSlug`),
 // con un 400 que la nombra; aquí solo que llegue.
 const salida = type("string > 0").describe("una salida");
-const puesto = type("string <= 80").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("un puesto de 80 caracteres como mucho, sin «<» ni «>»");
+// Lo exporta también el catálogo de puestos de cada salida (`salidas.schema.ts`):
+// un puesto que no pasara esta regla daría 400 a todo el que lo pidiera.
+export const puesto = type("string <= 80").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("un puesto de 80 caracteres como mucho, sin «<» ni «>»");
 // Euros, con dos decimales como mucho y con tope: la voluntad es libre, pero un 5000 es un error de tecleo.
 const donativo = type("number >= 0").narrow((n) => n <= 1000 && Math.round(n * 100) === n * 100).describe("un importe entre 0 y 1000 €, con dos decimales como mucho");
 // La clave que genera el ordenador de la mesa al abrir cada operación: la misma en cada reintento.

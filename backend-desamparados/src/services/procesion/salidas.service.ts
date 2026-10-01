@@ -157,7 +157,7 @@ export class SalidasService {
 
   /**
    * Fija (o cambia) la fecha de una salida a mano: crea su acto en la Agenda o
-   * mueve el que ya tenía, y lo enlaza a la fila. Las de la Pascua se calculan
+   * mueve el que ya tenía si es del mismo año, y lo enlaza a la fila. Las de la Pascua se calculan
    * solas: ponerles fecha a mano dejaría dos fechas que no coinciden.
    */
   static async fijarFecha(salida: SalidaConActo, datos: { inicio: string; lugar?: string | null }, meta?: MetaDeAuditoria) {
@@ -175,7 +175,11 @@ export class SalidasService {
       startDate: inicio,
       type: TipoEvento.PROCESION,
     };
-    const evento = antes
+    // Un acto por año: si el enlazado es de otro, se crea uno nuevo y el viejo
+    // se queda en la Agenda como historia. Moverlo borraría la fecha de la
+    // salida de aquel año, que es lo que sus papeletas impresas dicen.
+    const mismoAnio = antes && diaMadrid(antes.inicio).slice(0, 4) === diaMadrid(inicio).slice(0, 4);
+    const evento = antes && mismoAnio
       ? await db.evento.update({ where: { id: antes.eventoId }, data: acto })
       : await db.evento.create({ data: acto });
     await db.salida.update({ where: { id: salida.id }, data: { eventoId: evento.id } });
