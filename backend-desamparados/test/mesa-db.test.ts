@@ -20,7 +20,8 @@ import { EmailService } from '../src/services/email.service.js';
 import { PapeletasService } from '../src/services/procesion/papeletas.service.js';
 import { MesaService } from '../src/services/procesion/mesa.service.js';
 import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
-import { anioDeLaMesa, ZonasService, type EntregaEnMesa } from '../src/services/procesion/zonas.service.js';
+import { anioDeLaMesa, ZonasService, type EntregaEnMesa, type InscripcionEnMesa } from '../src/services/procesion/zonas.service.js';
+import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { InventarioService } from '../src/services/inventario.service.js';
 import { CLAVE_CINGULOS, recuentoDeCingulos } from '../src/services/procesion/cingulos.js';
@@ -50,7 +51,7 @@ after(async () => {
 // El año de la salida que atiende la mesa, que no es el natural: pasada la
 // Semana Santa es el siguiente (ver `anioDeLaMesa`). Sin base, el natural: esas
 // pruebas se omiten igual.
-const YEAR = await anioDeLaMesa('PASION').catch(() => new Date().getFullYear());
+const YEAR = await salida(PASION).then(anioDeLaMesa).catch(() => new Date().getFullYear());
 
 // Números de prenda que no chocan con los del ropero de desarrollo.
 let serie = 0;
@@ -66,8 +67,9 @@ async function escenario() {
   const prendas: number[] = [];
   const turnos: number[] = [];
   const claves: string[] = [];
-  const cuotaSalida = await db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } });
-  await db.configuracion.upsert({ where: { key: 'precio_papeleta_sitio' }, update: { value: '0' }, create: { key: 'precio_papeleta_sitio', value: '0' } });
+  // La cuota de la Pasión, a 0 € mientras duran; se devuelve al recoger.
+  const cuotaSalida = (await salida(PASION)).importeCuota;
+  await db.salida.update({ where: { slug: PASION }, data: { importeCuota: 0 } });
   const totalCingulos = await db.configuracion.findUnique({ where: { key: CLAVE_CINGULOS } });
   /** Deja en el ropero `n` cíngulos libres, cuente lo que cuente la base de desarrollo. */
   const cingulosLibres = async (n: number) => {
@@ -112,14 +114,16 @@ async function escenario() {
     for (const id of usuariosExtra) await borrarUsuarioPrueba(id);
     await borrarUsuarioPrueba(usuario.id);
     await borrarUsuarioPrueba(admin.id);
-    if (cuotaSalida) await db.configuracion.update({ where: { key: cuotaSalida.key }, data: { value: cuotaSalida.value } });
-    else await db.configuracion.deleteMany({ where: { key: 'precio_papeleta_sitio' } });
+    await db.salida.update({ where: { slug: PASION }, data: { importeCuota: cuotaSalida } });
     if (totalCingulos) await db.configuracion.update({ where: { key: CLAVE_CINGULOS }, data: { value: totalCingulos.value } });
     else await db.configuracion.deleteMany({ where: { key: CLAVE_CINGULOS } });
   };
 
-  const inscribir = (hermanoId: number, extra: Partial<Parameters<typeof ZonasService.inscribir>[0]> = {}) =>
-    ZonasService.inscribir({ hermanoId, salida: 'PASION', puesto: 'Nazareno', ...extra }, clave(), meta);
+  /** Apunta en la mesa; la salida, por su slug (la Pasión si no se dice). */
+  const inscribir = async (hermanoId: number, extra: Partial<Omit<InscripcionEnMesa, 'salida'>> & { salida?: string } = {}) => {
+    const { salida: slug = PASION, ...resto } = extra;
+    return ZonasService.inscribir({ hermanoId, puesto: 'Nazareno', ...resto, salida: await salida(slug) }, clave(), meta);
+  };
   const entregar = (solicitudId: number, extra: Partial<EntregaEnMesa> = {}) =>
     ZonasService.entregar({ solicitudId, origenTunica: 'PROPIA', ...extra }, clave(), meta);
 
@@ -145,9 +149,9 @@ test('inscribir crea la solicitud, sin papeleta ni recibo; sin nada que pagar va
     assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: h.id } })).alturaHombro, 154);
 
     // Ya apuntado: no sale en el buscador de Inscripción, sí en el de Túnicas.
-    assert.equal((await MesaService.buscarPersonas(h.apellidos, { zona: 'inscripcion' })).length, 0);
-    assert.equal((await MesaService.buscarPersonas(h.apellidos, { zona: 'tunicas' }))[0]?.id, h.id);
-    assert.ok((await ZonasService.colas('PASION')).porRecoger.some((f) => f.solicitudId === r.solicitudId), 'le espera Túnicas');
+    assert.equal((await MesaService.buscarPersonas(h.apellidos, await salida(PASION), { zona: 'inscripcion' })).length, 0);
+    assert.equal((await MesaService.buscarPersonas(h.apellidos, await salida(PASION), { zona: 'tunicas' }))[0]?.id, h.id);
+    assert.ok((await ZonasService.colas(await salida(PASION))).porRecoger.some((f) => f.solicitudId === r.solicitudId), 'le espera Túnicas');
     await assert.rejects(e.inscribir(h.id), esHttp(409, /Ya está apuntado/));
 
     // Al recoger nace la papeleta, con un recibo exento de 0 €, y la solicitud queda recogida.
@@ -196,7 +200,7 @@ test('con una cuota sin pagar la túnica no sale; Tesorería la cobra (una sola 
     const r = await e.inscribir(h.id);
     assert.equal(r.requisitos.puedeRecoger, false);
     assert.equal(r.requisitos.totalPendiente, 20);
-    assert.ok((await ZonasService.colas('PASION')).porCobrar.some((f) => f.solicitudId === r.solicitudId), 'le espera Tesorería');
+    assert.ok((await ZonasService.colas(await salida(PASION))).porCobrar.some((f) => f.solicitudId === r.solicitudId), 'le espera Tesorería');
 
     await assert.rejects(
       e.entregar(r.solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero }),
@@ -237,7 +241,7 @@ test('con cuota de salida, Tesorería la cobra y su recibo es el de la papeleta 
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    await db.configuracion.update({ where: { key: 'precio_papeleta_sitio' }, data: { value: '12.5' } });
+    await db.salida.update({ where: { slug: PASION }, data: { importeCuota: 12.5 } });
     const h = await e.hermano();
     const { solicitudId, requisitos } = await e.inscribir(h.id);
     assert.deepEqual(requisitos.motivos, ['Falta pagar la papeleta.']);
@@ -310,7 +314,7 @@ test('una cuota devuelta se cobra con su reemisión; lo de otra familia no se co
     assert.notEqual(reemision.id, devuelta.id);
     assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: reemision.id } })).estado, EstadoPago.PAGADO);
     assert.equal(await db.transaccion.count({ where: { reciboId: reemision.id } }), 1);
-    assert.equal((await ZonasService.requisitos(db, h.id, 'PASION')).cuotasPendientes.length, 0, 'la devuelta ya está cubierta');
+    assert.equal((await ZonasService.requisitos(db, h.id, await salida(PASION))).cuotasPendientes.length, 0, 'la devuelta ya está cubierta');
   } finally {
     await e.recoger();
   }
@@ -322,7 +326,7 @@ test('el Rosario: su propia solicitud, con la voluntad que se ajusta al cobrar, 
   try {
     const h = await e.hermano();
     const pasion = await e.inscribir(h.id);
-    const rosario = await e.inscribir(h.id, { salida: 'ROSARIO', puesto: 'Vela', donativo: 5 });
+    const rosario = await e.inscribir(h.id, { salida: ROSARIO, puesto: 'Vela', donativo: 5 });
     assert.notEqual(rosario.solicitudId, pasion.solicitudId, 'una por salida');
     assert.deepEqual(rosario.requisitos.motivos, ['Falta el donativo.']);
     await assert.rejects(e.entregar(rosario.solicitudId), esHttp(409, /Falta el donativo/));
@@ -334,7 +338,7 @@ test('el Rosario: su propia solicitud, con la voluntad que se ajusta al cobrar, 
     const recibo = await db.recibo.findUniqueOrThrow({ where: { id: cobro.cobrados[0].id } });
     assert.equal(recibo.tipo, TipoRecibo.DONATIVO);
     // El Rosario lleva su propio año: el de octubre, no el de la Pasión.
-    assert.equal(recibo.concepto, `Donativo Rosario vespertino ${await anioDeLaMesa('ROSARIO')}`);
+    assert.equal(recibo.concepto, `Donativo Rosario vespertino ${await anioDeLaMesa(await salida(ROSARIO))}`);
 
     const tunica = await e.prenda(TipoPrenda.TUNICA);
     const hecha = await e.entregar(rosario.solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero, puesto: 'Trono' });
@@ -346,10 +350,10 @@ test('el Rosario: su propia solicitud, con la voluntad que se ajusta al cobrar, 
 
     // Si al final da 0 €, ya no debe nada y no hay asiento.
     const otro = await e.hermano();
-    const cero = await e.inscribir(otro.id, { salida: 'ROSARIO', puesto: 'Vela', donativo: 2 });
+    const cero = await e.inscribir(otro.id, { salida: ROSARIO, puesto: 'Vela', donativo: 2 });
     const nada = await ZonasService.cobrar({ hermanoId: otro.id, reciboIds: [], solicitudes: [{ solicitudId: cero.solicitudId, importe: 0 }], metodoPago: MetodoPago.EFECTIVO }, e.clave(), e.meta);
     assert.equal(nada.total, 0);
-    assert.equal((await ZonasService.requisitos(db, otro.id, 'ROSARIO')).puedeRecoger, true);
+    assert.equal((await ZonasService.requisitos(db, otro.id, await salida(ROSARIO))).puedeRecoger, true);
     assert.equal(await db.transaccion.count({ where: { hermanoId: otro.id } }), 0);
   } finally {
     await e.recoger();
@@ -431,17 +435,17 @@ test('una cita de antes, sin solicitud, se enlaza al apuntar; al recoger queda a
   try {
     const h = await e.hermano();
     const hoy = new Date();
-    const turno = await db.turno.create({ data: { fecha: hoy, horaInicio: hoy, horaFin: new Date(hoy.getTime() + 3_600_000) } });
+    const turno = await db.turno.create({ data: { fecha: hoy, horaInicio: hoy, horaFin: new Date(hoy.getTime() + 3_600_000), salidaId: await idDeSalida(PASION) } });
     e.turnos.push(turno.id);
     const cita = await db.cita.create({ data: { turnoId: turno.id, hermanoId: h.id } });
 
-    assert.ok((await MesaService.esperadosHoy()).some((x) => x.citaId === cita.id), 'sale entre los esperados de hoy');
+    assert.ok((await MesaService.esperadosHoy(await salida(PASION))).some((x) => x.citaId === cita.id), 'sale entre los esperados de hoy');
     const { solicitudId } = await e.inscribir(h.id);
     assert.equal((await db.solicitud.findUniqueOrThrow({ where: { id: solicitudId } })).citaId, cita.id);
     const { papeletaId } = await e.entregar(solicitudId);
     assert.equal((await db.papeletaSitio.findUniqueOrThrow({ where: { id: papeletaId } })).citaId, cita.id);
     assert.equal((await db.cita.findUniqueOrThrow({ where: { id: cita.id } })).estado, EstadoCita.ATENDIDA);
-    assert.ok(!(await MesaService.esperadosHoy()).some((x) => x.citaId === cita.id), 'ya no se le espera');
+    assert.ok(!(await MesaService.esperadosHoy(await salida(PASION))).some((x) => x.citaId === cita.id), 'ya no se le espera');
   } finally {
     await e.recoger();
   }
@@ -458,7 +462,7 @@ test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al
     const nueva = await e.prenda(TipoPrenda.TUNICA);
     const { solicitudId } = await e.inscribir(h.id, { puesto: 'Bocina' });
 
-    const ficha = await MesaService.ficha(h.id);
+    const ficha = await MesaService.ficha(h.id, await salida(PASION));
     assert.deepEqual(ficha.propuesta.tunica, { origen: 'ROPERO', numero: vieja.numero });
     assert.equal(ficha.propuesta.puesto, 'Bocina', 'manda lo que pidió');
     assert.equal(ficha.solicitud?.id, solicitudId);
@@ -469,7 +473,7 @@ test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al
     await e.entregar(solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: nueva.numero });
     assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: vieja.id } })).estado, EstadoPrenda.DISPONIBLE);
     assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: nueva.id } })).hermanoId, h.id);
-    const despues = await MesaService.ficha(h.id);
+    const despues = await MesaService.ficha(h.id, await salida(PASION));
     assert.equal(despues.solicitud, null);
     assert.equal(despues.papeleta?.puestoPedido, 'Bocina');
   } finally {
@@ -486,7 +490,7 @@ test('corregir una solicitud cambia lo pedido; corregir la papeleta cambia la ro
     const { solicitudId } = await e.inscribir(h.id);
     await MesaService.editarSolicitud(solicitudId, { puesto: 'Bocina' }, e.meta);
     assert.equal((await db.solicitud.findUniqueOrThrow({ where: { id: solicitudId } })).puesto, 'Bocina');
-    await assert.rejects(MesaService.editarSolicitud(solicitudId, { donativo: 5 }, e.meta), esHttp(409, /solo se cambia en el Rosario/));
+    await assert.rejects(MesaService.editarSolicitud(solicitudId, { donativo: 5 }, e.meta), esHttp(409, /solo se cambia en las salidas de donativo/));
 
     const { papeletaId } = await e.entregar(solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: t1.numero, numCapiroteAsignado: cap.numero });
     const corregida = await MesaService.editarPapeleta(papeletaId, { numTunicaAsignada: t2.numero, puesto: 'Viacrucis' }, e.meta);
@@ -527,8 +531,8 @@ test('el cíngulo va con la túnica del ropero; si no quedan, se le debe y se le
     await assert.rejects(e.entregar(sb, { origenTunica: 'ROPERO', numTunicaAsignada: tb.numero, cingulo: 'PRESTADO' }), esHttp(409, /No quedan cíngulos/));
     const pb = await e.entregar(sb, { origenTunica: 'ROPERO', numTunicaAsignada: tb.numero });
     assert.equal(pb.cingulo, 'DEBIDO');
-    assert.equal((await MesaService.ficha(b.id)).cingulos.enElRopero, 0);
-    const faltan = await MesaService.listado(YEAR, { faltaCingulo: true });
+    assert.equal((await MesaService.ficha(b.id, await salida(PASION))).cingulos.enElRopero, 0);
+    const faltan = await MesaService.listado(YEAR, await salida(PASION), { faltaCingulo: true });
     assert.deepEqual(faltan.apuntados.filter((f) => e.hermanos.includes(f.hermano.id)).map((f) => f.hermano.id), [b.id]);
     assert.ok(faltan.faltanCingulos >= 1);
 
@@ -559,8 +563,8 @@ test('después de la salida se devuelve todo: la túnica al lavado, lo roto al t
     });
 
     // Quien tiene algo sin devolver sale en el buscador de Devolución y en la lista.
-    assert.equal((await MesaService.buscarPersonas(h.apellidos, { zona: 'devolucion' }))[0]?.id, h.id);
-    const ficha = await MesaService.ficha(h.id);
+    assert.equal((await MesaService.buscarPersonas(h.apellidos, await salida(PASION), { zona: 'devolucion' }))[0]?.id, h.id);
+    const ficha = await MesaService.ficha(h.id, await salida(PASION));
     assert.deepEqual(ficha.prendas.map((p) => p.id).sort(), [tunica.id, capirote.id].sort());
     assert.deepEqual(ficha.cingulosSinDevolver, [{ papeletaId, year: YEAR }]);
     const lista = (await ZonasService.sinDevolver()).find((f) => f.hermano.id === h.id);
@@ -579,7 +583,7 @@ test('después de la salida se devuelve todo: la túnica al lavado, lo roto al t
     assert.equal((await ZonasService.devolver(devolucion, clave, e.meta)).repetida, true, 'reintentar no falla');
     await assert.rejects(ZonasService.devolver(devolucion, e.clave(), e.meta), esHttp(409, /ya no consta prestada/));
     assert.equal((await ZonasService.sinDevolver()).some((f) => f.hermano.id === h.id), false);
-    assert.equal((await MesaService.buscarPersonas(h.apellidos, { zona: 'devolucion' })).length, 0);
+    assert.equal((await MesaService.buscarPersonas(h.apellidos, await salida(PASION), { zona: 'devolucion' })).length, 0);
 
     // Del lavado sale lista para prestar.
     const lavadas = await InventarioService.marcarLavadas([tunica.id]);
@@ -621,7 +625,7 @@ test('una túnica no va en dos papeletas de la misma salida, aunque el ropero la
     // Después de la salida la devuelve: el ropero la tiene libre, pero va en la papeleta de Ana.
     await ZonasService.devolver({ hermanoId: a.id, prendas: [{ id: tunica.id }], cingulos: [] }, e.clave(), e.meta);
 
-    const [buscada] = await MesaService.prendas('TUNICA', tunica.numero);
+    const [buscada] = await MesaService.prendas('TUNICA', tunica.numero, await salida(PASION));
     assert.equal(buscada.enPapeleta?.id, a.id, 'la mesa sabe en qué papeleta va');
 
     const sb = (await e.inscribir(b.id)).solicitudId;
@@ -646,7 +650,7 @@ test('el listado dice en qué punto está cada uno: por pagar, listo o recogido'
     const b = await e.inscribir(listo.id);
     const c = await e.inscribir(recogido.id);
     const { papeletaId } = await e.entregar(c.solicitudId);
-    const { apuntados } = await MesaService.listado(YEAR, { salida: 'PASION' });
+    const { apuntados } = await MesaService.listado(YEAR, await salida(PASION), {});
     const de = (tipo: string, id: number) => apuntados.find((p) => p.tipo === tipo && p.id === id)!;
     assert.equal(de('solicitud', a.solicitudId).estado, 'por-pagar');
     assert.equal(de('solicitud', a.solicitudId).pendiente, 25);
@@ -664,11 +668,11 @@ test('al cerrar el plazo, la solicitud de quien pidió día y no vino se cancela
   try {
     const [faltaA, faltaB] = [await e.hermano(), await e.hermano()];
     const ayer = new Date(Date.now() - 26 * 3_600_000);
-    const turno = await db.turno.create({ data: { fecha: ayer, horaInicio: ayer, horaFin: new Date(ayer.getTime() + 3_600_000), salida: 'ROSARIO' } });
+    const turno = await db.turno.create({ data: { fecha: ayer, horaInicio: ayer, horaFin: new Date(ayer.getTime() + 3_600_000), salidaId: await idDeSalida(ROSARIO) } });
     e.turnos.push(turno.id);
     const [citaA, citaB] = [await db.cita.create({ data: { turnoId: turno.id, hermanoId: faltaA.id } }), await db.cita.create({ data: { turnoId: turno.id, hermanoId: faltaB.id } })];
-    const sinPagar = await db.solicitud.create({ data: { hermanoId: faltaA.id, year: YEAR, salida: 'ROSARIO', puesto: 'Vela', donativo: 5, origen: 'WEB', citaId: citaA.id } });
-    const pagada = await db.solicitud.create({ data: { hermanoId: faltaB.id, year: YEAR, salida: 'ROSARIO', puesto: 'Vela', donativo: 5, origen: 'WEB', citaId: citaB.id } });
+    const sinPagar = await db.solicitud.create({ data: { hermanoId: faltaA.id, year: YEAR, salidaId: await idDeSalida(ROSARIO), puesto: 'Vela', donativo: 5, origen: 'WEB', citaId: citaA.id } });
+    const pagada = await db.solicitud.create({ data: { hermanoId: faltaB.id, year: YEAR, salidaId: await idDeSalida(ROSARIO), puesto: 'Vela', donativo: 5, origen: 'WEB', citaId: citaB.id } });
     await ZonasService.cobrar({ hermanoId: faltaB.id, reciboIds: [], solicitudes: [{ solicitudId: pagada.id }], metodoPago: MetodoPago.TARJETA }, e.clave(), e.meta);
 
     await PapeletasService.procesarAusencias(new Date(), true, e.meta);
@@ -753,7 +757,7 @@ test('por HTTP: la mesa es de la Junta que reparte; perdonar, de Tesorería y el
       });
 
     assert.equal((await como(e.usuario.id, Role.USER, '/admin/mesa/personas?q=Buscable')).status, 403);
-    const busqueda = await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas?q=${encodeURIComponent(h.apellidos)}&zona=inscripcion`);
+    const busqueda = await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas?q=${encodeURIComponent(h.apellidos)}&zona=inscripcion&salida=${PASION}`);
     assert.equal(busqueda.status, 200);
     const [encontrada] = await busqueda.json() as { id: number; situacion: string }[];
     assert.equal(encontrada.id, h.id);
@@ -762,9 +766,16 @@ test('por HTTP: la mesa es de la Junta que reparte; perdonar, de Tesorería y el
     assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${h.id}/activar`, 'POST')).status, 403);
     assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/prendas?tipo=GORRO&q=1')).status, 400);
     assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/perdonar', 'POST', { reciboIds: [cuota.id] })).status, 403);
-    const ins = await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/inscribir', 'POST', { hermanoId: h.id, salida: 'PASION', puesto: 'Cirio', clave: e.clave() });
+    const ins = await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/inscribir', 'POST', { hermanoId: h.id, salida: PASION, puesto: 'Cirio', clave: e.clave() });
     assert.equal(ins.status, 201);
-    assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/inscribir', 'POST', { hermanoId: h.id, salida: 'PASION', puesto: 'Cirio', clave: 'x' })).status, 400, 'una clave que no lo es');
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/inscribir', 'POST', { hermanoId: h.id, salida: PASION, puesto: 'Cirio', clave: 'x' })).status, 400, 'una clave que no lo es');
+
+    // La salida es obligatoria: sin ella, o con una que no existe, la mesa no supone ninguna.
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/colas')).status, 400, 'sin salida');
+    const noExiste = await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/colas?salida=no-existe');
+    assert.equal(noExiste.status, 400, 'con una salida que no existe');
+    assert.match((await noExiste.json() as { error: string }).error, /No existe la salida «no-existe»/);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/colas?salida=${PASION}`)).status, 200);
     await db.auditLog.deleteMany({ where: { userId: albaceria.id } });
   } finally {
     await borrarUsuarioPrueba(albaceria.id);
@@ -794,8 +805,8 @@ test('el canal en vivo avisa a los demás puestos de lo que se hace en uno', asy
       if (done) break;
       leido += decodificador.decode(value);
     }
-    const aviso = JSON.parse(leido.slice(leido.indexOf('data:') + 5).split('\n')[0]) as { que: string; hermanoId: number; salida: string };
-    assert.deepEqual(aviso, { que: 'inscrito', hermanoId: h.id, salida: 'PASION' });
+    const aviso = JSON.parse(leido.slice(leido.indexOf('data:') + 5).split('\n')[0]) as { que: string; hermanoId: number; salidaId: number };
+    assert.deepEqual(aviso, { que: 'inscrito', hermanoId: h.id, salidaId: await idDeSalida(PASION) });
   } finally {
     corte.abort();
     await e.recoger();
@@ -810,17 +821,17 @@ test('lo que se pide desde el área sale en la mesa: en el listado, en Túnicas 
   const e = await escenario();
   try {
     const h = await e.hermano({ nombre: 'Desdelaweb' });
-    const year = await PlazoPapeletasService.anioDeLaProcesion('PASION');
-    await db.solicitud.create({ data: { hermanoId: h.id, year, salida: 'PASION', puesto: 'Nazareno', origen: 'WEB' } });
+    const year = PlazoPapeletasService.anioDeLaProcesion(await salida(PASION));
+    await db.solicitud.create({ data: { hermanoId: h.id, year, salidaId: await idDeSalida(PASION), puesto: 'Nazareno', origen: 'WEB' } });
 
-    const listado = await fetch(`${baseUrl}/api/procesion/admin/mesa/apuntados?q=${encodeURIComponent(h.apellidos)}`, {
+    const listado = await fetch(`${baseUrl}/api/procesion/admin/mesa/apuntados?salida=${PASION}&q=${encodeURIComponent(h.apellidos)}`, {
       headers: { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}` },
     });
     assert.equal(listado.status, 200);
     assert.match(JSON.stringify(await listado.json()), new RegExp(`"id":${h.id},`), 'sin año en la petición, el listado es el de la salida');
-    const enTunicas = await MesaService.buscarPersonas(h.apellidos, { zona: 'tunicas' });
+    const enTunicas = await MesaService.buscarPersonas(h.apellidos, await salida(PASION), { zona: 'tunicas' });
     assert.deepEqual(enTunicas.map((p) => p.id), [h.id]);
-    const ficha = await MesaService.ficha(h.id);
+    const ficha = await MesaService.ficha(h.id, await salida(PASION));
     assert.ok(ficha.solicitud, 'la ficha de la mesa ve la solicitud');
   } finally {
     await e.recoger();
@@ -842,17 +853,17 @@ test('la túnica de su talla: en su ficha y, sin repetir, en la hoja de preparac
     await e.inscribir(ana.id, { alturaHombro: '2,15' });
     await e.inscribir(bea.id, { alturaHombro: '2,15' });
 
-    const ficha = await MesaService.ficha(ana.id);
+    const ficha = await MesaService.ficha(ana.id, await salida(PASION));
     assert.deepEqual(ficha.propuesta.tunica, { origen: 'ROPERO', numero: cerca.numero, porTalla: true }, 'la más cercana a su altura');
 
-    const hoja = await ZonasService.preparacion();
+    const hoja = await ZonasService.preparacion(await salida(PASION));
     const de = (id: number) => hoja.find((f) => f.hermano.id === id)!.propuesta.tunica;
     assert.deepEqual(new Set([de(ana.id).numero, de(bea.id).numero]), new Set([cerca.numero, lejos.numero]), 'una a cada una, sin repetir');
     assert.equal(de(ana.id).porTalla && de(bea.id).porTalla, true);
 
     // Dada a Ana, ya no es libre: a Bea se le propone la otra.
     await e.entregar((await db.solicitud.findFirstOrThrow({ where: { hermanoId: ana.id, estado: 'PENDIENTE' } })).id, { origenTunica: 'ROPERO', numTunicaAsignada: cerca.numero, cingulo: 'NINGUNO' });
-    assert.equal((await MesaService.ficha(bea.id)).propuesta.tunica.numero, lejos.numero);
+    assert.equal((await MesaService.ficha(bea.id, await salida(PASION))).propuesta.tunica.numero, lejos.numero);
   } finally {
     await e.recoger();
   }

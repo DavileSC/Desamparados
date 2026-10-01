@@ -18,6 +18,7 @@ import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.j
 import { ZonasService } from '../src/services/procesion/zonas.service.js';
 import { ponerTransporte, type TransporteDeCorreo } from '../src/services/correos/envio.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { PASION, salida } from './fixtures/salidas.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
@@ -42,7 +43,8 @@ after(async () => {
 async function escenario() {
   const usuario = await crearUsuarioPrueba(Role.USER);
   const marca = Date.now().toString(36);
-  const year = await PlazoPapeletasService.anioDeLaProcesion('PASION');
+  const pasion = await salida(PASION);
+  const year = PlazoPapeletasService.anioDeLaProcesion(pasion);
   const hermano = await db.hermano.create({
     data: { userId: usuario.id, nombre: 'Jesús', apellidos: `Papeleta${marca} Ruiz`, sexo: 'HOMBRE', email: `papeleta-${marca}@example.com`, fechaNacimiento: new Date(Date.UTC(1985, 3, 9)), activo: true, esTitular: true },
   });
@@ -50,7 +52,7 @@ async function escenario() {
     data: { hermanoId: hermano.id, year, concepto: `Papeleta de sitio ${year}`, importe: 20, tipo: 'PAPELETA_SITIO', estado: 'PAGADO', metodoPago: 'EFECTIVO', fechaPago: new Date() },
   });
   const papeleta = await db.papeletaSitio.create({
-    data: { hermanoId: hermano.id, year, salida: 'PASION', puesto: 'Nazareno', tramo: 'Tramo 2 · Cristo', numTunicaAsignada: '145-31', numCapiroteAsignado: '150', reciboId: recibo.id },
+    data: { hermanoId: hermano.id, year, salidaId: pasion.id, puesto: 'Nazareno', tramo: 'Tramo 2 · Cristo', numTunicaAsignada: '145-31', numCapiroteAsignado: '150', reciboId: recibo.id },
   });
   const recoger = async () => {
     await db.papeletaSitio.deleteMany({ where: { hermanoId: hermano.id } });
@@ -132,12 +134,12 @@ test('en el área, la papeleta de este año trae su QR para enseñarlo desde el 
   try {
     const estado = await MiProcesionService.getMiEstado(e.usuario.id);
     const ficha = estado.fichas.find((f) => f.id === e.hermano.id)!;
-    const papeleta = ficha.porSalida.PASION.papeleta;
+    const papeleta = ficha.porSalida[PASION].papeleta;
     assert.ok(papeleta?.qr, 'con la papeleta recogida, hay QR');
     assert.equal(leerCodigoDePapeleta(papeleta.qr.codigo), e.papeleta.id);
     assert.match(papeleta.qr.svg, /^<svg[\s\S]*<\/svg>\s*$/);
     assert.equal(papeleta.tunica, '145-31');
-    assert.ok(estado.salidas.find((s) => s.salida === 'PASION')?.evento.horaSalida, 'la hora de entrada va con la salida');
+    assert.ok(estado.salidas.find((s) => s.salida === PASION)?.evento.horaSalida, 'la hora de entrada va con la salida');
   } finally {
     await e.recoger();
   }

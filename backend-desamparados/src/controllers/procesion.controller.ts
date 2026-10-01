@@ -2,8 +2,7 @@ import { MiProcesionService } from '../services/procesion/mi-procesion.service.j
 import { PapeletasService } from '../services/procesion/papeletas.service.js';
 import { TurnosService } from '../services/procesion/turnos.service.js';
 import { PlazoPapeletasService } from '../services/procesion/plazo.service.js';
-import { SalidasService } from '../services/procesion/salidas.service.js';
-import type { Salida } from '@prisma/client';
+import { SalidasService, salidaDe } from '../services/procesion/salidas.service.js';
 import { handleHttp, HttpError } from '../utils/error.handle.js';
 import { instanteLimiteAusencias } from '../domain/datos-procesion.js';
 import { AuditoriaService } from '../services/auditoria.service.js';
@@ -16,7 +15,7 @@ export class ProcesionController {
   // ============================================================
 
   static getDias = manejar('Error obteniendo días', async (req, res) => {
-    const dias = await MiProcesionService.getDiasDisponibles((req.query.salida as Salida | undefined) ?? 'PASION');
+    const dias = await MiProcesionService.getDiasDisponibles(await salidaDe(req));
     res.json(dias);
   });
 
@@ -25,19 +24,16 @@ export class ProcesionController {
   });
 
   static getPlazo = manejar('Error obteniendo el plazo de papeletas', async (req, res) => {
-    const salida = (req.query.salida as Salida | undefined) ?? 'PASION';
+    const salida = await salidaDe(req);
     const plazo = await PlazoPapeletasService.estadoParaSecretaria(salida);
-    res.json(salida === 'ROSARIO' ? { ...plazo, rosario: await SalidasService.rosario() } : plazo);
+    // Las de fecha a mano enseñan junto al interruptor el acto que la fija (o que falta).
+    res.json(salida.fecha === 'MANUAL' ? { ...plazo, fecha: SalidasService.fecha(salida) } : plazo);
   });
 
   static cambiarPlazo = manejar('Error cambiando el plazo de papeletas', async (req, res) => {
-    const { abierto, avisar, borradorNoticia, salida } = req.body as { abierto: boolean; avisar?: boolean; borradorNoticia?: boolean; salida?: Salida };
-    const resultado = await PlazoPapeletasService.cambiar(abierto, { avisar, borradorNoticia, salida }, AuditoriaService.metaFromReq(req));
+    const { abierto, avisar, borradorNoticia } = req.body as { abierto: boolean; avisar?: boolean; borradorNoticia?: boolean };
+    const resultado = await PlazoPapeletasService.cambiar(abierto, { avisar, borradorNoticia }, await salidaDe(req), AuditoriaService.metaFromReq(req));
     res.json(resultado);
-  });
-
-  static fijarRosario = manejar('Error fijando la fecha del Rosario', async (req, res) => {
-    res.json(await SalidasService.fijarRosario(req.body as { inicio: string; lugar?: string | null }, AuditoriaService.metaFromReq(req)));
   });
 
   static avisarAsistencia = manejar('Error al pedir la papeleta', async (req, res) => {
@@ -80,7 +76,7 @@ export class ProcesionController {
 
   static getListadoProcesion = manejar('Error generando el censo de la procesión', async (req, res) => {
     const year = Number(req.params.year);
-    const listado = await PapeletasService.getListadoProcesion(year, (req.query.salida as Salida | undefined) ?? 'PASION');
+    const listado = await PapeletasService.getListadoProcesion(year, await salidaDe(req));
     res.status(200).json(listado);
   });
 
@@ -103,12 +99,12 @@ export class ProcesionController {
   // ============================================================
 
   static getTodosTurnos = manejar('Error obteniendo los turnos', async (req, res) => {
-    const turnos = await TurnosService.getTodosLosTurnos(req.query.salida as Salida | undefined);
+    const turnos = await TurnosService.getTodosLosTurnos(await salidaDe(req));
     res.status(200).json(turnos);
   });
 
   static crearTurno = manejar('Error creando el turno', async (req, res) => {
-    const nuevoTurno = await TurnosService.crearTurno(req.body, AuditoriaService.metaFromReq(req));
+    const nuevoTurno = await TurnosService.crearTurno(req.body, await salidaDe(req), AuditoriaService.metaFromReq(req));
     res.status(201).json(nuevoTurno);
   });
 

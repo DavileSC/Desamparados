@@ -136,7 +136,7 @@ export class EmailService {
 
     // El asunto es texto, no HTML: con el nombre escapado, «O'Brien» llegaba
     // como «O&#39;Brien». Los saltos de línea los aplana nodemailer.
-    const asunto = `${nombrePapeleta} ${datosPapeleta.year}: ${nombreHermano}`;
+    const asunto = `Papeleta del ${nombrePapeleta} ${datosPapeleta.year}: ${nombreHermano}`;
     return await enviarCorreo(emailDestino, asunto, maquetar({
       titulo: `${salida.nombre} ${datosPapeleta.year}`,
       antetitulo: salida.nombre,

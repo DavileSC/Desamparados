@@ -17,7 +17,6 @@ import { configuracionRedsys, formularioDePago, leerAviso, modoDePago, numeroDeP
 import { urlDeLaWeb } from '../correos/plantilla.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
 import { MisRecibosService } from '../mis-recibos.service.js';
-import { PapeletasService } from '../procesion/papeletas.service.js';
 import { ZonasService } from '../procesion/zonas.service.js';
 import { DonativoService } from './donativo.service.js';
 import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';

@@ -1,5 +1,4 @@
 import type { Request, Response } from 'express';
-import type { Salida } from '@prisma/client';
 import { MesaService, type AltaEnMesaDto, type CorreccionFichaDto, type EdicionPapeletaDto, type EdicionSolicitudDto, type ZonaDeBusqueda } from '../services/procesion/mesa.service.js';
 import { PapeletasService } from '../services/procesion/papeletas.service.js';
 import { anioDeLaMesa, ZonasService, type CobroEnMesa, type DevolucionEnMesa, type EntregaEnMesa, type InscripcionEnMesa } from '../services/procesion/zonas.service.js';
@@ -10,8 +9,8 @@ import { AuditoriaService } from '../services/auditoria.service.js';
 import { manejar } from '../utils/manejar.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { archivoDePapeleta, datosDeLaPapeleta, papeletaEnPdf } from '../services/procesion/papeleta-pdf.js';
+import { salidaDe } from '../services/procesion/salidas.service.js';
 
-const salidaDe = (req: Request) => (req.query.salida as Salida | undefined) ?? 'PASION';
 /** La clave de la operación va en el cuerpo; el resto es el DTO. */
 const sinClave = <T extends { clave?: string }>(cuerpo: T) => {
   const { clave, ...dto } = cuerpo;
@@ -24,22 +23,21 @@ const LATIDO_MS = 25_000;
 /** La mesa de la procesión (ver `MesaService` y `ZonasService`). */
 export class MesaController {
   static buscar = manejar('Error buscando en el censo', async (req, res) => {
-    res.json(await MesaService.buscarPersonas(String(req.query.q ?? ''), {
+    res.json(await MesaService.buscarPersonas(String(req.query.q ?? ''), await salidaDe(req), {
       zona: req.query.zona as ZonaDeBusqueda | undefined,
-      salida: salidaDe(req),
     }));
   });
 
   static esperados = manejar('Error leyendo quién viene hoy', async (req, res) => {
-    res.json(await MesaService.esperadosHoy(salidaDe(req)));
+    res.json(await MesaService.esperadosHoy(await salidaDe(req)));
   });
 
   static ficha = manejar('Error leyendo la ficha para la mesa', async (req, res) => {
-    res.json(await MesaService.ficha(Number(req.params.id), salidaDe(req)));
+    res.json(await MesaService.ficha(Number(req.params.id), await salidaDe(req)));
   });
 
   static prendas = manejar('Error buscando en el ropero', async (req, res) => {
-    res.json(await MesaService.prendas(req.query.tipo as TipoRopa, String(req.query.q ?? '')));
+    res.json(await MesaService.prendas(req.query.tipo as TipoRopa, String(req.query.q ?? ''), await salidaDe(req)));
   });
 
   static alta = manejar('Error dando de alta en la mesa', async (req, res) => {
@@ -85,11 +83,11 @@ export class MesaController {
 
   static listado = manejar('Error leyendo los apuntados', async (req, res) => {
     // Sin año, el de la salida que se está repartiendo, no el natural (ver `anioDeLaMesa`).
-    const year = req.query.year ? Number(req.query.year) : await anioDeLaMesa(salidaDe(req));
-    res.json(await MesaService.listado(year, {
+    const salida = await salidaDe(req);
+    const year = req.query.year ? Number(req.query.year) : anioDeLaMesa(salida);
+    res.json(await MesaService.listado(year, salida, {
       q: req.query.q as string | undefined,
       puesto: req.query.puesto as string | undefined,
-      salida: salidaDe(req),
       faltaCingulo: req.query.faltaCingulo === '1',
     }));
   });
@@ -97,8 +95,9 @@ export class MesaController {
   // --- Las zonas ---
 
   static inscribir = manejar('Error apuntando en la mesa', async (req, res) => {
-    const { clave, dto } = sinClave(req.body as InscripcionEnMesa & { clave?: string });
-    res.status(201).json(await ZonasService.inscribir(dto, clave, AuditoriaService.metaFromReq(req)));
+    const { clave, dto } = sinClave(req.body as Omit<InscripcionEnMesa, 'salida'> & { salida: string; clave?: string });
+    const salida = await salidaDe(req);
+    res.status(201).json(await ZonasService.inscribir({ ...dto, salida }, clave, AuditoriaService.metaFromReq(req)));
   });
 
   static cobrar = manejar('Error cobrando en la mesa', async (req, res) => {
@@ -130,11 +129,11 @@ export class MesaController {
   });
 
   static colas = manejar('Error leyendo las colas de la mesa', async (req, res) => {
-    res.json(await ZonasService.colas(salidaDe(req)));
+    res.json(await ZonasService.colas(await salidaDe(req)));
   });
 
   static preparacion = manejar('Error leyendo la ropa por preparar', async (req, res) => {
-    res.json(await ZonasService.preparacion(req.query.turnoId ? Number(req.query.turnoId) : undefined));
+    res.json(await ZonasService.preparacion(await salidaDe(req), req.query.turnoId ? Number(req.query.turnoId) : undefined));
   });
 
   /**

@@ -14,6 +14,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { Modelo182Service } from '../src/services/modelo-182.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { idDeSalida, ROSARIO } from './fixtures/salidas.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const EJERCICIO = 2091;
@@ -77,7 +78,7 @@ test('el resumen, el fichero y los certificados del ejercicio', async (t) => {
     await recibo(sinDni.id, TipoRecibo.CUOTA_HERMANO, '30', `${EJERCICIO}-02-01`, 'Cuota 2091');
     // Lo de una salida no es donativo, aunque se llame así.
     const delRosario = await recibo(madre.id, TipoRecibo.DONATIVO, '5', `${EJERCICIO}-10-10`, 'Donativo Rosario vespertino 2091');
-    await db.papeletaSitio.create({ data: { hermanoId: madre.id, year: EJERCICIO, salida: 'ROSARIO', puesto: 'Vela', reciboId: delRosario.id } });
+    await db.papeletaSitio.create({ data: { hermanoId: madre.id, year: EJERCICIO, salidaId: await idDeSalida(ROSARIO), puesto: 'Vela', reciboId: delRosario.id } });
 
     // Un donativo en línea con certificado, otro anónimo, y un apadrinamiento con NIF.
     const enLinea = (donativo: object, euros: string) => db.pagoEnLinea.create({

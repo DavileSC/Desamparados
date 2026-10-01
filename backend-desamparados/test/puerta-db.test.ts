@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { Role, TipoRecibo, type Salida } from '@prisma/client';
+import { Role, TipoRecibo } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -15,6 +15,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { codigoDePapeleta } from '../src/domain/papeleta-qr.js';
 import { anioDeLaMesa } from '../src/services/procesion/zonas.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
@@ -42,21 +43,22 @@ test('escanear en la puerta: entra una vez, y lo que no vale no entra', async (t
   const usuario = await crearUsuarioPrueba(Role.USER);
   const hermanos: number[] = [];
   try {
-    const year = await anioDeLaMesa('PASION');
-    const conPapeleta = async (salida: Salida, anio: number) => {
+    const pasion = await salida(PASION);
+    const year = anioDeLaMesa(pasion);
+    const conPapeleta = async (slug: string, anio: number) => {
       const h = await db.hermano.create({
         data: { userId: usuario.id, nombre: 'Prueba', apellidos: `Puerta ${Date.now()}${hermanos.length}`, fechaNacimiento: new Date('1990-01-01T00:00:00Z') },
       });
       hermanos.push(h.id);
-      const recibo = await db.recibo.create({ data: { hermanoId: h.id, year: anio, concepto: `Papeleta ${salida} ${anio}`, importe: '0', tipo: TipoRecibo.PAPELETA_SITIO } });
-      return db.papeletaSitio.create({ data: { hermanoId: h.id, year: anio, salida, puesto: 'Nazareno', tramo: 'Tramo 1', numero: 3, reciboId: recibo.id } });
+      const recibo = await db.recibo.create({ data: { hermanoId: h.id, year: anio, concepto: `Papeleta ${slug} ${anio}`, importe: '0', tipo: TipoRecibo.PAPELETA_SITIO } });
+      return db.papeletaSitio.create({ data: { hermanoId: h.id, year: anio, salidaId: await idDeSalida(slug), puesto: 'Nazareno', tramo: 'Tramo 1', numero: 3, reciboId: recibo.id } });
     };
-    const buena = await conPapeleta('PASION', year);
-    const delRosario = await conPapeleta('ROSARIO', year);
-    const sinPapeleta = await conPapeleta('PASION', year);
+    const buena = await conPapeleta(PASION, year);
+    const delRosario = await conPapeleta(ROSARIO, year);
+    const sinPapeleta = await conPapeleta(PASION, year);
 
     const escanear = (codigo: string, cab = cabeceras(diputado.id, Role.SECRETARIA)) =>
-      fetch(`${baseUrl}/api/procesion/admin/puerta/escanear`, { method: 'POST', headers: cab, body: JSON.stringify({ codigo, salida: 'PASION' }) });
+      fetch(`${baseUrl}/api/procesion/admin/puerta/escanear`, { method: 'POST', headers: cab, body: JSON.stringify({ codigo, salida: PASION }) });
 
     // Sin sesión de la Junta no se escanea.
     assert.equal((await fetch(`${baseUrl}/api/procesion/admin/puerta/escanear`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 401);
@@ -73,10 +75,10 @@ test('escanear en la puerta: entra una vez, y lo que no vale no entra', async (t
     assert.equal((await (await escanear(codigoDePapeleta(999_999_999))).json()).veredicto, 'ANULADA');
 
     // Quien llega sin la papeleta entra a mano.
-    const aMano = await fetch(`${baseUrl}/api/procesion/admin/puerta/papeletas/${sinPapeleta.id}`, { method: 'POST', headers: cabeceras(diputado.id, Role.SECRETARIA), body: JSON.stringify({ salida: 'PASION' }) });
+    const aMano = await fetch(`${baseUrl}/api/procesion/admin/puerta/papeletas/${sinPapeleta.id}`, { method: 'POST', headers: cabeceras(diputado.id, Role.SECRETARIA), body: JSON.stringify({ salida: PASION }) });
     assert.equal((await aMano.json()).veredicto, 'ENTRA');
 
-    const estado = await (await fetch(`${baseUrl}/api/procesion/admin/puerta?salida=PASION`, { headers: cabeceras(diputado.id, Role.SECRETARIA) })).json();
+    const estado = await (await fetch(`${baseUrl}/api/procesion/admin/puerta?salida=${PASION}`, { headers: cabeceras(diputado.id, Role.SECRETARIA) })).json();
     assert.equal(estado.year, year);
     assert.ok(estado.ultimas.some((p: { id: number }) => p.id === buena.id));
     assert.ok(!estado.faltan.some((p: { id: number }) => p.id === buena.id || p.id === sinPapeleta.id));

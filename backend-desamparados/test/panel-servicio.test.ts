@@ -13,6 +13,7 @@ import { claveMes } from '../src/domain/panel-censo.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { diaMadrid } from '../src/domain/contabilidad.js';
+import { idDeSalida } from './fixtures/salidas.js';
 
 let dbDisponible = false;
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -337,7 +338,7 @@ describe('el calendario del Inicio', () => {
     const otroMes = new Date(Date.UTC(anio, mes + 2, 15, 12));
     const acto = await db.evento.create({ data: { title: 'ZZ acto del mes', startDate: mediados, type: 'CULTO' } });
     const lejano = await db.evento.create({ data: { title: 'ZZ acto lejano', startDate: otroMes, type: 'CULTO' } });
-    const turno = await db.turno.create({ data: { fecha: mediados, horaInicio: mediados, horaFin: mediados } });
+    const turno = await db.turno.create({ data: { fecha: mediados, horaInicio: mediados, horaFin: mediados, salidaId: await idDeSalida() } });
     try {
       const { calendario } = await PanelService.getPanel();
       assert.equal(calendario.mes, mediados.toISOString().slice(0, 7));

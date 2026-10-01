@@ -19,7 +19,9 @@ const alturaHombro = type("string <= 8").describe("una altura de hombro");
 const dia = type("string").matching(/^\d{4}-\d{2}-\d{2}$/).describe("una fecha válida (AAAA-MM-DD)");
 const nombrePropio = type("string <= 80").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("un texto de 80 caracteres como mucho, sin «<» ni «>»");
 const apellidoOpcional = type("string <= 80").matching(/^[^<>]*$/).describe("un apellido sin «<» ni «>»");
-const salida = type("'PASION' | 'ROSARIO'");
+// El slug de la salida. Si existe lo dice el servicio (`SalidasService.porSlug`),
+// con un 400 que la nombra; aquí solo que llegue.
+const salida = type("string > 0").describe("una salida");
 const puesto = type("string <= 80").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("un puesto de 80 caracteres como mucho, sin «<» ni «>»");
 // Euros, con dos decimales como mucho y con tope: la voluntad es libre, pero un 5000 es un error de tecleo.
 const donativo = type("number >= 0").narrow((n) => n <= 1000 && Math.round(n * 100) === n * 100).describe("un importe entre 0 y 1000 €, con dos decimales como mucho");
@@ -28,7 +30,7 @@ const claveOperacion = type("string").matching(/^[A-Za-z0-9-]{8,64}$/).describe(
 const observacionesMesa = type("string <= 500").matching(/^[^<>]*$/);
 
 // 1. La solicitud de la papeleta desde el área de hermanos: el día (que dice
-// la salida), quién va, el puesto que le gustaría y, en el Rosario, la voluntad.
+// la salida), quién va, el puesto que le gustaría y, con donativo, la voluntad.
 export const avisarAsistenciaSchema = type({
     body: {
         turnoId: idCuerpo,
@@ -54,13 +56,14 @@ export const crearTurnoSchema = type({
         horaInicio: fechaTexto,
         horaFin: fechaTexto,
         capacidadEstimada: "number.integer > 0",
-        "salida?": salida
+        salida
     }
 });
 
-// La salida de la que se habla, en la consulta: sin ella, la Pasión.
+// La salida de la que se habla, en la consulta. Obligatoria: con varias
+// salidas, suponer una es equivocarse en silencio.
 export const salidaQuerySchema = type({
-    query: { "salida?": salida }
+    query: { salida }
 });
 
 // 5. Procesar ausencias. El cuerpo es opcional (sin él, la fecha es «ahora»):
@@ -90,15 +93,7 @@ export const plazoPapeletasSchema = type({
         abierto: "boolean",
         "avisar?": "boolean",
         "borradorNoticia?": "boolean",
-        "salida?": salida
-    }
-});
-
-// La fecha del Rosario vespertino (instante completo, en octubre) y su lugar.
-export const fechaRosarioSchema = type({
-    body: {
-        inicio: fechaTexto,
-        "lugar?": type("string <= 160").matching(/^[^<>]*$/).or("null")
+        salida
     }
 });
 
@@ -110,21 +105,22 @@ export const mesaBuscarSchema = type({
     query: {
         q: type("string <= 100"),
         "zona?": "'inscripcion' | 'tesoreria' | 'tunicas' | 'devolucion' | 'todas'",
-        "salida?": salida,
+        salida,
     }
 });
 
 export const mesaEsperadosSchema = type({
-    query: { "salida?": salida }
+    query: { salida }
 });
 
+// En qué papeleta de este año va cada prenda: el ropero va por salida.
 export const mesaPrendasSchema = type({
-    query: { tipo: tipoRopa, q: numeroPrenda }
+    query: { tipo: tipoRopa, q: numeroPrenda, salida }
 });
 
 export const mesaListadoSchema = type({
     query: {
-        "salida?": salida,
+        salida,
         "year?": type("string").matching(/^\d{4}$/),
         "q?": type("string <= 100"),
         "puesto?": type("string <= 80"),
@@ -186,7 +182,7 @@ export const mesaEditarPapeletaSchema = type({
 });
 
 // Una solicitud aún sin recoger: el puesto que pide, las observaciones y,
-// en el Rosario, la voluntad si aún no la ha pagado.
+// con donativo, la voluntad si aún no la ha pagado.
 export const mesaEditarSolicitudSchema = type({
     body: {
         "puesto?": puesto,
@@ -258,11 +254,11 @@ export const mesaEntregarSchema = type({
 
 export const mesaFichaSchema = type({
     params: { id: type("string").matching(/^[1-9]\d{0,9}$/) },
-    query: { "salida?": salida }
+    query: { salida }
 });
 
 export const mesaPreparacionSchema = type({
-    query: { "turnoId?": type("string").matching(/^[1-9]\d{0,9}$/) }
+    query: { salida, "turnoId?": type("string").matching(/^[1-9]\d{0,9}$/) }
 });
 
 // El hermano paga en línea recibos de su familia, con tarjeta o Bizum.
@@ -296,7 +292,7 @@ export const avisoRedsysSchema = type({
 const nombreTramo = type("string <= 60").matching(/^[^<>]+$/).describe("un nombre de tramo de 60 caracteres como mucho, sin «<» ni «>»");
 
 export const cortejoQuerySchema = type({
-    query: { "salida?": salida, "year?": type(/^\d{4}$/).describe("un año de cuatro cifras") }
+    query: { salida, "year?": type(/^\d{4}$/).describe("un año de cuatro cifras") }
 });
 
 export const cortejoConfiguracionSchema = type({

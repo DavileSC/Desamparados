@@ -11,33 +11,31 @@ import assert from 'node:assert/strict';
 import { after, before, mock, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { EstadoPago, Role } from '@prisma/client';
+import { EstadoPago, Role, type Salida } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
 import { MiProcesionService } from '../src/services/procesion/mi-procesion.service.js';
-import { CLAVE_PLAZO, PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
+import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
 import { TurnosService } from '../src/services/procesion/turnos.service.js';
 import { SalidasService } from '../src/services/procesion/salidas.service.js';
 import { MisRecibosService } from '../src/services/mis-recibos.service.js';
-import { CLAVE_EVENTO_ROSARIO } from '../src/services/recibos/comunes.js';
-import { CLAVE_CUOTA_SALIDA, DATOS_SALIDA } from '../src/domain/salidas.js';
 import { apellidosTrasCambio, componerApellidos, partirApellidos } from '../src/domain/apellidos.js';
 import { enmascararIban } from '../src/domain/iban.js';
 import { esIbanValido, normalizarIban } from '../src/config/common.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
+import { diaMadrid, sumarDias } from '../src/domain/fecha-salida.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
-let plazoPrevio: string | null = null;
-let plazoRosarioPrevio: string | null = null;
-let rosarioPrevio: string | null = null;
-let cuotaPrevia: string | null = null;
-const CLAVE_PLAZO_ROSARIO = DATOS_SALIDA.ROSARIO.clavePlazo;
+// Las dos filas tal como estaban: las pruebas abren plazos, cambian la cuota y
+// ponen fecha al Rosario, y todo se devuelve al terminar.
+let previas: Salida[] = [];
 
 const avisosDeApertura = mock.method(EmailService, 'enviarAperturaPapeletas', async () => undefined);
 
@@ -48,31 +46,28 @@ before(async () => {
   const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
   if (dbDisponible) {
-    plazoPrevio = (await db.configuracion.findUnique({ where: { key: CLAVE_PLAZO } }))?.value ?? null;
-    plazoRosarioPrevio = (await db.configuracion.findUnique({ where: { key: CLAVE_PLAZO_ROSARIO } }))?.value ?? null;
-    rosarioPrevio = (await db.configuracion.findUnique({ where: { key: CLAVE_EVENTO_ROSARIO } }))?.value ?? null;
+    previas = await db.salida.findMany({ where: { slug: { in: [PASION, ROSARIO] } } });
     // Las pruebas cuentan con la cuota de salida de hoy, 0 €: la de la base
-    // puede ser otra (se cambia en Procesión) y se devuelve al terminar.
-    cuotaPrevia = (await db.configuracion.findUnique({ where: { key: CLAVE_CUOTA_SALIDA } }))?.value ?? null;
-    await db.configuracion.upsert({ where: { key: CLAVE_CUOTA_SALIDA }, update: { value: '0' }, create: { key: CLAVE_CUOTA_SALIDA, value: '0' } });
+    // puede ser otra (se cambia en el CMS).
+    await db.salida.update({ where: { slug: PASION }, data: { importeCuota: 0 } });
   }
 });
 
 after(async () => {
   mock.restoreAll();
   if (dbDisponible) {
-    for (const [key, previo] of [[CLAVE_PLAZO, plazoPrevio], [CLAVE_PLAZO_ROSARIO, plazoRosarioPrevio], [CLAVE_EVENTO_ROSARIO, rosarioPrevio], [CLAVE_CUOTA_SALIDA, cuotaPrevia]] as const) {
-      if (previo === null) await db.configuracion.deleteMany({ where: { key } });
-      else await db.configuracion.update({ where: { key }, data: { value: previo } });
+    for (const { id, plazoAbierto, plazoCambiadoEl, importeCuota, eventoId } of previas) {
+      await db.salida.update({ where: { id }, data: { plazoAbierto, plazoCambiadoEl, importeCuota, eventoId } });
     }
   }
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
   await db.$disconnect();
 });
 
-const fijarPlazo = (abierto: boolean, key: string = CLAVE_PLAZO) => db.configuracion.upsert({
-  where: { key }, update: { value: String(abierto) }, create: { key, value: String(abierto) },
-});
+const fijarPlazo = (abierto: boolean, slug: string = PASION) => db.salida.update({ where: { slug }, data: { plazoAbierto: abierto } });
+
+/** Un instante dentro de `dias` días, a la hora UTC dada (a mediodía, el mismo día en Madrid). */
+const dentroDe = (dias: number, hora = 12) => new Date(`${sumarDias(diaMadrid(new Date()), dias)}T${String(hora).padStart(2, '0')}:00:00.000Z`);
 
 /** Un titular con un sobrino a cargo, y los turnos y noticias que se creen. Todo se borra al terminar. */
 async function escenario() {
@@ -87,9 +82,9 @@ async function escenario() {
   const sobrino = await db.hermano.create({
     data: { userId: usuario.id, nombre: 'Pablo', apellidos: `Ruiz Plazo${marca}`, fechaNacimiento: new Date(Date.UTC(2014, 5, 1)), activo: true, esTitular: false, parentesco: 'SOBRINO' },
   });
-  const turno = async (dentroDeHoras: number, salida: 'PASION' | 'ROSARIO' = 'PASION') => {
+  const turno = async (dentroDeHoras: number, slug: string = PASION) => {
     const fecha = new Date(Date.now() + dentroDeHoras * 60 * 60 * 1000);
-    const t = await db.turno.create({ data: { fecha, horaInicio: fecha, horaFin: new Date(fecha.getTime() + 3 * 60 * 60 * 1000), capacidadEstimada: 50, salida } });
+    const t = await db.turno.create({ data: { fecha, horaInicio: fecha, horaFin: new Date(fecha.getTime() + 3 * 60 * 60 * 1000), capacidadEstimada: 50, salidaId: await idDeSalida(slug) } });
     turnos.push(t.id);
     return t;
   };
@@ -171,15 +166,15 @@ test('con el plazo cerrado no se reserva día; abierto, sí', async (t) => {
     assert.equal(await db.papeletaSitio.count({ where: { hermanoId: e.sobrino.id } }), 0, 'la papeleta nace al recogerla en la mesa');
 
     const estado = await MiProcesionService.getMiEstado(e.usuario.id);
-    const pasion = estado.salidas.find((x) => x.salida === 'PASION')!;
+    const pasion = estado.salidas.find((x) => x.salida === PASION)!;
     assert.equal(pasion.abierto, true);
     assert.ok(pasion.dias.some((d) => d.id === turno.id));
     const deSobrino = estado.fichas.find((f) => f.id === e.sobrino.id);
-    assert.equal(deSobrino?.porSalida.PASION.solicitud?.cita?.turno.id, turno.id);
-    assert.equal(deSobrino?.porSalida.PASION.solicitud?.puesto, 'Monaguillo');
-    assert.equal(deSobrino?.porSalida.PASION.papeleta, null);
+    assert.equal(deSobrino?.porSalida[PASION].solicitud?.cita?.turno.id, turno.id);
+    assert.equal(deSobrino?.porSalida[PASION].solicitud?.puesto, 'Monaguillo');
+    assert.equal(deSobrino?.porSalida[PASION].papeleta, null);
     assert.equal(deSobrino?.parentesco, 'SOBRINO');
-    assert.equal(estado.fichas.find((f) => f.id === e.titular.id)?.porSalida.PASION.solicitud, null);
+    assert.equal(estado.fichas.find((f) => f.id === e.titular.id)?.porSalida[PASION].solicitud, null);
   } finally {
     await e.recoger();
   }
@@ -190,15 +185,15 @@ test('abrir exige días de reparto; al abrir se avisa y queda un borrador de not
   const e = await escenario();
   try {
     await fijarPlazo(false);
-    const hayDias = (await PlazoPapeletasService.diasFuturos()).length > 0;
+    const hayDias = (await PlazoPapeletasService.diasFuturos(await salida(PASION))).length > 0;
     if (!hayDias) {
-      await assert.rejects(PlazoPapeletasService.cambiar(true, {}, { userId: e.admin.id }), /No hay días de reparto/);
+      await assert.rejects(PlazoPapeletasService.cambiar(true, {}, await salida(PASION), { userId: e.admin.id }), /No hay días de reparto/);
     }
 
     await e.turno(30);
     avisosDeApertura.mock.resetCalls();
     const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
-    const res = await fetch(`${baseUrl}/api/procesion/admin/plazo`, { method: 'POST', headers: cabeceras, body: JSON.stringify({ abierto: true, avisar: true, borradorNoticia: true }) });
+    const res = await fetch(`${baseUrl}/api/procesion/admin/plazo`, { method: 'POST', headers: cabeceras, body: JSON.stringify({ abierto: true, avisar: true, borradorNoticia: true, salida: PASION }) });
     assert.equal(res.status, 200);
     const cuerpo = await res.json() as { abierto: boolean; avisados: number; noticiaId: number | null };
     assert.equal(cuerpo.abierto, true);
@@ -209,7 +204,8 @@ test('abrir exige días de reparto; al abrir se avisa y queda un borrador de not
     const noticia = await db.noticia.findUnique({ where: { id: cuerpo.noticiaId! } });
     assert.equal(noticia?.visible, false, 'es un borrador');
     assert.match(noticia?.contenido ?? '', /<ul>/);
-    assert.equal(await PlazoPapeletasService.estaAbierto(), true);
+    assert.equal(await PlazoPapeletasService.estaAbierto(await salida(PASION)), true);
+    assert.equal(noticia?.titulo, `Abierta la inscripción del Sábado de Pasión ${PlazoPapeletasService.anioDeLaProcesion(await salida(PASION))}`);
 
     // Los correos salen después de responder.
     await new Promise((r) => setTimeout(r, 50));
@@ -221,9 +217,38 @@ test('abrir exige días de reparto; al abrir se avisa y queda un borrador de not
     const deHermano = await fetch(`${baseUrl}/api/procesion/admin/plazo`, {
       method: 'POST',
       headers: { Cookie: `${COOKIE_CMS}=${generateToken(e.usuario.id, Role.USER)}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ abierto: false }),
+      body: JSON.stringify({ abierto: false, salida: PASION }),
     });
     assert.equal(deHermano.status, 403);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('una salida con fecha a mano no abre su plazo sin fecha, y sin salida o con una que no existe es un 400', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    await fijarPlazo(false, ROSARIO);
+    await db.salida.update({ where: { slug: ROSARIO }, data: { eventoId: null } });
+    await e.turno(30, ROSARIO);
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
+    const abrir = (cuerpo: Record<string, unknown>) => fetch(`${baseUrl}/api/procesion/admin/plazo`, { method: 'POST', headers: cabeceras, body: JSON.stringify({ abierto: true, ...cuerpo }) });
+
+    const sinFecha = await abrir({ salida: ROSARIO });
+    assert.equal(sinFecha.status, 409);
+    assert.match((await sinFecha.json() as { error: string }).error, /Pon antes la fecha de la salida en la Agenda/);
+    assert.equal(await PlazoPapeletasService.estaAbierto(await salida(ROSARIO)), false);
+
+    assert.equal((await abrir({})).status, 400);
+    const noExiste = await abrir({ salida: 'no-existe' });
+    assert.equal(noExiste.status, 400);
+    assert.match((await noExiste.json() as { error: string }).error, /No existe la salida «no-existe»/);
+
+    // El plazo de la salida a mano dice qué acto le da la fecha (aquí, ninguno).
+    const plazo = await (await fetch(`${baseUrl}/api/procesion/admin/plazo?salida=${ROSARIO}`, { headers: cabeceras })).json() as { salida: string; fecha: unknown };
+    assert.equal(plazo.salida, ROSARIO);
+    assert.equal(plazo.fecha, null);
   } finally {
     await e.recoger();
   }
@@ -234,19 +259,19 @@ test('el Rosario tiene su plazo y sus días; se pide con donativo, se paga en l�
   const e = await escenario();
   try {
     const pasion = await e.turno(26);
-    const rosario = await e.turno(28, 'ROSARIO');
+    const rosario = await e.turno(28, ROSARIO);
     await fijarPlazo(true);
-    await fijarPlazo(false, CLAVE_PLAZO_ROSARIO);
+    await fijarPlazo(false, ROSARIO);
     await assert.rejects(
       MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: rosario.id, hermanoId: e.titular.id, puesto: 'Farol', donativo: 5 }),
       /Rosario vespertino no está abierta/,
     );
-    await fijarPlazo(true, CLAVE_PLAZO_ROSARIO);
+    await fijarPlazo(true, ROSARIO);
 
     // Las dos salidas, cada una con su papeleta y su día.
     await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: pasion.id, hermanoId: e.titular.id, puesto: 'Nazareno' });
     const r = await MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: rosario.id, hermanoId: e.titular.id, puesto: 'Vela', donativo: 5 });
-    assert.equal(r.salida, 'ROSARIO');
+    assert.equal(r.salida, ROSARIO);
     await assert.rejects(
       MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: rosario.id, hermanoId: e.titular.id, puesto: 'Vela' }),
       /Ya está apuntado al Rosario vespertino/,
@@ -254,8 +279,8 @@ test('el Rosario tiene su plazo y sus días; se pide con donativo, se paga en l�
 
     const estado = await MiProcesionService.getMiEstado(e.usuario.id);
     const titular = estado.fichas.find((f) => f.id === e.titular.id)!;
-    assert.equal(titular.porSalida.ROSARIO.solicitud?.pendiente, 5);
-    assert.equal(titular.porSalida.PASION.solicitud?.pendiente, 0, 'sin cuota de salida');
+    assert.equal(titular.porSalida[ROSARIO].solicitud?.pendiente, 5);
+    assert.equal(titular.porSalida[PASION].solicitud?.pendiente, 0, 'sin cuota de salida');
     assert.equal(estado.pagoEnLinea, true, 'fuera de producción, la pasarela simulada está encendida');
     assert.equal(await db.recibo.count({ where: { hermanoId: e.titular.id } }), 0, 'pedir no genera recibos');
 
@@ -290,45 +315,55 @@ test('los días de reparto y la fecha del Rosario salen en la Agenda pública', 
   const e = await escenario();
   const meta = { userId: e.admin.id };
   try {
-    // Un día fijo de octubre: el reparto del Rosario no puede pasar de octubre,
-    // y «dentro de 40 días» caía en noviembre según cuándo se pasara la prueba.
-    const dia = new Date(Date.UTC(2030, 9, 1));
-    const iso = (h: number) => new Date(Date.UTC(dia.getUTCFullYear(), dia.getUTCMonth(), dia.getUTCDate(), h)).toISOString();
-    const turno = await TurnosService.crearTurno({ fecha: iso(0).slice(0, 10), horaInicio: iso(16), horaFin: iso(19), capacidadEstimada: 60, salida: 'ROSARIO' }, meta);
+    // La fecha del Rosario la pone Secretaría: crea su acto en la Agenda, y
+    // cambiarla mueve el mismo acto. Sin octubre obligatorio: la decide la Junta.
+    const rosario = await SalidasService.fijarFecha(await salida(ROSARIO), { inicio: dentroDe(60, 17).toISOString(), lugar: 'Parroquia' }, meta);
+    e.eventos.push(rosario.eventoId);
+    const movido = await SalidasService.fijarFecha(await salida(ROSARIO), { inicio: dentroDe(61, 17).toISOString(), lugar: 'Parroquia' }, meta);
+    assert.equal(movido.eventoId, rosario.eventoId, 'cambiar la fecha mueve el mismo acto');
+    const enAgenda = await db.evento.findUniqueOrThrow({ where: { id: rosario.eventoId } });
+    assert.equal(enAgenda.type, 'PROCESION');
+    assert.equal(enAgenda.title, 'Rosario vespertino');
+    assert.equal((await salida(ROSARIO)).eventoId, rosario.eventoId, 'la salida queda enlazada a su acto');
+    // La de la Pascua se calcula sola.
+    await assert.rejects(SalidasService.fijarFecha(await salida(PASION), { inicio: dentroDe(10).toISOString() }, meta), /se calcula por la Pascua/);
+
+    // Un día de reparto antes de la salida, con su acto en la Agenda.
+    const dia = dentroDe(30);
+    const iso = (h: number) => new Date(dia.getTime() + (h - 12) * 60 * 60 * 1000).toISOString();
+    const turno = await TurnosService.crearTurno({ fecha: iso(12).slice(0, 10), horaInicio: iso(12), horaFin: iso(15), capacidadEstimada: 60, salida: ROSARIO }, await salida(ROSARIO), meta);
     e.turnos.push(turno.id);
     const acto = await db.evento.findUniqueOrThrow({ where: { id: turno.eventoId! } });
     assert.equal(acto.title, 'Reparto de papeletas del Rosario vespertino');
-    assert.equal(acto.startDate.toISOString(), iso(16));
+    assert.equal(acto.startDate.toISOString(), iso(12));
 
     await TurnosService.eliminarTurno(turno.id, meta);
     e.turnos.splice(e.turnos.indexOf(turno.id), 1);
     assert.equal(await db.evento.findUnique({ where: { id: acto.id } }), null, 'se va con su día');
 
-    await assert.rejects(SalidasService.fijarRosario({ inicio: '2026-11-07T18:30:00.000Z' }, meta), /siempre en octubre/);
-    const rosario = await SalidasService.fijarRosario({ inicio: '2026-10-17T17:30:00.000Z', lugar: 'Parroquia' }, meta);
-    e.eventos.push(rosario.eventoId);
-    const movido = await SalidasService.fijarRosario({ inicio: '2026-10-24T17:30:00.000Z', lugar: 'Parroquia' }, meta);
-    assert.equal(movido.eventoId, rosario.eventoId, 'cambiar la fecha mueve el mismo acto');
-    const enAgenda = await db.evento.findUniqueOrThrow({ where: { id: rosario.eventoId } });
-    assert.equal(enAgenda.type, 'PROCESION');
-    assert.equal(enAgenda.title, 'Rosario vespertino');
+    // Y después de la salida, no: la papeleta caería en una que ya pasó.
+    const tarde = dentroDe(62).toISOString();
+    await assert.rejects(
+      TurnosService.crearTurno({ fecha: tarde.slice(0, 10), horaInicio: tarde, horaFin: dentroDe(62, 15).toISOString(), capacidadEstimada: 60, salida: ROSARIO }, await salida(ROSARIO), meta),
+      /tiene que ser antes de la salida/,
+    );
   } finally {
     await e.recoger();
   }
 });
 
-test('Secretaría solo ve los días de reparto de este año, y los ya pasados no se borran', async (t) => {
+test('Secretaría solo ve los días de reparto de la salida que se prepara, y los ya pasados no se borran', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    const deEsteAnio = await e.turno(40 * 24, 'ROSARIO');
-    const pasado = await e.turno(-48, 'ROSARIO');
-    const antiguo = await e.turno(-2 * 366 * 24, 'ROSARIO');
+    const deEsteAnio = await e.turno(26);
+    const pasado = await e.turno(-48);
+    const antiguo = await e.turno(-2 * 366 * 24);
 
     await db.cita.create({ data: { turnoId: deEsteAnio.id, hermanoId: e.titular.id, estado: 'ATENDIDA' } });
     await db.cita.create({ data: { turnoId: deEsteAnio.id, hermanoId: e.sobrino.id, estado: 'CANCELADA' } });
 
-    const lista = await TurnosService.getTodosLosTurnos('ROSARIO');
+    const lista = await TurnosService.getTodosLosTurnos(await salida(PASION));
     const ids = lista.map((x) => x.id);
     assert.ok(ids.includes(deEsteAnio.id), 'el día que viene sale');
     assert.ok(!ids.includes(antiguo.id), 'el de hace dos años no sale');

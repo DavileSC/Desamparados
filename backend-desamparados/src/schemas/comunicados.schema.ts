@@ -4,7 +4,7 @@ import { type } from 'arktype';
 // servicio) y el segmento. Un cuerpo de boletín con fotos pasa del límite
 // general de JSON: por eso la ruta lleva su propio tope (ver app.ts).
 const segmento = type({
-    "conPapeleta?": "'PASION' | 'ROSARIO' | null",
+    "conPapeleta?": "number.integer > 0 | null",
     "conDeuda?": "boolean",
     "edad?": "'MAYORES' | 'MENORES' | null",
     "poblacion?": type("string <= 100").matching(/^[^<>]*$/).or("null"),

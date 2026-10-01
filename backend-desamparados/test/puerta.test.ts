@@ -5,13 +5,16 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { cuentasPorTramo, veredicto } from '../src/domain/puerta.js';
 
-const esperada = { year: 2027, salida: 'PASION' as const };
+// Los ids de dos salidas cualesquiera: la puerta solo compara.
+const PASION = 1;
+const ROSARIO = 2;
+const esperada = { year: 2027, salidaId: PASION };
 
 test('veredicto: entra, repetida, de otra salida o anulada', () => {
-  assert.equal(veredicto({ year: 2027, salida: 'PASION', entradaEl: null }, esperada), 'ENTRA');
-  assert.equal(veredicto({ year: 2027, salida: 'PASION', entradaEl: new Date() }, esperada), 'REPETIDA');
-  assert.equal(veredicto({ year: 2026, salida: 'PASION', entradaEl: null }, esperada), 'OTRA_SALIDA');
-  assert.equal(veredicto({ year: 2027, salida: 'ROSARIO', entradaEl: null }, esperada), 'OTRA_SALIDA');
+  assert.equal(veredicto({ year: 2027, salidaId: PASION, entradaEl: null }, esperada), 'ENTRA');
+  assert.equal(veredicto({ year: 2027, salidaId: PASION, entradaEl: new Date() }, esperada), 'REPETIDA');
+  assert.equal(veredicto({ year: 2026, salidaId: PASION, entradaEl: null }, esperada), 'OTRA_SALIDA');
+  assert.equal(veredicto({ year: 2027, salidaId: ROSARIO, entradaEl: null }, esperada), 'OTRA_SALIDA');
   // Anular borra la papeleta: el código sigue siendo bueno, pero ya no hay nada detrás.
   assert.equal(veredicto(null, esperada), 'ANULADA');
 });

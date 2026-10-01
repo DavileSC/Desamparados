@@ -24,6 +24,16 @@ export function reglaDe(s: SalidaConActo): ReglaFecha {
   return { fecha: 'MANUAL', acto: s.acto ? diaMadrid(s.acto.startDate) : null };
 }
 
+/**
+ * La salida de una petición: `?salida=<slug>` en las lecturas, `salida` en el
+ * cuerpo en las escrituras. Sin ella o si no existe, el 400 de `porSlug`.
+ */
+export function salidaDe(peticion: { query?: Record<string, unknown>; body?: unknown }): Promise<SalidaConActo> {
+  const delCuerpo = (peticion.body as { salida?: unknown } | undefined)?.salida;
+  const slug = peticion.query?.salida ?? delCuerpo;
+  return SalidasService.porSlug(typeof slug === 'string' ? slug : undefined);
+}
+
 export class SalidasService {
   /**
    * La salida de un `?salida=<slug>`. Sin ella no se sabe de qué salida se

@@ -154,14 +154,14 @@ describe('EmailService', () => {
 
     await EmailService.enviarConfirmacionRegistro('hermano@example.es', "Seán O'Brien <b>");
     await EmailService.enviarPapeleta('hermano@example.es', "Seán O'Brien", {
-      year: 2027, importe: '25,00 €', concepto: 'Papeleta', fechaSalida: 'Jueves Santo', horaSalida: '19:30h', accesoPuerta: 'Puerta principal',
+      year: 2027, salida: { nombre: 'Sábado de Pasión', cobro: 'CUOTA', conRopa: true, indicaciones: null }, importe: '25,00 €', concepto: 'Papeleta', fechaSalida: 'Jueves Santo', horaSalida: '19:30h', accesoPuerta: 'Puerta principal',
     });
 
     const [registro, papeleta] = general.enviados;
     assert.equal(registro.subject, 'Hemos recibido su solicitud de ingreso');
     assert.match(registro.html, /Seán O&#39;Brien &lt;b&gt;/);
     assert.doesNotMatch(registro.html, /O'Brien <b>/);
-    assert.equal(papeleta.subject, "Papeleta de sitio 2027: Seán O'Brien");
+    assert.equal(papeleta.subject, "Papeleta del Sábado de Pasión 2027: Seán O'Brien");
   });
 
   test('el escudo y la Virgen van dentro del correo; los avisos internos, solo con el escudo', async () => {

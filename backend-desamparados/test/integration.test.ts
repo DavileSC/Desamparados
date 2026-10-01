@@ -9,6 +9,7 @@ import { COOKIE_CMS, COOKIE_HERMANO, COOKIE_2FA } from '../src/utils/cookies.js'
 import { Role } from '@prisma/client';
 import { AdminService } from '../src/services/admin.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
+import { idDeSalida } from './fixtures/salidas.js';
 
 let server: Server;
 let baseUrl: string;
@@ -820,7 +821,7 @@ async function sembrarFamiliaPrueba(userId: number): Promise<number[]> {
       });
 
       await db.papeletaSitio.create({
-        data: { hermanoId: ficha.id, reciboId: recibo.id, year: 2024 + indice, puesto: 'Cirio' }
+        data: { hermanoId: ficha.id, reciboId: recibo.id, year: 2024 + indice, puesto: 'Cirio', salidaId: await idDeSalida() }
       });
 
       // La titular lleva además su cuota anual, sin papeleta.

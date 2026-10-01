@@ -18,7 +18,6 @@ import {
   cortejoAplicarSchema,
   yearParamSchema,
   salidaQuerySchema,
-  fechaRosarioSchema,
   mesaEsperadosSchema,
   mesaInscribirSchema,
   mesaCobrarSchema,
@@ -126,8 +125,6 @@ procesionRouter.delete('/admin/turnos/:id', checkRole([Role.ADMIN, Role.SECRETAR
 // El plazo de la solicitud en el área de hermanos: lo ve la Junta, lo cambia Secretaría.
 procesionRouter.get('/admin/plazo', checkRole(rolesJunta), validate(salidaQuerySchema), ProcesionController.getPlazo);
 procesionRouter.post('/admin/plazo', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(plazoPapeletasSchema), ProcesionController.cambiarPlazo);
-// La fecha del Rosario vespertino: la fija Secretaría y sale en la Agenda.
-procesionRouter.put('/admin/rosario', checkRole([Role.ADMIN, Role.SECRETARIA]), validate(fechaRosarioSchema), ProcesionController.fijarRosario);
 
 procesionRouter.get('/admin/cuadrante', checkRole(rolesJunta), ProcesionController.getCuadrante);
 procesionRouter.post('/admin/turnos/:id/apuntarme', checkRole(rolesJunta), validateId, ProcesionController.apuntarmeTurno);

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { Role, TipoRecibo } from '@prisma/client';
+import { Prisma, Role, TipoRecibo } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -15,6 +15,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { CortejoService } from '../src/services/procesion/cortejo.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { idDeSalida, PASION, salida } from './fixtures/salidas.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const YEAR = 2098;
@@ -38,7 +39,8 @@ after(async () => {
 async function escenario() {
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
   const usuario = await crearUsuarioPrueba(Role.USER);
-  const previa = await db.configuracion.findUnique({ where: { key: 'cortejo_PASION' } });
+  // El cortejo vive en la fila de la salida: se guarda y se devuelve al terminar.
+  const previa = (await salida(PASION)).cortejo;
   const hermanos: number[] = [];
 
   /** Un hermano con su papeleta de la Pasión de 2098. */
@@ -48,15 +50,14 @@ async function escenario() {
     });
     hermanos.push(h.id);
     const recibo = await db.recibo.create({ data: { hermanoId: h.id, year: YEAR, concepto: `Papeleta ${YEAR}`, importe: '0', tipo: TipoRecibo.PAPELETA_SITIO } });
-    return db.papeletaSitio.create({ data: { hermanoId: h.id, year: YEAR, salida: 'PASION', puesto, reciboId: recibo.id } });
+    return db.papeletaSitio.create({ data: { hermanoId: h.id, year: YEAR, salidaId: await idDeSalida(PASION), puesto, reciboId: recibo.id } });
   };
 
   const recoger = async () => {
     await db.papeletaSitio.deleteMany({ where: { hermanoId: { in: hermanos } } });
     await db.recibo.deleteMany({ where: { hermanoId: { in: hermanos } } });
     await db.hermano.deleteMany({ where: { id: { in: hermanos } } });
-    if (previa) await db.configuracion.update({ where: { key: previa.key }, data: { value: previa.value } });
-    else await db.configuracion.deleteMany({ where: { key: 'cortejo_PASION' } });
+    await db.salida.update({ where: { slug: PASION }, data: { cortejo: previa ?? Prisma.DbNull } });
     await db.auditLog.deleteMany({ where: { userId: staff.id } });
     await borrarUsuarioPrueba(usuario.id);
     await borrarUsuarioPrueba(staff.id);
@@ -68,7 +69,7 @@ test('repartir: los más nuevos delante, solo los puestos que se reparten, y la 
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const e = await escenario();
   try {
-    await CortejoService.guardarConfiguracion('PASION', {
+    await CortejoService.guardarConfiguracion(await salida(PASION), {
       tramos: [{ nombre: ' Cruz de guía ', plazas: 2 }, { nombre: 'Tramo del trono', plazas: 2 }],
       puestos: ['nazareno', 'Nazareno '],
     }, e.meta);
@@ -79,14 +80,14 @@ test('repartir: los más nuevos delante, solo los puestos que se reparten, y la 
     const medio2 = await e.conPapeleta('2010-01-01');
     const trono = await e.conPapeleta('1990-01-01', 'Trono');
 
-    const estado = await CortejoService.estado('PASION', YEAR);
+    const estado = await CortejoService.estado(await salida(PASION), YEAR);
     assert.deepEqual(estado.config, { tramos: [{ nombre: 'Cruz de guía', plazas: 2 }, { nombre: 'Tramo del trono', plazas: 2 }], puestos: ['nazareno'] });
     assert.equal(estado.papeletas, 5);
     assert.deepEqual(estado.reparto.tramos.map((x) => x.asignados), [2, 2]);
     assert.equal(estado.reparto.fuera, 1);
     assert.equal(estado.reparto.cambios, 4);
 
-    const r = await CortejoService.aplicar('PASION', YEAR, e.meta);
+    const r = await CortejoService.aplicar(await salida(PASION), YEAR, e.meta);
     assert.equal(r.cambiadas, 4);
     const lugar = async (id: number) => {
       const p = await db.papeletaSitio.findUniqueOrThrow({ where: { id } });
@@ -98,10 +99,10 @@ test('repartir: los más nuevos delante, solo los puestos que se reparten, y la 
     assert.deepEqual(await lugar(antiguo.id), ['Tramo del trono', 2]);
     assert.deepEqual(await lugar(trono.id), [null, null]);
 
-    const despues = await CortejoService.estado('PASION', YEAR);
+    const despues = await CortejoService.estado(await salida(PASION), YEAR);
     assert.equal(despues.reparto.cambios, 0);
     assert.deepEqual(despues.actual.map((g) => [g.tramo, g.hermanos.length]), [['Cruz de guía', 2], ['Tramo del trono', 2], [null, 1]]);
-    assert.equal((await CortejoService.aplicar('PASION', YEAR, e.meta)).cambiadas, 0);
+    assert.equal((await CortejoService.aplicar(await salida(PASION), YEAR, e.meta)).cambiadas, 0);
   } finally {
     await e.recoger();
   }
@@ -112,10 +113,10 @@ test('una configuración que no vale no se guarda, y sin papeletas que repartir 
   const e = await escenario();
   try {
     await assert.rejects(
-      CortejoService.guardarConfiguracion('PASION', { tramos: [{ nombre: 'Uno', plazas: 3 }, { nombre: 'UNO', plazas: 3 }], puestos: ['Nazareno'] }, e.meta),
+      CortejoService.guardarConfiguracion(await salida(PASION), { tramos: [{ nombre: 'Uno', plazas: 3 }, { nombre: 'UNO', plazas: 3 }], puestos: ['Nazareno'] }, e.meta),
       (err: unknown) => err instanceof HttpError && /mismo nombre/.test(err.message),
     );
-    await assert.rejects(CortejoService.aplicar('PASION', YEAR, e.meta), (err: unknown) => err instanceof HttpError && err.status === 409);
+    await assert.rejects(CortejoService.aplicar(await salida(PASION), YEAR, e.meta), (err: unknown) => err instanceof HttpError && err.status === 409);
   } finally {
     await e.recoger();
   }
@@ -128,11 +129,11 @@ test('el cortejo lo ve la Junta y solo lo cambian Secretaría y la administraci�
   const tesorero = await crearUsuarioPrueba(Role.TESORERIA);
   try {
     const como = (id: number, rol: Role) => ({ Cookie: `${COOKIE_CMS}=${generateToken(id, rol)}`, 'Content-Type': 'application/json' });
-    assert.equal((await fetch(`${baseUrl}/api/procesion/admin/cortejo?salida=PASION&year=${YEAR}`, { headers: como(tesorero.id, Role.TESORERIA) })).status, 200);
-    const cuerpo = JSON.stringify({ salida: 'PASION', year: YEAR });
+    assert.equal((await fetch(`${baseUrl}/api/procesion/admin/cortejo?salida=${PASION}&year=${YEAR}`, { headers: como(tesorero.id, Role.TESORERIA) })).status, 200);
+    const cuerpo = JSON.stringify({ salida: PASION, year: YEAR });
     assert.equal((await fetch(`${baseUrl}/api/procesion/admin/cortejo/aplicar`, { method: 'POST', headers: como(tesorero.id, Role.TESORERIA), body: cuerpo })).status, 403);
     const mal = await fetch(`${baseUrl}/api/procesion/admin/cortejo/configuracion`, {
-      method: 'PUT', headers: como(e.staff.id, Role.SECRETARIA), body: JSON.stringify({ salida: 'PASION', tramos: [{ nombre: 'Uno', plazas: 0 }], puestos: ['Nazareno'] }),
+      method: 'PUT', headers: como(e.staff.id, Role.SECRETARIA), body: JSON.stringify({ salida: PASION, tramos: [{ nombre: 'Uno', plazas: 0 }], puestos: ['Nazareno'] }),
     });
     assert.equal(mal.status, 400);
   } finally {

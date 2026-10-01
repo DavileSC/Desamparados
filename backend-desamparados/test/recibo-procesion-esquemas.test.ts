@@ -89,7 +89,7 @@ describe('D3 · emitir un recibo suelto', () => {
 });
 
 describe('D4 · la mesa por zonas', () => {
-  const inscripcion = { hermanoId: 3, salida: 'PASION', puesto: 'Cirio' };
+  const inscripcion = { hermanoId: 3, salida: 'sabado-de-pasion', puesto: 'Cirio' };
 
   test('inscribir no lleva importe: si alguien lo manda, se descarta y lo pone el servidor', () => {
     assert.ok(valido(validar(mesaInscribirSchema, { body: inscripcion })));
@@ -98,15 +98,18 @@ describe('D4 · la mesa por zonas', () => {
   });
 
   test('el donativo del Rosario, entre 0 y 1000 € y con dos decimales como mucho', () => {
-    assert.ok(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'ROSARIO', donativo: 0 } })));
-    assert.ok(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'ROSARIO', donativo: 12.5 } })));
+    assert.ok(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'rosario-vespertino', donativo: 0 } })));
+    assert.ok(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'rosario-vespertino', donativo: 12.5 } })));
     for (const malo of [-1, 5000, 1.234]) {
-      assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'ROSARIO', donativo: malo } })), false, String(malo));
+      assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'rosario-vespertino', donativo: malo } })), false, String(malo));
     }
   });
 
-  test('una salida que no existe, un puesto vacío o una clave que no lo es, son un 400', () => {
-    assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: 'CORPUS' } })), false);
+  // Si la salida existe lo dice el servicio (`SalidasService.porSlug`, también un 400): aquí, que llegue.
+  test('sin salida, un puesto vacío o una clave que no lo es, son un 400', () => {
+    assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, salida: '' } })), false);
+    const { salida: _salida, ...sinSalida } = inscripcion;
+    assert.equal(valido(validar(mesaInscribirSchema, { body: sinSalida })), false);
     assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, puesto: '  ' } })), false);
     assert.equal(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, clave: 'a b' } })), false);
     assert.ok(valido(validar(mesaInscribirSchema, { body: { ...inscripcion, clave: '0b8a2b9c-5d1e-4c7f-9a3b-2e6d8f1a4c7b' } })));

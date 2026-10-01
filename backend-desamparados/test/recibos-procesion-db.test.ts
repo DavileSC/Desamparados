@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { after, before, mock, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { EstadoCita, EstadoPago, MetodoPago, Role, TipoRecibo, TipoTransaccion } from '@prisma/client';
+import { EstadoCita, EstadoPago, MetodoPago, Prisma, Role, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -25,6 +25,10 @@ import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { PASION, salida } from './fixtures/salidas.js';
+import { reglaDe } from '../src/services/procesion/salidas.service.js';
+import { leerDatosEvento } from '../src/services/recibos/comunes.js';
+import { proximaFecha, sumarDias } from '../src/domain/fecha-salida.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
@@ -52,7 +56,27 @@ after(async () => {
 // El año de la salida que atiende la mesa, que no es el natural: pasada la
 // Semana Santa es el siguiente (ver `anioDeLaMesa`). Sin base, el natural: esas
 // pruebas se omiten igual.
-const YEAR = await anioDeLaMesa('PASION').catch(() => new Date().getFullYear());
+const YEAR = await salida(PASION).then(anioDeLaMesa).catch(() => new Date().getFullYear());
+
+/**
+ * Un día de reparto que vale para la Pasión: la víspera de su próxima salida.
+ * Las horas, a mediodía en UTC, caen en ese mismo día en Madrid todo el año.
+ */
+async function diaDeReparto() {
+  return sumarDias(proximaFecha(reglaDe(await salida(PASION)), diaMadrid(new Date()))!, -1);
+}
+
+/** Cambia la fila de la Pasión mientras dura `fn` y la deja como estaba. */
+async function conLaPasion(cambios: Prisma.SalidaUpdateInput, fn: () => Promise<void>) {
+  const previa = await db.salida.findUniqueOrThrow({ where: { slug: PASION } });
+  await db.salida.update({ where: { slug: PASION }, data: cambios });
+  try {
+    await fn();
+  } finally {
+    const { importeCuota, horaSalida, lugar, plazoAbierto, plazoCambiadoEl } = previa;
+    await db.salida.update({ where: { slug: PASION }, data: { importeCuota, horaSalida, lugar, plazoAbierto, plazoCambiadoEl } });
+  }
+}
 
 /**
  * Un escenario desechable: un administrador (el que firma la auditoría), un
@@ -65,9 +89,10 @@ async function escenario() {
   const hermanos: number[] = [];
   const turnos: number[] = [];
   const meta = { userId: admin.id };
-  // Estas pruebas cobran papeletas: la cuota de salida, a 30 € mientras duran.
-  const cuotaSalida = await db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } });
-  await db.configuracion.upsert({ where: { key: 'precio_papeleta_sitio' }, update: { value: '30' }, create: { key: 'precio_papeleta_sitio', value: '30' } });
+  // Estas pruebas cobran papeletas: la cuota de la Pasión, a 30 € mientras duran.
+  const pasion = await salida(PASION);
+  const cuotaSalida = pasion.importeCuota;
+  await db.salida.update({ where: { id: pasion.id }, data: { importeCuota: 30 } });
 
   const hermano = async (extra: { tieneTunicaPropia?: boolean; activo?: boolean } = {}) => {
     const h = await db.hermano.create({
@@ -86,7 +111,7 @@ async function escenario() {
 
   const turno = async (fecha: Date) => {
     const t = await db.turno.create({
-      data: { fecha, horaInicio: fecha, horaFin: new Date(fecha.getTime() + 3 * 60 * 60 * 1000), capacidadEstimada: 100 }
+      data: { fecha, horaInicio: fecha, horaFin: new Date(fecha.getTime() + 3 * 60 * 60 * 1000), capacidadEstimada: 100, salidaId: pasion.id }
     });
     turnos.push(t.id);
     return t;
@@ -103,20 +128,19 @@ async function escenario() {
     await db.hermano.deleteMany({ where: { id: { in: hermanos } } });
     await borrarUsuarioPrueba(usuario.id);
     await borrarUsuarioPrueba(admin.id);
-    if (cuotaSalida) await db.configuracion.update({ where: { key: cuotaSalida.key }, data: { value: cuotaSalida.value } });
-    else await db.configuracion.deleteMany({ where: { key: 'precio_papeleta_sitio' } });
+    await db.salida.update({ where: { id: pasion.id }, data: { importeCuota: cuotaSalida } });
   };
 
   /** El camino entero de la mesa: apuntar en Inscripción, cobrar en Tesorería y recoger en Túnicas. */
   const apuntarYCobrar = async (hermanoId: number, puesto = 'Cirio', metodoPago: 'EFECTIVO' | 'BIZUM' = MetodoPago.EFECTIVO) => {
-    const { solicitudId, requisitos } = await ZonasService.inscribir({ hermanoId, salida: 'PASION', puesto }, undefined, meta);
+    const { solicitudId, requisitos } = await ZonasService.inscribir({ hermanoId, salida: await salida(PASION), puesto }, undefined, meta);
     if (requisitos.salidaPendiente > 0) await ZonasService.cobrar({ hermanoId, reciboIds: [], solicitudes: [{ solicitudId }], metodoPago }, undefined, meta);
     const { papeletaId } = await ZonasService.entregar({ solicitudId, origenTunica: 'PROPIA' }, undefined, meta);
     const papeleta = await db.papeletaSitio.findUniqueOrThrow({ where: { id: papeletaId } });
     return { recibo: await db.recibo.findUniqueOrThrow({ where: { id: papeleta.reciboId } }), papeleta };
   };
 
-  return { admin, usuario, meta, hermano, turno, turnos, apuntarYCobrar, recoger };
+  return { admin, usuario, meta, pasion, hermano, turno, turnos, apuntarYCobrar, recoger };
 }
 
 async function auditoria(action: string, entityId: number | string) {
@@ -125,26 +149,6 @@ async function auditoria(action: string, entityId: number | string) {
 
 async function apuntes(reciboId: number) {
   return db.transaccion.findMany({ where: { reciboId }, orderBy: { id: 'asc' } });
-}
-
-/** Deja la configuración como estaba, exista o no la clave antes. */
-async function conConfiguracion(valores: Record<string, string>, fn: () => Promise<void>) {
-  const previas = await db.configuracion.findMany({ where: { key: { in: Object.keys(valores) } } });
-  try {
-    await fn();
-  } finally {
-    for (const key of Object.keys(valores)) {
-      const previa = previas.find((p) => p.key === key);
-      if (previa) await db.configuracion.update({ where: { key }, data: { value: previa.value } });
-      else await db.configuracion.deleteMany({ where: { key } });
-    }
-  }
-}
-
-async function fijarConfiguracion(valores: Record<string, string>) {
-  for (const [key, value] of Object.entries(valores)) {
-    await db.configuracion.upsert({ where: { key }, update: { value }, create: { key, value } });
-  }
 }
 
 // ============================================================================
@@ -162,8 +166,8 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     const { recibo, papeleta } = await e.apuntarYCobrar(hermano.id);
     assert.equal(papeleta.citaId, cita.id, 'la mesa enlaza la cita que tenía');
     assert.equal(recibo.estado, EstadoPago.PAGADO);
-    // Con un día de reparto por delante, la salida es la del año de ese día.
-    assert.equal(recibo.concepto, `Papeleta de sitio ${turno.fecha.getFullYear()}`);
+    // La papeleta es de la salida que se prepara, aunque el reparto sea en el año anterior.
+    assert.equal(recibo.concepto, `Papeleta de sitio ${YEAR}`);
 
     const respuesta = await PapeletasService.anularPapeleta(papeleta.id, e.meta);
     assert.equal(respuesta.estadoRecibo, EstadoPago.DEVUELTO);
@@ -190,7 +194,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
 
     // Reinscribir: antes daba 500 porque el recibo devuelto ocupaba el concepto.
     const segunda = await e.apuntarYCobrar(hermano.id, 'Vara', MetodoPago.BIZUM);
-    assert.equal(segunda.recibo.concepto, `Papeleta de sitio ${turno.fecha.getFullYear()} (reemisión 2)`);
+    assert.equal(segunda.recibo.concepto, `Papeleta de sitio ${YEAR} (reemisión 2)`);
     assert.equal(segunda.recibo.estado, EstadoPago.PAGADO);
   } finally {
     await e.recoger();
@@ -304,38 +308,28 @@ test('D3: por HTTP, Tesorería emite el recibo y busca al hermano sin ver sus da
 //  D4 · precios de la papeleta
 // ============================================================================
 
-test('D4: con la cuota de salida a 0 la papeleta nace exenta y sin asiento; «12,50» cobra 12,50; «-5» no inscribe', async (t) => {
+test('D4: con la cuota de salida a 0 la papeleta nace exenta y sin asiento; a 12,50 cobra 12,50', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    await conConfiguracion({ precio_papeleta_sitio: '' }, async () => {
-      const hermano = await e.hermano({ tieneTunicaPropia: false });
+    const hermano = await e.hermano({ tieneTunicaPropia: false });
 
-      await fijarConfiguracion({ precio_papeleta_sitio: '0' });
-      const gratis = await e.apuntarYCobrar(hermano.id);
-      assert.equal(gratis.recibo.estado, EstadoPago.EXENTO);
-      assert.equal(String(gratis.recibo.importe), '0');
-      assert.equal(gratis.recibo.metodoPago, null);
-      assert.deepEqual(await apuntes(gratis.recibo.id), [], 'el dinero que no existe no deja asientos');
+    await db.salida.update({ where: { id: e.pasion.id }, data: { importeCuota: 0 } });
+    const gratis = await e.apuntarYCobrar(hermano.id);
+    assert.equal(gratis.recibo.estado, EstadoPago.EXENTO);
+    assert.equal(String(gratis.recibo.importe), '0');
+    assert.equal(gratis.recibo.metodoPago, null);
+    assert.deepEqual(await apuntes(gratis.recibo.id), [], 'el dinero que no existe no deja asientos');
 
-      // Anular una papeleta exenta no mueve el recibo (EXENTO es final) ni inventa reversos.
-      const anulada = await PapeletasService.anularPapeleta(gratis.papeleta.id, e.meta);
-      assert.equal(anulada.estadoRecibo, EstadoPago.EXENTO);
-      assert.deepEqual(await apuntes(gratis.recibo.id), []);
+    // Anular una papeleta exenta no mueve el recibo (EXENTO es final) ni inventa reversos.
+    const anulada = await PapeletasService.anularPapeleta(gratis.papeleta.id, e.meta);
+    assert.equal(anulada.estadoRecibo, EstadoPago.EXENTO);
+    assert.deepEqual(await apuntes(gratis.recibo.id), []);
 
-      await fijarConfiguracion({ precio_papeleta_sitio: '12,50' });
-      const conComa = await e.apuntarYCobrar(hermano.id);
-      assert.equal(String(conComa.recibo.importe), '12.5', 'sin alquiler de túnica: solo la cuota de salida');
-      assert.equal(conComa.recibo.estado, EstadoPago.PAGADO);
-
-      await fijarConfiguracion({ precio_papeleta_sitio: '-5' });
-      const otro = await e.hermano();
-      await assert.rejects(
-        e.apuntarYCobrar(otro.id),
-        (err: unknown) => err instanceof HttpError && err.status === 409 && /no es un importe válido/.test(err.message)
-      );
-      assert.equal(await db.recibo.count({ where: { hermanoId: otro.id } }), 0, 'un precio ilegible no cobra nada');
-    });
+    await db.salida.update({ where: { id: e.pasion.id }, data: { importeCuota: 12.5 } });
+    const conComa = await e.apuntarYCobrar(hermano.id);
+    assert.equal(String(conComa.recibo.importe), '12.5', 'sin alquiler de túnica: solo la cuota de salida');
+    assert.equal(conComa.recibo.estado, EstadoPago.PAGADO);
   } finally {
     await e.recoger();
   }
@@ -399,14 +393,8 @@ test('D5/D19: un cambio de estado rechazado no deja auditoría ni toca el recibo
 test('D6: la papeleta de mesa y la de tesorería llevan la misma fecha, hora y puerta', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
-  // Se restauran clave a clave: reasignar process.env entero lo convierte en un
-  // objeto normal y en Windows pierde la insensibilidad a mayúsculas.
-  const entornoPrevio = { PROCESION_FECHA: process.env.PROCESION_FECHA, PROCESION_ACCESO: process.env.PROCESION_ACCESO };
   try {
-    process.env.PROCESION_FECHA = 'Sábado de Pasión (prueba)';
-    process.env.PROCESION_ACCESO = 'Puerta de prueba';
-    await conConfiguracion({ procesion_hora: '' }, async () => {
-      await fijarConfiguracion({ procesion_hora: '20:15h' });
+    await conLaPasion({ horaSalida: '20:15h', lugar: 'Puerta de prueba' }, async () => {
       papeletasEnviadas.mock.resetCalls();
 
       // Camino 1: la mesa, al dar la ropa.
@@ -418,10 +406,13 @@ test('D6: la papeleta de mesa y la de tesorería llevan la misma fecha, hora y p
       const recibo = await db.recibo.create({
         data: { hermanoId: enTesoreria.id, year: YEAR, concepto: `Papeleta de sitio ${YEAR}`, importe: 30, tipo: TipoRecibo.PAPELETA_SITIO }
       });
-      await db.papeletaSitio.create({ data: { hermanoId: enTesoreria.id, reciboId: recibo.id, year: YEAR, puesto: 'Cirio' } });
+      await db.papeletaSitio.create({ data: { hermanoId: enTesoreria.id, reciboId: recibo.id, year: YEAR, puesto: 'Cirio', salidaId: e.pasion.id } });
       await ReciboService.adminMarcarComoPagado(recibo.id, MetodoPago.EFECTIVO, e.meta);
 
-      const esperado = { fechaSalida: 'Sábado de Pasión (prueba)', horaSalida: '20:15h', accesoPuerta: 'Puerta de prueba' };
+      // El día, calculado por la Pascua: el mismo que da la fila.
+      const { fechaSalida } = leerDatosEvento(await salida(PASION));
+      assert.notEqual(fechaSalida, 'Por anunciar');
+      const esperado = { fechaSalida, horaSalida: '20:15h', accesoPuerta: 'Puerta de prueba' };
       const envios = papeletasEnviadas.mock.calls.map((c) => {
         const datos = c.arguments[2] as { fechaSalida: string; horaSalida: string; accesoPuerta: string };
         return { fechaSalida: datos.fechaSalida, horaSalida: datos.horaSalida, accesoPuerta: datos.accesoPuerta };
@@ -430,10 +421,6 @@ test('D6: la papeleta de mesa y la de tesorería llevan la misma fecha, hora y p
       assert.deepEqual(envios, [esperado, esperado]);
     });
   } finally {
-    for (const [clave, valor] of Object.entries(entornoPrevio)) {
-      if (valor === undefined) delete process.env[clave];
-      else process.env[clave] = valor;
-    }
     await e.recoger();
   }
 });
@@ -485,7 +472,7 @@ test('D16: los apuntados de un día no cuentan las citas canceladas', async (t) 
     await db.cita.create({ data: { hermanoId: a.id, turnoId: turno.id, estado: EstadoCita.RESERVADA } });
     await db.cita.create({ data: { hermanoId: b.id, turnoId: turno.id, estado: EstadoCita.CANCELADA } });
 
-    const dia = (await MiProcesionService.getDiasDisponibles()).find((d) => d.id === turno.id);
+    const dia = (await MiProcesionService.getDiasDisponibles(await salida(PASION))).find((d) => d.id === turno.id);
     assert.equal(dia?.genteApuntada, 1);
   } finally {
     await e.recoger();
@@ -501,8 +488,7 @@ test('D16: dos avisos a la vez para dos días no dejan al hermano con dos citas;
     const t2 = await e.turno(new Date(Date.now() + 2 * 60 * 60 * 1000));
 
     // Reservar exige el plazo abierto (plazo-papeletas.test.ts prueba el cerrado).
-    await conConfiguracion({ papeletas_abiertas: 'true' }, async () => {
-      await fijarConfiguracion({ papeletas_abiertas: 'true' });
+    await conLaPasion({ plazoAbierto: true }, async () => {
       const resultados = await Promise.allSettled([
         MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t1.id, hermanoId: hermano.id, puesto: 'Cirio' }),
         MiProcesionService.avisarAsistencia(e.usuario.id, { turnoId: t2.id, hermanoId: hermano.id, puesto: 'Cirio' }),
@@ -597,7 +583,8 @@ test('P5: sin fecha límite, el turno de hoy que aún no ha terminado no cuenta 
         fecha: inicioDiaMadrid(diaMadrid(new Date(ahora))),
         horaInicio: new Date(ahora + 60 * 60 * 1000),
         horaFin: new Date(ahora + 3 * 60 * 60 * 1000),
-        capacidadEstimada: 50
+        capacidadEstimada: 50,
+        salidaId: e.pasion.id,
       }
     });
     e.turnos.push(turno.id);
@@ -696,13 +683,15 @@ test('D19: crear y borrar un turno queda auditado con sus datos', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
-    // Un día fijo y lejano: con «mañana + 1 h» el fin podía cruzar la medianoche de Madrid.
+    // La víspera de la salida, a mediodía en UTC: con «mañana + 1 h» el fin podía cruzar la medianoche de Madrid.
+    const dia = await diaDeReparto();
     const turno = await TurnosService.crearTurno({
-      fecha: '2030-02-15',
-      horaInicio: '2030-02-15T18:00:00+01:00',
-      horaFin: '2030-02-15T21:00:00+01:00',
-      capacidadEstimada: 40
-    }, e.meta);
+      fecha: dia,
+      horaInicio: `${dia}T12:00:00Z`,
+      horaFin: `${dia}T15:00:00Z`,
+      capacidadEstimada: 40,
+      salida: PASION,
+    }, e.pasion, e.meta);
     e.turnos.push(turno.id);
 
     const alta = await auditoria(ACCIONES_AUDITORIA.TURNO_CREAR, turno.id);
@@ -722,7 +711,7 @@ test('Turnos: crear un turno con horas de otro día o al revés es un 400 con mo
   try {
     const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(e.admin.id, Role.ADMIN)}`, 'Content-Type': 'application/json' };
     const crear = (cuerpo: Record<string, unknown>) =>
-      fetch(`${baseUrl}/api/procesion/admin/turnos`, { method: 'POST', headers: cabeceras, body: JSON.stringify({ capacidadEstimada: 40, ...cuerpo }) });
+      fetch(`${baseUrl}/api/procesion/admin/turnos`, { method: 'POST', headers: cabeceras, body: JSON.stringify({ capacidadEstimada: 40, salida: PASION, ...cuerpo }) });
     // Contados solo los de ese día, para no depender de lo que hagan otras pruebas a la vez.
     const delDia = { fecha: { gte: new Date('2030-02-14T00:00:00Z'), lt: new Date('2030-02-17T00:00:00Z') } };
     const antes = await db.turno.count({ where: delDia });
@@ -732,10 +721,13 @@ test('Turnos: crear un turno con horas de otro día o al revés es un 400 con mo
     assert.equal(ficticia.status, 400);
     assert.match((await ficticia.json() as { error: string }).error, /hora de inicio tiene que ser del mismo día que el turno \(15\/02\/2030\)/);
 
-    // Un reparto de la Pasión después de su salida: la papeleta caería en la del año que ya pasó.
-    const tardio = await crear({ fecha: '2030-10-04', horaInicio: '2030-10-04T18:00:00+02:00', horaFin: '2030-10-04T21:00:00+02:00' });
+    // Un reparto de la Pasión después de su próxima salida: la papeleta caería en la que ya pasó.
+    const despues = sumarDias(await diaDeReparto(), 2);
+    const tardio = await crear({ fecha: despues, horaInicio: `${despues}T12:00:00Z`, horaFin: `${despues}T15:00:00Z` });
     assert.equal(tardio.status, 400);
-    assert.match((await tardio.json() as { error: string }).error, /para la de 2031/);
+    assert.match((await tardio.json() as { error: string }).error, /tiene que ser antes de la salida/);
+    const sinSalida = await crear({ fecha: '2030-02-15', horaInicio: '2030-02-15T18:00:00+01:00', horaFin: '2030-02-15T21:00:00+01:00', salida: 'no-existe' });
+    assert.equal(sinSalida.status, 400, 'una salida que no existe');
 
     const alDiaSiguiente = await crear({ fecha: '2030-02-15', horaInicio: '2030-02-15T22:00:00+01:00', horaFin: '2030-02-16T00:30:00+01:00' });
     assert.equal(alDiaSiguiente.status, 400);
@@ -755,27 +747,28 @@ test('Turnos: editar las horas de un turno sigue las mismas reglas que crearlo',
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
+    const dia = await diaDeReparto();
     const turno = await TurnosService.crearTurno({
-      fecha: '2030-02-15', horaInicio: '2030-02-15T18:00:00+01:00', horaFin: '2030-02-15T21:00:00+01:00', capacidadEstimada: 40
-    }, e.meta);
+      fecha: dia, horaInicio: `${dia}T12:00:00Z`, horaFin: `${dia}T15:00:00Z`, capacidadEstimada: 40, salida: PASION,
+    }, e.pasion, e.meta);
     e.turnos.push(turno.id);
 
     // Un fin anterior al inicio que ya tenía.
     await assert.rejects(
-      TurnosService.actualizarTurno(turno.id, { horaFin: new Date('2030-02-15T17:00:00+01:00') }, e.meta),
+      TurnosService.actualizarTurno(turno.id, { horaFin: new Date(`${dia}T11:00:00Z`) }, e.meta),
       (err: unknown) => err instanceof HttpError && err.status === 400 && /posterior a la hora de inicio/.test(err.message)
     );
     // Un inicio de otro día.
     await assert.rejects(
-      TurnosService.actualizarTurno(turno.id, { horaInicio: new Date('2030-02-14T18:00:00+01:00') }, e.meta),
+      TurnosService.actualizarTurno(turno.id, { horaInicio: new Date(`${sumarDias(dia, -1)}T12:00:00Z`) }, e.meta),
       (err: unknown) => err instanceof HttpError && err.status === 400 && /hora de inicio tiene que ser del mismo día/.test(err.message)
     );
     const intacto = await db.turno.findUniqueOrThrow({ where: { id: turno.id } });
-    assert.equal(intacto.horaFin.toISOString(), '2030-02-15T20:00:00.000Z');
+    assert.equal(intacto.horaFin.toISOString(), `${dia}T15:00:00.000Z`);
 
     // Y un cambio válido se guarda.
-    const ampliado = await TurnosService.actualizarTurno(turno.id, { horaFin: new Date('2030-02-15T22:00:00+01:00') }, e.meta);
-    assert.equal(ampliado.horaFin.toISOString(), '2030-02-15T21:00:00.000Z');
+    const ampliado = await TurnosService.actualizarTurno(turno.id, { horaFin: new Date(`${dia}T16:00:00Z`) }, e.meta);
+    assert.equal(ampliado.horaFin.toISOString(), `${dia}T16:00:00.000Z`);
   } finally {
     await e.recoger();
   }

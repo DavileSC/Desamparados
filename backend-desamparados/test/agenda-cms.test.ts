@@ -195,6 +195,7 @@ describe('calendario de la agenda en el CMS', () => {
         fecha: new Date(2091, 2, 15),
         horaInicio: new Date(2091, 2, 15, 18),
         horaFin: new Date(2091, 2, 15, 21),
+        salida: { connect: { slug: 'sabado-de-pasion' } },
         evento: { create: { title: `${marca} reparto`, startDate: new Date(2091, 2, 15, 18), endDate: new Date(2091, 2, 15, 21), type: 'OTRO' } },
       },
     });
