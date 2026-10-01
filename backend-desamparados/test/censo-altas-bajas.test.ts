@@ -19,7 +19,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { esCuentaAnonimizada } from '../src/domain/cuenta-anonimizada.js';
 import { diferenciasFicha, valorParaAuditoria } from '../src/domain/cambios-ficha.js';
-import { esClaveConfiguracion, normalizarValorConfiguracion } from '../src/domain/configuracion.js';
+import { esClaveConfiguracion } from '../src/domain/configuracion.js';
 import { diaDeHoy } from '../src/domain/fechas-hermano.js';
 import { diaMadrid } from '../src/domain/contabilidad.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
@@ -37,7 +37,6 @@ const creados = { usuarios: [] as number[], hermanos: [] as number[] };
 let secretaria: { id: number };
 let admin: { id: number };
 // Valor de la configuración que toca una prueba, para dejarlo como estaba.
-let precioOriginal: { value: string; descripcion: string | null } | null | undefined;
 
 // Un sufijo por ejecución: los apellidos de prueba no chocan con los de otra.
 const RONDA = Date.now().toString(36);
@@ -74,11 +73,6 @@ after(async () => {
   await db.recibo.deleteMany({ where: { hermanoId: { in: creados.hermanos } } });
   await db.hermano.deleteMany({ where: { id: { in: creados.hermanos } } });
   for (const id of creados.usuarios) await borrarUsuarioPrueba(id);
-  if (precioOriginal === null) {
-    await db.configuracion.deleteMany({ where: { key: 'precio_papeleta_sitio' } });
-  } else if (precioOriginal) {
-    await db.configuracion.update({ where: { key: 'precio_papeleta_sitio' }, data: { value: precioOriginal.value } });
-  }
   await db.$disconnect();
 });
 
@@ -639,43 +633,23 @@ describe('la ficha del censo trae la cuenta entera', () => {
 
 // =====================================================================
 describe('configuración y consultas de administración (P4 y S10)', () => {
-  test('cada clave valida su valor', () => {
-    assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', '12,5'), { ok: true, valor: '12.5' });
-    assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', ' 030,50 '), { ok: true, valor: '30.50' });
-    assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', '0'), { ok: true, valor: '0' });
-    // El alquiler de túnica ya no existe: no es un ajuste.
-    assert.equal(esClaveConfiguracion('precio_alquiler_tunica'), false);
-    // El mismo formato que lee procesion.service.ts: hasta ocho cifras enteras.
-    assert.deepEqual(normalizarValorConfiguracion('precio_papeleta_sitio', '12345678,99'), { ok: true, valor: '12345678.99' });
-    for (const malo of ['12,555', '-1', '30€', 'treinta', '', '1e3', '12.', '123456789']) {
-      assert.equal(normalizarValorConfiguracion('precio_papeleta_sitio', malo).ok, false, `«${malo}» debería rechazarse`);
-    }
-    // Los datos de la salida van al correo de la papeleta: texto corto y sin etiquetas.
-    assert.deepEqual(normalizarValorConfiguracion('procesion_hora', ' 19:30 '), { ok: true, valor: '19:30' });
-    assert.deepEqual(normalizarValorConfiguracion('procesion_acceso', 'Puerta lateral, calle Victoria'), { ok: true, valor: 'Puerta lateral, calle Victoria' });
-    for (const malo of ['', '   ', '<b>Jueves</b>', 'x'.repeat(121), 'línea\notra']) {
-      assert.equal(normalizarValorConfiguracion('procesion_fecha', malo).ok, false, `«${malo}» debería rechazarse`);
+  test('la cuota y los datos de la salida ya no son ajustes: viven en cada salida', () => {
+    for (const clave of ['precio_papeleta_sitio', 'procesion_fecha', 'procesion_hora', 'procesion_acceso', 'precio_alquiler_tunica']) {
+      assert.equal(esClaveConfiguracion(clave), false, clave);
     }
   });
 
-  test('la ruta rechaza el número de noticias de la portada, que ya no es un ajuste, y un precio con tres decimales', async (t) => {
+  test('la ruta rechaza las claves que nadie lee en vez de guardarlas en silencio', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     // Son tres fijas (NOTICIAS_EN_PORTADA): guardar otro número no cambiaría nada en la web.
     const limite = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key: 'home_news_limit', value: '5' } });
     assert.equal(limite.status, 400);
-    const precio = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key: 'precio_papeleta_sitio', value: '12,555' } });
-    assert.equal(precio.status, 400);
-  });
-
-  test('un precio con coma se guarda con punto', async (t) => {
-    if (!dbDisponible) return t.skip(SIN_DB);
-    const actual = await db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } });
-    precioOriginal = actual ? { value: actual.value, descripcion: actual.descripcion } : null;
-
-    const res = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key: 'precio_papeleta_sitio', value: '15,50' } });
-    assert.equal(res.status, 200);
-    const guardado = await db.configuracion.findUnique({ where: { key: 'precio_papeleta_sitio' } });
-    assert.equal(guardado!.value, '15.50');
+    // La cuota se cobra de `Salida.importeCuota`: guardarla aquí sería un «guardado» que no cobra.
+    for (const key of ['precio_papeleta_sitio', 'procesion_fecha', 'procesion_hora', 'procesion_acceso']) {
+      const res = await como(admin, Role.ADMIN, '/api/admin/config', { method: 'POST', json: { key, value: '15,50' } });
+      assert.equal(res.status, 400, key);
+    }
+    assert.equal(await db.configuracion.count({ where: { key: 'precio_papeleta_sitio' } }), 0, 'no se guarda nada');
   });
 
   test('un parámetro repetido en el buscador de usuarios es un 400, no un 500', async (t) => {

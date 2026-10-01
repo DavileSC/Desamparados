@@ -1,57 +1,14 @@
 import { diaMadrid, esDiaValido, inicioDiaMadrid } from './contabilidad.js';
 
 /**
- * Reglas de la papeleta de sitio que no necesitan base de datos: cómo se lee
- * un precio de la configuración, cómo se comparan los conceptos de los
- * recibos y la forma de los datos del evento que se imprimen en la papeleta
- * (el concepto y el importe de cada salida están en `salidas.ts`). Viven aquí para poder
- * probarlas en cualquier máquina: son las que, cuando se equivocan, cobran de
- * más o mandan a los hermanos a una hora que no es.
+ * Reglas de la papeleta de sitio que no necesitan base de datos: cómo se
+ * comparan los conceptos de los recibos, la forma de los datos del evento que
+ * se imprimen en la papeleta y las fechas de mantenimiento (el concepto y el
+ * importe de cada salida están en `salidas.ts`; la cuota es un `Decimal` de la
+ * fila de la salida, que ya no se lee de un texto de la configuración). Viven
+ * aquí para poder probarlas en cualquier máquina: son las que, cuando se
+ * equivocan, cobran de más o mandan a los hermanos a una hora que no es.
  */
-
-// ---------------------------------------------------------------------------
-//  Precios
-// ---------------------------------------------------------------------------
-
-// Hasta ocho cifras enteras y dos decimales, con punto o con coma: es lo que
-// cabe en `Decimal(10, 2)` y lo que escribe cualquiera en España («12,50»).
-// Sin signo a propósito: un «-5» no es un precio, es un error de tecleo que
-// antes acababa en un ingreso negativo en contabilidad.
-const IMPORTE = /^\d{1,8}(?:[.,]\d{1,2})?$/;
-
-/**
- * Convierte un importe escrito a mano en número, o `null` si no es un
- * importe válido. «0» es válido: una papeleta gratuita es una decisión de la
- * Junta, no un olvido.
- */
-export function parsearImporte(texto: string): number | null {
-  const limpio = texto.trim();
-  if (!IMPORTE.test(limpio)) return null;
-  const valor = Number(limpio.replace(',', '.'));
-  return Number.isFinite(valor) && valor >= 0 ? valor : null;
-}
-
-export type LecturaPrecio =
-  | { ok: true; valor: number; configurado: boolean }
-  | { ok: false; crudo: string };
-
-/**
- * Lee un precio de la tabla `Configuracion`.
- *
- * El valor por defecto se usa SOLO si la clave no está configurada (no existe
- * o está en blanco). Antes se hacía `Number(valor) || 30`, que convertía en
- * 30 € tanto un «0» como un «12,50» —`Number('12,50')` es `NaN`—: la mesa
- * cobraba un precio que nadie había puesto. Un valor configurado que no se
- * entiende no se sustituye en silencio: se devuelve como error para que la
- * inscripción se detenga y alguien lo corrija.
- */
-export function leerPrecio(crudo: string | null | undefined, porDefecto: number): LecturaPrecio {
-  if (crudo === null || crudo === undefined || crudo.trim() === '') {
-    return { ok: true, valor: porDefecto, configurado: false };
-  }
-  const valor = parsearImporte(crudo);
-  return valor === null ? { ok: false, crudo } : { ok: true, valor, configurado: true };
-}
 
 // ---------------------------------------------------------------------------
 //  Concepto del recibo

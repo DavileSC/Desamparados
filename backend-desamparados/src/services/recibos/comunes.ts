@@ -96,8 +96,11 @@ const EN_SECRETARIA = 'Consultar en secretaría';
  * la fila; las de fecha a mano lo sacan todo del acto de la Agenda que fija
  * Secretaría (ver `SalidasService.fijarFecha`). Lo que falte se dice tal cual:
  * una hora inventada se imprime y ya no se puede corregir.
+ *
+ * `anio`, el de la papeleta que se imprime: reimprimir una de 2026 en 2027
+ * tiene que decir el día de 2026. Sin él, el año que se prepara.
  */
-export function leerDatosEvento(salida: SalidaConActo): DatosEvento {
+export function leerDatosEvento(salida: SalidaConActo, anio?: number): DatosEvento {
   if (salida.fecha === 'MANUAL') {
     const { acto } = salida;
     if (!acto) return { fechaSalida: POR_ANUNCIAR, horaSalida: POR_ANUNCIAR, accesoPuerta: EN_SECRETARIA };
@@ -108,7 +111,7 @@ export function leerDatosEvento(salida: SalidaConActo): DatosEvento {
     };
   }
   const regla = reglaDe(salida);
-  const dia = fechaDeSalida(regla, anioDeLaSalida(regla, diaMadrid(new Date())));
+  const dia = fechaDeSalida(regla, anio ?? anioDeLaSalida(regla, diaMadrid(new Date())));
   return {
     // A mediodía UTC, el día es el mismo en Madrid en cualquier época del año.
     fechaSalida: dia ? formatoDiaLargo.format(new Date(`${dia}T12:00:00Z`)) : POR_ANUNCIAR,

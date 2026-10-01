@@ -1,6 +1,6 @@
 import { type } from 'arktype';
 import { paginacionQuery } from '../config/common';
-import { CLAVES_CONFIGURACION, normalizarValorConfiguracion, type ClaveConfiguracion } from '../domain/configuracion';
+import { esClaveConfiguracion, normalizarValorConfiguracion, type ClaveConfiguracion } from '../domain/configuracion';
 
 // Excluimos 'USER' porque ese es el rol base.
 const staffRoleSchema = type("'ADMIN' | 'TESORERIA' | 'ALBACERIA' | 'HERMANO_MAYOR' | 'REDES' | 'SECRETARIA'");
@@ -20,13 +20,15 @@ export const demoteUserSchema = type({
 
 // Para actualizar valores de la tabla de Configuración. Las claves salen de la
 // misma lista que usa el servicio: antes estaban escritas dos veces y podían
-// separarse sin que nada avisara.
-const allowedConfigKeys = type.enumerated(...CLAVES_CONFIGURACION);
+// separarse sin que nada avisara. Con `narrow` y no con `type.enumerated`: con
+// la lista vacía (hoy no hay ninguna), arktype solo diría «never».
+const allowedConfigKeys = type("string")
+    .narrow((clave) => esClaveConfiguracion(clave))
+    .describe("un parámetro de configuración que exista");
 
 /**
- * El valor se valida según la clave (un precio no se valida igual que un
- * límite de noticias) y sale ya normalizado: «12,50» llega al servicio como
- * «12.50». La regla vive en src/domain/configuracion.ts.
+ * El valor se valida según la clave y sale ya normalizado. La regla vive en
+ * src/domain/configuracion.ts.
  *
  * Va con `narrow` + `pipe` sobre el cuerpo entero y no como una unión por clave:
  * arktype 2.1 revienta al describir el error de una unión cuyas ramas llevan

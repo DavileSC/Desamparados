@@ -364,7 +364,7 @@ export class ReciboService {
         // Van impresos en la papeleta que recibe cada hermano: un valor
         // equivocado se envía y ya no se puede corregir. Misma fuente que la
         // inscripción en mesa.
-        ...leerDatosEvento(papeleta.salida)
+        ...leerDatosEvento(papeleta.salida, papeleta.year)
       };
 
       console.log(`📨 [Cola] Enviando papeleta recibo #${recibo.id} a ${enmascararEmail(recibo.hermano.user.email)}`);

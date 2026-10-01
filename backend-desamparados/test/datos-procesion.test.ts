@@ -1,4 +1,4 @@
-// Reglas de la papeleta de sitio sin base de datos: precios, concepto de la
+// Reglas de la papeleta de sitio sin base de datos: concepto de la
 // reemisión, datos del evento y fechas de mantenimiento. Son las que, cuando
 // fallan, cobran de más o citan a los hermanos a una hora que no es.
 
@@ -9,44 +9,10 @@ import {
   claveConcepto,
   instanteLimiteAusencias,
   motivoTurnoInvalido,
-  leerPrecio,
-  parsearImporte,
 } from '../src/domain/datos-procesion.js';
 import { conceptoDeSalida } from '../src/domain/salidas.js';
 
 const conceptoPapeleta = (year: number, existentes: string[]) => conceptoDeSalida({ nombre: 'Sábado de Pasión', cobro: 'CUOTA' }, year, existentes);
-
-describe('D4 · precios de la configuración', () => {
-  test('acepta la coma decimal que escribe cualquiera en España', () => {
-    assert.equal(parsearImporte('12,50'), 12.5);
-    assert.equal(parsearImporte('12.50'), 12.5);
-    assert.equal(parsearImporte(' 30 '), 30);
-  });
-
-  test('«0» es un precio, no un hueco que rellenar con 30', () => {
-    // Antes: Number('0') || 30 === 30.
-    assert.deepEqual(leerPrecio('0', 30), { ok: true, valor: 0, configurado: true });
-  });
-
-  test('«12,50» cobra 12,50 y no 30', () => {
-    // Antes: Number('12,50') es NaN y NaN || 30 === 30.
-    assert.deepEqual(leerPrecio('12,50', 30), { ok: true, valor: 12.5, configurado: true });
-  });
-
-  test('un negativo o un texto no se cobran: se devuelven como error', () => {
-    // Antes: «-5» creaba un ingreso negativo en contabilidad.
-    for (const malo of ['-5', 'treinta', '1e3', '12,505', '12.5.0', 'Infinity', 'NaN', '0x10']) {
-      assert.equal(leerPrecio(malo, 30).ok, false, `«${malo}» no debería aceptarse`);
-    }
-  });
-
-  test('el valor por defecto solo cuenta si la clave no está configurada', () => {
-    assert.deepEqual(leerPrecio(undefined, 15), { ok: true, valor: 15, configurado: false });
-    assert.deepEqual(leerPrecio(null, 30), { ok: true, valor: 30, configurado: false });
-    assert.deepEqual(leerPrecio('   ', 30), { ok: true, valor: 30, configurado: false });
-  });
-
-});
 
 describe('D2 · concepto del recibo al reinscribir', () => {
   test('la primera papeleta del año lleva el concepto de siempre', () => {

@@ -107,14 +107,13 @@ export class AdminService {
   }
 
   // 6. ACTUALIZAR UN VALOR DE CONFIGURACIÓN
-  // Lista blanca de claves conocidas (src/domain/configuracion.ts): evita que se
-  // cuelen parámetros arbitrarios (una clave 'precio_papeleta_sitio' mal escrita
-  // haría que el backend cobrara el precio de reserva sin que nadie lo notara).
-  // El valor se vuelve a validar aquí aunque la ruta ya lo haga: el servicio no
-  // sabe quién le llama, y un precio inválido guardado es un cobro equivocado.
+  // Lista blanca de claves conocidas (src/domain/configuracion.ts): una clave
+  // que nadie lee se guardaría y parecería surtir efecto sin surtirlo. El valor
+  // se vuelve a validar aquí aunque la ruta ya lo haga: el servicio no sabe
+  // quién le llama.
   static async updateConfiguracion(key: string, value: string, meta?: MetaDeAuditoria) {
     if (!esClaveConfiguracion(key)) {
-      throw new HttpError(`'${key}' no es un parámetro de configuración válido. Claves permitidas: ${CLAVES_CONFIGURACION.join(', ')}.`);
+      throw new HttpError(`'${key}' no es un parámetro de configuración válido.${CLAVES_CONFIGURACION.length ? ` Claves permitidas: ${CLAVES_CONFIGURACION.join(', ')}.` : ''}`);
     }
     const normalizado = normalizarValorConfiguracion(key, value);
     if (!normalizado.ok) throw new HttpError(normalizado.error);

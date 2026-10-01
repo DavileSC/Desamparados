@@ -74,7 +74,7 @@ export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta |
     faraona: p.numFaraonaAsignada,
     importe: importe > 0 && p.recibo.estado === 'PAGADO' ? euros(importe) : '',
     observaciones: p.observaciones,
-    ...leerDatosEvento(p.salida),
+    ...leerDatosEvento(p.salida, p.year),
     expedida: p.createdAt,
     codigo: codigoDePapeleta(p.id),
   };

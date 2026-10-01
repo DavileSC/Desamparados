@@ -533,7 +533,7 @@ export class ZonasService {
       tramo: p.tramo || '',
       tunica: p.numTunicaAsignada,
       observaciones: p.observaciones || '',
-      ...leerDatosEvento(p.salida),
+      ...leerDatosEvento(p.salida, p.year),
     }, p.hermano.sexo ?? undefined, pdf).catch(console.error);
   }
 

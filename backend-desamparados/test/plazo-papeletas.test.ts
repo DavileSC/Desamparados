@@ -57,7 +57,7 @@ after(async () => {
   mock.restoreAll();
   if (dbDisponible) {
     for (const { id, plazoAbierto, plazoCambiadoEl, importeCuota, eventoId } of previas) {
-      await db.salida.update({ where: { id }, data: { plazoAbierto, plazoCambiadoEl, importeCuota, eventoId } });
+      await db.salida.update({ where: { id }, data: { plazoAbierto, plazoCambiadoEl, importeCuota, eventoId: await siSigue(eventoId) } });
     }
   }
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
@@ -65,6 +65,10 @@ after(async () => {
 });
 
 const fijarPlazo = (abierto: boolean, slug: string = PASION) => db.salida.update({ where: { slug }, data: { plazoAbierto: abierto } });
+
+/** El acto que tenía enlazado una salida, si sigue existiendo: enlazar uno borrado rompería la clave ajena. */
+const siSigue = async (eventoId: number | null) =>
+  eventoId !== null && await db.evento.findUnique({ where: { id: eventoId }, select: { id: true } }) ? eventoId : null;
 
 /** Un instante dentro de `dias` días, a la hora UTC dada (a mediodía, el mismo día en Madrid). */
 const dentroDe = (dias: number, hora = 12) => new Date(`${sumarDias(diaMadrid(new Date()), dias)}T${String(hora).padStart(2, '0')}:00:00.000Z`);
@@ -314,6 +318,10 @@ test('los días de reparto y la fecha del Rosario salen en la Agenda pública', 
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   const meta = { userId: e.admin.id };
+  // El acto real del Rosario, si lo tiene, ni se mueve ni se borra: la prueba
+  // desengancha la salida, crea y borra el suyo, y al final lo vuelve a enlazar.
+  const actoPrevio = (await salida(ROSARIO)).eventoId;
+  await db.salida.update({ where: { slug: ROSARIO }, data: { eventoId: null } });
   try {
     // La fecha del Rosario la pone Secretaría: crea su acto en la Agenda, y
     // cambiarla mueve el mismo acto. Sin octubre obligatorio: la decide la Junta.
@@ -349,6 +357,7 @@ test('los días de reparto y la fecha del Rosario salen en la Agenda pública', 
     );
   } finally {
     await e.recoger();
+    await db.salida.update({ where: { slug: ROSARIO }, data: { eventoId: await siSigue(actoPrevio) } });
   }
 });
 
