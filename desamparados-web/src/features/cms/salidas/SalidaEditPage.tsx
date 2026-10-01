@@ -16,6 +16,7 @@ import { CLAVE_SALIDAS, editarSalida, fijarFechaDeSalida, type DatosSalida, type
 import CabeceraSeccion from '../CabeceraSeccion'
 import { fechaConDia } from './formato'
 import { site } from '../../../config/site'
+import { ARTICULOS, deArticulo, type Articulo } from '../../../domain/articulos'
 
 const mensaje = (e: unknown, porDefecto: string) => (e instanceof Error ? e.message : porDefecto)
 
@@ -50,6 +51,7 @@ interface SeccionProps {
 function SeccionDatos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
   const [nombre, setNombre] = useState(salida.nombre)
   const [slug, setSlug] = useState(salida.slug)
+  const [articulo, setArticulo] = useState<Articulo>(salida.articulo)
   const [orden, setOrden] = useState(String(salida.orden))
   const [activa, setActiva] = useState(salida.activa)
   const [confirmandoBaja, setConfirmandoBaja] = useState(false)
@@ -62,7 +64,7 @@ function SeccionDatos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
     setGuardando(true)
     setError(null)
     try {
-      await editarSalida(salida.id, { nombre: nombre.trim(), slug: slug.trim(), orden: Number(orden), activa })
+      await editarSalida(salida.id, { nombre: nombre.trim(), slug: slug.trim(), articulo, orden: Number(orden), activa })
       onGuardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se ha podido guardar.'))
@@ -76,6 +78,20 @@ function SeccionDatos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
       {error && <Alert severity="error">{error}</Alert>}
       <TextField label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} disabled={!puedeGuardar} fullWidth />
       <TextField label="Nombre corto (en la dirección)" value={slug} onChange={(e) => setSlug(e.target.value)} disabled={!puedeGuardar} fullWidth />
+      <TextField
+        select
+        label="Artículo"
+        value={articulo}
+        onChange={(e) => setArticulo(e.target.value as Articulo)}
+        disabled={!puedeGuardar}
+        helperText='Para escribir "del Sábado de Pasión" o "de la Procesión Magna".'
+        sx={{ maxWidth: 160 }}
+      >
+        {ARTICULOS.map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+      </TextField>
+      <Typography variant="body2" color="text.secondary">
+        {`Papeleta ${deArticulo(articulo, nombre.trim() || salida.nombre)}`}
+      </Typography>
       <TextField
         label="Orden"
         type="number"

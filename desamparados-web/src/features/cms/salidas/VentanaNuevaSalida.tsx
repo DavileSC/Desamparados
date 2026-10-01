@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { FormControlLabel, Radio, RadioGroup, Stack, TextField, Typography } from '@mui/material'
+import { FormControlLabel, MenuItem, Radio, RadioGroup, Stack, TextField, Typography } from '@mui/material'
 import VentanaFormulario from '../VentanaFormulario'
 import { crearSalida, type Salida } from '../../../lib/api/salidas'
 import { slugDe } from './slug'
+import { ARTICULOS, type Articulo } from '../../../domain/articulos'
 
 interface Props {
   abierta: boolean
@@ -17,13 +18,15 @@ interface Form {
   slug: string
   /** Deja de proponerse sola en cuanto se toca a mano. */
   slugTocado: boolean
+  articulo: Articulo
   fecha: 'PASCUA' | 'MANUAL'
   diasDesdePascua: string
   cobro: 'CUOTA' | 'DONATIVO'
   primerPuesto: string
 }
 
-const VACIO: Form = { nombre: '', slug: '', slugTocado: false, fecha: 'PASCUA', diasDesdePascua: '', cobro: 'CUOTA', primerPuesto: '' }
+// 'el': la gran mayoría de las salidas lo son («el Sábado de Pasión», «el Rosario vespertino»).
+const VACIO: Form = { nombre: '', slug: '', slugTocado: false, articulo: 'el', fecha: 'PASCUA', diasDesdePascua: '', cobro: 'CUOTA', primerPuesto: '' }
 
 /**
  * Alta de una salida: solo lo imprescindible para crearla (nombre, slug,
@@ -57,6 +60,7 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
       const salida = await crearSalida({
         nombre: form.nombre.trim(),
         slug: slugDe(form.slug),
+        articulo: form.articulo,
         // Detrás de la última. Contarlas repetía orden: las sembradas van 1 y 2,
         // y la tercera recibía un 2.
         orden: salidas.reduce((mayor, s) => Math.max(mayor, s.orden), 0) + 1,
@@ -101,6 +105,16 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
         helperText="Minúsculas y guiones: así se identifica la salida en las direcciones."
         fullWidth
       />
+      <TextField
+        select
+        label="Artículo"
+        value={form.articulo}
+        onChange={(e) => setForm((f) => ({ ...f, articulo: e.target.value as Articulo }))}
+        helperText='Para escribir "del Sábado de Pasión" o "de la Procesión Magna".'
+        sx={{ maxWidth: 160 }}
+      >
+        {ARTICULOS.map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+      </TextField>
       <Stack spacing={0.5}>
         <Typography variant="subtitle2">Fecha</Typography>
         <RadioGroup row value={form.fecha} onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value as Form['fecha'] }))}>

@@ -8,6 +8,7 @@ import { HelmetProvider } from 'react-helmet-async'
 import { crearTemaCms } from '../../../theme/cms'
 import { useAuthStore } from '../../altas/auth/store'
 import SalidasAdminPage from '../salidas/SalidasAdminPage'
+import SalidaEditPage from '../salidas/SalidaEditPage'
 import { crearSalida, salidasDelCms, type Salida } from '../../../lib/api/salidas'
 
 // `useSalidas` (tarea 4) llama a estas funciones: se simula el módulo entero y
@@ -18,13 +19,13 @@ vi.mock('../../../lib/api/salidas', async (importOriginal) => {
 })
 
 const pasion: Salida = {
-  id: 1, slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', orden: 1, activa: true, conRopa: true,
+  id: 1, slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', articulo: 'el', orden: 1, activa: true, conRopa: true,
   cobro: 'CUOTA', importeCuota: 0, fecha: 'PASCUA', diasDesdePascua: -8, horaSalida: '19:00', lugar: 'Templo parroquial',
   eventoId: null, plazoAbierto: true, puestos: [{ nombre: 'Nazareno', tunica: true, tocado: 'CAPIROTE', alturaHombro: false }],
   cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: '2026-03-28', acto: null,
 }
 const rosario: Salida = {
-  id: 2, slug: 'rosario-vespertino', nombre: 'Rosario vespertino', orden: 2, activa: false, conRopa: false,
+  id: 2, slug: 'rosario-vespertino', nombre: 'Rosario vespertino', articulo: 'el', orden: 2, activa: false, conRopa: false,
   cobro: 'DONATIVO', importeCuota: 0, fecha: 'MANUAL', diasDesdePascua: null, horaSalida: null, lugar: null,
   eventoId: null, plazoAbierto: false, puestos: [], cortejo: null, indicaciones: null, anio: 2026, fechaDelAnio: null, acto: null,
 }
@@ -37,6 +38,21 @@ function montar(ruta = '/cms/procesion/salidas') {
       { path: '/cms/procesion/salidas/:id/editar', element: <div>Editando</div> },
     ],
     { initialEntries: [ruta] },
+  )
+  render(
+    <HelmetProvider><QueryClientProvider client={cliente}><ThemeProvider theme={crearTemaCms('claro')}>
+      <RouterProvider router={router} />
+    </ThemeProvider></QueryClientProvider></HelmetProvider>,
+  )
+  return router
+}
+
+/** La ficha de edición, con su ruta real: la ventana no tiene suficiente para enseñar la vista previa. */
+function montarFicha(id: number) {
+  const cliente = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+  const router = createMemoryRouter(
+    [{ path: '/cms/procesion/salidas/:id/editar', element: <SalidaEditPage /> }],
+    { initialEntries: [`/cms/procesion/salidas/${id}/editar`] },
   )
   render(
     <HelmetProvider><QueryClientProvider client={cliente}><ThemeProvider theme={crearTemaCms('claro')}>
@@ -87,9 +103,22 @@ describe('SalidasAdminPage', () => {
     const datos = vi.mocked(crearSalida).mock.calls[0][0]
     expect(datos.fecha).toBe('PASCUA')
     expect(datos.diasDesdePascua).toBe(-3)
+    // «el» por defecto: la gran mayoría de las salidas lo son.
+    expect(datos.articulo).toBe('el')
     // Detrás de la última: con las sembradas (1 y 2), el 3; contarlas daría 2, repetido.
     expect(datos.orden).toBe(3)
     expect(datos.puestos).toEqual([{ nombre: 'Acompañante', tunica: false, tocado: null, alturaHombro: false }])
     expect(router.state.location.pathname).toBe('/cms/procesion/salidas/42/editar')
+  })
+})
+
+describe('SalidaEditPage', () => {
+  it('la sección Datos enseña la vista previa de la papeleta con el artículo de la salida', async () => {
+    const magna: Salida = { ...pasion, id: 3, slug: 'procesion-magna', nombre: 'Procesión Magna', articulo: 'la' }
+    vi.mocked(salidasDelCms).mockResolvedValue([pasion, rosario, magna])
+
+    montarFicha(3)
+
+    expect(await screen.findByText('Papeleta de la Procesión Magna')).toBeInTheDocument()
   })
 })

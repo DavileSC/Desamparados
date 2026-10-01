@@ -1,4 +1,5 @@
 import { llamarApi } from './cliente'
+import type { Articulo } from '../../domain/articulos'
 
 /** Un puesto que sugiere la mesa, con la ropa que suele llevar. */
 export interface PuestoDelCatalogo {
@@ -13,6 +14,8 @@ export interface Salida {
   id: number
   slug: string
   nombre: string
+  /** Con qué se escribe «del Sábado de Pasión» o «de la Procesión Magna» (domain/articulos.ts). */
+  articulo: Articulo
   orden: number
   activa: boolean
   conRopa: boolean
