@@ -3,6 +3,7 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import HowToVoteOutlinedIcon from '@mui/icons-material/HowToVoteOutlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
+import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumberOutlined'
 import VolunteerActivismOutlinedIcon from '@mui/icons-material/VolunteerActivismOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
@@ -104,6 +105,8 @@ export const itemsMenu: ItemMenu[] = [
   { label: 'Apadrinamientos', href: '/cms/apadrinamientos', roles: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: VolunteerActivismOutlinedIcon },
   { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
   { label: 'Tienda', href: '/cms/tienda', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: StorefrontOutlinedIcon },
+  // Los talonarios se reparten y se devuelven en Secretaría; el dinero lo lleva Tesorería.
+  { label: 'Lotería', href: '/cms/loteria', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: ConfirmationNumberOutlinedIcon },
   { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
   { label: 'Datos e informes', href: '/cms/datos', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Junta', icono: InsightsOutlinedIcon },
   { label: 'Informe anual', href: '/cms/informe-anual', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon },
@@ -134,6 +137,8 @@ export const rolesPorRutaCms = {
   'procesion/directo': ['ADMIN', 'SECRETARIA', 'ALBACERIA', 'HERMANO_MAYOR'],
   // La tienda: la guarda de /api/tienda/admin.
   tienda: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'],
+  // La lotería: la guarda de /api/loteria.
+  loteria: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'],
   // Los cabildos y el libro de actas: la guarda de /api/cabildos.
   cabildos: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   // El boletín y los avisos por correo: la guarda de /api/comunicados.

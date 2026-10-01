@@ -31,6 +31,8 @@ export const TRANSACCION_ERRORS = {
   // Los de recibos se corrigen desde el recibo: tocarlos aquí descuadraría la
   // contabilidad con el estado del recibo (cobrado, devuelto…).
   DE_RECIBO: 'Este apunte viene de un recibo y se corrige desde el recibo, en Tesorería.',
+  // Igual con la lotería: el talonario daría por liquidado lo que ya no está apuntado.
+  DE_LOTERIA: 'Este apunte viene de la lotería y se corrige desde Lotería (la compra o la liquidación del talonario).',
   CATEGORIA_NO_EXISTE: 'La categoría no existe.',
   FECHAS_AL_REVES: 'La fecha «hasta» no puede ser anterior a la fecha «desde».',
 } as const;
@@ -246,9 +248,11 @@ export class TransaccionService {
 
   /** Un apunte manual (sin recibo), o el motivo por el que no se puede tocar. */
   private static async apunteManual(id: number) {
-    const apunte = await db.transaccion.findUnique({ where: { id } });
-    if (!apunte) throw new NotFoundError(TRANSACCION_ERRORS.NO_EXISTE);
+    const encontrado = await db.transaccion.findUnique({ where: { id }, include: { talonarioLoteria: { select: { id: true } }, compraDeLoteria: { select: { id: true } } } });
+    if (!encontrado) throw new NotFoundError(TRANSACCION_ERRORS.NO_EXISTE);
+    const { talonarioLoteria, compraDeLoteria, ...apunte } = encontrado;
     if (apunte.reciboId !== null) throw new HttpError(TRANSACCION_ERRORS.DE_RECIBO, 409);
+    if (talonarioLoteria || compraDeLoteria) throw new HttpError(TRANSACCION_ERRORS.DE_LOTERIA, 409);
     return apunte;
   }
 
@@ -307,6 +311,9 @@ export class TransaccionService {
         include: {
           categoria: { select: { nombre: true } }, // Traemos el nombre para que el Frontend lo pinte
           hermano: { select: { nombre: true, apellidos: true } },
+          // De qué sorteo viene, si viene de la lotería: el libro enlaza allí en vez de dejarlo corregir.
+          talonarioLoteria: { select: { sorteoId: true } },
+          compraDeLoteria: { select: { id: true } },
         },
       }),
       db.transaccion.count({ where }),

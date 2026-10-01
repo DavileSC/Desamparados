@@ -26,6 +26,9 @@ export interface Transaction {
   categoriaId?: number
   /** Con recibo, el apunte se corrige desde el recibo; sin él, es manual y se corrige aquí. */
   reciboId?: number | null
+  /** Igual con la lotería: la liquidación de un talonario o la compra de los décimos de ese sorteo. */
+  talonarioLoteria?: { sorteoId: number } | null
+  compraDeLoteria?: { id: number } | null
   categoria: { nombre: string }
   hermano: { nombre: string; apellidos: string } | null
 }

@@ -402,6 +402,10 @@ model Transaccion {
   reciboId  Int?
   recibo    Recibo?  @relation(fields: [reciboId], references: [id])
 
+  /// Si es la liquidación de un talonario de lotería, o la compra de sus décimos.
+  talonarioLoteria TalonarioLoteria?
+  compraDeLoteria  SorteoLoteria?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -1282,4 +1286,56 @@ model CortejoEnDirecto {
   autorId       Int?
   autorNombre   String?  @db.VarChar(120)
   actualizadoEl DateTime @default(now())
+}
+
+/// Un sorteo de lotería en que juega el Grupo: compra décimos de uno o varios
+/// números y los reparte en participaciones, que se venden en talonarios.
+model SorteoLoteria {
+  id                  Int                @id @default(autoincrement())
+  /// «Lotería de Navidad 2026».
+  nombre              String             @db.VarChar(120)
+  fecha               DateTime           @db.Date
+  /// Los números que juega y, tras el sorteo, lo que gana un décimo de cada
+  /// uno: [{ "numero": "04512", "premio": null }]. Ver domain/loteria.ts.
+  numeros             Json
+  precioDecimo        Decimal            @db.Decimal(10, 2)
+  /// Décimos comprados de cada número.
+  decimos             Int
+  /// Lo que paga quien compra una participación…
+  precioParticipacion Decimal            @db.Decimal(10, 2)
+  /// …y lo que juega de eso, repartido entre los números. La diferencia es donativo.
+  jugado              Decimal            @db.Decimal(10, 2)
+  porTalonario        Int
+  /// El texto legal de la participación. Vacío: el de domain/loteria.ts.
+  leyenda             String             @default("") @db.Text
+  /// El gasto de la compra de los décimos, si ya se apuntó.
+  compraId            Int?               @unique
+  compra              Transaccion?       @relation(fields: [compraId], references: [id], onDelete: SetNull)
+  talonarios          TalonarioLoteria[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([fecha])
+}
+
+/// Un talonario de participaciones: a quién se le dio para venderlo y, al
+/// devolverlo, cuántas vendió. Su numeración sale del número de talonario.
+model TalonarioLoteria {
+  id            Int           @id @default(autoincrement())
+  sorteoId      Int
+  sorteo        SorteoLoteria @relation(fields: [sorteoId], references: [id], onDelete: Cascade)
+  numero        Int
+  /// Quien lo vende: un hermano, un bar del barrio… Null: en Secretaría, sin dar.
+  responsable   String?       @db.VarChar(120)
+  telefono      String?       @db.VarChar(30)
+  entregadoEl   DateTime?
+  /// Al liquidarlo: las vendidas (las demás se devuelven) y cómo se pagó.
+  vendidas      Int?
+  metodoPago    MetodoPago?
+  liquidadoEl   DateTime?
+  /// El ingreso de la liquidación en la contabilidad.
+  transaccionId Int?          @unique
+  transaccion   Transaccion?  @relation(fields: [transaccionId], references: [id], onDelete: SetNull)
+
+  @@unique([sorteoId, numero])
 }

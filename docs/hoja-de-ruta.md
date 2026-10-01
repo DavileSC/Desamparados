@@ -112,7 +112,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 |---|---|---|---|
 | ✅ | — | **Contabilidad por partida doble (plan de entidades sin fines lucrativos)** | Hecha: Contabilidad → «Partida doble». Cada categoría tiene su cuenta del plan (propuesta por el nombre, se cambia en «Plan de cuentas»); los asientos salen de los apuntes del libro de caja (570 Caja si es en efectivo, 572 Bancos si no), así que lo que apunten la lotería o la caja de la tienda entra solo. Cuenta de resultados, sumas y saldos, libro diario y Excel del ejercicio. Migración `cuenta_de_categoria` |
 | ⬜ | B | Modelo 182 y certificados de donación | **Antes, confirmar** que el Grupo tiene NIF propio y no depende del del Obispado |
-| 🔨 | A | Lotería y talonarios | |
+| ✅ | A | Lotería y talonarios | Hecha: Cuentas → «Lotería». El sorteo (uno o varios números, décimos y su precio, lo que cuesta y lo que juega la participación; el resto, donativo) no deja emitir más participaciones de las que juegan los décimos. Talonarios numerados, a quién se dieron (de uno en uno o por tramos), liquidación con lo vendido y cómo se pagó, y deshacerla. La compra de los décimos (gasto, «Compra de lotería» → 600) y cada liquidación (ingreso, «Lotería y rifas» → 722) se apuntan solas y no se tocan a mano en Contabilidad. Premios tras el sorteo (lo que cobra cada participación) y PDF de las participaciones con su matriz, cinco por hoja. Migración `loteria` |
 | 🟡 | A | Caja de tienda (TPV) | La mesa de procesión ya cobra por zonas |
 
 ## Fase 6 · Patrimonio y recaudación

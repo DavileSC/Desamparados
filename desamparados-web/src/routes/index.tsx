@@ -57,6 +57,7 @@ const CabildosAdminPage = lazy(() => import('../features/cms/CabildosAdminPage')
 const CabildoPage = lazy(() => import('../features/cms/CabildoPage'))
 const PartidaDoblePage = lazy(() => import('../features/cms/PartidaDoblePage'))
 const TiendaAdminPage = lazy(() => import('../features/cms/TiendaAdminPage'))
+const LoteriaAdminPage = lazy(() => import('../features/cms/loteria/LoteriaAdminPage'))
 const ApadrinamientosAdminPage = lazy(() => import('../features/cms/ApadrinamientosAdminPage'))
 const CampanaApadrinamientoPage = lazy(() => import('../features/cms/CampanaApadrinamientoPage'))
 const PublicacionEditPage = lazy(() => import('../features/cms/PublicacionEditPage'))
@@ -264,6 +265,7 @@ const router = createBrowserRouter([
           { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
           { path: 'contabilidad/partida-doble', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(PartidaDoblePage)}</ExigeRol> },
           { path: 'tienda', element: <ExigeRol roles={rolesPorRutaCms.tienda}>{withSuspense(TiendaAdminPage)}</ExigeRol> },
+          { path: 'loteria', element: <ExigeRol roles={rolesPorRutaCms.loteria}>{withSuspense(LoteriaAdminPage)}</ExigeRol> },
           { path: 'apadrinamientos', element: <ExigeRol roles={rolesPorRutaCms.apadrinamientos}>{withSuspense(ApadrinamientosAdminPage)}</ExigeRol> },
           { path: 'apadrinamientos/:id', element: <ExigeRol roles={rolesPorRutaCms.apadrinamientos}>{withSuspense(CampanaApadrinamientoPage)}</ExigeRol> },
           { path: 'datos', element: <ExigeRol roles={rolesPorRutaCms.datos}>{withSuspense(DatosInformesPage)}</ExigeRol> },

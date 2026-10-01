@@ -119,11 +119,11 @@ const CLAVE_GRUPOS = 'cms-menu-grupos'
 
 /**
  * Hasta este número de secciones el menú va abierto entero: plegar solo estorba.
- * Secretaría, con el boletín, los cabildos, la tienda, el cortejo en directo y
- * las cartas, llega a once contando el Inicio; Administración y el Hermano
- * Mayor pasan de dieciocho, que es para quien está pensado plegar.
+ * Secretaría, con el boletín, los cabildos, la tienda, el cortejo en directo,
+ * las cartas y la lotería, llega a doce contando el Inicio; Administración y
+ * el Hermano Mayor pasan de dieciocho, que es para quien está pensado plegar.
  */
-const SECCIONES_SIN_PLEGAR = 11
+const SECCIONES_SIN_PLEGAR = 12
 
 function leerGrupos(): Partial<Record<Grupo, boolean>> {
   try {
