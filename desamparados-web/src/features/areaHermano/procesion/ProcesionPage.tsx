@@ -20,7 +20,7 @@ import AvisoSuave from '../../../components/AvisoSuave'
 import { site } from '../../../config/site'
 import TarjetaPapeleta from './TarjetaPapeleta'
 import { useSalidas } from '../../procesion/useSalidas'
-import { conArticulo, deArticulo, laCorporacion, type Articulo } from '../../../domain/articulos'
+import { conArticulo, deArticulo, laCorporacion, segunLaCorporacion, type Articulo } from '../../../domain/articulos'
 
 /** El artículo de una salida del catálogo público por su slug: `SalidaDelHermano` no lo trae, así que se busca en `useSalidas()`. */
 const articuloDe = (catalogo: { slug: string; articulo: Articulo }[], slug: string): Articulo => catalogo.find((s) => s.slug === slug)?.articulo ?? 'el'
@@ -360,7 +360,7 @@ function Apuntadas({ fichas, salida, onHecho, onError }: { fichas: FichaEnLaProc
               <span>
                 <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{f.nombre} {f.apellidos}</Typography>
                 <Typography component="span" sx={{ display: 'block', fontSize: 14, color: 'text.secondary' }}>
-                  {papeleta ? sitio(papeleta) : `Pediste: ${solicitud!.puesto} (lo confirma ${laCorporacion({ corto: true })} en la mesa)`}
+                  {papeleta ? sitio(papeleta) : `Pediste: ${solicitud!.puesto} (lo ${segunLaCorporacion('confirma', 'confirman')} ${laCorporacion({ corto: true })} en la mesa)`}
                   {!papeleta && cita ? ` · ${dia(cita.turno)}, ${horas(cita.turno)}` : ''}
                 </Typography>
               </span>

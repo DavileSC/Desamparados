@@ -4,5 +4,6 @@
   "de":   [["el", "Grupo Parroquial", "del Grupo Parroquial"], ["la", "Hermandad", "de la Hermandad"], ["los", "Santos Oficios", "de los Santos Oficios"], ["las", "Cofradías Fusionadas", "de las Cofradías Fusionadas"]],
   "a":    [["el", "Grupo Parroquial", "al Grupo Parroquial"], ["la", "Hermandad", "a la Hermandad"], ["los", "Santos Oficios", "a los Santos Oficios"], ["las", "Cofradías Fusionadas", "a las Cofradías Fusionadas"]],
   "nuestro": [["el", "nuestro"], ["la", "nuestra"], ["los", "nuestros"], ["las", "nuestras"]],
+  "segunNumero": [["el", "cuenta", "cuentan", "cuenta"], ["la", "cuenta", "cuentan", "cuenta"], ["los", "cuenta", "cuentan", "cuentan"], ["las", "cuenta", "cuentan", "cuentan"]],
   "mayuscula": [["del Grupo", "Del Grupo"], ["él", "Él"], ["", ""]]
 }

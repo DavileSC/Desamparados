@@ -33,6 +33,7 @@ import FondoDeSolicitud from './FondoDeSolicitud'
 
 import { CAMPOS_API, VALORES_INICIALES, pasosDe, type Campo } from './pasos'
 import { deLaCorporacion, laCorporacion } from '../../../domain/articulos'
+import { site } from '../../../config/site'
 
 // Mismo umbral que el navbar (`DESKTOP_NAV_MIN`): por debajo la barra va en
 // flujo y mide 56 px en móvil y 64 en tableta; desde ahí es fija de 72 px y se
@@ -228,7 +229,7 @@ export default function HazteHermanoPage() {
     <>
       <MetaDePagina
         titulo="Hazte hermano"
-        descripcion={`Solicita tu alta como hermano ${deLaCorporacion()} de Nuestra Señora de los Desamparados. Rellena la solicitud y formaliza el alta en Secretaría.`}
+        descripcion={`Solicita tu alta como hermano ${deLaCorporacion()} de ${site.titular}. Rellena la solicitud y formaliza el alta en Secretaría.`}
       />
 
       <Box
@@ -268,7 +269,7 @@ export default function HazteHermanoPage() {
                 Hazte hermano
               </Typography>
               <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 17, lineHeight: 1.7, color: 'text.secondary', maxWidth: '44ch' }}>
-                Ser hermano es acompañar a Nuestra Señora de los Desamparados todo el año: en los
+                Ser hermano es acompañar a {site.titular} todo el año: en los
                 cultos, en la estación de penitencia del Sábado de Pasión y en la labor de caridad y
                 formación {deLaCorporacion()}. La solicitud se rellena aquí y se formaliza después en
                 Secretaría.
@@ -689,7 +690,7 @@ export default function HazteHermanoPage() {
                             Atrás
                           </Boton>
                         ) : (
-                          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Da el primer paso para seguir tu camino con Nuestra Señora de los Desamparados.</Typography>
+                          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{`Da el primer paso para seguir tu camino con ${site.titular}.`}</Typography>
                         )}
                         {/* En el primer paso se avanza eligiendo: un «Continuar» ahí
                             solo serviría para pasar sin haber elegido nada. */}

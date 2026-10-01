@@ -41,8 +41,12 @@ const CORPORACION_INTERPOLADA_JSX = /\b(?:el|del|al|El|Del|Al)\s+\{\s*(?:site|id
 // variable: se apunta en `EXCEPCIONES`, con fichero y motivo, igual que
 // cualquier otro hallazgo justificado (comprobado al ejecutar la prueba: hoy
 // no hay ninguno, ver el informe de esta ronda).
-const SALIDA_EN_CODIGO = /\b(?:del|al|en el)\s+(?:\$\{|\{)\s*[\w$]+(?:\??\.[\w$]+)*\??\.nombre\b[^}]*\}/;
-const SALIDA_EN_PLANTILLA = /\b(?:del|al|en el)\s+\{\{\s*salida\s*\}\}/;
+//
+// `el`/`El` también, y no solo «en el» (que queda dentro): la revisión final
+// recordó que la Tarea 4 había dejado un «El ${s.nombre}» fijo al empezar
+// frase, que con «del» y «al» solos no se veía.
+const SALIDA_EN_CODIGO = /\b(?:del|al|el|El)\s+(?:\$\{|\{)\s*[\w$]+(?:\??\.[\w$]+)*\??\.nombre\b[^}]*\}/;
+const SALIDA_EN_PLANTILLA = /\b(?:del|al|el|El)\s+\{\{\s*salida\s*\}\}/;
 
 /** Lo que sí puede llevarlo escrito, con su porqué. Fichero relativo a la raíz y un trozo de la línea. */
 const EXCEPCIONES: { fichero: string; contiene: string; motivo: string }[] = [

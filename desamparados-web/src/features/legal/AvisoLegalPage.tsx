@@ -2,13 +2,13 @@ import { Link, Typography } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
 import DatosDeIdentificacion from './DatosDeIdentificacion'
 import { site } from '../../config/site'
-import { deLaCorporacion, laCorporacion, mayuscula } from '../../domain/articulos'
+import { deLaCorporacion, laCorporacion, mayuscula, segunLaCorporacion } from '../../domain/articulos'
 
 export default function AvisoLegalPage() {
   return (
     <MarcoPaginaLegal
       title="Aviso Legal"
-      descripcion={`Datos identificativos ${deLaCorporacion()} de Nuestra Señora de los Desamparados de Málaga y condiciones de uso de esta web, conforme a la LSSI-CE.`}
+      descripcion={`Datos identificativos ${deLaCorporacion()} de ${site.titular} de ${site.entidad.localidad} y condiciones de uso de esta web, conforme a la LSSI-CE.`}
     >
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. Datos identificativos
@@ -23,7 +23,7 @@ export default function AvisoLegalPage() {
 
       {site.documentos.estatutos && (
         <Typography component="p" sx={{ mb: 2 }}>
-          {mayuscula(laCorporacion())} se rige por las{' '}
+          {mayuscula(laCorporacion())} {segunLaCorporacion('se rige', 'se rigen')} por las{' '}
           <Link href={site.documentos.estatutos} target="_blank" rel="noopener noreferrer" sx={{ color: 'secondary.main' }}>
             normas diocesanas de los Grupos Parroquiales
           </Link>

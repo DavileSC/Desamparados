@@ -14,6 +14,12 @@ export const conArticulo = (art: Articulo, nombre: string) => `${art} ${nombre}`
 export const deArticulo = (art: Articulo, nombre: string) => (art === 'el' ? `del ${nombre}` : `de ${art} ${nombre}`)
 export const aArticulo = (art: Articulo, nombre: string) => (art === 'el' ? `al ${nombre}` : `a ${art} ${nombre}`)
 export const nuestro = (art: Articulo) => ({ el: 'nuestro', la: 'nuestra', los: 'nuestros', las: 'nuestras' })[art]
+/**
+ * El verbo (o la frase) que concuerda con un sujeto que lleva este artículo:
+ * «el Grupo cuenta», pero «las Cofradías Fusionadas cuentan». El artículo ya
+ * dice el número, así que no hace falta guardar nada más.
+ */
+export const segunNumero = (art: Articulo, singular: string, plural: string) => (art === 'los' || art === 'las' ? plural : singular)
 export const mayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1)
 
 interface OpcionesCorporacion {
@@ -38,3 +44,6 @@ export const nuestraCorporacion = (o?: OpcionesCorporacion) => {
   const [art, nombre] = partes(o)
   return `${nuestro(art)} ${nombre}`
 }
+
+/** `segunNumero` con el artículo de la corporación: para las frases en que ella es el sujeto. */
+export const segunLaCorporacion = (singular: string, plural: string, o?: OpcionesCorporacion) => segunNumero(partes(o)[0], singular, plural)

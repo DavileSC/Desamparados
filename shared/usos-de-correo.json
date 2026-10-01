@@ -658,7 +658,7 @@
       "porDefecto": {
         "asunto": "Tu certificado de donativos de {{ejercicio}}",
         "titulo": "Tu certificado de donativos",
-        "cuerpo": "Hola, {{nombre}}:\n\nTe mandamos el certificado de tus donativos de {{ejercicio}} ({{importe}}). Va también en la declaración que {{la_corporacion_corto}} presenta a Hacienda (el Modelo 182), así que te saldrá en el borrador de la renta; guárdalo por si te lo piden.\n\nGracias por tu generosidad.",
+        "cuerpo": "Hola, {{nombre}}:\n\nTe mandamos el certificado de tus donativos de {{ejercicio}} ({{importe}}). Va también en la declaración que presentamos a Hacienda (el Modelo 182), así que te saldrá en el borrador de la renta; guárdalo por si te lo piden.\n\nGracias por tu generosidad.",
         "despedida": ""
       }
     },
@@ -685,7 +685,7 @@
       "porDefecto": {
         "asunto": "Nuestro pésame por {{difunto}}",
         "titulo": "Nuestro más sentido pésame",
-        "cuerpo": "Estimada familia:\n\nEn estos momentos de dolor, les acompaña {{la_corporacion}} por el fallecimiento de **{{difunto}}**, {{hermano}} de esta corporación. Lo encomendamos a {{titular}} y ofreceremos sufragios por su eterno descanso.\n\nLes haremos saber la fecha de la misa en su memoria. Para cualquier cosa que necesiten, estamos a su disposición en Secretaría.",
+        "cuerpo": "Estimada familia:\n\nEn estos momentos de dolor, les acompañamos desde {{la_corporacion}} por el fallecimiento de **{{difunto}}**, {{hermano}} de esta corporación. Lo encomendamos a {{titular}} y ofreceremos sufragios por su eterno descanso.\n\nLes haremos saber la fecha de la misa en su memoria. Para cualquier cosa que necesiten, estamos a su disposición en Secretaría.",
         "despedida": "Descanse en paz."
       }
     },
@@ -728,7 +728,7 @@
       "porDefecto": {
         "asunto": "{{que}} por {{difunto}}",
         "titulo": "{{que}} por {{difunto}}",
-        "cuerpo": "Estimada familia:\n\nLes comunicamos que {{la_corporacion}} ofrecerá una **{{que_minusculas}}** por el eterno descanso de **{{difunto}}**.\n\n[[cuando]]\n\nSerá un honor contar con su presencia.",
+        "cuerpo": "Estimada familia:\n\nLes comunicamos que desde {{la_corporacion}} ofreceremos una **{{que_minusculas}}** por el eterno descanso de **{{difunto}}**.\n\n[[cuando]]\n\nSerá un honor contar con su presencia.",
         "despedida": "Que {{titular}} le guarde y bendiga."
       }
     },

@@ -1,14 +1,14 @@
 import { Typography } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
 import DatosDeIdentificacion from './DatosDeIdentificacion'
-import { emailDerechos } from '../../config/site'
-import { deLaCorporacion, laCorporacion } from '../../domain/articulos'
+import { emailDerechos, site } from '../../config/site'
+import { deLaCorporacion, laCorporacion, segunLaCorporacion } from '../../domain/articulos'
 
 export default function PoliticaDePrivacidadPage() {
   return (
     <MarcoPaginaLegal
       title="Política de Privacidad"
-      descripcion={`Qué datos personales trata ${laCorporacion()} Nuestra Señora de los Desamparados, con qué finalidad y cómo ejercer los derechos de acceso, rectificación y supresión.`}
+      descripcion={`Qué datos personales ${segunLaCorporacion('trata', 'tratan')} ${laCorporacion()} de ${site.titular}, con qué finalidad y cómo ejercer los derechos de acceso, rectificación y supresión.`}
     >
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
         1. Responsable del tratamiento

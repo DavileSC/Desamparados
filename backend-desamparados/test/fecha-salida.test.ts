@@ -71,6 +71,12 @@ describe('los días de reparto, antes de su salida', () => {
     assert.equal(motivoRepartoFueraDeTemporada('2026-10-16', r, '2026-10-01', 'Rosario vespertino', 'el'), null);
     assert.match(motivoRepartoFueraDeTemporada('2026-10-18', r, '2026-10-01', 'Rosario vespertino', 'el') ?? '', /17 de octubre de 2026/);
   });
+  test('a mano sin fecha, la frase empieza por la salida con su artículo y concuerda en número', () => {
+    const sinFecha = { fecha: 'MANUAL', acto: null } as const;
+    assert.match(motivoRepartoFueraDeTemporada('2026-10-05', sinFecha, '2026-10-01', 'Rosario vespertino', 'el') ?? '', /^El Rosario vespertino todavía no tiene fecha\./);
+    assert.match(motivoRepartoFueraDeTemporada('2026-10-05', sinFecha, '2026-10-01', 'Procesión Magna', 'la') ?? '', /^La Procesión Magna todavía no tiene fecha\./);
+    assert.match(motivoRepartoFueraDeTemporada('2026-10-05', sinFecha, '2026-10-01', 'Santos Oficios', 'los') ?? '', /^Los Santos Oficios todavía no tienen fecha\./);
+  });
   test('con otro artículo, concuerda: «de la», no «del»', () => {
     assert.match(
       motivoRepartoFueraDeTemporada('2027-03-20', PASION, '2026-10-01', 'Procesión Magna', 'la') ?? '',

@@ -264,7 +264,7 @@ export default function AgendaEditPage() {
                     size="small"
                     value={form.dedicatoria}
                     onChange={(e) => campo('dedicatoria', e.target.value)}
-                    placeholder="en honor de Nuestra Señora de los Desamparados"
+                    placeholder={`en honor de ${site.titular}`}
                     helperText="Va debajo del título, en cursiva. Mejor un título corto («Solemne triduo») y lo demás aquí."
                     slotProps={{ htmlInput: { maxLength: 191 } }}
                   />

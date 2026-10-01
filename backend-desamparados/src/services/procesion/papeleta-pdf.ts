@@ -11,7 +11,7 @@ import QRCode from 'qrcode';
 import type { Sexo } from '@prisma/client';
 import db from '../../config/db.js';
 import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
-import { identidad } from '../../domain/datos-entidad.js';
+import { identidad, type Identidad } from '../../domain/datos-entidad.js';
 import { articuloDe, deLaCorporacion } from '../../domain/articulos.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
 import type { SalidaImpresa } from '../../dtos/email.dto.js';
@@ -154,7 +154,22 @@ function filaDeCeldas(doc: Doc, celdas: [string, string][], y: number, alto: num
   doc.rect(MARGEN, y + alto, ANCHO, 0.75).fill(FILETE);
 }
 
+/**
+ * Lo que la papeleta dice de la corporación, aparte de pdfkit: una función
+ * pura para poder probarlo con otra instalación sin generar el PDF (pdfkit
+ * comprime el contenido y el texto no se puede leer del buffer).
+ */
+export function textosDeLaPapeleta(identidadInstalacion: Identidad = identidad) {
+  return {
+    tipo: versalitas(identidadInstalacion.tipo),
+    titular: identidadInstalacion.titular,
+    localidad: identidadInstalacion.localidad,
+    expide: `Secretaría ${deLaCorporacion({ identidad: identidadInstalacion })}`,
+  };
+}
+
 function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
+  const t = textosDeLaPapeleta();
   const donativo = d.salida.cobro === 'DONATIVO';
   sinMargenes(doc, () => {
     doc.rect(0, 0, A4.ancho, 4.5).fill(BURDEOS);
@@ -162,9 +177,9 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
     // Cabecera: escudo, nombre del Grupo y la referencia.
     doc.image(IMAGENES.escudoOro, MARGEN, 33, { fit: [61.5, 75], align: 'center', valign: 'center' });
     const xTexto = MARGEN + 82.5;
-    rotulo(doc, versalitas(identidad.tipo), xTexto, 45, { letra: LETRA.textoFuerte, tam: 8.25, color: ORO_TEXTO, espaciado: 2.6 });
-    ajustado(doc, identidad.titular, xTexto, 58, { letra: LETRA.titulo, tam: 19, minimo: 14, ancho: 290, color: NEGRO });
-    rotulo(doc, identidad.localidad, xTexto, 84, { tam: 9.75, color: GRIS });
+    rotulo(doc, t.tipo, xTexto, 45, { letra: LETRA.textoFuerte, tam: 8.25, color: ORO_TEXTO, espaciado: 2.6 });
+    ajustado(doc, t.titular, xTexto, 58, { letra: LETRA.titulo, tam: 19, minimo: 14, ancho: 290, color: NEGRO });
+    rotulo(doc, t.localidad, xTexto, 84, { tam: 9.75, color: GRIS });
     etiqueta(doc, 'Referencia', MARGEN, 50, ANCHO, 'right');
     rotulo(doc, d.referencia, MARGEN, 62, { letra: LETRA.titulo, tam: 16.5, color: NEGRO, ancho: ANCHO, alinear: 'right' });
 
@@ -241,7 +256,7 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
       MARGEN, yPie - 4, { width: 320, lineGap: 2, height: 44, ellipsis: true },
     );
     rotulo(doc, `Expedida el ${fecha.format(d.expedida)}`, MARGEN, yPie - 2, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
-    rotulo(doc, `Secretaría ${deLaCorporacion()}`, MARGEN, yPie + 11, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
+    rotulo(doc, t.expide, MARGEN, yPie + 11, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
     doc.rect(0, A4.alto - 4.5, A4.ancho, 4.5).fill(NEGRO);
   });
 }

@@ -9,7 +9,7 @@
  * destina a sus fines propios y que es irrevocable.
  */
 import { identidad, secretaria } from '../domain/datos-entidad.js';
-import { conArticulo, deArticulo } from '../domain/articulos.js';
+import { conArticulo, deArticulo, segunNumero } from '../domain/articulos.js';
 import type { Aportacion } from '../domain/modelo-182.js';
 import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO,
@@ -97,7 +97,7 @@ function certificado(doc: Doc, c: ConfiguracionModelo182, ejercicio: number, d: 
   doc.x = MARGEN;
   doc.y = y + 26;
 
-  parrafo(doc, `Que ${conArticulo(identidad.articulo, identidad.nombre)} es una de las entidades beneficiarias del mecenazgo a las que se refiere el artículo 16 de la Ley 49/2002, de 23 de diciembre, de régimen fiscal de las entidades sin fines lucrativos y de los incentivos fiscales al mecenazgo, y que estos donativos se incluyen en su declaración informativa (Modelo 182) del ejercicio ${ejercicio}.`);
+  parrafo(doc, `Que ${conArticulo(identidad.articulo, identidad.nombre)} ${segunNumero(identidad.articulo, 'es', 'son')} una de las entidades beneficiarias del mecenazgo a las que se refiere el artículo 16 de la Ley 49/2002, de 23 de diciembre, de régimen fiscal de las entidades sin fines lucrativos y de los incentivos fiscales al mecenazgo, y que estos donativos se incluyen en su declaración informativa (Modelo 182) del ejercicio ${ejercicio}.`);
   parrafo(doc, 'Y para que conste a los efectos de la deducción prevista en dicha ley, se expide el presente certificado.');
 
   const yFirma = Math.min(doc.y + 14, A4.alto - 150);

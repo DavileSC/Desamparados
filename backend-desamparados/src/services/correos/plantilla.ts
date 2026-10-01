@@ -18,7 +18,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { emailDeSecretaria, identidad, lineasDeSecretaria, type Identidad } from '../../domain/datos-entidad.js';
-import { deLaCorporacion, laCorporacion } from '../../domain/articulos.js';
+import { deLaCorporacion, laCorporacion, segunLaCorporacion } from '../../domain/articulos.js';
 
 /**
  * Las imágenes van dentro del correo (adjuntos en línea, `cid:`) y no enlazadas
@@ -232,7 +232,7 @@ export function pie(para: Destinatario, identidadInstalacion: Identidad = identi
   const correo = emailDeSecretaria();
   return [
     p(`<strong style="color: ${texto};">¿Tiene alguna duda?</strong> Responda a este correo y le atenderá la Secretaría${correo ? `, o escriba a ${enlace(`mailto:${esc(correo)}`, correo)}` : ''}.`),
-    `<p style="margin: 0; color: ${suave};">Recibe este correo por su relación con ${laCorporacion({ identidad: identidadInstalacion })}, que trata sus datos conforme al Reglamento General de Protección de Datos. Más información en nuestra ${enlace(urlDeLaWeb('/politica-privacidad'), 'política de privacidad')}.</p>`,
+    `<p style="margin: 0; color: ${suave};">Recibe este correo por su relación con ${laCorporacion({ identidad: identidadInstalacion })}, que ${segunLaCorporacion('trata', 'tratan', { identidad: identidadInstalacion })} sus datos conforme al Reglamento General de Protección de Datos. Más información en nuestra ${enlace(urlDeLaWeb('/politica-privacidad'), 'política de privacidad')}.</p>`,
   ].join('');
 }
 

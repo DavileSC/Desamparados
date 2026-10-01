@@ -223,6 +223,14 @@ describe('las entradillas del Informe anual y los informes', () => {
     assert.doesNotMatch(texto, /El Procesión/);
   });
 
+  test('una salida en plural lleva el verbo en plural: «Los Santos Oficios reunieron» y «aún no tienen»', () => {
+    const santos = (papeletas: number) => crudos({ otraSalida: { nombre: 'Santos Oficios', articulo: 'los', papeletas } });
+    assert.match(enTexto(entradilla('procesion', santos(5), cerrado, HOY)), /Los Santos Oficios de 2026 reunieron 5 papeletas\./);
+    assert.match(enTexto(entradilla('procesion', santos(5), enMarcha, HOY)), /Los Santos Oficios de 2026 reúnen 5 papeletas\./);
+    assert.match(enTexto(entradilla('procesion', santos(0), enMarcha, HOY)), /Los Santos Oficios de 2026 aún no tienen papeletas\./);
+    assert.match(enTexto(entradilla('procesion', santos(0), cerrado, HOY)), /Los Santos Oficios de 2026 no tuvieron papeletas\./);
+  });
+
   test('las túnicas son femeninas y los capirotes masculinos', () => {
     const [, , tunicas, capirotes] = areasDe(crudos(), cerrado, HOY)[3].cifras;
     assert.equal(tunicas.grafica.titulo, 'Las túnicas, por estado');

@@ -3,7 +3,7 @@ import { describe, test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  aArticulo, aLaCorporacion, conArticulo, deArticulo, deLaCorporacion, laCorporacion, mayuscula, nuestraCorporacion, nuestro, type Articulo,
+  aArticulo, aLaCorporacion, conArticulo, deArticulo, deLaCorporacion, laCorporacion, mayuscula, nuestraCorporacion, nuestro, segunNumero, type Articulo,
 } from '../src/domain/articulos.js';
 
 const casos = JSON.parse(readFileSync(fileURLToPath(new URL('../../shared/casos-articulos.json', import.meta.url)), 'utf8'));
@@ -16,6 +16,9 @@ describe('artículos', () => {
   });
   test('el posesivo concuerda con el artículo', () => {
     for (const [art, esperado] of casos.nuestro) assert.equal(nuestro(art as Articulo), esperado);
+  });
+  test('el verbo concuerda en número: plural con «los» y «las»', () => {
+    for (const [art, singular, plural, esperado] of casos.segunNumero) assert.equal(segunNumero(art as Articulo, singular, plural), esperado);
   });
   test('la mayúscula de comienzo de frase', () => {
     for (const [texto, esperado] of casos.mayuscula) assert.equal(mayuscula(texto), esperado);

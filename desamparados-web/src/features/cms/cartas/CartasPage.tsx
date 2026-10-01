@@ -7,6 +7,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import CabeceraSeccion from '../CabeceraSeccion'
 import EtiquetasPostales from './EtiquetasPostales'
+import { site } from '../../../config/site'
 import { listasDelCenso } from '../../../lib/api/hermanos'
 import {
   CAMPOS_DE_CARTA, borrarCarta, cartas, crearCarta, destinatariosDeCarta, guardarCarta, pdfDeCartas,
@@ -40,7 +41,7 @@ export default function CartasPage() {
 
   return (
     <>
-      <Helmet><title>Cartas | CMS Desamparados</title><meta name="robots" content="noindex" /></Helmet>
+      <Helmet><title>{`Cartas | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Cartas" subtitulo="Cartas y circulares a los hermanos, en PDF, listas para imprimir y meter en un sobre de ventana.">
         <Button variant="outlined" onClick={() => setAbierta('etiquetas')}>Etiquetas postales</Button>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAbierta('nueva')}>Nueva carta</Button>

@@ -1,7 +1,8 @@
 import type { ClaveArea, DatosCrudos } from './datos-areas.js';
 import { euros, numero, salidaPrincipal } from './datos-areas.js';
 import type { Periodo } from './periodo-datos.js';
-import { conArticulo, deArticulo, laCorporacion, mayuscula } from './articulos.js';
+import { conArticulo, deArticulo, laCorporacion, mayuscula, segunLaCorporacion, segunNumero } from './articulos.js';
+import type { Identidad } from './datos-entidad.js';
 
 /**
  * El párrafo con que abre cada capítulo del Informe anual y cada informe: las
@@ -40,11 +41,11 @@ const nombreDelMes = (mes: string) => MESES_LARGOS[Number(mes.slice(5, 7)) - 1];
 
 const comienzo = (p: Periodo) => (p.enMarcha ? 'Hasta hoy' : `Al cierre de ${p.anio}`);
 
-function hermanos(d: DatosCrudos['hermanos'], p: Periodo): Trozo[] {
+function hermanos(d: DatosCrudos['hermanos'], p: Periodo, identidad?: Identidad): Trozo[] {
   const cambio = d.activos - d.activosAlEmpezar;
   const frente = cambio > 0 ? `${numero(cambio)} más que al empezar` : cambio < 0 ? `${numero(-cambio)} menos que al empezar` : 'los mismos que al empezar';
   const trozos: Trozo[] = [
-    { texto: `${comienzo(p)}, ${laCorporacion({ corto: true })} cuenta con ` },
+    { texto: `${comienzo(p)}, ${laCorporacion({ corto: true, identidad })} ${segunLaCorporacion('cuenta', 'cuentan', { identidad })} con ` },
     { texto: contar(d.activos, 'hermano', 'hermanos'), fuerte: true },
     { texto: `, ${frente}. ` },
   ];
@@ -92,20 +93,20 @@ function procesion(d: DatosCrudos['procesion'], p: Periodo): Trozo[] {
   }
   for (const s of d.porSalida.filter((x) => x !== principal)) {
     trozos.push({ texto: s.papeletas > 0
-      ? ` ${mayuscula(conArticulo(s.articulo, s.nombre))} de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ${contar(s.papeletas, 'papeleta', 'papeletas')}.`
-      : ` ${mayuscula(conArticulo(s.articulo, s.nombre))} de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
+      ? ` ${mayuscula(conArticulo(s.articulo, s.nombre))} de ${d.anio} ${p.enMarcha ? segunNumero(s.articulo, 'reúne', 'reúnen') : segunNumero(s.articulo, 'reunió', 'reunieron')} ${contar(s.papeletas, 'papeleta', 'papeletas')}.`
+      : ` ${mayuscula(conArticulo(s.articulo, s.nombre))} de ${d.anio} ${p.enMarcha ? segunNumero(s.articulo, 'aún no tiene', 'aún no tienen') : segunNumero(s.articulo, 'no tuvo', 'no tuvieron')} papeletas.` });
   }
   return trozos;
 }
 
-function inventario(d: DatosCrudos['inventario']): Trozo[] {
+function inventario(d: DatosCrudos['inventario'], identidad?: Identidad): Trozo[] {
   const piezas = d.enseres.reduce((s, e) => s + e.total, 0);
   const reparar = d.enseres.reduce((s, e) => s + e.reparar, 0);
   const disponibles = (tipo: 'TUNICA' | 'CAPIROTE') => d.prendas.find((x) => x.tipo === tipo && x.estado === 'DISPONIBLE')?.total ?? 0;
   const trozos: Trozo[] = piezas === 0
     ? [{ texto: 'Todavía no hay enseres en el inventario.' }]
     : [
-      { texto: `${mayuscula(laCorporacion({ corto: true }))} guarda ` },
+      { texto: `${mayuscula(laCorporacion({ corto: true, identidad }))} ${segunLaCorporacion('guarda', 'guardan', { identidad })} ` },
       { texto: contar(piezas, 'pieza', 'piezas'), fuerte: true },
       { texto: ` de ${contar(d.enseres.length, 'enser', 'enseres')}; ${reparar === 0 ? 'ninguna necesita' : reparar === 1 ? 'una necesita' : `${numero(reparar)} necesitan`} reparación.` },
     ];
@@ -159,12 +160,13 @@ function agenda(d: DatosCrudos['agenda'], p: Periodo, hoy: Date): Trozo[] {
   return trozos;
 }
 
-export function entradilla(clave: ClaveArea, d: DatosCrudos, p: Periodo, hoy: Date): Trozo[] {
+/** `identidad`, otra instalación: solo para las pruebas (test/otra-corporacion.test.ts); producción no la pasa. */
+export function entradilla(clave: ClaveArea, d: DatosCrudos, p: Periodo, hoy: Date, identidad?: Identidad): Trozo[] {
   switch (clave) {
-    case 'hermanos': return hermanos(d.hermanos, p);
+    case 'hermanos': return hermanos(d.hermanos, p, identidad);
     case 'dinero': return dinero(d.dinero, p);
     case 'procesion': return procesion(d.procesion, p);
-    case 'inventario': return inventario(d.inventario);
+    case 'inventario': return inventario(d.inventario, identidad);
     case 'web': return web(d.web, p);
     case 'agenda': return agenda(d.agenda, p, hoy);
   }

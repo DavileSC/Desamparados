@@ -6,7 +6,7 @@
  * Semana Santa se mueven con la Pascua (el Sábado de Pasión es −8) y las de
  * Gloria o el Rosario las fija la Junta cada año con un acto de la Agenda.
  */
-import { deArticulo, type Articulo } from './articulos.js';
+import { conArticulo, deArticulo, mayuscula, segunNumero, type Articulo } from './articulos.js';
 
 export type ReglaFecha =
   | { fecha: 'PASCUA'; diasDesdePascua: number }
@@ -75,7 +75,7 @@ export function anioDeLaSalida(regla: ReglaFecha, hoy: string): number {
  */
 export function motivoRepartoFueraDeTemporada(dia: string, regla: ReglaFecha, hoy: string, nombre: string, articulo: Articulo): string | null {
   const proxima = proximaFecha(regla, hoy);
-  if (!proxima) return `${nombre} todavía no tiene fecha. Pon antes la fecha de la salida en la Agenda.`;
+  if (!proxima) return `${mayuscula(conArticulo(articulo, nombre))} ${segunNumero(articulo, 'todavía no tiene', 'todavía no tienen')} fecha. Pon antes la fecha de la salida en la Agenda.`;
   if (dia < proxima) return null;
   return `El reparto ${deArticulo(articulo, nombre)} tiene que ser antes de la salida, que es el ${diaLargo(proxima)}.`;
 }

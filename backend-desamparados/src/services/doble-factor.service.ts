@@ -5,11 +5,30 @@ import { corteDeSesiones } from '../utils/jwt.handle';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '../utils/cifrado-totp.js';
+import { identidad, type Identidad } from '../domain/datos-entidad.js';
 import {
   APAGAR_2FA, MENSAJE_2FA_YA_ACTIVO, MENSAJE_CODIGO_USADO,
   comprobarBloqueo2FA, consumirCodigoDeRespaldo, generarCodigosDeRespaldo,
   hashDeCodigoDeRespaldo, limpiarFallos2FA, reclamarTotp, registrarFallo2FA,
 } from './auth/codigos-2fa.js';
+
+/**
+ * El TOTP de una cuenta, tal como lo da de alta la app de autenticación. El
+ * emisor es lo que esa app enseña junto al código, así que lleva el nombre
+ * corto de la corporación (`identidad`, otra instalación: para las pruebas).
+ * Cambiarlo no invalida cuentas ya enroladas: el código sale solo del secreto,
+ * y el emisor es una etiqueta que se guarda al escanear.
+ */
+export function totpDeLaCuenta(email: string, secret: OTPAuth.Secret, identidadInstalacion: Identidad = identidad) {
+  return new OTPAuth.TOTP({
+    issuer: identidadInstalacion.nombreCorto,
+    label: email,
+    algorithm: 'SHA1',
+    digits: 6,
+    period: 30,
+    secret,
+  });
+}
 
 /**
  * El doble factor de una cuenta: activarlo, desactivarlo y rescatarlo.
@@ -35,14 +54,7 @@ export class DobleFactorService {
     const secret = new OTPAuth.Secret({ size: 20 });
 
     // 2. Creamos el objeto TOTP
-    const totp = new OTPAuth.TOTP({
-      issuer: 'Cofradía Virtual',
-      label: user.email,
-      algorithm: 'SHA1',
-      digits: 6,
-      period: 30,
-      secret: secret
-    });
+    const totp = totpDeLaCuenta(user.email, secret);
 
     // 3. Obtenemos la URL otpauth://... automáticamente
     const otpauthUrl = totp.toString();

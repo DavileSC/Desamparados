@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  aArticulo, aLaCorporacion, conArticulo, deArticulo, deLaCorporacion, laCorporacion, mayuscula, nuestraCorporacion, nuestro, type Articulo,
+  aArticulo, aLaCorporacion, conArticulo, deArticulo, deLaCorporacion, laCorporacion, mayuscula, nuestraCorporacion, nuestro, segunNumero, type Articulo,
 } from '../articulos'
 // Import del JSON, como el resto de la web (`config/site.ts`), en vez del
 // `readFileSync` del backend: aquí lo resuelve Vite, no Node.
@@ -14,6 +14,9 @@ describe('artículos', () => {
   })
   it('el posesivo concuerda con el artículo', () => {
     for (const [art, esperado] of casos.nuestro) expect(nuestro(art as Articulo)).toBe(esperado)
+  })
+  it('el verbo concuerda en número: plural con «los» y «las»', () => {
+    for (const [art, singular, plural, esperado] of casos.segunNumero) expect(segunNumero(art as Articulo, singular, plural)).toBe(esperado)
   })
   it('la mayúscula de comienzo de frase', () => {
     for (const [texto, esperado] of casos.mayuscula) expect(mayuscula(texto)).toBe(esperado)

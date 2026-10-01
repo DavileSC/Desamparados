@@ -22,7 +22,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import Cortejo from './cortejo/Cortejo'
 import { site } from '../../config/site'
-import { deArticulo, laCorporacion, type Articulo } from '../../domain/articulos'
+import { deArticulo, laCorporacion, segunLaCorporacion, type Articulo } from '../../domain/articulos'
 
 const ZONA = 'Europe/Madrid'
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: ZONA, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -363,7 +363,7 @@ function FechaDeLaSalida({ nombre, articulo, fecha }: { nombre: string; articulo
       <Typography sx={{ fontSize: 14.5, color: 'text.secondary', lineHeight: 1.55 }}>
         {fecha
           ? `Sale el ${formatoDia.format(new Date(fecha.inicio))} a las ${formatoHora.format(new Date(fecha.inicio))}. Está en la Agenda pública.`
-          : `Todavía sin fecha. La decide ${laCorporacion({ corto: true })} cada año; hasta que la tenga no se puede abrir la solicitud.`}
+          : `Todavía sin fecha. La ${segunLaCorporacion('decide', 'deciden')} ${laCorporacion({ corto: true })} cada año; hasta que la tenga no se puede abrir la solicitud.`}
       </Typography>
       <Box component={Link} to="/cms/procesion/salidas" sx={{ ...enlace, color: 'primary.main', justifySelf: 'start' }}>Cambiar la fecha en Salidas</Box>
     </Paper>

@@ -5,7 +5,7 @@
  */
 import type { CabildoCompleto } from '../cabildos.service.js';
 import { extractoPlano } from '../../utils/sanear-html.js';
-import { identidad } from '../../domain/datos-entidad.js';
+import { identidad, type Identidad } from '../../domain/datos-entidad.js';
 import { deArticulo } from '../../domain/articulos.js';
 import {
   ANCHO_UTIL, BURDEOS, GRIS, LETRA, MX, NEGRO, Paginas, aBuffer, bandaInforme, marcaBorrador, nuevoDocumento, parrafos, pies, rotuloVersalitas,
@@ -34,12 +34,20 @@ function texto(p: Paginas, t: string, o: { cursiva?: boolean } = {}) {
   p.doc.font(o.cursiva ? LETRA.cursiva : LETRA.titulo).fontSize(11.5).fillColor(NEGRO).text(t, MX, p.doc.y, { width: ANCHO_UTIL, lineGap: 3, paragraphGap: 6 });
 }
 
+/**
+ * La frase con que abre el acta, aparte de pdfkit: pura para poder probarla
+ * con otra instalación sin generar el PDF (su texto no se lee del buffer).
+ */
+export function aperturaDelActa(c: Pick<CabildoCompleto, 'tipo' | 'fecha' | 'lugar' | 'enSegunda'>, identidadInstalacion: Identidad = identidad): string {
+  return `El ${fechaLarga(c.fecha)}, a las ${hora(c.fecha)}, se reúne en ${c.enSegunda ? 'segunda' : 'primera'} convocatoria el cabildo ${TIPO[c.tipo]} de hermanos ${deArticulo(identidadInstalacion.articulo, identidadInstalacion.nombre)}. Lugar: ${c.lugar}.`;
+}
+
 function acta(p: Paginas, c: CabildoCompleto) {
   const doc = p.doc;
   bandaInforme(doc, `Cabildo ${TIPO[c.tipo]}`, [fechaLarga(c.fecha), c.lugar]);
   p.seccion = `Cabildo ${TIPO[c.tipo]} · ${fechaLarga(c.fecha)}`;
 
-  texto(p, `El ${fechaLarga(c.fecha)}, a las ${hora(c.fecha)}, se reúne en ${c.enSegunda ? 'segunda' : 'primera'} convocatoria el cabildo ${TIPO[c.tipo]} de hermanos ${deArticulo(identidad.articulo, identidad.nombre)}. Lugar: ${c.lugar}.`);
+  texto(p, aperturaDelActa(c));
 
   apartado(p, 'Asistencia y quórum');
   const q = c.quorum;

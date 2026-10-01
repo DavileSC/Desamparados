@@ -14,7 +14,7 @@ import { contactSchema, type ContactFormData } from '../../features/contacto/sch
 import { enviarMensajeDeContacto } from '../../lib/api/contacto'
 import type { BloqueContacto as Datos, LineaDatos } from '../../lib/api/contenido'
 import { valorDe } from './presentacion'
-import { laCorporacion, mayuscula } from '../../domain/articulos'
+import { laCorporacion, mayuscula, segunLaCorporacion } from '../../domain/articulos'
 
 // Trampa para robots: fuera de la vista, del tabulador y de los lectores de
 // pantalla. Una persona no la ve ni la rellena; un programa que rellena todo
@@ -192,7 +192,7 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
 
           {/* Lo que pide la protección de datos en un formulario así: quién, para qué y dónde leer más. */}
           <Typography sx={{ color: 'text.secondary', fontSize: 13, lineHeight: 1.6 }}>
-            {mayuscula(laCorporacion())} usa estos datos solo para contestarte y no los cede a nadie. Más información en la{' '}
+            {mayuscula(laCorporacion())} {segunLaCorporacion('usa', 'usan')} estos datos solo para contestarte y no los {segunLaCorporacion('cede', 'ceden')} a nadie. Más información en la{' '}
             <Box component={Link} to="/politica-privacidad" sx={{ color: 'secondary.main', textDecoration: 'underline', textUnderlineOffset: 3 }}>
               política de privacidad
             </Box>
