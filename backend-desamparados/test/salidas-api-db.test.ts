@@ -44,6 +44,7 @@ const cookieDe = (userId: number, role: Role) => ({ Cookie: `${COOKIE_CMS}=${gen
 const datosDeAlta = (slug: string, extra: Record<string, unknown> = {}) => ({
   nombre: 'Traslado',
   slug,
+  articulo: 'el',
   orden: 9,
   activa: true,
   conRopa: false,
@@ -74,6 +75,53 @@ test('Secretaría da de alta una salida y sale en /api/salidas con su fecha del 
     const nueva = lista.find((s: { slug: string }) => s.slug === slug);
     assert.ok(nueva);
     assert.match(nueva.fechaDelAnio, /^\d{4}-\d{2}-\d{2}$/);
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+test('una salida con articulo "la" se devuelve con ese artículo, para escribir "de la Procesión Magna"', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const slug = `prueba-salida-${Date.now()}`;
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, {
+      method: 'POST',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify(datosDeAlta(slug, { nombre: 'Procesión Magna', articulo: 'la' })),
+    });
+    assert.equal(alta.status, 201);
+    const cuerpo = await alta.json();
+    assert.equal(cuerpo.articulo, 'la');
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+test('editar solo el artículo deja el resto de la salida como estaba', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const slug = `prueba-salida-${Date.now()}`;
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, {
+      method: 'POST',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify(datosDeAlta(slug)),
+    });
+    assert.equal(alta.status, 201);
+    const { id, nombre } = await alta.json();
+
+    const edicion = await fetch(`${baseUrl}/api/cms/salidas/${id}`, {
+      method: 'PUT',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify({ articulo: 'las' }),
+    });
+    assert.equal(edicion.status, 200);
+    const cuerpo = await edicion.json();
+    assert.equal(cuerpo.articulo, 'las');
+    assert.equal(cuerpo.nombre, nombre, 'el resto de la fila no cambia');
   } finally {
     await db.salida.deleteMany({ where: { slug } });
     await borrarUsuarioPrueba(staff.id);
@@ -139,6 +187,7 @@ for (const [caso, extra] of [
   ['un «<» en el nombre', { nombre: 'Traslado <b>' }],
   ['un lugar de 161 caracteres', { lugar: 'x'.repeat(161) }],
   ['21 puestos', { puestos: Array.from({ length: 21 }, (_, i) => ({ nombre: `Puesto ${i}`, tunica: false, tocado: null, alturaHombro: false })) }],
+  ['un artículo que no es de los cuatro válidos', { articulo: 'lo' }],
 ] as const) {
   test(`al dar de alta, ${caso} da 400`, async (t) => {
     if (!dbDisponible) { t.skip(SIN_DB); return; }

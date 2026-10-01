@@ -16,6 +16,7 @@ import { diaMadrid, fechaDeSalida, anioDeLaSalida, type ReglaFecha } from '../..
 import type { PuestoDelCatalogo } from '../../domain/salidas.js';
 import type { ConfiguracionCortejo } from '../../domain/cortejo.js';
 import type { DatosSalida, SalidaWeb } from '../../dtos/procesion.dto.js';
+import type { Articulo } from '../../domain/articulos.js';
 
 export type SalidaConActo = Salida & { acto: Evento | null };
 
@@ -140,7 +141,9 @@ export class SalidasService {
     const regla = reglaDe(s);
     const anio = anioDeLaSalida(regla, hoy);
     return {
-      id: s.id, slug: s.slug, nombre: s.nombre, orden: s.orden, activa: s.activa, conRopa: s.conRopa,
+      // `as Articulo`: la columna es un `VARCHAR(3)` sin enum en Prisma; el
+      // esquema de alta/edición es quien de verdad limita los cuatro valores.
+      id: s.id, slug: s.slug, nombre: s.nombre, articulo: s.articulo as Articulo, orden: s.orden, activa: s.activa, conRopa: s.conRopa,
       cobro: s.cobro, importeCuota: Number(s.importeCuota), fecha: s.fecha, diasDesdePascua: s.diasDesdePascua,
       horaSalida: s.horaSalida, lugar: s.lugar, eventoId: s.eventoId, plazoAbierto: s.plazoAbierto,
       puestos: s.puestos as unknown as PuestoDelCatalogo[], cortejo: s.cortejo as unknown as ConfiguracionCortejo | null,

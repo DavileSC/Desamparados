@@ -32,6 +32,8 @@ const lugar = sinEtiquetas(160).or('null');
 const datosSalida = type({
   nombre: type('0 < string <= 120').matching(/^[^<>]+$/).describe('un nombre de 120 caracteres como mucho, sin «<» ni «>»'),
   slug,
+  // «el Sábado de Pasión», «la Procesión Magna»: con qué se escribe «del» o «de la» (domain/articulos.ts).
+  articulo: "'el' | 'la' | 'los' | 'las'",
   orden: 'number.integer >= 0',
   activa: 'boolean',
   conRopa: 'boolean',

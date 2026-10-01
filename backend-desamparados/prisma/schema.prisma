@@ -67,6 +67,8 @@ model Salida {
   id              Int         @id @default(autoincrement())
   slug            String      @unique
   nombre          String
+  /// «el», «la», «los» o «las»: con qué se escribe «del Sábado de Pasión» o «de la Procesión Magna».
+  articulo        String      @default("el") @db.VarChar(3)
   orden           Int         @default(0)
   activa          Boolean     @default(true)
   conRopa         Boolean     @default(false)

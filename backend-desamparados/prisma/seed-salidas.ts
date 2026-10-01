@@ -41,6 +41,7 @@ export const SALIDAS_DE_SIEMPRE: Prisma.SalidaCreateInput[] = [
   {
     slug: 'sabado-de-pasion',
     nombre: 'Sábado de Pasión',
+    articulo: 'el',
     orden: 1,
     conRopa: true,
     cobro: CobroSalida.CUOTA,
@@ -53,6 +54,7 @@ export const SALIDAS_DE_SIEMPRE: Prisma.SalidaCreateInput[] = [
   {
     slug: 'rosario-vespertino',
     nombre: 'Rosario vespertino',
+    articulo: 'el',
     orden: 2,
     conRopa: false,
     cobro: CobroSalida.DONATIVO,

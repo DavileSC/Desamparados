@@ -10,7 +10,7 @@ import { leerDatosEvento } from '../src/services/recibos/comunes.js';
 import type { SalidaConActo } from '../src/services/procesion/salidas.service.js';
 
 const pasion: SalidaConActo = {
-  id: 1, slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', orden: 1, activa: true, conRopa: true,
+  id: 1, slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', articulo: 'el', orden: 1, activa: true, conRopa: true,
   cobro: 'CUOTA', importeCuota: new Prisma.Decimal(0), fecha: 'PASCUA', diasDesdePascua: -8,
   horaSalida: '19:30h', lugar: 'Casa parroquial', eventoId: null, acto: null,
   plazoAbierto: false, plazoCambiadoEl: null, puestos: [], cortejo: null, indicaciones: null,

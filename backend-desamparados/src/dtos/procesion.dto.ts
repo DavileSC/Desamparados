@@ -1,5 +1,6 @@
 import type { PuestoDelCatalogo } from '../domain/salidas.js';
 import type { ConfiguracionCortejo } from '../domain/cortejo.js';
+import type { Articulo } from '../domain/articulos.js';
 
 // 1. LA SOLICITUD DE LA PAPELETA (ÁREA DE HERMANOS)
 // Cuando el hermano dice "Quiero salir de cirio y pasaré el martes"
@@ -29,6 +30,8 @@ export interface CrearTurnoDto {
 export interface DatosSalida {
   nombre: string;
   slug: string;
+  /** Con qué se escribe «del Sábado de Pasión» o «de la Procesión Magna» (domain/articulos.ts). */
+  articulo: Articulo;
   orden: number;
   activa: boolean;
   conRopa: boolean;
@@ -47,6 +50,7 @@ export interface SalidaWeb {
   id: number;
   slug: string;
   nombre: string;
+  articulo: Articulo;
   orden: number;
   activa: boolean;
   conRopa: boolean;
