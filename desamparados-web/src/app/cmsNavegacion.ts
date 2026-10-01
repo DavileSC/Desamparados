@@ -15,6 +15,7 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import DirectionsWalkOutlinedIcon from '@mui/icons-material/DirectionsWalkOutlined'
+import EventRepeatOutlinedIcon from '@mui/icons-material/EventRepeatOutlined'
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
@@ -99,6 +100,7 @@ export const itemsMenu: ItemMenu[] = [
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
   { label: 'Cartas', href: '/cms/cartas', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: MailOutlinedIcon },
   { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: DirectionsWalkOutlinedIcon },
+  { label: 'Salidas', href: '/cms/procesion/salidas', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: EventRepeatOutlinedIcon },
   // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
   { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon },
   // Leer el QR de las papeletas al entrar: la Junta que está en la puerta.
@@ -153,6 +155,9 @@ export const rolesPorRutaCms = {
   // Llevan los datos del censo: los mismos que lo gestionan (la guarda de /api/cartas).
   cartas: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   procesion: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
+  // Las salidas procesionales: la guarda de /api/cms/salidas. El Hermano Mayor
+  // las ve, pero solo ADMIN y SECRETARIA pueden guardar (lo oculta la pantalla).
+  'procesion/salidas': ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'],
   // Los mismos que pueden inscribir y cobrar en el backend (rolesMesaReparto).
   'procesion/mesa': ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'],
   tesoreria: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
