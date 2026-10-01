@@ -167,7 +167,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     assert.equal(papeleta.citaId, cita.id, 'la mesa enlaza la cita que tenía');
     assert.equal(recibo.estado, EstadoPago.PAGADO);
     // La papeleta es de la salida que se prepara, aunque el reparto sea en el año anterior.
-    assert.equal(recibo.concepto, `Papeleta de sitio ${YEAR}`);
+    assert.equal(recibo.concepto, `Papeleta Sábado de Pasión ${YEAR}`);
 
     const respuesta = await PapeletasService.anularPapeleta(papeleta.id, e.meta);
     assert.equal(respuesta.estadoRecibo, EstadoPago.DEVUELTO);
@@ -194,7 +194,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
 
     // Reinscribir: antes daba 500 porque el recibo devuelto ocupaba el concepto.
     const segunda = await e.apuntarYCobrar(hermano.id, 'Vara', MetodoPago.BIZUM);
-    assert.equal(segunda.recibo.concepto, `Papeleta de sitio ${YEAR} (reemisión 2)`);
+    assert.equal(segunda.recibo.concepto, `Papeleta Sábado de Pasión ${YEAR} (reemisión 2)`);
     assert.equal(segunda.recibo.estado, EstadoPago.PAGADO);
   } finally {
     await e.recoger();
@@ -404,7 +404,7 @@ test('D6: la papeleta de mesa y la de tesorería llevan la misma fecha, hora y p
       // Camino 2: cobro en tesorería de una papeleta que estaba pendiente.
       const enTesoreria = await e.hermano();
       const recibo = await db.recibo.create({
-        data: { hermanoId: enTesoreria.id, year: YEAR, concepto: `Papeleta de sitio ${YEAR}`, importe: 30, tipo: TipoRecibo.PAPELETA_SITIO }
+        data: { hermanoId: enTesoreria.id, year: YEAR, concepto: `Papeleta Sábado de Pasión ${YEAR}`, importe: 30, tipo: TipoRecibo.PAPELETA_SITIO }
       });
       await db.papeletaSitio.create({ data: { hermanoId: enTesoreria.id, reciboId: recibo.id, year: YEAR, puesto: 'Cirio', salidaId: e.pasion.id } });
       await ReciboService.adminMarcarComoPagado(recibo.id, MetodoPago.EFECTIVO, e.meta);
@@ -641,18 +641,18 @@ test('D3: no se emite una segunda cuota viva del mismo año aunque cambie el con
   }
 });
 
-test('D2: un recibo «papeleta de sitio AAAA» en minúsculas no impide inscribir: la papeleta sale como reemisión', async (t) => {
+test('D2: un recibo «papeleta sábado de pasión AAAA» en minúsculas no impide inscribir: la papeleta sale como reemisión', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
     const hermano = await e.hermano();
-    // La clave única de MariaDB no distingue mayúsculas: este ocupa «Papeleta de sitio AAAA».
+    // La clave única de MariaDB no distingue mayúsculas: este ocupa «Papeleta Sábado de Pasión AAAA».
     await ReciboService.emitirRecibo(
-      { hermanoId: hermano.id, year: YEAR, concepto: `papeleta de sitio ${YEAR}`, importe: 5, tipo: 'OTRO' }, e.meta
+      { hermanoId: hermano.id, year: YEAR, concepto: `papeleta sábado de pasión ${YEAR}`, importe: 5, tipo: 'OTRO' }, e.meta
     );
 
     const { recibo } = await e.apuntarYCobrar(hermano.id);
-    assert.equal(recibo.concepto, `Papeleta de sitio ${YEAR} (reemisión 2)`);
+    assert.equal(recibo.concepto, `Papeleta Sábado de Pasión ${YEAR} (reemisión 2)`);
   } finally {
     await e.recoger();
   }

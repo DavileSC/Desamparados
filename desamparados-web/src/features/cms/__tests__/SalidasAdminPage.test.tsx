@@ -77,6 +77,9 @@ describe('SalidasAdminPage', () => {
     expect(screen.getByLabelText('Slug')).toHaveValue('traslado')
 
     await usuario.type(screen.getByLabelText('Días desde el Domingo de Resurrección'), '-3')
+    // Sin primer puesto no se puede crear: la API exige al menos uno.
+    expect(screen.getByRole('button', { name: 'Crear' })).toBeDisabled()
+    await usuario.type(screen.getByLabelText(/Primer puesto/), 'Acompañante')
     await usuario.click(screen.getByRole('button', { name: 'Crear' }))
 
     expect(await screen.findByText('Editando')).toBeInTheDocument()
@@ -84,6 +87,7 @@ describe('SalidasAdminPage', () => {
     const datos = vi.mocked(crearSalida).mock.calls[0][0]
     expect(datos.fecha).toBe('PASCUA')
     expect(datos.diasDesdePascua).toBe(-3)
+    expect(datos.puestos).toEqual([{ nombre: 'Acompañante', tunica: false, tocado: null, alturaHombro: false }])
     expect(router.state.location.pathname).toBe('/cms/procesion/salidas/42/editar')
   })
 })

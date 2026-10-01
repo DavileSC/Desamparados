@@ -113,12 +113,16 @@ export function repartirCortejo(config: ConfiguracionCortejo, papeletas: Papelet
 
 /**
  * El cortejo de una salida cuyo `cortejo` es null, porque el Grupo aún no
- * ha dicho nada: cuatro tramos iguales de nazarenos.
+ * ha dicho nada: cuatro tramos iguales con todos los puestos de la salida.
+ * Con los suyos y no con «Nazareno»: una salida de acompañantes no tiene
+ * nazarenos, y proponerlos dejaba el reparto sin nadie a quien repartir.
  */
-export const CORTEJO_POR_DEFECTO: ConfiguracionCortejo = {
-  tramos: [1, 2, 3, 4].map((n) => ({ nombre: `Tramo ${n}`, plazas: 30 })),
-  puestos: ['Nazareno'],
-};
+export function cortejoPorDefecto(puestos: readonly { nombre: string }[]): ConfiguracionCortejo {
+  return {
+    tramos: [1, 2, 3, 4].map((n) => ({ nombre: `Tramo ${n}`, plazas: 30 })),
+    puestos: puestosSinRepetir(puestos.map((p) => p.nombre)),
+  };
+}
 
 /** `null` si la configuración vale; si no, por qué. */
 export function problemaConfiguracion(config: ConfiguracionCortejo): string | null {

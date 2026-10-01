@@ -13,7 +13,7 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { HttpError } from '../src/utils/error.handle.js';
-import { CortejoService } from '../src/services/procesion/cortejo.service.js';
+import { CortejoService, leerConfiguracion } from '../src/services/procesion/cortejo.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { idDeSalida, PASION, salida } from './fixtures/salidas.js';
 
@@ -140,4 +140,11 @@ test('el cortejo lo ve la Junta y solo lo cambian Secretaría y la administraci�
     await borrarUsuarioPrueba(tesorero.id);
     await e.recoger();
   }
+});
+
+// Sin base: `leerConfiguracion` solo mira la fila que se le da.
+test('una salida con el puesto «Acompañante» y sin cortejo guardado propone «Acompañante»', () => {
+  const config = leerConfiguracion({ cortejo: null, puestos: [{ nombre: 'Acompañante', tunica: false, tocado: null, alturaHombro: false }] });
+  assert.deepEqual(config.puestos, ['Acompañante']);
+  assert.equal(config.tramos.length, 4);
 });

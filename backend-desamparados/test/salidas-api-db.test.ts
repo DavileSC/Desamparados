@@ -162,6 +162,39 @@ test('desactivar una salida la quita de /api/salidas, pero no de /api/cms/salida
   }
 });
 
+test('desactivar una salida con el plazo abierto lo deja cerrado', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const slug = `prueba-salida-${Date.now()}`;
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, {
+      method: 'POST',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify(datosDeAlta(slug)),
+    });
+    assert.equal(alta.status, 201);
+    const { id } = await alta.json();
+    // Abierto a mano: abrirlo por la API pediría días de reparto.
+    await db.salida.update({ where: { id }, data: { plazoAbierto: true, plazoCambiadoEl: new Date(Date.now() - 60_000) } });
+    const desde = new Date();
+
+    const edicion = await fetch(`${baseUrl}/api/cms/salidas/${id}`, {
+      method: 'PUT',
+      headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify({ activa: false }),
+    });
+    assert.equal(edicion.status, 200);
+
+    const fila = await db.salida.findUniqueOrThrow({ where: { id } });
+    assert.equal(fila.activa, false);
+    assert.equal(fila.plazoAbierto, false, 'reactivarla no debe devolverla con el plazo abierto');
+    assert.ok(fila.plazoCambiadoEl && fila.plazoCambiadoEl >= new Date(desde.getTime() - 1000), 'el cierre queda fechado');
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
 test('fijar la fecha de una salida a mano crea su acto en la Agenda', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);

@@ -82,13 +82,23 @@ describe('lo que queda de la salida', () => {
 });
 
 describe('cada salida con su recibo', () => {
-  test('con cuota, la papeleta de sitio de siempre; con donativo, el nombre de la salida', () => {
+  test('el concepto lleva el nombre de la salida: «Papeleta …» con cuota, «Donativo …» con voluntad', () => {
     const pasion = { nombre: 'Sábado de Pasión', cobro: 'CUOTA' as const };
     const rosario = { nombre: 'Rosario vespertino', cobro: 'DONATIVO' as const };
-    assert.equal(conceptoDeSalida(pasion, 2026, []), 'Papeleta de sitio 2026');
+    assert.equal(conceptoDeSalida(pasion, 2026, []), 'Papeleta Sábado de Pasión 2026');
     assert.equal(conceptoDeSalida(rosario, 2026, []), 'Donativo Rosario vespertino 2026');
-    assert.equal(conceptoDeSalida(rosario, 2026, ['Papeleta de sitio 2026']), 'Donativo Rosario vespertino 2026');
+    assert.equal(conceptoDeSalida(rosario, 2026, ['Papeleta Sábado de Pasión 2026']), 'Donativo Rosario vespertino 2026');
     assert.equal(conceptoDeSalida(rosario, 2026, ['donativo rosario vespertino 2026']), 'Donativo Rosario vespertino 2026 (reemisión 2)');
+  });
+
+  test('dos salidas con cuota el mismo año no chocan: ninguna sale como reemisión', () => {
+    const pasion = { nombre: 'Sábado de Pasión', cobro: 'CUOTA' as const };
+    const traslado = { nombre: 'Traslado', cobro: 'CUOTA' as const };
+    const primero = conceptoDeSalida(pasion, 2027, []);
+    const segundo = conceptoDeSalida(traslado, 2027, [primero]);
+    assert.notEqual(primero, segundo);
+    assert.equal(segundo, 'Papeleta Traslado 2027');
+    assert.doesNotMatch(segundo, /reemisi/);
   });
 
   test('el recibo es una papeleta de sitio con cuota y un donativo con voluntad', () => {

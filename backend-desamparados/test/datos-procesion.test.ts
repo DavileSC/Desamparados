@@ -16,22 +16,22 @@ const conceptoPapeleta = (year: number, existentes: string[]) => conceptoDeSalid
 
 describe('D2 · concepto del recibo al reinscribir', () => {
   test('la primera papeleta del año lleva el concepto de siempre', () => {
-    assert.equal(conceptoPapeleta(2026, []), 'Papeleta de sitio 2026');
-    assert.equal(conceptoPapeleta(2026, ['Cuota anual']), 'Papeleta de sitio 2026');
+    assert.equal(conceptoPapeleta(2026, []), 'Papeleta Sábado de Pasión 2026');
+    assert.equal(conceptoPapeleta(2026, ['Cuota anual']), 'Papeleta Sábado de Pasión 2026');
   });
 
   test('tras una anulación, la nueva sale como reemisión y no choca con la clave única', () => {
-    assert.equal(conceptoPapeleta(2026, ['Papeleta de sitio 2026']), 'Papeleta de sitio 2026 (reemisión 2)');
+    assert.equal(conceptoPapeleta(2026, ['Papeleta Sábado de Pasión 2026']), 'Papeleta Sábado de Pasión 2026 (reemisión 2)');
     assert.equal(
-      conceptoPapeleta(2026, ['Papeleta de sitio 2026', 'Papeleta de sitio 2026 (reemisión 2)']),
-      'Papeleta de sitio 2026 (reemisión 3)',
+      conceptoPapeleta(2026, ['Papeleta Sábado de Pasión 2026', 'Papeleta Sábado de Pasión 2026 (reemisión 2)']),
+      'Papeleta Sábado de Pasión 2026 (reemisión 3)',
     );
   });
 
   test('ocupa el primer hueco libre si falta alguna reemisión intermedia', () => {
     assert.equal(
-      conceptoPapeleta(2026, ['Papeleta de sitio 2026', 'Papeleta de sitio 2026 (reemisión 3)']),
-      'Papeleta de sitio 2026 (reemisión 2)',
+      conceptoPapeleta(2026, ['Papeleta Sábado de Pasión 2026', 'Papeleta Sábado de Pasión 2026 (reemisión 3)']),
+      'Papeleta Sábado de Pasión 2026 (reemisión 2)',
     );
   });
 });
@@ -127,10 +127,10 @@ describe('D2 · conceptos comparados como los compara MariaDB (utf8mb4_unicode_c
     assert.notEqual(claveConcepto(' papeleta'), claveConcepto('papeleta'));
   });
 
-  test('un «papeleta de sitio 2026» en minúsculas ocupa el hueco de la primera emisión', () => {
-    // Con un Set sensible a mayúsculas se proponía «Papeleta de sitio 2026», que
+  test('un «papeleta sábado de pasión 2026» en minúsculas ocupa el hueco de la primera emisión', () => {
+    // Con un Set sensible a mayúsculas se proponía «Papeleta Sábado de Pasión 2026», que
     // chocaba con la clave única y la inscripción daba un 409 sin explicación.
-    assert.equal(conceptoPapeleta(2026, ['papeleta de sitio 2026']), 'Papeleta de sitio 2026 (reemisión 2)');
-    assert.equal(conceptoPapeleta(2026, ['Papeleta de sitio 2026', 'PAPELETA DE SITIO 2026 (REEMISION 2) ']), 'Papeleta de sitio 2026 (reemisión 3)');
+    assert.equal(conceptoPapeleta(2026, ['papeleta sábado de pasión 2026']), 'Papeleta Sábado de Pasión 2026 (reemisión 2)');
+    assert.equal(conceptoPapeleta(2026, ['Papeleta Sábado de Pasión 2026', 'PAPELETA SÁBADO DE PASIÓN 2026 (REEMISION 2) ']), 'Papeleta Sábado de Pasión 2026 (reemisión 3)');
   });
 });

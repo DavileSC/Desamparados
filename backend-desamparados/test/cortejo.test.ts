@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { cuantosPorTramo, problemaConfiguracion, repartirCortejo, seReparte, type PapeletaDelCortejo } from '../src/domain/cortejo.js';
+import { cortejoPorDefecto, cuantosPorTramo, problemaConfiguracion, repartirCortejo, seReparte, type PapeletaDelCortejo } from '../src/domain/cortejo.js';
 
 const papeleta = (id: number, fechaAlta: string, puesto = 'Nazareno', numeroHermano: number | null = id): PapeletaDelCortejo =>
   ({ id, puesto, fechaAlta, numeroHermano, hermanoId: id });
@@ -64,5 +64,18 @@ describe('la configuración', () => {
     assert.match(problemaConfiguracion({ tramos: [{ nombre: 'Uno', plazas: 1 }, { nombre: 'uno', plazas: 1 }], puestos: ['N'] })!, /mismo nombre/);
     assert.match(problemaConfiguracion({ tramos: [{ nombre: 'Uno', plazas: 0 }], puestos: ['N'] })!, /al menos una plaza/);
     assert.match(problemaConfiguracion({ tramos: [{ nombre: 'Uno', plazas: 3 }], puestos: [] })!, /al menos un puesto/);
+  });
+});
+
+describe('el cortejo de una salida que aún no lo tiene guardado', () => {
+  test('propone los puestos de la propia salida, no los nazarenos de la Pasión', () => {
+    const config = cortejoPorDefecto([{ nombre: 'Acompañante' }]);
+    assert.deepEqual(config.puestos, ['Acompañante']);
+    assert.deepEqual(config.tramos.map((t) => t.nombre), ['Tramo 1', 'Tramo 2', 'Tramo 3', 'Tramo 4']);
+    assert.equal(problemaConfiguracion(config), null);
+  });
+
+  test('todos sus puestos, sin repetir', () => {
+    assert.deepEqual(cortejoPorDefecto([{ nombre: 'Cirio' }, { nombre: 'Insignia' }, { nombre: 'cirio' }]).puestos, ['Cirio', 'Insignia']);
   });
 });

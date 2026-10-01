@@ -12,17 +12,17 @@ import { anioDeLaMesa } from './zonas.service.js';
 import type { SalidaConActo } from './salidas.service.js';
 import { diaDe } from '../../domain/fechas-hermano.js';
 import {
-  CORTEJO_POR_DEFECTO, problemaConfiguracion, puestosSinRepetir, repartirCortejo, seReparte, type ConfiguracionCortejo,
+  cortejoPorDefecto, problemaConfiguracion, puestosSinRepetir, repartirCortejo, seReparte, type ConfiguracionCortejo,
 } from '../../domain/cortejo.js';
 
 /** La configuración como objeto JSON simple, para la auditoría. */
 const aJson = (c: ConfiguracionCortejo) => ({ tramos: c.tramos.map((t) => ({ nombre: t.nombre, plazas: t.plazas })), puestos: [...c.puestos] });
 
 /** Lo guardado, si es válido; si no (nunca se guardó, o se estropeó a mano), lo de por defecto. */
-export function leerConfiguracion(salida: Pick<SalidaConActo, 'cortejo'>): ConfiguracionCortejo {
+export function leerConfiguracion(salida: Pick<SalidaConActo, 'cortejo' | 'puestos'>): ConfiguracionCortejo {
   const guardada = salida.cortejo as ConfiguracionCortejo | null;
   if (Array.isArray(guardada?.tramos) && Array.isArray(guardada?.puestos) && !problemaConfiguracion(guardada)) return guardada;
-  return CORTEJO_POR_DEFECTO;
+  return cortejoPorDefecto(salida.puestos as unknown as { nombre: string }[]);
 }
 
 async function papeletasDelAnio(salida: SalidaConActo, year: number) {

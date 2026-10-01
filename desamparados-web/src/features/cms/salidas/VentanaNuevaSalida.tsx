@@ -20,14 +20,17 @@ interface Form {
   fecha: 'PASCUA' | 'MANUAL'
   diasDesdePascua: string
   cobro: 'CUOTA' | 'DONATIVO'
+  primerPuesto: string
 }
 
-const VACIO: Form = { nombre: '', slug: '', slugTocado: false, fecha: 'PASCUA', diasDesdePascua: '', cobro: 'CUOTA' }
+const VACIO: Form = { nombre: '', slug: '', slugTocado: false, fecha: 'PASCUA', diasDesdePascua: '', cobro: 'CUOTA', primerPuesto: '' }
 
 /**
  * Alta de una salida: solo lo imprescindible para crearla (nombre, slug,
- * cuándo es y cómo se cobra). El resto —ropa, puestos, indicaciones— se
- * rellena ya en su pantalla propia, a la que se navega en cuanto se crea.
+ * cuándo es, cómo se cobra y un primer puesto). El resto —ropa, más puestos,
+ * indicaciones— se rellena ya en su pantalla propia, a la que se navega en
+ * cuanto se crea. El primer puesto se pide aquí porque una salida sin puestos
+ * no tendría nada que elegir al pedir la papeleta, y la API no la admite.
  */
 export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerrar }: Props) {
   const [form, setForm] = useState<Form>(VACIO)
@@ -43,7 +46,7 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
     setForm((f) => ({ ...f, slug: valor.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''), slugTocado: true }))
 
   const diasValidos = form.fecha === 'MANUAL' || /^-?\d+$/.test(form.diasDesdePascua.trim())
-  const valido = form.nombre.trim() !== '' && form.slug.trim() !== '' && diasValidos
+  const valido = form.nombre.trim() !== '' && form.slug.trim() !== '' && form.primerPuesto.trim() !== '' && diasValidos
 
   const cerrar = () => { onCerrar(); setForm(VACIO); setError(null) }
 
@@ -63,7 +66,8 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
         diasDesdePascua: form.fecha === 'PASCUA' ? Number(form.diasDesdePascua.trim()) : null,
         horaSalida: null,
         lugar: null,
-        puestos: [],
+        // Sin ropa de entrada, como la salida: la ropa de cada puesto se dice en su pantalla.
+        puestos: [{ nombre: form.primerPuesto.trim(), tunica: false, tocado: null, alturaHombro: false }],
         indicaciones: null,
       })
       setForm(VACIO)
@@ -120,6 +124,14 @@ export default function VentanaNuevaSalida({ abierta, salidas, onCreada, onCerra
           <FormControlLabel value="DONATIVO" control={<Radio />} label="Donativo" />
         </RadioGroup>
       </Stack>
+      <TextField
+        label="Primer puesto"
+        value={form.primerPuesto}
+        onChange={(e) => setForm((f) => ({ ...f, primerPuesto: e.target.value }))}
+        helperText="Luego puedes añadir más y decir qué ropa lleva cada uno."
+        required
+        fullWidth
+      />
     </VentanaFormulario>
   )
 }

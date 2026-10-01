@@ -117,13 +117,16 @@ export class SalidasService {
     const antes = await SalidasService.porId(id);
     comprobarFecha({ ...antes, ...cambios } as DatosSalida);
     try {
-      const s = await db.salida.update({ where: { id }, data: normalizar(cambios) as Prisma.SalidaUpdateInput, include: { acto: true } });
+      // Una salida desactivada deja de verse, pero su plazo seguía abierto: al
+      // reactivarla, la solicitud volvía abierta sin que nadie la abriera.
+      const cierre = cambios.activa === false && antes.plazoAbierto ? { plazoAbierto: false, plazoCambiadoEl: new Date() } : {};
+      const s = await db.salida.update({ where: { id }, data: { ...(normalizar(cambios) as Prisma.SalidaUpdateInput), ...cierre }, include: { acto: true } });
       await AuditoriaService.log(ACCIONES_AUDITORIA.SALIDA_EDITAR, meta ?? {}, 'salida', s.id, {
-        antes: Object.fromEntries(Object.keys(cambios).map((c) => {
+        antes: Object.fromEntries(Object.keys({ ...cambios, ...cierre }).filter((c) => c !== 'plazoCambiadoEl').map((c) => {
           const valor = (antes as Record<string, unknown>)[c];
           return [c, valor instanceof Prisma.Decimal ? valor.toNumber() : valor];
         })),
-        despues: cambios,
+        despues: { ...cambios, ...('plazoAbierto' in cierre && { plazoAbierto: false }) },
       } as unknown as Prisma.InputJsonValue);
       return s;
     } catch (e) {

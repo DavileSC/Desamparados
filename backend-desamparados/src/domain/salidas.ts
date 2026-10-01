@@ -26,13 +26,16 @@ export function tipoReciboDe(cobro: CobroSalida): TipoRecibo {
 
 /**
  * Concepto del recibo de una papeleta que no choque con los que el hermano ya
- * tiene ese año: «Papeleta de sitio 2026», y si ya se le anuló una, «Papeleta
- * Sitio 2026 (reemisión 2)». El recibo de la papeleta anulada se queda (la
- * contabilidad conserva el rastro) y ocupa su concepto en la clave única.
+ * tiene ese año: «Papeleta Sábado de Pasión 2026», y si ya se le anuló una,
+ * «Papeleta Sábado de Pasión 2026 (reemisión 2)». El recibo de la papeleta
+ * anulada se queda (la contabilidad conserva el rastro) y ocupa su concepto en
+ * la clave única.
  */
 export function conceptoDeSalida(salida: { nombre: string; cobro: CobroSalida }, year: number, conceptosExistentes: readonly string[]): string {
-  // Los conceptos de siempre: «Papeleta de sitio 2026», «Donativo Rosario vespertino 2026».
-  const base = `${salida.cobro === 'DONATIVO' ? `Donativo ${salida.nombre}` : 'Papeleta de sitio'} ${year}`;
+  // Siempre con el nombre de la salida: con varias salidas de cuota el mismo
+  // año, un «Papeleta de sitio 2026» común haría que la segunda saliera como
+  // «(reemisión 2)» sin haberse anulado nada.
+  const base = `${salida.cobro === 'DONATIVO' ? 'Donativo' : 'Papeleta'} ${salida.nombre} ${year}`;
   const usados = new Set(conceptosExistentes.map(claveConcepto));
   if (!usados.has(claveConcepto(base))) return base;
   for (let n = 2; ; n += 1) {
