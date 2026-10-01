@@ -17,7 +17,7 @@ import { NoticiaService } from '../noticia.service';
 import { HttpError } from '../../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
 import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-salida.js';
-import { deArticulo, type Articulo } from '../../domain/articulos.js';
+import { articuloDe, deArticulo } from '../../domain/articulos.js';
 import { reglaDe, type SalidaConActo } from './salidas.service.js';
 
 type Cliente = Prisma.TransactionClient | typeof db;
@@ -109,8 +109,7 @@ export class PlazoPapeletasService {
     let avisados = 0;
 
     if (abrir && opciones.borradorNoticia) {
-      // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-      const articuloNoticia = salida.articulo as Articulo;
+      const articuloNoticia = articuloDe(salida);
       const noticia = await NoticiaService.crear({
         titulo: `Abierta la inscripción ${deArticulo(articuloNoticia, salida.nombre)} ${year}`,
         extracto: `Ya se puede pedir la papeleta ${deArticulo(articuloNoticia, salida.nombre)} desde el área de hermanos y elegir el día de reparto.`,
@@ -125,8 +124,7 @@ export class PlazoPapeletasService {
       const destinatarios = await PlazoPapeletasService.destinatarios();
       avisados = destinatarios.length;
       const textos = dias.map(describirTurno);
-      // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-      const salidaParaCorreo = { ...salida, articulo: salida.articulo as Articulo };
+      const salidaParaCorreo = { ...salida, articulo: articuloDe(salida) };
       void (async () => {
         for (const d of destinatarios) {
           try {
@@ -179,8 +177,7 @@ function contenidoNoticia(dias: { fecha: Date; horaInicio: Date; horaFin: Date }
     ? 'Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano.'
     : 'Para recogerla hay que estar al día con la cuota de hermano. Hay que llevar el DNI.';
   return [
-    // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-    `<p>Ya está abierta la inscripción ${deArticulo(salida.articulo as Articulo, escapar(salida.nombre))} de ${year}.</p>`,
+    `<p>Ya está abierta la inscripción ${deArticulo(articuloDe(salida), escapar(salida.nombre))} de ${year}.</p>`,
     '<p>Cada hermano puede pedir su papeleta desde el área de hermanos, para sí y para quienes tiene a su cargo, y elegir el día en que pasará a recogerla:</p>',
     `<ul>${lista}</ul>`,
     `<p>${cobro}</p>`,

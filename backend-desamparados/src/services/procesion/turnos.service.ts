@@ -10,7 +10,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../audito
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { motivoTurnoInvalido } from '../../domain/datos-procesion.js';
 import { diaMadrid, fechaDeSalida, motivoRepartoFueraDeTemporada, sumarDias } from '../../domain/fecha-salida.js';
-import { aArticulo, deArticulo, type Articulo } from '../../domain/articulos.js';
+import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
 import { PlazoPapeletasService } from './plazo.service';
 import { reglaDe, type SalidaConActo } from './salidas.service.js';
 
@@ -22,8 +22,7 @@ const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid'
  */
 function actoDelReparto(t: { salida: { nombre: string; articulo: string; conRopa: boolean }; horaInicio: Date; horaFin: Date }): Prisma.EventoCreateInput {
   const horas = `de ${formatoHora.format(t.horaInicio)} a ${formatoHora.format(t.horaFin)}`;
-  // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-  const articulo = t.salida.articulo as Articulo;
+  const articulo = articuloDe(t.salida);
   return {
     title: `Reparto de papeletas ${deArticulo(articulo, t.salida.nombre)}`,
     description: t.salida.conRopa
@@ -96,7 +95,7 @@ export class TurnosService {
 
     // 3. Antes de la próxima salida: la papeleta cuenta para el año de esa
     // salida, y un reparto después de ella la contaría en una que ya pasó.
-    const fueraDeTemporada = motivoRepartoFueraDeTemporada(diaMadrid(new Date(data.fecha)), reglaDe(salida), diaMadrid(new Date()), salida.nombre, salida.articulo as Articulo);
+    const fueraDeTemporada = motivoRepartoFueraDeTemporada(diaMadrid(new Date(data.fecha)), reglaDe(salida), diaMadrid(new Date()), salida.nombre, articuloDe(salida));
     if (fueraDeTemporada) throw new HttpError(fueraDeTemporada);
 
     // 4. Lo guardamos, con su acto en la Agenda pública.

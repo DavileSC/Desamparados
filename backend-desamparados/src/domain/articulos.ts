@@ -11,6 +11,9 @@ export type { Articulo };
  */
 export const ARTICULOS: readonly Articulo[] = ['el', 'la', 'los', 'las'];
 
+/** El artículo de una fila de Salida: la columna es un VARCHAR(3) sin enum (Prisma no conoce el tipo), y solo entra por el esquema de las salidas, que lo limita a los cuatro. */
+export const articuloDe = (s: { articulo: string }): Articulo => s.articulo as Articulo;
+
 export const conArticulo = (art: Articulo, nombre: string) => `${art} ${nombre}`;
 export const deArticulo = (art: Articulo, nombre: string) => (art === 'el' ? `del ${nombre}` : `de ${art} ${nombre}`);
 export const aArticulo = (art: Articulo, nombre: string) => (art === 'el' ? `al ${nombre}` : `a ${art} ${nombre}`);

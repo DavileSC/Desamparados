@@ -13,6 +13,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { anioDeHoy, leerPeriodo, periodoAnterior, periodoDe, periodosDisponibles } from '../src/domain/periodo-datos.js';
 import { areasDe, etiquetasDeMeses, valorEscrito, vistazo, type DatosCrudos } from '../src/domain/datos-areas.js';
+import type { Articulo } from '../src/domain/articulos.js';
 import { puedeEscribir } from '../src/services/informe-anual.service.js';
 import { informeAnual, informeDeArea } from '../src/services/informes/informes.js';
 import { entradilla, enTexto } from '../src/domain/entradillas.js';
@@ -100,7 +101,11 @@ describe('los años', () => {
 });
 
 /** Unas cifras de conjunto inventadas, para probar las palabras sin base de datos. */
-function crudos(parcial: { papeletas?: number } = {}): DatosCrudos {
+function crudos(parcial: {
+  papeletas?: number;
+  /** La segunda salida (la que siempre cae en «otras salidas», nunca es la principal): para probar que concuerda con su propio artículo. */
+  otraSalida?: { nombre?: string; articulo?: Articulo; papeletas?: number };
+} = {}): DatosCrudos {
   const meses = periodoDe(2025, HOY).meses;
   return {
     hermanos: {
@@ -124,7 +129,10 @@ function crudos(parcial: { papeletas?: number } = {}): DatosCrudos {
           papeletas: parcial.papeletas ?? 183, papeletasAnioAnterior: 131, porPuesto: [{ etiqueta: 'Nazareno de cirio', total: 90 }],
           serie: [{ anio: 2025, total: 131 }, { anio: 2026, total: parcial.papeletas ?? 183 }],
         },
-        { slug: 'rosario-vespertino', nombre: 'Rosario vespertino', articulo: 'el', conRopa: false, papeletas: 0, papeletasAnioAnterior: 0, porPuesto: [] },
+        {
+          slug: 'rosario-vespertino', nombre: parcial.otraSalida?.nombre ?? 'Rosario vespertino', articulo: parcial.otraSalida?.articulo ?? 'el',
+          conRopa: false, papeletas: parcial.otraSalida?.papeletas ?? 0, papeletasAnioAnterior: 0, porPuesto: [],
+        },
       ],
       porCobrar: [],
     },
@@ -207,6 +215,12 @@ describe('las entradillas del Informe anual y los informes', () => {
     const agenda = enTexto(entradilla('agenda', crudos(), enMarcha, HOY));
     assert.equal(agenda, 'La Agenda de 2026 tiene 1 acto: 1 culto. Se ha celebrado 1.');
     assert.match(enTexto(entradilla('web', crudos(), cerrado, HOY)), /El boletín aún no tiene suscritos\.$/);
+  });
+
+  test('en «otras salidas», una con artículo femenino o plural no lleva un «El» fijo', () => {
+    const texto = enTexto(entradilla('procesion', crudos({ otraSalida: { nombre: 'Procesión Magna', articulo: 'la', papeletas: 5 } }), cerrado, HOY));
+    assert.match(texto, /La Procesión Magna de 2026 reunió 5 papeletas\./);
+    assert.doesNotMatch(texto, /El Procesión/);
   });
 
   test('las túnicas son femeninas y los capirotes masculinos', () => {

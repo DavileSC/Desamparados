@@ -4,7 +4,7 @@ import { claveMes } from '../domain/panel-censo.js';
 import { agruparPorTextoLibre } from '../domain/panel-agrupar.js';
 import { periodoAnterior, periodoDe, periodosDisponibles, type Periodo } from '../domain/periodo-datos.js';
 import { areasDe, type Area, type DatosCrudos } from '../domain/datos-areas.js';
-import type { Articulo } from '../domain/articulos.js';
+import { articuloDe } from '../domain/articulos.js';
 import { devueltosPendientes } from './recibos/comunes.js';
 import { SalidasService } from './procesion/salidas.service.js';
 
@@ -203,8 +203,7 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
         return {
           slug: s.slug,
           nombre: s.nombre,
-          // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-          articulo: s.articulo as Articulo,
+          articulo: articuloDe(s),
           conRopa: s.conRopa,
           papeletas: s.total,
           papeletasAnioAnterior: s.anterior,

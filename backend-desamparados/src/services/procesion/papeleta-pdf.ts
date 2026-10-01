@@ -12,7 +12,7 @@ import type { Sexo } from '@prisma/client';
 import db from '../../config/db.js';
 import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
 import { identidad } from '../../domain/datos-entidad.js';
-import { deLaCorporacion, type Articulo } from '../../domain/articulos.js';
+import { articuloDe, deLaCorporacion } from '../../domain/articulos.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
 import type { SalidaImpresa } from '../../dtos/email.dto.js';
 import {
@@ -62,8 +62,7 @@ export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta |
   return {
     id: p.id,
     year: p.year,
-    // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-    salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones, articulo: p.salida.articulo as Articulo },
+    salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones, articulo: articuloDe(p.salida) },
     referencia: referenciaDe(p.year, p.id),
     nombre: `${p.hermano.nombre} ${p.hermano.apellidos}`.trim(),
     sexo: p.hermano.sexo,

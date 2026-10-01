@@ -20,7 +20,7 @@ import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { puedeTransicionar } from '../../domain/recibo-estados.js';
 import { conceptoDeSalida, tipoReciboDe } from '../../domain/salidas.js';
-import { aArticulo, deArticulo, type Articulo } from '../../domain/articulos.js';
+import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
 import type { SalidaConActo } from './salidas.service.js';
 import { recogerRopaEnTransaccion } from './ropa.js';
 import { avisarALaMesa } from './avisos-mesa.js';
@@ -94,8 +94,7 @@ export class PapeletasService {
    */
   static async crearSolicitudEnTransaccion(tx: Tx, datos: NuevaSolicitud) {
     const { hermanoId, salida, year } = datos;
-    // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-    const articulo = salida.articulo as Articulo;
+    const articulo = articuloDe(salida);
     if (await tx.papeletaSitio.findUnique({ where: { hermanoId_year_salidaId: { hermanoId, year, salidaId: salida.id } } })) {
       throw new HttpError(`Ya tiene su papeleta ${deArticulo(articulo, salida.nombre)} de ${year}.`, 409);
     }
@@ -399,8 +398,7 @@ export class PapeletasService {
           cita.hermano.user.email,
           cita.hermano.nombre,
           fechaStr,
-          // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-          { nombre: cita.turno.salida.nombre, articulo: cita.turno.salida.articulo as Articulo },
+          { nombre: cita.turno.salida.nombre, articulo: articuloDe(cita.turno.salida) },
           cita.hermano.sexo
         ).catch(() => console.error(`Error enviando email a ${enmascararEmail(cita.hermano.user.email)}`));
       }

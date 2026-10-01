@@ -20,7 +20,7 @@ import { conceptoDeSalida, pagoEnLineaDisponible } from '../../domain/salidas.js
 import { pagoParaLaWeb } from '../../domain/redsys.js';
 import QRCode from 'qrcode';
 import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
-import { aArticulo, deArticulo, type Articulo } from '../../domain/articulos.js';
+import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
 import { referenciaDe } from './papeleta-pdf.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
@@ -91,8 +91,7 @@ export class MiProcesionService {
         throw new HttpError('El turno no existe o ya no está disponible.');
       }
       const { salida } = turno;
-      // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-      const articulo = salida.articulo as Articulo;
+      const articulo = articuloDe(salida);
       // Con el plazo cerrado no se pide, lo intente la pantalla o alguien a mano.
       if (!(await PlazoPapeletasService.estaAbierto(salida, tx))) {
         throw new HttpError(`La inscripción ${deArticulo(articulo, salida.nombre)} no está abierta.`, 409);

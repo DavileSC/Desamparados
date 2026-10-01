@@ -18,7 +18,7 @@ import { firma, maquetar, parrafo, saludo, urlDeLaWeb } from './correos/plantill
 import { anioDeLaMesa } from './procesion/zonas.service.js';
 import { SalidasService } from './procesion/salidas.service.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
-import { deLaCorporacion, type Articulo } from '../domain/articulos.js';
+import { articuloDe, deLaCorporacion } from '../domain/articulos.js';
 import {
   adaptarAlCorreo, describirSegmento, destinatariosDe, emailDeToken, tokenDeBaja,
   type Destinatario, type Segmento, type SalidaDelSegmento,
@@ -91,8 +91,7 @@ function correoPara(c: { tipo: TipoComunicado; asunto: string; cuerpo: string },
 
 /** El nombre y el artículo de cada salida por su id, también de las desactivadas: un comunicado viejo sigue diciendo a quién fue. */
 const nombresDeSalidas = async () => new Map((await SalidasService.listar({ todas: true }))
-  // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
-  .map((s) => [s.id, { nombre: s.nombre, articulo: s.articulo as Articulo }]));
+  .map((s) => [s.id, { nombre: s.nombre, articulo: articuloDe(s) }]));
 
 const resumen = (c: { id: number; tipo: TipoComunicado; asunto: string; estado: EstadoComunicado; segmento: Prisma.JsonValue; enviadoEl: Date | null; autorNombre: string | null; createdAt: Date; updatedAt: Date }, nombres: ReadonlyMap<number, SalidaDelSegmento>) => ({
   id: c.id, tipo: c.tipo, asunto: c.asunto, estado: c.estado, segmento: c.segmento as Segmento,
