@@ -1,28 +1,23 @@
 /**
- * El plazo para pedir la papeleta desde el área de hermanos, uno por salida:
- * el de la Pasión y el del Rosario vespertino.
+ * El plazo para pedir la papeleta desde el área de hermanos, uno por salida.
  *
  * Lo abre y lo cierra Secretaría a mano. Mientras está cerrado, el hermano no
  * puede pedir la papeleta de esa salida (lo comprueba también la solicitud,
  * no solo la pantalla), aunque la mesa sigue apuntando a mano.
  *
- * Se guarda en la tabla de configuración, pero fuera de las claves de
- * `/admin/config`: abrirlo no es cambiar un valor, es avisar a los hermanos y
- * preparar la noticia, y eso solo pasa por aquí.
+ * Vive en la fila de la salida (`plazoAbierto`), pero no se cambia al editar
+ * la salida: abrirlo es avisar a los hermanos y preparar la noticia, y eso
+ * solo pasa por aquí.
  */
 import db from '../../config/db';
-import { EstadoCita, Prisma, type Salida } from '@prisma/client';
+import { EstadoCita, Prisma } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
 import { EmailService } from '../email.service';
 import { NoticiaService } from '../noticia.service';
 import { HttpError } from '../../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
-import { leerPrecio } from '../../domain/datos-procesion.js';
-import { CLAVE_CUOTA_SALIDA, CUOTA_SALIDA_POR_DEFECTO, DATOS_SALIDA } from '../../domain/salidas.js';
-import { identidad } from '../../domain/datos-entidad.js';
-
-/** La clave del plazo de la Pasión, la de siempre. */
-export const CLAVE_PLAZO = DATOS_SALIDA.PASION.clavePlazo;
+import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-salida.js';
+import { reglaDe, type SalidaConActo } from './salidas.service.js';
 
 type Cliente = Prisma.TransactionClient | typeof db;
 
@@ -35,66 +30,52 @@ export function describirTurno(turno: { fecha: Date; horaInicio: Date; horaFin: 
   return `${formatoDia.format(turno.fecha)}, de ${formatoHora.format(turno.horaInicio)} a ${formatoHora.format(turno.horaFin)}`;
 }
 
+/** La cuota que ve el hermano: `null` en las de donativo, donde se da la voluntad. */
+export const cuotaDe = (salida: { cobro: SalidaConActo['cobro']; importeCuota: SalidaConActo['importeCuota'] }): number | null =>
+  salida.cobro === 'DONATIVO' ? null : Number(salida.importeCuota);
+
 export class PlazoPapeletasService {
 
-  static async estaAbierto(salida: Salida = 'PASION', cliente: Cliente = db): Promise<boolean> {
-    const fila = await cliente.configuracion.findUnique({ where: { key: DATOS_SALIDA[salida].clavePlazo } });
-    return fila?.value === 'true';
+  /** Se lee de la base y no de la fila que se tenga: la solicitud lo comprueba dentro de su transacción. */
+  static async estaAbierto(salida: SalidaConActo, cliente: Cliente = db): Promise<boolean> {
+    const fila = await cliente.salida.findUnique({ where: { id: salida.id }, select: { plazoAbierto: true } });
+    return fila?.plazoAbierto === true;
   }
 
   /** Los días de reparto de una salida que quedan por delante, en orden. */
-  static diasFuturos(salida: Salida = 'PASION', cliente: Cliente = db) {
+  static diasFuturos(salida: SalidaConActo, cliente: Cliente = db) {
     return cliente.turno.findMany({
-      where: { activo: true, salida, fecha: { gte: inicioDeHoy() } },
+      where: { activo: true, salidaId: salida.id, fecha: { gte: inicioDeHoy() } },
       orderBy: [{ fecha: 'asc' }, { horaInicio: 'asc' }],
     });
   }
 
   /**
-   * El año de la salida a la que se refiere el plazo: el del primer día de
-   * reparto que queda. Sin ninguno, la Pasión pasada la Semana Santa (abril
-   * como muy tarde) es la del año siguiente, y el Rosario pasado octubre, también.
+   * El año de la salida que se está preparando: el de su próxima fecha (ver
+   * `anioDeLaSalida`). Pasada la salida, ya es la del año siguiente, aunque
+   * todavía no haya días de reparto.
    */
-  static async anioDeLaProcesion(salida: Salida = 'PASION', cliente: Cliente = db): Promise<number> {
-    const [primero] = await PlazoPapeletasService.diasFuturos(salida, cliente);
-    if (primero) return primero.fecha.getFullYear();
-    const hoy = new Date();
-    const pasada = salida === 'PASION' ? hoy.getMonth() >= 4 : hoy.getMonth() >= 10;
-    return pasada ? hoy.getFullYear() + 1 : hoy.getFullYear();
-  }
-
-  /**
-   * La cuota de salida de la Pasión (hoy 0 €, y entonces el hermano no ve
-   * nada de ella). `null` si la configuración tiene un valor que no se entiende.
-   */
-  static async cuotaDeSalida(): Promise<number | null> {
-    const fila = await db.configuracion.findUnique({ where: { key: CLAVE_CUOTA_SALIDA } });
-    const leida = leerPrecio(fila?.value, CUOTA_SALIDA_POR_DEFECTO);
-    return leida.ok ? leida.valor : null;
+  static anioDeLaProcesion(salida: SalidaConActo): number {
+    return anioDeLaSalida(reglaDe(salida), diaMadrid(new Date()));
   }
 
   /** Lo que ve Secretaría junto al interruptor de cada salida. */
-  static async estadoParaSecretaria(salida: Salida = 'PASION') {
-    const [fila, dias, cuotaSalida, year] = await Promise.all([
-      db.configuracion.findUnique({ where: { key: DATOS_SALIDA[salida].clavePlazo } }),
-      PlazoPapeletasService.diasFuturos(salida),
-      PlazoPapeletasService.cuotaDeSalida(),
-      PlazoPapeletasService.anioDeLaProcesion(salida),
-    ]);
+  static async estadoParaSecretaria(salida: SalidaConActo) {
+    const dias = await PlazoPapeletasService.diasFuturos(salida);
     const citasReservadas = dias.length === 0 ? 0 : await db.cita.count({
       where: { estado: EstadoCita.RESERVADA, turnoId: { in: dias.map((d) => d.id) } },
     });
     return {
-      salida,
-      abierto: fila?.value === 'true',
-      cambiadoEl: fila?.updatedAt ?? null,
-      year,
+      salida: salida.slug,
+      abierto: salida.plazoAbierto,
+      cambiadoEl: salida.plazoCambiadoEl,
+      year: PlazoPapeletasService.anioDeLaProcesion(salida),
       diasDeReparto: dias.length,
       primerDia: dias[0]?.fecha ?? null,
       ultimoDia: dias.at(-1)?.fecha ?? null,
       citasReservadas,
-      /** Solo la Pasión: en el Rosario se da la voluntad. */
-      cuotaSalida: salida === 'PASION' ? cuotaSalida : null,
+      /** Solo con cuota: en las de donativo se da la voluntad. */
+      cuotaSalida: cuotaDe(salida),
     };
   }
 
@@ -106,9 +87,11 @@ export class PlazoPapeletasService {
    * Los correos salen después de responder: con cientos de hermanos, esperar
    * a que se manden todos dejaría el botón colgado minutos.
    */
-  static async cambiar(abrir: boolean, opciones: { avisar?: boolean; borradorNoticia?: boolean; salida?: Salida }, meta?: MetaDeAuditoria) {
-    const salida = opciones.salida ?? 'PASION';
-    const clave = DATOS_SALIDA[salida].clavePlazo;
+  static async cambiar(abrir: boolean, opciones: { avisar?: boolean; borradorNoticia?: boolean }, salida: SalidaConActo, meta?: MetaDeAuditoria) {
+    // Sin fecha no se sabe para qué año son las papeletas ni hasta cuándo se reparte.
+    if (abrir && !proximaFecha(reglaDe(salida), diaMadrid(new Date()))) {
+      throw new HttpError('Pon antes la fecha de la salida en la Agenda.', 409);
+    }
     const dias = await PlazoPapeletasService.diasFuturos(salida);
     if (abrir && dias.length === 0) {
       throw new HttpError('No hay días de reparto por delante: los hermanos no tendrían día que elegir. Crea al menos uno antes de abrir el plazo.', 409);
@@ -118,23 +101,16 @@ export class PlazoPapeletasService {
       return { abierto: abrir, avisados: 0, noticiaId: null as number | null };
     }
 
-    await db.configuracion.upsert({
-      where: { key: clave },
-      create: { key: clave, value: String(abrir), descripcion: `Solicitud de papeletas del ${DATOS_SALIDA[salida].nombre} abierta en el área de hermanos` },
-      update: { value: String(abrir) },
-    });
+    await db.salida.update({ where: { id: salida.id }, data: { plazoAbierto: abrir, plazoCambiadoEl: new Date() } });
 
-    const year = await PlazoPapeletasService.anioDeLaProcesion(salida);
+    const year = PlazoPapeletasService.anioDeLaProcesion(salida);
     let noticiaId: number | null = null;
     let avisados = 0;
 
     if (abrir && opciones.borradorNoticia) {
-      const rosario = salida === 'ROSARIO';
       const noticia = await NoticiaService.crear({
-        titulo: rosario ? `Abierta la inscripción del Rosario vespertino ${year}` : `Abierta la solicitud de papeletas de sitio ${year}`,
-        extracto: rosario
-          ? 'Ya se puede apuntar al Rosario vespertino desde el área de hermanos y elegir el día de reparto.'
-          : 'Ya se puede pedir la papeleta de sitio desde el área de hermanos y elegir el día de reparto.',
+        titulo: `Abierta la inscripción del ${salida.nombre} ${year}`,
+        extracto: `Ya se puede pedir la papeleta del ${salida.nombre} desde el área de hermanos y elegir el día de reparto.`,
         contenido: contenidoNoticia(dias, year, salida),
         visible: false,
       });
@@ -159,7 +135,7 @@ export class PlazoPapeletasService {
 
     await AuditoriaService.log(
       abrir ? ACCIONES_AUDITORIA.PLAZO_PAPELETAS_ABRIR : ACCIONES_AUDITORIA.PLAZO_PAPELETAS_CERRAR,
-      meta ?? {}, 'configuracion', clave,
+      meta ?? {}, 'salida', salida.id,
       { antes: { abierto: yaAbierto }, despues: { abierto: abrir, avisados, noticiaId } },
     );
     return { abierto: abrir, avisados, noticiaId };
@@ -192,20 +168,19 @@ function inicioDeHoy() {
 }
 
 /** El cuerpo del borrador: se revisa antes de publicar, así que solo lo que se sabe seguro. */
-function contenidoNoticia(dias: { fecha: Date; horaInicio: Date; horaFin: Date }[], year: number, salida: Salida) {
+function contenidoNoticia(dias: { fecha: Date; horaInicio: Date; horaFin: Date }[], year: number, salida: SalidaConActo) {
   const lista = dias.map((d) => `<li>${describirTurno(d)}</li>`).join('');
-  if (salida === 'ROSARIO') {
-    return [
-      `<p>Ya está abierta la inscripción para el Rosario vespertino de ${year}, en el que acompañamos a ${identidad.titular} por las calles rezando el Santo Rosario.</p>`,
-      '<p>Cada hermano puede apuntarse desde el área de hermanos, para sí y para quienes tiene a su cargo, pedir el puesto en que le gustaría ir y elegir el día en que pasará a recoger su papeleta:</p>',
-      `<ul>${lista}</ul>`,
-      '<p>Se va en traje. Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano.</p>',
-    ].join('');
-  }
+  const cobro = salida.cobro === 'DONATIVO'
+    ? 'Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano.'
+    : 'Para recogerla hay que estar al día con la cuota de hermano. Hay que llevar el DNI.';
   return [
-    `<p>Ya está abierta la solicitud de papeletas de sitio para la Estación de Penitencia de ${year}.</p>`,
-    '<p>Cada hermano puede pedirla desde el área de hermanos, para sí y para quienes tiene a su cargo, y elegir el día en que pasará a recogerla:</p>',
+    `<p>Ya está abierta la inscripción del ${escapar(salida.nombre)} de ${year}.</p>`,
+    '<p>Cada hermano puede pedir su papeleta desde el área de hermanos, para sí y para quienes tiene a su cargo, y elegir el día en que pasará a recogerla:</p>',
     `<ul>${lista}</ul>`,
-    '<p>Para recogerla hay que estar al día con la cuota de hermano. Hay que llevar el DNI.</p>',
+    `<p>${cobro}</p>`,
+    ...(salida.indicaciones?.trim() ? [`<p>${escapar(salida.indicaciones.trim())}</p>`] : []),
   ].join('');
 }
+
+/** El nombre y las indicaciones se escriben en el CMS como texto: en el HTML de la noticia no son etiquetas. */
+const escapar = (texto: string) => texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

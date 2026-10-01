@@ -10,7 +10,6 @@
  * Criterio común: asuntos sin emojis y en minúscula normal, saludo según el
  * sexo de la ficha, firma del cargo y nada que el Grupo no haya confirmado.
  */
-import type { Salida } from '@prisma/client';
 import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactoDto } from '../dtos/contacto.dto';
 import {
@@ -73,23 +72,24 @@ export class EmailService {
   }
 
   /**
-   * La papeleta, cuando se recoge en la mesa (en la Pasión, con la ropa; en
-   * el Rosario, con el puesto confirmado). El QR no va en el cuerpo, que
+   * La papeleta, cuando se recoge en la mesa (con la ropa en las salidas que
+   * la llevan; si no, con el puesto confirmado). El QR no va en el cuerpo, que
    * muchos clientes de correo esconden o recortan: va en el PDF adjunto, el
    * mismo que se imprime en la mesa. Lo que la identifica en Secretaría es su
    * número.
    */
   static async enviarPapeleta(emailDestino: string, nombreHermano: string, datosPapeleta: DatosPapeleta, sexo?: Sexo, pdf?: { nombre: string; contenido: Buffer }) {
     const { negro, burdeos, linea, sobreNegro } = COLORES;
-    const rosario = datosPapeleta.salida === 'ROSARIO';
-    const nombrePapeleta = rosario ? 'Rosario vespertino' : 'Papeleta de sitio';
+    const { salida } = datosPapeleta;
+    const donativo = salida.cobro === 'DONATIVO';
+    const nombrePapeleta = salida.nombre;
     const referencia = datosPapeleta.papeletaId ? `${datosPapeleta.year}-${String(datosPapeleta.papeletaId).padStart(4, '0')}` : null;
     const celda = (titulo: string, valor: string, columnas = 1) =>
       `<td ${columnas === 2 ? 'colspan="2"' : 'width="50%"'} valign="top" style="padding: 12px 20px; border-top: 1px solid ${linea};">${rotulo(titulo)}<br><span style="font-size: 16px;">${esc(valor)}</span></td>`;
 
     const filasExtra = [
       datosPapeleta.tunica ? celda('Túnica', datosPapeleta.tunica) : '',
-      datosPapeleta.importe ? celda(rosario ? 'Donativo' : 'Limosna abonada', datosPapeleta.importe) : '',
+      datosPapeleta.importe ? celda(donativo ? 'Donativo' : 'Limosna abonada', datosPapeleta.importe) : '',
     ].filter(Boolean);
 
     // Como la de papel: recuadro negro, cabecera con el año y el número, el
@@ -99,7 +99,7 @@ export class EmailService {
         <tr>
           <td colspan="2" bgcolor="${negro}" style="background-color: ${negro}; padding: 11px 20px;">
             <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"><tr>
-              <td style="font-family: Georgia, serif; font-size: 15px; font-style: italic; color: #ffffff;">${nombrePapeleta} ${datosPapeleta.year}</td>
+              <td style="font-family: Georgia, serif; font-size: 15px; font-style: italic; color: #ffffff;">${esc(nombrePapeleta)} ${datosPapeleta.year}</td>
               ${referencia ? `<td align="right" style="font-family: Georgia, serif; font-size: 14px; color: ${sobreNegro};">N.º ${referencia}</td>` : ''}
             </tr></table>
           </td>
@@ -123,17 +123,14 @@ export class EmailService {
 
     const content = [
       saludo(nombreHermano, sexo),
-      parrafo(rosario
-        ? `La Secretaría le confirma su puesto en el Rosario vespertino del <strong>${esc(datosPapeleta.fechaSalida)}</strong>. Estos son los datos de su sitio:`
-        : `La Secretaría certifica que está al día con el Grupo Parroquial y le autoriza a realizar la Estación de Penitencia el próximo <strong>${esc(datosPapeleta.fechaSalida)}</strong>. Estos son los datos de su sitio:`),
+      parrafo(`La Secretaría le confirma su puesto en el ${esc(salida.nombre)} del <strong>${esc(datosPapeleta.fechaSalida)}</strong>. Estos son los datos de su sitio:`),
       papeleta,
-      recuadro('Antes de salir', rosario
-        ? 'Se va en traje oscuro, con la medalla del Grupo Parroquial. Se ruega puntualidad y recogimiento durante el rezo.'
-        : 'Se ruega puntualidad y decoro en la vestimenta. Es obligatorio portar la medalla del Grupo Parroquial y calzado oscuro. Guarde silencio durante la formación.'),
+      // Las indicaciones las escribe el CMS para cada salida; sin ellas, no hay recuadro.
+      salida.indicaciones?.trim() ? recuadro('Antes de salir', esc(salida.indicaciones.trim())) : '',
       parrafo(pdf
         ? 'Le adjuntamos su papeleta en PDF, con el código que se lee en la puerta del templo. También la tiene en el área de hermanos, en Procesión, para enseñarla desde el móvil.'
         : 'Conserve este correo: puede enseñarlo en el acceso si se le pide. Su papeleta, con el código que se lee en la puerta, está en el área de hermanos, en Procesión.'),
-      rosario ? '' : normativa,
+      salida.conRopa ? normativa : '',
       firma(BENDICION),
     ].join('');
 
@@ -141,8 +138,8 @@ export class EmailService {
     // como «O&#39;Brien». Los saltos de línea los aplana nodemailer.
     const asunto = `${nombrePapeleta} ${datosPapeleta.year}: ${nombreHermano}`;
     return await enviarCorreo(emailDestino, asunto, maquetar({
-      titulo: rosario ? `Su puesto en el Rosario vespertino ${datosPapeleta.year}` : `Su papeleta de sitio ${datosPapeleta.year}`,
-      antetitulo: rosario ? 'Rosario vespertino' : 'Estación de Penitencia',
+      titulo: `${salida.nombre} ${datosPapeleta.year}`,
+      antetitulo: salida.nombre,
       resumen: `${datosPapeleta.puesto || 'Puesto por asignar'} · ${datosPapeleta.fechaSalida}, ${datosPapeleta.horaSalida}.`,
       contenido: content,
     }), undefined, undefined, pdf ? [{ filename: pdf.nombre, content: pdf.contenido, contentType: 'application/pdf' }] : []);
@@ -377,27 +374,25 @@ export class EmailService {
    * va porque quien recibe el correo muchas veces pide también las de sus
    * menores.
    */
-  static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo?: Sexo, salida: Salida = 'PASION') {
-    const rosario = salida === 'ROSARIO';
+  static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo: Sexo | undefined, salida: { nombre: string; cobro: 'CUOTA' | 'DONATIVO'; indicaciones: string | null }) {
+    const donativo = salida.cobro === 'DONATIVO';
     const content = [
       saludo(nombreCuenta, sexo),
-      parrafo(rosario
-        ? `Ya está <strong>abierta la inscripción para el Rosario vespertino</strong> de ${year}. Puede apuntarse desde el área de hermanos, pedir el puesto en que le gustaría ir y elegir el día en que pasará a recoger su papeleta.`
-        : `Ya está <strong>abierta la solicitud de papeletas de sitio</strong> para la Estación de Penitencia de ${year}. Puede pedirla desde el área de hermanos y elegir el día en que pasará a recogerla.`),
+      parrafo(`Ya está <strong>abierta la inscripción del ${esc(salida.nombre)}</strong> de ${year}. Puede pedir su papeleta desde el área de hermanos y elegir el día en que pasará a recogerla.`),
       recuadro('Días de reparto', lista(dias, '0')),
       parrafo(fichas.length > 1 ? 'Puede pedirla para:' : 'Puede pedirla para su ficha:', 'margin-bottom: 6px;'),
       lista(fichas),
-      parrafo(rosario
-        ? 'Se va en traje. Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto.'
+      parrafo(donativo
+        ? 'Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto.'
         : 'Para recoger la papeleta hay que estar al día con la cuota de hermano: puede pagarla desde el área de hermanos o el día del reparto. Recuerde llevar el DNI.'),
-      boton(rosario ? 'Apuntarme al Rosario' : 'Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
+      salida.indicaciones?.trim() ? recuadro('Antes de salir', esc(salida.indicaciones.trim())) : '',
+      boton('Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
       firma(`Esperamos contar con su presencia acompañando a ${identidad.titular}.`),
     ].join('');
 
-    const titulo = rosario ? `Rosario vespertino ${year}` : `Papeletas de sitio ${year}`;
-    return await enviarCorreo(emailDestino, rosario ? `Abierta la inscripción del Rosario vespertino ${year}` : `Abierta la solicitud de papeletas de sitio ${year}`, maquetar({
-      titulo,
-      antetitulo: rosario ? 'Rosario vespertino' : 'Estación de Penitencia',
+    return await enviarCorreo(emailDestino, `Abierta la inscripción del ${salida.nombre} ${year}`, maquetar({
+      titulo: `${salida.nombre} ${year}`,
+      antetitulo: salida.nombre,
       resumen: `Ya puede pedir su papeleta y elegir el día de reparto. Primer día: ${dias[0] ?? 'por anunciar'}.`,
       contenido: content,
     }));

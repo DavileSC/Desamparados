@@ -7,7 +7,6 @@
  * deshacer una entrada pasa por la auditoría, que es lo que alguien puede
  * querer explicar después.
  */
-import type { Salida } from '@prisma/client';
 import db from '../../config/db.js';
 import { NotFoundError } from '../../utils/error.handle.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
@@ -15,9 +14,10 @@ import { leerCodigoDePapeleta } from '../../domain/papeleta-qr.js';
 import { cuentasPorTramo, veredicto, type Veredicto } from '../../domain/puerta.js';
 import { anioDeLaMesa } from './zonas.service.js';
 import { leerConfiguracion } from './cortejo.service.js';
+import type { SalidaConActo } from './salidas.service.js';
 
 const DE_LA_PAPELETA = {
-  id: true, year: true, salida: true, puesto: true, tramo: true, numero: true, entradaEl: true, entradaPor: true,
+  id: true, year: true, salidaId: true, salida: { select: { slug: true } }, puesto: true, tramo: true, numero: true, entradaEl: true, entradaPor: true,
   hermano: { select: { nombre: true, apellidos: true, numeroHermano: true } },
 } as const;
 
@@ -35,7 +35,7 @@ const aPapeleta = (p: Fila) => ({
   tramo: p.tramo,
   numero: p.numero,
   year: p.year,
-  salida: p.salida,
+  salida: p.salida.slug,
   entradaEl: p.entradaEl?.toISOString() ?? null,
   entradaPor: p.entradaPor,
 });
@@ -55,12 +55,10 @@ async function nombreDe(meta: MetaDeAuditoria) {
 
 export class PuertaService {
   /** Las cuentas por tramo, las últimas entradas y quién falta, para la salida de este año. */
-  static async estado(salida: Salida) {
-    const year = await anioDeLaMesa(salida);
-    const [config, papeletas] = await Promise.all([
-      leerConfiguracion(salida),
-      db.papeletaSitio.findMany({ where: { year, salida }, select: DE_LA_PAPELETA }),
-    ]);
+  static async estado(salida: SalidaConActo) {
+    const year = anioDeLaMesa(salida);
+    const config = leerConfiguracion(salida);
+    const papeletas = await db.papeletaSitio.findMany({ where: { year, salidaId: salida.id }, select: DE_LA_PAPELETA });
     const tramos = cuentasPorTramo(papeletas, config.tramos.map((t) => t.nombre));
     const faltan = papeletas
       .filter((p) => !p.entradaEl)
@@ -72,7 +70,7 @@ export class PuertaService {
       .slice(0, 12)
       .map(aPapeleta);
     return {
-      salida, year,
+      salida: salida.slug, year,
       total: papeletas.length,
       dentro: papeletas.length - faltan.length,
       tramos, faltan, ultimas,
@@ -80,7 +78,7 @@ export class PuertaService {
   }
 
   /** Un QR leído en la puerta. Si vale y no había entrado, queda dentro. */
-  static async escanear(codigo: string, salida: Salida, meta: MetaDeAuditoria): Promise<Lectura> {
+  static async escanear(codigo: string, salida: SalidaConActo, meta: MetaDeAuditoria): Promise<Lectura> {
     const id = leerCodigoDePapeleta(codigo);
     if (id === null) return { veredicto: 'FALSO', papeleta: null };
     return PuertaService.entrar(id, salida, meta);
@@ -91,10 +89,10 @@ export class PuertaService {
    * El `updateMany` con `entradaEl: null` hace que dos diputados leyendo la
    * misma papeleta a la vez no la apunten dos veces: el segundo ve «ya entró».
    */
-  static async entrar(id: number, salida: Salida, meta: MetaDeAuditoria): Promise<Lectura> {
-    const year = await anioDeLaMesa(salida);
+  static async entrar(id: number, salida: SalidaConActo, meta: MetaDeAuditoria): Promise<Lectura> {
+    const year = anioDeLaMesa(salida);
     const antes = await buscar(id);
-    const v = veredicto(antes, { year, salida });
+    const v = veredicto(antes, { year, salidaId: salida.id });
     if (v !== 'ENTRA') return { veredicto: v, papeleta: antes ? aPapeleta(antes) : null };
 
     const { count } = await db.papeletaSitio.updateMany({

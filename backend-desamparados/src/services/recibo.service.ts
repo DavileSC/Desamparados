@@ -346,12 +346,14 @@ export class ReciboService {
 
     // La papeleta asociada, si la hay, se busca aparte.
     const papeleta = await db.papeletaSitio.findUnique({
-      where: { reciboId }
+      where: { reciboId },
+      include: { salida: { include: { acto: true } } },
     });
 
     if (recibo.hermano.user?.email && papeleta) {
       const datosEmail: DatosPapeleta = {
         year: recibo.year,
+        salida: { nombre: papeleta.salida.nombre, cobro: papeleta.salida.cobro, conRopa: papeleta.salida.conRopa, indicaciones: papeleta.salida.indicaciones },
         importe: `${Number(recibo.importe).toFixed(2)} €`,
         concepto: recibo.concepto,
         papeletaId: papeleta.id,
@@ -362,7 +364,7 @@ export class ReciboService {
         // Van impresos en la papeleta que recibe cada hermano: un valor
         // equivocado se envía y ya no se puede corregir. Misma fuente que la
         // inscripción en mesa.
-        ...(await leerDatosEvento())
+        ...leerDatosEvento(papeleta.salida)
       };
 
       console.log(`📨 [Cola] Enviando papeleta recibo #${recibo.id} a ${enmascararEmail(recibo.hermano.user.email)}`);

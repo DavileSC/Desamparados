@@ -9,14 +9,14 @@
  * mesa recarga todo.
  */
 import { EventEmitter } from 'node:events';
-import type { Salida } from '@prisma/client';
 
 export type QueCambia = 'inscrito' | 'cobrado' | 'perdonado' | 'entregado' | 'corregido' | 'anulado' | 'alta' | 'devuelto';
 
 export interface AvisoDeMesa {
   que: QueCambia;
   hermanoId: number;
-  salida?: Salida;
+  /** De qué salida, si es de una en concreto. */
+  salidaId?: number;
   /** Quién lo hizo, para no avisarse a sí mismo de lo que acaba de hacer. */
   puesto?: string;
 }

@@ -1,39 +1,33 @@
 /**
- * El cortejo de cada salida: sus tramos (en `Configuracion`, porque cada
- * corporación tiene los suyos) y el reparto de las papeletas del año en ellos,
+ * El cortejo de cada salida: sus tramos (en la fila de la salida, porque cada
+ * corporación y cada salida tiene los suyos) y el reparto de las papeletas del año en ellos,
  * por antigüedad. La regla vive en `domain/cortejo.ts`; aquí, leerla, enseñar
  * lo que haría y aplicarla.
  */
-import type { Salida } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import db from '../../config/db';
 import { HttpError } from '../../utils/error.handle';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service.js';
 import { anioDeLaMesa } from './zonas.service.js';
+import type { SalidaConActo } from './salidas.service.js';
 import { diaDe } from '../../domain/fechas-hermano.js';
 import {
   CORTEJO_POR_DEFECTO, problemaConfiguracion, puestosSinRepetir, repartirCortejo, seReparte, type ConfiguracionCortejo,
 } from '../../domain/cortejo.js';
 
-const clave = (salida: Salida) => `cortejo_${salida}`;
-
 /** La configuración como objeto JSON simple, para la auditoría. */
 const aJson = (c: ConfiguracionCortejo) => ({ tramos: c.tramos.map((t) => ({ nombre: t.nombre, plazas: t.plazas })), puestos: [...c.puestos] });
 
 /** Lo guardado, si es válido; si no (nunca se guardó, o se estropeó a mano), lo de por defecto. */
-export async function leerConfiguracion(salida: Salida): Promise<ConfiguracionCortejo> {
-  const fila = await db.configuracion.findUnique({ where: { key: clave(salida) } });
-  if (fila) {
-    try {
-      const guardada = JSON.parse(fila.value) as ConfiguracionCortejo;
-      if (Array.isArray(guardada?.tramos) && Array.isArray(guardada?.puestos) && !problemaConfiguracion(guardada)) return guardada;
-    } catch { /* se estropeó a mano: vale lo de por defecto */ }
-  }
-  return CORTEJO_POR_DEFECTO[salida];
+export function leerConfiguracion(salida: Pick<SalidaConActo, 'cortejo'>): ConfiguracionCortejo {
+  const guardada = salida.cortejo as ConfiguracionCortejo | null;
+  if (Array.isArray(guardada?.tramos) && Array.isArray(guardada?.puestos) && !problemaConfiguracion(guardada)) return guardada;
+  return CORTEJO_POR_DEFECTO;
 }
 
-async function papeletasDelAnio(salida: Salida, year: number) {
+async function papeletasDelAnio(salida: SalidaConActo, year: number) {
   return db.papeletaSitio.findMany({
-    where: { year, salida },
+    where: { year, salidaId: salida.id },
     select: {
       id: true, puesto: true, tramo: true, numero: true,
       hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true, fechaAlta: true } },
@@ -46,9 +40,10 @@ export class CortejoService {
    * Cómo está el cortejo y cómo quedaría repartido: los tramos, lo que
    * cambiaría al aplicar y la lista de cada tramo tal como está ahora.
    */
-  static async estado(salida: Salida, anio?: number) {
-    const year = anio ?? await anioDeLaMesa(salida);
-    const [config, papeletas] = await Promise.all([leerConfiguracion(salida), papeletasDelAnio(salida, year)]);
+  static async estado(salida: SalidaConActo, anio?: number) {
+    const year = anio ?? anioDeLaMesa(salida);
+    const config = leerConfiguracion(salida);
+    const papeletas = await papeletasDelAnio(salida, year);
     const reparto = repartirCortejo(config, papeletas.map((p) => ({
       id: p.id, puesto: p.puesto, fechaAlta: diaDe(p.hermano.fechaAlta), numeroHermano: p.hermano.numeroHermano, hermanoId: p.hermano.id,
     })));
@@ -75,23 +70,19 @@ export class CortejoService {
           })),
       }));
 
-    return { salida, year, config, papeletas: papeletas.length, reparto: { tramos: reparto.tramos, fuera: reparto.fuera, cambios }, actual };
+    return { salida: salida.slug, year, config, papeletas: papeletas.length, reparto: { tramos: reparto.tramos, fuera: reparto.fuera, cambios }, actual };
   }
 
-  static async guardarConfiguracion(salida: Salida, config: ConfiguracionCortejo, meta?: MetaDeAuditoria) {
+  static async guardarConfiguracion(salida: SalidaConActo, config: ConfiguracionCortejo, meta?: MetaDeAuditoria) {
     const limpia: ConfiguracionCortejo = {
       tramos: config.tramos.map((t) => ({ nombre: t.nombre.trim(), plazas: t.plazas })),
       puestos: puestosSinRepetir(config.puestos),
     };
     const problema = problemaConfiguracion(limpia);
     if (problema) throw new HttpError(problema);
-    const antes = await leerConfiguracion(salida);
-    await db.configuracion.upsert({
-      where: { key: clave(salida) },
-      update: { value: JSON.stringify(limpia) },
-      create: { key: clave(salida), value: JSON.stringify(limpia), descripcion: `Tramos del cortejo (${salida}) y puestos que se reparten en ellos` },
-    });
-    await AuditoriaService.log(ACCIONES_AUDITORIA.CONFIG_UPDATE, meta ?? {}, 'configuracion', clave(salida), { antes: aJson(antes), despues: aJson(limpia) });
+    const antes = leerConfiguracion(salida);
+    await db.salida.update({ where: { id: salida.id }, data: { cortejo: aJson(limpia) as Prisma.InputJsonValue } });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.CONFIG_UPDATE, meta ?? {}, 'salida', salida.id, { antes: aJson(antes), despues: aJson(limpia) });
     return limpia;
   }
 
@@ -99,8 +90,9 @@ export class CortejoService {
    * Escribe en cada papeleta el tramo y el lugar que le tocan. Solo las de los
    * puestos que se reparten; y solo las que cambian, en una transacción.
    */
-  static async aplicar(salida: Salida, year: number, meta?: MetaDeAuditoria) {
-    const [config, papeletas] = await Promise.all([leerConfiguracion(salida), papeletasDelAnio(salida, year)]);
+  static async aplicar(salida: SalidaConActo, year: number, meta?: MetaDeAuditoria) {
+    const config = leerConfiguracion(salida);
+    const papeletas = await papeletasDelAnio(salida, year);
     const { asignaciones } = repartirCortejo(config, papeletas.map((p) => ({
       id: p.id, puesto: p.puesto, fechaAlta: diaDe(p.hermano.fechaAlta), numeroHermano: p.hermano.numeroHermano, hermanoId: p.hermano.id,
     })));
@@ -113,8 +105,8 @@ export class CortejoService {
     await db.$transaction(
       cambian.map((a) => db.papeletaSitio.update({ where: { id: a.papeletaId }, data: { tramo: a.tramo, numero: a.numero } })),
     );
-    await AuditoriaService.log(ACCIONES_AUDITORIA.CORTEJO_REPARTIR, meta ?? {}, 'cortejo', `${salida}:${year}`, {
-      despues: { salida, year, repartidas: asignaciones.length, cambiadas: cambian.length, tramos: config.tramos.length },
+    await AuditoriaService.log(ACCIONES_AUDITORIA.CORTEJO_REPARTIR, meta ?? {}, 'cortejo', `${salida.slug}:${year}`, {
+      despues: { salida: salida.slug, year, repartidas: asignaciones.length, cambiadas: cambian.length, tramos: config.tramos.length },
     });
     return {
       message: cambian.length === 0

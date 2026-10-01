@@ -5,14 +5,13 @@
  */
 import { CrearTurnoDto } from './../../dtos/procesion.dto';
 import db from '../../config/db';
-import { EstadoCita, Prisma, TipoEvento, type Salida } from '@prisma/client';
+import { EstadoCita, Prisma, TipoEvento } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { motivoTurnoInvalido } from '../../domain/datos-procesion.js';
-import { DATOS_SALIDA } from '../../domain/salidas.js';
-import { motivoRepartoFueraDeTemporada } from '../../domain/sabado-de-pasion.js';
-import { diaMadrid } from '../../domain/contabilidad.js';
+import { diaMadrid, fechaDeSalida, motivoRepartoFueraDeTemporada, sumarDias } from '../../domain/fecha-salida.js';
 import { PlazoPapeletasService } from './plazo.service';
+import { reglaDe, type SalidaConActo } from './salidas.service.js';
 
 const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
 
@@ -20,13 +19,13 @@ const formatoHora = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid'
  * El acto de la Agenda pública que anuncia un día de reparto: así la gente
  * sabe cuándo ir a apuntarse o a recoger la papeleta, sin entrar al área.
  */
-function actoDelReparto(t: { salida: Salida; horaInicio: Date; horaFin: Date }): Prisma.EventoCreateInput {
-  const rosario = t.salida === 'ROSARIO';
+function actoDelReparto(t: { salida: { nombre: string; conRopa: boolean }; horaInicio: Date; horaFin: Date }): Prisma.EventoCreateInput {
+  const horas = `de ${formatoHora.format(t.horaInicio)} a ${formatoHora.format(t.horaFin)}`;
   return {
-    title: rosario ? 'Reparto de papeletas del Rosario vespertino' : 'Reparto de papeletas de sitio',
-    description: rosario
-      ? `Día para apuntarse al Rosario vespertino y recoger la papeleta, de ${formatoHora.format(t.horaInicio)} a ${formatoHora.format(t.horaFin)}. Hay que estar al día con la cuota de hermano.`
-      : `Día para recoger la papeleta de sitio y la túnica, de ${formatoHora.format(t.horaInicio)} a ${formatoHora.format(t.horaFin)}. Hay que estar al día con la cuota de hermano y llevar el DNI.`,
+    title: `Reparto de papeletas del ${t.salida.nombre}`,
+    description: t.salida.conRopa
+      ? `Día para recoger la papeleta del ${t.salida.nombre} y la túnica, ${horas}. Hay que estar al día con la cuota de hermano y llevar el DNI.`
+      : `Día para apuntarse al ${t.salida.nombre} y recoger la papeleta, ${horas}. Hay que estar al día con la cuota de hermano.`,
     startDate: t.horaInicio,
     endDate: t.horaFin,
     type: TipoEvento.OTRO,
@@ -34,9 +33,9 @@ function actoDelReparto(t: { salida: Salida; horaInicio: Date; horaFin: Date }):
 }
 
 /** Un turno en la auditoría, con las fechas en ISO. */
-function fotoTurno(t: { fecha: Date; horaInicio: Date; horaFin: Date; capacidadEstimada: number; activo: boolean; salida?: Salida }) {
+function fotoTurno(t: { fecha: Date; horaInicio: Date; horaFin: Date; capacidadEstimada: number; activo: boolean; salidaId: number }) {
   return {
-    salida: t.salida,
+    salidaId: t.salidaId,
     fecha: t.fecha.toISOString(),
     horaInicio: t.horaInicio.toISOString(),
     horaFin: t.horaFin.toISOString(),
@@ -48,18 +47,24 @@ function fotoTurno(t: { fecha: Date; horaInicio: Date; horaFin: Date; capacidadE
 export class TurnosService {
 
   /**
-   * Los días de reparto de la salida de este año, para el panel de Secretaría:
-   * los que quedan y los que ya pasaron. Los de otros años no salen (se
-   * guardan: sus citas son el histórico de los hermanos).
+   * Los días de reparto de la salida que se prepara, para el panel de
+   * Secretaría: los que quedan y los que ya pasaron. Los de otros años no
+   * salen (se guardan: sus citas son el histórico de los hermanos). Con la
+   * Pascua, son los que caen después de la salida del año anterior y hasta
+   * la de este, aunque sean del otoño anterior; a mano, los del año natural.
    *
    * `citas` cuenta todas las que no se anularon: al venir, la cita pasa de
    * reservada a atendida, y contar solo las reservadas dejaba a 0 los días
    * ya repartidos. `vinieron`, las atendidas.
    */
-  static async getTodosLosTurnos(salida: Salida = 'PASION') {
-    const year = await PlazoPapeletasService.anioDeLaProcesion(salida);
+  static async getTodosLosTurnos(salida: SalidaConActo) {
+    const year = PlazoPapeletasService.anioDeLaProcesion(salida);
+    const regla = reglaDe(salida);
+    const anterior = regla.fecha === 'PASCUA' ? fechaDeSalida(regla, year - 1) : null;
+    const desde = anterior ? sumarDias(anterior, 1) : `${year}-01-01`;
+    const hasta = sumarDias(fechaDeSalida(regla, year) ?? `${year}-12-31`, 1);
     const turnos = await db.turno.findMany({
-      where: { salida, fecha: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) } },
+      where: { salidaId: salida.id, fecha: { gte: new Date(`${desde}T00:00:00Z`), lt: new Date(`${hasta}T00:00:00Z`) } },
       orderBy: { fecha: 'desc' },
     });
     const cuentas = await db.cita.groupBy({
@@ -76,7 +81,7 @@ export class TurnosService {
   /**
    * Crear un nuevo día de reparto en la Casa Grupo Parroquial.
    */
-  static async crearTurno(data: CrearTurnoDto, meta?: MetaDeAuditoria) {
+  static async crearTurno(data: CrearTurnoDto, salida: SalidaConActo, meta?: MetaDeAuditoria) {
     // 1. Convertimos los textos (strings) a fechas reales de JavaScript
     const fechaInicio = new Date(data.horaInicio);
     const fechaFin = new Date(data.horaFin);
@@ -86,10 +91,9 @@ export class TurnosService {
     const motivo = motivoTurnoInvalido(data.fecha, fechaInicio, fechaFin);
     if (motivo) throw new HttpError(motivo);
 
-    // 3. En su temporada: la Pasión, del 1 de enero a la víspera de su salida;
-    // el Rosario, en octubre. La mesa apunta la papeleta en el año en que se reparte.
-    const salida = data.salida ?? 'PASION';
-    const fueraDeTemporada = motivoRepartoFueraDeTemporada(diaMadrid(new Date(data.fecha)), salida);
+    // 3. Antes de la próxima salida: la papeleta cuenta para el año de esa
+    // salida, y un reparto después de ella la contaría en una que ya pasó.
+    const fueraDeTemporada = motivoRepartoFueraDeTemporada(diaMadrid(new Date(data.fecha)), reglaDe(salida), diaMadrid(new Date()), salida.nombre);
     if (fueraDeTemporada) throw new HttpError(fueraDeTemporada);
 
     // 4. Lo guardamos, con su acto en la Agenda pública.
@@ -99,7 +103,7 @@ export class TurnosService {
         horaInicio: fechaInicio,
         horaFin: fechaFin,
         capacidadEstimada: data.capacidadEstimada,
-        salida,
+        salida: { connect: { id: salida.id } },
         activo: true, // Por defecto lo abrimos al crearlo
         evento: { create: actoDelReparto({ salida, horaInicio: fechaInicio, horaFin: fechaFin }) },
       }
@@ -137,7 +141,8 @@ export class TurnosService {
         activo: data.activo,
         horaInicio,
         horaFin
-      }
+      },
+      include: { salida: true },
     });
     // El acto de la Agenda sigue al turno: con sus horas mientras está abierto,
     // fuera si se cierra (y de vuelta si se reabre).

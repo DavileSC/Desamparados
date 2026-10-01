@@ -9,9 +9,11 @@
  * quien llama.
  */
 import db from '../../config/db';
-import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion, type Salida } from '@prisma/client';
+import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { HttpError } from '../../utils/error.handle';
-import { CLAVES_EVENTO, datosEvento, type DatosEvento } from '../../domain/datos-procesion.js';
+import type { DatosEvento } from '../../domain/datos-procesion.js';
+import { anioDeLaSalida, diaMadrid, fechaDeSalida } from '../../domain/fecha-salida.js';
+import { reglaDe, type SalidaConActo } from '../procesion/salidas.service.js';
 import { palabrasDeBusqueda } from '../../domain/busqueda-texto.js';
 import { CATEGORIA_COMISIONES, CATEGORIA_DE_RECIBO, CATEGORIA_DEVOLUCIONES } from '../../domain/contabilidad.js';
 import { idsReemitidos, type ClaveRecibo } from '../../domain/reemisiones.js';
@@ -81,32 +83,39 @@ export function whereRecibosAdmin(query: ConsultaRecibos, year?: number, estado?
   };
 }
 
+const ZONA = { timeZone: 'Europe/Madrid' } as const;
+const formatoDiaLargo = new Intl.DateTimeFormat('es-ES', { ...ZONA, weekday: 'long', day: 'numeric', month: 'long' });
+const formatoHora = new Intl.DateTimeFormat('es-ES', { ...ZONA, hour: '2-digit', minute: '2-digit' });
+const POR_ANUNCIAR = 'Por anunciar';
+const EN_SECRETARIA = 'Consultar en secretaría';
+
 /**
  * Fecha, hora y puerta de la salida que se imprimen en la papeleta. Una sola
- * fuente para el cobro en tesorería y la mesa; el orden de preferencia está
- * en `domain/datos-procesion.ts`. Los del Rosario salen del acto que
- * Secretaría pone en la Agenda al fijar su fecha (ver `SalidasService`).
+ * fuente para el cobro en tesorería y la mesa: la fila de la salida. Las de
+ * la Pascua calculan su día del año que se prepara y llevan hora y lugar en
+ * la fila; las de fecha a mano lo sacan todo del acto de la Agenda que fija
+ * Secretaría (ver `SalidasService.fijarFecha`). Lo que falte se dice tal cual:
+ * una hora inventada se imprime y ya no se puede corregir.
  */
-export async function leerDatosEvento(salida: Salida = 'PASION'): Promise<DatosEvento> {
-  if (salida === 'ROSARIO') {
-    const clave = await db.configuracion.findUnique({ where: { key: CLAVE_EVENTO_ROSARIO } });
-    const acto = clave ? await db.evento.findUnique({ where: { id: Number(clave.value) || 0 } }) : null;
-    if (!acto) return { fechaSalida: 'Octubre, por anunciar', horaSalida: 'Por anunciar', accesoPuerta: 'Consultar en secretaría' };
-    const zona = { timeZone: 'Europe/Madrid' } as const;
+export function leerDatosEvento(salida: SalidaConActo): DatosEvento {
+  if (salida.fecha === 'MANUAL') {
+    const { acto } = salida;
+    if (!acto) return { fechaSalida: POR_ANUNCIAR, horaSalida: POR_ANUNCIAR, accesoPuerta: EN_SECRETARIA };
     return {
-      fechaSalida: new Intl.DateTimeFormat('es-ES', { ...zona, weekday: 'long', day: 'numeric', month: 'long' }).format(acto.startDate),
-      horaSalida: `${new Intl.DateTimeFormat('es-ES', { ...zona, hour: '2-digit', minute: '2-digit' }).format(acto.startDate)}h`,
-      accesoPuerta: acto.location?.trim() || 'Consultar en secretaría',
+      fechaSalida: formatoDiaLargo.format(acto.startDate),
+      horaSalida: `${formatoHora.format(acto.startDate)}h`,
+      accesoPuerta: acto.location?.trim() || EN_SECRETARIA,
     };
   }
-  const filas = await db.configuracion.findMany({
-    where: { key: { in: Object.values(CLAVES_EVENTO) } }
-  });
-  return datosEvento(Object.fromEntries(filas.map((f) => [f.key, f.value])));
+  const regla = reglaDe(salida);
+  const dia = fechaDeSalida(regla, anioDeLaSalida(regla, diaMadrid(new Date())));
+  return {
+    // A mediodía UTC, el día es el mismo en Madrid en cualquier época del año.
+    fechaSalida: dia ? formatoDiaLargo.format(new Date(`${dia}T12:00:00Z`)) : POR_ANUNCIAR,
+    horaSalida: salida.horaSalida?.trim() || POR_ANUNCIAR,
+    accesoPuerta: salida.lugar?.trim() || EN_SECRETARIA,
+  };
 }
-
-/** Configuración que guarda qué acto de la Agenda es el Rosario vespertino de este año. */
-export const CLAVE_EVENTO_ROSARIO = 'rosario_evento_id';
 
 // =================================================================
 //  1. GENERACIÓN MASIVA Y EMISIÓN SUELTA (ADMIN)

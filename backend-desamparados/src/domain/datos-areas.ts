@@ -19,6 +19,25 @@ import type { Recuento } from './panel-agrupar.js';
 export interface Movimientos { mes: string; altas: number; bajas: number }
 export interface PorCobrar { estado: 'PENDIENTE' | 'REMESADO' | 'DEVUELTO'; total: number; importe: number }
 
+/** Las cifras de una salida en el año del periodo. La serie de cinco años, solo en las que llevan ropa. */
+export interface CifrasDeSalida {
+  slug: string;
+  nombre: string;
+  conRopa: boolean;
+  papeletas: number;
+  papeletasAnioAnterior: number;
+  porPuesto: Recuento[];
+  serie?: { anio: number; total: number }[];
+}
+
+/**
+ * La salida que encabeza la procesión en los datos: la primera con ropa (la
+ * de la Semana Santa, con su serie de años) o, si no hay, la primera.
+ */
+export function salidaPrincipal(salidas: CifrasDeSalida[]): CifrasDeSalida | null {
+  return salidas.find((s) => s.serie) ?? salidas[0] ?? null;
+}
+
 export interface DatosCrudos {
   hermanos: {
     /** Al cierre del periodo, o hoy si está en marcha. */
@@ -46,10 +65,8 @@ export interface DatosCrudos {
   };
   procesion: {
     anio: number;
-    papeletas: number;
-    porPuesto: Recuento[];
-    porAnio: { anio: number; total: number }[];
-    rosario: { anio: number; papeletas: number; anterior: number; porPuesto: Recuento[] };
+    /** Las salidas activas, por su orden. */
+    porSalida: CifrasDeSalida[];
     porCobrar: PorCobrar[];
   };
   inventario: {
@@ -331,9 +348,18 @@ function dinero(d: DatosCrudos['dinero'], p: Periodo): Area {
 }
 
 function procesion(d: DatosCrudos['procesion']): Area {
-  const anterior = d.porAnio.find((a) => a.anio === d.anio - 1)?.total ?? 0;
-  const primero = d.porAnio[0];
+  // Cuatro cifras, como todas las áreas: la salida principal y su año a año,
+  // las demás salidas juntas (o la otra, si solo hay una) y lo por cobrar.
+  const principal = salidaPrincipal(d.porSalida);
+  const otras = d.porSalida.filter((s) => s !== principal);
+  const papeletas = principal?.papeletas ?? 0;
+  const anterior = principal?.papeletasAnioAnterior ?? 0;
+  const serie = principal?.serie ?? [{ anio: d.anio - 1, total: anterior }, { anio: d.anio, total: papeletas }];
+  const primero = serie[0];
   const filasPuesto = (lista: Recuento[], todo: number) => lista.map((r) => ({ etiqueta: r.etiqueta, valores: [r.total], nota: `${numero(r.total)} · ${porciento(r.total, todo)}` }));
+  const totalOtras = otras.reduce((n, s) => n + s.papeletas, 0);
+  const otrasAntes = otras.reduce((n, s) => n + s.papeletasAnioAnterior, 0);
+  const sola = otras.length === 1 ? otras[0] : null;
   return {
     clave: 'procesion',
     nombre: 'Procesión',
@@ -341,41 +367,54 @@ function procesion(d: DatosCrudos['procesion']): Area {
     cifras: [
       {
         etiqueta: `Papeletas ${d.anio}`,
-        valor: d.papeletas,
+        valor: papeletas,
         formato: 'numero',
-        nota: d.papeletas ? `Sábado de Pasión de ${d.anio}` : 'aún no hay papeletas',
+        nota: papeletas && principal ? `${principal.nombre} de ${d.anio}` : 'aún no hay papeletas',
         grafica: {
           titulo: `El cortejo de ${d.anio}, por puestos`,
-          resumen: contar(d.papeletas, 'papeleta', 'papeletas'),
-          vacio: d.papeletas === 0 ? `Todavía no hay papeletas para la salida de ${d.anio}.` : undefined,
-          cuerpo: { tipo: 'barras', colores: ['oro'], filas: filasPuesto(d.porPuesto, d.papeletas) },
+          resumen: contar(papeletas, 'papeleta', 'papeletas'),
+          vacio: papeletas === 0 ? `Todavía no hay papeletas para la salida de ${d.anio}.` : undefined,
+          cuerpo: { tipo: 'barras', colores: ['oro'], filas: filasPuesto(principal?.porPuesto ?? [], papeletas) },
         },
       },
       {
         // Sin reparto todavía, la diferencia sería «−183» y asustaría sin decir
         // nada: se enseñan las del año anterior, que es lo que se tiene.
-        ...(d.papeletas === 0
+        ...(papeletas === 0
           ? { etiqueta: `Papeletas ${d.anio - 1}`, valor: anterior, formato: 'numero' as const, nota: `${d.anio}, aún sin reparto` }
-          : { etiqueta: 'Año a año', valor: d.papeletas - anterior, formato: 'diferencia' as const, nota: `sobre las ${numero(anterior)} de ${d.anio - 1}`, tono: d.papeletas >= anterior ? 'bueno' as const : 'malo' as const }),
+          : { etiqueta: 'Año a año', valor: papeletas - anterior, formato: 'diferencia' as const, nota: `sobre las ${numero(anterior)} de ${d.anio - 1}`, tono: papeletas >= anterior ? 'bueno' as const : 'malo' as const }),
         grafica: {
           titulo: 'Papeletas de sitio, año a año',
-          resumen: primero ? `${numero(primero.total)} en ${primero.anio}, ${numero(d.papeletas)} en ${d.anio}` : '',
-          vacio: d.porAnio.every((a) => a.total === 0) ? 'Todavía no hay papeletas de ningún año.' : undefined,
-          cuerpo: { tipo: 'columnas', etiquetas: d.porAnio.map((a) => String(a.anio)), series: [{ nombre: 'papeletas', color: 'oro', valores: d.porAnio.map((a) => a.total) }], formato: 'numero', destacar: d.porAnio.length - 1 },
+          resumen: primero ? `${numero(primero.total)} en ${primero.anio}, ${numero(papeletas)} en ${d.anio}` : '',
+          vacio: serie.every((a) => a.total === 0) ? 'Todavía no hay papeletas de ningún año.' : undefined,
+          cuerpo: { tipo: 'columnas', etiquetas: serie.map((a) => String(a.anio)), series: [{ nombre: 'papeletas', color: 'oro', valores: serie.map((a) => a.total) }], formato: 'numero', destacar: serie.length - 1 },
         },
       },
-      {
-        etiqueta: `Rosario ${d.rosario.anio}`,
-        valor: d.rosario.papeletas,
-        formato: 'numero',
-        nota: `${numero(d.rosario.anterior)} en ${d.rosario.anio - 1}`,
-        grafica: {
-          titulo: `El Rosario vespertino de ${d.rosario.anio}`,
-          resumen: contar(d.rosario.papeletas, 'papeleta', 'papeletas'),
-          vacio: d.rosario.papeletas === 0 ? `No hay papeletas del Rosario de ${d.rosario.anio}.` : undefined,
-          cuerpo: { tipo: 'barras', colores: ['azul'], filas: filasPuesto(d.rosario.porPuesto, d.rosario.papeletas) },
+      sola
+        ? {
+          etiqueta: `${sola.nombre} ${d.anio}`,
+          valor: sola.papeletas,
+          formato: 'numero',
+          nota: `${numero(sola.papeletasAnioAnterior)} en ${d.anio - 1}`,
+          grafica: {
+            titulo: `${sola.nombre} de ${d.anio}`,
+            resumen: contar(sola.papeletas, 'papeleta', 'papeletas'),
+            vacio: sola.papeletas === 0 ? `No hay papeletas del ${sola.nombre} de ${d.anio}.` : undefined,
+            cuerpo: { tipo: 'barras', colores: ['azul'], filas: filasPuesto(sola.porPuesto, sola.papeletas) },
+          },
+        }
+        : {
+          etiqueta: `Otras salidas ${d.anio}`,
+          valor: totalOtras,
+          formato: 'numero',
+          nota: otras.length ? `${numero(otrasAntes)} en ${d.anio - 1}` : 'no hay más salidas',
+          grafica: {
+            titulo: `Las otras salidas de ${d.anio}`,
+            resumen: contar(totalOtras, 'papeleta', 'papeletas'),
+            vacio: totalOtras === 0 ? `No hay papeletas de otras salidas de ${d.anio}.` : undefined,
+            cuerpo: { tipo: 'barras', colores: ['azul'], filas: filasPuesto(otras.map((s) => ({ etiqueta: s.nombre, total: s.papeletas })), totalOtras) },
+          },
         },
-      },
       {
         etiqueta: 'Por cobrar',
         valor: sumaImportes(d.porCobrar),
@@ -605,7 +644,7 @@ export interface CifraVistazo { etiqueta: string; valor: string; antes: string; 
 export function vistazo(d: DatosCrudos, hoy: Date): CifraVistazo[] {
   const ahora = hoy.toISOString();
   const celebrados = d.agenda.actos.filter((a) => a.startDate < ahora).length;
-  const papeletasAntes = d.procesion.porAnio.find((a) => a.anio === d.procesion.anio - 1)?.total ?? 0;
+  const principal = salidaPrincipal(d.procesion.porSalida);
   const pct = (a: number, b: number) => (b ? `${a >= b ? '+' : '−'}${Math.round(Math.abs((a - b) / b) * 100)} %` : '—');
   const resultado = d.dinero.ingresos - d.dinero.gastos;
   const resultadoAntes = d.dinero.anterior.ingresos - d.dinero.anterior.gastos;
@@ -617,7 +656,7 @@ export function vistazo(d: DatosCrudos, hoy: Date): CifraVistazo[] {
     par('Altas', d.hermanos.altas, d.hermanos.anterior.altas),
     par('Bajas', d.hermanos.bajas, d.hermanos.anterior.bajas, false),
     par('Actos celebrados', celebrados, d.agenda.anterior),
-    par('Papeletas de sitio', d.procesion.papeletas, papeletasAntes),
+    par('Papeletas de sitio', principal?.papeletas ?? 0, principal?.papeletasAnioAnterior ?? 0),
     { etiqueta: 'Ingresos', valor: euros(d.dinero.ingresos), antes: euros(d.dinero.anterior.ingresos), cambio: pct(d.dinero.ingresos, d.dinero.anterior.ingresos), tono: d.dinero.ingresos >= d.dinero.anterior.ingresos ? 'bueno' : 'malo' },
     { etiqueta: 'Gastos', valor: euros(d.dinero.gastos), antes: euros(d.dinero.anterior.gastos), cambio: pct(d.dinero.gastos, d.dinero.anterior.gastos), tono: d.dinero.gastos <= d.dinero.anterior.gastos ? 'bueno' : 'malo' },
     { etiqueta: 'Resultado', valor: diferenciaEuros(resultado), antes: diferenciaEuros(resultadoAntes), cambio: resultado >= 0 ? 'superávit' : 'déficit', tono: resultado >= 0 ? 'bueno' : 'malo' },

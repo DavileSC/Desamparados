@@ -5,7 +5,7 @@ export interface AvisarAsistenciaDto {
   hermanoId: number; // Quién va
   /** El puesto que le gustaría. Lo decide el Grupo: la mesa lo confirma o lo cambia. */
   puesto: string;
-  /** Solo el Rosario: la voluntad que da, en euros (0 es válido). */
+  /** Solo en las salidas de donativo: la voluntad que da, en euros (0 es válido). */
   donativo?: number;
 }
 
@@ -16,6 +16,6 @@ export interface CrearTurnoDto {
   horaInicio: string;        // Cadena ISO
   horaFin: string;           // Cadena ISO
   capacidadEstimada: number; // Cuántos hermanos se espera atender
-  /** De qué salida es el reparto. Sin ella, la Pasión. */
-  salida?: 'PASION' | 'ROSARIO';
+  /** El slug de la salida del reparto: el controlador la busca y la pasa al servicio. */
+  salida: string;
 }

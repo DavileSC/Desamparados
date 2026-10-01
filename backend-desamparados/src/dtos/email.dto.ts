@@ -1,8 +1,18 @@
 
+import type { CobroSalida } from '@prisma/client';
+
+/** Lo de la salida que cambia la papeleta: el título, la frase del importe, la normativa y las indicaciones. */
+export interface SalidaImpresa {
+  nombre: string;
+  cobro: CobroSalida;
+  conRopa: boolean;
+  indicaciones: string | null;
+}
+
 export interface DatosPapeleta {
   year: number;
-  /** De qué salida es: el Rosario cambia el título y el texto. Sin ella, la Pasión. */
-  salida?: 'PASION' | 'ROSARIO';
+  /** De qué salida es: da el título, el nombre del importe y el recuadro de indicaciones. */
+  salida: SalidaImpresa;
   importe: string; // Ya formateado "25,00 €"
   concepto: string;
   /** El id de la papeleta: sale como «N.º 2027-0123» para buscarla en Secretaría. */

@@ -2,8 +2,8 @@
  * La solicitud y la papeleta de cada salida.
  *
  * Pedir salir (desde el área de hermanos o en la mesa) crea una Solicitud: ni
- * papeleta ni recibo. Lo que haya que pagar de la salida (la cuota de salida,
- * hoy 0 €, o el donativo del Rosario) se convierte en recibo al pagarlo. La
+ * papeleta ni recibo. Lo que haya que pagar de la salida (su cuota, que puede
+ * ser 0 €, o el donativo) se convierte en recibo al pagarlo. La
  * papeleta nace al recoger en Túnicas: si alguien no aparece, no queda nada
  * que anular. Aquí también se anula una papeleta, se cancela una solicitud,
  * el listado de los diputados de tramo y el repaso de quien pidió día y no vino.
@@ -12,15 +12,15 @@
  * la auditoría y el importe lo calcula siempre el servidor.
  */
 import db from '../../config/db';
-import { Cingulo, EstadoCita, EstadoPago, EstadoSolicitud, MetodoPago, OrigenSolicitud, Prisma, type Salida } from '@prisma/client';
+import { Cingulo, EstadoCita, EstadoPago, EstadoSolicitud, MetodoPago, OrigenSolicitud, Prisma } from '@prisma/client';
 import { EmailService } from '../email.service';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
 import { devolverCobroEnTransaccion, idCategoriaDevoluciones, retirarPapeletaEnTransaccion } from '../recibos/comunes.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { puedeTransicionar } from '../../domain/recibo-estados.js';
-import { leerPrecio } from '../../domain/datos-procesion.js';
-import { CLAVE_CUOTA_SALIDA, CUOTA_SALIDA_POR_DEFECTO, DATOS_SALIDA, conceptoDeSalida } from '../../domain/salidas.js';
+import { conceptoDeSalida, tipoReciboDe } from '../../domain/salidas.js';
+import type { SalidaConActo } from './salidas.service.js';
 import { recogerRopaEnTransaccion } from './ropa.js';
 import { avisarALaMesa } from './avisos-mesa.js';
 
@@ -31,11 +31,11 @@ const NOTA_CANCELACION = 'Devuelto al cancelar la solicitud de salida.';
 
 export interface NuevaSolicitud {
   hermanoId: number;
-  salida: Salida;
+  salida: SalidaConActo;
   year: number;
   puesto: string;
   observaciones?: string | null;
-  /** La voluntad del Rosario, en euros. En la Pasión no cuenta: manda la cuota de salida. */
+  /** La voluntad, en euros, en las salidas de donativo. En las de cuota no cuenta: manda la cuota. */
   donativo?: number;
   /** El día de reparto que eligió, si lo eligió. */
   citaId?: number | null;
@@ -76,24 +76,10 @@ export class PapeletasService {
     });
   }
 
-  /**
-   * La cuota de salida de la Pasión, de la configuración. Hoy es 0 € y nadie
-   * la ve; queda por si algún año se cobra. Un valor que no se entiende
-   * detiene la mesa: cobrar otra cosa es cobrar algo que nadie ha decidido.
-   */
-  static async cuotaDeSalida(cliente: Tx | typeof db = db): Promise<number> {
-    const fila = await cliente.configuracion.findUnique({ where: { key: CLAVE_CUOTA_SALIDA } });
-    const leida = leerPrecio(fila?.value, CUOTA_SALIDA_POR_DEFECTO);
-    if (!leida.ok) {
-      throw new HttpError(`La cuota de salida configurada («${leida.crudo}») no es un importe válido. Corrígela en Procesión antes de seguir.`, 409);
-    }
-    return leida.valor;
-  }
-
   /** La solicitud viva (pendiente de recoger) de alguien en una salida y año, si la tiene. */
-  static solicitudPendiente(cliente: Tx | typeof db, hermanoId: number, year: number, salida: Salida) {
+  static solicitudPendiente(cliente: Tx | typeof db, hermanoId: number, year: number, salidaId: number) {
     return cliente.solicitud.findFirst({
-      where: { hermanoId, year, salida, estado: EstadoSolicitud.PENDIENTE },
+      where: { hermanoId, year, salidaId, estado: EstadoSolicitud.PENDIENTE },
       include: { recibo: true },
       orderBy: { id: 'desc' },
     });
@@ -107,19 +93,19 @@ export class PapeletasService {
    */
   static async crearSolicitudEnTransaccion(tx: Tx, datos: NuevaSolicitud) {
     const { hermanoId, salida, year } = datos;
-    const nombre = `${DATOS_SALIDA[salida].nombre} de ${year}`;
-    if (await tx.papeletaSitio.findUnique({ where: { hermanoId_year_salida: { hermanoId, year, salida } } })) {
+    const nombre = `${salida.nombre} de ${year}`;
+    if (await tx.papeletaSitio.findUnique({ where: { hermanoId_year_salidaId: { hermanoId, year, salidaId: salida.id } } })) {
       throw new HttpError(`Ya tiene su papeleta del ${nombre}.`, 409);
     }
-    if (await PapeletasService.solicitudPendiente(tx, hermanoId, year, salida)) {
+    if (await PapeletasService.solicitudPendiente(tx, hermanoId, year, salida.id)) {
       throw new HttpError(`Ya está apuntado al ${nombre}.`, 409);
     }
     return tx.solicitud.create({
       data: {
-        hermanoId, salida, year,
+        hermanoId, salidaId: salida.id, year,
         puesto: datos.puesto.trim(),
         observaciones: datos.observaciones?.trim() || null,
-        donativo: DATOS_SALIDA[salida].importeLibre ? new Prisma.Decimal(Math.round((datos.donativo ?? 0) * 100) / 100) : null,
+        donativo: salida.cobro === 'DONATIVO' ? new Prisma.Decimal(Math.round((datos.donativo ?? 0) * 100) / 100) : null,
         citaId: datos.citaId ?? undefined,
         origen: datos.origen,
       },
@@ -133,18 +119,19 @@ export class PapeletasService {
    */
   static async reciboDeSalidaEnTransaccion(
     tx: Tx,
-    solicitud: { id: number; hermanoId: number; salida: Salida; year: number },
+    solicitud: { id: number; hermanoId: number; salidaId: number; year: number },
     importe: number,
     metodoPago: MetodoPago | null,
   ) {
+    const salida = await tx.salida.findUniqueOrThrow({ where: { id: solicitud.salidaId }, select: { nombre: true, cobro: true } });
     const conceptos = (await tx.recibo.findMany({ where: { hermanoId: solicitud.hermanoId, year: solicitud.year }, select: { concepto: true } })).map((r) => r.concepto);
     const pagado = importe > 0;
     const recibo = await tx.recibo.create({
       data: {
         year: solicitud.year,
-        concepto: conceptoDeSalida(solicitud.salida, solicitud.year, conceptos),
+        concepto: conceptoDeSalida(salida, solicitud.year, conceptos),
         importe: new Prisma.Decimal(importe),
-        tipo: DATOS_SALIDA[solicitud.salida].tipoRecibo,
+        tipo: tipoReciboDe(salida.cobro),
         estado: pagado ? EstadoPago.PAGADO : EstadoPago.EXENTO,
         metodoPago: pagado ? metodoPago : null,
         fechaPago: pagado ? new Date() : null,
@@ -165,7 +152,7 @@ export class PapeletasService {
     const papeleta = await tx.papeletaSitio.create({
       data: {
         year: solicitud.year,
-        salida: solicitud.salida,
+        salidaId: solicitud.salidaId,
         hermanoId: solicitud.hermanoId,
         reciboId,
         citaId: solicitud.citaId ?? undefined,
@@ -221,12 +208,12 @@ export class PapeletasService {
     });
     await AuditoriaService.log(ACCIONES_AUDITORIA.SOLICITUD_SALIDA_CANCELAR, meta ?? {}, 'solicitud', solicitudId, {
       antes: {
-        hermanoId: solicitud.hermanoId, year: solicitud.year, salida: solicitud.salida, puesto: solicitud.puesto,
+        hermanoId: solicitud.hermanoId, year: solicitud.year, salidaId: solicitud.salidaId, puesto: solicitud.puesto,
         recibo: solicitud.recibo && { id: solicitud.recibo.id, estado: solicitud.recibo.estado },
       },
       despues: { estado: EstadoSolicitud.CANCELADA },
     });
-    avisarALaMesa({ que: 'anulado', hermanoId: solicitud.hermanoId, salida: solicitud.salida });
+    avisarALaMesa({ que: 'anulado', hermanoId: solicitud.hermanoId, salidaId: solicitud.salidaId });
     return {
       message: solicitud.recibo?.estado === EstadoPago.PAGADO
         ? 'Solicitud cancelada. Lo pagado queda devuelto con su reverso en contabilidad.'
@@ -255,12 +242,12 @@ export class PapeletasService {
     const { papeleta, recibo, estadoFinal } = resultado;
     await AuditoriaService.log(ACCIONES_AUDITORIA.PAPELETA_ANULAR, meta ?? {}, 'papeleta', papeletaId, {
       antes: {
-        papeleta: { hermanoId: papeleta.hermanoId, year: papeleta.year, salida: papeleta.salida, puesto: papeleta.puesto, tramo: papeleta.tramo, citaId: papeleta.citaId },
+        papeleta: { hermanoId: papeleta.hermanoId, year: papeleta.year, salidaId: papeleta.salidaId, puesto: papeleta.puesto, tramo: papeleta.tramo, citaId: papeleta.citaId },
         recibo: { id: recibo.id, estado: recibo.estado, importe: String(recibo.importe) }
       },
       despues: { papeleta: null, recibo: { id: recibo.id, estado: estadoFinal } }
     });
-    avisarALaMesa({ que: 'anulado', hermanoId: papeleta.hermanoId, salida: papeleta.salida });
+    avisarALaMesa({ que: 'anulado', hermanoId: papeleta.hermanoId, salidaId: papeleta.salidaId });
 
     return {
       message: estadoFinal === EstadoPago.DEVUELTO && recibo.estado === EstadoPago.PAGADO
@@ -308,9 +295,9 @@ export class PapeletasService {
   }
 
   /** Genera el censo de la procesión para los diputados de tramo / mayordomos. */
-  static async getListadoProcesion(year: number, salida: Salida = 'PASION') {
+  static async getListadoProcesion(year: number, salida: SalidaConActo) {
     return await db.papeletaSitio.findMany({
-      where: { year, salida },
+      where: { year, salidaId: salida.id },
       include: {
         hermano: {
           select: { nombre: true, apellidos: true, telefono: true, alturaHombro: true }

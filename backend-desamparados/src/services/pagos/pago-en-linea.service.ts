@@ -78,16 +78,18 @@ export class PagoEnLineaService {
   static async preparar(userId: number, pago: LoQueSePaga) {
     const reciboIds = [...new Set(pago.reciboIds)];
     const solicitudIds = [...new Set(pago.solicitudIds)];
-    const [recibos, solicitudes, cuotaSalida] = await Promise.all([
+    const [recibos, solicitudes] = await Promise.all([
       db.recibo.findMany({
         where: { id: { in: reciboIds }, hermano: { userId, activo: true } },
         select: { id: true, estado: true, hermanoId: true, concepto: true, importe: true },
       }),
       db.solicitud.findMany({
         where: { id: { in: solicitudIds }, hermano: { userId, activo: true } },
-        select: { id: true, hermanoId: true, salida: true, estado: true, donativo: true, recibo: { select: { estado: true, concepto: true } } },
+        select: {
+          id: true, hermanoId: true, estado: true, donativo: true, recibo: { select: { estado: true, concepto: true } },
+          salida: { select: { cobro: true, importeCuota: true } },
+        },
       }),
-      PapeletasService.cuotaDeSalida(),
     ]);
     if (recibos.length !== reciboIds.length || solicitudes.length !== solicitudIds.length) throw new NotFoundError('Recibo no encontrado');
     const alguno = recibos[0]?.hermanoId ?? solicitudes[0]?.hermanoId;
@@ -98,7 +100,10 @@ export class PagoEnLineaService {
     let centimos = recibos.reduce((s, r) => s + aCentimos(r.importe), 0);
     for (const s of solicitudes) {
       if (s.estado !== EstadoSolicitud.PENDIENTE) throw new HttpError('Esa solicitud ya no está pendiente. Recarga la página.', 409);
-      const pendiente = pendienteDeLaSalida({ salida: s.salida, donativo: s.donativo === null ? null : Number(s.donativo), recibo: s.recibo }, cuotaSalida);
+      const pendiente = pendienteDeLaSalida(
+        { donativo: s.donativo === null ? null : Number(s.donativo), recibo: s.recibo },
+        { cobro: s.salida.cobro, importeCuota: Number(s.salida.importeCuota) },
+      );
       if (pendiente === 0) throw new HttpError('Lo de esa salida ya está pagado. Recarga la página.', 409);
       centimos += aCentimos(pendiente);
     }

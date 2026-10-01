@@ -16,6 +16,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditor
 import { enviarCorreo } from './correos/envio.js';
 import { firma, maquetar, parrafo, saludo, urlDeLaWeb } from './correos/plantilla.js';
 import { anioDeLaMesa } from './procesion/zonas.service.js';
+import { SalidasService } from './procesion/salidas.service.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
 import {
   adaptarAlCorreo, describirSegmento, destinatariosDe, emailDeToken, tokenDeBaja,
@@ -37,7 +38,7 @@ const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Solo los filtros que se conocen, para guardar lo que se eligió y nada más. */
 function segmentoLimpio(s: Segmento): Segmento {
   return {
-    conPapeleta: s.conPapeleta === 'PASION' || s.conPapeleta === 'ROSARIO' ? s.conPapeleta : null,
+    conPapeleta: Number.isInteger(s.conPapeleta) && (s.conPapeleta ?? 0) > 0 ? s.conPapeleta : null,
     conDeuda: s.conDeuda === true,
     edad: s.edad === 'MAYORES' || s.edad === 'MENORES' ? s.edad : null,
     poblacion: s.poblacion?.trim().slice(0, 100) || null,
@@ -51,7 +52,7 @@ async function fichasDelSegmento(tipo: TipoComunicado, s: Segmento) {
   const where: Prisma.HermanoWhereInput = {
     activo: true,
     ...(tipo === TipoComunicado.BOLETIN ? { boletin: true } : {}),
-    ...(s.conPapeleta ? { papeletas: { some: { salida: s.conPapeleta, year: await anioDeLaMesa(s.conPapeleta) } } } : {}),
+    ...(s.conPapeleta ? { papeletas: { some: { salidaId: s.conPapeleta, year: anioDeLaMesa(await SalidasService.porId(s.conPapeleta)) } } } : {}),
     ...(s.conDeuda ? { recibos: { some: { estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] } } } } : {}),
     ...(s.edad === 'MAYORES' ? { fechaNacimiento: { lte: hace18 } } : s.edad === 'MENORES' ? { fechaNacimiento: { gt: hace18 } } : {}),
     ...(s.poblacion ? { poblacion: s.poblacion } : {}),
@@ -87,9 +88,12 @@ function correoPara(c: { tipo: TipoComunicado; asunto: string; cuerpo: string },
   });
 }
 
-const resumen = (c: { id: number; tipo: TipoComunicado; asunto: string; estado: EstadoComunicado; segmento: Prisma.JsonValue; enviadoEl: Date | null; autorNombre: string | null; createdAt: Date; updatedAt: Date }) => ({
+/** El nombre de cada salida por su id, también de las desactivadas: un comunicado viejo sigue diciendo a quién fue. */
+const nombresDeSalidas = async () => new Map((await SalidasService.listar({ todas: true })).map((s) => [s.id, s.nombre]));
+
+const resumen = (c: { id: number; tipo: TipoComunicado; asunto: string; estado: EstadoComunicado; segmento: Prisma.JsonValue; enviadoEl: Date | null; autorNombre: string | null; createdAt: Date; updatedAt: Date }, nombres: ReadonlyMap<number, string>) => ({
   id: c.id, tipo: c.tipo, asunto: c.asunto, estado: c.estado, segmento: c.segmento as Segmento,
-  para: describirSegmento(c.tipo, c.segmento as Segmento), enviadoEl: c.enviadoEl, autorNombre: c.autorNombre,
+  para: describirSegmento(c.tipo, c.segmento as Segmento, nombres), enviadoEl: c.enviadoEl, autorNombre: c.autorNombre,
   createdAt: c.createdAt, updatedAt: c.updatedAt,
 });
 
@@ -139,8 +143,9 @@ export class ComunicadosService {
     const lista = await db.comunicado.findMany({ orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 200 });
     const cuentas = await db.comunicadoEnvio.groupBy({ by: ['comunicadoId', 'estado'], where: { comunicadoId: { in: lista.map((c) => c.id) } }, _count: { _all: true } });
     const de = (id: number, estado: EstadoEnvio) => cuentas.find((x) => x.comunicadoId === id && x.estado === estado)?._count._all ?? 0;
+    const nombres = await nombresDeSalidas();
     return lista.map((c) => ({
-      ...resumen(c),
+      ...resumen(c, nombres),
       envios: { enviados: de(c.id, EstadoEnvio.ENVIADO), fallidos: de(c.id, EstadoEnvio.FALLIDO), pendientes: de(c.id, EstadoEnvio.PENDIENTE) },
     }));
   }
@@ -148,7 +153,7 @@ export class ComunicadosService {
   static async obtener(id: number) {
     const c = await db.comunicado.findUnique({ where: { id } });
     if (!c) throw new NotFoundError('Comunicado no encontrado.');
-    return { ...resumen(c), cuerpo: c.cuerpo };
+    return { ...resumen(c, await nombresDeSalidas()), cuerpo: c.cuerpo };
   }
 
   /** A cuántas direcciones llegaría, y cuántas fichas del segmento no tienen correo. */
@@ -156,7 +161,7 @@ export class ComunicadosService {
     const s = segmentoLimpio(segmento);
     const fichas = await fichasDelSegmento(tipo, s);
     const { destinatarios, sinCorreo } = destinatariosDe(fichas);
-    return { para: describirSegmento(tipo, s), fichas: fichas.length, correos: destinatarios.length, sinCorreo };
+    return { para: describirSegmento(tipo, s, await nombresDeSalidas()), fichas: fichas.length, correos: destinatarios.length, sinCorreo };
   }
 
   static async crear(datos: DatosComunicado, meta?: MetaDeAuditoria) {
@@ -168,7 +173,7 @@ export class ComunicadosService {
         autorId: meta?.userId ?? null, autorNombre: autor ? `${autor.nombre} ${autor.apellidos}`.trim() : null,
       },
     });
-    return { ...resumen(c), cuerpo: c.cuerpo };
+    return { ...resumen(c, await nombresDeSalidas()), cuerpo: c.cuerpo };
   }
 
   /** Solo el borrador se cambia: lo enviado es lo que recibieron. */

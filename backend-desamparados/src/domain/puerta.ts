@@ -1,5 +1,3 @@
-import type { Salida } from '@prisma/client';
-
 /**
  * Lo que dice la puerta del templo al leer una papeleta, sin base de datos.
  *
@@ -9,7 +7,7 @@ import type { Salida } from '@prisma/client';
  * - `FALSO`: el texto no es un código de papeleta, o la firma no cuadra.
  * - `ANULADA`: el código es bueno, pero la papeleta ya no existe (anular la
  *   borra, y con ella su sitio en el cortejo).
- * - `OTRA_SALIDA`: es de otro año o de la otra salida (la del Rosario en la
+ * - `OTRA_SALIDA`: es de otro año o de otra salida (la del Rosario en la
  *   Pasión, o la del año pasado guardada en el móvil).
  * - `REPETIDA`: ya entró. No es un error de quien escanea: suele ser el mismo
  *   hermano pasando dos veces, o dos diputados leyendo la misma.
@@ -19,16 +17,16 @@ export type Veredicto = 'ENTRA' | 'REPETIDA' | 'OTRA_SALIDA' | 'ANULADA' | 'FALS
 
 export interface PapeletaEnLaPuerta {
   year: number;
-  salida: Salida;
+  salidaId: number;
   entradaEl: Date | null;
 }
 
 export function veredicto(
   papeleta: PapeletaEnLaPuerta | null,
-  esperada: { year: number; salida: Salida },
+  esperada: { year: number; salidaId: number },
 ): Exclude<Veredicto, 'FALSO'> {
   if (!papeleta) return 'ANULADA';
-  if (papeleta.year !== esperada.year || papeleta.salida !== esperada.salida) return 'OTRA_SALIDA';
+  if (papeleta.year !== esperada.year || papeleta.salidaId !== esperada.salidaId) return 'OTRA_SALIDA';
   return papeleta.entradaEl ? 'REPETIDA' : 'ENTRA';
 }
 

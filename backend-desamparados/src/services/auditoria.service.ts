@@ -67,7 +67,10 @@ export const ACCIONES_AUDITORIA = {
   LOTERIA_LIQUIDAR: 'LOTERIA_LIQUIDAR',
   LOTERIA_LIQUIDAR_DESHACER: 'LOTERIA_LIQUIDAR_DESHACER',
   LOTERIA_PREMIOS: 'LOTERIA_PREMIOS',
-  ROSARIO_FECHAR: 'ROSARIO_FECHAR',
+  // Las salidas procesionales: darlas de alta, cambiarlas y ponerles fecha a mano
+  SALIDA_CREAR: 'SALIDA_CREAR',
+  SALIDA_EDITAR: 'SALIDA_EDITAR',
+  SALIDA_FECHAR: 'SALIDA_FECHAR',
   RECIBO_EMITIR: 'RECIBO_EMITIR',
   // Remesas SEPA: generar el fichero para el banco y darla por cobrada
   REMESA_GENERAR: 'REMESA_GENERAR',

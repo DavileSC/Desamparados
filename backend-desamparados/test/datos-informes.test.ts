@@ -117,9 +117,16 @@ function crudos(parcial: { papeletas?: number } = {}): DatosCrudos {
       porCobrar: [{ estado: 'PENDIENTE', total: 10, importe: 350 }, { estado: 'DEVUELTO', total: 2, importe: 70 }],
     },
     procesion: {
-      anio: 2026, papeletas: parcial.papeletas ?? 183, porPuesto: [{ etiqueta: 'Nazareno de cirio', total: 90 }],
-      porAnio: [{ anio: 2025, total: 131 }, { anio: 2026, total: parcial.papeletas ?? 183 }],
-      rosario: { anio: 2025, papeletas: 0, anterior: 0, porPuesto: [] }, porCobrar: [],
+      anio: 2026,
+      porSalida: [
+        {
+          slug: 'sabado-de-pasion', nombre: 'Sábado de Pasión', conRopa: true,
+          papeletas: parcial.papeletas ?? 183, papeletasAnioAnterior: 131, porPuesto: [{ etiqueta: 'Nazareno de cirio', total: 90 }],
+          serie: [{ anio: 2025, total: 131 }, { anio: 2026, total: parcial.papeletas ?? 183 }],
+        },
+        { slug: 'rosario-vespertino', nombre: 'Rosario vespertino', conRopa: false, papeletas: 0, papeletasAnioAnterior: 0, porPuesto: [] },
+      ],
+      porCobrar: [],
     },
     inventario: {
       enseres: [{ nombre: 'Candelería del paso', optimo: 24, bueno: 6, reparar: 4, total: 34 }],

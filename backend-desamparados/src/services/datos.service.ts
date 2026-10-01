@@ -1,10 +1,11 @@
-import { EstadoPago, Prisma, Salida, TipoRecibo, TipoTransaccion } from '@prisma/client';
+import { EstadoPago, Prisma, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import db from '../config/db.js';
 import { claveMes } from '../domain/panel-censo.js';
 import { agruparPorTextoLibre } from '../domain/panel-agrupar.js';
 import { periodoAnterior, periodoDe, periodosDisponibles, type Periodo } from '../domain/periodo-datos.js';
 import { areasDe, type Area, type DatosCrudos } from '../domain/datos-areas.js';
 import { devueltosPendientes } from './recibos/comunes.js';
+import { SalidasService } from './procesion/salidas.service.js';
 
 /**
  * REGLA DE ORO, la misma que la del panel del Inicio: solo `count`, `groupBy` y
@@ -88,7 +89,7 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
   const [
     activos, activosAlEmpezar, altas, bajas, altasAntes, bajasAntes, bajasPorMotivo, fechasAlta, fechasBaja, cierres, edad, porEdad,
     tiposDinero, tiposDineroAntes, dineroPorFecha, dineroPorCategoria, categorias, recibosVivos, devueltos,
-    papeletas, puestos, papeletasPorAnio, rosario, rosarioAntes, puestosRosario, papeletasVivas, papeletasDevueltas,
+    salidas, papeletasVivas, papeletasDevueltas,
     enseres, prendas,
     noticias, publicaciones, versiones, noticiasAntes, publicacionesAntes, boletin, activosHoy,
     actos, actosAntes,
@@ -125,12 +126,19 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
     db.recibo.groupBy({ by: ['estado'], _count: { _all: true }, _sum: { importe: true }, where: { ...recibosDelPeriodo, estado: { in: vivos } } }),
     devueltosPendientes(recibosDelPeriodo),
 
-    db.papeletaSitio.count({ where: { year: p.anio, salida: Salida.PASION } }),
-    db.papeletaSitio.groupBy({ by: ['puesto'], _count: { _all: true }, where: { year: p.anio, salida: Salida.PASION } }),
-    db.papeletaSitio.groupBy({ by: ['year'], _count: { _all: true }, where: { salida: Salida.PASION, year: { gt: p.anio - 5, lte: p.anio } } }),
-    db.papeletaSitio.count({ where: { year: p.anio, salida: Salida.ROSARIO } }),
-    db.papeletaSitio.count({ where: { year: p.anio - 1, salida: Salida.ROSARIO } }),
-    db.papeletaSitio.groupBy({ by: ['puesto'], _count: { _all: true }, where: { year: p.anio, salida: Salida.ROSARIO } }),
+    // Cada salida activa con sus cifras; la serie de cinco años, solo en las
+    // que llevan ropa (las grandes, las de la Semana Santa).
+    SalidasService.listar().then((lista) => Promise.all(lista.map(async (s) => {
+      const [total, anterior, porPuesto, porAnio] = await Promise.all([
+        db.papeletaSitio.count({ where: { year: p.anio, salidaId: s.id } }),
+        db.papeletaSitio.count({ where: { year: p.anio - 1, salidaId: s.id } }),
+        db.papeletaSitio.groupBy({ by: ['puesto'], _count: { _all: true }, where: { year: p.anio, salidaId: s.id } }),
+        s.conRopa
+          ? db.papeletaSitio.groupBy({ by: ['year'], _count: { _all: true }, where: { salidaId: s.id, year: { gt: p.anio - 5, lte: p.anio } } })
+          : Promise.resolve(null),
+      ]);
+      return { slug: s.slug, nombre: s.nombre, conRopa: s.conRopa, total, anterior, porPuesto, porAnio };
+    }))),
     db.recibo.groupBy({ by: ['estado'], _count: { _all: true }, _sum: { importe: true }, where: { ...papeletasPorCobrar, estado: { in: vivos } } }),
     devueltosPendientes(papeletasPorCobrar),
 
@@ -160,7 +168,6 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
 
   const altasMes = porMes(fechasAlta, (f) => f.fechaAlta, (f) => f._count._all, p.meses);
   const bajasMes = porMes(fechasBaja, (f) => f.fechaBaja, (f) => f._count._all, p.meses);
-  const papeletasAnio = new Map(papeletasPorAnio.map((f) => [f.year, f._count._all]));
 
   return {
     hermanos: {
@@ -190,10 +197,18 @@ async function datosCrudos(p: Periodo, hoy: Date): Promise<DatosCrudos> {
     },
     procesion: {
       anio: p.anio,
-      papeletas,
-      porPuesto: agruparPorTextoLibre(expandir(puestos), 8),
-      porAnio: [4, 3, 2, 1, 0].map((n) => ({ anio: p.anio - n, total: papeletasAnio.get(p.anio - n) ?? 0 })),
-      rosario: { anio: p.anio, papeletas: rosario, anterior: rosarioAntes, porPuesto: agruparPorTextoLibre(expandir(puestosRosario), 8) },
+      porSalida: salidas.map((s) => {
+        const delAnio = new Map((s.porAnio ?? []).map((f) => [f.year, f._count._all]));
+        return {
+          slug: s.slug,
+          nombre: s.nombre,
+          conRopa: s.conRopa,
+          papeletas: s.total,
+          papeletasAnioAnterior: s.anterior,
+          porPuesto: agruparPorTextoLibre(expandir(s.porPuesto), 8),
+          ...(s.porAnio && { serie: [4, 3, 2, 1, 0].map((n) => ({ anio: p.anio - n, total: delAnio.get(p.anio - n) ?? 0 })) }),
+        };
+      }),
       porCobrar: partes(papeletasVivas, papeletasDevueltas),
     },
     inventario: {

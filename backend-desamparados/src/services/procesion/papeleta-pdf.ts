@@ -8,12 +8,12 @@
  * cualquier tamaño, y no depende de ninguna imagen.
  */
 import QRCode from 'qrcode';
-import type { Salida, Sexo } from '@prisma/client';
+import type { Sexo } from '@prisma/client';
 import db from '../../config/db.js';
 import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
-import { DATOS_SALIDA } from '../../domain/salidas.js';
 import { identidad } from '../../domain/datos-entidad.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
+import type { SalidaImpresa } from '../../dtos/email.dto.js';
 import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, MARFIL, NEGRO, ORO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
@@ -22,7 +22,7 @@ import {
 export interface DatosDeLaPapeleta {
   id: number;
   year: number;
-  salida: Salida;
+  salida: SalidaImpresa;
   /** «2027-0012»: el número con que la busca Secretaría. */
   referencia: string;
   nombre: string;
@@ -54,14 +54,14 @@ const euros = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
 export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta | null> {
   const p = await db.papeletaSitio.findUnique({
     where: { id },
-    include: { recibo: true, hermano: { select: { nombre: true, apellidos: true, sexo: true, numeroHermano: true, tratamiento: true } } },
+    include: { recibo: true, salida: { include: { acto: true } }, hermano: { select: { nombre: true, apellidos: true, sexo: true, numeroHermano: true, tratamiento: true } } },
   });
   if (!p) return null;
   const importe = Number(p.recibo.importe);
   return {
     id: p.id,
     year: p.year,
-    salida: p.salida,
+    salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones },
     referencia: referenciaDe(p.year, p.id),
     nombre: `${p.hermano.nombre} ${p.hermano.apellidos}`.trim(),
     sexo: p.hermano.sexo,
@@ -74,7 +74,7 @@ export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta |
     faraona: p.numFaraonaAsignada,
     importe: importe > 0 && p.recibo.estado === 'PAGADO' ? euros(importe) : '',
     observaciones: p.observaciones,
-    ...(await leerDatosEvento(p.salida)),
+    ...leerDatosEvento(p.salida),
     expedida: p.createdAt,
     codigo: codigoDePapeleta(p.id),
   };
@@ -154,7 +154,7 @@ function filaDeCeldas(doc: Doc, celdas: [string, string][], y: number, alto: num
 }
 
 function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
-  const rosario = d.salida === 'ROSARIO';
+  const donativo = d.salida.cobro === 'DONATIVO';
   sinMargenes(doc, () => {
     doc.rect(0, 0, A4.ancho, 4.5).fill(BURDEOS);
 
@@ -174,9 +174,9 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
     rombo(doc, A4.ancho / 2, yFilete + 0.4, 4, BURDEOS);
 
     // Qué es: «Papeleta de sitio» y la salida con su año.
-    // «Papeleta de sitio» en las dos salidas, como en la pantalla de Procesión: debajo va cuál.
+    // «Papeleta de sitio» en todas las salidas, como en la pantalla de Procesión: debajo va cuál.
     rotulo(doc, versalitas('Papeleta de sitio'), MARGEN, 160, { letra: LETRA.textoFuerte, tam: 9.75, color: BURDEOS, espaciado: 4.5, ancho: ANCHO, alinear: 'center' });
-    ajustado(doc, `${DATOS_SALIDA[d.salida].nombre} · ${d.year}`, MARGEN, 176, { letra: LETRA.fina, tam: 33, minimo: 24, ancho: ANCHO, color: NEGRO, alinear: 'center' });
+    ajustado(doc, `${d.salida.nombre} · ${d.year}`, MARGEN, 176, { letra: LETRA.fina, tam: 33, minimo: 24, ancho: ANCHO, color: NEGRO, alinear: 'center' });
 
     // Quién y dónde va.
     const yBloque = 244;
@@ -202,7 +202,7 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
     if (d.tunica) extra.push(['Túnica', d.tunica]);
     if (d.capirote) extra.push(['Capirote', d.capirote]);
     if (d.faraona) extra.push(['Faraona', d.faraona]);
-    if (d.importe) extra.push([rosario ? 'Donativo' : 'Limosna abonada', d.importe]);
+    if (d.importe) extra.push([donativo ? 'Donativo' : 'Limosna abonada', d.importe]);
     for (let i = 0; i < extra.length; i += 3) {
       filaDeCeldas(doc, extra.slice(i, i + 3), y, altoFila);
       y += altoFila;
@@ -233,10 +233,11 @@ function dibujar(doc: Doc, d: DatosDeLaPapeleta) {
     );
     rotulo(doc, 'Personal e intransferible.', xQr, yTexto + 82, { tam: 9.75, color: GRIS });
 
-    // Pie: la frase y quién la expide.
+    // Pie: las indicaciones de la salida (las escribe el CMS) y quién la
+    // expide. Tres líneas como mucho: más largas pisarían el filete de abajo.
     doc.font(LETRA.cursiva).fontSize(11.25).fillColor(GRIS).text(
-      rosario ? 'Se ruega puntualidad y recogimiento durante el rezo.' : 'Se ruega puntualidad y recogimiento durante toda la estación de penitencia.',
-      MARGEN, yPie - 4, { width: 320, lineGap: 2 },
+      d.salida.indicaciones?.trim() || 'Se ruega puntualidad y recogimiento.',
+      MARGEN, yPie - 4, { width: 320, lineGap: 2, height: 44, ellipsis: true },
     );
     rotulo(doc, `Expedida el ${fecha.format(d.expedida)}`, MARGEN, yPie - 2, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });
     rotulo(doc, `Secretaría del ${identidad.tipo}`, MARGEN, yPie + 11, { tam: 9, color: GRIS, ancho: ANCHO, alinear: 'right' });

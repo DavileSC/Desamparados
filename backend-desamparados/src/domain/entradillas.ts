@@ -1,5 +1,5 @@
 import type { ClaveArea, DatosCrudos } from './datos-areas.js';
-import { euros, numero } from './datos-areas.js';
+import { euros, numero, salidaPrincipal } from './datos-areas.js';
 import type { Periodo } from './periodo-datos.js';
 
 /**
@@ -77,20 +77,23 @@ function dinero(d: DatosCrudos['dinero'], p: Periodo): Trozo[] {
 }
 
 function procesion(d: DatosCrudos['procesion'], p: Periodo): Trozo[] {
-  const del = (anio: number) => d.porAnio.find((a) => a.anio === anio)?.total ?? 0;
-  const anterior = del(d.anio - 1);
-  const frente = (a: number, b: number) => (b === 0 ? '' : a > b ? `, ${numero(a - b)} más que la anterior` : a < b ? `, ${numero(b - a)} menos que la anterior` : ', las mismas que la anterior');
+  const principal = salidaPrincipal(d.porSalida);
   const trozos: Trozo[] = [];
-  if (d.papeletas > 0) {
-    trozos.push({ texto: `La salida del Sábado de Pasión de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ` }, { texto: contar(d.papeletas, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(d.papeletas, anterior)}.` });
+  if (!principal) return [{ texto: 'Todavía no hay salidas procesionales.' }];
+  const del = (anio: number) => (anio === d.anio - 1 ? principal.papeletasAnioAnterior : principal.serie?.find((a) => a.anio === anio)?.total ?? 0);
+  const anterior = principal.papeletasAnioAnterior;
+  const frente = (a: number, b: number) => (b === 0 ? '' : a > b ? `, ${numero(a - b)} más que la anterior` : a < b ? `, ${numero(b - a)} menos que la anterior` : ', las mismas que la anterior');
+  if (principal.papeletas > 0) {
+    trozos.push({ texto: `La salida del ${principal.nombre} de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ` }, { texto: contar(principal.papeletas, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(principal.papeletas, anterior)}.` });
   } else {
-    trozos.push({ texto: `La salida del Sábado de Pasión de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
+    trozos.push({ texto: `La salida del ${principal.nombre} de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
     if (anterior > 0) trozos.push({ texto: ` La de ${d.anio - 1} reunió ` }, { texto: contar(anterior, 'papeleta de sitio', 'papeletas de sitio'), fuerte: true }, { texto: `${frente(anterior, del(d.anio - 2))}.` });
   }
-  const r = d.rosario;
-  trozos.push({ texto: r.papeletas > 0
-    ? ` El Rosario vespertino de ${r.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ${contar(r.papeletas, 'papeleta', 'papeletas')}.`
-    : ` El Rosario vespertino de ${r.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
+  for (const s of d.porSalida.filter((x) => x !== principal)) {
+    trozos.push({ texto: s.papeletas > 0
+      ? ` El ${s.nombre} de ${d.anio} ${p.enMarcha ? 'reúne' : 'reunió'} ${contar(s.papeletas, 'papeleta', 'papeletas')}.`
+      : ` El ${s.nombre} de ${d.anio} ${p.enMarcha ? 'aún no tiene' : 'no tuvo'} papeletas.` });
+  }
   return trozos;
 }
 
