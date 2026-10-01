@@ -96,6 +96,10 @@ export const ACCIONES_AUDITORIA = {
   CORTEJO_DIRECTO_TERMINAR: 'CORTEJO_DIRECTO_TERMINAR',
   // Una entrada al templo apuntada por error, que vuelve a faltar
   PUERTA_DESHACER: 'PUERTA_DESHACER',
+  // El fichero del Modelo 182 sacado para presentarlo en Hacienda
+  MODELO_182_FICHERO: 'MODELO_182_FICHERO',
+  // Los certificados de donativos mandados por correo
+  MODELO_182_ENVIAR: 'MODELO_182_ENVIAR',
   // Procesión (turnos de reparto y citas)
   TURNO_CREAR: 'TURNO_CREAR',
   TURNO_ACTUALIZAR: 'TURNO_ACTUALIZAR',

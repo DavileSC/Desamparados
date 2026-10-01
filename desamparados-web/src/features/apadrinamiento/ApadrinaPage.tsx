@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import CamposCertificado from '../../components/CamposCertificado'
+import { SIN_CERTIFICADO, certificadoCompleto, datosFiscalesDe } from '../../lib/certificado'
 import { Alert, Box, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import MetaDePagina from '../../components/MetaDePagina'
@@ -26,6 +28,7 @@ export default function ApadrinaPage() {
   const [form, setForm] = useState(VACIO)
   const [enviando, setEnviando] = useState(false)
   const [errorForm, setErrorForm] = useState<string | null>(null)
+  const [certificado, setCertificado] = useState(SIN_CERTIFICADO)
 
   useEffect(() => {
     let cancelado = false
@@ -36,13 +39,13 @@ export default function ApadrinaPage() {
   }, [])
 
   const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
-  const listo = form.nombre.trim() !== '' && correoValido && form.telefono.trim().length >= 9
+  const listo = form.nombre.trim() !== '' && correoValido && form.telefono.trim().length >= 9 && certificadoCompleto(certificado)
 
   const pagar = async () => {
     if (!elegida) return
     setEnviando(true); setErrorForm(null)
     try {
-      const r = await apadrinar({ piezaId: elegida.id, nombre: form.nombre, email: form.email, telefono: form.telefono, dedicatoria: form.dedicatoria.trim() || null, mostrarNombre: form.mostrarNombre, metodo: form.metodo })
+      const r = await apadrinar({ piezaId: elegida.id, nombre: form.nombre, email: form.email, telefono: form.telefono, dedicatoria: form.dedicatoria.trim() || null, mostrarNombre: form.mostrarNombre, metodo: form.metodo, ...(certificado.quiere && { fiscal: datosFiscalesDe(certificado) }) })
       if (r.tipo === 'banco') irAlBanco(r)
       else navegar(`/apadrina/gracias/${r.token}`)
     } catch (err: unknown) {
@@ -85,6 +88,7 @@ export default function ApadrinaPage() {
             <TextField label="Teléfono" type="tel" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} fullWidth slotProps={{ htmlInput: { autoComplete: 'tel' } }} />
             <TextField label="Dedicatoria (opcional)" value={form.dedicatoria} onChange={(e) => setForm({ ...form, dedicatoria: e.target.value })} fullWidth slotProps={{ htmlInput: { maxLength: 200 } }} helperText="Por ejemplo: «En memoria de mis padres»." />
             <FormControlLabel control={<Checkbox checked={form.mostrarNombre} onChange={(e) => setForm({ ...form, mostrarNombre: e.target.checked })} />} label="Que mi nombre y la dedicatoria salgan en la foto" />
+            <CamposCertificado valor={certificado} onChange={setCertificado} />
             {datos && datos.metodos.length > 1 && (
               <TextField select label="Pagar con" value={form.metodo} onChange={(e) => setForm({ ...form, metodo: e.target.value as MetodoEnLinea })} fullWidth>
                 {datos.metodos.map((m) => <MenuItem key={m} value={m}>{m === 'BIZUM' ? 'Bizum' : 'Tarjeta'}</MenuItem>)}

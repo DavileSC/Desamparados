@@ -5,6 +5,8 @@ import { Alert, Box, ButtonBase, TextField, Typography } from '@mui/material'
 import CATALOGO from '../../../../shared/paginas-publicas.json'
 import topes from '../../../../shared/topes-contenido.json'
 import Boton from '../Boton'
+import CamposCertificado from '../CamposCertificado'
+import { SIN_CERTIFICADO, certificadoCompleto, datosFiscalesDe } from '../../lib/certificado'
 import { SERIF } from '../../features/inicio/estilos'
 import { anchoMaximo } from './presentacion'
 import { irAlBanco, type EstadoDelPago, type MetodoEnLinea } from '../../lib/api/procesion'
@@ -48,6 +50,7 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
   const [destino, setDestino] = useState<string | null>(null)
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
+  const [certificado, setCertificado] = useState(SIN_CERTIFICADO)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hecho, setHecho] = useState<string | null>(null)
@@ -55,7 +58,9 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
   const importe = elegido === 'otro' ? leerImporte(otro) : elegido
   const fueraDeLimites = importe !== null && (importe < topes.donativoMinimoEuros || importe > topes.donativoMaximoEuros)
   const faltaDestino = bloque.destinos.length > 0 && destino === null
-  const listo = importe !== null && !fueraDeLimites && !faltaDestino && pagina !== null
+  // El certificado se manda por correo: si lo pide, el correo deja de ser opcional.
+  const faltaCorreo = certificado.quiere && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const listo = importe !== null && !fueraDeLimites && !faltaDestino && pagina !== null && certificadoCompleto(certificado) && !faltaCorreo
 
   const enviar = async (metodo: MetodoEnLinea) => {
     if (!listo || importe === null || pagina === null) return
@@ -66,6 +71,7 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
         ...(destino && { destino }),
         ...(nombre.trim() && { nombre: nombre.trim() }),
         ...(email.trim() && { email: email.trim() }),
+        ...(certificado.quiere && { fiscal: datosFiscalesDe(certificado) }),
       })
       if (inicio.tipo === 'banco') {
         irAlBanco(inicio)
@@ -128,8 +134,12 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
         <TextField label="Tu nombre (opcional)" value={nombre} onChange={(e) => setNombre(e.target.value)} slotProps={{ htmlInput: { maxLength: 120 } }} sx={campo} />
-        <TextField label="Tu correo (opcional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} helperText="Solo para darte las gracias." slotProps={{ htmlInput: { maxLength: 254 } }} sx={campo} />
+        <TextField label={certificado.quiere ? 'Tu correo' : 'Tu correo (opcional)'} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          helperText={certificado.quiere ? 'Para mandarte el certificado.' : 'Solo para darte las gracias.'} slotProps={{ htmlInput: { maxLength: 254 } }} sx={campo} />
       </Box>
+
+      <CamposCertificado valor={certificado} onChange={setCertificado} sxCampo={campo}
+        sxCasilla={{ color: 'rgba(255,255,255,0.9)', '& .MuiCheckbox-root': { color: 'rgba(255,255,255,0.7)' }, '& .Mui-checked': { color: `${ACENTO} !important` } }} />
 
       {error && <Alert severity="error">{error}</Alert>}
       {hecho && <Alert severity="success">{hecho}</Alert>}

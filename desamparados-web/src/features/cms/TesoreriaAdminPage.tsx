@@ -36,6 +36,7 @@ import ListaRecibos from './tesoreria/ListaRecibos'
 import { NOMBRE_METODO } from './mesa/formato'
 import DialogoEstado, { type CambioEstado } from './tesoreria/DialogoEstado'
 import IncidenciasDePago from './tesoreria/IncidenciasDePago'
+import Modelo182 from './tesoreria/Modelo182'
 import Remesas from './tesoreria/Remesas'
 import { site } from '../../config/site'
 
@@ -83,7 +84,7 @@ interface NuevoRecibo { hermano: ReceiptBrother | null; year: string; concepto: 
 export default function TesoreriaAdminPage() {
   const [params, setParams] = useSearchParams()
   const vistaPedida = params.get('vista')
-  const vista = vistaPedida === 'impagos' || vistaPedida === 'remesas' ? vistaPedida : 'recibos'
+  const vista = vistaPedida === 'impagos' || vistaPedida === 'remesas' || vistaPedida === 'modelo182' ? vistaPedida : 'recibos'
   // La baja es de Secretaría: aquí solo la dan quienes también gestionan el censo.
   const role = useAuthStore((state) => state.cms?.role ?? 'USER')
   const puedeDarDeBaja = role === 'ADMIN' || role === 'HERMANO_MAYOR'
@@ -247,7 +248,7 @@ export default function TesoreriaAdminPage() {
       value={vista}
       onChange={(_, valor) => setParams((anteriores) => {
         const siguientes = new URLSearchParams(anteriores)
-        if (valor === 'impagos' || valor === 'remesas') siguientes.set('vista', valor)
+        if (valor === 'impagos' || valor === 'remesas' || valor === 'modelo182') siguientes.set('vista', valor)
         else siguientes.delete('vista')
         return siguientes
       })}
@@ -256,8 +257,9 @@ export default function TesoreriaAdminPage() {
       <Tab value="recibos" label="Recibos" />
       <Tab value="impagos" label="Impagos" />
       <Tab value="remesas" label="Remesas" />
+      <Tab value="modelo182" label="Modelo 182" />
     </Tabs>
-    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeDarDeBaja} /> : vista === 'remesas' ? <Remesas /> : <>
+    {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeDarDeBaja} /> : vista === 'remesas' ? <Remesas /> : vista === 'modelo182' ? <Modelo182 puedeCambiar={role === 'ADMIN' || role === 'TESORERIA'} /> : <>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}{notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
     <VentanaFormulario
       abierto={generando}

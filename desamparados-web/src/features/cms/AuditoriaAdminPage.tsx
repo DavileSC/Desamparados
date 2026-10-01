@@ -36,6 +36,8 @@ const ACCIONES: Record<string, string> = {
   APADRINAMIENTO_PAGADO: 'Apadrinamiento pagado',
   CORTEJO_DIRECTO_EMPEZAR: 'Sacar el cortejo en directo',
   PUERTA_DESHACER: 'Deshacer una entrada al templo',
+  MODELO_182_FICHERO: 'Sacar el fichero del Modelo 182',
+  MODELO_182_ENVIAR: 'Mandar los certificados de donativos',
   CORTEJO_DIRECTO_TERMINAR: 'Terminar el cortejo en directo',
   RECIBO_ACTUALIZAR: 'Editar un recibo',
   RECIBO_EMITIR: 'Emitir un recibo',

@@ -67,6 +67,33 @@ describe('BloqueDonativo', () => {
     expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toEqual({ pagina: 'caridad', importe: 7.5, metodo: 'TARJETA' })
   })
 
+  it('con certificado para la renta, pide los datos de Hacienda y el correo, y los manda', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor({ inicio: { tipo: 'hecho', total: 10, repetida: false } })
+    renderWithProviders(<BloqueDonativo bloque={{ ...BLOQUE, destinos: [] }} />, { ruta: RUTA })
+
+    await user.click(screen.getByRole('checkbox', { name: /certificado para desgravarlo/ }))
+    const donar = await screen.findByRole('button', { name: /^Donar/ })
+    expect(donar).toBeDisabled()
+    await user.type(screen.getByRole('textbox', { name: 'Nombre' }), 'Ana')
+    await user.type(screen.getByRole('textbox', { name: 'Apellidos' }), 'Ruiz Gil')
+    await user.type(screen.getByRole('textbox', { name: 'NIF' }), '12345678A')
+    expect(screen.getByText(/la letra no cuadra/)).toBeInTheDocument()
+    await user.clear(screen.getByRole('textbox', { name: 'NIF' }))
+    await user.type(screen.getByRole('textbox', { name: 'NIF' }), '12345678z')
+    await user.type(screen.getByRole('textbox', { name: 'Código postal' }), '29006')
+    // Sin correo no hay adonde mandar el certificado.
+    expect(donar).toBeDisabled()
+    await user.type(screen.getByRole('textbox', { name: 'Tu correo' }), 'ana@example.com')
+    await user.click(screen.getByRole('button', { name: /^Donar/ }))
+
+    expect(await screen.findByText(/hemos recibido tu donativo/)).toBeInTheDocument()
+    expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toEqual({
+      pagina: 'caridad', importe: 10, metodo: 'TARJETA', email: 'ana@example.com',
+      fiscal: { nif: '12345678Z', nombre: 'Ana', apellidos: 'Ruiz Gil', codigoPostal: '29006' },
+    })
+  })
+
   it('sin pago en línea, lo dice y no ofrece pagar', async () => {
     servidor({ pago: null })
     renderWithProviders(<BloqueDonativo bloque={BLOQUE} />, { ruta: RUTA })

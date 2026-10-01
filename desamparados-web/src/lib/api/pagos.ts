@@ -1,4 +1,5 @@
 import { llamarApi } from './cliente'
+import type { DatosFiscales } from '../certificado'
 import type { EstadoDelPago, InicioDePago, MetodoEnLinea } from './procesion'
 
 /** Con qué se paga en línea y si es de pruebas; null si no hay pago en línea. Lo ve cualquiera. */
@@ -15,6 +16,8 @@ export interface Donativo {
   nombre?: string
   email?: string
   metodo: MetodoEnLinea
+  /** Si quiere el certificado para la renta. */
+  fiscal?: DatosFiscales | null
 }
 
 /** Empezar un donativo, sin cuenta: con el banco vuelve el formulario firmado; simulado, ya está hecho. */

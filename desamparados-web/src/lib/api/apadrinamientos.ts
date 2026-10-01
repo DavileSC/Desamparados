@@ -1,3 +1,4 @@
+import type { DatosFiscales } from '../certificado'
 import { llamarApi } from './cliente'
 import type { MetodoEnLinea, EstadoPedido } from './tienda'
 
@@ -38,6 +39,8 @@ export interface DatosApadrinar {
   dedicatoria: string | null
   mostrarNombre: boolean
   metodo: MetodoEnLinea
+  /** Si quiere el certificado para la renta. */
+  fiscal?: DatosFiscales | null
 }
 
 export type ResultadoApadrinar =

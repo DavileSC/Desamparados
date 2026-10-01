@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { email } from '../config/common.js';
+import { datosFiscales, email } from '../config/common.js';
 
 // El donativo desde la web pública. Los límites del importe y el destino los
 // comprueba el servicio contra el bloque de la página, no este esquema: aquí
@@ -12,6 +12,8 @@ export const donativoSchema = type({
         "nombre?": "string <= 120",
         "email?": type(email).or("''"),
         metodo: "'TARJETA' | 'BIZUM'",
+        // Si quiere el certificado para desgravar (con correo, lo exige el servicio).
+        "fiscal?": datosFiscales.or("null"),
     }
 });
 

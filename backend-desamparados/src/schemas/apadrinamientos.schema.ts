@@ -1,5 +1,5 @@
 import { type } from 'arktype';
-import { email, idParam, telefono } from '../config/common.js';
+import { datosFiscales, email, idParam, telefono } from '../config/common.js';
 
 const textoLimpio = (max: number, que: string) =>
     type(`string <= ${max}`).narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe(`${que} de ${max} caracteres como mucho, sin «<» ni «>»`);
@@ -13,6 +13,8 @@ export const apadrinarSchema = type({
         dedicatoria: type("string <= 200").matching(/^[^<>]*$/).or("null"),
         mostrarNombre: "boolean",
         metodo: "'TARJETA' | 'BIZUM'",
+        // Si quiere el certificado de donación para desgravar.
+        "fiscal?": datosFiscales.or("null"),
     }
 });
 

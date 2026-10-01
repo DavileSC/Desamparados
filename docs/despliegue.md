@@ -341,6 +341,15 @@ Tres cosas que no se ven:
   Bizum no se puede terminar con el terminal público de Redsys (error SIS0475
   al autenticarse): hace falta el de pruebas del banco con Bizum activado.
 
+### El Modelo 182 (donativos)
+
+No necesita variables de entorno. Antes de enero, en Tesorería → «Modelo 182»
+→ «Datos del Grupo», se ponen el **NIF del Grupo**, el teléfono y la persona
+de contacto con Hacienda y quién firma los certificados. Se guardan en la base
+(`Configuracion`, clave `modelo_182`), no en el repositorio: el NIF no se
+publica. El fichero se presenta en la Sede de la Agencia Tributaria
+(«Presentación mediante fichero») con el certificado digital del Grupo.
+
 ### Las remesas SEPA (adeudos domiciliados)
 
 Tesorería cobra los recibos de quienes domicilian con un fichero de adeudos

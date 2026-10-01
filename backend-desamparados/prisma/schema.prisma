@@ -1269,6 +1269,14 @@ model Apadrinamiento {
   dedicatoria   String?          @db.VarChar(200)
   /// Si quiere que su nombre salga en la foto.
   mostrarNombre Boolean          @default(false)
+  /// Para el certificado de donación y el Modelo 182, si lo pidió: su NIF,
+  /// su nombre y sus apellidos por separado (el `nombre` de arriba es el que
+  /// sale en la foto, y Hacienda los pide en orden) y su código postal (de él
+  /// sale la provincia).
+  nif               String?          @db.VarChar(9)
+  nombreFiscal      String?          @db.VarChar(120)
+  apellidosFiscales String?          @db.VarChar(120)
+  codigoPostal      String?          @db.VarChar(5)
   estado        EstadoPedido     @default(PENDIENTE_PAGO)
   importe       Decimal          @db.Decimal(10, 2)
   metodo        MetodoPago?

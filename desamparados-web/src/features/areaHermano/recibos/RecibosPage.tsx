@@ -10,6 +10,7 @@ import { useListadoPaginado } from '../../../hooks/useListadoPaginado'
 import { misRecibos, type MyReceipt } from '../../../lib/api/recibos'
 import { estadoDelRecibo, formatearImporte } from './etiquetas'
 import AvisoSuave from '../../../components/AvisoSuave'
+import CertificadosDonativos from './CertificadosDonativos'
 import { site } from '../../../config/site'
 
 /**
@@ -79,6 +80,8 @@ export default function RecibosPage() {
           )}
 
           {meta && <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="mis recibos" />}
+
+          <CertificadosDonativos />
         </ContenedorDePagina>
       </SeccionAnimada>
     </>

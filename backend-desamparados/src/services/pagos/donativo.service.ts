@@ -33,7 +33,11 @@ export interface PeticionDeDonativo {
   nombre?: string;
   email?: string;
   metodo: MetodoEnLinea;
+  /** Si quiere el certificado para desgravar. */
+  fiscal?: DatosFiscales | null;
 }
+
+export interface DatosFiscales { nif: string; nombre: string; apellidos: string; codigoPostal: string }
 
 /** Lo que se guarda del donativo en el pago. */
 export interface DatosDelDonativo {
@@ -41,6 +45,14 @@ export interface DatosDelDonativo {
   destino: string | null;
   nombre: string | null;
   email: string | null;
+  /**
+   * Para el certificado y el Modelo 182, si lo pidió. Los donativos de antes
+   * de que existiera no lo llevan: se leen como sin certificado.
+   */
+  nif?: string | null;
+  nombreFiscal?: string | null;
+  apellidosFiscales?: string | null;
+  codigoPostal?: string | null;
 }
 
 interface BloqueDonativo { tipo: 'donativo'; importes: number[]; destinos: string[] }
@@ -81,14 +93,21 @@ export class DonativoService {
       throw new HttpError(`El donativo tiene que estar entre ${topes.donativoMinimoEuros} y ${topes.donativoMaximoEuros} €.`);
     }
 
+    const nombre = p.nombre?.trim() || null;
+    const email = p.email?.trim() || null;
+    // El certificado se manda por correo: sin él, no hay certificado.
+    if (p.fiscal && !email) throw new HttpError('Para el certificado de donación hace falta tu correo.');
+    const fiscal = p.fiscal
+      ? { nif: p.fiscal.nif, nombreFiscal: p.fiscal.nombre.trim(), apellidosFiscales: p.fiscal.apellidos.trim(), codigoPostal: p.fiscal.codigoPostal }
+      : { nif: null, nombreFiscal: null, apellidosFiscales: null, codigoPostal: null };
     const destino = p.destino?.trim() || null;
     if (bloque.destinos.length > 0) {
       const elegido = bloque.destinos.find((d) => d.trim().toLocaleLowerCase('es-ES') === destino?.toLocaleLowerCase('es-ES'));
       if (!elegido) throw new HttpError('Elige a qué quieres destinar el donativo.');
-      return { centimos, datos: { pagina: p.pagina, destino: elegido.trim(), nombre: p.nombre?.trim() || null, email: p.email?.trim() || null } };
+      return { centimos, datos: { pagina: p.pagina, destino: elegido.trim(), nombre, email, ...fiscal } };
     }
     if (destino) throw new HttpError('Este donativo no lleva destino.');
-    return { centimos, datos: { pagina: p.pagina, destino: null, nombre: p.nombre?.trim() || null, email: p.email?.trim() || null } };
+    return { centimos, datos: { pagina: p.pagina, destino: null, nombre, email, ...fiscal } };
   }
 
   /**

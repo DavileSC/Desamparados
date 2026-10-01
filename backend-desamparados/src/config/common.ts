@@ -1,5 +1,7 @@
 import { type } from 'arktype';
 import { motivoContrasenaDebil } from '../domain/password-debil.js';
+import { nifValido, normalizarNif } from '../domain/nif.js';
+import { provinciaDelCodigoPostal } from '../domain/modelo-182.js';
 
 // --- TIPOS REUTILIZABLES CON MENSAJES EN ESPAÑOL ---
 
@@ -78,6 +80,25 @@ export const codigoPostal = type("string").pipe(
     (valor: string) => valor.trim(),
     type("string").matching(/^[0-9]{5}$/).describe("un código postal válido de 5 dígitos"),
 );
+
+// El NIF de quien dona (DNI, NIE o CIF), para el certificado y el Modelo 182.
+// Con el patrón del DNI de abajo: se normaliza antes y se guarda limpio.
+export const nif = type("string").pipe(
+    normalizarNif,
+    type("string").narrow((s: string) => nifValido(s)).describe("un NIF válido (DNI, NIE o CIF) con su letra o cifra de control"),
+);
+
+// Para el certificado de donación: lo que pide Hacienda además del nombre.
+// El código postal tiene que ser español: de él sale la provincia del 182.
+export const datosFiscales = type({
+    nif,
+    nombre: type("string <= 120").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("el nombre, sin «<» ni «>»"),
+    apellidos: type("string <= 120").narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe("los apellidos, sin «<» ni «>»"),
+    codigoPostal: type("string").pipe(
+        (valor: string) => valor.trim(),
+        type("string").narrow((s: string) => provinciaDelCodigoPostal(s) !== null).describe("un código postal español de 5 cifras"),
+    ),
+});
 
 // 3. DNI/NIE con Validación Matemática Oficial
 //

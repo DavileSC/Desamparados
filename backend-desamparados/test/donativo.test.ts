@@ -92,6 +92,13 @@ describe('lo que dice el bloque', () => {
     await assert.rejects(DonativoService.comprobar({ ...base, importe: 10.005 }), /dos decimales/);
     await assert.rejects(DonativoService.comprobar({ ...base, pagina: 'no-existe' }), /no existe/);
 
+    // Con certificado: hace falta el correo, y se guardan el NIF, el nombre, los apellidos y el código postal.
+    const fiscal = { nif: '12345678Z', nombre: 'Ana', apellidos: ' Ruiz Gil ', codigoPostal: '29006' };
+    await assert.rejects(DonativoService.comprobar({ ...base, fiscal }), /tu correo/);
+    const conCertificado = (await DonativoService.comprobar({ ...base, email: 'ana@ejemplo.test', fiscal })).datos;
+    assert.deepEqual([conCertificado.nif, conCertificado.nombreFiscal, conCertificado.apellidosFiscales, conCertificado.codigoPostal], ['12345678Z', 'Ana', 'Ruiz Gil', '29006']);
+    assert.equal((await DonativoService.comprobar(base)).datos.nif, null, 'sin certificado, sin NIF');
+
     pagina = { bloques: [{ ...BLOQUE, destinos: [] }] };
     try {
       assert.equal((await DonativoService.comprobar({ ...base, destino: undefined })).datos.destino, null);
@@ -148,6 +155,9 @@ test('por HTTP: lo que no es un donativo se rechaza antes de ir al banco', async
   assert.equal((await donar({ pagina: 'caridad', importe: 10, destino: 'Otra cosa', metodo: 'TARJETA' })).status, 400);
   assert.equal((await donar({ pagina: 'caridad', importe: -3, destino: 'Caridad', metodo: 'TARJETA' })).status, 400);
   assert.equal((await donar({ pagina: 'caridad', importe: 10, destino: 'Caridad', metodo: 'BIZUM' })).status, 409, 'sin Bizum contratado');
+  // Un NIF con la letra mal o un código postal de fuera no llegan al servicio.
+  assert.equal((await donar({ pagina: 'caridad', importe: 10, destino: 'Caridad', metodo: 'TARJETA', nombre: 'Ana', email: 'a@ejemplo.test', fiscal: { nif: '12345678A', nombre: 'Ana', apellidos: 'Ruiz', codigoPostal: '29006' } })).status, 400);
+  assert.equal((await donar({ pagina: 'caridad', importe: 10, destino: 'Caridad', metodo: 'TARJETA', nombre: 'Ana', email: 'a@ejemplo.test', fiscal: { nif: '12345678Z', nombre: 'Ana', apellidos: 'Ruiz', codigoPostal: '75001' } })).status, 400);
   assert.equal((await fetch(`${baseUrl}/api/pagos/donativo/00000000ZZZZ`)).status, 404);
   const metodos = await (await fetch(`${baseUrl}/api/pagos/metodos`)).json() as { pago: { metodos: string[] } | null };
   assert.deepEqual(metodos.pago?.metodos, ['TARJETA']);

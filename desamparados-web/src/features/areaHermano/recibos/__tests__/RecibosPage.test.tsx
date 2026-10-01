@@ -20,22 +20,39 @@ const recibo = {
  * Una instancia de `Response` por llamada: `llamarApi` lee el cuerpo con
  * `res.text()` y reutilizar la misma la dejaría consumida en la segunda.
  */
-function responder(data: unknown[], meta: Record<string, number>) {
-  const simulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(
-    JSON.stringify({ data, meta }), { status: 200, headers: { 'Content-Type': 'application/json' } },
+function responder(data: unknown[], meta: Record<string, number>, certificados: unknown[] = []) {
+  const simulado = vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(
+    // Los certificados para la renta se piden aparte, debajo de la lista.
+    JSON.stringify(String(url).includes('/certificados') ? { disponibles: true, certificados } : { data, meta }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
   )))
   vi.stubGlobal('fetch', simulado)
   return simulado
 }
 
+/** Las llamadas al listado, sin la de los certificados. */
+const delListado = (simulado: ReturnType<typeof vi.fn>) => simulado.mock.calls.map(([u]) => String(u)).filter((u) => !u.includes('/certificados'))
+
 afterEach(() => { vi.unstubAllGlobals() })
 
 describe('RecibosPage', () => {
+  it('ofrece el certificado de donativos de cada año cerrado', async () => {
+    responder([recibo], { total: 1, page: 1, limit: 20, totalPages: 1 }, [{ ejercicio: 2025, nif: '12345678Z', nombre: 'Ana Pérez Ruiz', centimos: 3000 }])
+    renderWithProviders(<RecibosPage />)
+    expect(await screen.findByRole('heading', { name: 'Certificados para la renta' })).toBeInTheDocument()
+    expect(screen.getByText('2025 · Ana Pérez Ruiz')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Descargar' })).toBeEnabled()
+  })
+
+  it('sin donativos que certificar, no hay apartado de certificados', async () => {
+    responder([recibo], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    renderWithProviders(<RecibosPage />)
+    expect(await screen.findByText(/cuota anual/i)).toBeInTheDocument()
+    expect(screen.queryByText('Certificados para la renta')).not.toBeInTheDocument()
+  })
+
   it('dice cuántos recibos propios hay', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
-      JSON.stringify({ data: [], meta: { total: 30, page: 1, limit: 20, totalPages: 2 } }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    )))
+    responder([], { total: 30, page: 1, limit: 20, totalPages: 2 })
     renderWithProviders(<RecibosPage />)
     expect(await screen.findByText(/de 30/i)).toBeInTheDocument()
   })
@@ -47,14 +64,14 @@ describe('RecibosPage', () => {
     expect(await screen.findByText(/cuota anual/i)).toBeInTheDocument()
     expect(screen.getByText('30,00 €')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /ir a la página 2/i })).toBeInTheDocument()
-    expect(String(simulado.mock.calls[0]?.[0])).toContain('/recibos/mis-recibos?')
+    expect(delListado(simulado)[0]).toContain('/recibos/mis-recibos?')
   })
 
   it('pide la página que dice la URL', async () => {
     const simulado = responder([], { total: 45, page: 2, limit: 20, totalPages: 3 })
     renderWithProviders(<RecibosPage />, { ruta: '/area-hermano/recibos?pagina=2' })
 
-    await waitFor(() => expect(String(simulado.mock.calls.at(-1)?.[0])).toContain('page=2'))
+    await waitFor(() => expect(delListado(simulado).at(-1)).toContain('page=2'))
   })
 
   // El arreglo del móvil: seis columnas en una tabla obligaban a arrastrar la

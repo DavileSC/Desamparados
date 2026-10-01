@@ -19,13 +19,18 @@ import { enviarCorreo } from './correos/envio.js';
 import { datos, esc, firma, maquetar, parrafo, urlDeLaWeb } from './correos/plantilla.js';
 import { modoDePago, pagoParaLaWeb } from '../domain/redsys.js';
 import { aCentimos } from '../domain/sepa.js';
+import type { DatosFiscales } from './pagos/donativo.service.js';
 
 export const CATEGORIA_APADRINAMIENTOS = 'Apadrinamientos';
 const PAGADOS = [EstadoPedido.PAGADO, EstadoPedido.ENTREGADO];
 
 export interface DatosCampana { titulo: string; descripcion: string; foto: string; activa: boolean }
 export interface DatosPieza { nombre: string; precio: number; x: number; y: number }
-export interface DatosApadrinar { piezaId: number; nombre: string; email: string; telefono: string; dedicatoria: string | null; mostrarNombre: boolean; metodo: MetodoEnLinea }
+export interface DatosApadrinar {
+  piezaId: number; nombre: string; email: string; telefono: string; dedicatoria: string | null; mostrarNombre: boolean; metodo: MetodoEnLinea;
+  /** Si quiere el certificado de donación para desgravar. */
+  fiscal?: DatosFiscales | null;
+}
 
 const euros = (centimos: number) => `${(centimos / 100).toFixed(2).replace('.', ',')} €`;
 
@@ -51,7 +56,7 @@ async function campanaCompleta(id: number, conDatosPrivados: boolean) {
   };
 }
 
-function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; dedicatoria: string | null; pieza: { nombre: string; campana: { titulo: string } } }) {
+function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; dedicatoria: string | null; nif: string | null; pieza: { nombre: string; campana: { titulo: string } } }) {
   return maquetar({
     titulo: 'Gracias por apadrinar',
     antetitulo: 'Apadrinamientos del Grupo Parroquial',
@@ -64,7 +69,9 @@ function correoDeApadrinamiento(a: { nombre: string; importe: Prisma.Decimal; de
         ['Donativo', esc(euros(aCentimos(a.importe)))],
         ...(a.dedicatoria ? [['Dedicatoria', esc(a.dedicatoria)] as [string, string]] : []),
       ]),
-      parrafo('Si necesitas el certificado del donativo para la declaración de la renta, pídelo en Secretaría respondiendo a este correo.'),
+      parrafo(a.nif
+        ? 'Como pediste, te mandaremos el certificado para la renta cuando acabe el año.'
+        : 'Si necesitas el certificado del donativo para la declaración de la renta, pídelo en Secretaría respondiendo a este correo.'),
       firma(null, 'La Junta de Gobierno'),
     ].join(''),
   });
@@ -131,6 +138,8 @@ export class ApadrinamientosService {
         token: crypto.randomBytes(16).toString('hex'), piezaId: pieza.id,
         nombre: d.nombre.trim(), email: d.email.trim().toLowerCase(), telefono: d.telefono.trim(),
         dedicatoria: d.dedicatoria?.trim() || null, mostrarNombre: d.mostrarNombre, importe: pieza.precio,
+        nif: d.fiscal?.nif ?? null, nombreFiscal: d.fiscal?.nombre.trim() ?? null, apellidosFiscales: d.fiscal?.apellidos.trim() ?? null,
+        codigoPostal: d.fiscal?.codigoPostal ?? null,
       },
     });
     if (modo === 'simulado') {
