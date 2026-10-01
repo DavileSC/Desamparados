@@ -66,9 +66,11 @@ const ANTES: Record<string, string[]> = {
     'Alrededor del trono se organizan los cargos de la procesión',
   ],
   enseres: [
-    // Desde el carrusel de piezas (27-09-2026), las insignias van una a una.
+    // Desde el carrusel de piezas (27-09-2026), las insignias van una a una. El
+    // estandarte y el simpecado se quitaron el 01-10-2026: sus fotos eran de
+    // Commons sin autor (docs/venta/licencias.md) y no hay una del Grupo.
     'Los enseres procesionales son elementos fundamentales',
-    'Cruz de guía', 'Estandarte corporativo', 'Simpecado',
+    'Cruz de guía', 'Banderines',
     'El cuidado de los enseres es tarea de todos los hermanos',
   ],
   desamparados: [

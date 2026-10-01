@@ -24,11 +24,13 @@
     "limpiar:huerfanos": "node --import tsx scripts/limpiar-huerfanos.ts",
     "migrar:bloques": "node --import tsx scripts/migrar-a-bloques.ts",
     "fotos:webp": "node --import tsx scripts/fotos-a-webp.ts",
-    "correos:muestra": "node --import tsx scripts/muestra-correos.ts"
+    "correos:muestra": "node --import tsx scripts/muestra-correos.ts",
+    "licencias": "node scripts/licencias.mjs"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.0",

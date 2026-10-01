@@ -1917,11 +1917,11 @@
           {
             "familia": "Insignias",
             "titulo": "Cruz de guía",
-            "texto": "Abre el cortejo y marca el camino. Madera forrada de metal dorado, con los atributos de la Pasión en relieve.",
+            "texto": "Abre el cortejo y marca el camino. Madera con cantoneras y escudo de metal plateado, entre los primeros nazarenos.",
             "foto": {
-              "url": "/images/enseres/cruz.webp",
-              "alt": "Cruz de guía dorada, con los atributos de la Pasión en relieve",
-              "pie": "Foto de ejemplo · Wikimedia Commons, CC BY-SA"
+              "url": "/images/enseres/cruz-de-guia.webp",
+              "alt": "La cruz de guía del Grupo, entre los nazarenos y los banderines",
+              "pie": ""
             },
             "datos": [
               {
@@ -1934,18 +1934,18 @@
               },
               {
                 "etiqueta": "Materiales",
-                "valor": "Madera, metal dorado"
+                "valor": "Madera, metal plateado"
               }
             ]
           },
           {
             "familia": "Insignias",
-            "titulo": "Estandarte corporativo",
-            "texto": "La insignia que representa al Grupo. Bordado en oro sobre terciopelo morado, con el Crucificado en el óvalo central.",
+            "titulo": "Banderines",
+            "texto": "Acompañan a la cruz de guía en el primer tramo. Cada uno lleva su relieve en metal plateado sobre terciopelo negro y su número en la punta.",
             "foto": {
-              "url": "/images/enseres/estandarte.webp",
-              "alt": "Estandarte morado bordado en oro, con un crucificado en el centro",
-              "pie": "Foto de ejemplo · Wikimedia Commons, CC BY-SA"
+              "url": "/images/enseres/banderines.webp",
+              "alt": "Los banderines del cortejo, de noche, con sus relieves de metal plateado",
+              "pie": ""
             },
             "datos": [
               {
@@ -1958,86 +1958,18 @@
               },
               {
                 "etiqueta": "Materiales",
-                "valor": "Terciopelo, oro fino"
-              }
-            ]
-          },
-          {
-            "familia": "Insignias",
-            "titulo": "Simpecado",
-            "texto": "Precede al trono de la Virgen. Terciopelo granate bordado en oro, con la imagen de la Señora pintada al óleo.",
-            "foto": {
-              "url": "/images/enseres/simpecado.webp",
-              "alt": "Simpecado granate bordado en oro, con la Virgen pintada en el centro",
-              "pie": "Foto de ejemplo · Wikimedia Commons, CC BY-SA"
-            },
-            "datos": [
-              {
-                "etiqueta": "Bordado",
-                "valor": "Hermanas camareras"
-              },
-              {
-                "etiqueta": "Año",
-                "valor": "2011"
-              },
-              {
-                "etiqueta": "Procedencia",
-                "valor": "Donación"
-              }
-            ]
-          },
-          {
-            "familia": "Archivo",
-            "titulo": "Libro de Reglas",
-            "texto": "Guarda las reglas aprobadas por el Obispado. Tapas de terciopelo con cantoneras y escudo en plata de ley.",
-            "foto": {
-              "url": "/images/enseres/reglas.webp",
-              "alt": "Tapas de terciopelo azul con cantoneras y escudo de plata",
-              "pie": "Foto de ejemplo · Wikimedia Commons, CC BY-SA"
-            },
-            "datos": [
-              {
-                "etiqueta": "Orfebre",
-                "valor": "Talleres Marín"
-              },
-              {
-                "etiqueta": "Año",
-                "valor": "1989"
-              },
-              {
-                "etiqueta": "Materiales",
-                "valor": "Terciopelo, plata de ley"
-              }
-            ]
-          },
-          {
-            "familia": "Orfebrería",
-            "titulo": "Incensario y naveta",
-            "texto": "El humo del incienso abre paso a la Virgen. Incensario y naveta de metal plateado, cincelados a mano.",
-            "foto": {
-              "url": "/images/enseres/incensario.webp",
-              "alt": "Incensario humeante y naveta de plata, con sus cadenas",
-              "pie": "Foto de ejemplo · Wikimedia Commons, CC BY-SA"
-            },
-            "datos": [
-              {
-                "etiqueta": "Orfebre",
-                "valor": "Orfebrería Hermanos Lozano"
-              },
-              {
-                "etiqueta": "Año",
-                "valor": "2015"
+                "valor": "Terciopelo, metal plateado"
               }
             ]
           },
           {
             "familia": "Bordado",
             "titulo": "Manto de salida",
-            "texto": "Hojarasca de oro sobre terciopelo negro. Se restauró en 2018 y se pasó a terciopelo nuevo.",
+            "texto": "Terciopelo azul noche bordado en oro y plata, con el anagrama repetido por toda la cola. Se restauró en 2018.",
             "foto": {
-              "url": "/images/enseres/manto.webp",
-              "alt": "Detalle del bordado en oro del manto, con flores y hojas sobre terciopelo negro",
-              "pie": "Foto de ejemplo · Wikimedia Commons, CC BY-SA"
+              "url": "/images/enseres/manto-de-salida.webp",
+              "alt": "Detalle del manto azul de la Virgen, bordado en oro y plata",
+              "pie": ""
             },
             "datos": [
               {
@@ -2056,12 +1988,12 @@
           },
           {
             "familia": "Trono",
-            "titulo": "Palio y candelería",
-            "texto": "Doce varales y candelería de metal plateado: la luz de la cera sobre la Virgen, el Sábado de Pasión.",
+            "titulo": "Candelería",
+            "texto": "La cera del trono lleva el escudo del Grupo. Se enciende al anochecer, el Sábado de Pasión, y alumbra la cara de la Virgen.",
             "foto": {
-              "url": "/images/enseres/palio.webp",
-              "alt": "Palio de noche, con la candelería encendida delante de la Virgen",
-              "pie": "Foto de ejemplo · Wikimedia Commons, CC BY-SA"
+              "url": "/images/enseres/candeleria.webp",
+              "alt": "Cirios del trono con el escudo del Grupo, delante de la Virgen",
+              "pie": ""
             },
             "datos": [
               {
@@ -2074,7 +2006,7 @@
               },
               {
                 "etiqueta": "Piezas",
-                "valor": "12 varales, 64 candeleros"
+                "valor": "64 candeleros"
               }
             ]
           },
