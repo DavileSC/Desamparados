@@ -14,10 +14,16 @@
     "_comentario": [
       "Quién es la corporación: lo que cambia de una instalación a otra y hasta ahora estaba escrito en el código.",
       "nombre: el completo, en correos, PDF, actas y metadatos. nombreCorto: el de las pestañas y el rótulo de la barra.",
-      "tipo: la clase de corporación («Grupo Parroquial», «Hermandad»…), como la dice la papeleta. titular: la advocación, en los pies de foto y las bendiciones. dominio: sin https, el de la web pública."
+      "tipo: la clase de corporación («Grupo Parroquial», «Hermandad»…), como la dice la papeleta. tipoCorto: la misma clase",
+      "sin el segundo sustantivo («Grupo», «Hermandad»), para frases ya situadas que no necesitan repetirlo entero.",
+      "articulo: el que concuerda con tipo y tipoCorto («el» Grupo Parroquial, pero «la» Hermandad, «los» Santos Oficios…);",
+      "se guarda el artículo y no el género porque hay corporaciones en plural. titular: la advocación, en los pies de foto",
+      "y las bendiciones. dominio: sin https, el de la web pública."
     ],
     "nombre": "Grupo Parroquial Nuestra Señora de los Desamparados",
     "tipo": "Grupo Parroquial",
+    "tipoCorto": "Grupo",
+    "articulo": "el",
     "nombreCorto": "Desamparados",
     "titular": "Nuestra Señora de los Desamparados",
     "localidad": "Málaga",

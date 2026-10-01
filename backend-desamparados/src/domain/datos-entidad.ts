@@ -21,6 +21,16 @@ export interface DatosSecretaria {
 }
 
 /**
+ * El artículo que concuerda con la corporación o con una salida: se guarda el
+ * artículo y no el género porque hay corporaciones y salidas en plural (las
+ * Cofradías Fusionadas, los Santos Oficios). Vive aquí y no en
+ * `domain/articulos.ts` porque ese módulo necesita leer `identidad` (un valor)
+ * de este fichero; si `Identidad` importara el tipo desde allí, el import
+ * circular rompería la carga. `articulos.ts` lo reexporta.
+ */
+export type Articulo = 'el' | 'la' | 'los' | 'las';
+
+/**
  * Quién es la corporación: nombre, tipo, advocación, localidad y dominio. Lo que
  * cambia de una instalación a otra vive en `shared/datos-entidad.json`, no en
  * el código, para poder montar la web para otra corporación sin tocarlo.
@@ -30,13 +40,19 @@ export interface Identidad {
   nombreCorto: string;
   /** «Grupo Parroquial», «Hermandad»…: la papeleta lo pone encima de la advocación. */
   tipo: string;
+  /** La misma clase sin el segundo sustantivo («Grupo», «Hermandad»): para frases ya situadas. */
+  tipoCorto: string;
+  /** El artículo que acompaña a `tipo` y `tipoCorto`. */
+  articulo: Articulo;
   titular: string;
   localidad: string;
   dominio: string;
   descripcion: string;
 }
 
-export const identidad: Identidad = datos.identidad;
+// `as Identidad`: el import JSON no estrecha "el" al tipo literal `Articulo`,
+// solo a `string`, así que la asignación directa no compila.
+export const identidad: Identidad = datos.identidad as Identidad;
 
 export const secretaria: DatosSecretaria = datos.secretaria;
 
