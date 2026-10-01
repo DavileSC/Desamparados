@@ -46,6 +46,13 @@ test('componer: campos rellenos y escapados, bloques en su sitio, firma del carg
   assert.match(html, /Descanse en paz\./);
   assert.match(html, /La Secretaría/);
 
+  const corporacion = componer(pesame, {
+    asunto: 'x', titulo: 'x',
+    cuerpo: 'Bienvenido {{a_la_corporacion}}. Gracias por confiar en {{nuestra_corporacion}}; los datos {{de_la_corporacion_corto}}.',
+    despedida: '',
+  }).html;
+  assert.match(corporacion, /Bienvenido al Grupo Parroquial\. Gracias por confiar en nuestro Grupo Parroquial; los datos del Grupo\./);
+
   const tienda = usoDe('pedido_tienda')!;
   const conBloque = componer(tienda, tienda.porDefecto, { campos: { nombre: 'Ana', numero: 7 }, bloques: { lineas: '<table id="lineas"></table>' } }).html;
   assert.match(conBloque, /<table id="lineas"><\/table>/);

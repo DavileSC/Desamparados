@@ -12,6 +12,7 @@ import { EmailService } from './email.service';
 import { EmitirReciboDto, GenerarCuotasDto, UpdateReciboDto } from '../dtos/recibo.dto.js';
 import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { DatosPapeleta } from '../dtos/email.dto.js';
+import type { Articulo } from '../domain/articulos.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
@@ -353,7 +354,8 @@ export class ReciboService {
     if (recibo.hermano.user?.email && papeleta) {
       const datosEmail: DatosPapeleta = {
         year: recibo.year,
-        salida: { nombre: papeleta.salida.nombre, cobro: papeleta.salida.cobro, conRopa: papeleta.salida.conRopa, indicaciones: papeleta.salida.indicaciones },
+        // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
+        salida: { nombre: papeleta.salida.nombre, cobro: papeleta.salida.cobro, conRopa: papeleta.salida.conRopa, indicaciones: papeleta.salida.indicaciones, articulo: papeleta.salida.articulo as Articulo },
         importe: `${Number(recibo.importe).toFixed(2)} €`,
         concepto: recibo.concepto,
         papeletaId: papeleta.id,

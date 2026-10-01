@@ -3,16 +3,46 @@
     "Los usos de las plantillas de correo (sección Emails del CMS): qué correo es cada uno, qué campos y bloques admite y su texto original.",
     "El texto original es el que sale si no hay ninguna plantilla en uso para ese correo. Se edita aquí para otra instalación.",
     "Formato del cuerpo: párrafos separados por una línea en blanco; **negrita**; líneas con «- » son una lista; líneas con «> » son un recuadro (si la primera va entera en negrita, es su título); un bloque fijo va solo en su línea, [[asi]]; los campos van entre llaves, {{asi}}.",
-    "Campos de todos los correos: {{grupo}} (el nombre del Grupo) y {{titular}}. Cada uso añade los suyos."
+    "Campos de todos los correos: {{grupo}} (el nombre de la corporación) y {{titular}}, más los que la nombran con su artículo: {{la_corporacion}}, {{de_la_corporacion}}, {{a_la_corporacion}}, {{nuestra_corporacion}}, {{la_corporacion_corto}} y {{de_la_corporacion_corto}} (domain/articulos.ts, para no escribir «Grupo Parroquial» a mano). Cada uso añade los suyos; la apertura, la papeleta y el recordatorio de papeleta sin recoger añaden además {{de_la_salida}} y {{la_salida}}, con el artículo de esa salida."
   ],
   "comunes": [
     {
       "clave": "grupo",
-      "ayuda": "El nombre del Grupo Parroquial"
+      "ayuda": "El nombre de la corporación"
     },
     {
       "clave": "titular",
       "ayuda": "La advocación titular"
+    },
+    {
+      "clave": "la_corporacion",
+      "ayuda": "La corporación con su artículo",
+      "ejemplo": "el Grupo Parroquial"
+    },
+    {
+      "clave": "de_la_corporacion",
+      "ayuda": "«de» y la corporación con su artículo, contraído si toca",
+      "ejemplo": "del Grupo Parroquial"
+    },
+    {
+      "clave": "a_la_corporacion",
+      "ayuda": "«a» y la corporación con su artículo, contraído si toca",
+      "ejemplo": "al Grupo Parroquial"
+    },
+    {
+      "clave": "nuestra_corporacion",
+      "ayuda": "La corporación con «nuestro», «nuestra», «nuestros» o «nuestras»",
+      "ejemplo": "nuestro Grupo Parroquial"
+    },
+    {
+      "clave": "la_corporacion_corto",
+      "ayuda": "La corporación en corto, con su artículo",
+      "ejemplo": "el Grupo"
+    },
+    {
+      "clave": "de_la_corporacion_corto",
+      "ayuda": "«de» y la corporación en corto, con su artículo, contraído si toca",
+      "ejemplo": "del Grupo"
     }
   ],
   "usos": [
@@ -124,7 +154,7 @@
       "porDefecto": {
         "asunto": "Hemos recibido su solicitud de ingreso",
         "titulo": "Hemos recibido su solicitud",
-        "cuerpo": "{{saludo}}\n\nLa Secretaría acusa recibo de su **solicitud de ingreso** en nuestro Grupo Parroquial. Le agradecemos de corazón que haya dado este paso.\n\n[[documentos]]\n\n[[secretaria]]\n\nMientras tanto, su solicitud queda pendiente. Le escribiremos de nuevo en cuanto la Secretaría la haya revisado.",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría acusa recibo de su **solicitud de ingreso** en {{nuestra_corporacion}}. Le agradecemos de corazón que haya dado este paso.\n\n[[documentos]]\n\n[[secretaria]]\n\nMientras tanto, su solicitud queda pendiente. Le escribiremos de nuevo en cuanto la Secretaría la haya revisado.",
         "despedida": "Que {{titular}} le guarde y bendiga."
       }
     },
@@ -170,8 +200,8 @@
       ],
       "porDefecto": {
         "asunto": "Su solicitud de ingreso ha sido aprobada",
-        "titulo": "{{bienvenido}} al Grupo Parroquial",
-        "cuerpo": "{{saludo}}\n\nLa Secretaría ha **aprobado su solicitud de ingreso**. Desde hoy {{forma_parte}} del censo de hermanos del Grupo Parroquial:\n\n[[censo]]\n\nConserve el número de hermano: es el que identifica a cada uno en el censo y se pide en Secretaría.\n\nYa puede entrar en el área de hermanos para consultar sus datos, sus recibos y, llegado el momento, pedir su papeleta de sitio.\n\n[[boton]]",
+        "titulo": "{{bienvenido}} {{a_la_corporacion}}",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría ha **aprobado su solicitud de ingreso**. Desde hoy {{forma_parte}} del censo de hermanos {{de_la_corporacion}}:\n\n[[censo]]\n\nConserve el número de hermano: es el que identifica a cada uno en el censo y se pide en Secretaría.\n\nYa puede entrar en el área de hermanos para consultar sus datos, sus recibos y, llegado el momento, pedir su papeleta de sitio.\n\n[[boton]]",
         "despedida": "Que {{titular}} le guarde y bendiga."
       }
     },
@@ -204,7 +234,7 @@
         "asunto": "Resolución de su solicitud de ingreso",
         "titulo": "Resolución de su solicitud",
         "cuerpo": "{{saludo}}\n\nLe comunicamos que la Secretaría **no ha podido dar curso a su solicitud de ingreso**, y que sus datos han sido eliminados de nuestros registros.\n\nSi cree que se trata de un error, o desea volver a presentarla, responda a este correo y le atenderemos con mucho gusto.\n\n[[secretaria]]",
-        "despedida": "Le agradecemos el interés mostrado por nuestro Grupo Parroquial."
+        "despedida": "Le agradecemos el interés mostrado por {{nuestra_corporacion}}."
       }
     },
     {
@@ -235,7 +265,7 @@
       "porDefecto": {
         "asunto": "Baja en el censo de hermanos",
         "titulo": "Baja en el censo de hermanos",
-        "cuerpo": "{{saludo}}\n\nLe comunicamos que se ha tramitado su **baja en el censo de hermanos** del Grupo Parroquial.\n\nSi esta baja no responde a su voluntad, o desea volver más adelante, responda a este correo y la Secretaría le atenderá.\n\n[[secretaria]]",
+        "cuerpo": "{{saludo}}\n\nLe comunicamos que se ha tramitado su **baja en el censo de hermanos** {{de_la_corporacion}}.\n\nSi esta baja no responde a su voluntad, o desea volver más adelante, responda a este correo y la Secretaría le atenderá.\n\n[[secretaria]]",
         "despedida": "Le agradecemos el tiempo que ha formado parte de esta casa, que sigue abierta para cuando quiera volver. Que {{titular}} le guarde y bendiga."
       }
     },
@@ -267,7 +297,7 @@
       "porDefecto": {
         "asunto": "Baja en el censo de hermanos",
         "titulo": "Baja en el censo de hermanos",
-        "cuerpo": "{{saludo}}\n\nLe comunicamos que se ha tramitado su **baja en el censo de hermanos** del Grupo Parroquial, al no constar el pago de sus cuotas.\n\n> **¿Es un error?**\n> Si ya las ha pagado, o desea ponerse al corriente y reincorporarse, responda a este correo y la Secretaría lo revisará con usted.\n\n[[secretaria]]",
+        "cuerpo": "{{saludo}}\n\nLe comunicamos que se ha tramitado su **baja en el censo de hermanos** {{de_la_corporacion}}, al no constar el pago de sus cuotas.\n\n> **¿Es un error?**\n> Si ya las ha pagado, o desea ponerse al corriente y reincorporarse, responda a este correo y la Secretaría lo revisará con usted.\n\n[[secretaria]]",
         "despedida": "Quedamos a su disposición."
       }
     },
@@ -303,6 +333,16 @@
           "clave": "primer_dia",
           "ayuda": "El primer día de reparto",
           "ejemplo": "lunes, 5 de octubre"
+        },
+        {
+          "clave": "de_la_salida",
+          "ayuda": "«de» y la salida con su artículo, contraído si toca",
+          "ejemplo": "del Sábado de Pasión"
+        },
+        {
+          "clave": "la_salida",
+          "ayuda": "La salida con su artículo",
+          "ejemplo": "el Sábado de Pasión"
         }
       ],
       "bloques": [
@@ -328,9 +368,9 @@
         }
       ],
       "porDefecto": {
-        "asunto": "Abierta la inscripción del {{salida}} {{anio}}",
+        "asunto": "Abierta la inscripción {{de_la_salida}} {{anio}}",
         "titulo": "{{salida}} {{anio}}",
-        "cuerpo": "{{saludo}}\n\nYa está **abierta la inscripción del {{salida}}** de {{anio}}. Puede pedir su papeleta desde el área de hermanos y elegir el día en que pasará a recogerla.\n\n[[dias]]\n\n[[fichas]]\n\n[[cobro]]\n\n[[indicaciones]]\n\n[[boton]]",
+        "cuerpo": "{{saludo}}\n\nYa está **abierta la inscripción {{de_la_salida}}** de {{anio}}. Puede pedir su papeleta desde el área de hermanos y elegir el día en que pasará a recogerla.\n\n[[dias]]\n\n[[fichas]]\n\n[[cobro]]\n\n[[indicaciones]]\n\n[[boton]]",
         "despedida": "Esperamos contar con su presencia acompañando a {{titular}}."
       }
     },
@@ -381,6 +421,16 @@
           "clave": "nombre_completo",
           "ayuda": "Nombre y apellidos",
           "ejemplo": "Juan Pérez Ruiz"
+        },
+        {
+          "clave": "de_la_salida",
+          "ayuda": "«de» y la salida con su artículo, contraído si toca",
+          "ejemplo": "del Sábado de Pasión"
+        },
+        {
+          "clave": "la_salida",
+          "ayuda": "La salida con su artículo",
+          "ejemplo": "el Sábado de Pasión"
         }
       ],
       "bloques": [
@@ -403,9 +453,9 @@
         }
       ],
       "porDefecto": {
-        "asunto": "Papeleta del {{salida}} {{anio}}: {{nombre_completo}}",
+        "asunto": "Papeleta {{de_la_salida}} {{anio}}: {{nombre_completo}}",
         "titulo": "{{salida}} {{anio}}",
-        "cuerpo": "{{saludo}}\n\nLa Secretaría le confirma su puesto en el {{salida}} del **{{fecha}}**. Estos son los datos de su sitio:\n\n[[papeleta]]\n\n[[indicaciones]]\n\n[[adjunto]]\n\n[[normativa]]",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría le confirma su puesto en {{la_salida}} del **{{fecha}}**. Estos son los datos de su sitio:\n\n[[papeleta]]\n\n[[indicaciones]]\n\n[[adjunto]]\n\n[[normativa]]",
         "despedida": "Que {{titular}} le guarde y bendiga."
       }
     },
@@ -436,6 +486,16 @@
           "clave": "fecha_cita",
           "ayuda": "El día de la cita",
           "ejemplo": "lunes, 8 de marzo"
+        },
+        {
+          "clave": "de_la_salida",
+          "ayuda": "«de» y la salida con su artículo, contraído si toca",
+          "ejemplo": "del Sábado de Pasión"
+        },
+        {
+          "clave": "la_salida",
+          "ayuda": "La salida con su artículo",
+          "ejemplo": "el Sábado de Pasión"
         }
       ],
       "bloques": [
@@ -449,9 +509,9 @@
         }
       ],
       "porDefecto": {
-        "asunto": "Recordatorio: su papeleta del {{salida}} está sin recoger",
+        "asunto": "Recordatorio: su papeleta {{de_la_salida}} está sin recoger",
         "titulo": "Su papeleta sigue sin recoger",
-        "cuerpo": "{{saludo}}\n\nTenía cita el **{{fecha_cita}}** para recoger su papeleta del {{salida}} y, según nuestros registros, no pudo pasar.\n\nLa organización del cortejo depende de que cada hermano recoja su papeleta dentro del plazo de reparto. Si quiere salir este año, pase a recogerla en cuanto pueda, o pida una cita nueva desde el área de hermanos.\n\n> **Qué llevar**\n> - DNI.\n> - El recibo de la cuota anual, si la tiene pendiente.\n\n[[secretaria]]\n\n[[boton]]\n\nSi ya la ha recogido en las últimas horas, no haga caso de este mensaje.",
+        "cuerpo": "{{saludo}}\n\nTenía cita el **{{fecha_cita}}** para recoger su papeleta {{de_la_salida}} y, según nuestros registros, no pudo pasar.\n\nLa organización del cortejo depende de que cada hermano recoja su papeleta dentro del plazo de reparto. Si quiere salir este año, pase a recogerla en cuanto pueda, o pida una cita nueva desde el área de hermanos.\n\n> **Qué llevar**\n> - DNI.\n> - El recibo de la cuota anual, si la tiene pendiente.\n\n[[secretaria]]\n\n[[boton]]\n\nSi ya la ha recogido en las últimas horas, no haga caso de este mensaje.",
         "despedida": "Esperamos contar con su presencia acompañando a {{titular}}."
       }
     },
@@ -483,7 +543,7 @@
       "porDefecto": {
         "asunto": "Gracias por su donativo",
         "titulo": "Gracias por su donativo",
-        "cuerpo": "{{saludo}}\n\nHemos recibido su donativo de **{{importe}}**{{para_destino}}. Muchas gracias por su generosidad con el Grupo Parroquial.\n\nEste correo es solo un acuse. Si necesita un justificante para su declaración, escriba a Secretaría y se lo preparamos.",
+        "cuerpo": "{{saludo}}\n\nHemos recibido su donativo de **{{importe}}**{{para_destino}}. Muchas gracias por su generosidad con {{la_corporacion}}.\n\nEste correo es solo un acuse. Si necesita un justificante para su declaración, escriba a Secretaría y se lo preparamos.",
         "despedida": "Que {{titular}} le guarde y bendiga."
       }
     },
@@ -492,7 +552,7 @@
       "grupo": "Donativos y tienda",
       "nombre": "Gracias por apadrinar",
       "descripcion": "A quien apadrina una pieza, cuando el banco confirma el pago.",
-      "antetitulo": "Apadrinamientos del Grupo Parroquial",
+      "antetitulo": "Apadrinamientos {{de_la_corporacion}}",
       "firma": "La Junta de Gobierno",
       "campos": [
         {
@@ -533,7 +593,7 @@
       "grupo": "Donativos y tienda",
       "nombre": "Pedido de la tienda pagado",
       "descripcion": "A quien compra en la tienda de la web, cuando el banco confirma el pago.",
-      "antetitulo": "Tienda del Grupo Parroquial",
+      "antetitulo": "Tienda {{de_la_corporacion}}",
       "firma": "La Secretaría",
       "campos": [
         {
@@ -566,7 +626,7 @@
       "porDefecto": {
         "asunto": "Pedido n.º {{numero}} pagado",
         "titulo": "Pedido pagado",
-        "cuerpo": "Hola, {{nombre}}:\n\nHemos recibido el pago de tu pedido n.º {{numero}}. Muchas gracias: lo que se recauda en la tienda ayuda a sostener el culto y la caridad del Grupo.\n\n[[lineas]]\n\nPuedes recogerlo en Secretaría. Trae este correo o di tu número de pedido.\n\n[[secretaria]]",
+        "cuerpo": "Hola, {{nombre}}:\n\nHemos recibido el pago de tu pedido n.º {{numero}}. Muchas gracias: lo que se recauda en la tienda ayuda a sostener el culto y la caridad {{de_la_corporacion_corto}}.\n\n[[lineas]]\n\nPuedes recogerlo en Secretaría. Trae este correo o di tu número de pedido.\n\n[[secretaria]]",
         "despedida": ""
       }
     },
@@ -598,7 +658,7 @@
       "porDefecto": {
         "asunto": "Tu certificado de donativos de {{ejercicio}}",
         "titulo": "Tu certificado de donativos",
-        "cuerpo": "Hola, {{nombre}}:\n\nTe mandamos el certificado de tus donativos de {{ejercicio}} ({{importe}}). Va también en la declaración que el Grupo presenta a Hacienda (el Modelo 182), así que te saldrá en el borrador de la renta; guárdalo por si te lo piden.\n\nGracias por tu generosidad.",
+        "cuerpo": "Hola, {{nombre}}:\n\nTe mandamos el certificado de tus donativos de {{ejercicio}} ({{importe}}). Va también en la declaración que {{la_corporacion_corto}} presenta a Hacienda (el Modelo 182), así que te saldrá en el borrador de la renta; guárdalo por si te lo piden.\n\nGracias por tu generosidad.",
         "despedida": ""
       }
     },
@@ -625,7 +685,7 @@
       "porDefecto": {
         "asunto": "Nuestro pésame por {{difunto}}",
         "titulo": "Nuestro más sentido pésame",
-        "cuerpo": "Estimada familia:\n\nEl Grupo Parroquial les acompaña en el dolor por el fallecimiento de **{{difunto}}**, {{hermano}} de esta corporación. Lo encomendamos a {{titular}} y ofreceremos sufragios por su eterno descanso.\n\nLes haremos saber la fecha de la misa en su memoria. Para cualquier cosa que necesiten, estamos a su disposición en Secretaría.",
+        "cuerpo": "Estimada familia:\n\nEn estos momentos de dolor, les acompaña {{la_corporacion}} por el fallecimiento de **{{difunto}}**, {{hermano}} de esta corporación. Lo encomendamos a {{titular}} y ofreceremos sufragios por su eterno descanso.\n\nLes haremos saber la fecha de la misa en su memoria. Para cualquier cosa que necesiten, estamos a su disposición en Secretaría.",
         "despedida": "Descanse en paz."
       }
     },
@@ -668,7 +728,7 @@
       "porDefecto": {
         "asunto": "{{que}} por {{difunto}}",
         "titulo": "{{que}} por {{difunto}}",
-        "cuerpo": "Estimada familia:\n\nLes comunicamos que el Grupo Parroquial ofrecerá una **{{que_minusculas}}** por el eterno descanso de **{{difunto}}**.\n\n[[cuando]]\n\nSerá un honor contar con su presencia.",
+        "cuerpo": "Estimada familia:\n\nLes comunicamos que {{la_corporacion}} ofrecerá una **{{que_minusculas}}** por el eterno descanso de **{{difunto}}**.\n\n[[cuando]]\n\nSerá un honor contar con su presencia.",
         "despedida": "Que {{titular}} le guarde y bendiga."
       }
     },
@@ -677,7 +737,7 @@
       "grupo": "Boletín y avisos",
       "nombre": "Plantilla para el boletín o un aviso",
       "descripcion": "Un punto de partida para redactar en «Boletín y avisos»: convocatorias, cultos, recordatorios… El saludo y la firma los pone el boletín.",
-      "antetitulo": "Aviso del Grupo Parroquial",
+      "antetitulo": "Aviso {{de_la_corporacion}}",
       "firma": "La Secretaría",
       "libre": true,
       "campos": [],

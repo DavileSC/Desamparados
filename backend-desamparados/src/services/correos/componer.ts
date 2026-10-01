@@ -7,6 +7,7 @@
  * entra es el de esta función y el de los bloques fijos, que pone el código.
  */
 import { identidad } from '../../domain/datos-entidad.js';
+import { aLaCorporacion, deLaCorporacion, laCorporacion, nuestraCorporacion } from '../../domain/articulos.js';
 import {
   leerCuerpo, leerLinea, rellenar, resumenDe, usoDe,
   type Bloque, type ClaveDeUso, type TextoDePlantilla, type UsoDeCorreo,
@@ -21,7 +22,22 @@ export interface Relleno {
   para?: Destinatario;
 }
 
-const comunes = () => ({ grupo: identidad.nombre, titular: identidad.titular });
+/**
+ * Los campos que lleva todo correo: el nombre y la advocación, y la
+ * corporación con su artículo (domain/articulos.ts), para no escribir «Grupo
+ * Parroquial» a mano en cada plantilla. `cuerpoParaElEditor` reutiliza esta
+ * misma función para el editor del boletín.
+ */
+export const comunes = () => ({
+  grupo: identidad.nombre,
+  titular: identidad.titular,
+  la_corporacion: laCorporacion(),
+  de_la_corporacion: deLaCorporacion(),
+  a_la_corporacion: aLaCorporacion(),
+  nuestra_corporacion: nuestraCorporacion(),
+  la_corporacion_corto: laCorporacion({ corto: true }),
+  de_la_corporacion_corto: deLaCorporacion({ corto: true }),
+});
 
 function lineaHtml(linea: string, campos: Record<string, string>): string {
   return leerLinea(linea)

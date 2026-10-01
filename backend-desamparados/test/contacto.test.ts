@@ -156,7 +156,7 @@ describe('EmailService', () => {
 
     await EmailService.enviarConfirmacionRegistro('hermano@example.es', "Seán O'Brien <b>");
     await EmailService.enviarPapeleta('hermano@example.es', "Seán O'Brien", {
-      year: 2027, salida: { nombre: 'Sábado de Pasión', cobro: 'CUOTA', conRopa: true, indicaciones: null }, importe: '25,00 €', concepto: 'Papeleta', fechaSalida: 'Jueves Santo', horaSalida: '19:30h', accesoPuerta: 'Puerta principal',
+      year: 2027, salida: { nombre: 'Sábado de Pasión', cobro: 'CUOTA', conRopa: true, indicaciones: null, articulo: 'el' }, importe: '25,00 €', concepto: 'Papeleta', fechaSalida: 'Jueves Santo', horaSalida: '19:30h', accesoPuerta: 'Puerta principal',
     });
 
     const [registro, papeleta] = general.enviados;
@@ -166,11 +166,23 @@ describe('EmailService', () => {
     assert.equal(papeleta.subject, "Papeleta del Sábado de Pasión 2027: Seán O'Brien");
   });
 
+  test('el asunto de la papeleta lleva el artículo de la salida, no siempre «del»', async () => {
+    const general = transporteFalso();
+    ponerTransporte(general);
+    process.env.EMAIL_USER = 'secretaria@example.es';
+
+    await EmailService.enviarPapeleta('hermano@example.es', 'Ana', {
+      year: 2027, salida: { nombre: 'Procesión Magna', cobro: 'CUOTA', conRopa: true, indicaciones: null, articulo: 'la' }, importe: '25,00 €', concepto: 'Papeleta', fechaSalida: 'Jueves Santo', horaSalida: '19:30h', accesoPuerta: 'Puerta principal',
+    });
+
+    assert.match(general.enviados[0].subject, /^Papeleta de la Procesión Magna/);
+  });
+
   test('las indicaciones de la salida conservan sus saltos de línea en los correos', async () => {
     const general = transporteFalso();
     ponerTransporte(general);
     process.env.EMAIL_USER = 'secretaria@example.es';
-    const salida = { nombre: 'Rosario vespertino', cobro: 'DONATIVO' as const, conRopa: false, indicaciones: 'Puntualidad.\nMedalla <b>visible</b>.' };
+    const salida = { nombre: 'Rosario vespertino', cobro: 'DONATIVO' as const, conRopa: false, indicaciones: 'Puntualidad.\nMedalla <b>visible</b>.', articulo: 'el' as const };
 
     await EmailService.enviarPapeleta('hermano@example.es', 'Ana', {
       year: 2027, salida, importe: '', concepto: 'Papeleta', fechaSalida: 'sábado, 16 de octubre', horaSalida: '18:30h', accesoPuerta: 'Parroquia',
@@ -187,7 +199,7 @@ describe('EmailService', () => {
     ponerTransporte(general);
     process.env.EMAIL_USER = 'secretaria@example.es';
 
-    await EmailService.enviarRecordatorioAusencia('hermano@example.es', 'Ana', 'lunes, 4 de octubre', { nombre: 'Rosario vespertino' }, 'MUJER');
+    await EmailService.enviarRecordatorioAusencia('hermano@example.es', 'Ana', 'lunes, 4 de octubre', { nombre: 'Rosario vespertino', articulo: 'el' }, 'MUJER');
 
     const [correo] = general.enviados;
     assert.doesNotMatch(correo.html, /Estación de Penitencia|papeleta de sitio/);

@@ -14,6 +14,7 @@ import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
 import { identidad } from '../../domain/datos-entidad.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
 import type { SalidaImpresa } from '../../dtos/email.dto.js';
+import type { Articulo } from '../../domain/articulos.js';
 import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, MARFIL, NEGRO, ORO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
@@ -61,7 +62,8 @@ export async function datosDeLaPapeleta(id: number): Promise<DatosDeLaPapeleta |
   return {
     id: p.id,
     year: p.year,
-    salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones },
+    // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
+    salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones, articulo: p.salida.articulo as Articulo },
     referencia: referenciaDe(p.year, p.id),
     nombre: `${p.hermano.nombre} ${p.hermano.apellidos}`.trim(),
     sexo: p.hermano.sexo,

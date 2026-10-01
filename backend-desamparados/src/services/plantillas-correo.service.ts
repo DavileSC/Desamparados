@@ -9,13 +9,12 @@
 import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
-import { componer, usoObligado, type Relleno } from './correos/componer.js';
+import { comunes, componer, usoObligado, type Relleno } from './correos/componer.js';
 import { conImagenesEnLinea, recuadro } from './correos/plantilla.js';
 import { enviarCorreo } from './correos/envio.js';
 import {
   CAMPOS_COMUNES, USOS, problemasDePlantilla, usoDe, type ClaveDeUso, type TextoDePlantilla, type UsoDeCorreo,
 } from '../domain/plantillas-correo.js';
-import { identidad } from '../domain/datos-entidad.js';
 
 export interface DatosPlantilla extends TextoDePlantilla { nombre: string; uso: string }
 
@@ -170,13 +169,17 @@ export class PlantillasCorreoService {
 
 /**
  * El cuerpo de una plantilla libre como HTML sencillo para el editor del
- * boletín (párrafos, negritas y listas). Los campos comunes se rellenan; los
- * recuadros se quedan como párrafos con su título en negrita.
+ * boletín (párrafos, negritas y listas). Los campos comunes se rellenan (la
+ * expresión regular recorre `CAMPOS_COMUNES` en vez de listarlos a mano, para
+ * no olvidar ninguno al añadir uno nuevo); los recuadros se quedan como
+ * párrafos con su título en negrita.
  */
 export function cuerpoParaElEditor(cuerpo: string): string {
-  const campos = { grupo: identidad.nombre, titular: identidad.titular };
+  const campos: Record<string, string> = comunes();
+  const clavesComunes = CAMPOS_COMUNES.map((c) => c.clave).join('|');
+  const reComunes = new RegExp(`\\{\\{\\s*(${clavesComunes})\\s*\\}\\}`, 'g');
   const escapar = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const linea = (l: string) => escapar(l.replace(/\{\{\s*(grupo|titular)\s*\}\}/g, (_, c: 'grupo' | 'titular') => campos[c]))
+  const linea = (l: string) => escapar(l.replace(reComunes, (_, c: string) => campos[c] ?? ''))
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   return cuerpo.replace(/\r\n?/g, '\n').split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).map((b) => {
     const lineas = b.split('\n').map((l) => l.replace(/^>\s?/, ''));

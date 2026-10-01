@@ -17,6 +17,7 @@ import { NoticiaService } from '../noticia.service';
 import { HttpError } from '../../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
 import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-salida.js';
+import type { Articulo } from '../../domain/articulos.js';
 import { reglaDe, type SalidaConActo } from './salidas.service.js';
 
 type Cliente = Prisma.TransactionClient | typeof db;
@@ -122,10 +123,12 @@ export class PlazoPapeletasService {
       const destinatarios = await PlazoPapeletasService.destinatarios();
       avisados = destinatarios.length;
       const textos = dias.map(describirTurno);
+      // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
+      const salidaParaCorreo = { ...salida, articulo: salida.articulo as Articulo };
       void (async () => {
         for (const d of destinatarios) {
           try {
-            await EmailService.enviarAperturaPapeletas(d.email, d.nombre, d.fichas, textos, year, d.sexo, salida);
+            await EmailService.enviarAperturaPapeletas(d.email, d.nombre, d.fichas, textos, year, d.sexo, salidaParaCorreo);
           } catch (error) {
             console.error('No se ha podido avisar de la apertura de papeletas', error);
           }

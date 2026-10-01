@@ -16,6 +16,7 @@
  */
 import { DatosPapeleta } from '../dtos/email.dto';
 import { ContactoDto } from '../dtos/contacto.dto';
+import { conArticulo, deArticulo, type Articulo } from '../domain/articulos.js';
 import {
   COLORES, bloqueDeSecretaria, boton, cita, datos, esc, lista, maquetar, rotulo,
   parrafo, recuadro, segunSexo, urlDeLaWeb, type Sexo,
@@ -128,6 +129,7 @@ export class EmailService {
         saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano.split(' ')[0], nombre_completo: nombreHermano,
         salida: salida.nombre, anio: datosPapeleta.year, fecha: datosPapeleta.fechaSalida, hora: datosPapeleta.horaSalida,
         puesto: datosPapeleta.puesto || 'Por asignar',
+        de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
       },
       // Las indicaciones las escribe el CMS para cada salida; sin ellas, no hay recuadro.
       bloques: { papeleta, indicaciones: indicacionesDe(salida), adjunto, normativa: salida.conRopa ? normativa : '' },
@@ -295,9 +297,12 @@ export class EmailService {
    * va porque quien recibe el correo muchas veces pide también las de sus
    * menores.
    */
-  static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo: Sexo | undefined, salida: { nombre: string; cobro: 'CUOTA' | 'DONATIVO'; indicaciones: string | null }) {
+  static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo: Sexo | undefined, salida: { nombre: string; cobro: 'CUOTA' | 'DONATIVO'; indicaciones: string | null; articulo: Articulo }) {
     const { asunto, html } = await PlantillasCorreoService.correo('apertura', {
-      campos: { saludo: textoDeSaludo(nombreCuenta, sexo), nombre: nombreCuenta, salida: salida.nombre, anio: year, primer_dia: dias[0] ?? 'por anunciar' },
+      campos: {
+        saludo: textoDeSaludo(nombreCuenta, sexo), nombre: nombreCuenta, salida: salida.nombre, anio: year, primer_dia: dias[0] ?? 'por anunciar',
+        de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
+      },
       bloques: {
         dias: recuadro('Días de reparto', lista(dias, '0')),
         fichas: parrafo(fichas.length > 1 ? 'Puede pedirla para:' : 'Puede pedirla para su ficha:', 'margin-bottom: 6px;') + lista(fichas),
@@ -316,11 +321,14 @@ export class EmailService {
    * A quien tenía cita para recoger la papeleta y no pasó. `fechaCita` es el
    * día de la cita, ya escrito para leerlo («lunes, 8 de marzo»).
    */
-  static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string, salida: { nombre: string }, sexo?: Sexo) {
+  static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string, salida: { nombre: string; articulo: Articulo }, sexo?: Sexo) {
     // Con el nombre de la salida y no «papeleta de sitio» ni «Estación de
     // Penitencia»: hay salidas sin ropa (el Rosario) a las que no les cuadra.
     const { asunto, html } = await PlantillasCorreoService.correo('papeleta_sin_recoger', {
-      campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano, salida: salida.nombre, fecha_cita: fechaCita },
+      campos: {
+        saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano, salida: salida.nombre, fecha_cita: fechaCita,
+        de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
+      },
       bloques: { secretaria: bloqueDeSecretaria('Horario de reparto'), boton: boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')) },
     });
     return await enviarCorreo(emailDestino, asunto, html);

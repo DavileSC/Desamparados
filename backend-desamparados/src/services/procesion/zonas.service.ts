@@ -35,6 +35,7 @@ import { alturaHombroEnCm, CINGULO_SEGUN_TUNICA, normalizarNumeroPrenda, propues
 import {
   notaDePerdon, pendienteDeLaSalida, requisitosParaRecoger, tipoReciboDe, type CuotaDelHermano,
 } from '../../domain/salidas.js';
+import type { Articulo } from '../../domain/articulos.js';
 import type { SalidaConActo } from './salidas.service.js';
 import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.js';
 import { PlazoPapeletasService } from './plazo.service.js';
@@ -525,7 +526,8 @@ export class ZonasService {
       .catch((e: unknown) => { console.error('[Papeleta] No se pudo generar el PDF para el correo:', e); return undefined; });
     EmailService.enviarPapeleta(destino, p.hermano.nombre, {
       year: p.year,
-      salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones },
+      // `as Articulo`: la columna es un VARCHAR(3) sin enum en Prisma; el esquema de alta/edición de la salida es quien de verdad limita los cuatro valores.
+      salida: { nombre: p.salida.nombre, cobro: p.salida.cobro, conRopa: p.salida.conRopa, indicaciones: p.salida.indicaciones, articulo: p.salida.articulo as Articulo },
       concepto: p.recibo.concepto,
       importe: importe > 0 && p.recibo.estado === EstadoPago.PAGADO ? `${importe.toFixed(2).replace('.', ',')} €` : '',
       papeletaId: p.id,
