@@ -13,7 +13,8 @@ import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
 import type { ReactNode } from 'react'
 import { site } from '../config/site'
-import { aplanarMenu, menuPublico } from '../config/navegacion'
+import { aplanarMenu } from '../config/navegacion'
+import { useMenuPublico } from '../hooks/useMenuPublico'
 import ContenedorDePagina from './ContenedorDePagina'
 import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
 import { BOTON } from './estiloDeBoton'
@@ -29,11 +30,6 @@ const socialLinks: SocialLink[] = [
   { icon: <FacebookIcon fontSize="small" />, href: site.redes.facebook, label: 'Facebook' },
   { icon: <PlayCircleIcon fontSize="small" />, href: site.redes.youtube, label: 'YouTube' },
 ].flatMap((red) => (red.href ? [{ ...red, href: red.href }] : []))
-
-// Las columnas de enlaces se sacan del menú principal por su ruta: si una
-// sección cambia de nombre, el pie lo recoge solo, y si desaparece, su enlace
-// deja de pintarse en vez de quedar muerto.
-const entradasMenu = new Map(aplanarMenu(menuPublico).map((entrada) => [entrada.href, entrada.label]))
 
 // Los mismos grupos que el menú, y en su orden. Son cinco y caben tres
 // columnas: Corporación, la larga, va sola, y las cortas van de dos en dos.
@@ -107,6 +103,10 @@ function Dato({ icono, children }: { icono: ReactNode; children: ReactNode }) {
 }
 
 export default function PieDePagina() {
+  // Las columnas de enlaces se sacan del menú principal por su ruta: si una
+  // sección cambia de nombre, el pie lo recoge solo, y si desaparece (porque
+  // su módulo está apagado), su enlace deja de pintarse en vez de quedar muerto.
+  const entradasMenu = new Map(aplanarMenu(useMenuPublico()).map((entrada) => [entrada.href, entrada.label]))
   const { aceptadas, volverAPreguntar } = useConsentimientoDeCookies()
   // RGPD: el iframe de Google Maps envía la IP del visitante a Google. Solo se carga si el
   // usuario ha aceptado las cookies o pulsa explícitamente "Mostrar mapa" (click-to-load).

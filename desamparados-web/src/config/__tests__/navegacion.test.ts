@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { menuPublico, aplanarMenu, type EntradaMenu } from '../navegacion'
+import { menuPublico, aplanarMenu, menuVisible, type EntradaMenu } from '../navegacion'
 // El fuente del router como texto (`?raw` de Vite): así el test no necesita los
 // tipos de Node, que `tsconfig.app.json` no incluye para `src/`.
 import fuente from '../../routes/index.tsx?raw'
@@ -82,9 +82,26 @@ describe('menuPublico', () => {
 
   it('aplanarMenu devuelve todas las entradas, en orden de lectura', () => {
     const arbol: EntradaMenu[] = [
-      { label: 'A', href: '/a', hijos: [{ label: 'A1', href: '/a/1', hijos: [{ label: 'A1a', href: '/a/1/a' }] }] },
-      { label: 'B', href: '/b' },
+      { label: 'A', href: '/a', modulo: 'nucleo', hijos: [{ label: 'A1', href: '/a/1', modulo: 'nucleo', hijos: [{ label: 'A1a', href: '/a/1/a', modulo: 'nucleo' }] }] },
+      { label: 'B', href: '/b', modulo: 'nucleo' },
     ]
     expect(aplanarMenu(arbol).map((e) => e.label)).toEqual(['A', 'A1', 'A1a', 'B'])
+  })
+
+  it('menuVisible quita las entradas de módulos apagados y una sección que se queda sin hijos', () => {
+    const dibujo = (activos: string[]) => dibujar(menuVisible(menuPublico, new Set(activos))).join('\n')
+    expect(dibujo(['agenda', 'noticias', 'publicaciones', 'area-hermanos', 'alta-web', 'apadrinamientos', 'tienda-web'])).toBe(dibujar(menuPublico).join('\n'))
+    const sinTienda = dibujo(['agenda', 'noticias', 'publicaciones', 'area-hermanos', 'alta-web', 'apadrinamientos'])
+    expect(sinTienda).not.toContain('Tienda /tienda')
+    expect(sinTienda).toContain('Noticias /noticias')
+    const sinActualidad = dibujo(['publicaciones', 'area-hermanos'])
+    expect(sinActualidad).not.toContain('Actualidad')
+    expect(sinActualidad).toContain('Corporación /corporacion')
+    expect(sinActualidad).not.toContain('Hazte hermano')
+    expect(sinActualidad).toContain('Acceso hermanos /acceso')
+  })
+
+  it('todas las entradas llevan su módulo', () => {
+    for (const e of aplanarMenu(menuPublico)) expect(e.modulo, e.label).toBeDefined()
   })
 })

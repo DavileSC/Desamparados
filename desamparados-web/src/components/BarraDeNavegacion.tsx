@@ -12,6 +12,7 @@ import CajonMovil from './barra/CajonMovil'
 import { DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, socialMq, tinta } from './barra/estilos'
 import { site } from '../config/site'
 import { BOTON } from './estiloDeBoton'
+import { useModulos } from '../hooks/useModulos'
 
 /**
  * La barra de la web pública. Aquí está el armazón —el velo que se va cerrando
@@ -38,6 +39,7 @@ export default function BarraDeNavegacion() {
   const isMobile = useMediaQuery(`(max-width:${DESKTOP_NAV_MIN - 1}px)`)
   const [scrollProgress, setScrollProgress] = useState(0)
   const [cajonAbierto, setCajonAbierto] = useState(false)
+  const { activo } = useModulos()
 
   useEffect(() => {
     let targetProgress = 0
@@ -207,23 +209,25 @@ export default function BarraDeNavegacion() {
               ))}
             </Box>
 
-            <Button
-              component={Link}
-              to="/acceso"
-              variant="contained"
-              disableElevation
-              sx={{
-                ...BOTON.principal,
-                px: 3,
-                minHeight: 44,
-                height: 44,
-                flexShrink: 0,
-                fontSize: '14px',
-                [compactMq]: { px: 1.5, fontSize: '13px' },
-              }}
-            >
-              Acceso hermanos
-            </Button>
+            {activo('area-hermanos') && (
+              <Button
+                component={Link}
+                to="/acceso"
+                variant="contained"
+                disableElevation
+                sx={{
+                  ...BOTON.principal,
+                  px: 3,
+                  minHeight: 44,
+                  height: 44,
+                  flexShrink: 0,
+                  fontSize: '14px',
+                  [compactMq]: { px: 1.5, fontSize: '13px' },
+                }}
+              >
+                Acceso hermanos
+              </Button>
+            )}
           </Box>
         </Toolbar>
       </AppBar>

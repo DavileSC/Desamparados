@@ -13,6 +13,7 @@ import { login as apiLogin, verify2FA, type LoginResponse } from '../../../lib/a
 import { ErrorDeApi } from '../../../lib/api/cliente'
 import { enlaceConFlecha } from '../../../components/estiloDeBoton'
 import { site } from '../../../config/site'
+import { useModulos } from '../../../hooks/useModulos'
 
 function errorMessage(e: unknown, fallback: string) {
   return e instanceof ErrorDeApi ? e.message : fallback
@@ -23,6 +24,7 @@ export default function AccesoPage() {
   const location = useLocation()
   const hermano = useAuthStore((state) => state.hermano)
   const entrarSesion = useAuthStore((state) => state.entrarSesion)
+  const { activo, activos } = useModulos()
 
   // Segundo paso del login cuando la cuenta tiene 2FA activado. Al usuario lo
   // identifica una cookie de vida corta que emitio el servidor, no este estado.
@@ -73,6 +75,18 @@ export default function AccesoPage() {
   // Quien ya tiene sesión del área de hermanos no ve este formulario: directo al área.
   if (hermano) {
     return <Navigate to="/area-hermano" replace />
+  }
+
+  // Con el área apagada, el servidor rechaza el login con un 404; mejor decirlo
+  // antes de que nadie escriba su contraseña. A la junta se le enseña su acceso.
+  if (activos && !activo('area-hermanos')) {
+    return (
+      <Box sx={{ textAlign: 'center' }}>
+        <Typography component="h1" variant="h5" sx={{ mb: 1.5 }}>El área de hermanos no está activada</Typography>
+        <Typography color="text.secondary" sx={{ mb: 2 }}>En esta instalación los hermanos no entran por la web.</Typography>
+        <Typography>Si eres de la Junta de Gobierno, entra por el <Link to="/cms/acceso">acceso del CMS</Link>.</Typography>
+      </Box>
+    )
   }
 
   return (

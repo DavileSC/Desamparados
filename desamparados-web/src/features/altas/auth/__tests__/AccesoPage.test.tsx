@@ -2,8 +2,11 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AccesoPage from '../AccesoPage'
 import { useAuthStore } from '../store'
+import { CLAVES_MODULO } from '../../../../domain/modulos'
+import { CLAVE_MODULOS } from '../../../../lib/api/modulos'
 
 const ok = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
@@ -20,12 +23,22 @@ beforeEach(() => {
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-function montar() {
+// `AccesoPage` pregunta a `useModulos()` (un `useQuery`): necesita un
+// QueryClient aunque la mayoría de pruebas no toquen módulos. Sin lista
+// explícita, todos encendidos (como hace `AllTheProviders` en el resto de la web).
+function montar(modulos?: readonly string[]) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+  queryClient.setQueryDefaults(CLAVE_MODULOS, { gcTime: Infinity, staleTime: Infinity })
+  queryClient.setQueryData(CLAVE_MODULOS, [...(modulos ?? CLAVES_MODULO)])
   const router = createMemoryRouter([
     { path: '/acceso', element: <AccesoPage /> },
     { path: '*', element: <SondaRuta /> },
   ], { initialEntries: ['/acceso'] })
-  return render(<RouterProvider router={router} />)
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  )
 }
 
 describe('AccesoPage (acceso de hermanos)', () => {
@@ -90,5 +103,13 @@ describe('AccesoPage (acceso de hermanos)', () => {
 
     expect(screen.getByTestId('ruta')).toHaveTextContent('/area-hermano')
     expect(screen.queryByRole('button', { name: 'Entrar' })).not.toBeInTheDocument()
+  })
+
+  it('con el área de hermanos apagada, avisa en vez del formulario y enlaza al acceso del CMS', () => {
+    montar(['noticias'])
+
+    expect(screen.getByText('El área de hermanos no está activada')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/contraseña/i, { selector: 'input' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'acceso del CMS' })).toHaveAttribute('href', '/cms/acceso')
   })
 })
