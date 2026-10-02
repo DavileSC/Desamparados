@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { RegistroService } from '../services/registro.service';
 import { DobleFactorService } from '../services/doble-factor.service';
 import { MisDatosService } from '../services/mis-datos.service';
-import { AuthService, CuentaSinCmsError, Testigo2FACaducadoError } from '../services/auth.service';
+import { AuthService, AreaHermanosApagadaError, CuentaSinCmsError, Testigo2FACaducadoError } from '../services/auth.service';
 import { handleHttp } from '../utils/error.handle';
 import { RegisterDto, LoginDto } from '../dtos/auth.dto';
 import { AuditoriaService } from '../services/auditoria.service';
@@ -87,6 +87,11 @@ export class AuthController {
       // al área de hermanos, sin tener que reconocer el texto del mensaje.
       if (error instanceof CuentaSinCmsError) {
         return res.status(403).json({ error: error.codigo, message: error.message });
+      }
+      // El aviso de área apagada va tal cual: la pantalla de acceso solo tiene
+      // que enseñarlo, no reconocer un código.
+      if (error instanceof AreaHermanosApagadaError) {
+        return res.status(404).json({ message: error.message });
       }
       handleHttp(res, error, 'Credenciales incorrectas');
     }

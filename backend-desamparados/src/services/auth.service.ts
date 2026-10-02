@@ -23,6 +23,7 @@ import {
 import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '../utils/cifrado-totp.js';
 import { DOMINIO_CUENTA_ELIMINADA, PREFIJO_DNI_ELIMINADO } from '../domain/cuenta-anonimizada.js';
 import { suprimirDatosPersonales } from '../domain/auditoria-supresion.js';
+import { ModulosService } from './modulos.service.js';
 // -------------------------------
 
 /**
@@ -37,6 +38,20 @@ export class CuentaSinCmsError extends HttpError {
     super('Esta cuenta no pertenece al equipo del CMS. Si eres hermano, entra por el acceso del área de hermanos.', 403);
     this.name = 'CuentaSinCmsError';
     Object.setPrototypeOf(this, CuentaSinCmsError.prototype);
+  }
+}
+
+/**
+ * El área de hermanos está apagada en esta instalación: su acceso rechaza a
+ * todo el mundo, también a la junta (que tiene el suyo propio en /cms/acceso).
+ * Clase propia (no un `HttpError` suelto) para que el controlador pueda
+ * responder con el mensaje tal cual, sin la envoltura genérica de `handleHttp`.
+ */
+export class AreaHermanosApagadaError extends HttpError {
+  constructor() {
+    super('El área de hermanos no está activada en esta instalación.', 404);
+    this.name = 'AreaHermanosApagadaError';
+    Object.setPrototypeOf(this, AreaHermanosApagadaError.prototype);
   }
 }
 
@@ -143,6 +158,12 @@ export class AuthService {
 
   static async loginUser({ email, password, recordarme, contexto }: LoginDto, ip = 'desconocida') {
     const emailNorm = email.trim().toLowerCase();
+
+    // Con el área de hermanos apagada no se reparten sesiones de hermano a
+    // nadie, tampoco a la junta: el CMS tiene su propio acceso (/cms/acceso).
+    if (contexto === 'hermanos' && !(await ModulosService.activo('area-hermanos'))) {
+      throw new AreaHermanosApagadaError();
+    }
 
     // Bloqueo preventivo antes de gastar una consulta (defensa contra fuerza bruta)
     this.checkLockoutLogin(emailNorm, ip);
