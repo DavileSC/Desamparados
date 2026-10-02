@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, Button, Chip, CircularProgress, FormControlLabel, MenuItem, Paper, Stack, Switch, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Chip, CircularProgress, FormControlLabel, IconButton, MenuItem, Paper, Stack, Switch, Tab, Tabs, TextField, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Helmet } from 'react-helmet-async'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
-  borrarProducto, crearProducto, entregarPedido, guardarProducto, pedidosDelCms, productos,
-  type DatosProducto, type EstadoPedido, type PedidoDelCms, type Producto,
+  MAX_FOTOS_PRODUCTO, borrarProducto, crearProducto, entregarPedido, guardarProducto, pedidosDelCms, productos,
+  type DatosProducto, type EstadoPedido, type FotoDeProducto, type PedidoDelCms, type Producto,
 } from '../../lib/api/tienda'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CabeceraSeccion from './CabeceraSeccion'
@@ -19,14 +20,16 @@ import { site } from '../../config/site'
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const PRECIO = /^\d{1,5}(?:[.,]\d{1,2})?$/
 
-interface Formulario { nombre: string; descripcion: string; precio: string; foto: string; existencias: string; activo: boolean; orden: string }
-const VACIO: Formulario = { nombre: '', descripcion: '', precio: '', foto: '', existencias: '', activo: true, orden: '0' }
+interface Formulario { nombre: string; descripcion: string; precio: string; foto: string; fotos: FotoDeProducto[]; existencias: string; activo: boolean; orden: string }
+const VACIO: Formulario = { nombre: '', descripcion: '', precio: '', foto: '', fotos: [], existencias: '', activo: true, orden: '0' }
 const aFormulario = (p: Producto): Formulario => ({
-  nombre: p.nombre, descripcion: p.descripcion, precio: p.precio.toFixed(2).replace('.', ','), foto: p.foto ?? '',
+  nombre: p.nombre, descripcion: p.descripcion, precio: p.precio.toFixed(2).replace('.', ','), foto: p.foto ?? '', fotos: p.fotos,
   existencias: p.existencias === null ? '' : String(p.existencias), activo: p.activo, orden: String(p.orden),
 })
 const aDatos = (f: Formulario): DatosProducto => ({
   nombre: f.nombre.trim(), descripcion: f.descripcion.trim(), precio: Number(f.precio.replace(',', '.')), foto: f.foto || null,
+  // Un hueco que se añadió y no se llegó a subir no se guarda.
+  fotos: f.fotos.filter((x) => x.url).map((x) => ({ url: x.url, pie: x.pie.trim() })),
   existencias: f.existencias.trim() === '' ? null : Number(f.existencias), activo: f.activo, orden: Number(f.orden) || 0,
 })
 
@@ -165,7 +168,24 @@ export default function TiendaAdminPage() {
           <TextField label="Quedan" value={f.existencias} onChange={(e) => setEditando({ ...editando, form: { ...f, existencias: e.target.value } })} helperText="Vacío: sin límite" slotProps={{ htmlInput: { inputMode: 'numeric' } }} fullWidth />
           <TextField label="Orden" type="number" value={f.orden} onChange={(e) => setEditando({ ...editando, form: { ...f, orden: e.target.value } })} sx={{ width: 110, flexShrink: 0 }} />
         </Stack>
-        <CampoImagen valor={f.foto} onCambio={(ruta) => setEditando({ ...editando, form: { ...f, foto: ruta } })} etiqueta="Foto" />
+        <CampoImagen valor={f.foto} onCambio={(ruta) => setEditando({ ...editando, form: { ...f, foto: ruta } })} etiqueta="Foto principal" ayuda="La que se ve en la tienda. Al pulsarla se abren todas." />
+        {f.fotos.map((foto, i) => {
+          const cambiarFoto = (c: Partial<FotoDeProducto>) => setEditando({ ...editando, form: { ...f, fotos: f.fotos.map((x, k) => (k === i ? { ...x, ...c } : x)) } })
+          return (
+            <Stack key={i} direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'flex-start' } }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <CampoImagen valor={foto.url} onCambio={(ruta) => cambiarFoto({ url: ruta })} etiqueta={`Foto ${i + 2}`} ayuda="El reverso, un detalle, el tamaño en la mano…" sinQuitar />
+              </Box>
+              <TextField label={`Pie de la foto ${i + 2}`} value={foto.pie} onChange={(e) => cambiarFoto({ pie: e.target.value })} helperText="Opcional" slotProps={{ htmlInput: { maxLength: 160 } }} sx={{ flex: 1 }} />
+              <IconButton aria-label={`Quitar la foto ${i + 2}`} onClick={() => setEditando({ ...editando, form: { ...f, fotos: f.fotos.filter((_, k) => k !== i) } })}><DeleteOutlineIcon /></IconButton>
+            </Stack>
+          )
+        })}
+        {f.foto && f.fotos.length < MAX_FOTOS_PRODUCTO && (
+          <Button startIcon={<AddIcon />} onClick={() => setEditando({ ...editando, form: { ...f, fotos: [...f.fotos, { url: '', pie: '' }] } })} sx={{ alignSelf: 'flex-start' }}>
+            Añadir otra foto
+          </Button>
+        )}
         <FormControlLabel control={<Switch checked={f.activo} onChange={(e) => setEditando({ ...editando, form: { ...f, activo: e.target.checked } })} />} label="A la venta" />
       </>}
     </VentanaFormulario>

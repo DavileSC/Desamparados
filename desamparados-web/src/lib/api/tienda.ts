@@ -6,11 +6,18 @@ export interface Producto {
   descripcion: string
   precio: number
   foto: string | null
+  /** Las de más, que se ven en la galería al pulsar la foto. */
+  fotos: FotoDeProducto[]
   /** Null: sin límite. */
   existencias: number | null
   activo: boolean
   orden: number
 }
+
+export interface FotoDeProducto { url: string; pie: string }
+
+/** Las fotos de más que admite un producto, además de la principal (el tope del servidor). */
+export const MAX_FOTOS_PRODUCTO = 8
 
 export type MetodoEnLinea = 'TARJETA' | 'BIZUM'
 export type EstadoPedido = 'PENDIENTE_PAGO' | 'PAGADO' | 'ENTREGADO' | 'CANCELADO'

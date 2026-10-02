@@ -1,5 +1,6 @@
 import { type } from 'arktype';
 import { email, idParam, telefono } from '../config/common.js';
+import { imagenOpcional } from './noticia.schema.js';
 
 const textoLimpio = (max: number, que: string) =>
     type(`string <= ${max}`).narrow((s) => s.trim().length > 0).matching(/^[^<>]+$/).describe(`${que} de ${max} caracteres como mucho, sin «<» ni «>»`);
@@ -19,12 +20,19 @@ export const tokenPedidoSchema = type({ params: { token: type(/^[a-f0-9]{32}$/).
 // El precio, positivo y con dos decimales como mucho (así se guarda exacto).
 const precio = type("0 < number <= 99999.99").narrow((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6).describe("un precio positivo con dos decimales como mucho");
 
+// Las fotos de más de un producto: hasta ocho, cada una con su pie.
+export const MAX_FOTOS_PRODUCTO = 8;
+const fotosSchema = type({ url: imagenOpcional, pie: type("string <= 160").matching(/^[^<>]*$/) })
+    .array().atMostLength(MAX_FOTOS_PRODUCTO);
+
 export const productoSchema = type({
     body: {
         nombre: textoLimpio(120, 'un nombre'),
         descripcion: type("string <= 2000").matching(/^[^<>]*$/),
         precio,
         foto: type("string <= 500").or("null"),
+        // Opcional: quien no lo manda (una pantalla vieja) no borra las que hay.
+        "fotos?": fotosSchema,
         existencias: type("0 <= number.integer <= 100000").or("null"),
         activo: "boolean",
         orden: "0 <= number.integer <= 10000",

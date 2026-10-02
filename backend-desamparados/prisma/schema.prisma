@@ -1261,6 +1261,9 @@ model Producto {
   precio       Decimal             @db.Decimal(10, 2)
   /// URL de la foto, subida desde el CMS.
   foto         String?
+  /// Más fotos del producto, además de la principal: [{ url, pie }]. En la
+  /// tienda se ven todas al pulsar la foto. Cuentan en `ficheros-publicos.ts`.
+  fotos        Json?
   /// Cuántos quedan. Null: sin límite (se hace por encargo).
   existencias  Int?
   activo       Boolean             @default(true)

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import TiendaPage from '../TiendaPage'
@@ -9,8 +9,8 @@ const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuer
 const CATALOGO = {
   pagoDisponible: true, metodos: ['TARJETA', 'BIZUM'],
   productos: [
-    { id: 1, nombre: 'Medalla', descripcion: 'De plata', precio: 15, foto: null, existencias: 2, activo: true, orden: 0 },
-    { id: 2, nombre: 'Estampa', descripcion: '', precio: 1.5, foto: null, existencias: 0, activo: true, orden: 1 },
+    { id: 1, nombre: 'Medalla', descripcion: 'De plata', precio: 15, foto: null, fotos: [], existencias: 2, activo: true, orden: 0 },
+    { id: 2, nombre: 'Estampa', descripcion: '', precio: 1.5, foto: null, fotos: [], existencias: 0, activo: true, orden: 1 },
   ],
 }
 
@@ -18,6 +18,21 @@ beforeEach(() => { try { window.localStorage.clear() } catch { /* sin almacenami
 afterEach(() => { vi.unstubAllGlobals() })
 
 describe('TiendaPage', () => {
+  it('pulsar la foto de un producto abre la galería con todas sus fotos', async () => {
+    const user = userEvent.setup()
+    const medalla = { ...CATALOGO.productos[0], foto: '/uploads/medalla.webp', fotos: [{ url: '/uploads/reverso.webp', pie: 'El reverso' }, { url: '/uploads/caja.webp', pie: '' }] }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ ...CATALOGO, productos: [medalla, CATALOGO.productos[1]] })))
+    renderWithProviders(<TiendaPage />, { ruta: '/tienda' })
+
+    await user.click(await screen.findByRole('button', { name: 'Ver las 3 fotos de Medalla' }))
+    const visor = await screen.findByRole('dialog')
+    expect(within(visor).getAllByRole('img', { name: 'Medalla' }).length).toBeGreaterThan(0)
+    await user.keyboard('{ArrowRight}')
+    expect(await within(visor).findByText('El reverso')).toBeInTheDocument()
+    // Sin foto, no hay nada que ampliar.
+    expect(screen.queryByRole('button', { name: /fotos de Estampa|foto de Estampa/ })).not.toBeInTheDocument()
+  })
+
   it('llena la cesta sin pasar de lo que queda y paga con los datos del comprador', async () => {
     const user = userEvent.setup()
     const fetch = vi.fn().mockImplementation((_url: string, init: RequestInit = {}) => Promise.resolve(

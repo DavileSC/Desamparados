@@ -156,3 +156,34 @@ test('la tienda pública sin sesión, la gestión solo con la del CMS', async (t
     await e.recoger();
   }
 });
+
+test('las fotos de más de un producto: se guardan con su pie, salen en el catálogo y sin mandarlas no se borran', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  const tesorero = await crearUsuarioPrueba(Role.TESORERIA);
+  try {
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(tesorero.id, Role.TESORERIA)}`, 'Content-Type': 'application/json' };
+    const base = { nombre: e.medalla.nombre, descripcion: '', precio: 15, foto: '/uploads/medalla.webp', existencias: 2, activo: true, orden: 0 };
+    const guardar = (cuerpo: unknown) => fetch(`${baseUrl}/api/tienda/admin/productos/${e.medalla.id}`, { method: 'PUT', headers: cabeceras, body: JSON.stringify(cuerpo) });
+    const guardadas = async () => (await db.producto.findUnique({ where: { id: e.medalla.id } }))?.fotos;
+
+    // La que no tiene dirección (un hueco sin subir) se descarta.
+    assert.equal((await guardar({ ...base, fotos: [{ url: '/images/reverso.webp', pie: '  El reverso ' }, { url: null, pie: '' }] })).status, 200);
+    const catalogo = await (await fetch(`${baseUrl}/api/tienda`)).json() as { productos: { id: number; fotos: unknown }[] };
+    assert.deepEqual(catalogo.productos.find((p) => p.id === e.medalla.id)?.fotos, [{ url: '/images/reverso.webp', pie: 'El reverso' }]);
+    // Los productos de antes, sin fotos guardadas, dan una lista vacía.
+    assert.deepEqual(catalogo.productos.find((p) => p.id === e.estampa.id)?.fotos, []);
+
+    // Una pantalla que no manda `fotos` no las borra; una lista vacía, sí.
+    assert.equal((await guardar(base)).status, 200);
+    assert.equal((await guardadas() as unknown[]).length, 1);
+    assert.equal((await guardar({ ...base, fotos: [] })).status, 200);
+    assert.deepEqual(await guardadas(), []);
+
+    // Más de ocho, no.
+    assert.equal((await guardar({ ...base, fotos: Array.from({ length: 9 }, (_, i) => ({ url: `/images/f${i}.webp`, pie: '' })) })).status, 400);
+  } finally {
+    await borrarUsuarioPrueba(tesorero.id);
+    await e.recoger();
+  }
+});

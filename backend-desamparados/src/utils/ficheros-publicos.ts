@@ -136,7 +136,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     db.evento.findMany({ select: { description: true, fotoCartel: true } }),
     jsonDeContenido(),
     // La tienda y los apadrinamientos también suben fotos: sin contarlas, la limpieza las borraba.
-    db.producto.findMany({ select: { foto: true } }),
+    db.producto.findMany({ select: { foto: true, fotos: true } }),
     db.campanaApadrinamiento.findMany({ select: { foto: true } }),
   ]);
   const textos = [
@@ -147,7 +147,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     ...paginas.map((p) => p.contenido),
     ...eventos.flatMap((e) => [e.description, e.fotoCartel]),
     ...contenido,
-    ...productos.map((p) => p.foto),
+    ...productos.flatMap((p) => [p.foto, p.fotos ? JSON.stringify(p.fotos) : null]),
     ...campanas.map((c) => c.foto),
     ...rutasDelEntorno(),
   ];

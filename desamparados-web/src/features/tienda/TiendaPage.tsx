@@ -8,6 +8,7 @@ import CabeceraDePagina from '../../components/CabeceraDePagina'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
 import { catalogo, comprar, type Catalogo, type MetodoEnLinea } from '../../lib/api/tienda'
+import FotosDelProducto from './FotosDelProducto'
 import { irAlBanco } from '../../lib/api/procesion'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
@@ -94,9 +95,7 @@ export default function TiendaPage() {
                 const tope = Math.min(20, p.existencias ?? 20)
                 return (
                   <Paper component="li" key={p.id} sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                    {p.foto
-                      ? <Box component="img" src={p.foto} alt={p.nombre} loading="lazy" sx={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', display: 'block' }} />
-                      : <Box sx={{ width: '100%', aspectRatio: '4 / 3', bgcolor: 'action.hover' }} />}
+                    <FotosDelProducto producto={p} />
                     <Box sx={{ p: 2.5, display: 'grid', gap: 1, flex: 1 }}>
                       <Typography component="h2" sx={{ fontSize: 18, fontWeight: 600 }}>{p.nombre}</Typography>
                       {p.descripcion && <Typography variant="body2" color="text.secondary">{p.descripcion}</Typography>}

@@ -30,9 +30,29 @@ export interface DatosProducto {
   descripcion: string;
   precio: number;
   foto: string | null;
+  /** Sin él, no se tocan las que haya. Las que no tienen dirección se descartan. */
+  fotos?: { url: string | null; pie: string }[];
   existencias: number | null;
   activo: boolean;
   orden: number;
+}
+
+/** Lo que se guarda de un producto: las fotos de más, limpias. */
+function datosAGuardar({ fotos, ...d }: DatosProducto) {
+  return {
+    ...d,
+    nombre: d.nombre.trim(),
+    precio: new Prisma.Decimal(d.precio),
+    ...(fotos !== undefined ? { fotos: fotos.filter((f) => f.url).map((f) => ({ url: f.url!, pie: f.pie.trim() })) } : {}),
+  };
+}
+
+/** Las fotos de más tal como están guardadas: un JSON que puede faltar en los productos de antes. */
+function fotosDe(fotos: Prisma.JsonValue): { url: string; pie: string }[] {
+  if (!Array.isArray(fotos)) return [];
+  return fotos.flatMap((f) => (f && typeof f === 'object' && !Array.isArray(f) && typeof f.url === 'string' && f.url
+    ? [{ url: f.url, pie: typeof f.pie === 'string' ? f.pie : '' }]
+    : []));
 }
 
 export interface DatosCompra {
@@ -45,8 +65,8 @@ export interface DatosCompra {
 
 const euros = (centimos: number) => `${(centimos / 100).toFixed(2).replace('.', ',')} €`;
 
-const resumenProducto = (p: { id: number; nombre: string; descripcion: string; precio: Prisma.Decimal; foto: string | null; existencias: number | null; activo: boolean; orden: number }) => ({
-  id: p.id, nombre: p.nombre, descripcion: p.descripcion, precio: Number(p.precio), foto: p.foto, existencias: p.existencias, activo: p.activo, orden: p.orden,
+const resumenProducto = (p: { id: number; nombre: string; descripcion: string; precio: Prisma.Decimal; foto: string | null; fotos: Prisma.JsonValue; existencias: number | null; activo: boolean; orden: number }) => ({
+  id: p.id, nombre: p.nombre, descripcion: p.descripcion, precio: Number(p.precio), foto: p.foto, fotos: fotosDe(p.fotos), existencias: p.existencias, activo: p.activo, orden: p.orden,
 });
 
 /** El correo de «pedido pagado», con lo que se compró y dónde recogerlo. */
@@ -168,12 +188,12 @@ export class TiendaService {
   }
 
   static async crearProducto(d: DatosProducto) {
-    return resumenProducto(await db.producto.create({ data: { ...d, nombre: d.nombre.trim(), precio: new Prisma.Decimal(d.precio) } }));
+    return resumenProducto(await db.producto.create({ data: datosAGuardar(d) }));
   }
 
   static async actualizarProducto(id: number, d: DatosProducto) {
     if (!(await db.producto.findUnique({ where: { id }, select: { id: true } }))) throw new NotFoundError('Producto no encontrado.');
-    return resumenProducto(await db.producto.update({ where: { id }, data: { ...d, nombre: d.nombre.trim(), precio: new Prisma.Decimal(d.precio) } }));
+    return resumenProducto(await db.producto.update({ where: { id }, data: datosAGuardar(d) }));
   }
 
   /** Con pedidos, no se borra (los pedidos lo nombran): se retira de la venta. */
