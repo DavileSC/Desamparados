@@ -66,10 +66,17 @@ describe('la guardiana de los módulos', () => {
 
   test('toda ruta de routes/index.tsx pasa por pagina(…, modulo) o es una redirección', () => {
     const fallos: string[] = [];
+    const comprobadas: string[] = [];
     leer('desamparados-web/src/routes/index.tsx').forEach((linea, i) => {
       // Una ruta en una línea: `{ path: '…', element: … }` o `{ index: true, element: … }`.
-      if (!/\b(path:\s*'[^']*'|index:\s*true)\b/.test(linea) || !/\belement:/.test(linea)) return;
+      // El `\b` de cierre tiene que ir solo tras «true» (que acaba en letra): tras la
+      // comilla de `path: '…'` nunca hay límite de palabra (comilla y coma son las
+      // dos «no palabra»), así que un `\b` común a las dos alternativas dejaba sin
+      // comprobar casi todas las rutas del fichero sin que la prueba lo notara
+      // (hallazgo de la revisión de la ronda 1 de esta tarea).
+      if (!/\bpath:\s*'[^']*'|\bindex:\s*true\b/.test(linea) || !/\belement:/.test(linea)) return;
       if (/<Navigate\b|<DireccionAntigua\b/.test(linea)) return;
+      comprobadas.push(linea);
       const pagina = /\bpagina\(\w+,\s*('[a-z0-9-]+'|\[[^\]]*\])\)/.exec(linea);
       if (!pagina) { fallos.push(`routes/index.tsx:${i + 1}: sin pagina(…, modulo) → ${linea.trim()}`); return; }
       for (const c of clavesDe(pagina[1])) if (!esModulo(c)) fallos.push(`routes/index.tsx:${i + 1}: «${c}» no es del catálogo`);
@@ -77,6 +84,11 @@ describe('la guardiana de los módulos', () => {
     assert.deepEqual(fallos, [], fallos.join('\n'));
     // Y que de verdad hay rutas: si el fichero cambia de forma, esto avisa en vez de pasar en vacío.
     assert.ok(leer('desamparados-web/src/routes/index.tsx').filter((l) => /\bpagina\(/.test(l)).length > 60);
+    // Estas dos tenían `path:` y `element:` en líneas distintas (hallazgo de la
+    // revisión de esta tarea): la guardiana no las veía y nadie lo garantizaba.
+    // Si alguien vuelve a partirlas, que lo diga aquí y no en silencio.
+    assert.ok(comprobadas.some((l) => l.includes("path: '/cms/acceso'")), 'no veo /cms/acceso en una sola línea');
+    assert.ok(comprobadas.some((l) => l.includes("path: '/cms/vista-previa/:slug'")), 'no veo /cms/vista-previa/:slug en una sola línea');
   });
 
   test('todo tipo de bloque dice de qué módulo es', () => {

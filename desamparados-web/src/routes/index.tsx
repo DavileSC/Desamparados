@@ -241,13 +241,9 @@ const router = createBrowserRouter([
         // que se está escribiendo, dentro de un iframe del propio CMS. Va fuera
         // de <MarcoCms /> (sin menú del CMS) y fuera de <MarcoPublico /> (sin la
         // barra ni el pie ni el aviso de cookies de la web).
-        path: '/cms/vista-previa/:slug',
-        element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{pagina(PaginaEnVivo, 'nucleo')}</ExigeRol>,
+        path: '/cms/vista-previa/:slug', element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{pagina(PaginaEnVivo, 'nucleo')}</ExigeRol>,
       },
-      {
-        path: '/cms/acceso',
-        element: pagina(AccesoCmsPage, 'nucleo'),
-      },
+      { path: '/cms/acceso', element: pagina(AccesoCmsPage, 'nucleo') },
       {
         path: '/cms',
         element: <ExigeRol roles={rolesPorRutaCms.panel}><MarcoCms /></ExigeRol>,
