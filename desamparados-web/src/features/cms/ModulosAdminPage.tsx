@@ -54,74 +54,55 @@ export default function ModulosAdminPage() {
     })
   }
 
-  /**
-   * Apagar es un solo cambio. Encender con requisitos apagados son varios: primero
-   * lo que falta y el módulo pulsado al final, cada uno con su propia llamada (el
-   * servidor no tiene un «encender estos tres» de una vez).
-   */
-  const confirmar = async () => {
+  const confirmar = () => {
     if (!pregunta) return
     const { modulo } = pregunta
     const activo = pregunta.tipo !== 'apagar'
-    const claves = pregunta.tipo === 'encender-con' ? [...pregunta.faltan, modulo.clave] : [modulo.clave]
     setPregunta(null)
-    try {
-      for (const clave of claves) {
-        await cambiar.mutateAsync({ clave, activo, conRequisitos: activo })
-      }
-    } catch (e) {
-      setAviso(e instanceof Error ? e.message : 'No se ha podido completar el cambio.')
-    }
+    cambiar.mutate({ clave: modulo.clave, activo, conRequisitos: activo }, {
+      onError: (e) => setAviso(e.message),
+    })
   }
 
   return (
     <>
       <Helmet><title>{`Módulos | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-      {isPending ? (
-        // La cabecera no sale hasta tener datos: si saliera antes, un «Módulos»
-        // siempre presente dejaría a quien prueba la pantalla por su título sin
-        // ninguna señal de que falta esperar a la lista (la consulta llega
-        // después, y nada volvería a comprobarlo).
-        <Typography color="text.secondary">Cargando…</Typography>
-      ) : (
-        <>
-          <CabeceraSeccion titulo="Módulos" />
-          <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 720 }}>
-            Lo que esta instalación usa. Apagar un módulo lo quita del CMS, de la web y del área de hermanos y cierra sus rutas; sus datos se conservan y vuelven al encenderlo.
-          </Typography>
-          {aviso && <Alert severity="error" onClose={() => setAviso(null)} sx={{ mb: 2 }}>{aviso}</Alert>}
-          {isError && <Alert severity="error">No se han podido cargar los módulos.</Alert>}
-          {data && GRUPOS.map((grupo) => {
-            const delGrupo = data.filter((m) => m.grupo === grupo)
-            if (delGrupo.length === 0) return null
-            return (
-              <Box key={grupo} component="section" aria-labelledby={`modulos-${grupo}`} sx={{ mb: 4 }}>
-                <Typography id={`modulos-${grupo}`} component="h2" variant="overline" color="text.secondary">{grupo}</Typography>
-                <Stack divider={<Box sx={{ borderTop: 1, borderColor: 'divider' }} />}>
-                  {delGrupo.map((m) => (
-                    <Box key={m.clave} sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', py: 1.5 }}>
-                      <Switch
-                        checked={m.activo}
-                        disabled={cambiar.isPending}
-                        onChange={(e) => alCambiar(m, e.target.checked)}
-                        slotProps={{ input: { role: 'switch', 'aria-label': m.nombre } }}
-                      />
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 600 }}>{m.nombre}</Typography>
-                        <Typography variant="body2" color="text.secondary">{m.descripcion}</Typography>
-                        {m.requiere.length > 0 && (
-                          <Typography variant="body2" color="text.secondary">Requiere: {nombres(m.requiere)}</Typography>
-                        )}
-                        <Typography variant="body2" color="text.secondary">{m.datos.length ? datosEnPalabras(m) : 'Sin datos propios'}</Typography>
-                      </Box>
-                    </Box>
-                  ))}
-                </Stack>
-              </Box>
-            )
-          })}
-        </>
-      )}
+      <CabeceraSeccion titulo="Módulos" />
+      <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 720 }}>
+        Lo que esta instalación usa. Apagar un módulo lo quita del CMS, de la web y del área de hermanos y cierra sus rutas; sus datos se conservan y vuelven al encenderlo.
+      </Typography>
+      {aviso && <Alert severity="error" onClose={() => setAviso(null)} sx={{ mb: 2 }}>{aviso}</Alert>}
+      {isError && <Alert severity="error">No se han podido cargar los módulos.</Alert>}
+      {isPending && <Typography color="text.secondary">Cargando…</Typography>}
+      {data && GRUPOS.map((grupo) => {
+        const delGrupo = data.filter((m) => m.grupo === grupo)
+        if (delGrupo.length === 0) return null
+        return (
+          <Box key={grupo} component="section" aria-labelledby={`modulos-${grupo}`} sx={{ mb: 4 }}>
+            <Typography id={`modulos-${grupo}`} component="h2" variant="overline" color="text.secondary">{grupo}</Typography>
+            <Stack divider={<Box sx={{ borderTop: 1, borderColor: 'divider' }} />}>
+              {delGrupo.map((m) => (
+                <Box key={m.clave} sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', py: 1.5 }}>
+                  <Switch
+                    checked={m.activo}
+                    disabled={cambiar.isPending}
+                    onChange={(e) => alCambiar(m, e.target.checked)}
+                    slotProps={{ input: { role: 'switch', 'aria-label': m.nombre } }}
+                  />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 600 }}>{m.nombre}</Typography>
+                    <Typography variant="body2" color="text.secondary">{m.descripcion}</Typography>
+                    {m.requiere.length > 0 && (
+                      <Typography variant="body2" color="text.secondary">Requiere: {nombres(m.requiere)}</Typography>
+                    )}
+                    <Typography variant="body2" color="text.secondary">{m.datos.length ? datosEnPalabras(m) : 'Sin datos propios'}</Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+        )
+      })}
 
       <Dialog open={pregunta !== null} onClose={() => setPregunta(null)}>
         {pregunta?.tipo === 'apagar' && (

@@ -13,7 +13,13 @@ const lista = (apagados: string[] = []) => CATALOGO.modulos.map((m) => ({
   datos: m.clave === 'tienda' ? [{ que: 'productos', total: 12 }, { que: 'ventas de caja', total: 40 }] : [],
 }))
 
-/** Un servidor de mentira: la lista, y un PUT que responde lo que diga `alCambiar`. */
+/**
+ * Un servidor de mentira: la lista, y un PUT que responde lo que diga `alCambiar`.
+ * Cuando la respuesta es `ok`, el estado se actualiza con lo que ella misma dice
+ * (`cambiados`, que el backend enciende todos a una): mirar solo la clave de la
+ * URL se queda corto en «encender con requisitos», donde una sola llamada
+ * enciende más de un módulo.
+ */
 function servidor(apagados: string[], alCambiar: (clave: string, body: { activo: boolean; conRequisitos?: boolean }) => Promise<Response>) {
   let estado = apagados
   return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
@@ -21,8 +27,11 @@ function servidor(apagados: string[], alCambiar: (clave: string, body: { activo:
     if (init?.method === 'PUT') {
       const clave = ruta.split('/').pop()!
       const body = JSON.parse(String(init.body)) as { activo: boolean; conRequisitos?: boolean }
-      return alCambiar(clave, body).then((r) => {
-        if (r.ok) estado = body.activo ? estado.filter((c) => c !== clave) : [...estado, clave]
+      return alCambiar(clave, body).then(async (r) => {
+        if (r.ok) {
+          const { cambiados } = (await r.clone().json()) as { cambiados?: string[] }
+          estado = body.activo ? estado.filter((c) => !(cambiados ?? [clave]).includes(c)) : [...estado, clave]
+        }
         return r
       })
     }
@@ -39,7 +48,9 @@ describe('ModulosAdminPage', () => {
     vi.stubGlobal('fetch', servidor(['loteria'], () => json({ ok: true })))
     renderWithProviders(<ModulosAdminPage />)
     expect(await screen.findByRole('heading', { name: 'Módulos' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Cuentas' })).toBeInTheDocument()
+    // El título es fijo y sale desde el primer render; lo que depende de la
+    // consulta (los grupos, los interruptores) se espera aparte.
+    expect(await screen.findByRole('heading', { name: 'Cuentas' })).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: 'Tienda' })).toBeChecked()
     expect(screen.getByRole('switch', { name: 'Lotería y talonarios' })).not.toBeChecked()
     expect(screen.getByText('12 productos, 40 ventas de caja')).toBeInTheDocument()
@@ -84,6 +95,7 @@ describe('ModulosAdminPage', () => {
     await user.click(within(dialogo).getByRole('button', { name: /encender/i }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(put).toHaveBeenLastCalledWith('tienda-web', { activo: true, conRequisitos: true })
+    expect(put).toHaveBeenCalledTimes(2) // el intento sin requisitos, y el definitivo con ellos
     await waitFor(() => expect(screen.getByRole('switch', { name: 'Tienda' })).toBeChecked())
   })
 })
