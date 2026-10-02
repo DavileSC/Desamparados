@@ -61,7 +61,14 @@ test('Procesión abre el plazo sin crear la noticia si Noticias está apagado', 
   const salida = await SalidasService.porSlug('sabado-de-pasion');
   const abiertoAntes = salida.plazoAbierto;
   const noticiasAntes = await db.noticia.count();
+  // Abrir el plazo exige un día de reparto por delante y la siembra solo crea
+  // días pasados: la prueba trae el suyo, sin acto en la Agenda.
+  const dia = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + 30));
+  let turnoId: number | null = null;
   try {
+    turnoId = (await db.turno.create({
+      data: { fecha: dia, horaInicio: new Date(dia.getTime() + 18 * 3_600_000), horaFin: new Date(dia.getTime() + 21 * 3_600_000), capacidadEstimada: 50, activo: true, salida: { connect: { id: salida.id } } },
+    })).id;
     if (abiertoAntes) await PlazoPapeletasService.cambiar(false, {}, salida, META);
     await apagar(['noticias']);
     const r = await PlazoPapeletasService.cambiar(true, { borradorNoticia: true }, await SalidasService.porSlug('sabado-de-pasion'), META);
@@ -71,6 +78,8 @@ test('Procesión abre el plazo sin crear la noticia si Noticias está apagado', 
   } finally {
     await encenderTodo();
     await PlazoPapeletasService.cambiar(abiertoAntes, {}, await SalidasService.porSlug('sabado-de-pasion'), META);
+    // Después de dejar el plazo como estaba: cerrarlo no necesita días de reparto.
+    if (turnoId !== null) await db.turno.deleteMany({ where: { id: turnoId } });
   }
 });
 
