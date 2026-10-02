@@ -78,6 +78,16 @@ describe('tareasDelDia', () => {
     expect(porClave['noticias-borrador']).toBe('/cms/noticias')
     expect(porClave['hermanos-sin-numero']).toBe('/cms/hermanos')
   })
+
+  it('las tareas de un módulo apagado no salen; las del núcleo sí', () => {
+    // PANEL ya trae recibos devueltos, borradores y citas de reparto a la vez.
+    const todas = tareasDelDia(PANEL)
+    expect(todas.map((t) => t.clave)).toEqual(expect.arrayContaining(['recibos-devueltos', 'noticias-borrador', 'citas-reparto']))
+    const sinProcesionNiNoticias = tareasDelDia(PANEL, undefined, new Set())
+    expect(sinProcesionNiNoticias.map((t) => t.clave)).toContain('recibos-devueltos')
+    expect(sinProcesionNiNoticias.map((t) => t.clave)).not.toContain('citas-reparto')
+    expect(sinProcesionNiNoticias.map((t) => t.clave)).not.toContain('noticias-borrador')
+  })
 })
 
 describe('repartirTareas', () => {

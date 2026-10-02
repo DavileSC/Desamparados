@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
+import { useModulos } from '../../../hooks/useModulos'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { brillo } from '../../../theme/cms'
 import { Degradado, Halo } from '../../../components/charts/brillo'
@@ -253,6 +254,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
   const cifras = [
     {
       etiqueta: 'Hermanos activos',
+      modulo: 'nucleo' as const,
       valor: <Valor valor={panel.censo.activos} />,
       titulo: 'Altas y bajas, mes a mes',
       resumen: <><Diferencia valor={netos} /> en doce meses · {contar(panel.censo.altas12m, 'alta', 'altas')}, {contar(panel.censo.bajas12m, 'baja', 'bajas')}</>,
@@ -261,6 +263,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
     },
     {
       etiqueta: `Papeletas ${panel.procesion.anio}`,
+      modulo: 'procesion' as const,
       valor: <Valor valor={panel.procesion.papeletas} />,
       titulo: 'Papeletas de sitio, año a año',
       resumen: anterior && diferencia !== null ? <><Diferencia valor={diferencia} /> sobre las {numero(anterior.total)} de {anterior.anio}</> : 'Papeletas de sitio sacadas este año',
@@ -268,6 +271,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
     },
     {
       etiqueta: `Por cobrar ${ejercicio.anio}`,
+      modulo: 'nucleo' as const,
       valor: <Valor valor={porCobrar.importe} euros />,
       titulo: 'Lo que queda por cobrar',
       resumen: contar(porCobrar.total, 'recibo', 'recibos'),
@@ -275,6 +279,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
     },
     {
       etiqueta: `Saldo ${ejercicio.anio}`,
+      modulo: 'nucleo' as const,
       valor: <Valor valor={ejercicio.saldo} euros />,
       titulo: 'El saldo del año, mes a mes',
       resumen: <>{ejercicio.saldo >= 0 ? 'Superávit' : 'Déficit'} · {eurosResumen(ejercicio.ingresos)} de ingresos, {eurosResumen(ejercicio.gastos)} de gastos</>,
@@ -282,7 +287,9 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
       grafica: <CurvaDelSaldo valores={saldoMes} meses={['', ...mesesDelEjercicio.map((m) => etiquetaPunto(m.mes).split(' ')[0])]} color={ejercicio.saldo >= 0 ? ORO_GRAFICA : ROJO_GRAFICA} />,
     },
   ]
-  const actual = cifras[elegida]
+  const { activo } = useModulos()
+  const visibles = cifras.filter((c) => activo(c.modulo))
+  const actual = visibles[Math.min(elegida, visibles.length - 1)]
 
   return (
     <Box
@@ -310,8 +317,8 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
           },
         }}
       >
-        <Box className="selector" sx={{ minHeight: 0, display: 'grid', gridTemplateRows: 'repeat(4, minmax(0, 1fr))', gap: 1 }}>
-          {cifras.map((c, i) => {
+        <Box className="selector" sx={{ minHeight: 0, display: 'grid', gridTemplateRows: `repeat(${visibles.length}, minmax(0, 1fr))`, gap: 1 }}>
+          {visibles.map((c, i) => {
             const activa = i === elegida
             return (
               <Box

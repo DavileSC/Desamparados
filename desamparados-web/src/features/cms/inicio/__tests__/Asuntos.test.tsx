@@ -12,13 +12,13 @@ const TAREAS: Tarea[] = [
     clave: 'recibos-devueltos', prioridad: 'urgente', etiqueta: 'Urgente',
     titulo: '14 recibos devueltos', detalle: 'Tesorería · ejercicio 2026',
     cargo: 'Tesorería', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'],
-    accion: { texto: 'Revisar', href: '/cms/tesoreria' },
+    accion: { texto: 'Revisar', href: '/cms/tesoreria' }, modulo: 'nucleo',
   },
   {
     clave: 'noticias-borrador', prioridad: 'pendiente', etiqueta: 'Pendiente',
     titulo: '2 noticias en borrador', detalle: 'Noticias · sin publicar',
     cargo: 'Redes', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'],
-    accion: { texto: 'Publicar', href: '/cms/noticias' },
+    accion: { texto: 'Publicar', href: '/cms/noticias' }, modulo: 'noticias',
   },
 ]
 
