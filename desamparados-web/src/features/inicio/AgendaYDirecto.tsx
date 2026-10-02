@@ -15,6 +15,7 @@ import ListaDeAgenda, { ListaDeAgendaEsqueleto } from './ListaDeAgenda'
 import EnCarga from '../../components/esqueleto/EnCarga'
 import { inicioDeMes, inicioDelDia, nombreDelMes, sumarMeses } from './agenda'
 import { GOLD, PAPEL, SERIF, TINTA, ceja, enlaceBloque } from './estilos'
+import { useModulos } from '../../hooks/useModulos'
 
 // El tope por página del servidor: sobra para dos meses de actos.
 const ACTOS_POR_VENTANA = 100
@@ -90,6 +91,11 @@ function AlturaSostenida({ children, className, sx }: { children: ReactNode; cla
 
 export default function AgendaYDirecto() {
   const textos = useTextosPortada()
+  const { activos, activo } = useModulos()
+  // La sección es la agenda: sin ella no se pinta ni se pide nada (el directo va dentro).
+  // La lista llega en milisegundos y en esta instalación todo está encendido: mejor un
+  // esqueleto mientras no se sabe que un hueco que luego crece.
+  const apagado = activos !== null && !activo('agenda')
   const hoy = inicioDelDia(new Date())
   const [mesElegido, setMesElegido] = useState<Date | null>(null)
   // undefined: nadie ha tocado nada y se abre el próximo acto; null: el visitante lo ha cerrado.
@@ -99,6 +105,7 @@ export default function AgendaYDirecto() {
   const proximo = useQuery({
     queryKey: ['home', 'agenda', 'proximo'],
     queryFn: () => eventosDelCalendario({ cuantos: 1 }),
+    enabled: activos !== null && activo('agenda'),
     retry: false,
     staleTime: 60_000,
   })
@@ -120,7 +127,8 @@ export default function AgendaYDirecto() {
 
   const eventos = ventana.data ?? []
   const abiertoId = abierto === undefined ? eventos[0]?.id ?? null : abierto
-  const stream = site.directo.urlAlternativa
+  // El aviso del directo es del cortejo en directo: con su módulo apagado no se ofrece.
+  const stream = activo('cortejo-directo') ? site.directo.urlAlternativa : undefined
 
   const cambiarMes = (salto: number) => {
     setMesElegido(sumarMeses(mes, salto))
@@ -135,6 +143,8 @@ export default function AgendaYDirecto() {
   const listaCargando = proximo.isPending || (proximo.isSuccess && ventana.isPending) || reintentando
   const listaFallo = !listaCargando && (proximo.isError || ventana.isError)
   const reintentar = () => { void (proximo.isError ? proximo.refetch() : ventana.refetch()) }
+
+  if (apagado) return null
 
   return (
     <SeccionAnimada

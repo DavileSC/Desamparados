@@ -3,10 +3,11 @@ import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-li
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { useDeshacer } from '../useDeshacer'
 import { aAncla } from '../utilidades'
 import PaginaEnVivo from '../PaginaEnVivo'
+import { crearQueryClientDePruebas } from '../../../../test/queryClient'
 
 describe('useDeshacer', () => {
   it('deshace y rehace paso a paso; un cambio nuevo borra lo que había para rehacer', () => {
@@ -65,7 +66,7 @@ describe('PaginaEnVivo', () => {
     Object.defineProperty(window, 'parent', { value: padre, configurable: true })
 
     const router = createMemoryRouter([{ path: '/cms/vista-previa/:slug', element: <PaginaEnVivo /> }], { initialEntries: ['/cms/vista-previa/cultos'] })
-    render(<HelmetProvider><QueryClientProvider client={new QueryClient()}><RouterProvider router={router} /></QueryClientProvider></HelmetProvider>)
+    render(<HelmetProvider><QueryClientProvider client={crearQueryClientDePruebas()}><RouterProvider router={router} /></QueryClientProvider></HelmetProvider>)
     await waitFor(() => expect(recibido).toHaveBeenCalledWith({ tipo: 'desamparados:lista' }, window.location.origin))
 
     const documento = {

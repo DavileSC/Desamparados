@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
@@ -20,7 +20,8 @@ function entrarComo(role: string) {
   useAuthStore.setState({ cms: { id: 1, role, nombre: 'Prueba' } } as never)
 }
 
-const pintar = () => renderWithProviders(<Routes><Route path="/cms/informe-anual/:anio" element={<InformeAnualPage />} /></Routes>, { ruta: '/cms/informe-anual/2025' })
+const pintar = (modulos?: string[]) =>
+  renderWithProviders(<Routes><Route path="/cms/informe-anual/:anio" element={<InformeAnualPage />} /></Routes>, { ruta: '/cms/informe-anual/2025', modulos })
 
 beforeEach(() => entrarComo('HERMANO_MAYOR'))
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
@@ -69,5 +70,32 @@ describe('el Informe anual', () => {
     expect(puedeEscribir('HERMANO_MAYOR', 'fechaCabildo')).toBe(true)
     expect(anioPorDefecto(new Date(2026, 2, 31, 20))).toBe(2025)
     expect(anioPorDefecto(new Date(2026, 3, 1, 9))).toBe(2026)
+  })
+
+  it('sin Agenda, Procesión ni Inventario, sus capítulos no salen y el resto se renumera como en el PDF', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(informe())))
+    pintar(['informe-anual'])
+
+    const nav = await screen.findByRole('navigation', { name: 'Capítulos del Informe anual' })
+    expect(within(nav).queryByText('Cultos y actos')).not.toBeInTheDocument()
+    expect(within(nav).queryByText('Sábado de Pasión y Rosario')).not.toBeInTheDocument()
+    expect(within(nav).queryByText('Patrimonio')).not.toBeInTheDocument()
+
+    const numeroDe = (titulo: string) => within(nav).getByText(titulo).previousElementSibling?.textContent
+    expect(numeroDe('Presentación del Hermano Mayor')).toBe('I')
+    expect(numeroDe('El año de un vistazo')).toBe('II')
+    expect(numeroDe('Hermanos')).toBe('III')
+    expect(numeroDe('Cuentas')).toBe('IV')
+    expect(numeroDe('Comunicación')).toBe('V')
+  })
+
+  it('con todo encendido, la numeración es la de siempre', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(informe())))
+    pintar()
+
+    const nav = await screen.findByRole('navigation', { name: 'Capítulos del Informe anual' })
+    const numeroDe = (titulo: string) => within(nav).getByText(titulo).previousElementSibling?.textContent
+    expect(numeroDe('Hermanos')).toBe('IV')
+    expect(within(nav).getByText('Patrimonio')).toBeInTheDocument()
   })
 })

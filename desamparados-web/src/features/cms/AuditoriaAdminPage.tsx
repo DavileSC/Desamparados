@@ -17,6 +17,8 @@ const ACCIONES: Record<string, string> = {
   STAFF_PROMOTE: 'Asignar un cargo',
   STAFF_DEMOTE: 'Retirar un cargo',
   CONFIG_UPDATE: 'Cambiar la configuración',
+  MODULO_ENCENDER: 'Módulo encendido',
+  MODULO_APAGAR: 'Módulo apagado',
   '2FA_RESET_ADMIN': 'Restablecer el segundo factor de otra persona',
   RECIBO_COBRAR: 'Cobrar un recibo',
   REMESA_GENERAR: 'Generar una remesa de adeudos',
@@ -209,7 +211,7 @@ const ENTIDADES: Record<string, string> = {
   transaccion: 'Apunte', categoria: 'Categoría', turno: 'Turno', cita: 'Cita', evento: 'Evento',
   noticia: 'Noticia', pagina: 'Página', publicacion: 'Publicación', seccion: 'Sección', portada: 'Portada',
   contenido: 'Contenido', enser: 'Enser', prenda: 'Prenda', email: 'Correo', config: 'Configuración',
-  configuracion: 'Configuración',
+  configuracion: 'Configuración', modulo: 'Módulo',
 }
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })

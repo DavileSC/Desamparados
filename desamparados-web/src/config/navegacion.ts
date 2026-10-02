@@ -10,6 +10,7 @@
  * declaradas en el router para que un enlace del menú no pueda apuntar a un 404
  * sin que un test lo note.
  */
+import { cumple, type Modulo } from '../domain/modulos'
 
 export interface EntradaMenu {
   label: string
@@ -24,81 +25,100 @@ export interface EntradaMenu {
   hijos?: EntradaMenu[]
   /** Activa solo en su ruta exacta, no en las que cuelgan de ella. */
   exacta?: true
+  /** De qué módulo es: apagado, la entrada no sale. Una sección que se queda sin hijos tampoco. */
+  modulo: Modulo
 }
 
+// La guardiana del backend (`test/modulos-cobertura.test.ts`) lee este fichero
+// línea a línea y exige `modulo:` en toda línea que lleve `label:`, también en
+// las secciones de varias líneas (va pegado a `label` y `href`, `hijos`, etc.
+// siguen debajo tal cual).
 export const menuPublico: EntradaMenu[] = [
-  { label: 'Inicio', href: '/' },
+  { label: 'Inicio', href: '/', modulo: 'nucleo' },
   {
-    label: 'Corporación',
+    label: 'Corporación', modulo: 'nucleo',
     href: '/corporacion',
     hijos: [
       {
-        label: 'Historia',
+        label: 'Historia', modulo: 'nucleo',
         href: '/historia',
-        hijos: [{ label: 'Órganos de Gobierno', href: '/historia/organos-de-gobierno' }],
+        hijos: [{ label: 'Órganos de Gobierno', href: '/historia/organos-de-gobierno', modulo: 'nucleo' }],
       },
-      { label: 'Parroquia · Pasionistas', href: '/parroquia-pasionistas' },
+      { label: 'Parroquia · Pasionistas', href: '/parroquia-pasionistas', modulo: 'nucleo' },
       {
-        label: 'Nuestros fines',
+        label: 'Nuestros fines', modulo: 'nucleo',
         href: '/nuestros-fines',
         hijos: [
-          { label: 'Caridad', href: '/nuestros-fines/caridad' },
-          { label: 'Formación', href: '/nuestros-fines/formacion' },
+          { label: 'Caridad', href: '/nuestros-fines/caridad', modulo: 'nucleo' },
+          { label: 'Formación', href: '/nuestros-fines/formacion', modulo: 'nucleo' },
         ],
       },
-      { label: 'Cultos', href: '/cultos' },
+      { label: 'Cultos', href: '/cultos', modulo: 'nucleo' },
       {
-        label: 'Sábado de Pasión',
+        label: 'Sábado de Pasión', modulo: 'nucleo',
         href: '/sabado-de-pasion',
         hijos: [
-          { label: 'Recorrido', href: '/sabado-de-pasion/recorrido' },
-          { label: 'Trono', href: '/sabado-de-pasion/trono' },
-          { label: 'Enseres', href: '/sabado-de-pasion/enseres' },
+          { label: 'Recorrido', href: '/sabado-de-pasion/recorrido', modulo: 'nucleo' },
+          { label: 'Trono', href: '/sabado-de-pasion/trono', modulo: 'nucleo' },
+          { label: 'Enseres', href: '/sabado-de-pasion/enseres', modulo: 'nucleo' },
         ],
       },
-      { label: 'Rosario', href: '/rosario' },
+      { label: 'Rosario', href: '/rosario', modulo: 'nucleo' },
     ],
   },
   {
-    label: 'Sagrada titular',
+    label: 'Sagrada titular', modulo: 'nucleo',
     href: '/sagrada-titular',
     hijos: [
-      { label: 'Desamparados', href: '/desamparados' },
-      { label: 'Ajuar', href: '/ajuar' },
-      { label: 'Apadrina', href: '/apadrina' },
+      { label: 'Desamparados', href: '/desamparados', modulo: 'nucleo' },
+      { label: 'Ajuar', href: '/ajuar', modulo: 'nucleo' },
+      { label: 'Apadrina', href: '/apadrina', modulo: 'apadrinamientos' },
     ],
   },
   {
-    label: 'Actualidad',
+    label: 'Actualidad', modulo: 'nucleo',
     href: '/actualidad',
     hijos: [
-      { label: 'Agenda', href: '/agenda' },
-      { label: 'Noticias', href: '/noticias' },
-      { label: 'Tienda', href: '/tienda' },
+      { label: 'Agenda', href: '/agenda', modulo: 'agenda' },
+      { label: 'Noticias', href: '/noticias', modulo: 'noticias' },
+      { label: 'Tienda', href: '/tienda', modulo: 'tienda-web' },
     ],
   },
   {
-    label: 'Publicaciones',
+    label: 'Publicaciones', modulo: 'nucleo',
     href: '/publicaciones',
     hijos: [
       // El archivo entero: el único sitio donde salen los anuarios y las de historia.
-      { label: 'Todas las publicaciones', href: '/publicaciones', exacta: true },
-      { label: 'Boletines', href: '/publicaciones/boletines' },
-      { label: 'Dossier prensa', href: '/publicaciones/dossier-prensa' },
+      { label: 'Todas las publicaciones', href: '/publicaciones', exacta: true, modulo: 'publicaciones' },
+      { label: 'Boletines', href: '/publicaciones/boletines', modulo: 'publicaciones' },
+      { label: 'Dossier prensa', href: '/publicaciones/dossier-prensa', modulo: 'publicaciones' },
     ],
   },
   {
-    label: 'Hermanos',
+    label: 'Hermanos', modulo: 'nucleo',
     href: '/hermanos',
     hijos: [
-      { label: 'Hazte hermano', href: '/hazte-hermano' },
-      { label: 'Acceso hermanos', href: '/acceso' },
+      { label: 'Hazte hermano', href: '/hazte-hermano', modulo: 'alta-web' },
+      { label: 'Acceso hermanos', href: '/acceso', modulo: 'area-hermanos' },
     ],
   },
-  { label: 'Contacto', href: '/contacto' },
+  { label: 'Contacto', href: '/contacto', modulo: 'nucleo' },
 ]
 
 /** Todas las entradas del árbol en orden de lectura (padre antes que hijos). */
 export function aplanarMenu(entradas: EntradaMenu[]): EntradaMenu[] {
   return entradas.flatMap((entrada) => [entrada, ...aplanarMenu(entrada.hijos ?? [])])
+}
+
+/**
+ * El menú con estos módulos encendidos. Una sección (que no es enlace) que se
+ * quede sin hijos desaparece: un título que no despliega nada confunde.
+ */
+export function menuVisible(entradas: EntradaMenu[], activos: ReadonlySet<string>): EntradaMenu[] {
+  return entradas.flatMap((e) => {
+    if (!cumple(e.modulo, activos)) return []
+    if (!e.hijos) return [e]
+    const hijos = menuVisible(e.hijos, activos)
+    return hijos.length === 0 ? [] : [{ ...e, hijos }]
+  })
 }

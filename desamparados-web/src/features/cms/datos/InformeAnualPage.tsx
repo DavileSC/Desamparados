@@ -11,6 +11,8 @@ import {
 import { FILETE, FONDO_PIEZA, ORO, ROSA_URGENTE, SERIF, VERSALITAS } from '../inicio/estiloRetablo'
 import { useAltoDisponible } from '../inicio/useAltoDisponible'
 import { site } from '../../../config/site'
+import { useModulos } from '../../../hooks/useModulos'
+import { cumple, type Modulo } from '../../../domain/modulos'
 
 /**
  * El año que se abre sin elegir: de enero a marzo, el anterior (es cuando se
@@ -29,20 +31,28 @@ export function puedeEscribir(role: string | undefined, campo: CampoInforme): bo
 
 type ClaveCapitulo = 'portada' | 'presentacion' | 'patrimonio' | 'epilogo' | 'datos'
 
-interface Capitulo { numero: string; titulo: string; clave: ClaveCapitulo }
+interface Capitulo { numero: string; titulo: string; clave: ClaveCapitulo; modulo: Modulo }
 
 const CAPITULOS: Capitulo[] = [
-  { numero: '', titulo: 'Portada', clave: 'portada' },
-  { numero: 'I', titulo: 'Presentación del Hermano Mayor', clave: 'presentacion' },
-  { numero: 'II', titulo: 'El año de un vistazo', clave: 'datos' },
-  { numero: 'III', titulo: 'Cultos y actos', clave: 'datos' },
-  { numero: 'IV', titulo: 'Hermanos', clave: 'datos' },
-  { numero: 'V', titulo: 'Sábado de Pasión y Rosario', clave: 'datos' },
-  { numero: 'VI', titulo: 'Cuentas', clave: 'datos' },
-  { numero: 'VII', titulo: 'Patrimonio', clave: 'patrimonio' },
-  { numero: 'VIII', titulo: 'Comunicación', clave: 'datos' },
-  { numero: '—', titulo: 'Epílogo del Secretario', clave: 'epilogo' },
+  { numero: '', titulo: 'Portada', clave: 'portada', modulo: 'nucleo' },
+  { numero: 'I', titulo: 'Presentación del Hermano Mayor', clave: 'presentacion', modulo: 'nucleo' },
+  { numero: 'II', titulo: 'El año de un vistazo', clave: 'datos', modulo: 'nucleo' },
+  { numero: 'III', titulo: 'Cultos y actos', clave: 'datos', modulo: 'agenda' },
+  { numero: 'IV', titulo: 'Hermanos', clave: 'datos', modulo: 'nucleo' },
+  { numero: 'V', titulo: 'Sábado de Pasión y Rosario', clave: 'datos', modulo: 'procesion' },
+  { numero: 'VI', titulo: 'Cuentas', clave: 'datos', modulo: 'nucleo' },
+  { numero: 'VII', titulo: 'Patrimonio', clave: 'patrimonio', modulo: 'inventario' },
+  { numero: 'VIII', titulo: 'Comunicación', clave: 'datos', modulo: 'nucleo' },
+  { numero: '—', titulo: 'Epílogo del Secretario', clave: 'epilogo', modulo: 'nucleo' },
 ]
+
+const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
+
+/** Los capítulos con estos módulos, renumerados como los numera el PDF (sin huecos). */
+export function capitulosVisibles(activos: ReadonlySet<string>): Capitulo[] {
+  let n = 0
+  return CAPITULOS.filter((c) => cumple(c.modulo, activos)).map((c) => (c.numero && c.numero !== '—' ? { ...c, numero: ROMANOS[n++] } : c))
+}
 
 /** Los campos que se escriben en cada capítulo: el primero es el texto largo. */
 const CAMPOS: Record<Exclude<ClaveCapitulo, 'datos'>, { campo: CampoInforme; etiqueta: string; largo?: boolean; ayuda?: string }[]> = {
@@ -95,6 +105,8 @@ export default function InformeAnualPage() {
   const cliente = useQueryClient()
   const { referencia, alto } = useAltoDisponible()
   const clave = ['informe-anual', anio]
+  const { activos, activo: moduloActivo } = useModulos()
+  const capitulos = capitulosVisibles(activos ?? new Set())
 
   const { data, isPending, isError } = useQuery({ queryKey: clave, queryFn: () => traerInformeAnual(anio) })
 
@@ -159,7 +171,9 @@ export default function InformeAnualPage() {
   const faltan = data.faltan
   const avisoFalta = faltan.length === 2 ? 'Faltan la presentación y el epílogo' : faltan[0] === 'presentacion' ? 'Falta la presentación' : faltan[0] === 'epilogo' ? 'Falta el epílogo' : null
   const anios = Array.from({ length: 6 }, (_, i) => actual - i)
-  const campos = CAMPOS[elegido]
+  // Si se apaga el Inventario con Patrimonio elegido, ese capítulo ya no está en la lista: se enseña la Presentación.
+  const elegidoEfectivo = elegido === 'patrimonio' && !moduloActivo('inventario') ? 'presentacion' : elegido
+  const campos = CAMPOS[elegidoEfectivo]
   // El texto largo llena el hueco: tantas filas como quepan bajo los campos cortos.
   const cortos = campos.filter((c) => !c.largo).length
   const filasDelTexto = Math.min(26, Math.max(6, Math.floor(((alto ?? 700) - 250 - (cortos ? 64 : 0)) / 25.5)))
@@ -213,10 +227,10 @@ export default function InformeAnualPage() {
       <Box sx={{ flex: { md: '1 1 0 !important' }, minHeight: 0, display: 'grid', gap: 1.75, gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(260px, 360px) minmax(0, 1fr)' }, gridTemplateRows: { md: 'minmax(0, 1fr)' } }}>
         <Box component="nav" aria-label="Capítulos del Informe anual" sx={{ minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin', display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: '1px', p: 1, borderRadius: 2.5, border: `1px solid ${FILETE}` }}>
           <Box component="span" sx={{ ...VERSALITAS, fontSize: 10.5, px: 1.5, pb: 0.75 }}>Capítulos</Box>
-          {CAPITULOS.map((cap) => {
+          {capitulos.map((cap) => {
             const estado = estadoDe(cap, textos)
             const editable = cap.clave !== 'datos'
-            const activo = editable && cap.clave === elegido
+            const activo = editable && cap.clave === elegidoEfectivo
             const contenido = (
               <>
                 <Box component="span" sx={{ ...SERIF, fontSize: 16, color: 'primary.main', width: 30, flexShrink: 0 }}>{cap.numero}</Box>
@@ -245,15 +259,15 @@ export default function InformeAnualPage() {
           })}
         </Box>
 
-        <Box component="section" aria-label={TITULO_EDITOR[elegido]} sx={{ minWidth: 0, minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin', display: 'flex', flexDirection: 'column', gap: 1.5, px: 'clamp(14px, 2vw, 22px)', py: 1.75, borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: FONDO_PIEZA }}>
+        <Box component="section" aria-label={TITULO_EDITOR[elegidoEfectivo]} sx={{ minWidth: 0, minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin', display: 'flex', flexDirection: 'column', gap: 1.5, px: 'clamp(14px, 2vw, 22px)', py: 1.75, borderRadius: 2.5, border: `1px solid ${FILETE}`, backgroundColor: FONDO_PIEZA }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2, flexWrap: 'wrap' }}>
-            <Typography component="h2" sx={{ ...SERIF, fontSize: 22 }}>{TITULO_EDITOR[elegido]}</Typography>
+            <Typography component="h2" sx={{ ...SERIF, fontSize: 22 }}>{TITULO_EDITOR[elegidoEfectivo]}</Typography>
             <Typography aria-live="polite" sx={{ fontSize: 12.5, color: guardar.isError ? ROSA_URGENTE : 'text.secondary' }}>
               {[campos[0].largo ? `${palabras(textos[campos[0].campo])} palabras` : '', estadoGuardado].filter(Boolean).join(' · ')}
             </Typography>
           </Box>
           {!campos.some((c) => puedeEscribir(role, c.campo)) && (
-            <Alert severity="info">{elegido === 'epilogo' ? 'El epílogo lo escribe Secretaría, o el Hermano Mayor.' : 'Esta parte la escriben el Hermano Mayor o Administración.'}</Alert>
+            <Alert severity="info">{elegidoEfectivo === 'epilogo' ? 'El epílogo lo escribe Secretaría, o el Hermano Mayor.' : 'Esta parte la escriben el Hermano Mayor o Administración.'}</Alert>
           )}
           {campos.filter((c) => c.largo).map(campo)}
           {campos.some((c) => !c.largo) && (

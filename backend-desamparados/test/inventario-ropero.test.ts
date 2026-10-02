@@ -64,8 +64,11 @@ after(async () => {
   await db.$disconnect();
 });
 
+// El ropero (prendas, hermanos) vive en /api/ropero; los enseres y el
+// dashboard se quedan en /api/inventario (ver backend ropero.routes.ts).
+const esRopero = (ruta: string) => ruta.startsWith('/prendas') || ruta.startsWith('/hermanos');
 const como = (rol: Role, ruta: string, metodo = 'GET', cuerpo?: unknown) =>
-  fetch(`${baseUrl}/api/inventario${ruta}`, {
+  fetch(`${baseUrl}${esRopero(ruta) ? '/api/ropero' : '/api/inventario'}${ruta}`, {
     method: metodo,
     headers: { 'Content-Type': 'application/json', Cookie: `${COOKIE_CMS}=${generateToken(usuarios[rol]!, rol)}` },
     body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
@@ -73,7 +76,7 @@ const como = (rol: Role, ruta: string, metodo = 'GET', cuerpo?: unknown) =>
 
 describe('quién ve el ropero (P1)', () => {
   test('sin sesión, el ropero responde 401', async () => {
-    assert.equal((await fetch(`${baseUrl}/api/inventario/prendas`)).status, 401);
+    assert.equal((await fetch(`${baseUrl}/api/ropero/prendas`)).status, 401);
   });
 
   test('un hermano raso no ve el ropero ni la ficha de una prenda', async (t) => {

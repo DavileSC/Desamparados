@@ -44,6 +44,15 @@ describe('RecibosPage', () => {
     expect(screen.getByRole('button', { name: 'Descargar' })).toBeEnabled()
   })
 
+  // Sin el módulo del Modelo 182, el certificado para la renta no existe,
+  // aunque haya donativos que lo justificarían.
+  it('sin el módulo del Modelo 182, no hay apartado de certificados aunque haya donativos', async () => {
+    responder([recibo], { total: 1, page: 1, limit: 20, totalPages: 1 }, [{ ejercicio: 2025, nif: '12345678Z', nombre: 'Ana Pérez Ruiz', centimos: 3000 }])
+    renderWithProviders(<RecibosPage />, { modulos: ['area-hermanos'] })
+    expect(await screen.findByText(/cuota anual/i)).toBeInTheDocument()
+    expect(screen.queryByText('Certificados para la renta')).not.toBeInTheDocument()
+  })
+
   it('sin donativos que certificar, no hay apartado de certificados', async () => {
     responder([recibo], { total: 1, page: 1, limit: 20, totalPages: 1 })
     renderWithProviders(<RecibosPage />)

@@ -9,7 +9,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { Box, Button, useTheme } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { compactMq, esActiva, seccionActiva, tinta } from './estilos'
-import { menuPublico, type EntradaMenu } from '../../config/navegacion'
+import type { EntradaMenu } from '../../config/navegacion'
+import { useMenuPublico } from '../../hooks/useMenuPublico'
 
 /** Enlace de una subpágina dentro del desplegable de escritorio. */
 function EnlaceDesplegable({ entrada, secundario = false }: { entrada: EntradaMenu; secundario?: boolean }) {
@@ -173,6 +174,7 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
 
 /** Todas las secciones, en una fila. */
 export default function MenuEscritorio() {
+  const menu = useMenuPublico()
   return (
     <Box
       component="nav"
@@ -187,7 +189,7 @@ export default function MenuEscritorio() {
         [compactMq]: { gap: 0.5 },
       }}
     >
-      {menuPublico.map((entrada) => (
+      {menu.map((entrada) => (
         <SeccionEscritorio key={entrada.href} entrada={entrada} />
       ))}
     </Box>

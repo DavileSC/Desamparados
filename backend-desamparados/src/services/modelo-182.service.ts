@@ -171,7 +171,7 @@ async function aportaciones(ejercicio: number, cuotas: boolean) {
     }
   }
 
-  // --- Donativos en línea desde la web.
+  // --- Donativos en línea desde la web. Siempre, aunque su módulo esté apagado: apagar es ocultar, y lo cobrado se declara.
   const donativos = await db.pagoEnLinea.findMany({
     where: { tipo: TipoPagoEnLinea.DONATIVO, estado: EstadoPagoEnLinea.PAGADO, createdAt: { gte: desde, lt: hasta } },
     select: { id: true, importe: true, createdAt: true, donativo: true },
@@ -193,7 +193,7 @@ async function aportaciones(ejercicio: number, cuotas: boolean) {
     });
   }
 
-  // --- Apadrinamientos.
+  // --- Apadrinamientos: igual, siempre; una declaración fiscal no depende de qué pantallas se ven.
   const apadrinados = await db.apadrinamiento.findMany({
     where: { estado: { in: [EstadoPedido.PAGADO, EstadoPedido.ENTREGADO] }, pagadoEl: { gte: desde, lt: hasta } },
     select: { id: true, importe: true, pagadoEl: true, nombreFiscal: true, apellidosFiscales: true, nif: true, codigoPostal: true, email: true, pieza: { select: { nombre: true } } },

@@ -402,20 +402,35 @@ export async function informeAnual(
   const titulo = `Informe anual ${periodo.anio}`;
   const doc = nuevoDocumento(titulo);
   const p = new Paginas(doc, titulo);
-  const porClave = Object.fromEntries(areas.map((a) => [a.clave, a])) as Record<ClaveArea, Area>;
+  const porClave = Object.fromEntries(areas.map((a) => [a.clave, a])) as Partial<Record<ClaveArea, Area>>;
 
-  const capitulos: Capitulo[] = [
-    { numero: 'I', titulo: 'Presentación del Hermano Mayor', descripcion: 'Carta a los hermanos.' },
-    { numero: 'II', titulo: 'El año de un vistazo', descripcion: 'Las cifras clave, frente al año anterior.' },
-    { numero: 'III', titulo: 'Cultos y actos', descripcion: 'Cultos, formación, convivencias y cabildos, mes a mes.' },
-    { numero: 'IV', titulo: 'Hermanos', descripcion: 'Censo al cierre, altas y bajas con sus motivos, edades.' },
-    { numero: 'V', titulo: 'Sábado de Pasión y Rosario vespertino', descripcion: `Las dos salidas de ${periodo.anio}: papeletas de sitio y el cortejo por puestos.` },
-    { numero: 'VI', titulo: 'Cuentas', descripcion: 'Ingresos y gastos por partida, y lo que queda por cobrar.' },
-    { numero: 'VII', titulo: 'Patrimonio', descripcion: 'Enseres, túnicas y capirotes; estrenos, restauraciones y donaciones.' },
-    { numero: 'VIII', titulo: 'Comunicación', descripcion: 'Noticias, publicaciones y páginas de la web.' },
-    { numero: '', titulo: 'Epílogo', descripcion: 'Del Secretario, con el visto bueno del Hermano Mayor.' },
+  type Pieza = Capitulo & { area?: ClaveArea; escribir: () => void };
+  // Las áreas llegan ya sin las de módulos apagados (areasActivas): un capítulo
+  // cuya área no está, no se escribe ni se numera. El vistazo y los textos a
+  // mano no tienen área: salen siempre.
+  const todas: Omit<Pieza, 'numero'>[] = [
+    { titulo: 'Presentación del Hermano Mayor', descripcion: 'Carta a los hermanos.', escribir: () => {
+      if (textos.presentacion?.trim()) parrafos(p, textos.presentacion);
+      else hueco(p, '[Falta la carta del Hermano Mayor: se escribe en «Datos e informes › Informe anual».]');
+      p.y += 14;
+      lugarYFecha(p, textos.lugarFecha);
+      const yFirma = p.sitio(ALTO_FIRMA);
+      firma(doc, MX + ANCHO_UTIL - 172, yFirma, 'El Hermano Mayor', textos.firmaPresentacion);
+    } },
+    { titulo: 'El año de un vistazo', descripcion: 'Las cifras clave, frente al año anterior.', escribir: () => paginaVistazo(p, periodo, porClave, crudos, hoy) },
+    { titulo: 'Cultos y actos', descripcion: 'Cultos, formación, convivencias y cabildos, mes a mes.', area: 'agenda', escribir: () => CUERPOS.agenda(ctx('agenda')) },
+    { titulo: 'Hermanos', descripcion: 'Censo al cierre, altas y bajas con sus motivos, edades.', area: 'hermanos', escribir: () => CUERPOS.hermanos(ctx('hermanos')) },
+    { titulo: 'Sábado de Pasión y Rosario vespertino', descripcion: `Las dos salidas de ${periodo.anio}: papeletas de sitio y el cortejo por puestos.`, area: 'procesion', escribir: () => CUERPOS.procesion(ctx('procesion')) },
+    { titulo: 'Cuentas', descripcion: 'Ingresos y gastos por partida, y lo que queda por cobrar.', area: 'dinero', escribir: () => CUERPOS.dinero(ctx('dinero')) },
+    { titulo: 'Patrimonio', descripcion: 'Enseres, túnicas y capirotes; estrenos, restauraciones y donaciones.', area: 'inventario', escribir: () => CUERPOS.inventario(ctx('inventario')) },
+    { titulo: 'Comunicación', descripcion: 'Noticias, publicaciones y páginas de la web.', area: 'web', escribir: () => CUERPOS.web(ctx('web')) },
   ];
-  const [cPresentacion, cVistazo, cCultos, cHermanos, cProcesion, cCuentas, cPatrimonio, cComunicacion, cEpilogo] = capitulos;
+  const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+  const piezas: Pieza[] = todas
+    .filter((c) => !c.area || c.area in porClave)
+    .map((c, i) => ({ ...c, numero: ROMANOS[i] }));
+  const cEpilogo: Capitulo = { numero: '', titulo: 'Epílogo', descripcion: 'Del Secretario, con el visto bueno del Hermano Mayor.' };
+  const capitulos: Capitulo[] = [...piezas, cEpilogo];
 
   const abrir = (c: Capitulo) => {
     p.nueva();
@@ -423,35 +438,16 @@ export async function informeAnual(
     p.seccion = c.numero ? `${c.numero} · ${c.titulo}` : c.titulo;
     bandaCapitulo(doc, { cabecera: titulo, antetitulo: c.numero ? `Capítulo ${c.numero}` : titulo, titulo: c.titulo, numeral: c.numero || undefined });
   };
-  const ctx = (clave: ClaveArea): Contexto => ({ p, area: porClave[clave], crudos, periodo, hoy, notaPatrimonio: textos.notaPatrimonio });
+  const ctx = (clave: ClaveArea): Contexto => ({ p, area: porClave[clave]!, crudos, periodo, hoy, notaPatrimonio: textos.notaPatrimonio });
 
   portada(doc, periodo, textos);
   p.nueva(); // el índice: las filas se escriben al final, cuando se saben las páginas
   bandaCapitulo(doc, { cabecera: titulo, antetitulo: titulo, titulo: 'Índice' });
 
-  abrir(cPresentacion);
-  if (textos.presentacion?.trim()) parrafos(p, textos.presentacion);
-  else hueco(p, '[Falta la carta del Hermano Mayor: se escribe en «Datos e informes › Informe anual».]');
-  p.y += 14;
-  lugarYFecha(p, textos.lugarFecha);
-  const yFirma = p.sitio(ALTO_FIRMA);
-  firma(doc, MX + ANCHO_UTIL - 172, yFirma, 'El Hermano Mayor', textos.firmaPresentacion);
-
-  abrir(cVistazo);
-  paginaVistazo(p, periodo, porClave, crudos, hoy);
-
-  abrir(cCultos);
-  CUERPOS.agenda(ctx('agenda'));
-  abrir(cHermanos);
-  CUERPOS.hermanos(ctx('hermanos'));
-  abrir(cProcesion);
-  CUERPOS.procesion(ctx('procesion'));
-  abrir(cCuentas);
-  CUERPOS.dinero(ctx('dinero'));
-  abrir(cPatrimonio);
-  CUERPOS.inventario(ctx('inventario'));
-  abrir(cComunicacion);
-  CUERPOS.web(ctx('web'));
+  for (const pieza of piezas) {
+    abrir(pieza);
+    pieza.escribir();
+  }
 
   abrir(cEpilogo);
   if (textos.epilogo?.trim()) parrafos(p, textos.epilogo);
@@ -479,21 +475,24 @@ export async function informeAnual(
   return aBuffer(doc);
 }
 
-/** II · Ocho cifras frente al año anterior, hermanos y papeletas en cinco años, y el reparto del gasto. */
-function paginaVistazo(p: Paginas, periodo: Periodo, areas: Record<ClaveArea, Area>, crudos: DatosCrudos, hoy: Date) {
+/** II · Las cifras clave frente al año anterior, hermanos y papeletas en cinco años, y el reparto del gasto. */
+function paginaVistazo(p: Paginas, periodo: Periodo, areas: Partial<Record<ClaveArea, Area>>, crudos: DatosCrudos, hoy: Date) {
   const doc = p.doc;
   const antes = periodo.comparaHasta ? `la de ${periodo.anio - 1} a estas alturas` : `la de ${periodo.anio - 1}`;
-  entradilla(p, [{ texto: `Ocho cifras para resumir el año, cada una junto a ${antes}.` }]);
-  tarjetas(p, vistazo(crudos, hoy).map((c) => ({
+  // Las áreas ya llegan sin las de módulos apagados: sus cifras tampoco salen aquí.
+  const cifras = vistazo(crudos, hoy).filter((c) => c.area in areas);
+  entradilla(p, [{ texto: `Las cifras clave del año, cada una junto a ${antes}.` }]);
+  tarjetas(p, cifras.map((c) => ({
     etiqueta: c.etiqueta,
     valor: c.valor,
     nota: /\d/.test(c.cambio) ? `${c.cambio} · antes ${c.antes}` : `antes ${c.antes}`,
   })), { tam: 21 });
-  const hermanos = areas.hermanos.cifras[0].grafica;
-  const papeletas = areas.procesion.cifras[1].grafica;
+  const hermanos = areas.hermanos!.cifras[0].grafica;
+  // Sin Procesión (módulo apagado) no hay gráfica de papeletas: solo la de hermanos.
+  const papeletas = areas.procesion?.cifras[1].grafica;
   fila(p, [
     [{ ...hermanos, titulo: 'Hermanos, cinco años', pie: undefined }],
-    [{ ...papeletas, titulo: 'Papeletas, cinco salidas', pie: undefined }],
+    ...(papeletas ? [[{ ...papeletas, titulo: 'Papeletas, cinco salidas', pie: undefined }]] : []),
   ], { altoColumnas: 124 });
 
   // Adónde fue cada euro: los cuatro gastos mayores y el resto junto.

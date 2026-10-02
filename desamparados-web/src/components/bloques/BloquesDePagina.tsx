@@ -4,8 +4,11 @@ import { componenteDeBloque, pintaSuTitulo } from './registro'
 import BandaDeFondo, { type Fondo } from './BandaDeFondo'
 import MarcoEditable from './MarcoEditable'
 import { useModoEdicion } from './modoEdicion'
+import { moduloDeBloque } from './modulos'
 import { libreDe, siDe, valorDe, visibilidadDe } from './presentacion'
 import { GOLD } from '../../features/inicio/estilos'
+import { useModulos } from '../../hooks/useModulos'
+import { fichaDeModulo, type Modulo } from '../../domain/modulos'
 import type { Bloque } from '../../lib/api/contenido'
 
 /** El aire encima de un bloque, según su espaciado. `normal` es el de siempre. */
@@ -31,9 +34,10 @@ const ESPACIO = {
  */
 export default function BloquesDePagina({ bloques, desde = 0 }: { bloques: Bloque[]; desde?: number }) {
   const modo = useModoEdicion()
+  const { activo } = useModulos()
   const aPintar = bloques
     .map((bloque, i) => ({ bloque, indice: desde + i }))
-    .filter(({ bloque }) => modo !== null || visibilidadDe(bloque) === 'visible')
+    .filter(({ bloque }) => modo !== null || (visibilidadDe(bloque) === 'visible' && activo(moduloDeBloque(bloque))))
   if (aPintar.length === 0) return null
 
   return (
@@ -67,6 +71,14 @@ function mismaFranja(anterior: Bloque, bloque: Bloque): boolean {
  * CMS, para que un bloque se pinte exactamente como dentro de la página.
  */
 export function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = false }: { bloque: Bloque; indice?: number; primero?: boolean; pegado?: boolean }) {
+  const modo = useModoEdicion()
+  const { activo } = useModulos()
+  const modulo = moduloDeBloque(bloque)
+  // Un bloque de un módulo apagado no se pinta; en el constructor se dice por qué,
+  // para que quien edita no crea que se ha perdido.
+  if (modulo !== 'nucleo' && !activo(modulo)) {
+    return modo !== null ? <AvisoDeModuloApagado modulo={modulo} bloque={bloque} indice={indice} /> : null
+  }
   const Componente = componenteDeBloque(bloque)
   if (!Componente) return null
 
@@ -99,5 +111,16 @@ export function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = fa
         </BandaDeFondo>
       </MarcoEditable>
     </Box>
+  )
+}
+
+/** Lo que se ve en el constructor en el lugar de un bloque de un módulo apagado: por qué no sale en la web. */
+function AvisoDeModuloApagado({ modulo, bloque, indice }: { modulo: Exclude<Modulo, 'nucleo'>; bloque: Bloque; indice: number }) {
+  return (
+    <MarcoEditable bloque={bloque} indice={indice}>
+      <Box sx={{ p: 2, border: '1px dashed', borderColor: 'warning.main', borderRadius: 1, color: 'text.secondary', fontSize: 14 }}>
+        Este bloque es del módulo «{fichaDeModulo(modulo).nombre}», que no está activado: no se enseña en la web.
+      </Box>
+    </MarcoEditable>
   )
 }

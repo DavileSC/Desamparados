@@ -16,6 +16,7 @@ import { plantillasLibres } from '../../lib/api/emails'
 import { site } from '../../config/site'
 import { useSalidas } from '../procesion/useSalidas'
 import { deArticulo } from '../../domain/articulos'
+import { useModulos } from '../../hooks/useModulos'
 
 const LISTADO = '/cms/comunicados'
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
@@ -34,9 +35,11 @@ const aDatos = (c: ComunicadoCompleto): DatosComunicado => ({
 export default function ComunicadoEditPage() {
   const id = Number(useParams().id)
   const navegar = useNavigate()
+  const { activo } = useModulos()
   const [original, setOriginal] = useState<ComunicadoCompleto | null>(null)
   const [form, setForm] = useState<DatosComunicado | null>(null)
-  const { data: salidas = [] } = useSalidas()
+  // Las salidas solo hacen falta para el filtro «con papeleta de», que es de Procesión.
+  const { data: salidas = [] } = useSalidas({ enabled: activo('procesion') })
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -209,10 +212,12 @@ export default function ComunicadoEditPage() {
             {form.tipo === 'BOLETIN' ? 'A los hermanos activos suscritos al boletín' : 'A los hermanos activos'}{', y de ellos, solo a quienes cumplan lo que marques aquí.'}
           </Typography>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(3, minmax(0, 1fr))' } }}>
-            <TextField select size="small" label="Papeleta" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.conPapeleta ?? ''} onChange={(e) => segmento({ conPapeleta: e.target.value === '' ? null : Number(e.target.value) })}>
-              <MenuItem value="">Da igual</MenuItem>
-              {salidas.map((s) => <MenuItem key={s.id} value={s.id}>{`Con papeleta ${deArticulo(s.articulo, s.nombre)}`}</MenuItem>)}
-            </TextField>
+            {activo('procesion') && (
+              <TextField select size="small" label="Papeleta" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.conPapeleta ?? ''} onChange={(e) => segmento({ conPapeleta: e.target.value === '' ? null : Number(e.target.value) })}>
+                <MenuItem value="">Da igual</MenuItem>
+                {salidas.map((s) => <MenuItem key={s.id} value={s.id}>{`Con papeleta ${deArticulo(s.articulo, s.nombre)}`}</MenuItem>)}
+              </TextField>
+            )}
             <TextField select size="small" label="Edad" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.edad ?? ''} onChange={(e) => segmento({ edad: (e.target.value || null) as Segmento['edad'] })}>
               <MenuItem value="">Da igual</MenuItem>
               <MenuItem value="MAYORES">Mayores de edad</MenuItem>

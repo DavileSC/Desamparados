@@ -13,7 +13,8 @@ import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined'
 import type { ReactNode } from 'react'
 import { site } from '../config/site'
-import { aplanarMenu, menuPublico } from '../config/navegacion'
+import { aplanarMenu } from '../config/navegacion'
+import { useMenuPublico } from '../hooks/useMenuPublico'
 import ContenedorDePagina from './ContenedorDePagina'
 import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
 import { BOTON } from './estiloDeBoton'
@@ -29,11 +30,6 @@ const socialLinks: SocialLink[] = [
   { icon: <FacebookIcon fontSize="small" />, href: site.redes.facebook, label: 'Facebook' },
   { icon: <PlayCircleIcon fontSize="small" />, href: site.redes.youtube, label: 'YouTube' },
 ].flatMap((red) => (red.href ? [{ ...red, href: red.href }] : []))
-
-// Las columnas de enlaces se sacan del menú principal por su ruta: si una
-// sección cambia de nombre, el pie lo recoge solo, y si desaparece, su enlace
-// deja de pintarse en vez de quedar muerto.
-const entradasMenu = new Map(aplanarMenu(menuPublico).map((entrada) => [entrada.href, entrada.label]))
 
 // Los mismos grupos que el menú, y en su orden. Son cinco y caben tres
 // columnas: Corporación, la larga, va sola, y las cortas van de dos en dos.
@@ -107,6 +103,10 @@ function Dato({ icono, children }: { icono: ReactNode; children: ReactNode }) {
 }
 
 export default function PieDePagina() {
+  // Las columnas de enlaces se sacan del menú principal por su ruta: si una
+  // sección cambia de nombre, el pie lo recoge solo, y si desaparece (porque
+  // su módulo está apagado), su enlace deja de pintarse en vez de quedar muerto.
+  const entradasMenu = new Map(aplanarMenu(useMenuPublico()).map((entrada) => [entrada.href, entrada.label]))
   const { aceptadas, volverAPreguntar } = useConsentimientoDeCookies()
   // RGPD: el iframe de Google Maps envía la IP del visitante a Google. Solo se carga si el
   // usuario ha aceptado las cookies o pulsa explícitamente "Mostrar mapa" (click-to-load).
@@ -179,25 +179,34 @@ export default function PieDePagina() {
           </Box>
 
           {/* Mapa del sitio */}
-          {columnas.map((grupos, i) => (
-            // En el móvil (dos columnas), Corporación, la larga, ocupa dos filas y
-            // las otras dos columnas caen una debajo de otra a su lado.
-            <Box key={grupos[0].titulo} sx={{ gridRow: i === 0 ? { xs: 'span 2', md: 'auto' } : undefined, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {grupos.map((grupo) => (
-                <Box key={grupo.titulo} component="nav" aria-label={grupo.titulo}>
-                  <Typography component="h2" sx={tituloColumna}>{grupo.titulo}</Typography>
-                  <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 1.25 } }}>
-                    {grupo.rutas.flatMap((ruta) => {
-                      const label = entradasMenu.get(ruta)
-                      return label
-                        ? [<li key={ruta}><MuiLink component={Link} to={ruta} sx={enlace}>{label}</MuiLink></li>]
-                        : []
-                    })}
+          {columnas.map((grupos, i) => {
+            // Un grupo entero (título incluido) se omite si su módulo está apagado: un
+            // título sin ningún enlace debajo parece un fallo, no una sección vacía.
+            const gruposConEnlaces = grupos.flatMap((grupo) => {
+              const enlaces = grupo.rutas.flatMap((ruta) => {
+                const label = entradasMenu.get(ruta)
+                return label ? [{ ruta, label }] : []
+              })
+              return enlaces.length > 0 ? [{ ...grupo, enlaces }] : []
+            })
+            if (gruposConEnlaces.length === 0) return null
+            return (
+              // En el móvil (dos columnas), Corporación, la larga, ocupa dos filas y
+              // las otras dos columnas caen una debajo de otra a su lado.
+              <Box key={grupos[0].titulo} sx={{ gridRow: i === 0 ? { xs: 'span 2', md: 'auto' } : undefined, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {gruposConEnlaces.map((grupo) => (
+                  <Box key={grupo.titulo} component="nav" aria-label={grupo.titulo}>
+                    <Typography component="h2" sx={tituloColumna}>{grupo.titulo}</Typography>
+                    <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 1.25 } }}>
+                      {grupo.enlaces.map(({ ruta, label }) => (
+                        <li key={ruta}><MuiLink component={Link} to={ruta} sx={enlace}>{label}</MuiLink></li>
+                      ))}
+                    </Box>
                   </Box>
-                </Box>
-              ))}
-            </Box>
-          ))}
+                ))}
+              </Box>
+            )
+          })}
 
           {/* Dónde estamos: en tableta, la dirección a un lado y el mapa al otro */}
           <Box

@@ -107,6 +107,16 @@ describe('Inicio del CMS', () => {
     expect(localStorage.getItem('cms.inicio.pestana')).toBe('cifras')
   })
 
+  it('con Procesión apagado, en «Cifras» no está «Papeletas…» pero sí «Hermanos activos»', async () => {
+    const usuario = userEvent.setup()
+    responder(panel)
+    entrarComo('ADMIN')
+    renderWithProviders(<TemaCmsProvider><PanelPage /></TemaCmsProvider>, { modulos: ['noticias', 'agenda'] })
+    await usuario.click(await screen.findByRole('tab', { name: 'Cifras' }))
+    expect(screen.queryByRole('button', { name: /papeletas/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Hermanos activos/ })).toBeInTheDocument()
+  })
+
   it('las flechas pasan de una pestaña a otra', async () => {
     const usuario = userEvent.setup()
     responder(panel)

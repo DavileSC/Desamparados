@@ -4,6 +4,7 @@ import { CORMORANT } from '../../actualidad/agenda/letraAlmanaque'
 import { acercar, sinMovimiento, useCuenta } from './animaciones'
 import { ORO_CLARO } from './estiloRetablo'
 import { site } from '../../../config/site'
+import { useModulos } from '../../../hooks/useModulos'
 
 const FECHA_LARGA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
 const FECHA_CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -29,6 +30,8 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
 }) {
   const { fecha, dias } = cuentaAtrasEstacion(hoy)
   const diasContados = Math.round(useCuenta(dias, 1600))
+  // La cuenta atrás es un dato de la procesión, aunque salga de la Pascua: sin su módulo no se enseña.
+  const conProcesion = useModulos().activo('procesion')
 
   return (
     <Box
@@ -67,7 +70,7 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
         <Typography className="fecha-larga" sx={{ fontFamily: CORMORANT, fontStyle: 'italic', fontSize: 22, color: '#d8cfc6' }}>
           {FECHA_LARGA.format(fecha)}
         </Typography>
-        <Box className="cuenta" sx={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', columnGap: 1.5, mt: 1.5 }}>
+        {conProcesion && <Box className="cuenta" sx={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', columnGap: 1.5, mt: 1.5 }}>
           <Typography component="span" className="dias" sx={{ fontFamily: CORMORANT, fontWeight: 500, fontSize: 'min(136px, 16cqh, 36cqw)', lineHeight: 0.85, fontVariantNumeric: 'lining-nums' }}>
             {diasContados}
           </Typography>
@@ -75,7 +78,7 @@ export default function Retablo({ hoy = new Date(), foto = FOTO_POR_DEFECTO, x =
             {dias === 1 ? 'día' : 'días'}
           </Typography>
           <Typography component="span" className="para" sx={{ fontSize: 14, color: '#c9bfb6', flexBasis: '100%' }}>para la estación de penitencia</Typography>
-        </Box>
+        </Box>}
       </Box>
     </Box>
   )

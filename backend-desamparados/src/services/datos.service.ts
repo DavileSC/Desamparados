@@ -3,10 +3,11 @@ import db from '../config/db.js';
 import { claveMes } from '../domain/panel-censo.js';
 import { agruparPorTextoLibre } from '../domain/panel-agrupar.js';
 import { periodoAnterior, periodoDe, periodosDisponibles, type Periodo } from '../domain/periodo-datos.js';
-import { areasDe, type Area, type DatosCrudos } from '../domain/datos-areas.js';
+import { areasActivas, areasDe, type Area, type DatosCrudos } from '../domain/datos-areas.js';
 import { articuloDe } from '../domain/articulos.js';
 import { devueltosPendientes } from './recibos/comunes.js';
 import { SalidasService } from './procesion/salidas.service.js';
+import { ModulosService } from './modulos.service.js';
 
 /**
  * REGLA DE ORO, la misma que la del panel del Inicio: solo `count`, `groupBy` y
@@ -244,6 +245,6 @@ export class DatosService {
   static async leer(p: Periodo, hoy = new Date()): Promise<DatosResponse> {
     const crudos = await datosCrudos(p, hoy);
     const { inicio: _i, fin: _f, ...periodo } = p;
-    return { generadoEn: hoy.toISOString(), periodo, periodos: periodosDisponibles(hoy), areas: areasDe(crudos, p, hoy) };
+    return { generadoEn: hoy.toISOString(), periodo, periodos: periodosDisponibles(hoy), areas: areasActivas(areasDe(crudos, p, hoy), await ModulosService.activos()) };
   }
 }

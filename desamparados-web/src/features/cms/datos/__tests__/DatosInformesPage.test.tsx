@@ -48,6 +48,13 @@ describe('Datos e informes', () => {
     expect(screen.getByRole('button', { name: 'Informe de cuentas · PDF' })).toBeInTheDocument()
   })
 
+  it('sin el módulo del Informe anual no ofrece el botón', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(DATOS)))
+    renderWithProviders(<DatosInformesPage />, { ruta: '/cms/datos', modulos: [] })
+    expect(await screen.findByRole('heading', { name: 'Gráfica de Hermanos activos' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Informe anual' })).not.toBeInTheDocument()
+  })
+
   it('el informe de la pestaña se pide con su año', async () => {
     const fetch = vi.fn(async (url: string) =>
       String(url).includes('/informe/')

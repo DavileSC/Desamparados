@@ -22,6 +22,7 @@ import TablaPrendas from './inventario/TablaPrendas'
 import TarjetaCingulos from './inventario/TarjetaCingulos'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
+import { useModulos } from '../../hooks/useModulos'
 
 const emptyEnser = { nombre: '', referencia: '', categoria: '', ubicacion: '', cantidadOptimo: '0', cantidadBueno: '0', cantidadReparar: '0' }
 const emptyPrenda = { numero: '', tipo: 'TUNICA', talla: '', estado: 'DISPONIBLE', observaciones: '' }
@@ -68,10 +69,15 @@ const FILTROS_PRENDAS = {
 }
 
 export default function InventarioAdminPage() {
+  const { activo } = useModulos()
+  // El ropero es de Procesión y los enseres del Inventario: la pantalla enseña lo que haya.
+  const conEnseres = activo('inventario')
+  const conRopero = activo('procesion')
   // La pestaña vive en la URL, como los filtros: al volver de editar una
   // prenda se vuelve al ropero, no a los enseres.
   const [params, setParams] = useSearchParams()
-  const tab = params.get('vista') === 'ropero' ? 1 : 0
+  const tab = !conEnseres ? 1 : !conRopero ? 0 : params.get('vista') === 'ropero' ? 1 : 0
+  const titulo = conEnseres ? 'Inventario' : 'Ropero'
   const setTab = (valor: number) => setParams((anteriores) => {
     const siguientes = new URLSearchParams(anteriores)
     if (valor === 1) siguientes.set('vista', 'ropero')
@@ -115,25 +121,35 @@ export default function InventarioAdminPage() {
   // página con la URL diciendo otra. Solo la última carga en marcha tiene
   // derecho a escribir. Las llamadas de después de crear, borrar, asignar o
   // devolver la omiten: no hay carrera.
+  // Un módulo apagado no tiene router (404 MODULO_NO_ACTIVADO): sin su
+  // pestaña en pantalla, tampoco se le pide nada.
   const cargar = useCallback((vigente: () => boolean = () => true) => Promise.all([
-    listarEnseres({ pagina: enseres.pagina, porPagina: enseres.porPagina }, {
+    conEnseres ? listarEnseres({ pagina: enseres.pagina, porPagina: enseres.porPagina }, {
       search: filtrosEnseres.q,
       categoria: filtrosEnseres.categoria,
       ubicacion: filtrosEnseres.ubicacion,
       necesitaReparacion: filtrosEnseres.reparar ? 'true' : '',
       orden: filtrosEnseres.orden,
-    }),
-    listarPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }, filtrosPrendas as FiltrosPrendas),
+    }) : null,
+    conRopero ? listarPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }, filtrosPrendas as FiltrosPrendas) : null,
     // Sin el recuento de cíngulos, el ropero se sigue viendo.
-    recuentoDeCingulos().catch(() => null),
-  ]).then(([a, b, c]) => { if (!vigente()) return; setListaEnseres(a.data); setMetaEnseres(a.meta); setListaPrendas(b.data); setMetaPrendas(b.meta); setCingulos(c) }), [enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina, filtrosEnseres, filtrosPrendas])
+    conRopero ? recuentoDeCingulos().catch(() => null) : null,
+  ]).then(([a, b, c]) => {
+    if (!vigente()) return
+    if (a) { setListaEnseres(a.data); setMetaEnseres(a.meta) }
+    if (b) { setListaPrendas(b.data); setMetaPrendas(b.meta) }
+    if (conRopero) setCingulos(c)
+  }), [conEnseres, conRopero, enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina, filtrosEnseres, filtrosPrendas])
 
   // Las categorías y ubicaciones en uso, para los desplegables. Si fallan, los
   // filtros se quedan sin opciones pero el listado se sigue viendo.
   const cargarOpciones = useCallback(() => opcionesDeEnseres()
     .then((o) => setOpciones({ categorias: o.categorias ?? [], ubicaciones: o.ubicaciones ?? [] }))
     .catch(() => undefined), [])
-  useEffect(() => { void cargarOpciones() }, [cargarOpciones])
+  useEffect(() => {
+    if (!conEnseres) return
+    void cargarOpciones()
+  }, [conEnseres, cargarOpciones])
 
   useEffect(() => {
     let cancelado = false
@@ -204,8 +220,8 @@ export default function InventarioAdminPage() {
   }
 
   return <>
-    <Helmet><title>{`Inventario | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion titulo="Inventario">
+    <Helmet><title>{`${titulo} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
+    <CabeceraSeccion titulo={titulo}>
       <Button variant="contained" startIcon={<AddIcon />} onClick={abrirAlta}>{tab === 0 ? 'Nuevo enser' : 'Nueva prenda'}</Button>
     </CabeceraSeccion>
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -253,7 +269,7 @@ export default function InventarioAdminPage() {
       <TextField label="Observaciones" value={prendaForm.observaciones} onChange={(e) => setPrendaForm({ ...prendaForm, observaciones: e.target.value })} fullWidth multiline />
     </VentanaFormulario>
 
-    <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 3 }}><Tab label="Enseres" /><Tab label="Ropero" /></Tabs>
+    {conEnseres && conRopero && <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 3 }}><Tab label="Enseres" /><Tab label="Ropero" /></Tabs>}
     {tab === 0 ? (
       <BarraListado
         valores={filtrosEnseres}

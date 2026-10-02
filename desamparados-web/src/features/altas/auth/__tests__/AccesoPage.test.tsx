@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
 import AccesoPage from '../AccesoPage'
 import { useAuthStore } from '../store'
+import { crearQueryClientDePruebas } from '../../../../test/queryClient'
 
 const ok = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
@@ -20,12 +22,21 @@ beforeEach(() => {
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-function montar() {
+// `AccesoPage` pregunta a `useModulos()` (un `useQuery`): necesita un
+// QueryClient aunque la mayoría de pruebas no toquen módulos. No se usa
+// `renderWithProviders` porque esta pantalla necesita su propio
+// `RouterProvider` (para leer la ruta final tras la redirección con `SondaRuta`).
+function montar(modulos?: readonly string[]) {
+  const queryClient = crearQueryClientDePruebas(modulos)
   const router = createMemoryRouter([
     { path: '/acceso', element: <AccesoPage /> },
     { path: '*', element: <SondaRuta /> },
   ], { initialEntries: ['/acceso'] })
-  return render(<RouterProvider router={router} />)
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  )
 }
 
 describe('AccesoPage (acceso de hermanos)', () => {
@@ -90,5 +101,32 @@ describe('AccesoPage (acceso de hermanos)', () => {
 
     expect(screen.getByTestId('ruta')).toHaveTextContent('/area-hermano')
     expect(screen.queryByRole('button', { name: 'Entrar' })).not.toBeInTheDocument()
+  })
+
+  it('sin el alta por la web no ofrece «Solicita tu alta»', () => {
+    montar(['area-hermanos'])
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Solicita tu alta' })).not.toBeInTheDocument()
+  })
+
+  it('con el alta por la web, sí', () => {
+    montar(['area-hermanos', 'alta-web'])
+    expect(screen.getByRole('link', { name: 'Solicita tu alta' })).toHaveAttribute('href', '/hazte-hermano')
+  })
+
+  it('el formulario va en un único <main>, como el aviso de área apagada', () => {
+    // `getByRole('main')` falla si hay más de uno: antes el aviso llevaba su
+    // propio `<main>` y el formulario normal no tenía ninguno.
+    montar(['area-hermanos'])
+    expect(within(screen.getByRole('main')).getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  })
+
+  it('con el área de hermanos apagada, avisa en vez del formulario y enlaza al acceso del CMS', async () => {
+    montar(['noticias'])
+
+    expect(within(screen.getByRole('main')).getByRole('heading', { name: 'El área de hermanos no está activada' })).toBeInTheDocument()
+    await waitFor(() => expect(document.title).toMatch(/^Área de hermanos no activada \| /))
+    expect(screen.queryByLabelText(/contraseña/i, { selector: 'input' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'acceso del CMS' })).toHaveAttribute('href', '/cms/acceso')
   })
 })

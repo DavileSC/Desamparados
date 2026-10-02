@@ -5,6 +5,7 @@ import { CensoHojaController } from '../controllers/censo-hoja.controller';
 import { ficheroDeDatosMiddleware } from '../middleware/upload.middleware';
 import { authenticateToken } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
+import { conModulo } from '../middleware/modulos';
 import { Role } from '@prisma/client';
 
 import { validate } from '../config/validate';
@@ -76,6 +77,9 @@ hermanoRouter.get('/admin/listas', checkRole(rolesGestionCenso), HermanoControll
 hermanoRouter.post('/admin/listas', checkRole(rolesGestionCenso), validate(guardarListaSchema), HermanoController.guardarLista);
 hermanoRouter.delete('/admin/listas/:id', checkRole(rolesGestionCenso), validateId, HermanoController.borrarLista);
 
+// Los difuntos y sus sufragios son un módulo: todo lo que cuelga de /admin/difuntos, y el borrado de un sufragio.
+hermanoRouter.use('/admin/difuntos', conModulo('difuntos'));
+
 // Los difuntos y sus sufragios. También antes de `/admin/:id`.
 hermanoRouter.get('/admin/difuntos', checkRole(rolesGestionCenso), validate(difuntosQuerySchema), HermanoController.difuntos);
 hermanoRouter.get('/admin/difuntos/aniversarios', checkRole(rolesGestionCenso), HermanoController.aniversarios);
@@ -83,7 +87,7 @@ hermanoRouter.get('/admin/difuntos/:id', checkRole(rolesGestionCenso), validateI
 hermanoRouter.put('/admin/difuntos/:id/defuncion', checkRole(rolesGestionCenso), validateId, validate(fijarDefuncionSchema), HermanoController.fijarDefuncion);
 hermanoRouter.post('/admin/difuntos/:id/sufragios', checkRole(rolesGestionCenso), validateId, validate(nuevoSufragioSchema), HermanoController.crearSufragio);
 hermanoRouter.post('/admin/difuntos/:id/pesame', checkRole(rolesGestionCenso), validateId, validate(pesameSchema), HermanoController.enviarPesame);
-hermanoRouter.delete('/admin/sufragios/:id', checkRole(rolesGestionCenso), validateId, HermanoController.borrarSufragio);
+hermanoRouter.delete('/admin/sufragios/:id', checkRole(rolesGestionCenso), conModulo('difuntos'), validateId, HermanoController.borrarSufragio);
 
 hermanoRouter.get('/admin/:id', checkRole(rolesGestionCenso), validateId, HermanoController.getById);
 hermanoRouter.put('/admin/:id', checkRole(rolesGestionCenso), validateId, validate(updateAdminHermanoSchema), HermanoController.updateAdmin);

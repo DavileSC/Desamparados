@@ -131,6 +131,21 @@ describe('ProcesionPage', () => {
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/procesion/avisar/77'))).toBe(true))
   })
 
+  // Sin el módulo de cuotas en línea, ni se ofrece pagar ni se pregunta al
+  // banco por una vuelta: ese módulo es quien pone sentido a las dos cosas.
+  it('sin el módulo de cuotas en línea, no se ofrece pagar nada ni se comprueba la vuelta del banco', async () => {
+    const llamadas = servidor({
+      pago: { metodos: ['TARJETA'], pruebas: false },
+      fichas: [ficha(1, 'Antonio', { cuotasPendientes: [{ id: 30, year: 2026, concepto: 'Cuota 2026', importe: 20, estado: 'PENDIENTE' }] })],
+    })
+    renderWithProviders(<ProcesionPage />, { ruta: '/area-hermano/procesion?pago=00000042AB7Z', modulos: ['area-hermanos'] })
+
+    expect(await screen.findByText(/aún no está abierta/i)).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Pendiente de pago' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Comprobando el pago con el banco/)).not.toBeInTheDocument()
+    expect(llamadas.some((l) => l.url.includes('/mis-recibos/pagos/'))).toBe(false)
+  })
+
   it('con la pasarela (simulada), paga de una vez las cuotas y la voluntad prometida', async () => {
     const user = userEvent.setup()
     const solicitud = { id: 6, puesto: 'Vela', donativo: 5, pendiente: 5, concepto: 'Donativo Rosario vespertino 2026', pagada: false, cita: null }

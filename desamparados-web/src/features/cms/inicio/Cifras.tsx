@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
 import type { PanelResponse } from '../../../lib/api/panel'
+import { useModulos } from '../../../hooks/useModulos'
 import { useTemaCms } from '../../../app/useTemaCms'
 import { brillo } from '../../../theme/cms'
 import { Degradado, Halo } from '../../../components/charts/brillo'
@@ -253,6 +254,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
   const cifras = [
     {
       etiqueta: 'Hermanos activos',
+      modulo: 'nucleo' as const,
       valor: <Valor valor={panel.censo.activos} />,
       titulo: 'Altas y bajas, mes a mes',
       resumen: <><Diferencia valor={netos} /> en doce meses · {contar(panel.censo.altas12m, 'alta', 'altas')}, {contar(panel.censo.bajas12m, 'baja', 'bajas')}</>,
@@ -261,6 +263,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
     },
     {
       etiqueta: `Papeletas ${panel.procesion.anio}`,
+      modulo: 'procesion' as const,
       valor: <Valor valor={panel.procesion.papeletas} />,
       titulo: 'Papeletas de sitio, año a año',
       resumen: anterior && diferencia !== null ? <><Diferencia valor={diferencia} /> sobre las {numero(anterior.total)} de {anterior.anio}</> : 'Papeletas de sitio sacadas este año',
@@ -268,6 +271,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
     },
     {
       etiqueta: `Por cobrar ${ejercicio.anio}`,
+      modulo: 'nucleo' as const,
       valor: <Valor valor={porCobrar.importe} euros />,
       titulo: 'Lo que queda por cobrar',
       resumen: contar(porCobrar.total, 'recibo', 'recibos'),
@@ -275,6 +279,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
     },
     {
       etiqueta: `Saldo ${ejercicio.anio}`,
+      modulo: 'nucleo' as const,
       valor: <Valor valor={ejercicio.saldo} euros />,
       titulo: 'El saldo del año, mes a mes',
       resumen: <>{ejercicio.saldo >= 0 ? 'Superávit' : 'Déficit'} · {eurosResumen(ejercicio.ingresos)} de ingresos, {eurosResumen(ejercicio.gastos)} de gastos</>,
@@ -282,7 +287,14 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
       grafica: <CurvaDelSaldo valores={saldoMes} meses={['', ...mesesDelEjercicio.map((m) => etiquetaPunto(m.mes).split(' ')[0])]} color={ejercicio.saldo >= 0 ? ORO_GRAFICA : ROJO_GRAFICA} />,
     },
   ]
-  const actual = cifras[elegida]
+  const { activo } = useModulos()
+  const visibles = cifras.filter((c) => activo(c.modulo))
+  // Con un módulo apagado hay menos cifras: la elegida se recorta al rango, y
+  // el mismo índice marca el botón activo y la cifra en grande.
+  const indice = Math.min(elegida, visibles.length - 1)
+  const actual = visibles[indice]
+  // La curva del saldo (la última) lleva su leyenda a los dos extremos, debajo.
+  const esSaldo = actual === cifras[cifras.length - 1]
 
   return (
     <Box
@@ -298,10 +310,11 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
         sx={{
           flex: 1, minHeight: 0, display: 'grid', gap: 'clamp(8px, 1.6vh, 14px)',
           gridTemplateColumns: 'minmax(170px, 210px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)',
-          // En el móvil, las cuatro en una fila arriba y la gráfica debajo.
+          // En el móvil, las cifras visibles en una fila arriba (menos con algún módulo
+          // apagado) y la gráfica debajo.
           '@container cifras (max-width: 599px)': {
             gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'auto minmax(0, 1fr)',
-            '& .selector': { gridTemplateRows: 'none', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' },
+            '& .selector': { gridTemplateRows: 'none', gridTemplateColumns: `repeat(${visibles.length}, minmax(0, 1fr))`, gap: '6px' },
             '& .selector button': { px: 1, py: 0.75 },
             '& .selector .etiqueta': { fontSize: 9, letterSpacing: '0.04em' },
             '& .selector .valor': { fontSize: 'clamp(15px, 5cqi, 22px)' },
@@ -310,9 +323,9 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
           },
         }}
       >
-        <Box className="selector" sx={{ minHeight: 0, display: 'grid', gridTemplateRows: 'repeat(4, minmax(0, 1fr))', gap: 1 }}>
-          {cifras.map((c, i) => {
-            const activa = i === elegida
+        <Box className="selector" sx={{ minHeight: 0, display: 'grid', gridTemplateRows: `repeat(${visibles.length}, minmax(0, 1fr))`, gap: 1 }}>
+          {visibles.map((c, i) => {
+            const activa = i === indice
             return (
               <Box
                 key={c.etiqueta}
@@ -353,11 +366,11 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
             <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{actual.resumen}</Typography>
           </Box>
           {actual.leyenda && (
-            <Box sx={{ display: 'flex', justifyContent: elegida === 3 ? 'space-between' : 'flex-start', gap: 2, fontSize: 12.5, color: 'text.secondary', order: elegida === 3 ? 3 : 0 }}>
+            <Box sx={{ display: 'flex', justifyContent: esSaldo ? 'space-between' : 'flex-start', gap: 2, fontSize: 12.5, color: 'text.secondary', order: esSaldo ? 3 : 0 }}>
               {actual.leyenda}
             </Box>
           )}
-          <Box key={elegida} sx={{ flex: '1 1 0 !important', minHeight: 0, display: 'flex', flexDirection: 'column', pt: 1.5 }}>
+          <Box key={indice} sx={{ flex: '1 1 0 !important', minHeight: 0, display: 'flex', flexDirection: 'column', pt: 1.5 }}>
             {actual.grafica}
           </Box>
         </Box>

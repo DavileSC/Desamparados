@@ -22,6 +22,7 @@ import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import Cortejo from './cortejo/Cortejo'
 import { site } from '../../config/site'
+import { useModulos } from '../../hooks/useModulos'
 import { deArticulo, laCorporacion, segunLaCorporacion, type Articulo } from '../../domain/articulos'
 
 const ZONA = 'Europe/Madrid'
@@ -66,6 +67,8 @@ export default function ProcesionAdminPage() {
   const [cerrando, setCerrando] = useState(false)
   const [avisar, setAvisar] = useState(true)
   const [borrador, setBorrador] = useState(true)
+  // Sin Noticias no hay dónde dejar el borrador: ni se ofrece ni se pide.
+  const conNoticias = useModulos().activo('noticias')
   const [cambiando, setCambiando] = useState(false)
 
   const [creando, setCreando] = useState(false)
@@ -94,7 +97,7 @@ export default function ProcesionAdminPage() {
     if (!slug) return
     setCambiando(true); setError(null); setAviso(null)
     try {
-      const r = await cambiarPlazo(abrir, slug, abrir ? { avisar, borradorNoticia: borrador } : {})
+      const r = await cambiarPlazo(abrir, slug, abrir ? { avisar, borradorNoticia: borrador && conNoticias } : {})
       setAviso({
         texto: abrir
           ? `Solicitud abierta.${r.avisados ? ` Se está avisando por correo a ${r.avisados} ${r.avisados === 1 ? 'cuenta' : 'cuentas'}.` : ''}`
@@ -298,7 +301,7 @@ export default function ProcesionAdminPage() {
           </DialogContentText>
           <Stack>
             <FormControlLabel control={<Checkbox checked={avisar} onChange={(e) => setAvisar(e.target.checked)} />} label="Avisar por correo a los hermanos activos" />
-            <FormControlLabel control={<Checkbox checked={borrador} onChange={(e) => setBorrador(e.target.checked)} />} label="Dejar un borrador de noticia con los días, para publicarlo y moverlo por redes" />
+            {conNoticias && <FormControlLabel control={<Checkbox checked={borrador} onChange={(e) => setBorrador(e.target.checked)} />} label="Dejar un borrador de noticia con los días, para publicarlo y moverlo por redes" />}
           </Stack>
         </DialogContent>
         <DialogActions>

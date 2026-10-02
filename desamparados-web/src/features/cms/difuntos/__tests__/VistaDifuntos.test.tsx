@@ -64,6 +64,19 @@ describe('VistaDifuntos', () => {
     expect(await screen.findByText(/Misa de aniversario apuntada\. Ya está en la Agenda\. Familia avisada\./)).toBeInTheDocument()
   })
 
+  it('sin la Agenda no ofrece publicarlo en ella, ni lo pide', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor()
+    renderWithProviders(<VistaDifuntos puedeGestionar />, { modulos: ['difuntos'] })
+    await user.click(await screen.findByRole('button', { name: /Andrés Gil Ruiz/ }))
+    await user.click(await screen.findByRole('button', { name: 'Nuevo sufragio' }))
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).queryByRole('checkbox', { name: 'Publicarlo en la Agenda de la web' })).not.toBeInTheDocument()
+    await user.click(within(dialogo).getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toMatchObject({ enAgenda: false }))
+  })
+
   it('el pésame va a la familia, y se puede cambiar la dirección', async () => {
     const user = userEvent.setup()
     const llamadas = servidor()

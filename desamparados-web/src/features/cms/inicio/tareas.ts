@@ -1,5 +1,6 @@
 import type { AvisoJunta, PanelResponse } from '../../../lib/api/panel'
 import { NOMBRE_CARGO } from '../../../app/cmsNavegacion'
+import { CLAVES_MODULO, cumple, type Modulo } from '../../../domain/modulos'
 import { contar } from './plural'
 
 /**
@@ -31,6 +32,8 @@ export interface Tarea {
   accion: { texto: string; href: string } | null
   /** Solo en los avisos de la junta: se dan por hecho desde el propio Inicio. */
   aviso?: { id: number; creadoPorId: number | null }
+  /** De qué módulo es el asunto: apagado, no se enseña. Los avisos de la junta son del núcleo. */
+  modulo: Modulo
 }
 
 const JUNTA = ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA']
@@ -70,12 +73,13 @@ export function tareaDeAviso(aviso: AvisoJunta, hoy: Date = new Date()): Tarea {
     roles: aviso.para ? [aviso.para, 'ADMIN', 'HERMANO_MAYOR'] : JUNTA,
     accion: null,
     aviso: { id: aviso.id, creadoPorId: aviso.creadoPorId },
+    modulo: 'nucleo',
   }
 }
 
 const ORDEN: Record<Prioridad, number> = { urgente: 0, pendiente: 1, programado: 2 }
 
-export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date()): Tarea[] {
+export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date(), activos: ReadonlySet<string> = new Set(CLAVES_MODULO)): Tarea[] {
   const tareas: Tarea[] = []
 
   // Los ya reemitidos no piden nada: su recibo nuevo sigue su curso.
@@ -90,6 +94,7 @@ export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date()): Tare
       cargo: NOMBRE_CARGO.TESORERIA,
       roles: TESORERIA,
       accion: { texto: 'Revisar', href: '/cms/tesoreria' },
+      modulo: 'nucleo',
     })
   }
 
@@ -104,6 +109,7 @@ export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date()): Tare
       cargo: NOMBRE_CARGO.REDES,
       roles: CONTENIDO,
       accion: { texto: 'Publicar', href: '/cms/noticias' },
+      modulo: 'noticias',
     })
   }
 
@@ -118,6 +124,7 @@ export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date()): Tare
       cargo: NOMBRE_CARGO.SECRETARIA,
       roles: SECRETARIA,
       accion: { texto: 'Asignar', href: '/cms/hermanos' },
+      modulo: 'nucleo',
     })
   }
 
@@ -134,13 +141,14 @@ export function tareasDelDia(panel: PanelResponse, hoy: Date = new Date()): Tare
       // El CMS todavía no tiene pantalla de turnos de reparto: sin sitio al que
       // ir, el asunto informa y no ofrece botón a nadie.
       accion: null,
+      modulo: 'procesion',
     })
   }
 
   // Los avisos de la junta, entre los demás por su prioridad: lo urgente arriba.
   // `sort` es estable, así que dentro de cada prioridad no cambia el orden.
   for (const aviso of panel.avisos ?? []) tareas.push(tareaDeAviso(aviso, hoy))
-  return tareas.sort((a, b) => ORDEN[a.prioridad] - ORDEN[b.prioridad])
+  return tareas.filter((t) => cumple(t.modulo, activos)).sort((a, b) => ORDEN[a.prioridad] - ORDEN[b.prioridad])
 }
 
 /**

@@ -12,6 +12,7 @@ import { Revela } from '../../components/SeccionAnimada'
 import { CURVA_ENTRADA } from '../../components/entrada'
 import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
 import { BorradorPortadaContext, usePortada, useTextosPortada } from './useContenidoPortada'
+import { useModulos } from '../../hooks/useModulos'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
 const PARALLAX_X = 14
@@ -30,6 +31,10 @@ export default function Hero() {
   // siempre» corre sobre el hook, y con la copia aquí este bloque —el que más
   // se ve— se quedaba justo fuera de esa red.
   const textos = useTextosPortada()
+  const { activos, activo } = useModulos()
+  // El enlace puede pintarse mientras no se sabe (la lista llega en milisegundos):
+  // retirarlo después sería peor que dejarlo un instante de más.
+  const conAgenda = activos === null || activo('agenda')
   // En la vista previa del CMS el título no es el de la pantalla: la pantalla
   // ya tiene el suyo, «Portada», y dos títulos principales confunden al lector.
   const enVistaPrevia = useContext(BorradorPortadaContext) !== null
@@ -294,10 +299,13 @@ export default function Hero() {
             <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
               {textos.hero.botonPrincipal}
             </Boton>
-            {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta. */}
-            <Box component={Link} to="/agenda" sx={{ ...enlaceConFlecha, color: '#e4e2df' }}>
-              {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
-            </Box>
+            {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta.
+                Sin la Agenda no hay otro destino que no repita el botón principal: no se pinta. */}
+            {conAgenda && (
+              <Box component={Link} to="/agenda" sx={{ ...enlaceConFlecha, color: '#e4e2df' }}>
+                {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            )}
           </Box>
         </Revela>
       </Box>

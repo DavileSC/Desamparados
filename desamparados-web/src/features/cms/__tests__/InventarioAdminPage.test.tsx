@@ -236,7 +236,33 @@ describe('InventarioAdminPage', () => {
     })
     expect(await screen.findByText(/no hay prendas con esta búsqueda/i)).toBeInTheDocument()
   })
+
+  it('solo con Procesión es «Ropero»: sin pestañas, prendas y cíngulos, y «Nueva prenda»', async () => {
+    vi.stubGlobal('fetch', servidor())
+    renderWithProviders(<InventarioAdminPage />, { modulos: ['procesion', 'agenda'] })
+    expect(await screen.findByRole('heading', { name: 'Ropero' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /nueva prenda/i })).toBeInTheDocument()
+    expect(screen.getByLabelText('Buscar en el ropero')).toBeInTheDocument()
+  })
+
+  it('solo con Inventario no hay ropero', async () => {
+    vi.stubGlobal('fetch', servidor())
+    renderWithProviders(<InventarioAdminPage />, { modulos: ['inventario'] })
+    expect(await screen.findByRole('heading', { name: 'Inventario' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /nuevo enser/i })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Buscar en el ropero')).not.toBeInTheDocument()
+  })
 })
+
+function servidor() {
+  return vi.fn().mockImplementation((url: string) => Promise.resolve(respuestaJson(
+    String(url).includes('/opciones')
+      ? { categorias: [], ubicaciones: [] }
+      : { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } },
+  )))
+}
 
 function respuestaJson(cuerpo: unknown) {
   return new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } })

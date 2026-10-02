@@ -54,6 +54,17 @@ describe('ProcesionAdminPage', () => {
     expect(await screen.findByRole('link', { name: 'borrador de noticia' })).toHaveAttribute('href', '/cms/noticias/33/editar')
   })
 
+  it('sin Noticias no ofrece el borrador de noticia, ni lo pide', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor()
+    renderWithProviders(<ProcesionAdminPage />, { modulos: ['agenda', 'procesion'] })
+
+    await user.click(await screen.findByRole('switch', { name: /solicitud de papeletas abierta/i }))
+    expect(screen.queryByRole('checkbox', { name: /borrador de noticia/i })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Abrir la solicitud' }))
+    await waitFor(() => expect(llamadas.find((l) => l.metodo === 'POST')?.cuerpo).toMatchObject({ borradorNoticia: false }))
+  })
+
   it('sin días de reparto no deja abrir', async () => {
     servidor({ ...PLAZO, diasDeReparto: 0, primerDia: null, ultimoDia: null }, [])
     renderWithProviders(<ProcesionAdminPage />)

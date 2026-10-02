@@ -3,6 +3,7 @@ import { type } from 'arktype';
 import { AuthController } from '../controllers/auth.controller';
 import { authenticateToken, resolverSesiones } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
+import { conModulo } from '../middleware/modulos';
 import { Role } from '@prisma/client';
 
 // 1. Validadores
@@ -58,7 +59,7 @@ const rolesStaffCMS = [
 // Registro (Crea solicitud inactiva)
 // El alta llega en multipart cuando trae la foto o el certificado de bautismo
 // (ver alta-documentos.middleware), y en JSON cuando no.
-authRoutes.post('/register', authLimiter, recibirAlta, validate(registerSchema), comprobarDocumentosDelAlta, AuthController.register);
+authRoutes.post('/register', conModulo('alta-web'), authLimiter, recibirAlta, validate(registerSchema), comprobarDocumentosDelAlta, AuthController.register);
 
 // Pedir volver tras una baja: la web lo ofrece cuando el registro topa con un
 // DNI que ya está en el censo. Lleva el mismo limitador que el resto, porque es

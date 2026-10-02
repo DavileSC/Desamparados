@@ -706,7 +706,7 @@ test('el ropero respeta la página y el tamaño pedidos', async (t) => {
   try {
     const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(hermano.id, Role.ADMIN)}` };
 
-    const primera = await fetch(`${baseUrl}/api/inventario/prendas?page=1&limit=2`, { headers: cabeceras });
+    const primera = await fetch(`${baseUrl}/api/ropero/prendas?page=1&limit=2`, { headers: cabeceras });
     assert.equal(primera.status, 200);
     const uno = await primera.json() as { data: { id: number }[]; meta: Record<string, number> };
 
@@ -719,7 +719,7 @@ test('el ropero respeta la página y el tamaño pedidos', async (t) => {
       return t.skip(`solo hay ${uno.meta.total} prenda(s) en el ropero; hacen falta al menos 3 para comprobar dos páginas de tamaño 2 (ejecuta el seed de contenido)`);
     }
 
-    const segunda = await fetch(`${baseUrl}/api/inventario/prendas?page=2&limit=2`, { headers: cabeceras });
+    const segunda = await fetch(`${baseUrl}/api/ropero/prendas?page=2&limit=2`, { headers: cabeceras });
     const dos = await segunda.json() as { data: { id: number }[]; meta: Record<string, number> };
 
     assert.equal(dos.meta.page, 2, 'la página pedida no llegó al servicio');
@@ -743,12 +743,12 @@ test('el ropero publica la ficha de una prenda por su id', async (t) => {
   try {
     const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(hermano.id, Role.ADMIN)}` };
 
-    const listado = await fetch(`${baseUrl}/api/inventario/prendas?limit=1`, { headers: cabeceras });
+    const listado = await fetch(`${baseUrl}/api/ropero/prendas?limit=1`, { headers: cabeceras });
     const cuerpo = await listado.json() as { data: { id: number; numero: string }[] };
     if (cuerpo.data.length === 0) return t.skip('el ropero está vacío (ejecuta el seed de contenido)');
 
     const esperada = cuerpo.data[0];
-    const ficha = await fetch(`${baseUrl}/api/inventario/prendas/${esperada.id}`, { headers: cabeceras });
+    const ficha = await fetch(`${baseUrl}/api/ropero/prendas/${esperada.id}`, { headers: cabeceras });
 
     assert.equal(ficha.status, 200, 'la ruta /prendas/:id debe ir después de /prendas y antes de las de acción');
     const prenda = await ficha.json() as { id: number; numero: string };

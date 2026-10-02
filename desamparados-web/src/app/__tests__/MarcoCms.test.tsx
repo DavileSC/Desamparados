@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
 import MarcoCms from '../MarcoCms'
-import { itemsMenu, rolesPorRutaCms } from '../cmsNavegacion'
+import { itemsMenu, menuCmsVisible, rolesPorRutaCms } from '../cmsNavegacion'
 import { useAuthStore } from '../../features/altas/auth/store'
 import { CLAVE_TEMA_CMS } from '../temaCms'
 import { useNavigate } from 'react-router-dom'
@@ -82,6 +82,39 @@ describe('MarcoCms', () => {
     renderWithProviders(<MarcoCms />)
     expect(screen.queryByText('Grupo Parroquial Nuestra Señora de los Desamparados')).not.toBeInTheDocument()
     expect(screen.queryByText('Administración')).not.toBeInTheDocument()
+  })
+
+  it('con un módulo apagado, su entrada no está; el núcleo sigue', () => {
+    entrarComo('ADMIN')
+    const { container } = renderWithProviders(<MarcoCms />, { modulos: ['noticias', 'procesion', 'agenda'] })
+    expect(enlace(container, '/cms/noticias')).toBeInTheDocument()
+    expect(enlace(container, '/cms/tienda')).not.toBeInTheDocument()
+    expect(enlace(container, '/cms/loteria')).not.toBeInTheDocument()
+    expect(enlace(container, '/cms/hermanos')).toBeInTheDocument()
+    expect(enlace(container, '/cms/tesoreria')).toBeInTheDocument()
+  })
+
+  it('Administración ve Sistema → Módulos; el Hermano Mayor, no', () => {
+    entrarComo('ADMIN')
+    const { container, unmount } = renderWithProviders(<MarcoCms />)
+    expect(enlace(container, '/cms/modulos')).toBeInTheDocument()
+    unmount()
+    entrarComo('HERMANO_MAYOR')
+    const otro = renderWithProviders(<MarcoCms />)
+    expect(enlace(otro.container, '/cms/modulos')).not.toBeInTheDocument()
+  })
+
+  it('sin Inventario pero con Procesión, la entrada se llama «Ropero» y lleva a la misma pantalla', () => {
+    const conTodo = menuCmsVisible(itemsMenu, 'ADMIN', new Set(['inventario', 'procesion', 'agenda']))
+    expect(conTodo.filter((i) => i.href === '/cms/inventario').map((i) => i.label)).toEqual(['Inventario'])
+    const soloRopero = menuCmsVisible(itemsMenu, 'ADMIN', new Set(['procesion', 'agenda']))
+    expect(soloRopero.filter((i) => i.href === '/cms/inventario').map((i) => i.label)).toEqual(['Ropero'])
+    const nada = menuCmsVisible(itemsMenu, 'ADMIN', new Set())
+    expect(nada.filter((i) => i.href === '/cms/inventario')).toEqual([])
+  })
+
+  it('todas las entradas del menú llevan su módulo', () => {
+    for (const item of itemsMenu) expect(item.modulo, item.label).toBeDefined()
   })
 })
 

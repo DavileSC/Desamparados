@@ -5,6 +5,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { eventosDelCalendario } from '../../lib/api/agenda'
 import { esDestinoValido } from '../../lib/destinos'
 import { enlaceConFlecha } from '../estiloDeBoton'
+import { useModulos } from '../../hooks/useModulos'
 import { anchoMaximo } from './presentacion'
 import { anioDe, fechaDelActo, proximaFila } from './programa'
 import type { BloquePrograma as Datos, FilaDePrograma } from '../../lib/api/contenido'
@@ -24,11 +25,13 @@ const ACTOS = 60
  * Pinta su propio título, con el año en que estamos al otro lado.
  */
 export default function BloquePrograma({ bloque }: { bloque: Datos }) {
+  const { activo } = useModulos()
   const { data: actos } = useQuery({
     queryKey: ['programa', 'agenda'],
     queryFn: () => eventosDelCalendario({ cuantos: ACTOS }),
     retry: false,
     staleTime: 5 * 60_000,
+    enabled: activo('agenda'),
   })
   const proximo = actos ? proximaFila(bloque.filas, actos) : null
 

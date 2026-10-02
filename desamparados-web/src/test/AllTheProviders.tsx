@@ -1,15 +1,12 @@
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { MemoryRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import theme from '../theme'
+import { crearQueryClientDePruebas } from './queryClient'
 
-export default function AllTheProviders({ children, ruta = '/' }: { children: React.ReactNode; ruta?: string }) {
-  // Un cliente nuevo por render: si se compartiera, la caché de un test
-  // contaminaría al siguiente. Sin reintentos, o los fallos tardan segundos.
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  })
+export default function AllTheProviders({ children, ruta = '/', modulos }: { children: React.ReactNode; ruta?: string; modulos?: readonly string[] }) {
+  const queryClient = crearQueryClientDePruebas(modulos)
 
   return (
     <MemoryRouter initialEntries={[ruta]}>

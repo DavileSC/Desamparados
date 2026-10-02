@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { verifyToken, AuthTokenPayload } from "../utils/jwt.handle.js";
 import { AreaSesion, nombreCookie } from "../utils/cookies.js";
 import db from "../config/db.js";
+import { ModulosService } from "../services/modulos.service.js";
 
 // 1. DECLARATION MERGING: Extiende el Request global de Express de forma automática
 declare global {
@@ -58,6 +59,9 @@ export async function validateSessionAgainstDb(
 
 /** Lee una cookie de sesión y la valida; `null` si no está, no vale o no es de su área. */
 async function leerSesion(req: Request, area: AreaSesion): Promise<AuthTokenPayload | null> {
+  // Con el área de hermanos apagada, una sesión de hermano que ya existiera
+  // no vale: la pantalla desaparece y la API responde como si no hubiera sesión.
+  if (area === 'hermanos' && !(await ModulosService.activo('area-hermanos'))) return null;
   const token = req.cookies?.[nombreCookie(area)];
   if (!token) return null;
   // El tipo esperado es obligatorio: un testigo de 2FA colado en esta cookie

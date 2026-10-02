@@ -39,7 +39,12 @@
     "foto grande, su historia y su cartela (autor, año, materiales).",
     "",
     "Donativo (donativo), 01-10-2026: importes sugeridos y destinos, y se paga",
-    "con tarjeta o Bizum por la pasarela del banco, sin cuenta en la web."
+    "con tarjeta o Bizum por la pasarela del banco, sin cuenta en la web.",
+    "",
+    "modulo (02-10-2026): de qué módulo es cada tipo. 'nucleo' siempre se pinta; con una",
+    "clave, el bloque no se pinta ni se ofrece con el módulo apagado. El listado va por",
+    "fuente: noticias, agenda y publicaciones son módulos distintos. El itinerario y el",
+    "programa son del núcleo: solo consultan el cortejo en directo y la agenda si están."
   ],
   "tipos": [
     "texto",
@@ -70,5 +75,14 @@
     "relacion",
     "carrusel",
     "donativo"
-  ]
+  ],
+  "modulo": {
+    "texto": "nucleo", "foto": "nucleo", "galeria": "nucleo", "tarjetas": "nucleo", "llamada": "nucleo",
+    "datos": "nucleo", "itinerario": "nucleo", "cronologia": "nucleo",
+    "listado": { "porFuente": { "noticias-recientes": "noticias", "noticias": "noticias", "agenda-proxima": "agenda", "agenda": "agenda", "publicaciones": "publicaciones", "boletines": "publicaciones", "dossier": "publicaciones" } },
+    "contacto": "nucleo", "fotoTexto": "nucleo", "cita": "nucleo", "video": "nucleo", "botones": "nucleo",
+    "preguntas": "nucleo", "descargas": "nucleo", "mapa": "nucleo", "cuentaAtras": "nucleo", "espacio": "nucleo",
+    "fotoFija": "nucleo", "horario": "nucleo", "dibujo": "nucleo", "anillos": "nucleo", "puertas": "nucleo",
+    "programa": "nucleo", "relacion": "nucleo", "carrusel": "nucleo", "donativo": "donativos"
+  }
 }

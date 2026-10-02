@@ -15,10 +15,6 @@ import {
   useTheme,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
-import PersonIcon from '@mui/icons-material/Person'
-import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom'
-import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk'
-import ReceiptIcon from '@mui/icons-material/Receipt'
 import LogoutIcon from '@mui/icons-material/Logout'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import EscudoDelGrupo from '../components/EscudoDelGrupo'
@@ -26,23 +22,17 @@ import TransicionDePagina from '../components/TransicionDePagina'
 import { designTokens } from '../theme'
 import { cerrarSesion } from '../features/altas/auth/session'
 import { site } from '../config/site'
+import { entradasDelArea } from './areaHermanoNavegacion'
+import { useModulos } from '../hooks/useModulos'
 
 const ANCHO_CAJON = 260
-
-const entradasDelMenu = [
-  { label: 'Mi perfil', href: '/area-hermano/perfil', icon: <PersonIcon /> },
-  // Las fichas de quienes están a su cargo: un menor apuntado por su padre, su
-  // tío o su padrino. Sin esta pantalla, el alta de un menor solo se podía
-  // hacer el día del registro y nunca más.
-  { label: 'Mi familia', href: '/area-hermano/familia', icon: <FamilyRestroomIcon /> },
-  { label: 'Procesión', href: '/area-hermano/procesion', icon: <DirectionsWalkIcon /> },
-  { label: 'Recibos', href: '/area-hermano/recibos', icon: <ReceiptIcon /> },
-]
 
 export default function MarcoAreaHermano() {
   const theme = useTheme()
   const location = useLocation()
   const [cajonAbierto, setCajonAbierto] = useState(false)
+  const { activo } = useModulos()
+  const entradas = entradasDelArea.filter((e) => activo(e.modulo))
 
   const alternarCajon = () => setCajonAbierto(!cajonAbierto)
 
@@ -77,7 +67,7 @@ export default function MarcoAreaHermano() {
         </Box>
       </Box>
       <List sx={{ py: 2 }}>
-        {entradasDelMenu.map((item) => {
+        {entradas.map((item) => {
           const activa = esActiva(item.href)
           return (
             <ListItem key={item.label} disablePadding>
@@ -96,7 +86,7 @@ export default function MarcoAreaHermano() {
                   },
                 }}
               >
-                <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>{item.icon}</Box>
+                <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}><item.icono /></Box>
                 <ListItemText
                   primary={item.label}
                   slotProps={{

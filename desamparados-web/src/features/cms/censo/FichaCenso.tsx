@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { MOTIVOS_BAJA, fichaDeHermano, type FichaDeLaCuenta, type FichaDelCenso } from '../../../lib/api/hermanos'
 import { urlDocumentoPrivado } from '../../../lib/api/cliente'
 import { PARENTESCOS } from '../../../lib/api/auth'
+import { useModulos } from '../../../hooks/useModulos'
 import { ESTADO_RECIBO } from '../../areaHermano/recibos/etiquetas'
 import { ETIQUETA_TIPO } from '../ropero'
 import Pildora from '../listados/Pildora'
@@ -47,6 +48,7 @@ const papelEnLaCuenta = (f: FichaDeLaCuenta) =>
 export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerrar }: Props) {
   const [ficha, setFicha] = useState<FichaDelCenso | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { activo } = useModulos()
 
   useEffect(() => {
     // Pasar rápido por la lista lanza varias cargas: solo escribe la última.
@@ -197,14 +199,18 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
         <Resumen titulo="Último recibo">
           {recibo ? `${recibo.concepto} · ${ESTADO_RECIBO[recibo.estado]?.texto ?? recibo.estado}` : 'Ninguno'}
         </Resumen>
-        <Resumen titulo="Papeleta de sitio">
-          {papeleta ? [papeleta.year, papeleta.puesto, papeleta.tramo].filter(Boolean).join(' · ') : 'Ninguna'}
-        </Resumen>
-        <Resumen titulo="Del ropero">
-          {prendas.length > 0
-            ? prendas.map((p) => `${ETIQUETA_TIPO[p.tipo] ?? p.tipo} ${p.numero}${p.talla ? ` (${p.talla})` : ''}`).join(', ')
-            : 'Nada prestado'}
-        </Resumen>
+        {activo('procesion') && (
+          <Resumen titulo="Papeleta de sitio">
+            {papeleta ? [papeleta.year, papeleta.puesto, papeleta.tramo].filter(Boolean).join(' · ') : 'Ninguna'}
+          </Resumen>
+        )}
+        {activo('procesion') && (
+          <Resumen titulo="Del ropero">
+            {prendas.length > 0
+              ? prendas.map((p) => `${ETIQUETA_TIPO[p.tipo] ?? p.tipo} ${p.numero}${p.talla ? ` (${p.talla})` : ''}`).join(', ')
+              : 'Nada prestado'}
+          </Resumen>
+        )}
       </Box>
     </Paper>
   )

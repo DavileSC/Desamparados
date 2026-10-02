@@ -11,6 +11,7 @@ import { useDatosDePortada } from './useDatosDePortada'
 import { useTextosPortada } from './useContenidoPortada'
 import AvisosDeInicio from './AvisosDeInicio'
 import { SERIF, ceja, enlaceBloque } from './estilos'
+import { useModulos } from '../../hooks/useModulos'
 
 // En portada caben tres noticias; el resto está en el archivo.
 const MAX_NOTICIAS = 3
@@ -29,9 +30,14 @@ const pedirNoticias = () => noticiasDePortada(MAX_NOTICIAS)
  * destacada.
  */
 export default function NoticiasDestacadas() {
-  const consulta = useDatosDePortada('noticias', pedirNoticias)
+  const { activos, activo } = useModulos()
+  // La lista llega en milisegundos y en esta instalación todo está encendido:
+  // mejor un esqueleto mientras no se sabe que un hueco que luego crece.
+  const apagado = activos !== null && !activo('noticias')
+  const consulta = useDatosDePortada('noticias', pedirNoticias, activos !== null && activo('noticias'))
   const { data: noticias = [], isPending, isError, refetch } = consulta
   const textos = useTextosPortada()
+  if (apagado) return null
 
   return (
     <SeccionAnimada cascada id="actualidad" aria-labelledby="actualidad-titulo" sx={{ py: { xs: 8, md: 11 }, backgroundColor: '#121113' }}>

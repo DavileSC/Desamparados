@@ -3,6 +3,7 @@ import { Alert, Box, CircularProgress } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useAuthStore } from '../altas/auth/store'
 import { usePanelDeHoy } from '../../app/usePanelDeHoy'
+import { useModulos } from '../../hooks/useModulos'
 import { tareasDelDia } from './inicio/tareas'
 import Retablo from './inicio/Retablo'
 import Cabecera from './inicio/Cabecera'
@@ -44,6 +45,7 @@ export default function PanelPage() {
   const role = useAuthStore((state) => state.cms?.role)
   const userId = useAuthStore((state) => state.cms?.id)
   const { data, isPending, isError } = usePanelDeHoy()
+  const { activos } = useModulos()
   const { referencia, alto } = useAltoDisponible()
   const [pestana, setPestana] = useState<Pestana>(pestanaGuardada)
   const botones = useRef<(HTMLButtonElement | null)[]>([])
@@ -56,7 +58,8 @@ export default function PanelPage() {
     return <Alert severity="error">No se ha podido cargar el Inicio. Inténtalo de nuevo en unos minutos.</Alert>
   }
 
-  const tareas = tareasDelDia(data)
+  // Sin lista de módulos todavía, no se enseñan tareas de módulo: mejor que aparecer y desaparecer.
+  const tareas = tareasDelDia(data, undefined, activos ?? new Set())
   const hayUrgente = tareas.some((t) => t.prioridad === 'urgente')
 
   const abrir = (clave: Pestana) => {

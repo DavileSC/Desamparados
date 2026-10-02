@@ -13,6 +13,7 @@ import { GOLD, GRANATE } from '../../features/inicio/estilos'
 import { ATRIBUCION, cargarBarrio, centroDe, edificioDelTemplo, mapaVivo } from '../mapa/barrio'
 import { estiloDelMapa } from '../mapa/estilo'
 import { useModoEdicion } from './modoEdicion'
+import { useModulos } from '../../hooks/useModulos'
 import { anchoMaximo } from './presentacion'
 import { DISTANCIA_MAXIMA_M, acumulados, metros, paradaAlcanzada, posicionesEnRuta, sobreElRecorrido, tramoHasta } from './recorrido'
 import { cortejoEnDirecto } from '../../lib/api/cortejoDirecto'
@@ -69,6 +70,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const linea = bloque.recorrido.linea
   const reducir = useReducedMotion() ?? false
   const enConstructor = useModoEdicion() !== null
+  const { activo } = useModulos()
 
   const [camara, setCamara] = useState<Camara>(reducir || enConstructor ? 'entero' : 'sigue')
   const [reproduciendo, setReproduciendo] = useState(false)
@@ -78,7 +80,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
 
   // El cortejo en la calle: mientras lo esté, el trono va donde diga el móvil
   // de la Junta y el play se retira. En el constructor no se pregunta.
-  const directo = useQuery({ queryKey: ['cortejo-directo'], queryFn: cortejoEnDirecto, refetchInterval: SONDEO_MS, staleTime: 0, enabled: !enConstructor })
+  const directo = useQuery({ queryKey: ['cortejo-directo'], queryFn: cortejoEnDirecto, refetchInterval: SONDEO_MS, staleTime: 0, enabled: !enConstructor && activo('cortejo-directo') })
   const enCalle = useMemo(() => {
     const d = directo.data
     if (!d?.enDirecto || d.lng === undefined || d.lat === undefined || !d.actualizadoEl) return null

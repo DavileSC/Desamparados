@@ -74,6 +74,16 @@ describe('AuditoriaAdminPage', () => {
     expect(screen.queryByRole('button', { name: 'Ver detalles' })).not.toBeInTheDocument()
   })
 
+  it('encender y apagar un módulo se leen en palabras, sobre qué módulo', async () => {
+    responder([{
+      id: 11, action: 'MODULO_APAGAR', entityType: 'modulo', entityId: 'loteria', ip: null,
+      createdAt: '2026-10-02T10:00:00.000Z', user: autor,
+    }])
+    renderWithProviders(<AuditoriaAdminPage />)
+    expect(await screen.findByText('Módulo apagado')).toBeInTheDocument()
+    expect(screen.getByText('Módulo #loteria')).toBeInTheDocument()
+  })
+
   it('una acción sin nombre legible se enseña con su código', async () => {
     responder([{
       id: 10, action: 'ACCION_NUEVA', entityType: null, entityId: null, ip: null,

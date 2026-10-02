@@ -8,6 +8,7 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import app from '../src/app.js';
+import db from '../src/config/db.js';
 import { publicStorageDir } from '../src/middleware/upload.middleware.js';
 
 /**
@@ -35,6 +36,10 @@ before(async () => {
 after(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await rm(carpeta, { recursive: true, force: true });
+  // Las guardas de módulo consultan la base en la primera petición: sin
+  // desconectar, el pool de Prisma queda abierto y el runner no avanza al
+  // siguiente fichero.
+  await db.$disconnect();
 });
 
 test('las fotos públicas no gastan el cupo del limitador global', async () => {

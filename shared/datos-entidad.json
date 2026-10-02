@@ -36,5 +36,19 @@
     "telefono": "644 90 01 67",
     "email": "goretti.desamparados@gmail.com"
   },
+  "modulos": {
+    "_comentario": [
+      "Los módulos con los que arranca esta instalación (claves de shared/modulos.json). La",
+      "siembra crea las filas que falten con este valor y NO toca las que ya existen: lo que",
+      "Administración haya cambiado desde Sistema → «Módulos» manda. Un módulo del catálogo",
+      "que no esté aquí arranca apagado. Desamparados arranca con todos."
+    ],
+    "activos": [
+      "noticias", "publicaciones", "agenda", "comunicados", "alta-web", "area-hermanos",
+      "procesion", "puerta", "cortejo-directo", "inventario", "cartas", "difuntos", "apadrinamientos",
+      "remesas", "pago-en-linea", "cuotas-en-linea", "donativos", "tienda", "tienda-web", "loteria", "modelo-182", "contabilidad",
+      "cabildos", "informe-anual"
+    ]
+  },
   "escudoUrl": null
 }

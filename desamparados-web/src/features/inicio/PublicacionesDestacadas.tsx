@@ -13,6 +13,7 @@ import EnCarga, { estadoDeConsulta } from '../../components/esqueleto/EnCarga'
 import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 import { site } from '../../config/site'
+import { useModulos } from '../../hooks/useModulos'
 
 const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
   boletin: { nombre: 'Boletín informativo', corto: 'boletín' },
@@ -244,11 +245,16 @@ function PublicacionesEsqueleto() {
  * si no de la más reciente: el servidor las manda ya en ese orden.
  */
 export default function PublicacionesDestacadas() {
-  const consulta = useDatosDePortada('publicaciones', publicacionesDePortada)
+  const { activos, activo } = useModulos()
+  // La lista llega en milisegundos y en esta instalación todo está encendido:
+  // mejor un esqueleto mientras no se sabe que un hueco que luego crece.
+  const apagado = activos !== null && !activo('publicaciones')
+  const consulta = useDatosDePortada('publicaciones', publicacionesDePortada, activos !== null && activo('publicaciones'))
   const { data: publicaciones = [], isPending, isError, refetch } = consulta
   const textos = useTextosPortada()
   const [destacada, ...resto] = publicaciones
   const otras = resto.slice(0, 2)
+  if (apagado) return null
 
   return (
     <SeccionAnimada

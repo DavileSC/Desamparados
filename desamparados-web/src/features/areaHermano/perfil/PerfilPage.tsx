@@ -12,6 +12,7 @@ import { Contacto, CuotaYPago, DatosPersonales, VidaCofrade } from './apartados'
 import { PARENTESCO, aDia, diaLegible } from './etiquetas'
 import { site } from '../../../config/site'
 import { laCorporacion } from '../../../domain/articulos'
+import { useModulos } from '../../../hooks/useModulos'
 
 /** La del titular primero; luego las de quienes tiene a su cargo, de mayor a menor. */
 const ordenar = (fichas: ApiProfile[]) =>
@@ -33,6 +34,7 @@ function subtitulo(ficha: ApiProfile) {
  * La ficha elegida va en la URL (?ficha=), para volver a ella al recargar.
  */
 export default function PerfilPage() {
+  const { activo } = useModulos()
   const [params, setParams] = useSearchParams()
   const [fichas, setFichas] = useState<ApiProfile[]>([])
   const [cargando, setCargando] = useState(true)
@@ -139,11 +141,11 @@ export default function PerfilPage() {
               <Box key={ficha.id} sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }, gap: 2.5, alignItems: 'start' }}>
                 <Box sx={{ display: 'grid', gap: 2.5, minWidth: 0 }}>
                   <DatosPersonales ficha={ficha} onGuardada={guardada} />
-                  <VidaCofrade ficha={ficha} onGuardada={guardada} />
+                  {activo('procesion') && <VidaCofrade ficha={ficha} onGuardada={guardada} />}
                 </Box>
                 <Box sx={{ display: 'grid', gap: 2.5, minWidth: 0 }}>
                   <Contacto ficha={ficha} onGuardada={guardada} />
-                  <CuotaYPago ficha={ficha} onGuardada={guardada} />
+                  {activo('cuotas-en-linea') && <CuotaYPago ficha={ficha} onGuardada={guardada} />}
                 </Box>
               </Box>
             </>
