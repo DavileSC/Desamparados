@@ -26,31 +26,30 @@ const SIDEBAR = superficiesCms('oscuro').sidebar // #070608, la misma en los dos
 
 /**
  * Densidad del menú, en variables CSS que leen la marca, la navegación y el
- * pie. Abierto entero (catorce secciones en cuatro grupos, más el usuario),
- * el menú de Administración mide unos 800px en su versión holgada, así que en cualquier pantalla que no
- * sea muy alta aparecía una barra de scroll dentro del propio menú. En vez de
- * dejarlo desbordar, la barra se aprieta por tramos de altura de ventana: los
- * aires primero y la altura de las secciones después. Los rótulos de grupo se
- * quedan en todos los tramos, porque son lo que hace legible un menú de
- * catorce secciones. Cada tramo está medido para caber en su altura mínima, de modo que
- * un 1366×768 (unos 640px de ventana útil) entra sin scroll.
+ * pie. Solo va abierto un grupo, así que lo que tiene que caber es el Inicio,
+ * los cinco rótulos y el grupo más largo (Censo y procesión, nueve secciones).
+ * En vez de dejarlo desbordar, la barra se aprieta por tramos de altura de
+ * ventana: los aires primero y la altura de las secciones después, sin bajar
+ * la letra de 14px. Cada tramo está medido para caber en su altura mínima, de
+ * modo que un portátil escalado al 150 % (unos 550px útiles) entra sin scroll.
  */
 const densidadDelMenu = {
   '--cms-pad': '16px',
   '--cms-pad-top': '20px',
   '--cms-escudo': '38px',
   '--cms-marca': '17px',
-  '--cms-item': '36px',
-  '--cms-item-fuente': '14px',
-  '--cms-icono': '20px',
-  '--cms-area-pt': '10px',
+  '--cms-item': '40px',
+  '--cms-item-fuente': '15px',
+  '--cms-icono': '21px',
+  '--cms-rotulo': '12.5px',
+  '--cms-area-pt': '12px',
   '--cms-area-pb': '6px',
   '--cms-pie-pt': '14px',
   '--cms-avatar': '34px',
   '@media (max-height:899px)': {
     '--cms-pad-top': '16px',
     '--cms-escudo': '34px',
-    '--cms-item': '32px',
+    '--cms-item': '36px',
     '--cms-area-pt': '10px',
     '--cms-area-pb': '4px',
   },
@@ -58,41 +57,42 @@ const densidadDelMenu = {
     '--cms-pad': '14px',
     '--cms-pad-top': '14px',
     '--cms-escudo': '32px',
-    '--cms-marca': '17px',
-    '--cms-item': '30px',
-    '--cms-icono': '19px',
+    '--cms-item': '32px',
+    '--cms-icono': '20px',
     '--cms-area-pt': '8px',
     '--cms-area-pb': '2px',
     '--cms-pie-pt': '12px',
     '--cms-avatar': '32px',
   },
-  // El tramo de los portátiles de 768px de pantalla, que es donde más aprieta:
-  // con la barra del navegador y la de marcadores quedan unos 640px útiles.
+  // El tramo de los portátiles de 768px de pantalla: con la barra del
+  // navegador y la de marcadores quedan unos 640px útiles.
   '@media (max-height:759px)': {
     '--cms-pad': '12px',
     '--cms-pad-top': '10px',
-    '--cms-escudo': '27px',
+    '--cms-escudo': '28px',
     '--cms-marca': '16px',
-    '--cms-item': '24px',
-    '--cms-item-fuente': '13px',
-    '--cms-icono': '18px',
-    '--cms-area-pt': '4px',
-    '--cms-area-pb': '0px',
+    '--cms-item': '30px',
+    '--cms-item-fuente': '14.5px',
+    '--cms-icono': '19px',
+    '--cms-rotulo': '12px',
+    '--cms-area-pt': '6px',
+    '--cms-area-pb': '2px',
     '--cms-pie-pt': '8px',
-    '--cms-avatar': '28px',
+    '--cms-avatar': '30px',
   },
-  // Último recurso, para ventanas a media altura: aquí ya solo queda quitar
-  // aire y bajar un punto la letra.
+  // Un portátil escalado al 150 % (unos 550px útiles). Con un solo grupo
+  // abierto, el más largo (Censo y procesión, nueve secciones) cabe sin
+  // bajar la letra de 14px: antes, con todos abiertos, se llegaba a 12,5px.
   '@media (max-height:639px)': {
     '--cms-pad-top': '8px',
-    '--cms-escudo': '24px',
+    '--cms-escudo': '26px',
     '--cms-marca': '15px',
-    '--cms-item': '22px',
-    '--cms-item-fuente': '12.5px',
-    '--cms-icono': '17px',
-    '--cms-area-pt': '3px',
+    '--cms-item': '28px',
+    '--cms-item-fuente': '14px',
+    '--cms-icono': '18px',
+    '--cms-area-pt': '4px',
     '--cms-pie-pt': '7px',
-    '--cms-avatar': '26px',
+    '--cms-avatar': '28px',
   },
 } as const
 
@@ -115,29 +115,26 @@ function Contador({ seccion, valor, tono }: { seccion: string; valor: number; to
   )
 }
 
-/** Grupos abiertos o cerrados a mano, recordados en cada ordenador. */
-const CLAVE_GRUPOS = 'cms-menu-grupos'
-
 /**
- * Hasta este número de secciones el menú va abierto entero: plegar solo estorba.
- * Secretaría, con el boletín, los cabildos, la tienda, el cortejo en directo,
- * la puerta del templo, las cartas, la lotería, las salidas y los Emails, llega a
- * quince contando el Inicio; Administración y el Hermano Mayor pasan de dieciocho,
- * que es para quien está pensado plegar.
+ * El grupo abierto, recordado en cada ordenador. Solo uno a la vez: con varios
+ * abiertos el menú no cabía y había que encoger la letra para meterlo.
  */
-const SECCIONES_SIN_PLEGAR = 15
+const CLAVE_GRUPO = 'cms-menu-grupo'
 
-function leerGrupos(): Partial<Record<Grupo, boolean>> {
+function leerGrupo(): Grupo | null {
   try {
-    const guardado = window.localStorage.getItem(CLAVE_GRUPOS)
-    return guardado ? JSON.parse(guardado) as Partial<Record<Grupo, boolean>> : {}
+    const guardado = window.localStorage.getItem(CLAVE_GRUPO)
+    return GRUPOS.find((g) => g === guardado) ?? null
   } catch {
-    return {}
+    return null
   }
 }
 
-function guardarGrupos(abiertos: Partial<Record<Grupo, boolean>>) {
-  try { window.localStorage.setItem(CLAVE_GRUPOS, JSON.stringify(abiertos)) } catch { /* sin almacenamiento, se olvida al recargar */ }
+function guardarGrupo(grupo: Grupo | null) {
+  try {
+    if (grupo) window.localStorage.setItem(CLAVE_GRUPO, grupo)
+    else window.localStorage.removeItem(CLAVE_GRUPO)
+  } catch { /* sin almacenamiento, se olvida al recargar */ }
 }
 
 /** La entrada que más se ajusta a la dirección: en /cms/procesion/mesa, «Mesa» y no también «Procesión». */
@@ -149,7 +146,7 @@ function entradaActiva(pathname: string, entradas: ItemMenu[]): string | null {
 }
 
 const rotulo = {
-  fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.36)',
+  fontSize: 'var(--cms-rotulo)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)',
 } as const
 
 function Seccion({ item, activo, valor, onNavegar }: { item: ItemMenu; activo: boolean; valor: number; onNavegar?: () => void }) {
@@ -192,24 +189,24 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
   const visibles = activos ? menuCmsVisible(itemsMenu, role, activos).filter((item) => item.grupo !== 'cuenta') : []
   const hrefActivo = entradaActiva(location.pathname, visibles)
   const grupoActivo = visibles.find((item) => item.href === hrefActivo)?.grupo
-  // Al entrar en una página, su grupo se abre; luego se puede plegar como
-  // cualquier otro. Antes el grupo de la página iba abierto a la fuerza, sin
-  // flecha y sin poder plegarse, y parecía un grupo roto.
+  // Al entrar en una página, su grupo se abre (y se cierra el que estuviera
+  // abierto); luego se puede plegar como cualquier otro. Antes el grupo de la
+  // página iba abierto a la fuerza, sin flecha, y parecía un grupo roto.
   const plegableActivo = GRUPOS.find((g) => g === grupoActivo)
-  const [abiertos, setAbiertos] = useState<Partial<Record<Grupo, boolean>>>(() => ({ ...leerGrupos(), ...(plegableActivo && { [plegableActivo]: true }) }))
+  const [abierto, setAbierto] = useState<Grupo | null>(() => plegableActivo ?? leerGrupo())
   const [grupoVisto, setGrupoVisto] = useState(plegableActivo)
   if (plegableActivo !== grupoVisto) {
     setGrupoVisto(plegableActivo)
-    if (plegableActivo && !abiertos[plegableActivo]) setAbiertos({ ...abiertos, [plegableActivo]: true })
+    if (plegableActivo) setAbierto(plegableActivo)
   }
-  // Quien ve pocas secciones las ve todas; plegar es para Administración y el Hermano Mayor.
-  const plegable = visibles.length > SECCIONES_SIN_PLEGAR
+  // Con un solo grupo (Redes, por ejemplo) no hay nada que plegar.
+  const plegable = GRUPOS.filter((g) => visibles.some((item) => item.grupo === g)).length > 1
   const valorDe = (item: ItemMenu) => (item.contador ? contadores[item.contador.de] : 0)
 
   const alternar = (grupo: Grupo) => {
-    const siguiente = { ...abiertos, [grupo]: !abiertos[grupo] }
-    setAbiertos(siguiente)
-    guardarGrupos(siguiente)
+    const siguiente = abierto === grupo ? null : grupo
+    setAbierto(siguiente)
+    guardarGrupo(siguiente)
   }
 
   const lista = (items: ItemMenu[]) => (
@@ -236,7 +233,7 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
         }
         // Plegado con la página abierta dentro, el rótulo se queda encendido.
         const esElActivo = grupo === grupoActivo
-        const abierto = abiertos[grupo] === true
+        const estaAbierto = abierto === grupo
         // Plegado, el grupo no esconde lo que pide atención: suma los avisos de sus secciones.
         const conAviso = items.filter((item) => item.contador && valorDe(item) > 0)
         const avisos = conAviso.reduce((total, item) => total + valorDe(item), 0)
@@ -246,25 +243,25 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
           <Box key={grupo} sx={{ pt: 'var(--cms-area-pt)' }}>
             <ButtonBase
               onClick={() => alternar(grupo)}
-              aria-expanded={abierto}
+              aria-expanded={estaAbierto}
               aria-controls={idLista}
               sx={{
                 ...rotulo, width: '100%', justifyContent: 'flex-start', gap: 0.75,
-                px: 1.5, pb: 'var(--cms-area-pb)', pt: '2px', borderRadius: 1, fontFamily: 'inherit',
-                ...(esElActivo && !abierto && { color: 'rgba(255,255,255,0.78)' }),
-                '&:hover': { color: 'rgba(255,255,255,0.7)' },
+                px: 1.5, pb: 'var(--cms-area-pb)', pt: '4px', borderRadius: 1, fontFamily: 'inherit',
+                ...((estaAbierto || esElActivo) && { color: 'rgba(255,255,255,0.85)' }),
+                '&:hover': { color: '#fff' },
               }}
             >
               <Box component="span" sx={{ flexGrow: 1, textAlign: 'left' }}>{grupo}</Box>
-              {!abierto && (avisos > 0
+              {!estaAbierto && (avisos > 0
                 ? <Contador seccion={grupo} valor={avisos} tono={tono} />
                 : <Box component="span" aria-hidden="true" sx={{ letterSpacing: 0, fontVariantNumeric: 'tabular-nums' }}>{items.length}</Box>)}
               <ExpandMoreRoundedIcon
                 aria-hidden="true"
-                sx={{ fontSize: 16, transition: 'transform 150ms', transform: abierto ? 'none' : 'rotate(-90deg)' }}
+                sx={{ fontSize: 18, transition: 'transform 150ms', transform: estaAbierto ? 'none' : 'rotate(-90deg)' }}
               />
             </ButtonBase>
-            <Collapse in={abierto} id={idLista}>
+            <Collapse in={estaAbierto} id={idLista}>
               {lista(items)}
             </Collapse>
           </Box>

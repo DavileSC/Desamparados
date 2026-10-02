@@ -177,7 +177,7 @@ describe('el menú del Inicio', () => {
   it('los contadores salen de los datos del panel', async () => {
     entrarComo('SECRETARIA')
     renderWithProviders(<MarcoCms />)
-    // 3 hermanos sin número; Secretaría ve el menú abierto entero.
+    // 3 hermanos sin número: el número está en la sección aunque su grupo esté plegado.
     expect(await screen.findByLabelText('Hermanos: 3 pendientes')).toHaveTextContent('3')
     // Tesorería no lleva número aunque haya 14 devueltos: se ven en su tarjeta.
     expect(screen.queryByLabelText(/^Tesorería:/)).not.toBeInTheDocument()
@@ -234,11 +234,22 @@ describe('los grupos del menú se pliegan cuando son muchos', () => {
   beforeEach(() => { localStorage.clear(); responder() })
   afterEach(() => { vi.unstubAllGlobals() })
 
-  it('quien ve pocas secciones las ve todas, sin plegar', () => {
-    entrarComo('SECRETARIA')
+  it('con un solo grupo no hay nada que plegar', () => {
+    entrarComo('REDES')
     renderWithProviders(<MarcoCms />)
-    expect(screen.getByRole('link', { name: 'Mesa de procesión' })).toBeVisible()
-    expect(screen.queryByRole('button', { name: /Censo y procesión/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Noticias' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: /^Web/ })).not.toBeInTheDocument()
+  })
+
+  it('solo hay un grupo abierto: abrir otro cierra el anterior', async () => {
+    entrarComo('SECRETARIA')
+    renderWithProviders(<MarcoCms />, { ruta: '/cms/hermanos' })
+    const censo = screen.getByRole('button', { name: /Censo y procesión/ })
+    const web = screen.getByRole('button', { name: /^Web/ })
+    expect(censo).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(web)
+    expect(web).toHaveAttribute('aria-expanded', 'true')
+    expect(censo).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('el grupo de la página en la que se está va abierto y los demás plegados', () => {
@@ -271,11 +282,12 @@ describe('los grupos del menú se pliegan cuando son muchos', () => {
     expect(screen.getByRole('button', { name: /Cuentas/ })).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('entrar en una página de un grupo plegado lo abre', async () => {
-    localStorage.setItem('cms-menu-grupos', JSON.stringify({ Cuentas: false }))
+  it('entrar en una página abre su grupo aunque se recordara otro', async () => {
+    localStorage.setItem('cms-menu-grupo', 'Web')
     entrarComo('ADMIN')
     renderWithProviders(<MarcoCms />, { ruta: '/cms/tesoreria' })
     expect(screen.getByRole('button', { name: /Cuentas/ })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: /^Web/ })).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('plegado, el grupo sigue enseñando sus avisos', async () => {
