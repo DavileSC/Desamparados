@@ -4,10 +4,10 @@ import AllTheProviders from './AllTheProviders'
 
 export function renderWithProviders(
   ui: ReactElement,
-  { ruta = '/', ...options }: Omit<RenderOptions, 'wrapper'> & { ruta?: string } = {},
+  { ruta = '/', modulos, ...options }: Omit<RenderOptions, 'wrapper'> & { ruta?: string; modulos?: readonly string[] } = {},
 ) {
   return render(ui, {
-    wrapper: ({ children }) => <AllTheProviders ruta={ruta}>{children}</AllTheProviders>,
+    wrapper: ({ children }) => <AllTheProviders ruta={ruta} modulos={modulos}>{children}</AllTheProviders>,
     ...options,
   })
 }

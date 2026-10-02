@@ -6,12 +6,14 @@ import MarcoAcceso from '../app/MarcoAcceso'
 import MarcoAreaHermano from '../app/MarcoAreaHermano'
 import ExigeSesion from './ExigeSesion'
 import ExigeRol from './ExigeRol'
+import ExigeModulo from './ExigeModulo'
 import DireccionAntigua from './DireccionAntigua'
 import MarcoCms from '../app/MarcoCms'
 import { rolesPorRutaCms } from '../app/cmsNavegacion'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 import { site } from '../config/site'
+import type { Requisito } from '../domain/modulos'
 
 // Public pages
 const InicioPage = lazy(() => import('../features/inicio/InicioPage'))
@@ -103,11 +105,18 @@ const HistoricoPage = lazy(() => import('../features/areaHermano/procesion/Histo
 const RecibosPage = lazy(() => import('../features/areaHermano/recibos/RecibosPage'))
 const ReciboPage = lazy(() => import('../features/areaHermano/recibos/ReciboPage'))
 
-function withSuspense(Component: React.ComponentType) {
+/**
+ * Una página con su módulo: `nucleo` para lo que no se apaga, la clave para
+ * lo demás. La guardiana (backend, test/modulos-cobertura.test.ts) exige que
+ * toda ruta de este fichero pase por aquí o sea una redirección.
+ */
+function pagina(Component: React.ComponentType, modulo: Requisito) {
   return (
-    <Suspense fallback={<CargandoPagina />}>
-      <Component />
-    </Suspense>
+    <ExigeModulo modulo={modulo}>
+      <Suspense fallback={<CargandoPagina />}>
+        <Component />
+      </Suspense>
+    </ExigeModulo>
   )
 }
 
@@ -142,36 +151,36 @@ const router = createBrowserRouter([
         path: '/',
         element: <MarcoPublico />,
         children: [
-          { index: true, element: withSuspense(InicioPage) },
-          { path: 'historia', element: withSuspense(HistoriaPage) },
-          { path: 'historia/organos-de-gobierno', element: withSuspense(OrganosDeGobiernoPage) },
-          { path: 'parroquia-pasionistas', element: withSuspense(ParroquiaPage) },
-          { path: 'nuestros-fines', element: withSuspense(NuestrosFinesPage) },
-          { path: 'nuestros-fines/caridad', element: withSuspense(CaridadPage) },
-          { path: 'nuestros-fines/formacion', element: withSuspense(FormacionPage) },
-          { path: 'cultos', element: withSuspense(CultosPage) },
-          { path: 'sabado-de-pasion', element: withSuspense(SabadoPasionPage) },
-          { path: 'sabado-de-pasion/recorrido', element: withSuspense(RecorridoPage) },
-          { path: 'sabado-de-pasion/trono', element: withSuspense(TronoPage) },
-          { path: 'sabado-de-pasion/enseres', element: withSuspense(EnseresPage) },
-          { path: 'rosario', element: withSuspense(RosarioPage) },
-          { path: 'desamparados', element: withSuspense(DesamparadosPage) },
-          { path: 'ajuar', element: withSuspense(AjuarPage) },
-          { path: 'agenda', element: withSuspense(AgendaPage) },
-          { path: 'noticias', element: withSuspense(NoticiasPage) },
-          { path: 'noticias/:slug', element: withSuspense(NoticiaDetallePage) },
-          { path: 'publicaciones', element: withSuspense(PublicacionesPage) },
-          { path: 'publicaciones/boletines', element: withSuspense(BoletinesPage) },
-          { path: 'publicaciones/dossier-prensa', element: withSuspense(DossierPrensaPage) },
-          { path: 'hazte-hermano', element: withSuspense(HazteHermanoPage) },
-          { path: 'contacto', element: withSuspense(ContactoPage) },
-          { path: 'tienda', element: withSuspense(TiendaPage) },
-          { path: 'tienda/pedido/:token', element: withSuspense(PedidoTiendaPage) },
-          { path: 'apadrina', element: withSuspense(ApadrinaPage) },
-          { path: 'apadrina/gracias/:token', element: withSuspense(GraciasApadrinamientoPage) },
-          { path: 'aviso-legal', element: withSuspense(AvisoLegalPage) },
-          { path: 'politica-privacidad', element: withSuspense(PoliticaDePrivacidadPage) },
-          { path: 'politica-cookies', element: withSuspense(PoliticaDeCookiesPage) },
+          { index: true, element: pagina(InicioPage, 'nucleo') },
+          { path: 'historia', element: pagina(HistoriaPage, 'nucleo') },
+          { path: 'historia/organos-de-gobierno', element: pagina(OrganosDeGobiernoPage, 'nucleo') },
+          { path: 'parroquia-pasionistas', element: pagina(ParroquiaPage, 'nucleo') },
+          { path: 'nuestros-fines', element: pagina(NuestrosFinesPage, 'nucleo') },
+          { path: 'nuestros-fines/caridad', element: pagina(CaridadPage, 'nucleo') },
+          { path: 'nuestros-fines/formacion', element: pagina(FormacionPage, 'nucleo') },
+          { path: 'cultos', element: pagina(CultosPage, 'nucleo') },
+          { path: 'sabado-de-pasion', element: pagina(SabadoPasionPage, 'nucleo') },
+          { path: 'sabado-de-pasion/recorrido', element: pagina(RecorridoPage, 'nucleo') },
+          { path: 'sabado-de-pasion/trono', element: pagina(TronoPage, 'nucleo') },
+          { path: 'sabado-de-pasion/enseres', element: pagina(EnseresPage, 'nucleo') },
+          { path: 'rosario', element: pagina(RosarioPage, 'nucleo') },
+          { path: 'desamparados', element: pagina(DesamparadosPage, 'nucleo') },
+          { path: 'ajuar', element: pagina(AjuarPage, 'nucleo') },
+          { path: 'agenda', element: pagina(AgendaPage, 'agenda') },
+          { path: 'noticias', element: pagina(NoticiasPage, 'noticias') },
+          { path: 'noticias/:slug', element: pagina(NoticiaDetallePage, 'noticias') },
+          { path: 'publicaciones', element: pagina(PublicacionesPage, 'publicaciones') },
+          { path: 'publicaciones/boletines', element: pagina(BoletinesPage, 'publicaciones') },
+          { path: 'publicaciones/dossier-prensa', element: pagina(DossierPrensaPage, 'publicaciones') },
+          { path: 'hazte-hermano', element: pagina(HazteHermanoPage, 'alta-web') },
+          { path: 'contacto', element: pagina(ContactoPage, 'nucleo') },
+          { path: 'tienda', element: pagina(TiendaPage, 'tienda-web') },
+          { path: 'tienda/pedido/:token', element: pagina(PedidoTiendaPage, 'tienda-web') },
+          { path: 'apadrina', element: pagina(ApadrinaPage, 'apadrinamientos') },
+          { path: 'apadrina/gracias/:token', element: pagina(GraciasApadrinamientoPage, 'apadrinamientos') },
+          { path: 'aviso-legal', element: pagina(AvisoLegalPage, 'nucleo') },
+          { path: 'politica-privacidad', element: pagina(PoliticaDePrivacidadPage, 'nucleo') },
+          { path: 'politica-cookies', element: pagina(PoliticaDeCookiesPage, 'nucleo') },
           // Las direcciones de antes de quitar las portadas de sección (25-09-2026):
           // /corporacion/historia sigue llevando a /historia, y así con todas.
           { path: 'corporacion/*', element: <DireccionAntigua /> },
@@ -179,7 +188,7 @@ const router = createBrowserRouter([
           { path: 'actualidad/*', element: <DireccionAntigua /> },
           { path: 'hermanos/*', element: <DireccionAntigua /> },
           // 404 real (con cabecera y pie): antes cualquier URL errónea redirigía a la portada
-          { path: '*', element: withSuspense(NoEncontradaPage) },
+          { path: '*', element: pagina(NoEncontradaPage, 'nucleo') },
         ],
       },
       // La baja del boletín, desde el enlace de cada correo y sin sesión. Con el
@@ -189,37 +198,40 @@ const router = createBrowserRouter([
       {
         path: '/boletin/baja',
         element: <MarcoPublico />,
-        children: [{ index: true, element: withSuspense(BajaBoletinPage) }],
+        children: [{ index: true, element: pagina(BajaBoletinPage, 'comunicados') }],
       },
       {
         path: '/acceso',
         element: <MarcoAcceso />,
-        children: [{ index: true, element: withSuspense(AccesoPage) }],
+        // La pantalla misma enseña el aviso del área de hermanos apagada (Tarea 10).
+        children: [{ index: true, element: pagina(AccesoPage, 'nucleo') }],
       },
       {
         path: '/reset-password',
         element: <MarcoAcceso />,
-        children: [{ index: true, element: withSuspense(NuevaContrasenaPage) }],
+        children: [{ index: true, element: pagina(NuevaContrasenaPage, 'nucleo') }],
       },
       {
         path: '/area-hermano',
         element: (
-          <ExigeSesion>
-            <MarcoAreaHermano />
-          </ExigeSesion>
+          <ExigeModulo modulo="area-hermanos">
+            <ExigeSesion>
+              <MarcoAreaHermano />
+            </ExigeSesion>
+          </ExigeModulo>
         ),
         children: [
           { index: true, element: <Navigate to="/area-hermano/perfil" replace /> },
-          { path: 'perfil', element: withSuspense(PerfilPage) },
+          { path: 'perfil', element: pagina(PerfilPage, 'nucleo') },
           // La edición se hace ya en el propio perfil, apartado a apartado.
           { path: 'perfil/editar', element: <Navigate to="/area-hermano/perfil" replace /> },
-          { path: 'familia', element: withSuspense(FamiliaPage) },
-          { path: 'procesion', element: withSuspense(ProcesionPage) },
+          { path: 'familia', element: pagina(FamiliaPage, 'nucleo') },
+          { path: 'procesion', element: pagina(ProcesionPage, 'procesion') },
           // La papeleta se pide y se consulta ya en la propia página de Procesión.
           { path: 'procesion/papeleta', element: <Navigate to="/area-hermano/procesion" replace /> },
-          { path: 'procesion/historico', element: withSuspense(HistoricoPage) },
-          { path: 'recibos', element: withSuspense(RecibosPage) },
-          { path: 'recibos/:id', element: withSuspense(ReciboPage) },
+          { path: 'procesion/historico', element: pagina(HistoricoPage, 'procesion') },
+          { path: 'recibos', element: pagina(RecibosPage, 'nucleo') },
+          { path: 'recibos/:id', element: pagina(ReciboPage, 'nucleo') },
           { path: '*', element: <Navigate to="/area-hermano/perfil" replace /> },
         ],
       },
@@ -229,62 +241,62 @@ const router = createBrowserRouter([
         // de <MarcoCms /> (sin menú del CMS) y fuera de <MarcoPublico /> (sin la
         // barra ni el pie ni el aviso de cookies de la web).
         path: '/cms/vista-previa/:slug',
-        element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{withSuspense(PaginaEnVivo)}</ExigeRol>,
+        element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{pagina(PaginaEnVivo, 'nucleo')}</ExigeRol>,
       },
       {
         path: '/cms/acceso',
-        element: withSuspense(AccesoCmsPage),
+        element: pagina(AccesoCmsPage, 'nucleo'),
       },
       {
         path: '/cms',
         element: <ExigeRol roles={rolesPorRutaCms.panel}><MarcoCms /></ExigeRol>,
         children: [
-          { index: true, element: withSuspense(PanelPage) },
-          { path: 'mi-seguridad', element: <ExigeRol roles={rolesPorRutaCms['mi-seguridad']}>{withSuspense(MiSeguridadPage)}</ExigeRol> },
-          { path: 'paginas', element: <ExigeRol roles={rolesPorRutaCms.paginas}>{withSuspense(PaginasAdminPage)}</ExigeRol> },
-          { path: 'paginas/:slug', element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{withSuspense(PaginaAdminPage)}</ExigeRol> },
-          { path: 'portada', element: <ExigeRol roles={rolesPorRutaCms.portada}>{withSuspense(PortadaAdminPage)}</ExigeRol> },
+          { index: true, element: pagina(PanelPage, 'nucleo') },
+          { path: 'mi-seguridad', element: <ExigeRol roles={rolesPorRutaCms['mi-seguridad']}>{pagina(MiSeguridadPage, 'nucleo')}</ExigeRol> },
+          { path: 'paginas', element: <ExigeRol roles={rolesPorRutaCms.paginas}>{pagina(PaginasAdminPage, 'nucleo')}</ExigeRol> },
+          { path: 'paginas/:slug', element: <ExigeRol roles={rolesPorRutaCms['paginas/:slug']}>{pagina(PaginaAdminPage, 'nucleo')}</ExigeRol> },
+          { path: 'portada', element: <ExigeRol roles={rolesPorRutaCms.portada}>{pagina(PortadaAdminPage, 'nucleo')}</ExigeRol> },
           // Historia se edita ya como las demás páginas; la dirección vieja sigue llevando a ella.
           { path: 'historia', element: <Navigate to="/cms/paginas/historia" replace /> },
-          { path: 'noticias', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiasAdminPage)}</ExigeRol> },
-          { path: 'emails', element: <ExigeRol roles={rolesPorRutaCms.emails}>{withSuspense(EmailsPage)}</ExigeRol> },
-          { path: 'emails/:id', element: <ExigeRol roles={rolesPorRutaCms['emails/:id']}>{withSuspense(EmailEditPage)}</ExigeRol> },
-          { path: 'comunicados', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadosAdminPage)}</ExigeRol> },
-          { path: 'comunicados/:id', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{withSuspense(ComunicadoEditPage)}</ExigeRol> },
-          { path: 'cabildos', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{withSuspense(CabildosAdminPage)}</ExigeRol> },
-          { path: 'cabildos/:id', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{withSuspense(CabildoPage)}</ExigeRol> },
-          { path: 'noticias/nueva', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
-          { path: 'noticias/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{withSuspense(NoticiaEditPage)}</ExigeRol> },
-          { path: 'publicaciones', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionesAdminPage)}</ExigeRol> },
-          { path: 'publicaciones/nueva', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionEditPage)}</ExigeRol> },
-          { path: 'publicaciones/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{withSuspense(PublicacionEditPage)}</ExigeRol> },
-          { path: 'agenda', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaAdminPage)}</ExigeRol> },
-          { path: 'agenda/nuevo', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</ExigeRol> },
-          { path: 'agenda/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{withSuspense(AgendaEditPage)}</ExigeRol> },
-          { path: 'hermanos', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanosAdminPage)}</ExigeRol> },
-          { path: ':id/editar', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{withSuspense(HermanoEditPage)}</ExigeRol> },
-          { path: 'procesion', element: <ExigeRol roles={rolesPorRutaCms.procesion}>{withSuspense(ProcesionAdminPage)}</ExigeRol> },
-          { path: 'procesion/salidas', element: <ExigeRol roles={rolesPorRutaCms['procesion/salidas']}>{withSuspense(SalidasAdminPage)}</ExigeRol> },
-          { path: 'procesion/salidas/:id/editar', element: <ExigeRol roles={rolesPorRutaCms['procesion/salidas']}>{withSuspense(SalidaEditPage)}</ExigeRol> },
-          { path: 'procesion/mesa', element: <ExigeRol roles={rolesPorRutaCms['procesion/mesa']}>{withSuspense(MesaProcesionPage)}</ExigeRol> },
-          { path: 'procesion/puerta', element: <ExigeRol roles={rolesPorRutaCms['procesion/puerta']}>{withSuspense(PuertaTemploPage)}</ExigeRol> },
-          { path: 'procesion/directo', element: <ExigeRol roles={rolesPorRutaCms['procesion/directo']}>{withSuspense(CortejoDirectoPage)}</ExigeRol> },
-          { path: 'tesoreria', element: <ExigeRol roles={rolesPorRutaCms.tesoreria}>{withSuspense(TesoreriaAdminPage)}</ExigeRol> },
-          { path: 'inventario', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioAdminPage)}</ExigeRol> },
-          { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{withSuspense(InventarioEditPage)}</ExigeRol> },
-          { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(ContabilidadAdminPage)}</ExigeRol> },
-          { path: 'contabilidad/partida-doble', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{withSuspense(PartidaDoblePage)}</ExigeRol> },
-          { path: 'tienda', element: <ExigeRol roles={rolesPorRutaCms.tienda}>{withSuspense(TiendaAdminPage)}</ExigeRol> },
-          { path: 'loteria', element: <ExigeRol roles={rolesPorRutaCms.loteria}>{withSuspense(LoteriaAdminPage)}</ExigeRol> },
-          { path: 'apadrinamientos', element: <ExigeRol roles={rolesPorRutaCms.apadrinamientos}>{withSuspense(ApadrinamientosAdminPage)}</ExigeRol> },
-          { path: 'apadrinamientos/:id', element: <ExigeRol roles={rolesPorRutaCms.apadrinamientos}>{withSuspense(CampanaApadrinamientoPage)}</ExigeRol> },
-          { path: 'datos', element: <ExigeRol roles={rolesPorRutaCms.datos}>{withSuspense(DatosInformesPage)}</ExigeRol> },
-          { path: 'cartas', element: <ExigeRol roles={rolesPorRutaCms.cartas}>{withSuspense(CartasPage)}</ExigeRol> },
-          { path: 'informe-anual', element: <ExigeRol roles={rolesPorRutaCms['informe-anual']}>{withSuspense(InformeAnualPage)}</ExigeRol> },
-          { path: 'informe-anual/:anio', element: <ExigeRol roles={rolesPorRutaCms['informe-anual/:anio']}>{withSuspense(InformeAnualPage)}</ExigeRol> },
-          { path: 'accesos', element: <ExigeRol roles={rolesPorRutaCms.accesos}>{withSuspense(AccesosAdminPage)}</ExigeRol> },
-          { path: 'auditoria', element: <ExigeRol roles={rolesPorRutaCms.auditoria}>{withSuspense(AuditoriaAdminPage)}</ExigeRol> },
-          { path: 'ajustes-inicio', element: <ExigeRol roles={rolesPorRutaCms['ajustes-inicio']}>{withSuspense(AjustesInicioPage)}</ExigeRol> },
+          { path: 'noticias', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{pagina(NoticiasAdminPage, 'noticias')}</ExigeRol> },
+          { path: 'emails', element: <ExigeRol roles={rolesPorRutaCms.emails}>{pagina(EmailsPage, 'nucleo')}</ExigeRol> },
+          { path: 'emails/:id', element: <ExigeRol roles={rolesPorRutaCms['emails/:id']}>{pagina(EmailEditPage, 'nucleo')}</ExigeRol> },
+          { path: 'comunicados', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{pagina(ComunicadosAdminPage, 'comunicados')}</ExigeRol> },
+          { path: 'comunicados/:id', element: <ExigeRol roles={rolesPorRutaCms.comunicados}>{pagina(ComunicadoEditPage, 'comunicados')}</ExigeRol> },
+          { path: 'cabildos', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{pagina(CabildosAdminPage, 'cabildos')}</ExigeRol> },
+          { path: 'cabildos/:id', element: <ExigeRol roles={rolesPorRutaCms.cabildos}>{pagina(CabildoPage, 'cabildos')}</ExigeRol> },
+          { path: 'noticias/nueva', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{pagina(NoticiaEditPage, 'noticias')}</ExigeRol> },
+          { path: 'noticias/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.noticias}>{pagina(NoticiaEditPage, 'noticias')}</ExigeRol> },
+          { path: 'publicaciones', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{pagina(PublicacionesAdminPage, 'publicaciones')}</ExigeRol> },
+          { path: 'publicaciones/nueva', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{pagina(PublicacionEditPage, 'publicaciones')}</ExigeRol> },
+          { path: 'publicaciones/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.publicaciones}>{pagina(PublicacionEditPage, 'publicaciones')}</ExigeRol> },
+          { path: 'agenda', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{pagina(AgendaAdminPage, 'agenda')}</ExigeRol> },
+          { path: 'agenda/nuevo', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{pagina(AgendaEditPage, 'agenda')}</ExigeRol> },
+          { path: 'agenda/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.agenda}>{pagina(AgendaEditPage, 'agenda')}</ExigeRol> },
+          { path: 'hermanos', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{pagina(HermanosAdminPage, 'nucleo')}</ExigeRol> },
+          { path: ':id/editar', element: <ExigeRol roles={rolesPorRutaCms.hermanos}>{pagina(HermanoEditPage, 'nucleo')}</ExigeRol> },
+          { path: 'procesion', element: <ExigeRol roles={rolesPorRutaCms.procesion}>{pagina(ProcesionAdminPage, 'procesion')}</ExigeRol> },
+          { path: 'procesion/salidas', element: <ExigeRol roles={rolesPorRutaCms['procesion/salidas']}>{pagina(SalidasAdminPage, 'procesion')}</ExigeRol> },
+          { path: 'procesion/salidas/:id/editar', element: <ExigeRol roles={rolesPorRutaCms['procesion/salidas']}>{pagina(SalidaEditPage, 'procesion')}</ExigeRol> },
+          { path: 'procesion/mesa', element: <ExigeRol roles={rolesPorRutaCms['procesion/mesa']}>{pagina(MesaProcesionPage, 'procesion')}</ExigeRol> },
+          { path: 'procesion/puerta', element: <ExigeRol roles={rolesPorRutaCms['procesion/puerta']}>{pagina(PuertaTemploPage, 'puerta')}</ExigeRol> },
+          { path: 'procesion/directo', element: <ExigeRol roles={rolesPorRutaCms['procesion/directo']}>{pagina(CortejoDirectoPage, 'cortejo-directo')}</ExigeRol> },
+          { path: 'tesoreria', element: <ExigeRol roles={rolesPorRutaCms.tesoreria}>{pagina(TesoreriaAdminPage, 'nucleo')}</ExigeRol> },
+          { path: 'inventario', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{pagina(InventarioAdminPage, ['inventario', 'procesion'])}</ExigeRol> },
+          { path: 'inventario/:id/editar', element: <ExigeRol roles={rolesPorRutaCms.inventario}>{pagina(InventarioEditPage, ['inventario', 'procesion'])}</ExigeRol> },
+          { path: 'contabilidad', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{pagina(ContabilidadAdminPage, 'contabilidad')}</ExigeRol> },
+          { path: 'contabilidad/partida-doble', element: <ExigeRol roles={rolesPorRutaCms.contabilidad}>{pagina(PartidaDoblePage, 'contabilidad')}</ExigeRol> },
+          { path: 'tienda', element: <ExigeRol roles={rolesPorRutaCms.tienda}>{pagina(TiendaAdminPage, 'tienda')}</ExigeRol> },
+          { path: 'loteria', element: <ExigeRol roles={rolesPorRutaCms.loteria}>{pagina(LoteriaAdminPage, 'loteria')}</ExigeRol> },
+          { path: 'apadrinamientos', element: <ExigeRol roles={rolesPorRutaCms.apadrinamientos}>{pagina(ApadrinamientosAdminPage, 'apadrinamientos')}</ExigeRol> },
+          { path: 'apadrinamientos/:id', element: <ExigeRol roles={rolesPorRutaCms.apadrinamientos}>{pagina(CampanaApadrinamientoPage, 'apadrinamientos')}</ExigeRol> },
+          { path: 'datos', element: <ExigeRol roles={rolesPorRutaCms.datos}>{pagina(DatosInformesPage, 'nucleo')}</ExigeRol> },
+          { path: 'cartas', element: <ExigeRol roles={rolesPorRutaCms.cartas}>{pagina(CartasPage, 'cartas')}</ExigeRol> },
+          { path: 'informe-anual', element: <ExigeRol roles={rolesPorRutaCms['informe-anual']}>{pagina(InformeAnualPage, 'informe-anual')}</ExigeRol> },
+          { path: 'informe-anual/:anio', element: <ExigeRol roles={rolesPorRutaCms['informe-anual/:anio']}>{pagina(InformeAnualPage, 'informe-anual')}</ExigeRol> },
+          { path: 'accesos', element: <ExigeRol roles={rolesPorRutaCms.accesos}>{pagina(AccesosAdminPage, 'nucleo')}</ExigeRol> },
+          { path: 'auditoria', element: <ExigeRol roles={rolesPorRutaCms.auditoria}>{pagina(AuditoriaAdminPage, 'nucleo')}</ExigeRol> },
+          { path: 'ajustes-inicio', element: <ExigeRol roles={rolesPorRutaCms['ajustes-inicio']}>{pagina(AjustesInicioPage, 'nucleo')}</ExigeRol> },
         ],
       },
     ],
