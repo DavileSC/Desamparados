@@ -17,4 +17,14 @@ describe('la barra y el pie con módulos apagados', () => {
     expect(screen.getAllByRole('link', { name: 'Acceso hermanos' }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: 'Tienda' }).length).toBeGreaterThan(0)
   })
+
+  it('sin el módulo de publicaciones, el pie no deja el título «Publicaciones» sin enlaces', () => {
+    renderWithProviders(<PieDePagina />, { modulos: ['noticias', 'agenda'] })
+    expect(screen.queryByRole('heading', { name: 'Publicaciones' })).not.toBeInTheDocument()
+  })
+
+  it('con el módulo de publicaciones encendido, el pie sí pinta su título', () => {
+    renderWithProviders(<PieDePagina />)
+    expect(screen.getByRole('heading', { name: 'Publicaciones' })).toBeInTheDocument()
+  })
 })
