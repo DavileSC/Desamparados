@@ -79,6 +79,38 @@ describe('ComunicadoEditPage', () => {
     expect(screen.queryByRole('combobox', { name: 'Papeleta' })).not.toBeInTheDocument()
   })
 
+  it('con Procesión apagado, guardar borra el «con papeleta de» que ya tuviera el comunicado', async () => {
+    // Simula un comunicado guardado antes de apagar Procesión: la pantalla ya
+    // no enseña el filtro, pero el dato seguía viajando tal cual se guardaba.
+    const user = userEvent.setup()
+    const guardado = { ...BORRADOR, segmento: { ...BORRADOR.segmento, conPapeleta: 2 } }
+    const fetch = montar(guardado, undefined, ['comunicados'])
+    await screen.findByText(/Llegará a 10 direcciones/)
+
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => {
+      const put = fetch.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')
+      expect(put).toBeDefined()
+      expect(JSON.parse(String((put![1] as RequestInit).body)).segmento.conPapeleta).toBeNull()
+    })
+  })
+
+  it('con todos los módulos, guardar conserva el «con papeleta de» que trajera el comunicado', async () => {
+    const user = userEvent.setup()
+    const guardado = { ...BORRADOR, segmento: { ...BORRADOR.segmento, conPapeleta: 2 } }
+    const fetch = montar(guardado)
+    await screen.findByText(/Llegará a 10 direcciones/)
+
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => {
+      const put = fetch.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')
+      expect(put).toBeDefined()
+      expect(JSON.parse(String((put![1] as RequestInit).body)).segmento.conPapeleta).toBe(2)
+    })
+  })
+
   it('la prueba y el envío, este tras confirmar', async () => {
     const user = userEvent.setup()
     const fetch = montar(BORRADOR)
