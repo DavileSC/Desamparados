@@ -27,8 +27,10 @@ import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
 import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import DraftsOutlinedIcon from '@mui/icons-material/DraftsOutlined'
+import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined'
 import CATALOGO from '../../../shared/paginas-publicas.json'
 import type { PanelResponse } from '../lib/api/panel'
+import { cumple, type ClaveModulo, type Requisito } from '../domain/modulos'
 
 /**
  * Menú del CMS, agrupado por áreas, y roles que pasan la guarda de cada una
@@ -85,45 +87,66 @@ export interface ItemMenu {
   icono: ComponentType<{ fontSize?: 'small' | 'inherit' | 'medium' | 'large' }>
   /** El número dice cuántos hay; el tono, cuánta prisa corre. */
   contador?: { de: ClaveContador; tono: 'aviso' | 'error' }
+  /** De qué módulo es la entrada: apagado, no sale. `nucleo` es lo que no se apaga. */
+  modulo: Requisito
+  /** Se esconde si este módulo está encendido: «Ropero» solo vale cuando no hay «Inventario», que ya lo lleva dentro. */
+  ocultoSiActivo?: ClaveModulo
 }
 
 const TODOS = ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA']
 
 export const itemsMenu: ItemMenu[] = [
-  { label: 'Inicio', href: '/cms', roles: TODOS, grupo: 'suelta', icono: HomeOutlinedIcon },
-  { label: 'Páginas', href: '/cms/paginas', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: WebOutlinedIcon },
-  { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ImageOutlinedIcon },
-  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' } },
-  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: MenuBookOutlinedIcon },
-  { label: 'Boletín y avisos', href: '/cms/comunicados', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'], grupo: 'Web', icono: EmailOutlinedIcon },
+  { label: 'Inicio', href: '/cms', roles: TODOS, grupo: 'suelta', icono: HomeOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Páginas', href: '/cms/paginas', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: WebOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Portada', href: '/cms/portada', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ImageOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Noticias', href: '/cms/noticias', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: ArticleOutlinedIcon, contador: { de: 'noticiasBorradores', tono: 'aviso' }, modulo: 'noticias' },
+  { label: 'Publicaciones', href: '/cms/publicaciones', roles: ['ADMIN', 'REDES', 'HERMANO_MAYOR'], grupo: 'Web', icono: MenuBookOutlinedIcon, modulo: 'publicaciones' },
+  { label: 'Boletín y avisos', href: '/cms/comunicados', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR', 'REDES'], grupo: 'Web', icono: EmailOutlinedIcon, modulo: 'comunicados' },
   // Las plantillas de los correos que manda la web: Secretaría, el Hermano Mayor y Administración.
-  { label: 'Emails', href: '/cms/emails', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: DraftsOutlinedIcon },
-  { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon },
-  { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' } },
+  { label: 'Emails', href: '/cms/emails', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: DraftsOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Agenda', href: '/cms/agenda', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Web', icono: CalendarMonthOutlinedIcon, modulo: 'agenda' },
+  { label: 'Hermanos', href: '/cms/hermanos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: GroupsOutlinedIcon, contador: { de: 'hermanosSinNumero', tono: 'aviso' }, modulo: 'nucleo' },
   // Los días de reparto y el plazo de la papeleta: los ve la Junta del censo, los cambia Secretaría.
-  { label: 'Cartas', href: '/cms/cartas', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: MailOutlinedIcon },
-  { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: DirectionsWalkOutlinedIcon },
-  { label: 'Salidas', href: '/cms/procesion/salidas', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: EventRepeatOutlinedIcon },
+  { label: 'Cartas', href: '/cms/cartas', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: MailOutlinedIcon, modulo: 'cartas' },
+  { label: 'Procesión', href: '/cms/procesion', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: DirectionsWalkOutlinedIcon, modulo: 'procesion' },
+  { label: 'Salidas', href: '/cms/procesion/salidas', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: EventRepeatOutlinedIcon, modulo: 'procesion' },
   // Apuntar a quien sale, con su ropa y cobrando: la Junta que está en la mesa.
-  { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon },
+  { label: 'Mesa de procesión', href: '/cms/procesion/mesa', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA'], grupo: 'Censo y procesión', icono: HowToRegOutlinedIcon, modulo: 'procesion' },
   // Leer el QR de las papeletas al entrar: la Junta que está en la puerta.
-  { label: 'Puerta del templo', href: '/cms/procesion/puerta', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: QrCodeScannerOutlinedIcon },
-  { label: 'Cortejo en directo', href: '/cms/procesion/directo', roles: ['ADMIN', 'SECRETARIA', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: SensorsOutlinedIcon },
-  { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon },
-  { label: 'Apadrinamientos', href: '/cms/apadrinamientos', roles: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: VolunteerActivismOutlinedIcon },
-  { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon },
-  { label: 'Tienda', href: '/cms/tienda', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: StorefrontOutlinedIcon },
+  { label: 'Puerta del templo', href: '/cms/procesion/puerta', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: QrCodeScannerOutlinedIcon, modulo: 'puerta' },
+  { label: 'Cortejo en directo', href: '/cms/procesion/directo', roles: ['ADMIN', 'SECRETARIA', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: SensorsOutlinedIcon, modulo: 'cortejo-directo' },
+  { label: 'Inventario', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon, modulo: 'inventario' },
+  // Sin Inventario (los enseres) pero con Procesión, el ropero sigue existiendo: la
+  // misma pantalla, con el nombre de lo único que enseña. Con Inventario encendido
+  // no sale, porque Inventario ya lleva el ropero en su segunda pestaña.
+  { label: 'Ropero', href: '/cms/inventario', roles: ['ADMIN', 'ALBACERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: Inventory2OutlinedIcon, modulo: 'procesion', ocultoSiActivo: 'inventario' },
+  { label: 'Apadrinamientos', href: '/cms/apadrinamientos', roles: ['ADMIN', 'ALBACERIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Censo y procesión', icono: VolunteerActivismOutlinedIcon, modulo: 'apadrinamientos' },
+  { label: 'Tesorería', href: '/cms/tesoreria', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: AccountBalanceWalletOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Tienda', href: '/cms/tienda', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: StorefrontOutlinedIcon, modulo: 'tienda' },
   // Los talonarios se reparten y se devuelven en Secretaría; el dinero lo lleva Tesorería.
-  { label: 'Lotería', href: '/cms/loteria', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: ConfirmationNumberOutlinedIcon },
-  { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon },
-  { label: 'Datos e informes', href: '/cms/datos', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Junta', icono: InsightsOutlinedIcon },
-  { label: 'Informe anual', href: '/cms/informe-anual', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon },
-  { label: 'Cabildos', href: '/cms/cabildos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Junta', icono: HowToVoteOutlinedIcon },
-  { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon },
-  { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon },
-  { label: 'Ajustes del Inicio', href: '/cms/ajustes-inicio', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'cuenta', icono: TuneOutlinedIcon },
-  { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'cuenta', icono: ShieldOutlinedIcon },
+  { label: 'Lotería', href: '/cms/loteria', roles: ['ADMIN', 'SECRETARIA', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: ConfirmationNumberOutlinedIcon, modulo: 'loteria' },
+  { label: 'Contabilidad', href: '/cms/contabilidad', roles: ['ADMIN', 'TESORERIA', 'HERMANO_MAYOR'], grupo: 'Cuentas', icono: BarChartOutlinedIcon, modulo: 'contabilidad' },
+  { label: 'Datos e informes', href: '/cms/datos', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Junta', icono: InsightsOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Informe anual', href: '/cms/informe-anual', roles: ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA'], grupo: 'Junta', icono: HistoryEduOutlinedIcon, modulo: 'informe-anual' },
+  { label: 'Cabildos', href: '/cms/cabildos', roles: ['ADMIN', 'SECRETARIA', 'HERMANO_MAYOR'], grupo: 'Junta', icono: HowToVoteOutlinedIcon, modulo: 'cabildos' },
+  { label: 'Accesos', href: '/cms/accesos', roles: ['ADMIN'], grupo: 'Sistema', icono: ManageAccountsOutlinedIcon, modulo: 'nucleo' },
+  // Encender y apagar módulos abre pantallas a toda la junta: solo Administración.
+  { label: 'Módulos', href: '/cms/modulos', roles: ['ADMIN'], grupo: 'Sistema', icono: ExtensionOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Auditoría', href: '/cms/auditoria', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'Sistema', icono: FactCheckOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Ajustes del Inicio', href: '/cms/ajustes-inicio', roles: ['ADMIN', 'HERMANO_MAYOR'], grupo: 'cuenta', icono: TuneOutlinedIcon, modulo: 'nucleo' },
+  { label: 'Mi seguridad', href: '/cms/mi-seguridad', roles: TODOS, grupo: 'cuenta', icono: ShieldOutlinedIcon, modulo: 'nucleo' },
 ]
+
+/**
+ * Lo que ve un cargo con estos módulos: su rol, el módulo de la entrada y la
+ * regla de «Ropero». Fuera de los componentes para probarla sola.
+ */
+export function menuCmsVisible(items: ItemMenu[], role: string | undefined, activos: ReadonlySet<string>): ItemMenu[] {
+  return items.filter((item) =>
+    role !== undefined && item.roles.includes(role)
+    && cumple(item.modulo, activos)
+    && !(item.ocultoSiActivo && activos.has(item.ocultoSiActivo)))
+}
 
 /** Única fuente de verdad de las `ExigeRol` de `routes/index.tsx`. */
 export const rolesPorRutaCms = {
@@ -177,6 +200,8 @@ export const rolesPorRutaCms = {
   // Repartir cargos es repartir privilegios: ni el Hermano Mayor. El backend
   // lo estrecha igual (checkRole(SOLO_ADMIN) en adminRoutes).
   accesos: ['ADMIN'],
+  // Los módulos de la instalación: solo Administración, como los accesos.
+  modulos: ['ADMIN'],
   auditoria: ['ADMIN', 'HERMANO_MAYOR'],
   // La foto del retablo del Inicio: la misma guarda que PUT /api/panel/retablo.
   'ajustes-inicio': ['ADMIN', 'HERMANO_MAYOR'],

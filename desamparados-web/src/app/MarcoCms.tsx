@@ -16,8 +16,9 @@ import { cerrarSesion } from '../features/altas/auth/session'
 import { TemaCmsProvider } from './temaCms'
 import { useModoCms, useTemaCms } from './useTemaCms'
 import { superficiesCms } from '../theme/cms'
-import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu, type Grupo, type ItemMenu } from './cmsNavegacion'
+import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu, menuCmsVisible, type Grupo, type ItemMenu } from './cmsNavegacion'
 import { usePanelDeHoy } from './usePanelDeHoy'
+import { useModulos } from '../hooks/useModulos'
 import { designTokens } from '../theme'
 import { site } from '../config/site'
 
@@ -186,7 +187,9 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
   const location = useLocation()
   const { data } = usePanelDeHoy()
   const contadores = contadoresDelPanel(data)
-  const visibles = itemsMenu.filter((item) => role && item.roles.includes(role) && item.grupo !== 'cuenta')
+  const { activos } = useModulos()
+  // Sin la lista de módulos no se pinta ningún menú: aparecería y cambiaría.
+  const visibles = activos ? menuCmsVisible(itemsMenu, role, activos).filter((item) => item.grupo !== 'cuenta') : []
   const hrefActivo = entradaActiva(location.pathname, visibles)
   const grupoActivo = visibles.find((item) => item.href === hrefActivo)?.grupo
   // Al entrar en una página, su grupo se abre; luego se puede plegar como
@@ -320,9 +323,10 @@ function OpcionModoOscuro() {
 function BloqueUsuario({ role, onNavegar }: { role?: string; onNavegar?: () => void }) {
   const [ancla, setAncla] = useState<HTMLElement | null>(null)
   const location = useLocation()
+  const { activos } = useModulos()
   const cargo = role ? NOMBRE_CARGO[role] ?? role : ''
   const iniciales = cargo.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
-  const deLaCuenta = itemsMenu.filter((item) => item.grupo === 'cuenta' && role && item.roles.includes(role))
+  const deLaCuenta = activos ? menuCmsVisible(itemsMenu, role, activos).filter((item) => item.grupo === 'cuenta') : []
   const cerrar = () => setAncla(null)
   return (
     <Box sx={{ borderTop: '1px solid rgba(255,255,255,0.08)', pt: 'var(--cms-pie-pt)' }}>
