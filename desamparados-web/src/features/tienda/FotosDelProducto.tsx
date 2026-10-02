@@ -24,6 +24,10 @@ export default function FotosDelProducto({ producto }: { producto: Producto }) {
     ...producto.fotos.map((f, i) => ({ tipo: 'foto' as const, url: f.url, portada: '', alt: f.pie || `${producto.nombre}, foto ${i + 2}`, pie: f.pie })),
   ]
   const varias = medios.length > 1
+  // El visor pide la anterior o la siguiente sin mirar los bordes: aquí se da
+  // la vuelta, como en las galerías. Sin esto, «siguiente» en la última pedía
+  // una foto que no existe y el visor se rompía.
+  const ir = (indice: number) => setAbierta(((indice % medios.length) + medios.length) % medios.length)
 
   return (
     <>
@@ -53,7 +57,7 @@ export default function FotosDelProducto({ producto }: { producto: Producto }) {
       <VisorGaleria
         medios={medios}
         actual={abierta}
-        onIr={setAbierta}
+        onIr={ir}
         onCerrar={() => setAbierta(null)}
         reproduciendo={[]}
         onReproducir={() => {}}

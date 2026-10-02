@@ -29,6 +29,11 @@ describe('TiendaPage', () => {
     expect(within(visor).getAllByRole('img', { name: 'Medalla' }).length).toBeGreaterThan(0)
     await user.keyboard('{ArrowRight}')
     expect(await within(visor).findByText('El reverso')).toBeInTheDocument()
+    // Pasada la última, vuelve a la primera (antes el visor se rompía).
+    await user.keyboard('{ArrowRight}{ArrowRight}')
+    expect(within(screen.getByRole('dialog')).getByText('01')).toBeInTheDocument()
+    await user.keyboard('{ArrowLeft}')
+    expect(within(screen.getByRole('dialog')).getByText('03')).toBeInTheDocument()
     // Sin foto, no hay nada que ampliar.
     expect(screen.queryByRole('button', { name: /fotos de Estampa|foto de Estampa/ })).not.toBeInTheDocument()
   })
