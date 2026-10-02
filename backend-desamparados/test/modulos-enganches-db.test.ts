@@ -14,6 +14,7 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js'
 import { ModulosService } from '../src/services/modulos.service.js';
 import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
 import { SalidasService } from '../src/services/procesion/salidas.service.js';
+import { ComunicadosService } from '../src/services/comunicados.service.js';
 import { areasActivas, MODULO_DE_AREA, vistazo, type Area } from '../src/domain/datos-areas.js';
 import { DatosService } from '../src/services/datos.service.js';
 import { periodoDe } from '../src/domain/periodo-datos.js';
@@ -164,5 +165,29 @@ test('el Informe anual en borrador sale sin el capítulo de Procesión cuando es
     assert.ok((await recortado.arrayBuffer()).byteLength < paginasCompleto, 'con un capítulo menos pesa menos');
   } finally {
     await restaurar();
+  }
+});
+
+test('con Procesión apagada, el «a quién va» de un comunicado no promete el filtro de papeleta, que no se aplica', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const salida = await SalidasService.porSlug('sabado-de-pasion');
+  const segmento = { conPapeleta: salida.id };
+  const staff = await crearUsuarioPrueba(Role.ADMIN);
+  usuarios.push(staff.id);
+  let comunicadoId: number | null = null;
+  try {
+    assert.match((await ComunicadosService.destinatarios('AVISO', segmento)).para, /con papeleta/, 'encendido, el filtro se describe');
+    const c = await ComunicadosService.crear({ tipo: 'AVISO', asunto: 'Prueba de enganches', cuerpo: '<p>Hola.</p>', segmento }, { userId: staff.id, ...META });
+    comunicadoId = c.id;
+    await apagar(['procesion', 'puerta']);
+    const apagado = await ComunicadosService.destinatarios('AVISO', segmento);
+    assert.equal(apagado.para, 'Hermanos activos', 'sin Procesión el filtro no existe y la descripción no lo nombra');
+    assert.equal(apagado.fichas, (await ComunicadosService.destinatarios('AVISO', {})).fichas, 'van todos los del segmento, como dice');
+    const guardado = await ComunicadosService.obtener(c.id);
+    assert.equal(guardado.para, 'Hermanos activos', 'el guardado tampoco lo promete');
+    assert.equal(guardado.segmento.conPapeleta, salida.id, 'el filtro se conserva para cuando se reencienda');
+  } finally {
+    await restaurar();
+    if (comunicadoId) await db.comunicado.deleteMany({ where: { id: comunicadoId } });
   }
 });

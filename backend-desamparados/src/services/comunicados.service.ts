@@ -46,13 +46,22 @@ function segmentoLimpio(s: Segmento): Segmento {
     poblacion: s.poblacion?.trim().slice(0, 100) || null,
   };
 }
+/**
+ * El segmento que se aplica de verdad: «con papeleta de…» es de Procesión y,
+ * apagada, el filtro no existe. Se guarda igual (vuelve al reencender), pero
+ * ni se consulta ni se describe: el «a quién va» no debe prometer un filtro
+ * que no se aplica.
+ */
+async function segmentoAplicable(s: Segmento): Promise<Segmento> {
+  return s.conPapeleta && !(await ModulosService.activo('procesion')) ? { ...s, conPapeleta: null } : s;
+}
+
 
 /** Las fichas del segmento: siempre activas; en el boletín, solo las suscritas. */
 async function fichasDelSegmento(tipo: TipoComunicado, s: Segmento) {
   const hoy = diaDeHoy();
   const hace18 = new Date(`${Number(hoy.slice(0, 4)) - 18}${hoy.slice(4)}T00:00:00Z`);
-  // «Con papeleta de…» es de Procesión: apagada, el filtro no existe y se manda a todos los del segmento.
-  const conPapeleta = s.conPapeleta && (await ModulosService.activo('procesion')) ? s.conPapeleta : null;
+  const { conPapeleta } = await segmentoAplicable(s);
   const where: Prisma.HermanoWhereInput = {
     activo: true,
     ...(tipo === TipoComunicado.BOLETIN ? { boletin: true } : {}),
@@ -96,9 +105,9 @@ function correoPara(c: { tipo: TipoComunicado; asunto: string; cuerpo: string },
 const nombresDeSalidas = async () => new Map((await SalidasService.listar({ todas: true }))
   .map((s) => [s.id, { nombre: s.nombre, articulo: articuloDe(s) }]));
 
-const resumen = (c: { id: number; tipo: TipoComunicado; asunto: string; estado: EstadoComunicado; segmento: Prisma.JsonValue; enviadoEl: Date | null; autorNombre: string | null; createdAt: Date; updatedAt: Date }, nombres: ReadonlyMap<number, SalidaDelSegmento>) => ({
+const resumen = async (c: { id: number; tipo: TipoComunicado; asunto: string; estado: EstadoComunicado; segmento: Prisma.JsonValue; enviadoEl: Date | null; autorNombre: string | null; createdAt: Date; updatedAt: Date }, nombres: ReadonlyMap<number, SalidaDelSegmento>) => ({
   id: c.id, tipo: c.tipo, asunto: c.asunto, estado: c.estado, segmento: c.segmento as Segmento,
-  para: describirSegmento(c.tipo, c.segmento as Segmento, nombres), enviadoEl: c.enviadoEl, autorNombre: c.autorNombre,
+  para: describirSegmento(c.tipo, await segmentoAplicable(c.segmento as Segmento), nombres), enviadoEl: c.enviadoEl, autorNombre: c.autorNombre,
   createdAt: c.createdAt, updatedAt: c.updatedAt,
 });
 
@@ -149,21 +158,21 @@ export class ComunicadosService {
     const cuentas = await db.comunicadoEnvio.groupBy({ by: ['comunicadoId', 'estado'], where: { comunicadoId: { in: lista.map((c) => c.id) } }, _count: { _all: true } });
     const de = (id: number, estado: EstadoEnvio) => cuentas.find((x) => x.comunicadoId === id && x.estado === estado)?._count._all ?? 0;
     const nombres = await nombresDeSalidas();
-    return lista.map((c) => ({
-      ...resumen(c, nombres),
+    return Promise.all(lista.map(async (c) => ({
+      ...(await resumen(c, nombres)),
       envios: { enviados: de(c.id, EstadoEnvio.ENVIADO), fallidos: de(c.id, EstadoEnvio.FALLIDO), pendientes: de(c.id, EstadoEnvio.PENDIENTE) },
-    }));
+    })));
   }
 
   static async obtener(id: number) {
     const c = await db.comunicado.findUnique({ where: { id } });
     if (!c) throw new NotFoundError('Comunicado no encontrado.');
-    return { ...resumen(c, await nombresDeSalidas()), cuerpo: c.cuerpo };
+    return { ...(await resumen(c, await nombresDeSalidas())), cuerpo: c.cuerpo };
   }
 
   /** A cuántas direcciones llegaría, y cuántas fichas del segmento no tienen correo. */
   static async destinatarios(tipo: TipoComunicado, segmento: Segmento) {
-    const s = segmentoLimpio(segmento);
+    const s = await segmentoAplicable(segmentoLimpio(segmento));
     const fichas = await fichasDelSegmento(tipo, s);
     const { destinatarios, sinCorreo } = destinatariosDe(fichas);
     return { para: describirSegmento(tipo, s, await nombresDeSalidas()), fichas: fichas.length, correos: destinatarios.length, sinCorreo };
@@ -178,7 +187,7 @@ export class ComunicadosService {
         autorId: meta?.userId ?? null, autorNombre: autor ? `${autor.nombre} ${autor.apellidos}`.trim() : null,
       },
     });
-    return { ...resumen(c, await nombresDeSalidas()), cuerpo: c.cuerpo };
+    return { ...(await resumen(c, await nombresDeSalidas())), cuerpo: c.cuerpo };
   }
 
   /** Solo el borrador se cambia: lo enviado es lo que recibieron. */
