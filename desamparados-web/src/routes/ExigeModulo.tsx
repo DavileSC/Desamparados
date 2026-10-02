@@ -18,7 +18,8 @@ const ModuloNoActivadoPage = lazy(() => import('../features/cms/ModuloNoActivado
 export default function ExigeModulo({ modulo, children }: { modulo: Requisito; children: React.ReactNode }) {
   const { activos, error } = useModulos()
   const { pathname } = useLocation()
-  const esNucleo = Array.isArray(modulo) ? modulo.includes('nucleo') : modulo === 'nucleo'
+  // Lo que se cumple sin ningún módulo encendido es del núcleo.
+  const esNucleo = cumple(modulo, new Set())
   if (esNucleo) return <>{children}</>
   if (activos === null) return error ? <>{children}</> : <CargandoPagina />
   if (cumple(modulo, activos)) return <>{children}</>

@@ -204,7 +204,7 @@ const router = createBrowserRouter([
       {
         path: '/acceso',
         element: <MarcoAcceso />,
-        // La pantalla misma enseña el aviso del área de hermanos apagada (Tarea 10).
+        // Del núcleo a propósito: con el área de hermanos apagada, la pantalla de acceso enseña ella misma el aviso.
         children: [{ index: true, element: pagina(AccesoPage, 'nucleo') }],
       },
       {

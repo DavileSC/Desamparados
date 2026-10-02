@@ -289,7 +289,12 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
   ]
   const { activo } = useModulos()
   const visibles = cifras.filter((c) => activo(c.modulo))
-  const actual = visibles[Math.min(elegida, visibles.length - 1)]
+  // Con un módulo apagado hay menos cifras: la elegida se recorta al rango, y
+  // el mismo índice marca el botón activo y la cifra en grande.
+  const indice = Math.min(elegida, visibles.length - 1)
+  const actual = visibles[indice]
+  // La curva del saldo (la última) lleva su leyenda a los dos extremos, debajo.
+  const esSaldo = actual === cifras[cifras.length - 1]
 
   return (
     <Box
@@ -308,7 +313,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
           // En el móvil, las cuatro en una fila arriba y la gráfica debajo.
           '@container cifras (max-width: 599px)': {
             gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'auto minmax(0, 1fr)',
-            '& .selector': { gridTemplateRows: 'none', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' },
+            '& .selector': { gridTemplateRows: 'none', gridTemplateColumns: `repeat(${visibles.length}, minmax(0, 1fr))`, gap: '6px' },
             '& .selector button': { px: 1, py: 0.75 },
             '& .selector .etiqueta': { fontSize: 9, letterSpacing: '0.04em' },
             '& .selector .valor': { fontSize: 'clamp(15px, 5cqi, 22px)' },
@@ -319,7 +324,7 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
       >
         <Box className="selector" sx={{ minHeight: 0, display: 'grid', gridTemplateRows: `repeat(${visibles.length}, minmax(0, 1fr))`, gap: 1 }}>
           {visibles.map((c, i) => {
-            const activa = i === elegida
+            const activa = i === indice
             return (
               <Box
                 key={c.etiqueta}
@@ -360,11 +365,11 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
             <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{actual.resumen}</Typography>
           </Box>
           {actual.leyenda && (
-            <Box sx={{ display: 'flex', justifyContent: elegida === 3 ? 'space-between' : 'flex-start', gap: 2, fontSize: 12.5, color: 'text.secondary', order: elegida === 3 ? 3 : 0 }}>
+            <Box sx={{ display: 'flex', justifyContent: esSaldo ? 'space-between' : 'flex-start', gap: 2, fontSize: 12.5, color: 'text.secondary', order: esSaldo ? 3 : 0 }}>
               {actual.leyenda}
             </Box>
           )}
-          <Box key={elegida} sx={{ flex: '1 1 0 !important', minHeight: 0, display: 'flex', flexDirection: 'column', pt: 1.5 }}>
+          <Box key={indice} sx={{ flex: '1 1 0 !important', minHeight: 0, display: 'flex', flexDirection: 'column', pt: 1.5 }}>
             {actual.grafica}
           </Box>
         </Box>

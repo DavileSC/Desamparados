@@ -80,12 +80,20 @@ export default function AccesoPage() {
   // Con el área apagada, el servidor rechaza el login con un 404; mejor decirlo
   // antes de que nadie escriba su contraseña. A la junta se le enseña su acceso.
   if (activos && !activo('area-hermanos')) {
+    // En la misma tarjeta que el formulario, y como contenido principal con su
+    // título: es la página entera, no un aviso suelto en el marco.
     return (
-      <Box sx={{ textAlign: 'center' }}>
-        <Typography component="h1" variant="h5" sx={{ mb: 1.5 }}>El área de hermanos no está activada</Typography>
-        <Typography color="text.secondary" sx={{ mb: 2 }}>En esta instalación los hermanos no entran por la web.</Typography>
-        <Typography>Si eres de la Junta de Gobierno, entra por el <Link to="/cms/acceso">acceso del CMS</Link>.</Typography>
-      </Box>
+      <>
+        <Helmet>
+          <title>{`Área de hermanos no activada | ${site.nombreCorto}`}</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+        <TarjetaCristal component="main" sx={{ width: '100%', p: { xs: 3, md: 5 }, maxWidth: 440, mx: 'auto', textAlign: 'center' }}>
+          <Typography component="h1" variant="h5" sx={{ mb: 1.5 }}>El área de hermanos no está activada</Typography>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>En esta instalación los hermanos no entran por la web.</Typography>
+          <Typography>Si eres de la Junta de Gobierno, entra por el <Link to="/cms/acceso">acceso del CMS</Link>.</Typography>
+        </TarjetaCristal>
+      </>
     )
   }
 

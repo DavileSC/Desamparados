@@ -18,7 +18,7 @@ export function useModulos() {
     activos,
     cargando: isPending,
     error: isError,
-    /** Sin la lista todavía, nada de módulo está activo; `nucleo` sí. */
-    activo: (requisito: Requisito) => (activos ? cumple(requisito, activos) : requisito === 'nucleo'),
+    /** Sin la lista todavía, nada de módulo está activo; lo que vale con `nucleo`, sí. La misma regla que `cumple` y `ExigeModulo`. */
+    activo: (requisito: Requisito) => cumple(requisito, activos ?? new Set()),
   }
 }

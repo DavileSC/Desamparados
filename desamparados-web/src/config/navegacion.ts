@@ -29,9 +29,10 @@ export interface EntradaMenu {
   modulo: Modulo
 }
 
-// Guardiana (Tarea 17): lee este fichero línea a línea y exige `modulo:` en
-// toda línea que lleve `label:`, también en las secciones de varias líneas
-// (va pegado a `label` y `href`, `hijos`, etc. siguen debajo tal cual).
+// La guardiana del backend (`test/modulos-cobertura.test.ts`) lee este fichero
+// línea a línea y exige `modulo:` en toda línea que lleve `label:`, también en
+// las secciones de varias líneas (va pegado a `label` y `href`, `hijos`, etc.
+// siguen debajo tal cual).
 export const menuPublico: EntradaMenu[] = [
   { label: 'Inicio', href: '/', modulo: 'nucleo' },
   {

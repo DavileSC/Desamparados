@@ -72,11 +72,11 @@ function mismaFranja(anterior: Bloque, bloque: Bloque): boolean {
  */
 export function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = false }: { bloque: Bloque; indice?: number; primero?: boolean; pegado?: boolean }) {
   const modo = useModoEdicion()
-  const { activos } = useModulos()
+  const { activo } = useModulos()
   const modulo = moduloDeBloque(bloque)
   // Un bloque de un módulo apagado no se pinta; en el constructor se dice por qué,
   // para que quien edita no crea que se ha perdido.
-  if (modulo !== 'nucleo' && !(activos?.has(modulo))) {
+  if (modulo !== 'nucleo' && !activo(modulo)) {
     return modo !== null ? <AvisoDeModuloApagado modulo={modulo} bloque={bloque} indice={indice} /> : null
   }
   const Componente = componenteDeBloque(bloque)
