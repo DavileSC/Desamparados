@@ -29,6 +29,18 @@ try {
 const { default: app } = await import('./app');
 const { default: db } = await import('./config/db');
 
+// Los módulos encendidos, en memoria antes de la primera petición. Si la base
+// no responde, no se arranca a ciegas con todo apagado: se sale y systemd
+// vuelve a intentarlo.
+const { ModulosService } = await import('./services/modulos.service');
+try {
+  const encendidos = await ModulosService.cargar();
+  console.log(`[Módulos] ${encendidos.size} encendidos: ${[...encendidos].join(', ') || 'ninguno'}`);
+} catch (error) {
+  console.error(`[Módulos] No se pudieron leer los módulos de la base de datos: ${describirErrorParaLog(error)}`);
+  process.exit(1);
+}
+
 const PORT = puertoDeEscucha();
 const HOST = hostDeEscucha(); // 127.0.0.1 en producción; todas las interfaces en desarrollo
 

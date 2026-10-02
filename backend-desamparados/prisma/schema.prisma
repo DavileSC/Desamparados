@@ -960,6 +960,17 @@ model Configuracion {
   updatedAt   DateTime @updatedAt
 }
 
+/// Qué módulos tiene encendidos esta instalación. El catálogo (nombre, grupo,
+/// requisitos) vive en shared/modulos.json; aquí solo el interruptor y quién
+/// lo tocó. Apagar no borra nada: los datos del módulo siguen en sus tablas.
+model Modulo {
+  clave       String   @id @db.VarChar(40)
+  activo      Boolean
+  cambiadoEl  DateTime @default(now())
+  /// El correo de quien lo cambió desde el CMS; null si lo puso la siembra.
+  cambiadoPor String?  @db.VarChar(120)
+}
+
 // Códigos de respaldo del 2FA: se muestran UNA sola vez al activar,
 // y cada uno puede usarse una única vez (para login o para desactivar).
 model TwoFactorBackupCode {

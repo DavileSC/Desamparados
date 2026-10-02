@@ -8,6 +8,7 @@ import { sembrarContenido } from './seed-contenido';
 import { sembrarDemostracion } from './seed-demo';
 import { sembrarSalidas } from './seed-salidas';
 import { HERMANO_EMAIL_DESARROLLO, planDeCuentas, type PlanCuentas } from './seed-cuentas';
+import { ModulosService } from '../src/services/modulos.service';
 
 /**
  * Cuentas de la siembra (las reglas viven en seed-cuentas.ts):
@@ -119,6 +120,10 @@ async function main() {
   // 4. Las salidas procesionales: sin ellas no hay papeletas, ni repartos, ni
   //    mesa. Antes de la demostración, que cuelga sus papeletas de la Pasión.
   await sembrarSalidas();
+
+  // 4b. Los módulos que esta instalación tiene encendidos (shared/datos-entidad.json).
+  const modulosNuevos = await ModulosService.sembrar();
+  console.log(`   ${modulosNuevos} módulos nuevos (los que ya existían no se tocan)`);
 
   // 5. Censo de demostración: 300 hermanos con cinco ejercicios de cuotas,
   //    papeletas, contabilidad, reparto y ropero, para ver el CMS con

@@ -170,6 +170,9 @@ export const ACCIONES_AUDITORIA = {
   RETABLO_ACTUALIZAR: 'RETABLO_ACTUALIZAR',
   // Los textos a mano de la Memoria del curso
   INFORME_ANUAL_ACTUALIZAR: 'INFORME_ANUAL_ACTUALIZAR',
+  // Sistema → Módulos: encender o apagar un módulo de la instalación
+  MODULO_ENCENDER: 'MODULO_ENCENDER',
+  MODULO_APAGAR: 'MODULO_APAGAR',
   // Correo que no salió. No es una acción de nadie, pero se guarda aquí porque
   // es el único sitio del CMS donde el staff puede enterarse: antes el fallo
   // moría en un console.error y el alta se daba por buena sin avisar a nadie.
