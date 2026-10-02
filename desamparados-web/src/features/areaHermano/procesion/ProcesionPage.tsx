@@ -18,7 +18,7 @@ import { formatearImporte } from '../recibos/etiquetas'
 import { PARENTESCO } from '../perfil/etiquetas'
 import AvisoSuave from '../../../components/AvisoSuave'
 import { site } from '../../../config/site'
-import TarjetaPapeleta from './TarjetaPapeleta'
+import PapeletasDeLaFamilia from './PapeletasDeLaFamilia'
 import { useSalidas } from '../../procesion/useSalidas'
 import { conArticulo, deArticulo, laCorporacion, segunLaCorporacion, type Articulo } from '../../../domain/articulos'
 import { useModulos } from '../../../hooks/useModulos'
@@ -143,8 +143,8 @@ function Contenido({ estado, salida, comprobando, onHecho, onError }: PropsConte
     <Box sx={{ display: 'grid', gap: 3, maxWidth: 980 }}>
       {activo('cuotas-en-linea') && <PorPagar estado={estado} salida={salida} comprobando={comprobando} onHecho={onHecho} onError={onError} />}
       {conPapeleta.length > 0 && (
-        <Box component="section" aria-label="Papeletas para enseñar en la puerta" sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
-          {conPapeleta.map((f) => <TarjetaPapeleta key={f.id} ficha={f} salida={salida} />)}
+        <Box component="section" aria-label="Papeletas para enseñar en la puerta">
+          <PapeletasDeLaFamilia fichas={conPapeleta} salida={salida} quienEs={quienEs} />
         </Box>
       )}
       {apuntadas.length > 0 && <Apuntadas fichas={apuntadas} salida={salida} onHecho={onHecho} onError={onError} />}

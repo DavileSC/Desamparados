@@ -1,5 +1,6 @@
 import { Box, Typography } from '@mui/material'
 import type { FichaEnLaProcesion, SalidaDelHermano } from '../../../lib/api/procesion'
+import { BURDEOS, CREMA, FILETE, GRIS, NEGRO, ORO, SERIFA, imagenDelQr } from './papeleta-estilo'
 
 /**
  * La papeleta en el móvil: lo que el hermano enseña en la puerta del templo.
@@ -11,14 +12,6 @@ import type { FichaEnLaProcesion, SalidaDelHermano } from '../../../lib/api/proc
  * Solo en pantalla, sin descarga: quien la quiera en papel tiene el A4 que se
  * le dio en la mesa y que le llegó por correo.
  */
-
-const NEGRO = '#161214'
-const ORO = '#cdae72'
-const CREMA = '#f4efe5'
-const GRIS = '#b9b1a8'
-const FILETE = '#4a3f35'
-const BURDEOS = '#5c1622'
-const SERIFA = 'Georgia, "Times New Roman", serif'
 
 const etiqueta = { fontSize: 10, letterSpacing: '1.5px', textTransform: 'uppercase', color: GRIS } as const
 
@@ -56,7 +49,7 @@ export default function TarjetaPapeleta({ ficha, salida }: { ficha: FichaEnLaPro
         <Box sx={{ bgcolor: CREMA, p: 1.75, display: 'flex' }}>
           <Box
             component="img"
-            src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(papeleta.qr.svg)}`}
+            src={imagenDelQr(papeleta.qr.svg)}
             alt={`Código QR de la papeleta ${papeleta.referencia}`}
             sx={{ width: 180, height: 180, display: 'block', imageRendering: 'pixelated' }}
           />

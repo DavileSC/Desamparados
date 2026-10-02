@@ -246,6 +246,33 @@ describe('ProcesionPage', () => {
     expect(within(tarjeta).getByText('19:30h')).toBeInTheDocument()
   })
 
+  it('con varias papeletas, una lista y el modo puerta que las pasa de una en una', async () => {
+    const user = userEvent.setup()
+    const papeleta = (id: number, puesto: string) => ({ id, year: 2027, puesto, tramo: null, numero: null, referencia: `2027-00${id}`, tunica: null, qr: { codigo: `DSP1.${id}.AAAAAAAAAAAAAAAA`, svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>' } })
+    servidor({
+      fichas: [
+        ficha(1, 'Antonio', {}, { papeleta: papeleta(11, 'Nazareno') }),
+        ficha(2, 'Pablo', { esTitular: false, parentesco: 'HIJO' }, { papeleta: papeleta(12, 'Monaguillo') }),
+        ficha(3, 'Lucía', { esTitular: false, parentesco: 'SOBRINO' }, { papeleta: papeleta(13, 'Guardería') }),
+      ],
+    })
+    renderWithProviders(<ProcesionPage />)
+
+    // En la lista, sin tarjetas: no caben tres en la pantalla.
+    expect(await screen.findByRole('button', { name: 'Enseñar la papeleta de Pablo Benítez Salas' })).toBeInTheDocument()
+    expect(screen.queryByRole('article')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Modo puerta · las 3 seguidas' }))
+    const puerta = screen.getByRole('dialog', { name: /Antonio Benítez Salas, 1 de 3/ })
+    expect(within(puerta).getByRole('img', { name: 'Código QR de la papeleta 2027-0011' })).toBeInTheDocument()
+    await user.click(within(puerta).getByRole('button', { name: 'Pablo' }))
+    expect(screen.getByRole('dialog', { name: /Pablo Benítez Salas, 2 de 3/ })).toBeInTheDocument()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('dialog', { name: /Lucía Benítez Salas, 3 de 3/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Terminar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
   it('sin papeleta recogida no hay tarjeta', async () => {
     const solicitud = { id: 4, puesto: 'Nazareno', donativo: null, pendiente: 0, concepto: 'Papeleta de sitio 2027', pagada: true, cita: null }
     servidor({ fichas: [ficha(1, 'Antonio', {}, { solicitud })] })
