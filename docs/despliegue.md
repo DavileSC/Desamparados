@@ -616,17 +616,24 @@ estorba.
 Si no se está seguro de si toca, el arranque de la API lo dice: si quedan filas
 con la forma antigua, lo avisa en el registro nada más levantar.
 
-**Con la migración `20261031200000_modulos_activables`, hace falta sembrar
-después de migrar.** `docker compose up -d --build` aplica sola la migración
-(`npx prisma migrate deploy`, dentro del contenedor `migraciones`) y crea la
-tabla `Modulo`, pero no siembra sus filas. Eso lo hace
-`docker compose run --rm herramientas npm run seed` (`npx prisma db seed`):
-crea las filas que falten **con todo encendido** y no toca ninguna que ya
-exista, así que es seguro repetirla en una instalación que ya tenía módulos
-encendidos o apagados a mano. En una instalación nueva, antes de sembrar,
-`modulos.activos` de `shared/datos-entidad.json` decide con qué módulos
-arranca; en una que ya estuviera en marcha da igual lo que diga ese JSON,
-porque todas las filas ya existen y la siembra no las toca.
+**Con la migración `20261031200000_modulos_activables`, los módulos se
+siembran solos al arrancar.** `docker compose up -d --build` aplica la
+migración (`npx prisma migrate deploy`, dentro del contenedor `migraciones`),
+que crea la tabla `Modulo`, y al levantar la API `src/index.ts` llama a
+`ModulosService.cargar()`, que crea las filas que falten con el lote inicial
+(`modulos.activos` de `shared/datos-entidad.json`) y no toca ninguna que ya
+exista. No hay que sembrar nada a mano por esto. La siembra completa también
+crea esas filas, del mismo modo, pero no hace falta lanzarla solo por los
+módulos:
+
+```bash
+docker compose run --rm herramientas npm run seed   # opcional: lo mismo que hace el arranque, y el resto de la siembra
+```
+
+En una instalación nueva, `modulos.activos` decide con qué módulos arranca:
+hay que ajustarlo **antes del primer arranque**, porque después todas las
+filas ya existen y ni el arranque ni la siembra las tocan (se cambian desde
+la pantalla de Módulos del CMS).
 
 **Si hay fotos subidas antes del 27 de septiembre de 2026, conviene pasarlas a
 WebP una vez** (desde entonces la subida lo hace sola):

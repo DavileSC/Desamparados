@@ -466,10 +466,13 @@ dinero real.
 instalación», y una sesión de hermano que ya existiera se ignora en
 `middleware/session.ts`: no basta con ocultar el enlace de entrada.
 
-**Al desplegar, la migración no basta: hace falta sembrar.** La migración
-`20261031200000_modulos_activables` crea la tabla; `npx prisma db seed`
-crea las filas que falten con el lote inicial (lo que diga `modulos.activos`
-de `shared/datos-entidad.json`) y no toca ninguna fila que ya exista. El
-arranque de la API (`src/index.ts`) carga los módulos y **sale con error si
-la base no responde**: no hay forma de arrancar con el estado de los módulos
-a medias.
+**Al desplegar basta la migración: las filas se siembran solas al arrancar.**
+La migración `20261031200000_modulos_activables` crea la tabla, y el arranque
+de la API (`src/index.ts`) llama a `ModulosService.cargar()`, que a su vez
+llama a `sembrar()`: crea las filas que falten con el lote inicial (lo que
+diga `modulos.activos` de `shared/datos-entidad.json`) y no toca ninguna que
+ya exista. `npx prisma db seed` hace lo mismo, pero no hace falta solo por
+esto. Por eso una instalación nueva ajusta `modulos.activos` **antes del
+primer arranque**: después las filas ya existen y el JSON no cuenta. El
+arranque **sale con error si la base no responde**: no hay forma de arrancar
+con el estado de los módulos a medias.
