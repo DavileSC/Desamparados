@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert, Box, Button, CircularProgress, LinearProgress, List, ListItem, ListItemText, Paper, Stack, Tab, Tabs, TextField, Typography,
 } from '@mui/material'
@@ -16,10 +16,15 @@ import { deArticulo, deLaCorporacion } from '../../../domain/articulos'
 
 /** Las cuentas se refrescan solas: varios diputados escanean a la vez en distintas puertas. */
 const SONDEO_MS = 5_000
-/** Lo que se queda el resultado en pantalla antes de volver a leer. */
+/** Lo que espera la cámara antes de volver a leer. */
 const PAUSA_MS = 1_800
-/** El mismo código leído otra vez en este tiempo es el mismo gesto, no otra entrada. */
-const REPETICION_MS = 4_000
+/**
+ * Lo que dura el resultado en pantalla. Fijo, el aviso de la papeleta anterior
+ * se confundía con la siguiente. El mismo código leído en este tiempo es el
+ * mismo gesto (la papeleta sigue delante de la cámara), no otra entrada: con un
+ * margen menor, un «Adelante» pasaba solo a «Ya había entrado».
+ */
+const RESULTADO_MS = 4_000
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const hora = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
@@ -72,6 +77,11 @@ export default function PuertaTemploPage() {
   const [buscar, setBuscar] = useState('')
   const [error, setError] = useState<string | null>(null)
   const ultimo = useRef<{ texto: string; en: number } | null>(null)
+  const temporizadores = useRef<{ pausa?: number; resultado?: number }>({})
+  useEffect(() => () => {
+    window.clearTimeout(temporizadores.current.pausa)
+    window.clearTimeout(temporizadores.current.resultado)
+  }, [])
 
   const clave = ['puerta', slug]
   const { data: estado, error: errorCarga } = useQuery({ queryKey: clave, queryFn: () => estadoPuerta(slug), refetchInterval: SONDEO_MS, staleTime: 0, enabled: Boolean(salida) })
@@ -82,7 +92,11 @@ export default function PuertaTemploPage() {
     setError(null)
     vibrar(l.veredicto)
     setPausado(true)
-    window.setTimeout(() => setPausado(false), PAUSA_MS)
+    // Cada lectura empieza su cuenta: la anterior no puede borrar la nueva antes de tiempo.
+    window.clearTimeout(temporizadores.current.pausa)
+    window.clearTimeout(temporizadores.current.resultado)
+    temporizadores.current.pausa = window.setTimeout(() => setPausado(false), PAUSA_MS)
+    temporizadores.current.resultado = window.setTimeout(() => setLectura(null), RESULTADO_MS)
     void refrescar()
   }, [refrescar])
 
@@ -90,7 +104,7 @@ export default function PuertaTemploPage() {
     const limpio = texto.trim()
     if (!limpio) return
     const ahora = Date.now()
-    if (ultimo.current && ultimo.current.texto === limpio && ahora - ultimo.current.en < REPETICION_MS) return
+    if (ultimo.current && ultimo.current.texto === limpio && ahora - ultimo.current.en < RESULTADO_MS) return
     ultimo.current = { texto: limpio, en: ahora }
     try { mostrar(await escanearPapeleta(limpio.slice(0, 64), slug)) }
     catch (err: unknown) { setError(mensaje(err, 'No se ha podido comprobar la papeleta. Vuelve a intentarlo.')) }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -105,6 +105,25 @@ describe('PuertaTemploPage', () => {
     await screen.findByText('Luis Mora Paz')
     await user.type(screen.getByLabelText('Código de la papeleta'), 'cualquier cosa{Enter}')
     expect(await screen.findByText('No es una papeleta válida')).toBeInTheDocument()
+  })
+
+  it('el aviso se va solo y la misma papeleta delante de la cámara no se vuelve a leer mientras tanto', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const fetch = montar({ veredicto: 'REPETIDA', papeleta: { ...ANA, entradaEl: '2027-04-10T16:00:00.000Z' } })
+      await screen.findByText('Luis Mora Paz')
+      const escaneos = () => fetch.mock.calls.filter(([u]) => String(u).endsWith('/puerta/escanear')).length
+      await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+      expect(await screen.findByText('Ya había entrado')).toBeInTheDocument()
+      act(() => { vi.advanceTimersByTime(4_500) })
+      await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+      expect(escaneos()).toBe(1)
+      act(() => { vi.advanceTimersByTime(2_000) })
+      expect(screen.queryByText('Ya había entrado')).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('quien llega sin la papeleta se busca y se marca a mano', async () => {
