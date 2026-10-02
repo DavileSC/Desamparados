@@ -4,7 +4,9 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
+import { crearQueryClientDePruebas } from '../../../test/queryClient'
 import HermanoEditPage from '../HermanoEditPage'
 
 const ficha = {
@@ -53,7 +55,12 @@ function diferida<T>() {
 const deBaja = { ...ficha, activo: false, numeroHermano: null, fechaBaja: '2024-05-10T00:00:00.000Z' }
 const pendiente = { ...ficha, activo: false, numeroHermano: null, fechaBaja: null }
 
-function montar(id = 42) {
+// `HermanoEditPage` pregunta a `useModulos()` (un `useQuery`): necesita un
+// QueryClient aunque la mayoría de pruebas no toquen módulos. No se usa
+// `renderWithProviders` porque esta pantalla necesita un `RouterProvider`
+// con la ruta `:id` para que `useParams()` la lea.
+function montar(id = 42, modulos?: readonly string[]) {
+  const queryClient = crearQueryClientDePruebas(modulos)
   const router = createMemoryRouter(
     [
       { path: '/cms/hermanos', element: <h1>Gestión de hermanos</h1> },
@@ -61,7 +68,13 @@ function montar(id = 42) {
     ],
     { initialEntries: [`/cms/hermanos/${id}/editar`] },
   )
-  return render(<HelmetProvider><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
+  return render(
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>,
+  )
 }
 
 afterEach(() => { vi.unstubAllGlobals() })
@@ -78,6 +91,22 @@ describe('HermanoEditPage', () => {
     expect(screen.getByDisplayValue('118')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Nazareno de cirio')).toBeInTheDocument()
     expect(screen.getByDisplayValue('168')).toBeInTheDocument()
+  })
+
+  it('con Procesión apagado no hay esa sección', async () => {
+    responder(ficha)
+    montar(42, [])
+    await screen.findByDisplayValue('Rocío')
+    expect(screen.queryByRole('heading', { name: 'Procesión' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Talla de túnica')).not.toBeInTheDocument()
+  })
+
+  it('con todos los módulos, la sección de Procesión está', async () => {
+    responder(ficha)
+    montar()
+    await screen.findByDisplayValue('Rocío')
+    expect(screen.getByRole('heading', { name: 'Procesión' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Talla de túnica')).toBeInTheDocument()
   })
 
   it('no enseña el listado del censo mientras se edita', async () => {

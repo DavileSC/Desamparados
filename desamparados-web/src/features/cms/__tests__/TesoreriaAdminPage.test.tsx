@@ -323,4 +323,21 @@ describe('TesoreriaAdminPage', () => {
     expect(screen.queryByRole('button', { name: 'Reemitir Cuota vieja de Ana Pérez Ruiz' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reemitir Cuota nueva de Ana Pérez Ruiz' })).toBeInTheDocument()
   })
+
+  it('con Remesas y Modelo 182 apagados, esas pestañas no están', async () => {
+    vi.stubGlobal('fetch', responder(0))
+    renderWithProviders(<TesoreriaAdminPage />, { modulos: [] })
+
+    await screen.findByRole('tab', { name: 'Recibos' })
+    expect(screen.queryByRole('tab', { name: 'Remesas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Modelo 182' })).not.toBeInTheDocument()
+  })
+
+  it('con solo Remesas encendido, está esa pestaña y no Modelo 182', async () => {
+    vi.stubGlobal('fetch', responder(0))
+    renderWithProviders(<TesoreriaAdminPage />, { modulos: ['remesas'] })
+
+    expect(await screen.findByRole('tab', { name: 'Remesas' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Modelo 182' })).not.toBeInTheDocument()
+  })
 })

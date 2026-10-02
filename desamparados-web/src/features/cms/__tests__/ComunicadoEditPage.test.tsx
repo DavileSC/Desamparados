@@ -4,8 +4,9 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
+import { crearQueryClientDePruebas } from '../../../test/queryClient'
 import ComunicadoEditPage from '../ComunicadoEditPage'
 import { salidasDePrueba, esListaDeSalidas } from '../../../test/salidas'
 
@@ -18,7 +19,11 @@ const BORRADOR = {
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, pendientes: 0 }) {
+// `ComunicadoEditPage` pregunta a `useModulos()` (un `useQuery`): sin
+// `crearQueryClientDePruebas`, la consulta de módulos caería en el `fetch`
+// simulado de aquí abajo (pensado para las rutas del comunicado) y rompería
+// con una respuesta que no es la lista de módulos.
+function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, pendientes: 0 }, modulos?: readonly string[]) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
     if (esListaDeSalidas(ruta)) return Promise.resolve(json(salidasDePrueba))
@@ -34,7 +39,7 @@ function montar(comunicado: unknown, envios = { enviados: 0, fallidos: 0, pendie
     [{ path: '/cms/comunicados', element: <h1>Listado</h1> }, { path: '/cms/comunicados/:id', element: <ComunicadoEditPage /> }],
     { initialEntries: ['/cms/comunicados/7'] },
   )
-  const cliente = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const cliente = crearQueryClientDePruebas(modulos)
   render(<HelmetProvider><QueryClientProvider client={cliente}><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></QueryClientProvider></HelmetProvider>)
   return fetch
 }
@@ -66,6 +71,12 @@ describe('ComunicadoEditPage', () => {
       const ultima = fetch.mock.calls.filter(([url]) => String(url).endsWith('/destinatarios')).at(-1)!
       expect(JSON.parse(String((ultima[1] as RequestInit).body)).segmento.conPapeleta).toBe(2)
     })
+  })
+
+  it('con Procesión apagado no está el filtro «con papeleta de»', async () => {
+    montar(BORRADOR, undefined, ['comunicados'])
+    await screen.findByText(/Llegará a 10 direcciones/)
+    expect(screen.queryByRole('combobox', { name: 'Papeleta' })).not.toBeInTheDocument()
   })
 
   it('la prueba y el envío, este tras confirmar', async () => {

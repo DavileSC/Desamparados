@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../altas/auth/store'
+import { useModulos } from '../../hooks/useModulos'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
 import { aprobarSolicitud, cerrarHuecosDeNumero, descartarPeticionVuelta, solicitudesPendientes, reactivarHermano, rechazarSolicitud, buscarHermanos, type AdminBrother, type FiltrosCenso, type PendingRequest, type PeticionVuelta } from '../../lib/api/hermanos'
 import { usePaginacion } from '../../hooks/usePaginacion'
@@ -75,11 +76,14 @@ export default function HermanosAdminPage() {
   // altas. Quien llega aquí sin ser ninguno de los tres es porque la guarda de
   // ruta le deja mirar, no tocar.
   const puedeGestionar = role === 'ADMIN' || role === 'SECRETARIA' || role === 'HERMANO_MAYOR'
+  const { activo } = useModulos()
+  const conDifuntos = activo('difuntos')
   const [params, setParams] = useSearchParams()
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
   const pedida = params.get('vista')
-  const vista = pedida === 'solicitudes' || pedida === 'impagos' || pedida === 'difuntos' ? pedida : 'censo'
+  // Una vista de un módulo apagado (un enlace guardado) cae en el censo.
+  const vista = pedida === 'solicitudes' || pedida === 'impagos' || (pedida === 'difuntos' && conDifuntos) ? pedida : 'censo'
   // La ficha abierta a la derecha, también en la URL: «Editar ficha» y el botón
   // de atrás del navegador vuelven a ella, con la lista como estaba.
   const fichaAbierta = Number(params.get('ficha')) || null
@@ -249,7 +253,7 @@ export default function HermanosAdminPage() {
         <Tab value="censo" label="Censo" />
         <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
         <Tab value="impagos" label="Impagos" />
-        <Tab value="difuntos" label="Difuntos" />
+        {conDifuntos && <Tab value="difuntos" label="Difuntos" />}
       </Tabs>
       {puedeGestionar && (
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', rowGap: 1.5 }}>

@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import { useVolverAlListado } from '../../hooks/useVolverAlListado'
+import { useModulos } from '../../hooks/useModulos'
 import { MOTIVOS_BAJA, darDeBajaHermano, emanciparHermano, fichaDeHermano, reactivarHermano, actualizarHermano, type AdminBrother, type DatosDeFichaDeHermano, type MotivoBaja } from '../../lib/api/hermanos'
 import { PARENTESCOS } from '../../lib/api/auth'
 import { ESTADO_CIVIL, SEXO } from '../areaHermano/perfil/etiquetas'
@@ -101,6 +102,7 @@ const desdeFicha = (f: AdminBrother & { parentesco?: string | null }): Formulari
 export default function HermanoEditPage() {
   const { id } = useParams()
   const navegar = useNavigate()
+  const { activo } = useModulos()
   // El listado del que se vino, con su página y sus filtros: el enlace de editar
   // los trae en el state. Sin state (URL tecleada) se cae en la ruta pelada.
   const volverAlListado = useVolverAlListado('/cms/hermanos')
@@ -401,19 +403,23 @@ export default function HermanoEditPage() {
               </Box>
             </Stack>
           </Box>
-          <Divider />
-          <Box>
-            <Typography variant="h6" sx={{ mb: 2 }}>Procesión</Typography>
-            <Stack spacing={2}>
-              {texto('puesto', 'Puesto en el cortejo')}
-              {texto('tunica', 'Talla de túnica')}
-              {texto('alturaHombro', 'Altura de hombro (cm)', 'number')}
-              <FormControlLabel
-                control={<Switch checked={form.tieneTunicaPropia} onChange={(e) => campo('tieneTunicaPropia', e.target.checked)} />}
-                label="Tiene túnica propia"
-              />
-            </Stack>
-          </Box>
+          {activo('procesion') && (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2 }}>Procesión</Typography>
+                <Stack spacing={2}>
+                  {texto('puesto', 'Puesto en el cortejo')}
+                  {texto('tunica', 'Talla de túnica')}
+                  {texto('alturaHombro', 'Altura de hombro (cm)', 'number')}
+                  <FormControlLabel
+                    control={<Switch checked={form.tieneTunicaPropia} onChange={(e) => campo('tieneTunicaPropia', e.target.checked)} />}
+                    label="Tiene túnica propia"
+                  />
+                </Stack>
+              </Box>
+            </>
+          )}
 
           {(!ficha.esTitular || cuentaSuprimida) && (
             <>

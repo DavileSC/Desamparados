@@ -16,6 +16,7 @@ import { plantillasLibres } from '../../lib/api/emails'
 import { site } from '../../config/site'
 import { useSalidas } from '../procesion/useSalidas'
 import { deArticulo } from '../../domain/articulos'
+import { useModulos } from '../../hooks/useModulos'
 
 const LISTADO = '/cms/comunicados'
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
@@ -34,6 +35,7 @@ const aDatos = (c: ComunicadoCompleto): DatosComunicado => ({
 export default function ComunicadoEditPage() {
   const id = Number(useParams().id)
   const navegar = useNavigate()
+  const { activo } = useModulos()
   const [original, setOriginal] = useState<ComunicadoCompleto | null>(null)
   const [form, setForm] = useState<DatosComunicado | null>(null)
   const { data: salidas = [] } = useSalidas()
@@ -103,10 +105,13 @@ export default function ComunicadoEditPage() {
   const campo = <K extends keyof DatosComunicado>(k: K, v: DatosComunicado[K]) => setForm({ ...form, [k]: v })
   const segmento = (cambios: Partial<Segmento>) => setForm({ ...form, segmento: { ...form.segmento, ...cambios } })
   const cuerpoVacio = form.cuerpo.replace(/<[^>]*>/g, '').trim() === '' && !/<img/i.test(form.cuerpo)
+  // Con Procesión apagado no se enseña el filtro: no se guarda uno que la
+  // pantalla no deja ver, aunque el servidor ya lo ignore sin el módulo.
+  const paraGuardar = (f: DatosComunicado): DatosComunicado => (activo('procesion') ? f : { ...f, segmento: { ...f.segmento, conPapeleta: null } })
 
   const guardar = async () => {
     setGuardando(true); setError(null)
-    try { const c = await guardarComunicado(id, form); setOriginal(c); setForm(aDatos(c)); setAviso('Borrador guardado.') }
+    try { const c = await guardarComunicado(id, paraGuardar(form)); setOriginal(c); setForm(aDatos(c)); setAviso('Borrador guardado.') }
     catch (err: unknown) { setError(mensaje(err, 'No se ha podido guardar.')) }
     finally { setGuardando(false) }
   }
@@ -114,7 +119,7 @@ export default function ComunicadoEditPage() {
   const probar = async () => {
     setGuardando(true); setError(null); setAviso(null)
     try {
-      if (sucio) { const c = await guardarComunicado(id, form); setOriginal(c); setForm(aDatos(c)) }
+      if (sucio) { const c = await guardarComunicado(id, paraGuardar(form)); setOriginal(c); setForm(aDatos(c)) }
       setAviso((await enviarPrueba(id)).message)
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido enviar la prueba.')) }
     finally { setGuardando(false) }
@@ -123,7 +128,7 @@ export default function ComunicadoEditPage() {
   const enviar = async () => {
     setConfirmar(null); setGuardando(true); setError(null); setAviso(null)
     try {
-      if (sucio) await guardarComunicado(id, form)
+      if (sucio) await guardarComunicado(id, paraGuardar(form))
       setAviso((await enviarComunicado(id)).message)
       await cargar()
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido enviar.')) }
@@ -209,10 +214,12 @@ export default function ComunicadoEditPage() {
             {form.tipo === 'BOLETIN' ? 'A los hermanos activos suscritos al boletín' : 'A los hermanos activos'}{', y de ellos, solo a quienes cumplan lo que marques aquí.'}
           </Typography>
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(3, minmax(0, 1fr))' } }}>
-            <TextField select size="small" label="Papeleta" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.conPapeleta ?? ''} onChange={(e) => segmento({ conPapeleta: e.target.value === '' ? null : Number(e.target.value) })}>
-              <MenuItem value="">Da igual</MenuItem>
-              {salidas.map((s) => <MenuItem key={s.id} value={s.id}>{`Con papeleta ${deArticulo(s.articulo, s.nombre)}`}</MenuItem>)}
-            </TextField>
+            {activo('procesion') && (
+              <TextField select size="small" label="Papeleta" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.conPapeleta ?? ''} onChange={(e) => segmento({ conPapeleta: e.target.value === '' ? null : Number(e.target.value) })}>
+                <MenuItem value="">Da igual</MenuItem>
+                {salidas.map((s) => <MenuItem key={s.id} value={s.id}>{`Con papeleta ${deArticulo(s.articulo, s.nombre)}`}</MenuItem>)}
+              </TextField>
+            )}
             <TextField select size="small" label="Edad" slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }} value={form.segmento.edad ?? ''} onChange={(e) => segmento({ edad: (e.target.value || null) as Segmento['edad'] })}>
               <MenuItem value="">Da igual</MenuItem>
               <MenuItem value="MAYORES">Mayores de edad</MenuItem>

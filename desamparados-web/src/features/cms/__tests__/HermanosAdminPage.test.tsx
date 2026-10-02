@@ -389,6 +389,37 @@ describe('HermanosAdminPage', () => {
     expect(screen.getByRole('link', { name: /gómez marín, rocío/i })).toHaveAttribute('aria-current', 'true')
     expect(screen.getByRole('button', { name: /quitar el filtro situación/i })).toBeInTheDocument()
   })
+
+  it('con Procesión apagado, la ficha no enseña papeleta ni ropero, pero sí el último recibo', async () => {
+    const rocio = {
+      id: 5, nombre: 'Rocío', apellidos: 'Gómez Marín', numeroHermano: 118, dni: '12345678Z', email: null, activo: true, fechaBaja: null,
+      fechaNacimiento: '1980-02-10T00:00:00.000Z', fechaAlta: '2009-03-14T10:00:00.000Z', esTitular: true, tieneTunicaPropia: false,
+      tunica: 'L', alturaHombro: null, puesto: null, telefono: null, direccion: null, poblacion: null, codigoPostal: null,
+    }
+    const ficha = {
+      ...rocio,
+      user: { email: 'rocio@ejemplo.invalido', telefono: null, hermanos: [] },
+      recibos: [], papeletas: [{ year: 2026, puesto: 'Nazareno', tramo: '1' }], prendas: [{ id: 1, numero: '007', tipo: 'TUNICA', talla: 'L' }],
+    }
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => Promise.resolve(
+      /\/hermanos\/admin\/5$/.test(String(url))
+        ? new Response(JSON.stringify(ficha), { status: 200, headers: { 'Content-Type': 'application/json' } })
+        : respuestaCenso(String(url).includes('solicitudes') ? [] : [rocio]))))
+    renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?ficha=5', modulos: [] })
+
+    await screen.findByRole('heading', { name: 'Gómez Marín, Rocío' })
+    expect(screen.getByText('Último recibo')).toBeInTheDocument()
+    expect(screen.queryByText('Papeleta de sitio')).not.toBeInTheDocument()
+    expect(screen.queryByText('Del ropero')).not.toBeInTheDocument()
+  })
+
+  it('con Difuntos apagado no hay esa pestaña, y una URL guardada con ?vista=difuntos cae en el censo', async () => {
+    responderCenso(censoVacio, [])
+    renderWithProviders(<HermanosAdminPage />, { ruta: '/cms/hermanos?vista=difuntos', modulos: [] })
+
+    expect(await screen.findByLabelText(/buscar por nombre/i)).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Difuntos' })).not.toBeInTheDocument()
+  })
 })
 
 describe('los filtros de más y las listas guardadas', () => {

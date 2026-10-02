@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Alert, Autocomplete, Button, CircularProgress, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../altas/auth/store'
+import { useModulos } from '../../hooks/useModulos'
 import ListaImpagos from './impagos/ListaImpagos'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
@@ -82,9 +83,13 @@ const nombreHermano = (h: ReceiptBrother) => `${h.apellidos}, ${h.nombre}${h.num
 interface NuevoRecibo { hermano: ReceiptBrother | null; year: string; concepto: string; importe: string; tipo: EmittableReceiptType | '' }
 
 export default function TesoreriaAdminPage() {
+  const { activo } = useModulos()
+  const conRemesas = activo('remesas')
+  const conModelo182 = activo('modelo-182')
   const [params, setParams] = useSearchParams()
   const vistaPedida = params.get('vista')
-  const vista = vistaPedida === 'impagos' || vistaPedida === 'remesas' || vistaPedida === 'modelo182' ? vistaPedida : 'recibos'
+  // Una vista de un módulo apagado (un enlace guardado) cae en Recibos.
+  const vista = vistaPedida === 'impagos' || (vistaPedida === 'remesas' && conRemesas) || (vistaPedida === 'modelo182' && conModelo182) ? vistaPedida : 'recibos'
   // La baja es de Secretaría: aquí solo la dan quienes también gestionan el censo.
   const role = useAuthStore((state) => state.cms?.role ?? 'USER')
   const puedeDarDeBaja = role === 'ADMIN' || role === 'HERMANO_MAYOR'
@@ -256,8 +261,8 @@ export default function TesoreriaAdminPage() {
     >
       <Tab value="recibos" label="Recibos" />
       <Tab value="impagos" label="Impagos" />
-      <Tab value="remesas" label="Remesas" />
-      <Tab value="modelo182" label="Modelo 182" />
+      {conRemesas && <Tab value="remesas" label="Remesas" />}
+      {conModelo182 && <Tab value="modelo182" label="Modelo 182" />}
     </Tabs>
     {vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeDarDeBaja} /> : vista === 'remesas' ? <Remesas /> : vista === 'modelo182' ? <Modelo182 puedeCambiar={role === 'ADMIN' || role === 'TESORERIA'} /> : <>
     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}{notice && <Alert severity="success" sx={{ mb: 3 }}>{notice}</Alert>}
