@@ -2,6 +2,7 @@ import type { EstadoPrenda, MotivoBaja, TipoEvento, TipoPrenda } from '@prisma/c
 import type { Periodo } from './periodo-datos.js';
 import type { Recuento } from './panel-agrupar.js';
 import { deArticulo, type Articulo } from './articulos.js';
+import type { Modulo } from './modulos.js';
 
 /**
  * «Datos e informes», pestaña a pestaña, ya dicho en palabras: cuatro cifras por
@@ -132,6 +133,18 @@ export interface Cifra {
 }
 
 export type ClaveArea = 'hermanos' | 'dinero' | 'procesion' | 'inventario' | 'web' | 'agenda';
+
+/**
+ * De qué módulo es cada área: apagado el módulo, el área no sale en Datos e
+ * informes ni en el Informe anual. Hermanos, dinero y web son del núcleo.
+ */
+export const MODULO_DE_AREA: Record<ClaveArea, Modulo> = {
+  hermanos: 'nucleo', dinero: 'nucleo', procesion: 'procesion', inventario: 'inventario', web: 'nucleo', agenda: 'agenda',
+};
+
+export function areasActivas(areas: Area[], activos: ReadonlySet<string>): Area[] {
+  return areas.filter((a) => MODULO_DE_AREA[a.clave] === 'nucleo' || activos.has(MODULO_DE_AREA[a.clave]));
+}
 
 export interface Area {
   clave: ClaveArea;

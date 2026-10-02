@@ -4,8 +4,9 @@ import { InformeAnualService, leerAnio } from '../services/informe-anual.service
 import { AuditoriaService } from '../services/auditoria.service.js';
 import { informeAnual, informeDeArea } from '../services/informes/informes.js';
 import { leerPeriodo, periodoDe } from '../domain/periodo-datos.js';
-import { areasDe, type ClaveArea } from '../domain/datos-areas.js';
-import { HttpError } from '../utils/error.handle.js';
+import { areasActivas, areasDe, type ClaveArea } from '../domain/datos-areas.js';
+import { ModulosService } from '../services/modulos.service.js';
+import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { manejar } from '../utils/manejar.js';
 
 /** «Informe de hermanos 2026» → informe-de-hermanos-2026.pdf */
@@ -31,6 +32,7 @@ export class DatosController {
     const periodo = leerPeriodo(req.query.anio, hoy);
     const crudos = await DatosService.crudos(periodo, hoy);
     const area = areasDe(crudos, periodo, hoy).find((a) => a.clave === (req.params.area as ClaveArea))!;
+    if (!areasActivas([area], await ModulosService.activos()).length) throw new NotFoundError('Esa área es de un módulo que no está activado.');
     enviarPdf(res, await informeDeArea(area, periodo, crudos, hoy), `${area.informe} ${periodo.etiqueta}`);
   });
 
@@ -59,7 +61,7 @@ export class DatosController {
     }
     const periodo = periodoDe(anio, hoy);
     const crudos = await DatosService.crudos(periodo, hoy);
-    const pdf = await informeAnual(periodo, areasDe(crudos, periodo, hoy), crudos, informe.textos, { borrador, hoy });
+    const pdf = await informeAnual(periodo, areasActivas(areasDe(crudos, periodo, hoy), await ModulosService.activos()), crudos, informe.textos, { borrador, hoy });
     enviarPdf(res, pdf, `Informe anual ${anio}${borrador ? ' borrador' : ''}`, borrador);
   });
 }

@@ -17,6 +17,7 @@ import { enviarCorreo } from './correos/envio.js';
 import { firma, maquetar, parrafo, saludo, urlDeLaWeb } from './correos/plantilla.js';
 import { anioDeLaMesa } from './procesion/zonas.service.js';
 import { SalidasService } from './procesion/salidas.service.js';
+import { ModulosService } from './modulos.service.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
 import { articuloDe, deLaCorporacion } from '../domain/articulos.js';
 import {
@@ -50,10 +51,12 @@ function segmentoLimpio(s: Segmento): Segmento {
 async function fichasDelSegmento(tipo: TipoComunicado, s: Segmento) {
   const hoy = diaDeHoy();
   const hace18 = new Date(`${Number(hoy.slice(0, 4)) - 18}${hoy.slice(4)}T00:00:00Z`);
+  // «Con papeleta de…» es de Procesión: apagada, el filtro no existe y se manda a todos los del segmento.
+  const conPapeleta = s.conPapeleta && (await ModulosService.activo('procesion')) ? s.conPapeleta : null;
   const where: Prisma.HermanoWhereInput = {
     activo: true,
     ...(tipo === TipoComunicado.BOLETIN ? { boletin: true } : {}),
-    ...(s.conPapeleta ? { papeletas: { some: { salidaId: s.conPapeleta, year: anioDeLaMesa(await SalidasService.porId(s.conPapeleta)) } } } : {}),
+    ...(conPapeleta ? { papeletas: { some: { salidaId: conPapeleta, year: anioDeLaMesa(await SalidasService.porId(conPapeleta)) } } } : {}),
     ...(s.conDeuda ? { recibos: { some: { estado: { in: [EstadoPago.PENDIENTE, EstadoPago.DEVUELTO] } } } } : {}),
     ...(s.edad === 'MAYORES' ? { fechaNacimiento: { lte: hace18 } } : s.edad === 'MENORES' ? { fechaNacimiento: { gt: hace18 } } : {}),
     ...(s.poblacion ? { poblacion: s.poblacion } : {}),

@@ -14,6 +14,7 @@ import { EstadoCita, Prisma } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
 import { EmailService } from '../email.service';
 import { NoticiaService } from '../noticia.service';
+import { siModulo } from '../modulos.service.js';
 import { HttpError } from '../../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
 import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-salida.js';
@@ -109,15 +110,18 @@ export class PlazoPapeletasService {
     let avisados = 0;
 
     if (abrir && opciones.borradorNoticia) {
-      const articuloNoticia = articuloDe(salida);
-      const noticia = await NoticiaService.crear({
-        titulo: `Abierta la inscripción ${deArticulo(articuloNoticia, salida.nombre)} ${year}`,
-        extracto: `Ya se puede pedir la papeleta ${deArticulo(articuloNoticia, salida.nombre)} desde el área de hermanos y elegir el día de reparto.`,
-        contenido: contenidoNoticia(dias, year, salida),
-        visible: false,
-      });
-      noticiaId = noticia.id;
-      await AuditoriaService.log(ACCIONES_AUDITORIA.NOTICIA_CREAR, meta ?? {}, 'noticia', noticia.id);
+      // Con Noticias apagado no hay borrador que crear: el plazo se abre igual.
+      noticiaId = (await siModulo('noticias', async () => {
+        const articuloNoticia = articuloDe(salida);
+        const noticia = await NoticiaService.crear({
+          titulo: `Abierta la inscripción ${deArticulo(articuloNoticia, salida.nombre)} ${year}`,
+          extracto: `Ya se puede pedir la papeleta ${deArticulo(articuloNoticia, salida.nombre)} desde el área de hermanos y elegir el día de reparto.`,
+          contenido: contenidoNoticia(dias, year, salida),
+          visible: false,
+        });
+        await AuditoriaService.log(ACCIONES_AUDITORIA.NOTICIA_CREAR, meta ?? {}, 'noticia', noticia.id);
+        return noticia.id;
+      })) ?? null;
     }
 
     if (abrir && opciones.avisar) {

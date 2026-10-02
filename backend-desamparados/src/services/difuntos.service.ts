@@ -15,6 +15,7 @@ import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { aniosDeHermano, proximoAniversario } from '../domain/difuntos.js';
 import { comprobarBajaNoFutura, instanteDeDia } from '../domain/fechas-hermano.js';
 import { EmailService } from './email.service.js';
+import { siModulo } from './modulos.service.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 
 export const NOMBRE_SUFRAGIO: Record<TipoSufragio, string> = {
@@ -146,8 +147,9 @@ export class DifuntosService {
     const fecha = instanteMadrid(dto.fecha);
     const nombre = nombreDe(h);
     const lugar = dto.lugar?.trim() || null;
+    // Con la Agenda apagada el sufragio se registra igual, pero sin acto en la web.
     const evento = dto.enAgenda
-      ? await db.evento.create({ data: { title: `${NOMBRE_SUFRAGIO[dto.tipo]} por ${nombre}`, startDate: fecha, location: lugar, type: TipoEvento.CULTO } })
+      ? (await siModulo('agenda', () => db.evento.create({ data: { title: `${NOMBRE_SUFRAGIO[dto.tipo]} por ${nombre}`, startDate: fecha, location: lugar, type: TipoEvento.CULTO } }))) ?? null
       : null;
     const sufragio = await db.sufragio.create({
       data: { hermanoId: id, tipo: dto.tipo, fecha, lugar, notas: dto.notas?.trim() || null, eventoId: evento?.id ?? null },
