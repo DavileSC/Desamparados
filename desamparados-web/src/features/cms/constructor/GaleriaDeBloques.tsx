@@ -10,6 +10,8 @@ import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import Miniatura from './Miniatura'
 import { FICHA_DE_BLOQUE, GRUPOS_DE_BLOQUES } from './etiquetas'
 import { NOMBRE_BLOQUE } from '../bloques/formularios'
+import { moduloDeTipo } from '../../../components/bloques/modulos'
+import { useModulos } from '../../../hooks/useModulos'
 import { borrarSeccion, seccionesGuardadas, type Bloque, type SeccionGuardada } from '../../../lib/api/contenido'
 
 /**
@@ -52,10 +54,11 @@ export default function GaleriaDeBloques({ abierta, posicion, total, onElegir, o
 }
 
 function Tipos({ onElegir }: { onElegir: (tipo: string) => void }) {
+  const { activo } = useModulos()
   return (
     <Stack spacing={3}>
       {GRUPOS_DE_BLOQUES.map((grupo) => {
-        const tipos = TIPOS.tipos.filter((tipo) => FICHA_DE_BLOQUE[tipo]?.grupo === grupo)
+        const tipos = TIPOS.tipos.filter((tipo) => FICHA_DE_BLOQUE[tipo]?.grupo === grupo && activo(moduloDeTipo(tipo)))
         if (tipos.length === 0) return null
         return (
           <Box key={grupo} component="section" aria-labelledby={`grupo-${grupo}`}>

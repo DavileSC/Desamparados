@@ -8,6 +8,8 @@ import EditorTexto from '../../EditorTexto'
 import CampoTexto from '../../contenido/CampoTexto'
 import CampoEnlace from '../../contenido/CampoEnlace'
 import EditorDeLineas from './EditorDeLineas'
+import { fuentesVisibles } from '../../../../components/bloques/modulos'
+import { useModulos } from '../../../../hooks/useModulos'
 import type { Props } from './comunes'
 import type { BloqueTexto, BloqueLlamada, BloqueListado, BloqueContacto, FuenteListado } from '../../../../lib/api/contenido'
 
@@ -56,6 +58,8 @@ const FUENTES: { valor: FuenteListado; nombre: string; ayuda: string }[] = [
 ]
 
 export function FormularioListado({ bloque, onCambio }: Props<BloqueListado>) {
+  const { activos } = useModulos()
+  const visibles = activos ? fuentesVisibles(activos) : []
   const fuente = FUENTES.find((f) => f.valor === bloque.fuente)
   return (
     <TextField
@@ -68,7 +72,7 @@ export function FormularioListado({ bloque, onCambio }: Props<BloqueListado>) {
       size="small"
       fullWidth
     >
-      {FUENTES.map((f) => <option key={f.valor} value={f.valor}>{f.nombre}</option>)}
+      {FUENTES.filter((f) => visibles.includes(f.valor)).map((f) => <option key={f.valor} value={f.valor}>{f.nombre}</option>)}
     </TextField>
   )
 }
