@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { DatosController } from '../controllers/datos.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
+import { conModulo } from '../middleware/modulos.js';
 import { validate } from '../config/validate.js';
 import { anioInformeSchema, areaInformeSchema, guardarInformeAnualSchema } from '../schemas/datos.schema.js';
 
@@ -18,6 +19,9 @@ datosRoutes.use(authenticateToken);
 
 datosRoutes.get('/', checkRole(ROLES_DATOS), DatosController.leer);
 datosRoutes.get('/informe/:area', checkRole(ROLES_DATOS), validate(areaInformeSchema), DatosController.informe);
+
+// El Informe anual es un módulo; Datos e informes, núcleo.
+datosRoutes.use('/informe-anual', conModulo('informe-anual'));
 
 datosRoutes.get('/informe-anual/:anio', checkRole(ROLES_INFORME_ANUAL), validate(anioInformeSchema), DatosController.leerInformeAnual);
 datosRoutes.put('/informe-anual/:anio', checkRole(ROLES_INFORME_ANUAL), validate(guardarInformeAnualSchema), DatosController.guardarInformeAnual);

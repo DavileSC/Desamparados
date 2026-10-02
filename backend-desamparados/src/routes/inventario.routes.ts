@@ -7,11 +7,9 @@ import { validate } from '../config/validate.js';
 import { type } from 'arktype';
 import { idParam } from '../config/common.js'; 
 
-// Importamos todos los esquemas (Enseres y Prendas)
-import { 
-  createEnserSchema, updateEnserSchema, queryEnserSchema,
-  createPrendaSchema, updatePrendaSchema, queryPrendaSchema,
-  asignarPrendaSchema, devolverPrendaSchema, numeroHermanoParamSchema, prendasLavadasSchema, totalCingulosSchema
+// Importamos los esquemas de Enseres. Los de Prendas/Ropero viven en ropero.routes.ts.
+import {
+  createEnserSchema, updateEnserSchema, queryEnserSchema
 } from '../schemas/inventario.schema.js';
 
 const inventarioRoutes = Router();
@@ -54,43 +52,7 @@ inventarioRoutes.post('/enseres', checkRole(rolesGestores), validate(createEnser
 inventarioRoutes.put('/enseres/:id', checkRole(rolesGestores), validateId, validate(updateEnserSchema), InventarioController.updateEnser);
 inventarioRoutes.delete('/enseres/:id', checkRole(rolesGestores), validateId, InventarioController.deleteEnser);
 
-
-// ==========================================
-// --- 2. ROPERO (Mayordomía - Unitario) ---
-// Rutas base: /inventario/prendas/...
-// ==========================================
-
-// LECTURA (solo gestores): cada prenda prestada lleva el nombre, los apellidos
-// y el número de hermano de quien la tiene. Sin el checkRole, cualquier hermano
-// raso con sesión veía quién tiene cada túnica.
-inventarioRoutes.get('/prendas', checkRole(rolesGestores), validate(queryPrendaSchema), InventarioController.listPrendas);
-// Va DESPUÉS de '/prendas' y ANTES de las rutas de acción, igual que en el
-// bloque de enseres. ':id' se traga cualquier segmento suelto, así que
-// cualquier GET literal que se añada aquí ('/prendas/disponibles'...) tiene que
-// declararse por encima de esta línea o no llegará nunca a su controlador.
-inventarioRoutes.get('/prendas/:id', checkRole(rolesGestores), validateId, InventarioController.getOnePrenda);
-
-// GESTIÓN BÁSICA DE PRENDAS
-inventarioRoutes.post('/prendas', checkRole(rolesGestores), validate(createPrendaSchema), InventarioController.createPrenda);
-inventarioRoutes.put('/prendas/:id', checkRole(rolesGestores), validateId, validate(updatePrendaSchema), InventarioController.updatePrenda);
-inventarioRoutes.delete('/prendas/:id', checkRole(rolesGestores), validateId, InventarioController.deletePrenda);
-
-// --- LÓGICA DE ASIGNACIONES (PRÉSTAMOS) ---
-
-// Antes de prestar, el CMS enseña a quién: nombre y apellidos del hermano con
-// ese número. Cuelga de '/hermanos' y no de '/prendas' para que ningún
-// '/prendas/:id' se lo trague.
-inventarioRoutes.get('/hermanos/:numeroHermano', checkRole(rolesGestores), validate(numeroHermanoParamSchema), InventarioController.buscarHermano);
-
-// Rutas de acción
-inventarioRoutes.post('/prendas/:id/asignar', checkRole(rolesGestores), validateId, validate(asignarPrendaSchema), InventarioController.asignarPrenda);
-inventarioRoutes.post('/prendas/:id/devolver', checkRole(rolesGestores), validateId, validate(devolverPrendaSchema), InventarioController.devolverPrenda);
-// Las del lavado que ya están limpias vuelven a estar disponibles.
-inventarioRoutes.post('/prendas/lavadas', checkRole(rolesGestores), validate(prendasLavadasSchema), InventarioController.prendasLavadas);
-
-// Los cíngulos no van numerados: se cuentan.
-inventarioRoutes.get('/cingulos', checkRole(rolesGestores), InventarioController.cingulos);
-inventarioRoutes.put('/cingulos', checkRole(rolesGestores), validate(totalCingulosSchema), InventarioController.cambiarCingulos);
-
+// El ropero (prendas, cíngulos y la búsqueda por número de hermano) está en
+// ropero.routes.ts, montado en /api/ropero: es de Procesión, no del Inventario.
 
 export { inventarioRoutes };

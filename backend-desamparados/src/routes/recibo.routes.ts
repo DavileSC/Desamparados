@@ -1,12 +1,10 @@
 import { Router } from 'express';
 import { ReciboController } from '../controllers/recibo.controller.js';
-import { RemesaController } from '../controllers/remesa.controller.js';
-import { Norma43Controller } from '../controllers/norma43.controller.js';
 import { Modelo182Controller } from '../controllers/modelo-182.controller.js';
-import { certificadosQuerySchema, configuracionModelo182Schema, ejercicioQuerySchema, ficheroModelo182Schema } from '../schemas/modelo-182.schema.js';
-import { ficheroDeDatosMiddleware } from '../middleware/upload.middleware.js';
+import { certificadosQuerySchema } from '../schemas/modelo-182.schema.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
+import { conModulo } from '../middleware/modulos.js';
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
 import { type } from 'arktype';
@@ -19,11 +17,12 @@ import {
   emitirReciboSchema,
   generarCuotasSchema,
   marcarPagadoSchema,
-  remesaSchema,
   misRecibosQuerySchema,
   updateReciboSchema
 } from '../schemas/recibo.schema.js';
 import { estadoDePagoSchema, pagarEnLineaSchema } from '../schemas/procesion.schema.js';
+import { remesasRoutes } from './remesas.routes.js';
+import { modelo182Routes } from './modelo-182.routes.js';
 
 const reciboRoutes = Router();
 
@@ -42,16 +41,16 @@ reciboRoutes.get('/mis-recibos', validate(misRecibosQuerySchema), ReciboControll
 // sesión de hermano puede pedirla y solo verá lo suyo.
 // Los certificados de donativos de su cuenta, para la renta. Antes de
 // `/mis-recibos/:id`: si no, «certificados» se leería como un id y daría 400.
-reciboRoutes.get('/mis-recibos/certificados', Modelo182Controller.misCertificados);
-reciboRoutes.get('/mis-recibos/certificados/pdf', validate(certificadosQuerySchema), Modelo182Controller.miCertificado);
+reciboRoutes.get('/mis-recibos/certificados', conModulo('modelo-182'), Modelo182Controller.misCertificados);
+reciboRoutes.get('/mis-recibos/certificados/pdf', conModulo('modelo-182'), validate(certificadosQuerySchema), Modelo182Controller.miCertificado);
 reciboRoutes.get('/mis-recibos/:id', validateId, ReciboController.getMyRecibo);
 
 // Pagar en línea recibos de la familia: con Redsys devuelve el formulario
 // para ir al banco; simulado, cobra en el acto (ver `modoDePago`).
-reciboRoutes.post('/mis-recibos/pagar', validate(pagarEnLineaSchema), ReciboController.pagarEnLinea);
+reciboRoutes.post('/mis-recibos/pagar', conModulo('cuotas-en-linea'), validate(pagarEnLineaSchema), ReciboController.pagarEnLinea);
 
 // Cómo va un pago propio, a la vuelta del banco. Filtra por usuario en el servicio.
-reciboRoutes.get('/mis-recibos/pagos/:pedido', validate(estadoDePagoSchema), ReciboController.estadoDelPago);
+reciboRoutes.get('/mis-recibos/pagos/:pedido', conModulo('cuotas-en-linea'), validate(estadoDePagoSchema), ReciboController.estadoDelPago);
 
 // ==========================================
 //  RUTAS DE ADMIN (Tesorería, y ahora también el Hermano Mayor;
@@ -94,25 +93,11 @@ reciboRoutes.post('/admin/generar',
 reciboRoutes.get('/admin/pagos-en-linea/incidencias', checkRole(rolesTesoreria), ReciboController.incidenciasDePago);
 reciboRoutes.post('/admin/pagos-en-linea/incidencias/:id/resolver', checkRole(rolesTesoreria), validateId, ReciboController.resolverIncidencia);
 
-// Remesas SEPA: el fichero de adeudos para la banca en línea. Antes de las
-// rutas con `/admin/:id`, aunque hoy no chocan por la forma.
-// El Modelo 182: los donativos del año para Hacienda, y los certificados.
-reciboRoutes.get('/admin/modelo-182', checkRole(rolesTesoreria), validate(ejercicioQuerySchema), Modelo182Controller.resumen);
-reciboRoutes.put('/admin/modelo-182/configuracion', checkRole([Role.ADMIN, Role.TESORERIA]), validate(configuracionModelo182Schema), Modelo182Controller.guardarConfiguracion);
-reciboRoutes.get('/admin/modelo-182/fichero', checkRole(rolesTesoreria), validate(ficheroModelo182Schema), Modelo182Controller.fichero);
-reciboRoutes.get('/admin/modelo-182/certificados', checkRole(rolesTesoreria), validate(certificadosQuerySchema), Modelo182Controller.certificados);
-reciboRoutes.post('/admin/modelo-182/enviar', checkRole([Role.ADMIN, Role.TESORERIA]), validate(ejercicioQuerySchema), Modelo182Controller.enviar);
-
-reciboRoutes.get('/admin/remesas', checkRole(rolesTesoreria), RemesaController.estado);
-reciboRoutes.post('/admin/remesas/previa', checkRole(rolesTesoreria), validate(remesaSchema), RemesaController.previa);
-reciboRoutes.post('/admin/remesas', checkRole(rolesTesoreria), validate(remesaSchema), RemesaController.generar);
-reciboRoutes.get('/admin/remesas/:id/fichero', checkRole(rolesTesoreria), validateId, RemesaController.fichero);
-reciboRoutes.post('/admin/remesas/:id/cobrar', checkRole(rolesTesoreria), validateId, RemesaController.darPorCobrada);
-
-// El extracto del banco en Norma 43: casa devoluciones y cobros de las remesas.
-// El fichero va a memoria y no se guarda: se lee y se descarta.
-reciboRoutes.post('/admin/remesas/norma43/previa', checkRole(rolesTesoreria), ficheroDeDatosMiddleware.single('fichero'), Norma43Controller.previa);
-reciboRoutes.post('/admin/remesas/norma43/aplicar', checkRole(rolesTesoreria), ficheroDeDatosMiddleware.single('fichero'), Norma43Controller.aplicar);
+// El Modelo 182 y las remesas (con la Norma 43) son módulos: cada uno en su
+// router, montado aquí con su guarda para conservar la dirección. Antes de
+// `/admin/:id`, que se tragaría «remesas» y «modelo-182» como un id.
+reciboRoutes.use('/admin/modelo-182', conModulo('modelo-182'), modelo182Routes);
+reciboRoutes.use('/admin/remesas', conModulo('remesas'), remesasRoutes);
 
 reciboRoutes.post('/admin/:id/pagar',
   checkRole(rolesTesoreria),

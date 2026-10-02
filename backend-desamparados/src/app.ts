@@ -33,7 +33,8 @@ import { portadaRoutes } from './routes/portada.routes.js';
 import { contenidoRoutes } from './routes/contenido.routes.js';
 import { seccionesRoutes } from './routes/secciones.routes.js';
 import { modulosRoutes, modulosCmsRoutes } from './routes/modulos.routes.js';
-import { nucleo } from './middleware/modulos.js';
+import { conModulo, nucleo } from './middleware/modulos.js';
+import { roperoRoutes } from './routes/ropero.routes.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
 import { notFoundHandler, globalErrorHandler } from './middleware/error.middleware'; // Manejo de errores global
@@ -152,35 +153,39 @@ app.get(['/health', '/api/health'], (_req, res) => {
 // las rutas públicas de login/registro/reset (ver auth.routes.ts). Si cubriera
 // todo /api/auth, las operaciones autenticadas del staff (generar QR, activar
 // 2FA, rescate...) agotarían la cuota de 10/15 min sin ser objetivos de fuerza bruta.
-app.use('/api/auth', authRoutes);       // Login y Registro
-app.use('/api/hermanos', hermanoRoutes); // Gestión de Cofrades
-app.use('/api/cartas', cartaRoutes);     // Cartas y circulares de Secretaría
-app.use('/api/recibos', reciboRoutes);   // Pagos y Tesorería
-app.use('/api/pagos', pagoRoutes);       // Avisos del banco (Redsys), sin sesión
-app.use('/api/pages', paginaRoutes);     // Contenido estático
-app.use('/api/events', agendaRoutes);    // Agenda
-app.use('/api/news', noticiaRoutes);        // Noticias
-app.use('/api/publications', publicacionRoutes); // Publicaciones
-app.use('/api/contact', contactoRoutes); // Formulario de contacto
-app.use('/api/upload', subidaRoutes); // Subida de archivos
-app.use('/api/inventario', inventarioRoutes); // Inventario de enseres
-app.use('/api/admin', adminRoutes); // GESTIÓN DE STAFF Y ROLES
-app.use('/api/procesion', procesionRoutes); // Citas, papeletas y turnos
-app.use('/api/salidas', salidasRoutes);  // Las salidas activas, para la web y el área de hermanos
-app.use('/api/cms/salidas', salidasCmsRoutes); // Alta, edición y fecha de las salidas, desde el CMS
-app.use('/api/transacciones', transaccionRoutes); // Contabilidad
-app.use('/api/panel', panelRoutes);      // Panel del CMS
-app.use('/api/datos', datosRoutes);      // Datos e informes de la junta, y la Memoria del curso
-app.use('/api/comunicados', comunicadosRoutes); // Boletín y avisos por correo
-app.use('/api/cabildos', cabildosRoutes); // Cabildos y libro de actas
-app.use('/api/tienda', tiendaRoutes); // Tienda en línea: el catálogo y la compra, sin sesión
-app.use('/api/plantillas-correo', plantillasCorreoRoutes); // Emails: las plantillas de los correos
-app.use('/api/loteria', loteriaRoutes); // Lotería: sorteos, talonarios y su contabilidad
-app.use('/api/apadrinamientos', apadrinamientosRoutes); // Apadrinar piezas sobre una foto, sin sesión
-app.use('/api/cortejo-directo', cortejoDirectoRoutes); // Dónde va el cortejo en la calle
-app.use('/api/portada', portadaRoutes);  // Fotos de la cabecera del inicio
-app.use('/api/secciones', seccionesRoutes); // Secciones guardadas del constructor de páginas
-app.use('/api/contenido', contenidoRoutes); // Textos editables de la portada, el recorrido y la historia
+// Cada router dice de qué módulo es: `conModulo('…')` responde 404 con el
+// módulo apagado; `nucleo` es lo que no se apaga. Sin una de las dos marcas,
+// test/modulos-cobertura.test.ts falla: un router nuevo tiene que decidirlo.
+app.use('/api/auth', nucleo, authRoutes);       // Login y Registro (el registro lleva dentro la guarda de alta-web)
+app.use('/api/hermanos', nucleo, hermanoRoutes); // Gestión de Cofrades (los difuntos llevan dentro su guarda)
+app.use('/api/cartas', conModulo('cartas'), cartaRoutes);     // Cartas y circulares de Secretaría
+app.use('/api/recibos', nucleo, reciboRoutes);   // Pagos y Tesorería (remesas, Modelo 182 y cuotas en línea, dentro con su guarda)
+app.use('/api/pagos', nucleo, pagoRoutes);       // Avisos del banco (Redsys), sin sesión; nunca se apaga (dentro: métodos y donativo)
+app.use('/api/pages', nucleo, paginaRoutes);     // Contenido estático
+app.use('/api/events', conModulo('agenda'), agendaRoutes);    // Agenda
+app.use('/api/news', conModulo('noticias'), noticiaRoutes);        // Noticias
+app.use('/api/publications', conModulo('publicaciones'), publicacionRoutes); // Publicaciones
+app.use('/api/contact', nucleo, contactoRoutes); // Formulario de contacto
+app.use('/api/upload', nucleo, subidaRoutes); // Subida de archivos
+app.use('/api/inventario', conModulo('inventario'), inventarioRoutes); // Inventario de enseres
+app.use('/api/ropero', conModulo('procesion'), roperoRoutes); // Túnicas, prendas y cíngulos: parte de Procesión, no del Inventario
+app.use('/api/admin', nucleo, adminRoutes); // GESTIÓN DE STAFF Y ROLES
+app.use('/api/procesion', conModulo('procesion'), procesionRoutes); // Citas, papeletas y turnos (la Puerta lleva dentro su guarda)
+app.use('/api/salidas', conModulo('procesion'), salidasRoutes);  // Las salidas activas, para la web y el área de hermanos
+app.use('/api/cms/salidas', conModulo('procesion'), salidasCmsRoutes); // Alta, edición y fecha de las salidas, desde el CMS
+app.use('/api/transacciones', conModulo('contabilidad'), transaccionRoutes); // Contabilidad: las pantallas; los apuntes se escriben siempre
+app.use('/api/panel', nucleo, panelRoutes);      // Panel del CMS
+app.use('/api/datos', nucleo, datosRoutes);      // Datos e informes de la junta (el Informe anual lleva dentro su guarda)
+app.use('/api/comunicados', conModulo('comunicados'), comunicadosRoutes); // Boletín y avisos por correo
+app.use('/api/cabildos', conModulo('cabildos'), cabildosRoutes); // Cabildos y libro de actas
+app.use('/api/tienda', conModulo('tienda'), tiendaRoutes); // Tienda: la caja y los productos (la compra desde la web, dentro con tienda-web)
+app.use('/api/plantillas-correo', nucleo, plantillasCorreoRoutes); // Emails: las plantillas de los correos
+app.use('/api/loteria', conModulo('loteria'), loteriaRoutes); // Lotería: sorteos, talonarios y su contabilidad
+app.use('/api/apadrinamientos', conModulo('apadrinamientos'), apadrinamientosRoutes); // Apadrinar piezas sobre una foto, sin sesión
+app.use('/api/cortejo-directo', conModulo('cortejo-directo'), cortejoDirectoRoutes); // Dónde va el cortejo en la calle
+app.use('/api/portada', nucleo, portadaRoutes);  // Fotos de la cabecera del inicio
+app.use('/api/secciones', nucleo, seccionesRoutes); // Secciones guardadas del constructor de páginas
+app.use('/api/contenido', nucleo, contenidoRoutes); // Textos editables de la portada, el recorrido y la historia
 app.use('/api/modulos', nucleo, modulosRoutes);         // Qué módulos están encendidos, para la web
 app.use('/api/cms/modulos', nucleo, modulosCmsRoutes);  // Encenderlos y apagarlos, desde Sistema → Módulos
 

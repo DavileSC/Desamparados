@@ -7,15 +7,17 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
 import { limitadorCompras } from '../config/limiter.js';
+import { conModulo } from '../middleware/modulos.js';
 import { compraSchema, pedidosQuerySchema, productoIdSchema, productoSchema, tokenPedidoSchema } from '../schemas/tienda.schema.js';
 
 const tiendaRoutes = Router();
 
 // Lo público va ANTES de `authenticateToken`: el catálogo, comprar sin cuenta
 // y ver el propio pedido con su enlace (un token de 32 cifras hexadecimales).
-tiendaRoutes.get('/', TiendaController.catalogo);
-tiendaRoutes.post('/pedidos', limitadorCompras, validate(compraSchema), TiendaController.comprar);
-tiendaRoutes.get('/pedidos/:token', validate(tokenPedidoSchema), TiendaController.pedido);
+// La compra desde la web pública es el módulo tienda-web; la caja (/admin) es «tienda».
+tiendaRoutes.get('/', conModulo('tienda-web'), TiendaController.catalogo);
+tiendaRoutes.post('/pedidos', conModulo('tienda-web'), limitadorCompras, validate(compraSchema), TiendaController.comprar);
+tiendaRoutes.get('/pedidos/:token', conModulo('tienda-web'), validate(tokenPedidoSchema), TiendaController.pedido);
 
 // La gestión: productos y pedidos, desde el CMS.
 const admin = Router();
