@@ -101,7 +101,7 @@ ruta que debía seguir siendo pública.
 
 Por eso mismo, cuando una ruta nueva se declara por encima de un `.use()` de
 autenticación —como `/news/admin/:id`, `/publications/:id` o
-`/inventario/prendas/:id`—, lleva sus middlewares en línea y un comentario que
+`/ropero/prendas/:id`—, lleva sus middlewares en línea y un comentario que
 explica **por qué** el orden es de corrección y no de estilo. No reordenar esos
 ficheros «para que queden más limpios».
 
@@ -388,3 +388,88 @@ verdad cumplen WCAG AA:
 
 Antes de meter un color nuevo, calcular el contraste. El cálculo es el de WCAG
 sobre la luminancia relativa; cualquier comprobador en línea vale.
+
+---
+
+## 12. Los módulos activables
+
+Catálogo de 24 claves en `shared/modulos.json`; lo que no está en la lista es
+núcleo y nunca pregunta por un módulo (solo los módulos preguntan por el
+núcleo o por otros módulos). Apagar oculta, no borra: los datos se conservan.
+
+**Toda etiqueta de módulo es obligatoria y la vigila una guardiana que lee
+texto, no código.** Todo router de `app.ts` (`conModulo('clave')` o
+`nucleo`), toda entrada de los tres menús (`modulo:` en la misma línea que
+`label:`, también dentro de las secciones partidas en varios bloques), toda
+ruta de `routes/index.tsx` (`pagina(Componente, modulo)` en una sola línea) y
+todo tipo de bloque de `shared/tipos-de-bloque.json` llevan su módulo.
+`test/modulos-cobertura.test.ts` lee esos ficheros como texto —no puede
+importar la web desde `node:test`— y exige una entrada por línea; una ruta
+partida en dos líneas no se comprueba (por eso `/cms/acceso` y
+`/cms/vista-previa/:slug` se dejaron en una sola). Una ruta nueva sin decidir
+esto no pasa el CI.
+
+**Añadir un módulo son tres sitios, no uno.** Las claves van en
+`shared/modulos.json` y, además, en `CLAVES_MODULO` de
+`backend-desamparados/src/domain/modulos.ts` y de
+`desamparados-web/src/domain/modulos.ts` (para que compilen). El `RECUENTOS`
+de `modulos.service.ts` también lo exige, porque TypeScript lo comprueba por
+el `Record<ClaveModulo, …>`. Dos pruebas (`modulos-catalogo.test.ts` y
+`domain/__tests__/modulos.test.ts`) y la propia guardiana avisan si falta
+alguno de los tres.
+
+**El estado vive en memoria en el backend, un proceso por servidor.** Se
+carga la primera vez que algo pregunta y se recarga solo al cambiarlo desde
+el CMS. En las pruebas, apagar un módulo escribiendo en la tabla `Modulo` no
+basta: hace falta llamar a `ModulosService.cargar()` después para que la
+memoria se entere, y volver a encenderlo en `after` para no dejarlo apagado
+de cara al siguiente fichero.
+
+**Una prueba que levanta `app` y pide una ruta de `/api/...` tiene que
+desconectar la base en su `after`** (`await db.$disconnect()`), aunque no la
+use a mano: las guardas de módulo consultan `Modulo` en la primera petición,
+Prisma abre su pool de conexiones y, sin desconectar, el proceso no termina y
+`npm test` se queda colgado en ese fichero (pasó con
+`servidor-cuerpos.test.ts` y `limitador-global.test.ts`).
+
+**Las pruebas que apagan módulos en la tabla no se pueden lanzar en
+paralelo.** Varios ficheros (`modulos-apagados-db`, `modulos-enganches-db`,
+`modulos-area-hermanos-db`…) comparten la misma tabla: sueltos a mano sin
+`--test-concurrency=1` se pisan, uno ve apagado lo que apagó el otro.
+`npm test` y el CI ya van en serie (ver §6); lanzar varios de estos ficheros
+sueltos a mano, no.
+
+**En las pruebas de la web, toda pantalla que pregunte por los módulos
+necesita un cliente de consulta sembrado.** `renderWithProviders` siembra
+todos los módulos encendidos salvo que se pase `modulos: [...]`; si la
+pantalla necesita su propio router, `crearQueryClientDePruebas()` de
+`src/test/queryClient.ts` hace lo mismo. Con un `new QueryClient()` a secas,
+`useModulos()` pide `/api/modulos` al `fetch` simulado y lo da todo por
+apagado: pasó en `PaginaAdminPage.test.tsx` y tres pantallas más (menús,
+galería de bloques, bloques de página, formularios de listado, Inicio, perfil
+del área de hermanos). La siembra lleva
+`setQueryDefaults(['modulos'], { gcTime: Infinity, staleTime: Infinity })`
+antes de `setQueryData`: con el `gcTime: 0` del cliente de pruebas, una
+entrada sembrada sin un observador se recolecta en el siguiente tick.
+
+**El ropero está en `/api/ropero` (módulo `procesion`), no en
+`/api/inventario`.** Las prendas, los cíngulos y la búsqueda por número de
+hermano viven en ese router nuevo; el Inventario de enseres es otro módulo y
+otra pantalla.
+
+**El aviso del banco nunca se apaga.** `POST /api/pagos/redsys/notificacion`
+se monta como núcleo: un pago empezado antes de apagar Pago en línea es
+dinero real.
+
+**Con el área de hermanos apagada, el acceso rechaza a todo el mundo.**
+`/acceso` responde 404 con «El área de hermanos no está activada en esta
+instalación», y una sesión de hermano que ya existiera se ignora en
+`middleware/session.ts`: no basta con ocultar el enlace de entrada.
+
+**Al desplegar, la migración no basta: hace falta sembrar.** La migración
+`20261031200000_modulos_activables` crea la tabla; `npx prisma db seed`
+crea las filas que falten con el lote inicial (lo que diga `modulos.activos`
+de `shared/datos-entidad.json`) y no toca ninguna fila que ya exista. El
+arranque de la API (`src/index.ts`) carga los módulos y **sale con error si
+la base no responde**: no hay forma de arrancar con el estado de los módulos
+a medias.

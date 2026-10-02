@@ -616,6 +616,18 @@ estorba.
 Si no se está seguro de si toca, el arranque de la API lo dice: si quedan filas
 con la forma antigua, lo avisa en el registro nada más levantar.
 
+**Con la migración `20261031200000_modulos_activables`, hace falta sembrar
+después de migrar.** `docker compose up -d --build` aplica sola la migración
+(`npx prisma migrate deploy`, dentro del contenedor `migraciones`) y crea la
+tabla `Modulo`, pero no siembra sus filas. Eso lo hace
+`docker compose run --rm herramientas npm run seed` (`npx prisma db seed`):
+crea las filas que falten **con todo encendido** y no toca ninguna que ya
+exista, así que es seguro repetirla en una instalación que ya tenía módulos
+encendidos o apagados a mano. En una instalación nueva, antes de sembrar,
+`modulos.activos` de `shared/datos-entidad.json` decide con qué módulos
+arranca; en una que ya estuviera en marcha da igual lo que diga ese JSON,
+porque todas las filas ya existen y la siembra no las toca.
+
 **Si hay fotos subidas antes del 27 de septiembre de 2026, conviene pasarlas a
 WebP una vez** (desde entonces la subida lo hace sola):
 

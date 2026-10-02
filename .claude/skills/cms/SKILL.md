@@ -35,7 +35,8 @@ Los leen el servidor y la web. Un cambio en uno exige tocar los dos lados.
 
 ## Añadir un tipo de bloque
 
-1. `shared/tipos-de-bloque.json` (y opciones en `presentacion-de-bloques.json`).
+1. `shared/tipos-de-bloque.json` (y opciones en `presentacion-de-bloques.json`),
+   con su entrada en `modulo`.
 2. Backend: su esquema arktype en `src/schemas/bloques.schema.ts`.
 3. Web: el componente `components/bloques/BloqueXxx.tsx` y su entrada en
    `components/bloques/registro.tsx`; el tipo en `lib/api/contenido.ts`.

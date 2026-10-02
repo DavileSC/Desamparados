@@ -9,8 +9,10 @@ description: Convenciones de la web (React 19 + TypeScript + Vite + MUI 9 + Reac
 
 - **`app/`**: los marcos de cada zona (`MarcoPublico`, `MarcoCms`,
   `MarcoAreaHermano`, `MarcoAcceso`) y la navegación del CMS.
-- **`routes/index.tsx`**: todas las rutas, con `lazy()` por página;
-  `ExigeSesion` / `ExigeRol` protegen el área de hermanos y el CMS.
+- **`routes/index.tsx`**: todas las rutas con `pagina(Componente, modulo)`,
+  con `lazy()` por página; `ExigeSesion` / `ExigeRol` protegen el área de
+  hermanos y el CMS. Menús con `modulo:`; `useModulos()` para condicionar
+  trozos de pantalla.
 - **`features/<área>/`**: una carpeta por área (`actualidad`, `altas`,
   `areaHermano`, `cms`, `corporacion`…), con sus páginas `XxxPage.tsx` y sus
   pruebas en `__tests__/`. No hay separación `Page`/`View` ni Atomic Design.

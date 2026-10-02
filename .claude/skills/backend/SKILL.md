@@ -28,6 +28,8 @@ DAO**: los servicios consultan con `db` directamente.
 
 ## Rutas y permisos
 
+- Todo router se monta en `app.ts` con `conModulo('…')` o `nucleo`; los
+  enganches opcionales entre módulos, con `siModulo`.
 - El **orden de declaración manda**: una ruta escrita antes del
   `router.use(authenticateToken)` queda abierta. Si tiene que ir antes (p. ej.
   `/admin/…` delante de `/:slug`), lleva sus middlewares en línea y un comentario
