@@ -103,6 +103,17 @@ describe('AccesoPage (acceso de hermanos)', () => {
     expect(screen.queryByRole('button', { name: 'Entrar' })).not.toBeInTheDocument()
   })
 
+  it('sin el alta por la web no ofrece «Solicita tu alta»', () => {
+    montar(['area-hermanos'])
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Solicita tu alta' })).not.toBeInTheDocument()
+  })
+
+  it('con el alta por la web, sí', () => {
+    montar(['area-hermanos', 'alta-web'])
+    expect(screen.getByRole('link', { name: 'Solicita tu alta' })).toHaveAttribute('href', '/hazte-hermano')
+  })
+
   it('con el área de hermanos apagada, avisa en vez del formulario y enlaza al acceso del CMS', () => {
     montar(['noticias'])
 

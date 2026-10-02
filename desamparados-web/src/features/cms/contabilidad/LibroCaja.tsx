@@ -9,6 +9,7 @@ import type { ResumenContable, Transaction } from '../../../lib/api/contabilidad
 import type { FiltrosUi } from './filtros'
 import { COLOR_GASTO, COLOR_INGRESO, etiquetaMetodo, euros, fechaCorta } from './formato'
 import { useColoresContabilidad } from './tema'
+import { useModulos } from '../../../hooks/useModulos'
 
 interface Props {
   apuntes: Transaction[]
@@ -39,6 +40,9 @@ const soloLector = { position: 'absolute', width: '1px', height: '1px', overflow
  */
 export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar }: Props) {
   const { fondoCabecera } = useColoresContabilidad()
+  // Los apuntes de la caja o de la lotería se corrigen allí: con el módulo
+  // apagado no hay a dónde llevar, y tampoco se corrigen desde aquí.
+  const { activo } = useModulos()
   const verIngreso = tipo !== 'GASTO'
   const verGasto = tipo !== 'INGRESO'
   const verAcciones = Boolean(onCorregir || onBorrar)
@@ -90,19 +94,19 @@ export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar
                           <ReceiptLongOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    ) : deCaja ? (
+                    ) : deCaja ? (activo('tienda') && (
                       <Tooltip title="Es una venta de la caja de la tienda: se anula desde la caja">
                         <IconButton size="small" component={Link} to="/cms/tienda?vista=caja" aria-label="Abrir la caja de la tienda">
                           <StorefrontOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    ) : sorteo !== null ? (
+                    )) : sorteo !== null ? (activo('loteria') && (
                       <Tooltip title="Viene de la lotería: se corrige desde Lotería">
                         <IconButton size="small" component={Link} to={`/cms/loteria?sorteo=${sorteo}`} aria-label="Abrir el sorteo en Lotería">
                           <ConfirmationNumberOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    ) : <>
+                    )) : <>
                       {onCorregir && (
                         <Tooltip title="Corregir">
                           <IconButton size="small" aria-label={`Corregir «${a.concepto}»`} onClick={() => onCorregir(a)}><EditOutlinedIcon fontSize="small" /></IconButton>

@@ -73,15 +73,17 @@ describe('ComunicadoEditPage', () => {
     })
   })
 
-  it('con Procesión apagado no está el filtro «con papeleta de»', async () => {
-    montar(BORRADOR, undefined, ['comunicados'])
+  it('con Procesión apagado no está el filtro «con papeleta de» ni se piden las salidas', async () => {
+    const fetch = montar(BORRADOR, undefined, ['comunicados'])
     await screen.findByText(/Llegará a 10 direcciones/)
     expect(screen.queryByRole('combobox', { name: 'Papeleta' })).not.toBeInTheDocument()
+    expect(fetch.mock.calls.filter(([url]) => esListaDeSalidas(String(url)))).toEqual([])
   })
 
-  it('con Procesión apagado, guardar borra el «con papeleta de» que ya tuviera el comunicado', async () => {
-    // Simula un comunicado guardado antes de apagar Procesión: la pantalla ya
-    // no enseña el filtro, pero el dato seguía viajando tal cual se guardaba.
+  it('con Procesión apagado, guardar conserva el «con papeleta de» que ya tuviera el comunicado', async () => {
+    // Un comunicado guardado antes de apagar Procesión: apagar es ocultar. El
+    // filtro no se enseña, pero el dato viaja tal cual; el servidor lo ignora
+    // mientras el módulo esté apagado y vuelve a valer al encenderlo.
     const user = userEvent.setup()
     const guardado = { ...BORRADOR, segmento: { ...BORRADOR.segmento, conPapeleta: 2 } }
     const fetch = montar(guardado, undefined, ['comunicados'])
@@ -92,8 +94,9 @@ describe('ComunicadoEditPage', () => {
     await waitFor(() => {
       const put = fetch.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')
       expect(put).toBeDefined()
-      expect(JSON.parse(String((put![1] as RequestInit).body)).segmento.conPapeleta).toBeNull()
+      expect(JSON.parse(String((put![1] as RequestInit).body)).segmento.conPapeleta).toBe(2)
     })
+    expect(screen.queryByRole('combobox', { name: 'Papeleta' })).not.toBeInTheDocument()
   })
 
   it('con todos los módulos, guardar conserva el «con papeleta de» que trajera el comunicado', async () => {

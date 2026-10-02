@@ -187,15 +187,18 @@ export default function AccesoPage() {
           </>
         )}
 
-        <Typography
-          variant="body2"
-          sx={{ mt: 3, textAlign: 'center', color: 'text.secondary', fontSize: '13px' }}
-        >
-          ¿Aún no eres hermano?{' '}
-          <Box component="a" href="/hazte-hermano" sx={{ color: 'secondary.main', textDecoration: 'underline', display: 'inline-block', py: '12px', my: '-12px' }}>
-            Solicita tu alta
-          </Box>
-        </Typography>
+        {/* Sin el alta por la web, «Hazte hermano» no existe: no se ofrece. */}
+        {activo('alta-web') && (
+          <Typography
+            variant="body2"
+            sx={{ mt: 3, textAlign: 'center', color: 'text.secondary', fontSize: '13px' }}
+          >
+            ¿Aún no eres hermano?{' '}
+            <Box component="a" href="/hazte-hermano" sx={{ color: 'secondary.main', textDecoration: 'underline', display: 'inline-block', py: '12px', my: '-12px' }}>
+              Solicita tu alta
+            </Box>
+          </Typography>
+        )}
       </TarjetaCristal>
     </>
   )

@@ -16,6 +16,7 @@ import { site } from '../../config/site'
 import { GOLD, GRANATE, SERIF, TINTA, ceja } from './estilos'
 import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
 import type { TextosPortada } from '../../lib/api/portada'
+import { useModulos } from '../../hooks/useModulos'
 
 // Lo que NO se edita desde el CMS: qué teselas hay, su icono, su destino y su
 // orden. El documento solo pone título y descripción, casados por `clave`.
@@ -223,8 +224,12 @@ export default function AccesosRapidos() {
     textos.accesos.teselas.find((t) => t.clave === clave)
     ?? TEXTOS_POR_DEFECTO.accesos.teselas.find((t) => t.clave === clave)!
 
+  const { activo } = useModulos()
+  // Sin el alta por la web no hay a dónde mandar con «Hazte hermano», y sin
+  // Publicaciones los boletines no existen: ni placa ni tesela.
+  const conPlaca = activo('alta-web')
   const teselas: Acceso[] = [
-    ...ACCESOS,
+    ...ACCESOS.filter((a) => a.clave !== 'boletines' || activo('publicaciones')),
     ...(site.redes.youtube
       ? [{ clave: 'youtube', icon: <PlayCircleOutlinedIcon fontSize="inherit" />, href: site.redes.youtube }]
       : []),
@@ -254,16 +259,18 @@ export default function AccesosRapidos() {
             m: 0,
             p: 0,
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr 1fr', md: '1.3fr 1fr 1fr' },
+            gridTemplateColumns: { xs: '1fr 1fr', md: conPlaca ? '1.3fr 1fr 1fr' : '1fr 1fr' },
             // El ancho de las demás secciones de la portada, sin tope propio: con él
             // quedaba metida y descuadrada respecto a Noticias y Agenda.
             gap: { xs: 1.25, md: 1.75 },
           }}
         >
           {/* La placa se descubre de izquierda a derecha; las teselas van creciendo detrás. */}
-          <Revela as="li" efecto="desvelar" sx={{ display: 'flex', gridColumn: { xs: '1 / -1', md: '1' }, gridRow: { md: `1 / span ${filas}` } }}>
-            <PlacaHazteHermano placa={textos.accesos.placa} />
-          </Revela>
+          {conPlaca && (
+            <Revela as="li" efecto="desvelar" sx={{ display: 'flex', gridColumn: { xs: '1 / -1', md: '1' }, gridRow: { md: `1 / span ${filas}` } }}>
+              <PlacaHazteHermano placa={textos.accesos.placa} />
+            </Revela>
+          )}
           {teselas.map((acceso, i) => {
             const ancha = ultimaAncha && i === teselas.length - 1
             const { titulo, descripcion } = textoDe(acceso.clave)
@@ -273,7 +280,7 @@ export default function AccesosRapidos() {
                 key={acceso.href}
                 efecto="crecer"
                 orden={i + 1}
-                sx={{ display: 'flex', ...(ancha ? { gridColumn: { xs: '1 / -1', md: '2 / -1' } } : {}) }}
+                sx={{ display: 'flex', ...(ancha ? { gridColumn: { xs: '1 / -1', md: conPlaca ? '2 / -1' : '1 / -1' } } : {}) }}
               >
                 <Tesela icon={acceso.icon} href={acceso.href} title={titulo} description={descripcion} ancha={ancha} />
               </Revela>

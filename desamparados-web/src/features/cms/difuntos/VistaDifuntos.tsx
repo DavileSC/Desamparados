@@ -11,6 +11,7 @@ import {
   type Aniversario, type FichaDifunto, type TipoSufragio,
 } from '../../../lib/api/difuntos'
 import { deLaCorporacion } from '../../../domain/articulos'
+import { useModulos } from '../../../hooks/useModulos'
 
 const zona = { timeZone: 'Europe/Madrid' } as const
 const diaLargo = new Intl.DateTimeFormat('es-ES', { ...zona, day: 'numeric', month: 'long', year: 'numeric' })
@@ -206,10 +207,12 @@ function DialogoSufragio({ ficha, onCerrar, onHecho }: { ficha: FichaDifunto; on
   const [lugar, setLugar] = useState('')
   const [notas, setNotas] = useState('')
   const [enAgenda, setEnAgenda] = useState(true)
+  // Sin la Agenda no hay dónde publicarlo: la casilla no se ofrece.
+  const conAgenda = useModulos().activo('agenda')
   const [avisar, setAvisar] = useState(Boolean(ficha.familia))
   const [email, setEmail] = useState(ficha.familia?.email ?? '')
   const guardar = useMutation({
-    mutationFn: () => crearSufragio(ficha.id, { tipo, fecha, lugar: lugar.trim() || null, notas: notas.trim() || null, enAgenda, avisarA: avisar ? email.trim() : null }),
+    mutationFn: () => crearSufragio(ficha.id, { tipo, fecha, lugar: lugar.trim() || null, notas: notas.trim() || null, enAgenda: enAgenda && conAgenda, avisarA: avisar ? email.trim() : null }),
     onSuccess: (r) => onHecho([
       `${NOMBRE_SUFRAGIO[tipo]} apuntada.`,
       r.eventoId ? 'Ya está en la Agenda.' : '',
@@ -228,7 +231,7 @@ function DialogoSufragio({ ficha, onCerrar, onHecho }: { ficha: FichaDifunto; on
           <TextField label="Día y hora" type="datetime-local" value={fecha} onChange={(e) => setFecha(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
           <TextField label="Lugar" value={lugar} onChange={(e) => setLugar(e.target.value)} placeholder="Parroquia de…" slotProps={{ htmlInput: { maxLength: 200 } }} />
           <TextField label="Notas (solo para la junta)" value={notas} onChange={(e) => setNotas(e.target.value)} multiline minRows={2} slotProps={{ htmlInput: { maxLength: 2000 } }} />
-          <FormControlLabel control={<Checkbox checked={enAgenda} onChange={(e) => setEnAgenda(e.target.checked)} />} label="Publicarlo en la Agenda de la web" />
+          {conAgenda && <FormControlLabel control={<Checkbox checked={enAgenda} onChange={(e) => setEnAgenda(e.target.checked)} />} label="Publicarlo en la Agenda de la web" />}
           <FormControlLabel control={<Checkbox checked={avisar} onChange={(e) => setAvisar(e.target.checked)} />} label="Avisar a la familia por correo" />
           {avisar && <TextField label="Correo de la familia" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />}
           {guardar.isError && <Alert severity="error">{mensaje(guardar.error, 'No se ha podido guardar.')}</Alert>}

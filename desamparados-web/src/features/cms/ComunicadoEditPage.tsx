@@ -38,7 +38,8 @@ export default function ComunicadoEditPage() {
   const { activo } = useModulos()
   const [original, setOriginal] = useState<ComunicadoCompleto | null>(null)
   const [form, setForm] = useState<DatosComunicado | null>(null)
-  const { data: salidas = [] } = useSalidas()
+  // Las salidas solo hacen falta para el filtro «con papeleta de», que es de Procesión.
+  const { data: salidas = [] } = useSalidas({ enabled: activo('procesion') })
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -105,13 +106,10 @@ export default function ComunicadoEditPage() {
   const campo = <K extends keyof DatosComunicado>(k: K, v: DatosComunicado[K]) => setForm({ ...form, [k]: v })
   const segmento = (cambios: Partial<Segmento>) => setForm({ ...form, segmento: { ...form.segmento, ...cambios } })
   const cuerpoVacio = form.cuerpo.replace(/<[^>]*>/g, '').trim() === '' && !/<img/i.test(form.cuerpo)
-  // Con Procesión apagado no se enseña el filtro: no se guarda uno que la
-  // pantalla no deja ver, aunque el servidor ya lo ignore sin el módulo.
-  const paraGuardar = (f: DatosComunicado): DatosComunicado => (activo('procesion') ? f : { ...f, segmento: { ...f.segmento, conPapeleta: null } })
 
   const guardar = async () => {
     setGuardando(true); setError(null)
-    try { const c = await guardarComunicado(id, paraGuardar(form)); setOriginal(c); setForm(aDatos(c)); setAviso('Borrador guardado.') }
+    try { const c = await guardarComunicado(id, form); setOriginal(c); setForm(aDatos(c)); setAviso('Borrador guardado.') }
     catch (err: unknown) { setError(mensaje(err, 'No se ha podido guardar.')) }
     finally { setGuardando(false) }
   }
@@ -119,7 +117,7 @@ export default function ComunicadoEditPage() {
   const probar = async () => {
     setGuardando(true); setError(null); setAviso(null)
     try {
-      if (sucio) { const c = await guardarComunicado(id, paraGuardar(form)); setOriginal(c); setForm(aDatos(c)) }
+      if (sucio) { const c = await guardarComunicado(id, form); setOriginal(c); setForm(aDatos(c)) }
       setAviso((await enviarPrueba(id)).message)
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido enviar la prueba.')) }
     finally { setGuardando(false) }
@@ -128,7 +126,7 @@ export default function ComunicadoEditPage() {
   const enviar = async () => {
     setConfirmar(null); setGuardando(true); setError(null); setAviso(null)
     try {
-      if (sucio) await guardarComunicado(id, paraGuardar(form))
+      if (sucio) await guardarComunicado(id, form)
       setAviso((await enviarComunicado(id)).message)
       await cargar()
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido enviar.')) }

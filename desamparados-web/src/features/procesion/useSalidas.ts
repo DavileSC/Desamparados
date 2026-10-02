@@ -2,8 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { CLAVE_SALIDAS, salidas, salidasDelCms } from '../../lib/api/salidas'
 
-export function useSalidas({ delCms = false }: { delCms?: boolean } = {}) {
-  return useQuery({ queryKey: [...CLAVE_SALIDAS, delCms ? 'cms' : 'web'], queryFn: delCms ? salidasDelCms : salidas })
+/** `enabled` falso no pide nada: una pantalla que solo usa las salidas con Procesión encendida no las pide apagada. */
+export function useSalidas({ delCms = false, enabled = true }: { delCms?: boolean; enabled?: boolean } = {}) {
+  return useQuery({ queryKey: [...CLAVE_SALIDAS, delCms ? 'cms' : 'web'], queryFn: delCms ? salidasDelCms : salidas, enabled })
 }
 
 const leer = (clave: string) => { try { return localStorage.getItem(clave) } catch { return null } }

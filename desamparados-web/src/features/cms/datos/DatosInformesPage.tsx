@@ -10,6 +10,7 @@ import { entrada } from '../inicio/animaciones'
 import { FILETE, FONDO_PIEZA, ORO, ROJO_GRAFICA, SERIF, VERDE, VERSALITAS } from '../inicio/estiloRetablo'
 import GraficaDatos, { Muestra } from './GraficaDatos'
 import { site } from '../../../config/site'
+import { useModulos } from '../../../hooks/useModulos'
 
 const decimal = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
@@ -40,6 +41,7 @@ export default function DatosInformesPage() {
   const [elegidas, setElegidas] = useState<Partial<Record<ClaveArea, number>>>({})
   const botones = useRef<(HTMLButtonElement | null)[]>([])
   const idPanel = useId()
+  const conInformeAnual = useModulos().activo('informe-anual')
 
   const { data, isPending, isError, isFetching } = useQuery({
     queryKey: ['datos', anioPedido ?? 'actual'],
@@ -102,7 +104,7 @@ export default function DatosInformesPage() {
           >
             {data.periodos.map((p) => <MenuItem key={p.clave} value={p.clave}>{p.etiqueta}</MenuItem>)}
           </TextField>
-          <Button variant="contained" component={Link} to={`/cms/informe-anual/${data.periodo.anio}`}>Informe anual</Button>
+          {conInformeAnual && <Button variant="contained" component={Link} to={`/cms/informe-anual/${data.periodo.anio}`}>Informe anual</Button>}
         </Box>
       </Box>
 
