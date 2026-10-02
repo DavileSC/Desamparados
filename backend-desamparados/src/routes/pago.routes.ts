@@ -19,10 +19,14 @@ pagoRoutes.post('/redsys/notificacion',
   PagoController.avisoRedsys,
 );
 
-// Lo que la web pública necesita para ofrecer un pago: solo con la pasarela encendida.
+// Lo que la web pública necesita para ofrecer un pago: con qué se paga y si es
+// de pruebas. Sin sesión: lo ve cualquiera que abra la página. Solo con la
+// pasarela encendida.
 pagoRoutes.get('/metodos', conModulo('pago-en-linea'), PagoController.metodos);
 
-// El donativo desde la web pública, sin cuenta: su propio módulo (que requiere la pasarela).
+// El donativo desde la web pública, sin cuenta: su propio módulo (que requiere
+// la pasarela). Se comprueba contra el bloque «Donativo» de la página desde la
+// que se hace (ver DonativoService).
 pagoRoutes.post('/donativo', conModulo('donativos'), limitadorDonativo, validate(donativoSchema), PagoController.donar);
 pagoRoutes.get('/donativo/:pedido', conModulo('donativos'), validate(estadoDeDonativoSchema), PagoController.estadoDelDonativo);
 

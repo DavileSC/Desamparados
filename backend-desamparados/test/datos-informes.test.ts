@@ -190,7 +190,7 @@ describe('las cifras, en palabras', () => {
   test('el vistazo del Informe anual compara cada cifra con la del año anterior', () => {
     const v = vistazo(crudos(), HOY);
     assert.equal(v.length, 8);
-    assert.deepEqual(v[0], { etiqueta: 'Hermanos al cierre', valor: '228', antes: '133', cambio: '+95', tono: 'bueno' });
+    assert.deepEqual(v[0], { area: 'hermanos', etiqueta: 'Hermanos al cierre', valor: '228', antes: '133', cambio: '+95', tono: 'bueno' });
     assert.equal(v.find((c) => c.etiqueta === 'Bajas')?.tono, 'malo', 'más bajas es peor');
   });
 });

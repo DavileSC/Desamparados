@@ -78,6 +78,13 @@ const nombres = (claves: ClaveModulo[]) => claves.map((c) => `«${fichaDe(c).nom
 let activos: Set<ClaveModulo> | null = null;
 let cargando: Promise<ReadonlySet<ClaveModulo>> | null = null;
 
+/**
+ * Los cambios van de uno en uno: dos a la vez leerían el mismo «antes» y
+ * podrían dejar encendido un módulo sin su requisito (apagar Tienda mientras
+ * otro enciende Tienda en la web).
+ */
+let cambiando: Promise<unknown> = Promise.resolve();
+
 export class ModulosService {
   /** Crea las filas que falten con el lote; las que existen no se tocan. Devuelve cuántas creó. */
   static async sembrar(lote: readonly ClaveModulo[] = LOTE_INICIAL): Promise<number> {
@@ -123,6 +130,16 @@ export class ModulosService {
     clave: string, activar: boolean, opciones: { conRequisitos?: boolean }, quienId: number | undefined, meta: MetaDeAuditoria,
   ): Promise<ResultadoDeCambio> {
     if (!esClaveDeModulo(clave)) throw new NotFoundError('No hay ningún módulo con esa clave.');
+    const trabajo = () => ModulosService.cambiarYa(clave, activar, opciones, quienId, meta);
+    // Se encadena aunque el anterior fallara: un error no debe bloquear los siguientes.
+    const resultado = cambiando.then(trabajo, trabajo);
+    cambiando = resultado;
+    return resultado;
+  }
+
+  private static async cambiarYa(
+    clave: ClaveModulo, activar: boolean, opciones: { conRequisitos?: boolean }, quienId: number | undefined, meta: MetaDeAuditoria,
+  ): Promise<ResultadoDeCambio> {
     const antes = await ModulosService.activos();
     const ficha = fichaDe(clave);
     let cambiados: ClaveModulo[];
@@ -135,23 +152,31 @@ export class ModulosService {
     } else {
       const dependientes = dependientesActivos(clave, antes);
       if (dependientes.length) {
-        return { ok: false, faltan: [], dependientes, message: `No se puede apagar «${ficha.nombre}»: lo necesitan ${nombres(dependientes)}. Apaga antes esos módulos.` };
+        const aviso = dependientes.length === 1
+          ? `lo necesita ${nombres(dependientes)}. Apaga antes ese módulo.`
+          : `lo necesitan ${nombres(dependientes)}. Apaga antes esos módulos.`;
+        return { ok: false, faltan: [], dependientes, message: `No se puede apagar «${ficha.nombre}»: ${aviso}` };
       }
       cambiados = antes.has(clave) ? [clave] : [];
     }
     const cambiadoPor = quienId === undefined ? null : (await db.user.findUnique({ where: { id: quienId }, select: { email: true } }))?.email ?? null;
-    for (const c of cambiados) {
-      await db.modulo.upsert({
-        where: { clave: c },
-        update: { activo: activar, cambiadoEl: new Date(), cambiadoPor },
-        create: { clave: c, activo: activar, cambiadoPor },
-      });
-      await AuditoriaService.log(
-        activar ? ACCIONES_AUDITORIA.MODULO_ENCENDER : ACCIONES_AUDITORIA.MODULO_APAGAR,
-        meta, 'modulo', c, c === clave ? undefined : { porRequisitoDe: clave },
-      );
+    try {
+      for (const c of cambiados) {
+        await db.modulo.upsert({
+          where: { clave: c },
+          update: { activo: activar, cambiadoEl: new Date(), cambiadoPor },
+          create: { clave: c, activo: activar, cambiadoPor },
+        });
+        await AuditoriaService.log(
+          activar ? ACCIONES_AUDITORIA.MODULO_ENCENDER : ACCIONES_AUDITORIA.MODULO_APAGAR,
+          meta, 'modulo', c, c === clave ? undefined : { porRequisitoDe: clave },
+        );
+      }
+    } finally {
+      // Si la base falla a mitad, la memoria se relee igual: así no anuncia como apagado algo que ya se encendió.
+      await ModulosService.cargar();
     }
-    const despues = await ModulosService.cargar();
+    const despues = await ModulosService.activos();
     return { ok: true, cambiados, activos: CLAVES_MODULO.filter((c) => despues.has(c)) };
   }
 

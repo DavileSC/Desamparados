@@ -24,7 +24,8 @@ const validateId = validate(type({ params: { id: idParam } }));
 const rolesGestores = [Role.ADMIN, Role.ALBACERIA, Role.HERMANO_MAYOR];
 
 // LECTURA (solo gestores): cada prenda prestada lleva el nombre, los apellidos
-// y el número de hermano de quien la tiene.
+// y el número de hermano de quien la tiene. Sin el checkRole, cualquier hermano
+// raso con sesión veía quién tiene cada túnica.
 roperoRoutes.get('/prendas', checkRole(rolesGestores), validate(queryPrendaSchema), InventarioController.listPrendas);
 // ':id' se traga cualquier segmento suelto: un GET literal nuevo ('/prendas/disponibles'…) va por encima de esta línea.
 roperoRoutes.get('/prendas/:id', checkRole(rolesGestores), validateId, InventarioController.getOnePrenda);

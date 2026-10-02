@@ -122,6 +122,31 @@ describe('cambiar', () => {
     assert.equal(await ModulosService.activo('pago-en-linea'), true);
   });
 
+  test('con un solo dependiente encendido el aviso habla en singular', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    await ModulosService.cambiar('tienda-web', true, { conRequisitos: true }, undefined, META);
+    const r = await ModulosService.cambiar('tienda', false, {}, undefined, META);
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.deepEqual(r.dependientes, ['tienda-web']);
+      assert.equal(r.message, 'No se puede apagar «Tienda»: lo necesita «Tienda en la web». Apaga antes ese módulo.');
+    }
+  });
+
+  test('dos cambios a la vez no dejan un módulo encendido sin su requisito', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    await ModulosService.cambiar('tienda-web', false, {}, undefined, META);
+    await ModulosService.cambiar('tienda', true, {}, undefined, META);
+    // Los dos leerían el mismo «antes» (Tienda encendida, Tienda en la web apagada) si no fueran de uno en uno.
+    await Promise.all([
+      ModulosService.cambiar('tienda', false, {}, undefined, META),
+      ModulosService.cambiar('tienda-web', true, { conRequisitos: true }, undefined, META),
+    ]);
+    const enBase = await activosEnBase();
+    if (enBase.has('tienda-web')) assert.ok(enBase.has('tienda'), 'Tienda en la web encendida sin Tienda');
+    assert.deepEqual([...(await ModulosService.activos())].sort(), [...enBase].sort(), 'la memoria coincide con la base');
+  });
+
   test('apagar uno sin dependientes: apaga, queda en la base y en la auditoría, con quién', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const admin = await db.user.findFirst({ where: { role: 'ADMIN' }, select: { id: true, email: true } });

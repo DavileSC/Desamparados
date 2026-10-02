@@ -475,12 +475,14 @@ export async function informeAnual(
   return aBuffer(doc);
 }
 
-/** II · Ocho cifras frente al año anterior, hermanos y papeletas en cinco años, y el reparto del gasto. */
+/** II · Las cifras clave frente al año anterior, hermanos y papeletas en cinco años, y el reparto del gasto. */
 function paginaVistazo(p: Paginas, periodo: Periodo, areas: Partial<Record<ClaveArea, Area>>, crudos: DatosCrudos, hoy: Date) {
   const doc = p.doc;
   const antes = periodo.comparaHasta ? `la de ${periodo.anio - 1} a estas alturas` : `la de ${periodo.anio - 1}`;
-  entradilla(p, [{ texto: `Ocho cifras para resumir el año, cada una junto a ${antes}.` }]);
-  tarjetas(p, vistazo(crudos, hoy).map((c) => ({
+  // Las áreas ya llegan sin las de módulos apagados: sus cifras tampoco salen aquí.
+  const cifras = vistazo(crudos, hoy).filter((c) => c.area in areas);
+  entradilla(p, [{ texto: `Las cifras clave del año, cada una junto a ${antes}.` }]);
+  tarjetas(p, cifras.map((c) => ({
     etiqueta: c.etiqueta,
     valor: c.valor,
     nota: /\d/.test(c.cambio) ? `${c.cambio} · antes ${c.antes}` : `antes ${c.antes}`,

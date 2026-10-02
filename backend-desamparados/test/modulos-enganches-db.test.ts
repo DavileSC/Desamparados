@@ -14,7 +14,9 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js'
 import { ModulosService } from '../src/services/modulos.service.js';
 import { PlazoPapeletasService } from '../src/services/procesion/plazo.service.js';
 import { SalidasService } from '../src/services/procesion/salidas.service.js';
-import { areasActivas, MODULO_DE_AREA, type Area } from '../src/domain/datos-areas.js';
+import { areasActivas, MODULO_DE_AREA, vistazo, type Area } from '../src/domain/datos-areas.js';
+import { DatosService } from '../src/services/datos.service.js';
+import { periodoDe } from '../src/domain/periodo-datos.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const META = { ip: '127.0.0.1', userAgent: 'prueba-enganches' };
@@ -22,6 +24,8 @@ let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
 const usuarios: number[] = [];
+/** Cómo estaban los módulos antes de empezar, para dejarlos igual y no encender lo que la base tenía apagado. */
+let foto: { clave: string; activo: boolean }[] = [];
 
 before(async () => {
   server = app.listen(0);
@@ -29,12 +33,12 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
+  if (dbDisponible) foto = await db.modulo.findMany({ select: { clave: true, activo: true } });
 });
 
 after(async () => {
   if (dbDisponible) {
-    await db.modulo.updateMany({ data: { activo: true } });
-    await ModulosService.cargar();
+    await restaurar();
     await db.auditLog.deleteMany({ where: { userAgent: 'prueba-enganches' } });
     for (const id of usuarios) await borrarUsuarioPrueba(id);
   }
@@ -46,8 +50,8 @@ async function apagar(claves: string[]) {
   await db.modulo.updateMany({ where: { clave: { in: claves } }, data: { activo: false } });
   await ModulosService.cargar();
 }
-async function encenderTodo() {
-  await db.modulo.updateMany({ data: { activo: true } });
+async function restaurar() {
+  for (const fila of foto) await db.modulo.update({ where: { clave: fila.clave }, data: { activo: fila.activo } });
   await ModulosService.cargar();
 }
 async function cargo(role: Role) {
@@ -76,7 +80,7 @@ test('Procesión abre el plazo sin crear la noticia si Noticias está apagado', 
     assert.equal(r.abierto, true, 'el plazo se abre igual');
     assert.equal(await db.noticia.count(), noticiasAntes, 'ninguna noticia nueva');
   } finally {
-    await encenderTodo();
+    await restaurar();
     await PlazoPapeletasService.cambiar(abiertoAntes, {}, await SalidasService.porSlug('sabado-de-pasion'), META);
     // Después de dejar el plazo como estaba: cerrarlo no necesita días de reparto.
     if (turnoId !== null) await db.turno.deleteMany({ where: { id: turnoId } });
@@ -106,7 +110,7 @@ test('un sufragio «en la Agenda» con la Agenda apagada no crea acto', async (t
     assert.equal((await r.json() as { eventoId: number | null }).eventoId, null);
     assert.equal(await db.evento.count(), eventosAntes);
   } finally {
-    await encenderTodo();
+    await restaurar();
     await db.sufragio.deleteMany({ where: { hermanoId: hermano.id } });
     await db.hermano.deleteMany({ where: { id: hermano.id } });
   }
@@ -129,8 +133,21 @@ test('Datos e informes: fuera las áreas de módulos apagados, y su informe es u
     assert.equal((await fetch(`${baseUrl}/api/datos/informe/inventario`, { headers: { Cookie: hermanoMayor } })).status, 404);
     assert.equal((await fetch(`${baseUrl}/api/datos/informe/hermanos`, { headers: { Cookie: hermanoMayor } })).status, 200);
   } finally {
-    await encenderTodo();
+    await restaurar();
   }
+});
+
+test('el vistazo del Informe anual dice de qué área es cada cifra: sin Procesión no queda la de papeletas', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const hoy = new Date();
+  const tarjetas = vistazo(await DatosService.crudos(periodoDe(hoy.getUTCFullYear() - 1, hoy), hoy), hoy);
+  assert.ok(tarjetas.every((c) => c.area in MODULO_DE_AREA), 'cada tarjeta lleva su área');
+  assert.equal(tarjetas.find((c) => c.etiqueta === 'Papeletas de sitio')?.area, 'procesion');
+  // Lo mismo que hace la página del vistazo con las áreas que llegan filtradas.
+  const sinProcesion = new Set(Object.keys(MODULO_DE_AREA).filter((a) => a !== 'procesion'));
+  const quedan = tarjetas.filter((c) => sinProcesion.has(c.area));
+  assert.ok(!quedan.some((c) => c.etiqueta === 'Papeletas de sitio'));
+  assert.equal(quedan.length, tarjetas.length - 1);
 });
 
 test('el Informe anual en borrador sale sin el capítulo de Procesión cuando está apagada', async (t) => {
@@ -146,6 +163,6 @@ test('el Informe anual en borrador sale sin el capítulo de Procesión cuando es
     assert.equal(recortado.status, 200);
     assert.ok((await recortado.arrayBuffer()).byteLength < paginasCompleto, 'con un capítulo menos pesa menos');
   } finally {
-    await encenderTodo();
+    await restaurar();
   }
 });

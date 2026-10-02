@@ -47,6 +47,12 @@ describe('el catálogo', () => {
     assert.deepEqual([...LOTE_INICIAL], activos);
   });
 
+  test('el lote inicial respeta los requisitos', () => {
+    // Si no, la instalación arrancaría con un módulo encendido sin aquello que necesita.
+    const lote = new Set(LOTE_INICIAL);
+    for (const c of LOTE_INICIAL) assert.deepEqual(requisitosQueFaltan(c, lote), [], `«${c}» arranca sin sus requisitos`);
+  });
+
   test('las dependencias que fija el spec', () => {
     assert.deepEqual(fichaDe('procesion').requiere, ['agenda']);
     assert.deepEqual(fichaDe('puerta').requiere, ['procesion']);

@@ -651,7 +651,8 @@ export function areasDe(d: DatosCrudos, p: Periodo, hoy: Date): Area[] {
 
 // ---------------------------------------------------------------- el Informe anual: el año de un vistazo
 
-export interface CifraVistazo { etiqueta: string; valor: string; antes: string; cambio: string; tono?: 'bueno' | 'malo' }
+/** `area` dice de qué área sale: con su módulo apagado, la tarjeta no se pinta. */
+export interface CifraVistazo { area: ClaveArea; etiqueta: string; valor: string; antes: string; cambio: string; tono?: 'bueno' | 'malo' }
 
 /**
  * Las ocho cifras de la segunda página del Informe anual, cada una frente a la
@@ -664,17 +665,17 @@ export function vistazo(d: DatosCrudos, hoy: Date): CifraVistazo[] {
   const pct = (a: number, b: number) => (b ? `${a >= b ? '+' : '−'}${Math.round(Math.abs((a - b) / b) * 100)} %` : '—');
   const resultado = d.dinero.ingresos - d.dinero.gastos;
   const resultadoAntes = d.dinero.anterior.ingresos - d.dinero.anterior.gastos;
-  const par = (etiqueta: string, a: number, b: number, masEsBueno = true): CifraVistazo => ({
-    etiqueta, valor: numero(a), antes: numero(b), cambio: diferencia(a - b), tono: a === b ? undefined : (a > b) === masEsBueno ? 'bueno' : 'malo',
+  const par = (area: ClaveArea, etiqueta: string, a: number, b: number, masEsBueno = true): CifraVistazo => ({
+    area, etiqueta, valor: numero(a), antes: numero(b), cambio: diferencia(a - b), tono: a === b ? undefined : (a > b) === masEsBueno ? 'bueno' : 'malo',
   });
   return [
-    par('Hermanos al cierre', d.hermanos.activos, d.hermanos.activosAlEmpezar),
-    par('Altas', d.hermanos.altas, d.hermanos.anterior.altas),
-    par('Bajas', d.hermanos.bajas, d.hermanos.anterior.bajas, false),
-    par('Actos celebrados', celebrados, d.agenda.anterior),
-    par('Papeletas de sitio', principal?.papeletas ?? 0, principal?.papeletasAnioAnterior ?? 0),
-    { etiqueta: 'Ingresos', valor: euros(d.dinero.ingresos), antes: euros(d.dinero.anterior.ingresos), cambio: pct(d.dinero.ingresos, d.dinero.anterior.ingresos), tono: d.dinero.ingresos >= d.dinero.anterior.ingresos ? 'bueno' : 'malo' },
-    { etiqueta: 'Gastos', valor: euros(d.dinero.gastos), antes: euros(d.dinero.anterior.gastos), cambio: pct(d.dinero.gastos, d.dinero.anterior.gastos), tono: d.dinero.gastos <= d.dinero.anterior.gastos ? 'bueno' : 'malo' },
-    { etiqueta: 'Resultado', valor: diferenciaEuros(resultado), antes: diferenciaEuros(resultadoAntes), cambio: resultado >= 0 ? 'superávit' : 'déficit', tono: resultado >= 0 ? 'bueno' : 'malo' },
+    par('hermanos', 'Hermanos al cierre', d.hermanos.activos, d.hermanos.activosAlEmpezar),
+    par('hermanos', 'Altas', d.hermanos.altas, d.hermanos.anterior.altas),
+    par('hermanos', 'Bajas', d.hermanos.bajas, d.hermanos.anterior.bajas, false),
+    par('agenda', 'Actos celebrados', celebrados, d.agenda.anterior),
+    par('procesion', 'Papeletas de sitio', principal?.papeletas ?? 0, principal?.papeletasAnioAnterior ?? 0),
+    { area: 'dinero', etiqueta: 'Ingresos', valor: euros(d.dinero.ingresos), antes: euros(d.dinero.anterior.ingresos), cambio: pct(d.dinero.ingresos, d.dinero.anterior.ingresos), tono: d.dinero.ingresos >= d.dinero.anterior.ingresos ? 'bueno' : 'malo' },
+    { area: 'dinero', etiqueta: 'Gastos', valor: euros(d.dinero.gastos), antes: euros(d.dinero.anterior.gastos), cambio: pct(d.dinero.gastos, d.dinero.anterior.gastos), tono: d.dinero.gastos <= d.dinero.anterior.gastos ? 'bueno' : 'malo' },
+    { area: 'dinero', etiqueta: 'Resultado', valor: diferenciaEuros(resultado), antes: diferenciaEuros(resultadoAntes), cambio: resultado >= 0 ? 'superávit' : 'déficit', tono: resultado >= 0 ? 'bueno' : 'malo' },
   ];
 }

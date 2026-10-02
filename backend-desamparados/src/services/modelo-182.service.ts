@@ -35,7 +35,6 @@ import type { DatosDelDonativo } from './pagos/donativo.service.js';
 import { certificadosEnPdf } from './modelo-182-pdf.js';
 import { enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
-import { siModulo } from './modulos.service.js';
 
 const eurosTexto = (c: number) => `${(c / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
@@ -172,12 +171,12 @@ async function aportaciones(ejercicio: number, cuotas: boolean) {
     }
   }
 
-  // --- Donativos en línea desde la web: solo con su módulo (apagado, no hay nada que certificar).
-  const donativos = (await siModulo('donativos', () => db.pagoEnLinea.findMany({
+  // --- Donativos en línea desde la web. Siempre, aunque su módulo esté apagado: apagar es ocultar, y lo cobrado se declara.
+  const donativos = await db.pagoEnLinea.findMany({
     where: { tipo: TipoPagoEnLinea.DONATIVO, estado: EstadoPagoEnLinea.PAGADO, createdAt: { gte: desde, lt: hasta } },
     select: { id: true, importe: true, createdAt: true, donativo: true },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-  }))) ?? [];
+  });
   for (const p of donativos) {
     const fecha = diaDe(p.createdAt);
     if (!enRango(fecha)) continue;
@@ -194,12 +193,12 @@ async function aportaciones(ejercicio: number, cuotas: boolean) {
     });
   }
 
-  // --- Apadrinamientos: igual, solo con su módulo.
-  const apadrinados = (await siModulo('apadrinamientos', () => db.apadrinamiento.findMany({
+  // --- Apadrinamientos: igual, siempre; una declaración fiscal no depende de qué pantallas se ven.
+  const apadrinados = await db.apadrinamiento.findMany({
     where: { estado: { in: [EstadoPedido.PAGADO, EstadoPedido.ENTREGADO] }, pagadoEl: { gte: desde, lt: hasta } },
     select: { id: true, importe: true, pagadoEl: true, nombreFiscal: true, apellidosFiscales: true, nif: true, codigoPostal: true, email: true, pieza: { select: { nombre: true } } },
     orderBy: [{ pagadoEl: 'asc' }, { id: 'asc' }],
-  }))) ?? [];
+  });
   for (const a of apadrinados) {
     const fecha = diaDe(a.pagadoEl!);
     if (!enRango(fecha)) continue;

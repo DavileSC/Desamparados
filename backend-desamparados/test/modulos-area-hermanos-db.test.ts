@@ -19,6 +19,8 @@ let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
 const usuarios: number[] = [];
+/** Cómo estaban los módulos antes de empezar, para dejarlos igual y no encender lo que la base tenía apagado. */
+let foto: { clave: string; activo: boolean }[] = [];
 
 before(async () => {
   server = app.listen(0);
@@ -26,12 +28,13 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
+  if (dbDisponible) foto = await db.modulo.findMany({ select: { clave: true, activo: true } });
 });
 
 after(async () => {
   if (dbDisponible) {
-    await ModulosService.cambiar('area-hermanos', true, {}, undefined, META);
-    await ModulosService.cambiar('cuotas-en-linea', true, { conRequisitos: true }, undefined, META);
+    for (const fila of foto) await db.modulo.update({ where: { clave: fila.clave }, data: { activo: fila.activo } });
+    await ModulosService.cargar();
     await db.auditLog.deleteMany({ where: { userAgent: 'prueba-area' } });
     for (const id of usuarios) await borrarUsuarioPrueba(id);
   }

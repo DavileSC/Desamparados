@@ -16,6 +16,8 @@ import { CLAVES_MODULO, type ClaveModulo } from '../src/domain/modulos.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
+/** Cómo estaban los módulos antes de empezar, para dejarlos igual y no encender lo que la base tenía apagado. */
+let foto: { clave: string; activo: boolean }[] = [];
 let server: Server;
 let baseUrl: string;
 let admin: { id: number; cookie: string };
@@ -58,19 +60,24 @@ before(async () => {
   const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
   if (!dbDisponible) return;
+  foto = await db.modulo.findMany({ select: { clave: true, activo: true } });
   const u = await crearUsuarioPrueba(Role.ADMIN);
   admin = { id: u.id, cookie: `${COOKIE_CMS}=${generateToken(u.id, Role.ADMIN, false, 'cms')}` };
 });
 
 after(async () => {
   if (dbDisponible) {
-    await db.modulo.updateMany({ data: { activo: true } });
-    await ModulosService.cargar();
+    await restaurar();
     await borrarUsuarioPrueba(admin.id);
   }
   await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
   await db.$disconnect();
 });
+
+async function restaurar() {
+  for (const fila of foto) await db.modulo.update({ where: { clave: fila.clave }, data: { activo: fila.activo } });
+  await ModulosService.cargar();
+}
 
 async function ponerEnBase(claves: readonly string[], activo: boolean) {
   await db.modulo.updateMany({ where: { clave: { in: [...claves] } }, data: { activo } });
