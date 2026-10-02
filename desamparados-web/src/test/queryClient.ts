@@ -1,0 +1,34 @@
+import { QueryClient } from '@tanstack/react-query'
+import { CLAVES_MODULO } from '../domain/modulos'
+import { CLAVE_MODULOS } from '../lib/api/modulos'
+
+/**
+ * Un `QueryClient` de pruebas con los módulos ya en caché, para
+ * `AllTheProviders` y para cualquier prueba que necesite su propio
+ * `QueryClientProvider` sin pasar por `renderWithProviders` (como
+ * `AccesoPage.test.tsx`, que monta su propio `RouterProvider`).
+ *
+ * Un cliente nuevo por llamada: si se compartiera, la caché de una prueba
+ * contaminaría a la siguiente. Sin reintentos, o los fallos tardan segundos.
+ *
+ * `setQueryData` crea la consulta con el `gcTime: 0` de arriba: si nadie se
+ * suscribe en ese mismo tick (un componente que lee `useModulos()` tras un
+ * await, como un fetch simulado o un lazy), React Query la recolecta y
+ * `getQueryData` vuelve a dar `undefined`. El `gcTime: Infinity` de
+ * `useModulos` no evita esto: solo se aplica cuando ya hay un observador.
+ * Fijar aquí los valores por defecto de esta clave hace que la propia
+ * consulta nazca con ellos, sobreviva sin observadores y no haya ninguna
+ * pantalla que acabe pidiendo /modulos al `fetch` simulado del test.
+ *
+ * Los módulos encendidos, ya en caché: ninguna pantalla tiene que pedirlos
+ * (los tests simulan `fetch` para lo suyo y no sabrían responder a
+ * /modulos). Sin `modulos`, todo encendido, que es como está esta instalación.
+ */
+export function crearQueryClientDePruebas(modulos?: readonly string[]): QueryClient {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  })
+  queryClient.setQueryDefaults(CLAVE_MODULOS, { gcTime: Infinity, staleTime: Infinity })
+  queryClient.setQueryData(CLAVE_MODULOS, [...(modulos ?? CLAVES_MODULO)])
+  return queryClient
+}

@@ -2,11 +2,10 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import AccesoPage from '../AccesoPage'
 import { useAuthStore } from '../store'
-import { CLAVES_MODULO } from '../../../../domain/modulos'
-import { CLAVE_MODULOS } from '../../../../lib/api/modulos'
+import { crearQueryClientDePruebas } from '../../../../test/queryClient'
 
 const ok = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
@@ -24,12 +23,11 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals() })
 
 // `AccesoPage` pregunta a `useModulos()` (un `useQuery`): necesita un
-// QueryClient aunque la mayoría de pruebas no toquen módulos. Sin lista
-// explícita, todos encendidos (como hace `AllTheProviders` en el resto de la web).
+// QueryClient aunque la mayoría de pruebas no toquen módulos. No se usa
+// `renderWithProviders` porque esta pantalla necesita su propio
+// `RouterProvider` (para leer la ruta final tras la redirección con `SondaRuta`).
 function montar(modulos?: readonly string[]) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
-  queryClient.setQueryDefaults(CLAVE_MODULOS, { gcTime: Infinity, staleTime: Infinity })
-  queryClient.setQueryData(CLAVE_MODULOS, [...(modulos ?? CLAVES_MODULO)])
+  const queryClient = crearQueryClientDePruebas(modulos)
   const router = createMemoryRouter([
     { path: '/acceso', element: <AccesoPage /> },
     { path: '*', element: <SondaRuta /> },
