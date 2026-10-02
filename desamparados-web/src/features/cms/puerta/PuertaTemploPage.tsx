@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Alert, Box, Button, CircularProgress, LinearProgress, List, ListItem, ListItemText, Paper, Stack, Tab, Tabs, TextField, Typography,
+  Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, LinearProgress, List, ListItem, ListItemText, Paper, Stack, Tab, Tabs, TextField, Typography,
 } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -39,9 +39,19 @@ const TEXTO: Record<Veredicto, { titulo: string; tono: 'success' | 'warning' | '
   FALSO: { titulo: 'No es una papeleta válida', tono: 'error' },
 }
 
+/** El título de una lectura: el QR de una familia sin papeletas no es una «papeleta anulada». */
+function titulo(l: Lectura, tono: { titulo: string }): string {
+  if (l.familia && l.veredicto === 'ANULADA') return 'Sin papeletas de esta salida'
+  if (l.familia && l.veredicto === 'OTRA_SALIDA') return 'QR de familia de otra salida'
+  return tono.titulo
+}
+
 function explicacion(l: Lectura, salida: Salida, salidas: Salida[], year?: number): string {
   const p = l.papeleta
+  if (l.familia && l.veredicto === 'OTRA_SALIDA') return `Es de otra salida o de otro año, no ${deArticulo(salida.articulo, salida.nombre)}${year ? ` ${year}` : ''}.`
+  if (l.familia && l.veredicto === 'ANULADA') return 'Esa familia no tiene papeletas recogidas para esta salida: que pase por la mesa.'
   switch (l.veredicto) {
+    case 'FAMILIA': return ''
     case 'ENTRA': return p ? sitio(p) : ''
     case 'REPETIDA': return p?.entradaEl ? `Entró a las ${hora(p.entradaEl)}${p.entradaPor ? `, lo apuntó ${p.entradaPor}` : ''}.` : ''
     case 'OTRA_SALIDA': {
@@ -55,8 +65,14 @@ function explicacion(l: Lectura, salida: Salida, salidas: Salida[], year?: numbe
   }
 }
 
-function vibrar(v: Veredicto) {
-  try { navigator.vibrate?.(v === 'ENTRA' ? 60 : [90, 60, 90]) } catch { /* sin vibración */ }
+function vibrar(v: Lectura['veredicto']) {
+  try { navigator.vibrate?.(v === 'ENTRA' || v === 'FAMILIA' ? 60 : [90, 60, 90]) } catch { /* sin vibración */ }
+}
+
+/** El QR de una familia leído: quiénes son y a quiénes va a dejar pasar el diputado. */
+interface FamiliaEnPuerta {
+  papeletas: PapeletaEnPuerta[]
+  marcadas: Set<number>
 }
 
 /**
@@ -71,6 +87,10 @@ export default function PuertaTemploPage() {
   const slug = salida?.slug ?? ''
   const [camara, setCamara] = useState(false)
   const [lectura, setLectura] = useState<Lectura | null>(null)
+  const [familia, setFamilia] = useState<FamiliaEnPuerta | null>(null)
+  // Los de la familia que acaban de entrar, para decirlo como una lectura más.
+  const [entraron, setEntraron] = useState<PapeletaEnPuerta[] | null>(null)
+  const [dejandoPasar, setDejandoPasar] = useState(false)
   const [pausado, setPausado] = useState(false)
   const [codigo, setCodigo] = useState('')
   const [pestana, setPestana] = useState<'faltan' | 'ultimas'>('faltan')
@@ -87,18 +107,58 @@ export default function PuertaTemploPage() {
   const { data: estado, error: errorCarga } = useQuery({ queryKey: clave, queryFn: () => estadoPuerta(slug), refetchInterval: SONDEO_MS, staleTime: 0, enabled: Boolean(salida) })
   const refrescar = useCallback(() => cliente.invalidateQueries({ queryKey: ['puerta'] }), [cliente])
 
-  const mostrar = useCallback((l: Lectura) => {
-    setLectura(l)
-    setError(null)
-    vibrar(l.veredicto)
-    setPausado(true)
-    // Cada lectura empieza su cuenta: la anterior no puede borrar la nueva antes de tiempo.
+  /** Cada resultado empieza su cuenta: el anterior no puede borrar el nuevo antes de tiempo. */
+  const contar = useCallback(() => {
     window.clearTimeout(temporizadores.current.pausa)
     window.clearTimeout(temporizadores.current.resultado)
     temporizadores.current.pausa = window.setTimeout(() => setPausado(false), PAUSA_MS)
-    temporizadores.current.resultado = window.setTimeout(() => setLectura(null), RESULTADO_MS)
+    temporizadores.current.resultado = window.setTimeout(() => { setLectura(null); setEntraron(null) }, RESULTADO_MS)
+  }, [])
+
+  const mostrar = useCallback((l: Lectura) => {
+    setError(null)
+    setEntraron(null)
+    vibrar(l.veredicto)
+    setPausado(true)
+    if (l.veredicto === 'FAMILIA' && l.familia) {
+      // La familia espera a que el diputado diga quién está: ni se borra sola
+      // ni se lee otra papeleta encima hasta entonces.
+      window.clearTimeout(temporizadores.current.pausa)
+      window.clearTimeout(temporizadores.current.resultado)
+      setLectura(null)
+      setFamilia({ papeletas: l.familia, marcadas: new Set(l.familia.filter((p) => !p.entradaEl).map((p) => p.id)) })
+      return
+    }
+    setFamilia(null)
+    setLectura(l)
+    contar()
     void refrescar()
-  }, [refrescar])
+  }, [contar, refrescar])
+
+  const marcar = (id: number) => setFamilia((f) => {
+    if (!f) return f
+    const marcadas = new Set(f.marcadas)
+    if (marcadas.has(id)) marcadas.delete(id)
+    else marcadas.add(id)
+    return { ...f, marcadas }
+  })
+
+  const cancelarFamilia = () => { setFamilia(null); setPausado(false) }
+
+  /** Entran los marcados, de uno en uno como a mano: el que no vino entra luego con su QR. */
+  const dejarPasar = async () => {
+    if (!familia) return
+    setDejandoPasar(true)
+    const resultados = await Promise.allSettled([...familia.marcadas].map((id) => entrarAMano(id, slug)))
+    setDejandoPasar(false)
+    const dentro = resultados.flatMap((r) => (r.status === 'fulfilled' && r.value.veredicto === 'ENTRA' && r.value.papeleta ? [r.value.papeleta] : []))
+    const fallos = resultados.length - dentro.length
+    setFamilia(null)
+    setEntraron(dentro)
+    setError(fallos > 0 ? `${fallos === 1 ? 'Una entrada no se ha podido apuntar' : `${fallos} entradas no se han podido apuntar`}: búscalas en «Faltan».` : null)
+    contar()
+    void refrescar()
+  }
 
   const leer = useCallback(async (texto: string) => {
     const limpio = texto.trim()
@@ -127,8 +187,9 @@ export default function PuertaTemploPage() {
     return lista.filter((p) => `${nombre(p)} ${p.numeroHermano ?? ''} ${p.tramo ?? ''}`.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().includes(q))
   }, [estado, buscar])
 
-  const cambiarSalida = (nueva: string) => { elegir(nueva); setLectura(null); setError(null) }
-  const tono = lectura ? TEXTO[lectura.veredicto] : null
+  const cambiarSalida = (nueva: string) => { elegir(nueva); setLectura(null); setFamilia(null); setEntraron(null); setError(null) }
+  const tono = lectura && lectura.veredicto !== 'FAMILIA' ? TEXTO[lectura.veredicto] : null
+  const porEntrar = familia ? familia.papeletas.filter((p) => !p.entradaEl).length : 0
 
   if (cargando) return <CircularProgress aria-label="Cargando la puerta" />
   if (!salida) {
@@ -154,12 +215,53 @@ export default function PuertaTemploPage() {
           {lectura && tono && (
             <Alert severity={tono.tono} variant="filled" sx={{ '& .MuiAlert-message': { width: '100%' } }}
               action={lectura.veredicto === 'ENTRA' && lectura.papeleta ? <Button color="inherit" size="small" onClick={() => void deshacer(lectura.papeleta!)}>Deshacer</Button> : undefined}>
-              <Typography sx={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>{tono.titulo}</Typography>
+              <Typography sx={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>{titulo(lectura, tono)}</Typography>
               {lectura.papeleta && <Typography sx={{ fontSize: 19, fontWeight: 600, mt: 0.5 }}>{nombre(lectura.papeleta)}{lectura.papeleta.numeroHermano ? ` · n.º ${lectura.papeleta.numeroHermano}` : ''}</Typography>}
               <Typography sx={{ mt: 0.25 }}>{explicacion(lectura, salida, salidas, estado?.year)}</Typography>
             </Alert>
           )}
+          {entraron && entraron.length > 0 && (
+            <Alert severity="success" variant="filled" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
+              <Typography sx={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>{entraron.length === 1 ? 'Adelante' : `Adelante, los ${entraron.length}`}</Typography>
+              {entraron.map((p) => <Typography key={p.id} sx={{ fontSize: 17, fontWeight: 600, mt: 0.25 }}>{nombre(p)} <Box component="span" sx={{ fontWeight: 400, fontSize: 15 }}>· {sitio(p)}</Box></Typography>)}
+            </Alert>
+          )}
         </Box>
+
+        {/* El QR de una familia: el diputado mira quién está y deja pasar a esos. */}
+        {familia && (
+          <Paper role="group" aria-label="QR de familia" sx={{ p: 2, border: 2, borderColor: 'success.main' }}>
+            <Typography sx={{ fontSize: 20, fontWeight: 700 }}>QR de familia · {familia.papeletas.length} papeletas</Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.25, mb: 1 }}>
+              {porEntrar === 0 ? 'Ya habían entrado todos.' : 'Desmarca al que no esté: entrará luego con su propia papeleta.'}
+            </Typography>
+            <Stack>
+              {familia.papeletas.map((p) => p.entradaEl
+                ? (
+                  <Box key={p.id} sx={{ py: 0.75, pl: 4 }}>
+                    <Typography sx={{ fontWeight: 600 }}>{nombre(p)}</Typography>
+                    <Typography variant="body2" sx={{ color: 'warning.main' }}>Ya entró a las {hora(p.entradaEl)}{p.entradaPor ? `, lo apuntó ${p.entradaPor}` : ''}</Typography>
+                  </Box>
+                )
+                : (
+                  <FormControlLabel
+                    key={p.id}
+                    control={<Checkbox checked={familia.marcadas.has(p.id)} onChange={() => marcar(p.id)} />}
+                    label={<><Typography component="span" sx={{ fontWeight: 600, display: 'block' }}>{nombre(p)}</Typography><Typography component="span" variant="body2" color="text.secondary">{sitio(p)}</Typography></>}
+                    sx={{ py: 0.25, alignItems: 'center' }}
+                  />
+                ))}
+            </Stack>
+            <Stack direction="row" spacing={1.5} sx={{ mt: 1.5 }}>
+              {porEntrar > 0 && (
+                <Button variant="contained" color="success" size="large" disabled={familia.marcadas.size === 0 || dejandoPasar} onClick={() => void dejarPasar()} sx={{ flexGrow: 1 }}>
+                  {familia.marcadas.size === 1 ? 'Dejar pasar a 1' : `Dejar pasar a los ${familia.marcadas.size}`}
+                </Button>
+              )}
+              <Button variant="outlined" size="large" onClick={cancelarFamilia} disabled={dejandoPasar}>{porEntrar === 0 ? 'Cerrar' : 'Cancelar'}</Button>
+            </Stack>
+          </Paper>
+        )}
         {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
 
         {camara

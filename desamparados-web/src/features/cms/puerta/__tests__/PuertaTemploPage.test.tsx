@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -116,14 +116,36 @@ describe('PuertaTemploPage', () => {
       const escaneos = () => fetch.mock.calls.filter(([u]) => String(u).endsWith('/puerta/escanear')).length
       await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
       expect(await screen.findByText('Ya había entrado')).toBeInTheDocument()
-      act(() => { vi.advanceTimersByTime(4_500) })
+      act(() => { vi.advanceTimersByTime(3_000) })
       await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
       expect(escaneos()).toBe(1)
-      act(() => { vi.advanceTimersByTime(2_000) })
+      act(() => { vi.advanceTimersByTime(1_500) })
       expect(screen.queryByText('Ya había entrado')).not.toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('el QR de una familia no deja pasar a nadie hasta que el diputado confirma a los que están', async () => {
+    const user = userEvent.setup()
+    const PEPA = { ...ANA, id: 9, nombre: 'Pepa', apellidos: 'Ruiz Gil', numeroHermano: 140 }
+    const yaDentro = { ...ANA, entradaEl: '2027-04-10T16:00:00.000Z', entradaPor: 'Marta' }
+    const fetch = montar({ veredicto: 'FAMILIA', papeleta: null, familia: [LUIS, yaDentro, PEPA] })
+    await screen.findByText('Nazareno · Tramo 2 · n.º 4')
+    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSF1.40.1.2027.abcdefghijklmnop{Enter}')
+
+    const panel = await screen.findByRole('group', { name: 'QR de familia' })
+    expect(within(panel).getByText('Ya entró a las 18:00, lo apuntó Marta')).toBeInTheDocument()
+    expect(fetch.mock.calls.some(([u, i]) => String(u).includes('/puerta/papeletas/') && (i as RequestInit).method === 'POST')).toBe(false)
+    // Pepa no ha venido: entrará luego con su papeleta.
+    await user.click(within(panel).getByRole('checkbox', { name: /Pepa Ruiz Gil/ }))
+    await user.click(within(panel).getByRole('button', { name: 'Dejar pasar a 1' }))
+
+    expect(await screen.findByText('Adelante')).toBeInTheDocument()
+    const entradas = fetch.mock.calls.filter(([u, i]) => String(u).includes('/puerta/papeletas/') && (i as RequestInit).method === 'POST').map(([u]) => String(u))
+    expect(entradas).toHaveLength(1)
+    expect(entradas[0]).toMatch(/\/puerta\/papeletas\/8$/)
+    expect(screen.queryByRole('group', { name: 'QR de familia' })).not.toBeInTheDocument()
   })
 
   it('quien llega sin la papeleta se busca y se marca a mano', async () => {

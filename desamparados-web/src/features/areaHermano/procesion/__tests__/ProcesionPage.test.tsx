@@ -31,11 +31,11 @@ const EVENTO = { fechaSalida: 'Sábado de Pasión', horaSalida: '19:30h', acceso
 const salidas = (pasion: Partial<SalidaDelHermano> = {}, rosario: Partial<SalidaDelHermano> = {}): SalidaDelHermano[] => [
   {
     salida: 'sabado-de-pasion', salidaId: 1, nombre: 'Sábado de Pasión', conRopa: true, cobro: 'CUOTA', cuotaSalida: 0, indicaciones: null,
-    abierto: false, year: 2027, evento: EVENTO, dias: [], ...pasion,
+    abierto: false, year: 2027, evento: EVENTO, dias: [], ...pasion, qrFamilia: pasion.qrFamilia ?? null,
   },
   {
     salida: 'rosario-vespertino', salidaId: 2, nombre: 'Rosario vespertino', conRopa: false, cobro: 'DONATIVO', cuotaSalida: null, indicaciones: null,
-    abierto: false, year: 2026, evento: EVENTO, dias: [], ...rosario,
+    abierto: false, year: 2026, evento: EVENTO, dias: [], ...rosario, qrFamilia: rosario.qrFamilia ?? null,
   },
 ]
 
@@ -271,6 +271,31 @@ describe('ProcesionPage', () => {
     expect(screen.getByRole('dialog', { name: /Lucía Benítez Salas, 3 de 3/ })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Terminar' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('con QR de familia, el modo puerta empieza por él y sigue con las de cada uno', async () => {
+    const user = userEvent.setup()
+    const papeleta = (id: number) => ({ id, year: 2027, puesto: 'Nazareno', tramo: null, numero: null, referencia: `2027-00${id}`, tunica: null, qr: { codigo: `DSP1.${id}.AAAAAAAAAAAAAAAA`, svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>' } })
+    servidor({
+      salidas: salidas({ qrFamilia: { codigo: 'DSF1.40.1.2027.AAAAAAAAAAAAAAAA', svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>' } }),
+      fichas: [
+        ficha(1, 'Antonio', {}, { papeleta: papeleta(11) }),
+        ficha(2, 'Pablo', { esTitular: false, parentesco: 'HIJO' }, { papeleta: papeleta(12) }),
+      ],
+    })
+    renderWithProviders(<ProcesionPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Modo puerta · las 2 seguidas' }))
+    const puerta = screen.getByRole('dialog', { name: 'Toda la familia, 1 de 3' })
+    expect(within(puerta).getByRole('img', { name: 'Código QR de toda la familia' })).toBeInTheDocument()
+    await user.click(within(puerta).getByRole('button', { name: 'Antonio' }))
+    expect(screen.getByRole('dialog', { name: 'Papeleta de Antonio Benítez Salas, 2 de 3' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Todos' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cerrar el modo puerta' }))
+
+    // Desde la lista se va directo a la de cada uno, sin pasar por la de todos.
+    await user.click(screen.getByRole('button', { name: 'Enseñar la papeleta de Pablo Benítez Salas' }))
+    expect(screen.getByRole('dialog', { name: 'Papeleta de Pablo Benítez Salas, 3 de 3' })).toBeInTheDocument()
   })
 
   it('sin papeleta recogida no hay tarjeta', async () => {

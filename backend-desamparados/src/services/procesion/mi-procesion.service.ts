@@ -19,7 +19,7 @@ import { sanearPaginacion, respuestaPaginada } from '../../domain/paginacion.js'
 import { conceptoDeSalida, pagoEnLineaDisponible } from '../../domain/salidas.js';
 import { pagoParaLaWeb } from '../../domain/redsys.js';
 import QRCode from 'qrcode';
-import { codigoDePapeleta } from '../../domain/papeleta-qr.js';
+import { codigoDeFamilia, codigoDePapeleta } from '../../domain/papeleta-qr.js';
 import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
 import { referenciaDe } from './papeleta-pdf.js';
 import { leerDatosEvento } from '../recibos/comunes.js';
@@ -199,13 +199,17 @@ export class MiProcesionService {
     const cuotas = await cuotasQueCuentan(db, fichas.map((f) => f.id));
     // El QR de las papeletas de este año, que el hermano enseña en la puerta desde el móvil.
     const deEsteAnio = fichas.flatMap((f) => f.papeletas.filter((p) => p.year === anioDe(p.salidaId)));
-    const qrs = new Map(await Promise.all(deEsteAnio.map(async (p) => {
-      const codigo = codigoDePapeleta(p.id);
-      return [p.id, { codigo, svg: await QRCode.toString(codigo, { type: 'svg', errorCorrectionLevel: 'M', margin: 0 }) }] as const;
-    })));
+    const dibujar = async (codigo: string) => ({ codigo, svg: await QRCode.toString(codigo, { type: 'svg', errorCorrectionLevel: 'M', margin: 0 }) });
+    const qrs = new Map(await Promise.all(deEsteAnio.map(async (p) => [p.id, await dibujar(codigoDePapeleta(p.id))] as const)));
+    // Con dos o más papeletas de una salida, el QR de la familia: la puerta
+    // enseña la lista y el diputado deja pasar a los que estén.
+    const conQrDeFamilia = await Promise.all(salidas.map(async (s) => {
+      const suyas = deEsteAnio.filter((p) => p.salidaId === s.salidaId).length;
+      return { ...s, qrFamilia: suyas >= 2 ? await dibujar(codigoDeFamilia({ cuenta: userId, salidaId: s.salidaId, year: s.year })) : null };
+    }));
 
     return {
-      salidas,
+      salidas: conQrDeFamilia,
       pagoEnLinea: pagoEnLineaDisponible(),
       pago: pagoParaLaWeb(),
       fichas: fichas.map(({ solicitudes, papeletas, ...ficha }) => {

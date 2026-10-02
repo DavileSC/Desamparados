@@ -12,7 +12,7 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
-import { codigoDePapeleta } from '../src/domain/papeleta-qr.js';
+import { codigoDeFamilia, codigoDePapeleta } from '../src/domain/papeleta-qr.js';
 import { anioDeLaMesa } from '../src/services/procesion/zonas.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
@@ -83,6 +83,15 @@ test('escanear en la puerta: entra una vez, y lo que no vale no entra', async (t
     assert.ok(estado.ultimas.some((p: { id: number }) => p.id === buena.id));
     assert.ok(!estado.faltan.some((p: { id: number }) => p.id === buena.id || p.id === sinPapeleta.id));
     assert.ok(estado.tramos.find((x: { tramo: string }) => x.tramo === 'Tramo 1').dentro >= 2);
+
+    // El QR de la familia no apunta a nadie: enseña sus papeletas de esta
+    // salida, también las que ya entraron, y el diputado deja pasar a mano.
+    const familia = await (await escanear(codigoDeFamilia({ cuenta: usuario.id, salidaId: pasion.id, year }))).json();
+    assert.equal(familia.veredicto, 'FAMILIA');
+    assert.deepEqual(familia.familia.map((p: { id: number }) => p.id).sort(), [buena.id, sinPapeleta.id].sort(), 'sin la del Rosario');
+    assert.ok(familia.familia.every((p: { entradaEl: string | null }) => p.entradaEl !== null), 'las dos ya habían entrado');
+    assert.equal((await (await escanear(codigoDeFamilia({ cuenta: usuario.id, salidaId: pasion.id, year: year - 1 }))).json()).veredicto, 'OTRA_SALIDA');
+    assert.equal((await (await escanear(codigoDeFamilia({ cuenta: diputado.id, salidaId: pasion.id, year }))).json()).veredicto, 'ANULADA', 'una cuenta sin papeletas');
 
     // Deshacer: vuelve a faltar, y queda en la auditoría.
     const deshecha = await (await fetch(`${baseUrl}/api/procesion/admin/puerta/papeletas/${buena.id}`, { method: 'DELETE', headers: cabeceras(diputado.id, Role.SECRETARIA) })).json();

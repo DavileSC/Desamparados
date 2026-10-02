@@ -109,6 +109,8 @@ export interface SalidaDelHermano {
   evento: { fechaSalida: string; horaSalida: string; accesoPuerta: string }
   /** Vacío con el plazo cerrado. */
   dias: DiaDeReparto[]
+  /** Con dos o más papeletas de esta salida en la cuenta: el QR para que entren todos con un solo escaneo. */
+  qrFamilia: { codigo: string; svg: string } | null
 }
 
 export interface MiProcesion {

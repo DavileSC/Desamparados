@@ -48,7 +48,50 @@ export function leerCodigoDePapeleta(texto: string, secreto?: string): number | 
   const m = /^DSP1\.([1-9]\d{0,9})\.([A-Za-z0-9_-]{16})$/.exec(texto.trim());
   if (!m) return null;
   const id = Number(m[1]);
-  const esperada = Buffer.from(firma(id, secreto));
-  const llegada = Buffer.from(m[2]);
-  return esperada.length === llegada.length && timingSafeEqual(esperada, llegada) ? id : null;
+  return firmaValida(firma(id, secreto), m[2]) ? id : null;
+}
+
+const firmaValida = (esperada: string, llegada: string) => {
+  const a = Buffer.from(esperada);
+  const b = Buffer.from(llegada);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
+
+/**
+ * El QR de la familia: todas las papeletas de una cuenta para una salida y un
+ * año, para que una familia que llega junta no tenga que enseñarlas de una en
+ * una. Es el otro formato del contrato:
+ *
+ *     DSF1.<id de la cuenta>.<id de la salida>.<año>.<firma>
+ *
+ * Firmado igual que el de la papeleta. No dice qué papeletas son: las busca
+ * la puerta al leerlo, así que una papeleta anulada o recogida después no
+ * obliga a cambiar el código. Y no deja pasar a nadie por sí solo: la puerta
+ * enseña la lista y el diputado confirma quién está (el que no, entra luego
+ * con el QR de su papeleta).
+ */
+export interface Familia {
+  cuenta: number;
+  salidaId: number;
+  year: number;
+}
+
+const VERSION_FAMILIA = 'DSF1';
+
+const firmaDeFamilia = ({ cuenta, salidaId, year }: Familia, secreto?: string) =>
+  createHmac('sha256', clave(secreto)).update(`${VERSION_FAMILIA}.${cuenta}.${salidaId}.${year}`).digest('base64url').slice(0, LARGO_FIRMA);
+
+/** El texto que va en el QR de la familia. */
+export function codigoDeFamilia(familia: Familia, secreto?: string): string {
+  const { cuenta, salidaId, year } = familia;
+  for (const n of [cuenta, salidaId, year]) if (!Number.isInteger(n) || n <= 0) throw new Error(`Familia no válida: ${cuenta}.${salidaId}.${year}`);
+  return `${VERSION_FAMILIA}.${cuenta}.${salidaId}.${year}.${firmaDeFamilia(familia, secreto)}`;
+}
+
+/** La cuenta, la salida y el año de un QR de familia, o null si no lo es o la firma no cuadra. */
+export function leerCodigoDeFamilia(texto: string, secreto?: string): Familia | null {
+  const m = /^DSF1\.([1-9]\d{0,9})\.([1-9]\d{0,9})\.(\d{4})\.([A-Za-z0-9_-]{16})$/.exec(texto.trim());
+  if (!m) return null;
+  const familia = { cuenta: Number(m[1]), salidaId: Number(m[2]), year: Number(m[3]) };
+  return firmaValida(firmaDeFamilia(familia, secreto), m[4]) ? familia : null;
 }

@@ -20,8 +20,11 @@ export interface PapeletaEnPuerta {
 }
 
 export interface Lectura {
-  veredicto: Veredicto
+  /** `FAMILIA`: el QR de una familia; nadie ha entrado aún, la lista va en `familia`. */
+  veredicto: Veredicto | 'FAMILIA'
   papeleta: PapeletaEnPuerta | null
+  /** Solo al leer un QR de familia: sus papeletas de esta salida, también las que ya entraron. */
+  familia?: PapeletaEnPuerta[]
 }
 
 export interface TramoEnPuerta {

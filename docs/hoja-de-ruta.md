@@ -77,6 +77,7 @@ Así, instalarlo para otra corporación es rellenar su configuración.
 | ✅ | A | Escaneo del QR en la puerta del templo | Hecho: Censo y procesión → «Puerta del templo», pensada para el móvil. La cámara lee el QR de la papeleta (lector nativo en Android, `jsqr` en iPhone) o un lector de mano por el campo de texto; dice en grande si entra, si ya entró, si es de otra salida, anulada o falsa, y vibra. Cuentas por tramo que se refrescan solas cada 5 s, lista de los que faltan para marcar a mano a quien llega sin papeleta, y «Deshacer» (queda en la auditoría). Dos diputados leyendo la misma no la apuntan dos veces. Migración `puerta_del_templo` |
 | ✅ | — | **Cortejo por antigüedad, automático** | Hecha: Procesión → «Cortejo». Los tramos de cada salida (nombre y plazas) y los puestos que se reparten van en la configuración; «Repartir por antigüedad» pone a los más nuevos delante y a los más antiguos junto al trono, en proporción a las plazas, y escribe tramo y lugar en cada papeleta. Enseña antes cuántas cambian y la lista de cada tramo |
 | ✅ | A | Túnica propuesta según la medida | Hecha: sin túnica en casa ni libre la de antes, se propone la libre de talla más cercana a su altura al hombro (+5/−3 cm), en la ficha de la mesa y en la hoja del ropero sin repetir |
+| ✅ | A | Papeletas de la familia y QR de familia | Hecho: en Procesión del área de hermanos, con varias papeletas, lista y «Modo puerta» a pantalla completa (una a una, deslizando o con flechas). Con dos o más de una salida, el modo puerta empieza por un QR de toda la familia: en la Puerta del templo enseña la lista, el diputado desmarca al que no esté y «Dejar pasar» apunta al resto; quien falte entra luego con su papeleta. Sin migración |
 
 **El código del QR de la papeleta** (contrato entre A y B), en
 `backend-desamparados/src/domain/papeleta-qr.ts`:
@@ -88,6 +89,10 @@ Así, instalarlo para otra corporación es rellenar su configuración.
   escaneo, B).
 - Si la papeleta sigue valiendo (no anulada, de esta salida y año) lo decide
   el escaneo mirando la base, no el código.
+- El QR de la familia es `DSF1.<id de la cuenta>.<id de la salida>.<año>.<firma>`,
+  con la misma clave: `codigoDeFamilia` y `leerCodigoDeFamilia`. No dice qué
+  papeletas son (las busca la puerta al leerlo) ni deja pasar a nadie solo: la
+  lectura devuelve `FAMILIA` con la lista y cada entrada se apunta como a mano.
 
 ## Fase 3 · Comunicación
 

@@ -140,6 +140,8 @@ test('en el área, la papeleta de este año trae su QR para enseñarlo desde el 
     assert.match(papeleta.qr.svg, /^<svg[\s\S]*<\/svg>\s*$/);
     assert.equal(papeleta.tunica, '145-31');
     assert.ok(estado.salidas.find((s) => s.salida === PASION)?.evento.horaSalida, 'la hora de entrada va con la salida');
+    // Con una sola papeleta no hay QR de familia: no hay nadie más que dejar pasar.
+    assert.equal(estado.salidas.find((s) => s.salida === PASION)?.qrFamilia, null);
   } finally {
     await e.recoger();
   }

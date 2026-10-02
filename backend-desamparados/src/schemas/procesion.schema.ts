@@ -309,7 +309,8 @@ export const cortejoAplicarSchema = type({
     body: { salida, year: type("2000 <= number.integer <= 2100").describe("un año entre 2000 y 2100") }
 });
 
-// La puerta del templo. El código es el texto del QR (`DSP1.<id>.<firma>`): se
+// La puerta del templo. El código es el texto del QR (`DSP1.<id>.<firma>` o el
+// de la familia, `DSF1.<cuenta>.<salida>.<año>.<firma>`, que no pasa de 48): se
 // acota el largo para no firmar textos enormes; si es bueno lo dice la firma.
 export const puertaEscanearSchema = type({
     body: { codigo: "0 < string <= 64", salida }

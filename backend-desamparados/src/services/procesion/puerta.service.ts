@@ -10,7 +10,7 @@
 import db from '../../config/db.js';
 import { NotFoundError } from '../../utils/error.handle.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
-import { leerCodigoDePapeleta } from '../../domain/papeleta-qr.js';
+import { leerCodigoDeFamilia, leerCodigoDePapeleta } from '../../domain/papeleta-qr.js';
 import { cuentasPorTramo, veredicto, type Veredicto } from '../../domain/puerta.js';
 import { anioDeLaMesa } from './zonas.service.js';
 import { leerConfiguracion } from './cortejo.service.js';
@@ -43,8 +43,15 @@ const aPapeleta = (p: Fila) => ({
 export type PapeletaEnPuerta = ReturnType<typeof aPapeleta>;
 
 export interface Lectura {
-  veredicto: Veredicto;
+  /** `FAMILIA`: el QR de la familia; nadie ha entrado aún, la lista va en `familia`. */
+  veredicto: Veredicto | 'FAMILIA';
   papeleta: PapeletaEnPuerta | null;
+  /**
+   * Solo al leer un QR de familia: sus papeletas de esta salida, también las
+   * que ya entraron (`entradaEl`). Vacía si el código es de otra salida o año
+   * (`OTRA_SALIDA`) o si ya no le queda ninguna (`ANULADA`).
+   */
+  familia?: PapeletaEnPuerta[];
 }
 
 async function nombreDe(meta: MetaDeAuditoria) {
@@ -80,8 +87,26 @@ export class PuertaService {
   /** Un QR leído en la puerta. Si vale y no había entrado, queda dentro. */
   static async escanear(codigo: string, salida: SalidaConActo, meta: MetaDeAuditoria): Promise<Lectura> {
     const id = leerCodigoDePapeleta(codigo);
-    if (id === null) return { veredicto: 'FALSO', papeleta: null };
-    return PuertaService.entrar(id, salida, meta);
+    if (id !== null) return PuertaService.entrar(id, salida, meta);
+    const familia = leerCodigoDeFamilia(codigo);
+    if (familia) return PuertaService.familia(familia.cuenta, familia.salidaId, familia.year, salida);
+    return { veredicto: 'FALSO', papeleta: null };
+  }
+
+  /**
+   * El QR de una familia: no apunta a nadie, solo dice quiénes son. El
+   * diputado confirma quién está y cada uno entra con `entrar`, como a mano;
+   * el que no ha venido entra luego con el QR de su papeleta.
+   */
+  static async familia(cuenta: number, salidaId: number, year: number, salida: SalidaConActo): Promise<Lectura> {
+    if (salidaId !== salida.id || year !== anioDeLaMesa(salida)) return { veredicto: 'OTRA_SALIDA', papeleta: null, familia: [] };
+    const papeletas = await db.papeletaSitio.findMany({
+      where: { salidaId, year, hermano: { userId: cuenta } },
+      orderBy: [{ hermano: { esTitular: 'desc' } }, { hermano: { fechaNacimiento: 'asc' } }],
+      select: DE_LA_PAPELETA,
+    });
+    if (papeletas.length === 0) return { veredicto: 'ANULADA', papeleta: null, familia: [] };
+    return { veredicto: 'FAMILIA', papeleta: null, familia: papeletas.map(aPapeleta) };
   }
 
   /**
