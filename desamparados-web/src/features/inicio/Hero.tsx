@@ -31,7 +31,10 @@ export default function Hero() {
   // siempre» corre sobre el hook, y con la copia aquí este bloque —el que más
   // se ve— se quedaba justo fuera de esa red.
   const textos = useTextosPortada()
-  const conAgenda = useModulos().activo('agenda')
+  const { activos, activo } = useModulos()
+  // El enlace puede pintarse mientras no se sabe (la lista llega en milisegundos):
+  // retirarlo después sería peor que dejarlo un instante de más.
+  const conAgenda = activos === null || activo('agenda')
   // En la vista previa del CMS el título no es el de la pantalla: la pantalla
   // ya tiene el suyo, «Portada», y dos títulos principales confunden al lector.
   const enVistaPrevia = useContext(BorradorPortadaContext) !== null

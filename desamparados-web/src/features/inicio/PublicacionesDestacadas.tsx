@@ -245,13 +245,16 @@ function PublicacionesEsqueleto() {
  * si no de la más reciente: el servidor las manda ya en ese orden.
  */
 export default function PublicacionesDestacadas() {
-  const conPublicaciones = useModulos().activo('publicaciones')
-  const consulta = useDatosDePortada('publicaciones', publicacionesDePortada, conPublicaciones)
+  const { activos, activo } = useModulos()
+  // La lista llega en milisegundos y en esta instalación todo está encendido:
+  // mejor un esqueleto mientras no se sabe que un hueco que luego crece.
+  const apagado = activos !== null && !activo('publicaciones')
+  const consulta = useDatosDePortada('publicaciones', publicacionesDePortada, activos !== null && activo('publicaciones'))
   const { data: publicaciones = [], isPending, isError, refetch } = consulta
   const textos = useTextosPortada()
   const [destacada, ...resto] = publicaciones
   const otras = resto.slice(0, 2)
-  if (!conPublicaciones) return null
+  if (apagado) return null
 
   return (
     <SeccionAnimada

@@ -310,7 +310,8 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
         sx={{
           flex: 1, minHeight: 0, display: 'grid', gap: 'clamp(8px, 1.6vh, 14px)',
           gridTemplateColumns: 'minmax(170px, 210px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)',
-          // En el móvil, las cuatro en una fila arriba y la gráfica debajo.
+          // En el móvil, las cifras visibles en una fila arriba (menos con algún módulo
+          // apagado) y la gráfica debajo.
           '@container cifras (max-width: 599px)': {
             gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'auto minmax(0, 1fr)',
             '& .selector': { gridTemplateRows: 'none', gridTemplateColumns: `repeat(${visibles.length}, minmax(0, 1fr))`, gap: '6px' },

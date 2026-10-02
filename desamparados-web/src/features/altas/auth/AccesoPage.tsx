@@ -103,7 +103,7 @@ export default function AccesoPage() {
         <title>{`Acceso hermanos | ${site.nombreCorto}`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
-      <TarjetaCristal sx={{ width: '100%', p: { xs: 3, md: 5 }, maxWidth: 440, mx: 'auto' }}>
+      <TarjetaCristal component="main" sx={{ width: '100%', p: { xs: 3, md: 5 }, maxWidth: 440, mx: 'auto' }}>
         <Typography
           variant="h3"
           component="h1"

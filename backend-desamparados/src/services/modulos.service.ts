@@ -174,7 +174,13 @@ export class ModulosService {
       }
     } finally {
       // Si la base falla a mitad, la memoria se relee igual: así no anuncia como apagado algo que ya se encendió.
-      await ModulosService.cargar();
+      // Pero si la propia recarga falla (la base caída, por ejemplo), no debe tapar el error de la escritura:
+      // quien llama a `cambiar` necesita saber qué falló al guardar, no por qué no se pudo releer después.
+      try {
+        await ModulosService.cargar();
+      } catch (error) {
+        console.error('[Módulos] No se pudo recargar la memoria tras un cambio:', error);
+      }
     }
     const despues = await ModulosService.activos();
     return { ok: true, cambiados, activos: CLAVES_MODULO.filter((c) => despues.has(c)) };

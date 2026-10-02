@@ -655,8 +655,10 @@ export function areasDe(d: DatosCrudos, p: Periodo, hoy: Date): Area[] {
 export interface CifraVistazo { area: ClaveArea; etiqueta: string; valor: string; antes: string; cambio: string; tono?: 'bueno' | 'malo' }
 
 /**
- * Las ocho cifras de la segunda página del Informe anual, cada una frente a la
- * del año anterior (hasta el mismo día, si este va en marcha).
+ * Las ocho cifras del año de un vistazo, cada una frente a la del año anterior
+ * (hasta el mismo día, si este va en marcha). Siempre las ocho: es quien arma
+ * la segunda página del Informe anual el que se queda solo con las de las
+ * áreas presentes.
  */
 export function vistazo(d: DatosCrudos, hoy: Date): CifraVistazo[] {
   const ahora = hoy.toISOString();

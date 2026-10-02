@@ -114,6 +114,13 @@ describe('AccesoPage (acceso de hermanos)', () => {
     expect(screen.getByRole('link', { name: 'Solicita tu alta' })).toHaveAttribute('href', '/hazte-hermano')
   })
 
+  it('el formulario va en un único <main>, como el aviso de área apagada', () => {
+    // `getByRole('main')` falla si hay más de uno: antes el aviso llevaba su
+    // propio `<main>` y el formulario normal no tenía ninguno.
+    montar(['area-hermanos'])
+    expect(within(screen.getByRole('main')).getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  })
+
   it('con el área de hermanos apagada, avisa en vez del formulario y enlaza al acceso del CMS', async () => {
     montar(['noticias'])
 

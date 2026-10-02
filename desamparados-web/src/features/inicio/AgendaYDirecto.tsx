@@ -91,9 +91,11 @@ function AlturaSostenida({ children, className, sx }: { children: ReactNode; cla
 
 export default function AgendaYDirecto() {
   const textos = useTextosPortada()
-  const { activo } = useModulos()
+  const { activos, activo } = useModulos()
   // La sección es la agenda: sin ella no se pinta ni se pide nada (el directo va dentro).
-  const conAgenda = activo('agenda')
+  // La lista llega en milisegundos y en esta instalación todo está encendido: mejor un
+  // esqueleto mientras no se sabe que un hueco que luego crece.
+  const apagado = activos !== null && !activo('agenda')
   const hoy = inicioDelDia(new Date())
   const [mesElegido, setMesElegido] = useState<Date | null>(null)
   // undefined: nadie ha tocado nada y se abre el próximo acto; null: el visitante lo ha cerrado.
@@ -103,7 +105,7 @@ export default function AgendaYDirecto() {
   const proximo = useQuery({
     queryKey: ['home', 'agenda', 'proximo'],
     queryFn: () => eventosDelCalendario({ cuantos: 1 }),
-    enabled: conAgenda,
+    enabled: activos !== null && activo('agenda'),
     retry: false,
     staleTime: 60_000,
   })
@@ -142,7 +144,7 @@ export default function AgendaYDirecto() {
   const listaFallo = !listaCargando && (proximo.isError || ventana.isError)
   const reintentar = () => { void (proximo.isError ? proximo.refetch() : ventana.refetch()) }
 
-  if (!conAgenda) return null
+  if (apagado) return null
 
   return (
     <SeccionAnimada

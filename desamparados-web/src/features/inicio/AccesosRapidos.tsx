@@ -17,6 +17,7 @@ import { GOLD, GRANATE, SERIF, TINTA, ceja } from './estilos'
 import { useTextosPortada, TEXTOS_POR_DEFECTO } from './useContenidoPortada'
 import type { TextosPortada } from '../../lib/api/portada'
 import { useModulos } from '../../hooks/useModulos'
+import type { Requisito } from '../../domain/modulos'
 
 // Lo que NO se edita desde el CMS: qué teselas hay, su icono, su destino y su
 // orden. El documento solo pone título y descripción, casados por `clave`.
@@ -224,12 +225,15 @@ export default function AccesosRapidos() {
     textos.accesos.teselas.find((t) => t.clave === clave)
     ?? TEXTOS_POR_DEFECTO.accesos.teselas.find((t) => t.clave === clave)!
 
-  const { activo } = useModulos()
+  const { activos, activo } = useModulos()
   // Sin el alta por la web no hay a dónde mandar con «Hazte hermano», y sin
-  // Publicaciones los boletines no existen: ni placa ni tesela.
-  const conPlaca = activo('alta-web')
+  // Publicaciones los boletines no existen: ni placa ni tesela. Mientras no se
+  // sabe se pintan como encendidas (la lista llega en milisegundos): retirarlas
+  // después sería peor que dejarlas un instante de más.
+  const sigueEncendido = (clave: Requisito) => activos === null || activo(clave)
+  const conPlaca = sigueEncendido('alta-web')
   const teselas: Acceso[] = [
-    ...ACCESOS.filter((a) => a.clave !== 'boletines' || activo('publicaciones')),
+    ...ACCESOS.filter((a) => a.clave !== 'boletines' || sigueEncendido('publicaciones')),
     ...(site.redes.youtube
       ? [{ clave: 'youtube', icon: <PlayCircleOutlinedIcon fontSize="inherit" />, href: site.redes.youtube }]
       : []),
