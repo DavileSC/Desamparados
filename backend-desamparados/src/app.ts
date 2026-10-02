@@ -32,6 +32,8 @@ import { datosRoutes } from './routes/datos.routes.js';
 import { portadaRoutes } from './routes/portada.routes.js';
 import { contenidoRoutes } from './routes/contenido.routes.js';
 import { seccionesRoutes } from './routes/secciones.routes.js';
+import { modulosRoutes, modulosCmsRoutes } from './routes/modulos.routes.js';
+import { nucleo } from './middleware/modulos.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
 import { notFoundHandler, globalErrorHandler } from './middleware/error.middleware'; // Manejo de errores global
@@ -179,6 +181,8 @@ app.use('/api/cortejo-directo', cortejoDirectoRoutes); // Dónde va el cortejo e
 app.use('/api/portada', portadaRoutes);  // Fotos de la cabecera del inicio
 app.use('/api/secciones', seccionesRoutes); // Secciones guardadas del constructor de páginas
 app.use('/api/contenido', contenidoRoutes); // Textos editables de la portada, el recorrido y la historia
+app.use('/api/modulos', nucleo, modulosRoutes);         // Qué módulos están encendidos, para la web
+app.use('/api/cms/modulos', nucleo, modulosCmsRoutes);  // Encenderlos y apagarlos, desde Sistema → Módulos
 
 // ==========================================
 // 4. MANEJO DE ERRORES GLOBAL
