@@ -5,12 +5,13 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
 import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
 import TOPES from '../../../../../shared/topes-contenido.json'
 import PortadaAdminPage from '../PortadaAdminPage'
 import PaginaAdminPage from '../PaginaAdminPage'
+import { crearQueryClientDePruebas } from '../../../test/queryClient'
 
 /**
  * Los topes de longitud del servidor (`schemas/contenido.schema.ts`, que los lee
@@ -50,7 +51,7 @@ function montarLasPantallas() {
 
   render(
     <HelmetProvider>
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={crearQueryClientDePruebas()}>
         <ThemeProvider theme={crearTemaCms('claro')}>
           <RouterProvider router={rutaDe(<PortadaAdminPage />, '/cms/portada')} />
           <RouterProvider router={rutaDe(<PaginaAdminPage />, '/cms/paginas/:slug', '/cms/paginas/historia')} />

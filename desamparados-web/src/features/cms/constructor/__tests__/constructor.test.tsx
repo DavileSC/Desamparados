@@ -4,9 +4,10 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../../theme/cms'
 import PaginaAdminPage from '../../PaginaAdminPage'
+import { crearQueryClientDePruebas } from '../../../../test/queryClient'
 
 const contenido = {
   cabecera: { titulo: 'Nuestros fines', subtitulo: 'Caridad y formación.', foto: '', fotoAlt: '' },
@@ -53,7 +54,7 @@ function montar() {
   )
   render(
     <HelmetProvider>
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={crearQueryClientDePruebas()}>
         <ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>,

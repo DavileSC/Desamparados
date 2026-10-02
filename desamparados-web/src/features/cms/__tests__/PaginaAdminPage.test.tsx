@@ -4,10 +4,11 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { crearTemaCms } from '../../../theme/cms'
 import PaginaAdminPage from '../PaginaAdminPage'
 import TIPOS from '../../../../../shared/tipos-de-bloque.json'
+import { crearQueryClientDePruebas } from '../../../test/queryClient'
 
 const contenido = {
   cabecera: { titulo: 'Corporación', subtitulo: 'Grupo Parroquial.', foto: '', fotoAlt: '' },
@@ -56,7 +57,7 @@ function montar(respuestaPut?: { status: number; cuerpo: unknown }, datos: unkno
   )
   render(
     <HelmetProvider>
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={crearQueryClientDePruebas()}>
         <ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>,
