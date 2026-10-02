@@ -12,6 +12,7 @@ import { estadoDelRecibo, formatearImporte } from './etiquetas'
 import AvisoSuave from '../../../components/AvisoSuave'
 import CertificadosDonativos from './CertificadosDonativos'
 import { site } from '../../../config/site'
+import { useModulos } from '../../../hooks/useModulos'
 
 /**
  * Los recibos de la familia, agrupados por año.
@@ -28,6 +29,7 @@ import { site } from '../../../config/site'
  * encabezar, que es justo lo que se quiere leer.
  */
 export default function RecibosPage() {
+  const { activo } = useModulos()
   const { items: receipts, meta, loading, error, alCambiarPagina, cambiarTamano } =
     useListadoPaginado<MyReceipt>(misRecibos, 'No se han podido cargar tus recibos.')
 
@@ -81,7 +83,7 @@ export default function RecibosPage() {
 
           {meta && <Paginador meta={meta} onPagina={alCambiarPagina} onTamano={cambiarTamano} etiqueta="mis recibos" />}
 
-          <CertificadosDonativos />
+          {activo('modelo-182') && <CertificadosDonativos />}
         </ContenedorDePagina>
       </SeccionAnimada>
     </>

@@ -145,6 +145,19 @@ describe('PerfilPage', () => {
     expect(cuerpoDelPut(simulado)).toEqual({ formaPagoPref: 'DOMICILIACION', titularidadCuenta: null, titularCuenta: 'Ana Pérez' })
   })
 
+  // Sin Procesión ni Cuotas en línea instalados, esos dos apartados no existen:
+  // no hay vida cofrade que llevar ni pago en línea de la cuota que ofrecer.
+  it('sin Procesión ni Cuotas en línea, no hay Vida cofrade ni Cuota y pago', async () => {
+    responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />, { modulos: ['area-hermanos'] })
+
+    expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Datos personales' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Contacto y domicilio' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Vida cofrade' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Cuota y pago' })).not.toBeInTheDocument()
+  })
+
   // Quien solo apuntó a menores no tiene ficha: antes se le enseñaba la de su
   // hijo como si fuera la suya. Ahora ve las de sus menores, y le ofrece hacerse hermano.
   it('sin ficha propia ofrece hacerse hermano y enseña las de sus menores', async () => {

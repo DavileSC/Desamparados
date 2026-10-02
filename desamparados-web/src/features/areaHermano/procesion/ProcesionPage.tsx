@@ -21,6 +21,7 @@ import { site } from '../../../config/site'
 import TarjetaPapeleta from './TarjetaPapeleta'
 import { useSalidas } from '../../procesion/useSalidas'
 import { conArticulo, deArticulo, laCorporacion, segunLaCorporacion, type Articulo } from '../../../domain/articulos'
+import { useModulos } from '../../../hooks/useModulos'
 
 /** El artículo de una salida del catálogo público por su slug: `SalidaDelHermano` no lo trae, así que se busca en `useSalidas()`. */
 const articuloDe = (catalogo: { slug: string; articulo: Articulo }[], slug: string): Articulo => catalogo.find((s) => s.slug === slug)?.articulo ?? 'el'
@@ -60,6 +61,7 @@ const nuevaClave = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), 
  * hermano: aquí se ve lo que falta y se puede pagar.
  */
 export default function ProcesionPage() {
+  const { activo } = useModulos()
   const [estado, setEstado] = useState<MiProcesion | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -108,7 +110,7 @@ export default function ProcesionPage() {
             </Tabs>
           )}
 
-          <VueltaDelBanco onPagado={trasPagar} onComprobando={setComprobando} />
+          {activo('cuotas-en-linea') && <VueltaDelBanco onPagado={trasPagar} onComprobando={setComprobando} />}
           {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
           {aviso && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setAviso(null)}>{aviso}</Alert>}
           {!estado && !error && <CircularProgress aria-label="Cargando la procesión" />}
@@ -130,6 +132,7 @@ interface PropsContenido {
 }
 
 function Contenido({ estado, salida, comprobando, onHecho, onError }: PropsContenido) {
+  const { activo } = useModulos()
   const de = (f: FichaEnLaProcesion) => f.porSalida[salida.salida]
   const apuntadas = estado.fichas.filter((f) => de(f).papeleta || de(f).solicitud)
   const porPedir = estado.fichas.filter((f) => !de(f).papeleta && !de(f).solicitud)
@@ -138,7 +141,7 @@ function Contenido({ estado, salida, comprobando, onHecho, onError }: PropsConte
 
   return (
     <Box sx={{ display: 'grid', gap: 3, maxWidth: 980 }}>
-      <PorPagar estado={estado} salida={salida} comprobando={comprobando} onHecho={onHecho} onError={onError} />
+      {activo('cuotas-en-linea') && <PorPagar estado={estado} salida={salida} comprobando={comprobando} onHecho={onHecho} onError={onError} />}
       {conPapeleta.length > 0 && (
         <Box component="section" aria-label="Papeletas para enseñar en la puerta" sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
           {conPapeleta.map((f) => <TarjetaPapeleta key={f.id} ficha={f} salida={salida} />)}
