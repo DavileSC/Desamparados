@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { alModuloNoActivado } from '../lib/api/cliente'
 import { CLAVE_MODULOS, modulosActivos } from '../lib/api/modulos'
 import { cumple, type Requisito } from '../domain/modulos'
 
@@ -12,7 +13,14 @@ import { cumple, type Requisito } from '../domain/modulos'
  * piden nada.
  */
 export function useModulos() {
+  const queryClient = useQueryClient()
   const { data, isPending, isError } = useQuery({ queryKey: CLAVE_MODULOS, queryFn: modulosActivos, staleTime: Infinity, gcTime: Infinity })
+  // Un 404 de módulo apagado dice que esta lista está vieja: se vuelve a pedir.
+  // Cada pantalla que use el hook se apunta; con una petición ya en marcha,
+  // `cancelRefetch: false` hace que las demás esperen a esa en vez de repetirla.
+  useEffect(() => alModuloNoActivado(() => {
+    void queryClient.invalidateQueries({ queryKey: CLAVE_MODULOS }, { cancelRefetch: false })
+  }), [queryClient])
   const activos = useMemo<ReadonlySet<string> | null>(() => (data ? new Set<string>(data) : null), [data])
   return {
     activos,

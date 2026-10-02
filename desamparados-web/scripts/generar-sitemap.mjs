@@ -3,55 +3,35 @@
 // El sitemap se mantenía a mano y se desincronizó: llegó a anunciar a Google
 // tres URLs que ya no existían (/titular/…, renombradas a /sagrada-titular/…) y
 // a omitir siete páginas reales. Generarlo desde la única fuente de verdad —las
-// rutas declaradas— impide que vuelva a pasar.
+// rutas declaradas— impide que vuelva a pasar. Qué rutas entran y cuáles no
+// (parámetros, redirecciones, módulos que esta instalación no enciende) lo
+// decide `rutas-publicas.mjs`, el mismo que usa la prueba.
 //
 // Se ejecuta solo en `npm run build` (script `prebuild`).
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { datosEntidad, urlsIndexables } from './rutas-publicas.mjs'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
-const RUTAS = join(raiz, 'src/routes/index.tsx')
 const SITEMAP = join(raiz, 'public/sitemap.xml')
 // El dominio es el de la corporación: sale del fichero que comparten la API y la web.
-const { identidad } = JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
-const DOMINIO = `https://${identidad.dominio}`
+const DOMINIO = `https://${datosEntidad().identidad.dominio}`
 
-// Por debajo de este número algo ha cambiado en el router y el recorte de abajo
-// ya no encuentra el bloque público: mejor romper el build que publicar un
-// sitemap truncado.
-const MINIMO_ESPERADO = 20
+// Por debajo de este número algo ha cambiado en el router y el recorte de
+// rutas-publicas.mjs ya no encuentra el bloque público: mejor romper el build
+// que publicar un sitemap truncado. Las páginas del núcleo, que ninguna
+// instalación apaga, son 19: una instalación con todos los módulos apagados
+// tiene que pasar igual.
+const MINIMO_ESPERADO = 15
 
-const fuente = readFileSync(RUTAS, 'utf8')
-
-// El bloque público es el que cuelga de <MarcoPublico /> y termina en su
-// comodín `path: '*'`. Las demás secciones (acceso, área de hermanos, CMS) no
-// deben indexarse.
-const inicio = fuente.indexOf('<MarcoPublico />')
-if (inicio === -1) {
-  throw new Error('No se encuentra <MarcoPublico /> en src/routes/index.tsx: revisa este script.')
-}
-const fin = fuente.indexOf("path: '*'", inicio)
-if (fin === -1) {
-  throw new Error('No se encuentra el comodín del bloque público: revisa este script.')
-}
-
-const bloque = fuente.slice(inicio, fin)
-const rutas = [...bloque.matchAll(/path:\s*'([^']+)'/g)]
-  .map((m) => m[1])
-  // Las rutas con parámetro (`:slug`) son contenido dinámico: sus URLs reales
-  // dependen de la base de datos y no se pueden enumerar desde aquí.
-  // Las que acaban en `/*` solo llevan las direcciones de antes a las nuevas.
-  .filter((ruta) => !ruta.includes(':') && !ruta.includes('*'))
-
-const urls = ['/', ...rutas.map((r) => `/${r}`)]
-const unicas = [...new Set(urls)].sort((a, b) => (a === '/' ? -1 : b === '/' ? 1 : a.localeCompare(b)))
+const unicas = urlsIndexables()
 
 if (unicas.length < MINIMO_ESPERADO) {
   throw new Error(
     `Solo se han extraído ${unicas.length} rutas (se esperaban ${MINIMO_ESPERADO} o más). ` +
-      'El router ha cambiado de forma: ajusta scripts/generar-sitemap.mjs.'
+      'El router ha cambiado de forma: ajusta scripts/rutas-publicas.mjs.'
   )
 }
 

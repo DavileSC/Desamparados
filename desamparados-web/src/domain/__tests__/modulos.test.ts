@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import CATALOGO from '../../../../shared/modulos.json'
-import { CLAVES_MODULO, cumple, fichaDeModulo } from '../modulos'
+import { CLAVES_MODULO, cumple, dependientesActivos, fichaDeModulo } from '../modulos'
 
 describe('el catálogo de módulos en la web', () => {
   it('las claves escritas aquí son las de shared/modulos.json, en el mismo orden', () => {
@@ -20,5 +20,19 @@ describe('el catálogo de módulos en la web', () => {
   it('la ficha trae nombre y requisitos', () => {
     expect(fichaDeModulo('tienda-web').requiere).toEqual(['tienda', 'pago-en-linea'])
     expect(fichaDeModulo('puerta').nombre).toBe('Puerta del templo')
+  })
+})
+
+describe('dependientesActivos', () => {
+  it('los encendidos que lo requieren, también los que lo requieren a través de otro, en el orden del catálogo', () => {
+    const todos = new Set<string>(CLAVES_MODULO)
+    expect(dependientesActivos('pago-en-linea', todos)).toEqual(['apadrinamientos', 'cuotas-en-linea', 'donativos', 'tienda-web'])
+    expect(dependientesActivos('agenda', todos)).toEqual(['procesion', 'puerta'])
+  })
+
+  it('un dependiente apagado no cuenta, ni arrastra a los suyos', () => {
+    expect(dependientesActivos('tienda', new Set(['tienda', 'pago-en-linea']))).toEqual([])
+    // La Puerta requiere Procesión, que está apagada: no llega a la Agenda.
+    expect(dependientesActivos('agenda', new Set(['agenda', 'puerta']))).toEqual([])
   })
 })

@@ -1,46 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { datosEntidad, rutasDelBloquePublico, urlsIndexables } from '../rutas-publicas.mjs'
 
 // El sitemap se genera en `prebuild`, pero el fichero está versionado: si
 // alguien añade una ruta y hace commit sin construir, se desincroniza otra vez.
 // Esta prueba lo detecta en CI antes de que Google lo vea.
 
-const raiz = process.cwd()
-const { identidad } = JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
-const DOMINIO = `https://${identidad.dominio}`
-
-function rutasPublicasDelRouter(): string[] {
-  const fuente = readFileSync(join(raiz, 'src/routes/index.tsx'), 'utf8')
-  const inicio = fuente.indexOf('<MarcoPublico />')
-  const fin = fuente.indexOf("path: '*'", inicio)
-  const bloque = fuente.slice(inicio, fin)
-
-  const rutas = [...bloque.matchAll(/path:\s*'([^']+)'/g)]
-    .map((m) => m[1])
-    .filter((ruta) => !ruta.includes(':') && !ruta.includes('*'))
-
-  return [...new Set(['/', ...rutas.map((r) => `/${r}`)])].sort()
-}
+const DOMINIO = `https://${datosEntidad().identidad.dominio}`
 
 function urlsDelSitemap(): string[] {
-  const xml = readFileSync(join(raiz, 'public/sitemap.xml'), 'utf8')
+  const xml = readFileSync(join(process.cwd(), 'public/sitemap.xml'), 'utf8')
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
     .map((m) => m[1].replace(DOMINIO, ''))
     .sort()
 }
 
 describe('sitemap.xml', () => {
-  it('no anuncia ninguna URL que no exista como ruta', () => {
-    const rutas = rutasPublicasDelRouter()
-    const inexistentes = urlsDelSitemap().filter((url) => !rutas.includes(url))
-    expect(inexistentes, 'darían 404 a los buscadores').toEqual([])
-  })
-
-  it('no se deja fuera ninguna página pública', () => {
-    const sitemap = urlsDelSitemap()
-    const ausentes = rutasPublicasDelRouter().filter((ruta) => !sitemap.includes(ruta))
-    expect(ausentes, 'ejecuta `npm run sitemap` para regenerarlo').toEqual([])
+  it('anuncia exactamente las páginas públicas indexables de esta instalación', () => {
+    expect(urlsDelSitemap(), 'ejecuta `npm run sitemap` para regenerarlo').toEqual([...urlsIndexables()].sort())
   })
 
   it('no indexa el área privada ni el CMS', () => {
@@ -50,5 +28,27 @@ describe('sitemap.xml', () => {
         expect(url.startsWith(privada), `${url} no debería indexarse`).toBe(false)
       }
     }
+  })
+})
+
+describe('las páginas que van al sitemap', () => {
+  it('cada ruta del bloque público trae el módulo que le exige el router', () => {
+    const rutas = rutasDelBloquePublico()
+    expect(rutas.find((r) => r.ruta === 'tienda')?.requisito).toEqual(['tienda-web'])
+    expect(rutas.find((r) => r.ruta === 'contacto')?.requisito).toEqual(['nucleo'])
+    expect(rutas.length).toBeGreaterThan(20)
+  })
+
+  it('una página de un módulo que la instalación no enciende se queda fuera: respondería «no encontrado»', () => {
+    const sinTiendaWeb = urlsIndexables(datosEntidad().modulos.activos.filter((c) => c !== 'tienda-web'))
+    expect(sinTiendaWeb).not.toContain('/tienda')
+    expect(sinTiendaWeb).toContain('/contacto')
+    expect(sinTiendaWeb).toContain('/')
+    expect(urlsIndexables([])).not.toContain('/noticias')
+    expect(urlsIndexables([])).toContain('/historia')
+  })
+
+  it('las rutas con parámetro y las redirecciones no se anuncian', () => {
+    expect(urlsIndexables().some((u) => u.includes(':') || u.includes('*'))).toBe(false)
   })
 })

@@ -161,16 +161,16 @@ export class ModulosService {
     }
     const cambiadoPor = quienId === undefined ? null : (await db.user.findUnique({ where: { id: quienId }, select: { email: true } }))?.email ?? null;
     try {
-      for (const c of cambiados) {
-        await db.modulo.upsert({
+      // Los módulos de un cambio se guardan a una: encender «Tienda en la web»
+      // con «Tienda» por requisito no puede dejar la segunda encendida sola si
+      // la base falla a mitad.
+      const ahora = new Date();
+      if (cambiados.length) {
+        await db.$transaction(cambiados.map((c) => db.modulo.upsert({
           where: { clave: c },
-          update: { activo: activar, cambiadoEl: new Date(), cambiadoPor },
+          update: { activo: activar, cambiadoEl: ahora, cambiadoPor },
           create: { clave: c, activo: activar, cambiadoPor },
-        });
-        await AuditoriaService.log(
-          activar ? ACCIONES_AUDITORIA.MODULO_ENCENDER : ACCIONES_AUDITORIA.MODULO_APAGAR,
-          meta, 'modulo', c, c === clave ? undefined : { porRequisitoDe: clave },
-        );
+        })));
       }
     } finally {
       // Si la base falla a mitad, la memoria se relee igual: así no anuncia como apagado algo que ya se encendió.
@@ -181,6 +181,13 @@ export class ModulosService {
       } catch (error) {
         console.error('[Módulos] No se pudo recargar la memoria tras un cambio:', error);
       }
+    }
+    // La auditoría, después de confirmar: un apunte no debe dar fe de un cambio que no se guardó.
+    for (const c of cambiados) {
+      await AuditoriaService.log(
+        activar ? ACCIONES_AUDITORIA.MODULO_ENCENDER : ACCIONES_AUDITORIA.MODULO_APAGAR,
+        meta, 'modulo', c, c === clave ? undefined : { porRequisitoDe: clave },
+      );
     }
     const despues = await ModulosService.activos();
     return { ok: true, cambiados, activos: CLAVES_MODULO.filter((c) => despues.has(c)) };

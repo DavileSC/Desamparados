@@ -42,3 +42,22 @@ export function cumple(requisito: Requisito, activos: ReadonlySet<string>): bool
   const lista = Array.isArray(requisito) ? requisito : [requisito]
   return lista.some((m) => m === 'nucleo' || activos.has(m))
 }
+
+/**
+ * Los módulos encendidos que requieren `clave`, directa o indirectamente:
+ * mientras haya alguno, `clave` no se puede apagar. La misma regla que aplica
+ * el servidor (`domain/modulos.ts` del backend), adelantada aquí para avisar
+ * antes de preguntar. En el orden del catálogo.
+ */
+export function dependientesActivos(clave: ClaveModulo, activos: ReadonlySet<string>): ClaveModulo[] {
+  const dependientes = new Set<ClaveModulo>()
+  const visitar = (c: ClaveModulo) => {
+    for (const m of CATALOGO_MODULOS) {
+      if (!activos.has(m.clave) || dependientes.has(m.clave) || !m.requiere.includes(c)) continue
+      dependientes.add(m.clave)
+      visitar(m.clave)
+    }
+  }
+  visitar(clave)
+  return CLAVES_MODULO.filter((c) => dependientes.has(c))
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { llamarApi, ErrorDeApi } from '../cliente'
+import { llamarApi, ErrorDeApi, alModuloNoActivado } from '../cliente'
 
 function responder(status: number, cuerpo: unknown) {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
@@ -50,5 +50,26 @@ describe('llamarApi ante un 400 de validación', () => {
     const error = await errorDe('/recibos/1/cobrar')
 
     expect(error.message).toBe('Ese recibo ya está cobrado.')
+  })
+})
+
+describe('llamarApi ante un 404 de módulo apagado', () => {
+  it('avisa a quien escuche con la clave del módulo, y no ante un 404 cualquiera', async () => {
+    const oyente = vi.fn()
+    const dejarDeEscuchar = alModuloNoActivado(oyente)
+    responder(404, { status: 'error', error: 'MODULO_NO_ACTIVADO', modulo: 'tienda', message: 'El módulo «Tienda» no está activado en esta instalación.' })
+    const error = await errorDe('/tienda/productos')
+    expect(error.status).toBe(404)
+    expect(error.message).toBe('El módulo «Tienda» no está activado en esta instalación.')
+    expect(oyente).toHaveBeenCalledWith('tienda')
+
+    responder(404, { message: 'No existe ese producto.' })
+    await errorDe('/tienda/productos/9')
+    expect(oyente).toHaveBeenCalledTimes(1)
+
+    dejarDeEscuchar()
+    responder(404, { status: 'error', error: 'MODULO_NO_ACTIVADO', modulo: 'tienda', message: 'apagado' })
+    await errorDe('/tienda/productos')
+    expect(oyente).toHaveBeenCalledTimes(1)
   })
 })

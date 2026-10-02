@@ -8,6 +8,9 @@ import CATALOGO from '../../../../../shared/modulos.json'
 const json = (cuerpo: unknown, status = 200) =>
   Promise.resolve(new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } }))
 
+/** Los nombres del catálogo, para no escribirlos a mano. */
+const nombres = (claves: string[]) => claves.map((c) => CATALOGO.modulos.find((m) => m.clave === c)!.nombre).join(', ')
+
 const lista = (apagados: string[] = []) => CATALOGO.modulos.map((m) => ({
   ...m, activo: !apagados.includes(m.clave), cambiadoEl: null, cambiadoPor: null,
   datos: m.clave === 'tienda' ? [{ que: 'productos', total: 12 }, { que: 'ventas de caja', total: 40 }] : [],
@@ -72,13 +75,38 @@ describe('ModulosAdminPage', () => {
     await waitFor(() => expect(screen.getByRole('switch', { name: 'Tienda' })).not.toBeChecked())
   })
 
-  it('apagar algo que otros necesitan: el servidor dice que no y la pantalla dice cuáles', async () => {
+  it('apagar algo que otros encendidos necesitan: se avisa de cuáles antes de preguntar, sin llamar al servidor', async () => {
     const user = userEvent.setup({ delay: null })
-    vi.stubGlobal('fetch', servidor([], () => json({ status: 'error', message: 'No se puede apagar «Pago en línea»: lo necesitan «Donativos en línea».', faltan: [], dependientes: ['donativos'] }, 400)))
+    const put = vi.fn(() => json({ ok: true }))
+    vi.stubGlobal('fetch', servidor([], put))
+    renderWithProviders(<ModulosAdminPage />)
+    await user.click(await screen.findByRole('switch', { name: 'Pago en línea' }))
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByRole('heading')).toHaveTextContent('No se puede apagar «Pago en línea»')
+    expect(within(dialogo).getByText(/Lo necesitan/)).toHaveTextContent(`Lo necesitan ${nombres(['apadrinamientos', 'cuotas-en-linea', 'donativos', 'tienda-web'])}. Apaga antes esos módulos.`)
+    expect(within(dialogo).queryByRole('button', { name: /apagar/i })).not.toBeInTheDocument()
+    await user.click(within(dialogo).getByRole('button', { name: 'Entendido' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(put).not.toHaveBeenCalled()
+    expect(screen.getByRole('switch', { name: 'Pago en línea' })).toBeChecked()
+  })
+
+  it('con un solo dependiente encendido el aviso habla en singular', async () => {
+    const user = userEvent.setup({ delay: null })
+    vi.stubGlobal('fetch', servidor(['apadrinamientos', 'cuotas-en-linea', 'donativos'], () => json({ ok: true })))
+    renderWithProviders(<ModulosAdminPage />)
+    await user.click(await screen.findByRole('switch', { name: 'Pago en línea' }))
+    expect(within(await screen.findByRole('dialog')).getByText(/Lo necesita /)).toHaveTextContent(`Lo necesita ${nombres(['tienda-web'])}. Apaga antes ese módulo.`)
+  })
+
+  it('si la lista de la pantalla está vieja y el servidor dice que no, la pantalla dice cuáles', async () => {
+    const user = userEvent.setup({ delay: null })
+    // Para la pantalla nada depende de Pago en línea; el servidor sabe que alguien encendió Donativos mientras tanto.
+    vi.stubGlobal('fetch', servidor(['apadrinamientos', 'cuotas-en-linea', 'donativos', 'tienda-web'], () => json({ status: 'error', message: 'No se puede apagar «Pago en línea»: lo necesita «Donativos en línea». Apaga antes ese módulo.', faltan: [], dependientes: ['donativos'] }, 400)))
     renderWithProviders(<ModulosAdminPage />)
     await user.click(await screen.findByRole('switch', { name: 'Pago en línea' }))
     await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /apagar/i }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/lo necesitan «Donativos en línea»/)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/lo necesita «Donativos en línea»/)
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(screen.getByRole('switch', { name: 'Pago en línea' })).toBeChecked()
   })

@@ -90,6 +90,36 @@ function mensajeDeError(datos: unknown): string | null {
  */
 export const SESION_NO_CMS = 'SESION_NO_CMS'
 
+/**
+ * El 404 del backend cuando la ruta es de un módulo apagado. Si llega, la
+ * lista de módulos que tiene esta sesión está vieja (Administración lo apagó
+ * desde otra): `useModulos` se apunta aquí para volver a pedirla, y así los
+ * menús y las rutas se enteran sin recargar la página.
+ */
+export const MODULO_NO_ACTIVADO = 'MODULO_NO_ACTIVADO'
+
+type OyenteDeModulo = (modulo: string) => void
+const oyentesDeModuloNoActivado = new Set<OyenteDeModulo>()
+
+/** Avisa con la clave del módulo cada vez que una respuesta diga que está apagado. Devuelve cómo dejar de escuchar. */
+export function alModuloNoActivado(oyente: OyenteDeModulo): () => void {
+  oyentesDeModuloNoActivado.add(oyente)
+  return () => { oyentesDeModuloNoActivado.delete(oyente) }
+}
+
+/** La clave del módulo apagado que anuncia una respuesta, o null si no es eso. */
+function moduloNoActivado(datos: unknown): string | null {
+  if (!datos || typeof datos !== 'object') return null
+  const p = datos as { error?: unknown; modulo?: unknown }
+  return p.error === MODULO_NO_ACTIVADO && typeof p.modulo === 'string' ? p.modulo : null
+}
+
+function avisarSiModuloNoActivado(status: number, datos: unknown) {
+  if (status !== 404) return
+  const modulo = moduloNoActivado(datos)
+  if (modulo) for (const oyente of oyentesDeModuloNoActivado) oyente(modulo)
+}
+
 let refrescando: Promise<void> | null = null
 
 /** Una sola consulta aunque fallen a la vez todas las peticiones de la pantalla. */
@@ -136,6 +166,7 @@ export async function llamarApi<T>(path: string, options: ApiRequestOptions = {}
   }
 
   if (!res.ok) {
+    avisarSiModuloNoActivado(res.status, datos)
     // `auth: false` marca las peticiones para las que un 401 es normal (login,
     // y sobre todo el /me del arranque cuando el visitante es un invitado).
     if (res.status === 401 && auth) {
@@ -170,6 +201,7 @@ export async function traerArchivo(path: string, json?: unknown): Promise<{ blob
     const texto = await res.text()
     let datos: unknown = texto
     try { datos = texto ? JSON.parse(texto) : null } catch { /* no era JSON: se queda el texto */ }
+    avisarSiModuloNoActivado(res.status, datos)
     if (res.status === 401) void refrescarSesiones()
     throw new ErrorDeApi(mensajeDeError(datos) ?? `Error ${res.status}`, res.status, datos)
   }

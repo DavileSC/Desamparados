@@ -7,7 +7,7 @@ import { GRUPOS } from '../../app/cmsNavegacion'
 import { site } from '../../config/site'
 import { ErrorDeApi } from '../../lib/api/cliente'
 import { CLAVE_MODULOS, cambiarModulo, listasDelRechazo, modulosDelCms, type ModuloDelCms } from '../../lib/api/modulos'
-import { fichaDeModulo, type ClaveModulo } from '../../domain/modulos'
+import { dependientesActivos, fichaDeModulo, type ClaveModulo } from '../../domain/modulos'
 
 const CLAVE_LISTA = ['modulos', 'cms'] as const
 
@@ -18,11 +18,14 @@ const nombres = (claves: ClaveModulo[]) => claves.map((c) => fichaDeModulo(c).no
 type Pregunta =
   | { tipo: 'apagar'; modulo: ModuloDelCms }
   | { tipo: 'encender-con'; modulo: ModuloDelCms; faltan: ClaveModulo[] }
+  | { tipo: 'no-se-puede-apagar'; modulo: ModuloDelCms; dependientes: ClaveModulo[] }
 
 /**
  * Qué módulos tiene encendidos esta instalación. Solo Administración: encender
  * uno abre pantallas y rutas a toda la junta. Las reglas (qué requiere qué, qué
- * impide apagar) las aplica el servidor: aquí solo se preguntan y se cuentan.
+ * impide apagar) las aplica el servidor; la pantalla las adelanta con la lista
+ * que tiene para avisar antes de preguntar, pero si esa lista está vieja manda
+ * el servidor.
  */
 export default function ModulosAdminPage() {
   const queryClient = useQueryClient()
@@ -41,7 +44,10 @@ export default function ModulosAdminPage() {
 
   const alCambiar = (modulo: ModuloDelCms, activar: boolean) => {
     if (!activar) {
-      setPregunta({ tipo: 'apagar', modulo })
+      // Con dependientes encendidos el servidor diría que no: se avisa antes de preguntar «¿apagar?».
+      const activos = new Set((data ?? []).filter((m) => m.activo).map((m) => m.clave))
+      const dependientes = dependientesActivos(modulo.clave, activos)
+      setPregunta(dependientes.length ? { tipo: 'no-se-puede-apagar', modulo, dependientes } : { tipo: 'apagar', modulo })
       return
     }
     cambiar.mutate({ clave: modulo.clave, activo: true, conRequisitos: false }, {
@@ -55,7 +61,7 @@ export default function ModulosAdminPage() {
   }
 
   const confirmar = () => {
-    if (!pregunta) return
+    if (!pregunta || pregunta.tipo === 'no-se-puede-apagar') return
     const { modulo } = pregunta
     const activo = pregunta.tipo !== 'apagar'
     setPregunta(null)
@@ -129,6 +135,21 @@ export default function ModulosAdminPage() {
             <DialogActions>
               <Button onClick={() => setPregunta(null)}>Cancelar</Button>
               <Button variant="contained" onClick={confirmar}>Encender todos</Button>
+            </DialogActions>
+          </>
+        )}
+        {pregunta?.tipo === 'no-se-puede-apagar' && (
+          <>
+            <DialogTitle>No se puede apagar «{pregunta.modulo.nombre}»</DialogTitle>
+            <DialogContent>
+              <Typography>
+                {pregunta.dependientes.length === 1
+                  ? `Lo necesita ${nombres(pregunta.dependientes)}. Apaga antes ese módulo.`
+                  : `Lo necesitan ${nombres(pregunta.dependientes)}. Apaga antes esos módulos.`}
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button variant="contained" onClick={() => setPregunta(null)}>Entendido</Button>
             </DialogActions>
           </>
         )}

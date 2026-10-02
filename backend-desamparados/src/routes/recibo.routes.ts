@@ -4,6 +4,7 @@ import { Modelo182Controller } from '../controllers/modelo-182.controller.js';
 import { certificadosQuerySchema } from '../schemas/modelo-182.schema.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
+import { ROLES_TESORERIA } from './roles.js';
 import { conModulo } from '../middleware/modulos.js';
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
@@ -29,7 +30,6 @@ const reciboRoutes = Router();
 reciboRoutes.use(authenticateToken);
 
 const validateId = validate(type({ params: { id: idParam } }));
-const rolesTesoreria = [Role.ADMIN, Role.TESORERIA, Role.HERMANO_MAYOR];
 
 // ==========================================
 //  RUTAS DE USUARIO (Familia)
@@ -57,41 +57,41 @@ reciboRoutes.get('/mis-recibos/pagos/:pedido', conModulo('cuotas-en-linea'), val
 //  Secretaría nunca tuvo acceso aquí)
 // ==========================================
 
-reciboRoutes.get('/admin', checkRole(rolesTesoreria), validate(adminRecibosQuerySchema), ReciboController.getAdminRecibos);
+reciboRoutes.get('/admin', checkRole(ROLES_TESORERIA), validate(adminRecibosQuerySchema), ReciboController.getAdminRecibos);
 
 // Los contadores por estado de encima del listado, con sus mismos filtros.
-reciboRoutes.get('/admin/resumen', checkRole(rolesTesoreria), validate(adminResumenQuerySchema), ReciboController.getResumenAdmin);
+reciboRoutes.get('/admin/resumen', checkRole(ROLES_TESORERIA), validate(adminResumenQuerySchema), ReciboController.getResumenAdmin);
 
 // Quién debe cuotas. Lo consulta Tesorería, y también Secretaría, que es quien
 // da las bajas por impago y no entra en el resto de Tesorería.
 reciboRoutes.get('/admin/impagos',
-  checkRole([...rolesTesoreria, Role.SECRETARIA]),
+  checkRole([...ROLES_TESORERIA, Role.SECRETARIA]),
   validate(impagosQuerySchema),
   ReciboController.impagos
 );
 
 // Buscador para la ventana «Nuevo recibo»: Tesorería no entra en el del censo.
 reciboRoutes.get('/admin/hermanos',
-  checkRole(rolesTesoreria),
+  checkRole(ROLES_TESORERIA),
   validate(buscarHermanosQuerySchema),
   ReciboController.buscarHermanos
 );
 
 reciboRoutes.post('/admin',
-  checkRole(rolesTesoreria),
+  checkRole(ROLES_TESORERIA),
   validate(emitirReciboSchema),
   ReciboController.emitir
 );
 
 reciboRoutes.post('/admin/generar',
-  checkRole(rolesTesoreria),
+  checkRole(ROLES_TESORERIA),
   validate(generarCuotasSchema), // <-- Escudo contra importes negativos
   ReciboController.generarCuotas
 );
 
 // Lo que el banco cobró y no se pudo aplicar: Tesorería lo devuelve y lo da por resuelto.
-reciboRoutes.get('/admin/pagos-en-linea/incidencias', checkRole(rolesTesoreria), ReciboController.incidenciasDePago);
-reciboRoutes.post('/admin/pagos-en-linea/incidencias/:id/resolver', checkRole(rolesTesoreria), validateId, ReciboController.resolverIncidencia);
+reciboRoutes.get('/admin/pagos-en-linea/incidencias', checkRole(ROLES_TESORERIA), ReciboController.incidenciasDePago);
+reciboRoutes.post('/admin/pagos-en-linea/incidencias/:id/resolver', checkRole(ROLES_TESORERIA), validateId, ReciboController.resolverIncidencia);
 
 // El Modelo 182 y las remesas (con la Norma 43) son módulos: cada uno en su
 // router, montado aquí con su guarda para conservar la dirección. Antes de
@@ -100,14 +100,14 @@ reciboRoutes.use('/admin/modelo-182', conModulo('modelo-182'), modelo182Routes);
 reciboRoutes.use('/admin/remesas', conModulo('remesas'), remesasRoutes);
 
 reciboRoutes.post('/admin/:id/pagar',
-  checkRole(rolesTesoreria),
+  checkRole(ROLES_TESORERIA),
   validateId,
   validate(marcarPagadoSchema),
   ReciboController.marcarPagado
 );
 
 reciboRoutes.put('/admin/:id',
-  checkRole(rolesTesoreria),
+  checkRole(ROLES_TESORERIA),
   validateId,
   validate(updateReciboSchema), // Solo admite campos válidos
   ReciboController.updateDetalles

@@ -476,3 +476,18 @@ esto. Por eso una instalación nueva ajusta `modulos.activos` **antes del
 primer arranque**: después las filas ya existen y el JSON no cuenta. El
 arranque **sale con error si la base no responde**: no hay forma de arrancar
 con el estado de los módulos a medias.
+
+**El sitemap solo conoce el lote inicial de módulos.**
+`scripts/rutas-publicas.mjs` deja fuera las páginas públicas de los módulos
+que `modulos.activos` de `shared/datos-entidad.json` no nombra (su página
+responde «no encontrado», con `noindex`), y la prueba del sitemap recorta
+igual. Un módulo apagado después desde el CMS sigue anunciado hasta que se
+vuelva a construir la web: el sitemap es un fichero estático y no pregunta a
+la API.
+
+**Un 404 `MODULO_NO_ACTIVADO` hace que la web vuelva a pedir la lista de
+módulos.** `llamarApi` avisa (`alModuloNoActivado`, en `lib/api/cliente.ts`)
+y `useModulos` invalida `['modulos']`: una sesión abierta se entera de lo que
+Administración apagó desde otra sin recargar. En una prueba, un `fetch`
+simulado que responda ese 404 provoca una petición a `/modulos` que el
+simulado tiene que saber contestar.

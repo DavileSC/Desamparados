@@ -18,12 +18,14 @@ before(async () => {
   const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
   if (!dbDisponible) return;
+  await borrarDisparadoresQueFallan();
   await ModulosService.sembrar();
   estadoInicial = await db.modulo.findMany({ select: { clave: true, activo: true } });
 });
 
 after(async () => {
   if (dbDisponible) {
+    await borrarDisparadoresQueFallan();
     for (const fila of estadoInicial) await db.modulo.update({ where: { clave: fila.clave }, data: { activo: fila.activo } });
     await db.auditLog.deleteMany({ where: { action: { in: [ACCIONES_AUDITORIA.MODULO_ENCENDER, ACCIONES_AUDITORIA.MODULO_APAGAR] }, userAgent: 'prueba' } });
     ModulosService.olvidar();
@@ -32,6 +34,24 @@ after(async () => {
 });
 
 const activosEnBase = async () => new Set((await db.modulo.findMany({ where: { activo: true }, select: { clave: true } })).map((f) => f.clave));
+
+/**
+ * Para la prueba de la transacción: dos disparadores con los que la base
+ * rechaza encender «Tienda en la web» (al insertar y al actualizar, que el
+ * upsert de Prisma puede ir por cualquiera de los dos caminos). Se quitan en
+ * `before` y en `after` por si una ejecución anterior se quedó a medias.
+ */
+const DISPARADORES = [['prueba_modulos_falla_al_insertar', 'INSERT'], ['prueba_modulos_falla_al_actualizar', 'UPDATE']] as const;
+async function crearDisparadoresQueFallan() {
+  for (const [nombre, momento] of DISPARADORES) {
+    await db.$executeRawUnsafe(
+      `CREATE TRIGGER ${nombre} BEFORE ${momento} ON Modulo FOR EACH ROW BEGIN IF NEW.clave = 'tienda-web' AND NEW.activo = 1 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fallo provocado por la prueba'; END IF; END`,
+    );
+  }
+}
+async function borrarDisparadoresQueFallan() {
+  for (const [nombre] of DISPARADORES) await db.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${nombre}`);
+}
 
 describe('la siembra', () => {
   test('crea una fila por módulo del catálogo y no toca las que existen', async (t) => {
@@ -159,6 +179,26 @@ describe('cambiar', () => {
     const auditado = await db.auditLog.findFirst({ where: { action: ACCIONES_AUDITORIA.MODULO_APAGAR, entityId: 'loteria', userAgent: 'prueba' } });
     assert.ok(auditado);
     await ModulosService.cambiar('loteria', true, {}, undefined, META);
+  });
+
+  test('los módulos de un cambio se guardan a una: si la base falla a mitad, no queda ninguno cambiado ni auditado', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    await ModulosService.cambiar('tienda-web', false, {}, undefined, META);
+    await ModulosService.cambiar('tienda', false, {}, undefined, META);
+    const auditadosAntes = await db.auditLog.count({ where: { action: ACCIONES_AUDITORIA.MODULO_ENCENDER, userAgent: 'prueba' } });
+    // La base rechaza encender «Tienda en la web»; «Tienda», su requisito, va
+    // antes y ya estaría escrita si cada módulo se guardara por su cuenta.
+    await crearDisparadoresQueFallan();
+    try {
+      await assert.rejects(ModulosService.cambiar('tienda-web', true, { conRequisitos: true }, undefined, META));
+    } finally {
+      await borrarDisparadoresQueFallan();
+    }
+    assert.equal((await activosEnBase()).has('tienda'), false, '«Tienda» quedó encendida aunque el cambio entero falló');
+    assert.equal(await ModulosService.activo('tienda'), false, 'la memoria coincide con la base');
+    const auditadosDespues = await db.auditLog.count({ where: { action: ACCIONES_AUDITORIA.MODULO_ENCENDER, userAgent: 'prueba' } });
+    assert.equal(auditadosDespues, auditadosAntes, 'sin apuntes de un cambio que no se guardó');
+    await ModulosService.cambiar('tienda-web', true, { conRequisitos: true }, undefined, META);
   });
 
   test('una clave que no es del catálogo es un 404', async (t) => {
