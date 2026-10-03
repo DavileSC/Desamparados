@@ -81,6 +81,18 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   const enCalleRef = useRef(enCalle)
   useEffect(() => { enCalleRef.current = enCalle }, [enCalle])
 
+  // Con el cortejo en la calle, el enlace se comparte en redes para verlo por
+  // dónde va: quien lo abre cae directamente en el mapa, sin bajar por la
+  // cabecera. Una sola vez por visita, para no quitarle la pantalla a quien
+  // ya está leyendo; sin directo, la página se abre arriba como siempre.
+  const bloqueRef = useRef<HTMLDivElement>(null)
+  const yaLlevado = useRef(false)
+  useEffect(() => {
+    if (!listo || !enCalle || yaLlevado.current) return
+    yaLlevado.current = true
+    bloqueRef.current?.scrollIntoView({ block: 'start' })
+  }, [listo, enCalle])
+
   const hechos = useMemo(() => acumulados(linea), [linea])
   const posiciones = useMemo(() => posicionesEnRuta(paradas), [paradas])
   const circular = linea.length > 1 && metros(linea[0], linea[linea.length - 1]) < 40
@@ -322,7 +334,7 @@ export default function RecorridoEnMapa({ bloque }: { bloque: BloqueItinerario &
   }
 
   return (
-    <Box sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto' }}>
+    <Box ref={bloqueRef} sx={{ maxWidth: anchoMaximo(bloque, '1200px'), mx: 'auto', scrollMarginTop: { xs: 72, md: 96 } }}>
       <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5, color: '#e3d8bf', fontSize: 14 }}>
         <PlayArrowIcon sx={{ fontSize: 20, color: GOLD }} aria-hidden="true" />
         {enCalle
