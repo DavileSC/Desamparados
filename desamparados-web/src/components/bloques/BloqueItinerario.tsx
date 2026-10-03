@@ -4,10 +4,11 @@ import TarjetaCristal from '../TarjetaCristal'
 import { hayWebGL } from '../mapa/barrio'
 import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, valorDe } from './presentacion'
+import EsqueletoDelRecorrido from './EsqueletoDelRecorrido'
 import type { BloqueItinerario as Datos } from '../../lib/api/contenido'
 
 // El mapa lleva MapLibre (unos 800 KB): se descarga aparte, solo en la página
-// que lo usa, y mientras llega se ve el itinerario en línea.
+// que lo usa, y mientras llega se ve su esqueleto, del mismo tamaño.
 const RecorridoEnMapa = lazy(() => import('./RecorridoEnMapa'))
 
 /** Lo que se lee donde iría la hora mientras no se sabe. */
@@ -34,7 +35,7 @@ export default function BloqueItinerario({ bloque }: { bloque: Datos }) {
   const { recorrido } = bloque
   if (disposicion === 'plano' && recorrido && recorrido.linea.length >= 2 && hayWebGL()) {
     return (
-      <Suspense fallback={<BloqueItinerario bloque={{ ...bloque, presentacion: { ...bloque.presentacion, disposicion: 'linea' } }} />}>
+      <Suspense fallback={<EsqueletoDelRecorrido bloque={bloque} />}>
         <RecorridoEnMapa bloque={{ ...bloque, recorrido }} />
       </Suspense>
     )

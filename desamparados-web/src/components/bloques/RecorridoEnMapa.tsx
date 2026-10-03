@@ -15,6 +15,7 @@ import { estiloDelMapa } from '../mapa/estilo'
 import { useModoEdicion } from './modoEdicion'
 import { useModulos } from '../../hooks/useModulos'
 import { anchoMaximo } from './presentacion'
+import { ALTO_LISTA, ALTO_MAPA, ALTO_MINIMO, ALTO_MINIMO_LISTA } from './EsqueletoDelRecorrido'
 import { DISTANCIA_MAXIMA_M, acumulados, metros, paradaAlcanzada, posicionesEnRuta, sobreElRecorrido, tramoHasta } from './recorrido'
 import { cortejoEnDirecto } from '../../lib/api/cortejoDirecto'
 import type { BloqueItinerario, Coordenada, RecorridoEnMapa as Recorrido } from '../../lib/api/contenido'
@@ -29,16 +30,6 @@ const CAMARA_CERCA = { zoom: 16.6, pitch: 52, bearing: -12 }
 const GRANATE_CLARO = '#fc858a'
 /** El granate de la marca, aclarado para leerse sobre el fondo oscuro (5,4:1). */
 const BURDEOS_LEGIBLE = '#e06a78'
-/**
- * El alto del mapa y, en escritorio, también el de la lista de al lado. Con la
- * frase de encima y la cabecera, el bloque entero cabe en la pantalla con
- * holgura: no hace falta dejar el scroll clavado para ver el mapa entero. En
- * el móvil, mapa y lista van uno encima del otro y también caben juntos.
- */
-const ALTO_MAPA = { xs: '40svh', md: 'min(760px, calc(100svh - 210px))' }
-const ALTO_LISTA = { xs: '28svh', md: ALTO_MAPA.md }
-const ALTO_MINIMO = { xs: 230, md: 380 }
-const ALTO_MINIMO_LISTA = { xs: 170, md: ALTO_MINIMO.md }
 /** El recorrido entero, con aire abajo: ahí van el play y los botones de la cámara. */
 const MARGEN_ENTERO = { top: 48, right: 48, left: 48, bottom: 88 }
 
