@@ -13,9 +13,9 @@ export class CajaController {
   });
 
   static vender = manejar('Error cobrando la venta', async (req, res) => {
-    const { lineas, metodo } = req.body as { lineas: { productoId?: number; nombre?: string; centimos?: number; cantidad: number }[]; metodo: MetodoDeCaja };
+    const { lineas, metodo } = req.body as { lineas: { productoId?: number; tallaId?: number; nombre?: string; centimos?: number; cantidad: number }[]; metodo: MetodoDeCaja };
     const deCaja: LineaDeCaja[] = lineas.map((l) => (l.productoId !== undefined
-      ? { productoId: l.productoId, cantidad: l.cantidad }
+      ? { productoId: l.productoId, ...(l.tallaId !== undefined ? { tallaId: l.tallaId } : {}), cantidad: l.cantidad }
       : { nombre: l.nombre!, centimos: l.centimos!, cantidad: l.cantidad }));
     res.json(await CajaService.vender(deCaja, metodo, AuditoriaService.metaFromReq(req)));
   });

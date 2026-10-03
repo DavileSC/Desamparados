@@ -8,13 +8,25 @@ export interface Producto {
   foto: string | null
   /** Las de más, que se ven en la galería al pulsar la foto. */
   fotos: FotoDeProducto[]
-  /** Null: sin límite. */
+  /** Null: sin límite. Con tallas no se usa: cuenta lo de cada talla. */
   existencias: number | null
   activo: boolean
   orden: number
+  /** Vacío: sin tallas. Con alguna, se compra y se vende siempre por talla. */
+  tallas: TallaDeProducto[]
 }
 
 export interface FotoDeProducto { url: string; pie: string }
+
+export interface TallaDeProducto {
+  id: number
+  nombre: string
+  /** Null: sin límite. */
+  existencias: number | null
+}
+
+/** Las tallas que admite un producto (el tope del servidor). */
+export const MAX_TALLAS = 20
 
 /** Las fotos de más que admite un producto, además de la principal (el tope del servidor). */
 export const MAX_FOTOS_PRODUCTO = 8
@@ -29,7 +41,7 @@ export interface DatosCompra {
   email: string
   telefono: string
   metodo: MetodoEnLinea
-  lineas: { productoId: number; cantidad: number }[]
+  lineas: { productoId: number; tallaId?: number; cantidad: number }[]
 }
 
 export type ResultadoCompra =
@@ -41,7 +53,7 @@ export interface PedidoPublico {
   estado: EstadoPedido
   total: number
   nombre: string
-  lineas: { nombre: string; precio: number; cantidad: number }[]
+  lineas: { nombre: string; talla: string | null; precio: number; cantidad: number }[]
 }
 
 export interface PedidoDelCms extends PedidoPublico {
@@ -54,7 +66,10 @@ export interface PedidoDelCms extends PedidoPublico {
   entregadoEl: string | null
 }
 
-export type DatosProducto = Omit<Producto, 'id'>
+export type DatosProducto = Omit<Producto, 'id' | 'tallas'> & {
+  /** Las que traen `id` ya estaban; las que faltan se borran. */
+  tallas: { id?: number; nombre: string; existencias: number | null }[]
+}
 
 export const catalogo = () => llamarApi<Catalogo>('/tienda', { auth: false })
 export const comprar = (datos: DatosCompra) => llamarApi<ResultadoCompra>('/tienda/pedidos', { method: 'POST', json: datos, auth: false })

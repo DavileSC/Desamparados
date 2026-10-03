@@ -13,9 +13,11 @@ import db from '../config/db.js';
 import { HttpError, NotFoundError } from '../utils/error.handle.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './auditoria.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
-import { CATEGORIA_TIENDA } from './tienda.service.js';
+import { CATEGORIA_TIENDA, aLaVenta, conTallas } from './tienda.service.js';
 import { aCentimos } from '../domain/sepa.js';
 import { prepararVenta, resumenDeCaja, type LineaDeCaja, type MetodoDeCaja } from '../domain/caja.js';
+import { nombreConTalla } from '../domain/tienda.js';
+
 
 const aEuros = (centimos: number) => new Prisma.Decimal(centimos).div(100);
 
@@ -45,7 +47,7 @@ function aVista(s: SesionConVentas) {
     ventas: s.ventas.map((v) => ({
       id: v.id, total: Number(v.total), metodo: v.metodo, vendidaEl: v.vendidaEl, vendedor: v.vendedor,
       anuladaEl: v.anuladaEl, anuladaPor: v.anuladaPor,
-      lineas: v.lineas.map((l) => ({ productoId: l.productoId, nombre: l.nombre, precio: Number(l.precio), cantidad: l.cantidad })),
+      lineas: v.lineas.map((l) => ({ productoId: l.productoId, nombre: l.nombre, talla: l.nombreTalla, precio: Number(l.precio), cantidad: l.cantidad })),
     })),
   };
 }
@@ -88,23 +90,24 @@ export class CajaService {
       const sesion = await tx.cajaSesion.findFirst({ where: { cerradaEl: null }, select: { id: true } });
       if (!sesion) throw new HttpError('La caja está cerrada: ábrela para vender.', 409);
       const ids = lineas.flatMap((l) => ('productoId' in l ? [l.productoId] : []));
-      const catalogo = await tx.producto.findMany({ where: { id: { in: ids } } });
-      const preparada = prepararVenta(lineas, catalogo.map((p) => ({ id: p.id, nombre: p.nombre, centimos: aCentimos(p.precio), activo: p.activo, existencias: p.existencias })));
+      const catalogo = await tx.producto.findMany({ where: { id: { in: ids } }, include: conTallas });
+      const preparada = prepararVenta(lineas, catalogo.map(aLaVenta));
       if ('problema' in preparada) throw new HttpError(preparada.problema, 409);
 
       for (const l of preparada.lineas) {
         if (l.productoId === null) continue;
-        // Condicionado, como en la tienda en línea: con el último en dos sitios, solo uno se lo lleva.
-        const quitado = await tx.producto.updateMany({
-          where: { id: l.productoId, OR: [{ existencias: null }, { existencias: { gte: l.cantidad } }] },
-          data: { existencias: { decrement: l.cantidad } },
-        });
-        if (quitado.count === 0) throw new HttpError(`«${l.nombre}» se acaba de agotar.`, 409);
+        // Condicionado, como en la tienda en línea: con el último en dos
+        // sitios, solo uno se lo lleva. Con talla, se descuenta de la talla.
+        const hay = { OR: [{ existencias: null }, { existencias: { gte: l.cantidad } }] };
+        const quitado = l.tallaId !== null
+          ? await tx.tallaProducto.updateMany({ where: { id: l.tallaId, ...hay }, data: { existencias: { decrement: l.cantidad } } })
+          : await tx.producto.updateMany({ where: { id: l.productoId, ...hay }, data: { existencias: { decrement: l.cantidad } } });
+        if (quitado.count === 0) throw new HttpError(`«${nombreConTalla(l.nombre, l.talla)}» se acaba de agotar.`, 409);
       }
       const creada = await tx.cajaVenta.create({
         data: {
           sesionId: sesion.id, total: aEuros(preparada.centimos), metodo: metodo as MetodoPago, vendedor,
-          lineas: { create: preparada.lineas.map((l) => ({ productoId: l.productoId, nombre: l.nombre, precio: aEuros(l.centimos), cantidad: l.cantidad })) },
+          lineas: { create: preparada.lineas.map((l) => ({ productoId: l.productoId, tallaId: l.tallaId, nombre: l.nombre, nombreTalla: l.talla, precio: aEuros(l.centimos), cantidad: l.cantidad })) },
         },
       });
       const apunte = await tx.transaccion.create({
@@ -129,8 +132,10 @@ export class CajaService {
       if (v.sesion.cerradaEl) throw new HttpError('La caja de esa venta ya está cerrada: corrígela con un apunte en Contabilidad.', 409);
       for (const l of v.lineas) {
         if (l.productoId === null) continue;
-        // Sin límite (null) se queda sin límite: `increment` sobre null deja null.
-        await tx.producto.updateMany({ where: { id: l.productoId, existencias: { not: null } }, data: { existencias: { increment: l.cantidad } } });
+        // Sin límite (null) se queda sin límite: `increment` sobre null deja
+        // null. Con talla, vuelve a su talla (si aún existe).
+        if (l.tallaId !== null) await tx.tallaProducto.updateMany({ where: { id: l.tallaId, existencias: { not: null } }, data: { existencias: { increment: l.cantidad } } });
+        else await tx.producto.updateMany({ where: { id: l.productoId, existencias: { not: null } }, data: { existencias: { increment: l.cantidad } } });
       }
       if (v.transaccionId !== null) await tx.transaccion.deleteMany({ where: { id: v.transaccionId } });
       return tx.cajaVenta.update({ where: { id: ventaId }, data: { anuladaEl: new Date(), anuladaPor, transaccionId: null } });

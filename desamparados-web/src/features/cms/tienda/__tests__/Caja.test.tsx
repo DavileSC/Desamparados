@@ -6,7 +6,11 @@ import Caja from '../Caja'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
-const MEDALLA = { id: 1, nombre: 'Medalla', descripcion: '', precio: 15, foto: null, existencias: 2, activo: true, orden: 0 }
+const MEDALLA = { id: 1, nombre: 'Medalla', descripcion: '', precio: 15, foto: null, fotos: [], existencias: 2, activo: true, orden: 0, tallas: [] }
+const CAMISETA = {
+  id: 4, nombre: 'Camiseta', descripcion: '', precio: 12, foto: null, fotos: [], existencias: null, activo: true, orden: 1,
+  tallas: [{ id: 40, nombre: 'M', existencias: 1 }, { id: 41, nombre: 'XXL', existencias: 0 }],
+}
 const RESUMEN = { ventas: 0, anuladas: 0, total: 0, porMetodo: { EFECTIVO: 0, TARJETA: 0, BIZUM: 0 } }
 const ABIERTA = {
   id: 7, abiertaEl: '2026-10-02T09:00:00.000Z', abiertaPor: 'Ana Ruiz', fondoInicial: 50, cerradaEl: null, cerradaPor: null,
@@ -23,7 +27,7 @@ function servidor(estado: unknown) {
     const u = String(url)
     const metodo = init.method ?? 'GET'
     llamadas.push({ url: u, metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
-    if (u.endsWith('/tienda/admin/productos')) return Promise.resolve(json([MEDALLA]))
+    if (u.endsWith('/tienda/admin/productos')) return Promise.resolve(json([MEDALLA, CAMISETA]))
     if (u.endsWith('/caja/abrir')) return Promise.resolve(json({ abierta: ABIERTA, cerradas: [] }))
     if (u.endsWith('/caja/ventas')) return Promise.resolve(json({ ventaId: 3, total: 35.5, estado: { abierta: VENDIDA, cerradas: [] } }))
     if (u.endsWith('/caja/cerrar')) return Promise.resolve(json({ diferencia: -0.5, estado: { abierta: null, cerradas: [{ ...VENDIDA, cerradaEl: '2026-10-02T20:00:00.000Z', efectivoContado: 85, ventas: [] }] } }))
@@ -68,6 +72,25 @@ describe('Caja', () => {
     expect(llamadas.find((l) => l.url.endsWith('/caja/ventas'))?.cuerpo).toEqual({
       lineas: [{ productoId: 1, cantidad: 2 }, { nombre: 'Libro usado', centimos: 550, cantidad: 1 }], metodo: 'EFECTIVO',
     })
+  })
+
+  it('un producto con tallas se vende eligiendo la talla, sin pasar de lo que queda de ella', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor({ abierta: ABIERTA, cerradas: [] })
+    renderWithProviders(<Caja />)
+    const camiseta = await screen.findByRole('button', { name: /Camiseta/ })
+    await user.click(camiseta)
+    const menu = await screen.findByRole('menu', { name: 'Talla de Camiseta' })
+    expect(within(menu).getByRole('menuitem', { name: /Talla XXL/ })).toHaveAttribute('aria-disabled', 'true')
+    await user.click(within(menu).getByRole('menuitem', { name: /Talla M/ }))
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
+    expect(screen.getByText('Camiseta (talla M)')).toBeInTheDocument()
+    // De la M quedaba una y la XXL está agotada: ya no hay talla que vender.
+    expect(camiseta).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Tarjeta' }))
+    await waitFor(() => expect(llamadas.find((l) => l.url.endsWith('/caja/ventas'))?.cuerpo).toEqual({
+      lineas: [{ productoId: 4, tallaId: 40, cantidad: 1 }], metodo: 'TARJETA',
+    }))
   })
 
   it('se cierra contando el efectivo y dice el descuadre', async () => {

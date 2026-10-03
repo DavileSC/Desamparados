@@ -63,7 +63,7 @@ async function escenario() {
     await db.pedidoTienda.deleteMany({ where: { id: { in: ids } } });
     await db.producto.deleteMany({ where: { id: { in: [medalla.id, estampa.id] } } });
   };
-  const compra = (lineas: { productoId: number; cantidad: number }[]) => ({ nombre: marca, email: 'comprador@ejemplo.test', telefono: '600000000', metodo: 'TARJETA' as const, lineas });
+  const compra = (lineas: { productoId: number; tallaId?: number; cantidad: number }[]) => ({ nombre: marca, email: 'comprador@ejemplo.test', telefono: '600000000', metodo: 'TARJETA' as const, lineas });
   return { marca, medalla, estampa, compra, recoger };
 }
 
@@ -157,7 +157,58 @@ test('la tienda pública sin sesión, la gestión solo con la del CMS', async (t
   }
 });
 
+test('las tallas: se ponen desde el CMS, se compra por talla y se descuenta de la talla', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  process.env.PAGO_EN_LINEA = 'simulado';
+  const e = await escenario();
+  const tesorero = await crearUsuarioPrueba(Role.TESORERIA);
+  try {
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(tesorero.id, Role.TESORERIA)}`, 'Content-Type': 'application/json' };
+    const base = { nombre: e.medalla.nombre, descripcion: '', precio: 15, foto: null, existencias: 2, activo: true, orden: 0 };
+    const guardar = async (cuerpo: unknown) => {
+      const r = await fetch(`${baseUrl}/api/tienda/admin/productos/${e.medalla.id}`, { method: 'PUT', headers: cabeceras, body: JSON.stringify(cuerpo) });
+      return { status: r.status, cuerpo: await r.json() as { existencias: number | null; tallas: { id: number; nombre: string; existencias: number | null }[] } };
+    };
+
+    // Con tallas, lo que queda está en cada una y el del producto se deja en null.
+    const puesto = await guardar({ ...base, tallas: [{ nombre: 'S', existencias: 1 }, { nombre: ' M ', existencias: 4 }, { nombre: 'XXL', existencias: null }] });
+    assert.equal(puesto.status, 200);
+    assert.equal(puesto.cuerpo.existencias, null);
+    assert.deepEqual(puesto.cuerpo.tallas.map((x) => [x.nombre, x.existencias]), [['S', 1], ['M', 4], ['XXL', null]]);
+    const [s, m, xxl] = puesto.cuerpo.tallas;
+
+    // Repetidas (sin mirar mayúsculas), no.
+    assert.equal((await guardar({ ...base, tallas: [{ nombre: 'm', existencias: 1 }, { nombre: 'M', existencias: 1 }] })).status, 400);
+
+    // Sin talla no se compra; con ella, se descuenta de la suya.
+    await assert.rejects(TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {}), (err: unknown) => err instanceof HttpError && /elegir la talla/.test(err.message));
+    await assert.rejects(TiendaService.comprar(e.compra([{ productoId: e.medalla.id, tallaId: s.id, cantidad: 2 }]), {}), (err: unknown) => err instanceof HttpError && /talla S\)» solo quedan 1/.test(err.message));
+    const r = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, tallaId: m.id, cantidad: 3 }, { productoId: e.medalla.id, tallaId: xxl.id, cantidad: 2 }]), {});
+    const tallas = await db.tallaProducto.findMany({ where: { productoId: e.medalla.id }, orderBy: { orden: 'asc' } });
+    assert.deepEqual(tallas.map((x) => x.existencias), [1, 1, null], 'la M baja a 1; la XXL, sin límite, sigue sin límite');
+    const pedido = await TiendaService.pedidoPublico(r.token);
+    assert.deepEqual(pedido.lineas.map((l) => [l.talla, l.cantidad]), [['M', 3], ['XXL', 2]]);
+
+    // Cambiar una, quitar otra y añadir otra: el pedido conserva el nombre copiado.
+    const cambiado = await guardar({ ...base, tallas: [{ id: m.id, nombre: 'M', existencias: 10 }, { nombre: 'L', existencias: 2 }] });
+    assert.deepEqual(cambiado.cuerpo.tallas.map((x) => [x.nombre, x.existencias]), [['M', 10], ['L', 2]]);
+    assert.equal(cambiado.cuerpo.tallas[0].id, m.id, 'la que ya estaba conserva su id');
+    assert.deepEqual((await TiendaService.pedidoPublico(r.token)).lineas.map((l) => l.talla), ['M', 'XXL']);
+
+    // Una pantalla que no manda `tallas` no las toca; una lista vacía las quita y vuelve a contar el producto.
+    assert.equal((await guardar(base)).cuerpo.tallas.length, 2);
+    const sinTallas = await guardar({ ...base, tallas: [] });
+    assert.deepEqual(sinTallas.cuerpo.tallas, []);
+    assert.equal(sinTallas.cuerpo.existencias, 2);
+  } finally {
+    delete process.env.PAGO_EN_LINEA;
+    await borrarUsuarioPrueba(tesorero.id);
+    await e.recoger();
+  }
+});
+
 test('las fotos de más de un producto: se guardan con su pie, salen en el catálogo y sin mandarlas no se borran', async (t) => {
+
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const e = await escenario();
   const tesorero = await crearUsuarioPrueba(Role.TESORERIA);

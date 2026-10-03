@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert, Box, Button, ButtonBase, Chip, CircularProgress, Divider, IconButton, List, ListItem, ListItemText, Paper, Stack, TextField, Typography,
+  Alert, Box, Button, ButtonBase, Chip, CircularProgress, Divider, IconButton, List, ListItem, ListItemText, Menu, MenuItem, Paper, Stack, TextField, Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { abrirCaja, anularVenta, cerrarCaja, estadoDeCaja, venderEnCaja, type EstadoDeCaja, type MetodoDeCaja, type SesionDeCaja, type VentaDeCaja } from '../../../lib/api/caja'
-import { productos as traerProductos, type Producto } from '../../../lib/api/tienda'
+import { productos as traerProductos, type Producto, type TallaDeProducto } from '../../../lib/api/tienda'
+import { nombreConTalla } from '../../tienda/cesta'
+import { existenciasEnTexto } from './formularioProducto'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import VentanaFormulario from '../VentanaFormulario'
 import { euros } from '../contabilidad/formato'
@@ -24,8 +26,8 @@ function leerEuros(texto: string): number | null {
   return /^\d+(\.\d{1,2})?$/.test(t) ? Number(t) : null
 }
 
-/** Una línea del tique: del catálogo (con su id) o suelta (con su nombre y precio). */
-interface LineaTique { clave: string; productoId: number | null; nombre: string; precio: number; cantidad: number }
+/** Una línea del tique: del catálogo (con su id y, si la tiene, su talla) o suelta (con su nombre y precio). */
+interface LineaTique { clave: string; productoId: number | null; tallaId: number | null; nombre: string; precio: number; cantidad: number }
 
 /**
  * La caja de la tienda, para vender en persona en Secretaría: se abre con el
@@ -46,6 +48,8 @@ export default function Caja() {
   const [entregado, setEntregado] = useState('')
   const [aAnular, setAAnular] = useState<VentaDeCaja | null>(null)
   const [cierre, setCierre] = useState<{ contado: string; observaciones: string } | null>(null)
+  // El producto con tallas que se acaba de pulsar: se elige la talla en un menú junto a él.
+  const [eligiendo, setEligiendo] = useState<{ producto: Producto; ancla: HTMLElement } | null>(null)
 
   const poner = (e: EstadoDeCaja) => cliente.setQueryData(['caja'], e)
   const recargarProductos = () => cliente.invalidateQueries({ queryKey: ['tienda', 'productos'] })
@@ -54,11 +58,15 @@ export default function Caja() {
   const entrega = leerEuros(entregado)
   const cambio = entrega !== null && entrega > 0 ? Math.round((entrega - total) * 100) / 100 : null
 
-  const anadir = (p: Producto) => setTique((t) => {
-    const ya = t.find((l) => l.productoId === p.id)
+  const anadir = (p: Producto, talla: TallaDeProducto | null = null) => setTique((t) => {
+    const clave = talla ? `p${p.id}:${talla.id}` : `p${p.id}`
+    const ya = t.find((l) => l.clave === clave)
     if (ya) return t.map((l) => (l === ya ? { ...l, cantidad: Math.min(20, l.cantidad + 1) } : l))
-    return [...t, { clave: `p${p.id}`, productoId: p.id, nombre: p.nombre, precio: p.precio, cantidad: 1 }]
+    return [...t, { clave, productoId: p.id, tallaId: talla?.id ?? null, nombre: nombreConTalla(p.nombre, talla?.nombre), precio: p.precio, cantidad: 1 }]
   })
+  /** Cuántas de un producto (o de una talla suya) hay ya en el tique. */
+  const enTique = (productoId: number, tallaId: number | null) => tique.filter((l) => l.productoId === productoId && l.tallaId === tallaId).reduce((s, l) => s + l.cantidad, 0)
+  const tallaAgotada = (p: Producto, t: TallaDeProducto) => t.existencias !== null && t.existencias <= enTique(p.id, t.id)
   const cambiarCantidad = (clave: string, d: number) => setTique((t) => t.flatMap((l) => {
     if (l.clave !== clave) return [l]
     const n = l.cantidad + d
@@ -79,7 +87,7 @@ export default function Caja() {
 
   const cobrar = (metodo: MetodoDeCaja) => ejecutar(async () => {
     const r = await venderEnCaja(tique.map((l) => (l.productoId !== null
-      ? { productoId: l.productoId, cantidad: l.cantidad }
+      ? { productoId: l.productoId, ...(l.tallaId !== null ? { tallaId: l.tallaId } : {}), cantidad: l.cantidad }
       : { nombre: l.nombre, centimos: Math.round(l.precio * 100), cantidad: l.cantidad })), metodo)
     poner(r.estado)
     setAviso(`Venta n.º ${r.ventaId} cobrada: ${euros(r.total)} (${METODO[metodo].toLowerCase()})${metodo === 'EFECTIVO' && cambio !== null && cambio >= 0 ? `. Cambio: ${euros(cambio)}` : ''}.`)
@@ -132,13 +140,18 @@ export default function Caja() {
             </Typography>
             <Box role="group" aria-label="Productos" sx={{ display: 'grid', gap: 1, gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
               {(catalogo ?? []).map((p) => {
-                const agotado = p.existencias !== null && p.existencias <= (tique.find((l) => l.productoId === p.id)?.cantidad ?? 0)
+                const agotado = p.tallas.length > 0
+                  ? p.tallas.every((t) => tallaAgotada(p, t))
+                  : p.existencias !== null && p.existencias <= enTique(p.id, null)
                 return (
-                  <ButtonBase key={p.id} onClick={() => anadir(p)} disabled={agotado}
+                  <ButtonBase key={p.id} onClick={(e) => (p.tallas.length > 0 ? setEligiendo({ producto: p, ancla: e.currentTarget }) : anadir(p))} disabled={agotado}
+                    aria-haspopup={p.tallas.length > 0 ? 'menu' : undefined}
                     sx={{ p: 1.5, borderRadius: 1, border: 1, borderColor: 'divider', display: 'block', textAlign: 'left', opacity: agotado ? 0.45 : 1, '&:hover': { bgcolor: 'action.hover' } }}>
                     <Typography sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.25 }}>{p.nombre}</Typography>
                     <Typography variant="body2">{euros(p.precio)}</Typography>
-                    <Typography variant="caption" color="text.secondary">{p.existencias === null ? 'Sin límite' : `Quedan ${p.existencias}`}{p.activo ? '' : ' · fuera de la web'}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {p.tallas.length > 0 ? `${p.tallas.length} tallas · ` : ''}{(() => { const t = existenciasEnTexto(p); return t.charAt(0).toUpperCase() + t.slice(1) })()}{p.activo ? '' : ' · fuera de la web'}
+                    </Typography>
                   </ButtonBase>
                 )
               })}
@@ -148,6 +161,16 @@ export default function Caja() {
               </ButtonBase>
             </Box>
             {catalogo?.length === 0 && <Typography color="text.secondary">No hay productos: añádelos en la pestaña «Productos», o vende con «Otra cosa».</Typography>}
+            <Menu anchorEl={eligiendo?.ancla} open={eligiendo !== null} onClose={() => setEligiendo(null)}
+              slotProps={{ list: { 'aria-label': eligiendo ? `Talla de ${eligiendo.producto.nombre}` : undefined } }}>
+              {eligiendo?.producto.tallas.map((t) => (
+                <MenuItem key={t.id} disabled={tallaAgotada(eligiendo.producto, t)} onClick={() => { anadir(eligiendo.producto, t); setEligiendo(null) }}
+                  sx={{ minWidth: 180, display: 'flex', justifyContent: 'space-between', gap: 3 }}>
+                  <span>Talla {t.nombre}</span>
+                  <Typography component="span" variant="body2" color="text.secondary">{t.existencias === null ? 'sin límite' : t.existencias === 0 ? 'agotada' : `quedan ${t.existencias}`}</Typography>
+                </MenuItem>
+              ))}
+            </Menu>
           </Stack>
 
           <Paper sx={{ p: 2 }}>
@@ -213,7 +236,7 @@ export default function Caja() {
         puedeGuardar={Boolean(suelto?.nombre.trim()) && (leerEuros(suelto?.precio ?? '') ?? 0) > 0}
         onGuardar={() => {
           if (!suelto) return
-          setTique((t) => [...t, { clave: `s${Date.now()}`, productoId: null, nombre: suelto.nombre.trim(), precio: leerEuros(suelto.precio) ?? 0, cantidad: 1 }])
+          setTique((t) => [...t, { clave: `s${Date.now()}`, productoId: null, tallaId: null, nombre: suelto.nombre.trim(), precio: leerEuros(suelto.precio) ?? 0, cantidad: 1 }])
           setSuelto(null)
         }}
         onCerrar={() => setSuelto(null)}
@@ -277,7 +300,8 @@ function SesionAbierta({ sesion, ocupado, onAnular, onCerrar }: { sesion: Sesion
               sx={{ pr: 12, opacity: v.anuladaEl ? 0.55 : 1 }}>
               <ListItemText
                 primary={`${hora(v.vendidaEl)} · n.º ${v.id} · ${euros(v.total)} · ${METODO[v.metodo]}`}
-                secondary={v.lineas.map((l) => `${l.cantidad} × ${l.nombre}`).join(', ')}
+                secondary={v.lineas.map((l) => `${l.cantidad} × ${nombreConTalla(l.nombre, l.talla)}`).join(', ')}
+
               />
             </ListItem>
           ))}

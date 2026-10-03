@@ -1264,10 +1264,14 @@ model Producto {
   /// Más fotos del producto, además de la principal: [{ url, pie }]. En la
   /// tienda se ven todas al pulsar la foto. Cuentan en `ficheros-publicos.ts`.
   fotos        Json?
-  /// Cuántos quedan. Null: sin límite (se hace por encargo).
+  /// Cuántos quedan. Null: sin límite (se hace por encargo). Con tallas no se
+  /// usa (queda null): lo que queda se cuenta en cada talla.
   existencias  Int?
   activo       Boolean             @default(true)
   orden        Int                 @default(0)
+  /// Las tallas (S, M, L…), si el producto las tiene: entonces se compra y se
+  /// vende siempre una talla, y cada una lleva sus existencias.
+  tallas       TallaProducto[]
   lineas       PedidoTiendaLinea[]
   /// Lo vendido en la caja de la tienda.
   lineasDeCaja CajaVentaLinea[]
@@ -1275,6 +1279,22 @@ model Producto {
   updatedAt    DateTime            @updatedAt
 
   @@index([activo, orden])
+}
+
+/// Una talla de un producto, con lo que queda de ella.
+model TallaProducto {
+  id           Int                 @id @default(autoincrement())
+  productoId   Int
+  producto     Producto            @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  nombre       String              @db.VarChar(20)
+  /// Cuántas quedan de esta talla. Null: sin límite (se hace por encargo).
+  existencias  Int?
+  orden        Int                 @default(0)
+  lineas       PedidoTiendaLinea[]
+  lineasDeCaja CajaVentaLinea[]
+
+  @@unique([productoId, nombre])
+  @@index([productoId, orden])
 }
 
 /// Un pedido de la tienda. Se compra sin cuenta y se recoge en Secretaría.
@@ -1360,29 +1380,35 @@ model CajaVenta {
 
 /// Lo vendido: un producto del catálogo, o algo suelto escrito a mano.
 model CajaVentaLinea {
-  id         Int       @id @default(autoincrement())
-  ventaId    Int
-  venta      CajaVenta @relation(fields: [ventaId], references: [id], onDelete: Cascade)
-  productoId Int?
-  producto   Producto? @relation(fields: [productoId], references: [id], onDelete: SetNull)
-  /// Nombre y precio copiados, como en los pedidos en línea.
-  nombre     String    @db.VarChar(120)
-  precio     Decimal   @db.Decimal(10, 2)
-  cantidad   Int
+  id          Int            @id @default(autoincrement())
+  ventaId     Int
+  venta       CajaVenta      @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  productoId  Int?
+  producto    Producto?      @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  tallaId     Int?
+  talla       TallaProducto? @relation(fields: [tallaId], references: [id], onDelete: SetNull)
+  /// Nombre, talla y precio copiados, como en los pedidos en línea.
+  nombre      String         @db.VarChar(120)
+  nombreTalla String?        @db.VarChar(20)
+  precio      Decimal        @db.Decimal(10, 2)
+  cantidad    Int
 
   @@index([ventaId])
 }
 
 model PedidoTiendaLinea {
-  id         Int          @id @default(autoincrement())
-  pedidoId   Int
-  pedido     PedidoTienda @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  productoId Int?
-  producto   Producto?    @relation(fields: [productoId], references: [id], onDelete: SetNull)
-  /// Nombre y precio copiados: el pedido no cambia si mañana cambia el producto.
-  nombre     String       @db.VarChar(120)
-  precio     Decimal      @db.Decimal(10, 2)
-  cantidad   Int
+  id          Int            @id @default(autoincrement())
+  pedidoId    Int
+  pedido      PedidoTienda   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId  Int?
+  producto    Producto?      @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  tallaId     Int?
+  talla       TallaProducto? @relation(fields: [tallaId], references: [id], onDelete: SetNull)
+  /// Nombre, talla y precio copiados: el pedido no cambia si mañana cambia el producto.
+  nombre      String         @db.VarChar(120)
+  nombreTalla String?        @db.VarChar(20)
+  precio      Decimal        @db.Decimal(10, 2)
+  cantidad    Int
 
   @@index([pedidoId])
 }

@@ -6,6 +6,7 @@ import CabeceraDePagina from '../../components/CabeceraDePagina'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
 import { pedidoPublico, type PedidoPublico } from '../../lib/api/tienda'
+import { nombreConTalla } from './cesta'
 
 const euros = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
 /** El aviso del banco puede llegar unos segundos después que la persona: se pregunta un rato. */
@@ -71,7 +72,7 @@ export default function PedidoTiendaPage() {
           <Paper sx={{ p: 3, display: 'grid', gap: 0.75 }}>
             {pedido.lineas.map((l, i) => (
               <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-                <Typography>{l.cantidad} × {l.nombre}</Typography>
+                <Typography>{l.cantidad} × {nombreConTalla(l.nombre, l.talla)}</Typography>
                 <Typography>{euros(l.precio * l.cantidad)}</Typography>
               </Box>
             ))}

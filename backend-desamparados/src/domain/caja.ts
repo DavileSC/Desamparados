@@ -6,45 +6,48 @@
  * del navegador) o cosas sueltas escritas a mano (un libro de segunda mano,
  * una estampa que no está en la tienda), con su precio.
  */
-import { MAX_POR_LINEA, type ProductoALaVenta } from './tienda.js';
+import { MAX_POR_LINEA, faltaDe, tallaDeLaLinea, type ProductoALaVenta } from './tienda.js';
 
 export const MAX_LINEAS_CAJA = 40;
 /** Lo más caro que se apunta suelto: más, es que se ha escrito mal. */
 export const MAX_SUELTO_CENTIMOS = 5_000_00;
 
 export type LineaDeCaja =
-  | { productoId: number; cantidad: number }
+  | { productoId: number; tallaId?: number; cantidad: number }
   | { nombre: string; centimos: number; cantidad: number };
 
-export interface LineaCobrada { productoId: number | null; nombre: string; centimos: number; cantidad: number }
+export interface LineaCobrada { productoId: number | null; tallaId: number | null; talla: string | null; nombre: string; centimos: number; cantidad: number }
 
 export function prepararVenta(lineas: LineaDeCaja[], catalogo: ProductoALaVenta[]):
   { lineas: LineaCobrada[]; centimos: number } | { problema: string } {
   if (lineas.length === 0) return { problema: 'La venta está vacía.' };
   if (lineas.length > MAX_LINEAS_CAJA) return { problema: `Como mucho ${MAX_LINEAS_CAJA} líneas por venta.` };
   const porId = new Map(catalogo.map((p) => [p.id, p]));
-  // El mismo producto dos veces se junta, para comprobar bien lo que queda.
-  const juntas = new Map<number, number>();
+  // El mismo producto (y talla) dos veces se junta, para comprobar bien lo que queda.
+  const juntas = new Map<string, { productoId: number; tallaId?: number; cantidad: number }>();
   const cobradas: LineaCobrada[] = [];
   for (const l of lineas) {
     if (!Number.isInteger(l.cantidad) || l.cantidad < 1 || l.cantidad > MAX_POR_LINEA) return { problema: `Cada línea lleva entre 1 y ${MAX_POR_LINEA} unidades.` };
     if ('productoId' in l) {
-      juntas.set(l.productoId, (juntas.get(l.productoId) ?? 0) + l.cantidad);
+      const k = `${l.productoId}:${l.tallaId ?? ''}`;
+      juntas.set(k, { productoId: l.productoId, tallaId: l.tallaId, cantidad: (juntas.get(k)?.cantidad ?? 0) + l.cantidad });
     } else {
       const nombre = l.nombre.trim();
       if (!nombre) return { problema: 'Lo que se vende suelto necesita un nombre.' };
       if (!Number.isInteger(l.centimos) || l.centimos <= 0 || l.centimos > MAX_SUELTO_CENTIMOS) return { problema: `«${nombre}»: el precio no es válido.` };
-      cobradas.push({ productoId: null, nombre, centimos: l.centimos, cantidad: l.cantidad });
+      cobradas.push({ productoId: null, tallaId: null, talla: null, nombre, centimos: l.centimos, cantidad: l.cantidad });
     }
   }
-  for (const [productoId, cantidad] of juntas) {
+  // Al revés y por delante: los del catálogo quedan arriba y en su orden.
+  for (const { productoId, tallaId, cantidad } of [...juntas.values()].reverse()) {
     const p = porId.get(productoId);
     // En la caja se vende también lo retirado de la web: está en el mostrador.
     if (!p) return { problema: 'Algún producto ya no existe. Recarga la caja.' };
-    if (p.existencias !== null && p.existencias < cantidad) {
-      return { problema: p.existencias === 0 ? `«${p.nombre}» está agotado.` : `De «${p.nombre}» solo quedan ${p.existencias}.` };
-    }
-    cobradas.unshift({ productoId, nombre: p.nombre, centimos: p.centimos, cantidad });
+    const t = tallaDeLaLinea(p, tallaId);
+    if ('problema' in t) return t;
+    const falta = faltaDe(p, t.talla, t.existencias, cantidad, 'está agotado');
+    if (falta) return { problema: falta };
+    cobradas.unshift({ productoId, tallaId: t.talla?.id ?? null, talla: t.talla?.nombre ?? null, nombre: p.nombre, centimos: p.centimos, cantidad });
   }
   return { lineas: cobradas, centimos: cobradas.reduce((s, l) => s + l.centimos * l.cantidad, 0) };
 }

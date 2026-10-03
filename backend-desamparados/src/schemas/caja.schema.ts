@@ -13,6 +13,7 @@ export const abrirCajaSchema = type({ body: { fondoInicial: euros } });
 // lo uno o lo otro lo decide el controlador.
 const linea = type({
     "productoId?": "number.integer > 0",
+    "tallaId?": "number.integer > 0",
     "nombre?": type("0 < string <= 120").matching(/^[^<>]+$/),
     "centimos?": "number.integer > 0",
     cantidad: "number.integer > 0",

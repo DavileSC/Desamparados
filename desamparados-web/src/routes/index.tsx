@@ -176,6 +176,8 @@ const router = createBrowserRouter([
           { path: 'hazte-hermano', element: pagina(HazteHermanoPage, 'alta-web') },
           { path: 'contacto', element: pagina(ContactoPage, 'nucleo') },
           { path: 'tienda', element: pagina(TiendaPage, 'tienda-web') },
+          // La ficha de un producto: la misma página que la rejilla, que comparte la cesta.
+          { path: 'tienda/producto/:id', element: pagina(TiendaPage, 'tienda-web') },
           { path: 'tienda/pedido/:token', element: pagina(PedidoTiendaPage, 'tienda-web') },
           { path: 'apadrina', element: pagina(ApadrinaPage, 'apadrinamientos') },
           { path: 'apadrina/gracias/:token', element: pagina(GraciasApadrinamientoPage, 'apadrinamientos') },

@@ -11,7 +11,7 @@ export const compraSchema = type({
         email,
         telefono,
         metodo: "'TARJETA' | 'BIZUM'",
-        lineas: type({ productoId: "number.integer > 0", cantidad: "1 <= number.integer <= 20" }).array().atLeastLength(1).atMostLength(30),
+        lineas: type({ productoId: "number.integer > 0", "tallaId?": "number.integer > 0", cantidad: "1 <= number.integer <= 20" }).array().atLeastLength(1).atMostLength(30),
     }
 });
 
@@ -25,6 +25,17 @@ export const MAX_FOTOS_PRODUCTO = 8;
 const fotosSchema = type({ url: imagenOpcional, pie: type("string <= 160").matching(/^[^<>]*$/) })
     .array().atMostLength(MAX_FOTOS_PRODUCTO);
 
+// Las tallas: hasta veinte, cada una con su nombre (sin repetir, sin mirar
+// mayúsculas) y lo que queda (null: sin límite). Las que ya estaban traen su id.
+export const MAX_TALLAS = 20;
+const tallasSchema = type({
+    "id?": "number.integer > 0",
+    nombre: textoLimpio(20, 'una talla'),
+    existencias: type("0 <= number.integer <= 100000").or("null"),
+}).array().atMostLength(MAX_TALLAS)
+    .narrow((ts) => new Set(ts.map((t) => t.nombre.trim().toLowerCase())).size === ts.length)
+    .describe("tallas sin repetir");
+
 export const productoSchema = type({
     body: {
         nombre: textoLimpio(120, 'un nombre'),
@@ -33,6 +44,9 @@ export const productoSchema = type({
         foto: type("string <= 500").or("null"),
         // Opcional: quien no lo manda (una pantalla vieja) no borra las que hay.
         "fotos?": fotosSchema,
+        // Opcional, como las fotos: quien no lo manda no toca las tallas.
+        "tallas?": tallasSchema,
+
         existencias: type("0 <= number.integer <= 100000").or("null"),
         activo: "boolean",
         orden: "0 <= number.integer <= 10000",

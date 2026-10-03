@@ -10,7 +10,8 @@ export interface VentaDeCaja {
   vendedor: string | null
   anuladaEl: string | null
   anuladaPor: string | null
-  lineas: { productoId: number | null; nombre: string; precio: number; cantidad: number }[]
+  /** `talla`, la de lo vendido si la tenía (copiada, como el nombre). */
+  lineas: { productoId: number | null; nombre: string; talla: string | null; precio: number; cantidad: number }[]
 }
 
 export interface SesionDeCaja {
@@ -31,7 +32,7 @@ export interface SesionDeCaja {
 export interface EstadoDeCaja { abierta: SesionDeCaja | null; cerradas: SesionDeCaja[] }
 
 /** Una línea: un producto del catálogo, o algo suelto con su precio en céntimos. */
-export type LineaDeVenta = { productoId: number; cantidad: number } | { nombre: string; centimos: number; cantidad: number }
+export type LineaDeVenta = { productoId: number; tallaId?: number; cantidad: number } | { nombre: string; centimos: number; cantidad: number }
 
 export const estadoDeCaja = () => llamarApi<EstadoDeCaja>('/tienda/admin/caja')
 export const abrirCaja = (fondoInicial: number) => llamarApi<EstadoDeCaja>('/tienda/admin/caja/abrir', { method: 'POST', json: { fondoInicial } })
