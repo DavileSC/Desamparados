@@ -7,7 +7,7 @@ import { Helmet } from 'react-helmet-async'
 import { Link, useSearchParams } from 'react-router-dom'
 import { entregarPedido, pedidosDelCms, productos, type EstadoPedido } from '../../lib/api/tienda'
 import CabeceraSeccion from './CabeceraSeccion'
-import Caja from './tienda/Caja'
+import VentaEnMano from './tienda/VentaEnMano'
 import MesaDeProductos from './tienda/MesaDeProductos'
 import { nombreConTalla } from '../tienda/cesta'
 import { euros, fechaCorta } from './contabilidad/formato'
@@ -20,13 +20,15 @@ const ESTADOS: Record<EstadoPedido, string> = { PENDIENTE_PAGO: 'Sin pagar', PAG
 /**
  * La tienda en el CMS: los productos en mesa (la lista y la ficha del
  * elegido, con sus fotos, su precio y sus tallas), los pedidos pagados, que
- * se marcan como entregados al recogerlos en Secretaría, y la caja.
+ * se marcan como entregados al recogerlos en Secretaría, y la venta en mano
+ * (lo que se lleva alguien en Secretaría y el efectivo que va al banco).
  */
 export default function TiendaAdminPage() {
   const cliente = useQueryClient()
   const [params, setParams] = useSearchParams()
   const vistaPedida = params.get('vista')
-  const vista = vistaPedida === 'pedidos' || vistaPedida === 'caja' ? vistaPedida : 'productos'
+  // «caja» era el nombre de antes de la venta en mano: los enlaces viejos siguen valiendo.
+  const vista = vistaPedida === 'pedidos' ? 'pedidos' : vistaPedida === 'mano' || vistaPedida === 'caja' ? 'mano' : 'productos'
   const [estado, setEstado] = useState<EstadoPedido | ''>('PAGADO')
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -45,13 +47,13 @@ export default function TiendaAdminPage() {
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido marcar como entregado.')) }
   }
 
-  const irA = (v: string) => setParams(v === 'pedidos' || v === 'caja' ? { vista: v } : {})
+  const irA = (v: string) => setParams(v === 'pedidos' || v === 'mano' ? { vista: v } : {})
   const lista = consultaProductos.data
   const pedidos = consultaPedidos.data
 
   return <>
     <Helmet><title>{`Tienda | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion titulo="Tienda" subtitulo="Lo que se vende en la web y en Secretaría, la caja del día y los pedidos por recoger.">
+    <CabeceraSeccion titulo="Tienda" subtitulo="Lo que se vende en la web y en Secretaría, los pedidos por recoger y el efectivo que va al banco.">
       <Button variant="outlined" component={Link} to="/tienda" target="_blank" startIcon={<OpenInNewIcon />}>Ver la tienda</Button>
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => { irA('productos'); setPedirNuevo(true) }}>Nuevo producto</Button>
     </CabeceraSeccion>
@@ -61,7 +63,7 @@ export default function TiendaAdminPage() {
     <Tabs value={vista} onChange={(_, v: string) => irA(v)} sx={{ mb: 2.5 }}>
       <Tab value="productos" label="Productos" />
       <Tab value="pedidos" label={porEntregar > 0 ? <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>Pedidos <Chip size="small" color="warning" label={porEntregar} aria-label={`${porEntregar} por entregar`} /></Box> : 'Pedidos'} />
-      <Tab value="caja" label="Caja" />
+      <Tab value="mano" label="Venta en mano" />
     </Tabs>
 
     {vista === 'productos' && (!lista
@@ -69,7 +71,7 @@ export default function TiendaAdminPage() {
       : <MesaDeProductos lista={lista} pedirNuevo={pedirNuevo} onNuevoAtendido={() => setPedirNuevo(false)}
         onAviso={(t) => { setError(null); setAviso(t) }} onError={(t) => { setAviso(null); setError(t) }} />)}
 
-    {vista === 'caja' && <Caja />}
+    {vista === 'mano' && <VentaEnMano />}
 
     {vista === 'pedidos' && <>
       <TextField select size="small" label="Pedidos" value={estado} onChange={(e) => setEstado(e.target.value as EstadoPedido | '')} sx={{ mb: 2, minWidth: 220 }}>

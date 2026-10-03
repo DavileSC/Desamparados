@@ -33,7 +33,7 @@ export const TRANSACCION_ERRORS = {
   DE_RECIBO: 'Este apunte viene de un recibo y se corrige desde el recibo, en Tesorería.',
   // Igual con la lotería: el talonario daría por liquidado lo que ya no está apuntado.
   DE_LOTERIA: 'Este apunte viene de la lotería y se corrige desde Lotería (la compra o la liquidación del talonario).',
-  DE_CAJA: 'Este apunte es una venta de la caja de la tienda: se anula desde la caja mientras esté abierta.',
+  DE_CAJA: 'Este apunte es una venta en mano de la tienda: se anula desde Tienda → «Venta en mano».',
   CATEGORIA_NO_EXISTE: 'La categoría no existe.',
   FECHAS_AL_REVES: 'La fecha «hasta» no puede ser anterior a la fecha «desde».',
 } as const;

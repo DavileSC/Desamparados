@@ -1,7 +1,6 @@
-// La caja de la tienda contra MariaDB: abrir con fondo (y no dos a la vez),
-// vender del catálogo y suelto (existencias, apunte en la contabilidad que no
-// se toca a mano), anular con la caja abierta y cerrar con el arqueo. Si la
-// base de desarrollo ya tiene una caja abierta, la prueba se omite: no la toca.
+// La venta en mano de la tienda contra MariaDB: vender del catálogo y suelto
+// sin caja que abrir (existencias, apunte en la contabilidad que no se toca a
+// mano), anular, e ingresar el efectivo en el banco sin pasar de lo que queda.
 
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
@@ -46,62 +45,69 @@ test('preparar una venta: el precio del catálogo, lo suelto con el suyo, y lo q
   assert.equal(r.anuladas, 1);
 });
 
-test('abrir, vender, anular y cerrar la caja', async (t) => {
+test('vender en mano, anular e ingresar el efectivo en el banco', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
-  // Hay una sola caja abierta a la vez: si la base de desarrollo tiene una, no se toca.
-  if (await db.cajaSesion.findFirst({ where: { cerradaEl: null } })) return t.skip('hay una caja abierta en la base de desarrollo');
   const tesorero = await crearUsuarioPrueba(Role.TESORERIA);
   const cab = { Cookie: `${COOKIE_CMS}=${generateToken(tesorero.id, Role.TESORERIA)}`, 'Content-Type': 'application/json' };
   const post = (ruta: string, cuerpo: unknown = {}) => fetch(`${baseUrl}/api/tienda/admin/caja${ruta}`, { method: 'POST', headers: cab, body: JSON.stringify(cuerpo) });
-  const producto = await db.producto.create({ data: { nombre: `Medalla caja ${Date.now()}`, precio: '15', existencias: 3 } });
-  let sesionId: number | null = null;
-  const apuntes: number[] = [];
+  const estado = async () => (await fetch(`${baseUrl}/api/tienda/admin/caja`, { headers: cab })).json() as Promise<{ efectivoPorIngresar: number; ingresos: { id: number }[] }>;
+  const producto = await db.producto.create({ data: { nombre: `Medalla en mano ${Date.now()}`, precio: '15', existencias: 3 } });
+  const ventas: number[] = [];
+  const ingresos: number[] = [];
   try {
-    assert.equal((await post('/ventas', { lineas: [{ productoId: producto.id, cantidad: 1 }], metodo: 'EFECTIVO' })).status, 409, 'con la caja cerrada no se vende');
-    const abierta = await (await post('/abrir', { fondoInicial: 50 })).json();
-    sesionId = abierta.abierta.id;
-    assert.equal((await post('/abrir', { fondoInicial: 10 })).status, 409, 'no se abren dos');
+    // La base de desarrollo puede tener efectivo de antes: se mira lo que cambia.
+    const antes = (await estado()).efectivoPorIngresar;
 
+    // Sin caja que abrir: se vende y ya.
     const v1 = await (await post('/ventas', { lineas: [{ productoId: producto.id, cantidad: 2 }, { nombre: 'Libro usado', centimos: 550, cantidad: 1 }], metodo: 'EFECTIVO' })).json();
+    ventas.push(v1.ventaId);
     assert.equal(v1.total, 35.5);
-    const v2 = await (await post('/ventas', { lineas: [{ productoId: producto.id, cantidad: 1 }], metodo: 'TARJETA' })).json();
+    assert.equal(v1.estado.efectivoPorIngresar, antes + 35.5);
+    const v2 = await (await post('/ventas', { lineas: [{ productoId: producto.id, cantidad: 1 }], metodo: 'BIZUM' })).json();
+    ventas.push(v2.ventaId);
+    assert.equal(v2.estado.efectivoPorIngresar, antes + 35.5, 'el Bizum ya está en el banco');
     assert.equal((await db.producto.findUniqueOrThrow({ where: { id: producto.id } })).existencias, 0);
-    assert.equal((await post('/ventas', { lineas: [{ productoId: producto.id, cantidad: 1 }], metodo: 'BIZUM' })).status, 409, 'agotado');
+    assert.equal((await post('/ventas', { lineas: [{ productoId: producto.id, cantidad: 1 }], metodo: 'EFECTIVO' })).status, 409, 'agotado');
 
     // El apunte de una venta no se corrige desde Contabilidad.
-    const venta1 = await db.cajaVenta.findUniqueOrThrow({ where: { id: v1.ventaId } });
-    apuntes.push(venta1.transaccionId!);
-    const apunte = await db.transaccion.findUniqueOrThrow({ where: { id: venta1.transaccionId! } });
+    const apunte = await db.transaccion.findUniqueOrThrow({ where: { id: (await db.cajaVenta.findUniqueOrThrow({ where: { id: v1.ventaId } })).transaccionId! } });
     assert.equal(Number(apunte.importe), 35.5);
     assert.equal(apunte.metodoPago, 'EFECTIVO');
     assert.equal((await fetch(`${baseUrl}/api/transacciones/${apunte.id}`, { method: 'DELETE', headers: cab })).status, 409);
 
-    // Anular la de tarjeta: vuelve la medalla y se quita su apunte.
+    // Anular la de Bizum: vuelve la medalla y se quita su apunte.
     const tx2 = (await db.cajaVenta.findUniqueOrThrow({ where: { id: v2.ventaId } })).transaccionId!;
-    const tras = await (await post(`/ventas/${v2.ventaId}/anular`)).json();
-    assert.equal(tras.abierta.resumen.anuladas, 1);
+    assert.equal((await post(`/ventas/${v2.ventaId}/anular`)).status, 200);
     assert.equal((await db.producto.findUniqueOrThrow({ where: { id: producto.id } })).existencias, 1);
     assert.equal(await db.transaccion.count({ where: { id: tx2 } }), 0);
-    assert.equal((await post(`/ventas/${v2.ventaId}/anular`)).status, 409);
+    assert.equal((await post(`/ventas/${v2.ventaId}/anular`)).status, 409, 'ya anulada');
 
-    // Cerrar: debía haber 50 + 35,50; se cuentan 85.
-    const cierre = await (await post('/cerrar', { efectivoContado: 85, observaciones: 'Faltan 50 céntimos' })).json();
-    assert.equal(cierre.diferencia, -0.5);
-    assert.equal(cierre.estado.abierta, null);
-    const cerrada = cierre.estado.cerradas.find((s: { id: number }) => s.id === sesionId);
-    assert.equal(cerrada.efectivoEsperado, 85.5);
-    assert.equal((await post(`/ventas/${v1.ventaId}/anular`)).status, 409, 'con la caja cerrada ya no se anula');
+    // Ingresar en el banco: no más de lo que queda, ni con fecha futura.
+    assert.equal((await post('/ingresos', { fecha: '2026-01-01', importe: antes + 36 })).status, 409, 'más de lo que hay');
+    assert.equal((await post('/ingresos', { fecha: '2999-01-01', importe: 1 })).status, 400);
+    assert.equal((await post('/ingresos', { fecha: '2026-02-30', importe: 1 })).status, 400, 'un día que no existe');
+    const tras = await (await post('/ingresos', { fecha: '2026-01-01', importe: 30, nota: 'Ingreso del viernes' })).json();
+    ingresos.push(...tras.ingresos.filter((i: { nota: string }) => i.nota === 'Ingreso del viernes').map((i: { id: number }) => i.id));
+    assert.equal(tras.efectivoPorIngresar, Math.round((antes + 5.5) * 100) / 100);
+
+    // Si el efectivo de una venta ya consta en el banco, anularla dejaría ingresado más de lo vendido.
+    if (antes === 0) assert.equal((await post(`/ventas/${v1.ventaId}/anular`)).status, 409);
+
+    // Borrar el ingreso: el efectivo vuelve a quedar por ingresar.
+    assert.equal((await fetch(`${baseUrl}/api/tienda/admin/caja/ingresos/${ingresos[0]}`, { method: 'DELETE', headers: cab })).status, 200);
+    assert.equal((await estado()).efectivoPorIngresar, antes + 35.5);
+    ingresos.length = 0;
+
     assert.deepEqual(
-      (await db.auditLog.findMany({ where: { userId: tesorero.id, entityType: { in: ['cajaSesion', 'cajaVenta'] } }, orderBy: { id: 'asc' } })).map((a) => a.action),
-      ['CAJA_ABRIR', 'CAJA_VENDER', 'CAJA_VENDER', 'CAJA_ANULAR', 'CAJA_CERRAR'],
+      (await db.auditLog.findMany({ where: { userId: tesorero.id, entityType: { in: ['cajaVenta', 'ingresoEfectivoTienda'] } }, orderBy: { id: 'asc' } })).map((a) => a.action),
+      ['CAJA_VENDER', 'CAJA_VENDER', 'CAJA_ANULAR', 'TIENDA_INGRESO_BANCO', 'TIENDA_INGRESO_BORRAR'],
     );
   } finally {
-    if (sesionId) {
-      await db.cajaVentaLinea.deleteMany({ where: { venta: { sesionId } } });
-      await db.cajaVenta.deleteMany({ where: { sesionId } });
-      await db.cajaSesion.deleteMany({ where: { id: sesionId } });
-    }
+    const apuntes = (await db.cajaVenta.findMany({ where: { id: { in: ventas } }, select: { transaccionId: true } })).flatMap((v) => (v.transaccionId ? [v.transaccionId] : []));
+    await db.cajaVentaLinea.deleteMany({ where: { ventaId: { in: ventas } } });
+    await db.cajaVenta.deleteMany({ where: { id: { in: ventas } } });
     await db.transaccion.deleteMany({ where: { id: { in: apuntes } } });
+    await db.ingresoEfectivoTienda.deleteMany({ where: { id: { in: ingresos } } });
     await db.producto.deleteMany({ where: { id: producto.id } });
     await db.auditLog.deleteMany({ where: { userId: tesorero.id } });
     await borrarUsuarioPrueba(tesorero.id);

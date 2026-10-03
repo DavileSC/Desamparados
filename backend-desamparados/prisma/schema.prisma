@@ -1337,9 +1337,10 @@ model PlantillaCorreo {
   @@index([uso, enUso])
 }
 
-/// Una caja de la tienda, del abrir al cerrar: lo que se vende en persona en
-/// Secretaría o en la casa del Grupo. Solo hay una abierta a la vez; al
-/// cerrarla se cuenta el efectivo y queda escrito lo que debía haber.
+/// Una caja de la tienda, del abrir al cerrar. Ya no se usa: el Grupo no
+/// tiene mostrador, vende en mano de vez en cuando y lleva el efectivo al
+/// banco (`IngresoEfectivoTienda`). Se conserva por las ventas que se
+/// hicieran con ella.
 model CajaSesion {
   id               Int         @id @default(autoincrement())
   abiertaEl        DateTime    @default(now())
@@ -1359,12 +1360,14 @@ model CajaSesion {
   @@index([abiertaEl])
 }
 
-/// Una venta de la caja. Apunta su ingreso en la contabilidad al momento; si
-/// se anula (solo con la caja abierta), el apunte se quita y vuelven las existencias.
+/// Una venta en mano (en Secretaría, a quien se lo lleva sin pasar por la
+/// web). Apunta su ingreso en la contabilidad al momento; si se anula, el
+/// apunte se quita y vuelven las existencias. Las de antes llevan su caja;
+/// las de ahora, ninguna.
 model CajaVenta {
   id            Int              @id @default(autoincrement())
-  sesionId      Int
-  sesion        CajaSesion       @relation(fields: [sesionId], references: [id], onDelete: Restrict)
+  sesionId      Int?
+  sesion        CajaSesion?      @relation(fields: [sesionId], references: [id], onDelete: Restrict)
   total         Decimal          @db.Decimal(10, 2)
   metodo        MetodoPago
   vendidaEl     DateTime         @default(now())
@@ -1378,7 +1381,23 @@ model CajaVenta {
   @@index([sesionId])
 }
 
+/// El efectivo de la tienda que se lleva al banco. En la partida doble pasa
+/// de Caja (570) a Bancos (572); no es un ingreso: el ingreso fue la venta.
+model IngresoEfectivoTienda {
+  id          Int      @id @default(autoincrement())
+  /// El día en que se ingresó (a las 00:00 de Madrid).
+  fecha       DateTime
+  importe     Decimal  @db.Decimal(10, 2)
+  nota        String?  @db.VarChar(300)
+  /// Quién lo apuntó, copiado: sobrevive a la cuenta.
+  apuntadoPor String?  @db.VarChar(120)
+  createdAt   DateTime @default(now())
+
+  @@index([fecha])
+}
+
 /// Lo vendido: un producto del catálogo, o algo suelto escrito a mano.
+
 model CajaVentaLinea {
   id          Int            @id @default(autoincrement())
   ventaId     Int

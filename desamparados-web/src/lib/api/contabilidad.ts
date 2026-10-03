@@ -29,7 +29,7 @@ export interface Transaction {
   /** Igual con la lotería: la liquidación de un talonario o la compra de los décimos de ese sorteo. */
   talonarioLoteria?: { sorteoId: number } | null
   compraDeLoteria?: { id: number } | null
-  /** Si es una venta de la caja de la tienda: se anula desde la caja. */
+  /** Si es una venta en mano de la tienda: se anula desde la tienda. */
   ventaDeCaja?: { id: number } | null
   categoria: { nombre: string }
   hermano: { nombre: string; apellidos: string } | null
@@ -134,7 +134,8 @@ export interface PaginaDelDiario {
   total: number
   pagina: number
   porPagina: number
-  asientos: { numero: number; apunteId: number; fecha: string; concepto: string; lineas: { cuenta: string; nombre: string; debe: number; haber: number }[] }[]
+  /** `apunteId`, el apunte del libro de caja; `traspasoId`, el efectivo de la tienda llevado al banco. */
+  asientos: { numero: number; apunteId: number | null; traspasoId?: number; fecha: string; concepto: string; lineas: { cuenta: string; nombre: string; debe: number; haber: number }[] }[]
 }
 
 export const planDeCuentas = () => llamarApi<PlanDeCuentas>('/transacciones/partida-doble/plan')

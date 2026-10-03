@@ -1,12 +1,17 @@
 /**
- * La caja de la tienda: lo que se vende en persona, con su apertura y su
- * cierre del día.
+ * La venta en mano de la tienda: quien se lleva algo en Secretaría sin pasar
+ * por la web, y el efectivo que después se lleva al banco.
  *
- * Solo hay una caja abierta a la vez. Cada venta descuenta existencias y
- * apunta su ingreso en la contabilidad en el acto, en la categoría de la
- * tienda en línea (el efectivo va a Caja y la tarjeta o el Bizum a Bancos en
- * la partida doble, por el método). Anular una venta solo se puede con la
- * caja abierta: después ya está contada y se corrige con un apunte a mano.
+ * El Grupo no tiene mostrador: vende de vez en cuando, guarda el efectivo y
+ * lo ingresa en la cuenta más tarde. Por eso no hay caja que abrir ni que
+ * cerrar. Cada venta descuenta existencias y apunta su ingreso en la
+ * contabilidad en el acto, en la categoría de la tienda en línea (el efectivo
+ * va a Caja y la tarjeta o el Bizum a Bancos en la partida doble). Lo que se
+ * ingresa en el banco pasa de Caja a Bancos y se resta de lo que queda por
+ * ingresar.
+ *
+ * Las ventas de antes, de cuando había caja, siguen aquí con la suya; las de
+ * una caja ya cerrada no se anulan (estaban contadas en su arqueo).
  */
 import { MetodoPago, Prisma, TipoTransaccion } from '@prisma/client';
 import db from '../config/db.js';
@@ -15,11 +20,16 @@ import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from './au
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
 import { CATEGORIA_TIENDA, aLaVenta, conTallas } from './tienda.service.js';
 import { aCentimos } from '../domain/sepa.js';
-import { prepararVenta, resumenDeCaja, type LineaDeCaja, type MetodoDeCaja } from '../domain/caja.js';
+import { diaMadrid, inicioDiaMadrid } from '../domain/contabilidad.js';
+import { prepararVenta, type LineaDeCaja, type MetodoDeCaja } from '../domain/caja.js';
 import { nombreConTalla } from '../domain/tienda.js';
 
-
 const aEuros = (centimos: number) => new Prisma.Decimal(centimos).div(100);
+const euros = (centimos: number) => `${(centimos / 100).toFixed(2).replace('.', ',')} €`;
+
+/** Cuántas ventas recientes se enseñan, y cuántos ingresos. */
+const VENTAS_A_LA_VISTA = 50;
+const INGRESOS_A_LA_VISTA = 20;
 
 async function nombreDe(meta: MetaDeAuditoria) {
   if (!meta.userId) return null;
@@ -27,68 +37,47 @@ async function nombreDe(meta: MetaDeAuditoria) {
   return u ? `${u.nombre} ${u.apellidos ?? ''}`.trim().slice(0, 120) : null;
 }
 
-const conVentas = { ventas: { include: { lineas: true }, orderBy: [{ vendidaEl: 'desc' as const }, { id: 'desc' as const }] } };
-type SesionConVentas = Prisma.CajaSesionGetPayload<{ include: typeof conVentas }>;
-
-/** La sesión como la ve la pantalla: sus ventas y sus cuentas, en euros. */
-function aVista(s: SesionConVentas) {
-  const resumen = resumenDeCaja(aCentimos(s.fondoInicial), s.ventas.map((v) => ({ metodo: v.metodo, centimos: aCentimos(v.total), anulada: v.anuladaEl !== null })));
-  return {
-    id: s.id,
-    abiertaEl: s.abiertaEl, abiertaPor: s.abiertaPor, fondoInicial: Number(s.fondoInicial),
-    cerradaEl: s.cerradaEl, cerradaPor: s.cerradaPor,
-    efectivoEsperado: s.efectivoEsperado === null ? resumen.efectivoEsperado / 100 : Number(s.efectivoEsperado),
-    efectivoContado: s.efectivoContado === null ? null : Number(s.efectivoContado),
-    observaciones: s.observaciones,
-    resumen: {
-      ventas: resumen.ventas, anuladas: resumen.anuladas, total: resumen.total / 100,
-      porMetodo: { EFECTIVO: resumen.porMetodo.EFECTIVO / 100, TARJETA: resumen.porMetodo.TARJETA / 100, BIZUM: resumen.porMetodo.BIZUM / 100 },
-    },
-    ventas: s.ventas.map((v) => ({
-      id: v.id, total: Number(v.total), metodo: v.metodo, vendidaEl: v.vendidaEl, vendedor: v.vendedor,
-      anuladaEl: v.anuladaEl, anuladaPor: v.anuladaPor,
-      lineas: v.lineas.map((l) => ({ productoId: l.productoId, nombre: l.nombre, talla: l.nombreTalla, precio: Number(l.precio), cantidad: l.cantidad })),
-    })),
-  };
+/**
+ * Lo cobrado en efectivo (sin las anuladas) menos lo ingresado en el banco, en
+ * céntimos. Dentro de una transacción si se va a apuntar o anular algo.
+ */
+async function efectivoPorIngresar(tx: Prisma.TransactionClient | typeof db = db) {
+  const [vendido, ingresado] = await Promise.all([
+    tx.cajaVenta.aggregate({ where: { metodo: MetodoPago.EFECTIVO, anuladaEl: null }, _sum: { total: true } }),
+    tx.ingresoEfectivoTienda.aggregate({ _sum: { importe: true } }),
+  ]);
+  return aCentimos(vendido._sum.total ?? 0) - aCentimos(ingresado._sum.importe ?? 0);
 }
 
-export type VistaDeCaja = ReturnType<typeof aVista>;
-
 export class CajaService {
-  /** La caja abierta (o null) y las últimas cerradas. */
+  /** Las últimas ventas en mano, los últimos ingresos en el banco y el efectivo que queda por ingresar. */
   static async estado() {
-    const [abierta, cerradas] = await Promise.all([
-      db.cajaSesion.findFirst({ where: { cerradaEl: null }, include: conVentas, orderBy: { id: 'desc' } }),
-      db.cajaSesion.findMany({ where: { cerradaEl: { not: null } }, include: conVentas, orderBy: [{ cerradaEl: 'desc' }, { id: 'desc' }], take: 20 }),
+    const [ventas, ingresos, pendiente] = await Promise.all([
+      db.cajaVenta.findMany({
+        include: { lineas: true, sesion: { select: { cerradaEl: true } } },
+        orderBy: [{ vendidaEl: 'desc' }, { id: 'desc' }], take: VENTAS_A_LA_VISTA,
+      }),
+      db.ingresoEfectivoTienda.findMany({ orderBy: [{ fecha: 'desc' }, { id: 'desc' }], take: INGRESOS_A_LA_VISTA }),
+      efectivoPorIngresar(),
     ]);
     return {
-      abierta: abierta ? aVista(abierta) : null,
-      cerradas: cerradas.map((s) => {
-        const v = aVista(s);
-        // En el historial, las cuentas; las ventas una a una solo de la abierta.
-        return { ...v, ventas: [] };
-      }),
+      efectivoPorIngresar: pendiente / 100,
+      ventas: ventas.map((v) => ({
+        id: v.id, total: Number(v.total), metodo: v.metodo, vendidaEl: v.vendidaEl, vendedor: v.vendedor,
+        anuladaEl: v.anuladaEl, anuladaPor: v.anuladaPor,
+        // Las de una caja ya cerrada estaban contadas en su arqueo: no se tocan.
+        anulable: v.anuladaEl === null && !v.sesion?.cerradaEl,
+        lineas: v.lineas.map((l) => ({ productoId: l.productoId, nombre: l.nombre, talla: l.nombreTalla, precio: Number(l.precio), cantidad: l.cantidad })),
+      })),
+      ingresos: ingresos.map((i) => ({ id: i.id, fecha: diaMadrid(i.fecha), importe: Number(i.importe), nota: i.nota, apuntadoPor: i.apuntadoPor })),
     };
   }
 
-  static async abrir(fondoInicial: number, meta: MetaDeAuditoria) {
-    const abiertaPor = await nombreDe(meta);
-    const sesion = await db.$transaction(async (tx) => {
-      const ya = await tx.cajaSesion.findFirst({ where: { cerradaEl: null }, select: { id: true } });
-      if (ya) throw new HttpError('Ya hay una caja abierta: ciérrala antes de abrir otra.', 409);
-      return tx.cajaSesion.create({ data: { fondoInicial: aEuros(Math.round(fondoInicial * 100)), abiertaPor } });
-    });
-    await AuditoriaService.log(ACCIONES_AUDITORIA.CAJA_ABRIR, meta, 'cajaSesion', sesion.id, { despues: { fondoInicial } });
-    return CajaService.estado();
-  }
-
-  /** Cobra una venta en la caja abierta: existencias, contabilidad y venta, todo o nada. */
+  /** Apunta una venta en mano: existencias, contabilidad y venta, todo o nada. */
   static async vender(lineas: LineaDeCaja[], metodo: MetodoDeCaja, meta: MetaDeAuditoria) {
     const vendedor = await nombreDe(meta);
     const categoriaId = await idCategoriaDeRecibos(TipoTransaccion.INGRESO, CATEGORIA_TIENDA);
     const venta = await db.$transaction(async (tx) => {
-      const sesion = await tx.cajaSesion.findFirst({ where: { cerradaEl: null }, select: { id: true } });
-      if (!sesion) throw new HttpError('La caja está cerrada: ábrela para vender.', 409);
       const ids = lineas.flatMap((l) => ('productoId' in l ? [l.productoId] : []));
       const catalogo = await tx.producto.findMany({ where: { id: { in: ids } }, include: conTallas });
       const preparada = prepararVenta(lineas, catalogo.map(aLaVenta));
@@ -106,13 +95,13 @@ export class CajaService {
       }
       const creada = await tx.cajaVenta.create({
         data: {
-          sesionId: sesion.id, total: aEuros(preparada.centimos), metodo: metodo as MetodoPago, vendedor,
+          total: aEuros(preparada.centimos), metodo: metodo as MetodoPago, vendedor,
           lineas: { create: preparada.lineas.map((l) => ({ productoId: l.productoId, tallaId: l.tallaId, nombre: l.nombre, nombreTalla: l.talla, precio: aEuros(l.centimos), cantidad: l.cantidad })) },
         },
       });
       const apunte = await tx.transaccion.create({
         data: {
-          tipo: TipoTransaccion.INGRESO, categoriaId, concepto: `Caja de la tienda: venta n.º ${creada.id}`,
+          tipo: TipoTransaccion.INGRESO, categoriaId, concepto: `Tienda, venta en mano n.º ${creada.id}`,
           importe: aEuros(preparada.centimos), fecha: new Date(), metodoPago: metodo as MetodoPago,
         },
       });
@@ -122,14 +111,19 @@ export class CajaService {
     return { ventaId: venta.id, total: Number(venta.total), estado: await CajaService.estado() };
   }
 
-  /** Deshace una venta de la caja abierta: vuelven las existencias y se quita el apunte. */
+  /** Deshace una venta en mano: vuelven las existencias y se quita el apunte. */
   static async anular(ventaId: number, meta: MetaDeAuditoria) {
     const anuladaPor = await nombreDe(meta);
     const venta = await db.$transaction(async (tx) => {
       const v = await tx.cajaVenta.findUnique({ where: { id: ventaId }, include: { lineas: true, sesion: { select: { cerradaEl: true } } } });
       if (!v) throw new NotFoundError('Esa venta no existe.');
       if (v.anuladaEl) throw new HttpError('Esa venta ya estaba anulada.', 409);
-      if (v.sesion.cerradaEl) throw new HttpError('La caja de esa venta ya está cerrada: corrígela con un apunte en Contabilidad.', 409);
+      if (v.sesion?.cerradaEl) throw new HttpError('Esa venta es de una caja ya cerrada: corrígela con un apunte en Contabilidad.', 409);
+      // Si ese efectivo ya consta llevado al banco, quitar la venta dejaría
+      // ingresado más de lo vendido: primero hay que corregir el ingreso.
+      if (v.metodo === MetodoPago.EFECTIVO && (await efectivoPorIngresar(tx)) < aCentimos(v.total)) {
+        throw new HttpError('Ese efectivo ya consta ingresado en el banco. Borra antes el ingreso que lo incluye y vuelve a apuntarlo sin esta venta.', 409);
+      }
       for (const l of v.lineas) {
         if (l.productoId === null) continue;
         // Sin límite (null) se queda sin límite: `increment` sobre null deja
@@ -144,26 +138,33 @@ export class CajaService {
     return CajaService.estado();
   }
 
-  /** Cierra la caja con el efectivo contado: queda escrito lo que debía haber y la diferencia. */
-  static async cerrar(efectivoContado: number, observaciones: string | null, meta: MetaDeAuditoria) {
-    const cerradaPor = await nombreDe(meta);
-    const sesion = await db.$transaction(async (tx) => {
-      const s = await tx.cajaSesion.findFirst({ where: { cerradaEl: null }, include: conVentas });
-      if (!s) throw new HttpError('No hay ninguna caja abierta.', 409);
-      const esperado = aVista(s).efectivoEsperado;
-      const { count } = await tx.cajaSesion.updateMany({
-        where: { id: s.id, cerradaEl: null },
-        data: {
-          cerradaEl: new Date(), cerradaPor,
-          efectivoEsperado: aEuros(Math.round(esperado * 100)), efectivoContado: aEuros(Math.round(efectivoContado * 100)),
-          observaciones: observaciones?.trim() || null,
-        },
-      });
-      if (count === 0) throw new HttpError('Otra persona acaba de cerrar la caja.', 409);
-      return { id: s.id, esperado };
+  /**
+   * Apunta el efectivo llevado al banco. No puede pasar de lo que queda por
+   * ingresar: si se ingresa a la vez dinero de otra cosa, aquí va solo lo de la tienda.
+   */
+  static async ingresar(fecha: string, importe: number, nota: string | null, meta: MetaDeAuditoria) {
+    const apuntadoPor = await nombreDe(meta);
+    const centimos = Math.round(importe * 100);
+    if (fecha > diaMadrid(new Date())) throw new HttpError('La fecha del ingreso no puede ser futura.');
+    const ingreso = await db.$transaction(async (tx) => {
+      const pendiente = await efectivoPorIngresar(tx);
+      if (centimos > pendiente) {
+        throw new HttpError(pendiente <= 0
+          ? 'No queda efectivo de la tienda por ingresar.'
+          : `Solo quedan ${euros(pendiente)} de la tienda por ingresar. Si llevas también dinero de otra cosa, apunta aquí solo lo de la tienda.`, 409);
+      }
+      return tx.ingresoEfectivoTienda.create({ data: { fecha: inicioDiaMadrid(fecha), importe: aEuros(centimos), nota: nota?.trim() || null, apuntadoPor } });
     });
-    const diferencia = Math.round((efectivoContado - sesion.esperado) * 100) / 100;
-    await AuditoriaService.log(ACCIONES_AUDITORIA.CAJA_CERRAR, meta, 'cajaSesion', sesion.id, { despues: { esperado: sesion.esperado, contado: efectivoContado, diferencia } });
-    return { diferencia, estado: await CajaService.estado() };
+    await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_INGRESO_BANCO, meta, 'ingresoEfectivoTienda', ingreso.id, { despues: { fecha, importe } });
+    return CajaService.estado();
+  }
+
+  /** Quita un ingreso apuntado por error: ese efectivo vuelve a quedar por ingresar. */
+  static async borrarIngreso(id: number, meta: MetaDeAuditoria) {
+    const ingreso = await db.ingresoEfectivoTienda.findUnique({ where: { id } });
+    if (!ingreso) throw new NotFoundError('Ese ingreso no existe.');
+    await db.ingresoEfectivoTienda.delete({ where: { id } });
+    await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_INGRESO_BORRAR, meta, 'ingresoEfectivoTienda', id, { antes: { fecha: diaMadrid(ingreso.fecha), importe: Number(ingreso.importe) } });
+    return CajaService.estado();
   }
 }

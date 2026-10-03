@@ -66,3 +66,17 @@ describe('los asientos', () => {
     assert.equal(r.excedente, 5000 - 500 - 1200);
   });
 });
+
+describe('el efectivo llevado al banco', () => {
+  const venta: ApunteDeCaja = { id: 9, fecha: '2026-06-05', concepto: 'Venta en mano', tipo: 'INGRESO', centimos: 2400, metodoPago: 'EFECTIVO', cuentaCategoria: '700' };
+  const diario = libroDiario([venta], [{ id: 1, fecha: '2026-06-05', concepto: 'Ingreso en el banco', centimos: 2000 }]);
+
+  test('pasa de Caja a Bancos, después de la venta del mismo día, y no toca la cuenta de resultados', () => {
+    assert.deepEqual(diario.map((a) => [a.numero, a.apunteId, a.traspasoId]), [[1, 9, undefined], [2, null, 1]]);
+    assert.deepEqual(diario[1].lineas, [{ cuenta: '572', debe: 2000, haber: 0 }, { cuenta: '570', debe: 0, haber: 2000 }]);
+    const sumas = sumasYSaldos(diario);
+    assert.equal(sumas.find((s) => s.cuenta === '570')?.saldo, 400, 'en caja quedan 4 € por ingresar');
+    assert.equal(sumas.find((s) => s.cuenta === '572')?.saldo, 2000);
+    assert.equal(cuentaDeResultados(sumas).excedente, 2400);
+  });
+});

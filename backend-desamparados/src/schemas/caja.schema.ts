@@ -1,10 +1,9 @@
 import { type } from 'arktype';
 import { idParam } from '../config/common.js';
+import { esDiaValido } from '../domain/contabilidad.js';
 
-// Importes en euros con dos decimales como mucho: el fondo y el efectivo contado.
-const euros = type("0 <= number <= 100000").narrow((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6).describe("un importe en euros con dos decimales como mucho");
-
-export const abrirCajaSchema = type({ body: { fondoInicial: euros } });
+// Un importe en euros, positivo y con dos decimales como mucho.
+const euros = type("0 < number <= 100000").narrow((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6).describe("un importe en euros con dos decimales como mucho");
 
 // Una línea: un producto del catálogo (`productoId`), o algo suelto con su
 // nombre y su precio (en céntimos, para no arrastrar decimales). Una sola
@@ -26,6 +25,13 @@ export const venderSchema = type({
 
 export const ventaIdSchema = type({ params: { id: idParam } });
 
-export const cerrarCajaSchema = type({
-    body: { efectivoContado: euros, "observaciones?": type("string <= 1000").matching(/^[^<>]*$/).or("null") }
+// El efectivo llevado al banco: el día (AAAA-MM-DD) y cuánto, con una nota si hace falta.
+export const ingresoSchema = type({
+    body: {
+        fecha: type("string").narrow((d) => esDiaValido(d)).describe("una fecha AAAA-MM-DD que exista"),
+        importe: euros,
+        "nota?": type("string <= 300").matching(/^[^<>]*$/).or("null"),
+    }
 });
+
+export const ingresoIdSchema = type({ params: { id: idParam } });

@@ -8,10 +8,6 @@ export class CajaController {
     res.json(await CajaService.estado());
   });
 
-  static abrir = manejar('Error abriendo la caja', async (req, res) => {
-    res.json(await CajaService.abrir((req.body as { fondoInicial: number }).fondoInicial, AuditoriaService.metaFromReq(req)));
-  });
-
   static vender = manejar('Error cobrando la venta', async (req, res) => {
     const { lineas, metodo } = req.body as { lineas: { productoId?: number; tallaId?: number; nombre?: string; centimos?: number; cantidad: number }[]; metodo: MetodoDeCaja };
     const deCaja: LineaDeCaja[] = lineas.map((l) => (l.productoId !== undefined
@@ -24,8 +20,12 @@ export class CajaController {
     res.json(await CajaService.anular(Number(req.params.id), AuditoriaService.metaFromReq(req)));
   });
 
-  static cerrar = manejar('Error cerrando la caja', async (req, res) => {
-    const { efectivoContado, observaciones } = req.body as { efectivoContado: number; observaciones?: string | null };
-    res.json(await CajaService.cerrar(efectivoContado, observaciones ?? null, AuditoriaService.metaFromReq(req)));
+  static ingresar = manejar('Error apuntando el ingreso en el banco', async (req, res) => {
+    const { fecha, importe, nota } = req.body as { fecha: string; importe: number; nota?: string | null };
+    res.json(await CajaService.ingresar(fecha, importe, nota ?? null, AuditoriaService.metaFromReq(req)));
+  });
+
+  static borrarIngreso = manejar('Error borrando el ingreso en el banco', async (req, res) => {
+    res.json(await CajaService.borrarIngreso(Number(req.params.id), AuditoriaService.metaFromReq(req)));
   });
 }

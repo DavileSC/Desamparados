@@ -95,8 +95,8 @@ export default function LibroCaja({ apuntes, totales, tipo, onCorregir, onBorrar
                         </IconButton>
                       </Tooltip>
                     ) : deCaja ? (activo('tienda') && (
-                      <Tooltip title="Es una venta de la caja de la tienda: se anula desde la caja">
-                        <IconButton size="small" component={Link} to="/cms/tienda?vista=caja" aria-label="Abrir la caja de la tienda">
+                      <Tooltip title="Es una venta en mano de la tienda: se anula desde Tienda → «Venta en mano»">
+                        <IconButton size="small" component={Link} to="/cms/tienda?vista=mano" aria-label="Abrir la venta en mano de la tienda">
                           <StorefrontOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>

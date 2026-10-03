@@ -109,27 +109,48 @@ export interface ApunteDeCaja {
   cuentaCategoria: string;
 }
 
+/**
+ * Efectivo que se lleva al banco: no es un ingreso ni un gasto, solo pasa de
+ * Caja a Bancos. Sin él, lo vendido en efectivo se quedaría en Caja para siempre.
+ */
+export interface TraspasoABanco {
+  id: number;
+  fecha: string;
+  concepto: string;
+  /** En céntimos. */
+  centimos: number;
+}
+
 export interface Linea { cuenta: string; debe: number; haber: number }
-export interface Asiento { numero: number; apunteId: number; fecha: string; concepto: string; lineas: Linea[] }
+/** `apunteId`, el apunte del libro de caja; `traspasoId`, el ingreso en el banco. Uno de los dos. */
+export interface Asiento { numero: number; apunteId: number | null; traspasoId?: number; fecha: string; concepto: string; lineas: Linea[] }
 
 /**
- * El libro diario: un asiento por apunte, numerados por fecha. Los importes
- * negativos (una corrección) se asientan con el cargo y el abono cambiados.
+ * El libro diario: un asiento por apunte y por traspaso al banco, numerados
+ * por fecha. Los importes negativos (una corrección) se asientan con el cargo
+ * y el abono cambiados. El mismo día, los apuntes van antes que los traspasos:
+ * primero se vende, luego se lleva al banco.
  */
-export function libroDiario(apuntes: ApunteDeCaja[]): Asiento[] {
-  return [...apuntes]
-    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id)
-    .map((a, i) => {
-      const tesoreria = cuentaDeTesoreria(a.metodoPago);
-      const importe = Math.abs(a.centimos);
-      const entra = (a.tipo === 'INGRESO') === (a.centimos >= 0);
-      const [cargo, abono] = entra ? [tesoreria, a.cuentaCategoria] : [a.cuentaCategoria, tesoreria];
-      return {
-        numero: i + 1, apunteId: a.id, fecha: a.fecha, concepto: a.concepto,
-        lineas: [{ cuenta: cargo, debe: importe, haber: 0 }, { cuenta: abono, debe: 0, haber: importe }],
-      };
-    });
+export function libroDiario(apuntes: ApunteDeCaja[], traspasos: TraspasoABanco[] = []): Asiento[] {
+  const deApuntes = apuntes.map((a) => {
+    const tesoreria = cuentaDeTesoreria(a.metodoPago);
+    const importe = Math.abs(a.centimos);
+    const entra = (a.tipo === 'INGRESO') === (a.centimos >= 0);
+    const [cargo, abono] = entra ? [tesoreria, a.cuentaCategoria] : [a.cuentaCategoria, tesoreria];
+    return {
+      orden: [a.fecha, 0, a.id] as const, apunteId: a.id, fecha: a.fecha, concepto: a.concepto,
+      lineas: [{ cuenta: cargo, debe: importe, haber: 0 }, { cuenta: abono, debe: 0, haber: importe }],
+    };
+  });
+  const deTraspasos = traspasos.map((t) => ({
+    orden: [t.fecha, 1, t.id] as const, apunteId: null, traspasoId: t.id, fecha: t.fecha, concepto: t.concepto,
+    lineas: [{ cuenta: '572', debe: t.centimos, haber: 0 }, { cuenta: '570', debe: 0, haber: t.centimos }],
+  }));
+  return [...deApuntes, ...deTraspasos]
+    .sort((a, b) => a.orden[0].localeCompare(b.orden[0]) || a.orden[1] - b.orden[1] || a.orden[2] - b.orden[2])
+    .map((a, i) => ({ numero: i + 1, apunteId: a.apunteId, ...('traspasoId' in a ? { traspasoId: a.traspasoId } : {}), fecha: a.fecha, concepto: a.concepto, lineas: a.lineas }));
 }
+
 
 export interface SumaDeCuenta { cuenta: string; nombre: string; debe: number; haber: number; saldo: number }
 

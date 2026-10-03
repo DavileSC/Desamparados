@@ -10,7 +10,8 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditor
 import { diaMadrid, inicioDiaMadrid } from '../domain/contabilidad.js';
 import { aCentimos } from '../domain/sepa.js';
 import {
-  PLAN, cuentaDeResultados, cuentaPropuesta, esCuentaDelPlan, libroDiario, nombreDeCuenta, sumasYSaldos, type ApunteDeCaja,
+  PLAN, cuentaDeResultados, cuentaPropuesta, esCuentaDelPlan, libroDiario, nombreDeCuenta, sumasYSaldos, type ApunteDeCaja, type TraspasoABanco,
+
 } from '../domain/partida-doble.js';
 
 const euros = (centimos: number) => centimos / 100;
@@ -39,7 +40,15 @@ async function asientosDelEjercicio(anio: number) {
     id: a.id, fecha: diaMadrid(a.fecha), concepto: a.concepto, tipo: a.tipo, centimos: aCentimos(a.importe),
     metodoPago: a.metodoPago, cuentaCategoria: cuentaDe.get(a.categoriaId)!,
   }));
-  return { plan, asientos: libroDiario(deCaja) };
+  // El efectivo de la tienda llevado al banco: de Caja a Bancos.
+  const ingresos = await db.ingresoEfectivoTienda.findMany({
+    where: { fecha: { gte: inicioDiaMadrid(`${anio}-01-01`), lt: inicioDiaMadrid(`${anio + 1}-01-01`) } },
+    orderBy: [{ fecha: 'asc' }, { id: 'asc' }],
+  });
+  const traspasos: TraspasoABanco[] = ingresos.map((i) => ({
+    id: i.id, fecha: diaMadrid(i.fecha), concepto: 'Tienda: efectivo ingresado en el banco', centimos: aCentimos(i.importe),
+  }));
+  return { plan, asientos: libroDiario(deCaja, traspasos) };
 }
 
 export class PartidaDobleService {

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
-import Caja from '../Caja'
+import VentaEnMano from '../VentaEnMano'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -11,15 +11,12 @@ const CAMISETA = {
   id: 4, nombre: 'Camiseta', descripcion: '', precio: 12, foto: null, fotos: [], existencias: null, activo: true, orden: 1,
   tallas: [{ id: 40, nombre: 'M', existencias: 1 }, { id: 41, nombre: 'XXL', existencias: 0 }],
 }
-const RESUMEN = { ventas: 0, anuladas: 0, total: 0, porMetodo: { EFECTIVO: 0, TARJETA: 0, BIZUM: 0 } }
-const ABIERTA = {
-  id: 7, abiertaEl: '2026-10-02T09:00:00.000Z', abiertaPor: 'Ana Ruiz', fondoInicial: 50, cerradaEl: null, cerradaPor: null,
-  efectivoEsperado: 50, efectivoContado: null, observaciones: null, resumen: RESUMEN, ventas: [],
-}
+const VACIO = { efectivoPorIngresar: 0, ventas: [], ingresos: [] }
 const VENDIDA = {
-  ...ABIERTA, efectivoEsperado: 85.5, resumen: { ...RESUMEN, ventas: 1, total: 35.5, porMetodo: { EFECTIVO: 35.5, TARJETA: 0, BIZUM: 0 } },
-  ventas: [{ id: 3, total: 35.5, metodo: 'EFECTIVO', vendidaEl: '2026-10-02T10:00:00.000Z', vendedor: 'Ana', anuladaEl: null, anuladaPor: null, lineas: [{ productoId: 1, nombre: 'Medalla', precio: 15, cantidad: 2 }, { productoId: null, nombre: 'Libro usado', precio: 5.5, cantidad: 1 }] }],
+  id: 3, total: 35.5, metodo: 'EFECTIVO', vendidaEl: '2026-10-02T10:00:00.000Z', vendedor: 'Ana', anuladaEl: null, anuladaPor: null, anulable: true,
+  lineas: [{ productoId: 1, nombre: 'Medalla', talla: null, precio: 15, cantidad: 2 }, { productoId: null, nombre: 'Libro usado', talla: null, precio: 5.5, cantidad: 1 }],
 }
+const CON_EFECTIVO = { efectivoPorIngresar: 35.5, ventas: [VENDIDA], ingresos: [] }
 
 function servidor(estado: unknown) {
   const llamadas: { url: string; metodo: string; cuerpo?: unknown }[] = []
@@ -28,9 +25,8 @@ function servidor(estado: unknown) {
     const metodo = init.method ?? 'GET'
     llamadas.push({ url: u, metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
     if (u.endsWith('/tienda/admin/productos')) return Promise.resolve(json([MEDALLA, CAMISETA]))
-    if (u.endsWith('/caja/abrir')) return Promise.resolve(json({ abierta: ABIERTA, cerradas: [] }))
-    if (u.endsWith('/caja/ventas')) return Promise.resolve(json({ ventaId: 3, total: 35.5, estado: { abierta: VENDIDA, cerradas: [] } }))
-    if (u.endsWith('/caja/cerrar')) return Promise.resolve(json({ diferencia: -0.5, estado: { abierta: null, cerradas: [{ ...VENDIDA, cerradaEl: '2026-10-02T20:00:00.000Z', efectivoContado: 85, ventas: [] }] } }))
+    if (u.endsWith('/caja/ventas')) return Promise.resolve(json({ ventaId: 3, total: 35.5, estado: CON_EFECTIVO }))
+    if (u.endsWith('/caja/ingresos')) return Promise.resolve(json({ ...CON_EFECTIVO, efectivoPorIngresar: 5.5, ingresos: [{ id: 9, fecha: '2026-10-02', importe: 30, nota: null, apuntadoPor: 'Ana' }] }))
     return Promise.resolve(json(estado))
   }))
   return llamadas
@@ -38,22 +34,13 @@ function servidor(estado: unknown) {
 
 afterEach(() => { vi.unstubAllGlobals() })
 
-describe('Caja', () => {
-  it('se abre con el fondo', async () => {
+describe('VentaEnMano', () => {
+  it('sin caja que abrir: se pulsa lo que se lleva, se dice cómo pagó y queda apuntado', async () => {
     const user = userEvent.setup()
-    const llamadas = servidor({ abierta: null, cerradas: [] })
-    renderWithProviders(<Caja />)
-    await user.type(await screen.findByLabelText('Fondo inicial (€)'), '50')
-    await user.click(screen.getByRole('button', { name: 'Abrir la caja' }))
-    expect(await screen.findByText(/con 50,00\s€ de fondo/)).toBeInTheDocument()
-    expect(llamadas.find((l) => l.url.endsWith('/caja/abrir'))?.cuerpo).toEqual({ fondoInicial: 50 })
-  })
-
-  it('vende del catálogo y suelto, calcula el cambio y cobra en efectivo', async () => {
-    const user = userEvent.setup()
-    const llamadas = servidor({ abierta: ABIERTA, cerradas: [] })
-    renderWithProviders(<Caja />)
+    const llamadas = servidor(VACIO)
+    renderWithProviders(<VentaEnMano />)
     const medalla = await screen.findByRole('button', { name: /Medalla/ })
+    expect(screen.queryByText(/Fondo inicial/)).not.toBeInTheDocument()
     await user.click(medalla)
     await user.click(medalla)
     // Solo quedan dos: la tercera no se puede pulsar.
@@ -65,19 +52,18 @@ describe('Caja', () => {
     // Hasta que el diálogo acaba de cerrarse, MUI deja el resto en aria-hidden (notas §6).
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     await waitFor(() => expect(screen.getByLabelText('Total de la venta')).toHaveTextContent('35,50'))
-    await user.type(screen.getByLabelText('Entrega en efectivo (€)'), '40')
-    expect(screen.getByText(/Cambio: 4,50/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Efectivo' }))
-    expect(await screen.findByText(/Venta n.º 3 cobrada: 35,50\s€ \(efectivo\). Cambio: 4,50/)).toBeInTheDocument()
+    expect(await screen.findByText(/Venta n.º 3 apuntada: 35,50\s€ en efectivo\. Queda por ingresar en el banco\./)).toBeInTheDocument()
     expect(llamadas.find((l) => l.url.endsWith('/caja/ventas'))?.cuerpo).toEqual({
       lineas: [{ productoId: 1, cantidad: 2 }, { nombre: 'Libro usado', centimos: 550, cantidad: 1 }], metodo: 'EFECTIVO',
     })
+    expect(screen.getByText(/Efectivo por ingresar en el banco: 35,50/)).toBeInTheDocument()
   })
 
   it('un producto con tallas se vende eligiendo la talla, sin pasar de lo que queda de ella', async () => {
     const user = userEvent.setup()
-    const llamadas = servidor({ abierta: ABIERTA, cerradas: [] })
-    renderWithProviders(<Caja />)
+    const llamadas = servidor(VACIO)
+    renderWithProviders(<VentaEnMano />)
     const camiseta = await screen.findByRole('button', { name: /Camiseta/ })
     await user.click(camiseta)
     const menu = await screen.findByRole('menu', { name: 'Talla de Camiseta' })
@@ -87,23 +73,35 @@ describe('Caja', () => {
     expect(screen.getByText('Camiseta (talla M)')).toBeInTheDocument()
     // De la M quedaba una y la XXL está agotada: ya no hay talla que vender.
     expect(camiseta).toBeDisabled()
-    await user.click(screen.getByRole('button', { name: 'Tarjeta' }))
+    await user.click(screen.getByRole('button', { name: 'Bizum' }))
     await waitFor(() => expect(llamadas.find((l) => l.url.endsWith('/caja/ventas'))?.cuerpo).toEqual({
-      lineas: [{ productoId: 4, tallaId: 40, cantidad: 1 }], metodo: 'TARJETA',
+      lineas: [{ productoId: 4, tallaId: 40, cantidad: 1 }], metodo: 'BIZUM',
     }))
   })
 
-  it('se cierra contando el efectivo y dice el descuadre', async () => {
+  it('el efectivo se apunta al llevarlo al banco, sin pasar de lo que queda por ingresar', async () => {
     const user = userEvent.setup()
-    servidor({ abierta: VENDIDA, cerradas: [] })
-    renderWithProviders(<Caja />)
-    await user.click(await screen.findByRole('button', { name: 'Cerrar la caja' }))
+    const llamadas = servidor(CON_EFECTIVO)
+    renderWithProviders(<VentaEnMano />)
+    expect(await screen.findByText(/Efectivo por ingresar en el banco: 35,50/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Apuntar ingreso en el banco' }))
     const dialogo = await screen.findByRole('dialog')
-    expect(within(dialogo).getByText(/85,50\s€/)).toBeInTheDocument()
-    await user.type(within(dialogo).getByLabelText('Efectivo contado (€)'), '85')
-    expect(within(dialogo).getByText(/Faltan 0,50/)).toBeInTheDocument()
-    await user.click(within(dialogo).getByRole('button', { name: 'Cerrar la caja' }))
-    expect(await screen.findByText(/descuadre de -0,50\s€ \(falta\)/)).toBeInTheDocument()
-    expect(screen.getByText('Faltan 0,50 €')).toBeInTheDocument()
+    const importe = within(dialogo).getByLabelText('Importe ingresado (€)')
+    expect(importe).toHaveValue('35,50')
+    await user.clear(importe)
+    await user.type(importe, '40')
+    expect(within(dialogo).getByText(/No puede pasar de 35,50/)).toBeInTheDocument()
+    expect(within(dialogo).getByRole('button', { name: 'Apuntar el ingreso' })).toBeDisabled()
+    await user.clear(importe)
+    await user.type(importe, '30')
+    await user.type(within(dialogo).getByLabelText('Nota (opcional)'), 'Ingreso del viernes')
+    await user.click(within(dialogo).getByRole('button', { name: 'Apuntar el ingreso' }))
+    expect(await screen.findByText(/Apuntado: 30,00\s€ ingresados en el banco\./)).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    const envio = llamadas.find((l) => l.url.endsWith('/caja/ingresos'))?.cuerpo as { fecha: string; importe: number; nota: string }
+    expect(envio).toMatchObject({ importe: 30, nota: 'Ingreso del viernes' })
+    expect(envio.fecha).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(screen.getByText(/Efectivo por ingresar en el banco: 5,50/)).toBeInTheDocument()
+    expect(within(screen.getByRole('list', { name: 'Ingresado en el banco' })).getByText(/30,00\s€ ingresados en el banco/)).toBeInTheDocument()
   })
 })

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Role } from '@prisma/client';
 import { TiendaController } from '../controllers/tienda.controller.js';
 import { CajaController } from '../controllers/caja.controller.js';
-import { abrirCajaSchema, cerrarCajaSchema, venderSchema, ventaIdSchema } from '../schemas/caja.schema.js';
+import { ingresoIdSchema, ingresoSchema, venderSchema, ventaIdSchema } from '../schemas/caja.schema.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
@@ -29,12 +29,13 @@ admin.put('/productos/:id', validate(productoIdSchema), validate(productoSchema)
 admin.delete('/productos/:id', validate(productoIdSchema), TiendaController.borrarProducto);
 admin.get('/pedidos', validate(pedidosQuerySchema), TiendaController.pedidos);
 admin.post('/pedidos/:id/entregar', validate(productoIdSchema), TiendaController.entregar);
-// La caja: lo que se vende en persona, con su apertura y su cierre.
+// La venta en mano: lo que se lleva alguien en Secretaría, y el efectivo
+// que después se ingresa en el banco. Sin caja que abrir ni cerrar.
 admin.get('/caja', CajaController.estado);
-admin.post('/caja/abrir', validate(abrirCajaSchema), CajaController.abrir);
 admin.post('/caja/ventas', validate(venderSchema), CajaController.vender);
 admin.post('/caja/ventas/:id/anular', validate(ventaIdSchema), CajaController.anular);
-admin.post('/caja/cerrar', validate(cerrarCajaSchema), CajaController.cerrar);
+admin.post('/caja/ingresos', validate(ingresoSchema), CajaController.ingresar);
+admin.delete('/caja/ingresos/:id', validate(ingresoIdSchema), CajaController.borrarIngreso);
 tiendaRoutes.use('/admin', admin);
 
 export { tiendaRoutes };
