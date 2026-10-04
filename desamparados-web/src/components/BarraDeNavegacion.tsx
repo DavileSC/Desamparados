@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { AppBar, Toolbar, Box, Button, IconButton, useTheme, useMediaQuery } from '@mui/material'
-import MenuIcon from '@mui/icons-material/Menu'
-import FacebookIcon from '@mui/icons-material/Facebook'
-import InstagramIcon from '@mui/icons-material/Instagram'
-import XIcon from '@mui/icons-material/X'
-import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import EscudoDelGrupo from './EscudoDelGrupo'
 import MenuEscritorio from './barra/MenuEscritorio'
 import CajonMovil from './barra/CajonMovil'
+import IconoDelMenu from './barra/IconoDelMenu'
+import { enlacesDeRedes } from './barra/redes'
 import { DESKTOP_NAV_MIN, VELO_ARRIBA, VELO_SCROLL, compactMq, desktopMq, socialMq, tinta } from './barra/estilos'
 import { site } from '../config/site'
 import { BOTON } from './estiloDeBoton'
@@ -26,13 +23,6 @@ function Escudo({ alto, altoCompacto }: { alto: number; altoCompacto?: number })
     <EscudoDelGrupo alto={alto} sx={altoCompacto ? { [compactMq]: { height: altoCompacto } } : undefined} />
   )
 }
-
-const enlacesDeRedes = [
-  { icon: <InstagramIcon fontSize="small" />, href: site.redes.instagram, label: 'Instagram' },
-  { icon: <XIcon fontSize="small" />, href: site.redes.x, label: 'X' },
-  { icon: <FacebookIcon fontSize="small" />, href: site.redes.facebook, label: 'Facebook' },
-  { icon: <PlayCircleIcon fontSize="small" />, href: site.redes.youtube, label: 'YouTube' },
-].flatMap(red => red.href ? [{ ...red, href: red.href }] : [])
 
 export default function BarraDeNavegacion() {
   const theme = useTheme()
@@ -112,9 +102,9 @@ export default function BarraDeNavegacion() {
               aria-label="Abrir menú"
               aria-expanded={cajonAbierto}
               onClick={() => setCajonAbierto(true)}
-              sx={{ color: 'text.primary' }}
+              sx={{ color: 'text.primary', width: 48, height: 48 }}
             >
-              <MenuIcon />
+              <IconoDelMenu abierto={false} />
             </IconButton>
           </Toolbar>
         </AppBar>
@@ -232,8 +222,8 @@ export default function BarraDeNavegacion() {
         </Toolbar>
       </AppBar>
 
-      {/* Se monta al abrirlo para que cada vez calcule qué sección desplegar. */}
-      {cajonAbierto && <CajonMovil abierto alCerrar={() => setCajonAbierto(false)} />}
+      {/* Montado siempre en el móvil, para que al cerrarlo se vea salir. */}
+      {isMobile && <CajonMovil abierto={cajonAbierto} alCerrar={() => setCajonAbierto(false)} />}
     </>
   )
 }

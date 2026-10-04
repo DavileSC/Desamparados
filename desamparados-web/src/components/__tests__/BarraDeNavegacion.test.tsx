@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { act, screen, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../test/test-utils'
 import BarraDeNavegacion from '../BarraDeNavegacion'
@@ -155,5 +155,35 @@ describe('BarraDeNavegacion en móvil', () => {
 
     expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/ajuar')
     expect(screen.queryByRole('link', { name: 'Historia' })).not.toBeInTheDocument()
+  })
+
+  // Las capas salen antes de que el cajón se quite: hay que esperar a que acaben.
+  it('la X lo cierra, y vuelve a abrirse con la sección de la página actual', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />, { ruta: '/ajuar' })
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    await user.click(screen.getByRole('button', { name: 'Cerrar menú' }))
+    expect(screen.getByRole('button', { name: 'Abrir menú', hidden: true })).toHaveAttribute('aria-expanded', 'false')
+    await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Menú' })).not.toBeInTheDocument(), { timeout: 3000 })
+
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/ajuar')
+  })
+
+  it('Escape lo cierra', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />)
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Menú' })).not.toBeInTheDocument(), { timeout: 3000 })
+  })
+
+  it('al pie, el acceso de hermanos y las redes', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />)
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    const menu = screen.getByRole('navigation', { name: 'Menú' })
+    expect(within(menu).getByRole('link', { name: 'Acceso hermanos' })).toHaveAttribute('href', '/acceso')
+    expect(within(menu).getByRole('link', { name: 'Instagram' })).toHaveAttribute('target', '_blank')
   })
 })
