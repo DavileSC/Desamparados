@@ -214,7 +214,7 @@ export default function TiendaPage() {
                 ...(quieto ? {} : ENTRADA),
                 m: 0, p: 0, listStyle: 'none', display: 'grid', columnGap: { xs: 1.5, sm: 3 }, rowGap: { xs: 3, sm: 4 }, gridTemplateColumns: REJILLA,
               }}>
-                {destacado && <PiezaDestacada producto={destacado} pagoDisponible={pagoDisponible} cesta={cesta} onAnadir={() => anadir(destacado.id, null)} />}
+                {destacado && <PiezaDestacada producto={destacado} pagoDisponible={pagoDisponible} cesta={cesta} onAnadir={(t) => anadir(destacado.id, t)} />}
                 {enRejilla.map((p) => (
                   <TarjetaDeProducto key={p.id} producto={p} pagoDisponible={pagoDisponible} cesta={cesta} onAnadir={() => anadir(p.id, null)} />
                 ))}

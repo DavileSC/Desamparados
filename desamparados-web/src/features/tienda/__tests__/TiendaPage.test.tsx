@@ -163,17 +163,37 @@ describe('TiendaPage', () => {
     expect(nombres()).toEqual(['Camiseta', 'Estampa', 'Medalla'])
   })
 
-  it('la pieza destacada sale en grande solo en «Todo», y con un filtro vuelve a la rejilla', async () => {
+  it('el producto destacado sale en grande solo en «Todo», y con un filtro vuelve a la rejilla', async () => {
     const user = userEvent.setup()
     servidor({ ...CATALOGO, productos: CATALOGO.productos.map((p) => (p.id === 1 ? { ...p, destacado: true } : p)) })
     montar('/tienda')
-    expect(await screen.findByText('Pieza destacada')).toBeInTheDocument()
+    expect(await screen.findByText('Destacado')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Añadir · 15,00/ })).toBeInTheDocument()
     await user.click(within(screen.getByRole('toolbar', { name: 'Filtrar y ordenar' })).getByRole('button', { name: 'Categoría' }))
     await user.click(within(await screen.findByRole('radiogroup', { name: 'Categoría' })).getByRole('radio', { name: /^Medallas/ }))
     await hojaCerrada()
-    expect(screen.queryByText('Pieza destacada')).not.toBeInTheDocument()
+    expect(screen.queryByText('Destacado')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Añadir Medalla a la cesta' })).toBeInTheDocument()
+  })
+
+  it('en el destacado con tallas se elige la talla y se añade sin abrir la ficha', async () => {
+    const user = userEvent.setup()
+    const fotos = [{ url: '/uploads/camiseta-espalda.webp', pie: 'Espalda' }]
+    servidor({ ...CATALOGO, productos: CATALOGO.productos.map((p) => (p.id === 3 ? { ...p, destacado: true, fotos } : p)) })
+    montar('/tienda')
+    // Sin talla elegida no se puede añadir: nadie ha pedido aún la S.
+    expect(await screen.findByRole('button', { name: 'Elige una talla' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Talla XXL, agotada' })).toBeDisabled()
+
+    // Las miniaturas cambian la foto grande.
+    expect(screen.getByRole('button', { name: 'Ver la foto 1' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Ver la foto 2: Espalda' }))
+    expect(screen.getByRole('button', { name: 'Ver la foto 2: Espalda' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Talla L' }))
+    await user.click(screen.getByRole('button', { name: /^Añadir talla L · 12,00/ }))
+    expect(screen.getByRole('button', { name: 'En la cesta · 1' })).toBeInTheDocument()
+    expect(JSON.parse(window.localStorage.getItem('tienda-cesta') ?? '{}')).toEqual({ '3:31': 1 })
   })
 
   it('sin categorías no hay desplegable de categoría, pero sí el resto de la barra', async () => {

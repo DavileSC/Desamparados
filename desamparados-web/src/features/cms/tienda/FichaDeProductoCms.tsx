@@ -48,9 +48,9 @@ export default function FichaDeProductoCms({ form: f, categorias, nuevo, guardan
           {categorias.map((c) => <MenuItem key={c.id} value={String(c.id)}>{c.nombre}</MenuItem>)}
         </TextField>
         <Box>
-          <FormControlLabel control={<Switch checked={f.destacado} onChange={(e) => poner({ destacado: e.target.checked })} />} label="Pieza destacada" />
+          <FormControlLabel control={<Switch checked={f.destacado} onChange={(e) => poner({ destacado: e.target.checked })} />} label="Producto destacado" />
           <Typography variant="body2" color="text.secondary">
-            Sale en grande al entrar en la tienda; si hay varias, la primera por orden. Va mejor con una foto de ambiente, que llene el recuadro.
+            Sale en grande al entrar en la tienda, con la foto entera y las tallas para elegir ahí mismo; si hay varios, el primero por orden.
           </Typography>
         </Box>
       </Box>
