@@ -1,33 +1,51 @@
 import { useMemo, useState } from 'react'
-import { Alert, Box, ButtonBase, Drawer, IconButton, Typography } from '@mui/material'
+import { Alert, Box, Drawer, IconButton, Typography } from '@mui/material'
+import { keyframes } from '@mui/material/styles'
+import { useReducedMotion } from 'framer-motion'
 import CloseIcon from '@mui/icons-material/Close'
 import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined'
-import PersonOutlineIcon from '@mui/icons-material/PersonOutlineOutlined'
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import MetaDePagina from '../../components/MetaDePagina'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
 import Boton from '../../components/Boton'
+import CifrasQueRuedan from '../../components/CifrasQueRuedan'
 import EnCarga, { estadoDeConsulta } from '../../components/esqueleto/EnCarga'
 import Hueso from '../../components/esqueleto/Hueso'
 import { catalogo, comprar, type TallaDeProducto } from '../../lib/api/tienda'
 import { irAlBanco } from '../../lib/api/procesion'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
-import { GOLD, GRANATE } from '../inicio/estilos'
 import TarjetaDeProducto from './TarjetaDeProducto'
 import PiezaDestacada from './PiezaDestacada'
 import FichaDeProducto from './FichaDeProducto'
 import BarraDeFiltros, { FiltrosActivos } from './BarraDeFiltros'
 import { SIN_FILTROS, filtrar, hayFiltros, ordenar, tallasDeLaTienda, type Filtros, type Orden } from './filtros'
 import CestaDeLaTienda, { type Comprador } from './CestaDeLaTienda'
+import CestaFlotante from './CestaFlotante'
 import { MAX_POR_LINEA, claveDe, euros, guardarCesta, leerCesta, lineasDeLaCesta, quedanDe, topeDe, type Cesta } from './cesta'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 
 /** La rejilla: dos columnas en el móvil, tres en la tableta y cuatro en el ordenador. */
 const REJILLA = { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(3, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }
+
+/**
+ * La entrada escalonada de la rejilla (el Animated Content de React Bits):
+ * cada ficha sube y aparece 70 ms después de la anterior. A partir de la
+ * docena entran todas a la vez, para no hacer esperar en un catálogo largo.
+ */
+const entrar = keyframes`
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+`
+const ENTRADA = {
+  '& > li': { animation: `${entrar} .6s cubic-bezier(.2, .7, .2, 1) both` },
+  ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`& > li:nth-of-type(${i + 1})`, { animationDelay: `${i * 70}ms` }])),
+  '& > li:nth-of-type(n+13)': { animationDelay: '840ms' },
+}
 
 /** La rejilla mientras llega el catálogo, con su forma: la destacada y las demás. */
 function Esqueleto() {
@@ -49,7 +67,7 @@ function Garantias({ conBizum }: { conBizum: boolean }) {
   const filas = [
     { Icono: CreditCardOutlinedIcon, texto: conBizum ? 'Tarjeta o Bizum' : 'Pago con tarjeta' },
     { Icono: StorefrontOutlinedIcon, texto: 'Se recoge en Secretaría' },
-    { Icono: PersonOutlineIcon, texto: 'Compra segura' },
+    { Icono: LockOutlinedIcon, texto: 'Compra segura' },
   ]
   return (
     <Box component="ul" sx={{ m: 0, mt: { xs: 5, md: 6 }, p: 0, pt: 3, listStyle: 'none', display: 'flex', flexWrap: 'wrap', columnGap: 6, rowGap: 1.5, borderTop: '1px solid rgba(204, 196, 201, 0.12)' }}>
@@ -85,6 +103,7 @@ export default function TiendaPage() {
   // Los filtros viven en la página, no en la dirección: cambiarlos es al momento.
   const [filtrosPedidos, setFiltros] = useState<Filtros>(SIN_FILTROS)
   const [orden, setOrden] = useState<Orden>('destacados')
+  const quieto = useReducedMotion() ?? false
 
   const datos = consulta.data
   const productos = useMemo(() => datos?.productos ?? [], [datos])
@@ -148,7 +167,7 @@ export default function TiendaPage() {
     <ContenedorDePagina>
       {/* Arriba, el hueco de la barra de navegación, que en escritorio va fija
           encima; abajo, el de la cesta que flota, para que no tape lo último. */}
-      <Box sx={{ pt: { xs: 10, md: 14 }, pb: hayCesta ? 14 : { xs: 6, md: 8 } }}>
+      <Box sx={{ pt: { xs: 10, md: 14 }, pb: hayCesta ? 13 : { xs: 6, md: 8 } }}>
         {!id && (
           <Box sx={{ mb: { xs: 1.5, md: 3.5 } }}>
             <Typography component="p" sx={{ fontSize: 11, letterSpacing: '0.28em', textTransform: 'uppercase', color: '#cdae72', fontWeight: 600 }}>
@@ -157,7 +176,7 @@ export default function TiendaPage() {
             <Typography component="h1" sx={{ mt: 1.25, fontSize: { xs: 38, md: 56 }, fontWeight: 200, lineHeight: 1, letterSpacing: '-0.02em' }}>
               {nombreCategoria ?? 'Tienda'}
               {datos && productos.length > 0 && (
-                <Box component="span" sx={{ ml: 1.5, fontSize: { xs: 20, md: 26 }, fontWeight: 300, color: '#8f8a8d', fontVariantNumeric: 'tabular-nums' }}>({visibles.length})</Box>
+                <CifrasQueRuedan texto={`(${visibles.length})`} sx={{ ml: 1.5, fontSize: { xs: 20, md: 26 }, fontWeight: 300, color: '#8f8a8d' }} />
               )}
             </Typography>
           </Box>
@@ -189,7 +208,10 @@ export default function TiendaPage() {
                   <Boton appVariant="claro" onClick={() => setFiltros(SIN_FILTROS)}>Quitar filtros</Boton>
                 </Box>
               )}
-              <Box component="ul" aria-label="Productos" sx={{
+              {/* Con otro filtro u otro orden la rejilla se monta de nuevo: así la
+                  entrada escalonada vuelve a empezar. */}
+              <Box component="ul" key={JSON.stringify([filtros, orden])} aria-label="Productos" sx={{
+                ...(quieto ? {} : ENTRADA),
                 m: 0, p: 0, listStyle: 'none', display: 'grid', columnGap: { xs: 1.5, sm: 3 }, rowGap: { xs: 3, sm: 4 }, gridTemplateColumns: REJILLA,
               }}>
                 {destacado && <PiezaDestacada producto={destacado} pagoDisponible={pagoDisponible} cesta={cesta} onAnadir={() => anadir(destacado.id, null)} />}
@@ -203,26 +225,7 @@ export default function TiendaPage() {
       </Box>
     </ContenedorDePagina>
 
-    {/* La cesta flota abajo en cuanto lleva algo: dice cuánto y la abre. */}
-    {hayCesta && !cestaAbierta && (
-      <Box role="region" aria-label="Resumen de la cesta" sx={{
-        position: 'fixed', zIndex: 10, bottom: { xs: 12, sm: 28 }, left: { xs: 12, sm: '50%' }, right: { xs: 12, sm: 'auto' }, transform: { sm: 'translateX(-50%)' },
-        minHeight: { xs: 60, sm: 56 }, display: 'flex', alignItems: 'center', gap: 2, pl: 2.5, pr: 1, borderRadius: '30px',
-        bgcolor: '#f4efe5', color: '#161214', boxShadow: '0 14px 36px rgba(0, 0, 0, 0.5)', whiteSpace: 'nowrap',
-      }}>
-        <Typography aria-live="polite" sx={{ fontSize: 14, color: 'inherit', flexGrow: 1 }}>
-          <b>{unidades}</b> en la cesta · {euros(total)}
-        </Typography>
-        <ButtonBase onClick={() => setCestaAbierta(true)} sx={{
-          height: 44, px: 2.25, borderRadius: '22px', bgcolor: GRANATE, color: '#fff', fontFamily: 'inherit', fontWeight: 600, fontSize: 14,
-          transition: 'background-color .2s ease, color .2s ease', '&:hover': { bgcolor: '#fff', color: GRANATE },
-          '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
-        }}>
-          Ver la cesta
-        </ButtonBase>
-      </Box>
-    )}
-
+    {hayCesta && !cestaAbierta && <CestaFlotante unidades={unidades} total={total} onAbrir={() => setCestaAbierta(true)} />}
     {pagoDisponible && (
       <Drawer anchor="right" open={cestaAbierta} onClose={() => setCestaAbierta(false)}
         slotProps={{ paper: { sx: { width: { xs: '100%', sm: 440 }, bgcolor: 'background.paper', backgroundImage: 'none' } } }}>

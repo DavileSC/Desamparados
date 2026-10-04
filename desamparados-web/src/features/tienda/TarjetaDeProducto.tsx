@@ -1,8 +1,10 @@
+import { useRef, useState } from 'react'
 import { Box, ButtonBase, Link as EnlaceMui, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { Link } from 'react-router-dom'
 import type { Producto } from '../../lib/api/tienda'
 import { GOLD, GRANATE, PAPEL } from '../inicio/estilos'
+import Chispa from './Chispa'
 import { POCAS, agotado, claveDe, enlaceDeFicha, euros, conTallas, quedanDe, quedanEnTotal, topeDe, type Cesta } from './cesta'
 
 
@@ -59,7 +61,8 @@ const redondo = (enCesta: boolean) => ({
  * Un producto en la rejilla de la tienda: la foto y el nombre llevan a su
  * ficha, y el «+» de la esquina lo añade sin entrar (marca cuántos llevas).
  * Con tallas, el «+» lleva a la ficha para elegirla: cinco botones de talla
- * no caben en la tarjeta.
+ * no caben en la tarjeta. Al añadir, el botón se hunde un instante y suelta
+ * una chispa de oro: se ve que ha entrado aunque la cesta quede lejos.
  */
 export default function TarjetaDeProducto({ producto: p, pagoDisponible, cesta, onAnadir }: {
   producto: Producto
@@ -71,6 +74,15 @@ export default function TarjetaDeProducto({ producto: p, pagoDisponible, cesta, 
   const enCesta = conTallas(p) ? 0 : cesta[claveDe(p.id)] ?? 0
   const lleno = enCesta >= topeDe(quedanDe(p))
   const fotos = (p.foto ? 1 : 0) + p.fotos.length
+  // Cada pulsación monta una chispa nueva (por su `key`), así vuelve a saltar.
+  const [chispas, setChispas] = useState(0)
+  const refMas = useRef<HTMLButtonElement>(null)
+  const anadir = () => {
+    onAnadir()
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    setChispas((n) => n + 1)
+    refMas.current?.animate?.([{ scale: 1 }, { scale: 0.86, offset: 0.35 }, { scale: 1 }], { duration: 350, easing: 'ease-out' })
+  }
 
   return (
     <Box component="li" sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, '&:hover img': { transform: 'scale(1.04)' } }}>
@@ -84,9 +96,10 @@ export default function TarjetaDeProducto({ producto: p, pagoDisponible, cesta, 
         <SelloDeExistencias producto={p} />
         {pagoDisponible && !sinNada && (conTallas(p)
           ? <ButtonBase component={Link} to={enlaceDeFicha(p)} aria-label={`Elegir la talla de ${p.nombre}`} sx={redondo(false)}><AddIcon fontSize="small" aria-hidden /></ButtonBase>
-          : <ButtonBase onClick={onAnadir} disabled={lleno}
+          : <ButtonBase ref={refMas} onClick={anadir} disabled={lleno}
             aria-label={enCesta ? `Añadir otra unidad de ${p.nombre} (llevas ${enCesta})` : `Añadir ${p.nombre} a la cesta`} sx={redondo(enCesta > 0)}>
             {enCesta ? enCesta : <AddIcon fontSize="small" aria-hidden />}
+            {chispas > 0 && <Chispa key={chispas} />}
           </ButtonBase>)}
       </Box>
       <Box sx={{ mt: 1.25, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1.25 }}>
