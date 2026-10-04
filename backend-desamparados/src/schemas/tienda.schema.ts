@@ -50,7 +50,18 @@ export const productoSchema = type({
         existencias: type("0 <= number.integer <= 100000").or("null"),
         activo: "boolean",
         orden: "0 <= number.integer <= 10000",
+        // Opcionales, como las fotos: quien no los manda no los toca.
+        "categoriaId?": type("number.integer > 0").or("null"),
+        "destacado?": "boolean",
     }
+});
+
+// Las categorías de la tienda: un nombre corto, que es lo que cabe en la píldora de filtros.
+export const categoriaSchema = type({ body: { nombre: textoLimpio(40, 'un nombre') } });
+
+// El orden de las categorías: todas, por sus ids, en el orden nuevo.
+export const ordenCategoriasSchema = type({
+    body: { ids: type("number.integer > 0").array().atMostLength(200).narrow((ids) => new Set(ids).size === ids.length).describe("ids sin repetir") },
 });
 
 export const productoIdSchema = type({ params: { id: idParam } });

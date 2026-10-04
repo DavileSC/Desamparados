@@ -9,6 +9,7 @@ import { entregarPedido, pedidosDelCms, productos, type EstadoPedido } from '../
 import CabeceraSeccion from './CabeceraSeccion'
 import VentaEnMano from './tienda/VentaEnMano'
 import MesaDeProductos from './tienda/MesaDeProductos'
+import CategoriasDeLaTienda from './tienda/CategoriasDeLaTienda'
 import { nombreConTalla } from '../tienda/cesta'
 import { euros, fechaCorta } from './contabilidad/formato'
 import { site } from '../../config/site'
@@ -20,7 +21,8 @@ const ESTADOS: Record<EstadoPedido, string> = { PENDIENTE_PAGO: 'Sin pagar', PAG
 /**
  * La tienda en el CMS: los productos en mesa (la lista y la ficha del
  * elegido, con sus fotos, su precio y sus tallas), los pedidos pagados, que
- * se marcan como entregados al recogerlos en Secretaría, y la venta en mano
+ * se marcan como entregados al recogerlos en Secretaría, las categorías por
+ * las que se filtra en la web, y la venta en mano
  * (lo que se lleva alguien en Secretaría y el efectivo que va al banco).
  */
 export default function TiendaAdminPage() {
@@ -28,7 +30,7 @@ export default function TiendaAdminPage() {
   const [params, setParams] = useSearchParams()
   const vistaPedida = params.get('vista')
   // «caja» era el nombre de antes de la venta en mano: los enlaces viejos siguen valiendo.
-  const vista = vistaPedida === 'pedidos' ? 'pedidos' : vistaPedida === 'mano' || vistaPedida === 'caja' ? 'mano' : 'productos'
+  const vista = vistaPedida === 'pedidos' || vistaPedida === 'categorias' ? vistaPedida : vistaPedida === 'mano' || vistaPedida === 'caja' ? 'mano' : 'productos'
   const [estado, setEstado] = useState<EstadoPedido | ''>('PAGADO')
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -47,7 +49,7 @@ export default function TiendaAdminPage() {
     } catch (err: unknown) { setError(mensaje(err, 'No se ha podido marcar como entregado.')) }
   }
 
-  const irA = (v: string) => setParams(v === 'pedidos' || v === 'mano' ? { vista: v } : {})
+  const irA = (v: string) => setParams(v === 'pedidos' || v === 'mano' || v === 'categorias' ? { vista: v } : {})
   const lista = consultaProductos.data
   const pedidos = consultaPedidos.data
 
@@ -63,6 +65,7 @@ export default function TiendaAdminPage() {
     <Tabs value={vista} onChange={(_, v: string) => irA(v)} sx={{ mb: 2.5 }}>
       <Tab value="productos" label="Productos" />
       <Tab value="pedidos" label={porEntregar > 0 ? <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>Pedidos <Chip size="small" color="warning" label={porEntregar} aria-label={`${porEntregar} por entregar`} /></Box> : 'Pedidos'} />
+      <Tab value="categorias" label="Categorías" />
       <Tab value="mano" label="Venta en mano" />
     </Tabs>
 
@@ -70,6 +73,8 @@ export default function TiendaAdminPage() {
       ? (consultaProductos.isError ? <Alert severity="error">{mensaje(consultaProductos.error, 'No se han podido cargar los productos.')}</Alert> : <CircularProgress aria-label="Cargando los productos" />)
       : <MesaDeProductos lista={lista} pedirNuevo={pedirNuevo} onNuevoAtendido={() => setPedirNuevo(false)}
         onAviso={(t) => { setError(null); setAviso(t) }} onError={(t) => { setAviso(null); setError(t) }} />)}
+
+    {vista === 'categorias' && <CategoriasDeLaTienda onAviso={(t) => { setError(null); setAviso(t) }} onError={(t) => { setAviso(null); setError(t) }} />}
 
     {vista === 'mano' && <VentaEnMano />}
 

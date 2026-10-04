@@ -1,8 +1,8 @@
-import { Box, Button, FormControlLabel, IconButton, Paper, Stack, Switch, TextField, Typography } from '@mui/material'
+import { Box, Button, FormControlLabel, IconButton, MenuItem, Paper, Stack, Switch, TextField, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import CampoImagen from '../CampoImagen'
-import { MAX_FOTOS_PRODUCTO, MAX_TALLAS, type FotoDeProducto } from '../../../lib/api/tienda'
+import { MAX_FOTOS_PRODUCTO, MAX_TALLAS, type CategoriaDelCms, type FotoDeProducto } from '../../../lib/api/tienda'
 import { ENTERO, PRECIO, TALLAS_HABITUALES, problemaDe, type Formulario, type TallaEnFormulario } from './formularioProducto'
 
 /**
@@ -10,8 +10,9 @@ import { ENTERO, PRECIO, TALLAS_HABITUALES, problemaDe, type Formulario, type Ta
  * ventana. Las tallas, cada una con lo que queda: con tallas, el producto ya
  * no lleva su propio «Quedan».
  */
-export default function FichaDeProductoCms({ form: f, nuevo, guardando, onCambiar, onGuardar, onDescartar, onBorrar, sucio }: {
+export default function FichaDeProductoCms({ form: f, categorias, nuevo, guardando, onCambiar, onGuardar, onDescartar, onBorrar, sucio }: {
   form: Formulario
+  categorias: CategoriaDelCms[]
   nuevo: boolean
   sucio: boolean
   guardando: boolean
@@ -39,6 +40,20 @@ export default function FichaDeProductoCms({ form: f, nuevo, guardando, onCambia
         <TextField label="Orden" type="number" value={f.orden} onChange={(e) => poner({ orden: e.target.value })} helperText="Menor, antes" fullWidth />
       </Box>
       <TextField label="Descripción" value={f.descripcion} onChange={(e) => poner({ descripcion: e.target.value })} multiline minRows={2} slotProps={{ htmlInput: { maxLength: 2000 } }} fullWidth />
+
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'minmax(0, 1fr) minmax(0, 1fr)' }, alignItems: 'start' }}>
+        <TextField select label="Categoría" value={f.categoriaId} onChange={(e) => poner({ categoriaId: e.target.value })}
+          helperText={categorias.length === 0 ? 'Créalas en la pestaña «Categorías».' : 'Por ella se filtra en la tienda.'} fullWidth>
+          <MenuItem value="">Sin categoría (solo en «Todo»)</MenuItem>
+          {categorias.map((c) => <MenuItem key={c.id} value={String(c.id)}>{c.nombre}</MenuItem>)}
+        </TextField>
+        <Box>
+          <FormControlLabel control={<Switch checked={f.destacado} onChange={(e) => poner({ destacado: e.target.checked })} />} label="Pieza destacada" />
+          <Typography variant="body2" color="text.secondary">
+            Sale en grande al entrar en la tienda; si hay varias, la primera por orden. Va mejor con una foto de ambiente, que llene el recuadro.
+          </Typography>
+        </Box>
+      </Box>
 
       <Box>
         <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>

@@ -41,6 +41,9 @@ export interface DatosProducto {
    * estaban; las que faltan se borran (los pedidos guardan su nombre copiado).
    */
   tallas?: { id?: number; nombre: string; existencias: number | null }[];
+  /** Sin ellos, no se tocan. */
+  categoriaId?: number | null;
+  destacado?: boolean;
 }
 
 /** Las tallas, en su orden, para enseñarlas y para comprobar lo que queda. */
@@ -82,8 +85,27 @@ const tallasDe = (p: ProductoConTallas) => p.tallas.map((t) => ({ id: t.id, nomb
 
 const resumenProducto = (p: ProductoConTallas) => ({
   id: p.id, nombre: p.nombre, descripcion: p.descripcion, precio: Number(p.precio), foto: p.foto, fotos: fotosDe(p.fotos), existencias: p.existencias, activo: p.activo, orden: p.orden,
-  tallas: tallasDe(p),
+  tallas: tallasDe(p), categoriaId: p.categoriaId, destacado: p.destacado,
+  // Para ordenar la tienda por «Lo más reciente».
+  creadoEl: p.createdAt,
 });
+
+/** Las categorías, en el orden que les da el CMS. */
+const ordenDeCategorias = [{ orden: 'asc' as const }, { nombre: 'asc' as const }, { id: 'asc' as const }];
+
+/** Una categoría que llega con un producto tiene que existir: la pantalla pudo quedarse vieja. */
+async function comprobarCategoria(categoriaId: number | null | undefined) {
+  if (categoriaId == null) return;
+  if (!(await db.categoriaProducto.findUnique({ where: { id: categoriaId }, select: { id: true } }))) {
+    throw new HttpError('Esa categoría ya no existe. Recarga la página.', 409);
+  }
+}
+
+/** Dos categorías no se llaman igual (sin mirar mayúsculas): se filtraría por las dos sin distinguirlas. */
+async function comprobarNombreLibre(nombre: string, salvo?: number) {
+  const otra = await db.categoriaProducto.findFirst({ where: { nombre, ...(salvo ? { id: { not: salvo } } : {}) }, select: { id: true } });
+  if (otra) throw new HttpError(`Ya hay una categoría que se llama «${nombre}».`, 409);
+}
 
 /** Un producto con lo que necesita `prepararPedido`: su precio en céntimos y sus tallas. */
 export const aLaVenta = (p: ProductoConTallas) => ({
@@ -170,8 +192,13 @@ export class TiendaService {
   /** Lo que se vende, para la web pública: solo lo activo. */
   static async catalogo() {
     const productos = await db.producto.findMany({ where: { activo: true }, include: conTallas, orderBy: [{ orden: 'asc' }, { nombre: 'asc' }, { id: 'asc' }] });
+    // Solo las que tienen algo a la venta: un filtro que no enseña nada sobra.
+    const categorias = await db.categoriaProducto.findMany({
+      where: { productos: { some: { activo: true } } }, select: { id: true, nombre: true }, orderBy: ordenDeCategorias,
+    });
     return {
       productos: productos.map(resumenProducto),
+      categorias,
       // Sin pasarela no se puede comprar: la web enseña el catálogo y dice dónde
       // comprar. Con ella, los métodos que admite (Bizum, solo si está contratado).
       pagoDisponible: modoDePago() !== null,
@@ -231,6 +258,7 @@ export class TiendaService {
   }
 
   static async crearProducto(d: DatosProducto) {
+    await comprobarCategoria(d.categoriaId);
     return resumenProducto(await db.$transaction(async (tx) => {
       const p = await tx.producto.create({ data: datosAGuardar(d) });
       if (d.tallas) await guardarTallas(tx, p.id, d.tallas);
@@ -240,6 +268,7 @@ export class TiendaService {
 
   static async actualizarProducto(id: number, d: DatosProducto) {
     if (!(await db.producto.findUnique({ where: { id }, select: { id: true } }))) throw new NotFoundError('Producto no encontrado.');
+    await comprobarCategoria(d.categoriaId);
     return resumenProducto(await db.$transaction(async (tx) => {
       // Si ya cuenta por tallas y no se mandan (una pantalla vieja), sigue
       // contando por talla: el `existencias` que llega no se usa.
@@ -260,6 +289,51 @@ export class TiendaService {
     }
     await db.producto.deleteMany({ where: { id } });
     return { message: 'Producto borrado.' };
+  }
+
+  // --- Las categorías ---
+
+  static async categorias() {
+    const lista = await db.categoriaProducto.findMany({ orderBy: ordenDeCategorias, include: { _count: { select: { productos: true } } } });
+    return lista.map((c) => ({ id: c.id, nombre: c.nombre, orden: c.orden, productos: c._count.productos }));
+  }
+
+  /** Una nueva va al final: las primeras son las que se ven sin abrir «Más». */
+  static async crearCategoria(nombre: string) {
+    const limpio = nombre.trim();
+    await comprobarNombreLibre(limpio);
+    const ultima = await db.categoriaProducto.aggregate({ _max: { orden: true } });
+    const c = await db.categoriaProducto.create({ data: { nombre: limpio, orden: (ultima._max.orden ?? -1) + 1 } });
+    return { id: c.id, nombre: c.nombre, orden: c.orden, productos: 0 };
+  }
+
+  static async renombrarCategoria(id: number, nombre: string) {
+    const limpio = nombre.trim();
+    if (!(await db.categoriaProducto.findUnique({ where: { id }, select: { id: true } }))) throw new NotFoundError('Categoría no encontrada.');
+    await comprobarNombreLibre(limpio, id);
+    const c = await db.categoriaProducto.update({ where: { id }, data: { nombre: limpio }, include: { _count: { select: { productos: true } } } });
+    return { id: c.id, nombre: c.nombre, orden: c.orden, productos: c._count.productos };
+  }
+
+  /**
+   * Pone el orden de todas de una vez. Las que no vengan (otra pantalla creó
+   * una mientras tanto) quedan detrás, en el orden que tenían.
+   */
+  static async ordenarCategorias(ids: number[]) {
+    await db.$transaction(async (tx) => {
+      const todas = await tx.categoriaProducto.findMany({ orderBy: ordenDeCategorias, select: { id: true } });
+      const existentes = new Set(todas.map((c) => c.id));
+      const enOrden = [...ids.filter((id) => existentes.has(id)), ...todas.map((c) => c.id).filter((id) => !ids.includes(id))];
+      for (const [orden, id] of enOrden.entries()) await tx.categoriaProducto.update({ where: { id }, data: { orden } });
+    });
+    return TiendaService.categorias();
+  }
+
+  /** Sus productos no se borran: se quedan sin categoría y salen solo en «Todo». */
+  static async borrarCategoria(id: number) {
+    const r = await db.categoriaProducto.deleteMany({ where: { id } });
+    if (r.count === 0) throw new NotFoundError('Categoría no encontrada.');
+    return { message: 'Categoría borrada. Sus productos siguen a la venta, sin categoría.' };
   }
 
   static async pedidos(estado?: EstadoPedido) {

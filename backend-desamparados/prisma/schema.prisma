@@ -1269,6 +1269,12 @@ model Producto {
   existencias  Int?
   activo       Boolean             @default(true)
   orden        Int                 @default(0)
+  /// Por ella se filtra en la tienda. Sin categoría, sale solo en «Todo».
+  categoriaId  Int?
+  categoria    CategoriaProducto?  @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  /// La pieza que la tienda enseña en grande al entrar. Si hay varias, la
+  /// primera por orden.
+  destacado    Boolean             @default(false)
   /// Las tallas (S, M, L…), si el producto las tiene: entonces se compra y se
   /// vende siempre una talla, y cada una lleva sus existencias.
   tallas       TallaProducto[]
@@ -1279,6 +1285,18 @@ model Producto {
   updatedAt    DateTime            @updatedAt
 
   @@index([activo, orden])
+  @@index([categoriaId])
+}
+
+/// Una categoría de la tienda (Ropa, Medallas…), para filtrar. El orden lo
+/// pone el CMS: las primeras son las que se ven sin abrir «Más».
+model CategoriaProducto {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique @db.VarChar(40)
+  orden     Int        @default(0)
+  productos Producto[]
+
+  @@index([orden])
 }
 
 /// Una talla de un producto, con lo que queda de ella.

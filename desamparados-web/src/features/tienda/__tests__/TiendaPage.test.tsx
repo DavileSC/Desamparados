@@ -9,15 +9,17 @@ import PedidoTiendaPage from '../PedidoTiendaPage'
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 const CAMISETA = {
   id: 3, nombre: 'Camiseta', descripcion: 'Negra, con el escudo', precio: 12, foto: '/uploads/camiseta.webp', fotos: [], existencias: null, activo: true, orden: 2,
+  categoriaId: 12, destacado: false, creadoEl: '2026-10-03T10:00:00.000Z',
   tallas: [{ id: 30, nombre: 'S', existencias: 3 }, { id: 31, nombre: 'L', existencias: 9 }, { id: 32, nombre: 'XXL', existencias: 0 }],
 }
 const CATALOGO = {
   pagoDisponible: true, metodos: ['TARJETA', 'BIZUM'],
   productos: [
-    { id: 1, nombre: 'Medalla', descripcion: 'De plata', precio: 15, foto: null, fotos: [], existencias: 2, activo: true, orden: 0, tallas: [] },
-    { id: 2, nombre: 'Estampa', descripcion: '', precio: 1.5, foto: null, fotos: [], existencias: 0, activo: true, orden: 1, tallas: [] },
+    { id: 1, nombre: 'Medalla', descripcion: 'De plata', precio: 15, foto: null, fotos: [], existencias: 2, activo: true, orden: 0, tallas: [], categoriaId: 10, destacado: false, creadoEl: '2026-10-01T10:00:00.000Z' },
+    { id: 2, nombre: 'Estampa', descripcion: '', precio: 1.5, foto: null, fotos: [], existencias: 0, activo: true, orden: 1, tallas: [], categoriaId: 11, destacado: false, creadoEl: '2026-10-02T10:00:00.000Z' },
     CAMISETA,
   ],
+  categorias: [{ id: 10, nombre: 'Medallas' }, { id: 11, nombre: 'Estampas' }, { id: 12, nombre: 'Ropa' }, { id: 13, nombre: 'Velas' }, { id: 14, nombre: 'Libros' }],
 }
 
 /** La tienda con sus rutas: la rejilla, la ficha y la vuelta del pedido. */
@@ -52,6 +54,12 @@ async function pagarComo(user: ReturnType<typeof userEvent.setup>, total: RegExp
   await user.click(pagar)
 }
 
+/**
+ * Hasta que la hoja termina de cerrarse, el resto de la página sigue oculto a
+ * los lectores de pantalla (y a `getByRole`): se espera a que se vaya.
+ */
+const hojaCerrada = () => waitFor(() => expect(document.querySelector('.MuiDrawer-root')).toBeNull())
+
 beforeEach(() => { try { window.localStorage.clear() } catch { /* sin almacenamiento */ } })
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -63,9 +71,14 @@ describe('TiendaPage', () => {
 
     expect(await screen.findByRole('link', { name: 'Medalla' })).toBeInTheDocument()
     expect(screen.getAllByText('Agotado').length).toBeGreaterThan(0)
-    await user.click(screen.getByRole('button', { name: 'Añadir' }))
-    expect(screen.getByRole('button', { name: 'En la cesta · 1' })).toBeInTheDocument()
-    const cesta = screen.getByRole('complementary', { name: 'Tu cesta' })
+    // La agotada no tiene «+».
+    expect(screen.queryByRole('button', { name: 'Añadir Estampa a la cesta' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ver la cesta' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Añadir Medalla a la cesta' }))
+    expect(screen.getByRole('button', { name: 'Añadir otra unidad de Medalla (llevas 1)' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Resumen de la cesta' })).toHaveTextContent('1 en la cesta')
+    await user.click(screen.getByRole('button', { name: 'Ver la cesta' }))
+    const cesta = await screen.findByRole('complementary', { name: 'Tu cesta' })
     await user.click(within(cesta).getByRole('button', { name: 'Añadir una unidad de Medalla' }))
     expect(within(cesta).getByRole('button', { name: 'Añadir una unidad de Medalla' })).toBeDisabled()
 
@@ -75,11 +88,100 @@ describe('TiendaPage', () => {
     expect(await screen.findByText('Pantalla del pedido')).toBeInTheDocument()
   })
 
-  it('en el móvil, un producto con tallas lleva a su ficha para elegirla', async () => {
+  it('un producto con tallas lleva a su ficha para elegirla', async () => {
     servidor()
     montar('/tienda')
-    expect(await screen.findByRole('link', { name: 'Elegir talla' })).toHaveAttribute('href', '/tienda/producto/3')
+    expect(await screen.findByRole('link', { name: 'Elegir la talla de Camiseta' })).toHaveAttribute('href', '/tienda/producto/3')
     expect(screen.getByRole('link', { name: 'Ver Camiseta' })).toHaveAttribute('href', '/tienda/producto/3')
+  })
+
+  it('la barra filtra por categoría y por precio, con el recuento en el título y las etiquetas para quitar', async () => {
+    const user = userEvent.setup()
+    servidor()
+    montar('/tienda')
+    const barra = await screen.findByRole('toolbar', { name: 'Filtrar y ordenar' })
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Tienda(3)')
+
+    // Categoría: una sola; al elegirla, la hoja se cierra y el título la dice.
+    await user.click(within(barra).getByRole('button', { name: 'Categoría' }))
+    await user.click(within(await screen.findByRole('radiogroup', { name: 'Categoría' })).getByRole('radio', { name: /^Estampas/ }))
+    await hojaCerrada()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Estampas(1)')
+    expect(screen.queryByRole('link', { name: 'Medalla' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Quitar Estampas' }))
+
+    // Precio: varios tramos a la vez; la hoja se cierra con «Ver N productos».
+    await user.click(within(barra).getByRole('button', { name: 'Precio' }))
+    const precio = await screen.findByRole('group', { name: 'Precio' })
+    await user.click(within(precio).getByRole('checkbox', { name: /^Hasta 5/ }))
+    await user.click(within(precio).getByRole('checkbox', { name: /^Más de 30/ }))
+    await user.click(screen.getByRole('button', { name: 'Ver 1 producto' }))
+    await hojaCerrada()
+    expect(screen.getByRole('link', { name: 'Estampa' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Medalla' })).not.toBeInTheDocument()
+    expect(within(barra).getByRole('button', { name: 'Precio (2)' })).toBeInTheDocument()
+
+    // Lo agotado, fuera, y con todo quitado vuelven todos.
+    await user.click(within(barra).getByRole('switch', { name: 'Ocultar lo agotado' }))
+    await user.click(screen.getByRole('button', { name: 'Quitar todo' }))
+    expect(screen.getByRole('link', { name: 'Estampa' })).toBeInTheDocument()
+    expect(within(barra).getByRole('switch', { name: 'Ocultar lo agotado' })).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('la talla solo deja lo que la tiene sin agotar, y sin productos con tallas no hay desplegable', async () => {
+    const user = userEvent.setup()
+    servidor()
+    montar('/tienda')
+    const barra = await screen.findByRole('toolbar', { name: 'Filtrar y ordenar' })
+    await user.click(within(barra).getByRole('button', { name: 'Talla' }))
+    const tallas = await screen.findByRole('group', { name: 'Talla' })
+    expect(within(tallas).getAllByRole('button').map((b) => b.textContent)).toEqual(['S', 'L', 'XXL'])
+    await user.click(within(tallas).getByRole('button', { name: 'XXL' }))
+    await user.click(screen.getByRole('button', { name: 'Ver 0 productos' }))
+    await hojaCerrada()
+    expect(screen.getByText('No hay nada con esos filtros.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Quitar filtros' }))
+    expect(screen.getByRole('link', { name: 'Camiseta' })).toBeInTheDocument()
+  })
+
+  it('ordena por precio y por lo más reciente', async () => {
+    const user = userEvent.setup()
+    servidor()
+    montar('/tienda')
+    const barra = await screen.findByRole('toolbar', { name: 'Filtrar y ordenar' })
+    const nombres = () => within(screen.getByRole('list', { name: 'Productos' })).getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+    expect(nombres()).toEqual(['Medalla', 'Estampa', 'Camiseta'])
+
+    await user.click(within(barra).getByRole('button', { name: 'Ordenar por: Destacados' }))
+    await user.click(within(await screen.findByRole('radiogroup', { name: 'Ordenar por' })).getByRole('radio', { name: 'Precio: de menor a mayor' }))
+    await hojaCerrada()
+    expect(nombres()).toEqual(['Estampa', 'Camiseta', 'Medalla'])
+
+    await user.click(within(barra).getByRole('button', { name: 'Ordenar por: Precio: de menor a mayor' }))
+    await user.click(within(await screen.findByRole('radiogroup', { name: 'Ordenar por' })).getByRole('radio', { name: 'Lo más reciente' }))
+    await hojaCerrada()
+    expect(nombres()).toEqual(['Camiseta', 'Estampa', 'Medalla'])
+  })
+
+  it('la pieza destacada sale en grande solo en «Todo», y con un filtro vuelve a la rejilla', async () => {
+    const user = userEvent.setup()
+    servidor({ ...CATALOGO, productos: CATALOGO.productos.map((p) => (p.id === 1 ? { ...p, destacado: true } : p)) })
+    montar('/tienda')
+    expect(await screen.findByText('Pieza destacada')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Añadir · 15,00/ })).toBeInTheDocument()
+    await user.click(within(screen.getByRole('toolbar', { name: 'Filtrar y ordenar' })).getByRole('button', { name: 'Categoría' }))
+    await user.click(within(await screen.findByRole('radiogroup', { name: 'Categoría' })).getByRole('radio', { name: /^Medallas/ }))
+    await hojaCerrada()
+    expect(screen.queryByText('Pieza destacada')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Añadir Medalla a la cesta' })).toBeInTheDocument()
+  })
+
+  it('sin categorías no hay desplegable de categoría, pero sí el resto de la barra', async () => {
+    servidor({ ...CATALOGO, categorias: [] })
+    montar('/tienda')
+    const barra = await screen.findByRole('toolbar', { name: 'Filtrar y ordenar' })
+    expect(within(barra).queryByRole('button', { name: 'Categoría' })).not.toBeInTheDocument()
+    expect(within(barra).getByRole('button', { name: 'Precio' })).toBeInTheDocument()
   })
 
   it('la ficha: se elige la talla (la agotada no), cuántas, y el pedido lleva la talla', async () => {
@@ -95,7 +197,8 @@ describe('TiendaPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Añadir una unidad de Camiseta' })[0])
     await user.click(screen.getByRole('button', { name: /Añadir · 24,00/ }))
 
-    const cesta = screen.getByRole('complementary', { name: 'Tu cesta' })
+    await user.click(screen.getByRole('button', { name: 'Ver la cesta' }))
+    const cesta = await screen.findByRole('complementary', { name: 'Tu cesta' })
     expect(within(cesta).getByText(/Talla L/)).toBeInTheDocument()
     await pagarComo(user, /Pagar 24,00/)
     await waitFor(() => expect(enviado()).not.toBeNull())
@@ -129,8 +232,10 @@ describe('TiendaPage', () => {
   it('una cesta guardada de antes pierde lo que ya no vale', async () => {
     // La medalla vale; la camiseta sin talla (de cuando no tenía tallas) y un producto borrado, no.
     window.localStorage.setItem('tienda-cesta', JSON.stringify({ 1: 1, 3: 2, 77: 1 }))
+    const user = userEvent.setup()
     servidor()
     montar('/tienda')
+    await user.click(await screen.findByRole('button', { name: 'Ver la cesta' }))
     const cesta = await screen.findByRole('complementary', { name: 'Tu cesta' })
     expect(within(cesta).getByText('Medalla')).toBeInTheDocument()
     expect(within(cesta).queryByText('Camiseta')).not.toBeInTheDocument()
@@ -141,8 +246,8 @@ describe('TiendaPage', () => {
     servidor({ ...CATALOGO, pagoDisponible: false })
     montar('/tienda')
     expect(await screen.findByText(/se compran en Secretaría/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Añadir' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('complementary', { name: 'Tu cesta' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Añadir/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ver la cesta' })).not.toBeInTheDocument()
   })
 })
 

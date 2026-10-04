@@ -8,7 +8,7 @@ import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
 import { limitadorCompras } from '../config/limiter.js';
 import { conModulo } from '../middleware/modulos.js';
-import { compraSchema, pedidosQuerySchema, productoIdSchema, productoSchema, tokenPedidoSchema } from '../schemas/tienda.schema.js';
+import { categoriaSchema, compraSchema, ordenCategoriasSchema, pedidosQuerySchema, productoIdSchema, productoSchema, tokenPedidoSchema } from '../schemas/tienda.schema.js';
 
 const tiendaRoutes = Router();
 
@@ -27,6 +27,12 @@ admin.get('/productos', TiendaController.productos);
 admin.post('/productos', validate(productoSchema), TiendaController.crearProducto);
 admin.put('/productos/:id', validate(productoIdSchema), validate(productoSchema), TiendaController.actualizarProducto);
 admin.delete('/productos/:id', validate(productoIdSchema), TiendaController.borrarProducto);
+admin.get('/categorias', TiendaController.categorias);
+admin.post('/categorias', validate(categoriaSchema), TiendaController.crearCategoria);
+// Antes que /categorias/:id, para que «orden» no se tome por un id.
+admin.put('/categorias/orden', validate(ordenCategoriasSchema), TiendaController.ordenarCategorias);
+admin.put('/categorias/:id', validate(productoIdSchema), validate(categoriaSchema), TiendaController.renombrarCategoria);
+admin.delete('/categorias/:id', validate(productoIdSchema), TiendaController.borrarCategoria);
 admin.get('/pedidos', validate(pedidosQuerySchema), TiendaController.pedidos);
 admin.post('/pedidos/:id/entregar', validate(productoIdSchema), TiendaController.entregar);
 // La venta en mano: lo que se lleva alguien en Secretaría, y el efectivo

@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Box, ButtonBase, Paper, TextField, Typography } from '@mui/material'
 import Boton from '../../components/Boton'
 import type { MetodoEnLinea } from '../../lib/api/tienda'
@@ -11,18 +11,18 @@ export interface Comprador { nombre: string; email: string; telefono: string; me
 const correoValido = (c: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.trim())
 
 /**
- * La cesta, al lado de la tienda, en dos pasos: lo que llevas (con «− n +»
+ * La cesta, en el cajón de la tienda, en dos pasos: lo que llevas (con «− n +»
  * en cada línea) y, al seguir, tus datos y cómo pagas. Partirlo deja la
  * cesta corta mientras se elige, que es lo que más rato se mira.
  */
-const CestaDeLaTienda = forwardRef<HTMLElement, {
+export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCambiar, onPagar }: {
   lineas: LineaDeLaCesta[]
   metodos: MetodoEnLinea[]
   enviando: boolean
   error: string | null
   onCambiar: (clave: string, cantidad: number) => void
   onPagar: (comprador: Comprador) => void
-}>(function CestaDeLaTienda({ lineas, metodos, enviando, error, onCambiar, onPagar }, ref) {
+}) {
   const [paso, setPaso] = useState<'cesta' | 'datos'>('cesta')
   const [comprador, setComprador] = useState<Comprador>({ nombre: '', email: '', telefono: '', metodo: metodos[0] ?? 'TARJETA' })
   const total = lineas.reduce((s, l) => s + l.producto.precio * l.cantidad, 0)
@@ -32,7 +32,7 @@ const CestaDeLaTienda = forwardRef<HTMLElement, {
   const enDatos = paso === 'datos' && lineas.length > 0
 
   return (
-    <Paper ref={ref} component="aside" aria-label="Tu cesta" sx={{ p: 3, position: { md: 'sticky' }, top: { md: 96 }, display: 'grid', gap: 2, scrollMarginTop: 80 }}>
+    <Paper component="aside" aria-label="Tu cesta" elevation={0} sx={{ px: 3, pb: 3, display: 'grid', gap: 2, bgcolor: 'transparent', backgroundImage: 'none' }}>
       <Box sx={{ display: 'flex', gap: 1, fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'text.secondary' }} aria-hidden="true">
         <Box component="span" sx={{ color: enDatos ? undefined : GOLD }}>1 · Cesta</Box>
         <span>›</span>
@@ -96,6 +96,4 @@ const CestaDeLaTienda = forwardRef<HTMLElement, {
       <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>Se recoge en Secretaría: no hacemos envíos.</Typography>
     </Paper>
   )
-})
-
-export default CestaDeLaTienda
+}

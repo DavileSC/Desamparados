@@ -14,15 +14,18 @@ export interface Formulario {
   nombre: string; descripcion: string; precio: string; foto: string; fotos: FotoDeProducto[]
   existencias: string; activo: boolean; orden: string
   conTallas: boolean; tallas: TallaEnFormulario[]
+  /** El id de su categoría, o '' sin categoría (como lo da el desplegable). */
+  categoriaId: string; destacado: boolean
 }
 
-export const VACIO: Formulario = { nombre: '', descripcion: '', precio: '', foto: '', fotos: [], existencias: '', activo: true, orden: '0', conTallas: false, tallas: [] }
+export const VACIO: Formulario = { nombre: '', descripcion: '', precio: '', foto: '', fotos: [], existencias: '', activo: true, orden: '0', conTallas: false, tallas: [], categoriaId: '', destacado: false }
 
 export const aFormulario = (p: Producto): Formulario => ({
   nombre: p.nombre, descripcion: p.descripcion, precio: p.precio.toFixed(2).replace('.', ','), foto: p.foto ?? '', fotos: p.fotos,
   existencias: p.existencias === null ? '' : String(p.existencias), activo: p.activo, orden: String(p.orden),
   conTallas: p.tallas.length > 0,
   tallas: p.tallas.map((t) => ({ id: t.id, nombre: t.nombre, existencias: t.existencias === null ? '' : String(t.existencias) })),
+  categoriaId: p.categoriaId === null ? '' : String(p.categoriaId), destacado: p.destacado,
 })
 
 const tallasValidas = (f: Formulario) => f.tallas.filter((t) => t.nombre.trim())
@@ -37,6 +40,7 @@ export const aDatos = (f: Formulario): DatosProducto => {
     existencias: tallas.length > 0 || f.existencias.trim() === '' ? null : Number(f.existencias),
     activo: f.activo, orden: Number(f.orden) || 0,
     tallas: tallas.map((t) => ({ ...(t.id ? { id: t.id } : {}), nombre: t.nombre.trim(), existencias: t.existencias.trim() === '' ? null : Number(t.existencias) })),
+    categoriaId: f.categoriaId ? Number(f.categoriaId) : null, destacado: f.destacado,
   }
 }
 

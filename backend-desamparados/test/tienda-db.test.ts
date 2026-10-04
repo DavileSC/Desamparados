@@ -238,3 +238,58 @@ test('las fotos de más de un producto: se guardan con su pie, salen en el catá
     await e.recoger();
   }
 });
+
+test('las categorías: se crean al final, se ordenan, filtran el catálogo y al borrarlas el producto se queda', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  const tesorero = await crearUsuarioPrueba(Role.TESORERIA);
+  const creadas: number[] = [];
+  try {
+    const cabeceras = { Cookie: `${COOKIE_CMS}=${generateToken(tesorero.id, Role.TESORERIA)}`, 'Content-Type': 'application/json' };
+    const api = (ruta: string, method = 'GET', cuerpo?: unknown) => fetch(`${baseUrl}/api/tienda/admin${ruta}`, { method, headers: cabeceras, ...(cuerpo ? { body: JSON.stringify(cuerpo) } : {}) });
+    const crear = async (nombre: string) => {
+      const r = await api('/categorias', 'POST', { nombre });
+      assert.equal(r.status, 201);
+      const c = await r.json() as { id: number; orden: number };
+      creadas.push(c.id);
+      return c;
+    };
+    const ropa = await crear(`Ropa ${e.marca}`);
+    const medallas = await crear(`Medallas ${e.marca}`);
+    assert.ok(medallas.orden > ropa.orden, 'la nueva va al final');
+    // El mismo nombre, aunque cambien las mayúsculas, no.
+    assert.equal((await api('/categorias', 'POST', { nombre: `ropa ${e.marca}`.toUpperCase() })).status, 409);
+
+    // Ordenar: la que se manda primero queda primero.
+    assert.equal((await api('/categorias/orden', 'PUT', { ids: [medallas.id, ropa.id] })).status, 200);
+    const lista = await (await api('/categorias')).json() as { id: number }[];
+    assert.ok(lista.findIndex((c) => c.id === medallas.id) < lista.findIndex((c) => c.id === ropa.id));
+
+    // El producto se pone en su categoría y como destacado; una categoría que no existe, no.
+    const base = { nombre: e.medalla.nombre, descripcion: '', precio: 15, foto: null, existencias: 2, activo: true, orden: 0 };
+    assert.equal((await api(`/productos/${e.medalla.id}`, 'PUT', { ...base, categoriaId: medallas.id, destacado: true })).status, 200);
+    assert.equal((await api(`/productos/${e.medalla.id}`, 'PUT', { ...base, categoriaId: 99_999_999 })).status, 409);
+    // Sin mandarlos (una pantalla vieja), no se tocan.
+    assert.equal((await api(`/productos/${e.medalla.id}`, 'PUT', base)).status, 200);
+
+    // El catálogo solo trae las categorías con algo a la venta.
+    const catalogo = await (await fetch(`${baseUrl}/api/tienda`)).json() as { categorias: { id: number }[]; productos: { id: number; categoriaId: number | null; destacado: boolean }[] };
+    assert.ok(catalogo.categorias.some((c) => c.id === medallas.id));
+    assert.ok(!catalogo.categorias.some((c) => c.id === ropa.id), 'Ropa no tiene nada: no sale');
+    const enCatalogo = catalogo.productos.find((p) => p.id === e.medalla.id);
+    assert.equal(enCatalogo?.categoriaId, medallas.id);
+    assert.equal(enCatalogo?.destacado, true);
+
+    // Borrar la categoría deja el producto a la venta, sin ella.
+    assert.equal((await api(`/categorias/${medallas.id}`, 'DELETE')).status, 200);
+    assert.equal((await db.producto.findUnique({ where: { id: e.medalla.id } }))?.categoriaId, null);
+    assert.equal((await api(`/categorias/${medallas.id}`, 'DELETE')).status, 404);
+
+    // Sin sesión del CMS, nada.
+    assert.equal((await fetch(`${baseUrl}/api/tienda/admin/categorias`)).status, 401);
+  } finally {
+    await db.categoriaProducto.deleteMany({ where: { id: { in: creadas } } });
+    await borrarUsuarioPrueba(tesorero.id);
+    await e.recoger();
+  }
+});

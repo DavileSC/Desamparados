@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Box, ButtonBase, Paper, TextField, Typography } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
-import { borrarProducto, crearProducto, guardarProducto, type Producto } from '../../../lib/api/tienda'
+import { borrarProducto, categoriasDelCms, crearProducto, guardarProducto, type Producto } from '../../../lib/api/tienda'
 import { euros } from '../contabilidad/formato'
 import FichaDeProductoCms from './FichaDeProductoCms'
 import { VACIO, aDatos, aFormulario, existenciasEnTexto, type Formulario } from './formularioProducto'
@@ -27,6 +27,7 @@ export default function MesaDeProductos({ lista, pedirNuevo, onNuevoAtendido, on
   onError: (texto: string) => void
 }) {
   const cliente = useQueryClient()
+  const categorias = useQuery({ queryKey: ['tienda', 'categorias'], queryFn: categoriasDelCms }).data ?? []
   const [seleccion, setSeleccion] = useState<Seleccion>(() => (lista[0] ? { id: lista[0].id } : null))
   const [form, setForm] = useState<{ actual: Formulario; original: Formulario } | null>(() => (lista[0] ? { actual: aFormulario(lista[0]), original: aFormulario(lista[0]) } : null))
   const [pendiente, setPendiente] = useState<Seleccion | undefined>(undefined)
@@ -134,6 +135,7 @@ export default function MesaDeProductos({ lista, pedirNuevo, onNuevoAtendido, on
         {form && seleccion
           ? <FichaDeProductoCms
             form={form.actual}
+            categorias={categorias}
             nuevo={'nuevo' in seleccion}
             sucio={sucio}
             guardando={guardando}

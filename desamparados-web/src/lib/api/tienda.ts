@@ -14,7 +14,19 @@ export interface Producto {
   orden: number
   /** Vacío: sin tallas. Con alguna, se compra y se vende siempre por talla. */
   tallas: TallaDeProducto[]
+  /** Null: sin categoría (sale solo en «Todo»). */
+  categoriaId: number | null
+  /** La pieza que la tienda enseña en grande al entrar (la primera, si hay varias). */
+  destacado: boolean
+  /** Cuándo se dio de alta (ISO), para ordenar por «Lo más reciente». */
+  creadoEl: string
 }
+
+/** Una categoría, como la ve la tienda: solo las que tienen algo a la venta, en su orden. */
+export interface CategoriaDeTienda { id: number; nombre: string }
+
+/** Una categoría en el CMS: con su orden y cuántos productos lleva. */
+export interface CategoriaDelCms extends CategoriaDeTienda { orden: number; productos: number }
 
 export interface FotoDeProducto { url: string; pie: string }
 
@@ -34,7 +46,7 @@ export const MAX_FOTOS_PRODUCTO = 8
 export type MetodoEnLinea = 'TARJETA' | 'BIZUM'
 export type EstadoPedido = 'PENDIENTE_PAGO' | 'PAGADO' | 'ENTREGADO' | 'CANCELADO'
 
-export interface Catalogo { productos: Producto[]; pagoDisponible: boolean; metodos: MetodoEnLinea[] }
+export interface Catalogo { productos: Producto[]; categorias: CategoriaDeTienda[]; pagoDisponible: boolean; metodos: MetodoEnLinea[] }
 
 export interface DatosCompra {
   nombre: string
@@ -66,7 +78,7 @@ export interface PedidoDelCms extends PedidoPublico {
   entregadoEl: string | null
 }
 
-export type DatosProducto = Omit<Producto, 'id' | 'tallas'> & {
+export type DatosProducto = Omit<Producto, 'id' | 'tallas' | 'creadoEl'> & {
   /** Las que traen `id` ya estaban; las que faltan se borran. */
   tallas: { id?: number; nombre: string; existencias: number | null }[]
 }
@@ -79,5 +91,10 @@ export const productos = () => llamarApi<Producto[]>('/tienda/admin/productos')
 export const crearProducto = (d: DatosProducto) => llamarApi<Producto>('/tienda/admin/productos', { method: 'POST', json: d })
 export const guardarProducto = (id: number, d: DatosProducto) => llamarApi<Producto>(`/tienda/admin/productos/${id}`, { method: 'PUT', json: d })
 export const borrarProducto = (id: number) => llamarApi<{ message: string }>(`/tienda/admin/productos/${id}`, { method: 'DELETE' })
+export const categoriasDelCms = () => llamarApi<CategoriaDelCms[]>('/tienda/admin/categorias')
+export const crearCategoria = (nombre: string) => llamarApi<CategoriaDelCms>('/tienda/admin/categorias', { method: 'POST', json: { nombre } })
+export const renombrarCategoria = (id: number, nombre: string) => llamarApi<CategoriaDelCms>(`/tienda/admin/categorias/${id}`, { method: 'PUT', json: { nombre } })
+export const ordenarCategorias = (ids: number[]) => llamarApi<CategoriaDelCms[]>('/tienda/admin/categorias/orden', { method: 'PUT', json: { ids } })
+export const borrarCategoria = (id: number) => llamarApi<{ message: string }>(`/tienda/admin/categorias/${id}`, { method: 'DELETE' })
 export const pedidosDelCms = (estado?: EstadoPedido) => llamarApi<PedidoDelCms[]>(`/tienda/admin/pedidos${estado ? `?estado=${estado}` : ''}`)
 export const entregarPedido = (id: number) => llamarApi<{ message: string }>(`/tienda/admin/pedidos/${id}/entregar`, { method: 'POST' })

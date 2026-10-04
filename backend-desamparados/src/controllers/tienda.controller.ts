@@ -14,6 +14,13 @@ export class TiendaController {
   static crearProducto = manejar('Error guardando el producto', async (req, res) => { res.status(201).json(await TiendaService.crearProducto(req.body as DatosProducto)); });
   static actualizarProducto = manejar('Error guardando el producto', async (req, res) => { res.json(await TiendaService.actualizarProducto(Number(req.params.id), req.body as DatosProducto)); });
   static borrarProducto = manejar('Error borrando el producto', async (req, res) => { res.json(await TiendaService.borrarProducto(Number(req.params.id))); });
+  static categorias = manejar('Error obteniendo las categorías', async (_req, res) => { res.json(await TiendaService.categorias()); });
+  static crearCategoria = manejar('Error guardando la categoría', async (req, res) => { res.status(201).json(await TiendaService.crearCategoria(String(req.body.nombre))); });
+  static renombrarCategoria = manejar('Error guardando la categoría', async (req, res) => {
+    res.json(await TiendaService.renombrarCategoria(Number(req.params.id), String(req.body.nombre)));
+  });
+  static ordenarCategorias = manejar('Error ordenando las categorías', async (req, res) => { res.json(await TiendaService.ordenarCategorias(req.body.ids as number[])); });
+  static borrarCategoria = manejar('Error borrando la categoría', async (req, res) => { res.json(await TiendaService.borrarCategoria(Number(req.params.id))); });
   static pedidos = manejar('Error obteniendo los pedidos', async (req, res) => {
     res.json(await TiendaService.pedidos(req.query.estado as EstadoPedido | undefined));
   });

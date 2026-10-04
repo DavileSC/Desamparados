@@ -20,7 +20,7 @@ function servidor() {
     const cuerpo = init.body ? JSON.parse(String(init.body)) as Record<string, unknown> : undefined
     llamadas.push({ url: u, metodo, cuerpo })
     if (metodo === 'PUT') return Promise.resolve(json({ ...CAMISETA, ...cuerpo, tallas: ((cuerpo?.tallas ?? []) as { nombre: string }[]).map((t, i) => ({ id: 50 + i, ...t })) }))
-    if (u.includes('/tienda/admin/pedidos')) return Promise.resolve(json([]))
+    if (u.includes('/tienda/admin/pedidos') || u.includes('/tienda/admin/categorias')) return Promise.resolve(json([]))
     return Promise.resolve(json([CAMISETA, ESTAMPA]))
   }))
   return llamadas
