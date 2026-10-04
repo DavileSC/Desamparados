@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Box, ButtonBase, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { keyframes } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Link } from 'react-router-dom'
 import Boton from '../../components/Boton'
@@ -10,6 +11,12 @@ import { GOLD, PAPEL } from '../inicio/estilos'
 import { Contador, ElegirTalla } from './ElegirTalla'
 import { FotoSobrePapel } from './TarjetaDeProducto'
 import { agotado, avisoDeTallas, claveDe, euros, conTallas, primeraConExistencias, quedanDe, topeDe, type Cesta } from './cesta'
+
+/** La foto nueva aparece fundiéndose sobre la que había (la «A · Fundido» de las maquetas). */
+const fundido = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`
 
 /**
  * La ficha de un producto: sus fotos en grande con las miniaturas debajo
@@ -27,6 +34,16 @@ export default function FichaDeProducto({ producto: p, pagoDisponible, cesta, on
   const escritorio = useMediaQuery(theme.breakpoints.up('md'), { noSsr: true })
   const { medir, medidaDe } = useMedidas()
   const [foto, setFoto] = useState(0)
+  // La que se estaba viendo, debajo, mientras la nueva se funde encima.
+  const [previa, setPrevia] = useState<number | null>(null)
+  const cambiar = (i: number) => { if (i !== foto) { setPrevia(foto); setFoto(i) } }
+  // Acabado el fundido, la de debajo sobra. Con un temporizador y no con el
+  // fin de la animación, que no llega si se pide menos movimiento.
+  useEffect(() => {
+    if (previa === null) return
+    const t = window.setTimeout(() => setPrevia(null), 500)
+    return () => window.clearTimeout(t)
+  }, [previa, foto])
   const [visor, setVisor] = useState<number | null>(null)
   const [talla, setTalla] = useState<TallaDeProducto | null>(() => primeraConExistencias(p))
   const [cantidad, setCantidad] = useState(1)
@@ -57,13 +74,26 @@ export default function FichaDeProducto({ producto: p, pagoDisponible, cesta, on
           {medios.length > 0 ? (
             <ButtonBase onClick={() => setVisor(foto)} aria-label={medios.length > 1 ? `Ampliar la foto ${foto + 1} de ${medios.length}` : `Ampliar la foto de ${p.nombre}`}
               sx={{ display: 'block', width: '100%', cursor: 'zoom-in', borderRadius: '4px', '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 3 } }}>
-              <FotoSobrePapel src={medios[foto].url} alt={medios[foto].alt} proporcion="1 / 1" ajuste="contain" relleno={3} />
+              <Box sx={{ position: 'relative' }}>
+                {previa !== null && medios[previa] && (
+                  <Box aria-hidden sx={{ position: 'absolute', inset: 0 }}>
+                    <FotoSobrePapel src={medios[previa].url} alt="" proporcion="1 / 1" ajuste="contain" relleno={3} />
+                  </Box>
+                )}
+                {/* Con cada foto se monta de nuevo (su `key`), y el fundido vuelve a empezar. */}
+                <Box key={foto} sx={{
+                  position: 'relative', animation: previa !== null ? `${fundido} .45s ease both` : 'none',
+                  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+                }}>
+                  <FotoSobrePapel src={medios[foto].url} alt={medios[foto].alt} proporcion="1 / 1" ajuste="contain" relleno={3} />
+                </Box>
+              </Box>
             </ButtonBase>
           ) : <FotoSobrePapel src={null} alt="" proporcion="1 / 1" />}
           {medios.length > 1 && (
             <Box sx={{ display: 'flex', gap: 1.25, mt: 1.5, flexWrap: 'wrap' }}>
               {medios.map((m, i) => (
-                <ButtonBase key={m.url} onClick={() => setFoto(i)} aria-label={`Ver la foto ${i + 1}${m.pie ? `: ${m.pie}` : ''}`} aria-pressed={i === foto}
+                <ButtonBase key={m.url} onClick={() => cambiar(i)} aria-label={`Ver la foto ${i + 1}${m.pie ? `: ${m.pie}` : ''}`} aria-pressed={i === foto}
                   sx={{ width: 72, height: 72, borderRadius: '4px', overflow: 'hidden', bgcolor: PAPEL, border: '2px solid', borderColor: i === foto ? GOLD : 'transparent', '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 } }}>
                   <Box component="img" src={m.url} alt="" sx={{ width: '100%', height: '100%', objectFit: 'contain', p: 0.5, boxSizing: 'border-box', mixBlendMode: 'multiply' }} />
                 </ButtonBase>

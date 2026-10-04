@@ -222,6 +222,18 @@ describe('TiendaPage', () => {
     expect(within(screen.getByRole('dialog')).getByText('03')).toBeInTheDocument()
   })
 
+  it('la ficha: al cambiar de foto, la nueva se funde sobre la anterior, que luego se quita', async () => {
+    const user = userEvent.setup()
+    const medalla = { ...CATALOGO.productos[0], foto: '/uploads/medalla.webp', fotos: [{ url: '/uploads/reverso.webp', pie: 'El reverso' }] }
+    servidor({ ...CATALOGO, productos: [medalla] })
+    montar('/tienda/producto/1')
+    await user.click(await screen.findByRole('button', { name: 'Ver la foto 2: El reverso' }))
+    const grande = screen.getByRole('button', { name: 'Ampliar la foto 2 de 2' })
+    expect(grande.querySelectorAll('img')).toHaveLength(2)
+    expect(within(grande).getByRole('img', { name: 'El reverso' })).toBeInTheDocument()
+    await waitFor(() => expect(grande.querySelectorAll('img')).toHaveLength(1))
+  })
+
   it('un producto que ya no está dice que no está y lleva a la tienda', async () => {
     servidor()
     montar('/tienda/producto/99')
