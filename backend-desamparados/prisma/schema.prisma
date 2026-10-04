@@ -955,7 +955,8 @@ model OperacionMesa {
 
 model Configuracion {
   key         String   @id
-  value       String
+  /// Texto largo: algunas claves guardan un JSON (las fotos del retablo por tiempos).
+  value       String   @db.Text
   descripcion String?
   updatedAt   DateTime @updatedAt
 }

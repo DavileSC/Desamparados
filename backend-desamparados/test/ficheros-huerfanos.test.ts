@@ -283,6 +283,30 @@ describe('ficheros a los que apunta el entorno', () => {
   });
 });
 
+describe('fotos del retablo del Inicio del CMS', () => {
+  test('la foto de todo el año y las de cada tiempo (dentro de un JSON) cuentan como en uso', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const deTodoElAnio = `${hex()}.webp`;
+    const deCuaresma = `${hex()}.webp`;
+    const claves = ['inicio_retablo_foto', 'inicio_retablo_tiempos'];
+    const antes = await db.configuracion.findMany({ where: { key: { in: claves } } });
+    try {
+      await db.configuracion.deleteMany({ where: { key: { in: claves } } });
+      await db.configuracion.createMany({ data: [
+        { key: 'inicio_retablo_foto', value: `/storage/public/${deTodoElAnio}` },
+        { key: 'inicio_retablo_tiempos', value: JSON.stringify([{ tiempo: 'cuaresma', foto: `/storage/public/${deCuaresma}`, x: 50, y: 30 }]) },
+      ] });
+      const referenciadas = await subidasReferenciadas();
+      assert.ok(referenciadas.has(deTodoElAnio));
+      assert.ok(referenciadas.has(deCuaresma));
+      assert.equal(await contarReferencias(deCuaresma), 1);
+    } finally {
+      await db.configuracion.deleteMany({ where: { key: { in: claves } } });
+      if (antes.length) await db.configuracion.createMany({ data: antes.map(({ key, value, descripcion }) => ({ key, value, descripcion })) });
+    }
+  });
+});
+
 describe('fotos de la portada (C1)', () => {
   test('la foto que sale de la lista se borra; las del seed y las estáticas no se tocan', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);

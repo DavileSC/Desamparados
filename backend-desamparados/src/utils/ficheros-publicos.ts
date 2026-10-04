@@ -59,6 +59,9 @@ export function subidasEnTexto(...textos: (string | null | undefined)[]): Set<st
  * `limpiar:huerfanos --borrar` dejaría el enlace de todos los correos muerto.
  */
 const VARIABLES_CON_RUTAS = ['NORMATIVA_URL'];
+
+/** Las claves de `Configuracion` del retablo del Inicio: guardan rutas de fotos subidas. */
+const PREFIJO_RETABLO = 'inicio_retablo_';
 const rutasDelEntorno = () => VARIABLES_CON_RUTAS.map((nombre) => process.env[nombre]);
 
 /**
@@ -90,6 +93,9 @@ export async function contarReferencias(nombre: string): Promise<number> {
     // enteras y se busca el nombre en su texto, porque el filtro JSON de Prisma
     // sobre MariaDB no es de fiar para un `contains` dentro de un objeto.
     contarEnContenido(nombre),
+    // Las fotos del retablo del Inicio del CMS: la de todo el año y las de
+    // cada tiempo (estas, dentro de un JSON).
+    db.configuracion.count({ where: { key: { startsWith: PREFIJO_RETABLO }, value: menciona } }),
   ]);
   return cuentas.reduce((total, n) => total + n, 0);
 }
@@ -127,7 +133,7 @@ async function jsonDeContenido(): Promise<string[]> {
 
 /** Todos los ficheros subidos que menciona alguna tabla (para el script de huérfanos). */
 export async function subidasReferenciadas(): Promise<Set<string>> {
-  const [noticias, publicaciones, portada, enseres, paginas, eventos, contenido, productos, campanas] = await Promise.all([
+  const [noticias, publicaciones, portada, enseres, paginas, eventos, contenido, productos, campanas, retablo] = await Promise.all([
     db.noticia.findMany({ select: { imagenUrl: true, contenido: true } }),
     db.publicacion.findMany({ select: { imagenUrl: true, archivoUrl: true, descripcion: true } }),
     db.imagenPortada.findMany({ select: { url: true } }),
@@ -138,6 +144,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     // La tienda y los apadrinamientos también suben fotos: sin contarlas, la limpieza las borraba.
     db.producto.findMany({ select: { foto: true, fotos: true } }),
     db.campanaApadrinamiento.findMany({ select: { foto: true } }),
+    db.configuracion.findMany({ where: { key: { startsWith: PREFIJO_RETABLO } }, select: { value: true } }),
   ]);
   const textos = [
     ...noticias.flatMap((n) => [n.imagenUrl, n.contenido]),
@@ -149,6 +156,7 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     ...contenido,
     ...productos.flatMap((p) => [p.foto, p.fotos ? JSON.stringify(p.fotos) : null]),
     ...campanas.map((c) => c.foto),
+    ...retablo.map((r) => r.value),
     ...rutasDelEntorno(),
   ];
   return subidasEnTexto(...textos);

@@ -1,4 +1,5 @@
 import { llamarApi } from './cliente'
+import type { Articulo } from '../../domain/articulos'
 
 /**
  * Valores cerrados que devuelve el backend. Se declaran aquí en vez de
@@ -42,6 +43,47 @@ export interface Retablo {
   foto: string | null
   x: number
   y: number
+}
+
+/** Los tiempos que se calculan solos cada año. */
+export type TiempoCalculado = 'cuaresma' | 'semana-santa' | 'navidad'
+
+/** Un tiempo del retablo con su foto: uno calculado, o unas fechas a mano (`MM-DD`). */
+export type TiempoDelRetablo = { foto: string; x: number; y: number } & (
+  | { tiempo: TiempoCalculado }
+  | { tiempo: 'a-mano'; nombre: string; desde: string; hasta: string }
+)
+
+/** Hasta qué cuenta los días el retablo. */
+export type CuentaAtras =
+  | { tipo: 'proxima' }
+  | { tipo: 'salida'; salidaId: number }
+  | { tipo: 'acto'; eventoId: number }
+  | { tipo: 'ninguna' }
+
+/** Lo que se cuenta, ya resuelto: su nombre, su artículo (null en un acto) y su día `AAAA-MM-DD`. */
+export interface CuentaDeHoy {
+  nombre: string
+  articulo: Articulo | null
+  fecha: string
+}
+
+/** Lo que pinta el Inicio: la foto que toca hoy y la cuenta atrás (null: ninguna). */
+export interface RetabloDeHoy extends Retablo {
+  /** Opcional: un backend anterior no la manda, y entonces se cuenta hasta el Sábado de Pasión. */
+  cuenta?: CuentaDeHoy | null
+}
+
+/** Lo que se puede elegir en «Ajustes del Inicio». Null: su módulo está apagado. */
+export interface OpcionesRetablo {
+  proxima: CuentaDeHoy | null
+  salidas: { id: number; nombre: string; articulo: Articulo; fecha: string | null }[] | null
+  actos: { id: number; nombre: string; fecha: string }[] | null
+}
+
+export interface AjustesRetablo extends Retablo {
+  tiempos: TiempoDelRetablo[]
+  cuenta: CuentaAtras
 }
 
 export interface PanelResponse {
@@ -97,7 +139,7 @@ export interface PanelResponse {
   }
   /** Opcionales: un backend anterior no los manda (sin avisos y con la foto de siempre). */
   avisos?: AvisoJunta[]
-  retablo?: Retablo
+  retablo?: RetabloDeHoy
 }
 
 export interface NuevoAviso {
@@ -116,11 +158,11 @@ export function darAvisoPorHecho(id: number) {
 }
 
 export function traerRetablo() {
-  return llamarApi<Retablo>('/panel/retablo')
+  return llamarApi<AjustesRetablo & { opciones: OpcionesRetablo }>('/panel/retablo')
 }
 
-export function guardarRetablo(retablo: Retablo) {
-  return llamarApi<Retablo>('/panel/retablo', { method: 'PUT', json: retablo })
+export function guardarRetablo(ajustes: AjustesRetablo) {
+  return llamarApi<AjustesRetablo & { opciones: OpcionesRetablo }>('/panel/retablo', { method: 'PUT', json: ajustes })
 }
 
 /** Sin año, el ejercicio en curso. */

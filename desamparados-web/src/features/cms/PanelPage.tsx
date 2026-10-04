@@ -94,7 +94,7 @@ export default function PanelPage() {
           },
         }}
       >
-        <Retablo foto={data.retablo?.foto ?? undefined} x={data.retablo?.x} y={data.retablo?.y} />
+        <Retablo foto={data.retablo?.foto ?? undefined} x={data.retablo?.x} y={data.retablo?.y} cuenta={data.retablo?.cuenta} />
         <Box
           sx={{
             minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', containerType: 'inline-size', containerName: 'columna',

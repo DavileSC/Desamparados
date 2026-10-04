@@ -11,6 +11,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { fechaLimite, puedeDarPorHecho } from '../src/domain/avisos.js';
+import { ModulosService } from '../src/services/modulos.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
@@ -18,6 +19,7 @@ let server: Server;
 let baseUrl: string;
 const usuarios: number[] = [];
 const avisos: number[] = [];
+const eventos: number[] = [];
 let retabloAntes: { key: string; value: string; descripcion: string | null }[] = [];
 
 before(async () => {
@@ -32,6 +34,7 @@ before(async () => {
 after(async () => {
   if (dbDisponible) {
     await db.avisoJunta.deleteMany({ where: { id: { in: avisos } } });
+    await db.evento.deleteMany({ where: { id: { in: eventos } } });
     // La foto del retablo, como estaba antes de las pruebas.
     await db.configuracion.deleteMany({ where: { key: { startsWith: 'inicio_retablo_' } } });
     if (retabloAntes.length) await db.configuracion.createMany({ data: retabloAntes.map(({ key, value, descripcion }) => ({ key, value, descripcion })) });
@@ -132,9 +135,10 @@ describe('la foto del retablo', () => {
     const hm = await cargo(Role.HERMANO_MAYOR);
     const guardado = await pedir('/retablo', hm.cookie, 'PUT', { foto: '/storage/public/0123456789abcdef0123456789abcdef.webp', x: 47.4, y: 56 });
     assert.equal(guardado.status, 200);
-    assert.deepEqual(await guardado.json(), { foto: '/storage/public/0123456789abcdef0123456789abcdef.webp', x: 47, y: 56 });
+    const { foto, x, y } = await guardado.json();
+    assert.deepEqual({ foto, x, y }, { foto: '/storage/public/0123456789abcdef0123456789abcdef.webp', x: 47, y: 56 });
     const panel = await (await pedir('', hm.cookie)).json();
-    assert.deepEqual(panel.retablo, { foto: '/storage/public/0123456789abcdef0123456789abcdef.webp', x: 47, y: 56 });
+    assert.deepEqual({ ...panel.retablo, cuenta: undefined }, { foto: '/storage/public/0123456789abcdef0123456789abcdef.webp', x: 47, y: 56, cuenta: undefined });
 
     const quitada = await (await pedir('/retablo', hm.cookie, 'PUT', { foto: '', x: 50, y: 30 })).json();
     assert.equal(quitada.foto, null);
@@ -147,5 +151,64 @@ describe('la foto del retablo', () => {
     assert.equal((await pedir('/retablo', hm.cookie, 'PUT', { foto: null, x: 120, y: 50 })).status, 400);
     const redes = await cargo(Role.REDES);
     assert.equal((await pedir('/retablo', redes.cookie, 'PUT', { foto: null, x: 50, y: 50 })).status, 403);
+  });
+});
+
+describe('los tiempos y la cuenta atrás del retablo', () => {
+  const FOTO_CUARESMA = '/storage/public/11111111111111111111111111111111.webp';
+  const FOTO_TODO_EL_ANIO = '/storage/public/22222222222222222222222222222222.webp';
+  // Un mes a mano que siempre incluye hoy: así la foto de hoy es la suya sea cuando sea.
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
+  const mm = hoy.slice(5, 7);
+  const ESTE_MES = { tiempo: 'a-mano', nombre: 'Este mes', desde: `${mm}-01`, hasta: `${mm}-28`, foto: FOTO_CUARESMA, x: 40, y: 20 };
+
+  test('se guardan con la foto de todo el año, y el Inicio recibe la foto que toca hoy', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    if (Number(hoy.slice(8, 10)) > 28) return t.skip('los días 29 a 31 caen fuera del mes de prueba');
+    const hm = await cargo(Role.HERMANO_MAYOR);
+    const guardado = await pedir('/retablo', hm.cookie, 'PUT', {
+      foto: FOTO_TODO_EL_ANIO, x: 50, y: 30, tiempos: [{ tiempo: 'cuaresma', foto: FOTO_CUARESMA, x: 50, y: 30 }, ESTE_MES], cuenta: { tipo: 'ninguna' },
+    });
+    assert.equal(guardado.status, 200);
+    const ajustes = await guardado.json();
+    assert.equal(ajustes.tiempos.length, 2);
+    assert.deepEqual(ajustes.cuenta, { tipo: 'ninguna' });
+    assert.ok('opciones' in ajustes);
+
+    const panel = await (await pedir('', hm.cookie)).json();
+    assert.deepEqual(panel.retablo, { foto: FOTO_CUARESMA, x: 40, y: 20, cuenta: null });
+
+    // Un cliente que solo manda la foto no borra los tiempos ni la cuenta.
+    await pedir('/retablo', hm.cookie, 'PUT', { foto: FOTO_TODO_EL_ANIO, x: 60, y: 30 });
+    const leido = await (await pedir('/retablo', hm.cookie)).json();
+    assert.equal(leido.tiempos.length, 2);
+    assert.deepEqual(leido.cuenta, { tipo: 'ninguna' });
+  });
+
+  test('la cuenta atrás hasta un acto de la Agenda lleva su nombre y su día', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const hm = await cargo(Role.HERMANO_MAYOR);
+    const acto = await db.evento.create({ data: { title: 'Triduo de prueba', startDate: new Date(Date.now() + 20 * 86400000) } });
+    eventos.push(acto.id);
+    await pedir('/retablo', hm.cookie, 'PUT', { foto: null, x: 50, y: 30, tiempos: [], cuenta: { tipo: 'acto', eventoId: acto.id } });
+    const panel = await (await pedir('', hm.cookie)).json();
+    ModulosService.olvidar();
+    if (await ModulosService.activo('agenda')) {
+      assert.equal(panel.retablo.cuenta.nombre, 'Triduo de prueba');
+      assert.equal(panel.retablo.cuenta.articulo, null);
+      assert.match(panel.retablo.cuenta.fecha, /^\d{4}-\d{2}-\d{2}$/);
+    } else {
+      assert.equal(panel.retablo.cuenta, null);
+    }
+  });
+
+  test('un tiempo sin foto, uno calculado repetido o un día que no existe, no', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const hm = await cargo(Role.HERMANO_MAYOR);
+    const con = (tiempos: unknown[]) => pedir('/retablo', hm.cookie, 'PUT', { foto: null, x: 50, y: 30, tiempos });
+    assert.equal((await con([{ tiempo: 'navidad', foto: '', x: 50, y: 30 }])).status, 400);
+    assert.equal((await con([{ tiempo: 'navidad', foto: FOTO_CUARESMA, x: 50, y: 30 }, { tiempo: 'navidad', foto: FOTO_CUARESMA, x: 50, y: 30 }])).status, 400);
+    assert.equal((await con([{ ...ESTE_MES, hasta: '02-30' }])).status, 400);
+    assert.equal((await con([{ tiempo: 'navidad', foto: 'https://otra-web.com/foto.jpg', x: 50, y: 30 }])).status, 400);
   });
 });
