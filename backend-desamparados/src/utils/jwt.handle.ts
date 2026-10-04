@@ -68,10 +68,12 @@ export const duracionSesionSegundos = (role: string): number =>
   esStaff(role) ? 8 * 3600 : 4 * 3600;
 
 /**
- * Duración de la sesión cuando se marca "Recordarme": 72 h desde el login,
- * para cualquier rol. Es una ventana fija: la actividad no la renueva.
+ * Duración de la sesión cuando se marca «Recuérdame», contada desde el login.
+ * La decide el ÁREA: el CMS da acceso al censo y a Tesorería y se usa en
+ * equipos compartidos, así que se recuerda menos que el área de hermanos.
+ * Es una ventana fija: la actividad no la renueva.
  */
-export const RECORDARME_SEGUNDOS = 72 * 3600;
+export const RECORDARME_SEGUNDOS = { cms: 2 * 24 * 3600, hermanos: 7 * 24 * 3600 } as const;
 
 /** El paso intermedio del 2FA caduca pronto: es solo para teclear un codigo */
 export const PENDIENTE_2FA_SEGUNDOS = 5 * 60;
@@ -103,7 +105,7 @@ const generateToken = (
     { id: userId, role, typ: 'session', origen, emitidoMs: Date.now() }, // <-- Guardamos el valor en la propiedad 'id'
     JWT_SECRET,
     {
-      expiresIn: recordarme ? RECORDARME_SEGUNDOS : duracionSesionSegundos(role),
+      expiresIn: recordarme ? RECORDARME_SEGUNDOS[origen] : duracionSesionSegundos(role),
       algorithm: 'HS256'
     }
   );

@@ -57,12 +57,16 @@ test('el staff del CMS dura 8 h y los hermanos 4 h', () => {
   assert.equal(duracionSesionSegundos('USER'), 4 * 3600);
 });
 
-test('con "recordarme" la sesión dura 72 h para cualquier rol', () => {
-  for (const role of ['USER', 'SECRETARIA', 'ADMIN']) {
-    const payload = verifyToken(generateToken(7, role, true), 'session');
-    assert.ok(payload, `token de ${role} debe verificarse`);
-    assert.equal(payload!.exp! - payload!.iat!, RECORDARME_SEGUNDOS, `rol ${role}`);
+test('con "recordarme" la sesión dura lo de su área para cualquier rol', () => {
+  for (const origen of ['cms', 'hermanos'] as const) {
+    for (const role of ['USER', 'SECRETARIA', 'ADMIN']) {
+      const payload = verifyToken(generateToken(7, role, true, origen), 'session');
+      assert.ok(payload, `token de ${role} debe verificarse`);
+      assert.equal(payload!.exp! - payload!.iat!, RECORDARME_SEGUNDOS[origen], `rol ${role} en ${origen}`);
+    }
   }
+  assert.equal(RECORDARME_SEGUNDOS.cms, 2 * 24 * 3600);
+  assert.equal(RECORDARME_SEGUNDOS.hermanos, 7 * 24 * 3600);
 });
 
 test('sin "recordarme" se mantiene la duración por rol', () => {

@@ -223,7 +223,7 @@ export default function AccesoCmsPage() {
 
                 <FormControlLabel
                   control={<Checkbox {...credentialsForm.register('recordarme')} />}
-                  label="Recordarme: mantener la sesión iniciada 72 horas"
+                  label="Recuérdame"
                 />
 
                 <Button type="submit" variant="contained" fullWidth disabled={credentialsForm.formState.isSubmitting}>

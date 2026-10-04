@@ -182,7 +182,7 @@ export default function AccesoPage() {
 
               <FormControlLabel
                 control={<Checkbox {...credentialsForm.register('recordarme')} />}
-                label="Recordarme: mantener la sesión iniciada 72 horas"
+                label="Recuérdame"
               />
 
               <Boton type="submit" fullWidth disabled={credentialsForm.formState.isSubmitting}>

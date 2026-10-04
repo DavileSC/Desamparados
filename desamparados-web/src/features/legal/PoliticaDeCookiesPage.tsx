@@ -20,8 +20,8 @@ export default function PoliticaDeCookiesPage() {
     ['desamparados-cookies-consent', 'Almacenamiento local', 'Recordar si se aceptaron o se rechazaron los contenidos de terceros.', 'Hasta que se cambie la decisión o se borren los datos del navegador.', PROPIA],
     ...(activo('tienda-web') ? [['tienda-cesta', 'Almacenamiento local', 'Guardar la cesta de la tienda entre visitas, hasta pagarla.', 'Hasta que se pague, se vacíe o se borren los datos del navegador.', PROPIA]] : []),
     ['desamparados:porPagina', 'Almacenamiento de sesión', 'Recordar cuántos elementos se ven por página en los listados.', 'Hasta cerrar la pestaña.', PROPIA],
-    ...(activo('area-hermanos') ? [['desamparados_hermano', 'Cookie técnica', 'Mantener abierta la sesión del área de hermanos.', '4 horas (72 horas si se marca «Recordarme»).', PROPIA]] : []),
-    ['desamparados_cms', 'Cookie técnica', 'Mantener abierta la sesión del personal en el gestor de la web.', 'Hasta cerrar el navegador (72 horas si se marca «Recordarme»).', PROPIA],
+    ...(activo('area-hermanos') ? [['desamparados_hermano', 'Cookie técnica', 'Mantener abierta la sesión del área de hermanos.', '4 horas (7 días si se marca «Recuérdame»).', PROPIA]] : []),
+    ['desamparados_cms', 'Cookie técnica', 'Mantener abierta la sesión del personal en el gestor de la web.', 'Hasta cerrar el navegador (2 días si se marca «Recuérdame»).', PROPIA],
     ['desamparados_2fa', 'Cookie técnica', 'Completar la verificación en dos pasos al entrar en el gestor.', '5 minutos.', PROPIA],
     ['cms-tema, cms-menu-grupo, cms.inicio.pestana', 'Almacenamiento local', 'Solo del personal: el tema claro u oscuro y el menú del gestor.', 'Hasta que se borren los datos del navegador.', PROPIA],
   ]

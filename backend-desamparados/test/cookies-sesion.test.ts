@@ -38,9 +38,11 @@ test('la cookie de hermanos persiste, también para un cargo de la junta', () =>
   assert.ok(typeof tesorero.maxAge === 'number' && tesorero.maxAge > 0);
 });
 
-test('con "recordarme" las dos persisten 72 h', () => {
+test('con "recordarme" el CMS persiste 2 días y el área de hermanos 7', () => {
+  assert.equal(opcionesCookieSesion('cms', 'ADMIN', true).maxAge, 2 * 24 * 3600 * 1000);
+  assert.equal(opcionesCookieSesion('hermanos', 'ADMIN', true).maxAge, 7 * 24 * 3600 * 1000);
   for (const area of ['cms', 'hermanos'] as const) {
-    assert.equal(opcionesCookieSesion(area, 'ADMIN', true).maxAge, RECORDARME_SEGUNDOS * 1000, `área ${area}`);
+    assert.equal(opcionesCookieSesion(area, 'USER', true).maxAge, RECORDARME_SEGUNDOS[area] * 1000, `área ${area}`);
   }
 });
 

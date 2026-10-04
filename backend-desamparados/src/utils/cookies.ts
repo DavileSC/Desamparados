@@ -39,12 +39,12 @@ const base = (path: string): CookieOptions => ({
  * de hermanos a ver su perfil se llevaba la cookie corta del CMS sin estar en
  * el CMS.
  *
- * Con «Recordarme» (cualquier área, cualquier rol): 72 h, alineadas con el JWT.
+ * Con «Recuérdame» (cualquier rol): la duración de su área, alineada con el JWT.
  */
 export const opcionesCookieSesion = (area: AreaSesion, role: string, recordarme = false): CookieOptions => ({
   ...base(RUTA_SESION),
   ...(recordarme
-    ? { maxAge: RECORDARME_SEGUNDOS * 1000 }
+    ? { maxAge: RECORDARME_SEGUNDOS[area] * 1000 }
     : area === 'cms'
       ? {}
       : { maxAge: duracionSesionSegundos(role) * 1000 })

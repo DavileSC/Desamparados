@@ -224,7 +224,7 @@ export class AuthController {
    *
    * Cierra el área que se pida, y las dos si no se pide ninguna. Borrar solo la
    * cookie dejaba vivo el token: quien lo hubiera copiado seguía dentro sus 8 h
-   * (o 72 h con «Recordarme») aunque se hubiera cerrado sesión en un equipo
+   * (o días con «Recuérdame») aunque se hubiera cerrado sesión en un equipo
    * compartido. Por eso además se revoca en el servidor.
    */
   static async logout(req: Request, res: Response) {
