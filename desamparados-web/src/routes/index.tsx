@@ -87,6 +87,7 @@ const MiSeguridadPage = lazy(() => import('../features/cms/MiSeguridadPage'))
 const AvisoLegalPage = lazy(() => import('../features/legal/AvisoLegalPage'))
 const PoliticaDePrivacidadPage = lazy(() => import('../features/legal/PoliticaDePrivacidadPage'))
 const PoliticaDeCookiesPage = lazy(() => import('../features/legal/PoliticaDeCookiesPage'))
+const CondicionesDeCompraPage = lazy(() => import('../features/legal/CondicionesDeCompraPage'))
 const BajaBoletinPage = lazy(() => import('../features/boletin/BajaBoletinPage'))
 const TiendaPage = lazy(() => import('../features/tienda/TiendaPage'))
 const PedidoTiendaPage = lazy(() => import('../features/tienda/PedidoTiendaPage'))
@@ -184,6 +185,7 @@ const router = createBrowserRouter([
           { path: 'aviso-legal', element: pagina(AvisoLegalPage, 'nucleo') },
           { path: 'politica-privacidad', element: pagina(PoliticaDePrivacidadPage, 'nucleo') },
           { path: 'politica-cookies', element: pagina(PoliticaDeCookiesPage, 'nucleo') },
+          { path: 'condiciones-de-compra', element: pagina(CondicionesDeCompraPage, 'tienda-web') },
           // Las direcciones de antes de quitar las portadas de sección (25-09-2026):
           // /corporacion/historia sigue llevando a /historia, y así con todas.
           { path: 'corporacion/*', element: <DireccionAntigua /> },

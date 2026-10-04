@@ -1,10 +1,13 @@
 import { Link, Typography } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
 import DatosDeIdentificacion from './DatosDeIdentificacion'
+import { Enlace } from './piezas'
+import { useModulos } from '../../hooks/useModulos'
 import { site } from '../../config/site'
 import { deLaCorporacion, laCorporacion, mayuscula, segunLaCorporacion } from '../../domain/articulos'
 
 export default function AvisoLegalPage() {
+  const tienda = useModulos().activo('tienda-web')
   return (
     <MarcoPaginaLegal
       title="Aviso Legal"
@@ -57,12 +60,27 @@ export default function AvisoLegalPage() {
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
-        5. Contacto y cumplimiento
+        5. Protección de datos, cookies y compras
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
-        Para consultas sobre este sitio o sobre el tratamiento de datos puede utilizarse el canal de contacto
-        oficial indicado por {laCorporacion()}. Este aviso debe ser revisado y completado por el responsable legal
-        antes de su puesta en producción.
+        Cómo se tratan los datos personales se explica en la <Enlace a="/politica-privacidad">Política de privacidad</Enlace>,
+        y lo que la web guarda en el navegador, en la <Enlace a="/politica-cookies">Política de cookies</Enlace>.
+        {tienda && <> Las compras en la tienda se rigen por las <Enlace a="/condiciones-de-compra">Condiciones de compra</Enlace>.</>}
+      </Typography>
+
+      <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
+        6. Contacto
+      </Typography>
+      <Typography component="p" sx={{ mb: 2 }}>
+        Para cualquier consulta sobre esta web puede escribirse a {site.contacto.email}
+        {site.contacto.telefono ? ` o llamarse al ${site.contacto.telefono}` : ''}.
+      </Typography>
+
+      <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
+        7. Legislación aplicable
+      </Typography>
+      <Typography component="p" sx={{ mb: 2 }}>
+        Este aviso y el uso de la web se rigen por la legislación española.
       </Typography>
     </MarcoPaginaLegal>
   )

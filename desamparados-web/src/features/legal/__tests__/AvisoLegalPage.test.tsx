@@ -33,7 +33,8 @@ describe('AvisoLegalPage con otra instalación', () => {
     expect(await screen.findByText(/información sobre la Hermandad, sus actividades/)).toBeInTheDocument()
     expect(screen.getByText(/son propiedad de la Hermandad o de terceros/)).toBeInTheDocument()
     expect(screen.getByText(/La Hermandad se rige por las/)).toBeInTheDocument()
-    expect(screen.getByText(/indicado por la Hermandad\. Este aviso/)).toBeInTheDocument()
+    // La frase provisional («debe ser revisado… antes de su puesta en producción») ya no sale en público.
+    expect(screen.queryByText(/puesta en producción/)).not.toBeInTheDocument()
     // Excepción real y documentada: la denominación jurídica exacta inscrita
     // (config/site.ts) es un dato legal propio, no una frase calculada, y por
     // eso sigue diciendo «Grupo Parroquial» aunque la instalación sea otra.

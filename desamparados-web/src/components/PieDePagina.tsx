@@ -17,6 +17,7 @@ import { aplanarMenu } from '../config/navegacion'
 import { useMenuPublico } from '../hooks/useMenuPublico'
 import ContenedorDePagina from './ContenedorDePagina'
 import { useConsentimientoDeCookies } from '../hooks/useConsentimientoDeCookies'
+import { useModulos } from '../hooks/useModulos'
 import { BOTON } from './estiloDeBoton'
 import { designTokens } from '../theme'
 
@@ -58,10 +59,12 @@ const columnas: { titulo: string; rutas: string[] }[][] = [
   ],
 ]
 
+// Las condiciones de compra, solo con la tienda encendida.
 const legalLinks = [
   { label: 'Aviso legal', to: '/aviso-legal' },
   { label: 'Privacidad', to: '/politica-privacidad' },
   { label: 'Cookies', to: '/politica-cookies' },
+  { label: 'Condiciones de compra', to: '/condiciones-de-compra', modulo: 'tienda-web' as const },
 ]
 
 const MAP_EMBED_URL =
@@ -108,6 +111,7 @@ export default function PieDePagina() {
   // su módulo está apagado), su enlace deja de pintarse en vez de quedar muerto.
   const entradasMenu = new Map(aplanarMenu(useMenuPublico()).map((entrada) => [entrada.href, entrada.label]))
   const { aceptadas, volverAPreguntar } = useConsentimientoDeCookies()
+  const { activo } = useModulos()
   // RGPD: el iframe de Google Maps envía la IP del visitante a Google. Solo se carga si el
   // usuario ha aceptado las cookies o pulsa explícitamente "Mostrar mapa" (click-to-load).
   const [mapRequested, setMapRequested] = useState(false)
@@ -301,7 +305,7 @@ export default function PieDePagina() {
               © {year} {site.nombre}
             </Typography>
             <Box component="nav" aria-label="Información legal" sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 3, rowGap: 1 }}>
-              {legalLinks.map((link) => (
+              {legalLinks.filter((link) => !link.modulo || activo(link.modulo)).map((link) => (
                 <MuiLink key={link.to} component={Link} to={link.to} sx={{ ...enlace, fontSize: 13 }}>
                   {link.label}
                 </MuiLink>

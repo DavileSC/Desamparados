@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Alert, Box, ButtonBase, Paper, TextField, Typography } from '@mui/material'
+import { Alert, Box, ButtonBase, Link as EnlaceMui, Paper, TextField, Typography } from '@mui/material'
+import { Link } from 'react-router-dom'
 import Boton from '../../components/Boton'
 import type { MetodoEnLinea } from '../../lib/api/tienda'
 import { GOLD, PAPEL } from '../inicio/estilos'
@@ -90,6 +91,13 @@ export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCa
           <Typography sx={{ fontWeight: 600 }}>{euros(total)}</Typography>
         </Box>
         {error && <Alert severity="error">{error}</Alert>}
+        {/* Lo que pide la ley antes de pagar: las condiciones de la compra y, al pedir los datos, para qué se usan. */}
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+          Al pagar aceptas las{' '}
+          <EnlaceMui component={Link} to="/condiciones-de-compra" target="_blank" sx={{ color: 'secondary.main' }}>condiciones de compra</EnlaceMui>
+          . Tus datos solo se usan para gestionar el pedido; más en la{' '}
+          <EnlaceMui component={Link} to="/politica-privacidad" target="_blank" sx={{ color: 'secondary.main' }}>política de privacidad</EnlaceMui>.
+        </Typography>
         <Boton onClick={() => onPagar(comprador)} disabled={!listo || enviando} fullWidth>{enviando ? 'Un momento…' : `Pagar ${euros(total)}`}</Boton>
         <Boton appVariant="claro" onClick={() => setPaso('cesta')} disabled={enviando} fullWidth>Volver a la cesta</Boton>
       </>}
