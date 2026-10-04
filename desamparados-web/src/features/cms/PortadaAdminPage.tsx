@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react'
-import { Alert, Box, CircularProgress, Divider, IconButton, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import { Alert, Box, CircularProgress, Divider, FormControlLabel, IconButton, Paper, Stack, Switch, TextField, Tooltip, Typography } from '@mui/material'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import { Helmet } from 'react-helmet-async'
@@ -20,6 +20,8 @@ import AvisoFotoDeCabecera from './portada/AvisoFotoDeCabecera'
 import { MAX_FOTOS_PORTADA, useEdicionDePortada } from './portada/useEdicionDePortada'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
+import { useModulos } from '../../hooks/useModulos'
+import CuentaAtrasDeSalida from '../inicio/CuentaAtrasDeSalida'
 
 export { MAX_FOTOS_PORTADA }
 
@@ -30,6 +32,7 @@ const AYUDA_FOTO_SABADO = `${AYUDA_FOTO} Ocupa el fondo del bloque a todo lo anc
   + 'Al cambiarla y guardar, la anterior se borra del servidor salvo que la use algo más.'
 
 export default function PortadaAdminPage() {
+  const { activo } = useModulos()
   const idMosaico = useId()
   const {
     filas, textos, error, guardado, guardando, sucio, borrador,
@@ -65,7 +68,7 @@ export default function PortadaAdminPage() {
           de los bloques) es parte del diseño y no se toca desde el CMS.
         </Typography>
 
-        <SeccionPlegable titulo="Cabecera" abiertaPorDefecto vistaPrevia={vista(<Hero />)}>
+        <SeccionPlegable titulo="Cabecera" abiertaPorDefecto vistaPrevia={vista(<><Hero /><CuentaAtrasDeSalida forma="franja" /></>)}>
           <CampoTexto
             etiqueta="Antetítulo"
             valor={textos.hero.ceja}
@@ -102,6 +105,17 @@ export default function PortadaAdminPage() {
             maxLength={60}
             ayuda="El enlace de al lado. Sigue llevando a la agenda."
           />
+          {activo('procesion') && (
+            <Box>
+              <FormControlLabel
+                control={<Switch checked={textos.hero.cuentaAtras !== false} onChange={(e) => cambiarHero({ cuentaAtras: e.target.checked })} />}
+                label="Cuenta atrás hasta la próxima salida"
+              />
+              <Typography variant="body2" color="text.secondary">
+                En el ordenador, abajo a la izquierda de la cabecera; en el móvil, en una franja bajo ella. Cuenta hasta la salida más cercana de Procesión, a su hora.
+              </Typography>
+            </Box>
+          )}
 
           <Divider sx={{ pt: 1 }} />
 

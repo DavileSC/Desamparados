@@ -1,4 +1,5 @@
 import { useContext, useEffect, useRef, useState, type MouseEvent } from 'react'
+import CuentaAtrasDeSalida from './CuentaAtrasDeSalida'
 import { Box, IconButton, Typography } from '@mui/material'
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
@@ -224,13 +225,11 @@ export default function Hero() {
           sx={{
             position: 'absolute',
             zIndex: 3,
-            // Arriba a la derecha en el móvil, donde abajo no queda sitio libre
-            // entre los botones; abajo a la izquierda en escritorio, lejos de
-            // los textos, que van a la derecha.
-            top: { xs: 12, md: 'auto' },
-            right: { xs: 12, md: 'auto' },
-            left: { md: 28 },
-            bottom: { md: 28 },
+            // Arriba a la derecha: en el móvil, abajo no queda sitio libre entre
+            // los botones; en escritorio, abajo a la izquierda va la cuenta
+            // atrás. Por debajo de la barra fija, que tapa los primeros 72 px.
+            top: { xs: 12, md: 96 },
+            right: { xs: 12, md: 28 },
             width: 40,
             height: 40,
             color: 'rgba(255,255,255,0.8)',
@@ -242,6 +241,7 @@ export default function Hero() {
           {pausado ? <PlayArrowRoundedIcon fontSize="small" /> : <PauseRoundedIcon fontSize="small" />}
         </IconButton>
       )}
+      <CuentaAtrasDeSalida forma="hero" />
       <Box
         sx={{
           position: 'relative',

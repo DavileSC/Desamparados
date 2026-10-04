@@ -17,7 +17,8 @@ interface ApiImagenPortada {
 
 export interface TextosPortada {
   /** `video`: el vídeo de fondo (`/storage/public/….mp4`), o vacío para que roten las fotos. */
-  hero: { ceja: string; titulo: string; parrafo: string; botonPrincipal: string; enlaceSecundario: string; video: string }
+  /** `cuentaAtras`: la cuenta atrás hasta la próxima salida; sin el campo (portadas de antes), sale. */
+  hero: { ceja: string; titulo: string; parrafo: string; botonPrincipal: string; enlaceSecundario: string; video: string; cuentaAtras?: boolean }
   actualidad: { ceja: string; titulo: string; enlace: string }
   /** `imagenUrl`: la foto velada del fondo; vacía, fondo oscuro liso. */
   agenda: { ceja: string; titulo: string; parrafo: string; enlace: string; directoTitulo: string; directoTexto: string; imagenUrl: string }

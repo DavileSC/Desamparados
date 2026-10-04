@@ -8,6 +8,10 @@ import { crearSalidaSchema, editarSalidaSchema, fechaDeSalidaSchema } from '../s
 
 /** Las activas, para la web pública y el área de hermanos: basta con sesión, de cualquiera de las dos áreas. */
 const salidasRouter = Router();
+// La próxima salida, para la cuenta atrás de la portada: pública, porque la
+// portada la ve cualquiera. Va antes de exigir sesión y solo dice el nombre,
+// el día y la hora: las cuotas, los puestos y el cortejo siguen tras la sesión.
+salidasRouter.get('/proxima', SalidasController.proxima);
 salidasRouter.use(authenticateToken);
 salidasRouter.get('/', SalidasController.listarWeb);
 

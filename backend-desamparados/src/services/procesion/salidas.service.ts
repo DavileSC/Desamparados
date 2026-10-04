@@ -12,11 +12,12 @@ import { FechaSalida, Prisma, TipoEvento, type Evento, type Salida } from '@pris
 import db from '../../config/db.js';
 import { HttpError } from '../../utils/error.handle.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
-import { diaMadrid, fechaDeSalida, anioDeLaSalida, type ReglaFecha } from '../../domain/fecha-salida.js';
+import { diaMadrid, fechaDeSalida, anioDeLaSalida, proximaFecha, type ReglaFecha } from '../../domain/fecha-salida.js';
+import { enMadrid } from '../../domain/datos-areas.js';
 import type { PuestoDelCatalogo } from '../../domain/salidas.js';
 import type { ConfiguracionCortejo } from '../../domain/cortejo.js';
 import type { DatosSalida, SalidaWeb } from '../../dtos/procesion.dto.js';
-import { articuloDe } from '../../domain/articulos.js';
+import { articuloDe, type Articulo } from '../../domain/articulos.js';
 
 export type SalidaConActo = Salida & { acto: Evento | null };
 
@@ -65,7 +66,37 @@ export function salidaDe(peticion: { query?: Record<string, unknown>; body?: unk
   return SalidasService.porSlug(typeof slug === 'string' ? slug : undefined);
 }
 
+/** La próxima salida para la cuenta atrás de la portada: lo justo, nada de cuotas ni puestos. */
+export interface ProximaSalida {
+  nombre: string;
+  articulo: Articulo;
+  /** El día en Madrid, `AAAA-MM-DD`. */
+  dia: string;
+  /** La hora de salida en Madrid, `HH:MM`, o null si no se ha puesto. */
+  hora: string | null;
+}
+
 export class SalidasService {
+  /**
+   * La salida activa que antes llega, de hoy en adelante (el mismo día todavía
+   * cuenta: la portada dice «hoy»). Las de la Pascua, con su hora de salida;
+   * las de fecha a mano, con la de su acto de la Agenda.
+   */
+  static async proxima(hoy = diaMadrid(new Date())): Promise<ProximaSalida | null> {
+    let mejor: ProximaSalida | null = null;
+    for (const s of await SalidasService.listar()) {
+      const dia = proximaFecha(reglaDe(s), hoy);
+      if (!dia) continue;
+      const hora = s.fecha === FechaSalida.MANUAL
+        ? (s.acto ? enMadrid(s.acto.startDate.toISOString()).hora : null)
+        : (s.horaSalida && /^\d{2}:\d{2}$/.test(s.horaSalida) ? s.horaSalida : null);
+      const candidata: ProximaSalida = { nombre: s.nombre, articulo: articuloDe(s), dia, hora };
+      const clave = (x: ProximaSalida) => `${x.dia}T${x.hora ?? '00:00'}`;
+      if (!mejor || clave(candidata) < clave(mejor)) mejor = candidata;
+    }
+    return mejor;
+  }
+
   /**
    * La salida de un `?salida=<slug>`. Sin ella no se sabe de qué salida se
    * habla, y antes se suponía la Pasión: con varias salidas, suponer es

@@ -46,6 +46,17 @@ export type DatosSalida = Omit<Salida, 'id' | 'eventoId' | 'plazoAbierto' | 'cor
 export const CLAVE_SALIDAS = ['salidas'] as const
 
 export const salidas = () => llamarApi<Salida[]>('/salidas')
+
+/** La próxima salida, para la cuenta atrás de la portada: pública y con lo justo. */
+export interface ProximaSalidaWeb {
+  nombre: string
+  articulo: Articulo
+  /** El día en Madrid, `AAAA-MM-DD`. */
+  dia: string
+  /** La hora de salida en Madrid, `HH:MM`; null si no se ha puesto. */
+  hora: string | null
+}
+export const proximaSalidaWeb = () => llamarApi<{ proxima: ProximaSalidaWeb | null }>('/salidas/proxima')
 export const salidasDelCms = () => llamarApi<Salida[]>('/cms/salidas')
 export const crearSalida = (datos: DatosSalida) => llamarApi<Salida>('/cms/salidas', { method: 'POST', json: datos })
 export const editarSalida = (id: number, datos: Partial<DatosSalida>) => llamarApi<Salida>(`/cms/salidas/${id}`, { method: 'PUT', json: datos })

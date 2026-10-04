@@ -16,6 +16,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { PASION } from './fixtures/salidas.js';
+import { SalidasService } from '../src/services/procesion/salidas.service.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
@@ -374,5 +375,31 @@ test('fijar la fecha de otro año crea un acto nuevo y deja el viejo en la Agend
     await db.salida.deleteMany({ where: { slug } });
     if (eventos.length) await db.evento.deleteMany({ where: { id: { in: eventos } } });
     await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+test('la próxima salida es pública y solo dice nombre, artículo, día y hora; la lista sigue pidiendo sesión', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const publica = await fetch(`${baseUrl}/api/salidas/proxima`);
+  // Con Procesión apagada en esta base, la ruta entera da 404: no hay nada que comprobar.
+  if (publica.status === 404) { t.skip('Procesión está apagada en esta base'); return; }
+  assert.equal(publica.status, 200);
+  const { proxima } = await publica.json() as { proxima: Record<string, unknown> | null };
+  if (proxima) assert.deepEqual(Object.keys(proxima).sort(), ['articulo', 'dia', 'hora', 'nombre']);
+  assert.equal((await fetch(`${baseUrl}/api/salidas`)).status, 401);
+});
+
+test('la próxima salida: la de fecha a mano, con la hora de Madrid de su acto, si llega antes que la de la Pascua', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const slug = `prueba-proxima-${Date.now()}`;
+  const acto = await db.evento.create({ data: { title: 'Rosario de prueba', startDate: new Date('2098-10-10T18:00:00.000Z') } });
+  try {
+    await db.salida.create({ data: { slug, nombre: 'Rosario de prueba', articulo: 'el', fecha: 'MANUAL', eventoId: acto.id, puestos: [] } });
+    const proxima = await SalidasService.proxima('2098-10-01');
+    // A las 18:00 UTC de octubre son las 20:00 en Madrid.
+    assert.deepEqual(proxima, { nombre: 'Rosario de prueba', articulo: 'el', dia: '2098-10-10', hora: '20:00' });
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    await db.evento.deleteMany({ where: { id: acto.id } });
   }
 });

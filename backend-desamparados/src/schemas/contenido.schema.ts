@@ -38,6 +38,9 @@ const heroSchema = type({
   // «ahorro de datos» o el «reducir movimiento» puestos. Su tope de peso lo
   // vuelve a comprobar `ContenidoService.guardar` sobre el fichero.
   video: sinFoto.or(rutaVideoPublica),
+  // La cuenta atrás hasta la próxima salida. Opcional: sin el campo (las
+  // portadas guardadas antes), la web la enseña.
+  'cuentaAtras?': 'boolean',
 });
 
 const portadaSchema = type({

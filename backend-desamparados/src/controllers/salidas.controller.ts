@@ -15,6 +15,10 @@ export class SalidasController {
     res.json(salidas.map((s) => SalidasService.paraLaWeb(s)));
   });
 
+  static proxima = manejar('Error obteniendo la próxima salida', async (_req, res) => {
+    res.json({ proxima: await SalidasService.proxima() });
+  });
+
   static listarCms = manejar('Error obteniendo las salidas', async (_req, res) => {
     const salidas = await SalidasService.listar({ todas: true });
     res.json(salidas.map((s) => SalidasService.paraLaWeb(s)));

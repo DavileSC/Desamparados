@@ -352,9 +352,9 @@ describe('PortadaAdminPage', { timeout: 15_000 }, () => {
     // Si esta pantalla y features/inicio/useContenidoPortada.ts dejan de compartir
     // clave, guardar deja de refrescar el inicio y nadie se entera.
     const { usuario, queryClient, invalidar } = montar({ conPortadaPublica: true })
-    await waitFor(() => expect(queryClient.getQueryCache().getAll()).toHaveLength(1))
-    const clavePublica = queryClient.getQueryCache().getAll()[0].queryKey
-    expect(clavePublica).toEqual(['home', 'portada'])
+    // La vista previa de la cabecera pide además las salidas (la cuenta atrás): se busca la de la portada entre todas.
+    const clavePublica = ['home', 'portada']
+    await waitFor(() => expect(queryClient.getQueryCache().getAll().map((q) => q.queryKey)).toContainEqual(clavePublica))
 
     await retocar(usuario, await screen.findByDisplayValue('Desamparados Málaga'))
     await guardar(usuario)
