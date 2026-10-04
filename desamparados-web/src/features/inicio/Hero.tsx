@@ -184,13 +184,15 @@ export default function Hero() {
               aria-hidden={activa ? undefined : true}
               fetchPriority={i === 0 ? 'high' : undefined}
               decoding="async"
-              initial={{ opacity: 0, ...(sePosa ? { scale: ZOOM_DE_ENTRADA } : {}) }}
+              // El zoom va en `transform`, no en `scale`: así lo hace la tarjeta
+              // gráfica y no da tirones mientras se monta el resto de la portada.
+              initial={{ opacity: 0, ...(sePosa ? { transform: `scale(${ZOOM_DE_ENTRADA})` } : {}) }}
               // La que entra se funde por encima; la que sale espera tapada a que
               // termine el fundido y se apaga de golpe. Si las dos se fundieran a
               // la vez, a mitad se vería el fondo oscuro a través de ambas.
-              animate={{ opacity: activa ? OPACIDAD_FOTO : 0, ...(sePosa ? { scale: 1 } : {}) }}
+              animate={{ opacity: activa ? OPACIDAD_FOTO : 0, ...(sePosa ? { transform: 'scale(1)' } : {}) }}
               transition={activa
-                ? { opacity: { duration: FUNDIDO_S, ease: 'easeInOut' }, scale: { duration: POSADO_S, ease: CURVA_ENTRADA } }
+                ? { opacity: { duration: FUNDIDO_S, ease: 'easeInOut' }, transform: { duration: POSADO_S, ease: CURVA_ENTRADA } }
                 : { duration: 0, delay: FUNDIDO_S }}
               sx={{
                 position: 'absolute',

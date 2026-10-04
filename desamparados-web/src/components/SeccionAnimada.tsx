@@ -16,11 +16,23 @@ const VIEWPORT = { once: true, margin: '0px 0px -12% 0px' } as const
  * - crecer: tarjetas y objetos (noticias, la agenda, los boletines, las teselas).
  * - cortina: titulares grandes: el texto asoma por detrás de una línea invisible.
  * - desvelar: placas y fotos: se descubren de izquierda a derecha, sin fundido.
+ *
+ * El movimiento va en `transform` y no en `y`/`scale`: framer-motion solo pasa
+ * a la tarjeta gráfica opacity, clipPath, filter y transform; `y` y `scale` los
+ * calcula cuadro a cuadro en el hilo principal. En los primeros segundos ese
+ * hilo está montando la página y las entradas iban a tirones.
+ *
+ * Se anima hasta el valor neutro escrito (`translateY(0px) scale(1)`) y ahí se
+ * queda: framer-motion convierte cualquier `none` (también en `transitionEnd`)
+ * en las mismas funciones a cero, y las tarjetas acababan en `scale(0)`,
+ * invisibles. Por eso nada que vaya `position: fixed` debe ir dentro de un
+ * Revela: el transform que queda le haría de caja de referencia.
  */
+
 const EFECTOS = {
-  subir: { oculto: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0 }, duracion: 1 },
-  crecer: { oculto: { opacity: 0, y: 48, scale: 0.94 }, visible: { opacity: 1, y: 0, scale: 1 }, duracion: 1.1 },
-  cortina: { oculto: { opacity: 0, y: '115%' }, visible: { opacity: 1, y: 0 }, duracion: 1.1 },
+  subir: { oculto: { opacity: 0, transform: 'translateY(40px)' }, visible: { opacity: 1, transform: 'translateY(0px)' }, duracion: 1 },
+  crecer: { oculto: { opacity: 0, transform: 'translateY(48px) scale(0.94)' }, visible: { opacity: 1, transform: 'translateY(0px) scale(1)' }, duracion: 1.1 },
+  cortina: { oculto: { opacity: 0, transform: 'translateY(115%)' }, visible: { opacity: 1, transform: 'translateY(0%)' }, duracion: 1.1 },
   desvelar: { oculto: { clipPath: 'inset(0 100% 0 0)' }, visible: { clipPath: 'inset(0 0 0 0)' }, duracion: 1.2 },
 } satisfies Record<string, { oculto: TargetAndTransition; visible: TargetAndTransition; duracion: number }>
 

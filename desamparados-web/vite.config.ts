@@ -21,27 +21,32 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 600,
       rollupOptions: {
         output: {
+          // Con nombre propio solo va lo que usa toda la web, que así se queda en
+          // la caché entre despliegues. El resto de librerías no lleva nombre y el
+          // empaquetador las pone junto a la página perezosa que las pide. Antes
+          // acababan todas en un «vendor» común de 1,8 MB —el mapa, el editor del
+          // CMS, el lector de QR…— que se descargaba y compilaba en la primera
+          // visita a cualquier página: la web iba a tirones los primeros segundos.
+          //
+          // Se compara el nombre del paquete, no un trozo de la ruta: con
+          // `includes('react')` caían en vendor-react @tiptap/react,
+          // react-hook-form o @tanstack/react-query.
           manualChunks(id: string) {
-            if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-router-dom')) {
-                return 'vendor-react'
-              }
-              if (id.includes('@mui') || id.includes('@emotion')) {
-                return 'vendor-mui'
-              }
-              if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
-                return 'vendor-forms'
-              }
-              if (
-                id.includes('framer-motion') ||
-                id.includes('react-helmet-async') ||
-                id.includes('@tanstack/react-query') ||
-                id.includes('zustand')
-              ) {
-                return 'vendor-utils'
-              }
-              return 'vendor'
+            const paquete = /node_modules[\\/]((?:@[^\\/]+[\\/])?[^\\/]+)/.exec(id)?.[1]?.replace('\\', '/')
+            if (!paquete) return undefined
+            if (['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler'].includes(paquete)) {
+              return 'vendor-react'
             }
+            if (paquete.startsWith('@mui/') || paquete.startsWith('@emotion/')) {
+              return 'vendor-mui'
+            }
+            if (['react-hook-form', '@hookform/resolvers', 'zod'].includes(paquete)) {
+              return 'vendor-forms'
+            }
+            if (['framer-motion', 'motion-dom', 'motion-utils', 'react-helmet-async', '@tanstack/react-query', '@tanstack/query-core', 'zustand'].includes(paquete)) {
+              return 'vendor-utils'
+            }
+            return undefined
           },
         },
       },
