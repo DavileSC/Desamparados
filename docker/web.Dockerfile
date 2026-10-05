@@ -7,7 +7,7 @@
 # porque aquí se copian tanto `desamparados-web/` como `docker/nginx/`.
 
 # ---------------------------------------------------------------------------
-FROM node:22-bookworm-slim AS construccion
+FROM node:24-bookworm-slim AS construccion
 
 WORKDIR /app/desamparados-web
 

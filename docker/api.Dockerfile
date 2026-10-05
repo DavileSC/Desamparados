@@ -13,12 +13,13 @@
 #   - `herramientas` la misma más el CLI de Prisma y lo necesario para las
 #                    migraciones, la siembra y los scripts de mantenimiento.
 #
-# Node 22 porque es la del CI (.github/workflows/verificacion.yml) y la que
-# pide docs/despliegue.md. Debian y no Alpine: sharp y el cliente de Prisma
+# Node 24 porque es la del CI (.github/workflows/verificacion.yml) y la de
+# desarrollo. No la 22: su ejecutor de pruebas fallaba a ratos al leer la
+# salida de los ficheros de prueba («Unable to deserialize cloned data»). Debian y no Alpine: sharp y el cliente de Prisma
 # traen binarios compilados para glibc.
 
 # ---------------------------------------------------------------------------
-FROM node:22-bookworm-slim AS base
+FROM node:24-bookworm-slim AS base
 
 ENV NODE_ENV=production
 WORKDIR /app/backend-desamparados
@@ -80,7 +81,7 @@ RUN mkdir -p storage/public storage/private && chown -R node:node storage
 USER node
 EXPOSE 3001
 
-# La imagen no trae curl; Node 22 tiene fetch.
+# La imagen no trae curl; Node tiene fetch.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3001)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
