@@ -16,6 +16,8 @@
 #   5. Si BACKUP_RCLONE_REMOTE está definida, sube la copia con rclone. Una
 #      copia que solo vive en el mismo servidor no sobrevive a que se pierda
 #      el servidor.
+#   6. Si BACKUP_RCLONE_DIAS está definida, borra allí las copias viejas
+#      (para destinos sin reglas de ciclo de vida, como Google Drive).
 #
 # Configuración (variables de entorno; en el servidor, en el EnvironmentFile
 # del servicio systemd, ver docs/despliegue.md):
@@ -24,6 +26,10 @@
 #   BACKUP_DIR             Dónde guardar las copias locales. Por defecto /var/backups/desamparados.
 #   BACKUP_RETENTION_DAYS  Días que se conservan las copias locales. Por defecto 14.
 #   BACKUP_RCLONE_REMOTE   Destino de rclone (p. ej. «copias:grupo-parroquial/desamparados»). Opcional.
+#   BACKUP_RCLONE_DIAS     Días de copias diarias que se conservan en el destino. Sin ella, allí no se borra nada.
+#   BACKUP_RCLONE_MESES    Además, la primera copia de cada mes durante estos meses. Por defecto 12.
+#   BACKUP_GRUPO_LECTOR    Grupo que puede leer las copias locales (el usuario con el que las baja
+#                          otro equipo, ver docs/servidor.md). Sin ella, solo las lee su dueño.
 #   PROYECTO_DIR           Carpeta con compose.yaml. Por defecto, la raíz del repositorio.
 #   APP_DIR                Carpeta de backend-desamparados. Por defecto, la de este script.
 #
@@ -46,8 +52,11 @@ APP_DIR="${APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 PROYECTO_DIR="${PROYECTO_DIR:-$(cd "$APP_DIR/.." && pwd)}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/desamparados}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
+BACKUP_RCLONE_MESES="${BACKUP_RCLONE_MESES:-12}"
 
 [[ "$BACKUP_RETENTION_DAYS" =~ ^[0-9]+$ ]] || fallo "BACKUP_RETENTION_DAYS debe ser un número de días."
+[[ -z "${BACKUP_RCLONE_DIAS:-}" || "$BACKUP_RCLONE_DIAS" =~ ^[1-9][0-9]*$ ]] || fallo "BACKUP_RCLONE_DIAS debe ser un número de días mayor que cero."
+[[ "$BACKUP_RCLONE_MESES" =~ ^[0-9]+$ ]] || fallo "BACKUP_RCLONE_MESES debe ser un número de meses."
 [[ -f "$PROYECTO_DIR/compose.yaml" ]] || fallo "No se encuentra $PROYECTO_DIR/compose.yaml."
 [[ -d "$APP_DIR/storage" ]] || fallo "No se encuentra $APP_DIR/storage."
 
@@ -117,6 +126,12 @@ log "Empaquetando volcado + storage/ y cifrando en $NOMBRE..."
 tar -C "$TMP" -cf - db.sql -C "$APP_DIR" storage | gzip -c | age "${AGE_ARGS[@]}" -o "$TMP/$NOMBRE"
 [[ -s "$TMP/$NOMBRE" ]] || fallo "La copia cifrada ha salido vacía."
 mv "$TMP/$NOMBRE" "$DESTINO"
+# El umask 077 la deja solo para su dueño. Con un grupo lector, la puede bajar
+# también el usuario de solo lectura del otro equipo, y nadie más.
+if [[ -n "${BACKUP_GRUPO_LECTOR:-}" ]]; then
+  chgrp "$BACKUP_GRUPO_LECTOR" "$DESTINO" && chmod 640 "$DESTINO" \
+    || fallo "No se pudo dar lectura al grupo $BACKUP_GRUPO_LECTOR (¿está el usuario de la copia en ese grupo?)."
+fi
 log "Copia local correcta: $DESTINO ($(du -h "$DESTINO" | cut -f1), $TABLAS tablas)."
 
 # --- 4. Rotación local ---
@@ -135,4 +150,37 @@ if [[ -n "${BACKUP_RCLONE_REMOTE:-}" ]]; then
   log "Copia fuera del servidor correcta."
 else
   log "AVISO: BACKUP_RCLONE_REMOTE sin definir: la copia solo está en este servidor."
+fi
+
+# --- 6. Rotación fuera del servidor ---
+# Solo para destinos que no saben borrar solos, como Google Drive: allí el
+# permiso de subir ya permite borrar, así que no se pierde nada haciéndolo
+# desde aquí. Lo que no se puede borrar desde este servidor es la copia que se
+# baja otro equipo (docs/servidor.md, «Copias de seguridad»).
+#
+# Se conservan las de los últimos BACKUP_RCLONE_DIAS días y, además, la primera
+# de cada mes de los últimos BACKUP_RCLONE_MESES meses: un fallo que se descubre
+# tarde (una noticia borrada hace dos meses) todavía tiene arreglo.
+if [[ -n "${BACKUP_RCLONE_REMOTE:-}" && -n "${BACKUP_RCLONE_DIAS:-}" ]]; then
+  REMOTO="${BACKUP_RCLONE_REMOTE%/}"
+  # Un listado que falla no puede leerse como «no hay ninguna»: se para.
+  LISTA="$(rclone lsf --files-only "$REMOTO")" || fallo "No se pudo listar $REMOTO para rotar. La copia sí se ha subido."
+  LIMITE_DIA="$(date -u -d "-$BACKUP_RCLONE_DIAS days" +%Y%m%d)"
+  LIMITE_MES="$(date -u -d "$(date -u +%Y-%m-01) -$BACKUP_RCLONE_MESES months" +%Y%m)"
+  MESES_VISTOS=" "
+  BORRADAS_FUERA=0
+  # Los nombres llevan la fecha, así que en orden alfabético van de la más
+  # antigua a la más nueva: la primera que aparece de cada mes es la que queda.
+  while IFS= read -r copia; do
+    [[ "$copia" =~ ^desamparados_([0-9]{8})T[0-9]{6}Z\.tar\.gz\.age$ ]] || continue
+    dia="${BASH_REMATCH[1]}"
+    mes="${dia:0:6}"
+    primera_del_mes=0
+    if [[ "$MESES_VISTOS" != *" $mes "* ]]; then primera_del_mes=1; MESES_VISTOS+="$mes "; fi
+    (( dia >= LIMITE_DIA )) && continue
+    (( primera_del_mes == 1 && mes > LIMITE_MES )) && continue
+    rclone deletefile "$REMOTO/$copia" || fallo "No se pudo borrar $copia de $REMOTO."
+    BORRADAS_FUERA=$((BORRADAS_FUERA + 1))
+  done < <(printf '%s\n' "$LISTA" | sort)
+  log "Rotación fuera: $BORRADAS_FUERA copia(s) borrada(s) (se quedan $BACKUP_RCLONE_DIAS días y la primera de cada mes durante $BACKUP_RCLONE_MESES meses)."
 fi

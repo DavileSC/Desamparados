@@ -426,6 +426,183 @@ Para repetirlas:
    sudo docker compose -f compose.yaml -f compose.servidor.yaml run --rm herramientas npm run limpiar:huerfanos -- --horas=0 --borrar
    ```
 
+## Copias de seguridad
+
+Tres sitios, para que ninguno solo baste para perderlas:
+
+| Dónde | Cuántas | Quién la pone ahí |
+|---|---|---|
+| El servidor (`/var/backups/desamparados/copias`) | 14 días | El timer, cada noche a las 4 (y `desplegar.sh`, antes de cada despliegue) |
+| Google Drive de `rrsspasdesampa@gmail.com`, carpeta `copias-desamparados` | 30 días y la primera de cada mes durante 12 meses | El mismo guion, con `rclone` |
+| El PC de desarrollo (`%USERPROFILE%\Copias Desamparados`) | Las 8 últimas, una por semana | El PC, que se la baja (`docker/servidor/bajar-copias.ps1`) |
+
+Van cifradas con `age` antes de salir de la base: ni el servidor, ni Google, ni
+quien se lleve el PC pueden leerlas sin la **clave privada**, que solo está en
+un gestor de contraseñas y en un USB. El guion y la restauración, en
+`despliegue.md`, «Copias de seguridad».
+
+Por qué el PC **se baja** la copia en vez de recibirla: en Drive no se puede
+dar permiso de subir sin dar también el de borrar, así que quien entrara en el
+servidor podría borrar las de Drive. Al PC no puede llegar: el servidor no
+tiene ninguna llave suya. El PC entra con el usuario `copias`, que solo puede
+leer la carpeta de las copias (sftp de solo lectura, encerrado en ella).
+
+### 1. En el PC: herramientas y claves
+
+En PowerShell:
+
+```powershell
+winget install --id FiloSottile.age -e
+winget install --id Rclone.Rclone -e
+# Cerrar y abrir PowerShell para que las encuentre.
+
+# La clave de las copias. Enseña la PÚBLICA (age1…); la privada queda en el fichero.
+age-keygen -o "$env:USERPROFILE\clave-copias-desamparados.txt"
+
+# La llave con la que el PC entra a bajarlas.
+ssh-keygen -t ed25519 -N '""' -C "copias desde el PC" -f "$env:USERPROFILE\.ssh\copias-desamparados"
+Get-Content "$env:USERPROFILE\.ssh\copias-desamparados.pub"
+```
+
+`clave-copias-desamparados.txt` se guarda **en el gestor de contraseñas y en
+un USB**, nunca en Drive ni en el servidor. Sin ella las copias no se pueden
+abrir. Del PC se borra después de probar una restauración (paso 6).
+
+### 2. En el servidor: el usuario `copias` y la carpeta
+
+```bash
+sudo apt install -y age rclone
+sudo useradd --system --create-home --home-dir /var/lib/copias --shell /usr/sbin/nologin copias
+sudo usermod -aG copias desamparados
+# La de arriba es de root (lo exige el encierro de sftp); la de dentro, de la copia.
+sudo install -d -m 755 -o root -g root /var/backups/desamparados
+sudo install -d -m 2750 -o desamparados -g copias /var/backups/desamparados/copias
+
+# La llave PÚBLICA del PC (la línea ssh-ed25519 … del paso 1), con `restrict` delante.
+sudo install -d -m 700 -o copias -g copias /var/lib/copias/.ssh
+echo 'restrict ssh-ed25519 AAAA… copias desde el PC' | sudo tee /var/lib/copias/.ssh/authorized_keys >/dev/null
+sudo chown copias:copias /var/lib/copias/.ssh/authorized_keys
+sudo chmod 600 /var/lib/copias/.ssh/authorized_keys
+
+# Solo sftp, solo lectura y encerrado en /var/backups/desamparados.
+sudo tee /etc/ssh/sshd_config.d/copias.conf >/dev/null <<'EOF'
+Match User copias
+    ChrootDirectory /var/backups/desamparados
+    ForceCommand internal-sftp -R
+    AllowTcpForwarding no
+    X11Forwarding no
+    PermitTTY no
+    PasswordAuthentication no
+EOF
+sudo sshd -t && sudo systemctl reload ssh
+sudo sshd -T -C user=copias,host=pc,addr=127.0.0.1 | grep -iE 'chrootdirectory|forcecommand|allowusers'
+```
+
+**Sin cerrar la sesión SSH abierta**: si algo de `sshd` saliera mal, es la
+que permite arreglarlo. `sshd -t` comprueba la configuración antes de
+recargar. Si la última orden enseña un `allowusers` que no incluye `copias`,
+hay que añadirlo ahí.
+
+### 3. En el servidor: Google Drive
+
+`rclone` guarda su configuración (con el permiso de Drive, que es un secreto)
+en `/etc/desamparados/rclone.conf`, que solo lee `desamparados`:
+
+```bash
+sudo -u desamparados env RCLONE_CONFIG=/etc/desamparados/rclone.conf rclone config
+```
+
+Respuestas: `n` (remoto nuevo) · nombre `copias` · tipo `drive` · `client_id`
+y `client_secret` vacíos · alcance **`drive.file`** (solo ve lo que sube él:
+el resto del Drive del Grupo queda fuera) · `service_account_file` vacío ·
+opciones avanzadas `n` · navegador automático **`n`**. Entonces enseña una
+orden `rclone authorize "drive" "…"`: se ejecuta **en el PC**, se entra con
+`rrsspasdesampa@gmail.com`, se acepta, y lo que devuelve el PC se pega en el
+servidor. Unidad compartida `n` · `y` para guardar · `q`. Lo que se copia y
+pega es un secreto: no se pega en ningún otro sitio.
+
+**Cambiar de cuenta o de servicio.** El guion solo conoce el destino
+`copias:`. Para otra cuenta de Google, `rclone config reconnect copias:` (con
+el mismo `sudo -u desamparados env RCLONE_CONFIG=…` delante) y otra vez el
+`rclone authorize` en el PC con la cuenta nueva. Para otro servicio
+(OneDrive, Dropbox, Backblaze B2…), borrar el remoto `copias` y crearlo de
+nuevo con su tipo. Las copias que ya había en la cuenta vieja se quedan allí:
+la rotación solo mira la nueva, así que esas se borran a mano.
+
+### 4. En el servidor: la configuración y el timer
+
+```bash
+echo 'age1…' | sudo tee /etc/desamparados/copias.pub >/dev/null    # la PÚBLICA del paso 1
+sudo tee /etc/desamparados/copia.env >/dev/null <<'EOF'
+BACKUP_AGE_RECIPIENTS=/etc/desamparados/copias.pub
+BACKUP_DIR=/var/backups/desamparados/copias
+BACKUP_RETENTION_DAYS=14
+BACKUP_RCLONE_REMOTE=copias:copias-desamparados
+BACKUP_RCLONE_DIAS=30
+BACKUP_RCLONE_MESES=12
+BACKUP_GRUPO_LECTOR=copias
+RCLONE_CONFIG=/etc/desamparados/rclone.conf
+PROYECTO_DIR=/srv/desamparados
+EOF
+sudo chown desamparados:desamparados /etc/desamparados/copia.env /etc/desamparados/copias.pub
+sudo chmod 640 /etc/desamparados/copia.env /etc/desamparados/copias.pub
+```
+
+Sin espacios en los valores: `desplegar.sh` lee este fichero con bash.
+
+El servicio y el timer son los de `despliegue.md`, «Programación diaria»
+(`/etc/systemd/system/desamparados-copia.service` y `.timer`). Después:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now desamparados-copia.timer
+sudo systemctl start desamparados-copia.service
+journalctl -u desamparados-copia -n 20 --no-pager
+```
+
+Tiene que acabar en «Copia fuera del servidor correcta» y la rotación, y en
+Drive aparece la carpeta `copias-desamparados` con la copia.
+
+### 5. En el PC: la primera bajada y la tarea semanal
+
+La primera vez, a mano, para aceptar la huella del servidor (comprobarla antes
+con `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` en el servidor):
+
+```powershell
+sftp -i "$env:USERPROFILE\.ssh\copias-desamparados" copias@51.255.45.220
+# sftp> ls /copias      (y `bye`)
+powershell -ExecutionPolicy Bypass -File "C:\Users\Davile\Documents\Proyecto Desamparados\docker\servidor\bajar-copias.ps1"
+```
+
+Y la tarea, los domingos a las 12 (o en cuanto se encienda el PC, si estaba
+apagado):
+
+```powershell
+$accion = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\Users\Davile\Documents\Proyecto Desamparados\docker\servidor\bajar-copias.ps1"'
+$cuando = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 12:00
+$ajustes = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable
+Register-ScheduledTask -TaskName 'Copias Desamparados' -Action $accion -Trigger $cuando -Settings $ajustes
+```
+
+Lo que hace cada semana queda en `Copias Desamparados\registro.txt`.
+
+### 6. Probar una restauración
+
+Una copia que nunca se ha abierto es una suposición. En el PC, sin tuberías
+(PowerShell 5.1 estropea los datos binarios que pasan por `|`):
+
+```powershell
+$copia = Get-ChildItem "$env:USERPROFILE\Copias Desamparados\desamparados_*.age" | Sort-Object Name | Select-Object -Last 1
+$r = "$env:TEMP\restauracion"; New-Item -ItemType Directory -Force $r | Out-Null
+age -d -i "$env:USERPROFILE\clave-copias-desamparados.txt" -o "$r\copia.tar.gz" $copia.FullName
+tar -xzf "$r\copia.tar.gz" -C $r
+Get-Content "$r\db.sql" -Tail 1; (Get-ChildItem "$r\storage" -Recurse -File).Count
+Remove-Item -Recurse -Force $r    # lleva el censo en claro
+```
+
+La última línea del volcado tiene que ser «Dump completed» y `storage` traer
+las fotos. Para volcarla en una base, `despliegue.md`, «Restaurar».
+
 ## El día de la presentación
 
 Pendiente de preparar. En esencia: la base buena con su propia `TOTP_ENC_KEY`,

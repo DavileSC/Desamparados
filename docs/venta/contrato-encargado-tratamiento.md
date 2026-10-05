@@ -164,8 +164,10 @@ acuerdo, podrá resolver el contrato del Servicio sin penalización.
 
 ### 7. Dónde se tratan los datos
 
-El servidor y las copias de seguridad están en el Espacio Económico Europeo.
-Si un subencargado del Anexo II trata datos fuera de él, se dice allí y con qué
+El servidor y las copias de seguridad están en el Espacio Económico Europeo,
+salvo lo que diga el Anexo II de las copias fuera del servidor (Google Drive,
+por ejemplo, no garantiza el país). Si un subencargado del Anexo II trata
+datos fuera de él, se dice allí y con qué
 garantía (una decisión de adecuación de la Comisión Europea, como el Marco de
 Privacidad de Datos UE-EE. UU., o cláusulas contractuales tipo). El Encargado
 no hará otras transferencias internacionales sin autorización previa y por
@@ -334,6 +336,7 @@ Corporación no use.
 |---|---|---|---|---|
 | [OVH SAS] u [otro proveedor del servidor] (solo en la opción A) | Servidor donde corren la web y la base de datos | Todos los del Anexo I | [Francia / UE] | Contrato de encargado del proveedor (sus condiciones generales) |
 | [Proveedor del almacenamiento externo de copias] | Guardar las copias de seguridad fuera del servidor | Todos, **cifrados**: el proveedor no tiene la clave | [UE] | Contrato de encargado del proveedor |
+| [Google (Google Drive)] (si las copias van ahí; con una cuenta de la Corporación, es proveedor de ella y no va en esta tabla) | Guardar las copias de seguridad fuera del servidor | Todos, **cifrados**: Google no tiene la clave | [EE. UU. / UE] | [Marco de Privacidad de Datos UE-EE. UU. y cláusulas tipo de Google] |
 | [Google (Gmail / Google Workspace)] u [otro proveedor de correo] | Enviar los correos del Servicio | Nombre, correo y el contenido de cada correo | [EE. UU. / UE] | [Marco de Privacidad de Datos UE-EE. UU. y cláusulas tipo de Google] |
 | [Cloudflare] (solo si se pone delante de la web) | Proteger la web y acelerarla | IP y peticiones de los visitantes | [UE y EE. UU.] | [Marco de Privacidad de Datos UE-EE. UU.] |
 
@@ -395,7 +398,10 @@ Son las que tiene el Servicio tal como se instala (`docs/despliegue.md`).
 - Una copia diaria de la base de datos y de todos los archivos, cifrada con
   `age` para una clave pública: la clave privada **no** está en el servidor, la
   guarda [quién y dónde].
-- Se guardan [14] días en el servidor y [plazo] en el almacenamiento externo.
+- Se guardan [14] días en el servidor y [plazo] en el almacenamiento externo
+  (con Google Drive: 30 días, más la primera de cada mes durante 12 meses).
+- [Si se baja también a un equipo del Encargado: las últimas 8 semanales, en
+  ese equipo, cifradas igual.]
 - La restauración se prueba primero en una base aparte; lo descifrado se borra
   al terminar.
 

@@ -845,6 +845,12 @@ también las copias de fuera, no hay copias. La rotación de allí la hacen las
 reglas de ciclo de vida del propio almacenamiento (por ejemplo, conservar 90
 días); el script solo sube.
 
+**Google Drive** no cumple ninguna de las dos cosas: el permiso de subir ya
+deja borrar, y no tiene reglas de ciclo de vida. Ahí la rotación la hace el
+guion (`BACKUP_RCLONE_DIAS` y `BACKUP_RCLONE_MESES`) y la copia que no se puede
+borrar desde el servidor es otra, la que se baja un equipo por su cuenta. Es lo
+que hay montado en el VPS: `servidor.md`, «Copias de seguridad».
+
 ### Programación diaria
 
 El script se ejecuta **fuera** de los contenedores —necesita `docker`, `age` y
