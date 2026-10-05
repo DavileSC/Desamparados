@@ -75,7 +75,10 @@ export function lineasDeSecretaria(datosSecretaria: DatosSecretaria = secretaria
  * Dirección de la Secretaría para el pie de los correos. Cae en las variables
  * de entorno del contacto, que es de donde salen hoy los enlaces del pie.
  */
-export function emailDeSecretaria(entorno: NodeJS.ProcessEnv = process.env): string | null {
+// El entorno llega siempre de fuera y sin los tipos de Node: este módulo lo
+// importa también la web (por la política de contraseñas), y en su imagen de
+// Docker no hay tipos de Node con los que compilar `process`.
+export function emailDeSecretaria(entorno: Readonly<Record<string, string | undefined>>): string | null {
   const candidatos = [secretaria.email, entorno.CONTACT_EMAIL_TO, entorno.EMAIL_USER];
   return candidatos.find(informado) ?? null;
 }
