@@ -106,7 +106,7 @@ La huella de GitHub, para no fiarse de cualquiera que conteste:
 
 ```bash
 ssh-keyscan -t ed25519 github.com 2>/dev/null | sudo -u desamparados tee /etc/desamparados/github_known_hosts
-ssh-keygen -lf /etc/desamparados/github_known_hosts
+sudo ssh-keygen -lf /etc/desamparados/github_known_hosts
 ```
 
 La huella tiene que ser `SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU`
@@ -137,6 +137,7 @@ sudo sed -i \
   -e "s|^DATABASE_PASSWORD=.*|DATABASE_PASSWORD=$(clave)|" \
   -e "s|^DATABASE_ROOT_PASSWORD=.*|DATABASE_ROOT_PASSWORD=$(clave)|" \
   -e "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -hex 64)|" \
+  -e "s|^TOTP_ENC_KEY=.*|TOTP_ENC_KEY=$(openssl rand -hex 32)|" \
   -e "s|^FRONTEND_URL=.*|FRONTEND_URL=https://pruebas.desamparadosmalaga.com|" \
   -e "s|^API_URL=.*|API_URL=https://pruebas.desamparadosmalaga.com|" \
   -e "s|^EMAIL_USER=.*|EMAIL_USER=davile17x@gmail.com|" \
@@ -144,12 +145,14 @@ sudo sed -i \
   .env
 ```
 
-Y tres a mano, con `sudo nano /srv/desamparados/.env`:
+El `.env` del servidor es este, `/srv/desamparados/.env`, y es el único que
+lee la API en Docker; el `backend-desamparados/.env` del equipo de desarrollo
+no se usa aquí. `TOTP_ENC_KEY` se genera nueva: la base de pruebas no tiene
+ninguna cuenta con el doble factor activado (en desarrollo, sin esa variable,
+la clave sale de `JWT_SECRET`), así que no hay secretos que conservar.
 
-- **`TOTP_ENC_KEY`**: la **misma** que la del `backend-desamparados/.env` del
-  equipo de desarrollo. Con la base de pruebas se copian los secretos del
-  doble factor, cifrados con esa clave; con otra, nadie del CMS podría entrar
-  con su 2FA. (Para la base buena de la presentación se genera una nueva.)
+Quedan a mano, con `sudo nano /srv/desamparados/.env`:
+
 - **`EMAIL_PASS`**: una *contraseña de aplicación* de la cuenta de Gmail
   (Cuenta de Google → Seguridad → Verificación en dos pasos → Contraseñas de
   aplicación), no la contraseña normal. Gmail deja enviar unos 500 correos al
@@ -195,7 +198,8 @@ La clave con la que entra GitHub, restringida a lanzar ese guion:
 ```bash
 sudo -u despliegue ssh-keygen -t ed25519 -N "" -C "github actions" -f /home/despliegue/clave-actions
 sudo -u despliegue install -d -m 700 /home/despliegue/.ssh
-echo "command=\"sudo -n -u desamparados /usr/local/sbin/desplegar-desamparados \\\"\$SSH_ORIGINAL_COMMAND\\\"\",restrict $(sudo cat /home/despliegue/clave-actions.pub)" \
+PUB=$(sudo cat /home/despliegue/clave-actions.pub)
+printf 'command="sudo -n -u desamparados /usr/local/sbin/desplegar-desamparados \\"$SSH_ORIGINAL_COMMAND\\"",restrict %s\n' "$PUB" \
   | sudo -u despliegue tee /home/despliegue/.ssh/authorized_keys
 sudo chmod 600 /home/despliegue/.ssh/authorized_keys
 ```
