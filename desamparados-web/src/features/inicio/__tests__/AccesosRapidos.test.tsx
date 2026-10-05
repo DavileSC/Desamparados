@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import { site } from '../../../config/site'
@@ -11,6 +11,12 @@ const redes = site.redes as { youtube: string | null }
 const youtubeOriginal = redes.youtube
 
 describe('AccesosRapidos', () => {
+  // Cada prueba parte sin canal de YouTube, y la que lo necesita lo pone: así el
+  // número de teselas no depende de lo que diga la configuración del Grupo.
+  beforeEach(() => {
+    redes.youtube = null
+  })
+
   afterEach(() => {
     redes.youtube = youtubeOriginal
     vi.unstubAllGlobals()

@@ -84,7 +84,8 @@ export const site = {
     facebook: 'https://www.facebook.com/desamparadosmalaga/' as string | DatoPendiente,
     instagram: 'https://www.instagram.com/desamparadosmalaga/' as string | DatoPendiente,
     x: 'https://x.com/GPDesamparados' as string | DatoPendiente,
-    youtube: null as string | DatoPendiente,
+    tiktok: 'https://www.tiktok.com/@desamparadosmalaga' as string | DatoPendiente,
+    youtube: 'https://www.youtube.com/@desamparadosmalaga' as string | DatoPendiente,
   },
 
   /** Retransmisión en directo desde la sede. `null` si no hay stream publicado. */

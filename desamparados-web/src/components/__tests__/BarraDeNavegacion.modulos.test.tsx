@@ -12,19 +12,25 @@ describe('la barra y el pie con módulos apagados', () => {
     expect(screen.getAllByRole('link', { name: 'Noticias' }).length).toBeGreaterThan(0)
   })
 
-  it('con todo encendido, los dos están', () => {
+  // «Acceso hermanos» ya no va en el pie, y en jsdom la barra es la del móvil,
+  // que lo guarda en el cajón: aquí solo se comprueba lo que el pie enlaza.
+  it('con todo encendido, el pie enlaza la tienda y el alta', () => {
     renderWithProviders(<><BarraDeNavegacion /><PieDePagina /></>)
-    expect(screen.getAllByRole('link', { name: 'Acceso hermanos' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: 'Hazte hermano' }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: 'Tienda' }).length).toBeGreaterThan(0)
   })
 
-  it('sin el módulo de publicaciones, el pie no deja el título «Publicaciones» sin enlaces', () => {
-    renderWithProviders(<PieDePagina />, { modulos: ['noticias', 'agenda'] })
-    expect(screen.queryByRole('heading', { name: 'Publicaciones' })).not.toBeInTheDocument()
+  it('sin la agenda, el pie no la enlaza; con ella, sí', () => {
+    const { unmount } = renderWithProviders(<PieDePagina />, { modulos: ['noticias'] })
+    expect(screen.queryByRole('link', { name: 'Agenda' })).not.toBeInTheDocument()
+    unmount()
+
+    renderWithProviders(<PieDePagina />)
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda')
   })
 
-  it('con el módulo de publicaciones encendido, el pie sí pinta su título', () => {
+  it('el pie firma el desarrollo web con su LinkedIn', () => {
     renderWithProviders(<PieDePagina />)
-    expect(screen.getByRole('heading', { name: 'Publicaciones' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /David Silva Cuevas/ })).toHaveAttribute('href', 'https://www.linkedin.com/in/david-silva-cuevas/')
   })
 })
