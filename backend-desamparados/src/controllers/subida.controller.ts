@@ -7,6 +7,7 @@ import sharp, { type Sharp } from 'sharp';
 import { scanBufferClamav } from '../utils/clamd.js';
 import { MAX_BYTES_IMAGEN, privateStorageDir } from '../middleware/upload.middleware.js';
 import { esUsoDeVideo, leerMp4, problemaDelVideo, topesDeVideo } from '../domain/mp4.js';
+import { enFilaDeFotos } from '../utils/fila-de-fotos.js';
 
 /** Una forma de codificar la foto ya leída (orientada y sin metadatos). */
 type Codificacion = (imagen: Sharp) => Sharp;
@@ -14,7 +15,7 @@ type Codificacion = (imagen: Sharp) => Sharp;
 // El servidor es un VPS pequeño: una foto se procesa con un solo hilo y
 // libvips no guarda nada en caché entre una y otra. Tarda algo más, pero no
 // se come la CPU ni la memoria de todo lo demás mientras alguien sube una
-// galería.
+// galería. Que haya una sola foto a la vez lo pone `enFilaDeFotos`.
 sharp.concurrency(1);
 sharp.cache(false);
 
@@ -60,7 +61,11 @@ export const CALIDAD_WEBP = 82;
  * Exportado para probarlo sin pasar por HTTP y para el script que pasa a WebP
  * las fotos subidas antes (`scripts/fotos-a-webp.ts`).
  */
-export async function prepararFoto(original: Buffer): Promise<Buffer> {
+export function prepararFoto(original: Buffer): Promise<Buffer> {
+  return enFilaDeFotos(() => convertirFoto(original));
+}
+
+async function convertirFoto(original: Buffer): Promise<Buffer> {
   // 'error' y no el 'warning' por defecto: una foto con un aviso menor de
   // libvips se puede publicar; una que no se puede decodificar, no.
   const datos = await sharp(original, { failOn: 'error', animated: true }).metadata();

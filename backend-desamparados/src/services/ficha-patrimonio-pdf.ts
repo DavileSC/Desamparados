@@ -15,6 +15,7 @@ import type { Enser } from '@prisma/client';
 import { identidad } from '../domain/datos-entidad.js';
 import { publicStorageDir } from '../middleware/upload.middleware.js';
 import { nombreDeSubida } from '../utils/ficheros-publicos.js';
+import { enFilaDeFotos } from '../utils/fila-de-fotos.js';
 import {
   A4, BURDEOS, FILETE, GRIS, IMAGENES, LETRA, NEGRO, ORO,
   aBuffer, nuevoDocumento, rombo, rotulo, sinMargenes, versalitas, type Doc,
@@ -33,7 +34,9 @@ async function jpegDe(url: string | null | undefined, anchoPx: number): Promise<
   if (!nombre || /\.(pdf|mp4)$/i.test(nombre)) return null;
   try {
     const original = await fs.readFile(path.join(publicStorageDir, nombre));
-    return await sharp(original).rotate().resize({ width: anchoPx, withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
+    // En la misma fila que las subidas: una ficha con muchas fotos no debe
+    // llenar los núcleos más que una galería.
+    return await enFilaDeFotos(() => sharp(original).rotate().resize({ width: anchoPx, withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer());
   } catch {
     return null;
   }
