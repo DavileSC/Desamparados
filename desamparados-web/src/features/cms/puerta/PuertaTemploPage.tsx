@@ -27,7 +27,8 @@ const PAUSA_MS = 1_800
 const RESULTADO_MS = 4_000
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
-const hora = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+// En hora de Madrid, la de la salida, aunque el móvil del diputado tenga otra zona.
+const hora = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })
 const nombre = (p: PapeletaEnPuerta) => `${p.nombre} ${p.apellidos}`
 const sitio = (p: PapeletaEnPuerta) => [p.puesto, p.tramo, p.numero !== null ? `n.º ${p.numero}` : null].filter(Boolean).join(' · ')
 

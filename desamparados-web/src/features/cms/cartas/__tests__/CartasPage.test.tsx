@@ -13,7 +13,9 @@ function servidor() {
     const metodo = init.method ?? 'GET'
     llamadas.push({ url: String(url), metodo, cuerpo: init.body ? JSON.parse(String(init.body)) : undefined })
     const u = String(url)
-    if (u.includes('/cartas/pdf') || u.includes('/cartas/etiquetas')) return Promise.resolve(new Response(new Blob(['%PDF-']), { status: 200, headers: { 'Content-Type': 'application/pdf' } }))
+    // El cuerpo en texto y no en un Blob: el Blob de jsdom no es el de Node, y el
+    // Response de Node 22 (el del CI) no lo admite como cuerpo; el de Node 24 sí.
+    if (u.includes('/cartas/pdf') || u.includes('/cartas/etiquetas')) return Promise.resolve(new Response('%PDF-', { status: 200, headers: { 'Content-Type': 'application/pdf' } }))
     if (u.includes('/cartas/destinatarios')) return Promise.resolve(json({ total: 245, demasiados: false, sinDireccion: 3, domicilios: 200 }))
     if (u.includes('/hermanos/admin/listas')) return Promise.resolve(json([{ id: 1, nombre: 'Sin correo', consulta: 'correo=sin' }]))
     if (metodo === 'POST' && u.endsWith('/cartas')) return Promise.resolve(json({ ...CARTA, id: 9, ...JSON.parse(String(init.body)) }))
