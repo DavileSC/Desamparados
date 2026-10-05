@@ -1,0 +1,147 @@
+name: Desplegar en el servidor
+
+# Construye las imágenes de un commit de main, las sube al registro de GitHub
+# (privado, como el repositorio) y las despliega en el VPS. Se lanza a mano,
+# con el botón «Run workflow» de la pestaña Actions: en main se sube muchas
+# veces al día desde dos equipos, y no todo tiene que llegar al servidor.
+#
+# Las imágenes se construyen aquí y no en el VPS porque compilar la web pide
+# más de 1 GB de memoria, y allí, con ClamAV encendido, no sobra.
+#
+# Lo que necesita, una sola vez (docs/servidor.md, «Despliegue desde GitHub»):
+#   - Secreto VPS_CLAVE_SSH: la clave privada con que entra al servidor. Allí
+#     solo puede lanzar /usr/local/sbin/desplegar-desamparados.
+#   - Secreto VPS_HUELLA: la línea de known_hosts del servidor, para no
+#     fiarse de quien conteste en esa IP.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Para comprobar que la verificación de ese commit pasó.
+  actions: read
+  # Para subir las imágenes al registro y, en el servidor, descargarlas con el
+  # token de esta misma ejecución, que caduca al terminar.
+  packages: write
+
+# Dos despliegues a la vez se pisarían en el servidor: el segundo espera.
+concurrency:
+  group: desplegar
+  cancel-in-progress: false
+
+env:
+  REGISTRO: ghcr.io/davilesc/desamparados
+  SERVIDOR: despliegue@51.255.45.220
+
+# Acciones fijadas por SHA, como en verificacion.yml. Las de Docker, a su
+# última versión el 05-10-2026.
+
+jobs:
+  comprobar:
+    name: Comprobar el commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Solo main, y con la verificación en verde
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Solo se despliega main (se ha lanzado sobre $GITHUB_REF)."
+            exit 1
+          fi
+          verdes=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow verificacion.yml \
+            --commit "$GITHUB_SHA" --status success --json databaseId --jq length)
+          if [ "$verdes" -eq 0 ]; then
+            echo "::error::La verificación de ${GITHUB_SHA:0:7} no ha pasado (o no ha terminado). Espera a que esté en verde."
+            exit 1
+          fi
+
+  construir:
+    name: Construir ${{ matrix.imagen }}
+    needs: comprobar
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - imagen: api
+            dockerfile: docker/api.Dockerfile
+            target: ejecucion
+          - imagen: herramientas
+            dockerfile: docker/api.Dockerfile
+            target: herramientas
+          - imagen: web
+            dockerfile: docker/web.Dockerfile
+            target: servidor
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          push: true
+          tags: ${{ env.REGISTRO }}-${{ matrix.imagen }}:${{ github.sha }}
+          # api y herramientas comparten casi todas las etapas: la misma caché.
+          cache-from: type=gha,scope=${{ matrix.dockerfile }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.dockerfile }}
+
+  probar-nginx:
+    name: Probar la configuración de nginx
+    needs: construir
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      # `nginx -t` con la imagen recién construida: un error de sintaxis en el
+      # sitio dejaría la web caída en el servidor. Se prueban los dos sitios:
+      # el de detrás del nginx del sistema (el que se usa hoy) y el de
+      # producción, que necesita un certificado cualquiera para arrancar.
+      - name: nginx -t
+        run: |
+          imagen="$REGISTRO-web:$GITHUB_SHA"
+          docker pull --quiet "$imagen"
+          echo "Sitio detrás del nginx del sistema:"
+          docker run --rm \
+            -v "$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro" \
+            "$imagen" nginx -t
+          echo "Sitio de producción:"
+          dominio=$(node -p "require('./shared/datos-entidad.json').identidad.dominio")
+          mkdir -p "certs/live/$dominio"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$dominio" \
+            -keyout "certs/live/$dominio/privkey.pem" -out "certs/live/$dominio/fullchain.pem" 2>/dev/null
+          docker run --rm -v "$PWD/certs:/etc/letsencrypt:ro" "$imagen" nginx -t
+
+  desplegar:
+    name: Desplegar en el VPS
+    needs: probar-nginx
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar ${{ github.sha }}
+        env:
+          CLAVE: ${{ secrets.VPS_CLAVE_SSH }}
+          HUELLA: ${{ secrets.VPS_HUELLA }}
+          TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$CLAVE" ] || [ -z "$HUELLA" ]; then
+            echo "::error::Faltan los secretos VPS_CLAVE_SSH y VPS_HUELLA (docs/servidor.md, «Despliegue desde GitHub»)."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$CLAVE" > ~/.ssh/clave && chmod 600 ~/.ssh/clave
+          printf '%s\n' "$HUELLA" > ~/.ssh/known_hosts
+          # En el servidor, la clave solo lanza el guion de despliegue, que
+          # recibe el commit como orden y el token por la entrada estándar
+          # (nunca en la línea de órdenes, donde lo vería `ps`).
+          printf '%s' "$TOKEN" | ssh -i ~/.ssh/clave -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$SERVIDOR" "$GITHUB_SHA"

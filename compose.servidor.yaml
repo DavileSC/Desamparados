@@ -1,0 +1,40 @@
+# Sobrescritura para el VPS, tal como está montado: con su propio nginx
+# delante (que tiene el 80 y el 443, el certificado y la página de
+# mantenimiento) y con las imágenes ya construidas por GitHub Actions.
+#
+#   docker compose -f compose.yaml -f compose.servidor.yaml up -d
+#
+# Lo despliega docker/servidor/desplegar.sh; a mano no hace falta. La guía es
+# docs/servidor.md.
+#
+# Qué cambia respecto a compose.yaml, y nada más:
+#   - Las imágenes no se construyen aquí: se descargan del registro de GitHub,
+#     de la versión que diga VERSION en el .env (el commit, la pone el guion de
+#     despliegue). Construir la web pide más de 1 GB de memoria, y en este
+#     servidor, con ClamAV encendido, no sobra.
+#   - nginx escucha solo en 127.0.0.1:8080 y por http: el HTTPS lo pone el nginx
+#     del sistema, que es el único que da al exterior. Por eso tampoco se usa el
+#     perfil `tls` (COMPOSE_PROFILES=antivirus en el .env).
+#   - El sitio de nginx es docker/nginx/sitio-tras-proxy.conf.
+
+services:
+  migraciones:
+    image: ghcr.io/davilesc/desamparados-herramientas:${VERSION:?falta VERSION en .env (la pone docker/servidor/desplegar.sh)}
+    build: !reset null
+
+  herramientas:
+    image: ghcr.io/davilesc/desamparados-herramientas:${VERSION:?falta VERSION en .env}
+    build: !reset null
+
+  api:
+    image: ghcr.io/davilesc/desamparados-api:${VERSION:?falta VERSION en .env}
+    build: !reset null
+
+  web:
+    image: ghcr.io/davilesc/desamparados-web:${VERSION:?falta VERSION en .env}
+    build: !reset null
+    ports: !override
+      - "127.0.0.1:8080:80"
+    volumes: !override
+      - ./backend-desamparados/storage/public:/srv/storage/public:ro
+      - ./docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro

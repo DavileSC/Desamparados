@@ -57,6 +57,8 @@ COPY docker/nginx/comun.conf /etc/nginx/conf.d/00-comun.conf
 # Las cabeceras de seguridad, en fragmentos que cada `location` incluye.
 COPY docker/nginx/seguridad.conf /etc/nginx/snippets/desamparados-seguridad.conf
 COPY docker/nginx/seguridad-sin-hsts.conf /etc/nginx/snippets/desamparados-seguridad-sin-hsts.conf
+# Las rutas del sitio, comunes al de producción y al de detrás de otro nginx.
+COPY docker/nginx/ubicaciones.conf /etc/nginx/snippets/desamparados-ubicaciones.conf
 
 # El sitio de producción. En local, compose.local.yaml monta encima de esta
 # misma ruta el de docker/nginx/sitio-local.conf.

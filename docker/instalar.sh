@@ -99,7 +99,10 @@ chmod 600 .env
 # --- 3. Las carpetas ---
 chown -R "$USUARIO:$USUARIO" "$PROYECTO_DIR"
 B="$PROYECTO_DIR/backend-desamparados"
-install -d -o "$USUARIO" -g "$USUARIO" -m 750 "$B/storage" "$B/storage/public" "$B/storage/private"
+install -d -o "$USUARIO" -g "$USUARIO" -m 750 "$B/storage/private"
+# La pública la lee el nginx del contenedor, que corre con su propio usuario:
+# con 750 no podría y cada foto subida daría 403. Lo que hay ahí es público.
+install -d -o "$USUARIO" -g "$USUARIO" -m 755 "$B/storage" "$B/storage/public"
 # Git se niega a trabajar en un repositorio de otro usuario sin esto.
 git config --system --get-all safe.directory 2>/dev/null | grep -qxF "$PROYECTO_DIR" \
   || git config --system --add safe.directory "$PROYECTO_DIR"

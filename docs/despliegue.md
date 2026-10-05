@@ -3,6 +3,12 @@
 > **El despliegue no debe ejecutarse todavía.** Este documento describe lo que
 > hará falta el día que se autorice; escribirlo antes evita improvisar durante
 > la puesta en producción.
+>
+> **El VPS del Grupo no es una máquina vacía**: tiene su propio nginx con la
+> página de mantenimiento y los puertos 80 y 443. Allí se usa además
+> `compose.servidor.yaml` (nginx del contenedor detrás del del sistema,
+> imágenes construidas en GitHub). Cómo está ese servidor y cómo se monta la
+> web de pruebas: [`servidor.md`](servidor.md).
 
 Todo el montaje va en contenedores, con un único `docker compose`. Los ficheros
 viven en el repositorio y se despliegan con él:
@@ -492,12 +498,12 @@ sudo useradd --system --shell /usr/sbin/nologin --uid 1000 desamparados 2>/dev/n
 sudo chown -R desamparados:desamparados /srv/desamparados
 sudo chmod 600 /srv/desamparados/.env
 
-# La carpeta de las subidas, del usuario de la API. nginx la lee a través del
-# montaje de solo lectura del compose, no por el sistema de archivos: aquí no
-# hace falta darle permisos a www-data ni a nadie más.
+# La carpeta de las subidas, del usuario de la API. La privada, solo suya.
+# La pública la lee además el nginx del contenedor, que corre con su propio
+# usuario (no www-data ni root): con 750 no podría y cada foto daría 403.
 B=/srv/desamparados/backend-desamparados
-sudo install -d -o desamparados -g desamparados -m 750 "$B/storage" \
-  "$B/storage/public" "$B/storage/private"
+sudo install -d -o desamparados -g desamparados -m 750 "$B/storage/private"
+sudo install -d -o desamparados -g desamparados -m 755 "$B/storage" "$B/storage/public"
 ```
 
 Si el uid 1000 ya está cogido en esa máquina, se usa otro y se pone en
