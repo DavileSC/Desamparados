@@ -40,3 +40,6 @@ backups/
 
 # Lo que deja tsc al comprobar los tipos (npm run comprobar-tipos).
 *.tsbuildinfo
+
+# Los números que deja scripts/carga.mjs: de una prueba concreta, no del código.
+carga-resultado*.json

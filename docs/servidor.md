@@ -339,6 +339,54 @@ scp ubuntu@51.255.45.220:/var/log/desamparados/recursos.csv .
 
 Para pararlo: `sudo systemctl disable --now desamparados-medir.timer`.
 
+## Pruebas de carga
+
+Hechas el 05-10-2026 con `backend-desamparados/scripts/carga.mjs`, lanzado
+desde el equipo de desarrollo (nunca desde el VPS: se comería la CPU que se
+quiere medir). **El VPS-1 basta, con mucho margen**:
+
+| Escalón (2,5 min cada uno) | Pet./s | p95 API | CPU de la API (de 200 %) | Memoria máquina |
+|---|---|---|---|---|
+| 10 visitantes a la vez | 33 | 98 ms | 12 / 33 máx. | 2,2 GB |
+| 100 visitantes a la vez | 306 | 315 ms | 49 / 59 máx. | 2,4 GB |
+| 6 editores subiendo fotos | 1 subida/s | foto 6,3 s | 183 / 198 máx. | 2,6 GB |
+| 16 puestos de la mesa (SSE) | 15 | 87 ms | 21 / 41 máx. | 2,5 GB |
+
+Cero errores en ~98.000 peticiones. Lo único que llenaba los dos núcleos era
+sharp con varias subidas a la vez; desde entonces las fotos se procesan de
+una en una (`src/utils/fila-de-fotos.ts`). La memoria de la API subió de
+350 a ~790 MB con las subidas y no volvió a bajar: si sigue así tras una hora
+tranquila, `MALLOC_ARENA_MAX=2` en la API.
+
+Para repetirlas:
+
+1. En el servidor, el límite de la API (todo sale de una IP) y un usuario de
+   la puerta solo para la carga. El usuario se crea **una vez**: el `tee -a`
+   añade otra línea cada vez que se lanza y nginx solo mira la primera.
+   ```bash
+   echo 'LIMITE_GLOBAL_POR_IP=1000000' | sudo tee -a /srv/desamparados/.env
+   cd /srv/desamparados && sudo docker compose -f compose.yaml -f compose.servidor.yaml up -d api
+   sudo sed -i '/^carga:/d' /etc/nginx/pruebas.htpasswd
+   printf 'carga:%s\n' "$(openssl passwd -apr1)" | sudo tee -a /etc/nginx/pruebas.htpasswd >/dev/null
+   while true; do sudo /usr/local/sbin/medir-desamparados /var/log/desamparados/carga.csv; sleep 5; done
+   ```
+2. En el equipo de desarrollo, las credenciales en `%USERPROFILE%\carga.env`
+   (variables en la cabecera del guion; una cuenta ADMIN del CMS) y:
+   ```powershell
+   cd backend-desamparados
+   node --env-file=$env:USERPROFILE\carga.env scripts/carga.mjs
+   ```
+   Mientras dure, nadie debe cerrar la sesión del CMS de esa cuenta: corta la
+   del guion (vuelve a entrar solo, hasta cinco veces).
+3. Al acabar, deshacerlo y limpiar las subidas de prueba (son de hoy, de ahí
+   `--horas=0`; sin `--borrar` solo las lista):
+   ```bash
+   sudo sed -i '/^LIMITE_GLOBAL_POR_IP=/d' /srv/desamparados/.env
+   sudo docker compose -f compose.yaml -f compose.servidor.yaml up -d api
+   sudo sed -i '/^carga:/d' /etc/nginx/pruebas.htpasswd
+   sudo docker compose -f compose.yaml -f compose.servidor.yaml run --rm herramientas npm run limpiar:huerfanos -- --horas=0 --borrar
+   ```
+
 ## El día de la presentación
 
 Pendiente de preparar. En esencia: la base buena con su propia `TOTP_ENC_KEY`,
