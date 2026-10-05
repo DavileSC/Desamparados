@@ -7,7 +7,10 @@ export const globalLimiter = rateLimit({
 	// 1000 por IP cada 15 minutos (~1 por segundo sostenido). Con 100, una visita
 	// a la portada (~6 peticiones) y un rato en el CMS bastaban para dejar al
 	// editor sin guardar y sin sesión. La fuerza bruta la frena authLimiter.
-	limit: 1000,
+	// LIMITE_GLOBAL_POR_IP lo sube para las pruebas de carga del servidor de
+	// pruebas, que salen todas de una misma IP (docs/servidor.md). Se lee en cada
+	// petición: cambiarla en el .env y reiniciar la API basta.
+	limit: () => Number(process.env.LIMITE_GLOBAL_POR_IP) || 1000,
 	standardHeaders: 'draft-7', // Usa el estándar moderno de cabeceras IETF
 	legacyHeaders: false, // Deshabilita las cabeceras `X-RateLimit-*`
 	message: {

@@ -76,6 +76,10 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
     errores.push(`PORT="${entorno.PORT}" no es un puerto válido (1-65535).`);
   }
 
+  if (definida(entorno.LIMITE_GLOBAL_POR_IP) && !esEnteroEnRango(entorno.LIMITE_GLOBAL_POR_IP, 1, 10_000_000)) {
+    errores.push(`LIMITE_GLOBAL_POR_IP="${entorno.LIMITE_GLOBAL_POR_IP}" debe ser un número entero positivo (peticiones por IP cada 15 minutos).`);
+  }
+
   if (definida(entorno.NUM_PROXIES) && !esEnteroEnRango(entorno.NUM_PROXIES, 0, 10)) {
     errores.push(`NUM_PROXIES="${entorno.NUM_PROXIES}" debe ser un número entero (0 sin proxy, 1 detrás de nginx).`);
   }
