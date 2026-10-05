@@ -106,7 +106,10 @@ if (desconocidas.size) {
 
 // Los correos que no son de ejemplo ni están en la lista, a @ejemplo.invalido.
 const lista = seQuedan.map((c) => `'${c.toLowerCase().replaceAll("'", "''")}'`).join(', ') || "''"
-salida.write('\n-- Ningún correo de verdad, salvo los que se quedan.\n')
+// mariadb-dump deja la conexión con `autocommit=0` tras la última tabla: sin
+// volver a encenderlo, estos UPDATE quedan en una transacción que nadie
+// confirma y se deshacen al cerrar el cliente, sin ningún error.
+salida.write('\n-- Ningún correo de verdad, salvo los que se quedan.\nSET autocommit = 1;\n')
 for (const [tabla, columnas] of Object.entries(correos)) {
   for (const c of columnas) {
     salida.write(`UPDATE \`${tabla}\` SET \`${c}\` = CONCAT(SUBSTRING_INDEX(\`${c}\`, '@', 1), '@ejemplo.invalido') ` +
@@ -114,6 +117,6 @@ for (const [tabla, columnas] of Object.entries(correos)) {
       `AND LOWER(\`${c}\`) NOT IN (${lista});\n`)
   }
 }
-salida.end('SET FOREIGN_KEY_CHECKS = 1;\n')
+salida.end('COMMIT;\nSET FOREIGN_KEY_CHECKS = 1;\n')
 await new Promise((resolver) => salida.on('finish', resolver))
 console.log(`Hecho: ${destino}. Se quedan con su correo: ${seQuedan.join(', ') || 'ninguno'}.`)
