@@ -21,6 +21,9 @@
 //   --usuarios-mesa 4,8,16         puestos de la mesa (cada uno con su SSE)
 //   --duracion 150                 segundos de cada escalón
 //   --pausa 2                      segundos medios entre páginas de un visitante
+//   --sin-fotos                    la lectura sin fotos: el tope de la API sin el de la red
+//   --parar-si 5,3000              deja de subir si un escalón pasa del 5 % de errores
+//                                  o de 3000 ms de p95 en la API (para buscar el techo)
 //   --salida resultado.json        dónde dejar los números
 
 import crypto from 'node:crypto';
@@ -35,6 +38,8 @@ const { values: op } = parseArgs({
     'usuarios-mesa': { type: 'string', default: '4,8,16' },
     duracion: { type: 'string', default: '150' },
     pausa: { type: 'string', default: '2' },
+    'sin-fotos': { type: 'boolean', default: false },
+    'parar-si': { type: 'string' },
     salida: { type: 'string', default: 'carga-resultado.json' },
   },
 });
@@ -73,10 +78,11 @@ class Medida {
     this.fin = null;
     this.grupos = new Map();
   }
-  apuntar(grupo, ms, estado) {
+  apuntar(grupo, ms, estado, bytes = 0) {
     let g = this.grupos.get(grupo);
-    if (!g) this.grupos.set(grupo, (g = { tiempos: [], errores: {} }));
+    if (!g) this.grupos.set(grupo, (g = { tiempos: [], errores: {}, bytes: 0 }));
     g.tiempos.push(ms);
+    g.bytes += bytes;
     const ok = typeof estado === 'number' && estado < 400;
     if (!ok) g.errores[estado] = (g.errores[estado] ?? 0) + 1;
   }
@@ -88,13 +94,15 @@ class Medida {
     const grupos = {};
     let total = 0;
     let fallos = 0;
+    let bytes = 0;
     for (const [nombre, g] of this.grupos) {
       const t = [...g.tiempos].sort((a, b) => a - b);
       const p = (q) => (t.length ? Math.round(t[Math.min(t.length - 1, Math.floor(q * t.length))]) : null);
       const errores = Object.values(g.errores).reduce((a, b) => a + b, 0);
       total += t.length;
       fallos += errores;
-      grupos[nombre] = { n: t.length, porSegundo: +(t.length / seg).toFixed(1), p50: p(0.5), p95: p(0.95), p99: p(0.99), max: p(1), errores: g.errores };
+      bytes += g.bytes;
+      grupos[nombre] = { n: t.length, porSegundo: +(t.length / seg).toFixed(1), mbps: +((g.bytes * 8) / seg / 1e6).toFixed(1), p50: p(0.5), p95: p(0.95), p99: p(0.99), max: p(1), errores: g.errores };
     }
     return {
       escalon: this.nombre,
@@ -104,17 +112,20 @@ class Medida {
       peticiones: total,
       porSegundo: +(total / seg).toFixed(1),
       tasaError: total ? +((100 * fallos) / total).toFixed(2) : 0,
+      // Megabits por segundo bajados: con fotos, la conexión (la de casa o la
+      // del VPS) puede ser el tope antes que la CPU, y hay que saber cuál fue.
+      mbps: +((bytes * 8) / seg / 1e6).toFixed(1),
       grupos,
     };
   }
 }
 
 function pintar(r) {
-  console.log(`\n── ${r.escalon}  (${r.inicioUTC.slice(11, 19)}–${r.finUTC?.slice(11, 19)} UTC)  ${r.peticiones} pet., ${r.porSegundo}/s, errores ${r.tasaError} %`);
-  console.log('   grupo                    n      /s     p50     p95     p99     max  errores');
+  console.log(`\n── ${r.escalon}  (${r.inicioUTC.slice(11, 19)}–${r.finUTC?.slice(11, 19)} UTC)  ${r.peticiones} pet., ${r.porSegundo}/s, ${r.mbps} Mbit/s, errores ${r.tasaError} %`);
+  console.log('   grupo                    n      /s  Mbit/s     p50     p95     p99     max  errores');
   for (const [nombre, g] of Object.entries(r.grupos)) {
     const err = Object.entries(g.errores).map(([k, v]) => `${k}×${v}`).join(' ') || '—';
-    console.log(`   ${nombre.padEnd(20)} ${String(g.n).padStart(6)} ${String(g.porSegundo).padStart(7)} ${String(g.p50).padStart(7)} ${String(g.p95).padStart(7)} ${String(g.p99).padStart(7)} ${String(g.max).padStart(7)}  ${err}`);
+    console.log(`   ${nombre.padEnd(20)} ${String(g.n).padStart(6)} ${String(g.porSegundo).padStart(7)} ${String(g.mbps).padStart(7)} ${String(g.p50).padStart(7)} ${String(g.p95).padStart(7)} ${String(g.p99).padStart(7)} ${String(g.max).padStart(7)}  ${err}`);
   }
 }
 
@@ -156,7 +167,7 @@ async function pedir(medida, grupo, ruta, { metodo = 'GET', cuerpo, cabeceras = 
     if (sesion && res.status === 401 && cookieCms && (await reentrar(h.cookie))) {
       return pedir(medida, grupo, ruta, { metodo, cuerpo, cabeceras, sesion, json, timeout });
     }
-    medida?.apuntar(grupo, performance.now() - t0, res.status);
+    medida?.apuntar(grupo, performance.now() - t0, res.status, buf.byteLength);
     if (json && res.ok) {
       try {
         return { estado: res.status, datos: JSON.parse(Buffer.from(buf).toString('utf8')), res };
@@ -268,7 +279,7 @@ async function visitante(medida, hasta) {
     }
     await Promise.all(API_PORTADA.map((r) => pedir(medida, 'api portada', r)));
     // Lo que se ve de la portada: unas cuantas fotos, no todas.
-    const fotos = [...recursos.fotos].sort(() => Math.random() - 0.5).slice(0, 6);
+    const fotos = op['sin-fotos'] ? [] : [...recursos.fotos].sort(() => Math.random() - 0.5).slice(0, 6);
     await Promise.all(fotos.map((f) => pedir(medida, 'fotos', f)));
     await pausaVisitante();
     if (Date.now() >= hasta) break;
@@ -377,6 +388,19 @@ async function escalon(nombre, usuarios, trabajo) {
   return r;
 }
 
+/** Buscando el techo: pasado este punto, más visitantes solo castigan al servidor. */
+function pasaDelTope(r) {
+  if (!op['parar-si']) return false;
+  const [maxError, maxP95] = op['parar-si'].split(',').map(Number);
+  const p95 = r.grupos['api portada']?.p95 ?? 0;
+  if (r.tasaError > maxError || p95 > maxP95) {
+    console.log(`
+■ Tope alcanzado: ${r.tasaError} % de errores, p95 de la API ${p95} ms. No se sube más.`);
+    return true;
+  }
+  return false;
+}
+
 const fases = op.fases.split(',').map((f) => f.trim());
 const resultados = [];
 
@@ -392,7 +416,13 @@ if (fases.includes('mesa')) {
 if (fases.includes('subidas')) ficheros = await prepararFicheros();
 
 for (const fase of fases) {
-  if (fase === 'lectura') for (const n of lista(op.usuarios)) resultados.push(await escalon('Lectura pública', n, visitante));
+  if (fase === 'lectura') {
+    for (const n of lista(op.usuarios)) {
+      const r = await escalon(op['sin-fotos'] ? 'Lectura sin fotos' : 'Lectura pública', n, visitante);
+      resultados.push(r);
+      if (pasaDelTope(r)) break;
+    }
+  }
   else if (fase === 'subidas') for (const n of lista(op['usuarios-subidas'])) resultados.push(await escalon('Subidas al CMS', n, editor));
   else if (fase === 'mesa') for (const n of lista(op['usuarios-mesa'])) resultados.push(await escalon('Mesa de procesión', n, puestoMesa));
   else salir(`Fase desconocida: ${fase}`);

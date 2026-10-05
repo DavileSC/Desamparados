@@ -217,8 +217,12 @@ repository secret:
 ```bash
 sudo cp /srv/desamparados/docker/servidor/nginx-pruebas.conf /etc/nginx/sites-available/pruebas.desamparadosmalaga.com
 sudo ln -s /etc/nginx/sites-available/pruebas.desamparadosmalaga.com /etc/nginx/sites-enabled/
-# La contraseña de la puerta (el usuario, el que se quiera):
-printf 'grupo:%s\n' "$(openssl passwd -apr1)" | sudo tee /etc/nginx/pruebas.htpasswd >/dev/null
+# La contraseña de la puerta (el usuario, el que se quiera). En tres pasos:
+# con `openssl … | sudo tee` en una línea, los dos leen el teclado a la vez y
+# se reparten las teclas («Verify failure»).
+sudo -v
+H=$(openssl passwd -apr1)
+echo "grupo:$H" | sudo tee /etc/nginx/pruebas.htpasswd >/dev/null
 sudo chown root:www-data /etc/nginx/pruebas.htpasswd && sudo chmod 640 /etc/nginx/pruebas.htpasswd
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d pruebas.desamparadosmalaga.com
@@ -360,16 +364,49 @@ foto tarda más (10,5 s de mediana en vez de 4,7) porque espera su turno.
 Queda ver si la memoria de la API baja sola tras las subidas; si no,
 `MALLOC_ARENA_MAX=2` en la API.
 
+**El techo** (prueba de estrés del mismo día, escalones de 2 min hasta 300
+visitantes, con y sin fotos, `--parar-si 5,3000`):
+
+| Visitantes | Con fotos: pet./s · p95 API | Sin fotos: pet./s · p95 API |
+|---|---|---|
+| 100 | 306 · 315 ms | 203 · 171 ms |
+| 150 | 354 · 2,3 s | 291 · 372 ms |
+| 200 | 375 · 2,7 s | 335 · 1,1 s |
+| 300 | 389 · 4,3 s, 2 % de errores | 356 · 2,5 s, 1,9 % de errores |
+
+- Se agota la **CPU de la máquina**: carga de 4–5 con 2 núcleos; API al 60–75 %
+  (picos del 100 %), nginx y base al 15–20 % cada uno, y el resto, el TLS del
+  nginx del sistema. La memoria no pasa de 2,5 GB, la base no pasa del 29 % y
+  la red no limita (las fotos siguen en ~150 ms con 260 Mbit/s).
+- Unos 150 visitantes del guion (una página cada 1–3 s, sin caché) equivalen
+  a entre 1.000 y 3.000 personas reales mirando la web a la vez.
+- Los cortes y los 500 con 300 visitantes eran del **nginx del sistema**: 768
+  conexiones por proceso, lo que trae Ubuntu (578 avisos «worker_connections
+  are not enough»). Subido a 4096, con `worker_rlimit_nofile 8192`:
+  ```bash
+  sudo sed -i 's/worker_connections [0-9]*;/worker_connections 4096;/' /etc/nginx/nginx.conf
+  grep -q worker_rlimit_nofile /etc/nginx/nginx.conf || sudo sed -i '/^worker_processes/a worker_rlimit_nofile 8192;' /etc/nginx/nginx.conf
+  sudo nginx -t && sudo systemctl reload nginx
+  ```
+- Si hiciera falta más, por orden de efecto: caché de unos segundos en nginx
+  para la API pública sin sesión, dos procesos de la API (un núcleo cada uno)
+  y, solo después, un VPS mayor.
+
 Para repetirlas:
 
 1. En el servidor, el límite de la API (todo sale de una IP) y un usuario de
-   la puerta solo para la carga. El usuario se crea **una vez**: el `tee -a`
-   añade otra línea cada vez que se lanza y nginx solo mira la primera.
+   la puerta solo para la carga. Se borra antes de crearlo porque el `tee -a`
+   añade una línea cada vez y nginx solo mira la primera. La contraseña se
+   pide aparte (`sudo -v` y luego `openssl`): en una sola línea con la tubería,
+   `openssl` y `sudo` leen el teclado a la vez y da «Verify failure».
    ```bash
    echo 'LIMITE_GLOBAL_POR_IP=1000000' | sudo tee -a /srv/desamparados/.env
    cd /srv/desamparados && sudo docker compose -f compose.yaml -f compose.servidor.yaml up -d api
    sudo sed -i '/^carga:/d' /etc/nginx/pruebas.htpasswd
-   printf 'carga:%s\n' "$(openssl passwd -apr1)" | sudo tee -a /etc/nginx/pruebas.htpasswd >/dev/null
+   sudo -v
+   H=$(openssl passwd -apr1)
+   echo "carga:$H" | sudo tee -a /etc/nginx/pruebas.htpasswd >/dev/null
+   sudo grep -c '^carga:' /etc/nginx/pruebas.htpasswd   # tiene que dar 1
    while true; do sudo /usr/local/sbin/medir-desamparados /var/log/desamparados/carga.csv; sleep 5; done
    ```
 2. En el equipo de desarrollo, las credenciales en `%USERPROFILE%\carga.env`
