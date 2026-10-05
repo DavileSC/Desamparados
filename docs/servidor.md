@@ -354,9 +354,11 @@ quiere medir). **El VPS-1 basta, con mucho margen**:
 
 Cero errores en ~98.000 peticiones. Lo único que llenaba los dos núcleos era
 sharp con varias subidas a la vez; desde entonces las fotos se procesan de
-una en una (`src/utils/fila-de-fotos.ts`). La memoria de la API subió de
-350 a ~790 MB con las subidas y no volvió a bajar: si sigue así tras una hora
-tranquila, `MALLOC_ARENA_MAX=2` en la API.
+una en una (`src/utils/fila-de-fotos.ts`). Comprobado ese mismo día con 6
+editores: la API pasa de 183/198 % a 101/120 % de CPU y de 794 a 545 MB; la
+foto tarda más (10,5 s de mediana en vez de 4,7) porque espera su turno.
+Queda ver si la memoria de la API baja sola tras las subidas; si no,
+`MALLOC_ARENA_MAX=2` en la API.
 
 Para repetirlas:
 
