@@ -58,8 +58,9 @@ DAO**: los servicios consultan con `db` directamente.
 - Acciones del CMS que cambian datos → `AuditoriaService` con su acción de
   `ACCIONES_AUDITORIA`. Sin datos personales en claro en el registro.
 - HTML del CMS → `sanearContenidoCms` (`utils/sanear-html.ts`) antes de guardar.
-- Subidas: `middleware/upload.middleware.ts` (tipo real con `file-type`, ClamAV,
-  WebP 1920 px). Documentos privados, en `storage/private`.
+- Subidas: multer en `middleware/upload.middleware.ts`; el tipo real
+  (`file-type`), ClamAV y el paso a WebP de 1920 px, en
+  `controllers/subida.controller.ts`. Documentos privados, en `storage/private`.
 - Transacciones que pueden chocar → `utils/transaction-retry.ts`; el conflicto
   se reconoce en `esConflictoDeConcurrencia` y sale como 409.
 - Correos: `services/correos/`; en pruebas nunca se envían. Los datos del Grupo

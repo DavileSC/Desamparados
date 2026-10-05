@@ -58,5 +58,5 @@ pública (que pinta `PaginaDeBloquesPublica slug="…"`) y el sitemap.
   `migrar:bloques`) y avisarlo al desplegar. Ver `docs/notas-del-proyecto.md` §9.
 - Opciones de presentación nuevas: añadir al final, sin cambiar el primer valor.
 - El HTML de los textos se sanea en el servidor; en la web, `limpiarHtml`.
-- El contenido de ejemplo (fotos de Commons, textos inventados) se marca como
-  tal y se avisa antes de desplegar.
+- El contenido de ejemplo (textos inventados) se marca como tal y se avisa
+  antes de desplegar.
