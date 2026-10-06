@@ -505,6 +505,17 @@ hay que añadirlo ahí.
 
 ### 3. En el servidor: Google Drive
 
+> **Pendiente (06-10-2026).** Drive se ha dejado para más adelante: el remoto
+> `copias:` existe, pero sigue con el proyecto compartido de rclone (ver «Un
+> proyecto de Google propio») y sin comprobar en qué cuenta escribe. Mientras,
+> las tres líneas `BACKUP_RCLONE_*` de `copia.env` (paso 4) van **comentadas**
+> con `#`: si están puestas y la subida falla, el guion acaba en error, el
+> timer marca fallo y `desplegar.sh` **no despliega**. Sin ellas, la copia se
+> queda en el servidor y el PC se la sigue bajando. Para retomarlo: proyecto
+> propio, `rclone lsd copias:` sin error con la cuenta del Grupo, quitar el
+> permiso de la otra cuenta en myaccount.google.com/connections y descomentar
+> las tres líneas.
+
 `rclone` guarda su configuración (con el permiso de Drive, que es un secreto)
 en `/etc/desamparados/rclone.conf`, que solo lee `desamparados`:
 
@@ -520,6 +531,19 @@ orden `rclone authorize "drive" "…"`: se ejecuta **en el PC**, se entra con
 `rrsspasdesampa@gmail.com`, se acepta, y lo que devuelve el PC se pega en el
 servidor. Unidad compartida `n` · `y` para guardar · `q`. Lo que se copia y
 pega es un secreto: no se pega en ningún otro sitio.
+
+**Un proyecto de Google propio, no el de rclone.** Con `client_id` vacío,
+rclone usa un proyecto que comparten todos sus usuarios del mundo, y Google lo
+corta a menudo (403 «Quota exceeded … consumer project_number:202264815644»).
+Para copias que no pueden fallar una noche, se crea uno con la cuenta del
+Grupo en https://console.cloud.google.com: proyecto nuevo, habilitar **Google
+Drive API**, pantalla de consentimiento **Externa** con el permiso
+`drive.file` y **publicada en producción** (en «Prueba», Google caduca el
+permiso a los 7 días y las copias dejan de subirse sin avisar), y un **ID de
+cliente de OAuth** de tipo «Aplicación de escritorio». El ID y el secreto se
+meten con `rclone config` → `e` → `copias`, y se vuelve a autorizar. Al
+autorizar, Google avisa de que la aplicación no está verificada: es la
+vuestra, «Configuración avanzada» → «Ir a…».
 
 **Cambiar de cuenta o de servicio.** El guion solo conoce el destino
 `copias:`. Para otra cuenta de Google, `rclone config reconnect copias:` (con
