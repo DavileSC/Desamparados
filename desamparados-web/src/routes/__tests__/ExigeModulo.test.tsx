@@ -24,7 +24,7 @@ describe('ExigeModulo', () => {
 
   it('en la web pública, apagado es la página de «no encontrado»', async () => {
     montar('/tienda', ['noticias'])
-    expect(await screen.findByRole('heading', { name: /no encontrada/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Esta calle no está en el recorrido' })).toBeInTheDocument()
     expect(screen.queryByText('La tienda')).not.toBeInTheDocument()
   })
 

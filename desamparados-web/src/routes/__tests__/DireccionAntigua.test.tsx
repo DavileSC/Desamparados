@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { crearQueryClientDePruebas } from '../../test/queryClient'
 import DireccionAntigua from '../DireccionAntigua'
 
 /** Dónde ha acabado el visitante, dirección entera. */
@@ -20,7 +22,7 @@ function entrarEn(direccion: string) {
     ],
     { initialEntries: [direccion] },
   )
-  render(<HelmetProvider><RouterProvider router={router} /></HelmetProvider>)
+  render(<QueryClientProvider client={crearQueryClientDePruebas()}><HelmetProvider><RouterProvider router={router} /></HelmetProvider></QueryClientProvider>)
   return router
 }
 
@@ -45,9 +47,9 @@ describe('las direcciones de antes de quitar las secciones', () => {
     expect(screen.getByText('en /acceso')).toBeInTheDocument()
   })
 
-  it('la portada de la sección sola, que se quitó, da «Página no encontrada»', async () => {
+  it('la portada de la sección sola, que se quitó, da la página de no encontrada', async () => {
     const router = entrarEn('/corporacion')
-    expect(await screen.findByRole('heading', { name: 'Página no encontrada' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Esta calle no está en el recorrido' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/corporacion')
   })
 })
