@@ -18,7 +18,7 @@ const descripcionImagen = type('string <= 200')
 
 export const guardarImagenesPortadaSchema = type({
   body: {
-    imagenes: type({ url: rutaImagenPublica, 'descripcion?': descripcionImagen })
+    imagenes: type({ url: rutaImagenPublica, 'descripcion?': descripcionImagen, 'encuadre?': '0 <= number.integer <= 100' })
       .array()
       .atMostLength(MAX_IMAGENES_PORTADA),
   },

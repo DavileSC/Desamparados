@@ -1024,6 +1024,10 @@ model ImagenPortada {
   id          Int      @id @default(autoincrement())
   url         String
   descripcion String?
+  /// En el móvil la cabecera es vertical y la foto, apaisada, se recorta por
+  /// los lados: qué parte se queda a la vista, de 0 (izquierda) a 100
+  /// (derecha). Sin él, la de siempre (35).
+  encuadre    Int?
   orden       Int
   createdAt   DateTime @default(now())
 

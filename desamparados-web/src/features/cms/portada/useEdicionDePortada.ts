@@ -32,7 +32,9 @@ export type Tesela = TextosPortada['accesos']['teselas'][number]
 
 let ultimaClave = 0
 const conClave = (imagen: ImagenPortada): Fila => ({ ...imagen, clave: ++ultimaClave })
-const sinClave = (filas: Fila[]): ImagenPortada[] => filas.map(({ url, descripcion }) => ({ url, descripcion }))
+/** Lo que se guarda de cada foto, siempre con la misma forma: así comparar con lo cargado dice si algo cambió. */
+const datosDe = ({ url, descripcion, encuadre }: ImagenPortada): ImagenPortada => ({ url, descripcion, ...(encuadre === undefined ? {} : { encuadre }) })
+const sinClave = (filas: Fila[]): ImagenPortada[] => filas.map(datosDe)
 
 export function useEdicionDePortada() {
   const queryClient = useQueryClient()
@@ -48,7 +50,7 @@ export function useEdicionDePortada() {
     portadaDelInicio()
       .then(({ imagenes, textos: cargados }) => {
         setFilas(imagenes.map(conClave))
-        setInicialFotos(imagenes.map(({ url, descripcion }) => ({ url, descripcion })))
+        setInicialFotos(imagenes.map(datosDe))
         setTextos(cargados)
         setInicialTextos(JSON.stringify(cargados))
       })

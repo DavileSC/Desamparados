@@ -17,6 +17,7 @@ import EscenaProcesion from '../inicio/EscenaProcesion'
 import PublicacionesDestacadas from '../inicio/PublicacionesDestacadas'
 import EdicionTesela from './portada/EdicionTesela'
 import AvisoFotoDeCabecera from './portada/AvisoFotoDeCabecera'
+import EncuadreEnElMovil from './portada/EncuadreEnElMovil'
 import { MAX_FOTOS_PORTADA, useEdicionDePortada } from './portada/useEdicionDePortada'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
@@ -150,6 +151,7 @@ export default function PortadaAdminPage() {
                         fullWidth
                         sx={{ mt: 2 }}
                       />
+                      <EncuadreEnElMovil url={fila.url} valor={fila.encuadre} onCambio={(encuadre) => cambiar(fila.clave, { encuadre })} />
                     </Box>
                     <Stack direction={{ xs: 'row', md: 'column' }} spacing={0.5}>
                       <Tooltip title="Subir">

@@ -14,6 +14,7 @@ import { CURVA_ENTRADA } from '../../components/entrada'
 import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO } from './heroImagenes'
 import { BorradorPortadaContext, usePortada, useTextosPortada } from './useContenidoPortada'
 import { useModulos } from '../../hooks/useModulos'
+import { ENCUADRE_MOVIL_POR_DEFECTO } from '../../lib/api/portada'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
 const PARALLAX_X = 14
@@ -163,7 +164,7 @@ export default function Hero() {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: { xs: '35% center', md: 'center' },
+              objectPosition: { xs: `${ENCUADRE_MOVIL_POR_DEFECTO}% center`, md: 'center' },
             }}
           />
         )}
@@ -201,7 +202,9 @@ export default function Hero() {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                objectPosition: { xs: '35% center', md: 'center' },
+                // Por debajo del PC la cabecera es vertical y la foto se recorta
+                // por los lados: cada una dice en el CMS qué parte se queda.
+                objectPosition: { xs: `${imagen.encuadre ?? ENCUADRE_MOVIL_POR_DEFECTO}% center`, md: 'center' },
                 zIndex: activa ? 2 : 1,
               }}
             />
@@ -213,8 +216,13 @@ export default function Hero() {
           position: 'absolute',
           inset: 0,
           zIndex: 1,
-          background:
-            'linear-gradient(to top, #121113 0%, rgba(7,6,8,.76) 18%, rgba(7,6,8,.12) 65%), linear-gradient(to left, rgba(7,6,8,.38), transparent 70%)',
+          background: {
+            // Por debajo del PC, el título va arriba y los botones abajo: se
+            // oscurecen solo los dos extremos y el centro queda limpio para la
+            // cara, que es lo que más se tapaba.
+            xs: 'linear-gradient(to bottom, rgba(7,6,8,.85) 0%, rgba(7,6,8,.35) 24%, transparent 38%), linear-gradient(to top, #121113 0%, rgba(7,6,8,.7) 12%, transparent 26%)',
+            md: 'linear-gradient(to top, #121113 0%, rgba(7,6,8,.76) 18%, rgba(7,6,8,.12) 65%), linear-gradient(to left, rgba(7,6,8,.38), transparent 70%)',
+          },
         }}
       />
 
@@ -225,11 +233,13 @@ export default function Hero() {
           sx={{
             position: 'absolute',
             zIndex: 3,
-            // Arriba a la derecha: en el móvil, abajo no queda sitio libre entre
-            // los botones; en escritorio, abajo a la izquierda va la cuenta
-            // atrás. Por debajo de la barra fija, que tapa los primeros 72 px.
-            top: { xs: 12, md: 96 },
-            right: { xs: 12, md: 28 },
+            // En el móvil, abajo a la derecha: arriba va el título, y los dos
+            // botones dejan libre ese rincón. En escritorio, arriba a la
+            // derecha (abajo a la izquierda va la cuenta atrás), por debajo
+            // de la barra fija, que tapa los primeros 72 px.
+            top: { xs: 'auto', md: 96 },
+            bottom: { xs: 24, md: 'auto' },
+            right: { xs: 16, md: 28 },
             width: 40,
             height: 40,
             color: 'rgba(255,255,255,0.8)',
@@ -250,67 +260,83 @@ export default function Hero() {
           // izquierda, que es como se lee un párrafo de varias líneas.
           textAlign: { xs: 'left', md: 'right' },
           width: '100%',
+          // Por debajo del PC ocupa todo el alto: el título arriba y los
+          // botones al pie, con la foto libre en medio.
+          height: { xs: '100%', md: 'auto' },
           display: 'flex',
           flexDirection: 'column',
+          justifyContent: { xs: 'space-between', md: 'flex-end' },
           alignItems: { xs: 'flex-start', md: 'flex-end' },
-          pb: { xs: 5, md: 8 },
+          pt: { xs: 3.5, md: 0 },
+          pb: { xs: 3.5, md: 8 },
           // Mismo margen lateral que el logo de la barra de navegación
           px: { xs: '20px', md: '40px', xl: '48px' },
         }}
       >
         {/* Los textos entran en cascada nada más montarse (no al entrar en vista:
-            el hero ya está a la vista), con el título asomando por su cortina. */}
-        <Revela alMontar retraso={RETRASO_TEXTOS_S}>
-          <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 11, md: 12 }, mb: 2 }}>
-            {textos.hero.ceja}
-          </Typography>
-        </Revela>
-        <Revela alMontar efecto="cortina" retraso={RETRASO_TEXTOS_S} orden={1}>
-          <Typography
-            id="hero-title"
-            variant="h1"
-            component={enVistaPrevia ? 'p' : 'h1'}
-            sx={{
-              color: 'text.primary',
-              mb: 2.5,
-              fontSize: { xs: '38px', sm: '50px', md: '64px' },
-              maxWidth: '780px',
-              textWrap: 'balance',
-              textShadow: '0 2px 24px rgba(0,0,0,.2)',
-            }}
-          >
-            {textos.hero.titulo}
-          </Typography>
-        </Revela>
-        <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={2}>
-          <Typography
-            variant="body1"
-            sx={{
-              color: 'text.secondary',
-              maxWidth: '510px',
-              ml: { xs: 0, md: 'auto' },
-              mb: 3.5,
-              fontSize: { xs: '16px', md: '18px' },
-            }}
-          >
-            {textos.hero.parrafo}
-          </Typography>
-        </Revela>
-        <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
-            <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
-              {textos.hero.botonPrincipal}
-            </Boton>
-            {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta.
-                Sin la Agenda no hay otro destino que no repita el botón principal: no se pinta. */}
-            {conAgenda && (
-              <Box component={Link} to="/agenda" sx={{ ...enlaceConFlecha, color: '#e4e2df' }}>
-                {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
-              </Box>
-            )}
-          </Box>
-        </Revela>
+            el hero ya está a la vista), con el título asomando por su cortina.
+            En dos grupos: por debajo del PC, uno va arriba y el otro al pie. */}
+        <Box sx={GRUPO}>
+          <Revela alMontar retraso={RETRASO_TEXTOS_S}>
+            <Typography variant="overline" sx={{ color: '#ded3bd', letterSpacing: '0.2em', fontSize: { xs: 11, md: 12 }, mb: 2 }}>
+              {textos.hero.ceja}
+            </Typography>
+          </Revela>
+          <Revela alMontar efecto="cortina" retraso={RETRASO_TEXTOS_S} orden={1}>
+            <Typography
+              id="hero-title"
+              variant="h1"
+              component={enVistaPrevia ? 'p' : 'h1'}
+              sx={{
+                color: 'text.primary',
+                mb: { xs: 0, md: 2.5 },
+                fontSize: { xs: '38px', sm: '50px', md: '64px' },
+                maxWidth: '780px',
+                textWrap: 'balance',
+                textShadow: '0 2px 24px rgba(0,0,0,.2)',
+              }}
+            >
+              {textos.hero.titulo}
+            </Typography>
+          </Revela>
+        </Box>
+        <Box sx={GRUPO}>
+          <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={2}>
+            <Typography
+              variant="body1"
+              sx={{
+                // En el móvil no cabe sin volver a tapar la cara: lo dicen ya el título y los botones.
+                display: { xs: 'none', sm: 'block' },
+                color: 'text.secondary',
+                maxWidth: '510px',
+                ml: { xs: 0, md: 'auto' },
+                mb: 3.5,
+                fontSize: { xs: '16px', md: '18px' },
+              }}
+            >
+              {textos.hero.parrafo}
+            </Typography>
+          </Revela>
+          <Revela alMontar retraso={RETRASO_TEXTOS_S} orden={3}>
+            {/* Con vídeo, el rincón de la derecha es de su botón de pausa. */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: { xs: 1.5, md: 3 }, pr: { xs: conVideo ? 7 : 0, md: 0 } }}>
+              <Boton component={Link} to="/historia" sx={{ px: { xs: 2.5, md: 3.5 }, fontSize: { xs: 14, md: 15 } }}>
+                {textos.hero.botonPrincipal}
+              </Boton>
+              {/* Las noticias ya vienen justo debajo del hero; la segunda acción lleva a lo que más se consulta.
+                  Sin la Agenda no hay otro destino que no repita el botón principal: no se pinta. */}
+              {conAgenda && (
+                <Box component={Link} to="/agenda" sx={{ ...enlaceConFlecha, color: '#e4e2df' }}>
+                  {textos.hero.enlaceSecundario} <ArrowForwardIcon sx={{ fontSize: 16 }} />
+                </Box>
+              )}
+            </Box>
+          </Revela>
+        </Box>
       </Box>
     </Box>
   )
 }
+
+/** Cada grupo de textos se alinea como el bloque: a la izquierda en el móvil, a la derecha en el PC. */
+const GRUPO = { display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } } as const

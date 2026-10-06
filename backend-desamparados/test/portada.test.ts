@@ -54,6 +54,13 @@ describe('validación de las fotos de portada', () => {
     assert.ok(esError(validar([{ url: '/images/hero.jpg', descripcion: 'x'.repeat(201) }])));
   });
 
+  test('el encuadre del móvil va de 0 a 100, en enteros, y es opcional', () => {
+    assert.ok(!esError(validar([{ url: '/images/hero.jpg', encuadre: 0 }, { url: '/images/hero.jpg', encuadre: 100 }, { url: '/images/hero.jpg' }])));
+    assert.ok(esError(validar([{ url: '/images/hero.jpg', encuadre: 101 }])));
+    assert.ok(esError(validar([{ url: '/images/hero.jpg', encuadre: -5 }])));
+    assert.ok(esError(validar([{ url: '/images/hero.jpg', encuadre: 33.5 }])));
+  });
+
   test(`no admite más de ${MAX_IMAGENES_PORTADA} fotos`, () => {
     const una = { url: '/images/hero.jpg' };
     assert.ok(!esError(validar(Array(MAX_IMAGENES_PORTADA).fill(una))));
@@ -143,17 +150,17 @@ describe('acceso a las fotos de portada', () => {
     const anterior = await PortadaServiceLista();
     try {
       const nuevas = [
-        { url: '/images/hero-1920.webp', descripcion: 'Primera' },
+        { url: '/images/hero-1920.webp', descripcion: 'Primera', encuadre: 60 },
         { url: '/storage/public/0123456789abcdef0123456789abcdef.jpg', descripcion: '   ' },
       ];
       const res = await guardar(nuevas, Role.REDES);
       assert.equal(res.status, 200, await res.text());
 
-      const { imagenes: lista } = (await (await fetch(`${baseUrl}/api/portada`)).json()) as { imagenes: { url: string; descripcion: string | null; orden: number }[] };
-      assert.deepEqual(lista.map((i) => [i.url, i.descripcion, i.orden]), [
-        ['/images/hero-1920.webp', 'Primera', 0],
-        // Una descripción en blanco se guarda como nula, no como espacios.
-        ['/storage/public/0123456789abcdef0123456789abcdef.jpg', null, 1],
+      const { imagenes: lista } = (await (await fetch(`${baseUrl}/api/portada`)).json()) as { imagenes: { url: string; descripcion: string | null; encuadre: number | null; orden: number }[] };
+      assert.deepEqual(lista.map((i) => [i.url, i.descripcion, i.encuadre, i.orden]), [
+        ['/images/hero-1920.webp', 'Primera', 60, 0],
+        // Una descripción en blanco se guarda como nula, no como espacios; sin encuadre, nulo.
+        ['/storage/public/0123456789abcdef0123456789abcdef.jpg', null, null, 1],
       ]);
 
       assert.equal((await guardar([{ url: 'https://fuera.com/x.jpg' }], Role.REDES)).status, 400);
@@ -164,8 +171,9 @@ describe('acceso a las fotos de portada', () => {
 });
 
 async function PortadaServiceLista() {
-  const { imagenes: lista } = (await (await fetch(`${baseUrl}/api/portada`)).json()) as { imagenes: { url: string; descripcion: string | null }[] };
-  return lista.map((i) => ({ url: i.url, descripcion: i.descripcion ?? '' }));
+  const { imagenes: lista } = (await (await fetch(`${baseUrl}/api/portada`)).json()) as { imagenes: { url: string; descripcion: string | null; encuadre: number | null }[] };
+  // Con el encuadre: si no, el test dejaría las fotos de desarrollo sin el suyo.
+  return lista.map((i) => ({ url: i.url, descripcion: i.descripcion ?? '', ...(i.encuadre === null ? {} : { encuadre: i.encuadre }) }));
 }
 
 test('GET /api/portada trae las fotos y los textos en la misma respuesta', async (t) => {

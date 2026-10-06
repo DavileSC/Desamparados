@@ -4,6 +4,7 @@ import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-public
 export interface ImagenPortadaEntrada {
   url: string;
   descripcion?: string;
+  encuadre?: number;
 }
 
 export class PortadaService {
@@ -11,7 +12,7 @@ export class PortadaService {
   static listarImagenes() {
     return db.imagenPortada.findMany({
       orderBy: { orden: 'asc' },
-      select: { id: true, url: true, descripcion: true, orden: true },
+      select: { id: true, url: true, descripcion: true, encuadre: true, orden: true },
     });
   }
 
@@ -28,6 +29,7 @@ export class PortadaService {
         data: imagenes.map((imagen, orden) => ({
           url: imagen.url,
           descripcion: imagen.descripcion?.trim() || null,
+          encuadre: imagen.encuadre ?? null,
           orden,
         })),
       }),
