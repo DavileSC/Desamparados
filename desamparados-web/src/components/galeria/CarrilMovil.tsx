@@ -32,8 +32,14 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
   // El que se está reproduciendo: al deslizar a otro deja de ser el actual y se desmonta.
   const [sonando, setSonando] = useState<number | null>(null)
 
+  // La que acaba de marcar el propio dedo. El índice cambia a mitad del gesto,
+  // y si el carril corriera tras él cortaría el deslizamiento de golpe.
+  const marcada = useRef<number | null>(null)
+
   // Si `actual` cambia desde fuera (al cerrar el visor en otra foto), el carril la sigue.
   useEffect(() => {
+    if (actual === marcada.current) return
+    marcada.current = actual
     const el = carril.current
     if (!el || !el.clientWidth) return
     const destino = actual * el.clientWidth
@@ -44,7 +50,10 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
     const el = carril.current
     if (!el || !el.clientWidth) return
     const indice = Math.round(el.scrollLeft / el.clientWidth)
-    if (indice !== actual && indice >= 0 && indice < medios.length) onIr(indice)
+    if (indice !== actual && indice >= 0 && indice < medios.length) {
+      marcada.current = indice
+      onIr(indice)
+    }
   }
 
   const medio = medios[actual]
@@ -75,14 +84,18 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
                 // acabado de encajar, el vídeo no sonaría.
                 onClick={() => { if (esVideo && enLinea) { onIr(i); setSonando(i) } else onAbrir(i, esVideo) }}
                 aria-label={esVideo ? `Reproducir: ${m.alt}` : `Ampliar: ${m.alt}`}
-                sx={hueco}
+                // Sin la onda de MUI: empieza al poner el dedo para deslizar y
+                // se ve como un círculo gris que crece sobre la foto.
+                disableRipple
+                sx={{ ...hueco, '&.Mui-focusVisible': { outline: `3px solid ${DORADO}`, outlineOffset: -3 } }}
               >
-                <Box component="img" src={imagenDe(m)} alt="" aria-hidden="true" loading="lazy" sx={fondoDesenfocado(26, 0.45)} />
+                <Box component="img" src={imagenDe(m)} alt="" aria-hidden="true" loading={Math.abs(i - actual) <= 1 ? 'eager' : 'lazy'} sx={fondoDesenfocado(26, 0.45)} />
                 <Box
                   component="img"
                   src={imagenDe(m)}
                   alt={m.alt}
-                  loading={i === 0 ? 'eager' : 'lazy'}
+                  // Las vecinas, ya cargadas: si no, aparecen de golpe al deslizar.
+                  loading={Math.abs(i - actual) <= 1 ? 'eager' : 'lazy'}
                   data-medida={imagenDe(m)}
                   onLoad={medir}
                   sx={{ position: 'relative', width: '100%', height: '100%', display: 'block', objectFit: formato === 'h' ? 'cover' : 'contain' }}

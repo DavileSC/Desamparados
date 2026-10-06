@@ -7,14 +7,13 @@ import PauseIcon from '@mui/icons-material/Pause'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 import type { MedioGaleria } from '../../lib/api/contenido'
-import { DORADO, botonRedondo, fondoDesenfocado, imagenDe, type Medida } from './formato'
+import { DORADO, animacionDeEntrada, animacionDeSalida, botonRedondo, fondoDesenfocado, imagenDe, useSaliente, type Medida } from './formato'
 import ReproductorEnLinea from './ReproductorEnLinea'
 
 /** Lo que dura cada foto en el pase automático. */
 export const DURACION_PASE = 6000
 
 const lento = keyframes`from { transform: scale(1) } to { transform: scale(1.07) }`
-const entra = keyframes`from { opacity: 0 } to { opacity: 1 }`
 const avanza = keyframes`from { transform: scaleX(0) } to { transform: scaleX(1) }`
 
 interface Props {
@@ -55,6 +54,8 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
   const varios = medios.length > 1
   const enMarcha = varios && !pausa && !encima && !quieta && !reproduciendo
   const { formato } = medidaDe(medio)
+  const saliente = useSaliente(actual)
+  const sale = saliente !== null ? medios[saliente] : undefined
 
   useEffect(() => {
     if (!enMarcha) return
@@ -70,7 +71,13 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
       onBlurCapture={() => setEncima(false)}
     >
       <Box sx={{ position: 'relative', aspectRatio: '16 / 9', maxHeight: '78vh', width: '100%', borderRadius: 1.5, overflow: 'hidden', bgcolor: '#070608' }}>
-        <Box component="img" key={`fondo-${actual}`} src={imagenDe(medio)} alt="" aria-hidden="true" sx={{ ...fondoDesenfocado(38, 0.45), animation: `${entra} 500ms ease-out` }} />
+        {sale && (
+          <Box key={`sale-${saliente}`} aria-hidden="true" sx={{ position: 'absolute', inset: 0, overflow: 'hidden', ...animacionDeSalida }}>
+            <Box component="img" src={imagenDe(sale)} alt="" sx={fondoDesenfocado(38, 0.45)} />
+            <Box component="img" src={imagenDe(sale)} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', objectFit: medidaDe(sale).formato === 'h' ? 'cover' : 'contain' }} />
+          </Box>
+        )}
+        <Box component="img" key={`fondo-${actual}`} src={imagenDe(medio)} alt="" aria-hidden="true" sx={{ ...fondoDesenfocado(38, 0.45), ...animacionDeEntrada(sale !== undefined) }} />
         {reproduciendo ? (
           <ReproductorEnLinea medio={medio} onTerminar={() => setSonando(null)} />
         ) : (
@@ -79,9 +86,10 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
           aria-label={esVideo ? `Reproducir: ${medio.alt}` : `Ampliar: ${medio.alt}`}
           sx={{ position: 'absolute', inset: 0, overflow: 'hidden', cursor: esVideo ? 'pointer' : 'zoom-in', '&.Mui-focusVisible': { outline: `3px solid ${DORADO}`, outlineOffset: -3 } }}
         >
+          {/* Envuelta: la entrada y su zoom lento mueven cada uno su `transform`. */}
+          <Box key={`foto-${actual}`} sx={{ position: 'absolute', inset: 0, ...animacionDeEntrada(sale !== undefined) }}>
           <Box
             component="img"
-            key={`foto-${actual}`}
             src={imagenDe(medio)}
             alt={medio.alt}
             data-medida={imagenDe(medio)}
@@ -90,10 +98,11 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
               width: '100%', height: '100%', display: 'block',
               // Horizontal: llena el escenario. Vertical o cuadrada: entera, sobre su fondo.
               objectFit: formato === 'h' ? 'cover' : 'contain',
-              animation: `${entra} 500ms ease-out, ${lento} 9s ease-out infinite alternate`,
+              animation: `${lento} 9s ease-out infinite alternate`,
               '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
             }}
           />
+          </Box>
         </ButtonBase>
         )}
 

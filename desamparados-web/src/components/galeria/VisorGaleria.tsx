@@ -8,7 +8,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import ScreenRotationIcon from '@mui/icons-material/ScreenRotation'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { esVideoPropio } from '../../lib/videoPropio'
-import { DORADO, botonRedondo, fondoDesenfocado, imagenDe, type Medida } from './formato'
+import { DORADO, animacionDeEntrada, animacionDeSalida, botonRedondo, fondoDesenfocado, imagenDe, useSaliente, type Medida } from './formato'
 
 const entra = keyframes`from { opacity: 0; transform: scale(0.98) } to { opacity: 1; transform: none }`
 
@@ -37,9 +37,11 @@ const BAJAR_PARA_CERRAR = 90
  * desenfocado. Un vídeo se reproduce en su proporción (la de su portada), así
  * que uno grabado en vertical se ve en vertical.
  */
-function Medio({ medio, activo, reproduciendo, onReproducir, medidaDe, medir }: {
+function Medio({ medio, activo, entrada = true, reproduciendo, onReproducir, medidaDe, medir }: {
   medio: MedioGaleria
   activo: boolean
+  /** En el carril del móvil la foto ya llega deslizándose, y en escritorio entra con el enfoque: otra entrada encima parpadea. */
+  entrada?: boolean
   reproduciendo: boolean
   onReproducir: () => void
   medidaDe: (medio: MedioGaleria) => Medida
@@ -79,7 +81,7 @@ function Medio({ medio, activo, reproduciendo, onReproducir, medidaDe, medir }: 
     )
   }
   return (
-    <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: activo ? `${entra} 240ms ease-out` : 'none' }}>
+    <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: activo && entrada ? `${entra} 240ms ease-out` : 'none' }}>
       <Box
         component="img"
         src={imagenDe(medio)}
@@ -130,13 +132,28 @@ export default function VisorGaleria({ medios, actual, onIr, onCerrar, reproduci
 
 type PropsVista = Omit<Props, 'actual' | 'escritorio'> & { indice: number; medio: MedioGaleria; varios: boolean }
 
+const hueco = { position: 'absolute', top: 48, bottom: 88, left: 96, right: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', containerType: 'size' } as const
+
 function VisorEscritorio({ medios, indice, medio, varios, onIr, onCerrar, reproduciendo, onReproducir, medidaDe, medir }: PropsVista) {
+  // Como en el escenario: la anterior se apaga debajo mientras la nueva se enfoca.
+  const saliente = useSaliente(indice)
+  const sale = saliente !== null ? medios[saliente] : undefined
   return (
     <Box sx={{ display: 'flex', height: '100%' }}>
       <Box sx={{ position: 'relative', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        <Box component="img" src={imagenDe(medio)} alt="" aria-hidden="true" sx={fondoDesenfocado(70, 0.32)} />
-        <Box sx={{ position: 'absolute', top: 48, bottom: 88, left: 96, right: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', containerType: 'size' }}>
-          <Medio key={indice} medio={medio} activo reproduciendo={reproduciendo.includes(medio.url)} onReproducir={() => onReproducir(medio.url)} medidaDe={medidaDe} medir={medir} />
+        {sale && (
+          <Box key={`sale-${saliente}`} aria-hidden="true" sx={{ position: 'absolute', inset: 0, ...animacionDeSalida }}>
+            <Box component="img" src={imagenDe(sale)} alt="" sx={fondoDesenfocado(70, 0.32)} />
+            <Box sx={hueco}>
+              <Box component="img" src={imagenDe(sale)} alt="" sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', borderRadius: 1 }} />
+            </Box>
+          </Box>
+        )}
+        <Box key={indice} sx={{ position: 'absolute', inset: 0, ...animacionDeEntrada(sale !== undefined) }}>
+          <Box component="img" src={imagenDe(medio)} alt="" aria-hidden="true" sx={fondoDesenfocado(70, 0.32)} />
+          <Box sx={hueco}>
+            <Medio medio={medio} activo entrada={false} reproduciendo={reproduciendo.includes(medio.url)} onReproducir={() => onReproducir(medio.url)} medidaDe={medidaDe} medir={medir} />
+          </Box>
         </Box>
         {varios && (
           <>
@@ -181,6 +198,8 @@ function VisorEscritorio({ medios, indice, medio, varios, onIr, onCerrar, reprod
 
 function VisorMovil({ medios, indice, medio, varios, onIr, onCerrar, reproduciendo, onReproducir, medidaDe, medir }: PropsVista) {
   const carril = useRef<HTMLDivElement>(null)
+  // La que acaba de marcar el propio dedo: ver CarrilMovil.
+  const marcada = useRef<number | null>(null)
   const inicio = useRef<{ x: number; y: number } | null>(null)
   const [bajando, setBajando] = useState(0)
   const [vertical, setVertical] = useState(() => window.matchMedia?.('(orientation: portrait)').matches ?? true)
@@ -195,6 +214,8 @@ function VisorMovil({ medios, indice, medio, varios, onIr, onCerrar, reproducien
 
   // Empieza en el medio que se tocó, y sigue a `indice` si cambia desde fuera.
   useEffect(() => {
+    if (indice === marcada.current) return
+    marcada.current = indice
     const el = carril.current
     if (!el || !el.clientWidth) return
     const destino = indice * el.clientWidth
@@ -205,7 +226,10 @@ function VisorMovil({ medios, indice, medio, varios, onIr, onCerrar, reproducien
     const el = carril.current
     if (!el || !el.clientWidth) return
     const i = Math.round(el.scrollLeft / el.clientWidth)
-    if (i !== indice && i >= 0 && i < medios.length) onIr(i)
+    if (i !== indice && i >= 0 && i < medios.length) {
+      marcada.current = i
+      onIr(i)
+    }
   }
 
   // Bajar el dedo cierra, como en las galerías del propio móvil.
@@ -242,9 +266,9 @@ function VisorMovil({ medios, indice, medio, varios, onIr, onCerrar, reproducien
       >
         {medios.map((m, i) => (
           <Box key={`${imagenDe(m)}-${i}`} sx={{ position: 'relative', flex: '0 0 100%', height: '100%', scrollSnapAlign: 'start', overflow: 'hidden' }}>
-            <Box component="img" src={imagenDe(m)} alt="" aria-hidden="true" loading="lazy" sx={fondoDesenfocado(40, 0.3)} />
+            <Box component="img" src={imagenDe(m)} alt="" aria-hidden="true" loading={Math.abs(i - indice) <= 1 ? 'eager' : 'lazy'} sx={fondoDesenfocado(40, 0.3)} />
             <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', containerType: 'size' }}>
-            <Medio medio={m} activo={i === indice} reproduciendo={reproduciendo.includes(m.url)} onReproducir={() => onReproducir(m.url)} medidaDe={medidaDe} medir={medir} />
+            <Medio medio={m} activo={i === indice} entrada={false} reproduciendo={reproduciendo.includes(m.url)} onReproducir={() => onReproducir(m.url)} medidaDe={medidaDe} medir={medir} />
             </Box>
           </Box>
         ))}

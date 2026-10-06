@@ -1,4 +1,5 @@
-import { useCallback, useState, type SyntheticEvent } from 'react'
+import { useCallback, useEffect, useState, type SyntheticEvent } from 'react'
+import { keyframes } from '@mui/material/styles'
 import type { MedioGaleria } from '../../lib/api/contenido'
 
 /** Horizontal, vertical o casi cuadrada: decide cómo se encaja cada foto. */
@@ -50,3 +51,52 @@ export const botonRedondo = (tamano: number) => ({
 }) as const
 
 export const DORADO = '#dec72b'
+
+/** Lo que tarda en pasar de foto en escritorio (el «enfoque»). */
+export const PASO = 1300
+
+/*
+ * El paso de foto en escritorio: la nueva llega desenfocada y en penumbra y se
+ * aclara, como una vela que prende, mientras la anterior se apaga debajo. Sin
+ * negro entre las dos. La escala acaba en `scale(1)` escrito: hasta `none`,
+ * algunos navegadores la interpolan desde cero.
+ */
+const enfoqueEntra = keyframes`
+  0% { opacity: 0; filter: blur(22px) brightness(0.3); transform: scale(1.05) }
+  45% { opacity: 1 }
+  100% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1) }
+`
+const enfoqueSale = keyframes`to { filter: blur(6px) brightness(0.2) }`
+const funde = keyframes`from { opacity: 0 } to { opacity: 1 }`
+
+/** La capa que entra (sin animación en la primera foto). Con «reducir movimiento», un fundido corto. */
+export const animacionDeEntrada = (pasando: boolean) => ({
+  animation: pasando ? `${enfoqueEntra} ${PASO}ms cubic-bezier(.3,0,.2,1) both` : 'none',
+  '@media (prefers-reduced-motion: reduce)': { animation: pasando ? `${funde} 300ms ease both` : 'none' },
+}) as const
+
+export const animacionDeSalida = {
+  animation: `${enfoqueSale} ${PASO}ms ease-in both`,
+  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+} as const
+
+/**
+ * El medio que se está yendo mientras entra `actual`, durante lo que dura el
+ * paso; `null` el resto del tiempo. Se queda debajo de la nueva para que el
+ * cambio sea entre dos fotos, no desde negro.
+ */
+export function useSaliente(actual: number) {
+  const [previa, setPrevia] = useState(actual)
+  const [saliente, setSaliente] = useState<number | null>(null)
+  // En el propio render, no en un efecto: así la nueva ya monta con su animación.
+  if (previa !== actual) {
+    setPrevia(actual)
+    setSaliente(previa)
+  }
+  useEffect(() => {
+    if (saliente === null) return
+    const reloj = window.setTimeout(() => setSaliente(null), PASO)
+    return () => window.clearTimeout(reloj)
+  }, [saliente, actual])
+  return saliente
+}
