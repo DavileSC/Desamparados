@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, it, expect } from 'vitest'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import BloqueCarrusel from '../BloqueCarrusel'
 import type { BloqueCarrusel as Datos, PiezaDeCarrusel } from '../../../lib/api/contenido'
@@ -45,6 +45,37 @@ describe('BloqueCarrusel', () => {
     expect(screen.queryByRole('button', { name: 'Pieza siguiente' })).not.toBeInTheDocument()
     expect(screen.queryByText('Insignias')).not.toBeInTheDocument()
     expect(screen.queryByText('Año')).not.toBeInTheDocument()
+  })
+
+  describe('en el móvil', () => {
+    // jsdom no casa ninguna media query (escritorio): se finge un móvil de 390 px.
+    const matchMediaOriginal = window.matchMedia
+    beforeEach(() => {
+      window.matchMedia = ((consulta: string) => {
+        const max = /max-width:\s*([\d.]+)px/.exec(consulta)
+        const min = /min-width:\s*([\d.]+)px/.exec(consulta)
+        const matches = (!max || 390 <= Number(max[1])) && (!min || 390 >= Number(min[1]))
+        return { matches, media: consulta, onchange: null, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => false }
+      }) as unknown as typeof window.matchMedia
+    })
+    afterEach(() => { window.matchMedia = matchMediaOriginal })
+
+    it('la ficha va sobre la foto y la cartela sube en una hoja', async () => {
+      renderWithProviders(<BloqueCarrusel bloque={bloque([pieza('Cruz'), pieza('Estandarte')])} />)
+      expect(screen.getByRole('heading', { name: 'Cruz' })).toBeInTheDocument()
+      expect(screen.queryByText('1997')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Ver cartela' }))
+      const hoja = await screen.findByRole('dialog', { name: 'Cruz' })
+      expect(within(hoja).getByText('1997')).toBeInTheDocument()
+      fireEvent.click(within(hoja).getByRole('button', { name: 'Cerrar la cartela' }))
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    })
+
+    it('las flechas siguen pasando de pieza', async () => {
+      renderWithProviders(<BloqueCarrusel bloque={bloque([pieza('Cruz'), pieza('Estandarte')])} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Pieza siguiente' }))
+      expect(await screen.findByRole('heading', { name: 'Estandarte' })).toBeInTheDocument()
+    })
   })
 
   it('solo la foto que se ve se anuncia a los lectores de pantalla', () => {
