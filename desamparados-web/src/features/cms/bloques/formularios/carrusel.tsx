@@ -3,7 +3,7 @@
  * historia y los datos de su cartela.
  */
 import { useState } from 'react'
-import { Button, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import { Box, Button, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
@@ -61,7 +61,7 @@ export function FormularioCarrusel({ bloque, onCambio }: Props<BloqueCarrusel>) 
       {bloque.piezas.map((pieza, indice) => {
         const n = indice + 1
         return (
-          <Stack key={claves[indice] ?? indice} spacing={2} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          <Stack key={claves[indice] ?? indice} spacing={2} sx={{ p: { xs: 1.5, sm: 2 }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
               <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>{pieza.titulo.trim() || `Pieza ${n}`}</Typography>
               <Tooltip title="Subir"><span>
@@ -129,18 +129,20 @@ export function FormularioCarrusel({ bloque, onCambio }: Props<BloqueCarrusel>) 
               Cartela: datos como «Autor», «Año» o «Materiales», con su valor.
             </Typography>
             {pieza.datos.map((dato, d) => (
-              <Stack key={d} direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+              // En el móvil, dato y valor uno encima de otro: en una fila, «Dato»
+              // se quedaba en 60px y se leía «Bord» o «Cuer».
+              <Box key={d} sx={{ display: 'grid', gap: 1, alignItems: 'start', gridTemplateColumns: { xs: 'minmax(0, 1fr) auto', sm: 'minmax(0, 1fr) minmax(0, 2fr) auto' } }}>
                 <TextField
                   label="Dato" value={dato.etiqueta}
                   onChange={(e) => cambiarDato(indice, d, { etiqueta: e.target.value })}
                   slotProps={{ htmlInput: { maxLength: topes.etiqueta } }}
-                  size="small" sx={{ flex: 1 }}
+                  size="small"
                 />
                 <TextField
                   label="Valor" value={dato.valor}
                   onChange={(e) => cambiarDato(indice, d, { valor: e.target.value })}
                   slotProps={{ htmlInput: { maxLength: topes.titulo } }}
-                  size="small" sx={{ flex: 2 }}
+                  size="small" sx={{ order: { xs: 3, sm: 0 } }}
                 />
                 <Tooltip title="Quitar el dato">
                   <IconButton size="small" aria-label={`Quitar el dato ${d + 1} de la pieza ${n}`} sx={{ mt: 0.5 }}
@@ -148,7 +150,7 @@ export function FormularioCarrusel({ bloque, onCambio }: Props<BloqueCarrusel>) 
                     <CloseIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
-              </Stack>
+              </Box>
             ))}
             {pieza.datos.length < topes.datosPorPieza && (
               <Button size="small" startIcon={<AddIcon />} sx={{ alignSelf: 'flex-start' }}

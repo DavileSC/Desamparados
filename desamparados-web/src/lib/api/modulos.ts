@@ -11,7 +11,7 @@ export interface ModuloDelCms extends FichaDeModulo {
   cambiadoEl: string | null
   cambiadoPor: string | null
   /** Cuántos datos tiene («12 productos»): se enseña antes de apagar. */
-  datos: { que: string; total: number }[]
+  datos: { uno: string; que: string; total: number }[]
 }
 export const modulosDelCms = () => llamarApi<ModuloDelCms[]>('/cms/modulos')
 

@@ -35,8 +35,9 @@ function pestanaGuardada(): Pestana {
  * pestañas: «Hoy» (los asuntos, el próximo acto y el curso) y «Cifras» (las
  * cuatro cifras de la casa, una en grande).
  *
- * Cabe siempre en la pantalla, sin scroll: mide lo que queda de ventana y la
- * pestaña abierta se queda con el hueco que sobra.
+ * Desde la tableta cabe en la pantalla, sin scroll: mide lo que queda de
+ * ventana y la pestaña abierta se queda con el hueco que sobra. En el móvil
+ * no cabe y se desplaza la página.
  *
  * El detalle de cada área (el censo, el dinero, la procesión por años) no va
  * aquí: está en «Datos e informes», de la junta.
@@ -80,7 +81,9 @@ export default function PanelPage() {
       sx={{
         // A sangre: el retablo llega a los bordes del panel, sin el margen del marco.
         m: { xs: -2.5, md: -4 },
-        height: alto ?? '100dvh', overflow: 'hidden',
+        // En el móvil no cabe todo: se desplaza la página entera, como cualquier
+        // otra. Antes la pestaña tenía su propia barra dentro de una página fija.
+        height: { xs: 'auto', sm: alto ?? '100dvh' }, overflow: { xs: 'visible', sm: 'hidden' },
         containerType: 'inline-size', containerName: 'inicio',
       }}
     >
@@ -88,7 +91,7 @@ export default function PanelPage() {
       <Box
         sx={{
           height: '100%', display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'clamp(96px, 15vh, 170px) minmax(0, 1fr)',
+          gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: { xs: 'clamp(96px, 15vh, 170px) auto', sm: 'clamp(96px, 15vh, 170px) minmax(0, 1fr)' },
           '@container inicio (min-width: 720px)': {
             gridTemplateColumns: 'clamp(220px, 28%, 400px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)',
           },
@@ -142,8 +145,8 @@ export default function PanelPage() {
             aria-labelledby={`inicio-pestana-${pestana}`}
             sx={{
               flex: '1 1 0 !important', minHeight: 0, display: 'flex', flexDirection: 'column',
-              // En el móvil no cabe todo: la pestaña se desplaza dentro y la página no.
-              '@container columna (max-width: 559px)': { overflowY: 'auto' },
+              // En el móvil mide lo que lleva: la que se desplaza es la página.
+              '@container columna (max-width: 559px)': { flex: 'none !important' },
             }}
           >
             {pestana === 'hoy'

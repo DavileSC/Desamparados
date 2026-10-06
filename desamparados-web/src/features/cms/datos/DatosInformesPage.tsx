@@ -184,12 +184,12 @@ export default function DatosInformesPage() {
                   ...entrada(i + 1),
                 }}
               >
-                <Box component="span" sx={{ ...VERSALITAS, fontSize: 10.5, color: activa ? ORO : 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.etiqueta}</Box>
+                <Box component="span" sx={{ ...VERSALITAS, fontSize: 10.5, color: activa ? ORO : 'text.secondary' }}>{c.etiqueta}</Box>
                 <Box component="span" sx={{ ...SERIF, fontSize: 'clamp(24px, 4.4vh, 30px)', lineHeight: 1, whiteSpace: 'nowrap', color: tono }}>
                   {escribirCifra(c)}
                   {c.sufijo && <Box component="em" sx={{ fontSize: '0.6em', color: 'text.secondary', ml: 0.75 }}>{c.sufijo}</Box>}
                 </Box>
-                <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nota}</Box>
+                <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{c.nota}</Box>
               </Box>
             )
           })}

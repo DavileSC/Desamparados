@@ -265,6 +265,26 @@ const TIPOGRAFIA_CMS = {
   subtitle1: texto, subtitle2: texto, body1: texto, body2: texto, button: texto, caption: texto, overline: texto,
 }
 
+/** Lo que comparten los dos temas del CMS y no depende del modo. */
+const COMPONENTES_COMUNES = {
+  // Con más pestañas de las que caben (en el móvil, casi siempre), las que
+  // sobraban quedaban fuera sin nada que avisara de que existían: Difuntos,
+  // Venta en mano, Modelo 182… Con flechas, también en el móvil.
+  MuiTabs: { defaultProps: { variant: 'scrollable', scrollButtons: 'auto', allowScrollButtonsMobile: true } },
+  // En el móvil, 32px de margen a cada lado de una ventana se comían una
+  // sexta parte del ancho: con 16 caben los campos.
+  MuiDialog: {
+    styleOverrides: {
+      paper: {
+        '@media (max-width:599.95px)': {
+          '&:not(.MuiDialog-paperFullScreen)': { margin: 16, maxWidth: 'calc(100% - 32px)', maxHeight: 'calc(100% - 32px)' },
+          '&.MuiDialog-paperFullWidth': { width: 'calc(100% - 32px)' },
+        },
+      },
+    },
+  },
+} as const
+
 /** Un tema del CMS con un modo fijo: la pantalla de acceso (siempre clara) y las pruebas. */
 export function crearTemaCms(modo: ModoCms): Theme {
   const s = superficiesCms(modo)
@@ -272,6 +292,7 @@ export function crearTemaCms(modo: ModoCms): Theme {
     typography: TIPOGRAFIA_CMS,
     palette: { mode: modo === 'claro' ? 'light' : 'dark', ...paletaCms(modo) },
     components: {
+      ...COMPONENTES_COMUNES,
       // La caja de scroll de una tabla hace de referencia a lo que va con
       // posición absoluta dentro (los rótulos solo para lectores de pantalla,
       // como «Acciones»): si no, se escapaban de ella y ensanchaban la página
@@ -323,6 +344,7 @@ export const temaCms: Theme = createTheme(
   {
     typography: TIPOGRAFIA_CMS,
     components: {
+      ...COMPONENTES_COMUNES,
       // La caja de scroll de una tabla hace de referencia a lo que va con
       // posición absoluta dentro (los rótulos solo para lectores de pantalla,
       // como «Acciones»): si no, se escapaban de ella y ensanchaban la página

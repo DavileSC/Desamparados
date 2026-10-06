@@ -96,6 +96,28 @@ const densidadDelMenu = {
   },
 } as const
 
+/**
+ * En el móvil el menú es un cajón que hace scroll, así que no hay que
+ * apretarlo por altura: con los tramos de arriba, un móvil de 733px caía en el
+ * de los portátiles, con secciones de 30px. Aquí manda el dedo: 48px por
+ * sección y 44px por rótulo de grupo.
+ */
+const densidadTactil = {
+  '--cms-pad': '16px',
+  '--cms-pad-top': '20px',
+  '--cms-escudo': '38px',
+  '--cms-marca': '18px',
+  '--cms-item': '48px',
+  '--cms-item-fuente': '16px',
+  '--cms-icono': '22px',
+  '--cms-rotulo': '13px',
+  '--cms-grupo': '44px',
+  '--cms-area-pt': '12px',
+  '--cms-area-pb': '2px',
+  '--cms-pie-pt': '14px',
+  '--cms-avatar': '36px',
+} as const
+
 function Contador({ seccion, valor, tono }: { seccion: string; valor: number; tono: 'aviso' | 'error' }) {
   // El número dice cuántos y el color cuánta prisa corre, pero el color nunca
   // va solo: el aria-label lo dice con palabras.
@@ -246,7 +268,7 @@ function Navegacion({ role, onNavegar }: { role?: string; onNavegar?: () => void
               aria-expanded={estaAbierto}
               aria-controls={idLista}
               sx={{
-                ...rotulo, width: '100%', justifyContent: 'flex-start', gap: 0.75,
+                ...rotulo, width: '100%', minHeight: 'var(--cms-grupo, auto)', justifyContent: 'flex-start', gap: 0.75,
                 px: 1.5, pb: 'var(--cms-area-pb)', pt: '4px', borderRadius: 1, fontFamily: 'inherit',
                 ...((estaAbierto || esElActivo) && { color: 'rgba(255,255,255,0.85)' }),
                 '&:hover': { color: '#fff' },
@@ -394,7 +416,7 @@ function Contenido() {
   const barra = (
     <Box
       sx={{
-        ...densidadDelMenu,
+        ...(esMovil ? densidadTactil : densidadDelMenu),
         minHeight: '100%',
         backgroundColor: SIDEBAR,
         p: 'var(--cms-pad)',
@@ -430,7 +452,7 @@ function Contenido() {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default', color: 'text.primary' }}>
       {esMovil ? (
-        <Drawer open={menuAbierto} onClose={() => setMenuAbierto(false)} sx={{ '& .MuiDrawer-paper': { width: 264, border: 0 } }}>
+        <Drawer open={menuAbierto} onClose={() => setMenuAbierto(false)} sx={{ '& .MuiDrawer-paper': { width: 'min(300px, 86vw)', border: 0 } }}>
           {barra}
         </Drawer>
       ) : (

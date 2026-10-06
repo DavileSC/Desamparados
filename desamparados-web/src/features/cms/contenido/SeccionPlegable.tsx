@@ -29,10 +29,10 @@ export default function SeccionPlegable(
       variant="outlined"
       sx={{ mb: 1.5 }}
     >
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: { xs: 1.5, sm: 2 } }}>
         <Typography sx={{ fontWeight: 600 }}>{titulo}</Typography>
       </AccordionSummary>
-      <AccordionDetails>
+      <AccordionDetails sx={{ px: { xs: 1.5, sm: 2 } }}>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
           {abierta && vistaPrevia}
           {children}

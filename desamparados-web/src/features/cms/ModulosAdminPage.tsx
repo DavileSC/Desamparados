@@ -11,8 +11,8 @@ import { dependientesActivos, fichaDeModulo, type ClaveModulo } from '../../doma
 
 const CLAVE_LISTA = ['modulos', 'cms'] as const
 
-/** «12 productos, 40 ventas de caja», o nada. */
-const datosEnPalabras = (m: ModuloDelCms) => m.datos.map((d) => `${d.total} ${d.que}`).join(', ')
+/** «12 productos, 1 venta de caja», o nada. */
+const datosEnPalabras = (m: ModuloDelCms) => m.datos.map((d) => `${d.total} ${d.total === 1 ? d.uno : d.que}`).join(', ')
 const nombres = (claves: ClaveModulo[]) => claves.map((c) => fichaDeModulo(c).nombre).join(', ')
 
 type Pregunta =

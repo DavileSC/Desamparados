@@ -109,7 +109,7 @@ export function FormularioGaleria({ bloque, onCambio }: Props<BloqueGaleria>) {
 
       {bloque.medios.map((medio, indice) => (
         <Stack key={claves[indice] ?? indice} spacing={1.5}
-          sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          sx={{ p: { xs: 1.5, sm: 2 }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
             <Chip size="small" icon={medio.tipo === 'video' ? <MovieOutlinedIcon /> : <AddPhotoAlternateOutlinedIcon />}
               label={medio.tipo === 'video' ? 'Vídeo' : 'Foto'} />

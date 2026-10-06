@@ -244,7 +244,7 @@ function FilaDeBloque({ fila, indice, total, abierta, invalida, onAlternar, onCa
             <Tab value="contenido" label="Contenido" />
             <Tab value="presentacion" label={opcionesCambiadas > 0 ? `Presentación (${opcionesCambiadas})` : 'Presentación'} />
           </Tabs>
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
             {pestana === 'contenido' ? (
               <Stack spacing={2}>
                 {!SIN_TITULO.has(bloque.tipo) && (

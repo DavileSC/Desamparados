@@ -10,6 +10,11 @@ import type { PaginaDeBloques } from '../../../lib/api/contenido'
 const ANCHOS = { movil: 390, tableta: 820, escritorio: 1440 } as const
 type Aparato = keyof typeof ANCHOS
 
+function aparatoInicial(): Aparato {
+  const ancho = typeof window === 'undefined' ? ANCHOS.escritorio : window.innerWidth
+  return ancho < 600 ? 'movil' : ancho < 1100 ? 'tableta' : 'escritorio'
+}
+
 /**
  * La página tal como quedará, en vivo y al ancho de un móvil, una tableta o
  * un escritorio. Va en un iframe con la propia web dentro: solo así la página
@@ -27,7 +32,9 @@ export default function VistaEnVivo({ slug, documento, seleccionado, onSeleccion
   /** Alto del marco, en CSS. */
   alto: string
 }) {
-  const [aparato, setAparato] = useState<Aparato>('escritorio')
+  // Empieza en el aparato desde el que se edita: en el móvil, el escritorio
+  // encogido a 390px dejaba la página diminuta e ilegible.
+  const [aparato, setAparato] = useState<Aparato>(aparatoInicial)
   const [lista, setLista] = useState(false)
   const [medida, setMedida] = useState({ ancho: 0, alto: 0 })
   const iframe = useRef<HTMLIFrameElement>(null)

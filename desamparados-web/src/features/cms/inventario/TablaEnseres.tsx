@@ -6,6 +6,8 @@ import type { Enser } from '../../../lib/api/inventario'
 import { useColoresContabilidad } from '../contabilidad/tema'
 import { useTonos } from '../listados/tonos'
 import { cabeceraTabla, soloLector } from './tabla'
+import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from '../listados/Fichas'
+import { useEnFichas } from '../listados/useEnFichas'
 
 interface Props {
   enseres: Enser[]
@@ -27,6 +29,52 @@ export default function TablaEnseres({ enseres, volver, onBorrar }: Props) {
     { clave: 'cantidadBueno', texto: 'bueno', color: punto.info },
     { clave: 'cantidadReparar', texto: 'a reparar', color: punto.aviso },
   ] as const
+  const enFichas = useEnFichas()
+
+  const conservacion = (e: Enser) => {
+    const total = e.cantidadOptimo + e.cantidadBueno + e.cantidadReparar
+    const partes = tramos.filter((t) => e[t.clave] > 0)
+    return <>
+      <Box aria-hidden="true" sx={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: carril }}>
+        {total > 0 && partes.map((t) => <Box key={t.clave} sx={{ width: `${(e[t.clave] / total) * 100}%`, backgroundColor: t.color }} />)}
+      </Box>
+      <Typography component="span" sx={{ display: 'block', mt: 0.5, fontSize: 12, color: 'text.secondary', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+        {partes.length > 0 ? partes.map((t) => `${e[t.clave]} ${t.texto}`).join(' · ') : 'Sin unidades'}
+      </Typography>
+    </>
+  }
+  const acciones = (e: Enser) => <>
+    <Tooltip title="Editar">
+      <IconButton size="small" aria-label={`Editar ${e.nombre}`} component={Link} to={`/cms/inventario/${e.id}/editar`} state={{ volver }}><EditOutlinedIcon fontSize="small" /></IconButton>
+    </Tooltip>
+    <Tooltip title="Eliminar">
+      <IconButton size="small" aria-label={`Eliminar ${e.nombre}`} onClick={() => onBorrar(e)}><DeleteOutlineIcon fontSize="small" /></IconButton>
+    </Tooltip>
+  </>
+
+  if (enFichas) {
+    return (
+      <ListaDeFichas etiqueta="Enseres" vacia={enseres.length === 0 ? 'No hay enseres con esta búsqueda o estos filtros.' : undefined}>
+        {enseres.map((e) => (
+          <Ficha
+            key={e.id}
+            acciones={acciones(e)}
+            titulo={<>
+              <Typography component="span" sx={{ display: 'block', fontSize: 15, fontWeight: 600 }}>{e.nombre}</Typography>
+              {e.referencia && <Typography component="span" sx={{ display: 'block', fontSize: 12.5, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{e.referencia}</Typography>}
+            </>}
+          >
+            <DatosDeFicha>
+              <Dato etiqueta="Categoría">{e.categoria || '—'}</Dato>
+              <Dato etiqueta="Total">{e.cantidadOptimo + e.cantidadBueno + e.cantidadReparar}</Dato>
+              <Dato etiqueta="Ubicación" ancho>{e.ubicacion || 'Sin ubicación'}</Dato>
+              <Dato etiqueta="Conservación" ancho>{conservacion(e)}</Dato>
+            </DatosDeFicha>
+          </Ficha>
+        ))}
+      </ListaDeFichas>
+    )
+  }
 
   return (
     <TableContainer component={Paper}>
@@ -44,7 +92,6 @@ export default function TablaEnseres({ enseres, volver, onBorrar }: Props) {
         <TableBody>
           {enseres.map((e) => {
             const total = e.cantidadOptimo + e.cantidadBueno + e.cantidadReparar
-            const partes = tramos.filter((t) => e[t.clave] > 0)
             return (
               <TableRow key={e.id} hover>
                 <TableCell>
@@ -53,23 +100,9 @@ export default function TablaEnseres({ enseres, volver, onBorrar }: Props) {
                 </TableCell>
                 <TableCell sx={{ color: e.categoria ? 'text.primary' : 'text.disabled' }}>{e.categoria || '—'}</TableCell>
                 <TableCell sx={{ color: e.ubicacion ? 'text.primary' : 'text.disabled' }}>{e.ubicacion || 'Sin ubicación'}</TableCell>
-                <TableCell>
-                  <Box aria-hidden="true" sx={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: carril }}>
-                    {total > 0 && partes.map((t) => <Box key={t.clave} sx={{ width: `${(e[t.clave] / total) * 100}%`, backgroundColor: t.color }} />)}
-                  </Box>
-                  <Typography component="span" sx={{ display: 'block', mt: 0.5, fontSize: 12, color: 'text.secondary', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                    {partes.length > 0 ? partes.map((t) => `${e[t.clave]} ${t.texto}`).join(' · ') : 'Sin unidades'}
-                  </Typography>
-                </TableCell>
+                <TableCell>{conservacion(e)}</TableCell>
                 <TableCell align="right" sx={{ fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{total}</TableCell>
-                <TableCell padding="none" align="right" sx={{ whiteSpace: 'nowrap', pr: 1 }}>
-                  <Tooltip title="Editar">
-                    <IconButton size="small" aria-label={`Editar ${e.nombre}`} component={Link} to={`/cms/inventario/${e.id}/editar`} state={{ volver }}><EditOutlinedIcon fontSize="small" /></IconButton>
-                  </Tooltip>
-                  <Tooltip title="Eliminar">
-                    <IconButton size="small" aria-label={`Eliminar ${e.nombre}`} onClick={() => onBorrar(e)}><DeleteOutlineIcon fontSize="small" /></IconButton>
-                  </Tooltip>
-                </TableCell>
+                <TableCell padding="none" align="right" sx={{ whiteSpace: 'nowrap', pr: 1 }}>{acciones(e)}</TableCell>
               </TableRow>
             )
           })}

@@ -302,7 +302,8 @@ export default function AjustesInicioPage() {
                         {f.foto && <Box component="img" src={f.foto} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${f.x}% ${f.y}%`, display: 'block' }} />}
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 600 }}>
+                        {/* Un `div`: las etiquetas de MUI son bloques y no caben dentro de un párrafo. */}
+                        <Typography component="div" sx={{ fontWeight: 600 }}>
                           {f.nombre}
                           {f.indice === indiceDeHoy && <Chip label="En uso hoy" size="small" color="primary" sx={{ ml: 1, height: 20, fontSize: 11 }} />}
                           {!f.foto && <Chip label="Sin foto" size="small" color="warning" sx={{ ml: 1, height: 20, fontSize: 11 }} />}

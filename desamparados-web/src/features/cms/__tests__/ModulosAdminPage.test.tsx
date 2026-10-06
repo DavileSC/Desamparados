@@ -13,7 +13,7 @@ const nombres = (claves: string[]) => claves.map((c) => CATALOGO.modulos.find((m
 
 const lista = (apagados: string[] = []) => CATALOGO.modulos.map((m) => ({
   ...m, activo: !apagados.includes(m.clave), cambiadoEl: null, cambiadoPor: null,
-  datos: m.clave === 'tienda' ? [{ que: 'productos', total: 12 }, { que: 'ventas de caja', total: 40 }] : [],
+  datos: m.clave === 'tienda' ? [{ uno: 'producto', que: 'productos', total: 12 }, { uno: 'venta de caja', que: 'ventas de caja', total: 1 }] : [],
 }))
 
 /**
@@ -56,7 +56,7 @@ describe('ModulosAdminPage', () => {
     expect(await screen.findByRole('heading', { name: 'Cuentas' })).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: 'Tienda' })).toBeChecked()
     expect(screen.getByRole('switch', { name: 'Lotería y talonarios' })).not.toBeChecked()
-    expect(screen.getByText('12 productos, 40 ventas de caja')).toBeInTheDocument()
+    expect(screen.getByText('12 productos, 1 venta de caja')).toBeInTheDocument()
     expect(screen.getByText(/Requiere: Tienda, Pago en línea/)).toBeInTheDocument()
   })
 
@@ -67,7 +67,7 @@ describe('ModulosAdminPage', () => {
     renderWithProviders(<ModulosAdminPage />)
     await user.click(await screen.findByRole('switch', { name: 'Tienda' }))
     const dialogo = await screen.findByRole('dialog')
-    expect(within(dialogo).getByText(/12 productos, 40 ventas de caja/)).toBeInTheDocument()
+    expect(within(dialogo).getByText(/12 productos, 1 venta de caja/)).toBeInTheDocument()
     expect(within(dialogo).getByText(/se conservan/i)).toBeInTheDocument()
     await user.click(within(dialogo).getByRole('button', { name: /apagar/i }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())

@@ -20,7 +20,8 @@ interface Props {
  */
 export default function Cabecera({ role, actividad, hoy = new Date() }: Props) {
   const cargo = role ? NOMBRE_CARGO[role] ?? '' : ''
-  const unaLinea = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } as const
+  // En el móvil la página se desplaza: el texto entero cabe partiendo líneas.
+  const unaLinea = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', '@container columna (max-width: 559px)': { whiteSpace: 'normal' } } as const
 
   return (
     <Box

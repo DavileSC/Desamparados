@@ -40,7 +40,7 @@ export function FormularioTarjetas({ bloque, onCambio }: Props<BloqueTarjetas>) 
   return (
     <Stack spacing={2}>
       {bloque.tarjetas.map((tarjeta, indice) => (
-        <Stack key={indice} spacing={1.5} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Stack key={indice} spacing={1.5} sx={{ p: { xs: 1.5, sm: 2 }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
           <Stack direction="row" sx={{ alignItems: 'center' }}>
             <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Tarjeta {indice + 1}</Typography>
             <Tooltip title={sobranParaQuitar ? 'Quitar' : 'El bloque necesita al menos una tarjeta'}><span>

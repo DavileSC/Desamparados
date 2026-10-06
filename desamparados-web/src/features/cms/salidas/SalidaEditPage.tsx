@@ -357,10 +357,13 @@ function SeccionPuestos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
   return (
     <Seccion titulo="Puestos" detalle="Lo que se puede elegir al pedir la papeleta. Al menos uno.">
       {error && <Alert severity="error">{error}</Alert>}
-      <Stack spacing={1.5}>
+      {/* En el móvil cada puesto va en columna y separado del siguiente por un
+          filete: si no, sus flechas y su papelera parecían del de debajo. */}
+      <Stack spacing={1.5} sx={{ '& > * + *': { pt: { xs: 1.5, sm: 0 }, borderTop: { xs: 1, sm: 0 }, borderColor: 'divider' } }}>
         {puestos.map((p, i) => (
           <Stack key={i} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
-            <TextField label="Nombre" value={p.nombre} onChange={(e) => cambiar(i, 'nombre', e.target.value)} disabled={!puedeGuardar} error={p.nombre.trim() === ''} sx={{ flex: '1 1 220px' }} />
+            {/* El `flex` solo en fila: en columna, sus 220px eran de alto y dejaban un hueco. */}
+            <TextField label="Nombre" value={p.nombre} onChange={(e) => cambiar(i, 'nombre', e.target.value)} disabled={!puedeGuardar} error={p.nombre.trim() === ''} sx={{ flex: { sm: '1 1 220px' } }} />
             <FormControlLabel control={<Switch checked={p.tunica} disabled={!puedeGuardar} onChange={(_e, v) => cambiar(i, 'tunica', v)} />} label="Túnica" />
             <TextField
               select

@@ -31,7 +31,7 @@ export default function ListaEditable<T>({ elementos, onCambio, nuevo, nombre, m
   return (
     <Stack spacing={2}>
       {elementos.map((elemento, indice) => (
-        <Stack key={indice} spacing={1.5} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Stack key={indice} spacing={1.5} sx={{ p: { xs: 1.5, sm: 2 }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
           <Stack direction="row" sx={{ alignItems: 'center' }}>
             <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>{nombre} {indice + 1}</Typography>
             <Tooltip title="Subir"><span>

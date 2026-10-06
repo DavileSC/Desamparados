@@ -60,7 +60,7 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
         <Typography variant="h2" component="h1" sx={{ mb: 0.5 }}>{titulo}</Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>{nombre}</Typography>
 
-        <Paper sx={{ p: { xs: 2.5, md: 4 } }}>
+        <Paper sx={{ p: { xs: 1.5, sm: 2.5, md: 4 } }}>
           {children}
 
           {!onDescartar && (

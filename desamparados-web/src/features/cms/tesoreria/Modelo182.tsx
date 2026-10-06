@@ -11,6 +11,8 @@ import { guardarEnDisco } from '../../../lib/api/datos'
 import VentanaFormulario from '../VentanaFormulario'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
 import { deLaCorporacion } from '../../../domain/articulos'
+import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from '../listados/Fichas'
+import { useEnFichas } from '../listados/useEnFichas'
 
 /** «del Grupo» (o lo que toque): la forma corta, para un rótulo o un texto ya situado. */
 const delGrupo = () => deLaCorporacion({ corto: true })
@@ -31,6 +33,7 @@ interface Props {
  */
 export default function Modelo182({ puedeCambiar }: Props) {
   const cliente = useQueryClient()
+  const enFichas = useEnFichas()
   const [ejercicio, setEjercicio] = useState(anioPorDefecto)
   const [texto, setTexto] = useState(String(anioPorDefecto()))
   const [justificante, setJustificante] = useState(justificantePorDefecto(anioPorDefecto()))
@@ -168,6 +171,32 @@ export default function Modelo182({ puedeCambiar }: Props) {
           {!r.configuracion.nif && r.declarados.length > 0 && <Alert severity="info" sx={{ mb: 1.5 }}>Los certificados llevan el NIF {delGrupo()}: ponlo en «Datos {delGrupo()}» para sacarlos.</Alert>}
           {r.declarados.length === 0
             ? <Typography color="text.secondary">No hay donativos con NIF en {r.ejercicio}.</Typography>
+            : enFichas ? (
+              <ListaDeFichas etiqueta={`Donantes del ${r.ejercicio}`}>
+                {r.declarados.map((d) => (
+                  <Ficha
+                    key={d.nif}
+                    titulo={<>
+                      <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{d.nombre}</Typography>
+                      {d.nifRepresentante && <Typography variant="body2" color="text.secondary">Menor de 14: representante {d.nifRepresentante}</Typography>}
+                      {d.provinciaSupuesta && <Typography variant="body2" color="warning.main">Sin código postal: se declara en la provincia {delGrupo()}</Typography>}
+                    </>}
+                    acciones={
+                      <Button size="small" disabled={!r.configuracion.nif || ocupado !== null}
+                        onClick={() => void descargar(d.nif, () => traerCertificados(r.ejercicio, d.nif), `certificado-${d.nif}-${r.ejercicio}.pdf`)}>
+                        {ocupado === d.nif ? '…' : 'Certificado'}
+                      </Button>
+                    }
+                  >
+                    <DatosDeFicha>
+                      <Dato etiqueta="NIF">{d.nif}</Dato>
+                      <Dato etiqueta="Importe">{euros182(d.centimos)}</Dato>
+                      <Dato etiqueta="Deducción" ancho>{d.porcentaje} %{d.recurrente && <Chip size="small" label="Recurrente" sx={{ ml: 1 }} />}</Dato>
+                    </DatosDeFicha>
+                  </Ficha>
+                ))}
+              </ListaDeFichas>
+            )
             : <TableContainer>
               <Table size="small" aria-label={`Donantes del ${r.ejercicio}`}>
                 <TableHead>

@@ -67,7 +67,7 @@ export function FormularioCronologia({ bloque, onCambio }: Props<BloqueCronologi
       {bloque.hitos.map((hito, indice) => {
         const n = indice + 1
         return (
-          <Stack key={claves[indice] ?? indice} spacing={2} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          <Stack key={claves[indice] ?? indice} spacing={2} sx={{ p: { xs: 1.5, sm: 2 }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
               <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>Hito {n}</Typography>
               <Tooltip title="Subir"><span>

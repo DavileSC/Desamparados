@@ -12,6 +12,8 @@ import { cabeceraTabla } from '../inventario/tabla'
 import Pildora from '../listados/Pildora'
 import { CLAVE_MESA } from './enVivo'
 import { alturaEnMetros, fechaCorta } from './formato'
+import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from '../listados/Fichas'
+import { useEnFichas } from '../listados/useEnFichas'
 
 const formatoDia = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long' })
 const tenue = { color: 'text.disabled' } as const
@@ -40,6 +42,14 @@ export default function PreparacionRopa({ salida }: { salida: string }) {
   const filas = lista.data ?? []
   const hacenFaltaCingulos = filas.filter((f) => f.propuesta.cingulo === 'PRESTADO').length
   const quedanCingulos = cingulos.data?.enElRopero ?? null
+  const enFichas = useEnFichas()
+  const propuestaDe = (f: (typeof filas)[number]) => {
+    const t = f.propuesta.tunica
+    return {
+      tunica: t.origen === 'PROPIA' ? 'Propia' : t.origen === 'NINGUNA' ? 'No lleva' : t.numero ? `${t.numero}${f.tallaTunica ? ` (${f.tallaTunica})` : ''}${t.porTalla ? ' · por su talla' : ''}` : 'Buscar una',
+      tocado: f.propuesta.capirote ?? (f.propuesta.faraona && `${f.propuesta.faraona} (faraona)`),
+    }
+  }
 
   return (
     <Stack spacing={2}>
@@ -61,7 +71,33 @@ export default function PreparacionRopa({ salida }: { salida: string }) {
       {lista.isError && <Alert severity="error">No se ha podido cargar la ropa por preparar.</Alert>}
       {lista.isLoading && <CircularProgress aria-label="Cargando la ropa por preparar" />}
 
-      {lista.data && (
+      {lista.data && enFichas && (
+        <ListaDeFichas etiqueta="Ropa por preparar" vacia={filas.length === 0 ? `No hay ropa por preparar${turnoId === '' ? '' : ' para ese día'}.` : undefined}>
+          {filas.map((f) => {
+            const { tunica, tocado } = propuestaDe(f)
+            return (
+              <Ficha
+                key={f.solicitudId}
+                titulo={<>
+                  <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{f.hermano.nombre} {f.hermano.apellidos}</Typography>
+                  <Typography component="span" variant="body2" color="text.secondary">{f.puesto}{turnoId === '' ? ` · ${f.dia ? formatoDia.format(new Date(f.dia)) : 'sin cita'}` : ''}</Typography>
+                </>}
+                acciones={f.cuotasPendientes > 0 ? <Box sx={{ mt: 0.5, mr: 1 }}><Pildora texto={`Debe ${f.cuotasPendientes}`} tono="aviso" /></Box> : undefined}
+              >
+                <DatosDeFicha>
+                  <Dato etiqueta="Nacimiento">{fechaCorta(f.hermano.fechaNacimiento)}</Dato>
+                  <Dato etiqueta="Talla">{f.hermano.alturaHombro ? alturaEnMetros(f.hermano.alturaHombro) : '—'}</Dato>
+                  <Dato etiqueta="Túnica">{tunica}</Dato>
+                  <Dato etiqueta="Capirote / faraona">{tocado || '—'}</Dato>
+                  <Dato etiqueta="Cíngulo">{f.propuesta.cingulo === 'PRESTADO' ? 'Del ropero' : f.propuesta.cingulo === 'PROPIO' ? 'Propio' : 'No lleva'}</Dato>
+                </DatosDeFicha>
+              </Ficha>
+            )
+          })}
+        </ListaDeFichas>
+      )}
+
+      {lista.data && !enFichas && (
         <TableContainer component={Paper}>
           <Table size="small" aria-label="Ropa por preparar" sx={{ minWidth: 980, '& td': { whiteSpace: 'nowrap' } }}>
             <TableHead>
@@ -80,8 +116,7 @@ export default function PreparacionRopa({ salida }: { salida: string }) {
             <TableBody>
               {filas.map((f) => {
                 const t = f.propuesta.tunica
-                const tunica = t.origen === 'PROPIA' ? 'Propia' : t.origen === 'NINGUNA' ? 'No lleva' : t.numero ? `${t.numero}${f.tallaTunica ? ` (${f.tallaTunica})` : ''}${t.porTalla ? ' · por su talla' : ''}` : 'Buscar una'
-                const tocado = f.propuesta.capirote ?? (f.propuesta.faraona && `${f.propuesta.faraona} (faraona)`)
+                const { tunica, tocado } = propuestaDe(f)
                 return (
                   <TableRow key={f.solicitudId}>
                     <TableCell sx={{ fontWeight: 600 }}>{f.hermano.nombre} {f.hermano.apellidos}</TableCell>

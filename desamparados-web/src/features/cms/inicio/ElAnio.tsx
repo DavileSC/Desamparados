@@ -48,12 +48,14 @@ export default function ElAnio({ actos, hoy = new Date() }: { actos: Acto[]; hoy
             display: 'grid', alignContent: 'start', columnGap: 3.5,
             // Con sitio, en dos columnas: se ven el doble de actos de un vistazo.
             '@container anio (min-width: 520px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+            // En el móvil se desplaza la página: la lista, entera y sin barra propia.
+            '@container columna (max-width: 559px)': { flex: 'none !important', overflowY: 'visible' },
           }}
         >
           {despues.map((acto, i) => (
             <Box component="li" key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'baseline', py: 'clamp(4px, .9vh, 8px)', borderTop: `1px solid ${FILETE_SUAVE}` }}>
               <Box component="span" sx={{ ...SERIF, width: 52, flexShrink: 0, fontSize: 18, color: 'text.secondary' }}>{diaMes(acto.fecha)}</Box>
-              <Box component="span" title={acto.titulo} sx={{ fontSize: 14, minWidth: 0, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acto.titulo}</Box>
+              <Box component="span" title={acto.titulo} sx={{ fontSize: 14, minWidth: 0, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', '@container columna (max-width: 559px)': { whiteSpace: 'normal' } }}>{acto.titulo}</Box>
               {acto.hora && <Box component="span" sx={{ fontSize: 12.5, color: 'text.secondary', flexShrink: 0 }}>{acto.hora}</Box>}
             </Box>
           ))}

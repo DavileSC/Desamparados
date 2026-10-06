@@ -265,11 +265,11 @@ export default function LoteriaAdminPage() {
             <TextField label="Fecha del sorteo" type="date" {...campo('fecha')} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
             <TextField label="Números" {...campo('numeros')} disabled={conTalonarios || conCompra} helperText="De cinco cifras; varios, separados por comas." fullWidth />
           </Stack>
-          <Stack direction="row" spacing={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField label="Precio del décimo (€)" {...campo('precioDecimo')} disabled={conCompra} slotProps={{ htmlInput: { inputMode: 'decimal' } }} fullWidth />
             <TextField label="Décimos de cada número" {...campo('decimos')} disabled={conCompra} slotProps={{ htmlInput: { inputMode: 'numeric' } }} fullWidth />
           </Stack>
-          <Stack direction="row" spacing={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField label="Precio de la participación (€)" {...campo('precioParticipacion')} disabled={conTalonarios} slotProps={{ htmlInput: { inputMode: 'decimal' } }} fullWidth />
             <TextField label="Juega (€)" {...campo('jugado')} disabled={conTalonarios} helperText="El resto es donativo." slotProps={{ htmlInput: { inputMode: 'decimal' } }} fullWidth />
             <TextField label="Por talonario" {...campo('porTalonario')} disabled={conTalonarios} slotProps={{ htmlInput: { inputMode: 'numeric' } }} fullWidth />

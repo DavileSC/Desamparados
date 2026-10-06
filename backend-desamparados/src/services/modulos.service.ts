@@ -7,7 +7,8 @@ import {
   type ClaveModulo, type FichaDeModulo,
 } from '../domain/modulos.js';
 
-export interface RecuentoDeDatos { que: string; total: number }
+/** `uno`, para cuando hay uno solo: «1 producto», no «1 productos». */
+export interface RecuentoDeDatos { uno: string; que: string; total: number }
 
 export interface ModuloDelCms extends FichaDeModulo {
   activo: boolean;
@@ -27,44 +28,44 @@ export type ResultadoDeCambio =
  * Contabilidad lee el libro, que es del núcleo) devuelve la lista vacía.
  */
 const RECUENTOS: Record<ClaveModulo, () => Promise<RecuentoDeDatos[]>> = {
-  noticias: async () => [{ que: 'noticias', total: await db.noticia.count() }],
-  publicaciones: async () => [{ que: 'publicaciones', total: await db.publicacion.count() }],
-  agenda: async () => [{ que: 'actos', total: await db.evento.count() }],
-  comunicados: async () => [{ que: 'comunicados', total: await db.comunicado.count() }],
+  noticias: async () => [{ uno: 'noticia', que: 'noticias', total: await db.noticia.count() }],
+  publicaciones: async () => [{ uno: 'publicación', que: 'publicaciones', total: await db.publicacion.count() }],
+  agenda: async () => [{ uno: 'acto', que: 'actos', total: await db.evento.count() }],
+  comunicados: async () => [{ uno: 'comunicado', que: 'comunicados', total: await db.comunicado.count() }],
   'alta-web': async () => [],
   'area-hermanos': async () => [],
   procesion: async () => [
-    { que: 'salidas', total: await db.salida.count() },
-    { que: 'papeletas', total: await db.papeletaSitio.count() },
-    { que: 'turnos de reparto', total: await db.turno.count() },
-    { que: 'prendas del ropero', total: await db.prenda.count() },
+    { uno: 'salida', que: 'salidas', total: await db.salida.count() },
+    { uno: 'papeleta', que: 'papeletas', total: await db.papeletaSitio.count() },
+    { uno: 'turno de reparto', que: 'turnos de reparto', total: await db.turno.count() },
+    { uno: 'prenda del ropero', que: 'prendas del ropero', total: await db.prenda.count() },
   ],
   puerta: async () => [],
   'cortejo-directo': async () => [],
-  inventario: async () => [{ que: 'enseres', total: await db.enser.count() }],
-  cartas: async () => [{ que: 'cartas', total: await db.carta.count() }],
-  difuntos: async () => [{ que: 'sufragios', total: await db.sufragio.count() }],
+  inventario: async () => [{ uno: 'enser', que: 'enseres', total: await db.enser.count() }],
+  cartas: async () => [{ uno: 'carta', que: 'cartas', total: await db.carta.count() }],
+  difuntos: async () => [{ uno: 'sufragio', que: 'sufragios', total: await db.sufragio.count() }],
   apadrinamientos: async () => [
-    { que: 'campañas', total: await db.campanaApadrinamiento.count() },
-    { que: 'apadrinamientos', total: await db.apadrinamiento.count() },
+    { uno: 'campaña', que: 'campañas', total: await db.campanaApadrinamiento.count() },
+    { uno: 'apadrinamiento', que: 'apadrinamientos', total: await db.apadrinamiento.count() },
   ],
-  remesas: async () => [{ que: 'remesas', total: await db.remesa.count() }],
-  'pago-en-linea': async () => [{ que: 'pagos en línea', total: await db.pagoEnLinea.count() }],
-  'cuotas-en-linea': async () => [{ que: 'pagos desde el área', total: await db.pagoEnLinea.count({ where: { origen: OrigenPago.AREA_HERMANOS } }) }],
-  donativos: async () => [{ que: 'donativos', total: await db.pagoEnLinea.count({ where: { tipo: TipoPagoEnLinea.DONATIVO } }) }],
+  remesas: async () => [{ uno: 'remesa', que: 'remesas', total: await db.remesa.count() }],
+  'pago-en-linea': async () => [{ uno: 'pago en línea', que: 'pagos en línea', total: await db.pagoEnLinea.count() }],
+  'cuotas-en-linea': async () => [{ uno: 'pago desde el área', que: 'pagos desde el área', total: await db.pagoEnLinea.count({ where: { origen: OrigenPago.AREA_HERMANOS } }) }],
+  donativos: async () => [{ uno: 'donativo', que: 'donativos', total: await db.pagoEnLinea.count({ where: { tipo: TipoPagoEnLinea.DONATIVO } }) }],
   tienda: async () => [
-    { que: 'productos', total: await db.producto.count() },
-    { que: 'ventas de caja', total: await db.cajaVenta.count() },
+    { uno: 'producto', que: 'productos', total: await db.producto.count() },
+    { uno: 'venta de caja', que: 'ventas de caja', total: await db.cajaVenta.count() },
   ],
-  'tienda-web': async () => [{ que: 'pedidos', total: await db.pedidoTienda.count({ where: { estado: { not: EstadoPedido.PENDIENTE_PAGO } } }) }],
+  'tienda-web': async () => [{ uno: 'pedido', que: 'pedidos', total: await db.pedidoTienda.count({ where: { estado: { not: EstadoPedido.PENDIENTE_PAGO } } }) }],
   loteria: async () => [
-    { que: 'sorteos', total: await db.sorteoLoteria.count() },
-    { que: 'talonarios', total: await db.talonarioLoteria.count() },
+    { uno: 'sorteo', que: 'sorteos', total: await db.sorteoLoteria.count() },
+    { uno: 'talonario', que: 'talonarios', total: await db.talonarioLoteria.count() },
   ],
   'modelo-182': async () => [],
   contabilidad: async () => [],
-  cabildos: async () => [{ que: 'cabildos', total: await db.cabildo.count() }],
-  'informe-anual': async () => [{ que: 'informes', total: await db.informeAnual.count() }],
+  cabildos: async () => [{ uno: 'cabildo', que: 'cabildos', total: await db.cabildo.count() }],
+  'informe-anual': async () => [{ uno: 'informe', que: 'informes', total: await db.informeAnual.count() }],
 };
 
 const nombres = (claves: ClaveModulo[]) => claves.map((c) => `«${fichaDe(c).nombre}»`).join(', ');

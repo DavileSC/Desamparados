@@ -77,7 +77,7 @@ export default function FichaDeProductoCms({ form: f, categorias, nuevo, guardan
               Poner {TALLAS_HABITUALES.join(', ')}
             </Button>
           )}
-          <Box sx={{ display: 'grid', gap: 1.25, gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+          <Box sx={{ display: 'grid', gap: 1.25, gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' }}>
             {f.tallas.map((t, i) => (
               <Box key={t.id ?? `nueva-${i}`} sx={{ display: 'flex', gap: 0.5, alignItems: 'flex-start', p: 1, border: '1px solid', borderColor: t.existencias.trim() === '0' ? 'error.light' : 'divider', borderRadius: 1 }}>
                 <TextField label="Talla" size="small" value={t.nombre} onChange={(e) => ponerTalla(i, { nombre: e.target.value })} slotProps={{ htmlInput: { maxLength: 20 } }} sx={{ width: 64 }} />

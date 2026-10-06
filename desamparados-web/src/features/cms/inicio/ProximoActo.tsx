@@ -52,11 +52,11 @@ export default function ProximoActo({ acto, hoy = new Date() }: { acto?: Acto; h
           </Box>
           <Box sx={{ gridArea: 'texto', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
             {etiqueta}
-            <Typography title={acto.titulo} sx={{ ...SERIF, fontSize: 'clamp(19px, 3.2vh, 23px)', lineHeight: 1.12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <Typography title={acto.titulo} sx={{ ...SERIF, fontSize: 'clamp(19px, 3.2vh, 23px)', lineHeight: 1.12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', '@container columna (max-width: 559px)': { whiteSpace: 'normal' } }}>
               {acto.titulo}
             </Typography>
             {acto.lugar && (
-              <Typography sx={{ fontSize: 12.5, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acto.lugar}</Typography>
+              <Typography sx={{ fontSize: 12.5, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', '@container columna (max-width: 559px)': { whiteSpace: 'normal' } }}>{acto.lugar}</Typography>
             )}
           </Box>
           <Box className="hora" sx={{ gridArea: 'hora', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25 }}>

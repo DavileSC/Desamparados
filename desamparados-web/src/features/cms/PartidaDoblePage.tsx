@@ -13,6 +13,8 @@ import { guardarEnDisco } from '../../lib/api/datos'
 import CabeceraSeccion from './CabeceraSeccion'
 import { euros } from './contabilidad/formato'
 import { site } from '../../config/site'
+import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from './listados/Fichas'
+import { useEnFichas } from './listados/useEnFichas'
 
 const mensaje = (err: unknown, porDefecto: string) => (err instanceof Error ? err.message : porDefecto)
 const importe = (n: number) => (n ? euros(n) : '')
@@ -35,6 +37,7 @@ export default function PartidaDoblePage() {
   const [pagina, setPagina] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [recarga, setRecarga] = useState(0)
+  const enFichas = useEnFichas()
 
   const anioValido = /^\d{4}$/.test(anio)
   useEffect(() => {
@@ -117,7 +120,27 @@ export default function PartidaDoblePage() {
       </Paper>
     )}
 
-    {ejercicio && vista === 'sumas' && (
+    {ejercicio && vista === 'sumas' && enFichas && (
+      <ListaDeFichas etiqueta="Sumas y saldos">
+        {ejercicio.sumas.map((s) => (
+          <Ficha key={s.cuenta} titulo={<Typography sx={{ fontWeight: 600 }}><Box component="span" sx={{ color: 'text.secondary', mr: 1 }}>{s.cuenta}</Box>{s.nombre}</Typography>}>
+            <DatosDeFicha>
+              <Dato etiqueta="Debe">{importe(s.debe) || '—'}</Dato>
+              <Dato etiqueta="Haber">{importe(s.haber) || '—'}</Dato>
+              <Dato etiqueta="Saldo" ancho>{s.saldo === 0 ? '—' : `${euros(Math.abs(s.saldo))} ${s.saldo > 0 ? 'deudor' : 'acreedor'}`}</Dato>
+            </DatosDeFicha>
+          </Ficha>
+        ))}
+        <Ficha titulo={<Typography sx={{ fontWeight: 700 }}>Total</Typography>}>
+          <DatosDeFicha>
+            <Dato etiqueta="Debe">{euros(ejercicio.sumas.reduce((t, s) => t + s.debe, 0))}</Dato>
+            <Dato etiqueta="Haber">{euros(ejercicio.sumas.reduce((t, s) => t + s.haber, 0))}</Dato>
+          </DatosDeFicha>
+        </Ficha>
+      </ListaDeFichas>
+    )}
+
+    {ejercicio && vista === 'sumas' && !enFichas && (
       <TableContainer component={Paper}>
         <Table size="small" sx={{ minWidth: 640 }} aria-label="Sumas y saldos">
           <TableHead><TableRow><TableCell>Cuenta</TableCell><TableCell>Nombre</TableCell><TableCell align="right">Debe</TableCell><TableCell align="right">Haber</TableCell><TableCell align="right">Saldo</TableCell></TableRow></TableHead>
@@ -141,6 +164,30 @@ export default function PartidaDoblePage() {
     )}
 
     {vista === 'diario' && (diario ? <>
+      {enFichas ? (
+        // Un asiento por ficha: el debe a la izquierda, el haber sangrado debajo, como en el libro.
+        <ListaDeFichas etiqueta="Libro diario">
+          {diario.asientos.map((a) => (
+            <Ficha
+              key={a.numero}
+              titulo={<>
+                <Typography component="span" sx={{ display: 'block', fontSize: 12.5, color: 'text.secondary' }}>Asiento {a.numero} · {a.fecha.split('-').reverse().join('/')}</Typography>
+                <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{a.concepto}</Typography>
+              </>}
+            >
+              {a.lineas.map((l, i) => (
+                <Box key={i} sx={{ display: 'flex', gap: 1.5, pl: l.haber ? 2.5 : 0, fontSize: 14 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>{l.cuenta} {l.nombre}</Box>
+                  <Box sx={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                    <Box component="span" sx={{ fontSize: 11, color: 'text.secondary', mr: 0.75 }}>{l.haber ? 'HABER' : 'DEBE'}</Box>
+                    {euros(l.haber || l.debe)}
+                  </Box>
+                </Box>
+              ))}
+            </Ficha>
+          ))}
+        </ListaDeFichas>
+      ) : (
       <TableContainer component={Paper}>
         <Table size="small" sx={{ minWidth: 720 }} aria-label="Libro diario">
           <TableHead><TableRow><TableCell>N.º</TableCell><TableCell>Fecha</TableCell><TableCell>Cuenta</TableCell><TableCell>Concepto</TableCell><TableCell align="right">Debe</TableCell><TableCell align="right">Haber</TableCell></TableRow></TableHead>
@@ -158,6 +205,7 @@ export default function PartidaDoblePage() {
           </TableBody>
         </Table>
       </TableContainer>
+      )}
       {diario.total > POR_PAGINA && (
         <Stack sx={{ alignItems: 'center', mt: 2 }}>
           <Pagination count={Math.ceil(diario.total / POR_PAGINA)} page={pagina} onChange={(_, p) => setPagina(p)} />
@@ -166,7 +214,9 @@ export default function PartidaDoblePage() {
     </> : <CircularProgress aria-label="Cargando el libro diario" />)}
 
     {plan && vista === 'plan' && (
-      <Paper sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, display: 'grid', gap: 1.5 }}>
+      // Una columna que no crece con su contenido: el nombre largo de una cuenta
+      // («740 · Subvenciones, donaciones y legados…») ensanchaba la página entera.
+      <Paper sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 1.5 }}>
         <Typography variant="body2" color="text.secondary">
           La cuenta de cada categoría del libro de caja. Las marcadas como «propuesta» se han sacado del nombre: elige la que corresponda y queda guardada.
           La tesorería va sola: el efectivo a 570 Caja y lo demás a 572 Bancos.
@@ -176,7 +226,8 @@ export default function PartidaDoblePage() {
             <Typography sx={{ flex: '1 1 220px' }}>{c.nombre} <Typography component="span" variant="body2" color="text.secondary">· {c.tipo === 'INGRESO' ? 'ingreso' : 'gasto'}{c.activa ? '' : ' · desactivada'}</Typography></Typography>
             <TextField
               select size="small" value={c.cuenta} onChange={(e) => void cambiarCuenta(c.id, e.target.value)}
-              helperText={c.propuesta ? 'Propuesta por el nombre' : undefined} sx={{ flex: '1 1 320px' }}
+              helperText={c.propuesta ? 'Propuesta por el nombre' : undefined}
+              sx={{ flex: '1 1 320px', minWidth: 0, '& .MuiSelect-select.MuiSelect-select': { whiteSpace: 'normal' } }}
               slotProps={{ htmlInput: { 'aria-label': `Cuenta de ${c.nombre}` } }}
             >
               {plan.cuentas.filter((x) => /^[67]/.test(x.codigo)).map((x) => <MenuItem key={x.codigo} value={x.codigo}>{x.codigo} · {x.nombre}</MenuItem>)}

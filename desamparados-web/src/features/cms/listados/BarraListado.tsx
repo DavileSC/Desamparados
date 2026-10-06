@@ -33,8 +33,11 @@ interface Props<C extends string> {
 const HUECO = 12 // gap: 1.5
 const ANCHO_BUSQUEDA = 280
 const ANCHO_ORDEN = 230
-/** Lo mínimo para dos desplegables en paralelo; por debajo, uno por fila. */
-const ANCHO_DOS_COLUMNAS = 2 * 150 + HUECO
+/**
+ * Lo mínimo para dos desplegables en paralelo; por debajo, uno por fila. Con
+ * 150 por columna, en el móvil iban dos y se leía «Con y sin c…».
+ */
+const ANCHO_DOS_COLUMNAS = 2 * 180 + HUECO
 
 /**
  * Columnas del bloque de desplegables según el sitio que tenga él (no la

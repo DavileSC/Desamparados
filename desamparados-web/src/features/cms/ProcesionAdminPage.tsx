@@ -18,6 +18,8 @@ import AvisoSinSalidas from '../procesion/AvisoSinSalidas'
 import { useSalidaElegida } from '../procesion/useSalidas'
 import { useColoresContabilidad } from './contabilidad/tema'
 import { cabeceraTabla, soloLector } from './inventario/tabla'
+import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from './listados/Fichas'
+import { useEnFichas } from './listados/useEnFichas'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import Cortejo from './cortejo/Cortejo'
@@ -76,6 +78,7 @@ export default function ProcesionAdminPage() {
   const [guardando, setGuardando] = useState(false)
   const [errorDia, setErrorDia] = useState<string | null>(null)
   const [porBorrar, setPorBorrar] = useState<TurnoDeReparto | null>(null)
+  const enFichas = useEnFichas()
   // La hora con la que se marcan los días ya pasados: la de abrir la pantalla basta.
   const [ahora] = useState(() => Date.now())
 
@@ -148,6 +151,15 @@ export default function ProcesionAdminPage() {
   }
 
   const ordenados = [...turnos].sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+  const borrarDia = (t: TurnoDeReparto) => (
+    <Tooltip title={t.citas > 0 ? 'Tiene citas: no se puede borrar' : 'Borrar el día'}>
+      <span>
+        <IconButton size="small" disabled={t.citas > 0} aria-label={`Borrar el día ${formatoDia.format(new Date(t.fecha))}`} onClick={() => setPorBorrar(t)}>
+          <DeleteOutlineIcon fontSize="small" />
+        </IconButton>
+      </span>
+    </Tooltip>
+  )
   const aforoValido = /^\d+$/.test(dia.aforo) && Number(dia.aforo) > 0
   const sinDias = plazo !== null && plazo.diasDeReparto === 0
 
@@ -240,6 +252,30 @@ export default function ProcesionAdminPage() {
         <Box component="section" aria-labelledby="dias-titulo">
           <Typography id="dias-titulo" component="h2" sx={{ fontSize: 18, fontWeight: 600, mb: 0.5 }}>Días de reparto</Typography>
           <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 1.5 }}>Cada día sale en la Agenda pública, para que la gente sepa cuándo ir a apuntarse.</Typography>
+          {enFichas ? (
+            <ListaDeFichas etiqueta="Días de reparto" vacia={ordenados.length === 0 ? 'Todavía no hay días de reparto.' : undefined}>
+              {ordenados.map((t) => {
+                const pasado = new Date(t.horaFin).getTime() < ahora
+                return (
+                  <Ficha
+                    key={t.id}
+                    acciones={puedeCambiar && !pasado ? borrarDia(t) : undefined}
+                    titulo={
+                      <Typography sx={{ fontWeight: pasado ? 400 : 600, color: pasado ? 'text.disabled' : 'text.primary' }}>
+                        {mayuscula(formatoDia.format(new Date(t.fecha)))}{pasado ? ' · pasado' : ''}
+                      </Typography>
+                    }
+                  >
+                    <DatosDeFicha>
+                      <Dato etiqueta="Horario">{formatoHora.format(new Date(t.horaInicio))} a {formatoHora.format(new Date(t.horaFin))}</Dato>
+                      <Dato etiqueta="Citas">{t.citas}{!pasado && ` de ${t.capacidadEstimada}`}</Dato>
+                      <Dato etiqueta="Vinieron">{t.vinieron > 0 || pasado ? t.vinieron : '—'}</Dato>
+                    </DatosDeFicha>
+                  </Ficha>
+                )
+              })}
+            </ListaDeFichas>
+          ) : (
           <TableContainer component={Paper}>
             <Table size="small" aria-labelledby="dias-titulo" sx={{ minWidth: 640 }}>
               <TableHead>
@@ -268,13 +304,7 @@ export default function ProcesionAdminPage() {
                       {puedeCambiar && (
                         <TableCell padding="none" align="right" sx={{ pr: 1 }}>
                           {/* Un día ya pasado es historia del reparto: no se borra. */}
-                          {!pasado && <Tooltip title={citas > 0 ? 'Tiene citas: no se puede borrar' : 'Borrar el día'}>
-                            <span>
-                              <IconButton size="small" disabled={citas > 0} aria-label={`Borrar el día ${formatoDia.format(new Date(t.fecha))}`} onClick={() => setPorBorrar(t)}>
-                                <DeleteOutlineIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>}
+                          {!pasado && borrarDia(t)}
                         </TableCell>
                       )}
                     </TableRow>
@@ -286,6 +316,7 @@ export default function ProcesionAdminPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          )}
         </Box>
       )}
 

@@ -289,7 +289,7 @@ export default function PaginaAdminPage() {
         <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: conVistaAlLado ? 'minmax(420px, 5fr) minmax(0, 7fr)' : '1fr', alignItems: 'start' }}>
           <Stack spacing={2} sx={{ minWidth: 0 }}>
             {/* La cabecera va aparte y sin botón de quitar: está siempre. */}
-            <Paper variant="outlined" sx={{ p: 2 }}>
+            <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 } }}>
               <SeccionPlegable titulo="Cabecera de la página" abiertaPorDefecto>
                 {/* Solo la trae Historia: las demás cabeceras no pintan ceja. */}
                 {cabecera.ceja !== undefined && (
@@ -311,15 +311,19 @@ export default function PaginaAdminPage() {
                     {cabecera.foto !== '' && (
                       <Box sx={{ px: 1 }}>
                         <Typography id="encuadre-cabecera" variant="body2" gutterBottom>Encuadre</Typography>
-                        <Slider
-                          aria-labelledby="encuadre-cabecera"
-                          value={cabecera.encuadre ?? ENCUADRE_POR_DEFECTO}
-                          onChange={(_, valor) => cambiarCabecera({ encuadre: valor as number }, 'encuadre')}
-                          min={0} max={100} step={5}
-                          marks={[{ value: 0, label: 'Arriba' }, { value: 50, label: 'Centro' }, { value: 100, label: 'Abajo' }]}
-                          getAriaValueText={(v) => `${v} %`}
-                        />
-                        <Typography variant="caption" color="text.secondary">
+                        {/* Sangrado: los rótulos de los extremos van centrados en ellos y se salían de la tarjeta. */}
+                        <Box sx={{ px: 3 }}>
+                          <Slider
+                            aria-labelledby="encuadre-cabecera"
+                            value={cabecera.encuadre ?? ENCUADRE_POR_DEFECTO}
+                            onChange={(_, valor) => cambiarCabecera({ encuadre: valor as number }, 'encuadre')}
+                            min={0} max={100} step={5}
+                            marks={[{ value: 0, label: 'Arriba' }, { value: 50, label: 'Centro' }, { value: 100, label: 'Abajo' }]}
+                            getAriaValueText={(v) => `${v} %`}
+                          />
+                        </Box>
+                        {/* En bloque: suelta, la ayuda tomaba el interlineado del texto grande de alrededor. */}
+                        <Typography variant="caption" component="p" color="text.secondary">
                           La banda recorta la foto: apaisada en el ordenador y vertical en el móvil. Elige qué parte se queda a la vista; en la vista en vivo se ve al momento.
                         </Typography>
                       </Box>

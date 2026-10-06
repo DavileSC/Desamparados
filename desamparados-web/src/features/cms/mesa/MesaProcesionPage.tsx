@@ -292,7 +292,8 @@ export default function MesaProcesionPage() {
                 <Typography variant="body2" color="text.secondary">
                   Quien pidió la papeleta en su área y lo tiene todo pagado va directo a Túnicas. Aquí se apunta a quien llega sin haberla pedido: después pasa por Tesorería si debe algo.
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                {/* Solo con teclado: en el móvil o la tableta no hay F2 ni Alt. */}
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, display: { xs: 'none', md: 'block' } }}>
                   Teclado: <strong>F2</strong> buscar · <strong>Enter</strong> elegir y confirmar · <strong>Esc</strong> volver · <strong>Alt+1…6</strong> zonas.
                 </Typography>
               </Paper>

@@ -37,7 +37,18 @@ function Columnas({ c }: { c: Extract<CuerpoGrafica, { tipo: 'columnas' }> }) {
   const max = Math.max(1, ...c.series.flatMap((s) => s.valores))
   const descripcion = c.etiquetas.map((et, i) => `${et}: ${c.series.map((s) => `${corto(s.valores[i] ?? 0, c.formato)} ${s.nombre}`).join(', ')}`).join('; ')
   return (
-    <Box role="img" aria-label={descripcion} sx={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+    <Box
+      role="img"
+      aria-label={descripcion}
+      sx={{
+        flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', containerType: 'inline-size',
+        // Sin sitio para cada cifra (unos 34px por barra si van de dos en dos,
+        // 24 si va sola), se pisaban unas con otras: en el móvil, doce meses de
+        // ingresos y gastos. Se quitan y la gráfica se lee por las alturas; las
+        // cifras siguen en la descripción.
+        [`@container (max-width: ${c.etiquetas.length * c.series.length * (c.series.length > 1 ? 34 : 24)}px)`]: { '& .cifra-columna': { visibility: 'hidden' } },
+      }}
+    >
       <Box sx={{ flex: '1 1 0', minHeight: 0, display: 'grid', gridTemplateColumns: `repeat(${c.etiquetas.length}, minmax(0, 1fr))`, borderBottom: '1px solid', borderColor: 'divider' }}>
         {c.etiquetas.map((et, i) => {
           const apagada = c.destacar !== undefined && c.destacar !== i
@@ -47,7 +58,7 @@ function Columnas({ c }: { c: Extract<CuerpoGrafica, { tipo: 'columnas' }> }) {
                 const v = s.valores[i] ?? 0
                 return (
                   <Box key={s.nombre} sx={{ flex: '1 1 0', maxWidth: 40, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', minWidth: 0 }}>
-                    <Box aria-hidden="true" sx={{ ...rotulo, fontSize: c.series.length > 1 ? 10.5 : 11.5, ...(!apagada && c.destacar !== undefined && { color: 'text.primary', fontWeight: 600 }) }}>{v ? corto(v, c.formato) : ''}</Box>
+                    <Box aria-hidden="true" className="cifra-columna" sx={{ ...rotulo, fontSize: c.series.length > 1 ? 10.5 : 11.5, ...(!apagada && c.destacar !== undefined && { color: 'text.primary', fontWeight: 600 }) }}>{v ? corto(v, c.formato) : ''}</Box>
                     <Box
                       sx={{
                         width: '100%', height: `${(v / max) * 86}%`, minHeight: v > 0 ? 2 : 0, borderRadius: '3px 3px 0 0',

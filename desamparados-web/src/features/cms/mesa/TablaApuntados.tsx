@@ -1,4 +1,4 @@
-import { IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material'
+import { Box, ButtonBase, IconButton, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import type { Apuntado } from '../../../lib/api/mesa'
 import type { Salida } from '../../../lib/api/salidas'
@@ -6,6 +6,8 @@ import { useColoresContabilidad } from '../contabilidad/tema'
 import { cabeceraTabla } from '../inventario/tabla'
 import Pildora from '../listados/Pildora'
 import { alturaEnMetros, euros } from './formato'
+import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from '../listados/Fichas'
+import { useEnFichas } from '../listados/useEnFichas'
 
 interface Props {
   apuntados: Apuntado[]
@@ -48,6 +50,61 @@ export default function TablaApuntados({ apuntados, salida, seleccionado, onEleg
   const { fondoCabecera } = useColoresContabilidad()
   const conRopa = salida.conRopa
   const columnas = conRopa ? 8 : 5
+  const enFichas = useEnFichas()
+  const ropaDe = (a: Apuntado) => ({
+    tunica: a.origenTunica === 'PROPIA' ? 'Propia' : a.origenTunica === 'NINGUNA' ? 'No lleva' : a.numTunicaAsignada,
+    tocado: a.numCapiroteAsignado ?? (a.numFaraonaAsignada && `${a.numFaraonaAsignada} (faraona)`),
+  })
+  const imprimir = (a: Apuntado) => a.tipo === 'papeleta' && (
+    <Tooltip title="Imprimir la papeleta">
+      {/* La fila abre la ficha: el clic del botón no debe llegar a ella. */}
+      <IconButton
+        size="small"
+        aria-label={`Imprimir la papeleta de ${a.hermano.nombre} ${a.hermano.apellidos}`}
+        onClick={(e) => { e.stopPropagation(); onImprimir(a.id) }}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <PrintOutlinedIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  )
+
+  if (enFichas) {
+    return (
+      <ListaDeFichas etiqueta="Apuntados" vacia={apuntados.length === 0 ? 'Todavía no hay nadie apuntado con esta búsqueda.' : undefined}>
+        {apuntados.map((a) => {
+          const { tunica, tocado } = ropaDe(a)
+          return (
+            <Ficha
+              key={`${a.tipo}-${a.id}`}
+              acciones={imprimir(a) || undefined}
+              titulo={
+                <ButtonBase
+                  onClick={() => onElegir(a.hermano.id)}
+                  aria-label={`Abrir a ${a.hermano.nombre} ${a.hermano.apellidos}`}
+                  sx={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 1, fontFamily: 'inherit', ...(a.hermano.id === seleccionado && { color: 'primary.main' }) }}
+                >
+                  <Typography component="span" sx={{ display: 'block', fontWeight: 600 }}>{a.hermano.nombre} {a.hermano.apellidos}</Typography>
+                  <Typography component="span" variant="body2" color="text.secondary">
+                    {a.puesto}{a.puestoPedido && a.puestoPedido !== a.puesto ? ` (pidió ${a.puestoPedido})` : ''}
+                  </Typography>
+                </ButtonBase>
+              }
+            >
+              <Box><Estado a={a} /></Box>
+              <DatosDeFicha>
+                <Dato etiqueta="Talla">{a.hermano.alturaHombro ? alturaEnMetros(a.hermano.alturaHombro) : '—'}</Dato>
+                {conRopa && <Dato etiqueta="Túnica">{tunica || '—'}</Dato>}
+                {conRopa && <Dato etiqueta="Capirote / faraona">{tocado || '—'}</Dato>}
+                {conRopa && <Dato etiqueta="Cíngulo"><Cingulo a={a} /></Dato>}
+              </DatosDeFicha>
+            </Ficha>
+          )
+        })}
+      </ListaDeFichas>
+    )
+  }
+
   return (
     <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 300px)', minHeight: 320 }}>
       <Table size="small" stickyHeader aria-label="Apuntados" sx={{ minWidth: conRopa ? 880 : 560, '& td': { whiteSpace: 'nowrap' } }}>
@@ -66,8 +123,7 @@ export default function TablaApuntados({ apuntados, salida, seleccionado, onEleg
         </TableHead>
         <TableBody>
           {apuntados.map((a) => {
-            const tunica = a.origenTunica === 'PROPIA' ? 'Propia' : a.origenTunica === 'NINGUNA' ? 'No lleva' : a.numTunicaAsignada
-            const tocado = a.numCapiroteAsignado ?? (a.numFaraonaAsignada && `${a.numFaraonaAsignada} (faraona)`)
+            const { tunica, tocado } = ropaDe(a)
             return (
               <TableRow
                 key={`${a.tipo}-${a.id}`}
@@ -89,19 +145,7 @@ export default function TablaApuntados({ apuntados, salida, seleccionado, onEleg
                 <TableCell>
                   <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
                     <Estado a={a} />
-                    {a.tipo === 'papeleta' && (
-                      <Tooltip title="Imprimir la papeleta">
-                        {/* La fila abre la ficha: el clic del botón no debe llegar a ella. */}
-                        <IconButton
-                          size="small"
-                          aria-label={`Imprimir la papeleta de ${a.hermano.nombre} ${a.hermano.apellidos}`}
-                          onClick={(e) => { e.stopPropagation(); onImprimir(a.id) }}
-                          onKeyDown={(e) => e.stopPropagation()}
-                        >
-                          <PrintOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                    {imprimir(a)}
                   </Stack>
                 </TableCell>
               </TableRow>

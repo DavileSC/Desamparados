@@ -310,14 +310,14 @@ export default function Cifras({ panel }: { panel: PanelResponse }) {
         sx={{
           flex: 1, minHeight: 0, display: 'grid', gap: 'clamp(8px, 1.6vh, 14px)',
           gridTemplateColumns: 'minmax(170px, 210px) minmax(0, 1fr)', gridTemplateRows: 'minmax(0, 1fr)',
-          // En el móvil, las cifras visibles en una fila arriba (menos con algún módulo
-          // apagado) y la gráfica debajo.
+          // En el móvil, las cifras arriba de dos en dos y la gráfica debajo. Las
+          // cuatro en una fila se quedaban en 85px y se leía «HERMANOS …».
           '@container cifras (max-width: 599px)': {
             gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'auto minmax(0, 1fr)',
-            '& .selector': { gridTemplateRows: 'none', gridTemplateColumns: `repeat(${visibles.length}, minmax(0, 1fr))`, gap: '6px' },
-            '& .selector button': { px: 1, py: 0.75 },
-            '& .selector .etiqueta': { fontSize: 9, letterSpacing: '0.04em' },
-            '& .selector .valor': { fontSize: 'clamp(15px, 5cqi, 22px)' },
+            '& .selector': { gridTemplateRows: 'none', gridTemplateColumns: `repeat(${Math.min(visibles.length, 2)}, minmax(0, 1fr))`, gap: '6px' },
+            '& .selector button': { px: 1.5, py: 1 },
+            '& .selector .etiqueta': { fontSize: 10.5, letterSpacing: '0.06em' },
+            '& .selector .valor': { fontSize: 22 },
             // La pestaña se desplaza en el móvil: la gráfica necesita un alto propio.
             '& .elegida': { minHeight: 300 },
           },

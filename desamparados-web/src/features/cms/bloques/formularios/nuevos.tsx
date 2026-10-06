@@ -176,7 +176,7 @@ export function FormularioAnillos({ bloque, onCambio }: Props<BloqueAnillos>) {
   return (
     <Stack spacing={2}>
       {bloque.fines.map((fin, i) => (
-        <Stack key={i} spacing={1.5} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Stack key={i} spacing={1.5} sx={{ p: { xs: 1.5, sm: 2 }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
           <Typography variant="subtitle2">{foco ? `Fin ${i + 1}` : `Anillo ${i + 1} (${ANILLO[i]})`}</Typography>
           <TextField label={`Nombre del fin ${i + 1}`} value={fin.titulo} size="small" fullWidth
             onChange={(e) => cambiarFin(i, { titulo: e.target.value })} slotProps={{ htmlInput: { maxLength: topes.titulo } }}
@@ -215,7 +215,7 @@ export function FormularioPuertas({ bloque, onCambio }: Props<BloquePuertas>) {
   return (
     <Stack spacing={2}>
       {bloque.puertas.map((puerta, i) => (
-        <Stack key={i} spacing={1.5} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Stack key={i} spacing={1.5} sx={{ p: { xs: 1.5, sm: 2 }, border: 1, borderColor: 'divider', borderRadius: 1 }}>
           <Typography variant="subtitle2">Puerta {i + 1} ({PUERTA[i]})</Typography>
           <TextField label="Ceja" value={puerta.ceja} size="small" fullWidth
             onChange={(e) => cambiarPuerta(i, { ceja: e.target.value })} helperText="Opcional. Unas palabras pequeñas encima, como «Si lo necesitas»."

@@ -86,7 +86,7 @@ function Fila({ tarea, conBoton, userId }: { tarea: Tarea; conBoton: boolean; us
         {tarea.etiqueta}
       </Box>
       <Box sx={{ gridArea: 'texto', minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography component="span" title={`${tarea.titulo} · ${tarea.detalle}`} sx={{ fontSize: 'clamp(13.5px, 1.8vh, 15px)', minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <Typography component="span" title={`${tarea.titulo} · ${tarea.detalle}`} sx={{ fontSize: 'clamp(13.5px, 1.8vh, 15px)', minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', '@container columna (max-width: 559px)': { whiteSpace: 'normal' } }}>
           {tarea.titulo} <Box component="span" sx={{ color: 'text.secondary' }}>· {tarea.detalle}</Box>
         </Typography>
         {tarea.aviso && <MarcaAviso />}
