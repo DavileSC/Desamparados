@@ -43,7 +43,7 @@ describe('política de contraseñas en los formularios', () => {
         sexo: 'MUJER' as const, estadoCivil: 'SOLTERO' as const, fechaBautismo: '1990-03-01',
         lugarBautismo: '', parroquiaBautismo: '', provincia: '', comunidadAutonoma: '', pais: '',
         formaPago: 'EFECTIVO' as const, iban: '', titularidad: 'PROPIA' as const, titularCuenta: '',
-        foto: null, certificadoBautismo: null, boletin: false,
+        foto: null, certificadoBautismo: null, boletin: false, autorizaImagen: false,
         aceptarPolitica: true,
       }
       expect(membershipSchema.safeParse({ ...base, password: '12345678' }).success).toBe(false)
