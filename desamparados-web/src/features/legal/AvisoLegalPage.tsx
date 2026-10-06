@@ -43,16 +43,32 @@ export default function AvisoLegalPage() {
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
-        3. Propiedad intelectual
+        3. Condiciones de uso
+      </Typography>
+      <Typography component="p" sx={{ mb: 2 }}>
+        Quien usa esta web se compromete a hacerlo conforme a la ley y a este aviso: a no usarla para fines ilícitos o que
+        perjudiquen a {laCorporacion()} o a terceros, a no intentar entrar en cuentas o zonas que no sean suyas, a no
+        introducir virus ni nada que dañe la web o a sus usuarios, y a no enviar por sus formularios contenidos ofensivos,
+        discriminatorios o falsos. Quien tenga cuenta debe guardar su contraseña y avisar si cree que otro la conoce.
+      </Typography>
+
+      <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
+        4. Propiedad intelectual
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
         Todos los contenidos de este sitio web, incluyendo textos, fotografías, gráficos, logotipos y
         cualquier otro elemento, son propiedad {deLaCorporacion()} o de terceros que han autorizado su
-        uso. Queda prohibida su reproducción total o parcial sin autorización expresa.
+        uso. Se pueden ver, imprimir y guardar para uso personal; queda prohibida su reproducción, distribución o
+        comunicación pública, total o parcial, sin autorización expresa.
+      </Typography>
+      {/* Voluntario: la ley solo pide avisar de las imágenes generadas, que ya llevan su pie. Es por transparencia. */}
+      <Typography component="p" sx={{ mb: 2 }}>
+        En el desarrollo de esta web y en la redacción de algunos textos se han usado herramientas de inteligencia
+        artificial, siempre con revisión humana. Las imágenes generadas con ellas lo indican debajo.
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
-        4. Responsabilidad
+        5. Responsabilidad
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
         El titular no se hace responsable de los daños derivados del uso incorrecto de los contenidos del
@@ -60,7 +76,17 @@ export default function AvisoLegalPage() {
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
-        5. Protección de datos, cookies y compras
+        6. Enlaces a otras webs
+      </Typography>
+      <Typography component="p" sx={{ mb: 2 }}>
+        Esta web enlaza a otras (redes sociales, mapas, vídeos, la pasarela de pago del banco…) y muestra algunos de sus
+        contenidos. {mayuscula(laCorporacion())} no {segunLaCorporacion('controla', 'controlan')} esas webs ni{' '}
+        {segunLaCorporacion('responde', 'responden')} de lo que publican, y enlazarlas no supone ninguna relación con ellas.
+        Si se tiene noticia de que alguna enlazada tiene contenidos ilícitos, se retirará el enlace.
+      </Typography>
+
+      <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
+        7. Protección de datos, cookies y compras
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
         Cómo se tratan los datos personales se explica en la <Enlace a="/politica-privacidad">Política de privacidad</Enlace>,
@@ -69,7 +95,7 @@ export default function AvisoLegalPage() {
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
-        6. Contacto
+        8. Contacto
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
         Para cualquier consulta sobre esta web puede escribirse a {site.contacto.email}
@@ -77,7 +103,7 @@ export default function AvisoLegalPage() {
       </Typography>
 
       <Typography variant="h5" component="h2" sx={{ color: 'text.primary', mb: 2, mt: 4 }}>
-        7. Legislación aplicable
+        9. Legislación aplicable
       </Typography>
       <Typography component="p" sx={{ mb: 2 }}>
         Este aviso y el uso de la web se rigen por la legislación española.

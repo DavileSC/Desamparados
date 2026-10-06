@@ -1343,6 +1343,7 @@
         "html": "<p>El Grupo Parroquial tiene su sede canónica en la <strong>Parroquia de Santa María Goretti</strong>, en la calle Corregidor Paz Guzmán, en el distrito de Cruz de Humilladero. Es una parroquia de barrio, de unos diez mil vecinos, y desde que se fundó la atiende una comunidad de <strong>Padres Pasionistas</strong>.</p><p>Su templo, del arquitecto Verdú, se terminó en 1981: paredes blancas, una cubierta verde que se abre en abanico y la torre de la cruz. En él celebramos nuestros cultos y en él se reúne el Grupo durante el año.</p>",
         "foto": {
           "url": "/images/templo-goretti.webp",
+          "ia": true,
           "alt": "Ilustración del templo de Santa María Goretti: edificio blanco de cubierta verde, con la torre de la cruz y una imagen tras la verja"
         }
       },

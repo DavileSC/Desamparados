@@ -633,6 +633,17 @@ export default function HazteHermanoPage() {
                                         sx={{ alignItems: 'flex-start' }}
                                       />
                                     </Grid>
+                                    {/* Aparte de la política: publicar la cara de alguien pide su permiso, y el de quien inscribe por los menores. */}
+                                    <Grid size={{ xs: 12 }}>
+                                      <FormControlLabel
+                                        control={<Checkbox {...register('autorizaImagen')} sx={{ mt: '-6px' }} />}
+                                        label={`Autorizo que se publiquen en la web y en las redes ${deLaCorporacion()} las fotos de cultos y salidas en que ${
+                                          camino === null || camino === 'HERMANO' ? 'aparezca' : conFichaPropia(camino) ? 'aparezcamos yo o los menores que inscribo' : 'aparezcan los menores que inscribo'
+                                        }`}
+                                        slotProps={{ typography: { sx: { fontSize: 16, lineHeight: 1.5, pt: '3px' } } }}
+                                        sx={{ alignItems: 'flex-start' }}
+                                      />
+                                    </Grid>
                                     <Grid size={{ xs: 12 }}>
                                       <FormControl error={!!errors.aceptarPolitica} sx={{ mt: 0.5 }}>
                                         <FormControlLabel

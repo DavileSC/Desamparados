@@ -41,6 +41,8 @@ export interface RegisterDto {
     pais?: string;
     /** Quiere el boletín de noticias por correo. */
     boletin?: boolean;
+    /** Autoriza publicar las fotos en que aparezca él y los menores que inscribe. */
+    autorizaImagen?: boolean;
   };
 
   /** Su propia ficha en el censo. Sin esto, la cuenta no es de un hermano. */

@@ -46,7 +46,7 @@ export default function BloqueDibujo({ bloque }: { bloque: Datos }) {
     }}>
       <Box ref={marco} sx={{ gridArea: 'dibujo', color: 'secondary.main', maxWidth: foto ? 'none' : { xs: 320, md: 440 }, width: '100%', mx: 'auto' }}>
         {foto
-          ? <Ilustracion url={foto.url} alt={foto.alt} quieto={quieto} />
+          ? <Ilustracion url={foto.url} alt={foto.alt} ia={foto.ia ?? false} quieto={quieto} />
           : <Dibujo avance={scrollYProgress} quieto={quieto} />}
       </Box>
       <Box sx={{ gridArea: 'texto', minWidth: 0 }}>
@@ -82,7 +82,7 @@ const ENCENDIDO = 5
  * Empieza cuando está a la vista, así que más abajo en una página también
  * se ve encenderse.
  */
-function Ilustracion({ url, alt, quieto }: { url: string; alt: string; quieto: boolean }) {
+function Ilustracion({ url, alt, ia, quieto }: { url: string; alt: string; ia: boolean; quieto: boolean }) {
   const marco = useRef<HTMLDivElement>(null)
   const aLaVista = useInView(marco, { once: true, amount: 0.3 })
   const encendida = quieto || aLaVista
@@ -101,6 +101,12 @@ function Ilustracion({ url, alt, quieto }: { url: string; alt: string; quieto: b
         animate={encendida ? { scaleX: 1 } : undefined}
         transition={transicion}
         sx={{ position: 'absolute', left: '4%', right: '4%', bottom: 0, height: '1px', backgroundColor: 'secondary.main', transformOrigin: 'center' }} />
+      {/* Lo pide la ley europea de IA; discreto, bajo el filete, para no quitarle protagonismo. */}
+      {ia && (
+        <Typography sx={{ position: 'absolute', right: '4%', top: '100%', mt: 0.75, fontSize: 12, letterSpacing: '0.04em', color: 'text.secondary' }}>
+          Ilustración generada con IA
+        </Typography>
+      )}
     </Box>
   )
 }

@@ -130,6 +130,20 @@ describe('el alta contra la base de datos', () => {
     assert.equal(fichas[1].dni, null);
   });
 
+  test('el permiso para publicar fotos va a todas las fichas del alta, y sin marcarlo no hay permiso', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const titular = { fechaNacimiento: '1986-11-03', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1986-12-28' } as const;
+    const menores = [{ nombre: 'Lucía', parentesco: 'HIJO', fechaNacimiento: '2017-04-12' }] as const;
+    const conPermiso = nuevoCorreo('fotos-si');
+    await RegistroService.registerUser({ usuario: { ...adulto(conPermiso, nuevoDni()), autorizaImagen: true }, titular, menores: [...menores] });
+    const sinPermiso = nuevoCorreo('fotos-no');
+    await RegistroService.registerUser({ usuario: adulto(sinPermiso, nuevoDni()), titular, menores: [...menores] });
+
+    // Quien inscribe decide por los menores: no es como el boletín, que va a una sola ficha.
+    assert.deepEqual((await fichasDe(conPermiso)).fichas.map((f) => f.autorizaImagen), [true, true]);
+    assert.deepEqual((await fichasDe(sinPermiso)).fichas.map((f) => f.autorizaImagen), [false, false]);
+  });
+
   test('camino 3: quien solo apunta a un menor no entra en el censo', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('solo-mi-hija');

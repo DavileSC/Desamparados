@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Alert, Box, ButtonBase, TextField, Typography } from '@mui/material'
 import CATALOGO from '../../../../shared/paginas-publicas.json'
@@ -140,6 +140,12 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
 
       <CamposCertificado valor={certificado} onChange={setCertificado} sxCampo={campo}
         sxCasilla={{ color: 'rgba(255,255,255,0.9)', '& .MuiCheckbox-root': { color: 'rgba(255,255,255,0.7)' }, '& .Mui-checked': { color: `${ACENTO} !important` } }} />
+
+      {/* La primera capa de información que pide el RGPD donde se recogen los datos; el resto, en la política. */}
+      <Typography sx={{ fontSize: 13.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.65)' }}>
+        Tus datos solo se usan para el donativo y, si pides el certificado, para declararlo a Hacienda (modelo 182). Más en la{' '}
+        <Box component={Link} to="/politica-privacidad" target="_blank" sx={{ color: ACENTO }}>política de privacidad</Box>.
+      </Typography>
 
       {error && <Alert severity="error">{error}</Alert>}
       {hecho && <Alert severity="success">{hecho}</Alert>}

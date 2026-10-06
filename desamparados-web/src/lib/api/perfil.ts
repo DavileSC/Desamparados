@@ -42,6 +42,8 @@ export interface ApiProfile {
   pais: string | null
   /** Quiere el boletín de noticias por correo. */
   boletin: boolean
+  /** Autoriza publicar las fotos de cultos y salidas en que aparece. */
+  autorizaImagen: boolean
   fechaBautismo: string | null
   /** «Bautizado/a en»: la localidad. */
   lugarBautismo: string | null
@@ -125,6 +127,7 @@ export type CambiosDeFicha = Partial<{
   comunidadAutonoma: string | null
   pais: string | null
   boletin: boolean
+  autorizaImagen: boolean
   fechaBautismo: string | null
   lugarBautismo: string | null
   parroquiaBautismo: string | null

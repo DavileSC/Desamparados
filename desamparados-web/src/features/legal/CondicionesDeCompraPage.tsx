@@ -1,7 +1,8 @@
+import { Box } from '@mui/material'
 import MarcoPaginaLegal from './MarcoPaginaLegal'
 import DatosDeIdentificacion from './DatosDeIdentificacion'
 import { Apartado, Enlace, Lista, P } from './piezas'
-import { site } from '../../config/site'
+import { legal, site } from '../../config/site'
 import { deLaCorporacion, laCorporacion, mayuscula, segunLaCorporacion } from '../../domain/articulos'
 
 /**
@@ -49,8 +50,9 @@ export default function CondicionesDeCompraPage() {
       <Apartado titulo="5. Derecho de desistimiento">
         <P>
           Quien compra como consumidor puede desistir de la compra, sin dar explicaciones, en los 14 días naturales siguientes
-          a la recogida. Basta con comunicarlo por correo a {site.contacto.email} o en Secretaría, y devolver el producto en
-          Secretaría, sin usar y en el estado en que se entregó.
+          a la recogida. Basta con comunicarlo de forma clara por correo a {site.contacto.email} o en Secretaría, y devolver el
+          producto en Secretaría, sin usar y en el estado en que se entregó. Puede usarse el modelo de formulario del final de
+          estas condiciones, aunque no es obligatorio.
         </P>
         <P>
           {mayuscula(laCorporacion())} {segunLaCorporacion('devuelve', 'devuelven')} el importe pagado en los 14 días siguientes
@@ -89,6 +91,25 @@ export default function CondicionesDeCompraPage() {
           Estas condiciones se rigen por la legislación española. Quien compra como consumidor conserva siempre los derechos
           que le reconoce la normativa de consumo y puede reclamar ante los tribunales de su domicilio.
         </P>
+      </Apartado>
+
+      {/* El modelo del anexo B de la Ley de consumidores (RDL 1/2007): ofrecerlo es obligatorio, y sin él el plazo de desistimiento se alarga a un año. */}
+      <Apartado titulo="Modelo de formulario de desistimiento">
+        <P>Solo debe rellenarse y enviarse si se quiere desistir de la compra.</P>
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '6px', p: { xs: 2, md: 3 }, mb: 2 }}>
+          <P>
+            A la atención de {legal(site.entidad.denominacion)}, {legal(site.entidad.domicilio)}, {site.contacto.email}:
+          </P>
+          <P>Por la presente le comunico que desisto de mi contrato de venta de los siguientes bienes:</P>
+          <Lista>
+            <li>Pedido el / recogido el:</li>
+            <li>Número de pedido:</li>
+            <li>Nombre de quien compró:</li>
+            <li>Domicilio de quien compró:</li>
+            <li>Firma (solo si el formulario se presenta en papel):</li>
+            <li>Fecha:</li>
+          </Lista>
+        </Box>
       </Apartado>
     </MarcoPaginaLegal>
   )

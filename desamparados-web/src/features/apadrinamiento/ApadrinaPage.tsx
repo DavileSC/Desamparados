@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import CamposCertificado from '../../components/CamposCertificado'
 import { SIN_CERTIFICADO, certificadoCompleto, datosFiscalesDe } from '../../lib/certificado'
 import { Alert, Box, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import MetaDePagina from '../../components/MetaDePagina'
 import CabeceraDePagina from '../../components/CabeceraDePagina'
 import ContenedorDePagina from '../../components/ContenedorDePagina'
@@ -95,6 +95,11 @@ export default function ApadrinaPage() {
               </TextField>
             )}
             {errorForm && <Alert severity="error">{errorForm}</Alert>}
+            {/* La primera capa de información que pide el RGPD donde se recogen los datos; el resto, en la política. */}
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+              Tus datos solo se usan para el apadrinamiento y, si pides el certificado, para declararlo a Hacienda (modelo 182). Más en la{' '}
+              <Box component={Link} to="/politica-privacidad" target="_blank" sx={{ color: 'secondary.main' }}>política de privacidad</Box>.
+            </Typography>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

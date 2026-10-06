@@ -22,7 +22,8 @@ const usuarioSchema = type({
     "provincia?": textoOpcional,
     "comunidadAutonoma?": textoOpcional,
     "pais?": textoOpcional,
-    "boletin?": "boolean"
+    "boletin?": "boolean",
+    "autorizaImagen?": "boolean"
 });
 
 // =================================================================

@@ -173,6 +173,7 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
       email: f.email ?? '', email2: f.email2 ?? '', telefono: f.telefono ?? '', telefonoFijo: f.telefonoFijo ?? '',
       direccion: f.direccion ?? '', codigoPostal: f.codigoPostal ?? '', poblacion: f.poblacion ?? '',
       provincia: f.provincia ?? '', comunidadAutonoma: f.comunidadAutonoma ?? '', pais: f.pais ?? '', boletin: f.boletin,
+      autorizaImagen: f.autorizaImagen,
     }),
     (v) => {
       if (!EMAIL.test(v.email.trim())) return 'Revisa el correo electrónico.'
@@ -191,6 +192,7 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
       direccion: v.direccion.trim(), codigoPostal: v.codigoPostal.trim(), poblacion: v.poblacion.trim(),
       provincia: opcional(v.provincia), comunidadAutonoma: opcional(v.comunidadAutonoma), pais: opcional(v.pais),
       boletin: v.boletin,
+      autorizaImagen: v.autorizaImagen,
     }),
     onGuardada,
   )
@@ -214,6 +216,7 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
           <Dato etiqueta="Comunidad autónoma" valor={ficha.comunidadAutonoma} />
           <Dato etiqueta="País" valor={ficha.pais} />
           <Dato etiqueta="Boletín de noticias" valor={ficha.boletin ? 'Sí, por correo' : 'No'} />
+          <Dato etiqueta="Publicar mis fotos" valor={ficha.autorizaImagen ? 'Sí, autorizado' : 'No'} />
         </Rejilla>
       }
       formulario={
@@ -231,6 +234,11 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
           <FormControlLabel
             control={<Checkbox checked={v.boletin} onChange={(e) => a.campo('boletin')(e.target.checked)} />}
             label="Quiero recibir el boletín de noticias por correo"
+            sx={{ gridColumn: '1 / -1' }}
+          />
+          <FormControlLabel
+            control={<Checkbox checked={v.autorizaImagen} onChange={(e) => a.campo('autorizaImagen')(e.target.checked)} />}
+            label={`Autorizo que se publiquen en la web y en las redes ${deLaCorporacion()} las fotos de cultos y salidas en que aparezca`}
             sx={{ gridColumn: '1 / -1' }}
           />
         </Rejilla>

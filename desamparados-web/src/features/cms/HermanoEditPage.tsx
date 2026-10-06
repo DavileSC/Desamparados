@@ -69,6 +69,7 @@ type Formulario = {
   telefono: string; telefonoFijo: string; email: string; email2: string
   direccion: string; poblacion: string; codigoPostal: string; provincia: string; comunidadAutonoma: string; pais: string
   boletin: boolean
+  autorizaImagen: boolean
   numeroHermano: string; fechaAlta: string; fechaBaja: string
   fechaJura: string; presentadoPor: string; presentadoPor2: string; fechaBautismo: string; lugarBautismo: string; parroquiaBautismo: string
   fechaMedalla: string; tratamiento: string
@@ -90,7 +91,7 @@ const desdeFicha = (f: AdminBrother & { parentesco?: string | null }): Formulari
   parentesco: f.parentesco ?? '',
   telefono: f.telefono ?? '', telefonoFijo: f.telefonoFijo ?? '', email: f.email ?? '', email2: f.email2 ?? '',
   direccion: f.direccion ?? '', poblacion: f.poblacion ?? '', codigoPostal: f.codigoPostal ?? '',
-  provincia: f.provincia ?? '', comunidadAutonoma: f.comunidadAutonoma ?? '', pais: f.pais ?? '', boletin: f.boletin,
+  provincia: f.provincia ?? '', comunidadAutonoma: f.comunidadAutonoma ?? '', pais: f.pais ?? '', boletin: f.boletin, autorizaImagen: f.autorizaImagen,
   fechaJura: aDia(f.fechaJura), presentadoPor: f.presentadoPor ?? '', presentadoPor2: f.presentadoPor2 ?? '',
   fechaMedalla: aDia(f.fechaMedalla), tratamiento: f.tratamiento ?? '',
   fechaBautismo: aDia(f.fechaBautismo), lugarBautismo: f.lugarBautismo ?? '', parroquiaBautismo: f.parroquiaBautismo ?? '',
@@ -181,6 +182,7 @@ export default function HermanoEditPage() {
         comunidadAutonoma: opcional(form.comunidadAutonoma),
         pais: opcional(form.pais),
         boletin: form.boletin,
+        autorizaImagen: form.autorizaImagen,
         ...(cambiada('fechaBautismo') ? { fechaBautismo: form.fechaBautismo || null } : {}),
         lugarBautismo: opcional(form.lugarBautismo),
         parroquiaBautismo: opcional(form.parroquiaBautismo),
@@ -347,6 +349,10 @@ export default function HermanoEditPage() {
               <FormControlLabel
                 control={<Switch checked={form.boletin} onChange={(e) => campo('boletin', e.target.checked)} />}
                 label="Recibe el boletín de noticias"
+              />
+              <FormControlLabel
+                control={<Switch checked={form.autorizaImagen} onChange={(e) => campo('autorizaImagen', e.target.checked)} />}
+                label="Autoriza que se publiquen sus fotos"
               />
             </Stack>
           </Box>

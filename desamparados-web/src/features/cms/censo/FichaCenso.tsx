@@ -94,6 +94,7 @@ export default function FichaCenso({ id, puedeGestionar, volver, enlace, onCerra
     ['Población', poblacion || null],
     ['Provincia, comunidad y país', provincia || null],
     ['Boletín de noticias', ficha.boletin ? 'Sí' : 'No'],
+    ['Publicar sus fotos', ficha.autorizaImagen ? 'Autorizado' : 'No autorizado'],
     ['Fecha de jura', ficha.fechaJura ? dia(ficha.fechaJura) : null],
     ['Presentado por', presentado || null],
     ['Medalla', ficha.fechaMedalla ? `Impuesta el ${dia(ficha.fechaMedalla)}` : null],

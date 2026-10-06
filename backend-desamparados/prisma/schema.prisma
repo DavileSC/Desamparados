@@ -250,6 +250,10 @@ model Hermano {
   pais              String?
   /// Quiere recibir el boletín de noticias por correo.
   boletin           Boolean @default(false)
+  /// Autoriza que se publiquen en la web y en redes las fotos de cultos y
+  /// salidas en que aparezca. Lo marca él (o quien lo inscribe, si es menor):
+  /// sin marcar, su cara no se publica. Las fichas de antes quedan sin marcar.
+  autorizaImagen    Boolean @default(false)
 
   // VIDA COFRADE
   // Bautismo y parroquia son datos religiosos (RGPD, art. 9): opcionales, y

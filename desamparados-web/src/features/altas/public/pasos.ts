@@ -41,7 +41,7 @@ export function pasosDe(camino: Camino | null): Paso[] {
     { titulo: 'La cuota', campos: ['formaPago', 'iban', 'titularidad', 'titularCuenta'] },
     {
       titulo: 'Acceso al área de hermanos',
-      campos: propia ? ['foto', 'password', 'boletin', 'aceptarPolitica'] : ['password', 'boletin', 'aceptarPolitica'],
+      campos: propia ? ['foto', 'password', 'boletin', 'autorizaImagen', 'aceptarPolitica'] : ['password', 'boletin', 'autorizaImagen', 'aceptarPolitica'],
     },
   ]
 }
@@ -84,7 +84,7 @@ export const VALORES_INICIALES: MembershipFormData = {
   sexo: '', estadoCivil: '', fechaBautismo: '', lugarBautismo: '', parroquiaBautismo: '',
   provincia: '', comunidadAutonoma: '', pais: 'España',
   formaPago: '', iban: '', titularidad: 'PROPIA', titularCuenta: '',
-  foto: null, certificadoBautismo: null, boletin: false,
+  foto: null, certificadoBautismo: null, boletin: false, autorizaImagen: false,
   comentarioAdicional: '',
 }
 

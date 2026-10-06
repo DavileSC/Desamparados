@@ -49,6 +49,8 @@ export interface AdminBrother {
   comunidadAutonoma: string | null
   pais: string | null
   boletin: boolean
+  /** Autoriza publicar las fotos en que aparece. */
+  autorizaImagen: boolean
   fechaBautismo: string | null
   lugarBautismo: string | null
   parroquiaBautismo: string | null
@@ -143,6 +145,7 @@ export interface DatosDeFichaDeHermano {
   comunidadAutonoma?: string | null
   pais?: string | null
   boletin?: boolean
+  autorizaImagen?: boolean
   fechaBautismo?: string | null
   lugarBautismo?: string | null
   parroquiaBautismo?: string | null

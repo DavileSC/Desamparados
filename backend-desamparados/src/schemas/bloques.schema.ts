@@ -548,6 +548,8 @@ const horarioSchema = type({
  *
  * `foto`, opcional (26-09-2026): una ilustración que se pinta en lugar del
  * dibujo de líneas, como la del templo. Con descripción, como toda foto.
+ * `ia` (06-10-2026): está generada con IA, y la web lo dice debajo. La ley
+ * europea de IA pide avisarlo desde agosto de 2026, y cuesta una línea.
  */
 export const DIBUJOS = ['templo', 'signoPasionista'] as const;
 
@@ -556,7 +558,7 @@ const dibujoSchema = type({
   tipo: "'dibujo'",
   dibujo: type.enumerated(...DIBUJOS),
   html: type(`1 <= string <= ${topes.html}`),
-  'foto?': { url: sinFoto.or(rutaImagenPublica), alt: DESCRIPCION },
+  'foto?': { url: sinFoto.or(rutaImagenPublica), alt: DESCRIPCION, 'ia?': 'boolean' },
 }).narrow((datos, ctx) => {
   if (enBlanco(datos.html)) return ctx.reject({ path: ['html'], problem: 'no puede quedar en blanco' });
   if (datos.foto && datos.foto.url !== '' && enBlanco(datos.foto.alt)) {

@@ -62,6 +62,8 @@ export interface RegistroData {
   pais?: string
   /** Quiere el boletín de noticias por correo. */
   boletin?: boolean
+  /** Autoriza publicar las fotos en que aparezca él y los menores que inscribe. */
+  autorizaImagen?: boolean
   /** La suya, si se hace hermano. Sin ella, la cuenta es solo para gestionar. */
   fechaNacimiento?: string
   /** Lo que acompaña a la ficha propia: van solo si hay `fechaNacimiento`. */
@@ -123,6 +125,7 @@ export function register(data: RegistroData) {
       ...siHay('comunidadAutonoma', data.comunidadAutonoma),
       ...siHay('pais', data.pais),
       boletin: data.boletin ?? false,
+      autorizaImagen: data.autorizaImagen ?? false,
     },
     ...(data.fechaNacimiento && data.ficha
       ? {

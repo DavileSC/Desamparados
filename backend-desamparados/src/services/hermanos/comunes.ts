@@ -97,7 +97,7 @@ export const USER_EDITABLE_FIELDS = [
   'nombre', 'primerApellido', 'segundoApellido', 'fechaNacimiento', 'dni',
   'sexo', 'estadoCivil', 'profesion', 'lugarNacimiento',
   'telefono', 'telefonoFijo', 'email', 'email2',
-  'direccion', 'poblacion', 'codigoPostal', 'provincia', 'comunidadAutonoma', 'pais', 'boletin',
+  'direccion', 'poblacion', 'codigoPostal', 'provincia', 'comunidadAutonoma', 'pais', 'boletin', 'autorizaImagen',
   'fechaBautismo', 'lugarBautismo', 'parroquiaBautismo',
   'formaPagoPref', 'iban', 'titularCuenta', 'titularidadCuenta',
   'parentesco'
@@ -142,7 +142,7 @@ export const HERMANO_SAFE_SELECT = {
   // El resto de la ficha, sin los datos bancarios.
   primerApellido: true, segundoApellido: true, sexo: true, estadoCivil: true,
   profesion: true, lugarNacimiento: true, telefonoFijo: true, email2: true,
-  provincia: true, comunidadAutonoma: true, pais: true, boletin: true,
+  provincia: true, comunidadAutonoma: true, pais: true, boletin: true, autorizaImagen: true,
   fechaBautismo: true, lugarBautismo: true, parroquiaBautismo: true,
   // Los documentos del alta: solo el nombre, se descargan con sesión del CMS.
   foto: true, certificadoBautismo: true,

@@ -44,6 +44,7 @@ const baseUpdateBody = type({
     "comunidadAutonoma?": opcional,
     "pais?": opcional,
     "boletin?": "boolean",
+    "autorizaImagen?": "boolean",
     // Bautismo y parroquia: datos religiosos, siempre opcionales.
     "fechaBautismo?": diaOpcional,
     "lugarBautismo?": opcional,

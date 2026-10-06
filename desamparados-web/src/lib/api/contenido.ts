@@ -188,7 +188,7 @@ export interface BloqueHorario extends BloqueBase {
 }
 /** Los dibujos que sabe trazar la web: lista cerrada, la misma que valida el servidor. */
 export type NombreDeDibujo = 'templo' | 'signoPasionista'
-/** `foto`: una ilustración que se pinta en lugar del dibujo de líneas (vacía, el dibujo). */
+/** `foto`: una ilustración que se pinta en lugar del dibujo de líneas (vacía, el dibujo); `ia`, si está generada con IA. */
 /** Un fin de los tres anillos: su texto y, si se quiere, un botón a su página. */
 export interface FinDeAnillo { titulo: string; texto: string; boton: string; enlace: string }
 /** Los tres fines entrelazados: siempre tres, uno por anillo; `centro` va en el cruce. */
@@ -219,7 +219,7 @@ export interface PiezaDeCarrusel {
 export interface BloqueCarrusel extends BloqueBase { tipo: 'carrusel'; piezas: PiezaDeCarrusel[] }
 /** Donativo: importes sugeridos en euros enteros y, si se quiere, destinos entre los que elegir. */
 export interface BloqueDonativo extends BloqueBase { tipo: 'donativo'; texto: string; importes: number[]; destinos: string[] }
-export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string } }
+export interface BloqueDibujo extends BloqueBase { tipo: 'dibujo'; dibujo: NombreDeDibujo; html: string; foto?: { url: string; alt: string; ia?: boolean } }
 
 export type Bloque =
   | BloqueTexto

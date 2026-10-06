@@ -39,6 +39,7 @@ export interface UpdateHermanoDto {
   comunidadAutonoma?: string | null;
   pais?: string | null;
   boletin?: boolean;
+  autorizaImagen?: boolean;
   fechaBautismo?: string | null;
   lugarBautismo?: string | null;
   parroquiaBautismo?: string | null;

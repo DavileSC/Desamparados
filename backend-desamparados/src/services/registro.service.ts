@@ -162,6 +162,7 @@ export class RegistroService {
             lugarBautismo: titular.lugarBautismo?.trim() || null,
             parroquiaBautismo: titular.parroquiaBautismo?.trim() || null,
             boletin: usuario.boletin ?? false,
+            autorizaImagen: usuario.autorizaImagen ?? false,
             ...cuentaDe(true),
             foto: documentos.foto ?? null,
             certificadoBautismo: documentos.certificadoBautismo ?? null,
@@ -179,6 +180,8 @@ export class RegistroService {
             fechaNacimiento: new Date(menor.fechaNacimiento),
             // El boletín va a la ficha del adulto; si no tiene, a las de ellos.
             boletin: !titular && (usuario.boletin ?? false),
+            // La foto, en cambio, es de cada uno: quien inscribe decide por los menores.
+            autorizaImagen: usuario.autorizaImagen ?? false,
             ...cuentaDe(false),
           })),
         ],

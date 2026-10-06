@@ -129,6 +129,7 @@ export const membershipSchema = z.object({
   foto: documento('foto', 'La foto'),
   certificadoBautismo: documento('certificadoBautismo', 'El certificado'),
   boletin: z.boolean(),
+  autorizaImagen: z.boolean(),
   menores: z.array(menorSchema),
   // Campo trampa: escondido en el formulario. Sin validación ninguna —una
   // persona nunca lo ve, así que no hay nada que corregirle— y opcional,

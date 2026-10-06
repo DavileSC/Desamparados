@@ -30,6 +30,10 @@ export default function PoliticaDePrivacidadPage() {
       </Apartado>
 
       <Apartado titulo="2. Qué datos se tratan, para qué y con qué base">
+        <P>
+          En cada formulario se marcan los datos obligatorios: sin ellos no puede atenderse lo que se pide (el alta, el
+          pedido, la respuesta). Los demás son voluntarios.
+        </P>
         <Subapartado titulo="Hermanos">
           <P>
             De quienes pertenecen {aLaCorporacion()} se tratan los datos de identificación y contacto (nombre, DNI, fecha de
@@ -51,6 +55,20 @@ export default function PoliticaDePrivacidadPage() {
             Los menores se inscriben a través de su padre, madre o tutor, que da los datos y presta el consentimiento por
             ellos cuando tienen menos de 14 años (art. 7 de la LOPDGDD). Quien los inscribe figura en la ficha con su
             parentesco.
+          </P>
+        </Subapartado>
+
+        <Subapartado titulo="Fotos de cultos y salidas">
+          <P>
+            {mayuscula(laCorporacion())} {segunLaCorporacion('publica', 'publican')} en esta web y en sus redes sociales fotos y
+            vídeos de sus cultos, de la salida procesional y de otros actos. De un hermano solo se publican aquellas en que se le
+            reconozca si lo ha autorizado (art. 6.1.a del RGPD); por un menor lo autoriza quien lo inscribe. La autorización
+            se da o se retira cuando se quiera{activo('area-hermanos') ? ', desde el área de hermanos' : ''} o escribiendo a{' '}
+            {emailDerechos}, y entonces se retiran las fotos ya publicadas que dependan {deLaCorporacion()}.
+          </P>
+          <P>
+            Las imágenes de conjunto de un acto público, en que nadie es el protagonista, se publican sin esa autorización, como
+            permite el art. 8.2.a de la Ley Orgánica 1/1982. Quien aparezca en una y no quiera puede pedir que se retire.
           </P>
         </Subapartado>
 
