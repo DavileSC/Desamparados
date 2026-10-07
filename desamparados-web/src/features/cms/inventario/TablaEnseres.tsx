@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Box, CardActionArea, IconButton, Menu, MenuItem, Paper, Typography } from '@mui/material'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
-import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import { Link } from 'react-router-dom'
 import type { Enser } from '../../../lib/api/inventario'
 import { useColoresContabilidad } from '../contabilidad/tema'
@@ -66,19 +65,20 @@ function FichaEnser({ enser: e, volver, horizontal, carril, onBorrar }: { enser:
   const total = totalDe(e)
   const partes = TRAMOS.filter((t) => e[t.clave] > 0)
 
-  const foto = (
+  // Sin foto, la ficha va sin su recuadro: un hueco gris con un icono no dice nada
+  // y, con varios enseres sin foto, la pantalla se llenaba de ellos.
+  const foto = e.imagenUrl ? (
     <Box
       sx={{
-        flexShrink: 0, overflow: 'hidden', backgroundColor: 'action.hover', color: 'text.disabled',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, overflow: 'hidden', backgroundColor: 'action.hover',
         ...(horizontal ? { width: 76, alignSelf: 'stretch', minHeight: 76, borderRadius: 1.5 } : { height: 140 }),
       }}
     >
-      {e.imagenUrl
-        ? <Box component="img" src={e.imagenUrl} alt="" loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        : <ImageOutlinedIcon aria-hidden="true" sx={{ fontSize: 30 }} />}
+      <Box component="img" src={e.imagenUrl} alt="" loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
     </Box>
-  )
+  ) : null
+  // El «⋯» va encima de la foto en el PC; sin ella, o en el móvil, cae sobre el texto.
+  const menuSobreTexto = horizontal || !e.imagenUrl
 
   return (
     <Paper component="li" sx={{ position: 'relative', overflow: 'hidden', display: 'flex' }}>
@@ -91,9 +91,9 @@ function FichaEnser({ enser: e, volver, horizontal, carril, onBorrar }: { enser:
       >
         {foto}
         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.75, p: horizontal ? 0 : 2 }}>
-          {/* En el móvil, a la derecha, el hueco del «⋯», que va encima: solo en esta
-              línea, no en toda la columna. En el PC el «⋯» va sobre la foto y no hace falta. */}
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, pr: horizontal ? 4.5 : 0 }}>
+          {/* A la derecha, el hueco del «⋯» cuando va encima del texto: solo en esta
+              línea, no en toda la columna. */}
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, pr: menuSobreTexto ? (horizontal ? 4.5 : 3.5) : 0 }}>
             <Typography component="h2" sx={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>{e.nombre}</Typography>
             <Typography component="span" aria-label={`${total} piezas`} sx={{ fontSize: horizontal ? 20 : 24, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{total}</Typography>
           </Box>
@@ -118,7 +118,7 @@ function FichaEnser({ enser: e, volver, horizontal, carril, onBorrar }: { enser:
         size="small"
         sx={{
           position: 'absolute', top: 6, right: 6,
-          ...(horizontal ? {} : { backgroundColor: 'background.paper', '&:hover': { backgroundColor: 'background.paper' } }),
+          ...(menuSobreTexto ? {} : { backgroundColor: 'background.paper', '&:hover': { backgroundColor: 'background.paper' } }),
         }}
       >
         <MoreHorizIcon fontSize="small" />
