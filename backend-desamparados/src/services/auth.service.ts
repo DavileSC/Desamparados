@@ -17,7 +17,7 @@ import { enmascararEmail } from '../utils/log-privacidad.js';
 import { ipKeyGenerator } from 'express-rate-limit';
 import { ContadorFallos, RegistroReciente } from '../utils/contador-fallos.js';
 import {
-  MENSAJE_CODIGO_USADO, comprobarBloqueo2FA, consumirCodigoDeRespaldo,
+  MENSAJE_CODIGO_USADO, comprobarBloqueo2FA, consumirCodigoDeRespaldo, normalizarCodigo2FA,
   limpiarFallos2FA, pasoTotpActual, reclamarTotp, registrarFallo2FA,
 } from './auth/codigos-2fa.js';
 import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '../utils/cifrado-totp.js';
@@ -305,7 +305,7 @@ export class AuthService {
       throw new Testigo2FACaducadoError();
     }
 
-    const code = token2fa.trim().toUpperCase();
+    const code = normalizarCodigo2FA(token2fa);
     let backupCodesRemaining: number | undefined;
 
     if (/^[0-9]{6}$/.test(code)) {
@@ -386,7 +386,7 @@ export class AuthService {
     return token;
   }
 
-  static async requestPasswordReset(email: string) {
+  static async requestPasswordReset(email: string, contexto: AreaSesion = 'hermanos') {
     // MEDIDA DE SEGURIDAD: Aunque el email no exista, decimos que todo ha ido bien.
     // Así evitamos que atacantes usen este endpoint para adivinar qué correos están registrados.
     //
@@ -394,7 +394,7 @@ export class AuthService {
     // escribía el token antes de contestar y sin él no, y esa diferencia de
     // tiempo decía lo mismo que el mensaje se esforzaba en callar. Todo el
     // trabajo va en segundo plano, exista o no la cuenta.
-    this.prepararRecuperacion(email)
+    this.prepararRecuperacion(email, contexto)
       .catch(err => console.error('Error preparando la recuperación de contraseña:', err));
 
     return { message: 'Si el correo está registrado, recibirás un enlace de recuperación.' };
@@ -404,7 +404,7 @@ export class AuthService {
    * El trabajo de «he olvidado mi contraseña», fuera del tiempo de respuesta.
    * Si el email no es de nadie, no hace nada.
    */
-  static async prepararRecuperacion(email: string): Promise<void> {
+  static async prepararRecuperacion(email: string, contexto: AreaSesion = 'hermanos'): Promise<void> {
     const user = await db.user.findUnique({
       where: { email },
       select: { id: true, email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } },
@@ -416,7 +416,7 @@ export class AuthService {
 
     // Enviamos el correo. OJO: se pasa el TOKEN en crudo; la URL completa la construye
     // EmailService (antes se construía aquí y el email la volvía a envolver: ?token=https://...?token=).
-    await EmailService.enviarRecuperacionContrasena(user.email, user.nombre, resetToken, { horas: 1, sexo: user.hermanos[0]?.sexo });
+    await EmailService.enviarRecuperacionContrasena(user.email, user.nombre, resetToken, { horas: 1, sexo: user.hermanos[0]?.sexo, area: contexto });
   }
 
   // 2. Aplicar la nueva contraseña

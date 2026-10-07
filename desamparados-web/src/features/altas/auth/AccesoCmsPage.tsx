@@ -229,7 +229,7 @@ export default function AccesoCmsPage() {
                 <Button type="submit" variant="contained" fullWidth disabled={credentialsForm.formState.isSubmitting}>
                   Entrar
                 </Button>
-                <Box component={Link} to="/reset-password" sx={{ color: 'text.primary', textDecoration: 'underline', textUnderlineOffset: '3px', textAlign: 'center', fontSize: '14px', minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Box component={Link} to="/reset-password?area=cms" sx={{ color: 'text.primary', textDecoration: 'underline', textUnderlineOffset: '3px', textAlign: 'center', fontSize: '14px', minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                   ¿Has olvidado tu contraseña?
                 </Box>
               </Box>

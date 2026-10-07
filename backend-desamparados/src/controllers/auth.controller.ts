@@ -156,8 +156,8 @@ export class AuthController {
   });
 
   static requestPasswordReset = manejar('Error al solicitar recuperación', async (req, res) => {
-      const { email } = req.body;
-      const result = await AuthService.requestPasswordReset(email);
+      const { email, contexto } = req.body;
+      const result = await AuthService.requestPasswordReset(email, contexto);
       res.status(200).json(result);
   });
   // =================================================================

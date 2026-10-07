@@ -23,6 +23,7 @@ import {
 } from './correos/plantilla.js';
 import { cuentaDeContacto, enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
+import type { AreaSesion } from '../utils/cookies.js';
 
 /** Quien entra en el censo al aprobar la solicitud, con el número que recibe. */
 export interface HermanoAprobado { nombre: string; apellidos: string | null; numeroHermano: number }
@@ -60,10 +61,12 @@ export class EmailService {
    */
   static async enviarRecuperacionContrasena(
     emailDestino: string, nombreHermano: string, token: string,
-    opciones: { horas?: number; cuentaNueva?: boolean; sexo?: Sexo } = {},
+    opciones: { horas?: number; cuentaNueva?: boolean; sexo?: Sexo; area?: AreaSesion } = {},
   ) {
-    const { horas = 1, cuentaNueva = false, sexo } = opciones;
-    const enlace = urlDeLaWeb(`/reset-password?token=${encodeURIComponent(token)}`);
+    const { horas = 1, cuentaNueva = false, sexo, area = 'hermanos' } = opciones;
+    // Con `area=cms`, al terminar la web lleva a la entrada del CMS y no a la de
+    // hermanos, que puede estar apagada y no es la de quien lo pidió.
+    const enlace = urlDeLaWeb(`/reset-password?token=${encodeURIComponent(token)}${area === 'cms' ? '&area=cms' : ''}`);
     const { asunto, html } = await PlantillasCorreoService.correo(cuentaNueva ? 'contrasena_cuenta_nueva' : 'contrasena_recuperar', {
       campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano, plazo: plazo(horas) },
       bloques: { enlace: boton(cuentaNueva ? 'Crear mi contraseña' : 'Elegir una contraseña nueva', enlace) },

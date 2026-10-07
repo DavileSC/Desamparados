@@ -98,6 +98,7 @@ export interface LoginDto {
 
 export interface RequestPasswordResetDto {
   email: string;
+  contexto?: 'cms' | 'hermanos';
 }
 
 export interface ResetPasswordDto {

@@ -34,6 +34,24 @@ export const authLimiter = rateLimit({
 	}
 });
 
+// 3. Limitador de la entrada (contraseña, código del 2FA y enlace de recuperación)
+// Igual que el estricto, pero solo cuenta lo que sale mal. Contando también los
+// aciertos, veinte personas que entraban bien desde una misma IP —el wifi de la
+// casa de hermandad o los móviles que comparten IP en su operadora (CGNAT)—
+// dejaban a la siguiente quince minutos fuera con la contraseña buena. La
+// fuerza bruta solo produce fallos, así que contra ella frena igual.
+export const limitadorEntrada = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	limit: 20,
+	skipSuccessfulRequests: true,
+	standardHeaders: 'draft-7',
+	legacyHeaders: false,
+	message: {
+		status: 429,
+		message: "Demasiados intentos de inicio de sesión. Por seguridad, espera 15 minutos."
+	}
+});
+
 // El formulario público puede provocar spam de correo, por lo que tiene un
 // límite propio más estricto que el resto de lecturas de la API.
 /**

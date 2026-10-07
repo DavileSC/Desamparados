@@ -9,7 +9,7 @@ import { identidad, type Identidad } from '../domain/datos-entidad.js';
 import {
   APAGAR_2FA, MENSAJE_2FA_YA_ACTIVO, MENSAJE_CODIGO_USADO,
   comprobarBloqueo2FA, consumirCodigoDeRespaldo, generarCodigosDeRespaldo,
-  hashDeCodigoDeRespaldo, limpiarFallos2FA, reclamarTotp, registrarFallo2FA,
+  hashDeCodigoDeRespaldo, limpiarFallos2FA, normalizarCodigo2FA, reclamarTotp, registrarFallo2FA,
 } from './auth/codigos-2fa.js';
 
 /**
@@ -134,7 +134,7 @@ export class DobleFactorService {
     const user = await db.user.findUnique({ where: { id: userId }, omit: { twoFactorSecret: false } });
     if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) throw new HttpError('2FA no está activado.');
 
-    const normalized = code.trim().toUpperCase();
+    const normalized = normalizarCodigo2FA(code);
 
     if (/^[0-9]{6}$/.test(normalized)) {
       const { resultado } = await reclamarTotp(user, normalized);

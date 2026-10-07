@@ -77,6 +77,22 @@ export function generarCodigosDeRespaldo(count: number = 8): string[] {
   return codes;
 }
 
+/**
+ * El código tal como se compara: sin espacios, en mayúsculas y, si es de
+ * respaldo, con sus guiones. En el móvil el teclado escribe en minúsculas y hay
+ * apps que enseñan el TOTP partido («863 427»); rechazar eso dejaba fuera a
+ * quien había perdido el móvil justo con el código bueno en la mano.
+ */
+export function normalizarCodigo2FA(code: string): string {
+  const c = code.trim().toUpperCase();
+  const totp = /^([0-9]{3})\s?([0-9]{3})$/.exec(c);
+  if (totp) return totp[1] + totp[2];
+  // Solo se recolocan los guiones de lo que tiene forma de código de respaldo;
+  // lo demás se compara tal cual y, si no es de nadie, falla como siempre.
+  const respaldo = /^([A-Z0-9]{4})[\s-]?([A-Z0-9]{4})[\s-]?([A-Z0-9]{4})$/.exec(c);
+  return respaldo ? respaldo.slice(1).join('-') : c;
+}
+
 export function hashDeCodigoDeRespaldo(code: string): string {
   return crypto.createHash('sha256').update(code).digest('hex');
 }

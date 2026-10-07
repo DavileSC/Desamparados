@@ -237,6 +237,22 @@ describe('EmailService', () => {
     assert.doesNotMatch(correo.text!, /Para completar/, 'el resumen oculto de la bandeja no va en el texto');
   });
 
+  test('el enlace de recuperación vuelve al acceso desde el que se pidió, y el correo no habla del área de hermanos', async () => {
+    const general = transporteFalso();
+    ponerTransporte(general);
+    process.env.EMAIL_USER = 'secretaria@example.es';
+
+    await EmailService.enviarRecuperacionContrasena('cargo@example.es', 'Ana', 'abc', { area: 'cms' });
+    await EmailService.enviarRecuperacionContrasena('hermano@example.es', 'Juan', 'abc');
+
+    const [alCargo, alHermano] = general.enviados;
+    assert.match(alCargo.text!, /reset-password\?token=abc&area=cms/);
+    assert.match(alHermano.text!, /reset-password\?token=abc(?!&)/);
+    // La misma plantilla vale para los dos: a un cargo no le puede hablar del área de hermanos.
+    assert.doesNotMatch(alCargo.subject, /hermanos/i);
+    assert.doesNotMatch(alCargo.text!, /área de hermanos/i);
+  });
+
   test('con CONTACT_EMAIL_USER y CONTACT_EMAIL_PASS, el contacto sale por su propia cuenta', async () => {
     const general = transporteFalso();
     const contacto = transporteFalso();

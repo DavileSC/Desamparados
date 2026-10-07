@@ -831,3 +831,24 @@ test('el acceso del CMS no crea sesión para una cuenta de hermano', async (t) =
     await borrarUsuarioPrueba(hermano.id);
   }
 });
+
+// El limitador por IP de la entrada contaba también los aciertos: veinte
+// personas que entraban bien desde una misma red (el wifi de la casa de
+// hermandad, los móviles que comparten IP en su operadora) dejaban a la
+// siguiente quince minutos fuera con la contraseña buena.
+test('entrar bien muchas veces desde una misma IP no agota el limitador', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const hermano = await crearUsuarioPrueba(Role.USER);
+  try {
+    for (let i = 0; i < 25; i++) {
+      const res = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: hermano.email, password: PASSWORD_PRUEBA, contexto: 'hermanos' })
+      });
+      assert.equal(res.status, 200, `el acceso n.º ${i + 1} tiene que entrar`);
+    }
+  } finally {
+    await borrarUsuarioPrueba(hermano.id);
+  }
+});

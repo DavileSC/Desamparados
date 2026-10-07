@@ -205,11 +205,12 @@ export function verify2FA(token2fa: string) {
   })
 }
 
-export function requestPasswordReset(email: string) {
+// `contexto`: desde qué acceso se pide; el enlace del correo vuelve a ese mismo.
+export function requestPasswordReset(email: string, contexto: 'cms' | 'hermanos' = 'hermanos') {
   return llamarApi<{ message: string }>('/auth/reset-password', {
     method: 'POST',
     auth: false,
-    json: { email },
+    json: { email, contexto },
   })
 }
 

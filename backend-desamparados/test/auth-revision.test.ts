@@ -390,6 +390,27 @@ test('el trabajo de la recuperación guarda el enlace y manda el correo solo si 
   }
 });
 
+// Quien la pide desde la entrada del CMS vuelve a la del CMS al terminar: el
+// enlace lo dice. La de hermanos no es la suya y puede estar apagada.
+test('la recuperación pedida desde el CMS manda el enlace del CMS', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const cargo = await crearUsuarioPrueba(Role.SECRETARIA);
+  const original = EmailService.enviarRecuperacionContrasena;
+  const areas: (string | undefined)[] = [];
+  try {
+    EmailService.enviarRecuperacionContrasena = (async (_e: string, _n: string, _t: string, opciones?: { area?: string }) => {
+      areas.push(opciones?.area); return true;
+    }) as typeof original;
+
+    await AuthService.prepararRecuperacion(cargo.email, 'cms');
+    await AuthService.prepararRecuperacion(cargo.email);
+    assert.deepEqual(areas, ['cms', 'hermanos']);
+  } finally {
+    EmailService.enviarRecuperacionContrasena = original;
+    await borrarUsuarioPrueba(cargo.id);
+  }
+});
+
 test('el mismo enlace de recuperación usado dos veces a la vez solo vale una', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const hermano = await crearUsuarioPrueba(Role.USER);

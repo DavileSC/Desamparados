@@ -51,7 +51,7 @@
       "grupo": "Cuenta",
       "nombre": "Recuperar la contraseña",
       "descripcion": "Cuando alguien pulsa «He olvidado mi contraseña».",
-      "antetitulo": "Área de hermanos",
+      "antetitulo": "Su cuenta",
       "firma": "La Secretaría",
       "campos": [
         {
@@ -78,9 +78,9 @@
         }
       ],
       "porDefecto": {
-        "asunto": "Restablecer su contraseña del área de hermanos",
+        "asunto": "Restablecer su contraseña",
         "titulo": "Restablecer su contraseña",
-        "cuerpo": "{{saludo}}\n\nHemos recibido una petición para restablecer la contraseña de su cuenta en el área de hermanos. Para elegir una nueva, pulse el botón:\n\n[[enlace]]\n\nEl enlace caduca en {{plazo}} y solo puede usarse una vez.\n\n> Si no ha pedido este cambio, puede ignorar este correo: su contraseña actual sigue funcionando y nadie más ha visto este enlace.",
+        "cuerpo": "{{saludo}}\n\nHemos recibido una petición para restablecer la contraseña de su cuenta. Para elegir una nueva, pulse el botón:\n\n[[enlace]]\n\nEl enlace caduca en {{plazo}} y solo puede usarse una vez.\n\n> Si no ha pedido este cambio, puede ignorar este correo: su contraseña actual sigue funcionando y nadie más ha visto este enlace.",
         "despedida": ""
       }
     },

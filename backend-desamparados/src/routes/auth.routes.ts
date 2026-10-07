@@ -9,7 +9,7 @@ import { Role } from '@prisma/client';
 // 1. Validadores
 import { validate } from '../config/validate'; 
 import { idParam, password } from '../config/common';
-import { authLimiter } from '../config/limiter';
+import { authLimiter, limitadorEntrada } from '../config/limiter';
 import { recibirAlta, comprobarDocumentosDelAlta } from '../middleware/alta-documentos.middleware';
 
 // 2. Esquemas blindados
@@ -52,7 +52,9 @@ const rolesStaffCMS = [
 // ==========================================
 //  RUTAS PÚBLICAS (Entrada al sistema)
 // ==========================================
-// Todas llevan el limitador estricto anti fuerza bruta (10 intentos/15 min por IP).
+// Todas llevan un limitador anti fuerza bruta por IP: el estricto (authLimiter,
+// que lo cuenta todo) las que mandan correos o crean filas, y el de la entrada
+// (limitadorEntrada, que solo cuenta los fallos) las que abren una sesión.
 // Las rutas autenticadas (2FA setup, rescate) NO lo llevan: ya exigen token válido
 // y les basta el limitador global.
 
@@ -67,17 +69,17 @@ authRoutes.post('/register', conModulo('alta-web'), authLimiter, recibirAlta, va
 authRoutes.post('/reactivacion', authLimiter, validate(reactivacionSchema), AuthController.solicitarReactivacion);
 
 // Login 
-authRoutes.post('/login', authLimiter, validate(loginSchema), AuthController.login);
+authRoutes.post('/login', limitadorEntrada, validate(loginSchema), AuthController.login);
 
 // Validación 2FA (objetivo clásico de fuerza bruta de códigos de 6 dígitos)
-authRoutes.post('/login/2fa', authLimiter, validate(verify2FASchema), AuthController.loginVerify2FA);
+authRoutes.post('/login/2fa', limitadorEntrada, validate(verify2FASchema), AuthController.loginVerify2FA);
 
 // Cierre de sesion: sin autenticar, para que una sesion caducada pueda limpiarse.
 authRoutes.post('/logout', validate(logoutSchema), AuthController.logout);
 
 // Recuperación de contraseña
 authRoutes.post('/reset-password', authLimiter, validate(requestPasswordResetSchema), AuthController.requestPasswordReset);
-authRoutes.post('/reset-password/confirmar', authLimiter, validate(resetPasswordRequestSchema), AuthController.resetPassword);
+authRoutes.post('/reset-password/confirmar', limitadorEntrada, validate(resetPasswordRequestSchema), AuthController.resetPassword);
 
 // ==========================================
 //  RUTAS PRIVADAS (Gestión del Perfil)

@@ -160,9 +160,11 @@ export const logoutSchema = type({
 // Esquema para validar los 6 dígitos del TOTP
 export const totpTokenSchema = type("string").matching(/^[0-9]{6}$/).describe("un código numérico de 6 dígitos");
 
-// Acepta el TOTP (123456) o un código de respaldo (AB2C-DEF4-GH56)
+// Acepta el TOTP (123456) o un código de respaldo (AB2C-DEF4-GH56). También en
+// minúsculas, sin guiones o con espacios: el servicio lo normaliza
+// (normalizarCodigo2FA) antes de comparar.
 const codigo2FASchema = type("string")
-    .matching(/^[0-9]{6}$|^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/)
+    .matching(/^\s*(?:[0-9]{3}\s?[0-9]{3}|[A-Z2-9]{4}[-\s]?[A-Z2-9]{4}[-\s]?[A-Z2-9]{4})\s*$/i)
     .describe("un código TOTP de 6 dígitos o un código de respaldo");
 
 // El usuario ya no viaja en el cuerpo: sale de la cookie del primer factor.
@@ -190,7 +192,9 @@ export const disable2FASchema = type({
 
 export const requestPasswordResetSchema = type({
     body: {
-        email: email // Reutilizamos tu validador base
+        email: email, // Reutilizamos tu validador base
+        // Desde qué acceso se pide: el enlace del correo vuelve a ese mismo.
+        "contexto?": "'cms' | 'hermanos'"
     }
 });
 

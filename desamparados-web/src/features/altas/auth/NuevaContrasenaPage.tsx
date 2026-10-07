@@ -16,6 +16,10 @@ export default function NuevaContrasenaPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token') ?? ''
+  // Quien viene del CMS vuelve a la entrada del CMS: la de hermanos no es la
+  // suya y, en una instalación sin área de hermanos, ni siquiera deja entrar.
+  const area = searchParams.get('area') === 'cms' ? 'cms' : 'hermanos'
+  const acceso = area === 'cms' ? '/cms/acceso' : '/acceso'
   const [success, setSuccess] = useState(false)
   const [requestSent, setRequestSent] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -37,7 +41,7 @@ export default function NuevaContrasenaPage() {
     try {
       await apiResetPassword(token, data.password)
       setSuccess(true)
-      window.setTimeout(() => navigate('/acceso', { replace: true }), 1800)
+      window.setTimeout(() => navigate(acceso, { replace: true }), 1800)
     } catch (error) {
       setSubmitError(error instanceof ErrorDeApi ? error.message : 'No se ha podido actualizar la contraseña.')
     }
@@ -46,7 +50,7 @@ export default function NuevaContrasenaPage() {
   const onRequestSubmit = async (data: RequestPasswordResetFormData) => {
     setSubmitError(null)
     try {
-      await apiRequestPasswordReset(data.email)
+      await apiRequestPasswordReset(data.email, area)
       setRequestSent(true)
     } catch (error) {
       setSubmitError(error instanceof ErrorDeApi ? error.message : 'No se ha podido solicitar la recuperación.')
@@ -82,7 +86,7 @@ export default function NuevaContrasenaPage() {
             <Boton type="submit" fullWidth disabled={isSubmitting}>Actualizar contraseña</Boton>
           </Box>
         )}
-        <Typography component={Link} to="/acceso" sx={{ display: 'block', mt: 3, textAlign: 'center', color: 'secondary.main' }}>
+        <Typography component={Link} to={acceso} sx={{ display: 'block', mt: 3, textAlign: 'center', color: 'secondary.main' }}>
           Volver al acceso
         </Typography>
       </TarjetaCristal>
