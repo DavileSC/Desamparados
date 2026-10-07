@@ -531,6 +531,41 @@ test('cinco fallos desde una IP no dejan fuera a la cuenta desde otra', async (t
   }
 });
 
+// Quien recupera la contraseña suele venir de fallar varias veces: con la
+// nueva recién puesta, el acceso le seguía diciendo que esperara 15 minutos.
+test('restablecer la contraseña quita el bloqueo y se entra con la nueva', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const hermano = await crearUsuarioPrueba(Role.USER);
+  try {
+    const suIp = ipUnica();
+    for (let i = 0; i < 5; i++) {
+      await assert.rejects(
+        AuthService.loginUser({ email: hermano.email, password: 'Contraseña-Equivocada-1', contexto: 'hermanos' }, suIp),
+        conEstado(401)
+      );
+    }
+    // Y el bloqueo por cuenta, que se dispara desde muchas redes.
+    for (let i = 0; i < 50; i++) {
+      await AuthService.loginUser({ email: hermano.email, password: 'Contraseña-Equivocada-1', contexto: 'hermanos' }, ipUnica())
+        .catch(() => undefined);
+    }
+
+    const nueva = 'Cirio-Granate-Nueva-2026';
+    const enlace = await AuthService.crearEnlaceDeContrasena(hermano.id, 1);
+    await AuthService.resetPassword(enlace, nueva);
+
+    const entrada = await AuthService.loginUser({ email: hermano.email, password: nueva, contexto: 'hermanos' }, suIp);
+    assert.equal(entrada.status, 'OK', 'desde la misma red en que falló, entra con la contraseña nueva');
+    await assert.rejects(
+      AuthService.loginUser({ email: hermano.email, password: PASSWORD_PRUEBA, contexto: 'hermanos' }, ipUnica()),
+      conEstado(401),
+      'la contraseña vieja ya no vale'
+    );
+  } finally {
+    await borrarUsuarioPrueba(hermano.id);
+  }
+});
+
 test('muchos fallos repartidos entre IP bloquean la cuenta en todas', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const hermano = await crearUsuarioPrueba(Role.USER);

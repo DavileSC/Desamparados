@@ -79,6 +79,13 @@ export class ContadorFallos {
     this.estados.delete(clave);
   }
 
+  /** Borra todas las claves que empiezan así: las de una cuenta en cualquier red. */
+  limpiarPrefijo(prefijo: string): void {
+    for (const clave of this.estados.keys()) {
+      if (clave.startsWith(prefijo)) this.estados.delete(clave);
+    }
+  }
+
   get tamano(): number {
     return this.estados.size;
   }

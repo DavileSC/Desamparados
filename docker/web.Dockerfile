@@ -38,6 +38,13 @@ COPY backend-desamparados/src /app/backend-desamparados/src
 # otro origen dejaría fuera la cookie de sesión, que es SameSite=Strict.
 RUN npm run build
 
+# Cada fichero de texto, comprimido una vez aquí: nginx sirve el .gz ya hecho
+# (gzip_static, en comun.conf) y el VPS no gasta CPU en cada visita. Sin esto
+# el móvil se bajaba ~1,1 MB de JS en vez de ~300 KB.
+RUN find dist -type f \( -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.svg' \
+      -o -name '*.json' -o -name '*.xml' -o -name '*.txt' -o -name '*.webmanifest' \) \
+      -size +1k -exec gzip -k -9 {} +
+
 # El sitio de nginx con el dominio de la corporación, del mismo fichero que la
 # web: aquí hay Node y en la imagen de nginx no.
 COPY docker/nginx/sitio.conf docker/nginx/generar-sitio.mjs /app/nginx/

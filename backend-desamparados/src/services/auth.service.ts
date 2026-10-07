@@ -424,15 +424,19 @@ export class AuthService {
     // El hash de la contraseña va antes que el token: es lo lento, y así la
     // consulta que gasta el token queda en una sola sentencia.
     const hashedPassword = await encrypt(newPassword);
+    const vigente = {
+      resetPasswordToken: hashDelTestigoDeRecuperacion(token),
+      resetPasswordExpires: { gt: new Date() } // gt = greater than (mayor que)
+    };
+    // Solo para saber de quién desbloquear el acceso al final; quien gasta el
+    // token es el updateMany de abajo.
+    const cuenta = await db.user.findFirst({ where: vigente, select: { email: true } });
 
     // Buscar y después escribir dejaba que dos peticiones con el mismo enlace
     // lo usaran las dos (y ganara la última). Ahora el token se gasta en la
     // misma sentencia que lo comprueba: solo una encuentra el hash sin usar.
     const { count } = await db.user.updateMany({
-      where: {
-        resetPasswordToken: hashDelTestigoDeRecuperacion(token),
-        resetPasswordExpires: { gt: new Date() } // gt = greater than (mayor que)
-      },
+      where: vigente,
       data: {
         password: hashedPassword,
         resetPasswordToken: null,
@@ -445,6 +449,16 @@ export class AuthService {
 
     if (count !== 1) {
       throw new HttpError('El enlace de recuperación es inválido o ha caducado.');
+    }
+
+    // Quien recupera la contraseña suele venir de equivocarse varias veces, y
+    // el bloqueo seguía en pie: con la contraseña nueva recién puesta, el
+    // acceso respondía «espera 15 minutos». Abrir el enlace del correo ya
+    // prueba que la cuenta es suya, así que se le quita en todas las redes.
+    if (cuenta) {
+      const email = cuenta.email.trim().toLowerCase();
+      this.fallosLoginPorEmail.limpiar(email);
+      this.fallosLoginPorIp.limpiarPrefijo(`${email}|`);
     }
 
     return { message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
