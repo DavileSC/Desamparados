@@ -91,8 +91,9 @@ function FichaEnser({ enser: e, volver, horizontal, carril, onBorrar }: { enser:
       >
         {foto}
         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.75, p: horizontal ? 0 : 2 }}>
-          {/* A la derecha, el hueco del «⋯», que va encima: solo en esta línea, no en toda la columna. */}
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, pr: horizontal ? 4.5 : 3.5 }}>
+          {/* En el móvil, a la derecha, el hueco del «⋯», que va encima: solo en esta
+              línea, no en toda la columna. En el PC el «⋯» va sobre la foto y no hace falta. */}
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, pr: horizontal ? 4.5 : 0 }}>
             <Typography component="h2" sx={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>{e.nombre}</Typography>
             <Typography component="span" aria-label={`${total} piezas`} sx={{ fontSize: horizontal ? 20 : 24, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{total}</Typography>
           </Box>
