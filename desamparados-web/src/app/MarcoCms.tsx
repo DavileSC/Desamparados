@@ -491,7 +491,10 @@ function Contenido() {
               backgroundColor: 'background.paper',
               position: 'sticky',
               top: 0,
-              zIndex: 1,
+              // El de una barra de MUI: con 1, empataba con las etiquetas de
+              // los campos (también 1) y, al ir ellas después, se pintaban
+              // encima al bajar. Sigue por debajo de menús y diálogos.
+              zIndex: 'appBar',
             }}
           >
             <IconButton edge="start" aria-label="Abrir el menú" onClick={() => setMenuAbierto(true)}>
