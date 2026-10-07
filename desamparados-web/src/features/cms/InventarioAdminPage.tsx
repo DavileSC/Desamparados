@@ -11,7 +11,6 @@ import {
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
-import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import { DialogoDevolucion, DialogoPrestamo } from './DialogosRopero'
 import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, ETIQUETA_TIPO, esCantidadValida } from './ropero'
@@ -241,9 +240,12 @@ export default function InventarioAdminPage() {
 
   return <>
     <Helmet><title>{`${titulo} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion
-      titulo={titulo}
-      subtitulo={conEnseres && conRopero ? (
+    {/* Título solo y, debajo, en una fila: el interruptor a la izquierda y los
+        botones a la derecha, a la misma altura. Con el interruptor en el hueco
+        del subtítulo, los botones quedaban centrados entre los dos, descolgados. */}
+    <Typography variant="h2" component="h1" sx={{ mb: 2 }}>{titulo}</Typography>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
+      {conEnseres && conRopero && (
         // Un interruptor con lo que hay en cada lado. El número no entra en el
         // nombre de la pestaña: se anuncia «Ropero», no «Ropero 126».
         <Tabs
@@ -251,7 +253,7 @@ export default function InventarioAdminPage() {
           onChange={(_, value) => setTab(value)}
           aria-label="Qué ver"
           sx={{
-            mt: 1.5, minHeight: 0, display: 'inline-flex', p: 0.5, borderRadius: 999, backgroundColor: 'action.hover',
+            minHeight: 0, display: 'inline-flex', p: 0.5, borderRadius: 999, backgroundColor: 'action.hover',
             '& .MuiTabs-indicator': { display: 'none' },
             '& .MuiTab-root': { minHeight: 40, px: 2.25, borderRadius: 999, textTransform: 'none', fontSize: 15, fontWeight: 600, color: 'text.secondary' },
             '& .MuiTab-root.Mui-selected': { backgroundColor: 'text.primary', color: 'background.paper' },
@@ -260,13 +262,15 @@ export default function InventarioAdminPage() {
           <Tab label={<span>Enseres{metaEnseres && <Box component="span" aria-hidden="true" sx={{ opacity: 0.7, fontWeight: 500, ml: 0.75 }}>{metaEnseres.total}</Box>}</span>} />
           <Tab label={<span>Ropero{totalRopero !== null && <Box component="span" aria-hidden="true" sx={{ opacity: 0.7, fontWeight: 500, ml: 0.75 }}>{totalRopero}</Box>}</span>} />
         </Tabs>
-      ) : undefined}
-    >
-      {tab === 1 && enLavado > 0 && (
-        <Button variant="outlined" color="inherit" onClick={() => setLavandoTodo(true)} sx={{ textTransform: 'none', borderColor: 'divider' }}>Todo el lavado, limpio</Button>
       )}
-      <Button variant="contained" startIcon={<AddIcon />} onClick={abrirAlta}>{tab === 0 ? 'Nuevo enser' : 'Nueva prenda'}</Button>
-    </CabeceraSeccion>
+      <Box sx={{ flex: 1 }} />
+      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' }, '& > *': { flex: { xs: '1 1 auto', sm: 'none' } }, '& .MuiButton-root': { whiteSpace: 'nowrap' } }}>
+        {tab === 1 && enLavado > 0 && (
+          <Button variant="outlined" color="inherit" onClick={() => setLavandoTodo(true)} sx={{ textTransform: 'none', borderColor: 'divider' }}>Todo el lavado, limpio</Button>
+        )}
+        <Button variant="contained" startIcon={<AddIcon />} onClick={abrirAlta}>{tab === 0 ? 'Nuevo enser' : 'Nueva prenda'}</Button>
+      </Box>
+    </Box>
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
     {notice && <Alert severity="success" sx={{ mb: 2 }}>{notice}</Alert>}
     <DialogoPrestamo key={prestando?.id ?? 'cerrado'} prenda={prestando} onCerrar={() => setPrestando(null)} onPrestada={(aviso) => void prestada(aviso)} />

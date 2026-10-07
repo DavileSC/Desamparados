@@ -31,20 +31,22 @@ export default function TarjetaCingulos({ recuento, onGuardar }: Props) {
   return (
     <Paper component="section" aria-labelledby="cingulos-titulo" sx={{ px: { xs: 2, md: 2.5 }, py: 1.5, mb: 2.5, display: 'grid', gap: 1.5 }}>
       {/* Una franja y no cuatro casillas: es una cuenta, no lo principal del ropero. */}
-      <Box sx={{ display: 'flex', alignItems: 'center', columnGap: 3, rowGap: 0.5, flexWrap: 'wrap', minHeight: 44 }}>
+      {/* En el PC, todo en una línea; en el móvil, el título con «Cambiar» y
+          debajo las cuatro cifras en rejilla, que en línea se partían a trozos. */}
+      <Box sx={{ display: 'grid', alignItems: 'center', columnGap: 3, rowGap: 1, minHeight: 44, gridTemplateColumns: { xs: '1fr auto', md: 'auto repeat(4, max-content) 1fr auto' } }}>
         <Typography id="cingulos-titulo" component="h2" sx={{ fontSize: 17, fontWeight: 600 }}>Cíngulos</Typography>
         {recuento && (
-          <>
+          <Box sx={{ display: { xs: 'grid', md: 'contents' }, gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 1, gridColumn: { xs: '1 / -1', md: 'auto' }, gridRow: { xs: 2, md: 'auto' } }}>
             <Cifra valor={recuento.total} texto={deLaCorporacion({ corto: true })} />
             <Cifra valor={recuento.enElRopero} texto="en el ropero" />
             <Cifra valor={recuento.prestados} texto={recuento.prestados === 1 ? 'prestado' : 'prestados'} />
             <Cifra valor={recuento.debidos} texto={recuento.debidos === 1 ? 'se debe' : 'se deben'} />
-          </>
+          </Box>
         )}
-        <Box sx={{ flex: 1 }} />
-        {recuento && !editando && (
-          <Button size="small" onClick={() => { setTexto(String(recuento.total)); setError(null); setEditando(true) }} sx={{ textTransform: 'none', fontSize: 14 }}>Cambiar el total</Button>
-        )}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }} />
+        {recuento && !editando ? (
+          <Button size="small" onClick={() => { setTexto(String(recuento.total)); setError(null); setEditando(true) }} sx={{ textTransform: 'none', fontSize: 14, justifySelf: 'end', gridRow: { xs: 1, md: 'auto' }, gridColumn: { xs: 2, md: 'auto' } }}>Cambiar el total</Button>
+        ) : <span />}
       </Box>
 
       {editando && recuento && (
@@ -68,11 +70,11 @@ export default function TarjetaCingulos({ recuento, onGuardar }: Props) {
   )
 }
 
-/** Una cifra de la franja: el número, grande, y lo que cuenta. */
+/** Una cifra de la franja: el número, grande, y lo que cuenta (en el móvil, debajo). */
 function Cifra({ valor, texto }: { valor: number; texto: string }) {
   return (
-    <Typography component="span" sx={{ fontSize: 14.5, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-      <Box component="span" sx={{ fontSize: 20, fontWeight: 600, color: 'text.primary', fontVariantNumeric: 'tabular-nums', mr: 0.75 }}>{valor}</Box>
+    <Typography component="span" sx={{ fontSize: { xs: 12.5, md: 14.5 }, color: 'text.secondary', whiteSpace: 'nowrap', display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'baseline' }, lineHeight: 1.3 }}>
+      <Box component="span" sx={{ fontSize: 20, fontWeight: 600, color: 'text.primary', fontVariantNumeric: 'tabular-nums', mr: { md: 0.75 } }}>{valor}</Box>
       {texto}
     </Typography>
   )

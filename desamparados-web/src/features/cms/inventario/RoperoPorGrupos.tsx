@@ -181,7 +181,7 @@ function Grupo({ recuento: r, filtros, volver, recarga, acciones, abierto, ocult
                 <Box component="span" aria-hidden="true" sx={{ width: 9, height: 9, flexShrink: 0, borderRadius: '50%', backgroundColor: ESTADO_PRENDA[p.estado].punto }} />
                 <Typography component="span" sx={{ width: 92, flexShrink: 0, fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.numero}</Typography>
                 <Typography component="span" sx={{ width: 52, flexShrink: 0, fontSize: 14, color: p.talla ? 'text.primary' : 'text.disabled' }}>{p.talla || '—'}</Typography>
-                <Typography component="span" sx={{ flex: 1, minWidth: 0, fontSize: 13.5, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <Typography component="span" title={prestadaA(p) ?? undefined} sx={{ flex: 1, minWidth: 0, fontSize: 13.5, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {prestadaA(p) ?? ETIQUETA_ESTADO[p.estado]}
                 </Typography>
                 <BotonPaso prenda={p} acciones={acciones} />

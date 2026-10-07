@@ -33,7 +33,6 @@ const totalDe = (e: Enser) => e.cantidadOptimo + e.cantidadBueno + e.cantidadRep
 export default function TablaEnseres({ enseres, volver, onBorrar }: Props) {
   const enFichas = useEnFichas()
   const { carril } = useColoresContabilidad()
-  const piezas = enseres.reduce((s, e) => s + totalDe(e), 0)
 
   if (enseres.length === 0) {
     return <Paper sx={{ py: 5, px: 2, textAlign: 'center', color: 'text.secondary' }}>No hay enseres con esta búsqueda o estos filtros.</Paper>
@@ -57,8 +56,6 @@ export default function TablaEnseres({ enseres, volver, onBorrar }: Props) {
             {t.texto.charAt(0).toUpperCase() + t.texto.slice(1)}
           </Box>
         ))}
-        <Box component="span" sx={{ flex: 1 }} />
-        <span>{enseres.length === 1 ? '1 enser' : `${enseres.length} enseres`} · {piezas === 1 ? '1 pieza' : `${piezas} piezas`} en esta página</span>
       </Box>
     </Box>
   )
@@ -74,7 +71,7 @@ function FichaEnser({ enser: e, volver, horizontal, carril, onBorrar }: { enser:
       sx={{
         flexShrink: 0, overflow: 'hidden', backgroundColor: 'action.hover', color: 'text.disabled',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        ...(horizontal ? { width: 88, alignSelf: 'stretch', minHeight: 88, borderRadius: 1.5 } : { height: 140 }),
+        ...(horizontal ? { width: 76, alignSelf: 'stretch', minHeight: 76, borderRadius: 1.5 } : { height: 140 }),
       }}
     >
       {e.imagenUrl
@@ -93,8 +90,9 @@ function FichaEnser({ enser: e, volver, horizontal, carril, onBorrar }: { enser:
         sx={{ display: 'flex', flexDirection: horizontal ? 'row' : 'column', alignItems: 'stretch', gap: horizontal ? 1.5 : 0, p: horizontal ? 1.5 : 0, height: '100%' }}
       >
         {foto}
-        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.75, p: horizontal ? 0 : 2, pr: horizontal ? 5 : 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.75, p: horizontal ? 0 : 2 }}>
+          {/* A la derecha, el hueco del «⋯», que va encima: solo en esta línea, no en toda la columna. */}
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, pr: horizontal ? 4.5 : 3.5 }}>
             <Typography component="h2" sx={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>{e.nombre}</Typography>
             <Typography component="span" aria-label={`${total} piezas`} sx={{ fontSize: horizontal ? 20 : 24, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{total}</Typography>
           </Box>
