@@ -1,13 +1,12 @@
-import { Box, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from '@mui/material'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import { useState } from 'react'
+import { Box, CardActionArea, IconButton, Menu, MenuItem, Paper, Typography } from '@mui/material'
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import { Link } from 'react-router-dom'
 import type { Enser } from '../../../lib/api/inventario'
 import { useColoresContabilidad } from '../contabilidad/tema'
-import { useTonos } from '../listados/tonos'
-import { cabeceraTabla, soloLector } from './tabla'
-import { Dato, DatosDeFicha, Ficha, ListaDeFichas } from '../listados/Fichas'
 import { useEnFichas } from '../listados/useEnFichas'
+import { CONSERVACION } from './colores'
 
 interface Props {
   enseres: Enser[]
@@ -16,110 +15,119 @@ interface Props {
   onBorrar: (enser: Enser) => void
 }
 
+const TRAMOS = [
+  { clave: 'cantidadOptimo', texto: 'óptimo', color: CONSERVACION.optimo },
+  { clave: 'cantidadBueno', texto: 'bueno', color: CONSERVACION.bueno },
+  { clave: 'cantidadReparar', texto: 'a reparar', color: CONSERVACION.reparar },
+] as const
+
+const totalDe = (e: Enser) => e.cantidadOptimo + e.cantidadBueno + e.cantidadReparar
+
 /**
- * Los enseres como tabla: se recorren, se comparan y se ordenan, así que van
- * en columnas, con el mismo lenguaje que el libro de caja. La conservación es
- * una barra partida en óptimo, bueno y a reparar, con las cifras debajo.
+ * Los enseres como fichas: cada pieza con su foto (la principal de su ficha
+ * de patrimonio), el total y la conservación en una barra partida en óptimo,
+ * bueno y a reparar. Toda la ficha lleva a editar; eliminar va en el menú de
+ * «⋯», lejos del dedo: una pieza con tasación no se borra de un toque.
+ * En el móvil, la foto a la izquierda y los datos a su lado.
  */
 export default function TablaEnseres({ enseres, volver, onBorrar }: Props) {
-  const { fondoCabecera, carril } = useColoresContabilidad()
-  const { punto } = useTonos()
-  const tramos = [
-    { clave: 'cantidadOptimo', texto: 'óptimo', color: punto.ok },
-    { clave: 'cantidadBueno', texto: 'bueno', color: punto.info },
-    { clave: 'cantidadReparar', texto: 'a reparar', color: punto.aviso },
-  ] as const
   const enFichas = useEnFichas()
+  const { carril } = useColoresContabilidad()
+  const piezas = enseres.reduce((s, e) => s + totalDe(e), 0)
 
-  const conservacion = (e: Enser) => {
-    const total = e.cantidadOptimo + e.cantidadBueno + e.cantidadReparar
-    const partes = tramos.filter((t) => e[t.clave] > 0)
-    return <>
-      <Box aria-hidden="true" sx={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: carril }}>
-        {total > 0 && partes.map((t) => <Box key={t.clave} sx={{ width: `${(e[t.clave] / total) * 100}%`, backgroundColor: t.color }} />)}
-      </Box>
-      <Typography component="span" sx={{ display: 'block', mt: 0.5, fontSize: 12, color: 'text.secondary', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-        {partes.length > 0 ? partes.map((t) => `${e[t.clave]} ${t.texto}`).join(' · ') : 'Sin unidades'}
-      </Typography>
-    </>
-  }
-  const acciones = (e: Enser) => <>
-    <Tooltip title="Editar">
-      <IconButton size="small" aria-label={`Editar ${e.nombre}`} component={Link} to={`/cms/inventario/${e.id}/editar`} state={{ volver }}><EditOutlinedIcon fontSize="small" /></IconButton>
-    </Tooltip>
-    <Tooltip title="Eliminar">
-      <IconButton size="small" aria-label={`Eliminar ${e.nombre}`} onClick={() => onBorrar(e)}><DeleteOutlineIcon fontSize="small" /></IconButton>
-    </Tooltip>
-  </>
-
-  if (enFichas) {
-    return (
-      <ListaDeFichas etiqueta="Enseres" vacia={enseres.length === 0 ? 'No hay enseres con esta búsqueda o estos filtros.' : undefined}>
-        {enseres.map((e) => (
-          <Ficha
-            key={e.id}
-            acciones={acciones(e)}
-            titulo={<>
-              <Typography component="span" sx={{ display: 'block', fontSize: 15, fontWeight: 600 }}>{e.nombre}</Typography>
-              {e.referencia && <Typography component="span" sx={{ display: 'block', fontSize: 12.5, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{e.referencia}</Typography>}
-            </>}
-          >
-            <DatosDeFicha>
-              <Dato etiqueta="Categoría">{e.categoria || '—'}</Dato>
-              <Dato etiqueta="Total">{e.cantidadOptimo + e.cantidadBueno + e.cantidadReparar}</Dato>
-              <Dato etiqueta="Ubicación" ancho>{e.ubicacion || 'Sin ubicación'}</Dato>
-              <Dato etiqueta="Conservación" ancho>{conservacion(e)}</Dato>
-            </DatosDeFicha>
-          </Ficha>
-        ))}
-      </ListaDeFichas>
-    )
+  if (enseres.length === 0) {
+    return <Paper sx={{ py: 5, px: 2, textAlign: 'center', color: 'text.secondary' }}>No hay enseres con esta búsqueda o estos filtros.</Paper>
   }
 
   return (
-    <TableContainer component={Paper}>
-      <Table size="small" aria-label="Enseres" sx={{ minWidth: 820 }}>
-        <TableHead>
-          <TableRow sx={cabeceraTabla(fondoCabecera)}>
-            <TableCell>Enser</TableCell>
-            <TableCell>Categoría</TableCell>
-            <TableCell>Ubicación</TableCell>
-            <TableCell sx={{ width: 230 }}>Conservación</TableCell>
-            <TableCell align="right" sx={{ width: 72 }}>Total</TableCell>
-            <TableCell padding="none" sx={{ width: 88 }}><Box component="span" sx={soloLector}>Acciones</Box></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {enseres.map((e) => {
-            const total = e.cantidadOptimo + e.cantidadBueno + e.cantidadReparar
-            return (
-              <TableRow key={e.id} hover>
-                <TableCell>
-                  <Typography component="span" sx={{ display: 'block', fontSize: 14.5, fontWeight: 600 }}>{e.nombre}</Typography>
-                  {e.referencia && <Typography component="span" sx={{ display: 'block', fontSize: 12.5, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{e.referencia}</Typography>}
-                </TableCell>
-                <TableCell sx={{ color: e.categoria ? 'text.primary' : 'text.disabled' }}>{e.categoria || '—'}</TableCell>
-                <TableCell sx={{ color: e.ubicacion ? 'text.primary' : 'text.disabled' }}>{e.ubicacion || 'Sin ubicación'}</TableCell>
-                <TableCell>{conservacion(e)}</TableCell>
-                <TableCell align="right" sx={{ fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{total}</TableCell>
-                <TableCell padding="none" align="right" sx={{ whiteSpace: 'nowrap', pr: 1 }}>{acciones(e)}</TableCell>
-              </TableRow>
-            )
-          })}
-          {enseres.length === 0 && (
-            <TableRow><TableCell colSpan={6} sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>No hay enseres con esta búsqueda o estos filtros.</TableCell></TableRow>
-          )}
-        </TableBody>
-      </Table>
-      {/* La leyenda de la barra, una vez para toda la tabla. */}
-      <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', px: 2, py: 1.25, borderTop: 1, borderColor: 'divider', fontSize: 12.5, color: 'text.secondary' }}>
-        {tramos.map((t) => (
+    <Box component="section" aria-label="Enseres">
+      <Box
+        component="ul"
+        sx={{
+          listStyle: 'none', m: 0, p: 0, display: 'grid', gap: 2,
+          gridTemplateColumns: enFichas ? '1fr' : 'repeat(auto-fill, minmax(230px, 1fr))',
+        }}
+      >
+        {enseres.map((e) => <FichaEnser key={e.id} enser={e} volver={volver} horizontal={enFichas} carril={carril} onBorrar={onBorrar} />)}
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap', mt: 2, fontSize: 13, color: 'text.secondary' }}>
+        {TRAMOS.map((t) => (
           <Box key={t.clave} component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-            <Box component="span" aria-hidden="true" sx={{ width: 9, height: 9, borderRadius: '2px', backgroundColor: t.color }} />
+            <Box component="span" aria-hidden="true" sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: t.color }} />
             {t.texto.charAt(0).toUpperCase() + t.texto.slice(1)}
           </Box>
         ))}
+        <Box component="span" sx={{ flex: 1 }} />
+        <span>{enseres.length === 1 ? '1 enser' : `${enseres.length} enseres`} · {piezas === 1 ? '1 pieza' : `${piezas} piezas`} en esta página</span>
       </Box>
-    </TableContainer>
+    </Box>
+  )
+}
+
+function FichaEnser({ enser: e, volver, horizontal, carril, onBorrar }: { enser: Enser; volver: string; horizontal: boolean; carril: string; onBorrar: (e: Enser) => void }) {
+  const [menu, setMenu] = useState<HTMLElement | null>(null)
+  const total = totalDe(e)
+  const partes = TRAMOS.filter((t) => e[t.clave] > 0)
+
+  const foto = (
+    <Box
+      sx={{
+        flexShrink: 0, overflow: 'hidden', backgroundColor: 'action.hover', color: 'text.disabled',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        ...(horizontal ? { width: 88, alignSelf: 'stretch', minHeight: 88, borderRadius: 1.5 } : { height: 140 }),
+      }}
+    >
+      {e.imagenUrl
+        ? <Box component="img" src={e.imagenUrl} alt="" loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        : <ImageOutlinedIcon aria-hidden="true" sx={{ fontSize: 30 }} />}
+    </Box>
+  )
+
+  return (
+    <Paper component="li" sx={{ position: 'relative', overflow: 'hidden', display: 'flex' }}>
+      <CardActionArea
+        component={Link}
+        to={`/cms/inventario/${e.id}/editar`}
+        state={{ volver }}
+        aria-label={`Editar ${e.nombre}`}
+        sx={{ display: 'flex', flexDirection: horizontal ? 'row' : 'column', alignItems: 'stretch', gap: horizontal ? 1.5 : 0, p: horizontal ? 1.5 : 0, height: '100%' }}
+      >
+        {foto}
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.75, p: horizontal ? 0 : 2, pr: horizontal ? 5 : 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+            <Typography component="h2" sx={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>{e.nombre}</Typography>
+            <Typography component="span" aria-label={`${total} piezas`} sx={{ fontSize: horizontal ? 20 : 24, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{total}</Typography>
+          </Box>
+          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+            {[e.referencia, e.categoria].filter(Boolean).join(' · ') || 'Sin referencia ni categoría'}
+          </Typography>
+          <Typography sx={{ fontSize: 13.5, color: e.ubicacion ? 'text.primary' : 'text.disabled' }}>{e.ubicacion || 'Sin ubicación'}</Typography>
+          <Box sx={{ mt: 'auto', pt: 0.75 }}>
+            <Box aria-hidden="true" sx={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', backgroundColor: carril }}>
+              {total > 0 && partes.map((t) => <Box key={t.clave} sx={{ width: `${(e[t.clave] / total) * 100}%`, backgroundColor: t.color }} />)}
+            </Box>
+            <Typography sx={{ mt: 0.5, fontSize: 12.5, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+              {partes.length > 0 ? partes.map((t) => `${e[t.clave]} ${t.texto}`).join(' · ') : 'Sin unidades'}
+            </Typography>
+          </Box>
+        </Box>
+      </CardActionArea>
+      {/* Fuera del enlace: un botón dentro de otro control no se puede pulsar bien ni leer. */}
+      <IconButton
+        aria-label={`Más acciones de ${e.nombre}`}
+        onClick={(ev) => setMenu(ev.currentTarget)}
+        size="small"
+        sx={{
+          position: 'absolute', top: 6, right: 6,
+          ...(horizontal ? {} : { backgroundColor: 'background.paper', '&:hover': { backgroundColor: 'background.paper' } }),
+        }}
+      >
+        <MoreHorizIcon fontSize="small" />
+      </IconButton>
+      <Menu anchorEl={menu} open={menu !== null} onClose={() => setMenu(null)}>
+        <MenuItem component={Link} to={`/cms/inventario/${e.id}/editar`} state={{ volver }}>Editar</MenuItem>
+        <MenuItem onClick={() => { setMenu(null); onBorrar(e) }} sx={{ color: 'error.main' }}>Eliminar</MenuItem>
+      </Menu>
+    </Paper>
   )
 }

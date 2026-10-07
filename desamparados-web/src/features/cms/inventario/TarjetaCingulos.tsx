@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material'
 import type { RecuentoDeCingulos } from '../../../lib/api/inventario'
-import { deLaCorporacion, mayuscula } from '../../../domain/articulos'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 interface Props {
   recuento: RecuentoDeCingulos | null
@@ -29,11 +29,21 @@ export default function TarjetaCingulos({ recuento, onGuardar }: Props) {
 
   const faltan = recuento ? recuento.debidos - recuento.enElRopero : 0
   return (
-    <Paper component="section" aria-labelledby="cingulos-titulo" sx={{ p: { xs: 2, md: 2.5 }, mb: 2.5, display: 'grid', gap: 1.5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+    <Paper component="section" aria-labelledby="cingulos-titulo" sx={{ px: { xs: 2, md: 2.5 }, py: 1.5, mb: 2.5, display: 'grid', gap: 1.5 }}>
+      {/* Una franja y no cuatro casillas: es una cuenta, no lo principal del ropero. */}
+      <Box sx={{ display: 'flex', alignItems: 'center', columnGap: 3, rowGap: 0.5, flexWrap: 'wrap', minHeight: 44 }}>
         <Typography id="cingulos-titulo" component="h2" sx={{ fontSize: 17, fontWeight: 600 }}>Cíngulos</Typography>
+        {recuento && (
+          <>
+            <Cifra valor={recuento.total} texto={deLaCorporacion({ corto: true })} />
+            <Cifra valor={recuento.enElRopero} texto="en el ropero" />
+            <Cifra valor={recuento.prestados} texto={recuento.prestados === 1 ? 'prestado' : 'prestados'} />
+            <Cifra valor={recuento.debidos} texto={recuento.debidos === 1 ? 'se debe' : 'se deben'} />
+          </>
+        )}
+        <Box sx={{ flex: 1 }} />
         {recuento && !editando && (
-          <Button size="small" onClick={() => { setTexto(String(recuento.total)); setError(null); setEditando(true) }}>Cambiar el total</Button>
+          <Button size="small" onClick={() => { setTexto(String(recuento.total)); setError(null); setEditando(true) }} sx={{ textTransform: 'none', fontSize: 14 }}>Cambiar el total</Button>
         )}
       </Box>
 
@@ -49,15 +59,6 @@ export default function TarjetaCingulos({ recuento, onGuardar }: Props) {
         </Stack>
       )}
       {error && <Alert severity="error">{error}</Alert>}
-
-      {recuento && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' }, gap: 1.25 }}>
-          <Cifra titulo={mayuscula(deLaCorporacion({ corto: true }))} valor={recuento.total} />
-          <Cifra titulo="En el ropero" valor={recuento.enElRopero} />
-          <Cifra titulo="Prestados" valor={recuento.prestados} detalle="sin devolver" />
-          <Cifra titulo="Se deben" valor={recuento.debidos} detalle="no había al recoger" />
-        </Box>
-      )}
       {recuento && faltan > 0 && (
         <Alert severity="warning">
           Se deben {recuento.debidos} y en el ropero {recuento.enElRopero === 1 ? 'queda 1' : `quedan ${recuento.enElRopero}`}: hay que pedir o hacer {faltan} más.
@@ -67,12 +68,12 @@ export default function TarjetaCingulos({ recuento, onGuardar }: Props) {
   )
 }
 
-function Cifra({ titulo, valor, detalle }: { titulo: string; valor: number; detalle?: string }) {
+/** Una cifra de la franja: el número, grande, y lo que cuenta. */
+function Cifra({ valor, texto }: { valor: number; texto: string }) {
   return (
-    <Box sx={{ p: 1.5, borderRadius: 1, backgroundColor: 'action.hover' }}>
-      <Typography sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary' }}>{titulo}</Typography>
-      <Typography sx={{ mt: 0.25, fontSize: 22, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{valor}</Typography>
-      {detalle && <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{detalle}</Typography>}
-    </Box>
+    <Typography component="span" sx={{ fontSize: 14.5, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+      <Box component="span" sx={{ fontSize: 20, fontWeight: 600, color: 'text.primary', fontVariantNumeric: 'tabular-nums', mr: 0.75 }}>{valor}</Box>
+      {texto}
+    </Typography>
   )
 }

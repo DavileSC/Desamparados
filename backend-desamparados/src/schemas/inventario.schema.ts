@@ -149,16 +149,14 @@ export const queryPrendaSchema = type({
 //  3. PRÉSTAMOS DEL ROPERO
 // =================================================================
 
-// Se presta por número de hermano, que es el que maneja la albacería; antes
-// había que teclear el id interno de la base de datos, que nadie conoce.
-const numeroHermanoSchema = type("number.integer > 0");
-
-export const asignarPrendaSchema = type({ body: { numeroHermano: numeroHermanoSchema } });
+// Se presta a la ficha que el CMS encontró por nombre y apellidos: su id.
+// Por número de hermano no: la albacería no se lo sabe y un dígito de más se
+// la prestaba a otro sin que nada lo avisara.
+export const asignarPrendaSchema = type({ body: { hermanoId: type("number.integer > 0") } });
 // Vuelve rota (al taller) o no: la túnica va siempre al lavado.
 export const devolverPrendaSchema = type({ body: { "rota?": "boolean" } });
 // Las prendas del lavado que ya están limpias; sin ids, todas.
 export const prendasLavadasSchema = type({ body: { "ids?": type("number.integer > 0").array().atMostLength(500) } });
 export const totalCingulosSchema = type({ body: { total: type("number.integer >= 0").narrow((n) => n <= 5000).describe("un número de cíngulos entre 0 y 5000") } });
-export const numeroHermanoParamSchema = type({
-    params: { numeroHermano: type("string").matching(/^[1-9]\d{0,8}$/).describe("un número de hermano") }
-});
+// Buscar hermanos para prestarles: por nombre y apellidos.
+export const buscarHermanosRoperoSchema = type({ query: { q: type("string <= 100") } });

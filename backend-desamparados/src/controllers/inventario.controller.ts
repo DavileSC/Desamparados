@@ -93,18 +93,11 @@ export class InventarioController {
 
   // --- LÓGICA DE ASIGNACIONES (PRÉSTAMOS Y DEVOLUCIONES) ---
 
-  static buscarHermano = manejar('Error buscando al hermano', async (req, res) => {
-    const hermano = await InventarioService.buscarHermanoPorNumero(Number(req.params.numeroHermano));
-    res.status(200).json(hermano);
-  });
-
   static asignarPrenda = manejar('Error al asignar la prenda al hermano', async (req, res) => {
     const prendaId = Number(req.params.id);
-    // El body trae { numeroHermano: 123 } validado por ArkType (inventario.schema.ts)
-    const { numeroHermano } = req.body;
-
-    const result = await InventarioService.asignarPrenda(prendaId, numeroHermano);
-    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_ASIGNAR, AuditoriaService.metaFromReq(req), 'prenda', prendaId, { numeroHermano });
+    const { hermanoId } = req.body as { hermanoId: number };
+    const result = await InventarioService.asignarPrenda(prendaId, hermanoId);
+    AuditoriaService.log(ACCIONES_AUDITORIA.PRENDA_ASIGNAR, AuditoriaService.metaFromReq(req), 'prenda', prendaId, { hermanoId });
     res.status(200).json({ message: 'Prenda asignada correctamente', data: result });
   });
 

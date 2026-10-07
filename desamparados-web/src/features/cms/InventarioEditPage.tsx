@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, CircularProgress, Divider, MenuItem, Select, Stack, TextField } from '@mui/material'
+import { Alert, Button, CircularProgress, Divider, MenuItem, Stack, TextField } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PantallaEdicion from './PantallaEdicion'
@@ -8,13 +8,13 @@ import { traerEnser, traerFichaEnser, traerPrenda, actualizarEnser, actualizarPr
 import { guardarEnDisco } from '../../lib/api/datos'
 import FichaPatrimonio from './inventario/FichaPatrimonio'
 import { fichaDelEnser, fichaParaGuardar, leerTasacion, type FormFicha } from './inventario/ficha'
-import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, esCantidadValida } from './ropero'
+import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, ETIQUETA_TIPO, esCantidadValida } from './ropero'
 import { site } from '../../config/site'
 
 type FormEnser = { nombre: string; referencia: string; categoria: string; ubicacion: string; cantidadOptimo: string; cantidadBueno: string; cantidadReparar: string; ficha: FormFicha }
 type FormPrenda = { numero: string; tipo: string; talla: string; estado: string; observaciones: string }
 
-const tipos = ['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO']
+const tipos = Object.keys(ETIQUETA_TIPO) as Prenda['tipo'][]
 
 /**
  * Enseres y ropero comparten pantalla porque comparten listado: el inventario
@@ -119,9 +119,9 @@ export default function InventarioEditPage() {
         {esPrenda ? (
           <Stack spacing={2}>
             <TextField label="Número" value={prenda.numero} onChange={(e) => campo('numero', e.target.value)} fullWidth />
-            <Select value={prenda.tipo} onChange={(e) => campo('tipo', e.target.value)} aria-label="Tipo de prenda">
-              {tipos.map((tipo) => <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>)}
-            </Select>
+            <TextField select label="Tipo de prenda" value={prenda.tipo} onChange={(e) => campo('tipo', e.target.value)} fullWidth>
+              {tipos.map((tipo) => <MenuItem key={tipo} value={tipo}>{ETIQUETA_TIPO[tipo]}</MenuItem>)}
+            </TextField>
             <TextField label="Talla" value={prenda.talla} onChange={(e) => campo('talla', e.target.value)} fullWidth />
             {/* PRESTADA la ponen «Prestar» y «Devolver», que guardan también quién
                 la tiene: aquí ni se elige ni se quita. */}

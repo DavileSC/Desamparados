@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import {
   cambiarTotalDeCingulos, crearEnser, crearPrenda, devolverPrenda, eliminarEnser, eliminarPrenda, listarEnseres, listarPrendas, marcarLavadas,
-  opcionesDeEnseres, recuentoDeCingulos, type Enser, type FiltrosPrendas, type Prenda, type RecuentoDeCingulos,
+  opcionesDeEnseres, recuentoDeCingulos, recuentoDelRopero, type Enser, type FiltrosPrendas, type Prenda, type RecuentoDeCingulos, type RecuentoDeTipo,
 } from '../../lib/api/inventario'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
@@ -18,7 +18,9 @@ import { AVISO_CANTIDADES, ESTADOS_ELEGIBLES, ETIQUETA_ESTADO, ETIQUETA_TIPO, es
 import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import TablaEnseres from './inventario/TablaEnseres'
-import TablaPrendas from './inventario/TablaPrendas'
+import PrendasEnFichas from './inventario/PrendasEnFichas'
+import RoperoPorGrupos from './inventario/RoperoPorGrupos'
+import { useEnFichas } from './listados/useEnFichas'
 import TarjetaCingulos from './inventario/TarjetaCingulos'
 import { site } from '../../config/site'
 import { deLaCorporacion } from '../../domain/articulos'
@@ -97,6 +99,13 @@ export default function InventarioAdminPage() {
   const [devolviendo, setDevolviendo] = useState<Prenda | null>(null)
   const [lavandoTodo, setLavandoTodo] = useState(false)
   const [cingulos, setCingulos] = useState<RecuentoDeCingulos | null>(null)
+  // Cuántas hay de cada tipo en cada estado: las cabeceras de los grupos, el
+  // número de la pestaña y si hay algo en el lavado.
+  const [recuento, setRecuento] = useState<RecuentoDeTipo[] | null>(null)
+  // Los grupos del PC piden sus prendas ellos mismos: esto les avisa de que algo cambió.
+  const [recarga, setRecarga] = useState(0)
+  // En el PC, el ropero por grupos; en el móvil, la lista en fichas, paginada como siempre.
+  const enFichas = useEnFichas()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [porBorrar, setPorBorrar] = useState<Enser | Prenda | null>(null)
@@ -131,15 +140,22 @@ export default function InventarioAdminPage() {
       necesitaReparacion: filtrosEnseres.reparar ? 'true' : '',
       orden: filtrosEnseres.orden,
     }) : null,
-    conRopero ? listarPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }, filtrosPrendas as FiltrosPrendas) : null,
-    // Sin el recuento de cíngulos, el ropero se sigue viendo.
+    conRopero && enFichas ? listarPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }, filtrosPrendas as FiltrosPrendas) : null,
+    // Sin el recuento de cíngulos o el del ropero, las prendas se siguen viendo.
     conRopero ? recuentoDeCingulos().catch(() => null) : null,
-  ]).then(([a, b, c]) => {
+    conRopero ? recuentoDelRopero().catch(() => null) : null,
+  ]).then(([a, b, c, d]) => {
     if (!vigente()) return
     if (a) { setListaEnseres(a.data); setMetaEnseres(a.meta) }
     if (b) { setListaPrendas(b.data); setMetaPrendas(b.meta) }
-    if (conRopero) setCingulos(c)
-  }), [conEnseres, conRopero, enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina, filtrosEnseres, filtrosPrendas])
+    if (conRopero) { setCingulos(c); setRecuento(Array.isArray(d) ? d : []) }
+  }), [conEnseres, conRopero, enFichas, enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina, filtrosEnseres, filtrosPrendas])
+
+  /** Tras cambiar algo: el listado, los recuentos y los grupos del PC. */
+  const recargar = () => {
+    setRecarga((n) => n + 1)
+    return cargar()
+  }
 
   // Las categorías y ubicaciones en uso, para los desplegables. Si fallan, los
   // filtros se quedan sin opciones pero el listado se sigue viendo.
@@ -174,7 +190,7 @@ export default function InventarioAdminPage() {
     finally { setGuardando(false) }
     setCreando(null)
     setNotice(aviso)
-    await cargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
+    await recargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
   }
 
   // Un enser nuevo puede traer una categoría o una ubicación que aún no estaba en los filtros.
@@ -188,13 +204,13 @@ export default function InventarioAdminPage() {
   }
   const savePrenda = () => guardar(() => crearPrenda(prendaForm), 'Prenda creada correctamente.', 'No se ha podido guardar la prenda.')
   const nombreDe = (item: Enser | Prenda) => ('nombre' in item ? item.nombre : `Prenda ${item.numero}`)
-  const borrar = async () => { if (!porBorrar) return; try { if (tab === 0) await eliminarEnser(porBorrar.id); else await eliminarPrenda(porBorrar.id); await cargar(); setNotice('Elemento eliminado correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido eliminar el elemento.')) } finally { setPorBorrar(null) } }
+  const borrar = async () => { if (!porBorrar) return; try { if (tab === 0) await eliminarEnser(porBorrar.id); else await eliminarPrenda(porBorrar.id); await recargar(); setNotice('Elemento eliminado correctamente.') } catch (e: unknown) { setError(mensaje(e, 'No se ha podido eliminar el elemento.')) } finally { setPorBorrar(null) } }
   const cantidadesValidas = CANTIDADES_ENSER.every(([campo]) => esCantidadValida(enserForm[campo]))
   const prestada = async (aviso: string) => {
     setPrestando(null)
     setError(null)
     setNotice(aviso)
-    await cargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
+    await recargar().catch((e: unknown) => setError(mensaje(e, 'No se ha podido cargar el inventario.')))
   }
   const devolver = async (rota: boolean) => {
     const prenda = devolviendo
@@ -202,7 +218,7 @@ export default function InventarioAdminPage() {
     if (!prenda) return
     try {
       const { data } = await devolverPrenda(prenda.id, rota)
-      await cargar()
+      await recargar()
       setNotice(`Prenda ${prenda.numero} devuelta: ${data.estado === 'TALLER' ? 'al taller, para arreglarla' : data.estado === 'LAVADO' ? 'al lavado' : 'queda disponible'}.`)
     } catch (e: unknown) { setError(mensaje(e, 'No se ha podido registrar la devolución.')) }
   }
@@ -210,7 +226,7 @@ export default function InventarioAdminPage() {
     setLavandoTodo(false)
     try {
       const r = await marcarLavadas(prenda && [prenda.id])
-      await cargar()
+      await recargar()
       setNotice(prenda ? `Prenda ${prenda.numero} lavada: queda disponible.` : r.lavadas === 0 ? 'No había nada en el lavado.' : `${r.lavadas} ${r.lavadas === 1 ? 'prenda lavada queda disponible' : 'prendas lavadas quedan disponibles'}.`)
     } catch (e: unknown) { setError(mensaje(e, 'No se han podido marcar como lavadas.')) }
   }
@@ -219,9 +235,36 @@ export default function InventarioAdminPage() {
     setNotice(`Cíngulos ${deLaCorporacion({ corto: true })}: ${total}.`)
   }
 
+  const totalRopero = recuento ? recuento.reduce((suma, r) => suma + r.total, 0) : null
+  const enLavado = recuento ? recuento.reduce((suma, r) => suma + (r.estados.LAVADO ?? 0), 0) : 0
+  const accionesPrenda = { onPrestar: setPrestando, onDevolver: setDevolviendo, onLavada: (p: Prenda) => void lavadas(p), onBorrar: setPorBorrar }
+
   return <>
     <Helmet><title>{`${titulo} | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-    <CabeceraSeccion titulo={titulo}>
+    <CabeceraSeccion
+      titulo={titulo}
+      subtitulo={conEnseres && conRopero ? (
+        // Un interruptor con lo que hay en cada lado. El número no entra en el
+        // nombre de la pestaña: se anuncia «Ropero», no «Ropero 126».
+        <Tabs
+          value={tab}
+          onChange={(_, value) => setTab(value)}
+          aria-label="Qué ver"
+          sx={{
+            mt: 1.5, minHeight: 0, display: 'inline-flex', p: 0.5, borderRadius: 999, backgroundColor: 'action.hover',
+            '& .MuiTabs-indicator': { display: 'none' },
+            '& .MuiTab-root': { minHeight: 40, px: 2.25, borderRadius: 999, textTransform: 'none', fontSize: 15, fontWeight: 600, color: 'text.secondary' },
+            '& .MuiTab-root.Mui-selected': { backgroundColor: 'text.primary', color: 'background.paper' },
+          }}
+        >
+          <Tab label={<span>Enseres{metaEnseres && <Box component="span" aria-hidden="true" sx={{ opacity: 0.7, fontWeight: 500, ml: 0.75 }}>{metaEnseres.total}</Box>}</span>} />
+          <Tab label={<span>Ropero{totalRopero !== null && <Box component="span" aria-hidden="true" sx={{ opacity: 0.7, fontWeight: 500, ml: 0.75 }}>{totalRopero}</Box>}</span>} />
+        </Tabs>
+      ) : undefined}
+    >
+      {tab === 1 && enLavado > 0 && (
+        <Button variant="outlined" color="inherit" onClick={() => setLavandoTodo(true)} sx={{ textTransform: 'none', borderColor: 'divider' }}>Todo el lavado, limpio</Button>
+      )}
       <Button variant="contained" startIcon={<AddIcon />} onClick={abrirAlta}>{tab === 0 ? 'Nuevo enser' : 'Nueva prenda'}</Button>
     </CabeceraSeccion>
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -261,7 +304,7 @@ export default function InventarioAdminPage() {
     >
       <TextField label="Número" value={prendaForm.numero} onChange={(e) => setPrendaForm({ ...prendaForm, numero: e.target.value })} fullWidth />
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField select label="Tipo de prenda" value={prendaForm.tipo} onChange={(e) => setPrendaForm({ ...prendaForm, tipo: e.target.value })} fullWidth>{['TUNICA', 'CAPIROTE', 'FARAONA', 'CAPA', 'OTRO'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField>
+        <TextField select label="Tipo de prenda" value={prendaForm.tipo} onChange={(e) => setPrendaForm({ ...prendaForm, tipo: e.target.value })} fullWidth>{TIPOS_PRENDA.map((t) => <MenuItem key={t.valor} value={t.valor}>{t.etiqueta}</MenuItem>)}</TextField>
         <TextField label="Talla" value={prendaForm.talla} onChange={(e) => setPrendaForm({ ...prendaForm, talla: e.target.value })} fullWidth />
       </Stack>
       {/* Sin «Prestada»: una prenda se presta con «Prestar», que anota a quién. */}
@@ -269,7 +312,6 @@ export default function InventarioAdminPage() {
       <TextField label="Observaciones" value={prendaForm.observaciones} onChange={(e) => setPrendaForm({ ...prendaForm, observaciones: e.target.value })} fullWidth multiline />
     </VentanaFormulario>
 
-    {conEnseres && conRopero && <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 3 }}><Tab label="Enseres" /><Tab label="Ropero" /></Tabs>}
     {tab === 0 ? (
       <BarraListado
         valores={filtrosEnseres}
@@ -284,9 +326,6 @@ export default function InventarioAdminPage() {
       />
     ) : (<>
       <TarjetaCingulos recuento={cingulos} onGuardar={guardarCingulos} />
-      <Stack direction="row" sx={{ justifyContent: 'flex-end', mb: 1 }}>
-        <Button size="small" onClick={() => setLavandoTodo(true)}>Todo el lavado, limpio</Button>
-      </Stack>
       <BarraListado
         valores={filtrosPrendas}
         onCambiar={cambiarPrendas}
@@ -301,9 +340,11 @@ export default function InventarioAdminPage() {
     {/* Hasta que llega la primera página no se pinta la tabla: vacía, diría «No hay enseres» mientras carga. */}
     {tab === 0
       ? metaEnseres && <TablaEnseres enseres={listaEnseres} volver={consultaListado} onBorrar={setPorBorrar} />
-      : metaPrendas && <TablaPrendas prendas={listaPrendas} volver={consultaListado} onPrestar={setPrestando} onDevolver={setDevolviendo} onLavada={(p) => void lavadas(p)} onBorrar={setPorBorrar} />}
+      : enFichas
+        ? metaPrendas && <PrendasEnFichas prendas={listaPrendas} volver={consultaListado} {...accionesPrenda} />
+        : <RoperoPorGrupos recuento={recuento} filtros={filtrosPrendas as FiltrosPrendas} volver={consultaListado} recarga={recarga} {...accionesPrenda} />}
     {tab === 0
       ? metaEnseres && <Paginador meta={metaEnseres} onPagina={enseres.irAPagina} onTamano={enseres.cambiarTamano} etiqueta="los enseres" />
-      : metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}
+      : enFichas && metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}
   </>
 }

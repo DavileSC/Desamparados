@@ -29,8 +29,8 @@ export const eliminarEnser = (id: number) => llamarApi<{ message: string }>(`/in
 export const crearPrenda = (json: object) => llamarApi<Prenda>('/ropero/prendas', { method: 'POST', json })
 export const actualizarPrenda = (id: number, json: object) => llamarApi<Prenda>(`/ropero/prendas/${id}`, { method: 'PUT', json })
 export const eliminarPrenda = (id: number) => llamarApi<{ message: string }>(`/ropero/prendas/${id}`, { method: 'DELETE' })
-/** Se presta por número de hermano, no por el id interno de la base de datos (que nadie conoce). */
-export const asignarPrenda = (id: number, numeroHermano: number) => llamarApi<{ message: string }>(`/ropero/prendas/${id}/asignar`, { method: 'POST', json: { numeroHermano } })
+/** Se presta a la ficha que se eligió buscando por nombre y apellidos (ver `buscarHermanosDelRopero`). */
+export const asignarPrenda = (id: number, hermanoId: number) => llamarApi<{ message: string }>(`/ropero/prendas/${id}/asignar`, { method: 'POST', json: { hermanoId } })
 /** La túnica va siempre al lavado; lo demás, disponible; lo roto (`rota`), al taller. */
 export const devolverPrenda = (id: number, rota: boolean) => llamarApi<{ message: string; data: Prenda }>(`/ropero/prendas/${id}/devolver`, { method: 'POST', json: { rota } })
 /** Las prendas del lavado que ya están limpias vuelven a estar disponibles; sin ids, todas. */
@@ -50,9 +50,27 @@ export const traerFichaEnser = (id: number) => traerArchivo(`/inventario/enseres
  */
 export const traerPrenda = (id: number) => llamarApi<Prenda>(`/ropero/prendas/${id}`)
 
-/** Lo justo para confirmar un préstamo antes de hacerlo: «Nº 123 · Nombre Apellidos». */
-export interface HermanoDelRopero { numeroHermano: number; nombre: string; apellidos: string }
+/**
+ * Un hermano de alta, tal como sale al buscarlo para prestarle algo: lo justo
+ * para no confundir a dos que se llaman igual (número, edad, quién lleva su
+ * cuenta si no es suya) y lo que ya tiene del ropero.
+ */
+export interface HermanoDelRopero {
+  id: number
+  numeroHermano: number | null
+  nombre: string
+  apellidos: string
+  fechaNacimiento: string
+  puesto: string | null
+  /** Quien lleva su cuenta si no es la suya (un padre, una tía, el padrino). */
+  gestor: string | null
+  prendas: { tipo: Prenda['tipo']; numero: string; talla: string | null }[]
+}
 
-/** El hermano activo con ese número; 404 si no hay ninguno. Solo para gestores del inventario. */
-export const buscarHermanoPorNumero = (numeroHermano: number) =>
-  llamarApi<HermanoDelRopero>(`/ropero/hermanos/${numeroHermano}`)
+/** Por nombre y apellidos, en cualquier orden; con menos de dos letras, nadie. */
+export const buscarHermanosDelRopero = (q: string) =>
+  llamarApi<HermanoDelRopero[]>(`/ropero/hermanos?q=${encodeURIComponent(q)}`)
+
+/** Cuántas prendas hay de cada tipo en cada estado: las cabeceras de los grupos del ropero. */
+export interface RecuentoDeTipo { tipo: Prenda['tipo']; total: number; estados: Partial<Record<Prenda['estado'], number>> }
+export const recuentoDelRopero = () => llamarApi<RecuentoDeTipo[]>('/ropero/recuento')

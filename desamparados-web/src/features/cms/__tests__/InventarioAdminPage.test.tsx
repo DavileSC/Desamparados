@@ -62,7 +62,7 @@ describe('InventarioAdminPage', () => {
     // Cada extremo responde lo suyo: la llamada se distingue por su URL, nunca
     // por su posición en mock.calls.
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(
-      JSON.stringify({
+      JSON.stringify(String(url).includes('/recuento') ? recuento() : {
         data: [String(url).includes('/enseres') ? enser : prenda],
         meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
       }),
@@ -105,11 +105,15 @@ describe('InventarioAdminPage', () => {
     expect(within(ventana).getByRole('button', { name: 'Guardar' })).toBeDisabled()
   })
 
-  it('se presta buscando por número de hermano y enseñando su nombre antes de confirmar', async () => {
+  it('se presta buscando por nombre y apellidos; con dos que se llaman igual, lo avisa y se elige por la ficha', async () => {
     const user = userEvent.setup()
+    const tocayo = (id: number, numeroHermano: number, fechaNacimiento: string) => ({
+      id, numeroHermano, nombre: 'Ana', apellidos: 'Ruiz Martín', fechaNacimiento, puesto: null, gestor: null, prendas: [],
+    })
     const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
       const ruta = String(url)
-      if (ruta.includes('/hermanos/123')) return Promise.resolve(respuestaJson({ numeroHermano: 123, nombre: 'Ana', apellidos: 'Ruiz Martín' }))
+      if (ruta.includes('/recuento')) return Promise.resolve(respuestaJson(recuento()))
+      if (ruta.includes('/ropero/hermanos?q=')) return Promise.resolve(respuestaJson([tocayo(76, 123, '1990-05-01'), tocayo(77, 517, '2015-03-02')]))
       if (init?.method === 'POST') return Promise.resolve(respuestaJson({ message: 'Prenda asignada correctamente' }))
       return Promise.resolve(respuestaJson({ data: [ruta.includes('/enseres') ? enser : prenda], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } }))
     })
@@ -121,15 +125,18 @@ describe('InventarioAdminPage', () => {
     const dialogo = screen.getByRole('dialog', { name: /prestar la prenda tun-002/i })
     expect(within(dialogo).getByRole('button', { name: 'Prestar' })).toBeDisabled()
 
-    await user.type(within(dialogo).getByLabelText(/número de hermano/i), '123')
-    await user.click(within(dialogo).getByRole('button', { name: 'Buscar' }))
-    expect(await within(dialogo).findByText('Nº 123 · Ana Ruiz Martín')).toBeInTheDocument()
+    await user.type(within(dialogo).getByLabelText('Nombre y apellidos'), 'ana ruiz')
+    const opciones = await within(dialogo).findAllByRole('option')
+    expect(opciones).toHaveLength(2)
+    expect(within(dialogo).getAllByText(/hay otro con el mismo nombre/i)).toHaveLength(2)
+    expect(within(opciones[1]).getByText(/n\.º 517/i)).toBeInTheDocument()
 
-    await user.click(within(dialogo).getByRole('button', { name: 'Prestar a Ana' }))
+    await user.click(opciones[1])
+    await user.click(within(dialogo).getByRole('button', { name: 'Prestar a Ana Ruiz Martín' }))
     await waitFor(() => {
       const envio = simulado.mock.calls.find(([url, init]) => String(url).includes('/prendas/9/asignar') && init?.method === 'POST')
       expect(envio).toBeDefined()
-      expect(JSON.parse(String(envio![1].body))).toEqual({ numeroHermano: 123 })
+      expect(JSON.parse(String(envio![1].body))).toEqual({ hermanoId: 77 })
     })
     expect(await screen.findByText('Prenda TUN-002 prestada a Ana Ruiz Martín.')).toBeInTheDocument()
   })
@@ -140,6 +147,7 @@ describe('InventarioAdminPage', () => {
     const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
       if (init?.method === 'POST') return Promise.resolve(respuestaJson({ message: 'Prenda devuelta con éxito', data: { ...prenda, estado: 'TALLER' } }))
       if (String(url).includes('/cingulos')) return Promise.resolve(respuestaJson({ total: 0, prestados: 0, enElRopero: 0, debidos: 0 }))
+      if (String(url).includes('/recuento')) return Promise.resolve(respuestaJson(recuento({ PRESTADA: 1 })))
       return Promise.resolve(respuestaJson({ data: [String(url).includes('/enseres') ? enser : prestada], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } }))
     })
     vi.stubGlobal('fetch', simulado)
@@ -170,6 +178,8 @@ describe('InventarioAdminPage', () => {
       if (String(url).includes('/cingulos') && init?.method === 'PUT') return Promise.resolve(respuestaJson({ total: 40, prestados: 30, enElRopero: 10, debidos: 3 }))
       if (String(url).includes('/cingulos')) return Promise.resolve(respuestaJson({ total: 31, prestados: 30, enElRopero: 1, debidos: 3 }))
       if (String(url).includes('/prendas/lavadas')) return Promise.resolve(respuestaJson({ ids: [9, 10], lavadas: 2 }))
+      // Con algo en el lavado, la cabecera ofrece darlo todo por limpio.
+      if (String(url).includes('/recuento')) return Promise.resolve(respuestaJson(recuento({ LAVADO: 2 })))
       return Promise.resolve(respuestaJson({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }))
     })
     vi.stubGlobal('fetch', simulado)
@@ -198,7 +208,9 @@ describe('InventarioAdminPage', () => {
     const fetchSimulado = vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(
       JSON.stringify(String(url).includes('/opciones')
         ? { categorias: ['Cortejo'], ubicaciones: ['Sacristía'] }
-        : { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+        : String(url).includes('/recuento')
+          ? [...recuento(), { tipo: 'CAPIROTE', total: 3, estados: { DISPONIBLE: 3 } }]
+          : { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     )))
     vi.stubGlobal('fetch', fetchSimulado)
@@ -222,8 +234,8 @@ describe('InventarioAdminPage', () => {
 
   it('busca en el ropero por el hermano que tiene la prenda', async () => {
     const user = userEvent.setup()
-    const fetchSimulado = vi.fn().mockImplementation(() => Promise.resolve(new Response(
-      JSON.stringify({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+    const fetchSimulado = vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(
+      JSON.stringify(String(url).includes('/recuento') ? recuento() : { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     )))
     vi.stubGlobal('fetch', fetchSimulado)
@@ -266,4 +278,9 @@ function servidor() {
 
 function respuestaJson(cuerpo: unknown) {
   return new Response(JSON.stringify(cuerpo), { status: 200, headers: { 'Content-Type': 'application/json' } })
+}
+
+/** Lo que responde /ropero/recuento: las túnicas, con los estados que se pidan (por defecto, una disponible). */
+function recuento(estados: Record<string, number> = { DISPONIBLE: 1 }) {
+  return [{ tipo: 'TUNICA', total: Object.values(estados).reduce((a, b) => a + b, 0), estados }]
 }

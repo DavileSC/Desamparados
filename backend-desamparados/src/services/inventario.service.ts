@@ -286,21 +286,13 @@ export class InventarioService {
   // --- LÓGICA DE NEGOCIO: ASIGNACIONES ---
 
   /**
-   * El hermano activo con ese número, con lo justo para confirmar el préstamo
-   * en el CMS («Nº 123 · Nombre Apellidos») antes de hacerlo.
+   * Se presta al hermano por su ficha: el CMS lo busca por nombre y apellidos
+   * y manda su id. Antes se tecleaba el número de hermano, que la albacería no
+   * se sabe, y un dígito de más se la prestaba a otro.
    */
-  static async buscarHermanoPorNumero(numeroHermano: number) {
-    const hermano = await db.hermano.findFirst({
-      where: { numeroHermano, activo: true },
-      select: { numeroHermano: true, nombre: true, apellidos: true }
-    });
-    if (!hermano) throw new NotFoundError(`No hay ningún hermano activo con el número ${numeroHermano}.`);
-    return hermano;
-  }
-
-  static async asignarPrenda(prendaId: number, numeroHermano: number) {
-    const hermano = await db.hermano.findFirst({ where: { numeroHermano, activo: true }, select: { id: true } });
-    if (!hermano) throw new NotFoundError(`No hay ningún hermano activo con el número ${numeroHermano}.`);
+  static async asignarPrenda(prendaId: number, hermanoId: number) {
+    const hermano = await db.hermano.findFirst({ where: { id: hermanoId, activo: true }, select: { id: true } });
+    if (!hermano) throw new NotFoundError('Ese hermano no está de alta en el censo.');
 
     // Condicionada al estado: si dos personas asignan la misma prenda a la vez,
     // la segunda no pisa a la primera.

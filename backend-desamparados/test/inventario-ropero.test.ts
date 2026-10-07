@@ -30,10 +30,6 @@ const usuarios: Partial<Record<Role, number>> = {};
 let hermanoId = 0;
 // Un número de hermano que no choque con los de la base de desarrollo.
 const numeroHermano = 900_000_000 + randomInt(0, 99_999_999);
-// Uno que seguro que no existe. Por DEBAJO del de prueba, no por encima: ese
-// número pasa a ser el máximo del censo mientras dura el fichero, y los tests
-// de aprobaciones, que corren a la vez, numeran con `máximo + 1`.
-const numeroInexistente = numeroHermano - 1;
 const numeroPrenda = `PRUEBA-${Date.now()}`;
 let prendaId = 0;
 
@@ -66,7 +62,7 @@ after(async () => {
 
 // El ropero (prendas, hermanos) vive en /api/ropero; los enseres y el
 // dashboard se quedan en /api/inventario (ver backend ropero.routes.ts).
-const esRopero = (ruta: string) => ruta.startsWith('/prendas') || ruta.startsWith('/hermanos');
+const esRopero = (ruta: string) => ruta.startsWith('/prendas') || ruta.startsWith('/hermanos') || ruta.startsWith('/recuento');
 const como = (rol: Role, ruta: string, metodo = 'GET', cuerpo?: unknown) =>
   fetch(`${baseUrl}${esRopero(ruta) ? '/api/ropero' : '/api/inventario'}${ruta}`, {
     method: metodo,
@@ -83,7 +79,8 @@ describe('quién ve el ropero (P1)', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     assert.equal((await como(Role.USER, '/prendas')).status, 403);
     assert.equal((await como(Role.USER, '/prendas/1')).status, 403);
-    assert.equal((await como(Role.USER, `/hermanos/${numeroHermano}`)).status, 403);
+    assert.equal((await como(Role.USER, '/hermanos?q=prueba')).status, 403);
+    assert.equal((await como(Role.USER, '/recuento')).status, 403);
   });
 
   // Antes abiertos «porque no llevan datos personales», pero cada enser dice
@@ -107,15 +104,19 @@ describe('préstamos del ropero (D15)', () => {
     assert.equal(res.status, 400);
   });
 
-  test('se busca al hermano por su número antes de prestar', async (t) => {
+  test('se busca al hermano por su nombre y apellidos antes de prestar', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    const res = await como(Role.ALBACERIA, `/hermanos/${numeroHermano}`);
+    const res = await como(Role.ALBACERIA, `/hermanos?q=${encodeURIComponent('hermano prueba ropero')}`);
     assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { numeroHermano, nombre: 'Hermano', apellidos: 'De Prueba Ropero' });
+    const encontrados = await res.json() as { id: number; numeroHermano: number; gestor: string | null; prendas: unknown[] }[];
+    const suyo = encontrados.find((h) => h.id === hermanoId);
+    assert.ok(suyo, 'las palabras valen en cualquier orden y repartidas entre nombre y apellidos');
+    assert.equal(suyo.numeroHermano, numeroHermano, 'con su número, para distinguir a dos que se llaman igual');
+    assert.ok(suyo.gestor, 'su cuenta la lleva otro: se dice quién');
+    assert.deepEqual(suyo.prendas, []);
 
-    const nadie = await como(Role.ALBACERIA, `/hermanos/${numeroInexistente}`);
-    assert.equal(nadie.status, 404);
-    assert.equal((await como(Role.ALBACERIA, '/hermanos/abc')).status, 400);
+    // Una letra sola no busca: saldría medio censo.
+    assert.deepEqual(await (await como(Role.ALBACERIA, '/hermanos?q=a')).json(), []);
   });
 
   test('prestar, editar y devolver: el estado solo lo cambian «Asignar» y «Devolver»', async (t) => {
@@ -127,14 +128,14 @@ describe('préstamos del ropero (D15)', () => {
     // Editando no se presta: quedaría prestada a nadie.
     assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}`, 'PUT', { estado: 'PRESTADA' })).status, 400);
 
-    const asignar = await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { numeroHermano });
+    const asignar = await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { hermanoId });
     assert.equal(asignar.status, 200, await asignar.clone().text());
     const prestada = ((await asignar.json()) as { data: { estado: string; hermano: { numeroHermano: number } } }).data;
     assert.equal(prestada.estado, 'PRESTADA');
     assert.equal(prestada.hermano.numeroHermano, numeroHermano);
 
     // Ya prestada, no se presta otra vez.
-    assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { numeroHermano })).status, 400);
+    assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { hermanoId })).status, 400);
 
     // Editar la ficha reenviando el mismo estado sí se puede; cambiarlo no.
     assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}`, 'PUT', { estado: 'PRESTADA', observaciones: 'Bajo descosido' })).status, 200);
@@ -156,20 +157,20 @@ describe('préstamos del ropero (D15)', () => {
     assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}`, 'PUT', { estado: 'DISPONIBLE' })).status, 200);
   });
 
-  test('prestar a un número que no existe responde 404 y no toca la prenda', async (t) => {
+  test('prestar a un hermano que no existe responde 404 y no toca la prenda', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     if (!prendaId) return t.skip('depende de la prenda creada en la prueba anterior');
-    const res = await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { numeroHermano: numeroInexistente });
+    const res = await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { hermanoId: 2_000_000_000 });
     assert.equal(res.status, 404);
     const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
     assert.equal(prenda?.estado, 'DISPONIBLE');
     assert.equal(prenda?.hermanoId, null);
   });
 
-  test('ya no se presta tecleando el id interno del hermano', async (t) => {
+  test('ya no se presta tecleando el número de hermano', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     if (!prendaId) return t.skip('depende de la prenda creada en la prueba anterior');
-    assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { hermanoId })).status, 400);
+    assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { numeroHermano })).status, 400);
   });
 
   test('las cantidades de un enser con decimales se rechazan con 400, no con 500', async (t) => {
@@ -196,6 +197,24 @@ describe('foto de un enser', () => {
       assert.equal((await db.enser.findUnique({ where: { id } }))?.imagenUrl, null);
     } finally {
       await db.enser.deleteMany({ where: { id } });
+    }
+  });
+});
+
+describe('recuento del ropero', () => {
+  test('cuenta las prendas de cada tipo por estado, y suman el total del tipo', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const numero = `REC-${Date.now()}`;
+    const p = await db.prenda.create({ data: { numero, tipo: 'FARAONA', estado: 'TALLER' } });
+    try {
+      const res = await como(Role.ALBACERIA, '/recuento');
+      assert.equal(res.status, 200);
+      const grupos = await res.json() as { tipo: string; total: number; estados: Record<string, number> }[];
+      const faraonas = grupos.find((g) => g.tipo === 'FARAONA');
+      assert.ok(faraonas && (faraonas.estados.TALLER ?? 0) >= 1);
+      for (const g of grupos) assert.equal(Object.values(g.estados).reduce((a, b) => a + b, 0), g.total, g.tipo);
+    } finally {
+      await db.prenda.delete({ where: { id: p.id } });
     }
   });
 });
