@@ -21,7 +21,7 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
-import { publicStorageDir, MAX_BYTES_IMAGEN, MAX_BYTES_PDF } from '../src/middleware/upload.middleware.js';
+import { carpetaDeSubidas, publicStorageDir, MAX_BYTES_IMAGEN, MAX_BYTES_PDF } from '../src/middleware/upload.middleware.js';
 import { prepararFoto, LADO_MAXIMO } from '../src/controllers/subida.controller.js';
 import { parseClamdResponse, reiniciarAvisoSinAntivirus, scanBufferClamav } from '../src/utils/clamd.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
@@ -235,8 +235,45 @@ describe('fotos sin metadatos (C5)', () => {
     assert.ok(data.url.endsWith(`/storage/public/${data.filename}`));
     assert.equal(data.type, 'image/webp');
     const nuevos = (await ficherosEnAlmacen()).filter((f) => !antes.includes(f));
-    assert.deepEqual(nuevos, [data.filename], 'solo queda la WebP, no el PNG que se subió');
+    const base = data.filename.replace(/\.webp$/, '');
+    assert.deepEqual(nuevos.sort(), [data.filename, `${base}-1280.webp`, `${base}-640.webp`].sort(), 'solo quedan la WebP y sus copias, no el PNG que se subió');
     assert.equal((await sharp(await readFile(path.join(almacenPublico, data.filename))).metadata()).format, 'webp');
+  });
+
+  test('una foto ancha deja copias de 640 y 1280 px; una estrecha, copias iguales a ella (FR5)', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const ancha = await sharp(fotoConRuido(2400, 1200), { raw: { width: 2400, height: 1200, channels: 3 } }).jpeg().toBuffer();
+    const res = await subir(ancha, 'ancha.jpg', 'image/jpeg');
+    assert.equal(res.status, 201, await res.clone().text());
+    const { data } = await res.json() as { data: { filename: string } };
+    const base = data.filename.replace(/\.webp$/, '');
+    const ancho = async (nombre: string) => (await sharp(await readFile(path.join(almacenPublico, nombre))).metadata()).width;
+    assert.equal(await ancho(data.filename), LADO_MAXIMO);
+    assert.equal(await ancho(`${base}-1280.webp`), 1280);
+    assert.equal(await ancho(`${base}-640.webp`), 640);
+    const copia = await sharp(await readFile(path.join(almacenPublico, `${base}-640.webp`))).metadata();
+    assert.equal(copia.exif, undefined, 'las copias tampoco llevan metadatos');
+
+    const estrecha = await sharp({ create: { width: 300, height: 200, channels: 3, background: '#a03d44' } }).png().toBuffer();
+    const res2 = await subir(estrecha, 'estrecha.png', 'image/png');
+    assert.equal(res2.status, 201);
+    const { data: data2 } = await res2.json() as { data: { filename: string } };
+    const base2 = data2.filename.replace(/\.webp$/, '');
+    const principal = await readFile(path.join(almacenPublico, data2.filename));
+    assert.deepEqual(await readFile(path.join(almacenPublico, `${base2}-640.webp`)), principal);
+    assert.deepEqual(await readFile(path.join(almacenPublico, `${base2}-1280.webp`)), principal);
+  });
+
+  test('lo subido espera fuera de la carpeta pública hasta pasar las comprobaciones (DS9)', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    assert.notEqual(path.dirname(carpetaDeSubidas), almacenPublico);
+    assert.ok(!carpetaDeSubidas.startsWith(almacenPublico + path.sep), 'la carpeta de espera no puede colgar de la pública');
+    const roto = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00]), Buffer.alloc(500, 3)]);
+    const res = await subir(roto, 'rota.jpg', 'image/jpeg');
+    assert.equal(res.status, 400);
+    const pdf = await subir(pdfDe(2000), 'documento.pdf', 'application/pdf');
+    assert.equal(pdf.status, 201);
+    assert.deepEqual(await readdir(carpetaDeSubidas), [], 'en la carpeta de espera no queda nada, ni lo rechazado ni lo aceptado');
   });
 
   test('una foto que dice ser JPEG y no se puede leer se rechaza y no se queda en disco', async (t) => {

@@ -31,6 +31,8 @@ import {
   subidasEnUso,
   subidasReferenciadas,
 } from '../src/utils/ficheros-publicos.js';
+import { completarVariantes } from '../src/utils/variantes-publicas.js';
+import sharp from 'sharp';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -374,6 +376,73 @@ describe('referencias para el script de huérfanos', () => {
     } finally {
       if (antes) await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes.datos as object } });
       else await db.contenidoPagina.deleteMany({ where: { slug: 'portada' } });
+    }
+  });
+});
+
+describe('copias reducidas de las fotos (FR5)', () => {
+  test('borrar una foto se lleva sus copias; una copia sola también se puede borrar', async () => {
+    const carpeta = await mkdtemp(path.join(os.tmpdir(), 'variantes-'));
+    try {
+      const base = hex();
+      for (const n of [`${base}.webp`, `${base}-640.webp`, `${base}-1280.webp`]) await writeFile(path.join(carpeta, n), 'x');
+      assert.equal(await borrarSubida(`${base}.webp`, carpeta), true);
+      for (const n of [`${base}.webp`, `${base}-640.webp`, `${base}-1280.webp`]) assert.ok(!existsSync(path.join(carpeta, n)), `${n} debería haberse ido`);
+
+      const suelta = `${hex()}-640.webp`;
+      await writeFile(path.join(carpeta, suelta), 'x');
+      assert.equal(await borrarSubida(suelta, carpeta), true);
+      for (const mala of [`${hex()}-700.webp`, `${hex()}-640.jpg`, `../${hex()}-640.webp`]) {
+        assert.equal(await borrarSubida(mala, carpeta), false, `no debería aceptar ${mala}`);
+      }
+    } finally {
+      await rm(carpeta, { recursive: true, force: true });
+    }
+  });
+
+  test('una copia sigue a su foto en la búsqueda de huérfanos, y nombrar una copia cuenta como su foto', async () => {
+    const carpeta = await mkdtemp(path.join(os.tmpdir(), 'variantes-'));
+    try {
+      const enUso = hex();
+      const huerfana = hex();
+      for (const b of [enUso, huerfana]) {
+        for (const n of [`${b}.webp`, `${b}-640.webp`, `${b}-1280.webp`]) await writeFile(path.join(carpeta, n), 'x');
+      }
+      const { huerfanos, ignorados } = await buscarHuerfanos({ referenciados: new Set([`${enUso}.webp`]), directorio: carpeta, minHoras: 0 });
+      assert.deepEqual(huerfanos.map((h) => h.nombre).sort(), [`${huerfana}-1280.webp`, `${huerfana}-640.webp`, `${huerfana}.webp`].sort());
+      assert.deepEqual(ignorados, []);
+      assert.deepEqual([...subidasEnTexto(`<img srcset="/storage/public/${enUso}-640.webp 640w">`)], [`${enUso}.webp`]);
+    } finally {
+      await rm(carpeta, { recursive: true, force: true });
+    }
+  });
+
+  test('el script completa las copias que faltan y no toca las que ya están', async () => {
+    const carpeta = await mkdtemp(path.join(os.tmpdir(), 'variantes-'));
+    try {
+      const ancha = hex();
+      const completa = hex();
+      await writeFile(path.join(carpeta, `${ancha}.webp`), await sharp({ create: { width: 1600, height: 400, channels: 3, background: '#262326' } }).webp().toBuffer());
+      await writeFile(path.join(carpeta, `${completa}.webp`), 'no es una foto, pero ya tiene sus copias');
+      await writeFile(path.join(carpeta, `${completa}-640.webp`), 'a');
+      await writeFile(path.join(carpeta, `${completa}-1280.webp`), 'b');
+      await writeFile(path.join(carpeta, 'hero-1920.webp'), 'no es una subida');
+
+      const prueba = await completarVariantes({ directorio: carpeta, aplicar: false });
+      assert.deepEqual(prueba.completadas, [`${ancha}.webp`]);
+      assert.ok(!existsSync(path.join(carpeta, `${ancha}-640.webp`)), 'en modo prueba no escribe');
+
+      const hecho = await completarVariantes({ directorio: carpeta });
+      assert.deepEqual(hecho.completadas, [`${ancha}.webp`]);
+      assert.equal(hecho.yaEstaban, 1);
+      assert.equal((await sharp(path.join(carpeta, `${ancha}-640.webp`)).metadata()).width, 640);
+      assert.equal((await sharp(path.join(carpeta, `${ancha}-1280.webp`)).metadata()).width, 1280);
+      assert.ok(!existsSync(path.join(carpeta, 'hero-1920-640.webp')));
+
+      const otraVez = await completarVariantes({ directorio: carpeta });
+      assert.deepEqual(otraVez.completadas, [], 'idempotente');
+    } finally {
+      await rm(carpeta, { recursive: true, force: true });
     }
   });
 });

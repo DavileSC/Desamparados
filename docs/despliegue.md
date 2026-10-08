@@ -600,6 +600,15 @@ docker compose up -d --build
 Las imágenes se reconstruyen, las migraciones nuevas se aplican solas y los
 contenedores se sustituyen. Los pasos 3 y 4 no se repiten.
 
+**Si hay fotos subidas antes del 8 de octubre de 2026**, se les generan sus
+copias reducidas (640 y 1280 px de ancho), que la web pide en `srcset` sin
+preguntar si existen. Es idempotente y no toca lo que ya está; también hay que
+pasarlo después de `npm run fotos:webp`:
+
+```bash
+docker compose run --rm herramientas npm run imagenes:variantes
+```
+
 **Si la base se sembró antes del 18 de septiembre de 2026, hay un paso más, y
 va antes de que nadie abra el CMS:**
 

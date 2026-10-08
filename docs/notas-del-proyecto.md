@@ -366,6 +366,20 @@ de alto la encogería sin motivo.
 Y **nunca se agranda** (`withoutEnlargement`): subir la resolución de una foto
 pequeña solo la emborrona y la engorda.
 
+**Cada foto pública lleva además dos copias: `<hex>-640.webp` y
+`<hex>-1280.webp`** (desde octubre de 2026), para el `srcset` de la web.
+Existen **siempre**, aunque la foto sea más estrecha (entonces son una copia
+idéntica): la web deduce sus direcciones de la URL guardada y no pregunta. Por
+eso, si una foto se copia o se restaura a mano en `storage/public`, hay que
+pasar después `npm run imagenes:variantes`, o la web pedirá copias que no están.
+Borrar la foto se lleva sus copias (`borrarSubida`) y el script de huérfanos las
+trata como parte de su foto. El contrato vive en `domain/variantes-de-foto.ts`.
+
+**Lo que se sube espera en `storage/subiendo` hasta pasar las comprobaciones**
+(tipo real, antivirus, sharp) y solo entonces se mueve a `storage/public`:
+nginx sirve esa carpeta directamente del disco y, si multer escribiera allí,
+un fichero sin validar sería descargable durante esos segundos.
+
 ---
 
 ## 11. El contraste de la web pública

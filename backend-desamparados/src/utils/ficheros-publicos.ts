@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import db from '../config/db.js';
 import { publicStorageDir } from '../middleware/upload.middleware.js';
+import { ANCHOS_VARIANTES, fotoDeVariante, nombreDeVariante } from '../domain/variantes-de-foto.js';
 
 /**
  * Ficheros que sube el CMS a `storage/public` y que dejan de usarse.
@@ -19,8 +20,15 @@ import { publicStorageDir } from '../middleware/upload.middleware.js';
  */
 export const RUTA_SUBIDA_PUBLICA = /^\/storage\/public\/([a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf|mp4))$/i;
 
-/** Las rutas de subida que aparecen dentro de un texto: una URL suelta o el HTML de una noticia. */
-const RUTAS_EN_TEXTO = /\/storage\/public\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf|mp4)(?![A-Za-z0-9])/gi;
+/**
+ * Las rutas de subida que aparecen dentro de un texto: una URL suelta o el HTML
+ * de una noticia. También la de una copia reducida (`<hex>-640.webp`), que
+ * cuenta como su foto: si algún día se guarda una, la foto no se borra.
+ */
+const RUTAS_EN_TEXTO = new RegExp(
+  `/storage/public/[a-f0-9]{32}(?:-(?:${ANCHOS_VARIANTES.join('|')})(?=\\.webp))?\\.(?:jpg|jpeg|png|webp|pdf|mp4)(?![A-Za-z0-9])`,
+  'gi',
+);
 
 /**
  * El nombre del fichero si la ruta es una subida del CMS; si no, null. Conserva
@@ -44,7 +52,9 @@ export function subidasEnTexto(...textos: (string | null | undefined)[]): Set<st
   const nombres = new Set<string>();
   for (const texto of textos) {
     if (!texto) continue;
-    for (const [ruta] of texto.matchAll(RUTAS_EN_TEXTO)) {
+    for (const [encontrada] of texto.matchAll(RUTAS_EN_TEXTO)) {
+      const base = fotoDeVariante(path.posix.basename(encontrada));
+      const ruta = base ? `/storage/public/${base}` : encontrada;
       const nombre = nombreDeSubida(ruta);
       if (nombre) nombres.add(nombre);
     }
@@ -207,10 +217,20 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
  * fía de quien la llama. Que el fichero ya no exista no es un error.
  */
 export async function borrarSubida(nombre: string, directorio = publicStorageDir): Promise<boolean> {
-  const seguro = nombreDeSubida(`/storage/public/${nombre}`);
+  const esVariante = fotoDeVariante(nombre) !== null;
+  const seguro = esVariante ? nombre : nombreDeSubida(`/storage/public/${nombre}`);
   if (!seguro || seguro !== nombre) return false;
+  // Con la foto se van sus copias reducidas: sin ella nadie las pide, y la
+  // foto retirada (la de un menor, por RGPD) seguiría publicada en pequeño.
+  if (!esVariante && /\.webp$/i.test(seguro)) {
+    for (const ancho of ANCHOS_VARIANTES) await borrarSiExiste(path.join(directorio, nombreDeVariante(seguro, ancho)));
+  }
+  return borrarSiExiste(path.join(directorio, seguro));
+}
+
+async function borrarSiExiste(ruta: string): Promise<boolean> {
   try {
-    await fs.unlink(path.join(directorio, seguro));
+    await fs.unlink(ruta);
     return true;
   } catch (e: any) {
     if (e?.code === 'ENOENT') return false;
@@ -286,11 +306,13 @@ export async function buscarHuerfanos({
   const ignorados: string[] = [];
   for (const entrada of entradas) {
     if (!entrada.isFile()) continue;
-    if (nombreDeSubida(`/storage/public/${entrada.name}`) !== entrada.name) {
+    // Una copia reducida sigue a su foto: en uso si la foto lo está.
+    const deFoto = fotoDeVariante(entrada.name);
+    if (!deFoto && nombreDeSubida(`/storage/public/${entrada.name}`) !== entrada.name) {
       ignorados.push(entrada.name);
       continue;
     }
-    if (enUso.has(clave(entrada.name))) continue;
+    if (enUso.has(clave(deFoto ?? entrada.name))) continue;
     const datos = await fs.stat(path.join(directorio, entrada.name));
     // La edad nunca es negativa: el mtime del disco puede quedar unos
     // milisegundos por delante del reloj de Node (NTFS lo hace), y entonces la

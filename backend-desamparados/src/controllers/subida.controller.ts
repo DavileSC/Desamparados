@@ -5,9 +5,10 @@ import path from 'path';
 import fs from 'fs/promises';
 import sharp, { type Sharp } from 'sharp';
 import { scanBufferClamav } from '../utils/clamd.js';
-import { MAX_BYTES_IMAGEN, privateStorageDir } from '../middleware/upload.middleware.js';
+import { MAX_BYTES_IMAGEN, privateStorageDir, publicStorageDir } from '../middleware/upload.middleware.js';
 import { esUsoDeVideo, leerMp4, problemaDelVideo, topesDeVideo } from '../domain/mp4.js';
 import { enFilaDeFotos } from '../utils/fila-de-fotos.js';
+import { ANCHOS_VARIANTES, nombreDeVariante } from '../domain/variantes-de-foto.js';
 
 /** Una forma de codificar la foto ya leída (orientada y sin metadatos). */
 type Codificacion = (imagen: Sharp) => Sharp;
@@ -62,10 +63,55 @@ export const CALIDAD_WEBP = 82;
  * las fotos subidas antes (`scripts/fotos-a-webp.ts`).
  */
 export function prepararFoto(original: Buffer): Promise<Buffer> {
-  return enFilaDeFotos(() => convertirFoto(original));
+  return enFilaDeFotos(async () => (await convertirFoto(original)).foto);
 }
 
-async function convertirFoto(original: Buffer): Promise<Buffer> {
+export interface FotoConVariantes {
+  foto: Buffer;
+  variantes: { ancho: number; datos: Buffer }[];
+}
+
+/**
+ * Como `prepararFoto`, pero además saca las copias de `ANCHOS_VARIANTES`. Todo
+ * en el mismo turno de la fila: las copias se hacen con la foto aún leída.
+ */
+export function prepararFotoConVariantes(original: Buffer): Promise<FotoConVariantes> {
+  return enFilaDeFotos(async () => {
+    const { foto, sinPerdida } = await convertirFoto(original);
+    return { foto, variantes: await reducir(foto, sinPerdida) };
+  });
+}
+
+/**
+ * Las copias reducidas de una foto ya preparada (WebP, sin metadatos). Para el
+ * script que las genera para las fotos subidas antes (`scripts/variantes-de-imagenes.ts`).
+ */
+export function variantesDeFoto(foto: Buffer, { sinPerdida = false } = {}) {
+  return enFilaDeFotos(() => reducir(foto, sinPerdida));
+}
+
+async function reducir(foto: Buffer, sinPerdida: boolean): Promise<FotoConVariantes['variantes']> {
+  const datos = await sharp(foto, { animated: true }).metadata();
+  // Una animación se copia tal cual, por lo mismo que no se le pone tope.
+  const animada = (datos.pages ?? 1) > 1;
+  const variantes: FotoConVariantes['variantes'] = [];
+  for (const ancho of ANCHOS_VARIANTES) {
+    if (animada || (datos.width ?? 0) <= ancho) {
+      variantes.push({ ancho, datos: foto });
+      continue;
+    }
+    const reducida = sharp(foto).resize({ width: ancho, withoutEnlargement: true });
+    variantes.push({
+      ancho,
+      datos: await (sinPerdida
+        ? reducida.webp({ lossless: true })
+        : reducida.webp({ quality: CALIDAD_WEBP, smartSubsample: true })).toBuffer(),
+    });
+  }
+  return variantes;
+}
+
+async function convertirFoto(original: Buffer): Promise<{ foto: Buffer; sinPerdida: boolean }> {
   // 'error' y no el 'warning' por defecto: una foto con un aviso menor de
   // libvips se puede publicar; una que no se puede decodificar, no.
   const datos = await sharp(original, { failOn: 'error', animated: true }).metadata();
@@ -100,11 +146,22 @@ async function convertirFoto(original: Buffer): Promise<Buffer> {
     if (!mejor || salida.length < mejor.length) mejor = salida;
     if (salida.length <= original.length) break;
   }
-  return mejor!;
+  return { foto: mejor!, sinPerdida: Boolean(datos.isPalette) };
 }
 
 /** El nombre del fichero con la extensión `.webp` en lugar de la que traía (`<hex>.jpg` → `<hex>.webp`). */
 export const conExtensionWebp = (nombre: string) => `${path.basename(nombre, path.extname(nombre))}.webp`;
+
+/**
+ * Deja un fichero ya comprobado en su carpeta definitiva. Se escribe al lado
+ * con otro nombre y se renombra: nginx sirve `storage/public` directamente, y
+ * así nunca ve un fichero escrito a medias.
+ */
+async function publicar(datos: Buffer, nombre: string, carpeta: string) {
+  const temporal = path.join(carpeta, `.${nombre}.tmp`);
+  await fs.writeFile(temporal, datos);
+  await fs.rename(temporal, path.join(carpeta, nombre));
+}
 
 export class SubidaController {
 
@@ -190,13 +247,19 @@ export class SubidaController {
 
       // ================== FOTOS EN WEBP, SIN METADATOS ==================
       // Los PDF se guardan byte a byte: recodificarlos cambiaría el documento.
+      const isPrivate = req.path.startsWith('/private');
+      const destino = isPrivate ? privateStorageDir : publicStorageDir;
       let size = file.size;
       let filename = file.filename;
       let tipo = fileTypeResult.mime;
       if (esImagen) {
         let limpia: Buffer;
+        let variantes: FotoConVariantes['variantes'] = [];
         try {
-          limpia = await prepararFoto(original);
+          // Las copias reducidas solo hacen falta en la web pública; la foto de
+          // un documento privado se abre de una en una desde el CMS.
+          if (isPrivate) limpia = await prepararFoto(original);
+          else ({ foto: limpia, variantes } = await prepararFotoConVariantes(original));
         } catch (error) {
           await fs.unlink(filePath);
           console.warn(`[Upload] No se ha podido recodificar ${file.originalname}:`, error instanceof Error ? error.message : error);
@@ -213,11 +276,19 @@ export class SubidaController {
           });
         }
         // Sale siempre en WebP: se guarda con su extensión y el original se va.
+        // Las copias, antes que la principal: si algo se corta a medias, nunca
+        // queda publicada una foto cuyas copias falten.
         filename = conExtensionWebp(file.filename);
-        await fs.writeFile(path.join(path.dirname(filePath), filename), limpia);
-        if (filename !== file.filename) await fs.unlink(filePath);
+        for (const { ancho, datos } of variantes) {
+          await publicar(datos, nombreDeVariante(filename, ancho), destino);
+        }
+        await publicar(limpia, filename, destino);
+        // En la privada, una WebP subida ya se llama igual que la definitiva.
+        if (path.join(destino, filename) !== filePath) await fs.unlink(filePath);
         size = limpia.length;
         tipo = 'image/webp';
+      } else {
+        await fs.rename(filePath, path.join(destino, filename));
       }
 
       // Generamos la URL pública usando una fuente confiable (Variable de entorno).
@@ -226,7 +297,6 @@ export class SubidaController {
       const baseUrl = process.env.API_URL || 'http://localhost:3001';
 
       // Construimos la URL que guardaremos en la DB
-      const isPrivate = req.path.startsWith('/private');
       const fileUrl = isPrivate
         ? `${baseUrl}/api/upload/private/${encodeURIComponent(filename)}`
         : `${baseUrl}/storage/public/${encodeURIComponent(filename)}`;
@@ -296,6 +366,9 @@ export class SubidaController {
         console.error(`[Security] Subida de vídeo rechazada: el antivirus no está disponible (${antivirus.reason})`);
         return rechazar(503, 'El análisis antivirus no está disponible, inténtalo más tarde.');
       }
+
+      // Solo ahora, con todo comprobado, pasa a la carpeta que sirve nginx.
+      await fs.rename(file.path, path.join(publicStorageDir, file.filename));
 
       res.status(201).json({
         message: 'Vídeo subido correctamente',

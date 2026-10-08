@@ -6,8 +6,16 @@ import topesVideo from '../../../shared/topes-video.json' with { type: 'json' };
 
 export const publicStorageDir = path.join(process.cwd(), 'storage', 'public');
 export const privateStorageDir = path.join(process.cwd(), 'storage', 'private');
+/**
+ * Donde caen las subidas públicas mientras se comprueban (tipo real, antivirus,
+ * sharp). nginx sirve `storage/public` directamente del disco: si multer
+ * escribiera allí, un fichero sin validar —o uno que el antivirus va a
+ * rechazar— sería descargable durante esos segundos. Está dentro de `storage/`
+ * para que pasarlo a la pública sea un `rename` en el mismo disco.
+ */
+export const carpetaDeSubidas = path.join(process.cwd(), 'storage', 'subiendo');
 
-for (const directory of [publicStorageDir, privateStorageDir]) {
+for (const directory of [publicStorageDir, privateStorageDir, carpetaDeSubidas]) {
   if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
 }
 
@@ -61,7 +69,7 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 // Cada destino tiene su propio middleware para no depender de datos enviados
 // por el cliente para decidir si un documento es público o privado.
 export const publicUploadMiddleware = multer({
-  storage: createStorage(publicStorageDir),
+  storage: createStorage(carpetaDeSubidas),
   fileFilter,
   limits: { fileSize: MAX_BYTES_PDF }
 });
@@ -87,7 +95,7 @@ const filtroDeVideo = (_req: any, file: Express.Multer.File, cb: multer.FileFilt
 };
 
 export const videoUploadMiddleware = multer({
-  storage: createStorage(publicStorageDir),
+  storage: createStorage(carpetaDeSubidas),
   fileFilter: filtroDeVideo,
   limits: { fileSize: MAX_BYTES_VIDEO, files: 1 }
 });
