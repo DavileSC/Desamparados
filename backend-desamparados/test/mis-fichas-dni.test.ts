@@ -12,8 +12,8 @@ import db from '../src/config/db.js';
 import { MENSAJE_DNI_NO_GUARDADO, MisFichasService } from '../src/services/mis-fichas.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const LETRAS = 'TRWAGMYFPDXBNJZSQVHLCKE';
 const dniValido = (n: number) => `${String(n).padStart(8, '0')}${LETRAS[n % 23]}`;
 let siguiente = 60_000_000 + randomInt(0, 900_000);

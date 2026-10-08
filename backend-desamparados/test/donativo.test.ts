@@ -18,8 +18,8 @@ import { ContenidoService } from '../src/services/contenido.service.js';
 import { DonativoService, bloqueDeDonativo, conceptoDelDonativo } from '../src/services/pagos/donativo.service.js';
 import { TransaccionService } from '../src/services/transaccion.service.js';
 import { ponerTransporte, type TransporteDeCorreo } from '../src/services/correos/envio.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const CLAVE = configuracionRedsys({}).clave;
 const BLOQUE = { tipo: 'donativo', titulo: 'Colabora', texto: '', importes: [5, 10, 20], destinos: ['Caridad', 'Cultos'] };
 const VARIABLES = ['PAGO_EN_LINEA', 'REDSYS_ENTORNO', 'REDSYS_COMERCIO', 'REDSYS_TERMINAL', 'REDSYS_CLAVE', 'REDSYS_BIZUM'] as const;

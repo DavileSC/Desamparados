@@ -7,8 +7,8 @@ import db from '../src/config/db.js';
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { ModulosService, siModulo } from '../src/services/modulos.service.js';
 import { CLAVES_MODULO } from '../src/domain/modulos.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 /** Lo que había antes, para dejarlo igual. */
 let estadoInicial: { clave: string; activo: boolean }[] = [];

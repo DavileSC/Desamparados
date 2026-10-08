@@ -25,8 +25,8 @@ import { carpetaDeSubidas, publicStorageDir, MAX_BYTES_IMAGEN, MAX_BYTES_PDF } f
 import { prepararFoto, LADO_MAXIMO } from '../src/controllers/subida.controller.js';
 import { parseClamdResponse, reiniciarAvisoSinAntivirus, scanBufferClamav } from '../src/utils/clamd.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;

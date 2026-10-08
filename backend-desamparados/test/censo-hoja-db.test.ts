@@ -18,8 +18,8 @@ import { CensoHojaService, CUENTA_CENSO_IMPORTADO } from '../src/services/censo-
 import { ACCIONES_AUDITORIA } from '../src/services/auditoria.service.js';
 import { escribirCsv, leerCsv } from '../src/domain/censo-hoja.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;

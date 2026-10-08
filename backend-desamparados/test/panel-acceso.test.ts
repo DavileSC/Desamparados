@@ -12,6 +12,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import db from '../src/config/db.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 let server: Server;
 let baseUrl: string;
@@ -21,7 +22,6 @@ const roleToUserId: Record<string, number> = {};
 const STAFF = ['ADMIN', 'HERMANO_MAYOR', 'SECRETARIA', 'TESORERIA', 'REDES', 'ALBACERIA'];
 
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let motivoSinDb = '';
 
 async function sondearDb(): Promise<boolean> {

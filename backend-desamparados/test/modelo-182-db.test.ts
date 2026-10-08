@@ -15,8 +15,8 @@ import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { Modelo182Service } from '../src/services/modelo-182.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { idDeSalida, ROSARIO } from './fixtures/salidas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const EJERCICIO = 2091;
 let dbDisponible = false;
 let server: Server;

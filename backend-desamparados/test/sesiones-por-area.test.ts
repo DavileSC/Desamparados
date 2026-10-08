@@ -21,6 +21,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
+import { sinDb } from './fixtures/sin-db.js';
 
 let dbDisponible = false;
 let motivoSinDb = '';
@@ -70,7 +71,7 @@ const payloadDe = (id: number, role: string, origen: 'cms' | 'hermanos') => ({
 });
 
 test('cerrar el área de hermanos no invalida la sesión del CMS', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.TESORERIA);
   creados.push(user.id);
 
@@ -85,7 +86,7 @@ test('cerrar el área de hermanos no invalida la sesión del CMS', async (t) => 
 });
 
 test('cerrar el CMS no invalida la sesión del área de hermanos', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.SECRETARIA);
   creados.push(user.id);
 
@@ -99,7 +100,7 @@ test('cerrar el CMS no invalida la sesión del área de hermanos', async (t) => 
 });
 
 test('el corte global sigue matando las dos', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.ADMIN);
   creados.push(user.id);
 
@@ -112,7 +113,7 @@ test('el corte global sigue matando las dos', async (t) => {
 });
 
 test('un token de hermanos no vale como sesión del CMS aunque la cuenta sea de staff', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.ADMIN);
   creados.push(user.id);
 
@@ -136,7 +137,7 @@ test('un token de hermanos no vale como sesión del CMS aunque la cuenta sea de 
 // pero checkRole la ignora en las rutas de staff y usa la del CMS.
 
 test('con las dos cookies puestas, cada área usa la suya', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.TESORERIA);
   creados.push(user.id);
 
@@ -155,13 +156,13 @@ test('con las dos cookies puestas, cada área usa la suya', async (t) => {
 });
 
 test('sin ninguna cookie, las rutas con sesión dan 401', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const respuesta = await fetch(`${baseUrl}/api/hermanos/mis-perfiles`);
   assert.equal(respuesta.status, 401);
 });
 
 test('solo con la cookie del CMS, una ruta del área de hermanos sigue atendiendo', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   // Es su propia ficha: una sesión del CMS es más fuerte, no más débil.
   const user = await crearUsuarioPrueba(Role.SECRETARIA);
   creados.push(user.id);
@@ -175,7 +176,7 @@ test('solo con la cookie del CMS, una ruta del área de hermanos sigue atendiend
 // --- Tarea 5: checkRole exige la sesión del CMS, nunca cae a la de hermanos ---
 
 test('la cookie de hermanos no abre una ruta de staff, aunque la cuenta sea ADMIN', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   // Saltarse esto es saltarse el segundo factor: solo se pide en /cms/acceso.
   const user = await crearUsuarioPrueba(Role.ADMIN);
   creados.push(user.id);
@@ -189,7 +190,7 @@ test('la cookie de hermanos no abre una ruta de staff, aunque la cuenta sea ADMI
 });
 
 test('la cookie del CMS no vale si el rol no llega', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.REDES);
   creados.push(user.id);
   const cms = generateToken(user.id, Role.REDES, false, 'cms');
@@ -206,7 +207,7 @@ test('la cookie del CMS no vale si el rol no llega', async (t) => {
 // --- Tarea 6: el login pone la cookie de su área y no toca la otra ---
 
 test('entrar como hermano no borra la cookie del CMS', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   // Es el hallazgo del usuario: estaba en el CMS, entró como hermano para ver
   // su perfil, y la administración le dijo que su sesión no tenía acceso.
   const user = await crearUsuarioPrueba(Role.TESORERIA);
@@ -225,7 +226,7 @@ test('entrar como hermano no borra la cookie del CMS', async (t) => {
 });
 
 test('entrar en el CMS no borra la cookie del área de hermanos', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.SECRETARIA);
   creados.push(user.id);
 
@@ -244,7 +245,7 @@ test('entrar en el CMS no borra la cookie del área de hermanos', async (t) => {
 // --- Tarea 7: /auth/me devuelve las dos sesiones ---
 
 test('/auth/me responde 200 a un invitado, con las dos sesiones vacías', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   // Un visitante sin sesión es el caso normal de la web pública, no un error.
   const respuesta = await fetch(`${baseUrl}/api/auth/me`);
   assert.equal(respuesta.status, 200);
@@ -252,7 +253,7 @@ test('/auth/me responde 200 a un invitado, con las dos sesiones vacías', async 
 });
 
 test('/auth/me devuelve las dos sesiones de quien tiene las dos', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.TESORERIA);
   creados.push(user.id);
   const cms = generateToken(user.id, Role.TESORERIA, false, 'cms');
@@ -282,7 +283,7 @@ test('/auth/me devuelve las dos sesiones de quien tiene las dos', async (t) => {
 // (401 por contraseña frente a 403 por área), no si el borrado se completa.
 
 test('una cuenta de staff con las dos cookies llega a comprobar la contraseña (área efectiva: cms)', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.TESORERIA);
   creados.push(user.id);
   const cms = generateToken(user.id, Role.TESORERIA, false, 'cms');
@@ -297,7 +298,7 @@ test('una cuenta de staff con las dos cookies llega a comprobar la contraseña (
 });
 
 test('una cuenta de staff con solo la cookie de hermanos no puede pedir su borrado RGPD (área efectiva: hermanos)', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.TESORERIA);
   creados.push(user.id);
   const hermano = generateToken(user.id, Role.TESORERIA, false, 'hermanos');
@@ -321,7 +322,7 @@ test('una cuenta de staff con solo la cookie de hermanos no puede pedir su borra
 // /api/panel, la ruta real.
 
 test('cerrar el área de hermanos deja el CMS dentro', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.TESORERIA);
   creados.push(user.id);
   const cms = generateToken(user.id, Role.TESORERIA, false, 'cms');
@@ -348,7 +349,7 @@ test('cerrar el área de hermanos deja el CMS dentro', async (t) => {
 });
 
 test('sin área, el cierre de sesión echa de las dos', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   const user = await crearUsuarioPrueba(Role.ADMIN);
   creados.push(user.id);
   const cms = generateToken(user.id, Role.ADMIN, false, 'cms');

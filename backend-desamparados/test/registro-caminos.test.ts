@@ -15,8 +15,8 @@ import { AuthService } from '../src/services/auth.service.js';
 import { MAXIMO_MENORES_POR_ALTA, registerSchema } from '../src/schemas/auth.schema.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { RegistroService } from '../src/services/registro.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const PASSWORD = 'Trono-Alameda-84-Verde';
 
 /** DNI con la letra que le toca, para que pase la validación del esquema. */

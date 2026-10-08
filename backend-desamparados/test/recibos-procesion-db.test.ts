@@ -29,8 +29,8 @@ import { PASION, salida } from './fixtures/salidas.js';
 import { reglaDe } from '../src/services/procesion/salidas.service.js';
 import { leerDatosEvento } from '../src/services/recibos/comunes.js';
 import { proximaFecha, sumarDias } from '../src/domain/fecha-salida.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;

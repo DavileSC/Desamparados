@@ -16,8 +16,8 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { ponerTransporte } from '../src/services/correos/envio.js';
 import type { CorreoParaBuzon } from '../src/utils/buzon-pruebas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const LETRAS = 'TRWAGMYFPDXBNJZSQVHLCKE';
 const dniValido = (n: number) => `${String(n).padStart(8, '0')}${LETRAS[n % 23]}`;
 const sufijo = `${Date.now().toString(36)}${randomInt(0, 1e6).toString(36)}`;

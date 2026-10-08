@@ -13,8 +13,8 @@ import { AuthService } from '../src/services/auth.service.js';
 import { RegistroService } from '../src/services/registro.service.js';
 import { SolicitudesService } from '../src/services/solicitudes.service.js';
 import { CensoService } from '../src/services/censo.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 const LETRAS = 'TRWAGMYFPDXBNJZSQVHLCKE';
 const dniValido = (n: number) => `${String(n).padStart(8, '0')}${LETRAS[n % 23]}`;

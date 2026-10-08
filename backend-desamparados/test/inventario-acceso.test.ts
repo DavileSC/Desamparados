@@ -14,6 +14,7 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 let dbDisponible = false;
 let server: Server;
@@ -37,7 +38,7 @@ after(async () => {
 const RUTAS = ['/api/inventario/dashboard', '/api/inventario/enseres', '/api/inventario/enseres/1'];
 
 test('un hermano con sesión del área de hermanos no lee el inventario', async (t) => {
-  if (!dbDisponible) return t.skip('sin base de datos');
+  if (!dbDisponible) return t.skip(SIN_DB);
   const user = await crearUsuarioPrueba(Role.USER);
   creados.push(user.id);
   const cookie = `${COOKIE_HERMANO}=${generateToken(user.id, Role.USER, false, 'hermanos')}`;
@@ -49,7 +50,7 @@ test('un hermano con sesión del área de hermanos no lee el inventario', async 
 });
 
 test('un cargo del CMS sin Inventario (Redes) no lee el inventario', async (t) => {
-  if (!dbDisponible) return t.skip('sin base de datos');
+  if (!dbDisponible) return t.skip(SIN_DB);
   const user = await crearUsuarioPrueba(Role.REDES);
   creados.push(user.id);
   const cookie = `${COOKIE_CMS}=${generateToken(user.id, Role.REDES, false, 'cms')}`;
@@ -61,7 +62,7 @@ test('un cargo del CMS sin Inventario (Redes) no lee el inventario', async (t) =
 });
 
 test('Albacería sí lee el inventario', async (t) => {
-  if (!dbDisponible) return t.skip('sin base de datos');
+  if (!dbDisponible) return t.skip(SIN_DB);
   const user = await crearUsuarioPrueba(Role.ALBACERIA);
   creados.push(user.id);
   const cookie = `${COOKIE_CMS}=${generateToken(user.id, Role.ALBACERIA, false, 'cms')}`;

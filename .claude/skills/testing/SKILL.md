@@ -13,7 +13,10 @@ description: Cómo se prueba el proyecto: node:test en el backend, Vitest + Test
   que dice qué fija. Lo que no necesita base (esquemas, `domain/`) se prueba
   sin ella; lo demás, contra MariaDB.
 - Si falta MariaDB, el test se omite **con motivo** dentro del cuerpo:
-  `t.skip(SIN_DB)`. Nunca `skip: () => …` (queda omitido para siempre).
+  `t.skip(SIN_DB)`, o `t.skip(sinDb(detalle))` con el porqué, los dos de
+  `test/fixtures/sin-db.ts`: empiezan por «requiere MariaDB», que es lo que
+  busca la guarda del CI, y `omisiones-sin-db.test.ts` rechaza un motivo
+  escrito a mano. Nunca `skip: () => …` (queda omitido para siempre).
   Omitido no es pasado.
 - Los tests nunca envían correo (guarda en `services/correos/envio.ts`).
 - Datos propios con sufijo aleatorio y limpieza en `after`; si se retiene una

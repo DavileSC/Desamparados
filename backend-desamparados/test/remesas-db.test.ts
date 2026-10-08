@@ -25,8 +25,8 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js'
 import { extracto } from './fixtures/norma43.js';
 import { Norma43Service } from '../src/services/norma43.service.js';
 import { inicioDiaMadrid } from '../src/domain/contabilidad.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const YEAR = 2097;
 const IBAN_VALIDO = 'ES9121000418450200051332';
 const ACREEDOR = {

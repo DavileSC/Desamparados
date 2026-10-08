@@ -18,8 +18,8 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { calendarioIcs, horario, nombreDeFichero, plegar, textoIcs } from '../src/domain/calendario-ics.js';
 import { identidad } from '../src/domain/datos-entidad.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const actualizado = new Date('2026-09-20T10:00:00Z');
 // Horas de Madrid escritas en UTC: en noviembre, una hora menos.
 const triduo = {

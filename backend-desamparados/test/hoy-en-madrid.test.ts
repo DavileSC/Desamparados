@@ -16,8 +16,8 @@ import { PapeletasService } from '../src/services/procesion/papeletas.service.js
 import { MesaService } from '../src/services/procesion/mesa.service.js';
 import { idDeSalida, salida, PASION } from './fixtures/salidas.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 
 before(async () => {

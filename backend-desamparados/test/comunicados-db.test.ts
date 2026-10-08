@@ -18,8 +18,8 @@ import { ponerTransporte } from '../src/services/correos/envio.js';
 import { ComunicadosService, envioTerminado } from '../src/services/comunicados.service.js';
 import { tokenDeBaja } from '../src/domain/comunicados.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;

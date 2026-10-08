@@ -19,6 +19,7 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixt
 import { MisDatosService } from '../src/services/mis-datos.service.js';
 import { DobleFactorService } from '../src/services/doble-factor.service.js';
 import { reclamarTotp } from '../src/services/auth/codigos-2fa.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 /**
  * Fallos que encontró la revisión independiente de los arreglos de acceso del
@@ -32,7 +33,6 @@ import { reclamarTotp } from '../src/services/auth/codigos-2fa.js';
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 before(async () => {
   server = app.listen(0);

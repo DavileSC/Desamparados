@@ -18,8 +18,8 @@ import { ComunicadosService } from '../src/services/comunicados.service.js';
 import { areasActivas, MODULO_DE_AREA, vistazo, type Area } from '../src/domain/datos-areas.js';
 import { DatosService } from '../src/services/datos.service.js';
 import { periodoDe } from '../src/domain/periodo-datos.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const META = { ip: '127.0.0.1', userAgent: 'prueba-enganches' };
 let dbDisponible = false;
 let server: Server;

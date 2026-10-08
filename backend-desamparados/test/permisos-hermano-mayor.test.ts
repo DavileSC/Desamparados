@@ -19,6 +19,7 @@ import { Role } from '@prisma/client';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { publicStorageDir } from '../src/middleware/upload.middleware.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 // Un PNG real de 1×1: la subida comprueba los «magic numbers», no solo la extensión.
 const PNG_1X1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
@@ -34,7 +35,6 @@ const usuariosTestId: number[] = [];
 const roleToUserId: Record<string, number> = {};
 
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let motivoSinDb = '';
 
 async function sondearDb(): Promise<boolean> {

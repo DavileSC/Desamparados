@@ -18,8 +18,8 @@ import { TiendaService } from '../src/services/tienda.service.js';
 import { PagoEnLineaService } from '../src/services/pagos/pago-en-linea.service.js';
 import { TransaccionService } from '../src/services/transaccion.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const PRUEBAS = configuracionRedsys({});
 let dbDisponible = false;
 let server: Server;

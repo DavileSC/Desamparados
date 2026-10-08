@@ -17,6 +17,7 @@ import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '..
 import { validarEntorno } from '../src/config/entorno.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
 import { DobleFactorService } from '../src/services/doble-factor.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 /**
  * Rotación de TOTP_ENC_KEY y rescate del 2FA por consola (punto 1 de la
@@ -36,7 +37,6 @@ process.env.TOTP_ENC_KEY_ANTERIOR = CLAVE_VIEJA.toString('hex');
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 before(async () => {
   server = app.listen(0);

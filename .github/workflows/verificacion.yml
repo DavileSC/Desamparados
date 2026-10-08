@@ -125,7 +125,11 @@ jobs:
       # «Omitido no es pasado» (docs/notas-del-proyecto.md, sección 6): con la
       # base de datos levantada, una prueba omitida por falta de MariaDB es
       # que algo no conecta, y el job debe fallar en vez de quedar en verde.
-      # Las omisiones por otros motivos se listan como aviso.
+      # Las omisiones por otros motivos se listan como aviso. Todas las de
+      # «sin base» salen de backend-desamparados/test/fixtures/sin-db.ts y
+      # empiezan por «requiere MariaDB»; test/omisiones-sin-db.test.ts impide
+      # que una prueba escriba su propio motivo con otro texto, que esta
+      # guarda no vería.
       - name: Comprobar que no se ha omitido ninguna prueba por falta de base de datos
         if: always()
         run: |

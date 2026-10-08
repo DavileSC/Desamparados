@@ -14,9 +14,9 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js'
 import { HttpError } from '../src/utils/error.handle.js';
 import { diaMadrid } from '../src/domain/contabilidad.js';
 import { idDeSalida } from './fixtures/salidas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 /**
  * Valores reconocibles del hermano de prueba. El panel es informativo y no

@@ -15,9 +15,9 @@ import { TransaccionService } from '../src/services/transaccion.service.js';
 import { diaMadrid, inicioDiaMadrid, unAnioAntes } from '../src/domain/contabilidad.js';
 import { claveMes, whereAltasAprobadas } from '../src/domain/panel-censo.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 let usuarioId: number | undefined;
 const hermanos: Record<'pendiente' | 'aprobado' | 'deBaja', number> = { pendiente: 0, aprobado: 0, deBaja: 0 };

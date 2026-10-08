@@ -34,8 +34,8 @@ import {
 import { completarVariantes } from '../src/utils/variantes-publicas.js';
 import sharp from 'sharp';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const hex = () => randomBytes(16).toString('hex');
 
 describe('qué cuenta como fichero subido por el CMS', () => {

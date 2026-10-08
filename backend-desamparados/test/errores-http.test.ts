@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import multer from 'multer';
 import { handleHttp, HttpError, traducirErrorPrisma } from '../src/utils/error.handle.js';
 import { globalErrorHandler } from '../src/middleware/error.middleware.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 /**
  * Traducción de errores a respuestas HTTP.
@@ -249,7 +250,6 @@ describe('globalErrorHandler', () => {
  * notara. El skip va dentro del cuerpo (ver docs/notas-del-proyecto.md, §6).
  */
 describe('con MariaDB', () => {
-  const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
   async function sondearDb(db: { $queryRaw: (q: TemplateStringsArray) => Promise<unknown> }): Promise<boolean> {
     const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());

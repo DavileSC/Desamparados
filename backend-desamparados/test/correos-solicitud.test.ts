@@ -181,7 +181,7 @@ describe('un correo que no sale deja rastro', () => {
 //  Los correos del expediente, disparados desde las operaciones de verdad
 // ---------------------------------------------------------------------------
 
-const SIN_DB = 'sin base de datos disponible';
+import { SIN_DB } from './fixtures/sin-db.js';
 let dbDisponible = false;
 
 before(async () => {

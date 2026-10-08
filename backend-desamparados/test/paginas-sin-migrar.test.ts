@@ -17,7 +17,7 @@ import {
   paginasSinMigrarABloques,
 } from '../src/domain/paginas-sin-migrar.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
+import { SIN_DB } from './fixtures/sin-db.js';
 let dbDisponible = false;
 
 /** La forma que tenía el Recorrido antes de los bloques, recortada. */

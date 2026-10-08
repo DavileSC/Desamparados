@@ -14,9 +14,9 @@ import type { CreateHermanoDto } from '../src/dtos/hermano.dto.js';
 import { SolicitudesService } from '../src/services/solicitudes.service.js';
 import { MisFichasService } from '../src/services/mis-fichas.service.js';
 import { CensoService } from '../src/services/censo.service.js';
+import { sinDb } from './fixtures/sin-db.js';
 
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let motivoSinDb = '';
 
 async function sondearDb(): Promise<boolean> {
@@ -74,7 +74,7 @@ after(async () => {
 });
 
 test('el cierre de huecos da número a las activas que no lo tienen', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
 
   const antigua = await fichaActivaSinNumero();
   const reciente = await db.hermano.update({
@@ -95,7 +95,7 @@ test('el cierre de huecos da número a las activas que no lo tienen', async (t) 
 });
 
 test('con la misma fecha de alta, el desempate por id da un orden estable', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
 
   // fichaActivaSinNumero() siempre pone la misma fechaAlta (1995-03-10): las
   // dos fichas empatan a propósito, para probar el `id asc` de desempate que
@@ -116,7 +116,7 @@ test('con la misma fecha de alta, el desempate por id da un orden estable', asyn
 });
 
 test('el cierre de huecos no renumera a quien ya tiene número', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
 
   const conNumero = await db.hermano.findFirst({
     where: { activo: true, numeroHermano: { not: null } },
@@ -132,7 +132,7 @@ test('el cierre de huecos no renumera a quien ya tiene número', async (t) => {
 });
 
 test('sin huecos, el cierre no hace nada', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
   await SolicitudesService.cerrarHuecosDeNumero();
   const segunda = await SolicitudesService.cerrarHuecosDeNumero();
   assert.deepEqual(segunda.asignados, [], 'la segunda pasada no debe tocar nada');
@@ -147,7 +147,7 @@ test('sin huecos, el cierre no hace nada', async (t) => {
 // el test incapaz de ponerse rojo pasara lo que pasara).
 
 test('una ficha recién creada por su tutor nace sin número, y lo recibe al aprobarla', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
 
   const tutor = await crearUsuarioPrueba();
   usuariosCreados.push(tutor.id);
@@ -168,7 +168,7 @@ test('una ficha recién creada por su tutor nace sin número, y lo recibe al apr
 });
 
 test('dar de baja libera el número y reactivar da uno nuevo', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
 
   const tutor = await crearUsuarioPrueba();
   usuariosCreados.push(tutor.id);
@@ -194,7 +194,7 @@ test('dar de baja libera el número y reactivar da uno nuevo', async (t) => {
 });
 
 test('las fichas de este test no quedan activas sin número tras pasar por sus vías de alta', async (t) => {
-  if (!dbDisponible) return t.skip(motivoSinDb);
+  if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
 
   const tutor = await crearUsuarioPrueba();
   usuariosCreados.push(tutor.id);

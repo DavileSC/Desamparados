@@ -17,11 +17,11 @@ import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { TransaccionService } from '../src/services/transaccion.service.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 const usuarios: Partial<Record<'TESORERIA' | 'REDES' | 'USER', number>> = {};
 const categoriasCreadas: number[] = [];

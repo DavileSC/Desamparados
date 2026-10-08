@@ -21,8 +21,8 @@ import {
   borrarDocumentosPrivados, buscarDocumentosHuerfanos, documentosPrivadosReferenciados,
 } from '../src/utils/documentos-privados.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const hex = () => randomBytes(16).toString('hex');
 const enDisco = (nombre: string) => existsSync(path.join(privateStorageDir, nombre));
 

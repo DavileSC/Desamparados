@@ -13,8 +13,8 @@ import { fechaMasReciente, marcaDestacada } from '../src/domain/destacada-portad
 import { HttpError } from '../src/utils/error.handle.js';
 import { NoticiaService } from '../src/services/noticia.service.js';
 import { PublicacionService } from '../src/services/publicacion.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 describe('marcaDestacada', () => {
   const publicada = { visible: true };

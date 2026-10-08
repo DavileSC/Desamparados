@@ -19,6 +19,7 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixt
 import { DobleFactorService } from '../src/services/doble-factor.service.js';
 import { RegistroService } from '../src/services/registro.service.js';
 import { consumirCodigoDeRespaldo } from '../src/services/auth/codigos-2fa.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 /**
  * Arreglos de acceso y sesión de la auditoría del 11-09-2026 (A1-A10 y el
@@ -32,7 +33,6 @@ import { consumirCodigoDeRespaldo } from '../src/services/auth/codigos-2fa.js';
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 before(async () => {
   server = app.listen(0);

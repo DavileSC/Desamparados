@@ -17,8 +17,8 @@ import type { Articulo } from '../src/domain/articulos.js';
 import { puedeEscribir } from '../src/services/informe-anual.service.js';
 import { informeAnual, informeDeArea } from '../src/services/informes/informes.js';
 import { entradilla, enTexto } from '../src/domain/entradillas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 /** Un año sin datos reales: la prueba escribe su Informe anual y lo borra al acabar. */
 const ANIO_DE_PRUEBA = 2001;
 let dbDisponible = false;

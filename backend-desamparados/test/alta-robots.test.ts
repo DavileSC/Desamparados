@@ -14,8 +14,8 @@ import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { registerSchema } from '../src/schemas/auth.schema.js';
 import { trampaRellena } from '../src/domain/senales-de-robot.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const PASSWORD = 'Trono-Alameda-84-Verde';
 const LETRAS = 'TRWAGMYFPDXBNJZSQVHLCKE';
 const dniValido = (n: number) => `${String(n).padStart(8, '0')}${LETRAS[n % 23]}`;

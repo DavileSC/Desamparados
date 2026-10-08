@@ -17,8 +17,8 @@ import { MisDatosService } from '../src/services/mis-datos.service.js';
 import { anioDeLaMesa } from '../src/services/procesion/zonas.service.js';
 import { PASION, salida } from './fixtures/salidas.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 
 before(async () => {

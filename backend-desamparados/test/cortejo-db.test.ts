@@ -16,8 +16,8 @@ import { HttpError } from '../src/utils/error.handle.js';
 import { CortejoService, leerConfiguracion } from '../src/services/procesion/cortejo.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { idDeSalida, PASION, salida } from './fixtures/salidas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const YEAR = 2098;
 let dbDisponible = false;
 let server: Server;

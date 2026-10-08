@@ -19,8 +19,8 @@ import {
 import { PagoEnLineaService } from '../src/services/pagos/pago-en-linea.service.js';
 import { ZonasService } from '../src/services/procesion/zonas.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const PRUEBAS = configuracionRedsys({});
 
 /** Un aviso como los de Redsys: parámetros en base64 y firma en base64 «de URL». */

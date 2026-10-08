@@ -24,8 +24,8 @@ import {
 } from '../src/services/auth/codigos-2fa.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const NUEVA = 'Cirio-Alameda-2026-Verde';
 
 let server: Server;
