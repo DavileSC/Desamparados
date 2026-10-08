@@ -12,8 +12,8 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { fechaLimite, puedeDarPorHecho } from '../src/domain/avisos.js';
 import { ModulosService } from '../src/services/modulos.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
@@ -151,6 +151,27 @@ describe('la foto del retablo', () => {
     assert.equal((await pedir('/retablo', hm.cookie, 'PUT', { foto: null, x: 120, y: 50 })).status, 400);
     const redes = await cargo(Role.REDES);
     assert.equal((await pedir('/retablo', redes.cookie, 'PUT', { foto: null, x: 50, y: 50 })).status, 403);
+  });
+});
+
+describe('quién lee y ajusta el retablo (SA5)', () => {
+  test('sin sesión, 401; el resto de la junta ni lo lee ni lo guarda; Administración y el Hermano Mayor, sí', async (t) => {
+    assert.equal((await fetch(`${baseUrl}/api/panel/retablo`)).status, 401);
+    assert.equal((await fetch(`${baseUrl}/api/panel/retablo`, { method: 'PUT' })).status, 401);
+    if (!dbDisponible) return t.skip(SIN_DB);
+    for (const rol of [Role.SECRETARIA, Role.TESORERIA, Role.REDES, Role.ALBACERIA, Role.USER]) {
+      const otro = await cargo(rol);
+      assert.equal((await pedir('/retablo', otro.cookie)).status, 403, `${rol} no lee los ajustes`);
+      assert.equal((await pedir('/retablo', otro.cookie, 'PUT', { foto: null, x: 50, y: 50 })).status, 403, `${rol} no los guarda`);
+    }
+    for (const rol of [Role.ADMIN, Role.HERMANO_MAYOR]) {
+      const quien = await cargo(rol);
+      const leido = await pedir('/retablo', quien.cookie);
+      assert.equal(leido.status, 200, rol);
+      const ajustes = await leido.json() as { x: number; y: number; opciones: unknown };
+      assert.ok(ajustes.opciones, 'con las opciones para el formulario');
+      assert.equal((await pedir('/retablo', quien.cookie, 'PUT', { foto: null, x: ajustes.x, y: ajustes.y })).status, 200, rol);
+    }
   });
 });
 

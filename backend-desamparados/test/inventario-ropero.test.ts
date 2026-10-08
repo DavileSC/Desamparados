@@ -21,8 +21,8 @@ import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
@@ -62,7 +62,7 @@ after(async () => {
 
 // El ropero (prendas, hermanos) vive en /api/ropero; los enseres y el
 // dashboard se quedan en /api/inventario (ver backend ropero.routes.ts).
-const esRopero = (ruta: string) => ruta.startsWith('/prendas') || ruta.startsWith('/hermanos') || ruta.startsWith('/recuento');
+const esRopero = (ruta: string) => ['/prendas', '/hermanos', '/recuento', '/cingulos'].some((r) => ruta.startsWith(r));
 const como = (rol: Role, ruta: string, metodo = 'GET', cuerpo?: unknown) =>
   fetch(`${baseUrl}${esRopero(ruta) ? '/api/ropero' : '/api/inventario'}${ruta}`, {
     method: metodo,
@@ -157,20 +157,31 @@ describe('préstamos del ropero (D15)', () => {
     assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}`, 'PUT', { estado: 'DISPONIBLE' })).status, 200);
   });
 
+  // Cada una con su prenda: antes dependían de la que creaba la prueba de
+  // arriba y, si esa fallaba, se omitían en vez de fallar (SA4).
   test('prestar a un hermano que no existe responde 404 y no toca la prenda', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    if (!prendaId) return t.skip('depende de la prenda creada en la prueba anterior');
-    const res = await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { hermanoId: 2_000_000_000 });
-    assert.equal(res.status, 404);
-    const prenda = await db.prenda.findUnique({ where: { id: prendaId } });
-    assert.equal(prenda?.estado, 'DISPONIBLE');
-    assert.equal(prenda?.hermanoId, null);
+    const propia = await db.prenda.create({ data: { numero: `${numeroPrenda}-404`, tipo: 'TUNICA', estado: 'DISPONIBLE' } });
+    try {
+      const res = await como(Role.ALBACERIA, `/prendas/${propia.id}/asignar`, 'POST', { hermanoId: 2_000_000_000 });
+      assert.equal(res.status, 404);
+      const prenda = await db.prenda.findUnique({ where: { id: propia.id } });
+      assert.equal(prenda?.estado, 'DISPONIBLE');
+      assert.equal(prenda?.hermanoId, null);
+    } finally {
+      await db.prenda.deleteMany({ where: { id: propia.id } });
+    }
   });
 
   test('ya no se presta tecleando el número de hermano', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
-    if (!prendaId) return t.skip('depende de la prenda creada en la prueba anterior');
-    assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { numeroHermano })).status, 400);
+    const propia = await db.prenda.create({ data: { numero: `${numeroPrenda}-NUM`, tipo: 'TUNICA', estado: 'DISPONIBLE' } });
+    try {
+      assert.equal((await como(Role.ALBACERIA, `/prendas/${propia.id}/asignar`, 'POST', { numeroHermano })).status, 400);
+      assert.equal((await db.prenda.findUnique({ where: { id: propia.id } }))?.estado, 'DISPONIBLE');
+    } finally {
+      await db.prenda.deleteMany({ where: { id: propia.id } });
+    }
   });
 
   // NG9 (auditoría 07-10-2026): se borraba una prenda que seguía en casa de un
@@ -233,6 +244,65 @@ describe('recuento del ropero', () => {
       for (const g of grupos) assert.equal(Object.values(g.estados).reduce((a, b) => a + b, 0), g.total, g.tipo);
     } finally {
       await db.prenda.delete({ where: { id: p.id } });
+    }
+  });
+});
+
+// SA5: las dos acciones del ropero que no tenían prueba HTTP.
+describe('lavado y cíngulos (SA5)', () => {
+  test('sin sesión y sin cargo de patrimonio no se tocan', async (t) => {
+    assert.equal((await fetch(`${baseUrl}/api/ropero/prendas/lavadas`, { method: 'POST' })).status, 401);
+    assert.equal((await fetch(`${baseUrl}/api/ropero/cingulos`, { method: 'PUT' })).status, 401);
+    if (!dbDisponible) return t.skip(SIN_DB);
+    assert.equal((await como(Role.USER, '/prendas/lavadas', 'POST', { ids: [1] })).status, 403);
+    assert.equal((await como(Role.USER, '/cingulos', 'PUT', { total: 10 })).status, 403);
+  });
+
+  test('marcar lavadas devuelve a disponible solo las del lavado que se nombran', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    // Siempre con ids: sin ellos se marcan TODAS las del lavado, también las
+    // de la base de desarrollo.
+    const [lavada, otraLavada, enTaller] = await Promise.all([
+      db.prenda.create({ data: { numero: `${numeroPrenda}-L1`, tipo: 'TUNICA', estado: 'LAVADO' } }),
+      db.prenda.create({ data: { numero: `${numeroPrenda}-L2`, tipo: 'TUNICA', estado: 'LAVADO' } }),
+      db.prenda.create({ data: { numero: `${numeroPrenda}-T1`, tipo: 'TUNICA', estado: 'TALLER' } }),
+    ]);
+    try {
+      const res = await como(Role.ALBACERIA, '/prendas/lavadas', 'POST', { ids: [lavada.id, enTaller.id] });
+      assert.equal(res.status, 200, await res.clone().text());
+      assert.deepEqual(await res.json(), { ids: [lavada.id], lavadas: 1 }, 'la del taller no estaba en el lavado');
+      const estados = Object.fromEntries((await db.prenda.findMany({ where: { id: { in: [lavada.id, otraLavada.id, enTaller.id] } } })).map((p) => [p.id, p.estado]));
+      assert.equal(estados[lavada.id], 'DISPONIBLE');
+      assert.equal(estados[otraLavada.id], 'LAVADO', 'la que no se nombra sigue en el lavado');
+      assert.equal(estados[enTaller.id], 'TALLER');
+
+      assert.equal((await como(Role.ALBACERIA, '/prendas/lavadas', 'POST', { ids: [0] })).status, 400);
+    } finally {
+      await db.prenda.deleteMany({ where: { id: { in: [lavada.id, otraLavada.id, enTaller.id] } } });
+    }
+  });
+
+  test('el total de cíngulos se cambia, se valida y no baja de los prestados', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const antes = await db.configuracion.findUnique({ where: { key: 'cingulos_total' } });
+    try {
+      const recuento = await (await como(Role.ALBACERIA, '/cingulos')).json() as { total: number; prestados: number };
+      const nuevo = recuento.prestados + 3;
+      const res = await como(Role.ALBACERIA, '/cingulos', 'PUT', { total: nuevo });
+      assert.equal(res.status, 200, await res.clone().text());
+      const despues = await res.json() as { total: number; enElRopero: number; prestados: number };
+      assert.equal(despues.total, nuevo);
+      assert.equal(despues.enElRopero, 3);
+
+      for (const total of [-1, 5001, 2.5, 'diez']) {
+        assert.equal((await como(Role.ALBACERIA, '/cingulos', 'PUT', { total })).status, 400, String(total));
+      }
+      if (recuento.prestados > 0) {
+        assert.equal((await como(Role.ALBACERIA, '/cingulos', 'PUT', { total: recuento.prestados - 1 })).status, 409);
+      }
+    } finally {
+      if (antes) await db.configuracion.update({ where: { key: 'cingulos_total' }, data: { value: antes.value } });
+      else await db.configuracion.deleteMany({ where: { key: 'cingulos_total' } });
     }
   });
 });
