@@ -123,6 +123,10 @@ export const ACCIONES_AUDITORIA = {
   PLAZO_PAPELETAS_ABRIR: 'PLAZO_PAPELETAS_ABRIR',
   PLAZO_PAPELETAS_CERRAR: 'PLAZO_PAPELETAS_CERRAR',
   // Secretaría
+  // Un alta por la web con un correo o un DNI ya registrados: la web responde
+  // como si se hubiera creado (no puede decir quién está en el censo), y esto
+  // es lo que le queda a Secretaría para saberlo.
+  ALTA_NO_TRAMITADA: 'ALTA_NO_TRAMITADA',
   SOLICITUD_APROBAR: 'SOLICITUD_APROBAR',
   SOLICITUD_RECHAZAR: 'SOLICITUD_RECHAZAR',
   HERMANO_BAJA: 'HERMANO_BAJA',

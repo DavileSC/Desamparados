@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { RegistroService } from '../services/registro.service';
+import { MENSAJE_ALTA, RegistroService } from '../services/registro.service';
 import { DobleFactorService } from '../services/doble-factor.service';
 import { MisDatosService } from '../services/mis-datos.service';
 import { AuthService, AreaHermanosApagadaError, CuentaSinCmsError, Testigo2FACaducadoError } from '../services/auth.service';
@@ -36,16 +36,19 @@ export class AuthController {
       console.warn('[Alta] Solicitud descartada como spam (campo trampa relleno).');
       return res.status(201).json({
         fichas: (body.menores?.length ?? 0) + (body.titular ? 1 : 0),
-        message: 'Solicitud enviada correctamente. Revisa tu email y pásate por Secretaría para formalizar tu alta.',
+        message: MENSAJE_ALTA,
       });
     }
 
-    const result = await RegistroService.registerUser({ ...body, documentos: req.documentosDelAlta });
+    const { creada, ...respuesta } = await RegistroService.registerUser(
+      { ...body, documentos: req.documentosDelAlta }, AuditoriaService.metaFromReq(req),
+    );
     // Ya están en la ficha: que no los borre la limpieza de alta-documentos.
-    res.locals.conservarDocumentos = true;
+    // Si el alta chocó con algo ya registrado, no hay ficha y se borran.
+    res.locals.conservarDocumentos = creada;
 
-    // Ahora devuelve un 201 Created con el mensaje de "Pásate por Secretaría"
-    res.status(201).json(result);
+    // El mismo 201 y el mismo cuerpo se haya creado o no: ver registerUser.
+    res.status(201).json(respuesta);
   });
 
   /**
