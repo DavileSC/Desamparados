@@ -15,7 +15,9 @@ if (!salida) {
   process.exit(2)
 }
 
-const { dominio } = JSON.parse(readFileSync(entidad, 'utf8')).identidad
+// Sin la marca BOM que deja Windows al guardar (U+FEFF): JSON.parse no la acepta.
+const texto = readFileSync(entidad, 'utf8')
+const { dominio } = JSON.parse(texto.charCodeAt(0) === 0xfeff ? texto.slice(1) : texto).identidad
 if (!/^www\.[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(dominio ?? '')) {
   console.error(`El dominio de ${entidad} («${dominio}») tiene que ser del tipo www.ejemplo.com.`)
   process.exit(1)

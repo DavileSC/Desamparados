@@ -45,7 +45,15 @@ export function rutaDeDatosEntidad(entorno = process.env) {
   return ruta
 }
 
+/**
+ * El texto de un fichero de datos, sin la marca BOM del principio. PowerShell
+ * (`>` y `Out-File -Encoding utf8` en la 5.1) y el Bloc de notas la ponen al
+ * guardar en Windows, y JSON.parse no la acepta: el 08-10-2026 llegó así al
+ * servidor y la API no habría arrancado. Vite ya la quita al importar el JSON.
+ */
+export const sinBom = (texto) => (texto.charCodeAt(0) === 0xfeff ? texto.slice(1) : texto)
+
 /** El contenido del fichero de la instalación (ver `rutaDeDatosEntidad`). */
 export function leerDatosEntidad(entorno = process.env) {
-  return JSON.parse(readFileSync(rutaDeDatosEntidad(entorno), 'utf8'))
+  return JSON.parse(sinBom(readFileSync(rutaDeDatosEntidad(entorno), 'utf8')))
 }

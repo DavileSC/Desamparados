@@ -33,4 +33,5 @@ export interface DatosEntidad {
 export declare const RUTA_INSTALACION: string
 export declare const RUTA_EJEMPLO: string
 export declare function rutaDeDatosEntidad(entorno?: Readonly<Record<string, string | undefined>>): string
+export declare function sinBom(texto: string): string
 export declare function leerDatosEntidad(entorno?: Readonly<Record<string, string | undefined>>): DatosEntidad
