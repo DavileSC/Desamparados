@@ -57,4 +57,19 @@ describe('HojaCenso', () => {
     await waitFor(() => expect(onImportado).toHaveBeenCalledWith('Se han importado 3 fichas.'))
     expect(fetch.mock.calls.some(([url, init]) => String(url).endsWith('/hermanos/admin/censo/importar') && (init as RequestInit).body instanceof FormData)).toBe(true)
   })
+
+  // El servidor mide el .xlsx descomprimido antes de abrirlo: pasado de 50 MB
+  // responde 413, y eso tiene que verse en la ventana, no quedarse en blanco.
+  it('un Excel demasiado grande una vez abierto (413) se dice en la ventana', async () => {
+    const user = userEvent.setup()
+    const mensaje = 'El Excel es demasiado grande una vez abierto: pártelo en varios o guárdalo como CSV.'
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(json({ error: mensaje }, 413))))
+    renderWithProviders(<HojaCenso onImportado={() => undefined} onError={() => undefined} />)
+    await user.click(screen.getByRole('button', { name: 'Importar' }))
+    const ventana = await screen.findByRole('dialog')
+    await user.upload(within(ventana).getByLabelText('Fichero del censo'), new File(['PK'], 'censo.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+
+    expect(await within(ventana).findByText(mensaje)).toBeInTheDocument()
+  })
 })
+
