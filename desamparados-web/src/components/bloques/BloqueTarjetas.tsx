@@ -6,6 +6,7 @@ import { ICONOS } from './iconos'
 import { anchoMaximo, valorDe } from './presentacion'
 import type { BloqueTarjetas as Datos, TarjetaEnlace } from '../../lib/api/contenido'
 import { esDestinoValido } from '../../lib/destinos'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 type Estilo = 'cristal' | 'papel' | 'contorno' | 'granate' | 'numeradas'
 
@@ -74,7 +75,7 @@ function Tarjeta({ tarjeta, estilo, horizontal, centrada }: { tarjeta: TarjetaEn
 
   const media = foto
     ? (
-      <Box component="img" src={foto} alt={tarjeta.fotoAlt ?? ''} loading="lazy" decoding="async"
+      <Box component="img" {...propsDeFoto(foto, '(min-width: 900px) 400px, 100vw')} alt={tarjeta.fotoAlt ?? ''} loading="lazy" decoding="async"
         sx={horizontal
           ? { width: { xs: '100%', sm: '38%' }, aspectRatio: { xs: '16 / 9', sm: 'auto' }, objectFit: 'cover', flexShrink: 0, alignSelf: 'stretch' }
           : { width: '100%', aspectRatio: '16 / 10', objectFit: 'cover', display: 'block' }} />

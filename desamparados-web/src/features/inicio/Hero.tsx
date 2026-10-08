@@ -15,6 +15,7 @@ import { FUNDIDO_S, IMAGENES_POR_DEFECTO, INTERVALO_ROTACION_MS, OPACIDAD_FOTO }
 import { BorradorPortadaContext, usePortada, useTextosPortada } from './useContenidoPortada'
 import { useModulos } from '../../hooks/useModulos'
 import { ENCUADRE_MOVIL_POR_DEFECTO } from '../../lib/api/portada'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 // Desplazamiento máximo de la imagen (px) cuando el cursor está en el borde del hero
 const PARALLAX_X = 14
@@ -169,22 +170,34 @@ export default function Hero() {
           />
         )}
         {!conVideo && imagenes?.map((imagen, i) => {
-          // Se montan la visible, las ya enseñadas y la siguiente; las demás
-          // no gastan red hasta que se acerca su turno.
-          if (i > tick + 1) return null
+          // Solo se montan la visible, la siguiente (así ya está cargada cuando
+          // le toca fundirse) y la anterior, que tiene que seguir debajo
+          // mientras la nueva se funde encima. Las demás no gastan red ni
+          // memoria hasta que se acerca su turno, por muchas fotos que ponga
+          // el CMS.
+          const anterior = (actual - 1 + total) % total
+          const siguiente = (actual + 1) % total
+          if (i !== actual && i !== siguiente && !(tick > 0 && i === anterior)) return null
           const activa = i === actual
           // La primera foto, además de fundirse, se posa desde un zoom ligero: es
           // la entrada de la página. Las demás solo se funden; un zoom en cada
           // cambio de foto cansaría.
           const sePosa = i === 0 && !reduceMotion
+          // Solo la primera de la visita compite por la red con lo urgente; las
+          // que vienen detrás tienen siete segundos para llegar.
+          const primera = i === 0 && tick === 0
           return (
             <Box
               key={`${i}-${imagen.url}`}
               component={motion.img}
-              src={imagen.url}
+              // A lo ancho de la pantalla; pero en vertical la foto se recorta por
+              // los lados para llenar el alto, y lo que manda es ese alto (una
+              // foto apaisada necesita ~1,5 veces el alto de ancho).
+              {...propsDeFoto(imagen.url, '(orientation: portrait) 150vh, 100vw')}
               alt={imagen.descripcion}
               aria-hidden={activa ? undefined : true}
-              fetchPriority={i === 0 ? 'high' : undefined}
+              fetchPriority={primera ? 'high' : 'low'}
+              loading={primera ? 'eager' : 'lazy'}
               decoding="async"
               // El zoom va en `transform`, no en `scale`: así lo hace la tarjeta
               // gráfica y no da tirones mientras se monta el resto de la portada.

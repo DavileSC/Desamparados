@@ -5,6 +5,7 @@ import { GOLD, SERIF, ceja as estiloCeja } from '../../features/inicio/estilos'
 import { useModoEdicion } from './modoEdicion'
 import { ENCUADRE_POR_DEFECTO, srcSetDeCabecera } from './cabecera'
 import Hueso, { Lineas } from '../esqueleto/Hueso'
+import { caerALaOriginal, srcsetDeSubida } from '../../lib/fotoSubida'
 
 /** Fondo de la página: la foto se funde a él por abajo. */
 const FONDO = '#121113'
@@ -110,7 +111,8 @@ export default function CabeceraASangre({ titulo, subtitulo, foto, fotoAlt, encu
           <Box
             component="img"
             src={foto}
-            srcSet={srcSetDeCabecera(foto)}
+            srcSet={srcSetDeCabecera(foto) ?? srcsetDeSubida(foto)}
+            onError={(e) => { caerALaOriginal(e.currentTarget) }}
             sizes="100vw"
             alt={fotoAlt}
             decoding="async"

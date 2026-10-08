@@ -8,6 +8,7 @@ import ParrafoQueSeEnciende from '../../components/ParrafoQueSeEnciende'
 import { CURVA_ENTRADA } from '../../components/entrada'
 import { SERIF } from './estilos'
 import { useTextosPortada } from './useContenidoPortada'
+import { caerALaOriginal, srcsetDeSubida } from '../../lib/fotoSubida'
 
 // La foto entra posándose desde este zoom, y tarda esto en quedarse quieta.
 const ZOOM_DE_ENTRADA = 1.06
@@ -50,8 +51,9 @@ export default function EscenaProcesion() {
             de una tienda. Foto y alt editables desde el CMS; ver FOTO_DEL_REPOSITORIO arriba. */}
         <img
           src={sabadoDePasion.imagenUrl}
-          srcSet={esLaDelRepositorio ? SRCSET_DEL_REPOSITORIO : undefined}
-          sizes={esLaDelRepositorio ? '100vw' : undefined}
+          srcSet={esLaDelRepositorio ? SRCSET_DEL_REPOSITORIO : srcsetDeSubida(sabadoDePasion.imagenUrl)}
+          sizes="100vw"
+          onError={(e) => { caerALaOriginal(e.currentTarget) }}
           alt={sabadoDePasion.imagenAlt}
           loading="lazy"
           decoding="async"

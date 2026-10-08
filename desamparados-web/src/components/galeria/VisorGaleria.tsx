@@ -9,6 +9,7 @@ import ScreenRotationIcon from '@mui/icons-material/ScreenRotation'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { esVideoPropio } from '../../lib/videoPropio'
 import { DORADO, animacionDeEntrada, animacionDeSalida, botonRedondo, fondoDesenfocado, imagenDe, useSaliente, type Medida } from './formato'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 const entra = keyframes`from { opacity: 0; transform: scale(0.98) } to { opacity: 1; transform: none }`
 
@@ -84,7 +85,7 @@ function Medio({ medio, activo, entrada = true, reproduciendo, onReproducir, med
     <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: activo && entrada ? `${entra} 240ms ease-out` : 'none' }}>
       <Box
         component="img"
-        src={imagenDe(medio)}
+        {...propsDeFoto(imagenDe(medio), '100vw')}
         alt={medio.alt}
         data-medida={imagenDe(medio)}
         onLoad={medir}
@@ -143,14 +144,14 @@ function VisorEscritorio({ medios, indice, medio, varios, onIr, onCerrar, reprod
       <Box sx={{ position: 'relative', flex: 1, minWidth: 0, overflow: 'hidden' }}>
         {sale && (
           <Box key={`sale-${saliente}`} aria-hidden="true" sx={{ position: 'absolute', inset: 0, ...animacionDeSalida }}>
-            <Box component="img" src={imagenDe(sale)} alt="" sx={fondoDesenfocado(70, 0.32)} />
+            <Box component="img" {...propsDeFoto(imagenDe(sale), '320px')} alt="" sx={fondoDesenfocado(70, 0.32)} />
             <Box sx={hueco}>
-              <Box component="img" src={imagenDe(sale)} alt="" sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', borderRadius: 1 }} />
+              <Box component="img" {...propsDeFoto(imagenDe(sale), '100vw')} alt="" sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', borderRadius: 1 }} />
             </Box>
           </Box>
         )}
         <Box key={indice} sx={{ position: 'absolute', inset: 0, ...animacionDeEntrada(sale !== undefined) }}>
-          <Box component="img" src={imagenDe(medio)} alt="" aria-hidden="true" sx={fondoDesenfocado(70, 0.32)} />
+          <Box component="img" {...propsDeFoto(imagenDe(medio), '320px')} alt="" aria-hidden="true" sx={fondoDesenfocado(70, 0.32)} />
           <Box sx={hueco}>
             <Medio medio={medio} activo entrada={false} reproduciendo={reproduciendo.includes(medio.url)} onReproducir={() => onReproducir(medio.url)} medidaDe={medidaDe} medir={medir} />
           </Box>
@@ -185,7 +186,7 @@ function VisorEscritorio({ medios, indice, medio, varios, onIr, onCerrar, reprod
                 aria-current={i === indice ? 'true' : undefined}
                 sx={{ position: 'relative', height: 72, borderRadius: 1, overflow: 'hidden', opacity: i === indice ? 1 : 0.5, outline: i === indice ? `2px solid ${DORADO}` : 'none', outlineOffset: 2, '&:hover': { opacity: 1 } }}
               >
-                <Box component="img" src={imagenDe(m)} alt="" loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <Box component="img" {...propsDeFoto(imagenDe(m), '160px')} alt="" loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 {m.tipo === 'video' && <PlayArrowIcon aria-hidden="true" sx={{ position: 'absolute', right: 4, bottom: 4, fontSize: 18, color: DORADO }} />}
               </ButtonBase>
             ))}
@@ -266,7 +267,7 @@ function VisorMovil({ medios, indice, medio, varios, onIr, onCerrar, reproducien
       >
         {medios.map((m, i) => (
           <Box key={`${imagenDe(m)}-${i}`} sx={{ position: 'relative', flex: '0 0 100%', height: '100%', scrollSnapAlign: 'start', overflow: 'hidden' }}>
-            <Box component="img" src={imagenDe(m)} alt="" aria-hidden="true" loading={Math.abs(i - indice) <= 1 ? 'eager' : 'lazy'} sx={fondoDesenfocado(40, 0.3)} />
+            <Box component="img" {...propsDeFoto(imagenDe(m), '320px')} alt="" aria-hidden="true" loading={Math.abs(i - indice) <= 1 ? 'eager' : 'lazy'} sx={fondoDesenfocado(40, 0.3)} />
             <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', containerType: 'size' }}>
             <Medio medio={m} activo={i === indice} entrada={false} reproduciendo={reproduciendo.includes(m.url)} onReproducir={() => onReproducir(m.url)} medidaDe={medidaDe} medir={medir} />
             </Box>

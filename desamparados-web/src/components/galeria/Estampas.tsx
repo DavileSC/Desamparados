@@ -7,6 +7,7 @@ import { useReducedMotion } from 'framer-motion'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { imagenDe } from './formato'
 import { BOTON } from '../estiloDeBoton'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 /** Los botones del pie de las estampas: el estilo discreto, algo más bajos. */
 const BOTON_ESTAMPA = { ...BOTON.oscuro, minHeight: 40, px: 2, fontSize: 14 } as const
@@ -99,7 +100,7 @@ export default function Estampas({ medios, onAbrir }: {
                 transition: arrastrando || quieto ? 'none' : 'transform .6s cubic-bezier(.2, .8, .2, 1)',
               }}
             >
-              <Box component="img" src={imagenDe(m)} alt="" draggable={false} loading="lazy" decoding="async"
+              <Box component="img" {...propsDeFoto(imagenDe(m), '(min-width: 900px) 33vw, 50vw')} alt="" draggable={false} loading="lazy" decoding="async"
                 sx={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
               {m.tipo === 'video' && (
                 <Box sx={{ position: 'absolute', inset: '10px 10px 40px', display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>

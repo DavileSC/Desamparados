@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { SERIF, ceja } from '../../features/inicio/estilos'
 import { anchoMaximo } from './presentacion'
 import type { BloqueCarrusel as Datos, PiezaDeCarrusel } from '../../lib/api/contenido'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 /** Oro apagado de la familia de la pieza, el mismo de la relación de cargos. */
 const ORO_SUAVE = '#c4af79'
@@ -92,7 +93,7 @@ export default function BloqueCarrusel({ bloque }: { bloque: Datos }) {
             // Clave posicional: una pieza no tiene identificador, y la foto no guarda estado.
             key={i}
             component="img"
-            src={p.foto.url}
+            {...propsDeFoto(p.foto.url, '(min-width: 900px) 100vw, 190vw')}
             alt={p.foto.alt}
             aria-hidden={i === actual ? undefined : true}
             // La que se ve y sus dos vecinas, ya cargadas: así la flecha no enseña un hueco.
@@ -194,7 +195,7 @@ function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acab
         <Box
           key={i}
           component="img"
-          src={p.foto.url}
+          {...propsDeFoto(p.foto.url, '(min-width: 900px) 100vw, 190vw')}
           alt={p.foto.alt}
           aria-hidden={i === actual ? undefined : true}
           loading={Math.abs(i - actual) <= 1 || (actual === 0 && i === total - 1) ? 'eager' : 'lazy'}

@@ -6,6 +6,7 @@ import { GOLD, GRANATE, SERIF, ceja } from '../../features/inicio/estilos'
 import { parrafosDe, type BloqueCronologia as Datos, type HitoHistoria } from '../../lib/api/contenido'
 import { idDeHito } from './cronologia'
 import { valorDe } from './presentacion'
+import { caerALaOriginal, propsDeFoto, srcsetDeSubida } from '../../lib/fotoSubida'
 
 /** El fondo de la página: el hueco del punto del raíl se rellena con él. */
 const FONDO = '#121113'
@@ -341,6 +342,9 @@ function FotoDelHito({ url, alt, vivo }: { url: string; alt: string; vivo: boole
       component="img"
       ref={ref}
       src={cerca || !vivo ? url : undefined}
+      srcSet={cerca || !vivo ? srcsetDeSubida(url) : undefined}
+      sizes="(min-width: 600px) 560px, 100vw"
+      onError={(e) => { caerALaOriginal(e.currentTarget) }}
       alt={alt}
       decoding="async"
       onLoad={() => setCargada(true)}
@@ -382,7 +386,7 @@ function CronologiaHorizontal({ bloque, conAnclas }: { bloque: Datos; conAnclas:
             </Typography>
             <Typography component="span" sx={{ ...ceja, mb: 2, mt: 1, letterSpacing: '0.22em' }}>{hito.etiqueta}</Typography>
             {hito.foto.url !== '' && (
-              <Box component="img" src={hito.foto.url} alt={hito.foto.alt} loading="lazy" decoding="async"
+              <Box component="img" {...propsDeFoto(hito.foto.url, '(min-width: 900px) 500px, 100vw')} alt={hito.foto.alt} loading="lazy" decoding="async"
                 sx={{ display: 'block', width: '100%', aspectRatio: '16 / 10', objectFit: 'cover', mb: 2 }} />
             )}
             <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: { xs: 22, md: 24 }, lineHeight: 1.25, mb: 1.5 }}>{hito.titulo}</Typography>
@@ -473,7 +477,7 @@ function CintaViva({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean })
                 </Typography>
                 <Typography component="span" sx={{ ...ceja, mb: 2.5, mt: 2, letterSpacing: '0.22em' }}>{hito.etiqueta}</Typography>
                 {hito.foto.url !== '' && (
-                  <Box component="img" src={hito.foto.url} alt={hito.foto.alt} loading="lazy" decoding="async"
+                  <Box component="img" {...propsDeFoto(hito.foto.url, '(min-width: 900px) 500px, 100vw')} alt={hito.foto.alt} loading="lazy" decoding="async"
                     sx={{ display: 'block', width: '100%', aspectRatio: '16 / 10', objectFit: 'cover', mb: 2.5 }} />
                 )}
                 <Typography component="h3" sx={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.2, mb: 1.5 }}>{hito.titulo}</Typography>

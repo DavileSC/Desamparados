@@ -9,6 +9,7 @@ import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { DORADO, animacionDeEntrada, animacionDeSalida, botonRedondo, fondoDesenfocado, imagenDe, useSaliente, type Medida } from './formato'
 import ReproductorEnLinea from './ReproductorEnLinea'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 /** Lo que dura cada foto en el pase automático. */
 export const DURACION_PASE = 6000
@@ -73,11 +74,11 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
       <Box sx={{ position: 'relative', aspectRatio: '16 / 9', maxHeight: '78vh', width: '100%', borderRadius: 1.5, overflow: 'hidden', bgcolor: '#070608' }}>
         {sale && (
           <Box key={`sale-${saliente}`} aria-hidden="true" sx={{ position: 'absolute', inset: 0, overflow: 'hidden', ...animacionDeSalida }}>
-            <Box component="img" src={imagenDe(sale)} alt="" sx={fondoDesenfocado(38, 0.45)} />
-            <Box component="img" src={imagenDe(sale)} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', objectFit: medidaDe(sale).formato === 'h' ? 'cover' : 'contain' }} />
+            <Box component="img" {...propsDeFoto(imagenDe(sale), '320px')} alt="" sx={fondoDesenfocado(38, 0.45)} />
+            <Box component="img" {...propsDeFoto(imagenDe(sale), '(min-width: 900px) 75vw, 100vw')} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', objectFit: medidaDe(sale).formato === 'h' ? 'cover' : 'contain' }} />
           </Box>
         )}
-        <Box component="img" key={`fondo-${actual}`} src={imagenDe(medio)} alt="" aria-hidden="true" sx={{ ...fondoDesenfocado(38, 0.45), ...animacionDeEntrada(sale !== undefined) }} />
+        <Box component="img" key={`fondo-${actual}`} {...propsDeFoto(imagenDe(medio), '320px')} alt="" aria-hidden="true" sx={{ ...fondoDesenfocado(38, 0.45), ...animacionDeEntrada(sale !== undefined) }} />
         {reproduciendo ? (
           <ReproductorEnLinea medio={medio} onTerminar={() => setSonando(null)} />
         ) : (
@@ -90,7 +91,7 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
           <Box key={`foto-${actual}`} sx={{ position: 'absolute', inset: 0, ...animacionDeEntrada(sale !== undefined) }}>
           <Box
             component="img"
-            src={imagenDe(medio)}
+            {...propsDeFoto(imagenDe(medio), '(min-width: 900px) 75vw, 100vw')}
             alt={medio.alt}
             data-medida={imagenDe(medio)}
             onLoad={medir}
@@ -158,7 +159,7 @@ export default function Escenario({ medios, actual, onIr, onAbrir, medidaDe, med
                   aria-current={activo ? 'true' : undefined}
                   sx={{ position: 'relative', flex: '0 0 112px', height: 72, borderRadius: 1, overflow: 'hidden', opacity: activo ? 1 : 0.55, outline: activo ? `2px solid ${DORADO}` : 'none', outlineOffset: 2, transition: 'opacity 200ms', '&:hover': { opacity: 1 } }}
                 >
-                  <Box component="img" src={imagenDe(m)} alt="" loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <Box component="img" {...propsDeFoto(imagenDe(m), '160px')} alt="" loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   {m.tipo === 'video' && (
                     <Box aria-hidden="true" sx={{ position: 'absolute', right: 6, bottom: 6, width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(7,6,8,0.7)', color: DORADO, display: 'grid', placeItems: 'center' }}>
                       <PlayArrowIcon sx={{ fontSize: 14 }} />

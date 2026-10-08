@@ -5,6 +5,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { GOLD, GRANATE, PANTALLA_ALTA, SERIF } from '../features/inicio/estilos'
 import type { Noticia } from '../types'
 import Hueso, { Lineas } from './esqueleto/Hueso'
+import { propsDeFoto } from '../lib/fotoSubida'
 
 interface TarjetaNoticiaProps {
   noticia: Noticia
@@ -117,8 +118,7 @@ export default function TarjetaNoticia({ noticia, indice = 0, destacada = false,
         {conFoto ? (
           <Box
             component="img"
-            src={noticia.imagen}
-            onError={() => setFotoRota(noticia.imagen ?? null)}
+            {...propsDeFoto(noticia.imagen ?? '', destacada ? '(min-width: 900px) 66vw, 100vw' : '(min-width: 1200px) 400px, (min-width: 600px) 50vw, 100vw', () => setFotoRota(noticia.imagen ?? null))}
             alt=""
             loading={destacada ? 'eager' : 'lazy'}
             decoding="async"
