@@ -73,7 +73,8 @@ export default function Cortejo({ salida, puestos, puedeCambiar, onAviso }: Prop
     finally { setGuardando(false) }
   }
 
-  const repartibles = estado.papeletas - estado.reparto.fuera
+  // Las de baja cuentan en `papeletas` pero no en `fuera`: el reparto no las ve.
+  const repartibles = estado.papeletas - estado.reparto.fuera - estado.deBaja
 
   return (
     <Box component="section" aria-labelledby="cortejo-titulo" sx={{ mt: 4 }}>
@@ -83,6 +84,12 @@ export default function Cortejo({ salida, puestos, puedeCambiar, onAviso }: Prop
         más antiguos junto al trono; cada tramo recibe una parte en proporción a sus plazas.
       </Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
+      {estado.deBaja > 0 && (
+        <Alert severity="warning" sx={{ mb: 2, maxWidth: 900 }}>
+          {estado.deBaja === 1 ? '1 papeleta es de un hermano de baja' : `${estado.deBaja} papeletas son de hermanos de baja`}: no
+          entran en el reparto ni pasan la puerta. Anularlas lo decide la Junta.
+        </Alert>
+      )}
 
       <Paper sx={{ p: { xs: 2, md: 2.5 }, mb: 2, maxWidth: 900, display: 'grid', gap: 2 }}>
         <Box component="ol" sx={{ m: 0, p: 0, listStyle: 'none', display: 'grid', gap: 1.25 }}>
@@ -153,6 +160,7 @@ export default function Cortejo({ salida, puestos, puedeCambiar, onAviso }: Prop
                     <Box component="span" sx={{ display: 'inline-block', minWidth: 28, color: 'text.secondary' }}>{h.numero ?? '—'}</Box>
                     {h.apellidos}, {h.nombre}
                     <Box component="span" sx={{ color: 'text.secondary' }}>{h.numeroHermano !== null ? ` · n.º ${h.numeroHermano}` : ''}{h.seReparte ? '' : ` · ${h.puesto}`}</Box>
+                    {h.deBaja && <Chip size="small" color="error" variant="outlined" label="De baja" sx={{ ml: 1, height: 20, fontSize: 12 }} />}
                   </Typography>
                 ))}
               </Box>

@@ -36,6 +36,7 @@ const TEXTO: Record<Veredicto, { titulo: string; tono: 'success' | 'warning' | '
   ENTRA: { titulo: 'Adelante', tono: 'success' },
   REPETIDA: { titulo: 'Ya había entrado', tono: 'warning' },
   OTRA_SALIDA: { titulo: 'Papeleta de otra salida', tono: 'error' },
+  DE_BAJA: { titulo: 'De baja en el censo', tono: 'error' },
   ANULADA: { titulo: 'Papeleta anulada', tono: 'error' },
   FALSO: { titulo: 'No es una papeleta válida', tono: 'error' },
 }
@@ -61,6 +62,7 @@ function explicacion(l: Lectura, salida: Salida, salidas: Salida[], year?: numbe
       const otra = salidas.find((s) => s.slug === p.salida)
       return `Es ${otra ? deArticulo(otra.articulo, otra.nombre) : 'de otra salida,'} ${p.year}, no ${deArticulo(salida.articulo, salida.nombre)}${year ? ` ${year}` : ''}.`
     }
+    case 'DE_BAJA': return 'Está de baja: no puede salir. Que hable con Secretaría.'
     case 'ANULADA': return 'La papeleta se anuló: que pase por la mesa.'
     case 'FALSO': return `El código no es de una papeleta ${deLaCorporacion({ corto: true })}, o está dañado. Búscalo por su nombre en «Faltan».`
   }
@@ -69,6 +71,9 @@ function explicacion(l: Lectura, salida: Salida, salidas: Salida[], year?: numbe
 function vibrar(v: Lectura['veredicto']) {
   try { navigator.vibrate?.(v === 'ENTRA' || v === 'FAMILIA' ? 60 : [90, 60, 90]) } catch { /* sin vibración */ }
 }
+
+/** La puerta no le deja entrar (ni a mano): no se le ofrece, aunque venga en el QR de su familia. */
+const puedeEntrar = (p: PapeletaEnPuerta) => !p.entradaEl && !p.deBaja
 
 /** El QR de una familia leído: quiénes son y a quiénes va a dejar pasar el diputado. */
 interface FamiliaEnPuerta {
@@ -127,7 +132,7 @@ export default function PuertaTemploPage() {
       window.clearTimeout(temporizadores.current.pausa)
       window.clearTimeout(temporizadores.current.resultado)
       setLectura(null)
-      setFamilia({ papeletas: l.familia, marcadas: new Set(l.familia.filter((p) => !p.entradaEl).map((p) => p.id)) })
+      setFamilia({ papeletas: l.familia, marcadas: new Set(l.familia.filter(puedeEntrar).map((p) => p.id)) })
       return
     }
     setFamilia(null)
@@ -190,7 +195,8 @@ export default function PuertaTemploPage() {
 
   const cambiarSalida = (nueva: string) => { elegir(nueva); setLectura(null); setFamilia(null); setEntraron(null); setError(null) }
   const tono = lectura && lectura.veredicto !== 'FAMILIA' ? TEXTO[lectura.veredicto] : null
-  const porEntrar = familia ? familia.papeletas.filter((p) => !p.entradaEl).length : 0
+  const porEntrar = familia ? familia.papeletas.filter(puedeEntrar).length : 0
+  const familiaDeBaja = familia ? familia.papeletas.some((p) => p.deBaja && !p.entradaEl) : false
 
   if (cargando) return <CircularProgress aria-label="Cargando la puerta" />
   if (!salida) {
@@ -204,7 +210,7 @@ export default function PuertaTemploPage() {
     <Helmet><title>{`Puerta del templo | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
     <CabeceraSeccion
       titulo="Puerta del templo"
-      subtitulo={estado ? `${salida.nombre} ${estado.year} · ${estado.dentro} de ${estado.total} dentro` : salida.nombre}
+      subtitulo={estado ? `${salida.nombre} ${estado.year} · ${estado.dentro} de ${estado.total} dentro${estado.deBaja > 0 ? ` · ${estado.deBaja} de baja` : ''}` : salida.nombre}
     >
       <SelectorSalida salidas={salidas} valor={slug} onChange={cambiarSalida} />
     </CabeceraSeccion>
@@ -234,7 +240,8 @@ export default function PuertaTemploPage() {
           <Paper role="group" aria-label="QR de familia" sx={{ p: 2, border: 2, borderColor: 'success.main' }}>
             <Typography sx={{ fontSize: 20, fontWeight: 700 }}>QR de familia · {familia.papeletas.length} papeletas</Typography>
             <Typography color="text.secondary" sx={{ mt: 0.25, mb: 1 }}>
-              {porEntrar === 0 ? 'Ya habían entrado todos.' : 'Desmarca al que no esté: entrará luego con su propia papeleta.'}
+              {porEntrar > 0 ? 'Desmarca al que no esté: entrará luego con su propia papeleta.'
+                : familiaDeBaja ? 'No queda nadie que pueda entrar.' : 'Ya habían entrado todos.'}
             </Typography>
             <Stack>
               {familia.papeletas.map((p) => p.entradaEl
@@ -244,6 +251,13 @@ export default function PuertaTemploPage() {
                     <Typography variant="body2" sx={{ color: 'warning.main' }}>Ya entró a las {hora(p.entradaEl)}{p.entradaPor ? `, lo apuntó ${p.entradaPor}` : ''}</Typography>
                   </Box>
                 )
+                : p.deBaja
+                  ? (
+                    <Box key={p.id} sx={{ py: 0.75, pl: 4 }}>
+                      <Typography sx={{ fontWeight: 600 }}>{nombre(p)}</Typography>
+                      <Typography variant="body2" sx={{ color: 'error.main' }}>De baja en el censo: no puede salir. Que hable con Secretaría.</Typography>
+                    </Box>
+                  )
                 : (
                   <FormControlLabel
                     key={p.id}
