@@ -130,6 +130,18 @@ describe('AgendaAdminPage', () => {
     expect(screen.queryByText('Evento eliminado.')).not.toBeInTheDocument()
   })
 
+  it('el acto que es la fecha de una salida no se puede eliminar desde la Agenda, y dice por qué', async () => {
+    const usuario = userEvent.setup()
+    responder([{ ...evento, salidaEnlazada: { id: 1, nombre: 'Sábado de Pasión' } }], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    montar()
+
+    await usuario.click(await screen.findByRole('button', { name: /más acciones para besapiés/i }))
+    const eliminar = screen.getByRole('menuitem', { name: /eliminar/i })
+    expect(eliminar).toHaveAttribute('aria-disabled', 'true')
+    await usuario.hover(eliminar.parentElement!)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Es la fecha de la salida «Sábado de Pasión»: cámbiala desde la ficha de la salida')
+  })
+
   it('pide la página que dice la URL', async () => {
     const simulado = responder([], { total: 60, page: 2, limit: 20, totalPages: 3 })
     montar('/cms/agenda?vista=lista&pagina=2')

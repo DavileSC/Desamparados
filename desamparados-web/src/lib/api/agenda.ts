@@ -26,6 +26,12 @@ export interface ApiEvent {
   cartel?: boolean
   dedicatoria?: string | null
   fotoCartel?: string | null
+  /**
+   * Solo lo traen el listado y el calendario del CMS: la salida que tiene este
+   * acto como fecha. Mientras la tenga, el servidor no deja borrarlo (409),
+   * porque la salida se quedaría sin día.
+   */
+  salidaEnlazada?: { id: number; nombre: string } | null
 }
 
 function enTexto(fecha: string) {
