@@ -24,7 +24,8 @@ export const contactSchema = z.object({
   email: z.string().trim().max(254, 'El email es demasiado largo').regex(EMAIL_VISITANTE, 'Introduce un email válido'),
   telefono: z.string().trim().refine(telefonoValido, 'Introduce un teléfono válido (puede llevar el prefijo del país, como +34)'),
   asunto: z.string().trim().min(1, 'El asunto es obligatorio').max(160, 'El asunto es demasiado largo').regex(SIN_ANGULOS, 'El asunto no puede llevar los caracteres < ni >'),
-  mensaje: z.string().min(10, 'El mensaje debe tener al menos 10 caracteres').max(5000, 'El mensaje no puede pasar de 5000 caracteres'),
+  // Con trim: diez espacios no son un mensaje, y el servidor tampoco los cuenta.
+  mensaje: z.string().trim().min(10, 'El mensaje debe tener al menos 10 caracteres').max(5000, 'El mensaje no puede pasar de 5000 caracteres'),
   // Campo trampa: está escondido y una persona lo deja vacío. Ver ContactoPage.
   comentarioAdicional: z.string().optional(),
 })
