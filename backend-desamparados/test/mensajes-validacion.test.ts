@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { type, ArkErrors } from 'arktype';
 import { mensajeValidacion } from '../src/config/mensajes-validacion.js';
-import { email, password } from '../src/config/common.js';
+import { email, password, textoRequerido } from '../src/config/common.js';
 
 /** Mensajes por campo, como los devuelve `validate`. */
 function mensajes(esquema: (datos: unknown) => unknown, datos: unknown): Record<string, string> {
@@ -51,4 +51,12 @@ test('un predicado con motivo propio usa ese motivo y no revienta', () => {
 test('ningún mensaje conserva la ruta ni el valor recibido', () => {
   const m = mensajes(type({ body: { importe: 'number > 0' } }), { body: { importe: -1 } });
   assert.equal(m['body.importe'], 'Debe ser mayor que cero');
+});
+
+// Sin tope, un texto más largo que la columna (VARCHAR(191)) llegaba a la base
+// y salía como 500; ahora lo para el esquema con su mensaje.
+test('textoRequerido no pasa de 191 caracteres', () => {
+  const esquema = type({ titulo: textoRequerido });
+  assert.ok(!(esquema({ titulo: 'a'.repeat(191) }) instanceof ArkErrors));
+  assert.match(mensajes(esquema, { titulo: 'a'.repeat(192) }).titulo, /191/);
 });

@@ -165,3 +165,16 @@ describe('cabeceras y estáticos', () => {
     assert.equal(conBarra.status, 404);
   });
 });
+
+describe('CORS', () => {
+  // La mesa de la procesión y las categorías contables usan PATCH; sin él en
+  // la lista, el navegador cortaba la petición en la comprobación previa
+  // cuando la web y la API no comparten origen.
+  test('la comprobación previa admite PATCH', async () => {
+    const respuesta = await fetch(`${baseUrl}/api/procesion/admin/papeletas/1`, {
+      method: 'OPTIONS',
+      headers: { Origin: 'http://localhost:5173', 'Access-Control-Request-Method': 'PATCH' },
+    });
+    assert.match(respuesta.headers.get('access-control-allow-methods') ?? '', /(^|,)PATCH(,|$)/);
+  });
+});

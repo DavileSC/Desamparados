@@ -2,7 +2,10 @@ import { type } from 'arktype';
 import { email, textoRequerido } from '../config/common';
 
 const boundedText = type('string <= 160');
-const message = type('string >= 10 & string <= 5000');
+// Recortado antes de contar: diez espacios no son un mensaje. La web ya lo
+// recorta, pero el formulario se puede mandar sin ella.
+const message = type('string <= 5000').pipe((valor: string) => valor.trim(), type('string >= 10'))
+  .describe('un mensaje de al menos 10 caracteres');
 
 // El email del visitante acaba en el Reply-To del correo. La regla común
 // (`email` de config/common.ts) admite cosas como `"x"<a@b.c>` o

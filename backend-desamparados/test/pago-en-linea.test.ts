@@ -43,6 +43,18 @@ describe('la firma de Redsys', () => {
     assert.equal(leerAviso({}, PRUEBAS.clave), null);
   });
 
+  // La ruta del aviso es pública: lo que no se pueda leer es «no es del
+  // banco» (null), nunca una excepción que salga como 500.
+  test('un aviso con escapes rotos o que no es un objeto se descarta sin lanzar', () => {
+    const roto = aviso({ Ds_Order: '%E0%A4%A', Ds_Amount: '3000', Ds_Response: '0000' });
+    assert.equal(leerAviso(roto, PRUEBAS.clave), null);
+    const autorizacionRota = aviso({ Ds_Order: '00000042AB7Z', Ds_Amount: '3000', Ds_Response: '0000', Ds_AuthorisationCode: '%' });
+    assert.equal(leerAviso(autorizacionRota, PRUEBAS.clave)?.autorizacion, null);
+    for (const json of ['null', '42', '"texto"', '[]']) {
+      assert.equal(leerAviso({ Ds_MerchantParameters: Buffer.from(json).toString('base64'), Ds_Signature: 'x' }, PRUEBAS.clave), null, json);
+    }
+  });
+
   test('solo de 0000 a 0099 es cobrado', () => {
     const con = (r: string) => leerAviso(aviso({ Ds_Order: '00000001ABCD', Ds_Amount: '100', Ds_Response: r }), PRUEBAS.clave)?.cobrado;
     assert.equal(con('0000'), true);

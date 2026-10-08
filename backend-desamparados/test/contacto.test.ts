@@ -48,6 +48,16 @@ describe('validación del formulario', () => {
   });
 });
 
+describe('el mensaje', () => {
+  test('los espacios de los bordes no cuentan para el mínimo de 10 y se recortan', () => {
+    assert.ok(esError(validar({ mensaje: '   hola           ' })), 'cuatro letras con relleno no son un mensaje');
+    assert.ok(esError(validar({ mensaje: ' '.repeat(40) })));
+    const bueno = validar({ mensaje: '  Quería preguntar por el horario.  ' });
+    assert.ok(!esError(bueno));
+    assert.equal((bueno as { body: { mensaje: string } }).body.mensaje, 'Quería preguntar por el horario.');
+  });
+});
+
 describe('señales de robot', () => {
   test('campo trampa relleno o demasiado rápido: descartado', () => {
     assert.ok(motivoDescarte({ comentarioAdicional: 'https://spam.example', tiempoRelleno: 60_000 }));

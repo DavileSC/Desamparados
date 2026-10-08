@@ -117,6 +117,13 @@ describe('traducirErrorPrisma', () => {
     assert.equal(traducirErrorPrisma(otro), null);
   });
 
+  test('P2000 (texto más largo que la columna) → 400, también suelto del adaptador', () => {
+    const esperado = { status: 400, message: 'Uno de los textos es demasiado largo: acórtalo y vuelve a intentarlo.' };
+    assert.deepEqual(traducirErrorPrisma(errorPrisma('P2000', { modelName: 'Evento' })), esperado);
+    const suelto = Object.assign(new Error('Data too long'), { name: 'DriverAdapterError', cause: { kind: 'LengthMismatch', column: 'title' } });
+    assert.deepEqual(traducirErrorPrisma(suelto), esperado);
+  });
+
   test('el resto no se traduce', () => {
     assert.equal(traducirErrorPrisma(errorPrisma('P2011', {})), null);
     assert.equal(traducirErrorPrisma(new Error('otra cosa')), null);
@@ -266,6 +273,16 @@ describe('con MariaDB', () => {
     } finally {
       await borrarUsuarioPrueba(usuario.id);
     }
+  });
+
+  test('un texto más largo que su columna se traduce a 400', async (t) => {
+    const { default: db } = await import('../src/config/db.js');
+    if (!(await sondearDb(db))) return t.skip(SIN_DB);
+    const error = await db.evento.create({ data: { title: 'x'.repeat(300), startDate: new Date() } }).then(
+      async (creado) => { await db.evento.delete({ where: { id: creado.id } }); return null; },
+      (e: unknown) => e,
+    );
+    assert.equal(traducirErrorPrisma(error)?.status, 400);
   });
 
   test('una fila cambiada por otra transacción a mitad (MariaDB 1020) se traduce a 409', async (t) => {

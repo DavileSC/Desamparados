@@ -84,7 +84,9 @@ app.use(cors({
     // '*' es incompatible con credentials, asi que en desarrollo reflejamos el origen.
     origin: allowedOrigin ? allowedOrigin : (process.env.NODE_ENV === 'production' ? false : true),
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    // PATCH también: la mesa de la procesión y las categorías contables lo
+    // usan, y fuera de él la comprobación previa del navegador lo rechazaba.
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     // Ya no se usa Authorization: la sesion viaja en cookie.
     allowedHeaders: ['Content-Type']
 }));
