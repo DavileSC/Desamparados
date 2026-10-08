@@ -24,6 +24,7 @@ import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
 import type { SalidaConActo } from './salidas.service.js';
 import { recogerRopaEnTransaccion } from './ropa.js';
 import { avisarALaMesa } from './avisos-mesa.js';
+import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -60,12 +61,12 @@ export class PapeletasService {
 
   /** Listado de quién esperamos HOY. */
   static async getAsistentesDelDia(fecha: Date) {
-    const start = new Date(fecha.setHours(0, 0, 0, 0));
-    const end = new Date(fecha.setHours(23, 59, 59, 999));
+    // El día de Madrid, no el del reloj del servidor (que corre en UTC).
+    const { desde, hasta } = diaMadridComoIntervalo(fecha);
 
     return await db.cita.findMany({
       where: {
-        turno: { fecha: { gte: start, lte: end } },
+        turno: { fecha: { gte: desde, lt: hasta } },
         estado: EstadoCita.RESERVADA
       },
       include: {

@@ -18,6 +18,7 @@ import { siModulo } from '../modulos.service.js';
 import { HttpError } from '../../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
 import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-salida.js';
+import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 import { articuloDe, deArticulo } from '../../domain/articulos.js';
 import { reglaDe, type SalidaConActo } from './salidas.service.js';
 
@@ -168,10 +169,9 @@ export class PlazoPapeletasService {
   }
 }
 
+/** Hoy en Madrid: el servidor corre en UTC y `setHours` daba el día anterior de madrugada. */
 function inicioDeHoy() {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  return hoy;
+  return diaMadridComoIntervalo(new Date()).desde;
 }
 
 /** El cuerpo del borrador: se revisa antes de publicar, así que solo lo que se sabe seguro. */

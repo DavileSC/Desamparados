@@ -15,6 +15,7 @@ import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { condicionBusqueda } from '../../domain/busqueda-texto.js';
 import { apellidosTrasCambio, componerApellidos } from '../../domain/apellidos.js';
 import { comprobarEsAdulto, comprobarEsMenor } from '../../domain/fechas-hermano.js';
+import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 import { alturaHombroEnCm, normalizarNumeroPrenda, propuestaDeRopa, type Origen } from '../../domain/mesa-procesion.js';
 import { getNextNumeroHermano, transaccionReintentable } from '../hermanos/comunes.js';
 import { CensoService } from '../censo.service.js';
@@ -136,11 +137,11 @@ export class MesaService {
   }
 
   /** Quienes pidieron día para hoy y aún no han recogido la papeleta. */
-  static async esperadosHoy(salida: SalidaConActo) {
-    const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
-    const fin = new Date(); fin.setHours(23, 59, 59, 999);
+  static async esperadosHoy(salida: SalidaConActo, ahora = new Date()) {
+    // Hoy en Madrid: el servidor corre en UTC y de 00:00 a 02:00 era ayer.
+    const { desde, hasta } = diaMadridComoIntervalo(ahora);
     const citas = await db.cita.findMany({
-      where: { estado: EstadoCita.RESERVADA, papeleta: null, turno: { salidaId: salida.id, fecha: { gte: inicio, lte: fin } } },
+      where: { estado: EstadoCita.RESERVADA, papeleta: null, turno: { salidaId: salida.id, fecha: { gte: desde, lt: hasta } } },
       orderBy: { hermano: { apellidos: 'asc' } },
       select: { id: true, hermano: { select: { id: true, nombre: true, apellidos: true, fechaNacimiento: true } } },
     });

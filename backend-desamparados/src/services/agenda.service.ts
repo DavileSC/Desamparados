@@ -5,6 +5,7 @@ import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
+import { diaMadridComoIntervalo } from '../domain/contabilidad.js';
 
 /**
  * Los actos que la portada de la web enseña en su lista, sin sesión: los
@@ -64,8 +65,8 @@ export class AgendaService {
     } else {
       // Por defecto, lo que queda desde hoy: lo que empieza hoy o después y lo
       // que ya empezó pero no ha terminado (el segundo día de un triduo).
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Hoy en Madrid, no en el reloj del servidor (que corre en UTC).
+      const today = diaMadridComoIntervalo(new Date()).desde;
       whereClause.OR = [{ startDate: { gte: today } }, { endDate: { gte: today } }];
     }
 
@@ -117,8 +118,7 @@ export class AgendaService {
    */
   static async getAdminEvents(periodo: PeriodoAgenda, { page, limit, q, tipo }: AdminEventFilterDto) {
     const paginacion = sanearPaginacion({ page, limit });
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    const hoy = diaMadridComoIntervalo(new Date()).desde;
 
     const filtros: Prisma.EventoWhereInput = {
       ...(tipo ? { type: tipo } : {}),
@@ -222,8 +222,7 @@ export class AgendaService {
 
   /** Cuál es el siguiente acto desde hoy y cuáles salen ahora en la portada de la web. */
   private static async resumenDeHoy() {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    const hoy = diaMadridComoIntervalo(new Date()).desde;
     const proximos: Prisma.EventoWhereInput = { startDate: { gte: hoy } };
     const [siguiente, enPortada] = await db.$transaction([
       db.evento.findFirst({ where: proximos, orderBy: [{ startDate: 'asc' }, { id: 'asc' }], select: { id: true, title: true, startDate: true } }),
