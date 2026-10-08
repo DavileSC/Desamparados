@@ -178,7 +178,9 @@ services:
   # Certificado de Let's Encrypt. Perfil `tls`: en local no se usa.
   # -------------------------------------------------------------------------
   certbot:
-    image: certbot/certbot:latest
+    # Versión fija: con `latest`, cada `pull` podía traer un certbot mayor con
+    # opciones cambiadas y la renovación fallar en silencio hasta caducar.
+    image: certbot/certbot:v5.8.0
     profiles: ["tls"]
     restart: unless-stopped
     volumes:

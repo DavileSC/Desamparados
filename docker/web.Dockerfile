@@ -51,7 +51,10 @@ COPY docker/nginx/sitio.conf docker/nginx/generar-sitio.mjs /app/nginx/
 RUN node /app/nginx/generar-sitio.mjs /app/shared/datos-entidad.json /app/nginx/sitio.conf /app/nginx/sitio-generado.conf
 
 # ---------------------------------------------------------------------------
-FROM nginx:1.27-alpine AS servidor
+# La rama estable fijada, no `latest`: un `up --build` cualquiera no debe
+# cambiar de versión mayor de nginx por su cuenta. La 1.30 recibe los parches
+# de seguridad; al pasar a la siguiente estable se cambia aquí a mano.
+FROM nginx:1.30-alpine AS servidor
 
 # La imagen oficial trae un sitio de ejemplo en conf.d que atendería el puerto
 # 80 antes que el nuestro.
