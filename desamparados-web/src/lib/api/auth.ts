@@ -228,6 +228,19 @@ export function resetPassword(token: string, newPassword: string) {
 }
 
 /**
+ * Cambiar la contraseña con la sesión abierta. El servidor cierra todas las
+ * sesiones de la cuenta y da cookies nuevas a las de este navegador: después
+ * hay que volver a pedir /auth/me. Una actual equivocada es un 400, no un 401:
+ * la sesión sigue buena y `llamarApi` no la da por caducada.
+ */
+export function cambiarContrasena(actual: string, nueva: string) {
+  return llamarApi<{ message: string }>('/auth/cambiar-contrasena', {
+    method: 'POST',
+    json: { actual, nueva },
+  })
+}
+
+/**
  * Las sesiones abiertas, una por área. Responde 200 aunque no haya ninguna:
  * para un visitante eso es lo normal, no un error.
  */

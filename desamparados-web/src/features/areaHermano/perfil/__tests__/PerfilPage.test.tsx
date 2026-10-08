@@ -168,4 +168,98 @@ describe('PerfilPage', () => {
     expect(screen.getByRole('link', { name: /hacerme hermano/i })).toHaveAttribute('href', '/area-hermano/familia')
     expect(screen.getByText('Bruno Pérez Ruiz')).toBeInTheDocument()
   })
+
+  // Un DNI de otra ficha ya no responde 409 «Ese DNI ya está registrado» (decía
+  // quién está en el censo): es un 400 con otro texto, y hay un tope diario.
+  it.each([
+    [400, 'No se ha podido guardar ese DNI. Si es correcto, habla con Secretaría.'],
+    [429, 'Has cambiado demasiados DNI por hoy. Inténtalo mañana.'],
+  ])('un DNI que el servidor no guarda (%i) enseña su mensaje tal cual', async (status, mensaje) => {
+    const user = userEvent.setup()
+    const simulado = responder([ficha(1, 'Ana')])
+    simulado.mockImplementation((_url: string, init: RequestInit = {}) => Promise.resolve(init.method === 'PUT'
+      ? new Response(JSON.stringify({ error: mensaje }), { status, headers: { 'Content-Type': 'application/json' } })
+      : json({ data: [ficha(1, 'Ana')], meta: { total: 1, page: 1, limit: FICHAS_POR_FAMILIA, totalPages: 1 } })))
+    renderWithProviders(<PerfilPage />)
+
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: /editar datos personales/i }))
+    const dni = screen.getByLabelText(/DNI o NIE/)
+    await user.clear(dni)
+    await user.type(dni, '00000000T')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText(mensaje)).toBeInTheDocument()
+  })
+})
+
+describe('PerfilPage: cambiar la contraseña', () => {
+  const conCuerpo = (cuerpo: unknown, status = 200) =>
+    new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
+
+  /** Las fichas por GET; el cambio de contraseña y /auth/me, con lo que se pida. */
+  function simular(cambio: () => Response) {
+    const simulado = vi.fn().mockImplementation((url: string) => {
+      if (String(url).includes('/auth/cambiar-contrasena')) return Promise.resolve(cambio())
+      if (String(url).includes('/auth/me')) return Promise.resolve(conCuerpo({ cms: null, hermano: { id: 1, email: 'ana@ejemplo.test', role: 'HERMANO', perfiles: [] } }))
+      return Promise.resolve(json({ data: [ficha(1, 'Ana')], meta: { total: 1, page: 1, limit: FICHAS_POR_FAMILIA, totalPages: 1 } }))
+    })
+    vi.stubGlobal('fetch', simulado)
+    return simulado
+  }
+  const llamadasA = (simulado: ReturnType<typeof simular>, ruta: string) => simulado.mock.calls.filter(([url]) => String(url).includes(ruta))
+
+  async function rellenar(user: ReturnType<typeof userEvent.setup>, nueva = 'Otra-Clave-2026-Larga', repetida = nueva) {
+    await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('button', { name: 'Cambiar' }))
+    await user.type(screen.getByLabelText('Contraseña actual'), 'La-De-Antes-2025')
+    await user.type(screen.getByLabelText('Contraseña nueva'), nueva)
+    await user.type(screen.getByLabelText('Repite la contraseña nueva'), repetida)
+    await user.click(screen.getByRole('button', { name: 'Cambiar la contraseña' }))
+  }
+
+  it('manda la actual y la nueva, enseña el mensaje y vuelve a pedir las sesiones', async () => {
+    const user = userEvent.setup()
+    const simulado = simular(() => conCuerpo({ message: 'Contraseña cambiada. Se han cerrado las sesiones abiertas en otros dispositivos.' }))
+    renderWithProviders(<PerfilPage />)
+    await rellenar(user)
+
+    expect(await screen.findByText(/Contraseña cambiada/)).toBeInTheDocument()
+    const [[, init]] = llamadasA(simulado, '/auth/cambiar-contrasena')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(String(init.body))).toEqual({ actual: 'La-De-Antes-2025', nueva: 'Otra-Clave-2026-Larga' })
+    // Las cookies son nuevas: lo que sabía la web de las sesiones era de antes del corte.
+    await waitFor(() => expect(llamadasA(simulado, '/auth/me')).toHaveLength(1))
+  })
+
+  it('no manda nada si la nueva no se repite igual', async () => {
+    const user = userEvent.setup()
+    const simulado = simular(() => conCuerpo({ message: 'ok' }))
+    renderWithProviders(<PerfilPage />)
+    await rellenar(user, 'Otra-Clave-2026-Larga', 'Otra-Clave-2026-Larg')
+
+    expect(await screen.findByText('Las contraseñas no coinciden')).toBeInTheDocument()
+    expect(llamadasA(simulado, '/auth/cambiar-contrasena')).toHaveLength(0)
+  })
+
+  it('la actual equivocada (400) se dice, y no se toma por una sesión caducada', async () => {
+    const user = userEvent.setup()
+    const simulado = simular(() => conCuerpo({ error: 'La contraseña actual no es correcta.' }, 400))
+    renderWithProviders(<PerfilPage />)
+    await rellenar(user)
+
+    expect(await screen.findByText('La contraseña actual no es correcta.')).toBeInTheDocument()
+    // Un 401 haría que la web preguntara por las sesiones; un 400 no.
+    expect(llamadasA(simulado, '/auth/me')).toHaveLength(0)
+  })
+
+  it('el error de un campo va bajo su casilla', async () => {
+    const user = userEvent.setup()
+    simular(() => conCuerpo({ error: 'Error de validación', errors: [{ field: 'nueva', message: 'La contraseña es demasiado común' }] }, 400))
+    renderWithProviders(<PerfilPage />)
+    await rellenar(user)
+
+    expect(await screen.findByText('La contraseña es demasiado común')).toBeInTheDocument()
+    expect(screen.getByLabelText('Contraseña nueva')).toHaveAttribute('aria-invalid', 'true')
+  })
 })

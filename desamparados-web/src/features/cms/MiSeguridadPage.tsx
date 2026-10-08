@@ -5,6 +5,7 @@ import { useAuthStore } from '../altas/auth/store'
 import { sesionActual, activar2FA, desactivar2FA, generarQr2FA } from '../../lib/api/auth'
 import { ErrorDeApi } from '../../lib/api/cliente'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
+import CambiarContrasena from '../altas/auth/CambiarContrasena'
 import { site } from '../../config/site'
 
 function errorMessage(e: unknown, fallback: string) {
@@ -12,8 +13,9 @@ function errorMessage(e: unknown, fallback: string) {
 }
 
 /**
- * Gestión del doble factor de la propia cuenta. Solo se ofrece al staff (la
- * ruta y los endpoints del backend lo limitan a roles del CMS).
+ * La contraseña y el doble factor de la propia cuenta. La contraseña es la
+ * misma que la del área de hermanos (es una sola cuenta). La pantalla solo
+ * se ofrece al staff (la ruta y los endpoints del 2FA la limitan a roles del CMS).
  *
  * El flujo de activación es el estándar: QR → código → respaldos en claro una
  * sola vez. El de desactivación pide un TOTP o un respaldo para evitar que
@@ -96,8 +98,16 @@ export default function MiSeguridadPage() {
 
       <Typography variant="h3" component="h1" sx={{ mb: 0.5 }}>Mi seguridad</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Doble factor de autenticación de tu cuenta ({cms?.email}).
+        Contraseña y doble factor de autenticación de tu cuenta ({cms?.email}).
       </Typography>
+
+      <Paper sx={{ p: { xs: 2, md: 3 }, maxWidth: 640, mb: 3 }}>
+        <Typography variant="h5" component="h2" sx={{ mb: 1 }}>Contraseña</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+          Es la misma con la que entras en el área de hermanos. Al cambiarla se cierran las sesiones abiertas en otros dispositivos.
+        </Typography>
+        <CambiarContrasena variante="cms" />
+      </Paper>
 
       <Paper sx={{ p: { xs: 2, md: 3 }, maxWidth: 640 }}>
         <Stack spacing={3}>
