@@ -7,7 +7,7 @@ import type { Articulo } from '../../domain/articulos'
  * entrar en el paquete del navegador. Si algún día se añade un valor nuevo en
  * el esquema, hay que reflejarlo aquí.
  */
-export type EstadoRecibo = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'DEVUELTO' | 'ANULADO' | 'EXENTO'
+export type EstadoRecibo = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'DEVUELTO' | 'ANULADO' | 'EXENTO' | 'REEMBOLSADO'
 export type TipoMovimiento = 'INGRESO' | 'GASTO'
 export type TipoEvento = 'CULTO' | 'PROCESION' | 'FORMACION' | 'ENSAYO' | 'REUNION' | 'SOCIAL' | 'OTRO'
 

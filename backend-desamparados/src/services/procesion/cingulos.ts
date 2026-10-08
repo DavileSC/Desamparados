@@ -36,12 +36,46 @@ export async function totalDeCingulos(cliente: Cliente = db): Promise<number> {
 }
 
 export async function recuentoDeCingulos(cliente: Cliente = db): Promise<RecuentoDeCingulos> {
-  const [total, prestados, debidos] = await Promise.all([
+  const [total, enPapeleta, sueltos, debidos] = await Promise.all([
     totalDeCingulos(cliente),
     cliente.papeletaSitio.count({ where: { cingulo: Cingulo.PRESTADO } }),
+    cliente.cinguloSinPapeleta.count(),
     cliente.papeletaSitio.count({ where: { cingulo: Cingulo.DEBIDO } }),
   ]);
+  const prestados = enPapeleta + sueltos;
   return { total, prestados, debidos, enElRopero: Math.max(total - prestados, 0) };
+}
+
+/** Quien tiene algún cíngulo sin devolver, en su papeleta o en una anulada. */
+export const CON_CINGULO_SIN_DEVOLVER: Prisma.HermanoWhereInput = {
+  OR: [{ papeletas: { some: { cingulo: Cingulo.PRESTADO } } }, { cingulosSueltos: { some: {} } }],
+};
+
+/**
+ * Los cíngulos sin devolver, de cualquier salida y año (de esos hermanos, o
+ * de todos): los de sus papeletas y los de papeletas que se anularon.
+ * `papeletaId` es por lo que la mesa los devuelve (`devolverCingulosEnTransaccion`).
+ */
+export async function cingulosSinDevolverDe(cliente: Cliente, hermanoIds?: number[]): Promise<{ papeletaId: number; year: number; hermanoId: number }[]> {
+  const deQuien = hermanoIds ? { hermanoId: { in: hermanoIds } } : {};
+  const [enPapeleta, sueltos] = await Promise.all([
+    cliente.papeletaSitio.findMany({ where: { ...deQuien, cingulo: Cingulo.PRESTADO }, select: { id: true, year: true, hermanoId: true } }),
+    cliente.cinguloSinPapeleta.findMany({ where: deQuien, select: { papeletaId: true, year: true, hermanoId: true } }),
+  ]);
+  return [...enPapeleta.map(({ id, ...c }) => ({ papeletaId: id, ...c })), ...sueltos].sort((a, b) => b.year - a.year);
+}
+
+/**
+ * Da por devueltos los cíngulos de `papeletaIds` que tenga `hermanoId`, estén
+ * en su papeleta o en una anulada. Devuelve cuántos había.
+ */
+export async function devolverCingulosEnTransaccion(tx: Prisma.TransactionClient, hermanoId: number, papeletaIds: number[]) {
+  const enPapeleta = await tx.papeletaSitio.updateMany({
+    where: { id: { in: papeletaIds }, hermanoId, cingulo: Cingulo.PRESTADO },
+    data: { cingulo: Cingulo.DEVUELTO },
+  });
+  const sueltos = await tx.cinguloSinPapeleta.deleteMany({ where: { papeletaId: { in: papeletaIds }, hermanoId } });
+  return enPapeleta.count + sueltos.count;
 }
 
 /**
@@ -54,6 +88,7 @@ export async function prestarCinguloEnTransaccion(tx: Prisma.TransactionClient, 
     where: { hermanoId, cingulo: Cingulo.PRESTADO, ...(papeletaId !== null && { id: { not: papeletaId } }) },
     data: { cingulo: Cingulo.DEVUELTO },
   });
+  await tx.cinguloSinPapeleta.deleteMany({ where: { hermanoId } });
   const { enElRopero } = await recuentoDeCingulos(tx);
   if (enElRopero <= 0) {
     throw new HttpError('No quedan cíngulos en el ropero: marca «Se le debe» y se le da cuando los haya.', 409);

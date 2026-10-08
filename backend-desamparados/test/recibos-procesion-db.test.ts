@@ -16,7 +16,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { EmailService } from '../src/services/email.service.js';
 import { ReciboService } from '../src/services/recibo.service.js';
-import { idCategoriaDeRecibos } from '../src/services/recibos/comunes.js';
+import { devueltosPendientes, idCategoriaDeRecibos } from '../src/services/recibos/comunes.js';
 import { MiProcesionService } from '../src/services/procesion/mi-procesion.service.js';
 import { PapeletasService } from '../src/services/procesion/papeletas.service.js';
 import { anioDeLaMesa, ZonasService } from '../src/services/procesion/zonas.service.js';
@@ -170,11 +170,14 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     assert.equal(recibo.concepto, `Papeleta Sábado de Pasión ${YEAR}`);
 
     const respuesta = await PapeletasService.anularPapeleta(papeleta.id, e.meta);
-    assert.equal(respuesta.estadoRecibo, EstadoPago.DEVUELTO);
+    assert.equal(respuesta.estadoRecibo, EstadoPago.REEMBOLSADO);
 
-    // El recibo sigue el grafo: PAGADO -> DEVUELTO, nunca un ANULADO forzado.
+    // El recibo sigue el grafo: PAGADO -> REEMBOLSADO, nunca un ANULADO forzado.
+    // Ni DEVUELTO: eso es una deuda que se reemite, y lo reembolsado no se debe.
     const tras = await db.recibo.findUniqueOrThrow({ where: { id: recibo.id } });
-    assert.equal(tras.estado, EstadoPago.DEVUELTO);
+    assert.equal(tras.estado, EstadoPago.REEMBOLSADO);
+    // Y no cuenta como por cobrar: antes el Inicio lo sumaba y Tesorería ofrecía reemitirlo.
+    assert.equal((await devueltosPendientes({ hermanoId: hermano.id })).total, 0);
 
     // Y contabilidad cuadra: el ingreso tiene su reverso por el mismo importe.
     const movimientos = await apuntes(recibo.id);
@@ -190,7 +193,7 @@ test('D2: anular una papeleta cobrada devuelve el recibo con su reverso, libera 
     const registro = await auditoria(ACCIONES_AUDITORIA.PAPELETA_ANULAR, papeleta.id);
     const detalles = registro?.detalles as { antes: { recibo: { estado: string } }; despues: { recibo: { estado: string } } };
     assert.equal(detalles.antes.recibo.estado, EstadoPago.PAGADO);
-    assert.equal(detalles.despues.recibo.estado, EstadoPago.DEVUELTO);
+    assert.equal(detalles.despues.recibo.estado, EstadoPago.REEMBOLSADO);
 
     // Reinscribir: antes daba 500 porque el recibo devuelto ocupaba el concepto.
     const segunda = await e.apuntarYCobrar(hermano.id, 'Vara', MetodoPago.BIZUM);
@@ -854,6 +857,27 @@ test('un recibo que el banco devuelve apunta su comisión; uno cobrado, además,
 
     const registro = await auditoria(ACCIONES_AUDITORIA.RECIBO_ACTUALIZAR, cobrado.id);
     assert.equal((registro?.detalles as { despues: { comision?: number } }).despues.comision, 2);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('la devolución lleva el día en que la hizo el banco, no el del clic (NG4)', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const hermano = await e.hermano();
+    const cobrado = await ReciboService.emitirRecibo({ hermanoId: hermano.id, year: YEAR, concepto: 'Cuota de diciembre', importe: 20, tipo: 'CUOTA_HERMANO' }, e.meta);
+    await ReciboService.adminMarcarComoPagado(cobrado.id, MetodoPago.TRANSFERENCIA, e.meta);
+    // Un día que no existe o que aún no ha llegado no vale; tampoco sin devolver.
+    const manana = sumarDias(diaMadrid(new Date()), 1);
+    await assert.rejects(ReciboService.adminUpdateDetalles(cobrado.id, { estado: 'DEVUELTO', fechaDevolucion: manana }, e.meta), (err: unknown) => err instanceof HttpError && err.status === 400);
+    await assert.rejects(ReciboService.adminUpdateDetalles(cobrado.id, { estado: 'ANULADO', fechaDevolucion: '2025-12-30' }, e.meta), (err: unknown) => err instanceof HttpError && err.status === 400);
+
+    await ReciboService.adminUpdateDetalles(cobrado.id, { estado: 'DEVUELTO', comision: 2, fechaDevolucion: '2025-12-30' }, e.meta);
+    const gastos = (await apuntes(cobrado.id)).filter((a) => a.tipo === TipoTransaccion.GASTO);
+    assert.equal(gastos.length, 2);
+    for (const g of gastos) assert.equal(g.fecha.toISOString(), inicioDiaMadrid('2025-12-30').toISOString(), 'el reverso y la comisión, en el ejercicio del banco');
   } finally {
     await e.recoger();
   }

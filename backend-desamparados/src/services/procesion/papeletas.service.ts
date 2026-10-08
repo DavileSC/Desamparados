@@ -193,7 +193,10 @@ export class PapeletasService {
     if (count !== 1) throw new HttpError('Esta solicitud ya no está pendiente. Recarga la ficha.', 409);
     const recibo = solicitud.recibo;
     if (recibo?.estado === EstadoPago.PAGADO) {
-      await devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, [recibo.observaciones, NOTA_CANCELACION].filter(Boolean).join(' · '));
+      await devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, {
+        observaciones: [recibo.observaciones, NOTA_CANCELACION].filter(Boolean).join(' · '),
+        destino: EstadoPago.REEMBOLSADO,
+      });
     }
     if (solicitud.citaId) {
       await tx.cita.updateMany({ where: { id: solicitud.citaId, estado: EstadoCita.RESERVADA }, data: { estado: EstadoCita.CANCELADA } });
@@ -258,7 +261,7 @@ export class PapeletasService {
     avisarALaMesa({ que: 'anulado', hermanoId: solicitud.hermanoId, salidaId: solicitud.salidaId });
     return {
       message: solicitud.recibo?.estado === EstadoPago.PAGADO
-        ? 'Solicitud cancelada. Lo pagado queda devuelto con su reverso en contabilidad.'
+        ? 'Solicitud cancelada. Lo pagado queda reembolsado, con su reverso en contabilidad.'
         : 'Solicitud cancelada.',
     };
   }
@@ -266,7 +269,7 @@ export class PapeletasService {
   /**
    * Anular una papeleta ya recogida: el hermano no sale (enfermedad, un
    * error). El recibo sigue el grafo de estados como cualquier otro: si
-   * estaba cobrado pasa a DEVUELTO con su asiento de reverso; si era exento,
+   * estaba cobrado pasa a REEMBOLSADO con su asiento de reverso; si era exento,
    * se queda como está porque no hubo dinero. La papeleta se borra y su
    * solicitud queda cancelada: puede volver a apuntarse, y su nuevo recibo
    * sale como reemisión. La ropa sigue a su nombre hasta que la devuelva.
@@ -292,8 +295,8 @@ export class PapeletasService {
     avisarALaMesa({ que: 'anulado', hermanoId: papeleta.hermanoId, salidaId: papeleta.salidaId });
 
     return {
-      message: estadoFinal === EstadoPago.DEVUELTO && recibo.estado === EstadoPago.PAGADO
-        ? 'Papeleta anulada. El cobro queda devuelto con su reverso en contabilidad. La ropa sigue a su nombre hasta que la devuelva.'
+      message: estadoFinal === EstadoPago.REEMBOLSADO
+        ? 'Papeleta anulada. El cobro queda reembolsado, con su reverso en contabilidad. La ropa sigue a su nombre hasta que la devuelva.'
         : 'Papeleta anulada. La ropa sigue a su nombre hasta que la devuelva.',
       reciboId: recibo.id,
       estadoRecibo: estadoFinal
@@ -311,8 +314,8 @@ export class PapeletasService {
     let estadoFinal: EstadoPago = recibo.estado;
 
     if (recibo.estado === EstadoPago.PAGADO) {
-      await devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, observaciones);
-      estadoFinal = EstadoPago.DEVUELTO;
+      await devolverCobroEnTransaccion(tx, recibo, categoriaDevolucionesId, { observaciones, destino: EstadoPago.REEMBOLSADO });
+      estadoFinal = EstadoPago.REEMBOLSADO;
     } else if (puedeTransicionar(recibo.estado, EstadoPago.ANULADO)) {
       const transicion = await tx.recibo.updateMany({
         where: { id: recibo.id, estado: recibo.estado },
@@ -323,16 +326,14 @@ export class PapeletasService {
       }
       estadoFinal = EstadoPago.ANULADO;
     } else {
-      // EXENTO, o ya DEVUELTO/ANULADO: estados finales, solo se anota el motivo.
+      // EXENTO, o ya DEVUELTO/ANULADO/REEMBOLSADO: estados finales, solo se anota el motivo.
       await tx.recibo.update({ where: { id: recibo.id }, data: { observaciones } });
     }
 
     // La ropa no se toca: la tiene él y sigue a su nombre (y en «Sin
     // devolver») hasta que la traiga y se reciba con «Devolver», que la manda
-    // al lavado. Antes se daba por devuelta al anular.
-    // Su solicitud, cancelada: si vuelve, pide otra.
-    await tx.solicitud.updateMany({ where: { papeletaId: papeleta.id }, data: { estado: EstadoSolicitud.CANCELADA, citaId: null } });
-    // Libera la cita y borra la papeleta (hueco en la procesión y clave [hermano, año, salida]).
+    // al lavado. Antes se daba por devuelta al anular. Cancela la solicitud,
+    // libera la cita y borra la papeleta, con el cíngulo a salvo.
     await retirarPapeletaEnTransaccion(tx, recibo.id);
     return estadoFinal;
   }

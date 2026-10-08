@@ -23,7 +23,7 @@ import { SolicitudesService } from '../solicitudes.service.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { CAMPO_DE_ROPA, comprobarQueNoVaEnOtraPapeleta, prestarRopaEnTransaccion, recogerRopaEnTransaccion, ropaPedida, tunicasLibres, type TipoRopa } from './ropa.js';
 import { anioDeLaMesa, cuotasQueCuentan, pendienteDe } from './zonas.service.js';
-import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
+import { CON_CINGULO_SIN_DEVOLVER, cingulosSinDevolverDe, prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { avisarALaMesa } from './avisos-mesa.js';
 import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { conceptoDeSalida, requisitosParaRecoger } from '../../domain/salidas.js';
@@ -65,7 +65,7 @@ const SIN_CENSO: AccesoMesa = { censo: false };
 const EN_ACTIVO: Prisma.HermanoWhereInput = { activo: true, fechaBaja: null };
 /** Le queda ropa por devolver: aunque esté de baja, Albacería tiene que poder recibirla. */
 const CON_ROPA_SIN_DEVOLVER: Prisma.HermanoWhereInput = {
-  OR: [{ prendas: { some: { estado: EstadoPrenda.PRESTADA } } }, { papeletas: { some: { cingulo: Cingulo.PRESTADO } } }],
+  OR: [{ prendas: { some: { estado: EstadoPrenda.PRESTADA } } }, CON_CINGULO_SIN_DEVOLVER],
 };
 
 /** `623577927` → `••••••927`: lo justo para confirmar con la persona delante. */
@@ -172,7 +172,7 @@ export class MesaService {
     const porZona: Prisma.HermanoWhereInput =
       zona === 'inscripcion' ? { papeletas: { none: { year, salidaId } }, solicitudes: { none: { year, salidaId, estado: EstadoSolicitud.PENDIENTE } } }
         : zona === 'tunicas' ? { solicitudes: { some: { year, salidaId, estado: EstadoSolicitud.PENDIENTE } } }
-          : zona === 'devolucion' ? { OR: [{ prendas: { some: { estado: EstadoPrenda.PRESTADA } } }, { papeletas: { some: { cingulo: Cingulo.PRESTADO } } }] }
+          : zona === 'devolucion' ? CON_ROPA_SIN_DEVOLVER
             : {};
 
     const personas = await db.hermano.findMany({
@@ -259,9 +259,10 @@ export class MesaService {
       include: { recibo: true, cita: { select: { turno: { select: { fecha: true, horaInicio: true } } } } },
       orderBy: { id: 'desc' },
     });
-    // Los cíngulos sin devolver, de cualquier salida y año: van con el resto de la ropa.
+    // Los cíngulos sin devolver, de cualquier salida y año (también de una
+    // papeleta anulada): van con el resto de la ropa.
     const [cingulosSinDevolver, cingulos] = await Promise.all([
-      db.papeletaSitio.findMany({ where: { hermanoId, cingulo: Cingulo.PRESTADO }, select: { id: true, year: true }, orderBy: { year: 'desc' } }),
+      cingulosSinDevolverDe(db, [hermanoId]),
       recuentoDeCingulos(),
     ]);
 
@@ -301,7 +302,7 @@ export class MesaService {
       year,
       /** Lo que tiene del ropero sin devolver: las prendas numeradas y los cíngulos. */
       prendas,
-      cingulosSinDevolver: cingulosSinDevolver.map((c) => ({ papeletaId: c.id, year: c.year })),
+      cingulosSinDevolver: cingulosSinDevolver.map((c) => ({ papeletaId: c.papeletaId, year: c.year })),
       /** Cuántos cíngulos quedan: sin ninguno, la mesa propone «se le debe». */
       cingulos,
       solicitud: solicitud && {

@@ -14,10 +14,18 @@ import { EstadoPago, MetodoPago } from '@prisma/client';
  *              │             └─> ANULADO
  *              ├─> ANULADO                  (se retira antes de cobrar)
  *              └─> EXENTO                   (el hermano no paga esta vez)
- *   PAGADO ────────────────────> DEVUELTO   (se retrocede un cobro hecho)
+ *   PAGADO ─────────────────┬──> DEVUELTO     (el banco echa atrás un cobro)
+ *                           └──> REEMBOLSADO  (se le devuelve al hermano)
  *
- * DEVUELTO, ANULADO y EXENTO son finales: para volver a cobrar se emite un
- * recibo nuevo, de modo que la contabilidad conserva el rastro completo.
+ * DEVUELTO, ANULADO, EXENTO y REEMBOLSADO son finales: para volver a cobrar se
+ * emite un recibo nuevo, de modo que la contabilidad conserva el rastro completo.
+ *
+ * DEVUELTO y REEMBOLSADO llevan el mismo reverso, pero no significan lo mismo:
+ * un devuelto se sigue debiendo (cuenta como por cobrar, se reemite y se puede
+ * pagar en línea); un reembolso es dinero que el Grupo devolvió a propósito, al
+ * anular una papeleta o cancelar una solicitud, y no se debe. Cuando los dos
+ * eran DEVUELTO, Tesorería veía «Reemitir» en un donativo cancelado y volvía a
+ * cobrarlo.
  *
  * PENDIENTE -> PAGADO y REMESADO -> PAGADO no están aquí a propósito: cobrar
  * no es una edición de estado, tiene su propia operación
@@ -33,8 +41,9 @@ import { EstadoPago, MetodoPago } from '@prisma/client';
 const TRANSICIONES: Record<EstadoPago, readonly EstadoPago[]> = {
   [EstadoPago.PENDIENTE]: [EstadoPago.REMESADO, EstadoPago.ANULADO, EstadoPago.EXENTO],
   [EstadoPago.REMESADO]: [EstadoPago.DEVUELTO, EstadoPago.ANULADO],
-  [EstadoPago.PAGADO]: [EstadoPago.DEVUELTO],
+  [EstadoPago.PAGADO]: [EstadoPago.DEVUELTO, EstadoPago.REEMBOLSADO],
   [EstadoPago.DEVUELTO]: [],
+  [EstadoPago.REEMBOLSADO]: [],
   [EstadoPago.ANULADO]: [],
   [EstadoPago.EXENTO]: [],
 };
@@ -44,6 +53,7 @@ export const ESTADOS_FINALES: readonly EstadoPago[] = [
   EstadoPago.DEVUELTO,
   EstadoPago.ANULADO,
   EstadoPago.EXENTO,
+  EstadoPago.REEMBOLSADO,
 ];
 
 /** Estados a los que se puede pasar desde `origen`. Vacío si es final. */
@@ -62,7 +72,7 @@ export function puedeTransicionar(origen: EstadoPago, destino: EstadoPago): bool
  * Un REMESADO devuelto nunca llegó a ingresar nada, así que no lleva reverso.
  */
 export function requiereReverso(origen: EstadoPago, destino: EstadoPago): boolean {
-  return origen === EstadoPago.PAGADO && destino === EstadoPago.DEVUELTO;
+  return origen === EstadoPago.PAGADO && (destino === EstadoPago.DEVUELTO || destino === EstadoPago.REEMBOLSADO);
 }
 
 /** Estados desde los que se puede cobrar un recibo (ver el grafo de arriba). */
@@ -87,10 +97,10 @@ export const MENSAJE_REMESADO_EN_MANO = 'está en el banco, cobrándose por domi
 
 /**
  * `true` si pasar un recibo de papeleta a `destino` deja la papeleta sin
- * efecto. Un recibo devuelto o anulado ya no respalda ningún sitio en la
+ * efecto. Un recibo devuelto, reembolsado o anulado ya no respalda ningún sitio en la
  * procesión: si Tesorería lo devuelve, la papeleta se anula igual que si la
  * anulara la mesa de reparto. EXENTO no: el hermano sale sin pagar.
  */
 export function anulaPapeleta(destino: EstadoPago): boolean {
-  return destino === EstadoPago.DEVUELTO || destino === EstadoPago.ANULADO;
+  return destino === EstadoPago.DEVUELTO || destino === EstadoPago.REEMBOLSADO || destino === EstadoPago.ANULADO;
 }

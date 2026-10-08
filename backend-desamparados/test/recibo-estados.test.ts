@@ -36,8 +36,11 @@ describe('máquina de estados de recibos', () => {
     }
   });
 
-  test('un cobro solo puede retrocederse a devuelto', () => {
-    assert.deepEqual(transicionesDesde(EstadoPago.PAGADO), [EstadoPago.DEVUELTO]);
+  test('un cobro solo puede retrocederse a devuelto o a reembolsado', () => {
+    assert.deepEqual(transicionesDesde(EstadoPago.PAGADO), [EstadoPago.DEVUELTO, EstadoPago.REEMBOLSADO]);
+    assert.ok(requiereReverso(EstadoPago.PAGADO, EstadoPago.REEMBOLSADO));
+    assert.ok(anulaPapeleta(EstadoPago.REEMBOLSADO));
+    assert.deepEqual(transicionesDesde(EstadoPago.REEMBOLSADO), [], 'un reembolso es final');
   });
 
   test('un recibo remesado puede acabar devuelto o anulado, pero no exento', () => {

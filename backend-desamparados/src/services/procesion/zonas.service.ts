@@ -42,7 +42,7 @@ import { PapeletasService, type SolicitudConRecibo } from './papeletas.service.j
 import { PlazoPapeletasService } from './plazo.service.js';
 import { archivoDePapeleta, datosDeLaPapeleta, papeletaEnPdf } from './papeleta-pdf.js';
 import { comprobarQueNoVaEnOtraPapeleta, estadoAlDevolver, prestarRopaEnTransaccion, ropaPedida, tunicasLibres, type TipoRopa } from './ropa.js';
-import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
+import { cingulosSinDevolverDe, devolverCingulosEnTransaccion, prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { unaVez } from './una-vez.js';
 import { avisarALaMesa } from './avisos-mesa.js';
 
@@ -145,9 +145,9 @@ async function cinguloPorDefecto(tx: Tx, hermanoId: number, origen: Origen): Pro
   if (propuesto !== Cingulo.PRESTADO) return propuesto;
   const [{ enElRopero }, trae] = await Promise.all([
     recuentoDeCingulos(tx),
-    tx.papeletaSitio.count({ where: { hermanoId, cingulo: Cingulo.PRESTADO } }),
+    cingulosSinDevolverDe(tx, [hermanoId]),
   ]);
-  return enElRopero + trae > 0 ? Cingulo.PRESTADO : Cingulo.DEBIDO;
+  return enElRopero + trae.length > 0 ? Cingulo.PRESTADO : Cingulo.DEBIDO;
 }
 
 /** Lo que le queda de la salida a una solicitud, según cobre su salida. */
@@ -468,10 +468,7 @@ export class ZonasService {
       }
       const cingulos = [...new Set(dto.cingulos)];
       if (cingulos.length > 0) {
-        const { count } = await tx.papeletaSitio.updateMany({
-          where: { id: { in: cingulos }, hermanoId: dto.hermanoId, cingulo: Cingulo.PRESTADO },
-          data: { cingulo: Cingulo.DEVUELTO },
-        });
+        const count = await devolverCingulosEnTransaccion(tx, dto.hermanoId, cingulos);
         if (count !== cingulos.length) throw new HttpError('El cíngulo ya no consta prestado a esta persona. Recarga la ficha.', 409);
       }
       return { hermanoId: dto.hermanoId, prendas: devueltas, cingulos: cingulos.length };
@@ -495,10 +492,7 @@ export class ZonasService {
         select: { id: true, tipo: true, numero: true, fechaAsignacion: true, hermanoId: true },
         orderBy: [{ tipo: 'asc' }, { numero: 'asc' }],
       }),
-      db.papeletaSitio.findMany({
-        where: { cingulo: Cingulo.PRESTADO },
-        select: { id: true, year: true, hermanoId: true },
-      }),
+      cingulosSinDevolverDe(db).then((lista) => lista.map(({ papeletaId, ...c }) => ({ id: papeletaId, ...c }))),
     ]);
     const ids = [...new Set([...prendas.map((p) => p.hermanoId!), ...cingulos.map((c) => c.hermanoId)])];
     const hermanos = await db.hermano.findMany({

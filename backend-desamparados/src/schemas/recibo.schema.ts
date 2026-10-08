@@ -1,9 +1,10 @@
 import { type } from 'arktype';
 import { textoRequerido, paginacionQuery, ordenQuery } from '../config/common.js';
 import { ORDENES_RECIBOS } from '../domain/ordenacion.js';
+import { esDiaValido } from '../domain/contabilidad.js';
 
 // Validar estado de pago basado en tu Enum
-const estadoPagoSchema = type("'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'");
+const estadoPagoSchema = type("'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO' | 'REEMBOLSADO'");
 const metodoPagoSchema = type("'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'");
 
 // Un año de verdad: entero. Un 2026.5 pasaba la validación y reventaba en
@@ -52,7 +53,9 @@ export const updateReciboSchema = type({
         "tramo?": "string",
         "observaciones?": "string",
         // Lo que cobra el banco al devolverlo; solo con estado DEVUELTO (lo comprueba el servicio).
-        "comision?": importeSchema
+        "comision?": importeSchema,
+        // El día en que el banco lo devolvió; solo con estado DEVUELTO (lo comprueba el servicio).
+        "fechaDevolucion?": type('string').narrow((valor) => esDiaValido(valor)).describe('una fecha AAAA-MM-DD que exista')
     }
 });
 

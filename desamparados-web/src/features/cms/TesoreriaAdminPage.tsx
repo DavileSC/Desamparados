@@ -18,6 +18,7 @@ import {
   buscarHermanosConRecibo,
   type AdminReceipt,
   type AdminReceiptStatus,
+  type DatosDevolucion,
   type EmittableReceiptType,
   type FiltrosRecibos,
   type PaymentMethod,
@@ -42,7 +43,7 @@ import Remesas from './tesoreria/Remesas'
 import { site } from '../../config/site'
 
 const methods: PaymentMethod[] = ['EFECTIVO', 'BIZUM', 'TRANSFERENCIA', 'TARJETA', 'DOMICILIACION']
-const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento' }
+const statusLabels: Record<AdminReceipt['estado'], string> = { PENDIENTE: 'Pendiente', REMESADO: 'Remesado', PAGADO: 'Pagado', ANULADO: 'Anulado', DEVUELTO: 'Devuelto', EXENTO: 'Exento', REEMBOLSADO: 'Reembolsado' }
 const typeLabels: Record<EmittableReceiptType, string> = { CUOTA_HERMANO: 'Cuota de hermano', DONATIVO: 'Donativo', OTRO: 'Otro' }
 // Para filtrar sí entra la papeleta, aunque no se emita desde aquí.
 const tiposRecibo: Record<ReceiptType, string> = { PAPELETA_SITIO: 'Papeleta de sitio', ...typeLabels }
@@ -225,11 +226,11 @@ export default function TesoreriaAdminPage() {
   }
 
   const abrirCambio = (recibo: AdminReceipt, destino: AdminReceiptStatus) => { setErrorCambio(null); setCambio({ recibo, destino }) }
-  const cambiarEstado = async (comision?: number) => {
+  const cambiarEstado = async (devolucion: DatosDevolucion) => {
     if (!cambio) return
     setWorking(true); setErrorCambio(null); setNotice(null)
     try {
-      const resultado = await cambiarEstadoRecibo(cambio.recibo.id, { estado: cambio.destino, ...(comision !== undefined ? { comision } : {}) })
+      const resultado = await cambiarEstadoRecibo(cambio.recibo.id, { estado: cambio.destino, ...devolucion })
       setCambio(null)
       setNotice(resultado.message)
       await cargar()
@@ -365,7 +366,7 @@ export default function TesoreriaAdminPage() {
     {loading ? <CircularProgress aria-label="Cargando recibos" /> : receipts.length === 0
       ? <Alert severity="info">{filtros.q || filtros.estado || filtros.tipo ? 'No hay recibos con esta búsqueda o estos filtros.' : filtros.recibo ? `No existe el recibo #${filtros.recibo}.` : esAnioCompleto(year) ? 'No hay recibos para este año.' : 'No hay recibos.'}</Alert>
       : <ListaRecibos recibos={receipts} verAnio={!esAnioCompleto(year)} ocupado={working} onCobrar={pay} onConfirmar={pay} onReemitir={abrirReemision} onCambiarEstado={abrirCambio} />}
-    <DialogoEstado cambio={cambio} guardando={working} error={errorCambio} onConfirmar={(comision) => void cambiarEstado(comision)} onCancelar={() => setCambio(null)} />
+    <DialogoEstado cambio={cambio} guardando={working} error={errorCambio} onConfirmar={(devolucion) => void cambiarEstado(devolucion)} onCancelar={() => setCambio(null)} />
     {meta && <Paginador meta={meta} onPagina={irAPagina} onTamano={cambiarTamano} etiqueta="recibos" />}
     </>}
   </>

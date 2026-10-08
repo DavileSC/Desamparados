@@ -21,13 +21,15 @@ export interface EmitirReciboDto {
 }
 
 export interface UpdateReciboDto {
-  estado?: 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO';
+  estado?: 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO' | 'REEMBOLSADO';
   metodoPago?: MetodoPago;
   puesto?: string;
   tramo?: string;
   observaciones?: string;
   /** Lo que cobra el banco al devolver el recibo: se apunta como gasto. */
   comision?: number;
+  /** AAAA-MM-DD: el día en que el banco lo devolvió, para el reverso y la comisión. Hoy si no se dice. */
+  fechaDevolucion?: string;
 }
 
 // Para el filtro de búsqueda del admin

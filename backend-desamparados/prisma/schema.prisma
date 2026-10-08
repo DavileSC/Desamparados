@@ -30,6 +30,9 @@ enum EstadoPago {
   DEVUELTO // El banco lo echa para atrás por falta de fondos
   ANULADO
   EXENTO
+  /// Se le devolvió al hermano lo que pagó (papeleta anulada, solicitud
+  /// cancelada). No es DEVUELTO: aquel es una deuda que se reemite, este no se debe.
+  REEMBOLSADO
 }
 
 enum MetodoPago {
@@ -332,6 +335,7 @@ model Hermano {
   citas              Cita[]
   transacciones      Transaccion[]
   prendas            Prenda[]
+  cingulosSueltos    CinguloSinPapeleta[]
   solicitudes        Solicitud[]
   /// Los cabildos a los que asistió.
   asistenciasCabildo CabildoAsistencia[]
@@ -541,6 +545,25 @@ model Remesa {
 // ---------------------------------------------------------
 // 5. LA PROCESIÓN (PAPELETA DE SITIO)
 // ---------------------------------------------------------
+
+/// Un cíngulo prestado cuya papeleta se anuló. El préstamo vivía solo en la
+/// papeleta (`cingulo: PRESTADO`) y, al borrarla, el cíngulo dejaba de constar:
+/// salía de «Sin devolver» y contaba como del ropero estando en casa del
+/// hermano. Aquí sigue a su nombre hasta que lo devuelva, y la mesa lo maneja
+/// por el número de la papeleta anulada, como a los demás.
+model CinguloSinPapeleta {
+  id         Int      @id @default(autoincrement())
+  /// La papeleta anulada que lo prestó (ya no existe: sin clave ajena).
+  papeletaId Int      @unique
+  hermanoId  Int
+  /// Cascade: solo se borran fichas que nunca llegaron a aprobarse, y esas no
+  /// tienen papeletas ni, por tanto, cíngulos.
+  hermano    Hermano  @relation(fields: [hermanoId], references: [id], onDelete: Cascade)
+  year       Int
+  createdAt  DateTime @default(now())
+
+  @@index([hermanoId])
+}
 
 model PapeletaSitio {
   id       Int    @id @default(autoincrement())

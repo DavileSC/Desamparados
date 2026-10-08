@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import TesoreriaAdminPage from '../TesoreriaAdminPage'
@@ -255,7 +255,7 @@ describe('TesoreriaAdminPage', () => {
     expect(screen.getByText(/se reemite en la mesa de reparto/i)).toBeInTheDocument()
   })
 
-  it('un remesado que el banco devuelve se marca desde su menú, con la comisión', async () => {
+  it('un remesado que el banco devuelve se marca desde su menú, con la comisión y el día del banco', async () => {
     const user = userEvent.setup({ delay: null })
     const simulado = servidor([recibo(7, 'REMESADO', 'Cuota anual')])
     vi.stubGlobal('fetch', simulado)
@@ -272,23 +272,30 @@ describe('TesoreriaAdminPage', () => {
     expect(within(ventana).getByRole('button', { name: 'Devuelto por el banco' })).toBeDisabled()
     await user.clear(within(ventana).getByLabelText(/comisión del banco/i))
     await user.type(within(ventana).getByLabelText(/comisión del banco/i), '3,50')
+    // El día del extracto, no el del clic: los asientos van a ese día.
+    fireEvent.change(within(ventana).getByLabelText(/día de la devolución/i), { target: { value: '2099-01-01' } })
+    expect(within(ventana).getByRole('button', { name: 'Devuelto por el banco' })).toBeDisabled()
+    fireEvent.change(within(ventana).getByLabelText(/día de la devolución/i), { target: { value: '2025-12-30' } })
     await user.click(within(ventana).getByRole('button', { name: 'Devuelto por el banco' }))
 
     expect(await screen.findByText(/la comisión del banco queda apuntada/i)).toBeInTheDocument()
     const [url, init] = llamadas(simulado, (_, i) => i?.method === 'PUT').at(-1)!
     expect(String(url)).toContain('/recibos/admin/7')
-    expect(JSON.parse(String((init as RequestInit).body))).toEqual({ estado: 'DEVUELTO', comision: 3.5 })
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({ estado: 'DEVUELTO', comision: 3.5, fechaDevolucion: '2025-12-30' })
   })
 
-  it('un cobrado se puede devolver avisando del gasto, y lleva a sus apuntes de Contabilidad', async () => {
+  it('un cobrado se puede reembolsar avisando del gasto, y lleva a sus apuntes de Contabilidad', async () => {
     const user = userEvent.setup({ delay: null })
     vi.stubGlobal('fetch', servidor([{ ...recibo(8, 'PAGADO', 'Donativo'), fechaPago: '2026-02-01T10:00:00.000Z', metodoPago: 'EFECTIVO' }]))
     renderWithProviders(<TesoreriaAdminPage />)
 
     await user.click(await screen.findByRole('button', { name: 'Más acciones de Donativo de Ana Pérez Ruiz' }))
     expect(screen.getByRole('menuitem', { name: /ver en contabilidad/i })).toHaveAttribute('href', '/cms/contabilidad?recibo=8')
-    await user.click(screen.getByRole('menuitem', { name: 'Devolver el cobro' }))
-    expect(within(screen.getByRole('dialog')).getByText(/se apunta un gasto de 25,00\s€ que anula el cobro/i)).toBeInTheDocument()
+    expect(screen.getAllByRole('menuitem').map((m) => m.textContent)).toContain('Devuelto por el banco')
+    await user.click(screen.getByRole('menuitem', { name: 'Reembolsar al hermano' }))
+    const ventana = within(screen.getByRole('dialog'))
+    expect(ventana.getByText(/se apunta un gasto de 25,00\s€ que anula el cobro/i)).toBeInTheDocument()
+    expect(ventana.getByText(/no queda nada por cobrar y no se reemite/i)).toBeInTheDocument()
   })
 
   it('un pendiente se puede enviar al banco, eximir o anular; uno anulado no ofrece nada', async () => {

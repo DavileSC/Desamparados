@@ -13,6 +13,8 @@ export const ESTADO_RECIBO: Record<ReceiptStatus, { texto: string; color: string
   PENDIENTE: { texto: 'Pendiente', color: 'warning.main' },
   REMESADO: { texto: 'Remesado', color: 'info.main' },
   DEVUELTO: { texto: 'Devuelto', color: 'error.main' },
+  // Se le devolvió el dinero: no debe nada, así que no va en rojo.
+  REEMBOLSADO: { texto: 'Reembolsado', color: 'text.secondary' },
   ANULADO: { texto: 'Anulado', color: 'error.main' },
   EXENTO: { texto: 'Exento', color: 'text.secondary' },
 }

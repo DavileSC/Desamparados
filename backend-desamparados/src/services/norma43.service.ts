@@ -105,7 +105,8 @@ export class Norma43Service {
     const omitidos: string[] = [];
     for (const d of analisis.devoluciones.filter((x) => !x.yaAplicado)) {
       try {
-        await ReciboService.adminUpdateDetalles(d.reciboId, { estado: EstadoPago.DEVUELTO }, meta);
+        // Con la fecha valor del movimiento: es el día en que el banco lo devolvió.
+        await ReciboService.adminUpdateDetalles(d.reciboId, { estado: EstadoPago.DEVUELTO, fechaDevolucion: d.fecha }, meta);
         devueltos += 1;
       } catch (error) {
         if (!(error instanceof HttpError)) throw error;

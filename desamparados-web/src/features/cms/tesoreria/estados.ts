@@ -45,6 +45,13 @@ export const ESTADOS_RECIBO: Record<AdminReceiptStatus, EstadoRecibo> = {
     claro: { texto: '#5f42a8', fondo: 'rgba(150,110,230,0.15)' },
     oscuro: { texto: '#c9b3f5', fondo: 'rgba(150,110,230,0.18)' },
   },
+  // Lo que el Grupo devolvió a propósito (papeleta anulada, solicitud
+  // cancelada): no es deuda, así que no va en rojo ni pide reemitirlo.
+  REEMBOLSADO: {
+    etiqueta: 'Reembolsado', plural: 'Reembolsados', cuenta: 'nada',
+    claro: { texto: '#2c6470', fondo: 'rgba(60,140,155,0.13)' },
+    oscuro: { texto: '#8fd0da', fondo: 'rgba(60,140,155,0.20)' },
+  },
   ANULADO: {
     etiqueta: 'Anulado', plural: 'Anulados', cuenta: 'nada',
     claro: { texto: '#5c575b', fondo: 'rgba(0,0,0,0.06)' },
@@ -60,18 +67,24 @@ export const ESTADOS_RECIBO: Record<AdminReceiptStatus, EstadoRecibo> = {
 export const CAMBIOS_DE_ESTADO: Record<AdminReceiptStatus, readonly AdminReceiptStatus[]> = {
   PENDIENTE: ['REMESADO', 'EXENTO', 'ANULADO'],
   REMESADO: ['DEVUELTO', 'ANULADO'],
-  PAGADO: ['DEVUELTO'],
+  PAGADO: ['DEVUELTO', 'REEMBOLSADO'],
   DEVUELTO: [],
+  REEMBOLSADO: [],
   ANULADO: [],
   EXENTO: [],
 }
 
-/** El texto del menú de cada cambio, según de dónde se parte. */
-export function accionDeCambio(origen: AdminReceiptStatus, destino: AdminReceiptStatus): string {
+/**
+ * El texto del menú de cada cambio. Un cobrado tiene dos salidas que no se
+ * deben confundir: el banco lo echó atrás (se sigue debiendo) o se le devuelve
+ * el dinero al hermano (no se debe).
+ */
+export function accionDeCambio(destino: AdminReceiptStatus): string {
   if (destino === 'REMESADO') return 'Enviar al banco'
   if (destino === 'EXENTO') return 'Eximir de pago'
   if (destino === 'ANULADO') return 'Anular'
-  return origen === 'PAGADO' ? 'Devolver el cobro' : 'Devuelto por el banco'
+  if (destino === 'REEMBOLSADO') return 'Reembolsar al hermano'
+  return 'Devuelto por el banco'
 }
 
 /** El tono de un estado en los dos modos a la vez: lo elige el navegador, sin volver a pintar. */
@@ -81,4 +94,4 @@ export function tonoDeEstado(estado: AdminReceiptStatus): Tono {
 }
 
 /** En el orden de los contadores: primero lo que hay que hacer. */
-export const ORDEN_ESTADOS: AdminReceiptStatus[] = ['PENDIENTE', 'REMESADO', 'DEVUELTO', 'PAGADO', 'EXENTO', 'ANULADO']
+export const ORDEN_ESTADOS: AdminReceiptStatus[] = ['PENDIENTE', 'REMESADO', 'DEVUELTO', 'PAGADO', 'REEMBOLSADO', 'EXENTO', 'ANULADO']

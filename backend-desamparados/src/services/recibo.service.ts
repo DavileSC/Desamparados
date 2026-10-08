@@ -17,6 +17,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditor
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { anulaPapeleta, estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO, puedeCobrarse, puedeTransicionar, requiereReverso } from '../domain/recibo-estados.js';
+import { instanteDelApunte } from '../domain/contabilidad.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { agruparImpagos } from '../domain/impagos.js';
@@ -290,6 +291,7 @@ export class ReciboService {
           [EstadoPago.PAGADO]: 'Este recibo ya estaba pagado.',
           [EstadoPago.ANULADO]: 'No se puede cobrar un recibo anulado.',
           [EstadoPago.DEVUELTO]: 'Este recibo fue devuelto: emite un recibo nuevo para volver a cobrarlo.',
+          [EstadoPago.REEMBOLSADO]: 'Este recibo se reembolsó: no se vuelve a cobrar.',
           [EstadoPago.EXENTO]: 'No se puede cobrar un recibo exento.'
         };
         throw new HttpError(motivos[actual.estado] ?? 'Este recibo no se puede cobrar.', 409);
@@ -392,11 +394,20 @@ export class ReciboService {
     const tocaPapeleta = data.puesto !== undefined || data.tramo !== undefined || data.observaciones !== undefined;
     // Solo una devolución puede necesitar el reverso; la categoría se resuelve
     // antes de abrir la transacción (ver idCategoriaDeRecibos).
-    const categoriaDevolucionesId = data.estado === EstadoPago.DEVUELTO ? await idCategoriaDevoluciones() : null;
-    // La comisión del banco solo tiene sentido al devolver.
+    const retrocede = data.estado === EstadoPago.DEVUELTO || data.estado === EstadoPago.REEMBOLSADO;
+    const categoriaDevolucionesId = retrocede ? await idCategoriaDevoluciones() : null;
+    // La comisión del banco y el día de la devolución solo tienen sentido al devolver.
     if (data.comision !== undefined && data.estado !== EstadoPago.DEVUELTO) {
       throw new HttpError('La comisión del banco solo se apunta al devolver un recibo.');
     }
+    if (data.fechaDevolucion !== undefined && data.estado !== EstadoPago.DEVUELTO) {
+      throw new HttpError('El día de la devolución solo se indica al devolver un recibo.');
+    }
+    if (data.fechaDevolucion !== undefined && data.fechaDevolucion > diaDeHoy()) {
+      throw new HttpError('El día de la devolución no puede ser posterior a hoy.');
+    }
+    // Los asientos de la devolución, al día en que el banco la hizo (ver devolverCobroEnTransaccion).
+    const fechaDevolucion = data.fechaDevolucion !== undefined ? instanteDelApunte(data.fechaDevolucion) : new Date();
     const categoriaComisionesId = data.comision !== undefined ? await idCategoriaComisiones() : null;
 
     const resultado = await db.$transaction(async (tx) => {
@@ -420,9 +431,12 @@ export class ReciboService {
 
       if (cambiaEstado) {
         if (requiereReverso(actual.estado, destino)) {
-          // requiereReverso implica destino DEVUELTO, así que la categoría ya está resuelta.
+          // requiereReverso implica destino DEVUELTO o REEMBOLSADO, así que la categoría ya está resuelta.
           if (categoriaDevolucionesId === null) throw new Error('Falta la categoría de devoluciones.');
-          await devolverCobroEnTransaccion(tx, actual, categoriaDevolucionesId);
+          await devolverCobroEnTransaccion(tx, actual, categoriaDevolucionesId, {
+            destino: destino as typeof EstadoPago.DEVUELTO | typeof EstadoPago.REEMBOLSADO,
+            fecha: fechaDevolucion,
+          });
         } else {
           // Condicionado al estado que se validó: si entre la lectura y la
           // escritura alguien lo cobró, esto no pisa el cobro con un ANULADO
@@ -435,7 +449,7 @@ export class ReciboService {
         }
 
         if (categoriaComisionesId !== null && data.comision !== undefined) {
-          await apuntarComisionEnTransaccion(tx, actual, data.comision, categoriaComisionesId);
+          await apuntarComisionEnTransaccion(tx, actual, data.comision, categoriaComisionesId, fechaDevolucion);
         }
 
         // Coherencia con la mesa de reparto: un recibo de papeleta devuelto o
@@ -485,7 +499,7 @@ export class ReciboService {
 
     // Lo que ha pasado en Contabilidad, dicho en el aviso: desde allí no se ve el porqué.
     const enContabilidad = [
-      resultado.despues.estado === EstadoPago.DEVUELTO && resultado.antes.estado === EstadoPago.PAGADO ? 'el cobro queda anulado en Contabilidad' : null,
+      (resultado.despues.estado === EstadoPago.DEVUELTO || resultado.despues.estado === EstadoPago.REEMBOLSADO) && resultado.antes.estado === EstadoPago.PAGADO ? 'el cobro queda anulado en Contabilidad' : null,
       'comision' in resultado.despues ? 'la comisión del banco queda apuntada' : null,
     ].filter(Boolean).join(' y ');
     return {

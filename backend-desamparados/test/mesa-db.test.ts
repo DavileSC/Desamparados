@@ -256,7 +256,7 @@ test('con cuota de salida, Tesorería la cobra y su recibo es el de la papeleta 
 
     // Anular la papeleta devuelve el cobro y cancela su solicitud.
     await PapeletasService.anularPapeleta(papeletaId, e.meta);
-    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: papeleta.reciboId } })).estado, EstadoPago.DEVUELTO);
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: papeleta.reciboId } })).estado, EstadoPago.REEMBOLSADO);
     assert.equal((await db.solicitud.findUniqueOrThrow({ where: { id: solicitudId } })).estado, 'CANCELADA');
   } finally {
     await e.recoger();
@@ -577,9 +577,9 @@ test('el cíngulo va con la túnica del ropero; si no quedan, se le debe y se le
     assert.equal((await db.papeletaSitio.findUniqueOrThrow({ where: { id: pb.papeletaId } })).cingulo, 'PRESTADO');
     assert.equal((await recuentoDeCingulos()).enElRopero, 0);
 
-    // Anular la papeleta devuelve también el cíngulo.
+    // Anular la papeleta no devuelve el cíngulo: lo tiene él hasta que lo traiga (NG5).
     await PapeletasService.anularPapeleta(pa.papeletaId, e.meta);
-    assert.equal((await recuentoDeCingulos()).enElRopero, 1);
+    assert.equal((await recuentoDeCingulos()).enElRopero, 0);
   } finally {
     await e.recoger();
   }
@@ -623,6 +623,52 @@ test('después de la salida se devuelve todo: la túnica al lavado, lo roto al t
     const lavadas = await InventarioService.marcarLavadas([tunica.id]);
     assert.deepEqual(lavadas.ids, [tunica.id]);
     assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: tunica.id } })).estado, EstadoPrenda.DISPONIBLE);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('anular una papeleta con el cíngulo prestado lo deja a su nombre hasta que lo devuelva (NG5)', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    await e.cingulosLibres(1);
+    const h = await e.hermano();
+    const tunica = await e.prenda(TipoPrenda.TUNICA);
+    const { papeletaId } = await e.entregar((await e.inscribir(h.id)).solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: tunica.numero });
+    assert.equal((await recuentoDeCingulos()).enElRopero, 0);
+
+    await PapeletasService.anularPapeleta(papeletaId, e.meta);
+    assert.equal(await db.papeletaSitio.findUnique({ where: { id: papeletaId } }), null);
+
+    // Antes salía de «Sin devolver» y volvía a contar como del ropero.
+    assert.equal((await recuentoDeCingulos()).enElRopero, 0, 'sigue fuera del ropero');
+    assert.deepEqual((await MesaService.ficha(h.id, await salida(PASION))).cingulosSinDevolver, [{ papeletaId, year: YEAR }]);
+    assert.equal((await ZonasService.sinDevolver()).find((f) => f.hermano.id === h.id)?.cingulos.length, 1);
+    assert.equal((await MesaService.buscarPersonas(h.apellidos, await salida(PASION), { zona: 'devolucion' }))[0]?.id, h.id);
+
+    // Se devuelve por el número de la papeleta anulada, como cualquier otro.
+    await ZonasService.devolver({ hermanoId: h.id, prendas: [{ id: tunica.id }], cingulos: [papeletaId] }, e.clave(), e.meta);
+    assert.equal((await recuentoDeCingulos()).enElRopero, 1);
+    assert.equal((await ZonasService.sinDevolver()).some((f) => f.hermano.id === h.id), false);
+  } finally {
+    await e.recoger();
+  }
+});
+
+test('Tesorería devuelve el recibo de una papeleta: la solicitud queda cancelada, no recogida sin papeleta (NG5)', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const h = await e.hermano();
+    const { solicitudId } = await e.inscribir(h.id);
+    const { papeletaId } = await e.entregar(solicitudId);
+    const { reciboId } = await db.papeletaSitio.findUniqueOrThrow({ where: { id: papeletaId } });
+    // Sin cuota la papeleta sale exenta, que no se anula: se deja pendiente de cobro.
+    await db.recibo.update({ where: { id: reciboId }, data: { estado: EstadoPago.PENDIENTE } });
+    await ReciboService.adminUpdateDetalles(reciboId, { estado: 'ANULADO' }, e.meta);
+    assert.equal(await db.papeletaSitio.findUnique({ where: { id: papeletaId } }), null);
+    assert.equal((await db.solicitud.findUniqueOrThrow({ where: { id: solicitudId } })).estado, 'CANCELADA');
   } finally {
     await e.recoger();
   }

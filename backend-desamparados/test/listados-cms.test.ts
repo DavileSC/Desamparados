@@ -162,7 +162,8 @@ describe('consultas contra la base de datos', () => {
     const { estados } = await ReciboService.getResumenAdmin({ q: marca });
     assert.deepEqual(estados.PENDIENTE, { cuenta: 3, total: 60 });
     assert.deepEqual(estados.DEVUELTO, { cuenta: 0, total: 0 });
-    assert.equal(Object.keys(estados).length, 6);
+    assert.deepEqual(estados.REEMBOLSADO, { cuenta: 0, total: 0 });
+    assert.equal(Object.keys(estados).length, 7);
     const soloDonativos = await ReciboService.getResumenAdmin({ q: marca, tipo: 'DONATIVO' }, 2026);
     assert.deepEqual(soloDonativos.estados.PENDIENTE, { cuenta: 1, total: 10 });
   });

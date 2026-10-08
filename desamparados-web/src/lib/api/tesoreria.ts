@@ -1,7 +1,7 @@
 import { llamarApi, traerArchivo } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 
-export type AdminReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
+export type AdminReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO' | 'REEMBOLSADO'
 export type PaymentMethod = 'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'
 export type ReceiptType = 'PAPELETA_SITIO' | 'CUOTA_HERMANO' | 'DONATIVO' | 'OTRO'
 /** Los que se pueden emitir a mano: la papeleta nace en la mesa de reparto, con su sitio. */
@@ -67,10 +67,14 @@ export function cobrarRecibo(id: number, metodoPago: PaymentMethod) {
 }
 
 /**
- * Cambia el estado de un recibo (remesar, devolver, anular, eximir). Al
- * devolverlo, `comision` es lo que cobró el banco: se apunta como gasto.
+ * Cambia el estado de un recibo (remesar, devolver, reembolsar, anular,
+ * eximir). Al devolverlo, `comision` es lo que cobró el banco (se apunta como
+ * gasto) y `fechaDevolucion` el día en que lo devolvió (AAAA-MM-DD): los
+ * asientos van a ese día, que es el que cuadra con el extracto.
  */
-export function cambiarEstadoRecibo(id: number, payload: { estado: AdminReceiptStatus; comision?: number }) {
+export interface DatosDevolucion { comision?: number; fechaDevolucion?: string }
+
+export function cambiarEstadoRecibo(id: number, payload: { estado: AdminReceiptStatus } & DatosDevolucion) {
   return llamarApi<{ message: string; papeletaAnulada: boolean }>(`/recibos/admin/${id}`, { method: 'PUT', json: payload })
 }
 

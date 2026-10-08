@@ -6,6 +6,7 @@ import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import UndoRoundedIcon from '@mui/icons-material/UndoRounded'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import CurrencyExchangeOutlinedIcon from '@mui/icons-material/CurrencyExchangeOutlined'
 import type { AdminReceiptStatus } from '../../../lib/api/tesoreria'
 import { ESTADOS_RECIBO, tonoDeEstado } from './estados'
 
@@ -14,6 +15,7 @@ const ICONOS: Record<AdminReceiptStatus, ComponentType<SvgIconProps>> = {
   REMESADO: AccountBalanceOutlinedIcon,
   PAGADO: CheckRoundedIcon,
   DEVUELTO: UndoRoundedIcon,
+  REEMBOLSADO: CurrencyExchangeOutlinedIcon,
   EXENTO: ShieldOutlinedIcon,
   ANULADO: BlockOutlinedIcon,
 }

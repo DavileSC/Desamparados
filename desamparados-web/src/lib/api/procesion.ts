@@ -2,7 +2,7 @@ import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
 import type { Salida } from './salidas'
 
-export type ReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO'
+export type ReceiptStatus = 'PENDIENTE' | 'REMESADO' | 'PAGADO' | 'ANULADO' | 'DEVUELTO' | 'EXENTO' | 'REEMBOLSADO'
 
 export interface ApiProcessionTicket {
   id: number

@@ -9,7 +9,7 @@
  * quien llama.
  */
 import db from '../../config/db';
-import { EstadoCita, EstadoPago, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
+import { Cingulo, EstadoCita, EstadoPago, EstadoSolicitud, Prisma, MetodoPago, TipoRecibo, TipoTransaccion } from '@prisma/client';
 import { HttpError } from '../../utils/error.handle';
 import type { DatosEvento } from '../../domain/datos-procesion.js';
 import { anioDeLaSalida, diaMadrid, fechaDeSalida } from '../../domain/fecha-salida.js';
@@ -140,11 +140,18 @@ export function leerDatosEvento(salida: SalidaConActo, anio?: number): DatosEven
 // =================================================================
 
 /**
- * PAGADO -> DEVUELTO con su asiento de reverso, dentro de la transacción de
- * quien llama. Es el único camino para retroceder un cobro: lo usan la
- * edición de Tesorería y la anulación de una papeleta en mesa, que antes
- * pasaba el recibo a ANULADO por su cuenta y dejaba el ingreso en contabilidad
- * como si el dinero siguiera en caja.
+ * PAGADO -> DEVUELTO (o REEMBOLSADO) con su asiento de reverso, dentro de la
+ * transacción de quien llama. `destino` dice si se sigue debiendo (DEVUELTO, el
+ * banco no lo cobró) o si se le devolvió al hermano (REEMBOLSADO): el reverso
+ * es el mismo, pero solo el primero es deuda (ver `domain/recibo-estados`).
+ * `fecha` es la del asiento: el día en que el banco lo devolvió (la fecha valor
+ * del extracto o la que diga Tesorería); con la del clic, una devolución del
+ * 30 de diciembre aplicada el 3 de enero caía en el ejercicio siguiente.
+ *
+ * Es el único camino para retroceder un cobro: lo usan la edición de
+ * Tesorería y la anulación de una papeleta en mesa, que antes pasaba el recibo
+ * a ANULADO por su cuenta y dejaba el ingreso en contabilidad como si el
+ * dinero siguiera en caja.
  *
  * El cambio va condicionado a que siga PAGADO: de dos peticiones a la vez,
  * solo una gana y solo una apunta el reverso.
@@ -156,11 +163,15 @@ export async function devolverCobroEnTransaccion(
   tx: Tx,
   recibo: { id: number; importe: Prisma.Decimal; metodoPago: MetodoPago | null; hermanoId: number },
   categoriaDevolucionesId: number,
-  observaciones?: string
+  { observaciones, destino = EstadoPago.DEVUELTO, fecha = new Date() }: {
+    observaciones?: string;
+    destino?: typeof EstadoPago.DEVUELTO | typeof EstadoPago.REEMBOLSADO;
+    fecha?: Date;
+  } = {}
 ) {
   const transicion = await tx.recibo.updateMany({
     where: { id: recibo.id, estado: EstadoPago.PAGADO },
-    data: { estado: EstadoPago.DEVUELTO, ...(observaciones !== undefined ? { observaciones } : {}) }
+    data: { estado: destino, ...(observaciones !== undefined ? { observaciones } : {}) }
   });
   if (transicion.count !== 1) throw new HttpError(MENSAJE_ESTADO_CAMBIADO, 409);
 
@@ -184,7 +195,7 @@ export async function devolverCobroEnTransaccion(
       categoriaId: categoriaDevolucionesId,
       concepto: conceptoReverso,
       importe: recibo.importe,
-      fecha: new Date(),
+      fecha,
       metodoPago: recibo.metodoPago,
       hermanoId: recibo.hermanoId,
       reciboId: recibo.id
@@ -193,14 +204,26 @@ export async function devolverCobroEnTransaccion(
 }
 
 /**
- * Deja sin efecto la papeleta de un recibo, si la tiene: libera la cita (por
- * si el hermano quiere volver otro día) y borra la papeleta, que libera su
- * hueco en la procesión y la clave [hermano, año] para una reinscripción.
+ * Deja sin efecto la papeleta de un recibo, si la tiene: cancela su solicitud
+ * (si vuelve, pide otra), libera la cita (por si quiere volver otro día) y
+ * borra la papeleta, que libera su hueco en la procesión y la clave
+ * [hermano, año] para una reinscripción. Lo usan la mesa al anular y Tesorería
+ * al devolver o anular el recibo: antes Tesorería dejaba la solicitud RECOGIDA
+ * sin papeleta.
+ *
+ * La ropa no se toca: sigue a su nombre hasta que la devuelva. Las prendas ya
+ * van a su nombre; el cíngulo prestado solo constaba en la papeleta, así que
+ * pasa a `CinguloSinPapeleta` antes de borrarla.
  * Devuelve la papeleta retirada, o `null` si el recibo no tenía.
  */
 export async function retirarPapeletaEnTransaccion(tx: Tx, reciboId: number) {
   const papeleta = await tx.papeletaSitio.findUnique({ where: { reciboId } });
   if (!papeleta) return null;
+
+  if (papeleta.cingulo === Cingulo.PRESTADO) {
+    await tx.cinguloSinPapeleta.create({ data: { papeletaId: papeleta.id, hermanoId: papeleta.hermanoId, year: papeleta.year } });
+  }
+  await tx.solicitud.updateMany({ where: { papeletaId: papeleta.id }, data: { estado: EstadoSolicitud.CANCELADA, citaId: null } });
 
   if (papeleta.citaId) {
     await tx.cita.updateMany({
@@ -268,7 +291,8 @@ export async function apuntarComisionEnTransaccion(
   tx: Tx,
   recibo: { id: number; hermanoId: number; metodoPago: MetodoPago | null },
   importe: number,
-  categoriaComisionesId: number
+  categoriaComisionesId: number,
+  fecha: Date = new Date()
 ) {
   await tx.transaccion.create({
     data: {
@@ -276,7 +300,7 @@ export async function apuntarComisionEnTransaccion(
       categoriaId: categoriaComisionesId,
       concepto: `Comisión del banco por devolver el recibo #${recibo.id}`,
       importe,
-      fecha: new Date(),
+      fecha,
       metodoPago: recibo.metodoPago,
       hermanoId: recibo.hermanoId,
       reciboId: recibo.id

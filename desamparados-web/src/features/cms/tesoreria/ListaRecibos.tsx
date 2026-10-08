@@ -21,7 +21,7 @@ interface Props {
 }
 
 /** Los que tienen apuntes en Contabilidad: el cobro, su reverso o la comisión del banco. */
-const conApuntes = (r: AdminReceipt) => r.estado === 'PAGADO' || r.estado === 'DEVUELTO'
+const conApuntes = (r: AdminReceipt) => r.estado === 'PAGADO' || r.estado === 'DEVUELTO' || r.estado === 'REEMBOLSADO'
 
 /** A partir de este ancho del listado, tabla; por debajo, una tarjeta por recibo. */
 const ANCHO_TABLA = 760
@@ -40,6 +40,7 @@ function detalle(r: AdminReceipt): string {
     case 'REMESADO': return 'En el banco, sin confirmar'
     case 'PAGADO': return r.fechaPago ? `Cobrado el ${fechaCorta(r.fechaPago)}${r.metodoPago ? ` · ${etiquetaMetodo(r.metodoPago)}` : ''}` : 'Cobrado'
     case 'DEVUELTO': return r.reemitido ? 'Devuelto · ya reemitido' : r.tipo === 'PAPELETA_SITIO' ? 'Devuelto: se reemite en la mesa de reparto' : 'Devuelto: hay que reemitirlo'
+    case 'REEMBOLSADO': return 'Reembolsado: no se debe nada'
     case 'EXENTO': return 'Exento de pago'
     case 'ANULADO': return 'Anulado'
   }
@@ -128,7 +129,7 @@ export default function ListaRecibos({ recibos, verAnio, ocupado, onCobrar, onCo
       <Menu anchorEl={menu?.ancla} open={menu !== null} onClose={cerrar}>
         {menu && CAMBIOS_DE_ESTADO[menu.recibo.estado].map((destino) => (
           <MenuItem key={destino} onClick={() => { cerrar(); onCambiarEstado(menu.recibo, destino) }}>
-            {accionDeCambio(menu.recibo.estado, destino)}
+            {accionDeCambio(destino)}
           </MenuItem>
         ))}
         {menu && CAMBIOS_DE_ESTADO[menu.recibo.estado].length > 0 && conApuntes(menu.recibo) && <Divider />}
