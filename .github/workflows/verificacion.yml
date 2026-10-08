@@ -161,7 +161,9 @@ jobs:
         run: npm ci
 
       - name: Comprobar tipos
-        run: npx tsc --noEmit -p tsconfig.app.json
+        # `-b` como en local (CLAUDE.md): el proyecto usa project references y
+        # así se comprueban todas, también la de vite.config.ts.
+        run: npx tsc -b
 
       - name: Lint
         run: npm run lint
