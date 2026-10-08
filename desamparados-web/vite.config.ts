@@ -1,6 +1,16 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
+/**
+ * Las carpetas de @mui/material que van en vendor-mui: lo que necesita
+ * cualquier página para arrancar. Un componente que solo pinta el CMS no entra.
+ */
+const NUCLEO_MUI = new Set([
+  'styles', 'utils', 'internal', 'colors', 'transitions', 'zero-styled', 'DefaultPropsProvider',
+  'className', 'generateUtilityClass', 'generateUtilityClasses', 'locale', 'version', 'index.js',
+  'CssBaseline', 'GlobalStyles', 'useMediaQuery', 'Box', 'Typography', 'ButtonBase', 'Button', 'SvgIcon',
+])
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -41,6 +51,15 @@ export default defineConfig(({ mode }) => {
             // los bajaba también quien solo visita la web pública. Sueltos, cada
             // uno acaba junto a la pantalla que lo pinta.
             if (paquete === '@mui/icons-material') return undefined
+            // De @mui/material, solo el núcleo: el tema, los estilos y las
+            // piezas que pinta cualquier página. Con todo @mui/* aquí, la web
+            // pública bajaba Autocomplete, Table, Slider… que solo usa el CMS
+            // (62 KB gzip de más en la portada). El resto de componentes, como
+            // los iconos, va sin grupo junto a quien los pinta.
+            if (paquete === '@mui/material') {
+              const carpeta = /@mui[\\/]material[\\/](?:esm[\\/])?([^\\/]+)/.exec(id)?.[1]
+              return carpeta && NUCLEO_MUI.has(carpeta) ? 'vendor-mui' : undefined
+            }
             if (paquete.startsWith('@mui/') || paquete.startsWith('@emotion/')) {
               return 'vendor-mui'
             }
