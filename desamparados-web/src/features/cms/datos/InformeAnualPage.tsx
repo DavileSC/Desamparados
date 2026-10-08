@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, Box, Button, CircularProgress, MenuItem, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -112,40 +112,48 @@ export default function InformeAnualPage() {
 
   const [textos, setTextos] = useState<TextosInforme | null>(null)
   const pendientes = useRef<Partial<TextosInforme>>({})
+  // Lo mismo que «hay algo en `pendientes`», en estado: el aviso de «Guardando…»
+  // se pinta con esto, y un ref leído al pintar no avisa a React de que cambia.
+  const [hayPendientes, setHayPendientes] = useState(false)
   const reloj = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [elegido, setElegido] = useState<Exclude<ClaveCapitulo, 'datos'>>(role === 'SECRETARIA' ? 'epilogo' : 'presentacion')
 
   // Lo escrito en pantalla se carga una vez por año: después manda lo que se
   // teclea. Si se recargara con cada guardado, borraría lo que llega mientras.
-  const cargado = useRef<number | null>(null)
-  useEffect(() => {
-    if (data && data.anio === anio && cargado.current !== anio) {
-      cargado.current = anio
-      setTextos(data.textos)
-    }
-  }, [data, anio])
+  // Se ajusta al pintar y no en un efecto: así no hay una vuelta con los textos
+  // del año anterior en pantalla.
+  const [cargado, setCargado] = useState<number | null>(null)
+  if (data && data.anio === anio && cargado !== anio) {
+    setCargado(anio)
+    setTextos(data.textos)
+  }
 
   const guardar = useMutation({
-    mutationFn: (cambios: Partial<TextosInforme>) => guardarInformeAnual(anio, cambios),
-    onSuccess: (respuesta) => cliente.setQueryData<InformeAnualResponse>(clave, (antes) => (antes ? { ...antes, faltan: respuesta.faltan, actualizada: respuesta.actualizada } : respuesta)),
+    // El año viaja con los cambios: lo pendiente al cambiar de año es del anterior.
+    mutationFn: ({ deAnio, cambios }: { deAnio: number; cambios: Partial<TextosInforme> }) => guardarInformeAnual(deAnio, cambios),
+    onSuccess: (respuesta, { deAnio }) => cliente.setQueryData<InformeAnualResponse>(['informe-anual', deAnio], (antes) => (antes ? { ...antes, faltan: respuesta.faltan, actualizada: respuesta.actualizada } : respuesta)),
   })
 
-  const volcar = () => {
+  const { mutateAsync: guardarCambios } = guardar
+  const volcar = useCallback((deAnio: number) => {
     if (reloj.current) clearTimeout(reloj.current)
     reloj.current = null
     const cambios = pendientes.current
     pendientes.current = {}
-    if (Object.keys(cambios).length) return guardar.mutateAsync(cambios)
+    setHayPendientes(false)
+    if (Object.keys(cambios).length) return guardarCambios({ deAnio, cambios })
     return Promise.resolve()
-  }
-  // Lo que quede por guardar al salir de la pantalla, se guarda.
-  useEffect(() => () => { void volcar() }, [anio])
+  }, [guardarCambios])
+  // Lo que quede por guardar al salir de la pantalla o cambiar de año, se
+  // guarda en el año en que se escribió.
+  useEffect(() => () => { void volcar(anio) }, [anio, volcar])
 
   const escribir = (campo: CampoInforme, valor: string) => {
     setTextos((t) => (t ? { ...t, [campo]: valor } : t))
     pendientes.current = { ...pendientes.current, [campo]: valor }
+    setHayPendientes(true)
     if (reloj.current) clearTimeout(reloj.current)
-    reloj.current = setTimeout(() => { void volcar() }, ESPERA_GUARDADO)
+    reloj.current = setTimeout(() => { void volcar(anio) }, ESPERA_GUARDADO)
   }
 
   const pdf = useMutation({
@@ -154,7 +162,7 @@ export default function InformeAnualPage() {
       // servidor, porque el navegador bloquea las ventanas que no nacen de un clic.
       const ventana = borrador ? window.open('', '_blank') : null
       try {
-        await volcar()
+        await volcar(anio)
         const archivo = await traerInformeAnualPdf(anio, borrador)
         if (ventana) ventana.location.href = URL.createObjectURL(archivo.blob)
         else guardarEnDisco(archivo, `informe-anual-${anio}.pdf`)
@@ -165,7 +173,7 @@ export default function InformeAnualPage() {
     },
   })
 
-  if (isPending || ((!textos || cargado.current !== anio) && !isError)) return <CircularProgress aria-label="Cargando el Informe anual" />
+  if (isPending || ((!textos || cargado !== anio) && !isError)) return <CircularProgress aria-label="Cargando el Informe anual" />
   if (isError || !data || !textos) return <Alert severity="error">No se ha podido cargar el Informe anual. Inténtalo de nuevo en unos minutos.</Alert>
 
   const faltan = data.faltan
@@ -177,7 +185,7 @@ export default function InformeAnualPage() {
   // El texto largo llena el hueco: tantas filas como quepan bajo los campos cortos.
   const cortos = campos.filter((c) => !c.largo).length
   const filasDelTexto = Math.min(26, Math.max(6, Math.floor(((alto ?? 700) - 250 - (cortos ? 64 : 0)) / 25.5)))
-  const estadoGuardado = guardar.isPending || Object.keys(pendientes.current).length ? 'Guardando…' : guardar.isError ? `No se ha guardado: ${guardar.error.message}` : guardar.isSuccess || data.actualizada ? 'Guardado' : ''
+  const estadoGuardado = guardar.isPending || hayPendientes ? 'Guardando…' : guardar.isError ? `No se ha guardado: ${guardar.error.message}` : guardar.isSuccess || data.actualizada ? 'Guardado' : ''
 
   const campo = (c: (typeof campos)[number]) => (
     <TextField
@@ -210,7 +218,7 @@ export default function InformeAnualPage() {
           <Typography component="h1" sx={{ ...SERIF, fontSize: 'clamp(26px, 4.4vh, 32px)', lineHeight: 1.05 }}>{`Informe anual ${anio}`}</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
-          <TextField select size="small" label="Año" value={anio} onChange={(e) => { void volcar(); navigate(`/cms/informe-anual/${e.target.value}`) }} sx={{ minWidth: 150 }}>
+          <TextField select size="small" label="Año" value={anio} onChange={(e) => { void volcar(anio); navigate(`/cms/informe-anual/${e.target.value}`) }} sx={{ minWidth: 150 }}>
             {anios.map((a) => <MenuItem key={a} value={a}>{a}{a === actual ? ' (en marcha)' : ''}</MenuItem>)}
           </TextField>
           <Button variant="outlined" disabled={pdf.isPending} onClick={() => pdf.mutate(true)}>Ver borrador</Button>

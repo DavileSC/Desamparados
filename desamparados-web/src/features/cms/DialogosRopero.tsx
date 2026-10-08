@@ -41,9 +41,13 @@ export function DialogoPrestamo({ prenda, onCerrar, onPrestada }: DialogoPrestam
   const [error, setError] = useState<string | null>(null)
 
   // Se busca al dejar de escribir; una respuesta que llega tarde no pisa a la de un texto más nuevo.
+  const limpio = texto.trim()
+  const corta = limpio.replace(/\s/g, '').length < 2
+  // Con menos de dos letras no se busca y lo encontrado antes se olvida (al
+  // pintar: en el efecto costaba un pintado de más).
+  if (corta && resultados !== null) setResultados(null)
   useEffect(() => {
-    const limpio = texto.trim()
-    if (limpio.replace(/\s/g, '').length < 2) { setResultados(null); return }
+    if (corta) return
     let vigente = true
     const espera = window.setTimeout(() => {
       setBuscando(true)
@@ -53,7 +57,7 @@ export function DialogoPrestamo({ prenda, onCerrar, onPrestada }: DialogoPrestam
         .finally(() => { if (vigente) setBuscando(false) })
     }, 300)
     return () => { vigente = false; window.clearTimeout(espera) }
-  }, [texto])
+  }, [limpio, corta])
 
   const prestar = async () => {
     if (!prenda || !elegido) return

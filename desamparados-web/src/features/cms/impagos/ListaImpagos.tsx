@@ -30,7 +30,6 @@ export default function ListaImpagos({ puedeDarDeBaja }: Props) {
   const [filas, setFilas] = useState<HermanoConImpagos[]>([])
   const [meta, setMeta] = useState<MetaPaginacion | null>(null)
   const [anioActual, setAnioActual] = useState(new Date().getFullYear())
-  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const { pagina, porPagina, irAPagina, cambiarTamano } = usePaginacion('Impagos')
@@ -49,14 +48,18 @@ export default function ListaImpagos({ puedeDarDeBaja }: Props) {
       setAnioActual(respuesta.anioActual)
     }), [incluirAnioActual, minimo, pagina, porPagina])
 
+  // «Cargando» es que la consulta de ahora aún no ha contestado: deducido al
+  // pintar, sin un efecto que lo encienda (y un pintado de más) en cada cambio.
+  const consulta = JSON.stringify([incluirAnioActual, minimo, pagina, porPagina])
+  const [contestada, setContestada] = useState<string | null>(null)
+  const cargando = contestada !== consulta
   useEffect(() => {
     let cancelado = false
-    setCargando(true)
     cargar(() => !cancelado)
       .catch((e: unknown) => { if (!cancelado) setError(e instanceof Error ? e.message : 'No se ha podido cargar la lista de impagos.') })
-      .finally(() => { if (!cancelado) setCargando(false) })
+      .finally(() => { if (!cancelado) setContestada(consulta) })
     return () => { cancelado = true }
-  }, [cargar])
+  }, [cargar, consulta])
 
   const abrirBaja = (fila: HermanoConImpagos) => { setFechaBaja(hoyEnMadrid()); setPorDarDeBaja(fila) }
 

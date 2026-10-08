@@ -17,18 +17,20 @@ type Medida = { ancho: number; alto: number }
  * ya estaban puestas.
  */
 export default function AvisoFotoDeCabecera({ url }: { url: string }) {
-  const [medida, setMedida] = useState<Medida | null>(null)
+  // La medida va con la foto de la que es: al cambiar de foto, la vieja deja
+  // de valer al pintar, sin un efecto que la borre (y un pintado de más).
+  const [leida, setLeida] = useState<{ url: string; medida: Medida } | null>(null)
 
   useEffect(() => {
-    setMedida(null)
     if (!url) return
     let vivo = true
     const imagen = new Image()
-    imagen.onload = () => { if (vivo) setMedida({ ancho: imagen.naturalWidth, alto: imagen.naturalHeight }) }
+    imagen.onload = () => { if (vivo) setLeida({ url, medida: { ancho: imagen.naturalWidth, alto: imagen.naturalHeight } }) }
     imagen.src = url
     return () => { vivo = false }
   }, [url])
 
+  const medida = leida?.url === url ? leida.medida : null
   if (!medida || !medida.ancho) return null
   const { ancho, alto } = medida
 

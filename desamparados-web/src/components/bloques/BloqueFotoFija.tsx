@@ -32,6 +32,9 @@ export default function BloqueFotoFija({ bloque }: { bloque: Datos }) {
     partes.current.forEach((parte, i) => {
       if (parte && parte.getBoundingClientRect().top < altura) indice = i
     })
+    // Legítimo en el efecto de abajo: mide dónde han quedado los pasos en la
+    // pantalla, y eso no se sabe al pintar, solo después.
+    // eslint-disable-next-line react/set-state-in-effect
     setActiva(indice)
   }, [])
   const { scrollY } = useScroll()

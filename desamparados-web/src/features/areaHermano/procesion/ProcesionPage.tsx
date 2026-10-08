@@ -167,6 +167,8 @@ const ESPERA_MS = 2000
 const INTENTOS = 10
 const COMPROBANDO = 'Comprobando el pago con el banco…'
 
+type Resultado = { tono: 'info' | 'success' | 'error' | 'warning'; texto: string }
+
 /**
  * La vuelta de la página del banco (`?pago=<pedido>`). La vuelta no prueba
  * nada: quien da el pago por hecho es el aviso del banco al servidor, que
@@ -181,20 +183,20 @@ function VueltaDelBanco({ onPagado, onComprobando }: { onPagado: () => void; onC
   const [params, setParams] = useSearchParams()
   const pedido = params.get('pago')
   const fallido = params.get('resultado') === 'no'
-  const [resultado, setResultado] = useState<{ tono: 'info' | 'success' | 'error' | 'warning'; texto: string } | null>(null)
+  // Solo se guarda la respuesta final, con el pedido al que contesta; el fallo
+  // y el «Comprobando…» se deducen de la dirección al pintar.
+  const [final, setFinal] = useState<{ pedido: string; resultado: Resultado } | null>(null)
+  const resultado: Resultado | null = !pedido ? null
+    : fallido ? { tono: 'error', texto: 'El pago no se ha completado y no se te ha cobrado nada. Puedes intentarlo otra vez.' }
+      : final?.pedido === pedido ? final.resultado : { tono: 'info', texto: COMPROBANDO }
 
   useEffect(() => {
-    if (!pedido) return
-    if (fallido) {
-      setResultado({ tono: 'error', texto: 'El pago no se ha completado y no se te ha cobrado nada. Puedes intentarlo otra vez.' })
-      return
-    }
+    if (!pedido || fallido) return
     let cancelado = false
     let intento = 0
-    setResultado({ tono: 'info', texto: COMPROBANDO })
     onComprobando(true)
-    const terminar = (r: { tono: 'info' | 'success' | 'error' | 'warning'; texto: string }) => {
-      setResultado(r)
+    const terminar = (r: Resultado) => {
+      setFinal({ pedido, resultado: r })
       onComprobando(false)
     }
     const preguntar = async () => {
@@ -223,7 +225,6 @@ function VueltaDelBanco({ onPagado, onComprobando }: { onPagado: () => void; onC
 
   if (!resultado) return null
   const cerrar = () => {
-    setResultado(null)
     setParams((p) => { p.delete('pago'); p.delete('resultado'); return p }, { replace: true })
   }
   return <Alert severity={resultado.tono} sx={{ mb: 3 }} onClose={resultado.texto === COMPROBANDO ? undefined : cerrar}>{resultado.texto}</Alert>

@@ -44,15 +44,21 @@ const normalizar = (texto: string) => texto.trim().replace(/\s+/g, '').toUpperCa
  * de otro, o que no está en el ropero, con la opción de darla de alta ahí.
  */
 export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoId, salida, crear, onCrear, onBloqueo, autoFocus, asignada }: Props) {
-  const [estado, setEstado] = useState<Estado>({ tipo: 'vacio' })
   const numero = normalizar(valor)
   const esLaAsignada = Boolean(asignada) && numero === normalizar(asignada ?? '')
+  // La respuesta del ropero, con la pregunta a la que responde. Vacío, asignada
+  // y «buscando» se deducen al pintar: guardados en el efecto, cada tecla
+  // pintaba dos veces y un instante con el estado del número anterior.
+  const clave = JSON.stringify([tipo, numero, hermanoId, salida])
+  const [hallado, setHallado] = useState<{ clave: string; estado: Estado } | null>(null)
+  const estado: Estado = !numero ? { tipo: 'vacio' }
+    : esLaAsignada ? { tipo: 'asignada' }
+      : hallado?.clave === clave ? hallado.estado : { tipo: 'buscando' }
 
   useEffect(() => {
-    if (!numero) { setEstado({ tipo: 'vacio' }); return }
-    if (esLaAsignada) { setEstado({ tipo: 'asignada' }); return }
+    if (!numero || esLaAsignada) return
     let cancelado = false
-    setEstado({ tipo: 'buscando' })
+    const setEstado = (nuevo: Estado) => setHallado({ clave, estado: nuevo })
     const espera = window.setTimeout(() => {
       prendasDelRopero(tipo, numero, salida)
         .then((prendas) => {
@@ -77,7 +83,7 @@ export default function CampoPrenda({ tipo, etiqueta, valor, onCambiar, hermanoI
         .catch(() => { if (!cancelado) setEstado({ tipo: 'error' }) })
     }, ESPERA_MS)
     return () => { cancelado = true; window.clearTimeout(espera) }
-  }, [numero, tipo, hermanoId, salida, esLaAsignada])
+  }, [numero, tipo, hermanoId, salida, esLaAsignada, clave])
 
   // Lo que no se puede prestar bloquea el botón de apuntar; «no está» solo si no se da de alta.
   const bloqueada = estado.tipo === 'ocupada' || (estado.tipo === 'falta' && !crear)
