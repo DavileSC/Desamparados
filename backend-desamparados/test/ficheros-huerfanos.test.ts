@@ -25,6 +25,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import {
   borrarSubida,
   buscarHuerfanos,
+  buscarRestosDeSubidas,
   contarReferencias,
   nombreDeSubida,
   subidasEnTexto,
@@ -513,6 +514,37 @@ describe('huérfanos con el reloj del disco por delante', () => {
       assert.deepEqual(huerfanos.map((h) => h.nombre), [huerfano]);
     } finally {
       await rm(carpeta, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('restos de una subida que no terminó', () => {
+  test('lo viejo de storage/subiendo y los .tmp del renombrado, nada más', async () => {
+    const raiz = await mkdtemp(path.join(os.tmpdir(), 'restos-'));
+    const subiendo = path.join(raiz, 'subiendo');
+    const publico = path.join(raiz, 'public');
+    await mkdir(subiendo);
+    await mkdir(publico);
+    const viejo = new Date(Date.now() - 48 * 3600_000);
+    const escribir = async (ruta: string, antiguo = true) => {
+      await writeFile(ruta, 'x');
+      if (antiguo) await utimes(ruta, viejo, viejo);
+    };
+    const n = hex();
+    await escribir(path.join(subiendo, `${n}.jpg`));
+    await escribir(path.join(subiendo, `${hex()}.png`), false); // alguien subiendo ahora mismo
+    await escribir(path.join(publico, `.${n}.webp.tmp`));
+    await escribir(path.join(publico, `.${n}-640.webp.tmp`));
+    await escribir(path.join(publico, `${n}.webp`)); // la foto ya publicada no es un resto
+    await escribir(path.join(publico, '.gitkeep'));
+    try {
+      const restos = await buscarRestosDeSubidas({ subiendo, publico, minHoras: 24 });
+      assert.deepEqual(
+        restos.map((r) => path.relative(raiz, r.ruta).split(path.sep).join('/')).sort(),
+        [`public/.${n}-640.webp.tmp`, `public/.${n}.webp.tmp`, `subiendo/${n}.jpg`].sort(),
+      );
+    } finally {
+      await rm(raiz, { recursive: true, force: true });
     }
   });
 });

@@ -325,3 +325,36 @@ export async function buscarHuerfanos({
   huerfanos.sort((a, b) => a.nombre.localeCompare(b.nombre));
   return { huerfanos, ignorados };
 }
+
+/**
+ * Lo que deja una subida que no llegó a terminar. La subida escribe primero en
+ * `storage/subiendo` y solo mueve el fichero a `storage/public` cuando ha
+ * pasado el tipo real, ClamAV y sharp, a través de un `.<nombre>.tmp` que se
+ * renombra. Si el proceso muere en medio (un reinicio del contenedor, sharp sin
+ * memoria), el `catch` que lo borraría no llega a ejecutarse y el fichero sin
+ * comprobar se queda allí para siempre. Nada de esto lo sirve nginx, pero sigue
+ * siendo lo que alguien subió.
+ */
+export async function buscarRestosDeSubidas({
+  subiendo,
+  publico = publicStorageDir,
+  minHoras = 24,
+  ahora = new Date(),
+}: { subiendo: string; publico?: string; minHoras?: number; ahora?: Date }): Promise<{ ruta: string; bytes: number }[]> {
+  const restos: { ruta: string; bytes: number }[] = [];
+  const candidatos = async (directorio: string, vale: (nombre: string) => boolean) => {
+    const entradas = await fs.readdir(directorio, { withFileTypes: true }).catch(() => []);
+    for (const entrada of entradas) {
+      if (!entrada.isFile() || !vale(entrada.name)) continue;
+      const ruta = path.join(directorio, entrada.name);
+      const datos = await fs.stat(ruta);
+      if (Math.max(0, ahora.getTime() - datos.mtime.getTime()) < minHoras * 3600_000) continue;
+      restos.push({ ruta, bytes: datos.size });
+    }
+  };
+  // En la carpeta de espera todo es de la subida: no hay nada más que proteger.
+  await candidatos(subiendo, () => true);
+  // En la pública, solo el temporal del renombrado, con su forma exacta.
+  await candidatos(publico, (nombre) => /^\.[a-f0-9]{32}(-\d+)?\.[a-z0-9]+\.tmp$/.test(nombre));
+  return restos.sort((a, b) => a.ruta.localeCompare(b.ruta));
+}
