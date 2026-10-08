@@ -24,6 +24,7 @@ import { fechaCobroMinima } from '../src/domain/sepa.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { extracto } from './fixtures/norma43.js';
 import { Norma43Service } from '../src/services/norma43.service.js';
+import { inicioDiaMadrid } from '../src/domain/contabilidad.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const YEAR = 2097;
@@ -219,6 +220,9 @@ test('darla por cobrada cobra lo que sigue en el banco, con su asiento, y deja l
     const asientos = await db.transaccion.findMany({ where: { reciboId: ra.id } });
     assert.equal(asientos.length, 1);
     assert.equal(Number(asientos[0].importe), 30);
+    // El dinero entró el día del cargo, no el del clic: ahí va el asiento.
+    assert.equal(cobrado.fechaPago?.toISOString(), inicioDiaMadrid('2020-01-02').toISOString());
+    assert.equal(asientos[0].fecha.toISOString(), inicioDiaMadrid('2020-01-02').toISOString());
     assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: rb.id } })).estado, EstadoPago.DEVUELTO);
     assert.equal((await db.remesa.findUniqueOrThrow({ where: { id: remesa.id } })).estado, EstadoRemesa.COBRADA);
 
@@ -271,7 +275,8 @@ test('el extracto Norma 43 devuelve lo que el banco devolvió y cobra la remesa,
     await db.remesa.update({ where: { id: remesa.id }, data: { fechaCobro: new Date('2026-09-01T00:00:00Z') } });
 
     const fichero = extracto([
-      { fecha: '260901', signo: 2, centimos: 4250, conceptos: ['ABONO ADEUDOS SEPA', remesa.mensajeId] },
+      // El abono llega con fecha valor del día 2: manda sobre la fecha de cobro pedida.
+      { fecha: '260902', signo: 2, centimos: 4250, conceptos: ['ABONO ADEUDOS SEPA', remesa.mensajeId] },
       { fecha: '260908', signo: 1, centimos: 1250, conceptos: [`DEVOLUCION REC-${rb.id}`, 'AM04 SALDO INSUFICIENTE'] },
       { fecha: '260910', signo: 1, centimos: 5000, conceptos: ['RECIBO LUZ'] },
     ]);
@@ -294,6 +299,8 @@ test('el extracto Norma 43 devuelve lo que el banco devolvió y cobra la remesa,
     // Solo el cobrado lleva asiento; el devuelto nunca llegó a entrar.
     assert.equal(await db.transaccion.count({ where: { reciboId: rb.id } }), 0);
     assert.equal(await db.transaccion.count({ where: { reciboId: ra.id } }), 1);
+    const asiento = await db.transaccion.findFirstOrThrow({ where: { reciboId: ra.id } });
+    assert.equal(asiento.fecha.toISOString(), inicioDiaMadrid('2026-09-02').toISOString(), 'con la fecha valor del extracto');
 
     const otraVez = await Norma43Service.aplicar(fichero, e.meta);
     assert.deepEqual([otraVez.devueltos, otraVez.cobradas], [0, 0]);

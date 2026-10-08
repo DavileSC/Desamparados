@@ -114,7 +114,7 @@ export class Norma43Service {
     }
     for (const c of analisis.cobros.filter((x) => !x.yaAplicado)) {
       try {
-        await RemesaService.darPorCobrada(c.remesaId, meta);
+        await RemesaService.darPorCobrada(c.remesaId, meta, c.fecha);
         cobradas += 1;
       } catch (error) {
         if (!(error instanceof HttpError)) throw error;

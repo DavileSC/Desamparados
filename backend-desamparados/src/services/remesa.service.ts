@@ -16,6 +16,7 @@ import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { ReciboService } from './recibo.service.js';
 import { diaDeHoy } from '../domain/fechas-hermano.js';
+import { instanteDelApunte } from '../domain/contabilidad.js';
 import { deLaCorporacion } from '../domain/articulos.js';
 import {
   TEXTO_EXCLUSION, aCentimos, clasificarRecibos, fechaCobroMinima, generarPain008, importeXml, leerAcreedorSepa,
@@ -203,8 +204,13 @@ export class RemesaService {
    * cobro en ventanilla). Los que el banco devolvió ya se marcaron como
    * devueltos y no se tocan. Se puede repetir: si se corta a medias, la
    * segunda vez cobra solo lo que faltaba.
+   *
+   * Los asientos llevan el día en que el banco cargó los adeudos: la fecha
+   * valor del extracto si viene de la Norma 43 y, si no, la fecha de cobro de
+   * la remesa. Con la del clic, un cobro de septiembre dado por bueno en
+   * octubre caía en el mes equivocado y no cuadraba con el banco.
    */
-  static async darPorCobrada(id: number, meta?: MetaDeAuditoria) {
+  static async darPorCobrada(id: number, meta?: MetaDeAuditoria, fechaValor?: string) {
     const remesa = await db.remesa.findUnique({ where: { id }, select: { id: true, estado: true, fechaCobro: true } });
     if (!remesa) throw new NotFoundError('Remesa no encontrada.');
     if (remesa.estado === EstadoRemesa.COBRADA) throw new HttpError('Esta remesa ya estaba cobrada.', 409);
@@ -218,10 +224,11 @@ export class RemesaService {
       select: { id: true },
       orderBy: { id: 'asc' },
     });
+    const fechaCargo = instanteDelApunte(fechaValor ?? fechaCobro);
     let cobrados = 0;
     for (const { id: reciboId } of enElBanco) {
       try {
-        await ReciboService.adminMarcarComoPagado(reciboId, MetodoPago.DOMICILIACION, meta);
+        await ReciboService.adminMarcarComoPagado(reciboId, MetodoPago.DOMICILIACION, meta, fechaCargo);
         cobrados += 1;
       } catch (error) {
         // Otro lo cobró o lo devolvió mientras tanto: ya no es de esta remesa cobrarlo.

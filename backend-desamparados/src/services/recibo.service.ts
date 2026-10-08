@@ -272,8 +272,10 @@ export class ReciboService {
   //  4. GESTIÓN INDIVIDUAL (ADMIN/TESORERO)
   // =================================================================
 
-  // Cobrar y emitir papeleta
-  static async adminMarcarComoPagado(reciboId: number, metodoPago?: MetodoPago, meta?: MetaDeAuditoria) {
+  // Cobrar y emitir papeleta. `fechaCargo` es el día en que entró el dinero si
+  // no es ahora (una remesa que el banco cargó antes del clic): el asiento va a
+  // ese día, que es el que cuadra con el extracto.
+  static async adminMarcarComoPagado(reciboId: number, metodoPago?: MetodoPago, meta?: MetaDeAuditoria, fechaCargo?: Date) {
     // Antes de abrir la transacción: ver idCategoriaDeRecibos. La categoría
     // depende del tipo del recibo, que no cambia nunca: leerlo aquí fuera es seguro.
     const previo = await db.recibo.findUnique({ where: { id: reciboId }, select: { tipo: true } });
@@ -304,7 +306,7 @@ export class ReciboService {
         where: { id: reciboId, estado: { in: [...ESTADOS_COBRABLES] } },
         data: {
           estado: EstadoPago.PAGADO,
-          fechaPago: new Date(),
+          fechaPago: fechaCargo ?? new Date(),
           ...(metodo ? { metodoPago: metodo } : {})
         }
       });
