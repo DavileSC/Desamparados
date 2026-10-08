@@ -267,9 +267,9 @@ export class PapeletasService {
    * Anular una papeleta ya recogida: el hermano no sale (enfermedad, un
    * error). El recibo sigue el grafo de estados como cualquier otro: si
    * estaba cobrado pasa a DEVUELTO con su asiento de reverso; si era exento,
-   * se queda como está porque no hubo dinero. La ropa vuelve al ropero, la
-   * papeleta se borra y su solicitud queda cancelada: puede volver a
-   * apuntarse, y su nuevo recibo sale como reemisión.
+   * se queda como está porque no hubo dinero. La papeleta se borra y su
+   * solicitud queda cancelada: puede volver a apuntarse, y su nuevo recibo
+   * sale como reemisión. La ropa sigue a su nombre hasta que la devuelva.
    */
   static async anularPapeleta(papeletaId: number, meta?: MetaDeAuditoria) {
     const categoriaDevolucionesId = await idCategoriaDevoluciones();
@@ -293,8 +293,8 @@ export class PapeletasService {
 
     return {
       message: estadoFinal === EstadoPago.DEVUELTO && recibo.estado === EstadoPago.PAGADO
-        ? 'Papeleta anulada. El cobro queda devuelto con su reverso en contabilidad. Ropa liberada.'
-        : 'Papeleta anulada. Ropa liberada.',
+        ? 'Papeleta anulada. El cobro queda devuelto con su reverso en contabilidad. La ropa sigue a su nombre hasta que la devuelva.'
+        : 'Papeleta anulada. La ropa sigue a su nombre hasta que la devuelva.',
       reciboId: recibo.id,
       estadoRecibo: estadoFinal
     };
