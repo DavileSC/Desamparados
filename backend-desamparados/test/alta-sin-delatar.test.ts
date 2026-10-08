@@ -4,8 +4,9 @@
 // registrado respondía 409 «Ya hay una ficha en el censo con el DNI …»
 // (antes de crear nada), y el formulario servía para averiguar si alguien es
 // hermano probando DNI uno a uno: eso revela creencias (art. 9 RGPD). Ahora
-// responde lo mismo que un alta hecha, no crea nada, escribe al correo del
-// formulario sin decir qué dato chocó y deja el choque en la auditoría.
+// responde lo mismo que un alta hecha, no crea nada y deja el choque en la
+// auditoría. Al correo del formulario le llega lo mismo que tras un alta
+// hecha, salvo que el choque sea ese mismo correo: entonces se avisa a su dueño.
 
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
@@ -79,10 +80,14 @@ describe('un dato ya registrado no se delata', () => {
     const dniAdulto = nuevoDni();
     const dniMenor = nuevoDni();
     const primero = nuevoCorreo('primero');
+    enviados.length = 0;
     const buena = await alta({ usuario: usuario(primero, dniAdulto), titular, menores: [{ nombre: 'Marta', dni: dniMenor, fechaNacimiento: '2012-05-01' }] });
     assert.equal(buena.status, 201);
     const cuerpoBueno = await buena.json() as Record<string, unknown>;
     assert.deepEqual(Object.keys(cuerpoBueno).sort(), ['fichas', 'message'], 'sin el id de la cuenta, que delataría la diferencia');
+    await esperarCorreos();
+    const confirmacion = enviados.find((c) => c.to === primero);
+    assert.ok(confirmacion, 'el alta hecha escribe su confirmación');
 
     const intentos = {
       'el DNI del adulto ya es de una cuenta y una ficha': { usuario: usuario(nuevoCorreo('otro-adulto'), dniAdulto), titular, menores: [{ nombre: 'Luis', fechaNacimiento: '2013-01-01' }] },
@@ -101,14 +106,23 @@ describe('un dato ya registrado no se delata', () => {
       await esperarCorreos();
       const aviso = enviados.find((c) => c.to === email);
       assert.ok(aviso, `${caso}: se escribe al correo del formulario`);
-      assert.match(aviso.html, /no hemos podido tramitarla/);
+      if (email === primero) {
+        // El buzón es de quien ya tiene cuenta: solo lo lee su dueño, y a él sí
+        // se le puede decir que esa alta no sigue.
+        assert.match(aviso.html, /no hemos podido tramitarla/);
+      } else {
+        // Un correo recién inventado con el DNI de otro: si le llegara un correo
+        // distinto del de un alta hecha, sabría que ese DNI está en el censo.
+        assert.equal(aviso.subject, confirmacion.subject, `${caso}: el mismo correo que un alta hecha`);
+        assert.doesNotMatch(aviso.html, /no hemos podido tramitarla/, caso);
+      }
       for (const dni of [dniAdulto, dniMenor]) assert.ok(!aviso.html.includes(dni), `${caso}: el correo no dice qué DNI`);
     }
 
     // Secretaría lo ve en la auditoría, con el motivo y sin el DNI ni el correo en claro.
     const rastros = await db.auditLog.findMany({ where: { action: 'ALTA_NO_TRAMITADA', createdAt: { gte: new Date(Date.now() - 60_000) } } });
     const motivos = rastros.map((r) => (r.detalles as { motivo: string }).motivo);
-    for (const motivo of ['dni_de_menor_en_el_censo', 'correo_o_dni_de_cuenta']) assert.ok(motivos.includes(motivo), motivo);
+    for (const motivo of ['dni_de_menor_en_el_censo', 'dni_de_cuenta', 'correo_de_cuenta']) assert.ok(motivos.includes(motivo), motivo);
     for (const r of rastros) {
       const texto = JSON.stringify(r.detalles);
       assert.ok(!texto.includes(dniAdulto) && !texto.includes(dniMenor) && !texto.includes(primero), texto);

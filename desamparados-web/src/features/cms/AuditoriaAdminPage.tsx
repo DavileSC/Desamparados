@@ -188,7 +188,8 @@ const NOMBRE_DE_CORREO: Record<string, string> = {
 
 /** Con qué chocó un alta no tramitada (registro.service: `Choque`). */
 const MOTIVOS_ALTA: Record<string, string> = {
-  correo_o_dni_de_cuenta: 'El correo o el DNI ya son de una cuenta',
+  correo_de_cuenta: 'El correo ya es de una cuenta',
+  dni_de_cuenta: 'El DNI ya es de una cuenta',
   dni_en_el_censo: 'El DNI ya está en el censo',
   dni_de_menor_en_el_censo: 'El DNI de un menor ya está en el censo',
   carrera: 'Otra alta con los mismos datos entró a la vez',

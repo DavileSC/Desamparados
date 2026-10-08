@@ -18,7 +18,7 @@ export const MENSAJE_ALTA = 'Solicitud enviada correctamente. Revisa tu email y 
 
 /** Qué dato del alta ya estaba registrado. Solo para la auditoría, nunca para la respuesta. */
 type Choque =
-  | { motivo: 'correo_o_dni_de_cuenta'; entidad: 'user'; id: number }
+  | { motivo: 'correo_de_cuenta' | 'dni_de_cuenta'; entidad: 'user'; id: number }
   | { motivo: 'dni_de_menor_en_el_censo' | 'dni_en_el_censo'; entidad: 'hermano'; id: number }
   | { motivo: 'carrera'; entidad: null; id: null };
 
@@ -87,11 +87,15 @@ export class RegistroService {
     // respuesta. Antes salía un 409 «Ya hay una ficha en el censo con el DNI
     // …», y el formulario servía para averiguar si alguien es hermano —que
     // revela sus creencias (art. 9 RGPD)— probando DNI uno a uno. Ahora se
-    // responde lo mismo que a un alta hecha, y el que sigue es el dueño del
-    // correo, que recibe uno que le dice qué hacer sin decir qué dato chocó.
-    // Es lo mismo que hace `solicitarReactivacion`.
+    // responde lo mismo que a un alta hecha (como `solicitarReactivacion`), y
+    // el correo que llega tampoco lo delata: ver `altaNoTramitada`.
+    // El correo de la confirmación es el mismo en los dos caminos.
+    const confirmacion = {
+      sexo: titular?.sexo,
+      certificadoAdjunto: !!documentos.certificadoBautismo && menores.length === 0,
+    };
     const choque = await this.buscarChoque(usuario, Boolean(titular), dnisDeMenores);
-    if (choque) return this.altaNoTramitada(usuario, choque, fichasPedidas, meta);
+    if (choque) return this.altaNoTramitada(usuario, choque, fichasPedidas, meta, confirmacion);
 
     // Los apellidos del adulto: por separado si vienen así, y si no, partidos.
     const apellidosDelAdulto = apellidosTrasCambio(usuario)!;
@@ -203,7 +207,7 @@ export class RegistroService {
       // la transacción: el índice único la para, y se contesta igual que a
       // cualquier otro choque, no con un 409 que lo delataría.
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        return this.altaNoTramitada(usuario, { motivo: 'carrera', entidad: null, id: null }, fichasPedidas, meta, false);
+        return this.altaNoTramitada(usuario, { motivo: 'carrera', entidad: null, id: null }, fichasPedidas, meta, confirmacion, false);
       }
       throw error;
     }
@@ -212,10 +216,7 @@ export class RegistroService {
     // El "catch" asegura que si falla el email, no se rompa el registro de la API
     // El certificado solo se da por entregado si es el único que hace falta:
     // los menores traen el suyo en persona.
-    EmailService.enviarConfirmacionRegistro(result.user.email, result.user.nombre, {
-      sexo: titular?.sexo,
-      certificadoAdjunto: !!documentos.certificadoBautismo && menores.length === 0,
-    })
+    EmailService.enviarConfirmacionRegistro(result.user.email, result.user.nombre, confirmacion)
       .catch(error => {
         console.error(`❌ [Error Email] Fallo al enviar el correo de confirmación a ${enmascararEmail(result.user.email)}:`, error);
       });
@@ -245,10 +246,12 @@ export class RegistroService {
   private static async buscarChoque(
     usuario: RegisterDto['usuario'], conFichaPropia: boolean, dnisDeMenores: string[],
   ): Promise<Choque | null> {
-    const cuenta = await db.user.findFirst({
-      where: { OR: [{ email: usuario.email }, { dni: usuario.dni }] }, select: { id: true },
-    });
-    if (cuenta) return { motivo: 'correo_o_dni_de_cuenta', entidad: 'user', id: cuenta.id };
+    // El correo primero: si es de una cuenta, el buzón es de su dueño y a él sí
+    // se le puede contar que esa alta no sigue.
+    const deCorreo = await db.user.findFirst({ where: { email: usuario.email }, select: { id: true } });
+    if (deCorreo) return { motivo: 'correo_de_cuenta', entidad: 'user', id: deCorreo.id };
+    const deDni = await db.user.findFirst({ where: { dni: usuario.dni }, select: { id: true } });
+    if (deDni) return { motivo: 'dni_de_cuenta', entidad: 'user', id: deDni.id };
     if (dnisDeMenores.length > 0) {
       const ficha = await db.hermano.findFirst({ where: { dni: { in: dnisDeMenores } }, select: { id: true } });
       if (ficha) return { motivo: 'dni_de_menor_en_el_censo', entidad: 'hermano', id: ficha.id };
@@ -269,16 +272,26 @@ export class RegistroService {
    * respuesta no las distinga a ojo; deja el choque en la auditoría para
    * Secretaría (sin datos personales: el motivo y a qué registro apunta) y
    * escribe al correo del formulario.
+   *
+   * Qué correo: si chocó ese mismo correo, el aviso de «no tramitada», que
+   * solo lee el dueño del buzón. Si chocó un DNI, la confirmación de siempre:
+   * con un correo recién inventado y el DNI de otro, un aviso distinto diría
+   * que esa persona está en el censo. Esa alta la recoge Secretaría en la
+   * auditoría. La carrera tampoco sabe qué chocó, así que va como un DNI.
    */
   private static async altaNoTramitada(
-    usuario: RegisterDto['usuario'], choque: Choque, fichas: number, meta: MetaDeAuditoria, conHash = true,
+    usuario: RegisterDto['usuario'], choque: Choque, fichas: number, meta: MetaDeAuditoria,
+    confirmacion: Parameters<typeof EmailService.enviarConfirmacionRegistro>[2], conHash = true,
   ) {
     if (conHash) await encrypt(usuario.password);
     await AuditoriaService.log(ACCIONES_AUDITORIA.ALTA_NO_TRAMITADA, meta, choque.entidad ?? undefined, choque.id ?? undefined, {
       motivo: choque.motivo,
       para: enmascararEmail(usuario.email),
     });
-    EmailService.enviarSolicitudNoTramitada(usuario.email, usuario.nombre).catch((error) => {
+    const envio = choque.motivo === 'correo_de_cuenta'
+      ? EmailService.enviarSolicitudNoTramitada(usuario.email, usuario.nombre)
+      : EmailService.enviarConfirmacionRegistro(usuario.email, usuario.nombre, confirmacion);
+    envio.catch((error) => {
       console.error(`❌ [Error Email] Fallo al avisar a ${enmascararEmail(usuario.email)} de un alta no tramitada:`, error);
     });
     return { fichas, message: MENSAJE_ALTA, creada: false };
