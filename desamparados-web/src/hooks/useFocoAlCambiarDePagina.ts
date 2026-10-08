@@ -23,13 +23,14 @@ const ESPERA_MAXIMA_MS = 4000
  */
 export function useFocoAlCambiarDePagina(principal: RefObject<HTMLElement | null>) {
   const { pathname, hash } = useLocation()
-  const primera = useRef(true)
+  // La ruta en la que ya se ha puesto el foco (o en la que se empezó). Con un
+  // simple «es la primera vez», el doble efecto del StrictMode de desarrollo
+  // contaba la segunda pasada como una navegación y robaba el foco al cargar.
+  const anterior = useRef(pathname)
 
   useEffect(() => {
-    if (primera.current) {
-      primera.current = false
-      return
-    }
+    if (anterior.current === pathname) return
+    anterior.current = pathname
     const main = principal.current
     if (!main || hash) return
 

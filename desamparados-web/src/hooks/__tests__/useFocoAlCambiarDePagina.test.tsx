@@ -1,7 +1,7 @@
 // Fija que, al navegar dentro de la web, el foco pasa al título de la página
 // nueva (o al <main> si no tiene), y que en la primera carga no se toca.
 import { describe, it, expect } from 'vitest'
-import { useEffect, useRef, useState } from 'react'
+import { StrictMode, useEffect, useRef, useState } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Link, MemoryRouter, Outlet, Route, Routes } from 'react-router-dom'
@@ -29,7 +29,9 @@ function Tarda() {
 }
 
 function montar() {
+  // Con StrictMode, como main.tsx: en desarrollo cada efecto corre dos veces.
   render(
+    <StrictMode>
     <MemoryRouter initialEntries={['/']}>
       <Routes>
         <Route element={<Marco />}>
@@ -39,7 +41,8 @@ function montar() {
           <Route path="/tarda" element={<Tarda />} />
         </Route>
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
+    </StrictMode>,
   )
 }
 
