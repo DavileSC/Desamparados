@@ -85,6 +85,24 @@ describe('validarEntorno', () => {
     assert.ok(avisos.some((a) => a.includes('X-Forwarded-For')));
   });
 
+  // Un pago simulado en producción daba recibos por pagados sin cobrar, y
+  // solo lo decía un aviso en el registro que nadie lee.
+  test('en producción, un pago de prueba corta el arranque salvo que se consienta por escrito', () => {
+    for (const pago of [{ PAGO_EN_LINEA: 'simulado' }, { PAGO_EN_LINEA: 'redsys' }, { PAGO_EN_LINEA: 'redsys', REDSYS_ENTORNO: 'pruebas' }]) {
+      const { errores } = validarEntorno({ ...PRODUCCION_COMPLETA, ...pago });
+      assert.ok(errores.some((e) => /PAGO_DE_PRUEBA_EN_PRODUCCION=si/.test(e)), JSON.stringify(pago));
+      const consentido = validarEntorno({ ...PRODUCCION_COMPLETA, ...pago, PAGO_DE_PRUEBA_EN_PRODUCCION: 'si' });
+      assert.deepEqual(consentido.errores, [], JSON.stringify(pago));
+      assert.ok(consentido.avisos.some((a) => /no se cobra de verdad/.test(a)));
+    }
+    // El banco de verdad y el pago apagado no necesitan nada.
+    const real = { PAGO_EN_LINEA: 'redsys', REDSYS_ENTORNO: 'real', REDSYS_COMERCIO: '123456789', REDSYS_CLAVE: 'sq7HjrUOBfKmC576ILgskD5srU870gJ7' };
+    assert.deepEqual(validarEntorno({ ...PRODUCCION_COMPLETA, ...real }).errores, []);
+    assert.deepEqual(validarEntorno({ ...PRODUCCION_COMPLETA, PAGO_EN_LINEA: 'no' }).errores, []);
+    // Fuera de producción el simulado es lo normal.
+    assert.deepEqual(validarEntorno({ NODE_ENV: 'development', PAGO_EN_LINEA: 'simulado' }).errores, []);
+  });
+
   test('comprobarEntorno lanza con la lista completa', () => {
     assert.throws(() => comprobarEntorno({ NODE_ENV: 'production' }), /El servidor no arranca: el entorno tiene 9 problema\(s\)/);
     assert.doesNotThrow(() => comprobarEntorno({ NODE_ENV: 'development' }));

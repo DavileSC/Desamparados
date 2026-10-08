@@ -322,6 +322,7 @@ Bizum va aparte: se pide que lo activen en el mismo TPV.
 | `REDSYS_ENTORNO` | `pruebas` (por defecto) no cobra; `real` cobra de verdad y exige las claves |
 | `REDSYS_COMERCIO`, `REDSYS_TERMINAL`, `REDSYS_CLAVE` | Las que da el banco. En pruebas, sin ellas se usan las públicas de Redsys |
 | `REDSYS_BIZUM=si` | Solo si el banco ha activado Bizum en el TPV |
+| `PAGO_DE_PRUEBA_EN_PRODUCCION=si` | Solo en la web de pruebas: consiente un pago que no cobra (simulado, o Redsys sin `real`) con `NODE_ENV=production`. Sin ella, eso impide arrancar |
 
 Tres cosas que no se ven:
 
@@ -335,9 +336,11 @@ Tres cosas que no se ven:
   queda como incidencia arriba de Tesorería. El dinero se devuelve desde el
   portal del banco con el número de pedido y se marca como devuelto.
 - **Probarlo antes de cobrar:** con `REDSYS_ENTORNO=pruebas` todo el camino
-  funciona sin mover dinero (tarjeta 4548 8100 0000 0003, 12/49, CVV 123). Al
-  arrancar con pruebas o simulado en producción, el backend lo avisa en el
-  registro.
+  funciona sin mover dinero (tarjeta 4548 8100 0000 0003, 12/49, CVV 123). En
+  producción, pruebas o simulado **impiden arrancar** salvo que el `.env`
+  diga `PAGO_DE_PRUEBA_EN_PRODUCCION=si` (lo lleva la web de pruebas, y
+  entonces solo se avisa en el registro): un olvido así daría recibos por
+  pagados sin cobrar.
 - **Probarlo en local con el banco de verdad** (su entorno de pruebas): el
   aviso necesita una dirección pública. Con
   `cloudflared tunnel --url http://localhost:3001` se abre una, y en el
