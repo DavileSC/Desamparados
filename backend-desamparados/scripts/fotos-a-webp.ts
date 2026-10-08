@@ -12,7 +12,7 @@
  *  - storage/private: la foto de la ficha del hermano (`Hermano.foto`). Los
  *    certificados de bautismo son documentos y no se tocan.
  *  - La base: cada tabla y campo que puede nombrar una subida, la misma lista
- *    que `contarReferencias` en utils/ficheros-publicos.ts (noticias, agenda,
+ *    que `subidasEnUso` en utils/ficheros-publicos.ts (noticias, agenda,
  *    publicaciones, enseres, portada, páginas y sus versiones…).
  *
  * El orden protege de un corte a medias: primero se escriben las WebP, luego
@@ -43,7 +43,7 @@ const FOTO_SUBIDA = /^[a-f0-9]{32}\.(?:jpe?g|png|webp)$/i;
 /**
  * Tabla y columnas donde puede aparecer el nombre de una subida pública. Si se
  * añade un campo con rutas a /storage/public, tiene que entrar aquí y en
- * `contarReferencias` (utils/ficheros-publicos.ts).
+ * `subidasEnUso` (utils/ficheros-publicos.ts).
  */
 const COLUMNAS: [tabla: string, columnas: string[]][] = [
   ['Noticia', ['imagenUrl', 'contenido']],

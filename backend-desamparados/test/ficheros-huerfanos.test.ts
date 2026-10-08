@@ -28,6 +28,7 @@ import {
   contarReferencias,
   nombreDeSubida,
   subidasEnTexto,
+  subidasEnUso,
   subidasReferenciadas,
 } from '../src/utils/ficheros-publicos.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
@@ -374,6 +375,50 @@ describe('referencias para el script de huérfanos', () => {
       if (antes) await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes.datos as object } });
       else await db.contenidoPagina.deleteMany({ where: { slug: 'portada' } });
     }
+  });
+});
+
+describe('comprobación en lote de las que siguen en uso (FR6)', () => {
+  test('preguntar por todas a la vez da lo mismo que el recorrido completo del script', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const enNoticia = `${hex()}.webp`;
+    const enEvento = `${hex()}.pdf`;
+    const enPagina = `${hex()}.jpg`;
+    const enGaleriaEnser = `${hex()}.webp`;
+    const enProducto = `${hex()}.webp`;
+    // Guardada con la extensión en mayúsculas y preguntada en minúsculas: la
+    // comparación no distingue, como siempre.
+    const mayusculas = `${hex()}.JPG`;
+    const libres = [`${hex()}.webp`, `${hex()}.pdf`];
+    const slug = slugUnico();
+    const noticia = await db.noticia.create({ data: { titulo: 'Lote', slug, contenido: `<img src="/storage/public/${enNoticia}"><img src="/storage/public/${mayusculas}">`, visible: false } });
+    const evento = await db.evento.create({ data: { title: 'Lote', fotoCartel: `/storage/public/${enEvento}`, startDate: new Date() } });
+    await db.pagina.create({ data: { slug, titulo: 'Lote', contenido: `<a href="http://localhost:3001/storage/public/${enPagina}">x</a>` } });
+    const enser = await db.enser.create({ data: { nombre: 'Lote', fotos: [{ url: `/storage/public/${enGaleriaEnser}`, pie: '' }] } });
+    const producto = await db.producto.create({ data: { nombre: 'Lote', precio: 1, fotos: [{ url: `/storage/public/${enProducto}`, pie: '' }] } });
+    try {
+      const candidatos = [enNoticia, enEvento, enPagina, enGaleriaEnser, enProducto, mayusculas.toLowerCase(), ...libres];
+      const enLote = await subidasEnUso(candidatos);
+      const referenciadas = new Set([...(await subidasReferenciadas())].map((n) => n.toLowerCase()));
+      assert.deepEqual(
+        [...enLote].sort(),
+        candidatos.map((n) => n.toLowerCase()).filter((n) => referenciadas.has(n)).sort(),
+        'el lote y el recorrido completo tienen que coincidir',
+      );
+      assert.deepEqual([...enLote].sort(), [enNoticia, enEvento, enPagina, enGaleriaEnser, enProducto, mayusculas.toLowerCase()].sort());
+      for (const libre of libres) assert.equal(await contarReferencias(libre), 0);
+      assert.equal(await contarReferencias(enEvento), 1);
+    } finally {
+      await db.noticia.deleteMany({ where: { id: noticia.id } });
+      await db.evento.deleteMany({ where: { id: evento.id } });
+      await db.pagina.deleteMany({ where: { slug } });
+      await db.enser.deleteMany({ where: { id: enser.id } });
+      await db.producto.deleteMany({ where: { id: producto.id } });
+    }
+  });
+
+  test('sin candidatos no consulta nada y devuelve un conjunto vacío', async () => {
+    assert.equal((await subidasEnUso([])).size, 0);
   });
 });
 
