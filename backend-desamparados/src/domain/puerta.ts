@@ -9,16 +9,21 @@
  *   borra, y con ella su sitio en el cortejo).
  * - `OTRA_SALIDA`: es de otro año o de otra salida (la del Rosario en la
  *   Pasión, o la del año pasado guardada en el móvil).
+ * - `DE_BAJA`: la papeleta es buena, pero su hermano ya no está en el censo.
+ *   Darle de baja no anula una papeleta pagada (eso lo decide la Junta), así
+ *   que la puerta es quien lo para.
  * - `REPETIDA`: ya entró. No es un error de quien escanea: suele ser el mismo
  *   hermano pasando dos veces, o dos diputados leyendo la misma.
  * - `ENTRA`: adelante.
  */
-export type Veredicto = 'ENTRA' | 'REPETIDA' | 'OTRA_SALIDA' | 'ANULADA' | 'FALSO';
+export type Veredicto = 'ENTRA' | 'REPETIDA' | 'OTRA_SALIDA' | 'DE_BAJA' | 'ANULADA' | 'FALSO';
 
 export interface PapeletaEnLaPuerta {
   year: number;
   salidaId: number;
   entradaEl: Date | null;
+  /** Su hermano no está en activo (de baja, o difunto). */
+  deBaja: boolean;
 }
 
 export function veredicto(
@@ -27,6 +32,7 @@ export function veredicto(
 ): Exclude<Veredicto, 'FALSO'> {
   if (!papeleta) return 'ANULADA';
   if (papeleta.year !== esperada.year || papeleta.salidaId !== esperada.salidaId) return 'OTRA_SALIDA';
+  if (papeleta.deBaja) return 'DE_BAJA';
   return papeleta.entradaEl ? 'REPETIDA' : 'ENTRA';
 }
 

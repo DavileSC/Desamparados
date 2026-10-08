@@ -11,12 +11,22 @@ const ROSARIO = 2;
 const esperada = { year: 2027, salidaId: PASION };
 
 test('veredicto: entra, repetida, de otra salida o anulada', () => {
-  assert.equal(veredicto({ year: 2027, salidaId: PASION, entradaEl: null }, esperada), 'ENTRA');
-  assert.equal(veredicto({ year: 2027, salidaId: PASION, entradaEl: new Date() }, esperada), 'REPETIDA');
-  assert.equal(veredicto({ year: 2026, salidaId: PASION, entradaEl: null }, esperada), 'OTRA_SALIDA');
-  assert.equal(veredicto({ year: 2027, salidaId: ROSARIO, entradaEl: null }, esperada), 'OTRA_SALIDA');
+  assert.equal(veredicto({ year: 2027, salidaId: PASION, entradaEl: null, deBaja: false }, esperada), 'ENTRA');
+  assert.equal(veredicto({ year: 2027, salidaId: PASION, entradaEl: new Date(), deBaja: false }, esperada), 'REPETIDA');
+  assert.equal(veredicto({ year: 2026, salidaId: PASION, entradaEl: null, deBaja: false }, esperada), 'OTRA_SALIDA');
+  assert.equal(veredicto({ year: 2027, salidaId: ROSARIO, entradaEl: null, deBaja: false }, esperada), 'OTRA_SALIDA');
   // Anular borra la papeleta: el código sigue siendo bueno, pero ya no hay nada detrás.
   assert.equal(veredicto(null, esperada), 'ANULADA');
+});
+
+// NG2 (auditoría del 07-10-2026): la baja no tocaba la papeleta y la puerta le
+// dejaba entrar. La papeleta pagada se queda (anularla lo decide la Junta),
+// pero en la puerta no pasa.
+test('veredicto: la papeleta de alguien de baja no entra', () => {
+  assert.equal(veredicto({ year: 2027, salidaId: PASION, entradaEl: null, deBaja: true }, esperada), 'DE_BAJA');
+  assert.equal(veredicto({ year: 2027, salidaId: PASION, entradaEl: null, deBaja: false }, esperada), 'ENTRA');
+  // De otra salida sigue siendo lo primero que hay que decir.
+  assert.equal(veredicto({ year: 2026, salidaId: PASION, entradaEl: null, deBaja: true }, esperada), 'OTRA_SALIDA');
 });
 
 test('los tramos, en el orden del cortejo; los escritos a mano después; sin tramo, al final', () => {

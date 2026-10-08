@@ -20,6 +20,8 @@ import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { filtrosAvanzados } from '../domain/filtros-censo.js';
 import { ORDENES_CENSO, ordenDe } from '../domain/ordenacion.js';
 import { EmailService } from './email.service';
+import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
+import { idCategoriaDevoluciones } from './recibos/comunes.js';
 
 /**
  * El censo entero, como lo ve Secretaría: buscarlo, leer una ficha, corregirla,
@@ -343,6 +345,9 @@ export class CensoService {
       comprobarBajaNoFutura(fechaDefuncion);
     }
 
+    // Las categorías contables, antes de abrir la transacción (ver idCategoriaDeRecibos).
+    const categoriaDevolucionesId = await idCategoriaDevoluciones();
+    let canceladas: SolicitudConRecibo[] = [];
     const cuentaBloqueada = await transaccionReintentable(async (tx) => {
       // El estado va en el `where` (ver reactivarHermano): dos clics seguidos
       // no dan dos bajas.
@@ -352,6 +357,8 @@ export class CensoService {
         data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: motivo ?? null, ...(fechaDefuncion && { fechaDefuncion }) }
       });
       if (count === 0) throw new HttpError(HERMANO_ERRORS.HERMANO_ALREADY_DOWN);
+      // Lo que tenía pedido para salir y aún no ha pagado ni recogido.
+      canceladas = await PapeletasService.cancelarSolicitudesDeBajaEnTransaccion(tx, [hermanoId], categoriaDevolucionesId);
 
       const restantes = await tx.hermano.count({
         where: { userId: hermano.userId, activo: true }
@@ -375,6 +382,7 @@ export class CensoService {
       antes: { activo: true, numeroHermano: hermano.numeroHermano, fechaBaja: null, cuentaActiva: hermano.user.active },
       despues: { activo: false, numeroHermano: null, fechaBaja: valorParaAuditoria(fechaBaja), motivoBaja: motivo ?? null, cuentaActiva: hermano.user.active && !cuentaBloqueada }
     });
+    await PapeletasService.registrarCanceladasPorBaja(canceladas, meta ?? {});
 
     // Aviso de la baja, fuera de la transacción y con catch: la baja ya está
     // escrita y un correo no puede deshacerla.

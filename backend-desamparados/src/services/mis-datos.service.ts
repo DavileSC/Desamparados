@@ -10,6 +10,8 @@ import { suprimirDatosPersonales } from '../domain/auditoria-supresion.js';
 import { asegurarQueQuedaOtroAdmin } from './auth.service';
 import { consumirCodigoDeRespaldo, reclamarTotp } from './auth/codigos-2fa.js';
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
+import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
+import { idCategoriaDevoluciones } from './recibos/comunes.js';
 
 // Datos de contacto de una ficha, fuera, en la supresión de la cuenta.
 // La foto y el certificado de bautismo también salen: no hacen falta para la
@@ -104,6 +106,9 @@ export class MisDatosService {
     const randomPass = crypto.randomBytes(32).toString('hex');
     const fichas = { retiradas: 0, dadasDeBaja: 0, yaDeBaja: 0 };
     let registrosSuprimidos = 0;
+    // Las categorías contables, antes de abrir la transacción (ver idCategoriaDeRecibos).
+    const categoriaDevolucionesId = await idCategoriaDevoluciones();
+    let canceladas: SolicitudConRecibo[] = [];
 
     await db.$transaction(async (tx) => {
       // 0. El último ADMIN activo no se va.
@@ -144,6 +149,7 @@ export class MisDatosService {
       // A todas se les limpia el contacto; nombre e historial económico se
       // conservan porque los recibos tienen obligación de retención (6 años).
       const fechaBaja = new Date();
+      const deBaja: number[] = [];
       for (const { id } of user.hermanos) {
         const ficha = await tx.hermano.findUnique({
           where: { id },
@@ -176,7 +182,10 @@ export class MisDatosService {
           data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: 'VOLUNTARIA', ...CONTACTO_FUERA }
         });
         fichas.dadasDeBaja += 1;
+        deBaja.push(id);
       }
+      // Lo que tenían pedido para salir y aún no han pagado ni recogido.
+      canceladas = await PapeletasService.cancelarSolicitudesDeBajaEnTransaccion(tx, deBaja, categoriaDevolucionesId);
 
       // 4. La auditoría de la cuenta y de sus fichas guarda el antes y el
       // después de cada cambio (DNI, correo, dirección...) durante todo el
@@ -212,6 +221,7 @@ export class MisDatosService {
       antes: { rol: user.role, activa: user.active, fichasActivas: user.hermanos.filter((h) => h.activo).length },
       despues: { activa: false, anonimizada: true, fichas, registrosAuditoriaSuprimidos: registrosSuprimidos }
     });
+    await PapeletasService.registrarCanceladasPorBaja(canceladas, meta ?? { userId });
 
     return {
       message: 'Tu cuenta ha sido eliminada y tus datos personales anonimizados. ' +

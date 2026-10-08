@@ -23,6 +23,7 @@ import { conceptoDeSalida, tipoReciboDe } from '../../domain/salidas.js';
 import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
 import type { SalidaConActo } from './salidas.service.js';
 import { avisarALaMesa } from './avisos-mesa.js';
+import { PlazoPapeletasService } from './plazo.service.js';
 import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 
 type Tx = Prisma.TransactionClient;
@@ -196,6 +197,45 @@ export class PapeletasService {
     }
     if (solicitud.citaId) {
       await tx.cita.updateMany({ where: { id: solicitud.citaId, estado: EstadoCita.RESERVADA }, data: { estado: EstadoCita.CANCELADA } });
+    }
+  }
+
+  /**
+   * Al dar de baja (también por fallecimiento): las solicitudes de salidas que
+   * aún no se han celebrado, sin recoger y sin pagar, quedan canceladas en la
+   * misma transacción que la baja, como si las cancelara el hermano desde su
+   * área. Las pagadas se quedan: anularlas y devolver el dinero lo decide la
+   * Junta, igual que las papeletas ya recogidas (la puerta no las deja entrar).
+   * Devuelve las canceladas, para dejar su rastro con `registrarCanceladasPorBaja`.
+   */
+  static async cancelarSolicitudesDeBajaEnTransaccion(tx: Tx, hermanoIds: number[], categoriaDevolucionesId: number) {
+    if (hermanoIds.length === 0) return [];
+    const pendientes = await tx.solicitud.findMany({
+      where: {
+        hermanoId: { in: hermanoIds },
+        estado: EstadoSolicitud.PENDIENTE,
+        OR: [{ reciboId: null }, { recibo: { estado: { not: EstadoPago.PAGADO } } }],
+      },
+      include: { recibo: true, salida: { include: { acto: true } } },
+    });
+    // Una solicitud de una salida ya celebrada no se toca: es historia.
+    const vivas = pendientes.filter((s) => s.year >= PlazoPapeletasService.anioDeLaProcesion(s.salida));
+    for (const solicitud of vivas) await PapeletasService.cancelarSolicitudEnTransaccion(tx, solicitud, categoriaDevolucionesId);
+    return vivas;
+  }
+
+  /** El rastro de las solicitudes que canceló una baja: el mismo que deja cancelarlas a mano. */
+  static async registrarCanceladasPorBaja(solicitudes: SolicitudConRecibo[], meta: MetaDeAuditoria) {
+    for (const s of solicitudes) {
+      await AuditoriaService.log(ACCIONES_AUDITORIA.SOLICITUD_SALIDA_CANCELAR, meta, 'solicitud', s.id, {
+        origen: 'baja en el censo',
+        antes: {
+          hermanoId: s.hermanoId, year: s.year, salidaId: s.salidaId, puesto: s.puesto, citaId: s.citaId,
+          recibo: s.recibo && { id: s.recibo.id, estado: s.recibo.estado },
+        },
+        despues: { estado: EstadoSolicitud.CANCELADA },
+      });
+      avisarALaMesa({ que: 'anulado', hermanoId: s.hermanoId, salidaId: s.salidaId });
     }
   }
 

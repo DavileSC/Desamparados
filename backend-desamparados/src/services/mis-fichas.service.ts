@@ -18,6 +18,8 @@ import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
 import { enmascararIban } from '../domain/iban.js';
 import { renuevaMandato } from '../domain/sepa.js';
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
+import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
+import { idCategoriaDevoluciones } from './recibos/comunes.js';
 
 /**
  * Las fichas que cuelgan de una cuenta: la suya y las de quien tenga a su
@@ -167,6 +169,9 @@ export class MisFichasService {
     if (check.fechaBaja) throw new HttpError(HERMANO_ERRORS.PROFILE_ALREADY_DOWN);
 
     const fechaBaja = new Date();
+    // Las categorías contables, antes de abrir la transacción (ver idCategoriaDeRecibos).
+    const categoriaDevolucionesId = await idCategoriaDevoluciones();
+    let canceladas: SolicitudConRecibo[] = [];
     const resultado = await transaccionReintentable(async (tx) => {
       // El estado y el historial se miran dentro de la transacción: con dos
       // clics seguidos, la segunda petición ve lo que ya hizo la primera.
@@ -196,6 +201,8 @@ export class MisFichasService {
         data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: 'VOLUNTARIA' }
       });
       if (count === 0) throw new HttpError(HERMANO_ERRORS.PROFILE_ALREADY_DOWN);
+      // Lo que tenía pedido para salir y aún no ha pagado ni recogido.
+      canceladas = await PapeletasService.cancelarSolicitudesDeBajaEnTransaccion(tx, [hermanoId], categoriaDevolucionesId);
 
       const restantes = await tx.hermano.count({
         where: { userId: managerUserId, activo: true }
@@ -226,6 +233,7 @@ export class MisFichasService {
       antes: { activo: check.activo, numeroHermano: check.numeroHermano, fechaBaja: null, cuentaActiva: check.user.active },
       despues: { activo: false, numeroHermano: null, fechaBaja: valorParaAuditoria(fechaBaja), cuentaActiva: check.user.active && !resultado.cuentaDesactivada }
     });
+    await PapeletasService.registrarCanceladasPorBaja(canceladas, meta ?? {});
 
     return resultado.cuentaDesactivada
       ? { message: 'Perfil dado de baja. Usuario gestor desactivado.' }
