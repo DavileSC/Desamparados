@@ -4,6 +4,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { site } from '../../../config/site'
 import { GOLD, SERIF } from '../../inicio/estilos'
 import { enlaceConFlecha } from '../../../components/estiloDeBoton'
+import PedirReactivacion from './PedirReactivacion'
 
 /** Enlaces del lateral: el enlace con flecha, en blanco con la flecha dorada. */
 const enlaceLateral = { ...enlaceConFlecha, color: '#fff', fontSize: 14, '& svg': { ...enlaceConFlecha['& svg'], fontSize: 16, color: GOLD }, '&:hover': { color: GOLD } } as const
@@ -44,6 +45,7 @@ export default function ProcesoAlta() {
           Tengo una duda
           <ArrowForwardIcon />
         </Box>
+        <PedirReactivacion sx={enlaceLateral} />
       </Box>
       <Typography sx={{ mt: 1.5, fontSize: 13, lineHeight: 1.6, color: 'text.secondary' }}>
         El alta de un menor se hace aquí mismo: elige arriba la opción que te toque. Si tienes cualquier duda,

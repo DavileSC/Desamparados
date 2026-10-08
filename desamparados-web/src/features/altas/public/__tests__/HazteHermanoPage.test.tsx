@@ -170,7 +170,7 @@ describe('HazteHermanoPage', () => {
 
   it('manda el DNI y el teléfono normalizados', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
-      respuesta({ user: { id: 1, email: 'juan@ejemplo.es' }, fichas: 1, message: 'ok' }, 201),
+      respuesta({ fichas: 1, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
     renderWithProviders(<HazteHermanoPage />)
@@ -208,7 +208,7 @@ describe('HazteHermanoPage', () => {
 
   it('sustituye el formulario por la confirmación con el email usado', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      respuesta({ user: { id: 1, email: 'juan@ejemplo.es' }, fichas: 1, message: 'ok' }, 201),
+      respuesta({ fichas: 1, message: 'ok' }, 201),
     ))
     renderWithProviders(<HazteHermanoPage />)
     const u = await rellenarTodo()
@@ -224,7 +224,7 @@ describe('HazteHermanoPage', () => {
 
   it('el camino con menores añade un paso, y se pueden apuntar dos', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
-      respuesta({ user: { id: 1, email: 'juan@ejemplo.es' }, fichas: 3, message: 'ok' }, 201),
+      respuesta({ fichas: 3, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
     renderWithProviders(<HazteHermanoPage />)
@@ -264,7 +264,7 @@ describe('HazteHermanoPage', () => {
 
   it('quien solo apunta a un menor no da su fecha de nacimiento: no tendrá ficha', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
-      respuesta({ user: { id: 1, email: 'juan@ejemplo.es' }, fichas: 1, message: 'ok' }, 201),
+      respuesta({ fichas: 1, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
     renderWithProviders(<HazteHermanoPage />)
@@ -309,20 +309,38 @@ describe('HazteHermanoPage', () => {
     expect(await screen.findByText(/autorización firmada/i)).toBeInTheDocument()
   })
 
-  it('a quien ya está en el censo le ofrece pedir la reactivación', async () => {
+  it('la reactivación se pide desde un acceso fijo, sin pasar por el alta', async () => {
     const fetchFalso = vi.fn()
-      .mockResolvedValueOnce(respuesta({ message: 'Ya hay una ficha en el censo con ese DNI. Si fuiste hermano, pide a Secretaría que te reactive.' }, 409))
       .mockResolvedValueOnce(respuesta({ message: 'Si hay una ficha a tu nombre, Secretaría la revisará y se pondrá en contacto contigo.' }, 200))
     vi.stubGlobal('fetch', fetchFalso)
+    renderWithProviders(<HazteHermanoPage />)
+    const u = usuario()
+
+    await u.click(screen.getByRole('button', { name: /¿Fuiste hermano\? Pide la reactivación/ }))
+    const dialogo = await screen.findByRole('dialog')
+    await u.type(within(dialogo).getByLabelText('DNI/NIE'), '12345678z')
+    await u.type(within(dialogo).getByLabelText('Email'), 'juan@ejemplo.es')
+    await u.click(within(dialogo).getByRole('button', { name: 'Pedir la reactivación' }))
+
+    // El mensaje es el del servidor, el mismo exista o no la ficha.
+    expect(await within(dialogo).findByText(/Secretaría la revisará/i)).toBeInTheDocument()
+    expect(String(fetchFalso.mock.calls[0][0])).toContain('/auth/reactivacion')
+    expect(JSON.parse(fetchFalso.mock.calls[0][1].body)).toEqual({ dni: '12345678Z', email: 'juan@ejemplo.es' })
+  })
+
+  it('un alta enviada no promete que esté en Secretaría: remite al correo', async () => {
+    // El servidor responde lo mismo aunque el correo o el DNI ya estuvieran
+    // registrados: la pantalla no puede dar por tramitado lo que quizá no lo está.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      respuesta({ fichas: 1, message: 'Solicitud enviada correctamente. Revisa tu email y pásate por Secretaría para formalizar tu alta.' }, 201),
+    ))
     renderWithProviders(<HazteHermanoPage />)
     const u = await rellenarTodo()
     await enviar(u)
 
-    await u.click(await screen.findByRole('button', { name: /pedir la reactivación/i }))
-
-    expect(await screen.findByText(/Secretaría la revisará/i)).toBeInTheDocument()
-    expect(String(fetchFalso.mock.calls[1][0])).toContain('/auth/reactivacion')
-    expect(JSON.parse(fetchFalso.mock.calls[1][1].body)).toEqual({ dni: '12345678Z', email: 'juan@ejemplo.es' })
+    expect(await screen.findByRole('heading', { name: /Te hemos escrito/ })).toBeInTheDocument()
+    expect(screen.getByText(/con los siguientes pasos/)).toBeInTheDocument()
+    expect(screen.queryByText(/está en Secretaría/)).not.toBeInTheDocument()
   })
 
   it('no pasa de «Tus datos» sin sexo ni estado civil', async () => {
@@ -375,7 +393,7 @@ describe('HazteHermanoPage', () => {
 
   it('domiciliar pide el IBAN y, si la cuenta es de otra persona, su nombre', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
-      respuesta({ user: { id: 1, email: 'juan@ejemplo.es' }, fichas: 1, message: 'ok' }, 201),
+      respuesta({ fichas: 1, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
     renderWithProviders(<HazteHermanoPage />)
@@ -415,7 +433,7 @@ describe('HazteHermanoPage', () => {
 
   it('con foto o certificado, el alta va en multipart con cada documento en su campo', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
-      respuesta({ user: { id: 1, email: 'juan@ejemplo.es' }, fichas: 1, message: 'ok' }, 201),
+      respuesta({ fichas: 1, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
     renderWithProviders(<HazteHermanoPage />)

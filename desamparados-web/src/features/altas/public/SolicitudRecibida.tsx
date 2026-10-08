@@ -16,8 +16,12 @@ interface SolicitudRecibidaProps {
 }
 
 /**
- * Lo que sustituye al formulario cuando la solicitud ha entrado. Cuenta lo
- * mismo que el correo de acuse de recibo: qué ha pasado y qué toca ahora.
+ * Lo que sustituye al formulario al enviar la solicitud. El servidor responde
+ * lo mismo se haya tramitado o no (si el correo o un DNI ya estaban
+ * registrados, no lo dice: el formulario no puede servir para averiguar quién
+ * está en el censo) y en los dos casos escribe al correo con lo que toca. Por
+ * eso aquí no se promete que la solicitud esté en Secretaría: se remite al
+ * correo.
  * Se lleva el foco al título para que quien usa teclado o lector de pantalla
  * sepa que la página ha cambiado y no se quede sobre un botón que ya no está.
  */
@@ -36,12 +40,12 @@ export default function SolicitudRecibida({ nombre, email, fichas = 1, soloMenor
         tabIndex={-1}
         sx={{ fontFamily: SERIF, fontSize: { xs: 26, md: 32 }, lineHeight: 1.15, letterSpacing: '-0.01em', outline: 'none', mb: 1.5 }}
       >
-        Gracias, {nombre}. Tu solicitud está en Secretaría.
+        Gracias, {nombre}. Te hemos escrito.
       </Typography>
       <Typography sx={{ fontSize: 16, lineHeight: 1.65, maxWidth: '58ch', mb: 3 }}>
-        Te hemos enviado el acuse de recibo a <strong>{email}</strong>. Si no lo ves en unos minutos,
+        Te hemos escrito a <strong>{email}</strong> con los siguientes pasos. Si no lo ves en unos minutos,
         mira en la carpeta de correo no deseado.
-        {fichas > 1 && <> La solicitud lleva <strong>{fichas} fichas</strong>: Secretaría las revisa todas juntas.</>}
+        {fichas > 1 && <> Has enviado <strong>{fichas} fichas</strong> en la misma solicitud.</>}
       </Typography>
 
       <Box sx={{ borderTop: `1px solid ${FILETE_TARJETA}`, pt: 2.5, mb: 3.5 }}>
@@ -49,9 +53,10 @@ export default function SolicitudRecibida({ nombre, email, fichas = 1, soloMenor
           Qué toca ahora
         </Typography>
         <Typography sx={{ fontSize: 15, lineHeight: 1.7, maxWidth: '58ch', color: 'text.secondary' }}>
-          Pásate por Secretaría, en la casa parroquial, con tu DNI y el certificado de bautismo de cada
-          persona que apuntas ({site.contacto.horario.toLowerCase()}). Allí formalizan el alta y activan tu
-          acceso al área de hermanos con el email y la contraseña que acabas de elegir.
+          Sigue lo que te decimos en el correo. Lo habitual es pasarse por Secretaría, en la casa parroquial,
+          con el DNI y el certificado de bautismo de cada persona que apuntas
+          ({site.contacto.horario.toLowerCase()}): allí se formaliza el alta y se activa el acceso al área
+          de hermanos.
           {soloMenores && ' Desde ahí gestionarás sus fichas, aunque tú no seas hermano.'}
         </Typography>
       </Box>
