@@ -6,7 +6,7 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import {
   ADMIN_EDITABLE_FIELDS, FICHA_PENDIENTE, HERMANO_ERRORS, HERMANO_SAFE_SELECT,
-  USER_EDITABLE_FIELDS, WHERE_SITUACION, comprobarDniLibre, emanciparFicha,
+  USER_EDITABLE_FIELDS, WHERE_SITUACION, emanciparFicha,
   esCuentaStaff, getNextNumeroHermano, prepareUpdateData, sinFechasDelMismoDia,
   transaccionReintentable, type FichaEmancipable, type SearchHermanoQuery,
 } from './hermanos/comunes.js';
@@ -20,6 +20,49 @@ import { renuevaMandato } from '../domain/sepa.js';
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
 import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
 import { idCategoriaDevoluciones } from './recibos/comunes.js';
+import { ContadorFallos } from '../utils/contador-fallos.js';
+
+const UN_DIA = 24 * 60 * 60 * 1000;
+
+/**
+ * Lo que se responde cuando el DNI de una ficha del área de hermanos ya es de
+ * otra ficha. Antes decía «Ese DNI ya está registrado», y «Mi familia» servía
+ * para averiguar quién está en el censo probando DNI. No lo confirma: deja el
+ * caso a Secretaría, que lo ve en la auditoría.
+ */
+export const MENSAJE_DNI_NO_GUARDADO = 'No se ha podido guardar ese DNI. Si es correcto, habla con Secretaría.';
+
+/**
+ * Cuántos DNI puede escribir una cuenta en sus fichas al día, salgan bien o
+ * mal: también un DNI que se guarda dice algo (que no estaba en el censo). Una
+ * familia que apunta a sus hijos no llega ni de lejos.
+ */
+const intentosDeDni = new ContadorFallos({ maxFallos: 10, bloqueoMs: UN_DIA, ventanaMs: UN_DIA, tope: 10_000 });
+
+/** Cuenta un DNI escrito desde el área de hermanos y frena a quien escribe demasiados. */
+function contarIntentoDeDni(userId: number) {
+  const clave = String(userId);
+  if (intentosDeDni.restanteBloqueo(clave) > 0) {
+    throw new HttpError('Has cambiado demasiados DNI por hoy. Si necesitas corregir alguno, habla con Secretaría.', 429);
+  }
+  intentosDeDni.registrarFallo(clave);
+}
+
+/**
+ * Que el DNI no sea ya de otra ficha, sin decirlo. El choque queda en la
+ * auditoría, con la ficha con la que choca, para que Secretaría lo resuelva.
+ */
+async function exigirDniLibreSinDelatar(dni: string, exceptoId: number | null, meta: MetaDeAuditoria | undefined) {
+  const otra = await db.hermano.findFirst({
+    where: { dni, ...(exceptoId !== null ? { id: { not: exceptoId } } : {}) },
+    select: { id: true },
+  });
+  if (!otra) return;
+  await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_DNI_OCUPADO, meta ?? {}, 'hermano', exceptoId ?? undefined, {
+    fichaConEseDni: otra.id,
+  });
+  throw new HttpError(MENSAJE_DNI_NO_GUARDADO);
+}
 
 /**
  * Las fichas que cuelgan de una cuenta: la suya y las de quien tenga a su
@@ -62,8 +105,8 @@ export class MisFichasService {
 
   static async createDependentProfile(managerUserId: number, data: CreateHermanoDto, meta?: MetaDeAuditoria) {
     if (data.dni) {
-      const existe = await db.hermano.findFirst({ where: { dni: data.dni } });
-      if (existe) throw new HttpError(HERMANO_ERRORS.DNI_DUPLICATE, 409);
+      contarIntentoDeDni(managerUserId);
+      await exigirDniLibreSinDelatar(data.dni, null, meta);
     }
 
     const manager = await db.user.findUnique({ where: { id: managerUserId } });
@@ -128,7 +171,8 @@ export class MisFichasService {
       throw new HttpError('Para domiciliar los recibos hace falta el IBAN de la cuenta.');
     }
     if (typeof dataToUpdate.dni === 'string' && dataToUpdate.dni !== hermano.dni) {
-      await comprobarDniLibre(dataToUpdate.dni, hermanoId);
+      contarIntentoDeDni(managerUserId);
+      await exigirDniLibreSinDelatar(dataToUpdate.dni, hermanoId, meta);
     }
     const detalles = diferenciasFicha(hermano, dataToUpdate);
     // Domiciliar o cambiar de cuenta es autorizar el adeudo de nuevo: la

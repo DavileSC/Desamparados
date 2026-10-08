@@ -141,6 +141,9 @@ export const ACCIONES_AUDITORIA = {
   FAMILIAR_CREAR: 'FAMILIAR_CREAR',
   FAMILIAR_ACTUALIZAR: 'FAMILIAR_ACTUALIZAR',
   FAMILIAR_SOLICITUD_RETIRAR: 'FAMILIAR_SOLICITUD_RETIRAR',
+  // Un DNI escrito en «Mi familia» o «Mi perfil» que ya es de otra ficha: al
+  // hermano no se le dice (revelaría quién está en el censo); Secretaría lo ve aquí.
+  FAMILIAR_DNI_OCUPADO: 'FAMILIAR_DNI_OCUPADO',
   // La propia cuenta: cambiar la contraseña con la sesión abierta
   CONTRASENA_CAMBIAR: 'CONTRASENA_CAMBIAR',
   // RGPD
