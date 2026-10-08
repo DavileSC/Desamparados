@@ -10,6 +10,7 @@ import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
 import { type } from 'arktype';
 import { idParam } from '../config/common.js';
+import { ROLES_CENSO_EN_MESA } from '../services/procesion/mesa.service.js';
 
 // AHORA IMPORTAMOS TODO DESDE EL SCHEMA
 import {
@@ -49,6 +50,9 @@ procesionRouter.use(authenticateToken);
 const validateId = validate(type({ params: { id: idParam } }));
 const rolesMesaReparto = [Role.ADMIN, Role.TESORERIA, Role.SECRETARIA, Role.ALBACERIA];
 const rolesJunta = [Role.ADMIN, Role.TESORERIA, Role.SECRETARIA, Role.ALBACERIA, Role.HERMANO_MAYOR];
+// Lo que toca el censo (dar de alta, reactivar, aprobar) es de Secretaría,
+// también en la mesa. Las mismas que ven la ficha entera (ver `MesaService`).
+const rolesCensoMesa = [...ROLES_CENSO_EN_MESA];
 
 // ==========================================
 //  ZONA HERMANO (APP)
@@ -75,7 +79,9 @@ procesionRouter.get('/admin/mesa/apuntados', checkRole(rolesMesaReparto), valida
 procesionRouter.get('/admin/mesa/personas', checkRole(rolesMesaReparto), validate(mesaBuscarSchema), MesaController.buscar);
 procesionRouter.get('/admin/mesa/esperados', checkRole(rolesMesaReparto), validate(mesaEsperadosSchema), MesaController.esperados);
 procesionRouter.get('/admin/mesa/prendas', checkRole(rolesMesaReparto), validate(mesaPrendasSchema), MesaController.prendas);
-procesionRouter.post('/admin/mesa/personas', checkRole(rolesMesaReparto), validate(mesaAltaSchema), MesaController.alta);
+// Una ficha nace activa y con número, o cuelga a un menor de una cuenta: es
+// un alta en el censo, no algo que Tesorería o Albacería decidan en la mesa.
+procesionRouter.post('/admin/mesa/personas', checkRole(rolesCensoMesa), validate(mesaAltaSchema), MesaController.alta);
 procesionRouter.get('/admin/mesa/personas/:id', checkRole(rolesMesaReparto), validate(mesaFichaSchema), MesaController.ficha);
 procesionRouter.get('/admin/mesa/colas', checkRole(rolesMesaReparto), validate(salidaQuerySchema), MesaController.colas);
 procesionRouter.get('/admin/mesa/preparacion', checkRole(rolesMesaReparto), validate(mesaPreparacionSchema), MesaController.preparacion);
@@ -93,7 +99,7 @@ procesionRouter.patch('/admin/solicitudes/:id', checkRole(rolesMesaReparto), val
 procesionRouter.delete('/admin/solicitudes/:id', checkRole(rolesMesaReparto), validateId, MesaController.cancelarSolicitud);
 procesionRouter.patch('/admin/mesa/personas/:id', checkRole(rolesMesaReparto), validate(type({ params: { id: idParam } }).and(mesaCorregirSchema)), MesaController.corregir);
 // Reactivar una baja o aprobar una solicitud es cosa del censo: Secretaría.
-procesionRouter.post('/admin/mesa/personas/:id/activar', checkRole([Role.ADMIN, Role.SECRETARIA]), validateIdMesa, MesaController.activar);
+procesionRouter.post('/admin/mesa/personas/:id/activar', checkRole(rolesCensoMesa), validateIdMesa, MesaController.activar);
 procesionRouter.patch('/admin/papeletas/:id', checkRole(rolesMesaReparto), validate(type({ params: { id: idParam } }).and(mesaEditarPapeletaSchema)), MesaController.editarPapeleta);
 // La papeleta en A4 para imprimirla en la mesa al dar la ropa (o reimprimirla).
 procesionRouter.get('/admin/papeletas/:id/pdf', checkRole(rolesMesaReparto), validateIdMesa, MesaController.papeletaPdf);

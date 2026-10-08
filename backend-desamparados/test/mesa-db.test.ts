@@ -765,12 +765,14 @@ test('«editar antes de guardar» corrige la ficha y deja rastro solo de lo que 
   const e = await escenario();
   try {
     const h = await e.hermano();
-    const r = await MesaService.corregirFicha(h.id, { primerApellido: 'Galea', segundoApellido: 'Mayorga', telefono: '623577927', alturaHombro: '1,45' }, e.meta);
+    // Como Secretaría: el teléfono solo lo corrige quien lleva el censo.
+    const censo = { censo: true };
+    const r = await MesaService.corregirFicha(h.id, { primerApellido: 'Galea', segundoApellido: 'Mayorga', telefono: '623577927', alturaHombro: '1,45' }, e.meta, censo);
     assert.equal(r.cambiados, 5, 'apellidos juntos y partidos, teléfono y altura');
     const ficha = await db.hermano.findUniqueOrThrow({ where: { id: h.id } });
     assert.equal(ficha.apellidos, 'Galea Mayorga');
     assert.equal(ficha.alturaHombro, 145);
-    assert.equal((await MesaService.corregirFicha(h.id, { telefono: '623577927' }, e.meta)).cambiados, 0);
+    assert.equal((await MesaService.corregirFicha(h.id, { telefono: '623577927' }, e.meta, censo)).cambiados, 0);
   } finally {
     await e.recoger();
   }
@@ -813,6 +815,84 @@ test('por HTTP: la mesa es de la Junta que reparte; perdonar, de Tesorería y el
     await db.auditLog.deleteMany({ where: { userId: albaceria.id } });
   } finally {
     await borrarUsuarioPrueba(albaceria.id);
+    await e.recoger();
+  }
+});
+
+// AC3 y AC7 (auditoría del 07-10-2026): Tesorería y Albacería están en la
+// mesa para cobrar y dar la ropa. Buscaban por un trozo de DNI o teléfono,
+// leían el DNI y el contacto de cualquier ficha (bajas y pendientes
+// incluidas), los corregían y daban de alta hermanos con número.
+test('por HTTP: Tesorería y Albacería en la mesa solo ven y corrigen fichas en activo, sin DNI ni contacto, y no dan de alta', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  const albaceria = await crearUsuarioPrueba(Role.ALBACERIA);
+  const tesoreria = await crearUsuarioPrueba(Role.TESORERIA);
+  const secretaria = await crearUsuarioPrueba(Role.SECRETARIA);
+  try {
+    const sufijo = `${process.pid}${Date.now() % 1_000_000}`.slice(-7);
+    const dni = `${sufijo}Q`.padStart(9, '0');
+    const activo = await e.hermano({ nombre: 'Visible' });
+    await db.hermano.update({ where: { id: activo.id }, data: { dni, telefono: '623577927', email: `visible-${sufijo}@ejemplo.test` } });
+    const baja = await e.hermano({ nombre: 'Oculta' });
+    await db.hermano.update({ where: { id: baja.id }, data: { activo: false, fechaBaja: new Date() } });
+    const conRopa = await e.hermano({ nombre: 'Debe' });
+    await db.hermano.update({ where: { id: conRopa.id }, data: { activo: false, fechaBaja: new Date() } });
+    await e.prenda(TipoPrenda.TUNICA, numeroDePrueba(), { estado: EstadoPrenda.PRESTADA, hermanoId: conRopa.id });
+
+    const como = (userId: number, rol: Role, ruta: string, metodo = 'GET', cuerpo?: unknown) =>
+      fetch(`${baseUrl}/api/procesion${ruta}`, {
+        method: metodo,
+        headers: { Cookie: `${COOKIE_CMS}=${generateToken(userId, rol)}`, ...(cuerpo !== undefined && { 'Content-Type': 'application/json' }) },
+        body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+      });
+    const buscar = async (userId: number, rol: Role, q: string) =>
+      (await (await como(userId, rol, `/admin/mesa/personas?q=${encodeURIComponent(q)}&salida=${PASION}`)).json() as { id: number }[]).map((p) => p.id);
+
+    // Por nombre: los de activo, y la baja que aún debe ropa (hay que recibírsela).
+    assert.ok((await buscar(albaceria.id, Role.ALBACERIA, `Visible ${activo.apellidos}`)).includes(activo.id));
+    assert.ok((await buscar(albaceria.id, Role.ALBACERIA, `Debe ${conRopa.apellidos}`)).includes(conRopa.id), 'la baja con ropa sin devolver sale, para recibirla');
+    assert.ok(!(await buscar(albaceria.id, Role.ALBACERIA, `Oculta ${baja.apellidos}`)).includes(baja.id), 'la baja sin nada pendiente, no');
+    // Por DNI o teléfono, solo el dato entero.
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, dni.slice(0, 5)), []);
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, '5779'), []);
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, dni.toLowerCase()), [activo.id]);
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, '623577927'), [activo.id]);
+
+    // La ficha, sin DNI y con el contacto enmascarado.
+    const ficha = await (await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${activo.id}?salida=${PASION}`)).json() as { dni: string | null; telefono: string; email: string; contactoCompleto: boolean };
+    assert.equal(ficha.dni, null);
+    assert.equal(ficha.telefono, '••••••927');
+    assert.match(ficha.email, /^vi•••@ejemplo\.test$/);
+    assert.equal(ficha.contactoCompleto, false);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${baja.id}?salida=${PASION}`)).status, 404);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${conRopa.id}?salida=${PASION}`)).status, 200);
+
+    // Corregir: lo de la procesión sí; el contacto y las bajas, no.
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${activo.id}`, 'PATCH', { alturaHombro: '1,50' })).status, 200);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${activo.id}`, 'PATCH', { telefono: '600000000' })).status, 403);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${activo.id}`, 'PATCH', { email: 'otro@ejemplo.test' })).status, 403);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${baja.id}`, 'PATCH', { alturaHombro: '1,50' })).status, 404);
+    assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: activo.id } })).telefono, '623577927');
+
+    // Dar de alta es del censo (AC7).
+    const alta = { nombre: 'Nadie', primerApellido: 'Nuevo', fechaNacimiento: '2020-01-01', tutorHermanoId: activo.id, parentesco: 'HIJO' };
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/personas', 'POST', alta)).status, 403);
+    assert.equal((await como(tesoreria.id, Role.TESORERIA, '/admin/mesa/personas', 'POST', alta)).status, 403);
+
+    // Secretaría sigue viéndolo todo: la ficha entera, las bajas (para
+    // reactivarlas) y la búsqueda por un trozo del DNI.
+    const completa = await (await como(secretaria.id, Role.SECRETARIA, `/admin/mesa/personas/${activo.id}?salida=${PASION}`)).json() as { dni: string; telefono: string; contactoCompleto: boolean };
+    assert.equal(completa.dni, dni);
+    assert.equal(completa.telefono, '623577927');
+    assert.equal(completa.contactoCompleto, true);
+    assert.ok((await buscar(secretaria.id, Role.SECRETARIA, dni.slice(0, 7))).includes(activo.id));
+    assert.ok((await buscar(secretaria.id, Role.SECRETARIA, `Oculta ${baja.apellidos}`)).includes(baja.id));
+  } finally {
+    for (const u of [albaceria, tesoreria, secretaria]) {
+      await db.auditLog.deleteMany({ where: { userId: u.id } });
+      await borrarUsuarioPrueba(u.id);
+    }
     await e.recoger();
   }
 });
