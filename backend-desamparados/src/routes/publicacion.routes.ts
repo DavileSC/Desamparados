@@ -4,6 +4,7 @@ import { PublicacionController } from '../controllers/publicacion.controller.js'
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
+import { cachePublica } from '../middleware/cache-publica.js';
 import { publicacionesCmsQuerySchema, categoryParamSchema, crearPublicacionSchema, publicacionIdParamSchema, publicacionesQuerySchema, actualizarPublicacionSchema } from '../schemas/publicacion.schema.js';
 
 const publicacionRoutes = Router();
@@ -12,10 +13,10 @@ const publicacionRoutes = Router();
 // dos siguen siendo solo de ADMIN, en admin.routes.ts).
 const roles = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
-publicacionRoutes.get('/latest', PublicacionController.latest);
+publicacionRoutes.get('/latest', cachePublica, PublicacionController.latest);
 publicacionRoutes.get('/admin', authenticateToken, checkRole(roles), validate(publicacionesCmsQuerySchema), PublicacionController.adminList);
-publicacionRoutes.get('/category/:category', validate(categoryParamSchema), PublicacionController.list);
-publicacionRoutes.get('/', validate(publicacionesQuerySchema), PublicacionController.list);
+publicacionRoutes.get('/category/:category', cachePublica, validate(categoryParamSchema), PublicacionController.list);
+publicacionRoutes.get('/', cachePublica, validate(publicacionesQuerySchema), PublicacionController.list);
 
 // El orden es de corrección, no de estilo: '/:id' captura cualquier segmento
 // suelto, así que va DESPUÉS de '/latest' y '/admin' o esas dos dejarían de

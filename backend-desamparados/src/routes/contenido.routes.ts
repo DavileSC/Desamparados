@@ -5,6 +5,7 @@ import { ContenidoController } from '../controllers/contenido.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
+import { cachePublica } from '../middleware/cache-publica.js';
 import { idParam } from '../config/common.js';
 import { esSlugContenido } from '../domain/contenido.js';
 import { guardarContenidoSchema } from '../schemas/contenido.schema.js';
@@ -16,7 +17,7 @@ const contenidoRoutes = Router();
 const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
 // La web la lee sin sesión.
-contenidoRoutes.get('/:slug', ContenidoController.leer);
+contenidoRoutes.get('/:slug', cachePublica, ContenidoController.leer);
 
 // El historial es del CMS: quién cambió qué y cuándo no es para la web.
 const idVersion = type({ params: { slug: 'string', id: idParam } });

@@ -4,6 +4,7 @@ import { PortadaController } from '../controllers/portada.controller.js';
 import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js';
 import { validate } from '../config/validate.js';
+import { cachePublica } from '../middleware/cache-publica.js';
 import { guardarImagenesPortadaSchema } from '../schemas/portada.schema.js';
 
 const portadaRoutes = Router();
@@ -12,7 +13,7 @@ const portadaRoutes = Router();
 const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
 // La portada de la web la lee sin sesión: fotos y textos de una vez.
-portadaRoutes.get('/', PortadaController.listar);
+portadaRoutes.get('/', cachePublica, PortadaController.listar);
 
 // Se guarda la lista entera de golpe: sin altas ni bajas sueltas, el orden que
 // llega es el orden que se enseña.
