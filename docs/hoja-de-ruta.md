@@ -51,6 +51,10 @@ hechas o aparcadas.
   mano, nunca se descarta lo del otro.
 - Al empezar una tarea, marcarla 🔨 aquí y subirlo: así el otro sabe que está
   cogida.
+- El grafo de graphify (`graphify-out/`) **solo lo regenera y lo sube el A**,
+  con `/graphify . --update` tras un `git pull`. El B lo baja y lo consulta,
+  pero nunca lo regenera: `graph.json` pesa 16 MB y un conflicto en él no se
+  puede juntar a mano. Si el B lo ve viejo, se lo pide al A.
 
 ## Regla para todo lo que venga
 

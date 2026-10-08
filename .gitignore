@@ -43,3 +43,9 @@ repomix-output.xml
 
 # Capturas y volcados del MCP de Playwright: son de una sesión, no del proyecto.
 .playwright-mcp/
+
+# Grafo de graphify: se versiona para que los dos PC consulten el mismo, salvo
+# la caché y los punteros al Python y a la carpeta de este equipo.
+graphify-out/cache/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
