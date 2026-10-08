@@ -20,15 +20,11 @@ export const TARJETA = {
 } as const
 
 /**
- * Ajustes del formulario sobre la tarjeta. El tema de la web ya es oscuro;
- * aquí solo se corrige lo que sobre tinta no se lee: el rojo de error de
- * serie (#ba1a1a) queda a 2,6:1 sobre la tarjeta, y los avisos de un
- * formulario son justo lo que hay que poder leer.
+ * Ajustes del formulario sobre la tarjeta. El tema de la web ya es oscuro y
+ * trae un rojo de error legible sobre tinta (ERROR_SOBRE_OSCURO); aquí solo
+ * se corrige lo que la tarjeta cambia de los campos.
  */
 export const temaTarjeta: Theme = createTheme(theme, {
-  palette: {
-    error: { main: '#f08a84', dark: '#d9655e', light: '#f7b1ac', contrastText: '#0c0b0d' },
-  },
   components: {
     MuiOutlinedInput: {
       styleOverrides: {

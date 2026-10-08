@@ -1,8 +1,8 @@
 /**
  * El menú de escritorio: una entrada por sección y, en las que tienen
  * subpáginas, un panel que se abre al pasar el ratón o al llegar con el
- * teclado. El título de esas secciones no es clicable: no lleva a ninguna
- * página, para eso están las subpáginas de dentro.
+ * teclado. El título de esas secciones no lleva a ninguna página (para eso
+ * están las subpáginas de dentro): pulsarlo solo abre o cierra el panel.
  */
 import { useState, useRef, type FocusEvent, type KeyboardEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -10,7 +10,11 @@ import { Box, Button, useTheme } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { compactMq, esActiva, seccionActiva, tinta } from './estilos'
 import type { EntradaMenu } from '../../config/navegacion'
+import { designTokens } from '../../theme'
 import { useMenuPublico } from '../../hooks/useMenuPublico'
+
+/** El dorado del foco de los botones (estiloDeBoton.ts): el mismo en toda la web. */
+const FOCO = { outline: `2px solid ${designTokens.colors.tertiaryFixedDim}`, outlineOffset: '2px' } as const
 
 /** Enlace de una subpágina dentro del desplegable de escritorio. */
 function EnlaceDesplegable({ entrada, secundario = false }: { entrada: EntradaMenu; secundario?: boolean }) {
@@ -33,6 +37,9 @@ function EnlaceDesplegable({ entrada, secundario = false }: { entrada: EntradaMe
         textDecoration: 'none',
         whiteSpace: 'nowrap',
         '&:hover, &:focus-visible': { color: 'secondary.main', backgroundColor: 'rgba(255,255,255,0.05)' },
+        // El cambio de color solo no basta para ver dónde está el foco: el
+        // dorado ya es el color del enlace activo.
+        '&:focus-visible': FOCO,
       }}
     >
       {entrada.label}
@@ -80,6 +87,11 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
         {...(desplegable
           ? { disableRipple: true, tabIndex: 0 }
           : { component: Link, to: entrada.href })}
+        // Sin esto, Enter y Espacio no hacían nada y, tras cerrar con Escape, no
+        // había forma de reabrir sin salir de la sección. `detail === 0` es una
+        // pulsación de teclado: alterna. Con el ratón el panel ya se abrió al
+        // pasar por encima, y un clic no debe cerrarlo.
+        onClick={desplegable ? (e: React.MouseEvent) => setAbierta(e.detail === 0 ? !abierta : true) : undefined}
         aria-haspopup={desplegable ? 'true' : undefined}
         aria-expanded={desplegable ? abierta : undefined}
         // Chevron solo en las secciones que despliegan; gira al abrirse.
@@ -126,6 +138,8 @@ function SeccionEscritorio({ entrada }: { entrada: EntradaMenu }) {
           },
           '&:hover': { color: 'secondary.main', backgroundColor: 'transparent' },
           '&:hover::after': { transform: 'scaleX(1)' },
+          // disableRipple quita también la marca de foco de MUI: se pone la de la web.
+          '&.Mui-focusVisible': FOCO,
           [compactMq]: { fontSize: '13px', px: 0.35, '&::after': { left: 3, right: 3 } },
         }}
       >

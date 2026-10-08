@@ -106,6 +106,21 @@ describe('BarraDeNavegacion en escritorio', () => {
     expect(accesos()).toHaveLength(1)
   })
 
+  it('tras cerrar con Escape, Enter y Espacio la vuelven a abrir y a cerrar', async () => {
+    // Antes no tenían efecto: para reabrir había que salir de la sección y volver.
+    const user = userEvent.setup()
+    renderWithProviders(<BarraDeNavegacion />)
+    const hermanos = within(navEscritorio()).getByRole('button', { name: 'Hermanos', hidden: true })
+    act(() => hermanos.focus())
+    await user.keyboard('{Escape}')
+    expect(hermanos).toHaveAttribute('aria-expanded', 'false')
+
+    await user.keyboard('{Enter}')
+    expect(hermanos).toHaveAttribute('aria-expanded', 'true')
+    await user.keyboard(' ')
+    expect(hermanos).toHaveAttribute('aria-expanded', 'false')
+  })
+
   it('las secciones sin subpáginas no anuncian desplegable', () => {
     renderWithProviders(<BarraDeNavegacion />)
     expect(within(navEscritorio()).getByRole('link', { name: 'Contacto', hidden: true })).not.toHaveAttribute('aria-haspopup')
