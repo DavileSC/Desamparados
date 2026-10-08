@@ -13,6 +13,7 @@ import {
   LONGITUD_MINIMA,
   LONGITUD_MAXIMA,
 } from '../../../backend-desamparados/src/domain/password-debil'
+import { laCorporacion } from '../domain/articulos'
 
 export { LONGITUD_MINIMA, LONGITUD_MAXIMA }
 
@@ -22,7 +23,7 @@ export { LONGITUD_MINIMA, LONGITUD_MAXIMA }
  * consigue que la persona lo intente otras cinco veces.
  */
 export const contrasenaNueva = z.string().superRefine((valor, ctx) => {
-  const motivo = motivoContrasenaDebil(valor)
+  const motivo = motivoContrasenaDebil(valor, laCorporacion())
   if (motivo) {
     ctx.addIssue({ code: 'custom', message: `La contraseña ${motivo}` })
   }

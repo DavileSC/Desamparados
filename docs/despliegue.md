@@ -97,7 +97,7 @@ PostgreSQL, se comería la mitad de ese margen.
 ### El dominio
 
 También está sin comprar. Se escribe en un único sitio, `identidad.dominio` de
-`shared/datos-entidad.json` (siempre con `www.`): de ahí lo toman la web (su
+`instalacion/datos-entidad.json` (siempre con `www.`): de ahí lo toman la web (su
 dirección canónica, el sitemap, `robots.txt`), la imagen de nginx al
 construirse (`docker/nginx/generar-sitio.mjs` rellena `sitio.conf`) y
 `docker/instalar.sh`, que lo pone en `FRONTEND_URL` y `API_URL`. Al elegirlo,
@@ -639,7 +639,7 @@ siembran solos al arrancar.** `docker compose up -d --build` aplica la
 migración (`npx prisma migrate deploy`, dentro del contenedor `migraciones`),
 que crea la tabla `Modulo`, y al levantar la API `src/index.ts` llama a
 `ModulosService.cargar()`, que crea las filas que falten con el lote inicial
-(`modulos.activos` de `shared/datos-entidad.json`) y no toca ninguna que ya
+(`modulos.activos` de `instalacion/datos-entidad.json`) y no toca ninguna que ya
 exista. No hay que sembrar nada a mano por esto. La siembra completa también
 crea esas filas, del mismo modo, pero no hace falta lanzarla solo por los
 módulos:
@@ -687,9 +687,47 @@ la de `herramientas`, porque el CLI de Prisma hace falta para las migraciones.
 
 La web se vende con **una instalación por cliente**: su servidor, su base y su
 dominio. Todo lo que distingue a una corporación de otra está en
-`shared/datos-entidad.json` (nombre, nombre corto, advocación, localidad,
+`instalacion/datos-entidad.json` (nombre, nombre corto, advocación, localidad,
 dominio, datos de Secretaría) y en el `.env` (secretos y claves del banco). El
 código es el mismo para todas.
+
+### Los datos de la corporación
+
+Viven en `instalacion/datos-entidad.json`, junto al `.env` y, como él, **fuera
+de git** (`.gitignore`). Si estuvieran versionados, `actualizar.sh` se negaría
+a actualizar cualquier copia con datos propios, y un `git pull` chocaría con
+los de cada cliente. Se crean copiando `shared/datos-entidad.ejemplo.json` (una
+corporación inventada, con cada campo explicado) y rellenándolo.
+
+Quién los lee:
+
+- **La API**, al arrancar: `shared/datos-entidad.mjs` los busca, y el compose
+  los monta en el contenedor (`./instalacion`, de solo lectura). La imagen de
+  la API no los lleva.
+- **La web**, al compilar: el código los importa como
+  `@instalacion/datos-entidad.json` y Vite decide qué fichero es. También
+  salen de ellos `index.html`, `public/manifest.json` y `public/robots.txt`,
+  que se generan antes de `dev` y de `build` y tampoco están en git. Hasta que
+  la web los lea al arrancar (siguiente fila de la Fase 8), **la imagen de la
+  web es de una corporación**: en GitHub se construye con la variable
+  `DATOS_ENTIDAD` (ver `servidor.md`).
+- **nginx**, al construir la imagen de la web: el dominio.
+
+**Sin el fichero no arranca nada**, y es a propósito: la API, Vite y los
+guiones se paran con un mensaje que dice qué hacer. Caer en el ejemplo
+mandaría correos y PDF con el nombre de una corporación inventada sin que
+nadie lo notara. Solo las pruebas usan el ejemplo sin pedirlo (Node y Vitest
+lo marcan en el entorno), así que también vigilan que nada dependa de
+Desamparados. Con `DATOS_ENTIDAD=<ruta desde la raíz>` se elige otro fichero;
+el CI de verificación lo pone al ejemplo.
+
+En el PC de desarrollo hace falta el de Desamparados en `instalacion/`. El del
+último commit que lo tuvo en git:
+
+```bash
+mkdir -p instalacion
+git show 935099b:shared/datos-entidad.json > instalacion/datos-entidad.json
+```
 
 **Antes de cargar su censo**, el contrato de encargado del tratamiento firmado:
 la corporación es responsable de los datos de sus hermanos y quien instala y
@@ -703,8 +741,9 @@ En un servidor limpio con Docker y su plugin compose:
 ```bash
 sudo git clone <repositorio> /srv/desamparados
 cd /srv/desamparados
-# shared/datos-entidad.json con los datos de la corporación, y el dominio
-# apuntando ya a este servidor.
+# El dominio apuntando ya a este servidor. La primera vez, instalar.sh crea
+# instalacion/datos-entidad.json desde el ejemplo y para: se rellena y se
+# vuelve a lanzar (no sigue mientras tenga el dominio del ejemplo).
 sudo ./docker/instalar.sh secretaria@corporacion.es
 ```
 

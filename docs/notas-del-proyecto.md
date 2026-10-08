@@ -131,6 +131,13 @@ Y un detalle de shell: arrancar un servidor con `npm run dev 2>&1 | head -40` lo
 mata en cuanto `head` cierra la tubería. Para dejarlo vivo, redirigir a un fichero
 de log.
 
+**Sin `instalacion/datos-entidad.json` no arranca nada**: ni la API, ni
+`npm run dev` de la web, ni el build. Está fuera de git, así que tras clonar, o
+en el PC que haga el `git pull` en que salió de git, hay que crearlo (el
+comando está en «Los datos de la corporación», en `despliegue.md`). Ese mismo
+pull borra además `index.html`, el manifest y `robots.txt` de la web, que
+ahora se generan solos con `npm run dev` o `npm run identidad`.
+
 ---
 
 ## 6. Trampas en los tests
@@ -221,6 +228,16 @@ en ninguna parte (los comentarios están en `AccountingAdminPage.test.tsx:182`,
 `PortadaAdminPage.test.tsx:186`). Por eso está aquí: cuesta una tarde
 encontrarlo y treinta segundos evitarlo.
 
+**Las pruebas no corren con Desamparados, sino con la corporación de
+ejemplo** (`shared/datos-entidad.ejemplo.json`: «la Hermandad de Nuestra Señora
+de la Esperanza», de Villanueva). Las de los dos lados la eligen solas, aunque
+en la máquina exista `instalacion/datos-entidad.json` (ver «Los datos de la
+corporación» en `despliegue.md`). Una prueba que espere «del Grupo» o
+«Desamparados» escrito falla. Se compara con lo que sale de la identidad
+(`deLaCorporacion({ corto: true })`, `site.titular`, `identidad.nombre`…), o
+con el ejemplo si lo que se prueba es justo la frase. Cuando se cambió, cayeron
+así 17 pruebas de la web y 7 de la API.
+
 ## 6 bis. MariaDB 11.8 y los choques de transacciones
 
 La base de desarrollo trae `innodb_snapshot_isolation=ON`: si dos transacciones
@@ -298,7 +315,7 @@ El aviso interno a Secretaría y el del formulario de contacto siguen en el
 código: no los lee ningún hermano.
 
 **Los correos salen deliberadamente incompletos.** El horario de Secretaría, la
-dirección, el teléfono y el escudo viven en `shared/datos-entidad.json` con el
+dirección, el teléfono y el escudo viven en `instalacion/datos-entidad.json` con el
 mismo criterio que `config/site.ts` en la web: `null` es «pendiente de confirmar»
 y el bloque entero **desaparece** del correo. Antes iban escritos a mano en la
 plantilla una «C/ Falsa, 123, 29000 Málaga», un horario inventado y un
@@ -487,7 +504,7 @@ instalación», y una sesión de hermano que ya existiera se ignora en
 La migración `20261031200000_modulos_activables` crea la tabla, y el arranque
 de la API (`src/index.ts`) llama a `ModulosService.cargar()`, que a su vez
 llama a `sembrar()`: crea las filas que falten con el lote inicial (lo que
-diga `modulos.activos` de `shared/datos-entidad.json`) y no toca ninguna que
+diga `modulos.activos` de `instalacion/datos-entidad.json`) y no toca ninguna que
 ya exista. `npx prisma db seed` hace lo mismo, pero no hace falta solo por
 esto. Por eso una instalación nueva ajusta `modulos.activos` **antes del
 primer arranque**: después las filas ya existen y el JSON no cuenta. El

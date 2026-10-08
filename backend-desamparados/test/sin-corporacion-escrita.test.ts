@@ -56,13 +56,13 @@ const EXCEPCIONES: { fichero: string; contiene: string; motivo: string }[] = [
     motivo:
       'Denominación jurídica exacta inscrita (art. 10 LSSI-CE y art. 13 RGPD): un hecho legal de ' +
       'esta instalación, no una frase calculable con artículo. Pendiente de pasar a ' +
-      'shared/datos-entidad.json (hoja de ruta).',
+      'instalacion/datos-entidad.json (hoja de ruta).',
   },
   // El catálogo "comunes" de usos-de-correo.json documenta, para quien edite una
   // plantilla desde el CMS, lo que hoy escriben los campos {{la_corporacion}}…
   // (domain/articulos.ts) con la identidad de esta instalación: un "ejemplo" de
   // ayuda, no una plantilla con la corporación escrita a mano. Cambia solo si
-  // cambia shared/datos-entidad.json, igual que la denominación jurídica de arriba.
+  // cambia instalacion/datos-entidad.json, igual que la denominación jurídica de arriba.
   ...(['el Grupo Parroquial', 'del Grupo Parroquial', 'al Grupo Parroquial', 'nuestro Grupo Parroquial', 'el Grupo', 'del Grupo'] as const)
     .map((ejemplo) => ({
       fichero: 'shared/usos-de-correo.json',

@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import Remesas from '../Remesas'
+import { deLaCorporacion } from '../../../../domain/articulos'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 const REMESA = {
@@ -41,7 +42,7 @@ describe('Remesas', () => {
   it('sin los datos del acreedor dice qué falta y no deja crear remesas', async () => {
     api({ ...ESTADO, configurada: false, problemas: ['Falta SEPA_ACREEDOR_ID en la configuración del servidor.'], remesas: [] })
     renderWithProviders(<Remesas />)
-    expect(await screen.findByText('Faltan los datos del Grupo como acreedor')).toBeInTheDocument()
+    expect(await screen.findByText(`Faltan los datos ${deLaCorporacion({ corto: true })} como acreedor`)).toBeInTheDocument()
     expect(screen.getByText('Falta SEPA_ACREEDOR_ID en la configuración del servidor.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Nueva remesa' })).toBeDisabled()
     expect(screen.getByText('Todavía no hay remesas.')).toBeInTheDocument()

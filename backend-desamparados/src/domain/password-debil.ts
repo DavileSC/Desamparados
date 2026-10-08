@@ -10,8 +10,6 @@
  * lo que aparece en los primeros miles de intentos de un ataque por diccionario,
  * sin añadir dependencias ni llamadas de red al registro.
  */
-import { laCorporacion } from './articulos.js';
-
 export const LONGITUD_MINIMA = 12;
 export const LONGITUD_MAXIMA = 64;
 
@@ -74,8 +72,12 @@ function esSecuencia(valor: string): boolean {
  * Motivo por el que la contraseña no vale, o `null` si es aceptable.
  * El motivo se devuelve para poder decírselo a la persona: un «contraseña no
  * válida» a secas solo consigue que lo intente otras cinco veces.
+ *
+ * `laCorporacion` («el Grupo Parroquial») llega de fuera y no se importa: la
+ * web incluye este módulo en su bundle, y la identidad de la API se lee del
+ * disco, que en el navegador no hay. Cada lado pasa la suya.
  */
-export function motivoContrasenaDebil(valor: string): string | null {
+export function motivoContrasenaDebil(valor: string, laCorporacion: string): string | null {
   if (valor.length < LONGITUD_MINIMA) {
     return `debe tener al menos ${LONGITUD_MINIMA} caracteres`;
   }
@@ -100,7 +102,7 @@ export function motivoContrasenaDebil(valor: string): string | null {
     // adornos —`Desamparados2026`— y no una frase que la contenga.
     const resto = normalizada.split(raizNormalizada).join('');
     if (resto.length < 5) {
-      return `es demasiado fácil de adivinar: evita palabras comunes o relacionadas con ${laCorporacion()}`;
+      return `es demasiado fácil de adivinar: evita palabras comunes o relacionadas con ${laCorporacion}`;
     }
   }
 
@@ -109,5 +111,6 @@ export function motivoContrasenaDebil(valor: string): string | null {
 
 /** `true` si la contraseña supera todas las comprobaciones. */
 export function esContrasenaAceptable(valor: string): boolean {
-  return motivoContrasenaDebil(valor) === null;
+  // El motivo no se enseña: la frase de la corporación da igual.
+  return motivoContrasenaDebil(valor, '') === null;
 }

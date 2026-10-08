@@ -171,6 +171,19 @@ Comprobar sin enseñar los valores:
 sudo grep -E '^[A-Z_]+=' /srv/desamparados/.env | sed -E 's/=.+/=****/; s/=$/= (VACÍA)/'
 ```
 
+Y los datos de la corporación, que tampoco están en git
+(`instalacion/datos-entidad.json`, ver «Los datos de la corporación» en
+`despliegue.md`). La API los lee del volumen al arrancar y sin ellos no
+arranca; `desplegar-desamparados` se para antes si faltan. Son los mismos que
+la variable `DATOS_ENTIDAD` de GitHub (paso 6), con la que se compila la web:
+
+```bash
+cd /srv/desamparados
+sudo -u desamparados install -d instalacion
+sudo -u desamparados nano instalacion/datos-entidad.json   # el de Desamparados entero
+python3 -m json.tool instalacion/datos-entidad.json >/dev/null && grep '"dominio"' instalacion/datos-entidad.json
+```
+
 ### 5. Las carpetas de las subidas
 
 ```bash
@@ -215,6 +228,13 @@ repository secret:
   (la privada, entera). Después, borrarla del servidor:
   `sudo shred -u /home/despliegue/clave-actions`.
 - **`VPS_HUELLA`**: lo que sale de `ssh-keyscan -t ed25519 51.255.45.220 2>/dev/null`.
+
+Y en la pestaña **Variables** de esa misma página (no es un secreto: todo sale
+en la web), **`DATOS_ENTIDAD`**: el contenido entero de
+`instalacion/datos-entidad.json`. `desplegar.yml` lo escribe antes de construir
+la imagen de la web, que los lleva compilados dentro; sin la variable, el
+despliegue se para. Al cambiar los datos hay que cambiar los dos: la variable
+(la web) y el fichero del servidor (la API).
 
 ### 7. El subdominio en el nginx del sistema
 

@@ -15,6 +15,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { PlantillasCorreoService } from '../src/services/plantillas-correo.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { identidad } from '../src/domain/datos-entidad.js';
 
 let dbDisponible = false;
 let server: Server;
@@ -82,7 +83,7 @@ test('crear, poner en uso, componer con ella, no borrar la que está en uso y vo
     await PlantillasCorreoService.crear({ nombre: 'Convocatoria de cabildo', uso: 'libre', asunto: 'Cabildo general', titulo: '', cuerpo: 'Se convoca a los hermanos del **{{grupo}}**.\n\n- Orden del día', despedida: '' }, { userId: secretaria.id });
     assert.equal((await fetch(`${baseUrl}/api/plantillas-correo/usar`, { method: 'POST', headers: s, body: JSON.stringify({ uso: 'libre', id: otra.id }) })).status, 400);
     const libres = await (await fetch(`${baseUrl}/api/plantillas-correo/libres`, { headers: s })).json();
-    assert.match(libres[0].cuerpo, /^<p>Se convoca a los hermanos del <strong>Grupo Parroquial/);
+    assert.ok(libres[0].cuerpo.startsWith(`<p>Se convoca a los hermanos del <strong>${identidad.nombre}`), libres[0].cuerpo);
     assert.match(libres[0].cuerpo, /<ul><li><p>Orden del día<\/p><\/li><\/ul>$/);
   } finally {
     await db.plantillaCorreo.deleteMany({ where: { uso: { in: ['pesame', 'libre'] } } });

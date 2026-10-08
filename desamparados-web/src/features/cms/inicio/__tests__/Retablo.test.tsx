@@ -5,6 +5,7 @@ import { TemaCmsProvider } from '../../../../app/temaCms'
 import Retablo from '../Retablo'
 
 import type { CuentaDeHoy } from '../../../../lib/api/panel'
+import { site } from '../../../../config/site'
 
 const montar = (hoy: Date, modulos?: string[], cuenta?: CuentaDeHoy | null) =>
   renderWithProviders(<TemaCmsProvider><Retablo hoy={hoy} cuenta={cuenta} /></TemaCmsProvider>, { modulos })
@@ -32,9 +33,9 @@ describe('Retablo', () => {
     expect(screen.getByText('0')).toBeInTheDocument()
   })
 
-  it('lleva la imagen de Nuestra Señora de los Desamparados', () => {
+  it('lleva la imagen de la titular', () => {
     montar(new Date(2026, 8, 11))
-    expect(screen.getByRole('img', { name: 'Nuestra Señora de los Desamparados' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: site.titular })).toBeInTheDocument()
   })
 
   it('con la cuenta del servidor: el nombre arriba, los días y «para» con su artículo', () => {
@@ -54,7 +55,7 @@ describe('Retablo', () => {
 
   it('sin cuenta atrás, solo la foto', () => {
     montar(new Date(2026, 9, 5), undefined, null)
-    expect(screen.getByRole('region', { name: 'Nuestra Señora de los Desamparados' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: site.titular })).toBeInTheDocument()
     expect(screen.queryByText('Sábado de Pasión')).not.toBeInTheDocument()
     expect(screen.queryByText(/^días?$/)).not.toBeInTheDocument()
   })

@@ -27,12 +27,13 @@ describe('artículos', () => {
 
 describe('la corporación', () => {
   const hermandad = { articulo: 'la' as const, tipo: 'Hermandad', tipoCorto: 'Hermandad' };
+  // En las pruebas, la de esta instalación es la del ejemplo: «la Hermandad».
   test('la de esta instalación', () => {
-    assert.equal(laCorporacion(), 'el Grupo Parroquial');
-    assert.equal(deLaCorporacion(), 'del Grupo Parroquial');
-    assert.equal(deLaCorporacion({ corto: true }), 'del Grupo');
-    assert.equal(aLaCorporacion(), 'al Grupo Parroquial');
-    assert.equal(nuestraCorporacion(), 'nuestro Grupo Parroquial');
+    assert.equal(laCorporacion(), 'la Hermandad');
+    assert.equal(deLaCorporacion(), 'de la Hermandad');
+    assert.equal(deLaCorporacion({ corto: true }), 'de la Hermandad');
+    assert.equal(aLaCorporacion(), 'a la Hermandad');
+    assert.equal(nuestraCorporacion(), 'nuestra Hermandad');
   });
   test('otra instalación', () => {
     assert.equal(deLaCorporacion({ identidad: hermandad }), 'de la Hermandad');

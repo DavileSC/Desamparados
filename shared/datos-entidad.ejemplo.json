@@ -1,0 +1,70 @@
+{
+  "_comentario": [
+    "EJEMPLO: una corporación inventada. Cada instalación tiene el suyo en instalacion/datos-entidad.json,",
+    "fuera de git, junto al .env: se crea copiando este y rellenándolo (docs/despliegue.md). Así un",
+    "«git pull» nunca choca con los datos de una corporación ni se los lleva por delante.",
+    "",
+    "Lo leen la API (correos, PDF, actas, iCal, sitemap), la web (site.ts, títulos, frases con artículo)",
+    "y, al generarse, index.html, el manifest, robots.txt y nginx. Las pruebas usan este ejemplo, así que",
+    "también vigilan que nada dependa de una corporación concreta.",
+    "",
+    "null significa «todavía no confirmado»: el correo o la página OMITE ese bloque entero en vez de",
+    "inventarse un valor. Un correo automático no se corrige una vez enviado."
+  ],
+  "identidad": {
+    "_comentario": [
+      "Quién es la corporación: lo que cambia de una instalación a otra.",
+      "nombre: el completo, en correos, PDF, actas y metadatos. nombreCorto: el de las pestañas y el rótulo de la barra.",
+      "tipo: la clase de corporación («Grupo Parroquial», «Hermandad»…), como la dice la papeleta. tipoCorto: la misma clase",
+      "sin el segundo sustantivo («Grupo», «Hermandad»), para frases ya situadas que no necesitan repetirlo entero.",
+      "articulo: el que concuerda con tipo y tipoCorto («el» Grupo Parroquial, pero «la» Hermandad, «los» Santos Oficios…);",
+      "se guarda el artículo y no el género porque hay corporaciones en plural. titular: la advocación, en los pies de foto",
+      "y las bendiciones. dominio: sin https y con «www.», el de la web pública. denominacion: la jurídica exacta inscrita,",
+      "la de los textos legales y el legalName de index.html; null mientras no esté confirmada."
+    ],
+    "nombre": "Hermandad de Nuestra Señora de la Esperanza",
+    "tipo": "Hermandad",
+    "tipoCorto": "Hermandad",
+    "articulo": "la",
+    "nombreCorto": "Esperanza",
+    "titular": "Nuestra Señora de la Esperanza",
+    "localidad": "Villanueva",
+    "dominio": "www.corporacion.example",
+    "descripcion": "Hermandad de Nuestra Señora de la Esperanza de Villanueva. Una corporación de ejemplo para instalar la web.",
+    "denominacion": null
+  },
+  "secretaria": {
+    "_comentario": [
+      "La dirección de Secretaría es la de la sede (abajo): los correos y los PDF la componen de",
+      "sede.calle, sede.codigoPostal y sede.localidad."
+    ],
+    "horario": "Martes y jueves, de 20:00 a 21:30",
+    "telefono": null,
+    "email": "secretaria@corporacion.example"
+  },
+  "sede": {
+    "_comentario": [
+      "Dónde está la corporación, para quien quiere ir: el pie de la web, las condiciones de compra y la",
+      "location del JSON-LD de index.html."
+    ],
+    "nombre": "Iglesia Parroquial de San Juan",
+    "calle": "Plaza Mayor, 1",
+    "codigoPostal": "00000",
+    "localidad": "Villanueva"
+  },
+  "modulos": {
+    "_comentario": [
+      "Los módulos con los que arranca esta instalación (claves de shared/modulos.json). La",
+      "siembra crea las filas que falten con este valor y NO toca las que ya existen: lo que",
+      "Administración haya cambiado desde Sistema → «Módulos» manda. Un módulo del catálogo",
+      "que no esté aquí arranca apagado. El ejemplo arranca con todos."
+    ],
+    "activos": [
+      "noticias", "publicaciones", "agenda", "comunicados", "alta-web", "area-hermanos",
+      "procesion", "puerta", "cortejo-directo", "inventario", "cartas", "difuntos", "apadrinamientos",
+      "remesas", "pago-en-linea", "cuotas-en-linea", "donativos", "tienda", "tienda-web", "loteria", "modelo-182", "contabilidad",
+      "cabildos", "informe-anual"
+    ]
+  },
+  "escudoUrl": null
+}

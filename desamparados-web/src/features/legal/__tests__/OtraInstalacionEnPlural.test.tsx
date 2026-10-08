@@ -7,7 +7,7 @@ import { renderWithProviders } from '../../../test/test-utils'
 // que la corporación es el sujeto tiene que ir en plural; y lo que antes se
 // escribía de Desamparados («Nuestra Señora de los Desamparados», «Málaga»)
 // tiene que salir de la identidad.
-vi.mock('../../../../../shared/datos-entidad.json', () => ({
+vi.mock('@instalacion/datos-entidad.json', () => ({
   default: {
     identidad: {
       nombre: 'Cofradías Fusionadas de Nuestra Señora de la Paz',

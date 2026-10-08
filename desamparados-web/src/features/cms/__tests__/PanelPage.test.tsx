@@ -6,6 +6,7 @@ import { TemaCmsProvider } from '../../../app/temaCms'
 import PanelPage from '../PanelPage'
 import { useAuthStore } from '../../altas/auth/store'
 import type { PanelResponse } from '../../../lib/api/panel'
+import { site } from '../../../config/site'
 
 const panel: PanelResponse = {
   generadoEn: '2026-09-11T08:00:00.000Z',
@@ -149,7 +150,7 @@ describe('Inicio del CMS', () => {
     responder(panel)
     entrarComo('ADMIN')
     montar()
-    expect(await screen.findByRole('img', { name: 'Nuestra Señora de los Desamparados' })).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: site.titular })).toBeInTheDocument()
     expect(screen.getByText('para la estación de penitencia')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /^El año \d{4}$/ })).toBeInTheDocument()
   })

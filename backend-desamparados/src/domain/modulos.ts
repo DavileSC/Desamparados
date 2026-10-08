@@ -1,5 +1,5 @@
 import catalogo from '../../../shared/modulos.json' with { type: 'json' };
-import datos from '../../../shared/datos-entidad.json' with { type: 'json' };
+import { leerDatosEntidad } from '../../../shared/datos-entidad.mjs';
 
 /**
  * Los módulos que una instalación puede apagar. Van escritos aquí, y no solo
@@ -46,7 +46,7 @@ export function fichaDe(clave: ClaveModulo): FichaDeModulo {
 }
 
 /** Con qué arranca esta instalación. Una clave que no sea del catálogo se ignora. */
-export const LOTE_INICIAL: readonly ClaveModulo[] = (datos.modulos.activos as string[]).filter(esClaveDeModulo);
+export const LOTE_INICIAL: readonly ClaveModulo[] = leerDatosEntidad().modulos.activos.filter(esClaveDeModulo);
 
 /**
  * Lo que hay que encender antes de encender `clave`: sus requisitos y los de

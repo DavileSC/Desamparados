@@ -34,7 +34,9 @@ escribir código: primero el contrato (esquema arktype y tipo de `lib/api/`).
 | Backend | `npm run comprobar-tipos` (no `tsc --noEmit`) | `npm test` (necesita MariaDB) |
 | Frontend | `npx tsc -b` (no `tsc --noEmit`) | `npx vitest run --testTimeout=20000` |
 
-Después de un `git pull`, `npx prisma generate` en el backend.
+Después de un `git pull`, `npx prisma generate` en el backend. Los datos de la
+corporación están fuera de git, en `instalacion/datos-entidad.json`: sin él no
+arranca nada (las pruebas usan el ejemplo, `shared/datos-entidad.ejemplo.json`).
 
 ## Skills del proyecto
 

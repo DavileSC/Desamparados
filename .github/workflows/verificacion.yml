@@ -23,6 +23,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Aquí no hay instalación: la siembra, la compilación y las pruebas usan la
+# corporación de ejemplo (relativa a la raíz del repositorio; ver
+# shared/datos-entidad.mjs). Así también se ve si algo depende de Desamparados.
+env:
+  DATOS_ENTIDAD: shared/datos-entidad.ejemplo.json
+
 # Las acciones van fijadas por SHA de commit y no por etiqueta: una etiqueta se
 # puede mover y ejecutar código distinto sin que cambie este fichero. El
 # comentario dice a qué versión corresponde cada SHA (v4 apuntaba a v4.4.0 el

@@ -16,18 +16,18 @@ describe('rechazo de contraseñas débiles', () => {
   });
 
   test('rechaza por debajo de la longitud mínima', () => {
-    assert.match(motivoContrasenaDebil('Abc12345') ?? '', /al menos 12/);
+    assert.match(motivoContrasenaDebil('Abc12345', 'el Grupo Parroquial') ?? '', /al menos 12/);
     assert.equal(esContrasenaAceptable('a'.repeat(LONGITUD_MINIMA - 1)), false);
   });
 
   test('rechaza el relleno con un solo carácter', () => {
-    assert.match(motivoContrasenaDebil('aaaaaaaaaaaaaa') ?? '', /mismo carácter repetido/);
+    assert.match(motivoContrasenaDebil('aaaaaaaaaaaaaa', 'el Grupo Parroquial') ?? '', /mismo carácter repetido/);
   });
 
   test('rechaza secuencias seguidas', () => {
-    assert.match(motivoContrasenaDebil('123456789012') ?? '', /secuencia/);
-    assert.match(motivoContrasenaDebil('abcdefghijkl') ?? '', /secuencia/);
-    assert.match(motivoContrasenaDebil('987654321098') ?? '', /secuencia/);
+    assert.match(motivoContrasenaDebil('123456789012', 'el Grupo Parroquial') ?? '', /secuencia/);
+    assert.match(motivoContrasenaDebil('abcdefghijkl', 'el Grupo Parroquial') ?? '', /secuencia/);
+    assert.match(motivoContrasenaDebil('987654321098', 'el Grupo Parroquial') ?? '', /secuencia/);
   });
 
   test('rechaza las palabras que un atacante prueba primero', () => {
@@ -57,7 +57,7 @@ describe('rechazo de contraseñas débiles', () => {
   });
 
   test('el motivo explica qué corregir, no dice solo "no válida"', () => {
-    const motivo = motivoContrasenaDebil('corta');
+    const motivo = motivoContrasenaDebil('corta', 'el Grupo Parroquial');
     assert.ok(motivo && motivo.length > 10);
     assert.ok(!/no válida/i.test(motivo));
   });

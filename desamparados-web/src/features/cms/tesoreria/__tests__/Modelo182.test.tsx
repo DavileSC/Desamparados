@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import Modelo182 from '../Modelo182'
+import { deLaCorporacion } from '../../../../domain/articulos'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 const anio = new Date().getFullYear() - 1
@@ -64,6 +65,6 @@ describe('Modelo182', () => {
     renderWithProviders(<Modelo182 puedeCambiar={false} />)
     await screen.findByText('Ana Ruiz Gil')
     expect(screen.queryByRole('button', { name: /Mandarlos por correo/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ver datos del Grupo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: `Ver datos ${deLaCorporacion({ corto: true })}` })).toBeInTheDocument()
   })
 })

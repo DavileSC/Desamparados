@@ -29,6 +29,12 @@ COPY desamparados-web/ ./
 # esto llega a la imagen final: de esta etapa solo sale `dist/`.
 COPY shared /app/shared
 COPY backend-desamparados/src /app/backend-desamparados/src
+# Los datos de la corporación, que no están en git: en GitHub Actions los
+# escribe desplegar.yml desde la variable DATOS_ENTIDAD antes de construir, y en
+# un servidor que construye él mismo son los suyos. Van dentro de la web
+# compilada (títulos, textos legales, index.html), así que esta imagen es de una
+# corporación. La de la API no los lleva: los lee del volumen al arrancar.
+COPY instalacion/datos-entidad.json /app/instalacion/datos-entidad.json
 
 # `npm run build` regenera antes la identidad y la lista de rutas públicas
 # (script `prebuild`; esta última va a shared/ y aquí no sale de la etapa: el
@@ -50,7 +56,7 @@ RUN find dist -type f \( -name '*.js' -o -name '*.css' -o -name '*.html' -o -nam
 # El sitio de nginx con el dominio de la corporación, del mismo fichero que la
 # web: aquí hay Node y en la imagen de nginx no.
 COPY docker/nginx/sitio.conf docker/nginx/generar-sitio.mjs /app/nginx/
-RUN node /app/nginx/generar-sitio.mjs /app/shared/datos-entidad.json /app/nginx/sitio.conf /app/nginx/sitio-generado.conf
+RUN node /app/nginx/generar-sitio.mjs /app/instalacion/datos-entidad.json /app/nginx/sitio.conf /app/nginx/sitio-generado.conf
 
 # ---------------------------------------------------------------------------
 # La rama estable fijada, no `latest`: un `up --build` cualquiera no debe

@@ -16,6 +16,7 @@ import { Modelo182Service } from '../src/services/modelo-182.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { idDeSalida, ROSARIO } from './fixtures/salidas.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { deLaCorporacion } from '../src/domain/articulos.js';
 
 const EJERCICIO = 2091;
 let dbDisponible = false;
@@ -117,7 +118,7 @@ test('el resumen, el fichero y los certificados del ejercicio', async (t) => {
     assert.equal(de(dniDonante)?.provincia, '28');
     assert.ok(r.excluidos.some((e) => e.nombre === 'Pedro Sin Dni' && e.centimos === 30_00));
     assert.ok(r.anonimos.cuantos >= 1);
-    assert.deepEqual(r.faltaParaElFichero, ['el NIF del Grupo', 'un teléfono de contacto de nueve cifras', 'la persona de contacto']);
+    assert.deepEqual(r.faltaParaElFichero, [`el NIF ${deLaCorporacion({ corto: true })}`, 'un teléfono de contacto de nueve cifras', 'la persona de contacto']);
 
     // Sin cuotas, solo los donativos.
     await Modelo182Service.guardarConfiguracion({ ...r.configuracion, cuotas: false }, meta);

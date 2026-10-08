@@ -121,7 +121,7 @@ async function main() {
   //    mesa. Antes de la demostración, que cuelga sus papeletas de la Pasión.
   await sembrarSalidas();
 
-  // 4b. Los módulos que esta instalación tiene encendidos (shared/datos-entidad.json).
+  // 4b. Los módulos que esta instalación tiene encendidos (instalacion/datos-entidad.json).
   const modulosNuevos = await ModulosService.sembrar();
   console.log(`   ${modulosNuevos} módulos nuevos (los que ya existían no se tocan)`);
 

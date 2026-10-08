@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+import { rutaDeDatosEntidad } from '../shared/datos-entidad.mjs'
 
 /**
  * Las carpetas de @mui/material que van en vendor-mui: lo que necesita
@@ -21,6 +22,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    // Los datos de la corporación son de cada instalación y no están en git
+    // (instalacion/datos-entidad.json): el código los importa por este nombre y
+    // aquí se decide qué fichero es. Si falta, Vite no arranca y dice qué hacer.
+    resolve: { alias: { '@instalacion/datos-entidad.json': rutaDeDatosEntidad() } },
     server: {
       proxy: {
         '/api': { target: backendUrl, changeOrigin: true },

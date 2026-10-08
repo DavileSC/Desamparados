@@ -180,7 +180,7 @@ export function firma(despedida: string | null, cargo = 'La Secretaría', identi
 
 /**
  * Bloque con el horario y la dirección de Secretaría. Devuelve cadena vacía
- * mientras el Grupo Parroquial no confirme esos datos (shared/datos-entidad.json):
+ * mientras el Grupo Parroquial no confirme esos datos (instalacion/datos-entidad.json):
  * antes iban escritos a mano en la plantilla, y el correo citaba un horario y
  * una «C/ Falsa, 123» a los que un solicitante podía presentarse de verdad.
  */

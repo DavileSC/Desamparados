@@ -1,26 +1,50 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { leerDatosEntidad, rutaDeDatosEntidad } from '../../../shared/datos-entidad.mjs'
 
-// index.html, el manifest y robots.txt se generan de shared/datos-entidad.json
-// antes de dev y de build, pero están versionados: si alguien cambia el JSON o
-// la plantilla y hace commit sin generar, la web publicaría la identidad vieja.
+// index.html, el manifest y robots.txt son de cada instalación y no están en
+// git: se generan antes de dev y de build. Aquí se generan con el ejemplo en
+// una carpeta aparte, para no pisar los de esta máquina.
 
 const raiz = process.cwd()
+const destino = mkdtempSync(join(tmpdir(), 'identidad-'))
+afterAll(() => rmSync(destino, { recursive: true, force: true }))
+
+const generar = (entorno: NodeJS.ProcessEnv) =>
+  spawnSync(process.execPath, ['scripts/generar-identidad.mjs', '--destino', destino], { cwd: raiz, encoding: 'utf8', env: entorno })
 
 describe('los ficheros de la identidad', () => {
-  it('están al día con shared/datos-entidad.json', () => {
-    const r = spawnSync(process.execPath, ['scripts/generar-identidad.mjs', '--comprobar'], { cwd: raiz, encoding: 'utf8' })
+  it('se generan con los datos de la instalación, sin marcas de la plantilla', () => {
+    const r = generar({ ...process.env, DATOS_ENTIDAD: 'shared/datos-entidad.ejemplo.json' })
     expect(r.stderr).toBe('')
     expect(r.status).toBe(0)
-  })
 
-  it('index.html no deja ninguna marca de la plantilla sin sustituir', () => {
-    const html = readFileSync(join(raiz, 'index.html'), 'utf8')
+    const html = readFileSync(join(destino, 'index.html'), 'utf8')
     expect(html).not.toMatch(/\{\{/)
-    const { identidad } = JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
+    const { identidad } = leerDatosEntidad()
     expect(html).toContain(`<title>${identidad.nombre} | ${identidad.localidad}</title>`)
     expect(html).toContain(`"url": "https://${identidad.dominio}/"`)
+    expect(readFileSync(join(destino, 'public/robots.txt'), 'utf8')).toContain(`Sitemap: https://${identidad.dominio}/sitemap.xml`)
+  })
+
+  it('sin el fichero de la instalación falla y dice qué hacer, en vez de usar el ejemplo', () => {
+    const r = generar({ ...process.env, DATOS_ENTIDAD: 'instalacion/no-existe.json' })
+    expect(r.status).not.toBe(0)
+    expect(r.stderr).toContain('no existe')
+  })
+
+  it('fuera de las pruebas busca instalacion/ y no cae en el ejemplo', () => {
+    expect(rutaDeDatosEntidad({ VITEST: 'true' })).toMatch(/shared[\\/]datos-entidad\.ejemplo\.json$/)
+    // En esta máquina puede existir o no: si existe es ese; si no, el error lo dice.
+    let resultado: string
+    try {
+      resultado = rutaDeDatosEntidad({})
+    } catch (error) {
+      resultado = String(error)
+    }
+    expect(resultado).toMatch(/instalacion[\\/]datos-entidad\.json/)
   })
 })

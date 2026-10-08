@@ -14,7 +14,7 @@
     "",
     "Las claves van también escritas en src/domain/modulos.ts de cada paquete, para que una",
     "clave mal escrita no compile; una prueba a cada lado comprueba que las listas coinciden.",
-    "El lote inicial de cada instalación va en shared/datos-entidad.json (modulos.activos)."
+    "El lote inicial de cada instalación va en instalacion/datos-entidad.json (modulos.activos)."
   ],
   "modulos": [
     { "clave": "noticias", "nombre": "Noticias", "grupo": "Web", "descripcion": "Las noticias de la web pública y su mesa en el CMS.", "requiere": [] },

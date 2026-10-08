@@ -13,7 +13,7 @@ import type { BloqueDatos as Datos } from '../../lib/api/contenido'
  * pertenece en vez de leer dos listas sueltas.
  *
  * Un valor vacío es legítimo: el servidor solo exige la etiqueta, con el mismo
- * criterio que `shared/datos-entidad.json` —lo que el Grupo Parroquial aún no
+ * criterio que `instalacion/datos-entidad.json` —lo que el Grupo Parroquial aún no
  * ha confirmado se deja en blanco antes que inventarlo—.
  */
 export default function BloqueDatos({ bloque }: { bloque: Datos }) {

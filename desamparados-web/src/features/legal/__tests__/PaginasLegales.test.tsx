@@ -6,6 +6,7 @@ import PoliticaDeCookiesPage from '../PoliticaDeCookiesPage'
 import PoliticaDePrivacidadPage from '../PoliticaDePrivacidadPage'
 import CondicionesDeCompraPage from '../CondicionesDeCompraPage'
 import PieDePagina from '../../../components/PieDePagina'
+import { laCorporacion } from '../../../domain/articulos'
 
 beforeEach(() => { try { window.localStorage.clear() } catch { /* sin almacenamiento */ } })
 
@@ -58,7 +59,7 @@ describe('páginas legales', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Condiciones de compra' })).toBeInTheDocument()
     expect(screen.getByText(/en los 14 días naturales siguientes a la recogida/)).toBeInTheDocument()
     expect(screen.getByText(/garantía legal de conformidad de tres años/)).toBeInTheDocument()
-    expect(screen.getByText(/el Grupo Parroquial devuelve el importe/)).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(`${laCorporacion()} devuelve el importe`))).toBeInTheDocument()
   })
 
   it('el pie enlaza las condiciones de compra solo con la tienda encendida', () => {

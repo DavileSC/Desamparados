@@ -34,7 +34,7 @@ Problemas reales antes que gustos de estilo.
   los necesitan? ¿HTML del CMS saneado?
 - ¿Texto visible con «Hermandad», «Cofradía» o «Sagrados Titulares»? ¿«Tus
   hijos» donde el tutor puede no ser el padre?
-- ¿Datos del Grupo escritos a mano en vez de `shared/datos-entidad.json` o
+- ¿Datos del Grupo escritos a mano en vez de `instalacion/datos-entidad.json` o
   `config/site.ts`? ¿Algo inventado sin marcar como ejemplo?
 - ¿Prueba que pasa sin mirar (skip como función, `queryByRole` con un diálogo
   abierto, `as unknown as`)?

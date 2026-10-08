@@ -14,14 +14,14 @@ describe('MetaDePagina', () => {
   it('pone el título con el sufijo del sitio y la descripción', async () => {
     montar(<MetaDePagina titulo="Cultos" descripcion="Los cultos del año." />)
 
-    await waitFor(() => expect(document.title).toBe('Cultos | Desamparados'))
+    await waitFor(() => expect(document.title).toBe(`Cultos | ${site.nombreCorto}`))
     expect(contenidoDe('meta[name="description"]')).toBe('Los cultos del año.')
   })
 
   it('repite título y descripción en Open Graph, que es lo que se lee al pegar el enlace', async () => {
     montar(<MetaDePagina titulo="Cultos" descripcion="Los cultos del año." />)
 
-    await waitFor(() => expect(contenidoDe('meta[property="og:title"]')).toBe('Cultos | Desamparados'))
+    await waitFor(() => expect(contenidoDe('meta[property="og:title"]')).toBe(`Cultos | ${site.nombreCorto}`))
     expect(contenidoDe('meta[property="og:description"]')).toBe('Los cultos del año.')
   })
 
@@ -38,7 +38,7 @@ describe('MetaDePagina', () => {
     // puede: se quita al arrancar para que no salga repetida.
     montar(<MetaDePagina titulo="Sin descripción" descripcion="  " />)
 
-    await waitFor(() => expect(document.title).toBe('Sin descripción | Desamparados'))
+    await waitFor(() => expect(document.title).toBe(`Sin descripción | ${site.nombreCorto}`))
     expect(contenidoDe('meta[name="description"]')).toBe(site.descripcion)
     expect(contenidoDe('meta[property="og:description"]')).toBe(site.descripcion)
   })

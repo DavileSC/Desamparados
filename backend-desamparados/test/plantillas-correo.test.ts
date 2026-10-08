@@ -8,6 +8,7 @@ import { USOS, leerCuerpo, problemasDePlantilla, resumenDe, usoDe } from '../src
 import { componer } from '../src/services/correos/componer.js';
 import { PlantillasCorreoService } from '../src/services/plantillas-correo.service.js';
 import { direccionDeLaSede, identidad, secretaria, type Identidad } from '../src/domain/datos-entidad.js';
+import { aLaCorporacion, deLaCorporacion, nuestraCorporacion } from '../src/domain/articulos.js';
 
 test('cada texto original del catálogo es una plantilla válida de su uso', () => {
   const claves = USOS.map((u) => u.clave);
@@ -53,7 +54,7 @@ test('componer: campos rellenos y escapados, bloques en su sitio, firma del carg
     cuerpo: 'Bienvenido {{a_la_corporacion}}. Gracias por confiar en {{nuestra_corporacion}}; los datos {{de_la_corporacion_corto}}.',
     despedida: '',
   }).html;
-  assert.match(corporacion, /Bienvenido al Grupo Parroquial\. Gracias por confiar en nuestro Grupo Parroquial; los datos del Grupo\./);
+  assert.ok(corporacion.includes(`Bienvenido ${aLaCorporacion()}. Gracias por confiar en ${nuestraCorporacion()}; los datos ${deLaCorporacion({ corto: true })}.`));
 
   const tienda = usoDe('pedido_tienda')!;
   const conBloque = componer(tienda, tienda.porDefecto, { campos: { nombre: 'Ana', numero: 7 }, bloques: { lineas: '<table id="lineas"></table>' } }).html;
@@ -73,7 +74,7 @@ test('la vista previa rellena los campos de la corporación con la identidad de 
   const texto = { asunto: '{{grupo}}', titulo: 'Bienvenido {{a_la_corporacion}}', cuerpo: 'Hola, {{nombre}}.', despedida: 'Que {{titular}} le guarde.' };
   const previa = PlantillasCorreoService.vistaPrevia('alta_aprobada', texto);
   assert.equal(previa.asunto, identidad.nombre);
-  assert.match(previa.html, /Bienvenido al Grupo Parroquial/);
+  assert.ok(previa.html.includes(`Bienvenido ${aLaCorporacion()}`));
   assert.ok(previa.html.includes(`Que ${identidad.titular} le guarde.`), 'la titular no puede salir vacía');
   assert.match(previa.html, /Hola, Juan\./, 'los campos propios del uso siguen con su ejemplo');
 
@@ -99,7 +100,7 @@ test('los ejemplos de los campos de la salida hablan de la misma salida', () => 
   }
 });
 
-// La dirección de Secretaría estaba escrita dos veces en shared/datos-entidad.json
+// La dirección de Secretaría estaba escrita dos veces en instalacion/datos-entidad.json
 // (en `secretaria` y en `sede`); ahora sale solo de la sede.
 test('la dirección de Secretaría es la de la sede, en una línea', () => {
   assert.equal(direccionDeLaSede({ nombre: 'Iglesia', calle: 'C. Mayor, 3', codigoPostal: '29006', localidad: 'Málaga' }), 'C. Mayor, 3, 29006 Málaga');
