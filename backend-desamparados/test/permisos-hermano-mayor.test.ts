@@ -6,6 +6,9 @@
 // los casos salvo el de «sin sesión» necesitan usuarios reales y se omiten
 // con motivo si no hay MariaDB levantada — el CI no la levanta.
 
+// Primero: la prueba de subida escribe fotos (y sus copias de 640 y 1280 px)
+// que no deben caer en el storage/public del repositorio.
+import './fixtures/almacen-temporal.js';
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
@@ -16,9 +19,6 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import db from '../src/config/db.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { Role } from '@prisma/client';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { publicStorageDir } from '../src/middleware/upload.middleware.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
 // Un PNG real de 1×1: la subida comprueba los «magic numbers», no solo la extensión.
@@ -150,8 +150,6 @@ describe('permisos del Hermano Mayor', () => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const res = await como('HERMANO_MAYOR', '/api/upload/public', { method: 'POST', body: formularioConPng() });
     assert.equal(res.status, 201, `recibió ${res.status}`);
-    const { data } = await res.json() as { data: { filename: string } };
-    await fs.unlink(path.join(publicStorageDir, data.filename)).catch(() => {});
   });
 
   test('un hermano raso sigue sin poder subir a la carpeta pública', async (t) => {
