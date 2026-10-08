@@ -44,7 +44,7 @@
     <meta property="og:locale" content="es_ES" />
     <meta property="og:title" content="Grupo Parroquial Nuestra Señora de los Desamparados | Málaga" />
     <meta property="og:description" content="Grupo Parroquial de Nuestra Señora de los Desamparados de Málaga. Devoción, historia y patrimonio en el corazón de la ciudad." />
-    <meta property="og:image" content="https://www.desamparadosmalaga.com/images/hero-1920.webp" />
+    <meta property="og:image" content="https://www.desamparadosmalaga.com/images/hero.jpg" />
     <meta property="og:image:alt" content="Nuestra Señora de los Desamparados" />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -55,21 +55,24 @@
 
       Está aquí y no en React por lo mismo que las etiquetas de arriba: así
       viaja en el HTML tal cual, sin depender de que nadie ejecute JavaScript.
-      El nombre, la dirección de la web, el correo y el teléfono salen de
-      `shared/datos-entidad.json` al generar index.html (scripts/generar-identidad.mjs).
-      Los perfiles (`sameAs`) y la sede son de esta corporación y van escritos
-      aquí: al montar la web para otra, se cambian aquí y en `src/config/site.ts`.
+      El nombre, la denominación jurídica, la dirección de la web, el correo, el
+      teléfono y la sede salen de `shared/datos-entidad.json` al generar
+      index.html (scripts/generar-identidad.mjs): son los mismos que lee
+      `src/config/site.ts`. Los perfiles (`sameAs`) son de esta corporación y
+      van escritos aquí: al montar la web para otra, se cambian aquí y en
+      `site.ts`.
 
-      NO lleva `legalName`, `taxID` ni la dirección fiscal: son los datos que
-      siguen pendientes de confirmar en `site.ts`. Un dato inventado aquí lo
-      publicaría Google como bueno. `location` sí va: es dónde está la
-      parroquia, que es un dato real y el que busca quien quiere venir.
+      Un dato pendiente (`null` en el JSON) hace desaparecer su línea: un dato
+      inventado aquí lo publicaría Google como bueno. No lleva `taxID`: el Grupo
+      Parroquial no quiere publicar su NIF. `location` es dónde está la
+      parroquia, el dato que busca quien quiere venir.
     -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "ReligiousOrganization",
         "name": "Grupo Parroquial Nuestra Señora de los Desamparados",
+        "legalName": "Parroquia Santa María Goretti - Grupo Parroquial Nuestra Señora de los Desamparados",
         "url": "https://www.desamparadosmalaga.com/",
         "email": "goretti.desamparados@gmail.com",
         "telephone": "+34 644 90 01 67",

@@ -23,7 +23,7 @@ export type DatoPendiente = null
  * `shared/datos-entidad.json`, que lee también la API (correos, PDF). Montar la
  * web para otra corporación empieza por ese fichero, no por el código.
  */
-const { identidad, secretaria } = ENTIDAD
+const { identidad, secretaria, sede } = ENTIDAD
 
 export const site = {
   /** Nombre comercial con el que se identifica la web. */
@@ -42,7 +42,7 @@ export const site = {
 
   entidad: {
     /** Denominación jurídica exacta inscrita. */
-    denominacion: 'Parroquia Santa María Goretti - Grupo Parroquial Nuestra Señora de los Desamparados' as string | DatoPendiente,
+    denominacion: identidad.denominacion as string | DatoPendiente,
     /** Domicilio social completo (vía, número, CP y municipio). */
     domicilio: 'Calle Corregidor Paz Guzmán, 13, 29006 Málaga' as string | DatoPendiente,
     /** Localidad conocida, usable mientras no haya domicilio completo. */
@@ -60,12 +60,13 @@ export const site = {
 
   /**
    * Dónde está el Grupo Parroquial, para quien quiere ir: el pie de página. No
-   * es el domicilio social de `entidad`, que es un dato legal y sigue pendiente.
+   * es el domicilio social de `entidad`, que es un dato legal. Sale del mismo
+   * JSON que el JSON-LD de index.html, para no escribir la calle dos veces.
    */
   sede: {
-    nombre: 'Iglesia Parroquial Santa María Goretti',
-    direccion: 'C. Corregidor Paz Guzmán, 13',
-    localidad: 'Málaga',
+    nombre: sede.nombre,
+    direccion: sede.calle,
+    localidad: sede.localidad,
     /** Abre Google Maps en otra pestaña con la parroquia buscada. */
     comoLlegar: 'https://www.google.com/maps/search/?api=1&query=Iglesia%20Parroquial%20Santa%20Mar%C3%ADa%20Goretti%2C%20M%C3%A1laga',
   },

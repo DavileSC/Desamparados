@@ -37,7 +37,7 @@ export default function GraciasApadrinamientoPage() {
 
   const esperando = a?.estado === 'PENDIENTE_PAGO' && !fallo && intentos < INTENTOS
   return <>
-    <MetaDePagina titulo="Gracias por apadrinar" />
+    <MetaDePagina titulo="Gracias por apadrinar" sinIndexar />
     <CabeceraDePagina title={a?.estado === 'PAGADO' ? 'Gracias' : 'Tu apadrinamiento'} />
     <ContenedorDePagina>
       <Box sx={{ py: { xs: 4, md: 6 }, maxWidth: 640, display: 'grid', gap: 3 }}>

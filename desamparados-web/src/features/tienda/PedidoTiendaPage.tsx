@@ -47,7 +47,7 @@ export default function PedidoTiendaPage() {
   const esperando = pedido?.estado === 'PENDIENTE_PAGO' && !fallo && intentos < INTENTOS
 
   return <>
-    <MetaDePagina titulo="Tu pedido" />
+    <MetaDePagina titulo="Tu pedido" sinIndexar />
     <CabeceraDePagina title={pedido ? `Pedido n.º ${pedido.numero}` : 'Tu pedido'} />
     <ContenedorDePagina>
       <Box sx={{ py: { xs: 4, md: 6 }, maxWidth: 640 }}>

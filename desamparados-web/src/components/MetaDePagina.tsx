@@ -10,25 +10,36 @@ import { site } from '../config/site'
  * lo que la página cuenta.
  *
  * Emite además `og:title` y `og:description`, que es lo que se lee al pegar un
- * enlace en WhatsApp o en redes. El resto de Open Graph (la URL canónica, la
- * imagen, el nombre del sitio) lo pone `RootLayout` una vez para todas.
+ * enlace en WhatsApp o en redes. El resto de Open Graph (el nombre del sitio,
+ * el tipo, la imagen) es el mismo para todas y viaja en `index.html`; la URL
+ * canónica la pone `RootLayout`.
+ *
+ * La descripción va siempre, aunque la página no traiga la suya: las de
+ * `index.html` se quitan al arrancar (lib/metaEstaticas.ts) para no salir
+ * repetidas, así que heredar ya no es posible.
  *
  * El `<title>` lleva siempre el sufijo del sitio salvo en la portada, que ya se
  * llama por él.
  */
-export default function MetaDePagina({ titulo, descripcion, conSufijo = true }: {
+export default function MetaDePagina({ titulo, descripcion, conSufijo = true, sinIndexar = false }: {
   titulo: string
-  /** Una o dos frases sobre lo que hay en la página. Sin ella se hereda la de `index.html`. */
+  /** Una o dos frases sobre lo que hay en la página. Sin ella, la general del sitio. */
   descripcion?: string
   conSufijo?: boolean
+  /** Para las páginas de un solo visitante (un pedido, un recibo): no pintan nada en un buscador. */
+  sinIndexar?: boolean
 }) {
   const completo = conSufijo ? `${titulo} | ${site.nombreCorto}` : titulo
+  // Una cadena vacía (el subtítulo en blanco de una página del CMS) también cae
+  // a la general: una descripción vacía le dice al buscador que no la hay.
+  const frase = descripcion?.trim() || site.descripcion
   return (
     <Helmet>
       <title>{completo}</title>
       <meta property="og:title" content={completo} />
-      {descripcion ? <meta name="description" content={descripcion} /> : <></>}
-      {descripcion ? <meta property="og:description" content={descripcion} /> : <></>}
+      <meta name="description" content={frase} />
+      <meta property="og:description" content={frase} />
+      {sinIndexar ? <meta name="robots" content="noindex" /> : <></>}
     </Helmet>
   )
 }

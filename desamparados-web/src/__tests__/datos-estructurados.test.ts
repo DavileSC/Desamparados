@@ -43,12 +43,12 @@ describe('los datos estructurados de index.html', () => {
     expect(lugar.address.addressLocality).toBe(site.sede.localidad)
   })
 
-  it('no publica los datos legales que siguen pendientes de confirmar', () => {
-    // Mientras `site.ts` los tenga a null, aquí no pueden aparecer: Google los
-    // daría por buenos y un dato inventado no se retira fácil.
+  it('la denominación jurídica es la de site.ts, y solo si está confirmada', () => {
+    // Con `null` en el JSON la línea desaparece al generar index.html: Google
+    // daría por bueno un dato inventado, y no se retira fácil.
     const datos = jsonLd()
-    expect(datos.legalName).toBeUndefined()
+    expect(datos.legalName).toBe(site.entidad.denominacion ?? undefined)
+    // El NIF no se publica por decisión del Grupo Parroquial (site.ts).
     expect(datos.taxID).toBeUndefined()
-    expect(datos.address).toBeUndefined()
   })
 })

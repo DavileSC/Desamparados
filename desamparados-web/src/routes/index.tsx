@@ -135,9 +135,8 @@ function RootLayout() {
       <Helmet>
         <link rel="canonical" href={canonical} />
         <meta property="og:url" content={canonical} />
-        <meta property="og:site_name" content={site.nombre} />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${site.url}/images/hero-1920.webp`} />
+        {/* og:site_name, og:type y og:image no van: son las mismas en todas
+            las páginas, ya vienen en index.html y aquí salían repetidas. */}
       </Helmet>
       <ScrollRestoration />
       <Outlet />

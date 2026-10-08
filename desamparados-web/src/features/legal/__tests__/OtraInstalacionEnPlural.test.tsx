@@ -19,8 +19,10 @@ vi.mock('../../../../../shared/datos-entidad.json', () => ({
       localidad: 'Antequera',
       dominio: 'www.fusionadas.ejemplo',
       descripcion: 'Cofradías de ejemplo, para las pruebas.',
+      denominacion: null,
     },
     secretaria: { horario: null, direccion: null, telefono: null, email: 'secretaria@fusionadas.ejemplo' },
+    sede: { nombre: 'Casa de las Cofradías', calle: 'C. de Ejemplo, 1', codigoPostal: '29200', localidad: 'Antequera' },
     escudoUrl: null,
   },
 }))
