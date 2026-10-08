@@ -1,7 +1,8 @@
 /**
  * La ropa de la procesión en el ropero: prestar a quien sale la túnica y el
- * capirote o la faraona que le da la mesa, recogerlos si se anula y
- * recibirlos de vuelta después de la salida: todo lo prestado se devuelve.
+ * capirote o la faraona que le da la mesa, deshacer un préstamo que se
+ * corrige en la mesa y recibirlos de vuelta después de la salida: todo lo
+ * prestado se devuelve, y solo «Devolver» lo da por devuelto.
  *
  * Todo corre dentro de la transacción de quien llama (la inscripción, la
  * corrección de una papeleta, la anulación): o se presta la ropa y se emite
@@ -27,8 +28,12 @@ export interface RopaPedida {
 
 /**
  * Presta a `hermanoId` cada prenda pedida. Si la persona tenía otra del
- * mismo tipo sin devolver, esa vuelve al ropero: se lleva una túnica cada
- * vez, y la de antes la entrega en la mesa al recoger la nueva.
+ * mismo tipo sin devolver, esa sigue a su nombre: antes se daba por devuelta
+ * al prestar la nueva, pasaba a disponible sin el lavado y salía de «Sin
+ * devolver» aunque siguiera en su casa. Si la entrega en la mesa, se recibe
+ * con «Devolver». No se rechaza el préstamo nuevo: el ropero admite varias
+ * prendas a nombre de la misma persona, y una túnica del año pasado sin
+ * devolver no debe parar el reparto.
  *
  * Una prenda que consta en el lavado se puede prestar: el reparto es meses
  * después de la devolución y ya estará lavada aunque nadie lo marcara. Se
@@ -60,12 +65,6 @@ export async function prestarRopaEnTransaccion(tx: Tx, hermanoId: number, pedida
       const quien = prenda.hermano ? `${prenda.hermano.nombre} ${prenda.hermano.apellidos}` : 'otra persona';
       throw new HttpError(`${nombre} la tiene ${quien}.`, 409);
     }
-
-    // La que tenía del mismo tipo, de vuelta al ropero.
-    await tx.prenda.updateMany({
-      where: { tipo, hermanoId, estado: EstadoPrenda.PRESTADA, id: { not: prenda.id } },
-      data: { estado: EstadoPrenda.DISPONIBLE, hermanoId: null, fechaAsignacion: null },
-    });
 
     // Condicionada al estado leído: si otra mesa la presta a la vez, una de las dos lo sabe.
     const { count } = await tx.prenda.updateMany({
@@ -106,7 +105,13 @@ export async function comprobarQueNoVaEnOtraPapeleta(
   }
 }
 
-/** Devuelve al ropero las prendas de una papeleta que sigan prestadas a esa persona. */
+/**
+ * Deshace el préstamo de las prendas de una papeleta que se corrige en la mesa
+ * (un número mal tecleado, o la túnica que no le valía y deja allí mismo): la
+ * prenda no llegó a salir, así que vuelve disponible sin pasar por el lavado.
+ * No sirve para anular una papeleta ya recogida: esa ropa está en casa del
+ * hermano y vuelve con «Devolver».
+ */
 export async function recogerRopaEnTransaccion(
   tx: Tx,
   hermanoId: number,

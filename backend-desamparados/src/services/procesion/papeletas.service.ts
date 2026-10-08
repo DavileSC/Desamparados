@@ -22,7 +22,6 @@ import { puedeTransicionar } from '../../domain/recibo-estados.js';
 import { conceptoDeSalida, tipoReciboDe } from '../../domain/salidas.js';
 import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
 import type { SalidaConActo } from './salidas.service.js';
-import { recogerRopaEnTransaccion } from './ropa.js';
 import { avisarALaMesa } from './avisos-mesa.js';
 import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 
@@ -288,8 +287,9 @@ export class PapeletasService {
       await tx.recibo.update({ where: { id: recibo.id }, data: { observaciones } });
     }
 
-    // La ropa que se le prestó con esta papeleta, de vuelta al ropero.
-    await recogerRopaEnTransaccion(tx, papeleta.hermanoId, papeleta);
+    // La ropa no se toca: la tiene él y sigue a su nombre (y en «Sin
+    // devolver») hasta que la traiga y se reciba con «Devolver», que la manda
+    // al lavado. Antes se daba por devuelta al anular.
     // Su solicitud, cancelada: si vuelve, pide otra.
     await tx.solicitud.updateMany({ where: { papeletaId: papeleta.id }, data: { estado: EstadoSolicitud.CANCELADA, citaId: null } });
     // Libera la cita y borra la papeleta (hueco en la procesión y clave [hermano, año, salida]).

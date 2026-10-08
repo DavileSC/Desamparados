@@ -473,7 +473,7 @@ test('una cita de antes, sin solicitud, se enlaza al apuntar; al recoger queda a
   }
 });
 
-test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al cambiar de túnica, la vieja vuelve al ropero', async (t) => {
+test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al cambiar de túnica, la vieja sigue a su nombre hasta que la devuelva', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
@@ -493,7 +493,13 @@ test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al
     assert.deepEqual(ficha.familia.map((f) => f.id), [hija.id], 'la familia con cuotas por pagar');
 
     await e.entregar(solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: nueva.numero });
-    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: vieja.id } })).estado, EstadoPrenda.DISPONIBLE);
+    // NG3 (auditoría 07-10-2026): volvía a DISPONIBLE sin pasar por el lavado
+    // y desaparecía de «Sin devolver» aunque siguiera en su casa. Vuelve con
+    // «Devolver», como todas.
+    const tunicaVieja = await db.prenda.findUniqueOrThrow({ where: { id: vieja.id } });
+    assert.equal(tunicaVieja.estado, EstadoPrenda.PRESTADA);
+    assert.equal(tunicaVieja.hermanoId, h.id);
+    assert.ok((await ZonasService.sinDevolver()).some((f) => f.hermano.id === h.id), 'sale en «Sin devolver»');
     assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: nueva.id } })).hermanoId, h.id);
     const despues = await MesaService.ficha(h.id, await salida(PASION));
     assert.equal(despues.solicitud, null);
@@ -503,7 +509,7 @@ test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al
   }
 });
 
-test('corregir una solicitud cambia lo pedido; corregir la papeleta cambia la ropa; anular la devuelve toda', async (t) => {
+test('corregir una solicitud cambia lo pedido; corregir la papeleta cambia la ropa; anular la deja prestada hasta que se devuelva', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
@@ -526,8 +532,14 @@ test('corregir una solicitud cambia lo pedido; corregir la papeleta cambia la ro
     assert.equal(propia.numTunicaAsignada, null);
     assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: t2.id } })).estado, EstadoPrenda.DISPONIBLE);
 
+    // NG3 (auditoría 07-10-2026): anular una papeleta recogida no trae la
+    // ropa de vuelta; la daba por devuelta y la túnica se saltaba el lavado.
     await PapeletasService.anularPapeleta(papeletaId, e.meta);
-    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: cap.id } })).estado, EstadoPrenda.DISPONIBLE);
+    const capirote = await db.prenda.findUniqueOrThrow({ where: { id: cap.id } });
+    assert.equal(capirote.estado, EstadoPrenda.PRESTADA);
+    assert.equal(capirote.hermanoId, h.id);
+    await ZonasService.devolver({ hermanoId: h.id, prendas: [{ id: cap.id }], cingulos: [] }, e.clave(), e.meta);
+    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: cap.id } })).estado, EstadoPrenda.DISPONIBLE, 'vuelve con «Devolver»');
   } finally {
     await e.recoger();
   }
