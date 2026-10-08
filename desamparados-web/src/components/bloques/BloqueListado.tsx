@@ -9,7 +9,7 @@ import TarjetaPublicacion, { TarjetaPublicacionEsqueleto } from '../TarjetaPubli
 import EnCarga from '../esqueleto/EnCarga'
 import { Lineas } from '../esqueleto/Hueso'
 import Paginador from '../Paginador'
-import { noticiasDePortada, archivoDeNoticias } from '../../lib/api/noticias'
+import { noticiasDePortada, archivoDeNoticias, CLAVE_ARCHIVO_DE_NOTICIAS } from '../../lib/api/noticias'
 import { traerProximosEventos } from '../../lib/api/agenda'
 import AgendaDeCultos, { SuscribirseALaAgenda } from '../../features/actualidad/agenda/AgendaDeCultos'
 import { type Pagina } from '../../hooks/useListadoPaginado'
@@ -337,9 +337,9 @@ const LOTE = 9
  */
 function ArchivoDeNoticias({ titulo, bloque }: PropsListado) {
   const { items, loading, cargandoMas, hayMas, error, cargarMas } =
-    useCargarMas(pedirNoticias, 'No se han podido cargar las noticias.', { primera: PRIMERA_CARGA, lote: LOTE })
+    useCargarMas(CLAVE_ARCHIVO_DE_NOTICIAS, pedirNoticias, 'No se han podido cargar las noticias.', { primera: PRIMERA_CARGA, lote: LOTE })
   // Cuántas hay a la vista viaja con cada tarjeta: al volver desde la ficha de
-  // una noticia siguen cargadas las mismas.
+  // una noticia la dirección pide las mismas, y la caché ya las tiene.
   const { search: consultaArchivo } = useLocation()
 
   return (
