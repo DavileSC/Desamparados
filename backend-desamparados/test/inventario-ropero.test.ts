@@ -173,6 +173,24 @@ describe('préstamos del ropero (D15)', () => {
     assert.equal((await como(Role.ALBACERIA, `/prendas/${prendaId}/asignar`, 'POST', { numeroHermano })).status, 400);
   });
 
+  // NG9 (auditoría 07-10-2026): se borraba una prenda que seguía en casa de un
+  // hermano y con ella el único rastro de quién la tenía.
+  test('una prenda prestada no se borra: se ofrece darla de baja', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const otra = await db.prenda.create({ data: { numero: `${numeroPrenda}-B`, tipo: 'TUNICA', estado: 'PRESTADA', hermanoId, fechaAsignacion: new Date() } });
+    try {
+      const res = await como(Role.ALBACERIA, `/prendas/${otra.id}`, 'DELETE');
+      assert.equal(res.status, 409);
+      assert.match(((await res.json()) as { error: string }).error, /baja/i);
+      assert.ok(await db.prenda.findUnique({ where: { id: otra.id } }), 'sigue en el ropero');
+
+      await db.prenda.update({ where: { id: otra.id }, data: { estado: 'DISPONIBLE', hermanoId: null } });
+      assert.equal((await como(Role.ALBACERIA, `/prendas/${otra.id}`, 'DELETE')).status, 200);
+    } finally {
+      await db.prenda.deleteMany({ where: { id: otra.id } });
+    }
+  });
+
   test('las cantidades de un enser con decimales se rechazan con 400, no con 500', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     assert.equal((await como(Role.ALBACERIA, '/enseres', 'POST', { nombre: 'Prueba', cantidadOptimo: 2.5 })).status, 400);
