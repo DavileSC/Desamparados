@@ -30,8 +30,10 @@ COPY desamparados-web/ ./
 COPY shared /app/shared
 COPY backend-desamparados/src /app/backend-desamparados/src
 
-# `npm run build` regenera antes el sitemap (script `prebuild`) a partir del
-# router, y después hace `tsc -b && vite build`.
+# `npm run build` regenera antes la identidad y la lista de rutas públicas
+# (script `prebuild`; esta última va a shared/ y aquí no sale de la etapa: el
+# sitemap lo sirve la API con la versionada), y después hace
+# `tsc -b && vite build`.
 #
 # VITE_API_URL se queda sin definir a propósito: el cliente cae entonces en
 # `/api` (src/lib/api/client.ts), que es una ruta del mismo dominio. Apuntar a

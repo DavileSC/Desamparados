@@ -494,13 +494,16 @@ primer arranque**: después las filas ya existen y el JSON no cuenta. El
 arranque **sale con error si la base no responde**: no hay forma de arrancar
 con el estado de los módulos a medias.
 
-**El sitemap solo conoce el lote inicial de módulos.**
-`scripts/rutas-publicas.mjs` deja fuera las páginas públicas de los módulos
-que `modulos.activos` de `shared/datos-entidad.json` no nombra (su página
-responde «no encontrado», con `noindex`), y la prueba del sitemap recorta
-igual. Un módulo apagado después desde el CMS sigue anunciado hasta que se
-vuelva a construir la web: el sitemap es un fichero estático y no pregunta a
-la API.
+**El sitemap lo sirve la API, en `/sitemap.xml`** (desde octubre de 2026;
+antes era un fichero estático de la web que solo conocía el lote inicial de
+módulos y no nombraba las noticias). Se arma en cada petición con los módulos
+encendidos en ese momento y las noticias publicadas, cada una con su
+`lastmod`. Las páginas fijas salen de `shared/rutas-publicas.json`, que genera
+`npm run sitemap` en la web leyendo su router: **tras añadir o quitar una
+ruta pública hay que regenerarlo y confirmarlo**, y la prueba
+`scripts/__tests__/sitemap.test.ts` de la web falla si no. nginx manda
+`/sitemap.xml` a la API (`docker/nginx/ubicaciones.conf`); `robots.txt` sigue
+apuntando ahí.
 
 **Un 404 `MODULO_NO_ACTIVADO` hace que la web vuelva a pedir la lista de
 módulos.** `llamarApi` avisa (`alModuloNoActivado`, en `lib/api/cliente.ts`)

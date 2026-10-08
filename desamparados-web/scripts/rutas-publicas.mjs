@@ -1,6 +1,6 @@
-// Las páginas públicas que se anuncian a los buscadores, leídas del router y
-// recortadas por los módulos con los que arranca esta instalación. Lo usan
-// `generar-sitemap.mjs` y su prueba, para que los dos recorten igual.
+// Las páginas públicas que se anuncian a los buscadores, leídas del router.
+// Lo usan `generar-sitemap.mjs` (que deja la lista en shared/rutas-publicas.json
+// para la API) y su prueba.
 
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -56,4 +56,21 @@ export function urlsIndexables(activos = datosEntidad().modulos.activos) {
     .filter(({ ruta, requisito }) => !ruta.includes(':') && !ruta.includes('*') && cumple(requisito))
     .map(({ ruta }) => `/${ruta}`)
   return [...new Set(['/', ...rutas])].sort((a, b) => (a === '/' ? -1 : b === '/' ? 1 : a.localeCompare(b)))
+}
+
+/**
+ * Lo que va a shared/rutas-publicas.json: las rutas del bloque público con su
+ * requisito de módulo, sin el comodín y SIN recortar por módulos: eso lo hace
+ * la API al servir /sitemap.xml, con los módulos que estén encendidos en ese
+ * momento. Las de parámetro van también (la API rellena `noticias/:slug` con
+ * las noticias publicadas y se salta las demás), y todas empiezan por `/`.
+ */
+export function rutasParaElSitemap() {
+  const vistas = new Set()
+  return rutasDelBloquePublico()
+    .filter(({ ruta }) => !ruta.includes('*'))
+    .map(({ ruta, requisito }) => ({ ruta: `/${ruta}`, requisito }))
+    .concat([{ ruta: '/', requisito: ['nucleo'] }])
+    .filter(({ ruta }) => !vistas.has(ruta) && vistas.add(ruta))
+    .sort((a, b) => (a.ruta === '/' ? -1 : b.ruta === '/' ? 1 : a.ruta.localeCompare(b.ruta)))
 }

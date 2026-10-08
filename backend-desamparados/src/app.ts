@@ -35,6 +35,7 @@ import { seccionesRoutes } from './routes/secciones.routes.js';
 import { modulosRoutes, modulosCmsRoutes } from './routes/modulos.routes.js';
 import { conModulo, nucleo } from './middleware/modulos.js';
 import { roperoRoutes } from './routes/ropero.routes.js';
+import { SitemapController } from './controllers/sitemap.controller.js';
 import helmetConfig from './config/helmet'; // Configuración de seguridad
 import { globalLimiter } from './config/limiter'; // Rate Limiting
 import { notFoundHandler, globalErrorHandler } from './middleware/error.middleware'; // Manejo de errores global
@@ -190,6 +191,10 @@ app.use('/api/secciones', nucleo, seccionesRoutes); // Secciones guardadas del c
 app.use('/api/contenido', nucleo, contenidoRoutes); // Textos editables de la portada, el recorrido y la historia
 app.use('/api/modulos', nucleo, modulosRoutes);         // Qué módulos están encendidos, para la web
 app.use('/api/cms/modulos', nucleo, modulosCmsRoutes);  // Encenderlos y apagarlos, desde Sistema → Módulos
+
+// El sitemap, en la raíz y no bajo /api: es donde lo buscan los buscadores
+// (lo anuncia robots.txt). nginx manda aquí /sitemap.xml (docker/nginx/ubicaciones.conf).
+app.get('/sitemap.xml', nucleo, SitemapController.xml);
 
 // ==========================================
 // 4. MANEJO DE ERRORES GLOBAL

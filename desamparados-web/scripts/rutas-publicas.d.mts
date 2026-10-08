@@ -3,3 +3,4 @@ export interface RutaPublica { ruta: string; requisito: string[] }
 export function datosEntidad(): { identidad: { dominio: string }; modulos: { activos: string[] } }
 export function rutasDelBloquePublico(): RutaPublica[]
 export function urlsIndexables(activos?: readonly string[]): string[]
+export function rutasParaElSitemap(): RutaPublica[]

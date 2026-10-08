@@ -1,33 +1,34 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { datosEntidad, rutasDelBloquePublico, urlsIndexables } from '../rutas-publicas.mjs'
+import { datosEntidad, rutasDelBloquePublico, rutasParaElSitemap, urlsIndexables } from '../rutas-publicas.mjs'
 
-// El sitemap se genera en `prebuild`, pero el fichero está versionado: si
-// alguien añade una ruta y hace commit sin construir, se desincroniza otra vez.
-// Esta prueba lo detecta en CI antes de que Google lo vea.
+// El sitemap lo sirve la API (/sitemap.xml) con la lista de rutas públicas que
+// genera `npm run sitemap` en shared/rutas-publicas.json. El fichero está
+// versionado: si alguien añade una ruta y hace commit sin regenerarlo, la API
+// anunciaría la lista vieja. Esta prueba lo detecta en CI antes de que Google
+// lo vea (y la del backend, `test/sitemap.test.ts`, comprueba lo que sirve).
 
-const DOMINIO = `https://${datosEntidad().identidad.dominio}`
-
-function urlsDelSitemap(): string[] {
-  const xml = readFileSync(join(process.cwd(), 'public/sitemap.xml'), 'utf8')
-  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
-    .map((m) => m[1].replace(DOMINIO, ''))
-    .sort()
+function rutasDelJson(): { ruta: string; requisito: string[] }[] {
+  return JSON.parse(readFileSync(join(process.cwd(), '../shared/rutas-publicas.json'), 'utf8')).rutas
 }
 
-describe('sitemap.xml', () => {
-  it('anuncia exactamente las páginas públicas indexables de esta instalación', () => {
-    expect(urlsDelSitemap(), 'ejecuta `npm run sitemap` para regenerarlo').toEqual([...urlsIndexables()].sort())
+describe('shared/rutas-publicas.json', () => {
+  it('lleva exactamente las rutas públicas del router, con su módulo', () => {
+    expect(rutasDelJson(), 'ejecuta `npm run sitemap` para regenerarlo').toEqual(rutasParaElSitemap())
   })
 
-  it('no indexa el área privada ni el CMS', () => {
+  it('no lleva el área privada ni el CMS', () => {
     const privadas = ['/cms', '/area-hermano', '/acceso', '/reset-password']
-    for (const url of urlsDelSitemap()) {
+    for (const { ruta } of rutasDelJson()) {
       for (const privada of privadas) {
-        expect(url.startsWith(privada), `${url} no debería indexarse`).toBe(false)
+        expect(ruta.startsWith(privada), `${ruta} no debería indexarse`).toBe(false)
       }
     }
+  })
+
+  it('el sitemap ya no es un fichero de la web: lo sirve la API', () => {
+    expect(existsSync(join(process.cwd(), 'public/sitemap.xml'))).toBe(false)
   })
 })
 
