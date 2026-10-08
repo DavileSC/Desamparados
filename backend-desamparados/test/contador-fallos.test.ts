@@ -97,3 +97,51 @@ test('el registro de redes confiadas no pasa de su tope', () => {
   assert.ok(r.tamano <= 10);
   assert.equal(r.tiene('cuenta|red-99'), true, 'se conserva lo más reciente');
 });
+
+// El 2FA tenía un bloqueo fijo: quien conocía la contraseña de un cargo
+// probaba cinco códigos cada quince minutos sin fin.
+test('bloqueo creciente: cada tanda dura más, hasta la última, que se repite', () => {
+  const { c, avanzar } = contador({ escaladaMs: [15 * MINUTO, 60 * MINUTO, 240 * MINUTO], olvidoTandasMs: 24 * 60 * MINUTO });
+  const tanda = () => {
+    let bloqueo = 0;
+    for (let i = 0; i < 3; i++) bloqueo = c.registrarFallo('a') || bloqueo;
+    return bloqueo;
+  };
+  assert.equal(tanda(), 15 * MINUTO, 'la primera, 15 minutos');
+  assert.equal(c.restanteBloqueo('a'), 15 * MINUTO);
+  avanzar(15 * MINUTO);
+  assert.equal(tanda(), 60 * MINUTO, 'la segunda, una hora');
+  avanzar(60 * MINUTO);
+  assert.equal(tanda(), 240 * MINUTO);
+  avanzar(240 * MINUTO);
+  assert.equal(tanda(), 240 * MINUTO, 'de la última en adelante se repite');
+});
+
+test('registrarFallo dice cuándo empieza un bloqueo, una vez por tanda', () => {
+  const { c } = contador({ escaladaMs: [15 * MINUTO, 60 * MINUTO] });
+  assert.equal(c.registrarFallo('a'), 0);
+  assert.equal(c.registrarFallo('a'), 0);
+  assert.equal(c.registrarFallo('a'), 15 * MINUTO);
+});
+
+test('las tandas no se olvidan al pasar la ventana, sino tras un día sin fallar o con un acierto', () => {
+  const { c, avanzar } = contador({ escaladaMs: [15 * MINUTO, 60 * MINUTO], olvidoTandasMs: 24 * 60 * MINUTO });
+  for (let i = 0; i < 3; i++) c.registrarFallo('a');
+  // Esperar más que la ventana (una hora) tras el bloqueo no devuelve a 15 min.
+  avanzar(15 * MINUTO + 2 * 60 * MINUTO);
+  for (let i = 0; i < 3; i++) c.registrarFallo('a');
+  assert.equal(c.restanteBloqueo('a'), 60 * MINUTO);
+
+  // Un día entero sin fallar después del bloqueo: vuelve a la primera tanda.
+  avanzar(60 * MINUTO + 24 * 60 * MINUTO + 1);
+  for (let i = 0; i < 3; i++) c.registrarFallo('a');
+  assert.equal(c.restanteBloqueo('a'), 15 * MINUTO);
+
+  // Un acierto lo deja a cero.
+  avanzar(15 * MINUTO);
+  for (let i = 0; i < 3; i++) c.registrarFallo('a');
+  assert.equal(c.restanteBloqueo('a'), 60 * MINUTO);
+  c.limpiar('a');
+  for (let i = 0; i < 3; i++) c.registrarFallo('a');
+  assert.equal(c.restanteBloqueo('a'), 15 * MINUTO);
+});

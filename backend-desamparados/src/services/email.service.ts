@@ -75,6 +75,44 @@ export class EmailService {
   }
 
   /**
+   * Aviso de que la contraseña se ha cambiado desde la propia cuenta. Si no
+   * fue su dueño, es la única forma de que se entere a tiempo.
+   */
+  static async enviarContrasenaCambiada(emailDestino: string, nombre: string, fecha: string, sexo?: Sexo) {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('contrasena_cambiada', {
+      campos: { saludo: textoDeSaludo(nombre, sexo), nombre, fecha },
+    });
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /**
+   * El doble factor se ha bloqueado por códigos equivocados. Para llegar a
+   * pedirlo hay que acertar la contraseña, así que si no era el titular, el
+   * aviso le dice que alguien la conoce.
+   */
+  static async enviarDobleFactorBloqueado(emailDestino: string, nombre: string, plazoTexto: string, sexo?: Sexo) {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('doble_factor_bloqueado', {
+      campos: { saludo: textoDeSaludo(nombre, sexo), nombre, plazo: plazoTexto },
+    });
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /**
+   * Un alta que no se ha podido tramitar porque el correo o algún DNI ya
+   * figura en una cuenta o en el censo. La web contesta lo mismo que a un alta
+   * normal para no revelar quién está en el censo: este correo, que solo lee
+   * el dueño de la dirección, es lo que le dice qué hacer, y tampoco dice qué
+   * dato chocó ni de quién es.
+   */
+  static async enviarSolicitudNoTramitada(emailDestino: string, nombre: string) {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('solicitud_no_tramitada', {
+      campos: { saludo: textoDeSaludo(nombre), nombre },
+      bloques: { secretaria: bloqueDeSecretaria('Atención en Secretaría') },
+    });
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /**
    * La papeleta, cuando se recoge en la mesa (con la ropa en las salidas que
    * la llevan; si no, con el puesto confirmado). El QR no va en el cuerpo, que
    * muchos clientes de correo esconden o recortan: va en el PDF adjunto, el

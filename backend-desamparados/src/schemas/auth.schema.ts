@@ -202,6 +202,18 @@ export const requestPasswordResetSchema = type({
 //  5. RGPD: BORRADO DE LA PROPIA CUENTA
 // =================================================================
 // Exige la contraseña actual como confirmación de identidad.
+/**
+ * Cambiar la contraseña con la sesión abierta. La nueva, con las mismas reglas
+ * que el enlace de recuperación; la actual solo tiene que venir (y no pasar
+ * del tope de bcrypt, que corta en 72 bytes y no merece más).
+ */
+export const cambiarContrasenaSchema = type({
+    body: {
+        actual: type("1 <= string <= 128").describe("tu contraseña actual"),
+        nueva: password
+    }
+});
+
 export const deleteAccountSchema = type({
     body: {
         password: type("string >= 1").describe("tu contraseña actual")

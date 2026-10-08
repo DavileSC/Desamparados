@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import * as OTPAuth from 'otpauth';
 import db from '../../config/db';
 import { HttpError } from '../../utils/error.handle';
+import { EmailService } from '../email.service.js';
 import { ContadorFallos } from '../../utils/contador-fallos.js';
 import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '../../utils/cifrado-totp.js';
 
@@ -16,8 +17,15 @@ import { cifrarSecretoTotp, leerSecretoTotp, SecretoTotpIlegibleError } from '..
  * manera de usarlos desde otro sitio era no separar nunca los dos temas.
  */
 
-const QUINCE_MINUTOS = 15 * 60 * 1000;
-const UNA_HORA = 60 * 60 * 1000;
+const MINUTO = 60 * 1000;
+const UNA_HORA = 60 * MINUTO;
+
+/**
+ * Cuánto dura cada bloqueo seguido del doble factor: 15 min, 1 h, 4 h y, de
+ * ahí en adelante, un día. Con un bloqueo fijo de quince minutos, quien tenía
+ * la contraseña de un cargo podía probar veinte códigos por hora sin fin.
+ */
+export const ESCALADA_BLOQUEO_2FA = [15 * MINUTO, UNA_HORA, 4 * UNA_HORA, 24 * UNA_HORA];
 
 export const MENSAJE_CODIGO_USADO = 'Ese código ya se ha usado. Espera a que tu aplicación muestre el siguiente.';
 export const MENSAJE_2FA_YA_ACTIVO = 'El doble factor ya está activo. Desactívalo primero si quieres configurarlo con otro móvil.';
@@ -42,20 +50,47 @@ export const APAGAR_2FA = { twoFactorEnabled: false, twoFactorSecret: null, twoF
 // 2FA y la desactivación: si cada uno llevara el suyo, quien tuviera la
 // contraseña probaría cinco códigos en uno y otros cinco en el otro. Por eso
 // vive aquí y no dentro de ninguno de los dos servicios.
+// Las tandas se olvidan con un acierto o tras un día entero sin fallar
+// después del último bloqueo.
 const fallos2FA = new ContadorFallos({
-  maxFallos: 5, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
+  maxFallos: 5, bloqueoMs: ESCALADA_BLOQUEO_2FA[0], escaladaMs: ESCALADA_BLOQUEO_2FA,
+  ventanaMs: UNA_HORA, olvidoTandasMs: 24 * UNA_HORA, tope: 10_000
 });
+
+/** «15 minutos», «1 hora», «4 horas»: lo que dura un bloqueo, para leerlo. */
+export function textoDePlazo(ms: number): string {
+  const minutos = Math.max(1, Math.ceil(ms / MINUTO));
+  if (minutos < 60) return minutos === 1 ? '1 minuto' : `${minutos} minutos`;
+  const horas = Math.ceil(minutos / 60);
+  return horas === 1 ? '1 hora' : `${horas} horas`;
+}
 
 export function comprobarBloqueo2FA(userId: number): void {
   const restante = fallos2FA.restanteBloqueo(String(userId));
   if (restante > 0) {
-    const mins = Math.ceil(restante / 60000);
-    throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${mins} minuto(s).`, 429);
+    throw new HttpError(`Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera ${textoDePlazo(restante)}.`, 429);
   }
 }
 
+/**
+ * Apunta un código equivocado. Si con él empieza un bloqueo, se avisa al
+ * titular por correo (uno por tanda, no uno por fallo), sin esperar: el
+ * aviso no puede retrasar ni tumbar la respuesta.
+ */
 export function registrarFallo2FA(userId: number): void {
-  fallos2FA.registrarFallo(String(userId));
+  const bloqueo = fallos2FA.registrarFallo(String(userId));
+  if (bloqueo > 0) {
+    avisarBloqueo2FA(userId, bloqueo).catch((error) => console.error('[2FA] No se pudo avisar del bloqueo:', error));
+  }
+}
+
+export async function avisarBloqueo2FA(userId: number, bloqueoMs: number): Promise<boolean> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { email: true, nombre: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } },
+  });
+  if (!user) return false;
+  return EmailService.enviarDobleFactorBloqueado(user.email, user.nombre, textoDePlazo(bloqueoMs), user.hermanos[0]?.sexo ?? undefined);
 }
 
 export function limpiarFallos2FA(userId: number): void {
