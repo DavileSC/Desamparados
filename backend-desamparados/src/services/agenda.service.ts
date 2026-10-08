@@ -6,6 +6,7 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
 import { diaMadridComoIntervalo } from '../domain/contabilidad.js';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 
 /**
  * Los actos que la portada de la web enseña en su lista, sin sesión: los
@@ -321,7 +322,17 @@ static async createEvent(data: CreateEventDto) {
   }
 
   static async deleteEvent(id: number) {
-    const borrado = await db.evento.delete({ where: { id } });
+    // El acto de una salida es su fecha: borrarlo aquí la dejaba sin fecha
+    // (SetNull) sin que la ficha de la salida se enterara. Comprobación y
+    // borrado en la misma transacción, para que un «Fijar fecha» a la vez no
+    // enlace el acto justo antes de borrarlo.
+    const borrado = await transactionWithRetry(async (tx) => {
+      const salida = await tx.salida.findFirst({ where: { eventoId: id }, select: { nombre: true } });
+      if (salida) {
+        throw new HttpError(`Este acto es la fecha de la salida «${salida.nombre}»: cámbiala desde la ficha de la salida, no desde la Agenda.`, 409);
+      }
+      return tx.evento.delete({ where: { id } });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     await borrarSubidasHuerfanas(subidasEnTexto(borrado.fotoCartel));
     return borrado;
   }
