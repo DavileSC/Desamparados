@@ -17,6 +17,7 @@ import { configuracionRedsys, formularioDePago, leerAviso, modoDePago, numeroDeP
 import { urlDeLaWeb } from '../correos/plantilla.js';
 import { ACCIONES_AUDITORIA, AuditoriaService, type MetaDeAuditoria } from '../auditoria.service.js';
 import { MisRecibosService } from '../mis-recibos.service.js';
+import { MENSAJE_YA_REEMITIDO, reemitidosDe } from '../recibos/comunes.js';
 import { ZonasService } from '../procesion/zonas.service.js';
 import { DonativoService } from './donativo.service.js';
 import { aCentimos, claveDelCobro, urlDelAviso, type InicioDePago, type MetodoEnLinea } from './comunes.js';
@@ -80,7 +81,7 @@ export class PagoEnLineaService {
     const [recibos, solicitudes] = await Promise.all([
       db.recibo.findMany({
         where: { id: { in: reciboIds }, hermano: { userId, activo: true } },
-        select: { id: true, estado: true, hermanoId: true, concepto: true, importe: true },
+        select: { id: true, estado: true, hermanoId: true, year: true, tipo: true, concepto: true, importe: true },
       }),
       db.solicitud.findMany({
         where: { id: { in: solicitudIds }, hermano: { userId, activo: true } },
@@ -96,6 +97,11 @@ export class PagoEnLineaService {
 
     const noPagable = recibos.find((r) => r.estado !== EstadoPago.PENDIENTE && r.estado !== EstadoPago.DEVUELTO);
     if (noPagable) throw new HttpError(`«${noPagable.concepto}» no está pendiente de pago.`, 409);
+    // Un devuelto con reemisión ya no se debe: se debe (o se pagó) la reemisión.
+    // Aquí avisa pronto; quien lo impide de verdad es el cobro, en su transacción.
+    const reemitidos = await reemitidosDe(recibos.filter((r) => r.estado === EstadoPago.DEVUELTO));
+    const yaReemitido = recibos.find((r) => reemitidos.has(r.id));
+    if (yaReemitido) throw new HttpError(MENSAJE_YA_REEMITIDO(yaReemitido.concepto), 409);
     let centimos = recibos.reduce((s, r) => s + aCentimos(r.importe), 0);
     for (const s of solicitudes) {
       if (s.estado !== EstadoSolicitud.PENDIENTE) throw new HttpError('Esa solicitud ya no está pendiente. Recarga la página.', 409);

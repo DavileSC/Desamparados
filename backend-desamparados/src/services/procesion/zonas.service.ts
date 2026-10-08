@@ -27,7 +27,7 @@ import db from '../../config/db.js';
 import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../auditoria.service.js';
 import { EmailService } from '../email.service.js';
-import { idCategoriaIngresos, leerDatosEvento } from '../recibos/comunes.js';
+import { exigirSinReemision, idCategoriaIngresos, leerDatosEvento } from '../recibos/comunes.js';
 import { idsReemitidos } from '../../domain/reemisiones.js';
 import { claveConcepto } from '../../domain/datos-procesion.js';
 import { diaMadrid, inicioDiaMadrid } from '../../domain/contabilidad.js';
@@ -277,7 +277,8 @@ export class ZonasService {
         const importe = Number(r.importe);
         let cobrado: { id: number; concepto: string } = r;
         if (r.estado === EstadoPago.DEVUELTO) {
-          // Final: se cobra su reemisión, que ya nace pagada.
+          // Final: se cobra su reemisión, que ya nace pagada. Una sola vez.
+          await exigirSinReemision(tx, r);
           cobrado = await tx.recibo.create({
             data: {
               hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, importe: r.importe,
@@ -327,6 +328,7 @@ export class ZonasService {
         if (r.estado === EstadoPago.REMESADO) throw new HttpError(`«${r.concepto}» está en el banco, cobrándose: no se puede perdonar.`, 409);
         const observaciones = [r.observaciones, nota].filter(Boolean).join(' · ');
         if (r.estado === EstadoPago.DEVUELTO) {
+          await exigirSinReemision(tx, r);
           const reemision = await tx.recibo.create({
             data: {
               hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, importe: r.importe, estado: EstadoPago.EXENTO,
