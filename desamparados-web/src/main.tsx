@@ -12,8 +12,10 @@ import './index.css'
 import App from './App.tsx'
 import theme from './theme'
 import { quitarMetaEstaticas } from './lib/metaEstaticas'
+import { recargarAlFallarUnTrozo } from './lib/recargaTrasDespliegue'
 
 quitarMetaEstaticas()
+recargarAlFallarUnTrozo()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

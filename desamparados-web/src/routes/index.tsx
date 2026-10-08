@@ -11,6 +11,7 @@ import { rolesPorRutaCms } from '../app/rolesCms'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 import { site } from '../config/site'
+import ErrorDeRuta from '../components/ErrorDeRuta'
 import type { Requisito } from '../domain/modulos'
 
 // Los marcos del CMS y del área de hermanos van aparte, como las páginas: con
@@ -152,6 +153,7 @@ function RootLayout() {
 const router = createBrowserRouter([
   {
     element: <RootLayout />,
+    errorElement: <ErrorDeRuta />,
     children: [
       {
         path: '/',

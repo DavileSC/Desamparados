@@ -35,34 +35,39 @@ export default class RedDeErrores extends Component<Props, State> {
     console.error('[RedDeErrores] Error no controlado en la interfaz:', error, info.componentStack)
   }
 
-  private recargar = () => {
-    window.location.href = '/'
-  }
-
   render() {
     if (!this.state.hasError) return this.props.children
-
-    return (
-      <Box
-        component="main"
-        role="alert"
-        sx={{ py: { xs: 10, md: 16 }, minHeight: '60vh', display: 'flex', alignItems: 'center' }}
-      >
-        <ContenedorDePagina>
-          <Box sx={{ maxWidth: 560, mx: 'auto', textAlign: 'center' }}>
-            <Typography variant="h3" component="h1" sx={{ mb: 2 }}>
-              Algo ha fallado en esta página
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4 }}>
-              No hemos podido mostrar el contenido. El resto del sitio sigue funcionando: vuelve a
-              la portada e inténtalo de nuevo. Si se repite, escríbenos y lo revisamos.
-            </Typography>
-            <Button onClick={this.recargar} sx={BOTON.principal}>
-              Volver a la portada
-            </Button>
-          </Box>
-        </ContenedorDePagina>
-      </Box>
-    )
+    return <AvisoDeError />
   }
+}
+
+/**
+ * El aviso de que algo falló, con salida a la portada. Lo pintan esta red y la
+ * del router (`ErrorDeRuta`): sin la del router, un fallo dentro de una ruta
+ * salía en la pantalla en inglés de React Router, sin cabecera ni salida.
+ */
+export function AvisoDeError() {
+  return (
+    <Box
+      component="main"
+      role="alert"
+      sx={{ py: { xs: 10, md: 16 }, minHeight: '60vh', display: 'flex', alignItems: 'center' }}
+    >
+      <ContenedorDePagina>
+        <Box sx={{ maxWidth: 560, mx: 'auto', textAlign: 'center' }}>
+          <Typography variant="h3" component="h1" sx={{ mb: 2 }}>
+            Algo ha fallado en esta página
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'text.secondary', mb: 4 }}>
+            No hemos podido mostrar el contenido. El resto del sitio sigue funcionando: vuelve a
+            la portada e inténtalo de nuevo. Si se repite, escríbenos y lo revisamos.
+          </Typography>
+          {/* Una carga entera y no una navegación: si lo roto es el código, trae el nuevo. */}
+          <Button onClick={() => { window.location.href = '/' }} sx={BOTON.principal}>
+            Volver a la portada
+          </Button>
+        </Box>
+      </ContenedorDePagina>
+    </Box>
+  )
 }
