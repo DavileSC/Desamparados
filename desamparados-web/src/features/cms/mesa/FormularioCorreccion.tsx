@@ -294,7 +294,7 @@ function CorreccionPapeleta({ ficha, salida, role, puestosUsados, onHecho, onRec
       <DialogoConfirmacion
         abierto={anulando}
         titulo="¿Anular la papeleta?"
-        mensaje={`Se anula la papeleta de ${ficha.nombre} ${ficha.apellidos}. Si se cobró, el recibo queda devuelto con su apunte en contabilidad, y la ropa del ropero vuelve a estar libre.`}
+        mensaje={`Se anula la papeleta de ${ficha.nombre} ${ficha.apellidos}. Si se cobró, el recibo queda devuelto con su apunte en contabilidad. La ropa sigue a su nombre hasta que la devuelva.`}
         textoConfirmar="Anular"
         peligro
         onConfirmar={() => void anular()}

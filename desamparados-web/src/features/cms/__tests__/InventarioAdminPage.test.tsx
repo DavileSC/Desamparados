@@ -172,6 +172,30 @@ describe('InventarioAdminPage', () => {
     expect(await screen.findByText('Prenda TUN-002 devuelta: al taller, para arreglarla.')).toBeInTheDocument()
   })
 
+  it('una prenda prestada no se puede eliminar, y si el servidor lo rechaza se dice por qué', async () => {
+    const user = userEvent.setup()
+    const prestada = { ...prenda, id: 10, numero: 'TUN-003', estado: 'PRESTADA', hermano: { nombre: 'Ana', apellidos: 'Ruiz', numeroHermano: 123 } }
+    const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      // Una que se prestó en otra mesa mientras tanto: aquí aún se ve disponible.
+      if (init?.method === 'DELETE') return Promise.resolve(new Response(JSON.stringify({ error: 'La prenda está prestada y no se puede borrar.' }), { status: 409, headers: { 'Content-Type': 'application/json' } }))
+      if (String(url).includes('/cingulos')) return Promise.resolve(respuestaJson({ total: 0, prestados: 0, enElRopero: 0, debidos: 0 }))
+      if (String(url).includes('/recuento')) return Promise.resolve(respuestaJson(recuento({ PRESTADA: 1, DISPONIBLE: 1 })))
+      return Promise.resolve(respuestaJson({ data: String(url).includes('/enseres') ? [enser] : [prenda, prestada], meta: { total: 2, page: 1, limit: 20, totalPages: 1 } }))
+    })
+    vi.stubGlobal('fetch', simulado)
+    renderWithProviders(<InventarioAdminPage />, { ruta: '/cms/inventario' })
+
+    await user.click(await screen.findByRole('tab', { name: 'Ropero' }))
+    await user.click((await screen.findAllByRole('button', { name: 'Más acciones de TUN-003' }))[0])
+    expect(screen.getByRole('menuitem', { name: 'Eliminar' })).toHaveAttribute('aria-disabled', 'true')
+    await user.keyboard('{Escape}')
+
+    await user.click(screen.getAllByRole('button', { name: 'Más acciones de TUN-002' })[0])
+    await user.click(screen.getByRole('menuitem', { name: 'Eliminar' }))
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Eliminar' }))
+    expect(await screen.findByText('La prenda está prestada y no se puede borrar.')).toBeInTheDocument()
+  })
+
   it('los cíngulos se cuentan: se cambia el total y avisa si no llegan para los que se deben', async () => {
     const user = userEvent.setup()
     const simulado = vi.fn().mockImplementation((url: string, init?: RequestInit) => {

@@ -115,6 +115,21 @@ describe('AgendaAdminPage', () => {
     expect(screen.getByRole('menuitem', { name: /duplicar/i })).toHaveAttribute('href', '/cms/agenda/nuevo')
   })
 
+  it('si el acto es la fecha de una salida, el servidor no deja borrarlo y se dice por qué', async () => {
+    const usuario = userEvent.setup()
+    const simulado = responder([evento], { total: 1, page: 1, limit: 20, totalPages: 1 })
+    simulado.mockImplementation((_url: string, init?: RequestInit) => Promise.resolve(init?.method === 'DELETE'
+      ? new Response(JSON.stringify({ error: 'Este acto es la fecha de la salida «Sábado de Pasión»: cámbiala desde la ficha de la salida, no desde la Agenda.' }), { status: 409, headers: { 'Content-Type': 'application/json' } })
+      : new Response(JSON.stringify({ data: [evento], meta: { total: 1, page: 1, limit: 20, totalPages: 1 }, resumen: resumenBase }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    montar()
+
+    await usuario.click(await screen.findByRole('button', { name: /más acciones para besapiés/i }))
+    await usuario.click(screen.getByRole('menuitem', { name: /eliminar/i }))
+    await usuario.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Eliminar' }))
+    expect(await screen.findByText(/Este acto es la fecha de la salida «Sábado de Pasión»/)).toBeInTheDocument()
+    expect(screen.queryByText('Evento eliminado.')).not.toBeInTheDocument()
+  })
+
   it('pide la página que dice la URL', async () => {
     const simulado = responder([], { total: 60, page: 2, limit: 20, totalPages: 3 })
     montar('/cms/agenda?vista=lista&pagina=2')

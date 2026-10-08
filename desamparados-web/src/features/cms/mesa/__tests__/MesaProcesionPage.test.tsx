@@ -495,6 +495,23 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/admin/solicitudes/99'))).toBe(true))
   })
 
+  it('anular una papeleta no promete que la ropa vuelva al ropero: sigue a su nombre', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem('mesa.zona', 'listado')
+    const papeleta = {
+      id: 5, year: 2027, puesto: 'Nazareno', puestoPedido: 'Nazareno', tramo: null, observaciones: null,
+      numTunicaAsignada: '140-107', numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: 'ROPERO' as const, cingulo: 'PRESTADO' as const,
+      recibo: { id: 1, concepto: 'Papeleta de sitio 2027', importe: 0, estado: 'EXENTO' as const, metodoPago: null, tipo: 'PAPELETA_SITIO' },
+    }
+    servidor({ ficha: { ...FICHA, papeleta, requisitos: AL_DIA } })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+    await user.click(await screen.findByRole('button', { name: 'Anular papeleta' }))
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText(/La ropa sigue a su nombre hasta que la devuelva\./)).toBeInTheDocument()
+    expect(within(dialogo).queryByText(/vuelve a estar libre/)).not.toBeInTheDocument()
+  })
+
   it('«Le falta el cíngulo» filtra el listado, y desde la ficha se le da cuando lo haya', async () => {
     const user = userEvent.setup()
     localStorage.setItem('mesa.zona', 'listado')
