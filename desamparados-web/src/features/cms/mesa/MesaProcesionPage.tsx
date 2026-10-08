@@ -8,7 +8,7 @@ import WifiOffOutlinedIcon from '@mui/icons-material/WifiOffOutlined'
 import { Helmet } from 'react-helmet-async'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
-import { apuntados, colasDeLaMesa, fichaDeMesa, imprimirPapeleta, sinDevolver, type ZonaDeBusqueda } from '../../../lib/api/mesa'
+import { apuntados, colasDeLaMesa, fichaDeMesa, imprimirPapeleta, llevaElCensoEnMesa, sinDevolver, type ZonaDeBusqueda } from '../../../lib/api/mesa'
 import AvisoSinSalidas from '../../procesion/AvisoSinSalidas'
 import SelectorSalida from '../../procesion/SelectorSalida'
 import { useSalidaElegida } from '../../procesion/useSalidas'
@@ -193,11 +193,14 @@ export default function MesaProcesionPage() {
             salida={slug}
             onElegir={(p) => abrir(p.id)}
           />
-          {zonaVisible === 'inscripcion' && (
-            <Button startIcon={<PersonAddAltOutlinedIcon />} onClick={() => { setAviso(null); setModo({ tipo: 'alta' }) }} sx={{ alignSelf: 'start' }}>
-              No está en el censo: darla de alta
-            </Button>
-          )}
+          {/* Dar de alta es cosa del censo: al resto, el servidor se lo rechaza. */}
+          {zonaVisible === 'inscripcion' && (llevaElCensoEnMesa(role)
+            ? (
+              <Button startIcon={<PersonAddAltOutlinedIcon />} onClick={() => { setAviso(null); setModo({ tipo: 'alta' }) }} sx={{ alignSelf: 'start' }}>
+                No está en el censo: darla de alta
+              </Button>
+            )
+            : <Typography variant="body2" color="text.secondary">Si no está en el censo, avisa a Secretaría.</Typography>)}
         </Stack>
       )}
 
@@ -220,7 +223,7 @@ export default function MesaProcesionPage() {
         </Stack>
       )}
 
-      {modo.tipo === 'alta' && (
+      {modo.tipo === 'alta' && llevaElCensoEnMesa(role) && (
         <AltaEnMesa salida={slug} onCancelar={buscar} onHecha={(id, texto) => { setModo({ tipo: 'ficha', id }); setAviso({ tono: 'success', texto }) }} />
       )}
 

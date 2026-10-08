@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Box, ButtonBase, CircularProgress, InputAdornment, Stack, TextField, Typography } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import {
-  buscarPersonas, esperadosHoy, type Esperado, type PersonaEncontrada, type ZonaDeBusqueda,
+  buscarPersonas, esperadosHoy, llevaElCensoEnMesa, type Esperado, type PersonaEncontrada, type ZonaDeBusqueda,
 } from '../../../lib/api/mesa'
+import { useAuthStore } from '../../altas/auth/store'
 import Pildora from '../listados/Pildora'
 import { fechaCorta } from './formato'
 
@@ -32,6 +33,11 @@ const ESPERA_MS = 250
 export default function BuscadorPersonas({
   etiqueta = 'Buscar en el censo', onElegir, zona = 'todas', salida, conEsperados, autoFocus, id,
 }: Props) {
+  // Quien no lleva el censo solo encuentra por DNI, teléfono o correo con el
+  // dato entero (un trozo servía para sacar los de cualquiera): se le avisa,
+  // o creería que no está.
+  const role = useAuthStore((s) => s.cms?.role ?? 'USER')
+  const datoEntero = !llevaElCensoEnMesa(role)
   const [texto, setTexto] = useState('')
   const [resultados, setResultados] = useState<PersonaEncontrada[] | null>(null)
   const [esperados, setEsperados] = useState<Esperado[]>([])
@@ -116,6 +122,7 @@ export default function BuscadorPersonas({
           },
           htmlInput: { autoComplete: 'off' },
         }}
+        helperText={datoEntero ? 'El DNI, el teléfono o el correo, enteros; el nombre vale a trozos.' : undefined}
       />
 
       {error && <Typography variant="body2" color="error">No se ha podido buscar. Vuelve a intentarlo.</Typography>}

@@ -126,9 +126,17 @@ export interface FichaDeMesa {
   apellidos: string
   fechaNacimiento: string
   sexo: 'HOMBRE' | 'MUJER' | null
+  /**
+   * Con `contactoCompleto: false` (quien no lleva el censo: Tesorería,
+   * Albacería), enmascarados: «••••••927», «vi•••@dominio.es». Sirven para
+   * confirmar con la persona delante, no para llamar ni para corregirlos.
+   */
   telefono: string | null
   email: string | null
+  /** `null` también cuando quien pide no lleva el censo: no se le enseña. */
   dni: string | null
+  /** Si el DNI y el contacto van enteros. Sin ellos, la mesa no deja corregir el teléfono ni el correo (el servidor da 403). */
+  contactoCompleto: boolean
   numeroHermano: number | null
   esTitular: boolean
   situacion: Situacion
@@ -207,6 +215,7 @@ export interface Apuntado {
     nombre: string
     apellidos: string
     fechaNacimiento: string
+    /** Enmascarados para quien no lleva el censo («••••••927»): no valen para llamar ni escribir. */
     telefono: string | null
     email: string | null
     alturaHombro: number | null
@@ -258,6 +267,13 @@ export interface RopaPorPreparar {
   tallaTunica: string | null
   cuotasPendientes: number
 }
+
+/**
+ * Quién lleva el censo en la mesa (`ROLES_CENSO_EN_MESA` del backend): busca
+ * por un trozo de cualquier dato, ve la ficha entera, corrige el contacto y da
+ * de alta. El resto de la mesa (Tesorería, Albacería) cobra y da la ropa.
+ */
+export const llevaElCensoEnMesa = (rol: string) => rol === 'ADMIN' || rol === 'SECRETARIA'
 
 /** El canal en vivo de la mesa (eventos del servidor). */
 export const URL_EVENTOS_MESA = `${(import.meta.env.VITE_API_URL ?? '/api').replace(/\/+$/, '')}/procesion/admin/mesa/eventos`
