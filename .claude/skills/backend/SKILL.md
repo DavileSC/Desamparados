@@ -48,7 +48,7 @@ DAO**: los servicios consultan con `db` directamente.
   y `req.user` los rellena `middleware/session.ts`.
 - La sesión se valida contra la base en cada petición (usuario activo, cortes
   de revocación, rol refrescado). No confiar en el rol del token.
-- CORS solo `GET/POST/PUT/DELETE` y `Content-Type`.
+- CORS solo `GET/POST/PUT/PATCH/DELETE` y `Content-Type`.
 
 ## Reglas
 

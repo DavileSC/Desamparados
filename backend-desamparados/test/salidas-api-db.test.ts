@@ -357,6 +357,22 @@ test('el acto enlazado a una salida no se borra desde la Agenda', async (t) => {
     eventoId = (await db.salida.findUniqueOrThrow({ where: { id } })).eventoId;
     assert.ok(eventoId);
 
+    // La Agenda del CMS lo dice antes de que nadie pulse «Eliminar»: en el
+    // listado y en el calendario, con la salida; un acto suelto, con null.
+    const suelto = await db.evento.create({ data: { title: 'Acto suelto de prueba', startDate: new Date('2099-10-18T18:00:00.000Z') } });
+    try {
+      const calendario = await (await fetch(
+        `${baseUrl}/api/events/admin/calendario?desde=2099-10-01T00:00&hasta=2099-11-01T00:00`,
+        { headers: cookieDe(staff.id, Role.SECRETARIA) },
+      )).json() as { data: { id: number; salidaEnlazada: { id: number; nombre: string } | null }[] };
+      assert.deepEqual(calendario.data.find((e) => e.id === eventoId)?.salidaEnlazada, { id, nombre: 'Traslado' });
+      assert.equal(calendario.data.find((e) => e.id === suelto.id)?.salidaEnlazada, null);
+      const listado = await (await fetch(`${baseUrl}/api/events/admin?periodo=proximos&q=Traslado&limit=100`, { headers: cookieDe(staff.id, Role.SECRETARIA) })).json() as { data: { id: number; salidaEnlazada: unknown }[] };
+      assert.deepEqual(listado.data.find((e) => e.id === eventoId)?.salidaEnlazada, { id, nombre: 'Traslado' });
+    } finally {
+      await db.evento.delete({ where: { id: suelto.id } });
+    }
+
     const borrar = await fetch(`${baseUrl}/api/events/${eventoId}`, { method: 'DELETE', headers: cookieDe(staff.id, Role.SECRETARIA) });
     assert.equal(borrar.status, 409);
     assert.match((await borrar.json()).error, /salida/i);

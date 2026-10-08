@@ -35,6 +35,17 @@ function datosDelCartel(data: Pick<CreateEventDto, 'cartel' | 'dedicatoria' | 'f
   return { cartel: data.cartel, dedicatoria: limpio(data.dedicatoria), fotoCartel: limpio(data.fotoCartel) };
 }
 
+/**
+ * La salida cuyo acto es este (su fecha), para que el CMS diga por qué no se
+ * puede borrar desde la Agenda (el borrado responde 409, ver `deleteEvent`) y
+ * no ofrezca «Eliminar». Una basta: es lo que nombra el 409.
+ */
+const SALIDA_ENLAZADA = { select: { id: true, nombre: true }, orderBy: { id: 'asc' }, take: 1 } satisfies Prisma.Evento$salidasArgs;
+
+function conSalidaEnlazada<T extends { salidas: { id: number; nombre: string }[] }>({ salidas, ...evento }: T) {
+  return { ...evento, salidaEnlazada: salidas[0] ?? null };
+}
+
 export class AgendaService {
 
   // =================================================================
@@ -146,6 +157,7 @@ export class AgendaService {
           type: true,
           updatedAt: true,
           cartel: true,
+          salidas: SALIDA_ENLAZADA,
         }
       }),
       db.evento.count({ where }),
@@ -161,7 +173,7 @@ export class AgendaService {
     ]);
 
     return {
-      ...respuestaPaginada(eventos, total, paginacion),
+      ...respuestaPaginada(eventos.map(conSalidaEnlazada), total, paginacion),
       resumen: {
         proximos: cuantosProximos,
         pasados: cuantosPasados,
@@ -210,13 +222,14 @@ export class AgendaService {
           updatedAt: true,
           cartel: true,
           turno: { select: { id: true } },
+          salidas: SALIDA_ENLAZADA,
         },
       }),
       AgendaService.resumenDeHoy(),
     ]);
 
     return {
-      data: eventos.map(({ turno, ...evento }) => ({ ...evento, reparto: turno !== null })),
+      data: eventos.map(({ turno, ...evento }) => ({ ...conSalidaEnlazada(evento), reparto: turno !== null })),
       resumen,
     };
   }
