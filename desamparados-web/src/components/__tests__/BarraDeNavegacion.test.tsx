@@ -181,7 +181,10 @@ describe('BarraDeNavegacion en móvil', () => {
     expect(screen.getByRole('button', { name: 'Abrir menú', hidden: true })).toHaveAttribute('aria-expanded', 'false')
     await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Menú' })).not.toBeInTheDocument(), { timeout: 3000 })
 
-    await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
+    // findByRole y no getByRole: la página sigue con aria-hidden hasta que acaba
+    // la transición del cierre, y con el CI cargado el botón aún no se veía
+    // (docs/notas-del-proyecto.md, sección 6).
+    await user.click(await screen.findByRole('button', { name: 'Abrir menú' }))
     expect(screen.getByRole('link', { name: 'Ajuar' })).toHaveAttribute('href', '/ajuar')
   })
 

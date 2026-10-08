@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { identidadGenerada } from '../test/identidadGenerada'
 
 /**
  * Los iconos se declaran en dos sitios (`index.html` y `manifest.json`) y viven
@@ -9,8 +10,9 @@ import { join } from 'node:path'
  * icono por defecto. Se ve en la pestaña, no en los tests. De ahí esto.
  */
 const raiz = process.cwd()
-const html = readFileSync(join(raiz, 'index.html'), 'utf8')
-const manifiesto = JSON.parse(readFileSync(join(raiz, 'public/manifest.json'), 'utf8')) as {
+const generada = identidadGenerada()
+const html = generada.html
+const manifiesto = JSON.parse(generada.manifiesto) as {
   theme_color: string
   icons: { src: string }[]
 }

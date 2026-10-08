@@ -142,6 +142,10 @@ describe('arranque real (src/index.ts)', () => {
         NODE_ENV: 'production',
         DOTENV_CONFIG_PATH: path.join(raiz, 'no-existe.env'),
         DOTENV_CONFIG_QUIET: 'true',
+        // Los datos de la corporación no son lo que se prueba aquí, y con el
+        // entorno vaciado el hijo no sabe que es una prueba: sin esto buscaría
+        // instalacion/, que en el CI no existe, y pararía antes de la lista.
+        DATOS_ENTIDAD: 'shared/datos-entidad.ejemplo.json',
       },
     });
     assert.equal(resultado.status, 1, `salida: ${resultado.stdout}\n${resultado.stderr}`);
