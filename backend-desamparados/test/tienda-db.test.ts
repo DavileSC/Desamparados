@@ -16,6 +16,7 @@ import { HttpError } from '../src/utils/error.handle.js';
 import { configuracionRedsys, firmar } from '../src/domain/redsys.js';
 import { TiendaService } from '../src/services/tienda.service.js';
 import { PagoEnLineaService } from '../src/services/pagos/pago-en-linea.service.js';
+import { TransaccionService } from '../src/services/transaccion.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -82,6 +83,9 @@ test('con el pago simulado, el pedido se paga en el acto: existencias, contabili
     const apunte = await db.transaccion.findFirstOrThrow({ where: { concepto: `Tienda: pedido n.º ${pedido.numero}` }, include: { categoria: true } });
     assert.equal(Number(apunte.importe), 19.5);
     assert.equal(apunte.categoria.nombre, 'Ventas de la tienda');
+    // El pedido guarda su apunte, y la contabilidad no lo trata como manual.
+    assert.equal((await db.pedidoTienda.findUniqueOrThrow({ where: { id: pedido.numero } })).transaccionId, apunte.id);
+    await assert.rejects(TransaccionService.remove(apunte.id), (err: unknown) => err instanceof HttpError && err.status === 409 && /pedido de la tienda/.test(err.message));
 
     await assert.rejects(TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 2 }]), {}), (err: unknown) => err instanceof HttpError && /solo quedan 1/.test(err.message));
 

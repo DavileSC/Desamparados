@@ -16,6 +16,7 @@ import db from '../src/config/db.js';
 import { configuracionRedsys, firmar } from '../src/domain/redsys.js';
 import { ContenidoService } from '../src/services/contenido.service.js';
 import { DonativoService, bloqueDeDonativo, conceptoDelDonativo } from '../src/services/pagos/donativo.service.js';
+import { TransaccionService } from '../src/services/transaccion.service.js';
 import { ponerTransporte, type TransporteDeCorreo } from '../src/services/correos/envio.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -141,6 +142,9 @@ test('el banco avisa: el donativo entra una vez en la contabilidad y el donante 
   assert.equal(apuntes[0].metodoPago, 'TARJETA');
   assert.equal(apuntes[0].hermanoId, null);
   assert.match(apuntes[0].concepto, /^Donativo en línea · Cultos · de Lucía/);
+  // El pago guarda su apunte, y la contabilidad no lo trata como manual.
+  assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: inicio.pedido } })).transaccionId, apuntes[0].id);
+  await assert.rejects(TransaccionService.remove(apuntes[0].id), (err: unknown) => err instanceof Error && 'status' in err && err.status === 409 && /donativo/.test(err.message));
 
   for (let i = 0; i < 50 && !enviados.some((c) => c.to === 'lucia@example.com'); i++) await new Promise((r) => setTimeout(r, 20));
   const gracias = enviados.find((c) => c.to === 'lucia@example.com');

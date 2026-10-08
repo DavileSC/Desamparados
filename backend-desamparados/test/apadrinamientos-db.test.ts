@@ -15,6 +15,7 @@ import { HttpError } from '../src/utils/error.handle.js';
 import { configuracionRedsys, firmar } from '../src/domain/redsys.js';
 import { ApadrinamientosService } from '../src/services/apadrinamientos.service.js';
 import { PagoEnLineaService } from '../src/services/pagos/pago-en-linea.service.js';
+import { TransaccionService } from '../src/services/transaccion.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
 const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
@@ -87,6 +88,10 @@ test('con el pago simulado: apadrinada en el acto, con el nombre solo si se pidi
 
     const apunte = await db.transaccion.findFirstOrThrow({ where: { concepto: `Apadrinamiento: Vela 1 (${e.c.titulo})` }, include: { categoria: true } });
     assert.deepEqual([Number(apunte.importe), apunte.categoria.nombre], [20, 'Apadrinamientos']);
+    // El apadrinamiento guarda su apunte, y la contabilidad no lo trata como manual.
+    assert.equal((await db.apadrinamiento.findFirstOrThrow({ where: { token: r1.token } })).transaccionId, apunte.id);
+    await assert.rejects(TransaccionService.update(apunte.id, { tipo: 'INGRESO', categoriaId: apunte.categoriaId, concepto: 'x', importe: 1, fecha: '2026-01-01', metodoPago: 'TARJETA' }),
+      (err: unknown) => err instanceof HttpError && err.status === 409 && /apadrinamiento/.test(err.message));
     const resumen = (await ApadrinamientosService.campanas()).find((x) => x.id === e.c.id)!;
     assert.deepEqual([resumen.piezas, resumen.apadrinadas, resumen.recaudado], [2, 2, 40]);
   } finally {

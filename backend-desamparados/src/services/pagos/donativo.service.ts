@@ -163,7 +163,8 @@ export class DonativoService {
           importe: pago.importe, fecha: new Date(), metodoPago: pago.metodo,
         },
       });
-      await tx.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
+      // El pago guarda su apunte: así la contabilidad sabe que no es manual.
+      await tx.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, transaccionId: apunte.id, ...banco } });
       return { transaccionId: apunte.id };
     });
     if (repetida) return;

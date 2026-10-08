@@ -455,9 +455,19 @@ model Transaccion {
   compraDeLoteria  SorteoLoteria?
   /// Si es una venta de la caja de la tienda: se corrige desde la caja, no a mano.
   ventaDeCaja      CajaVenta?
+  /// Si es el cobro de un pedido de la tienda, de un apadrinamiento o de un
+  /// donativo en línea: lo apuntó el banco al cobrar, y tampoco se toca a mano.
+  pedidoTienda     PedidoTienda?
+  apadrinamiento   Apadrinamiento?
+  pagoEnLinea      PagoEnLinea?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // El libro, el panel y los informes filtran siempre por fecha, y por
+  // categoría dentro de un periodo.
+  @@index([fecha])
+  @@index([categoriaId, fecha])
 }
 
 model Recibo {
@@ -854,32 +864,35 @@ enum TipoPagoEnLinea {
 /// la página de Redsys, con lo que se paga y el importe calculado aquí; solo el
 /// aviso firmado del banco lo da por pagado, nunca la vuelta del navegador.
 model PagoEnLinea {
-  id           Int               @id @default(autoincrement())
+  id            Int               @id @default(autoincrement())
   /// El número de pedido para Redsys: 12 caracteres, los 4 primeros cifras.
-  pedido       String?           @unique @db.VarChar(12)
+  pedido        String?           @unique @db.VarChar(12)
   /// Quién paga, si tiene cuenta. La tienda, los apadrinamientos y los
   /// donativos de la web pública se pagan sin ella.
-  userId       Int?
+  userId        Int?
   /// De dónde viene el pago, y qué se paga fuera del área de hermanos.
-  origen       OrigenPago        @default(AREA_HERMANOS)
-  referenciaId Int?
-  tipo         TipoPagoEnLinea   @default(RECIBOS)
+  origen        OrigenPago        @default(AREA_HERMANOS)
+  referenciaId  Int?
+  tipo          TipoPagoEnLinea   @default(RECIBOS)
   /// Del donativo: el destino que eligió, la página desde la que donó y, si
   /// los dio, su nombre y su correo (para darle las gracias).
-  donativo     Json?
+  donativo      Json?
   /// TARJETA o BIZUM.
-  metodo       MetodoPago
-  importe      Decimal           @db.Decimal(10, 2)
-  reciboIds    Json
-  solicitudIds Json
-  estado       EstadoPagoEnLinea @default(PENDIENTE)
+  metodo        MetodoPago
+  importe       Decimal           @db.Decimal(10, 2)
+  reciboIds     Json
+  solicitudIds  Json
+  estado        EstadoPagoEnLinea @default(PENDIENTE)
   /// El código de respuesta del banco (Ds_Response) y su autorización.
-  respuesta    String?           @db.VarChar(8)
-  autorizacion String?           @db.VarChar(12)
+  respuesta     String?           @db.VarChar(8)
+  autorizacion  String?           @db.VarChar(12)
   /// Qué no cuadró, en una incidencia; y quién la dio por resuelta.
-  motivo       String?           @db.Text
-  resueltaPor  Int?
-  resueltaEl   DateTime?
+  motivo        String?           @db.Text
+  resueltaPor   Int?
+  resueltaEl    DateTime?
+  /// El ingreso de un donativo, al cobrarse (los recibos llevan el suyo en el recibo).
+  transaccionId Int?              @unique
+  transaccion   Transaccion?      @relation(fields: [transaccionId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1326,20 +1339,23 @@ model TallaProducto {
 
 /// Un pedido de la tienda. Se compra sin cuenta y se recoge en Secretaría.
 model PedidoTienda {
-  id          Int                 @id @default(autoincrement())
+  id            Int                 @id @default(autoincrement())
   /// Para la página de vuelta del banco: sin él, nadie ve un pedido ajeno.
-  token       String              @unique @db.VarChar(32)
-  nombre      String              @db.VarChar(120)
-  email       String              @db.VarChar(191)
-  telefono    String              @db.VarChar(30)
-  estado      EstadoPedido        @default(PENDIENTE_PAGO)
-  total       Decimal             @db.Decimal(10, 2)
-  metodo      MetodoPago?
-  pagadoEl    DateTime?
-  entregadoEl DateTime?
-  lineas      PedidoTiendaLinea[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  token         String              @unique @db.VarChar(32)
+  nombre        String              @db.VarChar(120)
+  email         String              @db.VarChar(191)
+  telefono      String              @db.VarChar(30)
+  estado        EstadoPedido        @default(PENDIENTE_PAGO)
+  total         Decimal             @db.Decimal(10, 2)
+  metodo        MetodoPago?
+  pagadoEl      DateTime?
+  entregadoEl   DateTime?
+  /// El ingreso del pedido, al cobrarse: se corrige desde la tienda, no a mano.
+  transaccionId Int?                @unique
+  transaccion   Transaccion?        @relation(fields: [transaccionId], references: [id], onDelete: SetNull)
+  lineas        PedidoTiendaLinea[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   @@index([estado, createdAt])
 }
@@ -1513,6 +1529,9 @@ model Apadrinamiento {
   importe           Decimal          @db.Decimal(10, 2)
   metodo            MetodoPago?
   pagadoEl          DateTime?
+  /// El ingreso del apadrinamiento, al cobrarse: no se corrige a mano.
+  transaccionId     Int?             @unique
+  transaccion       Transaccion?     @relation(fields: [transaccionId], references: [id], onDelete: SetNull)
   createdAt         DateTime         @default(now())
 
   @@index([piezaId, estado])
