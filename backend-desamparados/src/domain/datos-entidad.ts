@@ -54,12 +54,34 @@ export interface Identidad {
 // solo a `string`, así que la asignación directa no compila.
 export const identidad: Identidad = datos.identidad as Identidad;
 
-export const secretaria: DatosSecretaria = datos.secretaria;
-
-export const escudoUrl: string | null = datos.escudoUrl;
-
 const informado = (valor: string | null | undefined): valor is string =>
   typeof valor === 'string' && valor.trim() !== '';
+
+/** Dónde está la corporación (`sede` del JSON), que es también donde atiende Secretaría. */
+export interface Sede {
+  nombre: string | null;
+  calle: string | null;
+  codigoPostal: string | null;
+  localidad: string | null;
+}
+
+/**
+ * «C. Corregidor Paz Guzmán, 13, 29006 Málaga»: la sede en una línea. Sin la
+ * calle no hay dirección (null, y el bloque desaparece del correo); sin
+ * código postal o localidad, lo que haya.
+ */
+export function direccionDeLaSede(sede: Sede): string | null {
+  if (!informado(sede.calle)) return null;
+  const poblacion = [sede.codigoPostal, sede.localidad].filter(informado).map((v) => v.trim()).join(' ');
+  return [sede.calle.trim(), poblacion].filter(Boolean).join(', ');
+}
+
+// La dirección de Secretaría sale de la sede: estaba escrita dos veces en el
+// JSON, y cambiar una sin la otra dejaba los correos y el pie de la web
+// mandando a sitios distintos.
+export const secretaria: DatosSecretaria = { ...datos.secretaria, direccion: direccionDeLaSede(datos.sede) };
+
+export const escudoUrl: string | null = datos.escudoUrl;
 
 /**
  * Las líneas del bloque «Atención al Hermano», en el orden en que se pintan y
