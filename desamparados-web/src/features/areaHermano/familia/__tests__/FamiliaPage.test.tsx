@@ -110,4 +110,28 @@ describe('FamiliaPage', () => {
     await u.click(await screen.findByRole('button', { name: /darle cuenta propia/i }))
     expect(await screen.findByRole('dialog', { name: /cuenta propia a Marta/i })).toBeInTheDocument()
   })
+
+  // Antes, 409 «Ese DNI ya está registrado»: decía quién está en el censo.
+  it.each([
+    [400, 'No se ha podido guardar ese DNI. Si es correcto, habla con Secretaría.'],
+    [429, 'Has cambiado demasiados DNI por hoy. Inténtalo mañana.'],
+  ])('un DNI que el servidor no guarda (%i) enseña su mensaje tal cual', async (status, mensaje) => {
+    const fichas = [ficha(2, 'Lucía', { fechaNacimiento: haceAnios(9) })]
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
+      Promise.resolve(init?.method === 'POST' ? json({ error: mensaje }, status) : listado(fichas))))
+    renderWithProviders(<FamiliaPage />)
+    const u = usuario()
+
+    await u.click(await screen.findByRole('button', { name: /hacerme hermano/i }))
+    const dialogo = await screen.findByRole('dialog')
+    await u.type(within(dialogo).getByLabelText('Nombre'), 'Javier')
+    await u.clear(within(dialogo).getByLabelText('Primer apellido'))
+    await u.type(within(dialogo).getByLabelText('Primer apellido'), 'Ruiz')
+    await u.type(within(dialogo).getByLabelText('Fecha de nacimiento'), '1986-11-03')
+    await u.type(within(dialogo).getByLabelText('Tu DNI/NIE'), '12345678Z')
+    await u.click(within(dialogo).getByRole('button', { name: 'Guardar' }))
+
+    expect(await within(dialogo).findByText(mensaje)).toBeInTheDocument()
+  })
 })
+
