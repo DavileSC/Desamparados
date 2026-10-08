@@ -11,8 +11,6 @@ import { validate } from '../config/validate.js';
 import { type } from 'arktype';
 import { idParam } from '../config/common.js';
 import { ROLES_CENSO_EN_MESA } from '../services/procesion/mesa.service.js';
-
-// AHORA IMPORTAMOS TODO DESDE EL SCHEMA
 import {
   avisarAsistenciaSchema,
   cortejoQuerySchema,
