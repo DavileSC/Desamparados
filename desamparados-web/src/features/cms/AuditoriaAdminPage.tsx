@@ -8,6 +8,7 @@ import type { MetaPaginacion } from '../../lib/api/tipos'
 import { NOMBRE_CARGO } from '../../app/cmsNavegacion'
 import CabeceraSeccion from './CabeceraSeccion'
 import { site } from '../../config/site'
+import CORREOS from '../../../../shared/usos-de-correo.json'
 
 /**
  * Nombre legible de cada acción (AUDIT_ACTIONS en audit.service.ts). Una acción
@@ -128,6 +129,23 @@ const ACCIONES: Record<string, string> = {
   REACTIVACION_DESCARTAR: 'Descartar una reactivación',
   CENSO_CERRAR_HUECOS: 'Cerrar los huecos del censo',
   EMAIL_FALLIDO: 'Correo que no se pudo enviar',
+  ALTA_NO_TRAMITADA: 'Alta por la web no tramitada (datos ya registrados)',
+  FAMILIAR_DNI_OCUPADO: 'DNI de otra ficha escrito desde el área de hermanos',
+  CONTRASENA_CAMBIAR: 'Cambiar su contraseña',
+  PAGO_EN_LINEA_INCIDENCIA: 'Pago en línea que no cuadra',
+  PAGO_EN_LINEA_RESOLVER: 'Dar por resuelto un pago en línea',
+  DEFUNCION_FIJAR: 'Fijar la fecha de defunción',
+  SUFRAGIO_CREAR: 'Apuntar un sufragio',
+  SUFRAGIO_BORRAR: 'Borrar un sufragio',
+  PESAME_ENVIAR: 'Enviar el pésame',
+  CARTAS_GENERAR: 'Generar cartas',
+  ETIQUETAS_GENERAR: 'Generar etiquetas',
+  LOTERIA_COMPRA: 'Comprar lotería',
+  LOTERIA_COMPRA_DESHACER: 'Deshacer una compra de lotería',
+  LOTERIA_ENTREGA: 'Entregar talonarios de lotería',
+  LOTERIA_LIQUIDAR: 'Liquidar un talonario de lotería',
+  LOTERIA_LIQUIDAR_DESHACER: 'Deshacer la liquidación de un talonario',
+  LOTERIA_PREMIOS: 'Apuntar los premios de la lotería',
 }
 
 /** Nombre legible de los campos que aparecen en los detalles; el resto va tal cual. */
@@ -149,6 +167,45 @@ const CAMPOS: Record<string, string> = {
   fechaJura: 'Fecha de jura', presentadoPor: 'Presentado por', presentadoPor2: 'Presentado también por',
   formaPagoPref: 'Forma de pago', parentesco: 'Parentesco',
   abierto: 'Solicitud abierta', avisados: 'Cuentas avisadas por correo', noticiaId: 'Borrador de noticia',
+  motivo: 'Motivo', uso: 'Correo', para: 'Para', fichaConEseDni: 'Ficha que ya tiene ese DNI',
+  sesionesCerradas: 'Sesiones cerradas', antes: 'Antes', despues: 'Después',
+}
+
+/**
+ * Los correos por su nombre: EMAIL_FALLIDO guarda la clave del uso y no el
+ * asunto (que podía llevar el nombre del destinatario). Los del catálogo de
+ * Emails salen de shared/; estos otros no tienen plantilla.
+ */
+const CORREOS_SIN_PLANTILLA: Record<string, string> = {
+  comunicado: 'Boletín o aviso', comunicado_prueba: 'Prueba de un boletín o aviso',
+  aviso_solicitud: 'Aviso a Secretaría de una solicitud nueva', contacto: 'Mensaje del formulario de contacto',
+  sin_clasificar: 'Sin clasificar',
+}
+const NOMBRE_DE_CORREO: Record<string, string> = {
+  ...CORREOS_SIN_PLANTILLA,
+  ...Object.fromEntries(CORREOS.usos.map((uso) => [uso.clave, uso.nombre])),
+}
+
+/** Con qué chocó un alta no tramitada (registro.service: `Choque`). */
+const MOTIVOS_ALTA: Record<string, string> = {
+  correo_o_dni_de_cuenta: 'El correo o el DNI ya son de una cuenta',
+  dni_en_el_censo: 'El DNI ya está en el censo',
+  dni_de_menor_en_el_censo: 'El DNI de un menor ya está en el censo',
+  carrera: 'Otra alta con los mismos datos entró a la vez',
+}
+
+/**
+ * Los detalles con sus códigos traducidos donde la acción los trae: la clave
+ * del correo y el motivo del alta. El código se queda entre paréntesis, que es
+ * lo que se busca en los registros del servidor.
+ */
+function legibles(accion: string, detalles: unknown): unknown {
+  if (!esObjeto(detalles)) return detalles
+  const salida = { ...detalles }
+  const conCodigo = (nombre: string | undefined, codigo: string) => (nombre ? `${nombre} (${codigo})` : codigo)
+  if (accion === 'EMAIL_FALLIDO' && typeof salida.uso === 'string') salida.uso = conCodigo(NOMBRE_DE_CORREO[salida.uso], salida.uso)
+  if (accion === 'ALTA_NO_TRAMITADA' && typeof salida.motivo === 'string') salida.motivo = conCodigo(MOTIVOS_ALTA[salida.motivo], salida.motivo)
+  return salida
 }
 
 const etiqueta = (campo: string) => CAMPOS[campo] ?? campo
@@ -173,9 +230,13 @@ function formatear(valor: unknown): string {
 function DetallesAuditoria({ detalles }: { detalles: unknown }) {
   if (!esObjeto(detalles)) return <Typography variant="body2">{formatear(detalles)}</Typography>
 
-  const { antes, despues, ...resto } = detalles
-  const mapaAntes = esObjeto(antes) ? antes : {}
-  const mapaDespues = esObjeto(despues) ? despues : {}
+  // El antes y el después van en tabla cuando son objetos; un valor suelto
+  // (la fecha de una defunción) se queda con los demás datos, o se perdería.
+  const tabla = esObjeto(detalles.antes) || esObjeto(detalles.despues)
+  const { antes, despues, ...sueltos } = detalles
+  const resto = tabla ? sueltos : detalles
+  const mapaAntes = tabla && esObjeto(antes) ? antes : {}
+  const mapaDespues = tabla && esObjeto(despues) ? despues : {}
   const campos = [...new Set([...Object.keys(mapaAntes), ...Object.keys(mapaDespues)])]
 
   return (
@@ -262,7 +323,7 @@ function FilaAuditoria({ entry }: { entry: AuditEntry }) {
         <TableRow>
           <TableCell colSpan={5} sx={{ py: 0, ...(abierto ? {} : { borderBottom: 0 }) }}>
             <Collapse in={abierto} id={idDetalles} unmountOnExit>
-              <Box sx={{ pb: 2 }}><DetallesAuditoria detalles={entry.detalles} /></Box>
+              <Box sx={{ pb: 2 }}><DetallesAuditoria detalles={legibles(entry.action, entry.detalles)} /></Box>
             </Collapse>
           </TableCell>
         </TableRow>
