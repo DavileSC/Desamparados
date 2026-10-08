@@ -74,6 +74,26 @@ const enmascararTelefono = (telefono: string) => {
   return digitos.length <= 3 ? '•••' : `${'•'.repeat(digitos.length - 3)}${digitos.slice(-3)}`;
 };
 
+/**
+ * Buscar en la mesa. Quien lleva el censo, por un trozo de cualquier dato;
+ * los demás, por un trozo del nombre o los apellidos y por DNI, teléfono o
+ * correo solo con el dato entero: un trozo servía para sacar el contacto de
+ * cualquiera tecleando cifras sueltas.
+ */
+function condicionDeBusquedaEnMesa(
+  texto: string, acceso: AccesoMesa, camposDelCenso: ('nombre' | 'apellidos' | 'dni' | 'telefono' | 'email')[],
+): Prisma.HermanoWhereInput {
+  if (acceso.censo) return condicionBusqueda(texto, camposDelCenso);
+  return {
+    OR: [
+      condicionBusqueda(texto, ['nombre', 'apellidos']),
+      { dni: texto.toUpperCase() },
+      { telefono: { in: [texto, texto.replace(/\s+/g, '')] } },
+      { email: texto.toLowerCase() },
+    ],
+  };
+}
+
 type Situacion = 'activo' | 'baja' | 'pendiente';
 const situacionDe = (h: { activo: boolean; fechaBaja: Date | null }): Situacion =>
   h.activo ? 'activo' : h.fechaBaja ? 'baja' : 'pendiente';
@@ -143,16 +163,7 @@ export class MesaService {
     if (texto.length < 2) return [];
     const { zona = 'todas', acceso = SIN_CENSO } = opciones;
     const numero = /^\d{1,9}$/.test(texto) ? Number(texto) : null;
-    const busqueda: Prisma.HermanoWhereInput = acceso.censo
-      ? condicionBusqueda(texto, ['nombre', 'apellidos', 'dni', 'telefono', 'email'])
-      : {
-        OR: [
-          condicionBusqueda(texto, ['nombre', 'apellidos']),
-          { dni: texto.toUpperCase() },
-          { telefono: { in: [texto, texto.replace(/\s+/g, '')] } },
-          { email: texto.toLowerCase() },
-        ],
-      };
+    const busqueda = condicionDeBusquedaEnMesa(texto, acceso, ['nombre', 'apellidos', 'dni', 'telefono', 'email']);
     const year = anioDeLaMesa(salida);
     const salidaId = salida.id;
     // Los ya apuntados (con solicitud o papeleta) no salen en Inscripción:
@@ -615,10 +626,14 @@ export class MesaService {
    * uno con su punto del camino: solicitado con algo por pagar, listo para
    * recoger, o recogido (y entonces con su papeleta y su ropa).
    */
-  static async listado(year: number, salida: SalidaConActo, filtro: { q?: string; puesto?: string; faltaCingulo?: boolean }) {
+  static async listado(
+    year: number, salida: SalidaConActo, filtro: { q?: string; puesto?: string; faltaCingulo?: boolean }, acceso: AccesoMesa = SIN_CENSO,
+  ) {
     const salidaId = salida.id;
-    const busqueda = condicionBusqueda(filtro.q, ['nombre', 'apellidos', 'telefono', 'email']);
-    const deLaPersona = Object.keys(busqueda).length > 0 ? { hermano: busqueda } : {};
+    // Como el buscador: el teléfono y el correo de todos los apuntados se
+    // enseñaban y se buscaban por un trozo a cualquiera de la mesa.
+    const texto = filtro.q?.trim() ?? '';
+    const deLaPersona = texto ? { hermano: condicionDeBusquedaEnMesa(texto, acceso, ['nombre', 'apellidos', 'telefono', 'email']) } : {};
     const delPuesto = filtro.puesto ? { puesto: filtro.puesto } : {};
     const hermano = { select: { id: true, nombre: true, apellidos: true, fechaNacimiento: true, telefono: true, email: true, alturaHombro: true, numeroHermano: true, activo: true } } as const;
 
@@ -641,7 +656,13 @@ export class MesaService {
     ]);
     const cuotas = await cuotasQueCuentan(db, solicitudes.map((s) => s.hermano.id));
 
-    const sinActivo = <T extends { activo: boolean }>({ activo: _activo, ...resto }: T) => resto;
+    // Sin el censo, el contacto va enmascarado, como en la ficha.
+    const sinActivo = <T extends { activo: boolean; telefono: string | null; email: string | null }>({ activo: _activo, ...resto }: T) =>
+      acceso.censo ? resto : {
+        ...resto,
+        telefono: resto.telefono && enmascararTelefono(resto.telefono),
+        email: resto.email && enmascararEmail(resto.email),
+      };
     const filas = [
       ...papeletas.map((p) => ({
         tipo: 'papeleta' as const,

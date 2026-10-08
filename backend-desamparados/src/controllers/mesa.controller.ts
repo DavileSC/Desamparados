@@ -93,7 +93,7 @@ export class MesaController {
       q: req.query.q as string | undefined,
       puesto: req.query.puesto as string | undefined,
       faltaCingulo: req.query.faltaCingulo === '1',
-    }));
+    }, accesoDe(req)));
   });
 
   // --- Las zonas ---

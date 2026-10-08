@@ -696,6 +696,42 @@ test('el listado dice en qué punto está cada uno: por pagar, listo o recogido'
   }
 });
 
+// El listado enseñaba el teléfono y el correo de todos los apuntados y los
+// buscaba por un trozo a cualquiera de la mesa: igual que en el buscador y la
+// ficha, sin el censo el contacto va enmascarado y solo se busca con el dato entero.
+test('el listado, sin el censo: contacto enmascarado y teléfono o correo solo enteros', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const h = await e.hermano({ nombre: 'Contacto' });
+    const correo = `listado-${Date.now()}@ejemplo.test`;
+    await db.hermano.update({ where: { id: h.id }, data: { telefono: '623577927', email: correo } });
+    await e.inscribir(h.id);
+    const pasion = await salida(PASION);
+    const suyo = (r: Awaited<ReturnType<typeof MesaService.listado>>) => r.apuntados.find((a) => a.hermano.id === h.id);
+
+    const conCenso = suyo(await MesaService.listado(YEAR, pasion, {}, { censo: true }));
+    assert.equal(conCenso?.hermano.telefono, '623577927');
+    assert.equal(conCenso?.hermano.email, correo);
+
+    const sinCenso = suyo(await MesaService.listado(YEAR, pasion, {}));
+    assert.equal(sinCenso?.hermano.telefono, '••••••927');
+    assert.notEqual(sinCenso?.hermano.email, correo);
+    assert.ok(!String(sinCenso?.hermano.email).startsWith('listado-'), 'el correo va tapado');
+
+    // Un trozo del teléfono o del correo encuentra con el censo y no sin él.
+    assert.ok(suyo(await MesaService.listado(YEAR, pasion, { q: '577927' }, { censo: true })));
+    assert.equal(suyo(await MesaService.listado(YEAR, pasion, { q: '577927' })), undefined);
+    assert.equal(suyo(await MesaService.listado(YEAR, pasion, { q: correo.slice(0, 12) })), undefined);
+    // Entero, sí.
+    assert.ok(suyo(await MesaService.listado(YEAR, pasion, { q: '623577927' })));
+    assert.ok(suyo(await MesaService.listado(YEAR, pasion, { q: correo })));
+    assert.ok(suyo(await MesaService.listado(YEAR, pasion, { q: 'Contacto' })), 'por el nombre, como siempre');
+  } finally {
+    await e.recoger();
+  }
+});
+
 test('al cerrar el plazo, la solicitud de quien pidió día y no vino se cancela; la ya pagada, no', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
