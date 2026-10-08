@@ -311,6 +311,27 @@ describe('fotos del retablo del Inicio del CMS', () => {
   });
 });
 
+describe('fotos incrustadas en el boletín y en las actas', () => {
+  // Los dos se escriben con EditorTexto, que deja insertar fotos: la limpieza
+  // de huérfanos las borraba de boletines ya enviados y de actas aprobadas.
+  test('cuentan como en uso para el script y para el borrado al guardar', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const enBoletin = `${hex()}.webp`;
+    const enActa = `${hex()}.webp`;
+    const comunicado = await db.comunicado.create({ data: { tipo: 'BOLETIN', asunto: 'Prueba de fotos', cuerpo: `<p>Hola</p><img src="/storage/public/${enBoletin}">`, segmento: {} } });
+    const cabildo = await db.cabildo.create({ data: { tipo: 'ORDINARIO', fecha: new Date(), lugar: 'Prueba', ordenDelDia: [], acta: `<p>Acta</p><img src="/storage/public/${enActa}">` } });
+    try {
+      const referenciadas = await subidasReferenciadas();
+      assert.ok(referenciadas.has(enBoletin));
+      assert.ok(referenciadas.has(enActa));
+      assert.deepEqual([...(await subidasEnUso([enBoletin, enActa]))].sort(), [enBoletin, enActa].sort());
+    } finally {
+      await db.cabildo.delete({ where: { id: cabildo.id } });
+      await db.comunicado.delete({ where: { id: comunicado.id } });
+    }
+  });
+});
+
 describe('fotos de la portada (C1)', () => {
   test('la foto que sale de la lista se borra; las del seed y las estáticas no se tocan', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);

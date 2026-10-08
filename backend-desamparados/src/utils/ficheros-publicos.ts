@@ -115,7 +115,7 @@ export async function subidasEnUso(nombres: Iterable<string>): Promise<Set<strin
     for (const c of candidatos) if (texto.includes(c)) enUso.add(c);
   };
 
-  const [noticias, publicaciones, portada, enseres, paginas, eventos, retablo, productos, campanas, contenido] = await Promise.all([
+  const [noticias, publicaciones, portada, enseres, paginas, eventos, retablo, productos, campanas, comunicados, cabildos, contenido] = await Promise.all([
     db.noticia.findMany({ where: mencionaAlguno(['imagenUrl', 'contenido'], candidatos), select: { imagenUrl: true, contenido: true } }),
     db.publicacion.findMany({ where: mencionaAlguno(['imagenUrl', 'archivoUrl', 'descripcion'], candidatos), select: { imagenUrl: true, archivoUrl: true, descripcion: true } }),
     db.imagenPortada.findMany({ where: mencionaAlguno(['url'], candidatos), select: { url: true } }),
@@ -132,6 +132,11 @@ export async function subidasEnUso(nombres: Iterable<string>): Promise<Set<strin
     // producto se borraba al quitarla de la noticia.
     db.producto.findMany({ select: { foto: true, fotos: true } }),
     db.campanaApadrinamiento.findMany({ where: mencionaAlguno(['foto'], candidatos), select: { foto: true } }),
+    // El boletín y el acta se escriben con el mismo editor que las noticias,
+    // que deja insertar fotos. Sin contarlas, la limpieza las borraba: un
+    // boletín ya enviado o un acta aprobada con la foto rota para siempre.
+    db.comunicado.findMany({ where: mencionaAlguno(['cuerpo'], candidatos), select: { cuerpo: true } }),
+    db.cabildo.findMany({ where: mencionaAlguno(['acta'], candidatos), select: { acta: true } }),
     // El contenido editable guarda rutas de foto dentro de un JSON (la de
     // «Sábado de Pasión», el plano del recorrido, las de la historia).
     jsonDeContenido(),
@@ -146,6 +151,8 @@ export async function subidasEnUso(nombres: Iterable<string>): Promise<Set<strin
   for (const r of retablo) marcar(r.value);
   for (const p of productos) marcar(p.foto, p.fotos ? JSON.stringify(p.fotos) : null);
   for (const c of campanas) marcar(c.foto);
+  for (const c of comunicados) marcar(c.cuerpo);
+  for (const c of cabildos) marcar(c.acta);
   // En el JSON del constructor cuenta solo lo que tiene forma de ruta de
   // subida, como siempre; con `clave()` a los dos lados, porque en Linux
   // «<hex>.JPG» y «<hex>.jpg» son ficheros distintos y un fallo de
@@ -182,7 +189,7 @@ async function jsonDeContenido(): Promise<string[]> {
 
 /** Todos los ficheros subidos que menciona alguna tabla (para el script de huérfanos). */
 export async function subidasReferenciadas(): Promise<Set<string>> {
-  const [noticias, publicaciones, portada, enseres, paginas, eventos, contenido, productos, campanas, retablo] = await Promise.all([
+  const [noticias, publicaciones, portada, enseres, paginas, eventos, contenido, productos, campanas, retablo, comunicados, cabildos] = await Promise.all([
     db.noticia.findMany({ select: { imagenUrl: true, contenido: true } }),
     db.publicacion.findMany({ select: { imagenUrl: true, archivoUrl: true, descripcion: true } }),
     db.imagenPortada.findMany({ select: { url: true } }),
@@ -194,6 +201,8 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     db.producto.findMany({ select: { foto: true, fotos: true } }),
     db.campanaApadrinamiento.findMany({ select: { foto: true } }),
     db.configuracion.findMany({ where: { key: { startsWith: PREFIJO_RETABLO } }, select: { value: true } }),
+    db.comunicado.findMany({ select: { cuerpo: true } }),
+    db.cabildo.findMany({ select: { acta: true } }),
   ]);
   const textos = [
     ...noticias.flatMap((n) => [n.imagenUrl, n.contenido]),
@@ -206,6 +215,8 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
     ...productos.flatMap((p) => [p.foto, p.fotos ? JSON.stringify(p.fotos) : null]),
     ...campanas.map((c) => c.foto),
     ...retablo.map((r) => r.value),
+    ...comunicados.map((c) => c.cuerpo),
+    ...cabildos.map((c) => c.acta),
     ...rutasDelEntorno(),
   ];
   return subidasEnTexto(...textos);
