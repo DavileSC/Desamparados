@@ -6,9 +6,9 @@ import { ficheroDeDatosMiddleware } from '../middleware/upload.middleware';
 import { authenticateToken } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
 import { conModulo } from '../middleware/modulos';
-import { Role } from '@prisma/client';
 
 import { validate } from '../config/validate';
+import { ROLES_CENSO } from './roles';
 import { idParam } from '../config/common'; 
 
 import { 
@@ -36,7 +36,7 @@ import {
  * Redes y los hermanos rasos se quedan fuera de todo esto, con test negativo
  * en test/permisos-hermano-mayor.test.ts.
  */
-const rolesGestionCenso = [Role.ADMIN, Role.SECRETARIA, Role.HERMANO_MAYOR];
+const rolesGestionCenso = ROLES_CENSO;
 
 const hermanoRouter = Router();
 
