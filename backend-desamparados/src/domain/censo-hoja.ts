@@ -266,13 +266,30 @@ export function leerCsv(contenido: string): string[][] {
     } else celda += c;
   }
   if (celda !== '' || fila.length > 0) { fila.push(celda); filas.push(fila); }
-  return filas.filter((f) => f.some((c) => c.trim() !== ''));
+  // La «'» que pone `escribirCsv` delante de lo que parece una fórmula se
+  // quita al volver a leerlo: un censo exportado e importado queda igual.
+  return filas
+    .filter((f) => f.some((c) => c.trim() !== ''))
+    .map((f) => f.map((c) => (c.startsWith("'") && EMPIEZA_COMO_FORMULA.test(c.slice(1)) ? c.slice(1) : c)));
 }
 
-/** Filas a CSV para Excel en español: «;», comillas cuando hacen falta y BOM para las tildes. */
+/**
+ * Lo que Excel o LibreOffice leen como fórmula al abrir un CSV. Una dirección
+ * escrita en el alta como «=HIPERVINCULO(…)» se ejecutaba en el ordenador de
+ * Secretaría al abrir el censo exportado.
+ */
+const EMPIEZA_COMO_FORMULA = /^[=+\-@\t\r]/;
+
+/**
+ * Filas a CSV para Excel en español: «;», comillas cuando hacen falta y BOM
+ * para las tildes. Un texto que empieza como una fórmula lleva delante «'», la
+ * marca de «esto es texto» de las hojas de cálculo. Solo los textos: un número
+ * de verdad (negativo incluido) no es una fórmula, y el censo no exporta
+ * importes. El xlsx no lo necesita porque escribe cada celda como texto.
+ */
 export function escribirCsv(filas: (string | number | null)[][]): string {
   const celda = (v: string | number | null) => {
-    const t = v === null ? '' : String(v);
+    const t = v === null ? '' : typeof v === 'string' && EMPIEZA_COMO_FORMULA.test(v) ? `'${v}` : String(v);
     return /[";\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   return `\uFEFF${filas.map((f) => f.map(celda).join(';')).join('\r\n')}\r\n`;

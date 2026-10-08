@@ -125,6 +125,18 @@ describe('CSV', () => {
     assert.deepEqual(leerCsv('Nombre,Nota\nAna,"dice ""hola""\ny adiós"'), [['Nombre', 'Nota'], ['Ana', 'dice "hola"\ny adiós']]);
   });
 
+  // Un texto del alta que empieza por «=», «+», «-», «@», tabulador o retorno
+  // se abría como fórmula en Excel al abrir el censo exportado.
+  test('un texto que parece una fórmula sale con «\'» delante y vuelve a leerse igual', () => {
+    const peligrosos = ['=HYPERLINK("http://x")', '+34 600 000 000', '-2+3', '@SUMA(A1)', '\tTab', '\rRetorno'];
+    const csv = escribirCsv([peligrosos]);
+    const celdas = csv.replace(/^﻿/, '').trimEnd().split(';');
+    for (const c of celdas) assert.match(c, /^"?'/, `sin neutralizar: ${JSON.stringify(c)}`);
+    assert.deepEqual(leerCsv(csv), [peligrosos]);
+    // Un número de verdad no es una fórmula y no se toca.
+    assert.equal(escribirCsv([[-5, 12]]), '﻿-5;12\r\n');
+  });
+
   test('lo que escribe lo vuelve a leer igual', () => {
     const filas = [['Nombre', 'Dirección', 'Número'], ['Ana', 'C/ Mayor; 3', '12'], ['Luis "el Moreno"', '', '']];
     assert.deepEqual(leerCsv(escribirCsv(filas)), filas);
