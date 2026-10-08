@@ -184,10 +184,12 @@ jobs:
       - name: Construir
         run: npm run build
 
-      # `npm run build` regenera el sitemap: si quedó desincronizado en el
-      # commit, aquí se ve como un cambio sin registrar.
-      - name: Comprobar que el sitemap está al día
-        run: git diff --exit-code public/sitemap.xml
+      # `npm run build` regenera la lista de páginas del sitemap desde el router
+      # (shared/rutas-publicas.json, que sirve la API): si quedó desincronizada
+      # en el commit, aquí se ve como un cambio sin registrar. Antes miraba
+      # public/sitemap.xml, que ya no existe, y el paso fallaba siempre.
+      - name: Comprobar que la lista del sitemap está al día
+        run: git diff --exit-code ../shared/rutas-publicas.json
 
       - name: Auditoría de dependencias
         run: npm audit --audit-level=high

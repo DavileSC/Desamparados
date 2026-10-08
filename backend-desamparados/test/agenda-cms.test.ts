@@ -18,6 +18,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { ACTOS_EN_PORTADA, actosEnPortada } from '../src/services/agenda.service.js';
 import { SIN_DB } from './fixtures/sin-db.js';
+import { diaMadridComoIntervalo } from '../src/domain/contabilidad.js';
 
 let server: Server;
 let baseUrl: string;
@@ -42,9 +43,9 @@ before(async () => {
 
   // Pegados a la medianoche de hoy, que es donde el servidor corta entre pasados
   // y próximos: así caen en la primera página de cada pestaña aunque la base de
-  // desarrollo tenga más eventos.
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  // desarrollo tenga más eventos. La de Madrid, como el servidor, y no la de la
+  // máquina: en el CI, que va en UTC, «ayer a las 23:59» ya era hoy en Madrid.
+  const hoy = diaMadridComoIntervalo(new Date()).desde;
   const minutos = (n: number) => new Date(hoy.getTime() + n * 60_000);
   eventos.ayer = (await db.evento.create({ data: { title: `${marca} ayer`, startDate: minutos(-1) } })).id;
   eventos.anteayer = (await db.evento.create({ data: { title: `${marca} antes`, startDate: minutos(-2) } })).id;
