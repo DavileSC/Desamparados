@@ -77,7 +77,7 @@ export class MiProcesionService {
       where: { id: hermanoId, userId: userId, activo: true }
     });
     if (!checkPropiedad) {
-      throw new HttpError('No tienes permisos para apuntar a este cofrade.');
+      throw new HttpError('No tienes permisos para apuntar a este hermano.');
     }
 
     // Todas las comprobaciones y la creación van en la misma transacción
