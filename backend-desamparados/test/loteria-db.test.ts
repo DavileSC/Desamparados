@@ -90,8 +90,11 @@ test('la lotería: sorteo, talonarios, liquidación, compra, premios y participa
     const contabilidad = await fetch(`${baseUrl}/api/transacciones/${ingreso.transaccionId}`, { method: 'DELETE', headers: { Cookie: `${COOKIE_CMS}=${generateToken(tesorero.id, Role.TESORERIA)}` } });
     assert.equal(contabilidad.status, 409);
 
-    // Deshacer la liquidación quita el ingreso.
-    s = await json(await yo(`/talonarios/${talonario1}/liquidacion`, { method: 'DELETE' }));
+    // Deshacer la liquidación quita el ingreso. Con dos clics a la vez, solo
+    // uno deshace: el otro ya no encuentra la liquidación que leyó (409).
+    const dosDeshacer = await Promise.all([1, 2].map(() => yo(`/talonarios/${talonario1}/liquidacion`, { method: 'DELETE' })));
+    assert.deepEqual(dosDeshacer.map((r) => r.status).sort(), [200, 409]);
+    s = await json(dosDeshacer.find((r) => r.status === 200)!);
     assert.equal(s.liquidados, 0);
     assert.equal(await db.transaccion.count({ where: { id: ingreso.transaccionId! } }), 0);
     s = await json(await yo(`/talonarios/${talonario1}/liquidacion`, { method: 'POST', json: { vendidas: 10, metodoPago: 'BIZUM' } }));
@@ -113,9 +116,13 @@ test('la lotería: sorteo, talonarios, liquidación, compra, premios y participa
     assert.equal(pdf.headers.get('content-type'), 'application/pdf');
     assert.equal(paginas(Buffer.from(await pdf.arrayBuffer())), 4);
 
-    // Para terminar, se deshace la compra (el gasto se va).
-    s = await json(await yo(`/${sorteoId}/compra`, { method: 'DELETE' }));
+    // Para terminar, se deshace la compra (el gasto se va), una sola vez aunque lleguen dos.
+    const compraId = (await db.sorteoLoteria.findUniqueOrThrow({ where: { id: sorteoId } })).compraId!;
+    const dosCompras = await Promise.all([1, 2].map(() => yo(`/${sorteoId}/compra`, { method: 'DELETE' })));
+    assert.deepEqual(dosCompras.map((r) => r.status).sort(), [200, 409]);
+    s = await json(dosCompras.find((r) => r.status === 200)!);
     assert.equal(s.compra, null);
+    assert.equal(await db.transaccion.count({ where: { id: compraId } }), 0);
     assert.equal(await db.auditLog.count({ where: { userId: tesorero.id, action: { startsWith: 'LOTERIA_' } } }), 7);
   } finally {
     if (sorteoId) {
