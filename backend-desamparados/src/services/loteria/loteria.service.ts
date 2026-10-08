@@ -204,10 +204,14 @@ export class LoteriaService {
   static async deshacerCompra(id: number, meta: MetaDeAuditoria) {
     const s = await sorteoOError(id);
     if (s.compraId === null) throw new HttpError('La compra de este sorteo no está apuntada.', 409);
-    await db.$transaction([
-      db.sorteoLoteria.update({ where: { id }, data: { compraId: null } }),
-      db.transaccion.delete({ where: { id: s.compraId } }),
-    ]);
+    const compraId = s.compraId;
+    await db.$transaction(async (tx) => {
+      // Condicionado a la compra que se leyó: si entre tanto otro la deshizo
+      // (y quizá la volvió a apuntar), esto no se lleva por delante la nueva.
+      const { count } = await tx.sorteoLoteria.updateMany({ where: { id, compraId }, data: { compraId: null } });
+      if (count !== 1) throw new HttpError('La compra de este sorteo ha cambiado mientras tanto. Recarga la página.', 409);
+      await tx.transaccion.delete({ where: { id: compraId } });
+    });
     await AuditoriaService.log(ACCIONES_AUDITORIA.LOTERIA_COMPRA_DESHACER, meta, 'sorteoLoteria', id);
     return this.sorteo(id);
   }
@@ -283,7 +287,14 @@ export class LoteriaService {
     if (!t) throw new NotFoundError('Ese talonario ya no existe.');
     if (!t.liquidadoEl) throw new HttpError('Este talonario no está liquidado.', 409);
     await db.$transaction(async (tx) => {
-      await tx.talonarioLoteria.update({ where: { id: talonarioId }, data: { vendidas: null, metodoPago: null, liquidadoEl: null, transaccionId: null } });
+      // Condicionado a la liquidación que se leyó: si entre tanto otro la
+      // deshizo y se volvió a liquidar, esto no borra la nueva ni deja su
+      // ingreso suelto en la contabilidad.
+      const { count } = await tx.talonarioLoteria.updateMany({
+        where: { id: talonarioId, liquidadoEl: t.liquidadoEl, transaccionId: t.transaccionId },
+        data: { vendidas: null, metodoPago: null, liquidadoEl: null, transaccionId: null },
+      });
+      if (count !== 1) throw new HttpError('La liquidación de este talonario ha cambiado mientras tanto. Recarga la página.', 409);
       if (t.transaccionId !== null) await tx.transaccion.deleteMany({ where: { id: t.transaccionId } });
     });
     await AuditoriaService.log(ACCIONES_AUDITORIA.LOTERIA_LIQUIDAR_DESHACER, meta, 'talonarioLoteria', talonarioId, { numero: t.numero, vendidas: t.vendidas });

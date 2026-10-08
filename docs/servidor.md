@@ -159,7 +159,11 @@ Quedan a mano, con `sudo nano /srv/desamparados/.env`:
   día.
 - Si se quiere probar el pago, las `REDSYS_*` del entorno de **pruebas** (las
   del `.env` de desarrollo), con `PAGO_EN_LINEA=redsys` y
-  `REDSYS_ENTORNO=pruebas`.
+  `REDSYS_ENTORNO=pruebas`, **y además `PAGO_DE_PRUEBA_EN_PRODUCCION=si`**.
+  La API corre aquí con `NODE_ENV=production`, y en producción un pago que no
+  cobra de verdad (simulado, o Redsys sin `REDSYS_ENTORNO=real`) impide
+  arrancar si no se consiente así por escrito. Esa línea es solo de la web de
+  pruebas: en la de verdad no debe estar nunca.
 
 Comprobar sin enseñar los valores:
 

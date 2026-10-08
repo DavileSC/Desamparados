@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Divider, IconButton, ListItemIcon, Menu, MenuItem } from '@mui/material'
+import { Box, Button, Divider, IconButton, ListItemIcon, Menu, MenuItem, Tooltip } from '@mui/material'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -14,6 +14,10 @@ import type { ApiEvent } from '../../../lib/api/agenda'
 export default function AccionesActo({ evento, volver, onBorrar }: { evento: ApiEvent; volver: string; onBorrar: () => void }) {
   const [menu, setMenu] = useState<HTMLElement | null>(null)
   const cerrar = () => setMenu(null)
+  // Borrarlo dejaría a la salida sin fecha: se cambia desde su ficha.
+  const porQueNoSeBorra = evento.salidaEnlazada
+    ? `Es la fecha de la salida «${evento.salidaEnlazada.nombre}»: cámbiala desde la ficha de la salida`
+    : null
   return <>
     <Button
       size="small"
@@ -37,9 +41,24 @@ export default function AccionesActo({ evento, volver, onBorrar }: { evento: Api
         <ListItemIcon><ContentCopyOutlinedIcon fontSize="small" /></ListItemIcon>Duplicar
       </MenuItem>
       <Divider />
-      <MenuItem onClick={() => { cerrar(); onBorrar() }} sx={{ color: 'error.main' }}>
-        <ListItemIcon sx={{ color: 'inherit' }}><DeleteOutlineIcon fontSize="small" /></ListItemIcon>Eliminar
-      </MenuItem>
+      {porQueNoSeBorra ? (
+        // El servidor ya lo rechaza; deshabilitado se ve antes de pulsar. Un
+        // elemento deshabilitado no recibe el ratón, así que el porqué lo
+        // enseña la caja de alrededor. Solo entonces va envuelto: la lista del
+        // menú no baja a buscar dentro de una caja, y la opción habilitada
+        // dejaría de alcanzarse con las flechas.
+        <Tooltip title={porQueNoSeBorra} placement="left" describeChild>
+          <Box component="li" role="none">
+            <MenuItem component="div" disabled sx={{ color: 'error.main' }}>
+              <ListItemIcon sx={{ color: 'inherit' }}><DeleteOutlineIcon fontSize="small" /></ListItemIcon>Eliminar
+            </MenuItem>
+          </Box>
+        </Tooltip>
+      ) : (
+        <MenuItem onClick={() => { cerrar(); onBorrar() }} sx={{ color: 'error.main' }}>
+          <ListItemIcon sx={{ color: 'inherit' }}><DeleteOutlineIcon fontSize="small" /></ListItemIcon>Eliminar
+        </MenuItem>
+      )}
     </Menu>
   </>
 }

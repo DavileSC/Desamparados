@@ -37,12 +37,18 @@ export default defineConfig(({ mode }) => {
             if (['react', 'react-dom', 'react-router', 'react-router-dom', 'scheduler'].includes(paquete)) {
               return 'vendor-react'
             }
+            // Los iconos no: casi todos son del CMS (unos 165), y en vendor-mui
+            // los bajaba también quien solo visita la web pública. Sueltos, cada
+            // uno acaba junto a la pantalla que lo pinta.
+            if (paquete === '@mui/icons-material') return undefined
             if (paquete.startsWith('@mui/') || paquete.startsWith('@emotion/')) {
               return 'vendor-mui'
             }
-            if (['react-hook-form', '@hookform/resolvers', 'zod'].includes(paquete)) {
-              return 'vendor-forms'
-            }
+            // Sin grupo para react-hook-form y zod: con «vendor-forms» el
+            // empaquetador metía ahí también el código CJS de react, de modo que
+            // toda página importaba ese trozo (y sus 30 KB de formularios) aunque
+            // no tuviera ningún formulario. Sueltos, van con el formulario que
+            // los usa.
             if (['framer-motion', 'motion-dom', 'motion-utils', 'react-helmet-async', '@tanstack/react-query', '@tanstack/query-core', 'zustand'].includes(paquete)) {
               return 'vendor-utils'
             }

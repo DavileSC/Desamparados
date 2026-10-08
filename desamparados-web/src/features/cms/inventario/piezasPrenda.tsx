@@ -76,7 +76,16 @@ export function MenuPrenda({ prenda: p, volver, onBorrar }: { prenda: Prenda; vo
       </Tooltip>
       <IconButton size="small" aria-label={`Más acciones de ${p.numero}`} onClick={(e) => setAncla(e.currentTarget)}><MoreHorizIcon fontSize="small" /></IconButton>
       <Menu anchorEl={ancla} open={ancla !== null} onClose={() => setAncla(null)}>
-        <MenuItem onClick={() => { setAncla(null); onBorrar(p) }} sx={{ color: 'error.main' }}>Eliminar</MenuItem>
+        {p.estado === 'PRESTADA'
+          // Borrarla se llevaría el único rastro de quién la tiene: el servidor
+          // lo rechaza, y aquí se dice antes el camino. El span deja ver el
+          // aviso sobre un elemento deshabilitado.
+          ? (
+            <Tooltip title="Está prestada: regístrala con «Devolver» y, si no va a volver, pásala a «Baja», que conserva su historia." placement="left">
+              <span><MenuItem disabled>Eliminar</MenuItem></span>
+            </Tooltip>
+          )
+          : <MenuItem onClick={() => { setAncla(null); onBorrar(p) }} sx={{ color: 'error.main' }}>Eliminar</MenuItem>}
       </Menu>
     </Box>
   )

@@ -24,6 +24,7 @@
     "limpiar:huerfanos": "node --import tsx scripts/limpiar-huerfanos.ts",
     "migrar:bloques": "node --import tsx scripts/migrar-a-bloques.ts",
     "fotos:webp": "node --import tsx scripts/fotos-a-webp.ts",
+    "imagenes:variantes": "node --import tsx scripts/variantes-de-imagenes.ts",
     "correos:muestra": "node --import tsx scripts/muestra-correos.ts",
     "licencias": "node scripts/licencias.mjs"
   },

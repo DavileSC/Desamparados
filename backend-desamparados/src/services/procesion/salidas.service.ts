@@ -211,10 +211,15 @@ export class SalidasService {
     // se queda en la Agenda como historia. Moverlo borraría la fecha de la
     // salida de aquel año, que es lo que sus papeletas impresas dicen.
     const mismoAnio = antes && diaMadrid(antes.inicio).slice(0, 4) === diaMadrid(inicio).slice(0, 4);
-    const evento = antes && mismoAnio
-      ? await db.evento.update({ where: { id: antes.eventoId }, data: acto })
-      : await db.evento.create({ data: acto });
-    await db.salida.update({ where: { id: salida.id }, data: { eventoId: evento.id } });
+    // Crear el acto y enlazarlo, juntos: si el enlace fallaba, quedaba un acto
+    // suelto en la Agenda pública con el nombre de la salida.
+    const evento = await db.$transaction(async (tx) => {
+      const guardado = antes && mismoAnio
+        ? await tx.evento.update({ where: { id: antes.eventoId }, data: acto })
+        : await tx.evento.create({ data: acto });
+      await tx.salida.update({ where: { id: salida.id }, data: { eventoId: guardado.id } });
+      return guardado;
+    });
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.SALIDA_FECHAR, meta ?? {}, 'salida', salida.id, {
       antes: antes && { eventoId: antes.eventoId, inicio: antes.inicio.toISOString(), lugar: antes.lugar },

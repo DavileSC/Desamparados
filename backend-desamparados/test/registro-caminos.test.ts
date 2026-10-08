@@ -15,8 +15,8 @@ import { AuthService } from '../src/services/auth.service.js';
 import { MAXIMO_MENORES_POR_ALTA, registerSchema } from '../src/schemas/auth.schema.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { RegistroService } from '../src/services/registro.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const PASSWORD = 'Trono-Alameda-84-Verde';
 
 /** DNI con la letra que le toca, para que pase la validación del esquema. */
@@ -252,7 +252,8 @@ describe('el alta contra la base de datos', () => {
     );
   });
 
-  test('un DNI que ya está en el censo se rechaza con 409', async (t) => {
+  // No con un 409, que diría quién está en el censo: ver alta-sin-delatar.test.ts.
+  test('un DNI que ya está en el censo no crea nada y responde como un alta', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     const email = nuevoCorreo('con-dni-ocupado');
     const ocupado = nuevoDni();
@@ -261,12 +262,12 @@ describe('el alta contra la base de datos', () => {
       menores: [{ nombre: 'Marta', dni: ocupado, fechaNacimiento: '2010-05-01' }],
     });
 
-    await assert.rejects(
-      () => RegistroService.registerUser({
-        usuario: adulto(email, nuevoDni()),
-        menores: [{ nombre: 'Otra', dni: ocupado, fechaNacimiento: '2011-01-01' }],
-      }),
-      (e: HttpError) => e instanceof HttpError && e.status === 409,
-    );
+    const respuesta = await RegistroService.registerUser({
+      usuario: adulto(email, nuevoDni()),
+      menores: [{ nombre: 'Otra', dni: ocupado, fechaNacimiento: '2011-01-01' }],
+    });
+    assert.equal(respuesta.creada, false);
+    assert.equal(respuesta.fichas, 1, 'cuenta las fichas pedidas, como un alta hecha');
+    assert.equal(await db.user.count({ where: { email } }), 0, 'no queda una cuenta a medias');
   });
 });

@@ -3,7 +3,7 @@ import { HelmetProvider } from 'react-helmet-async'
 import { MotionConfig } from 'framer-motion'
 import AppRouter from './routes'
 import RedDeErrores from './components/RedDeErrores'
-import { useCargarSesion } from './features/altas/auth/session'
+import { useCargarSesion, useVaciarCacheAlCambiarDeUsuario } from './features/altas/auth/session'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +18,7 @@ const queryClient = new QueryClient({
 function App() {
   // Recupera la sesion de la cookie httpOnly. Una sola vez, al arrancar.
   useCargarSesion()
+  useVaciarCacheAlCambiarDeUsuario(queryClient)
 
   return (
     <HelmetProvider>

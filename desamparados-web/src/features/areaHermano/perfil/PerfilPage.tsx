@@ -9,6 +9,7 @@ import Boton from '../../../components/Boton'
 import { misFichas, type ApiProfile } from '../../../lib/api/perfil'
 import { aniosCumplidos } from '../../altas/public/schema'
 import { Contacto, CuotaYPago, DatosPersonales, VidaCofrade } from './apartados'
+import ApartadoContrasena from './ApartadoContrasena'
 import { PARENTESCO, aDia, diaLegible } from './etiquetas'
 import { site } from '../../../config/site'
 import { laCorporacion } from '../../../domain/articulos'
@@ -149,6 +150,14 @@ export default function PerfilPage() {
                 </Box>
               </Box>
             </>
+          )}
+
+          {/* De la cuenta, no de la ficha: va fuera de la rejilla y no cambia al
+              elegir otra persona. Media anchura en escritorio, como una columna. */}
+          {!cargando && (
+            <Box sx={{ mt: 2.5, width: { xs: '100%', md: 'calc(50% - 10px)' } }}>
+              <ApartadoContrasena />
+            </Box>
           )}
         </ContenedorDePagina>
       </SeccionAnimada>

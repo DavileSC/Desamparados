@@ -129,3 +129,18 @@ test('ni el código ni las plantillas escriben la corporación ni la salida a ma
   mirar(plantillas, sinBloqueDeComentario(lineasDe(readFileSync(plantillas, 'utf8'))), [CORPORACION, SALIDA_EN_PLANTILLA]);
   assert.deepEqual(hallazgos, [], `Escritas a mano (usa domain/articulos.ts o los campos {{la_corporacion}}…):\n${hallazgos.join('\n')}`);
 });
+
+// «Cofrade» es el miembro de una cofradía: aquí son «hermanos» en todas las
+// instalaciones (la auditoría del 07-10-2026 encontró un «No tienes permisos
+// para apuntar a este cofrade» que leía el hermano en su área). Solo el
+// backend: sus mensajes de error llegan tal cual a la pantalla.
+test('los mensajes del backend llaman «hermanos» a los miembros, no «cofrades»', () => {
+  const hallazgos: string[] = [];
+  for (const f of ficheros(join(RAIZ, 'backend-desamparados/src'))) {
+    lineasDe(readFileSync(f, 'utf8')).forEach((l, i) => {
+      const texto = sinComentarios(l);
+      if (/['"`][^'"`]*\bcofrades?\b/i.test(texto)) hallazgos.push(`${relative(RAIZ, f).replace(/\\/g, '/')}:${i + 1}: ${texto.trim()}`);
+    });
+  }
+  assert.deepEqual(hallazgos, [], `«cofrade» en un texto visible:\n${hallazgos.join('\n')}`);
+});

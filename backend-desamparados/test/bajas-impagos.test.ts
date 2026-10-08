@@ -18,8 +18,8 @@ import { ReciboService } from '../src/services/recibo.service.js';
 import { CensoService } from '../src/services/censo.service.js';
 import { EmailService } from '../src/services/email.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const ANIO = Number(diaDeHoy().slice(0, 4));
 
 describe('agrupar los impagos por hermano', () => {

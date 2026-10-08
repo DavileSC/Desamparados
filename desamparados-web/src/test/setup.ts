@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom/vitest'
+import { afterEach } from 'vitest'
 
 /**
  * jsdom no implementa IntersectionObserver, y `SeccionAnimada` (framer-motion,
@@ -70,3 +71,13 @@ globalThis.matchMedia ??= ((consulta: string) => ({
   removeEventListener() {},
   dispatchEvent: () => false,
 })) as unknown as typeof window.matchMedia
+
+/**
+ * Las fichas del CMS guardan en sessionStorage lo que se queda sin guardar
+ * (`useFichaCms`), y jsdom comparte ese almacenamiento entre las pruebas de un
+ * mismo fichero: el borrador que deja una aparecía como «Quedaron cambios sin
+ * guardar» al abrir la ficha en la siguiente y le tapaba la pantalla.
+ */
+afterEach(() => {
+  try { sessionStorage.clear() } catch { /* sin almacenamiento, nada que limpiar */ }
+})

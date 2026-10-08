@@ -48,7 +48,7 @@ DAO**: los servicios consultan con `db` directamente.
   y `req.user` los rellena `middleware/session.ts`.
 - La sesión se valida contra la base en cada petición (usuario activo, cortes
   de revocación, rol refrescado). No confiar en el rol del token.
-- CORS solo `GET/POST/PUT/DELETE` y `Content-Type`.
+- CORS solo `GET/POST/PUT/PATCH/DELETE` y `Content-Type`.
 
 ## Reglas
 
@@ -60,7 +60,9 @@ DAO**: los servicios consultan con `db` directamente.
 - HTML del CMS → `sanearContenidoCms` (`utils/sanear-html.ts`) antes de guardar.
 - Subidas: multer en `middleware/upload.middleware.ts`; el tipo real
   (`file-type`), ClamAV y el paso a WebP de 1920 px, en
-  `controllers/subida.controller.ts`. Documentos privados, en `storage/private`.
+  `controllers/subida.controller.ts`. Lo público se comprueba en
+  `storage/subiendo` y solo después pasa a `storage/public`; cada foto pública
+  deja además sus copias de 640 y 1280 px (`domain/variantes-de-foto.ts`). Documentos privados, en `storage/private`.
 - Transacciones que pueden chocar → `utils/transaction-retry.ts`; el conflicto
   se reconoce en `esConflictoDeConcurrencia` y sale como 409.
 - Correos: `services/correos/`; en pruebas nunca se envían. Los datos del Grupo

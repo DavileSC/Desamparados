@@ -14,7 +14,7 @@ import { Revela } from '../../../components/SeccionAnimada'
 import Boton from '../../../components/Boton'
 import CampoContrasena from '../../../components/CampoContrasena'
 import { LONGITUD_MINIMA } from '../../../lib/politicaDeContrasena'
-import { register as apiRegister, pedirReactivacion } from '../../../lib/api/auth'
+import { register as apiRegister } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
 import { GOLD, SERIF, ceja } from '../../inicio/estilos'
 import {
@@ -64,10 +64,6 @@ export default function HazteHermanoPage() {
   const [camino, setCamino] = useState<Camino | null>(null)
   const [enviada, setEnviada] = useState<{ nombre: string; email: string; fichas: number; soloMenores: boolean } | null>(null)
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
-  // Cuando el alta topa con un DNI que ya está en el censo, lo que toca no es
-  // repetir el formulario: es pedir que reactiven la ficha de antes.
-  const [ofrecerVuelta, setOfrecerVuelta] = useState(false)
-  const [vueltaPedida, setVueltaPedida] = useState<string | null>(null)
 
   const {
     register, handleSubmit, setError, setFocus, trigger, reset, getValues, setValue, watch, control,
@@ -139,20 +135,8 @@ export default function HazteHermanoPage() {
     setFocus('nombre')
   }
 
-  const pedirVuelta = async () => {
-    setErrorEnvio(null)
-    try {
-      const { message } = await pedirReactivacion(getValues('dni'), getValues('email'))
-      setVueltaPedida(message)
-      setOfrecerVuelta(false)
-    } catch (error) {
-      setErrorEnvio(error instanceof ErrorDeApi ? error.message : 'No se ha podido enviar la petición. Inténtalo más tarde.')
-    }
-  }
-
   const onSubmit = async (data: MembershipFormData) => {
     setErrorEnvio(null)
-    setOfrecerVuelta(false)
     try {
       const propia = conFichaPropia(data.camino)
       const respuesta = await apiRegister({
@@ -179,13 +163,6 @@ export default function HazteHermanoPage() {
       setCamino(null)
       setPaso(0)
     } catch (error) {
-      // Un DNI que ya está en el censo es de alguien que estuvo aquí: se le
-      // ofrece pedir la vuelta en vez de dejarlo en un callejón sin salida.
-      if (error instanceof ErrorDeApi && /ya hay una ficha en el censo/i.test(error.message)) {
-        setOfrecerVuelta(true)
-        setErrorEnvio(error.message)
-        return
-      }
       if (error instanceof ErrorDeApi && Object.keys(error.fields).length > 0) {
         // El servidor dice qué campo falla; enseñarlo bajo su casilla, en su
         // paso, en vez de un «Error de validación» suelto que no dice qué corregir.
@@ -678,20 +655,7 @@ export default function HazteHermanoPage() {
                         })}
                       </Box>
 
-                      {errorEnvio && (
-                        <Alert
-                          severity="error"
-                          role="alert"
-                          action={ofrecerVuelta ? (
-                            <Boton type="button" appVariant="outline" onClick={() => void pedirVuelta()} sx={{ borderRadius: '3px', height: 40, whiteSpace: 'nowrap' }}>
-                              Pedir la reactivación
-                            </Boton>
-                          ) : undefined}
-                        >
-                          {errorEnvio}
-                        </Alert>
-                      )}
-                      {vueltaPedida && <Alert severity="success" role="status">{vueltaPedida}</Alert>}
+                      {errorEnvio && <Alert severity="error" role="alert">{errorEnvio}</Alert>}
 
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, borderTop: `1px solid ${FILETE_TARJETA}`, pt: { xs: 2.5, md: 3 } }}>
                         {/* Altura fija en los dos botones: el de contorno lleva 1 px de

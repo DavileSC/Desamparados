@@ -95,6 +95,11 @@ describe('contactSchema', () => {
     }
     expect(contactSchema.safeParse({ ...valido, email: "o'brien@example.ie" }).success).toBe(true)
   })
+
+  it('los espacios no cuentan para los diez caracteres del mensaje', () => {
+    expect(contactSchema.safeParse({ ...valido, mensaje: '   hola      ' }).success).toBe(false)
+    expect(contactSchema.safeParse({ ...valido, mensaje: '  Diez letras  ' }).success).toBe(true)
+  })
 })
 
 describe('telefonoValido', () => {

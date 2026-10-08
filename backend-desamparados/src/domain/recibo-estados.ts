@@ -1,4 +1,4 @@
-import { EstadoPago } from '@prisma/client';
+import { EstadoPago, MetodoPago } from '@prisma/client';
 
 /**
  * Máquina de estados de un recibo, sin base de datos de por medio.
@@ -72,6 +72,18 @@ export const ESTADOS_COBRABLES: readonly EstadoPago[] = [EstadoPago.PENDIENTE, E
 export function puedeCobrarse(estado: EstadoPago): boolean {
   return ESTADOS_COBRABLES.includes(estado);
 }
+
+/**
+ * Desde qué estados se cobra con `metodo`. Un remesado está en el banco, que
+ * es quien lo cobra: solo se da por cobrado por domiciliación (o sin decir
+ * método, que es lo mismo). Cobrarlo en mano con la remesa en el banco lo
+ * cobraría dos veces; si el banco lo devuelve, se cobra su reemisión.
+ */
+export function estadosCobrablesCon(metodo: MetodoPago | null | undefined): EstadoPago[] {
+  return metodo == null || metodo === MetodoPago.DOMICILIACION ? [...ESTADOS_COBRABLES] : [EstadoPago.PENDIENTE];
+}
+
+export const MENSAJE_REMESADO_EN_MANO = 'está en el banco, cobrándose por domiciliación: no se cobra en mano. Si el banco lo devuelve, se cobra su reemisión.';
 
 /**
  * `true` si pasar un recibo de papeleta a `destino` deja la papeleta sin

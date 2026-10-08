@@ -86,6 +86,19 @@ export function diaMadrid(instante: Date): string {
 }
 
 /**
+ * El día de Madrid en que cae `instante`, como intervalo `[desde, hasta)` para
+ * consultar con `gte`/`lt`. Para «hoy» no vale `setHours`: el servidor corre en
+ * UTC y de medianoche a las 02:00 de Madrid seguía siendo el día anterior.
+ * Los días de cambio de hora duran 23 o 25 horas, y así salen.
+ */
+export function diaMadridComoIntervalo(instante: Date): { desde: Date; hasta: Date } {
+  const dia = diaMadrid(instante);
+  const [anio, mes, d] = dia.split('-').map(Number);
+  const siguiente = new Date(Date.UTC(anio, mes - 1, d + 1)).toISOString().slice(0, 10);
+  return { desde: inicioDiaMadrid(dia), hasta: inicioDiaMadrid(siguiente) };
+}
+
+/**
  * ¿Es un día que existe en el calendario? El patrón `AAAA-MM-DD` deja pasar el
  * 2026-02-30, que `Date.UTC` convierte sin avisar en el 2 de marzo. Los años se
  * acotan a 1900-2100: por debajo de 100 `Date.UTC` los lee como 19xx, y un

@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import multer from 'multer';
 import { handleHttp, HttpError, traducirErrorPrisma } from '../src/utils/error.handle.js';
 import { globalErrorHandler } from '../src/middleware/error.middleware.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 /**
  * Traducción de errores a respuestas HTTP.
@@ -115,6 +116,13 @@ describe('traducirErrorPrisma', () => {
     // Otro error de MariaDB sin traducción sigue siendo interno:
     const otro = Object.assign(new Error('Table doesn\'t exist'), { name: 'DriverAdapterError', cause: { kind: 'mysql', code: 1146 } });
     assert.equal(traducirErrorPrisma(otro), null);
+  });
+
+  test('P2000 (texto más largo que la columna) → 400, también suelto del adaptador', () => {
+    const esperado = { status: 400, message: 'Uno de los textos es demasiado largo: acórtalo y vuelve a intentarlo.' };
+    assert.deepEqual(traducirErrorPrisma(errorPrisma('P2000', { modelName: 'Evento' })), esperado);
+    const suelto = Object.assign(new Error('Data too long'), { name: 'DriverAdapterError', cause: { kind: 'LengthMismatch', column: 'title' } });
+    assert.deepEqual(traducirErrorPrisma(suelto), esperado);
   });
 
   test('el resto no se traduce', () => {
@@ -242,7 +250,6 @@ describe('globalErrorHandler', () => {
  * notara. El skip va dentro del cuerpo (ver docs/notas-del-proyecto.md, §6).
  */
 describe('con MariaDB', () => {
-  const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
   async function sondearDb(db: { $queryRaw: (q: TemplateStringsArray) => Promise<unknown> }): Promise<boolean> {
     const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
@@ -266,6 +273,16 @@ describe('con MariaDB', () => {
     } finally {
       await borrarUsuarioPrueba(usuario.id);
     }
+  });
+
+  test('un texto más largo que su columna se traduce a 400', async (t) => {
+    const { default: db } = await import('../src/config/db.js');
+    if (!(await sondearDb(db))) return t.skip(SIN_DB);
+    const error = await db.evento.create({ data: { title: 'x'.repeat(300), startDate: new Date() } }).then(
+      async (creado) => { await db.evento.delete({ where: { id: creado.id } }); return null; },
+      (e: unknown) => e,
+    );
+    assert.equal(traducirErrorPrisma(error)?.status, 400);
   });
 
   test('una fila cambiada por otra transacción a mitad (MariaDB 1020) se traduce a 409', async (t) => {

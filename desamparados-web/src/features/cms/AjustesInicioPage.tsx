@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react'
+import { useMemo, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react'
 import {
   Alert, Box, Button, ButtonBase, Chip, CircularProgress, FormControlLabel, Menu, MenuItem, Paper, Radio, RadioGroup, Stack, TextField, Typography,
 } from '@mui/material'
@@ -147,7 +147,13 @@ export default function AjustesInicioPage() {
   const [subiendo, setSubiendo] = useState(false)
   const [errorFoto, setErrorFoto] = useState<string | null>(null)
 
-  useEffect(() => { if (data) setAjustes({ foto: data.foto, x: data.x, y: data.y, tiempos: data.tiempos, cuenta: data.cuenta }) }, [data])
+  // Lo del servidor pasa al formulario cada vez que llega (al pintar y no en un
+  // efecto, que enseñaba un instante los ajustes de siempre).
+  const [copiado, setCopiado] = useState<typeof data>(undefined)
+  if (data && data !== copiado) {
+    setCopiado(data)
+    setAjustes({ foto: data.foto, x: data.x, y: data.y, tiempos: data.tiempos, cuenta: data.cuenta })
+  }
 
   const guardar = useMutation({
     mutationFn: () => guardarRetablo(ajustes),

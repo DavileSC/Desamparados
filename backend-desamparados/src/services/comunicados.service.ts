@@ -129,7 +129,7 @@ function procesarPendientes(): Promise<void> {
           orderBy: { id: 'asc' },
         });
         if (!envio) break;
-        const ok = await enviarCorreo(envio.email, envio.comunicado.asunto, correoPara(envio.comunicado, envio));
+        const ok = await enviarCorreo(envio.email, envio.comunicado.asunto, correoPara(envio.comunicado, envio), { uso: 'comunicado' });
         await db.comunicadoEnvio.update({
           where: { id: envio.id },
           data: { estado: ok ? EstadoEnvio.ENVIADO : EstadoEnvio.FALLIDO, enviadoEl: new Date() },
@@ -217,7 +217,7 @@ export class ComunicadosService {
     if (!c) throw new NotFoundError('Comunicado no encontrado.');
     const yo = meta?.userId ? await db.user.findUnique({ where: { id: meta.userId }, select: { email: true, nombre: true } }) : null;
     if (!yo) throw new HttpError('No se sabe a quién mandar la prueba.');
-    const ok = await enviarCorreo(yo.email, `[Prueba] ${c.asunto}`, correoPara(c, { email: yo.email, nombre: yo.nombre, sexo: null }));
+    const ok = await enviarCorreo(yo.email, `[Prueba] ${c.asunto}`, correoPara(c, { email: yo.email, nombre: yo.nombre, sexo: null }), { uso: 'comunicado_prueba' });
     if (!ok) throw new HttpError('La prueba no ha salido: revisa la cuenta de correo del servidor.', 502);
     return { message: `Prueba enviada a ${yo.email}.` };
   }

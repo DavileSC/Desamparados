@@ -11,8 +11,8 @@ import { randomInt } from 'node:crypto';
 import db from '../src/config/db.js';
 import { archivoCmsQuerySchema } from '../src/schemas/noticia.schema.js';
 import { NoticiaService, condicionEstadoNoticia } from '../src/services/noticia.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 const valida = (query: Record<string, string>) =>
   !(archivoCmsQuerySchema.onDeepUndeclaredKey('delete')({ query, body: {}, params: {} }) as { summary?: string }).summary;

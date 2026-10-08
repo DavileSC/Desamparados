@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Helmet } from 'react-helmet-async'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import ListaDeAgenda from '../inicio/ListaDeAgenda'
 import CartelDeCulto from '../actualidad/agenda/CartelDeCulto'
 import CampoImagen from './CampoImagen'
@@ -16,7 +17,7 @@ import { useFichaCms } from './ficha/useFichaCms'
 import PuntoTipo from './agenda/PuntoTipo'
 import { TIPOS_EVENTO } from './agenda/tiposEvento'
 import { haceCuanto } from './redaccion/completitud'
-import { crearEvento, traerEvento, actualizarEvento, type ApiEvent, type DatosDeActo } from '../../lib/api/agenda'
+import { crearEvento, traerEvento, actualizarEvento, invalidarAgendaPublica, type ApiEvent, type DatosDeActo } from '../../lib/api/agenda'
 import { site } from '../../config/site'
 
 /** El formulario: día y hora por separado, que es como se piensa un acto. */
@@ -65,13 +66,14 @@ function desdeEvento(evento: ApiEvent): Formulario {
  */
 export default function AgendaEditPage() {
   const { id } = useParams()
+  const queryClient = useQueryClient()
   const nuevo = id === undefined
   const { state } = useLocation()
   const copiaDe = nuevo ? (state as { copiaDe?: unknown } | null)?.copiaDe : undefined
   // Desde el panel del día del calendario, el acto nuevo nace con ese día puesto.
   const fecha = nuevo ? (state as { fecha?: unknown } | null)?.fecha : undefined
   const diaInicial = typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha : ''
-  const { cargado, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, setForm, guardar: guardarFicha } =
+  const { cargado, form, inicial, sucio, guardando, error, bloqueo, borrador, volverAlListado, campo, setForm, guardar: guardarFicha } =
     useFichaCms<ApiEvent, Formulario>({
       listado: '/cms/agenda',
       origen: nuevo ? (typeof copiaDe === 'number' ? copiaDe : null) : Number(id),
@@ -118,7 +120,11 @@ export default function AgendaEditPage() {
       fotoCartel: form.fotoCartel || null,
     }
     await guardarFicha(
-      () => (nuevo ? crearEvento(datos) : actualizarEvento(Number(id), datos)),
+      async () => {
+        await (nuevo ? crearEvento(datos) : actualizarEvento(Number(id), datos))
+        // La agenda de la portada lo tenía cacheado: sin esto seguía sin él.
+        invalidarAgendaPublica(queryClient)
+      },
       {
         siFalla: 'No se ha podido guardar el evento.',
         aviso: yaPaso
@@ -306,7 +312,7 @@ export default function AgendaEditPage() {
         )}
       </Box>
 
-      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="este evento" />
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="este evento" borrador={borrador} />
       <Box sx={{ height: 24 }} />
     </>
   )

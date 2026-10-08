@@ -145,8 +145,19 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
     if (!definida(entorno[nombre])) errores.push(`Falta ${nombre} (${motivo}).`);
   }
 
-  if (pago === 'simulado' || (pago === 'redsys' && entorno.REDSYS_ENTORNO !== 'real')) {
+  // Un pago de mentira en producción da recibos por pagados sin que entre un
+  // euro, y con solo un aviso en el registro nadie lo ve hasta el arqueo. Se
+  // corta el arranque; la web de pruebas, que también corre como producción,
+  // lo pide por escrito con PAGO_DE_PRUEBA_EN_PRODUCCION=si.
+  const pagoDePrueba = pago === 'simulado' || (pago === 'redsys' && entorno.REDSYS_ENTORNO !== 'real');
+  const pruebaConsentida = entorno.PAGO_DE_PRUEBA_EN_PRODUCCION?.trim() === 'si';
+  if (pagoDePrueba && pruebaConsentida) {
     avisos.push('El pago en línea está en pruebas: los hermanos pueden pagar, pero no se cobra de verdad (PAGO_EN_LINEA / REDSYS_ENTORNO).');
+  } else if (pagoDePrueba) {
+    errores.push(
+      'El pago en línea está en pruebas en producción (PAGO_EN_LINEA=simulado, o redsys sin REDSYS_ENTORNO=real): ' +
+      'los recibos se darían por pagados sin cobrar. Si es la web de pruebas, añade PAGO_DE_PRUEBA_EN_PRODUCCION=si.'
+    );
   }
 
   for (const nombre of ['FRONTEND_URL', 'API_URL']) {

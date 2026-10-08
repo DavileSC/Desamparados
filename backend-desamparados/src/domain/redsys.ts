@@ -179,15 +179,26 @@ export function leerAviso(cuerpo: Record<string, unknown>, clave: string): Aviso
   if (typeof parametros !== 'string' || typeof firma !== 'string' || !parametros || !firma) return null;
   let datos: Record<string, unknown>;
   try {
-    datos = JSON.parse(Buffer.from(parametros, 'base64').toString('utf8')) as Record<string, unknown>;
+    const leido: unknown = JSON.parse(Buffer.from(parametros, 'base64').toString('utf8'));
+    // Un `null` o un número también son JSON, y `Object.keys(null)` lanza.
+    if (!leido || typeof leido !== 'object' || Array.isArray(leido)) return null;
+    datos = leido as Record<string, unknown>;
   } catch {
     return null;
   }
   // Redsys escribe los nombres con mayúsculas variables según el producto.
+  // Un escape roto («%E0%A4%A») hacía lanzar a decodeURIComponent antes de
+  // mirar la firma, y la ruta pública del aviso respondía 500: se trata como
+  // un dato que falta.
   const leer = (nombre: string) => {
     const k = Object.keys(datos).find((x) => x.toLowerCase() === nombre.toLowerCase());
     const v = k === undefined ? undefined : datos[k];
-    return typeof v === 'string' || typeof v === 'number' ? decodeURIComponent(String(v)) : null;
+    if (typeof v !== 'string' && typeof v !== 'number') return null;
+    try {
+      return decodeURIComponent(String(v));
+    } catch {
+      return null;
+    }
   };
   const pedido = leer('Ds_Order');
   const importe = leer('Ds_Amount');

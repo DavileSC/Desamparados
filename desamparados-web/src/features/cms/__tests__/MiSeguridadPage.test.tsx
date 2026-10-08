@@ -148,4 +148,27 @@ describe('MiSeguridadPage', () => {
     expect(await screen.findByText(/vuelve a entrar solo con contraseña/i)).toBeInTheDocument()
     expect(useAuthStore.getState().cms?.twoFactorEnabled).toBe(false)
   })
+
+  it('cambia la contraseña y vuelve a pedir las sesiones, que el servidor ha renovado', async () => {
+    const fetchMock = mockPorUrl({
+      '/auth/cambiar-contrasena': { message: 'Contraseña cambiada. Se han cerrado las sesiones abiertas en otros dispositivos.' },
+      '/auth/me': { cms: { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms', twoFactorEnabled: false }, hermano: null },
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    renderWithProviders(<MiSeguridadPage />)
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText('Contraseña actual'), 'La-De-Antes-2025')
+    await user.type(screen.getByLabelText('Contraseña nueva'), 'Otra-Clave-2026-Larga')
+    await user.type(screen.getByLabelText('Repite la contraseña nueva'), 'Otra-Clave-2026-Larga')
+    await user.click(screen.getByRole('button', { name: 'Cambiar la contraseña' }))
+
+    expect(await screen.findByText(/Contraseña cambiada/)).toBeInTheDocument()
+    const cambio = fetchMock.mock.calls.find((c) => String(c[0]).includes('/auth/cambiar-contrasena'))
+    expect(JSON.parse(String(cambio?.[1]?.body))).toEqual({ actual: 'La-De-Antes-2025', nueva: 'Otra-Clave-2026-Larga' })
+    await vi.waitFor(() => expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/auth/me'))).toBe(true))
+    // Un cambio de contraseña no cierra la sesión del CMS de quien lo hace.
+    expect(useAuthStore.getState().cms).not.toBeNull()
+  })
 })
+

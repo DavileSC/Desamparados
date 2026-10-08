@@ -68,6 +68,31 @@ describe('Hero', () => {
     expect(screen.getByAltText('Primera foto')).not.toHaveAttribute('aria-hidden')
   })
 
+  it('con muchas fotos monta solo la visible, la siguiente y la que acaba de salir', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const hex = (n: number) => String(n).repeat(32)
+    const fotos = [1, 2, 3, 4, 5].map((n) => ({ id: n, url: `/storage/public/${hex(n)}.webp`, descripcion: `Foto ${n}`, orden: n }))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: fotos })))
+    const { container } = renderWithProviders(<Hero />)
+    const montadas = () => [...container.querySelectorAll('img')].map((img) => img.alt)
+
+    const primera = await screen.findByRole('img', { name: 'Foto 1' })
+    expect(montadas()).toEqual(['Foto 1', 'Foto 2'])
+    // Las fotos subidas llevan sus copias reducidas; solo la primera corre.
+    expect(primera).toHaveAttribute('srcset', expect.stringContaining(`${hex(1)}-640.webp 640w`))
+    expect(screen.getByAltText('Foto 2')).toHaveAttribute('fetchpriority', 'low')
+    expect(screen.getByAltText('Foto 2')).toHaveAttribute('loading', 'lazy')
+
+    act(() => { vi.advanceTimersByTime(INTERVALO_ROTACION_MS) })
+    expect(montadas()).toEqual(['Foto 1', 'Foto 2', 'Foto 3'])
+    act(() => { vi.advanceTimersByTime(INTERVALO_ROTACION_MS) })
+    expect(montadas()).toEqual(['Foto 2', 'Foto 3', 'Foto 4'])
+    // Al dar la vuelta, la última sigue debajo mientras la primera se funde encima.
+    act(() => { vi.advanceTimersByTime(INTERVALO_ROTACION_MS * 3) })
+    expect(montadas()).toEqual(['Foto 1', 'Foto 2', 'Foto 5'])
+    expect(screen.getByAltText('Foto 1')).not.toHaveAttribute('aria-hidden')
+  })
+
   it('con una sola foto no hay rotación', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuesta({ imagenes: [FOTOS[0]] })))

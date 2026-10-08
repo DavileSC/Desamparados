@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import { Alert, Box, Button, ButtonBase, CircularProgress, Paper, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { listarPrendas, type FiltrosPrendas, type Prenda, type RecuentoDeTipo } from '../../../lib/api/inventario'
@@ -94,34 +94,41 @@ interface GrupoProps {
 function Grupo({ recuento: r, filtros, volver, recarga, acciones, abierto, oculto, onAlternar, onEncontradas }: GrupoProps) {
   const [prendas, setPrendas] = useState<Prenda[]>([])
   const [total, setTotal] = useState<number | null>(null)
-  const [cargando, setCargando] = useState(false)
+  const [cargandoMas, setCargandoMas] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const id = `grupo-${r.tipo.toLowerCase()}`
   const { q, estado, orden } = filtros
+  // El padre la crea en cada pintado; con `useEffectEvent` se llama la última
+  // sin que pedir la tanda dependa de ella (si no, se pediría en cada pintado).
+  const avisarEncontradas = useEffectEvent(onEncontradas)
 
   // La primera tanda, cada vez que cambian los filtros o algo cambia una prenda.
   // Cerrado no se pide nada, salvo filtrando: hay que saber si esconderlo.
   const filtrando = Boolean(q || estado)
+  const pide = abierto || filtrando
+  // La primera tanda está cargando si aún no ha contestado la de estos filtros;
+  // deducido al pintar, sin un efecto que lo encienda.
+  const consulta = JSON.stringify([q, estado, orden, r.tipo, recarga])
+  const [contestada, setContestada] = useState<string | null>(null)
+  const cargando = (pide && contestada !== consulta) || cargandoMas
   useEffect(() => {
-    if (!abierto && !filtrando) return
+    if (!pide) return
     let vigente = true
-    setCargando(true)
     listarPrendas({ pagina: 1, porPagina: POR_TANDA }, { q, estado, orden, tipo: r.tipo })
       .then((res) => {
         if (!vigente) return
         setPrendas(res.data)
         setTotal(res.meta.total)
         setError(null)
-        onEncontradas(res.meta.total)
+        avisarEncontradas(res.meta.total)
       })
       .catch((e: unknown) => { if (vigente) setError(e instanceof Error ? e.message : 'No se ha podido cargar el grupo.') })
-      .finally(() => { if (vigente) setCargando(false) })
+      .finally(() => { if (vigente) setContestada(consulta) })
     return () => { vigente = false }
-    // onEncontradas cambia en cada pintado del padre; lo que manda son los filtros.
-  }, [abierto, filtrando, q, estado, orden, r.tipo, recarga])
+  }, [pide, consulta, q, estado, orden, r.tipo, recarga])
 
   const verMas = async () => {
-    setCargando(true)
+    setCargandoMas(true)
     try {
       const res = await listarPrendas({ pagina: Math.floor(prendas.length / POR_TANDA) + 1, porPagina: POR_TANDA }, { q, estado, orden, tipo: r.tipo })
       setPrendas((antes) => [...antes, ...res.data.filter((p) => !antes.some((a) => a.id === p.id))])
@@ -129,7 +136,7 @@ function Grupo({ recuento: r, filtros, volver, recarga, acciones, abierto, ocult
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se han podido cargar más.')
     } finally {
-      setCargando(false)
+      setCargandoMas(false)
     }
   }
 

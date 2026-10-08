@@ -27,11 +27,11 @@ import { MisDatosService } from '../src/services/mis-datos.service.js';
 import { SolicitudesService } from '../src/services/solicitudes.service.js';
 import { MisFichasService } from '../src/services/mis-fichas.service.js';
 import { CensoService } from '../src/services/censo.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 const creados = { usuarios: [] as number[], hermanos: [] as number[] };
 let secretaria: { id: number };

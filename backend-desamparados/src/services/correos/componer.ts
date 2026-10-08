@@ -74,11 +74,14 @@ const aTexto = (campos: Relleno['campos'] = {}, identidadInstalacion?: Identidad
 });
 
 /** Compone el correo de un uso con el texto dado. */
-export function componer(uso: UsoDeCorreo, texto: TextoDePlantilla, r: Relleno = {}): { asunto: string; html: string } {
+export function componer(uso: UsoDeCorreo, texto: TextoDePlantilla, r: Relleno = {}): { asunto: string; html: string; uso: string } {
   const campos = aTexto(r.campos, r.identidad);
   const contenido = leerCuerpo(texto.cuerpo).map((b) => bloqueHtml(b, campos, r.bloques ?? {})).join('');
   const despedida = rellenar(texto.despedida, campos).trim();
   return {
+    // La clave del uso viaja con el correo: si el envío falla, es lo que se
+    // apunta en la auditoría en vez del asunto, que puede llevar un nombre.
+    uso: uso.clave,
     // El asunto es texto, no HTML: sin escapar («O'Brien» llegaba como «O&#39;Brien»).
     asunto: rellenar(texto.asunto, campos).replace(/\s+/g, ' ').trim(),
     html: maquetar({

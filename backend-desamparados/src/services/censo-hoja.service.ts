@@ -19,6 +19,7 @@ import ExcelJS from 'exceljs';
 import { MetodoPago, Prisma, Role } from '@prisma/client';
 import db from '../config/db';
 import { HttpError } from '../utils/error.handle';
+import { revisarZip } from '../utils/zip-acotado.js';
 import { encrypt } from '../utils/bcrypt.handle.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { diaDeHoy, diaDe, instanteDeDia } from '../domain/fechas-hermano.js';
@@ -40,6 +41,12 @@ export const CUENTA_CENSO_IMPORTADO = {
 /** Un tope razonable: el censo más grande de una corporación cabe de sobra. */
 const MAX_FILAS = 5000;
 
+/**
+ * Lo que puede ocupar el Excel ya descomprimido. Un censo de 5000 filas no
+ * llega ni a 5 MB; por encima solo cabe una bomba zip.
+ */
+export const MAX_BYTES_XLSX_DESCOMPRIMIDO = 50 * 1024 * 1024;
+
 type Celda = unknown;
 
 /** Lo que haya en una celda de Excel, como valor simple: texto, número o fecha. */
@@ -56,6 +63,10 @@ function valorExcel(v: ExcelJS.CellValue): Celda {
 async function leerHoja(buffer: Buffer): Promise<Celda[][]> {
   const esXlsx = buffer.subarray(0, 2).toString('latin1') === 'PK';
   if (!esXlsx) return leerCsv(textoDeFichero(buffer));
+  // Antes de dárselo a ExcelJS, que lo descomprime entero en memoria.
+  const veredicto = revisarZip(buffer, MAX_BYTES_XLSX_DESCOMPRIMIDO);
+  if (veredicto === 'grande') throw new HttpError('El Excel es demasiado grande una vez abierto: pártelo en varios o guárdalo como CSV.', 413);
+  if (veredicto === 'roto') throw new HttpError('El fichero no se puede abrir: guárdalo como Excel (.xlsx) o como CSV.');
   const libro = new ExcelJS.Workbook();
   try {
     await libro.xlsx.load(buffer as unknown as ArrayBuffer);

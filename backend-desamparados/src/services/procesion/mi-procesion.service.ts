@@ -77,7 +77,7 @@ export class MiProcesionService {
       where: { id: hermanoId, userId: userId, activo: true }
     });
     if (!checkPropiedad) {
-      throw new HttpError('No tienes permisos para apuntar a este cofrade.');
+      throw new HttpError('No tienes permisos para apuntar a este hermano.');
     }
 
     // Todas las comprobaciones y la creación van en la misma transacción
@@ -253,24 +253,34 @@ export class MiProcesionService {
    * aquí. Una papeleta ya recogida tampoco se anula desde el área.
    */
   static async cancelarAsistencia(userId: number, citaId: number, meta?: MetaDeAuditoria) {
-    // Seguridad: Buscar la cita asegurando que el hermano pertenece al usuario logueado
-    const cita = await db.cita.findFirst({
-      where: { id: citaId, hermano: { userId } },
-      include: { solicitud: { include: { recibo: true } } },
-    });
+    // Las categorías contables, antes de abrir la transacción (ver idCategoriaDeRecibos).
+    const categoriaDevolucionesId = await idCategoriaDevoluciones();
+    // Se lee y se cancela en la misma transacción, serializable como los
+    // cobros: leído fuera, un pago que llegara entre medias (la mesa, el aviso
+    // del banco) dejaba la solicitud cancelada con el dinero dentro.
+    const hecho = await transactionWithRetry(async (tx) => {
+      // Seguridad: Buscar la cita asegurando que el hermano pertenece al usuario logueado
+      const cita = await tx.cita.findFirst({
+        where: { id: citaId, hermano: { userId } },
+        include: { solicitud: { include: { recibo: true } } },
+      });
 
-    if (!cita) throw new NotFoundError('Cita no encontrada o no autorizada.');
-    if (cita.estado !== EstadoCita.RESERVADA) throw new HttpError('Esta cita ya no se puede cancelar.');
+      if (!cita) throw new NotFoundError('Cita no encontrada o no autorizada.');
+      if (cita.estado !== EstadoCita.RESERVADA) throw new HttpError('Esta cita ya no se puede cancelar.');
 
-    const solicitud = cita.solicitud;
-    if (!solicitud || solicitud.estado !== EstadoSolicitud.PENDIENTE) {
-      return await db.cita.update({ where: { id: citaId }, data: { estado: EstadoCita.CANCELADA } });
-    }
-    if (solicitud.recibo?.estado === EstadoPago.PAGADO) {
-      throw new HttpError('Ya está pagada: para anularla y que te devuelvan el dinero, habla con Tesorería.', 409);
-    }
+      const solicitud = cita.solicitud;
+      if (!solicitud || solicitud.estado !== EstadoSolicitud.PENDIENTE) {
+        return { soloCita: await tx.cita.update({ where: { id: citaId }, data: { estado: EstadoCita.CANCELADA } }) };
+      }
+      if (solicitud.recibo?.estado === EstadoPago.PAGADO) {
+        throw new HttpError('Ya está pagada: para anularla y que te devuelvan el dinero, habla con Tesorería.', 409);
+      }
+      await PapeletasService.cancelarSolicitudEnTransaccion(tx, solicitud, categoriaDevolucionesId);
+      return { solicitud };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    if ('soloCita' in hecho) return hecho.soloCita;
+    const { solicitud } = hecho;
 
-    await db.$transaction(async (tx) => PapeletasService.cancelarSolicitudEnTransaccion(tx, solicitud, await idCategoriaDevoluciones()));
     await AuditoriaService.log(ACCIONES_AUDITORIA.SOLICITUD_SALIDA_CANCELAR, meta ?? { userId }, 'solicitud', solicitud.id, {
       origen: 'área de hermanos',
       antes: { hermanoId: solicitud.hermanoId, year: solicitud.year, salidaId: solicitud.salidaId, puesto: solicitud.puesto, citaId },

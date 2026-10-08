@@ -28,8 +28,8 @@ import { esIbanValido, normalizarIban } from '../src/config/common.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 import { diaMadrid, sumarDias } from '../src/domain/fecha-salida.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;

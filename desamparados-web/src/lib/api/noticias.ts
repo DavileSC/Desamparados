@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query'
 import type { Noticia } from '../../types'
 import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
@@ -34,6 +35,21 @@ function aNoticia(noticia: NoticiaDeLaApi): Noticia {
 export async function noticiasDePortada(count?: number) {
   const noticias = await llamarApi<NoticiaDeLaApi[]>('/news/latest')
   return noticias.slice(0, count).map(aNoticia)
+}
+
+/**
+ * Lo que guarda la caché de las noticias públicas: el archivo con «Cargar más»
+ * y (debajo de 'noticias') los destinos de enlace del CMS. Publicar, cambiar o
+ * borrar una noticia invalida todo lo que cuelga de aquí y la portada
+ * (`CLAVE_NOTICIAS_DE_PORTADA`), o la web sigue enseñando lo de antes.
+ */
+export const CLAVE_ARCHIVO_DE_NOTICIAS = ['noticias', 'archivo'] as const
+export const CLAVE_NOTICIAS_DE_PORTADA = ['portada', 'noticias'] as const
+
+/** Tras crear, cambiar o borrar una noticia en el CMS: que la web pública la vuelva a pedir. */
+export function invalidarNoticiasPublicas(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: CLAVE_NOTICIAS_DE_PORTADA })
+  void queryClient.invalidateQueries({ queryKey: ['noticias'] })
 }
 
 export async function archivoDeNoticias(pagina: { pagina: number; porPagina: number }) {

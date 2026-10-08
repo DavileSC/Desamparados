@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
-const { identidad, secretaria } = JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
+const { identidad, secretaria, sede } = JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
 
 const url = `https://${identidad.dominio}`
 const valores = {
@@ -26,6 +26,11 @@ const valores = {
   url,
   email: secretaria.email,
   telefono: secretaria.telefono,
+  denominacion: identidad.denominacion,
+  sedeNombre: sede.nombre,
+  sedeCalle: sede.calle,
+  sedeCodigoPostal: sede.codigoPostal,
+  sedeLocalidad: sede.localidad,
 }
 
 const html = (v) => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -72,6 +77,10 @@ const robots = () => [
   'Disallow: /area-hermano',
   'Disallow: /acceso',
   'Disallow: /reset-password',
+  // Llevan en la dirección la clave de un pedido o de un pago: son de quien
+  // pagó, no de un buscador.
+  'Disallow: /tienda/pedido/',
+  'Disallow: /apadrina/gracias/',
   `Sitemap: ${url}/sitemap.xml`,
   '',
 ].join('\n')

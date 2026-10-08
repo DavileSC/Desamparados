@@ -10,6 +10,7 @@ import { Role } from '@prisma/client';
 import { AdminService } from '../src/services/admin.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixtures/usuarios.js';
 import { idDeSalida } from './fixtures/salidas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 let server: Server;
 let baseUrl: string;
@@ -27,7 +28,6 @@ let baseUrl: string;
  * notara. Ademas, `dbDisponible` solo se conoce despues del before().
  */
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 // Por qué no se pudo conectar. Sin esto, una ejecución sin base de datos se
 // limita a omitir los tests y no hay forma de saber si es que MariaDB está

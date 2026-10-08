@@ -3,6 +3,7 @@ import { Box, ButtonBase, Typography } from '@mui/material'
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { imagenDe } from './formato'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 /**
  * Las fotos en tiras, una al lado de otra: la abierta ocupa casi todo y las
@@ -49,7 +50,7 @@ export default function Tiras({ medios, onAbrir }: {
                 '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 2 },
               }}
             >
-              <Box component="img" src={imagenDe(medio)} alt="" loading="lazy" decoding="async" sx={{
+              <Box component="img" {...propsDeFoto(imagenDe(medio), '(min-width: 900px) 50vw, 100vw')} alt="" loading="lazy" decoding="async" sx={{
                 position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
                 filter: esta ? 'none' : 'brightness(.55) saturate(.8)', transform: esta ? 'scale(1)' : 'scale(1.12)',
                 transition: 'transform 1.2s cubic-bezier(.2, .8, .2, 1), filter .8s',

@@ -11,6 +11,9 @@ import '@fontsource-variable/saira/wdth.css'
 import './index.css'
 import App from './App.tsx'
 import theme from './theme'
+import { quitarMetaEstaticas } from './lib/metaEstaticas'
+
+quitarMetaEstaticas()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

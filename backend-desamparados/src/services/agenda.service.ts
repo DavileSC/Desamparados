@@ -5,6 +5,8 @@ import { condicionBusqueda } from '../domain/busqueda-texto.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { borrarSubidasHuerfanas, subidasEnTexto } from '../utils/ficheros-publicos.js';
+import { diaMadridComoIntervalo } from '../domain/contabilidad.js';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 
 /**
  * Los actos que la portada de la web enseña en su lista, sin sesión: los
@@ -31,6 +33,17 @@ export function actosEnPortada<E extends { startDate: Date }>(proximosPublicos: 
 function datosDelCartel(data: Pick<CreateEventDto, 'cartel' | 'dedicatoria' | 'fotoCartel'>) {
   const limpio = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() || null);
   return { cartel: data.cartel, dedicatoria: limpio(data.dedicatoria), fotoCartel: limpio(data.fotoCartel) };
+}
+
+/**
+ * La salida cuyo acto es este (su fecha), para que el CMS diga por qué no se
+ * puede borrar desde la Agenda (el borrado responde 409, ver `deleteEvent`) y
+ * no ofrezca «Eliminar». Una basta: es lo que nombra el 409.
+ */
+const SALIDA_ENLAZADA = { select: { id: true, nombre: true }, orderBy: { id: 'asc' }, take: 1 } satisfies Prisma.Evento$salidasArgs;
+
+function conSalidaEnlazada<T extends { salidas: { id: number; nombre: string }[] }>({ salidas, ...evento }: T) {
+  return { ...evento, salidaEnlazada: salidas[0] ?? null };
 }
 
 export class AgendaService {
@@ -64,8 +77,8 @@ export class AgendaService {
     } else {
       // Por defecto, lo que queda desde hoy: lo que empieza hoy o después y lo
       // que ya empezó pero no ha terminado (el segundo día de un triduo).
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Hoy en Madrid, no en el reloj del servidor (que corre en UTC).
+      const today = diaMadridComoIntervalo(new Date()).desde;
       whereClause.OR = [{ startDate: { gte: today } }, { endDate: { gte: today } }];
     }
 
@@ -117,8 +130,7 @@ export class AgendaService {
    */
   static async getAdminEvents(periodo: PeriodoAgenda, { page, limit, q, tipo }: AdminEventFilterDto) {
     const paginacion = sanearPaginacion({ page, limit });
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    const hoy = diaMadridComoIntervalo(new Date()).desde;
 
     const filtros: Prisma.EventoWhereInput = {
       ...(tipo ? { type: tipo } : {}),
@@ -145,6 +157,7 @@ export class AgendaService {
           type: true,
           updatedAt: true,
           cartel: true,
+          salidas: SALIDA_ENLAZADA,
         }
       }),
       db.evento.count({ where }),
@@ -160,7 +173,7 @@ export class AgendaService {
     ]);
 
     return {
-      ...respuestaPaginada(eventos, total, paginacion),
+      ...respuestaPaginada(eventos.map(conSalidaEnlazada), total, paginacion),
       resumen: {
         proximos: cuantosProximos,
         pasados: cuantosPasados,
@@ -209,21 +222,21 @@ export class AgendaService {
           updatedAt: true,
           cartel: true,
           turno: { select: { id: true } },
+          salidas: SALIDA_ENLAZADA,
         },
       }),
       AgendaService.resumenDeHoy(),
     ]);
 
     return {
-      data: eventos.map(({ turno, ...evento }) => ({ ...evento, reparto: turno !== null })),
+      data: eventos.map(({ turno, ...evento }) => ({ ...conSalidaEnlazada(evento), reparto: turno !== null })),
       resumen,
     };
   }
 
   /** Cuál es el siguiente acto desde hoy y cuáles salen ahora en la portada de la web. */
   private static async resumenDeHoy() {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    const hoy = diaMadridComoIntervalo(new Date()).desde;
     const proximos: Prisma.EventoWhereInput = { startDate: { gte: hoy } };
     const [siguiente, enPortada] = await db.$transaction([
       db.evento.findFirst({ where: proximos, orderBy: [{ startDate: 'asc' }, { id: 'asc' }], select: { id: true, title: true, startDate: true } }),
@@ -322,7 +335,17 @@ static async createEvent(data: CreateEventDto) {
   }
 
   static async deleteEvent(id: number) {
-    const borrado = await db.evento.delete({ where: { id } });
+    // El acto de una salida es su fecha: borrarlo aquí la dejaba sin fecha
+    // (SetNull) sin que la ficha de la salida se enterara. Comprobación y
+    // borrado en la misma transacción, para que un «Fijar fecha» a la vez no
+    // enlace el acto justo antes de borrarlo.
+    const borrado = await transactionWithRetry(async (tx) => {
+      const salida = await tx.salida.findFirst({ where: { eventoId: id }, select: { nombre: true } });
+      if (salida) {
+        throw new HttpError(`Este acto es la fecha de la salida «${salida.nombre}»: cámbiala desde la ficha de la salida, no desde la Agenda.`, 409);
+      }
+      return tx.evento.delete({ where: { id } });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     await borrarSubidasHuerfanas(subidasEnTexto(borrado.fotoCartel));
     return borrado;
   }

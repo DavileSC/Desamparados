@@ -7,9 +7,9 @@ import { after, before, describe, test } from 'node:test';
 import db from '../src/config/db.js';
 import { MisFichasService } from '../src/services/mis-fichas.service.js';
 import { CensoService } from '../src/services/censo.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 // Ids creados en las pruebas, para dejar la base como estaba.
 const creados: { usuarios: number[]; hermanos: number[] } = { usuarios: [], hermanos: [] };

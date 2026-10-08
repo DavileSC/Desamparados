@@ -17,8 +17,10 @@ vi.mock('../../../../../shared/datos-entidad.json', () => ({
       localidad: 'Málaga',
       dominio: 'www.desamparadosmalaga.com',
       descripcion: 'Hermandad de Nuestra Señora de los Desamparados de Málaga.',
+      denominacion: 'Hermandad de Ejemplo, inscrita',
     },
     secretaria: { horario: null, direccion: null, telefono: null, email: 'goretti.desamparados@gmail.com' },
+    sede: { nombre: 'Casa Hermandad', calle: 'C. de Ejemplo, 1', codigoPostal: '29001', localidad: 'Málaga' },
     escudoUrl: null,
   },
 }))
@@ -35,9 +37,9 @@ describe('AvisoLegalPage con otra instalación', () => {
     expect(screen.getByText(/La Hermandad se rige por las/)).toBeInTheDocument()
     // La frase provisional («debe ser revisado… antes de su puesta en producción») ya no sale en público.
     expect(screen.queryByText(/puesta en producción/)).not.toBeInTheDocument()
-    // Excepción real y documentada: la denominación jurídica exacta inscrita
-    // (config/site.ts) es un dato legal propio, no una frase calculada, y por
-    // eso sigue diciendo «Grupo Parroquial» aunque la instalación sea otra.
-    expect(screen.getByText('Parroquia Santa María Goretti - Grupo Parroquial Nuestra Señora de los Desamparados')).toBeInTheDocument()
+    // La denominación jurídica inscrita no es una frase calculada, pero tampoco
+    // está ya escrita en el código: sale de shared/datos-entidad.json, como el
+    // legalName de index.html, y cambia con la instalación.
+    expect(screen.getByText('Hermandad de Ejemplo, inscrita')).toBeInTheDocument()
   })
 })

@@ -7,6 +7,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import SeccionAnimada from '../../../components/SeccionAnimada'
 import { noticiaPorDireccion } from '../../../lib/api/noticias'
+import { ErrorDeApi } from '../../../lib/api/cliente'
 import type { Noticia } from '../../../types'
 import NoEncontradaPage from '../../noEncontrado/NoEncontradaPage'
 import { limpiarHtml } from '../../../lib/limpiarHtml'
@@ -14,6 +15,7 @@ import { useVolverAlListado } from '../../../hooks/useVolverAlListado'
 import EnCarga from '../../../components/esqueleto/EnCarga'
 import { Lineas } from '../../../components/esqueleto/Hueso'
 import { enlaceConFlecha } from '../../../components/estiloDeBoton'
+import { propsDeFoto } from '../../../lib/fotoSubida'
 
 // La cabecera y el cuerpo de la ficha: los comparten la ficha y su esqueleto.
 const cabeceraSx = { position: 'relative', pt: { xs: 10, md: 14 }, pb: { xs: 4, md: 5 }, mb: { xs: 3, md: 4 }, backgroundColor: 'background.paper', overflow: 'hidden' } as const
@@ -27,6 +29,9 @@ export default function NoticiaDetallePage() {
   const [noticia, setNoticia] = useState<Noticia | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Se guarda qué dirección no existe, no un sí o no: al pasar a otra noticia
+  // sin desmontar la página, la marca no debe arrastrarse.
+  const [inexistente, setInexistente] = useState<string | null>(null)
   const [intento, setIntento] = useState(0)
 
   useEffect(() => {
@@ -37,7 +42,12 @@ export default function NoticiaDetallePage() {
         if (!cancelado) setNoticia(data)
       })
       .catch((err: unknown) => {
-        if (!cancelado) setError(err instanceof Error ? err.message : 'No se ha podido cargar la noticia.')
+        if (cancelado) return
+        // Una dirección que no existe no es un fallo pasajero: ofrecer «Volver a
+        // intentar» no lleva a ninguna parte, y la página de no encontrada
+        // lleva el noindex que la saca de los buscadores.
+        if (err instanceof ErrorDeApi && err.status === 404) setInexistente(slug)
+        else setError(err instanceof Error ? err.message : 'No se ha podido cargar la noticia.')
       })
       .finally(() => {
         if (!cancelado) setLoading(false)
@@ -54,6 +64,7 @@ export default function NoticiaDetallePage() {
     setIntento((n) => n + 1)
   }
 
+  if (inexistente === slug) return <NoEncontradaPage />
   if (loading || error) {
     return <EnCarga avisoArriba estado={loading ? 'cargando' : 'error'} que="la noticia" alReintentar={reintentar} esqueleto={<FichaEsqueleto />} />
   }
@@ -80,7 +91,7 @@ export default function NoticiaDetallePage() {
           <>
             <Box
               component="img"
-              src={noticia.imagen}
+              {...propsDeFoto(noticia.imagen, '100vw')}
               alt=""
               aria-hidden="true"
               decoding="async"

@@ -280,7 +280,14 @@ export class InventarioService {
   }
 
   static async deletePrenda(id: number) {
-    return await db.prenda.delete({ where: { id } });
+    // Condicionado al estado y no leído antes: borrar una prenda que está en
+    // casa de un hermano se lleva el único rastro de quién la tiene, y un
+    // «Asignar» entre la lectura y el borrado se colaría igual.
+    const { count } = await db.prenda.deleteMany({ where: { id, estado: { not: EstadoPrenda.PRESTADA } } });
+    if (count > 0) return;
+    const prenda = await db.prenda.findUnique({ where: { id }, select: { id: true } });
+    if (!prenda) throw new NotFoundError('Prenda no encontrada.');
+    throw new HttpError('La prenda está prestada y no se puede borrar: registra su devolución con «Devolver» y, si no va a volver al ropero, pásala después a «Baja», que conserva su historia.', 409);
   }
 
   // --- LÓGICA DE NEGOCIO: ASIGNACIONES ---

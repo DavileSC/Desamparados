@@ -464,6 +464,84 @@ export class AuthService {
     return { message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
   }
 
+  // Fallos de la contraseña actual al cambiarla, por cuenta. Desde una sesión
+  // robada (un ordenador sin bloquear) se podría ir probando la contraseña
+  // sin pasar por el login y sus bloqueos; el limitador por IP no basta si la
+  // sesión se usa desde varias redes.
+  private static readonly fallosCambioContrasena = new ContadorFallos({
+    maxFallos: 5, bloqueoMs: QUINCE_MINUTOS, ventanaMs: UNA_HORA, tope: 10_000
+  });
+
+  /**
+   * Cambiar la contraseña con la sesión abierta: la actual y la nueva. Cierra
+   * todas las sesiones de la cuenta, como el enlace de recuperación (si la
+   * cambia porque se la han robado, el ladrón queda fuera), y devuelve una
+   * sesión nueva para cada área que traía esta petición, para que quien la
+   * cambia no se vea echado. Quita también el bloqueo del login, como la
+   * recuperación: ya ha probado que la cuenta es suya.
+   */
+  static async cambiarContrasena(
+    userId: number,
+    actual: string,
+    nueva: string,
+    sesiones: { area: AreaSesion; recordarme: boolean }[],
+    meta: MetaDeAuditoria = {},
+  ): Promise<{ message: string; sesiones: { area: AreaSesion; token: string; role: Role; recordarme: boolean }[] }> {
+    const clave = String(userId);
+    const restante = this.fallosCambioContrasena.restanteBloqueo(clave);
+    if (restante > 0) {
+      throw new HttpError(`Demasiados intentos con la contraseña actual equivocada: espera ${Math.ceil(restante / 60000)} minuto(s).`, 429);
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, nombre: true, role: true, active: true, password: true, hermanos: { where: { esTitular: true }, select: { sexo: true }, take: 1 } },
+    });
+    if (!user || !user.active) throw new HttpError('Tu sesión ha caducado. Vuelve a entrar.', 401);
+
+    // 400 y no 401: la sesión es buena, lo que falla es un dato del formulario,
+    // y un 401 haría creer a la web que la sesión ha caducado.
+    if (!(await verified(actual, user.password))) {
+      this.fallosCambioContrasena.registrarFallo(clave);
+      throw new HttpError('La contraseña actual no es correcta.');
+    }
+    this.fallosCambioContrasena.limpiar(clave);
+    if (await verified(nueva, user.password)) {
+      throw new HttpError('La contraseña nueva es igual que la actual: elige otra.');
+    }
+
+    const corte = corteDeSesiones();
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        password: await encrypt(nueva),
+        // Un enlace de recuperación pedido antes ya no debe servir.
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+        tokenValidAfter: corte,
+      },
+    });
+
+    const email = user.email.trim().toLowerCase();
+    this.fallosLoginPorEmail.limpiar(email);
+    this.fallosLoginPorIp.limpiarPrefijo(`${email}|`);
+
+    // La sesión nueva tiene que nacer después del corte, o la cortaría él.
+    while (Date.now() < corte.getTime()) await new Promise((r) => setTimeout(r, 1));
+    const nuevas = sesiones.map(({ area, recordarme }) => ({
+      area, recordarme, role: user.role, token: generateToken(user.id, user.role, recordarme, area),
+    }));
+
+    await AuditoriaService.log(ACCIONES_AUDITORIA.CONTRASENA_CAMBIAR, { ...meta, userId }, 'user', userId, { sesionesCerradas: true });
+
+    const fecha = new Date();
+    const cuando = `${new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' }).format(fecha)}, a las ${new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hour12: false }).format(fecha)}`;
+    EmailService.enviarContrasenaCambiada(user.email, user.nombre, cuando, user.hermanos[0]?.sexo ?? undefined)
+      .catch((error) => console.error('[Cuenta] No se pudo avisar del cambio de contraseña:', error));
+
+    return { message: 'Contraseña cambiada. Se han cerrado las sesiones abiertas en otros dispositivos.', sesiones: nuevas };
+  }
+
   /**
    * Cierra las sesiones de la cuenta. Con `area`, solo las de esa área: salir
    * del portal del hermano no puede echar a nadie del CMS, ni al revés, porque

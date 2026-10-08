@@ -43,7 +43,7 @@ describe('EscenaProcesion', () => {
     expect(foto).toHaveAttribute('srcset', expect.stringContaining('nazarenos-1920.webp'))
   })
 
-  it('una foto subida se sirve sin srcset', async () => {
+  it('una foto subida se sirve con sus copias reducidas', async () => {
     const textos = textosDePrueba()
     textos.sabadoDePasion.imagenUrl = '/storage/public/ab12cd34ef56ab78cd90ef12ab34cd56.webp'
     // Un alt distinto del de siempre: así el render de respaldo (foto del
@@ -56,6 +56,18 @@ describe('EscenaProcesion', () => {
     renderWithProviders(<EscenaProcesion />)
 
     const foto = await screen.findByRole('img', { name: 'Una foto subida desde el CMS' })
+    expect(foto).toHaveAttribute('srcset', expect.stringContaining('ab12cd34ef56ab78cd90ef12ab34cd56-640.webp 640w'))
+  })
+
+  it('una foto sin copias se sirve sin srcset', async () => {
+    const textos = textosDePrueba()
+    textos.sabadoDePasion.imagenUrl = '/storage/public/antigua.jpg'
+    textos.sabadoDePasion.imagenAlt = 'Una foto antigua'
+    responderPortada(textos)
+
+    renderWithProviders(<EscenaProcesion />)
+
+    const foto = await screen.findByRole('img', { name: 'Una foto antigua' })
     expect(foto).not.toHaveAttribute('srcset')
   })
 })

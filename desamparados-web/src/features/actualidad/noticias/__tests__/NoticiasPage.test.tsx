@@ -113,7 +113,7 @@ describe('NoticiasPage: la noticia destacada', () => {
 describe('NoticiasPage: si falla al cargar más', () => {
   it('se quedan las ya cargadas, avisa y deja volver a intentarlo', async () => {
     let fallar = true
-    servirArchivo(archivo(25), (url) => fallar && url.includes('limit=19'))
+    servirArchivo(archivo(25), (url) => fallar && url.includes('limit=9'))
     const usuario = userEvent.setup()
     renderWithProviders(<NoticiasPage />)
 
@@ -148,6 +148,35 @@ describe('NoticiasPage: volver de una noticia no pierde lo cargado', () => {
 
     const volver = await screen.findByRole('link', { name: /volver a todas las noticias/i })
     expect(volver).toHaveAttribute('href', '/noticias?mostrar=19')
+  })
+
+  // FR9 de la auditoría del 07-10-2026: lo cargado vivía en el estado del
+  // componente y volver lo pedía todo otra vez desde la primera página, con
+  // el esqueleto delante. Aquí el servidor deja de contestar al volver: si la
+  // lista sale igual, es que viene de la caché.
+  it('al volver, las diecinueve salen de la caché sin esperar al servidor', async () => {
+    const simulado = servirArchivo(archivo(25))
+    const usuario = userEvent.setup()
+    renderWithProviders(
+      <Routes>
+        <Route path="/noticias" element={<NoticiasPage />} />
+        <Route path="/noticias/:slug" element={<NoticiaDetallePage />} />
+      </Routes>,
+      { ruta: '/noticias' },
+    )
+
+    await screen.findByRole('link', { name: /noticia 10\b/i })
+    await usuario.click(screen.getByRole('button', { name: /cargar más noticias/i }))
+    await usuario.click(await screen.findByRole('link', { name: /noticia 19\b/i }))
+    const volver = await screen.findByRole('link', { name: /volver a todas las noticias/i })
+
+    const respuestaAnterior = simulado.getMockImplementation()!
+    simulado.mockImplementation((entrada: RequestInfo | URL) =>
+      String(entrada).includes('/archive') ? new Promise(() => {}) : respuestaAnterior(entrada))
+    await usuario.click(volver)
+
+    expect(await screen.findByRole('link', { name: /noticia 19\b/i })).toBeInTheDocument()
+    expect(tarjetas()).toHaveLength(19)
   })
 
   it('una dirección con ?mostrar=19 abre ya con diecinueve', async () => {

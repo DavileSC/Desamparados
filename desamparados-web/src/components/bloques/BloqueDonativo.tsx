@@ -182,6 +182,8 @@ const TRAS_EL_BANCO: Record<Exclude<EstadoDelPago, 'PENDIENTE'>, { tono: 'succes
   INCIDENCIA: { tono: 'warning', texto: (i) => `El banco ha cobrado ${i}, pero algo no ha cuadrado. Tesorería lo revisará y, si hace falta, te lo devolverá.` },
 }
 
+type Aviso = { tono: 'info' | 'success' | 'error' | 'warning'; texto: string }
+
 /**
  * La vuelta de la página del banco (`?donativo=<pedido>`). Como en el pago de
  * recibos, la vuelta no prueba nada: se pregunta al servidor hasta que el
@@ -191,17 +193,18 @@ function VueltaDelBanco() {
   const [params, setParams] = useSearchParams()
   const pedido = params.get('donativo')
   const fallido = params.get('resultado') === 'no'
-  const [aviso, setAviso] = useState<{ tono: 'info' | 'success' | 'error' | 'warning'; texto: string } | null>(null)
+  // Solo se guarda la respuesta final, con el pedido al que contesta; el fallo
+  // y el «Comprobando…» se deducen de la dirección al pintar.
+  const [final, setFinal] = useState<{ pedido: string; aviso: Aviso } | null>(null)
+  const aviso: Aviso | null = !pedido ? null
+    : fallido ? { tono: 'error', texto: 'El donativo no se ha completado y no se te ha cobrado nada. Puedes intentarlo otra vez.' }
+      : final?.pedido === pedido ? final.aviso : { tono: 'info', texto: 'Comprobando el donativo con el banco…' }
 
   useEffect(() => {
-    if (!pedido) return
-    if (fallido) {
-      setAviso({ tono: 'error', texto: 'El donativo no se ha completado y no se te ha cobrado nada. Puedes intentarlo otra vez.' })
-      return
-    }
+    if (!pedido || fallido) return
     let cancelado = false
     let intento = 0
-    setAviso({ tono: 'info', texto: 'Comprobando el donativo con el banco…' })
+    const setAviso = (nuevo: Aviso) => setFinal({ pedido, aviso: nuevo })
     const preguntar = async () => {
       try {
         const { estado, importe } = await estadoDelDonativo(pedido)
@@ -224,7 +227,6 @@ function VueltaDelBanco() {
 
   if (!aviso) return null
   const cerrar = () => {
-    setAviso(null)
     setParams((p) => { p.delete('donativo'); p.delete('resultado'); return p }, { replace: true })
   }
   return <Alert severity={aviso.tono} onClose={aviso.texto.startsWith('Comprobando') ? undefined : cerrar}>{aviso.texto}</Alert>

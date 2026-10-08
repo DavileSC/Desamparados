@@ -18,12 +18,15 @@ import type { SalidaConActo } from './salidas.service.js';
 
 const DE_LA_PAPELETA = {
   id: true, year: true, salidaId: true, salida: { select: { slug: true } }, puesto: true, tramo: true, numero: true, entradaEl: true, entradaPor: true,
-  hermano: { select: { nombre: true, apellidos: true, numeroHermano: true } },
+  hermano: { select: { nombre: true, apellidos: true, numeroHermano: true, activo: true } },
 } as const;
 
 type Fila = NonNullable<Awaited<ReturnType<typeof buscar>>>;
 
 const buscar = (id: number) => db.papeletaSitio.findUnique({ where: { id }, select: DE_LA_PAPELETA });
+
+/** Su hermano ya no está en el censo: la papeleta sigue (pagada), pero no sale. */
+const deBaja = (p: Fila) => !p.hermano.activo;
 
 /** Lo que se enseña de una papeleta en la puerta: quién es y dónde va, nada más. */
 const aPapeleta = (p: Fila) => ({
@@ -38,6 +41,7 @@ const aPapeleta = (p: Fila) => ({
   salida: p.salida.slug,
   entradaEl: p.entradaEl?.toISOString() ?? null,
   entradaPor: p.entradaPor,
+  deBaja: deBaja(p),
 });
 
 export type PapeletaEnPuerta = ReturnType<typeof aPapeleta>;
@@ -65,7 +69,10 @@ export class PuertaService {
   static async estado(salida: SalidaConActo) {
     const year = anioDeLaMesa(salida);
     const config = leerConfiguracion(salida);
-    const papeletas = await db.papeletaSitio.findMany({ where: { year, salidaId: salida.id }, select: DE_LA_PAPELETA });
+    const todas = await db.papeletaSitio.findMany({ where: { year, salidaId: salida.id }, select: DE_LA_PAPELETA });
+    // Quien está de baja no va a entrar: no cuenta en los tramos ni en
+    // «faltan». Si entró antes de la baja, ya está dentro y se queda contado.
+    const papeletas = todas.filter((p) => !deBaja(p) || p.entradaEl);
     const tramos = cuentasPorTramo(papeletas, config.tramos.map((t) => t.nombre));
     const faltan = papeletas
       .filter((p) => !p.entradaEl)
@@ -80,6 +87,8 @@ export class PuertaService {
       salida: salida.slug, year,
       total: papeletas.length,
       dentro: papeletas.length - faltan.length,
+      /** Papeletas de esta salida cuyo hermano está de baja y no ha entrado: no se esperan. */
+      deBaja: todas.length - papeletas.length,
       tramos, faltan, ultimas,
     };
   }
@@ -117,7 +126,7 @@ export class PuertaService {
   static async entrar(id: number, salida: SalidaConActo, meta: MetaDeAuditoria): Promise<Lectura> {
     const year = anioDeLaMesa(salida);
     const antes = await buscar(id);
-    const v = veredicto(antes, { year, salidaId: salida.id });
+    const v = veredicto(antes && { ...antes, deBaja: deBaja(antes) }, { year, salidaId: salida.id });
     if (v !== 'ENTRA') return { veredicto: v, papeleta: antes ? aPapeleta(antes) : null };
 
     const { count } = await db.papeletaSitio.updateMany({

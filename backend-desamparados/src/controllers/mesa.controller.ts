@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { MesaService, type AltaEnMesaDto, type CorreccionFichaDto, type EdicionPapeletaDto, type EdicionSolicitudDto, type ZonaDeBusqueda } from '../services/procesion/mesa.service.js';
+import { esDelCensoEnMesa, MesaService, type AccesoMesa, type AltaEnMesaDto, type CorreccionFichaDto, type EdicionPapeletaDto, type EdicionSolicitudDto, type ZonaDeBusqueda } from '../services/procesion/mesa.service.js';
 import { PapeletasService } from '../services/procesion/papeletas.service.js';
 import { anioDeLaMesa, ZonasService, type CobroEnMesa, type DevolucionEnMesa, type EntregaEnMesa, type InscripcionEnMesa } from '../services/procesion/zonas.service.js';
 import { recuentoDeCingulos } from '../services/procesion/cingulos.js';
@@ -20,11 +20,15 @@ const sinClave = <T extends { clave?: string }>(cuerpo: T) => {
 /** Cada cuánto se manda un latido por el canal: los proxies cortan las conexiones calladas. */
 const LATIDO_MS = 25_000;
 
+/** Lo que ve y corrige quien pide: el censo entero, o solo lo que hace falta para cobrar y dar la ropa. */
+const accesoDe = (req: Request): AccesoMesa => ({ censo: esDelCensoEnMesa(req.user?.role) });
+
 /** La mesa de la procesión (ver `MesaService` y `ZonasService`). */
 export class MesaController {
   static buscar = manejar('Error buscando en el censo', async (req, res) => {
     res.json(await MesaService.buscarPersonas(String(req.query.q ?? ''), await salidaDe(req), {
       zona: req.query.zona as ZonaDeBusqueda | undefined,
+      acceso: accesoDe(req),
     }));
   });
 
@@ -33,7 +37,7 @@ export class MesaController {
   });
 
   static ficha = manejar('Error leyendo la ficha para la mesa', async (req, res) => {
-    res.json(await MesaService.ficha(Number(req.params.id), await salidaDe(req)));
+    res.json(await MesaService.ficha(Number(req.params.id), await salidaDe(req), accesoDe(req)));
   });
 
   static prendas = manejar('Error buscando en el ropero', async (req, res) => {
@@ -50,7 +54,7 @@ export class MesaController {
   });
 
   static corregir = manejar('Error corrigiendo la ficha', async (req, res) => {
-    res.json(await MesaService.corregirFicha(Number(req.params.id), req.body as CorreccionFichaDto, AuditoriaService.metaFromReq(req)));
+    res.json(await MesaService.corregirFicha(Number(req.params.id), req.body as CorreccionFichaDto, AuditoriaService.metaFromReq(req), accesoDe(req)));
   });
 
   static activar = manejar('Error poniendo en activo', async (req, res) => {
@@ -89,7 +93,7 @@ export class MesaController {
       q: req.query.q as string | undefined,
       puesto: req.query.puesto as string | undefined,
       faltaCingulo: req.query.faltaCingulo === '1',
-    }));
+    }, accesoDe(req)));
   });
 
   // --- Las zonas ---

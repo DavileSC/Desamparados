@@ -310,8 +310,11 @@ rellenan ahí y aparecen solos.**
 **El aviso de rechazo se envía después de borrar la cuenta.**
 `rechazarSolicitud` elimina el usuario entero cuando nunca llegó a aprobarse, así
 que el email y el nombre se leen **antes** de la transacción. Por el mismo motivo
-el asunto de ese correo no lleva el nombre: si el envío falla, el asunto acaba en
-la auditoría, y eso devolvería a la base el dato que se acaba de borrar.
+el asunto de ese correo no lleva el nombre. Desde octubre de 2026, un correo que
+falla deja en la auditoría la **clave del uso** (`solicitud_rechazada`…) y un
+resumen del error sin direcciones, nunca el asunto: el asunto lo escribe la
+plantilla y podía llevar el nombre de quien lo recibía durante los 730 días de
+la auditoría.
 
 ---
 
@@ -362,6 +365,20 @@ de alto la encogería sin motivo.
 
 Y **nunca se agranda** (`withoutEnlargement`): subir la resolución de una foto
 pequeña solo la emborrona y la engorda.
+
+**Cada foto pública lleva además dos copias: `<hex>-640.webp` y
+`<hex>-1280.webp`** (desde octubre de 2026), para el `srcset` de la web.
+Existen **siempre**, aunque la foto sea más estrecha (entonces son una copia
+idéntica): la web deduce sus direcciones de la URL guardada y no pregunta. Por
+eso, si una foto se copia o se restaura a mano en `storage/public`, hay que
+pasar después `npm run imagenes:variantes`, o la web pedirá copias que no están.
+Borrar la foto se lleva sus copias (`borrarSubida`) y el script de huérfanos las
+trata como parte de su foto. El contrato vive en `domain/variantes-de-foto.ts`.
+
+**Lo que se sube espera en `storage/subiendo` hasta pasar las comprobaciones**
+(tipo real, antivirus, sharp) y solo entonces se mueve a `storage/public`:
+nginx sirve esa carpeta directamente del disco y, si multer escribiera allí,
+un fichero sin validar sería descargable durante esos segundos.
 
 ---
 
@@ -477,13 +494,16 @@ primer arranque**: después las filas ya existen y el JSON no cuenta. El
 arranque **sale con error si la base no responde**: no hay forma de arrancar
 con el estado de los módulos a medias.
 
-**El sitemap solo conoce el lote inicial de módulos.**
-`scripts/rutas-publicas.mjs` deja fuera las páginas públicas de los módulos
-que `modulos.activos` de `shared/datos-entidad.json` no nombra (su página
-responde «no encontrado», con `noindex`), y la prueba del sitemap recorta
-igual. Un módulo apagado después desde el CMS sigue anunciado hasta que se
-vuelva a construir la web: el sitemap es un fichero estático y no pregunta a
-la API.
+**El sitemap lo sirve la API, en `/sitemap.xml`** (desde octubre de 2026;
+antes era un fichero estático de la web que solo conocía el lote inicial de
+módulos y no nombraba las noticias). Se arma en cada petición con los módulos
+encendidos en ese momento y las noticias publicadas, cada una con su
+`lastmod`. Las páginas fijas salen de `shared/rutas-publicas.json`, que genera
+`npm run sitemap` en la web leyendo su router: **tras añadir o quitar una
+ruta pública hay que regenerarlo y confirmarlo**, y la prueba
+`scripts/__tests__/sitemap.test.ts` de la web falla si no. nginx manda
+`/sitemap.xml` a la API (`docker/nginx/ubicaciones.conf`); `robots.txt` sigue
+apuntando ahí.
 
 **Un 404 `MODULO_NO_ACTIVADO` hace que la web vuelva a pedir la lista de
 módulos.** `llamarApi` avisa (`alModuloNoActivado`, en `lib/api/cliente.ts`)

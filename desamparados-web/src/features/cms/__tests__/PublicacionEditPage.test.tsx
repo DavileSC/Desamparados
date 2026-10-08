@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
 import { TemaCmsProvider } from '../../../app/temaCms'
 import PublicacionEditPage from '../PublicacionEditPage'
@@ -40,7 +41,7 @@ function montar(ruta: string) {
     ],
     { initialEntries: [ruta] },
   )
-  render(<HelmetProvider><TemaCmsProvider><RouterProvider router={router} /></TemaCmsProvider></HelmetProvider>)
+  render(<QueryClientProvider client={new QueryClient()}><HelmetProvider><TemaCmsProvider><RouterProvider router={router} /></TemaCmsProvider></HelmetProvider></QueryClientProvider>)
   return simulado
 }
 

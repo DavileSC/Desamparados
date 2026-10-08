@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material'
+import { propsDeFoto } from '../lib/fotoSubida'
 
 interface CabeceraDePaginaProps {
   title: string
@@ -28,7 +29,7 @@ export default function CabeceraDePagina({ title, subtitle, image, imageAlt }: C
         <>
           <Box
             component="img"
-            src={image}
+            {...propsDeFoto(image ?? '', '100vw')}
             // Respaldo en el título, no en cadena vacía: las páginas cuya foto
             // no viene del CMS (p. ej. Sagrada Titular, con una foto fija en el
             // código) no pasan `imageAlt`, y no por eso la foto se queda sin

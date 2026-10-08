@@ -2,7 +2,7 @@ import { llamarApi } from './cliente'
 import { deLaSalida } from './procesion'
 
 /** Lo que dice la puerta al leer una papeleta (ver `domain/puerta.ts` del backend). */
-export type Veredicto = 'ENTRA' | 'REPETIDA' | 'OTRA_SALIDA' | 'ANULADA' | 'FALSO'
+export type Veredicto = 'ENTRA' | 'REPETIDA' | 'OTRA_SALIDA' | 'DE_BAJA' | 'ANULADA' | 'FALSO'
 
 export interface PapeletaEnPuerta {
   id: number
@@ -17,6 +17,11 @@ export interface PapeletaEnPuerta {
   salida: string
   entradaEl: string | null
   entradaPor: string | null
+  /**
+   * Su hermano ya no está en activo. Darle de baja no anula una papeleta
+   * pagada (lo decide la Junta): es la puerta quien lo para.
+   */
+  deBaja: boolean
 }
 
 export interface Lectura {
@@ -39,6 +44,8 @@ export interface EstadoPuerta {
   year: number
   total: number
   dentro: number
+  /** Papeletas de hermanos de baja que no han entrado: no cuentan en `total` ni en «Faltan». */
+  deBaja: number
   tramos: TramoEnPuerta[]
   faltan: PapeletaEnPuerta[]
   ultimas: PapeletaEnPuerta[]

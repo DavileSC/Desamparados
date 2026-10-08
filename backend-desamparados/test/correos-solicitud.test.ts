@@ -19,7 +19,7 @@ import { readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { EmailService } from '../src/services/email.service.js';
 import { buzonDePruebas, buzonPedido } from '../src/utils/buzon-pruebas.js';
-import { ponerCuentaDeContacto, ponerTransporte } from '../src/services/correos/envio.js';
+import { ponerCuentaDeContacto, ponerTransporte, resumenDelFallo } from '../src/services/correos/envio.js';
 import db from '../src/config/db.js';
 import { AuthService } from '../src/services/auth.service.js';
 import { PASSWORD_PRUEBA } from './fixtures/usuarios.js';
@@ -155,9 +155,25 @@ describe('un correo que no sale deja rastro', () => {
       orderBy: { id: 'desc' },
     });
     assert.ok(registro, 'no se ha registrado el fallo en la auditoría');
-    const detalles = registro.detalles as { para?: string; asunto?: string };
+    const detalles = registro.detalles as { para?: string; asunto?: string; uso?: string; motivo?: string };
     assert.match(String(detalles.para), /@example\.es/, 'el registro dice a quién no llegó');
     assert.ok(!String(detalles.para).includes('ana@'), 'pero sin guardar la dirección entera');
+    // Qué correo era, por su clave: el asunto puede llevar el nombre y se
+    // guardaba en claro los 730 días de la auditoría.
+    assert.equal(detalles.uso, 'solicitud_recibida');
+    assert.equal(detalles.asunto, undefined);
+  });
+
+  // El error de nodemailer trae la dirección en `rejected`, `envelope` y la
+  // respuesta del SMTP; volcado entero, acababa en el registro.
+  test('el fallo se resume sin la dirección', () => {
+    const smtp = Object.assign(new Error('Can\'t send mail - all recipients were rejected: 550 5.1.1 <ana.ruiz@example.es>: no existe'), {
+      code: 'EENVELOPE', responseCode: 550, command: 'RCPT TO', rejected: ['ana.ruiz@example.es'],
+    });
+    const resumen = resumenDelFallo(smtp);
+    assert.equal(resumen, 'EENVELOPE · SMTP 550 · RCPT TO');
+    const propio = resumenDelFallo(new Error('No se pudo con ana.ruiz@example.es'));
+    assert.ok(!propio.includes('ana.ruiz@'), propio);
   });
 });
 
@@ -165,7 +181,7 @@ describe('un correo que no sale deja rastro', () => {
 //  Los correos del expediente, disparados desde las operaciones de verdad
 // ---------------------------------------------------------------------------
 
-const SIN_DB = 'sin base de datos disponible';
+import { SIN_DB } from './fixtures/sin-db.js';
 let dbDisponible = false;
 
 before(async () => {

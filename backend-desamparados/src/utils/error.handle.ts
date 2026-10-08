@@ -68,6 +68,11 @@ function camposDelError(error: Prisma.PrismaClientKnownRequestError): string[] {
   return resto.split('_').filter(Boolean);
 }
 
+const TEXTO_DEMASIADO_LARGO = {
+  status: 400,
+  message: 'Uno de los textos es demasiado largo: acórtalo y vuelve a intentarlo.',
+};
+
 const CONFLICTO_CONCURRENCIA = {
   status: 409,
   message: 'Otra persona ha cambiado estos datos a la vez; vuelve a intentarlo.',
@@ -114,12 +119,16 @@ export function esConflictoDeConcurrencia(error: unknown): boolean {
  *  - P2003 (clave ajena)            → 409: se intenta borrar algo que otros
  *    registros usan, o se enlaza con algo que no existe.
  *  - P2034 y los errores 1020/1213 de MariaDB (escritura concurrente) → 409
+ *  - P2000 (texto más largo que la columna; MariaDB 1406) → 400: un campo sin
+ *    tope en su esquema llegaba a la base y salía como 500.
  *
  * El valor duplicado NO se repite en el mensaje: el que lo envió ya lo sabe y
  * así no se filtra nada si la respuesta acaba en un registro.
  */
 export function traducirErrorPrisma(error: unknown): { status: number; message: string } | null {
   if (esConflictoDeConcurrencia(error)) return { ...CONFLICTO_CONCURRENCIA };
+  const causa = causaDelAdaptador(error);
+  if (causa && (causa.kind === 'LengthMismatch' || Number(causa.code ?? causa.originalCode) === 1406)) return { ...TEXTO_DEMASIADO_LARGO };
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return null;
 
   switch (error.code) {
@@ -131,6 +140,8 @@ export function traducirErrorPrisma(error: unknown): { status: number; message: 
         message: nombre ? `Ya existe un registro con ${nombre}.` : 'Ya existe un registro con ese valor.',
       };
     }
+    case 'P2000':
+      return { ...TEXTO_DEMASIADO_LARGO };
     case 'P2025':
       return { status: 404, message: 'El registro solicitado no existe.' };
     case 'P2003':

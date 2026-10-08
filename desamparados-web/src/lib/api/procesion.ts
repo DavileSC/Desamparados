@@ -252,6 +252,8 @@ export interface EstadoCortejo {
   year: number
   config: ConfiguracionCortejo
   papeletas: number
+  /** Papeletas cuyo hermano está de baja: cuentan en `papeletas`, pero quedan fuera del reparto. */
+  deBaja: number
   reparto: {
     tramos: { nombre: string; plazas: number; asignados: number }[]
     /** Papeletas de puestos que no se reparten (trono, acólitos…): no se tocan. */
@@ -262,7 +264,7 @@ export interface EstadoCortejo {
   /** Cómo está ahora, por tramos; `tramo: null` son las que aún no tienen. */
   actual: {
     tramo: string | null
-    hermanos: { papeletaId: number; numero: number | null; puesto: string; seReparte: boolean; nombre: string; apellidos: string; numeroHermano: number | null }[]
+    hermanos: { papeletaId: number; numero: number | null; puesto: string; seReparte: boolean; nombre: string; apellidos: string; numeroHermano: number | null; deBaja: boolean }[]
   }[]
 }
 

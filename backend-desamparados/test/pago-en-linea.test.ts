@@ -17,9 +17,10 @@ import {
   configuracionRedsys, firmar, formularioDePago, leerAviso, modoDePago, numeroDePedido, pagoParaLaWeb,
 } from '../src/domain/redsys.js';
 import { PagoEnLineaService } from '../src/services/pagos/pago-en-linea.service.js';
+import { ZonasService } from '../src/services/procesion/zonas.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const PRUEBAS = configuracionRedsys({});
 
 /** Un aviso como los de Redsys: parámetros en base64 y firma en base64 «de URL». */
@@ -40,6 +41,18 @@ describe('la firma de Redsys', () => {
     assert.equal(leerAviso(otraClave, PRUEBAS.clave), null, 'firmado con otra clave no es del banco');
     assert.equal(leerAviso({ Ds_MerchantParameters: 'no-es-json', Ds_Signature: 'x' }, PRUEBAS.clave), null);
     assert.equal(leerAviso({}, PRUEBAS.clave), null);
+  });
+
+  // La ruta del aviso es pública: lo que no se pueda leer es «no es del
+  // banco» (null), nunca una excepción que salga como 500.
+  test('un aviso con escapes rotos o que no es un objeto se descarta sin lanzar', () => {
+    const roto = aviso({ Ds_Order: '%E0%A4%A', Ds_Amount: '3000', Ds_Response: '0000' });
+    assert.equal(leerAviso(roto, PRUEBAS.clave), null);
+    const autorizacionRota = aviso({ Ds_Order: '00000042AB7Z', Ds_Amount: '3000', Ds_Response: '0000', Ds_AuthorisationCode: '%' });
+    assert.equal(leerAviso(autorizacionRota, PRUEBAS.clave)?.autorizacion, null);
+    for (const json of ['null', '42', '"texto"', '[]']) {
+      assert.equal(leerAviso({ Ds_MerchantParameters: Buffer.from(json).toString('base64'), Ds_Signature: 'x' }, PRUEBAS.clave), null, json);
+    }
   });
 
   test('solo de 0000 a 0099 es cobrado', () => {
@@ -220,6 +233,41 @@ test('denegado: no se paga nada; si ya no cuadra, incidencia para Tesorería', a
     await assert.rejects(PagoEnLineaService.iniciar(e.usuario.id, { reciboIds: [doble.id], solicitudIds: [], metodo: 'TARJETA' }, undefined), /no está pendiente de pago/);
     // Sin Bizum contratado, no se ofrece.
     await assert.rejects(PagoEnLineaService.iniciar(e.usuario.id, { reciboIds: [denegada.id], solicitudIds: [], metodo: 'BIZUM' }, undefined), /Bizum no está disponible/);
+  } finally {
+    await e.recoger();
+  }
+});
+
+// Un recibo devuelto se cobra emitiendo su reemisión, y eso solo una vez. Antes
+// cada cobro emitía una reemisión nueva: con el pago en línea empezado y la
+// cuota cobrada en la mesa mientras tanto, el aviso del banco la volvía a
+// cobrar («(reemisión 2)», con su ingreso). Ahora el aviso acaba en incidencia.
+test('un devuelto ya reemitido no se vuelve a cobrar: el aviso del banco queda como incidencia', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const devuelto = await e.cuota('Cuota devuelta');
+    await db.recibo.update({ where: { id: devuelto.id }, data: { estado: EstadoPago.DEVUELTO } });
+    const inicio = await empezar(e.usuario.id, [devuelto.id]);
+
+    // Mientras el hermano está en el banco, se cobra en la mesa.
+    await ZonasService.cobrar({ hermanoId: e.hermano.id, reciboIds: [devuelto.id], metodoPago: 'EFECTIVO' }, undefined);
+    const reemisiones = () => db.recibo.count({ where: { hermanoId: e.hermano.id, concepto: { contains: 'reemisión' } } });
+    assert.equal(await reemisiones(), 1);
+
+    assert.equal((await avisar(aviso({ Ds_Order: inicio.pedido, Ds_Amount: '3000', Ds_Response: '0000' }))).status, 200);
+    assert.equal((await PagoEnLineaService.estado(e.usuario.id, inicio.pedido)).estado, EstadoPagoEnLinea.INCIDENCIA);
+    assert.equal(await reemisiones(), 1, 'sin una segunda reemisión');
+    assert.equal(await db.transaccion.count({ where: { hermanoId: e.hermano.id } }), 1, 'un solo ingreso');
+
+    // Ni la mesa ni el área de hermanos lo vuelven a cobrar, ni se perdona otra vez.
+    await assert.rejects(
+      ZonasService.cobrar({ hermanoId: e.hermano.id, reciboIds: [devuelto.id], metodoPago: 'EFECTIVO' }, undefined),
+      (err: { status?: number; message: string }) => err.status === 409 && /ya se volvió a emitir/.test(err.message),
+    );
+    await assert.rejects(PagoEnLineaService.iniciar(e.usuario.id, { reciboIds: [devuelto.id], solicitudIds: [], metodo: 'TARJETA' }, undefined), /ya se volvió a emitir/);
+    await assert.rejects(ZonasService.perdonar({ reciboIds: [devuelto.id] }, undefined), /ya se volvió a emitir/);
+    assert.equal(await reemisiones(), 1);
   } finally {
     await e.recoger();
   }

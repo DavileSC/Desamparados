@@ -21,7 +21,7 @@ export const globalLimiter = rateLimit({
 
 // 2. Limitador Estricto (Para Login/Registro/2FA/Reset)
 // Evita fuerza bruta para adivinar contraseñas o códigos TOTP.
-// Nota: el lockout por CUENTA del 2FA (5 fallos → 15 min de bloqueo) cubre
+// Nota: el lockout por CUENTA del 2FA (5 fallos → bloqueo creciente de 15 min a 24 h) cubre
 // ataques distribuidos; este limiter cubre por IP.
 export const authLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,

@@ -114,6 +114,21 @@ describe('una noticia nueva', () => {
     expect(peticion.cuerpo.contenido).toBe('<p></p>')
   })
 
+  // FR10 de la auditoría del 07-10-2026: guardar no invalidaba la caché
+  // pública, y en la misma pestaña la portada y el archivo seguían con lo de antes.
+  it('al guardar, la portada y el archivo públicos se vuelven a pedir', async () => {
+    const invalidar = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+    const user = userEvent.setup()
+    montar('/cms/noticias/nueva')
+    await user.type(await screen.findByLabelText('Título'), 'Cultos de noviembre')
+    await user.click(screen.getByRole('button', { name: 'Guardar borrador' }))
+
+    await screen.findByText(/borrador guardado/i)
+    const claves = invalidar.mock.calls.map(([filtro]) => JSON.stringify(filtro?.queryKey))
+    expect(claves).toEqual(expect.arrayContaining([JSON.stringify(['portada', 'noticias']), JSON.stringify(['noticias'])]))
+    invalidar.mockRestore()
+  })
+
   it('la dirección se escribe solo con lo que admite el servidor', async () => {
     const user = userEvent.setup()
     montar('/cms/noticias/nueva')

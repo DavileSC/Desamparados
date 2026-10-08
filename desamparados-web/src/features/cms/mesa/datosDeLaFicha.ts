@@ -25,12 +25,16 @@ export function useDatosPersona(ficha: FichaDeMesa) {
     if (datos.primerApellido.trim() !== antes.primerApellido) c.primerApellido = datos.primerApellido.trim()
     if (datos.segundoApellido.trim() !== antes.segundoApellido) c.segundoApellido = datos.segundoApellido.trim() || null
     if (datos.fechaNacimiento !== antes.fechaNacimiento) c.fechaNacimiento = datos.fechaNacimiento
-    if (datos.telefono.trim() !== antes.telefono) c.telefono = datos.telefono.trim() || null
-    if (datos.email.trim() !== antes.email) c.email = datos.email.trim() || null
+    // Sin el contacto entero llega enmascarado: no se corrige desde aquí, y
+    // mandarlo (aunque fuera tal cual) lo rechaza el servidor con un 403.
+    if (ficha.contactoCompleto) {
+      if (datos.telefono.trim() !== antes.telefono) c.telefono = datos.telefono.trim() || null
+      if (datos.email.trim() !== antes.email) c.email = datos.email.trim() || null
+    }
     return c
   }
 
-  return { datos, setDatos, correccion }
+  return { datos, setDatos, correccion, contactoCompleto: ficha.contactoCompleto }
 }
 
 export const leyenda = { fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'text.secondary', mb: 1 } as const

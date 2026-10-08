@@ -16,8 +16,8 @@ import { HttpError } from '../src/utils/error.handle.js';
 import { CortejoService, leerConfiguracion } from '../src/services/procesion/cortejo.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { idDeSalida, PASION, salida } from './fixtures/salidas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const YEAR = 2098;
 let dbDisponible = false;
 let server: Server;
@@ -103,6 +103,37 @@ test('repartir: los más nuevos delante, solo los puestos que se reparten, y la 
     assert.equal(despues.reparto.cambios, 0);
     assert.deepEqual(despues.actual.map((g) => [g.tramo, g.hermanos.length]), [['Cruz de guía', 2], ['Tramo del trono', 2], [null, 1]]);
     assert.equal((await CortejoService.aplicar(await salida(PASION), YEAR, e.meta)).cambiadas, 0);
+  } finally {
+    await e.recoger();
+  }
+});
+
+// NG2 (auditoría del 07-10-2026): dar de baja no quita la papeleta pagada (lo
+// decide la Junta), y el reparto por antigüedad le seguía dando sitio.
+test('repartir: quien está de baja no entra en el reparto y pierde el lugar que tenía', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    await CortejoService.guardarConfiguracion(await salida(PASION), { tramos: [{ nombre: 'Único', plazas: 3 }], puestos: ['Nazareno'] }, e.meta);
+    const antiguo = await e.conPapeleta('1980-01-01');
+    const nuevo = await e.conPapeleta('2024-01-01');
+    const deBaja = await e.conPapeleta('2023-01-01');
+    await db.papeletaSitio.update({ where: { id: deBaja.id }, data: { tramo: 'Único', numero: 1 } });
+    await db.hermano.update({ where: { id: deBaja.hermanoId }, data: { activo: false, fechaBaja: new Date(), numeroHermano: null } });
+
+    const estado = await CortejoService.estado(await salida(PASION), YEAR);
+    assert.deepEqual(estado.reparto.tramos.map((x) => x.asignados), [2], 'solo los dos en activo');
+    assert.equal(estado.deBaja, 1);
+
+    await CortejoService.aplicar(await salida(PASION), YEAR, e.meta);
+    const lugar = async (id: number) => {
+      const p = await db.papeletaSitio.findUniqueOrThrow({ where: { id } });
+      return [p.tramo, p.numero];
+    };
+    assert.deepEqual(await lugar(nuevo.id), ['Único', 1]);
+    assert.deepEqual(await lugar(antiguo.id), ['Único', 2]);
+    assert.deepEqual(await lugar(deBaja.id), [null, null], 'sin lugar: no se le espera');
+    assert.equal((await CortejoService.estado(await salida(PASION), YEAR)).reparto.cambios, 0);
   } finally {
     await e.recoger();
   }

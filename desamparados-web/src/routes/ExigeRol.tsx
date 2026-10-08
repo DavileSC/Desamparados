@@ -17,7 +17,9 @@ export default function ExigeRol({ roles, children }: ExigeRolProps) {
 
   // El CMS tiene acceso propio, con segundo factor. Sin su sesión se va allí,
   // con `from` para volver a la página que pedía. Tener abierta la del portal
-  // del hermano no cuenta: esa no ha pasado el 2FA.
+  // del hermano no cuenta: esa no ha pasado el 2FA. Una sesión que caduca con
+  // alguien dentro no llega aquí como `null` (ver `cmsCaducada` en el store):
+  // la pantalla sigue montada y el marco pide volver a entrar en una ventana.
   if (!cms) return <Navigate to="/cms/acceso" state={{ from: location }} replace />
   if (!roles.includes(cms.role)) return <Navigate to="/cms" replace />
 

@@ -19,8 +19,8 @@ import { ZonasService } from '../src/services/procesion/zonas.service.js';
 import { ponerTransporte, type TransporteDeCorreo } from '../src/services/correos/envio.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { PASION, salida } from './fixtures/salidas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;

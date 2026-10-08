@@ -3,4 +3,6 @@ Disallow: /cms
 Disallow: /area-hermano
 Disallow: /acceso
 Disallow: /reset-password
+Disallow: /tienda/pedido/
+Disallow: /apadrina/gracias/
 Sitemap: https://www.desamparadosmalaga.com/sitemap.xml

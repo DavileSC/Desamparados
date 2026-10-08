@@ -15,8 +15,8 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js'
 import { ModulosService } from '../src/services/modulos.service.js';
 import { conModulo, nucleo } from '../src/middleware/modulos.js';
 import { CLAVES_MODULO } from '../src/domain/modulos.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;

@@ -30,8 +30,10 @@ COPY desamparados-web/ ./
 COPY shared /app/shared
 COPY backend-desamparados/src /app/backend-desamparados/src
 
-# `npm run build` regenera antes el sitemap (script `prebuild`) a partir del
-# router, y después hace `tsc -b && vite build`.
+# `npm run build` regenera antes la identidad y la lista de rutas públicas
+# (script `prebuild`; esta última va a shared/ y aquí no sale de la etapa: el
+# sitemap lo sirve la API con la versionada), y después hace
+# `tsc -b && vite build`.
 #
 # VITE_API_URL se queda sin definir a propósito: el cliente cae entonces en
 # `/api` (src/lib/api/client.ts), que es una ruta del mismo dominio. Apuntar a
@@ -51,7 +53,10 @@ COPY docker/nginx/sitio.conf docker/nginx/generar-sitio.mjs /app/nginx/
 RUN node /app/nginx/generar-sitio.mjs /app/shared/datos-entidad.json /app/nginx/sitio.conf /app/nginx/sitio-generado.conf
 
 # ---------------------------------------------------------------------------
-FROM nginx:1.27-alpine AS servidor
+# La rama estable fijada, no `latest`: un `up --build` cualquiera no debe
+# cambiar de versión mayor de nginx por su cuenta. La 1.30 recibe los parches
+# de seguridad; al pasar a la siguiente estable se cambia aquí a mano.
+FROM nginx:1.30-alpine AS servidor
 
 # La imagen oficial trae un sitio de ejemplo en conf.d que atendería el puerto
 # 80 antes que el nuestro.

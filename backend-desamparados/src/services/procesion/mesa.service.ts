@@ -15,6 +15,7 @@ import { HttpError, NotFoundError } from '../../utils/error.handle.js';
 import { condicionBusqueda } from '../../domain/busqueda-texto.js';
 import { apellidosTrasCambio, componerApellidos } from '../../domain/apellidos.js';
 import { comprobarEsAdulto, comprobarEsMenor } from '../../domain/fechas-hermano.js';
+import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 import { alturaHombroEnCm, normalizarNumeroPrenda, propuestaDeRopa, type Origen } from '../../domain/mesa-procesion.js';
 import { getNextNumeroHermano, transaccionReintentable } from '../hermanos/comunes.js';
 import { CensoService } from '../censo.service.js';
@@ -24,6 +25,7 @@ import { CAMPO_DE_ROPA, comprobarQueNoVaEnOtraPapeleta, prestarRopaEnTransaccion
 import { anioDeLaMesa, cuotasQueCuentan, pendienteDe } from './zonas.service.js';
 import { prestarCinguloEnTransaccion, recuentoDeCingulos, type CinguloEnMesa } from './cingulos.js';
 import { avisarALaMesa } from './avisos-mesa.js';
+import { enmascararEmail } from '../../utils/log-privacidad.js';
 import { conceptoDeSalida, requisitosParaRecoger } from '../../domain/salidas.js';
 import { cuotaDe } from './plazo.service.js';
 import type { SalidaConActo } from './salidas.service.js';
@@ -38,6 +40,59 @@ export type ZonaDeBusqueda = 'inscripcion' | 'tesoreria' | 'tunicas' | 'devoluci
 
 /** Cuántas personas devuelve el buscador: la mesa afina escribiendo más. */
 const RESULTADOS = 12;
+
+/**
+ * Quién lleva el censo en la mesa: busca por cualquier dato, ve la ficha
+ * entera (DNI y contacto), la corrige, da de alta y reactiva. Es la misma
+ * lista que puede «Reactivar» o «Aprobar alta» (`/activar`).
+ */
+export const ROLES_CENSO_EN_MESA: readonly Role[] = [Role.ADMIN, Role.SECRETARIA];
+export const esDelCensoEnMesa = (rol: string | undefined): boolean => rol !== undefined && (ROLES_CENSO_EN_MESA as readonly string[]).includes(rol);
+
+/**
+ * Lo que puede la persona de la mesa que pide. Tesorería y Albacería cobran y
+ * dan la ropa: les basta reconocer a quien tienen delante, y no necesitan el
+ * DNI ni el contacto de nadie, ni ver bajas, pendientes o difuntos. Antes
+ * buscaban por un trozo de DNI o de teléfono y leían y corregían cualquier
+ * ficha del censo, todo el año (auditoría del 07-10-2026, AC3).
+ */
+export interface AccesoMesa {
+  censo: boolean;
+}
+const SIN_CENSO: AccesoMesa = { censo: false };
+
+/** Está en activo: lo único que ve de la mesa quien no lleva el censo. */
+const EN_ACTIVO: Prisma.HermanoWhereInput = { activo: true, fechaBaja: null };
+/** Le queda ropa por devolver: aunque esté de baja, Albacería tiene que poder recibirla. */
+const CON_ROPA_SIN_DEVOLVER: Prisma.HermanoWhereInput = {
+  OR: [{ prendas: { some: { estado: EstadoPrenda.PRESTADA } } }, { papeletas: { some: { cingulo: Cingulo.PRESTADO } } }],
+};
+
+/** `623577927` → `••••••927`: lo justo para confirmar con la persona delante. */
+const enmascararTelefono = (telefono: string) => {
+  const digitos = telefono.replace(/\s+/g, '');
+  return digitos.length <= 3 ? '•••' : `${'•'.repeat(digitos.length - 3)}${digitos.slice(-3)}`;
+};
+
+/**
+ * Buscar en la mesa. Quien lleva el censo, por un trozo de cualquier dato;
+ * los demás, por un trozo del nombre o los apellidos y por DNI, teléfono o
+ * correo solo con el dato entero: un trozo servía para sacar el contacto de
+ * cualquiera tecleando cifras sueltas.
+ */
+function condicionDeBusquedaEnMesa(
+  texto: string, acceso: AccesoMesa, camposDelCenso: ('nombre' | 'apellidos' | 'dni' | 'telefono' | 'email')[],
+): Prisma.HermanoWhereInput {
+  if (acceso.censo) return condicionBusqueda(texto, camposDelCenso);
+  return {
+    OR: [
+      condicionBusqueda(texto, ['nombre', 'apellidos']),
+      { dni: texto.toUpperCase() },
+      { telefono: { in: [texto, texto.replace(/\s+/g, '')] } },
+      { email: texto.toLowerCase() },
+    ],
+  };
+}
 
 type Situacion = 'activo' | 'baja' | 'pendiente';
 const situacionDe = (h: { activo: boolean; fechaBaja: Date | null }): Situacion =>
@@ -98,13 +153,17 @@ export class MesaService {
    * de hermano. Salen también las de baja y las pendientes de aprobar: la mesa
    * las reactiva o aprueba ahí mismo. Con la fecha de nacimiento, que es lo
    * que distingue a dos «Alejandro García».
+   *
+   * Quien no lleva el censo solo encuentra a los que están en activo (y a
+   * quien le queda ropa por devolver), y por DNI, teléfono o correo solo con
+   * el dato entero: un trozo servía para sacar los datos de cualquiera.
    */
-  static async buscarPersonas(q: string, salida: SalidaConActo, opciones: { zona?: ZonaDeBusqueda } = {}) {
+  static async buscarPersonas(q: string, salida: SalidaConActo, opciones: { zona?: ZonaDeBusqueda; acceso?: AccesoMesa } = {}) {
     const texto = q.trim();
     if (texto.length < 2) return [];
-    const { zona = 'todas' } = opciones;
+    const { zona = 'todas', acceso = SIN_CENSO } = opciones;
     const numero = /^\d{1,9}$/.test(texto) ? Number(texto) : null;
-    const busqueda = condicionBusqueda(texto, ['nombre', 'apellidos', 'dni', 'telefono', 'email']);
+    const busqueda = condicionDeBusquedaEnMesa(texto, acceso, ['nombre', 'apellidos', 'dni', 'telefono', 'email']);
     const year = anioDeLaMesa(salida);
     const salidaId = salida.id;
     // Los ya apuntados (con solicitud o papeleta) no salen en Inscripción:
@@ -117,7 +176,13 @@ export class MesaService {
             : {};
 
     const personas = await db.hermano.findMany({
-      where: { AND: [numero !== null ? { OR: [busqueda, { numeroHermano: numero }] } : busqueda, porZona] },
+      where: {
+        AND: [
+          numero !== null ? { OR: [busqueda, { numeroHermano: numero }] } : busqueda,
+          porZona,
+          ...(acceso.censo ? [] : [{ OR: [EN_ACTIVO, CON_ROPA_SIN_DEVOLVER] }]),
+        ],
+      },
       take: RESULTADOS,
       orderBy: [{ apellidos: 'asc' }, { nombre: 'asc' }],
       select: {
@@ -136,11 +201,11 @@ export class MesaService {
   }
 
   /** Quienes pidieron día para hoy y aún no han recogido la papeleta. */
-  static async esperadosHoy(salida: SalidaConActo) {
-    const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
-    const fin = new Date(); fin.setHours(23, 59, 59, 999);
+  static async esperadosHoy(salida: SalidaConActo, ahora = new Date()) {
+    // Hoy en Madrid: el servidor corre en UTC y de 00:00 a 02:00 era ayer.
+    const { desde, hasta } = diaMadridComoIntervalo(ahora);
     const citas = await db.cita.findMany({
-      where: { estado: EstadoCita.RESERVADA, papeleta: null, turno: { salidaId: salida.id, fecha: { gte: inicio, lte: fin } } },
+      where: { estado: EstadoCita.RESERVADA, papeleta: null, turno: { salidaId: salida.id, fecha: { gte: desde, lt: hasta } } },
       orderBy: { hermano: { apellidos: 'asc' } },
       select: { id: true, hermano: { select: { id: true, nombre: true, apellidos: true, fechaNacimiento: true } } },
     });
@@ -153,11 +218,14 @@ export class MesaService {
    * ha apuntado y no ha recogido) o su papeleta (si ya recogió), lo que debe
    * (y lo que debe su familia, que suele pagar junta), la ropa que tiene
    * prestada, lo que llevó la última vez y la ropa que se le propone.
+   *
+   * Quien no lleva el censo solo abre fichas en activo (o con ropa por
+   * devolver), sin el DNI y con el teléfono y el correo enmascarados.
    */
-  static async ficha(hermanoId: number, salida: SalidaConActo) {
+  static async ficha(hermanoId: number, salida: SalidaConActo, acceso: AccesoMesa = SIN_CENSO) {
     const year = anioDeLaMesa(salida);
-    const h = await db.hermano.findUnique({
-      where: { id: hermanoId },
+    const h = await db.hermano.findFirst({
+      where: { id: hermanoId, ...(acceso.censo ? {} : { OR: [EN_ACTIVO, CON_ROPA_SIN_DEVOLVER] }) },
       select: {
         id: true, nombre: true, primerApellido: true, segundoApellido: true, apellidos: true,
         fechaNacimiento: true, sexo: true, telefono: true, email: true, dni: true, numeroHermano: true,
@@ -221,6 +289,13 @@ export class MesaService {
 
     return {
       ...datos,
+      ...(!acceso.censo && {
+        dni: null,
+        telefono: datos.telefono && enmascararTelefono(datos.telefono),
+        email: datos.email && enmascararEmail(datos.email),
+      }),
+      /** Si el DNI y el contacto van enteros: sin ellos, la pantalla no deja corregirlos. */
+      contactoCompleto: acceso.censo,
       situacion: situacionDe({ activo, fechaBaja }),
       salida: salida.slug,
       year,
@@ -383,9 +458,17 @@ export class MesaService {
     return hermano;
   }
 
-  /** «Editar antes de guardar»: los datos que la mesa comprueba con la persona delante. */
-  static async corregirFicha(hermanoId: number, dto: CorreccionFichaDto, meta?: MetaDeAuditoria) {
-    const actual = await db.hermano.findUnique({ where: { id: hermanoId } });
+  /**
+   * «Editar antes de guardar»: los datos que la mesa comprueba con la persona
+   * delante. Quien no lleva el censo corrige solo fichas en activo, y no el
+   * teléfono ni el correo: no los ve enteros, y son los datos con que se
+   * entra al área de hermanos y se recupera la contraseña.
+   */
+  static async corregirFicha(hermanoId: number, dto: CorreccionFichaDto, meta?: MetaDeAuditoria, acceso: AccesoMesa = SIN_CENSO) {
+    if (!acceso.censo && (dto.telefono !== undefined || dto.email !== undefined)) {
+      throw new HttpError('El teléfono y el correo los corrige Secretaría.', 403);
+    }
+    const actual = await db.hermano.findFirst({ where: { id: hermanoId, ...(acceso.censo ? {} : EN_ACTIVO) } });
     if (!actual) throw new NotFoundError('No se encontró a esa persona en el censo.');
 
     const data: Prisma.HermanoUpdateInput = {};
@@ -543,10 +626,14 @@ export class MesaService {
    * uno con su punto del camino: solicitado con algo por pagar, listo para
    * recoger, o recogido (y entonces con su papeleta y su ropa).
    */
-  static async listado(year: number, salida: SalidaConActo, filtro: { q?: string; puesto?: string; faltaCingulo?: boolean }) {
+  static async listado(
+    year: number, salida: SalidaConActo, filtro: { q?: string; puesto?: string; faltaCingulo?: boolean }, acceso: AccesoMesa = SIN_CENSO,
+  ) {
     const salidaId = salida.id;
-    const busqueda = condicionBusqueda(filtro.q, ['nombre', 'apellidos', 'telefono', 'email']);
-    const deLaPersona = Object.keys(busqueda).length > 0 ? { hermano: busqueda } : {};
+    // Como el buscador: el teléfono y el correo de todos los apuntados se
+    // enseñaban y se buscaban por un trozo a cualquiera de la mesa.
+    const texto = filtro.q?.trim() ?? '';
+    const deLaPersona = texto ? { hermano: condicionDeBusquedaEnMesa(texto, acceso, ['nombre', 'apellidos', 'telefono', 'email']) } : {};
     const delPuesto = filtro.puesto ? { puesto: filtro.puesto } : {};
     const hermano = { select: { id: true, nombre: true, apellidos: true, fechaNacimiento: true, telefono: true, email: true, alturaHombro: true, numeroHermano: true, activo: true } } as const;
 
@@ -569,7 +656,13 @@ export class MesaService {
     ]);
     const cuotas = await cuotasQueCuentan(db, solicitudes.map((s) => s.hermano.id));
 
-    const sinActivo = <T extends { activo: boolean }>({ activo: _activo, ...resto }: T) => resto;
+    // Sin el censo, el contacto va enmascarado, como en la ficha.
+    const sinActivo = <T extends { activo: boolean; telefono: string | null; email: string | null }>({ activo: _activo, ...resto }: T) =>
+      acceso.censo ? resto : {
+        ...resto,
+        telefono: resto.telefono && enmascararTelefono(resto.telefono),
+        email: resto.email && enmascararEmail(resto.email),
+      };
     const filas = [
       ...papeletas.map((p) => ({
         tipo: 'papeleta' as const,

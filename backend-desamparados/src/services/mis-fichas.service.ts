@@ -6,7 +6,7 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import {
   ADMIN_EDITABLE_FIELDS, FICHA_PENDIENTE, HERMANO_ERRORS, HERMANO_SAFE_SELECT,
-  USER_EDITABLE_FIELDS, WHERE_SITUACION, comprobarDniLibre, emanciparFicha,
+  USER_EDITABLE_FIELDS, WHERE_SITUACION, emanciparFicha,
   esCuentaStaff, getNextNumeroHermano, prepareUpdateData, sinFechasDelMismoDia,
   transaccionReintentable, type FichaEmancipable, type SearchHermanoQuery,
 } from './hermanos/comunes.js';
@@ -18,6 +18,51 @@ import { apellidosTrasCambio, partirApellidos } from '../domain/apellidos.js';
 import { enmascararIban } from '../domain/iban.js';
 import { renuevaMandato } from '../domain/sepa.js';
 import { borrarDocumentosPrivados, documentosDe } from '../utils/documentos-privados.js';
+import { PapeletasService, type SolicitudConRecibo } from './procesion/papeletas.service.js';
+import { idCategoriaDevoluciones } from './recibos/comunes.js';
+import { ContadorFallos } from '../utils/contador-fallos.js';
+
+const UN_DIA = 24 * 60 * 60 * 1000;
+
+/**
+ * Lo que se responde cuando el DNI de una ficha del área de hermanos ya es de
+ * otra ficha. Antes decía «Ese DNI ya está registrado», y «Mi familia» servía
+ * para averiguar quién está en el censo probando DNI. No lo confirma: deja el
+ * caso a Secretaría, que lo ve en la auditoría.
+ */
+export const MENSAJE_DNI_NO_GUARDADO = 'No se ha podido guardar ese DNI. Si es correcto, habla con Secretaría.';
+
+/**
+ * Cuántos DNI puede escribir una cuenta en sus fichas al día, salgan bien o
+ * mal: también un DNI que se guarda dice algo (que no estaba en el censo). Una
+ * familia que apunta a sus hijos no llega ni de lejos.
+ */
+const intentosDeDni = new ContadorFallos({ maxFallos: 10, bloqueoMs: UN_DIA, ventanaMs: UN_DIA, tope: 10_000 });
+
+/** Cuenta un DNI escrito desde el área de hermanos y frena a quien escribe demasiados. */
+function contarIntentoDeDni(userId: number) {
+  const clave = String(userId);
+  if (intentosDeDni.restanteBloqueo(clave) > 0) {
+    throw new HttpError('Has cambiado demasiados DNI por hoy. Si necesitas corregir alguno, habla con Secretaría.', 429);
+  }
+  intentosDeDni.registrarFallo(clave);
+}
+
+/**
+ * Que el DNI no sea ya de otra ficha, sin decirlo. El choque queda en la
+ * auditoría, con la ficha con la que choca, para que Secretaría lo resuelva.
+ */
+async function exigirDniLibreSinDelatar(dni: string, exceptoId: number | null, meta: MetaDeAuditoria | undefined) {
+  const otra = await db.hermano.findFirst({
+    where: { dni, ...(exceptoId !== null ? { id: { not: exceptoId } } : {}) },
+    select: { id: true },
+  });
+  if (!otra) return;
+  await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_DNI_OCUPADO, meta ?? {}, 'hermano', exceptoId ?? undefined, {
+    fichaConEseDni: otra.id,
+  });
+  throw new HttpError(MENSAJE_DNI_NO_GUARDADO);
+}
 
 /**
  * Las fichas que cuelgan de una cuenta: la suya y las de quien tenga a su
@@ -60,8 +105,8 @@ export class MisFichasService {
 
   static async createDependentProfile(managerUserId: number, data: CreateHermanoDto, meta?: MetaDeAuditoria) {
     if (data.dni) {
-      const existe = await db.hermano.findFirst({ where: { dni: data.dni } });
-      if (existe) throw new HttpError(HERMANO_ERRORS.DNI_DUPLICATE, 409);
+      contarIntentoDeDni(managerUserId);
+      await exigirDniLibreSinDelatar(data.dni, null, meta);
     }
 
     const manager = await db.user.findUnique({ where: { id: managerUserId } });
@@ -126,7 +171,8 @@ export class MisFichasService {
       throw new HttpError('Para domiciliar los recibos hace falta el IBAN de la cuenta.');
     }
     if (typeof dataToUpdate.dni === 'string' && dataToUpdate.dni !== hermano.dni) {
-      await comprobarDniLibre(dataToUpdate.dni, hermanoId);
+      contarIntentoDeDni(managerUserId);
+      await exigirDniLibreSinDelatar(dataToUpdate.dni, hermanoId, meta);
     }
     const detalles = diferenciasFicha(hermano, dataToUpdate);
     // Domiciliar o cambiar de cuenta es autorizar el adeudo de nuevo: la
@@ -167,6 +213,9 @@ export class MisFichasService {
     if (check.fechaBaja) throw new HttpError(HERMANO_ERRORS.PROFILE_ALREADY_DOWN);
 
     const fechaBaja = new Date();
+    // Las categorías contables, antes de abrir la transacción (ver idCategoriaDeRecibos).
+    const categoriaDevolucionesId = await idCategoriaDevoluciones();
+    let canceladas: SolicitudConRecibo[] = [];
     const resultado = await transaccionReintentable(async (tx) => {
       // El estado y el historial se miran dentro de la transacción: con dos
       // clics seguidos, la segunda petición ve lo que ya hizo la primera.
@@ -196,6 +245,8 @@ export class MisFichasService {
         data: { activo: false, fechaBaja, numeroHermano: null, motivoBaja: 'VOLUNTARIA' }
       });
       if (count === 0) throw new HttpError(HERMANO_ERRORS.PROFILE_ALREADY_DOWN);
+      // Lo que tenía pedido para salir y aún no ha pagado ni recogido.
+      canceladas = await PapeletasService.cancelarSolicitudesDeBajaEnTransaccion(tx, [hermanoId], categoriaDevolucionesId);
 
       const restantes = await tx.hermano.count({
         where: { userId: managerUserId, activo: true }
@@ -226,6 +277,7 @@ export class MisFichasService {
       antes: { activo: check.activo, numeroHermano: check.numeroHermano, fechaBaja: null, cuentaActiva: check.user.active },
       despues: { activo: false, numeroHermano: null, fechaBaja: valorParaAuditoria(fechaBaja), cuentaActiva: check.user.active && !resultado.cuentaDesactivada }
     });
+    await PapeletasService.registrarCanceladasPorBaja(canceladas, meta ?? {});
 
     return resultado.cuentaDesactivada
       ? { message: 'Perfil dado de baja. Usuario gestor desactivado.' }

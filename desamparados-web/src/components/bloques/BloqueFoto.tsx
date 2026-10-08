@@ -3,6 +3,7 @@ import FotoAmpliable from './FotoAmpliable'
 import { GOLD } from '../../features/inicio/estilos'
 import { anchoMaximo, siDe, valorDe } from './presentacion'
 import type { BloqueFoto as Datos } from '../../lib/api/contenido'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 /** Ancho de la foto según su tamaño. `grande` es el de siempre. */
 const TAMANOS = { pequena: '480px', mediana: '720px', grande: '1000px', completa: 'none' } as const
@@ -32,7 +33,7 @@ export default function BloqueFoto({ bloque }: { bloque: Datos }) {
   const marco = MARCOS[valorDe(bloque, 'marco') as keyof typeof MARCOS] ?? MARCOS.ninguno
 
   const imagen = (
-    <Box component="img" src={bloque.url} alt={bloque.alt} loading="lazy" decoding="async"
+    <Box component="img" {...propsDeFoto(bloque.url, completa ? '100vw' : '(min-width: 1000px) 1000px, 100vw')} alt={bloque.alt} loading="lazy" decoding="async"
       sx={{
         width: '100%', height: 'auto', display: 'block', borderRadius: completa ? 0 : 2,
         ...(proporcion !== 'original' && { aspectRatio: proporcion.replace(':', ' / '), objectFit: 'cover' }),

@@ -11,6 +11,7 @@ import Estampas from './galeria/Estampas'
 import Carteles from './galeria/Carteles'
 import { imagenDe, useMedidas } from './galeria/formato'
 import { soloVideos } from './bloques/presentacion'
+import { propsDeFoto } from '../lib/fotoSubida'
 
 export type FormatoGaleria = 'pase' | 'cuadricula' | 'mosaico' | 'tiras' | 'estampas' | 'carteles'
 
@@ -144,7 +145,7 @@ function Rejilla({ medios, mosaico, columnas, onAbrir }: {
                 '&.Mui-focusVisible': { outline: '2px solid #dec72b', outlineOffset: 2 },
               }}
             >
-              <Box component="img" src={imagenDe(medio)} alt="" loading="lazy" decoding="async"
+              <Box component="img" {...propsDeFoto(imagenDe(medio), '(min-width: 900px) 33vw, 50vw')} alt="" loading="lazy" decoding="async"
                 sx={{ display: 'block', width: '100%', height: mosaico ? 'auto' : '100%', aspectRatio: mosaico ? undefined : '1 / 1', objectFit: 'cover' }} />
               {video && (
                 <Box aria-hidden sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', backgroundColor: 'rgba(0,0,0,0.25)' }}>

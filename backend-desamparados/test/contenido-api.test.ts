@@ -2,17 +2,17 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
-import type { Server } from 'node:http';
+import http, { type Server } from 'node:http';
 import { Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { sembrarContenidoPaginas } from '../prisma/seed-contenido.js';
-import { SLUGS_CONTENIDO, porDefecto } from '../src/domain/contenido.js';
+import { SLUGS_CONTENIDO, porDefecto, type SlugContenido } from '../src/domain/contenido.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS, COOKIE_HERMANO } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
@@ -31,6 +31,20 @@ after(async () => {
   await db.$disconnect();
 });
 
+/**
+ * Lo que hace el navegador al revalidar lo que tiene guardado. Con `http` y
+ * no con `fetch`: el `fetch` de Node, al ver un `If-None-Match` puesto a
+ * mano, añade por norma `Cache-Control: no-cache`, y Express responde entonces
+ * 200 aunque el ETag coincida.
+ */
+const estadoRevalidando = (url: string, etag: string) =>
+  new Promise<number>((resolve, reject) => {
+    http.get(url, { headers: { 'If-None-Match': etag } }, (res) => {
+      res.resume();
+      resolve(res.statusCode ?? 0);
+    }).on('error', reject);
+  });
+
 const cookieCms = (id: number, role: Role) => `${COOKIE_CMS}=${generateToken(id, role, false, 'cms')}`;
 
 test('la siembra deja una fila por página editable, con los textos de siempre', async (t) => {
@@ -44,10 +58,11 @@ test('la siembra deja una fila por página editable, con los textos de siempre',
   // cada página nueva en un rojo que no señalaba ningún defecto.
   assert.deepEqual(filas.map((f) => f.slug), [...SLUGS_CONTENIDO].sort());
 
-  // Por slug y no por posición: las filas vienen ordenadas alfabéticamente, así
-  // que con `filas[0]` cada página nueva corría todas las demás y el test
-  // pasaba a comprobar documentos que no eran los suyos.
-  const documento = (slug: string) => filas.find((f) => f.slug === slug)!.datos as any;
+  // Los textos se comprueban en lo que la siembra escribe en una fila nueva
+  // (`porDefecto`, de shared/contenido-por-defecto.json), no en la fila viva:
+  // la siembra no pisa lo editado, y la base de desarrollo tiene el recorrido
+  // editado (9 paradas), con lo que esta prueba fallaba siempre en local.
+  const documento = (slug: string) => porDefecto(slug as SlugContenido) as any;
 
   // Los tres fines, cada uno con su página (desde el 26-09-2026, en los tres anillos).
   const fines = documento('nuestros-fines').bloques.find((b: any) => b.tipo === 'anillos');
@@ -95,13 +110,37 @@ test('sembrar dos veces no pisa lo que se haya editado', async (t) => {
 test('GET /api/contenido/portada devuelve el documento mezclado, sin sesión', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   await sembrarContenidoPaginas();
+  // La fila viva puede estar editada: se deja con los textos de partida y se
+  // devuelve como estaba.
+  const antes = await db.contenidoPagina.findUnique({ where: { slug: 'portada' } });
+  try {
+    await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: porDefecto('portada') as object } });
+    const respuesta = await fetch(`${baseUrl}/api/contenido/portada`);
+    assert.equal(respuesta.status, 200);
 
-  const respuesta = await fetch(`${baseUrl}/api/contenido/portada`);
-  assert.equal(respuesta.status, 200);
+    const datos = await respuesta.json() as any;
+    assert.equal(datos.hero.titulo, 'Desamparados Málaga');
+    assert.equal(datos.accesos.teselas.length, 6);
+  } finally {
+    await db.contenidoPagina.update({ where: { slug: 'portada' }, data: { datos: antes!.datos as object } });
+  }
+});
 
-  const datos = await respuesta.json() as any;
-  assert.equal(datos.hero.titulo, 'Desamparados Málaga');
-  assert.equal(datos.accesos.teselas.length, 6);
+test('las lecturas públicas se guardan en caché solo revalidando, y responden 304 si nada cambió (FR12)', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  for (const ruta of ['/api/contenido/portada', '/api/portada', '/api/news/latest', '/api/news/archive', '/api/publications/latest', '/api/publications']) {
+    const primera = await fetch(`${baseUrl}${ruta}`);
+    assert.equal(primera.status, 200, ruta);
+    // Nunca `max-age`: el CMS vuelve a pedir estas rutas nada más publicar.
+    assert.equal(primera.headers.get('cache-control'), 'public, no-cache', ruta);
+    const etag = primera.headers.get('etag');
+    assert.ok(etag, `${ruta} tiene que llevar ETag para poder revalidar`);
+    assert.equal(await estadoRevalidando(`${baseUrl}${ruta}`, etag!), 304, ruta);
+  }
+  // Lo que depende de la sesión no lleva la cabecera pública.
+  const privada = await fetch(`${baseUrl}/api/contenido/portada/versiones`);
+  assert.equal(privada.status, 401);
+  assert.notEqual(privada.headers.get('cache-control'), 'public, no-cache');
 });
 
 test('un campo que falta en la fila sale del valor por defecto', async (t) => {

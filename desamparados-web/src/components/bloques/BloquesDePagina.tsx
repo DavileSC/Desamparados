@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import { Box } from '@mui/material'
 import TituloDeSeccion from '../TituloDeSeccion'
+import Hueso from '../esqueleto/Hueso'
 import { componenteDeBloque, pintaSuTitulo } from './registro'
 import BandaDeFondo, { type Fondo } from './BandaDeFondo'
 import MarcoEditable from './MarcoEditable'
@@ -106,8 +108,15 @@ export function BloqueDePagina({ bloque, indice = 0, primero = true, pegado = fa
             constante de módulo con todos los componentes ya declarados. La regla
             no ve a través del índice.
           */}
-          {/* eslint-disable-next-line react/static-components */}
-          <Componente bloque={bloque as never} />
+          {/*
+            Un bloque perezoso que aún no ha llegado. En la web no se llega a ver
+            (`ConBloquesCargados` espera antes); sí en la vista previa del CMS al
+            añadir uno, o donde se pinte un bloque suelto.
+          */}
+          <Suspense fallback={<Hueso sx={{ height: 200 }} />}>
+            {/* eslint-disable-next-line react/static-components */}
+            <Componente bloque={bloque as never} />
+          </Suspense>
         </BandaDeFondo>
       </MarcoEditable>
     </Box>

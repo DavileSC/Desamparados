@@ -1,4 +1,5 @@
 import { Box } from '@mui/material'
+import { caerALaOriginal, srcsetDeSubida } from '../lib/fotoSubida'
 
 /** Fondo de página: la foto se funde a él por arriba y por abajo de la ventana. */
 const FONDO = '#121113'
@@ -34,8 +35,9 @@ export default function FondoDePagina({ url, altura = '100svh' }: { url: string;
         <Box
           component="img"
           src={url}
-          srcSet={esLaDelRepositorio ? SRCSET_DEL_REPOSITORIO : undefined}
-          sizes={esLaDelRepositorio ? '100vw' : undefined}
+          srcSet={esLaDelRepositorio ? SRCSET_DEL_REPOSITORIO : srcsetDeSubida(url)}
+          sizes="100vw"
+          onError={(e) => { caerALaOriginal(e.currentTarget) }}
           alt=""
           decoding="async"
           fetchPriority="low"

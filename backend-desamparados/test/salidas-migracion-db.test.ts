@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import db from '../src/config/db.js';
 import type { PuestoDelCatalogo } from '../src/domain/salidas.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 
 before(async () => {

@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import db from '../config/db.js';
 import { publicStorageDir } from '../middleware/upload.middleware.js';
+import { ANCHOS_VARIANTES, fotoDeVariante, nombreDeVariante } from '../domain/variantes-de-foto.js';
 
 /**
  * Ficheros que sube el CMS a `storage/public` y que dejan de usarse.
@@ -19,8 +20,15 @@ import { publicStorageDir } from '../middleware/upload.middleware.js';
  */
 export const RUTA_SUBIDA_PUBLICA = /^\/storage\/public\/([a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf|mp4))$/i;
 
-/** Las rutas de subida que aparecen dentro de un texto: una URL suelta o el HTML de una noticia. */
-const RUTAS_EN_TEXTO = /\/storage\/public\/[a-f0-9]{32}\.(?:jpg|jpeg|png|webp|pdf|mp4)(?![A-Za-z0-9])/gi;
+/**
+ * Las rutas de subida que aparecen dentro de un texto: una URL suelta o el HTML
+ * de una noticia. También la de una copia reducida (`<hex>-640.webp`), que
+ * cuenta como su foto: si algún día se guarda una, la foto no se borra.
+ */
+const RUTAS_EN_TEXTO = new RegExp(
+  `/storage/public/[a-f0-9]{32}(?:-(?:${ANCHOS_VARIANTES.join('|')})(?=\\.webp))?\\.(?:jpg|jpeg|png|webp|pdf|mp4)(?![A-Za-z0-9])`,
+  'gi',
+);
 
 /**
  * El nombre del fichero si la ruta es una subida del CMS; si no, null. Conserva
@@ -44,7 +52,9 @@ export function subidasEnTexto(...textos: (string | null | undefined)[]): Set<st
   const nombres = new Set<string>();
   for (const texto of textos) {
     if (!texto) continue;
-    for (const [ruta] of texto.matchAll(RUTAS_EN_TEXTO)) {
+    for (const [encontrada] of texto.matchAll(RUTAS_EN_TEXTO)) {
+      const base = fotoDeVariante(path.posix.basename(encontrada));
+      const ruta = base ? `/storage/public/${base}` : encontrada;
       const nombre = nombreDeSubida(ruta);
       if (nombre) nombres.add(nombre);
     }
@@ -64,51 +74,90 @@ const VARIABLES_CON_RUTAS = ['NORMATIVA_URL'];
 const PREFIJO_RETABLO = 'inicio_retablo_';
 const rutasDelEntorno = () => VARIABLES_CON_RUTAS.map((nombre) => process.env[nombre]);
 
+/** Un `OR` de `contains` para buscar varios nombres en varios campos de una tabla en una sola consulta. */
+function mencionaAlguno<C extends string>(campos: readonly C[], nombres: string[]) {
+  return { OR: nombres.flatMap((nombre) => campos.map((campo) => ({ [campo]: { contains: nombre } }) as { [K in C]?: { contains: string } })) };
+}
+
 /**
- * Cuántos registros siguen mencionando el fichero. Se busca por el nombre y no
- * por la ruta exacta: así cuentan también las fotos incrustadas en el HTML y las
- * URLs absolutas que guardaban versiones antiguas del CMS. El nombre es aleatorio
- * de 32 hex, así que no hay falsos positivos que valgan la pena.
+ * Cuáles de los ficheros siguen mencionados por algún registro (devuelve sus
+ * nombres en minúsculas). Se busca por el nombre y no por la ruta exacta: así
+ * cuentan también las fotos incrustadas en el HTML y las URLs absolutas que
+ * guardaban versiones antiguas del CMS. El nombre es aleatorio de 32 hex, así
+ * que no hay falsos positivos que valgan la pena.
+ *
+ * Todos los candidatos van juntos: antes se preguntaba uno a uno, y cada uno
+ * volvía a leer el contenido entero (páginas, versiones y secciones, con su
+ * JSON) y a lanzar una consulta por tabla. Guardar una página con veinte fotos
+ * eran veinte lecturas de todo el historial. Ahora el JSON se lee una vez y
+ * cada tabla responde a una sola consulta con todos los nombres.
  *
  * Es la lista de todos los sitios donde el CMS guarda rutas: si se añade un
  * campo nuevo que apunte a `/storage/public`, tiene que entrar aquí y en
  * `subidasReferenciadas`, o sus ficheros se borrarán estando en uso. El
- * contenido editable ya está contemplado vía `contarEnContenido`: son las filas
- * `portada`, `recorrido` e `historia` (valores de `slug`) de la tabla `ContenidoPagina`, no
- * tablas con esos nombres, que no existen.
+ * contenido editable va por `jsonDeContenido`: son las filas `portada`,
+ * `recorrido`, `historia`… (valores de `slug`) de la tabla `ContenidoPagina`.
  */
-export async function contarReferencias(nombre: string): Promise<number> {
-  const enEntorno = [...subidasEnTexto(...rutasDelEntorno())].some((n) => clave(n) === clave(nombre));
-  if (enEntorno) return 1;
-  const menciona = { contains: nombre };
-  const cuentas = await Promise.all([
-    db.noticia.count({ where: { OR: [{ imagenUrl: menciona }, { contenido: menciona }] } }),
-    db.publicacion.count({ where: { OR: [{ imagenUrl: menciona }, { archivoUrl: menciona }, { descripcion: menciona }] } }),
-    db.imagenPortada.count({ where: { url: menciona } }),
-    db.enser.count({ where: { imagenUrl: menciona } }),
-    db.pagina.count({ where: { contenido: menciona } }),
-    db.evento.count({ where: { OR: [{ description: menciona }, { fotoCartel: menciona }] } }),
-    // El contenido editable guarda rutas de foto dentro de un JSON (la de
-    // «Sábado de Pasión», el plano del recorrido, las de la historia). Son pocas filas: se leen
-    // enteras y se busca el nombre en su texto, porque el filtro JSON de Prisma
-    // sobre MariaDB no es de fiar para un `contains` dentro de un objeto.
-    contarEnContenido(nombre),
+export async function subidasEnUso(nombres: Iterable<string>): Promise<Set<string>> {
+  const candidatos = [...new Set([...nombres].map(clave))];
+  const enUso = new Set<string>();
+  if (candidatos.length === 0) return enUso;
+
+  // Las del entorno, en minúsculas como todo lo demás.
+  for (const n of subidasEnTexto(...rutasDelEntorno())) enUso.add(clave(n));
+
+  // La consulta solo filtra; quién menciona a quién se decide aquí, con el
+  // texto en minúsculas: es lo mismo que hacía el `contains` de antes (la
+  // colación de MariaDB no distingue mayúsculas), sin fiarse de la colación.
+  const marcar = (...textos: (string | null | undefined)[]) => {
+    const texto = textos.filter(Boolean).join(' ').toLowerCase();
+    if (!texto) return;
+    for (const c of candidatos) if (texto.includes(c)) enUso.add(c);
+  };
+
+  const [noticias, publicaciones, portada, enseres, paginas, eventos, retablo, productos, campanas, contenido] = await Promise.all([
+    db.noticia.findMany({ where: mencionaAlguno(['imagenUrl', 'contenido'], candidatos), select: { imagenUrl: true, contenido: true } }),
+    db.publicacion.findMany({ where: mencionaAlguno(['imagenUrl', 'archivoUrl', 'descripcion'], candidatos), select: { imagenUrl: true, archivoUrl: true, descripcion: true } }),
+    db.imagenPortada.findMany({ where: mencionaAlguno(['url'], candidatos), select: { url: true } }),
+    // Las galerías (`fotos`) son JSON y el filtro JSON de Prisma sobre MariaDB
+    // no es de fiar para un `contains`: son pocas filas y se leen enteras.
+    db.enser.findMany({ select: { imagenUrl: true, fotos: true } }),
+    db.pagina.findMany({ where: mencionaAlguno(['contenido'], candidatos), select: { contenido: true } }),
+    db.evento.findMany({ where: mencionaAlguno(['description', 'fotoCartel'], candidatos), select: { description: true, fotoCartel: true } }),
     // Las fotos del retablo del Inicio del CMS: la de todo el año y las de
-    // cada tiempo (estas, dentro de un JSON).
-    db.configuracion.count({ where: { key: { startsWith: PREFIJO_RETABLO }, value: menciona } }),
+    // cada tiempo (estas, dentro de un JSON guardado como texto).
+    db.configuracion.findMany({ where: { key: { startsWith: PREFIJO_RETABLO }, ...mencionaAlguno(['value'], candidatos) }, select: { value: true } }),
+    // La tienda y los apadrinamientos también suben fotos. Antes solo los
+    // miraba el script de huérfanos: una foto de noticia reutilizada en un
+    // producto se borraba al quitarla de la noticia.
+    db.producto.findMany({ select: { foto: true, fotos: true } }),
+    db.campanaApadrinamiento.findMany({ where: mencionaAlguno(['foto'], candidatos), select: { foto: true } }),
+    // El contenido editable guarda rutas de foto dentro de un JSON (la de
+    // «Sábado de Pasión», el plano del recorrido, las de la historia).
+    jsonDeContenido(),
   ]);
-  return cuentas.reduce((total, n) => total + n, 0);
+
+  for (const n of noticias) marcar(n.imagenUrl, n.contenido);
+  for (const p of publicaciones) marcar(p.imagenUrl, p.archivoUrl, p.descripcion);
+  for (const i of portada) marcar(i.url);
+  for (const e of enseres) marcar(e.imagenUrl, e.fotos ? JSON.stringify(e.fotos) : null);
+  for (const p of paginas) marcar(p.contenido);
+  for (const e of eventos) marcar(e.description, e.fotoCartel);
+  for (const r of retablo) marcar(r.value);
+  for (const p of productos) marcar(p.foto, p.fotos ? JSON.stringify(p.fotos) : null);
+  for (const c of campanas) marcar(c.foto);
+  // En el JSON del constructor cuenta solo lo que tiene forma de ruta de
+  // subida, como siempre; con `clave()` a los dos lados, porque en Linux
+  // «<hex>.JPG» y «<hex>.jpg» son ficheros distintos y un fallo de
+  // comparación aquí se paga borrando lo que sigue en uso.
+  for (const n of subidasEnTexto(...contenido)) enUso.add(clave(n));
+
+  return new Set(candidatos.filter((c) => enUso.has(c)));
 }
 
-async function contarEnContenido(nombre: string): Promise<number> {
-  const paginas = await jsonDeContenido();
-  // Con `clave()` a los dos lados, como en el resto de la familia: el nombre se
-  // compara sin mirar mayúsculas porque las subidas antiguas podían guardar la
-  // extensión en mayúsculas y en Linux «<hex>.JPG» y «<hex>.jpg» son ficheros
-  // distintos. Siendo esta la cuenta que decide si una foto publicada se borra,
-  // un fallo de comparación aquí se paga borrando lo que sigue en uso.
-  const mencionados = new Set([...subidasEnTexto(...paginas)].map(clave));
-  return mencionados.has(clave(nombre)) ? 1 : 0;
+/** Cuántos registros siguen mencionando el fichero: 1 si alguno, 0 si ninguno. */
+export async function contarReferencias(nombre: string): Promise<number> {
+  return (await subidasEnUso([nombre])).size;
 }
 
 /**
@@ -168,10 +217,20 @@ export async function subidasReferenciadas(): Promise<Set<string>> {
  * fía de quien la llama. Que el fichero ya no exista no es un error.
  */
 export async function borrarSubida(nombre: string, directorio = publicStorageDir): Promise<boolean> {
-  const seguro = nombreDeSubida(`/storage/public/${nombre}`);
+  const esVariante = fotoDeVariante(nombre) !== null;
+  const seguro = esVariante ? nombre : nombreDeSubida(`/storage/public/${nombre}`);
   if (!seguro || seguro !== nombre) return false;
+  // Con la foto se van sus copias reducidas: sin ella nadie las pide, y la
+  // foto retirada (la de un menor, por RGPD) seguiría publicada en pequeño.
+  if (!esVariante && /\.webp$/i.test(seguro)) {
+    for (const ancho of ANCHOS_VARIANTES) await borrarSiExiste(path.join(directorio, nombreDeVariante(seguro, ancho)));
+  }
+  return borrarSiExiste(path.join(directorio, seguro));
+}
+
+async function borrarSiExiste(ruta: string): Promise<boolean> {
   try {
-    await fs.unlink(path.join(directorio, seguro));
+    await fs.unlink(ruta);
     return true;
   } catch (e: any) {
     if (e?.code === 'ENOENT') return false;
@@ -194,12 +253,24 @@ export async function borrarSubidasHuerfanas(
 ): Promise<string[]> {
   const siguen = new Set([...conservar].map(clave));
   const vistos = new Set<string>();
-  const borrados: string[] = [];
+  const candidatos: string[] = [];
   for (const nombre of antes) {
     if (siguen.has(clave(nombre)) || vistos.has(clave(nombre))) continue;
     vistos.add(clave(nombre));
+    candidatos.push(nombre);
+  }
+  const borrados: string[] = [];
+  if (candidatos.length === 0) return borrados;
+  let enUso: Set<string>;
+  try {
+    enUso = await subidasEnUso(candidatos);
+  } catch (e) {
+    console.error('[Storage] No se ha podido comprobar qué ficheros siguen en uso; no se borra ninguno:', e);
+    return borrados;
+  }
+  for (const nombre of candidatos) {
+    if (enUso.has(clave(nombre))) continue;
     try {
-      if ((await contarReferencias(nombre)) > 0) continue;
       if (await borrarSubida(nombre, directorio)) borrados.push(nombre);
     } catch (e) {
       console.error(`[Storage] No se ha podido borrar el fichero huérfano ${nombre}:`, e);
@@ -235,11 +306,13 @@ export async function buscarHuerfanos({
   const ignorados: string[] = [];
   for (const entrada of entradas) {
     if (!entrada.isFile()) continue;
-    if (nombreDeSubida(`/storage/public/${entrada.name}`) !== entrada.name) {
+    // Una copia reducida sigue a su foto: en uso si la foto lo está.
+    const deFoto = fotoDeVariante(entrada.name);
+    if (!deFoto && nombreDeSubida(`/storage/public/${entrada.name}`) !== entrada.name) {
       ignorados.push(entrada.name);
       continue;
     }
-    if (enUso.has(clave(entrada.name))) continue;
+    if (enUso.has(clave(deFoto ?? entrada.name))) continue;
     const datos = await fs.stat(path.join(directorio, entrada.name));
     // La edad nunca es negativa: el mtime del disco puede quedar unos
     // milisegundos por delante del reloj de Node (NTFS lo hace), y entonces la
@@ -251,4 +324,37 @@ export async function buscarHuerfanos({
   }
   huerfanos.sort((a, b) => a.nombre.localeCompare(b.nombre));
   return { huerfanos, ignorados };
+}
+
+/**
+ * Lo que deja una subida que no llegó a terminar. La subida escribe primero en
+ * `storage/subiendo` y solo mueve el fichero a `storage/public` cuando ha
+ * pasado el tipo real, ClamAV y sharp, a través de un `.<nombre>.tmp` que se
+ * renombra. Si el proceso muere en medio (un reinicio del contenedor, sharp sin
+ * memoria), el `catch` que lo borraría no llega a ejecutarse y el fichero sin
+ * comprobar se queda allí para siempre. Nada de esto lo sirve nginx, pero sigue
+ * siendo lo que alguien subió.
+ */
+export async function buscarRestosDeSubidas({
+  subiendo,
+  publico = publicStorageDir,
+  minHoras = 24,
+  ahora = new Date(),
+}: { subiendo: string; publico?: string; minHoras?: number; ahora?: Date }): Promise<{ ruta: string; bytes: number }[]> {
+  const restos: { ruta: string; bytes: number }[] = [];
+  const candidatos = async (directorio: string, vale: (nombre: string) => boolean) => {
+    const entradas = await fs.readdir(directorio, { withFileTypes: true }).catch(() => []);
+    for (const entrada of entradas) {
+      if (!entrada.isFile() || !vale(entrada.name)) continue;
+      const ruta = path.join(directorio, entrada.name);
+      const datos = await fs.stat(ruta);
+      if (Math.max(0, ahora.getTime() - datos.mtime.getTime()) < minHoras * 3600_000) continue;
+      restos.push({ ruta, bytes: datos.size });
+    }
+  };
+  // En la carpeta de espera todo es de la subida: no hay nada más que proteger.
+  await candidatos(subiendo, () => true);
+  // En la pública, solo el temporal del renombrado, con su forma exacta.
+  await candidatos(publico, (nombre) => /^\.[a-f0-9]{32}(-\d+)?\.[a-z0-9]+\.tmp$/.test(nombre));
+  return restos.sort((a, b) => a.ruta.localeCompare(b.ruta));
 }

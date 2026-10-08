@@ -4,6 +4,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import type { MedioGaleria } from '../../lib/api/contenido'
 import { DORADO, fondoDesenfocado, imagenDe, type Medida } from './formato'
 import ReproductorEnLinea from './ReproductorEnLinea'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 interface Props {
   medios: MedioGaleria[]
@@ -89,10 +90,10 @@ export default function CarrilMovil({ medios, actual, onIr, onAbrir, medidaDe, m
                 disableRipple
                 sx={{ ...hueco, '&.Mui-focusVisible': { outline: `3px solid ${DORADO}`, outlineOffset: -3 } }}
               >
-                <Box component="img" src={imagenDe(m)} alt="" aria-hidden="true" loading={Math.abs(i - actual) <= 1 ? 'eager' : 'lazy'} sx={fondoDesenfocado(26, 0.45)} />
+                <Box component="img" {...propsDeFoto(imagenDe(m), '320px')} alt="" aria-hidden="true" loading={Math.abs(i - actual) <= 1 ? 'eager' : 'lazy'} sx={fondoDesenfocado(26, 0.45)} />
                 <Box
                   component="img"
-                  src={imagenDe(m)}
+                  {...propsDeFoto(imagenDe(m), '100vw')}
                   alt={m.alt}
                   // Las vecinas, ya cargadas: si no, aparecen de golpe al deslizar.
                   loading={Math.abs(i - actual) <= 1 ? 'eager' : 'lazy'}

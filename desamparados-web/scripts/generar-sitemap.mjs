@@ -1,48 +1,57 @@
-// Genera public/sitemap.xml a partir del router.
+// Genera shared/rutas-publicas.json a partir del router: las páginas públicas
+// que anuncia el sitemap, cada una con el módulo que exige.
 //
-// El sitemap se mantenía a mano y se desincronizó: llegó a anunciar a Google
-// tres URLs que ya no existían (/titular/…, renombradas a /sagrada-titular/…) y
-// a omitir siete páginas reales. Generarlo desde la única fuente de verdad —las
-// rutas declaradas— impide que vuelva a pasar. Qué rutas entran y cuáles no
-// (parámetros, redirecciones, módulos que esta instalación no enciende) lo
-// decide `rutas-publicas.mjs`, el mismo que usa la prueba.
+// El sitemap ya no es un fichero de la web: lo sirve la API en /sitemap.xml
+// (backend-desamparados/src/services/sitemap.service.ts), que sabe qué módulos
+// están encendidos AHORA y qué noticias hay publicadas. Lo que la API no puede
+// saber es qué páginas declara el router de la web, que vive aquí y no viaja
+// en su imagen: por eso esta lista va a `shared/`, que leen los dos lados.
 //
-// Se ejecuta solo en `npm run build` (script `prebuild`).
+// Antes se mantenía a mano y se desincronizó: llegó a anunciar a Google tres
+// URLs que ya no existían y a omitir siete páginas reales. Generarla desde las
+// rutas declaradas impide que vuelva a pasar, y dos pruebas lo vigilan (la de
+// `scripts/__tests__/sitemap.test.ts` y la del backend, `test/sitemap.test.ts`).
+//
+// Se ejecuta en `npm run build` (script `prebuild`) y con `npm run sitemap`.
+// El fichero está versionado: tras cambiar una ruta pública, ejecutarlo y
+// confirmar el JSON.
 
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { datosEntidad, urlsIndexables } from './rutas-publicas.mjs'
+import { rutasParaElSitemap } from './rutas-publicas.mjs'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
-const SITEMAP = join(raiz, 'public/sitemap.xml')
-// El dominio es el de la corporación: sale del fichero que comparten la API y la web.
-const DOMINIO = `https://${datosEntidad().identidad.dominio}`
+const DESTINO = join(raiz, '../shared/rutas-publicas.json')
 
 // Por debajo de este número algo ha cambiado en el router y el recorte de
 // rutas-publicas.mjs ya no encuentra el bloque público: mejor romper el build
-// que publicar un sitemap truncado. Las páginas del núcleo, que ninguna
-// instalación apaga, son 19: una instalación con todos los módulos apagados
-// tiene que pasar igual.
-const MINIMO_ESPERADO = 15
+// que dejar un sitemap truncado.
+const MINIMO_ESPERADO = 20
 
-const unicas = urlsIndexables()
+const rutas = rutasParaElSitemap()
 
-if (unicas.length < MINIMO_ESPERADO) {
+if (rutas.length < MINIMO_ESPERADO) {
   throw new Error(
-    `Solo se han extraído ${unicas.length} rutas (se esperaban ${MINIMO_ESPERADO} o más). ` +
+    `Solo se han extraído ${rutas.length} rutas (se esperaban ${MINIMO_ESPERADO} o más). ` +
       'El router ha cambiado de forma: ajusta scripts/rutas-publicas.mjs.'
   )
 }
 
-const xml = [
-  '<?xml version="1.0" encoding="UTF-8"?>',
-  '<!-- Generado por scripts/generar-sitemap.mjs. No editar a mano. -->',
-  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-  ...unicas.map((ruta) => `  <url><loc>${DOMINIO}${ruta}</loc></url>`),
-  '</urlset>',
+const comentario =
+  'Generado por desamparados-web/scripts/generar-sitemap.mjs desde el router. No editar a mano: ' +
+  'tras cambiar una ruta pública, `npm run sitemap` en la web. La API lo usa para servir /sitemap.xml.'
+
+// Una ruta por línea: el diff de un cambio en el router se lee de un vistazo.
+const texto = [
+  '{',
+  `  "_comentario": ${JSON.stringify(comentario)},`,
+  '  "rutas": [',
+  rutas.map((r) => `    ${JSON.stringify(r).replace(/,"/g, ', "').replace(/":/g, '": ').replace(/^\{/, '{ ').replace(/\}$/, ' }')}`).join(',\n'),
+  '  ]',
+  '}',
   '',
 ].join('\n')
 
-writeFileSync(SITEMAP, xml, 'utf8')
-console.log(`sitemap.xml generado con ${unicas.length} URLs`)
+writeFileSync(DESTINO, texto, 'utf8')
+console.log(`shared/rutas-publicas.json generado con ${rutas.length} rutas`)

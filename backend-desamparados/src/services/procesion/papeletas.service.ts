@@ -22,8 +22,9 @@ import { puedeTransicionar } from '../../domain/recibo-estados.js';
 import { conceptoDeSalida, tipoReciboDe } from '../../domain/salidas.js';
 import { aArticulo, articuloDe, deArticulo } from '../../domain/articulos.js';
 import type { SalidaConActo } from './salidas.service.js';
-import { recogerRopaEnTransaccion } from './ropa.js';
 import { avisarALaMesa } from './avisos-mesa.js';
+import { PlazoPapeletasService } from './plazo.service.js';
+import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -60,12 +61,12 @@ export class PapeletasService {
 
   /** Listado de quién esperamos HOY. */
   static async getAsistentesDelDia(fecha: Date) {
-    const start = new Date(fecha.setHours(0, 0, 0, 0));
-    const end = new Date(fecha.setHours(23, 59, 59, 999));
+    // El día de Madrid, no el del reloj del servidor (que corre en UTC).
+    const { desde, hasta } = diaMadridComoIntervalo(fecha);
 
     return await db.cita.findMany({
       where: {
-        turno: { fecha: { gte: start, lte: end } },
+        turno: { fecha: { gte: desde, lt: hasta } },
         estado: EstadoCita.RESERVADA
       },
       include: {
@@ -199,6 +200,45 @@ export class PapeletasService {
     }
   }
 
+  /**
+   * Al dar de baja (también por fallecimiento): las solicitudes de salidas que
+   * aún no se han celebrado, sin recoger y sin pagar, quedan canceladas en la
+   * misma transacción que la baja, como si las cancelara el hermano desde su
+   * área. Las pagadas se quedan: anularlas y devolver el dinero lo decide la
+   * Junta, igual que las papeletas ya recogidas (la puerta no las deja entrar).
+   * Devuelve las canceladas, para dejar su rastro con `registrarCanceladasPorBaja`.
+   */
+  static async cancelarSolicitudesDeBajaEnTransaccion(tx: Tx, hermanoIds: number[], categoriaDevolucionesId: number) {
+    if (hermanoIds.length === 0) return [];
+    const pendientes = await tx.solicitud.findMany({
+      where: {
+        hermanoId: { in: hermanoIds },
+        estado: EstadoSolicitud.PENDIENTE,
+        OR: [{ reciboId: null }, { recibo: { estado: { not: EstadoPago.PAGADO } } }],
+      },
+      include: { recibo: true, salida: { include: { acto: true } } },
+    });
+    // Una solicitud de una salida ya celebrada no se toca: es historia.
+    const vivas = pendientes.filter((s) => s.year >= PlazoPapeletasService.anioDeLaProcesion(s.salida));
+    for (const solicitud of vivas) await PapeletasService.cancelarSolicitudEnTransaccion(tx, solicitud, categoriaDevolucionesId);
+    return vivas;
+  }
+
+  /** El rastro de las solicitudes que canceló una baja: el mismo que deja cancelarlas a mano. */
+  static async registrarCanceladasPorBaja(solicitudes: SolicitudConRecibo[], meta: MetaDeAuditoria) {
+    for (const s of solicitudes) {
+      await AuditoriaService.log(ACCIONES_AUDITORIA.SOLICITUD_SALIDA_CANCELAR, meta, 'solicitud', s.id, {
+        origen: 'baja en el censo',
+        antes: {
+          hermanoId: s.hermanoId, year: s.year, salidaId: s.salidaId, puesto: s.puesto, citaId: s.citaId,
+          recibo: s.recibo && { id: s.recibo.id, estado: s.recibo.estado },
+        },
+        despues: { estado: EstadoSolicitud.CANCELADA },
+      });
+      avisarALaMesa({ que: 'anulado', hermanoId: s.hermanoId, salidaId: s.salidaId });
+    }
+  }
+
   /** Cancelar una solicitud desde la mesa (el listado), con su rastro. */
   static async cancelarSolicitud(solicitudId: number, meta?: MetaDeAuditoria) {
     const categoriaDevolucionesId = await idCategoriaDevoluciones();
@@ -227,9 +267,9 @@ export class PapeletasService {
    * Anular una papeleta ya recogida: el hermano no sale (enfermedad, un
    * error). El recibo sigue el grafo de estados como cualquier otro: si
    * estaba cobrado pasa a DEVUELTO con su asiento de reverso; si era exento,
-   * se queda como está porque no hubo dinero. La ropa vuelve al ropero, la
-   * papeleta se borra y su solicitud queda cancelada: puede volver a
-   * apuntarse, y su nuevo recibo sale como reemisión.
+   * se queda como está porque no hubo dinero. La papeleta se borra y su
+   * solicitud queda cancelada: puede volver a apuntarse, y su nuevo recibo
+   * sale como reemisión. La ropa sigue a su nombre hasta que la devuelva.
    */
   static async anularPapeleta(papeletaId: number, meta?: MetaDeAuditoria) {
     const categoriaDevolucionesId = await idCategoriaDevoluciones();
@@ -253,8 +293,8 @@ export class PapeletasService {
 
     return {
       message: estadoFinal === EstadoPago.DEVUELTO && recibo.estado === EstadoPago.PAGADO
-        ? 'Papeleta anulada. El cobro queda devuelto con su reverso en contabilidad. Ropa liberada.'
-        : 'Papeleta anulada. Ropa liberada.',
+        ? 'Papeleta anulada. El cobro queda devuelto con su reverso en contabilidad. La ropa sigue a su nombre hasta que la devuelva.'
+        : 'Papeleta anulada. La ropa sigue a su nombre hasta que la devuelva.',
       reciboId: recibo.id,
       estadoRecibo: estadoFinal
     };
@@ -287,8 +327,9 @@ export class PapeletasService {
       await tx.recibo.update({ where: { id: recibo.id }, data: { observaciones } });
     }
 
-    // La ropa que se le prestó con esta papeleta, de vuelta al ropero.
-    await recogerRopaEnTransaccion(tx, papeleta.hermanoId, papeleta);
+    // La ropa no se toca: la tiene él y sigue a su nombre (y en «Sin
+    // devolver») hasta que la traiga y se reciba con «Devolver», que la manda
+    // al lavado. Antes se daba por devuelta al anular.
     // Su solicitud, cancelada: si vuelve, pide otra.
     await tx.solicitud.updateMany({ where: { papeletaId: papeleta.id }, data: { estado: EstadoSolicitud.CANCELADA, citaId: null } });
     // Libera la cita y borra la papeleta (hueco en la procesión y clave [hermano, año, salida]).

@@ -171,7 +171,10 @@ export function register(data: RegistroData) {
     comentarioAdicional: data.comentarioAdicional ?? '',
   }
 
-  type Respuesta = { user: { id: number; email: string }; fichas: number; message: string }
+  // Lo mismo se haya creado el alta o no: si el correo o un DNI ya estaban
+  // registrados, el servidor responde igual y lo explica por correo, para que
+  // el formulario no sirva para averiguar quién está en el censo.
+  type Respuesta = { fichas: number; message: string }
   // Sin documentos, JSON como siempre. Con ellos, multipart: el alta va entera
   // en `datos` y cada fichero en su campo, para que el servidor diga cuál falla.
   if (!data.foto && !data.certificadoBautismo) {
@@ -185,9 +188,9 @@ export function register(data: RegistroData) {
 }
 
 /**
- * Pedir volver tras una baja. Se ofrece cuando el alta topa con un DNI que ya
- * está en el censo. La respuesta es siempre la misma, exista o no la ficha: el
- * servidor no dice quién está en el censo y la pantalla tampoco puede saberlo.
+ * Pedir volver tras una baja, desde el acceso fijo del alta. La respuesta es
+ * siempre la misma, exista o no la ficha: el servidor no dice quién está en el
+ * censo y la pantalla tampoco puede saberlo.
  */
 export function pedirReactivacion(dni: string, email: string) {
   return llamarApi<{ message: string }>('/auth/reactivacion', {
@@ -221,6 +224,19 @@ export function resetPassword(token: string, newPassword: string) {
     method: 'POST',
     auth: false,
     json: { token, newPassword },
+  })
+}
+
+/**
+ * Cambiar la contraseña con la sesión abierta. El servidor cierra todas las
+ * sesiones de la cuenta y da cookies nuevas a las de este navegador: después
+ * hay que volver a pedir /auth/me. Una actual equivocada es un 400, no un 401:
+ * la sesión sigue buena y `llamarApi` no la da por caducada.
+ */
+export function cambiarContrasena(actual: string, nueva: string) {
+  return llamarApi<{ message: string }>('/auth/cambiar-contrasena', {
+    method: 'POST',
+    json: { actual, nueva },
   })
 }
 

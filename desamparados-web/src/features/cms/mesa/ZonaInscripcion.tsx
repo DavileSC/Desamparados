@@ -24,7 +24,7 @@ interface Props {
  * por Tesorería; si no, directo a Túnicas.
  */
 export default function ZonaInscripcion({ ficha, salida, role, puestosUsados, onHecho, onRecargar }: Props) {
-  const { datos, setDatos, correccion } = useDatosPersona(ficha)
+  const { datos, setDatos, correccion, contactoCompleto } = useDatosPersona(ficha)
   const [puesto, setPuesto] = useState(ficha.propuesta.puesto)
   const [altura, setAltura] = useState(alturaEnMetros(ficha.alturaHombro))
   const [donativo, setDonativo] = useState('')
@@ -87,7 +87,7 @@ export default function ZonaInscripcion({ ficha, salida, role, puestosUsados, on
         <Typography variant="body2" color="text.secondary">En {ficha.anterior.year} salió de {ficha.anterior.puesto}.</Typography>
       )}
 
-      <DatosPersona datos={datos} onCambiar={setDatos} />
+      <DatosPersona datos={datos} onCambiar={setDatos} contactoCompleto={contactoCompleto} />
 
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.5 }}>
         <Typography component="legend" sx={leyenda}>{salida.nombre}</Typography>

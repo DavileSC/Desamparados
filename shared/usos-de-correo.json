@@ -123,6 +123,70 @@
       }
     },
     {
+      "clave": "contrasena_cambiada",
+      "grupo": "Cuenta",
+      "nombre": "Contraseña cambiada",
+      "descripcion": "Cuando alguien cambia su contraseña desde su cuenta, con la sesión abierta.",
+      "antetitulo": "Su cuenta",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "fecha",
+          "ayuda": "Cuándo se cambió",
+          "ejemplo": "8 de octubre de 2026, a las 18:05"
+        }
+      ],
+      "bloques": [],
+      "porDefecto": {
+        "asunto": "Se ha cambiado la contraseña de su cuenta",
+        "titulo": "Contraseña cambiada",
+        "cuerpo": "{{saludo}}\n\nLe confirmamos que la contraseña de su cuenta **se ha cambiado** el {{fecha}}. Por seguridad, se han cerrado las sesiones que tuviera abiertas en otros dispositivos.\n\n> **Si no ha sido usted**\n> Alguien conoce su contraseña. Elija una nueva cuanto antes desde «He olvidado mi contraseña», en el acceso de la web, y avise a la Secretaría {{de_la_corporacion}}.",
+        "despedida": ""
+      }
+    },
+    {
+      "clave": "doble_factor_bloqueado",
+      "grupo": "Cuenta",
+      "nombre": "Doble factor bloqueado",
+      "descripcion": "Cuando se escriben varios códigos del doble factor equivocados seguidos y el acceso al CMS se bloquea un tiempo.",
+      "antetitulo": "Su cuenta",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "plazo",
+          "ayuda": "Cuánto dura el bloqueo",
+          "ejemplo": "15 minutos"
+        }
+      ],
+      "bloques": [],
+      "porDefecto": {
+        "asunto": "Hemos bloqueado el acceso a su cuenta del CMS",
+        "titulo": "Acceso bloqueado un tiempo",
+        "cuerpo": "{{saludo}}\n\nSe han escrito **varios códigos equivocados** del doble factor de su cuenta, así que el acceso al CMS queda bloqueado durante {{plazo}}. Si vuelve a pasar, cada bloqueo dura más que el anterior.\n\nSi era usted, espere ese tiempo y escriba el código que muestre su aplicación en ese momento.\n\n> **Si no era usted**\n> Para llegar al doble factor hay que acertar antes la contraseña: alguien la conoce. Cámbiela cuanto antes desde «He olvidado mi contraseña» y avise a la Secretaría {{de_la_corporacion}}.",
+        "despedida": ""
+      }
+    },
+    {
       "clave": "solicitud_recibida",
       "grupo": "Altas y bajas",
       "nombre": "Solicitud de ingreso recibida",
@@ -156,6 +220,38 @@
         "titulo": "Hemos recibido su solicitud",
         "cuerpo": "{{saludo}}\n\nLa Secretaría acusa recibo de su **solicitud de ingreso** en {{nuestra_corporacion}}. Le agradecemos de corazón que haya dado este paso.\n\n[[documentos]]\n\n[[secretaria]]\n\nMientras tanto, su solicitud queda pendiente. Le escribiremos de nuevo en cuanto la Secretaría la haya revisado.",
         "despedida": "Que {{titular}} le guarde y bendiga."
+      }
+    },
+    {
+      "clave": "solicitud_no_tramitada",
+      "grupo": "Altas y bajas",
+      "nombre": "Solicitud de ingreso que no se ha podido tramitar",
+      "descripcion": "Al que pide el ingreso cuando su correo o algún DNI del formulario ya figura en una cuenta o en el censo. No dice cuál ni de quién: la web responde lo mismo que en un alta normal.",
+      "antetitulo": "Secretaría",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "secretaria",
+          "ayuda": "Dirección, horario y contacto de Secretaría"
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Sobre su solicitud de ingreso",
+        "titulo": "Su solicitud necesita a Secretaría",
+        "cuerpo": "{{saludo}}\n\nHemos recibido una solicitud de ingreso en {{nuestra_corporacion}} con esta dirección de correo, pero **no hemos podido tramitarla por la web**: alguno de sus datos ya figura en nuestros registros.\n\nSuele pasar cuando ya se tiene cuenta, o cuando se fue hermano y se causó baja:\n\n- Si ya tiene cuenta, entre con ella; si no recuerda la contraseña, pida una nueva desde «He olvidado mi contraseña».\n- Si fue hermano, pida la reactivación desde el formulario de alta de la web.\n- En cualquier otro caso, la Secretaría lo resolverá con usted.\n\n[[secretaria]]\n\nSi no ha pedido el ingreso, puede ignorar este correo.",
+        "despedida": "Le agradecemos el interés mostrado por {{nuestra_corporacion}}."
       }
     },
     {

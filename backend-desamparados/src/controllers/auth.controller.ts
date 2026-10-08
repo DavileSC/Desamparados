@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { RegistroService } from '../services/registro.service';
+import { MENSAJE_ALTA, RegistroService } from '../services/registro.service';
 import { DobleFactorService } from '../services/doble-factor.service';
 import { MisDatosService } from '../services/mis-datos.service';
 import { AuthService, AreaHermanosApagadaError, CuentaSinCmsError, Testigo2FACaducadoError } from '../services/auth.service';
@@ -9,7 +9,7 @@ import { AuditoriaService } from '../services/auditoria.service';
 import { trampaRellena } from '../domain/senales-de-robot';
 import { ponerCookieSesion, ponerCookie2FA, limpiarCookie2FA, limpiarCookieSesion, limpiarCookiesAuth, COOKIE_2FA } from '../utils/cookies';
 import type { AreaSesion } from '../utils/cookies';
-import { verifyToken } from '../utils/jwt.handle';
+import { duracionSesionSegundos, verifyToken } from '../utils/jwt.handle';
 import type { AuthTokenPayload } from '../utils/jwt.handle';
 import { resolverSesiones } from '../middleware/session';
 import { manejar } from '../utils/manejar';
@@ -36,16 +36,19 @@ export class AuthController {
       console.warn('[Alta] Solicitud descartada como spam (campo trampa relleno).');
       return res.status(201).json({
         fichas: (body.menores?.length ?? 0) + (body.titular ? 1 : 0),
-        message: 'Solicitud enviada correctamente. Revisa tu email y pásate por Secretaría para formalizar tu alta.',
+        message: MENSAJE_ALTA,
       });
     }
 
-    const result = await RegistroService.registerUser({ ...body, documentos: req.documentosDelAlta });
+    const { creada, ...respuesta } = await RegistroService.registerUser(
+      { ...body, documentos: req.documentosDelAlta }, AuditoriaService.metaFromReq(req),
+    );
     // Ya están en la ficha: que no los borre la limpieza de alta-documentos.
-    res.locals.conservarDocumentos = true;
+    // Si el alta chocó con algo ya registrado, no hay ficha y se borran.
+    res.locals.conservarDocumentos = creada;
 
-    // Ahora devuelve un 201 Created con el mensaje de "Pásate por Secretaría"
-    res.status(201).json(result);
+    // El mismo 201 y el mismo cuerpo se haya creado o no: ver registerUser.
+    res.status(201).json(respuesta);
   });
 
   /**
@@ -260,6 +263,30 @@ export class AuthController {
     const userId = req.user!.id;
     const data = await MisDatosService.exportMisDatos(userId, AuditoriaService.metaFromReq(req));
     res.status(200).json(data);
+  });
+
+  /**
+   * Cambiar la contraseña con la sesión abierta. Cierra todas las sesiones de
+   * la cuenta y vuelve a dar una a las áreas que traía este navegador (las
+   * dos, si un cargo tiene abiertas la del CMS y la de hermanos), con la
+   * misma duración que tenían.
+   */
+  static cambiarContrasena = manejar('Error cambiando la contraseña', async (req, res) => {
+    const userId = req.user!.id;
+    const { actual, nueva } = req.body as { actual: string; nueva: string };
+    const sesiones = (['cms', 'hermanos'] as const)
+      .map((area) => ({ area, sesion: area === 'cms' ? req.sesiones.cms : req.sesiones.hermano }))
+      .filter(({ sesion }) => sesion?.id === userId)
+      .map(({ area, sesion }) => ({
+        area,
+        // «Recuérdame» no viaja en el token de sesión: se deduce de lo que
+        // dura, que con él pasa de la duración normal del rol.
+        recordarme: typeof sesion!.exp === 'number' && typeof sesion!.iat === 'number'
+          && sesion!.exp - sesion!.iat > duracionSesionSegundos(sesion!.role) + 60,
+      }));
+    const resultado = await AuthService.cambiarContrasena(userId, actual, nueva, sesiones, AuditoriaService.metaFromReq(req));
+    for (const s of resultado.sesiones) ponerCookieSesion(res, s.area, s.token, s.role, s.recordarme);
+    res.status(200).json({ message: resultado.message });
   });
 
   /** Derecho de supresión (art. 17 RGPD): anonimiza la cuenta. Requiere contraseña. */

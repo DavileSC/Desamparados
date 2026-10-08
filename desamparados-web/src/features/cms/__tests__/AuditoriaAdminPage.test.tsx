@@ -92,4 +92,60 @@ describe('AuditoriaAdminPage', () => {
     renderWithProviders(<AuditoriaAdminPage />)
     expect(await screen.findByText('ACCION_NUEVA')).toBeInTheDocument()
   })
+
+  it('un correo fallido dice qué correo era, por su nombre, y por qué no salió', async () => {
+    // Ya no guarda el asunto (podía llevar el nombre de quien lo recibía) sino la clave del uso.
+    const user = userEvent.setup()
+    responder([{
+      id: 12, action: 'EMAIL_FALLIDO', entityType: 'email', entityId: null, ip: null,
+      createdAt: '2026-10-08T10:00:00.000Z', user: null,
+      detalles: { para: 'j***@ejemplo.es', uso: 'solicitud_recibida', motivo: 'ECONNECTION · código 421' },
+    }])
+    renderWithProviders(<AuditoriaAdminPage />)
+
+    expect(await screen.findByText('Correo que no se pudo enviar')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Ver detalles' }))
+    expect(screen.getByText(/^Correo:/).parentElement).toHaveTextContent('Correo: Solicitud de ingreso recibida (solicitud_recibida)')
+    expect(screen.getByText(/^Motivo:/).parentElement).toHaveTextContent('Motivo: ECONNECTION · código 421')
+  })
+
+  it('las acciones nuevas de la auditoría del 07-10 tienen nombre, y sus datos también', async () => {
+    const user = userEvent.setup()
+    responder([
+      { id: 13, action: 'ALTA_NO_TRAMITADA', entityType: 'hermano', entityId: '42', ip: null, createdAt: '2026-10-08T10:00:00.000Z', user: null,
+        detalles: { motivo: 'dni_en_el_censo', para: 'j***@ejemplo.es' } },
+      { id: 14, action: 'FAMILIAR_DNI_OCUPADO', entityType: 'hermano', entityId: '7', ip: null, createdAt: '2026-10-08T10:00:00.000Z', user: autor,
+        detalles: { fichaConEseDni: 42 } },
+      { id: 15, action: 'CONTRASENA_CAMBIAR', entityType: 'user', entityId: '1', ip: null, createdAt: '2026-10-08T10:00:00.000Z', user: autor,
+        detalles: { sesionesCerradas: true } },
+      { id: 16, action: 'SOLICITUD_SALIDA_CANCELAR', entityType: 'solicitud', entityId: '9', ip: null, createdAt: '2026-10-08T10:00:00.000Z', user: autor,
+        detalles: { origen: 'baja en el censo', antes: { puesto: 'Cirio' }, despues: { estado: 'CANCELADA' } } },
+    ])
+    renderWithProviders(<AuditoriaAdminPage />)
+
+    expect(await screen.findByText('Alta por la web no tramitada (datos ya registrados)')).toBeInTheDocument()
+    expect(screen.getByText('DNI de otra ficha escrito desde el área de hermanos')).toBeInTheDocument()
+    expect(screen.getByText('Cambiar su contraseña')).toBeInTheDocument()
+    expect(screen.getByText('Cancelar una solicitud de salida')).toBeInTheDocument()
+
+    for (const boton of screen.getAllByRole('button', { name: 'Ver detalles' })) await user.click(boton)
+    expect(screen.getByText(/^Motivo:/).parentElement).toHaveTextContent('El DNI ya está en el censo (dni_en_el_censo)')
+    expect(screen.getByText(/^Ficha que ya tiene ese DNI:/).parentElement).toHaveTextContent('42')
+    expect(screen.getByText(/^Sesiones cerradas:/).parentElement).toHaveTextContent('Sí')
+    expect(screen.getByText(/^Origen:/).parentElement).toHaveTextContent('baja en el censo')
+  })
+
+  it('un antes y un después sueltos (no objetos) no se pierden', async () => {
+    const user = userEvent.setup()
+    responder([{
+      id: 17, action: 'DEFUNCION_FIJAR', entityType: 'hermano', entityId: '42', ip: null, createdAt: '2026-10-08T10:00:00.000Z', user: autor,
+      detalles: { antes: null, despues: '2026-10-01' },
+    }])
+    renderWithProviders(<AuditoriaAdminPage />)
+
+    expect(await screen.findByText('Fijar la fecha de defunción')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Ver detalles' }))
+    expect(screen.getByText(/^Después:/).parentElement).toHaveTextContent('01/10/2026')
+  })
 })
+

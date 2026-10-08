@@ -39,6 +39,20 @@ export const resetPasswordSchema = z.object({
 
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>
 
+// Cambiar la contraseña con la sesión abierta: la nueva con la misma política
+// que el restablecimiento; la actual, como en el acceso (puede ser anterior al
+// endurecimiento), con el tope del servidor.
+export const cambiarContrasenaSchema = z.object({
+  actual: contrasenaExistente.max(128, 'Esa contraseña es demasiado larga'),
+  nueva: contrasenaNueva,
+  confirmacion: z.string().min(1, 'Repite la contraseña nueva'),
+}).refine((data) => data.nueva === data.confirmacion, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmacion'],
+})
+
+export type CambiarContrasenaFormData = z.infer<typeof cambiarContrasenaSchema>
+
 export const requestPasswordResetSchema = z.object({
   email: z.string().trim().email('Introduce un email válido'),
 })

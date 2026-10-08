@@ -16,6 +16,16 @@ export interface OpcionesContador {
   maxFallos: number;
   /** Cuánto dura el bloqueo. */
   bloqueoMs: number;
+  /**
+   * Bloqueo creciente: la duración de cada tanda (la primera, la segunda…;
+   * de la última en adelante se repite). Con un bloqueo fijo, quien tiene la
+   * contraseña de un cargo probaba cinco códigos del 2FA cada quince minutos
+   * sin fin. Las tandas solo se olvidan con `limpiar` (un acierto) o tras
+   * `olvidoTandasMs` sin fallar. Sin él, todas las tandas duran `bloqueoMs`.
+   */
+  escaladaMs?: number[];
+  /** Sin fallos durante esto, las tandas vuelven a cero. Por defecto, `ventanaMs`. */
+  olvidoTandasMs?: number;
   /** Un fallo más antiguo que esto ya no suma: el contador vuelve a cero. */
   ventanaMs: number;
   /** Máximo de claves vivas a la vez. */
@@ -28,6 +38,8 @@ interface Estado {
   fallos: number;
   ultimoFallo: number;
   bloqueadoHasta: number;
+  /** Bloqueos que lleva la clave desde su último acierto. */
+  tandas: number;
 }
 
 // Cada cuántos fallos se barre aunque no se haya llegado al tope, para que las
@@ -50,18 +62,30 @@ export class ContadorFallos {
     return Math.max(0, estado.bloqueadoHasta - this.ahora());
   }
 
-  registrarFallo(clave: string): void {
+  /**
+   * Apunta un fallo. Devuelve los milisegundos del bloqueo que acaba de
+   * empezar, o 0 si este fallo no ha bloqueado: así quien llama sabe cuándo
+   * avisar al titular, una vez por tanda y no a cada fallo.
+   */
+  registrarFallo(clave: string): number {
     const ahora = this.ahora();
     let estado = this.estados.get(clave);
     if (!estado || this.caducado(estado, ahora)) {
-      estado = { fallos: 0, ultimoFallo: 0, bloqueadoHasta: 0 };
+      estado = { fallos: 0, ultimoFallo: 0, bloqueadoHasta: 0, tandas: 0 };
+    } else if (estado.bloqueadoHasta <= ahora && ahora - estado.ultimoFallo > this.opciones.ventanaMs) {
+      // Los fallos sueltos caducan con la ventana; las tandas, no.
+      estado.fallos = 0;
     }
 
     estado.fallos += 1;
     estado.ultimoFallo = ahora;
+    let bloqueo = 0;
     if (estado.fallos >= this.opciones.maxFallos) {
-      estado.bloqueadoHasta = ahora + this.opciones.bloqueoMs;
+      const escalera = this.opciones.escaladaMs;
+      bloqueo = escalera?.length ? escalera[Math.min(estado.tandas, escalera.length - 1)] : this.opciones.bloqueoMs;
+      estado.bloqueadoHasta = ahora + bloqueo;
       estado.fallos = 0;
+      estado.tandas += 1;
     }
 
     // Borrar y volver a meter: el Map conserva el orden de inserción, así la
@@ -73,6 +97,7 @@ export class ContadorFallos {
     if (this.estados.size > this.opciones.tope || this.fallosDesdeBarrido >= BARRER_CADA) {
       this.barrer(ahora);
     }
+    return bloqueo;
   }
 
   limpiar(clave: string): void {
@@ -112,7 +137,8 @@ export class ContadorFallos {
   }
 
   private caducado(estado: Estado, ahora: number): boolean {
-    return estado.bloqueadoHasta <= ahora && ahora - estado.ultimoFallo > this.opciones.ventanaMs;
+    const olvido = estado.tandas > 0 ? (this.opciones.olvidoTandasMs ?? this.opciones.ventanaMs) : this.opciones.ventanaMs;
+    return estado.bloqueadoHasta <= ahora && ahora - Math.max(estado.ultimoFallo, estado.bloqueadoHasta) > olvido;
   }
 }
 

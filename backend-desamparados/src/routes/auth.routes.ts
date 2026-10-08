@@ -21,6 +21,7 @@ import {
   enable2FASchema,
   disable2FASchema,
   deleteAccountSchema,
+  cambiarContrasenaSchema,
   requestPasswordResetSchema,
   logoutSchema
 } from '../schemas/auth.schema';
@@ -99,6 +100,11 @@ authRoutes.post('/2fa/enable', authenticateToken, checkRole(rolesStaffCMS), vali
 // entraba por el área de hermanos (que no pide 2FA) y desde esa sesión se
 // probaban códigos contra esta ruta. checkRole exige además origen 'cms'.
 authRoutes.post('/2fa/disable', authenticateToken, checkRole(rolesStaffCMS), validate(disable2FASchema), AuthController.setup2FADisable);
+
+// Cambiar la contraseña con la sesión abierta (área de hermanos o CMS: es la
+// misma cuenta). Con el limitador de la entrada, que solo cuenta los fallos,
+// además del bloqueo por cuenta del servicio.
+authRoutes.post('/cambiar-contrasena', authenticateToken, limitadorEntrada, validate(cambiarContrasenaSchema), AuthController.cambiarContrasena);
 
 // ==========================================
 //  RGPD (Datos personales del propio usuario)

@@ -10,13 +10,18 @@ interface Props {
    * datos rara vez cambian y desplegados obligaban a bajar para ver la ropa.
    */
   plegados?: boolean
+  /**
+   * Sin él (Tesorería, Albacería) el teléfono y el correo llegan
+   * enmascarados: se enseñan para confirmar con la persona, pero no se tocan.
+   */
+  contactoCompleto?: boolean
 }
 
 /**
  * Nombre, apellidos, nacimiento, teléfono y correo, ya rellenos. Se confirman
  * de un vistazo y solo se escribe si algo ha cambiado.
  */
-export default function DatosPersona({ datos, onCambiar, plegados = false }: Props) {
+export default function DatosPersona({ datos, onCambiar, plegados = false, contactoCompleto = true }: Props) {
   const [abiertos, setAbiertos] = useState(!plegados)
   const campo = (clave: keyof Datos, etiqueta: string, extra: object = {}) => (
     <TextField size="small" fullWidth label={etiqueta} value={datos[clave]} onChange={(e) => onCambiar({ ...datos, [clave]: e.target.value })} {...extra} />
@@ -42,8 +47,15 @@ export default function DatosPersona({ datos, onCambiar, plegados = false }: Pro
       {campo('primerApellido', 'Primer apellido', { required: true })}
       {campo('segundoApellido', 'Segundo apellido')}
       {campo('fechaNacimiento', 'Nacimiento', { type: 'date', required: true, slotProps: { inputLabel: { shrink: true } } })}
-      {campo('telefono', 'Teléfono', { slotProps: { htmlInput: { inputMode: 'tel' } } })}
-      <Box sx={{ gridColumn: '1 / -1' }}>{campo('email', 'Correo', { type: 'email' })}</Box>
+      {contactoCompleto
+        ? <>
+          {campo('telefono', 'Teléfono', { slotProps: { htmlInput: { inputMode: 'tel' } } })}
+          <Box sx={{ gridColumn: '1 / -1' }}>{campo('email', 'Correo', { type: 'email' })}</Box>
+        </>
+        : <>
+          {campo('telefono', 'Teléfono', { slotProps: { htmlInput: { readOnly: true } } })}
+          <Box sx={{ gridColumn: '1 / -1' }}>{campo('email', 'Correo', { helperText: 'El teléfono y el correo los corrige Secretaría.', slotProps: { htmlInput: { readOnly: true } } })}</Box>
+        </>}
     </Box>
   )
 }

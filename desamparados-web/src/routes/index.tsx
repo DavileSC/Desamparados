@@ -3,17 +3,22 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet, ScrollRestoratio
 import CargandoPagina from '../components/CargandoPagina'
 import MarcoPublico from '../app/MarcoPublico'
 import MarcoAcceso from '../app/MarcoAcceso'
-import MarcoAreaHermano from '../app/MarcoAreaHermano'
 import ExigeSesion from './ExigeSesion'
 import ExigeRol from './ExigeRol'
 import ExigeModulo from './ExigeModulo'
 import DireccionAntigua from './DireccionAntigua'
-import MarcoCms from '../app/MarcoCms'
-import { rolesPorRutaCms } from '../app/cmsNavegacion'
+import { rolesPorRutaCms } from '../app/rolesCms'
 import { Helmet } from 'react-helmet-async'
 import { useLocation } from 'react-router-dom'
 import { site } from '../config/site'
 import type { Requisito } from '../domain/modulos'
+
+// Los marcos del CMS y del área de hermanos van aparte, como las páginas: con
+// ellos dentro, cada visita a la web pública bajaba su menú, sus iconos, el tema
+// del CMS y el formulario de acceso (con zod y react-hook-form), unos 70 KB que
+// el público no usa nunca. Los roles salen de `rolesCms`, que no importa iconos.
+const MarcoCms = lazy(() => import('../app/MarcoCms'))
+const MarcoAreaHermano = lazy(() => import('../app/MarcoAreaHermano'))
 
 // Public pages
 const InicioPage = lazy(() => import('../features/inicio/InicioPage'))
@@ -135,9 +140,8 @@ function RootLayout() {
       <Helmet>
         <link rel="canonical" href={canonical} />
         <meta property="og:url" content={canonical} />
-        <meta property="og:site_name" content={site.nombre} />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${site.url}/images/hero-1920.webp`} />
+        {/* og:site_name, og:type y og:image no van: son las mismas en todas
+            las páginas, ya vienen en index.html y aquí salían repetidas. */}
       </Helmet>
       <ScrollRestoration />
       <Outlet />
@@ -221,7 +225,9 @@ const router = createBrowserRouter([
         element: (
           <ExigeModulo modulo="area-hermanos">
             <ExigeSesion>
-              <MarcoAreaHermano />
+              <Suspense fallback={<CargandoPagina />}>
+                <MarcoAreaHermano />
+              </Suspense>
             </ExigeSesion>
           </ExigeModulo>
         ),
@@ -250,7 +256,7 @@ const router = createBrowserRouter([
       { path: '/cms/acceso', element: pagina(AccesoCmsPage, 'nucleo') },
       {
         path: '/cms',
-        element: <ExigeRol roles={rolesPorRutaCms.panel}><MarcoCms /></ExigeRol>,
+        element: <ExigeRol roles={rolesPorRutaCms.panel}><Suspense fallback={<CargandoPagina />}><MarcoCms /></Suspense></ExigeRol>,
         children: [
           { index: true, element: pagina(PanelPage, 'nucleo') },
           { path: 'mi-seguridad', element: <ExigeRol roles={rolesPorRutaCms['mi-seguridad']}>{pagina(MiSeguridadPage, 'nucleo')}</ExigeRol> },

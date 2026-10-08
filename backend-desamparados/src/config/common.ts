@@ -5,11 +5,13 @@ import { provinciaDelCodigoPostal } from '../domain/modelo-182.js';
 
 // --- TIPOS REUTILIZABLES CON MENSAJES EN ESPAÑOL ---
 
-// 1. Texto obligatorio SIN caracteres HTML (Prevención XSS)
-export const textoRequerido = type("string")
+// 1. Texto obligatorio SIN caracteres HTML (Prevención XSS). Con tope de 191,
+// el ancho por defecto de un String de Prisma en MariaDB (VARCHAR(191)): sin
+// él, un valor más largo llegaba a la base y salía como 500 (P2000).
+export const textoRequerido = type("string <= 191")
     .narrow((s) => s.trim().length > 0)
     .matching(/^[^<>]+$/) // Prohíbe inyección de etiquetas HTML
-    .describe("un texto válido sin caracteres especiales (<, >)");
+    .describe("un texto válido sin caracteres especiales (<, >), de 191 caracteres como mucho");
 
 // Email: una sola dirección, de 254 caracteres como mucho (el máximo del
 // estándar). Sin tope y admitiendo comas, el formulario público de contacto

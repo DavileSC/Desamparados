@@ -7,6 +7,7 @@ import { esDestinoValido } from '../../lib/destinos'
 import { anchoMaximo, valorDe } from './presentacion'
 import { SERIF } from '../../features/inicio/estilos'
 import type { BloqueFotoTexto as Datos } from '../../lib/api/contenido'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 /**
  * Una foto a un lado y un texto con formato al otro, con un botón opcional
@@ -36,7 +37,7 @@ export default function BloqueFotoTexto({ bloque }: { bloque: Datos }) {
     }}>
       <Box component="figure" sx={{ gridArea: 'foto', m: 0 }}>
         {bloque.url !== '' && (
-          <Box component="img" src={bloque.url} alt={bloque.alt} loading="lazy" decoding="async"
+          <Box component="img" {...propsDeFoto(bloque.url, '(min-width: 900px) 50vw, 100vw')} alt={bloque.alt} loading="lazy" decoding="async"
             sx={{
               display: 'block', width: '100%', height: 'auto', borderRadius: 2,
               ...(proporcion !== 'original' && { aspectRatio: proporcion.replace(':', ' / '), objectFit: 'cover' }),
@@ -87,7 +88,7 @@ function Fundido({ bloque }: { bloque: Datos }) {
       display: 'flex', alignItems: { xs: 'flex-end', md: 'center' },
     }}>
       {bloque.url !== '' && (
-        <Box component="img" src={bloque.url} alt={bloque.alt} decoding="async"
+        <Box component="img" {...propsDeFoto(bloque.url, '(min-width: 900px) 75vw, 800px')} alt={bloque.alt} decoding="async"
           sx={{
             position: 'absolute', top: 0, bottom: 0, zIndex: -2,
             [derecha ? 'right' : 'left']: 0, width: { xs: '100%', md: '75%' }, height: '100%',

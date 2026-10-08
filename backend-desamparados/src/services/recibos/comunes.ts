@@ -285,6 +285,24 @@ export async function apuntarComisionEnTransaccion(
 }
 
 /**
+ * Un devuelto se vuelve a cobrar (o se perdona) emitiendo su reemisión, y eso
+ * solo una vez: con una ya emitida, otra cobraría dos veces la misma deuda.
+ * Pasó con el pago en línea empezado y la cuota cobrada en la mesa mientras
+ * tanto: el aviso del banco emitía «(reemisión 2)» con su ingreso.
+ *
+ * Va dentro de la transacción de quien cobra, y antes de mirar escribe en la
+ * fila del devuelto: dos cobros a la vez del mismo devuelto chocan en esa
+ * fila (y el reintento ya ve la reemisión del otro) en vez de emitir dos.
+ */
+export async function exigirSinReemision(tx: Tx, r: { id: number; hermanoId: number; year: number; tipo: TipoRecibo; concepto: string }) {
+  await tx.recibo.update({ where: { id: r.id }, data: { updatedAt: new Date() } });
+  const posterior = await tx.recibo.findFirst({ where: { hermanoId: r.hermanoId, year: r.year, tipo: r.tipo, id: { gt: r.id } }, select: { id: true } });
+  if (posterior) throw new HttpError(MENSAJE_YA_REEMITIDO(r.concepto), 409);
+}
+
+export const MENSAJE_YA_REEMITIDO = (concepto: string) => `«${concepto}» ya se volvió a emitir: lo que queda por cobrar es el recibo nuevo. Recarga la ficha.`;
+
+/**
  * De estos devueltos, cuáles ya tienen reemisión (ver `domain/reemisiones`).
  * Se leen solo los recibos de sus hermanos, años y tipos: nunca la tabla entera.
  */

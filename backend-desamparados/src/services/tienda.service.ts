@@ -169,21 +169,21 @@ async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDe
         : await tx.producto.updateMany({ where: { id: l.productoId, ...hay }, data: { existencias: { decrement: l.cantidad } } });
       if (quitado.count === 0) throw new HttpError(`«${nombreConTalla(l.nombre, l.nombreTalla)}» se agotó mientras se pagaba.`);
     }
-    const pagado = await tx.pedidoTienda.update({
-      where: { id: pedidoId },
-      data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date() },
-      include: { lineas: true },
-    });
-    await tx.transaccion.create({
+    const apunte = await tx.transaccion.create({
       data: {
         tipo: TipoTransaccion.INGRESO, categoriaId, concepto: `Tienda: pedido n.º ${pedidoId}`,
         importe: p.total, fecha: new Date(), metodoPago: metodo as MetodoPago,
       },
     });
-    return pagado;
+    // El pedido guarda su apunte: así la contabilidad sabe que no es manual.
+    return tx.pedidoTienda.update({
+      where: { id: pedidoId },
+      data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date(), transaccionId: apunte.id },
+      include: { lineas: true },
+    });
   });
   await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_PEDIDO_PAGADO, meta, 'pedido', pedidoId, { despues: { total: pedido.total.toString(), metodo } });
-  void correoDePedido(pedido).then(({ asunto, html }) => enviarCorreo(pedido.email, asunto, html)).catch(console.error);
+  void correoDePedido(pedido).then(({ asunto, html, uso }) => enviarCorreo(pedido.email, asunto, html, { uso })).catch(console.error);
 }
 
 registrarOrigenDePago(OrigenPago.TIENDA, aplicarPago, async (id) => (await db.pedidoTienda.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);

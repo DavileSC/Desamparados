@@ -22,6 +22,7 @@ import { generateToken } from '../src/utils/jwt.handle.js';
 import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { guardarImagenesPortadaSchema, MAX_IMAGENES_PORTADA } from '../src/schemas/portada.schema.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 const validar = (imagenes: unknown) => guardarImagenesPortadaSchema({ body: { imagenes } });
 const esError = (resultado: unknown) => resultado instanceof ArkErrors;
@@ -77,7 +78,6 @@ let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
 let motivoSinDb = '';
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 const usuarios: Record<string, number> = {};
 
 async function sondearDb(): Promise<boolean> {

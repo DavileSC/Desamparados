@@ -45,6 +45,8 @@ const ENTRADA = {
   '& > li': { animation: `${entrar} .6s cubic-bezier(.2, .7, .2, 1) both` },
   ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`& > li:nth-of-type(${i + 1})`, { animationDelay: `${i * 70}ms` }])),
   '& > li:nth-of-type(n+13)': { animationDelay: '840ms' },
+  // Quien pide menos movimiento ve las fichas ya puestas, sin la cascada.
+  '@media (prefers-reduced-motion: reduce)': { '& > li': { animation: 'none' } },
 }
 
 /** La rejilla mientras llega el catálogo, con su forma: la destacada y las demás. */

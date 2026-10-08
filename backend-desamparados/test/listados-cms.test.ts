@@ -20,8 +20,8 @@ import { TransaccionService } from '../src/services/transaccion.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { diaMadrid, inicioDiaMadrid } from '../src/domain/contabilidad.js';
 import { CensoService } from '../src/services/censo.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 const valida = (esquema: { onDeepUndeclaredKey: (m: 'delete') => (d: unknown) => unknown }, query: Record<string, string>) =>
   !(esquema.onDeepUndeclaredKey('delete')({ query, body: {}, params: {} }) as { summary?: string }).summary;

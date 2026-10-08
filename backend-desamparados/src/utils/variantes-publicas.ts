@@ -1,0 +1,68 @@
+import fs from 'fs/promises';
+import path from 'path';
+import { publicStorageDir } from '../middleware/upload.middleware.js';
+import { variantesDeFoto } from '../controllers/subida.controller.js';
+import { ANCHOS_VARIANTES, nombreDeVariante } from '../domain/variantes-de-foto.js';
+
+/** Una foto pública subida desde el CMS ya en WebP: 32 hex en la raíz de storage/public. */
+const FOTO_WEBP = /^[a-f0-9]{32}\.webp$/i;
+
+/**
+ * Una WebP sin pérdida lleva un trozo `VP8L` en la cabecera. Sus copias se
+ * hacen también sin pérdida: suele ser un logo o un dibujo de colores planos,
+ * y con pérdida se ensuciarían los bordes.
+ */
+const esSinPerdida = (webp: Buffer) => webp.subarray(0, 64).includes('VP8L');
+
+export interface ResultadoVariantes {
+  /** Fotos a las que les faltaba alguna copia. */
+  completadas: string[];
+  /** Fotos que ya las tenían todas. */
+  yaEstaban: number;
+  /** Fotos que sharp no ha podido leer: se dejan como están. */
+  fallidas: string[];
+}
+
+/**
+ * Genera las copias reducidas (`<hex>-640.webp`, `<hex>-1280.webp`) que les
+ * falten a las fotos de storage/public: las subidas antes de que la subida las
+ * hiciera sola, o pasadas a WebP por `fotos:webp`. Idempotente: lo que ya
+ * existe no se toca. Con `aplicar: false` solo cuenta.
+ */
+export async function completarVariantes(
+  { directorio = publicStorageDir, aplicar = true }: { directorio?: string; aplicar?: boolean } = {},
+): Promise<ResultadoVariantes> {
+  const entradas = await fs.readdir(directorio, { withFileTypes: true });
+  const existentes = new Set(entradas.filter((e) => e.isFile()).map((e) => e.name));
+  const resultado: ResultadoVariantes = { completadas: [], yaEstaban: 0, fallidas: [] };
+
+  for (const entrada of entradas) {
+    if (!entrada.isFile() || !FOTO_WEBP.test(entrada.name)) continue;
+    const faltan = ANCHOS_VARIANTES.filter((ancho) => !existentes.has(nombreDeVariante(entrada.name, ancho)));
+    if (faltan.length === 0) {
+      resultado.yaEstaban++;
+      continue;
+    }
+    if (!aplicar) {
+      resultado.completadas.push(entrada.name);
+      continue;
+    }
+    try {
+      const foto = await fs.readFile(path.join(directorio, entrada.name));
+      const variantes = await variantesDeFoto(foto, { sinPerdida: esSinPerdida(foto) });
+      for (const { ancho, datos } of variantes) {
+        if (!(faltan as readonly number[]).includes(ancho)) continue;
+        // Al lado con otro nombre y renombrada: nginx nunca sirve una a medias.
+        const destino = path.join(directorio, nombreDeVariante(entrada.name, ancho));
+        const temporal = path.join(directorio, `.${path.basename(destino)}.tmp`);
+        await fs.writeFile(temporal, datos);
+        await fs.rename(temporal, destino);
+      }
+      resultado.completadas.push(entrada.name);
+    } catch (error) {
+      console.warn(`  ! ${entrada.name}: no se ha podido leer (${error instanceof Error ? error.message : error})`);
+      resultado.fallidas.push(entrada.name);
+    }
+  }
+  return resultado;
+}

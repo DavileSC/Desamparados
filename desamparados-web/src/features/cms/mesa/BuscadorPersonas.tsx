@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Box, ButtonBase, CircularProgress, InputAdornment, Stack, TextField, Typography } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import {
-  buscarPersonas, esperadosHoy, type Esperado, type PersonaEncontrada, type ZonaDeBusqueda,
+  buscarPersonas, esperadosHoy, llevaElCensoEnMesa, type Esperado, type PersonaEncontrada, type ZonaDeBusqueda,
 } from '../../../lib/api/mesa'
+import { useAuthStore } from '../../altas/auth/store'
 import Pildora from '../listados/Pildora'
 import { fechaCorta } from './formato'
 
@@ -32,10 +33,17 @@ const ESPERA_MS = 250
 export default function BuscadorPersonas({
   etiqueta = 'Buscar en el censo', onElegir, zona = 'todas', salida, conEsperados, autoFocus, id,
 }: Props) {
+  // Quien no lleva el censo solo encuentra por DNI, teléfono o correo con el
+  // dato entero (un trozo servía para sacar los de cualquiera): se le avisa,
+  // o creería que no está.
+  const role = useAuthStore((s) => s.cms?.role ?? 'USER')
+  const datoEntero = !llevaElCensoEnMesa(role)
   const [texto, setTexto] = useState('')
   const [resultados, setResultados] = useState<PersonaEncontrada[] | null>(null)
   const [esperados, setEsperados] = useState<Esperado[]>([])
-  const [buscando, setBuscando] = useState(false)
+  // La última búsqueda contestada (bien o mal): «buscando» es que la de ahora
+  // aún no lo está. Deducido al pintar, sin un efecto que lo encienda.
+  const [contestada, setContestada] = useState<string | null>(null)
   const [error, setError] = useState(false)
   const [marcado, setMarcado] = useState(0)
   const lista = useRef<HTMLDivElement>(null)
@@ -47,19 +55,24 @@ export default function BuscadorPersonas({
     return () => { cancelado = true }
   }, [conEsperados, salida])
 
+  const q = texto.trim()
+  const corta = q.length < 2
+  const pregunta = JSON.stringify([q, salida, zona])
+  const buscando = !corta && contestada !== pregunta
+  // Con menos de dos letras no se busca y lo encontrado antes se olvida.
+  if (corta && resultados !== null) setResultados(null)
+
   useEffect(() => {
-    const q = texto.trim()
-    if (q.length < 2) { setResultados(null); setBuscando(false); return }
+    if (corta) return
     let cancelado = false
-    setBuscando(true)
     const espera = window.setTimeout(() => {
       buscarPersonas(q, salida, zona)
         .then((r) => { if (!cancelado) { setResultados(r); setMarcado(0); setError(false) } })
         .catch(() => { if (!cancelado) setError(true) })
-        .finally(() => { if (!cancelado) setBuscando(false) })
+        .finally(() => { if (!cancelado) setContestada(pregunta) })
     }, ESPERA_MS)
     return () => { cancelado = true; window.clearTimeout(espera) }
-  }, [texto, zona, salida])
+  }, [q, corta, pregunta, zona, salida])
 
   const visibles: { id: number; nombre: string; apellidos: string; fechaNacimiento: string }[] = resultados ?? (conEsperados ? esperados : [])
   const elegir = (p: { id: number; nombre: string; apellidos: string }) => { onElegir(p); setTexto('') }
@@ -109,6 +122,7 @@ export default function BuscadorPersonas({
           },
           htmlInput: { autoComplete: 'off' },
         }}
+        helperText={datoEntero ? 'El DNI, el teléfono o el correo, enteros; el nombre vale a trozos.' : undefined}
       />
 
       {error && <Typography variant="body2" color="error">No se ha podido buscar. Vuelve a intentarlo.</Typography>}

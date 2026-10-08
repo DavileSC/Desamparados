@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeAll, describe, it, expect, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import { stubFetchPublico } from '../../../test/fetchPublico'
 import BloquesDePagina from '../BloquesDePagina'
 import { REGISTRO_BLOQUES } from '../registro'
+import { precargarBloques } from '../../../test/bloques'
 import TIPOS from '../../../../../shared/tipos-de-bloque.json'
 import type { Bloque } from '../../../lib/api/contenido'
 
@@ -14,6 +15,10 @@ const TARJETAS: Bloque = {
   tipo: 'tarjetas', titulo: 'Explora la sección',
   tarjetas: [{ titulo: 'Historia', descripcion: 'Orígenes.', enlace: '/historia' }],
 }
+
+// Estas pruebas miran cómo se pinta cada bloque, no su descarga: los perezosos
+// van ya cargados, como los deja `ConBloquesCargados` en la página.
+beforeAll(async () => { await precargarBloques() })
 
 describe('BloquesDePagina', () => {
   it('el registro cubre todos los tipos del catálogo compartido', () => {

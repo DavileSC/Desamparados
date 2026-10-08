@@ -14,6 +14,7 @@ import Hueso, { Lineas } from '../../components/esqueleto/Hueso'
 import { GOLD, GRANATE, PAPEL, SERIF, TINTA, ceja } from './estilos'
 import { site } from '../../config/site'
 import { useModulos } from '../../hooks/useModulos'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 const CATEGORIAS: Record<Publicacion['categoria'], { nombre: string; corto: string }> = {
   boletin: { nombre: 'Boletín informativo', corto: 'boletín' },
@@ -64,7 +65,7 @@ function Cubierta({ publicacion, pequena = false }: { publicacion: Publicacion; 
     const velo = (opacidad: number) => `rgba(${colores.velo}, ${opacidad})`
     return (
       <Box sx={{ position: 'relative', height: '100%', color: colores.texto }}>
-        <Box component="img" src={publicacion.imagen} alt="" sx={{ position: 'absolute', inset: 0, display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
+        <Box component="img" {...propsDeFoto(publicacion.imagen, '(min-width: 900px) 400px, 100vw')} alt="" sx={{ position: 'absolute', inset: 0, display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
         <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${velo(0.88)} 0%, ${velo(0.4)} 22%, ${velo(0)} 38%, ${velo(0)} 70%, ${velo(0.75)} 100%)` }} />
         <Box sx={{ position: 'relative', px: pequena ? 1.75 : 2, pt: 1.5 }}>
           <Box

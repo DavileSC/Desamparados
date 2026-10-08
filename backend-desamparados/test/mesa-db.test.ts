@@ -24,10 +24,11 @@ import { anioDeLaMesa, ZonasService, type EntregaEnMesa, type InscripcionEnMesa 
 import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { InventarioService } from '../src/services/inventario.service.js';
+import { ReciboService } from '../src/services/recibo.service.js';
 import { CLAVE_CINGULOS, recuentoDeCingulos } from '../src/services/procesion/cingulos.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
@@ -291,6 +292,27 @@ test('perdonar: la pendiente queda exenta con la nota del Hermano Mayor; la devu
   }
 });
 
+// Con la remesa en el banco, el cobro lo hace el banco: cobrarlo además en mano
+// (en la mesa o desde Tesorería) cobraba dos veces la misma cuota.
+test('una cuota remesada no se cobra en la mesa ni en Tesorería en mano; solo por domiciliación', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const h = await e.hermano();
+    const enBanco = await e.cuota(h.id, YEAR, EstadoPago.REMESADO);
+    await assert.rejects(ZonasService.cobrar({ hermanoId: h.id, reciboIds: [enBanco.id], metodoPago: MetodoPago.EFECTIVO }, e.clave(), e.meta), esHttp(409, /en el banco/));
+    await assert.rejects(ReciboService.adminMarcarComoPagado(enBanco.id, MetodoPago.EFECTIVO, e.meta), esHttp(409, /en el banco/));
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: enBanco.id } })).estado, EstadoPago.REMESADO);
+    assert.equal(await db.transaccion.count({ where: { reciboId: enBanco.id } }), 0);
+
+    await ReciboService.adminMarcarComoPagado(enBanco.id, undefined, e.meta);
+    const cobrado = await db.recibo.findUniqueOrThrow({ where: { id: enBanco.id } });
+    assert.deepEqual([cobrado.estado, cobrado.metodoPago], [EstadoPago.PAGADO, MetodoPago.DOMICILIACION]);
+  } finally {
+    await e.recoger();
+  }
+});
+
 test('una cuota devuelta se cobra con su reemisión; lo de otra familia no se cobra junto', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
@@ -451,7 +473,7 @@ test('una cita de antes, sin solicitud, se enlaza al apuntar; al recoger queda a
   }
 });
 
-test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al cambiar de túnica, la vieja vuelve al ropero', async (t) => {
+test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al cambiar de túnica, la vieja sigue a su nombre hasta que la devuelva', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
@@ -471,7 +493,13 @@ test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al
     assert.deepEqual(ficha.familia.map((f) => f.id), [hija.id], 'la familia con cuotas por pagar');
 
     await e.entregar(solicitudId, { origenTunica: 'ROPERO', numTunicaAsignada: nueva.numero });
-    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: vieja.id } })).estado, EstadoPrenda.DISPONIBLE);
+    // NG3 (auditoría 07-10-2026): volvía a DISPONIBLE sin pasar por el lavado
+    // y desaparecía de «Sin devolver» aunque siguiera en su casa. Vuelve con
+    // «Devolver», como todas.
+    const tunicaVieja = await db.prenda.findUniqueOrThrow({ where: { id: vieja.id } });
+    assert.equal(tunicaVieja.estado, EstadoPrenda.PRESTADA);
+    assert.equal(tunicaVieja.hermanoId, h.id);
+    assert.ok((await ZonasService.sinDevolver()).some((f) => f.hermano.id === h.id), 'sale en «Sin devolver»');
     assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: nueva.id } })).hermanoId, h.id);
     const despues = await MesaService.ficha(h.id, await salida(PASION));
     assert.equal(despues.solicitud, null);
@@ -481,7 +509,7 @@ test('la ficha dice lo que debe y lo que pidió, y propone la ropa que tiene; al
   }
 });
 
-test('corregir una solicitud cambia lo pedido; corregir la papeleta cambia la ropa; anular la devuelve toda', async (t) => {
+test('corregir una solicitud cambia lo pedido; corregir la papeleta cambia la ropa; anular la deja prestada hasta que se devuelva', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
   try {
@@ -504,8 +532,14 @@ test('corregir una solicitud cambia lo pedido; corregir la papeleta cambia la ro
     assert.equal(propia.numTunicaAsignada, null);
     assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: t2.id } })).estado, EstadoPrenda.DISPONIBLE);
 
+    // NG3 (auditoría 07-10-2026): anular una papeleta recogida no trae la
+    // ropa de vuelta; la daba por devuelta y la túnica se saltaba el lavado.
     await PapeletasService.anularPapeleta(papeletaId, e.meta);
-    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: cap.id } })).estado, EstadoPrenda.DISPONIBLE);
+    const capirote = await db.prenda.findUniqueOrThrow({ where: { id: cap.id } });
+    assert.equal(capirote.estado, EstadoPrenda.PRESTADA);
+    assert.equal(capirote.hermanoId, h.id);
+    await ZonasService.devolver({ hermanoId: h.id, prendas: [{ id: cap.id }], cingulos: [] }, e.clave(), e.meta);
+    assert.equal((await db.prenda.findUniqueOrThrow({ where: { id: cap.id } })).estado, EstadoPrenda.DISPONIBLE, 'vuelve con «Devolver»');
   } finally {
     await e.recoger();
   }
@@ -662,6 +696,42 @@ test('el listado dice en qué punto está cada uno: por pagar, listo o recogido'
   }
 });
 
+// El listado enseñaba el teléfono y el correo de todos los apuntados y los
+// buscaba por un trozo a cualquiera de la mesa: igual que en el buscador y la
+// ficha, sin el censo el contacto va enmascarado y solo se busca con el dato entero.
+test('el listado, sin el censo: contacto enmascarado y teléfono o correo solo enteros', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const h = await e.hermano({ nombre: 'Contacto' });
+    const correo = `listado-${Date.now()}@ejemplo.test`;
+    await db.hermano.update({ where: { id: h.id }, data: { telefono: '623577927', email: correo } });
+    await e.inscribir(h.id);
+    const pasion = await salida(PASION);
+    const suyo = (r: Awaited<ReturnType<typeof MesaService.listado>>) => r.apuntados.find((a) => a.hermano.id === h.id);
+
+    const conCenso = suyo(await MesaService.listado(YEAR, pasion, {}, { censo: true }));
+    assert.equal(conCenso?.hermano.telefono, '623577927');
+    assert.equal(conCenso?.hermano.email, correo);
+
+    const sinCenso = suyo(await MesaService.listado(YEAR, pasion, {}));
+    assert.equal(sinCenso?.hermano.telefono, '••••••927');
+    assert.notEqual(sinCenso?.hermano.email, correo);
+    assert.ok(!String(sinCenso?.hermano.email).startsWith('listado-'), 'el correo va tapado');
+
+    // Un trozo del teléfono o del correo encuentra con el censo y no sin él.
+    assert.ok(suyo(await MesaService.listado(YEAR, pasion, { q: '577927' }, { censo: true })));
+    assert.equal(suyo(await MesaService.listado(YEAR, pasion, { q: '577927' })), undefined);
+    assert.equal(suyo(await MesaService.listado(YEAR, pasion, { q: correo.slice(0, 12) })), undefined);
+    // Entero, sí.
+    assert.ok(suyo(await MesaService.listado(YEAR, pasion, { q: '623577927' })));
+    assert.ok(suyo(await MesaService.listado(YEAR, pasion, { q: correo })));
+    assert.ok(suyo(await MesaService.listado(YEAR, pasion, { q: 'Contacto' })), 'por el nombre, como siempre');
+  } finally {
+    await e.recoger();
+  }
+});
+
 test('al cerrar el plazo, la solicitud de quien pidió día y no vino se cancela; la ya pagada, no', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const e = await escenario();
@@ -731,12 +801,14 @@ test('«editar antes de guardar» corrige la ficha y deja rastro solo de lo que 
   const e = await escenario();
   try {
     const h = await e.hermano();
-    const r = await MesaService.corregirFicha(h.id, { primerApellido: 'Galea', segundoApellido: 'Mayorga', telefono: '623577927', alturaHombro: '1,45' }, e.meta);
+    // Como Secretaría: el teléfono solo lo corrige quien lleva el censo.
+    const censo = { censo: true };
+    const r = await MesaService.corregirFicha(h.id, { primerApellido: 'Galea', segundoApellido: 'Mayorga', telefono: '623577927', alturaHombro: '1,45' }, e.meta, censo);
     assert.equal(r.cambiados, 5, 'apellidos juntos y partidos, teléfono y altura');
     const ficha = await db.hermano.findUniqueOrThrow({ where: { id: h.id } });
     assert.equal(ficha.apellidos, 'Galea Mayorga');
     assert.equal(ficha.alturaHombro, 145);
-    assert.equal((await MesaService.corregirFicha(h.id, { telefono: '623577927' }, e.meta)).cambiados, 0);
+    assert.equal((await MesaService.corregirFicha(h.id, { telefono: '623577927' }, e.meta, censo)).cambiados, 0);
   } finally {
     await e.recoger();
   }
@@ -779,6 +851,84 @@ test('por HTTP: la mesa es de la Junta que reparte; perdonar, de Tesorería y el
     await db.auditLog.deleteMany({ where: { userId: albaceria.id } });
   } finally {
     await borrarUsuarioPrueba(albaceria.id);
+    await e.recoger();
+  }
+});
+
+// AC3 y AC7 (auditoría del 07-10-2026): Tesorería y Albacería están en la
+// mesa para cobrar y dar la ropa. Buscaban por un trozo de DNI o teléfono,
+// leían el DNI y el contacto de cualquier ficha (bajas y pendientes
+// incluidas), los corregían y daban de alta hermanos con número.
+test('por HTTP: Tesorería y Albacería en la mesa solo ven y corrigen fichas en activo, sin DNI ni contacto, y no dan de alta', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  const albaceria = await crearUsuarioPrueba(Role.ALBACERIA);
+  const tesoreria = await crearUsuarioPrueba(Role.TESORERIA);
+  const secretaria = await crearUsuarioPrueba(Role.SECRETARIA);
+  try {
+    const sufijo = `${process.pid}${Date.now() % 1_000_000}`.slice(-7);
+    const dni = `${sufijo}Q`.padStart(9, '0');
+    const activo = await e.hermano({ nombre: 'Visible' });
+    await db.hermano.update({ where: { id: activo.id }, data: { dni, telefono: '623577927', email: `visible-${sufijo}@ejemplo.test` } });
+    const baja = await e.hermano({ nombre: 'Oculta' });
+    await db.hermano.update({ where: { id: baja.id }, data: { activo: false, fechaBaja: new Date() } });
+    const conRopa = await e.hermano({ nombre: 'Debe' });
+    await db.hermano.update({ where: { id: conRopa.id }, data: { activo: false, fechaBaja: new Date() } });
+    await e.prenda(TipoPrenda.TUNICA, numeroDePrueba(), { estado: EstadoPrenda.PRESTADA, hermanoId: conRopa.id });
+
+    const como = (userId: number, rol: Role, ruta: string, metodo = 'GET', cuerpo?: unknown) =>
+      fetch(`${baseUrl}/api/procesion${ruta}`, {
+        method: metodo,
+        headers: { Cookie: `${COOKIE_CMS}=${generateToken(userId, rol)}`, ...(cuerpo !== undefined && { 'Content-Type': 'application/json' }) },
+        body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+      });
+    const buscar = async (userId: number, rol: Role, q: string) =>
+      (await (await como(userId, rol, `/admin/mesa/personas?q=${encodeURIComponent(q)}&salida=${PASION}`)).json() as { id: number }[]).map((p) => p.id);
+
+    // Por nombre: los de activo, y la baja que aún debe ropa (hay que recibírsela).
+    assert.ok((await buscar(albaceria.id, Role.ALBACERIA, `Visible ${activo.apellidos}`)).includes(activo.id));
+    assert.ok((await buscar(albaceria.id, Role.ALBACERIA, `Debe ${conRopa.apellidos}`)).includes(conRopa.id), 'la baja con ropa sin devolver sale, para recibirla');
+    assert.ok(!(await buscar(albaceria.id, Role.ALBACERIA, `Oculta ${baja.apellidos}`)).includes(baja.id), 'la baja sin nada pendiente, no');
+    // Por DNI o teléfono, solo el dato entero.
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, dni.slice(0, 5)), []);
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, '5779'), []);
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, dni.toLowerCase()), [activo.id]);
+    assert.deepEqual(await buscar(tesoreria.id, Role.TESORERIA, '623577927'), [activo.id]);
+
+    // La ficha, sin DNI y con el contacto enmascarado.
+    const ficha = await (await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${activo.id}?salida=${PASION}`)).json() as { dni: string | null; telefono: string; email: string; contactoCompleto: boolean };
+    assert.equal(ficha.dni, null);
+    assert.equal(ficha.telefono, '••••••927');
+    assert.match(ficha.email, /^vi•••@ejemplo\.test$/);
+    assert.equal(ficha.contactoCompleto, false);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${baja.id}?salida=${PASION}`)).status, 404);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${conRopa.id}?salida=${PASION}`)).status, 200);
+
+    // Corregir: lo de la procesión sí; el contacto y las bajas, no.
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${activo.id}`, 'PATCH', { alturaHombro: '1,50' })).status, 200);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${activo.id}`, 'PATCH', { telefono: '600000000' })).status, 403);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${activo.id}`, 'PATCH', { email: 'otro@ejemplo.test' })).status, 403);
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, `/admin/mesa/personas/${baja.id}`, 'PATCH', { alturaHombro: '1,50' })).status, 404);
+    assert.equal((await db.hermano.findUniqueOrThrow({ where: { id: activo.id } })).telefono, '623577927');
+
+    // Dar de alta es del censo (AC7).
+    const alta = { nombre: 'Nadie', primerApellido: 'Nuevo', fechaNacimiento: '2020-01-01', tutorHermanoId: activo.id, parentesco: 'HIJO' };
+    assert.equal((await como(albaceria.id, Role.ALBACERIA, '/admin/mesa/personas', 'POST', alta)).status, 403);
+    assert.equal((await como(tesoreria.id, Role.TESORERIA, '/admin/mesa/personas', 'POST', alta)).status, 403);
+
+    // Secretaría sigue viéndolo todo: la ficha entera, las bajas (para
+    // reactivarlas) y la búsqueda por un trozo del DNI.
+    const completa = await (await como(secretaria.id, Role.SECRETARIA, `/admin/mesa/personas/${activo.id}?salida=${PASION}`)).json() as { dni: string; telefono: string; contactoCompleto: boolean };
+    assert.equal(completa.dni, dni);
+    assert.equal(completa.telefono, '623577927');
+    assert.equal(completa.contactoCompleto, true);
+    assert.ok((await buscar(secretaria.id, Role.SECRETARIA, dni.slice(0, 7))).includes(activo.id));
+    assert.ok((await buscar(secretaria.id, Role.SECRETARIA, `Oculta ${baja.apellidos}`)).includes(baja.id));
+  } finally {
+    for (const u of [albaceria, tesoreria, secretaria]) {
+      await db.auditLog.deleteMany({ where: { userId: u.id } });
+      await borrarUsuarioPrueba(u.id);
+    }
     await e.recoger();
   }
 });

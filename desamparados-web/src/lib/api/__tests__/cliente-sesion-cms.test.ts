@@ -20,7 +20,7 @@ function servidor(rutas: Record<string, () => Response>) {
 }
 
 beforeEach(() => {
-  useAuthStore.setState({ status: 'listo', cms: cmsUser, hermano: null })
+  useAuthStore.setState({ status: 'listo', cms: cmsUser, hermano: null, cmsCaducada: false })
 })
 
 afterEach(() => { vi.unstubAllGlobals() })
@@ -31,6 +31,7 @@ afterEach(() => { vi.unstubAllGlobals() })
 // servidor qué queda vivo y se reparte lo que responda.
 describe('llamarApi ante un 401', () => {
   it('consulta /auth/me y reparte las sesiones que devuelva', async () => {
+    useAuthStore.setState({ cms: null })
     const fetchMock = servidor({
       '/contabilidad': () => respuesta({ error: 'No autenticado' }, 401),
       '/auth/me': () => respuesta({ cms: null, hermano: hermanoUser }),
@@ -39,11 +40,32 @@ describe('llamarApi ante un 401', () => {
 
     await expect(llamarApi('/contabilidad')).rejects.toBeInstanceOf(ErrorDeApi)
 
-    // La sesión del CMS ha caducado, pero la del área de hermanos seguía viva:
-    // se reparte tal cual, no se vacían las dos.
     await waitFor(() => {
-      expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: null, hermano: hermanoUser })
+      expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: null, hermano: hermanoUser, cmsCaducada: false })
     })
+  })
+
+  // Vaciar `cms` hacía que ExigeRol cambiara la pantalla por el acceso y el
+  // formulario que se estaba escribiendo se desmontaba con su texto. Se
+  // rompe si la caducidad vuelve a vaciar la sesión en vez de marcarla.
+  it('si caduca la del CMS con alguien dentro, la marca como caducada sin vaciarla; la de hermanos se reparte', async () => {
+    const fetchMock = servidor({
+      '/contabilidad': () => respuesta({ error: 'No autenticado' }, 401),
+      '/auth/me': () => respuesta({ cms: null, hermano: hermanoUser }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(llamarApi('/contabilidad')).rejects.toBeInstanceOf(ErrorDeApi)
+
+    await waitFor(() => {
+      expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: cmsUser, hermano: hermanoUser, cmsCaducada: true })
+    })
+  })
+
+  it('volver a entrar quita la marca de caducada', () => {
+    useAuthStore.setState({ cmsCaducada: true })
+    useAuthStore.getState().entrarSesion('cms', cmsUser)
+    expect(useAuthStore.getState().cmsCaducada).toBe(false)
   })
 
   it('varias peticiones fallando a la vez preguntan una sola vez', async () => {
@@ -64,7 +86,10 @@ describe('llamarApi ante un 401', () => {
     expect(consultasMe).toHaveLength(1)
   })
 
-  it('si /auth/me también falla, se vacían las dos sesiones en vez de dejarlas a medias', async () => {
+  // Un fallo de red o un 5xx de /auth/me no dice nada de las sesiones: antes
+  // vaciaba las dos y echaba también a la que seguía viva.
+  it('si /auth/me falla por la red o el servidor, no se toca ninguna sesión', async () => {
+    useAuthStore.setState({ hermano: hermanoUser })
     const fetchMock = servidor({
       '/contabilidad': () => respuesta({ error: 'No autenticado' }, 401),
       '/auth/me': () => respuesta({ message: 'Caído' }, 503),
@@ -74,8 +99,10 @@ describe('llamarApi ante un 401', () => {
     await expect(llamarApi('/contabilidad')).rejects.toBeInstanceOf(ErrorDeApi)
 
     await waitFor(() => {
-      expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: null, hermano: null })
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/auth/me'))).toBe(true)
     })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: cmsUser, hermano: hermanoUser, cmsCaducada: false })
   })
 
   it('con auth: false (login, el /me del arranque) un 401 no consulta nada ni toca la sesión', async () => {

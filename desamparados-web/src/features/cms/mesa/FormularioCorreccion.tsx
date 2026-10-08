@@ -43,7 +43,7 @@ export default function FormularioCorreccion(props: Props) {
  */
 function CorreccionSolicitud({ ficha, salida, role, puestosUsados, onHecho, onRecargar }: Props) {
   const solicitud = ficha.solicitud!
-  const { datos, setDatos, correccion } = useDatosPersona(ficha)
+  const { datos, setDatos, correccion, contactoCompleto } = useDatosPersona(ficha)
   const [puesto, setPuesto] = useState(solicitud.puesto)
   const [observaciones, setObservaciones] = useState(solicitud.observaciones ?? '')
   const [donativo, setDonativo] = useState(solicitud.donativo === null ? '' : String(solicitud.donativo).replace('.', ','))
@@ -94,7 +94,7 @@ function CorreccionSolicitud({ ficha, salida, role, puestosUsados, onHecho, onRe
         {ficha.requisitos.totalPendiente > 0 ? ` · debe ${euros(ficha.requisitos.totalPendiente)}` : ' · al día'}
       </Alert>
 
-      <DatosPersona datos={datos} onCambiar={setDatos} plegados />
+      <DatosPersona datos={datos} onCambiar={setDatos} plegados contactoCompleto={contactoCompleto} />
 
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.5 }}>
         <Typography component="legend" sx={leyenda}>Lo que pide</Typography>
@@ -135,7 +135,7 @@ function CorreccionSolicitud({ ficha, salida, role, puestosUsados, onHecho, onRe
  */
 function CorreccionPapeleta({ ficha, salida, role, puestosUsados, onHecho, onRecargar }: Props) {
   const papeleta = ficha.papeleta!
-  const { datos, setDatos, correccion } = useDatosPersona(ficha)
+  const { datos, setDatos, correccion, contactoCompleto } = useDatosPersona(ficha)
   const conRopa = salida.conRopa
   const [puesto, setPuesto] = useState(papeleta.puesto)
   const [origen, setOrigen] = useState<OrigenTunica>(papeleta.origenTunica ?? 'ROPERO')
@@ -238,7 +238,7 @@ function CorreccionPapeleta({ ficha, salida, role, puestosUsados, onHecho, onRec
         </Alert>
       )}
 
-      <DatosPersona datos={datos} onCambiar={setDatos} plegados />
+      <DatosPersona datos={datos} onCambiar={setDatos} plegados contactoCompleto={contactoCompleto} />
 
       <Box component="fieldset" sx={{ border: 0, p: 0, m: 0, display: 'grid', gap: 1.25 }}>
         <Typography component="legend" sx={leyenda}>{conRopa ? 'Puesto y ropa' : 'Puesto'}</Typography>
@@ -294,7 +294,7 @@ function CorreccionPapeleta({ ficha, salida, role, puestosUsados, onHecho, onRec
       <DialogoConfirmacion
         abierto={anulando}
         titulo="¿Anular la papeleta?"
-        mensaje={`Se anula la papeleta de ${ficha.nombre} ${ficha.apellidos}. Si se cobró, el recibo queda devuelto con su apunte en contabilidad, y la ropa del ropero vuelve a estar libre.`}
+        mensaje={`Se anula la papeleta de ${ficha.nombre} ${ficha.apellidos}. Si se cobró, el recibo queda devuelto con su apunte en contabilidad. La ropa sigue a su nombre hasta que la devuelva.`}
         textoConfirmar="Anular"
         peligro
         onConfirmar={() => void anular()}

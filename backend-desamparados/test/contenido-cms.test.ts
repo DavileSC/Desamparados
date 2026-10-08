@@ -210,7 +210,7 @@ describe('noticias de la portada', () => {
 //  Con base de datos
 // =================================================================
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
+import { SIN_DB } from './fixtures/sin-db.js';
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;

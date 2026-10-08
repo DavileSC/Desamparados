@@ -30,9 +30,28 @@ async function papeletasDelAnio(salida: SalidaConActo, year: number) {
     where: { year, salidaId: salida.id },
     select: {
       id: true, puesto: true, tramo: true, numero: true,
-      hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true, fechaAlta: true } },
+      hermano: { select: { id: true, nombre: true, apellidos: true, numeroHermano: true, fechaAlta: true, activo: true } },
     },
   });
+}
+
+type PapeletaDelAnio = Awaited<ReturnType<typeof papeletasDelAnio>>[number];
+
+/**
+ * El reparto por antigüedad, solo con quien está en activo. Dar de baja no
+ * anula una papeleta pagada (lo decide la Junta), pero no va a salir: no se
+ * le guarda sitio, y la puerta no le deja entrar.
+ */
+function repartir(config: ConfiguracionCortejo, papeletas: PapeletaDelAnio[]) {
+  const reparto = repartirCortejo(config, papeletas.filter((p) => p.hermano.activo).map((p) => ({
+    id: p.id, puesto: p.puesto, fechaAlta: diaDe(p.hermano.fechaAlta), numeroHermano: p.hermano.numeroHermano, hermanoId: p.hermano.id,
+  })));
+  // Las de baja de un puesto que se reparte pierden el lugar que tuvieran:
+  // si no, dos papeletas acabarían con el mismo número en el mismo tramo.
+  const sinLugar = papeletas
+    .filter((p) => !p.hermano.activo && seReparte(config, p.puesto))
+    .map((p) => ({ papeletaId: p.id, tramo: null, numero: null }));
+  return { ...reparto, asignaciones: [...reparto.asignaciones, ...sinLugar], deBaja: papeletas.filter((p) => !p.hermano.activo).length };
 }
 
 export class CortejoService {
@@ -44,9 +63,7 @@ export class CortejoService {
     const year = anio ?? anioDeLaMesa(salida);
     const config = leerConfiguracion(salida);
     const papeletas = await papeletasDelAnio(salida, year);
-    const reparto = repartirCortejo(config, papeletas.map((p) => ({
-      id: p.id, puesto: p.puesto, fechaAlta: diaDe(p.hermano.fechaAlta), numeroHermano: p.hermano.numeroHermano, hermanoId: p.hermano.id,
-    })));
+    const reparto = repartir(config, papeletas);
     const actualPorId = new Map(papeletas.map((p) => [p.id, p]));
     const cambios = reparto.asignaciones.filter((a) => {
       const p = actualPorId.get(a.papeletaId)!;
@@ -67,10 +84,16 @@ export class CortejoService {
           .map((p) => ({
             papeletaId: p.id, numero: p.numero, puesto: p.puesto, seReparte: seReparte(config, p.puesto),
             nombre: p.hermano.nombre, apellidos: p.hermano.apellidos, numeroHermano: p.hermano.numeroHermano,
+            deBaja: !p.hermano.activo,
           })),
       }));
 
-    return { salida: salida.slug, year, config, papeletas: papeletas.length, reparto: { tramos: reparto.tramos, fuera: reparto.fuera, cambios }, actual };
+    return {
+      salida: salida.slug, year, config, papeletas: papeletas.length,
+      /** Papeletas cuyo hermano está de baja: fuera del reparto. */
+      deBaja: reparto.deBaja,
+      reparto: { tramos: reparto.tramos, fuera: reparto.fuera, cambios }, actual,
+    };
   }
 
   static async guardarConfiguracion(salida: SalidaConActo, config: ConfiguracionCortejo, meta?: MetaDeAuditoria) {
@@ -93,9 +116,7 @@ export class CortejoService {
   static async aplicar(salida: SalidaConActo, year: number, meta?: MetaDeAuditoria) {
     const config = leerConfiguracion(salida);
     const papeletas = await papeletasDelAnio(salida, year);
-    const { asignaciones } = repartirCortejo(config, papeletas.map((p) => ({
-      id: p.id, puesto: p.puesto, fechaAlta: diaDe(p.hermano.fechaAlta), numeroHermano: p.hermano.numeroHermano, hermanoId: p.hermano.id,
-    })));
+    const { asignaciones } = repartir(config, papeletas);
     if (asignaciones.length === 0) throw new HttpError('No hay papeletas de los puestos que se reparten.', 409);
     const porId = new Map(papeletas.map((p) => [p.id, p]));
     const cambian = asignaciones.filter((a) => {
@@ -106,7 +127,7 @@ export class CortejoService {
       cambian.map((a) => db.papeletaSitio.update({ where: { id: a.papeletaId }, data: { tramo: a.tramo, numero: a.numero } })),
     );
     await AuditoriaService.log(ACCIONES_AUDITORIA.CORTEJO_REPARTIR, meta ?? {}, 'cortejo', `${salida.slug}:${year}`, {
-      despues: { salida: salida.slug, year, repartidas: asignaciones.length, cambiadas: cambian.length, tramos: config.tramos.length },
+      despues: { salida: salida.slug, year, repartidas: asignaciones.filter((a) => a.tramo !== null).length, cambiadas: cambian.length, tramos: config.tramos.length },
     });
     return {
       message: cambian.length === 0

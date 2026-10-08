@@ -123,6 +123,10 @@ export const ACCIONES_AUDITORIA = {
   PLAZO_PAPELETAS_ABRIR: 'PLAZO_PAPELETAS_ABRIR',
   PLAZO_PAPELETAS_CERRAR: 'PLAZO_PAPELETAS_CERRAR',
   // Secretaría
+  // Un alta por la web con un correo o un DNI ya registrados: la web responde
+  // como si se hubiera creado (no puede decir quién está en el censo), y esto
+  // es lo que le queda a Secretaría para saberlo.
+  ALTA_NO_TRAMITADA: 'ALTA_NO_TRAMITADA',
   SOLICITUD_APROBAR: 'SOLICITUD_APROBAR',
   SOLICITUD_RECHAZAR: 'SOLICITUD_RECHAZAR',
   HERMANO_BAJA: 'HERMANO_BAJA',
@@ -137,6 +141,11 @@ export const ACCIONES_AUDITORIA = {
   FAMILIAR_CREAR: 'FAMILIAR_CREAR',
   FAMILIAR_ACTUALIZAR: 'FAMILIAR_ACTUALIZAR',
   FAMILIAR_SOLICITUD_RETIRAR: 'FAMILIAR_SOLICITUD_RETIRAR',
+  // Un DNI escrito en «Mi familia» o «Mi perfil» que ya es de otra ficha: al
+  // hermano no se le dice (revelaría quién está en el censo); Secretaría lo ve aquí.
+  FAMILIAR_DNI_OCUPADO: 'FAMILIAR_DNI_OCUPADO',
+  // La propia cuenta: cambiar la contraseña con la sesión abierta
+  CONTRASENA_CAMBIAR: 'CONTRASENA_CAMBIAR',
   // RGPD
   CUENTA_DATOS_EXPORT: 'CUENTA_DATOS_EXPORT',
   CUENTA_AUTODELETE: 'CUENTA_AUTODELETE',

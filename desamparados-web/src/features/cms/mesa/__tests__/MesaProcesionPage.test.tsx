@@ -43,7 +43,7 @@ const DEBE: Requisitos = {
 
 const FICHA: FichaDeMesa = {
   id: 20, nombre: 'Abel', primerApellido: 'Reyes', segundoApellido: 'Díaz', apellidos: 'Reyes Díaz',
-  fechaNacimiento: '2013-08-01T12:00:00.000Z', sexo: 'HOMBRE', telefono: '622661532', email: 'virginia@ejemplo.es', dni: null,
+  fechaNacimiento: '2013-08-01T12:00:00.000Z', sexo: 'HOMBRE', telefono: '622661532', email: 'virginia@ejemplo.es', dni: null, contactoCompleto: true,
   numeroHermano: 57, esTitular: false, situacion: 'activo', tieneTunicaPropia: false, alturaHombro: null, puesto: null,
   salida: 'sabado-de-pasion', year: 2027, prendas: [], cingulosSinDevolver: [], cingulos: { total: 10, prestados: 3, enElRopero: 7, debidos: 0 },
   solicitud: null, papeleta: null, requisitos: DEBE, familia: [],
@@ -163,6 +163,7 @@ describe('MesaProcesionPage · Inscripción', () => {
   })
 
   it('lo corregido en los datos va a la ficha antes de apuntar', async () => {
+    como('SECRETARIA')
     const user = userEvent.setup()
     const llamadas = servidor({ respuestas: { '/mesa/inscribir': { solicitudId: 99, puesto: 'Nazareno', requisitos: AL_DIA } } })
     renderWithProviders(<MesaProcesionPage />)
@@ -177,6 +178,45 @@ describe('MesaProcesionPage · Inscripción', () => {
     expect(patch?.url).toContain('/mesa/personas/20')
     expect(patch?.cuerpo).toEqual({ telefono: '600111222' })
     expect(await screen.findByText(/Que pase a Túnicas/)).toBeInTheDocument()
+  })
+})
+
+describe('MesaProcesionPage · quien no lleva el censo', () => {
+  const ENMASCARADA = { ...FICHA, telefono: '••••••532', email: 'vi•••@ejemplo.es', contactoCompleto: false }
+
+  it('ve el teléfono y el correo enmascarados, sin poder tocarlos, y no los manda al corregir', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor({ ficha: ENMASCARADA, respuestas: { '/mesa/inscribir': { solicitudId: 99, puesto: 'Nazareno', requisitos: AL_DIA } } })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+
+    expect(screen.getByRole('textbox', { name: 'Teléfono' })).toHaveValue('••••••532')
+    expect(screen.getByRole('textbox', { name: 'Teléfono' })).toHaveAttribute('readonly')
+    expect(screen.getByRole('textbox', { name: 'Correo' })).toHaveAttribute('readonly')
+    expect(screen.getByText('El teléfono y el correo los corrige Secretaría.')).toBeInTheDocument()
+    const nombre = screen.getByRole('textbox', { name: 'Nombre' })
+    await user.clear(nombre)
+    await user.type(nombre, 'Abelardo')
+    await user.click(screen.getByRole('button', { name: 'Apuntar' }))
+    await waitFor(() => expect(post(llamadas, '/mesa/inscribir')).toHaveLength(1))
+    expect(llamadas.find((l) => l.metodo === 'PATCH')?.cuerpo).toEqual({ nombre: 'Abelardo' })
+  })
+
+  it('no da de alta: le dice que avise a Secretaría, y el buscador pide el dato entero', async () => {
+    servidor()
+    renderWithProviders(<MesaProcesionPage />)
+    expect(await screen.findByText('Si no está en el censo, avisa a Secretaría.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'No está en el censo: darla de alta' })).not.toBeInTheDocument()
+    expect(screen.getByText(/El DNI, el teléfono o el correo, enteros/)).toBeInTheDocument()
+  })
+
+  it('Secretaría sí da de alta y busca a trozos', async () => {
+    como('SECRETARIA')
+    servidor()
+    renderWithProviders(<MesaProcesionPage />)
+    expect(await screen.findByRole('button', { name: 'No está en el censo: darla de alta' })).toBeInTheDocument()
+    expect(screen.queryByText('Si no está en el censo, avisa a Secretaría.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/El DNI, el teléfono o el correo, enteros/)).not.toBeInTheDocument()
   })
 })
 
@@ -453,6 +493,23 @@ describe('MesaProcesionPage · Listado y teclado', () => {
     await user.click(await screen.findByRole('button', { name: 'Cancelar solicitud' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar solicitud' }))
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/admin/solicitudes/99'))).toBe(true))
+  })
+
+  it('anular una papeleta no promete que la ropa vuelva al ropero: sigue a su nombre', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem('mesa.zona', 'listado')
+    const papeleta = {
+      id: 5, year: 2027, puesto: 'Nazareno', puestoPedido: 'Nazareno', tramo: null, observaciones: null,
+      numTunicaAsignada: '140-107', numCapiroteAsignado: null, numFaraonaAsignada: null, origenTunica: 'ROPERO' as const, cingulo: 'PRESTADO' as const,
+      recibo: { id: 1, concepto: 'Papeleta de sitio 2027', importe: 0, estado: 'EXENTO' as const, metodoPago: null, tipo: 'PAPELETA_SITIO' },
+    }
+    servidor({ ficha: { ...FICHA, papeleta, requisitos: AL_DIA } })
+    renderWithProviders(<MesaProcesionPage />)
+    await buscarAbel(user)
+    await user.click(await screen.findByRole('button', { name: 'Anular papeleta' }))
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText(/La ropa sigue a su nombre hasta que la devuelva\./)).toBeInTheDocument()
+    expect(within(dialogo).queryByText(/vuelve a estar libre/)).not.toBeInTheDocument()
   })
 
   it('«Le falta el cíngulo» filtra el listado, y desde la ficha se le da cuando lo haya', async () => {

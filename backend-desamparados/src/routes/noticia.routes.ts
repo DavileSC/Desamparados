@@ -5,6 +5,7 @@ import { authenticateToken } from '../middleware/session.js';
 import { checkRole } from '../middleware/checkRole.js'; // Usamos el global
 import { Role } from '@prisma/client';
 import { validate } from '../config/validate.js';
+import { cachePublica } from '../middleware/cache-publica.js';
 import { idParam } from '../config/common.js';
 import { crearNoticiaSchema, actualizarNoticiaSchema, slugParamSchema, archivoCmsQuerySchema } from '../schemas/noticia.schema.js';
 
@@ -17,9 +18,9 @@ const validateId = validate(type({ params: { id: idParam } }));
 const rolesCMS = [Role.ADMIN, Role.REDES, Role.HERMANO_MAYOR];
 
 // --- RUTAS PÚBLICAS ---
-noticiaRoutes.get('/latest', NoticiaController.getLatest);   
+noticiaRoutes.get('/latest', cachePublica, NoticiaController.getLatest);
 // Nota: Query params se validan en el controller o con un schema extra
-noticiaRoutes.get('/archive', NoticiaController.getArchive); 
+noticiaRoutes.get('/archive', cachePublica, NoticiaController.getArchive);
 
 // Esta ruta debe declararse antes de /:slug para que "admin" no se interprete
 // como un slug, lo que la deja fuera del bloque .use() de más abajo: por eso
@@ -45,7 +46,7 @@ noticiaRoutes.get(
 );
 
 // Blindamos que el slug no tenga inyecciones
-noticiaRoutes.get('/:slug', validate(slugParamSchema), NoticiaController.getOne);       
+noticiaRoutes.get('/:slug', cachePublica, validate(slugParamSchema), NoticiaController.getOne);
 
 // --- RUTAS PRIVADAS (Gestión CMS) ---
 // Aplicamos seguridad en bloque para no repetir

@@ -13,23 +13,23 @@ import { useAuthStore } from '../../../altas/auth/store'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
-const ANA = { id: 7, nombre: 'Ana', apellidos: 'Ruiz Gil', numeroHermano: 120, puesto: 'Nazareno', tramo: 'Tramo 2', numero: 4, year: 2027, salida: 'sabado-de-pasion', entradaEl: null, entradaPor: null }
+const ANA = { id: 7, nombre: 'Ana', apellidos: 'Ruiz Gil', numeroHermano: 120, puesto: 'Nazareno', tramo: 'Tramo 2', numero: 4, year: 2027, salida: 'sabado-de-pasion', entradaEl: null, entradaPor: null, deBaja: false }
 const LUIS = { ...ANA, id: 8, nombre: 'Luis', apellidos: 'Mora Paz', numeroHermano: 33, tramo: 'Tramo 1', numero: 1 }
 const ESTADO = {
-  salida: 'sabado-de-pasion', year: 2027, total: 2, dentro: 0,
+  salida: 'sabado-de-pasion', year: 2027, total: 2, dentro: 0, deBaja: 0,
   tramos: [{ tramo: 'Tramo 1', total: 1, dentro: 0 }, { tramo: 'Tramo 2', total: 1, dentro: 0 }],
   faltan: [LUIS, ANA], ultimas: [],
 }
 
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); useAuthStore.setState({ cms: null }) })
 
-function montar(escaneo: unknown, salidas: Salida[] | 'error' = salidasDePrueba) {
+function montar(escaneo: unknown, salidas: Salida[] | 'error' = salidasDePrueba, estado: unknown = ESTADO) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
     if (esListaDeSalidas(ruta)) return Promise.resolve(salidas === 'error' ? json({ error: 'Fallo' }, 500) : json(salidas))
     if (ruta.endsWith('/puerta/escanear')) return Promise.resolve(json(escaneo))
     if (init.method === 'POST' && ruta.includes('/puerta/papeletas/')) return Promise.resolve(json({ veredicto: 'ENTRA', papeleta: { ...ANA, entradaEl: '2027-04-10T16:00:00.000Z' } }))
-    return Promise.resolve(json(ESTADO))
+    return Promise.resolve(json(estado))
   })
   vi.stubGlobal('fetch', fetch)
   const cliente = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -157,5 +157,31 @@ describe('PuertaTemploPage', () => {
     await user.click(screen.getByRole('button', { name: 'Ha entrado' }))
     expect(await screen.findByText('Adelante')).toBeInTheDocument()
     expect(fetch.mock.calls.some(([u, i]) => String(u).endsWith('/puerta/papeletas/7') && (i as RequestInit).method === 'POST')).toBe(true)
+  })
+
+  it('la papeleta de un hermano de baja no pasa, y la cuenta dice cuántas hay', async () => {
+    const user = userEvent.setup()
+    montar({ veredicto: 'DE_BAJA', papeleta: { ...ANA, deBaja: true } }, salidasDePrueba, { ...ESTADO, deBaja: 1 })
+    expect(await screen.findByText('Sábado de Pasión 2027 · 0 de 2 dentro · 1 de baja')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSP1.7.abcdefghijklmnop{Enter}')
+    expect(await screen.findByText('De baja en el censo')).toBeInTheDocument()
+    expect(screen.getByText('Está de baja: no puede salir. Que hable con Secretaría.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Deshacer' })).not.toBeInTheDocument()
+  })
+
+  it('en el QR de familia, quien está de baja sale marcado y no se le deja pasar', async () => {
+    const user = userEvent.setup()
+    const PEPA = { ...ANA, id: 9, nombre: 'Pepa', apellidos: 'Ruiz Gil', numeroHermano: 140, deBaja: true }
+    const fetch = montar({ veredicto: 'FAMILIA', papeleta: null, familia: [LUIS, PEPA] })
+    await screen.findByText('Luis Mora Paz')
+    await user.type(screen.getByLabelText('Código de la papeleta'), 'DSF1.40.1.2027.abcdefghijklmnop{Enter}')
+
+    const panel = await screen.findByRole('group', { name: 'QR de familia' })
+    expect(within(panel).getByText(/De baja en el censo/)).toBeInTheDocument()
+    expect(within(panel).queryByRole('checkbox', { name: /Pepa Ruiz Gil/ })).not.toBeInTheDocument()
+    await user.click(within(panel).getByRole('button', { name: 'Dejar pasar a 1' }))
+    await screen.findByText('Adelante')
+    const entradas = fetch.mock.calls.filter(([u, i]) => String(u).includes('/puerta/papeletas/') && (i as RequestInit).method === 'POST').map(([u]) => String(u))
+    expect(entradas).toEqual([expect.stringMatching(/\/puerta\/papeletas\/8$/)])
   })
 })

@@ -45,6 +45,7 @@ export const designTokens = {
     surfaceDim: '#dbdad7',
     errorContainer: '#ffdad6',
     surfaceTint: '#615d60',
+    /** Rojo de error sobre fondo claro (el CMS en claro). */
     error: '#ba1a1a',
     inversePrimary: '#cbc5c8',
     surfaceContainerHighest: '#e4e2df',
@@ -94,6 +95,19 @@ export const designTokens = {
   },
 }
 
+/**
+ * Rojo de error de la web pública, que es oscura. El de serie (#ba1a1a) se
+ * queda en 2,9:1 sobre #121113 y 2,4:1 sobre #262326, y los avisos de un
+ * formulario son justo lo que hay que poder leer: este da 7,8:1 y 6,4:1. Con
+ * letra blanca encima no se leería (2,4:1), de ahí el contrastText casi negro.
+ */
+export const ERROR_SOBRE_OSCURO = {
+  main: '#f08a84',
+  dark: '#d9655e',
+  light: '#f7b1ac',
+  contrastText: '#0c0b0d',
+}
+
 export const themeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
@@ -113,10 +127,7 @@ export const themeOptions: ThemeOptions = {
       dark: designTokens.colors.tertiary,
       light: designTokens.colors.tertiaryFixed,
     },
-    error: {
-      main: designTokens.colors.error,
-      contrastText: designTokens.colors.onError,
-    },
+    error: ERROR_SOBRE_OSCURO,
     text: {
       primary: designTokens.colors.surfaceContainerLowest,
       secondary: designTokens.colors.surfaceVariant,

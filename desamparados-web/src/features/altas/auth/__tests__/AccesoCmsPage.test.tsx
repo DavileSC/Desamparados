@@ -225,4 +225,28 @@ describe('AccesoCmsPage', () => {
     expect(await screen.findByText(/la verificación ha caducado/i)).toBeInTheDocument()
     expect(useAuthStore.getState()).toMatchObject({ status: 'listo', cms: null, hermano: deHermanos })
   })
+
+  // El bloqueo del doble factor crece por tandas (15 min, 1 h, 4 h, 24 h): el
+  // plazo lo dice el servidor y la pantalla no puede fijar el suyo.
+  it('el bloqueo del doble factor enseña el plazo que da el servidor', async () => {
+    vi.stubGlobal('fetch', mockConEstados({
+      '/auth/login': { cuerpo: { status: '2FA_NEEDED', message: 'Introduce el código de tu aplicación de autenticación.' } },
+      '/auth/login/2fa': {
+        status: 429,
+        cuerpo: { error: 'Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera 4 horas.' },
+      },
+    }))
+
+    montar([
+      { path: '/cms/acceso', element: <AccesoCmsPage /> },
+      { path: '/cms', element: <div>panel</div> },
+    ])
+    const user = await escribirCredenciales('secretaria@cofradia.com')
+    await user.type(await screen.findByLabelText(/código de verificación/i), '123456')
+    await user.click(screen.getByRole('button', { name: 'Verificar' }))
+
+    expect(await screen.findByText('Demasiados intentos fallidos. Cuenta bloqueada temporalmente: espera 4 horas.')).toBeInTheDocument()
+    expect(screen.queryByText(/15 minutos/)).not.toBeInTheDocument()
+  })
 })
+

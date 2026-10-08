@@ -10,6 +10,7 @@ import SeccionAnimada from '../SeccionAnimada'
 import BloquesDePagina from './BloquesDePagina'
 import CabeceraASangre, { CabeceraASangreEsqueleto } from './CabeceraASangre'
 import BloquesEsqueleto from './BloquesEsqueleto'
+import ConBloquesCargados from './ConBloquesCargados'
 import EnCarga, { estadoDeConsulta } from '../esqueleto/EnCarga'
 import { cejaDePagina, tipoDeCabecera } from './cabecera'
 import { useBorradorPagina } from './borrador'
@@ -106,7 +107,9 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
               )}
             <SeccionAnimada sx={seccion}>
               <ContenedorDePagina>
-                <BloquesDePagina bloques={pagina.bloques} />
+                <ConBloquesCargados bloques={pagina.bloques} esqueleto={<BloquesEsqueleto />}>
+                  <BloquesDePagina bloques={pagina.bloques} />
+                </ConBloquesCargados>
               </ContenedorDePagina>
             </SeccionAnimada>
           </>

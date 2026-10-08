@@ -124,6 +124,7 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
 
           <TextField
             label="Nombre"
+            autoComplete="name"
             fullWidth
             error={!!errors.nombre}
             helperText={errors.nombre?.message}
@@ -135,6 +136,7 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
               <TextField
                 label="Email"
                 type="email"
+                autoComplete="email"
                 fullWidth
                 error={!!errors.email}
                 helperText={errors.email?.message}
@@ -145,6 +147,7 @@ export default function BloqueContacto({ bloque }: { bloque: Datos }) {
               <TextField
                 label="Teléfono (opcional)"
                 type="tel"
+                autoComplete="tel"
                 fullWidth
                 error={!!errors.telefono}
                 helperText={errors.telefono?.message}

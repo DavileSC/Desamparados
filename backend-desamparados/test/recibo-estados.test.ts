@@ -4,13 +4,14 @@
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { EstadoPago } from '@prisma/client';
+import { EstadoPago, MetodoPago } from '@prisma/client';
 import {
   puedeTransicionar,
   transicionesDesde,
   requiereReverso,
   ESTADOS_FINALES,
   puedeCobrarse,
+  estadosCobrablesCon,
   anulaPapeleta,
 } from '../src/domain/recibo-estados.js';
 
@@ -100,6 +101,15 @@ describe('máquina de estados de recibos', () => {
     assert.ok(puedeCobrarse(EstadoPago.REMESADO));
     for (const estado of [EstadoPago.PAGADO, ...ESTADOS_FINALES]) {
       assert.equal(puedeCobrarse(estado), false, `${estado} no debería poder cobrarse`);
+    }
+  });
+
+  test('un remesado solo lo cobra el banco: por domiciliación, nunca en mano', () => {
+    // Con la remesa en el banco, cobrarlo en efectivo lo cobraría dos veces.
+    assert.deepEqual(estadosCobrablesCon(MetodoPago.DOMICILIACION), [EstadoPago.PENDIENTE, EstadoPago.REMESADO]);
+    assert.deepEqual(estadosCobrablesCon(undefined), [EstadoPago.PENDIENTE, EstadoPago.REMESADO], 'sin método, el del banco');
+    for (const metodo of [MetodoPago.EFECTIVO, MetodoPago.TARJETA, MetodoPago.BIZUM, MetodoPago.TRANSFERENCIA]) {
+      assert.deepEqual(estadosCobrablesCon(metodo), [EstadoPago.PENDIENTE], metodo);
     }
   });
 

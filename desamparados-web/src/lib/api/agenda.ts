@@ -1,6 +1,16 @@
+import type { QueryClient } from '@tanstack/react-query'
 import type { Acto } from '../../types'
 import { llamarApi } from './cliente'
 import { paramsPagina, type RespuestaPaginada } from './tipos'
+
+/**
+ * Tras crear, cambiar o borrar un acto en el CMS: que la agenda de la portada
+ * (['home', 'agenda', …]) y la del bloque de programa la vuelvan a pedir.
+ */
+export function invalidarAgendaPublica(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: ['home', 'agenda'] })
+  void queryClient.invalidateQueries({ queryKey: ['programa', 'agenda'] })
+}
 
 export interface ApiEvent {
   id: number
@@ -16,6 +26,12 @@ export interface ApiEvent {
   cartel?: boolean
   dedicatoria?: string | null
   fotoCartel?: string | null
+  /**
+   * Solo lo traen el listado y el calendario del CMS: la salida que tiene este
+   * acto como fecha. Mientras la tenga, el servidor no deja borrarlo (409),
+   * porque la salida se quedaría sin día.
+   */
+  salidaEnlazada?: { id: number; nombre: string } | null
 }
 
 function enTexto(fecha: string) {

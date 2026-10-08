@@ -8,20 +8,20 @@ const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuer
 const ESTADO = {
   salida: 'sabado-de-pasion', year: 2027,
   config: { tramos: [{ nombre: 'Cruz de guía', plazas: 30 }, { nombre: 'Tramo del trono', plazas: 30 }], puestos: ['Nazareno'] },
-  papeletas: 5,
+  papeletas: 5, deBaja: 0,
   reparto: { tramos: [{ nombre: 'Cruz de guía', plazas: 30, asignados: 2 }, { nombre: 'Tramo del trono', plazas: 30, asignados: 2 }], fuera: 1, cambios: 3 },
   actual: [
-    { tramo: 'Cruz de guía', hermanos: [{ papeletaId: 1, numero: 1, puesto: 'Nazareno', seReparte: true, nombre: 'Ana', apellidos: 'Ruiz', numeroHermano: 301 }] },
-    { tramo: null, hermanos: [{ papeletaId: 5, numero: null, puesto: 'Trono', seReparte: false, nombre: 'Luis', apellidos: 'Gil', numeroHermano: 12 }] },
+    { tramo: 'Cruz de guía', hermanos: [{ papeletaId: 1, numero: 1, puesto: 'Nazareno', seReparte: true, nombre: 'Ana', apellidos: 'Ruiz', numeroHermano: 301, deBaja: false }] },
+    { tramo: null, hermanos: [{ papeletaId: 5, numero: null, puesto: 'Trono', seReparte: false, nombre: 'Luis', apellidos: 'Gil', numeroHermano: 12, deBaja: false }] },
   ],
 }
 
-function api() {
+function api(estado: unknown = ESTADO) {
   const fetch = vi.fn().mockImplementation((url: string, init: RequestInit = {}) => {
     const ruta = String(url)
     if (ruta.endsWith('/cortejo/aplicar')) return Promise.resolve(json({ message: 'Cortejo repartido: 3 papeletas han cambiado de tramo o de lugar.', cambiadas: 3 }))
     if (ruta.endsWith('/cortejo/configuracion')) return Promise.resolve(json(JSON.parse(String(init.body))))
-    return Promise.resolve(json(ESTADO))
+    return Promise.resolve(json(estado))
   })
   vi.stubGlobal('fetch', fetch)
   return fetch
@@ -71,5 +71,18 @@ describe('Cortejo', () => {
     expect(await screen.findByDisplayValue('Cruz de guía')).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Repartir por antigüedad' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Añadir tramo' })).not.toBeInTheDocument()
+  })
+
+  it('marca a quien está de baja y avisa de que no entra en el reparto', async () => {
+    api({
+      ...ESTADO, papeletas: 6, deBaja: 1,
+      actual: [...ESTADO.actual, { tramo: 'Tramo del trono', hermanos: [{ papeletaId: 6, numero: 3, puesto: 'Nazareno', seReparte: true, nombre: 'Eva', apellidos: 'Sanz', numeroHermano: 90, deBaja: true }] }],
+    })
+    renderWithProviders(<Cortejo salida="sabado-de-pasion" puestos={['Nazareno']} puedeCambiar onAviso={() => undefined} />)
+    expect(await screen.findByText(/1 papeleta es de un hermano de baja/)).toBeInTheDocument()
+    expect(screen.getByText(/6 papeletas: 4 se reparten en los tramos/)).toBeInTheDocument()
+    const eva = screen.getByText(/Sanz, Eva/).closest('li')!
+    expect(within(eva).getByText('De baja')).toBeInTheDocument()
+    expect(screen.getAllByText('De baja')).toHaveLength(1)
   })
 })

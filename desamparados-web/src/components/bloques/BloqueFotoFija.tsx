@@ -4,6 +4,7 @@ import { useMotionValueEvent, useReducedMotion, useScroll } from 'framer-motion'
 import { SERIF, ceja } from '../../features/inicio/estilos'
 import { parrafosDe, type BloqueFotoFija as Datos } from '../../lib/api/contenido'
 import { anchoMaximo, valorDe } from './presentacion'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 /** A qué altura de la pantalla (0 arriba, 1 abajo) empieza a leerse una parte. */
 const LINEA_DE_LECTURA = 0.55
@@ -32,6 +33,9 @@ export default function BloqueFotoFija({ bloque }: { bloque: Datos }) {
     partes.current.forEach((parte, i) => {
       if (parte && parte.getBoundingClientRect().top < altura) indice = i
     })
+    // Legítimo en el efecto de abajo: mide dónde han quedado los pasos en la
+    // pantalla, y eso no se sabe al pintar, solo después.
+    // eslint-disable-next-line react/set-state-in-effect
     setActiva(indice)
   }, [])
   const { scrollY } = useScroll()
@@ -63,7 +67,7 @@ export default function BloqueFotoFija({ bloque }: { bloque: Datos }) {
             // Clave posicional: una parte no tiene identificador, y la foto no guarda estado.
             key={i}
             component="img"
-            src={paso.foto.url}
+            {...propsDeFoto(paso.foto.url, '(min-width: 900px) 50vw, 100vw')}
             alt={paso.foto.alt}
             aria-hidden={i === activa ? undefined : true}
             loading={i === 0 ? undefined : 'lazy'}

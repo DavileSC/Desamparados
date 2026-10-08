@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { AppBar, Toolbar, Box, Button, IconButton, useTheme, useMediaQuery } from '@mui/material'
 import EscudoDelGrupo from './EscudoDelGrupo'
@@ -27,42 +27,54 @@ function Escudo({ alto, altoCompacto }: { alto: number; altoCompacto?: number })
 export default function BarraDeNavegacion() {
   const theme = useTheme()
   const isMobile = useMediaQuery(`(max-width:${DESKTOP_NAV_MIN - 1}px)`)
-  const [scrollProgress, setScrollProgress] = useState(0)
   const [cajonAbierto, setCajonAbierto] = useState(false)
   const { activo } = useModulos()
 
+  const barraRef = useRef<HTMLElement>(null)
+
+  // El velo se escribe directamente en el estilo de la barra, sin estado de
+  // React: con un `setState` por fotograma, cada bajada de rueda volvía a
+  // pintar la barra entera (menú, redes, botón) unas ochenta veces.
   useEffect(() => {
-    let targetProgress = 0
-    let currentProgress = 0
-    let animationFrameId: number
+    let objetivo = 0
+    let actual = 0
+    let fotograma = 0
 
-    const lerp = (start: number, end: number, factor: number) => start + (end - start) * factor
+    const pintar = (progreso: number) => {
+      const barra = barraRef.current
+      if (!barra) return
+      const filtro = `blur(${10 + progreso * 14}px) saturate(${110 + progreso * 40}%)`
+      barra.style.backgroundColor = tinta(VELO_ARRIBA + (VELO_SCROLL - VELO_ARRIBA) * progreso)
+      barra.style.backdropFilter = filtro
+      barra.style.setProperty('-webkit-backdrop-filter', filtro)
+    }
 
-    const updateProgress = () => {
-      currentProgress = lerp(currentProgress, targetProgress, 0.08)
-      if (Math.abs(currentProgress - targetProgress) > 0.001) {
-        setScrollProgress(currentProgress)
-        animationFrameId = requestAnimationFrame(updateProgress)
+    const acercar = () => {
+      actual += (objetivo - actual) * 0.08
+      if (Math.abs(actual - objetivo) > 0.001) {
+        pintar(actual)
+        fotograma = requestAnimationFrame(acercar)
       } else {
-        setScrollProgress(targetProgress)
+        actual = objetivo
+        pintar(actual)
       }
     }
 
-    const handleScroll = () => {
-      const maxScroll = 120
-      targetProgress = Math.min(window.scrollY / maxScroll, 1)
-      cancelAnimationFrame(animationFrameId)
-      animationFrameId = requestAnimationFrame(updateProgress)
+    const alDesplazar = () => {
+      objetivo = Math.min(window.scrollY / 120, 1)
+      cancelAnimationFrame(fotograma)
+      fotograma = requestAnimationFrame(acercar)
     }
 
-    window.addEventListener('scroll', handleScroll)
-    handleScroll()
+    // Pasivo: el oyente nunca cancela el desplazamiento, y así el navegador no
+    // tiene que esperarlo para mover la página.
+    window.addEventListener('scroll', alDesplazar, { passive: true })
+    alDesplazar()
     return () => {
-      window.removeEventListener('scroll', handleScroll)
-      cancelAnimationFrame(animationFrameId)
+      window.removeEventListener('scroll', alDesplazar)
+      cancelAnimationFrame(fotograma)
     }
   }, [])
-  const velo = VELO_ARRIBA + (VELO_SCROLL - VELO_ARRIBA) * scrollProgress
 
   return (
     <>
@@ -110,16 +122,18 @@ export default function BarraDeNavegacion() {
         </AppBar>
       )}
       <AppBar
+        ref={barraRef}
         position="fixed"
         elevation={0}
         sx={{
           // Banda de tinta casi opaca desde el primer píxel y con corte limpio: las
           // fotos del hero las cambia el cliente y no se puede contar con que sean
           // oscuras, y al bajar la barra pasa por encima de tarjetas de papel.
-          backgroundColor: tinta(velo),
+          // Lo de arriba del todo; al desplazar, el efecto lo sobrescribe en línea.
+          backgroundColor: tinta(VELO_ARRIBA),
           backgroundImage: 'none',
-          backdropFilter: `blur(${10 + scrollProgress * 14}px) saturate(${110 + scrollProgress * 40}%)`,
-          WebkitBackdropFilter: `blur(${10 + scrollProgress * 14}px) saturate(${110 + scrollProgress * 40}%)`,
+          backdropFilter: 'blur(10px) saturate(110%)',
+          WebkitBackdropFilter: 'blur(10px) saturate(110%)',
           borderBottom: 'none',
           boxShadow: 'none',
           display: 'none',

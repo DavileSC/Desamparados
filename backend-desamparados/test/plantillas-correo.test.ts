@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { USOS, leerCuerpo, problemasDePlantilla, resumenDe, usoDe } from '../src/domain/plantillas-correo.js';
 import { componer } from '../src/services/correos/componer.js';
 import { PlantillasCorreoService } from '../src/services/plantillas-correo.service.js';
-import { identidad, type Identidad } from '../src/domain/datos-entidad.js';
+import { direccionDeLaSede, identidad, secretaria, type Identidad } from '../src/domain/datos-entidad.js';
 
 test('cada texto original del catálogo es una plantilla válida de su uso', () => {
   const claves = USOS.map((u) => u.clave);
@@ -97,4 +97,13 @@ test('los ejemplos de los campos de la salida hablan de la misma salida', () => 
       if (valor !== undefined) assert.ok(valor.endsWith(` ${salida}`), `${uso.clave}: ${clave} «${valor}» no es «${salida}»`);
     }
   }
+});
+
+// La dirección de Secretaría estaba escrita dos veces en shared/datos-entidad.json
+// (en `secretaria` y en `sede`); ahora sale solo de la sede.
+test('la dirección de Secretaría es la de la sede, en una línea', () => {
+  assert.equal(direccionDeLaSede({ nombre: 'Iglesia', calle: 'C. Mayor, 3', codigoPostal: '29006', localidad: 'Málaga' }), 'C. Mayor, 3, 29006 Málaga');
+  assert.equal(direccionDeLaSede({ nombre: null, calle: 'C. Mayor, 3', codigoPostal: null, localidad: 'Málaga' }), 'C. Mayor, 3, Málaga');
+  assert.equal(direccionDeLaSede({ nombre: 'Iglesia', calle: null, codigoPostal: '29006', localidad: 'Málaga' }), null, 'sin calle no hay dirección');
+  assert.match(String(secretaria.direccion), /\b\d{5}\b/, 'el código postal sigue ahí: de él sale la provincia del Modelo 182');
 });

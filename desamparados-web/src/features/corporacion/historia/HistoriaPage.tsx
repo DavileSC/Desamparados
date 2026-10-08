@@ -14,6 +14,7 @@ import { GOLD, SERIF, ceja, enlaceBloque } from '../../inicio/estilos'
 import { esDestinoValido } from '../../../lib/destinos'
 import { useBorradorPagina } from '../../../components/bloques/borrador'
 import BloquesEsqueleto from '../../../components/bloques/BloquesEsqueleto'
+import ConBloquesCargados from '../../../components/bloques/ConBloquesCargados'
 import EnCarga, { estadoDeConsulta } from '../../../components/esqueleto/EnCarga'
 import { Lineas } from '../../../components/esqueleto/Hueso'
 import {
@@ -181,15 +182,20 @@ export default function HistoriaPage() {
           </ContenedorDePagina>
         </Box>
 
-        {bloques.map((bloque, posicion) => (
-          <BloqueDeHistoria
-            key={`${bloque.tipo}-${posicion}`}
-            bloque={bloque}
-            posicion={posicion}
-            idTitulo={`historia-bloque-${posicion + 1}`}
-            conAnclas={posicion === conIndice}
-          />
-        ))}
+        <ConBloquesCargados
+          bloques={bloques}
+          esqueleto={<Box sx={{ pb: { xs: 8, md: 12 } }}><ContenedorDePagina><BloquesEsqueleto /></ContenedorDePagina></Box>}
+        >
+          {bloques.map((bloque, posicion) => (
+            <BloqueDeHistoria
+              key={`${bloque.tipo}-${posicion}`}
+              bloque={bloque}
+              posicion={posicion}
+              idTitulo={`historia-bloque-${posicion + 1}`}
+              conAnclas={posicion === conIndice}
+            />
+          ))}
+        </ConBloquesCargados>
       </Box>
     </>
   )

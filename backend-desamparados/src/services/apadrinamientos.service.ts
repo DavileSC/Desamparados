@@ -82,21 +82,21 @@ async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta
     if (a.estado !== EstadoPedido.PENDIENTE_PAGO) throw new HttpError('El apadrinamiento ya no estaba pendiente de pago.');
     const otro = await tx.apadrinamiento.findFirst({ where: { piezaId: a.piezaId, estado: { in: PAGADOS } }, select: { id: true } });
     if (otro) throw new HttpError(`«${a.pieza.nombre}» la apadrinó otra persona mientras se pagaba.`);
-    const pagado = await tx.apadrinamiento.update({
-      where: { id: apadrinamientoId },
-      data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date() },
-      include: { pieza: { include: { campana: true } } },
-    });
-    await tx.transaccion.create({
+    const apunte = await tx.transaccion.create({
       data: {
         tipo: TipoTransaccion.INGRESO, categoriaId, concepto: `Apadrinamiento: ${a.pieza.nombre} (${a.pieza.campana.titulo})`.slice(0, 190),
         importe: a.importe, fecha: new Date(), metodoPago: metodo as MetodoPago,
       },
     });
-    return pagado;
+    // Guarda su apunte: así la contabilidad sabe que no es manual.
+    return tx.apadrinamiento.update({
+      where: { id: apadrinamientoId },
+      data: { estado: EstadoPedido.PAGADO, metodo: metodo as MetodoPago, pagadoEl: new Date(), transaccionId: apunte.id },
+      include: { pieza: { include: { campana: true } } },
+    });
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   await AuditoriaService.log(ACCIONES_AUDITORIA.APADRINAMIENTO_PAGADO, meta, 'apadrinamiento', apadrinamientoId, { despues: { piezaId: hecho.piezaId, importe: hecho.importe.toString() } });
-  void correoDeApadrinamiento(hecho).then(({ asunto, html }) => enviarCorreo(hecho.email, asunto, html)).catch(console.error);
+  void correoDeApadrinamiento(hecho).then(({ asunto, html, uso }) => enviarCorreo(hecho.email, asunto, html, { uso })).catch(console.error);
 }
 
 registrarOrigenDePago(OrigenPago.APADRINAMIENTO, aplicarPago, async (id) => (await db.apadrinamiento.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);

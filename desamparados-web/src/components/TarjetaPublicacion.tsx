@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material'
 import TarjetaCristal from './TarjetaCristal'
 import type { Publicacion } from '../types'
 import Hueso, { Lineas } from './esqueleto/Hueso'
+import { propsDeFoto } from '../lib/fotoSubida'
 
 interface TarjetaPublicacionProps {
   publicacion: Publicacion
@@ -55,8 +56,7 @@ export default function TarjetaPublicacion({ publicacion }: TarjetaPublicacionPr
         ) : (
           <Box
             component="img"
-            src={publicacion.imagen}
-            onError={() => setPortadaRota(publicacion.imagen ?? null)}
+            {...propsDeFoto(publicacion.imagen, '(min-width: 1200px) 400px, (min-width: 600px) 50vw, 100vw', () => setPortadaRota(publicacion.imagen ?? null))}
             alt={publicacion.titulo}
             loading="lazy"
             decoding="async"

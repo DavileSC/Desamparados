@@ -19,6 +19,7 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba, PASSWORD_PRUEBA } from './fixt
 import { DobleFactorService } from '../src/services/doble-factor.service.js';
 import { RegistroService } from '../src/services/registro.service.js';
 import { consumirCodigoDeRespaldo } from '../src/services/auth/codigos-2fa.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
 /**
  * Arreglos de acceso y sesión de la auditoría del 11-09-2026 (A1-A10 y el
@@ -32,7 +33,6 @@ import { consumirCodigoDeRespaldo } from '../src/services/auth/codigos-2fa.js';
 let server: Server;
 let baseUrl: string;
 let dbDisponible = false;
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 
 before(async () => {
   server = app.listen(0);
@@ -702,7 +702,8 @@ test('un ADMIN con otros administradores activos sí puede borrarse desde el CMS
 
 // Quien vuelve tras una baja conserva su ficha con el DNI: registrarse de nuevo
 // chocaba con el índice único de `Hermano.dni` y daba un 500.
-test('registrarse con el DNI de una ficha que ya existe responde 409 y no crea nada', async (t) => {
+// Y no responde 409: eso diría quién está en el censo (ver alta-sin-delatar.test.ts).
+test('registrarse con el DNI de una ficha que ya existe no crea nada', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const antiguo = await crearUsuarioPrueba(Role.USER);
   const dni = `F${Date.now()}`;
@@ -714,13 +715,11 @@ test('registrarse con el DNI de una ficha que ya existe responde 409 y no crea n
     }
   });
   try {
-    await assert.rejects(
-      RegistroService.registerUser({
-        usuario: { email: emailNuevo, dni, password: PASSWORD_PRUEBA, nombre: 'Prueba', apellidos: 'Vuelve', telefono: '600000000' },
-        titular: { fechaNacimiento: '1990-01-01', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1990-12-28' }
-      } as never),
-      conEstado(409)
-    );
+    const respuesta = await RegistroService.registerUser({
+      usuario: { email: emailNuevo, dni, password: PASSWORD_PRUEBA, nombre: 'Prueba', apellidos: 'Vuelve', telefono: '600000000' },
+      titular: { fechaNacimiento: '1990-01-01', sexo: 'HOMBRE', estadoCivil: 'SOLTERO', fechaBautismo: '1990-12-28' }
+    } as never);
+    assert.equal(respuesta.creada, false);
     assert.equal(await db.user.count({ where: { email: emailNuevo } }), 0, 'no debe quedar una cuenta a medias');
   } finally {
     await db.user.deleteMany({ where: { email: emailNuevo } });

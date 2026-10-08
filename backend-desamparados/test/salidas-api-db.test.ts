@@ -17,8 +17,8 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { PASION } from './fixtures/salidas.js';
 import { SalidasService } from '../src/services/procesion/salidas.service.js';
+import { SIN_DB } from './fixtures/sin-db.js';
 
-const SIN_DB = 'requiere MariaDB levantada (DATABASE_HOST); arranca la base de datos para ejecutarlo';
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
@@ -334,6 +334,73 @@ test('fijar la fecha de una salida a mano crea su acto en la Agenda', async (t) 
     await db.salida.deleteMany({ where: { slug } });
     if (eventoId) await db.evento.deleteMany({ where: { id: eventoId } });
     await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+// NG11 (auditoría 07-10-2026): borrar el acto desde la Agenda dejaba la
+// salida sin fecha (SetNull) sin que nadie se enterara.
+test('el acto enlazado a una salida no se borra desde la Agenda', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const slug = `prueba-salida-${Date.now()}`;
+  let eventoId: number | null = null;
+  try {
+    const alta = await fetch(`${baseUrl}/api/cms/salidas`, {
+      method: 'POST', headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify(datosDeAlta(slug, { fecha: 'MANUAL', diasDesdePascua: null })),
+    });
+    const { id } = await alta.json();
+    await fetch(`${baseUrl}/api/cms/salidas/${id}/fecha`, {
+      method: 'PUT', headers: cookieDe(staff.id, Role.SECRETARIA),
+      body: JSON.stringify({ inicio: '2099-10-17T18:00:00.000Z', lugar: 'Templo' }),
+    });
+    eventoId = (await db.salida.findUniqueOrThrow({ where: { id } })).eventoId;
+    assert.ok(eventoId);
+
+    // La Agenda del CMS lo dice antes de que nadie pulse «Eliminar»: en el
+    // listado y en el calendario, con la salida; un acto suelto, con null.
+    const suelto = await db.evento.create({ data: { title: 'Acto suelto de prueba', startDate: new Date('2099-10-18T18:00:00.000Z') } });
+    try {
+      const calendario = await (await fetch(
+        `${baseUrl}/api/events/admin/calendario?desde=2099-10-01T00:00&hasta=2099-11-01T00:00`,
+        { headers: cookieDe(staff.id, Role.SECRETARIA) },
+      )).json() as { data: { id: number; salidaEnlazada: { id: number; nombre: string } | null }[] };
+      assert.deepEqual(calendario.data.find((e) => e.id === eventoId)?.salidaEnlazada, { id, nombre: 'Traslado' });
+      assert.equal(calendario.data.find((e) => e.id === suelto.id)?.salidaEnlazada, null);
+      const listado = await (await fetch(`${baseUrl}/api/events/admin?periodo=proximos&q=Traslado&limit=100`, { headers: cookieDe(staff.id, Role.SECRETARIA) })).json() as { data: { id: number; salidaEnlazada: unknown }[] };
+      assert.deepEqual(listado.data.find((e) => e.id === eventoId)?.salidaEnlazada, { id, nombre: 'Traslado' });
+    } finally {
+      await db.evento.delete({ where: { id: suelto.id } });
+    }
+
+    const borrar = await fetch(`${baseUrl}/api/events/${eventoId}`, { method: 'DELETE', headers: cookieDe(staff.id, Role.SECRETARIA) });
+    assert.equal(borrar.status, 409);
+    assert.match((await borrar.json()).error, /salida/i);
+    assert.ok(await db.evento.findUnique({ where: { id: eventoId } }), 'el acto sigue');
+    assert.equal((await db.salida.findUniqueOrThrow({ where: { id } })).eventoId, eventoId, 'y la salida conserva su fecha');
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    if (eventoId) await db.evento.deleteMany({ where: { id: eventoId } });
+    await borrarUsuarioPrueba(staff.id);
+  }
+});
+
+// Crear el acto y enlazarlo iban por separado: si enlazar fallaba, quedaba un
+// acto suelto en la Agenda pública con el nombre de la salida.
+test('si no se puede enlazar el acto a la salida, tampoco se crea', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const slug = `prueba-salida-${Date.now()}`;
+  const nombre = `Salida fantasma ${Date.now()}`;
+  const fila = await db.salida.create({ data: { slug, nombre, fecha: 'MANUAL', puestos: [] } });
+  try {
+    const leida = await SalidasService.porSlug(slug);
+    // Se borra entre la lectura y el guardado: el enlace falla.
+    await db.salida.delete({ where: { id: fila.id } });
+    await assert.rejects(SalidasService.fijarFecha(leida, { inicio: '2099-10-17T18:00:00.000Z' }));
+    assert.equal(await db.evento.count({ where: { title: nombre } }), 0);
+  } finally {
+    await db.salida.deleteMany({ where: { slug } });
+    await db.evento.deleteMany({ where: { title: nombre } });
   }
 });
 
