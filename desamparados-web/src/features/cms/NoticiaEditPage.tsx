@@ -19,7 +19,7 @@ import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDeNoticia, tieneTexto } from './redaccion/completitud'
 import { useTemaCms } from '../../app/useTemaCms'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { crearNoticia, noticiaDelCms, actualizarNoticia, type NoticiaDeLaApi, type DatosDeNoticia } from '../../lib/api/noticias'
+import { crearNoticia, noticiaDelCms, actualizarNoticia, invalidarNoticiasPublicas, type NoticiaDeLaApi, type DatosDeNoticia } from '../../lib/api/noticias'
 import { site } from '../../config/site'
 
 /** Lo que cabe en las tres líneas de la tarjeta de la portada; pasarse no impide guardar. */
@@ -85,6 +85,9 @@ export default function NoticiaEditPage() {
         else await actualizarNoticia(Number(id), datos)
         // El contador de borradores del menú sale del panel del Inicio.
         void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
+        // Y la portada y el archivo públicos, o en esta misma pestaña la web
+        // seguiría enseñando lo de antes hasta que caducara su caché.
+        invalidarNoticiasPublicas(queryClient)
       },
       {
         siFalla: 'No se ha podido guardar la noticia.',

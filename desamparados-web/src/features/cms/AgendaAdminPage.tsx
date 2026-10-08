@@ -6,6 +6,7 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import ViewListOutlinedIcon from '@mui/icons-material/ViewListOutlined'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Link, useLocation } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CabeceraSeccion from './CabeceraSeccion'
 import CampoBusqueda from './listados/CampoBusqueda'
@@ -17,7 +18,7 @@ import { claveDia, claveMes, leerMes } from './agenda/calendario'
 import { rejillaEvento } from './agenda/rejilla'
 import { TIPOS_EVENTO } from './agenda/tiposEvento'
 import { agruparPorMes, cuandoEs, hora } from './agenda/fechas'
-import { eliminarEvento, eventosDelCms, type ApiEvent, type PeriodoAgenda, type ResumenAgenda, type ResumenDeHoy } from '../../lib/api/agenda'
+import { eliminarEvento, eventosDelCms, invalidarAgendaPublica, type ApiEvent, type PeriodoAgenda, type ResumenAgenda, type ResumenDeHoy } from '../../lib/api/agenda'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
@@ -103,11 +104,13 @@ export default function AgendaAdminPage() {
     return () => { cancelado = true }
   }, [cargar, vista])
 
+  const queryClient = useQueryClient()
   const borrar = async () => {
     if (!porBorrar) return
     setNotice(null)
     try {
       await eliminarEvento(porBorrar.id)
+      invalidarAgendaPublica(queryClient)
       if (vista === 'lista') await cargar()
       else setVersion((v) => v + 1)
       setNotice('Evento eliminado.')

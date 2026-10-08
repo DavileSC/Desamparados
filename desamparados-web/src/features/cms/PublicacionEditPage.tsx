@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Helmet } from 'react-helmet-async'
 import { Link, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import TarjetaPublicacion from '../../components/TarjetaPublicacion'
 import temaPublico from '../../theme'
@@ -16,7 +17,7 @@ import CampoPdf from './CampoPdf'
 import { EtiquetaEstado, Progreso } from './redaccion/FilaRedaccion'
 import { haceCuanto, piezasDePublicacion } from './redaccion/completitud'
 import { AYUDA_PDF, AYUDA_PORTADA, ETIQUETA_PORTADA, TIPOS_PUBLICACION } from './portadaPublicacion'
-import { crearPublicacion, publicacionDelCms, actualizarPublicacion, type PublicacionDeLaApi, type DatosDePublicacion } from '../../lib/api/publicaciones'
+import { crearPublicacion, publicacionDelCms, actualizarPublicacion, invalidarPublicacionesPublicas, type PublicacionDeLaApi, type DatosDePublicacion } from '../../lib/api/publicaciones'
 import { site } from '../../config/site'
 
 type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
@@ -41,6 +42,7 @@ type Accion = 'borrador' | 'publicar' | 'guardar' | 'despublicar'
  */
 export default function PublicacionEditPage() {
   const { id } = useParams()
+  const queryClient = useQueryClient()
   const nueva = id === undefined
   const [confirmando, setConfirmando] = useState<Accion | null>(null)
   const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, borrador, volverAlListado, campo, guardar: guardarFicha } =
@@ -73,7 +75,11 @@ export default function PublicacionEditPage() {
       fecha: nueva && form.fecha === inicial.fecha ? undefined : form.fecha,
     }
     await guardarFicha(
-      () => (nueva ? crearPublicacion(datos) : actualizarPublicacion(Number(id), datos)),
+      async () => {
+        await (nueva ? crearPublicacion(datos) : actualizarPublicacion(Number(id), datos))
+        // La portada la tenía cacheada: sin esto seguía enseñando la de antes.
+        invalidarPublicacionesPublicas(queryClient)
+      },
       {
         siFalla: 'No se ha podido guardar la publicación.',
         aviso: {

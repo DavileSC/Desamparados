@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { Helmet } from 'react-helmet-async'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import ListaDeAgenda from '../inicio/ListaDeAgenda'
 import CartelDeCulto from '../actualidad/agenda/CartelDeCulto'
 import CampoImagen from './CampoImagen'
@@ -16,7 +17,7 @@ import { useFichaCms } from './ficha/useFichaCms'
 import PuntoTipo from './agenda/PuntoTipo'
 import { TIPOS_EVENTO } from './agenda/tiposEvento'
 import { haceCuanto } from './redaccion/completitud'
-import { crearEvento, traerEvento, actualizarEvento, type ApiEvent, type DatosDeActo } from '../../lib/api/agenda'
+import { crearEvento, traerEvento, actualizarEvento, invalidarAgendaPublica, type ApiEvent, type DatosDeActo } from '../../lib/api/agenda'
 import { site } from '../../config/site'
 
 /** El formulario: día y hora por separado, que es como se piensa un acto. */
@@ -65,6 +66,7 @@ function desdeEvento(evento: ApiEvent): Formulario {
  */
 export default function AgendaEditPage() {
   const { id } = useParams()
+  const queryClient = useQueryClient()
   const nuevo = id === undefined
   const { state } = useLocation()
   const copiaDe = nuevo ? (state as { copiaDe?: unknown } | null)?.copiaDe : undefined
@@ -118,7 +120,11 @@ export default function AgendaEditPage() {
       fotoCartel: form.fotoCartel || null,
     }
     await guardarFicha(
-      () => (nuevo ? crearEvento(datos) : actualizarEvento(Number(id), datos)),
+      async () => {
+        await (nuevo ? crearEvento(datos) : actualizarEvento(Number(id), datos))
+        // La agenda de la portada lo tenía cacheado: sin esto seguía sin él.
+        invalidarAgendaPublica(queryClient)
+      },
       {
         siFalla: 'No se ha podido guardar el evento.',
         aviso: yaPaso

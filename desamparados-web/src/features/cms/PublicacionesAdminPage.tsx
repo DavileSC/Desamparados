@@ -14,7 +14,7 @@ import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion }
 import { textoPortada } from './redaccion/textos'
 import { piezasDePublicacion } from './redaccion/completitud'
 import { TIPOS_PUBLICACION, nombreTipo } from './portadaPublicacion'
-import { eliminarPublicacion, publicacionesDelCms, actualizarPublicacion, type PublicacionDeLaApi, type EstadoPublicacion, type ResumenPublicaciones } from '../../lib/api/publicaciones'
+import { eliminarPublicacion, publicacionesDelCms, actualizarPublicacion, invalidarPublicacionesPublicas, type PublicacionDeLaApi, type EstadoPublicacion, type ResumenPublicaciones } from '../../lib/api/publicaciones'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
@@ -22,9 +22,6 @@ import type { Publicacion } from '../../types'
 import { site } from '../../config/site'
 
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
-// Lo que useDatosDePortada('publicaciones') tiene cacheado 60 s: tras destacar hay que
-// pedirlo de nuevo o la portada seguiría con el orden de antes.
-const CLAVE_PUBLICACIONES_PORTADA = ['portada', 'publicaciones']
 const FILTROS = { q: {}, estado: { validos: ESTADOS }, tipo: { validos: TIPOS_PUBLICACION.map((t) => t.value) } }
 
 /**
@@ -76,10 +73,12 @@ export default function PublicacionesAdminPage() {
     return () => { cancelado = true }
   }, [cargar])
 
+  // La portada pública tiene cacheadas las publicaciones: lo que cambia aquí se lo invalida.
+  const queryClient = useQueryClient()
   const borrar = async () => {
     if (!porBorrar) return
     setNotice(null)
-    try { await eliminarPublicacion(porBorrar.id); await cargar(); setNotice('Publicación eliminada.') }
+    try { await eliminarPublicacion(porBorrar.id); invalidarPublicacionesPublicas(queryClient); await cargar(); setNotice('Publicación eliminada.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar la publicación.') }
     finally { setPorBorrar(null) }
   }
@@ -90,20 +89,20 @@ export default function PublicacionesAdminPage() {
     setNotice(null)
     try {
       await actualizarPublicacion(porCambiar.id, { visible: publicar })
+      invalidarPublicacionesPublicas(queryClient)
       await cargar()
       setNotice(publicar ? 'Publicada: ya se puede descargar desde la web.' : 'Pasada a borrador: ya no se ve en la web.')
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido cambiar la publicación.') }
     finally { setPorCambiar(null) }
   }
 
-  const queryClient = useQueryClient()
   // Sin diálogo: destacar no rompe nada y se deshace con el mismo clic.
   const fijar = async (publicacion: PublicacionDeLaApi) => {
     const destacar = !publicacion.fijada
     setNotice(null)
     try {
       await actualizarPublicacion(publicacion.id, { fijada: destacar })
-      void queryClient.invalidateQueries({ queryKey: CLAVE_PUBLICACIONES_PORTADA })
+      invalidarPublicacionesPublicas(queryClient)
       await cargar()
       setNotice(destacar
         ? 'Destacada: va la primera de la portada hasta que destaques otra.'

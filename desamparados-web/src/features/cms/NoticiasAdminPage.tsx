@@ -14,16 +14,13 @@ import { CabeceraColumnas, FiltroEstado, Grupo, LineaPortada, ResumenRedaccion }
 import { textoPortada } from './redaccion/textos'
 import { piezasDeNoticia } from './redaccion/completitud'
 import { CLAVE_PANEL_HOY } from '../../app/usePanelDeHoy'
-import { eliminarNoticia, noticiasDelCms, actualizarNoticia, type NoticiaDeLaApi, type EstadoNoticia, type ResumenNoticias } from '../../lib/api/noticias'
+import { eliminarNoticia, noticiasDelCms, actualizarNoticia, invalidarNoticiasPublicas, type NoticiaDeLaApi, type EstadoNoticia, type ResumenNoticias } from '../../lib/api/noticias'
 import { usePaginacion } from '../../hooks/usePaginacion'
 import Paginador from '../../components/Paginador'
 import type { MetaPaginacion } from '../../lib/api/tipos'
 import { site } from '../../config/site'
 
 const ESTADOS = ['publicadas', 'borradores', 'incompletas'] as const
-// Lo que useDatosDePortada('noticias') tiene cacheado 60 s: tras destacar hay que pedirlo
-// de nuevo o la portada seguiría enseñando el orden de antes.
-const CLAVE_NOTICIAS_PORTADA = ['portada', 'noticias']
 const FILTROS = { q: {}, estado: { validos: ESTADOS } }
 
 /**
@@ -79,12 +76,13 @@ export default function NoticiasAdminPage() {
   // publicar, se le pide el número nuevo en vez de esperar a que caduque.
   const queryClient = useQueryClient()
   const refrescarMenu = () => void queryClient.invalidateQueries({ queryKey: CLAVE_PANEL_HOY })
-  const refrescarPortada = () => void queryClient.invalidateQueries({ queryKey: CLAVE_NOTICIAS_PORTADA })
+  // Portada y archivo públicos: publicar, retirar, borrar o destacar cambia lo que enseñan.
+  const refrescarPortada = () => invalidarNoticiasPublicas(queryClient)
 
   const borrar = async () => {
     if (!porBorrar) return
     setNotice(null)
-    try { await eliminarNoticia(porBorrar.id); refrescarMenu(); await cargar(); setNotice('Noticia eliminada.') }
+    try { await eliminarNoticia(porBorrar.id); refrescarMenu(); refrescarPortada(); await cargar(); setNotice('Noticia eliminada.') }
     catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido eliminar la noticia.') }
     finally { setPorBorrar(null) }
   }
@@ -96,6 +94,7 @@ export default function NoticiasAdminPage() {
     try {
       await actualizarNoticia(porCambiar.id, { visible: publicar })
       refrescarMenu()
+      refrescarPortada()
       await cargar()
       setNotice(publicar ? 'Noticia publicada: ya se ve en la web.' : 'Noticia pasada a borrador: ya no se ve en la web.')
     } catch (err: unknown) { setError(err instanceof Error ? err.message : 'No se ha podido cambiar la noticia.') }
