@@ -38,6 +38,8 @@ COMMIT="${1:-}"
 
 cd "$PROYECTO_DIR"
 [[ -f .env ]] || fallo "Falta $PROYECTO_DIR/.env."
+# La API los lee del volumen al arrancar; sin ellos no arranca.
+[[ -f instalacion/datos-entidad.json ]] || fallo "Falta $PROYECTO_DIR/instalacion/datos-entidad.json, los datos de la corporación (docs/servidor.md)."
 
 compose() { docker compose -f compose.yaml -f compose.servidor.yaml "$@"; }
 

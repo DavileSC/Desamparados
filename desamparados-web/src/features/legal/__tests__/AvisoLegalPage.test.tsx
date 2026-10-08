@@ -5,7 +5,7 @@ import { renderWithProviders } from '../../../test/test-utils'
 // Una instalación de mentira con otro artículo: si el aviso legal sigue
 // escribiendo «Grupo» a mano, esta prueba lo nota aunque la de Desamparados
 // (con «el Grupo Parroquial» de siempre) no lo habría hecho.
-vi.mock('../../../../../shared/datos-entidad.json', () => ({
+vi.mock('@instalacion/datos-entidad.json', () => ({
   default: {
     identidad: {
       nombre: 'Hermandad Nuestra Señora de los Desamparados',
@@ -38,7 +38,7 @@ describe('AvisoLegalPage con otra instalación', () => {
     // La frase provisional («debe ser revisado… antes de su puesta en producción») ya no sale en público.
     expect(screen.queryByText(/puesta en producción/)).not.toBeInTheDocument()
     // La denominación jurídica inscrita no es una frase calculada, pero tampoco
-    // está ya escrita en el código: sale de shared/datos-entidad.json, como el
+    // está ya escrita en el código: sale de los datos de la instalación, como el
     // legalName de index.html, y cambia con la instalación.
     expect(screen.getByText('Hermandad de Ejemplo, inscrita')).toBeInTheDocument()
   })

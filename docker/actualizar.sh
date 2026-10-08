@@ -8,7 +8,8 @@
 #
 # Qué hace, en orden, y por qué en ese orden:
 #   1. Comprueba que el repositorio no tiene cambios a mano: un `git pull`
-#      encima los mezclaría o se pararía a medias.
+#      encima los mezclaría o se pararía a medias. Los datos de la corporación
+#      (instalacion/) y el .env no cuentan: están fuera de git.
 #   2. Hace la copia de seguridad ANTES de tocar nada. Las migraciones cambian
 #      la base y no tienen vuelta atrás: si la versión nueva sale mal, lo único
 #      que devuelve la base a como estaba es esta copia.
@@ -34,7 +35,7 @@ DESTINO=""
 for arg in "$@"; do
   case "$arg" in
     --sin-copia) SIN_COPIA=1 ;;
-    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
     -*) fallo "Opción desconocida: $arg" ;;
     *) DESTINO="$arg" ;;
   esac
@@ -42,6 +43,9 @@ done
 
 [[ -f compose.yaml ]] || fallo "No estoy en la carpeta del proyecto ($PROYECTO_DIR)."
 [[ -f .env ]] || fallo "Falta el .env: esta carpeta no es una instalación (ver docker/instalar.sh)."
+# Desde que salieron de git, cada instalación tiene los suyos junto al .env.
+# Sin ellos la web no se construye y la API no arranca: mejor parar antes de la copia.
+[[ -f instalacion/datos-entidad.json ]] || fallo "Falta instalacion/datos-entidad.json, los datos de la corporación. Cópialo de shared/datos-entidad.ejemplo.json y rellénalo (docs/despliegue.md, «Los datos de la corporación»)."
 command -v docker >/dev/null || fallo "No encuentro docker."
 
 compose() { docker compose -f compose.yaml "$@"; }

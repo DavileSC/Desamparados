@@ -14,13 +14,13 @@
  * El NIF no está aquí a propósito: el Grupo Parroquial no quiere publicarlo
  * (28-09-2026), y todo lo de este fichero acaba en el código de la web.
  */
-import ENTIDAD from '../../../shared/datos-entidad.json'
+import ENTIDAD from '@instalacion/datos-entidad.json'
 
 export type DatoPendiente = null
 
 /**
  * Quién es la corporación y cómo se la contacta: vive en
- * `shared/datos-entidad.json`, que lee también la API (correos, PDF). Montar la
+ * `instalacion/datos-entidad.json`, que lee también la API (correos, PDF). Montar la
  * web para otra corporación empieza por ese fichero, no por el código.
  */
 const { identidad, secretaria, sede } = ENTIDAD

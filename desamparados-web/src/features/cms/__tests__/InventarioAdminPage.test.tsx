@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../test/test-utils'
 import InventarioAdminPage from '../InventarioAdminPage'
+import { deLaCorporacion } from '../../../domain/articulos'
 
 const enser = {
   id: 4, nombre: 'Ciriales', referencia: 'CIR-01', categoria: 'Cortejo', ubicacion: 'Sacristía',
@@ -212,7 +213,7 @@ describe('InventarioAdminPage', () => {
     const tarjeta = await screen.findByRole('region', { name: 'Cíngulos' })
     expect(await within(tarjeta).findByText(/hay que pedir o hacer 2 más/)).toBeInTheDocument()
     await user.click(within(tarjeta).getByRole('button', { name: 'Cambiar el total' }))
-    const total = within(tarjeta).getByRole('textbox', { name: 'Cíngulos del Grupo' })
+    const total = within(tarjeta).getByRole('textbox', { name: `Cíngulos ${deLaCorporacion({ corto: true })}` })
     await user.clear(total)
     await user.type(total, '20')
     expect(within(tarjeta).getByText('No puede ser menos que los 30 prestados')).toBeInTheDocument()
@@ -220,7 +221,7 @@ describe('InventarioAdminPage', () => {
     await user.type(total, '40')
     await user.click(within(tarjeta).getByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(simulado.mock.calls.some(([u, i]) => String(u).includes('/cingulos') && i?.method === 'PUT' && i.body === JSON.stringify({ total: 40 }))).toBe(true))
-    expect(await screen.findByText('Cíngulos del Grupo: 40.')).toBeInTheDocument()
+    expect(await screen.findByText(`Cíngulos ${deLaCorporacion({ corto: true })}: 40.`)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Todo el lavado, limpio' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Sí, todo limpio' }))

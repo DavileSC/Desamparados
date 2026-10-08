@@ -13,7 +13,7 @@ import { COOKIE_CMS } from '../src/utils/cookies.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 import { anioDeHoy, leerPeriodo, periodoAnterior, periodoDe, periodosDisponibles } from '../src/domain/periodo-datos.js';
 import { areasDe, etiquetasDeMeses, valorEscrito, vistazo, type DatosCrudos } from '../src/domain/datos-areas.js';
-import type { Articulo } from '../src/domain/articulos.js';
+import { laCorporacion, type Articulo } from '../src/domain/articulos.js';
 import { puedeEscribir } from '../src/services/informe-anual.service.js';
 import { informeAnual, informeDeArea } from '../src/services/informes/informes.js';
 import { entradilla, enTexto } from '../src/domain/entradillas.js';
@@ -201,7 +201,7 @@ describe('las entradillas del Informe anual y los informes', () => {
 
   test('cuentan las cifras en una o dos frases, con la que las sostiene en negrita', () => {
     const trozos = entradilla('hermanos', crudos(), cerrado, HOY);
-    assert.equal(enTexto(trozos), 'Al cierre de 2025, el Grupo cuenta con 228 hermanos, 95 más que al empezar. Se han dado 99 altas y 4 bajas. La edad media es de 42,2 años y 22 hermanos son menores de edad.');
+    assert.equal(enTexto(trozos), `Al cierre de 2025, ${laCorporacion({ corto: true })} cuenta con 228 hermanos, 95 más que al empezar. Se han dado 99 altas y 4 bajas. La edad media es de 42,2 años y 22 hermanos son menores de edad.`);
     assert.deepEqual(trozos.filter((t) => t.fuerte).map((t) => t.texto), ['228 hermanos']);
   });
 

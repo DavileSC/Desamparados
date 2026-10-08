@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { site } from '../config/site'
 
@@ -8,7 +10,18 @@ import { site } from '../config/site'
  * depender de JavaScript, pero la fuente de verdad sigue siendo `site.ts`.
  * Dos sitios que dicen lo mismo se separan solos: esto lo impide.
  */
-const html = readFileSync(join(process.cwd(), 'index.html'), 'utf8')
+const html = (() => {
+  // index.html es de cada instalación y no está en git: se genera aquí con la
+  // misma que ve site.ts en las pruebas (el ejemplo), en una carpeta aparte.
+  const destino = mkdtempSync(join(tmpdir(), 'datos-estructurados-'))
+  try {
+    const r = spawnSync(process.execPath, ['scripts/generar-identidad.mjs', '--destino', destino], { cwd: process.cwd(), encoding: 'utf8' })
+    if (r.status !== 0) throw new Error(r.stderr)
+    return readFileSync(join(destino, 'index.html'), 'utf8')
+  } finally {
+    rmSync(destino, { recursive: true, force: true })
+  }
+})()
 
 function jsonLd(): Record<string, unknown> {
   const bloque = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)

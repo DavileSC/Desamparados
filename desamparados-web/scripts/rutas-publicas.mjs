@@ -5,13 +5,9 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { leerDatosEntidad } from '../../shared/datos-entidad.mjs'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
-
-/** El fichero que comparten la API y la web: el dominio y el lote inicial de módulos. */
-export function datosEntidad() {
-  return JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
-}
 
 /**
  * Las rutas del bloque público de `src/routes/index.tsx`, cada una con su
@@ -46,10 +42,10 @@ export function rutasDelBloquePublico() {
  * sin parámetro (`:slug` depende de la base de datos y no se puede enumerar
  * desde aquí), sin las que solo redirigen (`/*`) y sin las de módulos que
  * esta instalación no enciende: su página responde «no encontrado», y
- * anunciarla sería anunciar un 404. El lote es el de `datos-entidad.json`
+ * anunciarla sería anunciar un 404. El lote es el de los datos de la instalación
  * salvo que se pase otro (las pruebas).
  */
-export function urlsIndexables(activos = datosEntidad().modulos.activos) {
+export function urlsIndexables(activos = leerDatosEntidad().modulos.activos) {
   const encendidos = new Set(activos)
   const cumple = (requisito) => requisito.some((m) => m === 'nucleo' || encendidos.has(m))
   const rutas = rutasDelBloquePublico()

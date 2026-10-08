@@ -14,6 +14,7 @@
 import { ArkErrors } from 'arktype';
 import { email } from '../src/config/common';
 import { motivoContrasenaDebil } from '../src/domain/password-debil';
+import { laCorporacion } from '../src/domain/articulos';
 
 type Entorno = Record<string, string | undefined>;
 
@@ -64,7 +65,7 @@ export function planDeCuentas(entorno: Entorno = process.env): PlanCuentas {
 
   const password = entorno.SEED_ADMIN_PASSWORD;
   if (password) {
-    const motivo = motivoContrasenaDebil(password);
+    const motivo = motivoContrasenaDebil(password, laCorporacion());
     if (motivo) throw new Error(`Siembra cancelada: SEED_ADMIN_PASSWORD no vale, la contraseña ${motivo}.`);
   }
 

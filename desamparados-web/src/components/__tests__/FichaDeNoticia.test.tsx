@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
 import FichaDeNoticia from '../FichaDeNoticia'
 import type { Noticia } from '../../types'
+import { site } from '../../config/site'
 
 const NOTICIA: Noticia = {
   id: '1',
@@ -28,7 +29,7 @@ describe('FichaDeNoticia', () => {
     expect(ficha.headline).toBe(NOTICIA.titulo)
     expect(ficha.datePublished).toBe(NOTICIA.fecha)
     expect(ficha.articleSection).toBe('Cultos')
-    expect(ficha.mainEntityOfPage).toBe('https://www.desamparadosmalaga.com/noticias/triduo-titular')
+    expect(ficha.mainEntityOfPage).toBe(`${site.url}/noticias/triduo-titular`)
     expect(ficha.image).toBe(NOTICIA.imagen)
   })
 

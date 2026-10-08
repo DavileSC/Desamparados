@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { leerDatosEntidad } from '../../shared/datos-entidad.mjs';
 import {
   CATALOGO_MODULOS, CLAVES_MODULO, LOTE_INICIAL, dependientesActivos, esClaveDeModulo, fichaDe, requisitosQueFaltan,
 } from '../src/domain/modulos.js';
@@ -42,8 +43,9 @@ describe('el catálogo', () => {
   });
 
   test('el lote inicial de esta instalación solo tiene claves del catálogo', () => {
-    const activos = json('shared/datos-entidad.json').modulos.activos as string[];
-    for (const c of activos) assert.ok(esClaveDeModulo(c), `datos-entidad.json enciende «${c}», que no existe`);
+    // En las pruebas, la instalación es el ejemplo (shared/datos-entidad.mjs).
+    const activos = leerDatosEntidad().modulos.activos;
+    for (const c of activos) assert.ok(esClaveDeModulo(c), `datos-entidad.ejemplo.json enciende «${c}», que no existe`);
     assert.deepEqual([...LOTE_INICIAL], activos);
   });
 

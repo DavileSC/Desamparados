@@ -1,4 +1,9 @@
-import datos from '../../../shared/datos-entidad.json' with { type: 'json' };
+import { leerDatosEntidad } from '../../../shared/datos-entidad.mjs';
+
+// Se lee del disco al cargar el módulo, no se importa: el fichero es de cada
+// instalación (instalacion/datos-entidad.json, montado en el contenedor) y no
+// viaja en la imagen. Si falta, la API no arranca y dice qué hacer.
+const datos = leerDatosEntidad();
 
 /**
  * Los datos de contacto del Grupo Parroquial que salen en los correos.
@@ -32,8 +37,8 @@ export type Articulo = 'el' | 'la' | 'los' | 'las';
 
 /**
  * Quién es la corporación: nombre, tipo, advocación, localidad y dominio. Lo que
- * cambia de una instalación a otra vive en `shared/datos-entidad.json`, no en
- * el código, para poder montar la web para otra corporación sin tocarlo.
+ * cambia de una instalación a otra vive en `instalacion/datos-entidad.json`, no
+ * en el código, para poder montar la web para otra corporación sin tocarlo.
  */
 export interface Identidad {
   nombre: string;
@@ -50,8 +55,8 @@ export interface Identidad {
   descripcion: string;
 }
 
-// `as Identidad`: el import JSON no estrecha "el" al tipo literal `Articulo`,
-// solo a `string`, así que la asignación directa no compila.
+// `as Identidad`: el JSON trae el artículo como `string`, no como el tipo
+// literal `Articulo`, así que la asignación directa no compila.
 export const identidad: Identidad = datos.identidad as Identidad;
 
 const informado = (valor: string | null | undefined): valor is string =>
@@ -97,9 +102,7 @@ export function lineasDeSecretaria(datosSecretaria: DatosSecretaria = secretaria
  * Dirección de la Secretaría para el pie de los correos. Cae en las variables
  * de entorno del contacto, que es de donde salen hoy los enlaces del pie.
  */
-// El entorno llega siempre de fuera y sin los tipos de Node: este módulo lo
-// importa también la web (por la política de contraseñas), y en su imagen de
-// Docker no hay tipos de Node con los que compilar `process`.
+// El entorno llega de fuera para poder probarlo con uno inventado.
 export function emailDeSecretaria(entorno: Readonly<Record<string, string | undefined>>): string | null {
   const candidatos = [secretaria.email, entorno.CONTACT_EMAIL_TO, entorno.EMAIL_USER];
   return candidatos.find(informado) ?? null;

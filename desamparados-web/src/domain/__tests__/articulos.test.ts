@@ -26,11 +26,11 @@ describe('artículos', () => {
 describe('la corporación', () => {
   const hermandad = { articulo: 'la' as const, tipo: 'Hermandad', tipoCorto: 'Hermandad' }
   it('la de esta instalación', () => {
-    expect(laCorporacion()).toBe('el Grupo Parroquial')
-    expect(deLaCorporacion()).toBe('del Grupo Parroquial')
-    expect(deLaCorporacion({ corto: true })).toBe('del Grupo')
-    expect(aLaCorporacion()).toBe('al Grupo Parroquial')
-    expect(nuestraCorporacion()).toBe('nuestro Grupo Parroquial')
+    expect(laCorporacion()).toBe('la Hermandad')
+    expect(deLaCorporacion()).toBe('de la Hermandad')
+    expect(deLaCorporacion({ corto: true })).toBe('de la Hermandad')
+    expect(aLaCorporacion()).toBe('a la Hermandad')
+    expect(nuestraCorporacion()).toBe('nuestra Hermandad')
   })
   it('otra instalación', () => {
     expect(deLaCorporacion({ identidad: hermandad })).toBe('de la Hermandad')

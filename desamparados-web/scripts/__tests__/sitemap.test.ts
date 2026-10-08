@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { datosEntidad, rutasDelBloquePublico, rutasParaElSitemap, urlsIndexables } from '../rutas-publicas.mjs'
+import { rutasDelBloquePublico, rutasParaElSitemap, urlsIndexables } from '../rutas-publicas.mjs'
+import { leerDatosEntidad } from '../../../shared/datos-entidad.mjs'
 
 // El sitemap lo sirve la API (/sitemap.xml) con la lista de rutas públicas que
 // genera `npm run sitemap` en shared/rutas-publicas.json. El fichero está
@@ -41,7 +42,7 @@ describe('las páginas que van al sitemap', () => {
   })
 
   it('una página de un módulo que la instalación no enciende se queda fuera: respondería «no encontrado»', () => {
-    const sinTiendaWeb = urlsIndexables(datosEntidad().modulos.activos.filter((c) => c !== 'tienda-web'))
+    const sinTiendaWeb = urlsIndexables(leerDatosEntidad().modulos.activos.filter((c) => c !== 'tienda-web'))
     expect(sinTiendaWeb).not.toContain('/tienda')
     expect(sinTiendaWeb).toContain('/contacto')
     expect(sinTiendaWeb).toContain('/')

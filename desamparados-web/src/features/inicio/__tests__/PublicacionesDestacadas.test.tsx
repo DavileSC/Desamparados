@@ -4,6 +4,7 @@ import { renderWithProviders } from '../../../test/test-utils'
 import PublicacionesDestacadas from '../PublicacionesDestacadas'
 import { textosDePrueba } from './ayudas'
 import type { TextosPortada } from '../../../lib/api/portada'
+import { site } from '../../../config/site'
 
 afterEach(() => { vi.unstubAllGlobals() })
 
@@ -69,7 +70,7 @@ describe('PublicacionesDestacadas', () => {
     const conFoto = await screen.findByTestId('portada-publicacion')
     expect(conFoto.querySelector('img')).toHaveAttribute('src', '/storage/portada.jpg')
     expect(within(conFoto).getByText('Boletín')).toBeInTheDocument()
-    expect(within(conFoto).getByText('Grupo Parroquial')).toBeInTheDocument()
+    expect(within(conFoto).getByText(site.tipo)).toBeInTheDocument()
     expect(conFoto).toHaveTextContent('n.º12')
   })
 

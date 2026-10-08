@@ -8,9 +8,10 @@
 # Antes de ejecutarlo:
 #   - Docker con el plugin compose, y el repositorio clonado donde vaya a vivir
 #     (por ejemplo /srv/desamparados). Se ejecuta desde ahí, como root.
-#   - shared/datos-entidad.json con los datos de la corporación: el nombre, la
-#     advocación, la localidad y el dominio (www.…). De ahí salen la web, los
-#     correos, los PDF y nginx.
+#   - instalacion/datos-entidad.json con los datos de la corporación: el nombre,
+#     la advocación, la localidad y el dominio (www.…). De ahí salen la web, los
+#     correos, los PDF y nginx. Si no existe, este guion lo crea copiando
+#     shared/datos-entidad.ejemplo.json y para hasta que se rellene.
 #   - El dominio apuntando ya a este servidor, con los puertos 80 y 443 libres:
 #     Let's Encrypt lo comprueba al pedir el certificado.
 #
@@ -39,7 +40,7 @@ CERTIFICADO=1
 for arg in "$@"; do
   case "$arg" in
     --sin-certificado) CERTIFICADO=0 ;;
-    -h|--help) sed -n '2,28p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
     -*) fallo "Opción desconocida: $arg" ;;
     *) CORREO="$arg" ;;
   esac
@@ -50,9 +51,21 @@ done
 docker compose version >/dev/null 2>&1 || fallo "No encuentro «docker compose». Instala Docker Engine con su plugin compose."
 command -v openssl >/dev/null || fallo "No encuentro openssl, que genera los secretos."
 
+# Los datos de la corporación: fuera de git, para que actualizar no choque con
+# ellos. La primera vez se parte del ejemplo y se para: arrancar con la
+# corporación inventada mandaría correos y PDF con su nombre.
+DATOS=instalacion/datos-entidad.json
+EJEMPLO=shared/datos-entidad.ejemplo.json
+if [[ ! -f "$DATOS" ]]; then
+  install -d instalacion
+  cp "$EJEMPLO" "$DATOS"
+  fallo "He creado $PROYECTO_DIR/$DATOS a partir del ejemplo. Rellénalo con los datos de la corporación y vuelve a lanzar este guion."
+fi
+dominio_de() { sed -n 's/^[[:space:]]*"dominio":[[:space:]]*"\([^"]*\)".*/\1/p' "$1" | head -n 1; }
 # El dominio sale del mismo fichero que la web y nginx: un solo sitio donde cambiarlo.
-DOMINIO="$(sed -n 's/^[[:space:]]*"dominio":[[:space:]]*"\([^"]*\)".*/\1/p' shared/datos-entidad.json | head -n 1)"
-[[ "$DOMINIO" =~ ^www\.[a-z0-9-]+(\.[a-z0-9-]+)+$ ]] || fallo "El dominio de shared/datos-entidad.json («$DOMINIO») tiene que ser del tipo www.ejemplo.com."
+DOMINIO="$(dominio_de "$DATOS")"
+[[ "$DOMINIO" != "$(dominio_de "$EJEMPLO")" ]] || fallo "$DATOS sigue con los datos del ejemplo ($DOMINIO): rellénalo con los de la corporación."
+[[ "$DOMINIO" =~ ^www\.[a-z0-9-]+(\.[a-z0-9-]+)+$ ]] || fallo "El dominio de $DATOS («$DOMINIO») tiene que ser del tipo www.ejemplo.com."
 log "Instalación para $DOMINIO en $PROYECTO_DIR"
 
 compose() { docker compose -f compose.yaml "$@"; }

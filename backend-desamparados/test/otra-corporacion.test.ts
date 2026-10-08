@@ -1,5 +1,5 @@
 // La instalación de mentira: con una identidad «la Hermandad» en vez de «el
-// Grupo Parroquial» (shared/datos-entidad.json), los textos que antes se
+// Grupo Parroquial» (instalacion/datos-entidad.json), los textos que antes se
 // escribían a mano tienen que seguir leyéndose bien y sin rastro de «Grupo».
 //
 // Las funciones de domain/articulos.ts ya se prueban contra
@@ -18,7 +18,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import * as OTPAuth from 'otpauth';
-import type { Identidad } from '../src/domain/datos-entidad.js';
+import { identidad, type Identidad } from '../src/domain/datos-entidad.js';
 import { nuestraCorporacion } from '../src/domain/articulos.js';
 import { maquetar, pie } from '../src/services/correos/plantilla.js';
 import { componer, usoObligado } from '../src/services/correos/componer.js';
@@ -135,8 +135,8 @@ describe('el doble factor', () => {
     assert.equal(totp.issuer, 'Vera Cruz');
     assert.match(totp.toString(), /^otpauth:\/\/totp\/Vera%20Cruz:ana%40ejemplo\.es\?issuer=Vera%20Cruz&/);
   });
-  test('la de esta instalación, «Desamparados»', () => {
-    assert.equal(totpDeLaCuenta('ana@ejemplo.es', new OTPAuth.Secret({ size: 20 })).issuer, 'Desamparados');
+  test('la de esta instalación, por su nombre corto', () => {
+    assert.equal(totpDeLaCuenta('ana@ejemplo.es', new OTPAuth.Secret({ size: 20 })).issuer, identidad.nombreCorto);
   });
 });
 

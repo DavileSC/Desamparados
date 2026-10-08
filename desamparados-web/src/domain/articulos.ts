@@ -1,4 +1,4 @@
-import datos from '../../../shared/datos-entidad.json'
+import datos from '@instalacion/datos-entidad.json'
 
 /**
  * El artículo de la corporación o de una salida, y las frases que salen de él.

@@ -81,6 +81,23 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+      # Los datos de la corporación no están en git (instalacion/, ignorada): la
+      # web los lleva compilados dentro, así que aquí salen de la variable
+      # DATOS_ENTIDAD del repositorio (Settings → Secrets and variables →
+      # Actions → Variables), con el contenido entero del fichero. Hasta que la
+      # web los lea al arrancar, la imagen de la web es de una corporación.
+      - name: Datos de la corporación
+        if: matrix.imagen == 'web'
+        env:
+          DATOS_ENTIDAD: ${{ vars.DATOS_ENTIDAD }}
+        run: |
+          if [ -z "$DATOS_ENTIDAD" ]; then
+            echo "::error::Falta la variable DATOS_ENTIDAD del repositorio, con el contenido de instalacion/datos-entidad.json."
+            exit 1
+          fi
+          mkdir -p instalacion
+          printf '%s\n' "$DATOS_ENTIDAD" > instalacion/datos-entidad.json
+          node -e "const d = require('./instalacion/datos-entidad.json'); console.log('Corporación:', d.identidad.nombre, '·', d.identidad.dominio)"
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -108,6 +125,8 @@ jobs:
       # el de detrás del nginx del sistema (el que se usa hoy) y el de
       # producción, que necesita un certificado cualquiera para arrancar.
       - name: nginx -t
+        env:
+          DATOS_ENTIDAD: ${{ vars.DATOS_ENTIDAD }}
         run: |
           imagen="$REGISTRO-web:$GITHUB_SHA"
           docker pull --quiet "$imagen"
@@ -116,7 +135,7 @@ jobs:
             -v "$PWD/docker/nginx/sitio-tras-proxy.conf:/etc/nginx/conf.d/desamparados.conf:ro" \
             "$imagen" nginx -t
           echo "Sitio de producción:"
-          dominio=$(node -p "require('./shared/datos-entidad.json').identidad.dominio")
+          dominio=$(node -p "JSON.parse(process.env.DATOS_ENTIDAD).identidad.dominio")
           mkdir -p "certs/live/$dominio"
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$dominio" \
             -keyout "certs/live/$dominio/privkey.pem" -out "certs/live/$dominio/fullchain.pem" 2>/dev/null

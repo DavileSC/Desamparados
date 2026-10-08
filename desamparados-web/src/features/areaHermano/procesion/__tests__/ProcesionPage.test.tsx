@@ -6,6 +6,7 @@ import ProcesionPage from '../ProcesionPage'
 import type { FichaEnLaProcesion, FichaEnUnaSalida, MiProcesion, SalidaDelHermano } from '../../../../lib/api/procesion'
 import type { Salida } from '../../../../lib/api/salidas'
 import { salidasDePrueba, salidaRosario, esListaDeSalidas } from '../../../../test/salidas'
+import { laCorporacion } from '../../../../domain/articulos'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -121,7 +122,7 @@ describe('ProcesionPage', () => {
     const tarjeta = await screen.findByRole('region', { name: 'Este año' })
     expect(within(tarjeta).getByRole('heading', { name: 'Tu solicitud' })).toBeInTheDocument()
     const conAnio = new Date().getFullYear() === 2027 ? '' : ' de 2027'
-    expect(within(tarjeta).getByText(`Pediste: Nazareno (lo confirma el Grupo en la mesa) · Lunes, 8 de marzo${conAnio}, de 18:00 a 21:00`, { exact: false })).toBeInTheDocument()
+    expect(within(tarjeta).getByText(`Pediste: Nazareno (lo confirma ${laCorporacion({ corto: true })} en la mesa) · Lunes, 8 de marzo${conAnio}, de 18:00 a 21:00`, { exact: false })).toBeInTheDocument()
     // La salida está pagada (nada pendiente): lo que falta es la cuota, y se dice así.
     expect(within(tarjeta).getByText('Falta la cuota')).toBeInTheDocument()
     expect(within(tarjeta).queryByText('Pendiente de pago')).not.toBeInTheDocument()

@@ -110,6 +110,9 @@ services:
       # de Docker: así la copia de seguridad las empaqueta leyendo una carpeta
       # normal, y restaurar es un rsync.
       - ./backend-desamparados/storage:/app/backend-desamparados/storage
+      # Los datos de la corporación (no están en git ni en la imagen). Si falta
+      # el fichero, la API no arranca y dice qué hacer: docs/despliegue.md.
+      - ./instalacion:/app/instalacion:ro
     depends_on:
       migraciones:
         condition: service_completed_successfully
@@ -216,6 +219,8 @@ services:
     user: "${APP_UID:-1000}:${APP_GID:-1000}"
     volumes:
       - ./backend-desamparados/storage:/app/backend-desamparados/storage
+      # La siembra arranca los módulos de la instalación con su lote.
+      - ./instalacion:/app/instalacion:ro
     depends_on:
       db:
         condition: service_healthy

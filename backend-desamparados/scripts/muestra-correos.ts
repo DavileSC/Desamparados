@@ -37,4 +37,4 @@ await EmailService.enviarBajaORechazo(SOLICITANTE.email, SOLICITANTE.nombre, 'ba
 await EmailService.enviarBajaORechazo(SOLICITANTE.email, SOLICITANTE.nombre, 'baja', true, 'MUJER');
 
 console.log(`\nListo. Los correos están en:\n  ${carpetaCorreos()}\n`);
-console.log('Ábrelos con doble clic. Los datos de Secretaría salen de shared/datos-entidad.json.');
+console.log('Ábrelos con doble clic. Los datos de Secretaría salen de instalacion/datos-entidad.json.');

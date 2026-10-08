@@ -2,20 +2,23 @@
 // pasan por React: index.html (lo que leen WhatsApp, Facebook o Google sin
 // ejecutar JavaScript), public/manifest.json y public/robots.txt.
 //
-// Salen de shared/datos-entidad.json, el mismo fichero que leen la API y
+// Salen de instalacion/datos-entidad.json, el mismo fichero que leen la API y
 // src/config/site.ts: montar la web para otra corporación es cambiar ese
 // fichero, no buscar su nombre por el código. index.html sale de
 // index.plantilla.html; se edita la plantilla, nunca index.html.
 //
-// Se ejecuta antes de `npm run dev` y de `npm run build` (predev y prebuild).
-// Con `--comprobar` no escribe nada: falla si algún fichero no está al día.
+// Los tres son de cada instalación, como su fichero de datos, y por eso no
+// están en git: se escriben antes de `npm run dev` y de `npm run build`
+// (predev y prebuild). Con `--destino <carpeta>` se escriben allí y no en la
+// web (las pruebas).
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { leerDatosEntidad } from '../../shared/datos-entidad.mjs'
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
-const { identidad, secretaria, sede } = JSON.parse(readFileSync(join(raiz, '../shared/datos-entidad.json'), 'utf8'))
+const { identidad, secretaria, sede } = leerDatosEntidad()
 
 const url = `https://${identidad.dominio}`
 const valores = {
@@ -91,19 +94,9 @@ const ficheros = [
   ['public/robots.txt', robots()],
 ]
 
-const comprobar = process.argv.includes('--comprobar')
-const desfasados = []
+const posicion = process.argv.indexOf('--destino')
+const destino = posicion === -1 ? raiz : resolve(process.argv[posicion + 1] ?? '')
 for (const [ruta, contenido] of ficheros) {
-  const destino = join(raiz, ruta)
-  let actual = null
-  try { actual = readFileSync(destino, 'utf8') } catch { /* aún no existe */ }
-  // Sin mirar los saltos de línea: git los cambia a CRLF al sacar el repositorio en Windows.
-  const sinSaltos = (t) => t.replace(/\r\n/g, '\n')
-  if (actual !== null && sinSaltos(actual) === sinSaltos(contenido)) continue
-  if (comprobar) desfasados.push(ruta)
-  else writeFileSync(destino, contenido)
-}
-if (desfasados.length > 0) {
-  console.error(`No están al día con shared/datos-entidad.json: ${desfasados.join(', ')}. Ejecuta «npm run identidad».`)
-  process.exit(1)
+  mkdirSync(dirname(join(destino, ruta)), { recursive: true })
+  writeFileSync(join(destino, ruta), contenido)
 }

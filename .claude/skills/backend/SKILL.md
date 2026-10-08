@@ -66,7 +66,7 @@ DAO**: los servicios consultan con `db` directamente.
 - Transacciones que pueden chocar → `utils/transaction-retry.ts`; el conflicto
   se reconoce en `esConflictoDeConcurrencia` y sale como 409.
 - Correos: `services/correos/`; en pruebas nunca se envían. Los datos del Grupo
-  (dirección, horario…) salen de `shared/datos-entidad.json`, nunca a mano.
+  (dirección, horario…) salen de `instalacion/datos-entidad.json`, nunca a mano.
 - Variables de entorno nuevas: validarlas en `config/entorno.ts` y añadirlas a
   los `.env.example`.
 

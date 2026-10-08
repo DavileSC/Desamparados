@@ -1,5 +1,6 @@
 import { type } from 'arktype';
 import { motivoContrasenaDebil } from '../domain/password-debil.js';
+import { laCorporacion } from '../domain/articulos.js';
 import { nifValido, normalizarNif } from '../domain/nif.js';
 import { provinciaDelCodigoPostal } from '../domain/modelo-182.js';
 
@@ -29,7 +30,7 @@ export const email = type("string <= 254")
 // src/domain/password-debil.ts para poder probarlas sin base de datos.
 export const password = type("string")
     .narrow((valor, ctx) => {
-        const motivo = motivoContrasenaDebil(valor);
+        const motivo = motivoContrasenaDebil(valor, laCorporacion());
         return motivo === null || ctx.reject({ problem: `la contraseña ${motivo}` });
     });
 
