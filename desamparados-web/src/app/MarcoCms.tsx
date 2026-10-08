@@ -14,6 +14,7 @@ import EscudoDelGrupo from '../components/EscudoDelGrupo'
 import { useAuthStore } from '../features/altas/auth/store'
 import { cerrarSesion } from '../features/altas/auth/session'
 import { TemaCmsProvider } from './temaCms'
+import VentanaSesionCaducada from './VentanaSesionCaducada'
 import { useModoCms, useTemaCms } from './useTemaCms'
 import { superficiesCms } from '../theme/cms'
 import { GRUPOS, NOMBRE_CARGO, contadoresDelPanel, itemsMenu, menuCmsVisible, type Grupo, type ItemMenu } from './cmsNavegacion'
@@ -515,6 +516,7 @@ export default function MarcoCms() {
   return (
     <TemaCmsProvider>
       <Contenido />
+      <VentanaSesionCaducada />
     </TemaCmsProvider>
   )
 }

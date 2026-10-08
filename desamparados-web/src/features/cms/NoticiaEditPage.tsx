@@ -47,7 +47,7 @@ export default function NoticiaEditPage() {
   const nueva = id === undefined
   const queryClient = useQueryClient()
   const [confirmando, setConfirmando] = useState<Accion | null>(null)
-  const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, guardar: guardarFicha } =
+  const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, borrador, volverAlListado, campo, guardar: guardarFicha } =
     useFichaCms<NoticiaDeLaApi, DatosDeNoticia>({
       listado: '/cms/noticias',
       origen: nueva ? null : Number(id),
@@ -228,7 +228,7 @@ export default function NoticiaEditPage() {
         onConfirmar={() => { if (confirmando) void guardar(confirmando) }}
         onCancelar={() => setConfirmando(null)}
       />
-      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="esta noticia" />
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="esta noticia" borrador={borrador} />
       <Box sx={{ height: 24 }} />
     </>
   )

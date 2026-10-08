@@ -43,7 +43,7 @@ export default function PublicacionEditPage() {
   const { id } = useParams()
   const nueva = id === undefined
   const [confirmando, setConfirmando] = useState<Accion | null>(null)
-  const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, volverAlListado, campo, guardar: guardarFicha } =
+  const { cargado: guardada, form, inicial, sucio, guardando, error, bloqueo, borrador, volverAlListado, campo, guardar: guardarFicha } =
     useFichaCms<PublicacionDeLaApi, DatosDePublicacion>({
       listado: '/cms/publicaciones',
       origen: nueva ? null : Number(id),
@@ -226,7 +226,7 @@ export default function PublicacionEditPage() {
         onConfirmar={() => { if (confirmando) void guardar(confirmando) }}
         onCancelar={() => setConfirmando(null)}
       />
-      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="esta publicación" />
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="esta publicación" borrador={borrador} />
       <Box sx={{ height: 24 }} />
     </>
   )

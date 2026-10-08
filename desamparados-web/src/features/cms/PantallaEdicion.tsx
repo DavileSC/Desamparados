@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Box, Button, Paper, Stack, Typography } from '@mui/material'
 import { useBlocker, useNavigate } from 'react-router-dom'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
+import { useAvisoAlCerrarLaPestana } from '../../hooks/useAvisoAlCerrarLaPestana'
 
 /** Ancho de la columna de edición. Antes era 900 y pegada a la izquierda. */
 export const ANCHO_EDICION = 1100
@@ -48,6 +49,8 @@ export default function PantallaEdicion({ titulo, nombre, sucio, guardando = fal
   // sigue distinto del que se cargó. Sin esta condición, guardar terminaba
   // preguntando si se pierden los cambios que se acaban de guardar.
   const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sucio && !guardando && currentLocation.pathname !== nextLocation.pathname)
+  // El bloqueo de arriba no ve cerrar la pestaña ni recargar: esto sí.
+  useAvisoAlCerrarLaPestana(sucio && !guardando)
 
   return (
     <>

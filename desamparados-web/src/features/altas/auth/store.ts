@@ -41,8 +41,23 @@ interface AuthState {
    */
   cms: AuthUser | null
   hermano: AuthUser | null
+  /**
+   * La sesión del CMS ha caducado mientras se trabajaba en él. `cms` conserva
+   * al usuario de antes a propósito: si se vaciara, `ExigeRol` cambiaría la
+   * pantalla entera por el acceso y se perdería lo que se estaba escribiendo.
+   * En su lugar, el marco del CMS abre una ventana para volver a entrar. El
+   * servidor sigue rechazando cada petición mientras tanto: esto es solo lo
+   * que se pinta, no un permiso.
+   */
+  cmsCaducada: boolean
   entrarSesion: (area: AreaSesion, user: AuthUser) => void
   salirSesion: (area?: AreaSesion) => void
+  /**
+   * Lo que responde /auth/me, de una vez. En dos pasos (salir y volver a
+   * entrar) quien escucha los cambios de usuario veía un instante sin nadie y
+   * vaciaba la caché de una sesión que seguía siendo la misma.
+   */
+  ponerSesiones: (sesiones: { cms: AuthUser | null; hermano: AuthUser | null }) => void
 }
 
 // Sin persist: las sesiones viven en cookies httpOnly y el navegador no guarda
@@ -51,14 +66,16 @@ export const useAuthStore = create<AuthState>()((set) => ({
   status: 'cargando',
   cms: null,
   hermano: null,
+  cmsCaducada: false,
   entrarSesion: (area, user) =>
-    set(area === 'cms' ? { status: 'listo', cms: user } : { status: 'listo', hermano: user }),
+    set(area === 'cms' ? { status: 'listo', cms: user, cmsCaducada: false } : { status: 'listo', hermano: user }),
   salirSesion: (area) =>
     set(
-      area === 'cms' ? { status: 'listo', cms: null }
+      area === 'cms' ? { status: 'listo', cms: null, cmsCaducada: false }
       : area === 'hermanos' ? { status: 'listo', hermano: null }
-      : { status: 'listo', cms: null, hermano: null },
+      : { status: 'listo', cms: null, hermano: null, cmsCaducada: false },
     ),
+  ponerSesiones: ({ cms, hermano }) => set({ status: 'listo', cms, hermano, cmsCaducada: false }),
 }))
 
 /** Roles con acceso al CMS/Secretaría (el resto son hermanos rasos: USER) */

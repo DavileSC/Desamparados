@@ -127,12 +127,20 @@ function refrescarSesiones(): Promise<void> {
   refrescando ??= import('./auth')
     .then(({ sesionActual }) => sesionActual())
     .then(({ cms, hermano }) => {
-      const { entrarSesion, salirSesion } = useAuthStore.getState()
-      salirSesion()
-      if (cms) entrarSesion('cms', cms)
-      if (hermano) entrarSesion('hermanos', hermano)
+      const { cms: antes, ponerSesiones } = useAuthStore.getState()
+      if (antes && !cms) {
+        // La del CMS ha caducado con alguien dentro, quizá a medio escribir:
+        // se le pide volver a entrar en una ventana (ver `cmsCaducada`) en
+        // vez de vaciarla, que desmontaría el formulario con su texto.
+        useAuthStore.setState({ status: 'listo', hermano, cmsCaducada: true })
+        return
+      }
+      ponerSesiones({ cms, hermano })
     })
-    .catch(() => useAuthStore.getState().salirSesion())
+    // /auth/me no responde 401 nunca: si falla es la red o el servidor, y eso
+    // no dice nada de las sesiones. Vaciarlas echaba también a la que seguía
+    // viva; la siguiente petición que falle volverá a preguntar.
+    .catch(() => undefined)
     .finally(() => { refrescando = null })
   return refrescando
 }
