@@ -34,7 +34,8 @@ describe('HistoriaPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Historia' })).toBeInTheDocument()
     expect(screen.getByText('Corporación · Historia')).toBeInTheDocument()
 
-    const lista = screen.getByRole('list', { name: 'Cronología' })
+    // La cronología se descarga aparte: la página espera en esqueleto a que llegue.
+    const lista = await screen.findByRole('list', { name: 'Cronología' })
     const hitos = within(lista).getAllByRole('listitem')
     expect(hitos).toHaveLength(HITOS.length)
     hitos.forEach((hito, indice) => {

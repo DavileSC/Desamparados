@@ -1,9 +1,13 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '../../../../test/test-utils'
 import AgendaPage from '../AgendaPage'
+import { precargarBloques } from '../../../../test/bloques'
 import { stubFetchPublico } from '../../../../test/fetchPublico'
+
+// La página es de bloques y el listado se descarga aparte: aquí se mira lo que pinta.
+beforeAll(async () => { await precargarBloques() })
 
 // Horas locales, como las ve quien entra.
 const en = (dia: string, hora: string) => new Date(`${dia}T${hora}`).toISOString()

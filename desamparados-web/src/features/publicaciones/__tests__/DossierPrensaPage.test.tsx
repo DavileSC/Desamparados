@@ -1,8 +1,12 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '../../../test/test-utils'
 import DossierPrensaPage from '../DossierPrensaPage'
+import { precargarBloques } from '../../../test/bloques'
 import { stubFetchPublico } from '../../../test/fetchPublico'
+
+// La página es de bloques y el listado se descarga aparte: aquí se mira lo que pinta.
+beforeAll(async () => { await precargarBloques() })
 
 const dossier = {
   id: 9, titulo: 'Dossier de prensa 2026', descripcion: 'Apariciones en medios locales.', imagenUrl: null,

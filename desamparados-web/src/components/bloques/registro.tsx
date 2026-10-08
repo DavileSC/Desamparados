@@ -1,14 +1,10 @@
-import type { ComponentType } from 'react'
+import { use, type ComponentType } from 'react'
 import BloqueTexto from './BloqueTexto'
 import BloqueFoto from './BloqueFoto'
-import BloqueGaleria from './BloqueGaleria'
 import BloqueTarjetas from './BloqueTarjetas'
 import BloqueLlamada from './BloqueLlamada'
 import BloqueDatos from './BloqueDatos'
 import BloqueItinerario from './BloqueItinerario'
-import BloqueCronologia from './BloqueCronologia'
-import BloqueListado from './BloqueListado'
-import BloqueContacto from './BloqueContacto'
 import BloqueFotoTexto from './BloqueFotoTexto'
 import BloqueCita from './BloqueCita'
 import BloqueVideo from './BloqueVideo'
@@ -18,17 +14,89 @@ import BloqueDescargas from './BloqueDescargas'
 import BloqueMapa from './BloqueMapa'
 import BloqueCuentaAtras from './BloqueCuentaAtras'
 import BloqueEspacio from './BloqueEspacio'
-import BloqueDonativo from './BloqueDonativo'
 import BloqueFotoFija from './BloqueFotoFija'
-import BloqueHorario from './BloqueHorario'
-import BloqueDibujo from './BloqueDibujo'
 import BloqueAnillos from './BloqueAnillos'
 import BloquePuertas from './BloquePuertas'
 import BloquePrograma from './BloquePrograma'
 import BloqueRelacion from './BloqueRelacion'
-import BloqueCarrusel from './BloqueCarrusel'
 import { valorDe } from './presentacion'
 import type { Bloque } from '../../lib/api/contenido'
+
+type ComponenteDeBloque = ComponentType<{ bloque: never }>
+
+interface BloquePerezoso {
+  Componente: ComponenteDeBloque
+  cargar: () => Promise<void>
+  listo: () => boolean
+}
+
+/**
+ * Un bloque que se descarga aparte, la primera vez que una página lo lleva.
+ *
+ * Todos juntos pesaban unos 42 KB comprimidos, y los bajaba cualquier página
+ * de bloques aunque fuera solo texto y fotos. Los que van aquí son los grandes
+ * (el calendario del listado, la cronología, el carrusel, el formulario de
+ * contacto con react-hook-form y zod…); los pequeños siguen dentro.
+ *
+ * No es `React.lazy` porque aquel suspende siempre la primera vez que se pinta
+ * cada sitio, aunque el código ya esté descargado: un instante en blanco que
+ * cambiaría el alto de la página. Este, una vez cargado, pinta directamente, y
+ * `ConBloquesCargados` lo descarga antes de enseñar la página.
+ */
+function perezoso(importar: () => Promise<{ default: unknown }>): BloquePerezoso {
+  let cargado: ComponenteDeBloque | null = null
+  let promesa: Promise<void> | null = null
+  const cargar = () => (promesa ??= importar().then(
+    (modulo) => { cargado = modulo.default as ComponenteDeBloque },
+    // Si falla (un despliegue nuevo borró el trozo, la red), se olvida para
+    // que el siguiente intento vuelva a pedirlo en vez de fallar para siempre.
+    (error: unknown) => { promesa = null; throw error },
+  ))
+  // El registro es de constantes y este componente es parte de una: si cambia
+  // este fichero, el fast refresh recarga la página, que es lo que conviene.
+  // eslint-disable-next-line react/only-export-components
+  function Perezoso(props: { bloque: never }) {
+    // `use` admite llamarse con condición: solo suspende si aún no ha llegado.
+    if (!cargado) use(cargar())
+    const Componente = cargado as ComponenteDeBloque
+    // eslint-disable-next-line react/static-components -- es el componente del módulo descargado, siempre el mismo
+    return <Componente {...props} />
+  }
+  return { Componente: Perezoso, cargar, listo: () => cargado !== null }
+}
+
+const PEREZOSOS: Record<string, BloquePerezoso> = {
+  galeria: perezoso(() => import('./BloqueGaleria')),
+  cronologia: perezoso(() => import('./BloqueCronologia')),
+  listado: perezoso(() => import('./BloqueListado')),
+  contacto: perezoso(() => import('./BloqueContacto')),
+  horario: perezoso(() => import('./BloqueHorario')),
+  dibujo: perezoso(() => import('./BloqueDibujo')),
+  carrusel: perezoso(() => import('./BloqueCarrusel')),
+  donativo: perezoso(() => import('./BloqueDonativo')),
+}
+
+const enCurso = new Map<string, Promise<void>>()
+
+/**
+ * La descarga de los bloques perezosos que llevan estos bloques, o `null` si ya
+ * están todos. La misma promesa para los mismos tipos: `use` la necesita
+ * estable entre renders.
+ */
+export function cargarBloques(bloques: Bloque[]): Promise<void> | null {
+  const faltan = [...new Set(bloques.map((bloque) => bloque.tipo))]
+    .filter((tipo) => PEREZOSOS[tipo] && !PEREZOSOS[tipo].listo())
+    .sort()
+  if (faltan.length === 0) return null
+  const clave = faltan.join()
+  let promesa = enCurso.get(clave)
+  if (!promesa) {
+    promesa = Promise.all(faltan.map((tipo) => PEREZOSOS[tipo].cargar())).then(() => undefined)
+    enCurso.set(clave, promesa)
+    promesa.catch(() => undefined).finally(() => enCurso.delete(clave))
+  }
+  return promesa
+}
 
 /**
  * Qué componente pinta cada tipo de bloque.
@@ -38,35 +106,35 @@ import type { Bloque } from '../../lib/api/contenido'
  * de los tipos de esa lista: sin él, añadir un bloque en el servidor y olvidar
  * su componente dejaría un hueco en blanco en la página sin que nada fallara.
  */
-export const REGISTRO_BLOQUES: Record<string, ComponentType<{ bloque: never }>> = {
-  texto: BloqueTexto as ComponentType<{ bloque: never }>,
-  foto: BloqueFoto as ComponentType<{ bloque: never }>,
-  galeria: BloqueGaleria as ComponentType<{ bloque: never }>,
-  tarjetas: BloqueTarjetas as ComponentType<{ bloque: never }>,
-  llamada: BloqueLlamada as ComponentType<{ bloque: never }>,
-  datos: BloqueDatos as ComponentType<{ bloque: never }>,
-  itinerario: BloqueItinerario as ComponentType<{ bloque: never }>,
-  cronologia: BloqueCronologia as ComponentType<{ bloque: never }>,
-  listado: BloqueListado as ComponentType<{ bloque: never }>,
-  contacto: BloqueContacto as ComponentType<{ bloque: never }>,
-  fotoTexto: BloqueFotoTexto as ComponentType<{ bloque: never }>,
-  cita: BloqueCita as ComponentType<{ bloque: never }>,
-  video: BloqueVideo as ComponentType<{ bloque: never }>,
-  botones: BloqueBotones as ComponentType<{ bloque: never }>,
-  preguntas: BloquePreguntas as ComponentType<{ bloque: never }>,
-  descargas: BloqueDescargas as ComponentType<{ bloque: never }>,
-  mapa: BloqueMapa as ComponentType<{ bloque: never }>,
-  cuentaAtras: BloqueCuentaAtras as ComponentType<{ bloque: never }>,
-  espacio: BloqueEspacio as ComponentType<{ bloque: never }>,
-  fotoFija: BloqueFotoFija as ComponentType<{ bloque: never }>,
-  horario: BloqueHorario as ComponentType<{ bloque: never }>,
-  dibujo: BloqueDibujo as ComponentType<{ bloque: never }>,
-  anillos: BloqueAnillos as ComponentType<{ bloque: never }>,
-  puertas: BloquePuertas as ComponentType<{ bloque: never }>,
-  programa: BloquePrograma as ComponentType<{ bloque: never }>,
-  relacion: BloqueRelacion as ComponentType<{ bloque: never }>,
-  carrusel: BloqueCarrusel as ComponentType<{ bloque: never }>,
-  donativo: BloqueDonativo as ComponentType<{ bloque: never }>,
+export const REGISTRO_BLOQUES: Record<string, ComponenteDeBloque> = {
+  texto: BloqueTexto as ComponenteDeBloque,
+  foto: BloqueFoto as ComponenteDeBloque,
+  galeria: PEREZOSOS.galeria.Componente,
+  tarjetas: BloqueTarjetas as ComponenteDeBloque,
+  llamada: BloqueLlamada as ComponenteDeBloque,
+  datos: BloqueDatos as ComponenteDeBloque,
+  itinerario: BloqueItinerario as ComponenteDeBloque,
+  cronologia: PEREZOSOS.cronologia.Componente,
+  listado: PEREZOSOS.listado.Componente,
+  contacto: PEREZOSOS.contacto.Componente,
+  fotoTexto: BloqueFotoTexto as ComponenteDeBloque,
+  cita: BloqueCita as ComponenteDeBloque,
+  video: BloqueVideo as ComponenteDeBloque,
+  botones: BloqueBotones as ComponenteDeBloque,
+  preguntas: BloquePreguntas as ComponenteDeBloque,
+  descargas: BloqueDescargas as ComponenteDeBloque,
+  mapa: BloqueMapa as ComponenteDeBloque,
+  cuentaAtras: BloqueCuentaAtras as ComponenteDeBloque,
+  espacio: BloqueEspacio as ComponenteDeBloque,
+  fotoFija: BloqueFotoFija as ComponenteDeBloque,
+  horario: PEREZOSOS.horario.Componente,
+  dibujo: PEREZOSOS.dibujo.Componente,
+  anillos: BloqueAnillos as ComponenteDeBloque,
+  puertas: BloquePuertas as ComponenteDeBloque,
+  programa: BloquePrograma as ComponenteDeBloque,
+  relacion: BloqueRelacion as ComponenteDeBloque,
+  carrusel: PEREZOSOS.carrusel.Componente,
+  donativo: PEREZOSOS.donativo.Componente,
 }
 
 export const componenteDeBloque = (bloque: Bloque) => REGISTRO_BLOQUES[bloque.tipo]
