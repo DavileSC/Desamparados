@@ -24,6 +24,7 @@ import { anioDeLaMesa, ZonasService, type EntregaEnMesa, type InscripcionEnMesa 
 import { idDeSalida, PASION, ROSARIO, salida } from './fixtures/salidas.js';
 import { HttpError } from '../src/utils/error.handle.js';
 import { InventarioService } from '../src/services/inventario.service.js';
+import { ReciboService } from '../src/services/recibo.service.js';
 import { CLAVE_CINGULOS, recuentoDeCingulos } from '../src/services/procesion/cingulos.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
 
@@ -286,6 +287,27 @@ test('perdonar: la pendiente queda exenta con la nota del Hermano Mayor; la devu
     // Con todo perdonado (la del banco no bloquea), recoge.
     const { solicitudId } = await e.inscribir(h.id);
     await e.entregar(solicitudId);
+  } finally {
+    await e.recoger();
+  }
+});
+
+// Con la remesa en el banco, el cobro lo hace el banco: cobrarlo además en mano
+// (en la mesa o desde Tesorería) cobraba dos veces la misma cuota.
+test('una cuota remesada no se cobra en la mesa ni en Tesorería en mano; solo por domiciliación', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const e = await escenario();
+  try {
+    const h = await e.hermano();
+    const enBanco = await e.cuota(h.id, YEAR, EstadoPago.REMESADO);
+    await assert.rejects(ZonasService.cobrar({ hermanoId: h.id, reciboIds: [enBanco.id], metodoPago: MetodoPago.EFECTIVO }, e.clave(), e.meta), esHttp(409, /en el banco/));
+    await assert.rejects(ReciboService.adminMarcarComoPagado(enBanco.id, MetodoPago.EFECTIVO, e.meta), esHttp(409, /en el banco/));
+    assert.equal((await db.recibo.findUniqueOrThrow({ where: { id: enBanco.id } })).estado, EstadoPago.REMESADO);
+    assert.equal(await db.transaccion.count({ where: { reciboId: enBanco.id } }), 0);
+
+    await ReciboService.adminMarcarComoPagado(enBanco.id, undefined, e.meta);
+    const cobrado = await db.recibo.findUniqueOrThrow({ where: { id: enBanco.id } });
+    assert.deepEqual([cobrado.estado, cobrado.metodoPago], [EstadoPago.PAGADO, MetodoPago.DOMICILIACION]);
   } finally {
     await e.recoger();
   }

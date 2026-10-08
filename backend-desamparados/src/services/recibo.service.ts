@@ -16,7 +16,7 @@ import { articuloDe } from '../domain/articulos.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { transactionWithRetry } from '../utils/transaction-retry.js';
-import { anulaPapeleta, puedeCobrarse, puedeTransicionar, requiereReverso, ESTADOS_COBRABLES } from '../domain/recibo-estados.js';
+import { anulaPapeleta, estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO, puedeCobrarse, puedeTransicionar, requiereReverso } from '../domain/recibo-estados.js';
 import { enmascararEmail } from '../utils/log-privacidad.js';
 import { sanearPaginacion, respuestaPaginada } from '../domain/paginacion.js';
 import { agruparImpagos } from '../domain/impagos.js';
@@ -295,15 +295,17 @@ export class ReciboService {
         throw new HttpError(motivos[actual.estado] ?? 'Este recibo no se puede cobrar.', 409);
       }
 
-      // Un remesado lo cobra el banco: si no se dice otra cosa, se queda con
-      // el método que tenía o, en su defecto, domiciliación.
-      const metodo = metodoPago
-        ?? (actual.estado === EstadoPago.REMESADO ? (actual.metodoPago ?? MetodoPago.DOMICILIACION) : undefined);
+      // Un remesado lo cobra el banco, y solo por domiciliación (ver estadosCobrablesCon).
+      if (actual.estado === EstadoPago.REMESADO && !estadosCobrablesCon(metodoPago).includes(EstadoPago.REMESADO)) {
+        throw new HttpError(`Este recibo ${MENSAJE_REMESADO_EN_MANO}`, 409);
+      }
+      const metodo = metodoPago ?? (actual.estado === EstadoPago.REMESADO ? MetodoPago.DOMICILIACION : undefined);
 
       // El cambio condicionado evita que dos cobros concurrentes envíen dos
-      // emails o apunten dos ingresos para el mismo recibo.
+      // emails o apunten dos ingresos para el mismo recibo, y que se cobre en
+      // mano lo que se remesó mientras tanto.
       const result = await tx.recibo.updateMany({
-        where: { id: reciboId, estado: { in: [...ESTADOS_COBRABLES] } },
+        where: { id: reciboId, estado: { in: estadosCobrablesCon(metodo) } },
         data: {
           estado: EstadoPago.PAGADO,
           fechaPago: fechaCargo ?? new Date(),

@@ -29,6 +29,7 @@ import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from '../a
 import { EmailService } from '../email.service.js';
 import { exigirSinReemision, idCategoriaIngresos, leerDatosEvento } from '../recibos/comunes.js';
 import { idsReemitidos } from '../../domain/reemisiones.js';
+import { estadosCobrablesCon, MENSAJE_REMESADO_EN_MANO } from '../../domain/recibo-estados.js';
 import { claveConcepto } from '../../domain/datos-procesion.js';
 import { diaMadrid, inicioDiaMadrid } from '../../domain/contabilidad.js';
 import { alturaHombroEnCm, CINGULO_SEGUN_TUNICA, normalizarNumeroPrenda, propuestaDeRopa, type Origen } from '../../domain/mesa-procesion.js';
@@ -288,8 +289,11 @@ export class ZonasService {
             },
           });
         } else {
+          if (r.estado === EstadoPago.REMESADO && !estadosCobrablesCon(dto.metodoPago).includes(EstadoPago.REMESADO)) {
+            throw new HttpError(`«${r.concepto}» ${MENSAJE_REMESADO_EN_MANO}`, 409);
+          }
           const { count } = await tx.recibo.updateMany({
-            where: { id: r.id, estado: { in: [EstadoPago.PENDIENTE, EstadoPago.REMESADO] } },
+            where: { id: r.id, estado: { in: estadosCobrablesCon(dto.metodoPago) } },
             data: { estado: EstadoPago.PAGADO, fechaPago: ahora, metodoPago: dto.metodoPago },
           });
           if (count !== 1) throw new HttpError(`«${r.concepto}» ya no está pendiente de cobro. Recarga la ficha.`, 409);
