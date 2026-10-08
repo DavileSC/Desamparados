@@ -96,7 +96,7 @@ async function aplicarPago(apadrinamientoId: number, metodo: MetodoEnLinea, meta
     });
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   await AuditoriaService.log(ACCIONES_AUDITORIA.APADRINAMIENTO_PAGADO, meta, 'apadrinamiento', apadrinamientoId, { despues: { piezaId: hecho.piezaId, importe: hecho.importe.toString() } });
-  void correoDeApadrinamiento(hecho).then(({ asunto, html }) => enviarCorreo(hecho.email, asunto, html)).catch(console.error);
+  void correoDeApadrinamiento(hecho).then(({ asunto, html, uso }) => enviarCorreo(hecho.email, asunto, html, { uso })).catch(console.error);
 }
 
 registrarOrigenDePago(OrigenPago.APADRINAMIENTO, aplicarPago, async (id) => (await db.apadrinamiento.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);

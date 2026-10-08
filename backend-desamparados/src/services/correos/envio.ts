@@ -120,15 +120,45 @@ export function ponerCuentaDeContacto(nueva: CuentaDeContacto | null | undefined
   cuentaGuardada = nueva;
 }
 
+export interface OpcionesDeEnvio {
+  replyTo?: string;
+  cuenta?: CuentaDeContacto | null;
+  /** Archivos que van con el correo (la papeleta en PDF), además de las imágenes de la plantilla. */
+  adjuntos?: { filename: string; content: Buffer; contentType: string }[];
+  /**
+   * Qué correo es (la clave de shared/usos-de-correo.json, o «contacto»,
+   * «comunicado»…). Es lo que se apunta en la auditoría si no sale: el asunto
+   * puede llevar el nombre del destinatario.
+   */
+  uso?: string;
+}
+
+/**
+ * Lo que se puede contar de un fallo de envío sin datos personales. El error
+ * de nodemailer trae `rejected`, `envelope` y a veces la respuesta del SMTP
+ * con la dirección entera: volcado tal cual, acababa en el registro.
+ */
+export function resumenDelFallo(error: unknown): string {
+  if (!(error instanceof Error)) return 'desconocido';
+  const e = error as Error & { code?: unknown; responseCode?: unknown; command?: unknown };
+  const partes = [
+    typeof e.code === 'string' ? e.code : null,
+    typeof e.responseCode === 'number' ? `SMTP ${e.responseCode}` : null,
+    typeof e.command === 'string' ? e.command : null,
+  ].filter(Boolean);
+  // Sin código (un fallo propio, como «no hay cuenta configurada»), el
+  // mensaje, con cualquier dirección que lleve tapada.
+  return partes.length
+    ? partes.join(' · ')
+    : e.message.replace(/[^\s<>"',;:]+@[^\s<>"',;:]+/g, (d) => enmascararEmail(d)).slice(0, 250);
+}
+
 // --- MOTOR DE ENVÍO ---
 export async function enviarCorreo(
   to: string,
   subject: string,
   html: string,
-  replyTo?: string,
-  cuenta?: CuentaDeContacto | null,
-  /** Archivos que van con el correo (la papeleta en PDF), además de las imágenes de la plantilla. */
-  adjuntos: { filename: string; content: Buffer; contentType: string }[] = [],
+  { replyTo, cuenta, adjuntos = [], uso = 'sin_clasificar' }: OpcionesDeEnvio = {},
 ): Promise<boolean> {
   try {
     await (cuenta?.transporter ?? transporte()).sendMail({
@@ -146,15 +176,17 @@ export async function enviarCorreo(
     console.log(`✅ Email enviado con éxito a: ${enmascararEmail(to)}`);
     return true;
   } catch (error) {
-    console.error(`❌ Error enviando email a ${enmascararEmail(to)}:`, error);
+    const motivo = resumenDelFallo(error);
+    console.error(`❌ Error enviando el correo «${uso}» a ${enmascararEmail(to)}: ${motivo}`);
     // El fallo va también a la auditoría: es el único sitio donde el staff
     // puede verlo. La dirección se guarda ENMASCARADA — la auditoría ya
     // retiene IP y navegador, y no hace falta añadirle correos completos para
-    // saber que algo no salió.
+    // saber que algo no salió. Y la clave del correo en vez del asunto, que
+    // puede llevar el nombre de quien lo recibía y se guarda 730 días.
     await AuditoriaService.log(ACCIONES_AUDITORIA.EMAIL_FALLIDO, {}, 'email', undefined, {
       para: enmascararEmail(to),
-      asunto: subject,
-      motivo: error instanceof Error ? error.message.slice(0, 250) : 'desconocido',
+      uso,
+      motivo,
     });
     return false;
   }

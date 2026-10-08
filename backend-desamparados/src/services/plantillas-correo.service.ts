@@ -166,7 +166,7 @@ export class PlantillasCorreoService {
     const usuario = meta.userId ? await db.user.findUnique({ where: { id: meta.userId }, select: { email: true } }) : null;
     if (!usuario?.email) throw new HttpError('Tu cuenta no tiene correo al que mandar la prueba.', 409);
     const { asunto, html } = componer(u, texto, rellenoDeEjemplo(u));
-    const ok = await enviarCorreo(usuario.email, `[Prueba] ${asunto || u.nombre}`, html);
+    const ok = await enviarCorreo(usuario.email, `[Prueba] ${asunto || u.nombre}`, html, { uso: `prueba_${u.clave}` });
     if (!ok) throw new HttpError('No se ha podido mandar la prueba. Revisa la cuenta de correo de la web.', 502);
     return { message: `Prueba mandada a ${usuario.email}.` };
   }

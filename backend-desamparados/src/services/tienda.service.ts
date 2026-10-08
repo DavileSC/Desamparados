@@ -183,7 +183,7 @@ async function aplicarPago(pedidoId: number, metodo: MetodoEnLinea, meta: MetaDe
     });
   });
   await AuditoriaService.log(ACCIONES_AUDITORIA.TIENDA_PEDIDO_PAGADO, meta, 'pedido', pedidoId, { despues: { total: pedido.total.toString(), metodo } });
-  void correoDePedido(pedido).then(({ asunto, html }) => enviarCorreo(pedido.email, asunto, html)).catch(console.error);
+  void correoDePedido(pedido).then(({ asunto, html, uso }) => enviarCorreo(pedido.email, asunto, html, { uso })).catch(console.error);
 }
 
 registrarOrigenDePago(OrigenPago.TIENDA, aplicarPago, async (id) => (await db.pedidoTienda.findUnique({ where: { id }, select: { email: true } }))?.email ?? null);

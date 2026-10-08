@@ -67,11 +67,11 @@ export class EmailService {
     // Con `area=cms`, al terminar la web lleva a la entrada del CMS y no a la de
     // hermanos, que puede estar apagada y no es la de quien lo pidió.
     const enlace = urlDeLaWeb(`/reset-password?token=${encodeURIComponent(token)}${area === 'cms' ? '&area=cms' : ''}`);
-    const { asunto, html } = await PlantillasCorreoService.correo(cuentaNueva ? 'contrasena_cuenta_nueva' : 'contrasena_recuperar', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo(cuentaNueva ? 'contrasena_cuenta_nueva' : 'contrasena_recuperar', {
       campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano, plazo: plazo(horas) },
       bloques: { enlace: boton(cuentaNueva ? 'Crear mi contraseña' : 'Elegir una contraseña nueva', enlace) },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /**
@@ -127,7 +127,7 @@ export class EmailService {
       ? 'Le adjuntamos su papeleta en PDF, con el código que se lee en la puerta del templo. También la tiene en el área de hermanos, en Procesión, para enseñarla desde el móvil.'
       : 'Conserve este correo: puede enseñarlo en el acceso si se le pide. Su papeleta, con el código que se lee en la puerta, está en el área de hermanos, en Procesión.');
 
-    const { asunto, html } = await PlantillasCorreoService.correo('papeleta', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('papeleta', {
       campos: {
         saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano.split(' ')[0], nombre_completo: nombreHermano,
         salida: salida.nombre, anio: datosPapeleta.year, fecha: datosPapeleta.fechaSalida, hora: datosPapeleta.horaSalida,
@@ -137,7 +137,7 @@ export class EmailService {
       // Las indicaciones las escribe el CMS para cada salida; sin ellas, no hay recuadro.
       bloques: { papeleta, indicaciones: indicacionesDe(salida), adjunto, normativa: salida.conRopa ? normativa : '' },
     });
-    return await enviarCorreo(emailDestino, asunto, html, undefined, undefined, pdf ? [{ filename: pdf.nombre, content: pdf.contenido, contentType: 'application/pdf' }] : []);
+    return await enviarCorreo(emailDestino, asunto, html, { uso, adjuntos: pdf ? [{ filename: pdf.nombre, content: pdf.contenido, contentType: 'application/pdf' }] : [] });
   }
 
   /**
@@ -150,10 +150,10 @@ export class EmailService {
    * es otra cosa, con NIF, y la emite Tesorería.
    */
   static async enviarGraciasDonativo(emailDestino: string, nombre: string | null, importe: string, destino: string | null) {
-    const { asunto, html } = await PlantillasCorreoService.correo('donativo_gracias', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('donativo_gracias', {
       campos: { saludo: nombre ? textoDeSaludo(nombre) : 'Estimado/a amigo/a:', importe, para_destino: destino ? ` para ${destino}` : '' },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /**
@@ -162,26 +162,26 @@ export class EmailService {
    * cuenta), nunca a la cuenta del propio difunto.
    */
   static async enviarPesame(emailDestino: string, difunto: string, sexo?: Sexo) {
-    const { asunto, html } = await PlantillasCorreoService.correo('pesame', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('pesame', {
       campos: { difunto, hermano: sexo === 'MUJER' ? 'hermana' : 'hermano' },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /** El aviso a la familia de un sufragio por su difunto: qué, cuándo y dónde. */
   static async enviarAvisoSufragio(emailDestino: string, difunto: string, sufragio: { que: string; cuando: string; donde: string | null }) {
-    const { asunto, html } = await PlantillasCorreoService.correo('sufragio', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('sufragio', {
       campos: { difunto, que: sufragio.que, que_minusculas: sufragio.que.toLowerCase(), cuando: `${sufragio.cuando}${sufragio.donde ? `, ${sufragio.donde}` : ''}` },
       bloques: { cuando: recuadro(sufragio.que, `${esc(sufragio.cuando)}${sufragio.donde ? `<br>${esc(sufragio.donde)}` : ''}`) },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   static async enviarConfirmacionRegistro(emailDestino: string, nombreHermano: string, opciones: { sexo?: Sexo; certificadoAdjunto?: boolean } = {}) {
     const { sexo, certificadoAdjunto = false } = opciones;
     const documentos = ['DNI original.'];
     if (!certificadoAdjunto) documentos.push('Certificado de bautismo (copia expedida por su parroquia).');
-    const { asunto, html } = await PlantillasCorreoService.correo('solicitud_recibida', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('solicitud_recibida', {
       campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano },
       bloques: {
         documentos: recuadro('Próximo paso: pasar por Secretaría',
@@ -189,7 +189,7 @@ export class EmailService {
         secretaria: bloqueDeSecretaria('Atención en Secretaría'),
       },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /**
@@ -233,7 +233,7 @@ export class EmailService {
       resumen: `${nombreCompleto} ha pedido el ingreso por la web.`,
       contenido: content,
       para: 'interno',
-    }));
+    }), { uso: 'aviso_solicitud' });
   }
 
   /**
@@ -263,7 +263,7 @@ export class EmailService {
         </table>`
       : '';
 
-    const { asunto, html } = await PlantillasCorreoService.correo('alta_aprobada', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('alta_aprobada', {
       campos: {
         saludo: textoDeSaludo(nombreCuenta, sexo), nombre: nombreCuenta,
         bienvenido: varios ? 'Bienvenidos' : segunSexo(sexo, 'Bienvenido', 'Bienvenida'),
@@ -271,7 +271,7 @@ export class EmailService {
       },
       bloques: { censo, boton: boton('Entrar en el área de hermanos', urlDeLaWeb('/acceso')) },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /**
@@ -281,17 +281,18 @@ export class EmailService {
    * correo generado no puede dar por escrito una razón que nadie ha redactado.
    * La única excepción es el impago, que Secretaría elige al dar la baja.
    *
-   * El asunto NO lleva el nombre. Si el envío falla, `enviarEmailBase` guarda el
-   * asunto en la auditoría (EMAIL_FALLIDO), y en un rechazo eso devolvería a la
-   * base el nombre que `rechazarSolicitud` acaba de borrar.
+   * El asunto NO lleva el nombre: una plantilla del CMS puede cambiarlo, y no
+   * debe sacar a ningún sitio el nombre que `rechazarSolicitud` acaba de
+   * borrar. (Si el envío falla, la auditoría ya no guarda el asunto, solo la
+   * clave del correo.)
    */
   static async enviarBajaORechazo(emailDestino: string, nombreHermano: string, motivo: 'rechazo' | 'baja', porImpago = false, sexo?: Sexo) {
-    const uso = motivo === 'rechazo' ? 'solicitud_rechazada' : porImpago ? 'baja_impago' : 'baja';
-    const { asunto, html } = await PlantillasCorreoService.correo(uso, {
+    const clave = motivo === 'rechazo' ? 'solicitud_rechazada' : porImpago ? 'baja_impago' : 'baja';
+    const { asunto, html, uso } = await PlantillasCorreoService.correo(clave, {
       campos: { saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano },
       bloques: { secretaria: bloqueDeSecretaria('Contacto con Secretaría') },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /**
@@ -301,7 +302,7 @@ export class EmailService {
    * menores.
    */
   static async enviarAperturaPapeletas(emailDestino: string, nombreCuenta: string, fichas: string[], dias: string[], year: number, sexo: Sexo | undefined, salida: { nombre: string; cobro: 'CUOTA' | 'DONATIVO'; indicaciones: string | null; articulo: Articulo }) {
-    const { asunto, html } = await PlantillasCorreoService.correo('apertura', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('apertura', {
       campos: {
         saludo: textoDeSaludo(nombreCuenta, sexo), nombre: nombreCuenta, salida: salida.nombre, anio: year, primer_dia: dias[0] ?? 'por anunciar',
         de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
@@ -317,7 +318,7 @@ export class EmailService {
         boton: boton('Pedir la papeleta', urlDeLaWeb('/area-hermano/procesion')),
       },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   /**
@@ -327,14 +328,14 @@ export class EmailService {
   static async enviarRecordatorioAusencia(emailDestino: string, nombreHermano: string, fechaCita: string, salida: { nombre: string; articulo: Articulo }, sexo?: Sexo) {
     // Con el nombre de la salida y no «papeleta de sitio» ni «Estación de
     // Penitencia»: hay salidas sin ropa (el Rosario) a las que no les cuadra.
-    const { asunto, html } = await PlantillasCorreoService.correo('papeleta_sin_recoger', {
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('papeleta_sin_recoger', {
       campos: {
         saludo: textoDeSaludo(nombreHermano, sexo), nombre: nombreHermano, salida: salida.nombre, fecha_cita: fechaCita,
         de_la_salida: deArticulo(salida.articulo, salida.nombre), la_salida: conArticulo(salida.articulo, salida.nombre),
       },
       bloques: { secretaria: bloqueDeSecretaria('Horario de reparto'), boton: boton('Ir al área de hermanos', urlDeLaWeb('/area-hermano/procesion')) },
     });
-    return await enviarCorreo(emailDestino, asunto, html);
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
   }
 
   static async enviarContacto(datosContacto: ContactoDto): Promise<boolean> {
@@ -364,6 +365,6 @@ export class EmailService {
       resumen: `${datosContacto.nombre}: ${datosContacto.mensaje.slice(0, 90)}`,
       contenido: content,
       para: { contacto: datosContacto.nombre },
-    }), datosContacto.email, cuentaDeContacto());
+    }), { replyTo: datosContacto.email, cuenta: cuentaDeContacto(), uso: 'contacto' });
   }
 }

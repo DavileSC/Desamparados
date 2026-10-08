@@ -303,8 +303,9 @@ export class Modelo182Service {
     for (const d of conCorreo) {
       const pdf = await certificadosEnPdf(r.configuracion, ejercicio, [d]);
       const correo = await correoDelCertificado(d.nombre, ejercicio, d.centimos);
-      const ok = await enviarCorreo(d.email!, correo.asunto, correo.html, undefined, null,
-        [{ filename: `certificado-donativos-${ejercicio}.pdf`, content: pdf, contentType: 'application/pdf' }]);
+      const ok = await enviarCorreo(d.email!, correo.asunto, correo.html, {
+        uso: correo.uso, adjuntos: [{ filename: `certificado-donativos-${ejercicio}.pdf`, content: pdf, contentType: 'application/pdf' }],
+      });
       if (ok) enviados += 1;
     }
     const valor = JSON.stringify({ el: new Date().toISOString(), cuantos: enviados });

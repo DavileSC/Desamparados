@@ -310,8 +310,11 @@ rellenan ahí y aparecen solos.**
 **El aviso de rechazo se envía después de borrar la cuenta.**
 `rechazarSolicitud` elimina el usuario entero cuando nunca llegó a aprobarse, así
 que el email y el nombre se leen **antes** de la transacción. Por el mismo motivo
-el asunto de ese correo no lleva el nombre: si el envío falla, el asunto acaba en
-la auditoría, y eso devolvería a la base el dato que se acaba de borrar.
+el asunto de ese correo no lleva el nombre. Desde octubre de 2026, un correo que
+falla deja en la auditoría la **clave del uso** (`solicitud_rechazada`…) y un
+resumen del error sin direcciones, nunca el asunto: el asunto lo escribe la
+plantilla y podía llevar el nombre de quien lo recibía durante los 730 días de
+la auditoría.
 
 ---
 
