@@ -35,17 +35,17 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
   const enviar = (evento: FormEvent) => { evento.preventDefault(); onGuardar?.() }
 
   return (
-    <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{ p: { xs: 2.5, md: 3.25 }, display: 'flex', flexDirection: 'column', gap: 2.25 }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
+    <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{ p: { xs: 2.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
         <Box>
-          <Typography id={idTitulo} component="h2" sx={tituloOculto ? visuallyHidden : { fontSize: 18, fontWeight: 600 }}>{titulo}</Typography>
+          <Typography id={idTitulo} component="h2" sx={tituloOculto ? visuallyHidden : { fontSize: 20, fontWeight: 600 }}>{titulo}</Typography>
           {editando && <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>Editando</Typography>}
         </Box>
         {!editando && formulario && onEditar && (
           // En el móvil, solo el lápiz: con la palabra, títulos como «Datos
           // personales» se partían en dos líneas.
           <Button size="small" startIcon={<EditOutlinedIcon />} onClick={onEditar} aria-label={`Editar ${titulo.toLowerCase()}`} sx={{
-            color: 'text.secondary', minHeight: 40, flexShrink: 0,
+            color: 'primary.light', fontWeight: 600, minHeight: 40, flexShrink: 0,
             minWidth: { xs: 40, sm: 64 }, '& .MuiButton-startIcon': { mx: { xs: 0, sm: undefined } },
           }}>
             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Editar</Box>
@@ -80,21 +80,34 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
   )
 }
 
-/** Un dato leído: la etiqueta en pequeño y el valor, o una raya si falta. */
+/**
+ * Un dato leído: la etiqueta en pequeño y el valor, o una raya si falta. La
+ * etiqueta va en rosa del Grupo: en gris se confundía con el valor (09-10-2026).
+ * Si ocupa más, toma dos columnas cuando la rejilla tiene sitio para dos.
+ */
 export function Dato({ etiqueta, valor, completo = false }: { etiqueta: string; valor: ReactNode; completo?: boolean }) {
   const vacio = valor === null || valor === undefined || valor === ''
   return (
-    <Box sx={{ minWidth: 0, gridColumn: completo ? '1 / -1' : undefined }}>
-      <Typography component="dt" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'text.secondary' }}>{etiqueta}</Typography>
-      <Typography component="dd" sx={{ m: 0, mt: 0.5, fontSize: 15, overflowWrap: 'anywhere', color: vacio ? 'text.disabled' : 'text.primary' }}>{vacio ? '—' : valor}</Typography>
+    <Box sx={{ minWidth: 0, ...(completo ? { gridColumn: '1 / -1', '@container (min-width: 400px)': { gridColumn: 'span 2' } } : {}) }}>
+      <Typography component="dt" sx={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: (t) => (t.palette.mode === 'light' ? '#81262e' : 'rgba(255, 179, 180, 0.85)') }}>{etiqueta}</Typography>
+      <Typography component="dd" sx={{ m: 0, mt: 0.5, fontSize: 15, fontWeight: vacio ? 400 : 500, overflowWrap: 'anywhere', color: vacio ? 'text.disabled' : 'text.primary' }}>{vacio ? '—' : valor}</Typography>
     </Box>
   )
 }
 
-/** La rejilla de datos o de campos de un apartado: dos columnas, una en el móvil. */
+/**
+ * La rejilla de datos o de campos de un apartado. Caben tantas columnas como
+ * permite su ancho (no el de la pantalla): con el menú lateral del área, el
+ * ancho de la pantalla no dice cuánto sitio le queda a la tarjeta. `dense`
+ * rellena el hueco que deja un dato de dos columnas al saltar de fila.
+ */
 export function Rejilla({ children, lista = false }: { children: ReactNode; lista?: boolean }) {
   return (
-    <Box component={lista ? 'dl' : 'div'} sx={{ m: 0, display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, minmax(0, 1fr))' }, gap: lista ? '18px 24px' : '16px 18px' }}>
+    <Box component={lista ? 'dl' : 'div'} sx={{
+      m: 0, display: 'grid', containerType: 'inline-size', gridAutoFlow: 'row dense',
+      gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${lista ? 180 : 230}px), 1fr))`,
+      gap: lista ? '16px 22px' : '16px 18px',
+    }}>
       {children}
     </Box>
   )

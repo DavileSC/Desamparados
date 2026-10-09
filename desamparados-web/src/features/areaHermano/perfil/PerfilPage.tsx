@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Alert, Box, Chip, CircularProgress, Typography } from '@mui/material'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { Alert, Box, Chip, CircularProgress, MenuItem, TextField, Typography } from '@mui/material'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
@@ -12,8 +12,8 @@ import { Contacto, CuotaYPago, DatosPersonales, VidaCofrade } from './apartados'
 import ApartadoContrasena from './ApartadoContrasena'
 import { PARENTESCO, aDia, diaLegible } from './etiquetas'
 import { site } from '../../../config/site'
-import { laCorporacion } from '../../../domain/articulos'
 import { useModulos } from '../../../hooks/useModulos'
+import type { Requisito } from '../../../domain/modulos'
 
 /** La del titular primero; luego las de quienes tiene a su cargo, de mayor a menor. */
 const ordenar = (fichas: ApiProfile[]) =>
@@ -27,12 +27,26 @@ function subtitulo(ficha: ApiProfile) {
   return `${quien} · ${aniosCumplidos(aDia(ficha.fechaNacimiento))} años`
 }
 
+const iniciales = (f: ApiProfile) => `${f.nombre.trim()[0] ?? ''}${(f.primerApellido ?? f.apellidos).trim()[0] ?? ''}`.toUpperCase()
+
+type ClaveApartado = 'personales' | 'contacto' | 'cofrade' | 'cuota' | 'contrasena'
+
+/** El nombre corto es el del móvil: con los largos, cinco pestañas no caben ni en dos filas. */
+const PESTANAS: { clave: ClaveApartado; titulo: string; corto: string; modulo?: Requisito }[] = [
+  { clave: 'personales', titulo: 'Datos personales', corto: 'Datos' },
+  { clave: 'contacto', titulo: 'Contacto y domicilio', corto: 'Contacto' },
+  { clave: 'cofrade', titulo: 'Vida cofrade', corto: 'Cofrade', modulo: 'procesion' },
+  { clave: 'cuota', titulo: 'Cuota y pago', corto: 'Cuota', modulo: 'cuotas-en-linea' },
+  { clave: 'contrasena', titulo: 'Contraseña', corto: 'Contraseña' },
+]
+
 /**
- * «Mi perfil»: la ficha propia y las de quienes tiene a su cargo, una a una.
- * Cada apartado se edita por su cuenta. Lo que lleva Secretaría (número, alta,
- * jura, padrinos) se ve y no se toca.
+ * «Mi perfil»: la ficha propia y las de quienes tiene a su cargo, una a una, y
+ * cada ficha por apartados en pestañas (forma C, 09-10-2026). Cada apartado se
+ * edita por su cuenta. Lo que lleva Secretaría (número, alta, jura, padrinos)
+ * se ve y no se toca.
  *
- * La ficha elegida va en la URL (?ficha=), para volver a ella al recargar.
+ * La ficha y la pestaña van en la URL (?ficha=&apartado=), para volver a ellas al recargar.
  */
 export default function PerfilPage() {
   const { activo } = useModulos()
@@ -40,6 +54,8 @@ export default function PerfilPage() {
   const [fichas, setFichas] = useState<ApiProfile[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const base = useId()
+  const botones = useRef<(HTMLButtonElement | null)[]>([])
 
   useEffect(() => {
     let cancelado = false
@@ -59,35 +75,40 @@ export default function PerfilPage() {
   const pedida = Number(params.get('ficha'))
   const ficha = fichas.find((f) => f.id === pedida) ?? fichas[0] ?? null
   const sinFichaPropia = fichas.length > 0 && !fichas.some((f) => f.esTitular)
+  const pestanas = PESTANAS.filter((p) => !p.modulo || activo(p.modulo))
+  const abierta = pestanas.find((p) => p.clave === params.get('apartado')) ?? pestanas[0]!
+
   const guardada = (nueva: ApiProfile) => setFichas((actuales) => actuales.map((f) => (f.id === nueva.id ? nueva : f)))
-  const elegir = (id: number) => setParams((anteriores) => {
+  const cambiar = (clave: string, valor: string) => setParams((anteriores) => {
     const siguientes = new URLSearchParams(anteriores)
-    siguientes.set('ficha', String(id))
+    siguientes.set(clave, valor)
     return siguientes
   }, { replace: true })
+
+  // Flechas, Inicio y Fin mueven entre pestañas, como pide el patrón de pestañas de WAI-ARIA.
+  const teclas = (evento: KeyboardEvent, indice: number) => {
+    const destino = { ArrowRight: indice + 1, ArrowLeft: indice - 1, Home: 0, End: pestanas.length - 1 }[evento.key]
+    if (destino === undefined) return
+    evento.preventDefault()
+    const siguiente = (destino + pestanas.length) % pestanas.length
+    cambiar('apartado', pestanas[siguiente]!.clave)
+    botones.current[siguiente]?.focus()
+  }
 
   return (
     <>
       <Helmet><title>{`Mi perfil | ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
-      <SeccionAnimada sx={{ py: { xs: 4, md: 6 } }}>
-        <ContenedorDePagina>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, mb: 3 }}>
-            <Box>
-              <Typography variant="h2" component="h1">Mi perfil</Typography>
-              <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>
-                {fichas.length > 1 ? 'Tu ficha y las de quienes tienes a tu cargo.' : `Tus datos en ${laCorporacion()}.`}
-              </Typography>
-            </Box>
-            <Box component={Link} to="/area-hermano/familia" sx={{ color: 'primary.light', fontWeight: 600, fontSize: 15 }}>Apuntar a un menor</Box>
-          </Box>
-
+      {/* En PC, sin margen propio: el del marco del área basta, y así la ficha
+          cabe en la pantalla sin desplazarse (1280×552 con el escalado al 150 %). */}
+      <SeccionAnimada sx={{ py: { xs: 1, md: 0 } }}>
+        <ContenedorDePagina sx={{ px: { xs: 0, md: 0 } }}>
           {cargando && <CircularProgress aria-label="Cargando perfil" />}
-          {error && <Alert severity="error" sx={{ mb: 4 }}>{error}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
           {/* Su cuenta existe para gestionar a quienes tiene a su cargo: sus fichas
               están aquí, y desde «Mi familia» puede hacerse hermano también. */}
           {sinFichaPropia && (
-            <TarjetaCristal sx={{ p: 3, mb: 3, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+            <TarjetaCristal sx={{ p: 2.5, mb: 2.5, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
               <Typography sx={{ color: 'text.secondary', maxWidth: '62ch' }}>
                 Tú no tienes ficha de hermano: esta cuenta la abriste para quienes tienes a tu cargo. Si quieres, puedes hacerte hermano sin abrir otra cuenta.
               </Typography>
@@ -95,70 +116,106 @@ export default function PerfilPage() {
             </TarjetaCristal>
           )}
 
-          {fichas.length > 1 && (
-            <Box role="group" aria-label="Fichas de tu cuenta" sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
-              {fichas.map((f) => {
-                const abierta = f.id === ficha?.id
-                return (
-                  <Box
-                    key={f.id}
-                    component="button"
-                    type="button"
-                    onClick={() => elegir(f.id)}
-                    aria-current={abierta ? 'true' : undefined}
-                    sx={{
-                      appearance: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'text.primary',
-                      display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.25, minWidth: 150, minHeight: 56, px: 2.25, py: 1,
-                      borderRadius: '8px', border: '1px solid',
-                      borderColor: abierta ? 'rgba(255,179,180,0.45)' : 'rgba(204,196,201,0.12)',
-                      backgroundColor: abierta ? 'rgba(160,61,68,0.22)' : 'rgba(18,17,19,0.6)',
-                      '&:hover': { borderColor: 'rgba(255,179,180,0.45)' },
-                      '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: 2 },
-                    }}
-                  >
-                    <Box component="span" sx={{ fontSize: 15, fontWeight: 600 }}>{f.nombre}</Box>
-                    <Box component="span" sx={{ fontSize: 12.5, color: 'text.secondary' }}>{subtitulo(f)}</Box>
-                  </Box>
-                )
-              })}
-            </Box>
-          )}
+          {!ficha && !cargando && <Typography variant="h3" component="h1" sx={{ mb: 3 }}>Mi perfil</Typography>}
 
           {ficha && (
             <>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                <Typography component="p" sx={{ fontSize: 22, fontWeight: 600 }}>{ficha.nombre} {ficha.apellidos}</Typography>
-                {ficha.activo
-                  ? <Chip size="small" label="Activo" color="success" variant="outlined" />
-                  : <Chip size="small" label="Pendiente de Secretaría" color="warning" />}
-                {ficha.activo && (
-                  <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
-                    {ficha.numeroHermano ? `Hermano n.º ${ficha.numeroHermano}` : 'Número pendiente de asignar'} · desde el {diaLegible(ficha.fechaAlta)}
-                  </Typography>
-                )}
+              {/* «Mi perfil» va de antetítulo sobre el nombre: como título aparte se comía
+                  80 px de alto, y la ficha dejaba de caber sin desplazarse. */}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 2, rowGap: 1.5 }}>
+                <Box aria-hidden="true" sx={{
+                  width: { xs: 46, md: 56 }, height: { xs: 46, md: 56 }, flexShrink: 0, borderRadius: '50%', display: 'grid', placeItems: 'center',
+                  backgroundColor: '#6e1822', color: '#fff', fontWeight: 600, fontSize: { xs: 16, md: 19 },
+                }}>{iniciales(ficha)}</Box>
+                <Box sx={{ minWidth: 0, flex: '1 1 240px' }}>
+                  <Typography component="h1" sx={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255, 179, 180, 0.85)' }}>Mi perfil</Typography>
+                  <Typography component="p" sx={{ fontSize: { xs: 21, md: 24 }, fontWeight: 600, lineHeight: 1.2 }}>{ficha.nombre} {ficha.apellidos}</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.25, mt: 0.5 }}>
+                    {ficha.activo
+                      ? <Chip size="small" label="Activo" color="success" variant="outlined" />
+                      : <Chip size="small" label="Pendiente de Secretaría" color="warning" />}
+                    {ficha.activo && (
+                      <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+                        {ficha.numeroHermano ? `Hermano n.º ${ficha.numeroHermano}` : 'Número pendiente de asignar'} · desde el {diaLegible(ficha.fechaAlta)}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: { xs: 1.5, sm: 2.5 }, width: { xs: '100%', sm: 'auto' } }}>
+                  {fichas.length > 1 && (
+                    <TextField
+                      select
+                      size="small"
+                      label="Ficha que estás viendo"
+                      value={ficha.id}
+                      onChange={(e) => cambiar('ficha', String(e.target.value))}
+                      sx={{ width: { xs: '100%', sm: 280 } }}
+                    >
+                      {fichas.map((f) => <MenuItem key={f.id} value={f.id}>{f.nombre} · {subtitulo(f)}</MenuItem>)}
+                    </TextField>
+                  )}
+                  <Box component={Link} to="/area-hermano/familia" sx={{ color: 'primary.light', fontWeight: 600, fontSize: 15, whiteSpace: 'nowrap' }}>Apuntar a un menor</Box>
+                </Box>
               </Box>
 
-              {/* `key`: al cambiar de ficha, cada apartado empieza de cero, sin arrastrar una edición a medias. */}
-              <Box key={ficha.id} sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }, gap: 2.5, alignItems: 'start' }}>
-                <Box sx={{ display: 'grid', gap: 2.5, minWidth: 0 }}>
-                  <DatosPersonales ficha={ficha} onGuardada={guardada} />
-                  {activo('procesion') && <VidaCofrade ficha={ficha} onGuardada={guardada} />}
-                </Box>
-                <Box sx={{ display: 'grid', gap: 2.5, minWidth: 0 }}>
-                  <Contacto ficha={ficha} onGuardada={guardada} />
-                  {activo('cuotas-en-linea') && <CuotaYPago ficha={ficha} onGuardada={guardada} />}
-                </Box>
+              {/* Rejilla de columnas iguales, no una tira: así no sale barra de
+                  desplazamiento. El nombre largo solo cabe a partir de lg (con el
+                  menú lateral, en md le quedan unos 100 px a cada una); en el
+                  móvil, tres por fila. */}
+              <Box role="tablist" aria-label="Apartados de la ficha" sx={{
+                mt: { xs: 2.5, md: 2 }, display: 'grid', gap: { xs: 0.75, sm: 0 },
+                gridTemplateColumns: { xs: 'repeat(3, minmax(0, 1fr))', sm: `repeat(${pestanas.length}, minmax(0, 1fr))` },
+                borderBottom: { sm: '1px solid rgba(204, 196, 201, 0.16)' },
+              }}>
+                {pestanas.map((p, i) => {
+                  const elegida = p.clave === abierta.clave
+                  return (
+                    <Box
+                      key={p.clave}
+                      ref={(el: HTMLButtonElement | null) => { botones.current[i] = el }}
+                      component="button"
+                      type="button"
+                      role="tab"
+                      id={`${base}-pestana-${p.clave}`}
+                      aria-selected={elegida}
+                      aria-controls={`${base}-panel`}
+                      aria-label={p.titulo}
+                      tabIndex={elegida ? 0 : -1}
+                      onClick={() => cambiar('apartado', p.clave)}
+                      onKeyDown={(e: KeyboardEvent) => teclas(e, i)}
+                      sx={{
+                        appearance: 'none', cursor: 'pointer', font: 'inherit', fontSize: { xs: 14, lg: 15 }, fontWeight: 600,
+                        minWidth: 0, minHeight: 44, px: 1, border: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        color: elegida ? '#fff' : 'text.secondary',
+                        backgroundColor: { xs: elegida ? 'rgba(160, 61, 68, 0.45)' : 'rgba(26, 24, 27, 0.72)', sm: 'transparent' },
+                        borderRadius: { xs: '6px', sm: 0 },
+                        boxShadow: { sm: elegida ? 'inset 0 -2px 0 #ffb3b4' : 'none' },
+                        transition: 'color .2s ease, background-color .2s ease',
+                        '&:hover': { color: '#fff' },
+                        '&:focus-visible': { outline: '2px solid', outlineColor: 'secondary.main', outlineOffset: -2 },
+                      }}
+                    >
+                      <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>{p.titulo}</Box>
+                      <Box component="span" sx={{ display: { xs: 'inline', lg: 'none' } }}>{p.corto}</Box>
+                    </Box>
+                  )
+                })}
+              </Box>
+
+              {/* `key`: al cambiar de ficha o de pestaña, el apartado empieza de cero, sin arrastrar una edición a medias. */}
+              <Box key={`${ficha.id}-${abierta.clave}`} role="tabpanel" id={`${base}-panel`} aria-labelledby={`${base}-pestana-${abierta.clave}`} sx={{ mt: 2, minWidth: 0 }}>
+                {abierta.clave === 'personales' && <DatosPersonales ficha={ficha} onGuardada={guardada} />}
+                {abierta.clave === 'contacto' && <Contacto ficha={ficha} onGuardada={guardada} />}
+                {abierta.clave === 'cofrade' && <VidaCofrade ficha={ficha} onGuardada={guardada} />}
+                {abierta.clave === 'cuota' && <CuotaYPago ficha={ficha} onGuardada={guardada} />}
+                {/* De la cuenta, no de la ficha: es la misma sea cual sea la persona elegida. */}
+                {abierta.clave === 'contrasena' && <ApartadoContrasena />}
               </Box>
             </>
           )}
 
-          {/* De la cuenta, no de la ficha: va fuera de la rejilla y no cambia al
-              elegir otra persona. Media anchura en escritorio, como una columna. */}
-          {!cargando && (
-            <Box sx={{ mt: 2.5, width: { xs: '100%', md: 'calc(50% - 10px)' } }}>
-              <ApartadoContrasena />
-            </Box>
-          )}
+          {/* Sin ficha que enseñar, la contraseña de la cuenta sigue a mano. */}
+          {!cargando && !ficha && <Box sx={{ maxWidth: 640 }}><ApartadoContrasena /></Box>}
         </ContenedorDePagina>
       </SeccionAnimada>
     </>

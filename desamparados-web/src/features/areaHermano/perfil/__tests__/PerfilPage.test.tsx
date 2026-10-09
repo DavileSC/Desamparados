@@ -52,17 +52,24 @@ const cuerpoDelPut = (simulado: ReturnType<typeof responder>) => {
 afterEach(() => { vi.unstubAllGlobals() })
 
 describe('PerfilPage', () => {
-  it('pinta la ficha por apartados, con lo de Secretaría a la vista pero sin editar', async () => {
+  it('pinta la ficha por apartados en pestañas, con lo de Secretaría a la vista pero sin editar', async () => {
+    const user = userEvent.setup()
     responder([ficha(1, 'Ana')])
     renderWithProviders(<PerfilPage />)
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
-    expect(screen.getByText('ana@ejemplo.test')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
     for (const titulo of ['Datos personales', 'Contacto y domicilio', 'Vida cofrade', 'Cuota y pago']) {
+      await user.click(screen.getByRole('tab', { name: titulo }))
       expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument()
     }
+
+    await user.click(screen.getByRole('tab', { name: 'Contacto y domicilio' }))
+    expect(screen.getByText('ana@ejemplo.test')).toBeInTheDocument()
     // La cuenta, solo enmascarada; y la jura, con el candado de Secretaría.
+    await user.click(screen.getByRole('tab', { name: 'Cuota y pago' }))
     expect(screen.getByText('ES•• •••• •••• •••• •••• 1332')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Vida cofrade' }))
     expect(screen.getByText('19/03/2001')).toBeInTheDocument()
     expect(screen.getByText(/los lleva Secretaría/i)).toBeInTheDocument()
   })
@@ -94,10 +101,11 @@ describe('PerfilPage', () => {
     renderWithProviders(<PerfilPage />)
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
-    const fichas = screen.getByRole('group', { name: /fichas de tu cuenta/i })
-    expect(within(fichas).getByRole('button', { name: /ana/i })).toHaveAttribute('aria-current', 'true')
+    const selector = screen.getByRole('combobox', { name: /ficha que estás viendo/i })
+    expect(selector).toHaveTextContent(/ana/i)
 
-    await user.click(within(fichas).getByRole('button', { name: /bruno.*sobrino/i }))
+    await user.click(selector)
+    await user.click(within(screen.getByRole('listbox')).getByRole('option', { name: /bruno.*sobrino/i }))
     expect(await screen.findByText('Bruno Pérez Ruiz')).toBeInTheDocument()
     // Un sobrino no es «hijo»: su ficha dice qué es para quien la lleva.
     expect(screen.getByText('Qué es para ti')).toBeInTheDocument()
@@ -107,7 +115,7 @@ describe('PerfilPage', () => {
   it('cada apartado guarda solo sus campos, y el del sobrino va a su ficha', async () => {
     const user = userEvent.setup()
     const simulado = responder([ficha(1, 'Ana'), ficha(2, 'Bruno', { esTitular: false, parentesco: 'SOBRINO', fechaNacimiento: '2014-06-01T00:00:00.000Z' })])
-    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?ficha=2' })
+    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?ficha=2&apartado=contacto' })
 
     await screen.findByText('Bruno Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar contacto y domicilio/i }))
@@ -129,7 +137,7 @@ describe('PerfilPage', () => {
   it('la cuenta bancaria no se reenvía si no se escribe una nueva, y una mal copiada no se guarda', async () => {
     const user = userEvent.setup()
     const simulado = responder([ficha(1, 'Ana')])
-    renderWithProviders(<PerfilPage />)
+    renderWithProviders(<PerfilPage />, { ruta: '/area-hermano/perfil?apartado=cuota' })
 
     await screen.findByText('Ana Pérez Ruiz')
     await user.click(screen.getByRole('button', { name: /editar cuota y pago/i }))
@@ -152,10 +160,7 @@ describe('PerfilPage', () => {
     renderWithProviders(<PerfilPage />, { modulos: ['area-hermanos'] })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Datos personales' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Contacto y domicilio' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Vida cofrade' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Cuota y pago' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Datos personales', 'Contacto y domicilio', 'Contraseña'])
   })
 
   // Quien solo apuntó a menores no tiene ficha: antes se le enseñaba la de su
@@ -211,6 +216,7 @@ describe('PerfilPage: cambiar la contraseña', () => {
 
   async function rellenar(user: ReturnType<typeof userEvent.setup>, nueva = 'Otra-Clave-2026-Larga', repetida = nueva) {
     await screen.findByText('Ana Pérez Ruiz')
+    await user.click(screen.getByRole('tab', { name: 'Contraseña' }))
     await user.click(screen.getByRole('button', { name: 'Cambiar' }))
     await user.type(screen.getByLabelText('Contraseña actual'), 'La-De-Antes-2025')
     await user.type(screen.getByLabelText('Contraseña nueva'), nueva)

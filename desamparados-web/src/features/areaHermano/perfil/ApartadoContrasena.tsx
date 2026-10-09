@@ -15,14 +15,14 @@ export default function ApartadoContrasena() {
   const [hecho, setHecho] = useState<string | null>(null)
 
   return (
-    <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{ p: { xs: 2.5, md: 3.25 }, display: 'flex', flexDirection: 'column', gap: 2.25 }}>
+    <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{ p: { xs: 2.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
         <Box>
-          <Typography id={idTitulo} component="h2" sx={{ fontSize: 18, fontWeight: 600 }}>Contraseña</Typography>
+          <Typography id={idTitulo} component="h2" sx={{ fontSize: 20, fontWeight: 600 }}>Contraseña</Typography>
           {abierto && <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>Cambiándola</Typography>}
         </Box>
         {!abierto && (
-          <Button size="small" startIcon={<KeyOutlinedIcon />} onClick={() => { setHecho(null); setAbierto(true) }} sx={{ color: 'text.secondary', minHeight: 40, flexShrink: 0 }}>
+          <Button size="small" startIcon={<KeyOutlinedIcon />} onClick={() => { setHecho(null); setAbierto(true) }} sx={{ color: 'primary.light', fontWeight: 600, minHeight: 40, flexShrink: 0 }}>
             Cambiar
           </Button>
         )}
