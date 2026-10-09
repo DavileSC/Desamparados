@@ -175,14 +175,46 @@ Y los datos de la corporación, que tampoco están en git
 (`instalacion/datos-entidad.json`, ver «Los datos de la corporación» en
 `despliegue.md`). La API los lee del volumen al arrancar y sin ellos no
 arranca; `desplegar-desamparados` se para antes si faltan. Son los mismos que
-la variable `DATOS_ENTIDAD` de GitHub (paso 6), con la que se compila la web:
+la variable `DATOS_ENTIDAD` de GitHub (paso 6), con la que se compila la web.
+
+**Se sube con `scp`, no pegándolo en `nano`.** El 08-10-2026 se pegó desde
+una consola de Windows y llegó con los acentos estropeados («M├ílaga»). El
+JSON seguía siendo válido, así que nada falló: la API arrancó y los correos,
+los PDF y el emisor del 2FA salieron con esos caracteres hasta el día
+siguiente. La web no se enteró, porque se compila con la variable de GitHub.
+
+Desde PowerShell, en la carpeta del proyecto del PC:
+
+```powershell
+scp instalacion\datos-entidad.json ubuntu@51.255.45.220:/tmp/datos-entidad.json
+```
+
+Y en el servidor:
 
 ```bash
 cd /srv/desamparados
 sudo -u desamparados install -d instalacion
-sudo -u desamparados nano instalacion/datos-entidad.json   # el de Desamparados entero
-python3 -m json.tool instalacion/datos-entidad.json >/dev/null && grep '"dominio"' instalacion/datos-entidad.json
+sudo install -o desamparados -g desamparados -m 640 /tmp/datos-entidad.json instalacion/datos-entidad.json
+rm /tmp/datos-entidad.json
 ```
+
+Para comprobarlo, la huella de los datos, sin comentarios ni formato. Tiene
+que coincidir con la del mismo fichero en el PC (el mismo `python` desde la
+carpeta del proyecto). Que el JSON sea válido no basta: el estropeado también
+lo era.
+
+```bash
+sudo -u desamparados python3 -c "
+import json,hashlib
+def l(x):
+    if isinstance(x,dict): return {k:l(v) for k,v in x.items() if k!='_comentario'}
+    if isinstance(x,list): return [l(v) for v in x]
+    return x
+print(hashlib.sha256(json.dumps(l(json.load(open('instalacion/datos-entidad.json',encoding='utf-8-sig'))),sort_keys=True,ensure_ascii=False).encode()).hexdigest()[:16])"
+```
+
+El fichero es de `desamparados` y solo lo lee él y su grupo: con el usuario
+`ubuntu` da «Permission denied», y es lo esperado.
 
 ### 5. Las carpetas de las subidas
 
