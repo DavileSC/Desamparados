@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { type } from 'arktype';
 import { HermanoController } from '../controllers/hermano.controller';
 import { CensoHojaController } from '../controllers/censo-hoja.controller';
+import { PrimerAccesoController } from '../controllers/primer-acceso.controller';
+import { fichaAjenaSchema, invitarSchema, listadoPrimerAccesoSchema } from '../schemas/primer-acceso.schema';
 import { ficheroDeDatosMiddleware } from '../middleware/upload.middleware';
 import { authenticateToken } from '../middleware/session';
 import { checkRole } from '../middleware/checkRole';
@@ -89,6 +91,12 @@ hermanoRouter.post('/admin/difuntos/:id/sufragios', checkRole(rolesGestionCenso)
 hermanoRouter.post('/admin/difuntos/:id/pesame', checkRole(rolesGestionCenso), validateId, validate(pesameSchema), HermanoController.enviarPesame);
 hermanoRouter.delete('/admin/sufragios/:id', checkRole(rolesGestionCenso), conModulo('difuntos'), validateId, HermanoController.borrarSufragio);
 
+// Primer acceso del censo importado: quién falta por invitar, quién ya entró y
+// mandar las invitaciones. Antes de /admin/:id, que se tragaría «primer-acceso».
+hermanoRouter.use('/admin/primer-acceso', conModulo('area-hermanos'));
+hermanoRouter.get('/admin/primer-acceso', checkRole(rolesGestionCenso), validate(listadoPrimerAccesoSchema), PrimerAccesoController.listar);
+hermanoRouter.post('/admin/primer-acceso/invitar', checkRole(rolesGestionCenso), validate(invitarSchema), PrimerAccesoController.invitar);
+
 hermanoRouter.get('/admin/:id', checkRole(rolesGestionCenso), validateId, HermanoController.getById);
 hermanoRouter.put('/admin/:id', checkRole(rolesGestionCenso), validateId, validate(updateAdminHermanoSchema), HermanoController.updateAdmin);
 // La baja admite un cuerpo opcional con la fecha ({ fechaBaja: 'AAAA-MM-DD' }).
@@ -105,5 +113,10 @@ hermanoRouter.post('/mis-perfiles', validate(addProfileSchema), HermanoControlle
 hermanoRouter.put('/mis-perfiles/:id', validateId, validate(updateProfileSchema), HermanoController.updateProfile);
 hermanoRouter.delete('/mis-perfiles/:id', validateId, HermanoController.deleteProfile);
 hermanoRouter.post('/mis-perfiles/:id/emancipar', validateId, validate(emancipateSchema), HermanoController.emancipate);
+
+// La revisión de la ficha en el primer acceso: darla por buena, o devolver a
+// Secretaría una ficha que el censo colgó de esta cuenta por error.
+hermanoRouter.post('/primer-acceso/confirmar', PrimerAccesoController.confirmar);
+hermanoRouter.post('/primer-acceso/fichas/:id/ajena', validate(fichaAjenaSchema), PrimerAccesoController.fichaAjena);
 
 export { hermanoRouter as hermanoRoutes };

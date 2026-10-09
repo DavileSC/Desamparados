@@ -22,6 +22,8 @@ function montarRuta(elemento: React.ReactElement, { ruta }: { ruta: string }) {
     { path: '/cms/acceso', element: <p>acceso del cms</p> },
     { path: '/acceso', element: <p>acceso de hermanos</p> },
     { path: '/cms', element: <p>inicio del cms</p> },
+    { path: '/primer-acceso/ficha', element: <p>revisión de la ficha</p> },
+    { path: '/area-hermano', element: <p>área de hermanos</p> },
   ]
   const router = createMemoryRouter(rutas, { initialEntries: [ruta] })
   // Con Helmet: la pantalla de activar el doble factor pone su título.
@@ -35,6 +37,20 @@ describe('los guardas de ruta', () => {
     useAuthStore.setState({ status: 'listo', cms: null, hermano: HERMANO })
     montarRuta(<ExigeSesion><Dentro /></ExigeSesion>, { ruta: '/area-hermano/perfil' })
     expect(screen.getByText('dentro')).toBeInTheDocument()
+  })
+
+  it('quien vino con el censo importado revisa su ficha antes de entrar en el área', () => {
+    useAuthStore.setState({ status: 'listo', cms: null, hermano: { ...HERMANO, primerAccesoPendiente: true } })
+    montarRuta(<ExigeSesion><Dentro /></ExigeSesion>, { ruta: '/area-hermano/recibos' })
+    expect(screen.queryByText('dentro')).not.toBeInTheDocument()
+    expect(screen.getByText('revisión de la ficha')).toBeInTheDocument()
+  })
+
+  it('la revisión, ya confirmada, no se vuelve a ver', () => {
+    useAuthStore.setState({ status: 'listo', cms: null, hermano: HERMANO })
+    montarRuta(<ExigeSesion revision><Dentro /></ExigeSesion>, { ruta: '/primer-acceso/ficha/x' })
+    expect(screen.queryByText('dentro')).not.toBeInTheDocument()
+    expect(screen.getByText('área de hermanos')).toBeInTheDocument()
   })
 
   it('el CMS se abre con la sesión del CMS aunque no haya la de hermanos', () => {

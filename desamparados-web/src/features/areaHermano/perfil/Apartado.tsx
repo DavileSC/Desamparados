@@ -1,5 +1,6 @@
 import { useId, type FormEvent, type ReactNode } from 'react'
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
+import { visuallyHidden } from '@mui/utils'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import TarjetaCristal from '../../../components/TarjetaCristal'
@@ -21,13 +22,15 @@ interface Props {
   hecho?: boolean
   /** Lo que el hermano ve pero no toca: «Número, alta y jura los lleva Secretaría». */
   candado?: ReactNode
+  /** El título lo pone ya la pantalla de alrededor: solo para lectores de pantalla. */
+  tituloOculto?: boolean
 }
 
 /**
  * Un apartado de la ficha: se lee y, si se puede, se edita él solo, sin tocar
  * los demás. Cada uno guarda sus propios campos.
  */
-export default function Apartado({ titulo, vista, formulario, editando, onEditar, onCancelar, onGuardar, guardando = false, error, hecho, candado }: Props) {
+export default function Apartado({ titulo, vista, formulario, editando, onEditar, onCancelar, onGuardar, guardando = false, error, hecho, candado, tituloOculto = false }: Props) {
   const idTitulo = useId()
   const enviar = (evento: FormEvent) => { evento.preventDefault(); onGuardar?.() }
 
@@ -35,7 +38,7 @@ export default function Apartado({ titulo, vista, formulario, editando, onEditar
     <TarjetaCristal component="section" aria-labelledby={idTitulo} sx={{ p: { xs: 2.5, md: 3.25 }, display: 'flex', flexDirection: 'column', gap: 2.25 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
         <Box>
-          <Typography id={idTitulo} component="h2" sx={{ fontSize: 18, fontWeight: 600 }}>{titulo}</Typography>
+          <Typography id={idTitulo} component="h2" sx={tituloOculto ? visuallyHidden : { fontSize: 18, fontWeight: 600 }}>{titulo}</Typography>
           {editando && <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>Editando</Typography>}
         </Box>
         {!editando && formulario && onEditar && (

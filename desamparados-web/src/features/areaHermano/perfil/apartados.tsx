@@ -11,10 +11,24 @@ import Apartado, { Dato, Rejilla } from './Apartado'
 import { ESTADO_CIVIL, FORMAS_DE_PAGO, FORMA_DE_PAGO, PARENTESCO, SEXO, TITULARIDAD_CUENTA, aDia, diaLegible } from './etiquetas'
 import { deLaCorporacion } from '../../../domain/articulos'
 
+/**
+ * Cómo se usa el apartado dentro de la revisión del primer acceso: sin lápiz
+ * (allí se cambia con «Hay algo que cambiar»), abierto ya en edición si hace
+ * falta, y avisando al terminar, guarde o cancele.
+ */
+export interface Revision {
+  sinLapiz?: boolean
+  editando?: boolean
+  /** El título ya lo da la pantalla: se queda solo para los lectores de pantalla. */
+  tituloOculto?: boolean
+  alTerminar?: () => void
+}
+
 interface PropsApartado {
   ficha: ApiProfile
   /** La ficha tal como la devuelve el servidor tras guardar. */
   onGuardada: (ficha: ApiProfile) => void
+  revision?: Revision
 }
 
 const EMAIL = /^[^\s@,;<>()":\\[\]]+@[^\s@,;<>()":\\[\]]+\.[^\s@,;<>()":\\[\]]+$/
@@ -26,8 +40,8 @@ const opcional = (valor: string) => (valor.trim() === '' ? null : valor.trim())
  * Lo común a los cuatro apartados: sus valores mientras se editan, validar,
  * mandar solo sus campos y volver a leer con lo que devuelve el servidor.
  */
-function useApartado<T>(ficha: ApiProfile, desde: (f: ApiProfile) => T, validar: (v: T) => string | null, cambios: (v: T) => CambiosDeFicha, onGuardada: (f: ApiProfile) => void) {
-  const [editando, setEditando] = useState(false)
+function useApartado<T>(ficha: ApiProfile, desde: (f: ApiProfile) => T, validar: (v: T) => string | null, cambios: (v: T) => CambiosDeFicha, onGuardada: (f: ApiProfile) => void, revision?: Revision) {
+  const [editando, setEditando] = useState(revision?.editando === true)
   const [valores, setValores] = useState<T>(() => desde(ficha))
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,7 +52,7 @@ function useApartado<T>(ficha: ApiProfile, desde: (f: ApiProfile) => T, validar:
   return {
     editando, valores, guardando, error, hecho, campo,
     editar: () => { setValores(desde(ficha)); setError(null); setHecho(false); setEditando(true) },
-    cancelar: () => { setEditando(false); setError(null) },
+    cancelar: () => { setEditando(false); setError(null); revision?.alTerminar?.() },
     guardar: async () => {
       const problema = validar(valores)
       if (problema) { setError(problema); return }
@@ -47,6 +61,7 @@ function useApartado<T>(ficha: ApiProfile, desde: (f: ApiProfile) => T, validar:
         const { data } = await actualizarFicha(ficha.id, cambios(valores))
         onGuardada(data)
         setEditando(false); setHecho(true)
+        revision?.alTerminar?.()
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'No se ha podido guardar.')
       } finally {
@@ -91,7 +106,7 @@ function Opciones<V extends string>({ etiqueta, valor, onCambiar, opciones, vaci
 
 // --------------------------------------------------------------- Datos personales
 
-export function DatosPersonales({ ficha, onGuardada }: PropsApartado) {
+export function DatosPersonales({ ficha, onGuardada, revision }: PropsApartado) {
   const aCargo = !ficha.esTitular
   const a = useApartado(
     ficha,
@@ -119,6 +134,7 @@ export function DatosPersonales({ ficha, onGuardada }: PropsApartado) {
       ...(aCargo && v.parentesco ? { parentesco: v.parentesco } : {}),
     }),
     onGuardada,
+    revision,
   )
   const v = a.valores
   const edad = ficha.fechaNacimiento ? aniosCumplidos(aDia(ficha.fechaNacimiento)) : null
@@ -126,7 +142,8 @@ export function DatosPersonales({ ficha, onGuardada }: PropsApartado) {
   return (
     <Apartado
       titulo="Datos personales"
-      editando={a.editando} onEditar={a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
+      editando={a.editando} onEditar={revision?.sinLapiz ? undefined : a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
+      tituloOculto={revision?.tituloOculto}
       guardando={a.guardando} error={a.error} hecho={a.hecho}
       vista={
         <Rejilla lista>
@@ -166,7 +183,7 @@ export function DatosPersonales({ ficha, onGuardada }: PropsApartado) {
 
 // --------------------------------------------------------------- Contacto y domicilio
 
-export function Contacto({ ficha, onGuardada }: PropsApartado) {
+export function Contacto({ ficha, onGuardada, revision }: PropsApartado) {
   const a = useApartado(
     ficha,
     (f) => ({
@@ -195,6 +212,7 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
       autorizaImagen: v.autorizaImagen,
     }),
     onGuardada,
+    revision,
   )
   const v = a.valores
   const localidad = [ficha.codigoPostal, ficha.poblacion].filter(Boolean).join(' ')
@@ -202,7 +220,8 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
   return (
     <Apartado
       titulo="Contacto y domicilio"
-      editando={a.editando} onEditar={a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
+      editando={a.editando} onEditar={revision?.sinLapiz ? undefined : a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
+      tituloOculto={revision?.tituloOculto}
       guardando={a.guardando} error={a.error} hecho={a.hecho}
       vista={
         <Rejilla lista>
@@ -249,13 +268,14 @@ export function Contacto({ ficha, onGuardada }: PropsApartado) {
 
 // --------------------------------------------------------------- Vida cofrade
 
-export function VidaCofrade({ ficha, onGuardada }: PropsApartado) {
+export function VidaCofrade({ ficha, onGuardada, revision }: PropsApartado) {
   const a = useApartado(
     ficha,
     (f) => ({ fechaBautismo: aDia(f.fechaBautismo), lugarBautismo: f.lugarBautismo ?? '', parroquiaBautismo: f.parroquiaBautismo ?? '' }),
     (v) => ([v.lugarBautismo, v.parroquiaBautismo].some((t) => /[<>]/.test(t)) ? 'Los textos no pueden llevar «<» ni «>».' : null),
     (v) => ({ fechaBautismo: v.fechaBautismo || null, lugarBautismo: opcional(v.lugarBautismo), parroquiaBautismo: opcional(v.parroquiaBautismo) }),
     onGuardada,
+    revision,
   )
   const v = a.valores
   const presentado = [ficha.presentadoPor, ficha.presentadoPor2].filter(Boolean).join(' y ')
@@ -264,7 +284,8 @@ export function VidaCofrade({ ficha, onGuardada }: PropsApartado) {
   return (
     <Apartado
       titulo="Vida cofrade"
-      editando={a.editando} onEditar={a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
+      editando={a.editando} onEditar={revision?.sinLapiz ? undefined : a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
+      tituloOculto={revision?.tituloOculto}
       guardando={a.guardando} error={a.error} hecho={a.hecho}
       candado="Número, alta, jura, padrinos y procesión los lleva Secretaría"
       vista={
@@ -299,7 +320,7 @@ export function VidaCofrade({ ficha, onGuardada }: PropsApartado) {
 
 // --------------------------------------------------------------- Cuota y pago
 
-export function CuotaYPago({ ficha, onGuardada }: PropsApartado) {
+export function CuotaYPago({ ficha, onGuardada, revision }: PropsApartado) {
   const a = useApartado(
     ficha,
     (f) => ({ formaPagoPref: f.formaPagoPref, iban: '', titularidadCuenta: (f.titularidadCuenta ?? '') as TitularidadCuenta | '', titularCuenta: f.titularCuenta ?? '' }),
@@ -318,13 +339,15 @@ export function CuotaYPago({ ficha, onGuardada }: PropsApartado) {
       titularCuenta: v.titularidadCuenta === 'PROPIA' ? null : opcional(v.titularCuenta),
     }),
     onGuardada,
+    revision,
   )
   const v = a.valores
 
   return (
     <Apartado
       titulo="Cuota y pago"
-      editando={a.editando} onEditar={a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
+      editando={a.editando} onEditar={revision?.sinLapiz ? undefined : a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
+      tituloOculto={revision?.tituloOculto}
       guardando={a.guardando} error={a.error} hecho={a.hecho}
       vista={
         <Rejilla lista>

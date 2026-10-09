@@ -34,7 +34,8 @@ export interface AvisoJunta {
   hasta: string | null
   urgente: boolean
   creadoPorId: number | null
-  creadorRol: CargoJunta
+  /** USER: lo puso un hermano desde su primer acceso («no es de mi familia»). */
+  creadorRol: CargoJunta | 'USER'
   createdAt: string
 }
 

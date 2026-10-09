@@ -11,6 +11,8 @@ import { validate } from '../config/validate';
 import { idParam, password } from '../config/common';
 import { authLimiter, limitadorEntrada } from '../config/limiter';
 import { recibirAlta, comprobarDocumentosDelAlta } from '../middleware/alta-documentos.middleware';
+import { PrimerAccesoController } from '../controllers/primer-acceso.controller';
+import { datosInvitacionSchema, estrenarCuentaSchema } from '../schemas/primer-acceso.schema';
 
 // 2. Esquemas blindados
 import {
@@ -81,6 +83,12 @@ authRoutes.post('/logout', validate(logoutSchema), AuthController.logout);
 // Recuperación de contraseña
 authRoutes.post('/reset-password', authLimiter, validate(requestPasswordResetSchema), AuthController.requestPasswordReset);
 authRoutes.post('/reset-password/confirmar', limitadorEntrada, validate(resetPasswordRequestSchema), AuthController.resetPassword);
+
+// Primer acceso del censo importado: el enlace de la invitación. Leerlo no lo
+// gasta (saluda por el nombre); estrenarlo pone la contraseña y abre la sesión
+// del área de hermanos. Con el limitador de la entrada, como la recuperación.
+authRoutes.post('/primer-acceso/datos', conModulo('area-hermanos'), limitadorEntrada, validate(datosInvitacionSchema), PrimerAccesoController.datosDeLaInvitacion);
+authRoutes.post('/primer-acceso', conModulo('area-hermanos'), limitadorEntrada, validate(estrenarCuentaSchema), PrimerAccesoController.estrenar);
 
 // ==========================================
 //  RUTAS PRIVADAS (Gestión del Perfil)

@@ -123,6 +123,44 @@
       }
     },
     {
+      "clave": "primer_acceso_invitacion",
+      "grupo": "Cuenta",
+      "nombre": "Invitación al primer acceso",
+      "descripcion": "Cuando Secretaría invita a los hermanos que entraron con el censo importado a estrenar su cuenta y revisar su ficha.",
+      "antetitulo": "Área de hermanos",
+      "firma": "La Secretaría",
+      "campos": [
+        {
+          "clave": "saludo",
+          "ayuda": "«Estimado Juan:», según el sexo de la ficha",
+          "ejemplo": "Estimado Juan:"
+        },
+        {
+          "clave": "nombre",
+          "ayuda": "El nombre de pila",
+          "ejemplo": "Juan"
+        },
+        {
+          "clave": "plazo",
+          "ayuda": "Cuánto vale el enlace",
+          "ejemplo": "14 días"
+        }
+      ],
+      "bloques": [
+        {
+          "clave": "enlace",
+          "ayuda": "El botón con el enlace para entrar por primera vez",
+          "obligatorio": true
+        }
+      ],
+      "porDefecto": {
+        "asunto": "Su cuenta en el área de hermanos ya está lista",
+        "titulo": "Su cuenta en el área de hermanos",
+        "cuerpo": "{{saludo}}\n\nLa Secretaría {{de_la_corporacion}} ha pasado el censo a la nueva web y ya tiene **cuenta propia en el área de hermanos**, con este mismo correo.\n\nLa primera vez que entre le pediremos que elija su contraseña y que compruebe sus datos y los de los familiares que figuran con este correo. Son unos minutos y nos ayuda a tener el censo al día.\n\n[[enlace]]\n\nEl enlace caduca en {{plazo}} y solo puede usarse una vez. Si caduca, pida otro a la Secretaría o use «¿Has olvidado tu contraseña?» en la entrada del área de hermanos.",
+        "despedida": ""
+      }
+    },
+    {
       "clave": "contrasena_cambiada",
       "grupo": "Cuenta",
       "nombre": "Contraseña cambiada",

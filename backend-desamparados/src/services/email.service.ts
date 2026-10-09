@@ -75,6 +75,21 @@ export class EmailService {
   }
 
   /**
+   * La invitación al primer acceso de quien entró con el censo importado: el
+   * enlace pone la contraseña y lleva derecho a revisar la ficha. Va a otra
+   * página que la recuperación porque saluda por el nombre y entra sin pasar
+   * por el acceso.
+   */
+  static async enviarInvitacionPrimerAcceso(emailDestino: string, nombre: string, token: string, opciones: { horas: number; sexo?: Sexo }) {
+    const enlace = urlDeLaWeb(`/primer-acceso?token=${encodeURIComponent(token)}`);
+    const { asunto, html, uso } = await PlantillasCorreoService.correo('primer_acceso_invitacion', {
+      campos: { saludo: textoDeSaludo(nombre, opciones.sexo), nombre, plazo: plazo(opciones.horas) },
+      bloques: { enlace: boton('Entrar por primera vez', enlace) },
+    });
+    return await enviarCorreo(emailDestino, asunto, html, { uso });
+  }
+
+  /**
    * Aviso de que la contraseña se ha cambiado desde la propia cuenta. Si no
    * fue su dueño, es la única forma de que se entere a tiempo.
    */

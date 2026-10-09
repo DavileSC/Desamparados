@@ -6,7 +6,7 @@ import HojaCenso from '../HojaCenso'
 
 const json = (cuerpo: unknown, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } })
 const PREVIA = {
-  filas: 5, importables: 3, conCuenta: 1, deBaja: 1, sinNumero: 2, domiciliadas: 1,
+  filas: 5, importables: 3, conCuenta: 1, aCargo: 1, deBaja: 1, sinNumero: 2, domiciliadas: 1,
   columnas: [{ titulo: 'Nombre', clave: 'nombre' }, { titulo: 'Observaciones', clave: null }],
   errores: [{ fila: 5, errores: ['Falta el nombre.'] }, { fila: 6, errores: ['El DNI 01234567L ya está en la fila 2.'] }],
 }
@@ -48,7 +48,8 @@ describe('HojaCenso', () => {
 
     expect(await within(ventana).findByText('De 5 filas, entran 3.')).toBeInTheDocument()
     expect(within(ventana).getByText(/1 recibe su propia cuenta/)).toBeInTheDocument()
-    expect(within(ventana).getByText(/2 quedan sin cuenta propia/)).toBeInTheDocument()
+    expect(within(ventana).getByText(/1 trae el correo de otro hermano: queda en su cuenta/)).toBeInTheDocument()
+    expect(within(ventana).getByText(/1 queda sin cuenta: se les da con «Emancipar»/)).toBeInTheDocument()
     expect(within(ventana).getByText(/2 activos no traen número/)).toBeInTheDocument()
     expect(within(ventana).getByText(/Columnas que no se usan: «Observaciones»/)).toBeInTheDocument()
     expect(within(ventana).getByText('Fila 5: Falta el nombre.')).toBeInTheDocument()

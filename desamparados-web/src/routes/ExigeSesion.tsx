@@ -4,9 +4,11 @@ import CargandoPagina from '../components/CargandoPagina'
 
 interface ExigeSesionProps {
   children: React.ReactNode
+  /** Es la revisión del primer acceso: la única pantalla que ve quien la tiene pendiente. */
+  revision?: boolean
 }
 
-export default function ExigeSesion({ children }: ExigeSesionProps) {
+export default function ExigeSesion({ children, revision = false }: ExigeSesionProps) {
   const estado = useAuthStore((state) => state.status)
   const hermano = useAuthStore((state) => state.hermano)
   const location = useLocation()
@@ -20,6 +22,12 @@ export default function ExigeSesion({ children }: ExigeSesionProps) {
   if (!hermano) {
     return <Navigate to="/acceso" state={{ from: location }} replace />
   }
+
+  // Quien vino con el censo importado revisa su ficha antes que nada; y la
+  // revisión, ya hecha, no se vuelve a ver.
+  const pendiente = hermano.primerAccesoPendiente === true
+  if (pendiente && !revision) return <Navigate to="/primer-acceso/ficha" replace />
+  if (!pendiente && revision) return <Navigate to="/area-hermano" replace />
 
   return <>{children}</>
 }

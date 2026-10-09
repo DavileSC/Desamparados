@@ -10,8 +10,11 @@
  * vuelve a crear: importar dos veces el mismo fichero no duplica a nadie.
  *
  * Las cuentas: quien trae DNI y un correo libre recibe su propia cuenta, sin
- * contraseña (entra con «¿Olvidaste tu contraseña?»). El resto (menores, gente
- * sin correo) queda bajo una cuenta de custodia que nadie usa para entrar;
+ * contraseña: entra por la invitación del primer acceso, que le pide revisar
+ * su ficha. Quien comparte ese correo (los hijos que el censo apuntaba con el
+ * correo de su padre o su madre) cuelga de esa cuenta, y su titular revisa
+ * también sus fichas. El resto (sin correo, o con el de alguien que no está
+ * en el censo) queda bajo una cuenta de custodia que nadie usa para entrar;
  * Secretaría le da cuenta propia con «emancipar» cuando la pida.
  */
 import crypto from 'node:crypto';
@@ -136,21 +139,32 @@ async function analizar(buffer: Buffer) {
   ]);
   const ocupados = new Set([...correosOcupados.map((u) => u.email), ...dnisConCuenta.map((u) => u.dni)]);
   const conCuenta = new Set<number>();
+  const titularDe = new Map<string, FichaImportada>();
   for (const f of fichas) {
     if (f.dni && f.email && !ocupados.has(f.email) && !ocupados.has(f.dni)) {
       conCuenta.add(f.fila);
       ocupados.add(f.email);
+      titularDe.set(f.email, f);
     }
+  }
+  // A cargo: las filas en alta con el correo de un titular que también está
+  // en alta. De una cuenta de baja no se puede colgar nada: no entra nadie.
+  const aCargo = new Map<number, string>();
+  for (const f of fichas) {
+    const titular = f.email ? titularDe.get(f.email) : undefined;
+    if (titular && titular.fila !== f.fila && !f.fechaBaja && !titular.fechaBaja) aCargo.set(f.fila, f.email!);
   }
 
   errores.sort((a, b) => a.fila - b.fila);
   return {
     fichas,
     conCuenta,
+    aCargo,
     resumen: {
       filas: cuerpo.length,
       importables: fichas.length,
       conCuenta: conCuenta.size,
+      aCargo: aCargo.size,
       deBaja: fichas.filter((f) => f.fechaBaja).length,
       sinNumero: fichas.filter((f) => !f.fechaBaja && !f.numeroHermano).length,
       domiciliadas: fichas.filter((f) => f.iban).length,
@@ -161,7 +175,7 @@ async function analizar(buffer: Buffer) {
 }
 
 /** La cuenta de custodia, que se crea la primera vez que hace falta. */
-async function cuentaDeCustodia(tx: Prisma.TransactionClient): Promise<number> {
+export async function cuentaDeCustodia(tx: Prisma.TransactionClient): Promise<number> {
   const existente = await tx.user.findUnique({ where: { email: CUENTA_CENSO_IMPORTADO.email }, select: { id: true } });
   if (existente) return existente.id;
   const creada = await tx.user.create({
@@ -251,35 +265,43 @@ export class CensoHojaService {
    * no lo traen se numeran a continuación del último, por antigüedad.
    */
   static async importar(buffer: Buffer, meta?: MetaDeAuditoria) {
-    const { fichas, conCuenta, resumen } = await analizar(buffer);
+    const { fichas, conCuenta, aCargo, resumen } = await analizar(buffer);
     if (fichas.length === 0) throw new HttpError('No hay ninguna fila que se pueda importar.', 409);
 
     // Una contraseña que nadie sabe, la misma para todas: se entra con el
-    // enlace de «¿Olvidaste tu contraseña?». Cifrarla una vez por ficha
-    // tardaría minutos con un censo grande.
+    // enlace de la invitación (o con «¿Has olvidado tu contraseña?»). Cifrarla
+    // una vez por ficha tardaría minutos con un censo grande.
     const inutilizable = await encrypt(crypto.randomBytes(32).toString('hex'));
 
     await db.$transaction(async (tx) => {
-      const custodia = fichas.some((f) => !conCuenta.has(f.fila)) ? await cuentaDeCustodia(tx) : null;
+      const custodia = fichas.some((f) => !conCuenta.has(f.fila) && !aCargo.has(f.fila)) ? await cuentaDeCustodia(tx) : null;
       const { _max } = await tx.hermano.aggregate({ _max: { numeroHermano: true } });
       let siguiente = Math.max(_max.numeroHermano ?? 0, ...fichas.map((f) => f.numeroHermano ?? 0)) + 1;
       const numeroDe = new Map<number, number>();
       for (const f of [...fichas].filter((x) => !x.fechaBaja && !x.numeroHermano).sort((a, b) => a.fechaAlta.localeCompare(b.fechaAlta) || a.fila - b.fila)) {
         numeroDe.set(f.fila, siguiente++);
       }
+      const apellidosDe = (f: FichaImportada) => [f.primerApellido, f.segundoApellido].filter(Boolean).join(' ');
+      // Las cuentas primero: un hijo puede venir en el fichero antes que su padre.
+      const cuentaDe = new Map<string, number>();
+      for (const f of fichas.filter((x) => conCuenta.has(x.fila))) {
+        const { id } = await tx.user.create({
+          data: {
+            email: f.email!, dni: f.dni!, nombre: f.nombre, apellidos: apellidosDe(f), telefono: f.telefono ?? '',
+            direccion: f.direccion, poblacion: f.poblacion, codigoPostal: f.codigoPostal,
+            password: inutilizable, role: Role.USER, active: !f.fechaBaja,
+            // Una cuenta de baja no entra: no tiene nada que revisar.
+            primerAccesoPendiente: !f.fechaBaja,
+          },
+          select: { id: true },
+        });
+        cuentaDe.set(f.email!, id);
+      }
       for (const f of fichas) {
         const propia = conCuenta.has(f.fila);
-        const apellidos = [f.primerApellido, f.segundoApellido].filter(Boolean).join(' ');
-        const userId = propia
-          ? (await tx.user.create({
-            data: {
-              email: f.email!, dni: f.dni!, nombre: f.nombre, apellidos, telefono: f.telefono ?? '',
-              direccion: f.direccion, poblacion: f.poblacion, codigoPostal: f.codigoPostal,
-              password: inutilizable, role: Role.USER, active: !f.fechaBaja,
-            },
-            select: { id: true },
-          })).id
-          : custodia!;
+        const apellidos = apellidosDe(f);
+        const correoDelTitular = aCargo.get(f.fila);
+        const userId = propia ? cuentaDe.get(f.email!)! : correoDelTitular ? cuentaDe.get(correoDelTitular)! : custodia!;
         await tx.hermano.create({
           data: {
             userId,
@@ -314,7 +336,7 @@ export class CensoHojaService {
 
     await AuditoriaService.log(ACCIONES_AUDITORIA.CENSO_IMPORTAR, meta ?? {}, 'censo', 'importacion', {
       despues: {
-        filas: resumen.filas, importadas: fichas.length, conCuenta: resumen.conCuenta, deBaja: resumen.deBaja,
+        filas: resumen.filas, importadas: fichas.length, conCuenta: resumen.conCuenta, aCargo: resumen.aCargo, deBaja: resumen.deBaja,
         sinNumero: resumen.sinNumero, conErrores: resumen.errores.length,
       },
     });
@@ -322,6 +344,7 @@ export class CensoHojaService {
     const partes = [`Se han importado ${fichas.length === 1 ? '1 ficha' : `${fichas.length} fichas`}.`];
     if (resumen.errores.length) partes.push(`${resumen.errores.length === 1 ? '1 fila se ha quedado' : `${resumen.errores.length} filas se han quedado`} fuera.`);
     if (resumen.sinNumero) partes.push(`${resumen.sinNumero === 1 ? 'El activo que no traía número lo ha recibido' : `Los ${resumen.sinNumero} activos que no traían número lo han recibido`} a continuación del último, por antigüedad.`);
+    if (resumen.conCuenta) partes.push(`${resumen.conCuenta === 1 ? 'La cuenta nueva espera' : `Las ${resumen.conCuenta} cuentas nuevas esperan`} su invitación en la pestaña «Primer acceso».`);
     return { message: partes.join(' '), importadas: fichas.length };
   }
 }

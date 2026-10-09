@@ -79,6 +79,11 @@ export const ACCIONES_AUDITORIA = {
   // El censo en Excel o CSV: sacarlo entero es una salida de datos personales
   CENSO_EXPORTAR: 'CENSO_EXPORTAR',
   CENSO_IMPORTAR: 'CENSO_IMPORTAR',
+  // Primer acceso del censo importado: invitar, confirmar la ficha y devolver
+  // a Secretaría una ficha que no es de la familia
+  PRIMER_ACCESO_INVITAR: 'PRIMER_ACCESO_INVITAR',
+  PRIMER_ACCESO_CONFIRMAR: 'PRIMER_ACCESO_CONFIRMAR',
+  PRIMER_ACCESO_FICHA_AJENA: 'PRIMER_ACCESO_FICHA_AJENA',
   // El cortejo: repartir las papeletas en los tramos por antigüedad
   CORTEJO_REPARTIR: 'CORTEJO_REPARTIR',
   // Boletín y avisos: mandar uno y darse de baja desde el enlace del correo

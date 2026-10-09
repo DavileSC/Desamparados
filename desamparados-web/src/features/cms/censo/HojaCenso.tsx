@@ -112,12 +112,17 @@ export default function HojaCenso({ onImportado, onError }: Props) {
           <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2.5 }}>
             {previa.conCuenta > 0 && (
               <Typography component="li" variant="body2">
-                {plural(previa.conCuenta, 'recibe', 'reciben')} su propia cuenta (tienen DNI y correo): entran con «¿Olvidaste tu contraseña?».
+                {plural(previa.conCuenta, 'recibe', 'reciben')} su propia cuenta (tienen DNI y correo): se les invita desde la pestaña «Primer acceso».
               </Typography>
             )}
-            {previa.importables - previa.conCuenta > 0 && (
+            {previa.aCargo > 0 && (
               <Typography component="li" variant="body2">
-                {plural(previa.importables - previa.conCuenta, 'queda', 'quedan')} sin cuenta propia: se les da con «Emancipar» desde su ficha cuando la pidan.
+                {plural(previa.aCargo, 'trae', 'traen')} el correo de otro hermano: {previa.aCargo === 1 ? 'queda' : 'quedan'} en su cuenta, y él {previa.aCargo === 1 ? 'la revisa' : 'las revisa'} en su primer acceso.
+              </Typography>
+            )}
+            {previa.importables - previa.conCuenta - previa.aCargo > 0 && (
+              <Typography component="li" variant="body2">
+                {plural(previa.importables - previa.conCuenta - previa.aCargo, 'queda', 'quedan')} sin cuenta: se les da con «Emancipar» desde su ficha cuando la pidan.
               </Typography>
             )}
             {previa.sinNumero > 0 && (

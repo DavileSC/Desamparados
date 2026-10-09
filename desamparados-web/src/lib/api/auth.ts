@@ -227,6 +227,24 @@ export function resetPassword(token: string, newPassword: string) {
   })
 }
 
+/** A quién es una invitación al primer acceso, sin gastarla: para saludarle por su nombre. */
+export function datosInvitacion(token: string) {
+  return llamarApi<{ nombre: string; email: string }>('/auth/primer-acceso/datos', {
+    method: 'POST',
+    auth: false,
+    json: { token },
+  })
+}
+
+/** Pone la contraseña con la invitación y deja abierta la sesión del área de hermanos. */
+export function estrenarCuenta(token: string, newPassword: string, recordarme: boolean) {
+  return llamarApi<{ status: 'OK'; user: AuthUser }>('/auth/primer-acceso', {
+    method: 'POST',
+    auth: false,
+    json: { token, newPassword, recordarme },
+  })
+}
+
 /**
  * Cambiar la contraseña con la sesión abierta. El servidor cierra todas las
  * sesiones de la cuenta y da cookies nuevas a las de este navegador: después

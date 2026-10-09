@@ -255,6 +255,8 @@ export interface PreviaImportacionCenso {
   importables: number
   /** Con DNI y un correo libre: reciben su propia cuenta. */
   conCuenta: number
+  /** Comparten el correo de quien recibe cuenta: cuelgan de ella. */
+  aCargo: number
   deBaja: number
   /** Activos sin número: lo reciben a continuación del último. */
   sinNumero: number

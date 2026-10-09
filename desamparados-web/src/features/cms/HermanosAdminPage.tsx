@@ -20,6 +20,7 @@ import HojaCenso from './censo/HojaCenso'
 import { site } from '../../config/site'
 import ListasGuardadas from './censo/ListasGuardadas'
 import VistaDifuntos from './difuntos/VistaDifuntos'
+import VistaPrimerAcceso from './censo/VistaPrimerAcceso'
 import TuneIcon from '@mui/icons-material/Tune'
 
 const SITUACIONES: Opcion[] = [
@@ -78,12 +79,14 @@ export default function HermanosAdminPage() {
   const puedeGestionar = role === 'ADMIN' || role === 'SECRETARIA' || role === 'HERMANO_MAYOR'
   const { activo } = useModulos()
   const conDifuntos = activo('difuntos')
+  // Las invitaciones llevan al área de hermanos: sin ella no hay a dónde invitar.
+  const conPrimerAcceso = puedeGestionar && activo('area-hermanos')
   const [params, setParams] = useSearchParams()
   // La vista vive en la URL: así se puede volver a las solicitudes desde una
   // ficha sin perder dónde se estaba.
   const pedida = params.get('vista')
   // Una vista de un módulo apagado (un enlace guardado) cae en el censo.
-  const vista = pedida === 'solicitudes' || pedida === 'impagos' || (pedida === 'difuntos' && conDifuntos) ? pedida : 'censo'
+  const vista = pedida === 'solicitudes' || pedida === 'impagos' || (pedida === 'difuntos' && conDifuntos) || (pedida === 'primer-acceso' && conPrimerAcceso) ? pedida : 'censo'
   // La ficha abierta a la derecha, también en la URL: «Editar ficha» y el botón
   // de atrás del navegador vuelven a ella, con la lista como estaba.
   const fichaAbierta = Number(params.get('ficha')) || null
@@ -254,6 +257,7 @@ export default function HermanosAdminPage() {
         <Tab value="solicitudes" label={`Solicitudes (${metaSolicitudes?.total ?? 0})`} />
         <Tab value="impagos" label="Impagos" />
         {conDifuntos && <Tab value="difuntos" label="Difuntos" />}
+        {conPrimerAcceso && <Tab value="primer-acceso" label="Primer acceso" />}
       </Tabs>
       {puedeGestionar && (
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', rowGap: 1.5 }}>
@@ -284,7 +288,7 @@ export default function HermanosAdminPage() {
       onConfirmar={() => { setPorAsignarNumeros(false); void asignarNumeros() }}
       onCancelar={() => setPorAsignarNumeros(false)}
     />
-    {vista === 'difuntos' ? <VistaDifuntos puedeGestionar={puedeGestionar} /> : vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
+    {vista === 'primer-acceso' ? <VistaPrimerAcceso /> : vista === 'difuntos' ? <VistaDifuntos puedeGestionar={puedeGestionar} /> : vista === 'impagos' ? <ListaImpagos puedeDarDeBaja={puedeGestionar} /> : vista === 'solicitudes' ? <Paper sx={{ p: 3 }}><Stack spacing={2}>
       {requests.map((request) => (
         <Box key={request.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
           <Box>

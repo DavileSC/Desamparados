@@ -154,6 +154,18 @@ model User {
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
 
+  // --- PRIMER ACCESO ---
+  // Solo las cuentas que crea el importador del censo: sus datos vienen del
+  // censo de antes y el hermano tiene que revisarlos (los suyos y los de quien
+  // cuelga de su cuenta) antes de usar el área. Un alta por la web los acaba
+  // de escribir él mismo y nunca pasa por aquí.
+  primerAccesoPendiente Boolean   @default(false)
+  // Cuándo se le mandó la última invitación por correo (Secretaría reenvía).
+  invitadoEn            DateTime?
+  // Cuándo confirmó su ficha. Queda aunque la marca de arriba ya esté quitada:
+  // es lo que distingue «confirmó» de «nunca tuvo que hacerlo».
+  fichaConfirmadaEn     DateTime?
+
   // --- JUNTA DE GOBIERNO ---
   esJuntaDeGobierno Boolean @default(false)
 
@@ -171,6 +183,8 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([primerAccesoPendiente])
 }
 
 // ---------------------------------------------------------

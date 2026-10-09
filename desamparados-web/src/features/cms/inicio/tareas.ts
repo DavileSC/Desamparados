@@ -68,7 +68,7 @@ export function tareaDeAviso(aviso: AvisoJunta, hoy: Date = new Date()): Tarea {
     prioridad,
     etiqueta: ETIQUETA[prioridad],
     titulo: aviso.texto,
-    detalle: `${para} · de ${NOMBRE_CARGO[aviso.creadorRol]}${cuando}`,
+    detalle: `${para} · de ${aviso.creadorRol === 'USER' ? 'un hermano' : NOMBRE_CARGO[aviso.creadorRol]}${cuando}`,
     cargo: aviso.para ? NOMBRE_CARGO[aviso.para] : 'Toda la junta',
     roles: aviso.para ? [aviso.para, 'ADMIN', 'HERMANO_MAYOR'] : JUNTA,
     accion: null,

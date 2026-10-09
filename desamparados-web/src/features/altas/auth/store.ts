@@ -18,6 +18,11 @@ export interface AuthUser {
   twoFactorEnabled?: boolean
   /** De qué login nació la sesión: el CMS solo acepta tokens creados allí. */
   origen?: 'cms' | 'hermanos'
+  /**
+   * La cuenta vino del censo importado y aún no ha revisado su ficha: el área
+   * de hermanos la manda a la revisión hasta que la confirme.
+   */
+  primerAccesoPendiente?: boolean
 }
 
 export type AreaSesion = 'cms' | 'hermanos'

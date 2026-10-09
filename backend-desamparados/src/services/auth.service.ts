@@ -231,6 +231,8 @@ export class AuthService {
         role: user.role,
         perfiles: user.hermanos,
         twoFactorEnabled: user.twoFactorEnabled,
+        // La web lleva a la revisión de la ficha en vez de al área.
+        primerAccesoPendiente: user.primerAccesoPendiente,
         origen
       }
     };
@@ -253,7 +255,10 @@ export class AuthService {
 
     if (!user) throw new NotFoundError('Usuario no encontrado');
 
-    return { id: user.id, email: user.email, role: user.role, perfiles: user.hermanos, twoFactorEnabled: user.twoFactorEnabled };
+    return {
+      id: user.id, email: user.email, role: user.role, perfiles: user.hermanos, twoFactorEnabled: user.twoFactorEnabled,
+      primerAccesoPendiente: user.primerAccesoPendiente,
+    };
   }
 
   /**
@@ -384,6 +389,18 @@ export class AuthService {
       }
     });
     return token;
+  }
+
+  /**
+   * De quién es un enlace de contraseña que sigue vigente, sin gastarlo. El
+   * primer acceso saluda por el nombre antes de pedir la contraseña, y abre
+   * la sesión de esa cuenta en cuanto la pone.
+   */
+  static async cuentaDelEnlace(token: string) {
+    return db.user.findFirst({
+      where: { resetPasswordToken: hashDelTestigoDeRecuperacion(token), resetPasswordExpires: { gt: new Date() }, active: true },
+      select: { id: true, nombre: true, email: true, role: true, primerAccesoPendiente: true },
+    });
   }
 
   static async requestPasswordReset(email: string, contexto: AreaSesion = 'hermanos') {

@@ -104,6 +104,8 @@ const GraciasApadrinamientoPage = lazy(() => import('../features/apadrinamiento/
 const AccesoPage = lazy(() => import('../features/altas/auth/AccesoPage'))
 const AccesoCmsPage = lazy(() => import('../features/altas/auth/AccesoCmsPage'))
 const NuevaContrasenaPage = lazy(() => import('../features/altas/auth/NuevaContrasenaPage'))
+const PrimerAccesoPage = lazy(() => import('../features/areaHermano/primerAcceso/PrimerAccesoPage'))
+const RevisarFichaPage = lazy(() => import('../features/areaHermano/primerAcceso/RevisarFichaPage'))
 
 // Brother area pages
 const PerfilPage = lazy(() => import('../features/areaHermano/perfil/PerfilPage'))
@@ -221,6 +223,19 @@ const router = createBrowserRouter([
         path: '/reset-password',
         element: <MarcoAcceso />,
         children: [{ index: true, element: pagina(NuevaContrasenaPage, 'nucleo') }],
+      },
+      {
+        // El enlace de la invitación del censo importado: pone la contraseña y entra.
+        path: '/primer-acceso',
+        element: <MarcoAcceso />,
+        children: [{ index: true, element: pagina(PrimerAccesoPage, 'area-hermanos') }],
+      },
+      {
+        // La revisión de la ficha: con sesión, pero fuera del marco del área,
+        // porque hasta confirmarla no se puede ir a ninguna otra pantalla.
+        path: '/primer-acceso/ficha',
+        element: <ExigeSesion revision><Outlet /></ExigeSesion>,
+        children: [{ index: true, element: pagina(RevisarFichaPage, 'area-hermanos') }],
       },
       {
         path: '/area-hermano',

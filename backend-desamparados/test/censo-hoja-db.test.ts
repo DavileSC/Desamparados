@@ -1,7 +1,9 @@
 // El censo en Excel o CSV contra MariaDB: la exportación (sin datos bancarios,
 // con o sin bajas, con rastro en la auditoría) y la importación en dos pasos:
-// qué filas entran, quién recibe cuenta propia, qué número toma cada activo y
-// que importar dos veces no duplique a nadie. Cada prueba recoge lo suyo.
+// qué filas entran, quién recibe cuenta propia (con el primer acceso
+// pendiente), quién cuelga de ella por compartir su correo, qué número toma
+// cada activo y que importar dos veces no duplique a nadie. Cada prueba
+// recoge lo suyo.
 
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
@@ -75,25 +77,28 @@ test('importar: la vista previa separa lo bueno de lo malo, y al importar cada u
       ['Nombre', 'Apellidos', 'NIF', 'F. nacimiento', 'E-mail', 'F. alta', 'Fecha de baja', 'IBAN'],
       ['Ana', `${e.marca} Gil`, adulto, '15/03/1980', correo, '01/01/2001', '', 'ES91 2100 0418 4502 0005 1332'],
       ['Luisito', `${e.marca} Gil`, '', '10/10/2015', '', '01/01/2016', '', ''],
+      // Con el correo de Ana: el censo de antes apuntaba así a los hijos.
+      ['Marta', `${e.marca} Gil`, '', '04/05/2012', correo, '01/01/2013', '', ''],
       ['Pepa', `${e.marca} Ruiz`, otro, '01/02/1950', '', '01/01/1990', '31/12/2020', ''],
       ['', 'Sin nombre', '', '01/01/1990', '', '', '', ''],
       ['Ana', `${e.marca} Gil`, adulto, '15/03/1980', '', '', '', ''],
     ]);
 
     const previa = await CensoHojaService.previa(fichero);
-    assert.equal(previa.filas, 5);
-    assert.equal(previa.importables, 3);
+    assert.equal(previa.filas, 6);
+    assert.equal(previa.importables, 4);
     assert.equal(previa.conCuenta, 1);
+    assert.equal(previa.aCargo, 1);
     assert.equal(previa.deBaja, 1);
-    assert.equal(previa.sinNumero, 2);
+    assert.equal(previa.sinNumero, 3);
     assert.equal(previa.domiciliadas, 1);
-    assert.deepEqual(previa.errores.map((x) => x.fila), [5, 6]);
+    assert.deepEqual(previa.errores.map((x) => x.fila), [6, 7]);
     // La vista previa no toca nada.
     assert.equal(await db.hermano.count({ where: { apellidos: { contains: e.marca } } }), 0);
 
     const { _max } = await db.hermano.aggregate({ _max: { numeroHermano: true } });
     const r = await CensoHojaService.importar(fichero, e.meta);
-    assert.equal(r.importadas, 3);
+    assert.equal(r.importadas, 4);
 
     const ana = await db.hermano.findUniqueOrThrow({ where: { dni: adulto }, include: { user: true } });
     assert.equal(ana.esTitular, true);
@@ -101,19 +106,27 @@ test('importar: la vista previa separa lo bueno de lo malo, y al importar cada u
     assert.equal(ana.formaPagoPref, 'DOMICILIACION');
     assert.equal(ana.iban, 'ES9121000418450200051332');
     assert.ok(ana.fechaMandato);
+    // Su cuenta tiene que pasar por el primer acceso antes de usar el área.
+    assert.equal(ana.user.primerAccesoPendiente, true);
+    const marta = await db.hermano.findFirstOrThrow({ where: { nombre: 'Marta', apellidos: { contains: e.marca } } });
+    assert.equal(marta.userId, ana.userId);
+    assert.equal(marta.esTitular, false);
+    // Qué es para Ana lo dice Ana en su primer acceso: el censo no lo trae.
+    assert.equal(marta.parentesco, null);
     const nino = await db.hermano.findFirstOrThrow({ where: { nombre: 'Luisito', apellidos: { contains: e.marca } }, include: { user: true } });
     assert.equal(nino.user.email, CUENTA_CENSO_IMPORTADO.email);
     assert.equal(nino.esTitular, false);
-    // Los activos, a continuación del último y por antigüedad: Ana (2001) antes que el niño (2016).
-    assert.deepEqual([ana.numeroHermano, nino.numeroHermano], [(_max.numeroHermano ?? 0) + 1, (_max.numeroHermano ?? 0) + 2]);
-    const pepa = await db.hermano.findUniqueOrThrow({ where: { dni: otro } });
+    // Los activos, a continuación del último y por antigüedad: Ana (2001), Marta (2013) y el niño (2016).
+    const base = _max.numeroHermano ?? 0;
+    assert.deepEqual([ana.numeroHermano, marta.numeroHermano, nino.numeroHermano], [base + 1, base + 2, base + 3]);
+    const pepa = await db.hermano.findUniqueOrThrow({ where: { dni: otro }, include: { user: true } });
     assert.deepEqual([pepa.activo, pepa.numeroHermano], [false, null]);
 
     assert.ok(await db.auditLog.findFirst({ where: { action: ACCIONES_AUDITORIA.CENSO_IMPORTAR, userId: e.staff.id } }));
 
     // Otra vez el mismo fichero: todos ya están, no se duplica nadie.
     await assert.rejects(CensoHojaService.importar(fichero, e.meta), (err: unknown) => err instanceof HttpError && err.status === 409);
-    assert.equal(await db.hermano.count({ where: { apellidos: { contains: e.marca } } }), 3);
+    assert.equal(await db.hermano.count({ where: { apellidos: { contains: e.marca } } }), 4);
   } finally {
     await e.recoger();
   }
