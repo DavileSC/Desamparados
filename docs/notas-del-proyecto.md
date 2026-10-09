@@ -210,6 +210,32 @@ que dejen los datos de la base de desarrollo, y un test que retenga una
 transacción a propósito tiene que soltarla en un `finally`: una transacción
 abierta deja la fila bloqueada y cuelga la limpieza del final.
 
+**En local, los módulos son los de la base de desarrollo.** En el CI la base es
+nueva y la siembra los enciende todos; en local, lo que se haya apagado desde
+Sistema → «Módulos» sigue apagado, y una prueba que lo use falla con un 404 de
+módulo apagado sin que nada esté roto (pasó con `apadrinamientos` el
+09-10-2026). La prueba que necesite un módulo lo enciende ella con
+`encenderModulos([...])` de `test/fixtures/modulos.ts`, con sus requisitos, y
+en el `after` llama a lo que devuelve, que lo deja como estaba.
+
+**Los falsos rojos del frontend eran esperas cortas, no pruebas rotas**
+(revisado el 09-10-2026). Con la suite entera, un trabajador por núcleo se
+reparte la CPU y todo tarda hasta el doble. Caían por tres sitios:
+
+- `findBy…` y `waitFor` esperan 1 s de serie; ahora 5 s para todos
+  (`configure` en `src/test/setup.ts`). Terminan en cuanto aparece lo
+  esperado: esperar más solo alarga una prueba que de verdad falla.
+- Topes propios que se quedaron viejos: puestos cuando el general era de 5 s
+  (`{ timeout: 15_000 }` en Portada, Tesorería y Contabilidad), al subir el
+  general pasaron a ser más **cortos** que él y quitaban margen. El general es
+  ahora de 30 s (`vitest.config.ts`). **No se pone un tope propio por debajo
+  del general**, ni un `{ timeout: 3000 }` en un `waitFor`.
+- Las pruebas gigantes (Hazte hermano con menores, el vídeo de la galería, el
+  ancla del constructor) tardan unos 30 s solas: llevan 60 s propios.
+
+Si una vuelve a caer solo con la suite entera, se pasa sola con
+`--reporter=verbose` para ver cuánto tarda, y se compara con su tope.
+
 **Un diálogo de MUI abierto convierte en verdes las aserciones negativas por
 rol.** Mientras el modal sigue montado, su `ModalManager` pone `aria-hidden` a
 todos los hermanos del diálogo —o sea, al resto de la página—, y las consultas

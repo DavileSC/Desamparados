@@ -260,7 +260,7 @@ describe('HazteHermanoPage', () => {
     expect(cuerpo.menores[0].dni).toBeUndefined()
   // Siete pasos y dos menores tecleados campo a campo: con la suite entera
   // compitiendo por la CPU se pasa de los 20 s de tope, sin que falle nada.
-  }, 45_000)
+  }, 60_000)
 
   it('quien solo apunta a un menor no da su fecha de nacimiento: no tendrá ficha', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
@@ -429,7 +429,7 @@ describe('HazteHermanoPage', () => {
     const cuerpo = JSON.parse(fetchFalso.mock.calls[0][1].body)
     expect(cuerpo.pago).toEqual({ forma: 'DOMICILIACION', iban: 'ES9121000418450200051332', titularidad: 'OTRA_PERSONA', titularCuenta: 'Ana Ruiz Gil' })
     expect(cuerpo.usuario.boletin).toBe(true)
-  }, 45_000)
+  }, 60_000)
 
   it('con foto o certificado, el alta va en multipart con cada documento en su campo', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
@@ -467,5 +467,5 @@ describe('HazteHermanoPage', () => {
     expect(JSON.parse(String(cuerpo.get('datos'))).titular).toEqual(TITULAR)
     expect((cuerpo.get('foto') as File).name).toBe('foto.jpg')
     expect((cuerpo.get('certificadoBautismo') as File).name).toBe('certificado.pdf')
-  }, 45_000)
+  }, 60_000)
 })

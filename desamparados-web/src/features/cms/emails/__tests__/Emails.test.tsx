@@ -80,14 +80,14 @@ describe('Emails', () => {
 
     await user.clear(texto)
     await user.type(texto, 'Por {{{{difunta}}')
-    expect(await screen.findByText('Este correo no tiene el campo {{difunta}}.', {}, { timeout: 3000 })).toBeInTheDocument()
+    expect(await screen.findByText('Este correo no tiene el campo {{difunta}}.')).toBeInTheDocument()
 
     await user.clear(texto)
     await user.type(texto, 'Rezamos por ')
     await user.click(screen.getByRole('button', { name: '{{difunto}}' }))
     expect(texto).toHaveValue('Rezamos por {{difunto}}')
     await user.type(screen.getByLabelText(/Nombre de la plantilla/), 'Pésame breve')
-    await waitFor(() => expect(screen.queryByText(/no tiene el campo/)).not.toBeInTheDocument(), { timeout: 3000 })
+    await waitFor(() => expect(screen.queryByText(/no tiene el campo/)).not.toBeInTheDocument())
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
     await user.click(await screen.findByRole('button', { name: 'Guardar cambios' }))
     expect(await screen.findByRole('heading', { name: 'Lista' })).toBeInTheDocument()

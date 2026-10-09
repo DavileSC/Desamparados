@@ -307,7 +307,7 @@ describe('PaginaAdminPage: los bloques de la segunda fase', () => {
   // de la galería repintándose en cada una: solo tarda unos 5 a 7 s, y con la
   // suite completa en paralelo pasaba de los 20. Margen propio, como los tests
   // que rellenan la ventana de apunte en Contabilidad.
-  it('se añade un vídeo a la galería y avisa hasta que tiene dirección y portada', { timeout: 45_000 }, async () => {
+  it('se añade un vídeo a la galería y avisa hasta que tiene dirección y portada', { timeout: 60_000 }, async () => {
     const user = userEvent.setup()
     montar()
     await screen.findByDisplayValue('Corporación')

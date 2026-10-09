@@ -133,6 +133,11 @@ describe('cambiar', () => {
 
   test('apagar con dependientes encendidos: no lo hace y dice cuáles', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
+    // Los cuatro que dependen del pago en línea, encendidos: en la base de
+    // desarrollo puede haber alguno apagado. El `after` lo deja todo como estaba.
+    for (const clave of ['apadrinamientos', 'cuotas-en-linea', 'donativos', 'tienda-web']) {
+      await ModulosService.cambiar(clave, true, { conRequisitos: true }, undefined, META);
+    }
     const r = await ModulosService.cambiar('pago-en-linea', false, {}, undefined, META);
     assert.equal(r.ok, false);
     if (!r.ok) {

@@ -145,7 +145,7 @@ const fotosEnPantalla = () =>
  * caían de forma intermitente. El `delay: null` de `userEvent` ya está puesto;
  * esto es lo que queda.
  */
-describe('PortadaAdminPage', { timeout: 15_000 }, () => {
+describe('PortadaAdminPage', () => {
   it('carga las fotos en su orden y deja reordenar y quitar', async () => {
     const { usuario } = montar()
     await screen.findByRole('group', { name: 'Foto 1' })

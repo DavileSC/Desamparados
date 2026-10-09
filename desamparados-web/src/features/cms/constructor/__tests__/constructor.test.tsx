@@ -80,7 +80,7 @@ const accion = async (user: ReturnType<typeof userEvent.setup>, posicion: number
 }
 
 describe('el constructor: presentación', () => {
-  it('se elige un fondo y se guarda; volver al de siempre lo quita del documento', { timeout: 20000 }, async () => {
+  it('se elige un fondo y se guarda; volver al de siempre lo quita del documento', async () => {
     const user = userEvent.setup()
     const llamadas = montar()
     await screen.findByDisplayValue('Nuestros fines')
@@ -115,7 +115,7 @@ describe('el constructor: presentación', () => {
 
   // Teclea dos anclas letra a letra y duplica un bloque: sola tarda unos 6 s,
   // y con la suite entera en paralelo pasa de los 20. Margen propio.
-  it('el ancla se escribe como un slug, enseña su enlace y no puede repetirse', { timeout: 45_000 }, async () => {
+  it('el ancla se escribe como un slug, enseña su enlace y no puede repetirse', { timeout: 60_000 }, async () => {
     const user = userEvent.setup()
     const llamadas = montar()
     await screen.findByDisplayValue('Nuestros fines')
@@ -162,7 +162,7 @@ describe('el constructor: acciones sobre los bloques', () => {
     expect(screen.queryByText('Oculto')).not.toBeInTheDocument()
   })
 
-  it('el «+» entre dos bloques añade justo ahí', { timeout: 20000 }, async () => {
+  it('el «+» entre dos bloques añade justo ahí', async () => {
     const user = userEvent.setup()
     const llamadas = montar()
     await screen.findByDisplayValue('Nuestros fines')

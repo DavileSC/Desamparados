@@ -139,7 +139,7 @@ describe('TesoreriaAdminPage', () => {
       hermanoId: 5, year: new Date().getFullYear(), concepto: 'Cuota anual (reemisión)', importe: 12.5, tipo: 'CUOTA_HERMANO',
     })
     expect(await screen.findByText(/emitido\. queda pendiente de cobro/i)).toBeInTheDocument()
-  }, 15000)
+  })
 
   it('un importe negativo o con tres decimales no deja emitir y dice por qué', async () => {
     const user = userEvent.setup({ delay: null })

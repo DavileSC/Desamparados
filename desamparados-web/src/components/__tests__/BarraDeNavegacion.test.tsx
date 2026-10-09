@@ -179,7 +179,7 @@ describe('BarraDeNavegacion en móvil', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await user.click(screen.getByRole('button', { name: 'Cerrar menú' }))
     expect(screen.getByRole('button', { name: 'Abrir menú', hidden: true })).toHaveAttribute('aria-expanded', 'false')
-    await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Menú' })).not.toBeInTheDocument(), { timeout: 3000 })
+    await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Menú' })).not.toBeInTheDocument())
 
     // findByRole y no getByRole: la página sigue con aria-hidden hasta que acaba
     // la transición del cierre, y con el CI cargado el botón aún no se veía
@@ -193,7 +193,7 @@ describe('BarraDeNavegacion en móvil', () => {
     renderWithProviders(<BarraDeNavegacion />)
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await user.keyboard('{Escape}')
-    await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Menú' })).not.toBeInTheDocument(), { timeout: 3000 })
+    await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Menú' })).not.toBeInTheDocument())
   })
 
   it('al pie, el acceso de hermanos y las redes', async () => {

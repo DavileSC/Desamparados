@@ -17,12 +17,14 @@ import { ApadrinamientosService } from '../src/services/apadrinamientos.service.
 import { PagoEnLineaService } from '../src/services/pagos/pago-en-linea.service.js';
 import { TransaccionService } from '../src/services/transaccion.service.js';
 import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js';
+import { encenderModulos } from './fixtures/modulos.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
 const PRUEBAS = configuracionRedsys({});
 let dbDisponible = false;
 let server: Server;
 let baseUrl: string;
+let restaurarModulos: (() => Promise<void>) | undefined;
 const VARIABLES = ['PAGO_EN_LINEA', 'REDSYS_ENTORNO', 'REDSYS_COMERCIO', 'REDSYS_TERMINAL', 'REDSYS_CLAVE', 'REDSYS_BIZUM'] as const;
 const previas = Object.fromEntries(VARIABLES.map((v) => [v, process.env[v]]));
 
@@ -39,6 +41,7 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const timeout = new Promise<false>((resolve) => setTimeout(() => resolve(false), 3000).unref());
   dbDisponible = await Promise.race([db.$queryRaw`SELECT 1`.then(() => true).catch(() => false), timeout]);
+  if (dbDisponible) restaurarModulos = await encenderModulos(['apadrinamientos', 'pago-en-linea']);
 });
 
 after(async () => {
@@ -47,6 +50,7 @@ after(async () => {
     else process.env[v] = previas[v];
   }
   await new Promise<void>((resolve, reject) => server.close((e) => e ? reject(e) : resolve()));
+  await restaurarModulos?.();
   await db.$disconnect();
 });
 

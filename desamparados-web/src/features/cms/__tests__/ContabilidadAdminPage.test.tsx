@@ -194,12 +194,8 @@ describe('ContabilidadAdminPage', () => {
   })
 })
 
-// Los dos tests que rellenan la ventana entera tecla a tecla tardan unos 3 s
-// solos; con la suite completa en paralelo pasaban de los 5 s por defecto.
-const RELLENAR_VENTANA_MS = 15_000
-
 describe('apuntes manuales (D8)', () => {
-  it('el nuevo apunte pide fecha (hoy por defecto) y método, y los manda', { timeout: RELLENAR_VENTANA_MS }, async () => {
+  it('el nuevo apunte pide fecha (hoy por defecto) y método, y los manda', async () => {
     const user = userEvent.setup()
     const simulado = servir()
     renderWithProviders(<ContabilidadAdminPage />)
@@ -239,7 +235,7 @@ describe('apuntes manuales (D8)', () => {
     expect(screen.queryByRole('option', { name: /rifas antiguas/i })).not.toBeInTheDocument()
   })
 
-  it('un importe con tres decimales o una fecha futura se avisan en el campo y no se registran', { timeout: RELLENAR_VENTANA_MS }, async () => {
+  it('un importe con tres decimales o una fecha futura se avisan en el campo y no se registran', async () => {
     const user = userEvent.setup()
     servir()
     renderWithProviders(<ContabilidadAdminPage />)

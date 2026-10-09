@@ -39,14 +39,14 @@ describe('NuevaContrasenaPage', () => {
     montar(`/reset-password?token=${TOKEN}&area=cms`)
     expect(screen.getByRole('link', { name: 'Volver al acceso' })).toHaveAttribute('href', '/cms/acceso')
     await ponerContrasena()
-    expect(await screen.findByTestId('ruta', {}, { timeout: 4000 })).toHaveTextContent('/cms/acceso')
+    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cms/acceso')
   })
 
   it('con el enlace de siempre, al terminar lleva a la entrada de hermanos', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok({ message: 'ok' })))
     montar(`/reset-password?token=${TOKEN}`)
     await ponerContrasena()
-    expect(await screen.findByTestId('ruta', {}, { timeout: 4000 })).toHaveTextContent(/^\/acceso$/)
+    expect(await screen.findByTestId('ruta')).toHaveTextContent(/^\/acceso$/)
   })
 
   it('pedida desde el CMS, la petición lo dice para que el correo traiga el enlace del CMS', async () => {

@@ -149,7 +149,7 @@ describe('HermanoEditPage', () => {
     expect(cuerpo).not.toHaveProperty('fechaBaja')
   })
 
-  it('una fecha que se cambia sí se manda, en formato de día', { timeout: 20000 }, async () => {
+  it('una fecha que se cambia sí se manda, en formato de día', async () => {
     const user = userEvent.setup()
     const llamadas = servidor(() => ficha)
     montar()
@@ -166,7 +166,7 @@ describe('HermanoEditPage', () => {
     expect(guardado.cuerpo).not.toHaveProperty('fechaNacimiento')
   })
 
-  it('la medalla y el tratamiento los pone Secretaría y viajan al guardar', { timeout: 20000 }, async () => {
+  it('la medalla y el tratamiento los pone Secretaría y viajan al guardar', async () => {
     const user = userEvent.setup()
     const llamadas = servidor(() => ficha)
     montar()
@@ -201,7 +201,7 @@ describe('HermanoEditPage', () => {
     expect(screen.queryByLabelText('Fecha de baja')).not.toBeInTheDocument()
   })
 
-  it('en una ficha activa, «Dar de baja» pide la fecha y el motivo, confirma y no deja pulsar dos veces', { timeout: 20000 }, async () => {
+  it('en una ficha activa, «Dar de baja» pide la fecha y el motivo, confirma y no deja pulsar dos veces', async () => {
     const user = userEvent.setup()
     const respuestaBaja = diferida<unknown>()
     let fichaActual: unknown = ficha
@@ -235,7 +235,7 @@ describe('HermanoEditPage', () => {
     expect(await screen.findByRole('button', { name: 'Reactivar' })).toBeInTheDocument()
   })
 
-  it('en una ficha de baja, «Reactivar» pregunta antes', { timeout: 20000 }, async () => {
+  it('en una ficha de baja, «Reactivar» pregunta antes', async () => {
     const user = userEvent.setup()
     const llamadas = servidor((_url, metodo) => (metodo === 'POST' ? { message: 'Hermano reactivado correctamente. Se le ha asignado el nuevo número 301.' } : deBaja))
     montar()
@@ -248,7 +248,7 @@ describe('HermanoEditPage', () => {
     expect(reactivacion.url).toContain('/hermanos/admin/42/reactivar')
   })
 
-  it('en una ficha de baja se corrige la fecha de baja al guardar', { timeout: 20000 }, async () => {
+  it('en una ficha de baja se corrige la fecha de baja al guardar', async () => {
     const user = userEvent.setup()
     const llamadas = servidor(() => deBaja)
     montar()
@@ -303,7 +303,7 @@ describe('HermanoEditPage', () => {
     expect(screen.getByRole('button', { name: /emancipar/i })).toBeDisabled()
   })
 
-  it('el botón del diálogo de emancipar no responde mientras trabaja', { timeout: 20000 }, async () => {
+  it('el botón del diálogo de emancipar no responde mientras trabaja', async () => {
     const user = userEvent.setup()
     const respuesta = diferida<unknown>()
     const llamadas = servidor((_url, metodo) => (metodo === 'POST' ? respuesta.promesa : dependiente))
@@ -326,7 +326,7 @@ describe('HermanoEditPage', () => {
     expect(screen.queryByRole('button', { name: /emancipar/i })).not.toBeInTheDocument()
   })
 
-  it('emancipar pide el correo y confirma antes de crear la cuenta', { timeout: 20000 }, async () => {
+  it('emancipar pide el correo y confirma antes de crear la cuenta', async () => {
     const user = userEvent.setup()
     responder(dependiente)
     montar(43)

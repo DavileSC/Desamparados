@@ -63,7 +63,7 @@ function montarLasPantallas() {
 }
 
 describe('topes de longitud del CMS', () => {
-  it('todo maxlength que pintan las pantallas es un tope que el servidor conoce', { timeout: 20000 }, async () => {
+  it('todo maxlength que pintan las pantallas es un tope que el servidor conoce', async () => {
     const user = userEvent.setup()
     montarLasPantallas()
     // Las pantallas cargadas: en la portada las secciones plegadas siguen

@@ -1,5 +1,15 @@
 import '@testing-library/jest-dom/vitest'
 import { afterEach } from 'vitest'
+import { configure } from '@testing-library/react'
+
+/**
+ * Cuánto esperan `findBy…` y `waitFor` a que algo aparezca: 1 s de serie. Con
+ * la suite entera repartiéndose la CPU, pintar una página puede tardar más, y
+ * la prueba caía diciendo que no encontraba algo que sí estaba (Noticias,
+ * Publicaciones). Esperar más no retrasa ninguna prueba que pase: termina en
+ * cuanto aparece. Solo tarda más en fallar una que de verdad está rota.
+ */
+configure({ asyncUtilTimeout: 5000 })
 
 /**
  * jsdom no implementa IntersectionObserver, y `SeccionAnimada` (framer-motion,

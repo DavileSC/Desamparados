@@ -38,7 +38,7 @@ describe('el Informe anual', () => {
     expect(screen.getByRole('button', { name: 'Generar PDF' })).toBeDisabled()
     await usuario.type(texto, 'Queridos hermanos')
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/datos\/informe-anual\/2025$/), expect.objectContaining({ method: 'PUT' })), { timeout: 3000 })
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/datos\/informe-anual\/2025$/), expect.objectContaining({ method: 'PUT' })))
     const put = fetch.mock.calls.find(([, o]) => o?.method === 'PUT')!
     expect(JSON.parse(String(put[1]!.body))).toEqual({ presentacion: 'Queridos hermanos' })
     await waitFor(() => expect(screen.getByText(/Guardado/)).toBeInTheDocument())
