@@ -488,7 +488,7 @@ Tres sitios, para que ninguno solo baste para perderlas:
 
 | Dónde | Cuántas | Quién la pone ahí |
 |---|---|---|
-| El servidor (`/var/backups/desamparados/copias`) | 14 días | El timer, cada noche a las 4 (y `desplegar.sh`, antes de cada despliegue) |
+| El servidor (`/var/backups/desamparados/copias`) | 14 días | El timer, cada noche a las 4 UTC, las 6 en Madrid en verano y las 5 en invierno (y `desplegar.sh`, antes de cada despliegue) |
 | Google Drive de `rrsspasdesampa@gmail.com`, carpeta `copias-desamparados` | 30 días y la primera de cada mes durante 12 meses | El mismo guion, con `rclone` |
 | El PC de desarrollo (`%USERPROFILE%\Copias Desamparados`) | Las 8 últimas, una por semana | El PC, que se la baja (`docker/servidor/bajar-copias.ps1`) |
 
