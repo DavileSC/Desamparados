@@ -9,8 +9,13 @@ let contador = 0;
 /**
  * Crea un usuario desechable. El email y el DNI llevan un sufijo único para no
  * chocar con datos reales ni entre ejecuciones.
+ *
+ * Las cuentas del equipo nacen con el doble factor activado, porque sin él el
+ * CMS solo deja activarlo (ver checkRole). No llevan secreto: las pruebas que
+ * entran con un código de verdad, o que lo activan, piden `dobleFactor: false`
+ * y lo montan ellas.
  */
-export async function crearUsuarioPrueba(role: Role = Role.USER) {
+export async function crearUsuarioPrueba(role: Role = Role.USER, { dobleFactor = role !== Role.USER } = {}) {
   contador += 1;
   // Con el pid: los ficheros de test corren en procesos paralelos, cada uno con
   // su propio `contador`, y dos que coincidían en el mismo milisegundo chocaban
@@ -26,6 +31,7 @@ export async function crearUsuarioPrueba(role: Role = Role.USER) {
       apellidos: 'Automatica',
       telefono: '600000000',
       role,
+      twoFactorEnabled: dobleFactor,
       // Un minuto en el pasado: el `iat` del JWT va en segundos enteros y, si el
       // login cae en el mismo segundo que la creación, el redondeo lo dejaría
       // antes de tokenValidAfter y la sesión nacería ya invalidada. Los cortes

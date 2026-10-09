@@ -364,7 +364,7 @@ test('la cookie del hermano persiste 4 h y la del staff muere al cerrar', async 
   if (!dbDisponible) return t.skip(SIN_DB);
 
   const hermano = await crearUsuarioPrueba(Role.USER);
-  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA, { dobleFactor: false });
 
   try {
     const deHermano = cookieSesionDe(await entrar(hermano.email, 'hermanos'), 'hermanos')!;

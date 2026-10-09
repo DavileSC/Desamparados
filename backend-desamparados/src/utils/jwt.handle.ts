@@ -48,6 +48,10 @@ export interface AuthTokenPayload extends JwtPayload {
   // emitió. En cuanto se acepta un segundo factor ese valor cambia y el
   // testigo deja de valer: es de un solo uso sin guardar nada en memoria.
   paso2fa?: number | null;
+  // No viaja en el token: lo pone `validateSessionAgainstDb` leyendo la base
+  // en cada petición. Así, desactivarlo o un rescate de un ADMIN cuentan al
+  // instante, sin esperar a que caduque la sesión (ver checkRole).
+  dobleFactor?: boolean;
 }
 
 // Roles con acceso al CMS. Su sesion dura mas, pero la cookie muere al cerrar

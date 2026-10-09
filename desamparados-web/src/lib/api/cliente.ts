@@ -91,6 +91,14 @@ function mensajeDeError(datos: unknown): string | null {
 export const SESION_NO_CMS = 'SESION_NO_CMS'
 
 /**
+ * El 403 de una cuenta del equipo sin doble factor. Llega si se lo quitan con
+ * la sesión abierta (un rescate de un ADMIN, o «Cambiar de móvil» en otra
+ * pestaña): se pregunta la sesión, el store se entera de que falta y
+ * `ExigeRol` enseña la pantalla para activarlo.
+ */
+export const FALTA_DOBLE_FACTOR = 'FALTA_DOBLE_FACTOR'
+
+/**
  * El 404 del backend cuando la ruta es de un módulo apagado. Si llega, la
  * lista de módulos que tiene esta sesión está vieja (Administración lo apagó
  * desde otra): `useModulos` se apunta aquí para volver a pedirla, y así los
@@ -182,6 +190,9 @@ export async function llamarApi<T>(path: string, options: ApiRequestOptions = {}
       // no sabemos cuál: la petición no lleva el área. Preguntamos al servidor,
       // que devuelve las dos, en vez de tirar las dos a ciegas y echar de la
       // buena a quien seguía dentro.
+      void refrescarSesiones()
+    }
+    if (res.status === 403 && (datos as { error?: unknown } | null)?.error === FALTA_DOBLE_FACTOR) {
       void refrescarSesiones()
     }
     throw new ErrorDeApi(mensajeDeError(datos) ?? `Error ${res.status}`, res.status, datos)

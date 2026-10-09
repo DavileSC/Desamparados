@@ -105,6 +105,16 @@ autenticación —como `/news/admin/:id`, `/publications/:id` o
 explica **por qué** el orden es de corrección y no de estilo. No reordenar esos
 ficheros «para que queden más limpios».
 
+**Una sesión del CMS no basta: también hace falta el 2FA activo.** `checkRole`
+responde 403 `FALTA_DOBLE_FACTOR` a toda cuenta del equipo sin él, salvo en
+las dos rutas que lo activan (`checkRole(roles, { sinDobleFactor: true })`).
+Ninguna otra ruta lleva esa opción. Una ruta que mire `req.sesiones.cms` sin
+pasar por `checkRole` no tiene esa garantía y la comprueba ella (como el
+borrado de la propia cuenta en `mis-datos.service`). En las pruebas,
+`crearUsuarioPrueba` hace a los cargos con `twoFactorEnabled: true` y sin
+secreto. La que entre por contraseña en el CMS o active el 2FA pide
+`{ dobleFactor: false }`.
+
 ---
 
 ## 5. Trampas al levantar los servidores en local

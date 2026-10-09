@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import { useAuthStore } from '../altas/auth/store'
-import { sesionActual, activar2FA, desactivar2FA, generarQr2FA } from '../../lib/api/auth'
+import { sesionActual, desactivar2FA } from '../../lib/api/auth'
 import { ErrorDeApi } from '../../lib/api/cliente'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
 import CambiarContrasena from '../altas/auth/CambiarContrasena'
@@ -17,74 +17,32 @@ function errorMessage(e: unknown, fallback: string) {
  * misma que la del área de hermanos (es una sola cuenta). La pantalla solo
  * se ofrece al staff (la ruta y los endpoints del 2FA la limitan a roles del CMS).
  *
- * El flujo de activación es el estándar: QR → código → respaldos en claro una
- * sola vez. El de desactivación pide un TOTP o un respaldo para evitar que
- * quien se apodere de una sesión abierta deje la cuenta con un solo factor.
+ * El doble factor es obligatorio para el equipo: aquí siempre está activo,
+ * porque sin él `ExigeRol` enseña la pantalla de activación en lugar del CMS.
+ * Lo que se ofrece es cambiar de móvil: se apaga con un código vigente o de
+ * respaldo (para que quien se apodere de una sesión abierta no lo quite sin
+ * él) y, al apagarse, esa misma pantalla pide activarlo con el móvil nuevo.
  */
 export default function MiSeguridadPage() {
   const cms = useAuthStore((state) => state.cms)
   const entrarSesion = useAuthStore((state) => state.entrarSesion)
 
-  const [qr, setQr] = useState<{ qrCodeUrl: string; secret: string } | null>(null)
-  const [respaldos, setRespaldos] = useState<string[] | null>(null)
   const [codigo, setCodigo] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [aviso, setAviso] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
-  const [confirmarBaja, setConfirmarBaja] = useState(false)
+  const [confirmarCambio, setConfirmarCambio] = useState(false)
 
-  const activo = !!cms?.twoFactorEnabled
-
-  /** Refresca el estado de la cuenta (el 2FA cambia y el store debe enterarse). */
-  const refrescarSesion = async () => {
-    const { cms: actualizado } = await sesionActual()
-    if (actualizado) entrarSesion('cms', actualizado)
-  }
-
-  const pedirQr = async () => {
+  const cambiarDeMovil = async () => {
     setOcupado(true)
     setError(null)
-    setAviso(null)
-    try {
-      setQr(await generarQr2FA())
-    } catch (e) {
-      setError(errorMessage(e, 'No se ha podido generar el QR. Inténtalo de nuevo.'))
-      // 409: el servidor dice que ya está activo (activado desde otra pestaña,
-      // por ejemplo). Se refresca la cuenta para que la pantalla lo refleje.
-      if (e instanceof ErrorDeApi && e.status === 409) await refrescarSesion().catch(() => undefined)
-    } finally {
-      setOcupado(false)
-    }
-  }
-
-  const activar = async () => {
-    setOcupado(true)
-    setError(null)
-    try {
-      const { backupCodes } = await activar2FA(codigo.trim())
-      setRespaldos(backupCodes)
-      setQr(null)
-      setCodigo('')
-      await refrescarSesion()
-    } catch (e) {
-      setError(errorMessage(e, 'Código incorrecto. Comprueba que tu app muestra estos 6 dígitos.'))
-    } finally {
-      setOcupado(false)
-    }
-  }
-
-  const desactivar = async () => {
-    setOcupado(true)
-    setError(null)
-    setConfirmarBaja(false)
+    setConfirmarCambio(false)
     try {
       await desactivar2FA(codigo.trim())
-      setAviso('El doble factor está desactivado. Tu cuenta vuelve a entrar solo con contraseña.')
-      setCodigo('')
-      await refrescarSesion()
+      // Con la sesión al día, ExigeRol pasa a la pantalla de activación.
+      const { cms: actualizado } = await sesionActual()
+      if (actualizado) entrarSesion('cms', actualizado)
     } catch (e) {
       setError(errorMessage(e, 'Código incorrecto.'))
-    } finally {
       setOcupado(false)
     }
   }
@@ -114,128 +72,46 @@ export default function MiSeguridadPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Typography variant="h5" component="h2">Doble factor (2FA)</Typography>
             <Chip
-              label={activo ? 'Activado' : 'Desactivado'}
-              color={activo ? 'success' : 'default'}
+              label="Activado"
+              color="success"
               size="small"
               variant="outlined"
             />
           </Box>
 
           {error && <Alert severity="error" role="alert">{error}</Alert>}
-          {aviso && <Alert severity="success" role="alert">{aviso}</Alert>}
 
-          {respaldos ? (
-            <Stack spacing={2}>
-              <Alert severity="warning">
-                Guarda ahora estos códigos de respaldo (papel o gestor de contraseñas). Solo se
-                muestran esta vez: si pierdes el móvil, son la única forma de entrar.
-              </Alert>
-              <Box
-                component="ul"
-                sx={{
-                  columns: { xs: 1, sm: 2 },
-                  columnGap: 4,
-                  m: 0,
-                  p: 0,
-                  pl: 3,
-                  fontFamily: 'monospace',
-                }}
-              >
-                {respaldos.map((code) => (
-                  <Box component="li" key={code} sx={{ mb: 0.5 }}>{code}</Box>
-                ))}
-              </Box>
-              <Button variant="contained" sx={{ alignSelf: 'flex-start' }} onClick={() => setRespaldos(null)}>
-                Los he guardado
-              </Button>
-            </Stack>
-          ) : activo ? (
-            <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                Para desactivarlo introduce un código vigente de tu app de autenticación o un
-                código de respaldo.
-              </Typography>
-              <TextField
-                label="Código de verificación"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value)}
-                sx={{ maxWidth: 320 }}
-              />
-              <Button
-                variant="outlined"
-                color="error"
-                disabled={ocupado || codigo.trim().length < 6}
-                onClick={() => setConfirmarBaja(true)}
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                Desactivar 2FA
-              </Button>
-            </Stack>
-          ) : qr ? (
-            <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                Escanea el QR con tu app de autenticación (Google Authenticator, Aegis, 1Password…)
-                e introduce el código de 6 dígitos que muestre.
-              </Typography>
-              <Box
-                component="img"
-                src={qr.qrCodeUrl}
-                alt="QR para configurar el doble factor"
-                sx={{ width: 220, height: 220, border: `1px solid rgba(0,0,0,0.12)`, borderRadius: 1 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                ¿Sin cámara? Introduce esta clave a mano:{' '}
-                <Box component="span" sx={{ fontFamily: 'monospace' }}>{qr.secret}</Box>
-              </Typography>
-              <TextField
-                label="Código de 6 dígitos"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value)}
-                sx={{ maxWidth: 320 }}
-                error={!!error && !ocupado}
-              />
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="contained"
-                  disabled={ocupado || !/^[0-9]{6}$/.test(codigo.trim())}
-                  onClick={() => { void activar() }}
-                >
-                  Activar
-                </Button>
-                <Button onClick={() => { setQr(null); setCodigo(''); setError(null) }}>Cancelar</Button>
-              </Box>
-            </Stack>
-          ) : (
-            <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                Con el doble factor, entrar exige tu contraseña y un código que genera tu móvil.
-                Si lo pierdes, podrás usar los códigos de respaldo que se generan al activarlo.
-              </Typography>
-              <Button
-                variant="contained"
-                disabled={ocupado}
-                onClick={() => { void pedirQr() }}
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                Activar 2FA
-              </Button>
-            </Stack>
-          )}
+          <Typography variant="body2" color="text.secondary">
+            Para entrar en la administración hace falta, además de la contraseña, el código de tu
+            app de autenticación. ¿Has cambiado de móvil? Escribe un código vigente de la app (o uno
+            de respaldo) y a continuación podrás activarlo en el nuevo.
+          </Typography>
+          <TextField
+            label="Código de verificación"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            sx={{ maxWidth: 320 }}
+          />
+          <Button
+            variant="outlined"
+            disabled={ocupado || codigo.trim().length < 6}
+            onClick={() => setConfirmarCambio(true)}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            Cambiar de móvil
+          </Button>
         </Stack>
       </Paper>
 
       <DialogoConfirmacion
-        abierto={confirmarBaja}
-        titulo="¿Desactivar el doble factor?"
-        mensaje="Tu cuenta quedará protegida solo con la contraseña. Podrás volver a activarlo generando un QR nuevo."
-        textoConfirmar="Desactivar"
-        peligro
-        onConfirmar={() => { void desactivar() }}
-        onCancelar={() => setConfirmarBaja(false)}
+        abierto={confirmarCambio}
+        titulo="¿Cambiar de móvil?"
+        mensaje="El código de tu móvil actual dejará de valer. Antes de seguir en el CMS tendrás que escanear un QR nuevo con el otro móvil."
+        textoConfirmar="Cambiar de móvil"
+        onConfirmar={() => { void cambiarDeMovil() }}
+        onCancelar={() => setConfirmarCambio(false)}
       />
     </>
   )

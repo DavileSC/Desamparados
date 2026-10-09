@@ -16,7 +16,7 @@ import { useAuthStore, type AuthUser } from '../../altas/auth/store'
 // Ahora la pantalla sigue montada, se vuelve a entrar en una ventana y se
 // guarda con el texto intacto. Además, lo sucio queda en sessionStorage.
 
-const admin: AuthUser = { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms' }
+const admin: AuthUser = { id: 1, email: 'admin@cofradia.com', role: 'ADMIN', perfiles: [], origen: 'cms', twoFactorEnabled: true }
 const noticia = {
   id: 7, slug: 'apertura', titulo: 'Apertura del curso', extracto: 'Abre el curso.', contenido: '<p>Texto</p>',
   imagenUrl: null, visible: false, fecha: '2026-08-26T00:00:00.000Z',

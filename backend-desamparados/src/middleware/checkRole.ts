@@ -6,7 +6,18 @@ import { Role } from '@prisma/client';
 /** Código del 403 por sesión que no nació en el CMS (lo lee `lib/api/client.ts` del frontend). */
 export const SESION_NO_CMS = 'SESION_NO_CMS';
 
-export const checkRole = (allowedRoles: Role[]) => {
+/** Código del 403 por cuenta del equipo sin doble factor (lo lee `lib/api/cliente.ts` del frontend). */
+export const FALTA_DOBLE_FACTOR = 'FALTA_DOBLE_FACTOR';
+
+interface OpcionesDeCheckRole {
+  /**
+   * Solo para generar y activar el propio 2FA: es lo único que puede hacer
+   * una cuenta del equipo que todavía no lo tiene.
+   */
+  sinDobleFactor?: boolean;
+}
+
+export const checkRole = (allowedRoles: Role[], { sinDobleFactor = false }: OpcionesDeCheckRole = {}) => {
   // 2. Usamos RequestExt aquí
   return (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -41,7 +52,22 @@ export const checkRole = (allowedRoles: Role[]) => {
       // de hermano que esa misma persona pueda tener abierta en otra pestaña.
       req.user = sesion;
 
-      // Caso 2: El rol no coincide (Error 403 Forbidden).
+      // Caso 2: cuenta del equipo sin doble factor (403 con código propio).
+      //
+      // Una sola cuenta por persona, con la misma contraseña para el área de
+      // hermanos y el CMS: sin 2FA, la contraseña de un cargo bastaba para
+      // administrar. Por eso es obligatorio: se puede entrar al acceso del CMS
+      // sin él, pero solo para activarlo. Va aquí por la misma razón que el
+      // caso 1: es el paso obligado de todas las rutas de staff. `dobleFactor`
+      // sale de la base en cada petición, no del token (ver session.ts).
+      if (!sesion.dobleFactor && !sinDobleFactor) {
+        return res.status(403).json({
+          error: FALTA_DOBLE_FACTOR,
+          message: 'Activa el doble factor de tu cuenta para usar el gestor de contenidos.'
+        });
+      }
+
+      // Caso 3: El rol no coincide (Error 403 Forbidden).
       // Como user.role viene del JWT (string), lo casteamos al Enum Role de Prisma
       if (allowedRoles.includes(sesion.role as Role)) {
         return next();

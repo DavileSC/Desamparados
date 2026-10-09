@@ -94,8 +94,10 @@ authRoutes.post('/reset-password/confirmar', limitadorEntrada, validate(resetPas
 authRoutes.get('/me', resolverSesiones, AuthController.me);
 
 // POST y no GET: genera y guarda un secreto nuevo, no es una lectura.
-authRoutes.post('/2fa/generate', authenticateToken, checkRole(rolesStaffCMS), AuthController.setup2FAGenerate);
-authRoutes.post('/2fa/enable', authenticateToken, checkRole(rolesStaffCMS), validate(enable2FASchema), AuthController.setup2FAEnable);
+// Las dos únicas rutas del CMS que se abren sin doble factor: es obligatorio
+// para el equipo, y sin ellas no habría forma de activarlo.
+authRoutes.post('/2fa/generate', authenticateToken, checkRole(rolesStaffCMS, { sinDobleFactor: true }), AuthController.setup2FAGenerate);
+authRoutes.post('/2fa/enable', authenticateToken, checkRole(rolesStaffCMS, { sinDobleFactor: true }), validate(enable2FASchema), AuthController.setup2FAEnable);
 // Con checkRole como las otras dos: sin él, con la contraseña de un cargo se
 // entraba por el área de hermanos (que no pide 2FA) y desde esa sesión se
 // probaban códigos contra esta ruta. checkRole exige además origen 'cms'.

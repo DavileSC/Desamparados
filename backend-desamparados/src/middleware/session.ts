@@ -40,7 +40,7 @@ export async function validateSessionAgainstDb(
 
   const dbUser = await db.user.findUnique({
     where: { id: payload.id },
-    select: { role: true, active: true, tokenValidAfter: true, cmsValidoDesde: true, hermanoValidoDesde: true }
+    select: { role: true, active: true, twoFactorEnabled: true, tokenValidAfter: true, cmsValidoDesde: true, hermanoValidoDesde: true }
   });
 
   if (!dbUser || !dbUser.active) return null;
@@ -54,7 +54,7 @@ export async function validateSessionAgainstDb(
   if (issuedAtMs < corte) return null;
 
   // Devolvemos el payload con el rol REAL de la BD (no el que viajaba en el JWT)
-  return { ...payload, role: dbUser.role };
+  return { ...payload, role: dbUser.role, dobleFactor: dbUser.twoFactorEnabled };
 }
 
 /** Lee una cookie de sesión y la valida; `null` si no está, no vale o no es de su área. */

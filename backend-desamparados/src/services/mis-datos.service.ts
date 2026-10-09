@@ -98,6 +98,11 @@ export class MisDatosService {
     if (esStaff(user.role) && origen !== 'cms') {
       throw new HttpError('Esta cuenta es del equipo del CMS: para eliminarla, entra por el acceso del CMS.', 403);
     }
+    // Una sesión del CMS ya no implica haber pasado el 2FA: sin él activado,
+    // solo sirve para activarlo (ver checkRole), y esta ruta no pasa por checkRole.
+    if (esStaff(user.role) && !user.twoFactorEnabled) {
+      throw new HttpError('Esta cuenta es del equipo del CMS: activa antes el doble factor en «Mi seguridad».', 403);
+    }
 
     // Confirmación de identidad obligatoria
     const isMatch = await verified(password, user.password);

@@ -227,7 +227,7 @@ test('entrar como hermano no borra la cookie del CMS', async (t) => {
 
 test('entrar en el CMS no borra la cookie del área de hermanos', async (t) => {
   if (!dbDisponible) return t.skip(sinDb(motivoSinDb));
-  const user = await crearUsuarioPrueba(Role.SECRETARIA);
+  const user = await crearUsuarioPrueba(Role.SECRETARIA, { dobleFactor: false });
   creados.push(user.id);
 
   const respuesta = await fetch(`${baseUrl}/api/auth/login`, {

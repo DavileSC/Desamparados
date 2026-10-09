@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router-dom'
+import { HelmetProvider } from 'react-helmet-async'
 import ExigeSesion from '../ExigeSesion'
 import ExigeRol from '../ExigeRol'
 import { useAuthStore } from '../../features/altas/auth/store'
 
-const TESORERO = { id: 1, email: 'a@b.es', role: 'TESORERIA', perfiles: [], origen: 'cms' as const }
+const TESORERO = { id: 1, email: 'a@b.es', role: 'TESORERIA', perfiles: [], origen: 'cms' as const, twoFactorEnabled: true }
 const HERMANO = { id: 1, email: 'a@b.es', role: 'USER', perfiles: [], origen: 'hermanos' as const }
 const Dentro = () => <p>dentro</p>
 
@@ -23,7 +24,8 @@ function montarRuta(elemento: React.ReactElement, { ruta }: { ruta: string }) {
     { path: '/cms', element: <p>inicio del cms</p> },
   ]
   const router = createMemoryRouter(rutas, { initialEntries: [ruta] })
-  return render(<RouterProvider router={router} />)
+  // Con Helmet: la pantalla de activar el doble factor pone su título.
+  return render(<HelmetProvider><RouterProvider router={router} /></HelmetProvider>)
 }
 
 describe('los guardas de ruta', () => {
@@ -82,5 +84,16 @@ describe('los guardas de ruta', () => {
       <ExigeRol roles={['TESORERIA']}><Dentro /></ExigeRol>, { ruta: '/cms/tesoreria' },
     )
     expect(screen.getByText('inicio del cms')).toBeInTheDocument()
+  })
+
+  // El 2FA es obligatorio para el equipo: sin él, en lugar del CMS se enseña
+  // la pantalla para activarlo (el servidor rechaza todo lo demás).
+  it('con sesión del CMS pero sin doble factor, se pide activarlo antes de nada', async () => {
+    useAuthStore.setState({ status: 'listo', cms: { ...TESORERO, twoFactorEnabled: false }, hermano: null })
+    montarRuta(
+      <ExigeRol roles={['TESORERIA']}><Dentro /></ExigeRol>, { ruta: '/cms/tesoreria' },
+    )
+    expect(await screen.findByRole('heading', { name: /activa el doble factor/i })).toBeInTheDocument()
+    expect(screen.queryByText('dentro')).not.toBeInTheDocument()
   })
 })

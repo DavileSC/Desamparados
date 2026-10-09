@@ -79,7 +79,7 @@ const hashRespaldo = (codigoRespaldo: string) => crypto.createHash('sha256').upd
 
 test('activar el 2FA falla con 409 si el secreto cambia entre la comprobación y la escritura', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
-  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA, { dobleFactor: false });
   // Un «generar QR» de otra pestaña justo entre el código y la activación: se
   // provoca en ese punto exacto envolviendo la comprobación del TOTP, que el
   // servicio admite sustituir precisamente para esto.

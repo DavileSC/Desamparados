@@ -347,7 +347,7 @@ test('un código de respaldo también gasta el testigo', async (t) => {
 
 test('la activación rechaza un código de un intervalo ya usado', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
-  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA, { dobleFactor: false });
   try {
     const pasoActual = OTPAuth.TOTP.counter({ period: 30 });
     await db.user.update({
@@ -397,7 +397,7 @@ test('generar el QR ya no se sirve por GET', async (t) => {
 
 test('el QR nuevo guarda el secreto cifrado y se activa con su código', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
-  const staff = await crearUsuarioPrueba(Role.SECRETARIA);
+  const staff = await crearUsuarioPrueba(Role.SECRETARIA, { dobleFactor: false });
   try {
     const cookie = cookieSesion(staff.id, Role.SECRETARIA);
     const res = await peticion('/auth/2fa/generate', cookie);
