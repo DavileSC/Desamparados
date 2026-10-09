@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Box, FormControl, InputLabel, MenuItem, Pagination, Select, Typography } from '@mui/material'
+import { Box, FormControl, InputLabel, MenuItem, Pagination, Select, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { TAMANOS } from '../hooks/usePaginacion'
 import type { MetaPaginacion } from '../lib/api/tipos'
 
@@ -24,6 +24,10 @@ function idParaEtiqueta(etiqueta: string): string {
 
 export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props) {
   const { total, page, limit, totalPages } = meta
+  // En el móvil no caben «‹ 1 2 3 4 5 … 13 ›»: la flecha de la derecha se caía
+  // a otra línea. Con la página de cada lado y sin vecinas, como mucho siete
+  // botones de 40 px, que caben en 320.
+  const estrecho = useMediaQuery(useTheme().breakpoints.down('sm'))
 
   // Un enlace viejo con ?pagina=99 traería una lista vacía y un desconcierto.
   useEffect(() => {
@@ -43,6 +47,9 @@ export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props)
       page={Math.min(page, totalPages)}
       onChange={(_, numero) => onPagina(numero)}
       color="primary"
+      siblingCount={estrecho ? 0 : 1}
+      boundaryCount={1}
+      sx={{ '& .MuiPagination-ul': { flexWrap: 'nowrap', justifyContent: 'center' } }}
       getItemAriaLabel={(tipo, numero) =>
         tipo === 'page' ? `Ir a la página ${numero}`
         : tipo === 'previous' ? 'Página anterior'
@@ -56,12 +63,14 @@ export default function Paginador({ meta, onPagina, onTamano, etiqueta }: Props)
     return <Box sx={{ mt: 5, display: 'flex', justifyContent: 'center' }}>{numeros}</Box>
   }
 
+  // En el móvil, el recuento y el tamaño en una fila y los números debajo, a
+  // todo lo ancho y centrados: en la misma fila no cabían y se partían.
   return (
     <Box sx={{ mt: 3, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
       <Typography variant="body2" color="text.secondary">
         {totalPages > 1 ? `Mostrando ${desde}-${hasta} de ${total}` : `${total} resultados`}
       </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'center', sm: 'flex-start' }, '& > .MuiFormControl-root': { flex: { xs: '1 1 100%', sm: 'none' } } }}>
         {/* Sin anchura mínima, la etiqueta flotante se recortaba a «Resul…» sobre un valor de dos cifras. */}
         <FormControl size="small" sx={{ minWidth: 190 }}>
           <InputLabel id={idEtiqueta}>Resultados por página</InputLabel>

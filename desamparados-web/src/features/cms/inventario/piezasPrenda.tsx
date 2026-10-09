@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { Box, Button, IconButton, Menu, MenuItem, Tooltip } from '@mui/material'
+import { Box, Button, IconButton, Tooltip } from '@mui/material'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import { Link } from 'react-router-dom'
 import type { Prenda } from '../../../lib/api/inventario'
 import { ETIQUETA_ESTADO } from '../ropero'
@@ -65,28 +64,32 @@ export function BotonPaso({ prenda: p, acciones, ancho = false }: { prenda: Pren
   )
 }
 
-/** Editar a la vista (es lo habitual) y eliminar en «⋯», que no se pulse sin querer. */
+/**
+ * Editar y eliminar, a la vista. Eliminar estaba en un «⋯» para que no se
+ * pulsara sin querer, pero era lo único que había dentro y ya pide
+ * confirmación: el menú solo añadía un toque.
+ */
 export function MenuPrenda({ prenda: p, volver, onBorrar }: { prenda: Prenda; volver: string; onBorrar: (p: Prenda) => void }) {
-  const [ancla, setAncla] = useState<HTMLElement | null>(null)
   const ruta = `/cms/inventario/${p.id}/editar?tipo=prenda`
   return (
     <Box sx={{ display: 'flex', flexShrink: 0 }}>
       <Tooltip title="Editar">
         <IconButton size="small" aria-label={`Editar ${p.numero}`} component={Link} to={ruta} state={{ volver }}><EditOutlinedIcon fontSize="small" /></IconButton>
       </Tooltip>
-      <IconButton size="small" aria-label={`Más acciones de ${p.numero}`} onClick={(e) => setAncla(e.currentTarget)}><MoreHorizIcon fontSize="small" /></IconButton>
-      <Menu anchorEl={ancla} open={ancla !== null} onClose={() => setAncla(null)}>
-        {p.estado === 'PRESTADA'
-          // Borrarla se llevaría el único rastro de quién la tiene: el servidor
-          // lo rechaza, y aquí se dice antes el camino. El span deja ver el
-          // aviso sobre un elemento deshabilitado.
-          ? (
-            <Tooltip title="Está prestada: regístrala con «Devolver» y, si no va a volver, pásala a «Baja», que conserva su historia." placement="left">
-              <span><MenuItem disabled>Eliminar</MenuItem></span>
-            </Tooltip>
-          )
-          : <MenuItem onClick={() => { setAncla(null); onBorrar(p) }} sx={{ color: 'error.main' }}>Eliminar</MenuItem>}
-      </Menu>
+      {p.estado === 'PRESTADA'
+        // Borrarla se llevaría el único rastro de quién la tiene: el servidor
+        // lo rechaza, y aquí se dice antes el camino. El span deja ver el
+        // aviso sobre un botón deshabilitado.
+        ? (
+          <Tooltip title="Está prestada: regístrala con «Devolver» y, si no va a volver, pásala a «Baja», que conserva su historia.">
+            <span><IconButton size="small" disabled aria-label={`Eliminar ${p.numero} (está prestada)`}><DeleteOutlineIcon fontSize="small" /></IconButton></span>
+          </Tooltip>
+        )
+        : (
+          <Tooltip title="Eliminar">
+            <IconButton size="small" aria-label={`Eliminar ${p.numero}`} onClick={() => onBorrar(p)}><DeleteOutlineIcon fontSize="small" /></IconButton>
+          </Tooltip>
+        )}
     </Box>
   )
 }

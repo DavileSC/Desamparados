@@ -13,7 +13,7 @@ interface Props extends AccionesPrenda {
 /**
  * El ropero en el móvil: una ficha por prenda, con la marca del color de su
  * estado a la izquierda, su paso siguiente a todo lo ancho (para el pulgar) y
- * editar o eliminar arriba a la derecha. En el PC va por grupos (RoperoPorGrupos).
+ * editar y eliminar arriba a la derecha. En el PC, un tipo cada vez en tabla (TablaPrendas).
  */
 export default function PrendasEnFichas({ prendas, volver, ...acciones }: Props) {
   return (

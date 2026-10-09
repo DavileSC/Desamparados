@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Box, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { Helmet } from 'react-helmet-async'
 import AddIcon from '@mui/icons-material/Add'
 import { useLocation, useSearchParams } from 'react-router-dom'
@@ -18,7 +18,8 @@ import BarraListado, { type Opcion } from './listados/BarraListado'
 import { useFiltrosUrl } from './listados/useFiltrosUrl'
 import TablaEnseres from './inventario/TablaEnseres'
 import PrendasEnFichas from './inventario/PrendasEnFichas'
-import RoperoPorGrupos from './inventario/RoperoPorGrupos'
+import TablaPrendas from './inventario/TablaPrendas'
+import TiposDelRopero, { tiposConPrendas } from './inventario/TiposDelRopero'
 import { useEnFichas } from './listados/useEnFichas'
 import TarjetaCingulos from './inventario/TarjetaCingulos'
 import { site } from '../../config/site'
@@ -98,12 +99,10 @@ export default function InventarioAdminPage() {
   const [devolviendo, setDevolviendo] = useState<Prenda | null>(null)
   const [lavandoTodo, setLavandoTodo] = useState(false)
   const [cingulos, setCingulos] = useState<RecuentoDeCingulos | null>(null)
-  // Cuántas hay de cada tipo en cada estado: las cabeceras de los grupos, el
-  // número de la pestaña y si hay algo en el lavado.
+  // Cuántas hay de cada tipo en cada estado: los tipos del PC con sus
+  // recuentos, el número de la pestaña y si hay algo en el lavado.
   const [recuento, setRecuento] = useState<RecuentoDeTipo[] | null>(null)
-  // Los grupos del PC piden sus prendas ellos mismos: esto les avisa de que algo cambió.
-  const [recarga, setRecarga] = useState(0)
-  // En el PC, el ropero por grupos; en el móvil, la lista en fichas, paginada como siempre.
+  // En el PC, un tipo cada vez y en tabla; en el móvil, todo en fichas. Los dos, paginados.
   const enFichas = useEnFichas()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -139,7 +138,9 @@ export default function InventarioAdminPage() {
       necesitaReparacion: filtrosEnseres.reparar ? 'true' : '',
       orden: filtrosEnseres.orden,
     }) : null,
-    conRopero && enFichas ? listarPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }, filtrosPrendas as FiltrosPrendas) : null,
+    // En el PC siempre hay un tipo elegido: sin él (recién llegados) se espera
+    // a saber cuál es el primero, en vez de traer el ropero entero para nada.
+    conRopero && (enFichas || filtrosPrendas.tipo) ? listarPrendas({ pagina: prendas.pagina, porPagina: prendas.porPagina }, filtrosPrendas as FiltrosPrendas) : null,
     // Sin el recuento de cíngulos o el del ropero, las prendas se siguen viendo.
     conRopero ? recuentoDeCingulos().catch(() => null) : null,
     conRopero ? recuentoDelRopero().catch(() => null) : null,
@@ -150,11 +151,17 @@ export default function InventarioAdminPage() {
     if (conRopero) { setCingulos(c); setRecuento(Array.isArray(d) ? d : []) }
   }), [conEnseres, conRopero, enFichas, enseres.pagina, enseres.porPagina, prendas.pagina, prendas.porPagina, filtrosEnseres, filtrosPrendas])
 
-  /** Tras cambiar algo: el listado, los recuentos y los grupos del PC. */
-  const recargar = () => {
-    setRecarga((n) => n + 1)
-    return cargar()
-  }
+  /** Tras cambiar algo: el listado y los recuentos. */
+  const recargar = () => cargar()
+
+  // En el PC el ropero se ve un tipo cada vez: sin tipo en la URL, o con uno
+  // que ya no tiene prendas, se abre el primero que tenga.
+  const tiposDelPc = recuento && !enFichas ? tiposConPrendas(recuento) : []
+  const tipoSinElegir = tab === 1 && tiposDelPc.length > 0 && !tiposDelPc.some((r) => r.tipo === filtrosPrendas.tipo)
+  const primerTipo = tiposDelPc[0]?.tipo
+  useEffect(() => {
+    if (tipoSinElegir && primerTipo) cambiarPrendas({ tipo: primerTipo })
+  }, [tipoSinElegir, primerTipo, cambiarPrendas])
 
   // Las categorías y ubicaciones en uso, para los desplegables. Si fallan, los
   // filtros se quedan sin opciones pero el listado se sigue viendo.
@@ -330,25 +337,39 @@ export default function InventarioAdminPage() {
       />
     ) : (<>
       <TarjetaCingulos recuento={cingulos} onGuardar={guardarCingulos} />
+      {/* En el PC el tipo se elige en las pestañas de debajo: ni filtro ni orden por tipo. */}
       <BarraListado
         valores={filtrosPrendas}
         onCambiar={cambiarPrendas}
         busqueda={{ clave: 'q', etiqueta: 'Buscar en el ropero', placeholder: 'Número, talla, observaciones o hermano' }}
         filtros={[
-          { clave: 'tipo', etiqueta: 'Tipo', todos: 'Todos', opciones: TIPOS_PRENDA },
+          ...(enFichas ? [{ clave: 'tipo' as const, etiqueta: 'Tipo', todos: 'Todos', opciones: TIPOS_PRENDA }] : []),
           { clave: 'estado', etiqueta: 'Estado', todos: 'Todos', opciones: ESTADOS_PRENDA },
         ]}
-        orden={{ clave: 'orden', opciones: ORDENES_PRENDAS }}
+        orden={{ clave: 'orden', opciones: enFichas ? ORDENES_PRENDAS : ORDENES_PRENDAS.filter((o) => o.valor !== 'tipo') }}
       />
+      {/* Sin ninguna prenda no hay tipo que elegir, y por tanto ninguna lista que lo diga. */}
+      {!enFichas && recuento && tiposDelPc.length === 0 && (
+        <Paper sx={{ py: 5, px: 2, textAlign: 'center', color: 'text.secondary' }}>Todavía no hay prendas en el ropero.</Paper>
+      )}
+      {!enFichas && recuento && tiposDelPc.length > 0 && (
+        <TiposDelRopero
+          recuento={recuento}
+          tipo={filtrosPrendas.tipo as Prenda['tipo']}
+          estado={filtrosPrendas.estado}
+          onTipo={(tipo) => cambiarPrendas({ tipo })}
+          onEstado={(estado) => cambiarPrendas({ estado })}
+        />
+      )}
     </>)}
     {/* Hasta que llega la primera página no se pinta la tabla: vacía, diría «No hay enseres» mientras carga. */}
     {tab === 0
       ? metaEnseres && <TablaEnseres enseres={listaEnseres} volver={consultaListado} onBorrar={setPorBorrar} />
-      : enFichas
-        ? metaPrendas && <PrendasEnFichas prendas={listaPrendas} volver={consultaListado} {...accionesPrenda} />
-        : <RoperoPorGrupos recuento={recuento} filtros={filtrosPrendas as FiltrosPrendas} volver={consultaListado} recarga={recarga} {...accionesPrenda} />}
+      : metaPrendas && !tipoSinElegir && (enFichas
+        ? <PrendasEnFichas prendas={listaPrendas} volver={consultaListado} {...accionesPrenda} />
+        : <TablaPrendas prendas={listaPrendas} volver={consultaListado} {...accionesPrenda} />)}
     {tab === 0
       ? metaEnseres && <Paginador meta={metaEnseres} onPagina={enseres.irAPagina} onTamano={enseres.cambiarTamano} etiqueta="los enseres" />
-      : enFichas && metaPrendas && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}
+      : metaPrendas && !tipoSinElegir && <Paginador meta={metaPrendas} onPagina={prendas.irAPagina} onTamano={prendas.cambiarTamano} etiqueta="las prendas del ropero" />}
   </>
 }

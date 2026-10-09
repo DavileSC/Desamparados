@@ -187,12 +187,9 @@ describe('InventarioAdminPage', () => {
     renderWithProviders(<InventarioAdminPage />, { ruta: '/cms/inventario' })
 
     await user.click(await screen.findByRole('tab', { name: 'Ropero' }))
-    await user.click((await screen.findAllByRole('button', { name: 'Más acciones de TUN-003' }))[0])
-    expect(screen.getByRole('menuitem', { name: 'Eliminar' })).toHaveAttribute('aria-disabled', 'true')
-    await user.keyboard('{Escape}')
+    expect((await screen.findAllByRole('button', { name: 'Eliminar TUN-003 (está prestada)' }))[0]).toBeDisabled()
 
-    await user.click(screen.getAllByRole('button', { name: 'Más acciones de TUN-002' })[0])
-    await user.click(screen.getByRole('menuitem', { name: 'Eliminar' }))
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar TUN-002' })[0])
     await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Eliminar' }))
     expect(await screen.findByText('La prenda está prestada y no se puede borrar.')).toBeInTheDocument()
   })
@@ -244,8 +241,8 @@ describe('InventarioAdminPage', () => {
 
     // Entra directamente al ropero.
     expect(await screen.findByRole('tab', { name: 'Ropero', selected: true })).toBeInTheDocument()
-    await user.click(screen.getByRole('combobox', { name: /^tipo$/i }))
-    await user.click(await screen.findByRole('option', { name: 'Capirote' }))
+    // En el PC el tipo se elige en sus pestañas, no en la barra.
+    await user.click(await screen.findByRole('tab', { name: /^capirotes/i }))
     await waitFor(() => expect(ultima('/prendas')).toContain('tipo=CAPIROTE'))
     expect(ultima('/enseres')).not.toContain('tipo=')
 
@@ -255,6 +252,33 @@ describe('InventarioAdminPage', () => {
     await waitFor(() => expect(ultima('/enseres')).toContain(`ubicacion=${encodeURIComponent('Sacristía')}`))
     // El filtro del ropero sigue puesto aunque no se vea.
     expect(ultima('/prendas')).toContain('tipo=CAPIROTE')
+  })
+
+  it('en el PC, el ropero se abre en el primer tipo y los recuentos de estado filtran', async () => {
+    const user = userEvent.setup()
+    const fetchSimulado = vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(
+      JSON.stringify(String(url).includes('/recuento')
+        ? [{ tipo: 'CAPIROTE', total: 3, estados: { DISPONIBLE: 2, PRESTADA: 1 } }, ...recuento()]
+        : { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )))
+    vi.stubGlobal('fetch', fetchSimulado)
+    renderWithProviders(<InventarioAdminPage />, { ruta: '/cms/inventario?vista=ropero' })
+    const ultima = () => fetchSimulado.mock.calls.map(([url]) => String(url)).filter((url) => url.includes('/prendas')).at(-1) ?? ''
+
+    // Túnicas va antes que capirotes aunque el servidor los mande al revés.
+    expect(await screen.findByRole('tab', { name: /^túnicas/i, selected: true })).toBeInTheDocument()
+    await waitFor(() => expect(ultima()).toContain('tipo=TUNICA'))
+
+    await user.click(screen.getByRole('tab', { name: /^capirotes/i }))
+    await waitFor(() => expect(ultima()).toContain('tipo=CAPIROTE'))
+    const prestados = await screen.findByRole('button', { name: '1 prestado' })
+    await user.click(prestados)
+    await waitFor(() => expect(ultima()).toContain('estado=PRESTADA'))
+    expect(prestados).toHaveAttribute('aria-pressed', 'true')
+    // Otra vez, lo quita.
+    await user.click(prestados)
+    await waitFor(() => expect(ultima()).not.toContain('estado='))
   })
 
   it('busca en el ropero por el hermano que tiene la prenda', async () => {
