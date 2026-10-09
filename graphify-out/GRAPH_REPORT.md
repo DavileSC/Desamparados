@@ -1,723 +1,733 @@
 # Graph Report - Proyecto Desamparados  (2026-10-09)
 
 ## Corpus Check
-- 1463 files · ~1,522,689 words
+- 1468 files · ~1,525,339 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 8489 nodes · 28892 edges · 228 communities (207 shown, 21 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 271 edges (avg confidence: 0.84)
-- Token cost: 261,985 input · 0 output
+- 8522 nodes · 28815 edges · 237 communities (208 shown, 29 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 272 edges (avg confidence: 0.84)
+- Token cost: 132,533 input · 0 output
 
 ## Community Hubs (Navigation)
 - Pruebas backend con Prisma
-- Páginas públicas (MUI)
-- Bloques: presentación
 - Constructor: bloques y borrador
-- Alta y sesión del hermano
-- Ficha del hermano y cambios
 - Pruebas del CMS (Vitest)
-- Mesa: zonas de trabajo
-- Agenda y programa de cultos
-- Mesa de procesión (API)
-- Fotos a WebP y scripts
-- Dominio de salidas y turnos
+- Bloques: presentación
+- Acceso y rescate del 2FA
 - Formularios de bloques
-- Controladores del CMS
-- Pagos Redsys y caja
-- Tema del CMS
-- Siembra de contenido
-- Mesas de contenido CMS
-- Recibos y papeletas
+- Dominio de salidas y turnos
 - Alta y sesión del hermano
-- Contabilidad (CMS)
-- Tesorería y remesas (CMS)
-- Componentes comunes del CMS
-- Autenticación y 2FA
-- Autenticación y 2FA
+- Alta y sesión del hermano
+- Gráficas de barras
+- Ficha del censo
+- Constructor: borrador y cabecera
+- Siembra de contenido
+- Avisos de la Junta
+- Controladores del CMS
+- Diálogos del ropero
+- Informe anual en PDF
+- Ficha del hermano y cambios
+- Destacada de la portada
+- Tema del CMS
+- Recorrido en mapa
 - PDF: papeleta, carta, 182
 - Procesión y partida doble (CMS)
-- Rutas, sesión y roles
-- Tienda: filtros y efectos
-- Contabilidad y fechas de Madrid
-- Constructor: lista de bloques
-- Cliente API y formularios
-- Recorrido en mapa
-- Textos y artículos del Grupo
-- Datos del sitio y legal
-- Galería y visor
-- Inventario: DTO y hojas
-- Productos de la tienda (CMS)
-- Correos y seguridad de cuenta
-- Servicio de correo
-- Informe anual en PDF
+- Contabilidad (CMS)
+- Tesorería y remesas (CMS)
 - Esquemas procesión y recibos
-- Salidas, puerta y retablo
-- Plantillas de correo e identidad
-- Cabildos (servicio)
-- Esquemas de bloques
-- Calendario de la agenda (CMS)
-- Cabildos (web)
-- Arranque y log de privacidad
+- Mesa de procesión (API)
+- Barra, menú y pie
+- Búsqueda de texto
+- Correos y seguridad de cuenta
+- Galería y visor
+- Estilo de la papeleta
+- Cliente API y formularios
+- Listados, recibos y noticias
+- Rutas, sesión y roles
+- Errores HTTP y lotería
 - Perfil del hermano
+- Esquemas comunes y auth
+- Calendario de la agenda (CMS)
+- Catálogo de módulos
+- Datos del sitio y legal
+- Scripts y trampas de MariaDB
+- Panel de hoy
+- Servicio de correo
+- Datos e informes
+- Páginas públicas (MUI)
+- Plantillas de correo e identidad
+- Mesas de contenido CMS
 - Generador de datos demo
 - Modelo 182
-- Gráficas del Inicio
-- Listados, recibos y noticias
-- Importar censo desde hoja
-- Noticias, publicaciones y HTML
-- Retablo: fotos por tiempo
+- Mesas de contenido CMS
 - Contenido por defecto y mezcla
-- Barra, menú y pie
-- Lotería (CMS)
-- Errores HTTP y lotería
-- Hermanos y listas guardadas
-- Rutas, sesión y roles
-- Pruebas de Procesión
-- Esquemas comunes y auth
-- Bloque donativo y certificado
-- Datos e informe anual (web)
-- Barra, menú y pie
-- Pruebas del CMS (Vitest)
-- Skill backend y convenciones
-- Rutas de pago y límites
-- Comunicados
-- Inicio: cifras y gráficas
-- Cartas y etiquetas (dominio)
-- Horario de misas
-- Inicio: Hoy y El año
-- Remesas SEPA
-- Salidas, puerta y retablo
-- Esquemas noticias y avisos
-- Inicio: cifras y gráficas
-- Modelo 182 (web)
-- Cliente API y formularios
-- Router, React Query y fichas
-- Pruebas de carga
-- Esquemas inventario y ropero
-- Rutas web y módulos
-- Inventario y ropero (CMS)
-- Difuntos y aniversarios
-- Maqueta A4 del inicio
-- Router, React Query y fichas
-- Pruebas del CMS (Vitest)
-- Panel e inicio (API)
-- Partida doble
-- Ficha de patrimonio
-- Datos e informe anual (web)
+- Agenda y programa de cultos
 - Noticias, publicaciones y HTML
-- Siembra de cuentas por entorno
-- Servicios paginados
-- Autenticación y 2FA
-- Vite y editor de texto
+- Horario de misas
+- Pagos Redsys y caja
+- Recibos y papeletas
+- Lotería (CMS)
+- Esquemas de bloques
+- Rutas web y módulos
+- Mesa: zonas de trabajo
+- Cabildos (servicio)
+- Tienda: filtros y efectos
+- Componentes comunes del CMS
+- Panel e inicio (API)
+- Esquemas inventario y ropero
 - Dependencias del frontend
-- Inicio: avisos y tareas
-- Difuntos y sufragios
-- Rutas de cabildos
-- Esquemas tienda y caja
-- Datos e informe anual (API)
+- Cabildos (web)
+- Bloque donativo y certificado
+- Textos y artículos del Grupo
+- Dependencias del frontend
+- Retablo: fotos por tiempo
+- Rutas, sesión y roles
+- Comunicados
+- Informe anual
+- Mesa: zonas de trabajo
+- Agenda y programa de cultos
+- Tienda: filtros y efectos
+- Mesa: zonas de trabajo
+- Arranque y log de privacidad
+- Pruebas de carga
+- Esquemas noticias y avisos
+- Componentes comunes del CMS
+- Salidas, puerta y retablo
+- Maqueta A4 del inicio
+- Cartas y etiquetas (dominio)
+- Importar censo desde hoja
+- Inicio: Hoy y El año
+- Pruebas del CMS (Vitest)
+- Remesas SEPA
+- Remesas y Norma 43
 - Cartas y etiquetas (web)
+- Norma 43 y conciliación
+- Mesa de procesión (API)
+- Pruebas de Procesión
+- Pruebas de mesa y salidas
+- Salidas, puerta y retablo
+- Siembra de cuentas por entorno
+- Partida doble
+- Fotos a WebP y scripts
+- Gráficas del Inicio
+- Configuración por instalación
+- Cliente API y formularios
+- Inicio: cifras y gráficas
+- Esquemas tienda y caja
 - Transacciones y ordenación
-- Cortejo
-- Ficha del censo
-- Inventario y ropero (CMS)
+- Contabilidad y fechas de Madrid
+- Datos e informe anual (API)
+- Router, React Query y fichas
+- Productos de la tienda (CMS)
+- Productos de la tienda (CMS)
 - Dependencias del backend
 - Scripts npm del backend
 - Rutas del censo
-- Skills y CLAUDE.md
-- Norma 43 y conciliación
-- Panel de hoy y avisos
-- Galería de medios
-- Papeletas de la familia
+- Cortejo
+- Vídeos propios
+- Salidas, puerta y retablo
+- Controladores del CMS
+- Agenda y programa de cultos
 - tsconfig de la app
-- Esquemas de contenido
-- Presentación y destinos
+- Skills y CLAUDE.md
+- Alta completa y cuentas
 - Generador de identidad
-- Tienda y caja (API)
+- Servidor VPS y nginx
+- Skill cms
+- Pruebas: trampas y skill
+- Rutas de administración
+- Inventario: DTO y hojas
 - tsconfig del backend
 - Pruebas de Hazte hermano
 - Migración a bloques
-- Rutas de administración
-- Correos y seguridad de cuenta
-- Servidor VPS y nginx
-- Despliegue: cobros y 2FA
-- Skill cms
-- Pruebas del perfil
-- Pruebas de mesa y salidas
+- Recibos y papeletas
+- Fotos a WebP y scripts
+- Configuración de Vite
+- Mesa: zonas de trabajo
+- Productos de la tienda (CMS)
+- Contabilidad y fechas de Madrid
 - tsconfig de node (web)
-- Sesiones separadas (spec)
-- Módulos y género de la corporación
+- Despliegue y copias
 - devDependencies backend
 - Esquemas comunes y auth
 - Rutas de salidas
+- Difuntos y aniversarios
 - Rutas de lotería
+- Esquemas de bloques
+- Pruebas del perfil
+- Gráficas del Inicio
+- Barra de listados
 - Preparación de pruebas web
+- Rutas de cabildos
 - Validación del entorno
 - Calendario .ics
-- Módulos activables (API)
 - Marco del CMS y navegación
-- Constructor de páginas (spec)
+- Skill backend y convenciones
 - Compose y despliegue
-- Esquemas noticias y avisos
-- QR de papeletas
-- devDependencies frontend
+- Traspaso 08-10 e imágenes
+- Contenido por defecto y mezcla
+- Presentación y destinos
 - Subida de fotos (CMS)
-- Configuración de Vite
-- Módulos activables (API)
-- Esquemas de medios y portada
-- Bloques: presentación
-- Módulos activables (API)
-- Noticias, publicaciones y HTML
-- Pruebas de esquemas de bloques
+- Sesiones separadas (spec)
+- Constructor de páginas (spec)
+- Rutas de pago y límites
+- Esquemas noticias y avisos
 - Pruebas de alta y numeración
-- Barra de listados
-- Copias de seguridad
+- Pruebas del CMS (Vitest)
+- Traspasos de sesión
+- Inventario: DTO y hojas
 - Panel del CMS (spec)
 - Pruebas de alta y numeración
+- Fotos a WebP y scripts
+- Contabilidad y fechas de Madrid
+- Presentación y destinos
 - Scripts npm del frontend
-- Errores de ruta y recarga
-- Tipos de recibos (web)
-- Inventario y ropero (CMS)
-- Configuración por instalación
+- Panel de hoy y avisos
 - Traspasos de paginación
-- Skills y CLAUDE.md
-- Traspaso 08-10 e imágenes
 - Catálogo de bloques
-- Pruebas de apuntes
-- Subida de vídeos (web)
-- Panel e inicio (API)
-- Subida de vídeos (web)
-- Inicio: Hoy y El año
-- Agrupar texto del panel
-- Módulos activables (API)
-- Pruebas de DNI
+- Skills y CLAUDE.md
+- Fotos a WebP y scripts
 - tsconfig de pruebas
-- Inventario y ropero (CMS)
+- Siembra de contenido
+- Inicio: Hoy y El año
 - Venta en mano
 - Pruebas de la tienda
-- Errores de ruta y recarga
+- Despliegue: cobros y 2FA
+- Sesiones separadas (spec)
 - Salidas configurables (spec)
-- Traspasos de sesión
+- Módulos y género de la corporación
 - Licencias
 - Pruebas de remesas
 - Pruebas de tesorería
 - Script de instalación
 - Edición en pantalla (spec)
+- Ficha del hermano y cambios
 - Configuración de oxlint
-- Marco del CMS y navegación
+- Pruebas del CMS (Vitest)
 - Pruebas del CMS (Vitest)
 - Pruebas del CMS (Vitest)
 - Pruebas de inventario
 - Script de despliegue
 - Montaje en Docker
-- Guiones de instalación
-- Semilla y plan de cuentas
+- Arranque y log de privacidad
 - Copia del VPS
+- Importar censo desde hoja
 - Script de actualización
-- Servidor VPS y nginx
-- Hoja de ruta y venta
+- Módulos y género de la corporación
+- Pruebas del CMS (Vitest)
 - nginx
+- Arranque y log de privacidad
 - Filtros del censo
+- Tienda: filtros y efectos
 - tsconfig raíz web
 - Actualizar copias
 - Medir el servidor
 - Comunicación (hoja de ruta)
+- QR de papeletas
+- Despliegue: cobros y 2FA
 - Licencias OFL
 - Rutas públicas (tipos)
+- Hoja de ruta y venta
 - Cartas y difuntos (hoja de ruta)
 - Hoja de ruta y venta
+- Despliegue: cobros y 2FA
+- Correos de prueba
+- Servidor VPS y nginx
 - Tipos de datos-entidad
 - Skill frontend y CI
-- Hoja de ruta y venta
+- Despliegue: cobros y 2FA
+- Comunicación (hoja de ruta)
 - Ficha de patrimonio
-- Textos legales
+- Licencias y fotos
+- Contraste de la web
 
 ## God Nodes (most connected - your core abstractions)
-1. `@mui/material` - 337 edges
+1. `@mui/material` - 339 edges
 2. `llamarApi()` - 308 edges
 3. `react` - 269 edges
 4. `HttpError` - 267 edges
-5. `vitest` - 202 edges
-6. `@prisma/client` - 174 edges
-7. `@testing-library/react` - 158 edges
-8. `prisma` - 158 edges
-9. `MetaDeAuditoria` - 157 edges
-10. `NotFoundError` - 154 edges
+5. `vitest` - 203 edges
+6. `@prisma/client` - 175 edges
+7. `@testing-library/react` - 160 edges
+8. `MetaDeAuditoria` - 155 edges
+9. `NotFoundError` - 152 edges
+10. `react-router-dom` - 152 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Workflow Security Audit del backend (tsc --noEmit, npm audit, semanal)` --semantically_similar_to--> `Workflow Verificación (CI)`  [INFERRED] [semantically similar]
   backend-desamparados/.github/workflows/security-audit.yml → .github/workflows/verificacion.yml
 - `Contrato primero en tareas que cruzan API, web y shared` --semantically_similar_to--> `Esquema arktype de la configuración en shared/`  [INFERRED] [semantically similar]
   CLAUDE.md → docs/traspaso-2026-10-08.md
-- `Flujo de subidas (multer, file-type, ClamAV, WebP 1920)` --semantically_similar_to--> `Fotos a 1920 px con variantes 640/1280`  [INFERRED] [semantically similar]
-  .claude/skills/backend/SKILL.md → docs/notas-del-proyecto.md
-- `Traspaso 8-10-2026` --conceptually_related_to--> `Trabajo en dos PC (A y B)`  [INFERRED]
-  docs/traspaso-2026-10-08.md → CLAUDE.md
-- `Correos automáticos (buzón de pruebas, plantillas, datos pendientes)` --semantically_similar_to--> `JSON-LD ReligiousOrganization (schema.org)`  [INFERRED] [semantically similar]
-  docs/notas-del-proyecto.md → desamparados-web/index.plantilla.html
+- `Workflow Security Audit del backend (tsc --noEmit, npm audit, semanal)` --conceptually_related_to--> `Comprobar tipos con npx tsc -b (no --noEmit)`  [AMBIGUOUS]
+  backend-desamparados/.github/workflows/security-audit.yml → .claude/skills/frontend/SKILL.md
+- `README de la plantilla React + Vite + Oxlint` --conceptually_related_to--> `Skill frontend (React 19 + Vite + MUI 9 + React Query)`  [INFERRED]
+  desamparados-web/README.md → .claude/skills/frontend/SKILL.md
+- `Flujo de subidas (multer, file-type, ClamAV, WebP 1920)` --conceptually_related_to--> `Servicio clamav (perfil antivirus, tope 1800 MB)`  [INFERRED]
+  .claude/skills/backend/SKILL.md → compose.yaml
 
 ## Import Cycles
 - None detected.
 
 ## Hyperedges (group relationships)
+- **Cadena de arranque: db → migraciones → api → web** — compose_db, compose_migraciones, compose_api, compose_web [EXTRACTED 1.00]
 - **Paginación completa con desempate estable** — docs_traspaso_2026_08_30_paginacion_completa, docs_traspaso_2026_08_30_paginacion_ts, docs_traspaso_2026_09_01_ocho_listados_sin_desempate [EXTRACTED 1.00]
+- **Tubería CI/CD: verificación → comprobar → construir → nginx -t → desplegar** — _github_workflows_verificacion, _github_workflows_desplegar_comprobar, _github_workflows_desplegar_construir, _github_workflows_desplegar_probar_nginx, _github_workflows_desplegar_desplegar_vps [EXTRACTED 1.00]
 - **Defensa de subidas: multer/file-type, ClamAV obligatorio, almacenamiento público/privado** — backend_desamparados_security_antivirus_clamav, backend_desamparados_security_almacenamiento_publico_privado, compose_clamav, compose_web [INFERRED 0.85]
-- **Flujo de acceso al CMS con 2FA y origen de sesión** — docs_traspaso_2026_09_03_acceso_separado_cms, docs_traspaso_2026_09_03_recordarme, docs_traspaso_2026_09_04_origen_de_sesion, docs_traspaso_2026_09_07_mi_seguridad_2fa, docs_hoja_de_ruta_2fa_obligatorio_cargos [INFERRED 0.85]
+- **Flujo de acceso al CMS con 2FA y origen de sesión** — docs_traspaso_2026_09_03_acceso_separado_cms, docs_traspaso_2026_09_03_recordarme, docs_traspaso_2026_09_04_origen_de_sesion, docs_traspaso_2026_09_07_mi_seguridad_2fa [INFERRED 0.85]
 - **JSON de shared/ que leen los dos lados** — docs_superpowers_specs_2026_09_14_sesiones_separadas_y_area_del_hermano_design_casos_identidad, docs_superpowers_specs_2026_10_01_genero_de_la_corporacion_design_casos_articulos, docs_superpowers_specs_2026_09_15_portada_y_recorrido_editables_design_contenido_por_defecto, docs_superpowers_specs_2026_09_17_constructor_de_paginas_design_catalogo_tipos_de_bloque, docs_superpowers_specs_2026_10_01_modulos_del_cms_design_catalogo_modulos, docs_superpowers_specs_2026_10_01_genero_de_la_corporacion_design_datos_entidad_identidad [INFERRED 0.85]
+- **Consumidores de instalacion/datos-entidad.json** — compose_api, _github_workflows_desplegar_datos_entidad_var, desamparados_web_index_plantilla_schema_org, docs_notas_del_proyecto_modulos_activables [INFERRED 0.85]
 - **Lo propio del Grupo, a configuración (para la venta)** — docs_superpowers_specs_2026_10_01_salidas_configurables_design_modelo_salida, docs_superpowers_specs_2026_10_01_genero_de_la_corporacion_design_domain_articulos, docs_superpowers_specs_2026_10_01_genero_de_la_corporacion_design_datos_entidad_identidad, docs_superpowers_specs_2026_10_01_modulos_del_cms_design_catalogo_modulos, docs_superpowers_specs_2026_10_01_modulos_del_cms_design_modulosservice [INFERRED 0.85]
 - **Sesión en cookies, typ y marcas de corte** — docs_superpowers_specs_2026_08_28_sesion_cookie_httponly_design_cookie_httponly, docs_superpowers_specs_2026_08_28_sesion_cookie_httponly_design_claim_typ, docs_superpowers_specs_2026_08_28_sesion_cookie_httponly_design_cookie_paso_2fa, docs_superpowers_specs_2026_08_28_sesion_cookie_httponly_design_tokenvalidafter, docs_superpowers_specs_2026_09_14_sesiones_separadas_y_area_del_hermano_design_dos_cookies_por_area, docs_superpowers_specs_2026_09_14_sesiones_separadas_y_area_del_hermano_design_marcas_de_corte, docs_superpowers_specs_2026_09_14_sesiones_separadas_y_area_del_hermano_design_checkrole [INFERRED 0.85]
-- **Cobros en línea que pasan por la pasarela Redsys y apuntan en contabilidad** — docs_hoja_de_ruta_pasarela_redsys, docs_hoja_de_ruta_donativos_en_linea, docs_hoja_de_ruta_tienda_en_linea, docs_hoja_de_ruta_apadrinamiento, docs_hoja_de_ruta_partida_doble [EXTRACTED 1.00]
-- **Copias de seguridad cifradas: servidor, Drive y PC** — docs_despliegue_backup_vps_sh, docs_servidor_copias_tres_sitios, docs_servidor_usuario_copias_sftp, docs_servidor_google_drive_rclone, docs_servidor_bajar_copias_ps1, docs_despliegue_restaurar [EXTRACTED 1.00]
-- **Preparar la venta: una instalación por corporación configurable** — docs_hoja_de_ruta_una_instalacion_por_cliente, docs_hoja_de_ruta_configuracion_fuera_del_repositorio, docs_hoja_de_ruta_modulos_activables, docs_hoja_de_ruta_una_imagen_para_todos, docs_despliegue_instalar_actualizar_sh, docs_despliegue_datos_de_la_corporacion [INFERRED 0.85]
-- **Cadena de arranque: db → migraciones → api → web** — compose_db, compose_migraciones, compose_api, compose_web [EXTRACTED 1.00]
-- **Consumidores de instalacion/datos-entidad.json** — docs_notas_del_proyecto_datos_entidad, compose_api, _github_workflows_desplegar_datos_entidad_var, desamparados_web_index_plantilla_schema_org, docs_notas_del_proyecto_correos, docs_notas_del_proyecto_modulos_activables [INFERRED 0.85]
-- **Tubería CI/CD: verificación → comprobar → construir → nginx -t → desplegar** — _github_workflows_verificacion, _github_workflows_desplegar_comprobar, _github_workflows_desplegar_construir, _github_workflows_desplegar_probar_nginx, _github_workflows_desplegar_desplegar_vps [EXTRACTED 1.00]
+- **Cobros en línea por la pasarela Redsys** — docs_hoja_de_ruta_pasarela_redsys, docs_hoja_de_ruta_donativos_en_linea, docs_hoja_de_ruta_tienda_en_linea, docs_hoja_de_ruta_apadrinamiento, docs_hoja_de_ruta_partida_doble [INFERRED 0.85]
+- **Datos de la corporación fuera de git: fichero, variable de GitHub y subida por scp** — docs_notas_del_proyecto_datos_entidad_json, docs_hoja_de_ruta_configuracion_fuera_del_repositorio, docs_servidor_datos_entidad_variable_github, docs_servidor_datos_entidad_scp_huella [EXTRACTED 1.00]
+- **Copias de seguridad en tres sitios** — docs_servidor_copias_de_seguridad, docs_servidor_usuario_copias_sftp, docs_servidor_google_drive_rclone, docs_servidor_bajar_copias_ps1, docs_servidor_probar_restauracion [EXTRACTED 1.00]
 
-## Communities (228 total, 21 thin omitted)
+## Communities (237 total, 29 thin omitted)
 
 ### Community 0 - "Pruebas backend con Prisma"
 Cohesion: 0.04
-Nodes (120): app, numProxies, adapter, prisma, requiredEnvVars, SitemapController, guardarImagenesPortadaSchema, CUENTA_CENSO_IMPORTADO (+112 more)
+Nodes (131): app, numProxies, adapter, prisma, requiredEnvVars, COOKIE_CMS, COOKIE_HERMANO, generateToken() (+123 more)
 
-### Community 1 - "Páginas públicas (MUI)"
-Cohesion: 0.03
-Nodes (149): paginaPublica, CURVA_ENTRADA, Efecto, EFECTOS, ETIQUETAS, Revela(), RevelaProps, SeccionAnimada() (+141 more)
-
-### Community 2 - "Bloques: presentación"
-Cohesion: 0.03
-Nodes (159): ALINEACIONES, ANILLOS, AnillosEntrelazados(), BloqueAnillos(), COLORES, Fin(), PUNTOS, SITIOS (+151 more)
-
-### Community 3 - "Constructor: bloques y borrador"
+### Community 1 - "Constructor: bloques y borrador"
 Cohesion: 0.02
-Nodes (149): BloquesEsqueleto(), BorradorPaginaContext, useBorradorPagina(), cejaDePagina(), ENCUADRE_POR_DEFECTO, normal(), RUTAS, seccionesHasta() (+141 more)
+Nodes (181): BloquesEsqueleto(), useBorradorPagina(), bandaSx, CabeceraASangre(), CabeceraASangreEsqueleto(), cejaSx, Props, textoSx (+173 more)
 
-### Community 4 - "Alta y sesión del hermano"
+### Community 2 - "Pruebas del CMS (Vitest)"
+Cohesion: 0.02
+Nodes (100): REGISTRO_BLOQUES, BLOQUE, json(), servidor(), FOTO, TARJETAS, TEXTO, meses (+92 more)
+
+### Community 3 - "Bloques: presentación"
 Cohesion: 0.03
-Nodes (146): AvisoSuave(), Boton, BotonProps, ESTILO_DE, CampoContrasena, CampoContrasenaProps, TarjetaCristal, TarjetaCristalProps (+138 more)
+Nodes (135): BandaDeFondo(), Fondo, ALINEACIONES, ANILLOS, AnillosEntrelazados(), BloqueAnillos(), COLORES, Fin() (+127 more)
 
-### Community 5 - "Ficha del hermano y cambios"
+### Community 4 - "Acceso y rescate del 2FA"
 Cohesion: 0.03
-Nodes (94): apellidosTrasCambio(), CAMPOS_BANCARIOS, DetallesCambio, diferenciasFicha(), Instantanea, MARCA_CAMBIADO, ValorAuditado, valorParaAuditoria() (+86 more)
+Nodes (92): AuthController, CAMPOS_PERSONALES, suprimirDatosPersonales(), VALOR_SUPRIMIDO, DOMINIO_CUENTA_ELIMINADA, PREFIJO_DNI_ELIMINADO, LoginDto, MenorAltaDto (+84 more)
 
-### Community 6 - "Pruebas del CMS (Vitest)"
+### Community 5 - "Formularios de bloques"
 Cohesion: 0.03
-Nodes (75): PASO_DEL_FOCO_MS, BLOQUE, json(), servidor(), PUERTA, [FINES, CITA, LLAMADA], palabra(), OCULTA (+67 more)
+Nodes (130): PropsMovil, HitoDeLaLineaProps, ACENTOS, BloquePuertas(), BOTONES, Dato(), PanelDePuerta(), ICONOS (+122 more)
 
-### Community 7 - "Mesa: zonas de trabajo"
+### Community 6 - "Dominio de salidas y turnos"
+Cohesion: 0.04
+Nodes (98): aArticulo(), articuloDe(), deArticulo(), OpcionesCorporacion, SalidaDelSegmento, diaMadridComoIntervalo(), ConfiguracionCortejo, enMadrid() (+90 more)
+
+### Community 7 - "Alta y sesión del hermano"
+Cohesion: 0.03
+Nodes (114): LONGITUD_MAXIMA, Boton, BotonProps, ESTILO_DE, CampoContrasena, CampoContrasenaProps, TarjetaCristal, TarjetaCristalProps (+106 more)
+
+### Community 8 - "Alta y sesión del hermano"
+Cohesion: 0.03
+Nodes (83): App(), entradasDelArea, ClaveContador, contadoresDelPanel(), Grupo, GRUPOS, itemsMenu, Lugar (+75 more)
+
+### Community 9 - "Gráficas de barras"
+Cohesion: 0.03
+Nodes (74): BarrasHorizontales(), FilaBarra, Props, filas, montar(), SondaRuta(), detalle, contenido (+66 more)
+
+### Community 10 - "Ficha del censo"
+Cohesion: 0.04
+Nodes (99): dia(), edad(), Etiqueta(), FichaCenso(), papelEnLaCuenta(), PARENTESCO, Props, Resumen() (+91 more)
+
+### Community 11 - "Constructor: borrador y cabecera"
+Cohesion: 0.04
+Nodes (90): BorradorPaginaContext, cejaDePagina(), ENCUADRE_POR_DEFECTO, normal(), RUTAS, seccionesHasta(), SIN_CABECERA, srcSetDeCabecera() (+82 more)
+
+### Community 12 - "Siembra de contenido"
+Cohesion: 0.03
+Nodes (65): ARCHIVO_PUBLICACION_PENDIENTE, CATEGORIAS, enDias(), ENSERES, EVENTOS, IMAGENES_PORTADA, instalarArchivoPendiente(), instalarImagenesPortada() (+57 more)
+
+### Community 13 - "Avisos de la Junta"
 Cohesion: 0.05
-Nodes (120): AltaEnMesa(), PARENTESCOS, Props, Quien, Tutor, VACIA, VACIO_TUTOR, BuscadorPersonas() (+112 more)
+Nodes (29): CARGOS_DE_LA_JUNTA, fechaLimite(), LO_LLEVAN_TODO, puedeDarPorHecho(), MetaDeAuditoria, aPanel(), AvisoDelPanel, AvisoService (+21 more)
 
-### Community 8 - "Agenda y programa de cultos"
-Cohesion: 0.04
-Nodes (105): Agenda(), BloquePrograma(), Fila(), anioDe(), anioYMes(), fechaDelActo(), proximaFila(), Proximo (+97 more)
-
-### Community 9 - "Mesa de procesión (API)"
-Cohesion: 0.04
-Nodes (90): accesoDe(), MesaController, alturaHombroEnCm(), CINGULO_SEGUN_TUNICA, CinguloPropuesto, HOLGURA_TUNICA_CM, normalizarNumeroPrenda(), Origen (+82 more)
-
-### Community 10 - "Fotos a WebP y scripts"
-Cohesion: 0.03
-Nodes (87): aplicar, Cambio, COLUMNAS, convertir(), argHoras, argumentos, borrar, server (+79 more)
-
-### Community 11 - "Dominio de salidas y turnos"
-Cohesion: 0.04
-Nodes (74): aArticulo(), articuloDe(), ARTICULOS, deArticulo(), OpcionesCorporacion, Articulo, anioDeLaSalida(), diaLargo() (+66 more)
-
-### Community 12 - "Formularios de bloques"
+### Community 14 - "Controladores del CMS"
 Cohesion: 0.05
-Nodes (91): ICONOS, entra, BLOQUE_NUEVO, bloqueNuevo(), FormularioContacto(), FormularioListado(), FormularioLlamada(), FormularioTexto() (+83 more)
+Nodes (52): fichero(), autorDeLaPeticion(), slugDe(), enviarPdf(), nombreDeArchivo(), SitemapController, esSlugContenido(), AvisoDelBanco (+44 more)
 
-### Community 13 - "Controladores del CMS"
+### Community 15 - "Diálogos del ropero"
 Cohesion: 0.05
-Nodes (57): autorDeLaPeticion(), enviarPdf(), nombreDeArchivo(), CARGOS_DE_LA_JUNTA, fechaLimite(), LO_LLEVAN_TODO, puedeDarPorHecho(), SlugContenido (+49 more)
+Nodes (87): DialogoDevolucion(), DialogoDevolucionProps, DialogoPrestamo(), DialogoPrestamoProps, edad(), mensaje(), nombreCompleto(), ESTADO_PRENDA (+79 more)
 
-### Community 14 - "Pagos Redsys y caja"
-Cohesion: 0.04
-Nodes (70): LineaDeCaja, MetodoDeCaja, esSlugContenido(), AvisoDelBanco, claveDelPedido(), configuracionRedsys, firmar(), formularioDePago() (+62 more)
-
-### Community 15 - "Tema del CMS"
-Cohesion: 0.03
-Nodes (79): aEsquema(), CLAVE_TEMA_CMS, leerModo(), PuenteModo(), sinTransicionesUnMomento(), TemaCmsProvider(), montar(), Pintor() (+71 more)
-
-### Community 16 - "Siembra de contenido"
-Cohesion: 0.03
-Nodes (60): ARCHIVO_PUBLICACION_PENDIENTE, CATEGORIAS, enDias(), ENSERES, EVENTOS, IMAGENES_PORTADA, instalarArchivoPendiente(), instalarImagenesPortada() (+52 more)
-
-### Community 17 - "Mesas de contenido CMS"
+### Community 16 - "Informe anual en PDF"
 Cohesion: 0.05
-Nodes (80): idParaEtiqueta(), Paginador(), Props, TarjetaPublicacionProps, ACCIONES, AuditoriaAdminPage(), CAMPOS, CORREOS_SIN_PLANTILLA (+72 more)
+Nodes (99): agenda(), areasDe(), Cifra, CifraVistazo, ClaveArea, Color, conSigno(), contar() (+91 more)
 
-### Community 18 - "Recibos y papeletas"
+### Community 17 - "Ficha del hermano y cambios"
+Cohesion: 0.06
+Nodes (71): Apellidos, apellidosTrasCambio(), componerApellidos(), limpio(), partirApellidos(), CAMPOS_BANCARIOS, DetallesCambio, diferenciasFicha() (+63 more)
+
+### Community 18 - "Destacada de la portada"
 Cohesion: 0.04
-Nodes (67): innodb_snapshot_isolation=ON (errores 1020/1213), CATEGORIA_COMISIONES, CATEGORIA_DE_RECIBO, CATEGORIA_DEVOLUCIONES, DatosEvento, agruparImpagos(), CuotaImpagada, HermanoConImpagos (+59 more)
+Nodes (65): CambioPedido, fechaMasReciente(), MarcaAGuardar, marcaDestacada(), anclaDe(), slugDeNoticia(), DOMINIOS_VIMEO, DOMINIOS_YOUTUBE (+57 more)
 
-### Community 19 - "Alta y sesión del hermano"
-Cohesion: 0.04
-Nodes (67): App(), contadoresDelPanel(), menuCmsVisible(), BloqueUsuario(), Contador(), Contenido(), densidadDelMenu, densidadTactil (+59 more)
+### Community 19 - "Tema del CMS"
+Cohesion: 0.03
+Nodes (64): aEsquema(), CLAVE_TEMA_CMS, leerModo(), PuenteModo(), sinTransicionesUnMomento(), TemaCmsProvider(), montar(), Pintor() (+56 more)
 
-### Community 20 - "Contabilidad (CMS)"
+### Community 20 - "Recorrido en mapa"
+Cohesion: 0.06
+Nodes (77): ALTO_LISTA, ALTO_MAPA, ALTO_MINIMO, ALTO_MINIMO_LISTA, acumulados(), DISTANCIA_MAXIMA_M, fraccionMasCercana(), metros() (+69 more)
+
+### Community 21 - "PDF: papeleta, carta, 182"
+Cohesion: 0.07
+Nodes (84): lineasDeDireccion(), numeroImpreso(), cabecera(), cartasEnPdf(), fechaLarga, pies(), VENTANA, componer() (+76 more)
+
+### Community 22 - "Procesión y partida doble (CMS)"
+Cohesion: 0.06
+Nodes (81): deArticulo(), CertificadosDonativos(), AccionesApunte(), cabeceraImporte(), LibroCaja(), soloLector, COLORES, useColoresContabilidad() (+73 more)
+
+### Community 23 - "Contabilidad (CMS)"
 Cohesion: 0.07
 Nodes (81): aApunteManual(), aNumero(), apunteCompleto(), apunteDesde(), apunteNuevo(), categoriasParaApunte(), errorConcepto(), errorFecha() (+73 more)
 
-### Community 21 - "Tesorería y remesas (CMS)"
+### Community 24 - "Tesorería y remesas (CMS)"
 Cohesion: 0.05
 Nodes (82): etiquetaMetodo(), euros(), ContadoresEstado(), Props, CambioEstado, DialogoEstado(), explicacion(), accionDeCambio() (+74 more)
 
-### Community 22 - "Componentes comunes del CMS"
-Cohesion: 0.05
-Nodes (73): useTemaCms(), DialogoConfirmacion(), Props, CampoPdf(), CampoPdfProps, esPdf(), inputOculto, MAX_BYTES_PDF (+65 more)
-
-### Community 23 - "Autenticación y 2FA"
-Cohesion: 0.05
-Nodes (49): DOMINIO_CUENTA_ELIMINADA, PREFIJO_DNI_ELIMINADO, MenorAltaDto, Parentesco, ReactivacionDto, RegisterDto, RequestPasswordResetDto, ResetPasswordDto (+41 more)
-
-### Community 24 - "Autenticación y 2FA"
-Cohesion: 0.05
-Nodes (49): AuthController, CAMPOS_PERSONALES, suprimirDatosPersonales(), VALOR_SUPRIMIDO, LoginDto, Express, leerSesion(), optionalAuthentication (+41 more)
-
-### Community 25 - "PDF: papeleta, carta, 182"
-Cohesion: 0.07
-Nodes (77): jugadoPorNumero(), numeroImpreso(), CabildoCompleto, cabecera(), cartasEnPdf(), cuerpoYFirma(), fechaLarga, pies() (+69 more)
-
-### Community 26 - "Procesión y partida doble (CMS)"
-Cohesion: 0.06
-Nodes (71): deArticulo(), estadoPapeleta(), AccionesApunte(), cabeceraImporte(), LibroCaja(), soloLector, COLORES, useColoresContabilidad() (+63 more)
-
-### Community 27 - "Rutas, sesión y roles"
+### Community 25 - "Esquemas procesión y recibos"
 Cohesion: 0.04
-Nodes (65): EXPRESIONES, leer(), mensajeValidacion(), traducirEsperado(), validate(), CartaController, ComunicadosController, ContenidoController (+57 more)
+Nodes (82): ordenQuery(), CortejoController, Modelo182Controller, ProcesionController, PuertaController, ReciboController, esFechaValida(), modelo182Router (+74 more)
 
-### Community 28 - "Tienda: filtros y efectos"
+### Community 26 - "Mesa de procesión (API)"
+Cohesion: 0.05
+Nodes (72): accesoDe(), MesaController, alturaHombroEnCm(), CINGULO_SEGUN_TUNICA, CinguloPropuesto, HOLGURA_TUNICA_CM, normalizarNumeroPrenda(), Origen (+64 more)
+
+### Community 27 - "Barra, menú y pie"
+Cohesion: 0.05
+Nodes (64): MarcoAcceso(), MarcoPublico(), AvisoDeCookies(), CajonMovil(), capa, CAPAS, CURVA_CAPA, CURVA_ENTRADA (+56 more)
+
+### Community 28 - "Búsqueda de texto"
+Cohesion: 0.05
+Nodes (44): condicionBusqueda(), MAX_PALABRAS_BUSQUEDA, palabrasDeBusqueda(), ordenDe(), aEntero(), LIMITE_MAXIMO, LIMITE_POR_DEFECTO, MetaPaginacion (+36 more)
+
+### Community 29 - "Correos y seguridad de cuenta"
+Cohesion: 0.04
+Nodes (52): ContactoController, claveDelPedido(), firmar(), MIN_MS_RELLENO, motivoDescarte(), trampaRellena(), ESCALADA_BLOQUEO_2FA, cuentaDeContacto (+44 more)
+
+### Community 30 - "Galería y visor"
 Cohesion: 0.08
-Nodes (66): CIFRAS, CifrasQueRuedan(), PAPEL, BarraDeFiltros(), ceja, FiltrosActivos(), foco, Opcion() (+58 more)
+Nodes (59): BARRA_MOVIL, BloqueCarrusel(), CarruselMovil(), dos(), Ficha(), Flecha(), FotoAmpliable(), soloVideos() (+51 more)
 
-### Community 29 - "Contabilidad y fechas de Madrid"
-Cohesion: 0.07
-Nodes (51): agruparEnSerie(), claveMadrid(), claveNombreCategoria(), desfaseMadrid(), diaMadrid(), diaSiguiente(), esCategoriaDeRecibos(), esDiaValido() (+43 more)
-
-### Community 30 - "Constructor: lista de bloques"
-Cohesion: 0.05
-Nodes (61): BandaDeFondo(), Fondo, AvisoDeModuloApagado(), BloqueDePagina(), BloquesDePagina(), ESPACIO, mismaFranja(), avisoDe() (+53 more)
-
-### Community 31 - "Cliente API y formularios"
+### Community 31 - "Estilo de la papeleta"
 Cohesion: 0.06
-Nodes (62): euros(), FotoConPiezas(), Props, AccesosAdminPage(), ApadrinamientosAdminPage(), VACIA, CabeceraSeccion(), CampanaApadrinamientoPage() (+54 more)
+Nodes (68): conArticulo(), BURDEOS, CREMA, FILETE, GRIS, imagenDelQr(), NEGRO, ORO (+60 more)
 
-### Community 32 - "Recorrido en mapa"
+### Community 32 - "Cliente API y formularios"
+Cohesion: 0.06
+Nodes (63): euros(), FotoConPiezas(), Props, AccesosAdminPage(), ApadrinamientosAdminPage(), VACIA, CabeceraSeccion(), CampanaApadrinamientoPage() (+55 more)
+
+### Community 33 - "Listados, recibos y noticias"
 Cohesion: 0.07
-Nodes (57): acumulados(), fraccionMasCercana(), metros(), paradaAlcanzada(), posicionesEnRuta(), puntoEn(), sobreElRecorrido(), tramoHasta() (+49 more)
+Nodes (58): AvisoSuave(), AgendaProxima(), ArchivoDeNoticias(), cantidadDe(), columnasDe(), Encabezado(), enLista(), fechaDeLista() (+50 more)
 
-### Community 33 - "Textos y artículos del Grupo"
-Cohesion: 0.07
-Nodes (68): conArticulo(), laCorporacion(), mayuscula(), nuestraCorporacion(), nuestro(), partes(), segunLaCorporacion(), segunNumero() (+60 more)
-
-### Community 34 - "Datos del sitio y legal"
-Cohesion: 0.09
-Nodes (46): BloqueContacto(), iconoDe(), trampaOculta, useTiempoRelleno(), DATO_PENDIENTE, DatoPendiente, emailDerechos, faltanDatosIdentificativos (+38 more)
-
-### Community 35 - "Galería y visor"
-Cohesion: 0.09
-Nodes (57): BARRA_MOVIL, BloqueCarrusel(), CarruselMovil(), dos(), Ficha(), Flecha(), PropsMovil, FotoAmpliable() (+49 more)
-
-### Community 36 - "Inventario: DTO y hojas"
+### Community 34 - "Rutas, sesión y roles"
 Cohesion: 0.05
-Nodes (26): slugDe(), porHoja(), CreateEnserDto, CreatePrendaDto, EnserFilterDto, FichaPatrimonioDto, PrendaFilterDto, UpdateEnserDto (+18 more)
+Nodes (55): validate(), ContenidoController, CortejoDirectoController, DatosController, ModulosController, PaginaController, PlantillasCorreoController, PortadaController (+47 more)
 
-### Community 37 - "Productos de la tienda (CMS)"
+### Community 35 - "Errores HTTP y lotería"
 Cohesion: 0.07
-Nodes (61): fechaCorta(), CategoriasDeLaTienda(), mensaje(), FichaDeProductoCms(), aDatos(), aFormulario(), ENTERO, existenciasEnTexto() (+53 more)
+Nodes (42): LoteriaController, LineaDeCaja, MetodoDeCaja, jugadoPorNumero(), LEYENDA_POR_DEFECTO, maximoDeParticipaciones(), maximoDeTalonarios(), NUMERO_DE_LOTERIA (+34 more)
 
-### Community 38 - "Correos y seguridad de cuenta"
+### Community 36 - "Perfil del hermano"
+Cohesion: 0.09
+Nodes (59): Props, Apartado(), Dato(), Rejilla(), Campo(), Contacto(), CuotaYPago(), DatosPersonales() (+51 more)
+
+### Community 37 - "Esquemas comunes y auth"
 Cohesion: 0.05
-Nodes (41): SOLICITANTE, MIN_MS_RELLENO, motivoDescarte(), trampaRellena(), ESCALADA_BLOQUEO_2FA, OpcionesDeEnvio, ponerCuentaDeContacto(), ponerTransporte() (+33 more)
+Nodes (53): codigoPostal, datosFiscales, dni, email, iban, nif, telefono, textoOpcional (+45 more)
 
-### Community 39 - "Servicio de correo"
+### Community 38 - "Calendario de la agenda (CMS)"
+Cohesion: 0.09
+Nodes (54): useTemaCms(), AccionesActo(), actosPorDia(), claveDia(), claveMes(), colores(), leerDia(), leerMes() (+46 more)
+
+### Community 39 - "Catálogo de módulos"
+Cohesion: 0.06
+Nodes (41): CATALOGO_MODULOS, ClaveModulo, CLAVES_MODULO, dependientesActivos(), esClaveDeModulo(), fichaDe(), FichaDeModulo, LOTE_INICIAL (+33 more)
+
+### Community 40 - "Datos del sitio y legal"
 Cohesion: 0.10
-Nodes (44): ContactoDto, FormularioContactoDto, DatosPapeleta, CATEGORIA_APADRINAMIENTOS, correoDeApadrinamiento(), DatosApadrinar, DatosCampana, DatosPieza (+36 more)
+Nodes (43): BloqueContacto(), iconoDe(), trampaOculta, useTiempoRelleno(), enLaCabecera(), fichaDe(), NOTICIA, DATO_PENDIENTE (+35 more)
 
-### Community 40 - "Informe anual en PDF"
-Cohesion: 0.08
-Nodes (61): enMadrid(), fechaLarga(), Trozo, agenda(), calendario(), Capitulo, comienzo(), CUERPOS (+53 more)
-
-### Community 41 - "Esquemas procesión y recibos"
+### Community 41 - "Scripts y trampas de MariaDB"
 Cohesion: 0.05
-Nodes (58): CortejoController, ProcesionController, PuertaController, esFechaValida(), procesionRouter, rolesCensoMesa, rolesJunta, rolesMesaReparto (+50 more)
+Nodes (37): innodb_snapshot_isolation=ON (errores 1020/1213), SOLICITANTE, FORMATO_PRODUCCION, registroPeticiones(), alEscuchar(), HOST, PORT, globalErrorHandler() (+29 more)
 
-### Community 42 - "Salidas, puerta y retablo"
-Cohesion: 0.07
-Nodes (52): instanteEnMadrid(), Articulo, ARTICULOS, euros(), fechaConDia(), fechaLarga(), fechaLocal(), MESES (+44 more)
+### Community 42 - "Panel de hoy"
+Cohesion: 0.06
+Nodes (53): EntradaArea, NOMBRE_CARGO, CLAVE_PANEL_HOY, usePanelDeHoy(), Modulo, Capitulo, latido, aLaVista() (+45 more)
 
-### Community 43 - "Plantillas de correo e identidad"
-Cohesion: 0.08
-Nodes (48): aLaCorporacion(), datos, DatosSecretaria, direccionDeLaSede(), emailDeSecretaria(), escudoUrl, Identidad, informado() (+40 more)
+### Community 43 - "Servicio de correo"
+Cohesion: 0.11
+Nodes (41): ApadrinamientosController, n(), ContactoDto, FormularioContactoDto, aplicarPago(), CATEGORIA_APADRINAMIENTOS, correoDeApadrinamiento(), DatosApadrinar (+33 more)
 
-### Community 44 - "Cabildos (servicio)"
-Cohesion: 0.07
-Nodes (31): CabildosController, fichero(), aniosAntes(), limitesDelVoto(), problemaRecuento(), quorum(), REGLAS_POR_DEFECTO, ReglasCabildo (+23 more)
-
-### Community 45 - "Esquemas de bloques"
-Cohesion: 0.04
-Nodes (59): anillosSchema, archivoSchema, botonesSchema, botonSchema, carruselSchema, citaSchema, comunes, contactoSchema (+51 more)
-
-### Community 46 - "Calendario de la agenda (CMS)"
+### Community 44 - "Datos e informes"
 Cohesion: 0.09
-Nodes (53): AccionesActo(), actosPorDia(), claveDia(), claveMes(), colores(), leerDia(), leerMes(), rejillaDelMes() (+45 more)
+Nodes (53): numero(), DatosInformesPage(), decimal, escribirCifra(), Apiladas(), Barras(), colorDe(), Columnas() (+45 more)
 
-### Community 47 - "Cabildos (web)"
+### Community 45 - "Páginas públicas (MUI)"
 Cohesion: 0.07
-Nodes (53): aCampoFecha(), CabildoPage(), ESTADO, mensaje(), nombreDe(), plural(), Seccion(), VOTACION_VACIA (+45 more)
+Nodes (42): ALTO_MAXIMO_MOVIL, ANCHO_ESCRITORIO, ANCHO_MINIMO_ESCRITORIO, MarcoVistaPrevia(), Props, VistaPreviaPortada(), AvisoFotoDeCabecera(), Medida (+34 more)
 
-### Community 48 - "Arranque y log de privacidad"
-Cohesion: 0.04
-Nodes (49): author, description, @types/node, typescript, keywords, license, main, name (+41 more)
-
-### Community 49 - "Perfil del hermano"
+### Community 46 - "Plantillas de correo e identidad"
 Cohesion: 0.08
-Nodes (52): CAMINOS, DOCUMENTOS_ALTA, ESTADOS_CIVILES, FORMAS_DE_PAGO_ALTA, MAXIMO_MENORES, MenorFormData, menorSchema, SEXOS (+44 more)
+Nodes (44): datos, DatosSecretaria, direccionDeLaSede(), emailDeSecretaria(), escudoUrl, Identidad, informado(), lineasDeSecretaria() (+36 more)
 
-### Community 50 - "Generador de datos demo"
+### Community 47 - "Mesas de contenido CMS"
+Cohesion: 0.08
+Nodes (49): DefinicionFiltro, useFiltrosUrl(), ESTADOS, FILTROS, NoticiasAdminPage(), Vacio(), nombreTipo(), ESTADOS (+41 more)
+
+### Community 48 - "Generador de datos demo"
 Cohesion: 0.07
 Nodes (53): APELLIDOS, CALLES, CAPIROTES_DEL_ROPERO, CitaDemo, conCingulosSinDevolver(), conEstado(), EJERCICIOS_DEMO(), ejerciciosDelHermano() (+45 more)
 
-### Community 51 - "Modelo 182"
+### Community 49 - "Modelo 182"
 Cohesion: 0.08
-Nodes (44): deLaCorporacion(), alfa(), anioDe(), apellidosYNombre(), Aportacion, Declarado, declaradosDelEjercicio(), Declarante (+36 more)
+Nodes (43): alfa(), anioDe(), apellidosYNombre(), Aportacion, Declarado, declaradosDelEjercicio(), Declarante, esRecurrente() (+35 more)
 
-### Community 52 - "Gráficas del Inicio"
-Cohesion: 0.09
-Nodes (42): Degradado(), Halo(), ColumnasDivergentes(), MesDivergente, Props, ColumnasPorAnio(), Props, ColumnasPorPares() (+34 more)
+### Community 50 - "Mesas de contenido CMS"
+Cohesion: 0.07
+Nodes (44): ESTADO_RECIBO, TIPO_RECIBO, ACCIONES, AuditoriaAdminPage(), CAMPOS, CORREOS_SIN_PLANTILLA, DetallesAuditoria(), ENTIDADES (+36 more)
 
-### Community 53 - "Listados, recibos y noticias"
-Cohesion: 0.09
-Nodes (42): AgendaProxima(), ArchivoDeNoticias(), cantidadDe(), columnasDe(), Encabezado(), enLista(), fechaDeLista(), FilaDeLista (+34 more)
+### Community 51 - "Contenido por defecto y mezcla"
+Cohesion: 0.08
+Nodes (35): esObjeto(), mezclar(), mezclarConDefectos(), mezclarTeselas(), porDefecto(), SlugContenido, SLUGS_CONTENIDO, duracionEnPalabras() (+27 more)
 
-### Community 54 - "Importar censo desde hoja"
+### Community 52 - "Agenda y programa de cultos"
 Cohesion: 0.10
-Nodes (37): contenido(), Apellidos, componerApellidos(), limpio(), partirApellidos(), ClaveColumna, clavePersona(), COLUMNAS (+29 more)
+Nodes (45): Agenda(), AgendaDeCultos(), SuscribirseALaAgenda(), cae, CalendarioDeCultos(), CalendarioDeCultosEsqueleto(), colorDelActo(), FILA (+37 more)
 
-### Community 55 - "Noticias, publicaciones y HTML"
+### Community 53 - "Noticias, publicaciones y HTML"
+Cohesion: 0.08
+Nodes (28): fotoDeVariante(), SavePaginaDto, UpdatePaginaDto, PaginaService, ImagenPortadaEntrada, PortadaService, SeccionesService, borrarSiExiste() (+20 more)
+
+### Community 54 - "Horario de misas"
 Cohesion: 0.09
-Nodes (27): condicionBusqueda(), MAX_PALABRAS_BUSQUEDA, palabrasDeBusqueda(), CambioPedido, fechaMasReciente(), MarcaAGuardar, marcaDestacada(), ActualizarNoticiaDto (+19 more)
+Nodes (41): AL_DEDO, BloqueHorario(), Fila(), latido, PanelDespacho(), PanelMisa(), primeraMayuscula(), Valor() (+33 more)
 
-### Community 56 - "Retablo: fotos por tiempo"
-Cohesion: 0.08
-Nodes (44): CUARESMA, foto, MAYO, NAVIDAD, SEMANA_SANTA, aTexto(), duracion(), fotosDelAnio() (+36 more)
+### Community 55 - "Pagos Redsys y caja"
+Cohesion: 0.07
+Nodes (34): LineaCobrada, MAX_LINEAS_CAJA, MAX_SUELTO_CENTIMOS, prepararVenta(), resumenDeCaja, clave(), faltaDe(), LineaDelPedido (+26 more)
 
-### Community 57 - "Contenido por defecto y mezcla"
-Cohesion: 0.08
-Nodes (34): esObjeto(), mezclar(), mezclarConDefectos(), mezclarTeselas(), porDefecto(), SLUGS_CONTENIDO, Caja, cajas() (+26 more)
+### Community 56 - "Recibos y papeletas"
+Cohesion: 0.07
+Nodes (39): CATEGORIA_COMISIONES, CATEGORIA_DE_RECIBO, CATEGORIA_DEVOLUCIONES, agruparImpagos(), CuotaImpagada, HermanoConImpagos, ReciboLeido, anulaPapeleta() (+31 more)
 
-### Community 58 - "Barra, menú y pie"
-Cohesion: 0.10
-Nodes (36): CajonMovil(), capa, CAPAS, CURVA_CAPA, CURVA_ENTRADA, EnlaceCajon(), Panel(), pie (+28 more)
-
-### Community 59 - "Lotería (CMS)"
+### Community 57 - "Lotería (CMS)"
 Cohesion: 0.10
 Nodes (44): aNumero(), Base, Dialogo(), DialogoCompra(), DialogoEntrega(), DialogoImprimir(), DialogoLiquidacion(), DialogoPremios() (+36 more)
 
-### Community 60 - "Errores HTTP y lotería"
-Cohesion: 0.10
-Nodes (29): LoteriaController, LEYENDA_POR_DEFECTO, maximoDeParticipaciones(), maximoDeTalonarios(), NUMERO_DE_LOTERIA, NumeroJugado, numerosDe(), participacionesDelTalonario() (+21 more)
+### Community 58 - "Esquemas de bloques"
+Cohesion: 0.04
+Nodes (43): archivoSchema, botonSchema, comunes, contactoSchema, coordenada, cronologiaSchema, cuentaAtrasSchema, datoDePiezaSchema (+35 more)
 
-### Community 61 - "Hermanos y listas guardadas"
-Cohesion: 0.08
-Nodes (38): EXPORTACIONES, HojaCenso(), mensaje(), plural(), Props, CLAVE, ListasGuardadas(), BOLETIN (+30 more)
-
-### Community 62 - "Rutas, sesión y roles"
-Cohesion: 0.07
-Nodes (34): ordenQuery(), Modelo182Controller, Norma43Controller, ReciboController, RemesaController, ficheroDeDatosMiddleware, modelo182Router, reciboRoutes (+26 more)
-
-### Community 63 - "Pruebas de Procesión"
-Cohesion: 0.07
-Nodes (34): diaDelRosario, DIAS, estadoDelPagoEnElServidor, EVENTO, json(), respuestaDelPago, salidas(), servidor() (+26 more)
-
-### Community 64 - "Esquemas comunes y auth"
-Cohesion: 0.08
-Nodes (35): codigoPostal, dni, email, iban, nif, telefono, textoOpcional, textoRequerido (+27 more)
-
-### Community 65 - "Bloque donativo y certificado"
-Cohesion: 0.11
-Nodes (36): Aviso, BloqueDonativo(), euros(), leerImporte(), TRAS_EL_BANCO, useSlugDeLaPagina(), VueltaDelBanco(), CamposCertificado() (+28 more)
-
-### Community 66 - "Datos e informe anual (web)"
-Cohesion: 0.10
-Nodes (34): colorDelTipo(), DatosInformesPage(), decimal, escribirCifra(), Apiladas(), Barras(), colorDe(), Columnas() (+26 more)
-
-### Community 67 - "Barra, menú y pie"
+### Community 59 - "Rutas web y módulos"
 Cohesion: 0.09
-Nodes (27): MarcoAcceso(), MarcoAreaHermano(), MarcoPublico(), AvisoDeCookies(), base, BOTON, enlaceConFlecha, EstiloDeBoton (+19 more)
+Nodes (32): ItemMenu, aparece, CargandoPagina(), CATALOGO_MODULOS, ClaveModulo, CLAVES_MODULO, cumple(), dependientesActivos() (+24 more)
 
-### Community 68 - "Pruebas del CMS (Vitest)"
-Cohesion: 0.08
-Nodes (24): REGISTRO_BLOQUES, FOTO, TARJETAS, TEXTO, apertura, cabildo, catequesis, responder() (+16 more)
-
-### Community 69 - "Skill backend y convenciones"
-Cohesion: 0.08
-Nodes (28): Skill backend, authenticateToken + checkRole, conModulo / nucleo / siModulo (app.ts), enum Role (USER, ADMIN, TESORERIA, ALBACERIA, HERMANO_MAYOR, REDES, SECRETARIA), Flujo de subidas (multer, file-type, ClamAV, WebP 1920), Marcos (MarcoPublico, MarcoCms, MarcoAreaHermano) y routes/index.tsx con pagina(Componente, modulo), Skill revision, Lista propia de trampas del proyecto (+20 more)
-
-### Community 70 - "Rutas de pago y límites"
+### Community 60 - "Mesa: zonas de trabajo"
 Cohesion: 0.07
-Nodes (31): datosFiscales, authLimiter, globalLimiter, limitadorCompras, limitadorContacto, limitadorDonativo, limitadorEntrada, ApadrinamientosController (+23 more)
+Nodes (41): AltaEnMesa(), PARENTESCOS, Props, Quien, Tutor, VACIA, VACIO_TUTOR, BuscadorPersonas() (+33 more)
 
-### Community 71 - "Comunicados"
+### Community 61 - "Cabildos (servicio)"
+Cohesion: 0.11
+Nodes (23): CabildosController, aniosAntes(), limitesDelVoto(), problemaRecuento(), quorum(), REGLAS_POR_DEFECTO, ReglasCabildo, resultado() (+15 more)
+
+### Community 62 - "Tienda: filtros y efectos"
+Cohesion: 0.10
+Nodes (35): CIFRAS, CifrasQueRuedan(), BarraDeFiltros(), ceja, FiltrosActivos(), foco, Opcion(), QueCapa (+27 more)
+
+### Community 63 - "Componentes comunes del CMS"
+Cohesion: 0.09
+Nodes (34): DialogoConfirmacion(), Props, AvisoCambiosSinGuardar(), borrarBorrador(), escribirBorrador(), leerBorrador(), Opciones, useFichaCms() (+26 more)
+
+### Community 64 - "Panel e inicio (API)"
+Cohesion: 0.10
+Nodes (33): claveMesMadrid(), desfaseMadrid(), inicioDiaMadrid(), unAnioAntes(), CifrasDeSalida, Recuento, MovimientoMensual, PuntoCenso (+25 more)
+
+### Community 65 - "Esquemas inventario y ropero"
+Cohesion: 0.07
+Nodes (30): InventarioController, RoperoController, ORDENES_ENSERES, ORDENES_LIBRO, ORDENES_PRENDAS, ORDENES_RECIBOS, inventarioRoutes, validateId (+22 more)
+
+### Community 66 - "Dependencias del frontend"
+Cohesion: 0.05
+Nodes (41): dependencies, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, dompurify, @emotion/react, @emotion/styled, @fontsource/cormorant-garamond (+33 more)
+
+### Community 67 - "Cabildos (web)"
+Cohesion: 0.10
+Nodes (37): aCampoFecha(), CabildoPage(), ESTADO, mensaje(), nombreDe(), plural(), Seccion(), VOTACION_VACIA (+29 more)
+
+### Community 68 - "Bloque donativo y certificado"
+Cohesion: 0.10
+Nodes (34): Aviso, BloqueDonativo(), euros(), leerImporte(), TRAS_EL_BANCO, useSlugDeLaPagina(), VueltaDelBanco(), CamposCertificado() (+26 more)
+
+### Community 69 - "Textos y artículos del Grupo"
+Cohesion: 0.13
+Nodes (34): aLaCorporacion(), ARTICULOS, conArticulo(), deLaCorporacion(), laCorporacion(), mayuscula(), nuestraCorporacion(), nuestro() (+26 more)
+
+### Community 70 - "Dependencias del frontend"
+Cohesion: 0.07
+Nodes (30): @types/node, typescript, license, name, private, type, version, ErrorDeRuta() (+22 more)
+
+### Community 71 - "Retablo: fotos por tiempo"
+Cohesion: 0.10
+Nodes (35): CUARESMA, foto, MAYO, NAVIDAD, SEMANA_SANTA, aTexto(), duracion(), fotosDelAnio() (+27 more)
+
+### Community 72 - "Rutas, sesión y roles"
+Cohesion: 0.09
+Nodes (28): EXPRESIONES, leer(), mensajeValidacion(), traducirEsperado(), CartaController, ComunicadosController, SeccionesController, CLAVES_DE_FORMATO (+20 more)
+
+### Community 73 - "Comunicados"
 Cohesion: 0.12
 Nodes (25): adaptarAlCorreo(), base64url(), describirSegmento(), Destinatario, destinatariosDe(), emailDeToken(), esDireccionReal(), FichaDestinataria (+17 more)
 
-### Community 72 - "Inicio: cifras y gráficas"
+### Community 74 - "Informe anual"
 Cohesion: 0.08
-Nodes (28): cuentaAtrasEstacion, pascua(), sabadoDePasion(), soloDia(), acercar, aparecer, aparecerSuave, CIFRA (+20 more)
+Nodes (31): anioPorDefecto(), CAMPOS, CAPITULOS, capitulosVisibles(), ClaveCapitulo, estadoDe(), InformeAnualPage(), palabras() (+23 more)
 
-### Community 73 - "Cartas y etiquetas (dominio)"
-Cohesion: 0.10
-Nodes (29): CampoDeCarta, CAMPOS_DE_CARTA, camposDesconocidos(), DestinatarioDeCarta, rellenar(), saludoDe(), tratamientoDe(), valoresDe() (+21 more)
+### Community 75 - "Mesa: zonas de trabajo"
+Cohesion: 0.15
+Nodes (30): Datos, datosDe(), leyenda, useDatosPersona(), DatosPersona(), Props, alturaEnMetros(), diaDe() (+22 more)
 
-### Community 74 - "Horario de misas"
-Cohesion: 0.13
-Nodes (32): AL_DEDO, BloqueHorario(), Fila(), latido, PanelDespacho(), PanelMisa(), primeraMayuscula(), Valor() (+24 more)
-
-### Community 75 - "Inicio: Hoy y El año"
-Cohesion: 0.12
-Nodes (32): entrada(), ElAnio(), Hoy(), DIA_SEMANA, mayuscula(), ProximoActo(), Acto, actosDelAnio() (+24 more)
-
-### Community 76 - "Remesas SEPA"
-Cohesion: 0.12
-Nodes (33): esIbanValido(), normalizarIban(), AcreedorSepa, Adeudo, aUtc(), clasificarRecibos(), DatosRemesa, definida() (+25 more)
-
-### Community 77 - "Salidas, puerta y retablo"
-Cohesion: 0.10
-Nodes (29): ConstructorDetector, DetectorNativo, hayCamara(), LectorQr(), Props, explicacion(), FamiliaEnPuerta, hora() (+21 more)
-
-### Community 78 - "Esquemas noticias y avisos"
-Cohesion: 0.09
-Nodes (30): NoticiaController, PublicacionController, cachePublica(), noticiaRoutes, rolesCMS, validateId, publicacionRoutes, roles (+22 more)
-
-### Community 79 - "Inicio: cifras y gráficas"
+### Community 76 - "Agenda y programa de cultos"
 Cohesion: 0.14
-Nodes (29): NOMBRE_CARGO, numero(), Cabecera(), Props, AltasYBajas(), Cifras(), Diferencia(), Muestra() (+21 more)
+Nodes (29): CORMORANT, cubreElDia(), diasDeLaRejilla(), inicioDelDia(), nombreDelMes(), sumarMeses(), TIPOS, AgendaYDirecto() (+21 more)
 
-### Community 80 - "Modelo 182 (web)"
+### Community 77 - "Tienda: filtros y efectos"
+Cohesion: 0.22
+Nodes (29): PAPEL, agotado(), avisoDeTallas(), Cesta, claveDe(), conTallas(), enlaceDeFicha(), euros() (+21 more)
+
+### Community 78 - "Mesa: zonas de trabajo"
+Cohesion: 0.13
+Nodes (28): CancelarInscripcion(), CLAVE_MESA, esFalloDeRed(), mensajeDeFallo(), nuevaClave(), useClaveDeOperacion(), useMesaEnVivo(), nombrePrenda() (+20 more)
+
+### Community 79 - "Arranque y log de privacidad"
+Cohesion: 0.06
+Nodes (31): author, description, @types/node, typescript, keywords, license, main, name (+23 more)
+
+### Community 80 - "Pruebas de carga"
 Cohesion: 0.11
-Nodes (30): CertificadosDonativos(), anioPorDefecto(), delGrupo(), mensaje(), Modelo182(), Props, ApiRequestOptions, avisarSiModuloNoActivado() (+22 more)
+Nodes (24): alAzar(), API_PORTADA, BASE, cookieDe(), descubrir(), dormir(), editor(), entrarEnCms() (+16 more)
 
-### Community 81 - "Cliente API y formularios"
-Cohesion: 0.11
-Nodes (31): Campo, EmailEditPage(), mensaje(), EmailsPage(), fecha(), mensaje(), TarjetaDeUso(), CATALOGO (+23 more)
-
-### Community 82 - "Router, React Query y fichas"
+### Community 81 - "Esquemas noticias y avisos"
 Cohesion: 0.09
-Nodes (28): aDia(), aniosCumplidos(), camposDeEstado(), desdeFicha(), diaLegible(), diaMadrid(), esCuentaSuprimida(), Estado (+20 more)
+Nodes (29): NoticiaController, PublicacionController, noticiaRoutes, rolesCMS, validateId, publicacionRoutes, roles, actualizarNoticiaSchema (+21 more)
 
-### Community 83 - "Pruebas de carga"
+### Community 82 - "Componentes comunes del CMS"
 Cohesion: 0.11
-Nodes (25): alAzar(), API_PORTADA, BASE, cookieDe(), descubrir(), dormir(), editor(), entrarEnCms() (+17 more)
+Nodes (27): TarjetaPublicacionProps, CampoPdf(), CampoPdfProps, esPdf(), inputOculto, MAX_BYTES_PDF, AYUDA_PDF, AYUDA_PORTADA (+19 more)
 
-### Community 84 - "Esquemas inventario y ropero"
-Cohesion: 0.08
-Nodes (26): InventarioController, RoperoController, inventarioRoutes, validateId, roperoRoutes, validateId, asignarPrendaSchema, buscarHermanosRoperoSchema (+18 more)
-
-### Community 85 - "Rutas web y módulos"
-Cohesion: 0.11
-Nodes (26): ClaveContador, Grupo, GRUPOS, ItemMenu, Lugar, RUTA_PUBLICA, TODOS, rolesPorRutaCms (+18 more)
-
-### Community 86 - "Inventario y ropero (CMS)"
-Cohesion: 0.11
-Nodes (29): Cifra(), Props, TarjetaCingulos(), A_REPARAR, CAMPOS_ENSER, CANTIDADES_ENSER, emptyEnser, emptyPrenda (+21 more)
-
-### Community 87 - "Difuntos y aniversarios"
+### Community 83 - "Salidas, puerta y retablo"
 Cohesion: 0.10
-Nodes (16): aniosDeHermano(), Aniversario, aUtc(), proximoAniversario(), cuandoLargo, DIFUNTO, DifuntosService, instanteMadrid() (+8 more)
+Nodes (26): Articulo, ARTICULOS, euros(), fechaConDia(), fechaLarga(), fechaLocal(), MESES, resumenCobro() (+18 more)
 
-### Community 88 - "Maqueta A4 del inicio"
+### Community 84 - "Maqueta A4 del inicio"
 Cohesion: 0.14
 Nodes (32): ACTIVOS, ALTAS, BAJAS, barrasH(), columna(), DIR, documento(), eur() (+24 more)
 
-### Community 89 - "Router, React Query y fichas"
-Cohesion: 0.07
-Nodes (14): enlace(), MAX_FOTOS_PORTADA, FOTOS, montar(), Opciones, Peticion, respuesta(), SondaPortadaPublica() (+6 more)
+### Community 85 - "Cartas y etiquetas (dominio)"
+Cohesion: 0.11
+Nodes (25): CampoDeCarta, CAMPOS_DE_CARTA, camposDesconocidos(), DestinatarioDeCarta, rellenar(), saludoDe(), tratamientoDe(), valoresDe() (+17 more)
 
-### Community 90 - "Pruebas del CMS (Vitest)"
+### Community 86 - "Importar censo desde hoja"
+Cohesion: 0.15
+Nodes (28): ClaveColumna, clavePersona(), COLUMNAS, COLUMNAS_EXPORTACION, detectarColumnas(), diaUtc(), esCorreo(), escribirCsv() (+20 more)
+
+### Community 87 - "Inicio: Hoy y El año"
+Cohesion: 0.11
+Nodes (28): cuentaAtrasEstacion, pascua(), sabadoDePasion(), soloDia(), ElAnio(), mayuscula(), ProximoActo(), actosDelAnio() (+20 more)
+
+### Community 88 - "Pruebas del CMS (Vitest)"
 Cohesion: 0.09
 Nodes (18): redes, APERTURA, directo, TRIDUO, json(), responderPortada(), textosDePrueba(), dentroDeSeis (+10 more)
 
-### Community 91 - "Panel e inicio (API)"
-Cohesion: 0.17
-Nodes (24): claveMesMadrid(), unAnioAntes(), claveMes(), MovimientoMensual, PuntoCenso, serieCensoMensual(), ultimosMeses(), whereAltasAprobadas() (+16 more)
+### Community 89 - "Remesas SEPA"
+Cohesion: 0.14
+Nodes (28): esIbanValido(), normalizarIban(), AcreedorSepa, Adeudo, aUtc(), clasificarRecibos(), DatosRemesa, definida() (+20 more)
 
-### Community 92 - "Partida doble"
-Cohesion: 0.15
+### Community 90 - "Remesas y Norma 43"
+Cohesion: 0.09
+Nodes (23): contenido(), Norma43Controller, RemesaController, ALLOWED_EXTENSIONS, ALLOWED_MIMETYPES, ficheroDeDatosMiddleware, MAX_BYTES_DATOS, MAX_BYTES_PDF (+15 more)
+
+### Community 91 - "Cartas y etiquetas (web)"
+Cohesion: 0.14
+Nodes (27): camposDesconocidos(), CartasPage(), CLAVE, Editor(), EN_BLANCO, mensaje(), EtiquetasPostales(), plural() (+19 more)
+
+### Community 92 - "Norma 43 y conciliación"
+Cohesion: 0.12
+Nodes (25): Casado, casarMovimientos(), CuentaN43, diasEntre(), ExtractoN43, fecha(), hermanosNombrados(), importe() (+17 more)
+
+### Community 93 - "Mesa de procesión (API)"
+Cohesion: 0.14
+Nodes (22): clave(), codigoDeFamilia(), codigoDePapeleta(), Familia, firma(), firmaDeFamilia(), firmaValida(), leerCodigoDeFamilia() (+14 more)
+
+### Community 94 - "Pruebas de Procesión"
+Cohesion: 0.10
+Nodes (24): diaDelRosario, DIAS, estadoDelPagoEnElServidor, EVENTO, json(), respuestaDelPago, salidas(), servidor() (+16 more)
+
+### Community 95 - "Pruebas de mesa y salidas"
+Cohesion: 0.10
+Nodes (24): Props, Props, Aviso, AL_DIA, APUNTADOS, COLAS, DEBE, FICHA (+16 more)
+
+### Community 96 - "Salidas, puerta y retablo"
+Cohesion: 0.12
+Nodes (24): ConstructorDetector, DetectorNativo, hayCamara(), LectorQr(), Props, explicacion(), FamiliaEnPuerta, hora() (+16 more)
+
+### Community 97 - "Siembra de cuentas por entorno"
+Cohesion: 0.11
+Nodes (24): ADMIN_EMAIL_DESARROLLO, Entorno, ENTORNOS_SIEMBRA, EntornoSiembra, HERMANO_EMAIL_DESARROLLO, PlanCuentas, planDeCuentas(), main() (+16 more)
+
+### Community 98 - "Partida doble"
+Cohesion: 0.16
 Nodes (22): ApunteDeCaja, Asiento, Cuenta, cuentaDeResultados(), cuentaDeTesoreria(), cuentaPropuesta(), esCuentaDelPlan(), libroDiario() (+14 more)
 
-### Community 93 - "Ficha de patrimonio"
-Cohesion: 0.13
-Nodes (25): fichaDelEnser(), fichaParaGuardar(), FormFicha, leerTasacion(), MAX_FOTOS, FichaPatrimonio(), Props, FormEnser (+17 more)
-
-### Community 94 - "Datos e informe anual (web)"
-Cohesion: 0.11
-Nodes (23): EntradaArea, entradasDelArea, Modulo, anioPorDefecto(), CAMPOS, Capitulo, CAPITULOS, capitulosVisibles() (+15 more)
-
-### Community 95 - "Noticias, publicaciones y HTML"
-Cohesion: 0.13
-Nodes (9): SavePaginaDto, UpdatePaginaDto, autorDe(), PaginaService, ImagenPortadaEntrada, PortadaService, SeccionesService, borrarSubidasHuerfanas() (+1 more)
-
-### Community 96 - "Siembra de cuentas por entorno"
-Cohesion: 0.13
-Nodes (22): ADMIN_EMAIL_DESARROLLO, Entorno, ENTORNOS_SIEMBRA, EntornoSiembra, HERMANO_EMAIL_DESARROLLO, PlanCuentas, planDeCuentas(), main() (+14 more)
-
-### Community 97 - "Servicios paginados"
-Cohesion: 0.13
-Nodes (16): diaMadridComoIntervalo(), AdminCalendarioDto, AdminEventFilterDto, CreateEventDto, EventFilterDto, PeriodoAgenda, UpdateEventDto, ACTOS_EN_PORTADA (+8 more)
-
-### Community 98 - "Autenticación y 2FA"
-Cohesion: 0.09
-Nodes (19): alEscuchar(), HOST, PORT, claveHex(), claves(), ClaveTotp, derivarDeJwt(), descifrarCon() (+11 more)
-
-### Community 99 - "Vite y editor de texto"
-Cohesion: 0.08
-Nodes (25): @types/node, typescript, license, name, private, type, version, BotonFormato() (+17 more)
-
-### Community 100 - "Dependencias del frontend"
-Cohesion: 0.07
-Nodes (27): dependencies, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, dompurify, @emotion/react, @emotion/styled, @fontsource/cormorant-garamond (+19 more)
-
-### Community 101 - "Inicio: avisos y tareas"
-Cohesion: 0.11
-Nodes (24): cumple(), latido, aLaVista(), BotonHecho(), COLOR, Fila(), MarcaAviso(), CONTENIDO (+16 more)
-
-### Community 102 - "Difuntos y sufragios"
-Cohesion: 0.15
-Nodes (25): aDia(), CLAVE, conHora, cuandoFalta(), deDia(), diaCorto, diaLargo, DialogoSufragio() (+17 more)
-
-### Community 103 - "Rutas de cabildos"
+### Community 99 - "Fotos a WebP y scripts"
 Cohesion: 0.12
-Nodes (21): idParam, PlantillasCorreoController, cabildosRoutes, validateId, plantillasCorreoRoutes, rolesEmails, actaSchema, asistenteSchema (+13 more)
+Nodes (19): aplicar, Cambio, COLUMNAS, convertir(), CALIDAD_WEBP, Codificacion, conExtensionWebp(), convertirFoto() (+11 more)
+
+### Community 100 - "Gráficas del Inicio"
+Cohesion: 0.23
+Nodes (21): Degradado(), Halo(), ColumnasDivergentes(), MesDivergente, ColumnasPorAnio(), ColumnasPorPares(), PuntoPar, columna() (+13 more)
+
+### Community 101 - "Configuración por instalación"
+Cohesion: 0.08
+Nodes (23): Los datos de la corporación (instalacion/datos-entidad.json), Una instalación por corporación, Configuración fuera del repositorio (instalacion/datos-entidad.json), Contrato de encargado del tratamiento (art. 28 RGPD), Copias de seguridad fuera del servidor, Género de la corporación y guardiana sin-corporacion-escrita, Guiones de instalación y actualización de copias, Textos legales al día (+15 more)
+
+### Community 102 - "Cliente API y formularios"
+Cohesion: 0.15
+Nodes (24): Campo, EmailEditPage(), mensaje(), EmailsPage(), fecha(), mensaje(), TarjetaDeUso(), BloqueDeUso (+16 more)
+
+### Community 103 - "Inicio: cifras y gráficas"
+Cohesion: 0.10
+Nodes (20): olvidarCuentas(), puedeAnimar(), useCuenta(), Cabecera(), ORO_CLARO, ROSA_URGENTE, FECHA_CORTA, FECHA_LARGA (+12 more)
 
 ### Community 104 - "Esquemas tienda y caja"
 Cohesion: 0.11
 Nodes (22): CajaController, TiendaController, admin, tiendaRoutes, euros, ingresoIdSchema, ingresoSchema, linea (+14 more)
 
-### Community 105 - "Datos e informe anual (API)"
-Cohesion: 0.17
-Nodes (22): Area, areasActivas(), DatosCrudos, ANIO_MINIMO_DATOS, anioDeHoy(), leerPeriodo(), Periodo, periodoAnterior() (+14 more)
-
-### Community 106 - "Cartas y etiquetas (web)"
-Cohesion: 0.18
-Nodes (23): camposDesconocidos(), CartasPage(), CLAVE, Editor(), EN_BLANCO, mensaje(), EtiquetasPostales(), plural() (+15 more)
-
-### Community 107 - "Transacciones y ordenación"
+### Community 105 - "Transacciones y ordenación"
 Cohesion: 0.11
-Nodes (23): PartidaDobleController, TransaccionController, transaccionRoutes, anio, apunte, categoriasQuerySchema, concepto, createCategoriaSchema (+15 more)
+Nodes (24): PartidaDobleController, TransaccionController, transaccionRoutes, anio, apunte, categoriasQuerySchema, concepto, createCategoriaSchema (+16 more)
 
-### Community 108 - "Cortejo"
-Cohesion: 0.19
-Nodes (18): Asignacion, ConfiguracionCortejo, cortejoPorDefecto(), cuantosPorTramo(), deMasNuevoAMasAntiguo(), mismoPuesto(), PapeletaDelCortejo, problemaConfiguracion() (+10 more)
-
-### Community 109 - "Ficha del censo"
-Cohesion: 0.15
-Nodes (21): dia(), edad(), Etiqueta(), FichaCenso(), papelEnLaCuenta(), PARENTESCO, Props, Resumen() (+13 more)
-
-### Community 110 - "Inventario y ropero (CMS)"
+### Community 106 - "Contabilidad y fechas de Madrid"
 Cohesion: 0.20
-Nodes (21): ESTADO_PRENDA, AccionesPrenda, BotonPaso(), MenuPrenda(), PildoraEstado(), prestadaA(), PrendasEnFichas(), Props (+13 more)
+Nodes (21): agruparEnSerie(), claveMadrid(), claveNombreCategoria(), diaSiguiente(), esCategoriaDeRecibos(), fechasInvertidas(), FiltrosContables, granularidad (+13 more)
+
+### Community 107 - "Datos e informe anual (API)"
+Cohesion: 0.15
+Nodes (20): Area, areasActivas(), DatosCrudos, agruparPorTextoLibre(), etiquetaDe(), normalizar(), claveMes(), Periodo (+12 more)
+
+### Community 108 - "Router, React Query y fichas"
+Cohesion: 0.08
+Nodes (12): enlace(), FOTOS, montar(), Opciones, Peticion, respuesta(), SondaPortadaPublica(), Textos (+4 more)
+
+### Community 109 - "Productos de la tienda (CMS)"
+Cohesion: 0.16
+Nodes (23): CategoriasDeLaTienda(), mensaje(), ESTADOS, mensaje(), TiendaAdminPage(), nombreConTalla(), borrarCategoria(), catalogo (+15 more)
+
+### Community 110 - "Productos de la tienda (CMS)"
+Cohesion: 0.17
+Nodes (22): FichaDeProductoCms(), aDatos(), aFormulario(), ENTERO, existenciasEnTexto(), Formulario, PRECIO, problemaDe() (+14 more)
 
 ### Community 111 - "Dependencias del backend"
 Cohesion: 0.08
@@ -731,329 +741,325 @@ Nodes (24): scripts, 2fa:cifrar-secretos, 2fa:rescatar, admin:nueva-contrasena, 
 Cohesion: 0.13
 Nodes (22): CensoHojaController, HermanoController, hermanoRouter, validateId, addProfileSchema, bajaHermanoSchema, baseUpdateBody, datosProcesionSchema (+14 more)
 
-### Community 114 - "Skills y CLAUDE.md"
-Cohesion: 0.09
-Nodes (17): Esquemas arktype {params, query, body}, AuditoriaService / ACCIONES_AUDITORIA, HttpError / NotFoundError (utils/error.handle.ts), manejar() (utils/manejar.ts), Skill database (Prisma 7 sobre MariaDB), @@unique y CAMPOS_UNICOS -> 409 legible, MariaDB nativa de Windows en 3306 (no Docker), Secretos del usuario omitidos por defecto (omit en db.ts) (+9 more)
+### Community 114 - "Cortejo"
+Cohesion: 0.20
+Nodes (17): Asignacion, cortejoPorDefecto(), cuantosPorTramo(), deMasNuevoAMasAntiguo(), mismoPuesto(), PapeletaDelCortejo, problemaConfiguracion(), puestosSinRepetir() (+9 more)
 
-### Community 115 - "Norma 43 y conciliación"
-Cohesion: 0.15
-Nodes (20): Casado, casarMovimientos(), CuentaN43, diasEntre(), ExtractoN43, fecha(), hermanosNombrados(), importe() (+12 more)
+### Community 115 - "Vídeos propios"
+Cohesion: 0.18
+Nodes (17): CampoVideo(), CampoVideoProps, inputOculto, DatosDeVideo, duracionEnPalabras(), leerVideo(), megas(), problemaDelVideo() (+9 more)
 
-### Community 116 - "Panel de hoy y avisos"
-Cohesion: 0.10
-Nodes (12): CLAVE_PANEL_HOY, usePanelDeHoy(), ORO, CARGOS, NuevoAviso(), Censo, censoVacio, solicitud (+4 more)
+### Community 116 - "Salidas, puerta y retablo"
+Cohesion: 0.24
+Nodes (21): aCampoFechaMadrid(), mensaje(), PUESTO_VACIO, SalidaEditPage(), Seccion(), SeccionCobro(), SeccionDatos(), SeccionFecha() (+13 more)
 
-### Community 117 - "Galería de medios"
-Cohesion: 0.10
-Nodes (16): DURACION_PASE, CLIP, FOTO, OTRA, VIDEO, MOROSO, pagina(), respuesta() (+8 more)
+### Community 117 - "Controladores del CMS"
+Cohesion: 0.16
+Nodes (18): ANIO_MINIMO_DATOS, anioDeHoy(), leerPeriodo(), periodoAnterior(), periodoDe(), periodosDisponibles(), siguiente(), unAnioAntes() (+10 more)
 
-### Community 118 - "Papeletas de la familia"
-Cohesion: 0.21
-Nodes (20): BURDEOS, CREMA, FILETE, GRIS, imagenDelQr(), NEGRO, ORO, SERIFA (+12 more)
+### Community 118 - "Agenda y programa de cultos"
+Cohesion: 0.16
+Nodes (19): AgendaEditPage(), desdeEvento(), momento(), Panel(), vacio, aActo(), actualizarEvento(), BASE_API (+11 more)
 
 ### Community 119 - "tsconfig de la app"
 Cohesion: 0.09
 Nodes (21): compilerOptions, allowArbitraryExtensions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection (+13 more)
 
-### Community 120 - "Esquemas de contenido"
-Cohesion: 0.11
-Nodes (17): SeccionesController, anclaDe(), seccionesRoutes, cabeceraSchema, problemaDeBloque(), DESCRIPCION, ESQUEMAS, ETIQUETA (+9 more)
+### Community 120 - "Skills y CLAUDE.md"
+Cohesion: 0.10
+Nodes (14): AuditoriaService / ACCIONES_AUDITORIA, Skill git (convenciones de commits), SECURITY.md: guía de seguridad y despliegue del backend, Almacenamiento separado storage/public y storage/private, Antivirus ClamAV en subidas (CLAMAV_HOST, CLAMAV_REQUIRED, INSTREAM), AuditLog con retención (AUDIT_RETENTION_DAYS, auditoria:purgar), Checklist de despliegue (HTTPS, NODE_ENV, JWT_SECRET, TOTP_ENC_KEY, NUM_PROXIES, siembra segura), Copias de seguridad (backup-vps.sh con age + rclone; backup-db.ps1 local) (+6 more)
 
-### Community 121 - "Presentación y destinos"
-Cohesion: 0.13
-Nodes (17): ANCLA, esDestinoValido(), NOTICIA, RUTAS_DESTINO, COMUNES, esFecha(), LIBRES, Opcion (+9 more)
+### Community 121 - "Alta completa y cuentas"
+Cohesion: 0.10
+Nodes (7): registerSchema, titular, cuenta(), dniValido(), nuevoDni(), usuarios, sharp
 
 ### Community 122 - "Generador de identidad"
 Cohesion: 0.12
 Nodes (15): ficheros, html(), { identidad, secretaria, sede }, indexHtml(), json(), posicion, raiz, valor() (+7 more)
 
-### Community 123 - "Tienda y caja (API)"
-Cohesion: 0.18
-Nodes (16): LineaCobrada, MAX_LINEAS_CAJA, MAX_SUELTO_CENTIMOS, prepararVenta(), resumenDeCaja, clave(), faltaDe(), LineaDelPedido (+8 more)
+### Community 123 - "Servidor VPS y nginx"
+Cohesion: 0.13
+Nodes (19): Despliegue, Web de pruebas en el VPS, El servidor (VPS de OVH), compose.servidor.yaml, Fila de fotos (fila-de-fotos.ts), Medir el consumo (medir.sh y timer), nginx del sistema delante del contenedor (127.0.0.1:8080), Pruebas de carga (carga.mjs): el VPS-1 basta (+11 more)
 
-### Community 124 - "tsconfig del backend"
+### Community 124 - "Skill cms"
+Cohesion: 0.11
+Nodes (16): conModulo / nucleo / siModulo (app.ts), sanearContenidoCms (utils/sanear-html.ts), Skill cms (CMS y constructor de páginas), Receta: añadir un tipo de bloque (shared, bloques.schema.ts, registro.tsx, formularios, pruebas), Catálogos de shared/ (tipos-de-bloque, presentacion-de-bloques, paginas-publicas, contenido-por-defecto, topes), Constructor de páginas por bloques (ContenidoPagina.datos por slug, con historial), Mesas de contenido: noticias, publicaciones, agenda (listado + ficha única), Portada con esquema propio (contenido.schema.ts, PortadaAdminPage) (+8 more)
+
+### Community 125 - "Pruebas: trampas y skill"
+Cohesion: 0.12
+Nodes (10): Skill testing (node:test, Vitest, navegador), renderWithProviders y stubFetchPublico, Workflow Desplegar en el servidor, Job comprobar (solo main, verificación en verde), Workflow Verificación (CI), Job Backend (MariaDB 11.8, prisma, comprobar-tipos, pruebas en serie), Job Frontend (tsc -b, lint, test, build, sitemap), Guarda: ninguna prueba omitida por falta de MariaDB (+2 more)
+
+### Community 126 - "Rutas de administración"
+Cohesion: 0.16
+Nodes (16): AdminController, ClaveConfiguracion, CLAVES_CONFIGURACION, esClaveConfiguracion(), normalizarValorConfiguracion(), ResultadoValor, adminRoutes, LECTURA_AUDITORIA (+8 more)
+
+### Community 127 - "Inventario: DTO y hojas"
+Cohesion: 0.16
+Nodes (8): TextoDeCarta, CartasService, DatosDeCarta, MAX_CARTAS, NO_DIFUNTO, vacio(), consultaLimpia(), ListasService
+
+### Community 128 - "tsconfig del backend"
 Cohesion: 0.11
 Nodes (18): compilerOptions, emitDecoratorMetadata, esModuleInterop, experimentalDecorators, forceConsistentCasingInFileNames, ignoreDeprecations, module, moduleResolution (+10 more)
 
-### Community 125 - "Pruebas de Hazte hermano"
+### Community 129 - "Pruebas de Hazte hermano"
 Cohesion: 0.18
 Nodes (15): bloqueMenor(), continuar(), DATOS, elegir(), escoger(), pagarEnSecretaria(), PASO_1, PASO_2 (+7 more)
 
-### Community 126 - "Migración a bloques"
+### Community 130 - "Migración a bloques"
 Cohesion: 0.14
 Nodes (13): APLICAR, Cabecera, CONVERSORES, Documento, main(), parrafo(), recorridoABloques(), retirarTitulosRepetidos() (+5 more)
 
-### Community 127 - "Rutas de administración"
+### Community 131 - "Recibos y papeletas"
+Cohesion: 0.18
+Nodes (13): escapar(), generarPain008(), importeXml(), MotivoExclusion, TEXTO_EXCLUSION, candidatos(), Cliente, comprobarFecha() (+5 more)
+
+### Community 132 - "Fotos a WebP y scripts"
 Cohesion: 0.16
-Nodes (15): AdminController, ClaveConfiguracion, CLAVES_CONFIGURACION, normalizarValorConfiguracion(), ResultadoValor, adminRoutes, LECTURA_AUDITORIA, SOLO_ADMIN (+7 more)
+Nodes (16): borrarFicheros(), CampoDocumento, CAMPOS, comprobarDocumentosDelAlta(), DocumentoRechazado, DOCUMENTOS, DocumentosDelAlta, Express (+8 more)
 
-### Community 128 - "Correos y seguridad de cuenta"
-Cohesion: 0.12
-Nodes (6): registerSchema, RegistroService, titular, cuerpo(), dniValido(), marca
+### Community 133 - "Configuración de Vite"
+Cohesion: 0.16
+Nodes (12): destino, raiz, NUCLEO_MUI, vite, @vitejs/plugin-react, enPruebas(), leerDatosEntidad(), raiz (+4 more)
 
-### Community 129 - "Servidor VPS y nginx"
-Cohesion: 0.14
-Nodes (17): Despliegue, Fila de fotos (utils/fila-de-fotos.ts), Web de pruebas en el VPS, El servidor (VPS de OVH), Base de pruebas (exportar-base-pruebas.mjs), compose.servidor.yaml (127.0.0.1:8080, imágenes de GitHub), El día de la presentación, Dominio y DNS en IONOS (sin AAAA) (+9 more)
+### Community 134 - "Mesa: zonas de trabajo"
+Cohesion: 0.22
+Nodes (15): CampoCingulo(), cinguloInicial(), Props, CampoPrenda(), Estado, normalizar(), Props, puestoDelCatalogo() (+7 more)
 
-### Community 130 - "Despliegue: cobros y 2FA"
-Cohesion: 0.13
-Nodes (18): El Modelo 182 (datos del Grupo en Configuracion), PAGO_DE_PRUEBA_EN_PRODUCCION, El pago en línea (Redsys): notificación firmada del banco, Las remesas SEPA (adeudos domiciliados, RCUR), Variables de entorno (.env de la raíz), Doble factor obligatorio para los cargos, Apadrinamiento sobre una foto, Auditoría completa del 07-10-2026 (+10 more)
+### Community 135 - "Productos de la tienda (CMS)"
+Cohesion: 0.22
+Nodes (16): diaYHora(), hoy(), leerEuros(), Linea, mensaje(), METODO, VentaEnMano(), anularVenta() (+8 more)
 
-### Community 131 - "Skill cms"
-Cohesion: 0.12
-Nodes (14): sanearContenidoCms (utils/sanear-html.ts), Skill cms (CMS y constructor de páginas), Receta: añadir un tipo de bloque (shared, bloques.schema.ts, registro.tsx, formularios, pruebas), Catálogos de shared/ (tipos-de-bloque, presentacion-de-bloques, paginas-publicas, contenido-por-defecto, topes), Constructor de páginas por bloques (ContenidoPagina.datos por slug, con historial), Mesas de contenido: noticias, publicaciones, agenda (listado + ficha única), Portada con esquema propio (contenido.schema.ts, PortadaAdminPage), Skill frontend (React 19 + Vite + MUI 9 + React Query) (+6 more)
+### Community 136 - "Contabilidad y fechas de Madrid"
+Cohesion: 0.24
+Nodes (5): CreateTransaccionDto, UpdateTransaccionDto, deTipo(), foto(), TransaccionService
 
-### Community 132 - "Pruebas del perfil"
-Cohesion: 0.17
-Nodes (12): status(), ficha(), haceAnios(), hoy, json(), listado(), responder(), ficha() (+4 more)
-
-### Community 133 - "Pruebas de mesa y salidas"
-Cohesion: 0.13
-Nodes (11): AL_DIA, APUNTADOS, COLAS, DEBE, FICHA, json(), libre(), servidor() (+3 more)
-
-### Community 134 - "tsconfig de node (web)"
+### Community 137 - "tsconfig de node (web)"
 Cohesion: 0.12
 Nodes (16): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, noEmit, noFallthroughCasesInSwitch (+8 more)
 
-### Community 135 - "Sesiones separadas (spec)"
-Cohesion: 0.14
-Nodes (14): Plan: Sesión en cookie httpOnly, Cierre de huecos del número de hermano, Plan: Arreglos cerrados (fase 1 de 5), Plan: Sesiones separadas (fase 2 de 5), Sesión JWT en cookie httpOnly SameSite=Strict, Cookie de paso intermedio del 2FA (5 min), Endpoints /auth/me y /auth/logout, Spec: La sesión pasa a una cookie httpOnly (+6 more)
-
-### Community 136 - "Módulos y género de la corporación"
+### Community 138 - "Despliegue y copias"
 Cohesion: 0.13
-Nodes (16): Plan: El género de la corporación, Guardiana de cobertura de módulos, Plan: Módulos del CMS activables, checkRole exige la sesión del CMS, shared/casos-articulos.json, shared/datos-entidad.json (identidad: articulo, tipoCorto), domain/articulos.ts (del, al, nuestro), Plantillas de correo (shared/usos-de-correo.json) (+8 more)
+Nodes (17): Copias de seguridad con backup-vps.sh (age + rclone), instalar.sh, actualizar.sh y actualizar-copias.sh, migrar:bloques (bases sembradas antes del 18-09-2026), Orden de una puesta en producción, Purga de la auditoría (AUDIT_RETENTION_DAYS), Restaurar una copia, Rotar TOTP_ENC_KEY, Usuario del sistema y permisos de storage (+9 more)
 
-### Community 137 - "devDependencies backend"
+### Community 139 - "devDependencies backend"
 Cohesion: 0.12
 Nodes (16): devDependencies, prisma, ts-node, @types/bcryptjs, @types/cookie-parser, @types/cors, @types/express, @types/jsonwebtoken (+8 more)
 
-### Community 138 - "Esquemas comunes y auth"
+### Community 140 - "Esquemas comunes y auth"
 Cohesion: 0.17
 Nodes (13): paginacionQuery, AgendaController, agendaRoutes, rolesAgenda, validateId, agendaSchema, camposDelCartel, queryAgendaAdminSchema (+5 more)
 
-### Community 139 - "Rutas de salidas"
+### Community 141 - "Rutas de salidas"
 Cohesion: 0.15
 Nodes (13): SalidasController, rolesEscritura, rolesLectura, salidasCmsRouter, salidasRouter, puesto, crearSalidaSchema, datosSalida (+5 more)
 
-### Community 140 - "Rutas de lotería"
+### Community 142 - "Difuntos y aniversarios"
+Cohesion: 0.17
+Nodes (10): aniosDeHermano(), Aniversario, aUtc(), proximoAniversario(), cuandoLargo, DIFUNTO, instanteMadrid(), NOMBRE_SUFRAGIO (+2 more)
+
+### Community 143 - "Rutas de lotería"
 Cohesion: 0.19
 Nodes (12): conId, loteriaRoutes, compraSchema, entregaSchema, liquidacionSchema, metodoPago, nuevosTalonariosSchema, numeroDeTalonario (+4 more)
 
-### Community 141 - "Preparación de pruebas web"
+### Community 144 - "Esquemas de bloques"
+Cohesion: 0.12
+Nodes (16): anillosSchema, botonesSchema, carruselSchema, citaSchema, descargasSchema, dibujoSchema, donativoSchema, enBlanco() (+8 more)
+
+### Community 145 - "Pruebas del perfil"
+Cohesion: 0.18
+Nodes (11): status(), ficha(), haceAnios(), hoy, json(), listado(), responder(), ficha() (+3 more)
+
+### Community 146 - "Gráficas del Inicio"
+Cohesion: 0.15
+Nodes (13): Props, Props, Props, Props, ClaveEstado, FilaEstado, ICONO, ProporcionEstados() (+5 more)
+
+### Community 147 - "Barra de listados"
+Cohesion: 0.20
+Nodes (12): BarraListado(), FiltroDesplegable, Props, rejillaDelBloque(), CampoBusqueda(), ESPERA_BUSQUEDA_MS, Props, anchoControl() (+4 more)
+
+### Community 148 - "Preparación de pruebas web"
 Cohesion: 0.12
 Nodes (3): IntersectionObserverStub, ResizeObserverStub, @testing-library/jest-dom
 
-### Community 142 - "Validación del entorno"
+### Community 149 - "Rutas de cabildos"
+Cohesion: 0.22
+Nodes (12): idParam, cabildosRoutes, validateId, actaSchema, asistenteSchema, borrarVotacionSchema, cabildoSchema, celebrarSchema (+4 more)
+
+### Community 150 - "Validación del entorno"
 Cohesion: 0.20
 Nodes (14): comprobarEntorno(), definida(), Entorno, ENTORNOS_VALIDOS, esEnteroEnRango(), esUrlHttps(), HOST_PRODUCCION, hostDeEscucha() (+6 more)
 
-### Community 143 - "Calendario .ics"
+### Community 151 - "Calendario .ics"
 Cohesion: 0.23
 Nodes (14): ActoIcs, aUtc(), calendarioIcs(), diasEntre(), enMadrid(), horario(), instanteIcs(), local() (+6 more)
 
-### Community 144 - "Módulos activables (API)"
-Cohesion: 0.22
-Nodes (8): ClaveModulo, conModulo(), nucleo(), ModulosService, ponerEnBase(), restaurar(), apagar(), restaurar()
-
-### Community 145 - "Marco del CMS y navegación"
+### Community 152 - "Marco del CMS y navegación"
 Cohesion: 0.20
-Nodes (12): itemsMenu, PAGINAS_PUBLICAS, agruparPorGrupo(), arbolDeSeccion(), fila, FilaDePagina(), lista, PaginasAdminPage() (+4 more)
+Nodes (12): paginaPublica, PAGINAS_PUBLICAS, agruparPorGrupo(), arbolDeSeccion(), fila, FilaDePagina(), lista, PaginasAdminPage() (+4 more)
 
-### Community 146 - "Constructor de páginas (spec)"
-Cohesion: 0.18
-Nodes (11): Plan: Portada y Recorrido editables, Corporación como página piloto { cabecera, bloques[] }, Plan: Constructor de páginas, fase 1, shared/contenido-por-defecto.json, Tabla ContenidoPagina (un documento JSON por página), GET /api/portada (imágenes y textos juntos), Limpiador de ficheros huérfanos, Spec: Portada y Recorrido editables (+3 more)
+### Community 153 - "Skill backend y convenciones"
+Cohesion: 0.15
+Nodes (9): Skill backend, authenticateToken + checkRole, enum Role (USER, ADMIN, TESORERIA, ALBACERIA, HERMANO_MAYOR, REDES, SECRETARIA), Flujo de subidas (multer, file-type, ClamAV, WebP 1920), Skill revision, Lista propia de trampas del proyecto, security-audit (skill global), Seis variables de entorno para arrancar el backend (+1 more)
 
-### Community 147 - "Compose y despliegue"
+### Community 154 - "Compose y despliegue"
 Cohesion: 0.25
 Nodes (14): Job construir (api, herramientas, web), Variable de repositorio DATOS_ENTIDAD, Job desplegar (SSH al VPS con VPS_CLAVE_SSH y VPS_HUELLA), Job probar-nginx (nginx -t en los dos sitios), compose.yaml (producción), Servicio api, Servicio certbot (perfil tls), Servicio clamav (perfil antivirus, tope 1800 MB) (+6 more)
 
-### Community 148 - "Esquemas noticias y avisos"
-Cohesion: 0.16
-Nodes (12): PanelController, MAX_TIEMPOS, panelRoutes, ROLES_RETABLO, ROLES_STAFF, cargo, crearAvisoSchema, cuenta (+4 more)
+### Community 155 - "Traspaso 08-10 e imágenes"
+Cohesion: 0.19
+Nodes (10): Registro ghcr.io/davilesc/desamparados-*, CLAUDE.md del proyecto, Trabajo en dos PC (A y B), Mapa de carpetas (backend, web, shared, docs), JSON-LD ReligiousOrganization (schema.org), Traspaso 8-10-2026, Esquema arktype de la configuración en shared/, Grafo graphify del proyecto (+2 more)
 
-### Community 149 - "QR de papeletas"
-Cohesion: 0.29
-Nodes (12): clave(), codigoDeFamilia(), codigoDePapeleta(), Familia, firma(), firmaDeFamilia(), firmaValida(), leerCodigoDeFamilia() (+4 more)
+### Community 156 - "Contenido por defecto y mezcla"
+Cohesion: 0.23
+Nodes (11): Caja, cajas(), duracionDe(), esUsoDeVideo(), hija(), InfoMp4, leerMp4(), pistaDe() (+3 more)
 
-### Community 150 - "devDependencies frontend"
-Cohesion: 0.14
-Nodes (14): devDependencies, jsdom, oxlint, @testing-library/jest-dom, @testing-library/react, @testing-library/user-event, @types/geojson, @types/node (+6 more)
+### Community 157 - "Presentación y destinos"
+Cohesion: 0.20
+Nodes (12): COMUNES, esFecha(), LIBRES, Opcion, opcionesDe(), POR_TIPO, problemaDePresentacion, CABECERA (+4 more)
 
-### Community 151 - "Subida de fotos (CMS)"
+### Community 158 - "Subida de fotos (CMS)"
 Cohesion: 0.22
 Nodes (9): inputOculto, plural(), Props, SubidaDeFotos(), MAX_BYTES_FOTO, problemaDeFoto(), ResultadoSubida, subirFotos() (+1 more)
 
-### Community 152 - "Configuración de Vite"
-Cohesion: 0.21
-Nodes (10): NUCLEO_MUI, vite, @vitejs/plugin-react, enPruebas(), leerDatosEntidad(), raiz, RUTA_EJEMPLO, RUTA_INSTALACION (+2 more)
+### Community 159 - "Sesiones separadas (spec)"
+Cohesion: 0.16
+Nodes (12): Cierre de huecos del número de hermano, Plan: Arreglos cerrados (fase 1 de 5), Plan: Sesiones separadas (fase 2 de 5), Bandeja de validación de nombre, apellidos y DNI, shared/casos-identidad.json (reglas de identidad compartidas), checkRole exige la sesión del CMS, Dos cookies: desamparados_cms y desamparados_hermano, Spec: Sesiones separadas y área del hermano (+4 more)
 
-### Community 153 - "Módulos activables (API)"
-Cohesion: 0.27
-Nodes (9): CATALOGO_MODULOS, dependientesActivos(), fichaDe(), LOTE_INICIAL, Modulo, requisitosQueFaltan(), nombres(), GRUPOS_DEL_MENU (+1 more)
+### Community 160 - "Constructor de páginas (spec)"
+Cohesion: 0.19
+Nodes (10): Plan: Portada y Recorrido editables, Corporación como página piloto { cabecera, bloques[] }, Plan: Constructor de páginas, fase 1, shared/contenido-por-defecto.json, Tabla ContenidoPagina (un documento JSON por página), GET /api/portada (imágenes y textos juntos), Limpiador de ficheros huérfanos, Spec: Portada y Recorrido editables (+2 more)
 
-### Community 154 - "Esquemas de medios y portada"
-Cohesion: 0.18
-Nodes (10): galeriaSchema, videoSchema, medioGaleriaSchema, problemaDelMedio(), sinFoto, descripcionImagen, MAX_IMAGENES_PORTADA, rutaImagenPublica (+2 more)
-
-### Community 155 - "Bloques: presentación"
-Cohesion: 0.18
-Nodes (7): entrada(), mockConEstados(), mockPorUrl(), ok(), ATRIBUTOS_PERMITIDOS, ETIQUETAS_PERMITIDAS, dompurify
-
-### Community 156 - "Módulos activables (API)"
+### Community 161 - "Rutas de pago y límites"
 Cohesion: 0.23
-Nodes (8): esClaveDeModulo(), NUCLEO, cumple(), EntradaSitemap, escaparXml(), RUTA_DE_NOTICIA, RutaPublica, SitemapService
+Nodes (10): limitadorCompras, admin, apadrinamientosRoutes, apadrinarSchema, campanaIdSchema, campanaSchema, piezaIdSchema, piezaSchema (+2 more)
 
-### Community 157 - "Noticias, publicaciones y HTML"
-Cohesion: 0.23
-Nodes (10): DOMINIOS_VIMEO, DOMINIOS_YOUTUBE, normalizarVideo(), ATRIBUTOS_CMS, decodificarEntidades(), ETIQUETAS_CMS, normalizarMedio(), OPCIONES_CONTENIDO (+2 more)
+### Community 162 - "Esquemas noticias y avisos"
+Cohesion: 0.18
+Nodes (11): PanelController, panelRoutes, ROLES_RETABLO, ROLES_STAFF, cargo, crearAvisoSchema, cuenta, encuadreDeTiempo (+3 more)
 
-### Community 158 - "Pruebas de esquemas de bloques"
+### Community 163 - "Pruebas de alta y numeración"
 Cohesion: 0.24
-Nodes (8): esquemaDeBloque(), sanearBloques(), valida(), bloque(), falla(), FOTO, guardar(), VIDEO
-
-### Community 159 - "Pruebas de alta y numeración"
-Cohesion: 0.26
 Nodes (8): DESTINO, raiz, rutas, texto, raiz, rutasDelBloquePublico(), rutasParaElSitemap(), urlsIndexables()
 
-### Community 160 - "Barra de listados"
-Cohesion: 0.27
-Nodes (9): BarraListado(), FiltroDesplegable, Props, rejillaDelBloque(), anchoControl(), SIN_VALOR_VISIBLE, Pastilla, PastillasFiltro() (+1 more)
+### Community 164 - "Pruebas del CMS (Vitest)"
+Cohesion: 0.21
+Nodes (9): PASO_DEL_FOCO_MS, [FINES, CITA, LLAMADA], palabra(), mezcla(), OCULTO, Palabra(), ParrafoQueSeEnciende(), Props (+1 more)
 
-### Community 161 - "Copias de seguridad"
-Cohesion: 0.18
-Nodes (12): Copias de seguridad con backup-vps.sh (age + rclone), Purga de la auditoría (AUDIT_RETENTION_DAYS), Restaurar una copia, Copias de seguridad fuera del servidor, bajar-copias.ps1 (tarea semanal del PC), Copias en tres sitios (servidor, Drive, PC), Deploy key de GitHub de solo lectura, Guion desplegar-desamparados (desplegar.sh) (+4 more)
+### Community 165 - "Traspasos de sesión"
+Cohesion: 0.21
+Nodes (13): Traspaso 2026-09-03, Acceso separado al CMS (/cms/acceso), Recordarme (72 h fijas), Traspaso 2026-09-04, Origen de sesión en el JWT (cms | hermanos), Traspaso 2026-09-07, Mi seguridad: 2FA usable desde el CMS, Una sesión de hermanos abría la API del CMS (+5 more)
 
-### Community 162 - "Panel del CMS (spec)"
+### Community 167 - "Panel del CMS (spec)"
 Cohesion: 0.21
 Nodes (10): Plan: Panel del CMS y rediseño, AdminLayout rediseñado (barra oscura, lienzo claro), GET /api/panel, PanelService, Spec: Panel del CMS y rediseño, «Cómo va el año»: siete gráficas, Interruptor de tema Claro/Oscuro del CMS, «Para hoy»: tareas por cargo (+2 more)
 
-### Community 163 - "Pruebas de alta y numeración"
+### Community 168 - "Pruebas de alta y numeración"
 Cohesion: 0.25
 Nodes (9): inventario(), leer(), licenciaDe(), licenciaDelFichero(), partes, PROYECTOS, raiz, resolver() (+1 more)
 
-### Community 164 - "Scripts npm del frontend"
+### Community 169 - "Fotos a WebP y scripts"
+Cohesion: 0.29
+Nodes (8): avisarSinAntivirus(), noDisponible(), parseClamdResponse(), reiniciarAvisoSinAntivirus(), scanBufferClamav(), ScanResult, VeredictoAntivirus, writeAsync()
+
+### Community 170 - "Contabilidad y fechas de Madrid"
+Cohesion: 0.35
+Nodes (9): diaMadrid(), esDiaValido(), conFormatoEspanol(), DatosEvento, diaDelTurno(), instanteLimiteAusencias(), motivoTurnoInvalido(), dia (+1 more)
+
+### Community 171 - "Presentación y destinos"
+Cohesion: 0.22
+Nodes (6): ANCLA, esDestinoValido(), NOTICIA, RUTAS_DESTINO, enlaceInterno, valida()
+
+### Community 172 - "Scripts npm del frontend"
 Cohesion: 0.18
 Nodes (11): scripts, build, dev, identidad, lint, prebuild, predev, preview (+3 more)
 
-### Community 165 - "Errores de ruta y recarga"
-Cohesion: 0.33
-Nodes (6): ErrorDeRuta(), AvisoDeError(), esFalloDeTrozo(), recargarAlFallarUnTrozo(), recargarUnaVez(), cargar()
+### Community 173 - "Panel de hoy y avisos"
+Cohesion: 0.18
+Nodes (3): Censo, censoVacio, solicitud
 
-### Community 166 - "Tipos de recibos (web)"
-Cohesion: 0.27
-Nodes (9): ESTADO_RECIBO, TIPO_RECIBO, FichaDelCenso, ApiReceipt, MetodoPago, MyReceipt, MyReceiptDetail, ReceiptStatus (+1 more)
-
-### Community 167 - "Inventario y ropero (CMS)"
-Cohesion: 0.27
-Nodes (10): DialogoDevolucion(), DialogoDevolucionProps, DialogoPrestamo(), DialogoPrestamoProps, edad(), mensaje(), nombreCompleto(), asignarPrenda() (+2 more)
-
-### Community 168 - "Configuración por instalación"
-Cohesion: 0.22
-Nodes (10): Los datos de la corporación (instalacion/datos-entidad.json), Una instalación por corporación, Configuración fuera del repositorio (instalacion/datos-entidad.json), Contrato de encargado del tratamiento (art. 28 RGPD), Prueba guardiana sin-corporacion-escrita, Lo propio del Grupo, a configuración (identidad y género de la corporación), Módulos del CMS activables por instalación, Configuración validada y leída al arrancar (una imagen para todos) (+2 more)
-
-### Community 169 - "Traspasos de paginación"
+### Community 174 - "Traspasos de paginación"
 Cohesion: 0.24
 Nodes (11): Traspaso 2026-08-27, CMS inicial bajo /cms por roles, Traspaso 2026-08-28, Renombrado a Grupo Parroquial (79 ocurrencias), Traspaso 2026-08-29, PR #5 cms-edicion-y-tutores, Traspaso 2026-08-30, Paginación completa de los 18 listados (+3 more)
 
-### Community 170 - "Skills y CLAUDE.md"
-Cohesion: 0.22
-Nodes (6): Skill testing (node:test, Vitest, navegador), renderWithProviders y stubFetchPublico, Workflow Desplegar en el servidor, Job comprobar (solo main, verificación en verde), Workflow Verificación (CI), Pruebas con la corporación de ejemplo
-
-### Community 171 - "Traspaso 08-10 e imágenes"
-Cohesion: 0.24
-Nodes (7): Registro ghcr.io/davilesc/desamparados-*, Traspaso 8-10-2026, Esquema arktype de la configuración en shared/, Grafo graphify del proyecto, Lo que impide vender (instalar/actualizar, compilación, ciclos de vida, sin validar), Lo propio de Desamparados que sigue en el código, datos-entidad.json como punto único de configuración
-
-### Community 172 - "Catálogo de bloques"
+### Community 175 - "Catálogo de bloques"
 Cohesion: 0.29
-Nodes (6): esTipoBloque(), TipoBloque, TIPOS_BLOQUE, FUENTES_LISTADO, falla(), Tipo
+Nodes (7): esTipoBloque(), TipoBloque, TIPOS_BLOQUE, esquemaDeBloque(), FUENTES_LISTADO, falla(), Tipo
 
-### Community 173 - "Pruebas de apuntes"
-Cohesion: 0.24
-Nodes (8): apunte(), categoriasCreadas, crearApunte(), pedir(), Rol, SUFIJO, transaccionesCreadas, usuarios
-
-### Community 174 - "Subida de vídeos (web)"
-Cohesion: 0.36
-Nodes (6): DatosDeVideo, duracionEnPalabras(), megas(), problemaDelVideo(), reglasDe(), HD
-
-### Community 175 - "Panel e inicio (API)"
+### Community 176 - "Skills y CLAUDE.md"
 Cohesion: 0.22
-Nodes (6): anio, haceUnAnio, hermanos, hoy, mes, transacciones
+Nodes (8): Esquemas arktype {params, query, body}, HttpError / NotFoundError (utils/error.handle.ts), manejar() (utils/manejar.ts), Skill database (Prisma 7 sobre MariaDB), @@unique y CAMPOS_UNICOS -> 409 legible, MariaDB nativa de Windows en 3306 (no Docker), Secretos del usuario omitidos por defecto (omit en db.ts), Siembra idempotente (prisma/seed*.ts, npm run seed)
 
-### Community 176 - "Subida de vídeos (web)"
-Cohesion: 0.33
-Nodes (6): CampoVideoProps, RespuestaSubida, subirArchivoPublico(), subirImagenPublica(), subirPdfPublico(), UsoDeVideo
-
-### Community 177 - "Inicio: Hoy y El año"
-Cohesion: 0.22
-Nodes (4): APUNTES, CATEGORIAS, hoy(), RESUMEN
-
-### Community 178 - "Agrupar texto del panel"
+### Community 177 - "Fotos a WebP y scripts"
 Cohesion: 0.36
-Nodes (6): CifrasDeSalida, agruparPorTextoLibre(), etiquetaDe(), normalizar(), Recuento, PanelResponse
+Nodes (6): ANCHOS_VARIANTES, NOMBRE_DE_VARIANTE, nombreDeVariante(), completarVariantes(), esSinPerdida(), ResultadoVariantes
 
-### Community 179 - "Módulos activables (API)"
-Cohesion: 0.39
-Nodes (7): CLAVES_MODULO, bloque(), clavesDe(), esModulo(), leer(), menuEtiquetado(), RAIZ
-
-### Community 180 - "Pruebas de DNI"
-Cohesion: 0.29
-Nodes (5): MENSAJE_DNI_NO_GUARDADO, cuenta(), dniValido(), nuevoDni(), usuarios
-
-### Community 181 - "tsconfig de pruebas"
+### Community 178 - "tsconfig de pruebas"
 Cohesion: 0.25
 Nodes (7): compilerOptions, noEmit, rootDir, exclude, extends, include, ./tsconfig.json
 
-### Community 182 - "Inventario y ropero (CMS)"
-Cohesion: 0.36
-Nodes (7): CONSERVACION, FichaEnser(), Props, TablaEnseres(), totalDe(), TRAMOS, Enser
+### Community 179 - "Siembra de contenido"
+Cohesion: 0.25
+Nodes (6): ESCUDO, ICONOS, raiz, require, sharp, TINTA
 
-### Community 183 - "Venta en mano"
+### Community 180 - "Inicio: Hoy y El año"
+Cohesion: 0.25
+Nodes (3): APUNTES, CATEGORIAS, RESUMEN
+
+### Community 181 - "Venta en mano"
 Cohesion: 0.29
 Nodes (7): CAMISETA, CON_EFECTIVO, json(), MEDALLA, servidor(), VACIO, VENDIDA
 
-### Community 184 - "Pruebas de la tienda"
+### Community 182 - "Pruebas de la tienda"
 Cohesion: 0.29
 Nodes (5): CAMISETA, CATALOGO, json(), montar(), servidor()
 
-### Community 185 - "Errores de ruta y recarga"
-Cohesion: 0.29
-Nodes (5): META_QUE_PONE_CADA_PAGINA, quitarMetaEstaticas(), @fontsource-variable/exo-2, @fontsource-variable/saira, react-dom
+### Community 183 - "Despliegue: cobros y 2FA"
+Cohesion: 0.25
+Nodes (8): PAGO_DE_PRUEBA_EN_PRODUCCION, El pago en línea (Redsys): notificación firmada del banco, Las remesas SEPA (adeudos domiciliados, RCUR), Variables de entorno (.env de la raíz), Auditoría completa del 07-10-2026, Segunda auditoría (08-10-2026), Fotos a 1920 px y variantes 640/1280, El .env del servidor
 
-### Community 186 - "Salidas configurables (spec)"
+### Community 184 - "Sesiones separadas (spec)"
+Cohesion: 0.25
+Nodes (7): Plan: Sesión en cookie httpOnly, Sesión JWT en cookie httpOnly SameSite=Strict, Cookie de paso intermedio del 2FA (5 min), Endpoints /auth/me y /auth/logout, Spec: La sesión pasa a una cookie httpOnly, tokenValidAfter (revocación de sesiones), cmsValidoDesde y hermanoValidoDesde
+
+### Community 185 - "Salidas configurables (spec)"
 Cohesion: 0.25
 Nodes (7): Plan: Inicio del CMS A4, Sábado de Pasión calculado, no escrito, Plan: Salidas configurables, Sección «Procesión» del CMS (plazo, precios, días de reparto), Modelo Salida (tabla editable, N por corporación), Fecha de la salida por regla (Pascua) o a mano (acto de la Agenda), Spec: Salidas configurables
 
-### Community 187 - "Traspasos de sesión"
-Cohesion: 0.39
-Nodes (8): Traspaso 2026-09-03, Acceso separado al CMS (/cms/acceso), Recordarme (72 h fijas), Traspaso 2026-09-04, Origen de sesión en el JWT (cms | hermanos), Traspaso 2026-09-07, Mi seguridad: 2FA usable desde el CMS, Una sesión de hermanos abría la API del CMS
+### Community 186 - "Módulos y género de la corporación"
+Cohesion: 0.29
+Nodes (7): Plan: El género de la corporación, Guardiana de cobertura de módulos, Plan: Módulos del CMS activables, Plantillas de correo (shared/usos-de-correo.json), Prueba guardiana contra frases escritas a mano, Spec: Género y nombre de la corporación, Spec: Módulos del CMS
 
-### Community 188 - "Licencias"
+### Community 187 - "Licencias"
 Cohesion: 0.32
 Nodes (6): Licencias y material de terceros, Licencias de terceros (generado), npm run licencias, Fuentes con SIL OFL 1.1, Librerías a mirar (sharp LGPL, mariadb LGPL, buffers sin licencia), Mapa del barrio de OpenStreetMap (ODbL)
 
-### Community 190 - "Pruebas de remesas"
+### Community 189 - "Pruebas de remesas"
 Cohesion: 0.33
 Nodes (5): api(), ESTADO, json(), PREVIA, REMESA
 
-### Community 192 - "Script de instalación"
+### Community 191 - "Script de instalación"
 Cohesion: 0.48
 Nodes (5): compose(), dominio_de(), fallo(), log(), instalar.sh script
 
-### Community 193 - "Edición en pantalla (spec)"
+### Community 192 - "Edición en pantalla (spec)"
 Cohesion: 0.29
 Nodes (6): Plan: Editar en pantalla propia, ficha completa y tutores, DialogoConfirmacion (al guardar y al salir con cambios), Emancipación desde Secretaría con enlace al hermano, PantallaEdicion (editar en pantalla propia), Solicitudes de alta en pestaña propia de Hermanos, Spec: Editar en pantalla propia y emancipación
+
+### Community 193 - "Ficha del hermano y cambios"
+Cohesion: 0.40
+Nodes (6): cuenta(), ficha(), hermanoActivo(), hermanoDeBaja(), meta(), solicitudPendiente()
 
 ### Community 194 - "Configuración de oxlint"
 Cohesion: 0.33
 Nodes (5): plugins, rules, react/only-export-components, react/rules-of-hooks, $schema
 
-### Community 195 - "Marco del CMS y navegación"
+### Community 195 - "Pruebas del CMS (Vitest)"
 Cohesion: 0.40
-Nodes (4): BarrasHorizontales(), FilaBarra, Props, filas
+Nodes (3): montar(), SondaRuta(), TOKEN
 
 ### Community 196 - "Pruebas del CMS (Vitest)"
 Cohesion: 0.40
-Nodes (3): montar(), SondaRuta(), TOKEN
+Nodes (5): ANA, CONFIG, json(), RESUMEN, servidor()
 
 ### Community 197 - "Pruebas del CMS (Vitest)"
 Cohesion: 0.40
@@ -1071,61 +1077,69 @@ Nodes (5): compose(), fallo(), GIT_SSH_COMMAND, log(), desplegar.sh script
 Cohesion: 0.33
 Nodes (3): Antivirus ClamAV de las subidas, Montaje en docker compose (web, api, db, clamav, certbot, migraciones, herramientas), Probarlo en local (compose.local.yaml, sin HSTS)
 
-### Community 201 - "Guiones de instalación"
-Cohesion: 0.33
-Nodes (6): instalar.sh, actualizar.sh y actualizar-copias.sh, migrar:bloques (bases sembradas antes del 18-09-2026), Orden de una puesta en producción, Rotar TOTP_ENC_KEY, Usuario del sistema y permisos de storage, Guiones de instalación y actualización de varias copias
-
-### Community 202 - "Semilla y plan de cuentas"
+### Community 201 - "Arranque y log de privacidad"
 Cohesion: 0.40
-Nodes (4): PUESTOS_PASION, PUESTOS_ROSARIO, SALIDAS_DE_SIEMPRE, sembrarSalidas()
+Nodes (5): overrides, deepmerge-ts, mariadb, mysql2, uuid
 
-### Community 203 - "Copia del VPS"
+### Community 202 - "Copia del VPS"
 Cohesion: 0.80
 Nodes (4): compose(), fallo(), log(), backup-vps.sh script
+
+### Community 203 - "Importar censo desde hoja"
+Cohesion: 0.50
+Nodes (3): buscarFinDelDirectorio(), revisarZip(), VeredictoZip
 
 ### Community 204 - "Script de actualización"
 Cohesion: 0.80
 Nodes (4): compose(), fallo(), log(), actualizar.sh script
 
-### Community 205 - "Servidor VPS y nginx"
+### Community 205 - "Módulos y género de la corporación"
 Cohesion: 0.40
-Nodes (5): Traspaso 2026-09-11, Auditoría de seguridad y flujos (57 hallazgos), Traspaso 2026-09-22, Las pruebas del backend no se compilaban, Reparto de los ficheros grandes en módulos
+Nodes (5): Catálogo compartido de tipos de bloque, shared/modulos.json (catálogo de módulos), Guarda conModulo (404 si está apagado), Tabla Modulo y ModulosService en memoria, siModulo para enganches opcionales
 
-### Community 206 - "Hoja de ruta y venta"
+### Community 206 - "Pruebas del CMS (Vitest)"
 Cohesion: 0.50
-Nodes (5): Contrato de encargado del tratamiento, Anexo II: subencargados, Anexo III: medidas de seguridad, Opciones A/B: quién contrata el servidor, Encargado del tratamiento (art. 28 RGPD)
+Nodes (3): OCULTA, Props, TablaDeDatos()
 
 ### Community 207 - "nginx"
 Cohesion: 0.50
 Nodes (3): Configuración de nginx (cabeceras, CSP, registro sin consulta), Reenvío de la SPA a index.html, Registros sin consulta ni datos personales de más
 
-### Community 214 - "Comunicación (hoja de ruta)"
+### Community 215 - "Comunicación (hoja de ruta)"
 Cohesion: 0.67
-Nodes (3): Boletín y avisos masivos segmentados, Cabildos y actas, Emails: plantillas de los correos
+Nodes (3): Boletín y avisos masivos, Emails: plantillas de los correos, shared/usos-de-correo.json
+
+### Community 216 - "QR de papeletas"
+Cohesion: 1.00
+Nodes (3): Código QR de la papeleta (DSP1 / DSF1, papeleta-qr.ts), Papeleta de sitio en PDF con QR, Escaneo del QR en la puerta del templo
+
+### Community 217 - "Despliegue: cobros y 2FA"
+Cohesion: 0.67
+Nodes (3): Lotería y talonarios, Contabilidad por partida doble, Venta en mano (antes Caja de tienda)
 
 ## Ambiguous Edges - Review These
 - `Workflow Security Audit del backend (tsc --noEmit, npm audit, semanal)` → `Comprobar tipos con npx tsc -b (no --noEmit)`  [AMBIGUOUS]
   backend-desamparados/.github/workflows/security-audit.yml · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **1873 isolated node(s):** `Props`, `Censo`, `BotonProps`, `CampoContrasenaProps`, `TarjetaCristalProps` (+1868 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2355 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **21 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1901 isolated node(s):** `Calendario`, `ConResumen`, `Pagina`, `Sorteo`, `Efecto` (+1896 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2396 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `Workflow Security Audit del backend (tsc --noEmit, npm audit, semanal)` and `Comprobar tipos con npx tsc -b (no --noEmit)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `@mui/material` connect `Formularios de bloques` to `Páginas públicas (MUI)`, `Bloques: presentación`, `Constructor: bloques y borrador`, `Alta y sesión del hermano`, `Pruebas del CMS (Vitest)`, `Mesa: zonas de trabajo`, `Agenda y programa de cultos`, `Tema del CMS`, `Mesas de contenido CMS`, `Marco del CMS y navegación`, `Alta y sesión del hermano`, `Contabilidad (CMS)`, `Tesorería y remesas (CMS)`, `Componentes comunes del CMS`, `Subida de fotos (CMS)`, `Procesión y partida doble (CMS)`, `Tienda: filtros y efectos`, `Constructor: lista de bloques`, `Cliente API y formularios`, `Recorrido en mapa`, `Barra de listados`, `Datos del sitio y legal`, `Galería y visor`, `Productos de la tienda (CMS)`, `Inventario y ropero (CMS)`, `Salidas, puerta y retablo`, `Calendario de la agenda (CMS)`, `Cabildos (web)`, `Perfil del hermano`, `Gráficas del Inicio`, `Listados, recibos y noticias`, `Inventario y ropero (CMS)`, `Retablo: fotos por tiempo`, `Errores de ruta y recarga`, `Barra, menú y pie`, `Lotería (CMS)`, `Hermanos y listas guardadas`, `Pruebas de Procesión`, `Bloque donativo y certificado`, `Datos e informe anual (web)`, `Barra, menú y pie`, `Marco del CMS y navegación`, `Inicio: cifras y gráficas`, `Horario de misas`, `Inicio: Hoy y El año`, `Salidas, puerta y retablo`, `Inicio: cifras y gráficas`, `Modelo 182 (web)`, `Cliente API y formularios`, `Router, React Query y fichas`, `Rutas web y módulos`, `Inventario y ropero (CMS)`, `Router, React Query y fichas`, `Ficha de patrimonio`, `Datos e informe anual (web)`, `Vite y editor de texto`, `Inicio: avisos y tareas`, `Difuntos y sufragios`, `Cartas y etiquetas (web)`, `Ficha del censo`, `Inventario y ropero (CMS)`, `Panel de hoy y avisos`, `Papeletas de la familia`?**
-  _High betweenness centrality (0.148) - this node is a cross-community bridge._
-- **What connects `Props`, `Censo`, `BotonProps` to the rest of the system?**
-  _1873 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `@mui/material` connect `Bloques: presentación` to `Constructor: bloques y borrador`, `Formularios de bloques`, `Mesa: zonas de trabajo`, `Alta y sesión del hermano`, `Alta y sesión del hermano`, `Gráficas de barras`, `Ficha del censo`, `Constructor: borrador y cabecera`, `Productos de la tienda (CMS)`, `Diálogos del ropero`, `Gráficas del Inicio`, `Tema del CMS`, `Recorrido en mapa`, `Barra de listados`, `Procesión y partida doble (CMS)`, `Contabilidad (CMS)`, `Marco del CMS y navegación`, `Tesorería y remesas (CMS)`, `Barra, menú y pie`, `Galería y visor`, `Estilo de la papeleta`, `Cliente API y formularios`, `Listados, recibos y noticias`, `Subida de fotos (CMS)`, `Perfil del hermano`, `Calendario de la agenda (CMS)`, `Datos del sitio y legal`, `Panel de hoy`, `Datos e informes`, `Páginas públicas (MUI)`, `Mesas de contenido CMS`, `Mesas de contenido CMS`, `Agenda y programa de cultos`, `Horario de misas`, `Lotería (CMS)`, `Rutas web y módulos`, `Mesa: zonas de trabajo`, `Tienda: filtros y efectos`, `Componentes comunes del CMS`, `Cabildos (web)`, `Bloque donativo y certificado`, `Dependencias del frontend`, `Retablo: fotos por tiempo`, `Informe anual`, `Mesa: zonas de trabajo`, `Agenda y programa de cultos`, `Tienda: filtros y efectos`, `Pruebas del CMS (Vitest)`, `Mesa: zonas de trabajo`, `Componentes comunes del CMS`, `Salidas, puerta y retablo`, `Tienda: filtros y efectos`, `Cartas y etiquetas (web)`, `Pruebas de Procesión`, `Salidas, puerta y retablo`, `Gráficas del Inicio`, `Cliente API y formularios`, `Inicio: cifras y gráficas`, `Router, React Query y fichas`, `Productos de la tienda (CMS)`, `Productos de la tienda (CMS)`, `Vídeos propios`, `Salidas, puerta y retablo`, `Agenda y programa de cultos`?**
+  _High betweenness centrality (0.150) - this node is a cross-community bridge._
+- **What connects `Calendario`, `ConResumen`, `Pagina` to the rest of the system?**
+  _1901 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Pruebas backend con Prisma` be split into smaller, more focused modules?**
-  _Cohesion score 0.039722669118210374 - nodes in this community are weakly interconnected._
-- **Why does `vitest` connect `Pruebas del CMS (Vitest)` to `Páginas públicas (MUI)`, `Bloques: presentación`, `Constructor: bloques y borrador`, `Pruebas del perfil`, `Pruebas de mesa y salidas`, `Alta y sesión del hermano`, `Agenda y programa de cultos`, `Preparación de pruebas web`, `Tema del CMS`, `Siembra de contenido`, `Marco del CMS y navegación`, `Alta y sesión del hermano`, `Contabilidad (CMS)`, `Componentes comunes del CMS`, `Subida de fotos (CMS)`, `Configuración de Vite`, `Procesión y partida doble (CMS)`, `Bloques: presentación`, `Tienda: filtros y efectos`, `Constructor: lista de bloques`, `Pruebas de alta y numeración`, `Recorrido en mapa`, `Datos del sitio y legal`, `Galería y visor`, `Errores de ruta y recarga`, `Salidas, puerta y retablo`, `Subida de vídeos (web)`, `Cabildos (web)`, `Subida de vídeos (web)`, `Inicio: Hoy y El año`, `Perfil del hermano`, `Gráficas del Inicio`, `Listados, recibos y noticias`, `Venta en mano`, `Retablo: fotos por tiempo`, `Pruebas de la tienda`, `Barra, menú y pie`, `Bloque carrusel`, `Pruebas de remesas`, `Pruebas de Procesión`, `Pruebas de tesorería`, `Hermanos y listas guardadas`, `Datos e informe anual (web)`, `Marco del CMS y navegación`, `Pruebas del CMS (Vitest)`, `Pruebas del CMS (Vitest)`, `Pruebas del CMS (Vitest)`, `Pruebas de inventario`, `Inicio: cifras y gráficas`, `Barra, menú y pie`, `Horario de misas`, `Inicio: Hoy y El año`, `Salidas, puerta y retablo`, `Cliente API y formularios`, `Router, React Query y fichas`, `Rutas web y módulos`, `Router, React Query y fichas`, `Pruebas del CMS (Vitest)`, `Ficha de patrimonio`, `Datos e informe anual (web)`, `Vite y editor de texto`, `Inicio: avisos y tareas`, `Panel de hoy y avisos`, `Galería de medios`, `Generador de identidad`, `Pruebas de Hazte hermano`?**
-  _High betweenness centrality (0.104) - this node is a cross-community bridge._
-- **Should `Páginas públicas (MUI)` be split into smaller, more focused modules?**
-  _Cohesion score 0.02577889447236181 - nodes in this community are weakly interconnected._
-- **Why does `react` connect `Galería y visor` to `Páginas públicas (MUI)`, `Bloques: presentación`, `Constructor: bloques y borrador`, `Alta y sesión del hermano`, `Pruebas del CMS (Vitest)`, `Mesa: zonas de trabajo`, `Agenda y programa de cultos`, `Formularios de bloques`, `Tema del CMS`, `Mesas de contenido CMS`, `Marco del CMS y navegación`, `Alta y sesión del hermano`, `Contabilidad (CMS)`, `Tesorería y remesas (CMS)`, `Componentes comunes del CMS`, `Subida de fotos (CMS)`, `Procesión y partida doble (CMS)`, `Tienda: filtros y efectos`, `Constructor: lista de bloques`, `Cliente API y formularios`, `Recorrido en mapa`, `Barra de listados`, `Datos del sitio y legal`, `Productos de la tienda (CMS)`, `Inventario y ropero (CMS)`, `Salidas, puerta y retablo`, `Calendario de la agenda (CMS)`, `Cabildos (web)`, `Perfil del hermano`, `Gráficas del Inicio`, `Listados, recibos y noticias`, `Inventario y ropero (CMS)`, `Retablo: fotos por tiempo`, `Errores de ruta y recarga`, `Barra, menú y pie`, `Lotería (CMS)`, `Hermanos y listas guardadas`, `Bloque donativo y certificado`, `Datos e informe anual (web)`, `Barra, menú y pie`, `Inicio: cifras y gráficas`, `Horario de misas`, `Inicio: Hoy y El año`, `Salidas, puerta y retablo`, `Inicio: cifras y gráficas`, `Modelo 182 (web)`, `Cliente API y formularios`, `Router, React Query y fichas`, `Rutas web y módulos`, `Inventario y ropero (CMS)`, `Ficha de patrimonio`, `Datos e informe anual (web)`, `Vite y editor de texto`, `Difuntos y sufragios`, `Cartas y etiquetas (web)`, `Ficha del censo`, `Inventario y ropero (CMS)`, `Panel de hoy y avisos`, `Galería de medios`, `Papeletas de la familia`?**
-  _High betweenness centrality (0.100) - this node is a cross-community bridge._
+  _Cohesion score 0.036467288028232736 - nodes in this community are weakly interconnected._
+- **Why does `vitest` connect `Pruebas del CMS (Vitest)` to `Constructor: bloques y borrador`, `Pruebas de Hazte hermano`, `Bloques: presentación`, `Configuración de Vite`, `Formularios de bloques`, `Alta y sesión del hermano`, `Alta y sesión del hermano`, `Gráficas de barras`, `Ficha del censo`, `Constructor: borrador y cabecera`, `Diálogos del ropero`, `Pruebas del perfil`, `Gráficas del Inicio`, `Tema del CMS`, `Recorrido en mapa`, `Preparación de pruebas web`, `Contabilidad (CMS)`, `Marco del CMS y navegación`, `Barra, menú y pie`, `Galería y visor`, `Subida de fotos (CMS)`, `Listados, recibos y noticias`, `Pruebas de alta y numeración`, `Pruebas del CMS (Vitest)`, `Perfil del hermano`, `Datos del sitio y legal`, `Panel de hoy`, `Páginas públicas (MUI)`, `Panel de hoy y avisos`, `Mesas de contenido CMS`, `Mesas de contenido CMS`, `Agenda y programa de cultos`, `Inicio: Hoy y El año`, `Horario de misas`, `Venta en mano`, `Pruebas de la tienda`, `Rutas web y módulos`, `Bloque carrusel`, `Pruebas de remesas`, `Tienda: filtros y efectos`, `Pruebas de tesorería`, `Componentes comunes del CMS`, `Pruebas del CMS (Vitest)`, `Pruebas del CMS (Vitest)`, `Pruebas del CMS (Vitest)`, `Dependencias del frontend`, `Retablo: fotos por tiempo`, `Pruebas de inventario`, `Informe anual`, `Agenda y programa de cultos`, `Componentes comunes del CMS`, `Salidas, puerta y retablo`, `Inicio: Hoy y El año`, `Pruebas del CMS (Vitest)`, `Pruebas de Procesión`, `Pruebas de mesa y salidas`, `Salidas, puerta y retablo`, `Inicio: cifras y gráficas`, `Router, React Query y fichas`, `Vídeos propios`, `Generador de identidad`?**
+  _High betweenness centrality (0.091) - this node is a cross-community bridge._
+- **Should `Constructor: bloques y borrador` be split into smaller, more focused modules?**
+  _Cohesion score 0.022125203492674262 - nodes in this community are weakly interconnected._
+- **Why does `react` connect `Galería y visor` to `Constructor: bloques y borrador`, `Pruebas del CMS (Vitest)`, `Bloques: presentación`, `Formularios de bloques`, `Mesa: zonas de trabajo`, `Alta y sesión del hermano`, `Alta y sesión del hermano`, `Gráficas de barras`, `Ficha del censo`, `Constructor: borrador y cabecera`, `Productos de la tienda (CMS)`, `Diálogos del ropero`, `Tema del CMS`, `Recorrido en mapa`, `Barra de listados`, `Procesión y partida doble (CMS)`, `Contabilidad (CMS)`, `Marco del CMS y navegación`, `Tesorería y remesas (CMS)`, `Barra, menú y pie`, `Subida de fotos (CMS)`, `Estilo de la papeleta`, `Cliente API y formularios`, `Listados, recibos y noticias`, `Pruebas del CMS (Vitest)`, `Perfil del hermano`, `Calendario de la agenda (CMS)`, `Datos del sitio y legal`, `Panel de hoy`, `Datos e informes`, `Páginas públicas (MUI)`, `Mesas de contenido CMS`, `Mesas de contenido CMS`, `Agenda y programa de cultos`, `Horario de misas`, `Lotería (CMS)`, `Rutas web y módulos`, `Mesa: zonas de trabajo`, `Tienda: filtros y efectos`, `Componentes comunes del CMS`, `Cabildos (web)`, `Bloque donativo y certificado`, `Dependencias del frontend`, `Retablo: fotos por tiempo`, `Informe anual`, `Mesa: zonas de trabajo`, `Agenda y programa de cultos`, `Tienda: filtros y efectos`, `Mesa: zonas de trabajo`, `Componentes comunes del CMS`, `Salidas, puerta y retablo`, `Cartas y etiquetas (web)`, `Salidas, puerta y retablo`, `Gráficas del Inicio`, `Cliente API y formularios`, `Inicio: cifras y gráficas`, `Productos de la tienda (CMS)`, `Productos de la tienda (CMS)`, `Vídeos propios`, `Salidas, puerta y retablo`, `Agenda y programa de cultos`?**
+  _High betweenness centrality (0.080) - this node is a cross-community bridge._
