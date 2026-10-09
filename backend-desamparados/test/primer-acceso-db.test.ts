@@ -1,7 +1,8 @@
 // El primer acceso del censo importado contra MariaDB: la invitación sale por
 // correo y queda apuntada; su enlace saluda sin gastarse, pone la contraseña y
-// abre la sesión de una vez, y no vale dos veces; confirmar exige el
-// parentesco de las fichas a cargo y quita la marca para siempre; «no es de
+// abre la sesión de una vez, y no vale dos veces; confirmar exige los
+// obligatorios de cada ficha y el parentesco de las fichas a cargo, y quita la
+// marca para siempre; «no es de
 // mi familia» devuelve la ficha a la custodia con un aviso para Secretaría. Y
 // las rutas: el listado y las invitaciones son de quien lleva el censo.
 
@@ -9,7 +10,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import app from '../src/app.js';
 import db from '../src/config/db.js';
 import { generateToken } from '../src/utils/jwt.handle.js';
@@ -47,18 +48,21 @@ after(async () => {
 
 const CONTRASENA = 'Trono-Alameda-84-Verde';
 
-/** Una cuenta como las que deja el importador: sin contraseña útil, con su ficha y una hija colgada sin parentesco. */
+/** Una cuenta como las que deja el importador: sin contraseña útil, con su ficha completa y una hija colgada sin parentesco. */
 async function escenario() {
   const staff = await crearUsuarioPrueba(Role.SECRETARIA);
   const cuenta = await crearUsuarioPrueba(Role.USER);
   await db.user.update({ where: { id: cuenta.id }, data: { primerAccesoPendiente: true, nombre: 'Antonio', apellidos: 'Ruiz Montes' } });
-  const ficha = (datos: { nombre: string; esTitular: boolean }) => db.hermano.create({
+  const ficha = (datos: { nombre: string; esTitular: boolean } & Partial<Prisma.HermanoUncheckedCreateInput>) => db.hermano.create({
     data: {
       userId: cuenta.id, apellidos: 'Ruiz Montes', fechaNacimiento: new Date(Date.UTC(1980, 0, 1)),
       email: cuenta.email, telefono: '600000000', direccion: 'Calle Lagunillas 34', activo: true, sexo: 'HOMBRE', ...datos,
     },
   });
-  const titular = await ficha({ nombre: 'Antonio', esTitular: true });
+  const titular = await ficha({
+    nombre: 'Antonio', esTitular: true, primerApellido: 'Ruiz', dni: cuenta.dni, estadoCivil: 'CASADO',
+    fechaBautismo: new Date(Date.UTC(1980, 2, 1)), codigoPostal: '29012', poblacion: 'Málaga',
+  });
   const hija = await ficha({ nombre: 'Lucía', esTitular: false });
   const custodiaAntes = await db.user.findUnique({ where: { email: CUENTA_CENSO_IMPORTADO.email }, select: { id: true } });
   const recoger = async () => {
@@ -124,10 +128,17 @@ test('la invitación sale por correo y su enlace pone la contraseña y abre la s
   }
 });
 
-test('confirmar pide el parentesco de las fichas a cargo y quita la marca para siempre', async (t) => {
+test('confirmar pide los obligatorios y el parentesco de las fichas a cargo, y quita la marca para siempre', async (t) => {
   if (!dbDisponible) { t.skip(SIN_DB); return; }
   const e = await escenario();
   try {
+    // Lo que el Excel no traía no se da por bueno: hay que rellenarlo.
+    await db.hermano.update({ where: { id: e.titular.id }, data: { telefono: null, estadoCivil: null } });
+    const incompleta = await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: e.sesionHermano });
+    assert.equal(incompleta.status, 409);
+    assert.match((await incompleta.json() as { error: string }).error, /tu ficha: estado civil y teléfono móvil/);
+    await db.hermano.update({ where: { id: e.titular.id }, data: { telefono: '600000000', estadoCivil: 'CASADO' } });
+
     const sinParentesco = await pedir('/api/hermanos/primer-acceso/confirmar', { metodo: 'POST', cookie: e.sesionHermano });
     assert.equal(sinParentesco.status, 409);
     assert.match((await sinParentesco.json() as { error: string }).error, /Lucía/);

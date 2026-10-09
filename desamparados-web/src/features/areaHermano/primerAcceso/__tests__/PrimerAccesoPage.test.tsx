@@ -23,7 +23,6 @@ describe('PrimerAccesoPage', () => {
     expect(await screen.findByRole('heading', { name: 'Te damos la bienvenida, Antonio' })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: /Tu correo/ })).toHaveValue('antonio@ejemplo.test')
     await usuario.type(screen.getByLabelText('Crea tu contraseña'), 'Trono-Alameda-84-Verde')
-    await usuario.type(screen.getByLabelText('Repítela'), 'Trono-Alameda-84-Verde')
     await usuario.click(screen.getByRole('button', { name: 'Empezar' }))
 
     await waitFor(() => expect(useAuthStore.getState().hermano?.id).toBe(7))

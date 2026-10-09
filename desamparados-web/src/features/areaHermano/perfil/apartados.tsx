@@ -327,6 +327,9 @@ export function CuotaYPago({ ficha, onGuardada, revision }: PropsApartado) {
     (v) => {
       if (v.iban.trim() && !esIbanValido(v.iban)) return 'Revisa el IBAN: los dígitos de control no cuadran.'
       if (v.formaPagoPref === 'DOMICILIACION' && !v.iban.trim() && !ficha.ibanEnmascarado) return 'Para domiciliar los recibos hace falta el IBAN de la cuenta.'
+      // En el primer acceso se pide como en el alta (el banco necesita saber si
+      // la cuenta es suya o de otro); «Mi perfil» sigue dejándolo sin indicar.
+      if (revision && v.formaPagoPref === 'DOMICILIACION' && !v.titularidadCuenta) return 'Di de quién es la cuenta.'
       if (/[<>]/.test(v.titularCuenta)) return 'El titular no puede llevar «<» ni «>».'
       if (v.titularidadCuenta && v.titularidadCuenta !== 'PROPIA' && !v.titularCuenta.trim()) return 'Escribe el nombre del titular de la cuenta.'
       return null

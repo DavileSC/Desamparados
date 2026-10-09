@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -9,12 +10,15 @@ import Boton from '../../../components/Boton'
 import CampoContrasena from '../../../components/CampoContrasena'
 import { datosInvitacion, estrenarCuenta } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
-import { resetPasswordSchema, type ResetPasswordFormData } from '../../altas/auth/schema'
+import { contrasenaNueva } from '../../../lib/politicaDeContrasena'
 import { useAuthStore } from '../../altas/auth/store'
 import { laCorporacion, mayuscula } from '../../../domain/articulos'
 import { site } from '../../../config/site'
 
 const ENLACE = /^[a-f0-9]{64}$/i
+
+const contrasenaSchema = z.object({ password: contrasenaNueva })
+type ContrasenaFormData = z.infer<typeof contrasenaSchema>
 
 /**
  * Adonde lleva el correo de la invitación del censo importado. Saluda por el
@@ -37,12 +41,12 @@ export default function PrimerAccesoPage() {
     staleTime: Infinity,
   })
 
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { password: '', confirmation: '' },
+  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<ContrasenaFormData>({
+    resolver: zodResolver(contrasenaSchema),
+    defaultValues: { password: '' },
   })
 
-  const empezar = async (datos: ResetPasswordFormData) => {
+  const empezar = async (datos: ContrasenaFormData) => {
     try {
       const { user } = await estrenarCuenta(token, datos.password, false)
       entrarSesion('hermanos', user)
@@ -82,15 +86,16 @@ export default function PrimerAccesoPage() {
               <Typography sx={{ color: 'text.secondary', mt: 1.5 }}>
                 {mayuscula(laCorporacion())} ha pasado el censo a la web y ya tienes tu cuenta en el área de hermanos.
                 Antes de entrar, crea tu contraseña y comprueba que tus datos están bien: los tuyos y los de los familiares
-                que figuran con tu correo. Son unos minutos.
+                que figuran con tu correo. Es un par de minutos: solo tendrás que rellenar lo que falte.
               </Typography>
             </Box>
 
             <Box component="form" noValidate onSubmit={handleSubmit(empezar)} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* El usuario del gestor de contraseñas: así guarda la nueva con su correo. */}
               <TextField label="Tu correo (con él entrarás)" value={invitacion.data?.email ?? ''} autoComplete="username" slotProps={{ input: { readOnly: true }, inputLabel: { shrink: true } }} fullWidth />
-              <CampoContrasena label="Crea tu contraseña" autoComplete="new-password" fullWidth error={!!errors.password} helperText={errors.password?.message} {...register('password')} />
-              <CampoContrasena label="Repítela" autoComplete="new-password" fullWidth error={!!errors.confirmation} helperText={errors.confirmation?.message} {...register('confirmation')} />
+              {/* Sin «Repítela»: el ojo del campo deja ver lo escrito, y una
+                  segunda casilla era un paso más en una entrada que ya es larga. */}
+              <CampoContrasena label="Crea tu contraseña" autoComplete="new-password" fullWidth error={!!errors.password} helperText={errors.password?.message ?? 'Pulsa el ojo para ver lo que escribes.'} {...register('password')} />
               {errors.root?.message && <Alert severity="error">{errors.root.message}</Alert>}
               <Boton type="submit" fullWidth disabled={isSubmitting || !invitacion.data}>Empezar</Boton>
             </Box>

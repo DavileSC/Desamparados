@@ -14,48 +14,67 @@ import { ErrorDeApi } from '../../../lib/api/cliente'
 import { useAuthStore } from '../../altas/auth/store'
 import { cerrarSesion } from '../../altas/auth/session'
 import { useModulos } from '../../../hooks/useModulos'
-import { Contacto, CuotaYPago, DatosPersonales, VidaCofrade, type Revision } from '../perfil/apartados'
-import { aDia } from '../perfil/etiquetas'
-import { aniosCumplidos } from '../../altas/public/schema'
+import { CuotaYPago, type Revision } from '../perfil/apartados'
 import { deLaCorporacion } from '../../../domain/articulos'
 import { designTokens } from '../../../theme'
 import { site } from '../../../config/site'
+import PasoTusDatos from './PasoTusDatos'
+import PasoFamilia from './PasoFamilia'
+import { enUnaFrase, faltanDeLaCuota } from './obligatorios'
 
-type ClaveApartado = 'personales' | 'contacto' | 'vida' | 'cuota'
+type ClavePaso = 'datos' | 'cuota' | 'familia' | 'confirmar'
 
-type Paso =
-  | { tipo: 'apartado'; clave: ClaveApartado; titulo: string; texto: string }
-  | { tipo: 'familiar'; fichaId: number }
-  | { tipo: 'confirmar' }
-
-const APARTADOS: Record<ClaveApartado, { titulo: string; texto: string; Componente: typeof DatosPersonales }> = {
-  personales: { titulo: 'Datos personales', texto: 'Tu nombre, tu DNI y tu fecha de nacimiento, como figuran en el censo.', Componente: DatosPersonales },
-  contacto: { titulo: 'Contacto y domicilio', texto: 'Comprueba que podemos localizarte.', Componente: Contacto },
-  vida: { titulo: 'Vida cofrade', texto: 'Tu bautismo. Número, alta y jura los lleva Secretaría.', Componente: VidaCofrade },
-  cuota: { titulo: 'Cuota y pago', texto: 'Cómo pagas tu cuota y, si la tienes domiciliada, en qué cuenta.', Componente: CuotaYPago },
-}
+const TITULO: Record<ClavePaso, string> = { datos: 'Tus datos', cuota: 'Cuota y pago', familia: 'Tu familia', confirmar: 'Confirmar' }
 
 const nombreCompleto = (f: ApiProfile) => `${f.nombre} ${f.apellidos}`.trim()
 
+interface Avance { actual: number; alcanzado: number }
+
+/** Dónde se quedó, por cuenta: «Salir» promete que la próxima vez sigue aquí. */
+const claveGuardada = (cuenta: number | undefined) => `primer-acceso:${cuenta ?? 'sin-cuenta'}`
+
+function leerAvance(cuenta: number | undefined): Avance | null {
+  try {
+    const crudo = window.localStorage.getItem(claveGuardada(cuenta))
+    const avance = crudo ? (JSON.parse(crudo) as Partial<Avance>) : null
+    return avance && typeof avance.actual === 'number' && typeof avance.alcanzado === 'number' ? { actual: avance.actual, alcanzado: avance.alcanzado } : null
+  } catch {
+    return null
+  }
+}
+
+function guardarAvance(cuenta: number | undefined, avance: Avance | null) {
+  try {
+    if (avance) window.localStorage.setItem(claveGuardada(cuenta), JSON.stringify(avance))
+    else window.localStorage.removeItem(claveGuardada(cuenta))
+  } catch {
+    // Sin almacenamiento (ventana privada) vuelve a empezar, y no pierde nada:
+    // lo que guardó ya está en su ficha.
+  }
+}
+
 /**
- * La revisión del primer acceso de quien vino con el censo importado. Un paso
- * por apartado de su ficha, uno por cada familiar que cuelga de su cuenta y
- * el repaso final. Cada paso se lee como una ficha: «Sí, es correcto» pasa
- * al siguiente; «Hay algo que cambiar» abre sus campos (los mismos de «Mi
- * perfil», que guardan en el acto). Hasta confirmar no se ve nada más del área.
+ * La revisión del primer acceso de quien vino con el censo importado, en
+ * cuatro pasos como mucho: sus datos en una sola ficha, la cuota, toda su
+ * familia en una pantalla y la confirmación. Lo obligatorio que falta (lo
+ * mismo que pide el alta, en `obligatorios.ts`) se rellena antes de seguir;
+ * lo opcional queda a su elección. Hasta confirmar no se ve nada más del área.
  */
 export default function RevisarFichaPage() {
   const { activo } = useModulos()
   const navigate = useNavigate()
   const hermano = useAuthStore((s) => s.hermano)
   const entrarSesion = useAuthStore((s) => s.entrarSesion)
+  const conCuotas = activo('cuotas-en-linea')
 
   const [fichas, setFichas] = useState<ApiProfile[] | null>(null)
   const [errorCarga, setErrorCarga] = useState<string | null>(null)
   const [actual, setActual] = useState(0)
   // Hasta dónde ha llegado: el índice deja volver a cualquier paso ya visto.
   const [alcanzado, setAlcanzado] = useState(0)
-  const [cambiando, setCambiando] = useState(false)
+  const [cambiandoCuota, setCambiandoCuota] = useState(false)
+  // Cada guardado vuelve a montar la cuota: si sigue faltando algo, se abre otra vez.
+  const [vueltaCuota, setVueltaCuota] = useState(0)
   const [cambiados, setCambiados] = useState<Set<string>>(new Set())
   const [porDevolver, setPorDevolver] = useState<ApiProfile | null>(null)
   const [errorPaso, setErrorPaso] = useState<string | null>(null)
@@ -63,45 +82,49 @@ export default function RevisarFichaPage() {
   const [confirmando, setConfirmando] = useState(false)
   const [hecho, setHecho] = useState(false)
 
+  const cuenta = hermano?.id
   useEffect(() => {
     let cancelado = false
     misFichas()
-      .then((r) => { if (!cancelado) setFichas(r.data.filter((f) => f.activo)) })
+      .then((r) => {
+        if (cancelado) return
+        setFichas(r.data.filter((f) => f.activo))
+        const avance = leerAvance(cuenta)
+        if (avance) { setActual(avance.actual); setAlcanzado(avance.alcanzado) }
+      })
       .catch((e: unknown) => { if (!cancelado) setErrorCarga(e instanceof Error ? e.message : 'No se ha podido cargar tu ficha.') })
     return () => { cancelado = true }
-  }, [])
+  }, [cuenta])
+
+  useEffect(() => {
+    if (fichas && !hecho) guardarAvance(cuenta, { actual, alcanzado })
+  }, [fichas, hecho, actual, alcanzado, cuenta])
 
   const titular = fichas?.find((f) => f.esTitular) ?? null
   const familia = (fichas ?? []).filter((f) => !f.esTitular).sort((a, b) => a.fechaNacimiento.localeCompare(b.fechaNacimiento))
-  const pasos: Paso[] = [
-    ...(titular ? (['personales', 'contacto', ...(activo('procesion') ? ['vida' as const] : []), ...(activo('cuotas-en-linea') ? ['cuota' as const] : [])] as ClaveApartado[])
-      .map((clave): Paso => ({ tipo: 'apartado', clave, ...APARTADOS[clave] })) : []),
-    ...familia.map((f): Paso => ({ tipo: 'familiar', fichaId: f.id })),
-    { tipo: 'confirmar' },
+  const pasos: ClavePaso[] = [
+    ...(titular ? (['datos', ...(conCuotas ? ['cuota'] : [])] as ClavePaso[]) : []),
+    ...(familia.length > 0 ? (['familia'] as ClavePaso[]) : []),
+    'confirmar',
   ]
-  const paso = pasos[Math.min(actual, pasos.length - 1)]
-  const claveDe = (p: Paso) => (p.tipo === 'apartado' ? p.clave : p.tipo === 'familiar' ? `ficha-${p.fichaId}` : 'confirmar')
-  const etiquetaDe = (p: Paso) => {
-    if (p.tipo === 'apartado') return p.titulo
-    if (p.tipo === 'confirmar') return 'Confirmar'
-    const f = familia.find((x) => x.id === p.fichaId)
-    return f ? `${f.nombre}${f.numeroHermano ? ` · n.º ${f.numeroHermano}` : ''}` : ''
-  }
+  // Lo guardado puede apuntar más allá si desde entonces se fue alguien de la familia.
+  const indice = Math.min(actual, pasos.length - 1)
+  const paso = pasos[indice]
+  const etiquetaDe = (p: ClavePaso) => (p === 'familia' ? `${TITULO.familia} · ${familia.length}` : TITULO[p])
 
-  const ir = (i: number) => { setActual(i); setCambiando(false); setErrorPaso(null); window.scrollTo({ top: 0 }) }
-  const siguiente = () => { const i = actual + 1; setAlcanzado((a) => Math.max(a, i)); ir(i) }
+  const ir = (i: number) => { setActual(i); setCambiandoCuota(false); setErrorPaso(null); window.scrollTo({ top: 0 }) }
+  const siguiente = () => { const i = indice + 1; setAlcanzado((a) => Math.max(a, i)); ir(i) }
   const guardada = (nueva: ApiProfile) => {
     setFichas((actuales) => actuales?.map((f) => (f.id === nueva.id ? nueva : f)) ?? actuales)
-    setCambiados((c) => new Set(c).add(claveDe(paso)))
+    setCambiados((c) => new Set(c).add(nueva.esTitular ? paso : `ficha-${nueva.id}`))
   }
 
   const devolver = async (ficha: ApiProfile) => {
     setPorDevolver(null)
     try {
       await devolverFichaAjena(ficha.id)
-      // El paso desaparece y el índice se queda donde estaba: ahora apunta al siguiente.
+      // Si era la única, el paso de la familia desaparece y el índice apunta ya al siguiente.
       setFichas((actuales) => actuales?.filter((f) => f.id !== ficha.id) ?? actuales)
-      setAlcanzado((a) => Math.max(a - 1, actual))
     } catch (e) {
       setErrorPaso(e instanceof ErrorDeApi ? e.message : 'No se ha podido avisar a Secretaría.')
     }
@@ -111,6 +134,7 @@ export default function RevisarFichaPage() {
     setConfirmando(true); setErrorPaso(null)
     try {
       await confirmarFicha()
+      guardarAvance(cuenta, null)
       setHecho(true)
     } catch (e) {
       setErrorPaso(e instanceof ErrorDeApi ? e.message : 'No se ha podido confirmar. Inténtalo otra vez.')
@@ -126,6 +150,7 @@ export default function RevisarFichaPage() {
     navigate('/area-hermano', { replace: true })
   }
 
+  const antetitulo = `Paso ${indice + 1} de ${pasos.length}`
   let contenido: ReactNode
   if (errorCarga) {
     contenido = <Alert severity="error">{errorCarga}</Alert>
@@ -142,55 +167,51 @@ export default function RevisarFichaPage() {
         <Boton onClick={irAlArea}>Ir a mi área</Boton>
       </Box>
     )
-  } else if (paso.tipo === 'apartado') {
-    const { Componente } = APARTADOS[paso.clave]
-    const revision: Revision = { sinLapiz: true, tituloOculto: true, editando: cambiando, alTerminar: () => setCambiando(false) }
+  } else if (paso === 'datos' && titular) {
     contenido = (
       <>
-        <Encabezado antetitulo={`Paso ${actual + 1} de ${pasos.length}`} titulo={paso.titulo} texto={cambiando ? 'Cambia lo que no esté bien y guarda.' : paso.texto} />
-        {titular && <Componente key={`${paso.clave}-${cambiando}`} ficha={titular} onGuardada={guardada} revision={revision} />}
-        {!cambiando && <Pregunta onSi={siguiente} onCambiar={() => setCambiando(true)} cambiado={cambiados.has(paso.clave)} />}
+        <Encabezado antetitulo={antetitulo} titulo={TITULO.datos} texto="Así figuras en el censo. Si está bien, sigue; si algo no, lo cambias aquí mismo." />
+        <PasoTusDatos ficha={titular} onGuardada={guardada} onSi={siguiente} cambiado={cambiados.has('datos')} />
       </>
     )
-  } else if (paso.tipo === 'familiar') {
-    const ficha = familia.find((f) => f.id === paso.fichaId)!
-    const indice = familia.indexOf(ficha)
-    const sinParentesco = !ficha.parentesco
-    // Lo que el censo no traía: sin decir qué es para el titular, no se confirma.
-    const revisionPersonales: Revision = { editando: sinParentesco }
+  } else if (paso === 'cuota' && titular) {
+    const faltan = faltanDeLaCuota(titular)
+    const editando = cambiandoCuota || faltan.length > 0
+    const revision: Revision = { sinLapiz: true, tituloOculto: true, editando, alTerminar: () => { setCambiandoCuota(false); setVueltaCuota((v) => v + 1) } }
+    contenido = (
+      <>
+        <Encabezado antetitulo={antetitulo} titulo={TITULO.cuota} texto={editando ? 'Cambia lo que no esté bien y guarda.' : 'Cómo pagas tu cuota y, si la tienes domiciliada, en qué cuenta.'} />
+        {faltan.length > 0 && <Alert severity="warning">Para domiciliar la cuota nos falta: {enUnaFrase(faltan)}.</Alert>}
+        <CuotaYPago key={`cuota-${vueltaCuota}-${editando}`} ficha={titular} onGuardada={guardada} revision={revision} />
+        {!editando && <Pregunta onSi={siguiente} onCambiar={() => setCambiandoCuota(true)} cambiado={cambiados.has('cuota')} />}
+      </>
+    )
+  } else if (paso === 'familia') {
+    const uno = familia.length === 1
     contenido = (
       <>
         <Encabezado
-          antetitulo={`Tu familia · ${indice + 1} de ${familia.length}`}
-          titulo={nombreCompleto(ficha)}
-          texto={`Su ficha está en tu cuenta porque en el censo ${deLaCorporacion()} figuraba con tu correo${ficha.numeroHermano ? ` (n.º ${ficha.numeroHermano}, ${aniosCumplidos(aDia(ficha.fechaNacimiento))} años)` : ''}. Revisa sus datos y cambia con el lápiz lo que no esté bien.`}
+          antetitulo={antetitulo}
+          titulo={TITULO.familia}
+          texto={`${uno ? 'Está en tu cuenta porque en el censo figuraba' : 'Están en tu cuenta porque en el censo figuraban'} con tu correo. Dinos qué ${uno ? 'es' : 'es cada uno'} para ti y echa un vistazo a sus datos.`}
         />
-        <Box key={ficha.id} sx={{ display: 'grid', gap: 2.5 }}>
-          <DatosPersonales ficha={ficha} onGuardada={guardada} revision={revisionPersonales} />
-          <Contacto ficha={ficha} onGuardada={guardada} />
-          {activo('cuotas-en-linea') && <CuotaYPago ficha={ficha} onGuardada={guardada} />}
-        </Box>
-        {sinParentesco && <Alert severity="warning">Falta decir qué es {ficha.nombre} para ti: elígelo en «Datos personales» y guarda.</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          <Typography component="p" sx={{ fontSize: 18, fontWeight: 600 }}>¿Está todo bien?</Typography>
-          <Boton onClick={siguiente} disabled={sinParentesco} sx={{ alignSelf: { sm: 'flex-start' }, py: 1.75, px: 4 }}>Sí, es correcto</Boton>
-          <Button onClick={() => setPorDevolver(ficha)} sx={{ alignSelf: 'flex-start', color: 'text.secondary', textTransform: 'none', letterSpacing: 0, fontSize: 15, px: 0.5 }}>
-            No es de mi familia: avisar a Secretaría
-          </Button>
-        </Box>
+        <PasoFamilia familia={familia} titular={titular} conCuotas={conCuotas} onGuardada={guardada} onDevolver={setPorDevolver} onSeguir={siguiente} />
       </>
     )
   } else {
-    const revisados = pasos.filter((p) => p.tipo !== 'confirmar')
+    const revisados = [
+      ...pasos.filter((p) => p === 'datos' || p === 'cuota').map((p) => ({ clave: p as string, etiqueta: TITULO[p] })),
+      ...familia.map((f) => ({ clave: `ficha-${f.id}`, etiqueta: `${f.nombre}${f.numeroHermano ? ` · n.º ${f.numeroHermano}` : ''}` })),
+    ]
     contenido = (
       <>
-        <Encabezado antetitulo={`Paso ${actual + 1} de ${pasos.length}`} titulo="Repaso final" texto="Esto es lo que has revisado. Si todo está bien, confirma tu ficha y entrarás en tu área." />
+        <Encabezado antetitulo={antetitulo} titulo="Repaso final" texto="Esto es lo que has revisado. Si todo está bien, confirma y entrarás en tu área." />
         <TarjetaCristal component="ul" aria-label="Lo que has revisado" sx={{ m: 0, p: 0, listStyle: 'none' }}>
-          {revisados.map((p, i) => {
-            const cambiado = cambiados.has(claveDe(p))
+          {revisados.map(({ clave, etiqueta }, i) => {
+            const cambiado = cambiados.has(clave)
             return (
-              <Box component="li" key={claveDe(p)} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, px: { xs: 2, md: 3 }, py: 1.75, borderTop: i ? 1 : 0, borderColor: 'divider' }}>
-                <Box component="span">{etiquetaDe(p)}</Box>
+              <Box component="li" key={clave} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, px: { xs: 2, md: 3 }, py: 1.75, borderTop: i ? 1 : 0, borderColor: 'divider' }}>
+                <Box component="span">{etiqueta}</Box>
                 <Box component="span" sx={{ fontSize: 14, fontWeight: 600, color: cambiado ? 'warning.light' : 'success.light' }}>{cambiado ? 'Cambiado' : 'Sin cambios'}</Box>
               </Box>
             )
@@ -233,7 +254,7 @@ export default function RevisarFichaPage() {
         {mostrarIndice && (
           <Box aria-hidden="true" sx={{ display: { xs: 'flex', md: 'none' }, gap: 0.75, px: 2, pt: 2 }}>
             {pasos.map((p, i) => (
-              <Box key={claveDe(p)} sx={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i === actual ? 'secondary.main' : i < alcanzado ? 'success.main' : 'rgba(204,196,201,0.16)' }} />
+              <Box key={p} sx={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i === indice ? 'secondary.main' : i < alcanzado ? 'success.main' : 'rgba(204,196,201,0.16)' }} />
             ))}
           </Box>
         )}
@@ -248,12 +269,12 @@ export default function RevisarFichaPage() {
                 <ItemIndice numero={0} etiqueta="Tu contraseña" hecho actual={false} />
                 {pasos.map((p, i) => (
                   <ItemIndice
-                    key={claveDe(p)}
+                    key={p}
                     numero={i + 1}
                     etiqueta={etiquetaDe(p)}
-                    hecho={i < alcanzado && i !== actual}
-                    actual={i === actual}
-                    onClick={i <= alcanzado && i !== actual ? () => ir(i) : undefined}
+                    hecho={i < alcanzado && i !== indice}
+                    actual={i === indice}
+                    onClick={i <= alcanzado && i !== indice ? () => ir(i) : undefined}
                   />
                 ))}
               </Box>
@@ -265,8 +286,8 @@ export default function RevisarFichaPage() {
           <Box component="main" sx={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, maxWidth: 760 }}>
             {errorPaso && <Alert severity="error">{errorPaso}</Alert>}
             {contenido}
-            {mostrarIndice && actual > 0 && !cambiando && (
-              <Button onClick={() => ir(actual - 1)} sx={{ alignSelf: 'flex-start', color: 'text.secondary', textTransform: 'none', letterSpacing: 0, fontSize: 15, px: 0.5 }}>
+            {mostrarIndice && indice > 0 && !cambiandoCuota && (
+              <Button onClick={() => ir(indice - 1)} sx={{ alignSelf: 'flex-start', color: 'text.secondary', textTransform: 'none', letterSpacing: 0, fontSize: 15, px: 0.5 }}>
                 ← Atrás
               </Button>
             )}

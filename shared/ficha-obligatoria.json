@@ -1,0 +1,36 @@
+{
+  "titular": [
+    { "campo": "nombre", "etiqueta": "Nombre", "tipo": "texto" },
+    { "campo": "primerApellido", "etiqueta": "Primer apellido", "tipo": "texto" },
+    { "campo": "dni", "etiqueta": "DNI o NIE", "tipo": "dni" },
+    { "campo": "fechaNacimiento", "etiqueta": "Fecha de nacimiento", "tipo": "fecha" },
+    { "campo": "sexo", "etiqueta": "Sexo", "tipo": "sexo" },
+    { "campo": "estadoCivil", "etiqueta": "Estado civil", "tipo": "estadoCivil" },
+    { "campo": "email", "etiqueta": "Correo electrónico", "tipo": "correo" },
+    { "campo": "telefono", "etiqueta": "Teléfono móvil", "tipo": "telefono" },
+    { "campo": "direccion", "etiqueta": "Dirección", "tipo": "texto" },
+    { "campo": "codigoPostal", "etiqueta": "Código postal", "tipo": "codigoPostal" },
+    { "campo": "poblacion", "etiqueta": "Localidad", "tipo": "texto" }
+  ],
+  "familiar": [
+    { "campo": "nombre", "etiqueta": "Nombre", "tipo": "texto" },
+    { "campo": "primerApellido", "etiqueta": "Primer apellido", "tipo": "texto" },
+    { "campo": "fechaNacimiento", "etiqueta": "Fecha de nacimiento", "tipo": "fecha" },
+    { "campo": "parentesco", "etiqueta": "Qué es para ti", "tipo": "parentesco" }
+  ],
+  "domiciliacion": [
+    { "campo": "iban", "etiqueta": "IBAN de la cuenta", "tipo": "iban" },
+    { "campo": "titularidadCuenta", "etiqueta": "De quién es la cuenta", "tipo": "titularidad" }
+  ],
+  "opcionalesDelTitular": [
+    { "campo": "segundoApellido", "etiqueta": "Segundo apellido", "tipo": "texto" },
+    { "campo": "lugarNacimiento", "etiqueta": "Natural de", "tipo": "texto" },
+    { "campo": "profesion", "etiqueta": "Profesión", "tipo": "texto" },
+    { "campo": "fechaBautismo", "etiqueta": "Fecha de bautismo", "tipo": "fecha" },
+    { "campo": "lugarBautismo", "etiqueta": "Bautizado/a en", "tipo": "texto" },
+    { "campo": "parroquiaBautismo", "etiqueta": "Parroquia de bautismo", "tipo": "texto" },
+    { "campo": "telefonoFijo", "etiqueta": "Teléfono fijo", "tipo": "telefono" },
+    { "campo": "email2", "etiqueta": "Segundo correo", "tipo": "correo" },
+    { "campo": "provincia", "etiqueta": "Provincia", "tipo": "texto" }
+  ]
+}

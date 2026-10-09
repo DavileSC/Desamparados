@@ -17,6 +17,7 @@ import db from '../config/db';
 import { HttpError, NotFoundError } from '../utils/error.handle';
 import { generateToken } from '../utils/jwt.handle.js';
 import { respuestaPaginada, sanearPaginacion } from '../domain/paginacion.js';
+import { enUnaFrase, faltanEnLaFicha } from '../domain/ficha-obligatoria.js';
 import { AuditoriaService, ACCIONES_AUDITORIA, type MetaDeAuditoria } from './auditoria.service.js';
 import { AreaHermanosApagadaError, AuthService } from './auth.service.js';
 import { cuentaDeCustodia } from './censo-hoja.service.js';
@@ -187,19 +188,37 @@ export class PrimerAccesoService {
   // --- El hermano ---------------------------------------------------------------
 
   /**
-   * Da la ficha por revisada. Las de quien cuelga de la cuenta tienen que
-   * decir qué es para el titular: el censo de antes no lo traía.
+   * Da la ficha por revisada. Ninguna se confirma con un obligatorio vacío
+   * (los del alta, más qué es para el titular cada ficha que cuelga de su
+   * cuenta, que el censo de antes no traía): el importador deja en blanco lo
+   * que el Excel no tenía, y confirmar es justo lo que lo arregla.
    */
   static async confirmar(userId: number, meta: MetaDeAuditoria) {
     const cuenta = await db.user.findUnique({
       where: { id: userId },
-      select: { primerAccesoPendiente: true, hermanos: { where: { activo: true }, select: { nombre: true, esTitular: true, parentesco: true } } },
+      select: {
+        primerAccesoPendiente: true,
+        hermanos: {
+          where: { activo: true },
+          select: {
+            esTitular: true, nombre: true, apellidos: true, primerApellido: true, dni: true, fechaNacimiento: true,
+            sexo: true, estadoCivil: true, fechaBautismo: true, email: true, telefono: true, direccion: true,
+            codigoPostal: true, poblacion: true, parentesco: true,
+            formaPagoPref: true, iban: true, titularidadCuenta: true, titularCuenta: true,
+          },
+        },
+      },
     });
     if (!cuenta) throw new NotFoundError('Cuenta no encontrada.');
     // Dos pestañas, o volver atrás: ya estaba hecho y el resultado es el mismo.
     if (!cuenta.primerAccesoPendiente) return { confirmada: true };
-    const sinParentesco = cuenta.hermanos.find((h) => !h.esTitular && !h.parentesco);
-    if (sinParentesco) throw new HttpError(`Falta decir qué es ${sinParentesco.nombre} para ti.`, 409);
+    const conCuotas = await ModulosService.activo('cuotas-en-linea');
+    for (const ficha of cuenta.hermanos) {
+      const faltan = faltanEnLaFicha(ficha, conCuotas);
+      if (faltan.length === 0) continue;
+      const de = ficha.esTitular ? 'tu ficha' : `la ficha de ${ficha.nombre}`;
+      throw new HttpError(`Faltan datos obligatorios en ${de}: ${enUnaFrase(faltan)}.`, 409);
+    }
 
     await db.user.update({ where: { id: userId }, data: { primerAccesoPendiente: false, fichaConfirmadaEn: new Date() } });
     await AuditoriaService.log(ACCIONES_AUDITORIA.PRIMER_ACCESO_CONFIRMAR, meta, 'user', userId, { fichas: cuenta.hermanos.length });
