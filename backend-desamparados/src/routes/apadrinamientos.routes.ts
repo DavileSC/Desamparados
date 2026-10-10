@@ -13,7 +13,6 @@ const apadrinamientosRoutes = Router();
 // ver el propio apadrinamiento con su enlace. Apadrinar va con el limitador de
 // las compras de la tienda: apunta un pago y manda un correo.
 apadrinamientosRoutes.get('/', C.campanasPublicas);
-apadrinamientosRoutes.get('/campanas/:id', validate(campanaIdSchema), C.campanaPublica);
 apadrinamientosRoutes.post('/', limitadorCompras, validate(apadrinarSchema), C.apadrinar);
 apadrinamientosRoutes.get('/gracias/:token', validate(tokenApadrinamientoSchema), C.apadrinamiento);
 

@@ -108,8 +108,8 @@ describe('permisos del Hermano Mayor', () => {
   test('entra en contabilidad', async (t) => {
     if (!dbDisponible) return t.skip(SIN_DB);
     // /api/transacciones (la raíz del router) no tiene GET propio y da 404
-    // pase lo que pase con el rol; /balance sí existe (transaccion.routes.ts:23).
-    const res = await como('HERMANO_MAYOR', '/api/transacciones/balance');
+    // pase lo que pase con el rol; /categorias sí existe.
+    const res = await como('HERMANO_MAYOR', '/api/transacciones/categorias');
     assert.ok(res.status !== 401 && res.status !== 403 && res.status !== 404, `recibió ${res.status}`);
   });
 

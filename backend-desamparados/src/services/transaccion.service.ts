@@ -417,32 +417,4 @@ export class TransaccionService {
         .sort((a, b) => b.total - a.total),
     };
   }
-
-  // 3. LA JOYA DE LA CORONA: EL BALANCE GENERAL
-  static async getBalance() {
-    // Agrupamos y sumamos todos los importes, separados por INGRESO y GASTO
-    const sumatorios = await db.transaccion.groupBy({
-      by: ['tipo'],
-      _sum: { importe: true }
-    });
-
-    let totalIngresos = 0;
-    let totalGastos = 0;
-
-    sumatorios.forEach(agrupacion => {
-      const suma = Number(agrupacion._sum.importe) || 0;
-      if (agrupacion.tipo === 'INGRESO') totalIngresos = suma;
-      if (agrupacion.tipo === 'GASTO') totalGastos = suma;
-    });
-
-    // Céntimos exactos: restar en coma flotante deja colas (20.3 - 10.1 da
-    // 10.200000000000001), y este número se pinta tal cual.
-    const centimos = (n: number) => Math.round(n * 100) / 100;
-    return {
-      ingresos: centimos(totalIngresos),
-      gastos: centimos(totalGastos),
-      // Lo que queda limpio en la cuenta bancaria / caja
-      balanceTotal: centimos(totalIngresos - totalGastos)
-    };
-  }
 }

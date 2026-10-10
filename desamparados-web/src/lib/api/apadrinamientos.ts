@@ -54,7 +54,6 @@ export interface DatosCampana { titulo: string; descripcion: string; foto: strin
 export interface DatosPieza { nombre: string; precio: number; x: number; y: number }
 
 export const campanasPublicas = () => llamarApi<CampanasPublicas>('/apadrinamientos', { auth: false })
-export const campanaPublica = (id: number) => llamarApi<Campana>(`/apadrinamientos/campanas/${id}`, { auth: false })
 export const apadrinar = (d: DatosApadrinar) => llamarApi<ResultadoApadrinar>('/apadrinamientos', { method: 'POST', json: d, auth: false })
 export const apadrinamientoPublico = (token: string) => llamarApi<ApadrinamientoPublico>(`/apadrinamientos/gracias/${token}`, { auth: false })
 

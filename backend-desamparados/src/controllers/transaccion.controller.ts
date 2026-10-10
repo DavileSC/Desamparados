@@ -32,11 +32,6 @@ export class TransaccionController {
     res.status(200).json(resumen);
   });
 
-  static getDashboard = manejar('Error calculando el balance general', async (_req, res) => {
-    const balance = await TransaccionService.getBalance();
-    res.status(200).json(balance);
-  });
-
   static getCategorias = manejar('Error listando categorías', async (req, res) => {
     // Opcional: ?tipo=INGRESO y ?todas=true. Llegan ya validados por categoriasQuerySchema.
     const tipo = req.query.tipo as 'INGRESO' | 'GASTO' | undefined;

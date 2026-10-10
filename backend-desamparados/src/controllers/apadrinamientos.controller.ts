@@ -6,7 +6,6 @@ const n = (v: unknown) => Number(v);
 
 export class ApadrinamientosController {
   static campanasPublicas = manejar('Error obteniendo los apadrinamientos', async (_req, res) => { res.json(await ApadrinamientosService.campanasPublicas()); });
-  static campanaPublica = manejar('Error obteniendo la campaña', async (req, res) => { res.json(await ApadrinamientosService.campanaPublica(n(req.params.id))); });
   static apadrinar = manejar('Error apadrinando', async (req, res) => {
     res.status(201).json(await ApadrinamientosService.apadrinar(req.body as DatosApadrinar, AuditoriaService.metaFromReq(req)));
   });

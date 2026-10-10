@@ -33,12 +33,32 @@ function montar(estado: unknown) {
     return Promise.resolve(json(estado))
   })
   vi.stubGlobal('fetch', fetch)
-  const router = createMemoryRouter([{ path: '/cms/cabildos/:id', element: <CabildoPage /> }], { initialEntries: ['/cms/cabildos/3'] })
+  const router = createMemoryRouter([
+    { path: '/cms/cabildos', element: <p>Lista de cabildos</p> },
+    { path: '/cms/cabildos/:id', element: <CabildoPage /> },
+  ], { initialEntries: ['/cms/cabildos/3'] })
   render(<HelmetProvider><ThemeProvider theme={crearTemaCms('claro')}><RouterProvider router={router} /></ThemeProvider></HelmetProvider>)
   return fetch
 }
 
 describe('CabildoPage', () => {
+  it('un cabildo convocado y sin asistencia se borra, preguntando antes', async () => {
+    const user = userEvent.setup()
+    const fetch = montar({ ...CABILDO, asistentes: [], quorum: { ...CABILDO.quorum, presentesConVoto: 0 } })
+    await user.click(await screen.findByRole('button', { name: 'Borrar el cabildo' }))
+    const dialogo = await screen.findByRole('dialog')
+    expect(fetch.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'DELETE')).toBe(false)
+    await user.click(within(dialogo).getByRole('button', { name: 'Borrar el cabildo' }))
+    expect(await screen.findByText('Lista de cabildos')).toBeInTheDocument()
+    expect(fetch.mock.calls.some(([url, init]) => String(url).endsWith('/cabildos/3') && (init as RequestInit).method === 'DELETE')).toBe(true)
+  })
+
+  it('con asistencia apuntada ya no se ofrece borrarlo', async () => {
+    montar(CABILDO)
+    expect(await screen.findByText('Sin voto')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Borrar el cabildo' })).not.toBeInTheDocument()
+  })
+
   it('enseña el quórum y quién no tiene voto; sin quórum en primera, solo deja celebrarlo en segunda', async () => {
     const user = userEvent.setup()
     const fetch = montar(CABILDO)

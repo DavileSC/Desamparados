@@ -5,9 +5,9 @@ import {
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import DownloadIcon from '@mui/icons-material/Download'
 import { Helmet } from 'react-helmet-async'
-import { Link, useBlocker, useParams } from 'react-router-dom'
+import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import {
-  aprobarActa, actaEnPdf, apuntarAsistente, apuntarVotacion, borrarVotacion, cabildo, darPorCelebrado, guardarActa, guardarCabildo,
+  aprobarActa, actaEnPdf, borrarCabildo, apuntarAsistente, apuntarVotacion, borrarVotacion, cabildo, darPorCelebrado, guardarActa, guardarCabildo,
   prepararConvocatoria, quitarAsistente, type Cabildo, type Mayoria, type TipoCabildo,
 } from '../../lib/api/cabildos'
 import { buscarHermanos, type AdminBrother } from '../../lib/api/hermanos'
@@ -50,6 +50,7 @@ function Seccion({ titulo, children, detalle }: { titulo: string; detalle?: stri
  */
 export default function CabildoPage() {
   const id = Number(useParams().id)
+  const navegar = useNavigate()
   const [c, setC] = useState<Cabildo | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -59,7 +60,7 @@ export default function CabildoPage() {
   const [candidatos, setCandidatos] = useState<AdminBrother[]>([])
   const [votacion, setVotacion] = useState(VOTACION_VACIA)
   const [acta, setActa] = useState('')
-  const [confirmar, setConfirmar] = useState<'aprobar' | 'segunda' | null>(null)
+  const [confirmar, setConfirmar] = useState<'aprobar' | 'segunda' | 'borrar' | null>(null)
 
   useEffect(() => {
     let cancelado = false
@@ -91,6 +92,8 @@ export default function CabildoPage() {
   if (!c) return error ? <Alert severity="error">{error}</Alert> : <CircularProgress aria-label="Cargando el cabildo" />
 
   const cerrado = c.estado === 'ACTA_APROBADA'
+  // Lo mismo que exige el servidor: con asistencia apuntada ya es un cabildo que ocurrió.
+  const borrable = c.estado === 'CONVOCADO' && c.asistentes.length === 0
   const hacer = async (accion: () => Promise<Cabildo | void>, textoOk?: string) => {
     setOcupado(true); setError(null); setAviso(null)
     try {
@@ -131,6 +134,7 @@ export default function CabildoPage() {
           {c.convocatoriaId
             ? <Button component={Link} to={`/cms/comunicados/${c.convocatoriaId}`}>Abrir la convocatoria en Boletín y avisos</Button>
             : <Button disabled={ocupado} onClick={() => void hacer(async () => { const { comunicadoId } = await prepararConvocatoria(id); return { ...c, convocatoriaId: comunicadoId } }, 'Convocatoria preparada como borrador de aviso. Revísala y envíala desde Boletín y avisos.')}>Preparar la convocatoria por correo</Button>}
+          {borrable && <Button color="error" startIcon={<DeleteOutlineIcon />} disabled={ocupado} onClick={() => setConfirmar('borrar')} sx={{ ml: { sm: 'auto' } }}>Borrar el cabildo</Button>}
         </Stack>
       )}
     </Seccion>
@@ -249,6 +253,20 @@ export default function CabildoPage() {
       mensaje={`En segunda convocatoria basta con los presentes (${plural(c.asistentes.length, 'hermano', 'hermanos')}). Se guarda el censo con voto de hoy para el acta.`}
       textoConfirmar="Sí, en segunda"
       onConfirmar={() => { setConfirmar(null); void hacer(() => darPorCelebrado(id, true), 'Cabildo celebrado en segunda convocatoria. Ya se puede redactar el acta.') }}
+      onCancelar={() => setConfirmar(null)}
+    />
+    <DialogoConfirmacion
+      abierto={confirmar === 'borrar'}
+      titulo="¿Borrar el cabildo?"
+      mensaje={`Se borra el cabildo del ${fechaCabildo(c.fecha)} con su orden del día.${c.convocatoriaId
+        ? ' La convocatoria se queda en Boletín y avisos: si ya se envió, avisa a los hermanos de que se anula.'
+        : ''}`}
+      textoConfirmar="Borrar el cabildo"
+      peligro
+      onConfirmar={() => {
+        setConfirmar(null)
+        void hacer(async () => { await borrarCabildo(id); void navegar('/cms/cabildos', { replace: true }) })
+      }}
       onCancelar={() => setConfirmar(null)}
     />
     <DialogoConfirmacion

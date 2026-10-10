@@ -4,7 +4,6 @@ import { paramsPagina, type RespuestaPaginada } from './tipos'
 export type TipoApunte = 'INGRESO' | 'GASTO'
 export type MetodoPago = 'EFECTIVO' | 'BIZUM' | 'TRANSFERENCIA' | 'TARJETA' | 'DOMICILIACION'
 
-export interface Balance { ingresos: number; gastos: number; balanceTotal: number }
 export interface Category {
   id: number
   nombre: string
@@ -80,7 +79,6 @@ export function paramsFiltros(filtros: FiltrosContables): URLSearchParams {
   return params
 }
 
-export const balanceDelEjercicio = () => llamarApi<Balance>('/transacciones/balance')
 /** El orden solo es del libro: al resumen le da igual en qué orden se sumen los apuntes. */
 export const libroMayor = (pagina: { pagina: number; porPagina: number }, filtros: FiltrosContables = {}, orden?: string) => {
   const filtrado = paramsFiltros(filtros).toString()

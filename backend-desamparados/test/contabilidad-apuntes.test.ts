@@ -389,13 +389,4 @@ describe('consultas de la contabilidad (D12, S10)', () => {
     const res = await pedir('TESORERIA', '/categorias?tipo=INGRESO&tipo=GASTO');
     assert.ok(res.status < 500, `recibió ${res.status}`);
   });
-
-  test('el balance sale en céntimos exactos', async (t) => {
-    if (!dbDisponible) return t.skip(SIN_DB);
-    const res = await pedir('TESORERIA', '/balance');
-    assert.equal(res.status, 200);
-    for (const valor of [res.cuerpo.ingresos, res.cuerpo.gastos, res.cuerpo.balanceTotal]) {
-      assert.match(String(valor), /^-?\d+(\.\d{1,2})?$/, `${valor} tiene más de dos decimales`);
-    }
-  });
 });

@@ -21,6 +21,9 @@ import { crearUsuarioPrueba, borrarUsuarioPrueba } from './fixtures/usuarios.js'
 import { encenderModulos } from './fixtures/modulos.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
+/** Una campaña tal como la ve la web pública. */
+const campanaEnLaWeb = async (id: number) => (await ApadrinamientosService.campanasPublicas()).campanas.find((c) => c.id === id)!;
+
 const PRUEBAS = configuracionRedsys({});
 let dbDisponible = false;
 let server: Server;
@@ -82,7 +85,7 @@ test('con el pago simulado: apadrinada en el acto, con el nombre solo si se pidi
     await ApadrinamientosService.apadrinar({ ...e.persona('Luis', false), piezaId: e.vela2.id }, {});
     assert.equal((await ApadrinamientosService.apadrinamientoPublico(r1.token)).estado, 'PAGADO');
 
-    const publica = await ApadrinamientosService.campanaPublica(e.c.id);
+    const publica = await campanaEnLaWeb(e.c.id);
     assert.deepEqual(publica.piezas.map((p) => [p.nombre, p.apadrinada, p.padrino]), [['Vela 1', true, 'Ana'], ['Vela 2', true, null]]);
     assert.equal((publica.piezas[1] as Record<string, unknown>).contacto, undefined, 'la web pública no ve los datos de contacto');
     const cms = await ApadrinamientosService.campana(e.c.id);
@@ -122,7 +125,7 @@ test('con Redsys, dos a por la misma pieza: se la lleva el primer aviso y el otr
     const pago = await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: a.pedido } });
     assert.equal(pago.estado, 'INCIDENCIA');
     assert.match(pago.motivo ?? '', /la apadrinó otra persona/);
-    assert.equal((await ApadrinamientosService.campanaPublica(e.c.id)).piezas[0].padrino, 'Luis');
+    assert.equal((await campanaEnLaWeb(e.c.id)).piezas[0].padrino, 'Luis');
   } finally {
     delete process.env.PAGO_EN_LINEA;
     await e.recoger();

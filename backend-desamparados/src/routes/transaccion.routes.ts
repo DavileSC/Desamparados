@@ -48,7 +48,6 @@ transaccionRoutes.get('/partida-doble/:anio/excel', validate(ejercicioSchema), P
 transaccionRoutes.get('/libro-mayor', validate(libroMayorQuerySchema), TransaccionController.getLibroMayor);
 // Totales, serie y reparto por categoría para los mismos filtros que el libro mayor.
 transaccionRoutes.get('/resumen', validate(resumenQuerySchema), TransaccionController.getResumen);
-transaccionRoutes.get('/balance', TransaccionController.getDashboard);
 transaccionRoutes.post('/', validate(createTransaccionSchema), TransaccionController.create);
 // Solo apuntes manuales: los que vienen de un recibo se corrigen desde el recibo (409).
 transaccionRoutes.put('/:id', validate(updateTransaccionSchema), TransaccionController.update);

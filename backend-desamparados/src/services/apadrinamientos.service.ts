@@ -114,12 +114,6 @@ export class ApadrinamientosService {
     };
   }
 
-  static async campanaPublica(id: number) {
-    const c = await campanaCompleta(id, false);
-    if (!c.activa) throw new NotFoundError('Campaña no encontrada.');
-    return c;
-  }
-
   /** Apadrinar una pieza libre: se apunta y se va al banco (o se paga en el acto, simulado). */
   static async apadrinar(d: DatosApadrinar, meta: MetaDeAuditoria) {
     const modo = modoDePago();
