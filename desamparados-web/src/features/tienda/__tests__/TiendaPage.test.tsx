@@ -47,10 +47,20 @@ function servidor(catalogo: unknown = CATALOGO) {
 async function pagarComo(user: ReturnType<typeof userEvent.setup>, total: RegExp) {
   await user.click(screen.getByRole('button', { name: 'Seguir con el pago' }))
   const pagar = screen.getByRole('button', { name: total })
-  expect(pagar).toBeDisabled()
+  // Sin datos, «Pagar» no se queda en gris callado: dice qué falta y lleva al primero.
+  await user.click(pagar)
+  expect(screen.getByText('Escribe tu nombre.')).toBeInTheDocument()
+  expect(screen.getByText('Escribe tu correo.')).toBeInTheDocument()
+  expect(screen.getByText('Escribe tu teléfono.')).toBeInTheDocument()
+  expect(screen.getByLabelText('Nombre y apellidos')).toHaveFocus()
   await user.type(screen.getByLabelText('Nombre y apellidos'), 'Ana Ruiz')
-  await user.type(screen.getByLabelText('Correo'), 'ana@ejemplo.es')
-  await user.type(screen.getByLabelText('Teléfono'), '600111222')
+  await user.type(screen.getByLabelText('Correo'), 'ana@ejemplo')
+  await user.click(pagar)
+  expect(screen.getByText(/Revisa el correo/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Correo')).toHaveFocus()
+  await user.type(screen.getByLabelText('Correo'), '.es')
+  // Con el prefijo y espacios también vale: se manda con nueve cifras.
+  await user.type(screen.getByLabelText('Teléfono'), '+34 600 11 12 22')
   await user.click(pagar)
 }
 

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Alert, Box, ButtonBase, TextField, Typography } from '@mui/material'
@@ -7,6 +8,7 @@ import topes from '../../../../shared/topes-contenido.json'
 import Boton from '../Boton'
 import CamposCertificado from '../CamposCertificado'
 import { SIN_CERTIFICADO, certificadoCompleto, datosFiscalesDe } from '../../lib/certificado'
+import { enfocarLoQueFalla } from '../../lib/enfocarLoQueFalla'
 import { SERIF } from '../../features/inicio/estilos'
 import { anchoMaximo } from './presentacion'
 import { irAlBanco, type EstadoDelPago, type MetodoEnLinea } from '../../lib/api/procesion'
@@ -59,11 +61,24 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
   const fueraDeLimites = importe !== null && (importe < topes.donativoMinimoEuros || importe > topes.donativoMaximoEuros)
   const faltaDestino = bloque.destinos.length > 0 && destino === null
   // El certificado se manda por correo: si lo pide, el correo deja de ser opcional.
-  const faltaCorreo = certificado.quiere && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-  const listo = importe !== null && !fueraDeLimites && !faltaDestino && pagina !== null && certificadoCompleto(certificado) && !faltaCorreo
+  const correoBueno = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const correoMal = email.trim() === '' ? certificado.quiere : !correoBueno
+  const listo = importe !== null && !fueraDeLimites && !faltaDestino && pagina !== null && certificadoCompleto(certificado) && !correoMal
+  /*
+   * Los botones de pagar no se quedan en gris sin decir por qué: al pulsar, si
+   * falta algo, se marca en su sitio y el foco va a lo primero.
+   */
+  const [intentado, setIntentado] = useState(false)
+  const formulario = useRef<HTMLElement>(null)
+  const importeMal = (otro !== '' || intentado) && (importe === null || fueraDeLimites)
 
   const enviar = async (metodo: MetodoEnLinea) => {
-    if (!listo || importe === null || pagina === null) return
+    if (!listo) {
+      flushSync(() => setIntentado(true))
+      enfocarLoQueFalla(formulario.current)
+      return
+    }
+    if (importe === null || pagina === null) return
     setEnviando(true); setError(null); setHecho(null)
     try {
       const inicio = await donar({
@@ -96,10 +111,13 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
     '& .MuiOutlinedInput-notchedOutline': { borderColor: FILETE },
     '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
     '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.6)' },
+    // Lo de arriba pisa el color de error de MUI: lo marcado al intentar pagar va con el acento.
+    '& .Mui-error .MuiOutlinedInput-notchedOutline': { borderColor: ACENTO },
+    '& .MuiFormHelperText-root.Mui-error': { color: ACENTO },
   }
 
   return (
-    <Box component="section" aria-label={bloque.titulo || 'Donativo'} sx={{
+    <Box component="section" ref={formulario} aria-label={bloque.titulo || 'Donativo'} sx={{
       maxWidth: anchoMaximo(bloque, '760px'), mx: 'auto', p: { xs: 3.5, md: 5.5 },
       backgroundColor: RECUADRO, color: '#ffffff', borderRadius: '2px', display: 'grid', gap: 3,
     }}>
@@ -115,8 +133,8 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
       {elegido === 'otro' && (
         <TextField
           label="Importe (€)" value={otro} onChange={(e) => setOtro(e.target.value)} inputMode="decimal" autoFocus
-          error={otro !== '' && (importe === null || fueraDeLimites)}
-          helperText={otro !== '' && (importe === null || fueraDeLimites) ? `Escribe un importe entre ${topes.donativoMinimoEuros} y ${topes.donativoMaximoEuros} €.` : ' '}
+          error={importeMal}
+          helperText={importeMal ? `Escribe un importe entre ${topes.donativoMinimoEuros} y ${topes.donativoMaximoEuros} €.` : ' '}
           sx={{ ...campo, maxWidth: 220 }}
         />
       )}
@@ -125,20 +143,24 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
         <Box sx={{ display: 'grid', gap: 1.25 }}>
           <Typography id="donativo-destino" sx={{ fontSize: 13, letterSpacing: '0.18em', textTransform: 'uppercase', color: ACENTO }}>¿A qué lo destinas?</Typography>
           <Box role="group" aria-labelledby="donativo-destino" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
-            {bloque.destinos.map((d) => (
-              <ButtonBase key={d} aria-pressed={destino === d} onClick={() => setDestino(d)} sx={opcion(destino === d)}>{d}</ButtonBase>
+            {bloque.destinos.map((d, i) => (
+              <ButtonBase key={d} aria-pressed={destino === d} onClick={() => setDestino(d)} sx={opcion(destino === d)}
+                {...(intentado && faltaDestino && i === 0 && { 'data-falta': true, 'aria-describedby': 'donativo-falta-destino' })}>{d}</ButtonBase>
             ))}
           </Box>
+          {intentado && faltaDestino && <Typography id="donativo-falta-destino" sx={{ fontSize: 14, color: ACENTO }}>Elige a qué lo destinas.</Typography>}
         </Box>
       )}
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
         <TextField label="Tu nombre (opcional)" value={nombre} onChange={(e) => setNombre(e.target.value)} slotProps={{ htmlInput: { maxLength: 120 } }} sx={campo} />
         <TextField label={certificado.quiere ? 'Tu correo' : 'Tu correo (opcional)'} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-          helperText={certificado.quiere ? 'Para mandarte el certificado.' : 'Solo para darte las gracias.'} slotProps={{ htmlInput: { maxLength: 254 } }} sx={campo} />
+          error={intentado && correoMal}
+          helperText={intentado && correoMal ? (email.trim() === '' ? 'Escribe tu correo para mandarte el certificado.' : 'Revisa el correo: tiene que ser como nombre@dominio.es.')
+            : certificado.quiere ? 'Para mandarte el certificado.' : 'Solo para darte las gracias.'} slotProps={{ htmlInput: { maxLength: 254 } }} sx={campo} />
       </Box>
 
-      <CamposCertificado valor={certificado} onChange={setCertificado} sxCampo={campo}
+      <CamposCertificado valor={certificado} onChange={setCertificado} sxCampo={campo} marcarVacios={intentado}
         sxCasilla={{ color: 'rgba(255,255,255,0.9)', '& .MuiCheckbox-root': { color: 'rgba(255,255,255,0.7)' }, '& .Mui-checked': { color: `${ACENTO} !important` } }} />
 
       {/* La primera capa de información que pide el RGPD donde se recogen los datos; el resto, en la política. */}
@@ -154,7 +176,7 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
         <Box sx={{ display: 'grid', gap: 1.5 }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
             {pago.metodos.map((m, i) => (
-              <Boton key={m} appVariant={i === 0 ? 'primary' : 'claro'} disabled={!listo || enviando} onClick={() => void enviar(m)}>
+              <Boton key={m} appVariant={i === 0 ? 'primary' : 'claro'} disabled={enviando || pagina === null} onClick={() => void enviar(m)}>
                 {enviando ? 'Un momento…' : m === 'BIZUM' ? 'Con Bizum' : `Donar ${importe !== null && !fueraDeLimites ? euros(importe) : ''}${pago.metodos.length > 1 ? ' con tarjeta' : ''}`.replace('  ', ' ')}
               </Boton>
             ))}
@@ -163,7 +185,6 @@ export default function BloqueDonativo({ bloque }: { bloque: Datos }) {
             {pago.pruebas
               ? 'El pago en línea está en pruebas: todavía no se cobra de verdad.'
               : 'Se paga en la página segura del banco. No guardamos los datos de tu tarjeta.'}
-            {faltaDestino ? ' Elige antes a qué lo destinas.' : ''}
           </Typography>
         </Box>
       ) : data && (

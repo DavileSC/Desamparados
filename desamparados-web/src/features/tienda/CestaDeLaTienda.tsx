@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Alert, Box, ButtonBase, Link as EnlaceMui, Paper, TextField, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import Boton from '../../components/Boton'
@@ -6,10 +6,22 @@ import type { MetodoEnLinea } from '../../lib/api/tienda'
 import { GOLD, PAPEL } from '../inicio/estilos'
 import { Contador } from './ElegirTalla'
 import { euros, nombreConTalla, quedanDe, topeDe, type LineaDeLaCesta } from './cesta'
+import { esTelefonoValido, normalizarTelefono } from '../../lib/validacion/identidad'
 
 export interface Comprador { nombre: string; email: string; telefono: string; metodo: MetodoEnLinea }
 
 const correoValido = (c: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.trim())
+
+type Campo = 'nombre' | 'email' | 'telefono'
+
+/** Qué falla en cada dato del comprador, o `null`. */
+function fallosDe(c: Comprador): Record<Campo, string | null> {
+  return {
+    nombre: c.nombre.trim() === '' ? 'Escribe tu nombre.' : null,
+    email: c.email.trim() === '' ? 'Escribe tu correo.' : !correoValido(c.email) ? 'Revisa el correo: tiene que ser como nombre@dominio.es.' : null,
+    telefono: c.telefono.trim() === '' ? 'Escribe tu teléfono.' : !esTelefonoValido(c.telefono) ? 'Un teléfono de nueve cifras.' : null,
+  }
+}
 
 /**
  * La cesta, en el cajón de la tienda, en dos pasos: lo que llevas (con «− n +»
@@ -28,7 +40,24 @@ export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCa
   const [comprador, setComprador] = useState<Comprador>({ nombre: '', email: '', telefono: '', metodo: metodos[0] ?? 'TARJETA' })
   const total = lineas.reduce((s, l) => s + l.producto.precio * l.cantidad, 0)
   const unidades = lineas.reduce((s, l) => s + l.cantidad, 0)
-  const listo = lineas.length > 0 && comprador.nombre.trim() !== '' && correoValido(comprador.email) && comprador.telefono.trim().length >= 9
+  /*
+   * «Pagar» no se queda en gris sin decir por qué: al pulsarlo, si falta algo,
+   * se marca cada campo con lo que le pasa y el foco va al primero.
+   */
+  const [intentado, setIntentado] = useState(false)
+  const fallos = fallosDe(comprador)
+  const refs = { nombre: useRef<HTMLInputElement>(null), email: useRef<HTMLInputElement>(null), telefono: useRef<HTMLInputElement>(null) }
+  const fallo = (campo: Campo) => (intentado ? fallos[campo] : null)
+  const pagar = () => {
+    const primero = (['nombre', 'email', 'telefono'] as const).find((c) => fallos[c])
+    if (primero) {
+      setIntentado(true)
+      refs[primero].current?.focus()
+      return
+    }
+    // El servidor guarda nueve dígitos pelados: «+34 600 12 34 56» también vale.
+    onPagar({ ...comprador, email: comprador.email.trim(), telefono: normalizarTelefono(comprador.telefono) })
+  }
   // Si se vacía la cesta estando en los datos, se vuelve a la cesta.
   const enDatos = paso === 'datos' && lineas.length > 0
 
@@ -70,9 +99,12 @@ export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCa
           </>}
       </> : <>
         <Typography component="h2" sx={{ fontSize: 20, fontWeight: 600 }}>Tus datos</Typography>
-        <TextField label="Nombre y apellidos" value={comprador.nombre} onChange={(e) => setComprador({ ...comprador, nombre: e.target.value })} fullWidth slotProps={{ htmlInput: { maxLength: 120, autoComplete: 'name' } }} />
-        <TextField label="Correo" type="email" value={comprador.email} onChange={(e) => setComprador({ ...comprador, email: e.target.value })} fullWidth helperText="Te mandamos ahí la confirmación." slotProps={{ htmlInput: { autoComplete: 'email' } }} />
-        <TextField label="Teléfono" type="tel" value={comprador.telefono} onChange={(e) => setComprador({ ...comprador, telefono: e.target.value })} fullWidth slotProps={{ htmlInput: { autoComplete: 'tel' } }} />
+        <TextField label="Nombre y apellidos" value={comprador.nombre} onChange={(e) => setComprador({ ...comprador, nombre: e.target.value })} fullWidth inputRef={refs.nombre}
+          error={!!fallo('nombre')} helperText={fallo('nombre')} slotProps={{ htmlInput: { maxLength: 120, autoComplete: 'name' } }} />
+        <TextField label="Correo" type="email" value={comprador.email} onChange={(e) => setComprador({ ...comprador, email: e.target.value })} fullWidth inputRef={refs.email}
+          error={!!fallo('email')} helperText={fallo('email') ?? 'Te mandamos ahí la confirmación.'} slotProps={{ htmlInput: { autoComplete: 'email' } }} />
+        <TextField label="Teléfono" type="tel" value={comprador.telefono} onChange={(e) => setComprador({ ...comprador, telefono: e.target.value })} fullWidth inputRef={refs.telefono}
+          error={!!fallo('telefono')} helperText={fallo('telefono')} slotProps={{ htmlInput: { autoComplete: 'tel' } }} />
         {metodos.length > 1 && (
           <Box role="group" aria-label="Pagar con" sx={{ display: 'grid', gridTemplateColumns: `repeat(${metodos.length}, minmax(0, 1fr))`, gap: 1 }}>
             {metodos.map((m) => {
@@ -98,7 +130,7 @@ export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCa
           . Tus datos solo se usan para gestionar el pedido; más en la{' '}
           <EnlaceMui component={Link} to="/politica-privacidad" target="_blank" sx={{ color: 'secondary.main' }}>política de privacidad</EnlaceMui>.
         </Typography>
-        <Boton onClick={() => onPagar(comprador)} disabled={!listo || enviando} fullWidth>{enviando ? 'Un momento…' : `Pagar ${euros(total)}`}</Boton>
+        <Boton onClick={pagar} disabled={enviando} fullWidth>{enviando ? 'Un momento…' : `Pagar ${euros(total)}`}</Boton>
         <Boton appVariant="claro" onClick={() => setPaso('cesta')} disabled={enviando} fullWidth>Volver a la cesta</Boton>
       </>}
       <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>Se recoge en Secretaría: no hacemos envíos.</Typography>

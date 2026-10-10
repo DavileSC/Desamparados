@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import CamposCertificado from '../../components/CamposCertificado'
 import { SIN_CERTIFICADO, certificadoCompleto, datosFiscalesDe } from '../../lib/certificado'
+import { enfocarLoQueFalla } from '../../lib/enfocarLoQueFalla'
+import { esTelefonoValido, normalizarTelefono } from '../../lib/validacion/identidad'
 import { Alert, Box, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { Link, useNavigate } from 'react-router-dom'
 import MetaDePagina from '../../components/MetaDePagina'
@@ -39,13 +42,31 @@ export default function ApadrinaPage() {
   }, [])
 
   const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
-  const listo = form.nombre.trim() !== '' && correoValido && form.telefono.trim().length >= 9 && certificadoCompleto(certificado)
+  /*
+   * «Pagar» no se queda en gris sin decir por qué: al pulsarlo, si falta algo,
+   * se marca en su campo y el foco va a lo primero.
+   */
+  const [intentado, setIntentado] = useState(false)
+  const formulario = useRef<HTMLDivElement>(null)
+  const fallos = {
+    nombre: form.nombre.trim() === '' ? 'Escribe tu nombre.' : null,
+    email: form.email.trim() === '' ? 'Escribe tu correo.' : !correoValido ? 'Revisa el correo: tiene que ser como nombre@dominio.es.' : null,
+    telefono: form.telefono.trim() === '' ? 'Escribe tu teléfono.' : !esTelefonoValido(form.telefono) ? 'Un teléfono de nueve cifras.' : null,
+  }
+  const fallo = (campo: keyof typeof fallos) => (intentado ? fallos[campo] : null)
+  const listo = !fallos.nombre && !fallos.email && !fallos.telefono && certificadoCompleto(certificado)
 
   const pagar = async () => {
     if (!elegida) return
+    if (!listo) {
+      flushSync(() => setIntentado(true))
+      enfocarLoQueFalla(formulario.current)
+      return
+    }
     setEnviando(true); setErrorForm(null)
     try {
-      const r = await apadrinar({ piezaId: elegida.id, nombre: form.nombre, email: form.email, telefono: form.telefono, dedicatoria: form.dedicatoria.trim() || null, mostrarNombre: form.mostrarNombre, metodo: form.metodo, ...(certificado.quiere && { fiscal: datosFiscalesDe(certificado) }) })
+      // El servidor guarda nueve dígitos pelados: «+34 600 12 34 56» también vale.
+      const r = await apadrinar({ piezaId: elegida.id, nombre: form.nombre, email: form.email.trim(), telefono: normalizarTelefono(form.telefono), dedicatoria: form.dedicatoria.trim() || null, mostrarNombre: form.mostrarNombre, metodo: form.metodo, ...(certificado.quiere && { fiscal: datosFiscalesDe(certificado) }) })
       if (r.tipo === 'banco') irAlBanco(r)
       else navegar(`/apadrina/gracias/${r.token}`)
     } catch (err: unknown) {
@@ -71,7 +92,7 @@ export default function ApadrinaPage() {
               <Typography variant="body2" sx={{ mt: 1 }}>{c.libres === 0 ? 'Todas las piezas tienen padrino. ¡Gracias!' : c.libres === 1 ? 'Queda 1 pieza libre.' : `Quedan ${c.libres} piezas libres.`}</Typography>
             </Box>
             <Box sx={{ maxWidth: 900 }}>
-              <FotoConPiezas foto={c.foto} titulo={c.titulo} piezas={c.piezas} elegida={elegida?.id ?? null} onElegir={datos.pagoDisponible ? (p) => { setElegida(p); setErrorForm(null) } : undefined} />
+              <FotoConPiezas foto={c.foto} titulo={c.titulo} piezas={c.piezas} elegida={elegida?.id ?? null} onElegir={datos.pagoDisponible ? (p) => { setElegida(p); setErrorForm(null); setIntentado(false) } : undefined} />
             </Box>
           </Box>
         ))}
@@ -81,14 +102,17 @@ export default function ApadrinaPage() {
     <Dialog open={elegida !== null} onClose={enviando ? undefined : () => setElegida(null)} fullWidth maxWidth="sm" aria-labelledby="apadrinar-titulo">
       {elegida && <>
         <DialogTitle id="apadrinar-titulo">Apadrinar {elegida.nombre} · {euros(elegida.precio)}</DialogTitle>
-        <DialogContent>
+        <DialogContent ref={formulario}>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField label="Nombre y apellidos" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} fullWidth slotProps={{ htmlInput: { maxLength: 120, autoComplete: 'name' } }} />
-            <TextField label="Correo" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} fullWidth helperText="Te mandamos ahí la confirmación." slotProps={{ htmlInput: { autoComplete: 'email' } }} />
-            <TextField label="Teléfono" type="tel" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} fullWidth slotProps={{ htmlInput: { autoComplete: 'tel' } }} />
+            <TextField label="Nombre y apellidos" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} fullWidth
+              error={!!fallo('nombre')} helperText={fallo('nombre')} slotProps={{ htmlInput: { maxLength: 120, autoComplete: 'name' } }} />
+            <TextField label="Correo" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} fullWidth
+              error={!!fallo('email')} helperText={fallo('email') ?? 'Te mandamos ahí la confirmación.'} slotProps={{ htmlInput: { autoComplete: 'email' } }} />
+            <TextField label="Teléfono" type="tel" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} fullWidth
+              error={!!fallo('telefono')} helperText={fallo('telefono')} slotProps={{ htmlInput: { autoComplete: 'tel' } }} />
             <TextField label="Dedicatoria (opcional)" value={form.dedicatoria} onChange={(e) => setForm({ ...form, dedicatoria: e.target.value })} fullWidth slotProps={{ htmlInput: { maxLength: 200 } }} helperText="Por ejemplo: «En memoria de mis padres»." />
             <FormControlLabel control={<Checkbox checked={form.mostrarNombre} onChange={(e) => setForm({ ...form, mostrarNombre: e.target.checked })} />} label="Que mi nombre y la dedicatoria salgan en la foto" />
-            <CamposCertificado valor={certificado} onChange={setCertificado} />
+            <CamposCertificado valor={certificado} onChange={setCertificado} marcarVacios={intentado} />
             {datos && datos.metodos.length > 1 && (
               <TextField select label="Pagar con" value={form.metodo} onChange={(e) => setForm({ ...form, metodo: e.target.value as MetodoEnLinea })} fullWidth>
                 {datos.metodos.map((m) => <MenuItem key={m} value={m}>{m === 'BIZUM' ? 'Bizum' : 'Tarjeta'}</MenuItem>)}
@@ -104,7 +128,7 @@ export default function ApadrinaPage() {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Boton appVariant="outline" onClick={() => setElegida(null)} disabled={enviando}>Volver</Boton>
-          <Boton onClick={() => void pagar()} disabled={!listo || enviando}>{enviando ? 'Un momento…' : `Pagar ${euros(elegida.precio)}`}</Boton>
+          <Boton onClick={() => void pagar()} disabled={enviando}>{enviando ? 'Un momento…' : `Pagar ${euros(elegida.precio)}`}</Boton>
         </DialogActions>
       </>}
     </Dialog>

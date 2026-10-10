@@ -33,11 +33,12 @@ describe('BloqueDonativo', () => {
     const llamadas = servidor()
     renderWithProviders(<BloqueDonativo bloque={BLOQUE} />, { ruta: RUTA })
 
-    // El segundo importe sale marcado; sin destino todavía, no se puede donar.
+    // El segundo importe sale marcado; sin destino todavía, pulsar lo dice y lleva a elegirlo.
     expect(screen.getByRole('button', { name: /^10\s€$/ })).toHaveAttribute('aria-pressed', 'true')
-    const tarjeta = await screen.findByRole('button', { name: /Donar 10\s€ con tarjeta/ })
-    expect(tarjeta).toBeDisabled()
-    expect(screen.getByText(/Elige antes a qué lo destinas/)).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: /Donar 10\s€ con tarjeta/ }))
+    expect(screen.getByText('Elige a qué lo destinas.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Caridad' })).toHaveFocus()
+    expect(llamadas.some((l) => l.metodo === 'POST')).toBe(false)
 
     await user.click(screen.getByRole('button', { name: /^20\s€$/ }))
     await user.click(screen.getByRole('button', { name: 'Caridad' }))
@@ -58,7 +59,9 @@ describe('BloqueDonativo', () => {
     const campo = screen.getByRole('textbox', { name: 'Importe (€)' })
     await user.type(campo, '0,5')
     expect(screen.getByText(/entre 1 y 5000/)).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: /^Donar/ })).toBeDisabled()
+    await user.click(await screen.findByRole('button', { name: /^Donar/ }))
+    expect(campo).toHaveFocus()
+    expect(llamadas.some((l) => l.metodo === 'POST')).toBe(false)
 
     await user.clear(campo)
     await user.type(campo, '7,50')
@@ -74,7 +77,11 @@ describe('BloqueDonativo', () => {
 
     await user.click(screen.getByRole('checkbox', { name: /certificado para desgravarlo/ }))
     const donar = await screen.findByRole('button', { name: /^Donar/ })
-    expect(donar).toBeDisabled()
+    // Pulsar sin rellenar marca lo que falta y lleva al primero.
+    await user.click(donar)
+    expect(screen.getByText('Falta el nombre.')).toBeInTheDocument()
+    expect(screen.getByText('Faltan los apellidos.')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Tu correo' })).toHaveFocus()
     await user.type(screen.getByRole('textbox', { name: 'Nombre' }), 'Ana')
     await user.type(screen.getByRole('textbox', { name: 'Apellidos' }), 'Ruiz Gil')
     await user.type(screen.getByRole('textbox', { name: 'NIF' }), '12345678A')
@@ -83,7 +90,10 @@ describe('BloqueDonativo', () => {
     await user.type(screen.getByRole('textbox', { name: 'NIF' }), '12345678z')
     await user.type(screen.getByRole('textbox', { name: 'Código postal' }), '29006')
     // Sin correo no hay adonde mandar el certificado.
-    expect(donar).toBeDisabled()
+    await user.click(donar)
+    expect(screen.getByText('Escribe tu correo para mandarte el certificado.')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Tu correo' })).toHaveFocus()
+    expect(llamadas.some((l) => l.metodo === 'POST')).toBe(false)
     await user.type(screen.getByRole('textbox', { name: 'Tu correo' }), 'ana@example.com')
     await user.click(screen.getByRole('button', { name: /^Donar/ }))
 
