@@ -41,6 +41,11 @@ export interface Aportacion {
   codigoPostal: string | null;
   /** Adonde mandarle el certificado, si se sabe. */
   email: string | null;
+  /**
+   * La cuenta de la web de la que sale, en los recibos de hermanos. Los pagos
+   * en línea no la tienen: solo el correo que se dio al pagar.
+   */
+  userId?: number;
   centimos: number;
   /** El día (AAAA-MM-DD): decide el ejercicio. */
   fecha: string;

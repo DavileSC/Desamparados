@@ -5,7 +5,8 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import db from '../src/config/db.js';
-import { MisFichasService } from '../src/services/mis-fichas.service.js';
+import { MENSAJE_DNI_NO_GUARDADO, MENSAJE_FECHA_DE_SECRETARIA, MisFichasService } from '../src/services/mis-fichas.service.js';
+import { MENSAJE_EMANCIPACION_NO_GUARDADA } from '../src/services/hermanos/comunes.js';
 import { CensoService } from '../src/services/censo.service.js';
 import { SIN_DB } from './fixtures/sin-db.js';
 
@@ -166,5 +167,40 @@ describe('emancipación desde secretaría', () => {
 
     const apuntes = await db.auditLog.count({ where: { action: 'EMANCIPACION', entityId: String(dependiente.id) } });
     assert.equal(apuntes, 0, 'la auditoría no puede dar fe de algo que no ocurrió');
+  });
+});
+
+// --- Desde el área de hermanos (AC2 de la auditoría del 08-10) ---
+// Con una ficha a cargo aprobada, emancipar servía para probar DNI y correos:
+// cada choque tenía su 409 y no gastaba intentos.
+describe('emancipación desde el área de hermanos', () => {
+  test('un correo o un DNI con cuenta se rechazan con el mismo mensaje, sin decir cuál', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const { dependiente, tutor } = await tutorConDependiente('A1');
+    const otro = await tutorConDependiente('A2');
+    const intento = (datos: { newEmail: string; newDni?: string }) =>
+      MisFichasService.emancipateProfile(dependiente.id, tutor.id, { ...datos, newPassword: 'Prueba-2026-Segura' });
+
+    await assert.rejects(intento({ newEmail: otro.tutor.email }), (e: Error) => e.message === MENSAJE_EMANCIPACION_NO_GUARDADA);
+    await db.hermano.update({ where: { id: dependiente.id }, data: { dni: null } });
+    await assert.rejects(intento({ newEmail: 'nadie.a1@ejemplo.invalido', newDni: otro.tutor.dni! }), (e: Error) => e.message === MENSAJE_EMANCIPACION_NO_GUARDADA);
+    // El DNI de otra ficha del censo, con el mensaje de siempre de «Mi familia».
+    await assert.rejects(intento({ newEmail: 'nadie.a1@ejemplo.invalido', newDni: otro.dependiente.dni! }), (e: Error) => e.message === MENSAJE_DNI_NO_GUARDADO);
+
+    const ficha = await db.hermano.findUnique({ where: { id: dependiente.id } });
+    assert.equal(ficha!.userId, tutor.id, 'la ficha no se mueve');
+  });
+
+  test('la fecha de nacimiento de una ficha a cargo aprobada no la cambia el tutor', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    const hace10 = new Date(`${new Date().getUTCFullYear() - 10}-01-01T00:00:00Z`);
+    const { dependiente, tutor } = await tutorConDependiente('A3', hace10);
+    await assert.rejects(
+      MisFichasService.updateProfileIfOwned(dependiente.id, tutor.id, { fechaNacimiento: '1990-01-01' }),
+      (e: Error) => e.message === MENSAJE_FECHA_DE_SECRETARIA,
+    );
+    // La misma fecha (el formulario la manda siempre) no es un cambio.
+    await MisFichasService.updateProfileIfOwned(dependiente.id, tutor.id, { fechaNacimiento: hace10.toISOString().slice(0, 10), poblacion: 'Málaga' });
+    assert.equal((await db.hermano.findUnique({ where: { id: dependiente.id } }))!.fechaNacimiento.getTime(), hace10.getTime());
   });
 });

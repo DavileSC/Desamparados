@@ -151,6 +151,15 @@ test('el resumen, el fichero y los certificados del ejercicio', async (t) => {
     const hoy = new Date(`${EJERCICIO + 1}-02-01T10:00:00Z`);
     assert.ok((await Modelo182Service.miCertificado(familia.id, EJERCICIO, dniHija, hoy)).length > 1000);
     await assert.rejects(Modelo182Service.miCertificado(familia.id, EJERCICIO, dniDonante, hoy), /No hay donativos/);
+    // AC1: una ficha de la cuenta con el DNI de la donante no basta para ver lo que donó: ni
+    // pendiente (la crea el propio hermano), ni aprobada, porque lo pagó otro correo.
+    const conSuDni = await db.hermano.create({ data: { userId: familia.id, esTitular: false, nombre: 'Falsa', apellidos: 'Ficha', dni: dniDonante, fechaNacimiento: new Date('2085-01-01T00:00:00Z'), activo: false } });
+    hermanos.push(conSuDni.id);
+    await assert.rejects(Modelo182Service.miCertificado(familia.id, EJERCICIO, dniDonante, hoy), /No hay donativos/);
+    await db.hermano.update({ where: { id: conSuDni.id }, data: { activo: true } });
+    await assert.rejects(Modelo182Service.miCertificado(familia.id, EJERCICIO, dniDonante, hoy), /No hay donativos/);
+    assert.ok(!(await Modelo182Service.misCertificados(familia.id, hoy)).certificados.some((c) => c.nif === dniDonante));
+    await db.hermano.delete({ where: { id: conSuDni.id } });
     await assert.rejects(Modelo182Service.miCertificado(familia.id, EJERCICIO, dniMadre, new Date(`${EJERCICIO}-12-01T10:00:00Z`)), /acaba el año/);
     const suyo = await fetch(`${baseUrl}/api/recibos/mis-recibos/certificados`, { headers: { Cookie: `${COOKIE_HERMANO}=${generateToken(familia.id, Role.USER, false, 'hermanos')}` } });
     assert.equal(suyo.status, 200);

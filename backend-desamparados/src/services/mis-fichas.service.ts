@@ -30,6 +30,8 @@ const UN_DIA = 24 * 60 * 60 * 1000;
  * para averiguar quién está en el censo probando DNI. No lo confirma: deja el
  * caso a Secretaría, que lo ve en la auditoría.
  */
+export const MENSAJE_FECHA_DE_SECRETARIA = 'La fecha de nacimiento de una ficha a cargo ya aprobada la corrige Secretaría.';
+
 export const MENSAJE_DNI_NO_GUARDADO = 'No se ha podido guardar ese DNI. Si es correcto, habla con Secretaría.';
 
 /**
@@ -160,6 +162,12 @@ export class MisFichasService {
     if (!hermano) return null; // Devolvemos null para que el Controller lance el 403 IDOR
 
     const dataToUpdate = sinFechasDelMismoDia(prepareUpdateData(data, USER_EDITABLE_FIELDS) as Record<string, unknown>, hermano);
+    // La fecha de nacimiento de una ficha a cargo ya aprobada la corrige
+    // Secretaría: cambiándola, el tutor hacía adulto a un menor para
+    // emanciparlo (y con ello probar DNI y correos).
+    if (dataToUpdate.fechaNacimiento !== undefined && hermano.activo && !hermano.esTitular) {
+      throw new HttpError(MENSAJE_FECHA_DE_SECRETARIA, 409);
+    }
     // La ficha del titular no es de nadie: no lleva parentesco.
     if (hermano.esTitular) delete dataToUpdate.parentesco;
     const apellidos = apellidosTrasCambio(data, hermano);
@@ -293,7 +301,11 @@ export class MisFichasService {
     });
     if (!hermano) throw new HttpError(HERMANO_ERRORS.NOT_AUTHORIZED, 403);
 
-    return await emanciparFicha(hermano, dto.newEmail, dto.newDni, await encrypt(dto.newPassword), false, meta);
+    // Cada intento gasta uno de los DNI del día, también si solo cambia el
+    // correo: los dos dicen si alguien tiene cuenta.
+    contarIntentoDeDni(managerUserId);
+    if (dto.newDni && !hermano.dni) await exigirDniLibreSinDelatar(dto.newDni, hermanoId, meta);
+    return await emanciparFicha(hermano, dto.newEmail, dto.newDni, await encrypt(dto.newPassword), false, meta, true);
   }
   /**
    * Tronco común de la emancipación: las reglas y la transacción son las mismas

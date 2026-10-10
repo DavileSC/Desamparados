@@ -158,13 +158,13 @@ async function aportaciones(ejercicio: number, cuotas: boolean) {
       }
       lista.push({
         nif: h.dni, nifRepresentante: representante, apellidosYNombre: apellidosYNombre(h), nombre: quien,
-        codigoPostal: h.codigoPostal, email: h.email ?? titular?.email ?? null, centimos, fecha, concepto: r.concepto,
+        codigoPostal: h.codigoPostal, email: h.email ?? titular?.email ?? null, centimos, fecha, concepto: r.concepto, userId: h.userId,
       });
     } else if (titular?.dni && titular.id !== h.id) {
       // Sin DNI (un niño): lo pagó el titular de la cuenta, y a él se le declara.
       lista.push({
         nif: titular.dni, nifRepresentante: null, apellidosYNombre: apellidosYNombre(titular), nombre: `${titular.nombre} ${titular.apellidos}`,
-        codigoPostal: titular.codigoPostal, email: titular.email, centimos, fecha, concepto: `${r.concepto} (de ${h.nombre})`,
+        codigoPostal: titular.codigoPostal, email: titular.email, centimos, fecha, concepto: `${r.concepto} (de ${h.nombre})`, userId: h.userId,
       });
     } else if (Number(fecha.slice(0, 4)) === ejercicio) {
       excluidos.push({ nombre: quien, centimos, motivo: 'Sin DNI en la ficha.' });
@@ -323,23 +323,40 @@ export class Modelo182Service {
 
   /**
    * Los NIF que el hermano puede ver desde su área: el suyo y los de las fichas
-   * de su cuenta (sus hijos con DNI). Los recibos de un niño sin DNI ya van a
-   * nombre del titular.
+   * de su cuenta (sus hijos con DNI), solo de fichas activas. Una ficha
+   * pendiente la crea el propio hermano con el DNI que quiera: con ella
+   * bastaba escribir el DNI de un donante que no es hermano para ver lo que
+   * había donado (y donar dice de las creencias de alguien, art. 9 RGPD).
    */
   static async nifsDeLaCuenta(userId: number): Promise<string[]> {
-    const fichas = await db.hermano.findMany({ where: { userId, dni: { not: null } }, select: { dni: true } });
+    const fichas = await db.hermano.findMany({ where: { userId, activo: true, dni: { not: null } }, select: { dni: true } });
     return fichas.map((f) => f.dni!);
+  }
+
+  /**
+   * De la lista de un ejercicio, los NIF de la cuenta cuyas aportaciones son
+   * todas suyas: recibos de sus fichas o pagos en línea hechos con uno de sus
+   * correos. Si con ese NIF hay algo pagado por otra persona, el certificado
+   * (que lo suma todo) no se enseña aquí: lo manda Tesorería por correo.
+   */
+  private static async nifsVisibles(userId: number, lista: Aportacion[]): Promise<Set<string>> {
+    const nifs = await Modelo182Service.nifsDeLaCuenta(userId);
+    if (nifs.length === 0) return new Set();
+    const cuenta = await db.user.findUnique({ where: { id: userId }, select: { email: true, hermanos: { select: { email: true } } } });
+    const correos = new Set([cuenta?.email, ...(cuenta?.hermanos.map((h) => h.email) ?? [])].filter((e): e is string => !!e).map((e) => e.trim().toLowerCase()));
+    const esSuya = (a: Aportacion) => a.userId === userId || (a.userId === undefined && !!a.email && correos.has(a.email.trim().toLowerCase()));
+    return new Set(nifs.filter((nif) => lista.every((a) => a.nif !== nif || esSuya(a))));
   }
 
   /** Los certificados que tiene el hermano: por ejercicio cerrado de los cuatro últimos, lo que suma cada NIF. */
   static async misCertificados(userId: number, hoy = new Date()) {
-    const nifs = await Modelo182Service.nifsDeLaCuenta(userId);
     const configuracion = await leerConfiguracion();
     const actual = Number(diaDe(hoy).slice(0, 4));
     const salida: { ejercicio: number; nif: string; nombre: string; centimos: number }[] = [];
     for (let ejercicio = actual - 1; ejercicio >= actual - 4; ejercicio--) {
       const { lista } = await aportaciones(ejercicio, configuracion.cuotas);
-      for (const d of declaradosDelEjercicio(lista.filter((a) => nifs.includes(a.nif)), ejercicio)) {
+      const nifs = await Modelo182Service.nifsVisibles(userId, lista);
+      for (const d of declaradosDelEjercicio(lista.filter((a) => nifs.has(a.nif)), ejercicio)) {
         salida.push({ ejercicio, nif: d.nif, nombre: d.nombre, centimos: d.centimos });
       }
     }
@@ -348,9 +365,9 @@ export class Modelo182Service {
 
   static async miCertificado(userId: number, ejercicio: number, nif: string, hoy = new Date()) {
     if (ejercicio >= Number(diaDe(hoy).slice(0, 4))) throw new HttpError('El certificado se saca cuando acaba el año.', 409);
-    const nifs = await Modelo182Service.nifsDeLaCuenta(userId);
-    // Solo los NIF de su cuenta: el de otro no existe para él.
-    if (!nifs.includes(nif)) throw new NotFoundError('No hay donativos con ese NIF en el ejercicio.');
+    const { lista } = await aportaciones(ejercicio, (await leerConfiguracion()).cuotas);
+    // Solo los NIF de su cuenta y con todo pagado por ella: el de otro no existe para él.
+    if (!(await Modelo182Service.nifsVisibles(userId, lista)).has(nif)) throw new NotFoundError('No hay donativos con ese NIF en el ejercicio.');
     return Modelo182Service.certificados(ejercicio, [nif]);
   }
 }

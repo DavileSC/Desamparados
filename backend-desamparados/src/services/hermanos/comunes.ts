@@ -284,13 +284,21 @@ export async function getNextNumeroHermano(tx: Prisma.TransactionClient) {
   return (ultimo?.numeroHermano || 0) + 1;
 }
 
+export const MENSAJE_EMANCIPACION_NO_GUARDADA = 'No se ha podido crear la cuenta con ese correo y ese DNI. Si son correctos, habla con Secretaría.';
+
 export async function emanciparFicha(
   hermano: FichaEmancipable,
   newEmail: string,
   newDni: string | undefined,
   hashedPassword: string,
   mandarEnlace: boolean,
-  meta?: MetaDeAuditoria
+  meta?: MetaDeAuditoria,
+  /**
+   * Desde el área de hermanos: un correo o un DNI que ya tiene cuenta no se
+   * dice cuál de los dos es, ni siquiera que exista. Con dos 409 distintos,
+   * emancipar una ficha a cargo servía para probar DNI y correos del censo.
+   */
+  sinDelatar = false
 ) {
   const hermanoId = hermano.id;
   const managerUserId = hermano.userId;
@@ -306,11 +314,16 @@ export async function emanciparFicha(
   if (!dniFinal) throw new HttpError(HERMANO_ERRORS.DNI_REQUIRED_EMANCIPATION);
 
   const emailExists = await db.user.findUnique({ where: { email: newEmail } });
-  if (emailExists) throw new HttpError(HERMANO_ERRORS.EMAIL_IN_USE, 409);
-
   // El DNI también es único en User: si ya pertenece a otra cuenta (ej. el propio tutor),
   // la transacción fallaría con un error crudo de BD. Lo comprobamos antes.
   const dniExists = await db.user.findFirst({ where: { dni: dniFinal } });
+  if ((emailExists || dniExists) && sinDelatar) {
+    await AuditoriaService.log(ACCIONES_AUDITORIA.FAMILIAR_DNI_OCUPADO, meta ?? {}, 'hermano', hermanoId, {
+      emancipacion: true, choca: emailExists ? 'correo' : 'dni', cuenta: (emailExists ?? dniExists)!.id,
+    });
+    throw new HttpError(MENSAJE_EMANCIPACION_NO_GUARDADA);
+  }
+  if (emailExists) throw new HttpError(HERMANO_ERRORS.EMAIL_IN_USE, 409);
   if (dniExists) throw new HttpError('Ese DNI ya pertenece a otra cuenta de usuario.', 409);
 
   const { cuenta, tutorDesactivado } = await db.$transaction(async (tx) => {

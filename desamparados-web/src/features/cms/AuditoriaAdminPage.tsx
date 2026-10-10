@@ -125,6 +125,7 @@ const ACCIONES: Record<string, string> = {
   PAPELETA_ENTREGAR: 'Entregar una papeleta de sitio',
   SOLICITUD_SALIDA_CANCELAR: 'Cancelar una solicitud de salida',
   SOLICITUD_SALIDA_PEDIR: 'Pedir la papeleta desde el área de hermanos',
+  SOLICITUD_SALIDA_CAMBIAR_DIA: 'Cambiar el día de recoger la papeleta',
   PAGO_EN_LINEA: 'Pagar en línea desde el área de hermanos',
   SALIDA_CREAR: 'Dar de alta una salida',
   SALIDA_EDITAR: 'Cambiar una salida',

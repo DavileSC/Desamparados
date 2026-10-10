@@ -72,9 +72,9 @@ function useApartado<T>(ficha: ApiProfile, desde: (f: ApiProfile) => T, validar:
 }
 
 /** Un TextField de la ficha: etiqueta encima, a todo el ancho de su celda. */
-function Campo({ etiqueta, valor, onCambiar, tipo = 'text', obligatorio = false, ayuda, completo = false, autoComplete, placeholder }: {
+function Campo({ etiqueta, valor, onCambiar, tipo = 'text', obligatorio = false, ayuda, completo = false, autoComplete, placeholder, deshabilitado = false }: {
   etiqueta: string; valor: string; onCambiar: (valor: string) => void; tipo?: string; obligatorio?: boolean
-  ayuda?: string; completo?: boolean; autoComplete?: string; placeholder?: string
+  ayuda?: string; completo?: boolean; autoComplete?: string; placeholder?: string; deshabilitado?: boolean
 }) {
   return (
     <TextField
@@ -86,6 +86,7 @@ function Campo({ etiqueta, valor, onCambiar, tipo = 'text', obligatorio = false,
       helperText={ayuda}
       autoComplete={autoComplete}
       placeholder={placeholder}
+      disabled={deshabilitado}
       fullWidth
       slotProps={tipo === 'date' ? { inputLabel: { shrink: true } } : undefined}
       sx={completo ? { gridColumn: '1 / -1' } : undefined}
@@ -108,6 +109,7 @@ function Opciones<V extends string>({ etiqueta, valor, onCambiar, opciones, vaci
 
 export function DatosPersonales({ ficha, onGuardada, revision }: PropsApartado) {
   const aCargo = !ficha.esTitular
+  const fechaFija = aCargo && ficha.activo
   const a = useApartado(
     ficha,
     (f) => ({
@@ -165,7 +167,9 @@ export function DatosPersonales({ ficha, onGuardada, revision }: PropsApartado) 
           <Campo etiqueta="Primer apellido" valor={v.primerApellido} onCambiar={a.campo('primerApellido')} obligatorio />
           <Campo etiqueta="Segundo apellido" valor={v.segundoApellido} onCambiar={a.campo('segundoApellido')} />
           <Campo etiqueta="DNI o NIE" valor={v.dni} onCambiar={a.campo('dni')} obligatorio={!aCargo} ayuda={aCargo ? 'Si ya lo tiene' : undefined} />
-          <Campo etiqueta="Fecha de nacimiento" valor={v.fechaNacimiento} onCambiar={a.campo('fechaNacimiento')} tipo="date" obligatorio />
+          {/* La de una ficha a cargo ya aprobada la corrige Secretaría: cambiándola, un menor pasaba por adulto. */}
+          <Campo etiqueta="Fecha de nacimiento" valor={v.fechaNacimiento} onCambiar={a.campo('fechaNacimiento')} tipo="date" obligatorio
+            deshabilitado={fechaFija} ayuda={fechaFija ? 'Para corregirla, habla con Secretaría' : undefined} />
           <Opciones etiqueta="Sexo" valor={v.sexo} onCambiar={a.campo('sexo')} opciones={SEXO} vacio="Sin indicar" />
           <Opciones etiqueta="Estado civil" valor={v.estadoCivil} onCambiar={a.campo('estadoCivil')} opciones={ESTADO_CIVIL} vacio="Sin indicar" />
           <Campo etiqueta="Profesión" valor={v.profesion} onCambiar={a.campo('profesion')} />
