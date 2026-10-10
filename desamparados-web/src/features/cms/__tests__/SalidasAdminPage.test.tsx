@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@mui/material/styles'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -51,7 +51,10 @@ function montar(ruta = '/cms/procesion/salidas') {
 function montarFicha(id: number) {
   const cliente = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
   const router = createMemoryRouter(
-    [{ path: '/cms/procesion/salidas/:id/editar', element: <SalidaEditPage /> }],
+    [
+      { path: '/cms/procesion/salidas', element: <div>Listado de salidas</div> },
+      { path: '/cms/procesion/salidas/:id/editar', element: <SalidaEditPage /> },
+    ],
     { initialEntries: [`/cms/procesion/salidas/${id}/editar`] },
   )
   render(
@@ -120,5 +123,18 @@ describe('SalidaEditPage', () => {
     montarFicha(3)
 
     expect(await screen.findByText('Papeleta de la Procesión Magna')).toBeInTheDocument()
+  })
+
+  it('con una sección a medias, «Volver» pregunta antes de perder los cambios', async () => {
+    const user = userEvent.setup()
+    montarFicha(1)
+    await user.type(await screen.findByRole('textbox', { name: 'Indicaciones' }), 'Traje oscuro')
+    await user.click(screen.getByRole('link', { name: 'Volver' }))
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText(/cambios que has hecho en esta salida/)).toBeInTheDocument()
+    await user.click(within(dialogo).getByRole('button', { name: 'Seguir editando' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('textbox', { name: 'Indicaciones' })).toHaveValue('Traje oscuro')
+    expect(screen.queryByText('Listado de salidas')).not.toBeInTheDocument()
   })
 })

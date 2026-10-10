@@ -30,7 +30,7 @@ describe('CartasPage', () => {
   it('una carta nueva dice a cuántos va y se guarda con su búsqueda', async () => {
     const user = userEvent.setup()
     const llamadas = servidor()
-    renderWithProviders(<CartasPage />)
+    renderWithProviders(<CartasPage />, { routerDeDatos: true })
     await user.click(await screen.findByRole('button', { name: 'Nueva carta' }))
 
     const editor = await screen.findByRole('region', { name: 'Carta nueva' })
@@ -46,7 +46,7 @@ describe('CartasPage', () => {
   it('los campos se ponen donde está el cursor, y uno mal escrito se avisa', async () => {
     const user = userEvent.setup()
     servidor()
-    renderWithProviders(<CartasPage />)
+    renderWithProviders(<CartasPage />, { routerDeDatos: true })
     await user.click(await screen.findByRole('button', { name: /Cabildo de cuentas/ }))
     const texto = await screen.findByRole('textbox', { name: 'Texto' })
     await user.clear(texto)
@@ -64,7 +64,7 @@ describe('CartasPage', () => {
     vi.spyOn(window, 'open').mockReturnValue(pestana as unknown as Window)
     const llamadas = servidor()
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:cartas') }))
-    renderWithProviders(<CartasPage />)
+    renderWithProviders(<CartasPage />, { routerDeDatos: true })
     await user.click(await screen.findByRole('button', { name: /Cabildo de cuentas/ }))
     await user.click(await screen.findByRole('button', { name: 'Vista previa' }))
 
@@ -79,7 +79,7 @@ describe('CartasPage', () => {
     vi.spyOn(window, 'open').mockReturnValue(pestana as unknown as Window)
     const llamadas = servidor()
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:etiquetas') }))
-    renderWithProviders(<CartasPage />)
+    renderWithProviders(<CartasPage />, { routerDeDatos: true })
     await user.click(await screen.findByRole('button', { name: 'Etiquetas postales' }))
 
     const panel = await screen.findByRole('region', { name: 'Etiquetas postales' })
@@ -93,5 +93,37 @@ describe('CartasPage', () => {
 
     await waitFor(() => expect(pestana.location.href).toBe('blob:etiquetas'))
     expect(llamadas.find((l) => l.url.includes('/cartas/etiquetas'))?.cuerpo).toEqual({ consulta: 'estado=activo&correo=sin', formato: '3x8', saltar: 5, porDomicilio: false })
+  })
+
+  it('guardar una carta nueva deja el aviso a la vista; con cambios sin guardar, cambiar de carta pregunta', async () => {
+    const user = userEvent.setup()
+    servidor()
+    renderWithProviders(<CartasPage />, { routerDeDatos: true })
+    await user.click(await screen.findByRole('button', { name: 'Nueva carta' }))
+    const editor = await screen.findByRole('region', { name: 'Carta nueva' })
+    await user.type(within(editor).getByRole('textbox', { name: 'Nombre de la carta' }), 'Rosario')
+    await user.click(within(editor).getByRole('button', { name: 'Guardar' }))
+    expect(await screen.findByText('Carta guardada.')).toBeInTheDocument()
+
+    // Algo escrito y sin guardar: abrir otra carta pregunta antes de tirarlo.
+    await user.type(screen.getByRole('textbox', { name: 'Asunto' }), ' y más')
+    await user.click(screen.getByRole('button', { name: /Cabildo de cuentas/ }))
+    const dialogo = await screen.findByRole('dialog')
+    await user.click(within(dialogo).getByRole('button', { name: 'Seguir editando' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('textbox', { name: 'Asunto' })).toHaveValue(' y más')
+  })
+
+  it('borrar una carta pregunta antes', async () => {
+    const user = userEvent.setup()
+    const llamadas = servidor()
+    renderWithProviders(<CartasPage />, { routerDeDatos: true })
+    await user.click(await screen.findByRole('button', { name: /Cabildo de cuentas/ }))
+    await user.click(await screen.findByRole('button', { name: 'Borrar la carta' }))
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText('¿Borrar la carta «Cabildo de cuentas»?')).toBeInTheDocument()
+    expect(llamadas.some((l) => l.metodo === 'DELETE')).toBe(false)
+    await user.click(within(dialogo).getByRole('button', { name: 'Borrar la carta' }))
+    await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE' && l.url.includes('/cartas/3'))).toBe(true))
   })
 })

@@ -1,12 +1,16 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useBlocker } from 'react-router-dom'
 import {
   Alert, Box, Button, Chip, CircularProgress, List, ListItemButton, ListItemText, MenuItem, Paper, Stack, TextField, Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import CabeceraSeccion from '../CabeceraSeccion'
 import EtiquetasPostales from './EtiquetasPostales'
+import AvisoCambiosSinGuardar from '../ficha/AvisoCambiosSinGuardar'
+import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
+import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import { site } from '../../../config/site'
 import { listasDelCenso } from '../../../lib/api/hermanos'
 import {
@@ -34,17 +38,30 @@ function camposDesconocidos(texto: string): string[] {
  * dirección donde cae la ventana del sobre. Se guardan para otro año. Para
  * los sobres sin ventana o los paquetes, las etiquetas postales.
  */
+type Abierta = Carta | 'nueva' | 'etiquetas' | null
+
 export default function CartasPage() {
   const queryClient = useQueryClient()
   const lista = useQuery({ queryKey: CLAVE, queryFn: cartas })
-  const [abierta, setAbierta] = useState<Carta | 'nueva' | 'etiquetas' | null>(null)
+  const [abierta, setAbierta] = useState<Abierta>(null)
+  // El editor se monta de nuevo solo al abrir otra cosa: con la carta como
+  // clave, guardar una nueva lo remontaba y se perdía el «Carta guardada.».
+  const [sesion, setSesion] = useState(0)
+  const [sucio, setSucio] = useState(false)
+  const [pendiente, setPendiente] = useState<{ destino: Abierta } | null>(null)
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => sucio && currentLocation.pathname !== nextLocation.pathname)
+  useAvisoAlCerrarLaPestana(sucio)
+
+  const abrir = (destino: Abierta) => { setAbierta(destino); setSesion((n) => n + 1); setSucio(false); setPendiente(null) }
+  // Cambiar de carta, empezar otra o volver con lo escrito sin guardar lo tiraba sin preguntar.
+  const pedir = (destino: Abierta) => { if (sucio) setPendiente({ destino }); else abrir(destino) }
 
   return (
     <>
       <Helmet><title>{`Cartas | CMS ${site.nombreCorto}`}</title><meta name="robots" content="noindex" /></Helmet>
       <CabeceraSeccion titulo="Cartas" subtitulo="Cartas y circulares a los hermanos, en PDF, listas para imprimir y meter en un sobre de ventana.">
-        <Button variant="outlined" onClick={() => setAbierta('etiquetas')}>Etiquetas postales</Button>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAbierta('nueva')}>Nueva carta</Button>
+        <Button variant="outlined" onClick={() => pedir('etiquetas')}>Etiquetas postales</Button>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => pedir('nueva')}>Nueva carta</Button>
       </CabeceraSeccion>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(240px, 320px) minmax(0, 1fr)' }, gap: 2.5, alignItems: 'start' }}>
         <Box sx={{ display: { xs: abierta ? 'none' : 'block', md: 'block' } }}>
@@ -54,7 +71,7 @@ export default function CartasPage() {
             <Paper>
               <List aria-label="Cartas guardadas" dense>
                 {lista.data.map((c) => (
-                  <ListItemButton key={c.id} selected={typeof abierta === 'object' && abierta?.id === c.id} onClick={() => setAbierta(c)}>
+                  <ListItemButton key={c.id} selected={typeof abierta === 'object' && abierta?.id === c.id} onClick={() => pedir(c)}>
                     <ListItemText primary={c.nombre} secondary={c.asunto || 'Sin asunto'} />
                   </ListItemButton>
                 ))}
@@ -64,21 +81,36 @@ export default function CartasPage() {
         </Box>
         <Box sx={{ display: { xs: abierta ? 'block' : 'none', md: 'block' }, minWidth: 0 }}>
           {abierta === 'etiquetas'
-            ? <EtiquetasPostales onVolver={() => setAbierta(null)} />
+            ? <EtiquetasPostales onVolver={() => abrir(null)} />
             : abierta
-            ? <Editor key={abierta === 'nueva' ? 'nueva' : abierta.id} carta={abierta === 'nueva' ? null : abierta}
+            ? <Editor key={sesion} carta={abierta === 'nueva' ? null : abierta} onSucio={setSucio}
                 onGuardada={(c) => { setAbierta(c); void queryClient.invalidateQueries({ queryKey: CLAVE }) }}
-                onBorrada={() => { setAbierta(null); void queryClient.invalidateQueries({ queryKey: CLAVE }) }}
-                onVolver={() => setAbierta(null)} />
+                onBorrada={() => { abrir(null); void queryClient.invalidateQueries({ queryKey: CLAVE }) }}
+                onVolver={() => pedir(null)} />
             : <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}><Typography>Elige una carta guardada o empieza una nueva.</Typography></Paper>}
         </Box>
       </Box>
+      <DialogoConfirmacion
+        abierto={pendiente !== null}
+        titulo="Hay cambios sin guardar"
+        mensaje="Si sigues, se pierden los cambios que has hecho en esta carta."
+        textoConfirmar="Seguir sin guardar"
+        textoCancelar="Seguir editando"
+        peligro
+        onConfirmar={() => { if (pendiente) abrir(pendiente.destino) }}
+        onCancelar={() => setPendiente(null)}
+      />
+      <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="esta carta" />
     </>
   )
 }
 
-function Editor({ carta, onGuardada, onBorrada, onVolver }: { carta: Carta | null; onGuardada: (c: Carta) => void; onBorrada: () => void; onVolver: () => void }) {
-  const [datos, setDatos] = useState<DatosDeCarta>(carta ? { nombre: carta.nombre, asunto: carta.asunto, cuerpo: carta.cuerpo, consulta: carta.consulta, firmaCargo: carta.firmaCargo, firmaNombre: carta.firmaNombre } : EN_BLANCO)
+function Editor({ carta, onSucio, onGuardada, onBorrada, onVolver }: { carta: Carta | null; onSucio: (sucio: boolean) => void; onGuardada: (c: Carta) => void; onBorrada: () => void; onVolver: () => void }) {
+  const [guardados, setGuardados] = useState<DatosDeCarta>(carta ? { nombre: carta.nombre, asunto: carta.asunto, cuerpo: carta.cuerpo, consulta: carta.consulta, firmaCargo: carta.firmaCargo, firmaNombre: carta.firmaNombre } : EN_BLANCO)
+  const [datos, setDatos] = useState<DatosDeCarta>(guardados)
+  const [aBorrar, setABorrar] = useState(false)
+  const sucio = JSON.stringify(datos) !== JSON.stringify(guardados)
+  useEffect(() => { onSucio(sucio) }, [sucio, onSucio])
   const [aviso, setAviso] = useState<{ tono: 'success' | 'error'; texto: string } | null>(null)
   const cuerpoRef = useRef<HTMLTextAreaElement>(null)
   const listas = useQuery({ queryKey: ['censo', 'listas'], queryFn: listasDelCenso })
@@ -86,11 +118,16 @@ function Editor({ carta, onGuardada, onBorrada, onVolver }: { carta: Carta | nul
   const cambiar = (cambios: Partial<DatosDeCarta>) => setDatos((d) => ({ ...d, ...cambios }))
 
   const guardar = useMutation({
-    mutationFn: () => (carta ? guardarCarta(carta.id, datos) : crearCarta(datos)),
-    onSuccess: (c) => { setAviso({ tono: 'success', texto: 'Carta guardada.' }); onGuardada(c) },
+    mutationFn: (d: DatosDeCarta) => (carta ? guardarCarta(carta.id, d) : crearCarta(d)),
+    onSuccess: (c, d) => { setGuardados(d); setAviso({ tono: 'success', texto: 'Carta guardada.' }); onGuardada(c) },
     onError: (e) => setAviso({ tono: 'error', texto: mensaje(e, 'No se ha podido guardar.') }),
   })
-  const borrar = useMutation({ mutationFn: () => borrarCarta(carta!.id), onSuccess: onBorrada })
+  const borrar = useMutation({
+    mutationFn: () => borrarCarta(carta!.id),
+    onSuccess: onBorrada,
+    // Si la API falla, se dice: antes no pasaba nada y parecía borrada.
+    onError: (e) => setAviso({ tono: 'error', texto: mensaje(e, 'No se ha podido borrar la carta.') }),
+  })
   const pdf = useMutation({
     mutationFn: async (prueba: boolean) => {
       // La pestaña se abre ya, en el clic: el navegador bloquea las que nacen después de esperar.
@@ -158,14 +195,23 @@ function Editor({ carta, onGuardada, onBorrada, onVolver }: { carta: Carta | nul
         </Box>
 
         <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
-          <Button variant="contained" disabled={!valida || guardar.isPending} onClick={() => guardar.mutate()}>{guardar.isPending ? 'Guardando…' : 'Guardar'}</Button>
+          <Button variant="contained" disabled={!valida || guardar.isPending} onClick={() => guardar.mutate(datos)}>{guardar.isPending ? 'Guardando…' : 'Guardar'}</Button>
           <Button variant="outlined" disabled={!valida || n === 0 || pdf.isPending} onClick={() => pdf.mutate(true)}>Vista previa</Button>
           <Button variant="outlined" disabled={!valida || n === 0 || pdf.isPending} onClick={() => pdf.mutate(false)}>
             {pdf.isPending ? 'Preparando…' : `Imprimir las ${n} carta${n === 1 ? '' : 's'}`}
           </Button>
-          {carta && <Button color="error" disabled={borrar.isPending} onClick={() => borrar.mutate()} sx={{ ml: { sm: 'auto' } }}>Borrar la carta</Button>}
+          {carta && <Button color="error" disabled={borrar.isPending} onClick={() => setABorrar(true)} sx={{ ml: { sm: 'auto' } }}>Borrar la carta</Button>}
         </Stack>
       </Stack>
+      <DialogoConfirmacion
+        abierto={aBorrar}
+        titulo={`¿Borrar la carta «${carta?.nombre ?? ''}»?`}
+        mensaje="Se borra el texto guardado. Las cartas ya impresas no cambian."
+        textoConfirmar="Borrar la carta"
+        peligro
+        onConfirmar={() => { setABorrar(false); borrar.mutate() }}
+        onCancelar={() => setABorrar(false)}
+      />
     </Paper>
   )
 }

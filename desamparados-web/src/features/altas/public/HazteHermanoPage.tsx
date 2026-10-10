@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { Controller, useForm, useWatch, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,11 +8,13 @@ import {
 } from '@mui/material'
 import { ThemeProvider } from '@mui/material/styles'
 import MetaDePagina from '../../../components/MetaDePagina'
-import { Link } from 'react-router-dom'
+import { Link, useBlocker, useSearchParams } from 'react-router-dom'
 import ContenedorDePagina from '../../../components/ContenedorDePagina'
 import { Revela } from '../../../components/SeccionAnimada'
 import Boton from '../../../components/Boton'
 import CampoContrasena from '../../../components/CampoContrasena'
+import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
+import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import { LONGITUD_MINIMA } from '../../../lib/politicaDeContrasena'
 import { register as apiRegister } from '../../../lib/api/auth'
 import { ErrorDeApi } from '../../../lib/api/cliente'
@@ -77,6 +79,45 @@ export default function HazteHermanoPage() {
 
   const PASOS = pasosDe(camino)
   const esUltimo = paso === PASOS.length - 1
+
+  /*
+   * El paso va también en la dirección (`?paso=`): en el móvil, el gesto de
+   * «atrás» para volver un paso salía de la página y se llevaba la solicitud
+   * entera (datos, IBAN, foto y certificado). Ahora «atrás» vuelve al paso
+   * anterior. El paso manda en el estado (para poder enfocar el campo en el
+   * acto); la dirección lo sigue, y un cambio que venga de ella (atrás,
+   * adelante) se aplica si es un paso al que ya se llegó.
+   */
+  const [params, setParams] = useSearchParams()
+  const pasoEnLaDireccion = Number(params.get('paso') ?? 0)
+  const ultimaDireccion = useRef(pasoEnLaDireccion)
+  const [alcanzado, setAlcanzado] = useState(0)
+  const dirigir = (indice: number, reemplazar = false) => {
+    ultimaDireccion.current = indice
+    setParams((p) => { if (indice === 0) p.delete('paso'); else p.set('paso', String(indice)); return p }, { replace: reemplazar })
+  }
+  /** Cambia de paso ya (para poder enfocar después) y lo apunta en la dirección. */
+  const mover = (indice: number) => {
+    flushSync(() => { setPaso(indice); setAlcanzado((a) => Math.max(a, indice)) })
+    if (indice !== pasoEnLaDireccion) dirigir(indice)
+  }
+  useEffect(() => {
+    if (ultimaDireccion.current === pasoEnLaDireccion) return
+    ultimaDireccion.current = pasoEnLaDireccion
+    if (Number.isInteger(pasoEnLaDireccion) && pasoEnLaDireccion >= 0 && pasoEnLaDireccion <= alcanzado && (pasoEnLaDireccion === 0 || camino)) setPaso(pasoEnLaDireccion)
+    else dirigir(paso, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando cambia la dirección: lo demás se lee tal como está en ese momento
+  }, [pasoEnLaDireccion])
+  // Al llegar con un `?paso=` (una recarga, un enlace) no hay nada rellenado: se empieza por el principio.
+  useEffect(() => {
+    if (pasoEnLaDireccion !== 0) dirigir(0, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al entrar
+  }, [])
+
+  // Empezada y sin enviar, salir de la página (un enlace, cerrar la pestaña) pregunta antes.
+  const empezada = camino !== null && enviada === null
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => empezada && currentLocation.pathname !== nextLocation.pathname)
+  useAvisoAlCerrarLaPestana(empezada)
   /**
    * `useWatch` y no `watch('menores')`: el valor se lee para pintar, y `watch`
    * devuelve funciones que el compilador de React no puede memorizar, así que
@@ -105,12 +146,12 @@ export default function HazteHermanoPage() {
   /** Cambia al paso del campo y le pasa el foco: el paso se pinta ya, para que el campo se pueda enfocar. */
   const irA = (campo: Campo) => {
     const destino = pasoDe(campo)
-    flushSync(() => setPaso(destino === -1 ? 0 : destino))
+    mover(destino === -1 ? 0 : destino)
     if (!SIN_FOCO.includes(campo)) setFocus(campo)
   }
 
   const irAlPaso = (indice: number) => {
-    flushSync(() => setPaso(indice))
+    mover(indice)
     const primero = PASOS[indice].campos[0]
     if (!SIN_FOCO.includes(primero)) setFocus(primero)
   }
@@ -131,7 +172,7 @@ export default function HazteHermanoPage() {
     if (conMenores(elegido) && getValues('menores').length === 0) {
       setValue('menores', [{ ...menorVacio }])
     }
-    flushSync(() => setPaso(1))
+    mover(1)
     setFocus('nombre')
   }
 
@@ -162,6 +203,8 @@ export default function HazteHermanoPage() {
       reset()
       setCamino(null)
       setPaso(0)
+      setAlcanzado(0)
+      dirigir(0, true)
     } catch (error) {
       if (error instanceof ErrorDeApi && Object.keys(error.fields).length > 0) {
         // El servidor dice qué campo falla; enseñarlo bajo su casilla, en su
@@ -687,6 +730,16 @@ export default function HazteHermanoPage() {
           </Box>
         </ContenedorDePagina>
       </Box>
+      <DialogoConfirmacion
+        abierto={bloqueo.state === 'blocked'}
+        titulo="¿Dejar la solicitud a medias?"
+        mensaje="Si sales ahora se pierde lo que has rellenado de la solicitud."
+        textoConfirmar="Salir sin enviar"
+        textoCancelar="Seguir con la solicitud"
+        peligro
+        onConfirmar={() => bloqueo.proceed?.()}
+        onCancelar={() => bloqueo.reset?.()}
+      />
     </>
   )
 }

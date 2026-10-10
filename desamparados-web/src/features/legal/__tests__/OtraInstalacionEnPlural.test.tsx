@@ -51,7 +51,7 @@ describe('otra instalación, en plural', () => {
 
   it('hazte hermano: la descripción con su advocación, no la de Desamparados', async () => {
     const { default: HazteHermanoPage } = await import('../../altas/public/HazteHermanoPage')
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     await waitFor(() => expect(descripcion()).toMatch(/^Solicita tu alta como hermano de las Cofradías Fusionadas de Nuestra Señora de la Paz\./))
   })
 })

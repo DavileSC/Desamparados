@@ -5,7 +5,7 @@ import {
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import DownloadIcon from '@mui/icons-material/Download'
 import { Helmet } from 'react-helmet-async'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useBlocker, useParams } from 'react-router-dom'
 import {
   aprobarActa, actaEnPdf, apuntarAsistente, apuntarVotacion, borrarVotacion, cabildo, darPorCelebrado, guardarActa, guardarCabildo,
   prepararConvocatoria, quitarAsistente, type Cabildo, type Mayoria, type TipoCabildo,
@@ -14,6 +14,8 @@ import { buscarHermanos, type AdminBrother } from '../../lib/api/hermanos'
 import { guardarEnDisco } from '../../lib/api/datos'
 import { limpiarHtml } from '../../lib/limpiarHtml'
 import DialogoConfirmacion from '../../components/DialogoConfirmacion'
+import AvisoCambiosSinGuardar from './ficha/AvisoCambiosSinGuardar'
+import { useAvisoAlCerrarLaPestana } from '../../hooks/useAvisoAlCerrarLaPestana'
 import CabeceraSeccion from './CabeceraSeccion'
 import VentanaFormulario from './VentanaFormulario'
 import EditorTexto from './EditorTexto'
@@ -79,6 +81,12 @@ export default function CabildoPage() {
     }, 300)
     return () => { cancelado = true; clearTimeout(reloj) }
   }, [texto])
+
+  // El acta se redacta durante días: «Volver» o cerrar la pestaña con texto
+  // sin guardar lo tiraba sin preguntar.
+  const actaSucia = c !== null && c.estado === 'CELEBRADO' && acta !== c.acta
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => actaSucia && !ocupado && currentLocation.pathname !== nextLocation.pathname)
+  useAvisoAlCerrarLaPestana(actaSucia && !ocupado)
 
   if (!c) return error ? <Alert severity="error">{error}</Alert> : <CircularProgress aria-label="Cargando el cabildo" />
 
@@ -234,6 +242,7 @@ export default function CabildoPage() {
       </>}
     </VentanaFormulario>
 
+    <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="el acta" />
     <DialogoConfirmacion
       abierto={confirmar === 'segunda'}
       titulo="¿Celebrado en segunda convocatoria?"

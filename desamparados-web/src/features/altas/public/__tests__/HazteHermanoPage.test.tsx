@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { ThemeProvider } from '@mui/material/styles'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { renderWithProviders } from '../../../../test/test-utils'
+import { crearQueryClientDePruebas } from '../../../../test/queryClient'
+import theme from '../../../../theme'
 import HazteHermanoPage from '../HazteHermanoPage'
 
 // `delay: null` quita la espera que userEvent mete entre pulsación y
@@ -124,7 +129,7 @@ describe('HazteHermanoPage', () => {
     // navegador daba por bueno cualquier letra.
     const fetchFalso = vi.fn()
     vi.stubGlobal('fetch', fetchFalso)
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
     await rellenarDatos(u, { 'DNI/NIE': '12345678A' })
@@ -139,7 +144,7 @@ describe('HazteHermanoPage', () => {
   it('no pasa del segundo paso con un teléfono que no son nueve dígitos', async () => {
     const fetchFalso = vi.fn()
     vi.stubGlobal('fetch', fetchFalso)
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
     await rellenarDatos(u)
@@ -155,7 +160,7 @@ describe('HazteHermanoPage', () => {
   })
 
   it('conserva lo escrito al volver atrás', async () => {
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
     await rellenarDatos(u)
@@ -168,12 +173,38 @@ describe('HazteHermanoPage', () => {
     expect(screen.getByLabelText('DNI/NIE')).toHaveValue('12345678Z')
   })
 
+  it('«atrás» del navegador vuelve al paso anterior con lo escrito; salir de la página pregunta antes', async () => {
+    // En el móvil, el gesto de «atrás» salía de la página y se llevaba la solicitud entera.
+    const router = createMemoryRouter(
+      [{ path: '/', element: <p>Portada</p> }, { path: '/hazte-hermano', element: <HazteHermanoPage /> }],
+      { initialEntries: ['/', '/hazte-hermano'], initialIndex: 1 },
+    )
+    render(<QueryClientProvider client={crearQueryClientDePruebas()}><ThemeProvider theme={theme}><RouterProvider router={router} /></ThemeProvider></QueryClientProvider>)
+    const u = usuario()
+    await elegir(u, CAMINO_HERMANO)
+    await rellenarDatos(u)
+    await continuar(u)
+    expect(router.state.location.search).toBe('?paso=2')
+
+    await act(() => router.navigate(-1))
+    await waitFor(() => expect(pasoDe('Nombre')).not.toHaveAttribute('inert'))
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Juan')
+
+    // Hasta la elección del camino, y de ahí fuera de la página: eso ya pregunta.
+    await act(() => router.navigate(-1))
+    await act(() => router.navigate(-1))
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText('¿Dejar la solicitud a medias?')).toBeInTheDocument()
+    await u.click(within(dialogo).getByRole('button', { name: 'Seguir con la solicitud' }))
+    expect(router.state.location.pathname).toBe('/hazte-hermano')
+  })
+
   it('manda el DNI y el teléfono normalizados', async () => {
     const fetchFalso = vi.fn().mockResolvedValue(
       respuesta({ fichas: 1, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = await rellenarTodo({ 'DNI/NIE': '12345678-z', Teléfono: '+34 600 12 34 56' })
     await enviar(u)
 
@@ -196,7 +227,7 @@ describe('HazteHermanoPage', () => {
       message: 'Error de validación',
       errors: [{ field: 'usuario.dni', message: 'ese DNI ya está registrado' }],
     }, 400)))
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = await rellenarTodo()
     await enviar(u)
 
@@ -210,7 +241,7 @@ describe('HazteHermanoPage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       respuesta({ fichas: 1, message: 'ok' }, 201),
     ))
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = await rellenarTodo()
     await enviar(u)
 
@@ -227,7 +258,7 @@ describe('HazteHermanoPage', () => {
       respuesta({ fichas: 3, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_CON_MENORES)
     await rellenarDatos(u)
@@ -267,7 +298,7 @@ describe('HazteHermanoPage', () => {
       respuesta({ fichas: 1, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_SOLO_MENORES)
 
@@ -294,7 +325,7 @@ describe('HazteHermanoPage', () => {
   })
 
   it('avisa de la autorización cuando el menor no es hijo suyo', async () => {
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_CON_MENORES)
     await rellenarDatos(u)
@@ -313,7 +344,7 @@ describe('HazteHermanoPage', () => {
     const fetchFalso = vi.fn()
       .mockResolvedValueOnce(respuesta({ message: 'Si hay una ficha a tu nombre, Secretaría la revisará y se pondrá en contacto contigo.' }, 200))
     vi.stubGlobal('fetch', fetchFalso)
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
 
     await u.click(screen.getByRole('button', { name: /¿Fuiste hermano\? Pide la reactivación/ }))
@@ -334,7 +365,7 @@ describe('HazteHermanoPage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       respuesta({ fichas: 1, message: 'Solicitud enviada correctamente. Revisa tu email y pásate por Secretaría para formalizar tu alta.' }, 201),
     ))
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = await rellenarTodo()
     await enviar(u)
 
@@ -344,7 +375,7 @@ describe('HazteHermanoPage', () => {
   })
 
   it('no pasa de «Tus datos» sin sexo ni estado civil', async () => {
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
     await rellenar(u, PASO_1)
@@ -355,7 +386,7 @@ describe('HazteHermanoPage', () => {
   })
 
   it('la fecha de bautismo es obligatoria y no puede ser anterior al nacimiento', async () => {
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
     await rellenarDatos(u)
@@ -370,7 +401,7 @@ describe('HazteHermanoPage', () => {
   })
 
   it('el código postal rellena la provincia y la comunidad, sin pisar lo escrito a mano', async () => {
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
     await rellenarDatos(u)
@@ -396,7 +427,7 @@ describe('HazteHermanoPage', () => {
       respuesta({ fichas: 1, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
     await rellenarDatos(u)
@@ -436,7 +467,7 @@ describe('HazteHermanoPage', () => {
       respuesta({ fichas: 1, message: 'ok' }, 201),
     )
     vi.stubGlobal('fetch', fetchFalso)
-    renderWithProviders(<HazteHermanoPage />)
+    renderWithProviders(<HazteHermanoPage />, { routerDeDatos: true })
     const u = usuario()
     await elegir(u, CAMINO_HERMANO)
     await rellenarDatos(u)

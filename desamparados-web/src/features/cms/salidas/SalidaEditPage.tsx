@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import {
   Alert, Box, Button, CircularProgress, FormControlLabel, IconButton, MenuItem, Paper, Radio, RadioGroup, Stack, Switch, TextField, Typography,
 } from '@mui/material'
@@ -7,11 +7,13 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import { Helmet } from 'react-helmet-async'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useBlocker, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../altas/auth/store'
 import { useSalidas } from '../../procesion/useSalidas'
 import DialogoConfirmacion from '../../../components/DialogoConfirmacion'
+import AvisoCambiosSinGuardar from '../ficha/AvisoCambiosSinGuardar'
+import { useAvisoAlCerrarLaPestana } from '../../../hooks/useAvisoAlCerrarLaPestana'
 import { CLAVE_SALIDAS, editarSalida, fijarFechaDeSalida, type DatosSalida, type PuestoDelCatalogo, type Salida } from '../../../lib/api/salidas'
 import CabeceraSeccion from '../CabeceraSeccion'
 import { fechaConDia } from './formato'
@@ -45,10 +47,32 @@ interface SeccionProps {
   puedeGuardar: boolean
   /** Tras guardar: invalida la caché, para que el listado y esta pantalla vean lo nuevo. */
   onGuardado: () => void
+  /** Cada sección dice si tiene cambios sin guardar: la pantalla avisa antes de salir. */
+  onSucio: (seccion: string, sucio: boolean) => void
+}
+
+/**
+ * Si los valores de una sección difieren de lo último guardado. Devuelve la
+ * función que se llama tras guardar: toma lo que haya en el siguiente pintado
+ * (que puede traer lo que devolvió el servidor) como lo guardado.
+ */
+function useSeccionSucia(seccion: string, valores: unknown, onSucio: SeccionProps['onSucio']) {
+  const actual = JSON.stringify(valores)
+  const [guardado, setGuardado] = useState(actual)
+  const [recienGuardado, setRecienGuardado] = useState(false)
+  useEffect(() => {
+    if (!recienGuardado) return
+    setGuardado(actual)
+    setRecienGuardado(false)
+  }, [recienGuardado, actual])
+  const sucio = !recienGuardado && actual !== guardado
+  useEffect(() => { onSucio(seccion, sucio) }, [seccion, sucio, onSucio])
+  useEffect(() => () => onSucio(seccion, false), [seccion, onSucio])
+  return () => setRecienGuardado(true)
 }
 
 /** Datos: nombre, slug, orden y si está activa. */
-function SeccionDatos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
+function SeccionDatos({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProps) {
   const [nombre, setNombre] = useState(salida.nombre)
   const [slug, setSlug] = useState(salida.slug)
   const [articulo, setArticulo] = useState<Articulo>(salida.articulo)
@@ -57,6 +81,7 @@ function SeccionDatos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
   const [confirmandoBaja, setConfirmandoBaja] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const guardado = useSeccionSucia('datos', { nombre, slug, articulo, orden, activa }, onSucio)
 
   const valido = nombre.trim() !== '' && slug.trim() !== '' && /^\d+$/.test(orden.trim())
 
@@ -66,6 +91,7 @@ function SeccionDatos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
     try {
       await editarSalida(salida.id, { nombre: nombre.trim(), slug: slug.trim(), articulo, orden: Number(orden), activa })
       onGuardado()
+      guardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se ha podido guardar.'))
     } finally {
@@ -131,7 +157,7 @@ function SeccionDatos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
 }
 
 /** Fecha: por la Pascua (con hora y lugar) o a mano (que mueve el acto de la Agenda). */
-function SeccionFecha({ salida, puedeGuardar, onGuardado }: SeccionProps) {
+function SeccionFecha({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProps) {
   const [tipo, setTipo] = useState<DatosSalida['fecha']>(salida.fecha)
   const [diasDesdePascua, setDiasDesdePascua] = useState(salida.diasDesdePascua !== null ? String(salida.diasDesdePascua) : '')
   const [horaPascua, setHoraPascua] = useState(salida.horaSalida ?? '')
@@ -143,6 +169,7 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado }: SeccionProps) {
   const [fechaDelAnio, setFechaDelAnio] = useState(salida.fechaDelAnio)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const guardado = useSeccionSucia('fecha', { tipo, diasDesdePascua, horaPascua, lugarPascua, fechaHoraManual, lugarManual }, onSucio)
 
   const diasValidos = /^-?\d+$/.test(diasDesdePascua.trim())
   const valido = tipo === 'MANUAL' || diasValidos
@@ -173,6 +200,7 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado }: SeccionProps) {
         }
       }
       onGuardado()
+      guardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se ha podido guardar la fecha.'))
     } finally {
@@ -233,11 +261,12 @@ function SeccionFecha({ salida, puedeGuardar, onGuardado }: SeccionProps) {
 }
 
 /** Cobro: cuota (con su importe) o donativo libre. */
-function SeccionCobro({ salida, puedeGuardar, onGuardado }: SeccionProps) {
+function SeccionCobro({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProps) {
   const [cobro, setCobro] = useState<DatosSalida['cobro']>(salida.cobro)
   const [importe, setImporte] = useState(String(salida.importeCuota).replace('.', ','))
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const guardado = useSeccionSucia('cobro', { cobro, importe }, onSucio)
 
   const importeValido = /^\d{1,8}(?:[.,]\d{1,2})?$/.test(importe.trim())
   const valido = cobro === 'DONATIVO' || importeValido
@@ -248,6 +277,7 @@ function SeccionCobro({ salida, puedeGuardar, onGuardado }: SeccionProps) {
     try {
       await editarSalida(salida.id, { cobro, importeCuota: cobro === 'CUOTA' ? Number(importe.trim().replace(',', '.')) : 0 })
       onGuardado()
+      guardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se ha podido guardar el cobro.'))
     } finally {
@@ -283,10 +313,11 @@ function SeccionCobro({ salida, puedeGuardar, onGuardado }: SeccionProps) {
 }
 
 /** Ropa: si esta salida reparte ropa del ropero. */
-function SeccionRopa({ salida, puedeGuardar, onGuardado }: SeccionProps) {
+function SeccionRopa({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProps) {
   const [conRopa, setConRopa] = useState(salida.conRopa)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const guardado = useSeccionSucia('ropa', { conRopa }, onSucio)
 
   const guardar = async () => {
     setGuardando(true)
@@ -294,6 +325,7 @@ function SeccionRopa({ salida, puedeGuardar, onGuardado }: SeccionProps) {
     try {
       await editarSalida(salida.id, { conRopa })
       onGuardado()
+      guardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se ha podido guardar.'))
     } finally {
@@ -320,10 +352,11 @@ function SeccionRopa({ salida, puedeGuardar, onGuardado }: SeccionProps) {
 const PUESTO_VACIO: PuestoDelCatalogo = { nombre: '', tunica: false, tocado: null, alturaHombro: false }
 
 /** Puestos: el catálogo de puestos que se pueden pedir al pedir la papeleta. Mínimo uno. */
-function SeccionPuestos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
+function SeccionPuestos({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProps) {
   const [puestos, setPuestos] = useState<PuestoDelCatalogo[]>(salida.puestos.length > 0 ? salida.puestos : [PUESTO_VACIO])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const guardado = useSeccionSucia('puestos', puestos, onSucio)
 
   const cambiar = <K extends keyof PuestoDelCatalogo>(i: number, clave: K, valor: PuestoDelCatalogo[K]) =>
     setPuestos((actuales) => actuales.map((p, j) => (i === j ? { ...p, [clave]: valor } : p)))
@@ -347,6 +380,7 @@ function SeccionPuestos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
     try {
       await editarSalida(salida.id, { puestos: puestos.map((p) => ({ ...p, nombre: p.nombre.trim() })) })
       onGuardado()
+      guardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se han podido guardar los puestos.'))
     } finally {
@@ -403,10 +437,11 @@ function SeccionPuestos({ salida, puedeGuardar, onGuardado }: SeccionProps) {
 }
 
 /** Indicaciones: texto libre para la papeleta y los correos. */
-function SeccionIndicaciones({ salida, puedeGuardar, onGuardado }: SeccionProps) {
+function SeccionIndicaciones({ salida, puedeGuardar, onGuardado, onSucio }: SeccionProps) {
   const [texto, setTexto] = useState(salida.indicaciones ?? '')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const guardado = useSeccionSucia('indicaciones', texto, onSucio)
 
   const guardar = async () => {
     setGuardando(true)
@@ -414,6 +449,7 @@ function SeccionIndicaciones({ salida, puedeGuardar, onGuardado }: SeccionProps)
     try {
       await editarSalida(salida.id, { indicaciones: texto.trim() || null })
       onGuardado()
+      guardado()
     } catch (e: unknown) {
       setError(mensaje(e, 'No se han podido guardar las indicaciones.'))
     } finally {
@@ -458,6 +494,18 @@ export default function SalidaEditPage() {
   const salida = salidas?.find((s) => s.id === Number(id)) ?? null
 
   const onGuardado = () => void cliente.invalidateQueries({ queryKey: CLAVE_SALIDAS })
+  // Cada sección tiene su «Guardar»: con una a medias, «Volver» o cerrar la pestaña lo perdía sin avisar.
+  const [sucias, setSucias] = useState<ReadonlySet<string>>(new Set())
+  const onSucio = useCallback((seccion: string, sucio: boolean) => setSucias((antes) => {
+    if (antes.has(seccion) === sucio) return antes
+    const despues = new Set(antes)
+    if (sucio) despues.add(seccion)
+    else despues.delete(seccion)
+    return despues
+  }), [])
+  const hayCambios = sucias.size > 0
+  const bloqueo = useBlocker(({ currentLocation, nextLocation }) => hayCambios && currentLocation.pathname !== nextLocation.pathname)
+  useAvisoAlCerrarLaPestana(hayCambios)
 
   if (!salida) {
     if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress aria-label="Cargando la salida" /></Box>
@@ -470,11 +518,12 @@ export default function SalidaEditPage() {
       <Button component={Link} to="/cms/procesion/salidas">Volver</Button>
     </CabeceraSeccion>
 
-    <SeccionDatos salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} />
-    <SeccionFecha salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} />
-    <SeccionCobro salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} />
-    <SeccionRopa salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} />
-    <SeccionPuestos salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} />
-    <SeccionIndicaciones salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} />
+    <SeccionDatos salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} onSucio={onSucio} />
+    <SeccionFecha salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} onSucio={onSucio} />
+    <SeccionCobro salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} onSucio={onSucio} />
+    <SeccionRopa salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} onSucio={onSucio} />
+    <SeccionPuestos salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} onSucio={onSucio} />
+    <SeccionIndicaciones salida={salida} puedeGuardar={puedeGuardar} onGuardado={onGuardado} onSucio={onSucio} />
+    <AvisoCambiosSinGuardar bloqueo={bloqueo} deQue="esta salida" />
   </>
 }
