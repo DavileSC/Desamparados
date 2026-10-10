@@ -64,8 +64,16 @@ export const SALIDAS_DE_SIEMPRE: Prisma.SalidaCreateInput[] = [
   },
 ];
 
-/** Crea las que falten. Las que ya existen no se tocan: desde ahí las edita el CMS. */
-export async function sembrarSalidas(): Promise<void> {
+/**
+ * Crea las que falten. Las que ya existen no se tocan: desde ahí las edita el
+ * CMS. En producción (`soloSiNoHay`), solo en una base sin salidas: una que
+ * la Junta borró no vuelve con el siguiente despliegue.
+ */
+export async function sembrarSalidas({ soloSiNoHay = false } = {}): Promise<void> {
+  if (soloSiNoHay && (await db.salida.count()) > 0) {
+    console.log('   (salidas: ya hay, no se siembran)');
+    return;
+  }
   for (const salida of SALIDAS_DE_SIEMPRE) {
     await db.salida.upsert({ where: { slug: salida.slug }, update: {}, create: salida });
   }

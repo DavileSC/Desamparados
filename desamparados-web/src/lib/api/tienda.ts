@@ -80,7 +80,9 @@ export interface PedidoDelCms extends PedidoPublico {
 
 export type DatosProducto = Omit<Producto, 'id' | 'tallas' | 'creadoEl'> & {
   /** Las que traen `id` ya estaban; las que faltan se borran. */
-  tallas: { id?: number; nombre: string; existencias: number | null }[]
+  tallas: { id?: number; nombre: string; existencias: number | null; existenciasLeidas?: number | null }[]
+  /** Lo que quedaba al abrir la ficha: el servidor no pisa lo vendido entretanto. */
+  existenciasLeidas?: number | null
 }
 
 export const catalogo = () => llamarApi<Catalogo>('/tienda', { auth: false })

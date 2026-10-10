@@ -32,6 +32,8 @@ const tallasSchema = type({
     "id?": "number.integer > 0",
     nombre: textoLimpio(20, 'una talla'),
     existencias: type("0 <= number.integer <= 100000").or("null"),
+    // Lo que tenía al abrir la ficha: ver `existenciasAlGuardar`.
+    "existenciasLeidas?": type("number.integer >= 0").or("null"),
 }).array().atMostLength(MAX_TALLAS)
     .narrow((ts) => new Set(ts.map((t) => t.nombre.trim().toLowerCase())).size === ts.length)
     .describe("tallas sin repetir");
@@ -48,6 +50,7 @@ export const productoSchema = type({
         "tallas?": tallasSchema,
 
         existencias: type("0 <= number.integer <= 100000").or("null"),
+        "existenciasLeidas?": type("number.integer >= 0").or("null"),
         activo: "boolean",
         orden: "0 <= number.integer <= 10000",
         // Opcionales, como las fotos: quien no los manda no los toca.

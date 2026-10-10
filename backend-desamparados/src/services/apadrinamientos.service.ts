@@ -15,6 +15,7 @@ import { HttpError, NotFoundError } from '../utils/error.handle';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from './auditoria.service.js';
 import { PagoEnLineaService, registrarOrigenDePago, type MetodoEnLinea } from './pagos/pago-en-linea.service.js';
 import { idCategoriaDeRecibos } from './recibos/comunes.js';
+import { transactionWithRetry } from '../utils/transaction-retry.js';
 import { enviarCorreo } from './correos/envio.js';
 import { PlantillasCorreoService } from './plantillas-correo.service.js';
 import { datos, esc, firma, maquetar, parrafo, urlDeLaWeb } from './correos/plantilla.js';
@@ -200,10 +201,20 @@ export class ApadrinamientosService {
     return campanaCompleta(campanaId, true);
   }
 
+  /**
+   * Solo una pieza sin apadrinar y sin nadie en el banco con ella. Se mira y
+   * se borra en la misma transacción, serializable como el cobro: fuera, un
+   * pago que llegara entre medias se perdía con la pieza. Los intentos que el
+   * banco no cobró (CANCELADO) no son de nadie y se van con ella.
+   */
   static async quitarPieza(campanaId: number, piezaId: number) {
-    const pagada = await db.apadrinamiento.count({ where: { piezaId, estado: { in: PAGADOS } } });
-    if (pagada > 0) throw new HttpError('Esa pieza ya está apadrinada: no se quita.', 409);
-    await db.piezaApadrinable.deleteMany({ where: { id: piezaId, campanaId } });
+    await transactionWithRetry(async (tx) => {
+      const vivos = await tx.apadrinamiento.count({ where: { piezaId, estado: { not: EstadoPedido.CANCELADO } } });
+      if (vivos > 0) throw new HttpError('Esa pieza ya está apadrinada, o alguien la está pagando ahora: no se quita.', 409);
+      if (!(await tx.piezaApadrinable.findFirst({ where: { id: piezaId, campanaId }, select: { id: true } }))) return;
+      await tx.apadrinamiento.deleteMany({ where: { piezaId } });
+      await tx.piezaApadrinable.delete({ where: { id: piezaId } });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     return campanaCompleta(campanaId, true);
   }
 }

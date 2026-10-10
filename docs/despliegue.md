@@ -645,8 +645,12 @@ crea esas filas, del mismo modo, pero no hace falta lanzarla solo por los
 módulos:
 
 ```bash
-docker compose run --rm herramientas npm run seed   # opcional: lo mismo que hace el arranque, y el resto de la siembra
+docker compose run --rm herramientas npm run seed   # no hace falta: lo mismo que hace el arranque, y el resto de la siembra
 ```
+
+En producción la siembra solo pone los ejemplos (noticias, agenda,
+publicaciones, enseres, salidas) en las tablas que estén vacías, así que
+volver a lanzarla no devuelve lo que la Junta haya borrado.
 
 En una instalación nueva, `modulos.activos` decide con qué módulos arranca:
 hay que ajustarlo **antes del primer arranque**, porque después todas las

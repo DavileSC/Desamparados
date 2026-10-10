@@ -40,7 +40,13 @@ export interface DatosProducto {
    * cada talla y `existencias` no se usa. Las que traen `id` son las que ya
    * estaban; las que faltan se borran (los pedidos guardan su nombre copiado).
    */
-  tallas?: { id?: number; nombre: string; existencias: number | null }[];
+  tallas?: { id?: number; nombre: string; existencias: number | null; existenciasLeidas?: number | null }[];
+  /**
+   * Lo que quedaba al abrir la ficha (también en cada talla). Las ventas
+   * descuentan mientras tanto: con él se sabe si lo que llega es un cambio
+   * de quien edita o un número viejo (ver `existenciasAlGuardar`).
+   */
+  existenciasLeidas?: number | null;
   /** Sin ellos, no se tocan. */
   categoriaId?: number | null;
   destacado?: boolean;
@@ -50,7 +56,20 @@ export interface DatosProducto {
 export const conTallas = { tallas: { orderBy: [{ orden: 'asc' as const }, { id: 'asc' as const }] } };
 
 /** Lo que se guarda de un producto: las fotos de más, limpias. Las tallas van aparte. */
-function datosAGuardar({ fotos, tallas, ...d }: DatosProducto) {
+/**
+ * Lo que se guarda en «Quedan», sin pisar lo vendido mientras la ficha
+ * estaba abierta: se abre con 5, se venden 2 y, al guardar la descripción,
+ * volvían a ser 5 y se vendía lo que no había. Si quien edita no lo tocó,
+ * se queda lo que hay ahora; si lo cambió sobre un número que ya no es el
+ * de la base, se le pide que lo revise (409).
+ */
+export function existenciasAlGuardar(nuevas: number | null, leidas: number | null | undefined, ahora: number | null, quien: string): number | null {
+  if (leidas === undefined || leidas === ahora) return nuevas;
+  if (nuevas === leidas) return ahora;
+  throw new HttpError(`Mientras editabas cambió lo que queda ${quien}: ahora ${ahora === null ? 'no tiene límite' : `quedan ${ahora}`}. Revísalo y guarda otra vez.`, 409);
+}
+
+function datosAGuardar({ fotos, tallas, existenciasLeidas: _leidas, ...d }: DatosProducto) {
   return {
     ...d,
     // Con tallas, lo que queda está en cada una: el del producto no se usa.
@@ -127,8 +146,12 @@ async function guardarTallas(tx: Prisma.TransactionClient, productoId: number, t
   const suyas = new Set(antes.map((t) => t.id));
   const quedan = new Set(tallas.flatMap((t) => (t.id !== undefined && suyas.has(t.id) ? [t.id] : [])));
   await tx.tallaProducto.deleteMany({ where: { productoId, id: { notIn: [...quedan] } } });
+  const ahora = new Map((await tx.tallaProducto.findMany({ where: { productoId, id: { in: [...quedan] } }, select: { id: true, existencias: true } })).map((t) => [t.id, t.existencias]));
   for (const [orden, t] of tallas.entries()) {
-    const datosTalla = { nombre: t.nombre.trim(), existencias: t.existencias, orden };
+    const existencias = t.id !== undefined && quedan.has(t.id)
+      ? existenciasAlGuardar(t.existencias, t.existenciasLeidas, ahora.get(t.id) ?? null, `de la talla ${t.nombre.trim()}`)
+      : t.existencias;
+    const datosTalla = { nombre: t.nombre.trim(), existencias, orden };
     if (t.id !== undefined && quedan.has(t.id)) await tx.tallaProducto.update({ where: { id: t.id }, data: datosTalla });
     else await tx.tallaProducto.create({ data: { ...datosTalla, productoId } });
   }
@@ -273,7 +296,12 @@ export class TiendaService {
       // Si ya cuenta por tallas y no se mandan (una pantalla vieja), sigue
       // contando por talla: el `existencias` que llega no se usa.
       const yaTiene = d.tallas === undefined && (await tx.tallaProducto.count({ where: { productoId: id } })) > 0;
-      await tx.producto.update({ where: { id }, data: { ...datosAGuardar(d), ...(yaTiene ? { existencias: null } : {}) } });
+      const datos = datosAGuardar(d);
+      if (datos.existencias !== null) {
+        const actual = await tx.producto.findUniqueOrThrow({ where: { id }, select: { existencias: true } });
+        datos.existencias = existenciasAlGuardar(datos.existencias, d.existenciasLeidas, actual.existencias, 'del producto');
+      }
+      await tx.producto.update({ where: { id }, data: { ...datos, ...(yaTiene ? { existencias: null } : {}) } });
       if (d.tallas) await guardarTallas(tx, id, d.tallas);
       return tx.producto.findUniqueOrThrow({ where: { id }, include: conTallas });
     }));

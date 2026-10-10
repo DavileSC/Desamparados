@@ -2,6 +2,7 @@
 // a la vez por el banco, el segundo queda como incidencia), el nombre solo sale
 // si se pidió, el ingreso va a contabilidad y la gestión pide sesión del CMS.
 
+import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import type { AddressInfo } from 'node:net';
@@ -66,6 +67,7 @@ async function escenario() {
     await db.transaccion.deleteMany({ where: { concepto: { contains: c.titulo } } });
     await db.pagoEnLinea.deleteMany({ where: { origen: 'APADRINAMIENTO', referenciaId: { in: ids } } });
     await db.auditLog.deleteMany({ where: { OR: [{ entityType: 'apadrinamiento', entityId: { in: ids.map(String) } }, { action: 'EMAIL_FALLIDO', createdAt: { gte: new Date(Date.now() - 120_000) } }] } });
+    await db.apadrinamiento.deleteMany({ where: { id: { in: ids } } });
     await db.campanaApadrinamiento.delete({ where: { id: c.id } });
   };
   return { c, vela1, vela2, persona, recoger };
@@ -146,6 +148,27 @@ test('lo público sin sesión, la gestión solo con la del CMS', async (t) => {
   } finally {
     await borrarUsuarioPrueba(albacea.id);
     await borrarUsuarioPrueba(redes.id);
+    await e.recoger();
+  }
+});
+
+test('DS2: una pieza con alguien pagándola en el banco no se quita; con solo intentos cancelados, sí', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const intento = (piezaId: number, estado: 'PENDIENTE_PAGO' | 'CANCELADO') => db.apadrinamiento.create({
+      data: { token: crypto.randomUUID().replace(/-/g, ''), piezaId, nombre: 'Rosa', email: 'rosa@ejemplo.test', telefono: '600000000', estado, importe: '20' },
+    });
+    await intento(e.vela1.id, 'PENDIENTE_PAGO');
+    await assert.rejects(ApadrinamientosService.quitarPieza(e.c.id, e.vela1.id), (err: unknown) => err instanceof HttpError && err.status === 409);
+    assert.ok(await db.apadrinamiento.findFirst({ where: { piezaId: e.vela1.id } }), 'el cobro en curso sigue ahí');
+
+    await intento(e.vela2.id, 'CANCELADO');
+    const sin = await ApadrinamientosService.quitarPieza(e.c.id, e.vela2.id);
+    assert.deepEqual(sin.piezas.map((p) => p.nombre), ['Vela 1']);
+    // La base tampoco deja borrar a ciegas una pieza con apadrinamientos.
+    await assert.rejects(db.piezaApadrinable.delete({ where: { id: e.vela1.id } }));
+  } finally {
     await e.recoger();
   }
 });

@@ -525,14 +525,25 @@ export async function sembrarContenidoPaginas() {
   console.log(`   ${SLUGS_CONTENIDO.length} páginas de contenido editable`);
 }
 
-export async function sembrarContenido() {
+/**
+ * `soloTablasVacias` (producción): los ejemplos se siembran solo donde no hay
+ * nada, es decir, en la instalación. Creando «lo que falte» por slug o título,
+ * volver a sembrar en un despliegue posterior devolvía a la web las noticias
+ * ficticias y los enseres de ejemplo que la Junta ya había borrado.
+ */
+export async function sembrarContenido({ soloTablasVacias = false } = {}) {
   console.log('Sembrando contenido de ejemplo (editable desde el CMS):');
-  await sembrarNoticias();
-  await sembrarEventos();
-  await sembrarPublicaciones();
+  const toca = async (nombre: string, cuantas: Promise<number>) => {
+    if (!soloTablasVacias || (await cuantas) === 0) return true;
+    console.log(`   (${nombre}: ya hay contenido, no se siembran ejemplos)`);
+    return false;
+  };
+  if (await toca('noticias', db.noticia.count())) await sembrarNoticias();
+  if (await toca('agenda', db.evento.count())) await sembrarEventos();
+  if (await toca('publicaciones', db.publicacion.count())) await sembrarPublicaciones();
   await sembrarImagenesPortada();
   await sembrarContenidoPaginas();
-  await sembrarPaginas();
-  await sembrarAlbaceria();
+  if (await toca('páginas del CMS', db.pagina.count())) await sembrarPaginas();
+  if (await toca('enseres y prendas', Promise.all([db.enser.count(), db.prenda.count()]).then(([a, b]) => a + b))) await sembrarAlbaceria();
   await sembrarContabilidad();
 }

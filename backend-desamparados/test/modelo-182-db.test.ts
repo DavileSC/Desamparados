@@ -173,7 +173,10 @@ test('el resumen, el fichero y los certificados del ejercicio', async (t) => {
     await db.recibo.deleteMany({ where: { hermanoId: { in: hermanos } } });
     await db.hermano.deleteMany({ where: { id: { in: hermanos } } });
     await db.pagoEnLinea.deleteMany({ where: { id: { in: pagos } } });
-    if (campanaId) await db.campanaApadrinamiento.delete({ where: { id: campanaId } });
+    if (campanaId) {
+      await db.apadrinamiento.deleteMany({ where: { pieza: { campanaId } } });
+      await db.campanaApadrinamiento.delete({ where: { id: campanaId } });
+    }
     if (previa) await db.configuracion.update({ where: { key: previa.key }, data: { value: previa.value } });
     else await db.configuracion.deleteMany({ where: { key: 'modelo_182' } });
     await db.configuracion.deleteMany({ where: { key: `modelo_182_enviados_${EJERCICIO}` } });

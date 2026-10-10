@@ -9,22 +9,28 @@ export const ENTERO = /^\d{1,6}$/
 /** Las de siempre, para no escribirlas una a una. */
 export const TALLAS_HABITUALES = ['S', 'M', 'L', 'XL', 'XXL']
 
-export interface TallaEnFormulario { id?: number; nombre: string; existencias: string }
+export interface TallaEnFormulario {
+  id?: number; nombre: string; existencias: string
+  /** Lo que tenía al abrir la ficha (no se ve): con él, guardar no pisa lo vendido entretanto. */
+  leidas?: number | null
+}
 export interface Formulario {
   nombre: string; descripcion: string; precio: string; foto: string; fotos: FotoDeProducto[]
   existencias: string; activo: boolean; orden: string
   conTallas: boolean; tallas: TallaEnFormulario[]
   /** El id de su categoría, o '' sin categoría (como lo da el desplegable). */
   categoriaId: string; destacado: boolean
+  /** Lo que quedaba al abrir la ficha; no en uno nuevo. */
+  leidas?: number | null
 }
 
 export const VACIO: Formulario = { nombre: '', descripcion: '', precio: '', foto: '', fotos: [], existencias: '', activo: true, orden: '0', conTallas: false, tallas: [], categoriaId: '', destacado: false }
 
 export const aFormulario = (p: Producto): Formulario => ({
   nombre: p.nombre, descripcion: p.descripcion, precio: p.precio.toFixed(2).replace('.', ','), foto: p.foto ?? '', fotos: p.fotos,
-  existencias: p.existencias === null ? '' : String(p.existencias), activo: p.activo, orden: String(p.orden),
+  existencias: p.existencias === null ? '' : String(p.existencias), leidas: p.existencias, activo: p.activo, orden: String(p.orden),
   conTallas: p.tallas.length > 0,
-  tallas: p.tallas.map((t) => ({ id: t.id, nombre: t.nombre, existencias: t.existencias === null ? '' : String(t.existencias) })),
+  tallas: p.tallas.map((t) => ({ id: t.id, nombre: t.nombre, existencias: t.existencias === null ? '' : String(t.existencias), leidas: t.existencias })),
   categoriaId: p.categoriaId === null ? '' : String(p.categoriaId), destacado: p.destacado,
 })
 
@@ -38,8 +44,12 @@ export const aDatos = (f: Formulario): DatosProducto => {
     // Un hueco que se añadió y no se llegó a subir no se guarda.
     fotos: f.fotos.filter((x) => x.url).map((x) => ({ url: x.url, pie: x.pie.trim() })),
     existencias: tallas.length > 0 || f.existencias.trim() === '' ? null : Number(f.existencias),
+    ...(f.leidas !== undefined ? { existenciasLeidas: f.leidas } : {}),
     activo: f.activo, orden: Number(f.orden) || 0,
-    tallas: tallas.map((t) => ({ ...(t.id ? { id: t.id } : {}), nombre: t.nombre.trim(), existencias: t.existencias.trim() === '' ? null : Number(t.existencias) })),
+    tallas: tallas.map((t) => ({
+      ...(t.id ? { id: t.id } : {}), nombre: t.nombre.trim(), existencias: t.existencias.trim() === '' ? null : Number(t.existencias),
+      ...(t.id && t.leidas !== undefined ? { existenciasLeidas: t.leidas } : {}),
+    })),
     categoriaId: f.categoriaId ? Number(f.categoriaId) : null, destacado: f.destacado,
   }
 }

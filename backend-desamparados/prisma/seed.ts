@@ -115,11 +115,11 @@ async function main() {
 
   // 3. Contenido de ejemplo (noticias, agenda, publicaciones, páginas,
   //    albacería y categorías contables) para no ver la web vacía.
-  await sembrarContenido();
+  await sembrarContenido({ soloTablasVacias: plan.entorno === 'production' });
 
   // 4. Las salidas procesionales: sin ellas no hay papeletas, ni repartos, ni
   //    mesa. Antes de la demostración, que cuelga sus papeletas de la Pasión.
-  await sembrarSalidas();
+  await sembrarSalidas({ soloSiNoHay: plan.entorno === 'production' });
 
   // 4b. Los módulos que esta instalación tiene encendidos (instalacion/datos-entidad.json).
   const modulosNuevos = await ModulosService.sembrar();

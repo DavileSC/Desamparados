@@ -1547,7 +1547,9 @@ model Apadrinamiento {
   id                Int              @id @default(autoincrement())
   token             String           @unique @db.VarChar(32)
   piezaId           Int
-  pieza             PiezaApadrinable @relation(fields: [piezaId], references: [id], onDelete: Cascade)
+  /// Restrict: quitar una pieza con un cobro en el banco o ya pagada se
+  /// llevaba el apadrinamiento (y con él a quién devolver y su NIF del 182).
+  pieza             PiezaApadrinable @relation(fields: [piezaId], references: [id], onDelete: Restrict)
   nombre            String           @db.VarChar(120)
   email             String           @db.VarChar(191)
   telefono          String           @db.VarChar(30)

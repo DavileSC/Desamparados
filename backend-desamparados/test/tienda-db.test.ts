@@ -297,3 +297,29 @@ test('las categorías: se crean al final, se ordenan, filtran el catálogo y al 
     await e.recoger();
   }
 });
+
+test('DS5: guardar la ficha no pisa lo vendido mientras estaba abierta; cambiar «Quedan» sobre un número viejo pide revisarlo', async (t) => {
+  if (!dbDisponible) { t.skip(SIN_DB); return; }
+  const e = await escenario();
+  try {
+    const base = { nombre: e.medalla.nombre, descripcion: 'Nueva', precio: 15, foto: null, activo: true, orden: 0 };
+    // Se abre la ficha con 2 y, entretanto, se vende 1.
+    await db.producto.update({ where: { id: e.medalla.id }, data: { existencias: { decrement: 1 } } });
+    const guardado = await TiendaService.actualizarProducto(e.medalla.id, { ...base, existencias: 2, existenciasLeidas: 2 });
+    assert.equal(guardado.existencias, 1, 'sin tocar «Quedan», se queda lo que hay');
+    await assert.rejects(TiendaService.actualizarProducto(e.medalla.id, { ...base, existencias: 10, existenciasLeidas: 2 }),
+      (err: unknown) => err instanceof HttpError && err.status === 409 && /quedan 1/.test(err.message));
+    // Leído al día, el cambio entra tal cual.
+    assert.equal((await TiendaService.actualizarProducto(e.medalla.id, { ...base, existencias: 10, existenciasLeidas: 1 })).existencias, 10);
+
+    // Igual en cada talla.
+    const conTallas = await TiendaService.actualizarProducto(e.medalla.id, { ...base, existencias: null, tallas: [{ nombre: 'M', existencias: 4 }] });
+    const m = conTallas.tallas[0];
+    await db.tallaProducto.update({ where: { id: m.id }, data: { existencias: { decrement: 1 } } });
+    const tras = await TiendaService.actualizarProducto(e.medalla.id, { ...base, existencias: null, tallas: [{ id: m.id, nombre: 'M', existencias: 4, existenciasLeidas: 4 }] });
+    assert.equal(tras.tallas[0].existencias, 3);
+  } finally {
+    await db.tallaProducto.deleteMany({ where: { productoId: e.medalla.id } });
+    await e.recoger();
+  }
+});
