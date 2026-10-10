@@ -101,17 +101,23 @@ export default function AgendaYDirecto() {
   // undefined: nadie ha tocado nada y se abre el próximo acto; null: el visitante lo ha cerrado.
   const [abierto, setAbierto] = useState<string | null | undefined>(undefined)
 
-  // El calendario se abre en el mes del próximo acto: así nunca arranca en un mes vacío.
+  // Una sola petición para lo primero que se ve: los próximos actos desde hoy.
+  // El primero dice en qué mes se abre el calendario (así nunca arranca en un
+  // mes vacío), y la ventana de ese mes y el siguiente es el principio de esa
+  // misma lista: van en orden y con el mismo tope. Antes eran dos peticiones
+  // en cadena tras la de los módulos; ahora la otra solo sale al cambiar de mes.
   const proximo = useQuery({
-    queryKey: ['home', 'agenda', 'proximo'],
-    queryFn: () => eventosDelCalendario({ cuantos: 1 }),
+    queryKey: ['home', 'agenda', 'proximos', hoy.getTime()],
+    queryFn: () => eventosDelCalendario({ desde: hoy, cuantos: ACTOS_POR_VENTANA }),
     enabled: activos !== null && activo('agenda'),
     retry: false,
     staleTime: 60_000,
   })
-  const mes = mesElegido ?? inicioDeMes(proximo.data?.[0]?.start ?? hoy)
+  const mesInicial = inicioDeMes(proximo.data?.[0]?.start ?? hoy)
+  const mes = mesElegido ?? mesInicial
+  const iniciales = (proximo.data ?? []).filter((e) => e.start < sumarMeses(mesInicial, 2))
 
-  // La ventana es el mes visible y el siguiente, desde hoy: los actos pasados no se enseñan.
+  // Otro mes: la ventana es el mes visible y el siguiente, desde hoy (los actos pasados no se enseñan).
   const ventana = useQuery({
     queryKey: ['home', 'agenda', mes.getTime()],
     queryFn: () => eventosDelCalendario({
@@ -119,13 +125,14 @@ export default function AgendaYDirecto() {
       hasta: sumarMeses(mes, 2),
       cuantos: ACTOS_POR_VENTANA,
     }),
-    enabled: proximo.isSuccess,
+    enabled: proximo.isSuccess && mesElegido !== null,
     placeholderData: keepPreviousData,
     retry: false,
     staleTime: 60_000,
   })
 
-  const eventos = ventana.data ?? []
+  // Mientras llega la del mes elegido, se queda a la vista la de antes.
+  const eventos = mesElegido === null ? iniciales : ventana.data ?? iniciales
   const abiertoId = abierto === undefined ? eventos[0]?.id ?? null : abierto
   // El aviso del directo es del cortejo en directo: con su módulo apagado no se ofrece.
   const stream = activo('cortejo-directo') ? site.directo.urlAlternativa : undefined
@@ -140,7 +147,9 @@ export default function AgendaYDirecto() {
   // la lista, que lleva su esqueleto mientras llegan el próximo acto y los de
   // la ventana, y el aviso si no llegan.
   const reintentando = (proximo.isError || ventana.isError) && (proximo.isFetching || ventana.isFetching)
-  const listaCargando = proximo.isPending || (proximo.isSuccess && ventana.isPending) || reintentando
+  // Al cambiar de mes no se vuelve al esqueleto: se queda lo de antes, velado, hasta que llega.
+  const listaCargando = proximo.isPending || reintentando
+  const otroMesLlegando = mesElegido !== null && (ventana.isPending || ventana.isPlaceholderData)
   const listaFallo = !listaCargando && (proximo.isError || ventana.isError)
   const reintentar = () => { void (proximo.isError ? proximo.refetch() : ventana.refetch()) }
 
@@ -245,7 +254,7 @@ export default function AgendaYDirecto() {
                   onElegir={elegir}
                 />
               </Box>
-              <Box sx={{ minWidth: 0, opacity: ventana.isPlaceholderData ? 0.6 : 1, transition: 'opacity .2s ease' }}>
+              <Box sx={{ minWidth: 0, opacity: otroMesLlegando ? 0.6 : 1, transition: 'opacity .2s ease' }}>
                 {listaCargando || listaFallo ? (
                   <EnCarga papel estado={listaFallo ? 'error' : 'cargando'} que="la agenda" alReintentar={reintentar} esqueleto={<ListaDeAgendaEsqueleto />} />
                 ) : eventos.length === 0 ? (

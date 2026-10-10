@@ -1,10 +1,11 @@
 import { createContext, useContext } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
+// Solo la clave de la portada: el JSON entero son 75 KB que la portada no usa.
+import { portada } from '../../../../shared/contenido-por-defecto.json'
 import { portadaDelInicio, type Portada, type TextosPortada } from '../../lib/api/portada'
 
 /** Los textos de siempre: lo que se enseña mientras carga y si la API falla. */
-export const TEXTOS_POR_DEFECTO = POR_DEFECTO.portada as TextosPortada
+export const TEXTOS_POR_DEFECTO = portada as TextosPortada
 
 /**
  * Un borrador de la portada que sustituye a lo guardado. Lo pone la vista

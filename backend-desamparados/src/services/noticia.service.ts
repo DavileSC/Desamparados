@@ -71,9 +71,12 @@ export class NoticiaService {
   // =================================================================
 
   // Portada: la destacada y, tras ella, las más recientes hasta NOTICIAS_EN_PORTADA.
+  // Los listados van sin `contenido`: la tarjeta usa el extracto, y el HTML de
+  // cada noticia (hasta 2 MB) solo lo pide su ficha.
   static async deLaPortada() {
     const noticias = await db.noticia.findMany({
       where: { visible: true },
+      omit: { contenido: true },
       orderBy: ORDEN_PORTADA,
       take: NOTICIAS_EN_PORTADA
     });
@@ -118,6 +121,7 @@ export class NoticiaService {
     const [noticias, total] = await db.$transaction([
       db.noticia.findMany({
         where: whereCondition,
+        omit: { contenido: true }, // Como en la portada: el cuerpo solo lo pide la ficha.
         orderBy: [
           { fecha: 'desc' },
           { id: 'asc' } // Desempate: dos noticias publicadas el mismo día comparten `fecha`

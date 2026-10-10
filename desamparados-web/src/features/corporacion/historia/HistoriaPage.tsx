@@ -21,7 +21,7 @@ import {
   getContenido,
   type Bloque, type BloqueCronologia as Cronologia, type BloqueLlamada, type PaginaDeBloques,
 } from '../../../lib/api/contenido'
-import POR_DEFECTO from '../../../../../shared/contenido-por-defecto.json'
+import { historia } from '../../../../../shared/contenido-por-defecto.json'
 import { deLaCorporacion } from '../../../domain/articulos'
 import { site } from '../../../config/site'
 
@@ -78,7 +78,7 @@ export default function HistoriaPage() {
   // Mientras llega, la cabecera y el cuerpo en esqueleto, y si no llega, el
   // aviso (como en las demás páginas de bloques). La de partida solo da el
   // título de la pestaña.
-  const { cabecera, bloques } = guardada ?? (POR_DEFECTO.historia as PaginaDeBloques)
+  const { cabecera, bloques } = guardada ?? (historia as PaginaDeBloques)
   const conIndice = bloques.findIndex((bloque) => bloque.tipo === 'cronologia')
   const hitosDelIndice = conIndice === -1 ? [] : (bloques[conIndice] as Cronologia).hitos
 

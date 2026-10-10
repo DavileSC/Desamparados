@@ -14,7 +14,7 @@ import ConBloquesCargados from './ConBloquesCargados'
 import EnCarga, { estadoDeConsulta } from '../esqueleto/EnCarga'
 import { cejaDePagina, tipoDeCabecera } from './cabecera'
 import { useBorradorPagina } from './borrador'
-import POR_DEFECTO from '../../../../shared/contenido-por-defecto.json'
+import CATALOGO from '../../../../shared/paginas-publicas.json'
 import { getContenido, type PaginaDeBloques, type SlugContenido } from '../../lib/api/contenido'
 import { SECCION_SIN_CABECERA, SECCION_TRAS_CABECERA } from '../espaciado'
 
@@ -68,16 +68,18 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
   })
   const { data } = consulta
   const guardada = borrador ?? data
-  // El de partida solo da el título de la pestaña mientras llega el guardado.
-  const pagina = guardada ?? ((POR_DEFECTO as Record<string, unknown>)[slug] as PaginaDeBloques)
+  // Mientras llega lo guardado, el título de la pestaña sale del catálogo de
+  // páginas: importar el contenido de partida entero (75 KB) solo para eso lo
+  // metía en un trozo compartido que bajaba también la portada.
+  const titulo = guardada?.cabecera.titulo ?? CATALOGO.paginas.find((p) => p.slug === slug)?.nombre ?? ''
   useBajarAlAncla(Boolean(data))
-  const ceja = cejaDePagina(slug, pagina.cabecera.titulo)
+  const ceja = cejaDePagina(slug, titulo)
   const seccion = sinCabecera ? SECCION_SIN_CABECERA : SECCION_TRAS_CABECERA
 
   return (
     <>
       {/* En la vista previa, la pestaña sigue siendo la del CMS. */}
-      {!borrador && <MetaDePagina titulo={pagina.cabecera.titulo} descripcion={pagina.cabecera.subtitulo || undefined} />}
+      {!borrador && <MetaDePagina titulo={titulo} descripcion={guardada?.cabecera.subtitulo || undefined} />}
       {/* La caja aísla el fondo: su `zIndex: -1` se queda detrás de la página y
           no se va por detrás del documento. Abarca cabecera y bloques, y ahí
           acaba: el pie queda fuera y la foto no lo pisa. */}
@@ -91,24 +93,24 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
             {sinCabecera
               ? (
                 <>
-                  {Boolean(pagina.cabecera.foto) && <FondoDePagina url={pagina.cabecera.foto} />}
-                  <Typography component="h1" sx={visuallyHidden}>{pagina.cabecera.titulo}</Typography>
+                  {Boolean(guardada.cabecera.foto) && <FondoDePagina url={guardada.cabecera.foto} />}
+                  <Typography component="h1" sx={visuallyHidden}>{guardada.cabecera.titulo}</Typography>
                 </>
               )
               : (
                 <CabeceraASangre
-                  titulo={pagina.cabecera.titulo}
-                  subtitulo={pagina.cabecera.subtitulo}
-                  foto={pagina.cabecera.foto}
-                  fotoAlt={pagina.cabecera.fotoAlt}
-                  encuadre={pagina.cabecera.encuadre}
+                  titulo={guardada.cabecera.titulo}
+                  subtitulo={guardada.cabecera.subtitulo}
+                  foto={guardada.cabecera.foto}
+                  fotoAlt={guardada.cabecera.fotoAlt}
+                  encuadre={guardada.cabecera.encuadre}
                   ceja={ceja}
                 />
               )}
             <SeccionAnimada sx={seccion}>
               <ContenedorDePagina>
-                <ConBloquesCargados bloques={pagina.bloques} esqueleto={<BloquesEsqueleto />}>
-                  <BloquesDePagina bloques={pagina.bloques} />
+                <ConBloquesCargados bloques={guardada.bloques} esqueleto={<BloquesEsqueleto />}>
+                  <BloquesDePagina bloques={guardada.bloques} />
                 </ConBloquesCargados>
               </ContenedorDePagina>
             </SeccionAnimada>
@@ -116,7 +118,7 @@ export default function PaginaDeBloquesPublica({ slug }: Props) {
         ) : estadoDeConsulta(consulta) === 'error' ? (
           <>
             {sinCabecera
-              ? <Typography component="h1" sx={visuallyHidden}>{pagina.cabecera.titulo}</Typography>
+              ? <Typography component="h1" sx={visuallyHidden}>{titulo}</Typography>
               : <Box className="esqueleto-quieto"><CabeceraASangreEsqueleto ceja={ceja} /></Box>}
             <Box sx={seccion}>
               <ContenedorDePagina>

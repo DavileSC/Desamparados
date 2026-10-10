@@ -18,7 +18,10 @@ export interface NoticiaDeLaApi {
   updatedAt?: string
 }
 
-function aNoticia(noticia: NoticiaDeLaApi): Noticia {
+/** Los listados públicos (portada y archivo) vienen sin `contenido`: solo lo trae la ficha. */
+type NoticiaDeListado = Omit<NoticiaDeLaApi, 'contenido'> & { contenido?: string }
+
+function aNoticia(noticia: NoticiaDeListado): Noticia {
   return {
     id: String(noticia.id),
     titulo: noticia.titulo,
@@ -33,7 +36,7 @@ function aNoticia(noticia: NoticiaDeLaApi): Noticia {
 }
 
 export async function noticiasDePortada(count?: number) {
-  const noticias = await llamarApi<NoticiaDeLaApi[]>('/news/latest')
+  const noticias = await llamarApi<NoticiaDeListado[]>('/news/latest')
   return noticias.slice(0, count).map(aNoticia)
 }
 
@@ -53,7 +56,7 @@ export function invalidarNoticiasPublicas(queryClient: QueryClient) {
 }
 
 export async function archivoDeNoticias(pagina: { pagina: number; porPagina: number }) {
-  const respuesta = await llamarApi<RespuestaPaginada<NoticiaDeLaApi>>(`/news/archive?${paramsPagina(pagina)}`)
+  const respuesta = await llamarApi<RespuestaPaginada<NoticiaDeListado>>(`/news/archive?${paramsPagina(pagina)}`)
   return { noticias: respuesta.data.map(aNoticia), meta: respuesta.meta }
 }
 

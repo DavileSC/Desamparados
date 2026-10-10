@@ -18,7 +18,7 @@ const directo = site.directo as { urlAlternativa: string | null }
 
 const TRIDUO = evento({ id: 2, title: 'Solemne triduo', description: 'Rosario y eucaristía.', startDate: '2026-10-20T12:00:00.000Z', endDate: '2026-10-22T12:00:00.000Z' })
 
-/** La API responde igual a las dos peticiones de la sección: el próximo acto (`limit=1`) y la ventana de dos meses. */
+/** La API de actos: con `limit=1` (el BloquePrograma y otros), solo el primero; si no, todos. */
 function servirEventos(eventos: ApiEvent[]) {
   const fetchMock = vi.fn(async (url: string) => {
     const lista = new URL(url, 'http://localhost').searchParams.get('limit') === '1' ? eventos.slice(0, 1) : eventos
@@ -63,6 +63,15 @@ describe('AgendaYDirecto', () => {
       expect(screen.getByRole('button', { name: new RegExp(`${dia} de octubre, 1 acto`) })).toBeInTheDocument()
     }
     expect(screen.queryByRole('button', { name: /19 de octubre/ })).not.toBeInTheDocument()
+  })
+
+  it('lo primero que se ve sale de una sola petición de actos, no de dos en cadena', async () => {
+    const fetchMock = servirEventos([APERTURA, TRIDUO])
+    renderWithProviders(<AgendaYDirecto />)
+    await screen.findByRole('button', { name: /20 de octubre, 1 acto/ })
+    const deActos = fetchMock.mock.calls.filter(([url]) => String(url).includes('/events'))
+    expect(deActos).toHaveLength(1)
+    expect(new URL(String(deActos[0][0]), 'http://localhost').searchParams.get('from')).toBe(new Date(2026, 9, 5).toISOString())
   })
 
   it('despliega el próximo acto y, al pulsar un día, abre el suyo', async () => {
