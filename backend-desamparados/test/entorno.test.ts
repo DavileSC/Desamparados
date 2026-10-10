@@ -68,6 +68,11 @@ describe('validarEntorno', () => {
     assert.ok(clave.some((e) => /TOTP_ENC_KEY debe tener exactamente 64/.test(e)));
   });
 
+  test('COMUNICADOS_PAUSA_MS tiene que ser un número de milisegundos', () => {
+    assert.ok(validarEntorno({ COMUNICADOS_PAUSA_MS: '1,5s' }).errores.some((e) => /COMUNICADOS_PAUSA_MS/.test(e)));
+    assert.ok(!validarEntorno({ COMUNICADOS_PAUSA_MS: '0' }).errores.some((e) => /COMUNICADOS_PAUSA_MS/.test(e)));
+  });
+
   test('en producción CLAMAV_REQUIRED=false no vale', () => {
     const { errores } = validarEntorno({ ...PRODUCCION_COMPLETA, CLAMAV_REQUIRED: 'false' });
     assert.ok(errores.some((e) => /CLAMAV_REQUIRED debe ser true/.test(e)));

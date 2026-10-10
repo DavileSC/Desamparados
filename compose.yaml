@@ -7,7 +7,7 @@
 # las copias de seguridad y el mantenimiento— está en docs/despliegue.md.
 #
 # Configuración: un único fichero `.env` en esta misma carpeta, a partir de
-# docker/.env.ejemplo. Compose lo usa para dos cosas a la vez: sustituir las
+# docker/.env.example. Compose lo usa para dos cosas a la vez: sustituir las
 # ${VARIABLES} de aquí abajo y pasárselo entero al contenedor de la API.
 
 name: desamparados
@@ -37,10 +37,14 @@ x-entorno-api: &entorno-api
   DATABASE_HOST: db
   # Se arma desde las partes para no tener dos sitios donde equivocarse. La
   # contraseña no debe llevar caracteres que haya que codificar en una URL:
-  # docker/.env.ejemplo explica cómo generarla.
+  # docker/.env.example explica cómo generarla.
   DATABASE_URL: mysql://${DATABASE_USER:?falta DATABASE_USER en .env}:${DATABASE_PASSWORD:?falta DATABASE_PASSWORD en .env}@db:3306/${DATABASE_NAME:?falta DATABASE_NAME en .env}
   CLAMAV_HOST: clamav
   CLAMAV_PORT: "3310"
+  # Vacía a propósito: `env_file` pasa el .env entero, root de MariaDB
+  # incluido, y la API, las migraciones y las herramientas no lo usan nunca.
+  # `environment` manda sobre `env_file`, así que aquí no llega.
+  DATABASE_ROOT_PASSWORD: ""
 
 x-imagen-api: &imagen-api
   build:

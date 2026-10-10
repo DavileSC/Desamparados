@@ -34,7 +34,11 @@ export interface DatosComunicado {
 }
 
 /** Entre correo y correo: por debajo de lo que Gmail tolera sin cortar. Se puede cambiar con COMUNICADOS_PAUSA_MS. */
-const pausa = () => Number(process.env.COMUNICADOS_PAUSA_MS ?? 1500);
+const pausa = () => {
+  const ms = Number(process.env.COMUNICADOS_PAUSA_MS ?? 1500);
+  // El arranque ya la valida (config/entorno.ts); por si acaso, nunca sin pausa por un valor roto.
+  return Number.isFinite(ms) && ms >= 0 ? ms : 1500;
+};
 const secreto = () => process.env.JWT_SECRET ?? '';
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

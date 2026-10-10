@@ -204,11 +204,25 @@ export class PagoEnLineaService {
     // misma regla: lo que ya no se puede aplicar es incidencia.
     if (pago.origen !== OrigenPago.AREA_HERMANOS) {
       const aplicar = APLICADORES[pago.origen];
+      // El pedido se reserva antes de aplicarlo, con la misma clave que el
+      // cobro del área. Un segundo aviso del banco que llegue mientras se
+      // aplica el primero choca con ella y es el repetido; sin esto, su
+      // aplicador decía «ya no estaba pendiente» y quedaba una incidencia falsa.
+      const clave = claveDelCobro(aviso.pedido);
+      try {
+        await db.operacionMesa.create({ data: { clave, tipo: 'aviso-del-banco' } });
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') return true;
+        throw e;
+      }
       try {
         if (!aplicar || pago.referenciaId === null) throw new HttpError('El pago no dice qué se pagaba.');
         await aplicar(pago.referenciaId, pago.metodo as MetodoEnLinea, { ...meta });
         await db.pagoEnLinea.updateMany({ where: { id: pago.id, estado: EstadoPagoEnLinea.PENDIENTE }, data: { estado: EstadoPagoEnLinea.PAGADO, ...banco } });
       } catch (e) {
+        // Sin aplicar, la reserva sobra: con ella, `incidencia` lo tomaría por
+        // cobrado, y un fallo de verdad tiene que poder reintentarse.
+        await db.operacionMesa.deleteMany({ where: { clave } });
         if (!(e instanceof HttpError)) throw e;
         await incidencia(`No se pudo aplicar el pago: ${e.message}`);
       }

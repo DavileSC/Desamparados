@@ -127,6 +127,17 @@ test('con Redsys, solo el aviso firmado lo da por pagado; sin existencias, queda
     assert.ok(await PagoEnLineaService.avisoDelBanco(aviso({ Ds_Order: otro.pedido, Ds_Amount: '3000', Ds_Response: '0000' }), {}));
     const numeroOtro = (await TiendaService.pedidoPublico(otro.token)).numero;
     assert.equal(await db.transaccion.count({ where: { concepto: `Tienda: pedido n.º ${numeroOtro}` } }), 1);
+
+    // Dos avisos del mismo pedido a la vez: uno lo cobra y el otro es el repetido, sin incidencia falsa.
+    await db.producto.update({ where: { id: e.medalla.id }, data: { existencias: 5 } });
+    const doble = await TiendaService.comprar(e.compra([{ productoId: e.medalla.id, cantidad: 1 }]), {});
+    if (doble.tipo !== 'banco') return;
+    const avisoDoble = aviso({ Ds_Order: doble.pedido, Ds_Amount: '1500', Ds_Response: '0000', Ds_AuthorisationCode: '333333' });
+    await Promise.all([PagoEnLineaService.avisoDelBanco(avisoDoble, {}), PagoEnLineaService.avisoDelBanco(avisoDoble, {})]);
+    assert.equal((await db.pagoEnLinea.findUniqueOrThrow({ where: { pedido: doble.pedido } })).estado, 'PAGADO');
+    assert.equal((await TiendaService.pedidoPublico(doble.token)).estado, 'PAGADO');
+    const numeroDoble = (await TiendaService.pedidoPublico(doble.token)).numero;
+    assert.equal(await db.transaccion.count({ where: { concepto: `Tienda: pedido n.º ${numeroDoble}` } }), 1);
   } finally {
     delete process.env.PAGO_EN_LINEA;
     await e.recoger();

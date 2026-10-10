@@ -112,6 +112,12 @@ jobs:
       - name: Aplicar migraciones
         run: npx prisma migrate deploy
 
+      # Un cambio en schema.prisma sin su migración pasaba en verde (el cliente
+      # se genera del esquema) y rompía el despliegue. Con la base ya migrada,
+      # cualquier diferencia con el esquema es una migración que falta.
+      - name: Esquema sin migración pendiente
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
       # Con NODE_ENV=test la siembra crea las cuentas de desarrollo, el
       # contenido de ejemplo y el censo de demostración: varias pruebas de
       # paginación se omiten si no hay al menos dos páginas de datos.

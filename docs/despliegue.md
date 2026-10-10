@@ -678,6 +678,48 @@ de nginx. Si algún día molesta, la salida es construir antes
 (`docker compose build`) y levantar después: la parada se reduce a lo que tarde
 en arrancar el contenedor ya construido.
 
+### Si una migración falla a medias
+
+En MariaDB los cambios de estructura (`ALTER TABLE`, `CREATE INDEX`…) no se
+deshacen si la migración falla después: lo que ya se ejecutó se queda. Prisma
+apunta esa migración como fallida y, mientras siga así, **todo despliegue se
+para con el error `P3009`** y la API no arranca. No se arregla volviendo a
+desplegar: hay que decidir a mano en qué quedó.
+
+1. **Copia de seguridad antes de tocar nada** (ver «Copias de seguridad»).
+2. Ver cuál falló y por qué:
+
+   ```bash
+   docker compose logs --no-color --tail 80 migraciones
+   docker compose run --rm herramientas npx prisma migrate status
+   ```
+
+3. Abrir su `migration.sql` (en `backend-desamparados/prisma/migrations/`) y
+   comprobar en la base qué sentencias llegaron a hacerse, por ejemplo con
+   `SHOW CREATE TABLE` (como root dentro del contenedor `db`, igual que en
+   «Restaurar»).
+4. Elegir una de dos salidas:
+   - **Terminarla a mano**: ejecutar las sentencias que faltan y decirle a
+     Prisma que está hecha:
+
+     ```bash
+     docker compose run --rm herramientas npx prisma migrate resolve --applied <carpeta_de_la_migración>
+     ```
+
+   - **Deshacerla a mano**: revertir lo que sí se hizo, decirle a Prisma que
+     no cuenta, corregir la migración en el repositorio y volver a desplegar:
+
+     ```bash
+     docker compose run --rm herramientas npx prisma migrate resolve --rolled-back <carpeta_de_la_migración>
+     ```
+
+5. Volver a desplegar y comprobar con `migrate status` que no queda ninguna
+   pendiente ni fallida.
+
+Una migración ya aplicada en el servidor **no se edita**: Prisma guarda su
+suma de comprobación y daría error. Lo que haya que corregir va en una
+migración nueva.
+
 ### Por qué `node --import tsx` y no JavaScript compilado
 
 El código usa imports sin extensión (`moduleResolution: bundler`), que Node no

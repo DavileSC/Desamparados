@@ -91,7 +91,7 @@ docker logout ghcr.io >/dev/null
 log "Cambiando los contenedores y aplicando las migraciones…"
 if ! compose up -d --remove-orphans; then
   compose logs --no-color --tail 40 migraciones >&2 || true
-  fallo "No se ha podido levantar (mira el registro de arriba). Si fallaron las migraciones, la API sigue parada y la base puede haber quedado a medias."
+  fallo "No se ha podido levantar (mira el registro de arriba). Si fallaron las migraciones, la API sigue parada y la base puede haber quedado a medias: docs/despliegue.md, «Si una migración falla a medias»."
 fi
 
 # --- 6. Comprobación ---

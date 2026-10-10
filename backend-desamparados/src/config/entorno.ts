@@ -99,6 +99,10 @@ export function validarEntorno(entorno: Entorno = process.env): ResultadoEntorno
     errores.push(`CLAMAV_REQUIRED="${entorno.CLAMAV_REQUIRED}" debe ser true o false.`);
   }
 
+  // Mal escrita daba NaN, el boletín salía de golpe y Gmail cortaba el envío a medias.
+  if (definida(entorno.COMUNICADOS_PAUSA_MS) && !esEnteroEnRango(entorno.COMUNICADOS_PAUSA_MS, 0, 60_000)) {
+    errores.push(`COMUNICADOS_PAUSA_MS="${entorno.COMUNICADOS_PAUSA_MS}" debe ser un número entero de milisegundos entre 0 y 60000 (por defecto, 1500).`);
+  }
   if (definida(entorno.AUDIT_RETENTION_DAYS) && !esEnteroEnRango(entorno.AUDIT_RETENTION_DAYS, 30, 100000)) {
     errores.push(`AUDIT_RETENTION_DAYS="${entorno.AUDIT_RETENTION_DAYS}" debe ser un número entero de días, 30 o más.`);
   }

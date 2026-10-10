@@ -232,7 +232,10 @@ export class CabildosService {
     const c = await cabildoOError(id);
     exigirAbierto(c);
     if (c.estado === EstadoCabildo.CONVOCADO) throw new HttpError('El acta se redacta cuando el cabildo ya se ha celebrado.', 409);
-    await db.cabildo.update({ where: { id }, data: { acta: sanearContenidoCms(html) } });
+    // El estado va en la condición: si se aprobó entre la lectura y aquí, no
+    // se reescribe un acta que ya está en el libro.
+    const { count } = await db.cabildo.updateMany({ where: { id, estado: EstadoCabildo.CELEBRADO }, data: { acta: sanearContenidoCms(html) } });
+    if (count === 0) throw new HttpError('El acta ya está aprobada: no se puede cambiar.', 409);
     return CabildosService.obtener(id);
   }
 
@@ -241,7 +244,8 @@ export class CabildosService {
     const c = await cabildoOError(id);
     if (c.estado !== EstadoCabildo.CELEBRADO) throw new HttpError(c.estado === EstadoCabildo.ACTA_APROBADA ? 'El acta ya estaba aprobada.' : 'El cabildo aún no se ha celebrado.', 409);
     if (!c.acta.replace(/<[^>]*>/g, '').trim()) throw new HttpError('El acta está vacía: redáctala antes de aprobarla.');
-    await db.cabildo.update({ where: { id }, data: { estado: EstadoCabildo.ACTA_APROBADA, actaAprobadaEl: new Date() } });
+    const { count } = await db.cabildo.updateMany({ where: { id, estado: EstadoCabildo.CELEBRADO }, data: { estado: EstadoCabildo.ACTA_APROBADA, actaAprobadaEl: new Date() } });
+    if (count === 0) throw new HttpError('El acta ya estaba aprobada.', 409);
     await AuditoriaService.log(ACCIONES_AUDITORIA.CABILDO_ACTA_APROBAR, meta ?? {}, 'cabildo', id, { despues: { estado: EstadoCabildo.ACTA_APROBADA } });
     return CabildosService.obtener(id);
   }

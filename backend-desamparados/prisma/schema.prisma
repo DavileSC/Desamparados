@@ -732,7 +732,9 @@ model Evento {
   turno Turno?
 
   /// Las salidas con fecha a mano que toman de aquí su día y su lugar.
-  salidas Salida[] @relation("ActoDeLaSalida")
+  salidas   Salida[]   @relation("ActoDeLaSalida")
+  /// Los sufragios por un difunto publicados con este acto.
+  sufragios Sufragio[]
 
   /// Los cultos solemnes salen en la Agenda pública como un cartel, con su
   /// foto y su dedicatoria («en honor de Nuestra Señora de los Desamparados»).
@@ -970,8 +972,9 @@ model Sufragio {
   fecha          DateTime
   lugar          String?      @db.VarChar(200)
   notas          String?      @db.Text
-  /// El acto de la Agenda, si se publicó.
+  /// El acto de la Agenda, si se publicó. Si el acto se borra, el sufragio se queda sin enlace (no apuntando a nada).
   eventoId       Int?
+  evento         Evento?      @relation(fields: [eventoId], references: [id], onDelete: SetNull)
   /// Cuándo se avisó a la familia por correo, si se avisó.
   familiaAvisada DateTime?
   createdAt      DateTime     @default(now())
@@ -1284,7 +1287,8 @@ model CabildoAsistencia {
   cabildoId    Int
   cabildo      Cabildo  @relation(fields: [cabildoId], references: [id], onDelete: Cascade)
   hermanoId    Int
-  hermano      Hermano  @relation(fields: [hermanoId], references: [id], onDelete: Cascade)
+  // Restrict: la asistencia es parte del acta; borrar al hermano no puede llevársela.
+  hermano      Hermano  @relation(fields: [hermanoId], references: [id], onDelete: Restrict)
   registradaEl DateTime @default(now())
 
   @@unique([cabildoId, hermanoId])
