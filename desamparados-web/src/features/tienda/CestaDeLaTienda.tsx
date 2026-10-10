@@ -7,6 +7,7 @@ import { GOLD, PAPEL } from '../inicio/estilos'
 import { Contador } from './ElegirTalla'
 import { euros, nombreConTalla, quedanDe, topeDe, type LineaDeLaCesta } from './cesta'
 import { esTelefonoValido, normalizarTelefono } from '../../lib/validacion/identidad'
+import { propsDeFoto } from '../../lib/fotoSubida'
 
 export interface Comprador { nombre: string; email: string; telefono: string; metodo: MetodoEnLinea }
 
@@ -78,7 +79,7 @@ export default function CestaDeLaTienda({ lineas, metodos, enviando, error, onCa
               {lineas.map((l) => (
                 <Box component="li" key={l.clave} sx={{ display: 'grid', gridTemplateColumns: '48px minmax(0, 1fr) auto', gap: 1.5, alignItems: 'center' }}>
                   <Box sx={{ width: 48, height: 48, bgcolor: PAPEL, borderRadius: '3px', overflow: 'hidden' }}>
-                    {l.producto.foto && <Box component="img" src={l.producto.foto} alt="" sx={{ width: '100%', height: '100%', objectFit: 'contain', p: 0.5, boxSizing: 'border-box', mixBlendMode: 'multiply' }} />}
+                    {l.producto.foto && <Box component="img" {...propsDeFoto(l.producto.foto, '48px')} alt="" sx={{ width: '100%', height: '100%', objectFit: 'contain', p: 0.5, boxSizing: 'border-box', mixBlendMode: 'multiply' }} />}
                   </Box>
                   <Box sx={{ minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 600, fontSize: 15, lineHeight: 1.3 }}>{l.producto.nombre}</Typography>

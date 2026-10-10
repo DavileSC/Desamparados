@@ -11,6 +11,10 @@ import { GOLD, PAPEL } from '../inicio/estilos'
 import { Contador, ElegirTalla } from './ElegirTalla'
 import { FotoSobrePapel } from './TarjetaDeProducto'
 import { agotado, avisoDeTallas, claveDe, euros, conTallas, primeraConExistencias, quedanDe, topeDe, type Cesta } from './cesta'
+import { propsDeFoto } from '../../lib/fotoSubida'
+
+/** La foto grande de la ficha: media pantalla desde md (dos columnas), entera en el móvil. */
+const TAMANO_GRANDE = '(min-width: 900px) 50vw, 100vw'
 
 /** La foto nueva aparece fundiéndose sobre la que había (la «A · Fundido» de las maquetas). */
 const fundido = keyframes`
@@ -77,7 +81,7 @@ export default function FichaDeProducto({ producto: p, pagoDisponible, cesta, on
               <Box sx={{ position: 'relative' }}>
                 {previa !== null && medios[previa] && (
                   <Box aria-hidden sx={{ position: 'absolute', inset: 0 }}>
-                    <FotoSobrePapel src={medios[previa].url} alt="" proporcion="1 / 1" ajuste="contain" relleno={3} />
+                    <FotoSobrePapel src={medios[previa].url} sizes={TAMANO_GRANDE} alt="" proporcion="1 / 1" ajuste="contain" relleno={3} />
                   </Box>
                 )}
                 {/* Con cada foto se monta de nuevo (su `key`), y el fundido vuelve a empezar. */}
@@ -85,17 +89,17 @@ export default function FichaDeProducto({ producto: p, pagoDisponible, cesta, on
                   position: 'relative', animation: previa !== null ? `${fundido} .45s ease both` : 'none',
                   '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
                 }}>
-                  <FotoSobrePapel src={medios[foto].url} alt={medios[foto].alt} proporcion="1 / 1" ajuste="contain" relleno={3} />
+                  <FotoSobrePapel src={medios[foto].url} sizes={TAMANO_GRANDE} alt={medios[foto].alt} proporcion="1 / 1" ajuste="contain" relleno={3} />
                 </Box>
               </Box>
             </ButtonBase>
-          ) : <FotoSobrePapel src={null} alt="" proporcion="1 / 1" />}
+          ) : <FotoSobrePapel src={null} sizes={TAMANO_GRANDE} alt="" proporcion="1 / 1" />}
           {medios.length > 1 && (
             <Box sx={{ display: 'flex', gap: 1.25, mt: 1.5, flexWrap: 'wrap' }}>
               {medios.map((m, i) => (
                 <ButtonBase key={m.url} onClick={() => cambiar(i)} aria-label={`Ver la foto ${i + 1}${m.pie ? `: ${m.pie}` : ''}`} aria-pressed={i === foto}
                   sx={{ width: 72, height: 72, borderRadius: '4px', overflow: 'hidden', bgcolor: PAPEL, border: '2px solid', borderColor: i === foto ? GOLD : 'transparent', '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 } }}>
-                  <Box component="img" src={m.url} alt="" sx={{ width: '100%', height: '100%', objectFit: 'contain', p: 0.5, boxSizing: 'border-box', mixBlendMode: 'multiply' }} />
+                  <Box component="img" {...propsDeFoto(m.url, '72px')} alt="" sx={{ width: '100%', height: '100%', objectFit: 'contain', p: 0.5, boxSizing: 'border-box', mixBlendMode: 'multiply' }} />
                 </ButtonBase>
               ))}
             </Box>

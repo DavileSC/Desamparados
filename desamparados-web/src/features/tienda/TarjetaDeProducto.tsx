@@ -4,6 +4,7 @@ import AddIcon from '@mui/icons-material/Add'
 import { Link } from 'react-router-dom'
 import type { Producto } from '../../lib/api/tienda'
 import { GOLD, GRANATE, PAPEL } from '../inicio/estilos'
+import { propsDeFoto } from '../../lib/fotoSubida'
 import Chispa from './Chispa'
 import { POCAS, agotado, claveDe, enlaceDeFicha, euros, conTallas, quedanDe, quedanEnTotal, topeDe, type Cesta } from './cesta'
 
@@ -14,8 +15,10 @@ import { POCAS, agotado, claveDe, enlaceDeFicha, euros, conTallas, quedanDe, que
  * recuadro. Con el papel debajo y el blanco fundido («multiply»), la prenda
  * parece puesta sobre la mesa. Las fotos con fondo propio apenas cambian.
  */
-export function FotoSobrePapel({ src, alt, proporcion = '1 / 1', ajuste = 'contain', relleno = 0 }: {
+export function FotoSobrePapel({ src, alt, sizes, proporcion = '1 / 1', ajuste = 'contain', relleno = 0 }: {
   src: string | null
+  /** Lo que ocupa en pantalla: con él, el navegador baja la copia de 640 o 1280 y no la de 1920. */
+  sizes: string
   alt: string
   proporcion?: string
   ajuste?: 'cover' | 'contain'
@@ -24,7 +27,7 @@ export function FotoSobrePapel({ src, alt, proporcion = '1 / 1', ajuste = 'conta
   return (
     <Box sx={{ position: 'relative', aspectRatio: proporcion, bgcolor: PAPEL, borderRadius: '4px', overflow: 'hidden' }}>
       {src && (
-        <Box component="img" src={src} alt={alt} loading="lazy"
+        <Box component="img" {...propsDeFoto(src, sizes)} alt={alt} loading="lazy"
           sx={{ width: '100%', height: '100%', objectFit: ajuste, p: relleno, boxSizing: 'border-box', mixBlendMode: 'multiply', display: 'block', transition: 'transform .5s ease' }} />
       )}
     </Box>
@@ -91,7 +94,7 @@ export default function TarjetaDeProducto({ producto: p, pagoDisponible, cesta, 
           sx={{ display: 'block', borderRadius: '4px', '&:focus-visible': { outline: `2px solid ${GOLD}`, outlineOffset: 3 } }}>
           {/* Entera, sin recortar: las prendas vienen recortadas sobre blanco y
               cortarles las mangas las estropea. */}
-          <FotoSobrePapel src={p.foto} alt="" proporcion="1 / 1" ajuste="contain" relleno={1.5} />
+          <FotoSobrePapel src={p.foto} alt="" sizes="(min-width: 1200px) 25vw, (min-width: 600px) 33vw, 50vw" proporcion="1 / 1" ajuste="contain" relleno={1.5} />
         </Box>
         <SelloDeExistencias producto={p} />
         {pagoDisponible && !sinNada && (conTallas(p)

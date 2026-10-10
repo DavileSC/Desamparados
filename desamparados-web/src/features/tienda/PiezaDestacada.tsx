@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import Boton from '../../components/Boton'
 import type { Producto, TallaDeProducto } from '../../lib/api/tienda'
 import { GOLD, PAPEL } from '../inicio/estilos'
+import { propsDeFoto } from '../../lib/fotoSubida'
 import { ElegirTalla } from './ElegirTalla'
 import { SelloDeExistencias } from './TarjetaDeProducto'
 import { agotado, avisoDeTallas, claveDe, conTallas, enlaceDeFicha, euros, quedanDe, topeDe, type Cesta } from './cesta'
@@ -66,7 +67,7 @@ export default function PiezaDestacada({ producto: p, pagoDisponible, cesta, onA
         <Box component={Link} to={enlaceDeFicha(p)} tabIndex={-1} aria-hidden sx={{ position: 'relative', minHeight: 0, display: 'block', p: { xs: 2, sm: 2.25 }, pb: 0.75 }}>
           {actual && (
             // Con cada foto se monta de nuevo (su `key`), y el fundido vuelve a empezar.
-            <Box key={actual.url} component="img" src={actual.url} alt="" sx={{
+            <Box key={actual.url} component="img" {...propsDeFoto(actual.url, '(min-width: 600px) 45vw, 100vw')} alt="" sx={{
               width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply', display: 'block',
               animation: `${fundido} .4s ease both`, '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
             }} />
@@ -81,7 +82,7 @@ export default function PiezaDestacada({ producto: p, pagoDisponible, cesta, onA
                   border: '1px solid', borderColor: i === foto ? '#1b1c1a' : 'transparent',
                   '&.Mui-focusVisible': { outline: `2px solid ${GOLD}`, outlineOffset: 2 },
                 }}>
-                <Box component="img" src={m.url} alt="" sx={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply', display: 'block' }} />
+                <Box component="img" {...propsDeFoto(m.url, '46px')} alt="" sx={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply', display: 'block' }} />
               </ButtonBase>
             ))}
           </Box>
