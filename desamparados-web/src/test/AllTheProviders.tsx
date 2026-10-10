@@ -3,6 +3,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { LazyMotion, domAnimation } from 'framer-motion'
 import theme from '../theme'
 import { crearQueryClientDePruebas } from './queryClient'
 
@@ -26,7 +27,8 @@ export default function AllTheProviders({ children, ruta = '/', modulos, routerD
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {children}
+        {/* Como en App: los componentes usan `m.*`, que sin esto no animan. */}
+        <LazyMotion features={domAnimation} strict>{children}</LazyMotion>
       </ThemeProvider>
     </QueryClientProvider>
   )

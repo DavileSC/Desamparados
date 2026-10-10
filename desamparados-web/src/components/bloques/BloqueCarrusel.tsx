@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { Box, ButtonBase, Drawer, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { SERIF, ceja } from '../../features/inicio/estilos'
 import { anchoMaximo } from './presentacion'
 import type { BloqueCarrusel as Datos, PiezaDeCarrusel } from '../../lib/api/contenido'
@@ -121,7 +121,7 @@ export default function BloqueCarrusel({ bloque }: { bloque: Datos }) {
       <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 4, py: { md: 1 } }}>
         <Box aria-live="polite" sx={{ minHeight: { md: 320 } }}>
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div
+            <m.div
               key={actual}
               initial={reducir ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -129,7 +129,7 @@ export default function BloqueCarrusel({ bloque }: { bloque: Datos }) {
               transition={{ duration: 0.4, ease: 'easeOut' }}
             >
               <Ficha pieza={pieza} />
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </Box>
 
@@ -214,7 +214,7 @@ function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acab
       <Box sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, px: '20px', pb: 2.25, display: 'flex', flexDirection: 'column', gap: 1.75, color: '#f3efe9' }}>
         <Box aria-live="polite">
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div
+            <m.div
               key={actual}
               initial={reducir ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -242,7 +242,7 @@ function CarruselMovil({ bloque, actual, pieza, total, ir, teclas, empieza, acab
                   Ver cartela
                 </ButtonBase>
               )}
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </Box>
 

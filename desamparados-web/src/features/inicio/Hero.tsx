@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState, type MouseEvent } from 'react'
 import CuentaAtrasDeSalida from './CuentaAtrasDeSalida'
 import { Box, IconButton, Typography } from '@mui/material'
-import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
+import { m, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded'
@@ -130,7 +130,7 @@ export default function Hero() {
           Las fotos van apiladas: la visible encima, y la que viene se monta debajo con
           antelación para que ya esté cargada cuando le toque fundirse. */}
       <Box
-        component={motion.div}
+        component={m.div}
         style={{ x, y }}
         sx={{
           position: 'absolute',
@@ -144,7 +144,7 @@ export default function Hero() {
       >
         {conVideo && imagenes && (
           <Box
-            component={motion.video}
+            component={m.video}
             ref={video}
             src={textos.hero.video}
             poster={imagenes[0]?.url}
@@ -189,7 +189,7 @@ export default function Hero() {
           return (
             <Box
               key={`${i}-${imagen.url}`}
-              component={motion.img}
+              component={m.img}
               // A lo ancho de la pantalla; pero en vertical la foto se recorta por
               // los lados para llenar el alto, y lo que manda es ese alto (una
               // foto apaisada necesita ~1,5 veces el alto de ancho).

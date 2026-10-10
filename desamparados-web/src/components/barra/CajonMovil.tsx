@@ -14,7 +14,7 @@ import { Fragment, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Box, Collapse, IconButton, List, ListItem, ListItemButton, Modal, Toolbar, useTheme } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { AnimatePresence, MotionConfig, motion, useIsPresent, type Variants } from 'framer-motion'
+import { AnimatePresence, MotionConfig, m, useIsPresent, type Variants } from 'framer-motion'
 import EscudoDelGrupo from '../EscudoDelGrupo'
 import IconoDelMenu from './IconoDelMenu'
 import { enlacesDeRedes } from './redes'
@@ -112,7 +112,7 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
 
   return (
     <Box
-      component={motion.div}
+      component={m.div}
       initial="oculta"
       animate="visible"
       exit="saliendo"
@@ -151,10 +151,10 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
 
       <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
         {CAPAS.slice(0, -1).map((color, i) => (
-          <Box key={color} component={motion.div} variants={capa} custom={i} sx={{ position: 'absolute', inset: 0, bgcolor: color }} />
+          <Box key={color} component={m.div} variants={capa} custom={i} sx={{ position: 'absolute', inset: 0, bgcolor: color }} />
         ))}
         <Box
-          component={motion.nav}
+          component={m.nav}
           aria-label="Menú"
           variants={capa}
           custom={CAPAS.length - 1}
@@ -180,7 +180,7 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
               const abierta = Boolean(seccionesAbiertas[entrada.href])
               return (
                 <ListItem key={entrada.href} disablePadding sx={{ display: 'block', overflow: 'hidden' }}>
-                  <motion.div variants={seccion} custom={[i, menu.length]}>
+                  <m.div variants={seccion} custom={[i, menu.length]}>
                     {/* Las secciones con subpáginas no llevan a ninguna: pulsarlas las despliega. */}
                     <ListItemButton
                       {...(hijos.length > 0
@@ -225,13 +225,13 @@ function Panel({ alCerrar }: { alCerrar: () => void }) {
                         </List>
                       </Collapse>
                     )}
-                  </motion.div>
+                  </m.div>
                 </ListItem>
               )
             })}
           </List>
 
-          <Box component={motion.div} variants={pie} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+          <Box component={m.div} variants={pie} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
             {activo('area-hermanos') ? (
               <Box
                 component={Link}

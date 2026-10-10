@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
-import { MotionConfig } from 'framer-motion'
+import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion'
 import AppRouter from './routes'
 import RedDeErrores from './components/RedDeErrores'
 import { useCargarSesion, useVaciarCacheAlCambiarDeUsuario } from './features/altas/auth/session'
@@ -34,14 +34,21 @@ function App() {
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
-        {/* Respeta prefers-reduced-motion del sistema en todas las animaciones */}
-        <MotionConfig reducedMotion="user">
-          {/* Envuelve al router para que un fallo de render muestre un aviso
-              en vez de dejar la página en blanco. */}
-          <RedDeErrores>
-            <AppRouter />
-          </RedDeErrores>
-        </MotionConfig>
+        {/*
+          Solo las piezas de animación que se usan (sin `layout` ni arrastre):
+          con `motion.*` iba la librería entera en cualquier visita. Los
+          componentes usan `m.*`, y `strict` avisa si se cuela un `motion.*`.
+        */}
+        <LazyMotion features={domAnimation} strict>
+          {/* Respeta prefers-reduced-motion del sistema en todas las animaciones */}
+          <MotionConfig reducedMotion="user">
+            {/* Envuelve al router para que un fallo de render muestre un aviso
+                en vez de dejar la página en blanco. */}
+            <RedDeErrores>
+              <AppRouter />
+            </RedDeErrores>
+          </MotionConfig>
+        </LazyMotion>
       </QueryClientProvider>
     </HelmetProvider>
   )

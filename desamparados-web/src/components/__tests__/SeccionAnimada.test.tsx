@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render as pintar, screen } from '@testing-library/react'
+import { LazyMotion, domAnimation } from 'framer-motion'
+import type { ReactNode } from 'react'
 import SeccionAnimada, { Revela } from '../SeccionAnimada'
+
+// Como en App: los componentes usan `m.*`, que sin LazyMotion no observan ni animan.
+const render = (ui: ReactNode) => pintar(<LazyMotion features={domAnimation} strict>{ui}</LazyMotion>)
 
 const movimiento = vi.hoisted(() => ({ reducido: false }))
 vi.mock('framer-motion', async (importOriginal) => ({

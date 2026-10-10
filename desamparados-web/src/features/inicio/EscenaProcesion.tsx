@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useMediaQuery } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
+import { m, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import { Revela } from '../../components/SeccionAnimada'
 import ParrafoQueSeEnciende from '../../components/ParrafoQueSeEnciende'
 import { CURVA_ENTRADA } from '../../components/entrada'
@@ -38,7 +38,7 @@ export default function EscenaProcesion() {
     <section ref={sectionRef} className="procession-scene" aria-labelledby="procession-title">
       {/* La foto se posa desde un zoom ligero la primera vez que entra en vista,
           además del parallax de siempre al hacer scroll. */}
-      <motion.div
+      <m.div
         className="procession-scene-image"
         style={{ y: reducedMotion ? 0 : imageY }}
         initial={reducedMotion ? false : { scale: ZOOM_DE_ENTRADA }}
@@ -58,7 +58,7 @@ export default function EscenaProcesion() {
           loading="lazy"
           decoding="async"
         />
-      </motion.div>
+      </m.div>
       <div className="procession-scene-shade" aria-hidden="true" />
       <div className="procession-scene-content">
         <Revela><span className="procession-scene-eyebrow">{sabadoDePasion.ceja}</span></Revela>

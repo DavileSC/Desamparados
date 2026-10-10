@@ -1,4 +1,4 @@
-import { motion, useReducedMotion, type TargetAndTransition } from 'framer-motion'
+import { m, useReducedMotion, type TargetAndTransition } from 'framer-motion'
 import { useModoEdicion } from './bloques/modoEdicion'
 import { Box, type SxProps, type Theme } from '@mui/material'
 import { CURVA_ENTRADA } from './entrada'
@@ -43,7 +43,7 @@ export type Efecto = keyof typeof EFECTOS
 // deja aire de sobra, para que las sombras de texto no salgan cortadas.
 const MASCARA = 'inset(-1em -1em -0.25em)'
 
-const ETIQUETAS = { div: motion.div, li: motion.li } as const
+const ETIQUETAS = { div: m.div, li: m.li } as const
 
 interface RevelaProps {
   children: React.ReactNode
@@ -91,7 +91,7 @@ export function Revela({ children, orden = 0, retraso = 0, as = 'div', efecto = 
     const disparoMascara = alMontar ? { animate: 'visible' } : { whileInView: 'visible', viewport: VIEWPORT }
     return (
       <Box component={ETIQUETAS[as]} initial="oculto" {...disparoMascara} sx={[{ clipPath: MASCARA }, ...(Array.isArray(sx) ? sx : [sx])]} className={className} id={id}>
-        <motion.div variants={{ oculto, visible }} transition={transition}>{children}</motion.div>
+        <m.div variants={{ oculto, visible }} transition={transition}>{children}</m.div>
       </Box>
     )
   }

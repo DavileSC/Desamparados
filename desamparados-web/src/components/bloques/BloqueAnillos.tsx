@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Box, Typography, useMediaQuery } from '@mui/material'
-import { motion, useInView, useReducedMotion } from 'framer-motion'
+import { m, useInView, useReducedMotion } from 'framer-motion'
 import { SERIF } from '../../features/inicio/estilos'
 import { esDestinoValido } from '../../lib/destinos'
 import { useModoEdicion } from './modoEdicion'
@@ -67,14 +67,14 @@ function AnillosEntrelazados({ bloque }: { bloque: Datos }) {
             strokeWidth: activo === i ? 3 : 2,
             transition: 'fill-opacity .35s, stroke-opacity .35s, stroke-width .35s',
           }}>
-            <motion.circle cx={anillo.cx} cy={anillo.cy} r={R} fill={COLORES[i]} stroke={COLORES[i]}
+            <m.circle cx={anillo.cx} cy={anillo.cy} r={R} fill={COLORES[i]} stroke={COLORES[i]}
               initial={quieto ? false : { pathLength: 0 }}
               animate={vivo ? { pathLength: 1 } : undefined}
               transition={{ duration: 1.2, delay: i * 0.25, ease: [0.45, 0.05, 0.4, 1] }} />
           </g>
         )
       })}
-      <motion.path d="M550 380 v44 M534 396 h32" stroke={COLORES[0]} strokeWidth={2} strokeLinecap="round" fill="none"
+      <m.path d="M550 380 v44 M534 396 h32" stroke={COLORES[0]} strokeWidth={2} strokeLinecap="round" fill="none"
         initial={quieto ? false : { opacity: 0 }} animate={vivo ? { opacity: 1 } : undefined} transition={{ duration: 0.6, delay: 1.1 }} />
     </>
   )
@@ -87,10 +87,10 @@ function AnillosEntrelazados({ bloque }: { bloque: Datos }) {
             {anillos}
             {ANILLOS.map((anillo, i) => (
               <g key={i}>
-                <motion.path d={anillo.hilo} stroke={COLORES[i]} strokeDasharray="3 6" fill="none"
+                <m.path d={anillo.hilo} stroke={COLORES[i]} strokeDasharray="3 6" fill="none"
                   initial={quieto ? false : { opacity: 0 }} animate={vivo ? { opacity: 1 } : undefined}
                   transition={{ duration: 0.5, delay: 1.2 + i * 0.12 }} />
-                <motion.circle cx={PUNTOS[i][0]} cy={PUNTOS[i][1]} r={4} fill={COLORES[i]}
+                <m.circle cx={PUNTOS[i][0]} cy={PUNTOS[i][1]} r={4} fill={COLORES[i]}
                   initial={quieto ? false : { scale: 0 }} animate={vivo ? { scale: 1 } : undefined}
                   transition={{ duration: 0.4, delay: 1.2 + i * 0.12 }} />
               </g>
@@ -110,7 +110,7 @@ function AnillosEntrelazados({ bloque }: { bloque: Datos }) {
             <Box key={i} sx={{ position: 'absolute', ...SITIOS[i] }}
               onMouseEnter={() => setActivo(i)} onMouseLeave={() => setActivo(null)}
               onFocus={() => setActivo(i)} onBlur={() => setActivo(null)}>
-              <Box component={motion.div}
+              <Box component={m.div}
                 initial={quieto ? false : { opacity: 0, y: 12 }} animate={vivo ? { opacity: 1, y: 0 } : undefined}
                 transition={{ duration: 0.6, delay: 1.35 + i * 0.15 }}>
                 <Fin fin={fin} color={COLORES[i]} alineacion={ALINEACIONES[i]} apagado={activo !== null && activo !== i} />

@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
-import { motion, useInView, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion'
+import { m, useInView, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion'
 import { SERIF } from '../../features/inicio/estilos'
 import { limpiarHtml } from '../../lib/limpiarHtml'
 import { useModoEdicion } from './modoEdicion'
@@ -91,12 +91,12 @@ function Ilustracion({ url, alt, ia, quieto }: { url: string; alt: string; ia: b
   const transicion = { duration: ENCENDIDO, ease: [0.45, 0.05, 0.4, 1] as const }
   return (
     <Box ref={marco} sx={{ position: 'relative', pb: 2 }}>
-      <Box component={motion.img} src={url} alt={alt} loading="eager" decoding="async"
+      <Box component={m.img} src={url} alt={alt} loading="eager" decoding="async"
         initial={quieto ? false : { filter: 'brightness(0.3) saturate(0.3)' }}
         animate={encendida ? { filter: 'brightness(1) saturate(1)' } : undefined}
         transition={transicion}
         sx={{ display: 'block', width: '100%', height: 'auto' }} />
-      <Box component={motion.div} aria-hidden
+      <Box component={m.div} aria-hidden
         initial={quieto ? false : { scaleX: 0.15 }}
         animate={encendida ? { scaleX: 1 } : undefined}
         transition={transicion}
@@ -123,7 +123,7 @@ function Trazo({ d, avance, quieto, desde, hasta, grueso = 1.6 }: PropsDibujo & 
   // Sin trazar, oculto del todo: con largo 0 el remate redondo aún pintaría un punto.
   const opacidad = useTransform(largo, (v) => (v > 0 ? 1 : 0))
   return (
-    <motion.path d={d} fill="none" stroke="currentColor" strokeWidth={grueso} strokeLinecap="round" strokeLinejoin="round"
+    <m.path d={d} fill="none" stroke="currentColor" strokeWidth={grueso} strokeLinecap="round" strokeLinejoin="round"
       style={quieto ? undefined : { pathLength: largo, opacity: opacidad }} />
   )
 }
@@ -199,11 +199,11 @@ function SignoPasionista(dibujo: PropsDibujo) {
         'M120 222 V257 M114 222 H126',
         'M136 224 L122 254 M131 221 L141 226',
       ]} />
-      <motion.g style={dibujo.quieto ? undefined : { opacity: lema }} fill="currentColor" fontFamily="Georgia, 'Times New Roman', serif" textAnchor="middle" letterSpacing="4">
+      <m.g style={dibujo.quieto ? undefined : { opacity: lema }} fill="currentColor" fontFamily="Georgia, 'Times New Roman', serif" textAnchor="middle" letterSpacing="4">
         <text x="120" y="152" fontSize="21">JESU</text>
         <text x="120" y="180" fontSize="21">XPI</text>
         <text x="120" y="208" fontSize="21">PASSIO</text>
-      </motion.g>
+      </m.g>
     </Lienzo>
   )
 }

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { Box } from '@mui/material'
 
 interface TransicionDePaginaProps {
@@ -8,7 +8,7 @@ interface TransicionDePaginaProps {
 export default function TransicionDePagina({ children }: TransicionDePaginaProps) {
   return (
     <Box
-      component={motion.div}
+      component={m.div}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}

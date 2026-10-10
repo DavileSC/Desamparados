@@ -1,5 +1,5 @@
 import { useRef, type CSSProperties } from 'react'
-import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'framer-motion'
+import { m, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'framer-motion'
 import { useModoEdicion } from './bloques/modoEdicion'
 
 /** Palabras que ocupa el borde entre lo encendido y lo apagado: un borde suave, no un corte. */
@@ -62,7 +62,7 @@ function Palabra({ avance, indice, total, children }: { avance: MotionValue<numb
     const k = Math.min(1, Math.max(0, (p * (total + BORDE) - indice) / BORDE))
     return mezcla(k * k * (3 - 2 * k))
   })
-  return <motion.span style={{ color }}>{children}</motion.span>
+  return <m.span style={{ color }}>{children}</m.span>
 }
 
 function mezcla(k: number): string {

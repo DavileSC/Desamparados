@@ -1,6 +1,6 @@
 import { Box, Typography, useMediaQuery } from '@mui/material'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
+import { m, useInView, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { useModoEdicion } from './modoEdicion'
 import { GOLD, GRANATE, SERIF, ceja } from '../../features/inicio/estilos'
 import { parrafosDe, type BloqueCronologia as Datos, type HitoHistoria } from '../../lib/api/contenido'
@@ -152,7 +152,7 @@ function CronologiaVertical({ bloque, conAnclas }: { bloque: Datos; conAnclas: b
     <Box sx={{ position: 'relative', maxWidth: 1072, mx: 'auto' }}>
       {vivo && largo > 0 && (
         <Box
-          component={motion.div}
+          component={m.div}
           aria-hidden="true"
           style={{ scaleY: escala, x: '-50%' }}
           sx={{
@@ -452,7 +452,7 @@ function CintaViva({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean })
         pt: 'max(120px, 16svh)',
       }}>
         <Box
-          component={motion.ol}
+          component={m.ol}
           ref={fila}
           aria-label={bloque.titulo || 'Cronología'}
           style={{ x }}
@@ -490,7 +490,7 @@ function CintaViva({ bloque, conAnclas }: { bloque: Datos; conAnclas: boolean })
         </Box>
         {/* Lo recorrido de la cinta: un filete de oro que se llena al bajar. */}
         <Box aria-hidden sx={{ mt: 6, mx: 'max(24px, calc(50vw - 560px))', height: '2px', backgroundColor: FILETE, overflow: 'hidden' }}>
-          <Box component={motion.div} style={{ scaleX: recorrido }} sx={{ height: '100%', transformOrigin: 'left', background: `linear-gradient(90deg, ${GOLD_SUAVE}, ${GOLD})` }} />
+          <Box component={m.div} style={{ scaleX: recorrido }} sx={{ height: '100%', transformOrigin: 'left', background: `linear-gradient(90deg, ${GOLD_SUAVE}, ${GOLD})` }} />
         </Box>
       </Box>
     </Box>

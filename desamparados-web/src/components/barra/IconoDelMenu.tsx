@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { motion, useReducedMotion } from 'framer-motion'
+import { m, useReducedMotion } from 'framer-motion'
 
 const CURVA = [0.22, 1, 0.36, 1] as const
 
@@ -20,8 +20,8 @@ export default function IconoDelMenu({ abierto, desdeCerradas = false }: { abier
   const raya = { position: 'absolute', left: 0, right: 0, height: '1.5px', bgcolor: 'currentColor', borderRadius: 1 } as const
   return (
     <Box aria-hidden sx={{ position: 'relative', width: 22, height: 10 }}>
-      <Box component={motion.span} variants={ARRIBA} initial={inicial} animate={estado} transition={transition} sx={raya} />
-      <Box component={motion.span} variants={ABAJO} initial={inicial} animate={estado} transition={transition} sx={raya} />
+      <Box component={m.span} variants={ARRIBA} initial={inicial} animate={estado} transition={transition} sx={raya} />
+      <Box component={m.span} variants={ABAJO} initial={inicial} animate={estado} transition={transition} sx={raya} />
     </Box>
   )
 }
