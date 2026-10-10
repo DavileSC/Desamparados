@@ -274,6 +274,8 @@ export class CensoService {
           activo: true,
           fechaBaja: null, // Limpiamos la fecha de baja
           motivoBaja: null,
+          // Si se dio por fallecido por error, volver lo deshace del todo.
+          fechaDefuncion: null,
           fechaAlta, // Nueva fecha de alta
           numeroHermano: nextNum,
           // Si volvió porque lo pidió desde la web, la petición queda atendida

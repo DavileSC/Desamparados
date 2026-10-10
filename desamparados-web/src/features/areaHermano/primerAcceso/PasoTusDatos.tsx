@@ -6,7 +6,7 @@ import Boton from '../../../components/Boton'
 import TarjetaCristal from '../../../components/TarjetaCristal'
 import type { ApiProfile } from '../../../lib/api/perfil'
 import { aniosCumplidos } from '../../altas/public/schema'
-import { Contacto, DatosPersonales, VidaCofrade } from '../perfil/apartados'
+import { Contacto, DatosPersonales, VidaDeHermano } from '../perfil/apartados'
 import { ESTADO_CIVIL, SEXO, aDia, diaLegible } from '../perfil/etiquetas'
 import CamposDeFicha from './CamposDeFicha'
 import { enUnaFrase, estaVacio, faltanDeTusDatos, opcionalesVacios } from './obligatorios'
@@ -38,7 +38,7 @@ export default function PasoTusDatos({ ficha, onGuardada, onSi, cambiado }: {
         <Box sx={{ display: 'grid', gap: 2.5 }}>
           <DatosPersonales ficha={ficha} onGuardada={onGuardada} />
           <Contacto ficha={ficha} onGuardada={onGuardada} />
-          <VidaCofrade ficha={ficha} onGuardada={onGuardada} />
+          <VidaDeHermano ficha={ficha} onGuardada={onGuardada} />
         </Box>
         <Boton onClick={() => setCambiando(false)} sx={{ alignSelf: { sm: 'flex-start' }, py: 1.75, px: 4 }}>Hecho, volver al resumen</Boton>
       </>

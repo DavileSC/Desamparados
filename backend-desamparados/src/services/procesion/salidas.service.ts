@@ -211,6 +211,12 @@ export class SalidasService {
     // se queda en la Agenda como historia. Moverlo borraría la fecha de la
     // salida de aquel año, que es lo que sus papeletas impresas dicen.
     const mismoAnio = antes && diaMadrid(antes.inicio).slice(0, 4) === diaMadrid(inicio).slice(0, 4);
+    // Solo se enlaza el último acto: poner ya la del año que viene, con la de
+    // este todavía por delante, dejaba a la mesa, la Puerta y el cortejo sin
+    // las papeletas que se están repartiendo.
+    if (antes && !mismoAnio && inicio > antes.inicio && diaMadrid(antes.inicio) >= diaMadrid(new Date())) {
+      throw new HttpError(`La salida de ${diaMadrid(antes.inicio).slice(0, 4)} todavía no se ha celebrado: la del año siguiente se pone cuando pase. Si esa fecha está mal, cámbiala dentro de su año.`, 409);
+    }
     // Crear el acto y enlazarlo, juntos: si el enlace fallaba, quedaba un acto
     // suelto en la Agenda pública con el nombre de la salida.
     const evento = await db.$transaction(async (tx) => {

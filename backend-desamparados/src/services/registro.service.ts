@@ -1,6 +1,6 @@
 import db from '../config/db';
 import { encrypt } from '../utils/bcrypt.handle';
-import { Prisma, Role } from '@prisma/client';
+import { MotivoBaja, Prisma, Role } from '@prisma/client';
 import { RegisterDto, ReactivacionDto } from '../dtos/auth.dto';
 import { comprobarEsAdulto, comprobarEsMenor, diaDeHoy, instanteDeDia } from '../domain/fechas-hermano.js';
 import { EmailService } from './email.service';
@@ -311,7 +311,10 @@ export class RegistroService {
    */
   static async solicitarReactivacion({ dni }: ReactivacionDto) {
     const ficha = await db.hermano.findFirst({
-      where: { dni, activo: false, fechaBaja: { not: null } },
+      // Una baja por fallecimiento no «pide volver»: con el DNI de un difunto
+      // se le colaría a Secretaría en la cola. El OR, porque `not` deja fuera
+      // también las bajas sin motivo (NULL).
+      where: { dni, activo: false, fechaBaja: { not: null }, OR: [{ motivoBaja: null }, { motivoBaja: { not: MotivoBaja.FALLECIMIENTO } }] },
       select: { id: true, reactivacionSolicitada: true },
     });
 

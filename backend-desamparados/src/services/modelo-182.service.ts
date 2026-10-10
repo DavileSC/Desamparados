@@ -172,13 +172,19 @@ async function aportaciones(ejercicio: number, cuotas: boolean) {
   }
 
   // --- Donativos en línea desde la web. Siempre, aunque su módulo esté apagado: apagar es ocultar, y lo cobrado se declara.
+  // Por la fecha del cobro (su apunte en la contabilidad), no por cuándo se
+  // empezó a pagar: uno empezado el 31-12 y cobrado el 1-1 es del año nuevo.
+  // Solo si el apunte ya no está, la de inicio.
   const donativos = await db.pagoEnLinea.findMany({
-    where: { tipo: TipoPagoEnLinea.DONATIVO, estado: EstadoPagoEnLinea.PAGADO, createdAt: { gte: desde, lt: hasta } },
-    select: { id: true, importe: true, createdAt: true, donativo: true },
+    where: {
+      tipo: TipoPagoEnLinea.DONATIVO, estado: EstadoPagoEnLinea.PAGADO,
+      OR: [{ transaccion: { fecha: { gte: desde, lt: hasta } } }, { transaccionId: null, createdAt: { gte: desde, lt: hasta } }],
+    },
+    select: { id: true, importe: true, createdAt: true, donativo: true, transaccion: { select: { fecha: true } } },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
   });
   for (const p of donativos) {
-    const fecha = diaDe(p.createdAt);
+    const fecha = diaDe(p.transaccion?.fecha ?? p.createdAt);
     if (!enRango(fecha)) continue;
     const d = p.donativo as unknown as DatosDelDonativo;
     if (!d?.nif || !d.nombreFiscal) {

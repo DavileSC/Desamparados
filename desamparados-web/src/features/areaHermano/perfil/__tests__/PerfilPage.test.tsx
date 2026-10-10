@@ -59,7 +59,7 @@ describe('PerfilPage', () => {
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Datos personales' })).toHaveAttribute('aria-selected', 'true')
-    for (const titulo of ['Datos personales', 'Contacto y domicilio', 'Vida cofrade', 'Cuota y pago']) {
+    for (const titulo of ['Datos personales', 'Contacto y domicilio', 'Vida de hermano', 'Cuota y pago']) {
       await user.click(screen.getByRole('tab', { name: titulo }))
       expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument()
     }
@@ -69,7 +69,7 @@ describe('PerfilPage', () => {
     // La cuenta, solo enmascarada; y la jura, con el candado de Secretaría.
     await user.click(screen.getByRole('tab', { name: 'Cuota y pago' }))
     expect(screen.getByText('ES•• •••• •••• •••• •••• 1332')).toBeInTheDocument()
-    await user.click(screen.getByRole('tab', { name: 'Vida cofrade' }))
+    await user.click(screen.getByRole('tab', { name: 'Vida de hermano' }))
     expect(screen.getByText('19/03/2001')).toBeInTheDocument()
     expect(screen.getByText(/los lleva Secretaría/i)).toBeInTheDocument()
   })
@@ -153,14 +153,22 @@ describe('PerfilPage', () => {
     expect(cuerpoDelPut(simulado)).toEqual({ formaPagoPref: 'DOMICILIACION', titularidadCuenta: null, titularCuenta: 'Ana Pérez' })
   })
 
-  // Sin Procesión ni Cuotas en línea instalados, esos dos apartados no existen:
-  // no hay vida cofrade que llevar ni pago en línea de la cuota que ofrecer.
-  it('sin Procesión ni Cuotas en línea, no hay Vida cofrade ni Cuota y pago', async () => {
+  // Sin Procesión ni Cuotas en línea (ni Remesas) instalados, esos dos apartados no existen.
+  it('sin Procesión ni Cuotas en línea, no hay Vida de hermano ni Cuota y pago', async () => {
     responder([ficha(1, 'Ana')])
     renderWithProviders(<PerfilPage />, { modulos: ['area-hermanos'] })
 
     expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
     expect(screen.getAllByRole('tab').map((t) => t.getAttribute('aria-label'))).toEqual(['Datos personales', 'Contacto y domicilio', 'Contraseña'])
+  })
+
+  // Con remesas y sin pago en línea, el IBAN se carga en la domiciliación: el hermano tiene que poder cambiarlo.
+  it('con Remesas, aunque no haya Cuotas en línea, está Cuota y pago', async () => {
+    responder([ficha(1, 'Ana')])
+    renderWithProviders(<PerfilPage />, { modulos: ['area-hermanos', 'remesas'] })
+
+    expect(await screen.findByText('Ana Pérez Ruiz')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Cuota y pago' })).toBeInTheDocument()
   })
 
   // Quien solo apuntó a menores no tiene ficha: antes se le enseñaba la de su

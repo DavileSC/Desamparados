@@ -14,11 +14,10 @@ import { EstadoCita, Prisma } from '@prisma/client';
 import { AuditoriaService, ACCIONES_AUDITORIA, MetaDeAuditoria } from '../auditoria.service';
 import { EmailService } from '../email.service';
 import { NoticiaService } from '../noticia.service';
-import { siModulo } from '../modulos.service.js';
+import { ModulosService, siModulo } from '../modulos.service.js';
 import { HttpError } from '../../utils/error.handle';
 import { DOMINIO_CUENTA_ELIMINADA } from '../../domain/cuenta-anonimizada.js';
 import { anioDeLaSalida, diaMadrid, proximaFecha } from '../../domain/fecha-salida.js';
-import { diaMadridComoIntervalo } from '../../domain/contabilidad.js';
 import { articuloDe, deArticulo } from '../../domain/articulos.js';
 import { reglaDe, type SalidaConActo } from './salidas.service.js';
 
@@ -45,10 +44,15 @@ export class PlazoPapeletasService {
     return fila?.plazoAbierto === true;
   }
 
-  /** Los días de reparto de una salida que quedan por delante, en orden. */
+  /**
+   * Los días de reparto de una salida que quedan por delante, en orden. Uno
+   * cuenta hasta que acaba (`horaFin`), igual que en el área: `fecha` es la
+   * medianoche UTC, y con ella el de hoy se daba por pasado o por futuro según
+   * dónde se mirara.
+   */
   static diasFuturos(salida: SalidaConActo, cliente: Cliente = db) {
     return cliente.turno.findMany({
-      where: { activo: true, salidaId: salida.id, fecha: { gte: inicioDeHoy() } },
+      where: { activo: true, salidaId: salida.id, horaFin: { gte: new Date() } },
       orderBy: [{ fecha: 'asc' }, { horaInicio: 'asc' }],
     });
   }
@@ -107,6 +111,9 @@ export class PlazoPapeletasService {
     await db.salida.update({ where: { id: salida.id }, data: { plazoAbierto: abrir, plazoCambiadoEl: new Date() } });
 
     const year = PlazoPapeletasService.anioDeLaProcesion(salida);
+    // Sin área de hermanos la papeleta se pide en la mesa de reparto: ni se
+    // avisa por correo (la plantilla manda al área) ni la noticia habla de ella.
+    const conArea = await ModulosService.activo('area-hermanos');
     let noticiaId: number | null = null;
     let avisados = 0;
 
@@ -116,8 +123,10 @@ export class PlazoPapeletasService {
         const articuloNoticia = articuloDe(salida);
         const noticia = await NoticiaService.crear({
           titulo: `Abierta la inscripción ${deArticulo(articuloNoticia, salida.nombre)} ${year}`,
-          extracto: `Ya se puede pedir la papeleta ${deArticulo(articuloNoticia, salida.nombre)} desde el área de hermanos y elegir el día de reparto.`,
-          contenido: contenidoNoticia(dias, year, salida),
+          extracto: conArea
+            ? `Ya se puede pedir la papeleta ${deArticulo(articuloNoticia, salida.nombre)} desde el área de hermanos y elegir el día de reparto.`
+            : `Ya se puede pedir la papeleta ${deArticulo(articuloNoticia, salida.nombre)} en la mesa de reparto.`,
+          contenido: contenidoNoticia(dias, year, salida, conArea),
           visible: false,
         });
         await AuditoriaService.log(ACCIONES_AUDITORIA.NOTICIA_CREAR, meta ?? {}, 'noticia', noticia.id);
@@ -125,7 +134,7 @@ export class PlazoPapeletasService {
       })) ?? null;
     }
 
-    if (abrir && opciones.avisar) {
+    if (abrir && opciones.avisar && conArea) {
       const destinatarios = await PlazoPapeletasService.destinatarios();
       avisados = destinatarios.length;
       const textos = dias.map(describirTurno);
@@ -169,20 +178,17 @@ export class PlazoPapeletasService {
   }
 }
 
-/** Hoy en Madrid: el servidor corre en UTC y `setHours` daba el día anterior de madrugada. */
-function inicioDeHoy() {
-  return diaMadridComoIntervalo(new Date()).desde;
-}
-
 /** El cuerpo del borrador: se revisa antes de publicar, así que solo lo que se sabe seguro. */
-function contenidoNoticia(dias: { fecha: Date; horaInicio: Date; horaFin: Date }[], year: number, salida: SalidaConActo) {
+function contenidoNoticia(dias: { fecha: Date; horaInicio: Date; horaFin: Date }[], year: number, salida: SalidaConActo, conArea: boolean) {
   const lista = dias.map((d) => `<li>${describirTurno(d)}</li>`).join('');
   const cobro = salida.cobro === 'DONATIVO'
     ? 'Para participar se pide la voluntad, y hay que estar al día con la cuota de hermano.'
     : 'Para recogerla hay que estar al día con la cuota de hermano. Hay que llevar el DNI.';
   return [
     `<p>Ya está abierta la inscripción ${deArticulo(articuloDe(salida), escapar(salida.nombre))} de ${year}.</p>`,
-    '<p>Cada hermano puede pedir su papeleta desde el área de hermanos, para sí y para quienes tiene a su cargo, y elegir el día en que pasará a recogerla:</p>',
+    conArea
+      ? '<p>Cada hermano puede pedir su papeleta desde el área de hermanos, para sí y para quienes tiene a su cargo, y elegir el día en que pasará a recogerla:</p>'
+      : '<p>Cada hermano puede pedir y recoger su papeleta en la mesa de reparto, para sí y para quienes tiene a su cargo, en uno de estos días:</p>',
     `<ul>${lista}</ul>`,
     `<p>${cobro}</p>`,
     ...(salida.indicaciones?.trim() ? [`<p>${escapar(salida.indicaciones.trim())}</p>`] : []),

@@ -430,12 +430,19 @@ test('fijar la fecha de otro año crea un acto nuevo y deja el viejo en la Agend
     assert.equal((await fijar('2098-10-24T18:00:00.000Z')).status, 200);
     assert.equal((await db.salida.findUniqueOrThrow({ where: { id } })).eventoId, de2098);
 
+    // Con la de 2098 todavía por delante no se pone la de 2099: la mesa perdería las papeletas de 2098.
+    const pronto = await fijar('2099-10-16T18:00:00.000Z');
+    assert.equal(pronto.status, 409);
+    assert.match((await pronto.json()).error, /todavía no se ha celebrado/);
+
+    // Celebrada ya (se lleva el acto al pasado), la del año siguiente es otro acto.
+    await db.evento.update({ where: { id: de2098 }, data: { startDate: new Date('2020-10-24T18:00:00.000Z') } });
     assert.equal((await fijar('2099-10-16T18:00:00.000Z')).status, 200);
     const de2099 = (await db.salida.findUniqueOrThrow({ where: { id } })).eventoId!;
     eventos.push(de2099);
     assert.notEqual(de2099, de2098, 'otro año, otro acto');
     const viejo = await db.evento.findUniqueOrThrow({ where: { id: de2098 } });
-    assert.equal(viejo.startDate.toISOString(), '2098-10-24T18:00:00.000Z', 'el de 2098 se queda como estaba');
+    assert.equal(viejo.startDate.toISOString(), '2020-10-24T18:00:00.000Z', 'el viejo se queda como estaba');
     const nuevo = await db.evento.findUniqueOrThrow({ where: { id: de2099 } });
     assert.equal(nuevo.startDate.toISOString(), '2099-10-16T18:00:00.000Z');
   } finally {

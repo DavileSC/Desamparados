@@ -71,7 +71,10 @@ export default function ProcesionAdminPage() {
   const [avisar, setAvisar] = useState(true)
   const [borrador, setBorrador] = useState(true)
   // Sin Noticias no hay dónde dejar el borrador: ni se ofrece ni se pide.
-  const conNoticias = useModulos().activo('noticias')
+  const modulos = useModulos()
+  const conNoticias = modulos.activo('noticias')
+  // Sin área de hermanos, la papeleta se pide en la mesa: el correo de apertura mandaría a un área que no está.
+  const conArea = modulos.activo('area-hermanos')
   const [cambiando, setCambiando] = useState(false)
 
   const [creando, setCreando] = useState(false)
@@ -101,7 +104,7 @@ export default function ProcesionAdminPage() {
     if (!slug) return
     setCambiando(true); setError(null); setAviso(null)
     try {
-      const r = await cambiarPlazo(abrir, slug, abrir ? { avisar, borradorNoticia: borrador && conNoticias } : {})
+      const r = await cambiarPlazo(abrir, slug, abrir ? { avisar: avisar && conArea, borradorNoticia: borrador && conNoticias } : {})
       setAviso({
         texto: abrir
           ? `Solicitud abierta.${r.avisados ? ` Se está avisando por correo a ${r.avisados} ${r.avisados === 1 ? 'cuenta' : 'cuentas'}.` : ''}`
@@ -329,10 +332,12 @@ export default function ProcesionAdminPage() {
         <DialogTitle>{`¿Abrir la solicitud de papeletas ${deArticulo(salida.articulo, salida.nombre)}?`}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Los hermanos podrán pedir la papeleta desde su área y elegir uno de los {plazo?.diasDeReparto ?? 0} días de reparto publicados.
+            {conArea
+              ? `Los hermanos podrán pedir la papeleta desde su área y elegir uno de los ${plazo?.diasDeReparto ?? 0} días de reparto publicados.`
+              : `Los hermanos pedirán la papeleta en la mesa de reparto, en uno de los ${plazo?.diasDeReparto ?? 0} días publicados.`}
           </DialogContentText>
           <Stack>
-            <FormControlLabel control={<Checkbox checked={avisar} onChange={(e) => setAvisar(e.target.checked)} />} label="Avisar por correo a los hermanos activos" />
+            {conArea && <FormControlLabel control={<Checkbox checked={avisar} onChange={(e) => setAvisar(e.target.checked)} />} label="Avisar por correo a los hermanos activos" />}
             {conNoticias && <FormControlLabel control={<Checkbox checked={borrador} onChange={(e) => setBorrador(e.target.checked)} />} label="Dejar un borrador de noticia con los días, para publicarlo y moverlo por redes" />}
           </Stack>
         </DialogContent>

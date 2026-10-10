@@ -8,7 +8,7 @@ import TarjetaCristal from '../../../components/TarjetaCristal'
 import Boton from '../../../components/Boton'
 import { misFichas, type ApiProfile } from '../../../lib/api/perfil'
 import { aniosCumplidos } from '../../altas/public/schema'
-import { Contacto, CuotaYPago, DatosPersonales, VidaCofrade } from './apartados'
+import { Contacto, CuotaYPago, DatosPersonales, VidaDeHermano } from './apartados'
 import ApartadoContrasena from './ApartadoContrasena'
 import { PARENTESCO, aDia, diaLegible } from './etiquetas'
 import { site } from '../../../config/site'
@@ -29,14 +29,15 @@ function subtitulo(ficha: ApiProfile) {
 
 const iniciales = (f: ApiProfile) => `${f.nombre.trim()[0] ?? ''}${(f.primerApellido ?? f.apellidos).trim()[0] ?? ''}`.toUpperCase()
 
-type ClaveApartado = 'personales' | 'contacto' | 'cofrade' | 'cuota' | 'contrasena'
+type ClaveApartado = 'personales' | 'contacto' | 'hermano' | 'cuota' | 'contrasena'
 
 /** El nombre corto es el del móvil: con los largos, cinco pestañas no caben ni en dos filas. */
 const PESTANAS: { clave: ClaveApartado; titulo: string; corto: string; modulo?: Requisito }[] = [
   { clave: 'personales', titulo: 'Datos personales', corto: 'Datos' },
   { clave: 'contacto', titulo: 'Contacto y domicilio', corto: 'Contacto' },
-  { clave: 'cofrade', titulo: 'Vida cofrade', corto: 'Cofrade', modulo: 'procesion' },
-  { clave: 'cuota', titulo: 'Cuota y pago', corto: 'Cuota', modulo: 'cuotas-en-linea' },
+  { clave: 'hermano', titulo: 'Vida de hermano', corto: 'Hermano', modulo: 'procesion' },
+  // Con remesas también: el IBAN es lo que se carga en la domiciliación, y solo lo cambia el hermano.
+  { clave: 'cuota', titulo: 'Cuota y pago', corto: 'Cuota', modulo: ['cuotas-en-linea', 'remesas'] },
   { clave: 'contrasena', titulo: 'Contraseña', corto: 'Contraseña' },
 ]
 
@@ -206,7 +207,7 @@ export default function PerfilPage() {
               <Box key={`${ficha.id}-${abierta.clave}`} role="tabpanel" id={`${base}-panel`} aria-labelledby={`${base}-pestana-${abierta.clave}`} sx={{ mt: 2, minWidth: 0 }}>
                 {abierta.clave === 'personales' && <DatosPersonales ficha={ficha} onGuardada={guardada} />}
                 {abierta.clave === 'contacto' && <Contacto ficha={ficha} onGuardada={guardada} />}
-                {abierta.clave === 'cofrade' && <VidaCofrade ficha={ficha} onGuardada={guardada} />}
+                {abierta.clave === 'hermano' && <VidaDeHermano ficha={ficha} onGuardada={guardada} />}
                 {abierta.clave === 'cuota' && <CuotaYPago ficha={ficha} onGuardada={guardada} />}
                 {/* De la cuenta, no de la ficha: es la misma sea cual sea la persona elegida. */}
                 {abierta.clave === 'contrasena' && <ApartadoContrasena />}

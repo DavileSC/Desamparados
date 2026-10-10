@@ -270,9 +270,9 @@ export function Contacto({ ficha, onGuardada, revision }: PropsApartado) {
   )
 }
 
-// --------------------------------------------------------------- Vida cofrade
+// --------------------------------------------------------------- Vida de hermano
 
-export function VidaCofrade({ ficha, onGuardada, revision }: PropsApartado) {
+export function VidaDeHermano({ ficha, onGuardada, revision }: PropsApartado) {
   const a = useApartado(
     ficha,
     (f) => ({ fechaBautismo: aDia(f.fechaBautismo), lugarBautismo: f.lugarBautismo ?? '', parroquiaBautismo: f.parroquiaBautismo ?? '' }),
@@ -287,7 +287,7 @@ export function VidaCofrade({ ficha, onGuardada, revision }: PropsApartado) {
 
   return (
     <Apartado
-      titulo="Vida cofrade"
+      titulo="Vida de hermano"
       editando={a.editando} onEditar={revision?.sinLapiz ? undefined : a.editar} onCancelar={a.cancelar} onGuardar={() => void a.guardar()}
       tituloOculto={revision?.tituloOculto}
       guardando={a.guardando} error={a.error} hecho={a.hecho}

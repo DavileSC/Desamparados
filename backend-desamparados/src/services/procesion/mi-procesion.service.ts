@@ -39,7 +39,7 @@ export class MiProcesionService {
       where: {
         activo: true,
         salidaId: salida.id,
-        fecha: { gte: new Date() } // Solo futuros
+        horaFin: { gte: new Date() } // Los que no han acabado: hoy cuenta hasta su hora de cierre
       },
       orderBy: { fecha: 'asc' },
       include: {
@@ -87,7 +87,7 @@ export class MiProcesionService {
     // rebasarse por lo mismo.
     const resultado = await transactionWithRetry(async (tx) => {
       const turno = await tx.turno.findUnique({ where: { id: turnoId }, include: { salida: { include: { acto: true } } } });
-      if (!turno || !turno.activo || turno.fecha < new Date()) {
+      if (!turno || !turno.activo || turno.horaFin < new Date()) {
         throw new HttpError('El turno no existe o ya no está disponible.');
       }
       const { salida } = turno;

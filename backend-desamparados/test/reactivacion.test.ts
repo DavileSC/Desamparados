@@ -126,4 +126,21 @@ describe('pedir volver tras una baja', () => {
 
     await assert.rejects(() => SolicitudesService.descartarReactivacion(fichas[0], {}), /ya no está/);
   });
+
+  test('un difunto no «pide volver»; si se dio por fallecido por error, reactivarlo borra la defunción', async (t) => {
+    if (!dbDisponible) return t.skip(SIN_DB);
+    await db.hermano.update({
+      where: { id: fichas[0] },
+      data: { activo: false, fechaBaja: new Date('2025-03-01'), motivoBaja: 'FALLECIMIENTO', fechaDefuncion: new Date('2025-03-01'), reactivacionSolicitada: null, numeroHermano: null },
+    });
+    const respuesta = await RegistroService.solicitarReactivacion({ dni: dniDeBaja, email });
+    assert.match(respuesta.message, /Si hay una ficha a tu nombre/, 'responde lo mismo que siempre');
+    assert.equal((await laFicha())!.reactivacionSolicitada, null, 'no entra en la cola de Secretaría');
+
+    await CensoService.reactivarHermano(fichas[0]);
+    const ficha = await laFicha();
+    assert.equal(ficha!.activo, true);
+    assert.equal(ficha!.fechaDefuncion, null);
+    assert.equal(ficha!.motivoBaja, null);
+  });
 });

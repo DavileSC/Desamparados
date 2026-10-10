@@ -42,6 +42,29 @@ function dniNuevo() {
   return `${n}${'TRWAGMYFPDXBNJZSQVHLCKE'[n % 23]}`;
 }
 
+test('un donativo en línea cuenta en el año en que se cobró, no en el que se empezó a pagar', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const categoria = await db.categoriaTransaccion.findFirstOrThrow({ where: { tipo: 'INGRESO' } });
+  const apunte = await db.transaccion.create({
+    data: { tipo: 'INGRESO', categoriaId: categoria.id, concepto: 'Donativo en línea (prueba 182)', importe: '60', fecha: new Date(`${EJERCICIO + 1}-01-01T09:00:00Z`), metodoPago: MetodoPago.TARJETA },
+  });
+  const nif = dniNuevo();
+  const pago = await db.pagoEnLinea.create({
+    data: {
+      tipo: TipoPagoEnLinea.DONATIVO, estado: EstadoPagoEnLinea.PAGADO, metodo: MetodoPago.TARJETA, importe: '60', reciboIds: [], solicitudIds: [],
+      donativo: { pagina: 'caridad', destino: null, nombre: 'Eva', email: null, nif, nombreFiscal: 'Eva', apellidosFiscales: 'Luna Gil', codigoPostal: '29001' },
+      createdAt: new Date(`${EJERCICIO}-12-31T23:50:00Z`), transaccionId: apunte.id,
+    },
+  });
+  try {
+    assert.equal((await Modelo182Service.resumen(EJERCICIO)).declarados.find((d) => d.nif === nif), undefined, 'no es del año en que se empezó');
+    assert.equal((await Modelo182Service.resumen(EJERCICIO + 1)).declarados.find((d) => d.nif === nif)?.centimos, 60_00, 'sino del año del cobro');
+  } finally {
+    await db.pagoEnLinea.delete({ where: { id: pago.id } });
+    await db.transaccion.delete({ where: { id: apunte.id } });
+  }
+});
+
 test('el resumen, el fichero y los certificados del ejercicio', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const tesorero = await crearUsuarioPrueba(Role.TESORERIA);

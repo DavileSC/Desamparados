@@ -88,6 +88,34 @@ test('Procesión abre el plazo sin crear la noticia si Noticias está apagado', 
   }
 });
 
+test('sin Área de hermanos, abrir el plazo no avisa por correo y la noticia manda a la mesa', async (t) => {
+  if (!dbDisponible) return t.skip(SIN_DB);
+  const salida = await SalidasService.porSlug('sabado-de-pasion');
+  const abiertoAntes = salida.plazoAbierto;
+  const dia = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + 30));
+  let turnoId: number | null = null;
+  let noticiaId: number | null = null;
+  try {
+    turnoId = (await db.turno.create({
+      data: { fecha: dia, horaInicio: new Date(dia.getTime() + 18 * 3_600_000), horaFin: new Date(dia.getTime() + 21 * 3_600_000), capacidadEstimada: 50, activo: true, salida: { connect: { id: salida.id } } },
+    })).id;
+    if (abiertoAntes) await PlazoPapeletasService.cambiar(false, {}, salida, META);
+    await db.modulo.updateMany({ where: { clave: 'noticias' }, data: { activo: true } });
+    await apagar(['area-hermanos']);
+    const r = await PlazoPapeletasService.cambiar(true, { avisar: true, borradorNoticia: true }, await SalidasService.porSlug('sabado-de-pasion'), META);
+    noticiaId = r.noticiaId;
+    assert.equal(r.avisados, 0, 'el correo mandaría a un área que no está');
+    const noticia = await db.noticia.findUniqueOrThrow({ where: { id: r.noticiaId! } });
+    assert.match(noticia.contenido, /mesa de reparto/);
+    assert.doesNotMatch(`${noticia.extracto} ${noticia.contenido}`, /área de hermanos/);
+  } finally {
+    await restaurar();
+    await PlazoPapeletasService.cambiar(abiertoAntes, {}, await SalidasService.porSlug('sabado-de-pasion'), META);
+    if (noticiaId !== null) await db.noticia.deleteMany({ where: { id: noticiaId } });
+    if (turnoId !== null) await db.turno.deleteMany({ where: { id: turnoId } });
+  }
+});
+
 test('un sufragio «en la Agenda» con la Agenda apagada no crea acto', async (t) => {
   if (!dbDisponible) return t.skip(SIN_DB);
   const secretaria = await cargo(Role.SECRETARIA);
